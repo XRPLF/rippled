@@ -20,11 +20,18 @@
 #ifndef RIPPLE_PEERFINDER_TYPES_H_INCLUDED
 #define RIPPLE_PEERFINDER_TYPES_H_INCLUDED
 
+#include "../../beast/beast/chrono/abstract_clock.h"
+
 namespace ripple {
 namespace PeerFinder {
 
-/** Used to identify peers. */
-typedef RipplePublicKey PeerID;
+/** Represents a set of addresses. */
+typedef std::vector <IP::Endpoint> IPAddresses;
+
+/** A set of Endpoint used for connecting. */
+typedef std::vector <Endpoint> Endpoints;
+
+typedef beast::abstract_clock <std::chrono::seconds> clock_type;
 
 }
 }

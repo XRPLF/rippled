@@ -1,10 +1,50 @@
 language: cpp
 compiler:
+  - clang
   - gcc
 before_install:
   - sudo apt-get update -qq
-  - sudo apt-get install -qq libboost1.48-all-dev protobuf-compiler libprotobuf-dev libssl-dev exuberant-ctags
-script: scons && npm install && npm test
+  - sudo apt-get install -qq python-software-properties
+  - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+  - sudo add-apt-repository -y ppa:boost-latest/ppa
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq g++-4.8
+  - sudo apt-get install -qq libboost1.55-all-dev 
+  # We want debug symbols for boost as we install gdb later
+  - sudo apt-get install -qq libboost1.55-dbg
+  - sudo apt-get install -qq mlocate
+  - sudo updatedb
+  - sudo locate libboost | grep /lib | grep -e ".a$"
+  - sudo apt-get install -qq protobuf-compiler libprotobuf-dev libssl-dev exuberant-ctags
+  # We need gcc >= 4.8 for some c++11 features
+  - sudo apt-get install -qq gcc-4.8
+  - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 40 --slave /usr/bin/g++ g++ /usr/bin/g++-4.8
+  - sudo update-alternatives --set gcc /usr/bin/gcc-4.8
+  # Stuff is gold. Nuff said ;)
+  - sudo apt-get -y install binutils-gold
+  # We can get a backtrace if the guy crashes
+  - sudo apt-get -y install gdb
+  # What versions are we ACTUALLY running?
+  - g++ -v
+  - clang -v
+
+script:
+  # Set so any failing command will abort the build
+  - set -e
+  # If only we could do -j12 ;)
+  - scons 
+  # See what we've actually built
+  - ldd ./build/rippled
+  # Run unittests (under gdb)
+  - | # create gdb script
+    echo "set env MALLOC_CHECK_=3" > script.gdb 
+    echo "run" >> script.gdb
+    echo "backtrace full" >> script.gdb 
+    # gdb --help
+  - cat script.gdb | gdb --ex 'set print thread-events off' --return-child-result --args ./build/rippled --unittest 
+  # Run integration tests
+  - npm install
+  - npm test
 notifications:
   email:
     false

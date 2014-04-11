@@ -19,21 +19,26 @@
 
 #if RIPPLE_HYPERLEVELDB_AVAILABLE
 
-namespace NodeStore
-{
+namespace ripple {
+namespace NodeStore {
 
-class HyperDBFactory::BackendImp
+class HyperDBBackend
     : public Backend
     , public BatchWriter::Callback
-    , public LeakChecked <HyperDBFactory::BackendImp>
+    , public LeakChecked <HyperDBBackend>
 {
 public:
-    typedef RecycledObjectPool <std::string> StringPool;
+    Journal m_journal;
+    size_t const m_keyBytes;
+    Scheduler& m_scheduler;
+    BatchWriter m_batch;
+    std::string m_name;
+    std::unique_ptr <hyperleveldb::DB> m_db;
 
-    BackendImp (size_t keyBytes,
-             Parameters const& keyValues,
-             Scheduler& scheduler)
-        : m_keyBytes (keyBytes)
+    HyperDBBackend (size_t keyBytes, Parameters const& keyValues,
+        Scheduler& scheduler, Journal journal)
+        : m_journal (journal)
+        , m_keyBytes (keyBytes)
         , m_scheduler (scheduler)
         , m_batch (*this, scheduler)
         , m_name (keyValues ["path"].toStdString ())
@@ -71,12 +76,13 @@ public:
         hyperleveldb::DB* db = nullptr;
         hyperleveldb::Status status = hyperleveldb::DB::Open (options, m_name, &db);
         if (!status.ok () || !db)
-            Throw (std::runtime_error (std::string("Unable to open/create leveldb: ") + status.ToString()));
+            Throw (std::runtime_error (std::string (
+                "Unable to open/create hyperleveldb: ") + status.ToString()));
 
-        m_db = db;
+        m_db.reset (db);
     }
 
-    ~BackendImp ()
+    ~HyperDBBackend ()
     {
     }
 
@@ -96,44 +102,38 @@ public:
         hyperleveldb::ReadOptions const options;
         hyperleveldb::Slice const slice (static_cast <char const*> (key), m_keyBytes);
 
+        std::string string;
+
+        hyperleveldb::Status getStatus = m_db->Get (options, slice, &string);
+
+        if (getStatus.ok ())
         {
-            // These are reused std::string objects,
-            // required for leveldb's funky interface.
-            //
-            StringPool::ScopedItem item (m_stringPool);
-            std::string& string = item.getObject ();
+            DecodedBlob decoded (key, string.data (), string.size ());
 
-            hyperleveldb::Status getStatus = m_db->Get (options, slice, &string);
-
-            if (getStatus.ok ())
+            if (decoded.wasOk ())
             {
-                DecodedBlob decoded (key, string.data (), string.size ());
-
-                if (decoded.wasOk ())
-                {
-                    *pObject = decoded.createObject ();
-                }
-                else
-                {
-                    // Decoding failed, probably corrupted!
-                    //
-                    status = dataCorrupt;
-                }
+                *pObject = decoded.createObject ();
             }
             else
             {
-                if (getStatus.IsCorruption ())
-                {
-                    status = dataCorrupt;
-                }
-                else if (getStatus.IsNotFound ())
-                {
-                    status = notFound;
-                }
-                else
-                {
-                    status = unknown;
-                }
+                // Decoding failed, probably corrupted!
+                //
+                status = dataCorrupt;
+            }
+        }
+        else
+        {
+            if (getStatus.IsCorruption ())
+            {
+                status = dataCorrupt;
+            }
+            else if (getStatus.IsNotFound ())
+            {
+                status = notFound;
+            }
+            else
+            {
+                status = unknown;
             }
         }
 
@@ -149,19 +149,18 @@ public:
     {
         hyperleveldb::WriteBatch wb;
 
+        EncodedBlob encoded;
+
+        // VFALCO Use range based for
+        BOOST_FOREACH (NodeObject::ref object, batch)
         {
-            EncodedBlob::Pool::ScopedItem item (m_blobPool);
+            encoded.prepare (object);
 
-            BOOST_FOREACH (NodeObject::ref object, batch)
-            {
-                item.getObject ().prepare (object);
-
-                wb.Put (
-                    hyperleveldb::Slice (reinterpret_cast <char const*> (
-                        item.getObject ().getKey ()), m_keyBytes),
-                    hyperleveldb::Slice (reinterpret_cast <char const*> (
-                        item.getObject ().getData ()), item.getObject ().getSize ()));
-            }
+            wb.Put (
+                hyperleveldb::Slice (reinterpret_cast <char const*> (
+                    encoded.getKey ()), m_keyBytes),
+                hyperleveldb::Slice (reinterpret_cast <char const*> (
+                    encoded.getData ()), encoded.getSize ()));
         }
 
         hyperleveldb::WriteOptions const options;
@@ -173,15 +172,14 @@ public:
     {
         hyperleveldb::ReadOptions const options;
 
-        ScopedPointer <hyperleveldb::Iterator> it (m_db->NewIterator (options));
+        std::unique_ptr <hyperleveldb::Iterator> it (m_db->NewIterator (options));
 
         for (it->SeekToFirst (); it->Valid (); it->Next ())
         {
             if (it->key ().size () == m_keyBytes)
             {
                 DecodedBlob decoded (it->key ().data (),
-                                                it->value ().data (),
-                                                it->value ().size ());
+                    it->value ().data (), it->value ().size ());
 
                 if (decoded.wasOk ())
                 {
@@ -192,14 +190,16 @@ public:
                 else
                 {
                     // Uh oh, corrupted data!
-                    WriteLog (lsFATAL, NodeObject) << "Corrupt NodeObject #" << uint256::fromVoid (it->key ().data ());
+                    m_journal.fatal <<
+                        "Corrupt NodeObject #" << uint256::fromVoid (it->key ().data ());
                 }
             }
             else
             {
                 // VFALCO NOTE What does it mean to find an
                 //             incorrectly sized key? Corruption?
-                WriteLog (lsFATAL, NodeObject) << "Bad key size = " << it->key ().size ();
+                m_journal.fatal <<
+                    "Bad key size = " << it->key ().size ();
             }
         }
     }
@@ -215,45 +215,34 @@ public:
     {
         storeBatch (batch);
     }
-
-private:
-    size_t const m_keyBytes;
-    Scheduler& m_scheduler;
-    BatchWriter m_batch;
-    StringPool m_stringPool;
-    EncodedBlob::Pool m_blobPool;
-    std::string m_name;
-    ScopedPointer <hyperleveldb::DB> m_db;
 };
 
 //------------------------------------------------------------------------------
 
-HyperDBFactory::HyperDBFactory ()
+class HyperDBFactory : public NodeStore::Factory
 {
+public:
+    String getName () const
+    {
+        return "HyperLevelDB";
+    }
+
+    std::unique_ptr <Backend> createInstance (size_t keyBytes,
+        Parameters const& keyValues, Scheduler& scheduler, Journal journal)
+    {
+        return std::make_unique <HyperDBBackend> (
+            keyBytes, keyValues, scheduler, journal);
+    }
+};
+
+//------------------------------------------------------------------------------
+
+std::unique_ptr <Factory> make_HyperDBFactory ()
+{
+    return std::make_unique <HyperDBFactory> ();
 }
 
-HyperDBFactory::~HyperDBFactory ()
-{
 }
-
-HyperDBFactory* HyperDBFactory::getInstance ()
-{
-    return new HyperDBFactory;
-}
-
-String HyperDBFactory::getName () const
-{
-    return "HyperLevelDB";
-}
-
-Backend* HyperDBFactory::createInstance (
-    size_t keyBytes,
-    Parameters const& keyValues,
-    Scheduler& scheduler)
-{
-    return new HyperDBFactory::BackendImp (keyBytes, keyValues, scheduler);
-}
-
 }
 
 #endif

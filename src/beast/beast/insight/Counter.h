@@ -20,9 +20,10 @@
 #ifndef BEAST_INSIGHT_COUNTER_H_INCLUDED
 #define BEAST_INSIGHT_COUNTER_H_INCLUDED
 
-#include "CounterImpl.h"
+#include <memory>
 
-#include "../stl/shared_ptr.h"
+#include "Base.h"
+#include "CounterImpl.h"
 
 namespace beast {
 namespace insight {
@@ -35,7 +36,7 @@ namespace insight {
     This is a lightweight reference wrapper which is cheap to copy and assign.
     When the last reference goes away, the metric is no longer collected.
 */
-class Counter
+class Counter : public Base
 {
 public:
     typedef CounterImpl::value_type value_type;
@@ -52,24 +53,9 @@ public:
         factory function in the Collector interface.
         @see Collector.
     */
-    explicit Counter (shared_ptr <CounterImpl> const& impl)
+    explicit Counter (std::shared_ptr <CounterImpl> const& impl)
         : m_impl (impl)
     {
-    }
-
-    /** Set a handler for polling.
-        If a handler is set, it will be called once per collection interval.
-        This may be used to implement polling style collection instead of
-        push style.
-        
-        Handler will be called with this signature:
-            void Handler (Counter const&);
-    */
-    template <class Handler>
-    void set_handler (Handler handler) const
-    {
-        if (m_impl)
-            m_impl->set_handler (handler);
     }
 
     /** Increment the counter. */
@@ -99,8 +85,13 @@ public:
         { increment (-1); return *this; }
     /** @} */
 
+    std::shared_ptr <CounterImpl> const& impl () const
+    {
+        return m_impl;
+    }
+
 private:
-    shared_ptr <CounterImpl> m_impl;
+    std::shared_ptr <CounterImpl> m_impl;
 };
 
 }

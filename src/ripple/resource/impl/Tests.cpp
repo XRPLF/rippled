@@ -23,6 +23,34 @@ namespace Resource {
 class Tests : public UnitTest
 {
 public:
+    class TestLogic
+        : private boost::base_from_member <manual_clock <std::chrono::seconds>>
+        , public Logic
+
+    {
+    private:
+        typedef boost::base_from_member <
+            manual_clock <std::chrono::seconds>> clock_type;
+
+    public:
+        explicit TestLogic (Journal journal)
+            : Logic (insight::NullCollector::New(), member, journal)
+        {
+        }
+
+        void advance ()
+        {
+            ++member;
+        }
+
+        manual_clock <std::chrono::seconds>& clock ()
+        {
+            return member;
+        }
+    };
+
+    //--------------------------------------------------------------------------
+
     void createGossip (Gossip& gossip)
     {
         int const v (10 + random().nextInt (10));
@@ -32,17 +60,95 @@ public:
         {
             Gossip::Item item;
             item.balance = 100 + random().nextInt (500);
-            item.address = IPAddress (IPAddress::V4 (
-                207, 127, 82, v + i));
+            item.address = IP::Endpoint (
+                IP::AddressV4 (207, 127, 82, v + i));
             gossip.items.push_back (item);
         }
     }
 
-    void testImports ()
+    //--------------------------------------------------------------------------
+
+    enum
+    {
+        maxLoopCount = 10000
+    };
+
+    void testDrop (Journal j)
+    {
+        beginTestCase ("Warn/drop");
+
+        Tests::TestLogic logic (j);
+
+        Charge const fee (dropThreshold + 1);
+        IP::Endpoint const addr (
+            IP::Endpoint::from_string ("207.127.82.2"));
+        
+        {
+            Consumer c (logic.newInboundEndpoint (addr));
+
+            // Create load until we get a warning
+            for (std::size_t n (maxLoopCount); true; --n)
+            {
+                if (n == 0)
+                {
+                    fail ("Loop count exceeded without warning");
+                    return;
+                }
+
+                if (c.charge (fee) == warn)
+                {
+                    pass ();
+                    break;
+                }
+                ++logic.clock ();
+            }
+
+            // Create load until we get dropped
+            for (std::size_t n (maxLoopCount); true; --n)
+            {
+                if (n == 0)
+                {
+                    fail ("Loop count exceeded without dropping");
+                    return;
+                }
+
+                if (c.charge (fee) == drop)
+                {
+                    pass ();
+                    break;
+                }
+                ++logic.clock ();
+            }
+
+        }
+
+        {
+            Consumer c (logic.newInboundEndpoint (addr));
+            expect (c.disconnect ());
+        }
+
+        for (std::size_t n (maxLoopCount); true; --n)
+        {
+            Consumer c (logic.newInboundEndpoint (addr));
+            if (n == 0)
+            {
+                fail ("Loop count exceeded without expiring black list");
+                return;
+            }
+
+            if (c.disposition() != drop)
+            {
+                pass ();
+                break;
+            }
+        }
+    }
+
+    void testImports (Journal j)
     {
         beginTestCase ("Imports");
 
-        LogicType <ManualClock> logic (journal());
+        TestLogic logic (j);
 
         Gossip g[5];
 
@@ -55,16 +161,17 @@ public:
         pass();
     }
 
-    void testImport ()
+    void testImport (Journal j)
     {
         beginTestCase ("Import");
 
-        LogicType <ManualClock> logic (journal());
+        TestLogic logic (j);
 
         Gossip g;
         Gossip::Item item;
         item.balance = 100;
-        item.address = IPAddress (IPAddress::V4 (207, 127, 82, 1));
+        item.address = IP::Endpoint (
+            IP::AddressV4 (207, 127, 82, 1));
         g.items.push_back (item);
 
         logic.importConsumers ("g", g);
@@ -72,37 +179,41 @@ public:
         pass();
     }
 
-    void testCharges ()
+    void testCharges (Journal j)
     {
         beginTestCase ("Charge");
 
-        LogicType <ManualClock> logic (journal());
+        TestLogic logic (j);
 
         {
-            IPAddress address (IPAddress::from_string ("207.127.82.1"));
+            IP::Endpoint address (IP::Endpoint::from_string ("207.127.82.1"));
             Consumer c (logic.newInboundEndpoint (address));
-            logMessage ("Charging " + c.to_string() + " 10,000 units");
-            c.charge (10000);
+            Charge fee (1000);
+            j.info <<
+                "Charging " << c.to_string() << " " << fee << " per second";
+            c.charge (fee);
             for (int i = 0; i < 128; ++i)
             {
-                logMessage (
-                    "Time = " + String::fromNumber (logic.clock().now()) +
-                    ", Balance = " + String::fromNumber (c.balance()));
-                ++logic.clock().now();
+                j.info <<
+                    "Time= " << logic.clock().now().time_since_epoch() <<
+                    ", Balance = " << c.balance();
+                logic.advance();
             }
         }
 
         {
-            IPAddress address (IPAddress::from_string ("207.127.82.2"));
+            IP::Endpoint address (IP::Endpoint::from_string ("207.127.82.2"));
             Consumer c (logic.newInboundEndpoint (address));
-            logMessage ("Charging " + c.to_string() + " 1000 units per second");
+            Charge fee (1000);
+            j.info <<
+                "Charging " << c.to_string() << " " << fee << " per second";
             for (int i = 0; i < 128; ++i)
             {
-                c.charge (1000);
-                logMessage (
-                    "Time = " + String::fromNumber (logic.clock().now()) +
-                    ", Balance = " + String::fromNumber (c.balance()));
-                ++logic.clock().now();
+                c.charge (fee);
+                j.info <<
+                    "Time= " << logic.clock().now().time_since_epoch() <<
+                    ", Balance = " << c.balance();
+                logic.advance();
             }
         }
 
@@ -111,12 +222,16 @@ public:
 
     void runTest ()
     {
-        testCharges();
-        testImports();
-        testImport();
+        //Journal j (journal());
+        Journal j;
+
+        testDrop (j);
+        testCharges (j);
+        testImports (j);
+        testImport (j);
     }
 
-    Tests () : UnitTest ("ResourceManager", "ripple", runManual)
+    Tests () : UnitTest ("ResourceManager", "ripple")
     {
     }
 };

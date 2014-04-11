@@ -20,6 +20,9 @@
 #ifndef BEAST_ASIO_HANDSHAKE_HANDSHAKEDETECTLOGIC_H_INCLUDED
 #define BEAST_ASIO_HANDSHAKE_HANDSHAKEDETECTLOGIC_H_INCLUDED
 
+namespace beast {
+namespace asio {
+
 class HandshakeDetectLogic
 {
 public:
@@ -137,5 +140,8 @@ public:
 private:
     Logic m_logic;
 };
+
+}
+}
 
 #endif

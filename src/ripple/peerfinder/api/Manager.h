@@ -20,6 +20,9 @@
 #ifndef RIPPLE_PEERFINDER_MANAGER_H_INCLUDED
 #define RIPPLE_PEERFINDER_MANAGER_H_INCLUDED
 
+#include "Slot.h"
+#include "Types.h"
+
 namespace ripple {
 namespace PeerFinder {
 
@@ -36,7 +39,9 @@ public:
     static Manager* New (
         Stoppable& parent,
         SiteFiles::Manager& siteFiles,
+        File const& pathToDbFileOrDirectory,
         Callback& callback,
+        clock_type& clock,
         Journal journal);
 
     /** Destroy the object.
@@ -53,66 +58,76 @@ public:
     */
     virtual void setConfig (Config const& config) = 0;
 
-    /** Add a set of strings for peers that should always be connected.
+    /** Add a peer that should always be connected.
         This is useful for maintaining a private cluster of peers.
-        If a string is not parseable as a numeric IP address it will
-        be passed to a DNS resolver to perform a lookup.
+        The string is the name as specified in the configuration
+        file, along with the set of corresponding IP addresses.
     */
-    virtual void addFixedPeers (
-        std::vector <std::string> const& strings) = 0;
+    virtual void addFixedPeer (std::string const& name,
+        std::vector <IP::Endpoint> const& addresses) = 0;
 
-    /** Add a set of strings as fallback IPAddress sources.
+    /** Add a set of strings as fallback IP::Endpoint sources.
         @param name A label used for diagnostics.
     */
     virtual void addFallbackStrings (std::string const& name,
         std::vector <std::string> const& strings) = 0;
 
-    /** Add a URL as a fallback location to obtain IPAddress sources.
+    /** Add a URL as a fallback location to obtain IP::Endpoint sources.
         @param name A label used for diagnostics.
     */
+    /* VFALCO NOTE Unimplemented
     virtual void addFallbackURL (std::string const& name,
         std::string const& url) = 0;
-
-    /** Called when an (outgoing) connection attempt to a particular address
-        is about to begin.
     */
-    virtual void onPeerConnectAttemptBegins (IPAddress const& address) = 0;
 
-    /** Called when an (outgoing) connection attempt to a particular address
-        completes, whether it succeeds or fails.
+    //--------------------------------------------------------------------------
+
+    /** Create a new inbound slot with the specified remote endpoint.
+        If nullptr is returned, then the slot could not be assigned.
+        Usually this is because of a detected self-connection.
     */
-    virtual void onPeerConnectAttemptCompletes (IPAddress const& address,
-                                                bool success) = 0;
+    virtual Slot::ptr new_inbound_slot (
+        IP::Endpoint const& local_endpoint,
+            IP::Endpoint const& remote_endpoint) = 0;
 
-    /** Called when a new peer connection is established but before get
-        we exchange hello messages.
+    /** Create a new outbound slot with the specified remote endpoint.
+        If nullptr is returned, then the slot could not be assigned.
+        Usually this is because of a duplicate connection.
     */
-    virtual void onPeerConnected (IPAddress const& address,
-                                  bool inbound) = 0;
+    virtual Slot::ptr new_outbound_slot (
+        IP::Endpoint const& remote_endpoint) = 0;
 
-    /** Called when a new peer connection is established after we exchange
-        hello messages.
-		Internally, we add the peer to our tracking table, validate that
-		we can connect to it, and begin advertising it to others after
-		we are sure that its connection is stable.
-	*/
-    virtual void onPeerHandshake (PeerID const& id,
-                                  IPAddress const& address,
-                                  bool inbound) = 0;
+    /** Called when an outbound connection attempt succeeds.
+        The local endpoint must be valid. If the caller receives an error
+        when retrieving the local endpoint from the socket, it should
+        proceed as if the connection attempt failed by calling on_closed
+        instead of on_connected.
+    */
+    virtual void on_connected (Slot::ptr const& slot,
+        IP::Endpoint const& local_endpoint) = 0;
 
-	/** Called when an existing peer connection drops for whatever reason.
-		Internally, we mark the peer as no longer connected, calculate 
-		stability metrics, and consider whether we should try to reconnect
-		to it or drop it from our list.
-	*/
-	virtual void onPeerDisconnected (PeerID const& id) = 0;
+    /** Called when a handshake is completed. */
+    virtual void on_handshake (Slot::ptr const& slot,
+        RipplePublicKey const& key, bool cluster) = 0;
 
     /** Called when mtENDPOINTS is received. */
-    virtual void onPeerEndpoints (PeerID const& id,
-        std::vector <Endpoint> const& endpoints) = 0;
+    virtual void on_endpoints (Slot::ptr const& slot,
+        Endpoints const& endpoints) = 0;
 
-    /** Called when a legacy IP/port address is received (from mtPEER). */
-    virtual void onPeerLegacyEndpoint (IPAddress const& ep) = 0;
+    /** Called when legacy IP/port addresses are received. */
+    virtual void on_legacy_endpoints (IPAddresses const& addresses) = 0;
+
+    /** Called when the slot is closed.
+        This always happens when the socket is closed, unless the socket
+        was canceled.
+    */
+    virtual void on_closed (Slot::ptr const& slot) = 0;
+
+    /** Called when the slot is closed via canceling operations.
+        This is instead of on_closed.
+    */
+    virtual void on_cancel (Slot::ptr const& slot) = 0;
+
 };
 
 }

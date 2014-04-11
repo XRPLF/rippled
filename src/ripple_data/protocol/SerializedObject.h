@@ -20,6 +20,8 @@
 #ifndef RIPPLE_SERIALIZEDOBJECT_H
 #define RIPPLE_SERIALIZEDOBJECT_H
 
+class STArray;
+
 class STObject
     : public SerializedType
     , public CountedObject <STObject>
@@ -48,19 +50,19 @@ public:
         setType (type);
     }
 
-    UPTR_T<STObject> oClone () const
+    STObject (SField::ref name, boost::ptr_vector<SerializedType>& data) : SerializedType (name), mType (NULL)
     {
-        return UPTR_T<STObject> (new STObject (*this));
+        mData.swap (data);
     }
 
-    static UPTR_T<STObject> parseJson (const Json::Value & value, SField::ref name = sfGeneric, int depth = 0);
-
-    virtual ~STObject ()
+    std::unique_ptr <STObject> oClone () const
     {
-        ;
+        return std::unique_ptr<STObject> (new STObject (*this));
     }
 
-    static UPTR_T<SerializedType> deserialize (SerializerIterator & sit, SField::ref name);
+    virtual ~STObject () { }
+
+    static std::unique_ptr<SerializedType> deserialize (SerializerIterator & sit, SField::ref name);
 
     bool setType (const SOTemplate & type);
     bool isValidForType ();
@@ -108,7 +110,7 @@ public:
         mData.push_back (t.clone ().release ());
         return mData.size () - 1;
     }
-    int giveObject (UPTR_T<SerializedType> t)
+    int giveObject (std::unique_ptr<SerializedType> t)
     {
         mData.push_back (t.release ());
         return mData.size () - 1;
@@ -197,6 +199,7 @@ public:
     const STAmount& getFieldAmount (SField::ref field) const;
     const STPathSet& getFieldPathSet (SField::ref field) const;
     const STVector256& getFieldV256 (SField::ref field) const;
+    const STArray& getFieldArray (SField::ref field) const;
 
     void setFieldU8 (SField::ref field, unsigned char);
     void setFieldU16 (SField::ref field, uint16);
@@ -223,21 +226,21 @@ public:
     bool delField (SField::ref field);
     void delField (int index);
 
-    static UPTR_T <SerializedType> makeDefaultObject (SerializedTypeID id, SField::ref name);
+    static std::unique_ptr <SerializedType> makeDefaultObject (SerializedTypeID id, SField::ref name);
 
     // VFALCO TODO remove the 'depth' parameter
-    static UPTR_T<SerializedType> makeDeserializedObject (
+    static std::unique_ptr<SerializedType> makeDeserializedObject (
         SerializedTypeID id,
         SField::ref name,
         SerializerIterator&,
         int depth);
 
-    static UPTR_T<SerializedType> makeNonPresentObject (SField::ref name)
+    static std::unique_ptr<SerializedType> makeNonPresentObject (SField::ref name)
     {
         return makeDefaultObject (STI_NOTPRESENT, name);
     }
 
-    static UPTR_T<SerializedType> makeDefaultObject (SField::ref name)
+    static std::unique_ptr<SerializedType> makeDefaultObject (SField::ref name)
     {
         return makeDefaultObject (name.fieldType, name);
     }
@@ -295,24 +298,9 @@ private:
     }
     */
 
-    // VFALCO TODO these parameters should not be const references.
-    template <typename T, typename U>
-    static T range_check_cast (const U& value, const T& minimum, const T& maximum)
-    {
-        if ((value < minimum) || (value > maximum))
-            throw std::runtime_error ("Value out of range");
-
-        return static_cast<T> (value);
-    }
-
     STObject* duplicate () const
     {
         return new STObject (*this);
-    }
-
-    STObject (SField::ref name, boost::ptr_vector<SerializedType>& data) : SerializedType (name), mType (NULL)
-    {
-        mData.swap (data);
     }
 
 private:
@@ -321,6 +309,16 @@ private:
 };
 
 //------------------------------------------------------------------------------
+
+// VFALCO TODO these parameters should not be const references.
+template <typename T, typename U>
+static T range_check_cast (const U& value, const T& minimum, const T& maximum)
+{
+    if ((value < minimum) || (value > maximum))
+        throw std::runtime_error ("Value out of range");
+
+    return static_cast<T> (value);
+}
 
 inline STObject::iterator range_begin (STObject& x)
 {
@@ -373,9 +371,9 @@ public:
         ;
     }
 
-    static UPTR_T<SerializedType> deserialize (SerializerIterator & sit, SField::ref name)
+    static std::unique_ptr<SerializedType> deserialize (SerializerIterator & sit, SField::ref name)
     {
-        return UPTR_T<SerializedType> (construct (sit, name));
+        return std::unique_ptr<SerializedType> (construct (sit, name));
     }
 
     const vector& getValue () const

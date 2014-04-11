@@ -34,7 +34,7 @@ protected:
     explicit LedgerMaster (Stoppable& parent);
 
 public:
-    typedef FUNCTION_TYPE <void (Ledger::ref)> callback;
+    typedef std::function <void (Ledger::ref)> callback;
 
 public:
     typedef RippleRecursiveMutex LockType;
@@ -50,16 +50,13 @@ public:
     virtual LockType& peekMutex () = 0;
 
     // The current ledger is the ledger we believe new transactions should go in
-    virtual Ledger::ref getCurrentLedger () = 0;
-
-    // An immutable snapshot of the current ledger
-    virtual Ledger::ref getCurrentSnapshot () = 0;
+    virtual Ledger::pointer getCurrentLedger () = 0;
 
     // The finalized ledger is the last closed/accepted ledger
-    virtual Ledger::ref getClosedLedger () = 0;
+    virtual Ledger::pointer getClosedLedger () = 0;
 
     // The validated ledger is the last fully validated ledger
-    virtual Ledger::ref getValidatedLedger () = 0;
+    virtual Ledger::pointer getValidatedLedger () = 0;
 
     // This is the last ledger we published to clients and can lag the validated ledger
     virtual Ledger::ref getPublishedLedger () = 0;
@@ -76,6 +73,8 @@ public:
 
     virtual void setMinValidations (int v) = 0;
 
+    virtual uint32 getEarliestFetch () = 0;
+
     virtual void pushLedger (Ledger::pointer newLedger) = 0;
     virtual void pushLedger (Ledger::pointer newLCL, Ledger::pointer newOL) = 0;
     virtual void storeLedger (Ledger::pointer) = 0;
@@ -89,7 +88,7 @@ public:
 
     virtual std::string getCompleteLedgers () = 0;
 
-    virtual Ledger::pointer closeLedger (bool recoverHeldTransactions) = 0;
+    virtual void closeLedger (bool recoverHeldTransactions) = 0;
 
     /** Get a ledger's hash by sequence number using the cache
     */
@@ -125,10 +124,11 @@ public:
     virtual void addValidateCallback (callback& c) = 0;
 
     virtual void checkAccept (Ledger::ref ledger) = 0;
-    virtual void checkAccept (uint256 const& hash) = 0;
+    virtual void checkAccept (uint256 const& hash, uint32 seq) = 0;
 
     virtual void tryAdvance () = 0;
     virtual void newPathRequest () = 0;
+    virtual bool isNewPathRequest () = 0;
     virtual void newOrderBookDB () = 0;
 
     virtual bool fixIndex (LedgerIndex ledgerIndex, LedgerHash const& ledgerHash) = 0;

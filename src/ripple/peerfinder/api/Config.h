@@ -23,31 +23,52 @@
 namespace ripple {
 namespace PeerFinder {
 
-/** Configuration for the Manager. */
+/** PeerFinder configuration settings. */
 struct Config
 {
-    Config ();
+    /** The largest number of public peer slots to allow.
+        This includes both inbound and outbound, but does not include
+        fixed peers.
+    */
+    int maxPeers;
 
-    static int const minOutCount = 10;
-    static int const outPercent = 15;
-    int maxPeerCount;
+    /** The number of automatic outbound connections to maintain.
+        Outbound connections are only maintained if autoConnect
+        is `true`. The value can be fractional; The decision to round up
+        or down will be made using a per-process pseudorandom number and
+        a probability proportional to the fractional part.
+        Example:
+            If outPeers is 9.3, then 30% of nodes will maintain 9 outbound
+            connections, while 70% of nodes will maintain 10 outbound
+            connections.
+    */
+    double outPeers;
 
-    /** True if we want to accept incoming connections. */
+    /** `true` if we want to accept incoming connections. */
     bool wantIncoming;
 
-    /** True if we want to establish connections automatically */
-    bool connectAutomatically;
+    /** `true` if we want to establish connections automatically */
+    bool autoConnect;
 
+    /** The listening port number. */
     uint16 listeningPort;
-    std::string featureList;
+
+    /** The set of features we advertise. */
+    std::string features;
+    
+    //--------------------------------------------------------------------------
+
+    /** Create a configuration with default values. */
+    Config ();
+
+    /** Returns a suitable value for outPeers according to the rules. */
+    double calcOutPeers () const;
+
+    /** Adjusts the values so they follow the business rules. */
+    void applyTuning ();
 
     /** Write the configuration into a property stream */
-    void onWrite(PropertyStream::Map& map);
-
-    /** Called to set sensible default values for anything
-        that hasn't been initialized.
-    */
-    void fillInDefaultValues();
+    void onWrite (PropertyStream::Map& map);
 };
 
 }

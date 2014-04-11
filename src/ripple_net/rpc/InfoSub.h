@@ -72,12 +72,12 @@ public:
         virtual bool unsubServer (uint64 uListener) = 0;
 
         virtual bool subBook (ref ispListener,
-            const uint160& currencyPays, const uint160& currencyGets,
-                const uint160& issuerPays, const uint160& issuerGets) = 0;
+            RippleCurrency const& currencyPays, RippleCurrency const& currencyGets,
+                RippleIssuer const& issuerPays, RippleIssuer const& issuerGets) = 0;
         
         virtual bool unsubBook (uint64 uListener,
-            const uint160& currencyPays, const uint160& currencyGets,
-                const uint160& issuerPays, const uint160& issuerGets) = 0;
+            RippleCurrency const& currencyPays, RippleCurrency const& currencyGets,
+                RippleIssuer const& issuerPays, RippleIssuer const& issuerGets) = 0;
 
         virtual bool subTransactions (ref ispListener) = 0;
         

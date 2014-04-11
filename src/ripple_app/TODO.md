@@ -1,16 +1,28 @@
 # ripple_app
 
-## Peer.cpp
+## LedgerMaster.cpp
 
-- Move magic number constants into Tuning.h / Peer constants enum 
+- Change getLedgerByHash() to not use "all bits zero" to mean
+  "return the current ledger"
 
-- Wrap lines to 80 columns
+- replace uint32 with LedgerIndex and choose appropriate names
 
-- Use Journal
+## IHashRouter.h
 
-- Pass Journal in the ctor argument list
+- Rename to HashRouter.h
 
-## Peers.cpp
+## HashRouter.cpp
+
+- Rename HashRouter to HashRouterImp
+
+- Inline functions
+
+- Comment appropriately
+
+- Determine the semantics of the uint256, replace it with an appropriate
+  typedef like RipplePublicKey or whatever is appropriate.
+
+- Provide good symbolic names for the config tunables.
 
 ## Beast
 

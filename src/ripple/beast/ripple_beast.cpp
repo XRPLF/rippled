@@ -27,20 +27,15 @@
 
 // Include this to get all the basic includes included, to prevent errors
 #include "../beast/modules/beast_core/beast_core.h"
-
-// Mac builds use ripple_beastobjc.mm
-#ifndef BEAST_MAC
-# include "../beast/modules/beast_core/beast_core.cpp"
-#endif
+#include "../beast/modules/beast_core/beast_core.cpp"
 
 #include "../beast/modules/beast_asio/beast_asio.cpp"
-#include "../beast/modules/beast_crypto/beast_crypto.cpp"
-#include "../beast/modules/beast_db/beast_db.cpp"
 #include "../beast/modules/beast_sqdb/beast_sqdb.cpp"
 
 #include "../beast/beast/asio/Asio.cpp"
 #include "../beast/beast/boost/Boost.cpp"
 #include "../beast/beast/chrono/Chrono.cpp"
+#include "../beast/beast/container/Container.cpp"
 #include "../beast/beast/crypto/Crypto.cpp"
 #include "../beast/beast/http/HTTP.cpp"
 #include "../beast/beast/insight/Insight.cpp"
@@ -49,3 +44,5 @@
 #include "../beast/beast/strings/Strings.cpp"
 #include "../beast/beast/threads/Threads.cpp"
 #include "../beast/beast/utility/Utility.cpp"
+
+#include "../beast/beast/cxx14/cxx14.cpp"

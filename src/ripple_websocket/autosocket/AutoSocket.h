@@ -20,6 +20,8 @@
 #ifndef __AUTOSOCKET_H_
 #define __AUTOSOCKET_H_
 
+#include "../../beast/beast/asio/bind_handler.h"
+
 // Socket wrapper that supports both SSL and non-SSL connections.
 // Generally, handle it as you would an SSL connection.
 // To force a non-SSL connection, just don't call async_handshake.
@@ -29,12 +31,13 @@ class AutoSocket
 {
 public:
     typedef boost::asio::ssl::stream<boost::asio::ip::tcp::socket>   ssl_socket;
+    typedef boost::asio::ip::tcp::socket::endpoint_type endpoint_type;
     typedef boost::shared_ptr<ssl_socket>           socket_ptr;
     typedef ssl_socket::next_layer_type             plain_socket;
     typedef ssl_socket::lowest_layer_type           lowest_layer_type;
     typedef ssl_socket::handshake_type              handshake_type;
     typedef boost::system::error_code               error_code;
-    typedef boost::function<void (error_code)>       callback;
+    typedef std::function <void (error_code)>       callback;
 
 public:
     AutoSocket (boost::asio::io_service& s, boost::asio::ssl::context& c)
@@ -140,8 +143,8 @@ public:
         {
             // must be plain
             mSecure = false;
-            //mSocket->get_io_service ().post (boost::bind (cbFunc, error_code ()));
-            mSocket->get_io_service ().wrap (cbFunc) (error_code());
+            mSocket->get_io_service ().post (
+                beast::asio::bind_handler (cbFunc, error_code()));
         }
         else
         {
@@ -168,8 +171,8 @@ public:
 			{
 				ec = e.code();
 			}
-            //mSocket->get_io_service ().post (boost::bind (handler, ec));
-            mSocket->get_io_service ().wrap (handler) (ec);
+            mSocket->get_io_service ().post (
+                beast::asio::bind_handler (handler, ec));
         }
     }
 

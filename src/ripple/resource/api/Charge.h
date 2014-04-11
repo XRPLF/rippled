@@ -21,6 +21,7 @@
 #define RIPPLE_RESOURCE_CHARGE_H_INCLUDED
 
 #include <ios>
+#include <string>
 
 namespace ripple {
 namespace Resource {

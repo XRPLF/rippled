@@ -27,14 +27,14 @@
 
 #include "../ripple_net/ripple_net.h"
 
-#include "beast/modules/beast_core/system/BeforeBoost.h"
+#include "../beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 
-#include "websocket/src/common.hpp"
-#include "websocket/src/sockets/socket_base.hpp"
-#include "websocket/src/sockets/multitls.hpp"
-#include "websocket/src/websocketpp.hpp"
-#include "websocket/src/logger/logger.hpp"
+#include "../websocket/src/common.hpp"
+#include "../websocket/src/sockets/socket_base.hpp"
+#include "../websocket/src/sockets/multitls.hpp"
+#include "../websocket/src/websocketpp.hpp"
+#include "../websocket/src/logger/logger.hpp"
 
 #endif

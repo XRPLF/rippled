@@ -20,9 +20,10 @@
 #ifndef BEAST_INSIGHT_METER_H_INCLUDED
 #define BEAST_INSIGHT_METER_H_INCLUDED
 
-#include "MeterImpl.h"
+#include <memory>
 
-#include "../stl/shared_ptr.h"
+#include "Base.h"
+#include "MeterImpl.h"
 
 namespace beast {
 namespace insight {
@@ -34,7 +35,7 @@ namespace insight {
     This is a lightweight reference wrapper which is cheap to copy and assign.
     When the last reference goes away, the metric is no longer collected.
 */
-class Meter
+class Meter : public Base
 {
 public:
     typedef MeterImpl::value_type value_type;
@@ -43,32 +44,16 @@ public:
         A null metric reports no information.
     */
     Meter ()
-    {
-    }
+        { }
 
     /** Create the metric reference the specified implementation.
         Normally this won't be called directly. Instead, call the appropriate
         factory function in the Collector interface.
         @see Collector.
     */
-    explicit Meter (shared_ptr <MeterImpl> const& impl)
+    explicit Meter (std::shared_ptr <MeterImpl> const& impl)
         : m_impl (impl)
-    {
-    }
-
-    /** Set a handler for polling.
-        If a handler is set, it will be called once per collection interval.
-        This may be used to implement polling style collection instead of
-        push style.
-        
-        Handler will be called with this signature:
-            void Handler (Meter const&);
-    */
-    template <class Handler>
-    void set_handler (Handler handler) const
-    {
-        m_impl->set_handler (handler);
-    }
+        { }
 
     /** Increment the meter. */
     /** @{ */
@@ -79,17 +64,31 @@ public:
     }
 
     Meter const& operator+= (value_type amount) const
-        { increment (amount); return *this; }
+    {
+        increment (amount);
+        return *this;
+    }
 
     Meter const& operator++ () const
-        { increment (1); return *this; }
+    {
+        increment (1);
+        return *this;
+    }
 
     Meter const& operator++ (int) const
-        { increment (1); return *this; }
+    {
+        increment (1);
+        return *this;
+    }
     /** @} */
 
+    std::shared_ptr <MeterImpl> const& impl () const
+    {
+        return m_impl;
+    }
+
 private:
-    shared_ptr <MeterImpl> m_impl;
+    std::shared_ptr <MeterImpl> m_impl;
 };
 
 }

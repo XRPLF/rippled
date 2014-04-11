@@ -20,8 +20,10 @@
 #ifndef BEAST_ASIO_TESTS_TESTPEER_H_INCLUDED
 #define BEAST_ASIO_TESTS_TESTPEER_H_INCLUDED
 
-/** An abstract peer for unit tests.
-*/
+namespace beast {
+namespace asio {
+
+/** An abstract peer for unit tests. */
 class TestPeer : public TestPeerBasics
 {
 public:
@@ -49,5 +51,8 @@ public:
     */
     virtual boost::system::error_code join () = 0;
 };
+
+}
+}
 
 #endif

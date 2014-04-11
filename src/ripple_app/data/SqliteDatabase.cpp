@@ -471,10 +471,10 @@ bool SqliteStatement::isError (int j)
     case SQLITE_OK:
     case SQLITE_ROW:
     case SQLITE_DONE:
-        return true;
+        return false;
 
     default:
-        return false;
+        return true;
     }
 }
 

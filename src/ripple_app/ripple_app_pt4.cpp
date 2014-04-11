@@ -23,10 +23,13 @@
 
 #include "../ripple_net/ripple_net.h"
 
+#include "../ripple/common/seconds_clock.h"
+
 #include <fstream> // for UniqueNodeList.cpp
 
-namespace ripple
-{
+#include "transactors/Transactor.h"
+
+namespace ripple {
 
 #include "paths/RippleState.cpp"
 
@@ -34,14 +37,10 @@ namespace ripple
 
 #include "ledger/InboundLedger.cpp"
 
-#include "tx/PaymentTransactor.cpp"
-#include "tx/RegularKeySetTransactor.cpp"
 #include "tx/TransactionCheck.cpp"
 #include "tx/TransactionMaster.cpp"
-#include "tx/TrustSetTransactor.cpp"
 #include "tx/Transaction.cpp"
 #include "tx/TransactionEngine.cpp"
 #include "tx/TransactionMeta.cpp"
-#include "tx/Transactor.cpp"
 
 }

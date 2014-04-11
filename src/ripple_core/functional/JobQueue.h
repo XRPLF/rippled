@@ -20,21 +20,23 @@
 #ifndef RIPPLE_CORE_JOBQUEUE_H_INCLUDED
 #define RIPPLE_CORE_JOBQUEUE_H_INCLUDED
 
+namespace ripple {
+
 class JobQueue : public Stoppable
 {
 protected:
     JobQueue (char const* name, Stoppable& parent);
 
 public:
-    static JobQueue* New (shared_ptr <insight::Collector> const& collector,
-        Stoppable& parent, Journal journal);
-
     virtual ~JobQueue () { }
 
-    // VFALCO TODO make convenience functions that allow the caller to not 
-    //             have to call bind.
+    // VFALCO NOTE Using boost::function here because Visual Studio 2012
+    //             std::function doesn't swallow return types.
     //
-    virtual void addJob (JobType type, const std::string& name, const FUNCTION_TYPE<void (Job&)>& job) = 0;
+    //        TODO Replace with std::function
+    //
+    virtual void addJob (JobType type,
+        std::string const& name, boost::function <void (Job&)> const& job) = 0;
 
     // Jobs waiting at this priority
     virtual int getJobCount (JobType t) = 0;
@@ -44,9 +46,6 @@ public:
 
     // All waiting jobs at or greater than this priority
     virtual int getJobCountGE (JobType t) = 0;
-
-    // jobs waiting, threads doing
-    virtual std::vector< std::pair<JobType, std::pair<int, int> > > getJobCounts () = 0;
 
     virtual void shutdown () = 0;
 
@@ -66,5 +65,10 @@ public:
 
     virtual Json::Value getJson (int c = 0) = 0;
 };
+
+std::unique_ptr <JobQueue> make_JobQueue (insight::Collector::ptr const& collector,
+    Stoppable& parent, Journal journal);
+
+}
 
 #endif

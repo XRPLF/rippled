@@ -20,8 +20,7 @@
 #ifndef RIPPLE_TESTOVERLAY_NETWORKTYPE_H_INCLUDED
 #define RIPPLE_TESTOVERLAY_NETWORKTYPE_H_INCLUDED
 
-namespace TestOverlay
-{
+namespace TestOverlay {
 
 template <class ConfigParam>
 class NetworkType : public ConfigParam
@@ -33,7 +32,7 @@ public:
     typedef typename Config::State      State;
     typedef typename Config::SizeType   SizeType;
 
-    typedef std::vector <ScopedPointer <Peer> > Peers;
+    typedef std::vector <std::unique_ptr <Peer> > Peers;
 
     NetworkType ()
         : m_steps (0)
@@ -63,7 +62,7 @@ public:
     Peer& createPeer ()
     {
         Peer* peer (new Peer (*this));
-        m_peers.push_back (peer);
+        m_peers.push_back (std::unique_ptr <Peer> (peer));
         return *peer;
     }
     
@@ -137,6 +136,8 @@ private:
     SizeType m_steps;
     Peers m_peers;
 };
+
+//------------------------------------------------------------------------------
 
 }
 

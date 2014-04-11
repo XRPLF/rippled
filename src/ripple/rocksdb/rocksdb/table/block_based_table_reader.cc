@@ -166,10 +166,28 @@ void DeleteBlock(void* arg, void* ignored) {
   delete reinterpret_cast<Block*>(arg);
 }
 
-void DeleteCachedBlock(const Slice& key, void* value) {
-  Block* block = reinterpret_cast<Block*>(value);
-  delete block;
-}
+//
+// Commented out DeleteCachedBlock to silence the following warning:
+//
+// warning: unused function 'DeleteCachedBlock'
+//
+// Although it looks like this function is being used later in this file,
+// it is not.  Instead a file-static function of the same name is being
+// used from block_based_table_builder.cc.  That function is being found
+// because this file and block_based_table_builder.cc are being
+// concatenated in ripple_rocksdb.cpp.  Fortunately the version of
+// DeleteCachedBlock in block_based_table_builder.cc is identical to this
+// one.  So everything is working.
+//
+// This function has not been removed because it will need to be
+// uncommented in the event we abandon the source file concatenation build
+// model.  In that event, failure to uncomment this function will lead to a
+// compile-time error, not a run-time error (so this is safe).
+//
+// void DeleteCachedBlock(const Slice& key, void* value) {
+//   Block* block = reinterpret_cast<Block*>(value);
+//   delete block;
+// }
 
 void DeleteCachedFilter(const Slice& key, void* value) {
   auto filter = reinterpret_cast<FilterBlockReader*>(value);

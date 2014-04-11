@@ -26,12 +26,13 @@ class ManagerImp
 {
 public:
     Journal m_journal;
-    LogicType <SimpleMonotonicClock> m_logic;
+    Logic m_logic;
 
-    ManagerImp (Journal journal)
+    ManagerImp (insight::Collector::ptr const& collector,
+        Journal journal)
         : Thread ("Resource::Manager")
         , m_journal (journal)
-        , m_logic (journal)
+        , m_logic (collector, get_seconds_clock (), journal)
     {
         startThread ();
     }
@@ -41,12 +42,12 @@ public:
         stopThread ();
     }
 
-    Consumer newInboundEndpoint (IPAddress const& address)
+    Consumer newInboundEndpoint (IP::Endpoint const& address)
     {
         return m_logic.newInboundEndpoint (address);
     }
 
-    Consumer newOutboundEndpoint (IPAddress const& address)
+    Consumer newOutboundEndpoint (IP::Endpoint const& address)
     {
         return m_logic.newOutboundEndpoint (address);
     }
@@ -105,11 +106,17 @@ Manager::Manager ()
 {
 }
 
+Manager::~Manager ()
+{
+}
+
 //------------------------------------------------------------------------------
 
-Manager* Manager::New (Journal journal)
+std::unique_ptr <Manager> make_Manager (
+    insight::Collector::ptr const& collector,
+        Journal journal)
 {
-    return new ManagerImp (journal);
+    return std::make_unique <ManagerImp> (collector, journal);
 }
 
 }

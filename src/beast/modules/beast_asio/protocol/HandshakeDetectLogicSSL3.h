@@ -20,6 +20,9 @@
 #ifndef BEAST_ASIO_HANDSHAKE_HANDSHAKEDETECTLOGICSSL3_H_INCLUDED
 #define BEAST_ASIO_HANDSHAKE_HANDSHAKEDETECTLOGICSSL3_H_INCLUDED
 
+namespace beast {
+namespace asio {
+
 // Handshake for SSL 3 (Also TLS 1.0 and 1.1)
 //
 // http://www.ietf.org/rfc/rfc2246.txt
@@ -78,5 +81,8 @@ public:
         conclude ();
     }
 };
+
+}
+}
 
 #endif

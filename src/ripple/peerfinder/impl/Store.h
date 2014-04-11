@@ -29,11 +29,17 @@ class Store
 public:
     virtual ~Store () { }
 
-    virtual void loadLegacyEndpoints (
-        std::vector <IPAddress>& list) = 0;
+    // load the bootstrap cache
+    typedef std::function <void (IP::Endpoint, int)> load_callback;
+    virtual std::size_t load (load_callback const& cb) = 0;
 
-    virtual void updateLegacyEndpoints (
-        std::vector <LegacyEndpoint const*> const& list) = 0;
+    // save the bootstrap cache
+    struct Entry
+    {
+        IP::Endpoint endpoint;
+        int valence;
+    };
+    virtual void save (std::vector <Entry> const& v) = 0;
 };
 
 }

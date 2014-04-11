@@ -33,11 +33,18 @@ Error StoreSqdb::open (File const& file)
 {
     Error error (m_session.open (file.getFullPathName ()));
 
+    m_journal.info <<
+        "Opening " << file.getFullPathName();
+
     if (!error)
         error = init ();
 
     if (!error)
         error = update ();
+
+    if (error)
+        m_journal.error <<
+            "Failed opening database: " << error.what();
 
     return error;
 }
@@ -206,8 +213,8 @@ bool StoreSqdb::select (SourceDesc& desc)
 
     if (st.execute_and_fetch (error))
     {
-        m_journal.debug << "Found record for " <<
-            desc.source->name ();
+        m_journal.debug <<
+            "Found record for " << *desc.source;
         
         found = true;
         desc.lastFetchTime = Utilities::stringToTime (lastFetchTime);
@@ -215,8 +222,8 @@ bool StoreSqdb::select (SourceDesc& desc)
     }
     else if (! error)
     {
-        m_journal.info << "No previous record for " <<
-            desc.source->name ();
+        m_journal.info <<
+            "No previous record for " << *desc.source;
     }
 
     if (error)
@@ -296,16 +303,18 @@ void StoreSqdb::selectList (SourceDesc& desc)
                 }
                 else
                 {
-                    m_journal.error << "Invalid public key '" <<
-                        publicKeyString << "' found in database";
+                    m_journal.error <<
+                        "Invalid public key '" << publicKeyString <<
+                        "' found in database";
                 }
             }
             while (st.fetch (error));
 
             if (! error)
             {
-                m_journal.info << "Loaded " << desc.results.list.size() <<
-                    " trusted validators for " << desc.source->name ();
+                m_journal.info <<
+                    "Loaded " << desc.results.list.size() <<
+                    " trusted validators for " << *desc.source;
             }
         }
     }

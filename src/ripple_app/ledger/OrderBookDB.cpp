@@ -63,9 +63,9 @@ void OrderBookDB::setup (Ledger::ref ledger)
 
 static void updateHelper (SLE::ref entry,
     boost::unordered_set< uint256 >& seen,
-    boost::unordered_map< currencyIssuer_t, std::vector<OrderBook::pointer> >& destMap,
-    boost::unordered_map< currencyIssuer_t, std::vector<OrderBook::pointer> >& sourceMap,
-    boost::unordered_set< currencyIssuer_t >& XRPBooks,
+    boost::unordered_map< RippleAsset, std::vector<OrderBook::pointer> >& destMap,
+    boost::unordered_map< RippleAsset, std::vector<OrderBook::pointer> >& sourceMap,
+    boost::unordered_set< RippleAsset >& XRPBooks,
     int& books)
 {
     if ((entry->getType () == ltDIR_NODE) && (entry->isFieldPresent (sfExchangeRate)) &&
@@ -84,10 +84,10 @@ static void updateHelper (SLE::ref entry,
             OrderBook::pointer book = boost::make_shared<OrderBook> (boost::cref (index),
                                       boost::cref (ci), boost::cref (co), boost::cref (ii), boost::cref (io));
 
-            sourceMap[currencyIssuer_ct (ci, ii)].push_back (book);
-            destMap[currencyIssuer_ct (co, io)].push_back (book);
+            sourceMap[RippleAssetRef (ci, ii)].push_back (book);
+            destMap[RippleAssetRef (co, io)].push_back (book);
             if (co.isZero())
-                XRPBooks.insert(currencyIssuer_ct (ci, ii));
+                XRPBooks.insert(RippleAssetRef (ci, ii));
             ++books;
         }
     }
@@ -96,9 +96,9 @@ static void updateHelper (SLE::ref entry,
 void OrderBookDB::update (Ledger::pointer ledger)
 {
     boost::unordered_set< uint256 > seen;
-    boost::unordered_map< currencyIssuer_t, std::vector<OrderBook::pointer> > destMap;
-    boost::unordered_map< currencyIssuer_t, std::vector<OrderBook::pointer> > sourceMap;
-    boost::unordered_set< currencyIssuer_t > XRPBooks;
+    boost::unordered_map< RippleAsset, std::vector<OrderBook::pointer> > destMap;
+    boost::unordered_map< RippleAsset, std::vector<OrderBook::pointer> > sourceMap;
+    boost::unordered_set< RippleAsset > XRPBooks;
 
     WriteLog (lsDEBUG, OrderBookDB) << "OrderBookDB::update>";
 
@@ -137,15 +137,15 @@ void OrderBookDB::addOrderBook(const uint160& ci, const uint160& co,
 
     if (toXRP)
     { // We don't want to search through all the to-XRP or from-XRP order books!
-        BOOST_FOREACH(OrderBook::ref ob, mSourceMap[currencyIssuer_ct(ci, ii)])
+        BOOST_FOREACH(OrderBook::ref ob, mSourceMap[RippleAssetRef(ci, ii)])
         {
-            if ((ob->getCurrencyOut() == co) && (ob->getIssuerOut() == io))
+            if (ob->getCurrencyOut().isZero ()) // also to XRP
                 return;
         }
     }
     else
     {
-        BOOST_FOREACH(OrderBook::ref ob, mDestMap[currencyIssuer_ct(co, io)])
+        BOOST_FOREACH(OrderBook::ref ob, mDestMap[RippleAssetRef(co, io)])
         {
             if ((ob->getCurrencyIn() == ci) && (ob->getIssuerIn() == ii))
                 return;
@@ -156,19 +156,19 @@ void OrderBookDB::addOrderBook(const uint160& ci, const uint160& co,
     OrderBook::pointer book = boost::make_shared<OrderBook> (boost::cref (index),
                               boost::cref (ci), boost::cref (co), boost::cref (ii), boost::cref (io));
 
-    mSourceMap[currencyIssuer_ct (ci, ii)].push_back (book);
-    mDestMap[currencyIssuer_ct (co, io)].push_back (book);
+    mSourceMap[RippleAssetRef (ci, ii)].push_back (book);
+    mDestMap[RippleAssetRef (co, io)].push_back (book);
     if (toXRP)
-        mXRPBooks.insert(currencyIssuer_ct (ci, ii));
+        mXRPBooks.insert(RippleAssetRef (ci, ii));
 }
 
 // return list of all orderbooks that want this issuerID and currencyID
-void OrderBookDB::getBooksByTakerPays (const uint160& issuerID, const uint160& currencyID,
+void OrderBookDB::getBooksByTakerPays (RippleIssuer const& issuerID, RippleCurrency const& currencyID,
                                        std::vector<OrderBook::pointer>& bookRet)
 {
     ScopedLockType sl (mLock, __FILE__, __LINE__);
-    boost::unordered_map< currencyIssuer_t, std::vector<OrderBook::pointer> >::const_iterator
-    it = mSourceMap.find (currencyIssuer_ct (currencyID, issuerID));
+    boost::unordered_map< RippleAsset, std::vector<OrderBook::pointer> >::const_iterator
+    it = mSourceMap.find (RippleAssetRef (currencyID, issuerID));
 
     if (it != mSourceMap.end ())
         bookRet = it->second;
@@ -176,20 +176,20 @@ void OrderBookDB::getBooksByTakerPays (const uint160& issuerID, const uint160& c
         bookRet.clear ();
 }
 
-bool OrderBookDB::isBookToXRP(const uint160& issuerID, const uint160& currencyID)
+bool OrderBookDB::isBookToXRP(RippleIssuer const& issuerID, RippleCurrency const& currencyID)
 {
     ScopedLockType sl (mLock, __FILE__, __LINE__);
 
-    return mXRPBooks.count(currencyIssuer_ct(currencyID, issuerID)) > 0;
+    return mXRPBooks.count(RippleAssetRef(currencyID, issuerID)) > 0;
 }
 
 // return list of all orderbooks that give this issuerID and currencyID
-void OrderBookDB::getBooksByTakerGets (const uint160& issuerID, const uint160& currencyID,
+void OrderBookDB::getBooksByTakerGets (RippleIssuer const& issuerID, RippleCurrency const& currencyID,
                                        std::vector<OrderBook::pointer>& bookRet)
 {
     ScopedLockType sl (mLock, __FILE__, __LINE__);
-    boost::unordered_map< currencyIssuer_t, std::vector<OrderBook::pointer> >::const_iterator
-    it = mDestMap.find (currencyIssuer_ct (currencyID, issuerID));
+    boost::unordered_map< RippleAsset, std::vector<OrderBook::pointer> >::const_iterator
+    it = mDestMap.find (RippleAssetRef (currencyID, issuerID));
 
     if (it != mDestMap.end ())
         bookRet = it->second;
@@ -197,8 +197,8 @@ void OrderBookDB::getBooksByTakerGets (const uint160& issuerID, const uint160& c
         bookRet.clear ();
 }
 
-BookListeners::pointer OrderBookDB::makeBookListeners (const uint160& currencyPays, const uint160& currencyGets,
-        const uint160& issuerPays, const uint160& issuerGets)
+BookListeners::pointer OrderBookDB::makeBookListeners (RippleCurrency const& currencyPays, RippleCurrency const& currencyGets,
+        RippleIssuer const& issuerPays, RippleIssuer const& issuerGets)
 {
     ScopedLockType sl (mLock, __FILE__, __LINE__);
     BookListeners::pointer ret = getBookListeners (currencyPays, currencyGets, issuerPays, issuerGets);
@@ -206,46 +206,35 @@ BookListeners::pointer OrderBookDB::makeBookListeners (const uint160& currencyPa
     if (!ret)
     {
         ret = boost::make_shared<BookListeners> ();
-        mListeners[issuerPays][issuerGets][currencyPays][currencyGets] = ret;
+
+        mListeners [RippleBookRef (
+            RippleAssetRef (currencyPays, issuerPays),
+            RippleAssetRef (currencyGets, issuerGets))] = ret;
+        assert (getBookListeners (currencyPays, currencyGets, issuerPays, issuerGets) == ret);
     }
 
     return ret;
 }
 
-BookListeners::pointer OrderBookDB::getBookListeners (const uint160& currencyPays, const uint160& currencyGets,
-        const uint160& issuerPays, const uint160& issuerGets)
+BookListeners::pointer OrderBookDB::getBookListeners (RippleCurrency const& currencyPays, RippleCurrency const& currencyGets,
+        RippleIssuer const& issuerPays, RippleIssuer const& issuerGets)
 {
     BookListeners::pointer ret;
     ScopedLockType sl (mLock, __FILE__, __LINE__);
 
-    std::map<uint160, std::map<uint160, std::map<uint160, std::map<uint160, BookListeners::pointer> > > >::iterator
-    it0 = mListeners.find (issuerPays);
+    MapType::iterator it0 (mListeners.find (RippleBookRef (
+        RippleAssetRef (currencyPays, issuerPays),
+            RippleAssetRef (currencyGets, issuerGets))));
 
-    if (it0 == mListeners.end ())
-        return ret;
+    if (it0 != mListeners.end ())
+        ret = it0->second;
 
-    std::map<uint160, std::map<uint160, std::map<uint160, BookListeners::pointer> > >::iterator
-    it1 = (*it0).second.find (issuerGets);
-
-    if (it1 == (*it0).second.end ())
-        return ret;
-
-    std::map<uint160, std::map<uint160, BookListeners::pointer> >::iterator it2 = (*it1).second.find (currencyPays);
-
-    if (it2 == (*it1).second.end ())
-        return ret;
-
-    std::map<uint160, BookListeners::pointer>::iterator it3 = (*it2).second.find (currencyGets);
-
-    if (it3 == (*it2).second.end ())
-        return ret;
-
-    return (*it3).second;
+    return ret;
 }
 
 // Based on the meta, send the meta to the streams that are listening
 // We need to determine which streams a given meta effects
-void OrderBookDB::processTxn (Ledger::ref ledger, const AcceptedLedgerTx& alTx, Json::Value& jvObj)
+void OrderBookDB::processTxn (Ledger::ref ledger, const AcceptedLedgerTx& alTx, Json::Value const& jvObj)
 {
     ScopedLockType sl (mLock, __FILE__, __LINE__);
 
@@ -261,6 +250,7 @@ void OrderBookDB::processTxn (Ledger::ref ledger, const AcceptedLedgerTx& alTx, 
                 {
                     SField* field = NULL;
 
+                    // We need a field that contains the TakerGets and TakerPays parameters
                     if (node.getFName () == sfModifiedNode)
                     {
                         field = &sfPreviousFields;
@@ -281,12 +271,12 @@ void OrderBookDB::processTxn (Ledger::ref ledger, const AcceptedLedgerTx& alTx, 
                         if (data)
                         {
                             const STAmount& takerGets = data->getFieldAmount (sfTakerGets);
-                            const uint160& currencyGets = takerGets.getCurrency ();
-                            const uint160& issuerGets = takerGets.getIssuer ();
+                            RippleCurrency const& currencyGets = takerGets.getCurrency ();
+                            RippleIssuer const& issuerGets = takerGets.getIssuer ();
 
                             const STAmount& takerPays = data->getFieldAmount (sfTakerPays);
-                            const uint160& currencyPays = takerPays.getCurrency ();
-                            const uint160& issuerPays = takerPays.getIssuer ();
+                            RippleCurrency const& currencyPays = takerPays.getCurrency ();
+                            RippleIssuer const& issuerPays = takerPays.getIssuer ();
 
                             // determine the OrderBook
                             BookListeners::pointer book =
@@ -325,7 +315,7 @@ void BookListeners::removeSubscriber (uint64 seq)
     mListeners.erase (seq);
 }
 
-void BookListeners::publish (Json::Value& jvObj)
+void BookListeners::publish (Json::Value const& jvObj)
 {
     Json::FastWriter jfwWriter;
     std::string sObj = jfwWriter.write (jvObj);

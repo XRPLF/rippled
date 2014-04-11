@@ -20,6 +20,9 @@
 #ifndef BEAST_ASIO_HANDSHAKE_HANDSHAKEDETECTLOGICPROXY_H_INCLUDED
 #define BEAST_ASIO_HANDSHAKE_HANDSHAKEDETECTLOGICPROXY_H_INCLUDED
 
+namespace beast {
+namespace asio {
+
 /** Handshake detector for the PROXY protcol
 
     http://haproxy.1wt.eu/download/1.5/doc/proxy-protocol.txt
@@ -155,5 +158,8 @@ private:
     std::size_t m_consumed;
     ProxyInfo m_info;
 };
+
+}
+}
 
 #endif

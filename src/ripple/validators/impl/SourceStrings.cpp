@@ -36,13 +36,14 @@ public:
     {
     }
 
-    String name ()
+    std::string to_string () const
     {
-        return m_name;
+        return m_name.toStdString();
     }
 
-    String uniqueID ()
+    String uniqueID () const
     {
+        // VFALCO TODO This can't be right...?
         return String::empty;
     }
 
@@ -75,10 +76,7 @@ private:
 SourceStrings* SourceStrings::New (
     String name, StringArray const& strings)
 {
-    ScopedPointer <SourceStrings> object (
-        new SourceStringsImp (name, strings));
-
-    return object.release ();
+    return new SourceStringsImp (name, strings);
 }
 
 }

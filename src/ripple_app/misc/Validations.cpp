@@ -32,7 +32,7 @@ private:
     typedef LockType::ScopedUnlockType ScopedUnlockType;
     LockType mLock;
 
-    TaggedCacheType<uint256, ValidationSet, UptimeTimerAdapter>     mValidations;
+    TaggedCache<uint256, ValidationSet>     mValidations;
     boost::unordered_map<uint160, SerializedValidation::pointer>    mCurrentValidations;
     std::vector<SerializedValidation::pointer>                      mStaleValidations;
 
@@ -60,7 +60,9 @@ private:
 public:
     ValidationsImp ()
         : mLock (this, "Validations", __FILE__, __LINE__)
-        , mValidations ("Validations", 128, 600), mWriting (false)
+        , mValidations ("Validations", 128, 600, get_seconds_clock (),
+            LogPartition::getJournal <TaggedCacheLog> ())
+        , mWriting (false)
     {
         mStaleValidations.reserve (512);
     }
@@ -71,7 +73,7 @@ private:
         RippleAddress signer = val->getSignerPublic ();
         bool isCurrent = false;
 
-        if (getApp().getUNL ().nodeInUNL (signer) || val->isTrusted ())
+        if (val->isTrusted () || getApp().getUNL ().nodeInUNL (signer))
         {
             val->setTrusted ();
             uint32 now = getApp().getOPs ().getCloseTimeNC ();
@@ -122,8 +124,8 @@ private:
         WriteLog (lsDEBUG, Validations) << "Val for " << hash << " from " << signer.humanNodePublic ()
                                         << " added " << (val->isTrusted () ? "trusted/" : "UNtrusted/") << (isCurrent ? "current" : "stale");
 
-        if (val->isTrusted ())
-            getApp().getLedgerMaster ().checkAccept (hash);
+        if (val->isTrusted () && isCurrent)
+            getApp().getLedgerMaster ().checkAccept (hash, val->getFieldU32 (sfLedgerSequence));
 
         // FIXME: This never forwards untrusted validations
         return isCurrent;

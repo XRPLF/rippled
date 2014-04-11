@@ -20,8 +20,10 @@
 #ifndef BEAST_ASIO_HANDSHAKE_INPUTPARSER_H_INCLUDED
 #define BEAST_ASIO_HANDSHAKE_INPUTPARSER_H_INCLUDED
 
-namespace InputParser
-{
+namespace beast {
+namespace asio {
+
+namespace InputParser {
 
 /** Tri-valued parsing state.
     This is convertible to bool which means continue.
@@ -380,8 +382,9 @@ struct Get <IPv4Address>
     }
 };
 
-//------------------------------------------------------------------------------
+}
 
+}
 }
 
 #endif

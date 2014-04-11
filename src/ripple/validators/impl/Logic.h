@@ -20,6 +20,8 @@
 #ifndef RIPPLE_VALIDATORS_LOGIC_H_INCLUDED
 #define RIPPLE_VALIDATORS_LOGIC_H_INCLUDED
 
+#include <memory>
+
 namespace ripple {
 namespace Validators {
 
@@ -48,6 +50,10 @@ public:
 
     Store& m_store;
     Journal m_journal;
+
+    // A small integer assigned to each closed ledger
+    //
+    int m_ledgerID;
 
     // The chosen set of trusted validators (formerly the "UNL")
     //
@@ -85,6 +91,7 @@ public:
     explicit Logic (Store& store, Journal journal = Journal ())
         : m_store (store)
         , m_journal (journal)
+        , m_ledgerID (0)
         , m_rebuildChosenList (false)
         , m_seenValidations (seenValidationsCacheSize)
         , m_seenLedgerHashes (seenLedgersCacheSize)
@@ -131,11 +138,13 @@ public:
     {
         if (findSourceByID (source->uniqueID()))
         {
-            m_journal.error << "Duplicate static " << source->name();
+            m_journal.error <<
+                "Duplicate static " << *source;
             return;
         }
 
-        m_journal.info << "Addding static " << source->name();
+        m_journal.trace <<
+            "Addding static " << *source;
 
         Source::Results results;
         source->fetch (results, m_journal);
@@ -143,8 +152,9 @@ public:
         if (results.success)
         {
             std::size_t const numAdded (merge (results.list, source));
-            m_journal.info << "Added " << numAdded
-                           << " trusted validators from " << source->name();
+            m_journal.trace <<
+                "Added " << numAdded <<
+                " trusted validators from " << *source;
         }
         else
         {
@@ -158,12 +168,14 @@ public:
     {
         if (findSourceByID (source->uniqueID()))
         {
-            ScopedPointer <Source> object (source);
-            m_journal.error << "Duplicate " << source->name();
+            std::unique_ptr <Source> object (source);
+            m_journal.error <<
+                "Duplicate " << *source;
             return;
         }
 
-        m_journal.info << "Adding " << source->name();
+        m_journal.info <<
+            "Adding " << *source;
 
         {
             m_sources.resize (m_sources.size() + 1);
@@ -329,20 +341,20 @@ public:
                 m_journal.info <<
                     "Fetched " << numFetched <<
                     "(" << (numAdded - numRemoved) << " new) " <<
-                    " trusted validators from " << source->name();
+                    " trusted validators from " << *source;
             }
             else if (numRemoved > numAdded)
             {
                 m_journal.info <<
                     "Fetched " << numFetched <<
                     "(" << numRemoved - numAdded << " removed) " <<
-                    " trusted validators from " << source->name();
+                    " trusted validators from " << *source;
             }
             else
             {
-                m_journal.info <<
+                m_journal.debug <<
                     "Fetched " << numFetched <<
-                    " trusted validators from " << source->name();
+                    " trusted validators from " << *source;
             }
 
             // See if we need to rebuild
@@ -357,7 +369,8 @@ public:
         }
         else
         {
-            m_journal.error << "Failed to fetch " << source->name();
+            m_journal.error <<
+                "Failed to fetch " << *source;
 
             ++desc.numberOfFailures;
             desc.status = SourceDesc::statusFailed;
@@ -427,6 +440,16 @@ public:
                 return;
 
             iter->second.receiveValidation (rv.ledgerHash);
+
+            m_journal.trace <<
+                "New trusted validation for " << rv.ledgerHash <<
+                " from " << rv.publicKey;
+        }
+        else
+        {
+            m_journal.trace <<
+                "Untrusted validation for " << rv.ledgerHash <<
+                " from " << rv.publicKey;
         }
     }
 
@@ -437,6 +460,11 @@ public:
         // Filter duplicates (defensive programming)
         if (! m_seenLedgerHashes.insert (ledgerHash))
             return;
+
+        ++m_ledgerID;
+
+        m_journal.trace <<
+            "Closed ledger " << m_ledgerID;
 
         for (ValidatorTable::iterator iter (m_validators.begin());
             iter != m_validators.end(); ++iter)

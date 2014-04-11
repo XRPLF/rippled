@@ -23,26 +23,23 @@
 #include "../ripple_basics/ripple_basics.h"
 #include "../ripple_data/ripple_data.h"
 
-#include "beast/beast/http/URL.h" // for Config
-#include "beast/beast/Insight.h"
+#include "../beast/beast/http/URL.h" // for Config
+#include "../beast/beast/Insight.h"
 
 #include "../ripple/resource/api/LegacyFees.h"
 
 #include "nodestore/NodeStore.h"
 
-namespace ripple
-{
-
+namespace ripple {
 // Order matters
-
 # include "functional/ConfigSections.h"
 #include "functional/Config.h"
 #include "functional/LoadFeeTrack.h"
 #  include "functional/LoadEvent.h"
 #  include "functional/LoadMonitor.h"
+}
+
 # include "functional/Job.h"
 #include "functional/JobQueue.h"
-
-}
 
 #endif

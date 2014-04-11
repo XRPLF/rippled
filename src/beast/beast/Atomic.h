@@ -207,6 +207,9 @@ private:
     #define BEAST_64BIT_ATOMICS_UNAVAILABLE 1
   #endif
 
+#elif BEAST_CLANG && BEAST_LINUX
+  #define BEAST_ATOMICS_GCC 1
+
 //==============================================================================
 #elif BEAST_GCC
   #define BEAST_ATOMICS_GCC 1        // GCC with intrinsics
@@ -297,8 +300,16 @@ template <typename Type>
 inline Type Atomic<Type>::operator+= (const Type amountToAdd) noexcept
 {
   #if BEAST_ATOMICS_MAC
+#   ifdef __clang__
+#       pragma clang diagnostic push
+#       pragma clang diagnostic ignored "-Wint-to-void-pointer-cast"
+#       pragma clang diagnostic ignored "-Wint-to-pointer-cast"
+#   endif
     return sizeof (Type) == 4 ? (Type) OSAtomicAdd32Barrier ((int32_t) castTo32Bit (amountToAdd), (BEAST_MAC_ATOMICS_VOLATILE int32_t*) &value)
                               : (Type) OSAtomicAdd64Barrier ((int64_t) amountToAdd, (BEAST_MAC_ATOMICS_VOLATILE int64_t*) &value);
+#   ifdef __clang__
+#       pragma clang diagnostic pop
+#   endif
   #elif BEAST_ATOMICS_WINDOWS
     return sizeof (Type) == 4 ? (Type) (beast_InterlockedExchangeAdd ((volatile long*) &value, (long) amountToAdd) + (long) amountToAdd)
                               : (Type) (beast_InterlockedExchangeAdd64 ((volatile __int64*) &value, (__int64) amountToAdd) + (__int64) amountToAdd);
@@ -317,13 +328,21 @@ template <typename Type>
 inline Type Atomic<Type>::operator++() noexcept
 {
   #if BEAST_ATOMICS_MAC
+#   ifdef __clang__
+#       pragma clang diagnostic push
+#       pragma clang diagnostic ignored "-Wint-to-void-pointer-cast"
+#       pragma clang diagnostic ignored "-Wint-to-pointer-cast"
+#   endif
     return sizeof (Type) == 4 ? (Type) OSAtomicIncrement32Barrier ((BEAST_MAC_ATOMICS_VOLATILE int32_t*) &value)
                               : (Type) OSAtomicIncrement64Barrier ((BEAST_MAC_ATOMICS_VOLATILE int64_t*) &value);
+#   ifdef __clang__
+#       pragma clang diagnostic pop
+#   endif
   #elif BEAST_ATOMICS_WINDOWS
     return sizeof (Type) == 4 ? (Type) beast_InterlockedIncrement ((volatile long*) &value)
                               : (Type) beast_InterlockedIncrement64 ((volatile __int64*) &value);
   #elif BEAST_ATOMICS_GCC
-    return (Type) __sync_add_and_fetch (&value, 1);
+    return (Type) __sync_add_and_fetch (&value, (Type) 1);
   #endif
 }
 
@@ -331,13 +350,21 @@ template <typename Type>
 inline Type Atomic<Type>::operator--() noexcept
 {
   #if BEAST_ATOMICS_MAC
+#   ifdef __clang__
+#       pragma clang diagnostic push
+#       pragma clang diagnostic ignored "-Wint-to-void-pointer-cast"
+#       pragma clang diagnostic ignored "-Wint-to-pointer-cast"
+#   endif
     return sizeof (Type) == 4 ? (Type) OSAtomicDecrement32Barrier ((BEAST_MAC_ATOMICS_VOLATILE int32_t*) &value)
                               : (Type) OSAtomicDecrement64Barrier ((BEAST_MAC_ATOMICS_VOLATILE int64_t*) &value);
+#   ifdef __clang__
+#       pragma clang diagnostic pop
+#   endif
   #elif BEAST_ATOMICS_WINDOWS
     return sizeof (Type) == 4 ? (Type) beast_InterlockedDecrement ((volatile long*) &value)
                               : (Type) beast_InterlockedDecrement64 ((volatile __int64*) &value);
   #elif BEAST_ATOMICS_GCC
-    return (Type) __sync_add_and_fetch (&value, -1);
+    return (Type) __sync_add_and_fetch (&value, (Type) -1);
   #endif
 }
 

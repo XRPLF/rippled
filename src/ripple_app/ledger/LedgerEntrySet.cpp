@@ -213,7 +213,8 @@ void LedgerEntrySet::entryModify (SLE::ref sle)
     {
     case taaCACHED:
         it->second.mAction  = taaMODIFY;
-        fallthru ();
+        
+        // Fall through
 
     case taaCREATE:
     case taaMODIFY:
@@ -275,11 +276,6 @@ bool LedgerEntrySet::hasChanges ()
         return true;
 
     return false;
-}
-
-bool LedgerEntrySet::intersect (const LedgerEntrySet& lesLeft, const LedgerEntrySet& lesRight)
-{
-    return true;    // XXX Needs implementation
 }
 
 Json::Value LedgerEntrySet::getJson (int) const
@@ -596,7 +592,7 @@ void LedgerEntrySet::calcRawMeta (Serializer& s, TER result, uint32 index)
     // add any new modified nodes to the modification set
     typedef std::map<uint256, SLE::pointer>::value_type u256_sle_pair;
     BOOST_FOREACH (u256_sle_pair & it, newMod)
-    entryModify (it.second);
+        entryModify (it.second);
 
     mSet.addRaw (s, result, index);
     WriteLog (lsTRACE, LedgerEntrySet) << "Metadata:" << mSet.getJson (0);
@@ -632,6 +628,22 @@ TER LedgerEntrySet::dirCount (uint256 const& uRootIndex, uint32& uCount)
     return tesSUCCESS;
 }
 
+bool LedgerEntrySet::dirIsEmpty (uint256 const& uRootIndex)
+{
+    uint64  uNodeDir = 0;
+
+    SLE::pointer sleNode = entryCache (ltDIR_NODE, Ledger::getDirNodeIndex (uRootIndex, uNodeDir));
+
+    if (!sleNode)
+        return true;
+
+    if (!sleNode->getFieldV256 (sfIndexes).peekValue ().empty ())
+        return false;
+
+    // If there's another page, it must be non-empty
+    return sleNode->getFieldU64 (sfIndexNext) == 0;
+}
+
 // <--     uNodeDir: For deletion, present to make dirDelete efficient.
 // -->   uRootIndex: The index of the base of the directory.  Nodes are based off of this.
 // --> uLedgerIndex: Value to add to directory.
@@ -641,7 +653,7 @@ TER LedgerEntrySet::dirAdd (
     uint64&                                 uNodeDir,
     uint256 const&                          uRootIndex,
     uint256 const&                          uLedgerIndex,
-    FUNCTION_TYPE<void (SLE::ref, bool)>    fDescriber)
+    std::function<void (SLE::ref, bool)>    fDescriber)
 {
     WriteLog (lsTRACE, LedgerEntrySet) << boost::str (boost::format ("dirAdd: uRootIndex=%s uLedgerIndex=%s")
                                        % uRootIndex.ToString ()
@@ -734,7 +746,7 @@ TER LedgerEntrySet::dirDelete (
     const bool                      bSoft)          // --> True, uNodeDir is not hard and fast (pass uNodeDir=0).
 {
     uint64              uNodeCur    = uNodeDir;
-    SLE::pointer        sleNode     = entryCache (ltDIR_NODE, uNodeCur ? Ledger::getDirNodeIndex (uRootIndex, uNodeCur) : uRootIndex);
+    SLE::pointer        sleNode     = entryCache (ltDIR_NODE, Ledger::getDirNodeIndex (uRootIndex, uNodeCur));
 
     if (!sleNode)
     {
@@ -865,11 +877,11 @@ TER LedgerEntrySet::dirDelete (
         {
             // Not root and not last node. Can delete node.
 
-            SLE::pointer        slePrevious = entryCache (ltDIR_NODE, uNodePrevious ? Ledger::getDirNodeIndex (uRootIndex, uNodePrevious) : uRootIndex);
+            SLE::pointer        slePrevious = entryCache (ltDIR_NODE, Ledger::getDirNodeIndex (uRootIndex, uNodePrevious));
 
             assert (slePrevious);
 
-            SLE::pointer        sleNext     = entryCache (ltDIR_NODE, uNodeNext ? Ledger::getDirNodeIndex (uRootIndex, uNodeNext) : uRootIndex);
+            SLE::pointer        sleNext     = entryCache (ltDIR_NODE, Ledger::getDirNodeIndex (uRootIndex, uNodeNext));
 
             assert (slePrevious);
             assert (sleNext);
@@ -1052,26 +1064,25 @@ void LedgerEntrySet::ownerCountAdjust (const uint160& uOwnerID, int iAmount, SLE
     }
 }
 
-TER LedgerEntrySet::offerDelete (SLE::ref sleOffer, uint256 const& uOfferIndex, const uint160& uOwnerID)
+TER LedgerEntrySet::offerDelete (SLE::pointer sleOffer)
 {
-    bool    bOwnerNode  = sleOffer->isFieldPresent (sfOwnerNode);   // Detect legacy dirs.
-    uint64  uOwnerNode  = sleOffer->getFieldU64 (sfOwnerNode);
-    TER     terResult   = dirDelete (false, uOwnerNode, Ledger::getOwnerDirIndex (uOwnerID), uOfferIndex, false, !bOwnerNode);
+
+    uint256 offerIndex = sleOffer->getIndex ();
+    uint160 uOwnerID   = sleOffer->getFieldAccount160 (sfAccount);
+    bool    bOwnerNode = sleOffer->isFieldPresent (sfOwnerNode);   // Detect legacy dirs.
+    uint64  uOwnerNode = sleOffer->getFieldU64 (sfOwnerNode);
+    uint256 uDirectory = sleOffer->getFieldH256 (sfBookDirectory);
+    uint64  uBookNode  = sleOffer->getFieldU64 (sfBookNode);
+
+    TER     terResult  = dirDelete (false, uOwnerNode, Ledger::getOwnerDirIndex (uOwnerID), offerIndex, false, !bOwnerNode);
+    TER     terResult2 = dirDelete (false, uBookNode, uDirectory, offerIndex, true, false);
 
     if (tesSUCCESS == terResult)
-    {
         ownerCountAdjust (uOwnerID, -1);
-
-        uint256     uDirectory  = sleOffer->getFieldH256 (sfBookDirectory);
-        uint64      uBookNode   = sleOffer->getFieldU64 (sfBookNode);
-
-        // Offer delete is always hard. Always have hints.
-        terResult   = dirDelete (false, uBookNode, uDirectory, uOfferIndex, true, true);
-    }
 
     entryDelete (sleOffer);
 
-    return terResult;
+    return (terResult == tesSUCCESS) ? terResult2 : terResult;
 }
 
 TER LedgerEntrySet::offerDelete (uint256 const& uOfferIndex)
@@ -1081,8 +1092,7 @@ TER LedgerEntrySet::offerDelete (uint256 const& uOfferIndex)
     if (!sleOffer)
         return tesSUCCESS;
 
-    const uint160   uOwnerID    = sleOffer->getFieldAccount160 (sfAccount);
-    return offerDelete (sleOffer, uOfferIndex, uOwnerID);
+    return offerDelete (sleOffer);
 }
 
 // Returns amount owed by uToAccountID to uFromAccountID.
@@ -1494,7 +1504,7 @@ TER LedgerEntrySet::rippleCredit (const uint160& uSenderID, const uint160& uRece
 
         saBalance   -= saAmount;
 
-        WriteLog (lsDEBUG, LedgerEntrySet) << boost::str (boost::format ("rippleCredit: %s --> %s : before=%s amount=%s after=%s")
+        WriteLog (lsTRACE, LedgerEntrySet) << boost::str (boost::format ("rippleCredit: %s --> %s : before=%s amount=%s after=%s")
                                            % RippleAddress::createHumanAccountID (uSenderID)
                                            % RippleAddress::createHumanAccountID (uReceiverID)
                                            % saBefore.getFullText ()
@@ -1508,6 +1518,7 @@ TER LedgerEntrySet::rippleCredit (const uint160& uSenderID, const uint160& uRece
         if (saBefore.isPositive ()                                                                              // Sender balance was positive.
                 && !saBalance.isPositive ()                                                                         // Sender is zero or negative.
                 && isSetBit ((uFlags = sleRippleState->getFieldU32 (sfFlags)), !bSenderHigh ? lsfLowReserve : lsfHighReserve) // Sender reserve is set.
+                && !isSetBit (uFlags, !bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)
                 && !sleRippleState->getFieldAmount (!bSenderHigh ? sfLowLimit : sfHighLimit)                        // Sender trust limit is 0.
                 && !sleRippleState->getFieldU32 (!bSenderHigh ? sfLowQualityIn : sfHighQualityIn)                   // Sender quality in is 0.
                 && !sleRippleState->getFieldU32 (!bSenderHigh ? sfLowQualityOut : sfHighQualityOut))                // Sender quality out is 0.
@@ -1612,7 +1623,7 @@ TER LedgerEntrySet::accountSend (const uint160& uSenderID, const uint160& uRecei
                                           ? entryCache (ltACCOUNT_ROOT, Ledger::getAccountRootIndex (uReceiverID))
                                           : SLE::pointer ();
 
-        WriteLog (lsDEBUG, LedgerEntrySet) << boost::str (boost::format ("accountSend> %s (%s) -> %s (%s) : %s")
+        WriteLog (lsTRACE, LedgerEntrySet) << boost::str (boost::format ("accountSend> %s (%s) -> %s (%s) : %s")
                                            % RippleAddress::createHumanAccountID (uSenderID)
                                            % (sleSender ? (sleSender->getFieldAmount (sfBalance)).getFullText () : "-")
                                            % RippleAddress::createHumanAccountID (uReceiverID)
@@ -1638,7 +1649,7 @@ TER LedgerEntrySet::accountSend (const uint160& uSenderID, const uint160& uRecei
             entryModify (sleReceiver);
         }
 
-        WriteLog (lsDEBUG, LedgerEntrySet) << boost::str (boost::format ("accountSend< %s (%s) -> %s (%s) : %s")
+        WriteLog (lsTRACE, LedgerEntrySet) << boost::str (boost::format ("accountSend< %s (%s) -> %s (%s) : %s")
                                            % RippleAddress::createHumanAccountID (uSenderID)
                                            % (sleSender ? (sleSender->getFieldAmount (sfBalance)).getFullText () : "-")
                                            % RippleAddress::createHumanAccountID (uReceiverID)
@@ -1649,7 +1660,7 @@ TER LedgerEntrySet::accountSend (const uint160& uSenderID, const uint160& uRecei
     {
         STAmount    saActual;
 
-        WriteLog (lsDEBUG, LedgerEntrySet) << boost::str (boost::format ("accountSend: %s -> %s : %s")
+        WriteLog (lsTRACE, LedgerEntrySet) << boost::str (boost::format ("accountSend: %s -> %s : %s")
                                            % RippleAddress::createHumanAccountID (uSenderID)
                                            % RippleAddress::createHumanAccountID (uReceiverID)
                                            % saAmount.getFullText ());

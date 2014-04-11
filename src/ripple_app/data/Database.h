@@ -90,6 +90,7 @@ public:
     // float getSingleDBValueFloat(const char* sql);
     // char* getSingleDBValueStr(const char* sql, std::string& retStr);
 
+    // VFALCO TODO Make this parameter a reference instead of a pointer.
     virtual bool setupCheckpointing (JobQueue*)
     {
         return false;

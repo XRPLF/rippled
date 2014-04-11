@@ -36,61 +36,190 @@ RPCHandler::RPCHandler (NetworkOPs* netOps, InfoSub::pointer infoSub)
 {
 }
 
-Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool bFailHard, Application::ScopedLockType& mlh)
+class LegacyPathFind
 {
-    if (getApp().getFeeTrack().isLoadedCluster() && (mRole != Config::ADMIN))
-        return rpcError(rpcTOO_BUSY);
+public:
 
-    Json::Value     jvResult;
-    RippleAddress   naSeed;
-    RippleAddress   raSrcAddressID;
-    bool            bOffline            = params.isMember ("offline") && params["offline"].asBool ();
+    LegacyPathFind (bool isAdmin) : m_isOkay (false)
+    {
+        if (isAdmin)
+            ++inProgress;
+        else
+        {
+            if ((getApp().getJobQueue ().getJobCountGE (jtCLIENT) > 50) ||
+                    getApp().getFeeTrack().isLoadedLocal ())
+            return;
+
+            do
+            {
+                int prevVal = inProgress.load();
+                if (prevVal >= maxInProgress)
+                    return;
+
+                if (inProgress.compare_exchange_strong (prevVal, prevVal + 1,
+                    std::memory_order_release, std::memory_order_relaxed))
+                break;
+            }
+            while (1);
+        }
+
+        m_isOkay = true;
+    }
+
+    ~LegacyPathFind ()
+    {
+        if (m_isOkay)
+            --inProgress;
+    }
+
+    bool isOkay ()
+    {
+        return m_isOkay;
+    }
+
+private:
+    static std::atomic <int> inProgress;
+    static int maxInProgress;
+
+    bool m_isOkay;
+};
+
+std::atomic <int> LegacyPathFind::inProgress (0);
+int LegacyPathFind::maxInProgress (2);
+
+//------------------------------------------------------------------------------
+
+// VFALCO TODO Move this to a Tuning.h or Defaults.h
+enum
+{
+    defaultAutoFillFeeMultiplier        = 10
+};
+
+/** Fill in the fee on behalf of the client.
+    This is called when the client does not explicitly specify the fee.
+    The client may also put a ceiling on the amount of the fee. This ceiling
+    is expressed as a multiplier based on the current ledger's fee schedule.
+
+    JSON fields
+    
+    "Fee"   The fee paid by the transaction. Omitted when the client
+            wants the fee filled in.
+
+    "fee_mult_max"  A multiplier applied to the current ledger's transaction
+                    fee that caps the maximum the fee server should auto fill.
+                    If this optional field is not specified, then a default
+                    multiplier is used.
+
+    @param tx       The JSON corresponding to the transaction to fill in
+    @param ledger   A ledger for retrieving the current fee schedule
+    @param result   A JSON object for injecting error results, if any
+    @param admin    `true` if this is called by an administrative endpoint.
+*/
+static void autofill_fee (Json::Value& request,
+    Ledger::pointer ledger, Json::Value& result, bool admin)
+{
+    Json::Value& tx (request["tx_json"]);
+
+    if (tx.isMember ("Fee"))
+        return;
+
+    int mult (defaultAutoFillFeeMultiplier);
+    if (request.isMember ("fee_mult_max"))
+    {
+        if (request["fee_mult_max"].isNumeric ())
+        {
+            mult = request["fee_mult_max"].asInt();
+        }
+        else
+        {
+            RPC::inject_error (rpcHIGH_FEE, RPC::expected_field_message (
+                "fee_mult_max", "a number"), result);
+            return;
+        }
+    }
+
+    // Administrative endpoints are exempt from local fees
+    uint64 fee = ledger->scaleFeeLoad (
+        getConfig().FEE_DEFAULT, admin);
+
+    uint64 const limit (mult * getConfig().FEE_DEFAULT);
+    if (fee > limit)
+    {
+        std::stringstream ss;
+        ss <<
+            "Fee of " << fee <<
+            " exceeds the requested tx limit of " << limit;
+        RPC::inject_error (rpcHIGH_FEE, ss.str(), result);
+        return;
+    }
+
+    tx ["Fee"] = (int) fee;
+}
+
+//------------------------------------------------------------------------------
+
+// VFALCO TODO This function should take a reference to the params, modify it
+//             as needed, and then there should be a separate function to
+//             submit the tranaction
+//
+Json::Value RPCHandler::transactionSign (Json::Value params,
+    bool bSubmit, bool bFailHard, Application::ScopedLockType& mlh)
+{
+    Json::Value jvResult;
 
     WriteLog (lsDEBUG, RPCHandler) << boost::str (boost::format ("transactionSign: %s") % params);
 
-    if (!bOffline && !getConfig ().RUN_STANDALONE && (getApp().getLedgerMaster().getValidatedLedgerAge() > 120))
-    {
+    if (! params.isMember ("secret"))
+        return RPC::missing_field_error ("secret");
+
+    if (! params.isMember ("tx_json"))
+        return RPC::missing_field_error ("tx_json");
+
+    RippleAddress naSeed;
+
+    if (! naSeed.setSeedGeneric (params["secret"].asString ()))
+        return RPC::make_error (rpcBAD_SEED,
+            RPC::invalid_field_message ("secret"));
+
+    Json::Value& tx_json (params ["tx_json"]);
+
+    if (! tx_json.isObject ())
+        return RPC::object_field_error ("tx_json");
+
+    if (! tx_json.isMember ("TransactionType"))
+        return RPC::missing_field_error ("tx_json.TransactionType");
+
+    std::string const sType = tx_json ["TransactionType"].asString ();
+
+    if (! tx_json.isMember ("Account"))
+        return RPC::make_error (rpcSRC_ACT_MISSING,
+            RPC::missing_field_message ("tx_json.Account"));
+
+    RippleAddress raSrcAddressID;
+
+    if (! raSrcAddressID.setAccountID (tx_json["Account"].asString ()))
+        return RPC::make_error (rpcSRC_ACT_MALFORMED,
+            RPC::invalid_field_message ("tx_json.Account"));
+
+    bool const bOffline (
+        params.isMember ("offline") && params["offline"].asBool ());
+
+    if (! tx_json.isMember ("Sequence") && bOffline)
+        return RPC::missing_field_error ("tx_json.Sequence");
+
+    // Check for current ledger
+    if (!bOffline && !getConfig ().RUN_STANDALONE &&
+        (getApp().getLedgerMaster().getValidatedLedgerAge() > 120))
         return rpcError (rpcNO_CURRENT);
-    }
 
-    if (!params.isMember ("secret") || !params.isMember ("tx_json"))
-    {
-        return rpcError (rpcINVALID_PARAMS);
-    }
+    // Check for load
+    if (getApp().getFeeTrack().isLoadedCluster() && (mRole != Config::ADMIN))
+        return rpcError(rpcTOO_BUSY);
 
-    Json::Value     txJSON      = params["tx_json"];
-
-    if (!txJSON.isObject ())
-    {
-        return rpcError (rpcINVALID_PARAMS);
-    }
-
-    if (!naSeed.setSeedGeneric (params["secret"].asString ()))
-    {
-        return rpcError (rpcBAD_SEED);
-    }
-
-    if (!txJSON.isMember ("Account"))
-    {
-        return rpcError (rpcSRC_ACT_MISSING);
-    }
-
-    if (!raSrcAddressID.setAccountID (txJSON["Account"].asString ()))
-    {
-        return rpcError (rpcSRC_ACT_MALFORMED);
-    }
-
-    if (!txJSON.isMember ("TransactionType"))
-    {
-        return rpcError (rpcINVALID_PARAMS);
-    }
-    std::string sType = txJSON["TransactionType"].asString ();
-
-    Ledger::pointer lSnapshot = mNetOps->getCurrentSnapshot ();
+    Ledger::pointer lSnapshot = mNetOps->getCurrentLedger ();
     AccountState::pointer asSrc = bOffline
                                   ? AccountState::pointer ()                              // Don't look up address if offline.
                                   : mNetOps->getAccountState (lSnapshot, raSrcAddressID);
-    mlh.unlock();
 
     if (!bOffline && !asSrc)
     {
@@ -101,40 +230,33 @@ Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool 
         return rpcError (rpcSRC_ACT_NOT_FOUND);
     }
 
-    if (!txJSON.isMember ("Fee")
-            && (
-                "AccountSet" == sType
-                || "Payment" == sType
-                || "OfferCreate" == sType
-                || "OfferCancel" == sType
-                || "TrustSet" == sType))
-    {
-//        feeReq = lSnapshot->scaleFeeLoad(, 
-        txJSON["Fee"] = (int) getConfig ().FEE_DEFAULT;
-    }
+    autofill_fee (params, lSnapshot, jvResult, mRole == Config::ADMIN);
+    if (RPC::contains_error (jvResult))
+        return jvResult;
 
     if ("Payment" == sType)
     {
-
         RippleAddress dstAccountID;
 
-        if (!txJSON.isMember ("Destination"))
-        {
-            return rpcError (rpcDST_ACT_MISSING);
-        }
+        if (! tx_json.isMember ("Amount"))
+            return RPC::missing_field_error ("tx_json.Amount");
 
-        if (!dstAccountID.setAccountID (txJSON["Destination"].asString ()))
-        {
-            return rpcError (rpcDST_ACT_MALFORMED);
-        }
+        STAmount amount;
 
-        if (txJSON.isMember ("Paths") && params.isMember ("build_path"))
-        {
-            // Asking to build a path when providing one is an error.
-            return rpcError (rpcINVALID_PARAMS);
-        }
+        if (! amount.bSetJson (tx_json ["Amount"]))
+            return RPC::invalid_field_error ("tx_json.Amount");
 
-        if (!txJSON.isMember ("Paths") && txJSON.isMember ("Amount") && params.isMember ("build_path"))
+        if (!tx_json.isMember ("Destination"))
+            return RPC::missing_field_error ("tx_json.Destination");
+
+        if (!dstAccountID.setAccountID (tx_json["Destination"].asString ()))
+            return RPC::invalid_field_error ("tx_json.Destination");
+
+        if (tx_json.isMember ("Paths") && params.isMember ("build_path"))
+            return RPC::make_error (rpcINVALID_PARAMS,
+                "Cannot specify both 'tx_json.Paths' and 'tx_json.build_path'");
+
+        if (!tx_json.isMember ("Paths") && tx_json.isMember ("Amount") && params.isMember ("build_path"))
         {
             // Need a ripple path.
             STPathSet   spsPaths;
@@ -142,35 +264,32 @@ Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool 
             uint160     uSrcIssuerID;
 
             STAmount    saSendMax;
-            STAmount    saSend;
 
-            if (!txJSON.isMember ("Amount")                 // Amount required.
-                    || !saSend.bSetJson (txJSON["Amount"]))     // Must be valid.
-                return rpcError (rpcDST_AMT_MALFORMED);
-
-            if (txJSON.isMember ("SendMax"))
+            if (tx_json.isMember ("SendMax"))
             {
-                if (!saSendMax.bSetJson (txJSON["SendMax"]))
-                    return rpcError (rpcINVALID_PARAMS);
+                if (!saSendMax.bSetJson (tx_json ["SendMax"]))
+                    return RPC::invalid_field_error ("tx_json.SendMax");
             }
             else
             {
                 // If no SendMax, default to Amount with sender as issuer.
-                saSendMax       = saSend;
+                saSendMax       = amount;
                 saSendMax.setIssuer (raSrcAddressID.getAccountID ());
             }
 
-            if (saSendMax.isNative () && saSend.isNative ())
-            {
-                // Asking to build a path for XRP to XRP is an error.
-                return rpcError (rpcINVALID_PARAMS);
-            }
+            if (saSendMax.isNative () && amount.isNative ())
+                return RPC::make_error (rpcINVALID_PARAMS,
+                    "Cannot build XRP to XRP paths.");
 
             {
+                LegacyPathFind lpf (mRole == Config::ADMIN);
+                if (!lpf.isOkay ())
+                    return rpcError (rpcTOO_BUSY);
+
                 bool bValid;
                 RippleLineCache::pointer cache = boost::make_shared<RippleLineCache> (lSnapshot);
                 Pathfinder pf (cache, raSrcAddressID, dstAccountID,
-                               saSendMax.getCurrency (), saSendMax.getIssuer (), saSend, bValid);
+                               saSendMax.getCurrency (), saSendMax.getIssuer (), amount, bValid);
 
                 STPath extraPath;
                 if (!bValid || !pf.findPaths (getConfig ().PATH_SEARCH_OLD, 4, spsPaths, extraPath))
@@ -186,23 +305,23 @@ Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool 
 
                 if (!spsPaths.isEmpty ())
                 {
-                    txJSON["Paths"] = spsPaths.getJson (0);
+                    tx_json["Paths"] = spsPaths.getJson (0);
                 }
             }
         }
     }
 
-    if (!txJSON.isMember ("Fee")
+    if (!tx_json.isMember ("Fee")
             && (
-                "AccountSet" == txJSON["TransactionType"].asString ()
-                || "OfferCreate" == txJSON["TransactionType"].asString ()
-                || "OfferCancel" == txJSON["TransactionType"].asString ()
-                || "TrustSet" == txJSON["TransactionType"].asString ()))
+                "AccountSet" == tx_json["TransactionType"].asString ()
+                || "OfferCreate" == tx_json["TransactionType"].asString ()
+                || "OfferCancel" == tx_json["TransactionType"].asString ()
+                || "TrustSet" == tx_json["TransactionType"].asString ()))
     {
-        txJSON["Fee"] = (int) getConfig ().FEE_DEFAULT;
+        tx_json["Fee"] = (int) getConfig ().FEE_DEFAULT;
     }
 
-    if (!txJSON.isMember ("Sequence"))
+    if (!tx_json.isMember ("Sequence"))
     {
         if (bOffline)
         {
@@ -211,15 +330,16 @@ Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool 
         }
         else
         {
-            txJSON["Sequence"] = asSrc->getSeq ();
+            tx_json["Sequence"] = asSrc->getSeq ();
         }
     }
 
-    if (!txJSON.isMember ("Flags")) txJSON["Flags"] = 0;
+    if (!tx_json.isMember ("Flags")) tx_json["Flags"] = 0;
 
     if (!bOffline)
     {
-        SLE::pointer    sleAccountRoot  = mNetOps->getSLEi (lSnapshot, Ledger::getAccountRootIndex (raSrcAddressID.getAccountID ()));
+        SLE::pointer sleAccountRoot = mNetOps->getSLEi (lSnapshot, 
+            Ledger::getAccountRootIndex (raSrcAddressID.getAccountID ()));
 
         if (!sleAccountRoot)
         {
@@ -231,23 +351,29 @@ Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool 
     bool            bHaveAuthKey    = false;
     RippleAddress   naAuthorizedPublic;
 
-    RippleAddress   naSecret            = RippleAddress::createSeedGeneric (params["secret"].asString ());
-    RippleAddress   naMasterGenerator   = RippleAddress::createGeneratorPublic (naSecret);
+    RippleAddress   naSecret = RippleAddress::createSeedGeneric (
+        params["secret"].asString ());
+    RippleAddress   naMasterGenerator = RippleAddress::createGeneratorPublic (
+        naSecret);
 
-    // Find the index of Account from the master generator, so we can generate the public and private keys.
-    RippleAddress       naMasterAccountPublic;
-    unsigned int        iIndex  = 0;
-    bool                bFound  = false;
+    // Find the index of Account from the master generator, so we can generate
+    // the public and private keys.
+    RippleAddress naMasterAccountPublic;
+    unsigned int iIndex  = 0;
+    bool bFound  = false;
 
-    // Don't look at ledger entries to determine if the account exists.  Don't want to leak to thin server that these accounts are
-    // related.
+    // Don't look at ledger entries to determine if the account exists.
+    // Don't want to leak to thin server that these accounts are related.
     while (!bFound && iIndex != getConfig ().ACCOUNT_PROBE_MAX)
     {
         naMasterAccountPublic.setAccountPublic (naMasterGenerator, iIndex);
 
-        WriteLog (lsWARNING, RPCHandler) << "authorize: " << iIndex << " : " << naMasterAccountPublic.humanAccountID () << " : " << raSrcAddressID.humanAccountID ();
+        WriteLog (lsWARNING, RPCHandler) <<
+            "authorize: " << iIndex <<
+            " : " << naMasterAccountPublic.humanAccountID () <<
+            " : " << raSrcAddressID.humanAccountID ();
 
-        bFound  = raSrcAddressID.getAccountID () == naMasterAccountPublic.getAccountID ();
+        bFound = raSrcAddressID.getAccountID () == naMasterAccountPublic.getAccountID ();
 
         if (!bFound)
             ++iIndex;
@@ -259,9 +385,12 @@ Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool 
     }
 
     // Use the generator to determine the associated public and private keys.
-    RippleAddress   naGenerator         = RippleAddress::createGeneratorPublic (naSecret);
-    RippleAddress   naAccountPublic     = RippleAddress::createAccountPublic (naGenerator, iIndex);
-    RippleAddress   naAccountPrivate    = RippleAddress::createAccountPrivate (naGenerator, naSecret, iIndex);
+    RippleAddress naGenerator = RippleAddress::createGeneratorPublic (
+        naSecret);
+    RippleAddress naAccountPublic = RippleAddress::createAccountPublic (
+        naGenerator, iIndex);
+    RippleAddress naAccountPrivate = RippleAddress::createAccountPrivate (
+        naGenerator, naSecret, iIndex);
 
     if (bHaveAuthKey
             // The generated pair must match authorized...
@@ -276,18 +405,23 @@ Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool 
         return rpcError (rpcSRC_ACT_NOT_FOUND);
     }
 
-    UPTR_T<STObject>    sopTrans;
+    std::unique_ptr<STObject> sopTrans;
 
-    try
     {
-        sopTrans = STObject::parseJson (txJSON);
-    }
-    catch (std::exception& e)
-    {
-        jvResult["error"]           = "malformedTransaction";
-        jvResult["error_exception"] = e.what ();
-
-        return jvResult;
+        STParsedJSON parsed ("tx_json", tx_json);
+        if (parsed.object.get() != nullptr)
+        {
+            // VFALCO NOTE No idea why this doesn't compile.
+            //sopTrans = parsed.object;
+            sopTrans.reset (parsed.object.release());
+        }
+        else
+        {
+            jvResult ["error"] = parsed.error ["error"];
+            jvResult ["error_code"] = parsed.error ["error_code"];
+            jvResult ["error_message"] = parsed.error ["error_message"];
+            return jvResult;
+        }
     }
 
     sopTrans->setFieldVL (sfSigningPubKey, naAccountPublic.getAccountPublic ());
@@ -300,22 +434,27 @@ Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool 
     }
     catch (std::exception& e)
     {
-        jvResult["error"]           = "invalidTransaction";
-        jvResult["error_exception"] = e.what ();
+        return RPC::make_error (rpcINTERNAL,
+            "Exception occurred during transaction");
+    }
 
-        return jvResult;
+    if (!isMemoOkay (*stpTrans))
+    {
+        return RPC::make_error (rpcINVALID_PARAMS,
+            "The memo exceeds the maximum allowed size.");
     }
 
     if (params.isMember ("debug_signing"))
     {
-        jvResult["tx_unsigned"]     = strHex (stpTrans->getSerializer ().peekData ());
+        jvResult["tx_unsigned"] = strHex (
+            stpTrans->getSerializer ().peekData ());
         jvResult["tx_signing_hash"] = stpTrans->getSigningHash ().ToString ();
     }
 
     // FIXME: For performance, transactions should not be signed in this code path.
     stpTrans->sign (naAccountPrivate);
 
-    Transaction::pointer            tpTrans;
+    Transaction::pointer tpTrans;
 
     try
     {
@@ -323,37 +462,33 @@ Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool 
     }
     catch (std::exception& e)
     {
-        jvResult["error"]           = "internalTransaction";
-        jvResult["error_exception"] = e.what ();
-
-        return jvResult;
+        return RPC::make_error (rpcINTERNAL,
+            "Exception occurred during transaction");
     }
 
     try
     {
         // FIXME: For performance, should use asynch interface
-        tpTrans = mNetOps->submitTransactionSync (tpTrans, mRole == Config::ADMIN, bFailHard, bSubmit);
+        tpTrans = mNetOps->submitTransactionSync (tpTrans, 
+            mRole == Config::ADMIN, true, bFailHard, bSubmit);
 
         if (!tpTrans)
         {
-            jvResult["error"]           = "invalidTransaction";
-            jvResult["error_exception"] = "Unable to sterilize transaction.";
-
-            return jvResult;
+            return RPC::make_error (rpcINTERNAL,
+                "Unable to sterilize transaction.");
         }
     }
     catch (std::exception& e)
     {
-        jvResult["error"]           = "internalSubmit";
-        jvResult["error_exception"] = e.what ();
-
-        return jvResult;
+        return RPC::make_error (rpcINTERNAL,
+            "Exception occurred during transaction submission.");
     }
 
     try
     {
-        jvResult["tx_json"]     = tpTrans->getJson (0);
-        jvResult["tx_blob"]     = strHex (tpTrans->getSTransaction ()->getSerializer ().peekData ());
+        jvResult["tx_json"] = tpTrans->getJson (0);
+        jvResult["tx_blob"] = strHex (
+            tpTrans->getSTransaction ()->getSerializer ().peekData ());
 
         if (temUNCERTAIN != tpTrans->getResult ())
         {
@@ -371,10 +506,8 @@ Json::Value RPCHandler::transactionSign (Json::Value params, bool bSubmit, bool 
     }
     catch (std::exception& e)
     {
-        jvResult["error"]           = "internalJson";
-        jvResult["error_exception"] = e.what ();
-
-        return jvResult;
+        return RPC::make_error (rpcINTERNAL,
+            "Exception occurred during JSON handling.");
     }
 }
 
@@ -403,7 +536,7 @@ Json::Value RPCHandler::getMasterGenerator (Ledger::ref lrLedger, const RippleAd
 
     if (vucMasterGenerator.empty ())
     {
-        return rpcError (rpcFAIL_GEN_DECRPYT);
+        return rpcError (rpcFAIL_GEN_DECRYPT);
     }
 
     naMasterGenerator.setGenerator (vucMasterGenerator);
@@ -561,7 +694,7 @@ Json::Value RPCHandler::accountFromString (Ledger::ref lrLedger, RippleAddress& 
 
             if (vucMasterGenerator.empty ())
             {
-                rpcError (rpcNO_GEN_DECRPYT);
+                rpcError (rpcNO_GEN_DECRYPT);
             }
 
             naGenerator.setGenerator (vucMasterGenerator);
@@ -577,26 +710,30 @@ Json::Value RPCHandler::accountFromString (Ledger::ref lrLedger, RippleAddress& 
 
 Json::Value RPCHandler::doAccountCurrencies (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
-    Ledger::pointer     lpLedger;
-    Json::Value         jvResult    = lookupLedger (params, lpLedger);
-
+    masterLockHolder.unlock ();
+    // Get the current ledger
+    Ledger::pointer lpLedger;
+    Json::Value jvResult (lookupLedger (params, lpLedger));
     if (!lpLedger)
         return jvResult;
-    if (lpLedger->isImmutable ())
-        masterLockHolder.unlock ();
 
-    if (!params.isMember ("account") && !params.isMember ("ident"))
-        return rpcError (rpcINVALID_PARAMS);
+    if (! params.isMember ("account") && ! params.isMember ("ident"))
+        return RPC::missing_field_error ("account");
 
-    std::string     strIdent    = params.isMember ("account") ? params["account"].asString () : params["ident"].asString ();
-    bool            bIndex;
-    int             iIndex      = params.isMember ("account_index") ? params["account_index"].asUInt () : 0;
-    bool            bStrict     = params.isMember ("strict") && params["strict"].asBool ();
-    RippleAddress   naAccount;
+    std::string const strIdent (params.isMember ("account")
+        ? params["account"].asString ()
+        : params["ident"].asString ());
+
+    int const iIndex (params.isMember ("account_index")
+        ? params["account_index"].asUInt ()
+        : 0);
+    bool const bStrict (params.isMember ("strict") && params["strict"].asBool ());
 
     // Get info on account.
-
-    Json::Value     jvAccepted      = accountFromString (lpLedger, naAccount, bIndex, strIdent, iIndex, bStrict);
+    bool bIndex; // out param
+    RippleAddress naAccount; // out param
+    Json::Value jvAccepted (accountFromString (
+        lpLedger, naAccount, bIndex, strIdent, iIndex, bStrict));
 
     if (!jvAccepted.empty ())
         return jvAccepted;
@@ -643,6 +780,8 @@ Json::Value RPCHandler::doAccountCurrencies (Json::Value params, Resource::Charg
 // }
 Json::Value RPCHandler::doAccountInfo (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
+    masterLockHolder.unlock ();
+
     Ledger::pointer     lpLedger;
     Json::Value         jvResult    = lookupLedger (params, lpLedger);
 
@@ -650,7 +789,7 @@ Json::Value RPCHandler::doAccountInfo (Json::Value params, Resource::Charge& loa
         return jvResult;
 
     if (!params.isMember ("account") && !params.isMember ("ident"))
-        return rpcError (rpcINVALID_PARAMS);
+        return RPC::missing_field_error ("account");
 
     std::string     strIdent    = params.isMember ("account") ? params["account"].asString () : params["ident"].asString ();
     bool            bIndex;
@@ -696,19 +835,30 @@ Json::Value RPCHandler::doBlackList (Json::Value params, Resource::Charge& loadT
 //   port: <number>
 // }
 // XXX Might allow domain for manual connections.
-Json::Value RPCHandler::doConnect (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value RPCHandler::doConnect (Json::Value params,
+                                   Resource::Charge& loadType,
+                                   Application::ScopedLockType& masterLockHolder)
 {
     if (getConfig ().RUN_STANDALONE)
         return "cannot connect in standalone mode";
 
     if (!params.isMember ("ip"))
+        return RPC::missing_field_error ("ip");
+
+    if (params.isMember ("port") && !params["port"].isConvertibleTo (Json::intValue))
         return rpcError (rpcINVALID_PARAMS);
 
-    std::string strIp   = params["ip"].asString ();
-    int         iPort   = params.isMember ("port") ? params["port"].asInt () : -1;
+    int iPort;
 
-    // XXX Validate legal IP and port
-    getApp().getPeers ().connectTo (strIp, iPort);
+    if(params.isMember ("port"))
+        iPort = params["port"].asInt ();
+    else
+        iPort = SYSTEM_PEER_PORT;
+
+    IP::Endpoint ip (IP::Endpoint::from_string(params["ip"].asString ()));
+
+    if (! is_unspecified (ip))
+        getApp().getPeers ().connect (ip.at_port(iPort));
 
     return "connecting";
 }
@@ -720,7 +870,7 @@ Json::Value RPCHandler::doConnect (Json::Value params, Resource::Charge& loadTyp
 Json::Value RPCHandler::doDataDelete (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
     if (!params.isMember ("key"))
-        return rpcError (rpcINVALID_PARAMS);
+        return RPC::missing_field_error ("key");
 
     std::string strKey = params["key"].asString ();
 
@@ -746,7 +896,7 @@ Json::Value RPCHandler::doDataDelete (Json::Value params, Resource::Charge& load
 Json::Value RPCHandler::doDataFetch (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
     if (!params.isMember ("key"))
-        return rpcError (rpcINVALID_PARAMS);
+        return RPC::missing_field_error ("key");
 
     std::string strKey = params["key"].asString ();
     std::string strValue;
@@ -770,8 +920,9 @@ Json::Value RPCHandler::doDataFetch (Json::Value params, Resource::Charge& loadT
 Json::Value RPCHandler::doDataStore (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
     if (!params.isMember ("key")
-            || !params.isMember ("value"))
-        return rpcError (rpcINVALID_PARAMS);
+        return RPC::missing_field_error ("key");
+    if (!params.isMember ("value")
+        return RPC::missing_field_error ("value");
 
     std::string strKey      = params["key"].asString ();
     std::string strValue    = params["value"].asString ();
@@ -831,7 +982,7 @@ Json::Value RPCHandler::doNicknameInfo (Json::Value params)
 Json::Value RPCHandler::doOwnerInfo (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
     if (!params.isMember ("account") && !params.isMember ("ident"))
-        return rpcError (rpcINVALID_PARAMS);
+        return RPC::missing_field_error ("account");
 
     std::string     strIdent    = params.isMember ("account") ? params["account"].asString () : params["ident"].asString ();
     bool            bIndex;
@@ -857,7 +1008,7 @@ Json::Value RPCHandler::doPeers (Json::Value, Resource::Charge& loadType, Applic
 {
     Json::Value jvResult (Json::objectValue);
 
-    jvResult["peers"]   = getApp().getPeers ().getPeersJson ();
+    jvResult["peers"]   = getApp().getPeers ().json ();
 
     getApp().getUNL().addClusterStatus(jvResult);
 
@@ -989,17 +1140,17 @@ Json::Value RPCHandler::doProofCreate (Json::Value params, Resource::Charge& loa
     if (params.isMember ("difficulty") || params.isMember ("secret"))
     {
         // VFALCO TODO why aren't we using the app's factory?
-        beast::ScopedPointer <ProofOfWorkFactory> pgGen (ProofOfWorkFactory::New ());
+        std::unique_ptr <ProofOfWorkFactory> pgGen (ProofOfWorkFactory::New ());
 
         if (params.isMember ("difficulty"))
         {
             if (!params["difficulty"].isIntegral ())
-                return rpcError (rpcINVALID_PARAMS);
+                return RPC::invalid_field_error ("difficulty");
 
-            int iDifficulty = params["difficulty"].asInt ();
+            int const iDifficulty (params["difficulty"].asInt ());
 
             if (iDifficulty < 0 || iDifficulty > ProofOfWorkFactory::kMaxDifficulty)
-                return rpcError (rpcINVALID_PARAMS);
+                return RPC::invalid_field_error ("difficulty");
 
             pgGen->setDifficulty (iDifficulty);
         }
@@ -1031,12 +1182,12 @@ Json::Value RPCHandler::doProofSolve (Json::Value params, Resource::Charge& load
     Json::Value         jvResult;
 
     if (!params.isMember ("token"))
-        return rpcError (rpcINVALID_PARAMS);
+        return RPC::missing_field_error ("token");
 
     std::string         strToken        = params["token"].asString ();
 
     if (!ProofOfWork::validateToken (strToken))
-        return rpcError (rpcINVALID_PARAMS);
+        return RPC::invalid_field_error ("token");
 
     ProofOfWork         powProof (strToken);
     uint256             uSolution       = powProof.solve ();
@@ -1062,10 +1213,10 @@ Json::Value RPCHandler::doProofVerify (Json::Value params, Resource::Charge& loa
     Json::Value         jvResult;
 
     if (!params.isMember ("token"))
-        return rpcError (rpcINVALID_PARAMS);
+        return RPC::missing_field_error ("token");
 
     if (!params.isMember ("solution"))
-        return rpcError (rpcINVALID_PARAMS);
+        return RPC::missing_field_error ("solution");
 
     std::string     strToken    = params["token"].asString ();
     uint256         uSolution (params["solution"].asString ());
@@ -1075,17 +1226,17 @@ Json::Value RPCHandler::doProofVerify (Json::Value params, Resource::Charge& loa
     if (params.isMember ("difficulty") || params.isMember ("secret"))
     {
         // VFALCO TODO why aren't we using the app's factory?
-        beast::ScopedPointer <ProofOfWorkFactory> pgGen (ProofOfWorkFactory::New ());
+        std::unique_ptr <ProofOfWorkFactory> pgGen (ProofOfWorkFactory::New ());
 
         if (params.isMember ("difficulty"))
         {
             if (!params["difficulty"].isIntegral ())
-                return rpcError (rpcINVALID_PARAMS);
+                return RPC::invalid_field_error ("difficulty");
 
             int iDifficulty = params["difficulty"].asInt ();
 
             if (iDifficulty < 0 || iDifficulty > ProofOfWorkFactory::kMaxDifficulty)
-                return rpcError (rpcINVALID_PARAMS);
+                return RPC::missing_field_error ("difficulty");
 
             pgGen->setDifficulty (iDifficulty);
         }
@@ -1126,22 +1277,16 @@ Json::Value RPCHandler::doProofVerify (Json::Value params, Resource::Charge& loa
 // }
 Json::Value RPCHandler::doAccountLines (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
+    masterLockHolder.unlock ();
+
     Ledger::pointer     lpLedger;
     Json::Value         jvResult    = lookupLedger (params, lpLedger);
 
     if (!lpLedger)
         return jvResult;
 
-    bool bUnlocked = false;
-
-    if (lpLedger->isImmutable ())
-    {
-        masterLockHolder.unlock ();
-        bUnlocked = true;
-    }
-
     if (!params.isMember ("account"))
-        return rpcError (rpcINVALID_PARAMS);
+        return RPC::missing_field_error ("account");
 
     std::string     strIdent    = params["account"].asString ();
     bool            bIndex      = params.isMember ("account_index");
@@ -1176,8 +1321,6 @@ Json::Value RPCHandler::doAccountLines (Json::Value params, Resource::Charge& lo
     if (lpLedger->hasAccount (raAccount))
     {
         AccountItems rippleLines (raAccount.getAccountID (), lpLedger, AccountItem::pointer (new RippleState ()));
-        if (!bUnlocked)
-            masterLockHolder.unlock ();
 
         jvResult["account"] = raAccount.humanAccountID ();
         Json::Value& jsonLines = (jvResult["lines"] = Json::arrayValue);
@@ -1245,22 +1388,16 @@ static void offerAdder (Json::Value& jvLines, SLE::ref offer)
 // }
 Json::Value RPCHandler::doAccountOffers (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
+    masterLockHolder.unlock ();
+
     Ledger::pointer     lpLedger;
     Json::Value         jvResult    = lookupLedger (params, lpLedger);
 
     if (!lpLedger)
         return jvResult;
 
-    bool bUnlocked = false;
-
-    if (lpLedger->isImmutable ())
-    {
-        masterLockHolder.unlock ();
-        bUnlocked = true;
-    }
-
     if (!params.isMember ("account"))
-        return rpcError (rpcINVALID_PARAMS);
+        return RPC::missing_field_error ("account");
 
     std::string     strIdent    = params["account"].asString ();
     bool            bIndex      = params.isMember ("account_index");
@@ -1286,11 +1423,36 @@ Json::Value RPCHandler::doAccountOffers (Json::Value params, Resource::Charge& l
     Json::Value& jvsOffers = (jvResult["offers"] = Json::arrayValue);
     lpLedger->visitAccountItems (raAccount.getAccountID (), BIND_TYPE (&offerAdder, boost::ref (jvsOffers), P_1));
 
-    if (!bUnlocked)
-        masterLockHolder.unlock ();
     loadType = Resource::feeMediumBurdenRPC;
 
     return jvResult;
+}
+
+template <class UnsignedInteger>
+inline bool is_xrp (UnsignedInteger const& value)
+{
+    return value.isZero();
+}
+
+template <class UnsignedInteger>
+inline bool is_not_xrp (UnsignedInteger const& value)
+{
+    return ! is_xrp (value);
+}
+
+inline uint160 const& xrp_issuer ()
+{
+    return ACCOUNT_XRP;
+}
+
+inline uint160 const& xrp_currency ()
+{
+    return CURRENCY_XRP;
+}
+
+inline uint160 const& neutral_issuer ()
+{
+    return ACCOUNT_ONE;
 }
 
 // {
@@ -1305,97 +1467,166 @@ Json::Value RPCHandler::doAccountOffers (Json::Value params, Resource::Charge& l
 // }
 Json::Value RPCHandler::doBookOffers (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
-    if (getApp().getJobQueue ().getJobCountGE (jtCLIENT) > 200)
-    {
-        return rpcError (rpcTOO_BUSY);
-    }
+    masterLockHolder.unlock ();
 
-    Ledger::pointer     lpLedger;
-    Json::Value         jvResult    = lookupLedger (params, lpLedger);
+    // VFALCO TODO Here is a terrible place for this kind of business
+    //             logic. It needs to be moved elsewhere and documented,
+    //             and encapsulated into a function.
+    if (getApp().getJobQueue ().getJobCountGE (jtCLIENT) > 200)
+        return rpcError (rpcTOO_BUSY);
+
+    Ledger::pointer lpLedger;
+    Json::Value jvResult (lookupLedger (params, lpLedger));
 
     if (!lpLedger)
         return jvResult;
 
-    if (lpLedger->isImmutable ())
-        masterLockHolder.unlock ();
+    if (!params.isMember ("taker_pays"))
+        return RPC::missing_field_error ("taker_pays");
 
-    if (!params.isMember ("taker_pays") || !params.isMember ("taker_gets") || !params["taker_pays"].isObject () || !params["taker_gets"].isObject ())
-        return rpcError (rpcINVALID_PARAMS);
+    if (!params.isMember ("taker_gets"))
+        return RPC::missing_field_error ("taker_gets");
 
-    uint160             uTakerPaysCurrencyID;
-    uint160             uTakerPaysIssuerID;
-    const Json::Value&  jvTakerPays = params["taker_pays"];
+    if (!params["taker_pays"].isObject ())
+        return RPC::object_field_error ("taker_pays");
 
-    // Parse mandatory currency.
-    if (!jvTakerPays.isMember ("currency")
-            || !STAmount::currencyFromString (uTakerPaysCurrencyID, jvTakerPays["currency"].asString ()))
+    if (!params["taker_gets"].isObject ())
+        return RPC::object_field_error ("taker_gets");
+
+    Json::Value const& taker_pays (params["taker_pays"]);
+
+    if (!taker_pays.isMember ("currency"))
+        return RPC::missing_field_error ("taker_pays.currency");
+
+    if (! taker_pays ["currency"].isString ())
+        return RPC::expected_field_error ("taker_pays.currency", "string");
+
+    Json::Value const& taker_gets = params["taker_gets"];
+
+    if (! taker_gets.isMember ("currency"))
+        return RPC::missing_field_error ("taker_gets.currency");
+
+    if (! taker_gets ["currency"].isString ())
+        return RPC::expected_field_error ("taker_gets.currency", "string");
+
+    uint160 pay_currency;
+
+    if (! STAmount::currencyFromString (
+        pay_currency, taker_pays ["currency"].asString ()))
     {
         WriteLog (lsINFO, RPCHandler) << "Bad taker_pays currency.";
-
-        return rpcError (rpcSRC_CUR_MALFORMED);
+        return RPC::make_error (rpcSRC_CUR_MALFORMED,
+            "Invalid field 'taker_pays.currency', bad currency.");
     }
-    // Parse optional issuer.
-    else if (((jvTakerPays.isMember ("issuer"))
-              && (!jvTakerPays["issuer"].isString ()
-                  || !STAmount::issuerFromString (uTakerPaysIssuerID, jvTakerPays["issuer"].asString ())))
-             // Don't allow illegal issuers.
-             || (!uTakerPaysCurrencyID != !uTakerPaysIssuerID)
-             || ACCOUNT_ONE == uTakerPaysIssuerID)
+
+    uint160 get_currency;
+
+    if (! STAmount::currencyFromString (
+        get_currency, taker_gets ["currency"].asString ()))
     {
-        WriteLog (lsINFO, RPCHandler) << "Bad taker_pays issuer.";
-
-        return rpcError (rpcSRC_ISR_MALFORMED);
+        WriteLog (lsINFO, RPCHandler) << "Bad taker_gets currency.";
+        return RPC::make_error (rpcDST_AMT_MALFORMED,
+            "Invalid field 'taker_gets.currency', bad currency.");
     }
 
-    uint160             uTakerGetsCurrencyID;
-    uint160             uTakerGetsIssuerID;
-    const Json::Value&  jvTakerGets = params["taker_gets"];
+    uint160 pay_issuer;
 
-    // Parse mandatory currency.
-    if (!jvTakerGets.isMember ("currency")
-            || !STAmount::currencyFromString (uTakerGetsCurrencyID, jvTakerGets["currency"].asString ()))
+    if (taker_pays.isMember ("issuer"))
     {
-        WriteLog (lsINFO, RPCHandler) << "Bad taker_pays currency.";
+        if (! taker_pays ["issuer"].isString())
+            return RPC::expected_field_error ("taker_pays.issuer", "string");
 
-        return rpcError (rpcSRC_CUR_MALFORMED);
+        if (! STAmount::issuerFromString (
+            pay_issuer, taker_pays ["issuer"].asString ()))
+            return RPC::make_error (rpcSRC_ISR_MALFORMED,
+                "Invalid field 'taker_pays.issuer', bad issuer.");
+
+        if (pay_issuer == neutral_issuer ())
+            return RPC::make_error (rpcSRC_ISR_MALFORMED,
+                "Invalid field 'taker_pays.issuer', bad issuer account one.");
     }
-    // Parse optional issuer.
-    else if (((jvTakerGets.isMember ("issuer"))
-              && (!jvTakerGets["issuer"].isString ()
-                  || !STAmount::issuerFromString (uTakerGetsIssuerID, jvTakerGets["issuer"].asString ())))
-             // Don't allow illegal issuers.
-             || (!uTakerGetsCurrencyID != !uTakerGetsIssuerID)
-             || ACCOUNT_ONE == uTakerGetsIssuerID)
+    else
     {
-        WriteLog (lsINFO, RPCHandler) << "Bad taker_gets issuer.";
-
-        return rpcError (rpcDST_ISR_MALFORMED);
+        pay_issuer = xrp_issuer ();
     }
 
-    if (uTakerPaysCurrencyID == uTakerGetsCurrencyID
-            && uTakerPaysIssuerID == uTakerGetsIssuerID)
+    if (is_xrp (pay_currency) && ! is_xrp (pay_issuer))
+        return RPC::make_error (rpcSRC_ISR_MALFORMED,
+            "Unneeded field 'taker_pays.issuer' for XRP currency specification.");
+
+    if (is_not_xrp (pay_currency) && is_xrp (pay_issuer))
+        return RPC::make_error (rpcSRC_ISR_MALFORMED,
+            "Invalid field 'taker_pays.issuer', expected non-XRP issuer.");
+
+    uint160 get_issuer;
+
+    if (taker_gets.isMember ("issuer"))
     {
-        WriteLog (lsINFO, RPCHandler) << "taker_gets same as taker_pays.";
+        if (! taker_gets ["issuer"].isString())
+            return RPC::expected_field_error ("taker_gets.issuer", "string");
 
-        return rpcError (rpcBAD_MARKET);
+        if (! STAmount::issuerFromString (
+            get_issuer, taker_gets ["issuer"].asString ()))
+            return RPC::make_error (rpcDST_ISR_MALFORMED,
+                "Invalid field 'taker_gets.issuer', bad issuer.");
+
+        if (get_issuer == neutral_issuer ())
+            return RPC::make_error (rpcDST_ISR_MALFORMED,
+                "Invalid field 'taker_gets.issuer', bad issuer account one.");
+    }
+    else
+    {
+        get_issuer = xrp_issuer ();
     }
 
-    RippleAddress   raTakerID;
 
-    if (!params.isMember ("taker"))
+    if (is_xrp (get_currency) && ! is_xrp (get_issuer))
+        return RPC::make_error (rpcDST_ISR_MALFORMED,
+            "Unneeded field 'taker_gets.issuer' for XRP currency specification.");
+
+    if (is_not_xrp (get_currency) && is_xrp (get_issuer))
+        return RPC::make_error (rpcDST_ISR_MALFORMED,
+            "Invalid field 'taker_gets.issuer', expected non-XRP issuer.");
+
+    RippleAddress raTakerID;
+
+    if (params.isMember ("taker"))
+    {
+        if (! params ["taker"].isString ())
+            return RPC::expected_field_error ("taker", "string");
+        
+        if (! raTakerID.setAccountID (params ["taker"].asString ()))
+            return RPC::invalid_field_error ("taker");
+    }
+    else
     {
         raTakerID.setAccountID (ACCOUNT_ONE);
     }
-    else if (!raTakerID.setAccountID (params["taker"].asString ()))
+
+    if (pay_currency == get_currency && pay_issuer == get_issuer)
     {
-        return rpcError (rpcBAD_ISSUER);
+        WriteLog (lsINFO, RPCHandler) << "taker_gets same as taker_pays.";
+        return RPC::make_error (rpcBAD_MARKET);
     }
 
-    const bool          bProof      = params.isMember ("proof");
-    const unsigned int  iLimit      = params.isMember ("limit") ? params["limit"].asUInt () : 0;
-    const Json::Value   jvMarker    = params.isMember ("marker") ? params["marker"] : Json::Value (Json::nullValue);
+    if (params.isMember ("limit") && ! params ["limit"].isIntegral())
+        return RPC::expected_field_error (
+        "limit", "integer");
 
-    mNetOps->getBookPage (lpLedger, uTakerPaysCurrencyID, uTakerPaysIssuerID, uTakerGetsCurrencyID, uTakerGetsIssuerID, raTakerID.getAccountID (), bProof, iLimit, jvMarker, jvResult);
+    unsigned int const iLimit (params.isMember ("limit")
+        ? params ["limit"].asUInt ()
+        : 0);
+
+    bool const bProof (params.isMember ("proof"));
+
+    Json::Value const jvMarker (params.isMember ("marker")
+        ? params["marker"]
+        : Json::Value (Json::nullValue));
+
+    mNetOps->getBookPage (lpLedger, pay_currency, pay_issuer,
+        get_currency, get_issuer, raTakerID.getAccountID (),
+            bProof, iLimit, jvMarker, jvResult);
+
     loadType = Resource::feeMediumBurdenRPC;
 
     return jvResult;
@@ -1443,16 +1674,7 @@ Json::Value RPCHandler::doPathFind (Json::Value params, Resource::Charge& loadTy
     {
         loadType = Resource::feeHighBurdenRPC;
         mInfoSub->clearPathRequest ();
-        PathRequest::pointer request = boost::make_shared<PathRequest> (mInfoSub);
-        Json::Value result = request->doCreate (lpLedger, params);
-
-        if (request->isValid ())
-        {
-            mInfoSub->setPathRequest (request);
-            getApp().getLedgerMaster ().newPathRequest ();
-        }
-
-        return result;
+        return getApp().getPathRequests().makePathRequest (mInfoSub, lpLedger, params);
     }
 
     if (sSubCommand == "close")
@@ -1479,31 +1701,30 @@ Json::Value RPCHandler::doPathFind (Json::Value params, Resource::Charge& loadTy
     return rpcError (rpcINVALID_PARAMS);
 }
 
-// TODO:
-// - Add support for specifying non-endpoint issuer.
-// - Return fully expanded path with proof.
-//   - Allows clients to verify path exists.
-// - Return canonicalized path.
-//   - From a trusted server, allows clients to use path without manipulation.
+// This interface is deprecated.
 Json::Value RPCHandler::doRipplePathFind (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
-    int jc = getApp().getJobQueue ().getJobCountGE (jtCLIENT);
+    masterLockHolder.unlock ();
 
-    if (jc > 200)
-    {
-        WriteLog (lsDEBUG, RPCHandler) << "Too busy for RPF: " << jc;
+    LegacyPathFind lpf (mRole == Config::ADMIN);
+    if (!lpf.isOkay ())
         return rpcError (rpcTOO_BUSY);
-    }
+
     loadType = Resource::feeHighBurdenRPC;
 
     RippleAddress   raSrc;
     RippleAddress   raDst;
     STAmount        saDstAmount;
     Ledger::pointer lpLedger;
-    Json::Value     jvResult    = lookupLedger (params, lpLedger);
 
-    if (!lpLedger)
-        return jvResult;
+    Json::Value     jvResult;
+
+    if (getConfig().RUN_STANDALONE || params.isMember("ledger") || params.isMember("ledger_index") || params.isMember("ledger_hash"))
+    { // The caller specified a ledger
+        jvResult = lookupLedger (params, lpLedger);
+        if (!lpLedger)
+            return jvResult;
+    }
 
     if (!params.isMember ("source_account"))
     {
@@ -1546,9 +1767,18 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value params, Resource::Charge& 
     else
     {
         loadType = Resource::feeHighBurdenRPC;
-        Ledger::pointer lSnapShot = boost::make_shared<Ledger> (boost::ref (*lpLedger), false);
+        RippleLineCache::pointer cache;
 
-        masterLockHolder.unlock (); // As long as we have a locked copy of the ledger, we can unlock.
+        if (lpLedger)
+        { // The caller specified a ledger
+            lpLedger = boost::make_shared<Ledger> (boost::ref (*lpLedger), false);
+            cache = boost::make_shared<RippleLineCache>(lpLedger);
+        }
+        else
+        { // Use the default ledger and cache
+            lpLedger = mNetOps->getValidatedLedger();
+            cache = getApp().getPathRequests().getLineCache(lpLedger, false);
+        }
 
         Json::Value     jvSrcCurrencies;
 
@@ -1558,7 +1788,7 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value params, Resource::Charge& 
         }
         else
         {
-            boost::unordered_set<uint160>   usCurrencies    = usAccountSourceCurrencies (raSrc, lpLedger, true);
+            boost::unordered_set<uint160>   usCurrencies    = usAccountSourceCurrencies (raSrc, cache, true);
 
             jvSrcCurrencies             = Json::Value (Json::arrayValue);
 
@@ -1575,7 +1805,7 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value params, Resource::Charge& 
         // Fill in currencies destination will accept
         Json::Value jvDestCur (Json::arrayValue);
 
-        boost::unordered_set<uint160> usDestCurrID = usAccountDestCurrencies (raDst, lpLedger, true);
+        boost::unordered_set<uint160> usDestCurrID = usAccountDestCurrencies (raDst, cache, true);
         BOOST_FOREACH (const uint160 & uCurrency, usDestCurrID)
         jvDestCur.append (STAmount::createHumanCurrency (uCurrency));
 
@@ -1583,7 +1813,6 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value params, Resource::Charge& 
         jvResult["destination_account"] = raDst.humanAccountID ();
 
         Json::Value jvArray (Json::arrayValue);
-        RippleLineCache::pointer cache = boost::make_shared<RippleLineCache> (lSnapShot);
 
         for (unsigned int i = 0; i != jvSrcCurrencies.size (); ++i)
         {
@@ -1626,7 +1855,23 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value params, Resource::Charge& 
             int level = getConfig().PATH_SEARCH_OLD;
             if ((getConfig().PATH_SEARCH_MAX > level) && !getApp().getFeeTrack().isLoadedLocal())
                 ++level;
-	    STPath extraPath;
+            if (params.isMember("depth") && params["depth"].isIntegral())
+            {
+                int rLev = params["search_depth"].asInt ();
+                if ((rLev < level) || (mRole == Config::ADMIN))
+                    level = rLev;
+            }
+
+            if (params.isMember("paths"))
+            {
+                STParsedJSON paths ("paths", params["paths"]);
+                if (paths.object.get() == nullptr)
+                    return paths.error;
+                else
+                    spsComputed = paths.object.get()->downcast<STPathSet> ();
+            }
+
+            STPath extraPath;
             if (!bValid || !pf.findPaths (level, 4, spsComputed, extraPath))
             {
                 WriteLog (lsWARNING, RPCHandler) << "ripple_path_find: No paths found.";
@@ -1646,7 +1891,7 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value params, Resource::Charge& 
                     1);
                 saMaxAmount.negate ();
 
-                LedgerEntrySet  lesSandbox (lSnapShot, tapNONE);
+                LedgerEntrySet  lesSandbox (lpLedger, tapNONE);
 
                 TER terResult   =
                     RippleCalc::rippleCalc (
@@ -1680,6 +1925,7 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value params, Resource::Charge& 
                     WriteLog (lsDEBUG, PathRequest) << "Trying with an extra path element";
                     spsComputed.addPath(extraPath);
                     vpsExpanded.clear ();
+                    lesSandbox.clear ();
                     terResult = RippleCalc::rippleCalc (lesSandbox, saMaxAmountAct, saDstAmountAct,
                                                         vpsExpanded, saMaxAmount, saDstAmount,
                                                         raDst.getAccountID (), raSrc.getAccountID (),
@@ -1737,6 +1983,8 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value params, Resource::Charge& 
 // }
 Json::Value RPCHandler::doSign (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
+    masterLockHolder.unlock ();
+
     loadType = Resource::feeHighBurdenRPC;
     bool bFailHard = params.isMember ("fail_hard") && params["fail_hard"].asBool ();
     return transactionSign (params, false, bFailHard, masterLockHolder);
@@ -1748,6 +1996,8 @@ Json::Value RPCHandler::doSign (Json::Value params, Resource::Charge& loadType, 
 // }
 Json::Value RPCHandler::doSubmit (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
+    masterLockHolder.unlock ();
+
     loadType = Resource::feeMediumBurdenRPC;
 
     if (!params.isMember ("tx_blob"))
@@ -1758,15 +2008,12 @@ Json::Value RPCHandler::doSubmit (Json::Value params, Resource::Charge& loadType
 
     Json::Value                 jvResult;
 
-    Blob    vucBlob (strUnHex (params["tx_blob"].asString ()));
+    std::pair<Blob, bool> ret(strUnHex (params["tx_blob"].asString ()));
 
-    if (!vucBlob.size ())
-    {
+    if (!ret.second || !ret.first.size ())
         return rpcError (rpcINVALID_PARAMS);
-    }
 
-
-    Serializer                  sTrans (vucBlob);
+    Serializer                  sTrans (ret.first);
     SerializerIterator          sitTrans (sTrans);
 
     SerializedTransaction::pointer stpTrans;
@@ -1799,7 +2046,7 @@ Json::Value RPCHandler::doSubmit (Json::Value params, Resource::Charge& loadType
 
     try
     {
-        (void) mNetOps->processTransaction (tpTrans, mRole == Config::ADMIN,
+        (void) mNetOps->processTransaction (tpTrans, mRole == Config::ADMIN, true,
             params.isMember ("fail_hard") && params["fail_hard"].asBool ());
     }
     catch (std::exception& e)
@@ -1810,7 +2057,6 @@ Json::Value RPCHandler::doSubmit (Json::Value params, Resource::Charge& loadType
         return jvResult;
     }
 
-    masterLockHolder.unlock ();
 
     try
     {
@@ -1889,8 +2135,8 @@ Json::Value RPCHandler::doServerState (Json::Value, Resource::Charge& loadType, 
 // }
 Json::Value RPCHandler::doTxHistory (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
-    loadType = Resource::feeMediumBurdenRPC;
     masterLockHolder.unlock ();
+    loadType = Resource::feeMediumBurdenRPC;
 
     if (!params.isMember ("start"))
         return rpcError (rpcINVALID_PARAMS);
@@ -1999,6 +2245,7 @@ Json::Value RPCHandler::doTx (Json::Value params, Resource::Charge& loadType, Ap
 
 Json::Value RPCHandler::doLedgerClosed (Json::Value, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
+    masterLockHolder.unlock ();
     Json::Value jvResult;
 
     uint256 uLedger = mNetOps->getClosedLedgerHash ();
@@ -2012,11 +2259,108 @@ Json::Value RPCHandler::doLedgerClosed (Json::Value, Resource::Charge& loadType,
 
 Json::Value RPCHandler::doLedgerCurrent (Json::Value, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
+    masterLockHolder.unlock ();
     Json::Value jvResult;
 
     jvResult["ledger_current_index"]    = mNetOps->getCurrentLedgerID ();
 
     return jvResult;
+}
+
+// Get state nodes from a ledger
+//   Inputs:
+//     limit:        integer, maximum number of entries
+//     marker:       opaque, resume point
+//     binary:       boolean, format
+//   Outputs:
+//     ledger_hash:  chosen ledger's hash
+//     ledger_index: chosen ledger's index
+//     state:        array of state nodes
+//     marker:       resume point, if any
+Json::Value RPCHandler::doLedgerData (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+{
+    masterLockHolder.unlock ();
+
+    int const BINARY_PAGE_LENGTH = 256;
+    int const JSON_PAGE_LENGTH = 2048;
+
+    Ledger::pointer lpLedger;
+
+    Json::Value jvResult = lookupLedger (params, lpLedger);
+    if (!lpLedger)
+        return jvResult;
+
+    uint256 resumePoint;
+    if (params.isMember ("marker"))
+    {
+        Json::Value const& jMarker = params["marker"];
+        if (!jMarker.isString ())
+            return RPC::expected_field_error ("marker", "valid");
+        if (!resumePoint.SetHex (jMarker.asString ()))
+            return RPC::expected_field_error ("marker", "valid");
+    }
+
+    bool isBinary = false;
+    if (params.isMember ("binary"))
+    {
+        Json::Value const& jBinary = params["binary"];
+        if (!jBinary.isBool ())
+            return RPC::expected_field_error ("binary", "bool");
+        isBinary = jBinary.asBool ();
+    }
+
+    int limit = -1;
+    int maxLimit = isBinary ? BINARY_PAGE_LENGTH : JSON_PAGE_LENGTH;
+
+    if (params.isMember ("limit"))
+    {
+        Json::Value const& jLimit = params["limit"];
+        if (!jLimit.isIntegral ())
+            return RPC::expected_field_error ("limit", "integer");
+
+        limit = jLimit.asInt ();
+    }
+
+    if ((limit < 0) || ((limit > maxLimit) && (mRole != Config::ADMIN)))
+        limit = maxLimit;
+
+    Json::Value jvReply = Json::objectValue;
+
+    jvReply["ledger_hash"] = lpLedger->getHash().GetHex ();
+    jvReply["ledger_index"] = lexicalCastThrow <std::string> (lpLedger->getLedgerSeq ());
+
+    Json::Value& nodes = (jvReply["state"] = Json::arrayValue);
+    SHAMap& map = *(lpLedger->peekAccountStateMap ());
+
+    for (;;)
+    {
+       SHAMapItem::pointer item = map.peekNextItem (resumePoint);
+       if (!item)
+           break;
+       resumePoint = item->getTag();
+
+       if (limit-- <= 0)
+       {
+           --resumePoint;
+           jvReply["marker"] = resumePoint.GetHex ();
+           break;
+       }
+
+       if (isBinary)
+       {
+           Json::Value& entry = nodes.append (Json::objectValue);
+           entry["data"] = strHex (item->peekData().begin(), item->peekData().size());
+           entry["index"] = item->getTag ().GetHex ();
+       }
+       else
+       {
+           SLE sle (item->peekSerializer(), item->getTag ());
+           Json::Value& entry = nodes.append (sle.getJson (0));
+           entry["index"] = item->getTag ().GetHex ();
+       }
+    }
+
+    return jvReply;
 }
 
 // ledger [id|index|current|closed] [full]
@@ -2026,6 +2370,7 @@ Json::Value RPCHandler::doLedgerCurrent (Json::Value, Resource::Charge& loadType
 // }
 Json::Value RPCHandler::doLedger (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
+    masterLockHolder.unlock ();
     if (!params.isMember ("ledger") && !params.isMember ("ledger_hash") && !params.isMember ("ledger_index"))
     {
         Json::Value ret (Json::objectValue), current (Json::objectValue), closed (Json::objectValue);
@@ -2045,9 +2390,6 @@ Json::Value RPCHandler::doLedger (Json::Value params, Resource::Charge& loadType
     if (!lpLedger)
         return jvResult;
 
-    if (lpLedger->isImmutable ())
-        masterLockHolder.unlock ();
-
     bool    bFull           = params.isMember ("full") && params["full"].asBool ();
     bool    bTransactions   = params.isMember ("transactions") && params["transactions"].asBool ();
     bool    bAccounts       = params.isMember ("accounts") && params["accounts"].asBool ();
@@ -2057,8 +2399,16 @@ Json::Value RPCHandler::doLedger (Json::Value params, Resource::Charge& loadType
                               | (bTransactions ? LEDGER_JSON_DUMP_TXRP : 0)
                               | (bAccounts ? LEDGER_JSON_DUMP_STATE : 0);
 
-    if (bFull || bAccounts | bExpand)
+    if (bFull || bAccounts)
     {
+
+        if (mRole != Config::ADMIN)
+        {
+            // Until some sane way to get full ledgers has been implemented, disallow
+            // retrieving all state nodes
+            return rpcError (rpcNO_PERMISSION);
+        }
+
         if (getApp().getFeeTrack().isLoadedLocal() && (mRole != Config::ADMIN))
         {
             WriteLog (lsDEBUG, Peer) << "Too busy to give full ledger";
@@ -2095,6 +2445,8 @@ Json::Value RPCHandler::doAccountTxSwitch (Json::Value params, Resource::Charge&
 // }
 Json::Value RPCHandler::doAccountTxOld (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
+    masterLockHolder.unlock ();
+
     RippleAddress   raAccount;
     uint32          offset      = params.isMember ("offset") ? params["offset"].asUInt () : 0;
     int             limit       = params.isMember ("limit") ? params["limit"].asUInt () : -1;
@@ -2169,7 +2521,6 @@ Json::Value RPCHandler::doAccountTxOld (Json::Value params, Resource::Charge& lo
     try
     {
 #endif
-        masterLockHolder.unlock ();
 
         Json::Value ret (Json::objectValue);
 
@@ -2255,6 +2606,8 @@ Json::Value RPCHandler::doAccountTxOld (Json::Value params, Resource::Charge& lo
 // }
 Json::Value RPCHandler::doAccountTx (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
+    masterLockHolder.unlock ();
+
     RippleAddress   raAccount;
     int             limit       = params.isMember ("limit") ? params["limit"].asUInt () : -1;
     bool            bBinary     = params.isMember ("binary") && params["binary"].asBool ();
@@ -2316,8 +2669,6 @@ Json::Value RPCHandler::doAccountTx (Json::Value params, Resource::Charge& loadT
     try
     {
 #endif
-        masterLockHolder.unlock ();
-
         Json::Value ret (Json::objectValue);
 
         ret["account"] = raAccount.humanAccountID ();
@@ -2530,6 +2881,7 @@ Json::Value RPCHandler::doWalletAccounts (Json::Value params, Resource::Charge& 
 
 Json::Value RPCHandler::doLogRotate (Json::Value, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
+    masterLockHolder.unlock ();
     return LogSink::get()->rotateLog ();
 }
 
@@ -2712,7 +3064,7 @@ Json::Value RPCHandler::doGetCounts (Json::Value params, Resource::Charge& loadT
     ret["ledger_hit_rate"] = getApp().getLedgerMaster ().getCacheHitRate ();
     ret["AL_hit_rate"] = AcceptedLedger::getCacheHitRate ();
 
-    ret["fullbelow_size"] = SHAMap::getFullBelowSize ();
+    ret["fullbelow_size"] = int(getApp().getFullBelowCache().size());
     ret["treenode_size"] = SHAMap::getTreeNodeSize ();
 
     std::string uptime;
@@ -2874,6 +3226,7 @@ Json::Value RPCHandler::doUnlScore (Json::Value, Resource::Charge& loadType, App
 
 Json::Value RPCHandler::doSMS (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
+    masterLockHolder.unlock ();
     if (!params.isMember ("text"))
         return rpcError (rpcINVALID_PARAMS);
 
@@ -2920,14 +3273,13 @@ Json::Value RPCHandler::doLedgerCleaner (Json::Value parameters, Resource::Charg
 // XXX In this case, not specify either ledger does not mean ledger current. It means any ledger.
 Json::Value RPCHandler::doTransactionEntry (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
+    masterLockHolder.unlock ();
+
     Ledger::pointer     lpLedger;
     Json::Value         jvResult    = lookupLedger (params, lpLedger);
 
     if (!lpLedger)
         return jvResult;
-
-    if (lpLedger->isImmutable())
-        masterLockHolder.unlock();
 
     if (!params.isMember ("tx_hash"))
     {
@@ -2973,100 +3325,135 @@ Json::Value RPCHandler::doTransactionEntry (Json::Value params, Resource::Charge
     return jvResult;
 }
 
-Json::Value RPCHandler::lookupLedger (Json::Value params, Ledger::pointer& lpLedger)
+// The previous version of the lookupLedger command would accept the
+// "ledger_index" argument as a string and silently treat it as a request to
+// return the current ledger which, while not strictly wrong, could cause a
+// lot of confusion.
+//
+// The code now robustly validates the input and ensures that the only possible
+// values for the "ledger_index" parameter are the index of a ledger passed as
+// an integer or one of the strings "current", "closed" or "validated".
+// Additionally, the code ensures that the value passed in "ledger_hash" is a
+// string and a valid hash. Invalid values will return an appropriate error
+// code.
+//
+// In the absence of the "ledger_hash" or "ledger_index" parameters, the code
+// assumes that "ledger_index" has the value "current".
+Json::Value RPCHandler::lookupLedger (Json::Value const& params, Ledger::pointer& lpLedger)
 {
     Json::Value jvResult;
 
-    uint256         uLedger         = params.isMember ("ledger_hash") ? uint256 (params["ledger_hash"].asString ()) : 0;
-    int32           iLedgerIndex    = params.isMember ("ledger_index") && params["ledger_index"].isNumeric () ? params["ledger_index"].asInt () : LEDGER_CURRENT;
+    Json::Value ledger_hash = params.get ("ledger_hash", Json::Value ("0"));
+    Json::Value ledger_index = params.get ("ledger_index", Json::Value ("current"));
 
-    std::string     strLedger;
-
-    if (params.isMember ("ledger_index") && !params["ledger_index"].isNumeric ())
-        strLedger   = params["ledger_index"].asString ();
-
-    // Support for DEPRECATED "ledger".
-    if (!params.isMember ("ledger"))
+    // Support for DEPRECATED "ledger" - attempt to deduce our input
+    if (params.isMember ("ledger"))
     {
-        nothing ();
-    }
-    else if (params["ledger"].asString ().size () > 12)
-    {
-        uLedger         = uint256 (params["ledger"].asString ());
-    }
-    else if (params["ledger"].isNumeric ())
-    {
-        iLedgerIndex    = params["ledger"].asInt ();
-    }
-    else
-    {
-        strLedger       = params["ledger"].asString ();
+        if (params["ledger"].asString ().size () > 12)
+        {
+            ledger_hash = params["ledger"];
+            ledger_index = Json::Value ("");
+        }
+        else if (params["ledger"].isNumeric ())
+        {
+            ledger_index = params["ledger"];
+            ledger_hash = Json::Value ("0");
+        }
+        else
+        {
+            ledger_index = params["ledger"];
+            ledger_hash = Json::Value ("0");
+        }
     }
 
-    if (strLedger == "current")
+    uint256 uLedger (0);
+
+    if (!ledger_hash.isString() || !uLedger.SetHex (ledger_hash.asString ()))
     {
-        iLedgerIndex = LEDGER_CURRENT;
-    }
-    else if (strLedger == "closed")
-    {
-        iLedgerIndex = LEDGER_CLOSED;
-    }
-    else if (strLedger == "validated")
-    {
-        iLedgerIndex = LEDGER_VALIDATED;
+        jvResult["error"] = "ledgerHashMalformed";
+        return jvResult;
     }
 
+    int32 iLedgerIndex = LEDGER_CURRENT;
+
+    // We only try to parse a ledger index if we have not already
+    // determined that we have a ledger hash.
+    if (!uLedger)
+    {
+        if (ledger_index.isNumeric ())
+            iLedgerIndex = ledger_index.asInt ();
+        else
+        {
+            std::string strLedger = ledger_index.asString ();
+
+            if (strLedger == "current")
+            {
+                iLedgerIndex = LEDGER_CURRENT;
+            }
+            else if (strLedger == "closed")
+            {
+                iLedgerIndex = LEDGER_CLOSED;
+            }
+            else if (strLedger == "validated")
+            {
+                iLedgerIndex = LEDGER_VALIDATED;
+            }
+            else
+            {
+                jvResult["error"] = "ledgerIndexMalformed";
+                return jvResult;
+            }
+        }
+    }
+
+    // The ledger was directly specified by hash.
     if (!!uLedger)
     {
-        // Ledger directly specified.
-        lpLedger    = mNetOps->getLedgerByHash (uLedger);
+        lpLedger = mNetOps->getLedgerByHash (uLedger);
 
         if (!lpLedger)
         {
-            jvResult["error"]   = "ledgerNotFound";
-
+            jvResult["error"] = "ledgerNotFound";
             return jvResult;
         }
 
-        iLedgerIndex    = lpLedger->getLedgerSeq (); // Set the current index, override if needed.
+        iLedgerIndex = lpLedger->getLedgerSeq ();
     }
 
     switch (iLedgerIndex)
     {
     case LEDGER_CURRENT:
-        lpLedger        = mNetOps->getCurrentSnapshot ();
-        iLedgerIndex    = lpLedger->getLedgerSeq ();
+        lpLedger = mNetOps->getCurrentLedger ();
+        iLedgerIndex = lpLedger->getLedgerSeq ();
         assert (lpLedger->isImmutable () && !lpLedger->isClosed ());
         break;
 
     case LEDGER_CLOSED:
-        lpLedger        = getApp().getLedgerMaster ().getClosedLedger ();
-        iLedgerIndex    = lpLedger->getLedgerSeq ();
+        lpLedger = getApp().getLedgerMaster ().getClosedLedger ();
+        iLedgerIndex = lpLedger->getLedgerSeq ();
         assert (lpLedger->isImmutable () && lpLedger->isClosed ());
         break;
 
     case LEDGER_VALIDATED:
-        lpLedger        = mNetOps->getValidatedLedger ();
-        iLedgerIndex    = lpLedger->getLedgerSeq ();
+        lpLedger = mNetOps->getValidatedLedger ();
+        iLedgerIndex = lpLedger->getLedgerSeq ();
         assert (lpLedger->isImmutable () && lpLedger->isClosed ());
         break;
     }
 
     if (iLedgerIndex <= 0)
     {
-        jvResult["error"]   = "ledgerNotFound";
-
+        jvResult["error"] = "ledgerIndexMalformed";
         return jvResult;
     }
 
     if (!lpLedger)
     {
-        lpLedger        = mNetOps->getLedgerBySeq (iLedgerIndex);
+        lpLedger = mNetOps->getLedgerBySeq (iLedgerIndex);
 
         if (!lpLedger)
         {
-            jvResult["error"]   = "ledgerNotFound"; // ledger_index from future?
-
+            jvResult["error"] = "ledgerNotFound"; // ledger_index from future?
             return jvResult;
         }
     }
@@ -3074,13 +3461,14 @@ Json::Value RPCHandler::lookupLedger (Json::Value params, Ledger::pointer& lpLed
     if (lpLedger->isClosed ())
     {
         if (!!uLedger)
-            jvResult["ledger_hash"]         = uLedger.ToString ();
+            jvResult["ledger_hash"] = uLedger.ToString ();
 
-        jvResult["ledger_index"]        = iLedgerIndex;
+        jvResult["ledger_index"] = iLedgerIndex;
     }
     else
     {
-        jvResult["ledger_current_index"]    = iLedgerIndex;
+        // CHECKME - What is this supposed to signify?
+        jvResult["ledger_current_index"] = iLedgerIndex;
     }
 
     return jvResult;
@@ -3093,14 +3481,13 @@ Json::Value RPCHandler::lookupLedger (Json::Value params, Ledger::pointer& lpLed
 // }
 Json::Value RPCHandler::doLedgerEntry (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
+    masterLockHolder.unlock ();
+
     Ledger::pointer     lpLedger;
     Json::Value         jvResult    = lookupLedger (params, lpLedger);
 
     if (!lpLedger)
         return jvResult;
-
-    if (lpLedger->isImmutable ())
-        masterLockHolder.unlock ();
 
     uint256     uNodeIndex;
     bool        bNodeBinary = false;
@@ -3239,16 +3626,6 @@ Json::Value RPCHandler::doLedgerEntry (Json::Value params, Resource::Charge& loa
                 || jvRippleState["accounts"][0u].asString () == jvRippleState["accounts"][1u].asString ()
            )
         {
-
-            WriteLog (lsINFO, RPCHandler)
-                    << boost::str (boost::format ("ledger_entry: ripple_state: accounts: %d currency: %d array: %d size: %d equal: %d")
-                                   % jvRippleState.isMember ("accounts")
-                                   % jvRippleState.isMember ("currency")
-                                   % jvRippleState["accounts"].isArray ()
-                                   % jvRippleState["accounts"].size ()
-                                   % (jvRippleState["accounts"][0u].asString () == jvRippleState["accounts"][1u].asString ())
-                                  );
-
             jvResult["error"]   = "malformedRequest";
         }
         else if (!naA.setAccountID (jvRippleState["accounts"][0u].asString ())
@@ -3309,6 +3686,8 @@ Json::Value RPCHandler::doLedgerEntry (Json::Value params, Resource::Charge& loa
 // }
 Json::Value RPCHandler::doLedgerHeader (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
+    masterLockHolder.unlock ();
+
     Ledger::pointer     lpLedger;
     Json::Value         jvResult    = lookupLedger (params, lpLedger);
 
@@ -3351,6 +3730,9 @@ boost::unordered_set<RippleAddress> RPCHandler::parseAccountIds (const Json::Val
 
 Json::Value RPCHandler::doSubscribe (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
+    // FIXME: This needs to release the master lock immediately
+    // Subscriptions need to be protected by their own lock
+
     InfoSub::pointer ispSub;
     Json::Value jvResult (Json::objectValue);
     uint32      uLedgerIndex = params.isMember ("ledger_index") && params["ledger_index"].isNumeric ()
@@ -3528,33 +3910,35 @@ Json::Value RPCHandler::doSubscribe (Json::Value params, Resource::Charge& loadT
                     || !jvSubRequest["taker_gets"].isObject ())
                 return rpcError (rpcINVALID_PARAMS);
 
-            uint160         uTakerPaysCurrencyID;
-            uint160         uTakerPaysIssuerID;
-            uint160         uTakerGetsCurrencyID;
-            uint160         uTakerGetsIssuerID;
+            // VFALCO TODO Use RippleAsset here
+            RippleCurrency pay_currency;
+            RippleIssuer   pay_issuer;
+            RippleCurrency get_currency;
+            RippleIssuer   get_issuer;
+
             bool            bBoth           = (jvSubRequest.isMember ("both") && jvSubRequest["both"].asBool ())
                                               || (jvSubRequest.isMember ("both_sides") && jvSubRequest["both_sides"].asBool ());  // DEPRECATED
             bool            bSnapshot       = (jvSubRequest.isMember ("snapshot") && jvSubRequest["snapshot"].asBool ())
                                               || (jvSubRequest.isMember ("state_now") && jvSubRequest["state_now"].asBool ());    // DEPRECATED
 
-            Json::Value     jvTakerPays     = jvSubRequest["taker_pays"];
-            Json::Value     jvTakerGets     = jvSubRequest["taker_gets"];
+            Json::Value     taker_pays     = jvSubRequest["taker_pays"];
+            Json::Value     taker_gets     = jvSubRequest["taker_gets"];
 
             // Parse mandatory currency.
-            if (!jvTakerPays.isMember ("currency")
-                    || !STAmount::currencyFromString (uTakerPaysCurrencyID, jvTakerPays["currency"].asString ()))
+            if (!taker_pays.isMember ("currency")
+                    || !STAmount::currencyFromString (pay_currency, taker_pays["currency"].asString ()))
             {
                 WriteLog (lsINFO, RPCHandler) << "Bad taker_pays currency.";
 
                 return rpcError (rpcSRC_CUR_MALFORMED);
             }
             // Parse optional issuer.
-            else if (((jvTakerPays.isMember ("issuer"))
-                      && (!jvTakerPays["issuer"].isString ()
-                          || !STAmount::issuerFromString (uTakerPaysIssuerID, jvTakerPays["issuer"].asString ())))
+            else if (((taker_pays.isMember ("issuer"))
+                      && (!taker_pays["issuer"].isString ()
+                          || !STAmount::issuerFromString (pay_issuer, taker_pays["issuer"].asString ())))
                      // Don't allow illegal issuers.
-                     || (!uTakerPaysCurrencyID != !uTakerPaysIssuerID)
-                     || ACCOUNT_ONE == uTakerPaysIssuerID)
+                     || (!pay_currency != !pay_issuer)
+                     || ACCOUNT_ONE == pay_issuer)
             {
                 WriteLog (lsINFO, RPCHandler) << "Bad taker_pays issuer.";
 
@@ -3562,28 +3946,28 @@ Json::Value RPCHandler::doSubscribe (Json::Value params, Resource::Charge& loadT
             }
 
             // Parse mandatory currency.
-            if (!jvTakerGets.isMember ("currency")
-                    || !STAmount::currencyFromString (uTakerGetsCurrencyID, jvTakerGets["currency"].asString ()))
+            if (!taker_gets.isMember ("currency")
+                    || !STAmount::currencyFromString (get_currency, taker_gets["currency"].asString ()))
             {
                 WriteLog (lsINFO, RPCHandler) << "Bad taker_pays currency.";
 
                 return rpcError (rpcSRC_CUR_MALFORMED);
             }
             // Parse optional issuer.
-            else if (((jvTakerGets.isMember ("issuer"))
-                      && (!jvTakerGets["issuer"].isString ()
-                          || !STAmount::issuerFromString (uTakerGetsIssuerID, jvTakerGets["issuer"].asString ())))
+            else if (((taker_gets.isMember ("issuer"))
+                      && (!taker_gets["issuer"].isString ()
+                          || !STAmount::issuerFromString (get_issuer, taker_gets["issuer"].asString ())))
                      // Don't allow illegal issuers.
-                     || (!uTakerGetsCurrencyID != !uTakerGetsIssuerID)
-                     || ACCOUNT_ONE == uTakerGetsIssuerID)
+                     || (!get_currency != !get_issuer)
+                     || ACCOUNT_ONE == get_issuer)
             {
                 WriteLog (lsINFO, RPCHandler) << "Bad taker_gets issuer.";
 
                 return rpcError (rpcDST_ISR_MALFORMED);
             }
 
-            if (uTakerPaysCurrencyID == uTakerGetsCurrencyID
-                    && uTakerPaysIssuerID == uTakerGetsIssuerID)
+            if (pay_currency == get_currency
+                    && pay_issuer == get_issuer)
             {
                 WriteLog (lsINFO, RPCHandler) << "taker_gets same as taker_pays.";
 
@@ -3601,20 +3985,22 @@ Json::Value RPCHandler::doSubscribe (Json::Value params, Resource::Charge& loadT
                 return rpcError (rpcBAD_ISSUER);
             }
 
-            if (!Ledger::isValidBook (uTakerPaysCurrencyID, uTakerPaysIssuerID, uTakerGetsCurrencyID, uTakerGetsIssuerID))
+            if (!Ledger::isValidBook (pay_currency, pay_issuer, get_currency, get_issuer))
             {
                 WriteLog (lsWARNING, RPCHandler) << "Bad market: " <<
-                                                 uTakerPaysCurrencyID << ":" << uTakerPaysIssuerID << " -> " <<
-                                                 uTakerGetsCurrencyID << ":" << uTakerGetsIssuerID;
+                                                 pay_currency << ":" << pay_issuer << " -> " <<
+                                                 get_currency << ":" << get_issuer;
                 return rpcError (rpcBAD_MARKET);
             }
 
-            mNetOps->subBook (ispSub, uTakerPaysCurrencyID, uTakerGetsCurrencyID, uTakerPaysIssuerID, uTakerGetsIssuerID);
+            mNetOps->subBook (ispSub, pay_currency, get_currency, pay_issuer, get_issuer);
 
-            if (bBoth) mNetOps->subBook (ispSub, uTakerGetsCurrencyID, uTakerPaysCurrencyID, uTakerGetsIssuerID, uTakerPaysIssuerID);
+            if (bBoth) mNetOps->subBook (ispSub, get_currency, pay_currency, get_issuer, pay_issuer);
 
             if (bSnapshot)
             {
+                masterLockHolder.unlock ();
+
                 loadType = Resource::feeMediumBurdenRPC;
                 Ledger::pointer     lpLedger = getApp().getLedgerMaster ().getPublishedLedger ();
                 if (lpLedger)
@@ -3626,17 +4012,17 @@ Json::Value RPCHandler::doSubscribe (Json::Value params, Resource::Charge& loadT
                         Json::Value jvBids (Json::objectValue);
                         Json::Value jvAsks (Json::objectValue);
 
-                        mNetOps->getBookPage (lpLedger, uTakerPaysCurrencyID, uTakerPaysIssuerID, uTakerGetsCurrencyID, uTakerGetsIssuerID, raTakerID.getAccountID (), false, 0, jvMarker, jvBids);
+                        mNetOps->getBookPage (lpLedger, pay_currency, pay_issuer, get_currency, get_issuer, raTakerID.getAccountID (), false, 0, jvMarker, jvBids);
 
                         if (jvBids.isMember ("offers")) jvResult["bids"] = jvBids["offers"];
 
-                        mNetOps->getBookPage (lpLedger, uTakerGetsCurrencyID, uTakerGetsIssuerID, uTakerPaysCurrencyID, uTakerPaysIssuerID, raTakerID.getAccountID (), false, 0, jvMarker, jvAsks);
+                        mNetOps->getBookPage (lpLedger, get_currency, get_issuer, pay_currency, pay_issuer, raTakerID.getAccountID (), false, 0, jvMarker, jvAsks);
 
                         if (jvAsks.isMember ("offers")) jvResult["asks"] = jvAsks["offers"];
                     }
                     else
                     {
-                        mNetOps->getBookPage (lpLedger, uTakerPaysCurrencyID, uTakerPaysIssuerID, uTakerGetsCurrencyID, uTakerGetsIssuerID, raTakerID.getAccountID (), false, 0, jvMarker, jvResult);
+                        mNetOps->getBookPage (lpLedger, pay_currency, pay_issuer, get_currency, get_issuer, raTakerID.getAccountID (), false, 0, jvMarker, jvResult);
                     }
                 }
             }
@@ -3764,31 +4150,31 @@ Json::Value RPCHandler::doUnsubscribe (Json::Value params, Resource::Charge& loa
                     || !jvSubRequest["taker_gets"].isObject ())
                 return rpcError (rpcINVALID_PARAMS);
 
-            uint160         uTakerPaysCurrencyID;
-            uint160         uTakerPaysIssuerID;
-            uint160         uTakerGetsCurrencyID;
-            uint160         uTakerGetsIssuerID;
+            uint160         pay_currency;
+            uint160         pay_issuer;
+            uint160         get_currency;
+            uint160         get_issuer;
             bool            bBoth           = (jvSubRequest.isMember ("both") && jvSubRequest["both"].asBool ())
                                               || (jvSubRequest.isMember ("both_sides") && jvSubRequest["both_sides"].asBool ());  // DEPRECATED
 
-            Json::Value     jvTakerPays     = jvSubRequest["taker_pays"];
-            Json::Value     jvTakerGets     = jvSubRequest["taker_gets"];
+            Json::Value     taker_pays     = jvSubRequest["taker_pays"];
+            Json::Value     taker_gets     = jvSubRequest["taker_gets"];
 
             // Parse mandatory currency.
-            if (!jvTakerPays.isMember ("currency")
-                    || !STAmount::currencyFromString (uTakerPaysCurrencyID, jvTakerPays["currency"].asString ()))
+            if (!taker_pays.isMember ("currency")
+                    || !STAmount::currencyFromString (pay_currency, taker_pays["currency"].asString ()))
             {
                 WriteLog (lsINFO, RPCHandler) << "Bad taker_pays currency.";
 
                 return rpcError (rpcSRC_CUR_MALFORMED);
             }
             // Parse optional issuer.
-            else if (((jvTakerPays.isMember ("issuer"))
-                      && (!jvTakerPays["issuer"].isString ()
-                          || !STAmount::issuerFromString (uTakerPaysIssuerID, jvTakerPays["issuer"].asString ())))
+            else if (((taker_pays.isMember ("issuer"))
+                      && (!taker_pays["issuer"].isString ()
+                          || !STAmount::issuerFromString (pay_issuer, taker_pays["issuer"].asString ())))
                      // Don't allow illegal issuers.
-                     || (!uTakerPaysCurrencyID != !uTakerPaysIssuerID)
-                     || ACCOUNT_ONE == uTakerPaysIssuerID)
+                     || (!pay_currency != !pay_issuer)
+                     || ACCOUNT_ONE == pay_issuer)
             {
                 WriteLog (lsINFO, RPCHandler) << "Bad taker_pays issuer.";
 
@@ -3796,37 +4182,37 @@ Json::Value RPCHandler::doUnsubscribe (Json::Value params, Resource::Charge& loa
             }
 
             // Parse mandatory currency.
-            if (!jvTakerGets.isMember ("currency")
-                    || !STAmount::currencyFromString (uTakerGetsCurrencyID, jvTakerGets["currency"].asString ()))
+            if (!taker_gets.isMember ("currency")
+                    || !STAmount::currencyFromString (get_currency, taker_gets["currency"].asString ()))
             {
                 WriteLog (lsINFO, RPCHandler) << "Bad taker_pays currency.";
 
                 return rpcError (rpcSRC_CUR_MALFORMED);
             }
             // Parse optional issuer.
-            else if (((jvTakerGets.isMember ("issuer"))
-                      && (!jvTakerGets["issuer"].isString ()
-                          || !STAmount::issuerFromString (uTakerGetsIssuerID, jvTakerGets["issuer"].asString ())))
+            else if (((taker_gets.isMember ("issuer"))
+                      && (!taker_gets["issuer"].isString ()
+                          || !STAmount::issuerFromString (get_issuer, taker_gets["issuer"].asString ())))
                      // Don't allow illegal issuers.
-                     || (!uTakerGetsCurrencyID != !uTakerGetsIssuerID)
-                     || ACCOUNT_ONE == uTakerGetsIssuerID)
+                     || (!get_currency != !get_issuer)
+                     || ACCOUNT_ONE == get_issuer)
             {
                 WriteLog (lsINFO, RPCHandler) << "Bad taker_gets issuer.";
 
                 return rpcError (rpcDST_ISR_MALFORMED);
             }
 
-            if (uTakerPaysCurrencyID == uTakerGetsCurrencyID
-                    && uTakerPaysIssuerID == uTakerGetsIssuerID)
+            if (pay_currency == get_currency
+                    && pay_issuer == get_issuer)
             {
                 WriteLog (lsINFO, RPCHandler) << "taker_gets same as taker_pays.";
 
                 return rpcError (rpcBAD_MARKET);
             }
 
-            mNetOps->unsubBook (ispSub->getSeq (), uTakerPaysCurrencyID, uTakerGetsCurrencyID, uTakerPaysIssuerID, uTakerGetsIssuerID);
+            mNetOps->unsubBook (ispSub->getSeq (), pay_currency, get_currency, pay_issuer, get_issuer);
 
-            if (bBoth) mNetOps->unsubBook (ispSub->getSeq (), uTakerGetsCurrencyID, uTakerPaysCurrencyID, uTakerGetsIssuerID, uTakerPaysIssuerID);
+            if (bBoth) mNetOps->unsubBook (ispSub->getSeq (), get_currency, pay_currency, get_issuer, pay_issuer);
         }
     }
 
@@ -3842,26 +4228,17 @@ Json::Value RPCHandler::doRpcCommand (const std::string& strMethod, Json::Value 
     WriteLog (lsTRACE, RPCHandler) << "doRpcCommand:" << strMethod << ":" << jvParams;
 
     if (!jvParams.isArray () || jvParams.size () > 1)
-        return rpcError (rpcINVALID_PARAMS);
+        return logRPCError (rpcError (rpcINVALID_PARAMS));
 
     Json::Value params   = jvParams.size () ? jvParams[0u] : Json::Value (Json::objectValue);
 
     if (!params.isObject ())
-        return rpcError (rpcINVALID_PARAMS);
+        return logRPCError (rpcError (rpcINVALID_PARAMS));
 
     // Provide the JSON-RPC method as the field "command" in the request.
     params["command"]    = strMethod;
 
-    Json::Value jvResult;
-#if RIPPLE_USE_RPC_SERVICE_MANAGER
-    std::pair <bool, Json::Value> result (getApp().
-        getRPCServiceManager().call (strMethod, params));
-    if (result.first)
-        jvResult = result.second;
-    else
-#endif
-        jvResult = doCommand (params, iRole, loadType);
-
+    Json::Value jvResult = doCommand (params, iRole, loadType);
 
     // Always report "status".  On an error report the request as received.
     if (jvResult.isMember ("error"))
@@ -3875,7 +4252,7 @@ Json::Value RPCHandler::doRpcCommand (const std::string& strMethod, Json::Value 
         jvResult["status"]  = "success";
     }
 
-    return jvResult;
+    return logRPCError (jvResult);
 }
 
 Json::Value RPCHandler::doInternal (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
@@ -3939,6 +4316,7 @@ Json::Value RPCHandler::doCommand (const Json::Value& params, int iRole, Resourc
         {   "ledger_cleaner",       &RPCHandler::doLedgerCleaner,       true,   optNetwork  },
         {   "ledger_closed",        &RPCHandler::doLedgerClosed,        false,  optClosed   },
         {   "ledger_current",       &RPCHandler::doLedgerCurrent,       false,  optCurrent  },
+        {   "ledger_data",          &RPCHandler::doLedgerData,          false,  optCurrent  },
         {   "ledger_entry",         &RPCHandler::doLedgerEntry,         false,  optCurrent  },
         {   "ledger_header",        &RPCHandler::doLedgerHeader,        false,  optCurrent  },
         {   "log_level",            &RPCHandler::doLogLevel,            true,   optNone     },
@@ -4087,4 +4465,53 @@ Json::Value RPCInternalHandler::runHandler (const std::string& name, const Json:
     return rpcError (rpcBAD_SYNTAX);
 }
 
-// vim:ts=4
+//------------------------------------------------------------------------------
+
+class JSONRPCTests : public UnitTest
+{
+public:
+    void testAutoFillFees ()
+    {
+        beginTestCase ("autofill_fee");
+
+        RippleAddress rootSeedMaster      = RippleAddress::createSeedGeneric ("masterpassphrase");
+        RippleAddress rootGeneratorMaster = RippleAddress::createGeneratorPublic (rootSeedMaster);
+        RippleAddress rootAddress         = RippleAddress::createAccountPublic (rootGeneratorMaster, 0);
+        uint64 startAmount (100000);
+        Ledger::pointer ledger (boost::make_shared <Ledger> (
+            rootAddress, startAmount));
+
+        {
+            Json::Value req;
+            Json::Value result;
+            Json::Reader ().parse (
+                "{ \"fee_mult_max\" : 1, \"tx_json\" : { } } "
+                , req);
+            autofill_fee (req, ledger, result, true);
+
+            expect (! RPC::contains_error (result));
+        }
+
+        {
+            Json::Value req;
+            Json::Value result;
+            Json::Reader ().parse (
+                "{ \"fee_mult_max\" : 0, \"tx_json\" : { } } "
+                , req);
+            autofill_fee (req, ledger, result, true);
+
+            expect (RPC::contains_error (result));
+        }
+    }
+
+    void runTest ()
+    {
+        testAutoFillFees ();
+    }
+
+    JSONRPCTests () : UnitTest ("ripple", "JSONRPC")
+    {
+    }
+};
+
+static JSONRPCTests jsonRPCTests;

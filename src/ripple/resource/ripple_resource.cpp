@@ -22,10 +22,14 @@
 #include "ripple_resource.h"
 
 #include "../algorithm/api/DecayingSample.h"
-#include "../algorithm/api/DiscreteClock.h"
+#include "../common/seconds_clock.h"
 
-#include "beast/modules/beast_core/system/BeforeBoost.h"
+#include "../beast/modules/beast_core/system/BeforeBoost.h"
+#include <boost/utility/base_from_member.hpp>
 #include <boost/unordered_map.hpp>
+
+#include "../beast/beast/Insight.h"
+#include "../beast/beast/cxx14/memory.h"
 
 #include "impl/Fees.cpp"
 #  include "impl/Kind.h"
@@ -35,7 +39,6 @@
 # include "impl/Import.h"
 #include "impl/Charge.cpp"
 #  include "impl/Logic.h"
-# include "impl/LogicType.h"
 #include "impl/Consumer.cpp"
 #include "impl/LegacyFees.cpp"
 #include "impl/Manager.cpp"

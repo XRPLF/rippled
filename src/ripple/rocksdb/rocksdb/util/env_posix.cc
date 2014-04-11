@@ -1367,7 +1367,7 @@ class PosixEnv : public Env {
     #if (__GLIBC__ * 1000 + __GLIBC_MINOR__) >= 2012
       pthread_setname_np (pthread_self(), "rocksdb:bg");
     #else
-      prctl (PR_SET_NAME, "rocksdb:bg", 0, 0, 0);
+      pthread_setname_np("rocksdb:bg");
     #endif
       reinterpret_cast<ThreadPool*>(arg)->BGThread();
       return nullptr;

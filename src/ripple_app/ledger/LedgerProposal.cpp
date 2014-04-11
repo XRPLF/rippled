@@ -36,8 +36,8 @@ LedgerProposal::LedgerProposal (const RippleAddress& naPub, const RippleAddress&
     mPreviousLedger (prevLgr), mCurrentHash (position), mCloseTime (closeTime), mProposeSeq (0),
     mPublicKey (naPub), mPrivateKey (naPriv)
 {
-    mPeerID     = mPublicKey.getNodeID ();
-    mTime       = boost::posix_time::second_clock::universal_time ();
+    mPeerID      = mPublicKey.getNodeID ();
+    mTime        = boost::posix_time::second_clock::universal_time ();
 }
 
 LedgerProposal::LedgerProposal (uint256 const& prevLgr, uint256 const& position, uint32 closeTime) :
@@ -59,9 +59,30 @@ uint256 LedgerProposal::getSigningHash () const
     return s.getSHA512Half ();
 }
 
+// Compute a unique identifier for this signed proposal
+uint256 LedgerProposal::computeSuppressionID (
+    uint256 const& proposeHash,
+    uint256 const& previousLedger,
+    uint32 proposeSeq,
+    uint32 closeTime,
+    Blob const& pubKey,
+    Blob const& signature)
+{
+
+    Serializer s (512);
+    s.add256 (proposeHash);
+    s.add256 (previousLedger);
+    s.add32 (proposeSeq);
+    s.add32 (closeTime);
+    s.addVL (pubKey);
+    s.addVL (signature);
+
+    return s.getSHA512Half ();
+}
+
 bool LedgerProposal::checkSign (const std::string& signature, uint256 const& signingHash)
 {
-    return mPublicKey.verifyNodePublic (signingHash, signature);
+    return mPublicKey.verifyNodePublic (signingHash, signature, ECDSA::not_strict);
 }
 
 bool LedgerProposal::changePosition (uint256 const& newPosition, uint32 closeTime)
@@ -90,6 +111,9 @@ Blob LedgerProposal::sign (void)
     // XXX If this can fail, find out sooner.
     // if (!mPrivateKey.signNodePrivate(getSigningHash(), ret))
     //  throw std::runtime_error("unable to sign proposal");
+
+    mSuppression = computeSuppressionID (mCurrentHash, mPreviousLedger, mProposeSeq,
+        mCloseTime, mPublicKey.getNodePublic (), ret);
 
     return ret;
 }

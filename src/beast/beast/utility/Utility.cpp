@@ -24,6 +24,7 @@
 // For Journal and Debug
 #include "../../modules/beast_core/beast_core.h"
 
+#include "impl/Assert.cpp"
 #include "impl/Debug.cpp"
 #include "impl/Journal.cpp"
 #include "impl/LeakChecked.cpp"

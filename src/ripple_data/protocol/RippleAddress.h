@@ -20,6 +20,8 @@
 #ifndef RIPPLE_RIPPLEADDRESS_H
 #define RIPPLE_RIPPLEADDRESS_H
 
+#include "../ripple/sslutil/api/ECDSACanonical.h"
+
 //
 // Used to hold addresses and parse and produce human formats.
 //
@@ -65,8 +67,8 @@ public:
 
     bool setNodePublic (const std::string& strPublic);
     void setNodePublic (Blob const& vPublic);
-    bool verifyNodePublic (uint256 const& hash, Blob const& vchSig) const;
-    bool verifyNodePublic (uint256 const& hash, const std::string& strSig) const;
+    bool verifyNodePublic (uint256 const& hash, Blob const& vchSig, ECDSA mustBeFullyCanonical) const;
+    bool verifyNodePublic (uint256 const& hash, const std::string& strSig, ECDSA mustBeFullyCanonical) const;
 
     static RippleAddress createNodePublic (const RippleAddress& naSeed);
     static RippleAddress createNodePublic (Blob const& vPublic);
@@ -127,7 +129,7 @@ public:
     void setAccountPublic (Blob const& vPublic);
     void setAccountPublic (const RippleAddress& generator, int seq);
 
-    bool accountPublicVerify (uint256 const& uHash, Blob const& vucSig) const;
+    bool accountPublicVerify (uint256 const& uHash, Blob const& vucSig, ECDSA mustBeFullyCanonical) const;
 
     static RippleAddress createAccountPublic (Blob const& vPublic)
     {

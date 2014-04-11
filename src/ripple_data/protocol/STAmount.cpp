@@ -74,6 +74,10 @@ bool STAmount::currencyFromString (uint160& uDstCurrency, const std::string& sCu
 
         s.get160 (uDstCurrency, 0);
     }
+    else if (40 == sCurrency.size ())
+    {
+        bSuccess    = uDstCurrency.SetHex (sCurrency);
+    }
     else
     {
         bSuccess    = false;
@@ -82,7 +86,6 @@ bool STAmount::currencyFromString (uint160& uDstCurrency, const std::string& sCu
     return bSuccess;
 }
 
-// XXX Broken for custom currencies?
 std::string STAmount::getHumanCurrency () const
 {
     return createHumanCurrency (mCurrency);
@@ -218,6 +221,7 @@ STAmount::STAmount (SField::ref n, const Json::Value& v)
 std::string STAmount::createHumanCurrency (const uint160& uCurrency)
 {
     std::string sCurrency;
+    static uint160 sFiatBits("FFFFFFFFFFFFFFFFFFFFFFFF0000000000000000");
 
     if (uCurrency.isZero ())
     {
@@ -231,7 +235,7 @@ std::string STAmount::createHumanCurrency (const uint160& uCurrency)
     {
         return uCurrency.ToString ();
     }
-    else
+    else if ((uCurrency & sFiatBits).isZero ())
     {
         Serializer  s (160 / 8);
 
@@ -257,6 +261,8 @@ std::string STAmount::createHumanCurrency (const uint160& uCurrency)
             sCurrency   = uCurrency.ToString ();
         }
     }
+    else
+       sCurrency = uCurrency.GetHex ();
 
     return sCurrency;
 }
@@ -1214,7 +1220,7 @@ STAmount STAmount::getPay (const STAmount& offerOut, const STAmount& offerIn, co
 
 STAmount STAmount::deserialize (SerializerIterator& it)
 {
-    UPTR_T<STAmount> s (dynamic_cast<STAmount*> (construct (it, sfGeneric)));
+    std::unique_ptr<STAmount> s (dynamic_cast<STAmount*> (construct (it, sfGeneric)));
     STAmount ret (*s);
     return ret;
 }
@@ -1567,6 +1573,17 @@ public:
         unexpected (STAmount (31).getText () != "31", "STAmount fail");
 
         unexpected (STAmount (310).getText () != "310", "STAmount fail");
+
+        unexpected (STAmount::createHumanCurrency (uint160 ()) != "XRP", "cHC(XRP)");
+
+        uint160 c;
+        unexpected (!STAmount::currencyFromString (c, "USD"), "create USD currency");
+        unexpected (STAmount::createHumanCurrency (c) != "USD", "check USD currency");
+
+        const std::string cur = "015841551A748AD2C1F76FF6ECB0CCCD00000000";
+        unexpected (!STAmount::currencyFromString (c, cur), "create custom currency");
+        unexpected (STAmount::createHumanCurrency (c) != cur, "check custom currency");
+        unexpected (c != uint160 (cur), "check custom currency");
     }
 
     //--------------------------------------------------------------------------

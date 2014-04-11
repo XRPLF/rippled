@@ -24,13 +24,14 @@
 #include <sys/resource.h>
 #endif
 
+
 //------------------------------------------------------------------------------
 
 // VFALCO TODO Reduce these boost dependencies. Make more interfaces
 //             purely abstract and move implementation into .cpp files.
 //
 
-#include "beast/modules/beast_core/system/BeforeBoost.h"
+#include "../beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/array.hpp>
 #include <boost/asio/read_until.hpp>
@@ -44,6 +45,7 @@
 #include <boost/tuple/tuple_comparison.hpp>
 #include <boost/unordered_set.hpp>
 #include <boost/weak_ptr.hpp>
+#include <boost/thread/shared_mutex.hpp>
 
 //------------------------------------------------------------------------------
 
@@ -52,32 +54,37 @@
 #include "../ripple_data/ripple_data.h"
 #include "../ripple_net/ripple_net.h"
 
-//#include "beast/modules/beast_sqdb/beast_sqdb.h"
-#include "beast/modules/beast_sqlite/beast_sqlite.h"
+#include "../ripple/common/ResolverAsio.h"
 
-// VFALCO NOTE If we forward declare PackedMessage and write out shared_ptr
-//             instead of using the in-class typedef, we can remove the entire
-//             ripple.pb.h from the main headers.
-//
-#include "peers/PackedMessage.h"
-
-namespace ripple {
+//#include "../beast/modules/beast_sqdb/beast_sqdb.h"
+#include "../beast/modules/beast_sqlite/beast_sqlite.h"
 
 // Order matters here. If you get compile errors,
 // reorder the include lines until the order is correct.
 
+#include "../../ripple/common/KeyCache.h"
+#include "../../ripple/common/TaggedCache.h"
+
+#include "../../ripple_overlay/ripple_overlay.h"
+
+namespace ripple {
 #include "data/Database.h"
 #include "data/DatabaseCon.h"
 #include "data/SqliteDatabase.h"
 #include "data/DBInit.h"
-
 #include "shamap/SHAMapItem.h"
+}
+
+// VFALCO NOTE Have to step outside the ripple namespace to
+//             get the specialization for std::hash, et. al.
 #include "shamap/SHAMapNode.h"
 #include "shamap/SHAMapTreeNode.h"
 #include "shamap/SHAMapMissingNode.h"
 #include "shamap/SHAMapSyncFilter.h"
 #include "shamap/SHAMapAddNode.h"
 #include "shamap/SHAMap.h"
+
+namespace ripple {
 #include "misc/SerializedTransaction.h"
 #include "misc/SerializedLedger.h"
 #include "tx/TransactionMeta.h"
@@ -92,8 +99,6 @@ namespace ripple {
 #include "misc/IFeatures.h"
 #include "misc/IFeeVote.h"
 #include "misc/IHashRouter.h"
-#include "peers/Peer.h"
-#include "peers/Peers.h"
 #include "peers/ClusterNodeStatus.h"
 #include "peers/UniqueNodeList.h"
 #include "misc/Validations.h"
@@ -105,8 +110,11 @@ namespace ripple {
 #include "ledger/AcceptedLedgerTx.h"
 #include "ledger/AcceptedLedger.h"
 #include "ledger/LedgerEntrySet.h"
+#include "ledger/DirectoryEntryIterator.h"
+#include "ledger/OrderBookIterator.h"
 #include "tx/TransactionEngine.h"
 #include "misc/CanonicalTXSet.h"
+#include "ledger/LedgerHolder.h"
 #include "ledger/LedgerHistory.h"
 #include "ledger/LedgerCleaner.h"
 #include "ledger/LedgerMaster.h"
@@ -114,36 +122,29 @@ namespace ripple {
 #include "misc/NetworkOPs.h"
 #include "tx/TransactionMaster.h"
 #include "main/LocalCredentials.h"
+} // escape the namespace
 #include "main/Application.h"
+namespace ripple {
 #include "ledger/OrderBookDB.h"
-#include "tx/Transactor.h"
-#include "tx/ChangeTransactor.h"
 #include "tx/TransactionAcquire.h"
 #include "consensus/DisputedTx.h"
 #include "consensus/LedgerConsensus.h"
 #include "ledger/LedgerTiming.h"
 #include "misc/Offer.h"
-#include "tx/OfferCancelTransactor.h"
-#include "tx/OfferCreateTransactor.h"
 #include "paths/RippleLineCache.h"
 #include "paths/PathRequest.h"
+#include "paths/PathRequests.h"
 #include "main/ParameterTable.h"
  #include "paths/RippleLineCache.h"
  #include "paths/PathState.h"
  #include "paths/RippleCalc.h"
 #include  "paths/Pathfinder.h"
-#include "tx/PaymentTransactor.h"
-#include "tx/RegularKeySetTransactor.h"
 #include "paths/RippleState.h"
-#include "tx/AccountSetTransactor.h"
-#include "tx/TrustSetTransactor.h"
-#include "tx/WalletAddTransactor.h"
-
+// VFALCO NOTE These contracts files are bunk
 #include "contracts/ScriptData.h"
 #include "contracts/Contract.h"
 #include "contracts/Interpreter.h"
 #include "contracts/Operation.h"
-
 }
 
 #endif

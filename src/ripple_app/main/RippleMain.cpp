@@ -154,7 +154,7 @@ public:
         //             code demands the Application object exists.
         //
         //        TODO To find out who, just comment the next line out
-        m_app = Application::New ();
+        m_app = make_Application();
 
         setAssertOnFailure (false);
     }
@@ -195,7 +195,7 @@ private:
 
 private:
     bool const m_shouldLog;
-    ScopedPointer <Application> m_app;
+    std::unique_ptr <Application> m_app;
 };
 
 static int runUnitTests (String const& match, String const& format)
@@ -272,7 +272,6 @@ int RippleMain::run (int argc, char const* const* argv)
     ("rpc_ip", po::value <std::string> (), "Specify the IP address for RPC command. Format: <ip-address>[':'<port-number>]")
     ("rpc_port", po::value <int> (), "Specify the port number for RPC command.")
     ("standalone,a", "Run with no peers.")
-    ("testnet,t", "Run in test net mode.")
     ("unittest,u", po::value <std::string> ()->implicit_value (""), "Perform unit tests.")
     ("unittest-format", po::value <std::string> ()->implicit_value ("text"), "Format unit test output. Choices are 'text', 'junit'")
     ("parameters", po::value< vector<string> > (), "Specify comma separated parameters.")
@@ -291,16 +290,6 @@ int RippleMain::run (int argc, char const* const* argv)
     // Interpret positional arguments as --parameters.
     po::positional_options_description p;
     p.add ("parameters", -1);
-
-    // NOTE: These must be added before the
-    //       Application object is created.
-    //
-    NodeStore::Database::addAvailableBackends ();
-
-    // VFALCO NOTE SqliteFactory is here because it has
-    //             dependencies like SqliteDatabase and DatabaseCon
-    //
-    NodeStore::Database::addFactory (SqliteFactory::getInstance ());
 
     if (! RandomNumbers::getInstance ().initialize ())
     {
@@ -391,7 +380,6 @@ int RippleMain::run (int argc, char const* const* argv)
     {
         getConfig ().setup (
             vm.count ("conf") ? vm["conf"].as<std::string> () : "", // Config file.
-            !!vm.count ("testnet"),                                 // Testnet flag.
             !!vm.count ("quiet"));                                  // Quiet flag.
 
         if (vm.count ("standalone"))
@@ -455,7 +443,7 @@ int RippleMain::run (int argc, char const* const* argv)
         if (!vm.count ("parameters"))
         {
             // No arguments. Run server.
-            ScopedPointer <Application> app (Application::New ());
+            std::unique_ptr <Application> app (make_Application ());
             setupServer ();            
             startServer ();
         }

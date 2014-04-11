@@ -20,6 +20,10 @@
 #ifndef RIPPLE_PROOFOFWORK_H
 #define RIPPLE_PROOFOFWORK_H
 
+#include "PowResult.h"
+
+namespace ripple {
+
 class ProofOfWork : LeakChecked <ProofOfWork>
 {
 public:
@@ -73,6 +77,7 @@ private:
     static const int maxIterations;
 };
 
+}
+
 #endif
 
-// vim:ts=4

@@ -20,15 +20,16 @@
 #ifndef BEAST_INSIGHT_HOOK_H_INCLUDED
 #define BEAST_INSIGHT_HOOK_H_INCLUDED
 
-#include "HookImpl.h"
+#include <memory>
 
-#include "../stl/shared_ptr.h"
+#include "Base.h"
+#include "HookImpl.h"
 
 namespace beast {
 namespace insight {
     
 /** A reference to a handler for performing polled collection. */
-class Hook
+class Hook : public Base
 {
 public:
     /** Create a null hook.
@@ -42,13 +43,17 @@ public:
         factory function in the Collector interface.
         @see Collector.
     */
-    explicit Hook (shared_ptr <HookImpl> const& impl)
+    explicit Hook (std::shared_ptr <HookImpl> const& impl)
         : m_impl (impl)
+        { }
+
+    std::shared_ptr <HookImpl> const& impl () const
     {
+        return m_impl;
     }
 
 private:
-    shared_ptr <HookImpl> m_impl;
+    std::shared_ptr <HookImpl> m_impl;
 };
 
 }

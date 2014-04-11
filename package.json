@@ -22,7 +22,7 @@
   },
 
   "scripts": {
-    "test": "mocha test/*-test.{js,coffee}"
+    "test": "mocha test/websocket-test.js test/server-test.js test/*-test.{js,coffee}"
   },
 
   "repository": {

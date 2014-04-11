@@ -139,7 +139,8 @@ bool operator!= (FixedArray <T, N> const& lhs, FixedArray <T, N> const& rhs)
 template <class T, std::size_t N>
 bool operator< (FixedArray <T, N> const& lhs, FixedArray <T, N> const& rhs)
 {
-    return std::lexicographical_compare (lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
+    return std::lexicographical_compare (
+        lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
 }
 
 template <class T, std::size_t N>

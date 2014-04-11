@@ -23,7 +23,7 @@
 
 //#include <cmath>
 
-#include "beast/modules/beast_core/system/BeforeBoost.h"
+#include "../beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/trim.hpp>
@@ -44,6 +44,7 @@
 #include <openssl/err.h>
 
 #include "../ripple/sslutil/ripple_sslutil.h"
+#include "../ripple_rpc/api/ErrorCodes.h"
 
 // VFALCO TODO fix these warnings!
 #if BEAST_MSVC
@@ -54,6 +55,8 @@
 #ifdef min
 #undef min
 #endif
+
+#include "protocol/STParsedJSON.cpp"
 
 namespace ripple
 {
@@ -69,6 +72,7 @@ namespace ripple
 
 #include "protocol/BuildInfo.cpp"
 #include "protocol/FieldNames.cpp"
+#include "protocol/HashPrefix.cpp"
 #include "protocol/LedgerFormats.cpp"
 #include "protocol/RippleAddress.cpp"
 #include "protocol/SerializedTypes.cpp"

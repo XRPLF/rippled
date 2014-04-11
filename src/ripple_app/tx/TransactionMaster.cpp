@@ -17,18 +17,10 @@
 */
 //==============================================================================
 
-#ifndef CACHED_TRANSACTION_NUM
-#define CACHED_TRANSACTION_NUM 65536
-#endif
-
-#ifndef CACHED_TRANSACTION_AGE
-#define CACHED_TRANSACTION_AGE 1800
-#endif
-
 TransactionMaster::TransactionMaster ()
-    : mCache ("TransactionCache", CACHED_TRANSACTION_NUM, CACHED_TRANSACTION_AGE)
+    : mCache ("TransactionCache", 65536, 1800, get_seconds_clock (),
+        LogPartition::getJournal <TaggedCacheLog> ())
 {
-    ;
 }
 
 bool TransactionMaster::inLedger (uint256 const& hash, uint32 ledger)

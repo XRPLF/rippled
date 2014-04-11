@@ -31,11 +31,22 @@ public:
     static char const* getCountedObjectName () { return "InboundLedger"; }
 
     typedef boost::shared_ptr <InboundLedger> pointer;
+    typedef std::pair < boost::weak_ptr<Peer>, boost::shared_ptr<protocol::TMLedgerData> > PeerDataPairType;
+
+    // These are the reasons we might acquire a ledger
+    enum fcReason
+    {
+        fcHISTORY,      // Acquiring past ledger
+        fcGENERIC,      // Generic other reasons
+        fcVALIDATION,   // Validations suggest this ledger is important
+        fcCURRENT,      // This might be the current ledger
+        fcCONSENSUS,    // We believe the consensus round requires this ledger
+    };
 
 public:
-    InboundLedger (uint256 const& hash, uint32 seq);
+    InboundLedger (uint256 const& hash, uint32 seq, fcReason reason, clock_type& clock);
 
-    virtual ~InboundLedger ();
+    ~InboundLedger ();
 
     bool isBase () const
     {
@@ -67,31 +78,26 @@ public:
     }
 
     // VFALCO TODO Make this the Listener / Observer pattern
-    bool addOnComplete (FUNCTION_TYPE<void (InboundLedger::pointer)>);
+    bool addOnComplete (std::function<void (InboundLedger::pointer)>);
 
-    bool takeBase (const std::string& data);
-    bool takeTxNode (const std::list<SHAMapNode>& IDs, const std::list<Blob >& data,
-                     SHAMapAddNode&);
-    bool takeTxRootNode (Blob const& data, SHAMapAddNode&);
-    bool takeAsNode (const std::list<SHAMapNode>& IDs, const std::list<Blob >& data,
-                     SHAMapAddNode&);
-    bool takeAsRootNode (Blob const& data, SHAMapAddNode&);
     void trigger (Peer::ref);
     bool tryLocal ();
     void addPeers ();
-    void awaitData ();
-    void noAwaitData ();
     bool checkLocal ();
-    void init(ScopedLockType& collectionLock, bool couldBeNew);
+    void init (ScopedLockType& collectionLock);
+
+    bool gotData (boost::weak_ptr<Peer>, boost::shared_ptr<protocol::TMLedgerData>);
 
     typedef std::pair <protocol::TMGetObjectByHash::ObjectType, uint256> neededHash_t;
 
     std::vector<neededHash_t> getNeededHashes ();
 
-    static void filterNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& nodeHashes,
+    // VFALCO TODO Replace uint256 with something semanticallyh meaningful
+    void filterNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& nodeHashes,
                              std::set<SHAMapNode>& recentNodes, int max, bool aggressive);
 
     Json::Value getJson (int);
+    void runData ();
 
 private:
     void done ();
@@ -105,6 +111,21 @@ private:
 
     boost::weak_ptr <PeerSet> pmDowncast ();
 
+    int processData (boost::shared_ptr<Peer> peer, protocol::TMLedgerData& data);
+
+    bool takeBase (const std::string& data);
+    bool takeTxNode (const std::list<SHAMapNode>& IDs, const std::list<Blob >& data,
+                     SHAMapAddNode&);
+    bool takeTxRootNode (Blob const& data, SHAMapAddNode&);
+
+    // VFALCO TODO Rename to receiveAccountStateNode
+    //             Don't use acronyms, but if we are going to use them at least
+    //             capitalize them correctly.
+    //
+    bool takeAsNode (const std::list<SHAMapNode>& IDs, const std::list<Blob >& data,
+                     SHAMapAddNode&);
+    bool takeAsRootNode (Blob const& data, SHAMapAddNode&);
+
 private:
     Ledger::pointer    mLedger;
     bool               mHaveBase;
@@ -113,15 +134,19 @@ private:
     bool               mAborted;
     bool               mSignaled;
     bool               mByHash;
-    beast::Atomic<int> mWaitCount;
     uint32             mSeq;
+    fcReason           mReason;
 
     std::set <SHAMapNode> mRecentTXNodes;
     std::set <SHAMapNode> mRecentASNodes;
 
-    std::vector <FUNCTION_TYPE <void (InboundLedger::pointer)> > mOnComplete;
+
+    // Data we have received from peers
+    PeerSet::LockType mReceivedDataLock;
+    std::vector <PeerDataPairType> mReceivedData;
+    bool mReceiveDispatched;
+
+    std::vector <std::function <void (InboundLedger::pointer)> > mOnComplete;
 };
 
 #endif
-
-// vim:ts=4

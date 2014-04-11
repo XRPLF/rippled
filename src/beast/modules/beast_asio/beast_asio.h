@@ -43,44 +43,18 @@
 // This module requires boost and possibly OpenSSL
 #include "system/BoostIncludes.h"
 
-// Checking overrides replaces unimplemented stubs with pure virtuals
-#ifndef BEAST_COMPILER_CHECKS_SOCKET_OVERRIDES
-# define BEAST_COMPILER_CHECKS_SOCKET_OVERRIDES 0
-#endif
-#if BEAST_COMPILER_CHECKS_SOCKET_OVERRIDES
-# define BEAST_SOCKET_VIRTUAL = 0
-#else
-# define BEAST_SOCKET_VIRTUAL
-#endif
-
-#include "../../beast/Asio.h"
-#include "../../beast/MPL.h"
 #include "../../beast/Utility.h"
 #include "../../beast/HTTP.h"
 
-#include "async/AbstractHandler.h"
-#include "async/WrapHandler.h"
-
-namespace beast {
+#include "../../beast/asio/IPAddressConversion.h"
 
 // Order matters
-#  include "async/SharedHandler.h"
-# include "async/SharedHandlerType.h"
-# include "async/SharedHandlerPtr.h"
-# include "async/ComposedAsyncOperation.h"
-#include "async/SharedHandlerAllocator.h"
 #include "async/AsyncObject.h"
 
-# include "basics/BuffersType.h"
 #include "basics/FixedInputBuffer.h"
 #include "basics/PeerRole.h"
 #include "basics/SSLContext.h"
 #include "basics/SharedArg.h"
-
-#   include "sockets/SocketBase.h"
-#  include "sockets/Socket.h"
-# include "sockets/SocketWrapper.h"
-#include "sockets/SocketWrapperStrand.h"
 
 #   include "http/HTTPVersion.h"
 #   include "http/HTTPField.h"
@@ -89,15 +63,11 @@ namespace beast {
 # include "http/HTTPRequest.h"
 # include "http/HTTPResponse.h"
 
-}
-
 # include "http/HTTPParser.h"
 #include "http/HTTPRequestParser.h"
 #include "http/HTTPResponseParser.h"
 
 #include "http/HTTPClientType.h"
-
-namespace beast {
 
 #  include "protocol/InputParser.h"
 # include "protocol/HandshakeDetectLogic.h"
@@ -119,8 +89,6 @@ namespace beast {
 #include "tests/TestPeerType.h"
 #include "tests/TestPeerDetailsTcp.h"
 #include "tests/PeerTest.h"
-
-}
 
 #endif
 

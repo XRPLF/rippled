@@ -45,12 +45,12 @@ public:
     virtual ~Source () { }
 
     /** The name of the source, used in diagnostic output. */
-    virtual String name () = 0;
+    virtual std::string to_string () const = 0;
 
     /** An identifier that uniquely describes the source.
         This is used for identification in the database.
     */
-    virtual String uniqueID () = 0;
+    virtual String uniqueID () const = 0;
 
     /** A string that is used to recreate the source from the database entry. */
     virtual String createParam () = 0;
@@ -76,6 +76,8 @@ public:
     virtual void fetch (Results& results, Journal journal) = 0;
     /** @} */
 };
+
+std::ostream& operator<< (std::ostream& os, Source const& v);
 
 }
 }

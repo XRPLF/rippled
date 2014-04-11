@@ -19,5 +19,12 @@
 
 #include "BeastConfig.h"
 
+#include "../Config.h"
+#include "../../modules/beast_core/beast_core.h" // for UnitTest
+
+#include "impl/abstract_clock.cpp"
+#include "impl/chrono_io.cpp"
+#include "impl/basic_seconds_clock.cpp"
+
 #include "impl/CPUMeter.cpp"
 #include "impl/RelativeTime.cpp"

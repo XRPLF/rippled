@@ -64,7 +64,7 @@ private:
 
     Json::Value transactionSign (Json::Value jvRequest, bool bSubmit, bool bFailHard, Application::ScopedLockType& mlh);
 
-    Json::Value lookupLedger (Json::Value jvRequest, Ledger::pointer& lpLedger);
+    Json::Value lookupLedger (Json::Value const& jvRequest, Ledger::pointer& lpLedger);
 
     Json::Value getMasterGenerator (
         Ledger::ref lrLedger,
@@ -114,6 +114,7 @@ private:
     Json::Value doLedgerCleaner         (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& mlh);
     Json::Value doLedgerClosed          (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& mlh);
     Json::Value doLedgerCurrent         (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& mlh);
+    Json::Value doLedgerData            (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& mlh);
     Json::Value doLedgerEntry           (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& mlh);
     Json::Value doLedgerHeader          (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& mlh);
     Json::Value doLogLevel              (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& mlh);

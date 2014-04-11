@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <memory>
+
 namespace ripple {
 namespace Validators {
 
@@ -27,7 +29,7 @@ class SourceURLImp
 public:
     explicit SourceURLImp (URL const& url)
         : m_url (url)
-        , m_client (HTTPClientBase::New ())
+        , m_client (beast::asio::HTTPClientBase::New ())
     {
     }
 
@@ -35,12 +37,15 @@ public:
     {
     }
 
-    String name ()
+    std::string to_string () const
     {
-        return "URL: '" + m_url.toString() + "'";
+        std::stringstream ss;
+        ss <<
+            "URL: '" << m_url.to_string() << "'";
+        return ss.str();
     }
 
-    String uniqueID ()
+    String uniqueID () const
     {
         return "URL," + m_url.toString();
     }
@@ -57,7 +62,7 @@ public:
 
     void fetch (Results& results, Journal journal)
     {
-        HTTPClientBase::result_type httpResult (m_client->get (m_url));
+        auto httpResult (m_client->get (m_url));
 
         if (httpResult.first == 0)
         {
@@ -75,7 +80,7 @@ public:
 
 private:
     URL m_url;
-    ScopedPointer <HTTPClientBase> m_client;
+    std::unique_ptr <beast::asio::HTTPClientBase> m_client;
 };
 
 //------------------------------------------------------------------------------

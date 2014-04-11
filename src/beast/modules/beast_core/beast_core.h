@@ -61,7 +61,6 @@
 #include "../../beast/Threads.h"
 #include "../../beast/Utility.h"
 #include "../../beast/Chrono.h"
-#include "../../beast/STL.h"
 
 #include "system/StandardIncludes.h"
 
@@ -77,10 +76,6 @@ class FileOutputStream;
 
 #include "diagnostic/Throw.h"
 #include "system/Functional.h"
-#include "memory/AtomicCounter.h"
-#include "memory/AtomicFlag.h"
-#include "memory/AtomicPointer.h"
-#include "memory/AtomicState.h"
 #include "threads/SpinDelay.h"
 
 #include "time/AtExitHook.h"
@@ -151,11 +146,8 @@ class FileOutputStream;
 #include "diagnostic/FatalError.h"
 #include "text/LexicalCast.h"
 #include "maths/Math.h"
-#include "maths/uint24.h"
 #include "logging/Logger.h"
 #include "diagnostic/FPUFlags.h"
-#include "memory/SharedFunction.h"
-#include "containers/AbstractFifo.h"
 #include "text/Identifier.h"
 #include "containers/Variant.h"
 #include "containers/LinkedListPointer.h"
@@ -163,13 +155,10 @@ class FileOutputStream;
 #include "containers/DynamicObject.h"
 #include "maths/BigInteger.h"
 #include "maths/Random.h"
-#include "containers/LockFreeQueue.h"
 #include "containers/OwnedArray.h"
 #include "text/StringPairArray.h"
 #include "containers/PropertySet.h"
-#include "containers/SharedObjectArray.h"
 #include "containers/ScopedValueSetter.h"
-#include "containers/SortedSet.h"
 #include "maths/Range.h"
 #include "containers/SparseSet.h"
 #include "files/DirectoryIterator.h"
@@ -186,12 +175,8 @@ class FileOutputStream;
 #include "json/JSON.h"
 #include "logging/FileLogger.h"
 #include "logging/Logger.h"
-#include "maths/Expression.h"
-#include "maths/Interval.h"
 #include "memory/OptionalScopedPointer.h"
 #include "memory/SharedSingleton.h"
-#include "memory/WeakReference.h"
-#include "memory/RecycledObjectPool.h"
 #include "misc/Main.h"
 #include "misc/Uuid.h"
 #include "misc/WindowsRegistry.h"
@@ -208,7 +193,6 @@ class FileOutputStream;
 #include "text/LocalisedStrings.h"
 #include "diagnostic/SemanticVersion.h"
 #include "text/StringPool.h"
-#include "text/TextDiff.h"
 #include "threads/ChildProcess.h"
 #include "threads/DynamicLibrary.h"
 #include "threads/HighResolutionTimer.h"
@@ -228,7 +212,6 @@ class FileOutputStream;
 
 #include "thread/DeadlineTimer.h"
 
-#include "thread/Semaphore.h"
 #include "thread/Workers.h"
 
 }

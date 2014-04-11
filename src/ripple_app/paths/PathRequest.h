@@ -24,16 +24,18 @@
 // The request issuer must maintain a strong pointer
 
 class RippleLineCache;
+class PathRequests;
 
 // Return values from parseJson <0 = invalid, >0 = valid
 #define PFR_PJ_INVALID              -1
 #define PFR_PJ_NOCHANGE             0
 #define PFR_PJ_CHANGE               1
 
-class PathRequest : public boost::enable_shared_from_this<PathRequest>, public CountedObject <PathRequest>
+class PathRequest :
+    public boost::enable_shared_from_this <PathRequest>,
+    public CountedObject <PathRequest>
 {
 public:
-
     static char const* getCountedObjectName () { return "PathRequest"; }
 
     typedef boost::weak_ptr<PathRequest>    wptr;
@@ -44,31 +46,36 @@ public:
 
 public:
     // VFALCO TODO Break the cyclic dependency on InfoSub
-    explicit PathRequest (boost::shared_ptr <InfoSub> const& subscriber);
+    PathRequest (boost::shared_ptr <InfoSub> const& subscriber,
+        int id, PathRequests&, Journal journal);
+    
     ~PathRequest ();
 
-    bool        isValid (const boost::shared_ptr<Ledger>&);
+    bool        isValid (RippleLineCache::ref crCache);
     bool        isValid ();
     bool        isNew ();
+    bool        needsUpdate (bool newOnly, LedgerIndex index);
     Json::Value getStatus ();
 
-    Json::Value doCreate (const boost::shared_ptr<Ledger>&, const Json::Value&);
+    Json::Value doCreate (const boost::shared_ptr<Ledger>&, const RippleLineCache::pointer&,
+        const Json::Value&, bool&);
     Json::Value doClose (const Json::Value&);
     Json::Value doStatus (const Json::Value&);
-
-    bool        doUpdate (const boost::shared_ptr<RippleLineCache>&, bool fast); // update jvStatus
-
-    static void updateAll (const boost::shared_ptr<Ledger>& ledger, bool newOnly, bool hasNew, CancelCallback shouldCancel);
+    Json::Value doUpdate (const boost::shared_ptr<RippleLineCache>&, bool fast); // update jvStatus
+    InfoSub::pointer getSubscriber ();
 
 private:
     void setValid ();
     void resetLevel (int level);
     int parseJson (const Json::Value&, bool complete);
-    static RippleLineCache::pointer getLineCache (Ledger::pointer& ledger);
+
+    Journal m_journal;
 
     typedef RippleRecursiveMutex LockType;
     typedef LockType::ScopedLockType ScopedLockType;
     LockType mLock;
+
+    PathRequests&                   mOwner;
 
     boost::weak_ptr<InfoSub>        wpSubscriber;               // Who this request came from
     Json::Value                     jvId;
@@ -79,29 +86,22 @@ private:
     RippleAddress                     raDstAccount;
     STAmount                          saDstAmount;
     std::set<currIssuer_t>            sciSourceCurrencies;
-    std::vector<Json::Value>          vjvBridges;
+    // std::vector<Json::Value>          vjvBridges;
     std::map<currIssuer_t, STPathSet> mContext;
 
     bool                            bValid;
-    bool                            bNew;
+
+    std::atomic<LedgerIndex>        iLastIndex;
 
     int                             iLastLevel;
     bool                            bLastSuccess;
 
     int                             iIdentifier;
-    static Atomic<int>              siLastIdentifier;
 
-    // Track all requests
-    static std::set<wptr>           sRequests;
+    boost::posix_time::ptime        ptCreated;
+    boost::posix_time::ptime        ptQuickReply;
+    boost::posix_time::ptime        ptFullReply;
 
-    // Use a RippleLineCache
-    static RippleLineCache::pointer sLineCache;
-
-    typedef RippleRecursiveMutex StaticLockType;
-    typedef LockType::ScopedLockType StaticScopedLockType;
-    static StaticLockType sLock;
 };
 
 #endif
-
-// vim:ts=4

@@ -25,23 +25,21 @@
 #include <map>
 #include <set>
 
-#include "beast/modules/beast_core/system/BeforeBoost.h"
+#include "../beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
 
 #include "nodestore/NodeStore.cpp"
-
+#include "../beast/beast/http/ParsedURL.h"
 #include "../ripple_net/ripple_net.h" // for HTTPClient
 
-namespace ripple
-{
-
+namespace ripple {
 #include "functional/Config.cpp"
 # include "functional/LoadFeeTrackImp.h" // private
 #include "functional/LoadFeeTrackImp.cpp"
-#include "functional/Job.cpp"
-#include "functional/JobQueue.cpp"
 #include "functional/LoadEvent.cpp"
 #include "functional/LoadMonitor.cpp"
-
 }
+
+#include "functional/Job.cpp"
+#include "functional/JobQueue.cpp"

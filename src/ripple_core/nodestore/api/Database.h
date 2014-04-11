@@ -20,8 +20,8 @@
 #ifndef RIPPLE_NODESTORE_DATABASE_H_INCLUDED
 #define RIPPLE_NODESTORE_DATABASE_H_INCLUDED
 
-namespace NodeStore
-{
+namespace ripple {
+namespace NodeStore {
 
 /** Persistency layer for NodeObject
 
@@ -39,53 +39,17 @@ namespace NodeStore
 class Database
 {
 public:
-    /** Construct a node store database.
-
-        The parameters are key value pairs passed to the backend. The
-        'type' key must exist, it defines the choice of backend. Most
-        backends also require a 'path' field.
-        
-        Some choices for 'type' are:
-            HyperLevelDB, LevelDBFactory, SQLite, KeyvaDB, MDB
-
-        If the fastBackendParameter is omitted or empty, no ephemeral database
-        is used. If the scheduler parameter is omited or unspecified, a
-        synchronous scheduler is used which performs all tasks immediately on
-        the caller's thread.
-
-        @note If the database cannot be opened or created, an exception is thrown.
-
-        @param name A diagnostic label for the database.
-        @param scheduler The scheduler to use for performing asynchronous tasks.
-        @param backendParameters The parameter string for the persistent backend.
-        @param fastBackendParameters [optional] The parameter string for the ephemeral backend.                        
-
-        @return The opened database.
-    */
-    static Database* New (char const* name,
-                          Scheduler& scheduler,
-                          Parameters const& backendParameters,
-                          Parameters fastBackendParameters = Parameters ());
-
     /** Destroy the node store.
         All pending operations are completed, pending writes flushed,
         and files closed before this returns.
     */
-    virtual ~Database () { }
+    virtual ~Database () = 0 ;
 
     /** Retrieve the name associated with this backend.
         This is used for diagnostics and may not reflect the actual path
         or paths used by the underlying backend.
     */
     virtual String getName () const = 0;
-
-    /** Add the specified backend factory to the list of available factories.
-        The names of available factories are compared against the "type"
-        value in the parameter list on construction. Ownership of the object
-        is transferred. The object must be allocated using new.
-        @param factory The factory to add.
-    */
-    static void addFactory (Factory* factory);
 
     /** Fetch an object.
         If the object is known to be not in the database, isn't found in the
@@ -97,6 +61,28 @@ public:
         @return The object, or nullptr if it couldn't be retrieved.
     */
     virtual NodeObject::pointer fetch (uint256 const& hash) = 0;
+
+    /** Fetch an object without waiting.
+        If I/O is required to determine whether or not the object is present,
+        `false` is returned. Otherwise, `true` is returned and `object` is set
+        to refer to the object, or `nullptr` if the object is not present.
+        If I/O is required, the I/O is scheduled.
+
+        @note This can be called concurrently.
+        @param hash The key of the object to retrieve
+        @param object The object retrieved
+        @return Whether the operation completed
+    */
+    virtual bool asyncFetch (uint256 const& hash, NodeObject::pointer& object) = 0;
+
+    /** Wait for all currently pending async reads to complete.
+    */
+    virtual void waitReads () = 0;
+
+    /** Get the maximum number of async reads the node store prefers.
+        @return The number of async reads preferred.
+    */
+    virtual int getDesiredAsyncReadCount () = 0;
 
     /** Store the object.
 
@@ -141,12 +127,9 @@ public:
 
     // VFALCO TODO Document this.
     virtual void sweep () = 0;
-
-    /** Add the known Backend factories to the singleton.
-    */
-    static void addAvailableBackends ();
 };
 
+}
 }
 
 #endif

@@ -88,7 +88,7 @@ void* hash (void const* buffer, std::size_t bytes, void* digest)
 
 digest_type& hash (void const* buffer, std::size_t bytes, digest_type& digest)
 {
-    hash (buffer, bytes, digest.c_array());
+    hash (buffer, bytes, digest.data());
     return digest;
 }
 

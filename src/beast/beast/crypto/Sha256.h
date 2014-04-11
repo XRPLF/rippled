@@ -22,7 +22,8 @@
 
 #include "../Config.h"
 #include "../CStdInt.h"
-#include "../FixedArray.h"
+
+#include <array>
 
 //------------------------------------------------------------------------------
 
@@ -36,7 +37,7 @@ enum
 };
 
 /** A container suitable for holding the resulting hash. */
-typedef FixedArray <uint8, digestLength> digest_type;
+typedef std::array <uint8, digestLength> digest_type;
 
 namespace detail {
 struct Context
@@ -85,7 +86,7 @@ public:
 
     digest_type& finish (digest_type& digest)
     {
-        finish (digest.c_array());
+        finish (digest.data());
         return digest;
     }
 

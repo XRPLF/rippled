@@ -25,13 +25,13 @@
 #define BEAST_SMARTPTR_ABSTRACTOBJECT_H_INCLUDED
 
 #include <list>
+#include <memory>
 #include <stdexcept>
 #include <typeinfo>
 #include "../Atomic.h"
 #include "../Config.h"
 #include "../Uncopyable.h"
 #include "../intrusive/LockFreeStack.h"
-#include "../smart_ptr/ScopedPointer.h"
 
 namespace beast {
 namespace abstract {
@@ -235,15 +235,17 @@ public:
             Derived must be a subclass of Interface
     */
     template <typename Derived>
-    void add_interface (ScopedPointer <Derived>&& derived)
+    void add_interface (Derived* derived)
     {
+        std::unique_ptr <BasicInterface> base_interface (
+            derived);
         if (has_interface <Derived> ())
             throw std::invalid_argument ("non-unique");
-        m_set.emplace_back (derived);
+        m_set.emplace_back (base_interface.release ());
     }
 
 private:
-    typedef std::list <ScopedPointer <BasicInterface>> Set;
+    typedef std::list <std::unique_ptr <BasicInterface>> Set;
     Set m_set;
 };
 

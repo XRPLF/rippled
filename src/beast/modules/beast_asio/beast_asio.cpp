@@ -23,17 +23,10 @@
 
 #include "beast_asio.h"
 
-namespace beast {
-
-# include "../../beast/http/impl/http-parser/http_parser.h"
-
-#include "async/SharedHandler.cpp"
+# include "../../beast/http/impl/http_parser.h"
 
 #include "basics/PeerRole.cpp"
 #include "basics/SSLContext.cpp"
-
-#include "sockets/SocketBase.cpp"
-#include "sockets/Socket.cpp"
 
 #include "protocol/HandshakeDetectLogicPROXY.cpp"
 
@@ -57,8 +50,6 @@ namespace beast {
 #include "tests/TestPeerUnitTests.cpp"
 
 #include "system/BoostUnitTests.cpp"
-
-}
 
 #include "http/HTTPParser.cpp"
 #include "http/HTTPRequestParser.cpp"

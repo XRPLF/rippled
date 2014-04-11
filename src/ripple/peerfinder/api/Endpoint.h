@@ -28,23 +28,13 @@ struct Endpoint
 {
     Endpoint ();
 
-    IPAddress address;
+    Endpoint (IP::Endpoint const& ep, int hops_);
+
     int hops;
-    uint32 incomingSlotsAvailable;
-    uint32 incomingSlotsMax;
-    uint32 uptimeSeconds;
-    std::string featureList;
+    IP::Endpoint address;
 };
 
-inline bool operator< (Endpoint const& lhs, Endpoint const& rhs)
-{
-    return lhs.address < rhs.address;
-}
-
-inline bool operator== (Endpoint const& lhs, Endpoint const& rhs)
-{
-    return lhs.address == rhs.address;
-}
+bool operator< (Endpoint const& lhs, Endpoint const& rhs);
 
 }
 }

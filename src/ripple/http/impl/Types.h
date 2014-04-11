@@ -46,21 +46,21 @@ inline std::string to_string (endpoint_t const& endpoint)
 
 inline endpoint_t to_asio (Port const& port)
 {
-    if (port.addr.isV4())
+    if (port.addr.is_v4())
     {
-        IPAddress::V4 v4 (port.addr.v4());
-        std::string const& s (v4.to_string());
+        IP::AddressV4 v4 (port.addr.to_v4());
+        std::string const& s (to_string (v4));
         return endpoint_t (address().from_string (s), port.port);
     }
 
-    //IPAddress::V6 v6 (ep.v6());
+    //IP::Endpoint::V6 v6 (ep.v6());
     return endpoint_t ();
 }
 
-inline IPAddress from_asio (endpoint_t const& endpoint)
+inline IP::Endpoint from_asio (endpoint_t const& endpoint)
 {
     std::stringstream ss (to_string (endpoint));
-    IPAddress ep;
+    IP::Endpoint ep;
     ss >> ep;
     return ep;
 }

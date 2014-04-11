@@ -23,6 +23,8 @@
 
 #include "../ripple/resource/ripple_resource.h"
 
+#include "../ripple/common/seconds_clock.h"
+
 namespace ripple
 {
 

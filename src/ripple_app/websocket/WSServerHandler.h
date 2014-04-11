@@ -299,7 +299,7 @@ public:
             try
             {
                 WriteLog (lsDEBUG, WSServerHandlerLog) <<
-                    "Ws:: Rejected(" << cpClient->get_socket ().remote_endpoint ().to_string () <<
+                    "Ws:: Rejected(" << to_string (cpClient->get_socket ().remote_endpoint ()) <<
                     ") '" << mpMessage->get_payload () << "'";
             }
             catch (...)
@@ -309,7 +309,7 @@ public:
 
         if (bRunQ)
             getApp().getJobQueue ().addJob (jtCLIENT, "WSClient::command",
-                                           BIND_TYPE (&WSServerHandler<endpoint_type>::do_messages, this, P_1, cpClient));
+                      BIND_TYPE (&WSServerHandler<endpoint_type>::do_messages, this, P_1, cpClient));
     }
 
     void do_messages (Job& job, connection_ptr cpClient)
@@ -325,7 +325,11 @@ public:
             ptr = it->second;
         }
 
-        for (int i = 0; i < 10; ++i)
+        // This loop prevents a single thread from handling more
+        // than 3 operations for the same client, otherwise a client
+        // can monopolize resources.
+        //
+        for (int i = 0; i < 3; ++i)
         {
             message_ptr msg = ptr->getMessage ();
 
@@ -339,7 +343,8 @@ public:
             }
         }
 
-        getApp().getJobQueue ().addJob (jtCLIENT, "WSClient::more",
+        if (ptr->checkMessage ())
+            getApp().getJobQueue ().addJob (jtCLIENT, "WSClient::more",
                                        BIND_TYPE (&WSServerHandler<endpoint_type>::do_messages, this, P_1, cpClient));
     }
 
@@ -351,7 +356,7 @@ public:
         try
         {
             WriteLog (lsDEBUG, WSServerHandlerLog) <<
-                "Ws:: Receiving(" << cpClient->get_socket ().remote_endpoint ().to_string () <<
+                "Ws:: Receiving(" << to_string (cpClient->get_socket ().remote_endpoint ()) <<
                 ") '" << mpMessage->get_payload () << "'";
         }
         catch (...)
@@ -381,8 +386,9 @@ public:
         {
             if (jvRequest.isMember ("command"))
             {
-                std::string cmd = jvRequest["command"].asString ();
-                job.rename (std::string ("WSClient::") + cmd);
+                Json::Value& jCmd = jvRequest["command"];
+                if (jCmd.isString())
+                    job.rename (std::string ("WSClient::") + jCmd.asString());
             }
 
             send (cpClient, conn->invokeCommand (jvRequest), false);

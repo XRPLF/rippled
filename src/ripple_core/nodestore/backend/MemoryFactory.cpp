@@ -17,23 +17,27 @@
 */
 //==============================================================================
 
-namespace NodeStore
-{
+namespace ripple {
+namespace NodeStore {
 
-class MemoryFactory::BackendImp : public Backend
+class MemoryBackend : public Backend
 {
-private:
-    typedef std::map <uint256 const, NodeObject::Ptr> Map;
-
 public:
-    BackendImp (size_t keyBytes, Parameters const& keyValues,
-        Scheduler& scheduler)
-        : m_keyBytes (keyBytes)
+    typedef std::map <uint256 const, NodeObject::Ptr> Map;
+    Journal m_journal;
+    size_t const m_keyBytes;
+    Map m_map;
+    Scheduler& m_scheduler;
+
+    MemoryBackend (size_t keyBytes, Parameters const& keyValues,
+        Scheduler& scheduler, Journal journal)
+        : m_journal (journal)
+        , m_keyBytes (keyBytes)
         , m_scheduler (scheduler)
     {
     }
 
-    ~BackendImp ()
+    ~MemoryBackend ()
     {
     }
 
@@ -88,42 +92,33 @@ public:
     {
         return 0;
     }
-
-    //--------------------------------------------------------------------------
-
-private:
-    size_t const m_keyBytes;
-
-    Map m_map;
-    Scheduler& m_scheduler;
 };
 
 //------------------------------------------------------------------------------
 
-MemoryFactory::MemoryFactory ()
+class MemoryFactory : public Factory
 {
+public:
+    String getName () const
+    {
+        return "Memory";
+    }
+
+    std::unique_ptr <Backend> createInstance (
+        size_t keyBytes, Parameters const& keyValues,
+            Scheduler& scheduler, Journal journal)
+    {
+        return std::make_unique <MemoryBackend> (
+            keyBytes, keyValues, scheduler, journal);
+    }
+};
+
+//------------------------------------------------------------------------------
+
+std::unique_ptr <Factory> make_MemoryFactory ()
+{
+    return std::make_unique <MemoryFactory> ();
 }
 
-MemoryFactory::~MemoryFactory ()
-{
 }
-
-MemoryFactory* MemoryFactory::getInstance ()
-{
-    return new MemoryFactory;
-}
-
-String MemoryFactory::getName () const
-{
-    return "Memory";
-}
-
-Backend* MemoryFactory::createInstance (
-    size_t keyBytes,
-    Parameters const& keyValues,
-    Scheduler& scheduler)
-{
-    return new MemoryFactory::BackendImp (keyBytes, keyValues, scheduler);
-}
-
 }

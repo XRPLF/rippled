@@ -160,7 +160,7 @@ public:
         uint64 &                             uNodeDir,      // Node of entry.
         uint256 const &                      uRootIndex,
         uint256 const &                      uLedgerIndex,
-        FUNCTION_TYPE<void (SLE::ref, bool)> fDescriber);
+        std::function<void (SLE::ref, bool)> fDescriber);
 
     TER dirDelete (
         const bool                      bKeepRoot,
@@ -172,6 +172,7 @@ public:
 
     bool                dirFirst (uint256 const & uRootIndex, SLE::pointer & sleNode, unsigned int & uDirEntry, uint256 & uEntryIndex);
     bool                dirNext (uint256 const & uRootIndex, SLE::pointer & sleNode, unsigned int & uDirEntry, uint256 & uEntryIndex);
+    bool                dirIsEmpty (uint256 const & uDirIndex);
     TER                 dirCount (uint256 const & uDirIndex, uint32 & uCount);
 
     uint256             getNextLedgerIndex (uint256 const & uHash);
@@ -181,7 +182,7 @@ public:
 
     // Offer functions.
     TER                 offerDelete (uint256 const & uOfferIndex);
-    TER                 offerDelete (SLE::ref sleOffer, uint256 const & uOfferIndex, const uint160 & uOwnerID);
+    TER                 offerDelete (SLE::pointer sleOffer);
 
     // Balance functions.
     uint32              rippleTransferRate (const uint160 & uIssuerID);
@@ -245,7 +246,10 @@ public:
         return mEntries.end ();
     }
 
-    static bool intersect (const LedgerEntrySet & lesLeft, const LedgerEntrySet & lesRight);
+    void setDeliveredAmount (STAmount const& amt)
+    {
+        mSet.setDeliveredAmount (amt);
+    }
 
 private:
     Ledger::pointer mLedger;

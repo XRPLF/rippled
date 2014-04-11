@@ -23,6 +23,5 @@
 #include "type_traits/IntegralConstant.h"
 #include "type_traits/IsIntegral.h"
 #include "type_traits/IsSigned.h"
-#include "type_traits/RemoveSigned.h"
 
 #endif

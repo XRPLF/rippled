@@ -52,17 +52,7 @@ public:
 
     /** Returns the LogPartition based on a type key. */
     template <class Key>
-    static LogPartition& get ()
-    {
-        struct LogPartitionType : LogPartition
-        {
-            LogPartitionType () : LogPartition (getPartitionName <Key> ())
-                { }
-        };
-
-        // Each LogPartition is a singleton.
-        return *SharedSingleton <LogPartitionType>::getInstance();
-    }
+    static LogPartition& get ();
 
     /** Returns a Journal using the specified LogPartition type key. */
     template <class Key>
@@ -96,7 +86,6 @@ public:
     static Journal::Severity convertLogSeverity (LogSeverity level);
     /** @} */
 
-private:
     /** Retrieve the name for a log partition. */
     template <class Key>
     static char const* getPartitionName ();
@@ -109,6 +98,30 @@ private:
     LogPartition*       mNextLog;
     std::string         mName;
 };
+
+//------------------------------------------------------------------------------
+
+namespace detail {
+
+template <class Key>
+struct LogPartitionType : LogPartition
+{
+    LogPartitionType () : LogPartition (getPartitionName <Key> ())
+        { }
+};
+
+}
+
+template <class Key>
+LogPartition& LogPartition::get ()
+{
+    return *SharedSingleton <
+      detail::LogPartitionType <Key>>::getInstance();
+}
+
+//------------------------------------------------------------------------------
+
+// VFALCO These macros are deprecated. Use the Journal class instead.
 
 #define SETUP_LOG(Class) \
     template <> char const* LogPartition::getPartitionName <Class> () { return #Class; } \

@@ -20,6 +20,8 @@
 #ifndef RIPPLE_PEERFINDER_CHECKERADAPTER_H_INCLUDED
 #define RIPPLE_PEERFINDER_CHECKERADAPTER_H_INCLUDED
 
+#include <memory>
+
 namespace ripple {
 namespace PeerFinder {
 
@@ -39,18 +41,18 @@ class CheckerAdapter : public Checker
 private:
     SerializedContext& m_context;
     ServiceQueue& m_queue;
-    ScopedPointer <Checker> m_checker;
+    std::unique_ptr <Checker> m_checker;
 
     struct Handler
     {
         SerializedContext& m_context;
         ServiceQueue& m_queue;
-        AbstractHandler <void (Checker::Result)> m_handler;
+        asio::shared_handler <void (Checker::Result)> m_handler;
 
         Handler (
             SerializedContext& context,
             ServiceQueue& queue,
-            AbstractHandler <void (Checker::Result)> handler)
+            asio::shared_handler <void (Checker::Result)> const& handler)
             : m_context (context)
             , m_queue (queue)
             , m_handler (handler)
@@ -86,8 +88,8 @@ public:
         m_checker->cancel();
     }
 
-    void async_test (IPAddress const& endpoint,
-        AbstractHandler <void (Checker::Result)> handler)
+    void async_test (IP::Endpoint const& endpoint,
+        asio::shared_handler <void (Checker::Result)> handler)
     {
         m_checker->async_test (endpoint, Handler (
             m_context, m_queue, handler));

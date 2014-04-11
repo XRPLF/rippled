@@ -28,7 +28,10 @@
 class ConsensusTransSetSF : public SHAMapSyncFilter
 {
 public:
-    ConsensusTransSetSF ();
+    typedef TaggedCache <uint256, Blob> NodeCache;
+
+    // VFALCO TODO Use a dependency injection to get the temp node cache
+    ConsensusTransSetSF (NodeCache& nodeCache);
 
     // Note that the nodeData is overwritten by this call
     void gotNode (bool fromFilter,
@@ -40,6 +43,9 @@ public:
     bool haveNode (SHAMapNode const& id,
                    uint256 const& nodeHash,
                    Blob& nodeData);
+
+private:
+    NodeCache& m_nodeCache;
 };
 
 // This class is only needed on add functions

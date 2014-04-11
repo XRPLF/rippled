@@ -20,6 +20,9 @@
 #ifndef RIPPLE_SERIALIZEDVALIDATION_H
 #define RIPPLE_SERIALIZEDVALIDATION_H
 
+// Validation flags
+const uint32 vfFullyCanonicalSig    = 0x80000000; // signature is fully canonical
+
 class SerializedValidation
     : public STObject
     , public CountedObject <SerializedValidation>

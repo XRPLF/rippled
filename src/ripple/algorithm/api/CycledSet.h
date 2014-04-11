@@ -20,7 +20,6 @@
 #ifndef RIPPLE_TYPES_CYCLEDSET_H_INCLUDED
 #define RIPPLE_TYPES_CYCLEDSET_H_INCLUDED
 
-#include "beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/unordered_set.hpp>
 
 namespace ripple {
@@ -32,7 +31,7 @@ namespace ripple {
     container.
 */
 template <class Key,
-          class Hash = typename Key::hasher,
+          class Hash = std::hash <Key>,
           class KeyEqual = std::equal_to <Key>,
           class Allocator = std::allocator <Key> >
 class CycledSet

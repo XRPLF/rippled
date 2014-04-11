@@ -119,12 +119,11 @@ void ServiceQueueBase::stop ()
 {
     SharedState::Access state (m_state);
     m_stopped.set (1);
-    for(;;)
+    while (! state->waiting.empty ())
     {
-        Waiter* waiting (state->waiting.pop_front());
-        if (waiting == nullptr)
-            break;
-        waiting->signal();
+        Waiter& waiting (state->waiting.front());
+        state->waiting.pop_front ();
+        waiting.signal ();
     }
 }
 
@@ -144,14 +143,24 @@ void ServiceQueueBase::wait ()
 
     {
         SharedState::Access state (m_state);
+
         if (stopped ())
             return;
+
         if (! state->handlers.empty())
             return;
-        waiter = state->unused.pop_front();
-        if (! waiter)
+
+        if (state->unused.empty ())
+        {
             waiter = new_waiter();
-        state->waiting.push_front (waiter);
+        }
+        else
+        {
+            waiter = &state->unused.front ();
+            state->unused.pop_front ();
+        }
+
+        state->waiting.push_front (*waiter);
     }
 
     waiter->wait();
@@ -160,19 +169,22 @@ void ServiceQueueBase::wait ()
 
     {
         SharedState::Access state (m_state);
-        state->unused.push_front (waiter);
+        state->unused.push_front (*waiter);
     }
 }
 
 void ServiceQueueBase::enqueue (Item* item)
 {
-    Waiter* waiter;
+    Waiter* waiter (nullptr);
 
     {
         SharedState::Access state (m_state);
         state->handlers.push_back (*item);
-        // Signal a Waiter if one exists
-        waiter = state->waiting.pop_front();
+        if (! state->waiting.empty ())
+        {
+            waiter = &state->waiting.front ();
+            state->waiting.pop_front ();
+        }
     }
 
     if (waiter != nullptr)
@@ -425,10 +437,11 @@ public:
         }
     };
 
-    static int const callsPerThread = 10000;
+    static std::size_t const totalCalls = 10000;
 
     void testThreads (std::size_t n)
     {
+        std::size_t const callsPerThread (totalCalls / n);
         beginTestCase (String::fromNumber (n) + " threads");
         ServiceQueue service (n);
         std::vector <ScopedPointer <ServiceThread> > threads;

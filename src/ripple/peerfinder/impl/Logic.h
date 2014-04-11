@@ -20,129 +20,136 @@
 #ifndef RIPPLE_PEERFINDER_LOGIC_H_INCLUDED
 #define RIPPLE_PEERFINDER_LOGIC_H_INCLUDED
 
+#include "Fixed.h"
+#include "SlotImp.h"
+
+#include "handout.h"
+#include "ConnectHandouts.h"
+#include "RedirectHandouts.h"
+#include "SlotHandouts.h"
+
+#include "../../../beast/beast/container/aged_container_utility.h"
+
+#include <map>
+#include <unordered_map>
+
 namespace ripple {
 namespace PeerFinder {
 
-// Fresh endpoints are ones we have seen recently via mtENDPOINTS.
-// These are best to give out to someone who needs additional
-// connections as quickly as possible, since it is very likely
-// that the fresh endpoints have open incoming slots.
-//
-// Reliable endpoints are ones which are highly likely to be
-// connectible over long periods of time. They might not necessarily
-// have an incoming slot, but they are good for bootstrapping when
-// there are no peers yet. Typically these are what we would want
-// to store in a database or local config file for a future launch.
-
-//------------------------------------------------------------------------------
-
-typedef boost::multi_index_container <
-    PeerInfo, boost::multi_index::indexed_by <
-        boost::multi_index::hashed_unique <
-            BOOST_MULTI_INDEX_MEMBER(PeerFinder::PeerInfo,PeerID,id),
-                PeerID::hasher>,
-        boost::multi_index::hashed_non_unique <
-            BOOST_MULTI_INDEX_MEMBER(PeerFinder::PeerInfo,IPAddress,address),
-                IPAddress::hasher>
-    >
-> Peers;
-
-//------------------------------------------------------------------------------
-
-/** The Logic for maintaining the list of Peer addresses.
+/** The Logic for maintaining the list of Slot addresses.
     We keep this in a separate class so it can be instantiated
     for unit tests.
 */
 class Logic
 {
-private:
-    typedef std::set < IPAddress > IPAddressSet;
-
 public:
-    template < class T, class C = std::less<T> >
-    struct PtrComparator
-    {
-        bool operator()(const T *x, const T *y) const
-        {
-            C comp;
+    // Maps remote endpoints to slots. Since a slot has a
+    // remote endpoint upon construction, this holds all counts.
+    // 
+    typedef std::map <IP::Endpoint,
+        std::shared_ptr <SlotImp>> Slots;
 
-            return comp(*x, *y);
-        }
-    };
+    typedef std::map <IP::Endpoint, Fixed> FixedSlots;
+
+    // A set of unique Ripple public keys
+    typedef std::set <RipplePublicKey> Keys;
+
+    // A set of non-unique IPAddresses without ports, used
+    // to filter duplicates when making outgoing connections.
+    typedef std::multiset <IP::Endpoint> ConnectedAddresses;
 
     struct State
     {
-        State ()
+        State (
+            Store* store,
+            clock_type& clock,
+            Journal journal)
             : stopping (false)
-            { }
+            , counts ()
+            , livecache (clock, Journal (
+                journal, Reporting::livecache))
+            , bootcache (*store, clock, Journal (
+                journal, Reporting::bootcache))
+        {
+        }
 
-        /** True if we are stopping. */
+        // True if we are stopping.
         bool stopping;
 
-        /** The source we are currently fetching.
-            This is used to cancel I/O during program exit.
-        */
+        // The source we are currently fetching.
+        // This is used to cancel I/O during program exit.
         SharedPtr <Source> fetchSource;
+
+        // Configuration settings
+        Config config;
+
+        // Slot counts and other aggregate statistics.
+        Counts counts;
+
+        // A list of slots that should always be connected
+        FixedSlots fixed;
+
+        // Live livecache from mtENDPOINTS messages
+        Livecache <> livecache;
+
+        // LiveCache of addresses suitable for gaining initial connections
+        Bootcache bootcache;
+
+        // Holds all counts
+        Slots slots;
+
+        // The addresses (but not port) we are connected to. This includes
+        // outgoing connection attempts. Note that this set can contain
+        // duplicates (since the port is not set)
+        ConnectedAddresses connected_addresses; 
+
+        // Set of public keys belonging to active peers
+        Keys keys;
     };
 
     typedef SharedData <State> SharedState;
 
+    Journal m_journal;
     SharedState m_state;
-
-    //--------------------------------------------------------------------------
-
-    DiscreteClock <DiscreteTime> m_clock;
+    clock_type& m_clock;
     Callback& m_callback;
     Store& m_store;
     Checker& m_checker;
-    Journal m_journal;
-
-    Config m_config;
-
-    // A list of peers that should always be connected
-    typedef std::set <IPAddress> FixedPeers;
-    FixedPeers m_fixedPeers;
 
     // A list of dynamic sources to consult as a fallback
-    std::vector <SharedPtr <Source> > m_sources;
+    std::vector <SharedPtr <Source>> m_sources;
 
-    // The current tally of peer slot statistics
-    Slots m_slots;
+    clock_type::time_point m_whenBroadcast;
 
-    // Our view of the current set of connected peers.
-    Peers m_peers;
-
-    Cache m_cache;
-
-    LegacyEndpointCache m_legacyCache;
-
-    // Our set of connection attempts currently in-progress
-    IPAddressSet m_attemptsInProgress;
+    ConnectHandouts::Squelches m_squelches;
 
     //--------------------------------------------------------------------------
 
     Logic (
-        DiscreteClock <DiscreteTime> clock,
+        clock_type& clock,
         Callback& callback,
         Store& store,
         Checker& checker,
         Journal journal)
-        : m_clock (clock)
+        : m_journal (journal, Reporting::logic)
+        , m_state (&store, std::ref (clock), journal)
+        , m_clock (clock)
         , m_callback (callback)
         , m_store (store)
         , m_checker (checker)
-        , m_journal (journal)
-        , m_slots (clock)
-        , m_cache (journal)
-        , m_legacyCache (store, journal)
+        , m_whenBroadcast (m_clock.now())
+        , m_squelches (m_clock)
     {
-        /* assign sensible default values */
-        m_config.fillInDefaultValues();
+        setConfig (Config ());
     }
 
-    DiscreteTime get_now()
+    // Load persistent state information from the Store
+    //
+    void load ()
     {
-        return m_clock();
+        SharedState::Access state (m_state);
+
+        state->bootcache.load ();
     }
 
     /** Stop the logic.
@@ -159,176 +166,717 @@ public:
             state->fetchSource->cancel ();
     }
 
-    // Output statistics
-    void onWrite (PropertyStream::Map& map)
-    {
-        // VFALCO NOTE These ugly casts are needed because
-        //             of how std::size_t is declared on some linuxes
-        //
-        map ["cache"]   = uint32(m_cache.size());
-        map ["legacy"]  = uint32(m_legacyCache.size());
-        map ["fixed_desired"] = uint32 (m_fixedPeers.size());
-        
-        {
-            PropertyStream::Map child ("slots", map);
-            m_slots.onWrite (child);
-        }
-
-        {
-            PropertyStream::Map child ("config", map);
-            m_config.onWrite (child);
-        }
-    }
-
-    //--------------------------------------------------------------------------
-
-    // Load persistent state information from the Store
-    //
-    void load ()
-    {
-        m_legacyCache.load (get_now());
-    }
-
-    // Returns a suitable Endpoint representing us.
-    //
-    Endpoint thisEndpoint ()
-    {
-        // Why would someone call this if we don't want incoming?
-        bassert (m_config.wantIncoming);
-
-        Endpoint ep;
-        ep.address = IPAddress (
-            IPAddress::V4 ()).withPort (m_config.listeningPort);
-        ep.hops = 0;
-        ep.incomingSlotsAvailable = m_slots.inboundSlots;
-        ep.incomingSlotsMax = m_slots.inboundSlotsMaximum;
-        ep.uptimeSeconds = m_slots.uptimeSeconds();
-
-        return ep;
-    }
-
-    // Returns true if the IPAddress contains no invalid data.
-    //
-    bool validIPAddress (IPAddress const& address)
-    {
-        if (! address.isPublic())
-            return false;
-        if (address.port() == 0)
-            return false;
-        return true;
-    }
-
-    // Return endpoints to which we want to try to make outgoing connections.
-    // We preferentially return endpoints which are far away from as to try to
-    // improve the algebraic connectivity of the network graph. For more see
-    // http://en.wikipedia.org/wiki/Algebraic_connectivity
-    //
-    void getNewOutboundEndpoints (int needed, std::vector <IPAddress>& list)
-    {
-        Giveaways giveaway (m_cache.getGiveawayList());
-        int count = 0;
-
-        for (Giveaways::reverse_iterator iter (giveaway.rbegin());
-             iter != giveaway.rend(); ++iter)
-        {
-            // Check whether we have anything at the current hop level.
-            iter->reset ();
-
-            for(GiveawaysAtHop::iterator iter2 (iter->begin());
-                iter2 != iter->end() && (count != needed); ++iter2)
-            {
-                CachedEndpoint *ep (*iter2);
-
-                // NIKB TODO we need to check whether this peer is already
-                // connected prior to just returning it and wasting time
-                // trying to establish a redundant connection.
-
-                if(ep->message.incomingSlotsAvailable != 0)
-                {
-                    list.push_back(ep->message.address);
-                    ++count;
-                }
-            }
-        }
-    }
-
-    // If configured to make outgoing connections, do us in order
-    // to bring us up to desired out count.
-    //
-    void makeOutgoingConnections ()
-    {
-        std::vector <IPAddress> list;
-
-        if (m_config.connectAutomatically)
-        {
-            if (m_slots.outDesired > m_slots.outboundCount)
-            {
-                int const needed (std::min (
-                                      m_slots.outDesired - m_slots.outboundCount,
-                                      int (maxAddressesPerAttempt)));
-
-                getNewOutboundEndpoints (needed, list);
-            }
-        }
-
-        if (m_slots.fixedCount < m_fixedPeers.size())
-        {
-            list.reserve (list.size() + m_fixedPeers.size() - m_slots.fixedCount);
-
-            for (FixedPeers::const_iterator iter (m_fixedPeers.begin());
-                iter != m_fixedPeers.end(); ++iter)
-            {
-                // Make sure the fixed peer is not already connected
-                if (m_peers.get<1>().find (*iter) == m_peers.get<1>().end())
-                    list.push_back (*iter);
-            }
-        }
-
-        if (! list.empty())
-            m_callback.connectPeerEndpoints (list);
-    }
-
     //--------------------------------------------------------------------------
     //
-    // Logic
+    // Manager
     //
     //--------------------------------------------------------------------------
 
     void setConfig (Config const& config)
     {
-        m_config = config;
-        
-        /* give sensible defaults to any uninitialized fields */
-        m_config.fillInDefaultValues();
-          
-        m_slots.update (m_config);
+        SharedState::Access state (m_state);
+        state->config = config;
+        state->counts.onConfig (state->config);
     }
 
-    void addFixedPeers (std::vector <std::string> const& strings)
+    void addFixedPeer (std::string const& name,
+        std::vector <IP::Endpoint> const& addresses)
     {
-        for (std::vector <std::string>::const_iterator iter (strings.begin());
-            iter != strings.end(); ++iter)
-        {            
-            IPAddress ep (IPAddress::from_string (*iter));
+        SharedState::Access state (m_state);
 
-            if (ep.empty ())
-                ep = IPAddress::from_string_altform(*iter);
+        if (addresses.empty ())
+        {
+            if (m_journal.info) m_journal.info <<
+                "Could not resolve fixed slot '" << name << "'";
+            return;
+        }
 
-            if (! ep.empty ())
+        for (auto const& remote_address : addresses)
+        {
+            auto result (state->fixed.emplace (std::piecewise_construct,
+                std::forward_as_tuple (remote_address),
+                    std::make_tuple (std::ref (m_clock))));
+
+            if (result.second)
             {
-                m_fixedPeers.insert (ep);
+                if (m_journal.debug) m_journal.debug << leftw (18) <<
+                    "Logic add fixed" << "'" << name <<
+                    "' at " << remote_address;
+                return;
+            }
+        }
+    }
 
-                m_journal.info << "Added fixed peer " << *iter;
+    //--------------------------------------------------------------------------
+
+    // Called when the Checker completes a connectivity test
+    void checkComplete (IP::Endpoint const& address,
+        IP::Endpoint const & checkedAddress, Checker::Result const& result)
+    {
+        if (result.error == boost::asio::error::operation_aborted)
+            return;
+
+        SharedState::Access state (m_state);
+        Slots::iterator const iter (state->slots.find (address));
+        SlotImp& slot (*iter->second);
+
+        if (iter == state->slots.end())
+        {
+            // The slot disconnected before we finished the check
+            if (m_journal.debug) m_journal.debug << leftw (18) <<
+                "Logic tested " << address <<
+                " but the connection was closed";
+            return;
+        }
+
+        // Mark that a check for this slot is finished.
+        slot.connectivityCheckInProgress = false;
+
+        if (! result.error)
+        {
+            slot.checked = true;
+            slot.canAccept = result.canAccept;
+
+            if (slot.canAccept)
+            {
+                if (m_journal.debug) m_journal.debug << leftw (18) <<
+                    "Logic testing " << address << " succeeded";
             }
             else
             {
-                // VFALCO TODO Attempt name resolution
-                m_journal.error << "Failed to resolve: '" << *iter << "'";
+                if (m_journal.info) m_journal.info << leftw (18) <<
+                    "Logic testing " << address << " failed";
+            }
+        }
+        else
+        {
+            // VFALCO TODO Should we retry depending on the error?
+            slot.checked = true;
+            slot.canAccept = false;
+
+            if (m_journal.error) m_journal.error << leftw (18) <<
+                "Logic testing " << iter->first << " with error, " <<
+                result.error.message();
+        }
+
+        if (! slot.canAccept)
+            state->bootcache.on_failure (address);
+    }
+
+    //--------------------------------------------------------------------------
+
+    SlotImp::ptr new_inbound_slot (IP::Endpoint const& local_endpoint,
+        IP::Endpoint const& remote_endpoint)
+    {
+        if (m_journal.debug) m_journal.debug << leftw (18) <<
+            "Logic accept" << remote_endpoint <<
+            " on local " << local_endpoint;
+
+        SharedState::Access state (m_state);
+
+        // Check for self-connect by address
+        {
+            auto const iter (state->slots.find (local_endpoint));
+            if (iter != state->slots.end ())
+            {
+                Slot::ptr const& self (iter->second);
+                assert ((self->local_endpoint () == boost::none) ||
+                    (self->local_endpoint () == remote_endpoint));
+                if (m_journal.warning) m_journal.warning << leftw (18) <<
+                    "Logic dropping " << remote_endpoint <<
+                    " as self connect";
+                return SlotImp::ptr ();
             }
         }
 
-        m_journal.info << m_fixedPeers.size() << " fixed peers added.";
+        // Create the slot
+        SlotImp::ptr const slot (std::make_shared <SlotImp> (local_endpoint,
+            remote_endpoint, fixed (remote_endpoint.address (), state),
+                m_clock));
+        // Add slot to table
+        auto const result (state->slots.emplace (
+            slot->remote_endpoint (), slot));
+        // Remote address must not already exist
+        assert (result.second);
+        // Add to the connected address list
+        state->connected_addresses.emplace (remote_endpoint.at_port (0));
+
+        // Update counts
+        state->counts.add (*slot);
+
+        return result.first->second;
     }
+
+    SlotImp::ptr new_outbound_slot (IP::Endpoint const& remote_endpoint)
+    {
+        if (m_journal.debug) m_journal.debug << leftw (18) <<
+            "Logic connect " << remote_endpoint;
+
+        SharedState::Access state (m_state);
+
+        // Check for duplicate connection
+        if (state->slots.find (remote_endpoint) !=
+            state->slots.end ())
+        {
+            if (m_journal.warning) m_journal.warning << leftw (18) <<
+                "Logic dropping " << remote_endpoint <<
+                " as duplicate connect";
+            return SlotImp::ptr ();
+        }
+
+        // Create the slot
+        SlotImp::ptr const slot (std::make_shared <SlotImp> (
+            remote_endpoint, fixed (remote_endpoint, state), m_clock));
+
+        // Add slot to table
+        std::pair <Slots::iterator, bool> result (
+            state->slots.emplace (slot->remote_endpoint (),
+                slot));
+        // Remote address must not already exist
+        assert (result.second);
+
+        // Add to the connected address list
+        state->connected_addresses.emplace (remote_endpoint.at_port (0));
+
+        // Update counts
+        state->counts.add (*slot);
+
+        return result.first->second;
+    }
+
+    void on_connected (SlotImp::ptr const& slot,
+        IP::Endpoint const& local_endpoint)
+    {
+        if (m_journal.trace) m_journal.trace << leftw (18) <<
+            "Logic connected" << slot->remote_endpoint () <<
+            " on local " << local_endpoint;
+
+        SharedState::Access state (m_state);
+
+        // The object must exist in our table
+        assert (state->slots.find (slot->remote_endpoint ()) !=
+            state->slots.end ());
+        // Assign the local endpoint now that it's known
+        slot->local_endpoint (local_endpoint);
+
+        // Check for self-connect by address
+        {
+            auto const iter (state->slots.find (local_endpoint));
+            if (iter != state->slots.end ())
+            {
+                Slot::ptr const& self (iter->second);
+                assert (self->local_endpoint () == slot->remote_endpoint ());
+                if (m_journal.warning) m_journal.warning << leftw (18) <<
+                    "Logic dropping " << slot->remote_endpoint () <<
+                    " as self connect";
+                m_callback.disconnect (slot, false);
+                return;
+            }
+        }
+
+        // Update counts
+        state->counts.remove (*slot);
+        slot->state (Slot::connected);
+        state->counts.add (*slot);
+    }
+
+    void on_handshake (SlotImp::ptr const& slot,
+        RipplePublicKey const& key, bool cluster)
+    {
+        if (m_journal.debug) m_journal.debug << leftw (18) <<
+            "Logic handshake " << slot->remote_endpoint () <<
+            " with " << (cluster ? "clustered " : "") << "key " << key;
+
+        SharedState::Access state (m_state);
+
+        // The object must exist in our table
+        assert (state->slots.find (slot->remote_endpoint ()) !=
+            state->slots.end ());
+        // Must be accepted or connected
+        assert (slot->state() == Slot::accept ||
+            slot->state() == Slot::connected);
+
+        // Check for duplicate connection by key
+        if (state->keys.find (key) != state->keys.end())
+        {
+            m_callback.disconnect (slot, true);
+            return;
+        }
+
+        // See if we have an open space for this slot
+        if (state->counts.can_activate (*slot))
+        {
+            // Set key and cluster right before adding to the map
+            // otherwise we could assert later when erasing the key.
+            state->counts.remove (*slot);
+            slot->public_key (key);
+            slot->cluster (cluster);
+            state->counts.add (*slot);
+
+            // Add the public key to the active set
+            std::pair <Keys::iterator, bool> const result (
+                state->keys.insert (key));
+            // Public key must not already exist
+            assert (result.second);
+
+            // Change state and update counts
+            state->counts.remove (*slot);
+            slot->activate (m_clock.now ());
+            state->counts.add (*slot);
+
+            if (! slot->inbound())
+                state->bootcache.on_success (
+                    slot->remote_endpoint());
+
+            // Mark fixed slot success
+            if (slot->fixed() && ! slot->inbound())
+            {
+                auto iter (state->fixed.find (slot->remote_endpoint()));
+                assert (iter != state->fixed.end ());
+                iter->second.success (m_clock.now ());
+                if (m_journal.trace) m_journal.trace << leftw (18) <<
+                    "Logic fixed " << slot->remote_endpoint () << " success";
+            }
+
+            m_callback.activate (slot);
+        }
+        else
+        {
+            if (! slot->inbound())
+                state->bootcache.on_success (
+                    slot->remote_endpoint());
+
+            // Maybe give them some addresses to try
+            if (slot->inbound ())
+                redirect (slot, state);
+
+            m_callback.disconnect (slot, true);
+        }
+    }
+
+    //--------------------------------------------------------------------------
+
+    // Validate and clean up the list that we received from the slot.
+    void preprocess (SlotImp::ptr const& slot, Endpoints& list,
+        SharedState::Access& state)
+    {
+        bool neighbor (false);
+        for (auto iter (list.begin()); iter != list.end();)
+        {
+            Endpoint& ep (*iter);
+
+            // Enforce hop limit
+            if (ep.hops > Tuning::maxHops)
+            {
+                if (m_journal.warning) m_journal.warning << leftw (18) <<
+                    "Endpoints drop " << ep.address <<
+                    " for excess hops " << ep.hops;
+                iter = list.erase (iter);
+                continue;
+            }
+
+            // See if we are directly connected
+            if (ep.hops == 0)
+            {
+                if (! neighbor)
+                {
+                    // Fill in our neighbors remote address
+                    neighbor = true;
+                    ep.address = slot->remote_endpoint().at_port (
+                        ep.address.port ());
+                }
+                else
+                {
+                    if (m_journal.warning) m_journal.warning << leftw (18) <<
+                        "Endpoints drop " << ep.address <<
+                        " for extra self";
+                    iter = list.erase (iter);
+                    continue;
+                }
+            }
+
+            // Discard invalid addresses
+            if (! is_valid_address (ep.address))
+            {
+                if (m_journal.warning) m_journal.warning << leftw (18) <<
+                    "Endpoints drop " << ep.address <<
+                    " as invalid";
+                iter = list.erase (iter);
+                continue;
+            }
+
+            // Filter duplicates
+            if (std::any_of (list.begin(), iter,
+                [ep](Endpoints::value_type const& other)
+                {
+                    return ep.address == other.address;
+                }))
+            {
+                if (m_journal.warning) m_journal.warning << leftw (18) <<
+                    "Endpoints drop " << ep.address <<
+                    " as duplicate";
+                iter = list.erase (iter);
+                continue;
+            }
+
+            // Increment hop count on the incoming message, so
+            // we store it at the hop count we will send it at.
+            //
+            ++ep.hops;
+
+            ++iter;
+        }
+    }
+
+    void on_endpoints (SlotImp::ptr const& slot, Endpoints list)
+    {
+        if (m_journal.trace) m_journal.trace << leftw (18) <<
+            "Endpoints from " << slot->remote_endpoint () <<
+            " contained " << list.size () <<
+            ((list.size() > 1) ? " entries" : " entry");
+
+        SharedState::Access state (m_state);
+   
+        // The object must exist in our table
+        assert (state->slots.find (slot->remote_endpoint ()) !=
+            state->slots.end ());
+
+        // Must be handshaked!
+        assert (slot->state() == Slot::active);
+
+        preprocess (slot, list, state);
+
+        clock_type::time_point const now (m_clock.now());
+
+        for (auto iter (list.cbegin()); iter != list.cend(); ++iter)
+        {
+            Endpoint const& ep (*iter);
+
+            assert (ep.hops != 0);
+
+            slot->recent.insert (ep.address, ep.hops);
+
+            // Note hops has been incremented, so 1
+            // means a directly connected neighbor.
+            //
+            if (ep.hops == 1)
+            {
+                if (slot->connectivityCheckInProgress)
+                {
+                    if (m_journal.warning) m_journal.warning << leftw (18) <<
+                        "Logic testing " << ep.address << " already in progress";
+                    continue;
+                }
+                
+                if (! slot->checked)
+                {
+                    // Mark that a check for this slot is now in progress.
+                    slot->connectivityCheckInProgress = true;
+
+                    // Test the slot's listening port before
+                    // adding it to the livecache for the first time.
+                    //                     
+                    m_checker.async_test (ep.address, bind (
+                        &Logic::checkComplete, this, slot->remote_endpoint (),
+                            ep.address, _1));
+
+                    // Note that we simply discard the first Endpoint
+                    // that the neighbor sends when we perform the
+                    // listening test. They will just send us another
+                    // one in a few seconds.
+
+                    continue;
+                }
+ 
+                // If they failed the test then skip the address
+                if (! slot->canAccept)
+                    continue;
+            }
+
+            // We only add to the livecache if the neighbor passed the
+            // listening test, else we silently drop their messsage
+            // since their listening port is misconfigured.
+            //
+            state->livecache.insert (ep);
+            state->bootcache.insert (ep.address);
+        }
+
+        slot->whenAcceptEndpoints = now + Tuning::secondsPerMessage;
+    }
+
+    //--------------------------------------------------------------------------
+
+    void on_legacy_endpoints (IPAddresses const& list)
+    {
+        // Ignoring them also seems a valid choice.
+        SharedState::Access state (m_state);
+        for (IPAddresses::const_iterator iter (list.begin());
+            iter != list.end(); ++iter)
+            state->bootcache.insert (*iter);
+    }
+
+    void remove (SlotImp::ptr const& slot, SharedState::Access& state)
+    {
+        Slots::iterator const iter (state->slots.find (
+            slot->remote_endpoint ()));
+        // The slot must exist in the table
+        assert (iter != state->slots.end ());
+        // Remove from slot by IP table
+        state->slots.erase (iter);
+        // Remove the key if present
+        if (slot->public_key () != boost::none)
+        {
+            Keys::iterator const iter (state->keys.find (*slot->public_key()));
+            // Key must exist
+            assert (iter != state->keys.end ());
+            state->keys.erase (iter);
+        }
+        // Remove from connected address table
+        {
+            auto const iter (state->connected_addresses.find (
+                slot->remote_endpoint().at_port (0)));
+            // Address must exist
+            assert (iter != state->connected_addresses.end ());
+            state->connected_addresses.erase (iter);
+        }
+
+        // Update counts
+        state->counts.remove (*slot);
+    }
+
+    void on_closed (SlotImp::ptr const& slot)
+    {
+        SharedState::Access state (m_state);
+
+        remove (slot, state);
+
+        // Mark fixed slot failure
+        if (slot->fixed() && ! slot->inbound() && slot->state() != Slot::active)
+        {
+            auto iter (state->fixed.find (slot->remote_endpoint()));
+            assert (iter != state->fixed.end ());
+            iter->second.failure (m_clock.now ());
+            if (m_journal.debug) m_journal.debug << leftw (18) <<
+                "Logic fixed " << slot->remote_endpoint () << " failed";
+        }
+
+        // Do state specific bookkeeping
+        switch (slot->state())
+        {
+        case Slot::accept:
+            if (m_journal.trace) m_journal.trace << leftw (18) <<
+                "Logic accept " << slot->remote_endpoint () << " failed";
+            break;
+
+        case Slot::connect:
+        case Slot::connected:
+            state->bootcache.on_failure (slot->remote_endpoint ());
+            // VFALCO TODO If the address exists in the ephemeral/live
+            //             endpoint livecache then we should mark the failure
+            // as if it didn't pass the listening test. We should also
+            // avoid propagating the address.
+            break;
+
+        case Slot::active:
+            if (m_journal.trace) m_journal.trace << leftw (18) <<
+                "Logic close " << slot->remote_endpoint();
+            break;
+
+        case Slot::closing:
+            if (m_journal.trace) m_journal.trace << leftw (18) <<
+                "Logic finished " << slot->remote_endpoint();
+            break;
+
+        default:
+            assert (false);
+            break;
+        }
+    }
+
+    void on_cancel (SlotImp::ptr const& slot)
+    {
+        SharedState::Access state (m_state);
+
+        remove (slot, state);
+
+        if (m_journal.trace) m_journal.trace << leftw (18) <<
+            "Logic cancel " << slot->remote_endpoint();
+    }
+
+    //--------------------------------------------------------------------------
+
+    // Returns `true` if the address matches a fixed slot address
+    bool fixed (IP::Endpoint const& endpoint, SharedState::Access& state) const
+    {
+        for (auto const& entry : state->fixed)
+            if (entry.first == endpoint)
+                return true;
+        return false;
+    }
+
+    // Returns `true` if the address matches a fixed slot address
+    // Note that this does not use the port information in the IP::Endpoint
+    bool fixed (IP::Address const& address, SharedState::Access& state) const
+    {
+        for (auto const& entry : state->fixed)
+            if (entry.first.address () == address)
+                return true;
+        return false;
+    }
+
+    //--------------------------------------------------------------------------
+    //
+    // Connection Strategy
+    //
+    //--------------------------------------------------------------------------
+
+    /** Adds eligible Fixed addresses for outbound attempts. */
+    template <class Container>
+    void get_fixed (std::size_t needed, Container& c,
+        SharedState::Access& state)
+    {
+        auto const now (m_clock.now());
+        for (auto iter = state->fixed.begin ();
+            needed && iter != state->fixed.end (); ++iter)
+        {
+            auto const& address (iter->first.address());
+            if (iter->second.when() <= now && std::none_of (
+                state->slots.cbegin(), state->slots.cend(),
+                    [address](Slots::value_type const& v)
+                    {
+                        return address == v.first.address();
+                    }))
+            {
+                c.push_back (iter->first);
+                --needed;
+            }
+        }
+    }
+
+    //--------------------------------------------------------------------------
+
+    // Adds slot addresses to the squelched set
+    void squelch_slots (SharedState::Access& state)
+    {
+        for (auto const& s : state->slots)
+        {
+            auto const result (m_squelches.insert (
+                s.second->remote_endpoint().address()));
+            if (! result.second)
+                m_squelches.touch (result.first);
+        }
+    }
+
+    /** Create new outbound connection attempts as needed.
+        This implements PeerFinder's "Outbound Connection Strategy"
+    */
+    void autoconnect ()
+    {
+        SharedState::Access state (m_state);
+
+        // Count how many more outbound attempts to make
+        //
+        auto needed (state->counts.attempts_needed ());
+        if (needed == 0)
+            return;
+
+        ConnectHandouts h (needed, m_squelches);
+
+        // Make sure we don't connect to already-connected entries.
+        squelch_slots (state);
+
+        // 1. Use Fixed if:
+        //    Fixed active count is below fixed count AND
+        //      ( There are eligible fixed addresses to try OR
+        //        Any outbound attempts are in progress)
+        //
+        if (state->counts.fixed_active() < state->fixed.size ())
+        {
+            get_fixed (needed, h.list(), state);
+
+            if (! h.list().empty ())
+            {
+                if (m_journal.debug) m_journal.debug << leftw (18) <<
+                    "Logic connect " << h.list().size() << " fixed";
+                m_callback.connect (h.list());
+                return;
+            }
+
+            if (state->counts.attempts() > 0)
+            {
+                if (m_journal.debug) m_journal.debug << leftw (18) <<
+                    "Logic waiting on " <<
+                        state->counts.attempts() << " attempts";
+                return;
+            }
+        }
+
+        // Only proceed if auto connect is enabled and we
+        // have less than the desired number of outbound slots
+        //
+        if (! state->config.autoConnect ||
+            state->counts.out_active () >= state->counts.out_max ())
+            return;
+
+        // 2. Use Livecache if:
+        //    There are any entries in the cache OR
+        //    Any outbound attempts are in progress
+        //
+        {
+            state->livecache.hops.shuffle();
+            handout (&h, (&h)+1,
+                state->livecache.hops.rbegin(),
+                    state->livecache.hops.rend());
+            if (! h.list().empty ())
+            {
+                if (m_journal.debug) m_journal.debug << leftw (18) <<
+                    "Logic connect " << h.list().size () << " live " <<
+                    ((h.list().size () > 1) ? "endpoints" : "endpoint");
+                m_callback.connect (h.list());
+                return;
+            }
+            else if (state->counts.attempts() > 0)
+            {
+                if (m_journal.debug) m_journal.debug << leftw (18) <<
+                    "Logic waiting on " <<
+                        state->counts.attempts() << " attempts";
+                return;
+            }
+        }
+
+        /*  3. Bootcache refill
+            If the Bootcache is empty, try to get addresses from the current
+            set of Sources and add them into the Bootstrap cache.
+
+            Pseudocode:
+                If (    domainNames.count() > 0 AND (
+                           unusedBootstrapIPs.count() == 0
+                        OR activeNameResolutions.count() > 0) )
+                    ForOneOrMore (DomainName that hasn't been resolved recently)
+                        Contact DomainName and add entries to the unusedBootstrapIPs
+                    return;
+        */
+
+        // 4. Use Bootcache if:
+        //    There are any entries we haven't tried lately
+        //
+        for (auto iter (state->bootcache.begin());
+            ! h.full() && iter != state->bootcache.end(); ++iter)
+            h.try_insert (*iter);
+
+        if (! h.list().empty ())
+        {
+            if (m_journal.debug) m_journal.debug << leftw (18) <<
+                "Logic connect " << h.list().size () << " boot " <<
+                ((h.list().size () > 1) ? "addresses" : "address");
+            m_callback.connect (h.list());
+            return;
+        }
+
+        // If we get here we are stuck
+    }
+
+    //--------------------------------------------------------------------------
 
     void addStaticSource (SharedPtr <Source> const& source)
     {
@@ -340,376 +888,74 @@ public:
         m_sources.push_back (source);
     }
 
-    // Called periodically to sweep the cache and remove aged out items.
-    //
-    void sweepCache ()
-    {
-        m_cache.sweep (get_now());
+    //--------------------------------------------------------------------------
 
-        for (Peers::iterator iter (m_peers.begin());
-            iter != m_peers.end(); ++iter)
-            iter->received.cycle();
+    // Called periodically to sweep the livecache and remove aged out items.
+    void expire ()
+    {
+        SharedState::Access state (m_state);
+
+        // Expire the Livecache
+        state->livecache.expire ();
+
+        // Expire the recent cache in each slot
+        for (auto const& entry : state->slots)
+            entry.second->expire();
+
+        // Expire the recent attempts table
+        beast::expire (m_squelches,
+            Tuning::recentAttemptDuration);
     }
 
-    // Called when an outbound connection attempt is started
-    //
-    void onPeerConnectAttemptBegins (IPAddress const& address)
+    // Called every so often to perform periodic tasks.
+    void periodicActivity ()
     {
-        std::pair <IPAddressSet::iterator, bool> ret =
-            m_attemptsInProgress.insert (address);
+        SharedState::Access state (m_state);
 
-        // We are always notified of connection attempts so if we think that
-        // something was in progress and a connection attempt begins then
-        // something is very wrong.
+        clock_type::time_point const now (m_clock.now());
 
-        bassert (ret.second);
+        autoconnect ();
+        expire ();
+        state->bootcache.periodicActivity ();
 
-        if (ret.second)
-            m_journal.debug << "Attempt for " << address << " is in progress";
-        else
-            m_journal.error << "Attempt for " << address << " was already in progress";
-    }
-
-    // Called when an outbound connection attempt completes
-    //
-    void onPeerConnectAttemptCompletes (IPAddress const& address, bool success)
-    {
-        IPAddressSet::size_type ret = m_attemptsInProgress.erase (address);
-
-        bassert (ret == 1);
-
-        if (ret == 1)
-            m_journal.debug << "Attempt for " << address <<
-                " completed: " << (success ? "success" : "failure");
-        else
-            m_journal.error << "Attempt for untracked " << address <<
-                " completed: " << (success ? "success" : "failure");
-    }
-
-    // Called when a peer connection is established but before a handshake
-    // occurs.
-    void onPeerConnected (IPAddress const& address, bool incoming)
-    {
-        m_journal.error << "Connected: " << address <<
-            (incoming ? " (incoming)" : " (outgoing)");
-    }
-
-    // Called when a peer connection is established.
-    // We are guaranteed that the PeerID is not already in our map.
-    // but we are *NOT* guaranteed that the IP isn't. So we need
-    // to be careful.
-    void onPeerHandshake (PeerID const& id,
-        IPAddress const& address, bool inbound)
-    {
-        m_journal.debug << "Handshake: " << address;
-
-        // If this is outgoing, record the success
-        if (! inbound)
-            m_legacyCache.checked (address, true);
-
-        std::pair <Peers::iterator, bool> result (
-            m_peers.insert (
-                PeerInfo (id, address, inbound, get_now())));
-        bassert (result.second);
-        m_slots.addPeer (m_config, inbound);
-
-        // VFALCO NOTE Update fixed peers count (HACKED)
-        for (FixedPeers::const_iterator iter (m_fixedPeers.begin());
-            iter != m_fixedPeers.end(); ++iter)
+        if (m_whenBroadcast <= now)
         {
-            if (iter->withPort (0) == address.withPort (0))
-                ++m_slots.fixedCount;
+            broadcast ();
+            m_whenBroadcast = now + Tuning::secondsPerMessage;
         }
-    }
-
-    // Called when a peer is disconnected.
-    // We are guaranteed to get this exactly once for each
-    // corresponding call to onPeerHandshake.
-    //
-    void onPeerDisconnected (PeerID const& id)
-    {
-        Peers::iterator iter (m_peers.find (id));
-        bassert (iter != m_peers.end());
-        PeerInfo const& peer (*iter);
-        m_journal.debug << "Disconnected: " << peer.address;
-        m_slots.dropPeer (m_config, peer.inbound);
-
-        // VFALCO NOTE Update fixed peers count (HACKED)
-        for (FixedPeers::const_iterator iter (m_fixedPeers.begin());
-            iter != m_fixedPeers.end(); ++iter)
-        {
-            if (iter->withPort (0) == peer.address.withPort (0))
-                --m_slots.fixedCount;
-        }
-
-        // Must come last
-        m_peers.erase (iter);
     }
 
     //--------------------------------------------------------------------------
     //
-    // CachedEndpoints
+    // Bootcache livecache sources
     //
     //--------------------------------------------------------------------------
 
-    // Returns true if the Endpoint contains no invalid data.
+    // Add one address.
+    // Returns `true` if the address is new.
     //
-    bool validEndpoint (Endpoint const& endpoint)
+    bool addBootcacheAddress (IP::Endpoint const& address,
+        SharedState::Access& state)
     {
-        // This function is here in case we add more stuff
-        // we want to validate to the Endpoint struct.
-        //
-        return validIPAddress (endpoint.address);
+        return state->bootcache.insert (address);
     }
 
-    // Prunes invalid endpoints from a list.
+    // Add a set of addresses.
+    // Returns the number of addresses added.
     //
-    void pruneEndpoints (
-        std::string const& source, std::vector <Endpoint>& list)
+    int addBootcacheAddresses (IPAddresses const& list)
     {
-        for (std::vector <Endpoint>::iterator iter (list.begin());
-            iter != list.end();)
+        int count (0);
+        SharedState::Access state (m_state);        
+        for (auto addr : list)
         {
-            if (! validEndpoint (*iter))
-            {
-                iter = list.erase (iter);
-                m_journal.error <<
-                    "Invalid endpoint " << iter->address <<
-                    " from " << source;
-            }
-            else
-            {
-                ++iter;
-            }
+            if (addBootcacheAddress (addr, state))
+                ++count;
         }
+        return count;
     }
 
-    // Send mtENDPOINTS for the specified peer
-    //
-    void sendEndpoints (PeerInfo const& peer, Giveaways &giveaway)
-    {
-        typedef std::vector <Endpoint> List;
-        std::vector <Endpoint> endpoints;
-
-        // Add us to the list if we want incoming
-        // VFALCO TODO Reconsider this logic
-        //if (m_slots.inboundSlots > 0)
-        if (m_config.wantIncoming)
-            endpoints.push_back (thisEndpoint ());
-
-        // We iterate over the hop list we have, adding one
-        // peer per hop (if possible) until we add the maximum
-        // number of peers we are allowed to send or we can't
-        // send anything else.
-        for (int i = 0; i != numberOfEndpoints; ++i)
-        {
-            for (Giveaways::iterator iter = giveaway.begin();
-                 iter != giveaway.end(); ++iter)
-            {
-                GiveawaysAtHop::iterator iter2 = iter->begin();
-
-                while(iter2 != iter->end())
-                {
-                    // FIXME NIKB check if the peer wants to receive this
-                    // endpoint and add it to the list of endpoints we will
-                    // send if he does.
-
-                    if(false)
-                        iter2 = iter->erase(iter2);
-                    else
-                        ++iter2;
-                }
-            }
-        }
-
-        if (! endpoints.empty())
-            m_callback.sendPeerEndpoints (peer.id, endpoints);
-    }
-
-    // Send mtENDPOINTS for each peer as needed
-    //
-    void sendEndpoints ()
-    {
-        if (! m_peers.empty())
-        {
-            m_journal.trace << "Sending endpoints...";
-
-            DiscreteTime const now (get_now());
-
-            // fill in endpoints.
-            Giveaways giveaway(m_cache.getGiveawayList());
-
-            for (Peers::iterator iter (m_peers.begin());
-                iter != m_peers.end(); ++iter)
-            {
-                PeerInfo const& peer (*iter);
-
-                // Reset the giveaway to begin a fresh iteration.
-                giveaway.reset ();
-
-                if (peer.whenSendEndpoints <= now)
-                {
-                    sendEndpoints (peer, giveaway);
-                    peer.whenSendEndpoints = now +
-                        secondsPerMessage;
-                }
-            }
-        }
-    }
-
-    // Called when the Checker completes a connectivity test
-    //
-    void onCheckEndpoint (PeerID const& id,
-        IPAddress address, Checker::Result const& result)
-    {
-        if (result.error == boost::asio::error::operation_aborted)
-            return;
-
-        Peers::iterator iter (m_peers.find (id));
-        if (iter != m_peers.end())
-        {
-            PeerInfo const& peer (*iter);
-
-            // Mark that a check for this peer is finished.
-            peer.connectivityCheckInProgress = false;
-
-            if (! result.error)
-            {
-                peer.checked = true;
-                peer.canAccept = result.canAccept;
-
-                if (peer.canAccept)
-                    m_journal.info << peer.address <<
-                        " passed listening test";
-                else
-                    m_journal.warning << peer.address <<
-                        " cannot accept incoming connections";
-            }
-            else
-            {
-                // VFALCO TODO Should we retry depending on the error?
-                peer.checked = true;
-                peer.canAccept = false;
-
-                m_journal.error << "Listening test for " <<
-                    peer.address << " failed: " <<
-                    result.error.message();
-            }
-        }
-        else
-        {
-            // The peer disconnected before we finished the check
-            m_journal.debug << "Finished listening test for " <<
-                id << " but the peer disconnected. ";
-        }
-    }
-
-    // Called when a peer sends us the mtENDPOINTS message.
-    //
-    void onPeerEndpoints (PeerID const& id, std::vector <Endpoint> list)
-    {
-        Peers::iterator iter (m_peers.find (id));
-        bassert (iter != m_peers.end());
-
-        DiscreteTime const now (get_now());
-        PeerInfo const& peer (*iter);
-
-        pruneEndpoints (peer.address.to_string(), list);
-
-        // Log at higher severity if this is the first time
-        m_journal.stream (peer.whenAcceptEndpoints == 0 ?
-            Journal::kInfo : Journal::kTrace) <<
-            "Received " << list.size() <<
-            " endpoints from " << peer.address;
-
-        // We charge a load penalty if the peer sends us more than 
-        // numberOfEndpoints peers in a single message
-        if (list.size() > numberOfEndpoints)
-        {
-            m_journal.warning << "Charging " << peer.address <<
-                " for sending too many endpoints";
-
-            m_callback.chargePeerLoadPenalty(id);
-        }
-
-        m_journal.debug << peer.address <<
-            " sent us " << list.size() << " endpoints.";
-
-        // Process each entry
-        //
-        int neighborCount (0);
-        for (std::vector <Endpoint>::const_iterator iter (list.begin());
-            iter != list.end(); ++iter)
-        {
-            Endpoint const& message (*iter);
-
-            // Remember that this peer gave us this address
-            peer.received.insert (message.address);
-
-            m_journal.debug << message.address <<
-                " at " << message.hops << " hops.";
-
-            if (message.hops == 0)
-            {
-                ++neighborCount;
-                if (neighborCount == 1)
-                {
-                    if (peer.connectivityCheckInProgress)
-                    {
-                        m_journal.warning << "Connectivity check for " <<
-                            message.address << "already in progress.";
-                    }
-                    else if (! peer.checked)
-                    {
-                        // Mark that a check for this peer is now in progress.
-                        peer.connectivityCheckInProgress = true;
-
-                        // Test the peer's listening port before
-                        // adding it to the cache for the first time.
-                        //                     
-                        m_checker.async_test (message.address, bind (
-                            &Logic::onCheckEndpoint, this, id,
-                                message.address, _1));
-
-                        // Note that we simply discard the first Endpoint
-                        // that the neighbor sends when we perform the
-                        // listening test. They will just send us another
-                        // one in a few seconds.
-                    }
-                    else if (peer.canAccept)
-                    {
-                        // We only add to the cache if the neighbor passed the
-                        // listening test, else we silently drop their message
-                        // since their listening port is misconfigured.
-                        //
-                        m_cache.insert (message, get_now());
-                    }
-                }
-            }
-            else
-            {
-                m_cache.insert (message, get_now());
-            }
-        }
-
-        if (neighborCount > 1)
-        {
-            m_journal.warning << peer.address <<
-                " sent " << neighborCount << " entries with hops=0";
-            // VFALCO TODO Should we apply load charges?
-        }
-
-        peer.whenAcceptEndpoints = now + secondsPerMessage;
-    }
-
-    //--------------------------------------------------------------------------
-    //
-    // LegacyEndpoint
-    //
-    //--------------------------------------------------------------------------
-
-    // Fetch addresses into the LegacyEndpointCache for bootstrapping
-    //
+    // Fetch bootcache addresses from the specified source.
     void fetch (SharedPtr <Source> const& source)
     {
         Source::Results results;
@@ -722,6 +968,9 @@ public:
                 state->fetchSource = source;
             }
 
+            // VFALCO NOTE The fetch is synchronous,
+            //             not sure if that's a good thing.
+            //
             source->fetch (results, m_journal);
 
             {
@@ -734,75 +983,226 @@ public:
 
         if (! results.error)
         {
-            std::size_t newEntries (0);
-            DiscreteTime now (get_now());
-
-            for (std::vector <IPAddress>::const_iterator iter (results.list.begin());
-                iter != results.list.end(); ++iter)
-            {
-                std::pair <LegacyEndpoint const&, bool> result (
-                    m_legacyCache.insert (*iter, now));
-                if (result.second)
-                    ++newEntries;
-            }
-
-            m_journal.debug <<
-                "Fetched " << results.list.size() <<
-                " legacy endpoints (" << newEntries << " new) "
-                "from " << source->name();
+            int const count (addBootcacheAddresses (results.addresses));
+            if (m_journal.info) m_journal.info << leftw (18) <<
+                "Logic added " << count <<
+                " new " << ((count == 1) ? "address" : "addresses") <<
+                " from " << source->name();
         }
         else
         {
-            m_journal.error <<
-                "Fetch " << source->name() << "failed: " <<
+            if (m_journal.error) m_journal.error << leftw (18) <<
+                "Logic failed " << "'" << source->name() << "' fetch, " <<
                 results.error.message();
         }
     }
 
-    // Completion handler for a LegacyEndpoint listening test.
+    //--------------------------------------------------------------------------
     //
-    void onCheckLegacyEndpoint (IPAddress const& endpoint,
-        Checker::Result const& result)
-    {
-        if (result.error == boost::asio::error::operation_aborted)
-            return;
+    // Endpoint message handling
+    //
+    //--------------------------------------------------------------------------
 
-        if (! result.error)
+    // Returns true if the IP::Endpoint contains no invalid data.
+    bool is_valid_address (IP::Endpoint const& address)
+    {
+        if (is_unspecified (address))
+            return false;
+        if (! is_public (address))
+            return false;
+        if (address.port() == 0)
+            return false;
+        return true;
+    }
+
+    //--------------------------------------------------------------------------
+
+    // Gives a slot a set of addresses to try next since we're full
+    void redirect (SlotImp::ptr const& slot, SharedState::Access& state)
+    {
+        RedirectHandouts h (slot);
+        state->livecache.hops.shuffle();
+        handout (&h, (&h)+1,
+            state->livecache.hops.begin(),
+                state->livecache.hops.end());
+
+        if (! h.list().empty ())
         {
-            if (result.canAccept)
-                m_journal.info << "Legacy address " << endpoint <<
-                    " passed listening test";
-            else
-                m_journal.warning << "Legacy address " << endpoint <<
-                    " cannot accept incoming connections";
+            if (m_journal.trace) m_journal.trace << leftw (18) <<
+                "Logic redirect " << slot->remote_endpoint() <<
+                " with " << h.list().size() <<
+                ((h.list().size() == 1) ? " address" : " addresses");
+            m_callback.send (slot, h.list());
         }
         else
         {
-            m_journal.error << "Listening test for legacy address " <<
-                endpoint << " failed: " << result.error.message();
+            if (m_journal.warning) m_journal.warning << leftw (18) <<
+                "Logic deferred " << slot->remote_endpoint();
         }
     }
 
-    void onPeerLegacyEndpoint (IPAddress const& address)
+    // Send mtENDPOINTS for each slot as needed
+    void broadcast ()
     {
-        if (! validIPAddress (address))
-            return;
-        std::pair <LegacyEndpoint const&, bool> result (
-            m_legacyCache.insert (address, get_now()));
-        if (result.second)
-        {
-            // its new
-            m_journal.trace << "New legacy endpoint: " << address;
+        SharedState::Access state (m_state);
 
-#if 0
-            // VFALCO NOTE Temporarily we are doing a check on each
-            //             legacy endpoint to test the async code
-            //
-            m_checker.async_test (address, bind (
-                &Logic::onCheckLegacyEndpoint,
-                    this, address, _1));
-#endif
+        std::vector <SlotHandouts> targets;
+
+        {
+            // build list of active slots
+            std::vector <SlotImp::ptr> slots;
+            slots.reserve (state->slots.size());
+            std::for_each (state->slots.cbegin(), state->slots.cend(),
+                [&slots](Slots::value_type const& value)
+                {
+                    if (value.second->state() == Slot::active)
+                        slots.emplace_back (value.second);
+                });
+            std::random_shuffle (slots.begin(), slots.end());
+
+            // build target vector
+            targets.reserve (slots.size());
+            std::for_each (slots.cbegin(), slots.cend(),
+                [&targets](SlotImp::ptr const& slot)
+                {
+                    targets.emplace_back (slot);
+                });
         }
+        
+        /* VFALCO NOTE
+            This is a temporary measure. Once we know our own IP
+            address, the correct solution is to put it into the Livecache
+            at hops 0, and go through the regular handout path. This way
+            we avoid handing our address out too frequenty, which this code
+            suffers from.
+        */
+        // Add an entry for ourselves if:
+        // 1. We want incoming
+        // 2. We have slots
+        // 3. We haven't failed the firewalled test
+        //
+        if (state->config.wantIncoming &&
+            state->counts.inboundSlots() > 0)
+        {
+            Endpoint ep;
+            ep.hops = 0;
+            ep.address = IP::Endpoint (
+                IP::AddressV4 ()).at_port (
+                    state->config.listeningPort);
+            for (auto& t : targets)
+                t.insert (ep);
+        }
+
+        // build sequence of endpoints by hops
+        state->livecache.hops.shuffle();
+        handout (targets.begin(), targets.end(),
+            state->livecache.hops.begin(),
+                state->livecache.hops.end());
+
+        // broadcast
+        for (auto const& t : targets)
+        {
+            SlotImp::ptr const& slot (t.slot());
+            auto const& list (t.list());
+            if (m_journal.trace) m_journal.trace << leftw (18) <<
+                "Logic sending " << slot->remote_endpoint() << 
+                " with " << list.size() <<
+                ((list.size() == 1) ? " endpoint" : " endpoints");
+            m_callback.send (slot, list);
+        }
+    }
+
+    //--------------------------------------------------------------------------
+    //
+    // PropertyStream
+    //
+    //--------------------------------------------------------------------------
+
+    void writeSlots (PropertyStream::Set& set, Slots const& slots)
+    {
+        for (auto const& entry : slots)
+        {
+            PropertyStream::Map item (set);
+            SlotImp const& slot (*entry.second);
+            if (slot.local_endpoint () != boost::none)
+                item ["local_address"] = to_string (*slot.local_endpoint ());
+            item ["remote_address"]   = to_string (slot.remote_endpoint ());
+            if (slot.inbound())
+                item ["inbound"]    = "yes";
+            if (slot.fixed())
+                item ["fixed"]      = "yes";
+            if (slot.cluster())
+                item ["cluster"]    = "yes";
+            
+            item ["state"] = stateString (slot.state());
+        }
+    }
+
+    void onWrite (PropertyStream::Map& map)
+    {
+        SharedState::Access state (m_state);
+
+        // VFALCO NOTE These ugly casts are needed because
+        //             of how std::size_t is declared on some linuxes
+        //
+        map ["bootcache"]   = uint32 (state->bootcache.size());
+        map ["fixed"]       = uint32 (state->fixed.size());
+
+        {
+            PropertyStream::Set child ("peers", map);
+            writeSlots (child, state->slots);
+        }
+
+        {
+            PropertyStream::Map child ("counts", map);
+            state->counts.onWrite (child);
+        }
+
+        {
+            PropertyStream::Map child ("config", map);
+            state->config.onWrite (child);
+        }
+
+        {
+            PropertyStream::Map child ("livecache", map);
+            state->livecache.onWrite (child);
+        }
+
+        {
+            PropertyStream::Map child ("bootcache", map);
+            state->bootcache.onWrite (child);
+        }
+    }
+
+    //--------------------------------------------------------------------------
+    //
+    // Diagnostics
+    //
+    //--------------------------------------------------------------------------
+
+    State const& state () const
+    {
+        return *SharedState::ConstAccess (m_state);
+    }
+
+    Counts const& counts () const
+    {
+        return SharedState::ConstAccess (m_state)->counts;
+    }
+
+    static std::string stateString (Slot::State state)
+    {
+        switch (state)
+        {
+        case Slot::accept:     return "accept";
+        case Slot::connect:    return "connect";
+        case Slot::connected:  return "connected";
+        case Slot::active:     return "active";
+        case Slot::closing:    return "closing";
+        default:
+            break;
+        };
+        return "?";
     }
 };
 
@@ -810,3 +1210,19 @@ public:
 }
 
 #endif
+
+/*
+
+- recent tables entries should last equal to the cache time to live
+- never send a slot a message thats in its recent table at a lower hop count
+- when sending a message to a slot, add it to its recent table at one lower hop count
+
+Giveaway logic
+
+When do we give away?
+
+- To one inbound connection when we redirect due to full
+
+- To all slots at every broadcast
+
+*/

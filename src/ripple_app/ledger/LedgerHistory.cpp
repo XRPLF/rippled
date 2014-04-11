@@ -30,10 +30,11 @@
 // FIXME: Need to clean up ledgers by index at some point
 
 LedgerHistory::LedgerHistory ()
-        : mLedgersByHash ("LedgerCache", CACHED_LEDGER_NUM, CACHED_LEDGER_AGE)
-        , mConsensusValidated ("ConsensusValidated", 64, 300)
+    : m_ledgers_by_hash ("LedgerCache", CACHED_LEDGER_NUM, CACHED_LEDGER_AGE,
+        get_seconds_clock (), LogPartition::getJournal <TaggedCacheLog> ())
+    , m_consensus_validated ("ConsensusValidated", 64, 300,
+        get_seconds_clock (), LogPartition::getJournal <TaggedCacheLog> ())
 {
-    ;
 }
 
 void LedgerHistory::addLedger (Ledger::pointer ledger, bool validated)
@@ -41,16 +42,16 @@ void LedgerHistory::addLedger (Ledger::pointer ledger, bool validated)
     assert (ledger && ledger->isImmutable ());
     assert (ledger->peekAccountStateMap ()->getHash ().isNonZero ());
 
-    TaggedCache::ScopedLockType sl (mLedgersByHash.peekMutex (), __FILE__, __LINE__);
+    LedgersByHash::ScopedLockType sl (m_ledgers_by_hash.peekMutex ());
 
-    mLedgersByHash.canonicalize (ledger->getHash(), ledger, true);
+    m_ledgers_by_hash.canonicalize (ledger->getHash(), ledger, true);
     if (validated)
         mLedgersByIndex[ledger->getLedgerSeq()] = ledger->getHash();
 }
 
 uint256 LedgerHistory::getLedgerHash (uint32 index)
 {
-    TaggedCache::ScopedLockType sl (mLedgersByHash.peekMutex (), __FILE__, __LINE__);
+    LedgersByHash::ScopedLockType sl (m_ledgers_by_hash.peekMutex ());
     std::map<uint32, uint256>::iterator it (mLedgersByIndex.find (index));
 
     if (it != mLedgersByIndex.end ())
@@ -61,17 +62,17 @@ uint256 LedgerHistory::getLedgerHash (uint32 index)
 
 Ledger::pointer LedgerHistory::getLedgerBySeq (uint32 index)
 {
-    TaggedCache::ScopedLockType sl (mLedgersByHash.peekMutex (), __FILE__, __LINE__);
-    std::map<uint32, uint256>::iterator it (mLedgersByIndex.find (index));
-
-    if (it != mLedgersByIndex.end ())
     {
-        uint256 hash = it->second;
-        sl.unlock ();
-        return getLedgerByHash (hash);
-    }
+        LedgersByHash::ScopedLockType sl (m_ledgers_by_hash.peekMutex ());
+        std::map <uint32, uint256>::iterator it (mLedgersByIndex.find (index));
 
-    sl.unlock ();
+        if (it != mLedgersByIndex.end ())
+        {
+            uint256 hash = it->second;
+            sl.unlock ();
+            return getLedgerByHash (hash);
+        }
+    }
 
     Ledger::pointer ret (Ledger::loadByIndex (index));
 
@@ -80,16 +81,19 @@ Ledger::pointer LedgerHistory::getLedgerBySeq (uint32 index)
 
     assert (ret->getLedgerSeq () == index);
 
-    sl.lock (__FILE__, __LINE__);
-    assert (ret->isImmutable ());
-    mLedgersByHash.canonicalize (ret->getHash (), ret);
-    mLedgersByIndex[ret->getLedgerSeq ()] = ret->getHash ();
-    return (ret->getLedgerSeq () == index) ? ret : Ledger::pointer ();
+    {
+        LedgersByHash::ScopedLockType sl (m_ledgers_by_hash.peekMutex ());
+
+        assert (ret->isImmutable ());
+        m_ledgers_by_hash.canonicalize (ret->getHash (), ret);
+        mLedgersByIndex[ret->getLedgerSeq ()] = ret->getHash ();
+        return (ret->getLedgerSeq () == index) ? ret : Ledger::pointer ();
+    }
 }
 
 Ledger::pointer LedgerHistory::getLedgerByHash (uint256 const& hash)
 {
-    Ledger::pointer ret = mLedgersByHash.fetch (hash);
+    Ledger::pointer ret = m_ledgers_by_hash.fetch (hash);
 
     if (ret)
     {
@@ -105,7 +109,7 @@ Ledger::pointer LedgerHistory::getLedgerByHash (uint256 const& hash)
 
     assert (ret->isImmutable ());
     assert (ret->getHash () == hash);
-    mLedgersByHash.canonicalize (ret->getHash (), ret);
+    m_ledgers_by_hash.canonicalize (ret->getHash (), ret);
     assert (ret->getHash () == hash);
 
     return ret;
@@ -116,10 +120,11 @@ void LedgerHistory::builtLedger (Ledger::ref ledger)
     LedgerIndex index = ledger->getLedgerSeq();
     LedgerHash hash = ledger->getHash();
     assert (!hash.isZero());
-    TaggedCache::ScopedLockType sl(mConsensusValidated.peekMutex(), __FILE__, __LINE__);
+    ConsensusValidated::ScopedLockType sl (
+        m_consensus_validated.peekMutex());
 
     boost::shared_ptr< std::pair< LedgerHash, LedgerHash > > entry = boost::make_shared<std::pair< LedgerHash, LedgerHash >>();
-    mConsensusValidated.canonicalize(index, entry, false);
+    m_consensus_validated.canonicalize(index, entry, false);
 
     if (entry->first != hash)
     {
@@ -140,10 +145,11 @@ void LedgerHistory::validatedLedger (Ledger::ref ledger)
     LedgerIndex index = ledger->getLedgerSeq();
     LedgerHash hash = ledger->getHash();
     assert (!hash.isZero());
-    TaggedCache::ScopedLockType sl(mConsensusValidated.peekMutex(), __FILE__, __LINE__);
+    ConsensusValidated::ScopedLockType sl (
+        m_consensus_validated.peekMutex());
 
     boost::shared_ptr< std::pair< LedgerHash, LedgerHash > > entry = boost::make_shared<std::pair< LedgerHash, LedgerHash >>();
-    mConsensusValidated.canonicalize(index, entry, false);
+    m_consensus_validated.canonicalize(index, entry, false);
 
     if (entry->second != hash)
     {
@@ -159,11 +165,11 @@ void LedgerHistory::validatedLedger (Ledger::ref ledger)
     }
 }
 
-/** Ensure mLedgersByHash doesn't have the wrong hash for a particular index
+/** Ensure m_ledgers_by_hash doesn't have the wrong hash for a particular index
 */
 bool LedgerHistory::fixIndex (LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
 {
-    TaggedCache::ScopedLockType sl (mLedgersByHash.peekMutex (), __FILE__, __LINE__);
+    LedgersByHash::ScopedLockType sl (m_ledgers_by_hash.peekMutex ());
     std::map<uint32, uint256>::iterator it (mLedgersByIndex.find (ledgerIndex));
 
     if ((it != mLedgersByIndex.end ()) && (it->second != ledgerHash) )
@@ -176,8 +182,6 @@ bool LedgerHistory::fixIndex (LedgerIndex ledgerIndex, LedgerHash const& ledgerH
 
 void LedgerHistory::tune (int size, int age)
 {
-    mLedgersByHash.setTargetSize (size);
-    mLedgersByHash.setTargetAge (age);
+    m_ledgers_by_hash.setTargetSize (size);
+    m_ledgers_by_hash.setTargetAge (age);
 }
-
-// vim:ts=4

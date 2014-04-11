@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 static const char* s_nodeStoreDBInit [] =
 {
     "PRAGMA synchronous=NORMAL;",
@@ -43,14 +45,12 @@ static int s_nodeStoreDBCount = NUMBER (s_nodeStoreDBInit);
 
 //------------------------------------------------------------------------------
 
-class SqliteFactory::BackendImp : public NodeStore::Backend
+class SqliteBackend : public NodeStore::Backend
 {
 public:
-    BackendImp (size_t keyBytes, std::string const& path, NodeStore::Scheduler& scheduler)
-        : m_keyBytes (keyBytes)
-        , m_name (path)
+    explicit SqliteBackend (std::string const& path)
+        : m_name (path)
         , m_db (new DatabaseCon(path, s_nodeStoreDBInit, s_nodeStoreDBCount))
-        , m_scheduler (scheduler)
     {
         String s;
 
@@ -60,7 +60,7 @@ public:
         m_db->getDB()->executeSQL (s.toStdString ().c_str ());
     }
 
-    ~BackendImp()
+    ~SqliteBackend()
     {
     }
 
@@ -216,36 +216,33 @@ public:
     }
 
 private:
-    size_t const m_keyBytes;
     std::string const m_name;
-    ScopedPointer <DatabaseCon> m_db;
-    NodeStore::Scheduler& m_scheduler;
+    std::unique_ptr <DatabaseCon> m_db;
 };
 
 //------------------------------------------------------------------------------
 
-SqliteFactory::SqliteFactory ()
+class SqliteFactory : public NodeStore::Factory
 {
+public:
+    String getName () const
+    {
+        return "Sqlite";
+    }
+
+    std::unique_ptr <NodeStore::Backend> createInstance (
+        size_t, NodeStore::Parameters const& keyValues,
+            NodeStore::Scheduler&, Journal)
+    {
+        return std::make_unique <SqliteBackend> (keyValues ["path"].toStdString ());
+    }
+};
+
+//------------------------------------------------------------------------------
+
+std::unique_ptr <NodeStore::Factory> make_SqliteFactory ()
+{
+    return std::make_unique <SqliteFactory> ();
 }
 
-SqliteFactory::~SqliteFactory ()
-{
-}
-
-SqliteFactory* SqliteFactory::getInstance ()
-{
-    return new SqliteFactory;
-}
-
-String SqliteFactory::getName () const
-{
-    return "Sqlite";
-}
-
-NodeStore::Backend* SqliteFactory::createInstance (
-    size_t keyBytes,
-    NodeStore::Parameters const& keyValues,
-    NodeStore::Scheduler& scheduler)
-{
-    return new BackendImp (keyBytes, keyValues ["path"].toStdString (), scheduler);
 }

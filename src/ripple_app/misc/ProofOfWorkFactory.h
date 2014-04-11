@@ -20,6 +20,11 @@
 #ifndef RIPPLE_PROOFOFWORKFACTORY_H_INCLUDED
 #define RIPPLE_PROOFOFWORKFACTORY_H_INCLUDED
 
+#include "PowResult.h"
+#include "ProofOfWork.h"
+
+namespace ripple {
+
 class ProofOfWorkFactory
 {
 public:
@@ -50,5 +55,7 @@ public:
 
     virtual void setSecret (uint256 const& secret) = 0;
 };
+
+}
 
 #endif

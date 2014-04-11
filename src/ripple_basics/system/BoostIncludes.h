@@ -26,13 +26,11 @@
 // boost includes anywhere else in the source code. If possible, do
 // not add any more includes.
 //
-// A long term goal is to reduce and hopefully eliminate the usage of boost.
-//
 
 #include <boost/version.hpp>
 
-#if BOOST_VERSION < 104700
-# error Ripple requires Boost version 1.47 or later
+#if BOOST_VERSION < 105500
+# error Ripple requires Boost version 1.55 or later
 #endif
 
 // This is better than setting it in some Makefile or IDE Project file.
@@ -56,5 +54,8 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/unordered_map.hpp>
+
+// work-around for broken <boost/get_pointer.hpp>
+#include "../../beast/beast/boost/get_pointer.h"
 
 #endif

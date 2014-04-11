@@ -1,4 +1,4 @@
 #!/bin/bash
 
 # flags set in mocha.opts
-mocha test/*-test.{js,coffee}
+mocha test/websocket-test.js test/server-test.js test/*-test.{js,coffee}

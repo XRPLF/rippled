@@ -78,7 +78,8 @@ private:
         }
         else
         {
-            return rpcError (rpcINVALID_PARAMS);
+            return RPC::make_param_error (std::string ("Invalid currency/issuer '") + 
+                    strCurrencyIssuer + "'");
         }
     }
 
@@ -406,6 +407,9 @@ private:
 
         if (reader.parse (jvParams[1u].asString (), jvRequest))
         {
+            if (!jvRequest.isObject ())
+                return rpcError (rpcINVALID_PARAMS);
+
             jvRequest["method"] = jvParams[0u];
 
             return jvRequest;
@@ -945,7 +949,7 @@ struct RPCCallImp
     }
 
     static bool onResponse (
-        FUNCTION_TYPE<void (const Json::Value& jvInput)> callbackFuncP,
+        std::function<void (const Json::Value& jvInput)> callbackFuncP,
             const boost::system::error_code& ecResult, int iStatus,
                 const std::string& strData)
     {
@@ -1125,7 +1129,7 @@ void RPCCall::fromNetwork (
     const std::string& strUsername, const std::string& strPassword,
     const std::string& strPath, const std::string& strMethod,
     const Json::Value& jvParams, const bool bSSL,
-    FUNCTION_TYPE<void (const Json::Value& jvInput)> callbackFuncP)
+    std::function<void (const Json::Value& jvInput)> callbackFuncP)
 {
     // Connect to localhost
     if (!getConfig ().QUIET)
@@ -1147,8 +1151,8 @@ void RPCCall::fromNetwork (
     // Log(lsDEBUG) << "requesting" << std::endl;
     // WriteLog (lsDEBUG, RPCParser) << "send request " << strMethod << " : " << strRequest << std::endl;
 
-    const int RPC_REPLY_MAX_BYTES (128*1024*1024);
-    const int RPC_NOTIFY_SECONDS (30);
+    const int RPC_REPLY_MAX_BYTES (256*1024*1024);
+    const int RPC_NOTIFY_SECONDS (600);
 
     HTTPClient::request (
         bSSL,

@@ -40,7 +40,7 @@ public:
         const std::string& strPath,
         std::size_t responseMax,
         boost::posix_time::time_duration timeout,
-        FUNCTION_TYPE <bool (const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete);
+        std::function <bool (const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete);
 
     static void get (
         bool bSSL,
@@ -50,17 +50,17 @@ public:
         const std::string& strPath,
         std::size_t responseMax,
         boost::posix_time::time_duration timeout,
-        FUNCTION_TYPE <bool (const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete);
+        std::function <bool (const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete);
 
     static void request (
         bool bSSL,
         boost::asio::io_service& io_service,
         std::string strSite,
         const unsigned short port,
-        FUNCTION_TYPE <void (boost::asio::streambuf& sb, const std::string& strHost)> build,
+        std::function <void (boost::asio::streambuf& sb, const std::string& strHost)> build,
         std::size_t responseMax,
         boost::posix_time::time_duration timeout,
-        FUNCTION_TYPE <bool (const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete);
+        std::function <bool (const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete);
 
     enum
     {

@@ -27,48 +27,72 @@
 class PeerSet : LeakChecked <PeerSet>
 {
 public:
+    typedef abstract_clock <std::chrono::seconds> clock_type;
+
     uint256 const& getHash () const
     {
         return mHash;
     }
+
     bool isComplete () const
     {
         return mComplete;
     }
+
     bool isFailed () const
     {
         return mFailed;
     }
+
     int getTimeouts () const
     {
         return mTimeouts;
     }
 
     bool isActive ();
+
     void progress ()
     {
-        mLastProgress = UptimeTimer::getInstance().getElapsedSeconds();
+        mProgress = true;
         mAggressive = false;
     }
+    
+    void clearProgress ()
+    {
+        mProgress = false;
+    }
+    
     bool isProgress ()
     {
-        return (mLastProgress + (mTimerInterval / 1000)) > UptimeTimer::getInstance().getElapsedSeconds();
+        return mProgress;
     }
+    
     void touch ()
     {
-        mLastAction = UptimeTimer::getInstance ().getElapsedSeconds ();
+        mLastAction = m_clock.now();
     }
-    int getLastAction ()
+    
+    clock_type::time_point getLastAction () const
     {
         return mLastAction;
     }
 
+    // VFALCO TODO Rename this to addPeerToSet
+    //
     bool peerHas (Peer::ref);
+
+    // VFALCO Workaround for MSVC std::function which doesn't swallow return types.
+    void peerHasVoid (Peer::ref peer)
+    {
+        peerHas (peer);
+    }
+
     void badPeer (Peer::ref);
+
     void setTimer ();
 
-    int takePeerSetFrom (const PeerSet& s);
-    int getPeerCount () const;
+    std::size_t takePeerSetFrom (const PeerSet& s);
+    std::size_t getPeerCount () const;
     virtual bool isDone () const
     {
         return mComplete || mFailed;
@@ -78,13 +102,14 @@ private:
     static void TimerEntry (boost::weak_ptr<PeerSet>, const boost::system::error_code& result);
     static void TimerJobEntry (Job&, boost::shared_ptr<PeerSet>);
 
-    // VFALCO TODO try to make some of these private
 protected:
+    // VFALCO TODO try to make some of these private
     typedef RippleRecursiveMutex LockType;
     typedef LockType::ScopedLockType ScopedLockType;
 
-    PeerSet (uint256 const& hash, int interval, bool txnData);
-    virtual ~PeerSet () { }
+    PeerSet (uint256 const& hash, int interval, bool txnData,
+        clock_type& clock, Journal journal);
+    virtual ~PeerSet () = 0;
 
     virtual void newPeer (Peer::ref) = 0;
     virtual void onTimer (bool progress, ScopedLockType&) = 0;
@@ -104,6 +129,9 @@ protected:
     void sendRequest (const protocol::TMGetLedger& message, Peer::ref peer);
 
 protected:
+    Journal m_journal;
+    clock_type& m_clock;
+
     LockType mLock;
 
     uint256 mHash;
@@ -113,17 +141,19 @@ protected:
     bool mFailed;
     bool mAggressive;
     bool mTxnData;
-    int mLastAction;
-    int mLastProgress;
+    clock_type::time_point mLastAction;
+    bool mProgress;
 
 
     // VFALCO TODO move the responsibility for the timer to a higher level
     boost::asio::deadline_timer             mTimer;
 
     // VFALCO TODO Verify that these are used in the way that the names suggest.
-    typedef uint64 PeerIdentifier;
+    typedef Peer::ShortId PeerIdentifier;
     typedef int ReceivedChunkCount;
-    boost::unordered_map <PeerIdentifier, ReceivedChunkCount> mPeers;
+    typedef boost::unordered_map <PeerIdentifier, ReceivedChunkCount> PeerSetMap;
+
+    PeerSetMap mPeers;
 };
 
 #endif

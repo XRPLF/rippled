@@ -256,23 +256,29 @@ std::string RelativeTime::to_string () const
 }
 
 }
-
-namespace beast {
-	
-namespace detail {
 	
 #if BEAST_WINDOWS
 
 #include <windows.h>
 
+namespace beast {
+namespace detail {
+
 static double monotonicCurrentTimeInSeconds()
 {
 	return GetTickCount64() / 1000.0;
 }
+ 
+}
+}
 	
 #elif BEAST_MAC || BEAST_IOS
 
-#include <time.h>
+#include <mach/mach_time.h>
+#include <mach/mach.h>
+
+namespace beast {
+namespace detail {
 	
 static double monotonicCurrentTimeInSeconds()
 {
@@ -309,10 +315,15 @@ static double monotonicCurrentTimeInSeconds()
 
     return mach_absolute_time() * data.ratio;
 }
+}
+}
 
 #else
 	
 #include <time.h>
+
+namespace beast {
+namespace detail {
 
 static double monotonicCurrentTimeInSeconds()
 {
@@ -320,8 +331,14 @@ static double monotonicCurrentTimeInSeconds()
 	clock_gettime (CLOCK_MONOTONIC, &t);
 	return t.tv_sec + t.tv_nsec / 1000000000.0;
 }
+
+}
+}
 	
 #endif
+
+namespace beast {
+namespace detail {
 
 // Records and returns the time from process startup
 static double getStartupTime()

@@ -26,7 +26,12 @@ class NodeStoreScheduler
     , public Stoppable
 {
 public:
-    NodeStoreScheduler (Stoppable& parent, JobQueue& jobQueue);
+    NodeStoreScheduler (Stoppable& parent);
+
+    // VFALCO NOTE This is a temporary hack to solve the problem
+    //             of circular dependency.
+    //
+    void setJobQueue (JobQueue& jobQueue);
 
     void onStop ();
     void onChildrenStopped ();
@@ -35,8 +40,8 @@ public:
 private:
     void doTask (NodeStore::Task& task, Job&);
 
-    JobQueue& m_jobQueue;
-    Atomic <int> m_taskCount;
+    JobQueue* m_jobQueue;
+    std::atomic <int> m_taskCount;
 };
 
 

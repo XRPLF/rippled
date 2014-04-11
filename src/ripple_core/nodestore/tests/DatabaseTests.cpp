@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-namespace NodeStore
-{
+namespace ripple {
+namespace NodeStore {
 
 class DatabaseTests : public TestBase
 {
@@ -36,6 +36,8 @@ public:
 
     void testImport (String destBackendType, String srcBackendType, int64 seedValue)
     {
+        std::unique_ptr <Manager> manager (make_Manager ());
+
         DummyScheduler scheduler;
 
         File const node_db (File::createTempFile ("node_db"));
@@ -47,9 +49,12 @@ public:
         Batch batch;
         createPredictableBatch (batch, 0, numObjectsToTest, seedValue);
 
+        Journal j ((journal ()));
+
         // Write to source db
         {
-            ScopedPointer <Database> src (Database::New ("test", scheduler, srcParams));
+            std::unique_ptr <Database> src (manager->make_Database (
+                "test", scheduler, j, 2, srcParams));
             storeBatch (*src, batch);
         }
 
@@ -57,7 +62,8 @@ public:
 
         {
             // Re-open the db
-            ScopedPointer <Database> src (Database::New ("test", scheduler, srcParams));
+            std::unique_ptr <Database> src (manager->make_Database (
+                "test", scheduler, j, 2, srcParams));
 
             // Set up the destination database
             File const dest_db (File::createTempFile ("dest_db"));
@@ -65,7 +71,8 @@ public:
             destParams.set ("type", destBackendType);
             destParams.set ("path", dest_db.getFullPathName ());
 
-            ScopedPointer <Database> dest (Database::New ("test", scheduler, destParams));
+            std::unique_ptr <Database> dest (manager->make_Database (
+                "test", scheduler, j, 2, destParams));
 
             beginTestCase (String ("import into '") + destBackendType + "' from '" + srcBackendType + "'");
 
@@ -80,7 +87,6 @@ public:
         std::sort (batch.begin (), batch.end (), NodeObject::LessThan ());
         std::sort (copy.begin (), copy.end (), NodeObject::LessThan ());
         expect (areBatchesEqual (batch, copy), "Should be equal");
-
     }
 
     //--------------------------------------------------------------------------
@@ -91,6 +97,8 @@ public:
                         int64 const seedValue,
                         int numObjectsToTest = 2000)
     {
+        std::unique_ptr <Manager> manager (make_Manager ());
+
         DummyScheduler scheduler;
 
         String s;
@@ -117,9 +125,12 @@ public:
         Batch batch;
         createPredictableBatch (batch, 0, numObjectsToTest, seedValue);
 
+        Journal j ((journal ()));
+
         {
             // Open the database
-            ScopedPointer <Database> db (Database::New ("test", scheduler, nodeParams, tempParams));
+            std::unique_ptr <Database> db (manager->make_Database ("test", scheduler,
+                j, 2, nodeParams, tempParams));
 
             // Write the batch
             storeBatch (*db, batch);
@@ -144,7 +155,8 @@ public:
         {
             {
                 // Re-open the database without the ephemeral DB
-                ScopedPointer <Database> db (Database::New ("test", scheduler, nodeParams));
+                std::unique_ptr <Database> db (manager->make_Database (
+                    "test", scheduler, j, 2, nodeParams));
 
                 // Read it back in
                 Batch copy;
@@ -159,8 +171,8 @@ public:
             if (useEphemeralDatabase)
             {
                 // Verify the ephemeral db
-                ScopedPointer <Database> db (Database::New ("test",
-                    scheduler, tempParams, StringPairArray ()));
+                std::unique_ptr <Database> db (manager->make_Database ("test",
+                    scheduler, j, 2, tempParams, StringPairArray ()));
 
                 // Read it back in
                 Batch copy;
@@ -188,7 +200,9 @@ public:
         testNodeStore ("rocksdb", useEphemeralDatabase, true, seedValue);
     #endif
 
+    #if RIPPLE_ENABLE_SQLITE_BACKEND_TESTS
         testNodeStore ("sqlite", useEphemeralDatabase, true, seedValue);
+    #endif
     }
 
     //--------------------------------------------------------------------------
@@ -205,7 +219,9 @@ public:
         testImport ("hyperleveldb", "hyperleveldb", seedValue);
     #endif
 
+    #if RIPPLE_ENABLE_SQLITE_BACKEND_TESTS
         testImport ("sqlite", "sqlite", seedValue);
+    #endif
     }
 
     //--------------------------------------------------------------------------
@@ -226,4 +242,5 @@ public:
 
 static DatabaseTests databaseTests;
 
+}
 }

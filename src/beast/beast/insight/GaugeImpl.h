@@ -20,22 +20,26 @@
 #ifndef BEAST_INSIGHT_GAUGEIMPL_H_INCLUDED
 #define BEAST_INSIGHT_GAUGEIMPL_H_INCLUDED
 
+#include <memory>
+
+#include "BaseImpl.h"
+
 namespace beast {
 namespace insight {
 
 class Gauge;
 
-class GaugeImpl : public enable_shared_from_this <GaugeImpl>
+class GaugeImpl
+    : public std::enable_shared_from_this <GaugeImpl>
+    , public BaseImpl
 {
 public:
     typedef uint64  value_type;
     typedef int64   difference_type;
-    typedef beast::function <void (Gauge const&)> HandlerType;
 
     virtual ~GaugeImpl () = 0;
     virtual void set (value_type value) = 0;
     virtual void increment (difference_type amount) = 0;
-    virtual void set_handler (HandlerType const& handler) = 0;
 };
 
 }

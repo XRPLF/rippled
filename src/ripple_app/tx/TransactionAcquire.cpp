@@ -17,18 +17,31 @@
 */
 //==============================================================================
 
-SETUP_LOG (TransactionAcquire)
+//SETUP_LOG (TransactionAcquire)
+template <> char const* LogPartition::getPartitionName <TransactionAcquire> () { return "TxAcquire"; }
 
-#define TX_ACQUIRE_TIMEOUT  250
+enum
+{
+    // VFALCO NOTE This should be a std::chrono::duration constant.
+    // TODO Document this. Is it seconds? Milliseconds? WTF?
+    TX_ACQUIRE_TIMEOUT = 250
+};
 
 typedef std::map<uint160, LedgerProposal::pointer>::value_type u160_prop_pair;
 typedef std::map<uint256, DisputedTx::pointer>::value_type u256_lct_pair;
 
-TransactionAcquire::TransactionAcquire (uint256 const& hash)
-    : PeerSet (hash, TX_ACQUIRE_TIMEOUT, true)
+TransactionAcquire::TransactionAcquire (uint256 const& hash, clock_type& clock)
+    : PeerSet (hash, TX_ACQUIRE_TIMEOUT, true, clock,
+        LogPartition::getJournal <TransactionAcquire> ())
     , mHaveRoot (false)
 {
-    mMap = boost::make_shared<SHAMap> (smtTRANSACTION, hash);
+    mMap = boost::make_shared<SHAMap> (smtTRANSACTION, hash,
+        std::ref (getApp().getFullBelowCache ()));
+    mMap->setTXMap ();
+}
+
+TransactionAcquire::~TransactionAcquire ()
+{
 }
 
 static void TACompletionHandler (uint256 hash, SHAMap::pointer map)
@@ -58,7 +71,7 @@ void TransactionAcquire::done ()
         map = mMap;
     }
 
-    getApp().getIOService ().post (BIND_TYPE (&TACompletionHandler, mHash, map));
+    getApp().getJobQueue().addJob (jtTXN_DATA, "completeAcquire", BIND_TYPE (&TACompletionHandler, mHash, map));
 }
 
 void TransactionAcquire::onTimer (bool progress, ScopedLockType& psl)
@@ -77,7 +90,7 @@ void TransactionAcquire::onTimer (bool progress, ScopedLockType& psl)
                 WriteLog (lsWARNING, TransactionAcquire) << "Still need it";
                 mTimeouts = 0;
                 aggressive = true;
-	    }
+            }
         }
         psl.lock(__FILE__, __LINE__);
 
@@ -95,7 +108,7 @@ void TransactionAcquire::onTimer (bool progress, ScopedLockType& psl)
         WriteLog (lsWARNING, TransactionAcquire) << "Out of peers for TX set " << getHash ();
 
         bool found = false;
-        std::vector<Peer::pointer> peerList = getApp().getPeers ().getPeerVector ();
+        Peers::PeerSequence peerList = getApp().getPeers ().getActivePeers ();
         BOOST_FOREACH (Peer::ref peer, peerList)
         {
             if (peer->hasTxSet (getHash ()))
@@ -122,9 +135,14 @@ boost::weak_ptr<PeerSet> TransactionAcquire::pmDowncast ()
 
 void TransactionAcquire::trigger (Peer::ref peer)
 {
-    if (mComplete || mFailed)
+    if (mComplete)
     {
-        WriteLog (lsINFO, TransactionAcquire) << "complete or failed";
+        WriteLog (lsINFO, TransactionAcquire) << "trigger after complete";
+        return;
+    }
+    if (mFailed)
+    {
+        WriteLog (lsINFO, TransactionAcquire) << "trigger after fail";
         return;
     }
 
@@ -145,7 +163,8 @@ void TransactionAcquire::trigger (Peer::ref peer)
     {
         std::vector<SHAMapNode> nodeIDs;
         std::vector<uint256> nodeHashes;
-        ConsensusTransSetSF sf;
+        // VFALCO TODO Use a dependency injection on the temp node cache
+        ConsensusTransSetSF sf (getApp().getTempNodeCache ());
         mMap->getMissingNodes (nodeIDs, nodeHashes, 256, &sf);
 
         if (nodeIDs.empty ())
@@ -167,7 +186,9 @@ void TransactionAcquire::trigger (Peer::ref peer)
             tmGL.set_querytype (protocol::qtINDIRECT);
 
         BOOST_FOREACH (SHAMapNode & it, nodeIDs)
-        * (tmGL.add_nodeids ()) = it.getRawString ();
+        {
+            * (tmGL.add_nodeids ()) = it.getRawString ();
+        }
         sendRequest (tmGL, peer);
     }
 }
@@ -194,27 +215,22 @@ SHAMapAddNode TransactionAcquire::takeNodes (const std::list<SHAMapNode>& nodeID
 
         std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin ();
         std::list< Blob >::const_iterator nodeDatait = data.begin ();
-        ConsensusTransSetSF sf;
+        ConsensusTransSetSF sf (getApp().getTempNodeCache ());
 
         while (nodeIDit != nodeIDs.end ())
         {
             if (nodeIDit->isRoot ())
             {
                 if (mHaveRoot)
-                {
-                    WriteLog (lsWARNING, TransactionAcquire) << "Got root TXS node, already have it";
-                    return SHAMapAddNode ();
-                }
-
-                if (!mMap->addRootNode (getHash (), *nodeDatait, snfWIRE, NULL))
+                    WriteLog (lsDEBUG, TransactionAcquire) << "Got root TXS node, already have it";
+                else if (!mMap->addRootNode (getHash (), *nodeDatait, snfWIRE, NULL).isGood())
                 {
                     WriteLog (lsWARNING, TransactionAcquire) << "TX acquire got bad root node";
-                    return SHAMapAddNode::invalid ();
                 }
                 else
                     mHaveRoot = true;
             }
-            else if (!mMap->addKnownNode (*nodeIDit, *nodeDatait, &sf))
+            else if (!mMap->addKnownNode (*nodeIDit, *nodeDatait, &sf).isGood())
             {
                 WriteLog (lsWARNING, TransactionAcquire) << "TX acquire got bad non-root node";
                 return SHAMapAddNode::invalid ();

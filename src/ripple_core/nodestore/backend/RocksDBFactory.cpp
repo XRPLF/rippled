@@ -19,19 +19,14 @@
 
 #if RIPPLE_ROCKSDB_AVAILABLE
 
-namespace NodeStore {
+#include <atomic>
 
-//------------------------------------------------------------------------------
+namespace ripple {
+namespace NodeStore {
 
 class RocksDBEnv : public rocksdb::EnvWrapper
 {
 public:
-    static RocksDBEnv* get ()
-    {
-        static RocksDBEnv instance;
-        return &instance;
-    }
-
     RocksDBEnv ()
         : EnvWrapper (rocksdb::Env::Default())
     {
@@ -56,8 +51,8 @@ public:
         void* a (p->a);
         delete p;
 
-        static Atomic <int> n;
-        int const id (++n);
+        static std::atomic <std::size_t> n;
+        std::size_t const id (++n);
         std::stringstream ss;
         ss << "rocksdb #" << id;
         Thread::setCurrentThreadName (ss.str());
@@ -65,7 +60,7 @@ public:
         (*f)(a);
     }
 
-    void StartThread(void (*f)(void*), void* a)
+    void StartThread (void (*f)(void*), void* a)
     {
         ThreadParams* const p (new ThreadParams (f, a));
         EnvWrapper::StartThread (&RocksDBEnv::thread_entry, p);
@@ -74,20 +69,23 @@ public:
 
 //------------------------------------------------------------------------------
 
-class RocksDBFactory::BackendImp
+class RocksDBBackend
     : public Backend
     , public BatchWriter::Callback
-    , public LeakChecked <RocksDBFactory::BackendImp>
+    , public LeakChecked <RocksDBBackend>
 {
 public:
-    typedef RecycledObjectPool <std::string> StringPool;
+    Journal m_journal;
+    size_t const m_keyBytes;
+    Scheduler& m_scheduler;
+    BatchWriter m_batch;
+    std::string m_name;
+    std::unique_ptr <rocksdb::DB> m_db;
 
-    //--------------------------------------------------------------------------
-
-    BackendImp (int keyBytes,
-             Parameters const& keyValues,
-             Scheduler& scheduler)
-        : m_keyBytes (keyBytes)
+    RocksDBBackend (int keyBytes, Parameters const& keyValues,
+        Scheduler& scheduler, Journal journal, RocksDBEnv* env)
+        : m_journal (journal)
+        , m_keyBytes (keyBytes)
         , m_scheduler (scheduler)
         , m_batch (*this, scheduler)
         , m_name (keyValues ["path"].toStdString ())
@@ -134,17 +132,17 @@ public:
             options.target_file_size_multiplier = keyValues["file_size_mult"].getIntValue();
         }
 
-        options.env = RocksDBEnv::get();
+        options.env = env;
 
         rocksdb::DB* db = nullptr;
         rocksdb::Status status = rocksdb::DB::Open (options, m_name, &db);
         if (!status.ok () || !db)
             Throw (std::runtime_error (std::string("Unable to open/create RocksDB: ") + status.ToString()));
 
-        m_db = db;
+        m_db.reset (db);
     }
 
-    ~BackendImp ()
+    ~RocksDBBackend ()
     {
     }
 
@@ -164,44 +162,40 @@ public:
         rocksdb::ReadOptions const options;
         rocksdb::Slice const slice (static_cast <char const*> (key), m_keyBytes);
 
+        std::string string;
+
+        rocksdb::Status getStatus = m_db->Get (options, slice, &string);
+
+        if (getStatus.ok ())
         {
-            // These are reused std::string objects,
-            // required for RocksDB's funky interface.
-            //
-            StringPool::ScopedItem item (m_stringPool);
-            std::string& string = item.getObject ();
+            DecodedBlob decoded (key, string.data (), string.size ());
 
-            rocksdb::Status getStatus = m_db->Get (options, slice, &string);
-
-            if (getStatus.ok ())
+            if (decoded.wasOk ())
             {
-                DecodedBlob decoded (key, string.data (), string.size ());
-
-                if (decoded.wasOk ())
-                {
-                    *pObject = decoded.createObject ();
-                }
-                else
-                {
-                    // Decoding failed, probably corrupted!
-                    //
-                    status = dataCorrupt;
-                }
+                *pObject = decoded.createObject ();
             }
             else
             {
-                if (getStatus.IsCorruption ())
-                {
-                    status = dataCorrupt;
-                }
-                else if (getStatus.IsNotFound ())
-                {
-                    status = notFound;
-                }
-                else
-                {
-                    status = unknown;
-                }
+                // Decoding failed, probably corrupted!
+                //
+                status = dataCorrupt;
+            }
+        }
+        else
+        {
+            if (getStatus.IsCorruption ())
+            {
+                status = dataCorrupt;
+            }
+            else if (getStatus.IsNotFound ())
+            {
+                status = notFound;
+            }
+            else
+            {
+                status = Status (customCode + getStatus.code());
+
+                m_journal.error << getStatus.ToString ();
             }
         }
 
@@ -217,19 +211,17 @@ public:
     {
         rocksdb::WriteBatch wb;
 
+        EncodedBlob encoded;
+
+        BOOST_FOREACH (NodeObject::ref object, batch)
         {
-            EncodedBlob::Pool::ScopedItem item (m_blobPool);
+            encoded.prepare (object);
 
-            BOOST_FOREACH (NodeObject::ref object, batch)
-            {
-                item.getObject ().prepare (object);
-
-                wb.Put (
-                    rocksdb::Slice (reinterpret_cast <char const*> (item.getObject ().getKey ()),
-                                                                    m_keyBytes),
-                    rocksdb::Slice (reinterpret_cast <char const*> (item.getObject ().getData ()),
-                                                                    item.getObject ().getSize ()));
-            }
+            wb.Put (
+                rocksdb::Slice (reinterpret_cast <char const*> (
+                    encoded.getKey ()), m_keyBytes),
+                rocksdb::Slice (reinterpret_cast <char const*> (
+                    encoded.getData ()), encoded.getSize ()));
         }
 
         rocksdb::WriteOptions const options;
@@ -241,7 +233,7 @@ public:
     {
         rocksdb::ReadOptions const options;
 
-        ScopedPointer <rocksdb::Iterator> it (m_db->NewIterator (options));
+        std::unique_ptr <rocksdb::Iterator> it (m_db->NewIterator (options));
 
         for (it->SeekToFirst (); it->Valid (); it->Next ())
         {
@@ -283,25 +275,17 @@ public:
     {
         storeBatch (batch);
     }
-
-private:
-    size_t const m_keyBytes;
-    Scheduler& m_scheduler;
-    BatchWriter m_batch;
-    StringPool m_stringPool;
-    EncodedBlob::Pool m_blobPool;
-    std::string m_name;
-    ScopedPointer <rocksdb::DB> m_db;
 };
 
 //------------------------------------------------------------------------------
 
-class RocksDBFactoryImp : public RocksDBFactory
+class RocksDBFactory : public Factory
 {
 public:
     std::shared_ptr <rocksdb::Cache> m_lruCache;
+    RocksDBEnv m_env;
 
-    RocksDBFactoryImp ()
+    RocksDBFactory ()
     {
         rocksdb::Options options;
         options.create_if_missing = true;
@@ -311,9 +295,8 @@ public:
         m_lruCache = options.block_cache;
     }
 
-    ~RocksDBFactoryImp ()
+    ~RocksDBFactory ()
     {
-
     }
 
     String getName () const
@@ -321,26 +304,23 @@ public:
         return "RocksDB";
     }
 
-    Backend* createInstance (
+    std::unique_ptr <Backend> createInstance (
         size_t keyBytes, Parameters const& keyValues,
-            Scheduler& scheduler)
+            Scheduler& scheduler, Journal journal)
     {
-        return new RocksDBFactory::BackendImp (
-            keyBytes, keyValues, scheduler);
+        return std::make_unique <RocksDBBackend> (
+            keyBytes, keyValues, scheduler, journal, &m_env);
     }
 };
 
 //------------------------------------------------------------------------------
 
-RocksDBFactory::~RocksDBFactory ()
+std::unique_ptr <Factory> make_RocksDBFactory ()
 {
+    return std::make_unique <RocksDBFactory> ();
 }
 
-RocksDBFactory* RocksDBFactory::New ()
-{
-    return new RocksDBFactoryImp;
 }
-
 }
 
 #endif

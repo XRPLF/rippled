@@ -45,7 +45,7 @@ linux-g++:QMAKE_CXXFLAGS += \
     -pthread
 
 INCLUDEPATH += \
-    "../../src" \
+    "../../src/BeastConfig/" \
     "../../src/leveldb/" \
     "../../src/leveldb/port" \
     "../../src/leveldb/include" \
@@ -65,11 +65,12 @@ UI_HEADERS_DIR += ../../src/ripple_basics
 SOURCES += \
     ../../src/ripple/beast/ripple_beast.cpp \
     ../../src/ripple/beast/ripple_beastc.c \
+    ../../src/ripple/common/ripple_common.cpp \
     ../../src/ripple/http/ripple_http.cpp \
     ../../src/ripple/json/ripple_json.cpp \
     ../../src/ripple/peerfinder/ripple_peerfinder.cpp \
+    ../../src/ripple/radmap/ripple_radmap.cpp \
     ../../src/ripple/resource/ripple_resource.cpp \
-    ../../src/ripple/rpc/ripple_rpc.cpp \
     ../../src/ripple/sitefiles/ripple_sitefiles.cpp \
     ../../src/ripple/sslutil/ripple_sslutil.cpp \
     ../../src/ripple/testoverlay/ripple_testoverlay.cpp \
@@ -95,6 +96,8 @@ SOURCES += \
     ../../src/ripple_hyperleveldb/ripple_hyperleveldb.cpp \
     ../../src/ripple_leveldb/ripple_leveldb.cpp \
     ../../src/ripple_net/ripple_net.cpp \
+    ../../src/ripple_overlay/ripple_overlay.cpp \
+    ../../src/ripple_rpc/ripple_rpc.cpp \
     ../../src/ripple_websocket/ripple_websocket.cpp
 
 LIBS += \

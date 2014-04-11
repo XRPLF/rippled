@@ -20,6 +20,10 @@
 #ifndef RIPPLE_SERIALIZER_H
 #define RIPPLE_SERIALIZER_H
 
+#include "../../ripple/common/byte_view.h"
+
+namespace ripple {
+
 class CKey; // forward declaration
 
 class Serializer
@@ -98,9 +102,9 @@ public:
     uint160 getRIPEMD160 (int size = -1) const;
     uint256 getSHA256 (int size = -1) const;
     uint256 getSHA512Half (int size = -1) const;
-    static uint256 getSHA512Half (Blob const& data, int size = -1);
+    static uint256 getSHA512Half (const_byte_view v);
+
     static uint256 getSHA512Half (const unsigned char* data, int len);
-    static uint256 getSHA512Half (const std::string& strData);
 
     // prefix hash functions
     static uint256 getPrefixHash (uint32 prefix, const unsigned char* data, int len);
@@ -217,11 +221,14 @@ public:
         return v.mData != mData;
     }
 
-    // signature functions
-    bool checkSignature (int pubkeyOffset, int signatureOffset) const;
-    bool checkSignature (Blob const& signature, CKey& rkey) const;
-    bool makeSignature (Blob& signature, CKey& rkey) const;
-    bool addSignature (CKey& rkey);
+    std::string getHex () const
+    {
+        std::stringstream h;
+        h << std::hex << std::setfill ('0');
+        for (unsigned char const& element : mData)
+            h << std::setw (2) << element;
+        return h.str ();
+    }
 
     // low-level VL length encode/decode functions
     static Blob encodeVL (int length);
@@ -291,5 +298,7 @@ public:
     Blob getVL ();
 };
 
+}
+
 #endif
-// vim:ts=4
+

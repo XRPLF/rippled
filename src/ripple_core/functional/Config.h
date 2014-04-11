@@ -102,19 +102,19 @@ public:
     struct Helpers
     {
         // This replaces CONFIG_FILE_NAME
-        static char const* getConfigFileName (bool forTestNetwork = false)
+        static char const* getConfigFileName ()
         {
-            return forTestNetwork ? "testnet-rippled.cfg" : "rippled.cfg";
+            return "rippled.cfg";
         }
 
-        static char const* getDatabaseDirName (bool forTestNetwork = false)
+        static char const* getDatabaseDirName ()
         {
-            return forTestNetwork ? "testnet-db" : "db";
+            return "db";
         }
 
-        static char const* getValidatorsFileName (bool forTestNetwork = false)
+        static char const* getValidatorsFileName ()
         {
-            return forTestNetwork ? "testnet-validators.txt" : "validators.txt";
+            return "validators.txt";
         }
     };
 
@@ -175,18 +175,6 @@ public:
         /** Load settings from the configuration file. */
         //Error load (ParsedConfigFile const& file);
     };
-
-    //--------------------------------------------------------------------------
-
-    /** Determine the location of the config file.
-        This searches the location provided on the command line first,
-        followed by the platform specific "user's home" directory.
-        @param commandLineLocation an optional location passed from the command line.
-        @param forTestNetwork Whether or not we are operating on the test network (DEPRECATATED)
-    */
-    static File findConfigFile (
-        String commandLineLocation = String::empty,
-        bool forTestNetwork = false);
 
     //--------------------------------------------------------------------------
 
@@ -273,7 +261,7 @@ public:
         ADMIN,
         FORBID
     };
-    Role getAdminRole (Json::Value const& params, std::string const& strRemoteIp) const;
+    Role getAdminRole (Json::Value const& params, IP::Endpoint const& remoteIp) const;
 
     /** Listening port number for peer connections. */
     int peerListeningPort;
@@ -294,7 +282,20 @@ public:
 private:
     std::string m_rpcIP;
     int m_rpcPort; // VFALCO TODO This should be a short.
+
+private:
+    /** The folder where new module databases should be located */
+    File m_moduleDbPath;
+
 public:
+    //--------------------------------------------------------------------------
+    /** Returns the location were databases should be located
+        The location may be a file, in which case databases should be placed in
+        the file, or it may be a directory, in which cases databases should be
+        stored in a file named after the module (e.g. "peerfinder.sqlite") that
+        is inside that directory.
+    */
+    File const& getModuleDatabasePath ();
 
     //--------------------------------------------------------------------------
 
@@ -339,7 +340,6 @@ public:
 public:
     // Configuration parameters
     bool                        QUIET;
-    bool                        TESTNET;
 
     boost::filesystem::path     DEBUG_LOGFILE;
     std::string                 CONSOLE_LOG_OUTPUT;
@@ -348,7 +348,7 @@ public:
 
     std::string                 VALIDATORS_SITE;        // Where to find validators.txt on the Internet.
     std::string                 VALIDATORS_URI;         // URI of validators.txt.
-    std::string                 VALIDATORS_BASE;        // Name with testnet-, if needed.
+    std::string                 VALIDATORS_BASE;        // Name
     std::vector<std::string>    IPS;                    // Peer IPs from rippled.cfg.
     std::vector<std::string>    IPS_FIXED;              // Fixed Peer IPs from rippled.cfg.
     std::vector<std::string>    SNTP_SERVERS;           // SNTP servers from rippled.cfg.
@@ -423,13 +423,13 @@ public:
     std::string                 WEBSOCKET_SSL_KEY;
 
     // RPC parameters
-    std::vector<std::string>    RPC_ADMIN_ALLOW;
-    std::string                 RPC_ADMIN_PASSWORD;
-    std::string                 RPC_ADMIN_USER;
-    std::string                 RPC_PASSWORD;
-    std::string                 RPC_USER;
-    bool                        RPC_ALLOW_REMOTE;
-    Json::Value                 RPC_STARTUP;
+    std::vector<beast::IP::Endpoint>   RPC_ADMIN_ALLOW;
+    std::string                     RPC_ADMIN_PASSWORD;
+    std::string                     RPC_ADMIN_USER;
+    std::string                     RPC_PASSWORD;
+    std::string                     RPC_USER;
+    bool                            RPC_ALLOW_REMOTE;
+    Json::Value                     RPC_STARTUP;
 
     int                         RPC_SECURE;
     std::string                 RPC_SSL_CERT;
@@ -459,6 +459,7 @@ public:
 
     // Node storage configuration
     uint32                      LEDGER_HISTORY;
+    uint32                      FETCH_DEPTH;
     int                         NODE_SIZE;
 
     // Client behavior
@@ -483,7 +484,7 @@ public:
     Config ();
 
     int getSize (SizedItemName);
-    void setup (const std::string& strConf, bool bTestNet, bool bQuiet);
+    void setup (const std::string& strConf, bool bQuiet);
     void load ();
 };
 

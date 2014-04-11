@@ -8,6 +8,7 @@ import glob
 import os
 import platform
 import re
+import sys
 
 OSX = bool(platform.mac_ver()[0])
 FreeBSD = bool('FreeBSD' == platform.system())
@@ -16,10 +17,12 @@ Ubuntu  = bool(Linux and 'Ubuntu' == platform.linux_distribution()[0])
 Debian  = bool(Linux and 'debian' == platform.linux_distribution()[0])
 Archlinux  = bool(Linux and ('','','') == platform.linux_distribution()) #Arch still has issues with the platform module
 
+USING_CLANG = OSX or os.environ.get('CC', None) == 'clang'
+
 #
 # We expect this to be set
-# 
-BOOST_HOME = os.environ.get("RIPPLED_BOOST_HOME", None) 
+#
+BOOST_HOME = os.environ.get("RIPPLED_BOOST_HOME", None)
 
 
 if OSX or Ubuntu or Debian or Archlinux:
@@ -33,8 +36,12 @@ else:
 # scons tools
 #
 
+HONOR_ENVS = ['CC', 'CXX', 'PATH']
+
 env = Environment(
-    tools = ['default', 'protoc']
+    tools = ['default', 'protoc'],
+    #ENV = dict((k, os.environ[k]) for k in HONOR_ENVS)
+    ENV = dict((k, os.environ[k]) for k in HONOR_ENVS if k in os.environ)
 )
 
 # Use a newer gcc on FreeBSD
@@ -44,12 +51,19 @@ if FreeBSD:
     env.Append(CCFLAGS = ['-Wl,-rpath=/usr/local/lib/gcc46'])
     env.Append(LINKFLAGS = ['-Wl,-rpath=/usr/local/lib/gcc46'])
 
-if OSX:
+if USING_CLANG:
     env.Replace(CC= 'clang')
     env.Replace(CXX= 'clang++')
-    env.Append(CXXFLAGS = ['-std=c++11', '-stdlib=libc++'])
-    env.Append(LINKFLAGS='-stdlib=libc++')
-    env['FRAMEWORKS'] = ['AppKit']
+
+    if Linux:
+        env.Append(CXXFLAGS = ['-std=c++11', '-stdlib=libstdc++'])
+        env.Append(LINKFLAGS='-stdlib=libstdc++')
+
+    if OSX:
+        env.Append(CXXFLAGS = ['-std=c++11', '-stdlib=libc++', 
+                               '-Wno-deprecated-register'])
+        env.Append(LINKFLAGS='-stdlib=libc++')
+        env['FRAMEWORKS'] = ['AppKit','Foundation']
 
 GCC_VERSION = re.split('\.', commands.getoutput(env['CXX'] + ' -dumpversion'))
 
@@ -93,17 +107,28 @@ BOOST_LIBS = [
     'boost_regex',
     'boost_system',
     'boost_thread',
-    'boost_random',
 ]
 
 # We whitelist platforms where the non -mt version is linked with pthreads. This
 # can be verified with: ldd libboost_filesystem.* If a threading library is
 # included the platform can be whitelisted.
-if FreeBSD or Ubuntu or Archlinux or OSX:
+# if FreeBSD or Ubuntu or Archlinux:
+
+if not (USING_CLANG and Linux) and (FreeBSD or Ubuntu or Archlinux or Debian or OSX):
     # non-mt libs do link with pthreads.
     env.Append(
         LIBS = BOOST_LIBS
     )
+elif Linux and USING_CLANG and Ubuntu:
+    # It's likely going to be here if using boost 1.55 
+    boost_statics = [ ("/usr/lib/x86_64-linux-gnu/lib%s.a" % a) for a in 
+                      BOOST_LIBS ]
+
+    if not all(os.path.exists(f) for f in boost_statics):
+        # Else here
+        boost_statics = [("/usr/lib/lib%s.a" % a) for a in BOOST_LIBS]
+    
+    env.Append(LIBS = [File(f) for f in boost_statics])
 else:
     env.Append(
         LIBS = [l + '-mt' for l in BOOST_LIBS]
@@ -124,11 +149,10 @@ else:
 #
 INCLUDE_PATHS = [
     '.',
-    'src',
+    'src/BeastConfig',
     'src/leveldb',
     'src/leveldb/port',
     'src/leveldb/include',
-    'src/beast',
     'build/proto'
     ]
 
@@ -159,14 +183,15 @@ COMPILED_FILES.extend([
     'src/ripple/http/ripple_http.cpp',
     'src/ripple/json/ripple_json.cpp',
     'src/ripple/peerfinder/ripple_peerfinder.cpp',
+    'src/ripple/radmap/ripple_radmap.cpp',
     'src/ripple/resource/ripple_resource.cpp',
     'src/ripple/rocksdb/ripple_rocksdb.cpp',
-    'src/ripple/rpc/ripple_rpc.cpp',
     'src/ripple/sitefiles/ripple_sitefiles.cpp',
     'src/ripple/sslutil/ripple_sslutil.cpp',
     'src/ripple/testoverlay/ripple_testoverlay.cpp',
     'src/ripple/types/ripple_types.cpp',
-    'src/ripple/validators/ripple_validators.cpp'
+    'src/ripple/validators/ripple_validators.cpp',
+	'src/ripple/common/ripple_common.cpp',
     ])
 
 # ------------------------------
@@ -182,12 +207,15 @@ COMPILED_FILES.extend([
     'src/ripple_app/ripple_app_pt6.cpp',
     'src/ripple_app/ripple_app_pt7.cpp',
     'src/ripple_app/ripple_app_pt8.cpp',
+    'src/ripple_app/ripple_app_pt9.cpp',
     'src/ripple_basics/ripple_basics.cpp',
     'src/ripple_core/ripple_core.cpp',
     'src/ripple_data/ripple_data.cpp',
     'src/ripple_hyperleveldb/ripple_hyperleveldb.cpp',
     'src/ripple_leveldb/ripple_leveldb.cpp',
     'src/ripple_net/ripple_net.cpp',
+    'src/ripple_overlay/ripple_overlay.cpp',
+    'src/ripple_rpc/ripple_rpc.cpp',
     'src/ripple_websocket/ripple_websocket.cpp'
     ])
 
@@ -226,7 +254,7 @@ env.Append(
         ['rt'] if not OSX else [] +\
         [
             'z'
-        ] 
+        ]
 )
 
 # We prepend, in case there's another BOOST somewhere on the path
@@ -237,23 +265,41 @@ if BOOST_HOME is not None:
 
 if not OSX:
     env.Append(LINKFLAGS = [
-        '-rdynamic', '-pthread', 
+        '-rdynamic',
+        '-pthread',
         ])
 
 DEBUGFLAGS  = ['-g', '-DDEBUG', '-D_DEBUG']
 
 env.Append(CCFLAGS = ['-pthread', '-Wall', '-Wno-sign-compare', '-Wno-char-subscripts']+DEBUGFLAGS)
-env.Append(CXXFLAGS = ['-O1', '-pthread', '-Wno-invalid-offsetof', '-Wformat']+DEBUGFLAGS)
+if not USING_CLANG:
+     more_warnings = ['-Wno-unused-local-typedefs']
+else:
+     # This disables the "You said it was a struct AND a class, wth is going on
+     # warnings"
+     more_warnings = ['-Wno-mismatched-tags']
+     # This needs to be a CCFLAGS not a CXXFLAGS
+     env.Append(CCFLAGS = more_warnings)
 
+env.Append(CXXFLAGS = ['-O1','-pthread', '-Wno-invalid-offsetof', '-Wformat']+more_warnings+DEBUGFLAGS)
 
 # RTTI is required for Beast and CountedObject.
 #
 env.Append(CXXFLAGS = ['-frtti'])
 
-if (int(GCC_VERSION[0]) == 4 and int(GCC_VERSION[1]) == 6):
-    env.Append(CXXFLAGS = ['-std=c++0x'])
-elif (int(GCC_VERSION[0]) > 4 or (int(GCC_VERSION[0]) == 4 and int(GCC_VERSION[1]) >= 7)):
-    env.Append(CXXFLAGS = ['-std=c++11'])
+UBUNTU_GCC_48_INSTALL_STEPS = '''
+https://ripple.com/wiki/Ubuntu_build_instructions#Ubuntu_versions_older_than_13.10_:_Install_gcc_4.8'''
+
+if not USING_CLANG:
+    if (int(GCC_VERSION[0]) == 4 and int(GCC_VERSION[1]) < 8):
+        print "\nrippled, using c++11, requires g++ version >= 4.8 to compile"
+
+        if Ubuntu:
+          print UBUNTU_GCC_48_INSTALL_STEPS
+
+        sys.exit(1)
+    else:
+        env.Append(CXXFLAGS = ['-std=c++11'])
 
 # FreeBSD doesn't support O_DSYNC
 if FreeBSD:

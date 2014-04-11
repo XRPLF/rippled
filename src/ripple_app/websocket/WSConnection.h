@@ -39,7 +39,7 @@ protected:
 
     WSConnection (Resource::Manager& resourceManager,
         Resource::Consumer usage, InfoSub::Source& source, bool isPublic,
-            IPAddress const& remoteAddress, boost::asio::io_service& io_service);
+            IP::Endpoint const& remoteAddress, boost::asio::io_service& io_service);
 
     virtual ~WSConnection ();
 
@@ -50,6 +50,7 @@ public:
     void onPong (const std::string&);
     void rcvMessage (message_ptr msg, bool& msgRejected, bool& runQueue);
     message_ptr getMessage ();
+    bool checkMessage ();
     void returnMessage (message_ptr ptr);
     Json::Value invokeCommand (Json::Value& jvRequest);
 
@@ -57,7 +58,7 @@ protected:
     Resource::Manager& m_resourceManager;
     Resource::Consumer m_usage;
     bool const m_isPublic;
-    IPAddress const m_remoteAddress;
+    IP::Endpoint const m_remoteAddress;
     LockType m_receiveQueueMutex;
     std::deque <message_ptr> m_receiveQueue;
     NetworkOPs& m_netOPs;

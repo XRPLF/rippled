@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace beast {
+
 HTTPMessage::HTTPMessage (HTTPVersion const& version_,
                           StringPairArray& fields,
                           DynamicBuffer& body)
@@ -47,4 +49,6 @@ String HTTPMessage::toString () const
     s << "HTTP " << version().toString() << newLine;
     s << m_headers.toString ();
     return s;
+}
+
 }

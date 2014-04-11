@@ -21,6 +21,8 @@
 
 #include "ripple_app.h"
 
+#include "../ripple/common/seconds_clock.h"
+
 namespace ripple {
 
 #include "shamap/SHAMap.cpp" // Uses theApp
@@ -29,12 +31,10 @@ namespace ripple {
 #include "shamap/SHAMapMissingNode.cpp"
 
 #include "misc/AccountItem.cpp"
-#include "tx/AccountSetTransactor.cpp"
 #include "misc/CanonicalTXSet.cpp"
 #include "ledger/LedgerProposal.cpp"
 #include "main/LoadManager.cpp"
 #include "misc/NicknameState.cpp"
-#include "tx/OfferCancelTransactor.cpp"
 #include "ledger/OrderBookDB.cpp"
 
 #include "data/Database.cpp"
@@ -43,3 +43,7 @@ namespace ripple {
 #include "data/DBInit.cpp"
 
 }
+
+# include "shamap/RadixMapTest.h"
+#include "shamap/RadixMapTest.cpp"
+#include "shamap/FetchPackTests.cpp"

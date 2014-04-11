@@ -20,9 +20,13 @@
 #ifndef BEAST_INSIGHT_EVENT_H_INCLUDED
 #define BEAST_INSIGHT_EVENT_H_INCLUDED
 
+#include <chrono>
+#include <memory>
+
+#include "Base.h"
 #include "EventImpl.h"
 
-#include "../stl/shared_ptr.h"
+#include "../chrono/chrono_util.h"
 
 namespace beast {
 namespace insight {
@@ -36,7 +40,7 @@ namespace insight {
     This is a lightweight reference wrapper which is cheap to copy and assign.
     When the last reference goes away, the metric is no longer collected.
 */
-class Event
+class Event : public Base
 {
 public:
     typedef EventImpl::value_type value_type;
@@ -45,31 +49,32 @@ public:
         A null metric reports no information.
     */
     Event ()
-    {
-    }
+        { }
 
     /** Create the metric reference the specified implementation.
         Normally this won't be called directly. Instead, call the appropriate
         factory function in the Collector interface.
         @see Collector.
     */
-    explicit Event (shared_ptr <EventImpl> const& impl)
+    explicit Event (std::shared_ptr <EventImpl> const& impl)
         : m_impl (impl)
-    {
-    }
+        { }
 
-    /** Push an event notification.
-        The value specifies the elapsed time in milliseconds, or any other
-        domain specific value.
-    */
-    void notify (value_type value) const
+    /** Push an event notification. */
+    template <class Rep, class Period>
+    void notify (std::chrono::duration <Rep, Period> const& value) const
     {
         if (m_impl)
-            m_impl->notify (value);
+            m_impl->notify (ceil <value_type> (value));
+    }
+
+    std::shared_ptr <EventImpl> const& impl () const
+    {
+        return m_impl;
     }
 
 private:
-    shared_ptr <EventImpl> m_impl;
+    std::shared_ptr <EventImpl> m_impl;
 };
 
 }

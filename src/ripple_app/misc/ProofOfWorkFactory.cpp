@@ -349,8 +349,7 @@ private:
 
 ProofOfWorkFactory* ProofOfWorkFactory::New ()
 {
-    ScopedPointer <ProofOfWorkFactory> object (new ProofOfWorkFactoryImp);
-    return object.release ();
+    return new ProofOfWorkFactoryImp;
 }
 
 //------------------------------------------------------------------------------

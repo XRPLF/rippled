@@ -22,10 +22,11 @@
 
 #include "../json/ripple_json.h"
 
-#include "beast/modules/beast_core/beast_core.h"
-#include "beast/modules/beast_crypto/beast_crypto.h" // for UnsignedInteger, Remove ASAP!
+#include "../beast/modules/beast_core/beast_core.h"
+#include "../beast/beast/Crypto.h"
 
-#include "beast/modules/beast_core/system/BeforeBoost.h"
+#include "../beast/modules/beast_core/system/BeforeBoost.h"
+#include <boost/utility/base_from_member.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/unordered_set.hpp>
 
@@ -50,8 +51,8 @@ using namespace beast;
 #  include "api/ByteOrder.h"
 #  include "api/strHex.h"
 # include "api/UInt128.h"
-# include "api/UInt160.h"
 # include "api/UInt256.h"
+# include "api/UInt160.h"
 # include "api/RandomNumbers.h"
 #include "api/HashMaps.h"
 
@@ -61,11 +62,11 @@ using namespace beast;
 #include "api/RippleAccountID.h"
 #include "api/RippleAccountPublicKey.h"
 #include "api/RippleAccountPrivateKey.h"
+#include "api/RippleAssets.h"
 #include "api/RipplePublicKey.h"
 #include "api/RipplePrivateKey.h"
 # include "api/SimpleIdentifier.h"
 #include "api/RippleLedgerHash.h"
 #include "api/RipplePublicKeyHash.h"
-#include "api/JsonPropertyStream.h"
 
 #endif

@@ -22,22 +22,23 @@
 
 #include "../ripple_basics/ripple_basics.h"
 #include "../ripple/json/ripple_json.h"
+#include "../ripple/sslutil/api/ECDSACanonical.h"
 
 struct bignum_st;
 typedef struct bignum_st BIGNUM;
 
 namespace ripple {
-
 #include "crypto/Base58Data.h"
 #include "crypto/RFC1751.h"
-
 #include "protocol/BuildInfo.h"
 #include "protocol/FieldNames.h"
 #include "protocol/HashPrefix.h"
 #include "protocol/Protocol.h"
 #include "protocol/RippleAddress.h"
 #include "protocol/RippleSystem.h"
+}
 #include "protocol/Serializer.h" // needs CKey
+namespace ripple {
 #include "protocol/TER.h"
 #include "protocol/SerializedTypes.h" // needs Serializer, TER
 #include "protocol/SerializedObjectTemplate.h"
@@ -50,6 +51,8 @@ namespace ripple {
 #include "utility/UptimeTimerAdapter.h"
 
 }
+
+#include "protocol/STParsedJSON.h"
 
 //------------------------------------------------------------------------------
 

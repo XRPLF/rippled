@@ -33,18 +33,18 @@ private:
         {
         }
 
-        std::set <uint64> const& peekPeers () const
+        std::set <PeerShortID> const& peekPeers () const
         {
             return mPeers;
         }
 
-        void addPeer (uint64 peer)
+        void addPeer (PeerShortID peer)
         {
             if (peer != 0)
                 mPeers.insert (peer);
         }
         
-        bool hasPeer (uint64 peer) const
+        bool hasPeer (PeerShortID peer) const
         {
             return mPeers.count (peer) > 0;
         }
@@ -69,14 +69,14 @@ private:
             mFlags &= ~flagsToClear;
         }
 
-        void swapSet (std::set <uint64>& other)
+        void swapSet (std::set <PeerShortID>& other)
         {
             mPeers.swap (other);
         }
 
     private:
         int mFlags;
-        std::set <uint64> mPeers;
+        std::set <PeerShortID> mPeers;
     };
 
 public:
@@ -88,13 +88,13 @@ public:
 
     bool addSuppression (uint256 const& index);
 
-    bool addSuppressionPeer (uint256 const& index, uint64 peer);
-    bool addSuppressionPeer (uint256 const& index, uint64 peer, int& flags);
+    bool addSuppressionPeer (uint256 const& index, PeerShortID peer);
+    bool addSuppressionPeer (uint256 const& index, PeerShortID peer, int& flags);
     bool addSuppressionFlags (uint256 const& index, int flag);
     bool setFlag (uint256 const& index, int flag);
     int getFlags (uint256 const& index);
 
-    bool swapSet (uint256 const& index, std::set<uint64>& peers, int flag);
+    bool swapSet (uint256 const& index, std::set<PeerShortID>& peers, int flag);
 
 private:
     Entry getEntry (uint256 const& );
@@ -162,7 +162,7 @@ HashRouter::Entry HashRouter::getEntry (uint256 const& index)
     return findCreateEntry (index, created);
 }
 
-bool HashRouter::addSuppressionPeer (uint256 const& index, uint64 peer)
+bool HashRouter::addSuppressionPeer (uint256 const& index, PeerShortID peer)
 {
     ScopedLockType sl (mLock, __FILE__, __LINE__);
 
@@ -171,7 +171,7 @@ bool HashRouter::addSuppressionPeer (uint256 const& index, uint64 peer)
     return created;
 }
 
-bool HashRouter::addSuppressionPeer (uint256 const& index, uint64 peer, int& flags)
+bool HashRouter::addSuppressionPeer (uint256 const& index, PeerShortID peer, int& flags)
 {
     ScopedLockType sl (mLock, __FILE__, __LINE__);
 
@@ -220,7 +220,7 @@ bool HashRouter::setFlag (uint256 const& index, int flag)
     return true;
 }
 
-bool HashRouter::swapSet (uint256 const& index, std::set<uint64>& peers, int flag)
+bool HashRouter::swapSet (uint256 const& index, std::set<PeerShortID>& peers, int flag)
 {
     ScopedLockType sl (mLock, __FILE__, __LINE__);
 

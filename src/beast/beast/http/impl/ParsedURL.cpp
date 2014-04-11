@@ -19,9 +19,9 @@
 
 #include "../ParsedURL.h"
 
-#include "http-parser/http_parser.h"
-
 #include "../../../modules/beast_core/beast_core.h" // for UnitTest
+
+#include "http_parser.h"
 
 namespace beast {
 

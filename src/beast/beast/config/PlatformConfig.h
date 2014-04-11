@@ -174,7 +174,6 @@
 
 #ifdef __clang__
  #define BEAST_CLANG 1
- #define BEAST_GCC 1
 #elif defined (__GNUC__)
   #define BEAST_GCC 1
 #elif defined (_MSC_VER)

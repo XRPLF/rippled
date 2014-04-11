@@ -21,20 +21,32 @@
 #define BEAST_INTRUSIVE_LIST_H_INCLUDED
 
 #include "../Config.h"
-
-#include "../mpl/CopyConst.h"
-
 #include "../Uncopyable.h"
 
 #include <iterator>
+#include <type_traits>
 
 namespace beast {
 
 template <typename, typename>
 class List;
 
-namespace detail
+namespace detail {
+
+/** Copy `const` attribute from T to U if present. */
+/** @{ */
+template <typename T, typename U>
+struct CopyConst
 {
+    typedef typename std::remove_const <U>::type type;
+};
+
+template <typename T, typename U>
+struct CopyConst <T const, U>
+{
+    typedef typename std::remove_const <U>::type const type;
+};
+/** @} */
 
 // This is the intrusive portion of the doubly linked list.
 // One derivation per list that the object may appear on
@@ -62,11 +74,11 @@ class ListIterator : public std::iterator <
     std::bidirectional_iterator_tag, std::size_t>
 {
 public:
-    typedef typename mpl::CopyConst<N, typename N::value_type>::type
-                                   value_type;
-    typedef value_type*            pointer;
-    typedef value_type&            reference;
-    typedef std::size_t            size_type;
+    typedef typename detail::CopyConst <
+        N, typename N::value_type>::type value_type;
+    typedef value_type* pointer;
+    typedef value_type& reference;
+    typedef std::size_t size_type;
 
     ListIterator (N* node = nullptr) noexcept
         : m_node (node)

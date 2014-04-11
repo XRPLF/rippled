@@ -20,6 +20,4 @@
 #ifndef BEAST_ASIO_H_INCLUDED
 #define BEAST_ASIO_H_INCLUDED
 
-#include "asio/IPAddressConversion.h"
-
 #endif

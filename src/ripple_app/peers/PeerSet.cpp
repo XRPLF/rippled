@@ -19,8 +19,18 @@
 
 class InboundLedger;
 
-PeerSet::PeerSet (uint256 const& hash, int interval, bool txnData)
-    : mLock (this, "PeerSet", __FILE__, __LINE__)
+// VFALCO NOTE The txnData constructor parameter is a code smell.
+//             It is true if we are the base of a TransactionAcquire,
+//             or false if we are base of InboundLedger. All it does
+//             is change the behavior of the timer depending on the
+//             derived class. Why not just make the timer callback
+//             function pure virtual?
+//
+PeerSet::PeerSet (uint256 const& hash, int interval, bool txnData,
+    clock_type& clock, Journal journal)
+    : m_journal (journal)
+    , m_clock (clock)
+    , mLock (this, "PeerSet", __FILE__, __LINE__)
     , mHash (hash)
     , mTimerInterval (interval)
     , mTimeouts (0)
@@ -28,17 +38,22 @@ PeerSet::PeerSet (uint256 const& hash, int interval, bool txnData)
     , mFailed (false)
     , mAggressive (false)
     , mTxnData (txnData)
+    , mProgress (false)
     , mTimer (getApp().getIOService ())
 {
-    mLastAction = mLastProgress = UptimeTimer::getInstance ().getElapsedSeconds ();
+    mLastAction = m_clock.now();
     assert ((mTimerInterval > 10) && (mTimerInterval < 30000));
+}
+
+PeerSet::~PeerSet ()
+{
 }
 
 bool PeerSet::peerHas (Peer::ref ptr)
 {
     ScopedLockType sl (mLock, __FILE__, __LINE__);
 
-    if (!mPeers.insert (std::make_pair (ptr->getPeerId (), 0)).second)
+    if (!mPeers.insert (std::make_pair (ptr->getShortId (), 0)).second)
         return false;
 
     newPeer (ptr);
@@ -48,7 +63,7 @@ bool PeerSet::peerHas (Peer::ref ptr)
 void PeerSet::badPeer (Peer::ref ptr)
 {
     ScopedLockType sl (mLock, __FILE__, __LINE__);
-    mPeers.erase (ptr->getPeerId ());
+    mPeers.erase (ptr->getShortId ());
 }
 
 void PeerSet::setTimer ()
@@ -71,7 +86,10 @@ void PeerSet::invokeOnTimer ()
         onTimer (false, sl);
     }
     else
+    {
+        clearProgress ();
         onTimer (true, sl);
+    }
 
     if (!isDone ())
         setTimer ();
@@ -86,9 +104,13 @@ void PeerSet::TimerEntry (boost::weak_ptr<PeerSet> wptr, const boost::system::er
 
     if (ptr)
     {
+        // VFALCO NOTE So this function is really two different functions depending on
+        //             the value of mTxnData, which is directly tied to whether we are
+        //             a base class of IncomingLedger or TransactionAcquire
+        //
         if (ptr->mTxnData)
         {
-            getApp().getJobQueue ().addJob (jtTXN_DATA, "timerEntry",
+            getApp().getJobQueue ().addJob (jtTXN_DATA, "timerEntryTxn",
                 BIND_TYPE (&PeerSet::TimerJobEntry, P_1, ptr));
         }
         else
@@ -101,7 +123,7 @@ void PeerSet::TimerEntry (boost::weak_ptr<PeerSet> wptr, const boost::system::er
                 ptr->setTimer ();
             }
             else
-                getApp().getJobQueue ().addJob (jtLEDGER_DATA, "timerEntry",
+                getApp().getJobQueue ().addJob (jtLEDGER_DATA, "timerEntryLgr",
                     BIND_TYPE (&PeerSet::TimerJobEntry, P_1, ptr));
 	}
     }
@@ -133,39 +155,41 @@ void PeerSet::sendRequest (const protocol::TMGetLedger& tmGL)
     if (mPeers.empty ())
         return;
 
-    PackedMessage::pointer packet = boost::make_shared<PackedMessage> (tmGL, protocol::mtGET_LEDGER);
+    PackedMessage::pointer packet (
+        boost::make_shared<PackedMessage> (tmGL, protocol::mtGET_LEDGER));
 
-    for (boost::unordered_map<uint64, int>::iterator it = mPeers.begin (), end = mPeers.end (); it != end; ++it)
+    for (auto const& p : mPeers)
     {
-        Peer::pointer peer = getApp().getPeers ().getPeerById (it->first);
+        Peer::pointer peer (getApp().getPeers ().findPeerByShortID (p.first));
 
         if (peer)
             peer->sendPacket (packet, false);
     }
 }
 
-int PeerSet::takePeerSetFrom (const PeerSet& s)
+std::size_t PeerSet::takePeerSetFrom (const PeerSet& s)
 {
-    int ret = 0;
+    std::size_t ret = 0;
     mPeers.clear ();
 
-    for (boost::unordered_map<uint64, int>::const_iterator it = s.mPeers.begin (), end = s.mPeers.end ();
-            it != end; ++it)
+    for (auto const& p : s.mPeers)
     {
-        mPeers.insert (std::make_pair (it->first, 0));
+        mPeers.insert (std::make_pair (p.first, 0));
         ++ret;
     }
-
+    
     return ret;
 }
 
-int PeerSet::getPeerCount () const
+std::size_t PeerSet::getPeerCount () const
 {
-    int ret = 0;
+    std::size_t ret (0);
 
-    for (boost::unordered_map<uint64, int>::const_iterator it = mPeers.begin (), end = mPeers.end (); it != end; ++it)
-        if (getApp().getPeers ().hasPeer (it->first))
+    for (auto const& p : mPeers)
+    {
+        if (getApp ().getPeers ().findPeerByShortID (p.first))
             ++ret;
+    }
 
     return ret;
 }

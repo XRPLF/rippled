@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-namespace NodeStore
-{
+namespace ripple {
+namespace NodeStore {
 
 void EncodedBlob::prepare (NodeObject::Ptr const& object)
 {
@@ -48,4 +48,5 @@ void EncodedBlob::prepare (NodeObject::Ptr const& object)
     }
 }
 
+}
 }

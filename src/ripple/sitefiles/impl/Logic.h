@@ -20,6 +20,8 @@
 #ifndef RIPPLE_SITEFILES_LOGIC_H_INCLUDED
 #define RIPPLE_SITEFILES_LOGIC_H_INCLUDED
 
+#include <memory>
+
 namespace ripple {
 namespace SiteFiles {
 
@@ -74,11 +76,11 @@ public:
 
     SharedState m_state;
     Journal m_journal;
-    ScopedPointer <HTTPClientBase> m_client;
+    std::unique_ptr <beast::asio::HTTPClientBase> m_client;
 
     explicit Logic (Journal journal)
         : m_journal (journal)
-        , m_client (HTTPClientBase::New (journal))
+        , m_client (beast::asio::HTTPClientBase::New (journal))
     {
     }
 
@@ -125,8 +127,7 @@ public:
 
         URL const& url (p.url());
 
-        HTTPClientBase::result_type const result (
-            m_client->get (url));
+        auto const result (m_client->get (url));
 
         //---
 

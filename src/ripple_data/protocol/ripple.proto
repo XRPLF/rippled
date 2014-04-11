@@ -14,7 +14,10 @@ enum MessageType
     mtCONTACT               = 11;
     mtGET_PEERS             = 12;
     mtPEERS                 = 13;
-    mtENDPOINTS             = 14;
+    // This field was previous used for PeerFinder ENDPOINTS messages. Since the
+    // structure's required fields changed, the message number was changed.
+    mtUNUSED_FIELD          = 14;
+    mtENDPOINTS             = 15;
 
     // operations for 'small' nodes
     mtSEARCH_TRANSACTION    = 20;
@@ -226,7 +229,7 @@ message TMGetPeers
     required uint32 doWeNeedThis    = 1;  // yes since you are asserting that the packet size isn't 0 in PackedMessage
 }
 
-message TMIPv4EndPoint
+message TMIPv4Endpoint
 {
     required uint32 ipv4            = 1;
 
@@ -238,24 +241,24 @@ message TMIPv4EndPoint
 
 message TMPeers
 {
-    repeated TMIPv4EndPoint nodes   = 1;
+    repeated TMIPv4Endpoint nodes   = 1;
 }
 
 // An Endpoint describes a network peer that can accept incoming connections
 message TMEndpoint
 {
-    required TMIPv4EndPoint ipv4 = 1;
-    required uint32         hops = 2;
-    required uint32         slots = 3;         // the number of available incoming slots
-    required uint32         maxSlots = 4;      // the maximum number of incoming slots
-    required uint32         uptimeSeconds = 5; // uptime in seconds
-    required string         features = 6;
+    required TMIPv4Endpoint ipv4    = 1;
+    required uint32         hops    = 2;
 }
 
 // An array of Endpoint messages
 message TMEndpoints
 {
-    repeated TMEndpoint endpoints = 1;
+    // This field is used to allow the TMEndpoints message format to be
+    // modified as necessary in the future. 
+    required uint32         version = 1;
+
+    repeated TMEndpoint     endpoints = 2;
 };
 
 message TMSearchTransaction

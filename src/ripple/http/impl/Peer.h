@@ -20,16 +20,20 @@
 #ifndef RIPPLE_HTTP_PEER_H_INCLUDED
 #define RIPPLE_HTTP_PEER_H_INCLUDED
 
+#include <memory>
+
+#include "../../ripple/common/MultiSocket.h"
+
 namespace ripple {
 namespace HTTP {
 
 // Holds the copy of buffers being sent
-typedef SharedArg <std::string> SharedBuffer;
+typedef beast::asio::SharedArg <std::string> SharedBuffer;
 
 /** Represents an active connection. */
 class Peer
     : public SharedObject
-    , public AsyncObject <Peer>
+    , public beast::asio::AsyncObject <Peer>
     , public Session
     , public List <Peer>::Node
     , public LeakChecked <Peer>
@@ -57,16 +61,16 @@ public:
     boost::asio::io_service::strand m_strand;
     boost::asio::deadline_timer m_data_timer;
     boost::asio::deadline_timer m_request_timer;
-    ScopedPointer <MultiSocket> m_socket;
+    std::unique_ptr <MultiSocket> m_socket;
     MemoryBlock m_buffer;
     HTTPRequestParser m_parser;
     int m_writesPending;
     bool m_closed;
     bool m_callClose;
-    Atomic <int> m_detached;
     SharedPtr <Peer> m_detach_ref;
     boost::optional <boost::asio::io_service::work> m_work;
     int m_errorCode;
+    std::atomic <int> m_detached;
 
     //--------------------------------------------------------------------------
 
@@ -80,6 +84,7 @@ public:
         , m_closed (false)
         , m_callClose (false)
         , m_errorCode (0)
+        , m_detached (0)
     {
         tag = nullptr;
 
@@ -93,7 +98,8 @@ public:
         case Port::require_ssl: flags = MultiSocket::server_ssl_required; break;
         }
 
-        m_socket = MultiSocket::New (m_impl.get_io_service(), port.context->get(), flags);
+        m_socket.reset (MultiSocket::New (
+            m_impl.get_io_service(), port.context->get(), flags));
 
         m_impl.add (*this);
     }
@@ -116,7 +122,7 @@ public:
         return m_impl.journal();
     }
 
-    IPAddress remoteAddress()
+    IP::Endpoint remoteAddress()
     {
         return from_asio (get_socket().remote_endpoint());
     }
@@ -163,7 +169,7 @@ public:
     // Make the Session asynchronous
     void detach ()
     {
-        if (m_detached.compareAndSetBool (1, 0))
+        if (m_detached.exchange (1) == 0)
         {
             bassert (! m_work);
             bassert (m_detach_ref.empty());
@@ -223,8 +229,8 @@ public:
 
         if (m_socket->needs_handshake ())
         {
-            m_socket->async_handshake (Socket::server, m_strand.wrap (
-                boost::bind (&Peer::handle_handshake, Ptr(this),
+            m_socket->async_handshake (beast::asio::abstract_socket::server,
+                m_strand.wrap (boost::bind (&Peer::handle_handshake, Ptr(this),
                     boost::asio::placeholders::error,
                         CompletionCounter (this))));
         }

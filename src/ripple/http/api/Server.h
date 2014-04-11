@@ -20,6 +20,7 @@
 #ifndef RIPPLE_HTTP_SERVER_H_INCLUDED
 #define RIPPLE_HTTP_SERVER_H_INCLUDED
 
+#include <memory>
 #include <ostream>
 
 namespace ripple {
@@ -74,7 +75,7 @@ public:
     void stop ();
 
 private:
-    ScopedPointer <ServerImpl> m_impl;
+    std::unique_ptr <ServerImpl> m_impl;
 };
 
 }

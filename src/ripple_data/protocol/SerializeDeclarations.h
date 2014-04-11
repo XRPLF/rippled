@@ -118,6 +118,7 @@ FIELD (PreviousTxnID,        HASH256, 5)
 FIELD (LedgerIndex,          HASH256, 6)
 FIELD (WalletLocator,        HASH256, 7)
 FIELD (RootIndex,            HASH256, 8)
+FIELD (AccountTxnID,         HASH256, 9)
 
 // 256-bit (uncommon)
 FIELD (BookDirectory,        HASH256, 16)
@@ -145,6 +146,7 @@ FIELD (SendMax,              AMOUNT, 9)
 // currency amount (uncommon)
 FIELD (MinimumOffer,         AMOUNT, 16)
 FIELD (RippleEscrow,         AMOUNT, 17)
+FIELD (DeliveredAmount,      AMOUNT, 18)
 
 // variable length
 FIELD (PublicKey,            VL, 1)
@@ -158,6 +160,8 @@ FIELD (FundCode,             VL, 8)
 FIELD (RemoveCode,           VL, 9)
 FIELD (ExpireCode,           VL, 10)
 FIELD (CreateCode,           VL, 11)
+FIELD (MemoType,             VL, 12)
+FIELD (MemoData,             VL, 13)
 
 // account
 FIELD (Account,              ACCOUNT, 1)
@@ -185,6 +189,7 @@ FIELD (PreviousFields,       OBJECT, 6)
 FIELD (FinalFields,          OBJECT, 7)
 FIELD (NewFields,            OBJECT, 8)
 FIELD (TemplateEntry,        OBJECT, 9)
+FIELD (Memo,                 OBJECT, 10)
 
 // array of objects
 // ARRAY/1 is reserved for end of array
@@ -195,5 +200,6 @@ FIELD (Template,             ARRAY, 5)
 FIELD (Necessary,            ARRAY, 6)
 FIELD (Sufficient,           ARRAY, 7)
 FIELD (AffectedNodes,        ARRAY, 8)
+FIELD (Memos,                ARRAY, 9)
 
 // vim:ts=4

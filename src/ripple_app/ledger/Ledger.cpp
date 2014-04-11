@@ -36,8 +36,10 @@ Ledger::Ledger (const RippleAddress& masterID, uint64 startAmount)
     , mValidHash (false)
     , mAccepted (false)
     , mImmutable (false)
-    , mTransactionMap (boost::make_shared <SHAMap> (smtTRANSACTION))
-    , mAccountStateMap (boost::make_shared <SHAMap> (smtSTATE))
+    , mTransactionMap  (boost::make_shared <SHAMap> (smtTRANSACTION,
+        std::ref (getApp().getFullBelowCache())))
+    , mAccountStateMap (boost::make_shared <SHAMap> (smtSTATE,
+        std::ref (getApp().getFullBelowCache())))
 {
     // special case: put coins in root account
     AccountState::pointer startAccount = boost::make_shared<AccountState> (masterID);
@@ -81,8 +83,10 @@ Ledger::Ledger (uint256 const& parentHash,
     , mValidHash (false)
     , mAccepted (false)
     , mImmutable (true)
-    , mTransactionMap (boost::make_shared <SHAMap> (smtTRANSACTION, transHash))
-    , mAccountStateMap (boost::make_shared <SHAMap> (smtSTATE, accountHash))
+    , mTransactionMap (boost::make_shared <SHAMap> (
+        smtTRANSACTION, transHash, std::ref (getApp().getFullBelowCache())))
+    , mAccountStateMap (boost::make_shared <SHAMap> (smtSTATE, accountHash,
+        std::ref (getApp().getFullBelowCache())))
 {
     updateHash ();
     loaded = true;
@@ -140,7 +144,8 @@ Ledger::Ledger (bool /* dummy */,
     , mValidHash (false)
     , mAccepted (false)
     , mImmutable (false)
-    , mTransactionMap (boost::make_shared <SHAMap> (smtTRANSACTION))
+    , mTransactionMap (boost::make_shared <SHAMap> (smtTRANSACTION,
+        std::ref (getApp().getFullBelowCache())))
     , mAccountStateMap (prevLedger.mAccountStateMap->snapShot (true))
 {
     prevLedger.updateHash ();
@@ -181,8 +186,12 @@ Ledger::Ledger (Blob const& rawLedger,
     initializeFees ();
 }
 
-Ledger::Ledger (const std::string& rawLedger, bool hasPrefix) :
-    mClosed (false), mValidated(false), mValidHash (false), mAccepted (false), mImmutable (true)
+Ledger::Ledger (const std::string& rawLedger, bool hasPrefix)
+    : mClosed (false)
+    , mValidated (false)
+    , mValidHash (false)
+    , mAccepted (false)
+    , mImmutable (true)
 {
     Serializer s (rawLedger);
     setRaw (s, hasPrefix);
@@ -261,8 +270,10 @@ void Ledger::setRaw (Serializer& s, bool hasPrefix)
 
     if (mValidHash)
     {
-        mTransactionMap = boost::make_shared<SHAMap> (smtTRANSACTION, mTransHash);
-        mAccountStateMap = boost::make_shared<SHAMap> (smtSTATE, mAccountHash);
+        mTransactionMap = boost::make_shared<SHAMap> (smtTRANSACTION, mTransHash,
+            std::ref (getApp().getFullBelowCache()));
+        mAccountStateMap = boost::make_shared<SHAMap> (smtSTATE, mAccountHash,
+            std::ref (getApp().getFullBelowCache()));
     }
 }
 
@@ -392,7 +403,7 @@ Transaction::pointer Ledger::getTransaction (uint256 const& transID) const
         return txn;
 
     if (type == SHAMapTreeNode::tnTRANSACTION_NM)
-        txn = Transaction::sharedTransaction (item->getData (), true);
+        txn = Transaction::sharedTransaction (item->peekData (), true);
     else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
     {
         Blob txnData;
@@ -1046,7 +1057,6 @@ Json::Value Ledger::getJson (int options)
     {
         Json::Value txns (Json::arrayValue);
         SHAMapTreeNode::TNType type;
-        SHAMap::ScopedLockType l (mTransactionMap->peekMutex (), __FILE__, __LINE__);
 
         for (SHAMapItem::pointer item = mTransactionMap->peekFirstItem (type); !!item;
                 item = mTransactionMap->peekNextItem (item->getTag (), type))
@@ -1131,10 +1141,8 @@ void Ledger::setCloseTime (boost::posix_time::ptime ptm)
     mCloseTime = iToSeconds (ptm);
 }
 
-// XXX Use shared locks where possible?
 LedgerStateParms Ledger::writeBack (LedgerStateParms parms, SLE::ref entry)
 {
-    SHAMap::ScopedLockType l (mAccountStateMap->peekMutex (), __FILE__, __LINE__);
     bool create = false;
 
     if (!mAccountStateMap->hasItem (entry->getIndex ()))
@@ -1187,8 +1195,6 @@ SLE::pointer Ledger::getSLEi (uint256 const& uId)
 {
     uint256 hash;
 
-    SHAMap::ScopedLockType sl (mAccountStateMap->peekMutex (), __FILE__, __LINE__);
-
     SHAMapItem::pointer node = mAccountStateMap->peekItem (uId, hash);
 
     if (!node)
@@ -1206,7 +1212,7 @@ SLE::pointer Ledger::getSLEi (uint256 const& uId)
     return ret;
 }
 
-void Ledger::visitAccountItems (const uint160& accountID, FUNCTION_TYPE<void (SLE::ref)> func)
+void Ledger::visitAccountItems (const uint160& accountID, std::function<void (SLE::ref)> func)
 {
     // Visit each item in this account's owner directory
     uint256 rootIndex       = Ledger::getOwnerDirIndex (accountID);
@@ -1234,22 +1240,22 @@ void Ledger::visitAccountItems (const uint160& accountID, FUNCTION_TYPE<void (SL
 
 }
 
-static void visitHelper (FUNCTION_TYPE<void (SLE::ref)>& function, SHAMapItem::ref item)
+static void visitHelper (std::function<void (SLE::ref)>& function, SHAMapItem::ref item)
 {
     function (boost::make_shared<SLE> (item->peekSerializer (), item->getTag ()));
 }
 
-void Ledger::visitStateItems (FUNCTION_TYPE<void (SLE::ref)> function)
+void Ledger::visitStateItems (std::function<void (SLE::ref)> function)
 {
     try
     {
         if (mAccountStateMap)
             mAccountStateMap->visitLeaves(BIND_TYPE(&visitHelper, beast::ref(function), P_1));
     }
-    catch (SHAMapMissingNode& sn)
+    catch (SHAMapMissingNode&)
     {
         if (mHash.isNonZero ())
-            getApp().getInboundLedgers().findCreate(mHash, mLedgerSeq, false);
+            getApp().getInboundLedgers().findCreate(mHash, mLedgerSeq, InboundLedger::fcGENERIC);
         throw;
     }
 }
@@ -1493,7 +1499,7 @@ uint256 Ledger::getLedgerFeeIndex ()
 
 uint256 Ledger::getLedgerFeatureIndex ()
 {
-    // get the index of the node that holds the last 256 ledgers
+    // get the index of the node that holds the enabled features
     Serializer s (2);
     s.add16 (spaceFeature);
     return s.getSHA512Half ();
@@ -1952,28 +1958,39 @@ void Ledger::initializeFees ()
 
 void Ledger::updateFees ()
 {
-    mBaseFee = getConfig ().FEE_DEFAULT;
-    mReferenceFeeUnits = 10;
-    mReserveBase = getConfig ().FEE_ACCOUNT_RESERVE;
-    mReserveIncrement = getConfig ().FEE_OWNER_RESERVE;
+    uint64 baseFee = getConfig ().FEE_DEFAULT;
+    uint32 referenceFeeUnits = 10;
+    uint32 reserveBase = getConfig ().FEE_ACCOUNT_RESERVE;
+    int64 reserveIncrement = getConfig ().FEE_OWNER_RESERVE;
 
     LedgerStateParms p = lepNONE;
     SLE::pointer sle = getASNode (p, Ledger::getLedgerFeeIndex (), ltFEE_SETTINGS);
 
-    if (!sle)
-        return;
+    if (sle)
+    {
+        if (sle->getFieldIndex (sfBaseFee) != -1)
+            baseFee = sle->getFieldU64 (sfBaseFee);
 
-    if (sle->getFieldIndex (sfBaseFee) != -1)
-        mBaseFee = sle->getFieldU64 (sfBaseFee);
+        if (sle->getFieldIndex (sfReferenceFeeUnits) != -1)
+            referenceFeeUnits = sle->getFieldU32 (sfReferenceFeeUnits);
 
-    if (sle->getFieldIndex (sfReferenceFeeUnits) != -1)
-        mReferenceFeeUnits = sle->getFieldU32 (sfReferenceFeeUnits);
+        if (sle->getFieldIndex (sfReserveBase) != -1)
+            reserveBase = sle->getFieldU32 (sfReserveBase);
 
-    if (sle->getFieldIndex (sfReserveBase) != -1)
-        mReserveBase = sle->getFieldU32 (sfReserveBase);
+        if (sle->getFieldIndex (sfReserveIncrement) != -1)
+            reserveIncrement = sle->getFieldU32 (sfReserveIncrement);
+    }
 
-    if (sle->getFieldIndex (sfReserveIncrement) != -1)
-        mReserveIncrement = sle->getFieldU32 (sfReserveIncrement);
+    {
+        StaticScopedLockType sl (sPendingSaveLock, __FILE__, __LINE__);
+        if (mBaseFee == 0)
+        {
+            mBaseFee = baseFee;
+            mReferenceFeeUnits = referenceFeeUnits;
+            mReserveBase = reserveBase;
+            mReserveIncrement = reserveIncrement;
+        }
+    }
 }
 
 uint64 Ledger::scaleFeeBase (uint64 fee)

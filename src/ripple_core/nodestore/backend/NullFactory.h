@@ -20,33 +20,16 @@
 #ifndef RIPPLE_NODESTORE_NULLFACTORY_H_INCLUDED
 #define RIPPLE_NODESTORE_NULLFACTORY_H_INCLUDED
 
-namespace NodeStore
-{
+namespace ripple {
+namespace NodeStore {
 
 /** Factory to produce a null backend.
-
     This is for standalone / testing mode.
-
     @see Database
 */
-class NullFactory : public Factory
-{
-private:
-    NullFactory ();
-    ~NullFactory ();
+std::unique_ptr <Factory> make_NullFactory ();
 
-public:
-    class BackendImp;
-
-    static NullFactory* getInstance ();
-
-    String getName () const;
-
-    Backend* createInstance (size_t keyBytes,
-                             Parameters const& keyValues,
-                             Scheduler& scheduler);
-};
-
+}
 }
 
 #endif

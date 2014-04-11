@@ -39,7 +39,7 @@ struct Import
     }
 
     // When the imported data expires
-    DiscreteTime whenExpires;
+    clock_type::rep whenExpires;
 
     // List of remote entries
     std::vector <Item> items;

@@ -20,18 +20,24 @@
 #ifndef BEAST_INSIGHT_EVENTIMPL_H_INCLUDED
 #define BEAST_INSIGHT_EVENTIMPL_H_INCLUDED
 
+#include <memory>
+
+#include "BaseImpl.h"
+
 namespace beast {
 namespace insight {
 
 class Event;
 
-class EventImpl : public enable_shared_from_this <EventImpl>
+class EventImpl
+    : public std::enable_shared_from_this <EventImpl>
+    , public BaseImpl
 {
 public:
-    typedef uint64 value_type;
+    typedef std::chrono::milliseconds value_type;
 
     virtual ~EventImpl () = 0;
-    virtual void notify (value_type value) = 0;
+    virtual void notify (value_type const& value) = 0;
 };
 
 }

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-namespace NodeStore
-{
+namespace ripple {
+namespace NodeStore {
 
 class TimingTests : public TestBase
 {
@@ -60,6 +60,8 @@ public:
 
     void testBackend (String type, int64 const seedValue)
     {
+        std::unique_ptr <Manager> manager (make_Manager ());
+
         DummyScheduler scheduler;
 
         String s;
@@ -77,8 +79,11 @@ public:
         NodeStore::Batch batch2;
         createPredictableBatch (batch2, 0, numObjectsToTest, seedValue);
 
+        Journal j ((journal ()));
+
         // Open the backend
-        ScopedPointer <Backend> backend (DatabaseImp::createBackend (params, scheduler));
+        std::unique_ptr <Backend> backend (manager->make_Backend (
+            params, scheduler, j));
 
         Stopwatch t;
 
@@ -122,12 +127,13 @@ public:
         testBackend ("rocksdb", seedValue);
     #endif
 
-    /*
+    #if RIPPLE_ENABLE_SQLITE_BACKEND_TESTS
         testBackend ("sqlite", seedValue);
-    */
+    #endif
     }
 };
 
 static TimingTests timingTests;
 
+}
 }

@@ -439,9 +439,16 @@ void Thread::yield()
 #if BEAST_BSD
  // ???
 #elif BEAST_MAC || BEAST_IOS
-// Compiles fine without prctl.h
+#include <Foundation/NSThread.h>
+#include <Foundation/NSString.h>
+#import <objc/message.h>
+namespace beast{
+#include "../../../modules/beast_core/native/osx_ObjCHelpers.h"
+}
+
 #else
 # include <sys/prctl.h>
+
 #endif
 
 namespace beast {

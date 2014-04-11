@@ -41,7 +41,7 @@ public:
         const std::string& strUsername, const std::string& strPassword,
         const std::string& strPath, const std::string& strMethod,
         const Json::Value& jvParams, const bool bSSL,
-        FUNCTION_TYPE<void (const Json::Value& jvInput)> callbackFuncP = FUNCTION_TYPE<void (const Json::Value& jvInput)> ());
+        std::function<void (const Json::Value& jvInput)> callbackFuncP = std::function<void (const Json::Value& jvInput)> ());
 };
 
 #endif

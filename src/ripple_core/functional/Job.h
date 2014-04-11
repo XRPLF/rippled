@@ -20,54 +20,61 @@
 #ifndef RIPPLE_JOB_H
 #define RIPPLE_JOB_H
 
+namespace ripple {
+
 // Note that this queue should only be used for CPU-bound jobs
 // It is primarily intended for signature checking
+
 enum JobType
 {
-    // must be in priority order, low to high
-    jtINVALID       = -1,
-    jtPACK          = 1,    // Make a fetch pack for a peer
-    jtPUBOLDLEDGER  = 2,    // An old ledger has been accepted
-    jtVALIDATION_ut = 3,    // A validation from an untrusted source
-    jtPROOFWORK     = 4,    // A proof of work demand from another server
-    jtTRANSACTION_l = 5,    // A local transaction
-    jtPROPOSAL_ut   = 6,    // A proposal from an untrusted source
-    jtLEDGER_DATA   = 7,    // Received data for a ledger we're acquiring
-    jtUPDATE_PF     = 8,    // Update pathfinding requests
-    jtCLIENT        = 9,    // A websocket command from the client
-    jtRPC           = 10,    // A websocket command from the client
-    jtTRANSACTION   = 11,   // A transaction received from the network
-    jtUNL           = 12,   // A Score or Fetch of the UNL (DEPRECATED)
-    jtADVANCE       = 13,   // Advance validated/acquired ledgers
-    jtPUBLEDGER     = 14,   // Publish a fully-accepted ledger
-    jtTXN_DATA      = 15,   // Fetch a proposed set
-    jtWAL           = 16,   // Write-ahead logging
-    jtVALIDATION_t  = 17,   // A validation from a trusted source
-    jtWRITE         = 18,   // Write out hashed objects
-    jtPROPOSAL_t    = 19,   // A proposal from a trusted source
-    jtSWEEP         = 20,   // Sweep for stale structures
-    jtNETOP_CLUSTER = 21,   // NetworkOPs cluster peer report
-    jtNETOP_TIMER   = 22,   // NetworkOPs net timer processing
-    jtADMIN         = 23,   // An administrative operation
+    // Special type indicating an invalid job - will go away soon.
+    jtINVALID = -1,
 
-    // special types not dispatched by the job pool
-    jtPEER          = 30,
-    jtDISK          = 31,
-    jtACCEPTLEDGER  = 32,
-    jtTXN_PROC      = 33,
-    jtOB_SETUP      = 34,
-    jtPATH_FIND     = 35,
-    jtHO_READ       = 36,
-    jtHO_WRITE      = 37,
-    jtGENERIC       = 38,   // Used just to measure time
-}; // CAUTION: If you add new types, add them to Job.cpp too
+    // Job types - the position in this enum indicates the job priority with
+    // earlier jobs having lower priority than later jobs. If you wish to
+    // insert a job at a specific priority, simply add it at the right location.
+    
+    jtPACK,          // Make a fetch pack for a peer
+    jtPUBOLDLEDGER,  // An old ledger has been accepted
+    jtVALIDATION_ut, // A validation from an untrusted source
+    jtPROOFWORK,     // A proof of work demand from another server
+    jtTRANSACTION_l, // A local transaction
+    jtPROPOSAL_ut,   // A proposal from an untrusted source
+    jtLEDGER_DATA,   // Received data for a ledger we're acquiring
+    jtCLIENT,        // A websocket command from the client
+    jtRPC,           // A websocket command from the client
+    jtUPDATE_PF,     // Update pathfinding requests
+    jtTRANSACTION,   // A transaction received from the network
+    jtUNL,           // A Score or Fetch of the UNL (DEPRECATED)
+    jtADVANCE,       // Advance validated/acquired ledgers
+    jtPUBLEDGER,     // Publish a fully-accepted ledger
+    jtTXN_DATA,      // Fetch a proposed set
+    jtWAL,           // Write-ahead logging
+    jtVALIDATION_t,  // A validation from a trusted source
+    jtWRITE,         // Write out hashed objects
+    jtACCEPT,        // Accept a consensus ledger
+    jtPROPOSAL_t,    // A proposal from a trusted source
+    jtSWEEP,         // Sweep for stale structures
+    jtNETOP_CLUSTER, // NetworkOPs cluster peer report
+    jtNETOP_TIMER,   // NetworkOPs net timer processing
+    jtADMIN,         // An administrative operation
 
-// VFALCO TODO move this into the enum so it calculates itself?
-#define NUM_JOB_TYPES 48 // why 48 and not 38?
+    // Special job types which are not dispatched by the job pool
+    jtPEER          ,
+    jtDISK          ,
+    jtTXN_PROC      ,
+    jtOB_SETUP      ,
+    jtPATH_FIND     ,
+    jtHO_READ       ,
+    jtHO_WRITE      ,
+    jtGENERIC       ,   // Used just to measure time
+};
 
 class Job
 {
 public:
+    typedef std::chrono::steady_clock clock_type;
+
     /** Default constructor.
 
         Allows Job to be used as a container type.
@@ -81,7 +88,7 @@ public:
     //
     Job ();
 
-    Job (Job const& other);
+    //Job (Job const& other);
 
     Job (JobType type, uint64 index);
 
@@ -90,14 +97,17 @@ public:
          std::string const& name,
          uint64 index,
          LoadMonitor& lm,
-         FUNCTION_TYPE <void (Job&)> const& job,
+         std::function <void (Job&)> const& job,
          CancelCallback cancelCallback);
 
-    Job& operator= (Job const& other);
+    //Job& operator= (Job const& other);
 
     JobType getType () const;
 
     CancelCallback getCancelCallback () const;
+
+    /** Returns the time when the job was queued. */
+    clock_type::time_point const& queue_time () const;
 
     /** Returns `true` if the running job should make a best-effort cancel. */
     bool shouldCancel () const;
@@ -106,21 +116,23 @@ public:
 
     void rename (const std::string& n);
 
-    // These comparison operators make the jobs sort in priority order in the job set
+    // These comparison operators make the jobs sort in priority order
+    // in the job set
     bool operator< (const Job& j) const;
     bool operator> (const Job& j) const;
     bool operator<= (const Job& j) const;
     bool operator>= (const Job& j) const;
 
-    static const char* toString (JobType);
-
 private:
     CancelCallback m_cancelCallback;
     JobType                     mType;
     uint64                      mJobIndex;
-    FUNCTION_TYPE <void (Job&)> mJob;
+    std::function <void (Job&)> mJob;
     LoadEvent::pointer          m_loadEvent;
     std::string                 mName;
+    clock_type::time_point m_queue_time;
 };
+
+}
 
 #endif

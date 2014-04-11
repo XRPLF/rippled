@@ -20,44 +20,26 @@
 #ifndef RIPPLE_BASICS_H_INCLUDED
 #define RIPPLE_BASICS_H_INCLUDED
 
-#include "beast/modules/beast_core/beast_core.h"
-#include "beast/modules/beast_crypto/beast_crypto.h"
+#include "../beast/modules/beast_core/beast_core.h"
+#include "../beast/beast/Crypto.h"
 
-#include "beast/modules/beast_core/system/BeforeBoost.h"
+#include "../beast/modules/beast_core/system/BeforeBoost.h"
 #include "system/BoostIncludes.h"
 
 #include "../../beast/beast/Utility.h"
 
-#ifndef RIPPLE_TRACK_MUTEXES
+#include <atomic>
+#include "../../beast/beast/cxx14/memory.h"
+
+#ifndef  RIPPLE_TRACK_MUTEXES
 # define RIPPLE_TRACK_MUTEXES 0
 #endif
 
 //------------------------------------------------------------------------------
 
-// From
-// http://stackoverflow.com/questions/4682343/how-to-resolve-conflict-between-boostshared-ptr-and-using-stdshared-ptr
-//
-#if __cplusplus > 201100L
-namespace boost
-{
-    template <class T>
-    const T* get_pointer (std::shared_ptr<T> const& ptr)
-    {
-        return ptr.get();
-    }
-
-    template <class T>
-    T* get_pointer (std::shared_ptr<T>& ptr)
-    {
-        return ptr.get();
-    }
-}
-#endif
-
 #include "../ripple/types/ripple_types.h"
 
-namespace ripple
-{
+namespace ripple {
 
 using namespace beast;
 
@@ -79,10 +61,8 @@ using namespace beast;
 #include "utility/Time.h"
 #include "utility/UptimeTimer.h"
 
-#include "containers/KeyCache.h"
 #include "containers/RangeSet.h"
-#include "containers/BlackList.h"
-#include "containers/TaggedCache.h"
+#include "containers/SyncUnorderedMap.h"
 
 }
 

@@ -24,10 +24,18 @@ namespace PeerFinder {
 
 Endpoint::Endpoint ()
     : hops (0)
-    , incomingSlotsAvailable (0)
-    , incomingSlotsMax (0)
-    , uptimeSeconds (0)
 {
+}
+
+Endpoint::Endpoint (IP::Endpoint const& ep, int hops_)
+    : hops (hops_)
+    , address (ep)
+{
+}
+
+bool operator< (Endpoint const& lhs, Endpoint const& rhs)
+{
+    return lhs.address < rhs.address;
 }
 
 }

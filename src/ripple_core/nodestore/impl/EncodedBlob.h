@@ -20,26 +20,19 @@
 #ifndef RIPPLE_NODESTORE_ENCODEDBLOB_H_INCLUDED
 #define RIPPLE_NODESTORE_ENCODEDBLOB_H_INCLUDED
 
-namespace NodeStore
-{
+namespace ripple {
+namespace NodeStore {
 
 /** Utility for producing flattened node objects.
-
-    These get recycled to prevent many small allocations.
-
     @note This defines the database format of a NodeObject!
 */
+// VFALCO TODO Make allocator aware and use short_alloc
 struct EncodedBlob
 {
 public:
-    typedef RecycledObjectPool <EncodedBlob> Pool;
-
     void prepare (NodeObject::Ptr const& object);
-
     void const* getKey () const noexcept { return m_key; }
-
     size_t getSize () const noexcept { return m_size; }
-
     void const* getData () const noexcept { return m_data.getData (); }
 
 private:
@@ -48,6 +41,7 @@ private:
     size_t m_size;
 };
 
+}
 }
 
 #endif

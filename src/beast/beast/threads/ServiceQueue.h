@@ -22,7 +22,6 @@
 
 #include "../chrono/CPUMeter.h"
 #include "../intrusive/List.h"
-#include "../intrusive/LockFreeStack.h"
 #include "SharedData.h"
 #include "ThreadLocalValue.h"
 #include "WaitableEvent.h"
@@ -371,7 +370,7 @@ protected:
 
     //--------------------------------------------------------------------------
 
-    class Waiter : public LockFreeStack <Waiter>::Node
+    class Waiter : public List <Waiter>::Node
     {
     public:
         Waiter()
@@ -390,8 +389,8 @@ protected:
     {
         // handlers
         List <Item> handlers;
-        LockFreeStack <Waiter> waiting;
-        LockFreeStack <Waiter> unused;
+        List <Waiter> waiting;
+        List <Waiter> unused;
     };
 
     typedef SharedData <State> SharedState;
@@ -440,9 +439,8 @@ public:
         typename Allocator::template rebind <Waiter>::other a (m_alloc);
         SharedState::Access state (m_state);
         while (expectedConcurrency--)
-        {
-            state->unused.push_front (new (a.allocate (1)) Waiter);
-        }
+            state->unused.push_front (
+                *new (a.allocate (1)) Waiter);
     }
 
     ~ServiceQueueType()
@@ -456,11 +454,10 @@ public:
         bassert (state->waiting.empty());
 
         typename Allocator::template rebind <Waiter>::other a (m_alloc);
-        for(;;)
+        while (! state->unused.empty ())
         {
-            Waiter* const waiter (state->unused.pop_front());
-            if (waiter == nullptr)
-                break;
+            Waiter* const waiter (&state->unused.front ());
+            state->unused.pop_front ();
             a.destroy (waiter);
             a.deallocate (waiter, 1);
         }

@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace ripple {
+
 Job::Job ()
     : mType (jtINVALID)
     , mJobIndex (0)
@@ -29,40 +31,20 @@ Job::Job (JobType type, uint64 index)
 {
 }
 
-Job::Job (Job const& other)
-    : m_cancelCallback (other.m_cancelCallback)
-    , mType (other.mType)
-    , mJobIndex (other.mJobIndex)
-    , mJob (other.mJob)
-    , m_loadEvent (other.m_loadEvent)
-    , mName (other.mName)
-{
-}
-
 Job::Job (JobType type,
           std::string const& name,
           uint64 index,
           LoadMonitor& lm,
-          FUNCTION_TYPE <void (Job&)> const& job,
+          std::function <void (Job&)> const& job,
           CancelCallback cancelCallback)
     : m_cancelCallback (cancelCallback)
     , mType (type)
     , mJobIndex (index)
     , mJob (job)
     , mName (name)
+    , m_queue_time (clock_type::now ())
 {
     m_loadEvent = boost::make_shared <LoadEvent> (boost::ref (lm), name, false);
-}
-
-Job& Job::operator= (Job const& other)
-{
-    mType = other.mType;
-    mJobIndex = other.mJobIndex;
-    mJob = other.mJob;
-    m_loadEvent = other.m_loadEvent;
-    mName = other.mName;
-    m_cancelCallback = other.m_cancelCallback;
-    return *this;
 }
 
 JobType Job::getType () const
@@ -72,13 +54,18 @@ JobType Job::getType () const
 
 CancelCallback Job::getCancelCallback () const
 {
-    bassert (! m_cancelCallback.empty());
+    bassert (m_cancelCallback);
     return m_cancelCallback;
+}
+
+Job::clock_type::time_point const& Job::queue_time () const
+{
+    return m_queue_time;
 }
 
 bool Job::shouldCancel () const
 {
-    if (! m_cancelCallback.empty ())
+    if (m_cancelCallback)
         return m_cancelCallback ();
     return false;
 }
@@ -94,52 +81,6 @@ void Job::doJob ()
 void Job::rename (std::string const& newName)
 {
     mName = newName;
-}
-
-const char* Job::toString (JobType t)
-{
-    switch (t)
-    {
-    case jtINVALID:         return "invalid";
-    case jtPACK:            return "makeFetchPack";
-    case jtPUBOLDLEDGER:    return "publishAcqLedger";
-    case jtVALIDATION_ut:   return "untrustedValidation";
-    case jtPROOFWORK:       return "proofOfWork";
-    case jtTRANSACTION_l:   return "localTransaction";
-    case jtPROPOSAL_ut:     return "untrustedProposal";
-    case jtLEDGER_DATA:     return "ledgerData";
-    case jtUPDATE_PF:       return "updatePaths";
-    case jtCLIENT:          return "clientCommand";
-    case jtRPC:             return "RPC";
-    case jtTRANSACTION:     return "transaction";
-    case jtUNL:             return "unl";
-    case jtADVANCE:         return "advanceLedger";
-    case jtPUBLEDGER:       return "publishNewLedger";
-    case jtTXN_DATA:        return "fetchTxnData";
-    case jtWAL:             return "writeAhead";
-    case jtVALIDATION_t:    return "trustedValidation";
-    case jtWRITE:           return "writeObjects";
-    case jtPROPOSAL_t:      return "trustedProposal";
-    case jtSWEEP:           return "sweep";
-    case jtNETOP_CLUSTER:   return "clusterReport";
-    case jtNETOP_TIMER:     return "heartbeat";
-
-    case jtADMIN:           return "administration";
-
-    // special types not dispatched by the job pool
-    case jtPEER:            return "peerCommand";
-    case jtDISK:            return "diskAccess";
-    case jtACCEPTLEDGER:    return "acceptLedger";
-    case jtTXN_PROC:        return "processTransaction";
-    case jtOB_SETUP:        return "orderBookSetup";
-    case jtPATH_FIND:       return "pathFind";
-    case jtHO_READ:         return "nodeRead";
-    case jtHO_WRITE:        return "nodeWrite";
-    case jtGENERIC:         return "generic";
-    default:
-        assert (false);
-        return "unknown";
-    }
 }
 
 bool Job::operator> (const Job& j) const
@@ -184,4 +125,6 @@ bool Job::operator<= (const Job& j) const
         return true;
 
     return mJobIndex <= j.mJobIndex;
+}
+
 }

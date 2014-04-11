@@ -20,6 +20,8 @@
 #ifndef RIPPLE_APP_RPCHTTPSERVER_H_INCLUDED
 #define RIPPLE_APP_RPCHTTPSERVER_H_INCLUDED
 
+namespace ripple {
+
 class RPCHTTPServer : public Stoppable
 {
 protected:
@@ -34,5 +36,7 @@ public:
     /** Opens listening ports based on the Config settings. */
     virtual void setup (Journal journal) = 0;
 };
+
+}
 
 #endif

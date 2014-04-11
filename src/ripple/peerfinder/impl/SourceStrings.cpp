@@ -40,15 +40,15 @@ public:
 
     void fetch (Results& results, Journal journal)
     {
-        results.list.resize (0);
-        results.list.reserve (m_strings.size());
+        results.addresses.resize (0);
+        results.addresses.reserve (m_strings.size());
         for (int i = 0; i < m_strings.size (); ++i)
         {
-            IPAddress ep (
-                IPAddress::from_string_altform (
-                    m_strings [i]));
-            if (! ep.empty())
-                results.list.push_back (ep);
+            IP::Endpoint ep (IP::Endpoint::from_string (m_strings [i]));
+            if (is_unspecified (ep))
+                ep = IP::Endpoint::from_string_altform (m_strings [i]);
+            if (! is_unspecified (ep))
+                results.addresses.push_back (ep);
         }
     }
 

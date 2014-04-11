@@ -33,11 +33,8 @@ public:
     typedef boost::shared_ptr<TransactionAcquire> pointer;
 
 public:
-    explicit TransactionAcquire (uint256 const& hash);
-    virtual ~TransactionAcquire ()
-    {
-        ;
-    }
+    TransactionAcquire (uint256 const& hash, clock_type& clock);
+    ~TransactionAcquire ();
 
     SHAMap::ref getMap ()
     {

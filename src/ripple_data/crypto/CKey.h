@@ -92,10 +92,11 @@ public:
     CKey ()
     {
         pkey = EC_KEY_new_by_curve_name (NID_secp256k1);
-        EC_KEY_set_conv_form (pkey, POINT_CONVERSION_COMPRESSED);
 
         if (pkey == NULL)
             throw key_error ("CKey::CKey() : EC_KEY_new_by_curve_name failed");
+
+        EC_KEY_set_conv_form (pkey, POINT_CONVERSION_COMPRESSED);
 
         fSet = false;
     }
@@ -103,10 +104,11 @@ public:
     CKey (const CKey& b)
     {
         pkey = EC_KEY_dup (b.pkey);
-        EC_KEY_set_conv_form (pkey, POINT_CONVERSION_COMPRESSED);
 
         if (pkey == NULL)
             throw key_error ("CKey::CKey(const CKey&) : EC_KEY_dup failed");
+
+        EC_KEY_set_conv_form (pkey, POINT_CONVERSION_COMPRESSED);
 
         fSet = b.fSet;
     }
@@ -269,16 +271,16 @@ public:
 
     bool Sign (uint256 const& hash, Blob& vchSig)
     {
-        unsigned char pchSig[10000];
-        unsigned int nSize = 0;
-
-        vchSig.clear ();
+        unsigned char pchSig[128];
+        unsigned int nSize = sizeof(pchSig)/sizeof(pchSig[0]) - 1;
 
         if (!ECDSA_sign (0, (unsigned char*)hash.begin (), hash.size (), pchSig, &nSize, pkey))
             return false;
 
-        vchSig.resize (nSize);
-        memcpy (&vchSig[0], pchSig, nSize);
+        size_t len = nSize;
+        makeCanonicalECDSASig (pchSig, len);
+        vchSig.resize (len);
+        memcpy (&vchSig[0], pchSig, len);
 
         return true;
     }

@@ -20,8 +20,10 @@
 #ifndef BEAST_ASIO_TESTS_PEERTEST_H_INCLUDED
 #define BEAST_ASIO_TESTS_PEERTEST_H_INCLUDED
 
-/** Performs a test of two peers defined by template parameters.
-*/
+namespace beast {
+namespace asio {
+
+/** Performs a test of two peers defined by template parameters. */
 class PeerTest
 {
 public:
@@ -235,5 +237,8 @@ public:
         report_async <Details> (test, arg, timeoutSeconds, beginTestCase);
     }
 };
+
+}
+}
 
 #endif

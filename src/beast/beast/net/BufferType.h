@@ -20,7 +20,7 @@
 #ifndef BEAST_NET_BASICS_BUFFERTYPE_H_INCLUDED
 #define BEAST_NET_BASICS_BUFFERTYPE_H_INCLUDED
 
-#include "../mpl/IfCond.h"
+#include <type_traits>
 
 namespace beast {
 
@@ -34,13 +34,11 @@ template <bool IsConst>
 class BufferType
 {
 private:
-    typedef typename mpl::IfCond <IsConst,
-        void const*,
-        void*>::type pointer_type;
+    typedef typename std::conditional <IsConst,
+        void const*, void*>::type pointer_type;
 
-    typedef typename mpl::IfCond <IsConst,
-        uint8 const,
-        uint8>::type byte_type;
+    typedef typename std::conditional <IsConst,
+        uint8 const, uint8>::type byte_type;
 
 public:
     typedef std::size_t size_type;

@@ -47,7 +47,7 @@ void SOTemplate::push_back (SOElement const& r)
 
     // Append the new element.
     //
-    mTypes.push_back (new SOElement (r));
+    mTypes.push_back (value_type (new SOElement (r)));
 }
 
 int SOTemplate::getIndex (SField::ref f) const

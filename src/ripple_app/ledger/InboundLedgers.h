@@ -24,68 +24,57 @@
 
     @see InboundLedger
 */
-// VFALCO TODO Rename to InboundLedgers
-// VFALCO TODO Create abstract interface
 class InboundLedgers
-    : public Stoppable
-    , public LeakChecked <InboundLedger>
 {
 public:
-    // How long before we try again to acquire the same ledger
-    static const int kReacquireIntervalSeconds = 300;
+    typedef abstract_clock <std::chrono::seconds> clock_type;
 
-    explicit InboundLedgers (Stoppable& parent);
+    virtual ~InboundLedgers() = 0;
+
+    // VFALCO TODO Make this a free function outside the class:
+    //             std::unique_ptr <InboundLedger> make_InboundLedgers (...)
+    //
+    static InboundLedgers* New (clock_type& clock, Stoppable& parent,
+                                insight::Collector::ptr const& collector);
+
 
     // VFALCO TODO Should this be called findOrAdd ?
     //
-    InboundLedger::pointer findCreate (uint256 const& hash, uint32 seq, bool bCouldBeNew);
+    virtual InboundLedger::pointer findCreate (uint256 const& hash, 
+        uint32 seq, InboundLedger::fcReason) = 0;
 
-    InboundLedger::pointer find (uint256 const& hash);
+    virtual InboundLedger::pointer find (LedgerHash const& hash) = 0;
 
-    bool hasLedger (LedgerHash const& ledgerHash);
+    virtual bool hasLedger (LedgerHash const& ledgerHash) = 0;
 
-    void dropLedger (LedgerHash const& ledgerHash);
-
-    bool awaitLedgerData (LedgerHash const& ledgerHash);
+    virtual void dropLedger (LedgerHash const& ledgerHash) = 0;
 
     // VFALCO TODO Why is hash passed by value?
     // VFALCO TODO Remove the dependency on the Peer object.
     //
-    void gotLedgerData (Job&,
-                        LedgerHash hash,
-                        boost::shared_ptr <protocol::TMLedgerData> packet,
-                        boost::weak_ptr<Peer> peer);
+    virtual bool gotLedgerData (LedgerHash const& ledgerHash,
+        boost::shared_ptr<Peer>,
+        boost::shared_ptr <protocol::TMLedgerData>) = 0;
 
-    int getFetchCount (int& timeoutCount);
+    virtual void doLedgerData (Job&, LedgerHash hash) = 0;
 
-    void logFailure (uint256 const& h)
-    {
-        mRecentFailures.add (h);
-    }
+    virtual void gotStaleData (
+        boost::shared_ptr <protocol::TMLedgerData> packet) = 0;
 
-    bool isFailure (uint256 const& h)
-    {
-        return mRecentFailures.isPresent (h, false);
-    }
+    virtual int getFetchCount (int& timeoutCount) = 0;
 
-    void clearFailures();
+    virtual void logFailure (uint256 const& h) = 0;
 
-    Json::Value getInfo();
+    virtual bool isFailure (uint256 const& h) = 0;
 
-    void gotFetchPack (Job&);
-    void sweep ();
+    virtual void clearFailures() = 0;
 
-    void onStop ();
+    virtual Json::Value getInfo() = 0;
 
-private:
-    typedef boost::unordered_map <uint256, InboundLedger::pointer> MapType;
+    virtual void gotFetchPack (Job&) = 0;
+    virtual void sweep () = 0;
 
-    typedef RippleRecursiveMutex LockType;
-    typedef LockType::ScopedLockType ScopedLockType;
-    LockType mLock;
-
-    MapType mLedgers;
-    KeyCache <uint256, UptimeTimerAdapter> mRecentFailures;
+    virtual void onStop() = 0;
 };
 
 #endif

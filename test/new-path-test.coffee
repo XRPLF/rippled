@@ -318,11 +318,11 @@ create_path_test = (pth) ->
     one_message (m) -> sent = m
 
     error_info = (m, more) ->
-      info = 
+      info =
         path_expected:     pth,
         path_find_request: sent,
         path_find_updates: messages
-      
+
       extend(info, more) if more?
       ledger.pretty_json(info)
 
@@ -350,8 +350,10 @@ create_path_test = (pth) ->
       # TODO:hack:
       expand_alternative alt for alt in m.alternatives
 
+
       messages[if updates then "update-#{updates}" else 'initial-response'] = m
       updates++
+      # console.log updates
 
       assert m.alternatives.length >= max_seen,
              "Subsequent path_find update' should never have less " +
@@ -359,10 +361,10 @@ create_path_test = (pth) ->
 
       max_seen = m.alternatives.length
 
-      if updates == 2
-        testutils.ledger_close(self.remote, -> )
+      # if updates == 2
+      #   testutils.ledger_close(self.remote, -> )
 
-      if updates == 3
+      if updates == 2
         # "TODO: need to patch ripple-lib"
         # self.log_pre(self.server.get_logs(), "Server Logs")
 

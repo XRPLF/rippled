@@ -26,7 +26,7 @@ SerializedType& SerializedType::operator= (const SerializedType& t)
 {
     if ((t.fName != fName) && fName->isUseful () && t.fName->isUseful ())
     {
-        WriteLog ((t.getSType () == STI_AMOUNT) ? lsDEBUG : lsWARNING, SerializedType) // This is common for amounts
+        WriteLog ((t.getSType () == STI_AMOUNT) ? lsTRACE : lsWARNING, SerializedType) // This is common for amounts
                 << "Caution: " << t.fName->getName () << " not replacing " << fName->getName ();
     }
 
@@ -330,7 +330,7 @@ STVector256* STVector256::construct (SerializerIterator& u, SField::ref name)
     Blob data = u.getVL ();
     Blob ::iterator begin = data.begin ();
 
-    UPTR_T<STVector256> vec (new STVector256 (name));
+    std::unique_ptr<STVector256> vec (new STVector256 (name));
 
     int count = data.size () / (256 / 8);
     vec->mValue.reserve (count);

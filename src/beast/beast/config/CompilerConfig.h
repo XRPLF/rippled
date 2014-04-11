@@ -30,6 +30,8 @@
 #error "PlatformConfig.h must come first!"
 #endif
 
+#include <assert.h>
+
 // This file defines miscellaneous macros for debugging, assertions, etc.
 
 #if BEAST_FORCE_DEBUG
@@ -109,6 +111,7 @@ extern void beast_reportFatalError (char const* message, char const* fileName, i
 */
 #define BDBG(dbgtext)          { beast::String tempDbgBuf; tempDbgBuf << dbgtext; beast::Logger::outputDebugString (tempDbgBuf); }
 
+#if 0
 /** This will always cause an assertion failure.
     It is only compiled in a debug build, (unless BEAST_LOG_ASSERTIONS is enabled for your build).
     @see bassert
@@ -122,6 +125,11 @@ extern void beast_reportFatalError (char const* message, char const* fileName, i
     @see bassertfalse
   */
 #define bassert(expression)   { if (! (expression)) beast_reportFatalError(#expression,__FILE__,__LINE__); }
+#else
+
+#define bassertfalse assert(false)
+#define bassert(expression) assert(expression)
+#endif
 
 #else
 

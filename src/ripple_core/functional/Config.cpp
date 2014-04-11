@@ -29,6 +29,43 @@
 #define DEFAULT_FEE_OFFER               DEFAULT_FEE_DEFAULT
 #define DEFAULT_FEE_OPERATION           1
 
+/** Parses a set of strings into IP::Endpoint
+      Strings which fail to parse are not included in the output. If a stream is
+      provided, human readable diagnostic error messages are written for each
+      failed parse.
+      @param out An OutputSequence to store the IP::Endpoint list
+      @param first The begining of the string input sequence
+      @param last The one-past-the-end of the string input sequence
+*/
+template <class OutputSequence, class InputIterator>
+void parseAddresses (OutputSequence& out, InputIterator first, InputIterator last,
+    Journal::Stream stream = Journal::Stream ())
+{
+    while (first != last)
+    {
+        auto const str (*first);
+        ++first;
+        {
+            IP::Endpoint const addr (IP::Endpoint::from_string (str));
+            if (! is_unspecified (addr))
+            {
+                out.push_back (addr);
+                continue;
+            }
+        }
+        {
+            IP::Endpoint const addr (IP::Endpoint::from_string_altform (str));
+            if (! is_unspecified (addr))
+            {
+                out.push_back (addr);
+                continue;
+            }
+        }
+        if (stream) stream <<
+            "Config: \"" << str << "\" is not a valid IP address.";
+    }
+}
+
 //------------------------------------------------------------------------------
 
 Config::Config ()
@@ -52,7 +89,6 @@ Config::Config ()
     // Defaults
     //
 
-    TESTNET                 = false;
     NETWORK_START_TIME      = 1319844908;
 
     RPC_SECURE              = 0;
@@ -70,7 +106,7 @@ Config::Config ()
     LEDGER_CREATOR          = false;
 
     RPC_ALLOW_REMOTE        = false;
-    RPC_ADMIN_ALLOW.push_back ("127.0.0.1");
+    RPC_ADMIN_ALLOW.push_back (beast::IP::Endpoint::from_string("127.0.0.1"));
 
     PEER_SSL_CIPHER_LIST    = DEFAULT_PEER_SSL_CIPHER_LIST;
     PEER_SCAN_INTERVAL_MIN  = DEFAULT_PEER_SCAN_INTERVAL_MIN;
@@ -94,6 +130,7 @@ Config::Config ()
     FEE_CONTRACT_OPERATION  = DEFAULT_FEE_OPERATION;
 
     LEDGER_HISTORY          = 256;
+    FETCH_DEPTH             = 1000000000;
 
     PATH_SEARCH_OLD         = DEFAULT_PATH_SEARCH_OLD;
     PATH_SEARCH             = DEFAULT_PATH_SEARCH;
@@ -112,7 +149,7 @@ Config::Config ()
     START_UP                = NORMAL;
 }
 
-void Config::setup (const std::string& strConf, bool bTestNet, bool bQuiet)
+void Config::setup (const std::string& strConf, bool bQuiet)
 {
     boost::system::error_code   ec;
     std::string                 strDbPath, strConfFile;
@@ -123,36 +160,19 @@ void Config::setup (const std::string& strConf, bool bTestNet, bool bQuiet)
     // that with "db" as the data directory.
     //
 
-    TESTNET     = bTestNet;
     QUIET       = bQuiet;
     NODE_SIZE   = 0;
 
-    // VFALCO NOTE TESTNET forces a "testnet-" prefix on the conf
-    //             file and db directory, unless --conf is specified
-    //             in which case there is no forced prefix.
+    strDbPath           = Helpers::getDatabaseDirName ();
+    strConfFile         = strConf.empty () ? Helpers::getConfigFileName () : strConf;
 
-    strDbPath           = Helpers::getDatabaseDirName (TESTNET);
-    strConfFile         = strConf.empty () ? Helpers::getConfigFileName (TESTNET) : strConf;
-
-    VALIDATORS_BASE     = Helpers::getValidatorsFileName (TESTNET);
+    VALIDATORS_BASE     = Helpers::getValidatorsFileName ();
 
     VALIDATORS_URI      = boost::str (boost::format ("/%s") % VALIDATORS_BASE);
 
-    if (TESTNET)
-    {
-        SIGN_TRANSACTION    = HashPrefix::txSignTestnet;
-        SIGN_VALIDATION     = HashPrefix::validationTestnet;
-        SIGN_PROPOSAL       = HashPrefix::proposalTestnet;
-    }
-    else
-    {
-        SIGN_TRANSACTION    = HashPrefix::txSign;
-        SIGN_VALIDATION     = HashPrefix::validation;
-        SIGN_PROPOSAL       = HashPrefix::proposal;
-    }
-
-    if (TESTNET)
-        Base58::setCurrentAlphabet (Base58::getTestnetAlphabet ());
+    SIGN_TRANSACTION    = HashPrefix::txSign;
+    SIGN_VALIDATION     = HashPrefix::validation;
+    SIGN_PROPOSAL       = HashPrefix::proposal;
 
     if (!strConf.empty ())
     {
@@ -219,6 +239,15 @@ void Config::setup (const std::string& strConf, bool bTestNet, bool bQuiet)
 
     if (ec)
         throw std::runtime_error (boost::str (boost::format ("Can not create %s") % DATA_DIR));
+
+    // Create the new unified database
+    m_moduleDbPath = getDatabaseDir();
+ 
+    // This code is temporarily disabled, and modules will fall back to using
+    // per-module databases (e.g. "peerfinder.sqlite") under the module db path
+    //    
+    //if (m_moduleDbPath.isDirectory ())
+    //    m_moduleDbPath = m_moduleDbPath.getChildFile("rippled.sqlite");
 }
 
 void Config::load ()
@@ -322,7 +351,12 @@ void Config::load ()
 
             if (smtTmp)
             {
-                RPC_ADMIN_ALLOW = *smtTmp;
+                std::vector<IP::Endpoint> parsedAddresses;
+                //parseAddresses<std::vector<IP::Endpoint>, std::vector<std::string>::const_iterator> 
+                //    (parsedAddresses, (*smtTmp).cbegin(), (*smtTmp).cend());
+                parseAddresses (parsedAddresses, (*smtTmp).cbegin(), (*smtTmp).cend());
+                RPC_ADMIN_ALLOW.insert (RPC_ADMIN_ALLOW.end(),
+                        parsedAddresses.cbegin (), parsedAddresses.cend ());
             }
 
             (void) SectionSingleB (secConfig, SECTION_RPC_ADMIN_PASSWORD, RPC_ADMIN_PASSWORD);
@@ -509,12 +543,26 @@ void Config::load ()
             {
                 boost::to_lower (strTemp);
 
-                if (strTemp == "none")
-                    LEDGER_HISTORY = 0;
-                else if (strTemp == "full")
+                if (strTemp == "full")
                     LEDGER_HISTORY = 1000000000u;
+                else if (strTemp == "none")
+                    LEDGER_HISTORY = 0;
                 else
                     LEDGER_HISTORY = lexicalCastThrow <uint32> (strTemp);
+            }
+            if (SectionSingleB (secConfig, SECTION_FETCH_DEPTH, strTemp))
+            {
+                boost::to_lower (strTemp);
+
+                if (strTemp == "none")
+                    FETCH_DEPTH = 0;
+                else if (strTemp == "full")
+                    FETCH_DEPTH = 1000000000u;
+                else
+                    FETCH_DEPTH = lexicalCastThrow <uint32> (strTemp);
+
+                if (FETCH_DEPTH < 10)
+                    FETCH_DEPTH = 10;
             }
 
             if (SectionSingleB (secConfig, SECTION_PATH_SEARCH_OLD, strTemp))
@@ -561,8 +609,8 @@ int Config::getSize (SizedItemName item)
         { siValidationsSize,    {   256,    256,    512,    1024,       1024    } },
         { siValidationsAge,     {   500,    500,    500,    500,        500     } },
 
-        { siNodeCacheSize,      {   8192,   16384,  32768,  131072,     0       } },
-        { siNodeCacheAge,       {   30,     60,     90,     120,        900     } },
+        { siNodeCacheSize,      {   16384,  32768,  131072, 262144,     0       } },
+        { siNodeCacheAge,       {   60,     90,     120,    900,        0       } },
 
         { siTreeCacheSize,      {   8192,   65536,  131072, 131072,     0       } },
         { siTreeCacheAge,       {   30,     60,     90,     120,        900     } },
@@ -597,139 +645,6 @@ Config& getConfig ()
 {
     static Config config;
     return config;
-}
-
-//------------------------------------------------------------------------------
-
-/*  The location of the configuration file is checked as follows,
-    in order of descending priority:
-
-    1. In the path specified by --conf command line option if present
-       (which is relative to the current directory)
-    2. In the current user's "home" directory
-    3. In the same directory as the rippled executable
-    4. In the "current" directory defined by the process which launched rippled
-*/
-File Config::findConfigFile (String commandLineLocation, bool forTestNetwork)
-{
-    File file (File::nonexistent ());
-
-#if 0
-    // Highest priority goes to commandLineLocation
-    //
-    if (file == File::nonexistent() && commandLineLocation != String::empty)
-    {
-        // If commandLineLocation is a full path,
-        // this will just assign the full path to file.
-        //
-        file = File::getCurrentDirectory().getChildFile (commandLineLocation);
-
-        if (! file.existsAsFile ())
-            file = File::nonexistent ();
-    }
-
-    // Next, we will look in the user's home directory
-    //
-#else
-
-#if 0
-    // VFALCO NOTE This is the original legacy code...
-
-    std::string strConfFile;
-
-    // Determine the config and data directories.
-    // If the config file is found in the current working directory,
-    // use the current working directory as the config directory and
-    // that with "db" as the data directory.
-    {
-        String s;
-        
-        if (forTestNetwork)
-            s += "testnet-";
-
-        if (commandLineLocation != String::empty)
-            s += Helpers::getConfigFileName (forTestNetwork);
-
-    strConfFile = boost::str (boost::format (forTestNetwork ? "testnet-%s" : "%s")
-                                      % (strConf.empty () ? Helpers::getConfigFileName() : strConf));
-
-    VALIDATORS_BASE     = boost::str (boost::format (TESTNET ? "testnet-%s" : "%s")
-                                      % VALIDATORS_FILE_NAME);
-    VALIDATORS_URI      = boost::str (boost::format ("/%s") % VALIDATORS_BASE);
-
-    if (TESTNET)
-    {
-        SIGN_TRANSACTION    = HashPrefix::txSignTestnet;
-        SIGN_VALIDATION     = HashPrefix::validationTestnet;
-        SIGN_PROPOSAL       = HashPrefix::proposalTestnet;
-    }
-    else
-    {
-        SIGN_TRANSACTION    = HashPrefix::txSign;
-        SIGN_VALIDATION     = HashPrefix::validation;
-        SIGN_PROPOSAL       = HashPrefix::proposal;
-    }
-
-    if (TESTNET)
-        Base58::setCurrentAlphabet (Base58::getTestnetAlphabet ());
-
-    if (!strConf.empty ())
-    {
-        // --conf=<path> : everything is relative that file.
-        CONFIG_FILE             = strConfFile;
-        CONFIG_DIR              = boost::filesystem::absolute (CONFIG_FILE);
-        CONFIG_DIR.remove_filename ();
-        DATA_DIR                = CONFIG_DIR / strDbPath;
-    }
-    else
-    {
-        CONFIG_DIR              = boost::filesystem::current_path ();
-        CONFIG_FILE             = CONFIG_DIR / strConfFile;
-        DATA_DIR                = CONFIG_DIR / strDbPath;
-
-        if (exists (CONFIG_FILE)
-                // Can we figure out XDG dirs?
-                || (!getenv ("HOME") && (!getenv ("XDG_CONFIG_HOME") || !getenv ("XDG_DATA_HOME"))))
-        {
-            // Current working directory is fine, put dbs in a subdir.
-            nothing ();
-        }
-        else
-        {
-            // Construct XDG config and data home.
-            // http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
-            std::string strHome             = strGetEnv ("HOME");
-            std::string strXdgConfigHome    = strGetEnv ("XDG_CONFIG_HOME");
-            std::string strXdgDataHome      = strGetEnv ("XDG_DATA_HOME");
-
-            if (strXdgConfigHome.empty ())
-            {
-                // $XDG_CONFIG_HOME was not set, use default based on $HOME.
-                strXdgConfigHome    = boost::str (boost::format ("%s/.config") % strHome);
-            }
-
-            if (strXdgDataHome.empty ())
-            {
-                // $XDG_DATA_HOME was not set, use default based on $HOME.
-                strXdgDataHome  = boost::str (boost::format ("%s/.local/share") % strHome);
-            }
-
-            CONFIG_DIR          = boost::str (boost::format ("%s/" SYSTEM_NAME) % strXdgConfigHome);
-            CONFIG_FILE         = CONFIG_DIR / strConfFile;
-            DATA_DIR            = boost::str (boost::format ("%s/" SYSTEM_NAME) % strXdgDataHome);
-
-            boost::filesystem::create_directories (CONFIG_DIR, ec);
-
-            if (ec)
-                throw std::runtime_error (boost::str (boost::format ("Can not create %s") % CONFIG_DIR));
-        }
-    }
-
-#endif
-
-#endif
-
-    return file;
 }
 
 //------------------------------------------------------------------------------
@@ -789,13 +704,19 @@ void Config::setRpcIpAndOptionalPort (std::string const& newAddress)
 
 //------------------------------------------------------------------------------
 
-Config::Role Config::getAdminRole (Json::Value const& params, std::string const& strRemoteIp) const
+Config::Role Config::getAdminRole (Json::Value const& params, beast::IP::Endpoint const& remoteIp) const
 {
-    Config::Role role;
-    bool    bPasswordSupplied   = params.isMember ("admin_user") || params.isMember ("admin_password");
-    bool    bPasswordRequired   = !this->RPC_ADMIN_USER.empty () || !this->RPC_ADMIN_PASSWORD.empty ();
+    Config::Role role (Config::FORBID);
 
-    bool    bPasswordWrong;
+    bool const bPasswordSupplied =
+        params.isMember ("admin_user") ||
+        params.isMember ("admin_password");
+
+    bool const bPasswordRequired =
+        ! this->RPC_ADMIN_USER.empty () ||
+        ! this->RPC_ADMIN_PASSWORD.empty ();
+
+    bool bPasswordWrong;
 
     if (bPasswordSupplied)
     {
@@ -822,12 +743,16 @@ Config::Role Config::getAdminRole (Json::Value const& params, std::string const&
     }
 
     // Meets IP restriction for admin.
-    bool    bAdminIP            = false;
+    IP::Endpoint const remote_addr (remoteIp.at_port (0));
+    bool bAdminIP = false;
 
-    BOOST_FOREACH (const std::string & strAllowIp, this->RPC_ADMIN_ALLOW)
+    for (auto const& allow_addr : RPC_ADMIN_ALLOW)
     {
-        if (strAllowIp == strRemoteIp)
-            bAdminIP    = true;
+        if (allow_addr == remote_addr)
+        {
+            bAdminIP = true;
+            break;
+        }
     }
 
     if (bPasswordWrong                          // Wrong
@@ -843,6 +768,12 @@ Config::Role Config::getAdminRole (Json::Value const& params, std::string const&
     }
 
     return role;
+}
+
+//------------------------------------------------------------------------------
+File const& Config::getModuleDatabasePath ()
+{
+    return m_moduleDbPath;
 }
 
 //

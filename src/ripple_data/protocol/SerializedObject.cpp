@@ -19,56 +19,56 @@
 
 SETUP_LOG (STObject)
 
-UPTR_T<SerializedType> STObject::makeDefaultObject (SerializedTypeID id, SField::ref name)
+std::unique_ptr<SerializedType> STObject::makeDefaultObject (SerializedTypeID id, SField::ref name)
 {
     assert ((id == STI_NOTPRESENT) || (id == name.fieldType));
 
     switch (id)
     {
     case STI_NOTPRESENT:
-        return UPTR_T<SerializedType> (new SerializedType (name));
+        return std::unique_ptr<SerializedType> (new SerializedType (name));
 
     case STI_UINT8:
-        return UPTR_T<SerializedType> (new STUInt8 (name));
+        return std::unique_ptr<SerializedType> (new STUInt8 (name));
 
     case STI_UINT16:
-        return UPTR_T<SerializedType> (new STUInt16 (name));
+        return std::unique_ptr<SerializedType> (new STUInt16 (name));
 
     case STI_UINT32:
-        return UPTR_T<SerializedType> (new STUInt32 (name));
+        return std::unique_ptr<SerializedType> (new STUInt32 (name));
 
     case STI_UINT64:
-        return UPTR_T<SerializedType> (new STUInt64 (name));
+        return std::unique_ptr<SerializedType> (new STUInt64 (name));
 
     case STI_AMOUNT:
-        return UPTR_T<SerializedType> (new STAmount (name));
+        return std::unique_ptr<SerializedType> (new STAmount (name));
 
     case STI_HASH128:
-        return UPTR_T<SerializedType> (new STHash128 (name));
+        return std::unique_ptr<SerializedType> (new STHash128 (name));
 
     case STI_HASH160:
-        return UPTR_T<SerializedType> (new STHash160 (name));
+        return std::unique_ptr<SerializedType> (new STHash160 (name));
 
     case STI_HASH256:
-        return UPTR_T<SerializedType> (new STHash256 (name));
+        return std::unique_ptr<SerializedType> (new STHash256 (name));
 
     case STI_VECTOR256:
-        return UPTR_T<SerializedType> (new STVector256 (name));
+        return std::unique_ptr<SerializedType> (new STVector256 (name));
 
     case STI_VL:
-        return UPTR_T<SerializedType> (new STVariableLength (name));
+        return std::unique_ptr<SerializedType> (new STVariableLength (name));
 
     case STI_ACCOUNT:
-        return UPTR_T<SerializedType> (new STAccount (name));
+        return std::unique_ptr<SerializedType> (new STAccount (name));
 
     case STI_PATHSET:
-        return UPTR_T<SerializedType> (new STPathSet (name));
+        return std::unique_ptr<SerializedType> (new STPathSet (name));
 
     case STI_OBJECT:
-        return UPTR_T<SerializedType> (new STObject (name));
+        return std::unique_ptr<SerializedType> (new STObject (name));
 
     case STI_ARRAY:
-        return UPTR_T<SerializedType> (new STArray (name));
+        return std::unique_ptr<SerializedType> (new STArray (name));
 
     default:
         WriteLog (lsFATAL, STObject) << "Object type: " << lexicalCast <std::string> (id);
@@ -78,7 +78,7 @@ UPTR_T<SerializedType> STObject::makeDefaultObject (SerializedTypeID id, SField:
 }
 
 // VFALCO TODO Remove the 'depth' parameter
-UPTR_T<SerializedType> STObject::makeDeserializedObject (SerializedTypeID id, SField::ref name,
+std::unique_ptr<SerializedType> STObject::makeDeserializedObject (SerializedTypeID id, SField::ref name,
         SerializerIterator& sit, int depth)
 {
     switch (id)
@@ -138,7 +138,7 @@ void STObject::set (const SOTemplate& type)
     mData.clear ();
     mType = &type;
 
-    BOOST_FOREACH (const SOElement * elem, type.peek ())
+    for (SOTemplate::value_type const& elem : type.peek ())
     {
         if (elem->flags != SOE_REQUIRED)
             giveObject (makeNonPresentObject (elem->e_field));
@@ -154,7 +154,7 @@ bool STObject::setType (const SOTemplate& type)
 
     mType = &type;
 
-    BOOST_FOREACH (const SOElement * elem, type.peek ())
+    for (SOTemplate::value_type const& elem : type.peek ())
     {
         bool match = false;
 
@@ -208,7 +208,7 @@ bool STObject::isValidForType ()
 {
     boost::ptr_vector<SerializedType>::iterator it = mData.begin ();
 
-    BOOST_FOREACH (const SOElement * elem, mType->peek ())
+    for (SOTemplate::value_type const& elem : mType->peek ())
     {
         if (it == mData.end ())
             return false;
@@ -297,10 +297,10 @@ bool STObject::set (SerializerIterator& sit, int depth)
 }
 
 
-UPTR_T<SerializedType> STObject::deserialize (SerializerIterator& sit, SField::ref name)
+std::unique_ptr<SerializedType> STObject::deserialize (SerializerIterator& sit, SField::ref name)
 {
     STObject* o;
-    UPTR_T<SerializedType> object (o = new STObject (name));
+    std::unique_ptr<SerializedType> object (o = new STObject (name));
     o->set (sit, 1);
     return object;
 }
@@ -832,6 +832,25 @@ const STAmount& STObject::getFieldAmount (SField::ref field) const
     return *cf;
 }
 
+const STArray& STObject::getFieldArray (SField::ref field) const
+{
+    static STArray empty;
+    const SerializedType* rf = peekAtPField (field);
+
+    if (!rf) throw std::runtime_error ("Field not found");
+
+    SerializedTypeID id = rf->getSType ();
+
+    if (id == STI_NOTPRESENT) return empty;
+
+    const STArray* cf = dynamic_cast<const STArray*> (rf);
+
+    if (!cf)
+        throw std::runtime_error ("Wrong field type");
+
+    return *cf;
+}
+
 const STPathSet& STObject::getFieldPathSet (SField::ref field) const
 {
     static STPathSet empty;
@@ -1232,381 +1251,6 @@ void STArray::sort (bool (*compare) (const STObject&, const STObject&))
     value.sort (compare);
 }
 
-UPTR_T<STObject> STObject::parseJson (const Json::Value& object, SField::ref inName, int depth)
-{
-    if (!object.isObject ())
-        throw std::runtime_error ("Value is not an object");
-
-    SField::ptr name = &inName;
-
-    boost::ptr_vector<SerializedType> data;
-    Json::Value::Members members (object.getMemberNames ());
-
-    for (Json::Value::Members::iterator it = members.begin (), end = members.end (); it != end; ++it)
-    {
-        const std::string& fieldName = *it;
-        const Json::Value& value = object[fieldName];
-
-        SField::ref field = SField::getField (fieldName);
-
-        if (field == sfInvalid)
-            throw std::runtime_error ("Unknown field: " + fieldName);
-
-        switch (field.fieldType)
-        {
-        case STI_UINT8:
-            if (value.isString ())
-            {
-#if 0
-
-                if (field == sfTransactionResult)
-                {
-                    TER terCode;
-
-                    if (FUNCTION_THAT_DOESNT_EXIST (value.asString (), terCode))
-                        value = static_cast<int> (terCode);
-                    else
-                        data.push_back (new STUInt8 (field, lexicalCastThrow <unsigned char> (value.asString ())));
-                }
-
-                data.push_back (new STUInt8 (field, lexicalCastThrow <unsigned char> (value.asString ())));
-#endif
-            }
-            else if (value.isInt ())
-            {
-                if (value.asInt () < 0 || value.asInt () > 255)
-                    throw std::runtime_error ("value out of range");
-
-                data.push_back (new STUInt8 (field, range_check_cast<unsigned char> (value.asInt (), 0, 255)));
-            }
-            else if (value.isUInt ())
-            {
-                if (value.asUInt () > 255)
-                    throw std::runtime_error ("value out of range");
-
-                data.push_back (new STUInt8 (field, range_check_cast<unsigned char> (value.asUInt (), 0, 255)));
-            }
-            else
-                throw std::runtime_error ("Incorrect type");
-
-            break;
-
-        case STI_UINT16:
-            if (value.isString ())
-            {
-                std::string strValue = value.asString ();
-
-                if (!strValue.empty () && ((strValue[0] < '0') || (strValue[0] > '9')))
-                {
-                    if (field == sfTransactionType)
-                    {
-                        // Retrieve type from name. Throws if not found.
-                        TxType const txType = TxFormats::getInstance()->findTypeByName (strValue);
-
-                        data.push_back (new STUInt16 (field, static_cast<uint16> (txType)));
-
-                        if (*name == sfGeneric)
-                            name = &sfTransaction;
-                    }
-                    else if (field == sfLedgerEntryType)
-                    {
-                        LedgerEntryType const type = LedgerFormats::getInstance()->findTypeByName (strValue);
-
-                        data.push_back (new STUInt16 (field, static_cast<uint16> (type)));
-
-                        if (*name == sfGeneric)
-                            name = &sfLedgerEntry;
-                    }
-                    else
-                        throw std::runtime_error ("Invalid field data");
-                }
-                else
-                    data.push_back (new STUInt16 (field, lexicalCastThrow <uint16> (strValue)));
-            }
-            else if (value.isInt ())
-                data.push_back (new STUInt16 (field, range_check_cast<uint16> (value.asInt (), 0, 65535)));
-            else if (value.isUInt ())
-                data.push_back (new STUInt16 (field, range_check_cast<uint16> (value.asUInt (), 0, 65535)));
-            else
-                throw std::runtime_error ("Incorrect type");
-
-            break;
-
-        case STI_UINT32:
-            if (value.isString ())
-            {
-                data.push_back (new STUInt32 (field, lexicalCastThrow <uint32> (value.asString ())));
-            }
-            else if (value.isInt ())
-            {
-                data.push_back (new STUInt32 (field, range_check_cast <uint32> (value.asInt (), 0u, 4294967295u)));
-            }
-            else if (value.isUInt ())
-            {
-                data.push_back (new STUInt32 (field, static_cast<uint32> (value.asUInt ())));
-            }
-            else
-            {
-                throw std::runtime_error ("Incorrect type");
-            }
-            break;
-
-        case STI_UINT64:
-            if (value.isString ())
-                data.push_back (new STUInt64 (field, uintFromHex (value.asString ())));
-            else if (value.isInt ())
-                data.push_back (new STUInt64 (field,
-                                              range_check_cast<uint64> (value.asInt (), 0, 18446744073709551615ull)));
-            else if (value.isUInt ())
-                data.push_back (new STUInt64 (field, static_cast<uint64> (value.asUInt ())));
-            else
-                throw std::runtime_error ("Incorrect type");
-
-            break;
-
-
-        case STI_HASH128:
-            if (value.isString ())
-                data.push_back (new STHash128 (field, value.asString ()));
-            else
-                throw std::runtime_error ("Incorrect type");
-
-            break;
-
-        case STI_HASH160:
-            if (value.isString ())
-                data.push_back (new STHash160 (field, value.asString ()));
-            else
-                throw std::runtime_error ("Incorrect type");
-
-            break;
-
-        case STI_HASH256:
-            if (value.isString ())
-                data.push_back (new STHash256 (field, value.asString ()));
-            else
-                throw std::runtime_error ("Incorrect type");
-
-            break;
-
-        case STI_VL:
-            if (!value.isString ())
-                throw std::runtime_error ("Incorrect type");
-
-            data.push_back (new STVariableLength (field, strUnHex (value.asString ())));
-            break;
-
-        case STI_AMOUNT:
-            data.push_back (new STAmount (field, value));
-            break;
-
-        case STI_VECTOR256:
-            if (!value.isArray ())
-                throw std::runtime_error ("Incorrect type");
-
-            {
-                data.push_back (new STVector256 (field));
-                STVector256* tail = dynamic_cast<STVector256*> (&data.back ());
-                assert (tail);
-
-                for (Json::UInt i = 0; !object.isValidIndex (i); ++i)
-                {
-                    uint256 s;
-                    s.SetHex (object[i].asString ());
-                    tail->addValue (s);
-                }
-            }
-            break;
-
-        case STI_PATHSET:
-            if (!value.isArray ())
-                throw std::runtime_error ("Path set must be array");
-
-            {
-                data.push_back (new STPathSet (field));
-                STPathSet* tail = dynamic_cast<STPathSet*> (&data.back ());
-                assert (tail);
-
-                for (Json::UInt i = 0; value.isValidIndex (i); ++i)
-                {
-                    STPath p;
-
-                    if (!value[i].isArray ())
-                        throw std::runtime_error ("Path must be array");
-
-                    for (Json::UInt j = 0; value[i].isValidIndex (j); ++j)
-                    {
-                        // each element in this path has some combination of account, currency, or issuer
-
-                        Json::Value pathEl = value[i][j];
-
-                        if (!pathEl.isObject ())
-                            throw std::runtime_error ("Path elements must be objects");
-
-                        const Json::Value& account  = pathEl["account"];
-                        const Json::Value& currency = pathEl["currency"];
-                        const Json::Value& issuer   = pathEl["issuer"];
-                        bool hasCurrency            = false;
-                        uint160 uAccount, uCurrency, uIssuer;
-
-                        if (!account.isNull ())
-                        {
-                            // human account id
-                            if (!account.isString ())
-                                throw std::runtime_error ("path element accounts must be strings");
-
-                            std::string strValue = account.asString ();
-
-                            if (value.size () == 40) // 160-bit hex account value
-                                uAccount.SetHex (strValue);
-
-                            {
-                                RippleAddress a;
-
-                                if (!a.setAccountID (strValue))
-                                    throw std::runtime_error ("Account in path element invalid");
-
-                                uAccount = a.getAccountID ();
-                            }
-                        }
-
-                        if (!currency.isNull ())
-                        {
-                            // human currency
-                            if (!currency.isString ())
-                                throw std::runtime_error ("path element currencies must be strings");
-
-                            hasCurrency = true;
-
-                            if (currency.asString ().size () == 40)
-                                uCurrency.SetHex (currency.asString ());
-                            else if (!STAmount::currencyFromString (uCurrency, currency.asString ()))
-                                throw std::runtime_error ("invalid currency");
-                        }
-
-                        if (!issuer.isNull ())
-                        {
-                            // human account id
-                            if (!issuer.isString ())
-                                throw std::runtime_error ("path element issuers must be strings");
-
-                            if (issuer.asString ().size () == 40)
-                                uIssuer.SetHex (issuer.asString ());
-                            else
-                            {
-                                RippleAddress a;
-
-                                if (!a.setAccountID (issuer.asString ()))
-                                    throw std::runtime_error ("path element issuer invalid");
-
-                                uIssuer = a.getAccountID ();
-                            }
-                        }
-
-                        p.addElement (STPathElement (uAccount, uCurrency, uIssuer, hasCurrency));
-                    }
-
-                    tail->addPath (p);
-                }
-            }
-            break;
-
-        case STI_ACCOUNT:
-        {
-            if (!value.isString ())
-                throw std::runtime_error ("Incorrect type");
-
-            std::string strValue = value.asString ();
-
-            if (value.size () == 40) // 160-bit hex account value
-            {
-                uint160 v;
-                v.SetHex (strValue);
-                data.push_back (new STAccount (field, v));
-            }
-            else
-            {
-                // ripple address
-                RippleAddress a;
-
-                if (!a.setAccountID (strValue))
-                {
-                    WriteLog (lsINFO, STObject) << "Invalid acccount JSON: " << fieldName << ": " << strValue;
-                    throw std::runtime_error ("Account invalid");
-                }
-
-                data.push_back (new STAccount (field, a.getAccountID ()));
-            }
-        }
-        break;
-
-        case STI_OBJECT:
-        case STI_TRANSACTION:
-        case STI_LEDGERENTRY:
-        case STI_VALIDATION:
-            if (!value.isObject ())
-                throw std::runtime_error ("Inner value is not an object");
-
-            if (depth > 64)
-                throw std::runtime_error ("Json nest depth exceeded");
-
-            data.push_back (parseJson (value, field, depth + 1).release ());
-            break;
-
-        case STI_ARRAY:
-            if (!value.isArray ())
-                throw std::runtime_error ("Inner value is not an array");
-
-            {
-                data.push_back (new STArray (field));
-                STArray* tail = dynamic_cast<STArray*> (&data.back ());
-                assert (tail);
-
-                for (Json::UInt i = 0; value.isValidIndex (i); ++i)
-                {
-
-                    bool isObject (value[i].isObject());
-                    bool singleKey (true);
-
-                    if (isObject)
-                    {
-                         singleKey = value[i].size() == 1;
-                    }
-
-                    if (!isObject || !singleKey)
-                    {
-                        std::stringstream err;
-
-                        err << "First level children of `"
-                            << field.getName()
-                            << "`must be objects containing a single key with"
-                            << " an object value";
-
-                        throw std::runtime_error (err.str());
-                    }
-
-                    // TODO: There doesn't seem to be a nice way to get just the
-                    // first/only key in an object without copying all keys into
-                    // a vector
-                    std::string objectName (value[i].getMemberNames()[0]);;
-                    SField::ref nameField (SField::getField(objectName));
-                    Json::Value objectFields (value[i][objectName]);
-
-                    tail->push_back (*STObject::parseJson (objectFields,
-                                                           nameField,
-                                                           depth + 1));
-                }
-            }
-            break;
-
-        default:
-            throw std::runtime_error ("Invalid field type");
-        }
-    }
-
-    return UPTR_T<STObject> (new STObject (*name, data));
-}
-
 //------------------------------------------------------------------------------
 
 class SerializedObjectTests : public UnitTest
@@ -1652,12 +1296,13 @@ public:
                                     "\"DeletedNode\":{\"Sequence\":1}"
                                 "}]}");
 
-            UPTR_T<STObject> so;
+            std::unique_ptr<STObject> so;
             Json::Value faultyJson;
             bool parsedOK (parseJSONString(faulty, faultyJson));
             unexpected(!parsedOK, "failed to parse");
-            so = STObject::parseJson (faultyJson);
-            fail ("It should have thrown. "
+            STParsedJSON parsed ("test", faultyJson);
+            expect (parsed.object.get() == nullptr,
+                "It should have thrown. "
                   "Immediate children of STArray encoded as json must "
                   "have one key only.");
         }
@@ -1677,16 +1322,15 @@ public:
         bool parsedOK (parseJSONString(json, jsonObject));
         if (parsedOK)
         {
-          UPTR_T<STObject> so;
-          so = STObject::parseJson (jsonObject);
-          Json::FastWriter writer;
-          std::string const& serialized (writer.write(so->getJson(0)));
-          bool serializedOK = serialized == json;
-          unexpected (!serializedOK, serialized + " should equal: " + json);
+            STParsedJSON parsed ("test", jsonObject);
+            Json::FastWriter writer;
+            std::string const& serialized (
+                writer.write (parsed.object->getJson(0)));
+            expect (serialized == json, serialized + " should equal: " + json);
         }
         else
         {
-          fail ("Couldn't parse json: " + json);
+            fail ("Couldn't parse json: " + json);
         }
     }
 

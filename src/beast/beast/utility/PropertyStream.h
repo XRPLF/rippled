@@ -25,6 +25,7 @@
 #include "../intrusive/List.h"
 #include "../threads/SharedData.h"
 
+#include <cstdint>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -51,6 +52,11 @@ protected:
 
     virtual void add (std::string const& key, std::string const& value) = 0;
 
+    void add (std::string const& key, char const* value)
+    {
+        add (key, std::string (value));
+    }
+
     template <typename Value>
     void lexical_add (std::string const &key, Value value)
     {
@@ -58,17 +64,38 @@ protected:
         ss << value;
         add (key, ss.str());
     }
-    virtual void add (std::string const& key,   int32 value);
-    virtual void add (std::string const& key,  uint32 value);
-    virtual void add (std::string const& key,   int64 value);
-    virtual void add (std::string const& key,  uint64 value);
-    virtual void add (std::string const& key,  double value);
+
+    virtual void add (std::string const& key, bool value);
+    virtual void add (std::string const& key, char value);
+    virtual void add (std::string const& key, signed char value);
+    virtual void add (std::string const& key, unsigned char value);
+    virtual void add (std::string const& key, wchar_t value);
+#if 0
+    virtual void add (std::string const& key, char16_t value);
+    virtual void add (std::string const& key, char32_t value);
+#endif
+    virtual void add (std::string const& key, short value);
+    virtual void add (std::string const& key, unsigned short value);
+    virtual void add (std::string const& key, int value);
+    virtual void add (std::string const& key, unsigned int value);
+    virtual void add (std::string const& key, long value);
+    virtual void add (std::string const& key, unsigned long value);
+    virtual void add (std::string const& key, long long value);
+    virtual void add (std::string const& key, unsigned long long value);
+    virtual void add (std::string const& key, float value);
+    virtual void add (std::string const& key, double value);
+    virtual void add (std::string const& key, long double value);
 
     virtual void array_begin () = 0;
     virtual void array_begin (std::string const& key) = 0;
     virtual void array_end () = 0;
 
     virtual void add (std::string const& value) = 0;
+
+    void add (char const* value)
+    {
+        add (std::string (value));
+    }
 
     template <typename Value>
     void lexical_add (Value value)
@@ -77,10 +104,27 @@ protected:
         ss << value;
         add (ss.str());
     }
-    virtual void add ( int32 value);
-    virtual void add (uint32 value);
-    virtual void add ( int64 value);
-    virtual void add (uint64 value);
+
+    virtual void add (bool value);
+    virtual void add (char value);
+    virtual void add (signed char value);
+    virtual void add (unsigned char value);
+    virtual void add (wchar_t value);
+#if 0
+    virtual void add (char16_t value);
+    virtual void add (char32_t value);
+#endif
+    virtual void add (short value);
+    virtual void add (unsigned short value);
+    virtual void add (int value);
+    virtual void add (unsigned int value);
+    virtual void add (long value);
+    virtual void add (unsigned long value);
+    virtual void add (long long value);
+    virtual void add (unsigned long long value);
+    virtual void add (float value);
+    virtual void add (double value);
+    virtual void add (long double value);
 
 private:
     class Item;
@@ -298,8 +342,24 @@ public:
         will be nullptr and the second value will be undefined.
         The second value is a boolean indicating whether or not the path string
         specifies the wildcard character '*' as the last character.
+
+        print statement examples
+        "parent.child" prints child and all of its children
+        "parent.child." start at the parent and print down to child
+        "parent.grandchild" prints nothing- grandchild not direct discendent
+        "parent.grandchild." starts at the parent and prints down to grandchild
+        "parent.grandchild.*" starts at parent, print through grandchild children
     */
-    std::pair <Source*, bool> find (std::string const& path);
+    std::pair <Source*, bool> find (std::string path);
+
+    Source* find_one_deep (std::string const& name);
+    PropertyStream::Source* find_path(std::string path);
+    PropertyStream::Source* find_one(std::string const& name);
+
+    static bool peel_leading_slash (std::string* path);
+    static bool peel_trailing_slashstar (std::string* path);
+    static std::string peel_name(std::string* path);    
+
 
     //--------------------------------------------------------------------------
 

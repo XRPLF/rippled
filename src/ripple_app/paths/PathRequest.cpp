@@ -19,28 +19,53 @@
 
 SETUP_LOG (PathRequest)
 
-// VFALCO TODO Move these globals into a PathRequests collection inteface
-PathRequest::StaticLockType PathRequest::sLock ("PathRequest", __FILE__, __LINE__);
-std::set <PathRequest::wptr> PathRequest::sRequests;
-RippleLineCache::pointer PathRequest::sLineCache;
-Atomic<int> PathRequest::siLastIdentifier(0);
-
-PathRequest::PathRequest (const boost::shared_ptr<InfoSub>& subscriber)
-    : mLock (this, "PathRequest", __FILE__, __LINE__)
+PathRequest::PathRequest (
+const boost::shared_ptr<InfoSub>& subscriber, int id, PathRequests& owner,
+    Journal journal)
+    : m_journal (journal)
+    , mLock (this, "PathRequest", __FILE__, __LINE__)
+    , mOwner (owner)
     , wpSubscriber (subscriber)
     , jvStatus (Json::objectValue)
     , bValid (false)
-    , bNew (true)
+    , iLastIndex (0)
     , iLastLevel (0)
     , bLastSuccess (false)
-    , iIdentifier (++siLastIdentifier)
+    , iIdentifier (id)
 {
-    WriteLog (lsINFO, PathRequest) << iIdentifier << " created";
+    if (m_journal.debug)
+        m_journal.debug << iIdentifier << " created";
+    ptCreated = boost::posix_time::microsec_clock::universal_time ();
+}
+
+static std::string const get_milli_diff (boost::posix_time::ptime const& after, boost::posix_time::ptime const& before)
+{
+    return lexicalCastThrow <std::string> (static_cast <unsigned> ((after - before).total_milliseconds()));
+}
+
+static std::string const get_milli_diff (boost::posix_time::ptime const& before)
+{
+    return get_milli_diff(boost::posix_time::microsec_clock::universal_time(), before);
 }
 
 PathRequest::~PathRequest()
 {
-    WriteLog (lsINFO, PathRequest) << iIdentifier << " destroyed";
+    std::string fast, full;
+    if (!ptQuickReply.is_not_a_date_time())
+    {
+        fast = " fast:";
+        fast += get_milli_diff (ptQuickReply, ptCreated);
+        fast += "ms";
+    }
+    if (!ptFullReply.is_not_a_date_time())
+    {
+        full = " full:";
+        full += get_milli_diff (ptFullReply, ptCreated);
+        full += "ms";
+    }
+    if (m_journal.info)
+        m_journal.info << iIdentifier << " complete:" << fast << full <<
+        " total:" << get_milli_diff(ptCreated) << "ms";
 }
 
 bool PathRequest::isValid ()
@@ -51,18 +76,49 @@ bool PathRequest::isValid ()
 
 bool PathRequest::isNew ()
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
-    return bNew;
+     // does this path request still need its first full path
+     return iLastIndex.load() == 0;
 }
 
-bool PathRequest::isValid (Ledger::ref lrLedger)
+bool PathRequest::needsUpdate (bool newOnly, LedgerIndex index)
+{
+    LedgerIndex lastIndex = iLastIndex.load();
+    for (;;)
+    {
+        if (newOnly)
+        {
+            // Is this request new
+            if (lastIndex != 0)
+                return false;
+
+            // This thread marks this request handled
+            if (iLastIndex.compare_exchange_weak (lastIndex, 1,
+                    std::memory_order_release, std::memory_order_relaxed))
+                return true;
+        }
+        else
+        {
+            // Has the request already been handled?
+            if (lastIndex >= index)
+                return false;
+
+            // This thread marks this request handled
+            if (iLastIndex.compare_exchange_weak (lastIndex, index,
+                    std::memory_order_release, std::memory_order_relaxed))
+                return true;
+        }
+    }
+}
+
+bool PathRequest::isValid (RippleLineCache::ref crCache)
 {
     ScopedLockType sl (mLock, __FILE__, __LINE__);
     bValid = raSrcAccount.isSet () && raDstAccount.isSet () && saDstAmount.isPositive ();
+    Ledger::pointer lrLedger = crCache->getLedger ();
 
     if (bValid)
     {
-        AccountState::pointer asSrc = getApp().getOPs ().getAccountState (lrLedger, raSrcAccount);
+        AccountState::pointer asSrc = getApp().getOPs ().getAccountState (crCache->getLedger(), raSrcAccount);
 
         if (!asSrc)
         {
@@ -73,7 +129,8 @@ bool PathRequest::isValid (Ledger::ref lrLedger)
         else
         {
             AccountState::pointer asDst = getApp().getOPs ().getAccountState (lrLedger, raDstAccount);
-            Json::Value jvDestCur;
+
+            Json::Value& jvDestCur = (jvStatus["destination_currencies"] = Json::arrayValue);
 
             if (!asDst)
             {
@@ -95,64 +152,59 @@ bool PathRequest::isValid (Ledger::ref lrLedger)
             }
             else
             {
-                boost::unordered_set<uint160> usDestCurrID = usAccountDestCurrencies (raDstAccount, lrLedger, true);
+                bool includeXRP = !isSetBit (asDst->peekSLE ().getFlags(), lsfDisallowXRP);
+                boost::unordered_set<uint160> usDestCurrID =
+                    usAccountDestCurrencies (raDstAccount, crCache, includeXRP);
+
                 BOOST_FOREACH (const uint160 & uCurrency, usDestCurrID)
-                jvDestCur.append (STAmount::createHumanCurrency (uCurrency));
+                    jvDestCur.append (STAmount::createHumanCurrency (uCurrency));
+
                 jvStatus["destination_tag"] = (asDst->peekSLE ().getFlags () & lsfRequireDestTag) != 0;
             }
-
-            jvStatus["destination_currencies"] = jvDestCur;
         }
     }
 
-    jvStatus["ledger_hash"] = lrLedger->getHash ().GetHex ();
-    jvStatus["ledger_index"] = lrLedger->getLedgerSeq ();
+    if (bValid)
+    {
+        jvStatus["ledger_hash"] = lrLedger->getHash ().GetHex ();
+        jvStatus["ledger_index"] = lrLedger->getLedgerSeq ();
+    }
     return bValid;
 }
 
-Json::Value PathRequest::doCreate (Ledger::ref lrLedger, const Json::Value& value)
+Json::Value PathRequest::doCreate (Ledger::ref lrLedger, RippleLineCache::ref& cache,
+    const Json::Value& value, bool& valid)
 {
-    assert (lrLedger->isClosed ());
-
-    // Get the ledger and line cache we should use
-    Ledger::pointer ledger = lrLedger;
-    RippleLineCache::pointer cache;
-    {
-        StaticScopedLockType sl (sLock, __FILE__, __LINE__);
-        cache = getLineCache (ledger);
-    }
 
     Json::Value status;
-    bool mValid;
 
+    if (parseJson (value, true) != PFR_PJ_INVALID)
     {
-        if (parseJson (value, true) != PFR_PJ_INVALID)
-        {
-            mValid = isValid (ledger);
+        bValid = isValid (cache);
 
-            if (mValid)
-            {
-                doUpdate (cache, true);
-            }
-        }
+        if (bValid)
+            status = doUpdate (cache, true);
         else
-            mValid = false;
-
+            status = jvStatus;
+    }
+    else
+    {
+        bValid = false;
         status = jvStatus;
     }
 
-    if (mValid)
+    if (m_journal.debug)
     {
-        WriteLog (lsINFO, PathRequest) << iIdentifier << " valid: " << raSrcAccount.humanAccountID () <<
-                                       " -> " << raDstAccount.humanAccountID ();
-        WriteLog (lsINFO, PathRequest) << iIdentifier << " Deliver: " << saDstAmount.getFullText ();
-
-        StaticScopedLockType sl (sLock, __FILE__, __LINE__);
-        sRequests.insert (shared_from_this ());
+        if (bValid)
+        {
+            m_journal.debug << iIdentifier << " valid: " << raSrcAccount.humanAccountID () <<
+            m_journal.debug << iIdentifier << " Deliver: " << saDstAmount.getFullText ();
+        }
+        else
+            m_journal.debug << iIdentifier << " invalid";
     }
-    else
-        WriteLog (lsINFO, PathRequest) << iIdentifier << " invalid";
 
+    valid = bValid;
     return status;
 }
 
@@ -250,7 +302,7 @@ int PathRequest::parseJson (const Json::Value& jvParams, bool complete)
 }
 Json::Value PathRequest::doClose (const Json::Value&)
 {
-    WriteLog (lsDEBUG, PathRequest) << iIdentifier << " closed";
+    m_journal.debug << iIdentifier << " closed";
     ScopedLockType sl (mLock, __FILE__, __LINE__);
     return jvStatus;
 }
@@ -267,24 +319,22 @@ void PathRequest::resetLevel (int l)
         iLastLevel = l;
 }
 
-bool PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
+Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
 {
-    WriteLog (lsDEBUG, PathRequest) << iIdentifier << " update " << (fast ? "fast" : "normal");
+    m_journal.debug << iIdentifier << " update " << (fast ? "fast" : "normal");
+
     ScopedLockType sl (mLock, __FILE__, __LINE__);
+
+    if (!isValid (cache))
+        return jvStatus;
     jvStatus = Json::objectValue;
-
-    if (!isValid (cache->getLedger ()))
-        return false;
-
-    if (!fast)
-        bNew = false;
 
     std::set<currIssuer_t> sourceCurrencies (sciSourceCurrencies);
 
     if (sourceCurrencies.empty ())
     {
         boost::unordered_set<uint160> usCurrencies =
-            usAccountSourceCurrencies (raSrcAccount, cache->getLedger (), true);
+            usAccountSourceCurrencies (raSrcAccount, cache, true);
         bool sameAccount = raSrcAccount == raDstAccount;
         BOOST_FOREACH (const uint160 & c, usCurrencies)
         {
@@ -312,12 +362,8 @@ bool PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
 
     if (iLevel == 0)
     { // first pass
-        if (loaded)
+        if (loaded || fast)
             iLevel = getConfig().PATH_SEARCH_FAST;
-        else if (!fast)
-            iLevel = getConfig().PATH_SEARCH_OLD;
-        else if (getConfig().PATH_SEARCH < getConfig().PATH_SEARCH_MAX)
-            iLevel = getConfig().PATH_SEARCH + 1; // start with an extra boost
         else
             iLevel = getConfig().PATH_SEARCH;
     }
@@ -326,8 +372,6 @@ bool PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
         iLevel = getConfig().PATH_SEARCH;
         if (loaded && (iLevel > getConfig().PATH_SEARCH_FAST))
             --iLevel;
-        else if (!loaded && (iLevel < getConfig().PATH_SEARCH))
-            ++iLevel;
     }
     else if (bLastSuccess)
     { // decrement, if possible
@@ -342,7 +386,7 @@ bool PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
             --iLevel;
     }
 
-    WriteLog (lsDEBUG, PathRequest) << iIdentifier << " processing at level " << iLevel;
+    m_journal.debug << iIdentifier << " processing at level " << iLevel;
 
     bool found = false;
 
@@ -350,13 +394,14 @@ bool PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
     {
         {
             STAmount test (currIssuer.first, currIssuer.second, 1);
-            WriteLog (lsDEBUG, PathRequest) << iIdentifier << " Trying to find paths: " << test.getFullText ();
+            if (m_journal.debug)
+                m_journal.debug << iIdentifier << " Trying to find paths: " << test.getFullText ();
         }
         bool valid;
         STPathSet& spsPaths = mContext[currIssuer];
         Pathfinder pf (cache, raSrcAccount, raDstAccount,
                        currIssuer.first, currIssuer.second, saDstAmount, valid);
-        CondLog (!valid, lsINFO, PathRequest) << iIdentifier << " PF request not valid";
+        CondLog (!valid, lsDEBUG, PathRequest) << iIdentifier << " PF request not valid";
 
         STPath extraPath;
         if (valid && pf.findPaths (iLevel, 4, spsPaths, extraPath))
@@ -369,7 +414,7 @@ bool PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
                     currIssuer.second.isNonZero () ? currIssuer.second :
                     (currIssuer.first.isZero () ? ACCOUNT_XRP : raSrcAccount.getAccountID ()), 1);
             saMaxAmount.negate ();
-            WriteLog (lsDEBUG, PathRequest) << iIdentifier << " Paths found, calling rippleCalc";
+            m_journal.debug << iIdentifier << " Paths found, calling rippleCalc";
             TER terResult = RippleCalc::rippleCalc (lesSandbox, saMaxAmountAct, saDstAmountAct,
                                                     vpsExpanded, saMaxAmount, saDstAmount,
                                                     raDstAccount.getAccountID (), raSrcAccount.getAccountID (),
@@ -378,14 +423,14 @@ bool PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
 
             if ((extraPath.size() > 0) && ((terResult == terNO_LINE) || (terResult == tecPATH_PARTIAL)))
             {
-                WriteLog (lsDEBUG, PathRequest) << iIdentifier << " Trying with an extra path element";
+                m_journal.debug << iIdentifier << " Trying with an extra path element";
                 spsPaths.addPath(extraPath);
                 vpsExpanded.clear ();
                 terResult = RippleCalc::rippleCalc (lesSandbox, saMaxAmountAct, saDstAmountAct,
                                                     vpsExpanded, saMaxAmount, saDstAmount,
                                                     raDstAccount.getAccountID (), raSrcAccount.getAccountID (),
                                                     spsPaths, false, false, false, true);
-                WriteLog (lsDEBUG, PathRequest) << iIdentifier << " Extra path element gives " << transHuman (terResult);
+                m_journal.debug << iIdentifier << " Extra path element gives " << transHuman (terResult);
             }
 
             if (terResult == tesSUCCESS)
@@ -398,111 +443,35 @@ bool PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
             }
             else
             {
-                WriteLog (lsINFO, PathRequest) << iIdentifier << " rippleCalc returns " << transHuman (terResult);
+                m_journal.debug << iIdentifier << " rippleCalc returns " << transHuman (terResult);
             }
         }
         else
         {
-            WriteLog (lsINFO, PathRequest) << iIdentifier << " No paths found";
+            m_journal.debug << iIdentifier << " No paths found";
         }
     }
 
     iLastLevel = iLevel;
     bLastSuccess = found;
 
+    if (fast && ptQuickReply.is_not_a_date_time())
+    {
+        ptQuickReply = boost::posix_time::microsec_clock::universal_time();
+        mOwner.reportFast ((ptQuickReply-ptCreated).total_milliseconds());
+    }
+    else if (!fast && ptFullReply.is_not_a_date_time())
+    {
+        ptFullReply = boost::posix_time::microsec_clock::universal_time();
+        mOwner.reportFull ((ptFullReply-ptCreated).total_milliseconds());
+    }
+
     jvStatus["alternatives"] = jvArray;
-    return true;
+    return jvStatus;
 }
 
-/** Get the current RippleLineCache, updating it if necessary.
-    Get the correct ledger to use.
-    Call with a lock
-*/
-RippleLineCache::pointer PathRequest::getLineCache (Ledger::pointer& ledger)
+InfoSub::pointer PathRequest::getSubscriber ()
 {
-    uint32 lineSeq = sLineCache ? sLineCache->getLedger()->getLedgerSeq() : 0;
-    if ( (lineSeq == 0) ||                             // No cache
-        (lineSeq < ledger->getLedgerSeq()) ||         // Cache is out of date
-        (lineSeq > (ledger->getLedgerSeq() + 16)))    // We jumped way back somehow
-    {
-        ledger = boost::make_shared<Ledger>(*ledger, false);
-        sLineCache = boost::make_shared<RippleLineCache> (ledger);
-    }
-    else
-    {
-        ledger = sLineCache->getLedger();
-    }
-    return sLineCache;
+    return wpSubscriber.lock ();
 }
 
-void PathRequest::updateAll (Ledger::ref inLedger, bool newOnly, bool hasNew, CancelCallback shouldCancel)
-{
-    std::set<wptr> requests;
-
-    LoadEvent::autoptr event (getApp().getJobQueue().getLoadEventAP(jtPATH_FIND, "PathRequest::updateAll"));
-
-    // Get the ledger and cache we should be using
-    Ledger::pointer ledger = inLedger;
-    RippleLineCache::pointer cache;
-    {
-        StaticScopedLockType sl (sLock, __FILE__, __LINE__);
-        requests = sRequests;
-        cache = getLineCache (ledger);
-    }
-
-    if (requests.empty ())
-        return;
-
-    WriteLog (lsDEBUG, PathRequest) << "updateAll seq=" << ledger->getLedgerSeq() <<
-        (newOnly ? " newOnly, " : " all, ") << requests.size() << " requests";
-
-    int processed = 0, removed = 0;
-
-    BOOST_FOREACH (wref wRequest, requests)
-    {
-        if (shouldCancel())
-            break;
-
-        bool remove = true;
-        PathRequest::pointer pRequest = wRequest.lock ();
-
-        if (pRequest)
-        {
-            // Drop old requests level to get new ones done faster
-            if (hasNew)
-                pRequest->resetLevel(getConfig().PATH_SEARCH);
-
-            if (newOnly && !pRequest->isNew ())
-                remove = false;
-            else
-            {
-                InfoSub::pointer ipSub = pRequest->wpSubscriber.lock ();
-
-                if (ipSub)
-                {
-                    Json::Value update;
-                    {
-                        ScopedLockType sl (pRequest->mLock, __FILE__, __LINE__);
-                        pRequest->doUpdate (cache, false);
-                        update = pRequest->jvStatus;
-                    }
-                    update["type"] = "path_find";
-                    ipSub->send (update, false);
-                    remove = false;
-                    ++processed;
-                }
-            }
-        }
-
-        if (remove)
-        {
-            ++removed;
-            StaticScopedLockType sl (sLock, __FILE__, __LINE__);
-            sRequests.erase (wRequest);
-        }
-    }
-    WriteLog (lsDEBUG, PathRequest) << "updateAll complete " << processed << " process and " <<
-        removed << " removed";
-}
-
-// vim:ts=4

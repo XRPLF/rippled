@@ -29,6 +29,8 @@ enum SHANodeFormat
     snfHASH     = 3, // just the hash
 };
 
+namespace ripple {
+
 class SHAMapTreeNode
     : public SHAMapNode
     , public CountedObject <SHAMapTreeNode>
@@ -74,7 +76,8 @@ public:
     }
     void touch (uint32 s)
     {
-        mAccessSeq = s;
+        if (mSeq != 0)
+            mAccessSeq = s;
     }
     uint256 const& getNodeHash () const
     {
@@ -140,7 +143,6 @@ public:
     { // CAUTION: Do not modify the item
         return mItem;
     }
-    SHAMapItem::pointer getItem () const;
     bool setItem (SHAMapItem::ref i, TNType type);
     uint256 const& getTag () const
     {
@@ -149,10 +151,6 @@ public:
     Blob const& peekData ()
     {
         return mItem->peekData ();
-    }
-    Blob getData () const
-    {
-        return mItem->getData ();
     }
 
     // sync functions
@@ -186,5 +184,7 @@ private:
 
     bool updateHash ();
 };
+
+}
 
 #endif

@@ -19,38 +19,39 @@
 
 #include "BeastConfig.h"
 
-#include "beast/modules/beast_core/system/BeforeBoost.h"
+#include "../beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/bimap.hpp>
 #include <boost/bimap/list_of.hpp>
 #include <boost/bimap/multiset_of.hpp>
 #include <boost/bimap/unordered_set_of.hpp>
 #include <boost/optional.hpp>
+#include <boost/version.hpp>
 
 #include "ripple_app.h"
 
 #include "../ripple_net/ripple_net.h"
+#include "../ripple_rpc/ripple_rpc.h"
 #include "../ripple_websocket/ripple_websocket.h"
 
 // This .cpp will end up including all of the public header
 // material in Ripple since it holds the Application object.
 
+#include "../ripple/common/seconds_clock.h"
 #include "../ripple/http/ripple_http.h"
 #include "../ripple/resource/ripple_resource.h"
-#include "../ripple/rpc/ripple_rpc.h"
 #include "../ripple/sitefiles/ripple_sitefiles.h"
 #include "../ripple/validators/ripple_validators.h"
 
-#include "beast/beast/Asio.h"
+#include "../beast/beast/Asio.h"
+#include "../beast/beast/asio/io_latency_probe.h"
+#include "../beast/beast/cxx14/memory.h"
 
 # include "main/CollectorManager.h"
 #include "main/CollectorManager.cpp"
 
+#include "misc/ProofOfWorkFactory.h"
+
 namespace ripple {
-
-//
-// Application
-//
-
 # include "main/NodeStoreScheduler.h"
 #include "main/NodeStoreScheduler.cpp"
 
@@ -60,19 +61,15 @@ namespace ripple {
 # include "main/FatalErrorReporter.h"
 #include "main/FatalErrorReporter.cpp"
 
-# include "peers/PeerDoor.h"
-#include "peers/PeerDoor.cpp"
-
 # include "rpc/RPCHandler.h"
-#   include "misc/PowResult.h"
-#  include "misc/ProofOfWork.h"
-# include "misc/ProofOfWorkFactory.h"
-#include "rpc/RPCHandler.cpp"
-
+}
 # include "rpc/RPCServerHandler.h"
 # include "main/RPCHTTPServer.h"
 #include "main/RPCHTTPServer.cpp"
 #include "rpc/RPCServerHandler.cpp"
+namespace ripple {
+#include "rpc/RPCHandler.cpp"
+
 #include "websocket/WSConnection.h"
 
 # include "tx/TxQueueEntry.h"
@@ -85,17 +82,22 @@ namespace ripple {
 #include "websocket/WSConnection.cpp"
 # include "websocket/WSDoor.h"
 #include "websocket/WSDoor.cpp"
+}
+
+
+
+#include "../ripple/common/ResolverAsio.h"
+
+# include "node/SqliteFactory.h"
+#include "node/SqliteFactory.cpp"
 
 #include "main/Application.cpp"
 
-//
-// RippleMain
-//
-# include "main/RippleMain.h"
-# include "node/SqliteFactory.h"
-#include "node/SqliteFactory.cpp"
-#include "main/RippleMain.cpp"
 
+
+namespace ripple {
+# include "main/RippleMain.h"
+#include "main/RippleMain.cpp"
 }
 
 //------------------------------------------------------------------------------
@@ -112,6 +114,23 @@ struct ProtobufLibrary
 //
 int main (int argc, char** argv)
 {
+#if defined(__GNUC__) && !defined(__clang__)
+    auto constexpr gccver = (__GNUC__ * 100 * 100) +
+                            (__GNUC_MINOR__ * 100) +
+                            __GNUC_PATCHLEVEL__;
+
+    static_assert (gccver >= 40801,
+        "GCC version 4.8.1 or later is required to compile rippled.");
+#endif
+
+#ifdef _MSC_VER
+    static_assert (_MSC_VER >= 1800,
+        "Visual Studio 2013 or later is required to compile rippled.");
+#endif
+
+    static_assert (BOOST_VERSION >= 105500,
+        "Boost version 1.55 or later is required to compile rippled");
+        
     //
     // These debug heap calls do nothing in release or non Visual Studio builds.
     //

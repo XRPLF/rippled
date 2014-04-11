@@ -108,6 +108,7 @@ enum TER    // aka TransactionEngineResult
     tefPAST_SEQ,
     tefWRONG_PRIOR,
     tefMASTER_DISABLED,
+    tefMAX_LEDGER,
 
     // -99 .. -1: R Retry (sequence too high, no funds for txn fee, originating account non-existent)
     // Causes:
@@ -127,6 +128,7 @@ enum TER    // aka TransactionEngineResult
     terOWNERS,              // Can't succeed with non-zero owner count.
     terPRE_SEQ,             // Can't pay fee, no point in forwarding, therefore don't burden network.
     terLAST,                // Process after all other transactions
+    terNO_RIPPLE,           // Rippling not allowed
 
     // 0: S Success (success)
     // Causes:
@@ -136,7 +138,7 @@ enum TER    // aka TransactionEngineResult
     // - Forwarded
     tesSUCCESS      = 0,
 
-    // 100 .. 129 C Claim fee only (ripple transaction with no good paths, pay to non-existent account, no path)
+    // 100 .. 159 C Claim fee only (ripple transaction with no good paths, pay to non-existent account, no path)
     // Causes:
     // - Success, but does not achieve optimal result.
     // - Invalid transaction or no effect, but claim fee to use the sequence number.
@@ -164,6 +166,9 @@ enum TER    // aka TransactionEngineResult
     tecMASTER_DISABLED          = 130,
     tecNO_REGULAR_KEY           = 131,
     tecOWNERS                   = 132,
+    tecNO_ISSUER                = 133,
+    tecNO_AUTH                  = 134,
+    tecNO_LINE                  = 135,
 };
 
 // VFALCO TODO change these to normal functions.

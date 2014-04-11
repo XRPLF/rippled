@@ -20,6 +20,10 @@
 #ifndef RIPPLE_APP_APPLICATION_H_INCLUDED
 #define RIPPLE_APP_APPLICATION_H_INCLUDED
 
+#include "FullBelowCache.h"
+
+namespace ripple {
+
 namespace SiteFiles { class Manager; }
 namespace Validators { class Manager; }
 namespace Resource { class Manager; }
@@ -45,11 +49,12 @@ class SerializedLedgerEntry;
 class TransactionMaster;
 class TxQueue;
 class LocalCredentials;
+class PathRequests;
 
 class DatabaseCon;
 
-typedef TaggedCacheType <uint256, Blob , UptimeTimerAdapter> NodeCache;
-typedef TaggedCacheType <uint256, SerializedLedgerEntry, UptimeTimerAdapter> SLECache;
+typedef TaggedCache <uint256, Blob> NodeCache;
+typedef TaggedCache <uint256, SerializedLedgerEntry> SLECache;
 
 class Application : public PropertyStream::Source
 {
@@ -71,16 +76,15 @@ public:
     virtual LockType& getMasterLock () = 0;
 
 public:
-    static Application* New ();
-
     Application ();
 
     virtual ~Application () { }
 
     virtual boost::asio::io_service& getIOService () = 0;
     virtual CollectorManager&       getCollectorManager () = 0;
-    virtual RPC::Manager&           getRPCServiceManager() = 0;
+    virtual FullBelowCache&         getFullBelowCache () = 0;
     virtual JobQueue&               getJobQueue () = 0;
+    virtual RPC::Manager&           getRPCManager () = 0;
     virtual SiteFiles::Manager&     getSiteFiles () = 0;
     virtual NodeCache&              getTempNodeCache () = 0;
     virtual SLECache&               getSLECache () = 0;
@@ -103,6 +107,7 @@ public:
     virtual TxQueue&                getTxQueue () = 0;
     virtual LocalCredentials&       getLocalCredentials () = 0;
     virtual Resource::Manager&      getResourceManager () = 0;
+    virtual PathRequests&           getPathRequests () = 0;
 
     virtual DatabaseCon* getRpcDB () = 0;
     virtual DatabaseCon* getTxnDB () = 0;
@@ -125,6 +130,28 @@ public:
     virtual void signalStop () = 0;
 };
 
+/** Create an instance of the Application object.
+    As long as there are legacy calls to getApp it is not safe
+    to create more than one Application object at a time.
+*/
+std::unique_ptr <Application> make_Application();
+
+// VFALCO DEPRECATED
+//
+//        Please do not write new code that calls getApp(). Instead,
+//        Use dependency injection to construct your class with a
+//        reference to the desired interface (Application in this case).
+//        Or better yet, instead of relying on the entire Application
+//        object, construct with just the interfaces that you need.
+//
+//        When working in existing code, try to clean it up by rewriting
+//        calls to getApp to use a data member instead, and inject the
+//        needed interfaces in the constructor.
+//
+//        http://en.wikipedia.org/wiki/Dependency_injection
+//
 extern Application& getApp ();
+
+}
 
 #endif

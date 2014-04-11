@@ -20,6 +20,14 @@
 namespace beast {
 namespace insight {
 
+Base::~Base ()
+{
+}
+
+BaseImpl::~BaseImpl ()
+{
+}
+
 CounterImpl::~CounterImpl ()
 {
 }

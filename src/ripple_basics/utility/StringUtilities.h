@@ -27,53 +27,9 @@
 
 // Ripple specific constant used for parsing qualities and other things
 //
+// NIKB TODO Why is this here instead of somewhere more sensible? What 
+// "other things" is this being used for?
 #define QUALITY_ONE         1000000000  // 10e9
-
-//------------------------------------------------------------------------------
-
-// Terminal output color codes
-#define vt_f_black          "\033[30m"
-#define vt_f_red            "\033[31m"
-#define vt_f_green          "\033[32m"
-#define vt_f_yellow         "\033[33m"
-#define vt_f_blue           "\033[34m"
-#define vt_f_megenta        "\033[35m"
-#define vt_f_cyan           "\033[36m"
-#define vt_f_white          "\033[37m"
-#define vt_f_default        "\033[39m"
-
-#define vt_b_black          "\033[40m"
-#define vt_b_red            "\033[41m"
-#define vt_b_green          "\033[42m"
-#define vt_b_yellow         "\033[43m"
-#define vt_b_blue           "\033[44m"
-#define vt_b_megenta        "\033[45m"
-#define vt_b_cyan           "\033[46m"
-#define vt_b_white          "\033[47m"
-#define vt_b_default        "\033[49m"
-
-#define vt_f_bold_black    "\033[1m\033[30m"
-#define vt_f_bold_red      "\033[1m\033[31m"
-#define vt_f_bold_green    "\033[1m\033[32m"
-#define vt_f_bold_yellow   "\033[1m\033[33m"
-#define vt_f_bold_blue     "\033[1m\033[34m"
-#define vt_f_bold_megenta  "\033[1m\033[35m"
-#define vt_f_bold_cyan     "\033[1m\033[36m"
-#define vt_f_bold_white    "\033[1m\033[37m"
-#define vt_f_bold_default  "\033[1m\033[39m"
-
-#define vt_bold             "\033[1m"
-#define vt_dim              "\033[2m"     // does not work for xterm
-#define vt_normal           "\033[22m"    // intensity
-
-#define vt_n_enable         "\033[7m"     // negative
-#define vt_n_disable        "\033[27m"
-
-#define vt_u_single         "\033[4m"     // underline
-#define vt_u_double         "\033[21m"    // does not work for xterm
-#define vt_u_disable        "\033[24m"
-
-#define vt_reset    vt_f_default vt_b_default vt_normal vt_n_disable vt_u_disable
 
 //------------------------------------------------------------------------------
 
@@ -81,6 +37,8 @@ extern std::string strprintf (const char* format, ...);
 
 extern std::string urlEncode (const std::string& strSrc);
 
+// NIKB TODO remove this function - it's only used for some logging in the UNL
+//           code which can be trivially rewritten.
 template<class Iterator>
 std::string strJoin (Iterator first, Iterator last, std::string strSeperator)
 {
@@ -94,6 +52,7 @@ std::string strJoin (Iterator first, Iterator last, std::string strSeperator)
     return ossValues.str ();
 }
 
+// NIKB TODO Remove the need for all these overloads. Move them out of here.
 inline const std::string strHex (const std::string& strSrc)
 {
     return strHex (strSrc.begin (), strSrc.size ());
@@ -143,12 +102,11 @@ inline static std::string sqlEscape (Blob const& vecSrc)
     return j;
 }
 
-int charUnHex (char cDigit);
 int strUnHex (std::string& strDst, const std::string& strSrc);
 
 uint64_t uintFromHex (const std::string& strSrc);
 
-Blob strUnHex (const std::string& strSrc);
+std::pair<Blob, bool> strUnHex (const std::string& strSrc);
 
 Blob strCopy (const std::string& strSrc);
 std::string strCopy (Blob const& vucSrc);
@@ -164,10 +122,6 @@ inline std::string strGetEnv (const std::string& strKey)
 bool parseUrl (const std::string& strUrl, std::string& strScheme, std::string& strDomain, int& iPort, std::string& strPath);
 
 #define ADDRESS(p) strHex(uint64( ((char*) p) - ((char*) 0)))
-
-/** Convert a pointer address to a string for display purposes.
-*/
-extern std::string addressToString (void const* address);
 
 /** Create a Parameters from a String.
 

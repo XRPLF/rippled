@@ -20,6 +20,10 @@
 #ifndef RIPPLE_SHAMAPNODE_H
 #define RIPPLE_SHAMAPNODE_H
 
+#include <functional>
+
+namespace ripple {
+
 // Identifies a node in a SHA256 hash map
 class SHAMapNode
 {
@@ -88,6 +92,12 @@ public:
     {
         return n != mNodeID;
     }
+    void set (SHAMapNode const& from)
+    {
+        mNodeID = from.mNodeID;
+        mDepth = from.mDepth;
+        mHash = from.mHash;
+    }
 
     virtual std::string getString () const;
     void dump () const;
@@ -126,5 +136,37 @@ inline std::ostream& operator<< (std::ostream& out, const SHAMapNode& node)
 {
     return out << node.getString ();
 }
+
+}
+
+//------------------------------------------------------------------------------
+
+/*
+namespace std {
+
+template <>
+struct hash <ripple::SHAMapNode>
+{
+    std::size_t operator() (ripple::SHAMapNode const& value) const
+    {
+        return value.getMHash ();
+    }
+};
+
+}
+*/
+
+//------------------------------------------------------------------------------
+
+/*
+namespace boost {
+
+template <>
+struct hash <ripple::SHAMapNode> : std::hash <ripple::SHAMapNode>
+{
+};
+
+}
+*/
 
 #endif

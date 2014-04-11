@@ -126,6 +126,9 @@ public:
         const uint160&          uSenderID
     );
 
+    void checkNoRipple (uint160 const& destinationAccountID, uint160 const& sourceAccountID);
+    void checkNoRipple (uint160 const&, uint160 const&, uint160 const&, uint160 const&);
+
     void setCanonical (
         const PathState&        psExpanded
     );
@@ -147,7 +150,7 @@ public:
     static bool lessPriority (PathState& lhs, PathState& rhs);
 
 public:
-    TER                         terStatus;
+    TER                  terStatus;
     std::vector<Node>    vpnNodes;
 
     // When processing, don't want to complicate directory walking with deletion.

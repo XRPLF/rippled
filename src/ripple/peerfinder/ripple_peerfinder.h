@@ -20,7 +20,7 @@
 #ifndef RIPPLE_PEERFINDER_H_INCLUDED
 #define RIPPLE_PEERFINDER_H_INCLUDED
 
-#include "beast/modules/beast_core/beast_core.h"
+#include "../beast/modules/beast_core/beast_core.h"
 
 #include "../sitefiles/ripple_sitefiles.h"
 
@@ -30,6 +30,7 @@ using namespace beast;
 
 #include "../types/api/RipplePublicKey.h"
 
+#include "api/Slot.h"
 # include "api/Endpoint.h"
 # include "api/Types.h"
 #include "api/Callback.h"

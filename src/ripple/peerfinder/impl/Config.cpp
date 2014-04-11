@@ -21,28 +21,36 @@ namespace ripple {
 namespace PeerFinder {
 
 Config::Config ()
-    : maxPeerCount (0)
-    , wantIncoming (false)
-    , connectAutomatically (false)
+    : maxPeers (Tuning::defaultMaxPeers)
+    , outPeers (calcOutPeers ())
+    , wantIncoming (true)
+    , autoConnect (true)
     , listeningPort (0)
 {
 }
 
-void Config::onWrite(PropertyStream::Map &map)
+double Config::calcOutPeers () const
 {
-    map ["min_out_count"]         = minOutCount;
-    map ["out_percent"]           = outPercent;
-    map ["max_peer_count"]        = maxPeerCount;
-    map ["want_incoming"]         = wantIncoming;
-    map ["connect_automatically"] = connectAutomatically;
-    map ["listening_port"]        = listeningPort;
-    map ["feature_list"]          = featureList;
+    return std::max (
+        maxPeers * Tuning::outPercent * 0.01,
+            double (Tuning::minOutCount));
 }
 
-void Config::fillInDefaultValues()
+void Config::applyTuning ()
 {
-    if (maxPeerCount == 0)
-        maxPeerCount = defaultMaxPeerCount;
+    if (maxPeers < Tuning::minOutCount)
+        maxPeers = Tuning::minOutCount;
+    outPeers = calcOutPeers ();
+}
+
+void Config::onWrite (PropertyStream::Map &map)
+{
+    map ["max_peers"]       = maxPeers;
+    map ["out_peers"]       = outPeers;
+    map ["want_incoming"]   = wantIncoming;
+    map ["auto_connect"]    = autoConnect;
+    map ["port"]            = listeningPort;
+    map ["features"]        = features;
 }
 
 }

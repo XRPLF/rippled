@@ -129,7 +129,6 @@
 namespace beast
 {
 
-#include "containers/AbstractFifo.cpp"
 #include "containers/DynamicObject.cpp"
 #include "containers/NamedValueSet.cpp"
 #include "containers/PropertySet.cpp"
@@ -155,7 +154,6 @@ namespace beast
 #include "logging/Logger.cpp"
 
 #include "maths/BigInteger.cpp"
-#include "maths/Expression.cpp"
 #include "maths/Random.cpp"
 
 #include "memory/MemoryBlock.cpp"
@@ -184,11 +182,9 @@ namespace beast
 #include "text/StringArray.cpp"
 #include "text/StringPairArray.cpp"
 #include "text/StringPool.cpp"
-#include "text/TextDiff.cpp"
 
 #include "thread/impl/TrackedMutex.cpp"
 #include "thread/DeadlineTimer.cpp"
-#include "thread/Semaphore.cpp"
 #include "thread/Workers.cpp"
 
 #include "threads/ChildProcess.cpp"

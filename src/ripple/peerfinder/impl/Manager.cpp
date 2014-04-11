@@ -30,33 +30,37 @@ class ManagerImp
 public:
     ServiceQueue m_queue;
     SiteFiles::Manager& m_siteFiles;
+    File m_databaseFile;
+    clock_type& m_clock;
     Journal m_journal;
     StoreSqdb m_store;
     SerializedContext m_context;
     CheckerAdapter m_checker;
-    LogicType <SimpleMonotonicClock> m_logic;
-    DeadlineTimer m_connectTimer;
-    DeadlineTimer m_messageTimer;
-    DeadlineTimer m_cacheTimer;
-
+    Logic m_logic;
+    DeadlineTimer m_secondsTimer;
+    
     //--------------------------------------------------------------------------
 
     ManagerImp (
         Stoppable& stoppable,
         SiteFiles::Manager& siteFiles,
+        File const& pathToDbFileOrDirectory,
         Callback& callback,
+        clock_type& clock,
         Journal journal)
         : Manager (stoppable)
         , Thread ("PeerFinder")
         , m_siteFiles (siteFiles)
+        , m_databaseFile (pathToDbFileOrDirectory)
+        , m_clock (clock)
         , m_journal (journal)
         , m_store (journal)
         , m_checker (m_context, m_queue)
-        , m_logic (callback, m_store, m_checker, journal)
-        , m_connectTimer (this)
-        , m_messageTimer (this)
-        , m_cacheTimer (this)
+        , m_logic (clock, callback, m_store, m_checker, journal)
+        , m_secondsTimer (this)
     {
+        if (m_databaseFile.isDirectory ())
+            m_databaseFile = m_databaseFile.getChildFile("peerfinder.sqlite");
     }
 
     ~ManagerImp ()
@@ -78,28 +82,22 @@ public:
                     config)));
     }
 
-    void addFixedPeers (
-        std::vector <std::string> const& strings)
+    void addFixedPeer (std::string const& name,
+        std::vector <IP::Endpoint> const& addresses)
     {
-#if 1
-        m_logic.addFixedPeers (strings);
-#else
-        m_queue.dispatch (m_context.wrap (
-            bind (&Logic::addFixedPeers, &m_logic,
-                std::vector <std::string> (strings))));
-#endif
+        m_queue.dispatch (
+            m_context.wrap (
+                boost::bind (&Logic::addFixedPeer, &m_logic,
+                    name, addresses)));
     }
 
     void addFallbackStrings (std::string const& name,
         std::vector <std::string> const& strings)
     {
-#if RIPPLE_USE_PEERFINDER
         m_queue.dispatch (
             m_context.wrap (
-                bind (
-                    &Logic::addStaticSource, &m_logic,
-                        SourceStrings::New (name, strings))));
-#endif
+                bind (&Logic::addStaticSource, &m_logic,
+                    SourceStrings::New (name, strings))));
     }
 
     void addFallbackURL (std::string const& name, std::string const& url)
@@ -107,75 +105,56 @@ public:
         // VFALCO TODO This needs to be implemented
     }
 
-    void onPeerConnectAttemptBegins (IPAddress const& address)
+    //--------------------------------------------------------------------------
+
+    Slot::ptr new_inbound_slot (
+        IP::Endpoint const& local_endpoint,
+            IP::Endpoint const& remote_endpoint)
     {
-#if RIPPLE_USE_PEERFINDER
-        m_queue.dispatch (
-            m_context.wrap (
-                bind (&Logic::onPeerConnectAttemptBegins, &m_logic,
-                      address)));
-#endif
+        return m_logic.new_inbound_slot (local_endpoint, remote_endpoint);
     }
 
-    void onPeerConnectAttemptCompletes (IPAddress const& address, bool success)
+    Slot::ptr new_outbound_slot (IP::Endpoint const& remote_endpoint)
     {
-#if RIPPLE_USE_PEERFINDER
-        m_queue.dispatch (
-            m_context.wrap (
-                bind (&Logic::onPeerConnectAttemptCompletes, &m_logic,
-                      address, success)));
-#endif
+        return m_logic.new_outbound_slot (remote_endpoint);
     }
 
-    void onPeerConnected (const IPAddress &address, bool incoming)
+    void on_connected (Slot::ptr const& slot,
+        IP::Endpoint const& local_endpoint)
     {
-#if RIPPLE_USE_PEERFINDER
-        m_queue.dispatch (
-            m_context.wrap (
-                bind (&Logic::onPeerConnected, &m_logic,
-                      address, incoming)));
-#endif
+        SlotImp::ptr impl (std::dynamic_pointer_cast <SlotImp> (slot));
+        m_logic.on_connected (impl, local_endpoint);
     }
 
-    void onPeerHandshake (PeerID const& id,
-        IPAddress const& address, bool incoming)
+    void on_handshake (Slot::ptr const& slot,
+        RipplePublicKey const& key, bool cluster)
     {
-#if RIPPLE_USE_PEERFINDER
-        m_queue.dispatch (
-            m_context.wrap (
-                bind (&Logic::onPeerHandshake, &m_logic,
-                    id, address, incoming)));
-#endif
+        SlotImp::ptr impl (std::dynamic_pointer_cast <SlotImp> (slot));
+        m_logic.on_handshake (impl, key, cluster);
     }
 
-    void onPeerDisconnected (const PeerID& id)
+    void on_endpoints (Slot::ptr const& slot,
+        Endpoints const& endpoints)
     {
-#if RIPPLE_USE_PEERFINDER
-        m_queue.dispatch (
-            m_context.wrap (
-                bind (&Logic::onPeerDisconnected, &m_logic,
-                    id)));
-#endif
+        SlotImp::ptr impl (std::dynamic_pointer_cast <SlotImp> (slot));
+        m_logic.on_endpoints (impl, endpoints);
     }
 
-    void onPeerLegacyEndpoint (IPAddress const& ep)
+    void on_legacy_endpoints (IPAddresses const& addresses)
     {
-#if RIPPLE_USE_PEERFINDER
-        m_queue.dispatch (
-            m_context.wrap (
-                bind (&Logic::onPeerLegacyEndpoint, &m_logic,
-                    ep)));
-#endif
+        m_logic.on_legacy_endpoints (addresses);
     }
 
-    void onPeerEndpoints (PeerID const& id,
-        std::vector <Endpoint> const& endpoints)
+    void on_closed (Slot::ptr const& slot)
     {
-#if RIPPLE_USE_PEERFINDER
-        m_queue.dispatch (
-            beast::bind (&Logic::onPeerEndpoints, &m_logic,
-                id, endpoints));
-#endif
+        SlotImp::ptr impl (std::dynamic_pointer_cast <SlotImp> (slot));
+        m_logic.on_closed (impl);
+    }
+
+    void on_cancel (Slot::ptr const& slot)
+    {
+        SlotImp::ptr impl (std::dynamic_pointer_cast <SlotImp> (slot));
+        m_logic.on_cancel (impl);
     }
 
     //--------------------------------------------------------------------------
@@ -191,12 +170,12 @@ public:
             section.data().begin()); iter != section.data().end(); ++iter)
         {
             std::string const& s (*iter);
-            IPAddress addr (IPAddress::from_string (s));
-            if (addr.empty ())
-                addr = IPAddress::from_string_altform(s);
-            if (! addr.empty())
+            IP::Endpoint addr (IP::Endpoint::from_string (s));
+            if (is_unspecified (addr))
+                addr = IP::Endpoint::from_string_altform(s);
+            if (! is_unspecified (addr))
             {
-                // add IPAddress to bootstrap cache
+                // add IP::Endpoint to bootstrap cache
                 ++n;
             }
         }
@@ -212,12 +191,12 @@ public:
             section.data().begin()); iter != section.data().end(); ++iter)
         {
             std::string const& s (*iter);
-            IPAddress addr (IPAddress::from_string (s));
-            if (addr.empty ())
-                addr = IPAddress::from_string_altform(s);
-            if (! addr.empty())
+            IP::Endpoint addr (IP::Endpoint::from_string (s));
+            if (is_unspecified (addr))
+                addr = IP::Endpoint::from_string_altform(s);
+            if (! is_unspecified (addr))
             {
-                // add IPAddress to fixed peers
+                // add IP::Endpoint to fixed peers
             }
         }
     }
@@ -251,9 +230,7 @@ public:
         m_journal.debug << "Stopping";
         m_checker.cancel ();
         m_logic.stop ();
-        m_connectTimer.cancel();
-        m_messageTimer.cancel();
-        m_cacheTimer.cancel();
+        m_secondsTimer.cancel();
         m_queue.dispatch (
             m_context.wrap (
                 bind (&Thread::signalThreadShouldExit, this)));
@@ -276,29 +253,13 @@ public:
 
     void onDeadlineTimer (DeadlineTimer& timer)
     {
-        if (timer == m_connectTimer)
+        if (timer == m_secondsTimer)
         {
             m_queue.dispatch (
                 m_context.wrap (
-                    bind (&Logic::makeOutgoingConnections, &m_logic)));
+                    bind (&Logic::periodicActivity, &m_logic)));
 
-            m_connectTimer.setExpiration (secondsPerConnect);
-        }
-        else if (timer == m_messageTimer)
-        {
-            m_queue.dispatch (
-                m_context.wrap (
-                    bind (&Logic::sendEndpoints, &m_logic)));
-
-            m_messageTimer.setExpiration (secondsPerMessage);
-        }
-        else if (timer == m_cacheTimer)
-        {
-            m_queue.dispatch (
-                m_context.wrap (
-                    bind (&Logic::sweepCache, &m_logic)));
-
-            m_cacheTimer.setExpiration (cacheSecondsToLive);
+            m_secondsTimer.setExpiration (Tuning::secondsPerConnect);
         }
     }
 
@@ -306,15 +267,12 @@ public:
     {
         m_journal.debug << "Initializing";
 
-        File const file (File::getSpecialLocation (
-            File::userDocumentsDirectory).getChildFile ("PeerFinder.sqlite"));
-
-        Error error (m_store.open (file));
+        Error error (m_store.open (m_databaseFile));
 
         if (error)
         {
             m_journal.fatal <<
-                "Failed to open '" << file.getFullPathName() << "'";
+                "Failed to open '" << m_databaseFile.getFullPathName() << "'";
         }
 
         if (! error)
@@ -322,13 +280,7 @@ public:
             m_logic.load ();
         }
 
-        m_connectTimer.setExpiration (secondsPerConnect);
-        m_messageTimer.setExpiration (secondsPerMessage);
-        m_cacheTimer.setExpiration (cacheSecondsToLive);
-    
-        m_queue.post (
-            m_context.wrap (
-                bind (&Logic::makeOutgoingConnections, &m_logic)));
+        m_secondsTimer.setExpiration (std::chrono::seconds (1));
     }
 
     void run ()
@@ -361,10 +313,13 @@ Manager::Manager (Stoppable& parent)
 Manager* Manager::New (
     Stoppable& parent,
     SiteFiles::Manager& siteFiles,
+    File const& databaseFile,
     Callback& callback,
+    clock_type& clock,
     Journal journal)
 {
-    return new ManagerImp (parent, siteFiles, callback, journal);
+    return new ManagerImp (parent, siteFiles, databaseFile, 
+        callback, clock, journal);
 }
 
 }

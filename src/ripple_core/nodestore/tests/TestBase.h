@@ -20,8 +20,8 @@
 #ifndef RIPPLE_NODESTORE_TESTBASE_H_INCLUDED
 #define RIPPLE_NODESTORE_TESTBASE_H_INCLUDED
 
-namespace NodeStore
-{
+namespace ripple {
+namespace NodeStore {
 
 // Some common code for the unit tests
 //
@@ -187,6 +187,7 @@ public:
     }
 };
 
+}
 }
 
 #endif

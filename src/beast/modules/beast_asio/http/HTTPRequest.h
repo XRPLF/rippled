@@ -20,6 +20,8 @@
 #ifndef BEAST_ASIO_HTTPREQUEST_H_INCLUDED
 #define BEAST_ASIO_HTTPREQUEST_H_INCLUDED
 
+namespace beast {
+
 class HTTPRequest : public HTTPMessage
 {
 public:
@@ -41,5 +43,7 @@ public:
 private:
     unsigned short m_method;
 };
+
+}
 
 #endif

@@ -24,7 +24,8 @@ class CollectorManagerImp
 {
 public:
     Journal m_journal;
-    shared_ptr <insight::Collector> m_collector;
+    insight::Collector::ptr m_collector;
+    std::unique_ptr <insight::Groups> m_groups;
 
     CollectorManagerImp (StringPairArray const& params,
         Journal journal)
@@ -34,7 +35,7 @@ public:
 
         if (server == "statsd")
         {
-            IPAddress const address (IPAddress::from_string (
+            IP::Endpoint const address (IP::Endpoint::from_string (
                 params ["address"].toStdString ()));
             std::string const& prefix (params ["prefix"].toStdString ());
 
@@ -44,15 +45,22 @@ public:
         {
             m_collector = insight::NullCollector::New ();
         }
+
+        m_groups = insight::make_Groups (m_collector);
     }
 
     ~CollectorManagerImp ()
     {
     }
 
-    shared_ptr <insight::Collector> const& collector ()
+    insight::Collector::ptr const& collector ()
     {
         return m_collector;
+    }
+
+    insight::Group::ptr const& group (std::string const& name)
+    {
+        return m_groups->get (name);
     }
 };
 

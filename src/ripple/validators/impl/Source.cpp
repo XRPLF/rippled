@@ -26,5 +26,11 @@ Source::Results::Results ()
 {
 }
 
+std::ostream& operator<< (std::ostream& os, Source const& v)
+{
+    os << v.to_string();
+    return os;
+}
+
 }
 }

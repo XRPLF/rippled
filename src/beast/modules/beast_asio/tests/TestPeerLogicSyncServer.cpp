@@ -17,7 +17,10 @@
 */
 //==============================================================================
 
-TestPeerLogicSyncServer::TestPeerLogicSyncServer (Socket& socket)
+namespace beast {
+namespace asio {
+
+TestPeerLogicSyncServer::TestPeerLogicSyncServer (abstract_socket& socket)
     : TestPeerLogic (socket)
 {
 }
@@ -72,9 +75,12 @@ void TestPeerLogicSyncServer::on_connect ()
             return;
     }
 
-    if (failure (socket ().shutdown (Socket::shutdown_both, error ())))
+    if (failure (socket ().shutdown (abstract_socket::shutdown_send, error ())))
         return;
 
     if (failure (socket ().close (error ())))
         return;
+}
+
+}
 }

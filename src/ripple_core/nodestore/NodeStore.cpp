@@ -17,21 +17,26 @@
 */
 //==============================================================================
 
+#include <memory>
+#include <vector>
+
 // backend support
-#include "beast/modules/beast_db/beast_db.h"
 #include "../ripple_hyperleveldb/ripple_hyperleveldb.h"
 #include "../ripple_leveldb/ripple_leveldb.h"
 #include "../ripple/rocksdb/ripple_rocksdb.h"
 
-namespace ripple {
+#include "../beast/beast/cxx14/memory.h"
 
+#include "../../ripple/common/seconds_clock.h"
+#include "../../ripple/common/TaggedCache.h"
+#include "../../ripple/common/KeyCache.h"
+
+#include "impl/Tuning.h"
 #  include "impl/DecodedBlob.h"
 #  include "impl/EncodedBlob.h"
 #  include "impl/BatchWriter.h"
 # include "backend/HyperDBFactory.h"
 #include "backend/HyperDBFactory.cpp"
-# include "backend/KeyvaDBFactory.h"
-#include "backend/KeyvaDBFactory.cpp"
 # include "backend/LevelDBFactory.h"
 #include "backend/LevelDBFactory.cpp"
 # include "backend/MemoryFactory.h"
@@ -41,18 +46,21 @@ namespace ripple {
 # include "backend/RocksDBFactory.h"
 #include "backend/RocksDBFactory.cpp"
 
+#include "impl/Backend.cpp"
 #include "impl/BatchWriter.cpp"
-# include "impl/Factories.h"
 # include "impl/DatabaseImp.h"
+#include "impl/Database.cpp"
 #include "impl/DummyScheduler.cpp"
 #include "impl/DecodedBlob.cpp"
 #include "impl/EncodedBlob.cpp"
+#include "impl/Factory.cpp"
+#include "impl/Manager.cpp"
 #include "impl/NodeObject.cpp"
+#include "impl/Scheduler.cpp"
+#include "impl/Task.cpp"
 
 # include "tests/TestBase.h"
 #include "tests/BackendTests.cpp"
 #include "tests/BasicTests.cpp"
 #include "tests/DatabaseTests.cpp"
 #include "tests/TimingTests.cpp"
-
-}

@@ -56,6 +56,8 @@ protected:
     explicit NetworkOPs (Stoppable& parent);
 
 public:
+    typedef abstract_clock <std::chrono::seconds> clock_type;
+
     enum Fault
     {
         // exceptions these functions can throw
@@ -80,10 +82,10 @@ public:
 public:
     // VFALCO TODO Make LedgerMaster a SharedPtr or a reference.
     //
-    static NetworkOPs* New (LedgerMaster& ledgerMaster,
+    static NetworkOPs* New (clock_type& clock, LedgerMaster& ledgerMaster,
         Stoppable& parent, Journal journal);
 
-    virtual ~NetworkOPs () { }
+    virtual ~NetworkOPs () = 0;
 
     //--------------------------------------------------------------------------
     //
@@ -103,11 +105,10 @@ public:
 
     virtual OperatingMode getOperatingMode () = 0;
     virtual std::string strOperatingMode () = 0;
-    virtual Ledger::ref     getClosedLedger () = 0;
-    virtual Ledger::ref     getValidatedLedger () = 0;
-    virtual Ledger::ref     getPublishedLedger () = 0;
-    virtual Ledger::ref     getCurrentLedger () = 0;
-    virtual Ledger::ref     getCurrentSnapshot () = 0;
+    virtual Ledger::pointer getClosedLedger () = 0;
+    virtual Ledger::pointer getValidatedLedger () = 0;
+    virtual Ledger::pointer getPublishedLedger () = 0;
+    virtual Ledger::pointer getCurrentLedger () = 0;
     virtual Ledger::pointer getLedgerByHash (uint256 const& hash) = 0;
     virtual Ledger::pointer getLedgerBySeq (const uint32 seq) = 0;
     virtual void            missingNodeInLedger (const uint32 seq) = 0;
@@ -136,16 +137,16 @@ public:
 
     // must complete immediately
     // VFALCO TODO Make this a TxCallback structure
-    typedef FUNCTION_TYPE<void (Transaction::pointer, TER)> stCallback;
+    typedef std::function<void (Transaction::pointer, TER)> stCallback;
     virtual void submitTransaction (Job&, SerializedTransaction::pointer,
         stCallback callback = stCallback ()) = 0;
     virtual Transaction::pointer submitTransactionSync (Transaction::ref tpTrans,
-        bool bAdmin, bool bFailHard, bool bSubmit) = 0;
+        bool bAdmin, bool bLocal, bool bFailHard, bool bSubmit) = 0;
     virtual void runTransactionQueue () = 0;
-    virtual Transaction::pointer processTransaction (Transaction::pointer,
-        bool bAdmin, bool bFailHard, stCallback) = 0;
+    virtual Transaction::pointer processTransactionCb (Transaction::pointer,
+        bool bAdmin, bool bLocal, bool bFailHard, stCallback) = 0;
     virtual Transaction::pointer processTransaction (Transaction::pointer transaction,
-        bool bAdmin, bool bFailHard) = 0;
+        bool bAdmin, bool bLocal, bool bFailHard) = 0;
     virtual Transaction::pointer findTransactionByID (uint256 const& transactionID) = 0;
     virtual int findTransactionsByDestination (std::list<Transaction::pointer>&,
         const RippleAddress& destinationAccount, uint32 startLedgerSeq,

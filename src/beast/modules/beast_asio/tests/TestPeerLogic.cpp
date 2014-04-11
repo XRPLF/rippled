@@ -17,7 +17,10 @@
 */
 //==============================================================================
 
-TestPeerLogic::TestPeerLogic (Socket& socket)
+namespace beast {
+namespace asio {
+
+TestPeerLogic::TestPeerLogic (abstract_socket& socket)
     : m_socket (&socket)
 {
 }
@@ -37,7 +40,7 @@ TestPeerLogic::error_code const& TestPeerLogic::error (error_code const& ec) noe
     return m_ec = ec;
 }
 
-Socket& TestPeerLogic::socket () noexcept
+abstract_socket& TestPeerLogic::socket () noexcept
 {
     return *m_socket;
 }
@@ -60,4 +63,7 @@ void TestPeerLogic::finished ()
 void TestPeerLogic::pure_virtual ()
 {
     fatal_error ("A TestPeerLogic function was called incorrectly");
+}
+
+}
 }

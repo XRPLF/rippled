@@ -46,7 +46,7 @@ public:
             @param  request The RPC request string.
             @return         The server's response.
         */
-        virtual std::string processRequest (std::string const& request, std::string const& remoteAddress) = 0;
+        virtual std::string processRequest (std::string const& request, IP::Endpoint const& remoteIPAddress) = 0;
     };
 
     virtual ~RPCServer () { }
@@ -55,15 +55,9 @@ public:
     */
     virtual void connected () = 0;
 
-    // VFALCO TODO Remove this since it exposes boost
+    // VFALCO TODO Remove these since they expose boost
     virtual boost::asio::ip::tcp::socket& getRawSocket () = 0;
-
-    /** Retrieve the remote address as a string.
-    
-        @return A std::string representing the remote address.
-    */
-    // VFALCO TODO Replace the return type with a dedicated class.
-    virtual std::string getRemoteAddressText () = 0;
+    virtual boost::asio::ip::tcp::socket::endpoint_type& getRemoteEndpoint () = 0;
 };
 
 #endif

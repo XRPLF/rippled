@@ -29,7 +29,7 @@ namespace Validators {
 //
 enum
 {
-#if 0
+#if 1
     // We will fetch a source at this interval
     hoursBetweenFetches = 24
     ,secondsBetweenFetches = hoursBetweenFetches * 60 * 60

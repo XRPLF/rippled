@@ -65,6 +65,20 @@ static inline const uint160& get_u160_one ()
 #define ACCOUNT_XRP         get_u160_zero()
 #define ACCOUNT_ONE         get_u160_one()                  // Used as a place holder.
 
+//------------------------------------------------------------------------------
+
+/** A type which can be exported to a well known binary format.
+    
+    A SerializedType:
+        - Always a field
+        - Can always go inside an eligible enclosing SerializedType
+            (such as STArray)
+        - Has a field name
+        
+
+    Like JSON, a SerializedObject is a basket which has rules
+    on what it can hold.
+*/
 // VFALCO TODO Document this as it looks like a central class.
 //             STObject is derived from it
 //
@@ -83,11 +97,14 @@ public:
 
     virtual ~SerializedType () { }
 
-    static UPTR_T<SerializedType> deserialize (SField::ref name)
+    static std::unique_ptr<SerializedType> deserialize (SField::ref name)
     {
-        return UPTR_T<SerializedType> (new SerializedType (name));
+        return std::unique_ptr<SerializedType> (new SerializedType (name));
     }
 
+    /** A SerializeType is a field.
+        This sets the name.
+    */
     void setFName (SField::ref n)
     {
         fName = &n;
@@ -106,9 +123,9 @@ public:
     {
         return STI_NOTPRESENT;
     }
-    UPTR_T<SerializedType> clone () const
+    std::unique_ptr<SerializedType> clone () const
     {
-        return UPTR_T<SerializedType> (duplicate ());
+        return std::unique_ptr<SerializedType> (duplicate ());
     }
 
     virtual std::string getFullText () const;
@@ -149,6 +166,24 @@ public:
         return true;
     }
 
+    template <class D>
+    D&  downcast()
+    {
+        D* ptr = dynamic_cast<D*> (this);
+        if (ptr == nullptr)
+            throw std::runtime_error ("type mismatch");
+        return *ptr;
+    }
+
+    template <class D>
+    D const& downcast() const
+    {
+        D const * ptr = dynamic_cast<D const*> (this);
+        if (ptr == nullptr)
+            throw std::runtime_error ("type mismatch");
+        return *ptr;
+    }
+
 protected:
     // VFALCO TODO make accessors for this
     SField::ptr fName;
@@ -160,18 +195,26 @@ private:
     }
 };
 
+//------------------------------------------------------------------------------
+
 inline SerializedType* new_clone (const SerializedType& s)
 {
-    return s.clone ().release ();
+    SerializedType* const copy (s.clone ().release ());
+    assert (typeid (*copy) == typeid (s));
+    return copy;
 }
+
 inline void delete_clone (const SerializedType* s)
 {
     boost::checked_delete (s);
 }
+
 inline std::ostream& operator<< (std::ostream& out, const SerializedType& t)
 {
     return out << t.getFullText ();
 }
+
+//------------------------------------------------------------------------------
 
 class STUInt8 : public SerializedType
 {
@@ -185,9 +228,9 @@ public:
     {
         ;
     }
-    static UPTR_T<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
+    static std::unique_ptr<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
     {
-        return UPTR_T<SerializedType> (construct (sit, name));
+        return std::unique_ptr<SerializedType> (construct (sit, name));
     }
 
     SerializedTypeID getSType () const
@@ -230,6 +273,8 @@ private:
     static STUInt8* construct (SerializerIterator&, SField::ref f);
 };
 
+//------------------------------------------------------------------------------
+
 class STUInt16 : public SerializedType
 {
 public:
@@ -242,9 +287,9 @@ public:
     {
         ;
     }
-    static UPTR_T<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
+    static std::unique_ptr<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
     {
-        return UPTR_T<SerializedType> (construct (sit, name));
+        return std::unique_ptr<SerializedType> (construct (sit, name));
     }
 
     SerializedTypeID getSType () const
@@ -287,6 +332,8 @@ private:
     static STUInt16* construct (SerializerIterator&, SField::ref name);
 };
 
+//------------------------------------------------------------------------------
+
 class STUInt32 : public SerializedType
 {
 public:
@@ -299,9 +346,9 @@ public:
     {
         ;
     }
-    static UPTR_T<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
+    static std::unique_ptr<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
     {
-        return UPTR_T<SerializedType> (construct (sit, name));
+        return std::unique_ptr<SerializedType> (construct (sit, name));
     }
 
     SerializedTypeID getSType () const
@@ -344,10 +391,11 @@ private:
     static STUInt32* construct (SerializerIterator&, SField::ref name);
 };
 
+//------------------------------------------------------------------------------
+
 class STUInt64 : public SerializedType
 {
 public:
-
     STUInt64 (uint64 v = 0) : value (v)
     {
         ;
@@ -356,9 +404,9 @@ public:
     {
         ;
     }
-    static UPTR_T<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
+    static std::unique_ptr<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
     {
-        return UPTR_T<SerializedType> (construct (sit, name));
+        return std::unique_ptr<SerializedType> (construct (sit, name));
     }
 
     SerializedTypeID getSType () const
@@ -400,6 +448,8 @@ private:
     }
     static STUInt64* construct (SerializerIterator&, SField::ref name);
 };
+
+//------------------------------------------------------------------------------
 
 // Internal form:
 // 1: If amount is zero, then value is zero and offset is -100
@@ -492,9 +542,9 @@ public:
 
     static STAmount createFromInt64 (SField::ref n, int64 v);
 
-    static UPTR_T<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
+    static std::unique_ptr<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
     {
-        return UPTR_T<SerializedType> (construct (sit, name));
+        return std::unique_ptr<SerializedType> (construct (sit, name));
     }
 
     bool bSetJson (const Json::Value& jvSource);
@@ -560,13 +610,17 @@ public:
     {
         return !mIsNegative && !isZero ();
     }
+    bool isLEZero () const
+    {
+        return mIsNegative || isZero ();
+    }
     bool isGEZero () const
     {
         return !mIsNegative;
     }
     bool isLegalNet () const
     {
-        return !mIsNative || (mValue < cMaxNativeN);
+        return !mIsNative || (mValue <= cMaxNativeN);
     }
     operator bool () const
     {
@@ -805,6 +859,8 @@ private:
 extern const STAmount saZero;
 extern const STAmount saOne;
 
+//------------------------------------------------------------------------------
+
 class STHash128 : public SerializedType
 {
 public:
@@ -832,9 +888,9 @@ public:
     {
         ;
     }
-    static UPTR_T<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
+    static std::unique_ptr<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
     {
-        return UPTR_T<SerializedType> (construct (sit, name));
+        return std::unique_ptr<SerializedType> (construct (sit, name));
     }
 
     SerializedTypeID getSType () const
@@ -876,6 +932,8 @@ private:
     static STHash128* construct (SerializerIterator&, SField::ref name);
 };
 
+//------------------------------------------------------------------------------
+
 class STHash160 : public SerializedType
 {
 public:
@@ -903,9 +961,9 @@ public:
     {
         ;
     }
-    static UPTR_T<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
+    static std::unique_ptr<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
     {
-        return UPTR_T<SerializedType> (construct (sit, name));
+        return std::unique_ptr<SerializedType> (construct (sit, name));
     }
 
     SerializedTypeID getSType () const
@@ -947,6 +1005,8 @@ private:
     static STHash160* construct (SerializerIterator&, SField::ref name);
 };
 
+//------------------------------------------------------------------------------
+
 class STHash256 : public SerializedType
 {
 public:
@@ -974,9 +1034,9 @@ public:
     {
         ;
     }
-    static UPTR_T<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
+    static std::unique_ptr<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
     {
-        return UPTR_T<SerializedType> (construct (sit, name));
+        return std::unique_ptr<SerializedType> (construct (sit, name));
     }
 
     SerializedTypeID getSType () const
@@ -1018,6 +1078,8 @@ private:
     static STHash256* construct (SerializerIterator&, SField::ref);
 };
 
+//------------------------------------------------------------------------------
+
 // variable length byte string
 class STVariableLength : public SerializedType
 {
@@ -1039,9 +1101,9 @@ public:
     {
         ;
     }
-    static UPTR_T<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
+    static std::unique_ptr<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
     {
-        return UPTR_T<SerializedType> (construct (sit, name));
+        return std::unique_ptr<SerializedType> (construct (sit, name));
     }
 
     virtual SerializedTypeID getSType () const
@@ -1091,6 +1153,8 @@ private:
     static STVariableLength* construct (SerializerIterator&, SField::ref);
 };
 
+//------------------------------------------------------------------------------
+
 class STAccount : public STVariableLength
 {
 public:
@@ -1111,9 +1175,9 @@ public:
     {
         ;
     }
-    static UPTR_T<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
+    static std::unique_ptr<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
     {
-        return UPTR_T<SerializedType> (construct (sit, name));
+        return std::unique_ptr<SerializedType> (construct (sit, name));
     }
 
     SerializedTypeID getSType () const
@@ -1136,6 +1200,8 @@ private:
     }
     static STAccount* construct (SerializerIterator&, SField::ref);
 };
+
+//------------------------------------------------------------------------------
 
 class STPathElement
 {
@@ -1222,6 +1288,8 @@ private:
     uint160         mCurrencyID;
     uint160         mIssuerID;
 };
+
+//------------------------------------------------------------------------------
 
 class STPath
 {
@@ -1322,6 +1390,8 @@ inline std::vector<STPathElement>::const_iterator range_end (const STPath& x)
     return x.end ();
 }
 
+//------------------------------------------------------------------------------
+
 // A set of zero or more payment paths
 class STPathSet : public SerializedType
 {
@@ -1346,9 +1416,9 @@ public:
         ;
     }
 
-    static UPTR_T<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
+    static std::unique_ptr<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
     {
-        return UPTR_T<SerializedType> (construct (sit, name));
+        return std::unique_ptr<SerializedType> (construct (sit, name));
     }
 
     //  std::string getText() const;
@@ -1482,6 +1552,8 @@ inline std::vector<STPath>::const_iterator range_end (const STPathSet& x)
     return x.end ();
 }
 
+//------------------------------------------------------------------------------
+
 class STVector256 : public SerializedType
 {
 public:
@@ -1508,9 +1580,9 @@ public:
     }
     void add (Serializer& s) const;
 
-    static UPTR_T<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
+    static std::unique_ptr<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
     {
-        return UPTR_T<SerializedType> (construct (sit, name));
+        return std::unique_ptr<SerializedType> (construct (sit, name));
     }
 
     const std::vector<uint256>& peekValue () const
@@ -1582,4 +1654,3 @@ private:
 };
 
 #endif
-// vim:ts=4

@@ -20,10 +20,11 @@
 #ifndef RIPPLE_NET_H_INCLUDED
 #define RIPPLE_NET_H_INCLUDED
 
-#include "beast/modules/beast_core/system/BeforeBoost.h"
+#include "../beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/unordered_set.hpp> // For InfoSub
 
-#include "beast/modules/beast_asio/beast_asio.h"
+#include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
 
 #include "../ripple/resource/ripple_resource.h"
 
@@ -34,8 +35,6 @@
 
 namespace ripple {
 
-#include "basics/RippleSSLContext.h"
-#include "basics/MultiSocket.h"
 #include "basics/HTTPRequest.h"
 #include "basics/HTTPClient.h"
 #include "basics/RPCServer.h"

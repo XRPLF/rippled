@@ -26,7 +26,7 @@ class TxQueueEntry
 public:
     typedef boost::shared_ptr<TxQueueEntry> pointer;
     typedef const boost::shared_ptr<TxQueueEntry>& ref;
-    typedef FUNCTION_TYPE<void (Transaction::pointer, TER)> stCallback; // must complete immediately
+    typedef std::function<void (Transaction::pointer, TER)> stCallback; // must complete immediately
 
 public:
     TxQueueEntry (Transaction::ref tx, bool sigChecked) : mTxn (tx), mSigChecked (sigChecked)

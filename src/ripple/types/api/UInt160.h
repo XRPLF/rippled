@@ -190,4 +190,30 @@ extern std::size_t hash_value (const uint160&);
 
 }
 
+//------------------------------------------------------------------------------
+
+namespace std {
+
+template <>
+struct hash <ripple::uint160> : ripple::uint160::hasher
+{
+    // VFALCO NOTE broken in vs2012
+    //using ripple::uint160::hasher::hasher; // inherit ctors
+};
+
+}
+
+//------------------------------------------------------------------------------
+
+namespace boost {
+
+template <>
+struct hash <ripple::uint160> : ripple::uint160::hasher
+{
+    // VFALCO NOTE broken in vs2012
+    //using ripple::uint160::hasher::hasher; // inherit ctors
+};
+
+}
+
 #endif

@@ -29,7 +29,7 @@ namespace insight {
 class NullCollector : public Collector
 {
 public:
-    static shared_ptr <Collector> New ();
+    static std::shared_ptr <Collector> New ();
 };
 
 }

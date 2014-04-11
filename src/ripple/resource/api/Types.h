@@ -26,9 +26,6 @@ namespace Resource {
 struct Key;
 struct Entry;
 
-/** Measures seconds from an unspecified fixed reference event in the past. */
-typedef int DiscreteTime;
-
 }
 }
 

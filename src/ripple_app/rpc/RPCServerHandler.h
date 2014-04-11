@@ -20,6 +20,8 @@
 #ifndef RIPPLE_RPCSERVERHANDLER_H_INCLUDED
 #define RIPPLE_RPCSERVERHANDLER_H_INCLUDED
 
+namespace ripple {
+
 class NetworkOPs;
 
 /** Handles RPC requests.
@@ -33,11 +35,13 @@ public:
 
     bool isAuthorized (std::map <std::string, std::string> const& headers);
 
-    std::string processRequest (std::string const& request, std::string const& remoteAddress);
+    std::string processRequest (std::string const& request, IP::Endpoint const& remoteIPAddress);
 
 private:
     NetworkOPs& m_networkOPs;
     Resource::Manager& m_resourceManager;
 };
+
+}
 
 #endif

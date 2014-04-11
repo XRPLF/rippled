@@ -20,14 +20,14 @@
 #ifndef BEAST_UTILITY_H_INCLUDED
 #define BEAST_UTILITY_H_INCLUDED
 
-#include "utility/BaseFromMember.h"
 #include "utility/Debug.h"
-#include "utility/EnableIf.h"
 #include "utility/Error.h"
 #include "utility/Journal.h"
 #include "utility/LeakChecked.h"
 #include "utility/PropertyStream.h"
 #include "utility/StaticObject.h"
+
+#include "utility/hash_pair.h"
 
 #endif
 

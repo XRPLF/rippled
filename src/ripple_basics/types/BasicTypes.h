@@ -37,6 +37,6 @@ typedef DeprecatedRecursiveMutex::scoped_lock DeprecatedScopedLock;
 //------------------------------------------------------------------------------
 
 /** A callback used to check for canceling an operation. */
-typedef SharedFunction <bool(void)> CancelCallback;
+typedef std::function <bool(void)> CancelCallback;
 
 #endif

@@ -20,7 +20,7 @@
 #ifndef RIPPLE_RIPPLECOLLECTOR_H_INCLUDED
 #define RIPPLE_RIPPLECOLLECTOR_H_INCLUDED
 
-#include "beast/beast/Insight.h"
+#include "../../beast/beast/Insight.h"
 
 namespace ripple {
 
@@ -31,7 +31,8 @@ public:
     static CollectorManager* New (StringPairArray const& params,
         Journal journal);
     virtual ~CollectorManager () = 0;
-    virtual shared_ptr <insight::Collector> const& collector () = 0;
+    virtual insight::Collector::ptr const& collector () = 0;
+    virtual insight::Group::ptr const& group (std::string const& name) = 0;
 };
 
 }

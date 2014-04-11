@@ -33,6 +33,7 @@
 #define RIPPLE_TYPES_BASE58_H
 
 #include <iterator>
+#include <type_traits>
 
 #include "Blob.h"
 
@@ -74,7 +75,6 @@ public:
 
     static Alphabet const& getBitcoinAlphabet ();
     static Alphabet const& getRippleAlphabet ();
-    static Alphabet const& getTestnetAlphabet ();
 
     static std::string raw_encode (
         unsigned char const* begin, unsigned char const* end,
@@ -87,7 +87,7 @@ public:
         Alphabet const& alphabet, bool withCheck)
     {
         typedef typename std::iterator_traits<InputIt>::value_type value_type;
-        std::vector <typename mpl::RemoveConst <value_type>::type> v;
+        std::vector <typename std::remove_const <value_type>::type> v;
         std::size_t const size (std::distance (first, last));
         if (withCheck)
         {

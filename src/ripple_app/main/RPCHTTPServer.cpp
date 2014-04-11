@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include "../../ripple/common/RippleSSLContext.h"
+
+namespace ripple {
+
 class RPCHTTPServerImp
     : public RPCHTTPServer
     , public LeakChecked <RPCHTTPServerImp>
@@ -29,7 +33,7 @@ public:
     NetworkOPs& m_networkOPs;
     RPCServerHandler m_deprecatedHandler;
     HTTP::Server m_server;
-    ScopedPointer <RippleSSLContext> m_context;
+    std::unique_ptr <RippleSSLContext> m_context;
 
     RPCHTTPServerImp (Stoppable& parent,
                       Journal journal,
@@ -46,14 +50,14 @@ public:
     {
         if (getConfig ().RPC_SECURE == 0)
         {
-            m_context = RippleSSLContext::createBare ();
+            m_context.reset (RippleSSLContext::createBare ());
         }
         else
         {
-            m_context = RippleSSLContext::createAuthenticated (
+            m_context.reset (RippleSSLContext::createAuthenticated (
                 getConfig ().RPC_SSL_KEY,
                     getConfig ().RPC_SSL_CERT,
-                        getConfig ().RPC_SSL_CHAIN);
+                        getConfig ().RPC_SSL_CHAIN));
         }
     }
 
@@ -67,16 +71,16 @@ public:
         if (! getConfig ().getRpcIP().empty () &&
               getConfig ().getRpcPort() != 0)
         {
-            IPAddress ep (IPAddress::from_string (getConfig().getRpcIP()));
-            if (! ep.empty())
+            IP::Endpoint ep (IP::Endpoint::from_string (getConfig().getRpcIP()));
+            if (! is_unspecified (ep))
             {
                 HTTP::Port port;
-                port.addr = ep.withPort(0);
+                port.addr = ep.at_port(0);
                 if (getConfig ().getRpcPort() != 0)
                     port.port = getConfig ().getRpcPort();
                 else
                     port.port = ep.port();
-                port.context = m_context;
+                port.context = m_context.get ();
 
                 HTTP::Ports ports;
                 ports.push_back (port);
@@ -112,7 +116,7 @@ public:
     {
         // Reject non-loopback connections if RPC_ALLOW_REMOTE is not set
         if (! getConfig().RPC_ALLOW_REMOTE &&
-            ! session.remoteAddress().isLoopback())
+            ! IP::is_loopback (session.remoteAddress()))
         {
             session.close();
         }
@@ -153,7 +157,7 @@ public:
     void processSession (Job& job, HTTP::Session& session)
     {
         session.write (m_deprecatedHandler.processRequest (
-            session.content(), session.remoteAddress().withPort(0).to_string()));
+            session.content(), session.remoteAddress().at_port(0)));
 
         session.close();
     }
@@ -172,7 +176,7 @@ public:
     }
 
     // Stolen directly from RPCServerHandler
-    std::string processRequest (std::string const& request, std::string const& remoteAddress)
+    std::string processRequest (std::string const& request, IP::Endpoint const& remoteIPAddress)
     {
         Json::Value jvRequest;
         {
@@ -187,14 +191,14 @@ public:
             }
         }
 
-        Config::Role const role (getConfig ().getAdminRole (jvRequest, remoteAddress));
+        Config::Role const role (getConfig ().getAdminRole (jvRequest, remoteIPAddress));
 
         Resource::Consumer usage;
 
         if (role == Config::ADMIN)
-            usage = m_resourceManager.newAdminEndpoint(remoteAddress);
+            usage = m_resourceManager.newAdminEndpoint (remoteIPAddress.to_string());
         else
-            usage = m_resourceManager.newInboundEndpoint(IPAddress::from_string(remoteAddress));
+            usage = m_resourceManager.newInboundEndpoint(remoteIPAddress);
 
         if (usage.disconnect ())
             return createResponse (503, "Server is overloaded");
@@ -287,3 +291,4 @@ RPCHTTPServer* RPCHTTPServer::New (Stoppable& parent,
     return new RPCHTTPServerImp (parent, journal, jobQueue, networkOPs, resourceManager);
 }
 
+}

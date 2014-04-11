@@ -66,6 +66,16 @@ struct Count
         return 0;
     }
 
+    /** Output to PropertyStream. */
+    void onWrite (PropertyStream::Map& map)
+    {
+        map["received"] = received;
+        map["expected"] = expected;
+        map["closed"]   = closed;
+        map["percent"]  = percent ();
+        map["percent_orphan"] = percent_orphaned();
+    }
+
     std::size_t received;   // Count of validations without a closed ledger
     std::size_t expected;   // Count of closed ledgers without a validation
     std::size_t closed;     // Number of validations with closed ledgers

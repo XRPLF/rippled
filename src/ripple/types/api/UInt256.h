@@ -27,6 +27,8 @@
 
 #include "base_uint.h"
 
+#include <functional>
+
 namespace ripple {
 
 class uint256 : public base_uint256
@@ -342,5 +344,20 @@ inline int Testuint256AdHoc (std::vector<std::string> vArg)
 extern std::size_t hash_value (uint256 const& );
 
 }
+
+//------------------------------------------------------------------------------
+
+namespace std {
+
+template <>
+struct hash <ripple::uint256> : std::hash <ripple::base_uint <256>>
+{
+    typedef std::hash <ripple::base_uint <256>> Base;
+    // VFALCO NOTE broken in vs2012
+    //using Base::Base; // inherit ctors
+
+};
+
+};
 
 #endif

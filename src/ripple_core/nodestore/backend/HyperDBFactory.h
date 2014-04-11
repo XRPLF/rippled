@@ -22,31 +22,15 @@
 
 #if RIPPLE_HYPERLEVELDB_AVAILABLE
 
-namespace NodeStore
-{
+namespace ripple {
+namespace NodeStore {
 
 /** Factory to produce HyperLevelDB backends for the NodeStore.
-
     @see Database
 */
-class HyperDBFactory : public NodeStore::Factory
-{
-private:
-    HyperDBFactory ();
-    ~HyperDBFactory ();
+std::unique_ptr <Factory> make_HyperDBFactory ();
 
-public:
-    class BackendImp;
-
-    static HyperDBFactory* getInstance ();
-
-    String getName () const;
-
-    NodeStore::Backend* createInstance (size_t keyBytes,
-                                        Parameters const& keyValues,
-                                        NodeStore::Scheduler& scheduler);
-};
-
+}
 }
 
 #endif

@@ -217,7 +217,9 @@ bool SerializedTransaction::checkSign (const RippleAddress& naAccountPublic) con
 {
     try
     {
-        return naAccountPublic.accountPublicVerify (getSigningHash (), getFieldVL (sfTxnSignature));
+        const ECDSA fullyCanonical = (getFlags() & tfFullyCanonicalSig) ?
+                                              ECDSA::strict : ECDSA::not_strict;
+        return naAccountPublic.accountPublicVerify (getSigningHash (), getFieldVL (sfTxnSignature), fullyCanonical);
     }
     catch (...)
     {
@@ -235,6 +237,13 @@ void SerializedTransaction::setSourceAccount (const RippleAddress& naSource)
     setFieldAccount (sfAccount, naSource);
 }
 
+Json::Value SerializedTransaction::getJson (int) const
+{
+    Json::Value ret = STObject::getJson (0);
+    ret["hash"] = getTransactionID ().GetHex ();
+    return ret;
+}
+
 Json::Value SerializedTransaction::getJson (int options, bool binary) const
 {
     if (binary)
@@ -245,10 +254,7 @@ Json::Value SerializedTransaction::getJson (int options, bool binary) const
         ret["hash"] = getTransactionID ().GetHex ();
         return ret;
     }
-
-    Json::Value ret = STObject::getJson (0);
-    ret["hash"] = getTransactionID ().GetHex ();
-    return ret;
+    return getJson(options);
 }
 
 std::string SerializedTransaction::getSQLValueHeader ()
@@ -302,6 +308,21 @@ std::string SerializedTransaction::getMetaSQL (Serializer rawTxn, uint32 inLedge
 }
 
 //------------------------------------------------------------------------------
+bool isMemoOkay (STObject const& st)
+{
+    if (!st.isFieldPresent (sfMemos))
+        return true;
+    // The number 2048 is a preallocation hint, not a hard limit
+    // to avoid allocate/copy/free's
+    Serializer s (2048);
+    st.getFieldArray (sfMemos).add (s);
+    // FIXME move the memo limit into a config tunable
+    if (s.getDataLength () > 1024)
+        return false;
+    return true;
+}
+
+//------------------------------------------------------------------------------
 
 class SerializedTransactionTests : public UnitTest
 {
@@ -344,9 +365,11 @@ public:
             pass ();
         }
 
-        UPTR_T<STObject> new_obj = STObject::parseJson (j.getJson (0), sfGeneric);
+        STParsedJSON parsed ("test", j.getJson (0));
+        std::unique_ptr <STObject> new_obj (std::move (parsed.object));
 
-        if (new_obj.get () == NULL) fail ("Unable to build object from json");
+        if (new_obj.get () == nullptr)
+            fail ("Unable to build object from json");
 
         if (STObject (j) != *new_obj)
         {

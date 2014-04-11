@@ -17,7 +17,12 @@
 */
 //==============================================================================
 
-TaggedCacheType <uint256, AcceptedLedger, UptimeTimerAdapter> AcceptedLedger::s_cache ("AcceptedLedger", 4, 60);
+// VFALCO TODO Remove this global and make it a member of the App
+//             Use a dependency injection to give AcceptedLedger access.
+//
+TaggedCache <uint256, AcceptedLedger> AcceptedLedger::s_cache (
+    "AcceptedLedger", 4, 60, get_seconds_clock (),
+        LogPartition::getJournal <TaggedCacheLog> ());
 
 AcceptedLedger::AcceptedLedger (Ledger::ref ledger) : mLedger (ledger)
 {

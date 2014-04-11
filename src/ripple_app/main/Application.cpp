@@ -17,6 +17,13 @@
 */
 //==============================================================================
 
+#include "../ripple/common/seconds_clock.h"
+#include "../ripple_rpc/api/Manager.h"
+
+#include "Tuning.h"
+
+namespace ripple {
+
 // VFALCO TODO Clean this global up
 static bool volatile doShutdown = false;
 
@@ -45,27 +52,156 @@ class LoadManagerLog;
 template <> char const* LogPartition::getPartitionName <LoadManagerLog> () { return "LoadManager"; }
 class ResourceManagerLog;
 template <> char const* LogPartition::getPartitionName <ResourceManagerLog> () { return "ResourceManager"; }
+class PathRequestLog;
+template <> char const* LogPartition::getPartitionName <PathRequestLog> () { return "PathRequest"; }
+class RPCManagerLog;
+template <> char const* LogPartition::getPartitionName <RPCManagerLog> () { return "RPCManager"; }
 
 template <> char const* LogPartition::getPartitionName <CollectorManager> () { return "Collector"; }
+
+struct TaggedCacheLog;
+template <> char const* LogPartition::getPartitionName <TaggedCacheLog> () { return "TaggedCache"; }
 
 //
 //------------------------------------------------------------------------------
 
-// VFALCO TODO Move the function definitions into the class declaration
-class ApplicationImp
-    : public Application
-    , public RootStoppable
-    , public DeadlineTimer::Listener
-    , public LeakChecked <ApplicationImp>
+// This hack lets the s_instance variable remain set during
+// the call to ~Application
+class ApplicationImpBase : public Application
 {
-private:
-    static ApplicationImp* s_instance;
-
 public:
+    ApplicationImpBase ()
+    {
+        assert (s_instance == nullptr);
+        s_instance = this;
+    }
+
+    ~ApplicationImpBase ()
+    {
+        s_instance = nullptr;
+    }
+
+    static Application* s_instance;
+
     static Application& getInstance ()
     {
         bassert (s_instance != nullptr);
         return *s_instance;
+    }
+};
+
+Application* ApplicationImpBase::s_instance;
+
+//------------------------------------------------------------------------------
+
+// VFALCO TODO Move the function definitions into the class declaration
+class ApplicationImp
+    : public ApplicationImpBase
+    , public RootStoppable
+    , public DeadlineTimer::Listener
+    , public LeakChecked <ApplicationImp>
+{
+public:
+    Journal m_journal;
+    Application::LockType m_masterMutex;
+
+    // These are not Stoppable-derived
+    std::unique_ptr <NodeStore::Manager> m_nodeStoreManager;
+
+    NodeCache m_tempNodeCache;
+    SLECache m_sleCache;
+    LocalCredentials m_localCredentials;
+    TransactionMaster m_txMaster;
+
+    std::unique_ptr <CollectorManager> m_collectorManager;
+    std::unique_ptr <Resource::Manager> m_resourceManager;
+    std::unique_ptr <FullBelowCache> m_fullBelowCache;
+
+    // These are Stoppable-related
+    NodeStoreScheduler m_nodeStoreScheduler;
+    std::unique_ptr <JobQueue> m_jobQueue;
+    IoServicePool m_mainIoPool;
+    std::unique_ptr <SiteFiles::Manager> m_siteFiles;
+    std::unique_ptr <RPC::Manager> m_rpcManager;
+    // VFALCO TODO Make OrderBookDB abstract
+    OrderBookDB m_orderBookDB;
+    std::unique_ptr <PathRequests> m_pathRequests;
+    std::unique_ptr <LedgerMaster> m_ledgerMaster;
+    std::unique_ptr <InboundLedgers> m_inboundLedgers;
+    std::unique_ptr <NetworkOPs> m_networkOPs;
+    std::unique_ptr <UniqueNodeList> m_deprecatedUNL;
+    std::unique_ptr <RPCHTTPServer> m_rpcHTTPServer;
+    RPCServerHandler m_rpcServerHandler;
+    std::unique_ptr <NodeStore::Database> m_nodeStore;
+    std::unique_ptr <SNTPClient> m_sntpClient;
+    std::unique_ptr <TxQueue> m_txQueue;
+    std::unique_ptr <Validators::Manager> m_validators;
+    std::unique_ptr <IFeatures> mFeatures;
+    std::unique_ptr <IFeeVote> mFeeVote;
+    std::unique_ptr <LoadFeeTrack> mFeeTrack;
+    std::unique_ptr <IHashRouter> mHashRouter;
+    std::unique_ptr <Validations> mValidations;
+    std::unique_ptr <ProofOfWorkFactory> mProofOfWorkFactory;
+    std::unique_ptr <LoadManager> m_loadManager;
+    DeadlineTimer m_sweepTimer;
+    bool volatile mShutdown;
+
+    std::unique_ptr <DatabaseCon> mRpcDB;
+    std::unique_ptr <DatabaseCon> mTxnDB;
+    std::unique_ptr <DatabaseCon> mLedgerDB;
+    std::unique_ptr <DatabaseCon> mWalletDB;
+
+    std::unique_ptr <beast::asio::SSLContext> m_peerSSLContext;
+    std::unique_ptr <beast::asio::SSLContext> m_wsSSLContext;
+    std::unique_ptr <Peers> m_peers;
+    std::unique_ptr <RPCDoor>  m_rpcDoor;
+    std::unique_ptr <WSDoor> m_wsPublicDoor;
+    std::unique_ptr <WSDoor> m_wsPrivateDoor;
+    std::unique_ptr <WSDoor> m_wsProxyDoor;
+
+    WaitableEvent m_stop;
+
+    std::unique_ptr <ResolverAsio> m_resolver;
+
+    io_latency_probe <std::chrono::steady_clock> m_probe;
+
+    //--------------------------------------------------------------------------
+
+    class sample_io_service_latency
+    {
+    public:
+        insight::Event latency;
+        Journal journal;
+
+        sample_io_service_latency (insight::Event latency_,
+            Journal journal_)
+            : latency (latency_)
+            , journal (journal_)
+        {
+        }
+
+        template <class Duration>
+        void operator() (Duration const& elapsed) const
+        {
+            auto ms (ceil <std::chrono::milliseconds> (elapsed));
+            if (ms.count() >= 10)
+                latency.notify (ms);
+            if (ms.count() >= 500)
+                journal.warning <<
+                    "io_service latency = " << ms;
+        }
+    };
+
+    static std::vector <std::unique_ptr <NodeStore::Factory>> make_Factories ()
+    {
+        std::vector <std::unique_ptr <NodeStore::Factory>> list;
+
+        // VFALCO NOTE SqliteFactory is here because it has
+        //             dependencies like SqliteDatabase and DatabaseCon
+        //
+        list.emplace_back (make_SqliteFactory ());
+
+        return list;
     }
 
     //--------------------------------------------------------------------------
@@ -73,25 +209,35 @@ public:
     ApplicationImp ()
         : RootStoppable ("Application")
         , m_journal (LogPartition::getJournal <ApplicationLog> ())
-        , m_tempNodeCache ("NodeCache", 16384, 90)
-        , m_sleCache ("LedgerEntryCache", 4096, 120)
+
+        , m_nodeStoreManager (NodeStore::make_Manager (
+            std::move (make_Factories ())))
+
+        , m_tempNodeCache ("NodeCache", 16384, 90, get_seconds_clock (),
+            LogPartition::getJournal <TaggedCacheLog> ())
+
+        , m_sleCache ("LedgerEntryCache", 4096, 120, get_seconds_clock (),
+            LogPartition::getJournal <TaggedCacheLog> ())
 
         , m_collectorManager (CollectorManager::New (
             getConfig().insightSettings,
                 LogPartition::getJournal <CollectorManager> ()))
 
-        , m_resourceManager (add (Resource::Manager::New (
-            LogPartition::getJournal <ResourceManagerLog> ())))
+        , m_resourceManager (Resource::make_Manager (
+            m_collectorManager->collector(),
+                LogPartition::getJournal <ResourceManagerLog> ()))
 
-        , m_rpcServiceManager (RPC::Manager::New (
-            LogPartition::getJournal <RPCServiceManagerLog> ()))
+        , m_fullBelowCache (std::make_unique <FullBelowCache> (
+            "full_below", get_seconds_clock (), m_collectorManager->collector (),
+                fullBelowTargetSize, fullBelowExpirationSeconds))
+
+        , m_nodeStoreScheduler (*this)
 
         // The JobQueue has to come pretty early since
         // almost everything is a Stoppable child of the JobQueue.
         //
-        , m_jobQueue (JobQueue::New (
-            m_collectorManager->collector (),
-                *this, LogPartition::getJournal <JobQueueLog> ()))
+        , m_jobQueue (make_JobQueue (m_collectorManager->group ("jobq"),
+            m_nodeStoreScheduler, LogPartition::getJournal <JobQueueLog> ()))
 
         // The io_service must be a child of the JobQueue since we call addJob
         // in response to newtwork data from peers and also client requests.
@@ -105,14 +251,25 @@ public:
         , m_siteFiles (SiteFiles::Manager::New (
             *this, LogPartition::getJournal <SiteFilesLog> ()))
 
+        , m_rpcManager (RPC::make_Manager (LogPartition::getJournal <RPCManagerLog> ()))
+
         , m_orderBookDB (*m_jobQueue)
+
+        , m_pathRequests ( new PathRequests (
+            LogPartition::getJournal <PathRequestLog> (), m_collectorManager->collector ()))
 
         , m_ledgerMaster (LedgerMaster::New (
             *m_jobQueue, LogPartition::getJournal <LedgerMaster> ()))
 
+        // VFALCO NOTE must come before NetworkOPs to prevent a crash due
+        //             to dependencies in the destructor.
+        //
+        , m_inboundLedgers (InboundLedgers::New (get_seconds_clock (), *m_jobQueue,
+                            m_collectorManager->collector ()))
+
         // VFALCO NOTE Does NetworkOPs depend on LedgerMaster?
-        , m_networkOPs (NetworkOPs::New (
-            *m_ledgerMaster, *m_jobQueue, LogPartition::getJournal <NetworkOPsLog> ()))
+        , m_networkOPs (NetworkOPs::New (get_seconds_clock (), *m_ledgerMaster,
+            *m_jobQueue, LogPartition::getJournal <NetworkOPsLog> ()))
 
         // VFALCO NOTE LocalCredentials starts the deprecated UNL service
         , m_deprecatedUNL (UniqueNodeList::New (*m_jobQueue))
@@ -120,23 +277,20 @@ public:
         , m_rpcHTTPServer (RPCHTTPServer::New (*m_networkOPs,
             LogPartition::getJournal <HTTPServerLog> (), *m_jobQueue, *m_networkOPs, *m_resourceManager))
 
-#if ! RIPPLE_USE_RPC_SERVICE_MANAGER
         , m_rpcServerHandler (*m_networkOPs, *m_resourceManager) // passive object, not a Service
-#endif
 
-        , m_nodeStoreScheduler (*m_jobQueue, *m_jobQueue)
-
-        , m_nodeStore (NodeStore::Database::New ("NodeStore.main", m_nodeStoreScheduler,
-            getConfig ().nodeDatabase, getConfig ().ephemeralNodeDatabase))
+        , m_nodeStore (m_nodeStoreManager->make_Database ("NodeStore.main", m_nodeStoreScheduler,
+            LogPartition::getJournal <NodeObject> (), 4, // four read threads for now
+                getConfig ().nodeDatabase, getConfig ().ephemeralNodeDatabase))
 
         , m_sntpClient (SNTPClient::New (*this))
-
-        , m_inboundLedgers (*m_jobQueue)
 
         , m_txQueue (TxQueue::New ())
 
         , m_validators (add (Validators::Manager::New (
-            *this, LogPartition::getJournal <ValidatorsLog> ())))
+            *this, 
+            getConfig ().getModuleDatabasePath (),
+            LogPartition::getJournal <ValidatorsLog> ())))
 
         , mFeatures (IFeatures::New (2 * 7 * 24 * 60 * 60, 200)) // two weeks, 200/256
 
@@ -155,9 +309,30 @@ public:
         , m_sweepTimer (this)
 
         , mShutdown (false)
+
+        , m_resolver (ResolverAsio::New (m_mainIoPool.getService (), Journal ()))
+
+        , m_probe (std::chrono::milliseconds (100), m_mainIoPool.getService())
     {
-        bassert (s_instance == nullptr);
-        s_instance = this;
+        add (m_resourceManager.get ());
+
+        //
+        // VFALCO - READ THIS!
+        //
+        //  Do not start threads, open sockets, or do any sort of "real work"
+        //  inside the constructor. Put it in onStart instead. Or if you must,
+        //  put it in setup (but everything in setup should be moved to onStart
+        //  anyway.
+        //
+        //  The reason is that the unit tests require the Application object to
+        //  be created (since so much code calls getApp()). But we don't actually
+        //  start all the threads, sockets, and services when running the unit
+        //  tests. Therefore anything which needs to be stopped will not get
+        //  stopped correctly if it is started in this constructor.
+        //
+
+        // VFALCO HACK
+        m_nodeStoreScheduler.setJobQueue (*m_jobQueue);
 
         add (m_ledgerMaster->getPropertySource ());
 
@@ -165,27 +340,26 @@ public:
         HashMaps::getInstance ().initializeNonce <size_t> ();
     }
 
-    ~ApplicationImp ()
-    {
-        bassert (s_instance == this);
-        s_instance = nullptr;
-    }
-
     //--------------------------------------------------------------------------
-    
+
     CollectorManager& getCollectorManager ()
     {
         return *m_collectorManager;
     }
 
-    RPC::Manager& getRPCServiceManager()
+    FullBelowCache& getFullBelowCache ()
     {
-        return *m_rpcServiceManager;
+        return *m_fullBelowCache;
     }
 
     JobQueue& getJobQueue ()
     {
         return *m_jobQueue;
+    }
+
+    RPC::Manager& getRPCManager ()
+    {
+        return *m_rpcManager;
     }
 
     SiteFiles::Manager& getSiteFiles()
@@ -215,7 +389,7 @@ public:
 
     InboundLedgers& getInboundLedgers ()
     {
-        return m_inboundLedgers;
+        return *m_inboundLedgers;
     }
 
     TransactionMaster& getMasterTransaction ()
@@ -256,6 +430,11 @@ public:
     OrderBookDB& getOrderBookDB ()
     {
         return m_orderBookDB;
+    }
+
+    PathRequests& getPathRequests ()
+    {
+        return *m_pathRequests;
     }
 
     SLECache& getSLECache ()
@@ -320,19 +499,19 @@ public:
 
     DatabaseCon* getRpcDB ()
     {
-        return mRpcDB;
+        return mRpcDB.get();
     }
     DatabaseCon* getTxnDB ()
     {
-        return mTxnDB;
+        return mTxnDB.get();
     }
     DatabaseCon* getLedgerDB ()
     {
-        return mLedgerDB;
+        return mLedgerDB.get();
     }
     DatabaseCon* getWalletDB ()
     {
-        return mWalletDB;
+        return mWalletDB.get();
     }
 
     bool isShutdown ()
@@ -353,10 +532,10 @@ public:
     {
         switch (index)
         {
-        case 0: mRpcDB = openDatabaseCon ("rpc.db", RpcDBInit, RpcDBCount); break;
-        case 1: mTxnDB = openDatabaseCon ("transaction.db", TxnDBInit, TxnDBCount); break;
-        case 2: mLedgerDB = openDatabaseCon ("ledger.db", LedgerDBInit, LedgerDBCount); break;
-        case 3: mWalletDB = openDatabaseCon ("wallet.db", WalletDBInit, WalletDBCount); break;
+        case 0: mRpcDB.reset (openDatabaseCon ("rpc.db", RpcDBInit, RpcDBCount)); break;
+        case 1: mTxnDB.reset (openDatabaseCon ("transaction.db", TxnDBInit, TxnDBCount)); break;
+        case 2: mLedgerDB.reset (openDatabaseCon ("ledger.db", LedgerDBInit, LedgerDBCount)); break;
+        case 3: mWalletDB.reset (openDatabaseCon ("wallet.db", WalletDBInit, WalletDBCount)); break;
         };
     }
 
@@ -426,8 +605,8 @@ public:
         getApp().getTxnDB ()->getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
                 (getConfig ().getSize (siTxnDBCache) * 1024)));
 
-        mTxnDB->getDB ()->setupCheckpointing (m_jobQueue);
-        mLedgerDB->getDB ()->setupCheckpointing (m_jobQueue);
+        mTxnDB->getDB ()->setupCheckpointing (m_jobQueue.get());
+        mLedgerDB->getDB ()->setupCheckpointing (m_jobQueue.get());
 
         if (!getConfig ().RUN_STANDALONE)
             updateTables ();
@@ -494,8 +673,8 @@ public:
 
         // SSL context used for Peer connections.
         {
-            m_peerSSLContext = RippleSSLContext::createAnonymous (
-                getConfig ().PEER_SSL_CIPHER_LIST);
+            m_peerSSLContext.reset (RippleSSLContext::createAnonymous (
+                getConfig ().PEER_SSL_CIPHER_LIST));
 
             // VFALCO NOTE, It seems the WebSocket context never has
             // set_verify_mode called, for either setting of WEBSOCKET_SECURE
@@ -503,68 +682,35 @@ public:
         }
 
         // VFALCO NOTE Unfortunately, in stand-alone mode some code still
-        //             foolishly calls getPeers(). When this is fixed we can move
-        //             the creation of the peer SSL context and Peers object into
-        //             the conditional.
+        //             foolishly calls getPeers(). When this is fixed we can
+        //             move the instantiation inside a conditional:
         //
-        m_peers = add (Peers::New (m_mainIoPool, *m_resourceManager, *m_siteFiles,
-            m_mainIoPool, m_peerSSLContext->get ()));
-
-        // If we're not in standalone mode,
-        // prepare ourselves for  networking
-        //
-        if (!getConfig ().RUN_STANDALONE)
-        {
-            // Create the listening sockets for peers
-            //
-            m_peerDoors.add (PeerDoor::New (
-                m_mainIoPool,
-                *m_resourceManager,
-                PeerDoor::sslRequired,
-                getConfig ().PEER_IP,
-                getConfig ().peerListeningPort,
-                m_mainIoPool,
-                m_peerSSLContext->get ()));
-
-            if (getConfig ().peerPROXYListeningPort != 0)
-            {
-                // Also listen on a PROXY-only port.
-                m_peerDoors.add (PeerDoor::New (
-                    m_mainIoPool,
-                    *m_resourceManager,
-                    PeerDoor::sslAndPROXYRequired,
-                    getConfig ().PEER_IP,
-                    getConfig ().peerPROXYListeningPort,
-                    m_mainIoPool,
-                    m_peerSSLContext->get ()));
-            }
-        }
-        else
-        {
-            m_journal.info << "Peer interface: disabled";
-        }
+        //             if (!getConfig ().RUN_STANDALONE)
+        m_peers.reset (add (Peers::New (m_mainIoPool, *m_resourceManager, 
+            *m_siteFiles, getConfig ().getModuleDatabasePath (),
+            *m_resolver, m_mainIoPool, m_peerSSLContext->get ())));
 
         // SSL context used for WebSocket connections.
         if (getConfig ().WEBSOCKET_SECURE)
         {
-            m_wsSSLContext = RippleSSLContext::createAuthenticated (
+            m_wsSSLContext.reset (RippleSSLContext::createAuthenticated (
                 getConfig ().WEBSOCKET_SSL_KEY,
                 getConfig ().WEBSOCKET_SSL_CERT,
-                getConfig ().WEBSOCKET_SSL_CHAIN);
+                getConfig ().WEBSOCKET_SSL_CHAIN));
         }
         else
         {
-            m_wsSSLContext = RippleSSLContext::createWebSocket ();
+            m_wsSSLContext.reset (RippleSSLContext::createWebSocket ());
         }
 
         // Create private listening WebSocket socket
         //
         if (!getConfig ().WEBSOCKET_IP.empty () && getConfig ().WEBSOCKET_PORT)
         {
-            m_wsPrivateDoor = WSDoor::New (*m_resourceManager,
+            m_wsPrivateDoor.reset (WSDoor::New (*m_resourceManager,
                 getOPs(), getConfig ().WEBSOCKET_IP,
                     getConfig ().WEBSOCKET_PORT, false, false,
-                        m_wsSSLContext->get ());
+                        m_wsSSLContext->get ()));
 
             if (m_wsPrivateDoor == nullptr)
             {
@@ -581,10 +727,10 @@ public:
         //
         if (!getConfig ().WEBSOCKET_PUBLIC_IP.empty () && getConfig ().WEBSOCKET_PUBLIC_PORT)
         {
-            m_wsPublicDoor = WSDoor::New (*m_resourceManager,
+            m_wsPublicDoor.reset (WSDoor::New (*m_resourceManager,
                 getOPs(), getConfig ().WEBSOCKET_PUBLIC_IP,
                     getConfig ().WEBSOCKET_PUBLIC_PORT, true, false,
-                        m_wsSSLContext->get ());
+                        m_wsSSLContext->get ()));
 
             if (m_wsPublicDoor == nullptr)
             {
@@ -598,10 +744,10 @@ public:
         }
         if (!getConfig ().WEBSOCKET_PROXY_IP.empty () && getConfig ().WEBSOCKET_PROXY_PORT)
         {
-            m_wsProxyDoor = WSDoor::New (*m_resourceManager,
+            m_wsProxyDoor.reset (WSDoor::New (*m_resourceManager,
                 getOPs(), getConfig ().WEBSOCKET_PROXY_IP,
                     getConfig ().WEBSOCKET_PROXY_PORT, true, true,
-                        m_wsSSLContext->get ());
+                        m_wsSSLContext->get ()));
 
             if (m_wsProxyDoor == nullptr)
             {
@@ -617,15 +763,11 @@ public:
         //
         // Allow RPC connections.
         //
-#if RIPPLE_USE_RPC_SERVICE_MANAGER
-        m_rpcHTTPServer->setup (m_journal);
-
-#else
         if (! getConfig ().getRpcIP().empty () && getConfig ().getRpcPort() != 0)
         {
             try
             {
-                m_rpcDoor = RPCDoor::New (m_mainIoPool, m_rpcServerHandler);
+                m_rpcDoor.reset (RPCDoor::New (m_mainIoPool, m_rpcServerHandler));
             }
             catch (const std::exception& e)
             {
@@ -640,14 +782,14 @@ public:
         {
             m_journal.info << "RPC interface: disabled";
         }
-#endif
 
         //
         // Begin connecting to network.
         //
         if (!getConfig ().RUN_STANDALONE)
         {
-            m_peers->start ();
+            // Should this message be here, conceptually? In theory this sort
+            // of message, if displayed, should be displayed from PeerFinder.
             if (getConfig ().PEER_PRIVATE && getConfig ().IPS.empty ())
                 m_journal.warning << "No outbound peer connections will be made";
 
@@ -705,6 +847,12 @@ public:
         m_journal.debug << "Application starting";
 
         m_sweepTimer.setExpiration (10);
+
+        m_probe.sample (sample_io_service_latency (
+            m_collectorManager->collector()->make_event (
+                "ios_latency"), LogPartition::getJournal <ApplicationLog> ()));
+
+        m_resolver->start ();
     }
 
     // Called to indicate shutdown.
@@ -712,7 +860,24 @@ public:
     {
         m_journal.debug << "Application stopping";
 
-        m_sweepTimer.cancel();
+        m_probe.cancel_async ();
+
+        // VFALCO Enormous hack, we have to force the probe to cancel
+        //        before we stop the io_service queue or else it never
+        //        unblocks in its destructor. The fix is to make all
+        //        io_objects gracefully handle exit so that we can
+        //        naturally return from io_service::run() instead of
+        //        forcing a call to io_service::stop()
+        m_probe.cancel ();
+
+        m_resolver->stop_async ();
+
+        // NIKB This is a hack - we need to wait for the resolver to
+        //      stop. before we stop the io_server_queue or weird
+        //      things will happen.
+        m_resolver->stop ();
+
+        m_sweepTimer.cancel ();
 
         // VFALCO TODO get rid of this flag
         mShutdown = true;
@@ -728,7 +893,7 @@ public:
     // PropertyStream
     //
 
-    void onWrite (PropertyStream& stream)
+    void onWrite (PropertyStream::Map& stream)
     {
     }
 
@@ -843,6 +1008,8 @@ public:
         //         have listeners register for "onSweep ()" notification.
         //
 
+        m_fullBelowCache->sweep ();
+
         logTimedCall (m_journal.warning, "TransactionMaster::sweep", __FILE__, __LINE__, boost::bind (
             &TransactionMaster::sweep, &m_txMaster));
 
@@ -884,64 +1051,6 @@ private:
     bool loadOldLedger (const std::string&, bool);
 
     void onAnnounceAddress ();
-
-private:
-    Journal m_journal;
-    Application::LockType m_masterMutex;
-
-    // These are not Stoppable-derived
-    NodeCache m_tempNodeCache;
-    SLECache m_sleCache;
-    LocalCredentials m_localCredentials;
-    TransactionMaster m_txMaster;
-
-    beast::unique_ptr <CollectorManager> m_collectorManager;
-    ScopedPointer <Resource::Manager> m_resourceManager;
-    ScopedPointer <RPC::Manager> m_rpcServiceManager;
-
-    // These are Stoppable-related
-    ScopedPointer <JobQueue> m_jobQueue;
-    IoServicePool m_mainIoPool;
-    ScopedPointer <SiteFiles::Manager> m_siteFiles;
-    OrderBookDB m_orderBookDB;
-    ScopedPointer <LedgerMaster> m_ledgerMaster;
-    ScopedPointer <NetworkOPs> m_networkOPs;
-    ScopedPointer <UniqueNodeList> m_deprecatedUNL;
-    ScopedPointer <RPCHTTPServer> m_rpcHTTPServer;
-#if ! RIPPLE_USE_RPC_SERVICE_MANAGER
-    RPCServerHandler m_rpcServerHandler;
-#endif
-    NodeStoreScheduler m_nodeStoreScheduler;
-    ScopedPointer <NodeStore::Database> m_nodeStore;
-    ScopedPointer <SNTPClient> m_sntpClient;
-    InboundLedgers m_inboundLedgers;
-    ScopedPointer <TxQueue> m_txQueue;
-    ScopedPointer <Validators::Manager> m_validators;
-    ScopedPointer <IFeatures> mFeatures;
-    ScopedPointer <IFeeVote> mFeeVote;
-    ScopedPointer <LoadFeeTrack> mFeeTrack;
-    ScopedPointer <IHashRouter> mHashRouter;
-    ScopedPointer <Validations> mValidations;
-    ScopedPointer <ProofOfWorkFactory> mProofOfWorkFactory;
-    ScopedPointer <LoadManager> m_loadManager;
-    DeadlineTimer m_sweepTimer;
-    bool volatile mShutdown;
-
-    ScopedPointer <DatabaseCon> mRpcDB;
-    ScopedPointer <DatabaseCon> mTxnDB;
-    ScopedPointer <DatabaseCon> mLedgerDB;
-    ScopedPointer <DatabaseCon> mWalletDB;
-
-    ScopedPointer <SSLContext> m_peerSSLContext;
-    ScopedPointer <SSLContext> m_wsSSLContext;
-    ScopedPointer <Peers> m_peers;
-    OwnedArray <PeerDoor>  m_peerDoors;
-    ScopedPointer <RPCDoor>  m_rpcDoor;
-    ScopedPointer <WSDoor> m_wsPublicDoor;
-    ScopedPointer <WSDoor> m_wsPrivateDoor;
-    ScopedPointer <WSDoor> m_wsProxyDoor;
-
-    WaitableEvent m_stop;
 };
 
 //------------------------------------------------------------------------------
@@ -1245,8 +1354,10 @@ void ApplicationImp::updateTables ()
     if (getConfig ().doImport)
     {
         NodeStore::DummyScheduler scheduler;
-        ScopedPointer <NodeStore::Database> source (NodeStore::Database::New (
-            "NodeStore.import", scheduler, getConfig ().importNodeDatabase));
+        std::unique_ptr <NodeStore::Database> source (
+            m_nodeStoreManager->make_Database ("NodeStore.import", scheduler,
+                LogPartition::getJournal <NodeObject> (), 0,
+                    getConfig ().importNodeDatabase));
 
         WriteLog (lsWARNING, NodeObject) <<
             "Node import from '" << source->getName () << "' to '"
@@ -1263,23 +1374,19 @@ void ApplicationImp::onAnnounceAddress ()
 
 //------------------------------------------------------------------------------
 
-ApplicationImp* ApplicationImp::s_instance;
-
-//------------------------------------------------------------------------------
-
 Application::Application ()
     : PropertyStream::Source ("app")
 {
 }
 
-Application* Application::New ()
+std::unique_ptr <Application> make_Application ()
 {
-    return new ApplicationImp;
+    return std::make_unique <ApplicationImp> ();
 }
 
 Application& getApp ()
 {
-    return ApplicationImp::getInstance ();
+    return ApplicationImpBase::getInstance ();
 }
 
-// class LoandObject (5removed, use git history to recover)
+}

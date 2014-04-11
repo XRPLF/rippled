@@ -63,7 +63,8 @@ namespace functional
 using std::ref;
 using std::cref;
 using std::bind;
-using std::function;
+
+//using std::function;
 
 }
 
@@ -166,7 +167,8 @@ namespace functional
 using std::tr1::ref;
 using std::tr1::cref;
 using std::tr1::bind;
-using std::tr1::function;
+
+//using std::tr1::function;
 
 }
 
@@ -269,7 +271,8 @@ namespace functional
 using boost::ref;
 using boost::cref;
 using boost::bind;
-using boost::function;
+
+//using boost::function;
 
 }
 

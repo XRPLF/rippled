@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+namespace beast {
+
 HTTPField::HTTPField ()
 {
 }
@@ -48,4 +50,6 @@ String HTTPField::name () const
 String HTTPField::value () const
 {
     return m_value;
+}
+
 }

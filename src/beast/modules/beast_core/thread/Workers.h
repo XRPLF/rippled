@@ -134,7 +134,7 @@ private:
     CPUMeter m_usage;                            // CPU utilization across threads
     String m_threadNames;                        // The name to give each thread
     WaitableEvent m_allPaused;                   // signaled when all threads paused
-    Semaphore m_semaphore;                       // each pending task is 1 resource
+    semaphore m_semaphore;                       // each pending task is 1 resource
     int m_numberOfThreads;                       // how many we want active now
     Atomic <int> m_activeCount;                  // to know when all are paused
     Atomic <int> m_pauseCount;                   // how many threads need to pause now

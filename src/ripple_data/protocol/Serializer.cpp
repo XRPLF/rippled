@@ -337,16 +337,21 @@ uint256 Serializer::getSHA256 (int size) const
 
 uint256 Serializer::getSHA512Half (int size) const
 {
-    return getSHA512Half (mData, size);
+    assert (size != 0);
+    if (size == 0)
+        return uint256();
+    if (size < 0 || size > mData.size())
+        return getSHA512Half (mData);
+
+    return getSHA512Half (const_byte_view (
+        mData.data(), mData.data() + size));
 }
 
-uint256 Serializer::getSHA512Half (Blob const& data, int size)
+uint256 Serializer::getSHA512Half (const_byte_view v)
 {
     uint256 j[2];
-
-    if ((size < 0) || (size > data.size ())) size = data.size ();
-
-    SHA512 (& (data.front ()), size, (unsigned char*) j);
+    SHA512 (v.data(), v.size(),
+        reinterpret_cast<unsigned char*> (j));
     return j[0];
 }
 
@@ -355,11 +360,6 @@ uint256 Serializer::getSHA512Half (const unsigned char* data, int len)
     uint256 j[2];
     SHA512 (data, len, (unsigned char*) j);
     return j[0];
-}
-
-uint256 Serializer::getSHA512Half (const std::string& strData)
-{
-    return getSHA512Half (reinterpret_cast<const unsigned char*> (strData.data ()), strData.size ());
 }
 
 uint256 Serializer::getPrefixHash (uint32 prefix, const unsigned char* data, int len)
@@ -378,42 +378,6 @@ uint256 Serializer::getPrefixHash (uint32 prefix, const unsigned char* data, int
     SHA512_Final (reinterpret_cast<unsigned char*> (&j[0]), &ctx);
 
     return j[0];
-}
-
-bool Serializer::checkSignature (int pubkeyOffset, int signatureOffset) const
-{
-    Blob pubkey, signature;
-
-    if (!getRaw (pubkey, pubkeyOffset, 65)) return false;
-
-    if (!getRaw (signature, signatureOffset, 72)) return false;
-
-    CKey pubCKey;
-
-    if (!pubCKey.SetPubKey (pubkey)) return false;
-
-    return pubCKey.Verify (getSHA512Half (signatureOffset), signature);
-}
-
-bool Serializer::checkSignature (Blob const& signature, CKey& key) const
-{
-    return key.Verify (getSHA512Half (), signature);
-}
-
-bool Serializer::makeSignature (Blob& signature, CKey& key) const
-{
-    return key.Sign (getSHA512Half (), signature);
-}
-
-bool Serializer::addSignature (CKey& key)
-{
-    Blob signature;
-
-    if (!key.Sign (getSHA512Half (), signature)) return false;
-
-    assert (signature.size () == 72);
-    addRaw (signature);
-    return true;
 }
 
 int Serializer::addVL (Blob const& vector)

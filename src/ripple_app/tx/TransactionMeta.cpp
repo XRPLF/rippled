@@ -27,7 +27,7 @@ TransactionMetaSet::TransactionMetaSet (uint256 const& txid, uint32 ledger, Blob
     Serializer s (vec);
     SerializerIterator sit (s);
 
-    UPTR_T<SerializedType> pobj = STObject::deserialize (sit, sfAffectedNodes);
+    std::unique_ptr<SerializedType> pobj = STObject::deserialize (sit, sfAffectedNodes);
     STObject* obj = static_cast<STObject*> (pobj.get ());
 
     if (!obj)
@@ -36,6 +36,9 @@ TransactionMetaSet::TransactionMetaSet (uint256 const& txid, uint32 ledger, Blob
     mResult = obj->getFieldU8 (sfTransactionResult);
     mIndex = obj->getFieldU32 (sfTransactionIndex);
     mNodes = * dynamic_cast<STArray*> (&obj->getField (sfAffectedNodes));
+
+    if (obj->isFieldPresent (sfDeliveredAmount))
+        setDeliveredAmount (obj->getFieldAmount (sfDeliveredAmount));
 }
 
 bool TransactionMetaSet::isNodeAffected (uint256 const& node) const
@@ -177,6 +180,7 @@ void TransactionMetaSet::init (uint256 const& id, uint32 ledger)
     mTransactionID = id;
     mLedger = ledger;
     mNodes = STArray (sfAffectedNodes, 32);
+    mDelivered = boost::optional <STAmount> ();
 }
 
 void TransactionMetaSet::swap (TransactionMetaSet& s)
@@ -212,6 +216,8 @@ STObject TransactionMetaSet::getAsObject () const
     metaData.setFieldU8 (sfTransactionResult, mResult);
     metaData.setFieldU32 (sfTransactionIndex, mIndex);
     metaData.addObject (mNodes);
+    if (hasDeliveredAmount ())
+        metaData.setFieldAmount (sfDeliveredAmount, getDeliveredAmount ());
     return metaData;
 }
 

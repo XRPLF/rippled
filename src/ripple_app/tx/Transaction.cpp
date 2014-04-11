@@ -31,7 +31,7 @@ Transaction::Transaction (SerializedTransaction::ref sit, bool bValidate)
         return;
     }
 
-    if (!bValidate || checkSign ())
+    if (!bValidate || (isMemoOkay (*mTransaction) && checkSign ()))
         mStatus = NEW;
 }
 
@@ -294,7 +294,7 @@ bool Transaction::convertToTransactions (uint32 firstLedgerSeq, uint32 secondLed
         if (!!first)
         {
             // transaction in our table
-            firstTrans = sharedTransaction (first->getData (), checkFirstTransactions);
+            firstTrans = sharedTransaction (first->peekData (), checkFirstTransactions);
 
             if ((firstTrans->getStatus () == INVALID) || (firstTrans->getID () != id ))
             {
@@ -307,7 +307,7 @@ bool Transaction::convertToTransactions (uint32 firstLedgerSeq, uint32 secondLed
         if (!!second)
         {
             // transaction in other table
-            secondTrans = sharedTransaction (second->getData (), checkSecondTransactions);
+            secondTrans = sharedTransaction (second->peekData (), checkSecondTransactions);
 
             if ((secondTrans->getStatus () == INVALID) || (secondTrans->getID () != id))
             {
@@ -350,29 +350,17 @@ Json::Value Transaction::getJson (int options, bool binary) const
     return ret;
 }
 
-//
-// Obsolete
-//
-
-static bool isHex (char j)
-{
-    if ((j >= '0') && (j <= '9')) return true;
-
-    if ((j >= 'A') && (j <= 'F')) return true;
-
-    if ((j >= 'a') && (j <= 'f')) return true;
-
-    return false;
-}
-
 bool Transaction::isHexTxID (const std::string& txid)
 {
-    if (txid.size () != 64) return false;
+    if (txid.size () != 64) 
+        return false;
 
-    for (int i = 0; i < 64; ++i)
-        if (!isHex (txid[i])) return false;
+    auto const ret = std::find_if_not (txid.begin (), txid.end (),
+        std::bind (
+            std::isxdigit <std::string::value_type>,
+            std::placeholders::_1,
+            std::locale ()));
 
-    return true;
+    return (ret == txid.end ());
 }
 
-// vim:ts=4

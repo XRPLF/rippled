@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-namespace NodeStore
-{
+namespace ripple {
+namespace NodeStore {
 
 // Tests predictable batches, and NodeObject blob encoding
 //
@@ -86,4 +86,5 @@ public:
 
 static BasicTests basicTests;
 
+}
 }

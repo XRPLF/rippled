@@ -23,7 +23,7 @@ SETUP_LOGN (WSConnection, "WSConnection")
 
 WSConnection::WSConnection (Resource::Manager& resourceManager,
     Resource::Consumer usage, InfoSub::Source& source, bool isPublic,
-        IPAddress const& remoteAddress, boost::asio::io_service& io_service)
+        IP::Endpoint const& remoteAddress, boost::asio::io_service& io_service)
     : InfoSub (source, usage)
     , m_resourceManager (resourceManager)
     , m_isPublic (isPublic)
@@ -80,6 +80,21 @@ void WSConnection::rcvMessage (message_ptr msg, bool& msgRejected, bool& runQueu
     }
 }
 
+bool WSConnection::checkMessage ()
+{
+    ScopedLockType sl (m_receiveQueueMutex, __FILE__, __LINE__);
+
+    assert (m_receiveQueueRunning);
+
+    if (m_isDead || m_receiveQueue.empty ())
+    {
+        m_receiveQueueRunning = false;
+        return false;
+    }
+
+    return true;
+}
+
 WSConnection::message_ptr WSConnection::getMessage ()
 {
     ScopedLockType sl (m_receiveQueueMutex, __FILE__, __LINE__);
@@ -100,7 +115,10 @@ void WSConnection::returnMessage (message_ptr ptr)
     ScopedLockType sl (m_receiveQueueMutex, __FILE__, __LINE__);
 
     if (!m_isDead)
-        m_receiveQueue.push_front(ptr);
+    {
+        m_receiveQueue.push_front (ptr);
+        m_receiveQueueRunning = false;
+    }
 }
 
 Json::Value WSConnection::invokeCommand (Json::Value& jvRequest)
@@ -139,8 +157,8 @@ Json::Value WSConnection::invokeCommand (Json::Value& jvRequest)
     Config::Role const role = m_isPublic
             ? Config::GUEST     // Don't check on the public interface.
             : getConfig ().getAdminRole (
-                jvRequest, m_remoteAddress.withPort(0).to_string());
-        
+                jvRequest, m_remoteAddress);
+
     if (Config::FORBID == role)
     {
         jvResult["result"]  = rpcError (rpcFORBIDDEN);

@@ -20,6 +20,8 @@
 #ifndef BEAST_HTTPPARSERIMPL_H_INCLUDED
 #define BEAST_HTTPPARSERIMPL_H_INCLUDED
 
+namespace beast {
+
 class HTTPParserImpl
 {
 public:
@@ -35,7 +37,7 @@ public:
     {
         m_settings.on_message_begin     = &HTTPParserImpl::on_message_begin;
         m_settings.on_url               = &HTTPParserImpl::on_url;
-        m_settings.on_status_complete   = &HTTPParserImpl::on_status_complete;
+        m_settings.on_status            = &HTTPParserImpl::on_status;
         m_settings.on_header_field      = &HTTPParserImpl::on_header_field;
         m_settings.on_header_value      = &HTTPParserImpl::on_header_value;
         m_settings.on_headers_complete  = &HTTPParserImpl::on_headers_complete;
@@ -152,7 +154,7 @@ private:
         return ec;
     }
 
-    int onStatusComplete ()
+    int onStatus ()
     {
         int ec (0);
         return ec;
@@ -214,19 +216,22 @@ private:
             onUrl (at, length);
     }
 
-    static int on_status_complete (http_parser* parser)
+    static int on_status (http_parser* parser,
+        char const* /*at*/, size_t /*length*/)
     {
         return static_cast <HTTPParserImpl*> (parser->data)->
-            onStatusComplete ();
+            onStatus ();
     }
 
-    static int on_header_field (http_parser* parser, const char *at, size_t length)
+    static int on_header_field (http_parser* parser,
+        const char *at, size_t length)
     {
         return static_cast <HTTPParserImpl*> (parser->data)->
             onHeaderField (at, length);
     }
 
-    static int on_header_value (http_parser* parser, const char *at, size_t length)
+    static int on_header_value (http_parser* parser,
+        const char *at, size_t length)
     {
         return static_cast <HTTPParserImpl*> (parser->data)->
             onHeaderValue (at, length);
@@ -238,7 +243,8 @@ private:
             onHeadersComplete ();
     }
 
-    static int on_body (http_parser* parser, const char *at, size_t length)
+    static int on_body (http_parser* parser,
+        const char *at, size_t length)
     {
         return static_cast <HTTPParserImpl*> (parser->data)->
             onBody (at, length);
@@ -261,5 +267,7 @@ private:
     bool m_headersComplete;
     DynamicBuffer m_body;
 };
+
+}
 
 #endif

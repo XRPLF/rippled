@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+namespace beast {
+namespace asio {
+
 SSLContext::SSLContext (ContextType& context)
     : m_context (context)
 {
@@ -26,3 +29,5 @@ SSLContext::~SSLContext ()
 {
 }
 
+}
+}

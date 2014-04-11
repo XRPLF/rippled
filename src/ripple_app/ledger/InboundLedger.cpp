@@ -17,28 +17,38 @@
 */
 //==============================================================================
 
-SETUP_LOG (InboundLedger)
+//SETUP_LOG (InboundLedger)
+template <> char const* LogPartition::getPartitionName <InboundLedger> () { return "InLedger"; }
 
-// VFALCO TODO replace macros
-#define LA_DEBUG
-#define LEDGER_ACQUIRE_TIMEOUT      6000    // millisecond for each ledger timeout
-#define LEDGER_TIMEOUT_COUNT        10      // how many timeouts before we giveup
-#define LEDGER_TIMEOUT_AGGRESSIVE   6       // how many timeouts before we get aggressive
+enum
+{
+    // millisecond for each ledger timeout
+    ledgerAcquireTimeoutMillis = 2500
 
-InboundLedger::InboundLedger (uint256 const& hash, uint32 seq)
-    : PeerSet (hash, LEDGER_ACQUIRE_TIMEOUT, false)
+    // how many timeouts before we giveup
+    ,ledgerTimeoutRetriesMax = 10
+
+    // how many timeouts before we get aggressive
+    ,ledgerBecomeAggressiveThreshold = 6
+};
+
+InboundLedger::InboundLedger (uint256 const& hash, uint32 seq, fcReason reason,
+    clock_type& clock)
+    : PeerSet (hash, ledgerAcquireTimeoutMillis, false, clock,
+        LogPartition::getJournal <InboundLedger> ())
     , mHaveBase (false)
     , mHaveState (false)
     , mHaveTransactions (false)
     , mAborted (false)
     , mSignaled (false)
     , mByHash (true)
-    , mWaitCount (0)
     , mSeq (seq)
+    , mReason (reason)
+    , mReceiveDispatched (false)
 {
-#ifdef LA_DEBUG
-    WriteLog (lsTRACE, InboundLedger) << "Acquiring ledger " << mHash;
-#endif
+
+    if (m_journal.trace) m_journal.trace <<
+        "Acquiring ledger " << mHash;
 }
 
 bool InboundLedger::checkLocal ()
@@ -55,9 +65,17 @@ bool InboundLedger::checkLocal ()
 
 InboundLedger::~InboundLedger ()
 {
+    // Save any received AS data not processed. It could be useful
+    // for populating a different ledger
+    BOOST_FOREACH (PeerDataPairType& entry, mReceivedData)
+    {
+        if (entry.second->type () == protocol::liAS_NODE)
+            getApp().getInboundLedgers().gotStaleData(entry.second);
+    }
+
 }
 
-void InboundLedger::init(ScopedLockType& collectionLock, bool couldBeNew)
+void InboundLedger::init (ScopedLockType& collectionLock)
 {
     ScopedLockType sl (mLock, __FILE__, __LINE__);
     collectionLock.unlock ();
@@ -66,18 +84,29 @@ void InboundLedger::init(ScopedLockType& collectionLock, bool couldBeNew)
     {
         addPeers ();
         setTimer ();
+
+        // For historical nodes, wait a bit since a
+        // fetch pack is probably coming
+        if (mReason != fcHISTORY)
+            trigger (Peer::pointer ());
     }
     else if (!isFailed ())
     {
-        WriteLog (lsDEBUG, InboundLedger) << "Acquiring ledger we already have locally: " << getHash ();
+        if (m_journal.debug) m_journal.debug <<
+            "Acquiring ledger we already have locally: " << getHash ();
         mLedger->setClosed ();
         mLedger->setImmutable ();
         getApp ().getLedgerMaster ().storeLedger (mLedger);
-        if (couldBeNew)
+
+        // Check if this could be a newer fully-validated ledger
+        if ((mReason == fcVALIDATION) || (mReason == fcCURRENT) || (mReason ==  fcCONSENSUS))
             getApp ().getLedgerMaster ().checkAccept (mLedger);
     }
 }
 
+/** See how much of the ledger data, if any, is
+    in our node store
+*/
 bool InboundLedger::tryLocal ()
 {
     // return value: true = no more work to do
@@ -94,19 +123,23 @@ bool InboundLedger::tryLocal ()
             if (!getApp().getOPs ().getFetchPack (mHash, data))
                 return false;
 
-            WriteLog (lsTRACE, InboundLedger) << "Ledger base found in fetch pack";
+            if (m_journal.trace) m_journal.trace <<
+                "Ledger base found in fetch pack";
             mLedger = boost::make_shared<Ledger> (data, true);
-            getApp().getNodeStore ().store (hotLEDGER, mLedger->getLedgerSeq (), data, mHash);
+            getApp().getNodeStore ().store (hotLEDGER,
+                mLedger->getLedgerSeq (), data, mHash);
         }
         else
         {
-            mLedger = boost::make_shared<Ledger> (strCopy (node->getData ()), true);
+            mLedger = boost::make_shared<Ledger> (
+                strCopy (node->getData ()), true);
         }
 
         if (mLedger->getHash () != mHash)
         {
             // We know for a fact the ledger can never be acquired
-            WriteLog (lsWARNING, InboundLedger) << mHash << " cannot be a ledger";
+            if (m_journal.warning) m_journal.warning <<
+                mHash << " cannot be a ledger";
             mFailed = true;
             return true;
         }
@@ -118,21 +151,24 @@ bool InboundLedger::tryLocal ()
     {
         if (mLedger->getTransHash ().isZero ())
         {
-            WriteLog (lsTRACE, InboundLedger) << "No TXNs to fetch";
+            if (m_journal.trace) m_journal.trace <<
+                "No TXNs to fetch";
             mHaveTransactions = true;
         }
         else
         {
             TransactionStateSF filter (mLedger->getLedgerSeq ());
 
-            if (mLedger->peekTransactionMap ()->fetchRoot (mLedger->getTransHash (), &filter))
+            if (mLedger->peekTransactionMap ()->fetchRoot (
+                mLedger->getTransHash (), &filter))
             {
-                WriteLog (lsTRACE, InboundLedger) << "Got root txn map locally";
-                std::vector<uint256> h = mLedger->getNeededTransactionHashes (1, &filter);
+                std::vector<uint256> h (mLedger->getNeededTransactionHashes (
+                    1, &filter));
 
                 if (h.empty ())
                 {
-                    WriteLog (lsTRACE, InboundLedger) << "Had full txn map locally";
+                    if (m_journal.trace) m_journal.trace <<
+                        "Had full txn map locally";
                     mHaveTransactions = true;
                 }
             }
@@ -143,21 +179,25 @@ bool InboundLedger::tryLocal ()
     {
         if (mLedger->getAccountHash ().isZero ())
         {
-            WriteLog (lsFATAL, InboundLedger) << "We are acquiring a ledger with a zero account hash";
-            mHaveState = true;
+            if (m_journal.fatal) m_journal.fatal <<
+                "We are acquiring a ledger with a zero account hash";
+            mFailed = true;
+            return true;
         }
         else
         {
             AccountStateSF filter (mLedger->getLedgerSeq ());
 
-            if (mLedger->peekAccountStateMap ()->fetchRoot (mLedger->getAccountHash (), &filter))
+            if (mLedger->peekAccountStateMap ()->fetchRoot (
+                mLedger->getAccountHash (), &filter))
             {
-                WriteLog (lsTRACE, InboundLedger) << "Got root AS map locally";
-                std::vector<uint256> h = mLedger->getNeededAccountStateHashes (1, &filter);
+                std::vector<uint256> h (mLedger->getNeededAccountStateHashes (
+                    1, &filter));
 
                 if (h.empty ())
                 {
-                    WriteLog (lsTRACE, InboundLedger) << "Had full AS map locally";
+                    if (m_journal.trace) m_journal.trace <<
+                        "Had full AS map locally";
                     mHaveState = true;
                 }
             }
@@ -166,7 +206,8 @@ bool InboundLedger::tryLocal ()
 
     if (mHaveTransactions && mHaveState)
     {
-        WriteLog (lsDEBUG, InboundLedger) << "Had everything locally";
+        if (m_journal.debug) m_journal.debug <<
+            "Had everything locally";
         mComplete = true;
         mLedger->setClosed ();
         mLedger->setImmutable ();
@@ -175,17 +216,32 @@ bool InboundLedger::tryLocal ()
     return mComplete;
 }
 
+/** Called with a lock by the PeerSet when the timer expires
+*/
 void InboundLedger::onTimer (bool wasProgress, ScopedLockType&)
 {
     mRecentTXNodes.clear ();
     mRecentASNodes.clear ();
 
-    if (getTimeouts () > LEDGER_TIMEOUT_COUNT)
+    if (isDone())
+    {
+        if (m_journal.info) m_journal.info <<
+            "Already done " << mHash;
+        return;
+    }
+
+    if (getTimeouts () > ledgerTimeoutRetriesMax)
     {
         if (mSeq != 0)
-            WriteLog (lsWARNING, InboundLedger) << getTimeouts() << " timeouts  for ledger " << mSeq;
+        {
+            if (m_journal.warning) m_journal.warning <<
+                getTimeouts() << " timeouts for ledger " << mSeq;
+        }
         else
-            WriteLog (lsWARNING, InboundLedger) << getTimeouts() << " timeouts  for ledger " << mHash;
+        {
+            if (m_journal.warning) m_journal.warning <<
+                getTimeouts() << " timeouts for ledger " << mHash;
+        }
         setFailed ();
         done ();
         return;
@@ -193,22 +249,15 @@ void InboundLedger::onTimer (bool wasProgress, ScopedLockType&)
 
     if (!wasProgress)
     {
-        if (isDone())
-        {
-            WriteLog (lsINFO, InboundLedger) << "Already done " << mHash;
-            return;
-        }
         checkLocal();
-        if (isDone())
-        {
-            WriteLog (lsINFO, InboundLedger) << "Completed fetch " << mHash;
-            return;
-        }
 
         mAggressive = true;
         mByHash = true;
-        int pc = getPeerCount ();
-        WriteLog (lsDEBUG, InboundLedger) << "No progress(" << pc << ") for ledger " << mHash;
+
+        std::size_t pc = getPeerCount ();
+        WriteLog (lsDEBUG, InboundLedger) << 
+            "No progress(" << pc << 
+            ") for ledger " << mHash;
 
         trigger (Peer::pointer ());
         if (pc < 4)
@@ -216,37 +265,34 @@ void InboundLedger::onTimer (bool wasProgress, ScopedLockType&)
     }
 }
 
-void InboundLedger::awaitData ()
-{
-    ++mWaitCount;
-}
-
-void InboundLedger::noAwaitData ()
-{ // subtract one if mWaitCount is greater than zero
-    do
-    {
-       int j = mWaitCount.get();
-       if (j <= 0)
-           return;
-       if (mWaitCount.compareAndSetBool(j - 1, j))
-           return;
-    } while (1);
-}
-
+/** Add more peers to the set, if possible */
 void InboundLedger::addPeers ()
 {
-    std::vector<Peer::pointer> peerList = getApp().getPeers ().getPeerVector ();
+    Peers::PeerSequence peerList = getApp().getPeers ().getActivePeers ();
 
     int vSize = peerList.size ();
 
     if (vSize == 0)
+    {
+        WriteLog (lsERROR, InboundLedger) << 
+            "No peers to add for ledger acquisition";
         return;
+    }
 
-    // We traverse the peer list in random order so as not to favor any particular peer
+    // FIXME-NIKB why are we doing this convoluted thing here instead of simply
+    // shuffling this vector and then pulling however many entries we need?
+
+    // We traverse the peer list in random order so as not to favor
+    // any particular peer
+    //
+    // VFALCO Use random_shuffle
+    //        http://en.cppreference.com/w/cpp/algorithm/random_shuffle
+    //
     int firstPeer = rand () % vSize;
 
     int found = 0;
 
+    // First look for peers that are likely to have this ledger
     for (int i = 0; i < vSize; ++i)
     {
         Peer::ref peer = peerList[ (i + firstPeer) % vSize];
@@ -259,21 +305,35 @@ void InboundLedger::addPeers ()
     }
 
     if (!found)
-    {
+    { // Oh well, try some random peers
         for (int i = 0; (i < 6) && (i < vSize); ++i)
         {
             if (peerHas (peerList[ (i + firstPeer) % vSize]))
                 ++found;
-	}
-	if (mSeq != 0)
-            WriteLog (lsDEBUG, InboundLedger) << "Chose " << found << " peer(s) for ledger " << mSeq;
+        }
+        if (mSeq != 0)
+        {
+            if (m_journal.debug) m_journal.debug <<
+                "Chose " << found << " peer(s) for ledger " << mSeq;
+        }
         else
-            WriteLog (lsDEBUG, InboundLedger) << "Chose " << found << " peer(s) for ledger " << getHash ().GetHex();
+        {
+            if (m_journal.debug) m_journal.debug <<
+                "Chose " << found << " peer(s) for ledger " <<
+                    getHash ().GetHex();
+        }
     }
     else if (mSeq != 0)
-        WriteLog (lsDEBUG, InboundLedger) << "Found " << found << " peer(s) with ledger " << mSeq;
+    {
+        if (m_journal.debug) m_journal.debug << 
+            "Found " << found << " peer(s) with ledger " << mSeq;
+    }
     else
-        WriteLog (lsDEBUG, InboundLedger) << "Found " << found << " peer(s) with ledger " << getHash ().GetHex();
+    {
+        if (m_journal.debug) m_journal.debug <<
+            "Found " << found << " peer(s) with ledger " <<
+                getHash ().GetHex();
+    }
 }
 
 boost::weak_ptr<PeerSet> InboundLedger::pmDowncast ()
@@ -281,14 +341,18 @@ boost::weak_ptr<PeerSet> InboundLedger::pmDowncast ()
     return boost::dynamic_pointer_cast<PeerSet> (shared_from_this ());
 }
 
+/** Dispatch acquire completion
+*/
 static void LADispatch (
     Job& job,
     InboundLedger::pointer la,
-    std::vector< FUNCTION_TYPE<void (InboundLedger::pointer)> > trig)
+    std::vector< std::function<void (InboundLedger::pointer)> > trig)
 {
     if (la->isComplete() && !la->isFailed())
+    {
         getApp().getLedgerMaster().checkAccept(la->getLedger());
-    getApp().getLedgerMaster().tryAdvance();
+        getApp().getLedgerMaster().tryAdvance();
+    }
     for (unsigned int i = 0; i < trig.size (); ++i)
         trig[i] (la);
 }
@@ -301,11 +365,12 @@ void InboundLedger::done ()
     mSignaled = true;
     touch ();
 
-    WriteLog (lsTRACE, InboundLedger) << "Done acquiring ledger " << mHash;
+    if (m_journal.trace) m_journal.trace <<
+        "Done acquiring ledger " << mHash;
 
     assert (isComplete () || isFailed ());
 
-    std::vector< FUNCTION_TYPE<void (InboundLedger::pointer)> > triggers;
+    std::vector< std::function<void (InboundLedger::pointer)> > triggers;
     {
         ScopedLockType sl (mLock, __FILE__, __LINE__);
         triggers.swap (mOnComplete);
@@ -322,48 +387,51 @@ void InboundLedger::done ()
 
     // We hold the PeerSet lock, so must dispatch
     getApp().getJobQueue ().addJob (jtLEDGER_DATA, "triggers",
-                                    BIND_TYPE (LADispatch, P_1, shared_from_this (), triggers));
+        BIND_TYPE (LADispatch, P_1, shared_from_this (), triggers));
 }
 
-bool InboundLedger::addOnComplete (FUNCTION_TYPE<void (InboundLedger::pointer)> trigger)
+bool InboundLedger::addOnComplete (
+    std::function <void (InboundLedger::pointer)> triggerFunc)
 {
     ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     if (isDone ())
         return false;
 
-    mOnComplete.push_back (trigger);
+    mOnComplete.push_back (triggerFunc);
     return true;
 }
 
+/** Request more nodes, perhaps from a specific peer
+*/
 void InboundLedger::trigger (Peer::ref peer)
 {
     ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     if (isDone ())
     {
-        WriteLog (lsDEBUG, InboundLedger) << "Trigger on ledger: " << mHash <<
-                                          (mAborted ? " aborted" : "") << (mComplete ? " completed" : "") << (mFailed ? " failed" : "");
+        if (m_journal.debug) m_journal.debug <<
+            "Trigger on ledger: " << mHash << (mAborted ? " aborted" : "") <<
+                (mComplete ? " completed" : "") << (mFailed ? " failed" : "");
         return;
     }
 
-    if ((mWaitCount.get() > 0) && peer)
-    {
-        WriteLog (lsTRACE, InboundLedger) << "Skipping peer";
-        return;
-    }
-
-    if (ShouldLog (lsTRACE, InboundLedger))
+    if (m_journal.trace)
     {
         if (peer)
-            WriteLog (lsTRACE, InboundLedger) << "Trigger acquiring ledger " << mHash << " from " << peer->getIP ();
+            m_journal.trace <<
+                "Trigger acquiring ledger " << mHash << " from " << peer;
         else
-            WriteLog (lsTRACE, InboundLedger) << "Trigger acquiring ledger " << mHash;
+            m_journal.trace <<
+                "Trigger acquiring ledger " << mHash;
 
         if (mComplete || mFailed)
-            WriteLog (lsTRACE, InboundLedger) << "complete=" << mComplete << " failed=" << mFailed;
+            m_journal.trace <<
+                "complete=" << mComplete << " failed=" << mFailed;
         else
-            WriteLog (lsTRACE, InboundLedger) << "base=" << mHaveBase << " tx=" << mHaveTransactions << " as=" << mHaveState;
+            m_journal.trace <<
+                "base=" << mHaveBase << " tx=" << mHaveTransactions <<
+                    " as=" << mHaveState;
     }
 
     if (!mHaveBase)
@@ -372,7 +440,8 @@ void InboundLedger::trigger (Peer::ref peer)
 
         if (mFailed)
         {
-            WriteLog (lsWARNING, InboundLedger) << " failed local for " << mHash;
+            if (m_journal.warning) m_journal.warning <<
+                " failed local for " << mHash;
             return;
         }
     }
@@ -381,10 +450,11 @@ void InboundLedger::trigger (Peer::ref peer)
     tmGL.set_ledgerhash (mHash.begin (), mHash.size ());
 
     if (getTimeouts () != 0)
-    {
+    { // Be more aggressive if we've timed out at least once
         tmGL.set_querytype (protocol::qtINDIRECT);
 
-        if (!isProgress () && !mFailed && mByHash && (getTimeouts () > LEDGER_TIMEOUT_AGGRESSIVE))
+        if (!isProgress () && !mFailed && mByHash && (
+            getTimeouts () > ledgerBecomeAggressiveThreshold))
         {
             std::vector<neededHash_t> need = getNeededHashes ();
 
@@ -396,7 +466,8 @@ void InboundLedger::trigger (Peer::ref peer)
                 bool typeSet = false;
                 BOOST_FOREACH (neededHash_t & p, need)
                 {
-                    WriteLog (lsWARNING, InboundLedger) << "Want: " << p.second;
+                    if (m_journal.warning) m_journal.warning
+                        << "Want: " << p.second;
 
                     if (!typeSet)
                     {
@@ -410,14 +481,17 @@ void InboundLedger::trigger (Peer::ref peer)
                         io->set_hash (p.second.begin (), p.second.size ());
                     }
                 }
-                PackedMessage::pointer packet = boost::make_shared<PackedMessage> (tmBH, protocol::mtGET_OBJECTS);
+
+                PackedMessage::pointer packet (boost::make_shared <PackedMessage> (
+                    tmBH, protocol::mtGET_OBJECTS));
                 {
                     ScopedLockType sl (mLock, __FILE__, __LINE__);
 
-                    for (boost::unordered_map<uint64, int>::iterator it = mPeers.begin (), end = mPeers.end ();
+                    for (PeerSetMap::iterator it = mPeers.begin (), end = mPeers.end ();
                             it != end; ++it)
                     {
-                        Peer::pointer iPeer = getApp().getPeers ().getPeerById (it->first);
+                        Peer::pointer iPeer (
+                            getApp().getPeers ().findPeerByShortID (it->first));
 
                         if (iPeer)
                         {
@@ -426,11 +500,13 @@ void InboundLedger::trigger (Peer::ref peer)
                         }
                     }
                 }
-                WriteLog (lsINFO, InboundLedger) << "Attempting by hash fetch for ledger " << mHash;
+                if (m_journal.info) m_journal.info <<
+                    "Attempting by hash fetch for ledger " << mHash;
             }
             else
             {
-                WriteLog (lsINFO, InboundLedger) << "getNeededHashes says acquire is complete";
+                if (m_journal.info) m_journal.info <<
+                    "getNeededHashes says acquire is complete";
                 mHaveBase = true;
                 mHaveTransactions = true;
                 mHaveState = true;
@@ -439,16 +515,96 @@ void InboundLedger::trigger (Peer::ref peer)
         }
     }
 
+    // We can't do much without the base data because we don't know the
+    // state or transaction root hashes.
     if (!mHaveBase && !mFailed)
     {
         tmGL.set_itype (protocol::liBASE);
-        WriteLog (lsTRACE, InboundLedger) << "Sending base request to " << (peer ? "selected peer" : "all peers");
+        if (m_journal.trace) m_journal.trace <<
+            "Sending base request to " << (peer ? "selected peer" : "all peers");
         sendRequest (tmGL, peer);
         return;
     }
 
     if (mLedger)
         tmGL.set_ledgerseq (mLedger->getLedgerSeq ());
+
+    // Get the state data first because it's the most likely to be useful
+    // if we wind up abandoning this fetch.
+    if (mHaveBase && !mHaveState && !mFailed)
+    {
+        assert (mLedger);
+
+        if (mLedger->peekAccountStateMap ()->getHash ().isZero ())
+        {
+            // we need the root node
+            tmGL.set_itype (protocol::liAS_NODE);
+            * (tmGL.add_nodeids ()) = SHAMapNode ().getRawString ();
+            if (m_journal.trace) m_journal.trace <<
+                "Sending AS root request to " << (peer ? "selected peer" : "all peers");
+            sendRequest (tmGL, peer);
+            return;
+        }
+        else
+        {
+            std::vector<SHAMapNode> nodeIDs;
+            std::vector<uint256> nodeHashes;
+            // VFALCO Why 256? Make this a constant
+            nodeIDs.reserve (256);
+            nodeHashes.reserve (256);
+            AccountStateSF filter (mSeq);
+
+            // Release the lock while we process the large state map
+            sl.unlock();
+            mLedger->peekAccountStateMap ()->getMissingNodes (
+                nodeIDs, nodeHashes, 256, &filter);
+            sl.lock();
+
+            // Make sure nothing happened while we released the lock
+            if (!mFailed && !mComplete && !mHaveState)
+            {
+                if (nodeIDs.empty ())
+                {
+                    if (!mLedger->peekAccountStateMap ()->isValid ())
+                        mFailed = true;
+                    else
+                    {
+                        mHaveState = true;
+
+                        if (mHaveTransactions)
+                            mComplete = true;
+                    }
+                }
+                else
+                {
+                    // VFALCO Why 128? Make this a constant
+                    if (!mAggressive)
+                        filterNodes (nodeIDs, nodeHashes, mRecentASNodes,
+                            128, !isProgress ());
+
+                    if (!nodeIDs.empty ())
+                    {
+                        tmGL.set_itype (protocol::liAS_NODE);
+                        BOOST_FOREACH (SHAMapNode const& it, nodeIDs)
+                        {
+                            * (tmGL.add_nodeids ()) = it.getRawString ();
+                        }
+                        if (m_journal.trace) m_journal.trace <<
+                            "Sending AS node " << nodeIDs.size () <<
+                                " request to " << (
+                                    peer ? "selected peer" : "all peers");
+                        if (nodeIDs.size () == 1 && m_journal.trace) m_journal.trace <<
+                            "AS node: " << nodeIDs[0];
+                        sendRequest (tmGL, peer);
+                        return;
+                    }
+                    else
+                        if (m_journal.trace) m_journal.trace <<
+                            "All AS nodes filtered";
+                }
+            }
+        }
+    }
 
     if (mHaveBase && !mHaveTransactions && !mFailed)
     {
@@ -459,7 +615,9 @@ void InboundLedger::trigger (Peer::ref peer)
             // we need the root node
             tmGL.set_itype (protocol::liTX_NODE);
             * (tmGL.add_nodeids ()) = SHAMapNode ().getRawString ();
-            WriteLog (lsTRACE, InboundLedger) << "Sending TX root request to " << (peer ? "selected peer" : "all peers");
+            if (m_journal.trace) m_journal.trace <<
+                "Sending TX root request to " << (
+                    peer ? "selected peer" : "all peers");
             sendRequest (tmGL, peer);
             return;
         }
@@ -470,7 +628,8 @@ void InboundLedger::trigger (Peer::ref peer)
             nodeIDs.reserve (256);
             nodeHashes.reserve (256);
             TransactionStateSF filter (mSeq);
-            mLedger->peekTransactionMap ()->getMissingNodes (nodeIDs, nodeHashes, 256, &filter);
+            mLedger->peekTransactionMap ()->getMissingNodes (
+                nodeIDs, nodeHashes, 256, &filter);
 
             if (nodeIDs.empty ())
             {
@@ -487,7 +646,8 @@ void InboundLedger::trigger (Peer::ref peer)
             else
             {
                 if (!mAggressive)
-                    filterNodes (nodeIDs, nodeHashes, mRecentTXNodes, 128, !isProgress ());
+                    filterNodes (nodeIDs, nodeHashes, mRecentTXNodes,
+                        128, !isProgress ());
 
                 if (!nodeIDs.empty ())
                 {
@@ -496,82 +656,34 @@ void InboundLedger::trigger (Peer::ref peer)
                     {
                         * (tmGL.add_nodeids ()) = it.getRawString ();
                     }
-                    WriteLog (lsTRACE, InboundLedger) << "Sending TX node " << nodeIDs.size ()
-                                                      << " request to " << (peer ? "selected peer" : "all peers");
+                    if (m_journal.trace) m_journal.trace <<
+                        "Sending TX node " << nodeIDs.size () <<
+                        " request to " << (
+                            peer ? "selected peer" : "all peers");
                     sendRequest (tmGL, peer);
                     return;
                 }
-            }
-        }
-    }
-
-    if (mHaveBase && !mHaveState && !mFailed)
-    {
-        assert (mLedger);
-
-        if (mLedger->peekAccountStateMap ()->getHash ().isZero ())
-        {
-            // we need the root node
-            tmGL.set_itype (protocol::liAS_NODE);
-            * (tmGL.add_nodeids ()) = SHAMapNode ().getRawString ();
-            WriteLog (lsTRACE, InboundLedger) << "Sending AS root request to " << (peer ? "selected peer" : "all peers");
-            sendRequest (tmGL, peer);
-            return;
-        }
-        else
-        {
-            std::vector<SHAMapNode> nodeIDs;
-            std::vector<uint256> nodeHashes;
-            nodeIDs.reserve (256);
-            nodeHashes.reserve (256);
-            AccountStateSF filter (mSeq);
-            mLedger->peekAccountStateMap ()->getMissingNodes (nodeIDs, nodeHashes, 256, &filter);
-
-            if (nodeIDs.empty ())
-            {
-                if (!mLedger->peekAccountStateMap ()->isValid ())
-                    mFailed = true;
                 else
-                {
-                    mHaveState = true;
-
-                    if (mHaveTransactions)
-                        mComplete = true;
-                }
-            }
-            else
-            {
-                if (!mAggressive)
-                    filterNodes (nodeIDs, nodeHashes, mRecentASNodes, 128, !isProgress ());
-
-                if (!nodeIDs.empty ())
-                {
-                    tmGL.set_itype (protocol::liAS_NODE);
-                    BOOST_FOREACH (SHAMapNode const& it, nodeIDs)
-                    {
-                        * (tmGL.add_nodeids ()) = it.getRawString ();
-		    }
-                    WriteLog (lsTRACE, InboundLedger) << "Sending AS node " << nodeIDs.size ()
-                                                      << " request to " << (peer ? "selected peer" : "all peers");
-                    CondLog (nodeIDs.size () == 1, lsTRACE, InboundLedger) << "AS node: " << nodeIDs[0];
-                    sendRequest (tmGL, peer);
-                    return;
-                }
+                    if (m_journal.trace) m_journal.trace <<
+                        "All TX nodes filtered";
             }
         }
     }
 
     if (mComplete || mFailed)
     {
-        WriteLog (lsDEBUG, InboundLedger) << "Done:" << (mComplete ? " complete" : "") << (mFailed ? " failed " : " ")
-                                          << mLedger->getLedgerSeq ();
+        if (m_journal.debug) m_journal.debug <<
+            "Done:" << (mComplete ? " complete" : "") <<
+                (mFailed ? " failed " : " ") <<
+            mLedger->getLedgerSeq ();
         sl.unlock ();
         done ();
     }
 }
 
-void InboundLedger::filterNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<uint256>& nodeHashes,
-                                 std::set<SHAMapNode>& recentNodes, int max, bool aggressive)
+void InboundLedger::filterNodes (std::vector<SHAMapNode>& nodeIDs,
+    std::vector<uint256>& nodeHashes, std::set<SHAMapNode>& recentNodes,
+    int max, bool aggressive)
 {
     // ask for new nodes in preference to ones we've already asked for
     assert (nodeIDs.size () == nodeHashes.size ());
@@ -599,7 +711,8 @@ void InboundLedger::filterNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<u
         {
             nodeIDs.clear ();
             nodeHashes.clear ();
-            WriteLog (lsTRACE, InboundLedger) << "filterNodes: all are duplicates";
+            if (m_journal.trace) m_journal.trace <<
+                "filterNodes: all are duplicates";
             return;
         }
     }
@@ -621,7 +734,8 @@ void InboundLedger::filterNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<u
                 ++insertPoint;
             }
 
-        WriteLog (lsTRACE, InboundLedger) << "filterNodes " << nodeIDs.size () << " to " << insertPoint;
+        if (m_journal.trace) m_journal.trace <<
+            "filterNodes " << nodeIDs.size () << " to " << insertPoint;
         nodeIDs.resize (insertPoint);
         nodeHashes.resize (insertPoint);
     }
@@ -638,13 +752,15 @@ void InboundLedger::filterNodes (std::vector<SHAMapNode>& nodeIDs, std::vector<u
     }
 }
 
-bool InboundLedger::takeBase (const std::string& data) // data must not have hash prefix
+/** Take ledger base data
+    Call with a lock
+*/
+// data must not have hash prefix
+bool InboundLedger::takeBase (const std::string& data)
 {
     // Return value: true=normal, false=bad data
-#ifdef LA_DEBUG
-    WriteLog (lsTRACE, InboundLedger) << "got base acquiring ledger " << mHash;
-#endif
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
+    if (m_journal.trace) m_journal.trace <<
+        "got base acquiring ledger " << mHash;
 
     if (mComplete || mFailed || mHaveBase)
         return true;
@@ -653,8 +769,10 @@ bool InboundLedger::takeBase (const std::string& data) // data must not have has
 
     if (mLedger->getHash () != mHash)
     {
-        WriteLog (lsWARNING, InboundLedger) << "Acquire hash mismatch";
-        WriteLog (lsWARNING, InboundLedger) << mLedger->getHash () << "!=" << mHash;
+        if (m_journal.warning) m_journal.warning <<
+            "Acquire hash mismatch";
+        if (m_journal.warning) m_journal.warning <<
+            mLedger->getHash () << "!=" << mHash;
         mLedger.reset ();
 #ifdef TRUST_NETWORK
         assert (false);
@@ -667,30 +785,40 @@ bool InboundLedger::takeBase (const std::string& data) // data must not have has
     Serializer s (data.size () + 4);
     s.add32 (HashPrefix::ledgerMaster);
     s.addRaw (data);
-    getApp().getNodeStore ().store (hotLEDGER, mLedger->getLedgerSeq (), s.modData (), mHash);
+    getApp().getNodeStore ().store (hotLEDGER,
+        mLedger->getLedgerSeq (), s.modData (), mHash);
 
     progress ();
 
-    if (!mLedger->getTransHash ())
+    if (mLedger->getTransHash ().isZero ())
         mHaveTransactions = true;
 
-    if (!mLedger->getAccountHash ())
+    if (mLedger->getAccountHash ().isZero ())
         mHaveState = true;
 
     mLedger->setAcquiring ();
     return true;
 }
 
+/** Process TX data received from a peer
+    Call with a lock
+*/
 bool InboundLedger::takeTxNode (const std::list<SHAMapNode>& nodeIDs,
-                                const std::list< Blob >& data, SHAMapAddNode& san)
+    const std::list< Blob >& data, SHAMapAddNode& san)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
-
     if (!mHaveBase)
+    {
+        if (m_journal.warning) m_journal.warning <<
+            "TX node without base";
+        san.incInvalid();
         return false;
+    }
 
     if (mHaveTransactions || mFailed)
+    {
+        san.incDuplicate();
         return true;
+    }
 
     std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin ();
     std::list< Blob >::const_iterator nodeDatait = data.begin ();
@@ -700,13 +828,16 @@ bool InboundLedger::takeTxNode (const std::list<SHAMapNode>& nodeIDs,
     {
         if (nodeIDit->isRoot ())
         {
-            if (!san.combine (mLedger->peekTransactionMap ()->addRootNode (mLedger->getTransHash (), *nodeDatait,
-                              snfWIRE, &tFilter)))
+            san += mLedger->peekTransactionMap ()->addRootNode (
+                mLedger->getTransHash (), *nodeDatait, snfWIRE, &tFilter);
+            if (!san.isGood())
                 return false;
         }
         else
         {
-            if (!san.combine (mLedger->peekTransactionMap ()->addKnownNode (*nodeIDit, *nodeDatait, &tFilter)))
+            san +=  mLedger->peekTransactionMap ()->addKnownNode (
+                *nodeIDit, *nodeDatait, &tFilter);
+            if (!san.isGood())
                 return false;
         }
 
@@ -729,22 +860,32 @@ bool InboundLedger::takeTxNode (const std::list<SHAMapNode>& nodeIDs,
     return true;
 }
 
+/** Process AS data received from a peer
+    Call with a lock
+*/
 bool InboundLedger::takeAsNode (const std::list<SHAMapNode>& nodeIDs,
-                                const std::list< Blob >& data, SHAMapAddNode& san)
+    const std::list< Blob >& data, SHAMapAddNode& san)
 {
-    WriteLog (lsTRACE, InboundLedger) << "got ASdata (" << nodeIDs.size () << ") acquiring ledger " << mHash;
-    CondLog (nodeIDs.size () == 1, lsTRACE, InboundLedger) << "got AS node: " << nodeIDs.front ();
+    if (m_journal.trace) m_journal.trace <<
+        "got ASdata (" << nodeIDs.size () << ") acquiring ledger " << mHash;
+    if (nodeIDs.size () == 1 && m_journal.trace) m_journal.trace <<
+        "got AS node: " << nodeIDs.front ();
 
     ScopedLockType sl (mLock, __FILE__, __LINE__);
 
     if (!mHaveBase)
     {
-        WriteLog (lsWARNING, InboundLedger) << "Don't have ledger base";
+        if (m_journal.warning) m_journal.warning <<
+            "Don't have ledger base";
+        san.incInvalid();
         return false;
     }
 
     if (mHaveState || mFailed)
+    {
+        san.incDuplicate();
         return true;
+    }
 
     std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin ();
     std::list< Blob >::const_iterator nodeDatait = data.begin ();
@@ -754,17 +895,25 @@ bool InboundLedger::takeAsNode (const std::list<SHAMapNode>& nodeIDs,
     {
         if (nodeIDit->isRoot ())
         {
-            if (!san.combine (mLedger->peekAccountStateMap ()->addRootNode (mLedger->getAccountHash (),
-                              *nodeDatait, snfWIRE, &tFilter)))
+            san += mLedger->peekAccountStateMap ()->addRootNode (
+                mLedger->getAccountHash (), *nodeDatait, snfWIRE, &tFilter);
+            if (!san.isGood ())
             {
-                WriteLog (lsWARNING, InboundLedger) << "Bad ledger base";
+                if (m_journal.warning) m_journal.warning <<
+                    "Bad ledger base";
                 return false;
             }
         }
-        else if (!san.combine (mLedger->peekAccountStateMap ()->addKnownNode (*nodeIDit, *nodeDatait, &tFilter)))
+        else
         {
-            WriteLog (lsWARNING, InboundLedger) << "Unable to add AS node";
-            return false;
+            san += mLedger->peekAccountStateMap ()->addKnownNode (
+                *nodeIDit, *nodeDatait, &tFilter);
+            if (!san.isGood ())
+            {
+                if (m_journal.warning) m_journal.warning <<
+                    "Unable to add AS node";
+                return false;
+            }
         }
 
         ++nodeIDit;
@@ -786,34 +935,52 @@ bool InboundLedger::takeAsNode (const std::list<SHAMapNode>& nodeIDs,
     return true;
 }
 
+/** Process AS root node received from a peer
+    Call with a lock
+*/
 bool InboundLedger::takeAsRootNode (Blob const& data, SHAMapAddNode& san)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
-
     if (mFailed || mHaveState)
+    {
+        san.incDuplicate();
         return true;
+    }
 
     if (!mHaveBase)
+    {
+        assert(false);
+        san.incInvalid();
         return false;
+    }
 
     AccountStateSF tFilter (mLedger->getLedgerSeq ());
-    return san.combine (
-               mLedger->peekAccountStateMap ()->addRootNode (mLedger->getAccountHash (), data, snfWIRE, &tFilter));
+    san += mLedger->peekAccountStateMap ()->addRootNode (
+        mLedger->getAccountHash (), data, snfWIRE, &tFilter);
+    return san.isGood();
 }
 
+/** Process AS root node received from a peer
+    Call with a lock
+*/
 bool InboundLedger::takeTxRootNode (Blob const& data, SHAMapAddNode& san)
 {
-    ScopedLockType sl (mLock, __FILE__, __LINE__);
-
     if (mFailed || mHaveState)
+    {
+        san.incDuplicate();
         return true;
+    }
 
     if (!mHaveBase)
+    {
+        assert(false);
+        san.incInvalid();
         return false;
+    }
 
     TransactionStateSF tFilter (mLedger->getLedgerSeq ());
-    return san.combine (
-               mLedger->peekTransactionMap ()->addRootNode (mLedger->getTransHash (), data, snfWIRE, &tFilter));
+    san += mLedger->peekTransactionMap ()->addRootNode (
+        mLedger->getTransHash (), data, snfWIRE, &tFilter);
+    return san.isGood();
 }
 
 std::vector<InboundLedger::neededHash_t> InboundLedger::getNeededHashes ()
@@ -822,31 +989,222 @@ std::vector<InboundLedger::neededHash_t> InboundLedger::getNeededHashes ()
 
     if (!mHaveBase)
     {
-        ret.push_back (std::make_pair (protocol::TMGetObjectByHash::otLEDGER, mHash));
+        ret.push_back (std::make_pair (
+            protocol::TMGetObjectByHash::otLEDGER, mHash));
         return ret;
     }
 
     if (!mHaveState)
     {
         AccountStateSF filter (mLedger->getLedgerSeq ());
-        std::vector<uint256> v = mLedger->getNeededAccountStateHashes (4, &filter);
+        // VFALCO NOTE What's the number 4?
+        std::vector<uint256> v = mLedger->getNeededAccountStateHashes (
+            4, &filter);
         BOOST_FOREACH (uint256 const & h, v)
         {
-            ret.push_back (std::make_pair (protocol::TMGetObjectByHash::otSTATE_NODE, h));
+            ret.push_back (std::make_pair (
+                protocol::TMGetObjectByHash::otSTATE_NODE, h));
         }
     }
 
     if (!mHaveTransactions)
     {
         TransactionStateSF filter (mLedger->getLedgerSeq ());
-        std::vector<uint256> v = mLedger->getNeededTransactionHashes (4, &filter);
+        // VFALCO NOTE What's the number 4?
+        std::vector<uint256> v = mLedger->getNeededTransactionHashes (
+            4, &filter);
         BOOST_FOREACH (uint256 const & h, v)
         {
-            ret.push_back (std::make_pair (protocol::TMGetObjectByHash::otTRANSACTION_NODE, h));
+            ret.push_back (std::make_pair (
+                protocol::TMGetObjectByHash::otTRANSACTION_NODE, h));
         }
     }
 
     return ret;
+}
+
+/** Stash a TMLedgerData received from a peer for later processing
+    Returns 'true' if we need to dispatch
+*/
+// VFALCO TODO Why isn't the shared_ptr passed by const& ?
+bool InboundLedger::gotData (boost::weak_ptr<Peer> peer,
+    boost::shared_ptr<protocol::TMLedgerData> data)
+{
+    ScopedLockType sl (mReceivedDataLock, __FILE__, __LINE__);
+
+    mReceivedData.push_back (PeerDataPairType (peer, data));
+
+    if (mReceiveDispatched)
+        return false;
+
+    mReceiveDispatched = true;
+    return true;
+}
+
+/** Process one TMLedgerData
+    Returns the number of useful nodes
+*/
+// VFALCO NOTE, it is not necessary to pass the entire Peer,
+//              we can get away with just a Resource::Consumer endpoint.
+//
+//        TODO Change peer to Consumer
+//
+int InboundLedger::processData (boost::shared_ptr<Peer> peer,
+    protocol::TMLedgerData& packet)
+{
+    ScopedLockType sl (mLock, __FILE__, __LINE__);
+
+    if (packet.type () == protocol::liBASE)
+    {
+        if (packet.nodes_size () < 1)
+        {
+            if (m_journal.warning) m_journal.warning <<
+                "Got empty base data";
+            peer->charge (Resource::feeInvalidRequest);
+            return -1;
+        }
+
+        SHAMapAddNode san;
+
+        if (!mHaveBase)
+        {
+            if (takeBase (packet.nodes (0).nodedata ()))
+                san.incUseful ();
+            else
+            {
+                if (m_journal.warning) m_journal.warning <<
+                    "Got invalid base data";
+                peer->charge (Resource::feeInvalidRequest);
+                return -1;
+            }
+        }
+
+
+        if (!mHaveState && (packet.nodes ().size () > 1) &&
+            !takeAsRootNode (strCopy (packet.nodes (1).nodedata ()), san))
+        {
+            if (m_journal.warning) m_journal.warning <<
+                "Included ASbase invalid";
+        }
+
+        if (!mHaveTransactions && (packet.nodes ().size () > 2) &&
+            !takeTxRootNode (strCopy (packet.nodes (2).nodedata ()), san))
+        {
+            if (m_journal.warning) m_journal.warning <<
+                "Included TXbase invalid";
+        }
+
+        if (!san.isInvalid ())
+            progress ();
+        else
+            if (m_journal.debug) m_journal.debug <<
+                "Peer sends invalid base data";
+
+        return san.getGood ();
+    }
+
+    if ((packet.type () == protocol::liTX_NODE) || (
+        packet.type () == protocol::liAS_NODE))
+    {
+        std::list<SHAMapNode> nodeIDs;
+        std::list< Blob > nodeData;
+
+        if (packet.nodes ().size () == 0)
+        {
+            if (m_journal.info) m_journal.info <<
+                "Got response with no nodes";
+            peer->charge (Resource::feeInvalidRequest);
+            return -1;
+        }
+
+        for (int i = 0; i < packet.nodes ().size (); ++i)
+        {
+            const protocol::TMLedgerNode& node = packet.nodes (i);
+
+            if (!node.has_nodeid () || !node.has_nodedata ())
+            {
+                if (m_journal.warning) m_journal.warning <<
+                    "Got bad node";
+                peer->charge (Resource::feeInvalidRequest);
+                return -1;
+            }
+
+            nodeIDs.push_back (SHAMapNode (node.nodeid ().data (),
+                node.nodeid ().size ()));
+            nodeData.push_back (Blob (node.nodedata ().begin (),
+                node.nodedata ().end ()));
+        }
+
+        SHAMapAddNode ret;
+
+        if (packet.type () == protocol::liTX_NODE)
+        {
+            takeTxNode (nodeIDs, nodeData, ret);
+            if (m_journal.debug) m_journal.debug <<
+                "Ledger TX node stats: " << ret.get();
+        }
+        else
+        {
+            takeAsNode (nodeIDs, nodeData, ret);
+            if (m_journal.debug) m_journal.debug <<
+                "Ledger AS node stats: " << ret.get();
+        }
+
+        if (!ret.isInvalid ())
+            progress ();
+        else
+            if (m_journal.debug) m_journal.debug <<
+                "Peer sends invalid node data";
+
+        return ret.getGood ();
+    }
+
+    return -1;
+}
+
+/** Process pending TMLedgerData
+    Query the 'best' peer
+*/
+void InboundLedger::runData ()
+{
+    boost::shared_ptr<Peer> chosenPeer;
+    int chosenPeerCount = -1;
+
+    std::vector <PeerDataPairType> data;
+    do
+    {
+        data.clear();
+        {
+            ScopedLockType sl (mReceivedDataLock, __FILE__, __LINE__);
+
+            if (mReceivedData.empty ())
+            {
+                mReceiveDispatched = false;
+                break;
+            }
+            data.swap(mReceivedData);
+        }
+
+        // Select the peer that gives us the most nodes that are useful,
+        // breaking ties in favor of the peer that responded first.
+        BOOST_FOREACH (PeerDataPairType& entry, data)
+        {
+            Peer::pointer peer = entry.first.lock();
+            if (peer)
+            {
+                int count = processData (peer, *(entry.second));
+                if (count > chosenPeerCount)
+                {
+                    chosenPeer = peer;
+                    chosenPeerCount = count;
+                }
+            }
+        }
+
+    } while (1);
+
+    if (chosenPeer)
+        trigger (chosenPeer);
 }
 
 Json::Value InboundLedger::getJson (int)
@@ -882,7 +1240,9 @@ Json::Value InboundLedger::getJson (int)
     if (mHaveBase && !mHaveState)
     {
         Json::Value hv (Json::arrayValue);
-        std::vector<uint256> v = mLedger->getNeededAccountStateHashes (16, NULL);
+        // VFALCO Why 16?
+        std::vector<uint256> v = mLedger->getNeededAccountStateHashes (
+            16, NULL);
         BOOST_FOREACH (uint256 const & h, v)
         {
             hv.append (h.GetHex ());
@@ -893,7 +1253,9 @@ Json::Value InboundLedger::getJson (int)
     if (mHaveBase && !mHaveTransactions)
     {
         Json::Value hv (Json::arrayValue);
-        std::vector<uint256> v = mLedger->getNeededTransactionHashes (16, NULL);
+        // VFALCO Why 16?
+        std::vector<uint256> v = mLedger->getNeededTransactionHashes (
+            16, NULL);
         BOOST_FOREACH (uint256 const & h, v)
         {
             hv.append (h.GetHex ());

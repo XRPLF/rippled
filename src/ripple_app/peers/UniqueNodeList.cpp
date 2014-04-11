@@ -143,9 +143,6 @@ public:
 
         // Score again if needed.
         scoreNext (false);
-
-        // Scan may be dirty due to new ips.
-        getApp().getPeers ().scanRefresh ();
     }
 
     void doFetch ()
@@ -201,7 +198,7 @@ public:
         }
 
         // Promote source, if needed.
-        if (!bFound || iSourceScore (vsWhy) >= iSourceScore (snCurrent.vsSource))
+        if (!bFound /*|| iSourceScore (vsWhy) >= iSourceScore (snCurrent.vsSource)*/)
         {
             snCurrent.vsSource      = vsWhy;
             snCurrent.strComment    = strComment;
@@ -440,10 +437,11 @@ public:
     {
         int         iDomains    = 0;
         int         iNodes      = 0;
-        Database*   db          = getApp().getWalletDB ()->getDB ();
 
+#if 0
         {
             DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+            Database* db = getApp().getWalletDB ()->getDB ();
 
             if (db->executeSQL (str (boost::format ("SELECT COUNT(*) AS Count FROM SeedDomains WHERE Source='%s' OR Source='%c';") % vsManual % vsValidator)) && db->startIterRows ())
                 iDomains    = db->getInt ("Count");
@@ -455,6 +453,7 @@ public:
 
             db->endIterRows ();
         }
+#endif
 
         bool    bLoaded = iDomains || iNodes;
 
@@ -493,41 +492,6 @@ public:
                                               % getConfig ().VALIDATORS_SITE);
 
             nodeNetwork ();
-        }
-
-        // Take the set of entries in IPS and insert them into the
-        // "legacy endpoint" database so they will be served as IP addresses
-        // in the legacy mtPEERS message. Note that this is all replaced by
-        // the new PeerFinder.
-        //
-        if (!getConfig ().IPS.empty ())
-        {
-            std::vector<std::string>    vstrValues;
-
-            vstrValues.reserve (getConfig ().IPS.size ());
-
-            BOOST_FOREACH (const std::string & strPeer, getConfig ().IPS)
-            {
-                std::string     strIP;
-                int             iPort;
-
-                if (parseIpPort (strPeer, strIP, iPort))
-                {
-                    vstrValues.push_back (str (boost::format ("(%s,'%c')")
-                                               % sqlEscape (str (boost::format ("%s %d") % strIP % iPort))
-                                               % static_cast<char> (vsConfig)));
-                }
-            }
-
-            if (!vstrValues.empty ())
-            {
-                DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
-
-                db->executeSQL (str (boost::format ("REPLACE INTO PeerIps (IpPort,Source) VALUES %s;")
-                                     % strJoin (vstrValues.begin (), vstrValues.end (), ",")));
-            }
-
-            fetchDirty ();
         }
     }
 
@@ -1087,9 +1051,6 @@ private:
             mUNL.swap (usUNL);
         }
 
-        // Score IPs.
-        db->executeSQL ("UPDATE PeerIps SET Score = 0 WHERE Score != 0;");
-
         boost::unordered_map<std::string, int>  umValidators;
 
         if (!vsnNodes.empty ())
@@ -1140,31 +1101,6 @@ private:
                     iEntry++;
                 }
             }
-        }
-
-        // Apply validator scores to each IP.
-        if (umScore.size ())
-        {
-            std::vector<std::string>    vstrValues;
-
-            vstrValues.reserve (umScore.size ());
-
-            typedef boost::unordered_map<std::pair< std::string, int>, score>::value_type ipScoreType;
-            BOOST_FOREACH (ipScoreType & ipScore, umScore)
-            {
-                IPAndPortNumber      ipEndpoint  = ipScore.first;
-                std::string strIpPort   = str (boost::format ("%s %d") % ipEndpoint.first % ipEndpoint.second);
-                score       iPoints     = ipScore.second;
-
-                vstrValues.push_back (str (boost::format ("(%s,%d,'%c')")
-                                           % sqlEscape (strIpPort)
-                                           % iPoints
-                                           % vsValidator));
-            }
-
-            // Set scores for each IP.
-            db->executeSQL (str (boost::format ("REPLACE INTO PeerIps (IpPort,Score,Source) VALUES %s;")
-                                 % strJoin (vstrValues.begin (), vstrValues.end (), ",")));
         }
 
         db->executeSQL ("COMMIT;");
@@ -1338,15 +1274,15 @@ private:
         {
             ScopedFetchLockType sl (mFetchLock, __FILE__, __LINE__);
 
-            bFull   = mFetchActive == NODE_FETCH_JOBS;
+            bFull = (mFetchActive == NODE_FETCH_JOBS);
         }
 
         if (!bFull)
         {
             // Determine next scan.
-            std::string                 strDomain;
-            boost::posix_time::ptime    tpNext;
-            boost::posix_time::ptime    tpNow;
+            std::string strDomain;
+            boost::posix_time::ptime tpNext (boost::posix_time::min_date_time);
+            boost::posix_time::ptime tpNow (boost::posix_time::second_clock::universal_time ());
 
             DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
             Database* db = getApp().getWalletDB ()->getDB ();
@@ -1354,13 +1290,12 @@ private:
             if (db->executeSQL ("SELECT Domain,Next FROM SeedDomains INDEXED BY SeedDomainNext ORDER BY Next LIMIT 1;")
                     && db->startIterRows ())
             {
-                int         iNext   = db->getInt ("Next");
+                int iNext (db->getInt ("Next"));
 
                 tpNext  = ptFromSeconds (iNext);
-                tpNow   = boost::posix_time::second_clock::universal_time ();
 
                 WriteLog (lsTRACE, UniqueNodeList) << str (boost::format ("fetchNext: iNext=%s tpNext=%s tpNow=%s") % iNext % tpNext % tpNow);
-                strDomain   = db->getStrBinary ("Domain");
+                strDomain = db->getStrBinary ("Domain");
 
                 db->endIterRows ();
             }
@@ -1369,7 +1304,7 @@ private:
             {
                 ScopedFetchLockType sl (mFetchLock, __FILE__, __LINE__);
 
-                bFull   = mFetchActive == NODE_FETCH_JOBS;
+                bFull = (mFetchActive == NODE_FETCH_JOBS);
 
                 if (!bFull && tpNext <= tpNow)
                 {
@@ -1380,8 +1315,6 @@ private:
             if (strDomain.empty () || bFull)
             {
                 WriteLog (lsTRACE, UniqueNodeList) << str (boost::format ("fetchNext: strDomain=%s bFull=%d") % strDomain % bFull);
-
-                nothing ();
             }
             else if (tpNext > tpNow)
             {
@@ -1389,7 +1322,11 @@ private:
                 // Fetch needs to happen in the future.  Set a timer to wake us.
                 mtpFetchNext    = tpNext;
 
-                double const seconds = (tpNext - tpNow).seconds ();
+                double seconds = (tpNext - tpNow).seconds ();
+
+                // VFALCO check this.
+                if (seconds == 0)
+                    seconds = 1;
 
                 m_fetchTimer.setExpiration (seconds);
             }
@@ -1722,7 +1659,6 @@ private:
 
                     if (naValidator.setSeedGeneric (strRefered))
                     {
-
                         WriteLog (lsWARNING, UniqueNodeList) << str (boost::format ("Bad validator: domain or public key required: %s %s") % strRefered % strComment);
                     }
                     else if (naValidator.setNodePublic (strRefered))

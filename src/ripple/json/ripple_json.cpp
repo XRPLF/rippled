@@ -34,7 +34,7 @@
 #include "impl/json_batchallocator.h"
 #endif
 
-#include "beast/modules/beast_core/beast_core.h"
+#include "../beast/modules/beast_core/beast_core.h"
 
 #include "ripple_json.h"
 
@@ -47,3 +47,5 @@
 #include "impl/json_writer.cpp"
 
 #include "impl/Tests.cpp"
+
+#include "impl/JsonPropertyStream.cpp"

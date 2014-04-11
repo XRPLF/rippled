@@ -17,7 +17,10 @@
 */
 //==============================================================================
 
-TestPeerLogicProxyClient::TestPeerLogicProxyClient (Socket& socket)
+namespace beast {
+namespace asio {
+
+TestPeerLogicProxyClient::TestPeerLogicProxyClient (abstract_socket& socket)
     : TestPeerLogicSyncClient (socket)
 {
 }
@@ -33,3 +36,7 @@ void TestPeerLogicProxyClient::on_pre_handshake ()
 
     boost::asio::write (socket (), boost::asio::buffer (line), error ());
 }
+
+}
+}
+

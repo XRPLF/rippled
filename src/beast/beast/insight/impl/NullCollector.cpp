@@ -37,10 +37,6 @@ public:
     {
     }
 
-    void set_handler (HandlerType const&)
-    {
-    }
-
 private:
     NullCounterImpl& operator= (NullCounterImpl const&);
 };
@@ -50,7 +46,7 @@ private:
 class NullEventImpl : public EventImpl
 {
 public:
-    void notify (value_type)
+    void notify (value_type const&)
     {
     }
 
@@ -71,10 +67,6 @@ public:
     {
     }
 
-    void set_handler (HandlerType const&)
-    {
-    }
-
 private:
     NullGaugeImpl& operator= (NullGaugeImpl const&);
 };
@@ -85,10 +77,6 @@ class NullMeterImpl : public MeterImpl
 {
 public:
     void increment (value_type)
-    {
-    }
-
-    void set_handler (HandlerType const&)
     {
     }
 
@@ -112,27 +100,27 @@ public:
 
     Hook make_hook (HookImpl::HandlerType const&)
     {
-        return Hook (make_shared <detail::NullHookImpl> ());
+        return Hook (std::make_shared <detail::NullHookImpl> ());
     }
 
     Counter make_counter (std::string const&)
     {
-        return Counter (make_shared <detail::NullCounterImpl> ());
+        return Counter (std::make_shared <detail::NullCounterImpl> ());
     }
 
     Event make_event (std::string const&)
     {
-        return Event (make_shared <detail::NullEventImpl> ());
+        return Event (std::make_shared <detail::NullEventImpl> ());
     }
 
     Gauge make_gauge (std::string const&)
     {
-        return Gauge (make_shared <detail::NullGaugeImpl> ());
+        return Gauge (std::make_shared <detail::NullGaugeImpl> ());
     }
     
     Meter make_meter (std::string const&)
     {
-        return Meter (make_shared <detail::NullMeterImpl> ());
+        return Meter (std::make_shared <detail::NullMeterImpl> ());
     }
 };
 
@@ -140,9 +128,9 @@ public:
 
 //------------------------------------------------------------------------------
 
-shared_ptr <Collector> NullCollector::New ()
+std::shared_ptr <Collector> NullCollector::New ()
 {
-    return beast::make_shared <detail::NullCollectorImp> ();
+    return std::make_shared <detail::NullCollectorImp> ();
 }
 
 }

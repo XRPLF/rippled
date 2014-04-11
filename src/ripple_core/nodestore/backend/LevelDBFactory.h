@@ -20,34 +20,15 @@
 #ifndef RIPPLE_NODESTORE_LEVELDBFACTORY_H_INCLUDED
 #define RIPPLE_NODESTORE_LEVELDBFACTORY_H_INCLUDED
 
-namespace NodeStore
-{
+namespace ripple {
+namespace NodeStore {
 
 /** Factory to produce LevelDBFactory backends for the NodeStore.
-
     @see Database
 */
-class LevelDBFactory : public Factory
-{
-private:
-    LevelDBFactory ();
-    ~LevelDBFactory ();
+std::unique_ptr <Factory> make_LevelDBFactory ();
 
-public:
-    class BackendImp;
-
-    static LevelDBFactory* getInstance ();
-
-    String getName () const;
-
-    Backend* createInstance (size_t keyBytes,
-                             Parameters const& keyValues,
-                             Scheduler& scheduler);
-
-private:
-    void* m_lruCache;
-};
-
+}
 }
 
 #endif

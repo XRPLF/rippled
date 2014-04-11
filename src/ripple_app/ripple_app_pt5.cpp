@@ -22,14 +22,15 @@
 #include "ripple_app.h"
 #include "../ripple_net/ripple_net.h"
 
+#include "../ripple/common/seconds_clock.h"
 #include "../ripple/peerfinder/ripple_peerfinder.h"
 #include "../ripple/resource/ripple_resource.h"
 #include "../ripple/validators/ripple_validators.h"
+#include "../ripple/common/RippleSSLContext.h"
 
 #include <deque>
 
-#include "peers/NameResolver.h"
-#include "peers/NameResolver.cpp"
+#include "misc/ProofOfWork.h"
 
 namespace ripple {
 
@@ -37,13 +38,5 @@ namespace ripple {
 #include "ledger/AcceptedLedgerTx.cpp"
 #include "main/LocalCredentials.cpp"
 #include "misc/Validations.cpp"
-#include "tx/OfferCreateTransactor.cpp"
-#include "tx/WalletAddTransactor.cpp"
 #include "misc/FeeVote.cpp"
-#   include "misc/PowResult.h"
-#  include "misc/ProofOfWork.h"
-# include "misc/ProofOfWorkFactory.h"
-#include "peers/Peer.cpp"
-#include "peers/PackedMessage.cpp"
-#include "peers/Peers.cpp"
 }
