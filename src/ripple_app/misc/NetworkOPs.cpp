@@ -2568,11 +2568,14 @@ void NetworkOPsImp::pubAccountTransaction (Ledger::ref lpCurrent, const Accepted
             }
         }
     }
-    m_journal.info << boost::str (boost::format ("pubAccountTransaction: iProposed=%d iAccepted=%d") % iProposed % iAccepted);
+    m_journal.info << "pubAccountTransaction:" <<
+        " iProposed=" << iProposed <<
+        " iAccepted=" << iAccepted;
 
     if (!notify.empty ())
     {
-        Json::Value jvObj   = transJson (*alTx.getTxn (), alTx.getResult (), bAccepted, lpCurrent);
+        Json::Value jvObj = transJson (
+            *alTx.getTxn (), alTx.getResult (), bAccepted, lpCurrent);
 
         if (alTx.isApplied ())
             jvObj["meta"] = alTx.getMeta ()->getJson (0);
@@ -2600,7 +2603,8 @@ void NetworkOPsImp::subAccount (InfoSub::ref isrListener,
     // For the connection, monitor each account.
     BOOST_FOREACH (const RippleAddress & naAccountID, vnaAccountIDs)
     {
-        m_journal.trace << boost::str (boost::format ("subAccount: account: %d") % naAccountID.humanAccountID ());
+        m_journal.trace << "subAccount:"
+            " account: " << naAccountID.humanAccountID ();
 
         isrListener->insertSubAccountInfo (naAccountID, uLedgerIndex);
     }
@@ -2832,7 +2836,9 @@ InfoSub::pointer NetworkOPsImp::addRpcSub (const std::string& strUrl, InfoSub::r
 }
 
 #ifndef USE_NEW_BOOK_PAGE
-
+// NIKB FIXME this should be looked at. There's no reason why this shouldn't
+//            work, but it demonstrated poor performance.
+//
 // FIXME : support iLimit.
 void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTakerPaysCurrencyID, const uint160& uTakerPaysIssuerID, const uint160& uTakerGetsCurrencyID, const uint160& uTakerGetsIssuerID, const uint160& uTakerID, const bool bProof, const unsigned int iLimit, const Json::Value& jvMarker, Json::Value& jvResult)
 { // CAUTION: This is the old get book page logic
@@ -2843,11 +2849,22 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
     const uint256   uBookEnd    = Ledger::getQualityNext (uBookBase);
     uint256         uTipIndex   = uBookBase;
 
-    m_journal.trace << boost::str (boost::format ("getBookPage: uTakerPaysCurrencyID=%s uTakerPaysIssuerID=%s") % STAmount::createHumanCurrency (uTakerPaysCurrencyID) % RippleAddress::createHumanAccountID (uTakerPaysIssuerID));
-    m_journal.trace << boost::str (boost::format ("getBookPage: uTakerGetsCurrencyID=%s uTakerGetsIssuerID=%s") % STAmount::createHumanCurrency (uTakerGetsCurrencyID) % RippleAddress::createHumanAccountID (uTakerGetsIssuerID));
-    m_journal.trace << boost::str (boost::format ("getBookPage: uBookBase=%s") % uBookBase);
-    m_journal.trace << boost::str (boost::format ("getBookPage:  uBookEnd=%s") % uBookEnd);
-    m_journal.trace << boost::str (boost::format ("getBookPage: uTipIndex=%s") % uTipIndex);
+    if (m_journal.trace) 
+    {
+        m_journal.trace << "getBookPage:" <<
+            " uTakerPaysCurrencyID=" << 
+                STAmount::createHumanCurrency (uTakerPaysCurrencyID) <<
+            " uTakerPaysIssuerID=" <<
+                RippleAddress::createHumanAccountID (uTakerPaysIssuerID);
+        m_journal.trace << "getBookPage:" <<
+            " uTakerGetsCurrencyID=" << 
+                STAmount::createHumanCurrency (uTakerGetsCurrencyID) <<
+            " uTakerGetsIssuerID=" <<
+                RippleAddress::createHumanAccountID (uTakerGetsIssuerID);
+        m_journal.trace << "getBookPage: uBookBase=" << uBookBase;
+        m_journal.trace << "getBookPage: uBookEnd=" << uBookEnd;
+        m_journal.trace << "getBookPage: uTipIndex=" << uTipIndex;
+    }
 
     LedgerEntrySet  lesActive (lpLedger, tapNONE, true);
 
@@ -2888,8 +2905,8 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
 
                 lesActive.dirFirst (uTipIndex, sleOfferDir, uBookEntry, uOfferIndex);
 
-                m_journal.trace << boost::str (boost::format ("getBookPage:   uTipIndex=%s") % uTipIndex);
-                m_journal.trace << boost::str (boost::format ("getBookPage: uOfferIndex=%s") % uOfferIndex);
+                m_journal.trace << "getBookPage:   uTipIndex=" << uTipIndex;
+                m_journal.trace << "getBookPage: uOfferIndex=" << uOfferIndex;
             }
         }
 
@@ -2979,9 +2996,13 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
                     std::min (saTakerPays, STAmount::multiply (saTakerGetsFunded, saDirRate, saTakerPays)).setJson (jvOffer["taker_pays_funded"]);
                 }
 
-                STAmount    saOwnerPays     = (QUALITY_ONE == uOfferRate)
-                                              ? saTakerGetsFunded
-                                              : std::min (saOwnerFunds, STAmount::multiply (saTakerGetsFunded, STAmount (CURRENCY_ONE, ACCOUNT_ONE, uOfferRate, -9)));
+                STAmount saOwnerPays = (QUALITY_ONE == uOfferRate)
+                    ? saTakerGetsFunded
+                    : std::min (
+                        saOwnerFunds, 
+                        STAmount::multiply (
+                            saTakerGetsFunded,
+                            STAmount (CURRENCY_ONE, ACCOUNT_ONE, uOfferRate, -9)));
 
                 umBalance[uOfferOwnerID]    = saOwnerFunds - saOwnerPays;
 
@@ -2995,7 +3016,7 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
             else
             {
                 m_journal.warning << "Missing offer";
-	    }
+        }
 
             if (!lesActive.dirNext (uTipIndex, sleOfferDir, uBookEntry, uOfferIndex))
             {
@@ -3003,7 +3024,7 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
             }
             else
             {
-                m_journal.trace << boost::str (boost::format ("getBookPage: uOfferIndex=%s") % uOfferIndex);
+                m_journal.trace << "getBookPage: uOfferIndex=" << uOfferIndex;
             }
         }
     }

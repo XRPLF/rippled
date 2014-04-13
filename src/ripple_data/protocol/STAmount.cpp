@@ -105,10 +105,7 @@ bool STAmount::bSetJson (const Json::Value& jvSource)
     }
     catch (const std::exception& e)
     {
-        WriteLog (lsINFO, STAmount)
-                << boost::str (boost::format ("bSetJson(): caught: %s")
-                               % e.what ());
-
+        WriteLog (lsINFO, STAmount) << "bSetJson(): caught: " << e.what ();
         return false;
     }
 }
@@ -120,11 +117,11 @@ STAmount::STAmount (SField::ref n, const Json::Value& v)
 
     if (v.isObject ())
     {
-        WriteLog (lsTRACE, STAmount)
-                << boost::str (boost::format ("value='%s', currency='%s', issuer='%s'")
-                               % v["value"].asString ()
-                               % v["currency"].asString ()
-                               % v["issuer"].asString ());
+        WriteLog (lsTRACE, STAmount) <<
+            "value='" << v["value"].asString () <<
+            "', currency='" << v["currency"].asString () <<
+            "', issuer='" << v["issuer"].asString () <<
+            "')";
 
         value       = v["value"];
         currency    = v["currency"];
@@ -222,51 +219,58 @@ STAmount::STAmount (SField::ref n, const Json::Value& v)
 
 std::string STAmount::createHumanCurrency (const uint160& uCurrency)
 {
-    std::string sCurrency;
-    static uint160 sFiatBits("FFFFFFFFFFFFFFFFFFFFFFFF0000000000000000");
+    static uint160 const sFiatBits("FFFFFFFFFFFFFFFFFFFFFFFF0000000000000000");
 
     if (uCurrency.isZero ())
     {
         return SYSTEM_CURRENCY_CODE;
     }
-    else if (CURRENCY_ONE == uCurrency)
+
+    if (CURRENCY_ONE == uCurrency)
     {
         return "1";
     }
-    else if (CURRENCY_BAD == uCurrency)
+
+    if (CURRENCY_BAD == uCurrency)
     {
         return uCurrency.ToString ();
     }
-    else if ((uCurrency & sFiatBits).isZero ())
+
+    if ((uCurrency & sFiatBits).isZero ())
     {
-        Serializer  s (160 / 8);
+        Serializer s (160 / 8);
 
         s.add160 (uCurrency);
 
         SerializerIterator  sit (s);
 
-        Blob    vucZeros    = sit.getRaw (96 / 8);
-        Blob    vucIso      = sit.getRaw (24 / 8);
-        Blob    vucVersion  = sit.getRaw (16 / 8);
-        Blob    vucReserved = sit.getRaw (24 / 8);
+        Blob const vucZeros    (sit.getRaw (96 / 8));
+        Blob const vucIso      (sit.getRaw (24 / 8));
+        Blob const vucVersion  (sit.getRaw (16 / 8));
+        Blob const vucReserved (sit.getRaw (24 / 8));
 
-        bool    bIso    =    isZeroFilled (vucZeros.begin (), vucZeros.size ())            // Leading zeros
-                          && isZeroFilled (vucVersion.begin (), vucVersion.size ())   // Zero version
-                          && isZeroFilled (vucReserved.begin (), vucReserved.size ()); // Reserved is zero.
+        auto is_zero_filled = [](Blob const& blob)
+        {
+            auto ret = std::find_if (blob.cbegin (), blob.cend (),
+                [](unsigned char c) 
+                { 
+                    return c != 0; 
+                });
+
+            return ret == blob.cend ();
+        };
+
+        bool bIso = is_zero_filled (vucZeros)        // Leading zeros
+                    && is_zero_filled (vucVersion)   // Zero version
+                    && is_zero_filled (vucReserved); // Reserved is zero.
 
         if (bIso)
-        {
-            sCurrency.assign (vucIso.begin (), vucIso.end ());
-        }
-        else
-        {
-            sCurrency   = uCurrency.ToString ();
-        }
+            return std::string (vucIso.begin (), vucIso.end ());
+        
+        return uCurrency.ToString ();
     }
-    else
-       sCurrency = uCurrency.GetHex ();
 
-    return sCurrency;
+    return uCurrency.GetHex ();
 }
 
 bool STAmount::setValue (const std::string& sAmount)
@@ -1081,30 +1085,22 @@ STAmount STAmount::deserialize (SerializerIterator& it)
 
 std::string STAmount::getFullText () const
 {
-    static const boost::format nativeFormat ("%s/" SYSTEM_CURRENCY_CODE);
-    static const boost::format noIssuer ("%s/%s/0");
-    static const boost::format issuerOne ("%s/%s/1");
-    static const boost::format normal ("%s/%s/%s");
+    std::string ret;
 
-    if (mIsNative)
+    ret.reserve(64);
+    ret = getText () + "/" + getHumanCurrency ();
+
+    if (!mIsNative)
     {
-        return str (boost::format (nativeFormat) % getText ());
+        if (!mIssuer)
+            ret += "/0";
+        else if (mIssuer == ACCOUNT_ONE)
+            ret += "/1";
+        else
+            ret += RippleAddress::createHumanAccountID (mIssuer);
     }
-    else if (!mIssuer)
-    {
-        return str (boost::format (noIssuer) % getText () % getHumanCurrency ());
-    }
-    else if (mIssuer == ACCOUNT_ONE)
-    {
-        return str (boost::format (issuerOne) % getText () % getHumanCurrency ());
-    }
-    else
-    {
-        return str (boost::format (normal)
-                    % getText ()
-                    % getHumanCurrency ()
-                    % RippleAddress::createHumanAccountID (mIssuer));
-    }
+
+    return ret;
 }
 
 STAmount STAmount::getRound () const

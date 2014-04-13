@@ -330,9 +330,9 @@ AccountState::pointer Ledger::getAccountState (const RippleAddress& accountID)
 
     if (!sle)
     {
-        WriteLog (lsDEBUG, Ledger) << boost::str (boost::format ("Ledger:getAccountState: not found: %s: %s")
-                                   % accountID.humanAccountID ()
-                                   % Ledger::getAccountRootIndex (accountID).GetHex ());
+        WriteLog (lsDEBUG, Ledger) << "Ledger:getAccountState:" <<
+            " not found: " << accountID.humanAccountID () <<
+            ": " << Ledger::getAccountRootIndex (accountID).GetHex ();
 
         return AccountState::pointer ();
     }
@@ -1677,12 +1677,12 @@ uint256 Ledger::getBookBase (const uint160& uTakerPaysCurrency, const uint160& u
 
     uint256 uBaseIndex  = getQualityIndex (s.getSHA512Half ()); // Return with quality 0.
 
-    WriteLog (lsTRACE, Ledger) << boost::str (boost::format ("getBookBase(%s,%s,%s,%s) = %s")
-                               % STAmount::createHumanCurrency (uTakerPaysCurrency)
-                               % RippleAddress::createHumanAccountID (uTakerPaysIssuerID)
-                               % STAmount::createHumanCurrency (uTakerGetsCurrency)
-                               % RippleAddress::createHumanAccountID (uTakerGetsIssuerID)
-                               % uBaseIndex.ToString ());
+    WriteLog (lsTRACE, Ledger) << "getBookBase" <<
+        "(" << STAmount::createHumanCurrency (uTakerPaysCurrency) <<
+        "," << RippleAddress::createHumanAccountID (uTakerPaysIssuerID) <<
+        "," << STAmount::createHumanCurrency (uTakerGetsCurrency) <<
+        "," << RippleAddress::createHumanAccountID (uTakerGetsIssuerID) <<
+        ") = " << uBaseIndex.ToString ();
 
     assert (isValidBook (uTakerPaysCurrency, uTakerPaysIssuerID, uTakerGetsCurrency, uTakerGetsIssuerID));
 

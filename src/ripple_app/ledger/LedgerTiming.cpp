@@ -44,9 +44,9 @@ bool ContinuousLedgerTiming::shouldClose (
             (currentMSeconds < -1000) || (currentMSeconds > 600000))
     {
         WriteLog (lsWARNING, LedgerTiming) <<
-                                              boost::str (boost::format ("CLC::shouldClose range Trans=%s, Prop: %d/%d, Secs: %d (last:%d)")
-                                                      % (anyTransactions ? "yes" : "no") % previousProposers % proposersClosed
-                                                      % currentMSeconds % previousMSeconds);
+            "CLC::shouldClose range Trans=" << (anyTransactions ? "yes" : "no") <<
+            " Prop: " << previousProposers << "/" << proposersClosed <<
+            " Secs: " << currentMSeconds << " (last: " << previousMSeconds << ")";
         return true;
     }
 
@@ -55,8 +55,9 @@ bool ContinuousLedgerTiming::shouldClose (
         // no transactions so far this interval
         if (proposersClosed > (previousProposers / 4)) // did we miss a transaction?
         {
-            WriteLog (lsTRACE, LedgerTiming) << "no transactions, many proposers: now (" << proposersClosed << " closed, "
-                                                << previousProposers << " before)";
+            WriteLog (lsTRACE, LedgerTiming) << 
+                "no transactions, many proposers: now (" << proposersClosed <<
+                " closed, " << previousProposers << " before)";
             return true;
         }
 
@@ -78,13 +79,15 @@ bool ContinuousLedgerTiming::shouldClose (
 
     if ((openMSeconds < LEDGER_MIN_CLOSE) && ((proposersClosed + proposersValidated) < (previousProposers / 2 )))
     {
-        WriteLog (lsDEBUG, LedgerTiming) << "Must wait minimum time before closing";
+        WriteLog (lsDEBUG, LedgerTiming) <<
+            "Must wait minimum time before closing";
         return false;
     }
 
     if ((currentMSeconds < previousMSeconds) && ((proposersClosed + proposersValidated) < previousProposers))
     {
-        WriteLog (lsDEBUG, LedgerTiming) << "We are waiting for more closes/validations";
+        WriteLog (lsDEBUG, LedgerTiming) <<
+            "We are waiting for more closes/validations";
         return false;
     }
 
@@ -103,9 +106,12 @@ bool ContinuousLedgerTiming::haveConsensus (
     bool forReal,               // deciding whether to stop consensus process
     bool& failed)               // we can't reach a consensus
 {
-    WriteLog (lsTRACE, LedgerTiming) << boost::str (boost::format ("CLC::haveConsensus: prop=%d/%d agree=%d validated=%d time=%d/%d%s") %
-                                        currentProposers % previousProposers % currentAgree % currentFinished % currentAgreeTime % previousAgreeTime %
-                                        (forReal ? "" : "X"));
+    WriteLog (lsTRACE, LedgerTiming) <<
+        "CLC::haveConsensus: prop=" << currentProposers <<
+        "/" << previousProposers <<
+        " agree=" << currentAgree << " validated=" << currentFinished <<
+        " time=" << currentAgreeTime <<  "/" << previousAgreeTime <<
+        (forReal ? "" : "X");
 
     if (currentAgreeTime <= LEDGER_MIN_CONSENSUS)
         return false;
@@ -115,7 +121,8 @@ bool ContinuousLedgerTiming::haveConsensus (
         // Less than 3/4 of the last ledger's proposers are present, we may need more time
         if (currentAgreeTime < (previousAgreeTime + LEDGER_MIN_CONSENSUS))
         {
-            CondLog (forReal, lsTRACE, LedgerTiming) << "too fast, not enough proposers";
+            CondLog (forReal, lsTRACE, LedgerTiming) <<
+                "too fast, not enough proposers";
             return false;
         }
     }
@@ -131,7 +138,8 @@ bool ContinuousLedgerTiming::haveConsensus (
     // If 80% of the nodes on your UNL have moved on, you should declare consensus
     if (((currentFinished * 100) / (currentProposers + 1)) > 80)
     {
-        CondLog (forReal, lsWARNING, LedgerTiming) << "We see no consensus, but 80% of nodes have moved on";
+        CondLog (forReal, lsWARNING, LedgerTiming) <<
+            "We see no consensus, but 80% of nodes have moved on";
         failed = true;
         return true;
     }

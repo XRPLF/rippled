@@ -128,13 +128,12 @@ bool Pathfinder::findPaths (int iLevel, const unsigned int iMaxPaths, STPathSet&
 { // pathsOut contains only non-default paths without source or destiation
 // On input, pathsOut contains any paths you want to ensure are included if still good
 
-    WriteLog (lsTRACE, Pathfinder) << boost::str (boost::format ("findPaths> mSrcAccountID=%s mDstAccountID=%s mDstAmount=%s mSrcCurrencyID=%s mSrcIssuerID=%s")
-                                   % RippleAddress::createHumanAccountID (mSrcAccountID)
-                                   % RippleAddress::createHumanAccountID (mDstAccountID)
-                                   % mDstAmount.getFullText ()
-                                   % STAmount::createHumanCurrency (mSrcCurrencyID)
-                                   % RippleAddress::createHumanAccountID (mSrcIssuerID)
-                                                 );
+    WriteLog (lsTRACE, Pathfinder) << "findPaths>"
+        " mSrcAccountID=" << RippleAddress::createHumanAccountID (mSrcAccountID) <<
+        " mDstAccountID=" << RippleAddress::createHumanAccountID (mDstAccountID) <<
+        " mDstAmount=" << mDstAmount.getFullText () <<
+        " mSrcCurrencyID=" << STAmount::createHumanCurrency (mSrcCurrencyID) <<
+        " mSrcIssuerID=" << RippleAddress::createHumanAccountID (mSrcIssuerID);
 
     if (!mLedger)
     {
@@ -319,28 +318,27 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
 
         if (tesSUCCESS != terResult)
         {
-            WriteLog (lsDEBUG, Pathfinder)
-                    << boost::str (boost::format ("findPaths: dropping: %s: %s")
-                                   % transToken (terResult)
-                                   % spCurrent.getJson (0));
+            WriteLog (lsDEBUG, Pathfinder) <<
+                "findPaths: dropping: " << transToken (terResult) <<
+                ": " << spCurrent.getJson (0);
         }
         else if (saDstAmountAct < saMinDstAmount)
         {
-            WriteLog (lsDEBUG, Pathfinder)
-                    << boost::str (boost::format ("findPaths: dropping: outputs %s: %s")
-                                   % saDstAmountAct
-                                   % spCurrent.getJson (0));
+            WriteLog (lsDEBUG, Pathfinder) <<
+                "findPaths: dropping: outputs " << saDstAmountAct <<
+                ": %s" << spCurrent.getJson (0);
         }
         else
         {
-            std::uint64_t  uQuality = STAmount::getRate (saDstAmountAct, saMaxAmountAct);
+            std::uint64_t  uQuality (
+                STAmount::getRate (saDstAmountAct, saMaxAmountAct));
 
-            WriteLog (lsDEBUG, Pathfinder)
-                    << boost::str (boost::format ("findPaths: quality: %d: %s")
-                                   % uQuality
-                                   % spCurrent.getJson (0));
+            WriteLog (lsDEBUG, Pathfinder) <<
+                "findPaths: quality: " << uQuality <<
+                ": " << spCurrent.getJson (0);
 
-            vMap.push_back (path_LQ_t (uQuality, spCurrent.mPath.size (), saDstAmountAct, i));
+            vMap.push_back (path_LQ_t (
+                uQuality, spCurrent.mPath.size (), saDstAmountAct, i));
         }
     }
 
@@ -367,24 +365,30 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
             {
                 // found an extra path that can move the whole amount
                 extraPath = mCompletePaths[lqt.get<3>()];
-                WriteLog (lsDEBUG, Pathfinder) << "Found extra full path: " << extraPath.getJson(0);
+                WriteLog (lsDEBUG, Pathfinder) <<
+                    "Found extra full path: " << extraPath.getJson(0);
             }
             else
-                WriteLog (lsDEBUG, Pathfinder) << "Skipping a non-filling path: " << mCompletePaths[lqt.get<3> ()].getJson (0);
+                WriteLog (lsDEBUG, Pathfinder) <<
+                    "Skipping a non-filling path: " <<
+                    mCompletePaths[lqt.get<3> ()].getJson (0);
         }
 
         if (remaining > zero)
         {
-            WriteLog (lsINFO, Pathfinder) << "Paths could not send " << remaining << " of " << mDstAmount;
+            WriteLog (lsINFO, Pathfinder) <<
+                "Paths could not send " << remaining << " of " << mDstAmount;
         }
         else
         {
-            WriteLog (lsDEBUG, Pathfinder) << boost::str (boost::format ("findPaths: RESULTS: %s") % spsDst.getJson (0));
+            WriteLog (lsDEBUG, Pathfinder) <<
+                "findPaths: RESULTS: " << spsDst.getJson (0);
         }
     }
     else
     {
-        WriteLog (lsDEBUG, Pathfinder) << boost::str (boost::format ("findPaths: RESULTS: non-defaults filtered away"));
+        WriteLog (lsDEBUG, Pathfinder) <<
+            "findPaths: RESULTS: non-defaults filtered away";
     }
 
     return spsDst;

@@ -781,16 +781,6 @@ public:
     static void canonicalizeRound (bool isNative, std::uint64_t& value, int& offset, bool roundUp);
 
 private:
-    template <class Iterator>
-    static bool isZeroFilled (Iterator first, int iSize)
-    {
-        while (iSize && !*first++)
-            --iSize;
-
-        return !iSize;
-    }
-
-private:
     uint160 mCurrency;      // Compared by ==. Always update mIsNative.
     uint160 mIssuer;        // Not compared by ==. 0 for XRP.
 
