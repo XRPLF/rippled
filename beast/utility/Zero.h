@@ -22,6 +22,9 @@
 
 #include "../config/CompilerConfig.h"
 
+// VS2013 SP1 fails with decltype return
+#define BEAST_NO_ZERO_AUTO_RETURN 1
+
 namespace beast {
 
 /** Zero allows classes to offer efficient comparisons to zero.
@@ -39,102 +42,122 @@ namespace beast {
     returns a positive number, 0, or a negative; or there needs to be a signum
     function which resolves in the namespace which takes an instance of T and
     returns a positive, zero or negative number.
- */
+*/
 
-struct Zero {};
+struct Zero
+{
+};
 
 namespace {
-
 static BEAST_CONSTEXPR Zero zero{};
+}
 
-}  // namespace
-
-/** The default implementation of signum calls the method on the class.
-
-    Calls to signum must be made from a namespace that does not include
-    overloads of the function.
- */
+/** Default implementation of signum calls the method on the class. */
 template <typename T>
-auto signum(T const& t) -> decltype(t.signum()) {
+#if BEAST_NO_ZERO_AUTO_RETURN
+int signum(T const& t)
+#else
+auto signum(T const& t) -> decltype(t.signum())
+#endif
+{
     return t.signum();
 }
 
 namespace detail {
 namespace zero_helper {
 
+// For argument dependent lookup to function properly, calls to signum must
+// be made from a namespace that does not include overloads of the function..
 template <class T>
-auto call_signum (T const& t) -> decltype(signum(t)) {
+#if BEAST_NO_ZERO_AUTO_RETURN
+int call_signum (T const& t)
+#else
+auto call_signum(T const& t) -> decltype(t.signum())
+#endif
+{
     return signum(t);
 }
 
 } // zero_helper
 } // detail
 
-/** Handle operators where T is on the left side using signum. */
+// Handle operators where T is on the left side using signum.
+
 template <typename T>
-bool operator==(T const& t, Zero) {
+bool operator==(T const& t, Zero)
+{
     return detail::zero_helper::call_signum(t) == 0;
 }
 
 template <typename T>
-bool operator!=(T const& t, Zero) {
+bool operator!=(T const& t, Zero)
+{
     return detail::zero_helper::call_signum(t) != 0;
 }
 
 template <typename T>
-bool operator>(T const& t, Zero) {
-    return detail::zero_helper::call_signum(t) > 0;
-}
-
-template <typename T>
-bool operator>=(T const& t, Zero) {
-    return detail::zero_helper::call_signum(t) >= 0;
-}
-
-template <typename T>
-bool operator<(T const& t, Zero) {
+bool operator<(T const& t, Zero)
+{
     return detail::zero_helper::call_signum(t) < 0;
 }
 
 template <typename T>
-bool operator<=(T const& t, Zero) {
+bool operator>(T const& t, Zero)
+{
+    return detail::zero_helper::call_signum(t) > 0;
+}
+
+template <typename T>
+bool operator>=(T const& t, Zero)
+{
+    return detail::zero_helper::call_signum(t) >= 0;
+}
+
+template <typename T>
+bool operator<=(T const& t, Zero)
+{
     return detail::zero_helper::call_signum(t) <= 0;
 }
 
+// Handle operators where T is on the right side by
+// reversing the operation, so that T is on the left side.
 
-/** Handle operators where T is on the right side by reversing the operation,
-    so that T is on the left side.
- */
 template <typename T>
-bool operator==(Zero, T const& t) {
+bool operator==(Zero, T const& t)
+{
     return t == zero;
 }
 
 template <typename T>
-bool operator!=(Zero, T const& t) {
+bool operator!=(Zero, T const& t)
+{
     return t != zero;
 }
 
 template <typename T>
-bool operator>(Zero, T const& t) {
-    return t < zero;
-}
-
-template <typename T>
-bool operator>=(Zero, T const& t) {
-    return t <= zero;
-}
-
-template <typename T>
-bool operator<(Zero, T const& t) {
+bool operator<(Zero, T const& t)
+{
     return t > zero;
 }
 
 template <typename T>
-bool operator<=(Zero, T const& t) {
+bool operator>(Zero, T const& t)
+{
+    return t < zero;
+}
+
+template <typename T>
+bool operator>=(Zero, T const& t)
+{
+    return t <= zero;
+}
+
+template <typename T>
+bool operator<=(Zero, T const& t)
+{
     return t >= zero;
 }
 
-}  // beast
+} // beast
 
 #endif

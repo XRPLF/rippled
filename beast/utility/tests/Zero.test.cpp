@@ -25,14 +25,20 @@ namespace beast {
 
 struct adl_tester {};
 
-int signum (adl_tester) { return 0; }
+int signum (adl_tester)
+{
+    return 0;
+}
 
 
 namespace detail {
 
 struct adl_tester2 {};
 
-int signum (adl_tester2) { return 0; }
+int signum (adl_tester2)
+{
+    return 0;
+}
 
 }  // detail
 

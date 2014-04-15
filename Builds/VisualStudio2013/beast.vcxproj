@@ -253,6 +253,7 @@
     <ClInclude Include="..\..\beast\utility\PropertyStream.h" />
     <ClInclude Include="..\..\beast\utility\StaticObject.h" />
     <ClInclude Include="..\..\beast\utility\type_name.h" />
+    <ClInclude Include="..\..\beast\utility\zero.h" />
     <ClInclude Include="..\..\beast\Version.h" />
     <ClInclude Include="..\..\modules\beast_asio\async\AsyncObject.h" />
     <ClInclude Include="..\..\modules\beast_asio\basics\FixedInputBuffer.h" />
@@ -767,7 +768,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\beast\utility\tests\hardened_hash.test.cpp">
+    <ClCompile Include="..\..\beast\utility\tests\Zero.test.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
