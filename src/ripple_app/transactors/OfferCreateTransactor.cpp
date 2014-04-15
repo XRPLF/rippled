@@ -731,10 +731,10 @@ TER OfferCreateTransactor::doApply ()
         "OfferCreate> " << mTxn.getJson (0);
 
     std::uint32_t const uTxFlags = mTxn.getFlags ();
-    bool const bPassive = isSetBit (uTxFlags, tfPassive);
-    bool const bImmediateOrCancel = isSetBit (uTxFlags, tfImmediateOrCancel);
-    bool const bFillOrKill = isSetBit (uTxFlags, tfFillOrKill);
-    bool const bSell = isSetBit (uTxFlags, tfSell);
+    bool const bPassive = is_bit_set (uTxFlags, tfPassive);
+    bool const bImmediateOrCancel = is_bit_set (uTxFlags, tfImmediateOrCancel);
+    bool const bFillOrKill = is_bit_set (uTxFlags, tfFillOrKill);
+    bool const bSell = is_bit_set (uTxFlags, tfSell);
     STAmount saTakerPays = mTxn.getFieldAmount (sfTakerPays);
     STAmount saTakerGets = mTxn.getFieldAmount (sfTakerGets);
 
@@ -906,9 +906,9 @@ TER OfferCreateTransactor::doApply ()
                 "delay: can't receive IOUs from non-existent issuer: " <<
                 RippleAddress::createHumanAccountID (uPaysIssuerID);
 
-            terResult   = isSetBit (mParams, tapRETRY) ? terNO_ACCOUNT : tecNO_ISSUER;
+            terResult   = is_bit_set (mParams, tapRETRY) ? terNO_ACCOUNT : tecNO_ISSUER;
         }
-        else if (isSetBit (sleTakerPays->getFieldU32 (sfFlags), lsfRequireAuth))
+        else if (is_bit_set (sleTakerPays->getFieldU32 (sfFlags), lsfRequireAuth))
         {
             SLE::pointer sleRippleState (mEngine->entryCache (
                 ltRIPPLE_STATE,
@@ -923,16 +923,16 @@ TER OfferCreateTransactor::doApply ()
 
             if (!sleRippleState)
             {
-                terResult   = isSetBit (mParams, tapRETRY)
+                terResult   = is_bit_set (mParams, tapRETRY)
                     ? terNO_LINE
                     : tecNO_LINE;
             }
-            else if (!isSetBit (sleRippleState->getFieldU32 (sfFlags), (canonical_gt ? lsfHighAuth : lsfLowAuth)))
+            else if (!is_bit_set (sleRippleState->getFieldU32 (sfFlags), (canonical_gt ? lsfHighAuth : lsfLowAuth)))
             {
                 m_journal.debug <<
                     "delay: can't receive IOUs from issuer without auth.";
 
-                terResult   = isSetBit (mParams, tapRETRY) ? terNO_AUTH : tecNO_AUTH;
+                terResult   = is_bit_set (mParams, tapRETRY) ? terNO_AUTH : tecNO_AUTH;
             }
         }
     }
@@ -940,7 +940,7 @@ TER OfferCreateTransactor::doApply ()
     STAmount        saPaid;
     STAmount        saGot;
     bool            bUnfunded   = false;
-    const bool      bOpenLedger = isSetBit (mParams, tapOPEN_LEDGER);
+    const bool      bOpenLedger = is_bit_set (mParams, tapOPEN_LEDGER);
 
     if ((tesSUCCESS == terResult) && !bExpired)
     {

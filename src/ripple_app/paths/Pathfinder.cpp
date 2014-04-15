@@ -588,7 +588,7 @@ bool Pathfinder::isNoRipple (const uint160& setByID, const uint160& setOnID, con
 {
     SLE::pointer sleRipple = mLedger->getSLEi (Ledger::getRippleStateIndex (setByID, setOnID, currencyID));
     return sleRipple &&
-        isSetBit (sleRipple->getFieldU32 (sfFlags), (setByID > setOnID) ? lsfHighNoRipple : lsfLowNoRipple);
+        is_bit_set (sleRipple->getFieldU32 (sfFlags), (setByID > setOnID) ? lsfHighNoRipple : lsfLowNoRipple);
 }
 
 // Does this path end on an account-to-account link whose last account
@@ -601,7 +601,7 @@ bool Pathfinder::isNoRippleOut (const STPath& currentPath)
 
     // Last link must be an account
     STPathElement const& endElement = *(currentPath.end() - 1);
-    if (!isSetBit(endElement.getNodeType(), STPathElement::typeAccount))
+    if (!is_bit_set(endElement.getNodeType(), STPathElement::typeAccount))
         return false;
 
     // What account are we leaving?
@@ -640,7 +640,7 @@ void Pathfinder::addLink(
             SLE::pointer sleEnd = mLedger->getSLEi(Ledger::getAccountRootIndex(uEndAccount));
             if (sleEnd)
             {
-                bool const bRequireAuth = isSetBit(sleEnd->getFieldU32(sfFlags), lsfRequireAuth);
+                bool const bRequireAuth = is_bit_set(sleEnd->getFieldU32(sfFlags), lsfRequireAuth);
                 bool const bIsEndCurrency = (uEndCurrency == mDstAmount.getCurrency());
                 bool const bIsNoRippleOut = isNoRippleOut (currentPath);
 

@@ -54,11 +54,11 @@ TER TrustSetTransactor::doApply ()
         return temINVALID_FLAG;
     }
 
-    bool const bSetAuth = isSetBit (uTxFlags, tfSetfAuth);
-    bool const bSetNoRipple = isSetBit (uTxFlags, tfSetNoRipple);
-    bool const bClearNoRipple  = isSetBit (uTxFlags, tfClearNoRipple);
+    bool const bSetAuth = is_bit_set (uTxFlags, tfSetfAuth);
+    bool const bSetNoRipple = is_bit_set (uTxFlags, tfSetNoRipple);
+    bool const bClearNoRipple  = is_bit_set (uTxFlags, tfClearNoRipple);
 
-    if (bSetAuth && !isSetBit (mTxnAccount->getFieldU32 (sfFlags), lsfRequireAuth))
+    if (bSetAuth && !is_bit_set (mTxnAccount->getFieldU32 (sfFlags), lsfRequireAuth))
     {
         m_journal.trace <<
             "Retry: Auth not required.";
@@ -248,19 +248,19 @@ TER TrustSetTransactor::doApply ()
 
 
         bool const  bLowReserveSet      = uLowQualityIn || uLowQualityOut ||
-                                          isSetBit (uFlagsOut, lsfLowNoRipple) ||
+                                          is_bit_set (uFlagsOut, lsfLowNoRipple) ||
                                           !!saLowLimit || saLowBalance > zero;
         bool const  bLowReserveClear    = !bLowReserveSet;
 
         bool const  bHighReserveSet     = uHighQualityIn || uHighQualityOut ||
-                                          isSetBit (uFlagsOut, lsfHighNoRipple) ||
+                                          is_bit_set (uFlagsOut, lsfHighNoRipple) ||
                                           !!saHighLimit || saHighBalance > zero;
         bool const  bHighReserveClear   = !bHighReserveSet;
 
         bool const  bDefault            = bLowReserveClear && bHighReserveClear;
 
-        bool const  bLowReserved        = isSetBit (uFlagsIn, lsfLowReserve);
-        bool const  bHighReserved       = isSetBit (uFlagsIn, lsfHighReserve);
+        bool const  bLowReserved        = is_bit_set (uFlagsIn, lsfLowReserve);
+        bool const  bHighReserved       = is_bit_set (uFlagsIn, lsfHighReserve);
 
         bool        bReserveIncrease    = false;
 

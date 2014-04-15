@@ -1150,8 +1150,8 @@ TER RippleCalc::calcNodeAccountRev (const unsigned int uNode, PathState& psCur, 
     PathState::Node&        pnNxt       = psCur.vpnNodes[uNode == uLast ? uLast : uNode + 1];
 
     // Current is allowed to redeem to next.
-    const bool          bPrvAccount     = !uNode || isSetBit (pnPrv.uFlags, STPathElement::typeAccount);
-    const bool          bNxtAccount     = uNode == uLast || isSetBit (pnNxt.uFlags, STPathElement::typeAccount);
+    const bool          bPrvAccount     = !uNode || is_bit_set (pnPrv.uFlags, STPathElement::typeAccount);
+    const bool          bNxtAccount     = uNode == uLast || is_bit_set (pnNxt.uFlags, STPathElement::typeAccount);
 
     const uint160&      uCurAccountID   = pnCur.uAccountID;
     const uint160&      uPrvAccountID   = bPrvAccount ? pnPrv.uAccountID : uCurAccountID;
@@ -1513,8 +1513,8 @@ TER RippleCalc::calcNodeAccountFwd (
     PathState::Node&    pnCur       = psCur.vpnNodes[uNode];
     PathState::Node&    pnNxt       = psCur.vpnNodes[uNode == uLast ? uLast : uNode + 1];
 
-    const bool      bPrvAccount     = isSetBit (pnPrv.uFlags, STPathElement::typeAccount);
-    const bool      bNxtAccount     = isSetBit (pnNxt.uFlags, STPathElement::typeAccount);
+    const bool      bPrvAccount     = is_bit_set (pnPrv.uFlags, STPathElement::typeAccount);
+    const bool      bNxtAccount     = is_bit_set (pnNxt.uFlags, STPathElement::typeAccount);
 
     const uint160&  uCurAccountID   = pnCur.uAccountID;
     const uint160&  uPrvAccountID   = bPrvAccount ? pnPrv.uAccountID : uCurAccountID;
@@ -1840,7 +1840,7 @@ TER RippleCalc::calcNodeAccountFwd (
 TER RippleCalc::calcNodeFwd (const unsigned int uNode, PathState& psCur, const bool bMultiQuality)
 {
     const PathState::Node& pnCur       = psCur.vpnNodes[uNode];
-    const bool              bCurAccount = isSetBit (pnCur.uFlags,  STPathElement::typeAccount);
+    const bool              bCurAccount = is_bit_set (pnCur.uFlags,  STPathElement::typeAccount);
 
     WriteLog (lsTRACE, RippleCalc) << boost::str (boost::format ("calcNodeFwd> uNode=%d") % uNode);
 
@@ -1875,7 +1875,7 @@ TER RippleCalc::calcNodeFwd (const unsigned int uNode, PathState& psCur, const b
 TER RippleCalc::calcNodeRev (const unsigned int uNode, PathState& psCur, const bool bMultiQuality)
 {
     PathState::Node& pnCur       = psCur.vpnNodes[uNode];
-    bool const       bCurAccount = isSetBit (pnCur.uFlags,  STPathElement::typeAccount);
+    bool const       bCurAccount = is_bit_set (pnCur.uFlags,  STPathElement::typeAccount);
     TER              terResult;
 
     // Do current node reverse.

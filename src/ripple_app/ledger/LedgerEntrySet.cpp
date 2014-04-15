@@ -1527,8 +1527,8 @@ TER LedgerEntrySet::rippleCredit (const uint160& uSenderID, const uint160& uRece
         // YYY Could skip this if rippling in reverse.
         if (saBefore > zero                                                                              // Sender balance was positive.
                 && saBalance <= zero                                                                         // Sender is zero or negative.
-                && isSetBit ((uFlags = sleRippleState->getFieldU32 (sfFlags)), !bSenderHigh ? lsfLowReserve : lsfHighReserve) // Sender reserve is set.
-                && !isSetBit (uFlags, !bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)
+                && is_bit_set ((uFlags = sleRippleState->getFieldU32 (sfFlags)), !bSenderHigh ? lsfLowReserve : lsfHighReserve) // Sender reserve is set.
+                && !is_bit_set (uFlags, !bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)
                 && !sleRippleState->getFieldAmount (!bSenderHigh ? sfLowLimit : sfHighLimit)                        // Sender trust limit is 0.
                 && !sleRippleState->getFieldU32 (!bSenderHigh ? sfLowQualityIn : sfHighQualityIn)                   // Sender quality in is 0.
                 && !sleRippleState->getFieldU32 (!bSenderHigh ? sfLowQualityOut : sfHighQualityOut))                // Sender quality out is 0.
@@ -1541,7 +1541,7 @@ TER LedgerEntrySet::rippleCredit (const uint160& uSenderID, const uint160& uRece
             sleRippleState->setFieldU32 (sfFlags, uFlags & (!bSenderHigh ? ~lsfLowReserve : ~lsfHighReserve));  // Clear reserve flag.
 
             bDelete = !saBalance        // Balance is zero.
-                      && !isSetBit (uFlags, bSenderHigh ? lsfLowReserve : lsfHighReserve); // Receiver reserve is clear.
+                      && !is_bit_set (uFlags, bSenderHigh ? lsfLowReserve : lsfHighReserve); // Receiver reserve is clear.
         }
 
         if (bSenderHigh)
@@ -1644,7 +1644,7 @@ TER LedgerEntrySet::accountSend (const uint160& uSenderID, const uint160& uRecei
         {
             if (sleSender->getFieldAmount (sfBalance) < saAmount)
             {
-                terResult   = isSetBit (mParams, tapOPEN_LEDGER) ? telFAILED_PROCESSING : tecFAILED_PROCESSING;
+                terResult   = is_bit_set (mParams, tapOPEN_LEDGER) ? telFAILED_PROCESSING : tecFAILED_PROCESSING;
             }
             else
             {

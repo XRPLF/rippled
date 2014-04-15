@@ -127,7 +127,7 @@ TER TransactionEngine::applyTransaction (const SerializedTransaction& txn, Trans
 
     if (isTesSuccess (terResult))
         didApply = true;
-    else if (isTecClaim (terResult) && !isSetBit (params, tapRETRY))
+    else if (isTecClaim (terResult) && !is_bit_set (params, tapRETRY))
     {
         // only claim the transaction fee
         WriteLog (lsDEBUG, TransactionEngine) << "Reprocessing to only claim fee";
@@ -188,7 +188,7 @@ TER TransactionEngine::applyTransaction (const SerializedTransaction& txn, Trans
             Serializer s;
             txn.add (s);
 
-            if (isSetBit (params, tapOPEN_LEDGER))
+            if (is_bit_set (params, tapOPEN_LEDGER))
             {
                 if (!mLedger->addTransaction (txID, s))
                 {
@@ -216,7 +216,7 @@ TER TransactionEngine::applyTransaction (const SerializedTransaction& txn, Trans
     mTxnAccount.reset ();
     mNodes.clear ();
 
-    if (!isSetBit (params, tapOPEN_LEDGER) && isTemMalformed (terResult))
+    if (!is_bit_set (params, tapOPEN_LEDGER) && isTemMalformed (terResult))
     {
         // XXX Malformed or failed transaction in closed ledger must bow out.
     }

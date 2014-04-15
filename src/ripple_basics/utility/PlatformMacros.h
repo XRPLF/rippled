@@ -21,6 +21,7 @@
 #define RIPPLE_PLATFORMMACROS_H
 
 #include <functional>
+#include "../../beast/beast/cxx14/type_traits.h" // <type_traits>
 
 namespace ripple {
 
@@ -30,11 +31,22 @@ namespace ripple {
 #define P_3           std::placeholders::_3
 #define P_4           std::placeholders::_4
 
+template <typename X, typename Y>
+inline
+std::enable_if_t<
+    (std::is_integral<X>::value || std::is_enum<X>::value) && 
+    (std::is_integral<Y>::value || std::is_enum<Y>::value), 
+bool>
+is_bit_set(X const x, Y const y)
+{
+    return (x & y);
+}
+
 // VFALCO TODO Clean this stuff up. Remove as much as possible
 // DEPRECATED
 #define nothing()           do {} while (0)
 #define NUMBER(x)           (sizeof(x)/sizeof((x)[0]))
-#define isSetBit(x,y)       (!!((x) & (y)))
+#define is_bit_set(x,y)       (!!((x) & (y)))
 
 } // ripple
 

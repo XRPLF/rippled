@@ -153,7 +153,7 @@ bool PathRequest::isValid (RippleLineCache::ref crCache)
             }
             else
             {
-                bool includeXRP = !isSetBit (asDst->peekSLE ().getFlags(), lsfDisallowXRP);
+                bool includeXRP = !is_bit_set (asDst->peekSLE ().getFlags(), lsfDisallowXRP);
                 boost::unordered_set<uint160> usDestCurrID =
                     usAccountDestCurrencies (raDstAccount, crCache, includeXRP);
 

@@ -1521,13 +1521,13 @@ private:
             if (! getApp().getHashRouter ().addSuppressionPeer (txID, m_shortId, flags))
             {
                 // we have seen this transaction recently
-                if (isSetBit (flags, SF_BAD))
+                if (is_bit_set (flags, SF_BAD))
                 {
                     charge (Resource::feeInvalidSignature);
                     return;
                 }
 
-                if (!isSetBit (flags, SF_RETRY))
+                if (!is_bit_set (flags, SF_RETRY))
                     return;
             }
 
@@ -2616,7 +2616,7 @@ private:
                 return;
             }
 
-            bool needCheck = ! isSetBit (flags, SF_SIGGOOD);
+            bool needCheck = ! is_bit_set (flags, SF_SIGGOOD);
             Transaction::pointer tx =
                 boost::make_shared<Transaction> (stx, needCheck);
 
@@ -2629,7 +2629,7 @@ private:
             else
                 getApp().getHashRouter ().setFlag (stx->getTransactionID (), SF_SIGGOOD);
 
-            getApp().getOPs ().processTransaction (tx, isSetBit (flags, SF_TRUSTED), false, false);
+            getApp().getOPs ().processTransaction (tx, is_bit_set (flags, SF_TRUSTED), false, false);
 
     #ifndef TRUST_NETWORK
         }

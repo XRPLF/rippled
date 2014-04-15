@@ -80,7 +80,7 @@ TER ChangeTransactor::preCheck ()
         return temBAD_SRC_ACCOUNT;
     }
 
-    if (isSetBit (mParams, tapOPEN_LEDGER))
+    if (is_bit_set (mParams, tapOPEN_LEDGER))
     {
         m_journal.warning << "Change transaction against open ledger";
         return temINVALID;

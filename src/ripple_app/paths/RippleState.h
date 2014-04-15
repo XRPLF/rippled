@@ -59,22 +59,22 @@ public:
     // True, Provided auth to peer.
     bool getAuth () const
     {
-        return isSetBit (mFlags,  mViewLowest ? lsfLowAuth : lsfHighAuth);
+        return is_bit_set (mFlags,  mViewLowest ? lsfLowAuth : lsfHighAuth);
     }
 
     bool getAuthPeer () const
     {
-        return isSetBit (mFlags, !mViewLowest ? lsfLowAuth : lsfHighAuth);
+        return is_bit_set (mFlags, !mViewLowest ? lsfLowAuth : lsfHighAuth);
     }
 
     bool getNoRipple () const
     {
-        return isSetBit (mFlags, mViewLowest ? lsfLowNoRipple : lsfHighNoRipple);
+        return is_bit_set (mFlags, mViewLowest ? lsfLowNoRipple : lsfHighNoRipple);
     }
 
     bool getNoRipplePeer () const
     {
-        return isSetBit (mFlags, !mViewLowest ? lsfLowNoRipple : lsfHighNoRipple);
+        return is_bit_set (mFlags, !mViewLowest ? lsfLowNoRipple : lsfHighNoRipple);
     }
 
     const STAmount& getBalance () const

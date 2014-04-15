@@ -41,8 +41,8 @@ public:
 
         explicit
         Options (std::uint32_t tx_flags)
-            : sell (isSetBit (tx_flags, tfSell))
-            , passive (isSetBit (tx_flags, tfPassive))
+            : sell (is_bit_set (tx_flags, tfSell))
+            , passive (is_bit_set (tx_flags, tfPassive))
         {
         }
 

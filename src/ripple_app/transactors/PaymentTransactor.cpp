@@ -23,9 +23,9 @@ TER PaymentTransactor::doApply ()
 {
     // Ripple if source or destination is non-native or if there are paths.
     std::uint32_t const uTxFlags = mTxn.getFlags ();
-    bool const bPartialPayment = isSetBit (uTxFlags, tfPartialPayment);
-    bool const bLimitQuality = isSetBit (uTxFlags, tfLimitQuality);
-    bool const bNoRippleDirect = isSetBit (uTxFlags, tfNoRippleDirect);
+    bool const bPartialPayment = is_bit_set (uTxFlags, tfPartialPayment);
+    bool const bLimitQuality = is_bit_set (uTxFlags, tfLimitQuality);
+    bool const bNoRippleDirect = is_bit_set (uTxFlags, tfNoRippleDirect);
     bool const bPaths = mTxn.isFieldPresent (sfPaths);
     bool const bMax = mTxn.isFieldPresent (sfSendMax);
     uint160 const uDstAccountID = mTxn.getFieldAccount160 (sfDestination);
@@ -154,7 +154,7 @@ TER PaymentTransactor::doApply ()
             // Another transaction could create the account and then this transaction would succeed.
             return tecNO_DST;
         }
-        else if (isSetBit (mParams, tapOPEN_LEDGER) && bPartialPayment)
+        else if (is_bit_set (mParams, tapOPEN_LEDGER) && bPartialPayment)
         {
             // Make retry work smaller, by rejecting this.
             m_journal.trace <<
@@ -211,7 +211,7 @@ TER PaymentTransactor::doApply ()
 
         try
         {
-            bool const openLedger = isSetBit (mParams, tapOPEN_LEDGER);
+            bool const openLedger = is_bit_set (mParams, tapOPEN_LEDGER);
             bool const tooManyPaths = spsPaths.size () > MaxPathSize;
 
             terResult = openLedger && tooManyPaths
@@ -230,7 +230,7 @@ TER PaymentTransactor::doApply ()
                               bLimitQuality,
                               bNoRippleDirect, // Always compute for finalizing ledger.
                               false, // Not standalone, delete unfundeds.
-                              isSetBit (mParams, tapOPEN_LEDGER));
+                              is_bit_set (mParams, tapOPEN_LEDGER));
 
             if (isTerRetry(terResult))
                 terResult = tecPATH_DRY;

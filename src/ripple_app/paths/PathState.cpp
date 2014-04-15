@@ -51,14 +51,14 @@ Json::Value PathState::Node::getJson () const
 
     jvNode["type"]  = uFlags;
 
-    if (isSetBit (uFlags, STPathElement::typeAccount) || !!uAccountID)
-        jvFlags.append (!!isSetBit (uFlags, STPathElement::typeAccount) == !!uAccountID ? "account" : "-account");
+    if (is_bit_set (uFlags, STPathElement::typeAccount) || !!uAccountID)
+        jvFlags.append (!!is_bit_set (uFlags, STPathElement::typeAccount) == !!uAccountID ? "account" : "-account");
 
-    if (isSetBit (uFlags, STPathElement::typeCurrency) || !!uCurrencyID)
-        jvFlags.append (!!isSetBit (uFlags, STPathElement::typeCurrency) == !!uCurrencyID ? "currency" : "-currency");
+    if (is_bit_set (uFlags, STPathElement::typeCurrency) || !!uCurrencyID)
+        jvFlags.append (!!is_bit_set (uFlags, STPathElement::typeCurrency) == !!uCurrencyID ? "currency" : "-currency");
 
-    if (isSetBit (uFlags, STPathElement::typeIssuer) || !!uIssuerID)
-        jvFlags.append (!!isSetBit (uFlags, STPathElement::typeIssuer) == !!uIssuerID ? "issuer" : "-issuer");
+    if (is_bit_set (uFlags, STPathElement::typeIssuer) || !!uIssuerID)
+        jvFlags.append (!!is_bit_set (uFlags, STPathElement::typeIssuer) == !!uIssuerID ? "issuer" : "-issuer");
 
     jvNode["flags"] = jvFlags;
 
@@ -182,12 +182,12 @@ TER PathState::pushNode (
     const bool          bFirst      = vpnNodes.empty ();
     const Node&         pnPrv       = bFirst ? Node () : vpnNodes.back ();
     // true, iff node is a ripple account. false, iff node is an offer node.
-    const bool          bAccount    = isSetBit (iType, STPathElement::typeAccount);
+    const bool          bAccount    = is_bit_set (iType, STPathElement::typeAccount);
     // true, iff currency supplied.
     // Currency is specified for the output of the current node.
-    const bool          bCurrency   = isSetBit (iType, STPathElement::typeCurrency);
+    const bool          bCurrency   = is_bit_set (iType, STPathElement::typeCurrency);
     // Issuer is specified for the output of the current node.
-    const bool          bIssuer     = isSetBit (iType, STPathElement::typeIssuer);
+    const bool          bIssuer     = is_bit_set (iType, STPathElement::typeIssuer);
     TER                 terResult   = tesSUCCESS;
 
     WriteLog (lsTRACE, RippleCalc) << "pushNode> "
@@ -266,7 +266,7 @@ TER PathState::pushNode (
         if (tesSUCCESS == terResult && !vpnNodes.empty ())
         {
             const Node&     pnBck       = vpnNodes.back ();
-            bool            bBckAccount = isSetBit (pnBck.uFlags, STPathElement::typeAccount);
+            bool            bBckAccount = is_bit_set (pnBck.uFlags, STPathElement::typeAccount);
 
             if (bBckAccount)
             {
@@ -305,8 +305,8 @@ TER PathState::pushNode (
 
                         terResult   = terNO_ACCOUNT;
                     }
-                    else if ((isSetBit (sleBck->getFieldU32 (sfFlags), lsfRequireAuth)
-                             && !isSetBit (sleRippleState->getFieldU32 (sfFlags), (bHigh ? lsfHighAuth : lsfLowAuth)))
+                    else if ((is_bit_set (sleBck->getFieldU32 (sfFlags), lsfRequireAuth)
+                             && !is_bit_set (sleRippleState->getFieldU32 (sfFlags), (bHigh ? lsfHighAuth : lsfLowAuth)))
                              && sleRippleState->getFieldAmount(sfBalance) == zero) // CHECKME
                     {
                         WriteLog (lsWARNING, RippleCalc) << "pushNode: delay: can't receive IOUs from issuer without auth.";
@@ -687,7 +687,7 @@ void PathState::setCanonical (
         const Node&  pnCur   = psExpanded.vpnNodes[uNode];
         const Node&  pnNxt   = psExpanded.vpnNodes[uNode + 1];
 
-        const bool      bCurAccount     = isSetBit (pnCur.uFlags, STPathElement::typeAccount);
+        const bool      bCurAccount     = is_bit_set (pnCur.uFlags, STPathElement::typeAccount);
 
         bool            bSkip   = false;
 
@@ -707,8 +707,8 @@ void PathState::setCanonical (
         else
         {
             // Currently at an offer.
-            const bool      bPrvAccount     = isSetBit (pnPrv.uFlags, STPathElement::typeAccount);
-            const bool      bNxtAccount     = isSetBit (pnNxt.uFlags, STPathElement::typeAccount);
+            const bool      bPrvAccount     = is_bit_set (pnPrv.uFlags, STPathElement::typeAccount);
+            const bool      bNxtAccount     = is_bit_set (pnNxt.uFlags, STPathElement::typeAccount);
 
             if (bPrvAccount && bNxtAccount                  // Offer surrounded by accounts.
                     && pnPrv.uCurrencyID != pnNxt.uCurrencyID)
@@ -784,9 +784,9 @@ void PathState::checkNoRipple (
         terStatus = terNO_LINE;
     }
     else if (
-        isSetBit (sleIn->getFieldU32 (sfFlags),
+        is_bit_set (sleIn->getFieldU32 (sfFlags),
             (secondAccount > firstAccount) ? lsfHighNoRipple : lsfLowNoRipple) &&
-        isSetBit (sleOut->getFieldU32 (sfFlags),
+        is_bit_set (sleOut->getFieldU32 (sfFlags),
             (secondAccount > thirdAccount) ? lsfHighNoRipple : lsfLowNoRipple))
     {
         WriteLog (lsINFO, RippleCalc) << "Path violates noRipple constraint between " <<
@@ -810,7 +810,7 @@ void PathState::checkNoRipple (uint160 const& uDstAccountID, uint160 const& uSrc
     {
         // There's just one link in the path
         // We only need to check source-node-dest
-        if (isSetBit (vpnNodes[0].uFlags, STPathElement::typeAccount) &&
+        if (is_bit_set (vpnNodes[0].uFlags, STPathElement::typeAccount) &&
             (vpnNodes[0].uAccountID != uSrcAccountID) &&
             (vpnNodes[0].uAccountID != uDstAccountID))
         {
@@ -824,8 +824,8 @@ void PathState::checkNoRipple (uint160 const& uDstAccountID, uint160 const& uSrc
     }
 
     // Check source <-> first <-> second
-    if (isSetBit (vpnNodes[0].uFlags, STPathElement::typeAccount) &&
-        isSetBit (vpnNodes[1].uFlags, STPathElement::typeAccount) &&
+    if (is_bit_set (vpnNodes[0].uFlags, STPathElement::typeAccount) &&
+        is_bit_set (vpnNodes[1].uFlags, STPathElement::typeAccount) &&
         (vpnNodes[0].uAccountID != uSrcAccountID))
     {
         if ((vpnNodes[0].uCurrencyID != vpnNodes[1].uCurrencyID))
@@ -844,8 +844,8 @@ void PathState::checkNoRipple (uint160 const& uDstAccountID, uint160 const& uSrc
 
     // Check second_from_last <-> last <-> destination
     size_t s = vpnNodes.size() - 2;
-    if (isSetBit (vpnNodes[s].uFlags, STPathElement::typeAccount) &&
-        isSetBit (vpnNodes[s+1].uFlags, STPathElement::typeAccount) &&
+    if (is_bit_set (vpnNodes[s].uFlags, STPathElement::typeAccount) &&
+        is_bit_set (vpnNodes[s+1].uFlags, STPathElement::typeAccount) &&
         (uDstAccountID != vpnNodes[s+1].uAccountID))
     {
         if ((vpnNodes[s].uCurrencyID != vpnNodes[s+1].uCurrencyID))
@@ -868,9 +868,9 @@ void PathState::checkNoRipple (uint160 const& uDstAccountID, uint160 const& uSrc
     for (int i = 1; i < (vpnNodes.size() - 1); ++i)
     {
 
-        if (isSetBit (vpnNodes[i-1].uFlags, STPathElement::typeAccount) &&
-            isSetBit (vpnNodes[i].uFlags, STPathElement::typeAccount) &&
-            isSetBit (vpnNodes[i+1].uFlags, STPathElement::typeAccount))
+        if (is_bit_set (vpnNodes[i-1].uFlags, STPathElement::typeAccount) &&
+            is_bit_set (vpnNodes[i].uFlags, STPathElement::typeAccount) &&
+            is_bit_set (vpnNodes[i+1].uFlags, STPathElement::typeAccount))
         { // two consecutive account-to-account links
 
             uint160 const& currencyID = vpnNodes[i].uCurrencyID;

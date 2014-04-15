@@ -53,20 +53,20 @@ TER AccountSetTransactor::doApply ()
         return temINVALID_FLAG;
     }
 
-    if (bSetRequireAuth && !isSetBit (uFlagsIn, lsfRequireAuth))
+    if (bSetRequireAuth && !is_bit_set (uFlagsIn, lsfRequireAuth))
     {
         if (!mEngine->view().dirIsEmpty (Ledger::getOwnerDirIndex (mTxnAccountID)))
         {
             m_journal.trace << "Retry: Owner directory not empty.";
 
-            return isSetBit(mParams, tapRETRY) ? terOWNERS : tecOWNERS;
+            return is_bit_set(mParams, tapRETRY) ? terOWNERS : tecOWNERS;
         }
 
         m_journal.trace << "Set RequireAuth.";
         uFlagsOut   |= lsfRequireAuth;
     }
 
-    if (bClearRequireAuth && isSetBit (uFlagsIn, lsfRequireAuth))
+    if (bClearRequireAuth && is_bit_set (uFlagsIn, lsfRequireAuth))
     {
         m_journal.trace << "Clear RequireAuth.";
         uFlagsOut   &= ~lsfRequireAuth;
@@ -82,13 +82,13 @@ TER AccountSetTransactor::doApply ()
         return temINVALID_FLAG;
     }
 
-    if (bSetRequireDest && !isSetBit (uFlagsIn, lsfRequireDestTag))
+    if (bSetRequireDest && !is_bit_set (uFlagsIn, lsfRequireDestTag))
     {
         m_journal.trace << "Set lsfRequireDestTag.";
         uFlagsOut   |= lsfRequireDestTag;
     }
 
-    if (bClearRequireDest && isSetBit (uFlagsIn, lsfRequireDestTag))
+    if (bClearRequireDest && is_bit_set (uFlagsIn, lsfRequireDestTag))
     {
         m_journal.trace << "Clear lsfRequireDestTag.";
         uFlagsOut   &= ~lsfRequireDestTag;
@@ -104,13 +104,13 @@ TER AccountSetTransactor::doApply ()
         return temINVALID_FLAG;
     }
 
-    if (bSetDisallowXRP && !isSetBit (uFlagsIn, lsfDisallowXRP))
+    if (bSetDisallowXRP && !is_bit_set (uFlagsIn, lsfDisallowXRP))
     {
         m_journal.trace << "Set lsfDisallowXRP.";
         uFlagsOut   |= lsfDisallowXRP;
     }
 
-    if (bClearDisallowXRP && isSetBit (uFlagsIn, lsfDisallowXRP))
+    if (bClearDisallowXRP && is_bit_set (uFlagsIn, lsfDisallowXRP))
     {
         m_journal.trace << "Clear lsfDisallowXRP.";
         uFlagsOut   &= ~lsfDisallowXRP;
@@ -126,7 +126,7 @@ TER AccountSetTransactor::doApply ()
         return temINVALID_FLAG;
     }
 
-    if ((uSetFlag == asfDisableMaster) && !isSetBit (uFlagsIn, lsfDisableMaster))
+    if ((uSetFlag == asfDisableMaster) && !is_bit_set (uFlagsIn, lsfDisableMaster))
     {
         if (!mTxnAccount->isFieldPresent (sfRegularKey))
             return tecNO_REGULAR_KEY;
@@ -135,7 +135,7 @@ TER AccountSetTransactor::doApply ()
         uFlagsOut   |= lsfDisableMaster;
     }
 
-    if ((uClearFlag == asfDisableMaster) && isSetBit (uFlagsIn, lsfDisableMaster))
+    if ((uClearFlag == asfDisableMaster) && is_bit_set (uFlagsIn, lsfDisableMaster))
     {
         m_journal.trace << "Clear lsfDisableMaster.";
         uFlagsOut   &= ~lsfDisableMaster;
