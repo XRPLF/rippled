@@ -21,6 +21,8 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <SpecifySectionAttributes>
+      </SpecifySectionAttributes>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

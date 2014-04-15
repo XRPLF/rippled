@@ -226,6 +226,10 @@ public:
         m_lruCache.reset (options.block_cache);
     }
 
+    ~LevelDBFactory()
+    {
+    }
+
     beast::String getName () const
     {
         return "LevelDB";

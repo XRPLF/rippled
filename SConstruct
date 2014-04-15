@@ -335,10 +335,11 @@ if not USING_CLANG:
 else:
      # This disables the "You said it was a struct AND a class, wth is going on
      # warnings"
-     more_warnings = ['-Wno-mismatched-tags']
+     more_warnings = ['-Wno-mismatched-tags'] # add '-Wshorten-64-to-32' some day
      # This needs to be a CCFLAGS not a CXXFLAGS
      env.Append(CCFLAGS = more_warnings)
 
+# add '-Wconversion' some day
 env.Append(CXXFLAGS = ['-O3', '-fno-strict-aliasing', '-pthread', '-Wno-invalid-offsetof', '-Wformat']+more_warnings+DEBUGFLAGS)
 
 # RTTI is required for Beast and CountedObject.
