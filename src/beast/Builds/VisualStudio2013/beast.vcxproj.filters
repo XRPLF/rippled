@@ -1201,6 +1201,9 @@
     <ClInclude Include="..\..\beast\utility\type_name.h">
       <Filter>beast\utility</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\beast\utility\zero.h">
+      <Filter>beast\utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\modules\beast_core\files\DirectoryIterator.cpp">
@@ -1647,9 +1650,6 @@
     <ClCompile Include="..\..\beast\threads\tests\Atomic.test.cpp">
       <Filter>beast\threads\tests</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\beast\utility\tests\hardened_hash.test.cpp">
-      <Filter>beast\utility\tests</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\beast\crypto\tests\BinaryEncoding.cpp">
       <Filter>beast\crypto\tests</Filter>
     </ClCompile>
@@ -1664,6 +1664,9 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\container\impl\spookyv2.cpp">
       <Filter>beast\container\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\utility\tests\Zero.test.cpp">
+      <Filter>beast\utility\tests</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
