@@ -3239,12 +3239,4 @@
       <Filter>[2] Old Ripple\ripple_overlay</Filter>
     </None>
   </ItemGroup>
-  <ItemGroup>
-    <Text Include="..\..\doc\todo\NIKB_TODO.txt">
-      <Filter>%28Notes%29</Filter>
-    </Text>
-    <Text Include="..\..\doc\todo\VFALCO_TODO.txt">
-      <Filter>%28Notes%29</Filter>
-    </Text>
-  </ItemGroup>
 </Project>

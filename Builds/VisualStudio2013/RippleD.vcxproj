@@ -2830,10 +2830,6 @@
     <None Include="..\..\src\ripple_rpc\TODO.md" />
     <None Include="..\QtCreator\rippled.pro" />
   </ItemGroup>
-  <ItemGroup>
-    <Text Include="..\..\doc\todo\NIKB_TODO.txt" />
-    <Text Include="..\..\doc\todo\VFALCO_TODO.txt" />
-  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{B7F39ECD-473C-484D-BC34-31F8362506A5}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
