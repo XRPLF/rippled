@@ -53,7 +53,7 @@ const std::uint32_t tfRequireAuth          = 0x00040000;
 const std::uint32_t tfOptionalAuth         = 0x00080000;
 const std::uint32_t tfDisallowXRP          = 0x00100000;
 const std::uint32_t tfAllowXRP             = 0x00200000;
-const std::uint32_t tfAccountSetMask       = ~ (TxFlag::requireDestTag | tfOptionalDestTag
+const std::uint32_t tfAccountSetMask       = ~ (tfUniversal | TxFlag::requireDestTag | tfOptionalDestTag
                                              | tfRequireAuth | tfOptionalAuth
                                              | tfDisallowXRP | tfAllowXRP);
 
