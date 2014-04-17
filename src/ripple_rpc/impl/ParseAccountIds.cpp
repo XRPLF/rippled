@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2012-2014 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,35 +17,32 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_PRINT_H_INCLUDED
-#define RIPPLE_RPC_PRINT_H_INCLUDED
+#include "ParseAccountIds.h"
 
 namespace ripple {
 namespace RPC {
 
-class DoPrint
+boost::unordered_set<RippleAddress> parseAccountIds (const Json::Value& jvArray)
 {
-public:
-    void operator() (Request& req)
-    {
-        JsonPropertyStream stream;
+    boost::unordered_set<RippleAddress> usnaResult;
 
-        if (req.params.isObject() &&
-            req.params["params"].isArray() &&
-            req.params["params"][0u].isString ())
+    for (Json::Value::const_iterator it = jvArray.begin (); it != jvArray.end (); it++)
+    {
+        RippleAddress   naString;
+
+        if (! (*it).isString () || !naString.setAccountID ((*it).asString ()))
         {
-            req.app.write (stream, req.params["params"][0u].asString());
+            usnaResult.clear ();
+            break;
         }
         else
         {
-            req.app.write (stream);
+            (void) usnaResult.insert (naString);
         }
-
-        req.result = stream.top();
     }
-};
 
-}
+    return usnaResult;
 }
 
-#endif
+} // RPC
+} // ripple

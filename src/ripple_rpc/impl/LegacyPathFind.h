@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2012-2014 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,35 +17,31 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_PRINT_H_INCLUDED
-#define RIPPLE_RPC_PRINT_H_INCLUDED
+#ifndef RIPPLE_RPC_LEGACYPATHFIND_H_INCLUDED
+#define RIPPLE_RPC_LEGACYPATHFIND_H_INCLUDED
 
 namespace ripple {
 namespace RPC {
 
-class DoPrint
+class LegacyPathFind
 {
 public:
-    void operator() (Request& req)
+    LegacyPathFind (bool isAdmin);
+    ~LegacyPathFind ();
+
+    bool isOkay () const
     {
-        JsonPropertyStream stream;
-
-        if (req.params.isObject() &&
-            req.params["params"].isArray() &&
-            req.params["params"][0u].isString ())
-        {
-            req.app.write (stream, req.params["params"][0u].asString());
-        }
-        else
-        {
-            req.app.write (stream);
-        }
-
-        req.result = stream.top();
+        return m_isOkay;
     }
+
+private:
+    static std::atomic <int> inProgress;
+    static int maxInProgress;
+
+    bool m_isOkay;
 };
 
-}
-}
+} // RPC
+} // ripple
 
 #endif

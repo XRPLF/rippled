@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2012-2014 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,35 +17,34 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_PRINT_H_INCLUDED
-#define RIPPLE_RPC_PRINT_H_INCLUDED
 
 namespace ripple {
-namespace RPC {
 
-class DoPrint
+// {
+//   ledger_hash : <ledger>
+//   ledger_index : <ledger_index>
+// }
+Json::Value RPCHandler::doLedgerHeader (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
-public:
-    void operator() (Request& req)
-    {
-        JsonPropertyStream stream;
+    masterLockHolder.unlock ();
 
-        if (req.params.isObject() &&
-            req.params["params"].isArray() &&
-            req.params["params"][0u].isString ())
-        {
-            req.app.write (stream, req.params["params"][0u].asString());
-        }
-        else
-        {
-            req.app.write (stream);
-        }
+    Ledger::pointer     lpLedger;
+    Json::Value         jvResult    = RPC::lookupLedger (params, lpLedger, *mNetOps);
 
-        req.result = stream.top();
-    }
-};
+    if (!lpLedger)
+        return jvResult;
 
-}
+    Serializer  s;
+
+    lpLedger->addRaw (s);
+
+    jvResult["ledger_data"] = strHex (s.peekData ());
+
+    // This information isn't verified, they should only use it if they trust us.
+    lpLedger->addJson (jvResult, 0);
+
+    return jvResult;
 }
 
-#endif
+
+} // ripple

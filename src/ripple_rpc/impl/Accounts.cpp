@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2012-2014 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,35 +17,47 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_PRINT_H_INCLUDED
-#define RIPPLE_RPC_PRINT_H_INCLUDED
+#include "Accounts.h"
 
 namespace ripple {
 namespace RPC {
 
-class DoPrint
+Json::Value accounts (
+    Ledger::ref lrLedger,
+    const RippleAddress& naMasterGenerator,
+    NetworkOPs& netOps)
 {
-public:
-    void operator() (Request& req)
-    {
-        JsonPropertyStream stream;
+    Json::Value jsonAccounts (Json::arrayValue);
 
-        if (req.params.isObject() &&
-            req.params["params"].isArray() &&
-            req.params["params"][0u].isString ())
+    // YYY Don't want to leak to thin server that these accounts are related.
+    // YYY Would be best to alternate requests to servers and to cache results.
+    unsigned int    uIndex  = 0;
+
+    do
+    {
+        RippleAddress       naAccount;
+
+        naAccount.setAccountPublic (naMasterGenerator, uIndex++);
+
+        AccountState::pointer as    = netOps.getAccountState (lrLedger, naAccount);
+
+        if (as)
         {
-            req.app.write (stream, req.params["params"][0u].asString());
+            Json::Value jsonAccount (Json::objectValue);
+
+            as->addJson (jsonAccount);
+
+            jsonAccounts.append (jsonAccount);
         }
         else
         {
-            req.app.write (stream);
+            uIndex  = 0;
         }
-
-        req.result = stream.top();
     }
-};
+    while (uIndex);
 
-}
+    return jsonAccounts;
 }
 
-#endif
+} // RPC
+} // ripple

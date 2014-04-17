@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2012-2014 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,35 +17,32 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_PRINT_H_INCLUDED
-#define RIPPLE_RPC_PRINT_H_INCLUDED
 
 namespace ripple {
-namespace RPC {
 
-class DoPrint
+// Result:
+// {
+//   random: <uint256>
+// }
+Json::Value RPCHandler::doRandom (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
-public:
-    void operator() (Request& req)
+    masterLockHolder.unlock ();
+    uint256         uRandom;
+
+    try
     {
-        JsonPropertyStream stream;
+        RandomNumbers::getInstance ().fillBytes (uRandom.begin (), uRandom.size ());
 
-        if (req.params.isObject() &&
-            req.params["params"].isArray() &&
-            req.params["params"][0u].isString ())
-        {
-            req.app.write (stream, req.params["params"][0u].asString());
-        }
-        else
-        {
-            req.app.write (stream);
-        }
+        Json::Value jvResult;
 
-        req.result = stream.top();
+        jvResult["random"]  = uRandom.ToString ();
+
+        return jvResult;
     }
-};
-
+    catch (...)
+    {
+        return rpcError (rpcINTERNAL);
+    }
 }
-}
 
-#endif
+} // ripple

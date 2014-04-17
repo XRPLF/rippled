@@ -328,6 +328,9 @@
     <Filter Include="[2] Old Ripple\ripple_app\book\tests">
       <UniqueIdentifier>{28b72c9f-02e3-4b57-9386-957478e1f0b7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="[2] Old Ripple\ripple_rpc\handlers">
+      <UniqueIdentifier>{f8e935e2-e54d-4681-9e7d-7e4a01192d6b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\ripple_basics\containers\RangeSet.cpp">
@@ -1514,6 +1517,210 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_overlay\impl\OverlayImpl.cpp">
       <Filter>[2] Old Ripple\ripple_overlay\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\ConsensusInfo.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\Feature.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\FetchInfo.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\GetCounts.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\Ledger.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\LedgerAccept.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\LedgerCleaner.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\LedgerClosed.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\LedgerCurrent.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\LedgerData.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\LedgerEntry.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\LedgerHeader.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\LogLevel.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\LogRotate.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\NicknameInfo.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\OwnerInfo.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\PathFind.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\Peers.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\Ping.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\Print.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\Profile.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\ProofCreate.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\ProofSolve.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\ProofVerify.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\Random.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\RipplePathFind.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\ServerInfo.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\ServerState.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\Sign.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\SMS.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\Stop.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\Submit.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\Subscribe.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\TransactionEntry.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\Tx.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\TxHistory.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\UnlAdd.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\UnlDelete.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\UnlList.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\UnlLoad.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\UnlNetwork.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\UnlReset.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\UnlScore.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\Unsubscribe.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\ValidationCreate.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\ValidationSeed.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\WalletAccounts.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\WalletPropose.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\WalletSeed.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\AccountCurrencies.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\AccountInfo.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\AccountLines.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\AccountOffers.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\AccountTx.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\AccountTxOld.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\AccountTxSwitch.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\BlackList.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\BookOffers.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\Connect.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\impl\ParseAccountIds.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\impl\TransactionSign.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\impl\AccountFromString.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\impl\Accounts.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\impl\Authorize.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\impl\GetMasterGenerator.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\impl\Handlers.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\impl\LegacyPathFind.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\impl\LookupLedger.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc\impl</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -3113,6 +3320,30 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\common\UnorderedMap.h">
       <Filter>[1] Ripple\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_rpc\impl\LookupLedger.h">
+      <Filter>[2] Old Ripple\ripple_rpc\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_rpc\impl\ParseAccountIds.h">
+      <Filter>[2] Old Ripple\ripple_rpc\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_rpc\impl\TransactionSign.h">
+      <Filter>[2] Old Ripple\ripple_rpc\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_rpc\impl\AccountFromString.h">
+      <Filter>[2] Old Ripple\ripple_rpc\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_rpc\impl\Accounts.h">
+      <Filter>[2] Old Ripple\ripple_rpc\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_rpc\impl\Authorize.h">
+      <Filter>[2] Old Ripple\ripple_rpc\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_rpc\impl\GetMasterGenerator.h">
+      <Filter>[2] Old Ripple\ripple_rpc\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_rpc\impl\LegacyPathFind.h">
+      <Filter>[2] Old Ripple\ripple_rpc\impl</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

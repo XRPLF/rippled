@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2012-2014 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,35 +17,38 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_PRINT_H_INCLUDED
-#define RIPPLE_RPC_PRINT_H_INCLUDED
 
 namespace ripple {
-namespace RPC {
 
-class DoPrint
+#if 0
+// XXX Needs to be revised for new paradigm
+// nickname_info <nickname>
+// Note: Nicknames are not automatically looked up by commands as they are advisory and can be changed.
+Json::Value RPCHandler::doNicknameInfo (Json::Value params)
 {
-public:
-    void operator() (Request& req)
+    std::string strNickname = params[0u].asString ();
+    boost::trim (strNickname);
+
+    if (strNickname.empty ())
     {
-        JsonPropertyStream stream;
-
-        if (req.params.isObject() &&
-            req.params["params"].isArray() &&
-            req.params["params"][0u].isString ())
-        {
-            req.app.write (stream, req.params["params"][0u].asString());
-        }
-        else
-        {
-            req.app.write (stream);
-        }
-
-        req.result = stream.top();
+        return rpcError (rpcNICKNAME_MALFORMED);
     }
-};
 
-}
-}
+    NicknameState::pointer  nsSrc   = mNetOps->getNicknameState (uint256 (0), strNickname);
 
+    if (!nsSrc)
+    {
+        return rpcError (rpcNICKNAME_MISSING);
+    }
+
+    Json::Value ret (Json::objectValue);
+
+    ret["nickname"] = strNickname;
+
+    nsSrc->addJson (ret);
+
+    return ret;
+}
 #endif
+
+} // ripple

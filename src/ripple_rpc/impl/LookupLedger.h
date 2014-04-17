@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2012-2014 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,35 +17,18 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_PRINT_H_INCLUDED
-#define RIPPLE_RPC_PRINT_H_INCLUDED
+#ifndef RIPPLE_RPC_LOOKUPLEDGER_H_INCLUDED
+#define RIPPLE_RPC_LOOKUPLEDGER_H_INCLUDED
 
 namespace ripple {
 namespace RPC {
 
-class DoPrint
-{
-public:
-    void operator() (Request& req)
-    {
-        JsonPropertyStream stream;
+Json::Value lookupLedger (
+    Json::Value const& jvRequest,
+    Ledger::pointer& lpLedger,
+    NetworkOPs& netOps);
 
-        if (req.params.isObject() &&
-            req.params["params"].isArray() &&
-            req.params["params"][0u].isString ())
-        {
-            req.app.write (stream, req.params["params"][0u].asString());
-        }
-        else
-        {
-            req.app.write (stream);
-        }
-
-        req.result = stream.top();
-    }
-};
-
-}
-}
+} // RPC
+} // ripple
 
 #endif

@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2012-2014 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,35 +17,32 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_PRINT_H_INCLUDED
-#define RIPPLE_RPC_PRINT_H_INCLUDED
 
 namespace ripple {
-namespace RPC {
 
-class DoPrint
+// {
+//   node: <domain>|<node_public>,
+//   comment: <comment>             // optional
+// }
+Json::Value RPCHandler::doUnlAdd (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
-public:
-    void operator() (Request& req)
+    std::string strNode     = params.isMember ("node") ? params["node"].asString () : "";
+    std::string strComment  = params.isMember ("comment") ? params["comment"].asString () : "";
+
+    RippleAddress   raNodePublic;
+
+    if (raNodePublic.setNodePublic (strNode))
     {
-        JsonPropertyStream stream;
+        getApp().getUNL ().nodeAddPublic (raNodePublic, UniqueNodeList::vsManual, strComment);
 
-        if (req.params.isObject() &&
-            req.params["params"].isArray() &&
-            req.params["params"][0u].isString ())
-        {
-            req.app.write (stream, req.params["params"][0u].asString());
-        }
-        else
-        {
-            req.app.write (stream);
-        }
-
-        req.result = stream.top();
+        return "adding node by public key";
     }
-};
+    else
+    {
+        getApp().getUNL ().nodeAddDomain (strNode, UniqueNodeList::vsManual, strComment);
 
-}
+        return "adding node by domain";
+    }
 }
 
-#endif
+} // ripple

@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2012-2014 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,35 +17,39 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_PRINT_H_INCLUDED
-#define RIPPLE_RPC_PRINT_H_INCLUDED
-
 namespace ripple {
-namespace RPC {
 
-class DoPrint
+// {
+//   secret: <string>
+// }
+Json::Value RPCHandler::doWalletSeed (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
-public:
-    void operator() (Request& req)
+    RippleAddress   raSeed;
+    bool            bSecret = params.isMember ("secret");
+
+    if (bSecret && !raSeed.setSeedGeneric (params["secret"].asString ()))
     {
-        JsonPropertyStream stream;
-
-        if (req.params.isObject() &&
-            req.params["params"].isArray() &&
-            req.params["params"][0u].isString ())
-        {
-            req.app.write (stream, req.params["params"][0u].asString());
-        }
-        else
-        {
-            req.app.write (stream);
-        }
-
-        req.result = stream.top();
+        return rpcError (rpcBAD_SEED);
     }
-};
+    else
+    {
+        RippleAddress   raAccount;
 
-}
-}
+        if (!bSecret)
+        {
+            raSeed.setSeedRandom ();
+        }
 
-#endif
+        RippleAddress   raGenerator = RippleAddress::createGeneratorPublic (raSeed);
+
+        raAccount.setAccountPublic (raGenerator, 0);
+
+        Json::Value obj (Json::objectValue);
+
+        obj["seed"]     = raSeed.humanSeed ();
+        obj["key"]      = raSeed.humanSeed1751 ();
+
+        return obj;
+    }
+}
+} // ripple

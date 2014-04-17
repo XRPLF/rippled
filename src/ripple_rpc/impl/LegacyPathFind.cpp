@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2012-2014 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,35 +17,45 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_PRINT_H_INCLUDED
-#define RIPPLE_RPC_PRINT_H_INCLUDED
+#include "LegacyPathFind.h"
 
 namespace ripple {
 namespace RPC {
 
-class DoPrint
+LegacyPathFind::LegacyPathFind (bool isAdmin) : m_isOkay (false)
 {
-public:
-    void operator() (Request& req)
+    if (isAdmin)
+        ++inProgress;
+    else
     {
-        JsonPropertyStream stream;
+        if ((getApp().getJobQueue ().getJobCountGE (jtCLIENT) > 50) ||
+                getApp().getFeeTrack().isLoadedLocal ())
+        return;
 
-        if (req.params.isObject() &&
-            req.params["params"].isArray() &&
-            req.params["params"][0u].isString ())
+        do
         {
-            req.app.write (stream, req.params["params"][0u].asString());
-        }
-        else
-        {
-            req.app.write (stream);
-        }
+            int prevVal = inProgress.load();
+            if (prevVal >= maxInProgress)
+                return;
 
-        req.result = stream.top();
+            if (inProgress.compare_exchange_strong (prevVal, prevVal + 1,
+                std::memory_order_release, std::memory_order_relaxed))
+            break;
+        }
+        while (1);
     }
-};
 
-}
+    m_isOkay = true;
 }
 
-#endif
+LegacyPathFind::~LegacyPathFind ()
+{
+    if (m_isOkay)
+        --inProgress;
+}
+
+std::atomic <int> LegacyPathFind::inProgress (0);
+int LegacyPathFind::maxInProgress (2);
+
+} // RPC
+} // ripple
