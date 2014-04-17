@@ -91,18 +91,18 @@ Error blob::select(session& s,
     return detail::sqliteError(__FILE__, __LINE__, result);
 }
 
-std::size_t blob::get_len()
+int blob::get_len()
 {
     return sqlite3_blob_bytes(m_blob);
 }
 
-Error blob::read(std::size_t offset, void* buf, std::size_t toRead)
+Error blob::read(int offset, void* buf, int toRead)
 {
     return detail::sqliteError(__FILE__, __LINE__,
                                sqlite3_blob_read(m_blob, static_cast<char*>(buf), toRead, offset));
 }
 
-Error blob::write(std::size_t offset, void const* buf, std::size_t toWrite)
+Error blob::write(int offset, void const* buf, int toWrite)
 {
     return detail::sqliteError(__FILE__, __LINE__,
                                sqlite3_blob_write(m_blob, buf, toWrite, offset));

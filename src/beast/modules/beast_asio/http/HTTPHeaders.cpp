@@ -54,13 +54,13 @@ std::size_t HTTPHeaders::size () const
     return m_fields.size ();
 }
 
-HTTPField HTTPHeaders::at (std::size_t index) const
+HTTPField HTTPHeaders::at (int index) const
 {
     return HTTPField (m_fields.getAllKeys () [index],
                       m_fields.getAllValues () [index]);
 }
 
-HTTPField HTTPHeaders::operator[] (std::size_t index) const
+HTTPField HTTPHeaders::operator[] (int index) const
 {
     return at (index);
 }

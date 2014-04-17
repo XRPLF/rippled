@@ -430,7 +430,7 @@ private:
 public:
     typedef Allocator allocator_type; // for std::uses_allocator<>
 
-    explicit ServiceQueueType (int expectedConcurrency = 1,
+    explicit ServiceQueueType (std::size_t expectedConcurrency = 1,
         Allocator alloc = Allocator())
         : m_alloc (alloc)
     {

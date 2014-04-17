@@ -125,14 +125,14 @@ void MemoryBlock::setSize (const size_t newSize, const bool initialiseToZero)
     {
         if (newSize <= 0)
         {
-            data.free();
+            data.free_up();
             size = 0;
         }
         else
         {
             if (data != nullptr)
             {
-                data.realloc (newSize);
+                data.reallocate (newSize);
 
                 if (initialiseToZero && (newSize > size))
                     zeromem (data + size, newSize - size);

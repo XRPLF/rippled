@@ -177,7 +177,7 @@ void standard_use_type::do_use()
         result = sqlite3_bind_text(m_st->m_stmt,
                                    m_iParam,
                                    s.c_str(),
-                                   s.size() * sizeof(s[0]),
+                                   int(s.size() * sizeof(s[0])),
                                    SQLITE_STATIC);
     }
     break;
@@ -188,7 +188,7 @@ void standard_use_type::do_use()
         result = sqlite3_bind_text16(m_st->m_stmt,
                                      m_iParam,
                                      s.c_str(),
-                                     s.size() * sizeof(s[0]),
+                                     int(s.size() * sizeof(s[0])),
                                      SQLITE_STATIC);
     }
     break;
