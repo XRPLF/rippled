@@ -76,9 +76,9 @@ public:
                  rowid id,
                  bool readAndWrite = false) noexcept;
 
-    std::size_t get_len();
-    Error read(std::size_t offset, void* buf, std::size_t toRead);
-    Error write(std::size_t offset, void const* buf, std::size_t toWrite);
+    int get_len();
+    Error read(int offset, void* buf, int toRead);
+    Error write(int offset, void const* buf, int toWrite);
     void close();
 
 private:

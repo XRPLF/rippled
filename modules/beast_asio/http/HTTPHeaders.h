@@ -51,8 +51,8 @@ public:
 
     /** Random access to fields by index. */
     /** @{ */
-    HTTPField at (std::size_t index) const;
-    HTTPField operator[] (std::size_t index) const;
+    HTTPField at (int index) const;
+    HTTPField operator[] (int index) const;
     /** @} */
 
     /** Associative access to fields by name.

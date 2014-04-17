@@ -128,7 +128,7 @@ public:
     //--------------------------------------------------------------------------
 
     template <typename Allocator>
-    void testThreads (std::size_t nConsumers, std::size_t nProducers)
+    void testThreads (int nConsumers, int nProducers)
     {
         std::stringstream ss;
         ss << 
@@ -147,11 +147,11 @@ public:
 
         Random r;
 
-        for (std::size_t i = 0; i < nConsumers; ++i)
+        for (int i = 0; i < nConsumers; ++i)
             consumers.emplace_back (new Consumer <ServiceType> (i + 1,
                 r.nextInt64(), service));
 
-        for (std::size_t i = 0; i < nProducers; ++i)
+        for (int i = 0; i < nProducers; ++i)
             producers.emplace_back (new Producer <ServiceType> (i + 1,
                 r.nextInt64(), service));
 
@@ -258,7 +258,7 @@ public:
 
     static std::size_t const totalCalls = 10000;
 
-    void testThreads (std::size_t n)
+    void testThreads (int n)
     {
         std::stringstream ss;
         ss << n << " threads";
@@ -270,7 +270,7 @@ public:
         ServiceQueue service (n);
         std::vector <std::unique_ptr <ServiceThread> > threads;
         threads.reserve (n);
-        for (std::size_t i = 0; i < n; ++i)
+        for (int i = 0; i < n; ++i)
             threads.emplace_back (new ServiceThread (i + 1,
                 r.nextInt64(), service));
         for (std::size_t i = n * callsPerThread; i; --i)

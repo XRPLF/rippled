@@ -114,10 +114,11 @@ public:
     }
 
     /** Build the inverse mapping table from characters to digits. */
-    static std::vector <int> invert (std::string const& alphabet, std::size_t radix)
+    static std::vector <int>
+    invert (std::string const& alphabet, int radix)
     {
         std::vector <int> table (256, -1);
-        for (std::size_t i (0); i < radix; ++i)
+        for (int i (0); i < radix; ++i)
             table [alphabet [i]] = i;
         return table;
     }
@@ -183,11 +184,12 @@ public:
     }
 
     /** Build the inverse mapping table from characters to digits. */
-    static std::vector <int> invert (std::string const& alphabet, std::size_t radix)
+    static std::vector <int>
+    invert (std::string const& alphabet, int radix)
     {
         std::vector <int> table (256, -1);
-        for (std::size_t i (0); i < radix; ++i)
-            table [alphabet [i]] = i;
+        for (int i (0); i < radix; ++i)
+            table [alphabet [i]] = int(i);
         return table;
     }
 };

@@ -598,7 +598,7 @@ public:
 
     void print (HTTPMessage const& m)
     {
-        for (std::size_t i = 0; i < m.headers().size(); ++i)
+        for (int i = 0; i < m.headers().size(); ++i)
         {
             HTTPField const f (m.headers()[i]);
             std::stringstream ss;

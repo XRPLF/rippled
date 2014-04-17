@@ -85,9 +85,9 @@ public:
         if (numAllocated != numElements)
         {
             if (numElements > 0)
-                elements.realloc ((size_t) numElements);
+                elements.reallocate ((size_t) numElements);
             else
-                elements.free();
+                elements.free_up();
 
             numAllocated = numElements;
         }
