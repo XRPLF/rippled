@@ -243,7 +243,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(Quality,core,ripple);
+BEAST_DEFINE_TESTSUITE(Quality,core,ripple);
 
 }
 }
