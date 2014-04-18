@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include "../../../beast/beast/unit_test/suite.h"
+#include "../../../beast/beast/utility/type_name.h"
 
 namespace ripple {
 
@@ -37,9 +38,57 @@ public:
         pass ();
     }
 
+    void
+    test_copy ()
+    {
+        Json::Value v1{2.5};
+        expect (v1.isDouble ());
+        expect (v1.asDouble () == 2.5);
+
+        Json::Value v2 = v1;
+        expect (v1.isDouble ());
+        expect (v1.asDouble () == 2.5);
+        expect (v2.isDouble ());
+        expect (v2.asDouble () == 2.5);
+        expect (v1 == v2);
+
+        v1 = v2;
+        expect (v1.isDouble ());
+        expect (v1.asDouble () == 2.5);
+        expect (v2.isDouble ());
+        expect (v2.asDouble () == 2.5);
+        expect (v1 == v2);
+
+        pass ();
+    }
+
+    void
+    test_move ()
+    {
+        Json::Value v1{2.5};
+        expect (v1.isDouble ());
+        expect (v1.asDouble () == 2.5);
+
+        Json::Value v2 = std::move(v1);
+        expect (v1.isNull ());
+        expect (v2.isDouble ());
+        expect (v2.asDouble () == 2.5);
+        expect (v1 != v2);
+
+        v1 = std::move(v2);
+        expect (v1.isDouble ());
+        expect (v1.asDouble () == 2.5);
+        expect (v2.isNull ());
+        expect (v1 != v2);
+
+        pass ();
+    }
+
     void run ()
     {
         testBadJson ();
+        test_copy ();
+        test_move ();
     }
 };
 

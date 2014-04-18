@@ -554,6 +554,26 @@ Value::operator= ( const Value& other )
     return *this;
 }
 
+Value::Value ( Value&& other )
+    : value_ ( other.value_ )
+    , type_ ( other.type_ )
+    , allocated_ ( other.allocated_ )
+# ifdef JSON_VALUE_USE_INTERNAL_MAP
+    , itemIsUsed_ ( other.itemIsUsed_ )
+    , memberNameIsStatic_ ( other.memberNameIsStatic_ )
+#endif  // JSON_VALUE_USE_INTERNAL_MAP
+    , comments_ ( other.comments_ )
+{
+    std::memset( &other, 0, sizeof(Value) );
+}
+
+Value&
+Value::operator= ( Value&& other )
+{
+    swap ( other );
+    return *this;
+}
+
 void
 Value::swap ( Value& other )
 {
