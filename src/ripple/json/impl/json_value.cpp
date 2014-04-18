@@ -554,16 +554,49 @@ Value::operator= ( const Value& other )
     return *this;
 }
 
+Value::Value ( Value&& other )
+    : value_ ( other.value_ )
+    , type_ ( other.type_ )
+    , allocated_ ( other.allocated_ )
+# ifdef JSON_VALUE_USE_INTERNAL_MAP
+    , itemIsUsed_ ( other.itemIsUsed_ )
+    , memberNameIsStatic_ ( other.memberNameIsStatic_ )
+#endif  // JSON_VALUE_USE_INTERNAL_MAP
+    , comments_ ( other.comments_ )
+{
+    std::memset( &other, 0, sizeof(Value) );
+}
+
+Value&
+Value::operator= ( Value&& other )
+{
+    swap ( other );
+    return *this;
+}
+
 void
 Value::swap ( Value& other )
 {
+    std::swap ( value_, other.value_ );
+
     ValueType temp = type_;
     type_ = other.type_;
     other.type_ = temp;
-    std::swap ( value_, other.value_ );
+
     int temp2 = allocated_;
     allocated_ = other.allocated_;
     other.allocated_ = temp2;
+
+# ifdef JSON_VALUE_USE_INTERNAL_MAP
+    unsigned temp3 = itemIsUsed_;
+    itemIsUsed_ = other.itemIsUsed_;
+    other.itemIsUsed_ = itemIsUsed_;
+
+    temp2 = memberNameIsStatic_;
+    memberNameIsStatic_ = other.memberNameIsStatic_;
+    other.memberNameIsStatic_ = temp2
+# endif
+    std::swap(comments_, other.comments_);
 }
 
 ValueType

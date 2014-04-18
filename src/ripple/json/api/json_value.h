@@ -215,6 +215,10 @@ public:
     ~Value ();
 
     Value& operator= ( const Value& other );
+
+    Value ( Value&& other );
+    Value& operator= ( Value&& other );
+
     /// Swap values.
     /// \note Currently, comments are intentionally not swapped, for
     /// both logic and efficiency.
