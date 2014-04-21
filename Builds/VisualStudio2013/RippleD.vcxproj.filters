@@ -2793,7 +2793,7 @@
     <ClCompile Include="..\..\src\ripple\common\impl\MultiSocket.cpp">
       <Filter>src\ripple\common\impl</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\common\impl\MultiSocketType.h">
+    <ClInclude Include="..\..\src\ripple\common\impl\MultiSocketImpl.h">
       <Filter>src\ripple\common\impl</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\common\impl\ResolverAsio.cpp">

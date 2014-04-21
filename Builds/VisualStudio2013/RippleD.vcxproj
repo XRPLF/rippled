@@ -1824,7 +1824,7 @@
     <ClCompile Include="..\..\src\ripple\common\impl\MultiSocket.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\common\impl\MultiSocketType.h">
+    <ClInclude Include="..\..\src\ripple\common\impl\MultiSocketImpl.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\common\impl\ResolverAsio.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>

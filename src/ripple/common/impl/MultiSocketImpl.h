@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_COMMON_MULTISOCKETTYPE_H_INCLUDED
-#define RIPPLE_COMMON_MULTISOCKETTYPE_H_INCLUDED
+#ifndef RIPPLE_COMMON_MULTISOCKETIMPL_H_INCLUDED
+#define RIPPLE_COMMON_MULTISOCKETIMPL_H_INCLUDED
 
 #include <ripple/common/MultiSocket.h>
 
@@ -38,7 +38,7 @@ namespace ripple {
 
 /** Template for producing instances of MultiSocket */
 template <class StreamSocket>
-class MultiSocketType
+class MultiSocketImpl
     : public MultiSocket
 {
 private:
@@ -77,16 +77,16 @@ public:
     typedef std::remove_reference_t <StreamSocket> next_layer_type;
     typedef typename next_layer_type::lowest_layer_type lowest_layer_type;
 
-    template <typename Arg>
-    MultiSocketType (Arg& arg,
-            boost::asio::ssl::context& ssl_context, int flags)
+    template <class... Args>
+    MultiSocketImpl (boost::asio::ssl::context& ssl_context, int flags,
+        Args&&... args)
         : m_flags (flags)
         , m_state (stateNone)
         , m_ssl_context (ssl_context)
         , m_verify_mode (0)
         , m_stream (nullptr)
         , m_needsShutdown (false)
-        , m_next_layer (arg)
+        , m_next_layer (std::forward <Args> (args)...)
         , m_proxyInfoSet (false)
         , m_native_ssl_handle (nullptr)
         , m_origFlags (cleaned_flags (flags))
@@ -162,7 +162,7 @@ protected:
 
     //--------------------------------------------------------------------------
     //
-    // MultiSocketType
+    // MultiSocketImpl
     //
     //--------------------------------------------------------------------------
 
@@ -865,7 +865,7 @@ protected:
     #endif
 
         error_handler m_handler;
-        MultiSocketType <StreamSocket>& m_owner;
+        MultiSocketImpl <StreamSocket>& m_owner;
         Stream& m_stream;
         handshake_type const m_type;
         boost::asio::basic_streambuf <Allocator> m_buffer;
@@ -875,7 +875,7 @@ protected:
             beast::asio::HandshakeDetectLogicSSL3> m_ssl;
         bool m_first_time;
 
-        AsyncOp (MultiSocketType <StreamSocket>& owner, Stream& stream,
+        AsyncOp (MultiSocketImpl <StreamSocket>& owner, Stream& stream,
             handshake_type type, beast::asio::const_buffers const& buffers,
                 error_handler const& handler)
             : m_handler (handler)
