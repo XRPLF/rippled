@@ -87,7 +87,7 @@ NodeObject::Ptr DecodedBlob::createObject ()
         memcpy (data.data (), m_objectData, m_dataBytes);
 
         object = NodeObject::createObject (
-            m_objectType, m_ledgerIndex, data, uint256::fromVoid (m_key));
+            m_objectType, m_ledgerIndex, std::move(data), uint256::fromVoid(m_key));
     }
 
     return object;

@@ -589,7 +589,7 @@ bool Ledger::saveValidatedLedger (bool current)
         Serializer s (128);
         s.add32 (HashPrefix::ledgerMaster);
         addRaw (s);
-        getApp().getNodeStore ().store (hotLEDGER, mLedgerSeq, s.modData (), mHash);
+        getApp().getNodeStore ().store (hotLEDGER, mLedgerSeq, std::move (s.modData ()), mHash);
     }
 
     AcceptedLedger::pointer aLedger;

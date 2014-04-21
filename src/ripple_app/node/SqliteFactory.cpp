@@ -95,7 +95,7 @@ public:
                 *pObject = NodeObject::createObject (
                     getTypeFromString (pSt.peekString (0)),
                     pSt.getUInt32 (1),
-                    data,
+                    std::move(data),
                     hash);
             }
             else
@@ -145,9 +145,9 @@ public:
         pStE.reset();
     }
 
-    void visitAll (NodeStore::VisitCallback& callback)
+    void for_each (std::function <void(NodeObject::Ptr)> f)
     {
-        // No lock needed as per the visitAll() API
+        // No lock needed as per the for_each() API
 
         uint256 hash;
 
@@ -164,10 +164,10 @@ public:
             NodeObject::Ptr const object (NodeObject::createObject (
                 getTypeFromString (pSt.peekString (0)),
                 pSt.getUInt32 (1),
-                data,
+                std::move(data),
                 hash));
 
-            callback.visitObject (object);
+            f (object);
         }
 
         pSt.reset ();

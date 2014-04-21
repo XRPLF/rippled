@@ -38,12 +38,14 @@ public:
     {
     }
     
-    void add_factory (std::unique_ptr <Factory> factory)
+    void
+    add_factory (std::unique_ptr <Factory> factory)
     {
         m_list.emplace_back (std::move (factory));
     }
 
-    void add_known_factories ()
+    void
+    add_known_factories ()
     {
         // This is part of the ripple_app module since it has dependencies
         //addFactory (make_SqliteFactory ());
@@ -62,7 +64,8 @@ public:
     #endif
     }
 
-    Factory* find (std::string const& name) const
+    Factory*
+    find (std::string const& name) const
     {
         for (List::const_iterator iter (m_list.begin ());
             iter != m_list.end (); ++iter)
@@ -71,7 +74,8 @@ public:
         return nullptr;
     }
 
-    static void missing_backend ()
+    static void
+    missing_backend ()
     {
         throw std::runtime_error (
             "Your rippled.cfg is missing a [node_db] entry, "
@@ -79,8 +83,11 @@ public:
             );
     }
 
-    std::unique_ptr <Backend> make_Backend (Parameters const& parameters,
-        Scheduler& scheduler, beast::Journal journal)
+    std::unique_ptr <Backend>
+    make_Backend (
+        Parameters const& parameters,
+        Scheduler& scheduler,
+        beast::Journal journal)
     {
         std::unique_ptr <Backend> backend;
 
@@ -108,10 +115,14 @@ public:
         return backend;
     }
 
-    std::unique_ptr <Database> make_Database (std::string const& name,
-        Scheduler& scheduler, beast::Journal journal, int readThreads,
-            Parameters const& backendParameters,
-                Parameters fastBackendParameters)
+    std::unique_ptr <Database>
+    make_Database (
+        std::string const& name,
+        Scheduler& scheduler,
+        beast::Journal journal,
+        int readThreads,
+        Parameters const& backendParameters,
+        Parameters fastBackendParameters)
     {
         std::unique_ptr <Backend> backend (make_Backend (
             backendParameters, scheduler, journal));
@@ -132,8 +143,8 @@ Manager::~Manager ()
 {
 }
 
-std::unique_ptr <Manager> make_Manager (
-    std::vector <std::unique_ptr <Factory>> factories)
+std::unique_ptr <Manager>
+make_Manager (std::vector <std::unique_ptr <Factory>> factories)
 {
     return std::make_unique <ManagerImp> (std::move (factories));
 }
