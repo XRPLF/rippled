@@ -45,8 +45,10 @@ public:
         void (*f)(void*);
         void* a;
     };
-
-    static void thread_entry (void* ptr)
+    
+    static
+    void
+    thread_entry (void* ptr)
     {
         ThreadParams* const p (reinterpret_cast <ThreadParams*> (ptr));
         void (*f)(void*) = p->f;
@@ -62,7 +64,8 @@ public:
         (*f)(a);
     }
 
-    void StartThread (void (*f)(void*), void* a)
+    void
+    StartThread (void (*f)(void*), void* a)
     {
         ThreadParams* const p (new ThreadParams (f, a));
         EnvWrapper::StartThread (&RocksDBEnv::thread_entry, p);
@@ -164,14 +167,16 @@ public:
     {
     }
 
-    std::string getName()
+    std::string 
+    getName()
     {
         return m_name;
     }
 
     //--------------------------------------------------------------------------
 
-    Status fetch (void const* key, NodeObject::Ptr* pObject)
+    Status
+    fetch (void const* key, NodeObject::Ptr* pObject)
     {
         pObject->reset ();
 
@@ -220,20 +225,22 @@ public:
         return status;
     }
 
-    void store (NodeObject::ref object)
+    void
+    store (NodeObject::ref object)
     {
         m_batch.store (object);
     }
 
-    void storeBatch (Batch const& batch)
+    void
+    storeBatch (Batch const& batch)
     {
         rocksdb::WriteBatch wb;
 
         EncodedBlob encoded;
 
-        BOOST_FOREACH (NodeObject::ref object, batch)
+        for (auto const& e : batch)
         {
-            encoded.prepare (object);
+            encoded.prepare (e);
 
             wb.Put (
                 rocksdb::Slice (reinterpret_cast <char const*> (
@@ -247,7 +254,8 @@ public:
         m_db->Write (options, &wb).ok ();
     }
 
-    void visitAll (VisitCallback& callback)
+    void
+    for_each (std::function <void(NodeObject::Ptr)> f)
     {
         rocksdb::ReadOptions const options;
 
@@ -263,33 +271,35 @@ public:
 
                 if (decoded.wasOk ())
                 {
-                    NodeObject::Ptr object (decoded.createObject ());
-
-                    callback.visitObject (object);
+                    f (decoded.createObject ());
                 }
                 else
                 {
                     // Uh oh, corrupted data!
-                    WriteLog (lsFATAL, NodeObject) << "Corrupt NodeObject #" << uint256 (it->key ().data ());
+                    if (m_journal.fatal) m_journal.fatal <<
+                        "Corrupt NodeObject #" << uint256 (it->key ().data ());
                 }
             }
             else
             {
                 // VFALCO NOTE What does it mean to find an
                 //             incorrectly sized key? Corruption?
-                WriteLog (lsFATAL, NodeObject) << "Bad key size = " << it->key ().size ();
+                if (m_journal.fatal) m_journal.fatal <<
+                    "Bad key size = " << it->key ().size ();
             }
         }
     }
 
-    int getWriteLoad ()
+    int
+    getWriteLoad ()
     {
         return m_batch.getWriteLoad ();
     }
 
     //--------------------------------------------------------------------------
 
-    void writeBatch (Batch const& batch)
+    void
+    writeBatch (Batch const& batch)
     {
         storeBatch (batch);
     }
@@ -317,14 +327,18 @@ public:
     {
     }
 
-    beast::String getName () const
+    beast::String
+    getName () const
     {
         return "RocksDB";
     }
 
-    std::unique_ptr <Backend> createInstance (
-        size_t keyBytes, Parameters const& keyValues,
-            Scheduler& scheduler, beast::Journal journal)
+    std::unique_ptr <Backend> 
+    createInstance (
+        size_t keyBytes,
+        Parameters const& keyValues,
+        Scheduler& scheduler,
+        beast::Journal journal)
     {
         return std::make_unique <RocksDBBackend> (
             keyBytes, keyValues, scheduler, journal, &m_env);
@@ -333,7 +347,8 @@ public:
 
 //------------------------------------------------------------------------------
 
-std::unique_ptr <Factory> make_RocksDBFactory ()
+std::unique_ptr <Factory>
+make_RocksDBFactory ()
 {
     return std::make_unique <RocksDBFactory> ();
 }

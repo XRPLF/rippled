@@ -34,7 +34,8 @@ BatchWriter::~BatchWriter ()
     waitForWriting ();
 }
 
-void BatchWriter::store (NodeObject::ref object)
+void
+BatchWriter::store (NodeObject::ref object)
 {
     std::lock_guard<decltype(mWriteMutex)> sl (mWriteMutex);
 
@@ -48,19 +49,22 @@ void BatchWriter::store (NodeObject::ref object)
     }
 }
 
-int BatchWriter::getWriteLoad ()
+int
+BatchWriter::getWriteLoad ()
 {
     std::lock_guard<decltype(mWriteMutex)> sl (mWriteMutex);
 
     return std::max (mWriteLoad, static_cast<int> (mWriteSet.size ()));
 }
 
-void BatchWriter::performScheduledTask ()
+void
+BatchWriter::performScheduledTask ()
 {
     writeBatch ();
 }
 
-void BatchWriter::writeBatch ()
+void
+BatchWriter::writeBatch ()
 {
     for (;;)
     {
@@ -90,7 +94,8 @@ void BatchWriter::writeBatch ()
     }
 }
 
-void BatchWriter::waitForWriting ()
+void
+BatchWriter::waitForWriting ()
 {
     std::unique_lock <decltype(mWriteMutex)> sl (mWriteMutex);
 

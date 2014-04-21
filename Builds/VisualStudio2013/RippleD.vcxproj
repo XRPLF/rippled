@@ -3045,7 +3045,6 @@
     <ClInclude Include="..\..\src\ripple_core\nodestore\api\Scheduler.h" />
     <ClInclude Include="..\..\src\ripple_core\nodestore\api\Task.h" />
     <ClInclude Include="..\..\src\ripple_core\nodestore\api\Types.h" />
-    <ClInclude Include="..\..\src\ripple_core\nodestore\api\VisitCallback.h" />
     <ClInclude Include="..\..\src\ripple_core\nodestore\backend\HyperDBFactory.h" />
     <ClInclude Include="..\..\src\ripple_core\nodestore\backend\LevelDBFactory.h" />
     <ClInclude Include="..\..\src\ripple_core\nodestore\backend\MemoryFactory.h" />
@@ -3249,6 +3248,7 @@
     <None Include="..\..\src\ripple\validators\README.md" />
     <None Include="..\..\src\ripple_app\ledger\TODO.md" />
     <None Include="..\..\src\ripple_app\TODO.md" />
+    <None Include="..\..\src\ripple_core\nodestore\README.md" />
     <None Include="..\..\src\ripple_overlay\README.md" />
     <None Include="..\..\src\ripple_overlay\TODO.md" />
     <None Include="..\..\src\ripple_rpc\README.md" />

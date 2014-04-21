@@ -77,7 +77,7 @@ public:
     // This constructor is private, use createObject instead.
     NodeObject (NodeObjectType type,
                 LedgerIndex ledgerIndex,
-                Blob& data,
+                Blob&& data,
                 uint256 const& hash,
                 PrivateAccess);
 
@@ -94,7 +94,7 @@ public:
     */
     static Ptr createObject (NodeObjectType type,
                              LedgerIndex ledgerIndex,
-                             Blob& data,
+                             Blob&& data,
                              uint256 const& hash);
 
     /** Retrieve the type of this object.

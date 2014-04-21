@@ -1124,7 +1124,7 @@ int SHAMap::flushDirty (NodeMap& map, int maxNodes, NodeObjectType t, std::uint3
 
 #endif
 
-        getApp().getNodeStore ().store (t, seq, s.modData (), it->second->getNodeHash ());
+        getApp().getNodeStore ().store (t, seq, std::move (s.modData ()), it->second->getNodeHash ());
 
         if (flushed++ >= maxNodes)
             return flushed;

@@ -20,7 +20,8 @@
 namespace ripple {
 namespace NodeStore {
 
-void EncodedBlob::prepare (NodeObject::Ptr const& object)
+void
+EncodedBlob::prepare (NodeObject::Ptr const& object)
 {
     m_key = object->getHash ().begin ();
 

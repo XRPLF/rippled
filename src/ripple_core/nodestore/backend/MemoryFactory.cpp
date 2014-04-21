@@ -41,14 +41,16 @@ public:
     {
     }
 
-    std::string getName ()
+    std::string
+    getName ()
     {
         return "memory";
     }
 
     //--------------------------------------------------------------------------
 
-    Status fetch (void const* key, NodeObject::Ptr* pObject)
+    Status
+    fetch (void const* key, NodeObject::Ptr* pObject)
     {
         uint256 const hash (uint256::fromVoid (key));
 
@@ -66,7 +68,8 @@ public:
         return ok;
     }
 
-    void store (NodeObject::ref object)
+    void
+    store (NodeObject::ref object)
     {
         Map::iterator iter = m_map.find (object->getHash ());
 
@@ -76,19 +79,22 @@ public:
         }
     }
 
-    void storeBatch (Batch const& batch)
+    void
+    storeBatch (Batch const& batch)
     {
-        for (std::size_t i = 0; i < batch.size (); ++i)
-            store (batch [i]);
+        for (auto const& e : batch)
+            store (e);
     }
 
-    void visitAll (VisitCallback& callback)
+    void
+    for_each (std::function <void(NodeObject::Ptr)> f)
     {
-        for (Map::const_iterator iter = m_map.begin (); iter != m_map.end (); ++iter)
-            callback.visitObject (iter->second);
+        for (auto const& e : m_map)
+            f (e.second);
     }
 
-    int getWriteLoad ()
+    int
+    getWriteLoad ()
     {
         return 0;
     }
@@ -99,14 +105,18 @@ public:
 class MemoryFactory : public Factory
 {
 public:
-    beast::String getName () const
+    beast::String
+    getName () const
     {
         return "Memory";
     }
 
-    std::unique_ptr <Backend> createInstance (
-        size_t keyBytes, Parameters const& keyValues,
-            Scheduler& scheduler, beast::Journal journal)
+    std::unique_ptr <Backend>
+    createInstance (
+        size_t keyBytes,
+        Parameters const& keyValues,
+        Scheduler& scheduler,
+        beast::Journal journal)
     {
         return std::make_unique <MemoryBackend> (
             keyBytes, keyValues, scheduler, journal);
@@ -115,7 +125,8 @@ public:
 
 //------------------------------------------------------------------------------
 
-std::unique_ptr <Factory> make_MemoryFactory ()
+std::unique_ptr <Factory>
+make_MemoryFactory ()
 {
     return std::make_unique <MemoryFactory> ();
 }

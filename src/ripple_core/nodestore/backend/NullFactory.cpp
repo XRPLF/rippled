@@ -31,29 +31,35 @@ public:
     {
     }
 
-    std::string getName()
+    std::string
+    getName()
     {
         return std::string ();
     }
 
-    Status fetch (void const*, NodeObject::Ptr*)
+    Status 
+    fetch (void const*, NodeObject::Ptr*)
     {
         return notFound;
     }
     
-    void store (NodeObject::ref object)
+    void
+    store (NodeObject::ref object)
     {
     }
     
-    void storeBatch (Batch const& batch)
+    void
+    storeBatch (Batch const& batch)
     {
     }
 
-    void visitAll (VisitCallback& callback)
+    void
+    for_each (std::function <void(NodeObject::Ptr)> f)
     {
     }
 
-    int getWriteLoad ()
+    int
+    getWriteLoad ()
     {
         return 0;
     }
@@ -71,8 +77,11 @@ public:
         return "none";
     }
 
-    std::unique_ptr <Backend> createInstance (
-        size_t, Parameters const&, Scheduler&, beast::Journal)
+    std::unique_ptr <Backend>
+    createInstance (
+        size_t,
+        Parameters const&,
+        Scheduler&, beast::Journal)
     {
         return std::make_unique <NullBackend> ();
     }
