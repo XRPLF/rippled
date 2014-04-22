@@ -20,8 +20,8 @@
 #ifndef RIPPLE_VALIDATORS_MANAGER_H_INCLUDED
 #define RIPPLE_VALIDATORS_MANAGER_H_INCLUDED
 
-#include "../../beast/beast/threads/Stoppable.h"
-#include "../../beast/modules/beast_core/files/File.h"
+#include "../../../beast/beast/threads/Stoppable.h"
+#include "../../../beast/modules/beast_core/files/File.h"
 
 namespace ripple {
 namespace Validators {

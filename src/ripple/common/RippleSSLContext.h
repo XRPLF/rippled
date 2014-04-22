@@ -20,7 +20,7 @@
 #ifndef RIPPLE_COMMON_SSLCONTEXT_H_INCLUDED
 #define RIPPLE_COMMON_SSLCONTEXT_H_INCLUDED
 
-#include "../beast/modules/beast_asio/beast_asio.h"
+#include "../../beast/modules/beast_asio/beast_asio.h"
 
 #include <string>
 

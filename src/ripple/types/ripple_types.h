@@ -22,9 +22,9 @@
 
 #include "../json/ripple_json.h"
 
-#include "../beast/beast/Crypto.h"
+#include "../../beast/beast/Crypto.h"
 
-#include "../beast/modules/beast_core/system/BeforeBoost.h"
+#include "../../beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/utility/base_from_member.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/unordered_set.hpp>

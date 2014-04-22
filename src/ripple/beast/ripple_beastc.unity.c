@@ -17,33 +17,17 @@
 */
 //==============================================================================
 
+/*  This file includes all of the C-language beast sources needed to link.
+    By including them here, we avoid having to muck with the SConstruct
+    Makefile, Project file, or whatever.
+
+    Note that these sources must be compiled using the C compiler.
+*/
+    
 #include "../../BeastConfig.h"
 
-#include "ripple_types.h"
-#include "../ripple/sslutil/ripple_sslutil.h"
-
-#ifdef BEAST_WIN32
-# include <Winsock2.h> // for ByteOrder.cpp
-// <Winsock2.h> defines 'max' and does other stupid things
-# ifdef max
-# undef max
-# endif
+#ifdef __cplusplus
+#error "Whoops! This file must be compiled with a C compiler!"
 #endif
 
-#include <set>
-#include <map>
-#include <unordered_set>
-#include <unordered_map>
-#include <boost/unordered_set.hpp>
-
-#include "impl/Base58.cpp"
-#include "impl/ByteOrder.cpp"
-#include "impl/RandomNumbers.cpp"
-#include "impl/strHex.cpp"
-#include "impl/UInt128.cpp"
-#include "impl/UInt160.cpp"
-#include "impl/UInt256.cpp"
-#include "impl/RippleIdentifierTests.cpp"
-#include "impl/RippleAssets.cpp"
-
-
+#include "../../beast/modules/beast_sqlite/beast_sqlite.unity.c"

@@ -55,9 +55,6 @@
     <None Include="..\..\beast\http\impl\http-parser\README.md">
       <Filter>beast\http\impl\http-parser</Filter>
     </None>
-    <None Include="..\..\modules\beast_core\beast_core.mm">
-      <Filter>beast_core</Filter>
-    </None>
     <None Include="..\..\beast\crypto\impl\sha2\README">
       <Filter>beast\crypto\impl\sha2</Filter>
     </None>
@@ -71,6 +68,9 @@
       <Filter>beast\asio</Filter>
     </None>
     <None Include="..\..\SConstruct" />
+    <None Include="..\..\modules\beast_core\beast_core.unity.mm">
+      <Filter>beast_core</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="beast_core">
@@ -1293,14 +1293,8 @@
     <ClCompile Include="..\..\modules\beast_core\diagnostic\UnitTestUtilities.cpp">
       <Filter>beast_core\diagnostic</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_sqlite\beast_sqlite.c">
-      <Filter>beast_sqlite</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\beast_sqlite\sqlite\sqlite3.c">
       <Filter>beast_sqlite\sqlite</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_sqdb\beast_sqdb.cpp">
-      <Filter>beast_sqdb</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_sqdb\source\blob.cpp">
       <Filter>beast_sqdb\source</Filter>
@@ -1413,23 +1407,11 @@
     <ClCompile Include="..\..\modules\beast_asio\http\HTTPParser.cpp">
       <Filter>beast_asio\http</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\beast_core\beast_core.cpp">
-      <Filter>beast_core</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\beast_asio\beast_asio.cpp">
-      <Filter>beast_asio</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\time\AtExitHook.cpp">
       <Filter>beast_core\time</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\beast_core\diagnostic\FatalError.cpp">
       <Filter>beast_core\diagnostic</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\beast\net\Net.cpp">
-      <Filter>beast\net</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\beast\utility\Utility.cpp">
-      <Filter>beast\utility</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\utility\impl\Journal.cpp">
       <Filter>beast\utility\impl</Filter>
@@ -1449,17 +1431,11 @@
     <ClCompile Include="..\..\beast\http\impl\http-parser\contrib\url_parser.c">
       <Filter>beast\http\impl\http-parser\contrib</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\beast\http\HTTP.cpp">
-      <Filter>beast\http</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\beast\strings\impl\CharacterFunctions.cpp">
       <Filter>beast\strings\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\strings\impl\String.cpp">
       <Filter>beast\strings\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\beast\strings\Strings.cpp">
-      <Filter>beast\strings</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\http\impl\URL.cpp">
       <Filter>beast\http\impl</Filter>
@@ -1475,9 +1451,6 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\crypto\impl\sha2\sha2speed.c">
       <Filter>beast\crypto\impl\sha2</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\beast\crypto\Crypto.cpp">
-      <Filter>beast\crypto</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\crypto\impl\Sha256.cpp">
       <Filter>beast\crypto\impl</Filter>
@@ -1509,9 +1482,6 @@
     <ClCompile Include="..\..\beast\threads\impl\WaitableEvent.cpp">
       <Filter>beast\threads\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\beast\threads\Threads.cpp">
-      <Filter>beast\threads</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\beast\threads\impl\Thread.cpp">
       <Filter>beast\threads\impl</Filter>
     </ClCompile>
@@ -1524,23 +1494,14 @@
     <ClCompile Include="..\..\beast\threads\impl\Stoppable.cpp">
       <Filter>beast\threads\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\beast\boost\Boost.cpp">
-      <Filter>beast\boost</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\beast\utility\impl\PropertyStream.cpp">
       <Filter>beast\utility\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\beast\asio\Asio.cpp">
-      <Filter>beast\asio</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\asio\impl\IPAddressConversion.cpp">
       <Filter>beast\asio\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\crypto\impl\MurmurHash.cpp">
       <Filter>beast\crypto\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\beast\insight\Insight.cpp">
-      <Filter>beast\insight</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\insight\impl\Collector.cpp">
       <Filter>beast\insight\impl</Filter>
@@ -1575,17 +1536,8 @@
     <ClCompile Include="..\..\beast\net\impl\IPEndpoint.cpp">
       <Filter>beast\net\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\beast\chrono\Chrono.cpp">
-      <Filter>beast\chrono</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\beast\container\Container.cpp">
-      <Filter>beast\container</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\beast\container\tests\buffer_view.test.cpp">
       <Filter>beast\container\tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\beast\cxx14\cxx14.cpp">
-      <Filter>beast\cxx14</Filter>
     </ClCompile>
     <ClCompile Include="..\..\beast\cxx14\tests\integer_sequence.test.cpp">
       <Filter>beast\cxx14\tests</Filter>
@@ -1644,9 +1596,6 @@
     <ClCompile Include="..\..\beast\streams\tests\basic_abstract_ostream.test.cpp">
       <Filter>beast\streams\tests</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\beast\streams\streams.cpp">
-      <Filter>beast\streams</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\beast\threads\tests\Atomic.test.cpp">
       <Filter>beast\threads\tests</Filter>
     </ClCompile>
@@ -1667,6 +1616,57 @@
     </ClCompile>
     <ClCompile Include="..\..\beast\utility\tests\Zero.test.cpp">
       <Filter>beast\utility\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\asio\Asio.unity.cpp">
+      <Filter>beast\asio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\boost\Boost.unity.cpp">
+      <Filter>beast\boost</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\chrono\Chrono.unity.cpp">
+      <Filter>beast\chrono</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\container\Container.unity.cpp">
+      <Filter>beast\container</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\crypto\Crypto.unity.cpp">
+      <Filter>beast\crypto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\cxx14\cxx14.unity.cpp">
+      <Filter>beast\cxx14</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\http\HTTP.unity.cpp">
+      <Filter>beast\http</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\insight\Insight.unity.cpp">
+      <Filter>beast\insight</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\net\Net.unity.cpp">
+      <Filter>beast\net</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\streams\streams.unity.cpp">
+      <Filter>beast\streams</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\strings\Strings.unity.cpp">
+      <Filter>beast\strings</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\threads\Threads.unity.cpp">
+      <Filter>beast\threads</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\beast\utility\Utility.unity.cpp">
+      <Filter>beast\utility</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_core\beast_core.unity.cpp">
+      <Filter>beast_core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_asio\beast_asio.unity.cpp">
+      <Filter>beast_asio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_sqdb\beast_sqdb.unity.cpp">
+      <Filter>beast_sqdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\beast_sqlite\beast_sqlite.unity.c">
+      <Filter>beast_sqlite</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

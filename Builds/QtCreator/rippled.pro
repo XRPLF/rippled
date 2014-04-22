@@ -62,42 +62,42 @@ UI_HEADERS_DIR += ../../src/ripple_basics
 # New style
 #
 SOURCES += \
-    ../../src/ripple/beast/ripple_beast.cpp \
+    ../../src/ripple/beast/ripple_beast.unity.cpp \
     ../../src/ripple/beast/ripple_beastc.c \
-    ../../src/ripple/common/ripple_common.cpp \
-    ../../src/ripple/http/ripple_http.cpp \
-    ../../src/ripple/json/ripple_json.cpp \
-    ../../src/ripple/peerfinder/ripple_peerfinder.cpp \
-    ../../src/ripple/radmap/ripple_radmap.cpp \
-    ../../src/ripple/resource/ripple_resource.cpp \
-    ../../src/ripple/sitefiles/ripple_sitefiles.cpp \
-    ../../src/ripple/sslutil/ripple_sslutil.cpp \
-    ../../src/ripple/testoverlay/ripple_testoverlay.cpp \
-    ../../src/ripple/types/ripple_types.cpp \
-    ../../src/ripple/validators/ripple_validators.cpp
+    ../../src/ripple/common/ripple_common.unity.cpp \
+    ../../src/ripple/http/ripple_http.unity.cpp \
+    ../../src/ripple/json/ripple_json.unity.cpp \
+    ../../src/ripple/peerfinder/ripple_peerfinder.unity.cpp \
+    ../../src/ripple/radmap/ripple_radmap.unity.cpp \
+    ../../src/ripple/resource/ripple_resource.unity.cpp \
+    ../../src/ripple/sitefiles/ripple_sitefiles.unity.cpp \
+    ../../src/ripple/sslutil/ripple_sslutil.unity.cpp \
+    ../../src/ripple/testoverlay/ripple_testoverlay.unity.cpp \
+    ../../src/ripple/types/ripple_types.unity.cpp \
+    ../../src/ripple/validators/ripple_validators.unity.cpp
 
 # ---------
 # Old style
 #
 SOURCES += \
-    ../../src/ripple_app/ripple_app.cpp \
-    ../../src/ripple_app/ripple_app_pt1.cpp \
-    ../../src/ripple_app/ripple_app_pt2.cpp \
-    ../../src/ripple_app/ripple_app_pt3.cpp \
-    ../../src/ripple_app/ripple_app_pt4.cpp \
-    ../../src/ripple_app/ripple_app_pt5.cpp \
-    ../../src/ripple_app/ripple_app_pt6.cpp \
-    ../../src/ripple_app/ripple_app_pt7.cpp \
-    ../../src/ripple_app/ripple_app_pt8.cpp \
-    ../../src/ripple_basics/ripple_basics.cpp \
-    ../../src/ripple_core/ripple_core.cpp \
-    ../../src/ripple_data/ripple_data.cpp \
-    ../../src/ripple_hyperleveldb/ripple_hyperleveldb.cpp \
-    ../../src/ripple_leveldb/ripple_leveldb.cpp \
-    ../../src/ripple_net/ripple_net.cpp \
-    ../../src/ripple_overlay/ripple_overlay.cpp \
-    ../../src/ripple_rpc/ripple_rpc.cpp \
-    ../../src/ripple_websocket/ripple_websocket.cpp
+    ../../src/ripple_app/ripple_app.unity.cpp \
+    ../../src/ripple_app/ripple_app_pt1.unity.cpp \
+    ../../src/ripple_app/ripple_app_pt2.unity.cpp \
+    ../../src/ripple_app/ripple_app_pt3.unity.cpp \
+    ../../src/ripple_app/ripple_app_pt4.unity.cpp \
+    ../../src/ripple_app/ripple_app_pt5.unity.cpp \
+    ../../src/ripple_app/ripple_app_pt6.unity.cpp \
+    ../../src/ripple_app/ripple_app_pt7.unity.cpp \
+    ../../src/ripple_app/ripple_app_pt8.unity.cpp \
+    ../../src/ripple_basics/ripple_basics.unity.cpp \
+    ../../src/ripple_core/ripple_core.unity.cpp \
+    ../../src/ripple_data/ripple_data.unity.cpp \
+    ../../src/ripple_hyperleveldb/ripple_hyperleveldb.unity.cpp \
+    ../../src/ripple_leveldb/ripple_leveldb.unity.cpp \
+    ../../src/ripple_net/ripple_net.unity.cpp \
+    ../../src/ripple_overlay/ripple_overlay.unity.cpp \
+    ../../src/ripple_rpc/ripple_rpc.unity.cpp \
+    ../../src/ripple_websocket/ripple_websocket.unity.cpp
 
 LIBS += \
     -lboost_date_time-mt\

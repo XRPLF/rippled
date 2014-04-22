@@ -20,10 +20,10 @@
 #ifndef RIPPLE_JSON_H_INCLUDED
 #define RIPPLE_JSON_H_INCLUDED
 
-#include "../beast/beast/Config.h"
+#include "../../beast/beast/Config.h"
 
-#include "../beast/beast/strings/String.h"
-#include "../beast/beast/utility/PropertyStream.h"
+#include "../../beast/beast/strings/String.h"
+#include "../../beast/beast/utility/PropertyStream.h"
 
 #include <deque>
 #include <stack>

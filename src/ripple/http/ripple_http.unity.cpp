@@ -19,27 +19,20 @@
 
 #include "../../BeastConfig.h"
 
-#include "ripple_resource.h"
+#include "ripple_http.h"
 
-#include "../beast/modules/beast_core/system/BeforeBoost.h"
-#include <boost/utility/base_from_member.hpp>
+#include "../ripple_net/ripple_net.h"
 
-#include "../algorithm/api/DecayingSample.h"
-#include "../common/seconds_clock.h"
+#include "../../beast/modules/beast_core/system/BeforeBoost.h"
+#include <boost/asio.hpp>
+#include <boost/optional.hpp>
 
-#include "../beast/beast/Insight.h"
-#include "../beast/beast/cxx14/memory.h"
-#include "../beast/beast/chrono/chrono_io.h"
+#include "impl/Port.cpp"
+#include "impl/ScopedStream.cpp"
 
-#include "impl/Fees.cpp"
-#  include "impl/Kind.h"
-# include "impl/Key.h"
-#  include "impl/Tuning.h"
-# include "impl/Entry.h"
-# include "impl/Import.h"
-#include "impl/Charge.cpp"
-#  include "impl/Logic.h"
-#include "impl/Consumer.cpp"
-#include "impl/LegacyFees.cpp"
-#include "impl/Manager.cpp"
-#include "impl/Tests.cpp"
+# include "impl/Types.h"
+#  include "impl/ServerImpl.h"
+# include "impl/Peer.h"
+# include "impl/Door.h"
+#include "impl/ServerImpl.cpp"
+#include "impl/Server.cpp"

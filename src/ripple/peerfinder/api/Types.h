@@ -22,7 +22,7 @@
 
 #include "Endpoint.h"
 
-#include "../../beast/beast/chrono/abstract_clock.h"
+#include "../../../beast/beast/chrono/abstract_clock.h"
 
 namespace ripple {
 namespace PeerFinder {
