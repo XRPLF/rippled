@@ -143,8 +143,13 @@ public:
 
         if (! keyValues["high_threads"].isEmpty())
         {
-            options.env->SetBackgroundThreads
-                (keyValues["high_threads"].getIntValue(), rocksdb::Env::HIGH);
+            auto const highThreads = keyValues["high_threads"].getIntValue();
+            options.env->SetBackgroundThreads (highThreads, rocksdb::Env::HIGH);
+
+            // If we have high-priority threads, presumably we want to
+            // use them for background flushes
+            if (highThreads > 0)
+                options.max_background_flushes = highThreads;
         }
 
         rocksdb::DB* db = nullptr;
