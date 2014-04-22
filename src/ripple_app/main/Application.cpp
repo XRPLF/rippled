@@ -24,9 +24,11 @@
 #include "Tuning.h"
 
 namespace ripple {
-
+    
 // VFALCO TODO Clean this global up
 static bool volatile doShutdown = false;
+
+static int const MAJORITY_FRACTION (200);
 
 //------------------------------------------------------------------------------
 //
@@ -57,6 +59,8 @@ class PathRequestLog;
 template <> char const* LogPartition::getPartitionName <PathRequestLog> () { return "PathRequest"; }
 class RPCManagerLog;
 template <> char const* LogPartition::getPartitionName <RPCManagerLog> () { return "RPCManager"; }
+class FeaturesLog;
+template <> char const* LogPartition::getPartitionName <FeaturesLog>() { return "FeatureTable"; }
 
 template <> char const* LogPartition::getPartitionName <CollectorManager> () { return "Collector"; }
 
@@ -137,8 +141,7 @@ public:
     std::unique_ptr <SNTPClient> m_sntpClient;
     std::unique_ptr <TxQueue> m_txQueue;
     std::unique_ptr <Validators::Manager> m_validators;
-    std::unique_ptr <IFeatures> mFeatures;
-    std::unique_ptr <IFeeVote> mFeeVote;
+    std::unique_ptr <FeatureTable> m_featureTable;
     std::unique_ptr <LoadFeeTrack> mFeeTrack;
     std::unique_ptr <IHashRouter> mHashRouter;
     std::unique_ptr <Validations> mValidations;
@@ -293,9 +296,8 @@ public:
             getConfig ().getModuleDatabasePath (),
             LogPartition::getJournal <ValidatorsLog> ())))
 
-        , mFeatures (IFeatures::New (2 * 7 * 24 * 60 * 60, 200)) // two weeks, 200/256
-
-        , mFeeVote (IFeeVote::New (10, 20 * SYSTEM_CURRENCY_PARTS, 5 * SYSTEM_CURRENCY_PARTS))
+        , m_featureTable (make_FeatureTable (weeks(2), MAJORITY_FRACTION, // 200/256
+            LogPartition::getJournal <FeaturesLog> ()))
 
         , mFeeTrack (LoadFeeTrack::New (LogPartition::getJournal <LoadManagerLog> ()))
 
@@ -448,19 +450,14 @@ public:
         return *m_validators;
     }
 
-    IFeatures& getFeatureTable ()
+    FeatureTable& getFeatureTable ()
     {
-        return *mFeatures;
+        return *m_featureTable;
     }
 
     LoadFeeTrack& getFeeTrack ()
     {
         return *mFeeTrack;
-    }
-
-    IFeeVote& getFeeVote ()
-    {
-        return *mFeeVote;
     }
 
     IHashRouter& getHashRouter ()
@@ -612,7 +609,7 @@ public:
         if (!getConfig ().RUN_STANDALONE)
             updateTables ();
 
-        mFeatures->addInitialFeatures ();
+        m_featureTable->addInitial ();
         Pathfinder::initPathTable ();
 
         m_ledgerMaster->setMinValidations (getConfig ().VALIDATION_QUORUM);

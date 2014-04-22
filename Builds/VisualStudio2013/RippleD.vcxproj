@@ -1072,13 +1072,13 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\Features.cpp">
+    <ClCompile Include="..\..\src\ripple_app\misc\FeaturesImpl.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\FeeVote.cpp">
+    <ClCompile Include="..\..\src\ripple_app\misc\FeeVoteImpl.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -2951,8 +2951,8 @@
     <ClInclude Include="..\..\src\ripple_app\misc\AccountItems.h" />
     <ClInclude Include="..\..\src\ripple_app\misc\AccountState.h" />
     <ClInclude Include="..\..\src\ripple_app\misc\CanonicalTXSet.h" />
-    <ClInclude Include="..\..\src\ripple_app\misc\IFeatures.h" />
-    <ClInclude Include="..\..\src\ripple_app\misc\IFeeVote.h" />
+    <ClInclude Include="..\..\src\ripple_app\misc\FeatureTable.h" />
+    <ClInclude Include="..\..\src\ripple_app\misc\FeeVote.h" />
     <ClInclude Include="..\..\src\ripple_app\misc\IHashRouter.h" />
     <ClInclude Include="..\..\src\ripple_app\misc\ProofOfWorkFactory.h" />
     <ClInclude Include="..\..\src\ripple_app\misc\NicknameState.h" />

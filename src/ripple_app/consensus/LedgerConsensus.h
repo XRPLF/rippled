@@ -21,7 +21,7 @@
 #define RIPPLE_LEDGERCONSENSUS_H
 
 namespace ripple {
-
+    
 /** Manager for achieving consensus on the next ledger.
 
     This object is created when the consensus process starts, and
@@ -32,12 +32,7 @@ class LedgerConsensus
 public:    
     typedef beast::abstract_clock <std::chrono::seconds> clock_type;
 
-    static boost::shared_ptr <LedgerConsensus> New (
-        clock_type& clock, LocalTxs& localtx,
-        LedgerHash const & prevLCLHash, Ledger::ref previousLedger,
-            std::uint32_t closeTime);
-
-    virtual ~LedgerConsensus () = 0;
+    virtual ~LedgerConsensus() = 0;
 
     virtual int startup () = 0;
 
@@ -84,6 +79,11 @@ public:
     // test/debug
     virtual void simulate () = 0;
 };
+
+boost::shared_ptr <LedgerConsensus>
+make_LedgerConsensus (LedgerConsensus::clock_type& clock, LocalTxs& localtx,
+    LedgerHash const & prevLCLHash, Ledger::ref previousLedger,
+        std::uint32_t closeTime, FeeVote& feeVote);
 
 } // ripple
 

@@ -678,12 +678,6 @@
     <ClCompile Include="..\..\src\ripple_app\misc\CanonicalTXSet.cpp">
       <Filter>[2] Old Ripple\ripple_app\misc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\Features.cpp">
-      <Filter>[2] Old Ripple\ripple_app\misc</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\FeeVote.cpp">
-      <Filter>[2] Old Ripple\ripple_app\misc</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\misc\HashRouter.cpp">
       <Filter>[2] Old Ripple\ripple_app\misc</Filter>
     </ClCompile>
@@ -1722,6 +1716,12 @@
     <ClCompile Include="..\..\src\ripple_rpc\impl\LookupLedger.cpp">
       <Filter>[2] Old Ripple\ripple_rpc\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\misc\FeaturesImpl.cpp">
+      <Filter>[2] Old Ripple\ripple_app\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\misc\FeeVoteImpl.cpp">
+      <Filter>[2] Old Ripple\ripple_app\misc</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\ripple_basics\containers\RangeSet.h">
@@ -2124,12 +2124,6 @@
       <Filter>[2] Old Ripple\ripple_app\misc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\misc\CanonicalTXSet.h">
-      <Filter>[2] Old Ripple\ripple_app\misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\misc\IFeatures.h">
-      <Filter>[2] Old Ripple\ripple_app\misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\misc\IFeeVote.h">
       <Filter>[2] Old Ripple\ripple_app\misc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\misc\IHashRouter.h">
@@ -3344,6 +3338,12 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_rpc\impl\LegacyPathFind.h">
       <Filter>[2] Old Ripple\ripple_rpc\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\misc\FeeVote.h">
+      <Filter>[2] Old Ripple\ripple_app\misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\misc\FeatureTable.h">
+      <Filter>[2] Old Ripple\ripple_app\misc</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

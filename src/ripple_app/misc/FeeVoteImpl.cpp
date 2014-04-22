@@ -19,9 +19,9 @@
 
 namespace ripple {
 
-class Features;
+class FeaturesImpl;
 
-class FeeVote : public IFeeVote
+class FeeVoteImpl : public FeeVote
 {
 private:
     
@@ -37,37 +37,41 @@ private:
             ++mVoteMap[mTarget];
         }
 
-        bool mayVote () const
+        bool
+        mayVote () const
         {
             // If we love the current setting, we will not vote
             return mCurrent != mTarget;
         }
 
-        void addVote (Integer vote)
+        void
+        addVote (Integer vote)
         {
             ++mVoteMap[vote];
         }
 
-        void noVote ()
+        void
+        noVote ()
         {
             addVote (mCurrent);
         }
 
-        Integer getVotes ()
+        Integer
+        getVotes ()
         {
             Integer ourVote = mCurrent;
             int weight = 0;
 
             typedef typename std::map<Integer, int>::value_type mapVType;
-            BOOST_FOREACH (const mapVType & value, mVoteMap)
+            for (auto const& e : mVoteMap)
             {
                 // Take most voted value between current and target, inclusive
-                if ((value.first <= std::max (mTarget, mCurrent)) &&
-                        (value.first >= std::min (mTarget, mCurrent)) &&
-                        (value.second > weight))
+                if ((e.first <= std::max (mTarget, mCurrent)) &&
+                        (e.first >= std::min (mTarget, mCurrent)) &&
+                        (e.second > weight))
                 {
-                    ourVote = value.first;
-                    weight = value.second;
+                    ourVote = e.first;
+                    weight = e.second;
                 }
             }
 
@@ -75,46 +79,55 @@ private:
         }
 
     private:
-        Integer mCurrent;       // The current setting
-        Integer mTarget;        // The setting we want
+        Integer mCurrent;   // The current setting
+        Integer mTarget;    // The setting we want
         std::map<Integer, int> mVoteMap;
     };
 
 public:
-    FeeVote (std::uint64_t targetBaseFee, std::uint32_t targetReserveBase,
-             std::uint32_t targetReserveIncrement)
+    FeeVoteImpl (std::uint64_t targetBaseFee, std::uint32_t targetReserveBase,
+             std::uint32_t targetReserveIncrement, beast::Journal journal)
         : mTargetBaseFee (targetBaseFee)
         , mTargetReserveBase (targetReserveBase)
         , mTargetReserveIncrement (targetReserveIncrement)
+        , m_journal (journal)
     {
     }
 
     //--------------------------------------------------------------------------
 
-    void doValidation (Ledger::ref lastClosedLedger, STObject& baseValidation)
+    void
+    doValidation (Ledger::ref lastClosedLedger, STObject& baseValidation) override
     {
         if (lastClosedLedger->getBaseFee () != mTargetBaseFee)
         {
-            WriteLog (lsINFO, Features) << "Voting for base fee of " << mTargetBaseFee;
+            if (m_journal.info) m_journal.info <<
+                "Voting for base fee of " << mTargetBaseFee;
+            
             baseValidation.setFieldU64 (sfBaseFee, mTargetBaseFee);
         }
 
         if (lastClosedLedger->getReserve (0) != mTargetReserveBase)
         {
-            WriteLog (lsINFO, Features) << "Voting for base resrve of " << mTargetReserveBase;
-            baseValidation.setFieldU32 (sfReserveBase, mTargetReserveBase);
+            if (m_journal.info) m_journal.info <<
+                "Voting for base resrve of " << mTargetReserveBase;
+
+            baseValidation.setFieldU32(sfReserveBase, mTargetReserveBase);
         }
 
         if (lastClosedLedger->getReserveInc () != mTargetReserveIncrement)
         {
-            WriteLog (lsINFO, Features) << "Voting for reserve increment of " << mTargetReserveIncrement;
+            if (m_journal.info) m_journal.info <<
+                "Voting for reserve increment of " << mTargetReserveIncrement;
+
             baseValidation.setFieldU32 (sfReserveIncrement, mTargetReserveIncrement);
         }
     }
 
     //--------------------------------------------------------------------------
 
-    void doVoting (Ledger::ref lastClosedLedger, SHAMap::ref initialPosition)
+    void
+    doVoting (Ledger::ref lastClosedLedger, SHAMap::ref initialPosition) override
     {
         // LCL must be flag ledger
         assert ((lastClosedLedger->getLedgerSeq () % 256) == 0);
@@ -125,9 +138,9 @@ public:
 
         // get validations for ledger before flag
         ValidationSet set = getApp().getValidations ().getValidations (lastClosedLedger->getParentHash ());
-        BOOST_FOREACH (ValidationSet::value_type const & value, set)
+        for (auto const& e : set)
         {
-            SerializedValidation const& val = *value.second;
+            SerializedValidation const& val = *e.second;
 
             if (val.isTrusted ())
             {
@@ -170,7 +183,10 @@ public:
                 (baseReserve != lastClosedLedger->getReserve (0)) ||
                 (incReserve != lastClosedLedger->getReserveInc ()))
         {
-            WriteLog (lsWARNING, Features) << "We are voting for a fee change: " << baseFee << "/" << baseReserve << "/" << incReserve;
+            if (m_journal.warning) m_journal.warning <<
+                "We are voting for a fee change: " << baseFee <<
+                "/" << baseReserve <<
+                "/" << incReserve;
 
             SerializedTransaction trans (ttFEE);
             trans.setFieldAccount (sfAccount, uint160 ());
@@ -181,7 +197,8 @@ public:
 
             uint256 txID = trans.getTransactionID ();
 
-            WriteLog (lsWARNING, Features) << "Vote: " << txID;
+            if (m_journal.warning) m_journal.warning <<
+                "Vote: " << txID;
 
             Serializer s;
             trans.add (s, true);
@@ -190,7 +207,8 @@ public:
 
             if (!initialPosition->addGiveItem (tItem, true, false))
             {
-                WriteLog (lsWARNING, Features) << "Ledger already had fee change";
+                if (m_journal.warning) m_journal.warning <<
+                    "Ledger already had fee change";
             }
         }
     }
@@ -199,15 +217,17 @@ private:
     std::uint64_t mTargetBaseFee;
     std::uint32_t mTargetReserveBase;
     std::uint32_t mTargetReserveIncrement;
+    beast::Journal m_journal;
 };
 
 //------------------------------------------------------------------------------
 
-IFeeVote* IFeeVote::New (std::uint64_t targetBaseFee,
-                         std::uint32_t targetReserveBase,
-                         std::uint32_t targetReserveIncrement)
+std::unique_ptr<FeeVote>
+make_FeeVote (std::uint64_t targetBaseFee, std::uint32_t targetReserveBase,
+    std::uint32_t targetReserveIncrement, beast::Journal journal)
 {
-    return new FeeVote (targetBaseFee, targetReserveBase, targetReserveIncrement);
+    return std::make_unique<FeeVoteImpl> (targetBaseFee, targetReserveBase,
+        targetReserveIncrement, journal);
 }
 
 } // ripple

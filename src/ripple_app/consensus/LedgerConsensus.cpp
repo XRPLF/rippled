@@ -36,10 +36,11 @@ public:
     static char const* getCountedObjectName () { return "LedgerConsensus"; }
 
     LedgerConsensusImp (clock_type& clock, LocalTxs& localtx,
-        LedgerHash const & prevLCLHash, 
-        Ledger::ref previousLedger, std::uint32_t closeTime)
+        LedgerHash const & prevLCLHash, Ledger::ref previousLedger,
+            std::uint32_t closeTime, FeeVote& feeVote)
         : m_clock (clock)
         , m_localTX (localtx)
+        , m_feeVote (feeVote)
         , mState (lcsPRE_CLOSE)
         , mCloseTime (closeTime)
         , mPrevLedgerHash (prevLCLHash)
@@ -950,7 +951,7 @@ private:
                 if (((newLCL->getLedgerSeq () + 1) % 256) == 0)
                 // next ledger is flag ledger   
                 {
-                    getApp().getFeeVote ().doValidation (newLCL, *v);
+                    m_feeVote.doValidation (newLCL, *v);
                     getApp().getFeatureTable ().doValidation (newLCL, *v);
                 }
 
@@ -1477,7 +1478,7 @@ private:
             // previous ledger was flag ledger
             SHAMap::pointer preSet 
                 = initialLedger.peekTransactionMap ()->snapShot (true);
-            getApp().getFeeVote ().doVoting (mPreviousLedger, preSet);
+            m_feeVote.doVoting (mPreviousLedger, preSet);
             getApp().getFeatureTable ().doVoting (mPreviousLedger, preSet);
             initialSet = preSet->snapShot (false);
         }
@@ -1859,7 +1860,7 @@ private:
         getApp().getOPs ().endConsensus (mHaveCorrectLCL);
     }
 
-    /** Add our fee to our validation
+    /** Add our load fee to our validation
     */
     void addLoad(SerializedValidation::ref val)
     {
@@ -1873,6 +1874,7 @@ private:
 private:
     clock_type& m_clock;
     LocalTxs& m_localTX;
+    FeeVote& m_feeVote;
 
     // VFALCO TODO Rename these to look pretty
     enum LCState
@@ -1928,12 +1930,13 @@ LedgerConsensus::~LedgerConsensus ()
 {
 }
 
-boost::shared_ptr <LedgerConsensus> LedgerConsensus::New (
-    clock_type& clock, LocalTxs& localtx,
-    LedgerHash const &prevLCLHash, Ledger::ref previousLedger, std::uint32_t closeTime)
+boost::shared_ptr <LedgerConsensus>
+make_LedgerConsensus (LedgerConsensus::clock_type& clock, LocalTxs& localtx,
+    LedgerHash const &prevLCLHash, Ledger::ref previousLedger,
+        std::uint32_t closeTime, FeeVote& feeVote)
 {
-    return boost::make_shared <LedgerConsensusImp> (
-        clock, localtx, prevLCLHash, previousLedger,closeTime);
+    return boost::make_shared <LedgerConsensusImp> (clock, localtx,
+        prevLCLHash, previousLedger, closeTime, feeVote);
 }
 
 } // ripple

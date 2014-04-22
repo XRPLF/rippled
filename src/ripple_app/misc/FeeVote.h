@@ -23,7 +23,7 @@
 namespace ripple {
 
 /** Manager to process fee votes. */
-class IFeeVote
+class FeeVote
 {
 public:
     /** Create a new fee vote manager.
@@ -31,12 +31,10 @@ public:
         @param targetBaseFee
         @param targetReserveBase
         @param targetReserveIncrement
+        @param journal
     */
-    static IFeeVote* New (std::uint64_t targetBaseFee,
-                          std::uint32_t targetReserveBase,
-                          std::uint32_t targetReserveIncrement);
 
-    virtual ~IFeeVote () { }
+    virtual ~FeeVote () { }
 
     /** Add local fee preference to validation.
 
@@ -54,6 +52,10 @@ public:
     virtual void doVoting (Ledger::ref lastClosedLedger,
                            SHAMap::ref initialPosition) = 0;
 };
+
+std::unique_ptr<FeeVote>
+make_FeeVote (std::uint64_t targetBaseFee, std::uint32_t targetReserveBase,
+    std::uint32_t targetReserveIncrement, beast::Journal journal);
 
 } // ripple
 

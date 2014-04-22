@@ -25,6 +25,11 @@
 
 namespace ripple {
 
+class FeeVoteLog;
+template <>
+char const*
+LogPartition::getPartitionName <FeeVoteLog>() { return "FeeVote"; }
+
 class NetworkOPsImp
     : public NetworkOPs
     , public beast::DeadlineTimer::Listener
@@ -46,6 +51,8 @@ public:
         : NetworkOPs (parent)
         , m_clock (clock)
         , m_journal (journal)
+        , m_feeVote (make_FeeVote(10, 20 * SYSTEM_CURRENCY_PARTS,
+            5 * SYSTEM_CURRENCY_PARTS, LogPartition::getJournal <FeeVoteLog>()))
         , m_localTX (LocalTxs::New ())
         , mMode (omDISCONNECTED)
         , mNeedNetworkLedger (false)
@@ -454,6 +461,8 @@ private:
     beast::Journal m_journal;
 
     std::unique_ptr <LocalTxs> m_localTX;
+
+    std::unique_ptr <FeeVote> m_feeVote;
 
     LockType mLock;
 
@@ -1463,9 +1472,9 @@ int NetworkOPsImp::beginConsensus (uint256 const& networkClosed, Ledger::pointer
     assert (!mConsensus);
     prevLedger->setImmutable ();
 
-    mConsensus = LedgerConsensus::New (m_clock, *m_localTX,
-        networkClosed, prevLedger,
-        m_ledgerMaster.getCurrentLedger ()->getCloseTimeNC ());
+    mConsensus = make_LedgerConsensus (m_clock, *m_localTX, networkClosed,
+        prevLedger, m_ledgerMaster.getCurrentLedger ()->getCloseTimeNC (),
+            *m_feeVote);
 
     m_journal.debug << "Initiating consensus engine";
     return mConsensus->startup ();

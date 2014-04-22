@@ -49,7 +49,7 @@ Json::Value RPCHandler::doFeature (Json::Value params, Resource::Charge& loadTyp
         return jvReply;
     }
 
-    uint256 uFeature = getApp().getFeatureTable ().getFeature (params["feature"].asString ());
+    uint256 uFeature = getApp().getFeatureTable ().get (params["feature"].asString ());
 
     if (uFeature.isZero ())
     {

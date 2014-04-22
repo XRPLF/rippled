@@ -17,8 +17,10 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_IFEATURES_H
-#define RIPPLE_IFEATURES_H
+#ifndef RIPPLE_FEATURES_H
+#define RIPPLE_FEATURES_H
+
+#include "../book/Types.h"
 
 namespace ripple {
 
@@ -26,13 +28,17 @@ class FeatureSet
 {
     // the status of all features requested in a given window
 public:
-    std::uint32_t  mCloseTime;
-    int     mTrustedValidations;                // number of trusted validations
-    ripple::unordered_map<uint256, int> mVotes;  // yes votes by feature
+    std::uint32_t mCloseTime;
+    int mTrustedValidations;                    // number of trusted validations
+    ripple::unordered_map<uint256, int> mVotes; // yes votes by feature
 
-    FeatureSet (std::uint32_t ct, int tv) : mCloseTime (ct), mTrustedValidations (tv)
+    FeatureSet (std::uint32_t ct) : mCloseTime (ct), mTrustedValidations (0)
     {
         ;
+    }
+    void addVoter ()
+    {
+        ++mTrustedValidations;
     }
     void addVote (uint256 const& feature)
     {
@@ -43,19 +49,19 @@ public:
 class FeatureState
 {
 public:
-    bool        mVetoed;            // We don't want this feature enabled
-    bool        mEnabled;
-    bool        mSupported;
-    bool        mDefault;           // Include in genesis ledger
+    bool mVetoed;   // We don't want this feature enabled
+    bool mEnabled;
+    bool mSupported;
+    bool mDefault;  // Include in genesis ledger
 
-    std::uint32_t      mFirstMajority;     // First time we saw a majority (close time)
-    std::uint32_t      mLastMajority;      // Most recent time we saw a majority (close time)
+    core::Clock::time_point m_firstMajority; // First time we saw a majority (close time)
+    core::Clock::time_point m_lastMajority;  // Most recent time we saw a majority (close time)
 
     std::string mFriendlyName;
 
     FeatureState ()
         : mVetoed (false), mEnabled (false), mSupported (false), mDefault (false),
-          mFirstMajority (0), mLastMajority (0)
+          m_firstMajority (0), m_lastMajority (0)
     {
         ;
     }
@@ -100,47 +106,53 @@ public:
     Individuals features are voted on by validators during the consensus
     process.
 */
-class IFeatures
+class FeatureTable
 {
 public:
-    static IFeatures* New (std::uint32_t majorityTime, int majorityFraction);
+    /** Create a new FeatureTable.
 
-    virtual ~IFeatures () { }
-
-    virtual void addInitialFeatures () = 0;
-
-    virtual FeatureState* addKnownFeature (const char* featureID, const char* friendlyName, bool veto) = 0;
-    virtual uint256 getFeature (const std::string& name) = 0;
-
-    virtual bool vetoFeature (uint256 const& feature) = 0;
-    virtual bool unVetoFeature (uint256 const& feature) = 0;
-
-    virtual bool enableFeature (uint256 const& feature) = 0;
-    virtual bool disableFeature (uint256 const& feature) = 0;
-
-    virtual bool isFeatureEnabled (uint256 const& feature) = 0;
-    virtual bool isFeatureSupported (uint256 const& feature) = 0;
-
-    virtual void setEnabledFeatures (const std::vector<uint256>& features) = 0;
-    virtual void setSupportedFeatures (const std::vector<uint256>& features) = 0;
-
-    // VFALCO NOTE these can't possibly be used since featureList_t was/is private.
-    /*
-    featureList_t getVetoedFeatures() = 0;
-    featureList_t getEnabledFeatures() = 0;
-    featureList_t getFeaturesToEnable(std::uint32_t closeTime) = 0;    // gets features we would vote to enable
-    featureList_t getDesiredFeatures() = 0;                     // features we support, do not veto, are not enabled
+        @param majorityTime the number of seconds a feature must hold a majority
+                            before we're willing to vote yes on it.
+        @param majorityFraction ratio, out of 256, of servers that must say
+                                they want a feature before we consider it to
+                                have a majority.
+        @param journal
     */
+
+    virtual ~FeatureTable() { }
+
+    virtual void addInitial () = 0;
+
+    virtual FeatureState* addKnown (const char* featureID,
+        const char* friendlyName, bool veto) = 0;
+    virtual uint256 get (const std::string& name) = 0;
+
+    virtual bool veto (uint256 const& feature) = 0;
+    virtual bool unVeto (uint256 const& feature) = 0;
+
+    virtual bool enable (uint256 const& feature) = 0;
+    virtual bool disable (uint256 const& feature) = 0;
+
+    virtual bool isEnabled (uint256 const& feature) = 0;
+    virtual bool isSupported (uint256 const& feature) = 0;
+
+    virtual void setEnabled (const std::vector<uint256>& features) = 0;
+    virtual void setSupported (const std::vector<uint256>& features) = 0;
 
     virtual void reportValidations (const FeatureSet&) = 0;
 
     virtual Json::Value getJson (int) = 0;
     virtual Json::Value getJson (uint256 const& ) = 0;
 
-    virtual void doValidation (Ledger::ref lastClosedLedger, STObject& baseValidation) = 0;
-    virtual void doVoting (Ledger::ref lastClosedLedger, SHAMap::ref initialPosition) = 0;
-
+    virtual void
+    doValidation (Ledger::ref lastClosedLedger, STObject& baseValidation) = 0;
+    virtual void
+    doVoting (Ledger::ref lastClosedLedger, SHAMap::ref initialPosition) = 0;
 };
+
+std::unique_ptr<FeatureTable>
+make_FeatureTable (std::chrono::seconds majorityTime, int majorityFraction,
+    beast::Journal journal);
 
 } // ripple
 

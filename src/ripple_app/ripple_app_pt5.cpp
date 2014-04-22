@@ -36,4 +36,4 @@
 #include "ledger/AcceptedLedgerTx.cpp"
 #include "main/LocalCredentials.cpp"
 #include "misc/Validations.cpp"
-#include "misc/FeeVote.cpp"
+#include "misc/FeeVoteImpl.cpp"

@@ -109,9 +109,9 @@ TER ChangeTransactor::applyFeature ()
     featureObject->setFieldV256 (sfFeatures, features);
     mEngine->entryModify (featureObject);
 
-    getApp().getFeatureTable ().enableFeature (feature);
+    getApp().getFeatureTable ().enable (feature);
 
-    if (!getApp().getFeatureTable ().isFeatureSupported (feature))
+    if (!getApp().getFeatureTable ().isSupported (feature))
         getApp().getOPs ().setFeatureBlocked ();
 
     return tesSUCCESS;
