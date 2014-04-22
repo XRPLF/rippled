@@ -22,10 +22,10 @@
 
 #include <vector>
 
-#include "../beast/modules/beast_core/system/BeforeBoost.h"
+#include "../../beast/modules/beast_core/system/BeforeBoost.h"
 
-#include "../beast/beast/http/URL.h"
-#include "../beast/beast/Threads.h"
+#include "../../beast/beast/http/URL.h"
+#include "../../beast/beast/Threads.h"
 
 #   include "api/Section.h"
 #  include "api/SiteFile.h"

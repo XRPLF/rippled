@@ -20,8 +20,8 @@
 #ifndef RIPPLE_VALIDATORS_SOURCE_H_INCLUDED
 #define RIPPLE_VALIDATORS_SOURCE_H_INCLUDED
 
-#include "../../beast/beast/smart_ptr/SharedObject.h"
-#include "../../beast/modules/beast_core/time/Time.h"
+#include "../../../beast/beast/smart_ptr/SharedObject.h"
+#include "../../../beast/modules/beast_core/time/Time.h"
 
 namespace ripple {
 namespace Validators {

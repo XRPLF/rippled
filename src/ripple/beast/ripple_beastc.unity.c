@@ -30,4 +30,4 @@
 #error "Whoops! This file must be compiled with a C compiler!"
 #endif
 
-#include "../beast/modules/beast_sqlite/beast_sqlite.c"
+#include "../../beast/modules/beast_sqlite/beast_sqlite.unity.c"

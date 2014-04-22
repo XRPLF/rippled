@@ -31,16 +31,16 @@
 #include <set>
 #include <unordered_set>
 
-#include "../beast/modules/beast_core/system/BeforeBoost.h"
+#include "../../beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/array.hpp>
 #include <boost/optional.hpp>
 #include <boost/regex.hpp>
 
-#include "../beast/modules/beast_sqdb/beast_sqdb.h"
-#include "../beast/modules/beast_asio/beast_asio.h"
+#include "../../beast/modules/beast_sqdb/beast_sqdb.h"
+#include "../../beast/modules/beast_asio/beast_asio.h"
 
-#include "../beast/beast/boost/ErrorCode.h"
-#include "../beast/beast/chrono/chrono_io.h"
+#include "../../beast/beast/boost/ErrorCode.h"
+#include "../../beast/beast/chrono/chrono_io.h"
 
 #include "impl/iosformat.h" // VFALCO NOTE move to beast
 

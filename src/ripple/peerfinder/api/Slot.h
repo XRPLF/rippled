@@ -22,7 +22,7 @@
 
 #include "../../types/api/RipplePublicKey.h"
 
-#include "../../beast/beast/net/IPEndpoint.h"
+#include "../../../beast/beast/net/IPEndpoint.h"
 
 #include <boost/optional.hpp>
 

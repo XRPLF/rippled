@@ -20,7 +20,7 @@
 #ifndef RIPPLE_ROCKSDB_H_INCLUDED
 #define RIPPLE_ROCKSDB_H_INCLUDED
 
-#include "../beast/beast/Config.h"
+#include "../../beast/beast/Config.h"
 
 #ifndef RIPPLE_ROCKSDB_AVAILABLE
 # if BEAST_WIN32

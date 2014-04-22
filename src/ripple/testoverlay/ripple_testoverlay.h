@@ -20,10 +20,10 @@
 #ifndef RIPPLE_TESTOVERLAY_H_INCLUDED
 #define RIPPLE_TESTOVERLAY_H_INCLUDED
 
-#include "../beast/modules/beast_core/system/BeforeBoost.h"
+#include "../../beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/unordered_set.hpp>
 
-#include "../beast/modules/beast_core/beast_core.h"
+#include "../../beast/modules/beast_core/beast_core.h"
 
 #include <memory>
 

@@ -19,34 +19,17 @@
 
 #include "../../BeastConfig.h"
 
-#include "ripple_types.h"
-#include "../ripple/sslutil/ripple_sslutil.h"
+#include "ripple_sitefiles.h"
 
-#ifdef BEAST_WIN32
-# include <Winsock2.h> // for ByteOrder.cpp
-// <Winsock2.h> defines min, max and does other stupid things
-# ifdef max
-# undef max
-# endif
-# ifdef min
-# undef min
-# endif
-#endif
+#include "../../beast/modules/beast_asio/beast_asio.h" // HTTPClientBase
+
+#include "../../beast/modules/beast_core/system/BeforeBoost.h"
+#include <boost/regex.hpp>
 
 #include <set>
-#include <map>
-#include <unordered_set>
-#include <unordered_map>
-#include <boost/unordered_set.hpp>
 
-#include "impl/Base58.cpp"
-#include "impl/ByteOrder.cpp"
-#include "impl/RandomNumbers.cpp"
-#include "impl/strHex.cpp"
-#include "impl/base_uint.cpp"
-#include "impl/UInt160.cpp"
-#include "impl/RippleIdentifierTests.cpp"
-#include "impl/RippleAssets.cpp"
-
-#include "../common/tests/cross_offer.test.cpp"
-
+#  include "impl/Site.h"
+# include "impl/Logic.h"
+#include "impl/Manager.cpp"
+#include "impl/Section.cpp"
+#include "impl/SiteFile.cpp"

@@ -22,7 +22,7 @@
 
 #include <boost/asio/io_service.hpp>
 
-#include "../beast/beast/utility/Journal.h"
+#include "../../beast/beast/utility/Journal.h"
 #include "Resolver.h"
 
 namespace ripple {

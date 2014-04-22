@@ -22,7 +22,7 @@
 
 // VFALCO NOTE this sucks that we have to include asio in the header
 //             just for HTTPMessage!!
-#include "../beast/modules/beast_asio/beast_asio.h"
+#include "../../beast/modules/beast_asio/beast_asio.h"
 
 # include "api/Port.h"
 # include "api/ScopedStream.h"

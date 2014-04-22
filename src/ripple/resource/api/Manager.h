@@ -23,9 +23,9 @@
 #include "Consumer.h"
 #include "Gossip.h"
 
-#include "../../beast/beast/insight/Collector.h"
-#include "../../beast/beast/net/IPEndpoint.h"
-#include "../../beast/beast/utility/Journal.h"
+#include "../../../beast/beast/insight/Collector.h"
+#include "../../../beast/beast/net/IPEndpoint.h"
+#include "../../../beast/beast/utility/Journal.h"
 
 namespace ripple {
 namespace Resource {

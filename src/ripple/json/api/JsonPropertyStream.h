@@ -20,7 +20,7 @@
 #ifndef RIPPLE_JSONPROPERTYSTREAM_H_INCLUDED
 #define RIPPLE_JSONPROPERTYSTREAM_H_INCLUDED
 
-#include "../beast/beast/utility/PropertyStream.h"
+#include "../../../beast/beast/utility/PropertyStream.h"
 
 namespace ripple {
 

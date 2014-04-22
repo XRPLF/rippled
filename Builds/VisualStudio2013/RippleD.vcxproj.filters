@@ -792,9 +792,6 @@
     <ClCompile Include="..\..\src\ripple_app\misc\ProofOfWork.cpp">
       <Filter>[2] Old Ripple\ripple_app\misc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\protobuf_core.cpp">
-      <Filter>[0] Libraries\protobuf</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_core\functional\Config.cpp">
       <Filter>[2] Old Ripple\ripple_core\functional</Filter>
     </ClCompile>
@@ -837,66 +834,6 @@
     <ClCompile Include="..\..\src\ripple\validators\impl\StoreSqdb.cpp">
       <Filter>[1] Ripple\validators\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ripple_app.cpp">
-      <Filter>[2] Old Ripple\ripple_app</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt1.cpp">
-      <Filter>[2] Old Ripple\ripple_app</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt2.cpp">
-      <Filter>[2] Old Ripple\ripple_app</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt3.cpp">
-      <Filter>[2] Old Ripple\ripple_app</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt4.cpp">
-      <Filter>[2] Old Ripple\ripple_app</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt5.cpp">
-      <Filter>[2] Old Ripple\ripple_app</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt6.cpp">
-      <Filter>[2] Old Ripple\ripple_app</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt7.cpp">
-      <Filter>[2] Old Ripple\ripple_app</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt8.cpp">
-      <Filter>[2] Old Ripple\ripple_app</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\ripple_basics.cpp">
-      <Filter>[2] Old Ripple\ripple_basics</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_core\ripple_core.cpp">
-      <Filter>[2] Old Ripple\ripple_core</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\ripple_data.cpp">
-      <Filter>[2] Old Ripple\ripple_data</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_hyperleveldb\ripple_hyperleveldb.cpp">
-      <Filter>[2] Old Ripple\ripple_hyperleveldb</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_net\ripple_net.cpp">
-      <Filter>[2] Old Ripple\ripple_net</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_websocket\ripple_websocket.cpp">
-      <Filter>[2] Old Ripple\ripple_websocket</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\validators\ripple_validators.cpp">
-      <Filter>[1] Ripple\validators</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\testoverlay\ripple_testoverlay.cpp">
-      <Filter>[1] Ripple\testoverlay</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_leveldb\ripple_leveldb.cpp">
-      <Filter>[2] Old Ripple\ripple_leveldb</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\beast\ripple_beast.cpp">
-      <Filter>[1] Ripple\beast</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\beast\ripple_beastc.c">
-      <Filter>[1] Ripple\beast</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\main\IoServicePool.cpp">
       <Filter>[2] Old Ripple\ripple_app\main</Filter>
     </ClCompile>
@@ -908,9 +845,6 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\json\impl\json_writer.cpp">
       <Filter>[1] Ripple\json\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\json\ripple_json.cpp">
-      <Filter>[1] Ripple\json</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_core\nodestore\NodeStore.cpp">
       <Filter>[2] Old Ripple\ripple_core\nodestore</Filter>
@@ -963,9 +897,6 @@
     <ClCompile Include="..\..\src\ripple_app\main\RPCHTTPServer.cpp">
       <Filter>[2] Old Ripple\ripple_app\main</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\http\ripple_http.cpp">
-      <Filter>[1] Ripple\http</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\http\impl\Server.cpp">
       <Filter>[1] Ripple\http\impl</Filter>
     </ClCompile>
@@ -978,14 +909,8 @@
     <ClCompile Include="..\..\src\ripple\http\impl\ServerImpl.cpp">
       <Filter>[1] Ripple\http\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\types\ripple_types.cpp">
-      <Filter>[1] Ripple\types</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\types\impl\Base58.cpp">
       <Filter>[1] Ripple\types\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\sslutil\ripple_sslutil.cpp">
-      <Filter>[1] Ripple\sslutil</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\sslutil\impl\CBigNum.cpp">
       <Filter>[1] Ripple\sslutil\impl</Filter>
@@ -1017,17 +942,11 @@
     <ClCompile Include="..\..\src\ripple_core\functional\LoadFeeTrackImp.cpp">
       <Filter>[2] Old Ripple\ripple_core\functional</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\peerfinder\ripple_peerfinder.cpp">
-      <Filter>[1] Ripple\peerfinder</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\json\impl\Tests.cpp">
       <Filter>[1] Ripple\json\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\peerfinder\impl\Checker.cpp">
       <Filter>[1] Ripple\peerfinder\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\resource\ripple_resource.cpp">
-      <Filter>[1] Ripple\resource</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\resource\impl\Charge.cpp">
       <Filter>[1] Ripple\resource\impl</Filter>
@@ -1047,9 +966,6 @@
     <ClCompile Include="..\..\src\ripple\resource\impl\LegacyFees.cpp">
       <Filter>[1] Ripple\resource\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\sitefiles\ripple_sitefiles.cpp">
-      <Filter>[1] Ripple\sitefiles</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\sitefiles\impl\Section.cpp">
       <Filter>[1] Ripple\sitefiles\impl</Filter>
     </ClCompile>
@@ -1058,9 +974,6 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\sitefiles\impl\Manager.cpp">
       <Filter>[1] Ripple\sitefiles\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rocksdb\ripple_rocksdb.cpp">
-      <Filter>[1] Ripple\rocksdb</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\builder.cc">
       <Filter>[1] Ripple\rocksdb\rocksdb\db</Filter>
@@ -1293,9 +1206,6 @@
     <ClCompile Include="..\..\src\ripple\types\impl\RippleAssets.cpp">
       <Filter>[1] Ripple\types\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\common\ripple_common.cpp">
-      <Filter>[1] Ripple\common</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_core\nodestore\backend\RocksDBFactory.cpp">
       <Filter>[2] Old Ripple\ripple_core\nodestore\backend</Filter>
     </ClCompile>
@@ -1329,7 +1239,7 @@
     <ClCompile Include="..\..\src\ripple_app\ledger\DirectoryEntryIterator.cpp">
       <Filter>[2] Old Ripple\ripple_app\ledger</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\radmap\ripple_radmap.cpp">
+    <ClCompile Include="..\..\src\ripple\radmap\ripple_radmap.unity.cpp">
       <Filter>[1] Ripple\proto\radmap</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\radmap\impl\BasicFullBelowCache.cpp">
@@ -1365,9 +1275,6 @@
     <ClCompile Include="..\..\src\ripple\peerfinder\sim\Tests.cpp">
       <Filter>[1] Ripple\peerfinder\sim</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\ripple_rpc.cpp">
-      <Filter>[2] Old Ripple\ripple_rpc</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_rpc\impl\ErrorCodes.cpp">
       <Filter>[2] Old Ripple\ripple_rpc\impl</Filter>
     </ClCompile>
@@ -1386,9 +1293,6 @@
     <ClCompile Include="..\..\src\ripple_overlay\impl\PeerDoor.cpp">
       <Filter>[2] Old Ripple\ripple_overlay\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_overlay\ripple_overlay.cpp">
-      <Filter>[2] Old Ripple\ripple_overlay</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\peerfinder\impl\Bootcache.cpp">
       <Filter>[1] Ripple\peerfinder\impl</Filter>
     </ClCompile>
@@ -1403,9 +1307,6 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\peerfinder\impl\SlotImp.cpp">
       <Filter>[1] Ripple\peerfinder\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt9.cpp">
-      <Filter>[2] Old Ripple\ripple_app</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\tx\Transaction.cpp">
       <Filter>[2] Old Ripple\ripple_app\tx</Filter>
@@ -1713,8 +1614,107 @@
     <ClCompile Include="..\..\src\snappy\snappy.unity.cpp">
       <Filter>[0] Libraries\snappy</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\common\tests\cross_offer.test.cpp">
-      <Filter>[1] Ripple\common\tests</Filter>
+    <ClCompile Include="..\..\src\ripple\beast\ripple_beast.unity.cpp">
+      <Filter>[1] Ripple\beast</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\beast\ripple_beastc.unity.c">
+      <Filter>[1] Ripple\beast</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\common\ripple_common.unity.cpp">
+      <Filter>[1] Ripple\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\http\ripple_http.unity.cpp">
+      <Filter>[1] Ripple\http</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\json\ripple_json.unity.cpp">
+      <Filter>[1] Ripple\json</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\peerfinder\ripple_peerfinder.unity.cpp">
+      <Filter>[1] Ripple\peerfinder</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\radmap\ripple_radmap.unity.cpp">
+      <Filter>[1] Ripple\radmap</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\resource\ripple_resource.unity.cpp">
+      <Filter>[1] Ripple\resource</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\ripple_rocksdb.unity.cpp">
+      <Filter>[1] Ripple\rocksdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\sitefiles\ripple_sitefiles.unity.cpp">
+      <Filter>[1] Ripple\sitefiles</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\sslutil\ripple_sslutil.unity.cpp">
+      <Filter>[1] Ripple\sslutil</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\testoverlay\ripple_testoverlay.unity.cpp">
+      <Filter>[1] Ripple\testoverlay</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\types\ripple_types.unity.cpp">
+      <Filter>[1] Ripple\types</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\validators\ripple_validators.unity.cpp">
+      <Filter>[1] Ripple\validators</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\ripple_app.unity.cpp">
+      <Filter>[2] Old Ripple\ripple_app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt1.unity.cpp">
+      <Filter>[2] Old Ripple\ripple_app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt2.unity.cpp">
+      <Filter>[2] Old Ripple\ripple_app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt3.unity.cpp">
+      <Filter>[2] Old Ripple\ripple_app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt4.unity.cpp">
+      <Filter>[2] Old Ripple\ripple_app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt5.unity.cpp">
+      <Filter>[2] Old Ripple\ripple_app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt6.unity.cpp">
+      <Filter>[2] Old Ripple\ripple_app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt7.unity.cpp">
+      <Filter>[2] Old Ripple\ripple_app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt8.unity.cpp">
+      <Filter>[2] Old Ripple\ripple_app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt9.unity.cpp">
+      <Filter>[2] Old Ripple\ripple_app</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_basics\ripple_basics.unity.cpp">
+      <Filter>[2] Old Ripple\ripple_basics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_core\ripple_core.unity.cpp">
+      <Filter>[2] Old Ripple\ripple_core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_data\ripple_data.unity.cpp">
+      <Filter>[2] Old Ripple\ripple_data</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_hyperleveldb\ripple_hyperleveldb.unity.cpp">
+      <Filter>[2] Old Ripple\ripple_hyperleveldb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_leveldb\ripple_leveldb.unity.cpp">
+      <Filter>[2] Old Ripple\ripple_leveldb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_net\ripple_net.unity.cpp">
+      <Filter>[2] Old Ripple\ripple_net</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_overlay\ripple_overlay.unity.cpp">
+      <Filter>[2] Old Ripple\ripple_overlay</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\ripple_rpc.unity.cpp">
+      <Filter>[2] Old Ripple\ripple_rpc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_websocket\ripple_websocket.unity.cpp">
+      <Filter>[2] Old Ripple\ripple_websocket</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\protobuf.unity.cpp">
+      <Filter>[0] Libraries\protobuf</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\types\impl\base_uint.cpp">
       <Filter>[1] Ripple\types\impl</Filter>
@@ -1766,6 +1766,9 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\paths\CalcNodeDeliverFwd.cpp">
       <Filter>[2] Old Ripple\ripple_app\paths</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\common\tests\cross_offer.test.cpp">
+      <Filter>[1] Ripple\common\tests</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -3419,9 +3422,6 @@
     <None Include="..\..\SConstruct" />
     <None Include="..\QtCreator\rippled.pro" />
     <None Include="..\..\README.md" />
-    <None Include="..\..\src\ripple\beast\ripple_beastobjc.mm">
-      <Filter>[1] Ripple\beast</Filter>
-    </None>
     <None Include="..\..\src\ripple\json\impl\json_internalarray.inl">
       <Filter>[1] Ripple\json\impl</Filter>
     </None>
@@ -3529,6 +3529,9 @@
     </None>
     <None Include="..\..\src\ripple_app\misc\README.md">
       <Filter>[2] Old Ripple\ripple_app\misc</Filter>
+    </None>
+    <None Include="..\..\src\ripple\beast\ripple_beastobjc.unity.mm">
+      <Filter>[1] Ripple\beast</Filter>
     </None>
     <CustomBuild Include="..\..\src\ripple\proto\ripple.proto">
       <Filter>[1] Ripple\proto</Filter>
