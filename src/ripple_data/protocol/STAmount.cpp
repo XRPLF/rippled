@@ -1092,10 +1092,12 @@ std::string STAmount::getFullText () const
 
     if (!mIsNative)
     {
+        ret += "/";
+
         if (!mIssuer)
-            ret += "/0";
+            ret += "0";
         else if (mIssuer == ACCOUNT_ONE)
-            ret += "/1";
+            ret += "1";
         else
             ret += RippleAddress::createHumanAccountID (mIssuer);
     }
