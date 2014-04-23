@@ -82,7 +82,7 @@ private:
         }
         else
         {
-            return RPC::make_param_error (std::string ("Invalid currency/issuer '") + 
+            return RPC::make_param_error (std::string ("Invalid currency/issuer '") +
                     strCurrencyIssuer + "'");
         }
     }
@@ -829,7 +829,7 @@ public:
             {   "ripple_path_find",     &RPCParser::parseRipplePathFind,        1,  2   },
             {   "sign",                 &RPCParser::parseSignSubmit,            2,  3   },
             {   "sms",                  &RPCParser::parseSMS,                   1,  1   },
-            {   "submit",               &RPCParser::parseSignSubmit,            1,  2   },
+            {   "submit",               &RPCParser::parseSignSubmit,            1,  3   },
             {   "server_info",          &RPCParser::parseAsIs,                  0,  0   },
             {   "server_state",         &RPCParser::parseAsIs,                  0,  0   },
             {   "stop",                 &RPCParser::parseAsIs,                  0,  0   },

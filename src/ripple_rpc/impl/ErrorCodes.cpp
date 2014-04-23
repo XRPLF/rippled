@@ -52,7 +52,6 @@ public:
         add (rpcACT_MALFORMED,         "actMalformed",      "Account malformed.");
         add (rpcACT_NOT_FOUND,         "actNotFound",       "Account not found.");
         add (rpcBAD_BLOB,              "badBlob",           "Blob must be a non-empty hex string.");
-        add (rpcHIGH_FEE,              "highFee",           "Current transaction fee exceeds your limit.");
         add (rpcBAD_FEATURE,           "badFeature",        "Feature unknown or invalid.");
         add (rpcBAD_ISSUER,            "badIssuer",         "Issuer account malformed.");
         add (rpcBAD_MARKET,            "badMarket",         "No such market.");
@@ -64,10 +63,11 @@ public:
         add (rpcDST_ACT_MISSING,       "dstActMissing",     "Destination account does not exist.");
         add (rpcDST_AMT_MALFORMED,     "dstAmtMalformed",   "Destination amount/currency/issuer is malformed.");
         add (rpcDST_ISR_MALFORMED,     "dstIsrMalformed",   "Destination issuer is malformed.");
-        add (rpcFORBIDDEN,             "forbidden",         "Bad credentials.");
         add (rpcFAIL_GEN_DECRYPT,      "failGenDecrypt",    "Failed to decrypt generator.");
+        add (rpcFORBIDDEN,             "forbidden",         "Bad credentials.");
         add (rpcGETS_ACT_MALFORMED,    "getsActMalformed",  "Gets account malformed.");
         add (rpcGETS_AMT_MALFORMED,    "getsAmtMalformed",  "Gets amount malformed.");
+        add (rpcHIGH_FEE,              "highFee",           "Current transaction fee exceeds your limit.");
         add (rpcHOST_IP_MALFORMED,     "hostIpMalformed",   "Host IP is malformed.");
         add (rpcINSUF_FUNDS,           "insufFunds",        "Insufficient funds.");
         add (rpcINTERNAL,              "internal",          "Internal error.");
@@ -76,6 +76,7 @@ public:
         add (rpcLGR_IDXS_INVALID,      "lgrIdxsInvalid",    "Ledger indexes invalid.");
         add (rpcLGR_IDX_MALFORMED,     "lgrIdxMalformed",   "Ledger index malformed.");
         add (rpcLGR_NOT_FOUND,         "lgrNotFound",       "Ledger not found.");
+        add (rpcMASTER_DISABLED,       "masterDisabled",    "Master key is disabled.");
         add (rpcNICKNAME_MALFORMED,    "nicknameMalformed", "Nickname is malformed.");
         add (rpcNICKNAME_MISSING,      "nicknameMissing",   "Nickname does not exist.");
         add (rpcNICKNAME_PERM,         "nicknamePerm",      "Account does not control nickname.");
@@ -85,7 +86,7 @@ public:
         add (rpcNO_CURRENT,            "noCurrent",         "Current ledger is unavailable.");
         add (rpcNO_EVENTS,             "noEvents",          "Current transport does not support events.");
         add (rpcNO_GEN_DECRYPT,        "noGenDecrypt",      "Password failed to decrypt master public generator.");
-        add (rpcNO_NETWORK,            "noNetwork",         "Network not available.");
+        add (rpcNO_NETWORK,            "noNetwork",         "Not synced to Ripple network.");
         add (rpcNO_PATH,               "noPath",            "Unable to find a ripple path.");
         add (rpcNO_PERMISSION,         "noPermission",      "You don't have permission for this command.");
         add (rpcNO_PF_REQUEST,         "noPathRequest",     "No pathfinding request in progress.");
