@@ -1621,6 +1621,15 @@ public:
 
     Json::Value getJson (int) const;
 
+    std::vector<uint256>::const_iterator begin() const
+    {
+        return mValue.begin ();
+    }
+    std::vector<uint256>::const_iterator end() const
+    {
+        return mValue.end ();
+    }
+
 private:
     std::vector<uint256>    mValue;
 
