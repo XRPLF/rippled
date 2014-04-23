@@ -156,7 +156,7 @@ public:
 
     bool setFlag (std::uint32_t);
     bool clearFlag (std::uint32_t);
-    bool isFlag(std::uint32_t);
+    bool isFlag(std::uint32_t) const;
     std::uint32_t getFlags () const;
 
     uint256 getHash (std::uint32_t prefix) const;

@@ -189,14 +189,14 @@ Json::Value transactionSign (
         return RPC::make_error (rpcSRC_ACT_MALFORMED,
             RPC::invalid_field_message ("tx_json.Account"));
 
-    bool const bOffline (
+    bool const verify = !(
         params.isMember ("offline") && params["offline"].asBool ());
 
-    if (! tx_json.isMember ("Sequence") && bOffline)
+    if (!tx_json.isMember ("Sequence") && !verify)
         return RPC::missing_field_error ("tx_json.Sequence");
 
     // Check for current ledger
-    if (!bOffline && !getConfig ().RUN_STANDALONE &&
+    if (verify && !getConfig ().RUN_STANDALONE &&
         (getApp().getLedgerMaster().getValidatedLedgerAge() > 120))
         return rpcError (rpcNO_CURRENT);
 
@@ -205,11 +205,11 @@ Json::Value transactionSign (
         return rpcError(rpcTOO_BUSY);
 
     Ledger::pointer lSnapshot = netOps.getCurrentLedger ();
-    AccountState::pointer asSrc = bOffline
+    AccountState::pointer asSrc = !verify
                                   ? AccountState::pointer ()                              // Don't look up address if offline.
                                   : netOps.getAccountState (lSnapshot, raSrcAddressID);
 
-    if (!bOffline && !asSrc)
+    if (verify && !asSrc)
     {
         // If not offline and did not find account, error.
         WriteLog (lsDEBUG, RPCHandler) << boost::str (boost::format ("transactionSign: Failed to find source account in current ledger: %s")
@@ -311,9 +311,10 @@ Json::Value transactionSign (
 
     if (!tx_json.isMember ("Sequence"))
     {
-        if (bOffline)
+        if (!verify)
         {
             // If offline, Sequence is mandatory.
+            // TODO: duplicates logic above.
             return rpcError (rpcINVALID_PARAMS);
         }
         else
@@ -324,7 +325,7 @@ Json::Value transactionSign (
 
     if (!tx_json.isMember ("Flags")) tx_json["Flags"] = tfFullyCanonicalSig;
 
-    if (!bOffline)
+    if (verify)
     {
         SLE::pointer sleAccountRoot = netOps.getSLEi (lSnapshot,
             Ledger::getAccountRootIndex (raSrcAddressID.getAccountID ()));
@@ -344,41 +345,35 @@ Json::Value transactionSign (
     RippleAddress   naMasterGenerator = RippleAddress::createGeneratorPublic (
         naSecret);
 
-    // Find the index of Account from the master generator, so we can generate
-    // the public and private keys.
-    RippleAddress naMasterAccountPublic;
-    unsigned int iIndex  = 0;
-    bool bFound  = false;
-
-    // Don't look at ledger entries to determine if the account exists.
-    // Don't want to leak to thin server that these accounts are related.
-    while (!bFound && iIndex != getConfig ().ACCOUNT_PROBE_MAX)
+    if (verify)
     {
-        naMasterAccountPublic.setAccountPublic (naMasterGenerator, iIndex);
+        auto masterAccountPublic = RippleAddress::createAccountPublic (
+            naMasterGenerator, 0);
+        auto account = masterAccountPublic.getAccountID();
+        auto const& sle = asSrc->peekSLE();
 
         WriteLog (lsWARNING, RPCHandler) <<
-            "authorize: " << iIndex <<
-            " : " << naMasterAccountPublic.humanAccountID () <<
-            " : " << raSrcAddressID.humanAccountID ();
-
-        bFound = raSrcAddressID.getAccountID () == naMasterAccountPublic.getAccountID ();
-
-        if (!bFound)
-            ++iIndex;
-    }
-
-    if (!bFound)
-    {
-        return rpcError (rpcBAD_SECRET);
+                "verify: " << masterAccountPublic.humanAccountID () <<
+                " : " << raSrcAddressID.humanAccountID ();
+        if (raSrcAddressID.getAccountID () == account)
+        {
+            if (sle.isFlag(lsfDisableMaster))
+                return rpcError (rpcMASTER_DISABLED);
+        }
+        else if (!sle.isFieldPresent(sfRegularKey) ||
+                 account != sle.getFieldAccount160 (sfRegularKey))
+        {
+            return rpcError (rpcBAD_SECRET);
+        }
     }
 
     // Use the generator to determine the associated public and private keys.
     RippleAddress naGenerator = RippleAddress::createGeneratorPublic (
         naSecret);
     RippleAddress naAccountPublic = RippleAddress::createAccountPublic (
-        naGenerator, iIndex);
+        naGenerator, 0);
     RippleAddress naAccountPrivate = RippleAddress::createAccountPrivate (
-        naGenerator, naSecret, iIndex);
+        naGenerator, naSecret, 0);
 
     if (bHaveAuthKey
             // The generated pair must match authorized...
@@ -386,6 +381,7 @@ Json::Value transactionSign (
             // ... or the master key must have been used.
             && raSrcAddressID.getAccountID () != naAccountPublic.getAccountID ())
     {
+        // TODO: we can't ever get here!
         // Log::out() << "iIndex: " << iIndex;
         // Log::out() << "sfAuthorizedKey: " << strHex(asSrc->getAuthorizedKey().getAccountID());
         // Log::out() << "naAccountPublic: " << strHex(naAccountPublic.getAccountID());

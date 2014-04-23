@@ -558,7 +558,7 @@ bool STObject::clearFlag (std::uint32_t f)
     return true;
 }
 
-bool STObject::isFlag (std::uint32_t f)
+bool STObject::isFlag (std::uint32_t f) const
 {
     return (getFlags () & f) == f;
 }
