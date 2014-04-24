@@ -30,24 +30,25 @@ Json::Value RPCHandler::doWalletPropose (Json::Value params, Resource::Charge& l
     RippleAddress   naSeed;
     RippleAddress   naAccount;
 
-    if (params.isMember ("passphrase"))
-    {
-        naSeed  = RippleAddress::createSeedGeneric (params["passphrase"].asString ());
-    }
-    else
-    {
+    if (!params.isMember ("passphrase"))
         naSeed.setSeedRandom ();
-    }
 
-    RippleAddress   naGenerator = RippleAddress::createGeneratorPublic (naSeed);
+    else if (!naSeed.setSeedGeneric (params["passphrase"].asString ()))
+        return rpcError(rpcBAD_SEED);
+
+    RippleAddress naGenerator = RippleAddress::createGeneratorPublic (naSeed);
     naAccount.setAccountPublic (naGenerator, 0);
 
     Json::Value obj (Json::objectValue);
 
     obj["master_seed"]      = naSeed.humanSeed ();
     obj["master_seed_hex"]  = naSeed.getSeed ().ToString ();
-    //obj["master_key"]     = naSeed.humanSeed1751();
+    obj["master_key"]     = naSeed.humanSeed1751();
     obj["account_id"]       = naAccount.humanAccountID ();
+    obj["public_key"] = naAccount.humanAccountPublic();
+
+    auto acct = naAccount.getAccountPublic();
+    obj["public_key_hex"] = strHex(acct.begin(), acct.size());
 
     return obj;
 }

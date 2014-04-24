@@ -48,6 +48,7 @@ Json::Value RPCHandler::doWalletSeed (Json::Value params, Resource::Charge& load
 
         obj["seed"]     = raSeed.humanSeed ();
         obj["key"]      = raSeed.humanSeed1751 ();
+        obj["deprecated"] = "Use wallet_propose instead";
 
         return obj;
     }
