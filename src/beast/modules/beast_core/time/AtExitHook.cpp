@@ -30,7 +30,7 @@ public:
         : m_didStaticDestruction (false)
     {
     }
-   
+
     static inline Manager& get ()
     {
         return StaticObject <Manager>::get();
@@ -59,12 +59,13 @@ private:
     // Called at program exit when destructors for objects
     // with static storage duration are invoked.
     //
-    void doStaticDetruction ()
+    void doStaticDestruction ()
     {
         // In theory this shouldn't be needed (?)
         ScopedLockType lock (m_mutex);
 
         bassert (! m_didStaticDestruction);
+        m_didStaticDestruction = true;
 
         for (List <Item>::iterator iter (m_list.begin()); iter != m_list.end();)
         {
@@ -82,7 +83,7 @@ private:
     {
         ~StaticDestructor ()
         {
-            Manager::get().doStaticDetruction();
+            Manager::get().doStaticDestruction();
         }
     };
 
@@ -100,7 +101,7 @@ private:
 // When it gets destroyed, we will call into the Manager to
 // call all of the AtExitHook items in the list.
 //
-AtExitHook::Manager::StaticDestructor AtExitHook::Manager::s_staticDestructor; 
+AtExitHook::Manager::StaticDestructor AtExitHook::Manager::s_staticDestructor;
 
 //------------------------------------------------------------------------------
 

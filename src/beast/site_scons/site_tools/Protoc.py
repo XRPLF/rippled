@@ -28,7 +28,7 @@
 #  Date : 2014--4-25
 
 """ 
-protoc.py: Protoc Builder for SCons
+Protoc.py: Protoc Builder for SCons
 
 This Builder invokes protoc to generate C++ and Python  from a .proto file.  
 
@@ -72,9 +72,10 @@ def ProtocEmitter(target, source, env):
 
     return target, source
 
-ProtocBuilder = SCons.Builder.Builder(action = ProtocAction,
-                                   emitter = ProtocEmitter,
-                                   srcsuffix = '$PROTOCSRCSUFFIX')
+ProtocBuilder = SCons.Builder.Builder(
+    action = ProtocAction,
+    emitter = ProtocEmitter,
+    srcsuffix = '$PROTOCSRCSUFFIX')
 
 def generate(env):
     """Add Builders and construction variables for protoc to an Environment."""
