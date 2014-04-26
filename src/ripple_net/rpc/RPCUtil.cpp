@@ -52,9 +52,17 @@ Json::Value JSONRPCError (int code, const std::string& message)
 // and to be compatible with other JSON-RPC implementations.
 //
 
-std::string createHTTPPost (const std::string& strHost, const std::string& strPath, const std::string& strMsg, const std::map<std::string, std::string>& mapRequestHeaders)
+std::string createHTTPPost (
+    std::string const& strHost,
+    std::string const& strPath,
+    std::string const& strMsg,
+    std::map<std::string, std::string> const& mapRequestHeaders)
 {
     std::ostringstream s;
+
+    // CHECKME this uses a different version than the replies below use. Is
+    //         this by design or an accident or should it be using
+    //         BuildInfo::getFullVersionString () as well?
 
     s << "POST "
       << (strPath.empty () ? "/" : strPath)
@@ -65,82 +73,107 @@ std::string createHTTPPost (const std::string& strHost, const std::string& strPa
       << "Content-Length: " << strMsg.size () << "\r\n"
       << "Accept: application/json\r\n";
 
-    typedef std::map<std::string, std::string>::value_type HeaderType;
-
-    BOOST_FOREACH (const HeaderType & item, mapRequestHeaders)
-    s << item.first << ": " << item.second << "\r\n";
+    for (auto const& item : mapRequestHeaders)
+        s << item.first << ": " << item.second << "\r\n";
 
     s << "\r\n" << strMsg;
 
     return s.str ();
 }
 
-std::string rfc1123Time ()
+std::string getHTTPHeaderTimestamp ()
 {
-    char buffer[64];
+    // CHECKME This is probably called often enough that optimizing it makes
+    //         sense. There's no point in doing all this work if this function
+    //         gets called multiple times a second.
+    char buffer[96];
     time_t now;
     time (&now);
     struct tm* now_gmt = gmtime (&now);
     std::string locale (setlocale (LC_TIME, nullptr));
     setlocale (LC_TIME, "C"); // we want posix (aka "C") weekday/month strings
-    strftime (buffer, sizeof (buffer), "%a, %d %b %Y %H:%M:%S +0000", now_gmt);
+    strftime (buffer, sizeof (buffer), 
+        "Date: %a, %d %b %Y %H:%M:%S +0000\r\n", 
+        now_gmt);
     setlocale (LC_TIME, locale.c_str ());
     return std::string (buffer);
 }
 
 std::string HTTPReply (int nStatus, const std::string& strMsg)
 {
-    WriteLog (lsTRACE, RPCLog) << "HTTP Reply " << nStatus << " " << strMsg;
+    if (ShouldLog (lsTRACE, RPCLog))
+    {
+        WriteLog (lsTRACE, RPCLog) << "HTTP Reply " << nStatus << " " << strMsg;
+    }
+
+    std::string ret;
 
     if (nStatus == 401)
-        return strprintf ("HTTP/1.0 401 Authorization Required\r\n"
-                          "Date: %s\r\n"
-                          "Server: " SYSTEM_NAME "-json-rpc/%s\r\n"
-                          "WWW-Authenticate: Basic realm=\"jsonrpc\"\r\n"
-                          "Content-Type: text/html\r\n"
-                          "Content-Length: 296\r\n"
-                          "\r\n"
-                          "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\"\r\n"
-                          "\"http://www.w3.org/TR/1999/REC-html401-19991224/loose.dtd\">\r\n"
-                          "<HTML>\r\n"
-                          "<HEAD>\r\n"
-                          "<TITLE>Error</TITLE>\r\n"
-                          "<META HTTP-EQUIV='Content-Type' CONTENT='text/html; charset=ISO-8859-1'>\r\n"
-                          "</HEAD>\r\n"
-                          "<BODY><H1>401 Unauthorized.</H1></BODY>\r\n"
-                          "</HTML>\r\n", rfc1123Time ().c_str (), FormatFullVersion ().c_str ());
+    {
+        ret.reserve (512);
 
-    std::string strStatus;
+        ret.append ("HTTP/1.0 401 Authorization Required\r\n");
+        ret.append (getHTTPHeaderTimestamp ());
 
-    if (nStatus == 200) strStatus = "OK";
-    else if (nStatus == 400) strStatus = "Bad Request";
-    else if (nStatus == 403) strStatus = "Forbidden";
-    else if (nStatus == 404) strStatus = "Not Found";
-    else if (nStatus == 500) strStatus = "Internal Server Error";
+        // CHECKME this returns a different version than the replies below. Is
+        //         this by design or an accident or should it be using
+        //         BuildInfo::getFullVersionString () as well?
+        ret.append ("Server: " SYSTEM_NAME "-json-rpc/");
+        ret.append (FormatFullVersion ());
+        ret.append ("\r\n");
 
-    std::string access;
+        // Be careful in modifying this! If you change the contents you MUST
+        // update the Content-Length header as well to indicate the correct
+        // size of the data.
+        ret.append ("WWW-Authenticate: Basic realm=\"jsonrpc\"\r\n"
+                    "Content-Type: text/html\r\n"
+                    "Content-Length: 296\r\n"
+                    "\r\n"
+                    "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\"\r\n"
+                    "\"http://www.w3.org/TR/1999/REC-html401-19991224/loose.dtd\">\r\n"
+                    "<HTML>\r\n"
+                    "<HEAD>\r\n"
+                    "<TITLE>Error</TITLE>\r\n"
+                    "<META HTTP-EQUIV='Content-Type' CONTENT='text/html; charset=ISO-8859-1'>\r\n"
+                    "</HEAD>\r\n"
+                    "<BODY><H1>401 Unauthorized.</H1></BODY>\r\n");
 
-    if (getConfig ().RPC_ALLOW_REMOTE) access = "Access-Control-Allow-Origin: *\r\n";
-    else access = "";
+        return ret;
+    }
 
-    return strprintf (
-               "HTTP/1.1 %d %s\r\n"
-               "Date: %s\r\n"
-               "Connection: Keep-Alive\r\n"
-               "%s"
-               "Content-Length: %d\r\n"
-               "Content-Type: application/json; charset=UTF-8\r\n"
-               "Server: " SYSTEM_NAME "-json-rpc/%s\r\n"
-               "\r\n"
-               "%s\r\n",
-               nStatus,
-               strStatus.c_str (),
-               rfc1123Time ().c_str (),
-               access.c_str (),
-               strMsg.size () + 2,
-               //SERVER_VERSION,
-               BuildInfo::getFullVersionString (),
-               strMsg.c_str ());
+    ret.reserve(256 + strMsg.length());
+
+    switch (nStatus)
+    {
+    case 200: ret.append ("HTTP/1.1 200 OK\r\n"); break;
+    case 400: ret.append ("HTTP/1.1 400 Bad Request\r\n"); break;
+    case 403: ret.append ("HTTP/1.1 403 Forbidden\r\n"); break;
+    case 404: ret.append ("HTTP/1.1 404 Not Found\r\n"); break;
+    case 500: ret.append ("HTTP/1.1 500 Internal Server Error\r\n"); break;
+    }
+
+    ret.append (getHTTPHeaderTimestamp ());
+
+    ret.append ("Connection: Keep-Alive\r\n");
+
+    if (getConfig ().RPC_ALLOW_REMOTE)
+        ret.append ("Access-Control-Allow-Origin: *\r\n");
+    
+    ret.append ("Content-Length: ");
+    ret.append (boost::lexical_cast<std::string>(strMsg.size () + 2));
+    ret.append ("\r\n");
+
+    ret.append ("Content-Type: application/json; charset=UTF-8\r\n");
+    
+    ret.append ("Server: " SYSTEM_NAME "-json-rpc/");
+    ret.append (BuildInfo::getFullVersionString ());
+    ret.append ("\r\n");
+    
+    ret.append ("\r\n");
+    ret.append (strMsg);
+    ret.append ("\r\n");
+
+    return ret;
 }
 
 int ReadHTTPStatus (std::basic_istream<char>& stream)
