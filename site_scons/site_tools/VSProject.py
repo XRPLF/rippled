@@ -24,8 +24,6 @@ import SCons.Node
 import SCons.Script.Main
 import SCons.Util
 
-import sys
-
 #-------------------------------------------------------------------------------
 
 # Adapted from msvs.py
@@ -102,7 +100,7 @@ def itemList(items, sep):
     def gen():
         for item in sorted(items):
             if type(item) == dict:
-                for k, v in item.items():
+                for k, v in sorted(item.items()):
                     yield k + '=' + v
             else:
                 yield item
@@ -141,7 +139,6 @@ class SwitchConverter(object):
             tag = 'AdditionalOptions'
             xml.append('%(prefix)s<%(tag)s>%(s)s%%(%(tag)s)</%(tag)s>\r\n' % locals())
         if xml:
-            xml.sort()
             return ''.join(xml)
         return ''
 
@@ -562,13 +559,6 @@ class _ProjectGenerator(object):
         self.filters_node = filters_node
         self.filters_file = None
         self.guid = _guid(os.path.basename(str(self.project_node)))
-        self.cpppath = []
-        for path in [os.path.abspath(x) for x in makeList(env['CPPPATH'])]:
-            common = os.path.commonprefix([path, self.root_dir])
-            if len(common) == len(self.root_dir):
-                self.cpppath.append(winpath(os.path.relpath(path, self.project_dir)))
-            #else:
-            #    self.cpppath.append(path)
         self.buildItemList(env)
 
     def buildItemList(self, env):
@@ -596,7 +586,7 @@ class _ProjectGenerator(object):
             targets = config.target
             for target in targets:
                 _walk(target, items)
-        self.items = sorted([v for k, v in items.iteritems()], key=lambda x: x.path)
+        self.items = sorted(items.itervalues(), key=lambda x: x.path)
 
     def makeListTag(self, items, tag, prefix='', inherit=True):
         '''Builds an XML tag string from a list of items. If items is
@@ -615,42 +605,25 @@ class _ProjectGenerator(object):
         for path in paths:
             if not os.path.isabs(path):
                 items.append(winpath(os.path.relpath(path, self.project_dir)))
-        items.sort()
         return items
-
-    def makePaths(self, paths, extra = None):
-        '''Returns a semicolon delimited string formed from a list
-        of root relative paths converted to be project relative.'''
-        s = ''
-        sep = ''
-        root_dir = os.getcwd()
-        for path in sorted(paths):
-            common = os.path.commonprefix([os.path.abspath(path), root_dir])
-            if len(common) == len(root_dir):
-                s += sep
-                s += winpath(os.path.relpath(path, self.project_dir))
-                sep = ';'
-        if extra:
-            s += sep + extra
-        return s
 
     def writeHeader(self):
         global clSwitches
 
         encoding = 'utf-8'
         project_guid = self.guid
-        name = 'RippleD'
+        name = os.path.splitext(os.path.basename(str(self.project_node)))[0]
 
         f = self.project_file
         f.write(UnicodeByteMarker)
         f.write(V12DSPHeader % locals())
+        f.write(V12DSPGlobals % locals())
         f.write('  <ItemGroup Label="ProjectConfigurations">\r\n')
         for config in self.configs:
             variant = config.variant
             platform = config.platform            
             f.write(V12DSPProjectConfiguration % locals())
         f.write('  </ItemGroup>\r\n')
-        f.write(V12DSPGlobals % locals())
 
         f.write('  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />\r\n')
         for config in self.configs:
@@ -678,26 +651,23 @@ class _ProjectGenerator(object):
             # Cl options
             f.write('    <ClCompile>\r\n')
             f.write(
-                #'      <PrecompiledHeader />\r\n'
                 '      <PreprocessorDefinitions>%s%%(PreprocessorDefinitions)</PreprocessorDefinitions>\r\n' % (
                     itemList(config.env['CPPDEFINES'], ';')))
             props = ''
-            props += self.makeListTag(
-                [x for x in config.env['CPPPATH'] if is_subdir(x, self.root_dir)
-                    ], 'AdditionalIncludeDirectories', '      ', True)
+            props += self.makeListTag(self.relPaths(sorted(config.env['CPPPATH'])),
+                'AdditionalIncludeDirectories', '      ', True)
             f.write(props)
-            f.write(CLSWITCHES.getXml(config.env['CCFLAGS'], '      '))
+            f.write(CLSWITCHES.getXml(sorted(config.env['CCFLAGS']), '      '))
             f.write('    </ClCompile>\r\n')
 
             f.write('    <Link>\r\n')
             props = ''
-            props += self.makeListTag([x for x in config.env['LIBS']
-                    ], 'AdditionalDependencies', '      ', True)
-            props += self.makeListTag(
-                [x for x in config.env['LIBPATH'] if is_subdir(x, self.root_dir)
-                    ], 'AdditionalLibraryDirectories', '      ', True)
+            props += self.makeListTag(sorted(config.env['LIBS']),
+                'AdditionalDependencies', '      ', True)
+            props += self.makeListTag(self.relPaths(sorted(config.env['LIBPATH'])),
+                'AdditionalLibraryDirectories', '      ', True)
             f.write(props)
-            f.write(LINKSWITCHES.getXml(config.env['LINKFLAGS'], '      '))
+            f.write(LINKSWITCHES.getXml(sorted(config.env['LINKFLAGS']), '      '))
             f.write('    </Link>\r\n')
 
             f.write('  </ItemDefinitionGroup>\r\n')
@@ -715,14 +685,13 @@ class _ProjectGenerator(object):
                 props = '      <ExcludedFromBuild>True</ExcludedFromBuild>\r\n'
             elif item.builder() == 'Object':
                 props = ''
-                for config, output in item.node.iteritems():
+                for config, output in sorted(item.node.iteritems()):
                     name = config.name
                     env = output.get_build_env()
-                    inc_dirs = self.makePaths(env['CPPPATH'])
-                    props += self.makeListTag(self.relPaths(env['CPPPATH']),
+                    props += self.makeListTag(self.relPaths(sorted(env['CPPPATH'])),
                         'AdditionalIncludeDirectories', '      ', True)
             elif item.builder() == 'Protoc':
-                for config, output in item.node.iteritems():
+                for config, output in sorted(item.node.iteritems()):
                     name = config.name
                     out_dir = os.path.relpath(os.path.dirname(str(output)), self.project_dir)
                     cpp_out = winpath(out_dir)
