@@ -1,576 +1,540 @@
+# rippled SConstruct
 #
-# Ripple - SConstruct
-#
+'''
 
-import commands
-import copy
-import glob
+    Target          Builds
+    ----------------------------------------------------------------------------
+
+    <none>          Same as 'install'
+    install         Default target and copies it to build/rippled (default)
+
+    all             All available variants
+    debug           All available debug variants
+    release         All available release variants
+
+    clang           All clang variants
+    clang.debug     clang debug variant
+    clang.release   clang release variant
+
+    gcc             All gcc variants
+    gcc.debug       gcc debug variant
+    gcc.release     gcc release variant
+
+    msvc            All msvc variants
+    msvc.debug      MSVC debug variant
+    msvc.release    MSVC release variant
+
+    vcxproj         Generate Visual Studio 2013 project file
+
+If the clang toolchain is detected, then the default target will use it, else
+the gcc toolchain will be used. On Windows environments, the MSVC toolchain is
+also detected.
+
+'''
+#
+'''
+
+TODO
+
+- Fix git-describe support
+- Fix printing exemplar command lines
+- Fix toolchain detection
+
+
+'''
+#-------------------------------------------------------------------------------
+
+import collections
 import os
-import platform
-import re
+import subprocess
 import sys
 import textwrap
+import SCons.Action
 
-OSX = bool(platform.mac_ver()[0])
-FreeBSD = bool('FreeBSD' == platform.system())
-Linux   = bool('Linux' == platform.system())
-Ubuntu  = bool(Linux and 'Ubuntu' == platform.linux_distribution()[0])
-Debian  = bool(Linux and 'debian' == platform.linux_distribution()[0])
-Fedora  = bool(Linux and 'Fedora' == platform.linux_distribution()[0])
-Archlinux  = bool(Linux and ('','','') == platform.linux_distribution()) #Arch still has issues with the platform module
+sys.path.append(os.path.join('src', 'beast', 'site_scons'))
 
-USING_CLANG = OSX or os.environ.get('CC', None) == 'clang'
-
-#
-# We expect this to be set
-#
-BOOST_HOME = os.environ.get("RIPPLED_BOOST_HOME", None)
-
-if OSX or Ubuntu or Debian or Archlinux:
-    CTAGS = 'ctags'
-elif FreeBSD:
-    CTAGS = 'exctags'
-else:
-    CTAGS = 'exuberant-ctags'
-
-#
-# scons tools
-#
-
-HONOR_ENVS = ['CC', 'CXX', 'PATH']
-
-env = Environment(
-    tools = ['default', 'protoc'],
-    ENV = dict((k, os.environ[k]) for k in HONOR_ENVS if k in os.environ)
-)
-
-if os.environ.get('CC', None):
-    env.Replace(CC = os.environ['CC'])
-
-if os.environ.get('CXX', None):
-    env.Replace(CXX = os.environ['CXX'])
-
-if os.environ.get('PATH', None):
-    env.Replace(PATH = os.environ['PATH'])
-
-# Use a newer gcc on FreeBSD
-if FreeBSD:
-    env.Replace(CC = 'gcc46')
-    env.Replace(CXX = 'g++46')
-    env.Append(CCFLAGS = ['-Wl,-rpath=/usr/local/lib/gcc46'])
-    env.Append(LINKFLAGS = ['-Wl,-rpath=/usr/local/lib/gcc46'])
-
-if USING_CLANG:
-    env.Replace(CC= 'clang')
-    env.Replace(CXX= 'clang++')
-
-    if Linux:
-        env.Append(CXXFLAGS = ['-std=c++11', '-stdlib=libstdc++'])
-        env.Append(LINKFLAGS='-stdlib=libstdc++')
-
-    if OSX:
-        env.Append(CXXFLAGS = ['-std=c++11', '-stdlib=libc++', 
-                               '-Wno-deprecated-register'])
-        env.Append(LINKFLAGS='-stdlib=libc++')
-        env['FRAMEWORKS'] = ['AppKit','Foundation']
-
-GCC_VERSION = re.split('\.', commands.getoutput(env['CXX'] + ' -dumpversion'))
-
-# Add support for ccache. Usage: scons ccache=1
-ccache = ARGUMENTS.get('ccache', 0)
-if int(ccache):
-    env.Prepend(CC = ['ccache'])
-    env.Prepend(CXX = ['ccache'])
-    ccache_dir = os.getenv('CCACHE_DIR')
-    if ccache_dir:
-        env.Replace(CCACHE_DIR = ccache_dir)
-
-#
-# Builder for CTags
-#
-ctags = Builder(action = '$CTAGS $CTAGSOPTIONS -f $TARGET $SOURCES')
-env.Append(BUILDERS = { 'CTags' : ctags })
-if OSX:
-    env.Replace(CTAGS = CTAGS)
-else:
-    env.Replace(CTAGS = CTAGS, CTAGSOPTIONS = '--tag-relative')
-
-# Use openssl
-env.ParseConfig('pkg-config --static --cflags --libs openssl')
-# Use protobuf
-env.ParseConfig('pkg-config --static --cflags --libs protobuf')
-
-# Beast uses kvm on FreeBSD
-if FreeBSD:
-    env.Append (
-        LIBS = [
-            'kvm'
-        ]
-    )
-
-# The required version of boost is documented in the README file.
-BOOST_LIBS = [
-    'boost_date_time',
-    'boost_filesystem',
-    'boost_program_options',
-    'boost_regex',
-    'boost_system',
-    'boost_thread',
-]
-
-# We whitelist platforms where the non -mt version is linked with pthreads. This
-# can be verified with: ldd libboost_filesystem.* If a threading library is
-# included the platform can be whitelisted.
-# if FreeBSD or Ubuntu or Archlinux:
-
-if not (USING_CLANG and Linux) and (FreeBSD or Ubuntu or Archlinux or Debian or OSX or Fedora):
-    # non-mt libs do link with pthreads.
-    env.Append(
-        LIBS = BOOST_LIBS
-    )
-elif Linux and USING_CLANG and Ubuntu:
-    # It's likely going to be here if using boost 1.55 
-    boost_statics = [ ("/usr/lib/x86_64-linux-gnu/lib%s.a" % a) for a in 
-                      BOOST_LIBS ]
-
-    if not all(os.path.exists(f) for f in boost_statics):
-        # Else here
-        boost_statics = [("/usr/lib/lib%s.a" % a) for a in BOOST_LIBS]
-    
-    env.Append(LIBS = [File(f) for f in boost_statics])
-else:
-    env.Append(
-        LIBS = [l + '-mt' for l in BOOST_LIBS]
-    )
-
-#-------------------------------------------------------------------------------
-# Change the way that information is printed so that we can get a nice
-# output
-#-------------------------------------------------------------------------------
-BuildLogFile = None
-
-def print_cmd_line_worker(item, fmt, cmd):
-    sys.stdout.write(fmt % ("    \033[94m" + item + "\033[0m"))
-
-    global BuildLogFile
-
-    if not BuildLogFile:
-        BuildLogFile = open('rippled-build.log', 'w')
-
-    if BuildLogFile:
-        wrapper = textwrap.TextWrapper()
-        wrapper.break_long_words = False
-        wrapper.break_on_hyphens = False
-        wrapper.width = 75
-
-        lines = wrapper.wrap(cmd)
-
-        for line in lines:
-            BuildLogFile.write("%s\n" % line)
-
-
-def print_cmd_line(s, target, src, env):
-    target = (''.join([str(x) for x in target]))
-    source = (''.join([str(x) for x in src]))
-
-    if ('build/rippled' == target):
-        print_cmd_line_worker(target, "%s\n", s)
-    elif ('tags' == target):
-        sys.stdout.write("    Generating tags")
-    else:
-        print_cmd_line_worker(source, "%s\n", s)
-
-
-# Originally, we wanted to suppress verbose display when running on Travis,
-# but we no longer want that functionality. Just use the following if to
-# get the suppression functionality again:
-#
-#if (os.environ.get('TRAVIS', '0') != 'true') and
-#   (os.environ.get('CI', '0') != 'true'):
-#
-#    env['PRINT_CMD_LINE_FUNC'] = print_cmd_line
-
-env['PRINT_CMD_LINE_FUNC'] = print_cmd_line
-
-
-#-------------------------------------------------------------------------------
-#
-# VFALCO NOTE Clean area.
-#
-#-------------------------------------------------------------------------------
-#
-# Nothing having to do with directories, source files,
-# or include paths should reside outside the boundaries.
-#
-
-# List of includes passed to the C++ compiler.
-# These are all relative to the repo dir.
-#
-INCLUDE_PATHS = [
-    '.',
-    'src/leveldb',
-    'src/leveldb/port',
-    'src/leveldb/include',
-    'src/snappy/snappy',
-    'src/snappy/config',
-    ]
-
-# if BOOST_HOME:
-#     INCLUDE_PATHS.append(BOOST_HOME)
-
-#-------------------------------------------------------------------------------
-#
-# Compiled sources
-#
-
-COMPILED_FILES = []
-
-# -------------------
-# Beast unity sources
-#
-if OSX:
-    # OSX: Use the Objective C++ version of beast_core
-    COMPILED_FILES.extend (['src/ripple/beast/ripple_beastobjc.unity.mm'])
-else:
-    COMPILED_FILES.extend (['src/ripple/beast/ripple_beast.unity.cpp'])
-COMPILED_FILES.extend (['src/ripple/beast/ripple_beastc.unity.c'])
-
-# ------------------------------
-# New-style Ripple unity sources
-#
-COMPILED_FILES.extend([
-    'src/ripple/http/ripple_http.unity.cpp',
-    'src/ripple/json/ripple_json.unity.cpp',
-    'src/ripple/peerfinder/ripple_peerfinder.unity.cpp',
-    'src/ripple/radmap/ripple_radmap.unity.cpp',
-    'src/ripple/resource/ripple_resource.unity.cpp',
-    'src/ripple/rocksdb/ripple_rocksdb.unity.cpp',
-    'src/ripple/sitefiles/ripple_sitefiles.unity.cpp',
-    'src/ripple/sslutil/ripple_sslutil.unity.cpp',
-    'src/ripple/testoverlay/ripple_testoverlay.unity.cpp',
-    'src/ripple/types/ripple_types.unity.cpp',
-    'src/ripple/validators/ripple_validators.unity.cpp',
-    'src/ripple/common/ripple_common.unity.cpp',
-    'src/snappy/snappy.unity.cpp',
-    ])
-
-# ------------------------------
-# Old-style Ripple unity sources
-#
-COMPILED_FILES.extend([
-    'src/ripple_app/ripple_app.unity.cpp',
-    'src/ripple_app/ripple_app_pt1.unity.cpp',
-    'src/ripple_app/ripple_app_pt2.unity.cpp',
-    'src/ripple_app/ripple_app_pt3.unity.cpp',
-    'src/ripple_app/ripple_app_pt4.unity.cpp',
-    'src/ripple_app/ripple_app_pt5.unity.cpp',
-    'src/ripple_app/ripple_app_pt6.unity.cpp',
-    'src/ripple_app/ripple_app_pt7.unity.cpp',
-    'src/ripple_app/ripple_app_pt8.unity.cpp',
-    'src/ripple_app/ripple_app_pt9.unity.cpp',
-    'src/ripple_basics/ripple_basics.unity.cpp',
-    'src/ripple_core/ripple_core.unity.cpp',
-    'src/ripple_data/ripple_data.unity.cpp',
-    'src/ripple_hyperleveldb/ripple_hyperleveldb.unity.cpp',
-    'src/ripple_leveldb/ripple_leveldb.unity.cpp',
-    'src/ripple_net/ripple_net.unity.cpp',
-    'src/ripple_overlay/ripple_overlay.unity.cpp',
-    'src/ripple_rpc/ripple_rpc.unity.cpp',
-    'src/ripple_websocket/ripple_websocket.unity.cpp',
-    'src/snappy/snappy.unity.cpp',
-    ])
-
-#
-#
-#-------------------------------------------------------------------------------
-
-# Map top level source directories to their location in the outputs
-#
-
-VariantDir('build/obj/src', 'src', duplicate=0)
+import Beast
 
 #-------------------------------------------------------------------------------
 
-# Add the list of includes to compiler include paths.
-#
-for path in INCLUDE_PATHS:
-    env.Append (CPPPATH = [ path ])
+def import_environ(env):
+    '''Imports environment settings into the construction environment'''
+    def set(keys):
+        if type(keys) == list:
+            for key in keys:
+                set(key)
+            return
+        if keys in os.environ:
+            value = os.environ[keys]
+            env[keys] = value
+    set(['GNU_CC', 'GNU_CXX', 'GNU_LINK'])
+    set(['CLANG_CC', 'CLANG_CXX', 'CLANG_LINK'])
 
-if BOOST_HOME:
-    env.Prepend (CPPPATH = [ BOOST_HOME ])
+def detect_toolchains(env):
+    def is_compiler(comp_from, comp_to):
+        return comp_from and comp_to in comp_from
+
+    def detect_clang(env):
+        n = sum(x in env for x in ['CLANG_CC', 'CLANG_CXX', 'CLANG_LINK'])
+        if n > 0:
+            if n == 3:
+                return True
+            raise ValueError('CLANG_CC, CLANG_CXX, and CLANG_LINK must be set together')
+        cc = env.get('CC')
+        cxx = env.get('CXX')
+        link = env.subst(env.get('LINK'))
+        if (cc and cxx and link and
+            is_compiler(cc, 'clang') and
+            is_compiler(cxx, 'clang') and
+            is_compiler(link, 'clang')):
+            env['CLANG_CC'] = cc
+            env['CLANG_CXX'] = cxx
+            env['CLANG_LINK'] = link
+            return True
+        cc = env.WhereIs('clang')
+        cxx = env.WhereIs('clang++')
+        link = cxx
+        if (is_compiler(cc, 'clang') and
+            is_compiler(cxx, 'clang') and
+            is_compiler(link, 'clang')):
+           env['CLANG_CC'] = cc
+           env['CLANG_CXX'] = cxx
+           env['CLANG_LINK'] = link
+           return True
+        env['CLANG_CC'] = 'clang'
+        env['CLANG_CXX'] = 'clang++'
+        env['CLANG_LINK'] = env['LINK']
+        return False
+
+    def detect_gcc(env):
+        n = sum(x in env for x in ['GNU_CC', 'GNU_CXX', 'GNU_LINK'])
+        if n > 0:
+            if n == 3:
+                return True
+            raise ValueError('GNU_CC, GNU_CXX, and GNU_LINK must be set together')
+        cc = env.get('CC')
+        cxx = env.get('CXX')
+        link = env.subst(env.get('LINK'))
+        if (cc and cxx and link and
+            is_compiler(cc, 'gcc') and
+            is_compiler(cxx, 'g++') and
+            is_compiler(link, 'g++')):
+            env['GNU_CC'] = cc
+            env['GNU_CXX'] = cxx
+            env['GNU_LINK'] = link
+            return True
+        cc = env.WhereIs('gcc')
+        cxx = env.WhereIs('g++')
+        link = cxx
+        if (is_compiler(cc, 'gcc') and
+            is_compiler(cxx, 'g++') and
+            is_compiler(link, 'g++')):
+           env['GNU_CC'] = cc
+           env['GNU_CXX'] = cxx
+           env['GNU_LINK'] = link
+           return True
+        env['GNU_CC'] = 'gcc'
+        env['GNU_CXX'] = 'g++'
+        env['GNU_LINK'] = env['LINK']
+        return False
+
+    toolchains = []
+    if detect_clang(env):
+        toolchains.append('clang')
+    if detect_gcc(env):
+        toolchains.append('gcc')
+    if env.Detect('cl'):
+        toolchains.append('msvc')
+    return toolchains
+
+def files(base):
+    def _iter(base):
+        for parent, _, files in os.walk(base):
+            for path in files:
+                path = os.path.join(parent, path)
+                yield os.path.normpath(path)
+    return list(_iter(base))
+
+def category(ext):
+    if ext in ['.c', '.cc', '.cpp']:
+        return 'compiled'
+    return 'none'
+
+def unity_category(f):
+    base, fullname = os.path.split(f)
+    name, ext = os.path.splitext(fullname)
+    if os.path.splitext(name)[1] == '.unity':
+        return category(ext)
+    return 'none'
+
+def categorize(groups, func, sources):
+    for f in sources:
+        groups.setdefault(func(f), []).append(f)
+
+def print_coms(target, source, env):
+    '''Display command line exemplars for an environment'''
+    print ('Target: ' + Beast.yellow(str(target[0])))
+    # TODO Add 'PROTOCCOM' to this list and make it work
+    Beast.print_coms(['CXXCOM', 'CCCOM', 'LINKCOM'], env)
 
 #-------------------------------------------------------------------------------
 
-# Apparently, only linux uses -ldl
-if Linux: # not FreeBSD:
-    env.Append(
-        LIBS = [
-            'dl', # dynamic linking for linux
-        ]
-    )
+# Set construction variables for the base environment
+def config_base(env):
+    if False:
+        env.Replace(
+            CCCOMSTR='Compiling ' + Beast.blue('$SOURCES'),
+            CXXCOMSTR='Compiling ' + Beast.blue('$SOURCES'),
+            LINKCOMSTR='Linking ' + Beast.blue('$TARGET'),
+            )
+    #git = Beast.Git(env) #  TODO(TOM)
+    if False: #git.exists:
+        env.Append(CPPDEFINES={'GIT_COMMIT_ID' : '"%s"' % git.commit_id})
 
-env.Append(
-    LIBS = \
-        # rt is for clock_nanosleep in beast
-        ['rt'] if not OSX else [] +\
-        [
-            'z'
-        ]
-)
+    try:
+        BOOST_ROOT = os.path.normpath(os.environ['BOOST_ROOT'])
+        env.Append(CPPPATH=[
+            BOOST_ROOT,
+            ])
+        env.Append(LIBPATH=[
+            os.path.join(BOOST_ROOT, 'stage', 'lib'),
+            ])
+    except KeyError:
+        pass
 
-# We prepend, in case there's another BOOST somewhere on the path
-# such, as installed into `/usr/lib/`
-if BOOST_HOME is not None:
-    env.Prepend(
-        LIBPATH = ["%s/stage/lib" % BOOST_HOME])
+    if Beast.system.linux:
+        env.ParseConfig('pkg-config --static --cflags --libs openssl')
+        env.ParseConfig('pkg-config --static --cflags --libs protobuf')
+    elif Beast.system.windows:
+        try:
+            OPENSSL_ROOT = os.path.normpath(os.environ['OPENSSL_ROOT'])
+            env.Append(CPPPATH=[
+                os.path.join(OPENSSL_ROOT, 'include'),
+                ])
+            env.Append(LIBPATH=[
+                os.path.join(OPENSSL_ROOT, 'lib', 'VC', 'static'),
+                ])
+        except KeyError:
+            pass
+    elif Beast.system.osx:
+        OSX_OPENSSL_ROOT = '/usr/local/Cellar/openssl/'
+        most_recent = sorted(os.listdir(OSX_OPENSSL_ROOT))[-1]
+        openssl = os.path.join(OSX_OPENSSL_ROOT, most_recent)
+        env.Prepend(CPPPATH='%s/include' % openssl)
+        env.Prepend(LIBPATH=['%s/lib' % openssl])
 
-if not OSX:
-    env.Append(LINKFLAGS = [
-        '-rdynamic',
-        '-pthread',
-        ])
+# Set toolchain and variant specific construction variables
+def config_env(toolchain, variant, env):
+    if variant == 'debug':
+        env.Append(CPPDEFINES=['DEBUG', '_DEBUG'])
 
-DEBUGFLAGS  = ['-g', '-DDEBUG', '-D_DEBUG']
+    elif variant == 'release':
+        env.Append(CPPDEFINES=['NDEBUG'])
 
-env.Append(CCFLAGS = ['-pthread', '-Wall', '-Wno-sign-compare', '-Wno-char-subscripts']+DEBUGFLAGS)
-if not USING_CLANG:
-     more_warnings = ['-Wno-unused-local-typedefs']
-else:
-     # This disables the "You said it was a struct AND a class, wth is going on
-     # warnings"
-     more_warnings = ['-Wno-mismatched-tags'] # add '-Wshorten-64-to-32' some day
-     # This needs to be a CCFLAGS not a CXXFLAGS
-     env.Append(CCFLAGS = more_warnings)
+    if toolchain in Split('clang gcc'):
+        env.Append(CCFLAGS=[
+            '-Wall',
+            '-Wno-sign-compare',
+            '-Wno-char-subscripts',
+            '-Wno-format',
+            ])
 
-# add '-Wconversion' some day
-env.Append(CXXFLAGS = ['-O3', '-fno-strict-aliasing', '-pthread', '-Wno-invalid-offsetof', '-Wformat']+more_warnings+DEBUGFLAGS)
+        env.Append(CXXFLAGS=[
+            '-frtti',
+            '-std=c++11',
+            '-Wno-invalid-offsetof'])
 
-# RTTI is required for Beast and CountedObject.
-#
-env.Append(CXXFLAGS = ['-frtti'])
+        if Beast.system.osx:
+            env.Append(CPPDEFINES={
+                'BEAST_COMPILE_OBJECTIVE_CPP': 1,
+                })
 
-UBUNTU_GCC_48_INSTALL_STEPS = '''
-https://ripple.com/wiki/Ubuntu_build_instructions#Ubuntu_versions_older_than_13.10_:_Install_gcc_4.8'''
-
-if not USING_CLANG:
-    if (int(GCC_VERSION[0]) == 4 and int(GCC_VERSION[1]) < 8):
-        print "\n\033[91mTo compile rippled using GCC you need version 4.8.1 or later.\033[0m\n"
-
-        if Ubuntu:
-          print "For information how to update your GCC, please visit:"
-          print UBUNTU_GCC_48_INSTALL_STEPS
-          print "\n"
-
-        sys.exit(1)
-    else:
-        env.Append(CXXFLAGS = ['-std=c++11'])
-
-# FreeBSD doesn't support O_DSYNC
-if FreeBSD:
-    env.Append(CPPFLAGS = ['-DMDB_DSYNC=O_SYNC'])
-
-if OSX:
-    env.Append(LINKFLAGS = ['-L/usr/local/opt/openssl/lib'])
-    env.Append(CXXFLAGS = ['-I/usr/local/opt/openssl/include'])
-
-# Determine if this is a Travis continuous integration build:
-TravisBuild = (os.environ.get('TRAVIS', '0') == 'true') and \
-              (os.environ.get('CI', '0') == 'true')
-
-RippleRepository = False
-
-# Determine if we're building against the main ripple repo or a developer repo
-if TravisBuild:
-    Slug = os.environ.get('TRAVIS_REPO_SLUG', '')
-
-    if (Slug.find ("ripple/") == 0):
-        RippleRepository = True
-
-if TravisBuild:
-    env.Append(CFLAGS = ['-DTRAVIS_CI_BUILD'])
-    env.Append(CXXFLAGS = ['-DTRAVIS_CI_BUILD'])
-
-if RippleRepository:
-    env.Append(CFLAGS = ['-DRIPPLE_MASTER_BUILD'])
-    env.Append(CXXFLAGS = ['-DRIPPLE_MASTER_BUILD'])
-
-# Display build configuration information for debugging purposes
-def print_nv_pair(n, v):
-    name = ("%s" % n.rjust(10))
-    sys.stdout.write("%s \033[94m%s\033[0m\n" % (name, v))
-
-def print_build_config(var):
-    val = env.get(var, '')
-    
-    if val and val != '':
-        name = ("%s" % var.rjust(10))
-
-        wrapper = textwrap.TextWrapper()
-        wrapper.break_long_words = False
-        wrapper.break_on_hyphens = False
-        wrapper.width = 69
-
-        if type(val) is str:
-            lines = wrapper.wrap(val)
+        # These should be the same regardless of platform...
+        if Beast.system.osx:
+            env.Append(CCFLAGS=[
+                '-Wno-deprecated',
+                '-Wno-deprecated-declarations',
+                '-Wno-unused-variable',
+                '-Wno-unused-function',
+                ])
         else:
-            lines = wrapper.wrap(" ".join(str(x) for x in val))
+            env.Append(CCFLAGS=[
+                '-Wno-unused-but-set-variable'
+                ])
 
-        for line in lines:
-            print_nv_pair (name, line)
-            name = "          "
+        env.Append(LIBS=[
+            'boost_date_time',
+            'boost_filesystem',
+            'boost_program_options',
+            'boost_regex',
+            'boost_system',
+            'boost_thread',
+            'dl',
+            ])
+        if Beast.system.osx:
+            env.Append(LIBS=[
+                'crypto',
+                'protobuf',
+                'ssl',
+                ])
+            env.Append(FRAMEWORKS=[
+                'AppKit',
+                'Foundation'
+                ])
+        else:
+            env.Append(LIBS=['rt'])
 
-config_vars = ['CC', 'CXX', 'CFLAGS', 'CPPFLAGS', 'CXXFLAGS', 'LINKFLAGS', 'LIBS']
+        env.Append(LINKFLAGS=[
+            '-rdynamic'
+            ])
 
-if TravisBuild:
-    Slug = os.environ.get('TRAVIS_REPO_SLUG', None)
-    Branch = os.environ.get('TRAVIS_BRANCH', None)
-    Commit = os.environ.get('TRAVIS_COMMIT', None)
+        if variant == 'debug':
+            env.Append(CCFLAGS=[
+                '-g'
+                ])
+        elif variant == 'release':
+            env.Append(CCFLAGS=[
+                '-O3',
+                '-fno-strict-aliasing'
+                ])
 
-    sys.stdout.write("\nBuild Type:\n")
+        if toolchain == 'clang':
+            if Beast.system.osx:
+                env.Replace(CC='clang', CXX='clang++', LINK='clang++')
+            else:
+                env.Replace(CC=env['CLANG_CC'], CXX=env['CLANG_CXX'], LINK=env['CLANG_LINK'])
+            # C and C++
+            # Add '-Wshorten-64-to-32'
+            env.Append(CCFLAGS=[])
+            # C++ only
+            # Why is this only for clang?
+            env.Append(CXXFLAGS=['-Wno-mismatched-tags'])
 
-    if (Slug.find ("ripple/") == 0):
-        print_nv_pair ("Build", "Travis - Ripple Master Repository")
+        elif toolchain == 'gcc':
+            env.Replace(CC=env['GNU_CC'], CXX=env['GNU_CXX'], LINK=env['GNU_LINK'])
+            # Why is this only for gcc?!
+            env.Append(CCFLAGS=['-Wno-unused-local-typedefs'])
+
+    elif toolchain == 'msvc':
+        env.Append (CPPPATH=[
+            os.path.join('src', 'protobuf', 'src'),
+            os.path.join('src', 'protobuf', 'vsprojects'),
+            ])
+        env.Append(CCFLAGS=[
+            '/bigobj',              # Increase object file max size
+            '/EHa',                 # ExceptionHandling all
+            '/fp:precise',          # Floating point behavior
+            '/Gd',                  # __cdecl calling convention
+            '/Gm-',                 # Minimal rebuild: disabled
+            '/GR',                  # Enable RTTI
+            '/Gy-',                 # Function level linking: disabled
+            '/FS',
+            '/MP',                  # Multiprocessor compilation
+            '/openmp-',             # pragma omp: disabled
+            '/Zc:forScope',         # Language extension: for scope
+            '/Zi',                  # Generate complete debug info
+            '/errorReport:none',    # No error reporting to Internet
+            '/nologo',              # Suppress login banner
+            #'/Fd${TARGET}.pdb',     # Path: Program Database (.pdb)
+            '/W3',                  # Warning level 3
+            '/WX-',                 # Disable warnings as errors
+            '/wd"4018"',            # Disable warning C4018
+            '/wd"4244"',            # Disable warning C4244
+            '/wd"4267"',            # Disable warning 4267
+            ])
+        env.Append(CPPDEFINES={
+            '_WIN32_WINNT' : '0x6000',
+            })
+        env.Append(CPPDEFINES=[
+            '_SCL_SECURE_NO_WARNINGS',
+            '_CRT_SECURE_NO_WARNINGS',
+            'WIN32_CONSOLE',
+            ])
+        env.Append(LIBS=[
+            'ssleay32MT.lib',
+            'libeay32MT.lib',
+            'Shlwapi.lib',
+            'kernel32.lib',
+            'user32.lib',
+            'gdi32.lib',
+            'winspool.lib',
+            'comdlg32.lib',
+            'advapi32.lib',
+            'shell32.lib',
+            'ole32.lib',
+            'oleaut32.lib',
+            'uuid.lib',
+            'odbc32.lib',
+            'odbccp32.lib',
+            ])
+        env.Append(LINKFLAGS=[
+            '/DEBUG',
+            '/DYNAMICBASE',
+            '/ERRORREPORT:NONE',
+            #'/INCREMENTAL',
+            '/MACHINE:X64',
+            '/MANIFEST',
+            #'''/MANIFESTUAC:"level='asInvoker' uiAccess='false'"''',
+            #'/NOLOGO',
+            '/NXCOMPAT',
+            '/SUBSYSTEM:CONSOLE',
+            '/TLBID:1',
+            ])
+
+        if variant == 'debug':
+            env.Append(CCFLAGS=[
+                '/GS',              # Buffers security check: enable
+                '/MTd',             # Language: Multi-threaded Debug CRT
+                '/Od',              # Optimization: Disabled
+                '/RTC1',            # Run-time error checks:
+                ])
+            env.Append(CPPDEFINES=[
+                '_CRTDBG_MAP_ALLOC'
+                ])
+        else:
+            env.Append(CCFLAGS=[
+                '/MT',              # Language: Multi-threaded CRT
+                '/Ox',              # Optimization: Full
+                ])
+
     else:
-        print_nv_pair ("Build", "Travis - Ripple Developer Fork")
-
-    if (Slug):
-        print_nv_pair ("Repo", Slug)
-        
-    if (Branch):
-        print_nv_pair ("Branch", Branch)
-
-    if (Commit):
-        print_nv_pair ("Commit", Commit)
-
-sys.stdout.write("\nConfiguration:\n")
-
-for var in config_vars:
-    print_build_config(var)
-
-sys.stdout.write("\nBuilding:\n")
-
-PROTO_SRCS = env.Protoc([], 'src/ripple/proto/ripple.proto',
-    PROTOCOUTDIR='src/ripple/proto',
-    PROTOCPROTOPATH=['src/ripple/proto'],
-    PROTOCPYTHONOUTDIR=None)
-
-# Only tag actual Ripple files.
-TAG_SRCS    = copy.copy(COMPILED_FILES)
-
-# Derive the object files from the source files.
-OBJECT_FILES = []
-
-OBJECT_FILES.append(PROTO_SRCS[0])
-
-for file in COMPILED_FILES:
-    OBJECT_FILES.append('build/obj/' + file)
-
-#
-# Targets
-#
-
-rippled = env.Program('build/rippled', OBJECT_FILES)
-
-tags    = env.CTags('tags', TAG_SRCS)
-
-Default(rippled, tags)
+        raise SCons.UserError('Unknown toolchain == "%s"' % toolchain)
 
 #-------------------------------------------------------------------------------
 
-# Returns the list of libraries needed by the test source file. This is
-# accomplished by scanning the source file for a special comment line
-# with this format, which must match exactly:
-#
-# // LIBS: <name>...
-#
-# path = path to source file
-#
-def get_libs(path):
-    prefix = '// LIBS:'
-    with open(path, 'rb') as f:
-        for line in f:
-            line = line.strip()
-            if line.startswith(prefix):
-                items = line.split(prefix, 1)[1].strip()
-                return [x.strip() for x in items.split(' ')]
-
-# Returns the list of source modules needed by the test source file. This
-#
-# // MODULES: <module>...
-#
-# path = path to source file
-#
-def get_mods(path):
-    prefix = '// MODULES:'
-    with open(path, 'rb') as f:
-        for line in f:
-            line = line.strip()
-            if line.startswith(prefix):
-                items = line.split(prefix, 1)[1].strip()
-                items = [os.path.normpath(os.path.join(
-                    os.path.dirname(path), x.strip())) for
-                        x in items.split(' ')]
-                return items
-
-# Build a stand alone executable that runs
-# all the test suites in one source file
-#
-def build_test(env,path):
-    libs = get_libs(path)
-    mods = get_mods(path)
-    bin = os.path.basename(os.path.splitext(path)[0])
-    bin = os.path.join ("build", bin)
-    srcs = ['src/beast/beast/unit_test/tests/main.cpp']
-    srcs.append (path)
-    if mods:
-        srcs.extend (mods)
-    # All paths get normalized here, so we can use posix
-    # forward slashes for everything including on Windows
-    srcs = [os.path.normpath(os.path.join ('build', x)) for x in srcs]
-    objs = [os.path.splitext(x)[0]+'.o' for x in srcs]
-    env_ = env
-    if libs:
-        env_.Append(LIBS = libs)
-    env_.Program (bin, srcs)
-
-#-------------------------------------------------------------------------------
-
-def main():
-    env = Environment()
-
-    env['PRINT_CMD_LINE_FUNC'] = print_cmd_line
-
-    env.VariantDir (os.path.join ('build', 'src'), 'src', duplicate=0)
-
-    # Copy important os environment variables into env
-    if os.environ.get ('CC', None):
-        env.Replace (CC = os.environ['CC'])
-    if os.environ.get ('CXX', None):
-        env.Replace (CXX = os.environ['CXX'])
-    if os.environ.get ('PATH', None):
-        env.Replace (PATH = os.environ['PATH'])
-
-    # Set up boost variables
-    home = os.environ.get("BOOST_HOME", None)
-    if home is not None:
-        env.Prepend (CPPPATH = home)
-        env.Append (LIBPATH = os.path.join (home, 'stage', 'lib'))
-
-    # Set up flags
-    env.Append(CXXFLAGS = [
-        '-std=c++11',
-        '-frtti',
-        '-g'
+# Configure the base construction environment
+root_dir = Dir('#').srcnode().get_abspath() # Path to this SConstruct file
+build_dir = os.path.join('build')
+base = Environment(
+    toolpath=[os.path.join ('src', 'beast', 'site_scons', 'site_tools')],
+    tools=['default', 'Protoc', 'VSProject'],
+    ENV=os.environ,
+    TARGET_ARCH='x86_64')
+import_environ(base)
+config_base(base)
+base.Append(CPPPATH=[
+    'src',
+    os.path.join(build_dir, 'proto'),
+    os.path.join('src', 'snappy', 'snappy'),
+    os.path.join('src', 'snappy', 'config'),
+    ])
+base.Append(CPPPATH=[
+    os.path.join('src', 'leveldb'),
+    os.path.join('src', 'leveldb', 'port'),
+    os.path.join('src', 'leveldb', 'include'),
+    ])
+if Beast.system.windows:
+    base.Append(CPPPATH=[
+        os.path.join('src', 'protobuf', 'src'),
+        ])
+else:
+    base.Append(CPPPATH=[
+        os.path.join('src', 'rocksdb'),
+        os.path.join('src', 'rocksdb', 'include'),
         ])
 
-    for root, dirs, files in os.walk('src/ripple'):
-        for path in files:
-            path = os.path.join(root,path)
-            if (path.endswith(".test.cpp")):
-                build_test(env,path)
+# Configure the toolchains, variants, default toolchain, and default target
+variants = ['debug', 'release']
+all_toolchains = ['clang', 'gcc', 'msvc']
+if Beast.system.osx:
+    toolchains = ['clang']
+    default_toolchain = 'clang'
+else:
+    toolchains = detect_toolchains(base)
+    if not toolchains:
+        raise ValueError('No toolchains detected!')
+    if 'msvc' in toolchains:
+        default_toolchain = 'msvc'
+    elif 'gcc' in toolchains:
+        if 'clang' in toolchains:
+            cxx = os.environ.get('CXX', 'g++')
+            default_toolchain = 'clang' if 'clang' in cxx else 'gcc'
+        else:
+            default_toolchain = 'gcc'
+    elif 'clang' in toolchains:
+        default_toolchain = 'clang'
+    else:
+        raise ValueError("Don't understand toolchains in " + str(toolchains))
+default_variant = 'debug'
+default_target = None
 
-    print_build_config (env)
+# Collect sources from recursive directory iteration
+groups = collections.defaultdict(list)
+categorize(groups, unity_category,
+      files('src/ripple')
+    + files('src/ripple_app')
+    + files('src/ripple_basics')
+    + files('src/ripple_core')
+    + files('src/ripple_data')
+    + files('src/ripple_hyperleveldb')
+    + files('src/ripple_leveldb')
+    + files('src/ripple_net')
+    + files('src/ripple_overlay')
+    + files('src/ripple_rpc')
+    + files('src/ripple_websocket')
+    + files('src/snappy')
+    )
 
-main()
+groups['protoc'].append (
+    os.path.join('src', 'ripple', 'proto', 'ripple.proto'))
+for source in groups['protoc']:
+    outputs = base.Protoc([],
+        source,
+        PROTOCPROTOPATH=[os.path.dirname(source)],
+        PROTOCOUTDIR=os.path.join(build_dir, 'proto'),
+        PROTOCPYTHONOUTDIR=None)
+    groups['none'].extend(outputs)
+if Beast.system.osx:
+    mm = os.path.join('src', 'ripple', 'beast', 'ripple_beastobjc.unity.mm')
+    groups['compiled'].append(mm)
 
+# Declare the targets
+aliases = collections.defaultdict(list)
+msvc_configs = []
+for toolchain in toolchains:
+    for variant in variants:
+        # Configure this variant's construction environment
+        env = base.Clone()
+        config_env(toolchain, variant, env)
+        variant_name = '%s.%s' % (toolchain, variant)
+        variant_dir = os.path.join(build_dir, variant_name)
+        variant_dirs = {
+            os.path.join(variant_dir, 'src') :
+                'src',
+            os.path.join(variant_dir, 'proto') :
+                os.path.join (build_dir, 'proto'),
+            }
+        for dest, source in variant_dirs.iteritems():
+            env.VariantDir(dest, source, duplicate=0)
+        objects = [env.Object(x) for x in Beast.variantFiles(
+            groups['compiled'], variant_dirs)]
+        target = env.Program(
+            target = os.path.join(variant_dir, 'rippled'),
+            source = objects
+            )
+        # This causes 'msvc.debug' (e.g.) to show up in the node tree...
+        #print_action = env.Command(variant_name, [], Action(print_coms, ''))
+        #env.Depends(objects, print_action)
+        if toolchain == default_toolchain and variant == default_variant:
+            default_target = target
+            install_target = env.Install (build_dir, source = default_target)
+            env.Alias ('install', install_target)
+            env.Default (install_target)
+            aliases['all'].extend(install_target)
+        if toolchain == 'msvc':
+            config = env.VSProjectConfig(variant, 'x64', target, env)
+            msvc_configs.append(config)
+        if toolchain in toolchains:
+            aliases['all'].extend(target)
+        aliases[variant].extend(target)
+        aliases[toolchain].extend(target)
+        env.Alias(variant_name, target)
+for key, value in aliases.iteritems():
+    env.Alias(key, value)
 
+vcxproj = base.VSProject(
+    os.path.join('Builds', 'VisualStudio2013', 'RippleD'),
+    source = [],
+    VSPROJECT_ROOT_DIRS = ['.'],
+    VSPROJECT_CONFIGS = msvc_configs)
+base.Alias('vcxproj', vcxproj)

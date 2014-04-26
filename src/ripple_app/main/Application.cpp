@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include "../ripple/common/seconds_clock.h"
-#include "../ripple_rpc/api/Manager.h"
-#include "../ripple_overlay/api/make_Overlay.h"
+#include "../../ripple/common/seconds_clock.h"
+#include "../../ripple_rpc/api/Manager.h"
+#include "../../ripple_overlay/api/make_Overlay.h"
 
 #include "Tuning.h"
 

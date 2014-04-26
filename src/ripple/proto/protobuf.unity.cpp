@@ -1,6 +1,7 @@
-
 // Unity build file for libprotobuf by Vinnie Falco <vinnie.falco@gmail.com>
 //
+
+#ifdef _MSC_VER
 
 #ifdef _MSC_VER // MSVC
 # pragma warning (push)
@@ -51,4 +52,6 @@
 
 #ifdef _MSC_VER // MSVC
 # pragma warning (pop)
+#endif
+
 #endif

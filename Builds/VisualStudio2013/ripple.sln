@@ -5,7 +5,7 @@ VisualStudioVersion = 12.0.30110.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "beast", "..\..\src\beast\Builds\VisualStudio2013\beast.vcxproj", "{73C5A0F0-7629-4DE7-9194-BE7AC6C19535}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RippleD", "RippleD.vcxproj", "{B7F39ECD-473C-484D-BC34-31F8362506A5}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RippleD", "RippleD.vcxproj", "{26B7D9AC-1A80-8EF8-6703-D061F1BECB75}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -16,20 +16,16 @@ Global
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{73C5A0F0-7629-4DE7-9194-BE7AC6C19535}.Debug|Win32.ActiveCfg = Debug|Win32
-		{73C5A0F0-7629-4DE7-9194-BE7AC6C19535}.Debug|Win32.Build.0 = Debug|Win32
 		{73C5A0F0-7629-4DE7-9194-BE7AC6C19535}.Debug|x64.ActiveCfg = Debug|x64
-		{73C5A0F0-7629-4DE7-9194-BE7AC6C19535}.Debug|x64.Build.0 = Debug|x64
 		{73C5A0F0-7629-4DE7-9194-BE7AC6C19535}.Release|Win32.ActiveCfg = Release|Win32
-		{73C5A0F0-7629-4DE7-9194-BE7AC6C19535}.Release|Win32.Build.0 = Release|Win32
 		{73C5A0F0-7629-4DE7-9194-BE7AC6C19535}.Release|x64.ActiveCfg = Release|x64
 		{73C5A0F0-7629-4DE7-9194-BE7AC6C19535}.Release|x64.Build.0 = Release|x64
-		{B7F39ECD-473C-484D-BC34-31F8362506A5}.Debug|Win32.ActiveCfg = Debug|x64
-		{B7F39ECD-473C-484D-BC34-31F8362506A5}.Debug|Win32.Build.0 = Debug|x64
-		{B7F39ECD-473C-484D-BC34-31F8362506A5}.Debug|x64.ActiveCfg = Debug|x64
-		{B7F39ECD-473C-484D-BC34-31F8362506A5}.Debug|x64.Build.0 = Debug|x64
-		{B7F39ECD-473C-484D-BC34-31F8362506A5}.Release|Win32.ActiveCfg = Release|x64
-		{B7F39ECD-473C-484D-BC34-31F8362506A5}.Release|x64.ActiveCfg = Release|x64
-		{B7F39ECD-473C-484D-BC34-31F8362506A5}.Release|x64.Build.0 = Release|x64
+		{26B7D9AC-1A80-8EF8-6703-D061F1BECB75}.Debug|Win32.ActiveCfg = debug|x64
+		{26B7D9AC-1A80-8EF8-6703-D061F1BECB75}.Debug|x64.ActiveCfg = debug|x64
+		{26B7D9AC-1A80-8EF8-6703-D061F1BECB75}.Debug|x64.Build.0 = debug|x64
+		{26B7D9AC-1A80-8EF8-6703-D061F1BECB75}.Release|Win32.ActiveCfg = release|x64
+		{26B7D9AC-1A80-8EF8-6703-D061F1BECB75}.Release|x64.ActiveCfg = release|x64
+		{26B7D9AC-1A80-8EF8-6703-D061F1BECB75}.Release|x64.Build.0 = release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

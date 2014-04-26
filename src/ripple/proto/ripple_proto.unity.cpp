@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2014 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,22 +17,4 @@
 */
 //==============================================================================
 
-#include "../../BeastConfig.h"
-
-#include "ripple_http.h"
-
-#include "../../ripple_net/ripple_net.h"
-
-#include "../../beast/modules/beast_core/system/BeforeBoost.h"
-#include <boost/asio.hpp>
-#include <boost/optional.hpp>
-
-#include "impl/Port.cpp"
-#include "impl/ScopedStream.cpp"
-
-# include "impl/Types.h"
-#  include "impl/ServerImpl.h"
-# include "impl/Peer.h"
-# include "impl/Door.h"
-#include "impl/ServerImpl.cpp"
-#include "impl/Server.cpp"
+#include "ripple.pb.cc"

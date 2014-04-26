@@ -20,8 +20,9 @@
 #ifndef RIPPLE_SHAMAP_H
 #define RIPPLE_SHAMAP_H
 
-#include "../ripple/radmap/ripple_radmap.h"
 #include "../main/FullBelowCache.h"
+
+#include "../../ripple/radmap/ripple_radmap.h"
 
 #include <unordered_map>
 

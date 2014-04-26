@@ -20,9 +20,10 @@
 #ifndef RIPPLE_OVERLAY_MESSAGE_H_INCLUDED
 #define RIPPLE_OVERLAY_MESSAGE_H_INCLUDED
 
-#include "../../ripple/proto/ripple.pb.h"
+#include "ripple.pb.h"
+    
+#include "../../beast/modules/beast_core/system/BeforeBoost.h"
 
-#include "../beast/modules/beast_core/system/BeforeBoost.h"
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/shared_ptr.hpp>
 

@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#if ! BEAST_COMPILE_OBJECTIVE_CPP
+
 /*  This file includes all of the beast sources needed to link.
     By including them here, we avoid having to muck with the SConstruct
     Makefile, Project file, or whatever.
@@ -46,3 +48,5 @@
 #include "../../beast/beast/cxx14/cxx14.unity.cpp"
 
 #include "../../beast/beast/unit_test/define_print.cpp"
+
+#endif
