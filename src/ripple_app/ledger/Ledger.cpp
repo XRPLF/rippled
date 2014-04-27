@@ -220,6 +220,8 @@ Ledger::~Ledger ()
 
 void Ledger::setImmutable ()
 {
+    // Updates the hash and marks the ledger and its maps immutable
+
     updateHash ();
     mImmutable = true;
 
@@ -245,8 +247,8 @@ void Ledger::updateHash ()
             mAccountHash.zero ();
     }
 
-    // VFALCO TODO Fix this hard coded magic number 118
-    Serializer s (118);
+    // VFALCO TODO Fix this hard coded magic number 122
+    Serializer s (122);
     s.add32 (HashPrefix::ledgerMaster);
     addRaw (s);
     mHash = s.getSHA512Half ();
@@ -296,6 +298,7 @@ void Ledger::addRaw (Serializer& s) const
 void Ledger::setAccepted (std::uint32_t closeTime, int closeResolution, bool correctCloseTime)
 {
     // used when we witnessed the consensus
+    // Rounds the close time, updates the hash, and sets the ledger accepted and immutable
     assert (mClosed && !mAccepted);
     mCloseTime = correctCloseTime ? roundCloseTime (closeTime, closeResolution) : closeTime;
     mCloseResolution = closeResolution;

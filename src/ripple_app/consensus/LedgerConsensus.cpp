@@ -928,8 +928,6 @@ private:
             }
 
             newLCL->setAccepted (closeTime, mCloseResolution, closeTimeCorrect);
-            newLCL->updateHash ();
-            newLCL->setImmutable ();
             getApp().getLedgerMaster().storeLedger(newLCL);
 
             WriteLog (lsDEBUG, LedgerConsensus) 
