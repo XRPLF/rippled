@@ -34,7 +34,9 @@ Javascript / Mocha tests.
 
 ## License
 
-Provided under the terms of the ISC License:
+`rippled` is provided under the terms of the ISC License:
+
+Copyright (c) 2012-2014 Ripple Labs Inc.
 
 Permission to use, copy, modify, and/or distribute this software for any
 purpose  with  or without fee is hereby granted, provided that the above
