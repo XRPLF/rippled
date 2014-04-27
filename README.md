@@ -1,4 +1,4 @@
-![Ripple Logo][https://dev.ripple.com/img/logo-lg.png]
+![Ripple Logo](https://dev.ripple.com/img/logo-lg.png "Ripple Logo")
 
 #Ripple - P2P Payment Network
 
