@@ -33,9 +33,8 @@ README for more details.
 Javascript / Mocha tests.
 
 ## License
-Ripple is open source and permissively licensed under the ISC license, which
-means that you can use it without restriction in your commercial applications!
-See the LICENSE file for more details.
+Ripple is open source and permissively licensed under the ISC license. See the
+LICENSE file for more details.
 
 ###For more information:
 * https://ripple.com
