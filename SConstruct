@@ -45,7 +45,7 @@ import Beast
 
 # Display command line exemplars
 def print_coms(target, source, env):
-    print ('TARGET ' + Beast.yellow(str(target[0])))
+    print ('Target: ' + Beast.yellow(str(target[0])))
     # TODO Add 'PROTOCCOM' to this list and make it work
     Beast.print_coms(['CXXCOM', 'CCCOM', 'LINKCOM'], env)
 
@@ -116,7 +116,7 @@ def config_env(toolchain, variant, env):
         env.Append(CFLAGS=[])
         env.Append(LIBS=[
             'boost_date_time', 'boost_filesystem', 'boost_program_options',
-            'boost_regex', 'boost_system', 'boost_thread' 'dl', 'rt'])
+            'boost_regex', 'boost_system', 'boost_thread', 'dl', 'rt'])
         env.Append(LINKFLAGS=['-rdynamic'])
 
         if variant == 'debug':
@@ -211,14 +211,14 @@ for toolchain in toolchains:
             PROTOCPROTOPATH=[os.path.join('src', 'ripple_data', 'protocol')],
             PROTOCOUTDIR=os.path.join(variant_dir),
             PROTOCPYTHONOUTDIR=None)
-        proto_objs = [(os.path.splitext(x)[0] + '.obj') for x in proto_srcs if os.path.splitext(str(x))[1] == '.cpp']
         # Declare the other sources
-        var_srcs = [os.path.join(variant_dir, str(f)) for f in srcs] + proto_objs
+        var_srcs = [os.path.join(variant_dir, str(f)) for f in srcs] + filter(
+            lambda x: os.path.splitext(str(x))[1] == '.cc', proto_srcs)
         # Declare the targets
         target = env.Program(
             target = os.path.join(variant_dir, 'rippled'),
             source = var_srcs)
-        print_action = env.Command(variant_name, [], Action(print_coms))
+        print_action = env.Command(variant_name, [], Action(print_coms, ''))
         env.Depends(var_srcs, print_action)
         env.Depends(target, proto_srcs)
         if (env.get('CC', None) == base_env.get('CC', None) and
