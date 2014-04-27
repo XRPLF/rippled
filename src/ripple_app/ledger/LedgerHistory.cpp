@@ -39,16 +39,18 @@ LedgerHistory::LedgerHistory ()
 {
 }
 
-void LedgerHistory::addLedger (Ledger::pointer ledger, bool validated)
+bool LedgerHistory::addLedger (Ledger::pointer ledger, bool validated)
 {
     assert (ledger && ledger->isImmutable ());
     assert (ledger->peekAccountStateMap ()->getHash ().isNonZero ());
 
     LedgersByHash::ScopedLockType sl (m_ledgers_by_hash.peekMutex ());
 
-    m_ledgers_by_hash.canonicalize (ledger->getHash(), ledger, true);
+    const bool alreadyHad = m_ledgers_by_hash.canonicalize (ledger->getHash(), ledger, true);
     if (validated)
         mLedgersByIndex[ledger->getLedgerSeq()] = ledger->getHash();
+
+    return alreadyHad;
 }
 
 uint256 LedgerHistory::getLedgerHash (std::uint32_t index)

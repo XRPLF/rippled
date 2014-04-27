@@ -78,6 +78,7 @@ public:
     std::atomic <std::uint32_t> mPubLedgerSeq;
     std::atomic <std::uint32_t> mValidLedgerClose;
     std::atomic <std::uint32_t> mValidLedgerSeq;
+    std::atomic <std::uint32_t> mBuildingLedgerSeq;
 
     //--------------------------------------------------------------------------
 
@@ -97,6 +98,7 @@ public:
         , mPubLedgerSeq (0)
         , mValidLedgerClose (0)
         , mValidLedgerSeq (0)
+        , mBuildingLedgerSeq (0)
     {
     }
 
@@ -271,9 +273,10 @@ public:
         return mLedgerHistory.fixIndex (ledgerIndex, ledgerHash);
     }
 
-    void storeLedger (Ledger::pointer ledger)
+    bool storeLedger (Ledger::pointer ledger)
     {
-        mLedgerHistory.addLedger (ledger, false);
+        // Returns true if we already had the ledger
+        return mLedgerHistory.addLedger (ledger, false);
     }
 
     void forceValid (Ledger::pointer ledger)
@@ -326,6 +329,17 @@ public:
 
         mCurrentLedger.set (closingLedger);
         mEngine.setLedger (mCurrentLedger.getMutable ());
+    }
+
+    LedgerIndex getBuildingLedger ()
+    {
+        // The ledger we are currently building, 0 of none
+        return mBuildingLedgerSeq.load ();
+    }
+
+    void setBuildingLedger (LedgerIndex i)
+    {
+        mBuildingLedgerSeq.store (i);
     }
 
     TER doTransaction (SerializedTransaction::ref txn, TransactionEngineParams params, bool& didApply)
@@ -641,10 +655,20 @@ public:
         getApp().getInboundLedgers().findCreate(hash, seq, InboundLedger::fcGENERIC);
     }
 
+    // Check if the specified ledger can become the new last fully-validated ledger
     void checkAccept (uint256 const& hash, std::uint32_t seq)
     {
-        if ((seq == 0) && (seq <= mValidLedgerSeq))
-            return;
+
+        if (seq != 0)
+        {
+            // Ledger is too old
+            if (seq <= mValidLedgerSeq)
+                return;
+
+            // Ledger could match the ledger we're already building
+	    if (seq == mBuildingLedgerSeq)
+	        return;
+	}
 
         Ledger::pointer ledger = mLedgerHistory.getLedgerByHash (hash);
 
@@ -667,16 +691,15 @@ public:
             checkAccept (ledger);
     }
 
-    void checkAccept (Ledger::ref ledger)
+    /**
+     * Determines how many validations are needed to fully-validated a ledger
+     *
+     * @return Number of validations needed
+     */
+    int getNeededValidations ()
     {
-        if (ledger->getLedgerSeq() <= mValidLedgerSeq)
-            return;
-
-        // Can we advance the last fully-validated ledger? If so, can we publish?
-        ScopedLockType ml (m_mutex);
-
-        if (ledger->getLedgerSeq() <= mValidLedgerSeq)
-            return;
+        if (getConfig ().RUN_STANDALONE)
+            return 0;
 
         int minVal = mMinValidations;
 
@@ -690,9 +713,21 @@ public:
                 minVal = val;
         }
 
-        if (getConfig ().RUN_STANDALONE)
-            minVal = 0;
+        return minVal;
+    }
 
+    void checkAccept (Ledger::ref ledger)
+    {
+        if (ledger->getLedgerSeq() <= mValidLedgerSeq)
+            return;
+
+        // Can we advance the last fully-validated ledger? If so, can we publish?
+        ScopedLockType ml (m_mutex);
+
+        if (ledger->getLedgerSeq() <= mValidLedgerSeq)
+            return;
+
+        int minVal = getNeededValidations();
         int tvc = getApp().getValidations().getTrustedValidationCount(ledger->getHash());
         if (tvc < minVal) // nothing we can do
         {
@@ -726,6 +761,94 @@ public:
             getApp().getFeeTrack().setRemoteFee(((fee * count) + (fee2 * count2)) / (count + count2));
 
         tryAdvance ();
+    }
+
+    /** Report that the consensus process build a particular ledger */
+    void consensusBuilt (Ledger::ref ledger) override
+    {
+        setBuildingLedger (0);
+
+        if (ledger->getLedgerSeq() <= mValidLedgerSeq)
+        {
+            WriteLog (lsINFO,  LedgerConsensus)
+               << "Consensus built old ledger: "
+               << ledger->getLedgerSeq() << " <= " << mValidLedgerSeq;
+            return;
+        }
+
+        // See if this ledger can be the new fully-validated ledger
+        checkAccept (ledger);
+
+        if (ledger->getLedgerSeq() <= mValidLedgerSeq)
+        {
+            WriteLog (lsDEBUG, LedgerConsensus)
+                << "Consensus ledger fully validated";
+            return;
+        }
+
+        // This ledger cannot be the new fully-validated ledger, but
+        // maybe we saved up validations for some other ledger that can be
+
+        auto const val = getApp().getValidations().getCurrentTrustedValidations();
+
+        // Track validation counts with sequence numbers
+        class valSeq
+        {
+            public:
+
+            valSeq () : valCount(0), ledgerSeq(0) { ; }
+
+            void mergeValidation (LedgerSeq seq)
+            {
+                valCount++;
+
+                // If we didn't already know the sequence, now we do
+                if (ledgerSeq == 0)
+                    ledgerSeq = seq;
+            }
+
+            int valCount;
+            LedgerSeq ledgerSeq;
+        };
+
+        // Count the number of current, trusted validations
+        ripple::unordered_map <uint256, valSeq> count;
+        for (auto const& v : val)
+        {
+            valSeq& vs = count[v->getLedgerHash()];
+            vs.mergeValidation (v->getFieldU32 (sfLedgerSequence));
+	}
+
+        int neededValidations = getNeededValidations ();
+        LedgerSeq maxSeq = mValidLedgerSeq;
+        uint256 maxLedger = ledger->getHash();
+
+        // Of the ledgers with sufficient validations,
+        // find the one with the highest sequence
+        for (auto& v : count)
+            if (v.second.valCount > neededValidations)
+            {
+                // If we still don't know the sequence, get it
+                if (v.second.ledgerSeq == 0)
+                {
+                    Ledger::pointer l = getLedgerByHash (v.first);
+                    if (l)
+                        v.second.ledgerSeq = l->getLedgerSeq();
+                }
+
+                if (v.second.ledgerSeq > maxSeq)
+                {
+                    maxSeq = v.second.ledgerSeq;
+                    maxLedger = v.first;
+                }
+	    }
+
+        if (maxSeq > mValidLedgerSeq)
+        {
+            WriteLog (lsDEBUG, LedgerConsensus)
+                << "Consensus triggered check of ledger";
+            checkAccept (maxLedger, maxSeq);
+        }
     }
 
     void advanceThread()

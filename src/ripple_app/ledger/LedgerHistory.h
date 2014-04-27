@@ -28,7 +28,7 @@ class LedgerHistory : beast::LeakChecked <LedgerHistory>
 public:
     LedgerHistory ();
 
-    void addLedger (Ledger::pointer ledger, bool validated);
+    bool addLedger (Ledger::pointer ledger, bool validated);
 
     float getCacheHitRate ()
     {

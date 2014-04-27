@@ -929,7 +929,16 @@ private:
             }
 
             newLCL->setAccepted (closeTime, mCloseResolution, closeTimeCorrect);
-            getApp().getLedgerMaster().storeLedger(newLCL);
+
+            if (getApp().getLedgerMaster().storeLedger (newLCL))
+                WriteLog (lsDEBUG, LedgerConsensus)
+                    << "Consensus built ledger we already had";
+            else if (getApp().getInboundLedgers().find (newLCL->getHash()))
+                WriteLog (lsDEBUG, LedgerConsensus)
+                    << "Consensus built ledger we were acquiring";
+            else
+                WriteLog (lsDEBUG, LedgerConsensus)
+                    << "Consensus built new ledger";
 
             WriteLog (lsDEBUG, LedgerConsensus) 
                 << "Report: NewL  = " << newLCL->getHash () 
@@ -973,6 +982,9 @@ private:
             else
                 WriteLog (lsINFO, LedgerConsensus) 
                     << "CNF newLCL " << newLCLHash;
+
+            // See if we can accept a ledger as fully-validated
+            getApp().getLedgerMaster().consensusBuilt (newLCL);
 
             Ledger::pointer newOL = boost::make_shared<Ledger> 
                 (true, boost::ref (*newLCL));
@@ -1484,6 +1496,9 @@ private:
         }
         else
             initialSet = initialLedger.peekTransactionMap ()->snapShot (false);
+
+        // Tell the ledger master not to acquire the ledger we're probably building
+        getApp().getLedgerMaster().setBuildingLedger (mPreviousLedger->getLedgerSeq () + 1);
 
         uint256 txSet = initialSet->getHash ();
         WriteLog (lsINFO, LedgerConsensus) << "initial position " << txSet;
