@@ -56,7 +56,7 @@ public:
         return *this;
     }
 
-    uint256 (std::uint64_t b)
+    explicit uint256 (std::uint64_t b)
     {
         *this = b;
     }

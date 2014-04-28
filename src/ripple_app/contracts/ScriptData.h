@@ -70,7 +70,7 @@ public:
     }
     virtual uint160 getUint160 ()
     {
-        return (0);
+        return uint160(0);
     }
 
     //virtual bool isCurrency(){ return(false); }

@@ -31,6 +31,12 @@ namespace ripple {
 
 class uint128 : public base_uint128
 {
+private:
+    uint128 (value_type const* ptr)
+    {
+        memcpy (pn, ptr, bytes);
+    }
+
 public:
     typedef base_uint128 basetype;
 
@@ -52,15 +58,6 @@ public:
         return *this;
     }
 
-    // VFALCO NOTE This looks dangerous and wouldn't be obvious at call
-    //             sites what is being performed here.
-    //
-    explicit uint128 (const base_uint256& b)
-    {
-        for (int i = 0; i < WIDTH; i++)
-            pn[i] = b.pn[i];
-    }
-
     explicit uint128 (Blob const& vch)
     {
         if (vch.size () == size ())
@@ -69,6 +66,10 @@ public:
             zero ();
     }
 
+    static uint128 low128(base_uint256 const& b)
+    {
+        return uint128 (b.data());
+    }
 };
 
 }
