@@ -17,4 +17,10 @@
 */
 //==============================================================================
 
-#include "ripple_beast.cpp"
+#undef BEAST_COMPILE_OBJECTIVE_CPP
+#define BEAST_COMPILE_OBJECTIVE_CPP 1
+
+#include "ripple_beast.unity.cpp"
+
+#undef BEAST_COMPILE_OBJECTIVE_CPP
+#define BEAST_COMPILE_OBJECTIVE_CPP 0

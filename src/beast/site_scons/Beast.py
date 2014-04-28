@@ -90,8 +90,12 @@ system = __System()
 #-------------------------------------------------------------------------------
 
 # See https://stackoverflow.com/questions/7445658/how-to-detect-if-the-console-does-support-ansi-escape-codes-in-python
-CAN_CHANGE_COLOR = (hasattr(sys.stderr, "isatty") and
-    sys.stderr.isatty() and not system.windows)
+CAN_CHANGE_COLOR = (
+  hasattr(sys.stderr, "isatty")
+  and sys.stderr.isatty()
+  and not system.windows
+  and not os.environ.get('INSIDE_EMACS')
+  )
 
 # See https://en.wikipedia.org/wiki/ANSI_escape_code
 BLUE = 94

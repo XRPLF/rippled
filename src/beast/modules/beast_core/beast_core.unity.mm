@@ -21,4 +21,10 @@
 */
 //==============================================================================
 
-#include "beast_core.beast_core.unity.cpp"
+#undef BEAST_COMPILE_OBJECTIVE_CPP
+#define BEAST_COMPILE_OBJECTIVE_CPP 1
+
+#include "beast_core.unity.cpp"
+
+#undef BEAST_COMPILE_OBJECTIVE_CPP
+#define BEAST_COMPILE_OBJECTIVE_CPP 0

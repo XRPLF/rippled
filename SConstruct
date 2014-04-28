@@ -34,14 +34,27 @@ also detected.
 
 import collections
 import os
+import subprocess
 import sys
 import textwrap
 import SCons.Action
 
 sys.path.append(os.path.join('src', 'beast', 'site_scons'))
+
 import Beast
 
+OSX_OPENSSL_ROOT = '/usr/local/Cellar/openssl/'
 #-------------------------------------------------------------------------------
+
+def osx_openssl_path():
+    most_recent = sorted(os.listdir(OSX_OPENSSL_ROOT))[-1]
+    return os.path.join(OSX_OPENSSL_ROOT, most_recent)
+
+def gcc_is_clang():
+    try:
+        return 'clang' in subprocess.check_output(['g++', '--version'])
+    except:
+        return False
 
 # Display command line exemplars
 def print_coms(target, source, env):
@@ -53,7 +66,7 @@ def detect_toolchains(env):
     toolchains = []
     if env.Detect('clang'):
         toolchains.append('clang')
-    if env.Detect('g++'):
+    if env.Detect('g++') and not gcc_is_clang():
         toolchains.append('gcc')
     if env.Detect('cl'):
         toolchains.append('msvc')
@@ -78,7 +91,7 @@ def config_base(env):
         CXXCOMSTR='Compiling ' + Beast.blue('$SOURCES'),
         LINKCOMSTR='Linking ' + Beast.blue('$TARGET'),
         )
-    #git = Beast.Git(env)
+    #git = Beast.Git(env) #  TODO(TOM)
     if False: #git.exists:
         env.Append(CPPDEFINES={'GIT_COMMIT_ID' : '"%s"' % git.commit_id})
     if Beast.system.linux:
@@ -86,6 +99,10 @@ def config_base(env):
         env.ParseConfig('pkg-config --static --cflags --libs protobuf')
     elif Beast.system.windows:
         env.Append(CPPPATH=[os.path.join('src', 'protobuf', 'src')])
+    elif Beast.system.osx:
+        openssl = osx_openssl_path()
+        env.Prepend(CPPPATH='%s/include' % openssl)
+        env.Prepend(LIBPATH=['%s/lib' % openssl])
 
 # Set toolchain and variant specific construction variables
 def config_env(toolchain, variant, env):
@@ -110,13 +127,28 @@ def config_env(toolchain, variant, env):
     if toolchain in Split('clang gcc'):
         env.Append(CCFLAGS=[
             '-Wall', '-Wno-sign-compare', '-Wno-char-subscripts',
-            '-Wno-format', '-Wno-unused-but-set-variable'])
+            '-Wno-format'])
+
+        if Beast.system.osx:
+            env.Append(CCFLAGS=['-Wno-deprecated',
+                                '-Wno-deprecated-declarations',
+                                '-Wno-unused-variable',
+                                '-Wno-unused-function',
+                ])
+            env.Append(CPPDEFINES={'BEAST_COMPILE_OBJECTIVE_CPP': 0})
+        else:
+            env.Append(CCFLAGS=['-Wno-unused-but-set-variable'])
+
         env.Append(CXXFLAGS=[
             '-frtti', '-std=c++11', '-Wno-invalid-offsetof'])
-        env.Append(CFLAGS=[])
         env.Append(LIBS=[
             'boost_date_time', 'boost_filesystem', 'boost_program_options',
-            'boost_regex', 'boost_system', 'boost_thread', 'dl', 'rt'])
+            'boost_regex', 'boost_system', 'boost_thread', 'dl', ])
+        if Beast.system.osx:
+            env.Append(LIBS=['crypto', 'protobuf', 'ssl'])
+        else:
+            env.Append(LIBS=['rt'])
+
         env.Append(LINKFLAGS=['-rdynamic'])
 
         if variant == 'debug':
@@ -131,8 +163,7 @@ def config_env(toolchain, variant, env):
             env.Append(CCFLAGS=[])
             # C++ only
             env.Append(CXXFLAGS=['-Wno-mismatched-tags'])
-            if Beast.system.osx:
-                env.Append(CXXFLAGS=['-Wno-deprecated-register'])
+
         elif toolchain == 'gcc':
             env.Replace(CC='gcc', CXX='g++')
             env.Append(CCFLAGS=['-Wno-unused-local-typedefs'])
@@ -190,6 +221,10 @@ srcs = filter(is_unity,
     list(files('src/ripple_rpc')) +
     list(files('src/ripple_websocket'))
     )
+
+if Beast.system.osx:
+    mm = os.path.join('src', 'ripple', 'beast', 'ripple_beastobjc.unity.mm')
+    srcs.append(mm)
 
 # Declare the targets
 aliases = collections.defaultdict(list)
