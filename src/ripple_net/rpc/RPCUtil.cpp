@@ -160,7 +160,7 @@ std::string HTTPReply (int nStatus, const std::string& strMsg)
         ret.append ("Access-Control-Allow-Origin: *\r\n");
     
     ret.append ("Content-Length: ");
-    ret.append (boost::lexical_cast<std::string>(strMsg.size () + 2));
+    ret.append (std::to_string(strMsg.size () + 2));
     ret.append ("\r\n");
 
     ret.append ("Content-Type: application/json; charset=UTF-8\r\n");
