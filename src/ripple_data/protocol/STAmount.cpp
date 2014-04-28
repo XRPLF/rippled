@@ -765,19 +765,23 @@ STAmount& STAmount::operator= (std::uint64_t v)
 
 STAmount& STAmount::operator+= (std::uint64_t v)
 {
-    if (mIsNative)
-        setSNValue (getSNValue () + static_cast<std::int64_t> (v));
-    else *this += STAmount (mCurrency, v);
+    assert (mIsNative);
 
+    if (!mIsNative)
+        throw std::runtime_error ("not native");
+
+    setSNValue (getSNValue () + static_cast<std::int64_t> (v));
     return *this;
 }
 
 STAmount& STAmount::operator-= (std::uint64_t v)
 {
-    if (mIsNative)
-        setSNValue (getSNValue () - static_cast<std::int64_t> (v));
-    else *this -= STAmount (mCurrency, v);
+    assert (mIsNative);
 
+    if (!mIsNative)
+        throw std::runtime_error ("not native");
+
+    setSNValue (getSNValue () - static_cast<std::int64_t> (v));
     return *this;
 }
 
