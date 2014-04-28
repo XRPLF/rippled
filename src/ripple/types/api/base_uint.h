@@ -50,6 +50,9 @@ inline int Testuint256AdHoc (std::vector<std::string> vArg);
 template<unsigned int BITS>
 class base_uint
 {
+    static_assert ((BITS % 32) == 0,
+        "The length of a base_uint must be a multiple of 32.");
+
 protected:
     enum { WIDTH = BITS / 32 };
 
@@ -129,9 +132,6 @@ protected:
     */
     base_uint (void const* data, FromVoid)
     {
-        // BITS must be a multiple of 32
-        static_bassert ((BITS % 32) == 0);
-
         memcpy (&pn [0], data, BITS / 8);
     }
 public:
