@@ -1716,10 +1716,10 @@
     <ClCompile Include="..\..\src\ripple_rpc\impl\LookupLedger.cpp">
       <Filter>[2] Old Ripple\ripple_rpc\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\FeaturesImpl.cpp">
+    <ClCompile Include="..\..\src\ripple_app\misc\FeeVoteImpl.cpp">
       <Filter>[2] Old Ripple\ripple_app\misc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\FeeVoteImpl.cpp">
+    <ClCompile Include="..\..\src\ripple_app\misc\AmendmentTableImpl.cpp">
       <Filter>[2] Old Ripple\ripple_app\misc</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\proto\ripple.pb.cc">
@@ -3342,7 +3342,7 @@
     <ClInclude Include="..\..\src\ripple_app\misc\FeeVote.h">
       <Filter>[2] Old Ripple\ripple_app\misc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\misc\FeatureTable.h">
+    <ClInclude Include="..\..\src\ripple_app\misc\AmendmentTable.h">
       <Filter>[2] Old Ripple\ripple_app\misc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\proto\ripple.pb.h">
@@ -3473,8 +3473,9 @@
     <None Include="..\..\src\ripple_core\nodestore\README.md">
       <Filter>[2] Old Ripple\ripple_core\nodestore</Filter>
     </None>
-  </ItemGroup>
-  <ItemGroup>
+    <None Include="..\..\src\ripple_app\misc\README.md">
+      <Filter>[2] Old Ripple\ripple_app\misc</Filter>
+    </None>
     <CustomBuild Include="..\..\src\ripple\proto\ripple.proto">
       <Filter>[1] Ripple\proto</Filter>
     </CustomBuild>
