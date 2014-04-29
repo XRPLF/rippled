@@ -86,6 +86,7 @@ Ledger::pointer LedgerHistory::getLedgerBySeq (std::uint32_t index)
     assert (ret->getLedgerSeq () == index);
 
     {
+        // Add this ledger to the local tracking by index
         LedgersByHash::ScopedLockType sl (m_ledgers_by_hash.peekMutex ());
 
         assert (ret->isImmutable ());
@@ -127,7 +128,7 @@ void LedgerHistory::builtLedger (Ledger::ref ledger)
     ConsensusValidated::ScopedLockType sl (
         m_consensus_validated.peekMutex());
 
-    boost::shared_ptr< std::pair< LedgerHash, LedgerHash > > entry = boost::make_shared<std::pair< LedgerHash, LedgerHash >>();
+    auto entry = boost::make_shared<std::pair< LedgerHash, LedgerHash >>();
     m_consensus_validated.canonicalize(index, entry, false);
 
     if (entry->first != hash)
