@@ -21,8 +21,8 @@ namespace ripple {
 
 TER ChangeTransactor::doApply ()
 {
-    if (mTxn.getTxnType () == ttFEATURE)
-        return applyFeature ();
+    if (mTxn.getTxnType () == ttAMENDMENT)
+        return applyAmendment ();
 
     if (mTxn.getTxnType () == ttFEE)
         return applyFee ();
@@ -89,30 +89,32 @@ TER ChangeTransactor::preCheck ()
     return tesSUCCESS;
 }
 
-TER ChangeTransactor::applyFeature ()
+TER ChangeTransactor::applyAmendment ()
 {
-    uint256 feature (mTxn.getFieldH256 (sfFeature));
+    uint256 amendment (mTxn.getFieldH256 (sfAmendment));
 
-    SLE::pointer featureObject (mEngine->entryCache (
-        ltFEATURES, Ledger::getLedgerFeatureIndex ()));
+    SLE::pointer amendmentObject (mEngine->entryCache (
+        ltAMENDMENTS, Ledger::getLedgerAmendmentIndex ()));
 
-    if (!featureObject)
-        featureObject = mEngine->entryCreate (
-            ltFEATURES, Ledger::getLedgerFeatureIndex ());
+    if (!amendmentObject)
+    {
+        amendmentObject = mEngine->entryCreate(
+            ltAMENDMENTS, Ledger::getLedgerAmendmentIndex());
+    }
 
-    STVector256 features (featureObject->getFieldV256 (sfFeatures));
+    STVector256 amendments (amendmentObject->getFieldV256 (sfAmendments));
 
-    if (features.hasValue (feature))
+    if (amendments.hasValue (amendment))
         return tefALREADY;
 
-    features.addValue (feature);
-    featureObject->setFieldV256 (sfFeatures, features);
-    mEngine->entryModify (featureObject);
+    amendments.addValue (amendment);
+    amendmentObject->setFieldV256 (sfAmendments, amendments);
+    mEngine->entryModify (amendmentObject);
 
-    getApp().getFeatureTable ().enable (feature);
+    getApp().getAmendmentTable ().enable (amendment);
 
-    if (!getApp().getFeatureTable ().isSupported (feature))
-        getApp().getOPs ().setFeatureBlocked ();
+    if (!getApp().getAmendmentTable ().isSupported (amendment))
+        getApp().getOPs ().setAmendmentBlocked ();
 
     return tesSUCCESS;
 }

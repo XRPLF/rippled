@@ -211,8 +211,8 @@ correctly to find the boost headers.
 /** Config: RIPPLE_PROPOSE_FEATURES
 This determines whether to add any features to the proposed transaction set.
 */
-#ifndef RIPPLE_PROPOSE_FEATURES
-#define RIPPLE_PROPOSE_FEATURES 0
+#ifndef RIPPLE_PROPOSE_AMENDMENTS
+#define RIPPLE_PROPOSE_AMENDMENTS 0
 #endif
 
 #endif
