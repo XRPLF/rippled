@@ -24,9 +24,9 @@
 
 namespace ripple {
 
+/** The status of all features requested in a given window */
 class FeatureSet
 {
-    // the status of all features requested in a given window
 public:
     std::uint32_t mCloseTime;
     int mTrustedValidations;                    // number of trusted validations
@@ -46,6 +46,9 @@ public:
     }
 };
 
+/** Current state of a feature. Tells if a feature is supported, enabled or 
+    vetoed. A vetoed feature means the node will never announce its support.
+*/
 class FeatureState
 {
 public:
@@ -100,9 +103,7 @@ public:
     }
 };
 
-/** Feature table interface.
-
-    The feature table stores the list of enabled and potential features.
+/** The feature table stores the list of enabled and potential features.
     Individuals features are voted on by validators during the consensus
     process.
 */

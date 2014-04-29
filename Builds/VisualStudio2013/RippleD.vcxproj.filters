@@ -3472,5 +3472,8 @@
     <None Include="..\..\src\ripple_overlay\TODO.md">
       <Filter>[2] Old Ripple\ripple_overlay</Filter>
     </None>
+    <None Include="..\..\src\ripple_app\misc\README.md">
+      <Filter>[2] Old Ripple\ripple_app\misc</Filter>
+    </None>
   </ItemGroup>
 </Project>

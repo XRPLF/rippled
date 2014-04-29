@@ -28,7 +28,7 @@ namespace ripple {
 // VFALCO TODO Clean this global up
 static bool volatile doShutdown = false;
 
-static int const MAJORITY_FRACTION (200);
+static int const MAJORITY_FRACTION (204);
 
 //------------------------------------------------------------------------------
 //
@@ -296,7 +296,7 @@ public:
             getConfig ().getModuleDatabasePath (),
             LogPartition::getJournal <ValidatorsLog> ())))
 
-        , m_featureTable (make_FeatureTable (weeks(2), MAJORITY_FRACTION, // 200/256
+        , m_featureTable (make_FeatureTable (weeks(2), MAJORITY_FRACTION, // 204/256 about 80%
             LogPartition::getJournal <FeaturesLog> ()))
 
         , mFeeTrack (LoadFeeTrack::New (LogPartition::getJournal <LoadManagerLog> ()))

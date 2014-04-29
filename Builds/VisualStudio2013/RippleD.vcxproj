@@ -3242,6 +3242,7 @@
     <None Include="..\..\src\ripple\validators\TODO.md" />
     <None Include="..\..\src\ripple\validators\README.md" />
     <None Include="..\..\src\ripple_app\ledger\TODO.md" />
+    <None Include="..\..\src\ripple_app\misc\README.md" />
     <None Include="..\..\src\ripple_app\TODO.md" />
     <None Include="..\..\src\ripple_overlay\README.md" />
     <None Include="..\..\src\ripple_overlay\TODO.md" />
