@@ -51,9 +51,9 @@ public:
         : NetworkOPs (parent)
         , m_clock (clock)
         , m_journal (journal)
+        , m_localTX (LocalTxs::New ())
         , m_feeVote (make_FeeVote(10, 20 * SYSTEM_CURRENCY_PARTS,
             5 * SYSTEM_CURRENCY_PARTS, LogPartition::getJournal <FeeVoteLog>()))
-        , m_localTX (LocalTxs::New ())
         , mMode (omDISCONNECTED)
         , mNeedNetworkLedger (false)
         , mProposing (false)
@@ -2861,15 +2861,15 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
     const uint256   uBookEnd    = Ledger::getQualityNext (uBookBase);
     uint256         uTipIndex   = uBookBase;
 
-    if (m_journal.trace) 
+    if (m_journal.trace)
     {
         m_journal.trace << "getBookPage:" <<
-            " uTakerPaysCurrencyID=" << 
+            " uTakerPaysCurrencyID=" <<
                 STAmount::createHumanCurrency (uTakerPaysCurrencyID) <<
             " uTakerPaysIssuerID=" <<
                 RippleAddress::createHumanAccountID (uTakerPaysIssuerID);
         m_journal.trace << "getBookPage:" <<
-            " uTakerGetsCurrencyID=" << 
+            " uTakerGetsCurrencyID=" <<
                 STAmount::createHumanCurrency (uTakerGetsCurrencyID) <<
             " uTakerGetsIssuerID=" <<
                 RippleAddress::createHumanAccountID (uTakerGetsIssuerID);
@@ -3011,7 +3011,7 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
                 STAmount saOwnerPays = (QUALITY_ONE == uOfferRate)
                     ? saTakerGetsFunded
                     : std::min (
-                        saOwnerFunds, 
+                        saOwnerFunds,
                         STAmount::multiply (
                             saTakerGetsFunded,
                             STAmount (CURRENCY_ONE, ACCOUNT_ONE, uOfferRate, -9)));
