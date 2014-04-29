@@ -51,9 +51,9 @@ public:
         : NetworkOPs (parent)
         , m_clock (clock)
         , m_journal (journal)
+        , m_localTX (LocalTxs::New ())
         , m_feeVote (make_FeeVote(10, 20 * SYSTEM_CURRENCY_PARTS,
             5 * SYSTEM_CURRENCY_PARTS, LogPartition::getJournal <FeeVoteLog>()))
-        , m_localTX (LocalTxs::New ())
         , mMode (omDISCONNECTED)
         , mNeedNetworkLedger (false)
         , mProposing (false)
