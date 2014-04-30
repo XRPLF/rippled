@@ -54,7 +54,7 @@ public:
     TER preCheck () override;
 
 private:
-    TER applyFeature ();
+    TER applyAmendment ();
     TER applyFee ();
 
     // VFALCO TODO Can this be removed?

@@ -64,7 +64,7 @@ std::unique_ptr<Transactor> Transactor::makeTransactor (
         return std::unique_ptr<Transactor> (
             new WalletAddTransactor (txn, params, engine));
 
-    case ttFEATURE:
+    case ttAMENDMENT:
     case ttFEE:
         return std::unique_ptr<Transactor> (
             new ChangeTransactor (txn, params, engine));

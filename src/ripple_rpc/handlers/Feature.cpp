@@ -45,11 +45,11 @@ Json::Value RPCHandler::doFeature (Json::Value params, Resource::Charge& loadTyp
     if (!params.isMember ("feature"))
     {
         Json::Value jvReply = Json::objectValue;
-        jvReply["features"] = getApp().getFeatureTable ().getJson (0);
+        jvReply["features"] = getApp().getAmendmentTable ().getJson(0);
         return jvReply;
     }
 
-    uint256 uFeature = getApp().getFeatureTable ().get (params["feature"].asString ());
+    uint256 uFeature = getApp().getAmendmentTable ().get(params["feature"].asString());
 
     if (uFeature.isZero ())
     {
@@ -60,7 +60,7 @@ Json::Value RPCHandler::doFeature (Json::Value params, Resource::Charge& loadTyp
     }
 
     if (!params.isMember ("vote"))
-        return getApp().getFeatureTable ().getJson (uFeature);
+        return getApp().getAmendmentTable ().getJson(uFeature);
 
     // WRITEME
     return rpcError (rpcNOT_SUPPORTED);

@@ -300,9 +300,9 @@ public:
     uint256 getLedgerHash (std::uint32_t ledgerIndex);
     std::vector< std::pair<std::uint32_t, uint256> > getLedgerHashes ();
 
-    static uint256 getLedgerFeatureIndex ();
+    static uint256 getLedgerAmendmentIndex ();
     static uint256 getLedgerFeeIndex ();
-    std::vector<uint256> getLedgerFeatures ();
+    std::vector<uint256> getLedgerAmendments ();
 
     std::vector<uint256> getNeededTransactionHashes (int max, SHAMapSyncFilter * filter);
     std::vector<uint256> getNeededAccountStateHashes (int max, SHAMapSyncFilter * filter);
