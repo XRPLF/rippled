@@ -27,7 +27,7 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value params, Resource::Charge& 
     masterLockHolder.unlock ();
 
     RPC::LegacyPathFind lpf (mRole == Config::ADMIN);
-    if (!lpf.isOkay ())
+    if (!lpf.isOk ())
         return rpcError (rpcTOO_BUSY);
 
     loadType = Resource::feeHighBurdenRPC;
