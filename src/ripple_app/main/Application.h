@@ -32,7 +32,7 @@ namespace RPC { class Manager; }
 
 // VFALCO TODO Fix forward declares required for header dependency loops
 class CollectorManager;
-class FeatureTable;
+class AmendmentTable;
 class IHashRouter;
 class LoadFeeTrack;
 class Overlay;
@@ -88,7 +88,7 @@ public:
     virtual NodeCache&              getTempNodeCache () = 0;
     virtual SLECache&               getSLECache () = 0;
     virtual Validators::Manager&    getValidators () = 0;
-    virtual FeatureTable&           getFeatureTable () = 0;
+    virtual AmendmentTable&         getAmendmentTable() = 0;
     virtual IHashRouter&            getHashRouter () = 0;
     virtual LoadFeeTrack&           getFeeTrack () = 0;
     virtual LoadManager&            getLoadManager () = 0;

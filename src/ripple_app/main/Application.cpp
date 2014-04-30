@@ -59,8 +59,8 @@ class PathRequestLog;
 template <> char const* LogPartition::getPartitionName <PathRequestLog> () { return "PathRequest"; }
 class RPCManagerLog;
 template <> char const* LogPartition::getPartitionName <RPCManagerLog> () { return "RPCManager"; }
-class FeaturesLog;
-template <> char const* LogPartition::getPartitionName <FeaturesLog>() { return "FeatureTable"; }
+class AmendmentTableLog;
+template <> char const* LogPartition::getPartitionName <AmendmentTableLog>() { return "AmendmentTable"; }
 
 template <> char const* LogPartition::getPartitionName <CollectorManager> () { return "Collector"; }
 
@@ -141,7 +141,7 @@ public:
     std::unique_ptr <SNTPClient> m_sntpClient;
     std::unique_ptr <TxQueue> m_txQueue;
     std::unique_ptr <Validators::Manager> m_validators;
-    std::unique_ptr <FeatureTable> m_featureTable;
+    std::unique_ptr <AmendmentTable> m_amendmentTable;
     std::unique_ptr <LoadFeeTrack> mFeeTrack;
     std::unique_ptr <IHashRouter> mHashRouter;
     std::unique_ptr <Validations> mValidations;
@@ -296,8 +296,8 @@ public:
             getConfig ().getModuleDatabasePath (),
             LogPartition::getJournal <ValidatorsLog> ())))
 
-        , m_featureTable (make_FeatureTable (weeks(2), MAJORITY_FRACTION, // 204/256 about 80%
-            LogPartition::getJournal <FeaturesLog> ()))
+        , m_amendmentTable (make_AmendmentTable (weeks(2), MAJORITY_FRACTION, // 204/256 about 80%
+            LogPartition::getJournal <AmendmentTableLog> ()))
 
         , mFeeTrack (LoadFeeTrack::New (LogPartition::getJournal <LoadManagerLog> ()))
 
@@ -450,9 +450,9 @@ public:
         return *m_validators;
     }
 
-    FeatureTable& getFeatureTable ()
+    AmendmentTable& getAmendmentTable()
     {
-        return *m_featureTable;
+        return *m_amendmentTable;
     }
 
     LoadFeeTrack& getFeeTrack ()
@@ -609,7 +609,7 @@ public:
         if (!getConfig ().RUN_STANDALONE)
             updateTables ();
 
-        m_featureTable->addInitial ();
+        m_amendmentTable->addInitial();
         Pathfinder::initPathTable ();
 
         m_ledgerMaster->setMinValidations (getConfig ().VALIDATION_QUORUM);
@@ -1069,7 +1069,7 @@ void ApplicationImp::startNewLedger ()
     {
         Ledger::pointer firstLedger = boost::make_shared<Ledger> (rootAddress, SYSTEM_CURRENCY_START);
         assert (!!firstLedger->getAccountState (rootAddress));
-        // WRITEME: Add any default features
+        // WRITEME: Add any default amendments
         // WRITEME: Set default fee/reserve
         firstLedger->updateHash ();
         firstLedger->setClosed ();
@@ -1215,7 +1215,7 @@ bool serverOkay (std::string& reason)
         return false;
     }
 
-    if (getApp().getOPs ().isFeatureBlocked ())
+    if (getApp().getOPs ().isAmendmentBlocked ())
     {
         reason = "Server version too old";
         return false;

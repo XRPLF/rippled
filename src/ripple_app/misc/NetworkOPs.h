@@ -251,8 +251,8 @@ public:
     virtual void setProposing (bool isProposing, bool isValidating) = 0;
     virtual bool isProposing () = 0;
     virtual bool isValidating () = 0;
-    virtual bool isFeatureBlocked () = 0;
-    virtual void setFeatureBlocked () = 0;
+    virtual bool isAmendmentBlocked () = 0;
+    virtual void setAmendmentBlocked () = 0;
     virtual void consensusViewChange () = 0;
     virtual int getPreviousProposers () = 0;
     virtual int getPreviousConvergeTime () = 0;

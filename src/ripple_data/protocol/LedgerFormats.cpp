@@ -108,8 +108,8 @@ LedgerFormats::LedgerFormats ()
             << SOElement (sfHashes,              SOE_REQUIRED)
             ;
 
-    add ("EnabledFeatures", ltFEATURES)
-            << SOElement (sfFeatures, SOE_REQUIRED)
+    add ("EnabledAmendments", ltAMENDMENTS)
+            << SOElement (sfAmendments, SOE_REQUIRED)
             ;
 
     add ("FeeSettings", ltFEE_SETTINGS)

@@ -146,7 +146,7 @@ SOTemplate const& SerializedValidation::getFormat ()
             format.push_back (SOElement (sfLedgerSequence,  SOE_OPTIONAL));
             format.push_back (SOElement (sfCloseTime,       SOE_OPTIONAL));
             format.push_back (SOElement (sfLoadFee,         SOE_OPTIONAL));
-            format.push_back (SOElement (sfFeatures,        SOE_OPTIONAL));
+            format.push_back (SOElement (sfAmendments,      SOE_OPTIONAL));
             format.push_back (SOElement (sfBaseFee,         SOE_OPTIONAL));
             format.push_back (SOElement (sfReserveBase,     SOE_OPTIONAL));
             format.push_back (SOElement (sfReserveIncrement, SOE_OPTIONAL));

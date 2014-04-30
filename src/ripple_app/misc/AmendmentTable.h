@@ -17,22 +17,22 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_FEATURES_H
-#define RIPPLE_FEATURES_H
+#ifndef RIPPLE_AMENDMENT_TABLE_H
+#define RIPPLE_AMENDMENT_TABLE_H
 
 #include "../book/Types.h"
 
 namespace ripple {
 
-/** The status of all features requested in a given window */
-class FeatureSet
+/** The status of all amendments requested in a given window */
+class AmendmentSet
 {
 public:
     std::uint32_t mCloseTime;
     int mTrustedValidations;                    // number of trusted validations
-    ripple::unordered_map<uint256, int> mVotes; // yes votes by feature
+    ripple::unordered_map<uint256, int> mVotes; // yes votes by amendment
 
-    FeatureSet (std::uint32_t ct) : mCloseTime (ct), mTrustedValidations (0)
+    AmendmentSet (std::uint32_t ct) : mCloseTime (ct), mTrustedValidations (0)
     {
         ;
     }
@@ -40,19 +40,19 @@ public:
     {
         ++mTrustedValidations;
     }
-    void addVote (uint256 const& feature)
+    void addVote (uint256 const& amendment)
     {
-        ++mVotes[feature];
+        ++mVotes[amendment];
     }
 };
 
-/** Current state of a feature. Tells if a feature is supported, enabled or 
-    vetoed. A vetoed feature means the node will never announce its support.
+/** Current state of a amendment. Tells if a amendment is supported, enabled or 
+    vetoed. A vetoed amendment means the node will never announce its support.
 */
-class FeatureState
+class AmendmentState
 {
 public:
-    bool mVetoed;   // We don't want this feature enabled
+    bool mVetoed;   // We don't want this amendment enabled
     bool mEnabled;
     bool mSupported;
     bool mDefault;  // Include in genesis ledger
@@ -62,7 +62,7 @@ public:
 
     std::string mFriendlyName;
 
-    FeatureState ()
+    AmendmentState ()
         : mVetoed (false), mEnabled (false), mSupported (false), mDefault (false),
           m_firstMajority (0), m_lastMajority (0)
     {
@@ -103,44 +103,44 @@ public:
     }
 };
 
-/** The feature table stores the list of enabled and potential features.
-    Individuals features are voted on by validators during the consensus
+/** The amendment table stores the list of enabled and potential amendments.
+    Individuals amendments are voted on by validators during the consensus
     process.
 */
-class FeatureTable
+class AmendmentTable
 {
 public:
-    /** Create a new FeatureTable.
+    /** Create a new AmendmentTable.
 
-        @param majorityTime the number of seconds a feature must hold a majority
+        @param majorityTime the number of seconds a amendment must hold a majority
                             before we're willing to vote yes on it.
         @param majorityFraction ratio, out of 256, of servers that must say
-                                they want a feature before we consider it to
+                                they want a amendment before we consider it to
                                 have a majority.
         @param journal
     */
 
-    virtual ~FeatureTable() { }
+    virtual ~AmendmentTable() { }
 
     virtual void addInitial () = 0;
 
-    virtual FeatureState* addKnown (const char* featureID,
+    virtual AmendmentState* addKnown (const char* amendmentID,
         const char* friendlyName, bool veto) = 0;
     virtual uint256 get (const std::string& name) = 0;
 
-    virtual bool veto (uint256 const& feature) = 0;
-    virtual bool unVeto (uint256 const& feature) = 0;
+    virtual bool veto (uint256 const& amendment) = 0;
+    virtual bool unVeto (uint256 const& amendment) = 0;
 
-    virtual bool enable (uint256 const& feature) = 0;
-    virtual bool disable (uint256 const& feature) = 0;
+    virtual bool enable (uint256 const& amendment) = 0;
+    virtual bool disable (uint256 const& amendment) = 0;
 
-    virtual bool isEnabled (uint256 const& feature) = 0;
-    virtual bool isSupported (uint256 const& feature) = 0;
+    virtual bool isEnabled (uint256 const& amendment) = 0;
+    virtual bool isSupported (uint256 const& amendment) = 0;
 
-    virtual void setEnabled (const std::vector<uint256>& features) = 0;
-    virtual void setSupported (const std::vector<uint256>& features) = 0;
+    virtual void setEnabled (const std::vector<uint256>& amendments) = 0;
+    virtual void setSupported (const std::vector<uint256>& amendments) = 0;
 
-    virtual void reportValidations (const FeatureSet&) = 0;
+    virtual void reportValidations (const AmendmentSet&) = 0;
 
     virtual Json::Value getJson (int) = 0;
     virtual Json::Value getJson (uint256 const& ) = 0;
@@ -151,8 +151,8 @@ public:
     doVoting (Ledger::ref lastClosedLedger, SHAMap::ref initialPosition) = 0;
 };
 
-std::unique_ptr<FeatureTable>
-make_FeatureTable (std::chrono::seconds majorityTime, int majorityFraction,
+std::unique_ptr<AmendmentTable>
+make_AmendmentTable (std::chrono::seconds majorityTime, int majorityFraction,
     beast::Journal journal);
 
 } // ripple

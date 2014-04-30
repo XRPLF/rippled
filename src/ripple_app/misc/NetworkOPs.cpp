@@ -58,7 +58,7 @@ public:
         , mNeedNetworkLedger (false)
         , mProposing (false)
         , mValidating (false)
-        , mFeatureBlocked (false)
+        , m_amendmentBlocked (false)
         , m_heartbeatTimer (this)
         , m_clusterTimer (this)
         , m_ledgerMaster (ledgerMaster)
@@ -299,11 +299,11 @@ public:
     {
         return mValidating;
     }
-    bool isFeatureBlocked ()
+    bool isAmendmentBlocked ()
     {
-        return mFeatureBlocked;
+        return m_amendmentBlocked;
     }
-    void setFeatureBlocked ();
+    void setAmendmentBlocked ();
     void consensusViewChange ();
     int getPreviousProposers ()
     {
@@ -469,7 +469,7 @@ private:
     OperatingMode                       mMode;
     bool                                mNeedNetworkLedger;
     bool                                mProposing, mValidating;
-    bool                                mFeatureBlocked;
+    bool                                m_amendmentBlocked;
     boost::posix_time::ptime            mConnectTime;
     beast::DeadlineTimer                m_heartbeatTimer;
     beast::DeadlineTimer                m_clusterTimer;
@@ -1191,9 +1191,9 @@ Json::Value NetworkOPsImp::getOwnerInfo (Ledger::pointer lpLedger, const RippleA
 // Other
 //
 
-void NetworkOPsImp::setFeatureBlocked ()
+void NetworkOPsImp::setAmendmentBlocked ()
 {
-    mFeatureBlocked = true;
+    m_amendmentBlocked = true;
     setMode (omTRACKING);
 }
 
@@ -1728,7 +1728,7 @@ void NetworkOPsImp::setMode (OperatingMode om)
             om = omCONNECTED;
     }
 
-    if ((om > omTRACKING) && mFeatureBlocked)
+    if ((om > omTRACKING) && m_amendmentBlocked)
         om = omTRACKING;
 
     if (mMode == om)
@@ -2207,8 +2207,8 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
 
     info["complete_ledgers"] = getApp().getLedgerMaster ().getCompleteLedgers ();
 
-    if (mFeatureBlocked)
-        info["feature_blocked"] = true;
+    if (m_amendmentBlocked)
+        info["amendment_blocked"] = true;
 
     size_t fp = mFetchPack.getCacheSize ();
 
