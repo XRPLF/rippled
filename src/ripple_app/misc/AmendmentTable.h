@@ -46,7 +46,7 @@ public:
     }
 };
 
-/** Current state of a amendment. Tells if a amendment is supported, enabled or 
+/** Current state of an amendment. Tells if a amendment is supported, enabled or 
     vetoed. A vetoed amendment means the node will never announce its support.
 */
 class AmendmentState
@@ -112,10 +112,10 @@ class AmendmentTable
 public:
     /** Create a new AmendmentTable.
 
-        @param majorityTime the number of seconds a amendment must hold a majority
+        @param majorityTime the number of seconds an amendment must hold a majority
                             before we're willing to vote yes on it.
         @param majorityFraction ratio, out of 256, of servers that must say
-                                they want a amendment before we consider it to
+                                they want an amendment before we consider it to
                                 have a majority.
         @param journal
     */

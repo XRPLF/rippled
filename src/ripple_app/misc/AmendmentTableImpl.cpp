@@ -38,7 +38,7 @@ protected:
     LockType mLock;
 
     amendmentMap_t m_amendmentMap;
-    std::chrono::seconds m_majorityTime; // Seconds a amendment must hold a majority
+    std::chrono::seconds m_majorityTime; // Seconds an amendment must hold a majority
     int mMajorityFraction;  // 256 = 100%
     core::Clock::time_point m_firstReport; // close time of first majority report
     core::Clock::time_point m_lastReport;  // close time of most recent majority report
