@@ -21,64 +21,8 @@
 
 namespace ripple {
 
-class LegacyPathFind
-{
-public:
-
-    LegacyPathFind (bool isAdmin) : m_isOkay (false)
-    {
-        if (isAdmin)
-            ++inProgress;
-        else
-        {
-            if ((getApp().getJobQueue ().getJobCountGE (jtCLIENT) > 50) ||
-                    getApp().getFeeTrack().isLoadedLocal ())
-            return;
-
-            do
-            {
-                int prevVal = inProgress.load();
-                if (prevVal >= maxInProgress)
-                    return;
-
-                if (inProgress.compare_exchange_strong (prevVal, prevVal + 1,
-                    std::memory_order_release, std::memory_order_relaxed))
-                break;
-            }
-            while (1);
-        }
-
-        m_isOkay = true;
-    }
-
-    ~LegacyPathFind ()
-    {
-        if (m_isOkay)
-            --inProgress;
-    }
-
-    bool isOkay ()
-    {
-        return m_isOkay;
-    }
-
-private:
-    static std::atomic <int> inProgress;
-    static int maxInProgress;
-
-    bool m_isOkay;
-};
-
-std::atomic <int> LegacyPathFind::inProgress (0);
-int LegacyPathFind::maxInProgress (2);
-
 //------------------------------------------------------------------------------
 
-// VFALCO TODO Move this to a Tuning.h or Defaults.h
-enum
-{
-    defaultAutoFillFeeMultiplier        = 10
-};
 
 namespace RPC {
 
@@ -106,11 +50,10 @@ static void autofill_fee (Json::Value& request,
     Ledger::pointer ledger, Json::Value& result, bool admin)
 {
     Json::Value& tx (request["tx_json"]);
-
     if (tx.isMember ("Fee"))
         return;
 
-    int mult (defaultAutoFillFeeMultiplier);
+    int mult = DEFAULT_AUTO_FILL_FEE_MULTIPLIER;
     if (request.isMember ("fee_mult_max"))
     {
         if (request["fee_mult_max"].isNumeric ())
@@ -125,11 +68,12 @@ static void autofill_fee (Json::Value& request,
         }
     }
 
-    // Administrative endpoints are exempt from local fees
-    std::uint64_t fee = ledger->scaleFeeLoad (
-        getConfig().FEE_DEFAULT, admin);
+    std::uint64_t const feeDefault = getConfig().FEE_DEFAULT;
 
-    std::uint64_t const limit (mult * getConfig().FEE_DEFAULT);
+    // Administrative endpoints are exempt from local fees
+    std::uint64_t const fee = ledger->scaleFeeLoad (feeDefault, admin);
+    std::uint64_t const limit = mult * feeDefault;
+
     if (fee > limit)
     {
         std::stringstream ss;
@@ -140,7 +84,91 @@ static void autofill_fee (Json::Value& request,
         return;
     }
 
-    tx ["Fee"] = (int) fee;
+    tx ["Fee"] = static_cast<int>(fee);
+}
+
+
+static Json::Value signPayment(
+    Json::Value const& params,
+    Json::Value& tx_json,
+    RippleAddress const& raSrcAddressID,
+    Ledger::pointer lSnapshot,
+    int role)
+{
+    RippleAddress dstAccountID;
+
+    if (!tx_json.isMember ("Amount"))
+        return RPC::missing_field_error ("tx_json.Amount");
+
+    STAmount amount;
+
+    if (!amount.bSetJson (tx_json ["Amount"]))
+        return RPC::invalid_field_error ("tx_json.Amount");
+
+    if (!tx_json.isMember ("Destination"))
+        return RPC::missing_field_error ("tx_json.Destination");
+
+    if (!dstAccountID.setAccountID (tx_json["Destination"].asString ()))
+        return RPC::invalid_field_error ("tx_json.Destination");
+
+    if (tx_json.isMember ("Paths") && params.isMember ("build_path"))
+        return RPC::make_error (rpcINVALID_PARAMS,
+            "Cannot specify both 'tx_json.Paths' and 'tx_json.build_path'");
+
+    if (!tx_json.isMember ("Paths")
+        && tx_json.isMember ("Amount")
+        && params.isMember ("build_path"))
+    {
+        // Need a ripple path.
+        STPathSet   spsPaths;
+        uint160     uSrcCurrencyID;
+        uint160     uSrcIssuerID;
+
+        STAmount    saSendMax;
+
+        if (tx_json.isMember ("SendMax"))
+        {
+            if (!saSendMax.bSetJson (tx_json ["SendMax"]))
+                return RPC::invalid_field_error ("tx_json.SendMax");
+        }
+        else
+        {
+            // If no SendMax, default to Amount with sender as issuer.
+            saSendMax = amount;
+            saSendMax.setIssuer (raSrcAddressID.getAccountID ());
+        }
+
+        if (saSendMax.isNative () && amount.isNative ())
+            return RPC::make_error (rpcINVALID_PARAMS,
+                "Cannot build XRP to XRP paths.");
+
+        {
+            LegacyPathFind lpf (role == Config::ADMIN);
+            if (!lpf.isOk ())
+                return rpcError (rpcTOO_BUSY);
+
+            bool bValid;
+            auto cache = boost::make_shared<RippleLineCache> (lSnapshot);
+            Pathfinder pf (cache, raSrcAddressID, dstAccountID,
+                           saSendMax.getCurrency (), saSendMax.getIssuer (),
+                           amount, bValid);
+
+            STPath extraPath;
+            if (!bValid || !pf.findPaths (getConfig ().PATH_SEARCH_OLD, 4, spsPaths, extraPath))
+            {
+                WriteLog (lsDEBUG, RPCHandler)
+                        << "transactionSign: build_path: No paths found.";
+                return rpcError (rpcNO_PATH);
+            }
+            WriteLog (lsDEBUG, RPCHandler)
+                    << "transactionSign: build_path: "
+                    << spsPaths.getJson (0);
+
+            if (!spsPaths.isEmpty ())
+                tx_json["Paths"] = spsPaths.getJson (0);
+        }
+    }
+    return Json::Value();
 }
 
 //------------------------------------------------------------------------------
@@ -155,7 +183,7 @@ Json::Value transactionSign (
 {
     Json::Value jvResult;
 
-    WriteLog (lsDEBUG, RPCHandler) << boost::str (boost::format ("transactionSign: %s") % params);
+    WriteLog (lsDEBUG, RPCHandler) << "transactionSign: " << params;
 
     if (! params.isMember ("secret"))
         return RPC::missing_field_error ("secret");
@@ -189,8 +217,8 @@ Json::Value transactionSign (
         return RPC::make_error (rpcSRC_ACT_MALFORMED,
             RPC::invalid_field_message ("tx_json.Account"));
 
-    bool const verify = !(
-        params.isMember ("offline") && params["offline"].asBool ());
+    bool const verify = !(params.isMember ("offline")
+                          && params["offline"].asBool ());
 
     if (!tx_json.isMember ("Sequence") && !verify)
         return RPC::missing_field_error ("tx_json.Sequence");
@@ -205,17 +233,19 @@ Json::Value transactionSign (
         return rpcError(rpcTOO_BUSY);
 
     Ledger::pointer lSnapshot = netOps.getCurrentLedger ();
-    AccountState::pointer asSrc = !verify
-                                  ? AccountState::pointer ()                              // Don't look up address if offline.
-                                  : netOps.getAccountState (lSnapshot, raSrcAddressID);
+    AccountState::pointer asSrc;
+    if (verify) {
+        asSrc = netOps.getAccountState (lSnapshot, raSrcAddressID);
 
-    if (verify && !asSrc)
-    {
-        // If not offline and did not find account, error.
-        WriteLog (lsDEBUG, RPCHandler) << boost::str (boost::format ("transactionSign: Failed to find source account in current ledger: %s")
-                                       % raSrcAddressID.humanAccountID ());
+        if (!asSrc)
+        {
+            // If not offline and did not find account, error.
+            WriteLog (lsDEBUG, RPCHandler)
+                    << "transactionSign: Failed to find source account in current ledger: "
+                    << raSrcAddressID.humanAccountID ();
 
-        return rpcError (rpcSRC_ACT_NOT_FOUND);
+            return rpcError (rpcSRC_ACT_NOT_FOUND);
+        }
     }
 
     autofill_fee (params, lSnapshot, jvResult, role == Config::ADMIN);
@@ -224,106 +254,27 @@ Json::Value transactionSign (
 
     if ("Payment" == sType)
     {
-        RippleAddress dstAccountID;
-
-        if (! tx_json.isMember ("Amount"))
-            return RPC::missing_field_error ("tx_json.Amount");
-
-        STAmount amount;
-
-        if (! amount.bSetJson (tx_json ["Amount"]))
-            return RPC::invalid_field_error ("tx_json.Amount");
-
-        if (!tx_json.isMember ("Destination"))
-            return RPC::missing_field_error ("tx_json.Destination");
-
-        if (!dstAccountID.setAccountID (tx_json["Destination"].asString ()))
-            return RPC::invalid_field_error ("tx_json.Destination");
-
-        if (tx_json.isMember ("Paths") && params.isMember ("build_path"))
-            return RPC::make_error (rpcINVALID_PARAMS,
-                "Cannot specify both 'tx_json.Paths' and 'tx_json.build_path'");
-
-        if (!tx_json.isMember ("Paths") && tx_json.isMember ("Amount") && params.isMember ("build_path"))
-        {
-            // Need a ripple path.
-            STPathSet   spsPaths;
-            uint160     uSrcCurrencyID;
-            uint160     uSrcIssuerID;
-
-            STAmount    saSendMax;
-
-            if (tx_json.isMember ("SendMax"))
-            {
-                if (!saSendMax.bSetJson (tx_json ["SendMax"]))
-                    return RPC::invalid_field_error ("tx_json.SendMax");
-            }
-            else
-            {
-                // If no SendMax, default to Amount with sender as issuer.
-                saSendMax       = amount;
-                saSendMax.setIssuer (raSrcAddressID.getAccountID ());
-            }
-
-            if (saSendMax.isNative () && amount.isNative ())
-                return RPC::make_error (rpcINVALID_PARAMS,
-                    "Cannot build XRP to XRP paths.");
-
-            {
-                LegacyPathFind lpf (role == Config::ADMIN);
-                if (!lpf.isOkay ())
-                    return rpcError (rpcTOO_BUSY);
-
-                bool bValid;
-                RippleLineCache::pointer cache = boost::make_shared<RippleLineCache> (lSnapshot);
-                Pathfinder pf (cache, raSrcAddressID, dstAccountID,
-                               saSendMax.getCurrency (), saSendMax.getIssuer (), amount, bValid);
-
-                STPath extraPath;
-                if (!bValid || !pf.findPaths (getConfig ().PATH_SEARCH_OLD, 4, spsPaths, extraPath))
-                {
-                    WriteLog (lsDEBUG, RPCHandler) << "transactionSign: build_path: No paths found.";
-
-                    return rpcError (rpcNO_PATH);
-                }
-                else
-                {
-                    WriteLog (lsDEBUG, RPCHandler) << "transactionSign: build_path: " << spsPaths.getJson (0);
-                }
-
-                if (!spsPaths.isEmpty ())
-                {
-                    tx_json["Paths"] = spsPaths.getJson (0);
-                }
-            }
-        }
+        auto e = signPayment(params, tx_json, raSrcAddressID, lSnapshot, role);
+        if (contains_error(e))
+            return e;
     }
 
-    if (!tx_json.isMember ("Fee")
-            && (
-                "AccountSet" == tx_json["TransactionType"].asString ()
-                || "OfferCreate" == tx_json["TransactionType"].asString ()
-                || "OfferCancel" == tx_json["TransactionType"].asString ()
-                || "TrustSet" == tx_json["TransactionType"].asString ()))
-    {
-        tx_json["Fee"] = (int) getConfig ().FEE_DEFAULT;
+    if (!tx_json.isMember ("Fee")) {
+        auto const& transactionType = tx_json["TransactionType"].asString ();
+        if ("AccountSet" == transactionType
+            || "OfferCreate" == transactionType
+            || "OfferCancel" == transactionType
+            || "TrustSet" == transactionType)
+        {
+            tx_json["Fee"] = (int) getConfig ().FEE_DEFAULT;
+        }
     }
 
     if (!tx_json.isMember ("Sequence"))
-    {
-        if (!verify)
-        {
-            // If offline, Sequence is mandatory.
-            // TODO: duplicates logic above.
-            return rpcError (rpcINVALID_PARAMS);
-        }
-        else
-        {
-            tx_json["Sequence"] = asSrc->getSeq ();
-        }
-    }
+        tx_json["Sequence"] = asSrc->getSeq ();
 
-    if (!tx_json.isMember ("Flags")) tx_json["Flags"] = tfFullyCanonicalSig;
+    if (!tx_json.isMember ("Flags"))
+        tx_json["Flags"] = tfFullyCanonicalSig;
 
     if (verify)
     {
@@ -331,24 +282,19 @@ Json::Value transactionSign (
             Ledger::getAccountRootIndex (raSrcAddressID.getAccountID ()));
 
         if (!sleAccountRoot)
-        {
             // XXX Ignore transactions for accounts not created.
             return rpcError (rpcSRC_ACT_NOT_FOUND);
-        }
     }
-
-    bool            bHaveAuthKey    = false;
-    RippleAddress   naAuthorizedPublic;
 
     RippleAddress   naSecret = RippleAddress::createSeedGeneric (
         params["secret"].asString ());
     RippleAddress   naMasterGenerator = RippleAddress::createGeneratorPublic (
         naSecret);
+    RippleAddress masterAccountPublic = RippleAddress::createAccountPublic (
+        naMasterGenerator, 0);
 
     if (verify)
     {
-        auto masterAccountPublic = RippleAddress::createAccountPublic (
-            naMasterGenerator, 0);
         auto account = masterAccountPublic.getAccountID();
         auto const& sle = asSrc->peekSLE();
 
@@ -367,48 +313,16 @@ Json::Value transactionSign (
         }
     }
 
-    // Use the generator to determine the associated public and private keys.
-    RippleAddress naGenerator = RippleAddress::createGeneratorPublic (
-        naSecret);
-    RippleAddress naAccountPublic = RippleAddress::createAccountPublic (
-        naGenerator, 0);
-    RippleAddress naAccountPrivate = RippleAddress::createAccountPrivate (
-        naGenerator, naSecret, 0);
-
-    if (bHaveAuthKey
-            // The generated pair must match authorized...
-            && naAuthorizedPublic.getAccountID () != naAccountPublic.getAccountID ()
-            // ... or the master key must have been used.
-            && raSrcAddressID.getAccountID () != naAccountPublic.getAccountID ())
+    STParsedJSON parsed ("tx_json", tx_json);
+    if (!parsed.object.get())
     {
-        // TODO: we can't ever get here!
-        // Log::out() << "iIndex: " << iIndex;
-        // Log::out() << "sfAuthorizedKey: " << strHex(asSrc->getAuthorizedKey().getAccountID());
-        // Log::out() << "naAccountPublic: " << strHex(naAccountPublic.getAccountID());
-
-        return rpcError (rpcSRC_ACT_NOT_FOUND);
+        jvResult ["error"] = parsed.error ["error"];
+        jvResult ["error_code"] = parsed.error ["error_code"];
+        jvResult ["error_message"] = parsed.error ["error_message"];
+        return jvResult;
     }
-
-    std::unique_ptr<STObject> sopTrans;
-
-    {
-        STParsedJSON parsed ("tx_json", tx_json);
-        if (parsed.object.get() != nullptr)
-        {
-            // VFALCO NOTE No idea why this doesn't compile.
-            //sopTrans = parsed.object;
-            sopTrans.reset (parsed.object.release());
-        }
-        else
-        {
-            jvResult ["error"] = parsed.error ["error"];
-            jvResult ["error_code"] = parsed.error ["error_code"];
-            jvResult ["error_message"] = parsed.error ["error_message"];
-            return jvResult;
-        }
-    }
-
-    sopTrans->setFieldVL (sfSigningPubKey, naAccountPublic.getAccountPublic ());
+    std::unique_ptr<STObject> sopTrans = std::move(parsed.object);
+    sopTrans->setFieldVL (sfSigningPubKey, masterAccountPublic.getAccountPublic ());
 
     SerializedTransaction::pointer stpTrans;
 
@@ -424,10 +338,7 @@ Json::Value transactionSign (
 
     std::string reason;
     if (!passesLocalChecks (*stpTrans, reason))
-    {
-        return RPC::make_error (rpcINVALID_PARAMS,
-            reason);
-    }
+        return RPC::make_error (rpcINVALID_PARAMS, reason);
 
     if (params.isMember ("debug_signing"))
     {
@@ -437,6 +348,9 @@ Json::Value transactionSign (
     }
 
     // FIXME: For performance, transactions should not be signed in this code path.
+    RippleAddress naAccountPrivate = RippleAddress::createAccountPrivate (
+        naMasterGenerator, naSecret, 0);
+
     stpTrans->sign (naAccountPrivate);
 
     Transaction::pointer tpTrans;

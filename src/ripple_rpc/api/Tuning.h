@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2014 Ripple Labs Inc.
+    Copyright (c) 2012, 2013 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,51 +17,19 @@
 */
 //==============================================================================
 
-#include "LegacyPathFind.h"
-#include "../api/Tuning.h"
+#ifndef RIPPLE_RPC_TUNING_H
+#define RIPPLE_RPC_TUNING_H
 
 namespace ripple {
 namespace RPC {
 
-LegacyPathFind::LegacyPathFind (bool isAdmin) : m_isOk (false)
-{
-    if (isAdmin)
-    {
-        ++inProgress;
-        m_isOk = true;
-        return;
-    }
+const int DEFAULT_AUTO_FILL_FEE_MULTIPLIER = 10;
+const int MAX_PATHFINDS_IN_PROGRESS = 2;
+const int MAX_PATHFIND_JOB_COUNT = 50;
 
-    auto& app = getApp();
-    auto const& jobCount = app.getJobQueue ().getJobCountGE (jtCLIENT);
-    if (jobCount > MAX_PATHFIND_JOB_COUNT || app.getFeeTrack().isLoadedLocal ())
-        return;
-
-    while (true)
-    {
-        int prevVal = inProgress.load();
-        if (prevVal >= MAX_PATHFINDS_IN_PROGRESS)
-            return;
-
-        if (inProgress.compare_exchange_strong (
-                prevVal,
-                prevVal + 1,
-                std::memory_order_release,
-                std::memory_order_relaxed))
-        {
-            m_isOk = true;
-            return;
-        }
-    }
-}
-
-LegacyPathFind::~LegacyPathFind ()
-{
-    if (m_isOk)
-        --inProgress;
-}
-
-std::atomic <int> LegacyPathFind::inProgress (0);
+// TODO(tom): Shouldn't DEFAULT_AUTO_FILL_FEE_MULTIPLIER be floating point?
 
 } // RPC
 } // ripple
+
+#endif

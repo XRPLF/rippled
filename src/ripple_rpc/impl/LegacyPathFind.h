@@ -29,16 +29,15 @@ public:
     LegacyPathFind (bool isAdmin);
     ~LegacyPathFind ();
 
-    bool isOkay () const
+    bool isOk () const
     {
-        return m_isOkay;
+        return m_isOk;
     }
 
 private:
     static std::atomic <int> inProgress;
-    static int maxInProgress;
 
-    bool m_isOkay;
+    bool m_isOk;
 };
 
 } // RPC
