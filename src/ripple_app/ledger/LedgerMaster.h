@@ -80,7 +80,7 @@ public:
 
     virtual void pushLedger (Ledger::pointer newLedger) = 0;
     virtual void pushLedger (Ledger::pointer newLCL, Ledger::pointer newOL) = 0;
-    virtual void storeLedger (Ledger::pointer) = 0;
+    virtual bool storeLedger (Ledger::pointer) = 0;
     virtual void forceValid (Ledger::pointer) = 0;
 
     virtual void setFullLedger (Ledger::pointer ledger, bool isSynchronous, bool isCurrent) = 0;
@@ -128,6 +128,10 @@ public:
 
     virtual void checkAccept (Ledger::ref ledger) = 0;
     virtual void checkAccept (uint256 const& hash, std::uint32_t seq) = 0;
+    virtual void consensusBuilt (Ledger::ref ledger) = 0;
+
+    virtual LedgerIndex getBuildingLedger () = 0;
+    virtual void setBuildingLedger (LedgerIndex index) = 0;
 
     virtual void tryAdvance () = 0;
     virtual void newPathRequest () = 0;

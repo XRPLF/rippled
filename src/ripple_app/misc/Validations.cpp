@@ -74,20 +74,18 @@ private:
         RippleAddress signer = val->getSignerPublic ();
         bool isCurrent = false;
 
-        if (val->isTrusted () || getApp().getUNL ().nodeInUNL (signer))
-        {
-            val->setTrusted ();
-            std::uint32_t now = getApp().getOPs ().getCloseTimeNC ();
-            std::uint32_t valClose = val->getSignTime ();
+        if (!val->isTrusted() && getApp().getUNL().nodeInUNL (signer))
+            val->setTrusted();
 
-            if ((now > (valClose - LEDGER_EARLY_INTERVAL)) && (now < (valClose + LEDGER_VAL_INTERVAL)))
-                isCurrent = true;
-            else
-            {
-                WriteLog (lsWARNING, Validations) << "Received stale validation now=" << now << ", close=" << valClose;
-            }
-        }
+        std::uint32_t now = getApp().getOPs().getCloseTimeNC();
+        std::uint32_t valClose = val->getSignTime();
+
+        if ((now > (valClose - LEDGER_EARLY_INTERVAL)) && (now < (valClose + LEDGER_VAL_INTERVAL)))
+            isCurrent = true;
         else
+            WriteLog (lsWARNING, Validations) << "Received stale validation now=" << now << ", close=" << valClose;
+
+        if (!val->isTrusted ())
         {
             WriteLog (lsDEBUG, Validations) << "Node " << signer.humanNodePublic () << " not in UNL st=" << val->getSignTime () <<
                                             ", hash=" << val->getLedgerHash () << ", shash=" << val->getSigningHash () << " src=" << source;
@@ -96,29 +94,37 @@ private:
         uint256 hash = val->getLedgerHash ();
         uint160 node = signer.getNodeID ();
 
+        if (val->isTrusted () && isCurrent)
         {
             ScopedLockType sl (mLock);
 
             if (!findCreateSet (hash)->insert (std::make_pair (node, val)).second)
                 return false;
 
-            if (isCurrent)
-            {
-                ripple::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.find (node);
+            auto it = mCurrentValidations.find (node);
 
-                if (it == mCurrentValidations.end ())
-                    mCurrentValidations.emplace (node, val);
-                else if (!it->second)
-                    it->second = val;
-                else if (val->getSignTime () > it->second->getSignTime ())
-                {
-                    val->setPreviousHash (it->second->getLedgerHash ());
-                    mStaleValidations.push_back (it->second);
-                    it->second = val;
-                    condWrite ();
-                }
-                else
-                    isCurrent = false;
+            if (it == mCurrentValidations.end ())
+            {
+                // No previous validation from this validator
+                mCurrentValidations.emplace (node, val);
+            }
+            else if (!it->second)
+            {
+                // Previous validation has expired
+                it->second = val;
+            }
+            else if (val->getSignTime () > it->second->getSignTime ())
+            {
+                // This is a newer validation
+                val->setPreviousHash (it->second->getLedgerHash ());
+                mStaleValidations.push_back (it->second);
+                it->second = val;
+                condWrite ();
+            }
+            else
+            {
+                // We already have a newer validation from this source
+                isCurrent = false;
             }
         }
 
@@ -126,10 +132,13 @@ private:
                                         << " added " << (val->isTrusted () ? "trusted/" : "UNtrusted/") << (isCurrent ? "current" : "stale");
 
         if (val->isTrusted () && isCurrent)
+        {
             getApp().getLedgerMaster ().checkAccept (hash, val->getFieldU32 (sfLedgerSequence));
+            return true;
+        }
 
         // FIXME: This never forwards untrusted validations
-        return isCurrent;
+        return false;
     }
 
     void tune (int size, int age)
@@ -246,7 +255,7 @@ private:
                         fee += it.second->getFieldU32(sfLoadFee);
                     else
                         fee += ref;
-		}
+                 }
             }
         }
 
