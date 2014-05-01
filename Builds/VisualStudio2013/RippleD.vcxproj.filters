@@ -331,6 +331,9 @@
     <Filter Include="[2] Old Ripple\ripple_rpc\handlers">
       <UniqueIdentifier>{f8e935e2-e54d-4681-9e7d-7e4a01192d6b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="[1] Ripple\proto">
+      <UniqueIdentifier>{ae6e40a1-a2ff-4a9e-b510-92192b96db44}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\ripple_basics\containers\RangeSet.cpp">
@@ -875,9 +878,6 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\ripple_app_pt8.cpp">
       <Filter>[2] Old Ripple\ripple_app</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\build\proto\ripple.pb.cc">
-      <Filter>[2] Old Ripple\ripple_data\protocol</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_basics\ripple_basics.cpp">
       <Filter>[2] Old Ripple\ripple_basics</Filter>
@@ -1721,6 +1721,9 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\misc\FeeVoteImpl.cpp">
       <Filter>[2] Old Ripple\ripple_app\misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\proto\ripple.pb.cc">
+      <Filter>[1] Ripple\proto</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -3345,11 +3348,9 @@
     <ClInclude Include="..\..\src\ripple_app\misc\FeatureTable.h">
       <Filter>[2] Old Ripple\ripple_app\misc</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <CustomBuild Include="..\..\src\ripple_data\protocol\ripple.proto">
-      <Filter>[2] Old Ripple\ripple_data\protocol</Filter>
-    </CustomBuild>
+    <ClInclude Include="..\..\src\ripple\proto\ripple.pb.h">
+      <Filter>[1] Ripple\proto</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\doc\CheatSheet.md">
@@ -3472,5 +3473,10 @@
     <None Include="..\..\src\ripple_overlay\TODO.md">
       <Filter>[2] Old Ripple\ripple_overlay</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\src\ripple\proto\ripple.proto">
+      <Filter>[1] Ripple\proto</Filter>
+    </CustomBuild>
   </ItemGroup>
 </Project>

@@ -19,7 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\build\proto\ripple.pb.cc" />
     <ClCompile Include="..\..\src\ripple\beast\ripple_beast.cpp" />
     <ClCompile Include="..\..\src\ripple\beast\ripple_beastc.c" />
     <ClCompile Include="..\..\src\ripple\common\impl\KeyCache.cpp">
@@ -188,6 +187,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\proto\ripple.pb.cc" />
     <ClCompile Include="..\..\src\ripple\radmap\impl\BasicFullBelowCache.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -2727,6 +2727,7 @@
     <ClInclude Include="..\..\src\ripple\peerfinder\sim\Predicates.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\sim\sync_timer.h" />
     <ClInclude Include="..\..\src\ripple\peerfinder\sim\WrappedSink.h" />
+    <ClInclude Include="..\..\src\ripple\proto\ripple.pb.h" />
     <ClInclude Include="..\..\src\ripple\radmap\api\BasicFullBelowCache.h" />
     <ClInclude Include="..\..\src\ripple\radmap\api\Tuning.h" />
     <ClInclude Include="..\..\src\ripple\radmap\ripple_radmap.h" />
@@ -3192,17 +3193,6 @@
   <ItemGroup>
     <None Include="..\..\doc\CheatSheet.md" />
     <None Include="..\..\doc\CodingStyle.md" />
-    <CustomBuild Include="..\..\src\ripple_data\protocol\ripple.proto">
-      <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">protoc --cpp_out=$(RepoDir)\build\proto -I=$(RepoDir)\src\ripple_data\protocol\ "$(RepoDir)\src\ripple_data\protocol\%(Filename)%(Extension)"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">protoc --cpp_out=$(RepoDir)\build\proto -I=$(RepoDir)\src\ripple_data\protocol\ "$(RepoDir)\src\ripple_data\protocol\%(Filename)%(Extension)"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">protoc --cpp_out=$(RepoDir)\build\proto -I=$(RepoDir)\src\ripple_data\protocol\ "$(RepoDir)\src\ripple_data\protocol\%(Filename)%(Extension)"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">protoc --cpp_out=$(RepoDir)\build\proto -I=$(RepoDir)\src\ripple_data\protocol\ "$(RepoDir)\src\ripple_data\protocol\%(Filename)%(Extension)"</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(RepoDir)\build\proto\%(Filename).pb.h;$(RepoDir)\build\proto\%(Filename).pb.cc</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(RepoDir)\build\proto\%(Filename).pb.h;$(RepoDir)\build\proto\%(Filename).pb.cc</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(RepoDir)\build\proto\%(Filename).pb.h;$(RepoDir)\build\proto\%(Filename).pb.cc</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(RepoDir)\build\proto\%(Filename).pb.h;$(RepoDir)\build\proto\%(Filename).pb.cc</Outputs>
-    </CustomBuild>
     <None Include="..\..\doc\Doxyfile" />
     <None Include="..\..\doc\rippled-example.cfg" />
     <None Include="..\..\LICENSE" />
@@ -3227,6 +3217,22 @@
     <None Include="..\..\src\ripple\json\TODO.md" />
     <None Include="..\..\src\ripple\peerfinder\README.md" />
     <None Include="..\..\src\ripple\peerfinder\TODO.md" />
+    <CustomBuild Include="..\..\src\ripple\proto\ripple.proto">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">protoc --cpp_out=%(RelativeDir) --proto_path=%(RelativeDir) %(Identity)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">protoc --cpp_out=%(RelativeDir) --proto_path=%(RelativeDir) %(Identity)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">protoc --cpp_out=%(RelativeDir) --proto_path=%(RelativeDir) %(Identity)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">protoc --cpp_out=%(RelativeDir) --proto_path=%(RelativeDir) %(Identity)</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RelativeDir)%(Filename).pb.h;%(RelativeDir)%(Filename).pb.cc</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RelativeDir)%(Filename).pb.h;%(RelativeDir)%(Filename).pb.cc</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RelativeDir)%(Filename).pb.h;%(RelativeDir)%(Filename).pb.cc</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RelativeDir)%(Filename).pb.h;%(RelativeDir)%(Filename).pb.cc</Outputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">protoc --cpp_out=%(RelativeDir) --proto_path=%(RelativeDir) %(Identity)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">protoc --cpp_out=%(RelativeDir) --proto_path=%(RelativeDir) %(Identity)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">protoc --cpp_out=%(RelativeDir) --proto_path=%(RelativeDir) %(Identity)</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">protoc --cpp_out=%(RelativeDir) --proto_path=%(RelativeDir) %(Identity)</Message>
+    </CustomBuild>
     <None Include="..\..\src\ripple\radmap\README.md" />
     <None Include="..\..\src\ripple\radmap\TODO.md" />
     <None Include="..\..\src\ripple\resource\README.md" />

@@ -1,13 +1,38 @@
-#!python
+#
+# Copyright (c) 2009  Scott Stafford
+#
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject to
+# the following conditions:
+#
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
+# KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+# LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+# OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+# WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#
+
+#  Author : Scott Stafford
+#  Date : 2009-12-09 20:36:14
+#
+#  Changes : Vinnie Falco <vinnie.falco@gmail.com>
+#  Date : 2014--4-25
+
 """ 
 protoc.py: Protoc Builder for SCons
 
-This Builder invokes protoc to generate C++ and Python 
-from a .proto file.  
+This Builder invokes protoc to generate C++ and Python  from a .proto file.  
 
 NOTE: Java is not currently supported.
-
-From: http://www.scons.org/wiki/ProtocBuilder
 """
 
 __author__ = "Scott Stafford"
@@ -25,42 +50,25 @@ import os.path
 protocs = 'protoc'
 
 ProtocAction = SCons.Action.Action('$PROTOCCOM', '$PROTOCCOMSTR')
-def ProtocEmitter(target, source, env):
-    dirOfCallingSConscript = Dir('.').srcnode()
-    env.Prepend(PROTOCPROTOPATH = dirOfCallingSConscript.path)
-    
-    source_with_corrected_path = []
-    for src in source:
-        commonprefix = os.path.commonprefix([dirOfCallingSConscript.path, src.srcnode().path])
-        if len(commonprefix)>0:
-            source_with_corrected_path.append( src.srcnode().path[len(commonprefix + os.sep):] )
-        else:
-            source_with_corrected_path.append( src.srcnode().path )
-        
-    source = source_with_corrected_path
-    
-    for src in source:
-        modulename = os.path.splitext(os.path.basename(src))[0]
 
-        if env['PROTOCOUTDIR']:            
-            base = os.path.join(env['PROTOCOUTDIR'] , modulename)
-            target.extend( [ base + '.pb.cc', base + '.pb.h' ] )
-        
-        if env['PROTOCPYTHONOUTDIR']:
-            base = os.path.join(env['PROTOCPYTHONOUTDIR'] , modulename)
-            target.append( base + '_pb2.py' )
+def ProtocEmitter(target, source, env):
+    PROTOCOUTDIR = env['PROTOCOUTDIR']
+    PROTOCPYTHONOUTDIR = env['PROTOCPYTHONOUTDIR']
+    for source_path in [str(x) for x in source]:
+        base = os.path.splitext(os.path.basename(source_path))[0]
+        if PROTOCOUTDIR:
+            target.extend([os.path.join(PROTOCOUTDIR, base + '.pb.cc'),
+                           os.path.join(PROTOCOUTDIR, base + '.pb.h')])
+        if PROTOCPYTHONOUTDIR:
+            target.append(os.path.join(PROTOCPYTHONOUTDIR, base + '_pb2.py'))
 
     try:
         target.append(env['PROTOCFDSOUT'])
     except KeyError:
         pass
 
-    # XXX KLUDGE: Force things to be right.
-    env['PROTOCOUTDIR']	    = 'build/proto'
-    env['PROTOCPROTOPATH']  = ['src/ripple_data/protocol']
-
-    #~ print "PROTOC SOURCE:", [str(s) for s in source]
-    #~ print "PROTOC TARGET:", [str(s) for s in target]
+    #print "PROTOC SOURCE:", [str(s) for s in source]
+    #print "PROTOC TARGET:", [str(s) for s in target]
 
     return target, source
 
@@ -75,7 +83,7 @@ def generate(env):
     except KeyError:
         bld = ProtocBuilder
         env['BUILDERS']['Protoc'] = bld
-        
+
     env['PROTOC']        = env.Detect(protocs) or 'protoc'
     env['PROTOCFLAGS']   = SCons.Util.CLVar('')
     env['PROTOCPROTOPATH'] = SCons.Util.CLVar('')

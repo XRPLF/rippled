@@ -210,8 +210,7 @@ INCLUDE_PATHS = [
     '.',
     'src/leveldb',
     'src/leveldb/port',
-    'src/leveldb/include',
-    'build/proto'
+    'src/leveldb/include'
     ]
 
 # if BOOST_HOME:
@@ -446,8 +445,10 @@ for var in config_vars:
 
 sys.stdout.write("\nBuilding:\n")
 
-PROTO_SRCS = env.Protoc([], 'src/ripple_data/protocol/ripple.proto', PROTOCOUTDIR='build/proto', PROTOCPYTHONOUTDIR=None)
-env.Clean(PROTO_SRCS, 'site_scons/site_tools/protoc.pyc')
+PROTO_SRCS = env.Protoc([], 'src/ripple/proto/ripple.proto',
+    PROTOCOUTDIR='src/ripple/proto',
+    PROTOCPROTOPATH=['src/ripple/proto'],
+    PROTOCPYTHONOUTDIR=None)
 
 # Only tag actual Ripple files.
 TAG_SRCS    = copy.copy(COMPILED_FILES)
