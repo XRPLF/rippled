@@ -62,6 +62,28 @@ enum SHAMapState
     smsInvalid = 4,         // Map is known not to be valid (usually synching a corrupt ledger)
 };
 
+/** A SHAMap is both a radix tree with a fan-out of 16 and a Merkle tree.
+
+    A radix tree is a tree with two properties:
+
+      1. The key for a node is represented by the node's position in the tree
+         (the "prefix property").
+      2. A node with only one child is merged with that child
+         (the "merge property")
+
+    These properties in a significantly smaller memory footprint for a radix tree.
+
+    And a fan-out of 16 means that each node in the tree has at most 16 children.
+    See https://en.wikipedia.org/wiki/Radix_tree
+
+    A Merkle tree is a tree where each non-leaf node is labelled with the hash
+    of the combined labels of its children nodes.
+
+    A key property of a Merkle tree is that testing for node inclusion is
+    O(log(N)) where N is the number of nodes in the tree.
+
+    See https://en.wikipedia.org/wiki/Merkle_tree
+ */
 class SHAMap
 //     : public CountedObject <SHAMap>
 {
