@@ -502,7 +502,7 @@ private:
     SubMapType                                          mSubTransactions;       // all accepted transactions
     SubMapType                                          mSubRTTransactions;     // all proposed and accepted transactions
 
-    TaggedCache< uint256, Blob>                     mFetchPack;
+    TaggedCache< uint256, Blob>                         mFetchPack;
     std::uint32_t                                       mFetchSeq;
 
     std::uint32_t                                       mLastLoadBase;
