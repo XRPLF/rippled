@@ -961,7 +961,7 @@ private:
                 // next ledger is flag ledger   
                 {
                     m_feeVote.doValidation (newLCL, *v);
-                    getApp().getFeatureTable ().doValidation (newLCL, *v);
+                    getApp().getAmendmentTable ().doValidation (newLCL, *v);
                 }
 
                 v->sign (signingHash, mValPrivate);
@@ -1491,7 +1491,7 @@ private:
             SHAMap::pointer preSet 
                 = initialLedger.peekTransactionMap ()->snapShot (true);
             m_feeVote.doVoting (mPreviousLedger, preSet);
-            getApp().getFeatureTable ().doVoting (mPreviousLedger, preSet);
+            getApp().getAmendmentTable ().doVoting (mPreviousLedger, preSet);
             initialSet = preSet->snapShot (false);
         }
         else

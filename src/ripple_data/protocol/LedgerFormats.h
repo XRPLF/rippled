@@ -65,7 +65,7 @@ enum LedgerEntryType
 
     ltLEDGER_HASHES     = 'h',
 
-    ltFEATURES          = 'f',
+    ltAMENDMENTS        = 'f',
 
     ltFEE_SETTINGS      = 's',
 };
@@ -87,7 +87,7 @@ enum LedgerNameSpace
     spaceBookDir        = 'B',  // Directory of order books.
     spaceContract       = 'c',
     spaceSkipList       = 's',
-    spaceFeature        = 'f',
+    spaceAmendment      = 'f',
     spaceFee            = 'e',
 };
 

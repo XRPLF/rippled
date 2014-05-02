@@ -19,38 +19,38 @@
 
 namespace ripple {
 
-/** Track the list of "features"
+/** Track the list of "amendments"
 
-    A "feature" is an option that can affect transaction processing
-    rules that is identified by a 256-bit feature identifier
+    An "amendment" is an option that can affect transaction processing
+    rules that is identified by a 256-bit amendment identifier
     and adopted, or rejected, by the network.
 */
-class FeaturesImpl : public FeatureTable
+    class AmendmentTableImpl : public AmendmentTable
 {
 protected:
 
-    typedef ripple::unordered_map<uint256, FeatureState> featureMap_t;
-    typedef std::pair<const uint256, FeatureState> featureIt_t;
-    typedef boost::unordered_set<uint256> featureList_t;
+    typedef ripple::unordered_map<uint256, AmendmentState> amendmentMap_t;
+    typedef std::pair<const uint256, AmendmentState> amendmentIt_t;
+    typedef boost::unordered_set<uint256> amendmentList_t;
 
     typedef RippleMutex LockType;
     typedef std::lock_guard <LockType> ScopedLockType;
     LockType mLock;
 
-    featureMap_t mFeatureMap;
-    std::chrono::seconds m_majorityTime; // Seconds a feature must hold a majority
+    amendmentMap_t m_amendmentMap;
+    std::chrono::seconds m_majorityTime; // Seconds an amendment must hold a majority
     int mMajorityFraction;  // 256 = 100%
     core::Clock::time_point m_firstReport; // close time of first majority report
     core::Clock::time_point m_lastReport;  // close time of most recent majority report
     beast::Journal m_journal;
 
-    FeatureState* getCreate (uint256 const& feature, bool create);
-    bool shouldEnable (std::uint32_t closeTime, const FeatureState& fs);
-    void setJson (Json::Value& v, const FeatureState&);
+    AmendmentState* getCreate (uint256 const& amendment, bool create);
+    bool shouldEnable (std::uint32_t closeTime, const AmendmentState& fs);
+    void setJson (Json::Value& v, const AmendmentState&);
 
 public:
 
-    FeaturesImpl (std::chrono::seconds majorityTime, int majorityFraction,
+    AmendmentTableImpl (std::chrono::seconds majorityTime, int majorityFraction,
             beast::Journal journal)
         : m_majorityTime (majorityTime)
         , mMajorityFraction (majorityFraction)
@@ -62,23 +62,23 @@ public:
 
     void addInitial () override;
 
-    FeatureState* addKnown (const char* featureID, const char* friendlyName,
+    AmendmentState* addKnown (const char* amendmentID, const char* friendlyName,
         bool veto) override;
     uint256 get (const std::string& name) override;
 
-    bool veto (uint256 const& feature) override;
-    bool unVeto (uint256 const& feature) override;
+    bool veto (uint256 const& amendment) override;
+    bool unVeto (uint256 const& amendment) override;
 
-    bool enable (uint256 const& feature) override;
-    bool disable (uint256 const& feature) override;
+    bool enable (uint256 const& amendment) override;
+    bool disable (uint256 const& amendment) override;
 
-    bool isEnabled (uint256 const& feature) override;
-    bool isSupported (uint256 const& feature) override;
+    bool isEnabled (uint256 const& amendment) override;
+    bool isSupported (uint256 const& amendment) override;
 
-    void setEnabled (const std::vector<uint256>& features) override;
-    void setSupported (const std::vector<uint256>& features) override;
+    void setEnabled (const std::vector<uint256>& amendments) override;
+    void setSupported (const std::vector<uint256>& amendments) override;
 
-    void reportValidations (const FeatureSet&) override;
+    void reportValidations (const AmendmentSet&) override;
 
     Json::Value getJson (int) override;
     Json::Value getJson (uint256 const&) override;
@@ -86,35 +86,35 @@ public:
     void doValidation (Ledger::ref lastClosedLedger, STObject& baseValidation) override;
     void doVoting (Ledger::ref lastClosedLedger, SHAMap::ref initialPosition) override;
 
-    featureList_t getVetoed ();
-    featureList_t getEnabled ();
-    featureList_t getToEnable (core::Clock::time_point closeTime);   // gets features we would vote to enable
-    featureList_t getDesired ();    // features we support, do not veto, are not enabled
+    amendmentList_t getVetoed();
+    amendmentList_t getEnabled();
+    amendmentList_t getToEnable(core::Clock::time_point closeTime);   // gets amendments we would vote to enable
+    amendmentList_t getDesired();    // amendments we support, do not veto, are not enabled
 };
 
 void
-FeaturesImpl::addInitial ()
+AmendmentTableImpl::addInitial ()
 {
-    // For each feature this version supports, construct the FeatureState object by calling
-    // addKnown. Set any vetoes or defaults. A pointer to the FeatureState can be stashed
+    // For each amendment this version supports, construct the AmendmentState object by calling
+    // addKnown. Set any vetoes or defaults. A pointer to the AmendmentState can be stashed
 }
 
-FeatureState*
-FeaturesImpl::getCreate (uint256 const& featureHash, bool create)
+AmendmentState*
+AmendmentTableImpl::getCreate (uint256 const& amendmentHash, bool create)
 {
     // call with the mutex held
-    auto iter (mFeatureMap.find (featureHash));
+    auto iter (m_amendmentMap.find (amendmentHash));
 
-    if (iter == mFeatureMap.end ())
+    if (iter == m_amendmentMap.end())
     {
         if (!create)
             return nullptr;
 
-        FeatureState* feature = & (mFeatureMap[featureHash]);
+        AmendmentState* amendment = & (m_amendmentMap[amendmentHash]);
 
         {
             std::string query = "SELECT FirstMajority,LastMajority FROM Features WHERE hash='";
-            query.append (featureHash.GetHex ());
+            query.append (amendmentHash.GetHex ());
             query.append ("';");
 
             DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
@@ -122,22 +122,22 @@ FeaturesImpl::getCreate (uint256 const& featureHash, bool create)
 
             if (db->executeSQL (query) && db->startIterRows ())
             {
-                feature->m_firstMajority = db->getBigInt("FirstMajority");
-                feature->m_lastMajority = db->getBigInt("LastMajority");
+                amendment->m_firstMajority = db->getBigInt("FirstMajority");
+                amendment->m_lastMajority = db->getBigInt("LastMajority");
                 db->endIterRows ();
             }
         }
 
-        return feature;
+        return amendment;
     }
 
     return & (iter->second);
 }
 
 uint256
-FeaturesImpl::get (const std::string& name)
+AmendmentTableImpl::get (const std::string& name)
 {
-    for (auto const& e : mFeatureMap)
+    for (auto const& e : m_amendmentMap)
     {
         if (name == e.second.mFriendlyName)
             return e.first;
@@ -146,12 +146,12 @@ FeaturesImpl::get (const std::string& name)
     return uint256 ();
 }
 
-FeatureState*
-FeaturesImpl::addKnown (const char* featureID, const char* friendlyName,
+AmendmentState*
+AmendmentTableImpl::addKnown (const char* amendmentID, const char* friendlyName,
     bool veto)
 {
     uint256 hash;
-    hash.SetHex (featureID);
+    hash.SetHex (amendmentID);
 
     if (hash.isZero ())
     {
@@ -159,7 +159,7 @@ FeaturesImpl::addKnown (const char* featureID, const char* friendlyName,
         return nullptr;
     }
 
-    FeatureState* f = getCreate (hash, true);
+    AmendmentState* f = getCreate (hash, true);
 
     if (friendlyName != nullptr)
         f->setFriendlyName (friendlyName);
@@ -171,10 +171,10 @@ FeaturesImpl::addKnown (const char* featureID, const char* friendlyName,
 }
 
 bool
-FeaturesImpl::veto (uint256 const& feature)
+AmendmentTableImpl::veto (uint256 const& amendment)
 {
     ScopedLockType sl (mLock);
-    FeatureState* s = getCreate (feature, true);
+    AmendmentState* s = getCreate (amendment, true);
 
     if (s->mVetoed)
         return false;
@@ -184,10 +184,10 @@ FeaturesImpl::veto (uint256 const& feature)
 }
 
 bool
-FeaturesImpl::unVeto (uint256 const& feature)
+AmendmentTableImpl::unVeto (uint256 const& amendment)
 {
     ScopedLockType sl (mLock);
-    FeatureState* s = getCreate (feature, false);
+    AmendmentState* s = getCreate (amendment, false);
 
     if (!s || !s->mVetoed)
         return false;
@@ -197,10 +197,10 @@ FeaturesImpl::unVeto (uint256 const& feature)
 }
 
 bool
-FeaturesImpl::enable (uint256 const& feature)
+AmendmentTableImpl::enable (uint256 const& amendment)
 {
     ScopedLockType sl (mLock);
-    FeatureState* s = getCreate (feature, true);
+    AmendmentState* s = getCreate (amendment, true);
 
     if (s->mEnabled)
         return false;
@@ -210,10 +210,10 @@ FeaturesImpl::enable (uint256 const& feature)
 }
 
 bool
-FeaturesImpl::disable (uint256 const& feature)
+AmendmentTableImpl::disable (uint256 const& amendment)
 {
     ScopedLockType sl (mLock);
-    FeatureState* s = getCreate (feature, false);
+    AmendmentState* s = getCreate (amendment, false);
 
     if (!s || !s->mEnabled)
         return false;
@@ -223,27 +223,27 @@ FeaturesImpl::disable (uint256 const& feature)
 }
 
 bool
-FeaturesImpl::isEnabled (uint256 const& feature)
+AmendmentTableImpl::isEnabled (uint256 const& amendment)
 {
     ScopedLockType sl (mLock);
-    FeatureState* s = getCreate (feature, false);
+    AmendmentState* s = getCreate (amendment, false);
     return s && s->mEnabled;
 }
 
 bool
-FeaturesImpl::isSupported (uint256 const& feature)
+AmendmentTableImpl::isSupported (uint256 const& amendment)
 {
     ScopedLockType sl (mLock);
-    FeatureState* s = getCreate (feature, false);
+    AmendmentState* s = getCreate (amendment, false);
     return s && s->mSupported;
 }
 
-FeaturesImpl::featureList_t
-FeaturesImpl::getVetoed ()
+AmendmentTableImpl::amendmentList_t
+AmendmentTableImpl::getVetoed ()
 {
-    featureList_t ret;
+    amendmentList_t ret;
     ScopedLockType sl (mLock);
-    for (auto const& e : mFeatureMap)
+    for (auto const& e : m_amendmentMap)
     {
         if (e.second.mVetoed)
             ret.insert (e.first);
@@ -251,12 +251,12 @@ FeaturesImpl::getVetoed ()
     return ret;
 }
 
-FeaturesImpl::featureList_t
-FeaturesImpl::getEnabled ()
+AmendmentTableImpl::amendmentList_t
+AmendmentTableImpl::getEnabled ()
 {
-    featureList_t ret;
+    amendmentList_t ret;
     ScopedLockType sl (mLock);
-    for (auto const& e : mFeatureMap)
+    for (auto const& e : m_amendmentMap)
     {
         if (e.second.mEnabled)
             ret.insert (e.first);
@@ -265,7 +265,8 @@ FeaturesImpl::getEnabled ()
 }
 
 bool
-FeaturesImpl::shouldEnable (std::uint32_t closeTime, const FeatureState& fs)
+AmendmentTableImpl::shouldEnable (std::uint32_t closeTime,
+    const AmendmentState& fs)
 {
     if (fs.mVetoed || fs.mEnabled || !fs.mSupported || (fs.m_lastMajority != m_lastReport))
         return false;
@@ -280,15 +281,15 @@ FeaturesImpl::shouldEnable (std::uint32_t closeTime, const FeatureState& fs)
     return (fs.m_lastMajority - fs.m_firstMajority) > m_majorityTime.count();
 }
 
-FeaturesImpl::featureList_t
-FeaturesImpl::getToEnable (core::Clock::time_point closeTime)
+AmendmentTableImpl::amendmentList_t
+AmendmentTableImpl::getToEnable (core::Clock::time_point closeTime)
 {
-    featureList_t ret;
+    amendmentList_t ret;
     ScopedLockType sl (mLock);
 
     if (m_lastReport != 0)
     {
-        for (auto const& e : mFeatureMap)
+        for (auto const& e : m_amendmentMap)
         {
             if (shouldEnable (closeTime, e.second))
                 ret.insert (e.first);
@@ -298,13 +299,13 @@ FeaturesImpl::getToEnable (core::Clock::time_point closeTime)
     return ret;
 }
 
-FeaturesImpl::featureList_t
-FeaturesImpl::getDesired ()
+AmendmentTableImpl::amendmentList_t
+AmendmentTableImpl::getDesired ()
 {
-    featureList_t ret;
+    amendmentList_t ret;
     ScopedLockType sl (mLock);
 
-    for (auto const& e : mFeatureMap)
+    for (auto const& e : m_amendmentMap)
     {
         if (e.second.mSupported && !e.second.mEnabled && !e.second.mVetoed)
             ret.insert (e.first);
@@ -314,7 +315,7 @@ FeaturesImpl::getDesired ()
 }
 
 void
-FeaturesImpl::reportValidations (const FeatureSet& set)
+AmendmentTableImpl::reportValidations (const AmendmentSet& set)
 {
     if (set.mTrustedValidations == 0)
         return;
@@ -328,14 +329,14 @@ FeaturesImpl::reportValidations (const FeatureSet& set)
     if (m_firstReport == 0)
         m_firstReport = set.mCloseTime;
 
-    std::vector<uint256> changedFeatures;
-    changedFeatures.resize (set.mVotes.size ());
+    std::vector<uint256> changedAmendments;
+    changedAmendments.resize(set.mVotes.size());
 
     for (auto const& e : set.mVotes)
     {
-        FeatureState& state = mFeatureMap[e.first];
+        AmendmentState& state = m_amendmentMap[e.first];
         if (m_journal.debug) m_journal.debug <<
-            "Feature " << e.first.GetHex () <<
+            "Amendment " << e.first.GetHex () <<
             " has " << e.second <<
             " votes, needs " << threshold;
 
@@ -347,11 +348,11 @@ FeaturesImpl::reportValidations (const FeatureSet& set)
             if (state.m_firstMajority == 0)
             {
                 if (m_journal.warning) m_journal.warning <<
-                    "Feature " << e.first <<
+                    "Amendment " << e.first <<
                     " attains a majority vote";
 
                 state.m_firstMajority = set.mCloseTime;
-                changedFeatures.push_back (e.first);
+                changedAmendments.push_back(e.first);
             }
         }
         else // we have no majority
@@ -359,26 +360,26 @@ FeaturesImpl::reportValidations (const FeatureSet& set)
             if (state.m_firstMajority != 0)
             {
                 if (m_journal.warning) m_journal.warning <<
-                    "Feature " << e.first <<
+                    "Amendment " << e.first <<
                     " loses majority vote";
 
                 state.m_firstMajority = 0;
                 state.m_lastMajority = 0;
-                changedFeatures.push_back (e.first);
+                changedAmendments.push_back(e.first);
             }
         }
     }
     m_lastReport = set.mCloseTime;
 
-    if (!changedFeatures.empty ())
+    if (!changedAmendments.empty())
     {
         DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
         Database* db = getApp().getWalletDB ()->getDB ();
 
         db->executeSQL ("BEGIN TRANSACTION;");
-        for (auto const& hash : changedFeatures)
+        for (auto const& hash : changedAmendments)
         {
-            FeatureState& fState = mFeatureMap[hash];
+            AmendmentState& fState = m_amendmentMap[hash];
             db->executeSQL (boost::str (boost::format (
                                             "UPDATE Features SET FirstMajority = %d WHERE Hash = '%s';"
                                         ) % fState.m_firstMajority % hash.GetHex ()));
@@ -387,63 +388,65 @@ FeaturesImpl::reportValidations (const FeatureSet& set)
                                             ) % fState.m_lastMajority % hash.GetHex()));
         }
         db->executeSQL ("END TRANSACTION;");
-        changedFeatures.clear ();
+        changedAmendments.clear();
     }
 }
 
 void
-FeaturesImpl::setEnabled (const std::vector<uint256>& features)
+AmendmentTableImpl::setEnabled (const std::vector<uint256>& amendments)
 {
     ScopedLockType sl (mLock);
-    for (auto& e : mFeatureMap)
+    for (auto& e : m_amendmentMap)
     {
         e.second.mEnabled = false;
     }
-    for (auto const& e : features)
+    for (auto const& e : amendments)
     {
-        mFeatureMap[e].mEnabled = true;
+        m_amendmentMap[e].mEnabled = true;
     }
 }
 
 void
-FeaturesImpl::setSupported (const std::vector<uint256>& features)
+AmendmentTableImpl::setSupported (const std::vector<uint256>& amendments)
 {
     ScopedLockType sl (mLock);
-    for (auto &e : mFeatureMap)
+    for (auto &e : m_amendmentMap)
     {
         e.second.mSupported = false;
     }
-    for (auto const& e : features)
+    for (auto const& e : amendments)
     {
-        mFeatureMap[e].mSupported = true;
+        m_amendmentMap[e].mSupported = true;
     }
 }
 
 void
-FeaturesImpl::doValidation (Ledger::ref lastClosedLedger, STObject& baseValidation)
+AmendmentTableImpl::doValidation (Ledger::ref lastClosedLedger,
+    STObject& baseValidation)
 {
-    featureList_t lFeatures = getDesired ();
+    amendmentList_t lAmendments = getDesired();
 
-    if (lFeatures.empty ())
+    if (lAmendments.empty())
         return;
 
-    STVector256 vFeatures (sfFeatures);
-    for (auto const& uFeature : lFeatures)
+    STVector256 vAmendments (sfAmendments);
+    for (auto const& uAmendment : lAmendments)
     {
-        vFeatures.addValue (uFeature);
+        vAmendments.addValue (uAmendment);
     }
-    vFeatures.sort ();
-    baseValidation.setFieldV256 (sfFeatures, vFeatures);
+    vAmendments.sort ();
+    baseValidation.setFieldV256 (sfAmendments, vAmendments);
 }
 
 void
-FeaturesImpl::doVoting (Ledger::ref lastClosedLedger, SHAMap::ref initialPosition)
+AmendmentTableImpl::doVoting (Ledger::ref lastClosedLedger,
+    SHAMap::ref initialPosition)
 {
 
     // LCL must be flag ledger
     assert((lastClosedLedger->getLedgerSeq () % 256) == 0);
 
-    FeatureSet featureSet (lastClosedLedger->getParentCloseTimeNC ());
+    AmendmentSet amendmentSet (lastClosedLedger->getParentCloseTimeNC ());
 
     // get validations for ledger before flag ledger
     ValidationSet valSet = getApp().getValidations ().getValidations (lastClosedLedger->getParentHash ());
@@ -453,29 +456,28 @@ FeaturesImpl::doVoting (Ledger::ref lastClosedLedger, SHAMap::ref initialPositio
 
         if (val.isTrusted ())
         {
-            featureSet.addVoter ();
-            if (val.isFieldPresent (sfFeatures))
+            amendmentSet.addVoter ();
+            if (val.isFieldPresent (sfAmendments))
             {
-                for (auto const& feature : val.getFieldV256 (sfFeatures))
+                for (auto const& amendment : val.getFieldV256 (sfAmendments))
                 {
-                    featureSet.addVote (feature);
+                    amendmentSet.addVote (amendment);
                 }
             }
-
         }
     }
-    reportValidations (featureSet);
+    reportValidations (amendmentSet);
 
-    featureList_t lFeatures = getToEnable (lastClosedLedger->getCloseTimeNC ());
-    for (auto const& uFeature : lFeatures)
+    amendmentList_t lAmendments = getToEnable (lastClosedLedger->getCloseTimeNC ());
+    for (auto const& uAmendment : lAmendments)
     {
         if (m_journal.warning) m_journal.warning <<
-            "Voting for feature: " << uFeature;
+            "Voting for amendment: " << uAmendment;
 
-        // Create the transaction to enable the feature
-        SerializedTransaction trans (ttFEATURE);
+        // Create the transaction to enable the amendment
+        SerializedTransaction trans (ttAMENDMENT);
         trans.setFieldAccount (sfAccount, uint160 ());
-        trans.setFieldH256 (sfFeature, uFeature);
+        trans.setFieldH256 (sfAmendment, uAmendment);
         uint256 txID = trans.getTransactionID ();
 
         if (m_journal.warning) m_journal.warning <<
@@ -484,24 +486,24 @@ FeaturesImpl::doVoting (Ledger::ref lastClosedLedger, SHAMap::ref initialPositio
         // Inject the transaction into our initial proposal
         Serializer s;
         trans.add (s, true);
-#if RIPPLE_PROPOSE_FEATURES
+#if RIPPLE_PROPOSE_AMENDMENTS
         SHAMapItem::pointer tItem = boost::make_shared<SHAMapItem> (txID, s.peekData ());
         if (!initialPosition->addGiveItem (tItem, true, false))
         {
             if (m_journal.warning) m_journal.warning <<
-                "Ledger already had feature transaction";
+                "Ledger already had amendment transaction";
         }
 #endif
     }
 }
 
 Json::Value
-FeaturesImpl::getJson (int)
+AmendmentTableImpl::getJson (int)
 {
     Json::Value ret(Json::objectValue);
     {
         ScopedLockType sl(mLock);
-        for (auto const& e : mFeatureMap)
+        for (auto const& e : m_amendmentMap)
         {
             setJson (ret[e.first.GetHex ()] = Json::objectValue, e.second);
         }
@@ -510,7 +512,7 @@ FeaturesImpl::getJson (int)
 }
 
 void
-FeaturesImpl::setJson (Json::Value& v, const FeatureState& fs)
+AmendmentTableImpl::setJson (Json::Value& v, const AmendmentState& fs)
 {
     if (!fs.mFriendlyName.empty())
         v["name"] = fs.mFriendlyName;
@@ -556,26 +558,26 @@ FeaturesImpl::setJson (Json::Value& v, const FeatureState& fs)
 }
 
 Json::Value
-FeaturesImpl::getJson (uint256 const& featureID)
+AmendmentTableImpl::getJson (uint256 const& amendmentID)
 {
     Json::Value ret = Json::objectValue;
-    Json::Value& jFeature = (ret[featureID.GetHex()] = Json::objectValue);
+    Json::Value& jAmendment = (ret[amendmentID.GetHex ()] = Json::objectValue);
 
     {
         ScopedLockType sl(mLock);
 
-        FeatureState *featureState = getCreate (featureID, true);
-        setJson (jFeature, *featureState);
+        AmendmentState *amendmentState = getCreate (amendmentID, true);
+        setJson (jAmendment, *amendmentState);
     }
 
     return ret;
 }
 
-std::unique_ptr<FeatureTable>
-make_FeatureTable (std::chrono::seconds majorityTime, int majorityFraction,
+std::unique_ptr<AmendmentTable>
+make_AmendmentTable (std::chrono::seconds majorityTime, int majorityFraction,
     beast::Journal journal)
 {
-    return std::make_unique<FeaturesImpl> (majorityTime, majorityFraction,
+    return std::make_unique<AmendmentTableImpl> (majorityTime, majorityFraction,
         journal);
 }
 

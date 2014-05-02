@@ -124,7 +124,7 @@ FIELD (AccountTxnID,         HASH256, 9)
 FIELD (BookDirectory,        HASH256, 16)
 FIELD (InvoiceID,            HASH256, 17)
 FIELD (Nickname,             HASH256, 18)
-FIELD (Feature,              HASH256, 19)
+FIELD (Amendment,            HASH256, 19)
 
 // 160-bit (common)
 FIELD (TakerPaysCurrency,    HASH160, 1)
@@ -177,7 +177,7 @@ FIELD (Paths,                PATHSET, 1)
 // vector of 256-bit
 FIELD (Indexes,              VECTOR256, 1)
 FIELD (Hashes,               VECTOR256, 2)
-FIELD (Features,             VECTOR256, 3)
+FIELD (Amendments,           VECTOR256, 3)
 
 // inner object
 // OBJECT/1 is reserved for end of object

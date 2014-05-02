@@ -83,7 +83,7 @@
 #include "main/LoadManager.h"
 #include "misc/OrderBook.h"
 #include "shamap/SHAMapSyncFilters.h"
-#include "misc/FeatureTable.h"
+#include "misc/AmendmentTable.h"
 #include "misc/FeeVote.h"
 #include "misc/IHashRouter.h"
 #include "peers/ClusterNodeStatus.h"

@@ -1504,11 +1504,11 @@ uint256 Ledger::getLedgerFeeIndex ()
     return s.getSHA512Half ();
 }
 
-uint256 Ledger::getLedgerFeatureIndex ()
+uint256 Ledger::getLedgerAmendmentIndex ()
 {
-    // get the index of the node that holds the enabled features
+    // get the index of the node that holds the enabled amendments
     Serializer s (2);
-    s.add16 (spaceFeature);
+    s.add16 (spaceAmendment);
     return s.getSHA512Half ();
 }
 
@@ -1616,15 +1616,15 @@ std::vector< std::pair<std::uint32_t, uint256> > Ledger::getLedgerHashes ()
     return ret;
 }
 
-std::vector<uint256> Ledger::getLedgerFeatures ()
+std::vector<uint256> Ledger::getLedgerAmendments ()
 {
-    std::vector<uint256> usFeatures;
-    SLE::pointer sleFeatures = getSLEi (getLedgerFeatureIndex ());
+    std::vector<uint256> usAmendments;
+    SLE::pointer sleAmendments = getSLEi (getLedgerAmendmentIndex ());
 
-    if (sleFeatures)
-        usFeatures = sleFeatures->getFieldV256 (sfFeatures).peekValue ();
+    if (sleAmendments)
+        usAmendments = sleAmendments->getFieldV256 (sfAmendments).peekValue ();
 
-    return usFeatures;
+    return usAmendments;
 }
 
 // XRP to XRP not allowed.
