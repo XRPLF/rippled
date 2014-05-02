@@ -57,6 +57,7 @@ public:
     bool        isValid ();
     bool        isNew ();
     bool        needsUpdate (bool newOnly, LedgerIndex index);
+    void        updateComplete ();
     Json::Value getStatus ();
 
     Json::Value doCreate (const boost::shared_ptr<Ledger>&, const RippleLineCache::pointer&,
@@ -93,7 +94,9 @@ private:
 
     bool                            bValid;
 
-    std::atomic<LedgerIndex>        iLastIndex;
+    LockType                        mIndexLock;
+    LedgerIndex                     mLastIndex;
+    bool                            mInProgress;
 
     int                             iLastLevel;
     bool                            bLastSuccess;

@@ -90,6 +90,7 @@ void PathRequests::updateAll (Ledger::ref inLedger, CancelCallback shouldCancel)
                         if (!ipSub->getConsumer ().warn ())
                         {
                             Json::Value update = pRequest->doUpdate (cache, false);
+                            pRequest->updateComplete ();
                             update["type"] = "path_find";
                             ipSub->send (update, false);
                             remove = false;

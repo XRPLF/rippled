@@ -29,7 +29,8 @@ const boost::shared_ptr<InfoSub>& subscriber, int id, PathRequests& owner,
     , wpSubscriber (subscriber)
     , jvStatus (Json::objectValue)
     , bValid (false)
-    , iLastIndex (0)
+    , mLastIndex (0)
+    , mInProgress (false)
     , iLastLevel (0)
     , bLastSuccess (false)
     , iIdentifier (id)
@@ -77,38 +78,43 @@ bool PathRequest::isValid ()
 
 bool PathRequest::isNew ()
 {
-     // does this path request still need its first full path
-     return iLastIndex.load() == 0;
+    ScopedLockType sl (mIndexLock);
+
+    // does this path request still need its first full path
+    return mLastIndex == 0;
 }
 
 bool PathRequest::needsUpdate (bool newOnly, LedgerIndex index)
 {
-    LedgerIndex lastIndex = iLastIndex.load();
-    for (;;)
+    ScopedLockType sl (mIndexLock);
+
+    if (mInProgress)
     {
-        if (newOnly)
-        {
-            // Is this request new
-            if (lastIndex != 0)
-                return false;
-
-            // This thread marks this request handled
-            if (iLastIndex.compare_exchange_weak (lastIndex, 1,
-                    std::memory_order_release, std::memory_order_relaxed))
-                return true;
-        }
-        else
-        {
-            // Has the request already been handled?
-            if (lastIndex >= index)
-                return false;
-
-            // This thread marks this request handled
-            if (iLastIndex.compare_exchange_weak (lastIndex, index,
-                    std::memory_order_release, std::memory_order_relaxed))
-                return true;
-        }
+        // Another thread is handling this
+        return false;
     }
+
+    if (newOnly && (mLastIndex != 0))
+    {
+        // Only handling new requests, this isn't new
+        return false;
+    }
+
+    if (mLastIndex >= index)
+    {
+        return false;
+    }
+
+    mInProgress = true;
+    return true;
+}
+
+void PathRequest::updateComplete ()
+{
+    ScopedLockType sl (mIndexLock);
+
+    assert (mInProgress);
+    mInProgress = false;
 }
 
 bool PathRequest::isValid (RippleLineCache::ref crCache)
