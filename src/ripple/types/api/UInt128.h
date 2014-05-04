@@ -29,48 +29,10 @@
 
 namespace ripple {
 
-class uint128 : public base_uint128
+inline uint128 high128(uint256 const& b)
 {
-private:
-    uint128 (value_type const* ptr)
-    {
-        memcpy (pn, ptr, bytes);
-    }
-
-public:
-    typedef base_uint128 basetype;
-
-    uint128 ()
-    {
-        zero ();
-    }
-
-    uint128 (const basetype& b)
-    {
-        *this = b;
-    }
-
-    uint128& operator= (const basetype& b)
-    {
-        for (int i = 0; i < WIDTH; i++)
-            pn[i] = b.pn[i];
-
-        return *this;
-    }
-
-    explicit uint128 (Blob const& vch)
-    {
-        if (vch.size () == size ())
-            memcpy (pn, &vch[0], size ());
-        else
-            zero ();
-    }
-
-    static uint128 low128(base_uint256 const& b)
-    {
-        return uint128 (b.data());
-    }
-};
+    return uint128::fromVoid (b.data());
+}
 
 }
 

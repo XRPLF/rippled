@@ -19,10 +19,10 @@
 
 namespace ripple {
 
-base_uint256 uint160::to256 () const
+uint256 to256 (uint160 const& a)
 {
     uint256 m;
-    memcpy (m.begin (), begin (), size ());
+    memcpy (m.begin (), a.begin (), a.size ());
     return m;
 }
 

@@ -19,11 +19,29 @@
 
 namespace ripple {
 
+// NIKB TODO having a dependency on HashMaps sucks. Try to remove it and combine
+//           these functions into a single template.
+
+std::size_t hash_value (uint128 const& u)
+{
+    std::size_t seed = HashMaps::getInstance ().getNonce <std::size_t> ();
+
+    return beast::hardened_hash<uint128>{seed}(u);
+}
+
+std::size_t hash_value (uint160 const& u)
+{
+    std::size_t seed = HashMaps::getInstance ().getNonce <std::size_t> ();
+
+    return beast::hardened_hash<uint160>{seed}(u);
+}
+
 std::size_t hash_value (uint256 const& u)
 {
     std::size_t seed = HashMaps::getInstance ().getNonce <size_t> ();
 
     return beast::hardened_hash<uint256>{seed}(u);
 }
+
 
 }
