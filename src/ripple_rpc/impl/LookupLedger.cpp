@@ -165,7 +165,7 @@ Json::Value lookupLedger (
     if (lpLedger->isClosed ())
     {
         if (!!uLedger)
-            jvResult["ledger_hash"] = uLedger.ToString ();
+            jvResult["ledger_hash"] = to_string (uLedger);
 
         jvResult["ledger_index"] = iLedgerIndex;
     }

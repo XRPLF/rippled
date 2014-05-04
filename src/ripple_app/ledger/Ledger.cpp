@@ -1685,7 +1685,7 @@ uint256 Ledger::getBookBase (const uint160& uTakerPaysCurrency, const uint160& u
         "," << RippleAddress::createHumanAccountID (uTakerPaysIssuerID) <<
         "," << STAmount::createHumanCurrency (uTakerGetsCurrency) <<
         "," << RippleAddress::createHumanAccountID (uTakerGetsIssuerID) <<
-        ") = " << uBaseIndex.ToString ();
+        ") = " << to_string (uBaseIndex);
 
     assert (isValidBook (uTakerPaysCurrency, uTakerPaysIssuerID, uTakerGetsCurrency, uTakerGetsIssuerID));
 
