@@ -1326,9 +1326,9 @@ private:
         if (closedLedger && closedLedger->isClosed ())
         {
             uint256 hash = closedLedger->getHash ();
-            h.set_ledgerclosed (hash.begin (), hash.GetSerializeSize ());
+            h.set_ledgerclosed (hash.begin (), hash.size ());
             hash = closedLedger->getParentHash ();
-            h.set_ledgerprevious (hash.begin (), hash.GetSerializeSize ());
+            h.set_ledgerprevious (hash.begin (), hash.size ());
         }
 
         Message::pointer packet = boost::make_shared<Message> (
