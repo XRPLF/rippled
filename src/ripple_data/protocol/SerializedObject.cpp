@@ -1134,8 +1134,8 @@ Json::Value STVector256::getJson (int options) const
 {
     Json::Value ret (Json::arrayValue);
 
-    BOOST_FOREACH (std::vector<uint256>::const_iterator::value_type vEntry, mValue)
-    ret.append (vEntry.ToString ());
+    for (auto const& vEntry : mValue)
+        ret.append (to_string (vEntry));
 
     return ret;
 }

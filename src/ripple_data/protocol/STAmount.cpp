@@ -219,7 +219,7 @@ STAmount::STAmount (SField::ref n, const Json::Value& v)
 
 std::string STAmount::createHumanCurrency (const uint160& uCurrency)
 {
-    static uint160 const sIsoBits  ("FFFFFFFFFFFFFFFFFFFFFFFF000000FFFFFFFFFF");
+    static uint160 const sIsoBits ("FFFFFFFFFFFFFFFFFFFFFFFF000000FFFFFFFFFF");
 
     if (uCurrency.isZero ())
     {
@@ -246,7 +246,7 @@ std::string STAmount::createHumanCurrency (const uint160& uCurrency)
             return iso;
     }
 
-    return uCurrency.ToString ();
+    return to_string (uCurrency);
 }
 
 bool STAmount::setValue (const std::string& sAmount)

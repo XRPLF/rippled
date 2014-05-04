@@ -28,7 +28,7 @@ Json::Value RPCHandler::doLedgerClosed (Json::Value, Resource::Charge& loadType,
     uint256 uLedger = mNetOps->getClosedLedgerHash ();
 
     jvResult["ledger_index"]        = mNetOps->getLedgerID (uLedger);
-    jvResult["ledger_hash"]         = uLedger.ToString ();
+    jvResult["ledger_hash"]         = to_string (uLedger);
     //jvResult["ledger_time"]       = uLedger.
 
     return jvResult;

@@ -1089,7 +1089,7 @@ STVector256 NetworkOPsImp::getDirNodeInfo (
 
     if (sleNode)
     {
-        m_journal.debug << "getDirNodeInfo: node index: " << uNodeIndex.ToString ();
+        m_journal.debug << "getDirNodeInfo: node index: " << to_string (uNodeIndex);
 
         m_journal.trace << "getDirNodeInfo: first: " << strHex (sleNode->getFieldU64 (sfIndexPrevious));
         m_journal.trace << "getDirNodeInfo:  last: " << strHex (sleNode->getFieldU64 (sfIndexNext));
@@ -1103,7 +1103,7 @@ STVector256 NetworkOPsImp::getDirNodeInfo (
     }
     else
     {
-        m_journal.info << "getDirNodeInfo: node index: NOT FOUND: " << uNodeIndex.ToString ();
+        m_journal.info << "getDirNodeInfo: node index: NOT FOUND: " << to_string (uNodeIndex);
 
         uNodePrevious   = 0;
         uNodeNext       = 0;
@@ -2341,7 +2341,7 @@ Json::Value NetworkOPsImp::pubBootstrapAccountInfo (Ledger::ref lpAccepted, cons
     jvObj["account"]        = naAccountID.humanAccountID ();
     jvObj["owner"]          = getOwnerInfo (lpAccepted, naAccountID);
     jvObj["ledger_index"]   = lpAccepted->getLedgerSeq ();
-    jvObj["ledger_hash"]    = lpAccepted->getHash ().ToString ();
+    jvObj["ledger_hash"]    = to_string (lpAccepted->getHash ());
     jvObj["ledger_time"]    = Json::Value::UInt (utFromSeconds (lpAccepted->getCloseTimeNC ()));
 
     return jvObj;
@@ -2390,7 +2390,7 @@ void NetworkOPsImp::pubLedger (Ledger::ref accepted)
 
             jvObj[jss::type]           = jss::ledgerClosed;
             jvObj[jss::ledger_index]   = lpAccepted->getLedgerSeq ();
-            jvObj[jss::ledger_hash]    = lpAccepted->getHash ().ToString ();
+            jvObj[jss::ledger_hash]    = to_string (lpAccepted->getHash ());
             jvObj[jss::ledger_time]    = Json::Value::UInt (lpAccepted->getCloseTimeNC ());
 
             jvObj[jss::fee_ref]        = Json::UInt (lpAccepted->getReferenceFeeUnits ());
@@ -2453,7 +2453,7 @@ Json::Value NetworkOPsImp::transJson (const SerializedTransaction& stTxn, TER te
     if (bValidated)
     {
         jvObj[jss::ledger_index]           = lpCurrent->getLedgerSeq ();
-        jvObj[jss::ledger_hash]            = lpCurrent->getHash ().ToString ();
+        jvObj[jss::ledger_hash]            = to_string (lpCurrent->getHash ());
         jvObj[jss::transaction][jss::date]  = lpCurrent->getCloseTimeNC ();
         jvObj[jss::validated]              = true;
 
@@ -2751,9 +2751,8 @@ bool NetworkOPsImp::subLedger (InfoSub::ref isrListener, Json::Value& jvResult)
     if (lpClosed)
     {
         jvResult[jss::ledger_index]    = lpClosed->getLedgerSeq ();
-        jvResult[jss::ledger_hash]     = lpClosed->getHash ().ToString ();
+        jvResult[jss::ledger_hash]     = to_string (lpClosed->getHash ());
         jvResult[jss::ledger_time]     = Json::Value::UInt (lpClosed->getCloseTimeNC ());
-
         jvResult[jss::fee_ref]         = Json::UInt (lpClosed->getReferenceFeeUnits ());
         jvResult[jss::fee_base]        = Json::UInt (lpClosed->getBaseFee ());
         jvResult[jss::reserve_base]    = Json::UInt (lpClosed->getReserve (0));
@@ -2783,7 +2782,8 @@ bool NetworkOPsImp::subServer (InfoSub::ref isrListener, Json::Value& jvResult)
         jvResult[jss::stand_alone] = getConfig ().RUN_STANDALONE;
 
     RandomNumbers::getInstance ().fillBytes (uRandom.begin (), uRandom.size ());
-    jvResult[jss::random]          = uRandom.ToString ();
+
+    jvResult[jss::random]          = to_string (uRandom);
     jvResult[jss::server_status]   = strOperatingMode ();
     jvResult[jss::load_base]       = getApp().getFeeTrack ().getLoadBase ();
     jvResult[jss::load_factor]     = getApp().getFeeTrack ().getLoadFactor ();
