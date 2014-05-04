@@ -58,7 +58,7 @@ Json::Value RPCHandler::doProofCreate (Json::Value params, Resource::Charge& loa
         }
 
         jvResult["token"]   = pgGen->getProof ().getToken ();
-        jvResult["secret"]  = pgGen->getSecret ().GetHex ();
+        jvResult["secret"]  = to_string (pgGen->getSecret ());
     }
     else
     {

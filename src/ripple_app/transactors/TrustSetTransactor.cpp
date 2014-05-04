@@ -360,17 +360,19 @@ TER TrustSetTransactor::doApply ()
         // Zero balance in currency.
         STAmount saBalance (STAmount (uCurrencyID, ACCOUNT_ONE));
 
+        uint256 index (Ledger::getRippleStateIndex (
+            mTxnAccountID, uDstAccountID, uCurrencyID));
 
         m_journal.trace <<
             "doTrustSet: Creating ripple line: " <<
-            Ledger::getRippleStateIndex (mTxnAccountID, uDstAccountID, uCurrencyID).ToString ();
+            to_string (index);
 
         // Create a new ripple line.
         terResult = mEngine->view ().trustCreate (
                           bHigh,
                           mTxnAccountID,
                           uDstAccountID,
-                          Ledger::getRippleStateIndex (mTxnAccountID, uDstAccountID, uCurrencyID),
+                          index,
                           mTxnAccount,
                           bSetAuth,
                           bSetNoRipple && !bClearNoRipple,

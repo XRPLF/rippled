@@ -20,7 +20,7 @@
 #ifndef RIPPLE_FULLBELOWCACHE_H_INCLUDED
 #define RIPPLE_FULLBELOWCACHE_H_INCLUDED
 
-#include "../ripple/types/api/UInt256.h"
+#include "../ripple/types/api/base_uint.h"
 #include "../ripple/radmap/api/BasicFullBelowCache.h"
 
 namespace ripple {

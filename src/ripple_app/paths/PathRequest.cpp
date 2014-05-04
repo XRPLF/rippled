@@ -173,7 +173,7 @@ bool PathRequest::isValid (RippleLineCache::ref crCache)
 
     if (bValid)
     {
-        jvStatus["ledger_hash"] = lrLedger->getHash ().GetHex ();
+        jvStatus["ledger_hash"] = to_string (lrLedger->getHash ());
         jvStatus["ledger_index"] = lrLedger->getLedgerSeq ();
     }
     return bValid;

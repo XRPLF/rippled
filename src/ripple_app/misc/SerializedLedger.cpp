@@ -93,7 +93,7 @@ SerializedLedgerEntry::pointer SerializedLedgerEntry::getMutable () const
 std::string SerializedLedgerEntry::getFullText () const
 {
     std::string ret = "\"";
-    ret += mIndex.GetHex ();
+    ret += to_string (mIndex);
     ret += "\" = { ";
     ret += mFormat->getName ();
     ret += ", ";
@@ -105,7 +105,7 @@ std::string SerializedLedgerEntry::getFullText () const
 std::string SerializedLedgerEntry::getText () const
 {
     return str (boost::format ("{ %s, %s }")
-                % mIndex.GetHex ()
+                % to_string (mIndex)
                 % STObject::getText ());
 }
 
@@ -113,7 +113,7 @@ Json::Value SerializedLedgerEntry::getJson (int options) const
 {
     Json::Value ret (STObject::getJson (options));
 
-    ret["index"]    = mIndex.GetHex ();
+    ret["index"] = to_string (mIndex);
 
     return ret;
 }

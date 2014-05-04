@@ -40,7 +40,7 @@ Json::Value RPCHandler::doProofSolve (Json::Value params, Resource::Charge& load
     ProofOfWork         powProof (strToken);
     uint256             uSolution       = powProof.solve ();
 
-    jvResult["solution"]                = uSolution.GetHex ();
+    jvResult["solution"]                = to_string (uSolution);
 
     return jvResult;
 }

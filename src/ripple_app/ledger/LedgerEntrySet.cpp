@@ -286,11 +286,10 @@ Json::Value LedgerEntrySet::getJson (int) const
 
     Json::Value nodes (Json::arrayValue);
 
-    for (std::map<uint256, LedgerEntrySetEntry>::const_iterator it = mEntries.begin (),
-            end = mEntries.end (); it != end; ++it)
+    for (auto it = mEntries.begin (), end = mEntries.end (); it != end; ++it)
     {
         Json::Value entry (Json::objectValue);
-        entry["node"] = it->first.GetHex ();
+        entry["node"] = to_string (it->first);
 
         switch (it->second.mEntry->getType ())
         {
@@ -659,8 +658,8 @@ TER LedgerEntrySet::dirAdd (
     std::function<void (SLE::ref, bool)>    fDescriber)
 {
     WriteLog (lsTRACE, LedgerEntrySet) << "dirAdd:" <<
-        " uRootIndex=" << uRootIndex.ToString () <<
-        " uLedgerIndex=" << uLedgerIndex.ToString ();
+        " uRootIndex=" << to_string (uRootIndex) <<
+        " uLedgerIndex=" << to_string (uLedgerIndex);
 
     SLE::pointer        sleNode;
     STVector256         svIndexes;
@@ -732,9 +731,9 @@ TER LedgerEntrySet::dirAdd (
     sleNode->setFieldV256 (sfIndexes, svIndexes);   // Save entry.
 
     WriteLog (lsTRACE, LedgerEntrySet) << 
-        "dirAdd:   creating: root: " << uRootIndex.ToString ();
+        "dirAdd:   creating: root: " << to_string (uRootIndex);
     WriteLog (lsTRACE, LedgerEntrySet) <<
-        "dirAdd:  appending: Entry: " << uLedgerIndex.ToString ();
+        "dirAdd:  appending: Entry: " << to_string (uLedgerIndex);
     WriteLog (lsTRACE, LedgerEntrySet) <<
         "dirAdd:  appending: Node: " << strHex (uNodeDir);
     // WriteLog (lsINFO, LedgerEntrySet) << "dirAdd:  appending: PREV: " << svIndexes.peekValue()[0].ToString();
@@ -757,9 +756,9 @@ TER LedgerEntrySet::dirDelete (
     if (!sleNode)
     {
         WriteLog (lsWARNING, LedgerEntrySet) << "dirDelete: no such node:" <<
-            " uRootIndex=" << uRootIndex.ToString () <<
+            " uRootIndex=" << to_string (uRootIndex) <<
             " uNodeDir=" << strHex (uNodeDir) <<
-            " uLedgerIndex=" << uLedgerIndex.ToString ();
+            " uLedgerIndex=" << to_string (uLedgerIndex);
 
         if (!bSoft)
         {

@@ -23,7 +23,7 @@
 #include "Message.h"
 
 #include "../../ripple/json/ripple_json.h"
-#include "../../ripple/types/api/UInt256.h"
+#include "../../ripple/types/api/base_uint.h"
 #include "../../ripple_data/protocol/RippleAddress.h"
 
 #include "../../beast/beast/net/IPEndpoint.h"

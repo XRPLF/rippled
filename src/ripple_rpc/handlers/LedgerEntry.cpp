@@ -214,12 +214,12 @@ Json::Value RPCHandler::doLedgerEntry (Json::Value params, Resource::Charge& loa
             sleNode->add (s);
 
             jvResult["node_binary"] = strHex (s.peekData ());
-            jvResult["index"]       = uNodeIndex.ToString ();
+            jvResult["index"]       = to_string (uNodeIndex);
         }
         else
         {
             jvResult["node"]        = sleNode->getJson (0);
-            jvResult["index"]       = uNodeIndex.ToString ();
+            jvResult["index"]       = to_string (uNodeIndex);
         }
     }
 
