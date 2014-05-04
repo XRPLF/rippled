@@ -344,7 +344,7 @@ Json::Value transactionSign (
     {
         jvResult["tx_unsigned"] = strHex (
             stpTrans->getSerializer ().peekData ());
-        jvResult["tx_signing_hash"] = stpTrans->getSigningHash ().ToString ();
+        jvResult["tx_signing_hash"] = to_string (stpTrans->getSigningHash ());
     }
 
     // FIXME: For performance, transactions should not be signed in this code path.

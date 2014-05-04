@@ -94,7 +94,7 @@ SerializedTransaction::SerializedTransaction (SerializerIterator& sit) : STObjec
 std::string SerializedTransaction::getFullText () const
 {
     std::string ret = "\"";
-    ret += getTransactionID ().GetHex ();
+    ret += to_string (getTransactionID ());
     ret += "\" = {";
     ret += STObject::getFullText ();
     ret += "}";
@@ -244,7 +244,7 @@ void SerializedTransaction::setSourceAccount (const RippleAddress& naSource)
 Json::Value SerializedTransaction::getJson (int) const
 {
     Json::Value ret = STObject::getJson (0);
-    ret["hash"] = getTransactionID ().GetHex ();
+    ret["hash"] = to_string (getTransactionID ());
     return ret;
 }
 
@@ -255,7 +255,7 @@ Json::Value SerializedTransaction::getJson (int options, bool binary) const
         Json::Value ret;
         Serializer s = STObject::getSerializer ();
         ret["tx"] = strHex (s.peekData ());
-        ret["hash"] = getTransactionID ().GetHex ();
+        ret["hash"] = to_string (getTransactionID ());
         return ret;
     }
     return getJson(options);
@@ -297,7 +297,8 @@ std::string SerializedTransaction::getSQL (Serializer rawTxn, std::uint32_t inLe
     std::string rTxn    = sqlEscape (rawTxn.peekData ());
 
     return str (boost::format (bfTrans)
-                % getTransactionID ().GetHex () % getTransactionType () % getSourceAccount ().humanAccountID ()
+                % to_string (getTransactionID ()) % getTransactionType ()
+                % getSourceAccount ().humanAccountID ()
                 % getSequence () % inLedger % status % rTxn);
 }
 
@@ -308,7 +309,8 @@ std::string SerializedTransaction::getMetaSQL (Serializer rawTxn, std::uint32_t 
     std::string rTxn    = sqlEscape (rawTxn.peekData ());
 
     return str (boost::format (bfTrans)
-                % getTransactionID ().GetHex () % getTransactionType () % getSourceAccount ().humanAccountID ()
+                % to_string (getTransactionID ()) % getTransactionType ()
+                % getSourceAccount ().humanAccountID ()
                 % getSequence () % inLedger % status % rTxn % escapedMetaData);
 }
 

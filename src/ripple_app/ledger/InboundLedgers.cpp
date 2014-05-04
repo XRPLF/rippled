@@ -196,13 +196,13 @@ public:
             ScopedLockType sl (mLock);
 
             inboundLedgers.reserve(mLedgers.size());
-            BOOST_FOREACH (const u256_acq_pair & it, mLedgers)
+            for (auto const& it : mLedgers)
             {
                 inboundLedgers.push_back(it);
             }
         }
 
-        BOOST_FOREACH (const u256_acq_pair & it, inboundLedgers)
+        for (auto const& it : inboundLedgers)
         {
             if (it.second->isActive ())
             {
@@ -281,20 +281,20 @@ public:
             ScopedLockType sl (mLock);
 
             acquires.reserve (mLedgers.size ());
-            BOOST_FOREACH (const u256_acq_pair & it, mLedgers)
+            for (auto const& it : mLedgers)
             {
                 assert (it.second);
                 acquires.push_back (it);
             }
         }
 
-        BOOST_FOREACH (const u256_acq_pair& it, acquires)
+        for (auto const& it : acquires)
         {
             std::uint32_t seq = it.second->getSeq();
             if (seq > 1)
                 ret[beast::lexicalCastThrow <std::string>(seq)] = it.second->getJson(0);
             else
-                ret[it.first.GetHex()] = it.second->getJson(0);
+                ret[to_string (it.first)] = it.second->getJson(0);
         }
 
     return ret;
@@ -307,14 +307,14 @@ public:
             ScopedLockType sl (mLock);
 
             acquires.reserve (mLedgers.size ());
-            BOOST_FOREACH (const u256_acq_pair & it, mLedgers)
+            for (auto const& it : mLedgers)
             {
                 assert (it.second);
                 acquires.push_back (it.second);
             }
         }
 
-        BOOST_FOREACH (const InboundLedger::pointer & acquire, acquires)
+        for (auto const& acquire : acquires)
         {
             acquire->checkLocal ();
         }

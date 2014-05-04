@@ -89,10 +89,10 @@ TER PaymentTransactor::doApply ()
     {
         m_journal.trace <<
             "Malformed transaction: Redundant transaction:" <<
-            " src=" << mTxnAccountID.ToString () <<
-            " dst=" << uDstAccountID.ToString () <<
-            " src_cur=" << uSrcCurrency.ToString () <<
-            " dst_cur=" << uDstCurrency.ToString ();
+            " src=" << to_string (mTxnAccountID) <<
+            " dst=" << to_string (uDstAccountID) <<
+            " src_cur=" << to_string (uSrcCurrency) <<
+            " dst_cur=" << to_string (uDstCurrency);
 
         return temREDUNDANT;
     }

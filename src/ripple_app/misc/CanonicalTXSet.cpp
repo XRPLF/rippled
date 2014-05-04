@@ -75,7 +75,7 @@ void CanonicalTXSet::push_back (SerializedTransaction::ref txn)
 {
     uint256 effectiveAccount = mSetHash;
 
-    effectiveAccount ^= txn->getSourceAccount ().getAccountID ().to256 ();
+    effectiveAccount ^= to256 (txn->getSourceAccount ().getAccountID ());
 
     mMap.insert (std::make_pair (
                      Key (effectiveAccount, txn->getSequence (), txn->getTransactionID ()),

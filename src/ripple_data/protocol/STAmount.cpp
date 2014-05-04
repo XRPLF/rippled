@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include "../../beast/beast/cxx14/iterator.h"
+
 namespace ripple {
 
 SETUP_LOG (STAmount)
@@ -219,7 +221,7 @@ STAmount::STAmount (SField::ref n, const Json::Value& v)
 
 std::string STAmount::createHumanCurrency (const uint160& uCurrency)
 {
-    static uint160 const sIsoBits  ("FFFFFFFFFFFFFFFFFFFFFFFF000000FFFFFFFFFF");
+    static uint160 const sIsoBits ("FFFFFFFFFFFFFFFFFFFFFFFF000000FFFFFFFFFF");
 
     if (uCurrency.isZero ())
     {
@@ -246,7 +248,7 @@ std::string STAmount::createHumanCurrency (const uint160& uCurrency)
             return iso;
     }
 
-    return uCurrency.ToString ();
+    return to_string (uCurrency);
 }
 
 bool STAmount::setValue (const std::string& sAmount)
@@ -584,68 +586,93 @@ void STAmount::setSNValue (std::int64_t v)
     }
 }
 
-std::string STAmount::getRaw () const
-{
-    // show raw internal form
-    if (mValue == 0) return "0";
-
-    if (mIsNative)
-    {
-        if (mIsNegative) return std::string ("-") + beast::lexicalCast <std::string> (mValue);
-        else return beast::lexicalCast <std::string> (mValue);
-    }
-
-    if (mIsNegative)
-        return mCurrency.GetHex () + ": -" +
-               beast::lexicalCast <std::string> (mValue) + "e" + beast::lexicalCast <std::string> (mOffset);
-    else return mCurrency.GetHex () + ": " +
-                    beast::lexicalCast <std::string> (mValue) + "e" + beast::lexicalCast <std::string> (mOffset);
-}
-
 std::string STAmount::getText () const
 {
     // keep full internal accuracy, but make more human friendly if posible
     if (*this == zero)
         return "0";
 
-    if (mIsNative)
+    std::string const raw_value (std::to_string (mValue));
+    std::string ret;
+
+    if (mIsNegative)
+        ret.append (1, '-');
+
+    bool const scientific ((mOffset != 0) && ((mOffset < -25) || (mOffset > -5)));
+
+    if (mIsNative || scientific)
     {
-        if (mIsNegative)
-            return std::string ("-") +  beast::lexicalCast <std::string> (mValue);
-        else return beast::lexicalCast <std::string> (mValue);
+        ret.append (raw_value);
+
+        if(scientific)
+        {
+            ret.append (1, 'e');
+            ret.append (std::to_string (mOffset));
+        }
+
+        return ret;
     }
 
-    if ((mOffset != 0) && ((mOffset < -25) || (mOffset > -5)))
+    assert (mOffset + 43 > 0);
+
+    size_t const pad_prefix = 27;
+    size_t const pad_suffix = 23;
+
+    std::string val;
+    val.reserve (raw_value.length () + pad_prefix + pad_suffix);
+    val.append (pad_prefix, '0');
+    val.append (raw_value);
+    val.append (pad_suffix, '0');
+
+    size_t const offset (mOffset + 43);
+
+    auto pre_from (val.begin ());
+    auto const pre_to (val.begin () + offset);
+
+    auto const post_from (val.begin () + offset);
+    auto post_to (val.end ());
+
+    // Crop leading zeroes. Take advantage of the fact that there's always a
+    // fixed amount of leading zeroes and skip them.
+    if (std::distance (pre_from, pre_to) > pad_prefix)
+        pre_from += pad_prefix;
+
+    assert (post_to >= post_from);
+
+    pre_from = std::find_if (pre_from, pre_to,
+        [](char c)
+        {
+            return c != '0';
+        });
+
+    // Crop trailing zeroes. Take advantage of the fact that there's always a
+    // fixed amount of trailing zeroes and skip them.
+    if (std::distance (post_from, post_to) > pad_suffix)
+        post_to -= pad_suffix;
+
+    assert (post_to >= post_from);
+
+    post_to = std::find_if(
+        std::make_reverse_iterator (post_to),
+        std::make_reverse_iterator (post_from),
+        [](char c)
+        {
+            return c != '0';
+        }).base();
+
+    // Assemble the output:
+    if (pre_from == pre_to)
+        ret.append (1, '0');
+    else
+        ret.append(pre_from, pre_to);
+
+    if (post_to != post_from)
     {
-        if (mIsNegative)
-            return std::string ("-") + beast::lexicalCast <std::string> (mValue) +
-                   "e" + beast::lexicalCast <std::string> (mOffset);
-        else
-            return beast::lexicalCast <std::string> (mValue) + "e" + beast::lexicalCast <std::string> (mOffset);
+        ret.append (1, '.');
+        ret.append (post_from, post_to);
     }
 
-    std::string val = "000000000000000000000000000";
-    val += beast::lexicalCast <std::string> (mValue);
-    val += "00000000000000000000000";
-
-    std::string pre = val.substr (0, mOffset + 43);
-    std::string post = val.substr (mOffset + 43);
-
-    size_t s_pre = pre.find_first_not_of ('0');
-
-    if (s_pre == std::string::npos)
-        pre = "0";
-    else
-        pre = pre.substr (s_pre);
-
-    size_t s_post = post.find_last_not_of ('0');
-
-    if (mIsNegative) pre = std::string ("-") + pre;
-
-    if (s_post == std::string::npos)
-        return pre;
-    else
-        return pre + "." + post.substr (0, s_post + 1);
+    return ret;
 }
 
 bool STAmount::isComparable (const STAmount& t) const
@@ -1421,8 +1448,6 @@ public:
         testcase ("custom currency");
 
         STAmount zeroSt (CURRENCY_ONE, ACCOUNT_ONE), one (CURRENCY_ONE, ACCOUNT_ONE, 1), hundred (CURRENCY_ONE, ACCOUNT_ONE, 100);
-
-        serializeAndDeserialize (one).getRaw ();
 
         unexpected (serializeAndDeserialize (zeroSt) != zeroSt, "STAmount fail");
 

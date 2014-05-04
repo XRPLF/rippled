@@ -744,7 +744,7 @@ public:
 
         for (int d = 0; d < 3; ++d) s.add32 (rand ());
 
-        return boost::make_shared<SHAMapItem> (s.getRIPEMD160 ().to256 (), s.peekData ());
+        return boost::make_shared<SHAMapItem> (to256 (s.getRIPEMD160 ()), s.peekData ());
     }
 
     bool confuseMap (SHAMap& map, int count)
