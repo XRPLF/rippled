@@ -131,7 +131,7 @@ bool InboundLedger::tryLocal ()
                 "Ledger base found in fetch pack";
             mLedger = boost::make_shared<Ledger> (data, true);
             getApp().getNodeStore ().store (hotLEDGER,
-                mLedger->getLedgerSeq (), data, mHash);
+                mLedger->getLedgerSeq (), std::move (data), mHash);
         }
         else
         {
@@ -790,7 +790,7 @@ bool InboundLedger::takeBase (const std::string& data)
     s.add32 (HashPrefix::ledgerMaster);
     s.addRaw (data);
     getApp().getNodeStore ().store (hotLEDGER,
-        mLedger->getLedgerSeq (), s.modData (), mHash);
+        mLedger->getLedgerSeq (), std::move (s.modData ()), mHash);
 
     progress ();
 

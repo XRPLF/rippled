@@ -90,7 +90,7 @@ void AccountStateSF::gotNode (bool fromFilter,
                               Blob& nodeData,
                               SHAMapTreeNode::TNType)
 {
-    getApp().getNodeStore ().store (hotACCOUNT_NODE, mLedgerSeq, nodeData, nodeHash);
+    getApp().getNodeStore ().store (hotACCOUNT_NODE, mLedgerSeq, std::move (nodeData), nodeHash);
 }
 
 bool AccountStateSF::haveNode (SHAMapNode const& id,
@@ -116,7 +116,7 @@ void TransactionStateSF::gotNode (bool fromFilter,
     getApp().getNodeStore ().store (
         (type == SHAMapTreeNode::tnTRANSACTION_NM) ? hotTRANSACTION : hotTRANSACTION_NODE,
         mLedgerSeq,
-        nodeData,
+        std::move (nodeData),
         nodeHash);
 }
 

@@ -75,7 +75,7 @@ public:
 
             r.fillBitsRandomly (data.data (), payloadBytes);
 
-            return NodeObject::createObject (type, ledgerIndex, data, hash);
+            return NodeObject::createObject(type, ledgerIndex, std::move(data), hash);
         }
 
     private:
@@ -163,7 +163,7 @@ public:
 
             db.store (object->getType (),
                       object->getIndex (),
-                      data,
+                      std::move (data),
                       object->getHash ());
         }
     }

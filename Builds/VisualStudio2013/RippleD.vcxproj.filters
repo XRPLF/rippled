@@ -2474,9 +2474,6 @@
     <ClInclude Include="..\..\src\ripple_core\nodestore\api\Factory.h">
       <Filter>[2] Old Ripple\ripple_core\nodestore\api</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\nodestore\api\VisitCallback.h">
-      <Filter>[2] Old Ripple\ripple_core\nodestore\api</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple_core\nodestore\backend\NullFactory.h">
       <Filter>[2] Old Ripple\ripple_core\nodestore\backend</Filter>
     </ClInclude>
@@ -3472,6 +3469,9 @@
     </None>
     <None Include="..\..\src\ripple_overlay\TODO.md">
       <Filter>[2] Old Ripple\ripple_overlay</Filter>
+    </None>
+    <None Include="..\..\src\ripple_core\nodestore\README.md">
+      <Filter>[2] Old Ripple\ripple_core\nodestore</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

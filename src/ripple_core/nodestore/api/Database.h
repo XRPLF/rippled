@@ -98,7 +98,7 @@ public:
     */
     virtual void store (NodeObjectType type,
                         std::uint32_t ledgerIndex,
-                        Blob& data,
+                        Blob&& data,
                         uint256 const& hash) = 0;
 
     /** Visit every object in the database
@@ -108,10 +108,10 @@ public:
                 or other methods.
         @see import
     */
-    virtual void visitAll (VisitCallback& callback) = 0;
+    virtual void for_each(std::function <void(NodeObject::Ptr)> f) = 0;
 
     /** Import objects from another database. */
-    virtual void import (Database& sourceDatabase) = 0;
+    virtual void import (Database& source) = 0;
 
     /** Retrieve the estimated number of pending write operations.
         This is used for diagnostics.

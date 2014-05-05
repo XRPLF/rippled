@@ -85,15 +85,14 @@ public:
             m_readGenCondVar.notify_all ();
         }
 
-        BOOST_FOREACH (std::thread& th, m_readThreads)
-            th.join ();
+        for (auto& e : m_readThreads)
+            e.join();
     }
 
     beast::String getName () const
     {
         return m_backend->getName ();
     }
-
 
     //------------------------------------------------------------------------------
 
@@ -190,14 +189,15 @@ public:
 
             if (! foundInFastBackend)
             {
-                 // If we have a fast back end, store it there for later.
+                // If we have a fast back end, store it there for later.
                 //
                 if (m_fastBackend != nullptr)
                     m_fastBackend->store (obj);
 
                 // Since this was a 'hard' fetch, we will log it.
                 //
-                WriteLog (lsTRACE, NodeObject) << "HOS: " << hash << " fetch: in db";
+                if (m_journal.trace) m_journal.trace <<
+                    "HOS: " << hash << " fetch: in db";
             }
         }
 
@@ -220,11 +220,13 @@ public:
         case dataCorrupt:
             // VFALCO TODO Deal with encountering corrupt data!
             //
-            WriteLog (lsFATAL, NodeObject) << "Corrupt NodeObject #" << hash;
+            if (m_journal.fatal) m_journal.fatal <<
+                "Corrupt NodeObject #" << hash;
             break;
 
         default:
-            WriteLog (lsWARNING, NodeObject) << "Unknown status=" << status;
+            if (m_journal.warning) m_journal.warning <<
+                "Unknown status=" << status;
             break;
         }
 
@@ -235,10 +237,10 @@ public:
 
     void store (NodeObjectType type,
                 std::uint32_t index,
-                Blob& data,
+                Blob&& data,
                 uint256 const& hash)
     {
-        NodeObject::Ptr object = NodeObject::createObject (type, index, data, hash);
+        NodeObject::Ptr object = NodeObject::createObject(type, index, std::move(data), hash);
 
         #if RIPPLE_VERIFY_NODEOBJECT_KEYS
         assert (hash == Serializer::getSHA512Half (data));
@@ -326,52 +328,30 @@ public:
 
     //------------------------------------------------------------------------------
 
-
-    void visitAll (VisitCallback& callback)
+    void for_each (std::function <void(NodeObject::Ptr)> f)
     {
-        m_backend->visitAll (callback);
+        m_backend->for_each (f);
     }
 
-    void import (Database& sourceDatabase)
+    void import (Database& source)
     {
-        class ImportVisitCallback : public VisitCallback
+        Batch b;
+        b.reserve (batchWritePreallocationSize);
+
+        source.for_each ([&](NodeObject::Ptr object)
         {
-        public:
-            explicit ImportVisitCallback (Backend& backend)
-                : m_backend (backend)
+            if (b.size () >= batchWritePreallocationSize)
             {
-                m_objects.reserve (batchWritePreallocationSize);
+                this->m_backend->storeBatch (b);
+                b.clear ();
+                b.reserve (batchWritePreallocationSize);
             }
 
-            ~ImportVisitCallback ()
-            {
-                if (! m_objects.empty ())
-                    m_backend.storeBatch (m_objects);
-            }
+            b.push_back (object);
+        });
 
-            void visitObject (NodeObject::Ptr const& object)
-            {
-                if (m_objects.size () >= batchWritePreallocationSize)
-                {
-                    m_backend.storeBatch (m_objects);
-
-                    m_objects.clear ();
-                    m_objects.reserve (batchWritePreallocationSize);
-                }
-
-                m_objects.push_back (object);
-            }
-
-        private:
-            Backend& m_backend;
-            Batch m_objects;
-        };
-
-        //--------------------------------------------------------------------------
-
-        ImportVisitCallback callback (*m_backend);
-
-        sourceDatabase.visitAll (callback);
+        if (! b.empty ())
+            m_backend->storeBatch (b);
     }
 };
 

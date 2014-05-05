@@ -76,11 +76,9 @@ public:
         This is usually called during import.
         @note This routine will not be called concurrently with itself
               or other methods.
-        @see import, VisitCallback
+        @see import
     */
-    virtual void visitAll (VisitCallback& callback) = 0;
-    // VFALCO TODO Implement
-    //virtual void visitAll (std::function <void (NodeObject::Ptr)> f) = 0;
+    virtual void for_each (std::function <void (NodeObject::Ptr)> f) = 0;
 
     /** Estimate the number of write operations pending. */
     virtual int getWriteLoad () = 0;
