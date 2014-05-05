@@ -233,9 +233,12 @@ std::string STAmount::createHumanCurrency (const uint160& uCurrency)
 
     if ((uCurrency & sIsoBits).isZero ())
     {
+        // The offset of the 3 character ISO code in the currency descriptor
+        int const isoOffset = 12;
+
         std::string const iso(
-            uCurrency.data () + (96 / 8),
-            uCurrency.data () + (96 / 8) + 3);
+            uCurrency.data () + isoOffset,
+            uCurrency.data () + isoOffset + 3);
 
         // Specifying the system currency code using ISO-style representation
         // is not allowed.
