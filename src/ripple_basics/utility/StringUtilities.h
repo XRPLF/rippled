@@ -215,6 +215,86 @@ inline std::string stringConcat(std::vector<detail::ConcatArg> args)
     return result;
 }
 
+/** toString() generalizes std::to_string to handle bools, chars, and strings.
+
+    It's also possible to provide implementation of toString for a class
+    which needs a string implementation.
+ */
+
+template <typename T>
+std::string toString(T t)
+{
+    return std::to_string(t);
+}
+
+inline std::string toString(bool b)
+{
+    return b ? "true" : "false";
+}
+
+inline std::string toString(char c)
+{
+    return std::string(1, c);
+}
+
+inline std::string toString(std::string s)
+{
+    return s;
+}
+
+inline std::string toString(char const* s)
+{
+    return s;
+}
+
+namespace detail {
+
+// ConcatArg is used to represent arguments to stringConcat.
+
+struct ConcatArg {
+    ConcatArg(std::string const& s) : data_(s.data()), size_(s.size())
+    {
+    }
+
+    ConcatArg(char const* s) : data_(s), size_(strlen(s))
+    {
+    }
+
+    template <typename T>
+    ConcatArg(T t) : string_(toString(t)),
+                     data_(string_.data()),
+                     size_(string_.size())
+    {
+    }
+
+    std::string string_;
+    char const* data_;
+    std::size_t size_;
+};
+
+} // namespace detail
+
+/** Concatenate strings, numbers, bools and chars into one string in O(n) time.
+
+    Usage:
+      stringConcat({"hello ", 23, 'x', true});
+
+    Returns:
+      "hello 23xtrue"
+ */
+inline std::string stringConcat(std::vector<detail::ConcatArg> args)
+{
+    int capacity = 0;
+    for (auto const& a: args)
+        capacity += a.size_;
+
+    std::string result;
+    result.reserve(capacity);
+    for (auto const& a: args)
+        result.insert(result.end(), a.data_, a.data_ + a.size_);
+    return result;
+}
+
 } // ripple
 
 #endif
