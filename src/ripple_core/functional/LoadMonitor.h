@@ -37,6 +37,8 @@ public:
 
     void addLoadSample (LoadEvent const& sample);
 
+    void addSamples (int count, std::chrono::milliseconds latency);
+
     void setTargetLatency (std::uint64_t avg, std::uint64_t pk);
 
     bool isOverTarget (std::uint64_t avg, std::uint64_t peak);

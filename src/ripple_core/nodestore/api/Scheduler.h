@@ -23,6 +23,22 @@
 namespace ripple {
 namespace NodeStore {
 
+/** Contains information about a fetch operation. */
+struct FetchReport
+{
+    std::chrono::milliseconds elapsed;
+    bool isAsync;
+    bool wentToDisk;
+    bool wasFound;
+};
+
+/** Contains information about a batch write operation. */
+struct BatchWriteReport
+{
+    std::chrono::milliseconds elapsed;
+    int writeCount;
+};
+
 /** Scheduling for asynchronous backend activity
     
     For improved performance, a backend has the option of performing writes
@@ -42,6 +58,16 @@ public:
         foreign thread.
     */
     virtual void scheduleTask (Task& task) = 0;
+
+    /** Reports completion of a fetch
+        Allows the scheduler to monitor the node store's performance
+    */
+    virtual void onFetch (FetchReport const& report) = 0;
+
+    /** Reports the completion of a batch write
+        Allows the scheduler to monitor the node store's performance
+    */
+    virtual void onBatchWrite (BatchWriteReport const& report) = 0;
 };
 
 }

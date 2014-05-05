@@ -63,6 +63,10 @@ public:
     //          
     virtual LoadEvent::autoptr getLoadEventAP (JobType t, const std::string& name) = 0;
 
+    // Add multiple load events
+    virtual void addLoadEvents (JobType t,
+        int count, std::chrono::milliseconds elapsed) = 0;
+
     virtual bool isOverloaded () = 0;
 
     virtual Json::Value getJson (int c = 0) = 0;

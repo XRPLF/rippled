@@ -158,6 +158,14 @@ public:
 
         add (jtGENERIC,       "generic",
             0,        false,  true,  0,     0);
+
+        add (jtNS_SYNC_READ,  "SyncReadNode",
+            0,        false,  true,  0,     0);
+        add (jtNS_ASYNC_READ, "AsyncReadNode",
+            0,        false,  true,  0,     0);
+        add (jtNS_WRITE,      "WriteNode",
+            0,        false,  true,  0,     0);
+
     }
 
     JobTypeInfo const& get (JobType jt) const

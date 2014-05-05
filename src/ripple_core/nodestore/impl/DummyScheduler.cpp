@@ -40,5 +40,15 @@ DummyScheduler::scheduledTasksStopped ()
 {
 }
 
+void
+DummyScheduler::onFetch (const FetchReport& report)
+{
+}
+
+void
+DummyScheduler::onBatchWrite (const BatchWriteReport& report)
+{
+}
+
 }
 }

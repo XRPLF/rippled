@@ -58,4 +58,18 @@ void NodeStoreScheduler::doTask (NodeStore::Task& task, Job&)
         stopped();
 }
 
+void NodeStoreScheduler::onFetch (NodeStore::FetchReport const& report)
+{
+    if (report.wentToDisk)
+        m_jobQueue->addLoadEvents (
+            report.isAsync ? jtNS_ASYNC_READ : jtNS_SYNC_READ,
+                1, report.elapsed);
+}
+
+void NodeStoreScheduler::onBatchWrite (NodeStore::BatchWriteReport const& report)
+{
+    m_jobQueue->addLoadEvents (jtNS_WRITE,
+        report.writeCount, report.elapsed);
+}
+
 } // ripple

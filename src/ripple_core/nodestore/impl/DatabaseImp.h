@@ -24,6 +24,7 @@
 
 #include <thread>
 #include <condition_variable>
+#include <chrono>
 
 namespace ripple {
 namespace NodeStore {
@@ -135,7 +136,30 @@ public:
         return m_cache.getTargetSize() / asyncDivider;
     }
 
-    NodeObject::Ptr fetch (uint256 const& hash)
+    NodeObject::Ptr fetch (uint256 const& hash) override
+    {
+        return doTimedFetch (hash, false);
+    }
+
+    /** Perform a fetch and report the time it took */
+    NodeObject::Ptr doTimedFetch (uint256 const& hash, bool isAsync)
+    {
+        FetchReport report;
+        report.isAsync = isAsync;
+        report.wentToDisk = false;
+
+        auto const before = std::chrono::steady_clock::now();
+        NodeObject::Ptr ret = doFetch (hash, report);
+        report.elapsed = std::chrono::duration_cast <std::chrono::milliseconds>
+            (std::chrono::steady_clock::now() - before);
+
+        report.wasFound = (ret != nullptr);
+        m_scheduler.onFetch (report);
+
+        return ret;
+    }
+
+    NodeObject::Ptr doFetch (uint256 const& hash, FetchReport &report)
     {
         // See if the object already exists in the cache
         //
@@ -150,6 +174,7 @@ public:
         // Check the database(s).
 
         bool foundInFastBackend = false;
+        report.wentToDisk = true;
 
         // Check the fast backend database if we have one
         //
@@ -324,7 +349,7 @@ public:
             }
 
             // Perform the read
-            fetch (hash);
+            doTimedFetch (hash, true);
          }
      }
 

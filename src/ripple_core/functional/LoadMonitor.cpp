@@ -122,7 +122,7 @@ void LoadMonitor::addLatency (int latency)
     mLatencyMSAvg += latency;
     mLatencyMSPeak += latency;
 
-    // VFALCO NOTE Why are we multiplying by 4?
+    // Units are quarters of a millisecond
     int const latencyPeak = mLatencyEvents * latency * 4;
 
     if (mLatencyMSPeak < latencyPeak)
@@ -163,6 +163,26 @@ void LoadMonitor::addLoadSample (LoadEvent const& sample)
 
     // VFALCO NOTE Why are we multiplying by 4?
     int const latencyPeak = mLatencyEvents * latencyMilliseconds * 4;
+
+    if (mLatencyMSPeak < latencyPeak)
+        mLatencyMSPeak = latencyPeak;
+}
+
+/* Add multiple samples
+   @param count The number of samples to add
+   @param latencyMS The total number of milliseconds
+*/
+void LoadMonitor::addSamples (int count, std::chrono::milliseconds latency)
+{
+    ScopedLockType sl (mLock);
+
+    update ();
+    mCounts += count;
+    mLatencyEvents += count;
+    mLatencyMSAvg += latency.count();
+    mLatencyMSPeak += latency.count();
+
+    int const latencyPeak = mLatencyEvents * latency.count() * 4 / count;
 
     if (mLatencyMSPeak < latencyPeak)
         mLatencyMSPeak = latencyPeak;

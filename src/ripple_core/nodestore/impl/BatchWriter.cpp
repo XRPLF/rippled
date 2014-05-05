@@ -90,7 +90,16 @@ BatchWriter::writeBatch ()
 
         }
 
+        BatchWriteReport report;
+        report.writeCount = set.size();
+        auto const before = std::chrono::steady_clock::now();
+
         m_callback.writeBatch (set);
+
+        report.elapsed = std::chrono::duration_cast <std::chrono::milliseconds>
+            (std::chrono::steady_clock::now() - before);
+
+        m_scheduler.onBatchWrite (report);
     }
 }
 
