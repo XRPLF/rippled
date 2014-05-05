@@ -219,7 +219,7 @@ STAmount::STAmount (SField::ref n, const Json::Value& v)
 
 std::string STAmount::createHumanCurrency (const uint160& uCurrency)
 {
-    static uint160 const sFiatBits("FFFFFFFFFFFFFFFFFFFFFFFF0000000000000000");
+    static uint160 const sIsoBits  ("FFFFFFFFFFFFFFFFFFFFFFFF000000FFFFFFFFFF");
 
     if (uCurrency.isZero ())
     {
@@ -231,46 +231,22 @@ std::string STAmount::createHumanCurrency (const uint160& uCurrency)
         return "1";
     }
 
-    if (CURRENCY_BAD == uCurrency)
+    if ((uCurrency & sIsoBits).isZero ())
     {
-        return uCurrency.ToString ();
+        // The offset of the 3 character ISO code in the currency descriptor
+        int const isoOffset = 12;
+
+        std::string const iso(
+            uCurrency.data () + isoOffset,
+            uCurrency.data () + isoOffset + 3);
+
+        // Specifying the system currency code using ISO-style representation
+        // is not allowed.
+        if (iso != SYSTEM_CURRENCY_CODE)
+            return iso;
     }
 
-    if ((uCurrency & sFiatBits).isZero ())
-    {
-        Serializer s (160 / 8);
-
-        s.add160 (uCurrency);
-
-        SerializerIterator  sit (s);
-
-        Blob const vucZeros    (sit.getRaw (96 / 8));
-        Blob const vucIso      (sit.getRaw (24 / 8));
-        Blob const vucVersion  (sit.getRaw (16 / 8));
-        Blob const vucReserved (sit.getRaw (24 / 8));
-
-        auto is_zero_filled = [](Blob const& blob)
-        {
-            auto ret = std::find_if (blob.cbegin (), blob.cend (),
-                [](unsigned char c) 
-                { 
-                    return c != 0; 
-                });
-
-            return ret == blob.cend ();
-        };
-
-        bool bIso = is_zero_filled (vucZeros)        // Leading zeros
-                    && is_zero_filled (vucVersion)   // Zero version
-                    && is_zero_filled (vucReserved); // Reserved is zero.
-
-        if (bIso)
-            return std::string (vucIso.begin (), vucIso.end ());
-        
-        return uCurrency.ToString ();
-    }
-
-    return uCurrency.GetHex ();
+    return uCurrency.ToString ();
 }
 
 bool STAmount::setValue (const std::string& sAmount)
