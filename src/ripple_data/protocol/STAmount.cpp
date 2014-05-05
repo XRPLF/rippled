@@ -219,7 +219,7 @@ STAmount::STAmount (SField::ref n, const Json::Value& v)
 
 std::string STAmount::createHumanCurrency (const uint160& uCurrency)
 {
-    static uint160 const sIsoBits  ("FFFFFFFFFFFFFFFFFFFFFFFF000FFFFFFFFFFFFF");
+    static uint160 const sIsoBits  ("FFFFFFFFFFFFFFFFFFFFFFFF000000FFFFFFFFFF");
 
     if (uCurrency.isZero ())
     {
@@ -231,15 +231,17 @@ std::string STAmount::createHumanCurrency (const uint160& uCurrency)
         return "1";
     }
 
-    if (CURRENCY_BAD == uCurrency)
-    {
-        return uCurrency.ToString ();
-    }
-
     if ((uCurrency & sIsoBits).isZero ())
-        return std::string (
+    {
+        std::string const iso(
             uCurrency.data () + (96 / 8),
             uCurrency.data () + (96 / 8) + 3);
+
+        // Specifying the system currency code using ISO-style representation
+        // is not allowed.
+        if (iso != SYSTEM_CURRENCY_CODE)
+            return iso;
+    }
 
     return uCurrency.ToString ();
 }
