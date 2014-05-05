@@ -219,7 +219,7 @@ STAmount::STAmount (SField::ref n, const Json::Value& v)
 
 std::string STAmount::createHumanCurrency (const uint160& uCurrency)
 {
-    static uint160 const sFiatBits("FFFFFFFFFFFFFFFFFFFFFFFF0000000000000000");
+    static uint160 const sIsoBits  ("FFFFFFFFFFFFFFFFFFFFFFFF000FFFFFFFFFFFFF");
 
     if (uCurrency.isZero ())
     {
@@ -236,41 +236,12 @@ std::string STAmount::createHumanCurrency (const uint160& uCurrency)
         return uCurrency.ToString ();
     }
 
-    if ((uCurrency & sFiatBits).isZero ())
-    {
-        Serializer s (160 / 8);
+    if ((uCurrency & sIsoBits).isZero ())
+        return std::string (
+            uCurrency.data () + (96 / 8),
+            uCurrency.data () + (96 / 8) + 3);
 
-        s.add160 (uCurrency);
-
-        SerializerIterator  sit (s);
-
-        Blob const vucZeros    (sit.getRaw (96 / 8));
-        Blob const vucIso      (sit.getRaw (24 / 8));
-        Blob const vucVersion  (sit.getRaw (16 / 8));
-        Blob const vucReserved (sit.getRaw (24 / 8));
-
-        auto is_zero_filled = [](Blob const& blob)
-        {
-            auto ret = std::find_if (blob.cbegin (), blob.cend (),
-                [](unsigned char c) 
-                { 
-                    return c != 0; 
-                });
-
-            return ret == blob.cend ();
-        };
-
-        bool bIso = is_zero_filled (vucZeros)        // Leading zeros
-                    && is_zero_filled (vucVersion)   // Zero version
-                    && is_zero_filled (vucReserved); // Reserved is zero.
-
-        if (bIso)
-            return std::string (vucIso.begin (), vucIso.end ());
-        
-        return uCurrency.ToString ();
-    }
-
-    return uCurrency.GetHex ();
+    return uCurrency.ToString ();
 }
 
 bool STAmount::setValue (const std::string& sAmount)
