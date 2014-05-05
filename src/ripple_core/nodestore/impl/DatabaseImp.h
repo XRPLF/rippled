@@ -130,7 +130,9 @@ public:
     int getDesiredAsyncReadCount ()
     {
         // We prefer a client not fill our cache
-        return m_cache.getTargetSize() / 4;
+        // We don't want to push data out of the cache
+        // before it's retrieved
+        return m_cache.getTargetSize() / asyncDivider;
     }
 
     NodeObject::Ptr fetch (uint256 const& hash)

@@ -30,6 +30,9 @@ enum
 
     // Expiration time for cached nodes
     ,cacheTargetSeconds = 300
+
+    // Fraction of the cache one query source can take
+    ,asyncDivider = 8
 };
 
 }
