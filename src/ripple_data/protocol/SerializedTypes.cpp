@@ -243,7 +243,7 @@ STHash128* STHash128::construct (SerializerIterator& u, SField::ref name)
 
 std::string STHash128::getText () const
 {
-    return value.GetHex ();
+    return to_string (value);
 }
 
 bool STHash128::isEquivalent (const SerializedType& t) const
@@ -259,7 +259,7 @@ STHash160* STHash160::construct (SerializerIterator& u, SField::ref name)
 
 std::string STHash160::getText () const
 {
-    return value.GetHex ();
+    return to_string (value);
 }
 
 bool STHash160::isEquivalent (const SerializedType& t) const
@@ -275,7 +275,7 @@ STHash256* STHash256::construct (SerializerIterator& u, SField::ref name)
 
 std::string STHash256::getText () const
 {
-    return value.GetHex ();
+    return to_string (value);
 }
 
 bool STHash256::isEquivalent (const SerializedType& t) const

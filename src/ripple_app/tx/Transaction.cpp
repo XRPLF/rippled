@@ -272,7 +272,7 @@ Transaction::pointer Transaction::transactionFromSQL (const std::string& sql)
 Transaction::pointer Transaction::load (uint256 const& id)
 {
     std::string sql = "SELECT LedgerSeq,Status,RawTxn FROM Transactions WHERE TransID='";
-    sql.append (id.GetHex ());
+    sql.append (to_string (id));
     sql.append ("';");
     return transactionFromSQL (sql);
 }
@@ -283,9 +283,8 @@ bool Transaction::convertToTransactions (std::uint32_t firstLedgerSeq, std::uint
 {
     // convert a straight SHAMap payload difference to a transaction difference table
     // return value: true=ledgers are valid, false=a ledger is invalid
-    SHAMap::Delta::const_iterator it;
 
-    for (it = inMap.begin (); it != inMap.end (); ++it)
+    for (auto it = inMap.begin (); it != inMap.end (); ++it)
     {
         uint256 const& id = it->first;
         SHAMapItem::ref first = it->second.first;

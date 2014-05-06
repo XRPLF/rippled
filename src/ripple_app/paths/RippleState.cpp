@@ -67,8 +67,8 @@ void RippleState::setViewAccount (const uint160& accountID)
 Json::Value RippleState::getJson (int)
 {
     Json::Value ret (Json::objectValue);
-    ret["low_id"] = mLowID.GetHex ();
-    ret["high_id"] = mHighID.GetHex ();
+    ret["low_id"] = to_string (mLowID);
+    ret["high_id"] = to_string (mHighID);
     return ret;
 }
 

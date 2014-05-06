@@ -30,7 +30,7 @@ uint128 CKey::PassPhraseToKey (const std::string& passPhrase)
 
     s.addRaw (passPhrase);
     uint256 hash256 = s.getSHA512Half ();
-    uint128 ret (uint128::low128(hash256));
+    uint128 ret (high128(hash256));
 
     s.secureErase ();
 

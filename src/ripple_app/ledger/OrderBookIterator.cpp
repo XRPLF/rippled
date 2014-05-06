@@ -42,12 +42,14 @@ bool BookDirIterator::nextDirectory (LedgerEntrySet& les)
     if (mIndex.isZero ())
     {
         // We ran off the end of the book
-        WriteLog (lsTRACE, Ledger) << "BookDirectoryIterator:: no next ledger index";
+        WriteLog (lsTRACE, Ledger) <<
+            "BookDirectoryIterator:: no next ledger index";
         return false;
     }
     assert (mIndex < mEnd);
 
-    WriteLog (lsTRACE, Ledger) << "BookDirectoryIterator:: index " << mIndex.GetHex();
+    WriteLog (lsTRACE, Ledger) <<
+        "BookDirectoryIterator:: index " << to_string (mIndex);
 
     // Retrieve the SLE from the LES
     mOfferDir = les.entryCache (ltDIR_NODE, mIndex);
@@ -58,7 +60,8 @@ bool BookDirIterator::nextDirectory (LedgerEntrySet& les)
 
 bool BookDirIterator::firstDirectory (LedgerEntrySet& les)
 {
-    WriteLog (lsTRACE, Ledger) << "BookDirIterator(" << mBase.GetHex() << ") firstDirectory";
+    WriteLog (lsTRACE, Ledger) <<
+        "BookDirIterator(" << to_string (mBase) << ") firstDirectory";
 
     /** Jump to the beginning
     */
@@ -82,7 +85,8 @@ bool BookDirIterator::resync (LedgerEntrySet& les)
 
 DirectoryEntryIterator BookDirIterator::getOfferIterator () const
 {
-    WriteLog (lsTRACE, Ledger) << "BookDirIterator(" << mBase.GetHex() << ") get offer iterator";
+    WriteLog (lsTRACE, Ledger) << "BookDirIterator(" << 
+        to_string (mBase) << ") get offer iterator";
     return DirectoryEntryIterator (mOfferDir);
 }
 
@@ -96,7 +100,7 @@ bool BookDirIterator::addJson (Json::Value& jv) const
     if (! (*this))
         return false;
 
-    jv["book_index"] = mIndex.GetHex();
+    jv["book_index"] = to_string (mIndex);
     return true;
 }
 

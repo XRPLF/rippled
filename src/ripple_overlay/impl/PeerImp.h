@@ -536,7 +536,7 @@ public:
                                       boost::lexical_cast<std::string>(maxSeq);
 
         if (!!m_closedLedgerHash)
-            ret["ledger"] = m_closedLedgerHash.GetHex ();
+            ret["ledger"] = to_string (m_closedLedgerHash);
 
         if (mLastStatus.has_newstatus ())
         {
@@ -1326,9 +1326,9 @@ private:
         if (closedLedger && closedLedger->isClosed ())
         {
             uint256 hash = closedLedger->getHash ();
-            h.set_ledgerclosed (hash.begin (), hash.GetSerializeSize ());
+            h.set_ledgerclosed (hash.begin (), hash.size ());
             hash = closedLedger->getParentHash ();
-            h.set_ledgerprevious (hash.begin (), hash.GetSerializeSize ());
+            h.set_ledgerprevious (hash.begin (), hash.size ());
         }
 
         Message::pointer packet = boost::make_shared<Message> (
@@ -2300,7 +2300,7 @@ private:
 
 	            memcpy (ledgerhash.begin (), packet.ledgerhash ().data (), 32);
 	            logMe += "LedgerHash:";
-	            logMe += ledgerhash.GetHex ();
+	            logMe += to_string (ledgerhash);
 	            ledger = getApp().getLedgerMaster ().getLedgerByHash (ledgerhash);
 
 	            if (!ledger && m_journal.trace)
@@ -2429,13 +2429,13 @@ private:
 	        {
 	            map = ledger->peekTransactionMap ();
 	            logMe += " TX:";
-	            logMe += map->getHash ().GetHex ();
+	            logMe += to_string (map->getHash ());
 	        }
 	        else if (packet.itype () == protocol::liAS_NODE)
 	        {
 	            map = ledger->peekAccountStateMap ();
 	            logMe += " AS:";
-	            logMe += map->getHash ().GetHex ();
+	            logMe += to_string (map->getHash ());
 	        }
 	    }
 

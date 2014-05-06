@@ -35,7 +35,7 @@ Json::Value RPCHandler::doRandom (Json::Value params, Resource::Charge& loadType
 
         Json::Value jvResult;
 
-        jvResult["random"]  = uRandom.ToString ();
+        jvResult["random"]  = to_string (uRandom);
 
         return jvResult;
     }

@@ -2303,7 +2303,8 @@ TER RippleCalc::rippleCalc (
             {
                 if (tesSUCCESS == terResult)
                 {
-                    WriteLog (lsDEBUG, RippleCalc) << "Became unfunded " << uOfferIndex.GetHex ();
+                    WriteLog (lsDEBUG, RippleCalc) <<
+                        "Became unfunded " << to_string (uOfferIndex);
                     terResult = lesActive.offerDelete (uOfferIndex);
                 }
             }
@@ -2314,7 +2315,8 @@ TER RippleCalc::rippleCalc (
         {
             if (tesSUCCESS == terResult)
             {
-                WriteLog (lsDEBUG, RippleCalc) << "Delete unfunded " << uOfferIndex.GetHex ();
+                WriteLog (lsDEBUG, RippleCalc) <<
+                    "Delete unfunded " << to_string (uOfferIndex);
                 terResult = lesActive.offerDelete (uOfferIndex);
             }
         }
