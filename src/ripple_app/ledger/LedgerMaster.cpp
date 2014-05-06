@@ -683,7 +683,8 @@ public:
                 ledger = l->getLedger();
             else
             {
-                WriteLog (lsDEBUG, LedgerMaster) << "checkAccept triggers acquire " << hash.GetHex();
+                WriteLog (lsDEBUG, LedgerMaster) << 
+                    "checkAccept triggers acquire " << to_string (hash);
             }
         }
 

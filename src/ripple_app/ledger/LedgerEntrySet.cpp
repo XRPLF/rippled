@@ -286,11 +286,10 @@ Json::Value LedgerEntrySet::getJson (int) const
 
     Json::Value nodes (Json::arrayValue);
 
-    for (std::map<uint256, LedgerEntrySetEntry>::const_iterator it = mEntries.begin (),
-            end = mEntries.end (); it != end; ++it)
+    for (auto it = mEntries.begin (), end = mEntries.end (); it != end; ++it)
     {
         Json::Value entry (Json::objectValue);
-        entry["node"] = it->first.GetHex ();
+        entry["node"] = to_string (it->first);
 
         switch (it->second.mEntry->getType ())
         {

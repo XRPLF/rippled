@@ -324,7 +324,7 @@ void InboundLedger::addPeers ()
         {
             if (m_journal.debug) m_journal.debug <<
                 "Chose " << found << " peer(s) for ledger " <<
-                    getHash ().GetHex();
+                    to_string (getHash ());
         }
     }
     else if (mSeq != 0)
@@ -336,7 +336,7 @@ void InboundLedger::addPeers ()
     {
         if (m_journal.debug) m_journal.debug <<
             "Found " << found << " peer(s) with ledger " <<
-                getHash ().GetHex();
+                to_string (getHash ());
     }
 }
 
@@ -1217,7 +1217,7 @@ Json::Value InboundLedger::getJson (int)
 
     ScopedLockType sl (mLock);
 
-    ret["hash"] = mHash.GetHex ();
+    ret["hash"] = to_string (mHash);
 
     if (mComplete)
         ret["complete"] = true;
@@ -1244,12 +1244,13 @@ Json::Value InboundLedger::getJson (int)
     if (mHaveBase && !mHaveState)
     {
         Json::Value hv (Json::arrayValue);
+        
         // VFALCO Why 16?
-        std::vector<uint256> v = mLedger->getNeededAccountStateHashes (
-            16, nullptr);
-        BOOST_FOREACH (uint256 const & h, v)
+        auto v = mLedger->getNeededAccountStateHashes (16, nullptr);
+        
+        for (auto const& h : v)
         {
-            hv.append (h.GetHex ());
+            hv.append (to_string (h));
         }
         ret["needed_state_hashes"] = hv;
     }
@@ -1258,11 +1259,11 @@ Json::Value InboundLedger::getJson (int)
     {
         Json::Value hv (Json::arrayValue);
         // VFALCO Why 16?
-        std::vector<uint256> v = mLedger->getNeededTransactionHashes (
-            16, nullptr);
-        BOOST_FOREACH (uint256 const & h, v)
+        auto v = mLedger->getNeededTransactionHashes (16, nullptr);
+
+        for (auto const& h : v)
         {
-            hv.append (h.GetHex ());
+            hv.append (to_string (h));
         }
         ret["needed_transaction_hashes"] = hv;
     }

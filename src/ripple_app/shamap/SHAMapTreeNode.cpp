@@ -421,7 +421,7 @@ std::string SHAMapTreeNode::getString () const
     std::string ret = "NodeID(";
     ret += beast::lexicalCastThrow <std::string> (getDepth ());
     ret += ",";
-    ret += getNodeID ().GetHex ();
+    ret += to_string (getNodeID ());
     ret += ")";
 
     if (isInner ())
@@ -432,7 +432,7 @@ std::string SHAMapTreeNode::getString () const
                 ret += "\nb";
                 ret += beast::lexicalCastThrow <std::string> (i);
                 ret += " = ";
-                ret += mHashes[i].GetHex ();
+                ret += to_string (mHashes[i]);
             }
     }
 
@@ -448,9 +448,9 @@ std::string SHAMapTreeNode::getString () const
             ret += ",leaf\n";
 
         ret += "  Tag=";
-        ret += getTag ().GetHex ();
+        ret += to_string (getTag ());
         ret += "\n  Hash=";
-        ret += mHash.GetHex ();
+        ret += to_string (mHash);
         ret += "/";
         ret += beast::lexicalCast <std::string> (mItem->peekSerializer ().getDataLength ());
     }
