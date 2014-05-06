@@ -111,6 +111,8 @@ public:
     virtual DatabaseCon* getTxnDB () = 0;
     virtual DatabaseCon* getLedgerDB () = 0;
 
+    virtual std::chrono::milliseconds getIOLatency () = 0;
+
     /** Retrieve the "wallet database"
 
         It looks like this is used to store the unique node list.

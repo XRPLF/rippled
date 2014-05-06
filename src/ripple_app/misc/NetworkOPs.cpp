@@ -2195,6 +2195,8 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
 
     info[jss::validation_quorum] = m_ledgerMaster.getMinValidations ();
 
+    info["io_latency_ms"] = static_cast<Json::UInt> (getApp().getIOLatency().count());
+
     if (admin)
     {
         if (getConfig ().VALIDATION_PUB.isValid ())
