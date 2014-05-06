@@ -1,5 +1,5 @@
 # Set default behaviour, in case users don't have core.autocrlf set.
-* text=auto
+#* text=auto
 
 # These annoying files
 rippled.1 binary
