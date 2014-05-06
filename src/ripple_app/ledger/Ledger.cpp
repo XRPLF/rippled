@@ -335,7 +335,7 @@ AccountState::pointer Ledger::getAccountState (const RippleAddress& accountID)
     {
         WriteLog (lsDEBUG, Ledger) << "Ledger:getAccountState:" <<
             " not found: " << accountID.humanAccountID () <<
-            ": " << Ledger::getAccountRootIndex (accountID).GetHex ();
+            ": " << to_string (Ledger::getAccountRootIndex (accountID));
 
         return AccountState::pointer ();
     }
@@ -626,7 +626,7 @@ bool Ledger::saveValidatedLedger (bool current)
             uint256 txID = vt.second->getTransactionID ();
             getApp().getMasterTransaction ().inLedger (txID, mLedgerSeq);
 
-            db->executeSQL (boost::str (deleteAcctTrans % txID.GetHex ()));
+            db->executeSQL (boost::str (deleteAcctTrans % to_string (txID)));
 
             const std::vector<RippleAddress>& accts = vt.second->getAffected ();
 
@@ -635,7 +635,7 @@ bool Ledger::saveValidatedLedger (bool current)
                 std::string sql = "INSERT INTO AccountTransactions (TransID, Account, LedgerSeq, TxnSeq) VALUES ";
                 bool first = true;
 
-                for (std::vector<RippleAddress>::const_iterator it = accts.begin (), end = accts.end (); it != end; ++it)
+                for (auto it = accts.begin (), end = accts.end (); it != end; ++it)
                 {
                     if (!first)
                         sql += ", ('";
@@ -645,7 +645,7 @@ bool Ledger::saveValidatedLedger (bool current)
                         first = false;
                     }
 
-                    sql += txID.GetHex ();
+                    sql += to_string (txID);
                     sql += "','";
                     sql += it->humanAccountID ();
                     sql += "',";
@@ -672,9 +672,10 @@ bool Ledger::saveValidatedLedger (bool current)
         DeprecatedScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
 
         getApp().getLedgerDB ()->getDB ()->executeSQL (boost::str (addLedger %
-                getHash ().GetHex () % mLedgerSeq % mParentHash.GetHex () %
-                beast::lexicalCastThrow <std::string> (mTotCoins) % mCloseTime % mParentCloseTime %
-                mCloseResolution % mCloseFlags % mAccountHash.GetHex () % mTransHash.GetHex ()));
+                to_string (getHash ()) % mLedgerSeq % to_string (mParentHash) %
+                beast::lexicalCastThrow <std::string> (mTotCoins) % mCloseTime % 
+                mParentCloseTime % mCloseResolution % mCloseFlags % 
+                to_string (mAccountHash) % to_string (mTransHash)));
     }
 
     { // Clients can now trust the database for information about this ledger sequence
@@ -723,7 +724,7 @@ Ledger::pointer Ledger::loadByHash (uint256 const& ledgerHash)
                              "ClosingTime,PrevClosingTime,CloseTimeRes,CloseFlags,LedgerSeq"
                              " from Ledgers WHERE LedgerHash = ?;");
 
-        pSt.bind (1, ledgerHash.GetHex ());
+        pSt.bind (1, to_string (ledgerHash));
         ledger = getSQL1 (&pSt);
     }
 
@@ -752,7 +753,7 @@ Ledger::pointer Ledger::loadByHash (uint256 const& ledgerHash)
 {
     // This is a low-level function with no caching and only gets accepted ledgers
     std::string sql = "SELECT * from Ledgers WHERE LedgerHash='";
-    sql.append (ledgerHash.GetHex ());
+    sql.append (to_string (ledgerHash));
     sql.append ("';");
     return getSQL (sql);
 }
@@ -876,7 +877,7 @@ void Ledger::getSQL2 (Ledger::ref ret)
     if (getApp().getOPs ().haveLedger (ret->getLedgerSeq ()))
         ret->setAccepted ();
 
-    WriteLog (lsTRACE, Ledger) << "Loaded ledger: " << ret->getHash ().GetHex ();
+    WriteLog (lsTRACE, Ledger) << "Loaded ledger: " << to_string (ret->getHash ());
 }
 
 uint256 Ledger::getHashByIndex (std::uint32_t ledgerIndex)
@@ -1010,7 +1011,7 @@ void Ledger::addJson (Json::Value& ret, int options)
 
 static void stateItemTagAppender(Json::Value& value, SHAMapItem::ref smi)
 {
-    value.append (smi->getTag ().GetHex ());
+    value.append (to_string (smi->getTag ()));
 }
 
 static void stateItemFullAppender(Json::Value& value, SLE::ref sle)
@@ -1028,7 +1029,7 @@ Json::Value Ledger::getJson (int options)
 
     ledger["seqNum"]                = beast::lexicalCastThrow <std::string> (mLedgerSeq); // DEPRECATED
 
-    ledger["parent_hash"]           = mParentHash.GetHex ();
+    ledger["parent_hash"]           = to_string (mParentHash);
     ledger["ledger_index"]          = beast::lexicalCastThrow <std::string> (mLedgerSeq);
 
     if (mClosed || bFull)
@@ -1036,12 +1037,12 @@ Json::Value Ledger::getJson (int options)
         if (mClosed)
             ledger["closed"] = true;
 
-        ledger["hash"]              = mHash.GetHex ();                              // DEPRECATED
+        ledger["hash"]              = to_string (mHash);                              // DEPRECATED
         ledger["totalCoins"]        = beast::lexicalCastThrow <std::string> (mTotCoins); // DEPRECATED
 
-        ledger["ledger_hash"]       = mHash.GetHex ();
-        ledger["transaction_hash"]  = mTransHash.GetHex ();
-        ledger["account_hash"]      = mAccountHash.GetHex ();
+        ledger["ledger_hash"]       = to_string (mHash);
+        ledger["transaction_hash"]  = to_string (mTransHash);
+        ledger["account_hash"]      = to_string (mAccountHash);
         ledger["accepted"]          = mAccepted;
         ledger["total_coins"]       = beast::lexicalCastThrow <std::string> (mTotCoins);
 
@@ -1092,11 +1093,11 @@ Json::Value Ledger::getJson (int options)
                 else
                 {
                     Json::Value error = Json::objectValue;
-                    error[item->getTag ().GetHex ()] = type;
+                    error[to_string (item->getTag ())] = type;
                     txns.append (error);
                 }
             }
-            else txns.append (item->getTag ().GetHex ());
+            else txns.append (to_string (item->getTag ()));
         }
 
         ledger["transactions"] = txns;
@@ -1809,8 +1810,8 @@ bool Ledger::assertSane ()
 
     Json::Value j = getJson (0);
 
-    j ["accountTreeHash"] = mAccountHash.GetHex ();
-    j ["transTreeHash"] = mTransHash.GetHex ();
+    j ["accountTreeHash"] = to_string (mAccountHash);
+    j ["transTreeHash"] = to_string (mTransHash);
 
     assert (false);
 

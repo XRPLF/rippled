@@ -114,7 +114,7 @@ AmendmentTableImpl::getCreate (uint256 const& amendmentHash, bool create)
 
         {
             std::string query = "SELECT FirstMajority,LastMajority FROM Features WHERE hash='";
-            query.append (amendmentHash.GetHex ());
+            query.append (to_string (amendmentHash));
             query.append ("';");
 
             DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
@@ -336,7 +336,7 @@ AmendmentTableImpl::reportValidations (const AmendmentSet& set)
     {
         AmendmentState& state = m_amendmentMap[e.first];
         if (m_journal.debug) m_journal.debug <<
-            "Amendment " << e.first.GetHex () <<
+            "Amendment " << to_string (e.first) <<
             " has " << e.second <<
             " votes, needs " << threshold;
 
@@ -348,7 +348,7 @@ AmendmentTableImpl::reportValidations (const AmendmentSet& set)
             if (state.m_firstMajority == 0)
             {
                 if (m_journal.warning) m_journal.warning <<
-                    "Amendment " << e.first <<
+                    "Amendment " << to_string (e.first) <<
                     " attains a majority vote";
 
                 state.m_firstMajority = set.mCloseTime;
@@ -360,7 +360,7 @@ AmendmentTableImpl::reportValidations (const AmendmentSet& set)
             if (state.m_firstMajority != 0)
             {
                 if (m_journal.warning) m_journal.warning <<
-                    "Amendment " << e.first <<
+                    "Amendment " << to_string (e.first) <<
                     " loses majority vote";
 
                 state.m_firstMajority = 0;
@@ -381,11 +381,11 @@ AmendmentTableImpl::reportValidations (const AmendmentSet& set)
         {
             AmendmentState& fState = m_amendmentMap[hash];
             db->executeSQL (boost::str (boost::format (
-                                            "UPDATE Features SET FirstMajority = %d WHERE Hash = '%s';"
-                                        ) % fState.m_firstMajority % hash.GetHex ()));
+                "UPDATE Features SET FirstMajority = %d WHERE Hash = '%s';") % 
+                fState.m_firstMajority % to_string (hash)));
             db->executeSQL (boost::str (boost::format (
-                                            "UPDATE Features SET LastMajority = %d WHERE Hash = '%s';"
-                                            ) % fState.m_lastMajority % hash.GetHex()));
+                "UPDATE Features SET LastMajority = %d WHERE Hash = '%s';") % 
+                fState.m_lastMajority % to_string(hash)));
         }
         db->executeSQL ("END TRANSACTION;");
         changedAmendments.clear();
@@ -505,7 +505,7 @@ AmendmentTableImpl::getJson (int)
         ScopedLockType sl(mLock);
         for (auto const& e : m_amendmentMap)
         {
-            setJson (ret[e.first.GetHex ()] = Json::objectValue, e.second);
+            setJson (ret[to_string (e.first)] = Json::objectValue, e.second);
         }
     }
     return ret;
@@ -561,7 +561,7 @@ Json::Value
 AmendmentTableImpl::getJson (uint256 const& amendmentID)
 {
     Json::Value ret = Json::objectValue;
-    Json::Value& jAmendment = (ret[amendmentID.GetHex ()] = Json::objectValue);
+    Json::Value& jAmendment = (ret[to_string (amendmentID)] = Json::objectValue);
 
     {
         ScopedLockType sl(mLock);

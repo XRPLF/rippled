@@ -29,7 +29,8 @@ SLE::pointer DirectoryEntryIterator::getEntry (LedgerEntrySet& les, LedgerEntryT
 */
 bool DirectoryEntryIterator::firstEntry (LedgerEntrySet& les)
 {
-    WriteLog (lsTRACE, Ledger) << "DirectoryEntryIterator::firstEntry(" << mRootIndex.GetHex() << ")";
+    WriteLog (lsTRACE, Ledger) << "DirectoryEntryIterator::firstEntry(" <<
+        to_string (mRootIndex) << ")";
     mEntry = 0;
     mDirNode.reset ();
 
@@ -40,14 +41,15 @@ bool DirectoryEntryIterator::firstEntry (LedgerEntrySet& les)
 */
 bool DirectoryEntryIterator::nextEntry (LedgerEntrySet& les)
 {
-
     if (!mDirNode)
     {
-        WriteLog (lsTRACE, Ledger) << "DirectoryEntryIterator::nextEntry(" << mRootIndex.GetHex() << ") need dir node";
+        WriteLog (lsTRACE, Ledger) << "DirectoryEntryIterator::nextEntry(" <<
+            to_string (mRootIndex) << ") need dir node";
         // Are we already at the end
         if (mDirIndex.isZero())
         {
-            WriteLog (lsTRACE, Ledger) << "DirectoryEntryIterator::nextEntry(" << mRootIndex.GetHex() << ") at end";
+            WriteLog (lsTRACE, Ledger) << "DirectoryEntryIterator::nextEntry(" <<
+                to_string (mRootIndex) << ") at end";
             return false;
         }
 
@@ -55,33 +57,36 @@ bool DirectoryEntryIterator::nextEntry (LedgerEntrySet& les)
         mDirNode = les.entryCache (ltDIR_NODE, mRootIndex);
         if (!mDirNode)
         {
-            WriteLog (lsTRACE, Ledger) << "DirectoryEntryIterator::nextEntry(" << mRootIndex.GetHex() << ") no dir node";
+            WriteLog (lsTRACE, Ledger) << "DirectoryEntryIterator::nextEntry("
+                << to_string (mRootIndex) << ") no dir node";
             mEntryIndex.zero();
             return false;
         }
     }
 
-   if (!les.dirNext (mRootIndex, mDirNode, mEntry, mEntryIndex))
-   {
-       mDirIndex.zero();
-       mDirNode.reset();
-       WriteLog (lsTRACE, Ledger) << "DirectoryEntryIterator::nextEntry(" << mRootIndex.GetHex() << ") now at end";
-       return false;
-   }
+    if (!les.dirNext (mRootIndex, mDirNode, mEntry, mEntryIndex))
+    {
+        mDirIndex.zero();
+        mDirNode.reset();
+        WriteLog (lsTRACE, Ledger) << "DirectoryEntryIterator::nextEntry(" <<
+            to_string (mRootIndex) << ") now at end";
+        return false;
+    }
 
-   WriteLog (lsTRACE, Ledger) << "DirectoryEntryIterator::nextEntry(" << mRootIndex.GetHex() << ") now at " << mEntry;
-   return true;
+    WriteLog (lsTRACE, Ledger) << "DirectoryEntryIterator::nextEntry(" <<
+        to_string (mRootIndex) << ") now at " << mEntry;
+    return true;
 }
 
 bool DirectoryEntryIterator::addJson (Json::Value& j) const
 {
     if (mDirNode && (mEntry != 0))
     {
-        j["dir_root"] = mRootIndex.GetHex();
+        j["dir_root"] = to_string (mRootIndex);
         j["dir_entry"] = static_cast<Json::UInt> (mEntry);
 
         if (mDirNode)
-            j["dir_index"] = mDirIndex.GetHex();
+            j["dir_index"] = to_string (mDirIndex);
 
         return true;
     }

@@ -2274,7 +2274,7 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
         std::uint64_t baseRef = lpClosed->getReferenceFeeUnits ();
         Json::Value l (Json::objectValue);
         l["seq"]                = Json::UInt (lpClosed->getLedgerSeq ());
-        l["hash"]               = lpClosed->getHash ().GetHex ();
+        l["hash"]               = to_string (lpClosed->getHash ());
 
         if (!human)
         {

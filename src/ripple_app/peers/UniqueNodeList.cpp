@@ -1821,7 +1821,7 @@ private:
                                           % iNext
                                           % iScan
                                           % iFetch
-                                          % sdSource.iSha256.GetHex ()
+                                          % to_string (sdSource.iSha256)
                                           % sqlEscape (sdSource.strComment)
                                          );
 
@@ -1923,7 +1923,7 @@ private:
                                    % iNext
                                    % iScan
                                    % iFetch
-                                   % snSource.iSha256.GetHex ()
+                                   % to_string (snSource.iSha256)
                                    % sqlEscape (snSource.strComment)
                                   );
 

@@ -75,6 +75,8 @@ public:
     typedef std::reverse_iterator
         <const_iterator>            const_reverse_iterator;
 
+    typedef Tag                     tag_type;
+
     pointer data() { return reinterpret_cast<pointer>(pn); }
     const_pointer data() const { return reinterpret_cast<const_pointer>(pn); }
 
@@ -291,11 +293,6 @@ public:
         hash_append (h, a.pn);
     }
 
-    std::string GetHex () const
-    {
-        return strHex (begin (), size ());
-    }
-
     void SetHexExact (const char* psz)
     {
         // must be precisely the correct number of hex digits
@@ -493,7 +490,6 @@ operator!= (base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
 }
 
 //------------------------------------------------------------------------------
-// nikb: can these two be removed?
 template <std::size_t Bits, class Tag = void>
 bool
 operator== (base_uint<Bits, Tag> const& a, std::uint64_t b)

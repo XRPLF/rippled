@@ -591,15 +591,20 @@ std::string STAmount::getRaw () const
 
     if (mIsNative)
     {
-        if (mIsNegative) return std::string ("-") + beast::lexicalCast <std::string> (mValue);
-        else return beast::lexicalCast <std::string> (mValue);
+        if (mIsNegative) 
+            return std::string ("-") + beast::lexicalCast <std::string> (mValue);
+        else
+            return beast::lexicalCast <std::string> (mValue);
     }
 
     if (mIsNegative)
-        return mCurrency.GetHex () + ": -" +
-               beast::lexicalCast <std::string> (mValue) + "e" + beast::lexicalCast <std::string> (mOffset);
-    else return mCurrency.GetHex () + ": " +
-                    beast::lexicalCast <std::string> (mValue) + "e" + beast::lexicalCast <std::string> (mOffset);
+        return to_string (mCurrency) + ": -" +
+            beast::lexicalCast <std::string> (mValue) + "e" +
+            beast::lexicalCast <std::string> (mOffset);
+    else 
+        return to_string (mCurrency) + ": " +
+            beast::lexicalCast <std::string> (mValue) + "e" +
+            beast::lexicalCast <std::string> (mOffset);
 }
 
 std::string STAmount::getText () const

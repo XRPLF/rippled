@@ -449,9 +449,10 @@ private:
                     {
                         s.erase ();
                         it->add (s);
-                        db->executeSQL (boost::str (insVal % it->getLedgerHash ().GetHex ()
-                                                    % it->getSignerPublic ().humanNodePublic () % it->getSignTime ()
-                                                    % sqlEscape (s.peekData ())));
+                        db->executeSQL (boost::str (
+                            insVal % to_string (it->getLedgerHash ()) %
+                            it->getSignerPublic ().humanNodePublic () %
+                            it->getSignTime () % sqlEscape (s.peekData ())));
                     }
                     db->executeSQL ("END TRANSACTION;");
                 }
