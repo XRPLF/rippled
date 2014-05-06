@@ -1740,6 +1740,9 @@
     <ClCompile Include="..\..\src\snappy\snappy.unity.cpp">
       <Filter>[0] Libraries\snappy</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\common\tests\cross_offer.test.cpp">
+      <Filter>[1] Ripple\common\tests</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\ripple_basics\containers\RangeSet.h">

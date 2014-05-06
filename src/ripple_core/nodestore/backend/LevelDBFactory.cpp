@@ -71,6 +71,14 @@ public:
             options.max_open_files = keyValues["open_files"].getIntValue();
         }
 
+        if (! keyValues["compression"].isEmpty ())
+        {
+            if (keyValues["compression"].getIntValue () == 0)
+            {
+                options.compression = leveldb::kNoCompression;
+            }
+        }
+
         leveldb::DB* db = nullptr;
         leveldb::Status status = leveldb::DB::Open (options, m_name, &db);
         if (!status.ok () || !db)

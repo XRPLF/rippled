@@ -155,6 +155,14 @@ public:
                 options.max_background_flushes = highThreads;
         }
 
+        if (! keyValues["compression"].isEmpty ())
+        {
+            if (keyValues["compression"].getIntValue () == 0)
+            {
+                options.compression = rocksdb::kNoCompression;
+            }
+        }
+
         rocksdb::DB* db = nullptr;
         rocksdb::Status status = rocksdb::DB::Open (options, m_name, &db);
         if (!status.ok () || !db)
