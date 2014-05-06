@@ -14,7 +14,7 @@
       <PreprocessorDefinitions>_VARIADIC_MAX=10;_WIN32_WINNT=0x0600;_SCL_SECURE_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <WarningLevel>Level3</WarningLevel>
-      <AdditionalIncludeDirectories>$(RepoDir)\src\protobuf\src;$(RepoDir)\src\protobuf\vsprojects;$(RepoDir)\src\leveldb;$(RepoDir)\src\leveldb\include;$(RepoDir)\build\proto;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(RepoDir)\src\protobuf\src;$(RepoDir)\src\protobuf\vsprojects;$(RepoDir)\src\leveldb;$(RepoDir)\src\leveldb\include;$(RepoDir)\src\snappy\snappy;$(RepoDir)\src\snappy\config;$(RepoDir)\build\proto;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
       <ExceptionHandling>Async</ExceptionHandling>
       <DisableSpecificWarnings>4018;4244</DisableSpecificWarnings>

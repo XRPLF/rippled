@@ -35,6 +35,7 @@
 #endif
 
 #if RIPPLE_ROCKSDB_AVAILABLE
+#define SNAPPY
 #include "rocksdb/include/rocksdb/arena.h"
 #include "rocksdb/include/rocksdb/cache.h"
 #include "rocksdb/include/rocksdb/compaction_filter.h"

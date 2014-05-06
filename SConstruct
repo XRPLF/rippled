@@ -210,7 +210,9 @@ INCLUDE_PATHS = [
     '.',
     'src/leveldb',
     'src/leveldb/port',
-    'src/leveldb/include'
+    'src/leveldb/include',
+    'src/snappy/snappy',
+    'src/snappy/config',
     ]
 
 # if BOOST_HOME:
@@ -237,6 +239,7 @@ COMPILED_FILES.extend (['src/ripple/beast/ripple_beastc.c'])
 # New-style Ripple unity sources
 #
 COMPILED_FILES.extend([
+    'src/snappy/snappy.unity.cpp',
     'src/ripple/http/ripple_http.cpp',
     'src/ripple/json/ripple_json.cpp',
     'src/ripple/peerfinder/ripple_peerfinder.cpp',

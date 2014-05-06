@@ -28,9 +28,6 @@
     <Filter Include="[0] Libraries\protobuf">
       <UniqueIdentifier>{1f093002-9955-4915-a17b-398d55c9fc76}</UniqueIdentifier>
     </Filter>
-    <Filter Include="[0] Libraries\websocket">
-      <UniqueIdentifier>{6967f835-a1b0-47e3-9bd9-6fc8bd0f3df7}</UniqueIdentifier>
-    </Filter>
     <Filter Include="[3] doc">
       <UniqueIdentifier>{c69b07a2-44e5-4b06-99a9-81f5d137ea15}</UniqueIdentifier>
     </Filter>
@@ -334,6 +331,12 @@
     <Filter Include="[1] Ripple\proto">
       <UniqueIdentifier>{ae6e40a1-a2ff-4a9e-b510-92192b96db44}</UniqueIdentifier>
     </Filter>
+    <Filter Include="[0] Libraries\snappy">
+      <UniqueIdentifier>{3ea8d3ab-136d-4ae1-bc76-24d8f318e539}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\websocket">
+      <UniqueIdentifier>{6967f835-a1b0-47e3-9bd9-6fc8bd0f3df7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\ripple_basics\containers\RangeSet.cpp">
@@ -424,43 +427,43 @@
       <Filter>[2] Old Ripple\ripple_websocket\autosocket</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\websocket\src\base64\base64.cpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\websocket\src\md5\md5.c">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\websocket\src\messages\data.cpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\websocket\src\processors\hybi_header.cpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\websocket\src\processors\hybi_util.cpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\websocket\src\rng\blank_rng.cpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\websocket\src\rng\boost_rng.cpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\websocket\src\sha1\sha1.cpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\websocket\src\sha1\shacmp.cpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\websocket\src\sha1\shatest.cpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\websocket\src\sha1\sha.cpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\websocket\src\network_utilities.cpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\websocket\src\uri.cpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\db\builder.cc">
       <Filter>[0] Libraries\leveldb\db</Filter>
@@ -1734,6 +1737,9 @@
     <ClCompile Include="..\..\src\ripple\proto\ripple.pb.cc">
       <Filter>[1] Ripple\proto</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\snappy\snappy.unity.cpp">
+      <Filter>[0] Libraries\snappy</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\ripple_basics\containers\RangeSet.h">
@@ -1836,97 +1842,97 @@
       <Filter>[2] Old Ripple\ripple_websocket\autosocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\base64\base64.h">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\http\constants.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\http\parser.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\logger\logger.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\md5\md5.h">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\md5\md5.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\messages\control.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\messages\data.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\processors\hybi.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\processors\hybi_header.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\processors\hybi_legacy.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\processors\hybi_util.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\processors\processor.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\rng\blank_rng.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\rng\boost_rng.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\roles\client.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\roles\server.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\sha1\sha1.h">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\sockets\autotls.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\sockets\plain.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\sockets\socket_base.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\sockets\tls.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\utf8_validator\utf8_validator.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\common.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\connection.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\endpoint.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\network_utilities.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\shared_const_buffer.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\uri.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\websocket_frame.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\websocketpp.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\db\builder.h">
       <Filter>[0] Libraries\leveldb\db</Filter>
@@ -2727,7 +2733,7 @@
       <Filter>[1] Ripple\sitefiles\api</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\sockets\multitls.hpp">
-      <Filter>[0] Libraries\websocket</Filter>
+      <Filter>[1] Ripple\websocket</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rocksdb\ripple_rocksdb.h">
       <Filter>[1] Ripple\rocksdb</Filter>
