@@ -3348,6 +3348,9 @@
     <ClInclude Include="..\..\src\ripple\proto\ripple.pb.h">
       <Filter>[1] Ripple\proto</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\common\jsonrpc_fields.h">
+      <Filter>[1] Ripple\common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\doc\CheatSheet.md">

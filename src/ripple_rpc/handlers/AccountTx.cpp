@@ -34,7 +34,7 @@ Json::Value RPCHandler::doAccountTx (Json::Value params, Resource::Charge& loadT
     masterLockHolder.unlock ();
 
     RippleAddress   raAccount;
-    int             limit       = params.isMember ("limit") ? params["limit"].asUInt () : -1;
+    int             limit       = params.isMember (jss::limit) ? params[jss::limit].asUInt () : -1;
     bool            bBinary     = params.isMember ("binary") && params["binary"].asBool ();
     bool            bForward    = params.isMember ("forward") && params["forward"].asBool ();
     std::uint32_t   uLedgerMin;
@@ -84,9 +84,9 @@ Json::Value RPCHandler::doAccountTx (Json::Value params, Resource::Charge& loadT
 
     Json::Value resumeToken;
 
-    if (params.isMember("marker"))
+    if (params.isMember(jss::marker))
     {
-         resumeToken = params["marker"];
+         resumeToken = params[jss::marker];
     }
 
 #ifndef BEAST_DEBUG
@@ -113,7 +113,7 @@ Json::Value RPCHandler::doAccountTx (Json::Value params, Resource::Charge& loadT
                 jvObj["tx_blob"]           = std::get<0> (*it);
                 jvObj["meta"]              = std::get<1> (*it);
                 jvObj["ledger_index"]      = uLedgerIndex;
-                jvObj["validated"]         = bValidated && uValidatedMin <= uLedgerIndex && uValidatedMax >= uLedgerIndex;
+                jvObj[jss::validated]      = bValidated && uValidatedMin <= uLedgerIndex && uValidatedMax >= uLedgerIndex;
 
             }
         }
@@ -127,26 +127,26 @@ Json::Value RPCHandler::doAccountTx (Json::Value params, Resource::Charge& loadT
                 Json::Value&    jvObj = jvTxns.append (Json::objectValue);
 
                 if (it->first)
-                    jvObj["tx"]             = it->first->getJson (1);
+                    jvObj[jss::tx]          = it->first->getJson (1);
 
                 if (it->second)
                 {
                     std::uint32_t uLedgerIndex = it->second->getLgrSeq ();
 
-                    jvObj["meta"]           = it->second->getJson (0);
-                    jvObj["validated"]      = bValidated && uValidatedMin <= uLedgerIndex && uValidatedMax >= uLedgerIndex;
+                    jvObj[jss::meta]        = it->second->getJson (0);
+                    jvObj[jss::validated]   = bValidated && uValidatedMin <= uLedgerIndex && uValidatedMax >= uLedgerIndex;
                 }
 
             }
         }
 
         //Add information about the original query
-        ret["ledger_index_min"] = uLedgerMin;
-        ret["ledger_index_max"] = uLedgerMax;
-        if (params.isMember ("limit"))
-            ret["limit"]        = limit;
+        ret[jss::ledger_index_min] = uLedgerMin;
+        ret[jss::ledger_index_max] = uLedgerMax;
+        if (params.isMember (jss::limit))
+            ret[jss::limit]        = limit;
         if (!resumeToken.isNull())
-            ret["marker"] = resumeToken;
+            ret[jss::marker] = resumeToken;
 
         return ret;
 #ifndef BEAST_DEBUG

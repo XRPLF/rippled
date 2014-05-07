@@ -123,9 +123,9 @@ STAmount::STAmount (SField::ref n, const Json::Value& v)
             "', issuer='" << v["issuer"].asString () <<
             "')";
 
-        value       = v["value"];
-        currency    = v["currency"];
-        issuer      = v["issuer"];
+        value       = v[jss::value];
+        currency    = v[jss::currency];
+        issuer      = v[jss::issuer];
     }
     else if (v.isArray ())
     {
@@ -1131,9 +1131,9 @@ void STAmount::setJson (Json::Value& elem) const
     {
         // It is an error for currency or issuer not to be specified for valid json.
 
-        elem["value"]       = getText ();
-        elem["currency"]    = getHumanCurrency ();
-        elem["issuer"]      = RippleAddress::createHumanAccountID (mIssuer);
+        elem[jss::value]      = getText ();
+        elem[jss::currency]   = getHumanCurrency ();
+        elem[jss::issuer]     = RippleAddress::createHumanAccountID (mIssuer);
     }
     else
     {

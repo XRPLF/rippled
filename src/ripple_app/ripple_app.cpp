@@ -32,6 +32,7 @@
 #include "../ripple_net/ripple_net.h"
 #include "../ripple_rpc/ripple_rpc.h"
 #include "../ripple_websocket/ripple_websocket.h"
+#include "../ripple/common/jsonrpc_fields.h"
 
 // This .cpp will end up including all of the public header
 // material in Ripple since it holds the Application object.

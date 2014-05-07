@@ -54,19 +54,19 @@ std::string AcceptedLedgerTx::getEscMeta () const
 void AcceptedLedgerTx::buildJson ()
 {
     mJson = Json::objectValue;
-    mJson["transaction"] = mTxn->getJson (0);
+    mJson[jss::transaction] = mTxn->getJson (0);
 
     if (mMeta)
     {
-        mJson["meta"] = mMeta->getJson (0);
-        mJson["raw_meta"] = strHex (mRawMeta);
+        mJson[jss::meta] = mMeta->getJson (0);
+        mJson[jss::raw_meta] = strHex (mRawMeta);
     }
 
-    mJson["result"] = transHuman (mResult);
+    mJson[jss::result] = transHuman (mResult);
 
     if (!mAffected.empty ())
     {
-        Json::Value& affected = (mJson["affected"] = Json::arrayValue);
+        Json::Value& affected = (mJson[jss::affected] = Json::arrayValue);
         BOOST_FOREACH (const RippleAddress & ra, mAffected)
         {
             affected.append (ra.humanAccountID ());

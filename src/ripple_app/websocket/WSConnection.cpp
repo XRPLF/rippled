@@ -132,18 +132,18 @@ Json::Value WSConnection::invokeCommand (Json::Value& jvRequest)
 
     // Requests without "command" are invalid.
     //
-    if (!jvRequest.isMember ("command"))
+    if (!jvRequest.isMember (jss::command))
     {
         Json::Value jvResult (Json::objectValue);
 
-        jvResult["type"]    = "response";
-        jvResult["status"]  = "error";
-        jvResult["error"]   = "missingCommand";
-        jvResult["request"] = jvRequest;
+        jvResult[jss::type]    = jss::response;
+        jvResult[jss::status]  = jss::error;
+        jvResult[jss::error]   = jss::missingCommand;
+        jvResult[jss::request] = jvRequest;
 
-        if (jvRequest.isMember ("id"))
+        if (jvRequest.isMember (jss::id))
         {
-            jvResult["id"]  = jvRequest["id"];
+            jvResult[jss::id]  = jvRequest[jss::id];
         }
 
         getConsumer().charge (Resource::feeInvalidRPC);
@@ -162,17 +162,17 @@ Json::Value WSConnection::invokeCommand (Json::Value& jvRequest)
 
     if (Config::FORBID == role)
     {
-        jvResult["result"]  = rpcError (rpcFORBIDDEN);
+        jvResult[jss::result]  = rpcError (rpcFORBIDDEN);
     }
     else
     {
-        jvResult["result"] = mRPCHandler.doCommand (jvRequest, role, loadType);
+        jvResult[jss::result] = mRPCHandler.doCommand (jvRequest, role, loadType);
     }
 
     getConsumer().charge (loadType);
     if (getConsumer().warn ())
     {
-        jvResult["warning"] = "load";
+        jvResult[jss::warning] = jss::load;
     }
 
     // Currently we will simply unwrap errors returned by the RPC
@@ -180,24 +180,24 @@ Json::Value WSConnection::invokeCommand (Json::Value& jvRequest)
     // consistent.
     //
     // Regularize result. This is duplicate code.
-    if (jvResult["result"].isMember ("error"))
+    if (jvResult[jss::result].isMember (jss::error))
     {
-        jvResult            = jvResult["result"];
-        jvResult["status"]  = "error";
-        jvResult["request"] = jvRequest;
+        jvResult               = jvResult[jss::result];
+        jvResult[jss::status]  = jss::error;
+        jvResult[jss::request] = jvRequest;
 
     }
     else
     {
-        jvResult["status"]  = "success";
+        jvResult[jss::status]  = jss::success;
     }
 
-    if (jvRequest.isMember ("id"))
+    if (jvRequest.isMember (jss::id))
     {
-        jvResult["id"]      = jvRequest["id"];
+        jvResult[jss::id]      = jvRequest[jss::id];
     }
 
-    jvResult["type"]        = "response";
+    jvResult[jss::type]        = jss::response;
 
     return jvResult;
 }

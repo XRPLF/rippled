@@ -21,6 +21,7 @@
 
 #include "ripple_app.h"
 #include "../ripple_net/ripple_net.h"
+#include "../ripple/common/jsonrpc_fields.h"
 
 #include "../ripple/common/seconds_clock.h"
 #include "../ripple/peerfinder/ripple_peerfinder.h"

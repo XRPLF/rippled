@@ -1080,7 +1080,7 @@ Json::Value STObject::getJson (int options) const
             if (!it.getFName ().hasName ())
                 ret[beast::lexicalCast <std::string> (index)] = it.getJson (options);
             else
-                ret[it.getName ()] = it.getJson (options);
+                ret[it.getJsonName ()] = it.getJson (options);
         }
     }
     return ret;

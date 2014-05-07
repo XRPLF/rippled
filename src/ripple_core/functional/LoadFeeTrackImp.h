@@ -20,6 +20,8 @@
 #ifndef RIPPLE_LOADFEETRACKIMP_H_INCLUDED
 #define RIPPLE_LOADFEETRACKIMP_H_INCLUDED
 
+#include "../../ripple/common/jsonrpc_fields.h"
+
 namespace ripple {
 
 class LoadFeeTrackImp : public LoadFeeTrack
@@ -187,10 +189,10 @@ public:
             ScopedLockType sl (mLock);
 
             // base_fee = The cost to send a "reference" transaction under no load, in millionths of a Ripple
-            j["base_fee"] = Json::Value::UInt (baseFee);
+            j[jss::base_fee] = Json::Value::UInt (baseFee);
 
             // load_fee = The cost to send a "reference" transaction now, in millionths of a Ripple
-            j["load_fee"] = Json::Value::UInt (
+            j[jss::load_fee] = Json::Value::UInt (
                                 mulDiv (baseFee, std::max (mLocalTxnLoadFee, mRemoteTxnLoadFee), lftNormalFee));
         }
 

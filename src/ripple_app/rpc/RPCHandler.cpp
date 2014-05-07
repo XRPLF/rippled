@@ -57,20 +57,20 @@ Json::Value RPCHandler::doRpcCommand (const std::string& strMethod, Json::Value 
         return logRPCError (rpcError (rpcINVALID_PARAMS));
 
     // Provide the JSON-RPC method as the field "command" in the request.
-    params["command"]    = strMethod;
+    params[jss::command]    = strMethod;
 
     Json::Value jvResult = doCommand (params, iRole, loadType);
 
     // Always report "status".  On an error report the request as received.
     if (jvResult.isMember ("error"))
     {
-        jvResult["status"]  = "error";
-        jvResult["request"] = params;
+        jvResult[jss::status]  = jss::error;
+        jvResult[jss::request] = params;
 
     }
     else
     {
-        jvResult["status"]  = "success";
+        jvResult[jss::status]  = jss::success;
     }
 
     return logRPCError (jvResult);
@@ -103,7 +103,7 @@ Json::Value RPCHandler::doCommand (const Json::Value& params, int iRole, Resourc
     if (!params.isMember ("command"))
         return rpcError (rpcCOMMAND_MISSING);
 
-    std::string     strCommand  = params["command"].asString ();
+    std::string     strCommand  = params[jss::command].asString ();
 
     WriteLog (lsTRACE, RPCHandler) << "COMMAND:" << strCommand;
     WriteLog (lsTRACE, RPCHandler) << "REQUEST:" << params;
@@ -232,7 +232,7 @@ Json::Value RPCHandler::doCommand (const Json::Value& params, int iRole, Resourc
                     // Probably got a string.
                     Json::Value jvResult (Json::objectValue);
 
-                    jvResult["message"] = jvRaw;
+                    jvResult[jss::message] = jvRaw;
 
                     return jvResult;
                 }

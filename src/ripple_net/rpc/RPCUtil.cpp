@@ -39,8 +39,8 @@ Json::Value JSONRPCError (int code, const std::string& message)
 {
     Json::Value error (Json::objectValue);
 
-    error["code"]       = Json::Value (code);
-    error["message"]    = Json::Value (message);
+    error[jss::code]       = Json::Value (code);
+    error[jss::message]    = Json::Value (message);
 
     return error;
 }
@@ -297,9 +297,9 @@ bool HTTPAuthorized (const std::map<std::string, std::string>& mapHeaders)
 std::string JSONRPCRequest (const std::string& strMethod, const Json::Value& params, const Json::Value& id)
 {
     Json::Value request;
-    request["method"] = strMethod;
-    request["params"] = params;
-    request["id"] = id;
+    request[jss::method] = strMethod;
+    request[jss::params] = params;
+    request[jss::id] = id;
     Json::FastWriter writer;
     return writer.write (request) + "\n";
 }
@@ -307,7 +307,7 @@ std::string JSONRPCRequest (const std::string& strMethod, const Json::Value& par
 std::string JSONRPCReply (const Json::Value& result, const Json::Value& error, const Json::Value& id)
 {
     Json::Value reply (Json::objectValue);
-    reply["result"] = result;
+    reply[jss::result] = result;
     //reply["error"]=error;
     //reply["id"]=id;
     Json::FastWriter writer;
@@ -318,7 +318,7 @@ void ErrorReply (std::ostream& stream, const Json::Value& objError, const Json::
 {
     // Send error reply from json-rpc error object
     int nStatus = 500;
-    int code = objError["code"].asInt ();
+    int code = objError[jss::code].asInt ();
 
     if (code == -32600) nStatus = 400;
     else if (code == -32601) nStatus = 404;

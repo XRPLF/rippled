@@ -27,8 +27,8 @@ Json::Value RPCHandler::doSubscribe (Json::Value params, Resource::Charge& loadT
 
     InfoSub::pointer ispSub;
     Json::Value jvResult (Json::objectValue);
-    std::uint32_t uLedgerIndex = params.isMember ("ledger_index") && params["ledger_index"].isNumeric ()
-                               ? params["ledger_index"].asUInt ()
+    std::uint32_t uLedgerIndex = params.isMember (jss::ledger_index) && params[jss::ledger_index].isNumeric ()
+                               ? params[jss::ledger_index].asUInt ()
                                : 0;
 
     if (!mInfoSub && !params.isMember ("url"))
@@ -120,12 +120,12 @@ Json::Value RPCHandler::doSubscribe (Json::Value params, Resource::Charge& loadT
                 }
                 else
                 {
-                    jvResult["error"]   = "unknownStream";
+                    jvResult[jss::error]   = "unknownStream";
                 }
             }
             else
             {
-                jvResult["error"]   = "malformedStream";
+                jvResult[jss::error]   = "malformedStream";
             }
         }
     }
@@ -148,7 +148,7 @@ Json::Value RPCHandler::doSubscribe (Json::Value params, Resource::Charge& loadT
 
         if (usnaAccoundIds.empty ())
         {
-            jvResult["error"]   = "malformedAccount";
+            jvResult[jss::error]   = "malformedAccount";
         }
         else
         {
@@ -171,7 +171,7 @@ Json::Value RPCHandler::doSubscribe (Json::Value params, Resource::Charge& loadT
 
         if (usnaAccoundIds.empty ())
         {
-            jvResult["error"]   = "malformedAccount";
+            jvResult[jss::error]   = "malformedAccount";
         }
         else
         {
@@ -197,10 +197,10 @@ Json::Value RPCHandler::doSubscribe (Json::Value params, Resource::Charge& loadT
             Json::Value&    jvSubRequest    = *it;
 
             if (!jvSubRequest.isObject ()
-                    || !jvSubRequest.isMember ("taker_pays")
-                    || !jvSubRequest.isMember ("taker_gets")
-                    || !jvSubRequest["taker_pays"].isObject ()
-                    || !jvSubRequest["taker_gets"].isObject ())
+                    || !jvSubRequest.isMember (jss::taker_pays)
+                    || !jvSubRequest.isMember (jss::taker_gets)
+                    || !jvSubRequest[jss::taker_pays].isObject ()
+                    || !jvSubRequest[jss::taker_gets].isObject ())
                 return rpcError (rpcINVALID_PARAMS);
 
             // VFALCO TODO Use RippleAsset here
@@ -214,21 +214,21 @@ Json::Value RPCHandler::doSubscribe (Json::Value params, Resource::Charge& loadT
             bool            bSnapshot       = (jvSubRequest.isMember ("snapshot") && jvSubRequest["snapshot"].asBool ())
                                               || (jvSubRequest.isMember ("state_now") && jvSubRequest["state_now"].asBool ());    // DEPRECATED
 
-            Json::Value     taker_pays     = jvSubRequest["taker_pays"];
-            Json::Value     taker_gets     = jvSubRequest["taker_gets"];
+            Json::Value     taker_pays     = jvSubRequest[jss::taker_pays];
+            Json::Value     taker_gets     = jvSubRequest[jss::taker_gets];
 
             // Parse mandatory currency.
-            if (!taker_pays.isMember ("currency")
-                    || !STAmount::currencyFromString (pay_currency, taker_pays["currency"].asString ()))
+            if (!taker_pays.isMember (jss::currency)
+                    || !STAmount::currencyFromString (pay_currency, taker_pays[jss::currency].asString ()))
             {
                 WriteLog (lsINFO, RPCHandler) << "Bad taker_pays currency.";
 
                 return rpcError (rpcSRC_CUR_MALFORMED);
             }
             // Parse optional issuer.
-            else if (((taker_pays.isMember ("issuer"))
-                      && (!taker_pays["issuer"].isString ()
-                          || !STAmount::issuerFromString (pay_issuer, taker_pays["issuer"].asString ())))
+            else if (((taker_pays.isMember (jss::issuer))
+                      && (!taker_pays[jss::issuer].isString ()
+                          || !STAmount::issuerFromString (pay_issuer, taker_pays[jss::issuer].asString ())))
                      // Don't allow illegal issuers.
                      || (!pay_currency != !pay_issuer)
                      || ACCOUNT_ONE == pay_issuer)
@@ -239,17 +239,17 @@ Json::Value RPCHandler::doSubscribe (Json::Value params, Resource::Charge& loadT
             }
 
             // Parse mandatory currency.
-            if (!taker_gets.isMember ("currency")
-                    || !STAmount::currencyFromString (get_currency, taker_gets["currency"].asString ()))
+            if (!taker_gets.isMember (jss::currency)
+                    || !STAmount::currencyFromString (get_currency, taker_gets[jss::currency].asString ()))
             {
                 WriteLog (lsINFO, RPCHandler) << "Bad taker_pays currency.";
 
                 return rpcError (rpcSRC_CUR_MALFORMED);
             }
             // Parse optional issuer.
-            else if (((taker_gets.isMember ("issuer"))
-                      && (!taker_gets["issuer"].isString ()
-                          || !STAmount::issuerFromString (get_issuer, taker_gets["issuer"].asString ())))
+            else if (((taker_gets.isMember (jss::issuer))
+                      && (!taker_gets[jss::issuer].isString ()
+                          || !STAmount::issuerFromString (get_issuer, taker_gets[jss::issuer].asString ())))
                      // Don't allow illegal issuers.
                      || (!get_currency != !get_issuer)
                      || ACCOUNT_ONE == get_issuer)
@@ -311,11 +311,11 @@ Json::Value RPCHandler::doSubscribe (Json::Value params, Resource::Charge& loadT
 
                         mNetOps->getBookPage (lpLedger, pay_currency, pay_issuer, get_currency, get_issuer, raTakerID.getAccountID (), false, 0, jvMarker, jvBids);
 
-                        if (jvBids.isMember ("offers")) jvResult["bids"] = jvBids["offers"];
+                        if (jvBids.isMember (jss::offers)) jvResult[jss::bids] = jvBids[jss::offers];
 
                         mNetOps->getBookPage (lpLedger, get_currency, get_issuer, pay_currency, pay_issuer, raTakerID.getAccountID (), false, 0, jvMarker, jvAsks);
 
-                        if (jvAsks.isMember ("offers")) jvResult["asks"] = jvAsks["offers"];
+                        if (jvAsks.isMember (jss::offers)) jvResult[jss::asks] = jvAsks[jss::offers];
                     }
                     else
                     {
