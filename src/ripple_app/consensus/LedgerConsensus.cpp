@@ -1792,7 +1792,7 @@ private:
         mCloseTime = getApp().getOPs ().getCloseTimeNC ();
         getApp().getOPs ().setLastCloseTime (mCloseTime);
         statusChange (protocol::neCLOSING_LEDGER, *mPreviousLedger);
-        getApp().getLedgerMaster().closeLedger (true);
+        getApp().getLedgerMaster().applyHeldTransactions ();
         takeInitialPosition (*getApp().getLedgerMaster ().getCurrentLedger ());
     }
 
