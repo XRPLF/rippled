@@ -1135,9 +1135,12 @@ int SHAMap::flushDirty (DirtySet& set, int maxNodes, NodeObjectType t, std::uint
 
         getApp().getNodeStore ().store (t, seq, std::move (s.modData ()), nodeHash);
 
-        // Put the canonical version into the SHAMap and the treeNodeCache
-        mTNByID.erase (*node);
-        fetchNodeExternal (*node, nodeHash);
+        if (getApp().running ())
+        {
+            // Put the canonical version into the SHAMap and the treeNodeCache
+            mTNByID.erase (*node);
+            fetchNodeExternal (*node, nodeHash);
+        }
 
         if (flushed++ >= maxNodes)
             return flushed;
