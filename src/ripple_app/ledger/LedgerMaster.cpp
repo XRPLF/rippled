@@ -769,6 +769,7 @@ public:
         // Because we just built a ledger, we are no longer building one
         setBuildingLedger (0);
 
+        // No need to process validations in standalone mode
         if (getConfig().RUN_STANDALONE)
             return;
 
