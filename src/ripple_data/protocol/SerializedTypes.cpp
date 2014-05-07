@@ -505,17 +505,17 @@ Json::Value STPath::getJson (int) const
         Json::Value elem (Json::objectValue);
         int         iType   = it.getNodeType ();
 
-        elem["type"]        = iType;
-        elem["type_hex"]    = strHex (iType);
+        elem[jss::type]      = iType;
+        elem[jss::type_hex]  = strHex (iType);
 
         if (iType & STPathElement::typeAccount)
-            elem["account"]     = RippleAddress::createHumanAccountID (it.getAccountID ());
+            elem[jss::account]  = RippleAddress::createHumanAccountID (it.getAccountID ());
 
         if (iType & STPathElement::typeCurrency)
-            elem["currency"]    = STAmount::createHumanCurrency (it.getCurrency ());
+            elem[jss::currency] = STAmount::createHumanCurrency (it.getCurrency ());
 
         if (iType & STPathElement::typeIssuer)
-            elem["issuer"]      = RippleAddress::createHumanAccountID (it.getIssuerID ());
+            elem[jss::issuer]   = RippleAddress::createHumanAccountID (it.getIssuerID ());
 
         ret.append (elem);
     }

@@ -46,6 +46,7 @@
 //             still uses the unity style inclusion.
 //
 #include "../ripple_rpc/api/ErrorCodes.h"
+#include "../ripple/common/jsonrpc_fields.h"
 
 #include "basics/HTTPRequest.cpp"
 #include "basics/HTTPClient.cpp"

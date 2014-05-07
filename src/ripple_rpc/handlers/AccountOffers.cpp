@@ -25,10 +25,10 @@ static void offerAdder (Json::Value& jvLines, SLE::ref offer)
     if (offer->getType () == ltOFFER)
     {
         Json::Value&    obj = jvLines.append (Json::objectValue);
-        offer->getFieldAmount (sfTakerPays).setJson (obj["taker_pays"]);
-        offer->getFieldAmount (sfTakerGets).setJson (obj["taker_gets"]);
-        obj["seq"] = offer->getFieldU32 (sfSequence);
-        obj["flags"] = offer->getFieldU32 (sfFlags);
+        offer->getFieldAmount (sfTakerPays).setJson (obj[jss::taker_pays]);
+        offer->getFieldAmount (sfTakerGets).setJson (obj[jss::taker_gets]);
+        obj[jss::seq] = offer->getFieldU32 (sfSequence);
+        obj[jss::flags] = offer->getFieldU32 (sfFlags);
     }
 }
 
@@ -48,12 +48,12 @@ Json::Value RPCHandler::doAccountOffers (Json::Value params, Resource::Charge& l
     if (!lpLedger)
         return jvResult;
 
-    if (!params.isMember ("account"))
+    if (!params.isMember (jss::account))
         return RPC::missing_field_error ("account");
 
-    std::string     strIdent    = params["account"].asString ();
-    bool            bIndex      = params.isMember ("account_index");
-    int             iIndex      = bIndex ? params["account_index"].asUInt () : 0;
+    std::string     strIdent    = params[jss::account].asString ();
+    bool            bIndex      = params.isMember (jss::account_index);
+    int             iIndex      = bIndex ? params[jss::account_index].asUInt () : 0;
 
     RippleAddress   raAccount;
 
@@ -64,15 +64,15 @@ Json::Value RPCHandler::doAccountOffers (Json::Value params, Resource::Charge& l
 
     // Get info on account.
 
-    jvResult["account"] = raAccount.humanAccountID ();
+    jvResult[jss::account] = raAccount.humanAccountID ();
 
     if (bIndex)
-        jvResult["account_index"]   = iIndex;
+        jvResult[jss::account_index]   = iIndex;
 
     if (!lpLedger->hasAccount (raAccount))
         return rpcError (rpcACT_NOT_FOUND);
 
-    Json::Value& jvsOffers = (jvResult["offers"] = Json::arrayValue);
+    Json::Value& jvsOffers = (jvResult[jss::offers] = Json::arrayValue);
     lpLedger->visitAccountItems (raAccount.getAccountID (), BIND_TYPE (&offerAdder, boost::ref (jvsOffers), P_1));
 
     loadType = Resource::feeMediumBurdenRPC;

@@ -27,12 +27,12 @@ Json::Value RPCHandler::doTx (Json::Value params, Resource::Charge& loadType, Ap
 {
     masterLockHolder.unlock ();
 
-    if (!params.isMember ("transaction"))
+    if (!params.isMember (jss::transaction))
         return rpcError (rpcINVALID_PARAMS);
 
-    bool binary = params.isMember ("binary") && params["binary"].asBool ();
+    bool binary = params.isMember (jss::binary) && params[jss::binary].asBool ();
 
-    std::string strTransaction  = params["transaction"].asString ();
+    std::string strTransaction  = params[jss::transaction].asString ();
 
     if (Transaction::isHexTxID (strTransaction))
     {
@@ -46,7 +46,7 @@ Json::Value RPCHandler::doTx (Json::Value params, Resource::Charge& loadType, Ap
 
 #ifdef READY_FOR_NEW_TX_FORMAT
         Json::Value ret;
-        ret["transaction"] = txn->getJson (0, binary);
+        ret[jss::transaction] = txn->getJson (0, binary);
 #else
         Json::Value ret = txn->getJson (0, binary);
 #endif
@@ -65,7 +65,7 @@ Json::Value RPCHandler::doTx (Json::Value params, Resource::Charge& loadType, Ap
 
                     if (lgr->getMetaHex (txid, meta))
                     {
-                        ret["meta"] = meta;
+                        ret[jss::meta] = meta;
                         okay = true;
                     }
                 }
@@ -76,12 +76,12 @@ Json::Value RPCHandler::doTx (Json::Value params, Resource::Charge& loadType, Ap
                     if (lgr->getTransactionMeta (txid, set))
                     {
                         okay = true;
-                        ret["meta"] = set->getJson (0);
+                        ret[jss::meta] = set->getJson (0);
                     }
                 }
 
                 if (okay)
-                    ret["validated"] = mNetOps->isValidated (lgr);
+                    ret[jss::validated] = mNetOps->isValidated (lgr);
             }
         }
 

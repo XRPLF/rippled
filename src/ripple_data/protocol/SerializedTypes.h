@@ -120,6 +120,10 @@ public:
     {
         return fName->fieldName;
     }
+    Json::StaticString const& getJsonName () const
+    {
+        return fName->getJsonName ();
+    }
 
     virtual SerializedTypeID getSType () const
     {

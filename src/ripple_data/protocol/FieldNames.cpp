@@ -62,12 +62,14 @@ static const int f = initFields ();
 
 
 SField::SField (SerializedTypeID tid, int fv) : fieldCode (FIELD_CODE (tid, fv)), fieldType (tid), fieldValue (fv),
-    fieldMeta (sMD_Default), fieldNum (++num), signingField (true)
+    fieldMeta (sMD_Default), fieldNum (++num), signingField (true), jsonName (nullptr)
 {
     // call with the map mutex
     fieldName = beast::lexicalCast <std::string> (tid) + "/" +
                 beast::lexicalCast <std::string> (fv);
     codeToField[fieldCode] = this;
+    rawJsonName = getName ();
+    jsonName = Json::StaticString (rawJsonName.c_str ());
     assert ((fv != 1) || ((tid != STI_ARRAY) && (tid != STI_OBJECT)));
 }
 

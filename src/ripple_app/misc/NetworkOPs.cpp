@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include "../../ripple_overlay/api/predicates.h"
+#include "../../ripple/common/jsonrpc_fields.h"
 
 #include "../../beast/modules/beast_core/thread/DeadlineTimer.h"
 #include "../../beast/modules/beast_core/system/SystemStats.h"
@@ -1150,17 +1151,17 @@ Json::Value NetworkOPsImp::getOwnerInfo (Ledger::pointer lpLedger, const RippleA
                 switch (sleCur->getType ())
                 {
                 case ltOFFER:
-                    if (!jvObjects.isMember ("offers"))
-                        jvObjects["offers"]         = Json::Value (Json::arrayValue);
+                    if (!jvObjects.isMember (jss::offers))
+                        jvObjects[jss::offers]         = Json::Value (Json::arrayValue);
 
-                    jvObjects["offers"].append (sleCur->getJson (0));
+                    jvObjects[jss::offers].append (sleCur->getJson (0));
                     break;
 
                 case ltRIPPLE_STATE:
-                    if (!jvObjects.isMember ("ripple_lines"))
-                        jvObjects["ripple_lines"]   = Json::Value (Json::arrayValue);
+                    if (!jvObjects.isMember (jss::ripple_lines))
+                        jvObjects[jss::ripple_lines]   = Json::Value (Json::arrayValue);
 
-                    jvObjects["ripple_lines"].append (sleCur->getJson (0));
+                    jvObjects[jss::ripple_lines].append (sleCur->getJson (0));
                     break;
 
                 case ltACCOUNT_ROOT:
@@ -1684,10 +1685,10 @@ void NetworkOPsImp::pubServer ()
     {
         Json::Value jvObj (Json::objectValue);
 
-        jvObj ["type"]          = "serverStatus";
-        jvObj ["server_status"] = strOperatingMode ();
-        jvObj ["load_base"]     = (mLastLoadBase = getApp().getFeeTrack ().getLoadBase ());
-        jvObj ["load_factor"]   = (mLastLoadFactor = getApp().getFeeTrack ().getLoadFactor ());
+        jvObj [jss::type]          = "serverStatus";
+        jvObj [jss::server_status] = strOperatingMode ();
+        jvObj [jss::load_base]     = (mLastLoadBase = getApp().getFeeTrack ().getLoadBase ());
+        jvObj [jss::load_factor]   = (mLastLoadFactor = getApp().getFeeTrack ().getLoadFactor ());
 
         Json::FastWriter w;
         std::string sObj = w.write (jvObj);
@@ -1936,10 +1937,10 @@ NetworkOPsImp::getTxsAccount (const RippleAddress& account, std::int32_t minLedg
     {
         try
         {
-            if (!token.isMember("ledger") || !token.isMember("seq"))
+            if (!token.isMember(jss::ledger) || !token.isMember(jss::seq))
                 return ret;
-            findLedger = token["ledger"].asInt();
-            findSeq = token["seq"].asInt();
+            findLedger = token[jss::ledger].asInt();
+            findSeq = token[jss::seq].asInt();
         }
         catch (...)
         {
@@ -1978,8 +1979,8 @@ NetworkOPsImp::getTxsAccount (const RippleAddress& account, std::int32_t minLedg
             else if (numberOfResults == 0)
             {
                 token = Json::objectValue;
-                token["ledger"] = db->getInt("LedgerSeq");
-                token["seq"] = db->getInt("TxnSeq");
+                token[jss::ledger] = db->getInt("LedgerSeq");
+                token[jss::seq] = db->getInt("TxnSeq");
                 break;
             }
 
@@ -2046,10 +2047,10 @@ NetworkOPsImp::getTxsAccountB (const RippleAddress& account, std::int32_t minLed
     {
         try
         {
-            if (!token.isMember("ledger") || !token.isMember("seq"))
+            if (!token.isMember(jss::ledger) || !token.isMember(jss::seq))
                 return ret;
-            findLedger = token["ledger"].asInt();
-            findSeq = token["seq"].asInt();
+            findLedger = token[jss::ledger].asInt();
+            findSeq = token[jss::seq].asInt();
         }
         catch (...)
         {
@@ -2086,8 +2087,8 @@ NetworkOPsImp::getTxsAccountB (const RippleAddress& account, std::int32_t minLed
             else if (numberOfResults == 0)
             {
                 token = Json::objectValue;
-                token["ledger"] = db->getInt("LedgerSeq");
-                token["seq"] = db->getInt("TxnSeq");
+                token[jss::ledger] = db->getInt("LedgerSeq");
+                token[jss::seq] = db->getInt("TxnSeq");
                 break;
             }
 
@@ -2160,7 +2161,7 @@ Json::Value NetworkOPsImp::getConsensusInfo ()
         return mConsensus->getJson (true);
 
     Json::Value info = Json::objectValue;
-    info["consensus"] = "none";
+    info[jss::consensus] = "none";
     return info;
 }
 
@@ -2176,86 +2177,86 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
         {
             // For a non admin connection, hash the node ID into a single RFC1751 word
             Blob const& addr (getApp().getLocalCredentials ().getNodePublic ().getNodePublic ());
-            info ["hostid"] = RFC1751::getWordFromBlob (addr.data (), addr.size ());
+            info [jss::hostid] = RFC1751::getWordFromBlob (addr.data (), addr.size ());
         }
         else
         {
             // Only admins get the hostname for security reasons
-            info ["hostid"] = beast::SystemStats::getComputerName();
+            info [jss::hostid] = beast::SystemStats::getComputerName();
         }
     }
 
-    info ["build_version"] = BuildInfo::getVersionString ();
+    info [jss::build_version] = BuildInfo::getVersionString ();
 
-    info["server_state"] = strOperatingMode ();
+    info [jss::server_state] = strOperatingMode ();
 
     if (mNeedNetworkLedger)
-        info["network_ledger"] = "waiting";
+        info[jss::network_ledger] = jss::waiting;
 
-    info["validation_quorum"] = m_ledgerMaster.getMinValidations ();
+    info[jss::validation_quorum] = m_ledgerMaster.getMinValidations ();
 
     if (admin)
     {
         if (getConfig ().VALIDATION_PUB.isValid ())
-            info["pubkey_validator"] = getConfig ().VALIDATION_PUB.humanNodePublic ();
+            info[jss::pubkey_validator] = getConfig ().VALIDATION_PUB.humanNodePublic ();
         else
-            info["pubkey_validator"] = "none";
+            info[jss::pubkey_validator] = jss::none;
     }
 
-    info["pubkey_node"] = getApp().getLocalCredentials ().getNodePublic ().humanNodePublic ();
+    info[jss::pubkey_node] = getApp().getLocalCredentials ().getNodePublic ().humanNodePublic ();
 
 
-    info["complete_ledgers"] = getApp().getLedgerMaster ().getCompleteLedgers ();
+    info[jss::complete_ledgers] = getApp().getLedgerMaster ().getCompleteLedgers ();
 
     if (m_amendmentBlocked)
-        info["amendment_blocked"] = true;
+        info[jss::amendment_blocked] = true;
 
     size_t fp = mFetchPack.getCacheSize ();
 
     if (fp != 0)
-        info["fetch_pack"] = Json::UInt (fp);
+        info[jss::fetch_pack] = Json::UInt (fp);
 
-    info["peers"] = Json::UInt (getApp ().overlay ().size ());
+    info[jss::peers] = Json::UInt (getApp ().overlay ().size ());
 
     Json::Value lastClose = Json::objectValue;
-    lastClose["proposers"] = getApp().getOPs ().getPreviousProposers ();
+    lastClose[jss::proposers] = getApp().getOPs ().getPreviousProposers ();
 
     if (human)
-        lastClose["converge_time_s"] = static_cast<double> (getApp().getOPs ().getPreviousConvergeTime ()) / 1000.0;
+        lastClose[jss::converge_time_s] = static_cast<double> (getApp().getOPs ().getPreviousConvergeTime ()) / 1000.0;
     else
-        lastClose["converge_time"] = Json::Int (getApp().getOPs ().getPreviousConvergeTime ());
+        lastClose[jss::converge_time] = Json::Int (getApp().getOPs ().getPreviousConvergeTime ());
 
-    info["last_close"] = lastClose;
+    info[jss::last_close] = lastClose;
 
     //  if (mConsensus)
-    //      info["consensus"] = mConsensus->getJson();
+    //      info[jss::consensus] = mConsensus->getJson();
 
     if (admin)
-        info["load"] = getApp().getJobQueue ().getJson ();
+        info[jss::load] = getApp().getJobQueue ().getJson ();
 
     if (!human)
     {
-        info["load_base"] = getApp().getFeeTrack ().getLoadBase ();
-        info["load_factor"] = getApp().getFeeTrack ().getLoadFactor ();
+        info[jss::load_base] = getApp().getFeeTrack ().getLoadBase ();
+        info[jss::load_factor] = getApp().getFeeTrack ().getLoadFactor ();
     }
     else
     {
-        info["load_factor"] =
+        info[jss::load_factor] =
             static_cast<double> (getApp().getFeeTrack ().getLoadFactor ()) / getApp().getFeeTrack ().getLoadBase ();
         if (admin)
         {
             std::uint32_t base = getApp().getFeeTrack().getLoadBase();
             std::uint32_t fee = getApp().getFeeTrack().getLocalFee();
             if (fee != base)
-                info["load_factor_local"] =
+                info[jss::load_factor_local] =
                     static_cast<double> (fee) / base;
             fee = getApp().getFeeTrack ().getRemoteFee();
             if (fee != base)
-                info["load_factor_net"] =
+                info[jss::load_factor_net] =
                     static_cast<double> (fee) / base;
             fee = getApp().getFeeTrack().getClusterFee();
             if (fee != base)
-                info["load_factor_cluster"] =
+                info[jss::load_factor_cluster] =
                     static_cast<double> (fee) / base;
         }
     }
@@ -2273,22 +2274,22 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
         std::uint64_t baseFee = lpClosed->getBaseFee ();
         std::uint64_t baseRef = lpClosed->getReferenceFeeUnits ();
         Json::Value l (Json::objectValue);
-        l["seq"]                = Json::UInt (lpClosed->getLedgerSeq ());
-        l["hash"]               = lpClosed->getHash ().GetHex ();
+        l[jss::seq]                = Json::UInt (lpClosed->getLedgerSeq ());
+        l[jss::hash]               = lpClosed->getHash ().GetHex ();
 
         if (!human)
         {
-            l["base_fee"]       = Json::Value::UInt (baseFee);
-            l["reserve_base"]   = Json::Value::UInt (lpClosed->getReserve (0));
-            l["reserve_inc"]    = Json::Value::UInt (lpClosed->getReserveInc ());
-            l["close_time"]     = Json::Value::UInt (lpClosed->getCloseTimeNC ());
+            l[jss::base_fee]       = Json::Value::UInt (baseFee);
+            l[jss::reserve_base]   = Json::Value::UInt (lpClosed->getReserve (0));
+            l[jss::reserve_inc]    = Json::Value::UInt (lpClosed->getReserveInc ());
+            l[jss::close_time]     = Json::Value::UInt (lpClosed->getCloseTimeNC ());
         }
         else
         {
-            l["base_fee_xrp"]       = static_cast<double> (baseFee) / SYSTEM_CURRENCY_PARTS;
-            l["reserve_base_xrp"]   =
+            l[jss::base_fee_xrp]       = static_cast<double> (baseFee) / SYSTEM_CURRENCY_PARTS;
+            l[jss::reserve_base_xrp]   =
                 static_cast<double> (Json::UInt (lpClosed->getReserve (0) * baseFee / baseRef)) / SYSTEM_CURRENCY_PARTS;
-            l["reserve_inc_xrp"]    =
+            l[jss::reserve_inc_xrp]    =
                 static_cast<double> (Json::UInt (lpClosed->getReserveInc () * baseFee / baseRef)) / SYSTEM_CURRENCY_PARTS;
 
             std::uint32_t closeTime = getCloseTimeNC ();
@@ -2299,20 +2300,20 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
                 std::uint32_t age = closeTime - lCloseTime;
 
                 if (age < 1000000)
-                    l["age"]            = Json::UInt (age);
+                    l[jss::age]            = Json::UInt (age);
             }
         }
 
         if (valid)
-            info["validated_ledger"] = l;
+            info[jss::validated_ledger] = l;
         else
-            info["closed_ledger"] = l;
+            info[jss::closed_ledger] = l;
 
         Ledger::pointer lpPublished = getPublishedLedger ();
         if (!lpPublished)
-            info["published_ledger"] = "none";
+            info[jss::published_ledger] = jss::none;
         else if (lpPublished->getLedgerSeq() != lpClosed->getLedgerSeq())
-            info["published_ledger"] = lpPublished->getLedgerSeq();
+            info[jss::published_ledger] = lpPublished->getLedgerSeq();
     }
 
     return info;
@@ -2387,20 +2388,20 @@ void NetworkOPsImp::pubLedger (Ledger::ref accepted)
         {
             Json::Value jvObj (Json::objectValue);
 
-            jvObj["type"]           = "ledgerClosed";
-            jvObj["ledger_index"]   = lpAccepted->getLedgerSeq ();
-            jvObj["ledger_hash"]    = lpAccepted->getHash ().ToString ();
-            jvObj["ledger_time"]    = Json::Value::UInt (lpAccepted->getCloseTimeNC ());
+            jvObj[jss::type]           = jss::ledgerClosed;
+            jvObj[jss::ledger_index]   = lpAccepted->getLedgerSeq ();
+            jvObj[jss::ledger_hash]    = lpAccepted->getHash ().ToString ();
+            jvObj[jss::ledger_time]    = Json::Value::UInt (lpAccepted->getCloseTimeNC ());
 
-            jvObj["fee_ref"]        = Json::UInt (lpAccepted->getReferenceFeeUnits ());
-            jvObj["fee_base"]       = Json::UInt (lpAccepted->getBaseFee ());
-            jvObj["reserve_base"]   = Json::UInt (lpAccepted->getReserve (0));
-            jvObj["reserve_inc"]    = Json::UInt (lpAccepted->getReserveInc ());
+            jvObj[jss::fee_ref]        = Json::UInt (lpAccepted->getReferenceFeeUnits ());
+            jvObj[jss::fee_base]       = Json::UInt (lpAccepted->getBaseFee ());
+            jvObj[jss::reserve_base]   = Json::UInt (lpAccepted->getReserve (0));
+            jvObj[jss::reserve_inc]    = Json::UInt (lpAccepted->getReserveInc ());
 
-            jvObj["txn_count"]      = Json::UInt (alpAccepted->getTxnCount ());
+            jvObj[jss::txn_count]      = Json::UInt (alpAccepted->getTxnCount ());
 
             if (mMode >= omSYNCING)
-                jvObj["validated_ledgers"]  = getApp().getLedgerMaster ().getCompleteLedgers ();
+                jvObj[jss::validated_ledgers]  = getApp().getLedgerMaster ().getCompleteLedgers ();
 
             NetworkOPsImp::SubMapType::const_iterator it = mSubLedger.begin ();
 
@@ -2446,29 +2447,29 @@ Json::Value NetworkOPsImp::transJson (const SerializedTransaction& stTxn, TER te
 
     transResultInfo (terResult, sToken, sHuman);
 
-    jvObj["type"]           = "transaction";
-    jvObj["transaction"]    = stTxn.getJson (0);
+    jvObj[jss::type]           = jss::transaction;
+    jvObj[jss::transaction]    = stTxn.getJson (0);
 
     if (bValidated)
     {
-        jvObj["ledger_index"]           = lpCurrent->getLedgerSeq ();
-        jvObj["ledger_hash"]            = lpCurrent->getHash ().ToString ();
-        jvObj["transaction"]["date"]    = lpCurrent->getCloseTimeNC ();
-        jvObj["validated"]              = true;
+        jvObj[jss::ledger_index]           = lpCurrent->getLedgerSeq ();
+        jvObj[jss::ledger_hash]            = lpCurrent->getHash ().ToString ();
+        jvObj[jss::transaction][jss::date]  = lpCurrent->getCloseTimeNC ();
+        jvObj[jss::validated]              = true;
 
         // WRITEME: Put the account next seq here
 
     }
     else
     {
-        jvObj["validated"]              = false;
-        jvObj["ledger_current_index"]   = lpCurrent->getLedgerSeq ();
+        jvObj[jss::validated]              = false;
+        jvObj[jss::ledger_current_index]   = lpCurrent->getLedgerSeq ();
     }
 
-    jvObj["status"]                 = bValidated ? "closed" : "proposed";
-    jvObj["engine_result"]          = sToken;
-    jvObj["engine_result_code"]     = terResult;
-    jvObj["engine_result_message"]  = sHuman;
+    jvObj[jss::status]                 = bValidated ? jss::closed : jss::proposed;
+    jvObj[jss::engine_result]          = sToken;
+    jvObj[jss::engine_result_code]     = terResult;
+    jvObj[jss::engine_result_message]  = sHuman;
 
     return jvObj;
 }
@@ -2476,7 +2477,7 @@ Json::Value NetworkOPsImp::transJson (const SerializedTransaction& stTxn, TER te
 void NetworkOPsImp::pubValidatedTransaction (Ledger::ref alAccepted, const AcceptedLedgerTx& alTx)
 {
     Json::Value jvObj   = transJson (*alTx.getTxn (), alTx.getResult (), true, alAccepted);
-    jvObj["meta"] = alTx.getMeta ()->getJson (0);
+    jvObj[jss::meta] = alTx.getMeta ()->getJson (0);
 
     Json::FastWriter w;
     std::string sObj = w.write (jvObj);
@@ -2590,7 +2591,7 @@ void NetworkOPsImp::pubAccountTransaction (Ledger::ref lpCurrent, const Accepted
             *alTx.getTxn (), alTx.getResult (), bAccepted, lpCurrent);
 
         if (alTx.isApplied ())
-            jvObj["meta"] = alTx.getMeta ()->getJson (0);
+            jvObj[jss::meta] = alTx.getMeta ()->getJson (0);
 
         Json::FastWriter w;
         std::string sObj = w.write (jvObj);
@@ -2749,18 +2750,18 @@ bool NetworkOPsImp::subLedger (InfoSub::ref isrListener, Json::Value& jvResult)
 
     if (lpClosed)
     {
-        jvResult["ledger_index"]    = lpClosed->getLedgerSeq ();
-        jvResult["ledger_hash"]     = lpClosed->getHash ().ToString ();
-        jvResult["ledger_time"]     = Json::Value::UInt (lpClosed->getCloseTimeNC ());
+        jvResult[jss::ledger_index]    = lpClosed->getLedgerSeq ();
+        jvResult[jss::ledger_hash]     = lpClosed->getHash ().ToString ();
+        jvResult[jss::ledger_time]     = Json::Value::UInt (lpClosed->getCloseTimeNC ());
 
-        jvResult["fee_ref"]         = Json::UInt (lpClosed->getReferenceFeeUnits ());
-        jvResult["fee_base"]        = Json::UInt (lpClosed->getBaseFee ());
-        jvResult["reserve_base"]    = Json::UInt (lpClosed->getReserve (0));
-        jvResult["reserve_inc"]     = Json::UInt (lpClosed->getReserveInc ());
+        jvResult[jss::fee_ref]         = Json::UInt (lpClosed->getReferenceFeeUnits ());
+        jvResult[jss::fee_base]        = Json::UInt (lpClosed->getBaseFee ());
+        jvResult[jss::reserve_base]    = Json::UInt (lpClosed->getReserve (0));
+        jvResult[jss::reserve_inc]     = Json::UInt (lpClosed->getReserveInc ());
     }
 
     if ((mMode >= omSYNCING) && !isNeedNetworkLedger ())
-        jvResult["validated_ledgers"]   = getApp().getLedgerMaster ().getCompleteLedgers ();
+        jvResult[jss::validated_ledgers]   = getApp().getLedgerMaster ().getCompleteLedgers ();
 
     ScopedLockType sl (mLock);
     return mSubLedger.emplace (isrListener->getSeq (), isrListener).second;
@@ -2779,13 +2780,13 @@ bool NetworkOPsImp::subServer (InfoSub::ref isrListener, Json::Value& jvResult)
     uint256         uRandom;
 
     if (getConfig ().RUN_STANDALONE)
-        jvResult["stand_alone"] = getConfig ().RUN_STANDALONE;
+        jvResult[jss::stand_alone] = getConfig ().RUN_STANDALONE;
 
     RandomNumbers::getInstance ().fillBytes (uRandom.begin (), uRandom.size ());
-    jvResult["random"]          = uRandom.ToString ();
-    jvResult["server_status"]   = strOperatingMode ();
-    jvResult["load_base"]       = getApp().getFeeTrack ().getLoadBase ();
-    jvResult["load_factor"]     = getApp().getFeeTrack ().getLoadFactor ();
+    jvResult[jss::random]          = uRandom.ToString ();
+    jvResult[jss::server_status]   = strOperatingMode ();
+    jvResult[jss::load_base]       = getApp().getFeeTrack ().getLoadBase ();
+    jvResult[jss::load_factor]     = getApp().getFeeTrack ().getLoadFactor ();
 
     ScopedLockType sl (mLock);
     return mSubServer.emplace (isrListener->getSeq (), isrListener).second;
@@ -2854,7 +2855,7 @@ InfoSub::pointer NetworkOPsImp::addRpcSub (const std::string& strUrl, InfoSub::r
 // FIXME : support iLimit.
 void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTakerPaysCurrencyID, const uint160& uTakerPaysIssuerID, const uint160& uTakerGetsCurrencyID, const uint160& uTakerGetsIssuerID, const uint160& uTakerID, const bool bProof, const unsigned int iLimit, const Json::Value& jvMarker, Json::Value& jvResult)
 { // CAUTION: This is the old get book page logic
-    Json::Value&    jvOffers    = (jvResult["offers"] = Json::Value (Json::arrayValue));
+    Json::Value&    jvOffers    = (jvResult[jss::offers] = Json::Value (Json::arrayValue));
 
     std::map<uint160, STAmount> umBalance;
     const uint256   uBookBase   = Ledger::getBookBase (uTakerPaysCurrencyID, uTakerPaysIssuerID, uTakerGetsCurrencyID, uTakerGetsIssuerID);
@@ -3004,8 +3005,10 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
 
                     saTakerGetsFunded   = saOwnerFundsLimit;
 
-                    saTakerGetsFunded.setJson (jvOffer["taker_gets_funded"]);
-                    std::min (saTakerPays, STAmount::multiply (saTakerGetsFunded, saDirRate, saTakerPays)).setJson (jvOffer["taker_pays_funded"]);
+                    saTakerGetsFunded.setJson (jvOffer[jss::taker_gets_funded]);
+                    std::min (saTakerPays,
+                        STAmount::multiply (saTakerGetsFunded, saDirRate, saTakerPays)).setJson
+                            (jvOffer[jss::taker_pays_funded]);
                 }
 
                 STAmount saOwnerPays = (QUALITY_ONE == uOfferRate)
@@ -3022,7 +3025,7 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
                 {
                     // Only provide funded offers and offers of the taker.
                     Json::Value& jvOf   = jvOffers.append (jvOffer);
-                    jvOf["quality"]     = saDirRate.getText ();
+                    jvOf[jss::quality]     = saDirRate.getText ();
                 }
             }
             else
@@ -3054,7 +3057,7 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
 // FIXME : support iLimit.
 void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTakerPaysCurrencyID, const uint160& uTakerPaysIssuerID, const uint160& uTakerGetsCurrencyID, const uint160& uTakerGetsIssuerID, const uint160& uTakerID, const bool bProof, const unsigned int iLimit, const Json::Value& jvMarker, Json::Value& jvResult)
 {
-    Json::Value&    jvOffers    = (jvResult["offers"] = Json::Value (Json::arrayValue));
+    Json::Value&    jvOffers    = (jvResult[jss::offers] = Json::Value (Json::arrayValue));
 
     std::map<uint160, STAmount> umBalance;
 
@@ -3151,8 +3154,8 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
 
                 saTakerGetsFunded   = saOwnerFundsLimit;
 
-                saTakerGetsFunded.setJson (jvOffer["taker_gets_funded"]);
-                std::min (saTakerPays, STAmount::multiply (saTakerGetsFunded, saDirRate, saTakerPays)).setJson (jvOffer["taker_pays_funded"]);
+                saTakerGetsFunded.setJson (jvOffer[jss::taker_gets_funded]);
+                std::min (saTakerPays, STAmount::multiply (saTakerGetsFunded, saDirRate, saTakerPays)).setJson (jvOffer[jss::taker_pays_funded]);
             }
 
             STAmount    saOwnerPays     = (QUALITY_ONE == uOfferRate)
@@ -3165,7 +3168,7 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
             {
                 // Only provide funded offers and offers of the taker.
                 Json::Value& jvOf   = jvOffers.append (jvOffer);
-                jvOf["quality"]     = saDirRate.getText ();
+                jvOf[jss::quality]     = saDirRate.getText ();
             }
 
         }

@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include "../../ripple/common/jsonrpc_fields.h"
+
 #include "../../beast/beast/unit_test/suite.h"
 
 namespace ripple {
@@ -1005,7 +1007,7 @@ Ledger::pointer Ledger::getLastFullLedger ()
 
 void Ledger::addJson (Json::Value& ret, int options)
 {
-    ret["ledger"] = getJson (options);
+    ret[jss::ledger] = getJson (options);
 }
 
 static void stateItemTagAppender(Json::Value& value, SHAMapItem::ref smi)
@@ -1026,43 +1028,43 @@ Json::Value Ledger::getJson (int options)
 
     ScopedLockType sl (mLock);
 
-    ledger["seqNum"]                = beast::lexicalCastThrow <std::string> (mLedgerSeq); // DEPRECATED
+    ledger[jss::seqNum]                = beast::lexicalCastThrow <std::string> (mLedgerSeq); // DEPRECATED
 
-    ledger["parent_hash"]           = mParentHash.GetHex ();
-    ledger["ledger_index"]          = beast::lexicalCastThrow <std::string> (mLedgerSeq);
+    ledger[jss::parent_hash]           = mParentHash.GetHex ();
+    ledger[jss::ledger_index]          = beast::lexicalCastThrow <std::string> (mLedgerSeq);
 
     if (mClosed || bFull)
     {
         if (mClosed)
-            ledger["closed"] = true;
+            ledger[jss::closed] = true;
 
-        ledger["hash"]              = mHash.GetHex ();                              // DEPRECATED
-        ledger["totalCoins"]        = beast::lexicalCastThrow <std::string> (mTotCoins); // DEPRECATED
+        ledger[jss::hash]           = mHash.GetHex ();                              // DEPRECATED
+        ledger[jss::totalCoins]     = beast::lexicalCastThrow <std::string> (mTotCoins); // DEPRECATED
 
-        ledger["ledger_hash"]       = mHash.GetHex ();
-        ledger["transaction_hash"]  = mTransHash.GetHex ();
-        ledger["account_hash"]      = mAccountHash.GetHex ();
-        ledger["accepted"]          = mAccepted;
-        ledger["total_coins"]       = beast::lexicalCastThrow <std::string> (mTotCoins);
+        ledger[jss::ledger_hash]       = mHash.GetHex ();
+        ledger[jss::transaction_hash]  = mTransHash.GetHex ();
+        ledger[jss::account_hash]      = mAccountHash.GetHex ();
+        ledger[jss::accepted]          = mAccepted;
+        ledger[jss::total_coins]       = beast::lexicalCastThrow <std::string> (mTotCoins);
 
         if (mCloseTime != 0)
         {
-            ledger["close_time"]            = mCloseTime;
-            ledger["close_time_human"]      = boost::posix_time::to_simple_string (ptFromSeconds (mCloseTime));
-            ledger["close_time_resolution"] = mCloseResolution;
+            ledger[jss::close_time]            = mCloseTime;
+            ledger[jss::close_time_human]      = boost::posix_time::to_simple_string (ptFromSeconds (mCloseTime));
+            ledger[jss::close_time_resolution] = mCloseResolution;
 
             if ((mCloseFlags & sLCF_NoConsensusTime) != 0)
-                ledger["close_time_estimated"] = true;
+                ledger[jss::close_time_estimated] = true;
         }
     }
     else
     {
-        ledger["closed"] = false;
+        ledger[jss::closed] = false;
     }
 
     if (mTransactionMap && (bFull || is_bit_set (options, LEDGER_JSON_DUMP_TXRP)))
     {
-        Json::Value txns (Json::arrayValue);
+        Json::Value& txns = (ledger[jss::transactions] = Json::arrayValue);
         SHAMapTreeNode::TNType type;
 
         for (SHAMapItem::pointer item = mTransactionMap->peekFirstItem (type); !!item;
@@ -1086,7 +1088,7 @@ Json::Value Ledger::getJson (int options)
 
                     TransactionMetaSet meta (item->getTag (), mLedgerSeq, sit.getVL ());
                     Json::Value txJson = txn.getJson (0);
-                    txJson["metaData"] = meta.getJson (0);
+                    txJson[jss::metaData] = meta.getJson (0);
                     txns.append (txJson);
                 }
                 else
@@ -1099,12 +1101,11 @@ Json::Value Ledger::getJson (int options)
             else txns.append (item->getTag ().GetHex ());
         }
 
-        ledger["transactions"] = txns;
     }
 
     if (mAccountStateMap && (bFull || is_bit_set (options, LEDGER_JSON_DUMP_STATE)))
     {
-        Json::Value& state = (ledger["accountState"] = Json::arrayValue);
+        Json::Value& state = (ledger[jss::accountState] = Json::arrayValue);
         if (bFull || is_bit_set (options, LEDGER_JSON_EXPAND))
             visitStateItems(BIND_TYPE(stateItemFullAppender, std::ref(state), P_1));
         else
@@ -1809,8 +1810,8 @@ bool Ledger::assertSane ()
 
     Json::Value j = getJson (0);
 
-    j ["accountTreeHash"] = mAccountHash.GetHex ();
-    j ["transTreeHash"] = mTransHash.GetHex ();
+    j [jss::accountTreeHash] = mAccountHash.GetHex ();
+    j [jss::transTreeHash] = mTransHash.GetHex ();
 
     assert (false);
 

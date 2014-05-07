@@ -36,12 +36,12 @@ Json::Value RPCHandler::doAccountLines (Json::Value params, Resource::Charge& lo
     if (!lpLedger)
         return jvResult;
 
-    if (!params.isMember ("account"))
+    if (!params.isMember (jss::account))
         return RPC::missing_field_error ("account");
 
-    std::string     strIdent    = params["account"].asString ();
-    bool            bIndex      = params.isMember ("account_index");
-    int             iIndex      = bIndex ? params["account_index"].asUInt () : 0;
+    std::string     strIdent    = params[jss::account].asString ();
+    bool            bIndex      = params.isMember (jss::account_index);
+    int             iIndex      = bIndex ? params[jss::account_index].asUInt () : 0;
 
     RippleAddress   raAccount;
 
@@ -50,18 +50,18 @@ Json::Value RPCHandler::doAccountLines (Json::Value params, Resource::Charge& lo
     if (!jvResult.empty ())
         return jvResult;
 
-    std::string     strPeer     = params.isMember ("peer") ? params["peer"].asString () : "";
-    bool            bPeerIndex      = params.isMember ("peer_index");
-    int             iPeerIndex      = bIndex ? params["peer_index"].asUInt () : 0;
+    std::string     strPeer     = params.isMember (jss::peer) ? params[jss::peer].asString () : "";
+    bool            bPeerIndex      = params.isMember (jss::peer_index);
+    int             iPeerIndex      = bIndex ? params[jss::peer_index].asUInt () : 0;
 
     RippleAddress   raPeer;
 
     if (!strPeer.empty ())
     {
-        jvResult["peer"]    = raAccount.humanAccountID ();
+        jvResult[jss::peer]    = raAccount.humanAccountID ();
 
         if (bPeerIndex)
-            jvResult["peer_index"]  = iPeerIndex;
+            jvResult[jss::peer_index]  = iPeerIndex;
 
         jvResult    = RPC::accountFromString (lpLedger, raPeer, bPeerIndex, strPeer, iPeerIndex, false, *mNetOps);
 
@@ -73,8 +73,8 @@ Json::Value RPCHandler::doAccountLines (Json::Value params, Resource::Charge& lo
     {
         AccountItems rippleLines (raAccount.getAccountID (), lpLedger, AccountItem::pointer (new RippleState ()));
 
-        jvResult["account"] = raAccount.humanAccountID ();
-        Json::Value& jsonLines = (jvResult["lines"] = Json::arrayValue);
+        jvResult[jss::account] = raAccount.humanAccountID ();
+        Json::Value& jsonLines = (jvResult[jss::lines] = Json::arrayValue);
 
 
         BOOST_FOREACH (AccountItem::ref item, rippleLines.getItems ())
@@ -89,23 +89,23 @@ Json::Value RPCHandler::doAccountLines (Json::Value params, Resource::Charge& lo
 
                 Json::Value&    jPeer   = jsonLines.append (Json::objectValue);
 
-                jPeer["account"]        = RippleAddress::createHumanAccountID (line->getAccountIDPeer ());
+                jPeer[jss::account]       = RippleAddress::createHumanAccountID (line->getAccountIDPeer ());
                 // Amount reported is positive if current account holds other account's IOUs.
                 // Amount reported is negative if other account holds current account's IOUs.
-                jPeer["balance"]        = saBalance.getText ();
-                jPeer["currency"]       = saBalance.getHumanCurrency ();
-                jPeer["limit"]          = saLimit.getText ();
-                jPeer["limit_peer"]     = saLimitPeer.getText ();
-                jPeer["quality_in"]     = static_cast<Json::UInt> (line->getQualityIn ());
-                jPeer["quality_out"]    = static_cast<Json::UInt> (line->getQualityOut ());
+                jPeer[jss::balance]       = saBalance.getText ();
+                jPeer[jss::currency]      = saBalance.getHumanCurrency ();
+                jPeer[jss::limit]         = saLimit.getText ();
+                jPeer[jss::limit_peer]     = saLimitPeer.getText ();
+                jPeer[jss::quality_in]     = static_cast<Json::UInt> (line->getQualityIn ());
+                jPeer[jss::quality_out]    = static_cast<Json::UInt> (line->getQualityOut ());
                 if (line->getAuth())
-                    jPeer["authorized"] = true;
+                    jPeer[jss::authorized] = true;
                 if (line->getAuthPeer())
-                    jPeer["peer_authorized"] = true;
+                    jPeer[jss::peer_authorized] = true;
                 if (line->getNoRipple())
-                    jPeer["no_ripple"]  = true;
+                    jPeer[jss::no_ripple]  = true;
                 if (line->getNoRipplePeer())
-                    jPeer["no_ripple_peer"] = true;
+                    jPeer[jss::no_ripple_peer] = true;
             }
         }
 

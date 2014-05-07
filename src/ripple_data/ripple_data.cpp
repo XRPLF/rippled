@@ -44,6 +44,7 @@
 
 #include "../ripple/sslutil/ripple_sslutil.h"
 #include "../ripple_rpc/api/ErrorCodes.h"
+#include "../ripple/common/jsonrpc_fields.h"
 
 // VFALCO TODO fix these warnings!
 #if BEAST_MSVC

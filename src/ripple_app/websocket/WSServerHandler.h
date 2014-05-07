@@ -368,8 +368,8 @@ public:
         {
             Json::Value jvResult (Json::objectValue);
 
-            jvResult["type"]    = "error";
-            jvResult["error"]   = "wsTextRequired"; // We only accept text messages.
+            jvResult[jss::type]    = jss::error;
+            jvResult[jss::error]   = "wsTextRequired"; // We only accept text messages.
 
             send (cpClient, jvResult, false);
         }
@@ -377,17 +377,17 @@ public:
         {
             Json::Value jvResult (Json::objectValue);
 
-            jvResult["type"]    = "error";
-            jvResult["error"]   = "jsonInvalid";    // Received invalid json.
-            jvResult["value"]   = mpMessage->get_payload ();
+            jvResult[jss::type]    = jss::error;
+            jvResult[jss::error]   = "jsonInvalid";    // Received invalid json.
+            jvResult[jss::value]   = mpMessage->get_payload ();
 
             send (cpClient, jvResult, false);
         }
         else
         {
-            if (jvRequest.isMember ("command"))
+            if (jvRequest.isMember (jss::command))
             {
-                Json::Value& jCmd = jvRequest["command"];
+                Json::Value& jCmd = jvRequest[jss::command];
                 if (jCmd.isString())
                     job.rename (std::string ("WSClient::") + jCmd.asString());
             }

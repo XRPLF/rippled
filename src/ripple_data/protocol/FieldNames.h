@@ -73,6 +73,11 @@ public:
     int                     fieldMeta;
     int                     fieldNum;
     bool                    signingField;
+    std::string             rawJsonName;
+    Json::StaticString      jsonName;
+
+    SField(SField const&) = delete;
+    SField& operator=(SField const&) = delete;
 
     SField (int fc, SerializedTypeID tid, int fv, const char* fn)
         : fieldCode (fc)
@@ -81,6 +86,8 @@ public:
         , fieldName (fn)
         , fieldMeta (sMD_Default)
         , signingField (true)
+        , rawJsonName (getName ())
+        , jsonName (rawJsonName.c_str ())
     {
         StaticScopedLockType sl (getMutex ());
 
@@ -96,6 +103,8 @@ public:
         , fieldName (fn)
         , fieldMeta (sMD_Default)
         , signingField (true)
+        , rawJsonName (getName ())
+        , jsonName (rawJsonName.c_str ())
     {
         StaticScopedLockType sl (getMutex ());
 
@@ -110,6 +119,8 @@ public:
         , fieldValue (0)
         , fieldMeta (sMD_Never)
         , signingField (true)
+        , rawJsonName (getName ())
+        , jsonName (rawJsonName.c_str ())
     {
         StaticScopedLockType sl (getMutex ());
         fieldNum = ++num;
@@ -132,6 +143,11 @@ public:
     bool hasName () const
     {
         return !fieldName.empty ();
+    }
+
+    Json::StaticString const& getJsonName () const
+    {
+        return jsonName;
     }
 
     bool isGeneric () const

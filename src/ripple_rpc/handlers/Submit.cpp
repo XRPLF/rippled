@@ -54,7 +54,7 @@ Json::Value RPCHandler::doSubmit (Json::Value params, Resource::Charge& loadType
     }
     catch (std::exception& e)
     {
-        jvResult["error"]           = "invalidTransaction";
+        jvResult[jss::error]           = "invalidTransaction";
         jvResult["error_exception"] = e.what ();
 
         return jvResult;
@@ -68,7 +68,7 @@ Json::Value RPCHandler::doSubmit (Json::Value params, Resource::Charge& loadType
     }
     catch (std::exception& e)
     {
-        jvResult["error"]           = "internalTransaction";
+        jvResult[jss::error]           = "internalTransaction";
         jvResult["error_exception"] = e.what ();
 
         return jvResult;
@@ -81,8 +81,8 @@ Json::Value RPCHandler::doSubmit (Json::Value params, Resource::Charge& loadType
     }
     catch (std::exception& e)
     {
-        jvResult["error"]           = "internalSubmit";
-        jvResult["error_exception"] = e.what ();
+        jvResult[jss::error]           = "internalSubmit";
+        jvResult[jss::error_exception] = e.what ();
 
         return jvResult;
     }
@@ -90,8 +90,8 @@ Json::Value RPCHandler::doSubmit (Json::Value params, Resource::Charge& loadType
 
     try
     {
-        jvResult["tx_json"]     = tpTrans->getJson (0);
-        jvResult["tx_blob"]     = strHex (tpTrans->getSTransaction ()->getSerializer ().peekData ());
+        jvResult[jss::tx_json]     = tpTrans->getJson (0);
+        jvResult[jss::tx_blob]     = strHex (tpTrans->getSTransaction ()->getSerializer ().peekData ());
 
         if (temUNCERTAIN != tpTrans->getResult ())
         {
@@ -100,17 +100,17 @@ Json::Value RPCHandler::doSubmit (Json::Value params, Resource::Charge& loadType
 
             transResultInfo (tpTrans->getResult (), sToken, sHuman);
 
-            jvResult["engine_result"]           = sToken;
-            jvResult["engine_result_code"]      = tpTrans->getResult ();
-            jvResult["engine_result_message"]   = sHuman;
+            jvResult[jss::engine_result]           = sToken;
+            jvResult[jss::engine_result_code]      = tpTrans->getResult ();
+            jvResult[jss::engine_result_message]   = sHuman;
         }
 
         return jvResult;
     }
     catch (std::exception& e)
     {
-        jvResult["error"]           = "internalJson";
-        jvResult["error_exception"] = e.what ();
+        jvResult[jss::error]           = "internalJson";
+        jvResult[jss::error_exception] = e.what ();
 
         return jvResult;
     }
