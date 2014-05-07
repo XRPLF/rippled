@@ -76,6 +76,9 @@ public:
     std::string             rawJsonName;
     Json::StaticString      jsonName;
 
+    SField(SField const&) = delete;
+    SField& operator=(SField const&) = delete;
+
     SField (int fc, SerializedTypeID tid, int fv, const char* fn)
         : fieldCode (fc)
         , fieldType (tid)
