@@ -26,11 +26,9 @@ public:
     typedef std::vector <std::unique_ptr <Factory>> List;
     List m_list;
 
-    explicit ManagerImp (std::vector <std::unique_ptr <Factory>> factories)
+    explicit ManagerImp (std::vector <std::unique_ptr <Factory>>&& factories)
         : m_list (std::move (factories))
     {
-        m_list.reserve (20);
-
         add_known_factories ();
     }
 

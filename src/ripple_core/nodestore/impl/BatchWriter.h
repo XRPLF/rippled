@@ -34,10 +34,6 @@ namespace NodeStore {
 
     @see Scheduler
 */
-// VFALCO NOTE I'm not entirely happy having placed this here,
-//             because whoever needs to use NodeStore certainly doesn't
-//             need to see the implementation details of BatchWriter.
-//
 class BatchWriter : private Task
 {
 public:

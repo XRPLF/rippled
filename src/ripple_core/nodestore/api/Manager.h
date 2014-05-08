@@ -45,7 +45,7 @@ public:
     virtual std::unique_ptr <Backend> make_Backend (Parameters const& parameters,
         Scheduler& scheduler, beast::Journal journal) = 0;
 
-    /** Construct a node store database.
+    /** Construct a NodeStore database.
 
         The parameters are key value pairs passed to the backend. The
         'type' key must exist, it defines the choice of backend. Most

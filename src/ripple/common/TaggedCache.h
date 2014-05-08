@@ -145,7 +145,8 @@ public:
     float getHitRate ()
     {
         lock_guard lock (m_mutex);
-        return (static_cast<float> (m_hits) * 100) / (1.0f + m_hits + m_misses);
+        auto const total = static_cast<float> (m_hits + m_misses);
+        return m_hits * (100.0f / std::max (1.0f, total));
     }
 
     void clearStats ()
