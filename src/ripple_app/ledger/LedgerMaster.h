@@ -91,7 +91,7 @@ public:
 
     virtual std::string getCompleteLedgers () = 0;
 
-    virtual void closeLedger (bool recoverHeldTransactions) = 0;
+    virtual void applyHeldTransactions () = 0;
 
     /** Get a ledger's hash by sequence number using the cache
     */
