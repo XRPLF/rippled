@@ -584,73 +584,60 @@ void STAmount::setSNValue (std::int64_t v)
     }
 }
 
-std::string STAmount::getRaw () const
-{
-    // show raw internal form
-    if (mValue == 0) return "0";
-
-    if (mIsNative)
-    {
-        if (mIsNegative) 
-            return std::string ("-") + beast::lexicalCast <std::string> (mValue);
-        else
-            return beast::lexicalCast <std::string> (mValue);
-    }
-
-    if (mIsNegative)
-        return to_string (mCurrency) + ": -" +
-            beast::lexicalCast <std::string> (mValue) + "e" +
-            beast::lexicalCast <std::string> (mOffset);
-    else 
-        return to_string (mCurrency) + ": " +
-            beast::lexicalCast <std::string> (mValue) + "e" +
-            beast::lexicalCast <std::string> (mOffset);
-}
-
 std::string STAmount::getText () const
 {
     // keep full internal accuracy, but make more human friendly if posible
     if (*this == zero)
         return "0";
 
-    if (mIsNative)
-    {
-        if (mIsNegative)
-            return std::string ("-") +  beast::lexicalCast <std::string> (mValue);
-        else return beast::lexicalCast <std::string> (mValue);
-    }
+    std::string ret;
+    ret.reserve (64);
 
-    if ((mOffset != 0) && ((mOffset < -25) || (mOffset > -5)))
+    if (mIsNegative)
+        ret.append (1, '-');
+
+    bool const scientific ((mOffset != 0) && ((mOffset < -25) || (mOffset > -5)));
+
+    if (mIsNative || scientific)
     {
-        if (mIsNegative)
-            return std::string ("-") + beast::lexicalCast <std::string> (mValue) +
-                   "e" + beast::lexicalCast <std::string> (mOffset);
-        else
-            return beast::lexicalCast <std::string> (mValue) + "e" + beast::lexicalCast <std::string> (mOffset);
+        ret.append (std::to_string (mValue));
+
+        if(scientific)
+        {
+            ret.append (1, 'e');
+            ret.append (std::to_string (mOffset));
+        }
+
+        return ret;
     }
 
     std::string val = "000000000000000000000000000";
     val += beast::lexicalCast <std::string> (mValue);
     val += "00000000000000000000000";
 
+    // NIKB TODO remove the need to call substr and copy a ton of data that will
+    //           be thrown away. We should restructure this to use iterators?
+    //           Random rant: why does std::string return both iterators and
+    //           offsets? Pick a method and stick to it. Argh.
     std::string pre = val.substr (0, mOffset + 43);
     std::string post = val.substr (mOffset + 43);
 
     size_t s_pre = pre.find_first_not_of ('0');
 
     if (s_pre == std::string::npos)
-        pre = "0";
+        ret.append (1, '0');
     else
-        pre = pre.substr (s_pre);
+        ret.append (pre.begin () + s_pre, pre.end ());
 
     size_t s_post = post.find_last_not_of ('0');
 
-    if (mIsNegative) pre = std::string ("-") + pre;
+    if (s_post != std::string::npos)
+    {
+        ret.append (1, '.');
+        ret.append (post.begin (), post.begin () + s_post + 1);
+    }
 
-    if (s_post == std::string::npos)
-        return pre;
-    else
-        return pre + "." + post.substr (0, s_post + 1);
+    return ret;
 }
 
 bool STAmount::isComparable (const STAmount& t) const
@@ -1426,8 +1413,6 @@ public:
         testcase ("custom currency");
 
         STAmount zeroSt (CURRENCY_ONE, ACCOUNT_ONE), one (CURRENCY_ONE, ACCOUNT_ONE, 1), hundred (CURRENCY_ONE, ACCOUNT_ONE, 100);
-
-        serializeAndDeserialize (one).getRaw ();
 
         unexpected (serializeAndDeserialize (zeroSt) != zeroSt, "STAmount fail");
 

@@ -51,6 +51,8 @@ protected:
 
     // This is really big-endian in byte order.
     // We sometimes use unsigned int for speed.
+
+    // NIKB TODO: migrate to std::array
     unsigned int pn[WIDTH];
 
 public:
@@ -59,7 +61,7 @@ public:
     // STL Container Interface
     //
 
-    static std::size_t const        bytes = (Bits/8);
+    static std::size_t const        bytes = Bits/8;
 
     typedef std::size_t             size_type;
     typedef std::ptrdiff_t          difference_type;
@@ -113,24 +115,21 @@ public:
 
 private:
     /** Construct from a raw pointer.
-    
         The buffer pointed to by `data` must be at least Bits/8 bytes.
-    */
-    struct helper {};
 
-    explicit base_uint (void const* data, helper)
+        @note the structure is used to disambiguate this from the std::uint64_t
+              constructor: something like base_uint(0) is ambiguous.
+    */
+    // NIKB TODO Remove the need for this constructor.
+    struct VoidHelper {};
+
+    explicit base_uint (void const* data, VoidHelper)
     {
         memcpy (&pn [0], data, Bits / 8);
     }
 
 public:
     base_uint () { zero (); }
-
-    static base_uint
-    fromVoid (void const* data)
-    {
-        return base_uint (data, helper ());
-    }
 
     explicit base_uint (Blob const& vch)
     {
@@ -147,6 +146,8 @@ public:
         *this = b;
     }
 
+    // NIKB TODO remove the need for this constructor - have a free function
+    //           to handle the hex string parsing.
     explicit base_uint (std::string const& str)
     {
         SetHex (str);
@@ -154,6 +155,15 @@ public:
 
     base_uint (base_uint const& other) = default;
     
+    /* Construct from a raw pointer.
+        The buffer pointed to by `data` must be at least Bits/8 bytes.
+    */
+    static base_uint
+    fromVoid (void const* data)
+    {
+        return base_uint (data, VoidHelper ());
+    }
+
     bool isZero () const
     {
         for (int i = 0; i < WIDTH; i++)
@@ -547,42 +557,5 @@ std::ostream& operator<< (std::ostream& out, base_uint<Bits, Tag> const& u)
 }
 
 }
-
-//------------------------------------------------------------------------------
-
-// namespace std
-// {
-
-// /** Specialization for equal_to. */
-// template <unsigned int Bits, class Tag>
-// struct equal_to <ripple::base_uint <Bits, Tag> >
-// {
-// public:
-//     typedef bool                    result_type;
-//     typedef ripple::base_uint<Bits, Tag> argument_type;
-//     typedef argument_type           first_argument_type;
-//     typedef argument_type           second_argument_type;
-
-//     equal_to ()
-//     {
-//     }
-
-//     template <typename Arg>
-//     explicit equal_to (Arg arg)
-//         : m_equal (arg)
-//     {
-//     }
-
-//     result_type operator() (argument_type const& lhs,
-//                             argument_type const& rhs) const
-//     {
-//         return m_equal (lhs, rhs);
-//     }
-
-// private:
-//     typename argument_type::equal m_equal;
-// };
-
-//}  // std
 
 #endif
