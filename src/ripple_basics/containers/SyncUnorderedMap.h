@@ -20,7 +20,7 @@
 #ifndef RIPPLE_SYNC_UNORDERED_MAP_H
 #define RIPPLE_SYNC_UNORDERED_MAP_H
 
-#include "../../ripple/common/UnorderedMap.h"
+#include "../../ripple/common/UnorderedContainers.h"
 
 namespace ripple {
 

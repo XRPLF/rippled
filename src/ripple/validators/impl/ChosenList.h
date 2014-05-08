@@ -20,7 +20,7 @@
 #ifndef RIPPLE_VALIDATORS_CHOSENLIST_H_INCLUDED
 #define RIPPLE_VALIDATORS_CHOSENLIST_H_INCLUDED
 
-#include "../../common/UnorderedMap.h"
+#include "../../common/UnorderedContainers.h"
 
 namespace ripple {
 namespace Validators {
