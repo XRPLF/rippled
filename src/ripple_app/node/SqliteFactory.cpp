@@ -192,10 +192,10 @@ public:
             default:                    type = "U";
         }
 
-        statement.bind(1, object->getHash().GetHex());
-        statement.bind(2, type);
-        statement.bind(3, object->getIndex());
-        statement.bindStatic(4, object->getData());
+        statement.bind (1, object->getHash ().GetHex ());
+        statement.bind (2, type);
+        statement.bind (3, object->getLedgerIndex ());
+        statement.bindStatic (4, object->getData ());
     }
 
     NodeObjectType getTypeFromString (std::string const& s)

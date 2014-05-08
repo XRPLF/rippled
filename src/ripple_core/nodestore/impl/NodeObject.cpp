@@ -59,7 +59,7 @@ NodeObject::getHash () const
 }
 
 LedgerIndex
-NodeObject::getIndex () const
+NodeObject::getLedgerIndex () const
 {
     return mLedgerIndex;
 }
