@@ -117,9 +117,8 @@ public:
     typedef boost::shared_lock<LockType> ScopedReadLockType;
     typedef boost::unique_lock<LockType> ScopedWriteLockType;
 
-public:
     // build new map
-    explicit SHAMap (SHAMapType t, FullBelowCache& fullBelowCache,
+    SHAMap (SHAMapType t, FullBelowCache& fullBelowCache,
         std::uint32_t seq = 1, MissingNodeHandler missing_node_handler = DefaultMissingNodeHandler());
 
     SHAMap (SHAMapType t, uint256 const& hash, FullBelowCache& fullBelowCache,
