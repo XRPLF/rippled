@@ -906,23 +906,23 @@ private:
             applyTransactions (set, newLCL, newLCL, failedTransactions, false);
             newLCL->updateSkipList ();
             newLCL->setClosed ();
-            boost::shared_ptr<SHAMap::NodeMap> acctNodes 
+            boost::shared_ptr<SHAMap::DirtySet> acctNodes
                 = newLCL->peekAccountStateMap ()->disarmDirty ();
-            boost::shared_ptr<SHAMap::NodeMap> txnNodes 
+            boost::shared_ptr<SHAMap::DirtySet> txnNodes
                 = newLCL->peekTransactionMap ()->disarmDirty ();
 
             // write out dirty nodes (temporarily done here)
             int fc;
 
-            while ((fc = SHAMap::flushDirty (*acctNodes, 256
-                , hotACCOUNT_NODE, newLCL->getLedgerSeq ())) > 0)
+            while ((fc = newLCL->peekAccountStateMap()->flushDirty (
+                *acctNodes, 256, hotACCOUNT_NODE, newLCL->getLedgerSeq ())) > 0)
             {
                 WriteLog (lsTRACE, LedgerConsensus) 
                     << "Flushed " << fc << " dirty state nodes";
             }
 
-            while ((fc = SHAMap::flushDirty (*txnNodes, 256
-                , hotTRANSACTION_NODE, newLCL->getLedgerSeq ())) > 0)
+            while ((fc = newLCL->peekTransactionMap()->flushDirty (
+                *txnNodes, 256, hotTRANSACTION_NODE, newLCL->getLedgerSeq ())) > 0)
             {
                 WriteLog (lsTRACE, LedgerConsensus) 
                     << "Flushed " << fc << " dirty transaction nodes";

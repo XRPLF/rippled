@@ -59,7 +59,8 @@ Ledger::Ledger (const RippleAddress& masterID, std::uint64_t startAmount)
 
     writeBack (lepCREATE, startAccount->getSLE ());
 
-    SHAMap::flushDirty (*mAccountStateMap->disarmDirty (), 256, hotACCOUNT_NODE, mLedgerSeq);
+    mAccountStateMap->flushDirty (*mAccountStateMap->disarmDirty (), 256,
+        hotACCOUNT_NODE, mLedgerSeq);
 
     initializeFees ();
 }
