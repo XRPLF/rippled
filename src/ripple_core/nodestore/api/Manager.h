@@ -23,7 +23,17 @@
 namespace ripple {
 namespace NodeStore {
 
-/** Singleton for managing NodeStore factories and back ends. */
+/** Singleton for managing NodeStore factories and back ends.
+    Create a Manager like this:
+    @code
+    NodeStore::DummyScheduler scheduler;
+    std::unique_ptr <NodeStore::Manager> m (NodeStore::make_Manager());
+
+    std::unique_ptr <NodeStore::Database> nodeStore (m->make_Database ("nodeStore",
+        scheduler, LogPartition::getJournal <NodeObject> (), 4,
+        getConfig ().nodeDatabase));
+    @endcode
+*/
 class Manager
 {
 public:
@@ -45,7 +55,7 @@ public:
     virtual std::unique_ptr <Backend> make_Backend (Parameters const& parameters,
         Scheduler& scheduler, beast::Journal journal) = 0;
 
-    /** Construct a node store database.
+    /** Construct a NodeStore database.
 
         The parameters are key value pairs passed to the backend. The
         'type' key must exist, it defines the choice of backend. Most

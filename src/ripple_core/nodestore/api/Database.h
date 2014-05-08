@@ -118,14 +118,17 @@ public:
     */
     virtual int getWriteLoad () = 0;
 
-    // VFALCO TODO Document this.
+    /** Get the positive cache hits to total attempts ratio. */
     virtual float getCacheHitRate () = 0;
 
-    // VFALCO TODO Document this.
-    //        TODO Document the parameter meanings.
+    /** Set the maximum number of entries and maximum cache age for both caches.
+        
+        @param size Number of cache entries (0 = ignore)
+        @param age Maximum cache age in seconds
+    */
     virtual void tune (int size, int age) = 0;
 
-    // VFALCO TODO Document this.
+    /** Remove expired entries from the positive and negative caches. */
     virtual void sweep () = 0;
 };
 

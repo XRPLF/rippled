@@ -283,15 +283,6 @@
     <Filter Include="[1] Ripple\common\impl">
       <UniqueIdentifier>{6f3085f6-dbe3-4622-a680-682787d0708c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="[1] Ripple\radmap">
-      <UniqueIdentifier>{1b34e7e8-8260-488c-8d09-bdd3b474f9e3}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="[1] Ripple\radmap\api">
-      <UniqueIdentifier>{19de3695-4341-49db-9da2-b220bc9e0149}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="[1] Ripple\radmap\impl">
-      <UniqueIdentifier>{67371f65-f9be-45b1-81e8-c83ef3336e5c}</UniqueIdentifier>
-    </Filter>
     <Filter Include="[1] Ripple\peerfinder\sim">
       <UniqueIdentifier>{c429638b-4572-44e4-a48a-c18fdd094ae1}</UniqueIdentifier>
     </Filter>
@@ -336,6 +327,15 @@
     </Filter>
     <Filter Include="[1] Ripple\websocket">
       <UniqueIdentifier>{6967f835-a1b0-47e3-9bd9-6fc8bd0f3df7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\proto\radmap">
+      <UniqueIdentifier>{1b34e7e8-8260-488c-8d09-bdd3b474f9e3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\proto\radmap\api">
+      <UniqueIdentifier>{19de3695-4341-49db-9da2-b220bc9e0149}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="[1] Ripple\proto\radmap\impl">
+      <UniqueIdentifier>{67371f65-f9be-45b1-81e8-c83ef3336e5c}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -1330,10 +1330,10 @@
       <Filter>[2] Old Ripple\ripple_app\ledger</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\radmap\ripple_radmap.cpp">
-      <Filter>[1] Ripple\radmap</Filter>
+      <Filter>[1] Ripple\proto\radmap</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\radmap\impl\BasicFullBelowCache.cpp">
-      <Filter>[1] Ripple\radmap\impl</Filter>
+      <Filter>[1] Ripple\proto\radmap\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\common\impl\KeyCache.cpp">
       <Filter>[1] Ripple\common\impl</Filter>
@@ -3057,13 +3057,13 @@
       <Filter>[2] Old Ripple\ripple_basics\containers</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\radmap\ripple_radmap.h">
-      <Filter>[1] Ripple\radmap</Filter>
+      <Filter>[1] Ripple\proto\radmap</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\radmap\api\BasicFullBelowCache.h">
-      <Filter>[1] Ripple\radmap\api</Filter>
+      <Filter>[1] Ripple\proto\radmap\api</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\radmap\api\Tuning.h">
-      <Filter>[1] Ripple\radmap\api</Filter>
+      <Filter>[1] Ripple\proto\radmap\api</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\common\KeyCache.h">
       <Filter>[1] Ripple\common</Filter>
@@ -3507,10 +3507,10 @@
       <Filter>[2] Old Ripple\ripple_app\ledger</Filter>
     </None>
     <None Include="..\..\src\ripple\radmap\README.md">
-      <Filter>[1] Ripple\radmap</Filter>
+      <Filter>[1] Ripple\proto\radmap</Filter>
     </None>
     <None Include="..\..\src\ripple\radmap\TODO.md">
-      <Filter>[1] Ripple\radmap</Filter>
+      <Filter>[1] Ripple\proto\radmap</Filter>
     </None>
     <None Include="..\..\src\ripple_rpc\README.md">
       <Filter>[2] Old Ripple\ripple_rpc</Filter>

@@ -23,7 +23,7 @@
 namespace ripple {
 namespace NodeStore {
 
-/** A backend used for the store.
+/** A backend used for the NodeStore.
 
     The NodeStore uses a swappable backend so that other database systems
     can be tried. Different databases may offer various features such

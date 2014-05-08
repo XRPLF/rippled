@@ -194,7 +194,7 @@ public:
 
         statement.bind(1, to_string (object->getHash()));
         statement.bind(2, type);
-        statement.bind(3, object->getIndex());
+        statement.bind(3, object->getLedgerIndex());
         statement.bindStatic(4, object->getData());
     }
 
