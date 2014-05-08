@@ -1743,8 +1743,8 @@ private:
                         if (obj.has_nodeid ())
                             newObj.set_index (obj.nodeid ());
 
-                        if (!reply.has_seq () && (hObj->getIndex () != 0))
-                            reply.set_seq (hObj->getIndex ());
+                        if (!reply.has_seq () && (hObj->getLedgerIndex () != 0))
+                            reply.set_seq (hObj->getLedgerIndex ());
                     }
                 }
             }

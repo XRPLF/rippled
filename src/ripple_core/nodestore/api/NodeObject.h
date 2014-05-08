@@ -34,13 +34,11 @@ enum NodeObjectType
     hotTRANSACTION_NODE = 4
 };
 
-/** A blob of data with associated metadata, referenced by hash.
-
-    The metadata includes the following:
-
-    - Type of the blob
-    - The ledger index in which it appears
-    - The SHA 256 hash
+/** A simple object that the Ledger uses to store entries. 
+    NodeObjects are comprised of a type, a hash, a ledger index and a blob. 
+    They can be uniquely identified by the hash, which is a SHA 256 of the 
+    blob. The blob is a variable length block of serialized data. The type 
+    identifies what the blob contains.
 
     @note No checking is performed to make sure the hash matches the data.
     @see SHAMap
@@ -107,8 +105,7 @@ public:
 
     /** Retrieve the ledger index in which this object appears.
     */
-    // VFALCO TODO rename to getLedgerIndex or getLedgerId
-    LedgerIndex getIndex () const;
+    LedgerIndex getLedgerIndex() const;
 
     /** Retrieve the binary data.
     */

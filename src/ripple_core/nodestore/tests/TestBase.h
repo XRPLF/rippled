@@ -162,7 +162,7 @@ public:
             Blob data (object->getData ());
 
             db.store (object->getType (),
-                      object->getIndex (),
+                      object->getLedgerIndex (),
                       std::move (data),
                       object->getHash ());
         }
