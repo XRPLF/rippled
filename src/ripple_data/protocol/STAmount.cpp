@@ -592,7 +592,7 @@ std::string STAmount::getText () const
 
     std::string const raw_value (std::to_string (mValue));
     std::string ret;
-    
+
     if (mIsNegative)
         ret.append (1, '-');
 
@@ -637,8 +637,11 @@ std::string STAmount::getText () const
 
     assert (post_to >= post_from);
 
-    while ((pre_from != pre_to) && (*pre_from == '0'))
-        ++pre_from;
+    pre_from = std::find_if (pre_from, pre_to,
+        [](char c)
+        {
+            return c != '0';
+        });
 
     // Crop trailing zeroes. Take advantage of the fact that there's always a
     // fixed amount of trailing zeroes and skip them.
@@ -647,16 +650,15 @@ std::string STAmount::getText () const
 
     assert (post_to >= post_from);
 
-    while (post_to != post_from)
-    {
-        --post_to;
-
-        if (*post_to != '0')
+    // NIKB FIXME This can be improved once std::make_reverse_iterator from
+    // C++14 becomes available for our use:
+    post_to = std::find_if(
+        std::reverse_iterator<std::string::iterator>(post_to),
+        std::reverse_iterator<std::string::iterator>(post_from),
+        [](char c)
         {
-            ++post_to;
-            break;
-        }
-    }
+            return c != '0';
+        }).base();
 
     // Assemble the output:
     if (pre_from == pre_to)
