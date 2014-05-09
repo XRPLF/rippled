@@ -71,7 +71,7 @@ Json::Value RPCHandler::doProofVerify (Json::Value params, Resource::Charge& loa
 
         prResult                = pgGen->checkProof (strToken, uSolution);
 
-        jvResult["secret"]      = pgGen->getSecret ().GetHex ();
+        jvResult["secret"]      = to_string (pgGen->getSecret ());
     }
     else
     {

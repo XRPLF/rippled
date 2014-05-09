@@ -45,8 +45,6 @@
 # include "api/Base58.h"
 #  include "api/ByteOrder.h"
 #  include "api/strHex.h"
-# include "api/UInt128.h"
-# include "api/UInt256.h"
 # include "api/UInt160.h"
 # include "api/RandomNumbers.h"
 #include "api/HashMaps.h"

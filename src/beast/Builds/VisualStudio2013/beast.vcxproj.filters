@@ -1053,6 +1053,9 @@
     <ClInclude Include="..\..\beast\cxx14\algorithm.h">
       <Filter>beast\cxx14</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\beast\cxx14\iterator.h">
+      <Filter>beast\cxx14</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\beast\cxx14\memory.h">
       <Filter>beast\cxx14</Filter>
     </ClInclude>

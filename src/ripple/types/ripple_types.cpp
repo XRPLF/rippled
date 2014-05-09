@@ -40,9 +40,8 @@
 #include "impl/ByteOrder.cpp"
 #include "impl/RandomNumbers.cpp"
 #include "impl/strHex.cpp"
-#include "impl/UInt128.cpp"
+#include "impl/base_uint.cpp"
 #include "impl/UInt160.cpp"
-#include "impl/UInt256.cpp"
 #include "impl/RippleIdentifierTests.cpp"
 #include "impl/RippleAssets.cpp"
 

@@ -64,7 +64,7 @@ TER OfferCancelTransactor::doApply ()
         "OfferCancel: offer not found: " <<
         RippleAddress::createHumanAccountID (mTxnAccountID) << 
         " : " << uOfferSequence <<
-        " : " << uOfferIndex.ToString ();
+        " : " << to_string (uOfferIndex);
 
     return tesSUCCESS;
 }

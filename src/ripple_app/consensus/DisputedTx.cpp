@@ -139,10 +139,9 @@ Json::Value DisputedTx::getJson ()
     if (!mVotes.empty ())
     {
         Json::Value votesj (Json::objectValue);
-        typedef ripple::unordered_map<uint160, bool>::value_type vt;
-        BOOST_FOREACH (vt & vote, mVotes)
+        for (auto& vote : mVotes)
         {
-            votesj[vote.first.GetHex ()] = vote.second;
+            votesj[to_string (vote.first)] = vote.second;
         }
         ret["votes"] = votesj;
     }

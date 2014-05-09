@@ -27,8 +27,6 @@
 
 namespace ripple {
 
-class uint256;
-
 // VFALCO TODO figure out a way to remove the dependency on openssl in the
 //         header. Maybe rewrite this to use cryptopp.
 

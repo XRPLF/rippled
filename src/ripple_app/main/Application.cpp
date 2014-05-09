@@ -1314,12 +1314,11 @@ static void addTxnSeqField ()
     Log (lsINFO) << "Altering table";
     db->executeSQL ("ALTER TABLE AccountTransactions ADD COLUMN TxnSeq INTEGER;");
 
-    typedef std::pair<uint256, int> u256_int_pair_t;
     boost::format fmt ("UPDATE AccountTransactions SET TxnSeq = %d WHERE TransID = '%s';");
     i = 0;
-    BOOST_FOREACH (u256_int_pair_t & t, txIDs)
+    for (auto& t : txIDs)
     {
-        db->executeSQL (boost::str (fmt % t.second % t.first.GetHex ()));
+        db->executeSQL (boost::str (fmt % t.second % to_string (t.first)));
 
         if ((++i % 1000) == 0)
             Log (lsINFO) << i << " transactions updated";

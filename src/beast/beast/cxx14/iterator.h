@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    This file is part of Beast: https://github.com/vinniefalco/Beast
+    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,13 +17,29 @@
 */
 //==============================================================================
 
-namespace ripple {
+#ifndef BEAST_CXX14_ITERATOR_H_INCLUDED
+#define BEAST_CXX14_ITERATOR_H_INCLUDED
 
-std::size_t hash_value (uint256 const& u)
+#include "config.h"
+
+#include <iterator>
+
+#if ! BEAST_NO_CXX14_COMPATIBILITY
+
+namespace std {
+
+// C++14 implementation of std::make_reverse_iterator to allow creation of a
+// reverse iterator from a given iterator.
+template <class Iter>
+inline
+reverse_iterator<Iter>
+make_reverse_iterator(Iter i)
 {
-    std::size_t seed = HashMaps::getInstance ().getNonce <size_t> ();
-
-    return beast::hardened_hash<uint256>{seed}(u);
+    return reverse_iterator<Iter>(i);
 }
 
 }
+
+#endif
+
+#endif

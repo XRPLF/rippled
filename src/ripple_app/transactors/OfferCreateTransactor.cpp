@@ -351,7 +351,7 @@ TER OfferCreateTransactor::takeOffers (
 
     m_journal.debug <<
         "takeOffers: bSell: " << bSell <<
-        ": against book: " << uBookBase.ToString ();
+        ": against book: " << to_string (uBookBase);
 
     LedgerEntrySet& lesActive = mEngine->view ();
     std::uint64_t const uTakeQuality = STAmount::getRate (saTakerGets, saTakerPays);
@@ -713,7 +713,7 @@ TER OfferCreateTransactor::takeOffers (
             m_journal.debug <<
 
                 "takeOffers: became unfunded: " <<
-                    uOfferIndex.ToString ();
+                    to_string (uOfferIndex);
 
             lesActive.offerDelete (uOfferIndex);
         }
@@ -764,7 +764,7 @@ TER OfferCreateTransactor::doApply ()
     const uint256 uLedgerIndex = Ledger::getOfferIndex (mTxnAccountID, uSequence);
 
     m_journal.trace <<
-        "Creating offer node: " << uLedgerIndex.ToString () <<
+        "Creating offer node: " << to_string (uLedgerIndex) <<
         " uSequence=" << uSequence;
 
     const uint160 uPaysCurrency = saTakerPays.getCurrency ();
@@ -881,7 +881,7 @@ TER OfferCreateTransactor::doApply ()
                 "offer not found: " <<
                 RippleAddress::createHumanAccountID (mTxnAccountID) <<
                 " : " << uCancelSequence <<
-                " : " << uCancelIndex.ToString ();
+                " : " << to_string (uCancelIndex);
         }
     }
 
@@ -948,7 +948,7 @@ TER OfferCreateTransactor::doApply ()
             uGetsCurrency, uGetsIssuerID, uPaysCurrency, uPaysIssuerID);
 
         if (m_journal.trace) m_journal.trace <<
-            "take against book:" << uTakeBookBase.ToString () <<
+            "take against book:" << to_string (uTakeBookBase) <<
             " for " << saTakerGets.getFullText () <<
             " -> " << saTakerPays.getFullText ();
 
@@ -1099,7 +1099,7 @@ TER OfferCreateTransactor::doApply ()
                 uGetsIssuerID);
 
             if (m_journal.trace) m_journal.trace <<
-                "adding to book: " << uBookBase.ToString () <<
+                "adding to book: " << to_string (uBookBase) <<
                 " : " << saTakerPays.getHumanCurrency () <<
                 "/" << RippleAddress::createHumanAccountID (saTakerPays.getIssuer ()) <<
                 " -> " << saTakerGets.getHumanCurrency () <<
@@ -1175,7 +1175,7 @@ TER OfferCreateTransactor::doApply ()
         for (auto const& uOfferIndex : usOfferUnfundedFound)
         {
             m_journal.trace <<
-                "takeOffers: found unfunded: " << uOfferIndex.ToString ();
+                "takeOffers: found unfunded: " << to_string (uOfferIndex);
 
             lesActive.offerDelete (uOfferIndex);
         }

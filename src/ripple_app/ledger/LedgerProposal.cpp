@@ -126,11 +126,11 @@ Blob LedgerProposal::sign (void)
 Json::Value LedgerProposal::getJson () const
 {
     Json::Value ret = Json::objectValue;
-    ret["previous_ledger"] = mPreviousLedger.GetHex ();
+    ret["previous_ledger"] = to_string (mPreviousLedger);
 
     if (mProposeSeq != seqLeave)
     {
-        ret["transaction_hash"] = mCurrentHash.GetHex ();
+        ret["transaction_hash"] = to_string (mCurrentHash);
         ret["propose_seq"] = mProposeSeq;
     }
 
