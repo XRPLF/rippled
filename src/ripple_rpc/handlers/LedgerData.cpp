@@ -79,7 +79,7 @@ Json::Value RPCHandler::doLedgerData (Json::Value params, Resource::Charge& load
 
     Json::Value jvReply = Json::objectValue;
 
-    jvReply["ledger_hash"] = lpLedger->getHash().GetHex ();
+    jvReply["ledger_hash"] = to_string (lpLedger->getHash());
     jvReply["ledger_index"] = beast::lexicalCastThrow <std::string> (lpLedger->getLedgerSeq ());
 
     Json::Value& nodes = (jvReply["state"] = Json::arrayValue);
@@ -95,7 +95,7 @@ Json::Value RPCHandler::doLedgerData (Json::Value params, Resource::Charge& load
        if (limit-- <= 0)
        {
            --resumePoint;
-           jvReply["marker"] = resumePoint.GetHex ();
+           jvReply["marker"] = to_string (resumePoint);
            break;
        }
 
@@ -103,13 +103,13 @@ Json::Value RPCHandler::doLedgerData (Json::Value params, Resource::Charge& load
        {
            Json::Value& entry = nodes.append (Json::objectValue);
            entry["data"] = strHex (item->peekData().begin(), item->peekData().size());
-           entry["index"] = item->getTag ().GetHex ();
+           entry["index"] = to_string (item->getTag ());
        }
        else
        {
            SLE sle (item->peekSerializer(), item->getTag ());
            Json::Value& entry = nodes.append (sle.getJson (0));
-           entry["index"] = item->getTag ().GetHex ();
+           entry["index"] = to_string (item->getTag ());
        }
     }
 

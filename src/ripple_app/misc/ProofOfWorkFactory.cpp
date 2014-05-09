@@ -157,9 +157,10 @@ public:
 
         ScopedLockType sl (mLock);
 
-        std::string s = boost::str (boost::format (f) % challenge.GetHex () % mTarget.GetHex () % mIterations % now);
-        std::string c = mSecret.GetHex () + s;
-        s += "-" + Serializer::getSHA512Half (c).GetHex ();
+        std::string s = boost::str (boost::format (f) % to_string (challenge) % 
+            to_string (mTarget) % mIterations % now);
+        std::string c = to_string (mSecret) + s;
+        s += "-" + to_string (Serializer::getSHA512Half (c));
 
         return ProofOfWork (s, mIterations, challenge, mTarget);
     }
@@ -182,9 +183,10 @@ public:
             return powCORRUPT;
         }
 
-        std::string v = mSecret.GetHex () + fields[0] + "-" + fields[1] + "-" + fields[2] + "-" + fields[3];
+        std::string v = to_string (mSecret) + fields[0] + "-" + 
+                        fields[1] + "-" + fields[2] + "-" + fields[3];
 
-        if (fields[4] != Serializer::getSHA512Half (v).GetHex ())
+        if (fields[4] != to_string (Serializer::getSHA512Half (v)))
         {
             WriteLog (lsDEBUG, ProofOfWork) << "PoW " << token << " has a bad token";
             return powCORRUPT;

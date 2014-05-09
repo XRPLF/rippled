@@ -28,7 +28,7 @@ boost::shared_ptr <Item> make_random_item (beast::Random& r)
     for (int d = 0; d < 3; ++d)
         s.add32 (r.nextInt ());
     return boost::make_shared <Item> (
-        s.getRIPEMD160().to256(), s.peekData ());
+        to256(s.getRIPEMD160()), s.peekData ());
 }
 
 //------------------------------------------------------------------------------

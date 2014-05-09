@@ -47,7 +47,7 @@ std::string SHAMapNode::getString () const
 
     return str (boost::format (NodeID)
                 % beast::lexicalCastThrow <std::string> (mDepth)
-                % mNodeID.GetHex ());
+                % to_string (mNodeID));
 }
 
 uint256 SHAMapNode::smMasks[65];

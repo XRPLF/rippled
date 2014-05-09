@@ -85,7 +85,7 @@ public:
             static SqliteStatement pSt (m_db->getDB()->getSqliteDB(),
                 "SELECT ObjType,LedgerIndex,Object FROM CommittedObjects WHERE Hash = ?;");
 
-            pSt.bind (1, hash.GetHex());
+            pSt.bind (1, to_string (hash));
 
             if (pSt.isRow (pSt.step()))
             {
@@ -192,7 +192,7 @@ public:
             default:                    type = "U";
         }
 
-        statement.bind(1, object->getHash().GetHex());
+        statement.bind(1, to_string (object->getHash()));
         statement.bind(2, type);
         statement.bind(3, object->getIndex());
         statement.bindStatic(4, object->getData());

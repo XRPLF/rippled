@@ -90,13 +90,16 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value params, Resource::Charge& 
         RippleLineCache::pointer cache;
 
         if (lpLedger)
-        { // The caller specified a ledger
+        {
+            // The caller specified a ledger
             lpLedger = boost::make_shared<Ledger> (boost::ref (*lpLedger), false);
             cache = boost::make_shared<RippleLineCache>(lpLedger);
         }
         else
-        { // Use the default ledger and cache
-            lpLedger = mNetOps->getValidatedLedger();
+        {
+            // The closed ledger is recent and any nodes made resident
+            // have the best chance to persist
+            lpLedger = mNetOps->getClosedLedger();
             cache = getApp().getPathRequests().getLineCache(lpLedger, false);
         }
 

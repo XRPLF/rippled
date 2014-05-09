@@ -381,7 +381,7 @@ void SHAMap::returnNode (SHAMapTreeNode::pointer& node, bool modify)
             root = node;
 
         if (mDirtyNodes)
-            (*mDirtyNodes)[*node] = node;
+            mDirtyNodes->insert (*node);
     }
 }
 
@@ -389,7 +389,7 @@ void SHAMap::trackNewNode (SHAMapTreeNode::pointer& node)
 {
     assert (node->getSeq() == mSeq);
     if (mDirtyNodes)
-        (*mDirtyNodes)[*node] = node;
+        mDirtyNodes->insert (*node);
 }
 
 SHAMapTreeNode* SHAMap::firstBelow (SHAMapTreeNode* node)
@@ -1093,38 +1093,54 @@ bool SHAMap::fetchRoot (uint256 const& hash, SHAMapSyncFilter* filter)
     return true;
 }
 
+/** Begin saving dirty nodes to be written later */
 int SHAMap::armDirty ()
 {
-    // begin saving dirty nodes
-    mDirtyNodes = boost::make_shared< ripple::unordered_map<SHAMapNode, SHAMapTreeNode::pointer, SHAMapNode_hash> > ();
+    mDirtyNodes = boost::make_shared <DirtySet> ();
     return ++mSeq;
 }
 
-int SHAMap::flushDirty (NodeMap& map, int maxNodes, NodeObjectType t, std::uint32_t seq)
+/** Write all modified nodes to the node store */
+int SHAMap::flushDirty (DirtySet& set, int maxNodes, NodeObjectType t, std::uint32_t seq)
 {
     int flushed = 0;
     Serializer s;
 
-    for (NodeMap::iterator it = map.begin (); it != map.end (); it = map.erase (it))
+    ScopedWriteLockType sl (mLock);
+
+    for (DirtySet::iterator it = set.begin (); it != set.end (); it = set.erase (it))
     {
-        //      tLog(t == hotTRANSACTION_NODE, lsDEBUG) << "TX node write " << it->first;
-        //      tLog(t == hotACCOUNT_NODE, lsDEBUG) << "STATE node write " << it->first;
+        SHAMapTreeNode::pointer node = checkCacheNode (*it);
+
+        // Check if node was deleted
+        if (!node)
+            continue;
+
+        uint256 const nodeHash = node->getNodeHash();
+
         s.erase ();
-        it->second->addRaw (s, snfPREFIX);
+        node->addRaw (s, snfPREFIX);
 
 #ifdef BEAST_DEBUG
 
-        if (s.getSHA512Half () != it->second->getNodeHash ())
+        if (s.getSHA512Half () != nodeHash)
         {
-            WriteLog (lsFATAL, SHAMap) << * (it->second);
+            WriteLog (lsFATAL, SHAMap) << *node;
             WriteLog (lsFATAL, SHAMap) << beast::lexicalCast <std::string> (s.getDataLength ());
-            WriteLog (lsFATAL, SHAMap) << s.getSHA512Half () << " != " << it->second->getNodeHash ();
+            WriteLog (lsFATAL, SHAMap) << s.getSHA512Half () << " != " << nodeHash;
             assert (false);
         }
 
 #endif
 
-        getApp().getNodeStore ().store (t, seq, std::move (s.modData ()), it->second->getNodeHash ());
+        getApp().getNodeStore ().store (t, seq, std::move (s.modData ()), nodeHash);
+
+        if (getApp().running ())
+        {
+            // Put the canonical version into the SHAMap and the treeNodeCache
+            mTNByID.erase (*node);
+            fetchNodeExternal (*node, nodeHash);
+        }
 
         if (flushed++ >= maxNodes)
             return flushed;
@@ -1133,12 +1149,12 @@ int SHAMap::flushDirty (NodeMap& map, int maxNodes, NodeObjectType t, std::uint3
     return flushed;
 }
 
-boost::shared_ptr<SHAMap::NodeMap> SHAMap::disarmDirty ()
+/** Stop saving dirty nodes */
+boost::shared_ptr<SHAMap::DirtySet> SHAMap::disarmDirty ()
 {
-    // stop saving dirty nodes
     ScopedWriteLockType sl (mLock);
 
-    boost::shared_ptr<NodeMap> ret;
+    boost::shared_ptr<DirtySet> ret;
     ret.swap (mDirtyNodes);
     return ret;
 }

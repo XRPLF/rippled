@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "../../common/UnorderedMap.h"
+#include "../../common/UnorderedContainers.h"
 
 #include "../../../beast/beast/unit_test/suite.h"
 
@@ -193,7 +193,7 @@ public:
 
         {
             Map c;
-        
+
             c.insert (std::make_pair (a1, 1));
             if (! expect (c.size () == 1)) return;
             c.insert (std::make_pair (a2, 2));
@@ -250,7 +250,7 @@ public:
         testcase ("ripple::unordered_map <RippleAssetRef, int>");
         testAssetMap <ripple::unordered_map <RippleAssetRef, int>> ();
 
-#endif        
+#endif
     }
 
     //--------------------------------------------------------------------------
@@ -281,19 +281,19 @@ public:
 
 //         log << std::hex << hash (Book (a1, a2));
 //         log << std::hex << hash (Book (a1, a2));
-// 
+//
 //         log << std::hex << hash (Book (a1, a3));
 //         log << std::hex << hash (Book (a1, a3));
-// 
+//
 //         log << std::hex << hash (Book (a1, a4));
 //         log << std::hex << hash (Book (a1, a4));
-// 
+//
 //         log << std::hex << hash (Book (a2, a3));
 //         log << std::hex << hash (Book (a2, a3));
-// 
+//
 //         log << std::hex << hash (Book (a2, a4));
 //         log << std::hex << hash (Book (a2, a4));
-// 
+//
 //         log << std::hex << hash (Book (a3, a4));
 //         log << std::hex << hash (Book (a3, a4));
 

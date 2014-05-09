@@ -17,21 +17,31 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_UNORDERED_MAP_H
-#define RIPPLE_UNORDERED_MAP_H
+namespace ripple {
 
-#include "../../beast/beast/container/hash_append.h"
+// NIKB TODO having a dependency on HashMaps sucks. Try to remove it and combine
+//           these functions into a single template.
 
-#include <unordered_map>
-
-namespace ripple
+std::size_t hash_value (uint128 const& u)
 {
+    std::size_t seed = HashMaps::getInstance ().getNonce <std::size_t> ();
 
-template <class Key, class Value, class Hash = beast::uhash<>,
-          class Pred = std::equal_to<Key>,
-          class Allocator = std::allocator<std::pair<Key const, Value>>>
-using unordered_map = std::unordered_map <Key, Value, Hash, Pred, Allocator>;
+    return beast::hardened_hash<uint128>{seed}(u);
+}
 
-} // ripple
+std::size_t hash_value (uint160 const& u)
+{
+    std::size_t seed = HashMaps::getInstance ().getNonce <std::size_t> ();
 
-#endif
+    return beast::hardened_hash<uint160>{seed}(u);
+}
+
+std::size_t hash_value (uint256 const& u)
+{
+    std::size_t seed = HashMaps::getInstance ().getNonce <size_t> ();
+
+    return beast::hardened_hash<uint256>{seed}(u);
+}
+
+
+}

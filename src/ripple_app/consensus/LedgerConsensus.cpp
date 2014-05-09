@@ -162,12 +162,11 @@ public:
 
             if (!mPeerPositions.empty ())
             {
-                typedef ripple::unordered_map<uint160, 
-                    LedgerProposal::pointer>::value_type pp_t;
                 Json::Value ppj (Json::objectValue);
-                BOOST_FOREACH (pp_t & pp, mPeerPositions)
+
+                for (auto& pp : mPeerPositions)
                 {
-                    ppj[pp.first.GetHex ()] = pp.second->getJson ();
+                    ppj[to_string (pp.first)] = pp.second->getJson ();
                 }
                 ret["peer_positions"] = ppj;
             }
@@ -175,48 +174,41 @@ public:
             if (!mAcquired.empty ())
             {
                 // acquired
-                typedef ripple::unordered_map<uint256, 
-                    SHAMap::pointer>::value_type ac_t;
                 Json::Value acq (Json::objectValue);
-                BOOST_FOREACH (ac_t & at, mAcquired)
+                for (auto& at : mAcquired)
                 {
                     if (at.second)
-                        acq[at.first.GetHex ()] = "acquired";
+                        acq[to_string (at.first)] = "acquired";
                     else
-                        acq[at.first.GetHex ()] = "failed";
+                        acq[to_string (at.first)] = "failed";
                 }
                 ret["acquired"] = acq;
             }
 
             if (!mAcquiring.empty ())
             {
-                typedef ripple::unordered_map<uint256, 
-                    TransactionAcquire::pointer>::value_type ac_t;
                 Json::Value acq (Json::arrayValue);
-                BOOST_FOREACH (ac_t & at, mAcquiring)
+                for (auto& at : mAcquiring)
                 {
-                    acq.append (at.first.GetHex ());
+                    acq.append (to_string (at.first));
                 }
                 ret["acquiring"] = acq;
             }
 
             if (!mDisputes.empty ())
             {
-                typedef ripple::unordered_map<uint256, 
-                    DisputedTx::pointer>::value_type d_t;
                 Json::Value dsj (Json::objectValue);
-                BOOST_FOREACH (d_t & dt, mDisputes)
+                for (auto& dt : mDisputes)
                 {
-                    dsj[dt.first.GetHex ()] = dt.second->getJson ();
+                    dsj[to_string (dt.first)] = dt.second->getJson ();
                 }
                 ret["disputes"] = dsj;
             }
 
             if (!mCloseTimes.empty ())
             {
-                typedef std::map<std::uint32_t, int>::value_type ct_t;
                 Json::Value ctj (Json::objectValue);
-                BOOST_FOREACH (ct_t & ct, mCloseTimes)
+                for (auto& ct : mCloseTimes)
                 {
                     ctj[beast::lexicalCastThrow <std::string> (ct.first)] = ct.second;
                 }
@@ -226,9 +218,9 @@ public:
             if (!mDeadNodes.empty ())
             {
                 Json::Value dnj (Json::arrayValue);
-                BOOST_FOREACH (const uint160 & dn, mDeadNodes)
+                for (auto const& dn : mDeadNodes)
                 {
-                    dnj.append (dn.GetHex ());
+                    dnj.append (to_string (dn));
                 }
                 ret["dead_nodes"] = dnj;
             }
@@ -671,7 +663,7 @@ public:
         int agree = 0, disagree = 0;
         uint256 ourPosition = mOurPosition->getCurrentHash ();
 
-        BOOST_FOREACH (u160_prop_pair & it, mPeerPositions)
+        for (auto& it : mPeerPositions)
         {
             if (!it.second->isBowOut ())
             {
@@ -681,8 +673,8 @@ public:
                 }
                 else
                 {
-                    WriteLog (lsDEBUG, LedgerConsensus) << it.first.GetHex () 
-                        << " has " << it.second->getCurrentHash ().GetHex ();
+                    WriteLog (lsDEBUG, LedgerConsensus) << to_string (it.first)
+                        << " has " << to_string (it.second->getCurrentHash ());
                     ++disagree;
                     if (mCompares.count(it.second->getCurrentHash()) == 0)
                     { // Make sure we have generated disputes
@@ -725,7 +717,7 @@ public:
         if (mDeadNodes.find (peerID) != mDeadNodes.end ())
         {
             WriteLog (lsINFO, LedgerConsensus) 
-                << "Position from dead node: " << peerID.GetHex ();
+                << "Position from dead node: " << to_string (peerID);
             return false;
         }
 
@@ -754,9 +746,9 @@ public:
         {
             // peer bows out
             WriteLog (lsINFO, LedgerConsensus) 
-                << "Peer bows out: " << peerID.GetHex ();
-            BOOST_FOREACH (u256_lct_pair & it, mDisputes)
-            it.second->unVote (peerID);
+                << "Peer bows out: " << to_string (peerID);
+            for (auto& it : mDisputes)
+                it.second->unVote (peerID);
             mPeerPositions.erase (peerID);
             mDeadNodes.insert (peerID);
             return true;
@@ -773,8 +765,8 @@ public:
 
         if (set)
         {
-            BOOST_FOREACH (u256_lct_pair & it, mDisputes)
-            it.second->setVote (peerID, set->hasItem (it.first));
+            for (auto& it : mDisputes)
+                it.second->setVote (peerID, set->hasItem (it.first));
         }
         else
         {
@@ -906,23 +898,23 @@ private:
             applyTransactions (set, newLCL, newLCL, failedTransactions, false);
             newLCL->updateSkipList ();
             newLCL->setClosed ();
-            boost::shared_ptr<SHAMap::NodeMap> acctNodes 
+            boost::shared_ptr<SHAMap::DirtySet> acctNodes
                 = newLCL->peekAccountStateMap ()->disarmDirty ();
-            boost::shared_ptr<SHAMap::NodeMap> txnNodes 
+            boost::shared_ptr<SHAMap::DirtySet> txnNodes
                 = newLCL->peekTransactionMap ()->disarmDirty ();
 
             // write out dirty nodes (temporarily done here)
             int fc;
 
-            while ((fc = SHAMap::flushDirty (*acctNodes, 256
-                , hotACCOUNT_NODE, newLCL->getLedgerSeq ())) > 0)
+            while ((fc = newLCL->peekAccountStateMap()->flushDirty (
+                *acctNodes, 256, hotACCOUNT_NODE, newLCL->getLedgerSeq ())) > 0)
             {
                 WriteLog (lsTRACE, LedgerConsensus) 
                     << "Flushed " << fc << " dirty state nodes";
             }
 
-            while ((fc = SHAMap::flushDirty (*txnNodes, 256
-                , hotTRANSACTION_NODE, newLCL->getLedgerSeq ())) > 0)
+            while ((fc = newLCL->peekTransactionMap()->flushDirty (
+                *txnNodes, 256, hotTRANSACTION_NODE, newLCL->getLedgerSeq ())) > 0)
             {
                 WriteLog (lsTRACE, LedgerConsensus) 
                     << "Flushed " << fc << " dirty transaction nodes";
@@ -1238,8 +1230,9 @@ private:
     void propose ()
     {
         WriteLog (lsTRACE, LedgerConsensus) << "We propose: " <<
-            (mOurPosition->isBowOut () ? std::string ("bowOut") 
-            : mOurPosition->getCurrentHash ().GetHex ());
+            (mOurPosition->isBowOut () 
+                ? std::string ("bowOut") 
+                : to_string (mOurPosition->getCurrentHash ()));
         protocol::TMProposeSet prop;
 
         prop.set_currenttxhash (mOurPosition->getCurrentHash ().begin ()
@@ -1792,7 +1785,7 @@ private:
         mCloseTime = getApp().getOPs ().getCloseTimeNC ();
         getApp().getOPs ().setLastCloseTime (mCloseTime);
         statusChange (protocol::neCLOSING_LEDGER, *mPreviousLedger);
-        getApp().getLedgerMaster().closeLedger (true);
+        getApp().getLedgerMaster().applyHeldTransactions ();
         takeInitialPosition (*getApp().getLedgerMaster ().getCurrentLedger ());
     }
 

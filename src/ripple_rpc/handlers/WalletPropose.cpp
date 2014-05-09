@@ -42,7 +42,7 @@ Json::Value RPCHandler::doWalletPropose (Json::Value params, Resource::Charge& l
     Json::Value obj (Json::objectValue);
 
     obj["master_seed"]      = naSeed.humanSeed ();
-    obj["master_seed_hex"]  = naSeed.getSeed ().ToString ();
+    obj["master_seed_hex"]  = to_string (naSeed.getSeed ());
     obj["master_key"]     = naSeed.humanSeed1751();
     obj["account_id"]       = naAccount.humanAccountID ();
     obj["public_key"] = naAccount.humanAccountPublic();
