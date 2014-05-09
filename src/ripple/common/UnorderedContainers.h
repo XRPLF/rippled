@@ -17,12 +17,13 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_UNORDERED_MAP_H
-#define RIPPLE_UNORDERED_MAP_H
+#ifndef RIPPLE_UNORDERED_CONTAINERS_H
+#define RIPPLE_UNORDERED_CONTAINERS_H
 
 #include "../../beast/beast/container/hash_append.h"
 
 #include <unordered_map>
+#include <unordered_set>
 
 namespace ripple
 {
@@ -31,6 +32,11 @@ template <class Key, class Value, class Hash = beast::uhash<>,
           class Pred = std::equal_to<Key>,
           class Allocator = std::allocator<std::pair<Key const, Value>>>
 using unordered_map = std::unordered_map <Key, Value, Hash, Pred, Allocator>;
+
+template <class Value, class Hash = beast::uhash<>,
+          class Pred = std::equal_to<Value>,
+          class Allocator = std::allocator<Value>>
+using unordered_set = std::unordered_set <Value, Hash, Pred, Allocator>;
 
 } // ripple
 

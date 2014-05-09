@@ -105,7 +105,7 @@ TER RippleCalc::calcNodeAdvance (
                 uPrvCurrencyID, uPrvIssuerID, uCurCurrencyID, uCurIssuerID);
             uDirectEnd      = Ledger::getQualityNext (uDirectTip);
 
-            sleDirectDir    = lesActive.entryCache (ltDIR_NODE, uDirectTip);
+            sleDirectDir    = mActiveLedger.entryCache (ltDIR_NODE, uDirectTip);
 
             // Associated vars are dirty, if found it.
             bDirectDirDirty = !!sleDirectDir;
@@ -127,7 +127,7 @@ TER RippleCalc::calcNodeAdvance (
             // Get next quality.
             if (bDirectAdvance)
             {
-                uDirectTip  = lesActive.getNextLedgerIndex (
+                uDirectTip  = mActiveLedger.getNextLedgerIndex (
                     uDirectTip, uDirectEnd);
             }
 
@@ -142,7 +142,7 @@ TER RippleCalc::calcNodeAdvance (
                     << "calcNodeAdvance: Quality advance: uDirectTip="
                     << uDirectTip;
 
-                sleDirectDir = lesActive.entryCache (ltDIR_NODE, uDirectTip);
+                sleDirectDir = mActiveLedger.entryCache (ltDIR_NODE, uDirectTip);
             }
             else if (bReverse)
             {
@@ -186,7 +186,7 @@ TER RippleCalc::calcNodeAdvance (
                 saTakerPays = sleOffer->getFieldAmount (sfTakerPays);
                 saTakerGets = sleOffer->getFieldAmount (sfTakerGets);
 
-                saOfferFunds = lesActive.accountFunds (
+                saOfferFunds = mActiveLedger.accountFunds (
                     uOfrOwnerID, saTakerGets);
                 // Funds left.
                 bFundsDirty     = false;
@@ -200,7 +200,7 @@ TER RippleCalc::calcNodeAdvance (
                 WriteLog (lsTRACE, RippleCalc) << "calcNodeAdvance: as is";
             }
         }
-        else if (!lesActive.dirNext (
+        else if (!mActiveLedger.dirNext (
             uDirectTip, sleDirectDir, uEntry, uOfferIndex))
         {
             // Failed to find an entry in directory.
@@ -231,7 +231,7 @@ TER RippleCalc::calcNodeAdvance (
         else
         {
             // Got a new offer.
-            sleOffer = lesActive.entryCache (ltOFFER, uOfferIndex);
+            sleOffer = mActiveLedger.entryCache (ltOFFER, uOfferIndex);
 
             if (!sleOffer)
             {
@@ -257,12 +257,12 @@ TER RippleCalc::calcNodeAdvance (
 
                 if (sleOffer->isFieldPresent (sfExpiration) &&
                     (sleOffer->getFieldU32 (sfExpiration) <=
-                     lesActive.getLedger ()->getParentCloseTimeNC ()))
+                     mActiveLedger.getLedger ()->getParentCloseTimeNC ()))
                 {
                     // Offer is expired.
                     WriteLog (lsTRACE, RippleCalc)
                         << "calcNodeAdvance: expired offer";
-                    musUnfundedFound.insert(uOfferIndex);
+                    mUnfundedOffers.insert(uOfferIndex);
                     continue;
                 }
                 else if (saTakerPays <= zero || saTakerGets <= zero)
@@ -280,13 +280,13 @@ TER RippleCalc::calcNodeAdvance (
                             << " saTakerGets=%s" << saTakerGets;
 
                         // Mark offer for always deletion.
-                        musUnfundedFound.insert (uOfferIndex);
+                        mUnfundedOffers.insert (uOfferIndex);
                     }
-                    else if (musUnfundedFound.find (uOfferIndex) !=
-                             musUnfundedFound.end ())
+                    else if (mUnfundedOffers.find (uOfferIndex) !=
+                             mUnfundedOffers.end ())
                     {
                         // Past internal error, offer was found failed to place
-                        // this in musUnfundedFound.
+                        // this in mUnfundedOffers.
                         // Just skip it. It will be deleted.
                         WriteLog (lsDEBUG, RippleCalc)
                             << "calcNodeAdvance: PAST INTERNAL ERROR:"
@@ -369,7 +369,7 @@ TER RippleCalc::calcNodeAdvance (
 
                 // Only the current node is allowed to use the source.
 
-                saOfferFunds = lesActive.accountFunds
+                saOfferFunds = mActiveLedger.accountFunds
                         (uOfrOwnerID, saTakerGets); // Funds held.
 
                 if (saOfferFunds <= zero)
@@ -384,7 +384,7 @@ TER RippleCalc::calcNodeAdvance (
                         // That is, even if this offer fails due to fill or kill
                         // still do deletions.
                         // Mark offer for always deletion.
-                        musUnfundedFound.insert (uOfferIndex);
+                        mUnfundedOffers.insert (uOfferIndex);
                     }
                     else
                     {
@@ -719,7 +719,7 @@ TER RippleCalc::calcNodeDeliverRev (
         // visited.  However, these deductions and adjustments are tenative.
         //
         // Must reset balances when going forward to perform actual transfers.
-        terResult   = lesActive.accountSend (
+        terResult   = mActiveLedger.accountSend (
             uOfrOwnerID, uCurIssuerID, saOutPassAct);
 
         if (tesSUCCESS != terResult)
@@ -744,7 +744,7 @@ TER RippleCalc::calcNodeDeliverRev (
         sleOffer->setFieldAmount (sfTakerGets, saTakerGetsNew);
         sleOffer->setFieldAmount (sfTakerPays, saTakerPaysNew);
 
-        lesActive.entryModify (sleOffer);
+        mActiveLedger.entryModify (sleOffer);
 
         if (saOutPassAct == saTakerGets)
         {
@@ -980,7 +980,7 @@ TER RippleCalc::calcNodeDeliverFwd (
 
                 // Output: Debit offer owner, send XRP or non-XPR to next
                 // account.
-                terResult   = lesActive.accountSend (
+                terResult   = mActiveLedger.accountSend (
                     uOfrOwnerID, uNxtAccountID, saOutPassAct);
 
                 if (tesSUCCESS != terResult)
@@ -1037,7 +1037,7 @@ TER RippleCalc::calcNodeDeliverFwd (
                 // fees).
                 auto id = !!uCurCurrencyID ? uCurIssuerID : ACCOUNT_XRP;
                 auto outPassTotal = saOutPassAct + saOutPassFees;
-                lesActive.accountSend (uOfrOwnerID, id, outPassTotal);
+                mActiveLedger.accountSend (uOfrOwnerID, id, outPassTotal);
 
                 WriteLog (lsTRACE, RippleCalc)
                     << "calcNodeDeliverFwd: ? --> OFFER --> offer:"
@@ -1068,7 +1068,7 @@ TER RippleCalc::calcNodeDeliverFwd (
                                                 // same account.
             {
                 auto id = !!uPrvCurrencyID ? uInAccountID : ACCOUNT_XRP;
-                terResult = lesActive.accountSend (
+                terResult = mActiveLedger.accountSend (
                     id, uOfrOwnerID, saInPassAct);
 
                 if (tesSUCCESS != terResult)
@@ -1098,7 +1098,7 @@ TER RippleCalc::calcNodeDeliverFwd (
             sleOffer->setFieldAmount (sfTakerGets, saTakerGetsNew);
             sleOffer->setFieldAmount (sfTakerPays, saTakerPaysNew);
 
-            lesActive.entryModify (sleOffer);
+            mActiveLedger.entryModify (sleOffer);
 
             if (saOutPassAct == saOutFunded || saTakerGetsNew == zero)
             {
@@ -1417,26 +1417,28 @@ TER RippleCalc::calcNodeAccountRev (
 
     // XXX Don't look up quality for XRP
     const std::uint32_t uQualityIn = uNode
-        ? lesActive.rippleQualityIn (uCurAccountID, uPrvAccountID, uCurrencyID)
+        ? mActiveLedger.rippleQualityIn (
+            uCurAccountID, uPrvAccountID, uCurrencyID)
         : QUALITY_ONE;
     const std::uint32_t uQualityOut = (uNode != uLast)
-        ? lesActive.rippleQualityOut (uCurAccountID, uNxtAccountID, uCurrencyID)
+        ? mActiveLedger.rippleQualityOut (
+            uCurAccountID, uNxtAccountID, uCurrencyID)
         : QUALITY_ONE;
 
     // For bPrvAccount:
     // Previous account is owed.
     const STAmount saPrvOwed = (bPrvAccount && uNode)
-        ? lesActive.rippleOwed (uCurAccountID, uPrvAccountID, uCurrencyID)
+        ? mActiveLedger.rippleOwed (uCurAccountID, uPrvAccountID, uCurrencyID)
         : STAmount (uCurrencyID, uCurAccountID);
 
     // Previous account may owe.
     const STAmount saPrvLimit = (bPrvAccount && uNode)
-        ? lesActive.rippleLimit (uCurAccountID, uPrvAccountID, uCurrencyID)
+        ? mActiveLedger.rippleLimit (uCurAccountID, uPrvAccountID, uCurrencyID)
         : STAmount (uCurrencyID, uCurAccountID);
 
     // Next account is owed.
     const STAmount saNxtOwed = (bNxtAccount && uNode != uLast)
-        ? lesActive.rippleOwed (uCurAccountID, uNxtAccountID, uCurrencyID)
+        ? mActiveLedger.rippleOwed (uCurAccountID, uNxtAccountID, uCurrencyID)
         : STAmount (uCurrencyID, uCurAccountID);
 
     WriteLog (lsTRACE, RippleCalc)
@@ -1627,7 +1629,8 @@ TER RippleCalc::calcNodeAccountRev (
             {
                 // Rate : 1.0 : transfer_rate
                 calcNodeRipple (
-                    QUALITY_ONE, lesActive.rippleTransferRate (uCurAccountID),
+                    QUALITY_ONE,
+                    mActiveLedger.rippleTransferRate (uCurAccountID),
                     saPrvRedeemReq, saCurIssueReq, saPrvRedeemAct,
                     saCurIssueAct, uRateMax);
 
@@ -1690,7 +1693,7 @@ TER RippleCalc::calcNodeAccountRev (
         {
             // Rate : 1.0 : transfer_rate
             calcNodeRipple (
-                QUALITY_ONE, lesActive.rippleTransferRate (uCurAccountID),
+                QUALITY_ONE, mActiveLedger.rippleTransferRate (uCurAccountID),
                 saPrvRedeemReq, saCurDeliverReq, saPrvRedeemAct,
                 saCurDeliverAct, uRateMax);
         }
@@ -1787,7 +1790,8 @@ TER RippleCalc::calcNodeAccountRev (
             {
                 // Rate : 1.0 : transfer_rate
                 calcNodeRipple (
-                    QUALITY_ONE, lesActive.rippleTransferRate (uCurAccountID),
+                    QUALITY_ONE,
+                    mActiveLedger.rippleTransferRate (uCurAccountID),
                     saPrvDeliverReq, saCurIssueReq, saPrvDeliverAct,
                     saCurIssueAct, uRateMax);
             }
@@ -1815,7 +1819,7 @@ TER RippleCalc::calcNodeAccountRev (
 
         // Rate : 1.0 : transfer_rate
         calcNodeRipple (
-            QUALITY_ONE, lesActive.rippleTransferRate (uCurAccountID),
+            QUALITY_ONE, mActiveLedger.rippleTransferRate (uCurAccountID),
             saPrvDeliverReq, saCurDeliverReq, saPrvDeliverAct,
             saCurDeliverAct, uRateMax);
 
@@ -1845,9 +1849,9 @@ TER RippleCalc::calcNodeAccountRev (
 // - If next node is an offer and output is XRP then we need to deliver funds to
 //   limbo.
 TER RippleCalc::calcNodeAccountFwd (
-    const unsigned int          uNode,              // 0 <= uNode <= uLast
-    PathState&                  psCur,
-    const bool                  bMultiQuality)
+    const unsigned int uNode,   // 0 <= uNode <= uLast
+    PathState& psCur,
+    const bool bMultiQuality)
 {
     TER                 terResult   = tesSUCCESS;
     const unsigned int  uLast       = psCur.vpnNodes.size () - 1;
@@ -1873,10 +1877,12 @@ TER RippleCalc::calcNodeAccountFwd (
     const uint160&  uCurrencyID     = pnCur.uCurrencyID;
 
     std::uint32_t uQualityIn = uNode
-        ? lesActive.rippleQualityIn (uCurAccountID, uPrvAccountID, uCurrencyID)
+        ? mActiveLedger.rippleQualityIn (
+            uCurAccountID, uPrvAccountID, uCurrencyID)
         : QUALITY_ONE;
-    std::uint32_t   uQualityOut = (uNode == uLast)
-        ? lesActive.rippleQualityOut (uCurAccountID, uNxtAccountID, uCurrencyID)
+    std::uint32_t  uQualityOut = (uNode == uLast)
+        ? mActiveLedger.rippleQualityOut (
+            uCurAccountID, uNxtAccountID, uCurrencyID)
         : QUALITY_ONE;
 
     // When looking backward (prv) for req we care about what we just
@@ -1998,7 +2004,7 @@ TER RippleCalc::calcNodeAccountFwd (
             if (saCurReceive)
             {
                 // Actually receive.
-                terResult = lesActive.rippleCredit (
+                terResult = mActiveLedger.rippleCredit (
                     uPrvAccountID, uCurAccountID,
                     saPrvRedeemReq + saPrvIssueReq, false);
             }
@@ -2049,7 +2055,8 @@ TER RippleCalc::calcNodeAccountFwd (
             {
                 // Rate : 1.0 : transfer_rate
                 calcNodeRipple (
-                    QUALITY_ONE, lesActive.rippleTransferRate (uCurAccountID),
+                    QUALITY_ONE,
+                    mActiveLedger.rippleTransferRate (uCurAccountID),
                     saPrvRedeemReq, saCurIssueReq, saPrvRedeemAct,
                     saCurIssueAct, uRateMax);
             }
@@ -2072,7 +2079,7 @@ TER RippleCalc::calcNodeAccountFwd (
 
             // Adjust prv --> cur balance : take all inbound
             terResult   = saProvide
-                ? lesActive.rippleCredit (uPrvAccountID, uCurAccountID,
+                ? mActiveLedger.rippleCredit (uPrvAccountID, uCurAccountID,
                                           saPrvRedeemReq + saPrvIssueReq, false)
                 : tecPATH_DRY;
         }
@@ -2103,7 +2110,8 @@ TER RippleCalc::calcNodeAccountFwd (
                 // Rate : 1.0 : transfer_rate
                 // XXX Is having the transfer rate here correct?
                 calcNodeRipple (
-                    QUALITY_ONE, lesActive.rippleTransferRate (uCurAccountID),
+                    QUALITY_ONE,
+                    mActiveLedger.rippleTransferRate (uCurAccountID),
                     saPrvRedeemReq, saCurDeliverReq, saPrvRedeemAct,
                     saCurDeliverAct, uRateMax);
             }
@@ -2122,7 +2130,7 @@ TER RippleCalc::calcNodeAccountFwd (
 
             // Adjust prv --> cur balance : take all inbound
             terResult   = saCurDeliverAct
-                ? lesActive.rippleCredit (uPrvAccountID, uCurAccountID,
+                ? mActiveLedger.rippleCredit (uPrvAccountID, uCurAccountID,
                                           saPrvRedeemReq + saPrvIssueReq, false)
                 : tecPATH_DRY;  // Didn't actually deliver anything.
         }
@@ -2142,7 +2150,7 @@ TER RippleCalc::calcNodeAccountFwd (
                 if (uCurrencyID.isZero ())
                     saCurDeliverAct = std::min (
                         saCurDeliverAct,
-                        lesActive.accountHolds (uCurAccountID, CURRENCY_XRP,
+                        mActiveLedger.accountHolds (uCurAccountID, CURRENCY_XRP,
                                                 ACCOUNT_XRP));
 
             }
@@ -2174,7 +2182,7 @@ TER RippleCalc::calcNodeAccountFwd (
                     << "calcNodeAccountFwd: ^ --> ACCOUNT -- XRP --> offer";
 
                 // Deliver XRP to limbo.
-                terResult = lesActive.accountSend (
+                terResult = mActiveLedger.accountSend (
                     uCurAccountID, ACCOUNT_XRP, saCurDeliverAct);
             }
         }
@@ -2226,7 +2234,8 @@ TER RippleCalc::calcNodeAccountFwd (
             {
                 // Rate : 1.0 : transfer_rate
                 calcNodeRipple (
-                    QUALITY_ONE, lesActive.rippleTransferRate (uCurAccountID),
+                    QUALITY_ONE,
+                    mActiveLedger.rippleTransferRate (uCurAccountID),
                     saPrvDeliverReq, saCurIssueReq, saPrvDeliverAct,
                     saCurIssueAct, uRateMax);
             }
@@ -2255,7 +2264,7 @@ TER RippleCalc::calcNodeAccountFwd (
         {
             // Rate : 1.0 : transfer_rate
             calcNodeRipple (
-                QUALITY_ONE, lesActive.rippleTransferRate (uCurAccountID),
+                QUALITY_ONE, mActiveLedger.rippleTransferRate (uCurAccountID),
                 saPrvDeliverReq, saCurDeliverReq, saPrvDeliverAct,
                 saCurDeliverAct, uRateMax);
         }
@@ -2322,7 +2331,7 @@ TER RippleCalc::calcNodeRev (
     STAmount& saTransferRate  = pnCur.saTransferRate;
 
     saTransferRate = STAmount::saFromRate (
-        lesActive.rippleTransferRate (uCurIssuerID));
+        mActiveLedger.rippleTransferRate (uCurIssuerID));
 
     WriteLog (lsTRACE, RippleCalc)
         << "calcNodeRev>"
@@ -2439,7 +2448,9 @@ void RippleCalc::pathNext (
 TER RippleCalc::rippleCalc (
     // Compute paths vs this ledger entry set.  Up to caller to actually apply
     // to ledger.
-    LedgerEntrySet& lesActive,  // <-> --> = Fee already applied to src balance.
+    LedgerEntrySet& activeLedger,
+    // <-> --> = Fee already applied to src balance.
+
     STAmount&       saMaxAmountAct,         // <-- The computed input amount.
     STAmount&       saDstAmountAct,         // <-- The computed output amount.
     std::vector<PathState::pointer>&  vpsExpanded,
@@ -2463,11 +2474,10 @@ TER RippleCalc::rippleCalc (
     const bool          bNoRippleDirect,
     const bool          bStandAlone,
     // True, not to delete unfundeds.
-    const bool          bOpenLedger
-)
+    const bool          bOpenLedger)
 {
-    assert (lesActive.isValid ());
-    RippleCalc  rc (lesActive, bOpenLedger);
+    assert (activeLedger.isValid ());
+    RippleCalc  rc (activeLedger, bOpenLedger);
 
     WriteLog (lsTRACE, RippleCalc)
         << "rippleCalc>"
@@ -2504,7 +2514,7 @@ TER RippleCalc::rippleCalc (
             return temUNKNOWN;
 
         pspDirect->setExpanded (
-            lesActive, STPath (), uDstAccountID, uSrcAccountID);
+            activeLedger, STPath (), uDstAccountID, uSrcAccountID);
 
         if (tesSUCCESS == pspDirect->terStatus)
            pspDirect->checkNoRipple (uDstAccountID, uSrcAccountID);
@@ -2554,7 +2564,7 @@ TER RippleCalc::rippleCalc (
             << RippleAddress::createHumanAccountID (uSrcAccountID);
 
         pspExpanded->setExpanded (
-            lesActive, spPath, uDstAccountID, uSrcAccountID);
+            activeLedger, spPath, uDstAccountID, uSrcAccountID);
 
         if (tesSUCCESS == pspExpanded->terStatus)
            pspExpanded->checkNoRipple (uDstAccountID, uSrcAccountID);
@@ -2592,21 +2602,22 @@ TER RippleCalc::rippleCalc (
         saDstAmountReq.getCurrency (), saDstAmountReq.getIssuer ());
 
     // Checkpoint with just fees paid.
-    const LedgerEntrySet lesBase = lesActive;
+    const LedgerEntrySet lesBase = activeLedger;
 
     // When processing, we don't want to complicate directory walking with
     // deletion.
     const std::uint64_t uQualityLimit = bLimitQuality
         ? STAmount::getRate (saDstAmountReq, saMaxAmountReq) : 0;
 
-    std::vector<uint256>    vuUnfundedBecame;                                       // Offers that became unfunded.
+    // Offers that became unfunded.
+    std::vector<uint256>    vuUnfundedBecame;
 
     int iPass   = 0;
 
     while (temUNCERTAIN == terResult)
     {
         int iBest = -1;
-        const LedgerEntrySet lesCheckpoint = lesActive;
+        const LedgerEntrySet lesCheckpoint = activeLedger;
         int iDry = 0;
 
         // True, if ever computed multi-quality.
@@ -2645,7 +2656,7 @@ TER RippleCalc::rippleCalc (
                 assert (pspCur->saOutAct < pspCur->saOutReq);
                 // Error if done, output met.
 
-                rc.pathNext (pspCur, bMultiQuality, lesCheckpoint, lesActive);
+                rc.pathNext (pspCur, bMultiQuality, lesCheckpoint, activeLedger);
                 // Compute increment.
                 WriteLog (lsDEBUG, RippleCalc)
                     << "rippleCalc: AFTER:"
@@ -2689,10 +2700,10 @@ TER RippleCalc::rippleCalc (
                             << " saInPass=" << pspCur->saInPass
                             << " saOutPass=" << pspCur->saOutPass;
 
-                        assert (lesActive.isValid ());
-                        lesActive.swapWith (pspCur->lesEntries);
+                        assert (activeLedger.isValid ());
+                        activeLedger.swapWith (pspCur->lesEntries);
                         // For the path, save ledger state.
-                        lesActive.invalidate ();
+                        activeLedger.invalidate ();
 
                         iBest   = pspCur->getIndex ();
                     }
@@ -2742,7 +2753,7 @@ TER RippleCalc::rippleCalc (
             // Record best pass' LedgerEntrySet to build off of and potentially
             // return.
             assert (pspBest->lesEntries.isValid ());
-            lesActive.swapWith (pspBest->lesEntries);
+            activeLedger.swapWith (pspBest->lesEntries);
             pspBest->lesEntries.invalidate ();
 
             saMaxAmountAct  += pspBest->saInPass;
@@ -2823,19 +2834,19 @@ TER RippleCalc::rippleCalc (
                 {
                     WriteLog (lsDEBUG, RippleCalc)
                         << "Became unfunded " << to_string (uOfferIndex);
-                    terResult = lesActive.offerDelete (uOfferIndex);
+                    terResult = activeLedger.offerDelete (uOfferIndex);
                 }
             }
         }
 
         // Delete found unfunded offers.
-        for (auto const& uOfferIndex: rc.musUnfundedFound)
+        for (auto const& uOfferIndex: rc.mUnfundedOffers)
         {
             if (tesSUCCESS == terResult)
             {
                 WriteLog (lsDEBUG, RippleCalc)
                     << "Delete unfunded " << to_string (uOfferIndex);
-                terResult = lesActive.offerDelete (uOfferIndex);
+                terResult = activeLedger.offerDelete (uOfferIndex);
             }
         }
     }

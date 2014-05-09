@@ -21,7 +21,7 @@
 #define RIPPLE_SITEFILES_SITEFILE_H_INCLUDED
 
 #include "Section.h"
-#include "../../common/UnorderedMap.h"
+#include "../../common/UnorderedContainers.h"
 
 #include <string>
 #include <unordered_map>

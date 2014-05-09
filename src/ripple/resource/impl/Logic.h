@@ -20,7 +20,7 @@
 #ifndef RIPPLE_RESOURCE_LOGIC_H_INCLUDED
 #define RIPPLE_RESOURCE_LOGIC_H_INCLUDED
 
-#include "../../common/UnorderedMap.h"
+#include "../../common/UnorderedContainers.h"
 
 #include "../../beast/beast/chrono/abstract_clock.h"
 
@@ -595,17 +595,17 @@ public:
             beast::PropertyStream::Set s ("inbound", map);
             writeList (now, s, state->inbound);
         }
-        
+
         {
             beast::PropertyStream::Set s ("outbound", map);
             writeList (now, s, state->outbound);
         }
-        
+
         {
             beast::PropertyStream::Set s ("admin", map);
             writeList (now, s, state->admin);
         }
-        
+
         {
             beast::PropertyStream::Set s ("inactive", map);
             writeList (now, s, state->inactive);
