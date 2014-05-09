@@ -144,6 +144,7 @@
     <ClInclude Include="..\..\beast\cxx14\algorithm.h" />
     <ClInclude Include="..\..\beast\cxx14\config.h" />
     <ClInclude Include="..\..\beast\cxx14\functional.h" />
+    <ClInclude Include="..\..\beast\cxx14\iterator.h" />
     <ClInclude Include="..\..\beast\cxx14\memory.h" />
     <ClInclude Include="..\..\beast\cxx14\type_traits.h" />
     <ClInclude Include="..\..\beast\cxx14\utility.h" />
