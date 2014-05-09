@@ -23,11 +23,13 @@
 namespace ripple {
 
 // account id, currency id, issuer id :: node
-typedef std::tuple <uint160, uint160, uint160> aciSource;
-typedef ripple::unordered_map <aciSource, unsigned int>                   curIssuerNode;  // Map of currency, issuer to node index.
-typedef ripple::unordered_map <aciSource, unsigned int>::const_iterator   curIssuerNodeConstIterator;
+typedef std::tuple <uint160, uint160, uint160> AccountCurrencyIssuer;
 
-extern std::size_t hash_value (const aciSource& asValue);
+// Map of currency, issuer to node index.
+typedef ripple::unordered_map <AccountCurrencyIssuer, unsigned int>
+AccountCurrencyIssuerToNodeIndex;
+
+extern std::size_t hash_value (const AccountCurrencyIssuer& asValue);
 
 // Holds a path state under incremental application.
 class PathState : public CountedObject <PathState>
@@ -89,11 +91,10 @@ public:
         STAmount                        saTakerGets;
 
     };
-public:
-    typedef boost::shared_ptr<PathState>        pointer;
-    typedef const boost::shared_ptr<PathState>& ref;
 
-public:
+    typedef std::shared_ptr<PathState>        pointer;
+    typedef const std::shared_ptr<PathState>& ref;
+
     PathState*  setIndex (const int iIndex)
     {
         mIndex  = iIndex;
@@ -131,27 +132,12 @@ public:
     void checkNoRipple (uint160 const& destinationAccountID, uint160 const& sourceAccountID);
     void checkNoRipple (uint160 const&, uint160 const&, uint160 const&, uint160 const&);
 
-    void setCanonical (
-        const PathState&        psExpanded
-    );
+    void setCanonical (const PathState& psExpanded);
 
     Json::Value getJson () const;
 
-#if 0
-    static PathState::pointer createCanonical (
-        PathState& ref       pspExpanded
-    )
-    {
-        PathState::pointer  pspNew  = boost::make_shared<PathState> (pspExpanded->saOutAct, pspExpanded->saInAct);
-
-        pspNew->setCanonical (pspExpanded);
-
-        return pspNew;
-    }
-#endif
     static bool lessPriority (PathState& lhs, PathState& rhs);
 
-public:
     TER                  terStatus;
     std::vector<Node>    vpnNodes;
 
@@ -160,11 +146,11 @@ public:
 
     // First time scanning foward, as part of path contruction, a funding source was mentioned for accounts. Source may only be
     // used there.
-    curIssuerNode               umForward;          // Map of currency, issuer to node index.
+    AccountCurrencyIssuerToNodeIndex umForward;
 
     // First time working in reverse a funding source was used.
     // Source may only be used there if not mentioned by an account.
-    curIssuerNode               umReverse;          // Map of currency, issuer to node index.
+    AccountCurrencyIssuerToNodeIndex umReverse;
 
     LedgerEntrySet              lesEntries;
 

@@ -26,12 +26,12 @@ namespace ripple {
 // all liquidity is used.
 //
 
-class RippleCalc; // for logging
+struct RippleCalc; // for logging
 
-std::size_t hash_value (const aciSource& asValue)
+std::size_t hash_value (const AccountCurrencyIssuer& asValue)
 {
     std::size_t const seed = 0;
-    return beast::hardened_hash<aciSource>{seed}(asValue);
+    return beast::hardened_hash<AccountCurrencyIssuer>{seed}(asValue);
 }
 
 // Compare the non-calculated fields.
@@ -126,19 +126,19 @@ TER PathState::pushImply (
     const uint160& uCurrencyID, // --> Delivering this currency.
     const uint160& uIssuerID)   // --> Delivering this issuer.
 {
-    const Node&  pnPrv       = vpnNodes.back ();
-    TER          terResult   = tesSUCCESS;
+    const Node&  previousNode       = vpnNodes.back ();
+    TER          errorCode   = tesSUCCESS;
 
     WriteLog (lsTRACE, RippleCalc) << "pushImply>" <<
         " " << RippleAddress::createHumanAccountID (uAccountID) <<
         " " << STAmount::createHumanCurrency (uCurrencyID) <<
         " " << RippleAddress::createHumanAccountID (uIssuerID);
 
-    if (pnPrv.uCurrencyID != uCurrencyID)
+    if (previousNode.uCurrencyID != uCurrencyID)
     {
         // Currency is different, need to convert via an offer.
 
-        terResult   = pushNode ( // Offer.
+        errorCode   = pushNode ( // Offer.
                           !!uCurrencyID
                           ? STPathElement::typeCurrency | STPathElement::typeIssuer
                           : STPathElement::typeCurrency,
@@ -150,37 +150,37 @@ TER PathState::pushImply (
     const Node&  pnBck       = vpnNodes.back ();
 
     // For ripple, non-XRP, ensure the issuer is on at least one side of the transaction.
-    if (tesSUCCESS == terResult
-            && !!uCurrencyID                                // Not XRP.
-            && (pnBck.uAccountID != uIssuerID               // Previous is not issuing own IOUs.
-                && uAccountID != uIssuerID))                // Current is not receiving own IOUs.
+    if (errorCode == tesSUCCESS
+        && !!uCurrencyID                                // Not XRP.
+        && (pnBck.uAccountID != uIssuerID               // Previous is not issuing own IOUs.
+            && uAccountID != uIssuerID))                // Current is not receiving own IOUs.
     {
         // Need to ripple through uIssuerID's account.
 
-        terResult   = pushNode (
+        errorCode   = pushNode (
                           STPathElement::typeAccount | STPathElement::typeCurrency | STPathElement::typeIssuer,
                           uIssuerID,                      // Intermediate account is the needed issuer.
                           uCurrencyID,
                           uIssuerID);
     }
 
-    WriteLog (lsTRACE, RippleCalc) << "pushImply< : " << transToken (terResult);
+    WriteLog (lsTRACE, RippleCalc) << "pushImply< : " << transToken (errorCode);
 
-    return terResult;
+    return errorCode;
 }
 
 // Append a node and insert before it any implied nodes.
 // Offers may go back to back.
-// <-- terResult: tesSUCCESS, temBAD_PATH, terNO_ACCOUNT, terNO_AUTH, terNO_LINE, tecPATH_DRY
+// <-- errorCode: tesSUCCESS, temBAD_PATH, terNO_ACCOUNT, terNO_AUTH, terNO_LINE, tecPATH_DRY
 TER PathState::pushNode (
     const int iType,
     const uint160& uAccountID,
     const uint160& uCurrencyID,
     const uint160& uIssuerID)
 {
-    Node                pnCur;
+    Node node;
     const bool          bFirst      = vpnNodes.empty ();
-    const Node&         pnPrv       = bFirst ? Node () : vpnNodes.back ();
+    const Node&         previousNode       = bFirst ? Node () : vpnNodes.back ();
     // true, iff node is a ripple account. false, iff node is an offer node.
     const bool          bAccount    = is_bit_set (iType, STPathElement::typeAccount);
     // true, iff currency supplied.
@@ -188,7 +188,7 @@ TER PathState::pushNode (
     const bool          bCurrency   = is_bit_set (iType, STPathElement::typeCurrency);
     // Issuer is specified for the output of the current node.
     const bool          bIssuer     = is_bit_set (iType, STPathElement::typeIssuer);
-    TER                 terResult   = tesSUCCESS;
+    TER                 errorCode   = tesSUCCESS;
 
     WriteLog (lsTRACE, RippleCalc) << "pushNode> " <<
        iType <<
@@ -196,47 +196,47 @@ TER PathState::pushNode (
        " " << (bCurrency ? STAmount::createHumanCurrency (uCurrencyID) : "-") <<
        "/" << (bIssuer ? RippleAddress::createHumanAccountID (uIssuerID) : "-");
 
-    pnCur.uFlags        = iType;
-    pnCur.uCurrencyID   = bCurrency ? uCurrencyID : pnPrv.uCurrencyID;
+    node.uFlags        = iType;
+    node.uCurrencyID   = bCurrency ? uCurrencyID : previousNode.uCurrencyID;
 
     if (iType & ~STPathElement::typeValidBits)
     {
         WriteLog (lsDEBUG, RippleCalc) << "pushNode: bad bits.";
 
-        terResult   = temBAD_PATH;
+        errorCode   = temBAD_PATH;
     }
-    else if (bIssuer && !pnCur.uCurrencyID)
+    else if (bIssuer && !node.uCurrencyID)
     {
         WriteLog (lsDEBUG, RippleCalc) << "pushNode: issuer specified for XRP.";
 
-        terResult   = temBAD_PATH;
+        errorCode   = temBAD_PATH;
     }
     else if (bIssuer && !uIssuerID)
     {
         WriteLog (lsDEBUG, RippleCalc) << "pushNode: specified bad issuer.";
 
-        terResult   = temBAD_PATH;
+        errorCode   = temBAD_PATH;
     }
     else if (!bAccount && !bCurrency && !bIssuer)
     {
         WriteLog (lsDEBUG, RippleCalc) << "pushNode: offer must specify at least currency or issuer.";
 
-        terResult   = temBAD_PATH;
+        errorCode   = temBAD_PATH;
     }
     else if (bAccount)
     {
         // Account link
 
-        pnCur.uAccountID    = uAccountID;
-        pnCur.uIssuerID     = bIssuer
+        node.uAccountID    = uAccountID;
+        node.uIssuerID     = bIssuer
                               ? uIssuerID
-                              : !!pnCur.uCurrencyID
+                              : !!node.uCurrencyID
                               ? uAccountID
                               : ACCOUNT_XRP;
-        pnCur.saRevRedeem   = STAmount (pnCur.uCurrencyID, uAccountID);
-        pnCur.saRevIssue    = STAmount (pnCur.uCurrencyID, uAccountID);
-        pnCur.saRevDeliver  = STAmount (pnCur.uCurrencyID, pnCur.uIssuerID);
-        pnCur.saFwdDeliver  = pnCur.saRevDeliver;
+        node.saRevRedeem   = STAmount (node.uCurrencyID, uAccountID);
+        node.saRevIssue    = STAmount (node.uCurrencyID, uAccountID);
+        node.saRevDeliver  = STAmount (node.uCurrencyID, node.uIssuerID);
+        node.saFwdDeliver  = node.saRevDeliver;
 
         if (bFirst)
         {
@@ -248,62 +248,62 @@ TER PathState::pushNode (
         {
             WriteLog (lsDEBUG, RippleCalc) << "pushNode: specified bad account.";
 
-            terResult   = temBAD_PATH;
+            errorCode   = temBAD_PATH;
         }
         else
         {
             // Add required intermediate nodes to deliver to current account.
             WriteLog (lsTRACE, RippleCalc) << "pushNode: imply for account.";
 
-            terResult   = pushImply (
-                              pnCur.uAccountID,                                   // Current account.
-                              pnCur.uCurrencyID,                                  // Wanted currency.
-                              !!pnCur.uCurrencyID ? uAccountID : ACCOUNT_XRP);    // Account as wanted issuer.
+            errorCode   = pushImply (
+                              node.uAccountID,                                   // Current account.
+                              node.uCurrencyID,                                  // Wanted currency.
+                              !!node.uCurrencyID ? uAccountID : ACCOUNT_XRP);    // Account as wanted issuer.
 
-            // Note: pnPrv may no longer be the immediately previous node.
+            // Note: previousNode may no longer be the immediately previous node.
         }
 
-        if (tesSUCCESS == terResult && !vpnNodes.empty ())
+        if (errorCode == tesSUCCESS && !vpnNodes.empty ())
         {
             const Node&     pnBck       = vpnNodes.back ();
             bool            bBckAccount = is_bit_set (pnBck.uFlags, STPathElement::typeAccount);
 
             if (bBckAccount)
             {
-                SLE::pointer    sleRippleState  = lesEntries.entryCache (ltRIPPLE_STATE, Ledger::getRippleStateIndex (pnBck.uAccountID, pnCur.uAccountID, pnPrv.uCurrencyID));
+                SLE::pointer    sleRippleState  = lesEntries.entryCache (ltRIPPLE_STATE, Ledger::getRippleStateIndex (pnBck.uAccountID, node.uAccountID, previousNode.uCurrencyID));
 
                 if (!sleRippleState)
                 {
                     WriteLog (lsTRACE, RippleCalc) << "pushNode: No credit line between "
                                                    << RippleAddress::createHumanAccountID (pnBck.uAccountID)
                                                    << " and "
-                                                   << RippleAddress::createHumanAccountID (pnCur.uAccountID)
+                                                   << RippleAddress::createHumanAccountID (node.uAccountID)
                                                    << " for "
-                                                   << STAmount::createHumanCurrency (pnCur.uCurrencyID)
+                                                   << STAmount::createHumanCurrency (node.uCurrencyID)
                                                    << "." ;
 
                     WriteLog (lsTRACE, RippleCalc) << getJson ();
 
-                    terResult   = terNO_LINE;
+                    errorCode   = terNO_LINE;
                 }
                 else
                 {
                     WriteLog (lsTRACE, RippleCalc) << "pushNode: Credit line found between "
                                                    << RippleAddress::createHumanAccountID (pnBck.uAccountID)
                                                    << " and "
-                                                   << RippleAddress::createHumanAccountID (pnCur.uAccountID)
+                                                   << RippleAddress::createHumanAccountID (node.uAccountID)
                                                    << " for "
-                                                   << STAmount::createHumanCurrency (pnCur.uCurrencyID)
+                                                   << STAmount::createHumanCurrency (node.uCurrencyID)
                                                    << "." ;
 
                     SLE::pointer        sleBck  = lesEntries.entryCache (ltACCOUNT_ROOT, Ledger::getAccountRootIndex (pnBck.uAccountID));
-                    bool                bHigh   = pnBck.uAccountID > pnCur.uAccountID;
+                    bool                bHigh   = pnBck.uAccountID > node.uAccountID;
 
                     if (!sleBck)
                     {
                         WriteLog (lsWARNING, RippleCalc) << "pushNode: delay: can't receive IOUs from non-existent issuer: " << RippleAddress::createHumanAccountID (pnBck.uAccountID);
 
-                        terResult   = terNO_ACCOUNT;
+                        errorCode   = terNO_ACCOUNT;
                     }
                     else if ((is_bit_set (sleBck->getFieldU32 (sfFlags), lsfRequireAuth)
                              && !is_bit_set (sleRippleState->getFieldU32 (sfFlags), (bHigh ? lsfHighAuth : lsfLowAuth)))
@@ -311,76 +311,76 @@ TER PathState::pushNode (
                     {
                         WriteLog (lsWARNING, RippleCalc) << "pushNode: delay: can't receive IOUs from issuer without auth.";
 
-                        terResult   = terNO_AUTH;
+                        errorCode   = terNO_AUTH;
                     }
 
-                    if (tesSUCCESS == terResult)
+                    if (errorCode == tesSUCCESS)
                     {
-                        STAmount    saOwed  = lesEntries.rippleOwed (pnCur.uAccountID, pnBck.uAccountID, pnCur.uCurrencyID);
+                        STAmount    saOwed  = lesEntries.rippleOwed (node.uAccountID, pnBck.uAccountID, node.uCurrencyID);
                         STAmount    saLimit;
 
                         if (saOwed <= zero
-                                && -saOwed >= (saLimit = lesEntries.rippleLimit (pnCur.uAccountID, pnBck.uAccountID, pnCur.uCurrencyID)))
+                                && -saOwed >= (saLimit = lesEntries.rippleLimit (node.uAccountID, pnBck.uAccountID, node.uCurrencyID)))
                         {
                             WriteLog (lsWARNING, RippleCalc) <<
                                 "pushNode: dry:" <<
                                 " saOwed=" << saOwed <<
                                 " saLimit=" << saLimit;
 
-                            terResult   = tecPATH_DRY;
+                            errorCode   = tecPATH_DRY;
                         }
                     }
                 }
             }
         }
 
-        if (tesSUCCESS == terResult)
+        if (errorCode == tesSUCCESS)
         {
-            vpnNodes.push_back (pnCur);
+            vpnNodes.push_back (node);
         }
     }
     else
     {
         // Offer link
         // Offers bridge a change in currency & issuer or just a change in issuer.
-        pnCur.uIssuerID     = bIssuer
+        node.uIssuerID     = bIssuer
                               ? uIssuerID
-                              : !!pnCur.uCurrencyID
-                              ? !!pnPrv.uIssuerID
-                              ? pnPrv.uIssuerID   // Default to previous issuer
-                              : pnPrv.uAccountID  // Or previous account if no previous issuer.
+                              : !!node.uCurrencyID
+                              ? !!previousNode.uIssuerID
+                              ? previousNode.uIssuerID   // Default to previous issuer
+                              : previousNode.uAccountID  // Or previous account if no previous issuer.
                       : ACCOUNT_XRP;
-        pnCur.saRateMax     = saZero;
-        pnCur.saRevDeliver  = STAmount (pnCur.uCurrencyID, pnCur.uIssuerID);
-        pnCur.saFwdDeliver  = pnCur.saRevDeliver;
+        node.saRateMax     = saZero;
+        node.saRevDeliver  = STAmount (node.uCurrencyID, node.uIssuerID);
+        node.saFwdDeliver  = node.saRevDeliver;
 
-        if (!!pnCur.uCurrencyID != !!pnCur.uIssuerID)
+        if (!!node.uCurrencyID != !!node.uIssuerID)
         {
             WriteLog (lsDEBUG, RippleCalc) << "pushNode: currency is inconsistent with issuer.";
 
-            terResult   = temBAD_PATH;
+            errorCode   = temBAD_PATH;
         }
-        else if (!!pnPrv.uAccountID)
+        else if (!!previousNode.uAccountID)
         {
             // Previous is an account.
             WriteLog (lsTRACE, RippleCalc) << "pushNode: imply for offer.";
 
             // Insert intermediary issuer account if needed.
-            terResult   = pushImply (
+            errorCode   = pushImply (
                 ACCOUNT_XRP, // Rippling, but offers don't have an account.
-                pnPrv.uCurrencyID,
-                pnPrv.uIssuerID);
+                previousNode.uCurrencyID,
+                previousNode.uIssuerID);
         }
 
-        if (tesSUCCESS == terResult)
+        if (errorCode == tesSUCCESS)
         {
-            vpnNodes.push_back (pnCur);
+            vpnNodes.push_back (node);
         }
     }
 
-    WriteLog (lsTRACE, RippleCalc) << "pushNode< : " << transToken (terResult);
+    WriteLog (lsTRACE, RippleCalc) << "pushNode< : " << transToken (errorCode);
 
-    return terResult;
+    return errorCode;
 }
 
 // Set to an expanded path.
@@ -440,7 +440,7 @@ void PathState::setExpanded (
         const uint160   uNxtCurrencyID  = spSourcePath.size ()
                                           ? spSourcePath.getElement (0).getCurrency () // Use next node.
                                           : uOutCurrencyID;                           // Use send.
-        const uint160   uNxtAccountID   = spSourcePath.size ()
+        const uint160   nextAccountID   = spSourcePath.size ()
                                           ? spSourcePath.getElement (0).getAccountID ()
                                           : !!uOutCurrencyID
                                           ? uOutIssuerID == uReceiverID
@@ -452,12 +452,12 @@ void PathState::setExpanded (
             " uMaxIssuerID=" << RippleAddress::createHumanAccountID (uMaxIssuerID) <<
             " uSenderIssuerID=" << RippleAddress::createHumanAccountID (uSenderIssuerID) <<
             " uNxtCurrencyID=" << STAmount::createHumanCurrency (uNxtCurrencyID) <<
-            " uNxtAccountID=" << RippleAddress::createHumanAccountID (uNxtAccountID);
+            " nextAccountID=" << RippleAddress::createHumanAccountID (nextAccountID);
 
         // Can't just use push implied, because it can't compensate for next account.
         if (!uNxtCurrencyID                         // Next is XRP, offer next. Must go through issuer.
                 || uMaxCurrencyID != uNxtCurrencyID // Next is different currency, offer next...
-                || uMaxIssuerID != uNxtAccountID)   // Next is not implied issuer
+                || uMaxIssuerID != nextAccountID)   // Next is not implied issuer
         {
             WriteLog (lsDEBUG, RippleCalc) << "setExpanded: sender implied:" <<
                 " account=" << RippleAddress::createHumanAccountID (uMaxIssuerID) <<
@@ -481,18 +481,18 @@ void PathState::setExpanded (
         {
             WriteLog (lsTRACE, RippleCalc) << "setExpanded: element in path";
             terStatus   = pushNode (
-                speElement.getNodeType (), speElement.getAccountID (), 
+                speElement.getNodeType (), speElement.getAccountID (),
                 speElement.getCurrency (), speElement.getIssuerID ());
         }
     }
 
-    const Node&  pnPrv           = vpnNodes.back ();
+    const Node&  previousNode           = vpnNodes.back ();
 
     if (tesSUCCESS == terStatus
             && !!uOutCurrencyID                         // Next is not XRP
             && uOutIssuerID != uReceiverID              // Out issuer is not receiver
-            && (pnPrv.uCurrencyID != uOutCurrencyID     // Previous will be an offer.
-                || pnPrv.uAccountID != uOutIssuerID))   // Need the implied issuer.
+            && (previousNode.uCurrencyID != uOutCurrencyID     // Previous will be an offer.
+                || previousNode.uAccountID != uOutIssuerID))   // Need the implied issuer.
     {
         // Add implied account.
         WriteLog (lsDEBUG, RippleCalc) << "setExpanded: receiver implied:" <<
@@ -530,11 +530,13 @@ void PathState::setExpanded (
 
         const unsigned int  uNodes  = vpnNodes.size ();
 
-        for (unsigned int uNode = 0; tesSUCCESS == terStatus && uNode != uNodes; ++uNode)
+        for (unsigned int nodeIndex = 0; tesSUCCESS == terStatus && nodeIndex != uNodes; ++nodeIndex)
         {
-            const Node&  pnCur   = vpnNodes[uNode];
+            const Node&  node   = vpnNodes[nodeIndex];
 
-            if (!umForward.insert (std::make_pair (std::make_tuple (pnCur.uAccountID, pnCur.uCurrencyID, pnCur.uIssuerID), uNode)).second)
+            AccountCurrencyIssuer aci(
+                node.uAccountID, node.uCurrencyID, node.uIssuerID);
+            if (!umForward.insert (std::make_pair (aci, nodeIndex)).second)
             {
                 // Failed to insert. Have a loop.
                 WriteLog (lsDEBUG, RippleCalc) <<
@@ -589,7 +591,7 @@ void PathState::setCanonical (
     const uint160   uOutCurrencyID  = saOutAct.getCurrency ();
     const uint160   uOutIssuerID    = saOutAct.getIssuer ();
 
-    unsigned int    uNode       = 0;
+    unsigned int    nodeIndex       = 0;
 
     unsigned int    uEnd        = psExpanded.vpnNodes.size ();  // The node, indexed by 0, not to include.
 
@@ -600,7 +602,7 @@ void PathState::setCanonical (
     uint160         uIssuerID       = uMaxIssuerID;
 
     // Node 0 is a composite of the sending account and saInAct.
-    ++uNode;    // skip node 0
+    ++nodeIndex;    // skip node 0
 
     // Last node is implied: Always skip last node
     --uEnd;     // skip last node
@@ -609,21 +611,21 @@ void PathState::setCanonical (
     // - currency is always the same as vpnNodes[0].
 #if 1
 
-    if (uNode != uEnd && uMaxIssuerID != uAccountID)
+    if (nodeIndex != uEnd && uMaxIssuerID != uAccountID)
     {
         // saInAct issuer is not the sender. This forces an implied node.
-        // WriteLog (lsDEBUG, RippleCalc) << boost::str(boost::format("setCanonical: in diff: uNode=%d uEnd=%d") % uNode % uEnd);
+        // WriteLog (lsDEBUG, RippleCalc) << boost::str(boost::format("setCanonical: in diff: nodeIndex=%d uEnd=%d") % nodeIndex % uEnd);
 
         // skip node 1
 
-        uIssuerID   = psExpanded.vpnNodes[uNode].uIssuerID;
+        uIssuerID   = psExpanded.vpnNodes[nodeIndex].uIssuerID;
 
-        ++uNode;
+        ++nodeIndex;
     }
 
 #else
 
-    if (uNode != uEnd)
+    if (nodeIndex != uEnd)
     {
         // Have another node
         bool    bKeep   = false;
@@ -656,17 +658,17 @@ void PathState::setCanonical (
 
         if (bKeep)
         {
-            uCurrencyID = psExpanded.vpnNodes[uNode].uCurrencyID;
-            uIssuerID   = psExpanded.vpnNodes[uNode].uIssuerID;
-            ++uNode;        // Keep it.
+            uCurrencyID = psExpanded.vpnNodes[nodeIndex].uCurrencyID;
+            uIssuerID   = psExpanded.vpnNodes[nodeIndex].uIssuerID;
+            ++nodeIndex;        // Keep it.
         }
     }
 
 #endif
 
-    if (uNode != uEnd && !!uOutCurrencyID && uOutIssuerID != uDstAccountID)
+    if (nodeIndex != uEnd && !!uOutCurrencyID && uOutIssuerID != uDstAccountID)
     {
-        // WriteLog (lsDEBUG, RippleCalc) << boost::str(boost::format("setCanonical: out diff: uNode=%d uEnd=%d") % uNode % uEnd);
+        // WriteLog (lsDEBUG, RippleCalc) << boost::str(boost::format("setCanonical: out diff: nodeIndex=%d uEnd=%d") % nodeIndex % uEnd);
         // The next to last node is saOutAct if an issuer different from receiver is supplied.
         // The next to last node can be implied.
 
@@ -675,33 +677,33 @@ void PathState::setCanonical (
 
     const Node&  pnEnd   = psExpanded.vpnNodes[uEnd];
 
-    if (uNode != uEnd
+    if (nodeIndex != uEnd
             && !pnEnd.uAccountID && pnEnd.uCurrencyID == uOutCurrencyID && pnEnd.uIssuerID == uOutIssuerID)
     {
         // The current end node is an offer converting to saOutAct's currency and issuer and can be implied.
-        // WriteLog (lsDEBUG, RippleCalc) << boost::str(boost::format("setCanonical: out offer: uNode=%d uEnd=%d") % uNode % uEnd);
+        // WriteLog (lsDEBUG, RippleCalc) << boost::str(boost::format("setCanonical: out offer: nodeIndex=%d uEnd=%d") % nodeIndex % uEnd);
 
         --uEnd;
     }
 
     // Do not include uEnd.
-    for (; uNode != uEnd; ++uNode)
+    for (; nodeIndex != uEnd; ++nodeIndex)
     {
-        // WriteLog (lsDEBUG, RippleCalc) << boost::str(boost::format("setCanonical: loop: uNode=%d uEnd=%d") % uNode % uEnd);
-        const Node&  pnPrv   = psExpanded.vpnNodes[uNode - 1];
-        const Node&  pnCur   = psExpanded.vpnNodes[uNode];
-        const Node&  pnNxt   = psExpanded.vpnNodes[uNode + 1];
+        // WriteLog (lsDEBUG, RippleCalc) << boost::str(boost::format("setCanonical: loop: nodeIndex=%d uEnd=%d") % nodeIndex % uEnd);
+        const Node&  previousNode   = psExpanded.vpnNodes[nodeIndex - 1];
+        const Node&  node   = psExpanded.vpnNodes[nodeIndex];
+        const Node&  nextNode   = psExpanded.vpnNodes[nodeIndex + 1];
 
-        const bool      bCurAccount     = is_bit_set (pnCur.uFlags, STPathElement::typeAccount);
+        const bool      nodeIsAccount     = is_bit_set (node.uFlags, STPathElement::typeAccount);
 
         bool            bSkip   = false;
 
-        if (bCurAccount)
+        if (nodeIsAccount)
         {
             // Currently at an account.
 
             // Output is non-XRP and issuer is account.
-            if (!!pnCur.uCurrencyID && pnCur.uIssuerID == pnCur.uAccountID)
+            if (!!node.uCurrencyID && node.uIssuerID == node.uAccountID)
             {
                 // Account issues itself.
                 // XXX Not good enough. Previous account must mention it.
@@ -712,11 +714,11 @@ void PathState::setCanonical (
         else
         {
             // Currently at an offer.
-            const bool      bPrvAccount     = is_bit_set (pnPrv.uFlags, STPathElement::typeAccount);
-            const bool      bNxtAccount     = is_bit_set (pnNxt.uFlags, STPathElement::typeAccount);
+            const bool      bPrvAccount     = is_bit_set (previousNode.uFlags, STPathElement::typeAccount);
+            const bool      bNxtAccount     = is_bit_set (nextNode.uFlags, STPathElement::typeAccount);
 
             if (bPrvAccount && bNxtAccount                  // Offer surrounded by accounts.
-                    && pnPrv.uCurrencyID != pnNxt.uCurrencyID)
+                    && previousNode.uCurrencyID != nextNode.uCurrencyID)
             {
                 // Offer can be implied by currency change.
                 // XXX What about issuer?
@@ -730,26 +732,25 @@ void PathState::setCanonical (
             // Copy node
             Node     pnNew;
 
-            bool            bSetAccount     = bCurAccount;
-            bool            bSetCurrency    = uCurrencyID != pnCur.uCurrencyID;
+            bool bSetCurrency = (uCurrencyID != node.uCurrencyID);
             // XXX What if we need the next account because we want to skip it?
-            bool            bSetIssuer      = !uCurrencyID && uIssuerID != pnCur.uIssuerID;
+            bool bSetIssuer = !uCurrencyID && (uIssuerID != node.uIssuerID);
 
-            pnNew.uFlags    = (bSetAccount ? STPathElement::typeAccount : 0)
+            pnNew.uFlags    = (nodeIsAccount ? STPathElement::typeAccount : 0)
                               | (bSetCurrency ? STPathElement::typeCurrency : 0)
                               | (bSetIssuer ? STPathElement::typeIssuer : 0);
 
-            if (bSetAccount)
-                pnNew.uAccountID    = pnCur.uAccountID;
+            if (nodeIsAccount)
+                pnNew.uAccountID    = node.uAccountID;
 
             if (bSetCurrency)
             {
-                pnNew.uCurrencyID   = pnCur.uCurrencyID;
+                pnNew.uCurrencyID   = node.uCurrencyID;
                 uCurrencyID         = pnNew.uCurrencyID;
             }
 
             if (bSetIssuer)
-                pnNew.uIssuerID     = pnCur.uIssuerID;
+                pnNew.uIssuerID     = node.uIssuerID;
 
             // XXX ^^^ What about setting uIssuerID?
 

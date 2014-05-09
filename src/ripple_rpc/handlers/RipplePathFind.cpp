@@ -22,7 +22,9 @@
 namespace ripple {
 
 // This interface is deprecated.
-Json::Value RPCHandler::doRipplePathFind (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value RPCHandler::doRipplePathFind (
+    Json::Value params, Resource::Charge& loadType,
+    Application::ScopedLockType& masterLockHolder)
 {
     masterLockHolder.unlock ();
 
@@ -217,7 +219,7 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value params, Resource::Charge& 
                 LedgerEntrySet  lesSandbox (lpLedger, tapNONE);
 
                 TER terResult   =
-                    RippleCalc::rippleCalc (
+                    rippleCalculate (
                         lesSandbox,
                         saMaxAmountAct,         // <--
                         saDstAmountAct,         // <--
@@ -249,7 +251,7 @@ Json::Value RPCHandler::doRipplePathFind (Json::Value params, Resource::Charge& 
                     spsComputed.addPath(extraPath);
                     vpsExpanded.clear ();
                     lesSandbox.clear ();
-                    terResult = RippleCalc::rippleCalc (lesSandbox, saMaxAmountAct, saDstAmountAct,
+                    terResult = rippleCalculate (lesSandbox, saMaxAmountAct, saDstAmountAct,
                                                         vpsExpanded, saMaxAmount, saDstAmount,
                                                         raDst.getAccountID (), raSrc.getAccountID (),
                                                         spsComputed, false, false, false, true);
