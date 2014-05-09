@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include "../../beast/beast/cxx14/iterator.h"
+
 namespace ripple {
 
 SETUP_LOG (STAmount)
@@ -650,11 +652,9 @@ std::string STAmount::getText () const
 
     assert (post_to >= post_from);
 
-    // NIKB FIXME This can be improved once std::make_reverse_iterator from
-    // C++14 becomes available for our use:
     post_to = std::find_if(
-        std::reverse_iterator<std::string::iterator>(post_to),
-        std::reverse_iterator<std::string::iterator>(post_from),
+        std::make_reverse_iterator (post_to),
+        std::make_reverse_iterator (post_from),
         [](char c)
         {
             return c != '0';
