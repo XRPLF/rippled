@@ -593,6 +593,8 @@ std::string STAmount::getText () const
     std::string ret;
     ret.reserve (64);
 
+    std::string const raw_value (std::to_string (mValue));
+
     if (mIsNegative)
         ret.append (1, '-');
 
@@ -600,7 +602,7 @@ std::string STAmount::getText () const
 
     if (mIsNative || scientific)
     {
-        ret.append (std::to_string (mValue));
+        ret.append (raw_value);
 
         if(scientific)
         {
@@ -611,30 +613,63 @@ std::string STAmount::getText () const
         return ret;
     }
 
-    std::string val = "000000000000000000000000000";
-    val += beast::lexicalCast <std::string> (mValue);
-    val += "00000000000000000000000";
+    assert (mOffset + 43 > 0);
 
-    // NIKB TODO remove the need to call substr and copy a ton of data that will
-    //           be thrown away. We should restructure this to use iterators?
-    //           Random rant: why does std::string return both iterators and
-    //           offsets? Pick a method and stick to it. Argh.
-    std::string pre = val.substr (0, mOffset + 43);
-    std::string post = val.substr (mOffset + 43);
+    size_t const pad_prefix = 27;
+    size_t const pad_suffix = 23;
 
-    size_t s_pre = pre.find_first_not_of ('0');
+    std::string val;
+    val.reserve (raw_value.length () + pad_prefix + pad_suffix);
+    val.append (pad_prefix, '0');
+    val.append (raw_value);
+    val.append (pad_suffix, '0');
 
-    if (s_pre == std::string::npos)
+    size_t const offset (mOffset + 43);
+
+    auto pre_from (val.begin ());
+    auto const pre_to (val.begin () + offset);
+
+    auto const post_from (val.begin () + offset);
+    auto post_to (val.end ());
+
+    // Crop leading zeroes. Take advantage of the fact that there's always a
+    // fixed amount of leading zeroes and skip them.
+    if (std::distance (pre_from, pre_to) > pad_prefix)
+        pre_from += pad_prefix;
+
+    assert (post_to >= post_from);
+
+    while ((pre_from != pre_to) && (*pre_from == '0'))
+        ++pre_from;
+
+    // Crop trailing zeroes. Take advantage of the fact that there's always a
+    // fixed amount of trailing zeroes and skip them.
+    if (std::distance (post_from, post_to) > pad_suffix)
+        post_to -= pad_suffix;
+
+    assert (post_to >= post_from);
+
+    while (post_to != post_from)
+    {
+        --post_to;
+
+        if (*post_to != '0')
+        {
+            ++post_to;
+            break;
+        }
+    }
+
+    // Assemble the output:
+    if (pre_from == pre_to)
         ret.append (1, '0');
     else
-        ret.append (pre.begin () + s_pre, pre.end ());
+        ret.append(pre_from, pre_to);
 
-    size_t s_post = post.find_last_not_of ('0');
-
-    if (s_post != std::string::npos)
+    if (post_to != post_from)
     {
         ret.append (1, '.');
-        ret.append (post.begin (), post.begin () + s_post + 1);
+        ret.append (post_from, post_to);
     }
 
     return ret;
