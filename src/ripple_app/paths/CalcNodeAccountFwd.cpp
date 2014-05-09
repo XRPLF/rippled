@@ -38,40 +38,37 @@ namespace ripple {
 // - If next node is an offer and output is XRP then we need to deliver funds to
 //   limbo.
 TER RippleCalc::calcNodeAccountFwd (
-    const unsigned int uNode,   // 0 <= uNode <= uLast
-    PathState& psCur,
+    const unsigned int nodeIndex,   // 0 <= nodeIndex <= lastNodeIndex
+    PathState& pathState,
     const bool bMultiQuality)
 {
-    TER                 terResult   = tesSUCCESS;
-    const unsigned int  uLast       = psCur.vpnNodes.size () - 1;
+    TER                 errorCode   = tesSUCCESS;
+    const unsigned int  lastNodeIndex       = pathState.vpnNodes.size () - 1;
 
     std::uint64_t       uRateMax    = 0;
 
-    PathState::Node& pnPrv = psCur.vpnNodes[uNode ? uNode - 1 : 0];
-    PathState::Node& pnCur = psCur.vpnNodes[uNode];
-    PathState::Node& pnNxt = psCur.vpnNodes[uNode == uLast ? uLast : uNode + 1];
+    auto& previousNode = pathState.vpnNodes[nodeIndex ? nodeIndex - 1 : 0];
+    auto& node = pathState.vpnNodes[nodeIndex];
+    auto& nextNode = pathState.vpnNodes[nodeIndex == lastNodeIndex ? lastNodeIndex : nodeIndex + 1];
 
-    const bool bPrvAccount
-        = is_bit_set (pnPrv.uFlags, STPathElement::typeAccount);
-    const bool bNxtAccount
-        = is_bit_set (pnNxt.uFlags, STPathElement::typeAccount);
+    const bool previousNodeIsAccount
+        = is_bit_set (previousNode.uFlags, STPathElement::typeAccount);
+    const bool nextNodeIsAccount
+        = is_bit_set (nextNode.uFlags, STPathElement::typeAccount);
 
-    const uint160& uCurAccountID = pnCur.uAccountID;
-    const uint160& uPrvAccountID
-        = bPrvAccount ? pnPrv.uAccountID : uCurAccountID;
+    const uint160& previousAccountID
+        = previousNodeIsAccount ? previousNode.uAccountID : node.uAccountID;
     // Offers are always issue.
-    const uint160& uNxtAccountID
-            = bNxtAccount ? pnNxt.uAccountID : uCurAccountID;
+    const uint160& nextAccountID
+        = nextNodeIsAccount ? nextNode.uAccountID : node.uAccountID;
 
-    const uint160&  uCurrencyID     = pnCur.uCurrencyID;
-
-    std::uint32_t uQualityIn = uNode
+    std::uint32_t uQualityIn = nodeIndex
         ? mActiveLedger.rippleQualityIn (
-            uCurAccountID, uPrvAccountID, uCurrencyID)
+            node.uAccountID, previousAccountID, node.uCurrencyID)
         : QUALITY_ONE;
-    std::uint32_t  uQualityOut = (uNode == uLast)
+    std::uint32_t  uQualityOut = (nodeIndex == lastNodeIndex)
         ? mActiveLedger.rippleQualityOut (
-            uCurAccountID, uNxtAccountID, uCurrencyID)
+            node.uAccountID, nextAccountID, node.uCurrencyID)
         : QUALITY_ONE;
 
     // When looking backward (prv) for req we care about what we just
@@ -79,128 +76,113 @@ TER RippleCalc::calcNodeAccountFwd (
     // When looking forward (cur) for req we care about what was desired: use
     // rev.
 
-    // For bNxtAccount
-    const STAmount& saPrvRedeemReq  = pnPrv.saFwdRedeem;
+    // For nextNodeIsAccount
     STAmount saPrvRedeemAct (
-        saPrvRedeemReq.getCurrency (), saPrvRedeemReq.getIssuer ());
+        previousNode.saFwdRedeem.getCurrency (),
+        previousNode.saFwdRedeem.getIssuer ());
 
-    const STAmount& saPrvIssueReq   = pnPrv.saFwdIssue;
     STAmount saPrvIssueAct (
-        saPrvIssueReq.getCurrency (), saPrvIssueReq.getIssuer ());
+        previousNode.saFwdIssue.getCurrency (),
+        previousNode.saFwdIssue.getIssuer ());
 
-    // For !bPrvAccount
-    const STAmount& saPrvDeliverReq = pnPrv.saFwdDeliver;
+    // For !previousNodeIsAccount
     STAmount saPrvDeliverAct (
-        saPrvDeliverReq.getCurrency (), saPrvDeliverReq.getIssuer ());
-
-    // For bNxtAccount
-    const STAmount& saCurRedeemReq  = pnCur.saRevRedeem;
-    STAmount& saCurRedeemAct  = pnCur.saFwdRedeem;
-
-    const STAmount& saCurIssueReq   = pnCur.saRevIssue;
-    STAmount& saCurIssueAct   = pnCur.saFwdIssue;
-
-    // For !bNxtAccount
-    const STAmount& saCurDeliverReq = pnCur.saRevDeliver;
-    STAmount& saCurDeliverAct = pnCur.saFwdDeliver;
-
-    // For !uNode
-    // Report how much pass sends.
-    STAmount& saCurSendMaxPass = psCur.saInPass;
+        previousNode.saFwdDeliver.getCurrency (),
+        previousNode.saFwdDeliver.getIssuer ());
 
     WriteLog (lsTRACE, RippleCalc)
         << "calcNodeAccountFwd> "
-        << "uNode=" << uNode << "/" << uLast
-        << " saPrvRedeemReq:" << saPrvRedeemReq
-        << " saPrvIssueReq:" << saPrvIssueReq
-        << " saPrvDeliverReq:" << saPrvDeliverReq
-        << " saCurRedeemReq:" << saCurRedeemReq
-        << " saCurIssueReq:" << saCurIssueReq
-        << " saCurDeliverReq:" << saCurDeliverReq;
+        << "nodeIndex=" << nodeIndex << "/" << lastNodeIndex
+        << " previousNode.saFwdRedeem:" << previousNode.saFwdRedeem
+        << " saPrvIssueReq:" << previousNode.saFwdIssue
+        << " previousNode.saFwdDeliver:" << previousNode.saFwdDeliver
+        << " node.saRevRedeem:" << node.saRevRedeem
+        << " node.saRevIssue:" << node.saRevIssue
+        << " node.saRevDeliver:" << node.saRevDeliver;
 
     // Ripple through account.
 
-    if (bPrvAccount && bNxtAccount)
+    if (previousNodeIsAccount && nextNodeIsAccount)
     {
         // Next is an account, must be rippling.
 
-        if (!uNode)
+        if (!nodeIndex)
         {
             // ^ --> ACCOUNT --> account
 
             // For the first node, calculate amount to ripple based on what is
             // available.
-            saCurRedeemAct      = saCurRedeemReq;
+            node.saFwdRedeem      = node.saRevRedeem;
 
-            if (psCur.saInReq >= zero)
+            if (pathState.saInReq >= zero)
             {
                 // Limit by send max.
-                saCurRedeemAct = std::min (
-                    saCurRedeemAct, psCur.saInReq - psCur.saInAct);
+                node.saFwdRedeem = std::min (
+                    node.saFwdRedeem, pathState.saInReq - pathState.saInAct);
             }
 
-            saCurSendMaxPass    = saCurRedeemAct;
+            pathState.saInPass    = node.saFwdRedeem;
 
-            saCurIssueAct = saCurRedeemAct == saCurRedeemReq
+            node.saFwdIssue = node.saFwdRedeem == node.saRevRedeem
                 // Fully redeemed.
-                ? saCurIssueReq : STAmount (saCurIssueReq);
+                ? node.saRevIssue : STAmount (node.saRevIssue);
 
-            if (!!saCurIssueAct && psCur.saInReq >= zero)
+            if (!!node.saFwdIssue && pathState.saInReq >= zero)
             {
                 // Limit by send max.
-                saCurIssueAct = std::min (
-                    saCurIssueAct,
-                    psCur.saInReq - psCur.saInAct - saCurRedeemAct);
+                node.saFwdIssue = std::min (
+                    node.saFwdIssue,
+                    pathState.saInReq - pathState.saInAct - node.saFwdRedeem);
             }
 
-            saCurSendMaxPass += saCurIssueAct;
+            pathState.saInPass += node.saFwdIssue;
 
             WriteLog (lsTRACE, RippleCalc)
                 << "calcNodeAccountFwd: ^ --> ACCOUNT --> account :"
-                << " saInReq=" << psCur.saInReq
-                << " saInAct=" << psCur.saInAct
-                << " saCurRedeemAct:" << saCurRedeemAct
-                << " saCurIssueReq:" << saCurIssueReq
-                << " saCurIssueAct:" << saCurIssueAct
-                << " saCurSendMaxPass:" << saCurSendMaxPass;
+                << " saInReq=" << pathState.saInReq
+                << " saInAct=" << pathState.saInAct
+                << " node.saFwdRedeem:" << node.saFwdRedeem
+                << " node.saRevIssue:" << node.saRevIssue
+                << " node.saFwdIssue:" << node.saFwdIssue
+                << " pathState.saInPass:" << pathState.saInPass;
         }
-        else if (uNode == uLast)
+        else if (nodeIndex == lastNodeIndex)
         {
             // account --> ACCOUNT --> $
             WriteLog (lsTRACE, RippleCalc)
                 << "calcNodeAccountFwd: account --> ACCOUNT --> $ :"
-                << " uPrvAccountID="
-                << RippleAddress::createHumanAccountID (uPrvAccountID)
-                << " uCurAccountID="
-                << RippleAddress::createHumanAccountID (uCurAccountID)
-                << " saPrvRedeemReq:" << saPrvRedeemReq
-                << " saPrvIssueReq:" << saPrvIssueReq;
+                << " previousAccountID="
+                << RippleAddress::createHumanAccountID (previousAccountID)
+                << " node.uAccountID="
+                << RippleAddress::createHumanAccountID (node.uAccountID)
+                << " previousNode.saFwdRedeem:" << previousNode.saFwdRedeem
+                << " previousNode.saFwdIssue:" << previousNode.saFwdIssue;
 
             // Last node. Accept all funds. Calculate amount actually to credit.
 
-            STAmount& saCurReceive = psCur.saOutPass;
+            STAmount& saCurReceive = pathState.saOutPass;
 
             STAmount saIssueCrd = uQualityIn >= QUALITY_ONE
-                    ? saPrvIssueReq  // No fee.
+                    ? previousNode.saFwdIssue  // No fee.
                     : STAmount::mulRound (
-                          saPrvIssueReq,
+                          previousNode.saFwdIssue,
                           STAmount (CURRENCY_ONE, ACCOUNT_ONE, uQualityIn, -9),
                           true); // Amount to credit.
 
             // Amount to credit. Credit for less than received as a surcharge.
-            saCurReceive    = saPrvRedeemReq + saIssueCrd;
+            saCurReceive    = previousNode.saFwdRedeem + saIssueCrd;
 
             if (saCurReceive)
             {
                 // Actually receive.
-                terResult = mActiveLedger.rippleCredit (
-                    uPrvAccountID, uCurAccountID,
-                    saPrvRedeemReq + saPrvIssueReq, false);
+                errorCode = mActiveLedger.rippleCredit (
+                    previousAccountID, node.uAccountID,
+                    previousNode.saFwdRedeem + previousNode.saFwdIssue, false);
             }
             else
             {
                 // After applying quality, total payment was microscopic.
-                terResult   = tecPATH_DRY;
+                errorCode   = tecPATH_DRY;
             }
         }
         else
@@ -209,71 +191,72 @@ TER RippleCalc::calcNodeAccountFwd (
             WriteLog (lsTRACE, RippleCalc)
                 << "calcNodeAccountFwd: account --> ACCOUNT --> account";
 
-            saCurRedeemAct.clear (saCurRedeemReq);
-            saCurIssueAct.clear (saCurIssueReq);
+            node.saFwdRedeem.clear (node.saRevRedeem);
+            node.saFwdIssue.clear (node.saRevIssue);
 
             // Previous redeem part 1: redeem -> redeem
-            if (saPrvRedeemReq && saCurRedeemReq)
+            if (previousNode.saFwdRedeem && node.saRevRedeem)
                 // Previous wants to redeem.
             {
                 // Rate : 1.0 : quality out
                 calcNodeRipple (
-                    QUALITY_ONE, uQualityOut, saPrvRedeemReq, saCurRedeemReq,
-                    saPrvRedeemAct, saCurRedeemAct, uRateMax);
+                    QUALITY_ONE, uQualityOut, previousNode.saFwdRedeem, node.saRevRedeem,
+                    saPrvRedeemAct, node.saFwdRedeem, uRateMax);
             }
 
             // Previous issue part 1: issue -> redeem
-            if (saPrvIssueReq != saPrvIssueAct
+            if (previousNode.saFwdIssue != saPrvIssueAct
                 // Previous wants to issue.
-                && saCurRedeemReq != saCurRedeemAct)
+                && node.saRevRedeem != node.saFwdRedeem)
                 // Current has more to redeem to next.
             {
                 // Rate: quality in : quality out
                 calcNodeRipple (
-                    uQualityIn, uQualityOut, saPrvIssueReq, saCurRedeemReq,
-                    saPrvIssueAct, saCurRedeemAct, uRateMax);
+                    uQualityIn, uQualityOut, previousNode.saFwdIssue, node.saRevRedeem,
+                    saPrvIssueAct, node.saFwdRedeem, uRateMax);
             }
 
             // Previous redeem part 2: redeem -> issue.
-            if (saPrvRedeemReq != saPrvRedeemAct
+            if (previousNode.saFwdRedeem != saPrvRedeemAct
                 // Previous still wants to redeem.
-                && saCurRedeemReq == saCurRedeemAct
+                && node.saRevRedeem == node.saFwdRedeem
                 // Current redeeming is done can issue.
-                && saCurIssueReq)
+                && node.saRevIssue)
                 // Current wants to issue.
             {
                 // Rate : 1.0 : transfer_rate
                 calcNodeRipple (
                     QUALITY_ONE,
-                    mActiveLedger.rippleTransferRate (uCurAccountID),
-                    saPrvRedeemReq, saCurIssueReq, saPrvRedeemAct,
-                    saCurIssueAct, uRateMax);
+                    mActiveLedger.rippleTransferRate (node.uAccountID),
+                    previousNode.saFwdRedeem, node.saRevIssue, saPrvRedeemAct,
+                    node.saFwdIssue, uRateMax);
             }
 
             // Previous issue part 2 : issue -> issue
-            if (saPrvIssueReq != saPrvIssueAct
+            if (previousNode.saFwdIssue != saPrvIssueAct
                 // Previous wants to issue.
-                && saCurRedeemReq == saCurRedeemAct
+                && node.saRevRedeem == node.saFwdRedeem
                 // Current redeeming is done can issue.
-                && saCurIssueReq)
+                && node.saRevIssue)
                 // Current wants to issue.
             {
                 // Rate: quality in : 1.0
                 calcNodeRipple (
-                    uQualityIn, QUALITY_ONE, saPrvIssueReq, saCurIssueReq,
-                    saPrvIssueAct, saCurIssueAct, uRateMax);
+                    uQualityIn, QUALITY_ONE, previousNode.saFwdIssue, node.saRevIssue,
+                    saPrvIssueAct, node.saFwdIssue, uRateMax);
             }
 
-            STAmount saProvide = saCurRedeemAct + saCurIssueAct;
+            STAmount saProvide = node.saFwdRedeem + node.saFwdIssue;
 
             // Adjust prv --> cur balance : take all inbound
-            terResult   = saProvide
-                ? mActiveLedger.rippleCredit (uPrvAccountID, uCurAccountID,
-                                          saPrvRedeemReq + saPrvIssueReq, false)
+            errorCode   = saProvide
+                ? mActiveLedger.rippleCredit (
+                    previousAccountID, node.uAccountID,
+                    previousNode.saFwdRedeem + previousNode.saFwdIssue, false)
                 : tecPATH_DRY;
         }
     }
-    else if (bPrvAccount && !bNxtAccount)
+    else if (previousNodeIsAccount && !nextNodeIsAccount)
     {
         // Current account is issuer to next offer.
         // Determine deliver to offer amount.
@@ -281,77 +264,78 @@ TER RippleCalc::calcNodeAccountFwd (
         // If issuer hold's an offer owners inbound IOUs, there is no fee and
         // redeem/issue will transparently happen.
 
-        if (uNode)
+        if (nodeIndex)
         {
             // Non-XRP, current node is the issuer.
             WriteLog (lsTRACE, RippleCalc)
                 << "calcNodeAccountFwd: account --> ACCOUNT --> offer";
 
-            saCurDeliverAct.clear (saCurDeliverReq);
+            node.saFwdDeliver.clear (node.saRevDeliver);
 
             // redeem -> issue/deliver.
             // Previous wants to redeem.
             // Current is issuing to an offer so leave funds in account as
             // "limbo".
-            if (saPrvRedeemReq)
+            if (previousNode.saFwdRedeem)
                 // Previous wants to redeem.
             {
                 // Rate : 1.0 : transfer_rate
                 // XXX Is having the transfer rate here correct?
                 calcNodeRipple (
                     QUALITY_ONE,
-                    mActiveLedger.rippleTransferRate (uCurAccountID),
-                    saPrvRedeemReq, saCurDeliverReq, saPrvRedeemAct,
-                    saCurDeliverAct, uRateMax);
+                    mActiveLedger.rippleTransferRate (node.uAccountID),
+                    previousNode.saFwdRedeem, node.saRevDeliver, saPrvRedeemAct,
+                    node.saFwdDeliver, uRateMax);
             }
 
             // issue -> issue/deliver
-            if (saPrvRedeemReq == saPrvRedeemAct
+            if (previousNode.saFwdRedeem == saPrvRedeemAct
                 // Previous done redeeming: Previous has no IOUs.
-                && saPrvIssueReq)
+                && previousNode.saFwdIssue)
                 // Previous wants to issue. To next must be ok.
             {
                 // Rate: quality in : 1.0
                 calcNodeRipple (
-                    uQualityIn, QUALITY_ONE, saPrvIssueReq, saCurDeliverReq,
-                    saPrvIssueAct, saCurDeliverAct, uRateMax);
+                    uQualityIn, QUALITY_ONE, previousNode.saFwdIssue, node.saRevDeliver,
+                    saPrvIssueAct, node.saFwdDeliver, uRateMax);
             }
 
             // Adjust prv --> cur balance : take all inbound
-            terResult   = saCurDeliverAct
-                ? mActiveLedger.rippleCredit (uPrvAccountID, uCurAccountID,
-                                          saPrvRedeemReq + saPrvIssueReq, false)
+            errorCode   = node.saFwdDeliver
+                ? mActiveLedger.rippleCredit (
+                    previousAccountID, node.uAccountID,
+                    previousNode.saFwdRedeem + previousNode.saFwdIssue, false)
                 : tecPATH_DRY;  // Didn't actually deliver anything.
         }
         else
         {
             // Delivering amount requested from downstream.
-            saCurDeliverAct = saCurDeliverReq;
+            node.saFwdDeliver = node.saRevDeliver;
 
             // If limited, then limit by send max and available.
-            if (psCur.saInReq >= zero)
+            if (pathState.saInReq >= zero)
             {
                 // Limit by send max.
-                saCurDeliverAct = std::min (saCurDeliverAct,
-                                            psCur.saInReq - psCur.saInAct);
+                node.saFwdDeliver = std::min (node.saFwdDeliver,
+                                            pathState.saInReq - pathState.saInAct);
 
                 // Limit XRP by available. No limit for non-XRP as issuer.
-                if (uCurrencyID.isZero ())
-                    saCurDeliverAct = std::min (
-                        saCurDeliverAct,
-                        mActiveLedger.accountHolds (uCurAccountID, CURRENCY_XRP,
-                                                ACCOUNT_XRP));
+                if (node.uCurrencyID.isZero ())
+                    node.saFwdDeliver = std::min (
+                        node.saFwdDeliver,
+                        mActiveLedger.accountHolds (
+                            node.uAccountID, CURRENCY_XRP, ACCOUNT_XRP));
 
             }
 
             // Record amount sent for pass.
-            saCurSendMaxPass    = saCurDeliverAct;
+            pathState.saInPass    = node.saFwdDeliver;
 
-            if (!saCurDeliverAct)
+            if (!node.saFwdDeliver)
             {
-                terResult   = tecPATH_DRY;
+                errorCode   = tecPATH_DRY;
             }
-            else if (!!uCurrencyID)
+            else if (!!node.uCurrencyID)
             {
                 // Non-XRP, current node is the issuer.
                 // We could be delivering to multiple accounts, so we don't know
@@ -371,24 +355,24 @@ TER RippleCalc::calcNodeAccountFwd (
                     << "calcNodeAccountFwd: ^ --> ACCOUNT -- XRP --> offer";
 
                 // Deliver XRP to limbo.
-                terResult = mActiveLedger.accountSend (
-                    uCurAccountID, ACCOUNT_XRP, saCurDeliverAct);
+                errorCode = mActiveLedger.accountSend (
+                    node.uAccountID, ACCOUNT_XRP, node.saFwdDeliver);
             }
         }
     }
-    else if (!bPrvAccount && bNxtAccount)
+    else if (!previousNodeIsAccount && nextNodeIsAccount)
     {
-        if (uNode == uLast)
+        if (nodeIndex == lastNodeIndex)
         {
             // offer --> ACCOUNT --> $
             WriteLog (lsTRACE, RippleCalc)
                 << "calcNodeAccountFwd: offer --> ACCOUNT --> $ : "
-                << saPrvDeliverReq;
+                << previousNode.saFwdDeliver;
 
-            STAmount& saCurReceive = psCur.saOutPass;
+            STAmount& saCurReceive = pathState.saOutPass;
 
             // Amount to credit.
-            saCurReceive    = saPrvDeliverReq;
+            saCurReceive    = previousNode.saFwdDeliver;
 
             // No income balance adjustments necessary.  The paying side inside
             // the offer paid to this account.
@@ -399,42 +383,42 @@ TER RippleCalc::calcNodeAccountFwd (
             WriteLog (lsTRACE, RippleCalc)
                 << "calcNodeAccountFwd: offer --> ACCOUNT --> account";
 
-            saCurRedeemAct.clear (saCurRedeemReq);
-            saCurIssueAct.clear (saCurIssueReq);
+            node.saFwdRedeem.clear (node.saRevRedeem);
+            node.saFwdIssue.clear (node.saRevIssue);
 
             // deliver -> redeem
-            if (saPrvDeliverReq && saCurRedeemReq)
+            if (previousNode.saFwdDeliver && node.saRevRedeem)
                 // Previous wants to deliver and can current redeem.
             {
                 // Rate : 1.0 : quality out
                 calcNodeRipple (
-                    QUALITY_ONE, uQualityOut, saPrvDeliverReq, saCurRedeemReq,
-                    saPrvDeliverAct, saCurRedeemAct, uRateMax);
+                    QUALITY_ONE, uQualityOut, previousNode.saFwdDeliver, node.saRevRedeem,
+                    saPrvDeliverAct, node.saFwdRedeem, uRateMax);
             }
 
             // deliver -> issue
             // Wants to redeem and current would and can issue.
-            if (saPrvDeliverReq != saPrvDeliverAct
+            if (previousNode.saFwdDeliver != saPrvDeliverAct
                 // Previous still wants to deliver.
-                && saCurRedeemReq == saCurRedeemAct
+                && node.saRevRedeem == node.saFwdRedeem
                 // Current has more to redeem to next.
-                && saCurIssueReq)
+                && node.saRevIssue)
                 // Current wants issue.
             {
                 // Rate : 1.0 : transfer_rate
                 calcNodeRipple (
                     QUALITY_ONE,
-                    mActiveLedger.rippleTransferRate (uCurAccountID),
-                    saPrvDeliverReq, saCurIssueReq, saPrvDeliverAct,
-                    saCurIssueAct, uRateMax);
+                    mActiveLedger.rippleTransferRate (node.uAccountID),
+                    previousNode.saFwdDeliver, node.saRevIssue, saPrvDeliverAct,
+                    node.saFwdIssue, uRateMax);
             }
 
             // No income balance adjustments necessary.  The paying side inside
             // the offer paid and the next link will receive.
-            STAmount saProvide = saCurRedeemAct + saCurIssueAct;
+            STAmount saProvide = node.saFwdRedeem + node.saFwdIssue;
 
             if (!saProvide)
-                terResult = tecPATH_DRY;
+                errorCode = tecPATH_DRY;
         }
     }
     else
@@ -444,27 +428,28 @@ TER RippleCalc::calcNodeAccountFwd (
         WriteLog (lsTRACE, RippleCalc)
             << "calcNodeAccountFwd: offer --> ACCOUNT --> offer";
 
-        saCurDeliverAct.clear (saCurDeliverReq);
+        node.saFwdDeliver.clear (node.saRevDeliver);
 
-        if (saPrvDeliverReq
+        if (previousNode.saFwdDeliver
             // Previous wants to deliver
-            && saCurIssueReq)
+            && node.saRevIssue)
             // Current wants issue.
         {
             // Rate : 1.0 : transfer_rate
             calcNodeRipple (
-                QUALITY_ONE, mActiveLedger.rippleTransferRate (uCurAccountID),
-                saPrvDeliverReq, saCurDeliverReq, saPrvDeliverAct,
-                saCurDeliverAct, uRateMax);
+                QUALITY_ONE,
+                mActiveLedger.rippleTransferRate (node.uAccountID),
+                previousNode.saFwdDeliver, node.saRevDeliver, saPrvDeliverAct,
+                node.saFwdDeliver, uRateMax);
         }
 
         // No income balance adjustments necessary.  The paying side inside the
         // offer paid and the next link will receive.
-        if (!saCurDeliverAct)
-            terResult   = tecPATH_DRY;
+        if (!node.saFwdDeliver)
+            errorCode   = tecPATH_DRY;
     }
 
-    return terResult;
+    return errorCode;
 }
 
 } // ripple

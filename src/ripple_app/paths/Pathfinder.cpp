@@ -290,13 +290,13 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
 
         spsPaths.addPath (spCurrent);               // Just checking the current path.
 
-        TER         terResult;
+        TER         errorCode;
 
         try
         {
             LedgerEntrySet lesSandbox (mLedger, tapNONE);
 
-            terResult   = RippleCalc::rippleCalc (
+            errorCode   = RippleCalc::rippleCalc (
                               lesSandbox,
                               saMaxAmountAct,     // --> computed input
                               saDstAmountAct,     // --> computed output
@@ -315,13 +315,13 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
         {
             WriteLog (lsINFO, Pathfinder) << "findPaths: Caught throw: " << e.what ();
 
-            terResult   = tefEXCEPTION;
+            errorCode   = tefEXCEPTION;
         }
 
-        if (tesSUCCESS != terResult)
+        if (errorCode != tesSUCCESS)
         {
             WriteLog (lsDEBUG, Pathfinder) <<
-                "findPaths: dropping: " << transToken (terResult) <<
+                "findPaths: dropping: " << transToken (errorCode) <<
                 ": " << spCurrent.getJson (0);
         }
         else if (saDstAmountAct < saMinDstAmount)

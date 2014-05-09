@@ -37,37 +37,32 @@ namespace ripple {
 // --> bEntryAdvance: true, to advance to next entry. false, recalculate.
 // <-- uOfferIndex : 0=end of list.
 TER RippleCalc::calcNodeAdvance (
-    const unsigned int          uNode,              // 0 < uNode < uLast
-    PathState&                  psCur,
+    const unsigned int          nodeIndex,
+    PathState&                  pathState,
     const bool                  bMultiQuality,
     const bool                  bReverse)
 {
-    PathState::Node&    pnPrv       = psCur.vpnNodes[uNode - 1];
-    PathState::Node&    pnCur       = psCur.vpnNodes[uNode];
+    auto& previousNode = pathState.vpnNodes[nodeIndex - 1];
+    auto& node = pathState.vpnNodes[nodeIndex];
 
-    const uint160&  uPrvCurrencyID  = pnPrv.uCurrencyID;
-    const uint160&  uPrvIssuerID    = pnPrv.uIssuerID;
-    const uint160&  uCurCurrencyID  = pnCur.uCurrencyID;
-    const uint160&  uCurIssuerID    = pnCur.uIssuerID;
+    uint256&        uDirectTip      = node.uDirectTip;
+    uint256&        uDirectEnd      = node.uDirectEnd;
+    bool&           bDirectAdvance  = node.bDirectAdvance;
+    bool&           bDirectRestart  = node.bDirectRestart;
+    SLE::pointer&   sleDirectDir    = node.sleDirectDir;
+    STAmount&       saOfrRate       = node.saOfrRate;
 
-    uint256&        uDirectTip      = pnCur.uDirectTip;
-    uint256&        uDirectEnd      = pnCur.uDirectEnd;
-    bool&           bDirectAdvance  = pnCur.bDirectAdvance;
-    bool&           bDirectRestart  = pnCur.bDirectRestart;
-    SLE::pointer&   sleDirectDir    = pnCur.sleDirectDir;
-    STAmount&       saOfrRate       = pnCur.saOfrRate;
+    bool&           bEntryAdvance   = node.bEntryAdvance;
+    unsigned int&   uEntry          = node.uEntry;
+    uint256&        uOfferIndex     = node.uOfferIndex;
+    SLE::pointer&   sleOffer        = node.sleOffer;
+    uint160&        uOfrOwnerID     = node.uOfrOwnerID;
+    STAmount&       saOfferFunds    = node.saOfferFunds;
+    STAmount&       saTakerPays     = node.saTakerPays;
+    STAmount&       saTakerGets     = node.saTakerGets;
+    bool&           bFundsDirty     = node.bFundsDirty;
 
-    bool&           bEntryAdvance   = pnCur.bEntryAdvance;
-    unsigned int&   uEntry          = pnCur.uEntry;
-    uint256&        uOfferIndex     = pnCur.uOfferIndex;
-    SLE::pointer&   sleOffer        = pnCur.sleOffer;
-    uint160&        uOfrOwnerID     = pnCur.uOfrOwnerID;
-    STAmount&       saOfferFunds    = pnCur.saOfferFunds;
-    STAmount&       saTakerPays     = pnCur.saTakerPays;
-    STAmount&       saTakerGets     = pnCur.saTakerGets;
-    bool&           bFundsDirty     = pnCur.bFundsDirty;
-
-    TER             terResult       = tesSUCCESS;
+    TER             errorCode       = tesSUCCESS;
 
     WriteLog (lsTRACE, RippleCalc)
             << "calcNodeAdvance: TakerPays:"
@@ -96,7 +91,9 @@ TER RippleCalc::calcNodeAdvance (
             // Need to initialize current node.
 
             uDirectTip = Ledger::getBookBase (
-                uPrvCurrencyID, uPrvIssuerID, uCurCurrencyID, uCurIssuerID);
+                previousNode.uCurrencyID, previousNode.uIssuerID,
+                node.uCurrencyID,
+                node.uIssuerID);
             uDirectEnd      = Ledger::getQualityNext (uDirectTip);
 
             sleDirectDir    = mActiveLedger.entryCache (ltDIR_NODE, uDirectTip);
@@ -240,7 +237,8 @@ TER RippleCalc::calcNodeAdvance (
                 saTakerGets = sleOffer->getFieldAmount (sfTakerGets);
 
                 const aciSource asLine = std::make_tuple (
-                    uOfrOwnerID, uCurCurrencyID, uCurIssuerID);
+                    uOfrOwnerID, node.uCurrencyID,
+                    node.uIssuerID);
 
                 WriteLog (lsTRACE, RippleCalc)
                     << "calcNodeAdvance: uOfrOwnerID="
@@ -301,7 +299,7 @@ TER RippleCalc::calcNodeAdvance (
 
                         // Don't process at all, things are in an unexpected
                         // state for this transactions.
-                        terResult = tefEXCEPTION;
+                        errorCode = tefEXCEPTION;
                     }
 
                     continue;
@@ -316,16 +314,16 @@ TER RippleCalc::calcNodeAdvance (
                 // quality which was previously skipped? Might need to check
                 // quality.
                 curIssuerNodeConstIterator itForward
-                    = psCur.umForward.find (asLine);
-                const bool bFoundForward = itForward != psCur.umForward.end ();
+                    = pathState.umForward.find (asLine);
+                const bool bFoundForward = itForward != pathState.umForward.end ();
 
                 // Only allow a source to be used once, in the first node
                 // encountered from initial path scan.  This prevents
                 // conflicting uses of the same balance when going reverse vs
                 // forward.
                 if (bFoundForward &&
-                    itForward->second != uNode &&
-                    uOfrOwnerID != uCurIssuerID)
+                    itForward->second != nodeIndex &&
+                    uOfrOwnerID != node.uIssuerID)
                 {
                     // Temporarily unfunded. Another node uses this source,
                     // ignore in this offer.
@@ -338,15 +336,15 @@ TER RippleCalc::calcNodeAdvance (
                 // This is overly strict. For contributions to past. We should
                 // only count source if actually used.
                 curIssuerNodeConstIterator itReverse
-                    = psCur.umReverse.find (asLine);
-                bool bFoundReverse = itReverse != psCur.umReverse.end ();
+                    = pathState.umReverse.find (asLine);
+                bool bFoundReverse = itReverse != pathState.umReverse.end ();
 
                 // For this quality increment, only allow a source to be used
                 // from a single node, in the first node encountered from
                 // applying offers in reverse.
                 if (bFoundReverse &&
-                    itReverse->second != uNode &&
-                    uOfrOwnerID != uCurIssuerID)
+                    itReverse->second != nodeIndex &&
+                    uOfrOwnerID != node.uIssuerID)
                 {
                     // Temporarily unfunded. Another node uses this source,
                     // ignore in this offer.
@@ -398,11 +396,12 @@ TER RippleCalc::calcNodeAdvance (
                     WriteLog (lsTRACE, RippleCalc)
                         << "calcNodeAdvance: remember="
                         <<  RippleAddress::createHumanAccountID (uOfrOwnerID)
-                        << "/" << STAmount::createHumanCurrency (uCurCurrencyID)
-                        << "/" << RippleAddress::createHumanAccountID (
-                            uCurIssuerID);
+                        << "/"
+                        << STAmount::createHumanCurrency (node.uCurrencyID)
+                        << "/"
+                        << RippleAddress::createHumanAccountID (node.uIssuerID);
 
-                    psCur.umReverse.insert (std::make_pair (asLine, uNode));
+                    pathState.umReverse.insert (std::make_pair (asLine, nodeIndex));
                 }
 
                 bFundsDirty     = false;
@@ -410,9 +409,9 @@ TER RippleCalc::calcNodeAdvance (
             }
         }
     }
-    while (tesSUCCESS == terResult && (bEntryAdvance || bDirectAdvance));
+    while (errorCode == tesSUCCESS && (bEntryAdvance || bDirectAdvance));
 
-    if (tesSUCCESS == terResult)
+    if (errorCode == tesSUCCESS)
     {
         WriteLog (lsTRACE, RippleCalc)
             << "calcNodeAdvance: uOfferIndex=" << uOfferIndex;
@@ -420,10 +419,10 @@ TER RippleCalc::calcNodeAdvance (
     else
     {
         WriteLog (lsDEBUG, RippleCalc)
-            << "calcNodeAdvance: terResult=" << transToken (terResult);
+            << "calcNodeAdvance: errorCode=" << transToken (errorCode);
     }
 
-    return terResult;
+    return errorCode;
 }
 
 }  // ripple

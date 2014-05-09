@@ -36,68 +36,69 @@ namespace ripple {
 // <-- tesSUCCESS or tecPATH_DRY
 
 TER RippleCalc::calcNodeAccountRev (
-    const unsigned int uNode, PathState& psCur, const bool bMultiQuality)
+    const unsigned int nodeIndex, PathState& pathState,
+    const bool bMultiQuality)
 {
     TER                 terResult       = tesSUCCESS;
-    const unsigned int  uLast           = psCur.vpnNodes.size () - 1;
+    const unsigned int  lastNodeIndex           = pathState.vpnNodes.size () - 1;
 
     std::uint64_t           uRateMax        = 0;
 
-    PathState::Node& pnPrv = psCur.vpnNodes[uNode ? uNode - 1 : 0];
-    PathState::Node& pnCur = psCur.vpnNodes[uNode];
-    PathState::Node& pnNxt = psCur.vpnNodes[uNode == uLast ? uLast : uNode + 1];
+    auto& previousNode = pathState.vpnNodes[nodeIndex ? nodeIndex - 1 : 0];
+    auto& node = pathState.vpnNodes[nodeIndex];
+    auto& nextNode = pathState.vpnNodes[nodeIndex == lastNodeIndex ? lastNodeIndex :                                               nodeIndex + 1];
 
     // Current is allowed to redeem to next.
-    const bool bPrvAccount = !uNode ||
-        is_bit_set (pnPrv.uFlags, STPathElement::typeAccount);
-    const bool bNxtAccount = uNode == uLast ||
-        is_bit_set (pnNxt.uFlags, STPathElement::typeAccount);
+    const bool previousNodeIsAccount = !nodeIndex ||
+        is_bit_set (previousNode.uFlags, STPathElement::typeAccount);
+    const bool nextNodeIsAccount = nodeIndex == lastNodeIndex ||
+        is_bit_set (nextNode.uFlags, STPathElement::typeAccount);
 
-    const uint160& uCurAccountID = pnCur.uAccountID;
-    const uint160& uPrvAccountID = bPrvAccount ? pnPrv.uAccountID
-        : uCurAccountID;
-    const uint160& uNxtAccountID = bNxtAccount ? pnNxt.uAccountID
-        : uCurAccountID;   // Offers are always issue.
-
-    const uint160& uCurrencyID = pnCur.uCurrencyID;
+    const uint160& previousAccountID = previousNodeIsAccount
+        ? previousNode.uAccountID : node.uAccountID;
+    const uint160& nextAccountID = nextNodeIsAccount ? nextNode.uAccountID
+        : node.uAccountID;   // Offers are always issue.
 
     // XXX Don't look up quality for XRP
-    const std::uint32_t uQualityIn = uNode
+    const std::uint32_t uQualityIn = nodeIndex
         ? mActiveLedger.rippleQualityIn (
-            uCurAccountID, uPrvAccountID, uCurrencyID)
+            node.uAccountID, previousAccountID, node.uCurrencyID)
         : QUALITY_ONE;
-    const std::uint32_t uQualityOut = (uNode != uLast)
+    const std::uint32_t uQualityOut = (nodeIndex != lastNodeIndex)
         ? mActiveLedger.rippleQualityOut (
-            uCurAccountID, uNxtAccountID, uCurrencyID)
+            node.uAccountID, nextAccountID, node.uCurrencyID)
         : QUALITY_ONE;
 
-    // For bPrvAccount:
+    // For previousNodeIsAccount:
     // Previous account is owed.
-    const STAmount saPrvOwed = (bPrvAccount && uNode)
-        ? mActiveLedger.rippleOwed (uCurAccountID, uPrvAccountID, uCurrencyID)
-        : STAmount (uCurrencyID, uCurAccountID);
+    const STAmount saPrvOwed = (previousNodeIsAccount && nodeIndex)
+        ? mActiveLedger.rippleOwed (
+            node.uAccountID, previousAccountID, node.uCurrencyID)
+        : STAmount (node.uCurrencyID, node.uAccountID);
 
     // Previous account may owe.
-    const STAmount saPrvLimit = (bPrvAccount && uNode)
-        ? mActiveLedger.rippleLimit (uCurAccountID, uPrvAccountID, uCurrencyID)
-        : STAmount (uCurrencyID, uCurAccountID);
+    const STAmount saPrvLimit = (previousNodeIsAccount && nodeIndex)
+        ? mActiveLedger.rippleLimit (
+            node.uAccountID, previousAccountID, node.uCurrencyID)
+        : STAmount (node.uCurrencyID, node.uAccountID);
 
     // Next account is owed.
-    const STAmount saNxtOwed = (bNxtAccount && uNode != uLast)
-        ? mActiveLedger.rippleOwed (uCurAccountID, uNxtAccountID, uCurrencyID)
-        : STAmount (uCurrencyID, uCurAccountID);
+    const STAmount saNxtOwed = (nextNodeIsAccount && nodeIndex != lastNodeIndex)
+        ? mActiveLedger.rippleOwed (
+            node.uAccountID, nextAccountID, node.uCurrencyID)
+        : STAmount (node.uCurrencyID, node.uAccountID);
 
     WriteLog (lsTRACE, RippleCalc)
         << "calcNodeAccountRev>"
-        << " uNode=%d/%d" << uNode << "/" << uLast
-        << " uPrvAccountID="
-        << RippleAddress::createHumanAccountID (uPrvAccountID)
-        << " uCurAccountID="
-        << RippleAddress::createHumanAccountID (uCurAccountID)
-        << " uNxtAccountID="
-        << RippleAddress::createHumanAccountID (uNxtAccountID)
+        << " nodeIndex=%d/%d" << nodeIndex << "/" << lastNodeIndex
+        << " previousAccountID="
+        << RippleAddress::createHumanAccountID (previousAccountID)
+        << " node.uAccountID="
+        << RippleAddress::createHumanAccountID (node.uAccountID)
+        << " nextAccountID="
+        << RippleAddress::createHumanAccountID (nextAccountID)
         << " uCurrencyID="
-        << STAmount::createHumanCurrency (uCurrencyID)
+        << STAmount::createHumanCurrency (node.uCurrencyID)
         << " uQualityIn=" << uQualityIn
         << " uQualityOut=" << uQualityOut
         << " saPrvOwed=" << saPrvOwed
@@ -107,32 +108,34 @@ TER RippleCalc::calcNodeAccountRev (
     const STAmount  saPrvRedeemReq  = (saPrvOwed > zero)
         ? saPrvOwed
         : STAmount (saPrvOwed.getCurrency (), saPrvOwed.getIssuer ());
-    STAmount& saPrvRedeemAct = pnPrv.saRevRedeem;
+    STAmount& saPrvRedeemAct = previousNode.saRevRedeem;
 
     // Previous can issue up to limit minus whatever portion of limit already
     // used (not including redeemable amount).
     const STAmount  saPrvIssueReq = (saPrvOwed < zero)
         ? saPrvLimit + saPrvOwed : saPrvLimit;
-    STAmount& saPrvIssueAct = pnPrv.saRevIssue;
+    STAmount& saPrvIssueAct = previousNode.saRevIssue;
 
-    // For !bPrvAccount
-    auto deliverCurrency = pnPrv.saRevDeliver.getCurrency ();
+    // For !previousNodeIsAccount
+    auto deliverCurrency = previousNode.saRevDeliver.getCurrency ();
     const STAmount  saPrvDeliverReq (
-        deliverCurrency, pnPrv.saRevDeliver.getIssuer (), -1);  // Unlimited.
-    STAmount&       saPrvDeliverAct = pnPrv.saRevDeliver;
+        deliverCurrency, previousNode.saRevDeliver.getIssuer (), -1);
+    // Unlimited.
 
-    // For bNxtAccount
-    const STAmount& saCurRedeemReq  = pnCur.saRevRedeem;
+    STAmount&       saPrvDeliverAct = previousNode.saRevDeliver;
+
+    // For nextNodeIsAccount
+    const STAmount& saCurRedeemReq  = node.saRevRedeem;
     STAmount saCurRedeemAct (
         saCurRedeemReq.getCurrency (), saCurRedeemReq.getIssuer ());
 
-    const STAmount& saCurIssueReq   = pnCur.saRevIssue;
+    const STAmount& saCurIssueReq   = node.saRevIssue;
     // Track progress.
     STAmount saCurIssueAct (
         saCurIssueReq.getCurrency (), saCurIssueReq.getIssuer ());
 
-    // For !bNxtAccount
-    const STAmount& saCurDeliverReq = pnCur.saRevDeliver;
+    // For !nextNodeIsAccount
+    const STAmount& saCurDeliverReq = node.saRevDeliver;
     STAmount saCurDeliverAct (
         saCurDeliverReq.getCurrency (), saCurDeliverReq.getIssuer ());
 
@@ -146,7 +149,7 @@ TER RippleCalc::calcNodeAccountRev (
         << " saCurIssueReq:" << saCurIssueReq
         << " saNxtOwed:" << saNxtOwed;
 
-    WriteLog (lsTRACE, RippleCalc) << psCur.getJson ();
+    WriteLog (lsTRACE, RippleCalc) << pathState.getJson ();
 
     // Current redeem req can't be more than IOUs on hand.
     assert (!saCurRedeemReq || (-saNxtOwed) >= saCurRedeemReq);
@@ -157,22 +160,22 @@ TER RippleCalc::calcNodeAccountRev (
             || -saNxtOwed == saCurRedeemReq);
     // If issue req, then redeem req must consume all owed.
 
-    if (!uNode)
+    if (!nodeIndex)
     {
         // ^ --> ACCOUNT -->  account|offer
         // Nothing to do, there is no previous to adjust.
 
         nothing ();
     }
-    else if (bPrvAccount && bNxtAccount)
+    else if (previousNodeIsAccount && nextNodeIsAccount)
     {
-        if (uNode == uLast)
+        if (nodeIndex == lastNodeIndex)
         {
             // account --> ACCOUNT --> $
             // Overall deliverable.
              // If previous is an account, limit.
             const STAmount saCurWantedReq = std::min (
-                psCur.saOutReq - psCur.saOutAct, saPrvLimit + saPrvOwed);
+                pathState.saOutReq - pathState.saOutAct, saPrvLimit + saPrvOwed);
             STAmount        saCurWantedAct (
                 saCurWantedReq.getCurrency (), saCurWantedReq.getIssuer ());
 
@@ -276,7 +279,7 @@ TER RippleCalc::calcNodeAccountRev (
                 // Rate : 1.0 : transfer_rate
                 calcNodeRipple (
                     QUALITY_ONE,
-                    mActiveLedger.rippleTransferRate (uCurAccountID),
+                    mActiveLedger.rippleTransferRate (node.uAccountID),
                     saPrvRedeemReq, saCurIssueReq, saPrvRedeemAct,
                     saCurIssueAct, uRateMax);
 
@@ -322,7 +325,7 @@ TER RippleCalc::calcNodeAccountRev (
                 << " saCurIssueAct:" << saCurIssueAct;
         }
     }
-    else if (bPrvAccount && !bNxtAccount)
+    else if (previousNodeIsAccount && !nextNodeIsAccount)
     {
         // account --> ACCOUNT --> offer
         // Note: deliver is always issue as ACCOUNT is the issuer for the offer
@@ -339,7 +342,8 @@ TER RippleCalc::calcNodeAccountRev (
         {
             // Rate : 1.0 : transfer_rate
             calcNodeRipple (
-                QUALITY_ONE, mActiveLedger.rippleTransferRate (uCurAccountID),
+                QUALITY_ONE,
+                mActiveLedger.rippleTransferRate (node.uAccountID),
                 saPrvRedeemReq, saCurDeliverReq, saPrvRedeemAct,
                 saCurDeliverAct, uRateMax);
         }
@@ -366,21 +370,21 @@ TER RippleCalc::calcNodeAccountRev (
             << " saCurDeliverAct:" << saCurDeliverAct
             << " saPrvOwed:" << saPrvOwed;
     }
-    else if (!bPrvAccount && bNxtAccount)
+    else if (!previousNodeIsAccount && nextNodeIsAccount)
     {
-        if (uNode == uLast)
+        if (nodeIndex == lastNodeIndex)
         {
             // offer --> ACCOUNT --> $
             // Previous is an offer, no limit: redeem own IOUs.
-            const STAmount& saCurWantedReq  = psCur.saOutReq - psCur.saOutAct;
+            const STAmount& saCurWantedReq  = pathState.saOutReq - pathState.saOutAct;
             STAmount saCurWantedAct (
                 saCurWantedReq.getCurrency (), saCurWantedReq.getIssuer ());
 
             WriteLog (lsTRACE, RippleCalc)
                 << "calcNodeAccountRev: offer --> ACCOUNT --> $ :"
                 << " saCurWantedReq:" << saCurWantedReq
-                << " saOutAct:" << psCur.saOutAct
-                << " saOutReq:" << psCur.saOutReq;
+                << " saOutAct:" << pathState.saOutAct
+                << " saOutReq:" << pathState.saOutReq;
 
             if (saCurWantedReq <= zero)
             {
@@ -437,7 +441,7 @@ TER RippleCalc::calcNodeAccountRev (
                 // Rate : 1.0 : transfer_rate
                 calcNodeRipple (
                     QUALITY_ONE,
-                    mActiveLedger.rippleTransferRate (uCurAccountID),
+                    mActiveLedger.rippleTransferRate (node.uAccountID),
                     saPrvDeliverReq, saCurIssueReq, saPrvDeliverAct,
                     saCurIssueAct, uRateMax);
             }
@@ -465,7 +469,8 @@ TER RippleCalc::calcNodeAccountRev (
 
         // Rate : 1.0 : transfer_rate
         calcNodeRipple (
-            QUALITY_ONE, mActiveLedger.rippleTransferRate (uCurAccountID),
+            QUALITY_ONE,
+            mActiveLedger.rippleTransferRate (node.uAccountID),
             saPrvDeliverReq, saCurDeliverReq, saPrvDeliverAct,
             saCurDeliverAct, uRateMax);
 

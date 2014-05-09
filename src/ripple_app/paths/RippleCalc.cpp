@@ -71,7 +71,7 @@ TER RippleCalc::rippleCalc (
         << " saMaxAmountReq:" << saMaxAmountReq
         << " saDstAmountReq:" << saDstAmountReq;
 
-    TER         terResult   = temUNCERTAIN;
+    TER         errorCode   = temUNCERTAIN;
 
     // YYY Might do basic checks on src and dst validity as per doPayment.
 
@@ -119,13 +119,13 @@ TER RippleCalc::rippleCalc (
         if (tesSUCCESS == pspDirect->terStatus)
         {
             // Had a success.
-            terResult   = tesSUCCESS;
+            errorCode   = tesSUCCESS;
 
             vpsExpanded.push_back (pspDirect);
         }
         else if (terNO_LINE != pspDirect->terStatus)
         {
-            terResult   = pspDirect->terStatus;
+            errorCode   = pspDirect->terStatus;
         }
     }
 
@@ -167,21 +167,21 @@ TER RippleCalc::rippleCalc (
 
         if (tesSUCCESS == pspExpanded->terStatus)
         {
-            terResult   = tesSUCCESS;           // Had a success.
+            errorCode   = tesSUCCESS;           // Had a success.
 
             pspExpanded->setIndex (vpsExpanded.size ());
             vpsExpanded.push_back (pspExpanded);
         }
         else if (terNO_LINE != pspExpanded->terStatus)
         {
-            terResult   = pspExpanded->terStatus;
+            errorCode   = pspExpanded->terStatus;
         }
     }
 
-    if (tesSUCCESS != terResult)
-        return terResult == temUNCERTAIN ? terNO_LINE : terResult;
+    if (errorCode != tesSUCCESS)
+        return errorCode == temUNCERTAIN ? terNO_LINE : errorCode;
     else
-        terResult   = temUNCERTAIN;
+        errorCode   = temUNCERTAIN;
 
     saMaxAmountAct  = STAmount (
         saMaxAmountReq.getCurrency (), saMaxAmountReq.getIssuer ());
@@ -201,7 +201,7 @@ TER RippleCalc::rippleCalc (
 
     int iPass   = 0;
 
-    while (temUNCERTAIN == terResult)
+    while (errorCode == temUNCERTAIN)
     {
         int iBest = -1;
         const LedgerEntrySet lesCheckpoint = activeLedger;
@@ -356,7 +356,7 @@ TER RippleCalc::rippleCalc (
             {
                 // Done. Delivered requested amount.
 
-                terResult   = tesSUCCESS;
+                errorCode   = tesSUCCESS;
             }
             else if (saDstAmountAct > saDstAmountReq)
             {
@@ -383,45 +383,45 @@ TER RippleCalc::rippleCalc (
             {
                 // Have sent maximum allowed. Partial payment not allowed.
 
-                terResult   = tecPATH_PARTIAL;
+                errorCode   = tecPATH_PARTIAL;
             }
             else
             {
                 // Have sent maximum allowed. Partial payment allowed.  Success.
 
-                terResult   = tesSUCCESS;
+                errorCode   = tesSUCCESS;
             }
         }
         // Not done and ran out of paths.
         else if (!bPartialPayment)
         {
             // Partial payment not allowed.
-            terResult   = tecPATH_PARTIAL;
+            errorCode   = tecPATH_PARTIAL;
         }
         // Partial payment ok.
         else if (!saDstAmountAct)
         {
             // No payment at all.
-            terResult   = tecPATH_DRY;
+            errorCode   = tecPATH_DRY;
         }
         else
         {
-            terResult   = tesSUCCESS;
+            errorCode   = tesSUCCESS;
         }
     }
 
     if (!bStandAlone)
     {
-        if (tesSUCCESS == terResult)
+        if (errorCode == tesSUCCESS)
         {
             // Delete became unfunded offers.
             for (auto const& uOfferIndex: vuUnfundedBecame)
             {
-                if (tesSUCCESS == terResult)
+                if (errorCode == tesSUCCESS)
                 {
                     WriteLog (lsDEBUG, RippleCalc)
                         << "Became unfunded " << to_string (uOfferIndex);
-                    terResult = activeLedger.offerDelete (uOfferIndex);
+                    errorCode = activeLedger.offerDelete (uOfferIndex);
                 }
             }
         }
@@ -429,16 +429,16 @@ TER RippleCalc::rippleCalc (
         // Delete found unfunded offers.
         for (auto const& uOfferIndex: rc.mUnfundedOffers)
         {
-            if (tesSUCCESS == terResult)
+            if (errorCode == tesSUCCESS)
             {
                 WriteLog (lsDEBUG, RippleCalc)
                     << "Delete unfunded " << to_string (uOfferIndex);
-                terResult = activeLedger.offerDelete (uOfferIndex);
+                errorCode = activeLedger.offerDelete (uOfferIndex);
             }
         }
     }
 
-    return terResult;
+    return errorCode;
 }
 
 } // ripple

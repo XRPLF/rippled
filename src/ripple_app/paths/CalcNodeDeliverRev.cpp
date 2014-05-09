@@ -33,8 +33,8 @@ namespace ripple {
 // as the rate does not increase past the initial rate.
 
 TER RippleCalc::calcNodeDeliverRev (
-    const unsigned int uNode,          // 0 < uNode < uLast
-    PathState&         psCur,
+    const unsigned int nodeIndex,
+    PathState&         pathState,
     const bool         bMultiQuality,  // True, if not constrained to the same
                                        // or better quality.
     const uint160&     uOutAccountID,  // --> Output owner's account.
@@ -43,21 +43,21 @@ TER RippleCalc::calcNodeDeliverRev (
     STAmount&          saOutAct)       // <-- Funds actually delivered for an
                                        // increment.
 {
-    TER terResult   = tesSUCCESS;
+    TER errorCode   = tesSUCCESS;
 
-    PathState::Node&    pnPrv       = psCur.vpnNodes[uNode - 1];
-    PathState::Node&    pnCur       = psCur.vpnNodes[uNode];
+    PathState::Node&    previousNode       = pathState.vpnNodes[nodeIndex - 1];
+    PathState::Node&    node       = pathState.vpnNodes[nodeIndex];
 
-    const uint160&  uCurIssuerID    = pnCur.uIssuerID;
-    const uint160&  uPrvAccountID   = pnPrv.uAccountID;
-    const STAmount& saTransferRate  = pnCur.saTransferRate;
+    const uint160&  uCurIssuerID    = node.uIssuerID;
+    const uint160&  uPrvAccountID   = previousNode.uAccountID;
+    const STAmount& saTransferRate  = node.saTransferRate;
     // Transfer rate of the TakerGets issuer.
 
-    STAmount&       saPrvDlvReq     = pnPrv.saRevDeliver;
+    STAmount&       saPrvDlvReq     = previousNode.saRevDeliver;
     // Accumulation of what the previous node must deliver.
 
-    uint256&        uDirectTip      = pnCur.uDirectTip;
-    bool&           bDirectRestart  = pnCur.bDirectRestart;
+    uint256&        uDirectTip      = node.uDirectTip;
+    bool&           bDirectRestart  = node.bDirectRestart;
 
     if (bMultiQuality)
         uDirectTip      = 0;                        // Restart book searching.
@@ -87,22 +87,22 @@ TER RippleCalc::calcNodeDeliverRev (
             return mOpenLedger ? telFAILED_PROCESSING : tecFAILED_PROCESSING;
         }
 
-        bool&           bEntryAdvance   = pnCur.bEntryAdvance;
-        STAmount&       saOfrRate       = pnCur.saOfrRate;
-        uint256&        uOfferIndex     = pnCur.uOfferIndex;
-        SLE::pointer&   sleOffer        = pnCur.sleOffer;
-        const uint160&  uOfrOwnerID     = pnCur.uOfrOwnerID;
-        bool&           bFundsDirty     = pnCur.bFundsDirty;
-        STAmount&       saOfferFunds    = pnCur.saOfferFunds;
-        STAmount&       saTakerPays     = pnCur.saTakerPays;
-        STAmount&       saTakerGets     = pnCur.saTakerGets;
-        STAmount&       saRateMax       = pnCur.saRateMax;
+        bool&           bEntryAdvance   = node.bEntryAdvance;
+        STAmount&       saOfrRate       = node.saOfrRate;
+        uint256&        uOfferIndex     = node.uOfferIndex;
+        SLE::pointer&   sleOffer        = node.sleOffer;
+        const uint160&  uOfrOwnerID     = node.uOfrOwnerID;
+        bool&           bFundsDirty     = node.bFundsDirty;
+        STAmount&       saOfferFunds    = node.saOfferFunds;
+        STAmount&       saTakerPays     = node.saTakerPays;
+        STAmount&       saTakerGets     = node.saTakerGets;
+        STAmount&       saRateMax       = node.saRateMax;
 
-        terResult = calcNodeAdvance (
-            uNode, psCur, bMultiQuality || saOutAct == zero, true);
+        errorCode = calcNodeAdvance (
+            nodeIndex, pathState, bMultiQuality || saOutAct == zero, true);
         // If needed, advance to next funded offer.
 
-        if (tesSUCCESS != terResult || !uOfferIndex)
+        if (errorCode != tesSUCCESS || !uOfferIndex)
         {
             // Error or out of offers.
             break;
@@ -262,9 +262,9 @@ TER RippleCalc::calcNodeDeliverRev (
             // offer --> OFFER --> ?
             // Compute in previous offer node how much could come in.
 
-            terResult   = calcNodeDeliverRev (
-                              uNode - 1,
-                              psCur,
+            errorCode   = calcNodeDeliverRev (
+                              nodeIndex - 1,
+                              pathState,
                               bMultiQuality,
                               uOfrOwnerID,
                               saInPassReq,
@@ -275,7 +275,7 @@ TER RippleCalc::calcNodeDeliverRev (
                 << " saInPassAct=" << saInPassAct;
         }
 
-        if (tesSUCCESS != terResult)
+        if (errorCode != tesSUCCESS)
             break;
 
         if (saInPassAct < saInPassReq)
@@ -309,10 +309,10 @@ TER RippleCalc::calcNodeDeliverRev (
         // visited.  However, these deductions and adjustments are tenative.
         //
         // Must reset balances when going forward to perform actual transfers.
-        terResult   = mActiveLedger.accountSend (
+        errorCode   = mActiveLedger.accountSend (
             uOfrOwnerID, uCurIssuerID, saOutPassAct);
 
-        if (tesSUCCESS != terResult)
+        if (errorCode != tesSUCCESS)
             break;
 
         // Adjust offer
@@ -327,7 +327,7 @@ TER RippleCalc::calcNodeDeliverRev (
                 << " saTakerGetsNew=%s" << saTakerGetsNew;
 
             // If mOpenLedger then ledger is not final, can vote no.
-            terResult   = mOpenLedger ? telFAILED_PROCESSING                                                           : tecFAILED_PROCESSING;
+            errorCode   = mOpenLedger ? telFAILED_PROCESSING                                                           : tecFAILED_PROCESSING;
             break;
         }
 
@@ -362,8 +362,8 @@ TER RippleCalc::calcNodeDeliverRev (
     assert (saOutAct <= saOutReq);
 
     // XXX Perhaps need to check if partial is okay to relax this?
-    if (tesSUCCESS == terResult && !saOutAct)
-        terResult   = tecPATH_DRY;
+    if (errorCode == tesSUCCESS && !saOutAct)
+        errorCode = tecPATH_DRY;
     // Unable to meet request, consider path dry.
 
     WriteLog (lsTRACE, RippleCalc)
@@ -372,7 +372,7 @@ TER RippleCalc::calcNodeDeliverRev (
         << " saOutReq=" << saOutReq
         << " saPrvDlvReq=" << saPrvDlvReq;
 
-    return terResult;
+    return errorCode;
 }
 
 }  // ripple

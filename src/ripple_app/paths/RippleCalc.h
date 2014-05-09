@@ -46,38 +46,38 @@ class RippleCalc
     unordered_set<uint256> mUnfundedOffers;
 
     void pathNext (
-        PathState::ref psrCur, const bool bMultiQuality,
+        PathState::ref pathState, const bool bMultiQuality,
         const LedgerEntrySet& lesCheckpoint, LedgerEntrySet& lesCurrent);
 
     TER calcNode (
-        const unsigned int uNode, PathState& psCur, const bool bMultiQuality);
+        unsigned int nodeIndex, PathState& pathState, bool bMultiQuality);
     TER calcNodeRev (
-        const unsigned int uNode, PathState& psCur, const bool bMultiQuality);
+        unsigned int nodeIndex, PathState& pathState, bool bMultiQuality);
     TER calcNodeFwd (
-        const unsigned int uNode, PathState& psCur, const bool bMultiQuality);
+        unsigned int nodeIndex, PathState& pathState, bool bMultiQuality);
     TER calcNodeOfferRev (
-        const unsigned int uNode, PathState& psCur, const bool bMultiQuality);
+        unsigned int nodeIndex, PathState& pathState, bool bMultiQuality);
     TER calcNodeOfferFwd (
-        const unsigned int uNode, PathState& psCur, const bool bMultiQuality);
+        unsigned int nodeIndex, PathState& pathState, bool bMultiQuality);
     TER calcNodeAccountRev (
-        const unsigned int uNode, PathState& psCur, const bool bMultiQuality);
+        unsigned int nodeIndex, PathState& pathState, bool bMultiQuality);
     TER calcNodeAccountFwd (
-        const unsigned int uNode, PathState& psCur, const bool bMultiQuality);
+        unsigned int nodeIndex, PathState& pathState, bool bMultiQuality);
     TER calcNodeAdvance (
-        const unsigned int uNode, PathState& psCur, const bool bMultiQuality,
-        const bool bReverse);
+        unsigned int nodeIndex, PathState& pathState, bool bMultiQuality,
+        bool bReverse);
 
     TER calcNodeDeliverRev (
-        const unsigned int          uNode,
-        PathState&                  psCur,
+        const unsigned int          nodeIndex,
+        PathState&                  pathState,
         const bool                  bMultiQuality,
         const uint160&              uOutAccountID,
         const STAmount&             saOutReq,
         STAmount&                   saOutAct);
 
     TER calcNodeDeliverFwd (
-        const unsigned int          uNode,
-        PathState&                  psCur,
+        const unsigned int          nodeIndex,
+        PathState&                  pathState,
         const bool                  bMultiQuality,
         const uint160&              uInAccountID,
         const STAmount&             saInReq,

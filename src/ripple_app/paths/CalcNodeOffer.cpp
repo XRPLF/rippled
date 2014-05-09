@@ -31,83 +31,83 @@ namespace ripple {
 //   - Payout to issuer or limbo.
 // - Deliver is set without transfer fees.
 TER RippleCalc::calcNodeOfferFwd (
-    const unsigned int          uNode,              // 0 < uNode < uLast
-    PathState&                  psCur,
+    const unsigned int          nodeIndex,
+    PathState&                  pathState,
     const bool                  bMultiQuality
 )
 {
-    TER             terResult;
-    PathState::Node& pnPrv = psCur.vpnNodes [uNode - 1];
+    TER             errorCode;
+    PathState::Node& previousNode = pathState.vpnNodes [nodeIndex - 1];
 
-    if (!!pnPrv.uAccountID)
+    if (!!previousNode.uAccountID)
     {
         // Previous is an account node, resolve its deliver.
         STAmount        saInAct;
         STAmount        saInFees;
 
-        terResult   = calcNodeDeliverFwd (
-                          uNode,
-                          psCur,
+        errorCode   = calcNodeDeliverFwd (
+                          nodeIndex,
+                          pathState,
                           bMultiQuality,
-                          pnPrv.uAccountID,
-                          pnPrv.saFwdDeliver, // Previous is sending this much.
+                          previousNode.uAccountID,
+                          previousNode.saFwdDeliver, // Previous is sending this much.
                           saInAct,
                           saInFees);
 
-        assert (tesSUCCESS != terResult ||
-                pnPrv.saFwdDeliver == saInAct + saInFees);
+        assert (errorCode != tesSUCCESS ||
+                previousNode.saFwdDeliver == saInAct + saInFees);
     }
     else
     {
         // Previous is an offer. Deliver has already been resolved.
-        terResult   = tesSUCCESS;
+        errorCode   = tesSUCCESS;
     }
 
-    return terResult;
+    return errorCode;
 
 }
 
 // Called to drive from the last offer node in a chain.
 TER RippleCalc::calcNodeOfferRev (
-    const unsigned int          uNode,              // 0 < uNode < uLast
-    PathState&                  psCur,
+    const unsigned int          nodeIndex,
+    PathState&                  pathState,
     const bool                  bMultiQuality)
 {
-    TER             terResult;
+    TER             errorCode;
 
-    PathState::Node& pnCur = psCur.vpnNodes [uNode];
-    PathState::Node& pnNxt = psCur.vpnNodes [uNode + 1];
+    PathState::Node& node = pathState.vpnNodes [nodeIndex];
+    PathState::Node& nextNode = pathState.vpnNodes [nodeIndex + 1];
 
-    if (!!pnNxt.uAccountID)
+    if (!!nextNode.uAccountID)
     {
         // Next is an account node, resolve current offer node's deliver.
         STAmount        saDeliverAct;
 
         WriteLog (lsTRACE, RippleCalc)
             << "calcNodeOfferRev: OFFER --> account:"
-            << " uNode=" << uNode
-            << " saRevDeliver=" << pnCur.saRevDeliver;
+            << " nodeIndex=" << nodeIndex
+            << " saRevDeliver=" << node.saRevDeliver;
 
-        terResult   = calcNodeDeliverRev (
-            uNode,
-            psCur,
+        errorCode   = calcNodeDeliverRev (
+            nodeIndex,
+            pathState,
             bMultiQuality,
-            pnNxt.uAccountID,
+            nextNode.uAccountID,
 
             // The next node wants the current node to deliver this much:
-            pnCur.saRevDeliver,
+            node.saRevDeliver,
             saDeliverAct);
     }
     else
     {
         WriteLog (lsTRACE, RippleCalc)
-            << "calcNodeOfferRev: OFFER --> offer: uNode=" << uNode;
+            << "calcNodeOfferRev: OFFER --> offer: nodeIndex=" << nodeIndex;
 
         // Next is an offer. Deliver has already been resolved.
-        terResult   = tesSUCCESS;
+        errorCode   = tesSUCCESS;
     }
 
-    return terResult;
+    return errorCode;
 }
 
 } // ripple

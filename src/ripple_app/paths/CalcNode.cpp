@@ -23,31 +23,32 @@
 namespace ripple {
 
 TER RippleCalc::calcNodeFwd (
-    const unsigned int uNode, PathState& psCur, const bool bMultiQuality)
+    const unsigned int nodeIndex, PathState& pathState,
+    const bool bMultiQuality)
 {
-    const PathState::Node& pnCur = psCur.vpnNodes[uNode];
-    const bool bCurAccount
-        = is_bit_set (pnCur.uFlags,  STPathElement::typeAccount);
+    const PathState::Node& node = pathState.vpnNodes[nodeIndex];
+    const bool nodeIsAccount
+        = is_bit_set (node.uFlags,  STPathElement::typeAccount);
 
     WriteLog (lsTRACE, RippleCalc)
-        << "calcNodeFwd> uNode=" << uNode;
+        << "calcNodeFwd> nodeIndex=" << nodeIndex;
 
-    TER terResult = bCurAccount
-        ? calcNodeAccountFwd (uNode, psCur, bMultiQuality)
-        : calcNodeOfferFwd (uNode, psCur, bMultiQuality);
+    TER errorCode = nodeIsAccount
+        ? calcNodeAccountFwd (nodeIndex, pathState, bMultiQuality)
+        : calcNodeOfferFwd (nodeIndex, pathState, bMultiQuality);
 
-    if (tesSUCCESS == terResult && uNode + 1 != psCur.vpnNodes.size ())
-        terResult   = calcNodeFwd (uNode + 1, psCur, bMultiQuality);
+    if (errorCode == tesSUCCESS && nodeIndex + 1 != pathState.vpnNodes.size ())
+        errorCode = calcNodeFwd (nodeIndex + 1, pathState, bMultiQuality);
 
-    if (tesSUCCESS == terResult && (!psCur.saInPass || !psCur.saOutPass))
-        terResult = tecPATH_DRY;
+    if (errorCode == tesSUCCESS && !(pathState.saInPass && pathState.saOutPass))
+        errorCode = tecPATH_DRY;
 
     WriteLog (lsTRACE, RippleCalc)
         << "calcNodeFwd<"
-        << " uNode:" << uNode
-        << " terResult:" << terResult;
+        << " nodeIndex:" << nodeIndex
+        << " errorCode:" << errorCode;
 
-    return terResult;
+    return errorCode;
 }
 
 // Calculate a node and its previous nodes.
@@ -56,57 +57,50 @@ TER RippleCalc::calcNodeFwd (
 // must be asked for.
 //
 // Then work forward, figuring out how much can actually be delivered.
-// <-- terResult: tesSUCCESS or tecPATH_DRY
+// <-- errorCode: tesSUCCESS or tecPATH_DRY
 // <-> pnNodes:
 //     --> [end]saWanted.mAmount
 //     --> [all]saWanted.mCurrency
 //     --> [all]saAccount
 //     <-> [0]saWanted.mAmount : --> limit, <-- actual
 TER RippleCalc::calcNodeRev (
-    const unsigned int uNode, PathState& psCur, const bool bMultiQuality)
+    const unsigned int nodeIndex, PathState& pathState,
+    const bool bMultiQuality)
 {
-    PathState::Node& pnCur = psCur.vpnNodes[uNode];
-    bool const bCurAccount
-        = is_bit_set (pnCur.uFlags,  STPathElement::typeAccount);
-    TER terResult;
+    PathState::Node& node = pathState.vpnNodes[nodeIndex];
+    bool const nodeIsAccount
+        = is_bit_set (node.uFlags,  STPathElement::typeAccount);
+    TER errorCode;
 
-    // Do current node reverse.
-    const uint160&  uCurIssuerID    = pnCur.uIssuerID;
-    STAmount& saTransferRate  = pnCur.saTransferRate;
-
-    saTransferRate = STAmount::saFromRate (
-        mActiveLedger.rippleTransferRate (uCurIssuerID));
+    node.saTransferRate = STAmount::saFromRate (
+        mActiveLedger.rippleTransferRate (node.uIssuerID));
 
     WriteLog (lsTRACE, RippleCalc)
         << "calcNodeRev>"
-        << " uNode=" << uNode
-        << " bCurAccount=" << bCurAccount
-        << " uIssuerID=" << RippleAddress::createHumanAccountID (uCurIssuerID)
-        << " saTransferRate=" << saTransferRate;
+        << " nodeIndex=" << nodeIndex
+        << " nodeIsAccount=" << nodeIsAccount
+        << " uIssuerID=" << RippleAddress::createHumanAccountID (node.uIssuerID)
+        << " saTransferRate=" << node.saTransferRate;
 
-    terResult = bCurAccount
-        ? calcNodeAccountRev (uNode, psCur, bMultiQuality)
-        : calcNodeOfferRev (uNode, psCur, bMultiQuality);
+    errorCode = nodeIsAccount
+        ? calcNodeAccountRev (nodeIndex, pathState, bMultiQuality)
+        : calcNodeOfferRev (nodeIndex, pathState, bMultiQuality);
 
     // Do previous.
-    if (tesSUCCESS != terResult)
-    {
+    if (errorCode != tesSUCCESS)
         // Error, don't continue.
         nothing ();
-    }
-    else if (uNode)
-    {
+    else if (nodeIndex)
         // Continue in reverse.
-        terResult = calcNodeRev (uNode - 1, psCur, bMultiQuality);
-    }
+        errorCode = calcNodeRev (nodeIndex - 1, pathState, bMultiQuality);
 
     WriteLog (lsTRACE, RippleCalc)
         << "calcNodeRev< "
-        << "uNode=" << uNode
-        << " terResult=%s" << transToken (terResult)
-        << "/" << terResult;
+        << "nodeIndex=" << nodeIndex
+        << " errorCode=%s" << transToken (errorCode)
+        << "/" << errorCode;
 
-    return terResult;
+    return errorCode;
 }
 
 } // ripple
