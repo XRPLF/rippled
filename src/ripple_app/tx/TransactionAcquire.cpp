@@ -163,6 +163,11 @@ void TransactionAcquire::trigger (Peer::ptr const& peer)
         * (tmGL.add_nodeids ()) = SHAMapNode ().getRawString ();
         sendRequest (tmGL, peer);
     }
+    else if (!mMap->isValid ())
+    {
+        mFailed = true;
+        done ();
+    }
     else
     {
         std::vector<SHAMapNode> nodeIDs;

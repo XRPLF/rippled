@@ -99,6 +99,11 @@ public:
     {
         return mType == tnINNER;
     }
+    bool isInBounds () const
+    {
+        // Nodes at depth 64 must be leaves
+        return (!isInner() || (getDepth() < 64));
+    }
     bool isValid () const
     {
         return mType != tnERROR;
