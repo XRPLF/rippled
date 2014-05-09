@@ -1842,6 +1842,50 @@ private:
         	std::bind (&sGetLedger, boost::weak_ptr<PeerImp> (shared_from_this ()), packet));
     }
 
+    /** A peer has sent us transaction set data */
+    static void peerTXData (Job&,
+        boost::weak_ptr <Peer> wPeer,
+        uint256 const& hash,
+        boost::shared_ptr <protocol::TMLedgerData> pPacket,
+        beast::Journal journal)
+    {
+        boost::shared_ptr <Peer> peer = wPeer.lock ();
+        if (!peer)
+            return;
+
+        protocol::TMLedgerData& packet = *pPacket;
+
+        std::list<SHAMapNode> nodeIDs;
+        std::list< Blob > nodeData;
+        for (int i = 0; i < packet.nodes ().size (); ++i)
+        {
+            const protocol::TMLedgerNode& node = packet.nodes (i);
+
+            if (!node.has_nodeid () || !node.has_nodedata () || (node.nodeid ().size () != 33))
+            {
+                journal.warning << "LedgerData request with invalid node ID";
+                peer->charge (Resource::feeInvalidRequest);
+                return;
+            }
+
+            nodeIDs.push_back (SHAMapNode (node.nodeid ().data (), node.nodeid ().size ()));
+            nodeData.push_back (Blob (node.nodedata ().begin (), node.nodedata ().end ()));
+        }
+
+        SHAMapAddNode san;
+        {
+            Application::ScopedLockType lock (getApp ().getMasterLock ());
+
+            san =  getApp().getOPs().gotTXData (peer, hash, nodeIDs, nodeData);
+        }
+
+        if (san.isInvalid ())
+        {
+            peer->charge (Resource::feeUnwantedData);
+        }
+
+    }
+
     void recvLedger (boost::shared_ptr<protocol::TMLedgerData> const& packet_ptr)
     {
         protocol::TMLedgerData& packet = *packet_ptr;
@@ -1884,35 +1928,11 @@ private:
         if (packet.type () == protocol::liTS_CANDIDATE)
         {
             // got data for a candidate transaction set
-            std::list<SHAMapNode> nodeIDs;
-            std::list< Blob > nodeData;
 
-            for (int i = 0; i < packet.nodes ().size (); ++i)
-            {
-                const protocol::TMLedgerNode& node = packet.nodes (i);
-
-                if (!node.has_nodeid () || !node.has_nodedata () || (node.nodeid ().size () != 33))
-                {
-                    m_journal.warning << "LedgerData request with invalid node ID";
-                    charge (Resource::feeInvalidRequest);
-                    return;
-                }
-
-                nodeIDs.push_back (SHAMapNode (node.nodeid ().data (), node.nodeid ().size ()));
-                nodeData.push_back (Blob (node.nodedata ().begin (), node.nodedata ().end ()));
-            }
-
-            SHAMapAddNode san;
-            {
-                Application::ScopedLockType lock (getApp ().getMasterLock ());
-
-                san =  getApp().getOPs ().gotTXData (shared_from_this (), hash, nodeIDs, nodeData);
-            }
-
-            if (san.isInvalid ())
-            {
-                charge (Resource::feeUnwantedData);
-            }
+            getApp().getJobQueue().addJob (jtTXN_DATA, "recvPeerData",
+                BIND_TYPE (&PeerImp::peerTXData, P_1,
+                    boost::weak_ptr<Peer> (shared_from_this ()),
+                        hash, packet_ptr, m_journal));
 
             return;
         }
