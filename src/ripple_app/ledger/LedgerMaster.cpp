@@ -44,8 +44,6 @@ public:
 
     LockType m_mutex;
 
-    TransactionEngine mEngine;
-
     LedgerHolder mCurrentLedger;        // The ledger we are currently processiong
     LedgerHolder mClosedLedger;         // The ledger that most recently closed
     LedgerHolder mValidLedger;          // The highest-sequence ledger we have fully accepted
@@ -212,7 +210,6 @@ public:
 	    }
 
             mCurrentLedger.set (newLedger);
-            mEngine.setLedger (newLedger);
         }
 
         if (getConfig().RUN_STANDALONE)
@@ -234,7 +231,6 @@ public:
             ScopedLockType ml (m_mutex);
             mClosedLedger.set (newLCL);
             mCurrentLedger.set (newOL);
-            mEngine.setLedger (newOL);
         }
 
         if (getConfig().RUN_STANDALONE)
@@ -245,7 +241,6 @@ public:
         else
         {
             mLedgerHistory.builtLedger (newLCL);
-            checkAccept (newLCL);
         }
     }
 
@@ -263,7 +258,6 @@ public:
             mClosedLedger.set (lastClosed);
 
             assert (!current->isClosed ());
-            mEngine.setLedger (current);
         }
         checkAccept (lastClosed);
     }
@@ -285,50 +279,51 @@ public:
         setFullLedger(ledger, true, false);
     }
 
-    void closeLedger (bool recover)
+    /** Apply held transactions to the open ledger
+        This is normally called as we close the ledger.
+        The open ledger remains open to handle new transactions
+        until a new open ledger is built.
+    */
+    void applyHeldTransactions ()
     {
         ScopedLockType sl (m_mutex);
-        Ledger::pointer closingLedger = mCurrentLedger.getMutable ();
 
-        if (recover)
+        // Start with a mutable snapshot of the open ledger
+        TransactionEngine engine (mCurrentLedger.getMutable ());
+
+        int recovers = 0;
+
+        for (auto const& it : mHeldTransactions)
         {
-            int recovers = 0;
-
-            for (CanonicalTXSet::iterator it = mHeldTransactions.begin (), end = mHeldTransactions.end (); it != end; ++it)
+            try
             {
-                try
-                {
-                    TransactionEngineParams tepFlags = tapOPEN_LEDGER;
+                TransactionEngineParams tepFlags = tapOPEN_LEDGER;
 
-                    if (getApp().getHashRouter ().addSuppressionFlags (it->first.getTXID (), SF_SIGGOOD))
-                        tepFlags = static_cast<TransactionEngineParams> (tepFlags | tapNO_CHECK_SIGN);
+                if (getApp().getHashRouter ().addSuppressionFlags (it.first.getTXID (), SF_SIGGOOD))
+                    tepFlags = static_cast<TransactionEngineParams> (tepFlags | tapNO_CHECK_SIGN);
 
-                    bool didApply;
-                    mEngine.applyTransaction (*it->second, tepFlags, didApply);
+                bool didApply;
+                engine.applyTransaction (*it.second, tepFlags, didApply);
 
-                    if (didApply)
-                        ++recovers;
+                if (didApply)
+                    ++recovers;
 
-                    // If a transaction is recovered but hasn't been relayed,
-                    // it will become disputed in the consensus process, which
-                    // will cause it to be relayed.
+                // If a transaction is recovered but hasn't been relayed,
+                // it will become disputed in the consensus process, which
+                // will cause it to be relayed.
 
-                }
-                catch (...)
-                {
-                    // CHECKME: We got a few of these
-                    WriteLog (lsWARNING, LedgerMaster) << "Held transaction throws";
-                }
             }
-
-            CondLog (recovers != 0, lsINFO, LedgerMaster) << "Recovered " << recovers << " held transactions";
-
-            // VFALCO TODO recreate the CanonicalTxSet object instead of resetting it
-            mHeldTransactions.reset (closingLedger->getHash ());
+            catch (...)
+            {
+                WriteLog (lsWARNING, LedgerMaster) << "Held transaction throws";
+            }
         }
 
-        mCurrentLedger.set (closingLedger);
-        mEngine.setLedger (mCurrentLedger.getMutable ());
+        CondLog (recovers != 0, lsINFO, LedgerMaster) << "Recovered " << recovers << " held transactions";
+
+        // VFALCO TODO recreate the CanonicalTxSet object instead of resetting it
+        mHeldTransactions.reset (engine.getLedger()->getHash ());
+        mCurrentLedger.set (engine.getLedger ());
     }
 
     LedgerIndex getBuildingLedger ()
@@ -345,12 +340,15 @@ public:
     TER doTransaction (SerializedTransaction::ref txn, TransactionEngineParams params, bool& didApply)
     {
         Ledger::pointer ledger;
+        TransactionEngine engine;
         TER result;
+        didApply = false;
 
         {
             ScopedLockType sl (m_mutex);
-            result = mEngine.applyTransaction (*txn, params, didApply);
-            ledger = mEngine.getLedger ();
+            ledger = mCurrentLedger.getMutable ();
+            engine.setLedger (ledger);
+            result = engine.applyTransaction (*txn, params, didApply);
         }
         if (didApply)
         {
@@ -769,6 +767,10 @@ public:
  
         // Because we just built a ledger, we are no longer building one
         setBuildingLedger (0);
+
+        // No need to process validations in standalone mode
+        if (getConfig().RUN_STANDALONE)
+            return;
 
         if (ledger->getLedgerSeq() <= mValidLedgerSeq)
         {
