@@ -590,11 +590,9 @@ std::string STAmount::getText () const
     if (*this == zero)
         return "0";
 
-    std::string ret;
-    ret.reserve (64);
-
     std::string const raw_value (std::to_string (mValue));
-
+    std::string ret;
+    
     if (mIsNegative)
         ret.append (1, '-');
 
