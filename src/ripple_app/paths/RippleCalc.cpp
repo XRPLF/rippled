@@ -243,7 +243,7 @@ TER RippleCalc::rippleCalc (
                 assert (pspCur->saOutAct < pspCur->saOutReq);
                 // Error if done, output met.
 
-                rc.pathNext (pspCur, bMultiQuality, lesCheckpoint, activeLedger);
+                rc.pathNext (*pspCur, bMultiQuality, lesCheckpoint, activeLedger);
                 // Compute increment.
                 WriteLog (lsDEBUG, RippleCalc)
                     << "rippleCalc: AFTER:"

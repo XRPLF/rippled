@@ -112,7 +112,7 @@ TER RippleCalc::calcNodeAccountFwd (
 
             // For the first node, calculate amount to ripple based on what is
             // available.
-            node.saFwdRedeem      = node.saRevRedeem;
+            node.saFwdRedeem = node.saRevRedeem;
 
             if (pathState.saInReq >= zero)
             {

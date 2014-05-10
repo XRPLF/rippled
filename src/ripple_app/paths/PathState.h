@@ -89,11 +89,10 @@ public:
         STAmount                        saTakerGets;
 
     };
-public:
+
     typedef boost::shared_ptr<PathState>        pointer;
     typedef const boost::shared_ptr<PathState>& ref;
 
-public:
     PathState*  setIndex (const int iIndex)
     {
         mIndex  = iIndex;
@@ -131,27 +130,12 @@ public:
     void checkNoRipple (uint160 const& destinationAccountID, uint160 const& sourceAccountID);
     void checkNoRipple (uint160 const&, uint160 const&, uint160 const&, uint160 const&);
 
-    void setCanonical (
-        const PathState&        psExpanded
-    );
+    void setCanonical (const PathState& psExpanded);
 
     Json::Value getJson () const;
 
-#if 0
-    static PathState::pointer createCanonical (
-        PathState& ref       pspExpanded
-    )
-    {
-        PathState::pointer  pspNew  = boost::make_shared<PathState> (pspExpanded->saOutAct, pspExpanded->saInAct);
-
-        pspNew->setCanonical (pspExpanded);
-
-        return pspNew;
-    }
-#endif
     static bool lessPriority (PathState& lhs, PathState& rhs);
 
-public:
     TER                  terStatus;
     std::vector<Node>    vpnNodes;
 

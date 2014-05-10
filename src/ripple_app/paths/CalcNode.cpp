@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+#include <tuple>
+
+#include "CalcState.h"
 #include "RippleCalc.h"
 #include "Tuning.h"
 
@@ -26,9 +29,8 @@ TER RippleCalc::calcNodeFwd (
     const unsigned int nodeIndex, PathState& pathState,
     const bool bMultiQuality)
 {
-    const PathState::Node& node = pathState.vpnNodes[nodeIndex];
-    const bool nodeIsAccount
-        = is_bit_set (node.uFlags,  STPathElement::typeAccount);
+    auto const& node = pathState.vpnNodes[nodeIndex];
+    auto const nodeIsAccount = isAccount(node);
 
     WriteLog (lsTRACE, RippleCalc)
         << "calcNodeFwd> nodeIndex=" << nodeIndex;
@@ -91,7 +93,7 @@ TER RippleCalc::calcNodeRev (
         // Error, don't continue.
         nothing ();
     else if (nodeIndex)
-        // Continue in reverse.
+        // Continue in reverse.  TODO(tom): remove unnecessary recursion.
         errorCode = calcNodeRev (nodeIndex - 1, pathState, bMultiQuality);
 
     WriteLog (lsTRACE, RippleCalc)

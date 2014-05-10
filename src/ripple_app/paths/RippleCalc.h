@@ -46,11 +46,9 @@ class RippleCalc
     unordered_set<uint256> mUnfundedOffers;
 
     void pathNext (
-        PathState::ref pathState, const bool bMultiQuality,
+        PathState& pathState, const bool bMultiQuality,
         const LedgerEntrySet& lesCheckpoint, LedgerEntrySet& lesCurrent);
 
-    TER calcNode (
-        unsigned int nodeIndex, PathState& pathState, bool bMultiQuality);
     TER calcNodeRev (
         unsigned int nodeIndex, PathState& pathState, bool bMultiQuality);
     TER calcNodeFwd (

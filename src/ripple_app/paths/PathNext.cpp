@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include "CalcState.h"
 #include "RippleCalc.h"
 #include "Tuning.h"
 
@@ -30,34 +31,34 @@ namespace ripple {
 // <-- pathState.uQuality
 
 void RippleCalc::pathNext (
-    PathState::ref pathState, const bool bMultiQuality,
+    PathState& pathState, const bool bMultiQuality,
     const LedgerEntrySet& lesCheckpoint, LedgerEntrySet& lesCurrent)
 {
     // The next state is what is available in preference order.
     // This is calculated when referenced accounts changed.
-    const unsigned int  lastNodeIndex           = pathState->vpnNodes.size () - 1;
+    const unsigned int  lastNodeIndex           = pathState.vpnNodes.size () - 1;
 
-    pathState->bConsumed   = false;
+    pathState.bConsumed   = false;
 
     // YYY This clearing should only be needed for nice logging.
-    pathState->saInPass = STAmount (
-        pathState->saInReq.getCurrency (), pathState->saInReq.getIssuer ());
-    pathState->saOutPass = STAmount (
-        pathState->saOutReq.getCurrency (), pathState->saOutReq.getIssuer ());
+    pathState.saInPass = STAmount (
+        pathState.saInReq.getCurrency (), pathState.saInReq.getIssuer ());
+    pathState.saOutPass = STAmount (
+        pathState.saOutReq.getCurrency (), pathState.saOutReq.getIssuer ());
 
-    pathState->vUnfundedBecame.clear ();
-    pathState->umReverse.clear ();
+    pathState.vUnfundedBecame.clear ();
+    pathState.umReverse.clear ();
 
     WriteLog (lsTRACE, RippleCalc)
-        << "pathNext: Path In: " << pathState->getJson ();
+        << "pathNext: Path In: " << pathState.getJson ();
 
-    assert (pathState->vpnNodes.size () >= 2);
+    assert (pathState.vpnNodes.size () >= 2);
 
     lesCurrent  = lesCheckpoint.duplicate ();  // Restore from checkpoint.
 
-    for (unsigned int uIndex = pathState->vpnNodes.size (); uIndex--;)
+    for (unsigned int uIndex = pathState.vpnNodes.size (); uIndex--;)
     {
-        auto& node   = pathState->vpnNodes[uIndex];
+        auto& node   = pathState.vpnNodes[uIndex];
 
         node.saRevRedeem.clear ();
         node.saRevIssue.clear ();
@@ -65,39 +66,39 @@ void RippleCalc::pathNext (
         node.saFwdDeliver.clear ();
     }
 
-    pathState->terStatus = calcNodeRev (lastNodeIndex, *pathState, bMultiQuality);
+    pathState.terStatus = calcNodeRev (lastNodeIndex, pathState, bMultiQuality);
 
     WriteLog (lsTRACE, RippleCalc)
-        << "pathNext: Path after reverse: " << pathState->getJson ();
+        << "pathNext: Path after reverse: " << pathState.getJson ();
 
-    if (tesSUCCESS == pathState->terStatus)
+    if (tesSUCCESS == pathState.terStatus)
     {
         // Do forward.
         lesCurrent = lesCheckpoint.duplicate ();   // Restore from checkpoint.
 
-        pathState->terStatus = calcNodeFwd (0, *pathState, bMultiQuality);
+        pathState.terStatus = calcNodeFwd (0, pathState, bMultiQuality);
     }
 
-    if (tesSUCCESS == pathState->terStatus)
+    if (tesSUCCESS == pathState.terStatus)
     {
-        CondLog (!pathState->saInPass || !pathState->saOutPass, lsDEBUG, RippleCalc)
+        CondLog (!pathState.saInPass || !pathState.saOutPass, lsDEBUG, RippleCalc)
             << "pathNext: Error calcNodeFwd reported success for nothing:"
-            << " saOutPass=" << pathState->saOutPass
-            << " saInPass=" << pathState->saInPass;
+            << " saOutPass=" << pathState.saOutPass
+            << " saInPass=" << pathState.saInPass;
 
-        if (!pathState->saOutPass || !pathState->saInPass)
+        if (!pathState.saOutPass || !pathState.saInPass)
             throw std::runtime_error ("Made no progress.");
 
         // Calculate relative quality.
-        pathState->uQuality = STAmount::getRate (
-            pathState->saOutPass, pathState->saInPass);
+        pathState.uQuality = STAmount::getRate (
+            pathState.saOutPass, pathState.saInPass);
 
         WriteLog (lsTRACE, RippleCalc)
-            << "pathNext: Path after forward: " << pathState->getJson ();
+            << "pathNext: Path after forward: " << pathState.getJson ();
     }
     else
     {
-        pathState->uQuality    = 0;
+        pathState.uQuality    = 0;
     }
 }
 

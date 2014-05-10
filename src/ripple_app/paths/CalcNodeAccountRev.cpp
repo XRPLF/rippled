@@ -39,19 +39,20 @@ TER RippleCalc::calcNodeAccountRev (
     const unsigned int nodeIndex, PathState& pathState,
     const bool bMultiQuality)
 {
-    TER                 terResult       = tesSUCCESS;
-    const unsigned int  lastNodeIndex           = pathState.vpnNodes.size () - 1;
+    TER terResult = tesSUCCESS;
+    auto const lastNodeIndex = pathState.vpnNodes.size () - 1;
+    auto const isFinalNode = (nodeIndex == lastNodeIndex);
 
-    std::uint64_t           uRateMax        = 0;
+    std::uint64_t uRateMax = 0;
 
     auto& previousNode = pathState.vpnNodes[nodeIndex ? nodeIndex - 1 : 0];
     auto& node = pathState.vpnNodes[nodeIndex];
-    auto& nextNode = pathState.vpnNodes[nodeIndex == lastNodeIndex ? lastNodeIndex :                                               nodeIndex + 1];
+    auto& nextNode = pathState.vpnNodes[isFinalNode ? lastNodeIndex : nodeIndex + 1];
 
     // Current is allowed to redeem to next.
     const bool previousNodeIsAccount = !nodeIndex ||
         is_bit_set (previousNode.uFlags, STPathElement::typeAccount);
-    const bool nextNodeIsAccount = nodeIndex == lastNodeIndex ||
+    const bool nextNodeIsAccount = isFinalNode ||
         is_bit_set (nextNode.uFlags, STPathElement::typeAccount);
 
     const uint160& previousAccountID = previousNodeIsAccount
@@ -169,7 +170,7 @@ TER RippleCalc::calcNodeAccountRev (
     }
     else if (previousNodeIsAccount && nextNodeIsAccount)
     {
-        if (nodeIndex == lastNodeIndex)
+        if (isFinalNode)
         {
             // account --> ACCOUNT --> $
             // Overall deliverable.
@@ -372,7 +373,7 @@ TER RippleCalc::calcNodeAccountRev (
     }
     else if (!previousNodeIsAccount && nextNodeIsAccount)
     {
-        if (nodeIndex == lastNodeIndex)
+        if (isFinalNode)
         {
             // offer --> ACCOUNT --> $
             // Previous is an offer, no limit: redeem own IOUs.
