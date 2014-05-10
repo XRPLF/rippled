@@ -28,10 +28,10 @@ namespace ripple {
 
 class RippleCalc; // for logging
 
-std::size_t hash_value (const aciSource& asValue)
+std::size_t hash_value (const AccountCurrencyIssuer& asValue)
 {
     std::size_t const seed = 0;
-    return beast::hardened_hash<aciSource>{seed}(asValue);
+    return beast::hardened_hash<AccountCurrencyIssuer>{seed}(asValue);
 }
 
 // Compare the non-calculated fields.
@@ -534,7 +534,9 @@ void PathState::setExpanded (
         {
             const Node&  node   = vpnNodes[nodeIndex];
 
-            if (!umForward.insert (std::make_pair (std::make_tuple (node.uAccountID, node.uCurrencyID, node.uIssuerID), nodeIndex)).second)
+            AccountCurrencyIssuer aci(
+                node.uAccountID, node.uCurrencyID, node.uIssuerID);
+            if (!umForward.insert (std::make_pair (aci, nodeIndex)).second)
             {
                 // Failed to insert. Have a loop.
                 WriteLog (lsDEBUG, RippleCalc) <<

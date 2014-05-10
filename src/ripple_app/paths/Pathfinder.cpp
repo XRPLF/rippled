@@ -20,6 +20,8 @@
 
 #include <tuple>
 
+#include "Calculators.h"
+
 namespace ripple {
 
 SETUP_LOG (Pathfinder)
@@ -244,7 +246,7 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
         std::vector<PathState::pointer> vpsExpanded;
         LedgerEntrySet lesSandbox (mLedger, tapNONE);
 
-        TER result = RippleCalc::rippleCalc (
+        TER result = rippleCalculate (
                  lesSandbox,
                  saMaxAmountAct,
                  saDstAmountAct,
@@ -296,7 +298,7 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
         {
             LedgerEntrySet lesSandbox (mLedger, tapNONE);
 
-            errorCode   = RippleCalc::rippleCalc (
+            errorCode   = rippleCalculate (
                               lesSandbox,
                               saMaxAmountAct,     // --> computed input
                               saDstAmountAct,     // --> computed output

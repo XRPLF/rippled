@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include "Calculators.h"
+
 #include "CalcNode.cpp"
 #include "CalcNodeAccountFwd.cpp"
 #include "CalcNodeAccountRev.cpp"
@@ -32,7 +34,7 @@ namespace ripple {
 SETUP_LOG (RippleCalc)
 
 // <-- TER: Only returns tepPATH_PARTIAL if !bPartialPayment.
-TER RippleCalc::rippleCalc (
+TER rippleCalculate (
     // Compute paths vs this ledger entry set.  Up to caller to actually apply
     // to ledger.
     LedgerEntrySet& activeLedger,
@@ -94,7 +96,7 @@ TER RippleCalc::rippleCalc (
         // nodes.
         // XXX Might also make a XRP bridge by default.
 
-        PathState::pointer pspDirect = boost::make_shared<PathState> (
+        PathState::pointer pspDirect = std::make_shared<PathState> (
             saDstAmountReq, saMaxAmountReq);
 
         if (!pspDirect)
@@ -135,7 +137,7 @@ TER RippleCalc::rippleCalc (
     int iIndex  = 0;
     for (auto const& spPath: spsPaths)
     {
-        PathState::pointer pspExpanded = boost::make_shared<PathState> (
+        PathState::pointer pspExpanded = std::make_shared<PathState> (
             saDstAmountReq, saMaxAmountReq);
 
         if (!pspExpanded)
@@ -243,7 +245,7 @@ TER RippleCalc::rippleCalc (
                 assert (pspCur->saOutAct < pspCur->saOutReq);
                 // Error if done, output met.
 
-                rc.pathNext (*pspCur, bMultiQuality, lesCheckpoint, activeLedger);
+                pathNext (rc, *pspCur, bMultiQuality, lesCheckpoint, rc.mActiveLedger);
                 // Compute increment.
                 WriteLog (lsDEBUG, RippleCalc)
                     << "rippleCalc: AFTER:"

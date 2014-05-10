@@ -23,11 +23,13 @@
 namespace ripple {
 
 // account id, currency id, issuer id :: node
-typedef std::tuple <uint160, uint160, uint160> aciSource;
-typedef ripple::unordered_map <aciSource, unsigned int>                   curIssuerNode;  // Map of currency, issuer to node index.
-typedef ripple::unordered_map <aciSource, unsigned int>::const_iterator   curIssuerNodeConstIterator;
+typedef std::tuple <uint160, uint160, uint160> AccountCurrencyIssuer;
 
-extern std::size_t hash_value (const aciSource& asValue);
+// Map of currency, issuer to node index.
+typedef ripple::unordered_map <AccountCurrencyIssuer, unsigned int>
+AccountCurrencyIssuerToNodeIndex;
+
+extern std::size_t hash_value (const AccountCurrencyIssuer& asValue);
 
 // Holds a path state under incremental application.
 class PathState : public CountedObject <PathState>
@@ -90,8 +92,8 @@ public:
 
     };
 
-    typedef boost::shared_ptr<PathState>        pointer;
-    typedef const boost::shared_ptr<PathState>& ref;
+    typedef std::shared_ptr<PathState>        pointer;
+    typedef const std::shared_ptr<PathState>& ref;
 
     PathState*  setIndex (const int iIndex)
     {
@@ -144,11 +146,11 @@ public:
 
     // First time scanning foward, as part of path contruction, a funding source was mentioned for accounts. Source may only be
     // used there.
-    curIssuerNode               umForward;          // Map of currency, issuer to node index.
+    AccountCurrencyIssuerToNodeIndex umForward;
 
     // First time working in reverse a funding source was used.
     // Source may only be used there if not mentioned by an account.
-    curIssuerNode               umReverse;          // Map of currency, issuer to node index.
+    AccountCurrencyIssuerToNodeIndex umReverse;
 
     LedgerEntrySet              lesEntries;
 

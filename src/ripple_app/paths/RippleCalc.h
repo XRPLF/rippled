@@ -28,98 +28,24 @@ namespace ripple {
     input required to produce a given output along a specified path.
 */
 
-// TODO(vfalco) What's the difference between a RippleState versus PathState?
-//
-class RippleCalc
-{
-  private:
-    // First time working in reverse a funding source was mentioned.  Source may
-    // only be used there.
-    //
-    // Map of currency, issuer to node index.
-    curIssuerNode mumSource;
-
-    // If the transaction fails to meet some constraint, still need to delete
-    // unfunded offers.
-    //
-    // Offers that were found unfunded.
-    unordered_set<uint256> mUnfundedOffers;
-
-    void pathNext (
-        PathState& pathState, const bool bMultiQuality,
-        const LedgerEntrySet& lesCheckpoint, LedgerEntrySet& lesCurrent);
-
-    TER calcNodeRev (
-        unsigned int nodeIndex, PathState& pathState, bool bMultiQuality);
-    TER calcNodeFwd (
-        unsigned int nodeIndex, PathState& pathState, bool bMultiQuality);
-    TER calcNodeOfferRev (
-        unsigned int nodeIndex, PathState& pathState, bool bMultiQuality);
-    TER calcNodeOfferFwd (
-        unsigned int nodeIndex, PathState& pathState, bool bMultiQuality);
-    TER calcNodeAccountRev (
-        unsigned int nodeIndex, PathState& pathState, bool bMultiQuality);
-    TER calcNodeAccountFwd (
-        unsigned int nodeIndex, PathState& pathState, bool bMultiQuality);
-    TER calcNodeAdvance (
-        unsigned int nodeIndex, PathState& pathState, bool bMultiQuality,
-        bool bReverse);
-
-    TER calcNodeDeliverRev (
-        const unsigned int          nodeIndex,
-        PathState&                  pathState,
-        const bool                  bMultiQuality,
-        const uint160&              uOutAccountID,
-        const STAmount&             saOutReq,
-        STAmount&                   saOutAct);
-
-    TER calcNodeDeliverFwd (
-        const unsigned int          nodeIndex,
-        PathState&                  pathState,
-        const bool                  bMultiQuality,
-        const uint160&              uInAccountID,
-        const STAmount&             saInReq,
-        STAmount&                   saInAct,
-        STAmount&                   saInFees);
-
-    void calcNodeRipple (
-        const std::uint32_t uQualityIn, const std::uint32_t uQualityOut,
-        const STAmount& saPrvReq, const STAmount& saCurReq,
-        STAmount& saPrvAct, STAmount& saCurAct, std::uint64_t& uRateMax);
-
-    RippleCalc (LedgerEntrySet& activeLedger, const bool bOpenLedger)
-        : mActiveLedger (activeLedger), mOpenLedger (bOpenLedger)
-    {
-    }
-
-public:
-    static TER rippleCalc (
-        LedgerEntrySet&                   lesActive,
-        STAmount&                         saMaxAmountAct,
-        STAmount&                         saDstAmountAct,
-        std::vector<PathState::pointer>&  vpsExpanded,
-        const STAmount&                   saDstAmountReq,
-        const STAmount&                   saMaxAmountReq,
-        const uint160&                    uDstAccountID,
-        const uint160&                    uSrcAccountID,
-        const STPathSet&                  spsPaths,
-        const bool                        bPartialPayment,
-        const bool                        bLimitQuality,
-        const bool                        bNoRippleDirect,
-        // --> True, not to affect accounts.
-        const bool                        bStandAlone,
-        // --> What kind of errors to return.
-        const bool                        bOpenLedger = true
-    );
-
-    static void setCanonical (
-        STPathSet& spsDst, const std::vector<PathState::pointer>& vpsExpanded,
-        bool bKeepDefault);
-
-private:
-    LedgerEntrySet& mActiveLedger;
-    bool mOpenLedger;
-};
+TER rippleCalculate (
+    LedgerEntrySet&                   lesActive,
+    STAmount&                         saMaxAmountAct,
+    STAmount&                         saDstAmountAct,
+    std::vector<PathState::pointer>&  vpsExpanded,
+    const STAmount&                   saDstAmountReq,
+    const STAmount&                   saMaxAmountReq,
+    const uint160&                    uDstAccountID,
+    const uint160&                    uSrcAccountID,
+    const STPathSet&                  spsPaths,
+    const bool                        bPartialPayment,
+    const bool                        bLimitQuality,
+    const bool                        bNoRippleDirect,
+    // --> True, not to affect accounts.
+    const bool                        bStandAlone,
+    // --> What kind of errors to return.
+    const bool                        bOpenLedger = true
+);
 
 } // ripple
 

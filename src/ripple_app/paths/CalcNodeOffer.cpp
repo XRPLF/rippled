@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include "Calculators.h"
 #include "RippleCalc.h"
 #include "Tuning.h"
 
@@ -30,7 +31,8 @@ namespace ripple {
 //   - Transfer fees credited to issuer.
 //   - Payout to issuer or limbo.
 // - Deliver is set without transfer fees.
-TER RippleCalc::calcNodeOfferFwd (
+TER calcNodeOfferFwd (
+    RippleCalc& rippleCalc,
     const unsigned int          nodeIndex,
     PathState&                  pathState,
     const bool                  bMultiQuality
@@ -46,13 +48,14 @@ TER RippleCalc::calcNodeOfferFwd (
         STAmount        saInFees;
 
         errorCode   = calcNodeDeliverFwd (
-                          nodeIndex,
-                          pathState,
-                          bMultiQuality,
-                          previousNode.uAccountID,
-                          previousNode.saFwdDeliver, // Previous is sending this much.
-                          saInAct,
-                          saInFees);
+            rippleCalc,
+            nodeIndex,
+            pathState,
+            bMultiQuality,
+            previousNode.uAccountID,
+            previousNode.saFwdDeliver, // Previous is sending this much.
+            saInAct,
+            saInFees);
 
         assert (errorCode != tesSUCCESS ||
                 previousNode.saFwdDeliver == saInAct + saInFees);
@@ -68,7 +71,8 @@ TER RippleCalc::calcNodeOfferFwd (
 }
 
 // Called to drive from the last offer node in a chain.
-TER RippleCalc::calcNodeOfferRev (
+TER calcNodeOfferRev (
+    RippleCalc& rippleCalc,
     const unsigned int          nodeIndex,
     PathState&                  pathState,
     const bool                  bMultiQuality)
@@ -89,6 +93,7 @@ TER RippleCalc::calcNodeOfferRev (
             << " saRevDeliver=" << node.saRevDeliver;
 
         errorCode   = calcNodeDeliverRev (
+            rippleCalc,
             nodeIndex,
             pathState,
             bMultiQuality,

@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include "Calculators.h"
 #include "CalcState.h"
 #include "RippleCalc.h"
 #include "Tuning.h"
@@ -30,7 +31,8 @@ namespace ripple {
 //
 // <-- pathState.uQuality
 
-void RippleCalc::pathNext (
+void pathNext (
+    RippleCalc& rippleCalc,
     PathState& pathState, const bool bMultiQuality,
     const LedgerEntrySet& lesCheckpoint, LedgerEntrySet& lesCurrent)
 {
@@ -66,7 +68,7 @@ void RippleCalc::pathNext (
         node.saFwdDeliver.clear ();
     }
 
-    pathState.terStatus = calcNodeRev (lastNodeIndex, pathState, bMultiQuality);
+    pathState.terStatus = calcNodeRev (rippleCalc, lastNodeIndex, pathState, bMultiQuality);
 
     WriteLog (lsTRACE, RippleCalc)
         << "pathNext: Path after reverse: " << pathState.getJson ();
@@ -76,7 +78,7 @@ void RippleCalc::pathNext (
         // Do forward.
         lesCurrent = lesCheckpoint.duplicate ();   // Restore from checkpoint.
 
-        pathState.terStatus = calcNodeFwd (0, pathState, bMultiQuality);
+        pathState.terStatus = calcNodeFwd (rippleCalc, 0, pathState, bMultiQuality);
     }
 
     if (tesSUCCESS == pathState.terStatus)

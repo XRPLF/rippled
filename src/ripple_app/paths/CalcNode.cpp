@@ -20,12 +20,14 @@
 #include <tuple>
 
 #include "CalcState.h"
+#include "Calculators.h"
 #include "RippleCalc.h"
 #include "Tuning.h"
 
 namespace ripple {
 
-TER RippleCalc::calcNodeFwd (
+TER calcNodeFwd (
+    RippleCalc& rippleCalc,
     const unsigned int nodeIndex, PathState& pathState,
     const bool bMultiQuality)
 {
@@ -36,11 +38,11 @@ TER RippleCalc::calcNodeFwd (
         << "calcNodeFwd> nodeIndex=" << nodeIndex;
 
     TER errorCode = nodeIsAccount
-        ? calcNodeAccountFwd (nodeIndex, pathState, bMultiQuality)
-        : calcNodeOfferFwd (nodeIndex, pathState, bMultiQuality);
+        ? calcNodeAccountFwd (rippleCalc, nodeIndex, pathState, bMultiQuality)
+        : calcNodeOfferFwd (rippleCalc, nodeIndex, pathState, bMultiQuality);
 
     if (errorCode == tesSUCCESS && nodeIndex + 1 != pathState.vpnNodes.size ())
-        errorCode = calcNodeFwd (nodeIndex + 1, pathState, bMultiQuality);
+        errorCode = calcNodeFwd (rippleCalc, nodeIndex + 1, pathState, bMultiQuality);
 
     if (errorCode == tesSUCCESS && !(pathState.saInPass && pathState.saOutPass))
         errorCode = tecPATH_DRY;
@@ -65,7 +67,8 @@ TER RippleCalc::calcNodeFwd (
 //     --> [all]saWanted.mCurrency
 //     --> [all]saAccount
 //     <-> [0]saWanted.mAmount : --> limit, <-- actual
-TER RippleCalc::calcNodeRev (
+TER calcNodeRev (
+    RippleCalc& rippleCalc,
     const unsigned int nodeIndex, PathState& pathState,
     const bool bMultiQuality)
 {
@@ -75,7 +78,7 @@ TER RippleCalc::calcNodeRev (
     TER errorCode;
 
     node.saTransferRate = STAmount::saFromRate (
-        mActiveLedger.rippleTransferRate (node.uIssuerID));
+        rippleCalc.mActiveLedger.rippleTransferRate (node.uIssuerID));
 
     WriteLog (lsTRACE, RippleCalc)
         << "calcNodeRev>"
@@ -85,8 +88,8 @@ TER RippleCalc::calcNodeRev (
         << " saTransferRate=" << node.saTransferRate;
 
     errorCode = nodeIsAccount
-        ? calcNodeAccountRev (nodeIndex, pathState, bMultiQuality)
-        : calcNodeOfferRev (nodeIndex, pathState, bMultiQuality);
+            ? calcNodeAccountRev (rippleCalc, nodeIndex, pathState, bMultiQuality)
+        : calcNodeOfferRev (rippleCalc, nodeIndex, pathState, bMultiQuality);
 
     // Do previous.
     if (errorCode != tesSUCCESS)
@@ -94,7 +97,7 @@ TER RippleCalc::calcNodeRev (
         nothing ();
     else if (nodeIndex)
         // Continue in reverse.  TODO(tom): remove unnecessary recursion.
-        errorCode = calcNodeRev (nodeIndex - 1, pathState, bMultiQuality);
+        errorCode = calcNodeRev (rippleCalc, nodeIndex - 1, pathState, bMultiQuality);
 
     WriteLog (lsTRACE, RippleCalc)
         << "calcNodeRev< "

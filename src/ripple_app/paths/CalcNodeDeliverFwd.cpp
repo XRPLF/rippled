@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include "Calculators.h"
 #include "RippleCalc.h"
 #include "Tuning.h"
 
@@ -28,7 +29,8 @@ namespace ripple {
 // <-- node.saFwdDeliver: For calcNodeAccountFwd to know how much went through
 // --> node.saRevDeliver: Do not exceed.
 
-TER RippleCalc::calcNodeDeliverFwd (
+TER calcNodeDeliverFwd (
+    RippleCalc& rippleCalc,
     const unsigned int nodeIndex,          // 0 < nodeIndex < lastNodeIndex
     PathState&         pathState,
     const bool         bMultiQuality,
@@ -78,12 +80,13 @@ TER RippleCalc::calcNodeDeliverFwd (
         {
             WriteLog (lsWARNING, RippleCalc)
                 << "calcNodeDeliverFwd: max loops cndf";
-            return mOpenLedger ? telFAILED_PROCESSING : tecFAILED_PROCESSING;
+            return rippleCalc.mOpenLedger ? telFAILED_PROCESSING : tecFAILED_PROCESSING;
         }
 
         // Determine values for pass to adjust saInAct, saInFees, and
         // saCurDeliverAct.
         errorCode   = calcNodeAdvance (
+            rippleCalc,
             nodeIndex, pathState, bMultiQuality || saInAct == zero, false);
         // If needed, advance to next funded offer.
 
@@ -95,7 +98,7 @@ TER RippleCalc::calcNodeDeliverFwd (
         {
             WriteLog (lsWARNING, RippleCalc)
                 << "calcNodeDeliverFwd: INTERNAL ERROR: Ran out of offers.";
-            return mOpenLedger ? telFAILED_PROCESSING : tecFAILED_PROCESSING;
+            return rippleCalc.mOpenLedger ? telFAILED_PROCESSING : tecFAILED_PROCESSING;
         }
         else if (errorCode == tesSUCCESS)
         {
@@ -218,7 +221,7 @@ TER RippleCalc::calcNodeDeliverFwd (
 
                 // Output: Debit offer owner, send XRP or non-XPR to next
                 // account.
-                errorCode   = mActiveLedger.accountSend (
+                errorCode   = rippleCalc.mActiveLedger.accountSend (
                     uOfrOwnerID, nextAccountID, saOutPassAct);
 
                 if (errorCode != tesSUCCESS)
@@ -237,14 +240,15 @@ TER RippleCalc::calcNodeDeliverFwd (
 
                 // Output fees vary as the next nodes offer owners may vary.
                 // Therefore, immediately push through output for current offer.
-                errorCode   = RippleCalc::calcNodeDeliverFwd (
-                                  nodeIndex + 1,
-                                  pathState,
-                                  bMultiQuality,
-                                  uOfrOwnerID,        // --> Current holder.
-                                  saOutPassMax,       // --> Amount available.
-                                  saOutPassAct,       // <-- Amount delivered.
-                                  saOutPassFees);     // <-- Fees charged.
+                errorCode   = calcNodeDeliverFwd (
+                    rippleCalc,
+                    nodeIndex + 1,
+                    pathState,
+                    bMultiQuality,
+                    uOfrOwnerID,        // --> Current holder.
+                    saOutPassMax,       // --> Amount available.
+                    saOutPassAct,       // <-- Amount delivered.
+                    saOutPassFees);     // <-- Fees charged.
 
                 if (errorCode != tesSUCCESS)
                     break;
@@ -275,7 +279,7 @@ TER RippleCalc::calcNodeDeliverFwd (
                 // fees).
                 auto id = !!uCurCurrencyID ? uCurIssuerID : ACCOUNT_XRP;
                 auto outPassTotal = saOutPassAct + saOutPassFees;
-                mActiveLedger.accountSend (uOfrOwnerID, id, outPassTotal);
+                rippleCalc.mActiveLedger.accountSend (uOfrOwnerID, id, outPassTotal);
 
                 WriteLog (lsTRACE, RippleCalc)
                     << "calcNodeDeliverFwd: ? --> OFFER --> offer:"
@@ -306,7 +310,7 @@ TER RippleCalc::calcNodeDeliverFwd (
                                                 // same account.
             {
                 auto id = !!uPrvCurrencyID ? uInAccountID : ACCOUNT_XRP;
-                errorCode = mActiveLedger.accountSend (
+                errorCode = rippleCalc.mActiveLedger.accountSend (
                     id, uOfrOwnerID, saInPassAct);
 
                 if (errorCode != tesSUCCESS)
@@ -328,7 +332,7 @@ TER RippleCalc::calcNodeDeliverFwd (
                     << " saTakerGetsNew=" << saTakerGetsNew;
 
                 // If mOpenLedger, then ledger is not final, can vote no.
-                errorCode   = mOpenLedger
+                errorCode   = rippleCalc.mOpenLedger
                               ? telFAILED_PROCESSING                                                          : tecFAILED_PROCESSING;
                 break;
             }
@@ -336,7 +340,7 @@ TER RippleCalc::calcNodeDeliverFwd (
             sleOffer->setFieldAmount (sfTakerGets, saTakerGetsNew);
             sleOffer->setFieldAmount (sfTakerPays, saTakerPaysNew);
 
-            mActiveLedger.entryModify (sleOffer);
+            rippleCalc.mActiveLedger.entryModify (sleOffer);
 
             if (saOutPassAct == saOutFunded || saTakerGetsNew == zero)
             {

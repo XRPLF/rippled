@@ -17,8 +17,9 @@
 */
 //==============================================================================
 
-#include "Tuning.h"
+#include "Calculators.h"
 #include "RippleCalc.h"
+#include "Tuning.h"
 
 namespace ripple {
 
@@ -32,7 +33,8 @@ namespace ripple {
 // spent on fees.  Continue processing until the request is satisified as long
 // as the rate does not increase past the initial rate.
 
-TER RippleCalc::calcNodeDeliverRev (
+TER calcNodeDeliverRev (
+    RippleCalc& rippleCalc,
     const unsigned int nodeIndex,
     PathState&         pathState,
     const bool         bMultiQuality,  // True, if not constrained to the same
@@ -84,7 +86,7 @@ TER RippleCalc::calcNodeDeliverRev (
         if (++loopCount > CALC_NODE_DELIVER_MAX_LOOPS)
         {
             WriteLog (lsFATAL, RippleCalc) << "loop count exceeded";
-            return mOpenLedger ? telFAILED_PROCESSING : tecFAILED_PROCESSING;
+            return rippleCalc.mOpenLedger ? telFAILED_PROCESSING : tecFAILED_PROCESSING;
         }
 
         bool&           bEntryAdvance   = node.bEntryAdvance;
@@ -99,6 +101,7 @@ TER RippleCalc::calcNodeDeliverRev (
         STAmount&       saRateMax       = node.saRateMax;
 
         errorCode = calcNodeAdvance (
+            rippleCalc,
             nodeIndex, pathState, bMultiQuality || saOutAct == zero, true);
         // If needed, advance to next funded offer.
 
@@ -263,12 +266,13 @@ TER RippleCalc::calcNodeDeliverRev (
             // Compute in previous offer node how much could come in.
 
             errorCode   = calcNodeDeliverRev (
-                              nodeIndex - 1,
-                              pathState,
-                              bMultiQuality,
-                              uOfrOwnerID,
-                              saInPassReq,
-                              saInPassAct);
+                rippleCalc,
+                nodeIndex - 1,
+                pathState,
+                bMultiQuality,
+                uOfrOwnerID,
+                saInPassReq,
+                saInPassAct);
 
             WriteLog (lsTRACE, RippleCalc)
                 << "calcNodeDeliverRev: offer --> OFFER --> ? :"
@@ -309,7 +313,7 @@ TER RippleCalc::calcNodeDeliverRev (
         // visited.  However, these deductions and adjustments are tenative.
         //
         // Must reset balances when going forward to perform actual transfers.
-        errorCode   = mActiveLedger.accountSend (
+        errorCode   = rippleCalc.mActiveLedger.accountSend (
             uOfrOwnerID, uCurIssuerID, saOutPassAct);
 
         if (errorCode != tesSUCCESS)
@@ -327,14 +331,14 @@ TER RippleCalc::calcNodeDeliverRev (
                 << " saTakerGetsNew=%s" << saTakerGetsNew;
 
             // If mOpenLedger then ledger is not final, can vote no.
-            errorCode   = mOpenLedger ? telFAILED_PROCESSING                                                           : tecFAILED_PROCESSING;
+            errorCode   = rippleCalc.mOpenLedger ? telFAILED_PROCESSING                                                           : tecFAILED_PROCESSING;
             break;
         }
 
         sleOffer->setFieldAmount (sfTakerGets, saTakerGetsNew);
         sleOffer->setFieldAmount (sfTakerPays, saTakerPaysNew);
 
-        mActiveLedger.entryModify (sleOffer);
+        rippleCalc.mActiveLedger.entryModify (sleOffer);
 
         if (saOutPassAct == saTakerGets)
         {

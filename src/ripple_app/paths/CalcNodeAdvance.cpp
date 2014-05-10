@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include "Calculators.h"
 #include "RippleCalc.h"
 #include "Tuning.h"
 
@@ -36,7 +37,8 @@ namespace ripple {
 // - Automatically advances to first offer.
 // --> bEntryAdvance: true, to advance to next entry. false, recalculate.
 // <-- uOfferIndex : 0=end of list.
-TER RippleCalc::calcNodeAdvance (
+TER calcNodeAdvance (
+    RippleCalc& rippleCalc,
     const unsigned int          nodeIndex,
     PathState&                  pathState,
     const bool                  bMultiQuality,
@@ -96,7 +98,7 @@ TER RippleCalc::calcNodeAdvance (
                 node.uIssuerID);
             uDirectEnd      = Ledger::getQualityNext (uDirectTip);
 
-            sleDirectDir    = mActiveLedger.entryCache (ltDIR_NODE, uDirectTip);
+            sleDirectDir    = rippleCalc.mActiveLedger.entryCache (ltDIR_NODE, uDirectTip);
 
             // Associated vars are dirty, if found it.
             bDirectDirDirty = !!sleDirectDir;
@@ -118,7 +120,7 @@ TER RippleCalc::calcNodeAdvance (
             // Get next quality.
             if (bDirectAdvance)
             {
-                uDirectTip  = mActiveLedger.getNextLedgerIndex (
+                uDirectTip  = rippleCalc.mActiveLedger.getNextLedgerIndex (
                     uDirectTip, uDirectEnd);
             }
 
@@ -133,7 +135,7 @@ TER RippleCalc::calcNodeAdvance (
                     << "calcNodeAdvance: Quality advance: uDirectTip="
                     << uDirectTip;
 
-                sleDirectDir = mActiveLedger.entryCache (ltDIR_NODE, uDirectTip);
+                sleDirectDir = rippleCalc.mActiveLedger.entryCache (ltDIR_NODE, uDirectTip);
             }
             else if (bReverse)
             {
@@ -151,7 +153,7 @@ TER RippleCalc::calcNodeAdvance (
                     << "calcNodeAdvance: Unreachable: "
                     << "Fell off end of order book.";
                 // FIXME: why?
-                return mOpenLedger ? telFAILED_PROCESSING :
+                return rippleCalc.mOpenLedger ? telFAILED_PROCESSING :
                     tecFAILED_PROCESSING;
             }
         }
@@ -177,7 +179,7 @@ TER RippleCalc::calcNodeAdvance (
                 saTakerPays = sleOffer->getFieldAmount (sfTakerPays);
                 saTakerGets = sleOffer->getFieldAmount (sfTakerGets);
 
-                saOfferFunds = mActiveLedger.accountFunds (
+                saOfferFunds = rippleCalc.mActiveLedger.accountFunds (
                     uOfrOwnerID, saTakerGets);
                 // Funds left.
                 bFundsDirty     = false;
@@ -191,7 +193,7 @@ TER RippleCalc::calcNodeAdvance (
                 WriteLog (lsTRACE, RippleCalc) << "calcNodeAdvance: as is";
             }
         }
-        else if (!mActiveLedger.dirNext (
+        else if (!rippleCalc.mActiveLedger.dirNext (
             uDirectTip, sleDirectDir, uEntry, uOfferIndex))
         {
             // Failed to find an entry in directory.
@@ -208,7 +210,7 @@ TER RippleCalc::calcNodeAdvance (
             {
                 WriteLog (lsWARNING, RippleCalc)
                     << "calcNodeAdvance: unreachable: ran out of offers";
-                return mOpenLedger ? telFAILED_PROCESSING :
+                return rippleCalc.mOpenLedger ? telFAILED_PROCESSING :
                     tecFAILED_PROCESSING;
                 // TEMPORARY
             }
@@ -222,7 +224,7 @@ TER RippleCalc::calcNodeAdvance (
         else
         {
             // Got a new offer.
-            sleOffer = mActiveLedger.entryCache (ltOFFER, uOfferIndex);
+            sleOffer = rippleCalc.mActiveLedger.entryCache (ltOFFER, uOfferIndex);
 
             if (!sleOffer)
             {
@@ -236,9 +238,8 @@ TER RippleCalc::calcNodeAdvance (
                 saTakerPays = sleOffer->getFieldAmount (sfTakerPays);
                 saTakerGets = sleOffer->getFieldAmount (sfTakerGets);
 
-                const aciSource asLine = std::make_tuple (
-                    uOfrOwnerID, node.uCurrencyID,
-                    node.uIssuerID);
+                const AccountCurrencyIssuer asLine (
+                    uOfrOwnerID, node.uCurrencyID, node.uIssuerID);
 
                 WriteLog (lsTRACE, RippleCalc)
                     << "calcNodeAdvance: uOfrOwnerID="
@@ -249,12 +250,12 @@ TER RippleCalc::calcNodeAdvance (
 
                 if (sleOffer->isFieldPresent (sfExpiration) &&
                     (sleOffer->getFieldU32 (sfExpiration) <=
-                     mActiveLedger.getLedger ()->getParentCloseTimeNC ()))
+                     rippleCalc.mActiveLedger.getLedger ()->getParentCloseTimeNC ()))
                 {
                     // Offer is expired.
                     WriteLog (lsTRACE, RippleCalc)
                         << "calcNodeAdvance: expired offer";
-                    mUnfundedOffers.insert(uOfferIndex);
+                    rippleCalc.mUnfundedOffers.insert(uOfferIndex);
                     continue;
                 }
                 else if (saTakerPays <= zero || saTakerGets <= zero)
@@ -272,10 +273,10 @@ TER RippleCalc::calcNodeAdvance (
                             << " saTakerGets=%s" << saTakerGets;
 
                         // Mark offer for always deletion.
-                        mUnfundedOffers.insert (uOfferIndex);
+                        rippleCalc.mUnfundedOffers.insert (uOfferIndex);
                     }
-                    else if (mUnfundedOffers.find (uOfferIndex) !=
-                             mUnfundedOffers.end ())
+                    else if (rippleCalc.mUnfundedOffers.find (uOfferIndex) !=
+                             rippleCalc.mUnfundedOffers.end ())
                     {
                         // Past internal error, offer was found failed to place
                         // this in mUnfundedOffers.
@@ -313,8 +314,7 @@ TER RippleCalc::calcNodeAdvance (
                 // XXX Going forward could we fund something with a worse
                 // quality which was previously skipped? Might need to check
                 // quality.
-                curIssuerNodeConstIterator itForward
-                    = pathState.umForward.find (asLine);
+                auto itForward = pathState.umForward.find (asLine);
                 const bool bFoundForward = itForward != pathState.umForward.end ();
 
                 // Only allow a source to be used once, in the first node
@@ -335,8 +335,7 @@ TER RippleCalc::calcNodeAdvance (
 
                 // This is overly strict. For contributions to past. We should
                 // only count source if actually used.
-                curIssuerNodeConstIterator itReverse
-                    = pathState.umReverse.find (asLine);
+                auto itReverse = pathState.umReverse.find (asLine);
                 bool bFoundReverse = itReverse != pathState.umReverse.end ();
 
                 // For this quality increment, only allow a source to be used
@@ -356,12 +355,12 @@ TER RippleCalc::calcNodeAdvance (
 
                 // Determine if used in past.
                 // We only need to know if it might need to be marked unfunded.
-                curIssuerNodeConstIterator itPast = mumSource.find (asLine);
-                bool bFoundPast = (itPast != mumSource.end ());
+                auto itPast = rippleCalc.mumSource.find (asLine);
+                bool bFoundPast = (itPast != rippleCalc.mumSource.end ());
 
                 // Only the current node is allowed to use the source.
 
-                saOfferFunds = mActiveLedger.accountFunds
+                saOfferFunds = rippleCalc.mActiveLedger.accountFunds
                         (uOfrOwnerID, saTakerGets); // Funds held.
 
                 if (saOfferFunds <= zero)
@@ -376,7 +375,7 @@ TER RippleCalc::calcNodeAdvance (
                         // That is, even if this offer fails due to fill or kill
                         // still do deletions.
                         // Mark offer for always deletion.
-                        mUnfundedOffers.insert (uOfferIndex);
+                        rippleCalc.mUnfundedOffers.insert (uOfferIndex);
                     }
                     else
                     {

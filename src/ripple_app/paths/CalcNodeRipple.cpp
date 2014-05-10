@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include "Calculators.h"
 #include "RippleCalc.h"
 #include "Tuning.h"
 
@@ -44,7 +45,8 @@ namespace ripple {
 // This routine is called one or two times for a node in a pass. If called once,
 // it will work and set a rate.  If called again, the new work must not worsen
 // the previous rate.
-void RippleCalc::calcNodeRipple (
+void calcNodeRipple (
+    RippleCalc& rippleCalc,
     const std::uint32_t uQualityIn,
     const std::uint32_t uQualityOut,
     const STAmount& saPrvReq,   // --> in limit including fees, <0 = unlimited

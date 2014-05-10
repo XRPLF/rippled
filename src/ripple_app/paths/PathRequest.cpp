@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include <tuple>
+
+#include "Calculators.h"
+
 namespace ripple {
 
 SETUP_LOG (PathRequest)
@@ -422,7 +426,7 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
                     (currIssuer.first.isZero () ? ACCOUNT_XRP : raSrcAccount.getAccountID ()), 1);
             saMaxAmount.negate ();
             m_journal.debug << iIdentifier << " Paths found, calling rippleCalc";
-            TER errorCode = RippleCalc::rippleCalc (lesSandbox, saMaxAmountAct, saDstAmountAct,
+            TER errorCode = rippleCalculate (lesSandbox, saMaxAmountAct, saDstAmountAct,
                                                     vpsExpanded, saMaxAmount, saDstAmount,
                                                     raDstAccount.getAccountID (), raSrcAccount.getAccountID (),
                                                     spsPaths, false, false, false, true);
@@ -433,7 +437,7 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
                 m_journal.debug << iIdentifier << " Trying with an extra path element";
                 spsPaths.addPath(extraPath);
                 vpsExpanded.clear ();
-                errorCode = RippleCalc::rippleCalc (lesSandbox, saMaxAmountAct, saDstAmountAct,
+                errorCode = rippleCalculate (lesSandbox, saMaxAmountAct, saDstAmountAct,
                                                     vpsExpanded, saMaxAmount, saDstAmount,
                                                     raDstAccount.getAccountID (), raSrcAccount.getAccountID (),
                                                     spsPaths, false, false, false, true);

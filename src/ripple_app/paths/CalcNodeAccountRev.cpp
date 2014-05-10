@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include "Calculators.h"
 #include "RippleCalc.h"
 #include "Tuning.h"
 
@@ -35,7 +36,8 @@ namespace ripple {
 //
 // <-- tesSUCCESS or tecPATH_DRY
 
-TER RippleCalc::calcNodeAccountRev (
+TER calcNodeAccountRev (
+    RippleCalc& rippleCalc,
     const unsigned int nodeIndex, PathState& pathState,
     const bool bMultiQuality)
 {
@@ -62,30 +64,30 @@ TER RippleCalc::calcNodeAccountRev (
 
     // XXX Don't look up quality for XRP
     const std::uint32_t uQualityIn = nodeIndex
-        ? mActiveLedger.rippleQualityIn (
+        ? rippleCalc.mActiveLedger.rippleQualityIn (
             node.uAccountID, previousAccountID, node.uCurrencyID)
         : QUALITY_ONE;
     const std::uint32_t uQualityOut = (nodeIndex != lastNodeIndex)
-        ? mActiveLedger.rippleQualityOut (
+        ? rippleCalc.mActiveLedger.rippleQualityOut (
             node.uAccountID, nextAccountID, node.uCurrencyID)
         : QUALITY_ONE;
 
     // For previousNodeIsAccount:
     // Previous account is owed.
     const STAmount saPrvOwed = (previousNodeIsAccount && nodeIndex)
-        ? mActiveLedger.rippleOwed (
+        ? rippleCalc.mActiveLedger.rippleOwed (
             node.uAccountID, previousAccountID, node.uCurrencyID)
         : STAmount (node.uCurrencyID, node.uAccountID);
 
     // Previous account may owe.
     const STAmount saPrvLimit = (previousNodeIsAccount && nodeIndex)
-        ? mActiveLedger.rippleLimit (
+        ? rippleCalc.mActiveLedger.rippleLimit (
             node.uAccountID, previousAccountID, node.uCurrencyID)
         : STAmount (node.uCurrencyID, node.uAccountID);
 
     // Next account is owed.
     const STAmount saNxtOwed = (nextNodeIsAccount && nodeIndex != lastNodeIndex)
-        ? mActiveLedger.rippleOwed (
+        ? rippleCalc.mActiveLedger.rippleOwed (
             node.uAccountID, nextAccountID, node.uCurrencyID)
         : STAmount (node.uCurrencyID, node.uAccountID);
 
@@ -217,6 +219,7 @@ TER RippleCalc::calcNodeAccountRev (
                 // If we previously redeemed and this has a poorer rate, this
                 // won't be included the current increment.
                 calcNodeRipple (
+                    rippleCalc,
                     uQualityIn, QUALITY_ONE, saPrvIssueReq, saCurWantedReq,
                     saPrvIssueAct, saCurWantedAct, uRateMax);
 
@@ -244,6 +247,7 @@ TER RippleCalc::calcNodeAccountRev (
             {
                 // Rate : 1.0 : quality out
                 calcNodeRipple (
+                    rippleCalc,
                     QUALITY_ONE, uQualityOut, saPrvRedeemReq, saCurRedeemReq,
                     saPrvRedeemAct, saCurRedeemAct, uRateMax);
 
@@ -261,6 +265,7 @@ TER RippleCalc::calcNodeAccountRev (
             {
                 // Rate: quality in : quality out
                 calcNodeRipple (
+                    rippleCalc,
                     uQualityIn, uQualityOut, saPrvIssueReq, saCurRedeemReq,
                     saPrvIssueAct, saCurRedeemAct, uRateMax);
 
@@ -279,8 +284,9 @@ TER RippleCalc::calcNodeAccountRev (
             {
                 // Rate : 1.0 : transfer_rate
                 calcNodeRipple (
+                    rippleCalc,
                     QUALITY_ONE,
-                    mActiveLedger.rippleTransferRate (node.uAccountID),
+                    rippleCalc.mActiveLedger.rippleTransferRate (node.uAccountID),
                     saPrvRedeemReq, saCurIssueReq, saPrvRedeemAct,
                     saCurIssueAct, uRateMax);
 
@@ -302,6 +308,7 @@ TER RippleCalc::calcNodeAccountRev (
             {
                 // Rate: quality in : 1.0
                 calcNodeRipple (
+                    rippleCalc,
                     uQualityIn, QUALITY_ONE, saPrvIssueReq, saCurIssueReq,
                     saPrvIssueAct, saCurIssueAct, uRateMax);
 
@@ -343,8 +350,8 @@ TER RippleCalc::calcNodeAccountRev (
         {
             // Rate : 1.0 : transfer_rate
             calcNodeRipple (
-                QUALITY_ONE,
-                mActiveLedger.rippleTransferRate (node.uAccountID),
+                rippleCalc, QUALITY_ONE,
+                rippleCalc.mActiveLedger.rippleTransferRate (node.uAccountID),
                 saPrvRedeemReq, saCurDeliverReq, saPrvRedeemAct,
                 saCurDeliverAct, uRateMax);
         }
@@ -355,6 +362,7 @@ TER RippleCalc::calcNodeAccountRev (
         {
             // Rate: quality in : 1.0
             calcNodeRipple (
+                rippleCalc,
                 uQualityIn, QUALITY_ONE, saPrvIssueReq, saCurDeliverReq,
                 saPrvIssueAct, saCurDeliverAct, uRateMax);
         }
@@ -399,6 +407,7 @@ TER RippleCalc::calcNodeAccountRev (
 
             // Rate: quality in : 1.0
             calcNodeRipple (
+                rippleCalc,
                 uQualityIn, QUALITY_ONE, saPrvDeliverReq, saCurWantedReq,
                 saPrvDeliverAct, saCurWantedAct, uRateMax);
 
@@ -429,6 +438,7 @@ TER RippleCalc::calcNodeAccountRev (
             {
                 // Rate : 1.0 : quality out
                 calcNodeRipple (
+                    rippleCalc,
                     QUALITY_ONE, uQualityOut, saPrvDeliverReq, saCurRedeemReq,
                     saPrvDeliverAct, saCurRedeemAct, uRateMax);
             }
@@ -441,8 +451,9 @@ TER RippleCalc::calcNodeAccountRev (
             {
                 // Rate : 1.0 : transfer_rate
                 calcNodeRipple (
+                    rippleCalc,
                     QUALITY_ONE,
-                    mActiveLedger.rippleTransferRate (node.uAccountID),
+                    rippleCalc.mActiveLedger.rippleTransferRate (node.uAccountID),
                     saPrvDeliverReq, saCurIssueReq, saPrvDeliverAct,
                     saCurIssueAct, uRateMax);
             }
@@ -470,8 +481,9 @@ TER RippleCalc::calcNodeAccountRev (
 
         // Rate : 1.0 : transfer_rate
         calcNodeRipple (
+            rippleCalc,
             QUALITY_ONE,
-            mActiveLedger.rippleTransferRate (node.uAccountID),
+            rippleCalc.mActiveLedger.rippleTransferRate (node.uAccountID),
             saPrvDeliverReq, saCurDeliverReq, saPrvDeliverAct,
             saCurDeliverAct, uRateMax);
 

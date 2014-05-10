@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include "Calculators.h"
 #include "RippleCalc.h"
 #include "Tuning.h"
 
@@ -37,7 +38,8 @@ namespace ripple {
 //   do not need to push funds.
 // - If next node is an offer and output is XRP then we need to deliver funds to
 //   limbo.
-TER RippleCalc::calcNodeAccountFwd (
+TER calcNodeAccountFwd (
+    RippleCalc& rippleCalc,
     const unsigned int nodeIndex,   // 0 <= nodeIndex <= lastNodeIndex
     PathState& pathState,
     const bool bMultiQuality)
@@ -63,11 +65,11 @@ TER RippleCalc::calcNodeAccountFwd (
         = nextNodeIsAccount ? nextNode.uAccountID : node.uAccountID;
 
     std::uint32_t uQualityIn = nodeIndex
-        ? mActiveLedger.rippleQualityIn (
+        ? rippleCalc.mActiveLedger.rippleQualityIn (
             node.uAccountID, previousAccountID, node.uCurrencyID)
         : QUALITY_ONE;
     std::uint32_t  uQualityOut = (nodeIndex == lastNodeIndex)
-        ? mActiveLedger.rippleQualityOut (
+        ? rippleCalc.mActiveLedger.rippleQualityOut (
             node.uAccountID, nextAccountID, node.uCurrencyID)
         : QUALITY_ONE;
 
@@ -175,7 +177,7 @@ TER RippleCalc::calcNodeAccountFwd (
             if (saCurReceive)
             {
                 // Actually receive.
-                errorCode = mActiveLedger.rippleCredit (
+                errorCode = rippleCalc.mActiveLedger.rippleCredit (
                     previousAccountID, node.uAccountID,
                     previousNode.saFwdRedeem + previousNode.saFwdIssue, false);
             }
@@ -200,6 +202,7 @@ TER RippleCalc::calcNodeAccountFwd (
             {
                 // Rate : 1.0 : quality out
                 calcNodeRipple (
+                    rippleCalc,
                     QUALITY_ONE, uQualityOut, previousNode.saFwdRedeem, node.saRevRedeem,
                     saPrvRedeemAct, node.saFwdRedeem, uRateMax);
             }
@@ -212,6 +215,7 @@ TER RippleCalc::calcNodeAccountFwd (
             {
                 // Rate: quality in : quality out
                 calcNodeRipple (
+                    rippleCalc,
                     uQualityIn, uQualityOut, previousNode.saFwdIssue, node.saRevRedeem,
                     saPrvIssueAct, node.saFwdRedeem, uRateMax);
             }
@@ -226,8 +230,8 @@ TER RippleCalc::calcNodeAccountFwd (
             {
                 // Rate : 1.0 : transfer_rate
                 calcNodeRipple (
-                    QUALITY_ONE,
-                    mActiveLedger.rippleTransferRate (node.uAccountID),
+                    rippleCalc, QUALITY_ONE,
+                    rippleCalc.mActiveLedger.rippleTransferRate (node.uAccountID),
                     previousNode.saFwdRedeem, node.saRevIssue, saPrvRedeemAct,
                     node.saFwdIssue, uRateMax);
             }
@@ -242,6 +246,7 @@ TER RippleCalc::calcNodeAccountFwd (
             {
                 // Rate: quality in : 1.0
                 calcNodeRipple (
+                    rippleCalc,
                     uQualityIn, QUALITY_ONE, previousNode.saFwdIssue, node.saRevIssue,
                     saPrvIssueAct, node.saFwdIssue, uRateMax);
             }
@@ -250,7 +255,7 @@ TER RippleCalc::calcNodeAccountFwd (
 
             // Adjust prv --> cur balance : take all inbound
             errorCode   = saProvide
-                ? mActiveLedger.rippleCredit (
+                ? rippleCalc.mActiveLedger.rippleCredit (
                     previousAccountID, node.uAccountID,
                     previousNode.saFwdRedeem + previousNode.saFwdIssue, false)
                 : tecPATH_DRY;
@@ -282,8 +287,8 @@ TER RippleCalc::calcNodeAccountFwd (
                 // Rate : 1.0 : transfer_rate
                 // XXX Is having the transfer rate here correct?
                 calcNodeRipple (
-                    QUALITY_ONE,
-                    mActiveLedger.rippleTransferRate (node.uAccountID),
+                    rippleCalc, QUALITY_ONE,
+                    rippleCalc.mActiveLedger.rippleTransferRate (node.uAccountID),
                     previousNode.saFwdRedeem, node.saRevDeliver, saPrvRedeemAct,
                     node.saFwdDeliver, uRateMax);
             }
@@ -296,13 +301,14 @@ TER RippleCalc::calcNodeAccountFwd (
             {
                 // Rate: quality in : 1.0
                 calcNodeRipple (
+                    rippleCalc,
                     uQualityIn, QUALITY_ONE, previousNode.saFwdIssue, node.saRevDeliver,
                     saPrvIssueAct, node.saFwdDeliver, uRateMax);
             }
 
             // Adjust prv --> cur balance : take all inbound
             errorCode   = node.saFwdDeliver
-                ? mActiveLedger.rippleCredit (
+                ? rippleCalc.mActiveLedger.rippleCredit (
                     previousAccountID, node.uAccountID,
                     previousNode.saFwdRedeem + previousNode.saFwdIssue, false)
                 : tecPATH_DRY;  // Didn't actually deliver anything.
@@ -323,7 +329,7 @@ TER RippleCalc::calcNodeAccountFwd (
                 if (node.uCurrencyID.isZero ())
                     node.saFwdDeliver = std::min (
                         node.saFwdDeliver,
-                        mActiveLedger.accountHolds (
+                        rippleCalc.mActiveLedger.accountHolds (
                             node.uAccountID, CURRENCY_XRP, ACCOUNT_XRP));
 
             }
@@ -355,7 +361,7 @@ TER RippleCalc::calcNodeAccountFwd (
                     << "calcNodeAccountFwd: ^ --> ACCOUNT -- XRP --> offer";
 
                 // Deliver XRP to limbo.
-                errorCode = mActiveLedger.accountSend (
+                errorCode = rippleCalc.mActiveLedger.accountSend (
                     node.uAccountID, ACCOUNT_XRP, node.saFwdDeliver);
             }
         }
@@ -392,6 +398,7 @@ TER RippleCalc::calcNodeAccountFwd (
             {
                 // Rate : 1.0 : quality out
                 calcNodeRipple (
+                    rippleCalc,
                     QUALITY_ONE, uQualityOut, previousNode.saFwdDeliver, node.saRevRedeem,
                     saPrvDeliverAct, node.saFwdRedeem, uRateMax);
             }
@@ -407,8 +414,8 @@ TER RippleCalc::calcNodeAccountFwd (
             {
                 // Rate : 1.0 : transfer_rate
                 calcNodeRipple (
-                    QUALITY_ONE,
-                    mActiveLedger.rippleTransferRate (node.uAccountID),
+                    rippleCalc, QUALITY_ONE,
+                    rippleCalc.mActiveLedger.rippleTransferRate (node.uAccountID),
                     previousNode.saFwdDeliver, node.saRevIssue, saPrvDeliverAct,
                     node.saFwdIssue, uRateMax);
             }
@@ -437,8 +444,8 @@ TER RippleCalc::calcNodeAccountFwd (
         {
             // Rate : 1.0 : transfer_rate
             calcNodeRipple (
-                QUALITY_ONE,
-                mActiveLedger.rippleTransferRate (node.uAccountID),
+                rippleCalc, QUALITY_ONE,
+                rippleCalc.mActiveLedger.rippleTransferRate (node.uAccountID),
                 previousNode.saFwdDeliver, node.saRevDeliver, saPrvDeliverAct,
                 node.saFwdDeliver, uRateMax);
         }
