@@ -114,29 +114,23 @@ public:
         return raw_encode (&v.front(), &v.back()+1, alphabet, withCheck);
     }
 
-    // VFALCO NOTE Avoid this interface which uses globals, explicitly
-    //             pass the alphabet in the call to encode!
-    //
-    static Alphabet const& getCurrentAlphabet ();
-    static void setCurrentAlphabet (Alphabet const& alphabet);
-
     template <class Container>
     static std::string encode (Container const& container)
     {
         return encode (container.container.begin(), container.end(),
-            getCurrentAlphabet(), false);
+            getRippleAlphabet(), false);
     }
 
     template <class Container>
     static std::string encodeWithCheck (Container const& container)
     {
         return encode (&container.front(), &container.back()+1,
-            getCurrentAlphabet(), true);
+            getRippleAlphabet(), true);
     }
 
     static std::string encode (const unsigned char* pbegin, const unsigned char* pend)
     {
-        return encode (pbegin, pend, getCurrentAlphabet(), false);
+        return encode (pbegin, pend, getRippleAlphabet(), false);
     }
 
     //--------------------------------------------------------------------------
@@ -146,13 +140,10 @@ public:
     static bool raw_decode (char const* first, char const* last,
         void* dest, std::size_t size, bool checked, Alphabet const& alphabet);
 
-    static bool decode (const char* psz, Blob& vchRet, Alphabet const& alphabet = getCurrentAlphabet ());
+    static bool decode (const char* psz, Blob& vchRet, Alphabet const& alphabet = getRippleAlphabet ());
     static bool decode (const std::string& str, Blob& vchRet);
-    static bool decodeWithCheck (const char* psz, Blob& vchRet, Alphabet const& alphabet = getCurrentAlphabet());
-    static bool decodeWithCheck (const std::string& str, Blob& vchRet, Alphabet const& alphabet = getCurrentAlphabet());
-
-private:
-    static Alphabet const* s_currentAlphabet;
+    static bool decodeWithCheck (const char* psz, Blob& vchRet, Alphabet const& alphabet = getRippleAlphabet());
+    static bool decodeWithCheck (const std::string& str, Blob& vchRet, Alphabet const& alphabet = getRippleAlphabet());
 };
 
 }

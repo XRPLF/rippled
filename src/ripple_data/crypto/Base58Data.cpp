@@ -39,34 +39,17 @@ CBase58Data::CBase58Data ()
 
 CBase58Data::~CBase58Data ()
 {
-    if (!vchData.empty ())
-        memset (&vchData[0], 0, vchData.size ());
+    // Ensures that any potentially sensitive data is cleared from memory
+    std::fill (std::begin (vchData), std::end(vchData), 0);
 }
 
-void CBase58Data::SetData (int nVersionIn, Blob const& vchDataIn)
-{
-    nVersion    = nVersionIn;
-    vchData     = vchDataIn;
-}
-
-void CBase58Data::SetData (int nVersionIn, const void* pdata, size_t nSize)
-{
-    nVersion = nVersionIn;
-    vchData.resize (nSize);
-
-    if (nSize)
-        memcpy (&vchData[0], pdata, nSize);
-}
-
-void CBase58Data::SetData (int nVersionIn, const unsigned char* pbegin, const unsigned char* pend)
-{
-    SetData (nVersionIn, (void*)pbegin, pend - pbegin);
-}
-
-bool CBase58Data::SetString (const char* psz, unsigned char version, Base58::Alphabet const& alphabet)
+bool CBase58Data::SetString (
+    std::string const& str,
+    unsigned char version, 
+    Base58::Alphabet const& alphabet)
 {
     Blob vchTemp;
-    Base58::decodeWithCheck (psz, vchTemp, alphabet);
+    Base58::decodeWithCheck (str.c_str (), vchTemp, alphabet);
 
     if (vchTemp.empty () || vchTemp[0] != version)
     {
@@ -85,11 +68,6 @@ bool CBase58Data::SetString (const char* psz, unsigned char version, Base58::Alp
     return true;
 }
 
-bool CBase58Data::SetString (const std::string& str, unsigned char version)
-{
-    return SetString (str.c_str (), version);
-}
-
 std::string CBase58Data::ToString () const
 {
     Blob vch (1, nVersion);
@@ -97,44 +75,6 @@ std::string CBase58Data::ToString () const
     vch.insert (vch.end (), vchData.begin (), vchData.end ());
 
     return Base58::encodeWithCheck (vch);
-}
-
-int CBase58Data::CompareTo (const CBase58Data& b58) const
-{
-    if (nVersion < b58.nVersion) return -1;
-
-    if (nVersion > b58.nVersion) return  1;
-
-    if (vchData < b58.vchData)   return -1;
-
-    if (vchData > b58.vchData)   return  1;
-
-    return 0;
-}
-
-bool CBase58Data::operator== (const CBase58Data& b58) const
-{
-    return CompareTo (b58) == 0;
-}
-bool CBase58Data::operator!= (const CBase58Data& b58) const
-{
-    return CompareTo (b58) != 0;
-}
-bool CBase58Data::operator<= (const CBase58Data& b58) const
-{
-    return CompareTo (b58) <= 0;
-}
-bool CBase58Data::operator>= (const CBase58Data& b58) const
-{
-    return CompareTo (b58) >= 0;
-}
-bool CBase58Data::operator< (const CBase58Data& b58) const
-{
-    return CompareTo (b58) <  0;
-}
-bool CBase58Data::operator> (const CBase58Data& b58) const
-{
-    return CompareTo (b58) >  0;
 }
 
 std::size_t hash_value (const CBase58Data& b58)

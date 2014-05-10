@@ -153,7 +153,7 @@ std::string RippleAddress::humanNodePublic () const
 
 bool RippleAddress::setNodePublic (const std::string& strPublic)
 {
-    mIsValid        = SetString (strPublic.c_str (), VER_NODE_PUBLIC);
+    mIsValid = SetString (strPublic, VER_NODE_PUBLIC, Base58::getRippleAlphabet ());
 
     return mIsValid;
 }
@@ -256,23 +256,23 @@ std::string RippleAddress::humanNodePrivate () const
 
 bool RippleAddress::setNodePrivate (const std::string& strPrivate)
 {
-    mIsValid        = SetString (strPrivate.c_str (), VER_NODE_PRIVATE);
+    mIsValid = SetString (strPrivate, VER_NODE_PRIVATE, Base58::getRippleAlphabet ());
 
     return mIsValid;
 }
 
 void RippleAddress::setNodePrivate (Blob const& vPrivate)
 {
-    mIsValid        = true;
+    mIsValid = true;
 
     SetData (VER_NODE_PRIVATE, vPrivate);
 }
 
 void RippleAddress::setNodePrivate (uint256 hash256)
 {
-    mIsValid        = true;
+    mIsValid = true;
 
-    SetData (VER_NODE_PRIVATE, hash256.begin (), 32);
+    SetData (VER_NODE_PRIVATE, hash256);
 }
 
 void RippleAddress::signNodePrivate (uint256 const& hash, Blob& vchSig) const
@@ -363,7 +363,7 @@ bool RippleAddress::setAccountID (const std::string& strAccountID, Base58::Alpha
     }
     else
     {
-        mIsValid    = SetString (strAccountID.c_str (), VER_ACCOUNT_ID, alphabet);
+        mIsValid = SetString (strAccountID, VER_ACCOUNT_ID, alphabet);
     }
 
     return mIsValid;
@@ -373,7 +373,7 @@ void RippleAddress::setAccountID (const uint160& hash160)
 {
     mIsValid        = true;
 
-    SetData (VER_ACCOUNT_ID, hash160.begin (), 20);
+    SetData (VER_ACCOUNT_ID, hash160);
 }
 
 //
@@ -429,14 +429,14 @@ std::string RippleAddress::humanAccountPublic () const
 
 bool RippleAddress::setAccountPublic (const std::string& strPublic)
 {
-    mIsValid        = SetString (strPublic.c_str (), VER_ACCOUNT_PUBLIC);
+    mIsValid = SetString (strPublic, VER_ACCOUNT_PUBLIC, Base58::getRippleAlphabet ());
 
     return mIsValid;
 }
 
 void RippleAddress::setAccountPublic (Blob const& vPublic)
 {
-    mIsValid        = true;
+    mIsValid = true;
 
     SetData (VER_ACCOUNT_PUBLIC, vPublic);
 }
@@ -522,7 +522,7 @@ std::string RippleAddress::humanAccountPrivate () const
 
 bool RippleAddress::setAccountPrivate (const std::string& strPrivate)
 {
-    mIsValid        = SetString (strPrivate.c_str (), VER_ACCOUNT_PRIVATE);
+    mIsValid = SetString (strPrivate, VER_ACCOUNT_PRIVATE, Base58::getRippleAlphabet ());
 
     return mIsValid;
 }
@@ -536,9 +536,9 @@ void RippleAddress::setAccountPrivate (Blob const& vPrivate)
 
 void RippleAddress::setAccountPrivate (uint256 hash256)
 {
-    mIsValid        = true;
+    mIsValid = true;
 
-    SetData (VER_ACCOUNT_PRIVATE, hash256.begin (), 32);
+    SetData (VER_ACCOUNT_PRIVATE, hash256);
 }
 
 void RippleAddress::setAccountPrivate (const RippleAddress& naGenerator, const RippleAddress& naSeed, int seq)
@@ -571,27 +571,6 @@ bool RippleAddress::accountPrivateSign (uint256 const& uHash, Blob& vucSig) cons
 
     return bResult;
 }
-
-#if 0
-bool RippleAddress::accountPrivateVerify (uint256 const& uHash, Blob const& vucSig) const
-{
-    CKey        ckPrivate;
-    bool        bVerified;
-
-    if (!ckPrivate.SetPrivateKeyU (getAccountPrivate ()))
-    {
-        // Bad private key.
-        WriteLog (lsWARNING, RippleAddress) << "accountPrivateVerify: Bad private key.";
-        bVerified   = false;
-    }
-    else
-    {
-        bVerified   = ckPrivate.Verify (uHash, vucSig);
-    }
-
-    return bVerified;
-}
-#endif
 
 Blob RippleAddress::accountPrivateEncrypt (const RippleAddress& naPublicTo, Blob const& vucPlainText) const
 {
@@ -659,27 +638,6 @@ Blob RippleAddress::accountPrivateDecrypt (const RippleAddress& naPublicFrom, Bl
 // Generators
 //
 
-BIGNUM* RippleAddress::getGeneratorBN () const
-{
-    // returns the public generator
-    switch (nVersion)
-    {
-    case VER_NONE:
-        throw std::runtime_error ("unset source - getGeneratorBN");
-
-    case VER_FAMILY_GENERATOR:
-        // Do nothing.
-        break;
-
-    default:
-        throw std::runtime_error (str (boost::format ("bad source: %d") % int (nVersion)));
-    }
-
-    BIGNUM* ret = BN_bin2bn (&vchData[0], vchData.size (), nullptr);
-    assert (ret);
-    return ret;
-}
-
 Blob const& RippleAddress::getGenerator () const
 {
     // returns the public generator
@@ -714,7 +672,7 @@ std::string RippleAddress::humanGenerator () const
 
 bool RippleAddress::setGenerator (const std::string& strGenerator)
 {
-    mIsValid        = SetString (strGenerator.c_str (), VER_FAMILY_GENERATOR);
+    mIsValid = SetString (strGenerator, VER_FAMILY_GENERATOR, Base58::getRippleAlphabet ());
 
     return mIsValid;
 }
@@ -816,7 +774,7 @@ int RippleAddress::setSeed1751 (const std::string& strHuman1751)
 
 bool RippleAddress::setSeed (const std::string& strSeed)
 {
-    mIsValid        = SetString (strSeed.c_str (), VER_FAMILY_SEED);
+    mIsValid = SetString (strSeed, VER_FAMILY_SEED, Base58::getRippleAlphabet ());
 
     return mIsValid;
 }
@@ -861,9 +819,9 @@ bool RippleAddress::setSeedGeneric (const std::string& strText)
 
 void RippleAddress::setSeed (uint128 hash128)
 {
-    mIsValid        = true;
+    mIsValid = true;
 
-    SetData (VER_FAMILY_SEED, hash128.begin (), 16);
+    SetData (VER_FAMILY_SEED, hash128);
 }
 
 void RippleAddress::setSeedRandom ()
