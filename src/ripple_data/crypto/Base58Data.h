@@ -32,39 +32,101 @@
 #ifndef RIPPLE_BASE58DATA_H
 #define RIPPLE_BASE58DATA_H
 
-#include ".././ripple/types/api/Base58.h"
+#include "../../ripple/types/api/Base58.h"
+#include "../../ripple/types/api/base_uint.h"
 
 namespace ripple {
 
 class CBase58Data
 {
 protected:
+    // NIKB TODO: combine nVersion into vchData so that CBase58Data becomes
+    //            unnecessary and is replaced by a couple of helper functions
+    //            that operate on a Blob.
+
     unsigned char nVersion;
     Blob vchData;
 
     CBase58Data ();
     ~CBase58Data ();
 
-    void SetData (int nVersionIn, Blob const& vchDataIn);
-    void SetData (int nVersionIn, const void* pdata, size_t nSize);
-    void SetData (int nVersionIn, const unsigned char* pbegin, const unsigned char* pend);
+    void SetData (int version, Blob const& vchDataIn)
+    {
+        nVersion = version;
+        vchData = vchDataIn;
+    }
+
+    template <size_t Bits, class Tag>
+    void SetData (int version, base_uint<Bits, Tag> const& from)
+    {
+        nVersion = version;
+
+        vchData.resize (from.size ());
+
+        std::copy (std::begin (from), std::end(from), std::begin (vchData));
+    }
 
 public:
-    bool SetString (const char* psz, unsigned char version, Base58::Alphabet const& alphabet = Base58::getCurrentAlphabet ());
-    bool SetString (const std::string& str, unsigned char version);
+    bool SetString (std::string const& str, unsigned char version,
+        Base58::Alphabet const& alphabet);
 
     std::string ToString () const;
-    int CompareTo (const CBase58Data& b58) const;
 
-    bool operator== (const CBase58Data& b58) const;
-    bool operator!= (const CBase58Data& b58) const;
-    bool operator<= (const CBase58Data& b58) const;
-    bool operator>= (const CBase58Data& b58) const;
-    bool operator< (const CBase58Data& b58) const;
-    bool operator> (const CBase58Data& b58) const;
+    int compare (const CBase58Data& b58) const
+    {
+        if (nVersion < b58.nVersion)
+            return -1;
+
+        if (nVersion > b58.nVersion)
+            return  1;
+
+        if (vchData < b58.vchData)
+            return -1;
+
+        if (vchData > b58.vchData)
+            return  1;
+
+        return 0;
+    }
 
     friend std::size_t hash_value (const CBase58Data& b58);
 };
+
+inline bool
+operator== (CBase58Data const& lhs, CBase58Data const& rhs)
+{
+    return lhs.compare (rhs) == 0;
+}
+
+inline bool
+operator!= (CBase58Data const& lhs, CBase58Data const& rhs)
+{
+    return lhs.compare (rhs) != 0;
+}
+
+inline bool
+operator< (CBase58Data const& lhs, CBase58Data const& rhs)
+{
+    return lhs.compare (rhs) <  0;
+}
+
+inline bool
+operator<= (CBase58Data const& lhs, CBase58Data const& rhs)
+{
+    return lhs.compare (rhs) <= 0;
+}
+
+inline bool
+operator> (CBase58Data const& lhs, CBase58Data const& rhs)
+{
+    return lhs.compare (rhs) > 0;
+}
+
+inline bool
+operator>= (CBase58Data const& lhs, CBase58Data const& rhs)
+{
+    return lhs.compare (rhs) >= 0;
+}
 
 extern std::size_t hash_value (const CBase58Data& b58);
 

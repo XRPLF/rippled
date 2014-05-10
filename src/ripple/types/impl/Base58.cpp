@@ -24,8 +24,6 @@
 
 namespace ripple {
 
-Base58::Alphabet const* Base58::s_currentAlphabet = &Base58::getRippleAlphabet ();
-
 void Base58::fourbyte_hash256 (void* out, void const* in, std::size_t bytes)
 {
     unsigned char const* const p (
@@ -86,16 +84,6 @@ std::string Base58::raw_encode (
     // Convert little endian std::string to big endian
     reverse (str.begin (), str.end ());
     return str;
-}
-
-Base58::Alphabet const& Base58::getCurrentAlphabet ()
-{
-    return *s_currentAlphabet;
-}
-
-void Base58::setCurrentAlphabet (Alphabet const& alphabet)
-{
-    s_currentAlphabet = &alphabet;
 }
 
 //------------------------------------------------------------------------------

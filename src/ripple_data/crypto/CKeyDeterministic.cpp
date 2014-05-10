@@ -215,7 +215,15 @@ static BIGNUM* makeHash (const RippleAddress& pubGen, int seq, BIGNUM* order)
 EC_KEY* CKey::GeneratePublicDeterministicKey (const RippleAddress& pubGen, int seq)
 {
     // publicKey(n) = rootPublicKey EC_POINT_+ Hash(pubHash|seq)*point
-    EC_KEY*         rootKey     = CKey::GenerateRootPubKey (pubGen.getGeneratorBN ());
+    BIGNUM* generator = BN_bin2bn (
+        pubGen.getGenerator ().data (),
+        pubGen.getGenerator ().size (),
+        nullptr);
+
+    if (generator == nullptr)
+        return nullptr;
+
+    EC_KEY*         rootKey     = CKey::GenerateRootPubKey (generator);
     const EC_POINT* rootPubKey  = EC_KEY_get0_public_key (rootKey);
     BN_CTX*         ctx         = BN_CTX_new ();
     EC_KEY*         pkey        = EC_KEY_new_by_curve_name (NID_secp256k1);
