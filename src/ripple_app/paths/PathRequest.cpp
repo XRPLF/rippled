@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include <tuple>
+
+#include "Calculators.h"
+
 namespace ripple {
 
 SETUP_LOG (PathRequest)
@@ -422,25 +426,25 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
                     (currIssuer.first.isZero () ? ACCOUNT_XRP : raSrcAccount.getAccountID ()), 1);
             saMaxAmount.negate ();
             m_journal.debug << iIdentifier << " Paths found, calling rippleCalc";
-            TER terResult = RippleCalc::rippleCalc (lesSandbox, saMaxAmountAct, saDstAmountAct,
+            TER errorCode = rippleCalculate (lesSandbox, saMaxAmountAct, saDstAmountAct,
                                                     vpsExpanded, saMaxAmount, saDstAmount,
                                                     raDstAccount.getAccountID (), raSrcAccount.getAccountID (),
                                                     spsPaths, false, false, false, true);
 
 
-            if ((extraPath.size() > 0) && ((terResult == terNO_LINE) || (terResult == tecPATH_PARTIAL)))
+            if ((extraPath.size() > 0) && ((errorCode == terNO_LINE) || (errorCode == tecPATH_PARTIAL)))
             {
                 m_journal.debug << iIdentifier << " Trying with an extra path element";
                 spsPaths.addPath(extraPath);
                 vpsExpanded.clear ();
-                terResult = RippleCalc::rippleCalc (lesSandbox, saMaxAmountAct, saDstAmountAct,
+                errorCode = rippleCalculate (lesSandbox, saMaxAmountAct, saDstAmountAct,
                                                     vpsExpanded, saMaxAmount, saDstAmount,
                                                     raDstAccount.getAccountID (), raSrcAccount.getAccountID (),
                                                     spsPaths, false, false, false, true);
-                m_journal.debug << iIdentifier << " Extra path element gives " << transHuman (terResult);
+                m_journal.debug << iIdentifier << " Extra path element gives " << transHuman (errorCode);
             }
 
-            if (terResult == tesSUCCESS)
+            if (errorCode == tesSUCCESS)
             {
                 Json::Value jvEntry (Json::objectValue);
                 jvEntry["source_amount"]    = saMaxAmountAct.getJson (0);
@@ -450,7 +454,7 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
             }
             else
             {
-                m_journal.debug << iIdentifier << " rippleCalc returns " << transHuman (terResult);
+                m_journal.debug << iIdentifier << " rippleCalc returns " << transHuman (errorCode);
             }
         }
         else

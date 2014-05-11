@@ -20,6 +20,8 @@
 
 #include <tuple>
 
+#include "Calculators.h"
+
 namespace ripple {
 
 SETUP_LOG (Pathfinder)
@@ -244,7 +246,7 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
         std::vector<PathState::pointer> vpsExpanded;
         LedgerEntrySet lesSandbox (mLedger, tapNONE);
 
-        TER result = RippleCalc::rippleCalc (
+        TER result = rippleCalculate (
                  lesSandbox,
                  saMaxAmountAct,
                  saDstAmountAct,
@@ -290,13 +292,13 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
 
         spsPaths.addPath (spCurrent);               // Just checking the current path.
 
-        TER         terResult;
+        TER         errorCode;
 
         try
         {
             LedgerEntrySet lesSandbox (mLedger, tapNONE);
 
-            terResult   = RippleCalc::rippleCalc (
+            errorCode   = rippleCalculate (
                               lesSandbox,
                               saMaxAmountAct,     // --> computed input
                               saDstAmountAct,     // --> computed output
@@ -315,13 +317,13 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
         {
             WriteLog (lsINFO, Pathfinder) << "findPaths: Caught throw: " << e.what ();
 
-            terResult   = tefEXCEPTION;
+            errorCode   = tefEXCEPTION;
         }
 
-        if (tesSUCCESS != terResult)
+        if (errorCode != tesSUCCESS)
         {
             WriteLog (lsDEBUG, Pathfinder) <<
-                "findPaths: dropping: " << transToken (terResult) <<
+                "findPaths: dropping: " << transToken (errorCode) <<
                 ": " << spCurrent.getJson (0);
         }
         else if (saDstAmountAct < saMinDstAmount)
