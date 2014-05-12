@@ -1133,14 +1133,16 @@ int SHAMap::flushDirty (DirtySet& set, int maxNodes, NodeObjectType t, std::uint
 
 #endif
 
-        getApp().getNodeStore ().store (t, seq, std::move (s.modData ()), nodeHash);
-
-        if (getApp().running ())
+        if (node->getSeq () != 0)
         {
-            // Put the canonical version into the SHAMap and the treeNodeCache
-            mTNByID.erase (*node);
-            fetchNodeExternal (*node, nodeHash);
+            // Node is not shareable
+            // Make and share a shareable copy
+            node = boost::make_shared <SHAMapTreeNode> (*node, 0);
+            canonicalize (node->getNodeHash(), node);
+            mTNByID.replace (*node, node);
         }
+
+        getApp().getNodeStore ().store (t, seq, std::move (s.modData ()), nodeHash);
 
         if (flushed++ >= maxNodes)
             return flushed;
