@@ -539,7 +539,11 @@ void InboundLedger::trigger (Peer::ptr const& peer)
     {
         assert (mLedger);
 
-        if (mLedger->peekAccountStateMap ()->getHash ().isZero ())
+        if (!mLedger->peekAccountStateMap ()->isValid ())
+        {
+            mFailed = true;
+        }
+        else if (mLedger->peekAccountStateMap ()->getHash ().isZero ())
         {
             // we need the root node
             tmGL.set_itype (protocol::liAS_NODE);
@@ -614,7 +618,11 @@ void InboundLedger::trigger (Peer::ptr const& peer)
     {
         assert (mLedger);
 
-        if (mLedger->peekTransactionMap ()->getHash ().isZero ())
+        if (!mLedger->peekTransactionMap ()->isValid ())
+        {
+            mFailed = true;
+        }
+        else if (mLedger->peekTransactionMap ()->getHash ().isZero ())
         {
             // we need the root node
             tmGL.set_itype (protocol::liTX_NODE);

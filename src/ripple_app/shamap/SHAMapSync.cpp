@@ -472,6 +472,13 @@ SHAMapAddNode SHAMap::addKnownNode (const SHAMapNode& node, Blob const& rawNode,
 
             canonicalize (iNode->getChildHash (branch), newNode);
 
+            if (!iNode->isInBounds ())
+            {
+                // Map is provably invalid
+                mState = smsInvalid;
+                return SHAMapAddNode::useful ();
+            }
+
             if (mTNByID.canonicalize(node, &newNode) && filter)
             {
                 Serializer s;
