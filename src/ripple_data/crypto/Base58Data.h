@@ -40,6 +40,10 @@ namespace ripple {
 class CBase58Data
 {
 protected:
+    // NIKB TODO: combine nVersion into vchData so that CBase58Data becomes
+    //            unnecessary and is replaced by a couple of helper functions
+    //            that operate on a Blob.
+
     unsigned char nVersion;
     Blob vchData;
 

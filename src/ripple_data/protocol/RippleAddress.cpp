@@ -324,7 +324,8 @@ std::string RippleAddress::humanAccountID () const
     case VER_ACCOUNT_ID:
     {
         StaticScopedLockType sl (s_lock);
-        ripple::unordered_map< Blob , std::string >::iterator it = rncMap.find (vchData);
+
+        auto it = rncMap.find (vchData);
 
         if (it != rncMap.end ())
             return it->second;

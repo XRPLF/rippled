@@ -59,12 +59,12 @@ bool CBase58Data::SetString (
     }
 
     nVersion = vchTemp[0];
-    vchData.resize (vchTemp.size () - 1);
 
-    if (!vchData.empty ())
-        memcpy (&vchData[0], &vchTemp[1], vchData.size ());
+    vchData.assign (vchTemp.begin () + 1, vchTemp.end ());
 
-    memset (&vchTemp[0], 0, vchTemp.size ());
+    // Ensures that any potentially sensitive data is cleared from memory
+    std::fill (vchTemp.begin(), vchTemp.end(), 0);
+
     return true;
 }
 
