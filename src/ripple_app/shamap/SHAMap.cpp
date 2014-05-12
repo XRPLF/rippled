@@ -1307,7 +1307,21 @@ SHAMapTreeNode::pointer SHAMap::getCache (uint256 const& hash, SHAMapNode const&
 void SHAMap::canonicalize (uint256 const& hash, SHAMapTreeNode::pointer& node)
 {
     assert (node->getSeq() == 0);
+
+    SHAMapNode id = *node;
+
     treeNodeCache.canonicalize (hash, node);
+
+    if (id != *node)
+    {
+        // The cache has the node with a different ID
+        node = boost::make_shared <SHAMapTreeNode> (*node, 0);
+        node->set (id);
+
+        // Future fetches are likely to use the newer ID
+        treeNodeCache.canonicalize (hash, node, true);
+        assert (id == *node);
+    }
 }
 
 //------------------------------------------------------------------------------
