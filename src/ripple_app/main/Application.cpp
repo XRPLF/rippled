@@ -106,6 +106,70 @@ class ApplicationImp
     , public beast::DeadlineTimer::Listener
     , public beast::LeakChecked <ApplicationImp>
 {
+private:
+    class io_latency_sampler
+    {
+    private:
+        std::mutex mutable m_mutex;
+        beast::insight::Event m_event;
+        beast::Journal m_journal;
+        beast::io_latency_probe <std::chrono::steady_clock> m_probe;
+        std::chrono::milliseconds m_lastSample;
+
+    public:
+        io_latency_sampler (
+            beast::insight::Event ev,
+            beast::Journal journal,
+            std::chrono::milliseconds interval,
+            boost::asio::io_service& ios)
+            : m_event (ev)
+            , m_journal (journal)
+            , m_probe (interval, ios)
+        {
+        }
+
+        void
+        start()
+        {
+            m_probe.sample (std::ref(*this));
+        }
+
+        template <class Duration>
+        void operator() (Duration const& elapsed)
+        {
+            auto const ms (ceil <std::chrono::milliseconds> (elapsed));
+
+            {
+                std::unique_lock <std::mutex> lock (m_mutex);
+                m_lastSample = ms;
+            }
+
+            if (ms.count() >= 10)
+                m_event.notify (ms);
+            if (ms.count() >= 500)
+                m_journal.warning <<
+                    "io_service latency = " << ms;
+        }
+
+        std::chrono::milliseconds
+        get () const
+        {
+            std::unique_lock <std::mutex> lock (m_mutex);
+            return m_lastSample;
+        }
+
+        void
+        cancel ()
+        {
+            m_probe.cancel ();
+        }
+
+        void cancel_async ()
+        {
+            m_probe.cancel_async ();
+        }
+    };
+
 public:
     beast::Journal m_journal;
     Application::LockType m_masterMutex;
@@ -167,34 +231,9 @@ public:
 
     std::unique_ptr <ResolverAsio> m_resolver;
 
-    beast::io_latency_probe <std::chrono::steady_clock> m_probe;
+    io_latency_sampler m_io_latency_sampler;
 
     //--------------------------------------------------------------------------
-
-    class sample_io_service_latency
-    {
-    public:
-        beast::insight::Event latency;
-        beast::Journal journal;
-
-        sample_io_service_latency (beast::insight::Event latency_,
-            beast::Journal journal_)
-            : latency (latency_)
-            , journal (journal_)
-        {
-        }
-
-        template <class Duration>
-        void operator() (Duration const& elapsed) const
-        {
-            auto ms (ceil <std::chrono::milliseconds> (elapsed));
-            if (ms.count() >= 10)
-                latency.notify (ms);
-            if (ms.count() >= 500)
-                journal.warning <<
-                    "io_service latency = " << ms;
-        }
-    };
 
     static std::vector <std::unique_ptr <NodeStore::Factory>> make_Factories ()
     {
@@ -315,7 +354,9 @@ public:
 
         , m_resolver (ResolverAsio::New (m_mainIoPool.getService (), beast::Journal ()))
 
-        , m_probe (std::chrono::milliseconds (100), m_mainIoPool.getService())
+        , m_io_latency_sampler (m_collectorManager->collector()->make_event ("ios_latency"),
+            LogPartition::getJournal <ApplicationLog> (),
+                std::chrono::milliseconds (100), m_mainIoPool.getService())
     {
         add (m_resourceManager.get ());
 
@@ -383,6 +424,13 @@ public:
     boost::asio::io_service& getIOService ()
     {
         return m_mainIoPool;
+    }
+
+    std::chrono::milliseconds getIOLatency ()
+    {
+        std::unique_lock <std::mutex> m_IOLatencyLock;
+
+        return m_io_latency_sampler.get ();
     }
 
     LedgerMaster& getLedgerMaster ()
@@ -848,9 +896,7 @@ public:
 
         m_sweepTimer.setExpiration (10);
 
-        m_probe.sample (sample_io_service_latency (
-            m_collectorManager->collector()->make_event (
-                "ios_latency"), LogPartition::getJournal <ApplicationLog> ()));
+        m_io_latency_sampler.start();
 
         m_resolver->start ();
     }
@@ -860,7 +906,7 @@ public:
     {
         m_journal.debug << "Application stopping";
 
-        m_probe.cancel_async ();
+        m_io_latency_sampler.cancel_async ();
 
         // VFALCO Enormous hack, we have to force the probe to cancel
         //        before we stop the io_service queue or else it never
@@ -868,7 +914,7 @@ public:
         //        io_objects gracefully handle exit so that we can
         //        naturally return from io_service::run() instead of
         //        forcing a call to io_service::stop()
-        m_probe.cancel ();
+        m_io_latency_sampler.cancel ();
 
         m_resolver->stop_async ();
 
