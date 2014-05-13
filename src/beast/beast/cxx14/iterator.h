@@ -24,8 +24,6 @@
 
 #include <iterator>
 
-#if ! BEAST_NO_CXX14_COMPATIBILITY
-
 namespace std {
 
 // C++14 implementation of std::make_reverse_iterator to allow creation of a
@@ -39,7 +37,5 @@ make_reverse_iterator(Iter i)
 }
 
 }
-
-#endif
 
 #endif
