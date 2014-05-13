@@ -873,7 +873,7 @@ TER ClassicOfferCreateTransactor::doApply ()
                     ? terNO_LINE
                     : tecNO_LINE;
             }
-            else if (!is_bit_set (sleRippleState->getFieldU32 (sfFlags), (canonical_gt ? lsfHighAuth : lsfLowAuth)))
+            else if (!is_bit_set (sleRippleState->getFieldU32 (sfFlags), (canonical_gt ? lsfLowAuth : lsfHighAuth)))
             {
                 m_journal.debug <<
                     "delay: can't receive IOUs from issuer without auth.";
