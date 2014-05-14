@@ -662,26 +662,31 @@ public:
 
         m_ledgerMaster->setMinValidations (getConfig ().VALIDATION_QUORUM);
 
-        if (getConfig ().START_UP == Config::FRESH)
+        auto const startUp = getConfig ().START_UP;
+        if (startUp == Config::FRESH)
         {
             m_journal.info << "Starting new Ledger";
 
             startNewLedger ();
         }
-        else if ((getConfig ().START_UP == Config::LOAD) || (getConfig ().START_UP == Config::REPLAY))
+        else if (startUp == Config::LOAD ||
+                 startUp == Config::LOAD_FILE ||
+                 startUp == Config::REPLAY)
         {
             m_journal.info << "Loading specified Ledger";
 
-            if (!loadOldLedger (getConfig ().START_LEDGER, getConfig ().START_UP == Config::REPLAY))
+            if (!loadOldLedger (getConfig ().START_LEDGER,
+                                startUp == Config::REPLAY,
+                                startUp == Config::LOAD_FILE))
             {
                 // wtf?
                 getApp().signalStop ();
                 exit (-1);
             }
         }
-        else if (getConfig ().START_UP == Config::NETWORK)
+        else if (startUp == Config::NETWORK)
         {
-            // This should probably become the default once we have a stable network
+            // This should probably become the default once we have a stable network.
             if (!getConfig ().RUN_STANDALONE)
                 m_networkOPs->needNetworkLedger ();
 
@@ -692,9 +697,10 @@ public:
 
         m_orderBookDB.setup (getApp().getLedgerMaster ().getCurrentLedger ());
 
-        //
         // Begin validation and ip maintenance.
-        // - LocalCredentials maintains local information: including identity and network connection persistence information.
+        //
+        // - LocalCredentials maintains local information: including identity
+        // - and network connection persistence information.
         //
         // VFALCO NOTE this starts the UNL
         m_localCredentials.start ();
@@ -1095,7 +1101,8 @@ public:
 private:
     void updateTables ();
     void startNewLedger ();
-    bool loadOldLedger (const std::string&, bool);
+    bool loadOldLedger (
+        const std::string& ledgerID, bool replay, bool isFilename);
 
     void onAnnounceAddress ();
 };
@@ -1116,8 +1123,8 @@ void ApplicationImp::startNewLedger ()
     {
         Ledger::pointer firstLedger = boost::make_shared<Ledger> (rootAddress, SYSTEM_CURRENCY_START);
         assert (!!firstLedger->getAccountState (rootAddress));
-        // WRITEME: Add any default amendments
-        // WRITEME: Set default fee/reserve
+        // TODO(david): Add any default amendments
+        // TODO(david): Set default fee/reserve
         firstLedger->updateHash ();
         firstLedger->setClosed ();
         firstLedger->setAccepted ();
@@ -1132,34 +1139,125 @@ void ApplicationImp::startNewLedger ()
     }
 }
 
-bool ApplicationImp::loadOldLedger (const std::string& l, bool bReplay)
+bool ApplicationImp::loadOldLedger (
+    const std::string& ledgerID, bool replay, bool isFileName)
 {
     try
     {
         Ledger::pointer loadLedger, replayLedger;
 
-        if (l.empty () || (l == "latest"))
+        if (isFileName)
+        {
+            std::ifstream ledgerFile (ledgerID.c_str (), std::ios::in);
+            if (!ledgerFile)
+            {
+                m_journal.fatal << "Unable to open file";
+            }
+            else
+            {
+                 Json::Reader reader;
+                 Json::Value jLedger;
+                 if (!reader.parse (ledgerFile, jLedger, false))
+                     m_journal.fatal << "Unable to parse ledger JSON";
+                 else
+                 {
+                     std::reference_wrapper<Json::Value> ledger (jLedger);
+
+                     // accept a wrapped ledger
+                     if (ledger.get().isMember  ("result"))
+                         ledger = ledger.get()["result"];
+                     if (ledger.get().isMember ("ledger"))
+                         ledger = ledger.get()["ledger"];
+
+
+                     std::uint32_t seq = 1;
+                     std::uint32_t closeTime = getApp().getOPs().getCloseTimeNC ();
+                     std::uint64_t totalCoins = 0;
+
+                     if (ledger.get().isMember ("accountState"))
+                     {
+                          if (ledger.get().isMember ("ledger_index"))
+                          {
+                              seq = ledger.get()["ledger_index"].asUInt();
+                          }
+                          if (ledger.get().isMember ("close_time"))
+                          {
+                              closeTime = ledger.get()["close_time"].asUInt();
+                          }
+                          if (ledger.get().isMember ("total_coins"))
+                          {
+                              totalCoins =
+                                beast::lexicalCastThrow<std::uint64_t>
+                                    (ledger.get()["total_coins"].asString());
+                          }
+                         ledger = ledger.get()["accountState"];
+                     }
+                     if (!ledger.get().isArray ())
+                     {
+                         m_journal.fatal << "State nodes must be an array";
+                     }
+                     else
+                     {
+                         loadLedger = boost::make_shared<Ledger> (seq, closeTime);
+                         loadLedger->setTotalCoins(totalCoins);
+
+                         for (Json::UInt index = 0; index < ledger.get().size(); ++index)
+                         {
+                             Json::Value& entry = ledger.get()[index];
+
+                             uint256 uIndex;
+                             uIndex.SetHex (entry["index"].asString());
+                             entry.removeMember ("index");
+
+                             STParsedJSON stp ("sle", ledger.get()[index]);
+                             // m_journal.info << "json: " << stp.object->getJson(0);
+
+                             if (stp.object && (uIndex.isNonZero()))
+                             {
+                                 SerializedLedgerEntry sle (*stp.object, uIndex);
+                                 bool ok = loadLedger->addSLE (sle);
+                                 if (!ok)
+                                     m_journal.warning << "Couldn't add serialized ledger: " << uIndex;
+                             }
+                             else
+                             {
+                                 m_journal.warning << "Invalid entry in ledger";
+                             }
+                         }
+                         // TODO(david): close ledger, update hash
+                     }
+                 }
+            }
+        }
+        else if (ledgerID.empty () || (ledgerID == "latest"))
             loadLedger = Ledger::getLastFullLedger ();
-        else if (l.length () == 64)
+        else if (ledgerID.length () == 64)
         {
             // by hash
             uint256 hash;
-            hash.SetHex (l);
+            hash.SetHex (ledgerID);
             loadLedger = Ledger::loadByHash (hash);
         }
         else // assume by sequence
-            loadLedger = Ledger::loadByIndex (beast::lexicalCastThrow <std::uint32_t> (l));
+            loadLedger = Ledger::loadByIndex (
+                beast::lexicalCastThrow <std::uint32_t> (ledgerID));
 
         if (!loadLedger)
         {
-            m_journal.fatal << "No Ledger found?" << std::endl;
+            m_journal.fatal << "No Ledger found from ledgerID="
+                            << ledgerID << std::endl;
             return false;
         }
 
-        if (bReplay)
-        { // Replay a ledger close with same prior ledger and transactions
-            replayLedger = loadLedger; // this ledger holds the transactions we want to replay
-            loadLedger = Ledger::loadByIndex (replayLedger->getLedgerSeq() - 1); // this is the prior ledger
+        if (replay)
+        {
+            // Replay a ledger close with same prior ledger and transactions
+
+            // this ledger holds the transactions we want to replay
+            replayLedger = loadLedger;
+
+            // this is the prior ledger
+            loadLedger = Ledger::loadByIndex (replayLedger->getLedgerSeq() - 1);
             if (!loadLedger || (replayLedger->getParentHash() != loadLedger->getHash()))
             {
                 m_journal.fatal << "Replay ledger missing/damaged";
@@ -1182,12 +1280,14 @@ bool ApplicationImp::loadOldLedger (const std::string& l, bool bReplay)
         if (!loadLedger->walkLedger ())
         {
             m_journal.fatal << "Ledger is missing nodes.";
+            assert(false);
             return false;
         }
 
         if (!loadLedger->assertSane ())
         {
             m_journal.fatal << "Ledger is not sane.";
+            assert(false);
             return false;
         }
 
@@ -1198,21 +1298,21 @@ bool ApplicationImp::loadOldLedger (const std::string& l, bool bReplay)
         m_ledgerMaster->forceValid(loadLedger);
         m_networkOPs->setLastCloseTime (loadLedger->getCloseTimeNC ());
 
-        if (bReplay)
-        { // inject transaction from replayLedger into consensus set
+        if (replay)
+        {
+            // inject transaction from replayLedger into consensus set
             SHAMap::ref txns = replayLedger->peekTransactionMap();
             Ledger::ref cur = getLedgerMaster().getCurrentLedger();
 
-            for (SHAMapItem::pointer it = txns->peekFirstItem(); it != nullptr; it = txns->peekNextItem(it->getTag()))
+            for (auto it = txns->peekFirstItem(); it != nullptr;
+                 it = txns->peekNextItem(it->getTag()))
             {
                 Transaction::pointer txn = replayLedger->getTransaction(it->getTag());
                 m_journal.info << txn->getJson(0);
                 Serializer s;
                 txn->getSTransaction()->add(s);
                 if (!cur->addTransaction(it->getTag(), s))
-                {
                     m_journal.warning << "Unable to add transaction " << it->getTag();
-                }
             }
         }
     }
@@ -1223,7 +1323,7 @@ bool ApplicationImp::loadOldLedger (const std::string& l, bool bReplay)
     }
     catch (boost::bad_lexical_cast&)
     {
-        m_journal.fatal << "Ledger specified '" << l << "' is not valid";
+        m_journal.fatal << "Ledger specified '" << ledgerID << "' is not valid";
         return false;
     }
 

@@ -360,6 +360,7 @@ public:
         FRESH,
         NORMAL,
         LOAD,
+        LOAD_FILE,
         REPLAY,
         NETWORK
     };

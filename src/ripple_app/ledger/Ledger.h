@@ -109,6 +109,8 @@ public:
             int closeFlags, int closeResolution,
             std::uint32_t ledgerSeq, bool & loaded); // used for database ledgers
 
+    Ledger (std::uint32_t ledgerSeq, std::uint32_t closeTime);
+
     Ledger (Blob const & rawLedger, bool hasPrefix);
 
     Ledger (const std::string & rawLedger, bool hasPrefix);
@@ -188,6 +190,10 @@ public:
     {
         mTotCoins -= fee;
     }
+    void setTotalCoins (std::uint64_t totCoins)
+    {
+        mTotCoins = totCoins;
+    }
     std::uint32_t getCloseTimeNC () const
     {
         return mCloseTime;
@@ -237,6 +243,9 @@ public:
         if (mAccountStateMap)
             mAccountStateMap->dropCache ();
     }
+
+    // returns false on error
+    bool addSLE (SLE const& sle);
 
     // ledger sync functions
     void setAcquiring (void);
