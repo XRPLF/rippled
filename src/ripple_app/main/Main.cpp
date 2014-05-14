@@ -204,6 +204,7 @@ int run (int argc, char** argv)
     ("load", "Load the current ledger from the local DB.")
     ("replay","Replay a ledger close.")
     ("ledger", po::value<std::string> (), "Load the specified ledger and start from .")
+    ("ledgerfile", po::value<std::string> (), "Load the specified ledger file.")
     ("start", "Start from a fresh Ledger.")
     ("net", "Get the initial ledger from the network.")
     ("fg", "Run in the foreground.")
@@ -329,6 +330,11 @@ int run (int argc, char** argv)
             getConfig ().START_UP = Config::REPLAY;
         else
             getConfig ().START_UP = Config::LOAD;
+    }
+    else if (vm.count ("ledgerfile"))
+    {
+        getConfig ().START_LEDGER = vm["ledgerfile"].as<std::string> ();
+        getConfig ().START_UP = Config::LOAD_FILE;
     }
     else if (vm.count ("load"))
     {

@@ -204,6 +204,28 @@ Ledger::Ledger (const std::string& rawLedger, bool hasPrefix)
     initializeFees ();
 }
 
+/** Used for ledgers loaded from JSON files */
+Ledger::Ledger (std::uint32_t ledgerSeq, std::uint32_t closeTime)
+    : mTotCoins (0),
+      mLedgerSeq (ledgerSeq),
+      mCloseTime (closeTime),
+      mParentCloseTime (0),
+      mCloseResolution (LEDGER_TIME_ACCURACY),
+      mCloseFlags (0),
+      mClosed (false),
+      mValidated (false),
+      mValidHash (false),
+      mAccepted (false),
+      mImmutable (false),
+      mTransactionMap (boost::make_shared <SHAMap> (
+          smtTRANSACTION, std::ref (getApp().getFullBelowCache()))),
+      mAccountStateMap (boost::make_shared <SHAMap> (
+          smtSTATE, std::ref (getApp().getFullBelowCache())))
+{
+    initializeFees ();
+}
+
+
 Ledger::~Ledger ()
 {
     if (mTransactionMap)
@@ -324,6 +346,12 @@ void Ledger::setAccepted ()
 bool Ledger::hasAccount (const RippleAddress& accountID)
 {
     return mAccountStateMap->hasItem (Ledger::getAccountRootIndex (accountID));
+}
+
+bool Ledger::addSLE (SLE const& sle)
+{
+    SHAMapItem item (sle.getIndex(), sle.getSerializer());
+    return mAccountStateMap->addItem(item, false, false);
 }
 
 AccountState::pointer Ledger::getAccountState (const RippleAddress& accountID)
@@ -676,8 +704,8 @@ bool Ledger::saveValidatedLedger (bool current)
 
         getApp().getLedgerDB ()->getDB ()->executeSQL (boost::str (addLedger %
                 to_string (getHash ()) % mLedgerSeq % to_string (mParentHash) %
-                beast::lexicalCastThrow <std::string> (mTotCoins) % mCloseTime % 
-                mParentCloseTime % mCloseResolution % mCloseFlags % 
+                beast::lexicalCastThrow <std::string> (mTotCoins) % mCloseTime %
+                mParentCloseTime % mCloseResolution % mCloseFlags %
                 to_string (mAccountHash) % to_string (mTransHash)));
     }
 

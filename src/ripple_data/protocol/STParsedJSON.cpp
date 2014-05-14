@@ -428,10 +428,10 @@ bool STParsedJSON::parse (std::string const& json_name,
                 STVector256* tail (dynamic_cast <STVector256*> (&data.back ()));
                 assert (tail);
 
-                for (Json::UInt i = 0; !json.isValidIndex (i); ++i)
+                for (Json::UInt i = 0; value.isValidIndex (i); ++i)
                 {
                     uint256 s;
-                    s.SetHex (json[i].asString ());
+                    s.SetHex (value[i].asString ());
                     tail->addValue (s);
                 }
             }
