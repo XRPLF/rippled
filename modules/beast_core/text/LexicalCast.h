@@ -20,205 +20,136 @@
 #ifndef BEAST_LEXICALCAST_H_INCLUDED
 #define BEAST_LEXICALCAST_H_INCLUDED
 
-namespace beast
+#include <string>
+#include "../../../beast/cxx14/type_traits.h" // <type_traits>
+
+#include <cerrno>
+#include <cstdlib>
+#include <limits>
+#include <utility>
+
+namespace beast {
+
+namespace detail {
+
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4800)
+#pragma warning(disable: 4804)
+#endif
+
+template <class IntType>
+bool
+parseSigned (IntType& result, char const* begin, char const* end)
 {
+    static_assert(std::is_signed<IntType>::value, "");
+    char* ptr;
+    auto errno_save = errno;
+    errno = 0;
+    long long r = std::strtoll(begin, &ptr, 10);
+    std::swap(errno, errno_save);
+    errno_save = ptr != end;
+    if (errno_save == 0)
+    {
+        if (std::numeric_limits<IntType>::min() <= r &&
+            r <= std::numeric_limits<IntType>::max())
+            result = static_cast<IntType>(r);
+        else
+            errno_save = 1;
+    }
+    return errno_save == 0;
+}
 
-// Base class with utility functions
-struct LexicalCastUtilities
+template <class UIntType>
+bool
+parseUnsigned (UIntType& result, char const* begin, char const* end)
 {
-    static unsigned char const s_digitTable [256];
-
-    // strict string to integer parser
-    template <class IntType, class InputIterator>
-    static inline bool parseSigned (IntType& result, InputIterator begin, InputIterator end)
+    static_assert(std::is_unsigned<UIntType>::value, "");
+    char* ptr;
+    auto errno_save = errno;
+    errno = 0;
+    unsigned long long r = std::strtoull(begin, &ptr, 10);
+    std::swap(errno, errno_save);
+    errno_save = ptr != end;
+    if (errno_save == 0)
     {
-        if (0 == std::distance (begin, end))
-            return false;
-
-        std::uint64_t accum = 0;
-        InputIterator it = begin;
-
-        // process sign
-        bool negative = false;
-        if ('+' == *it)
-        {
-            ++it;
-        }
-        else if ('-' == *it)
-        {
-            ++it;
-            negative = true;
-        }
-        if (end == it)
-            return false;
-
-        // calc max of abs value
-        std::uint64_t max;
-        if (negative)
-            max = static_cast <std::uint64_t> (
-                -(static_cast <std::int64_t> (std::numeric_limits <IntType>::min ())));
+        if (r <= std::numeric_limits<UIntType>::max())
+            result = static_cast<UIntType>(r);
         else
-            max = std::numeric_limits <IntType>::max ();
-
-        // process digits
-        while (end != it)
-        {
-            std::uint64_t const digit = static_cast <IntType> (
-                s_digitTable [static_cast <unsigned int> (*it++)]);
-
-            if (0xFF == digit)
-                return false;
-
-            std::uint64_t const overflow = (max - digit) / 10;
-
-            if (accum > overflow)
-                return false;
-
-            accum = (10 * accum) + digit;
-        }
-
-        if (negative)
-        {
-            result = -static_cast <IntType> (accum);
-        }
-        else
-        {
-            result = static_cast <IntType> (accum);
-        }
-
-        return true;
+            errno_save = 1;
     }
-
-    template <class IntType, class InputIterator>
-    static inline bool parseUnsigned (IntType& result, InputIterator begin, InputIterator end)
-    {
-        if (0 == std::distance (begin, end))
-            return false;
-
-        std::uint64_t accum = 0;
-        InputIterator it = begin;
-        std::uint64_t const max = std::numeric_limits <IntType>::max ();
-
-        // process digits
-        while (end != it)
-        {
-            std::uint64_t const digit = static_cast <IntType> (
-                s_digitTable [static_cast <unsigned int> (*it++)]);
-
-            if (0xFF == digit)
-                return false;
-
-            std::uint64_t const overflow = (max - digit) / 10;
-
-            if (accum > overflow)
-                return false;
-
-            accum = (10 * accum) + digit;
-        }
-
-        result = static_cast <IntType> (accum);
-
-        return true;
-    }
-};
+    return errno_save == 0;
+}
 
 //------------------------------------------------------------------------------
-
-/** This is thrown when a conversion is not possible.
-    Only used in the throw variants of lexicalCast.
-*/
-struct BadLexicalCast : public std::bad_cast
-{
-};
 
 // These specializatons get called by the non-member functions to do the work
 template <class Out, class In>
 struct LexicalCast;
 
-// conversion to String
-template <class In>
-struct LexicalCast <String, In>
-{
-    bool operator() (String& out, int in) const            { out = String (in); return true; }
-    bool operator() (String& out, unsigned int in) const   { out = String (in); return true; }
-    bool operator() (String& out, short in) const          { out = String (in); return true; }
-    bool operator() (String& out, unsigned short in) const { out = String (in); return true; }
-    bool operator() (String& out, std::int64_t in) const          { out = String (in); return true; }
-    bool operator() (String& out, std::uint64_t in) const         { out = String (in); return true; }
-    bool operator() (String& out, float in) const          { out = String (in); return true; }
-    bool operator() (String& out, double in) const         { out = String (in); return true; }
-};
-
-// Parse String to number
-template <class Out>
-struct LexicalCast <Out, String>
-{
-    bool operator() (int& out,            String const& in) const { std::string const& s (in.toStdString ()); return LexicalCastUtilities::parseSigned (out, s.begin (), s.end ()); }
-    bool operator() (short& out,          String const& in) const { std::string const& s (in.toStdString ()); return LexicalCastUtilities::parseSigned (out, s.begin (), s.end ()); }
-    bool operator() (std::int64_t& out,          String const& in) const { std::string const& s (in.toStdString ()); return LexicalCastUtilities::parseSigned (out, s.begin (), s.end ()); }
-    bool operator() (unsigned int& out,   String const& in) const { std::string const& s (in.toStdString ()); return LexicalCastUtilities::parseUnsigned (out, s.begin (), s.end ()); }
-    bool operator() (unsigned short& out, String const& in) const { std::string const& s (in.toStdString ()); return LexicalCastUtilities::parseUnsigned (out, s.begin (), s.end ()); }
-    bool operator() (std::uint64_t& out,         String const& in) const { std::string const& s (in.toStdString ()); return LexicalCastUtilities::parseUnsigned (out, s.begin (), s.end ()); }
-    bool operator() (float& out,          String const& in) const { bassertfalse; return false; /* UNIMPLEMENTED! */ }
-    bool operator() (double& out,         String const& in) const { bassertfalse; return false; /* UNIMPLEMENTED! */ }
-
-    bool operator () (bool& out, String const& in) const
-    {
-        // boost::lexical_cast is very strict, it
-        // throws on anything but "1" or "0"
-        //
-        if (in == "1")
-        {
-            out = true;
-            return true;
-        }
-        else if (in == "0")
-        {
-            out = false;
-            return true;
-        }
-
-        return false;
-    }
-};
-
-//------------------------------------------------------------------------------
-
-// Conversion to std::string
+// conversion to std::string
 template <class In>
 struct LexicalCast <std::string, In>
 {
-    bool operator() (std::string& out, In in) const
-    {
-        String s;
-
-        if (LexicalCast <String, In> () (s, in))
-        {
-            out = s.toStdString ();
-            return true;
-        }
-
-        return false;
-    }
+    bool operator() (std::string& out, short in)                { out = std::to_string(in); return true; }
+    bool operator() (std::string& out, int in)                  { out = std::to_string(in); return true; }
+    bool operator() (std::string& out, long in)                 { out = std::to_string(in); return true; }
+    bool operator() (std::string& out, long long in)            { out = std::to_string(in); return true; }
+    bool operator() (std::string& out, unsigned short in)       { out = std::to_string(in); return true; }
+    bool operator() (std::string& out, unsigned int in)         { out = std::to_string(in); return true; }
+    bool operator() (std::string& out, unsigned long in)        { out = std::to_string(in); return true; }
+    bool operator() (std::string& out, unsigned long long in)   { out = std::to_string(in); return true; }
+    bool operator() (std::string& out, float in)                { out = std::to_string(in); return true; }
+    bool operator() (std::string& out, double in)               { out = std::to_string(in); return true; }
+    bool operator() (std::string& out, long double in)          { out = std::to_string(in); return true; }
 };
 
-// Conversion from std::string
+// Parse std::string to number
 template <class Out>
 struct LexicalCast <Out, std::string>
 {
-    bool operator() (Out& out, std::string const& in) const
-    {
-        Out result;
-
-        if (LexicalCast <Out, String> () (result, String (in.c_str ())))
-        {
-            out = result;
-            return true;
-        }
-
-        return false;
-    }
+    bool operator() (short& out,                std::string const& in) const { return parseSigned (out, in.data(), in.data()+in.size()); }
+    bool operator() (int& out,                  std::string const& in) const { return parseSigned (out, in.data(), in.data()+in.size()); }
+    bool operator() (long& out,                 std::string const& in) const { return parseSigned (out, in.data(), in.data()+in.size()); }
+    bool operator() (long long& out,            std::string const& in) const { return parseSigned (out, in.data(), in.data()+in.size()); }
+    bool operator() (unsigned short& out,       std::string const& in) const { return parseUnsigned (out, in.data(), in.data()+in.size()); }
+    bool operator() (unsigned int& out,         std::string const& in) const { return parseUnsigned (out, in.data(), in.data()+in.size()); }
+    bool operator() (unsigned long& out,        std::string const& in) const { return parseUnsigned (out, in.data(), in.data()+in.size()); }
+    bool operator() (unsigned long long& out,   std::string const& in) const { return parseUnsigned (out, in.data(), in.data()+in.size()); }
+    bool operator() (float& out,                std::string const& in) const { bassertfalse; return false; /* UNIMPLEMENTED! */ }
+    bool operator() (double& out,               std::string const& in) const { bassertfalse; return false; /* UNIMPLEMENTED! */ }
+    bool operator() (long double& out,          std::string const& in) const { bassertfalse; return false; /* UNIMPLEMENTED! */ }
+#if 0
+    bool operator() (bool& out,                 std::string const& in) const;
+#else
+    bool operator() (bool& out,                 std::string const& in) const { return parseUnsigned (out, in.data(), in.data()+in.size()); }
+#endif
 };
+
+#if 0
+template <class Out>
+bool
+LexicalCast <Out, std::string>::operator() (bool& out, std::string const& in) const
+{
+    // boost::lexical_cast is very strict, it
+    // throws on anything but "1" or "0"
+    //
+    if (in == "1")
+    {
+        out = true;
+        return true;
+    }
+    else if (in == "0")
+    {
+        out = false;
+        return true;
+    }
+
+    return false;
+}
+#endif
+
+//------------------------------------------------------------------------------
 
 // Conversion from null terminated char const*
 template <class Out>
@@ -226,15 +157,7 @@ struct LexicalCast <Out, char const*>
 {
     bool operator() (Out& out, char const* in) const
     {
-        Out result;
-
-        if (LexicalCast <Out, String> () (result, String (in)))
-        {
-            out = result;
-            return true;
-        }
-
-        return false;
+        return LexicalCast <Out, std::string>()(out, in);
     }
 };
 
@@ -257,7 +180,20 @@ struct LexicalCast <Out, char*>
     }
 };
 
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+
+} // detail
+
 //------------------------------------------------------------------------------
+
+/** Thrown when a conversion is not possible with LexicalCast.
+    Only used in the throw variants of lexicalCast.
+*/
+struct BadLexicalCast : public std::bad_cast
+{
+};
 
 /** Intelligently convert from one type to another.
     @return `false` if there was a parsing or range error
@@ -265,7 +201,7 @@ struct LexicalCast <Out, char*>
 template <class Out, class In>
 bool lexicalCastChecked (Out& out, In in)
 {
-    return LexicalCast <Out, In> () (out, in);
+    return detail::LexicalCast <Out, In> () (out, in);
 }
 
 /** Convert from one type to another, throw on error
@@ -283,8 +219,6 @@ Out lexicalCastThrow (In in)
         return out;
 
     throw BadLexicalCast ();
-
-    return Out ();
 }
 
 /** Convert from one type to another.
