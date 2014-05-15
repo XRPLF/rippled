@@ -51,6 +51,7 @@ public:
     SerializedLedgerEntry (const Serializer & s, uint256 const & index);
     SerializedLedgerEntry (SerializerIterator & sit, uint256 const & index);
     SerializedLedgerEntry (LedgerEntryType type, uint256 const & index);
+    SerializedLedgerEntry (const STObject & object, uint256 const & index);
 
     SerializedTypeID getSType () const
     {
@@ -110,6 +111,11 @@ private:
     {
         return new SerializedLedgerEntry (*this);
     }
+
+    /** Make STObject comply with the template for this SLE type
+        Can throw
+    */
+    void setSLEType ();
 
 private:
     uint256                     mIndex;

@@ -46,6 +46,8 @@
 #include "../beast/beast/asio/io_latency_probe.h"
 #include "../beast/beast/cxx14/memory.h"
 
+#include <fstream> // For Application.cpp
+
 # include "main/CollectorManager.h"
 #include "main/CollectorManager.cpp"
 

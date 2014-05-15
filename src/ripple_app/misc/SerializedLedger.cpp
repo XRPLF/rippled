@@ -23,43 +23,44 @@ struct SerializedLedgerLog; // for Log
 
 SETUP_LOGN (SerializedLedgerLog,"SerializedLedger")
 
-SerializedLedgerEntry::SerializedLedgerEntry (SerializerIterator& sit, uint256 const& index)
+SerializedLedgerEntry::SerializedLedgerEntry (
+    SerializerIterator& sit, uint256 const& index)
     : STObject (sfLedgerEntry), mIndex (index), mMutable (true)
 {
     set (sit);
-    std::uint16_t type = getFieldU16 (sfLedgerEntryType);
-    
-    LedgerFormats::Item const* const item =
-        LedgerFormats::getInstance()->findByType (static_cast <LedgerEntryType> (type));
-    
-    if (item == nullptr)
-        throw std::runtime_error ("invalid ledger entry type");
-
-    mType = item->getType ();
-
-    if (!setType (item->elements))
-        throw std::runtime_error ("ledger entry not valid for type");
+    setSLEType ();
 }
 
-SerializedLedgerEntry::SerializedLedgerEntry (const Serializer& s, uint256 const& index)
+SerializedLedgerEntry::SerializedLedgerEntry (
+    const Serializer& s, uint256 const& index)
     : STObject (sfLedgerEntry), mIndex (index), mMutable (true)
 {
-    SerializerIterator sit (const_cast<Serializer&> (s)); // we know 's' isn't going away
+    // we know 's' isn't going away
+    SerializerIterator sit (const_cast<Serializer&> (s));
     set (sit);
+    setSLEType ();
+}
 
-    std::uint16_t type = getFieldU16 (sfLedgerEntryType);
+SerializedLedgerEntry::SerializedLedgerEntry (
+    const STObject & object, uint256 const& index)
+    : STObject (object), mIndex(index),  mMutable (true)
+{
+    setSLEType ();
+}
 
-    LedgerFormats::Item const* const item =
-        LedgerFormats::getInstance()->findByType (static_cast <LedgerEntryType> (type));
+void SerializedLedgerEntry::setSLEType ()
+{
+    auto type = static_cast <LedgerEntryType> (getFieldU16 (sfLedgerEntryType));
+    auto const item = LedgerFormats::getInstance()->findByType (type);
 
     if (item == nullptr)
         throw std::runtime_error ("invalid ledger entry type");
 
     mType = item->getType ();
-
     if (!setType (item->elements))
     {
-        WriteLog (lsWARNING, SerializedLedgerLog) << "Ledger entry not valid for type " << mFormat->getName ();
+        WriteLog (lsWARNING, SerializedLedgerLog)
+            << "Ledger entry not valid for type " << mFormat->getName ();
         WriteLog (lsWARNING, SerializedLedgerLog) << getJson (0);
         throw std::runtime_error ("ledger entry not valid for type");
     }
