@@ -1008,12 +1008,6 @@
     <ClCompile Include="..\..\src\ripple\sslutil\impl\CBigNum.cpp">
       <Filter>[1] Ripple\sslutil\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\types\impl\UInt256.cpp">
-      <Filter>[1] Ripple\types\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\types\impl\UInt128.cpp">
-      <Filter>[1] Ripple\types\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\types\impl\ByteOrder.cpp">
       <Filter>[1] Ripple\types\impl</Filter>
     </ClCompile>
@@ -1742,6 +1736,9 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\common\tests\cross_offer.test.cpp">
       <Filter>[1] Ripple\common\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\types\impl\base_uint.cpp">
+      <Filter>[1] Ripple\types\impl</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -2570,13 +2567,7 @@
     <ClInclude Include="..\..\src\ripple\sslutil\api\bignum_error.h">
       <Filter>[1] Ripple\sslutil\api</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\api\UInt256.h">
-      <Filter>[1] Ripple\types\api</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\api\base_uint.h">
-      <Filter>[1] Ripple\types\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\api\UInt128.h">
       <Filter>[1] Ripple\types\api</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\api\UInt160.h">
@@ -3254,9 +3245,6 @@
     <ClInclude Include="..\..\src\ripple_app\transactors\CreateOfferBridged.h">
       <Filter>[2] Old Ripple\ripple_app\transactors</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\transactors\CreateOfferOriginal.h">
-      <Filter>[2] Old Ripple\ripple_app\transactors</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\transactors\Payment.h">
       <Filter>[2] Old Ripple\ripple_app\transactors</Filter>
     </ClInclude>
@@ -3339,9 +3327,6 @@
     <ClInclude Include="..\..\src\ripple_overlay\api\Overlay.h">
       <Filter>[2] Old Ripple\ripple_overlay\api</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\common\UnorderedMap.h">
-      <Filter>[1] Ripple\common</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple_rpc\impl\LookupLedger.h">
       <Filter>[2] Old Ripple\ripple_rpc\impl</Filter>
     </ClInclude>
@@ -3376,6 +3361,9 @@
       <Filter>[1] Ripple\proto</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\common\jsonrpc_fields.h">
+      <Filter>[1] Ripple\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\common\UnorderedContainers.h">
       <Filter>[1] Ripple\common</Filter>
     </ClInclude>
   </ItemGroup>

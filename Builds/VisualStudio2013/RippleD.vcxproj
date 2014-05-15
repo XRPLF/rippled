@@ -490,6 +490,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\types\impl\base_uint.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\types\impl\ByteOrder.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
@@ -510,15 +514,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\types\impl\UInt128.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\types\impl\UInt160.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\types\impl\UInt256.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
@@ -1834,7 +1830,7 @@
     <ClInclude Include="..\..\src\ripple\common\RippleSSLContext.h" />
     <ClInclude Include="..\..\src\ripple\common\seconds_clock.h" />
     <ClInclude Include="..\..\src\ripple\common\TaggedCache.h" />
-    <ClInclude Include="..\..\src\ripple\common\UnorderedMap.h" />
+    <ClInclude Include="..\..\src\ripple\common\UnorderedContainers.h" />
     <ClInclude Include="..\..\src\ripple\http\api\Handler.h" />
     <ClInclude Include="..\..\src\ripple\http\api\Server.h" />
     <ClInclude Include="..\..\src\ripple\http\api\Port.h" />
@@ -2042,9 +2038,7 @@
     <ClInclude Include="..\..\src\ripple\types\api\RipplePublicKeyHash.h" />
     <ClInclude Include="..\..\src\ripple\types\api\SimpleIdentifier.h" />
     <ClInclude Include="..\..\src\ripple\types\api\strHex.h" />
-    <ClInclude Include="..\..\src\ripple\types\api\UInt128.h" />
     <ClInclude Include="..\..\src\ripple\types\api\UInt160.h" />
-    <ClInclude Include="..\..\src\ripple\types\api\UInt256.h" />
     <ClInclude Include="..\..\src\ripple\types\ripple_types.h" />
     <ClInclude Include="..\..\src\ripple\validators\api\Source.h" />
     <ClInclude Include="..\..\src\ripple\validators\api\Types.h" />
@@ -2154,7 +2148,6 @@
     <ClInclude Include="..\..\src\ripple_app\transactors\CreateOffer.h" />
     <ClInclude Include="..\..\src\ripple_app\transactors\CreateOfferDirect.h" />
     <ClInclude Include="..\..\src\ripple_app\transactors\CreateOfferBridged.h" />
-    <ClInclude Include="..\..\src\ripple_app\transactors\CreateOfferOriginal.h" />
     <ClInclude Include="..\..\src\ripple_app\transactors\Payment.h" />
     <ClInclude Include="..\..\src\ripple_app\transactors\SetRegularKey.h" />
     <ClInclude Include="..\..\src\ripple_app\transactors\Transactor.h" />
