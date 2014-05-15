@@ -22,10 +22,6 @@
 
 namespace ripple {
 
-// VFALCO TODO do not use auto-incrementing. Explicitly assign each
-//              constant so there is no possibility of someone coming in
-//              and screwing it up.
-//
 // VFALCO TODO consider renaming TER to TxErr or TxResult for clarity.
 //
 enum TER    // aka TransactionEngineResult
@@ -38,12 +34,12 @@ enum TER    // aka TransactionEngineResult
     // - Not forwarded
     // - No fee check
     telLOCAL_ERROR  = -399,
-    telBAD_DOMAIN, // VFALCO TODO should read "telBAD_DOMAIN = -398," etc...
-    telBAD_PATH_COUNT,
-    telBAD_PUBLIC_KEY,
-    telFAILED_PROCESSING,
-    telINSUF_FEE_P,
-    telNO_DST_PARTIAL,
+    telBAD_DOMAIN = -398, // VFALCO TODO should read "telBAD_DOMAIN = -398," etc...
+    telBAD_PATH_COUNT = -397,
+    telBAD_PUBLIC_KEY = -396,
+    telFAILED_PROCESSING = -395,
+    telINSUF_FEE_P = -394,
+    telNO_DST_PARTIAL = -393,
 
     // -299 .. -200: M Malformed (bad signature)
     // Causes:
@@ -54,35 +50,35 @@ enum TER    // aka TransactionEngineResult
     // - Reject
     // - Can not succeed in any imagined ledger.
     temMALFORMED    = -299,
-    temBAD_AMOUNT,
-    temBAD_AUTH_MASTER,
-    temBAD_CURRENCY,
-    temBAD_FEE,
-    temBAD_EXPIRATION,
-    temBAD_ISSUER,
-    temBAD_LIMIT,
-    temBAD_OFFER,
-    temBAD_PATH,
-    temBAD_PATH_LOOP,
-    temBAD_PUBLISH,
-    temBAD_TRANSFER_RATE,
-    temBAD_SEND_XRP_LIMIT,
-    temBAD_SEND_XRP_MAX,
-    temBAD_SEND_XRP_NO_DIRECT,
-    temBAD_SEND_XRP_PARTIAL,
-    temBAD_SEND_XRP_PATHS,
-    temBAD_SIGNATURE,
-    temBAD_SRC_ACCOUNT,
-    temBAD_SEQUENCE,
-    temDST_IS_SRC,
-    temDST_NEEDED,
-    temINVALID,
-    temINVALID_FLAG,
-    temREDUNDANT,
-    temREDUNDANT_SEND_MAX,
-    temRIPPLE_EMPTY,
-    temUNCERTAIN,       // An intermediate result used internally, should never be returned.
-    temUNKNOWN,
+    temBAD_AMOUNT = -298,
+    temBAD_AUTH_MASTER = -297,
+    temBAD_CURRENCY = -296,
+    temBAD_FEE = -295,
+    temBAD_EXPIRATION = -294,
+    temBAD_ISSUER = -293,
+    temBAD_LIMIT = -292,
+    temBAD_OFFER = -291,
+    temBAD_PATH = -290,
+    temBAD_PATH_LOOP = -289,
+    temBAD_PUBLISH = -288,
+    temBAD_TRANSFER_RATE = -287,
+    temBAD_SEND_XRP_LIMIT = -286,
+    temBAD_SEND_XRP_MAX = -285,
+    temBAD_SEND_XRP_NO_DIRECT = -284,
+    temBAD_SEND_XRP_PARTIAL = -283,
+    temBAD_SEND_XRP_PATHS = -282,
+    temBAD_SIGNATURE = -281,
+    temBAD_SRC_ACCOUNT = -280,
+    temBAD_SEQUENCE = -279,
+    temDST_IS_SRC = -278,
+    temDST_NEEDED = -277,
+    temINVALID = -276,
+    temINVALID_FLAG = -275,
+    temREDUNDANT = -274,
+    temREDUNDANT_SEND_MAX = -273,
+    temRIPPLE_EMPTY = -272,
+    temUNCERTAIN = -271,       // An intermediate result used internally, should never be returned.
+    temUNKNOWN = -270,
 
     // -199 .. -100: F Failure (sequence number previously used)
     // Causes:
@@ -94,23 +90,23 @@ enum TER    // aka TransactionEngineResult
     // - Not forwarded
     // - Could succeed in an imagined ledger.
     tefFAILURE      = -199,
-    tefALREADY,
-    tefBAD_ADD_AUTH,
-    tefBAD_AUTH,
-    tefBAD_CLAIM_ID,
-    tefBAD_GEN_AUTH,
-    tefBAD_LEDGER,
-    tefCLAIMED,
-    tefCREATED,
-    tefDST_TAG_NEEDED,
-    tefEXCEPTION,
-    tefGEN_IN_USE,
-    tefINTERNAL,
-    tefNO_AUTH_REQUIRED,    // Can't set auth if auth is not required.
-    tefPAST_SEQ,
-    tefWRONG_PRIOR,
-    tefMASTER_DISABLED,
-    tefMAX_LEDGER,
+    tefALREADY = -198,
+    tefBAD_ADD_AUTH = -197,
+    tefBAD_AUTH = -196,
+    tefBAD_CLAIM_ID = -195,
+    tefBAD_GEN_AUTH = -194,
+    tefBAD_LEDGER = -193,
+    tefCLAIMED = -192,
+    tefCREATED = -191,
+    tefDST_TAG_NEEDED = -190,
+    tefEXCEPTION = -189,
+    tefGEN_IN_USE = -188,
+    tefINTERNAL = -187,
+    tefNO_AUTH_REQUIRED = -186,    // Can't set auth if auth is not required.
+    tefPAST_SEQ = -185,
+    tefWRONG_PRIOR = -184,
+    tefMASTER_DISABLED = -183,
+    tefMAX_LEDGER = -182,
 
     // -99 .. -1: R Retry (sequence too high, no funds for txn fee, originating account non-existent)
     // Causes:
@@ -122,15 +118,15 @@ enum TER    // aka TransactionEngineResult
     // - Hold
     // - Makes hole in sequence which jams transactions.
     terRETRY        = -99,
-    terFUNDS_SPENT,         // This is a free transaction, therefore don't burden network.
-    terINSUF_FEE_B,         // Can't pay fee, therefore don't burden network.
-    terNO_ACCOUNT,          // Can't pay fee, therefore don't burden network.
-    terNO_AUTH,             // Not authorized to hold IOUs.
-    terNO_LINE,             // Internal flag.
-    terOWNERS,              // Can't succeed with non-zero owner count.
-    terPRE_SEQ,             // Can't pay fee, no point in forwarding, therefore don't burden network.
-    terLAST,                // Process after all other transactions
-    terNO_RIPPLE,           // Rippling not allowed
+    terFUNDS_SPENT = -98,         // This is a free transaction, therefore don't burden network.
+    terINSUF_FEE_B = -97,         // Can't pay fee, therefore don't burden network.
+    terNO_ACCOUNT = -96,          // Can't pay fee, therefore don't burden network.
+    terNO_AUTH = -95,             // Not authorized to hold IOUs.
+    terNO_LINE = -94,             // Internal flag.
+    terOWNERS = -93,              // Can't succeed with non-zero owner count.
+    terPRE_SEQ = -92,             // Can't pay fee, no point in forwarding, therefore don't burden network.
+    terLAST = -91,                // Process after all other transactions
+    terNO_RIPPLE = -90,           // Rippling not allowed
 
     // 0: S Success (success)
     // Causes:
