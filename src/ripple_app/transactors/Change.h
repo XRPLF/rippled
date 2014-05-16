@@ -22,20 +22,20 @@
 
 namespace ripple {
 
-class ChangeTransactorLog;
+class ChangeLog;
 
 template <>
 char const*
-LogPartition::getPartitionName <ChangeTransactorLog> ()
+LogPartition::getPartitionName <ChangeLog> ()
 {
     return "Tx/Change";
 }
 
-class ChangeTransactor
+class Change
     : public Transactor
 {
 public:
-    ChangeTransactor (
+    Change (
         SerializedTransaction const& txn,
         TransactionEngineParams params,
         TransactionEngine* engine)
@@ -43,7 +43,7 @@ public:
             txn,
             params,
             engine,
-            LogPartition::getJournal <ChangeTransactorLog> ())
+            LogPartition::getJournal <ChangeLog> ())
     {
     }
 
@@ -63,6 +63,16 @@ private:
         return false;
     }
 };
+
+inline
+std::unique_ptr <Transactor>
+make_Change (
+    SerializedTransaction const& txn,
+    TransactionEngineParams params,
+    TransactionEngine* engine)
+{
+    return std::make_unique <Change> (txn, params, engine);
+}
 
 }
 

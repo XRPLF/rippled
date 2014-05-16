@@ -23,9 +23,7 @@
 #include "Amount.h"
 #include "Amounts.h"
 
-#include <cassert>
 #include <cstdint>
-#include <limits>
 #include <ostream>
 
 namespace ripple {
@@ -49,56 +47,52 @@ private:
 public:
     Quality() = default;
 
+    /** Create a quality from the integer encoding of an Amount */
     explicit
-    Quality (std::uint64_t value)
-        : m_value (value)
-    {
-    }
+    Quality (std::uint64_t value);
 
     /** Create a quality from the ratio of two amounts. */
     explicit
-    Quality (Amounts const& amount)
-        : m_value (Amount::getRate (amount.out, amount.in))
-    {
-    }
+    Quality (Amounts const& amount);
 
     /** Advances to the next higher quality level. */
     /** @{ */
     Quality&
-    operator++()
-    {
-        assert (m_value > 0);
-        --m_value;
-        return *this;
-    }
+    operator++();
 
     Quality
-    operator++ (int)
-    {
-        Quality prev (*this);
-        --*this;
-        return prev;
-    }
+    operator++ (int);
     /** @} */
 
     /** Advances to the next lower quality level. */
     /** @{ */
     Quality&
-    operator--()
-    {
-        assert (m_value < std::numeric_limits<value_type>::max());
-        ++m_value;
-        return *this;
-    }
+    operator--();
 
     Quality
-    operator-- (int)
-    {
-        Quality prev (*this);
-        ++*this;
-        return prev;
-    }
+    operator-- (int);
     /** @} */
+
+    /** Returns the quality as Amount. */
+    Amount
+    rate () const
+    {
+        return Amount::setRate (m_value);
+    }
+
+    /** Returns the scaled amount with in capped.
+        Math is avoided if the result is exact. The output is clamped
+        to prevent money creation.
+    */
+    Amounts
+    ceil_in (Amounts const& amount, Amount const& limit) const;
+
+    /** Returns the scaled amount with out capped.
+        Math is avoided if the result is exact. The input is clamped
+        to prevent money creation.
+    */
+    Amounts
+    ceil_out (Amounts const& amount, Amount const& limit) const;
 
     /** Returns `true` if lhs is lower quality than `rhs`.
         Lower quality means the taker receives a worse deal.
@@ -119,78 +113,27 @@ public:
     }
 
     friend
+    bool
+    operator!= (Quality const& lhs, Quality const& rhs) noexcept
+    {
+        return ! (lhs == rhs);
+    }
+
+    friend
     std::ostream&
     operator<< (std::ostream& os, Quality const& quality)
     {
         os << quality.m_value;
         return os;
     }
-
-    /** Returns the quality as Amount. */
-    Amount
-    rate() const
-    {
-        return Amount::setRate (m_value);
-    }
-
-    /** Returns the scaled amount with in capped.
-        Math is avoided if the result is exact. The output is clamped
-        to prevent money creation.
-    */
-    Amounts
-    ceil_in (Amounts const& amount, Amount const& limit) const
-    {
-        if (amount.in > limit)
-        {
-            // VFALCO TODO make mulRound avoid math when v2==one
-#if 0
-            Amounts result (limit, Amount::mulRound (
-                limit, rate(), amount.out, true));
-#else
-            Amounts result (limit, Amount::divRound (
-                limit, rate(), amount.out, true));
-#endif
-            // Clamp out
-            if (result.out > amount.out)
-                result.out = amount.out;
-            return result;
-        }
-
-        return amount;
-    }
-
-    /** Returns the scaled amount with out capped.
-        Math is avoided if the result is exact. The input is clamped
-        to prevent money creation.
-    */
-    Amounts
-    ceil_out (Amounts const& amount, Amount const& limit) const
-    {
-        if (amount.out > limit)
-        {
-            // VFALCO TODO make divRound avoid math when v2==one
-#if 0
-            Amounts result (Amount::divRound (
-                limit, rate(), amount.in, true), limit);
-#else
-            Amounts result (Amount::mulRound (
-                limit, rate(), amount.in, true), limit);
-#endif
-            // Clamp in
-            if (result.in > amount.in)
-                result.in = amount.in;
-            return result;
-        }
-        return amount;
-    }
 };
 
-inline
-bool
-operator!= (Quality const& lhs, Quality const& rhs) noexcept
-{
-    return ! (lhs == rhs);
-}
+/** Calculate the quality of a two-hop path given the two hops.
+    @param lhs  The first leg of the path: input to intermediate.
+    @param rhs  The second leg of the path: intermediate to output.
+*/
+Quality
+composed_quality (Quality const& lhs, Quality const& rhs);
 
 }
 }

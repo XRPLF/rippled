@@ -19,7 +19,7 @@
 
 namespace ripple {
 
-TER TrustSetTransactor::doApply ()
+TER SetTrust::doApply ()
 {
     TER terResult = tesSUCCESS;
 

@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2014 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -80,6 +80,17 @@ public:
     {
         return Amounts (m_entry->getFieldAmount (sfTakerPays),
             m_entry->getFieldAmount (sfTakerGets));
+    }
+
+    /** Returns `true` if no more funds can flow through this offer. */
+    bool
+    fully_consumed() const noexcept
+    {
+        if (m_entry->getFieldAmount (sfTakerPays) <= zero)
+            return true;
+        if (m_entry->getFieldAmount (sfTakerGets) <= zero)
+            return true;
+        return false;
     }
 
     /** Returns the ledger entry underlying the offer. */

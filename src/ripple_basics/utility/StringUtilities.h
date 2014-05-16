@@ -111,7 +111,6 @@ Blob strCopy (const std::string& strSrc);
 std::string strCopy (Blob const& vucSrc);
 
 bool parseIpPort (const std::string& strSource, std::string& strIP, int& iPort);
-bool parseQuality (const std::string& strSource, std::uint32_t& uQuality);
 
 inline std::string strGetEnv (const std::string& strKey)
 {

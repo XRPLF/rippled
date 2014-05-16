@@ -20,7 +20,7 @@
 namespace ripple {
 
 
-TER OfferCancelTransactor::doApply ()
+TER CancelOffer::doApply ()
 {
     std::uint32_t const uOfferSequence = mTxn.getFieldU32 (sfOfferSequence);
     std::uint32_t const uAccountSequenceNext = mTxnAccount->getFieldU32 (sfSequence);
