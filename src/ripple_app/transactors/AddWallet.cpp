@@ -19,7 +19,7 @@
 
 namespace ripple {
 
-TER WalletAddTransactor::doApply ()
+TER AddWallet::doApply ()
 {
     std::uint32_t const uTxFlags = mTxn.getFlags ();
 

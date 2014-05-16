@@ -22,20 +22,20 @@
 
 namespace ripple {
 
-class AccountSetTransactorLog;
+class SetAccountLog;
 
 template <>
 char const*
-LogPartition::getPartitionName <AccountSetTransactorLog> ()
+LogPartition::getPartitionName <SetAccountLog> ()
 {
     return "Tx/AccountSet";
 }
 
-class AccountSetTransactor
+class SetAccount
     : public Transactor
 {
 public:
-    AccountSetTransactor (
+    SetAccount (
         SerializedTransaction const& txn,
         TransactionEngineParams params,
         TransactionEngine* engine)
@@ -43,13 +43,23 @@ public:
             txn,
             params,
             engine,
-            LogPartition::getJournal <AccountSetTransactorLog> ())
+            LogPartition::getJournal <SetAccountLog> ())
     {
 
     }
 
     TER doApply () override;
 };
+
+inline
+std::unique_ptr <Transactor>
+make_SetAccount (
+    SerializedTransaction const& txn,
+    TransactionEngineParams params,
+    TransactionEngine* engine)
+{
+    return std::make_unique <SetAccount> (txn, params, engine);
+}
 
 }
 

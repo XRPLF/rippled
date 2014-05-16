@@ -22,23 +22,23 @@
 
 namespace ripple {
 
-class PaymentTransactorLog;
+class PaymentLog;
 
 template <>
 char const*
-LogPartition::getPartitionName <PaymentTransactorLog> ()
+LogPartition::getPartitionName <PaymentLog> ()
 {
     return "Tx/Payment";
 }
 
-class PaymentTransactor 
+class Payment 
     : public Transactor
 {
     /* The largest number of paths we allow */
     static std::size_t const MaxPathSize = 6;
 
 public:
-    PaymentTransactor (
+    Payment (
         SerializedTransaction const& txn,
         TransactionEngineParams params,
         TransactionEngine* engine)
@@ -46,13 +46,23 @@ public:
             txn,
             params,
             engine,
-            LogPartition::getJournal <PaymentTransactorLog> ())
+            LogPartition::getJournal <PaymentLog> ())
     {
 
     }
 
     TER doApply ();
 };
+
+inline
+std::unique_ptr <Transactor>
+make_Payment (
+    SerializedTransaction const& txn,
+    TransactionEngineParams params,
+    TransactionEngine* engine)
+{
+    return std::make_unique <Payment> (txn, params, engine);
+}
 
 }
 

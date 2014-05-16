@@ -20,45 +20,53 @@
 #ifndef RIPPLE_TX_OFFERCREATE_H_INCLUDED
 #define RIPPLE_TX_OFFERCREATE_H_INCLUDED
 
+#include "../book/Amounts.h"
+#include "../book/Types.h"
+
 #include "../../beast/beast/cxx14/memory.h"
 
 namespace ripple {
 
-class OfferCreateTransactorLog;
+class CreateOfferLog;
 
 template <>
 char const*
-LogPartition::getPartitionName <OfferCreateTransactorLog> ()
+LogPartition::getPartitionName <CreateOfferLog> ()
 {
     return "Tx/OfferCreate";
 }
 
-class OfferCreateTransactor
+class CreateOffer
     : public Transactor
 {
-private:
-    template <class T>
-    static std::string
-    get_compare_sign (T const& lhs, T const& rhs)
-    {
-        if (lhs > rhs)
-            return ">";
+protected:
+    /** Determine if we are authorized to hold the asset we want to get */
+    TER checkAcceptAsset(core::AssetRef asset) const;
 
-        if (rhs > lhs)
-            return "<";
+    /** Fill offer as much as possible by consuming offers already on the books.
+        We adjusts account balances and charges fees on top to taker.
 
-        // If neither is bigger than the other, they must be equal
-        return "=";
-    }
+        @param taker_amount.in How much the taker offers
+        @param taker_amount.out How much the taker wants
+
+        @return result.first crossing operation success/failure indicator.
+                result.second amount of offer left unfilled - only meaningful
+                              if result.first is tesSUCCESS.
+    */
+    virtual std::pair<TER, core::Amounts> crossOffers (
+        core::LedgerView& view,
+        core::Amounts const& taker_amount) = 0;
 
 public:
-    OfferCreateTransactor (
+    CreateOffer (
         SerializedTransaction const& txn,
         TransactionEngineParams params,
         TransactionEngine* engine);
+
+    TER doApply () override;
 };
 
-std::unique_ptr <Transactor> make_OfferCreateTransactor (
+std::unique_ptr <Transactor> make_CreateOffer (
     SerializedTransaction const& txn,
     TransactionEngineParams params,
     TransactionEngine* engine);

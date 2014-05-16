@@ -20,6 +20,7 @@
 #ifndef RIPPLE_TYPES_RIPPLEASSETS_H_INCLUDED
 #define RIPPLE_TYPES_RIPPLEASSETS_H_INCLUDED
 
+#include <cassert>
 #include <functional>
 #include <type_traits>
 
@@ -66,6 +67,9 @@ public:
         : currency (currency_)
         , issuer (issuer_)
     {
+        // Either XRP and (currency == zero && issuer == zero) or some custom
+        // currency and (currency != 0 && issuer != 0)
+        assert (currency.isZero () == issuer.isZero ());
     }
 
     template <bool OtherByValue>
@@ -87,6 +91,7 @@ public:
 
     bool is_xrp () const
     {
+        assert (currency.isZero () == issuer.isZero ());
         if (currency.isZero ())
             return true;
         return false;

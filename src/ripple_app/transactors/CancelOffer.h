@@ -22,20 +22,20 @@
 
 namespace ripple {
 
-class OfferCancelTransactorLog;
+class CancelOfferLog;
 
 template <>
 char const*
-LogPartition::getPartitionName <OfferCancelTransactorLog> ()
+LogPartition::getPartitionName <CancelOfferLog> ()
 {
     return "Tx/OfferCancel";
 }
 
-class OfferCancelTransactor
+class CancelOffer
     : public Transactor
 {
 public:
-    OfferCancelTransactor (
+    CancelOffer (
         SerializedTransaction const& txn,
         TransactionEngineParams params,
         TransactionEngine* engine)
@@ -43,13 +43,23 @@ public:
             txn,
             params,
             engine,
-            LogPartition::getJournal <OfferCancelTransactorLog> ())
+            LogPartition::getJournal <CancelOfferLog> ())
     {
 
     }
 
     TER doApply () override;
 };
+
+inline
+std::unique_ptr <Transactor>
+make_CancelOffer (
+    SerializedTransaction const& txn,
+    TransactionEngineParams params,
+    TransactionEngine* engine)
+{
+    return std::make_unique <CancelOffer> (txn, params, engine);
+}
 
 }
 

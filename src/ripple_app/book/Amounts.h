@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2014 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -21,6 +21,8 @@
 #define RIPPLE_CORE_AMOUNTS_H_INCLUDED
 
 #include "Amount.h"
+
+#include "../../beast/beast/utility/noexcept.h"
 
 namespace ripple {
 namespace core {

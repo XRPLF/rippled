@@ -21,6 +21,11 @@
 
 #include "ripple_app.h"
 
+#include "book/impl/Taker.cpp"
+#include "book/impl/BookTip.cpp"
+#include "book/impl/OfferStream.cpp"
+#include "book/impl/Quality.cpp"
+
 #include "transactors/Transactor.cpp"
 
 #include "transactors/Change.cpp"

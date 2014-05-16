@@ -21,7 +21,7 @@ namespace ripple {
 
 // See https://ripple.com/wiki/Transaction_Format#Payment_.280.29
 
-TER PaymentTransactor::doApply ()
+TER Payment::doApply ()
 {
     // Ripple if source or destination is non-native or if there are paths.
     std::uint32_t const uTxFlags = mTxn.getFlags ();

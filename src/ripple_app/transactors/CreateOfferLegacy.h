@@ -24,30 +24,15 @@
 
 namespace ripple {
 
-class ClassicOfferCreateTransactor
-    : public OfferCreateTransactor
+class CreateOfferLegacy
+    : public CreateOffer
 {
-private:
-    template <class T>
-    static std::string
-    get_compare_sign (T const& lhs, T const& rhs)
-    {
-        if (lhs > rhs)
-            return ">";
-
-        if (rhs > lhs)
-            return "<";
-
-        // If neither is bigger than the other, they must be equal
-        return "=";
-    }
-
 public:
-    ClassicOfferCreateTransactor (
+    CreateOfferLegacy (
         SerializedTransaction const& txn,
         TransactionEngineParams params,
         TransactionEngine* engine)
-        : OfferCreateTransactor (
+        : CreateOffer (
             txn,
             params,
             engine)
@@ -56,6 +41,13 @@ public:
     }
 
     TER doApply () override;
+
+    virtual std::pair<TER, core::Amounts> crossOffers (
+        core::LedgerView& view,
+        core::Amounts const& taker_amount)
+    {
+        return std::make_pair (tesSUCCESS, core::Amounts ());
+    }
 
 private:
     bool isValidOffer (
