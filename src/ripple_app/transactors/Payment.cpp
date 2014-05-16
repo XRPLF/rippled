@@ -19,6 +19,8 @@
 
 namespace ripple {
 
+// See https://ripple.com/wiki/Transaction_Format#Payment_.280.29
+
 TER PaymentTransactor::doApply ()
 {
     // Ripple if source or destination is non-native or if there are paths.
@@ -30,24 +32,26 @@ TER PaymentTransactor::doApply ()
     bool const bMax = mTxn.isFieldPresent (sfSendMax);
     uint160 const uDstAccountID = mTxn.getFieldAccount160 (sfDestination);
     STAmount const saDstAmount = mTxn.getFieldAmount (sfAmount);
-    STAmount const saMaxAmount = bMax
-                                   ? mTxn.getFieldAmount (sfSendMax)
-                                   : saDstAmount.isNative ()
-                                   ? saDstAmount
-                                   : STAmount (saDstAmount.getCurrency (),
-                                        mTxnAccountID,
-                                        saDstAmount.getMantissa (),
-                                        saDstAmount.getExponent (),
-                                        saDstAmount < zero);
-    uint160 const uSrcCurrency = saMaxAmount.getCurrency ();
+    STAmount maxSourceAmount;
+    if (bMax)
+        maxSourceAmount = mTxn.getFieldAmount (sfSendMax);
+    else if (saDstAmount.isNative ())
+        maxSourceAmount = saDstAmount;
+    else
+      maxSourceAmount = STAmount (
+          saDstAmount.getCurrency (), mTxnAccountID, saDstAmount.getMantissa (),
+          saDstAmount.getExponent (), saDstAmount < zero);
+    uint160 const uSrcCurrency = maxSourceAmount.getCurrency ();
     uint160 const uDstCurrency = saDstAmount.getCurrency ();
+
+    // isZero() is XRP.  FIX!
     bool const bXRPDirect = uSrcCurrency.isZero () && uDstCurrency.isZero ();
 
     m_journal.trace <<
-        "saMaxAmount=" << saMaxAmount.getFullText () <<
+        "maxSourceAmount=" << maxSourceAmount.getFullText () <<
         " saDstAmount=" << saDstAmount.getFullText ();
 
-    if (!saDstAmount.isLegalNet () || !saMaxAmount.isLegalNet ())
+    if (!saDstAmount.isLegalNet () || !maxSourceAmount.isLegalNet ())
         return temBAD_AMOUNT;
 
     if (uTxFlags & tfPaymentMask)
@@ -64,10 +68,10 @@ TER PaymentTransactor::doApply ()
 
         return temDST_NEEDED;
     }
-    else if (bMax && saMaxAmount <= zero)
+    else if (bMax && maxSourceAmount <= zero)
     {
         m_journal.trace <<
-            "Malformed transaction: bad max amount: " << saMaxAmount.getFullText ();
+            "Malformed transaction: bad max amount: " << maxSourceAmount.getFullText ();
 
         return temBAD_AMOUNT;
     }
@@ -87,6 +91,8 @@ TER PaymentTransactor::doApply ()
     }
     else if (mTxnAccountID == uDstAccountID && uSrcCurrency == uDstCurrency && !bPaths)
     {
+        // You're signing yourself a payment.
+        // If bPaths is true, you might be trying some arbitrage.
         m_journal.trace <<
             "Malformed transaction: Redundant transaction:" <<
             " src=" << to_string (mTxnAccountID) <<
@@ -96,8 +102,10 @@ TER PaymentTransactor::doApply ()
 
         return temREDUNDANT;
     }
-    else if (bMax && saMaxAmount == saDstAmount && saMaxAmount.getCurrency () == saDstAmount.getCurrency ())
+    else if (bMax && maxSourceAmount == saDstAmount &&
+             maxSourceAmount.getCurrency () == saDstAmount.getCurrency ())
     {
+        // Consistent but redundant transaction.
         m_journal.trace <<
             "Malformed transaction: Redundant SendMax.";
 
@@ -105,6 +113,7 @@ TER PaymentTransactor::doApply ()
     }
     else if (bXRPDirect && bMax)
     {
+        // Consistent but redundant transaction.
         m_journal.trace <<
             "Malformed transaction: SendMax specified for XRP to XRP.";
 
@@ -112,6 +121,7 @@ TER PaymentTransactor::doApply ()
     }
     else if (bXRPDirect && bPaths)
     {
+        // XRP is sent without paths.
         m_journal.trace <<
             "Malformed transaction: Paths specified for XRP to XRP.";
 
@@ -119,6 +129,7 @@ TER PaymentTransactor::doApply ()
     }
     else if (bXRPDirect && bPartialPayment)
     {
+        // Consistent but redundant transaction.
         m_journal.trace <<
             "Malformed transaction: Partial payment specified for XRP to XRP.";
 
@@ -126,6 +137,7 @@ TER PaymentTransactor::doApply ()
     }
     else if (bXRPDirect && bLimitQuality)
     {
+        // Consistent but redundant transaction.
         m_journal.trace <<
             "Malformed transaction: Limit quality specified for XRP to XRP.";
 
@@ -133,19 +145,21 @@ TER PaymentTransactor::doApply ()
     }
     else if (bXRPDirect && bNoRippleDirect)
     {
+        // Consistent but redundant transaction.
         m_journal.trace <<
             "Malformed transaction: No ripple direct specified for XRP to XRP.";
 
         return temBAD_SEND_XRP_NO_DIRECT;
     }
 
-    SLE::pointer sleDst (mEngine->entryCache (
-        ltACCOUNT_ROOT, Ledger::getAccountRootIndex (uDstAccountID)));
+    //
+    // Open a ledger for editing.
+    auto const index = Ledger::getAccountRootIndex (uDstAccountID);
+    SLE::pointer sleDst (mEngine->entryCache (ltACCOUNT_ROOT, index));
 
     if (!sleDst)
     {
         // Destination account does not exist.
-
         if (!saDstAmount.isNative ())
         {
             m_journal.trace <<
@@ -156,6 +170,7 @@ TER PaymentTransactor::doApply ()
         }
         else if (is_bit_set (mParams, tapOPEN_LEDGER) && bPartialPayment)
         {
+            // You cannot fund an account with a partial payment.
             // Make retry work smaller, by rejecting this.
             m_journal.trace <<
                 "Delay transaction: Partial payment not allowed to create account.";
@@ -165,48 +180,60 @@ TER PaymentTransactor::doApply ()
             // transaction would succeed.
             return telNO_DST_PARTIAL;
         }
-        // Note: Reserve is not scaled by load.
         else if (saDstAmount.getNValue () < mEngine->getLedger ()->getReserve (0))
         {
+            // getReserve() is the minimum amount that an account can have.
+            // Reserve is not scaled by load.
             m_journal.trace <<
                 "Delay transaction: Destination account does not exist. " <<
                 "Insufficent payment to create account.";
 
+            // TODO: dedupe
             // Another transaction could create the account and then this
             // transaction would succeed.
             return tecNO_DST_INSUF_XRP;
         }
 
         // Create the account.
-        sleDst = mEngine->entryCreate (
-            ltACCOUNT_ROOT, Ledger::getAccountRootIndex (uDstAccountID));
-
+        auto const newIndex = Ledger::getAccountRootIndex (uDstAccountID);
+        sleDst = mEngine->entryCreate (ltACCOUNT_ROOT, newIndex);
         sleDst->setFieldAccount (sfAccount, uDstAccountID);
         sleDst->setFieldU32 (sfSequence, 1);
     }
-    else if ((sleDst->getFlags () & lsfRequireDestTag) && !mTxn.isFieldPresent (sfDestinationTag))
+    else if ((sleDst->getFlags () & lsfRequireDestTag) &&
+             !mTxn.isFieldPresent (sfDestinationTag))
     {
-        m_journal.trace <<
-            "Malformed transaction: DestinationTag required.";
+        // The tag is basically account-specific information we don't
+        // understand, but we can require someone to fill it in.
+
+        // We didn't make this test for a newly-formed account because there's
+        // no way for this field to be set.
+        m_journal.trace << "Malformed transaction: DestinationTag required.";
 
         return tefDST_TAG_NEEDED;
     }
     else
     {
+        // Tell the engine that we are intending to change the the destination
+        // account.  The source account gets always charged a fee so it's always
+        // marked as modified.
         mEngine->entryModify (sleDst);
     }
 
     TER terResult;
-    // XXX Should bMax be sufficient to imply ripple?
+
     bool const bRipple = bPaths || bMax || !saDstAmount.isNative ();
+    // XXX Should bMax be sufficient to imply ripple?
 
     if (bRipple)
     {
-        // Ripple payment
+        // Ripple payment with at least one intermediate step and uses
+        // transitive balances.
 
+        // Copy paths into an editable class.
         STPathSet spsPaths = mTxn.getFieldPathSet (sfPaths);
         std::vector<PathState::pointer> vpsExpanded;
-        STAmount saMaxAmountAct;
+        STAmount maxSourceAmountAct;
         STAmount saDstAmountAct;
 
         try
@@ -218,10 +245,10 @@ TER PaymentTransactor::doApply ()
                         ? telBAD_PATH_COUNT // Too many paths for proposed ledger.
                         : RippleCalc::rippleCalc (
                               mEngine->view (),
-                              saMaxAmountAct,
+                              maxSourceAmountAct,
                               saDstAmountAct,
-                              vpsExpanded,
-                              saMaxAmount,
+                              vpsExpanded,  // Vector for saving expanded path.
+                              maxSourceAmount,
                               saDstAmount,
                               uDstAccountID,
                               mTxnAccountID,
@@ -232,10 +259,19 @@ TER PaymentTransactor::doApply ()
                               false, // Not standalone, delete unfundeds.
                               is_bit_set (mParams, tapOPEN_LEDGER));
 
+            // Not standalone means: If we discover an offer that's unfunded, we
+            // should delete it as soon as we can.
+
+            // If you're not modifying the ledger, you don't need to delete
+            // unfunded.
+
+            // TODO(tom): what's going on here?
             if (isTerRetry(terResult))
                 terResult = tecPATH_DRY;
 
-            if ((tesSUCCESS == terResult) && (saDstAmountAct != saDstAmount))
+            // TODO: is this right?  If the amount is the correct amount, was
+            // the delivered amount previously set?
+            if (terResult == tesSUCCESS && saDstAmountAct != saDstAmount)
                 mEngine->view().setDeliveredAmount (saDstAmountAct);
         }
         catch (std::exception const& e)
@@ -250,13 +286,24 @@ TER PaymentTransactor::doApply ()
     {
         // Direct XRP payment.
 
+        // uOwnerCount is the number of entries in this legder for this account
+        // that require a reserve.
+
         std::uint32_t const uOwnerCount (mTxnAccount->getFieldU32 (sfOwnerCount));
+
+        // This is the total reserve in drops.
+        // TODO(tom): there should be a class for this.
         std::uint64_t const uReserve (mEngine->getLedger ()->getReserve (uOwnerCount));
 
-        // Make sure have enough reserve to send. Allow final spend to use reserve for fee.
-        if (mPriorBalance < saDstAmount + std::max(uReserve, mTxn.getTransactionFee ().getNValue ()))
+        // mPriorBalance is the balance on the sending account BEFORE the fees were charged.
+        //
+        // Make sure have enough reserve to send. Allow final spend to use
+        // reserve for fee.
+        auto const mmm = std::max(uReserve, mTxn.getTransactionFee ().getNValue ());
+        if (mPriorBalance < saDstAmount + mmm)
         {
-            // Vote no. However, transaction might succeed, if applied in a different order.
+            // Vote no.
+            // However, transaction might succeed, if applied in a different order.
             m_journal.trace << "Delay transaction: Insufficient funds: " <<
                 " " << mPriorBalance.getText () <<
                 " / " << (saDstAmount + uReserve).getText () <<
@@ -266,10 +313,12 @@ TER PaymentTransactor::doApply ()
         }
         else
         {
+            // The source account does have enough money, so do the arithmetic
+            // for the transfer and make the ledger change.
             mTxnAccount->setFieldAmount (sfBalance, mSourceBalance - saDstAmount);
             sleDst->setFieldAmount (sfBalance, sleDst->getFieldAmount (sfBalance) + saDstAmount);
 
-            // re-arm the password change fee if we can and need to
+            // Re-arm the password change fee if we can and need to.
             if ((sleDst->getFlags () & lsfPasswordSpent))
                 sleDst->clearFlag (lsfPasswordSpent);
 
@@ -293,5 +342,4 @@ TER PaymentTransactor::doApply ()
     return terResult;
 }
 
-}
-
+}  // ripple

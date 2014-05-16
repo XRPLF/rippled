@@ -22,6 +22,8 @@
 
 namespace ripple {
 
+// See https://ripple.com/wiki/Transaction_errors
+
 // VFALCO TODO do not use auto-incrementing. Explicitly assign each
 //              constant so there is no possibility of someone coming in
 //              and screwing it up.
