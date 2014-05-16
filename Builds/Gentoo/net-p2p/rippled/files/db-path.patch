@@ -1,0 +1,13 @@
+diff --git a/doc/rippled-example.cfg b/doc/rippled-example.cfg
+index 5bd82c1..729b119 100644
+--- a/doc/rippled-example.cfg
++++ b/doc/rippled-example.cfg
+@@ -796,7 +796,7 @@ medium
+ # Note that HyperLevelDB is unavailable on Windows platforms
+ [node_db]
+ type=HyperLevelDB
+-path=/etc/ripple/db/hyperldb
++path=/var/lib/ripple/db/hyperldb
+ 
+ # This needs to be an absolute directory reference, not a relative one.
+ # Modify this value as required.

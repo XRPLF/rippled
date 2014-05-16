@@ -1,0 +1,12 @@
+[Unit]
+Description=Ripple network server
+Documentation=https://ripple.com/wiki/Rippled
+After=network.target
+
+[Service]
+User=ripple
+ExecStart=/usr/bin/rippled --fg -q --conf /var/lib/ripple/rippled.cfg
+WorkingDirectory=/var/lib/ripple
+
+[Install]
+WantedBy=multi-user.target
