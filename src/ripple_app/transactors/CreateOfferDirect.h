@@ -27,15 +27,15 @@
 
 namespace ripple {
 
-class DirectOfferCreateTransactor
-    : public OfferCreateTransactor
+class CreateOfferDirect
+    : public CreateOffer
 {
 public:
-    DirectOfferCreateTransactor (
+    CreateOfferDirect (
         SerializedTransaction const& txn,
         TransactionEngineParams params,
         TransactionEngine* engine)
-        : OfferCreateTransactor (
+        : CreateOffer (
             txn,
             params,
             engine)

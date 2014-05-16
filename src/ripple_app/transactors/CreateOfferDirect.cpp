@@ -27,7 +27,7 @@ namespace ripple {
 
 // NIKB Move this in the right place
 std::pair<TER,bool>
-process_order (
+process_order_direct (
     core::LedgerView& view,
     core::BookRef const book,
     core::Account const& account,
@@ -40,7 +40,7 @@ process_order (
     TER result (tesSUCCESS);
     core::LedgerView view_cancel (view.duplicate());
     core::OfferStream offers (view, view_cancel, book, when, journal);
-    core::Taker taker (offers.view(), book, account, amount, options);
+    core::Taker taker (offers.view(), account, amount, options);
 
     if (journal.debug) journal.debug <<
         "process_order: " <<
@@ -50,9 +50,6 @@ process_order (
         "  balances: " <<
             view.accountFunds (taker.account(), amount.in) << ", " <<
             view.accountFunds (taker.account(), amount.out);
-
-    cross_flow.in.clear (amount.in);
-    cross_flow.out.clear (amount.out);
 
     bool place_order (true);
 
@@ -80,7 +77,7 @@ process_order (
             break;
         }
 
-        auto const offer (offers.tip());
+        auto const& offer (offers.tip());
 
         if (journal.debug) journal.debug <<
             "Considering offer: " << std::endl <<
@@ -115,15 +112,11 @@ process_order (
             "  pays/gets " << offer.amount().in << ", " << offer.amount().out
             ;
 
-        core::Amounts flow;
-        bool consumed;
-        std::tie (flow, consumed) = taker.fill (offer);
-
-        result = taker.process (flow, offer);
+        result = taker.cross (offer);
 
         if (journal.debug) journal.debug <<
             "       flow " <<
-                flow.in << ", " << flow.out << std::endl <<
+                ret.first.in << ", " << ret.first.out << std::endl <<
             "   balances " <<
                 view.accountFunds (taker.account(), amount.in) << ", " <<
                 view.accountFunds (taker.account(), amount.out)
@@ -131,17 +124,13 @@ process_order (
 
         if (result != tesSUCCESS)
         {
-            // VFALCO TODO Return the tec and let a caller higher
-            //             up convert the error if the ledger is open.
-            //result = bOpenLedger ?
-            //    telFAILED_PROCESSING : tecFAILED_PROCESSING;
             result = tecFAILED_PROCESSING;
             break;
         }
-
-        cross_flow.in += flow.in;
-        cross_flow.out += flow.out;
     }
+
+    // Figure out how much flowed during crossing
+    cross_flow = taker.flow ();
 
     if (result == tesSUCCESS)
     {
@@ -182,7 +171,7 @@ process_order (
     @return tesSUCCESS, terNO_ACCOUNT, telFAILED_PROCESSING, or
             tecFAILED_PROCESSING
 */
-std::pair<TER,bool> DirectOfferCreateTransactor::crossOffers (
+std::pair<TER,bool> CreateOfferDirect::crossOffers (
     core::LedgerView& view,
     const STAmount&     saTakerPays,
     const STAmount&     saTakerGets,
@@ -201,7 +190,7 @@ std::pair<TER,bool> DirectOfferCreateTransactor::crossOffers (
         core::Amount (saTakerPays.getCurrency(), saTakerPays.getIssuer()),
         core::Amount (saTakerGets.getCurrency(), saTakerGets.getIssuer()));
 
-    auto const result (process_order (
+    auto const result (process_order_direct (
         view, book, mTxnAccountID,
         core::Amounts (saTakerPays, saTakerGets), cross_flow, 
         core::Taker::Options (mTxn.getFlags()),
@@ -228,7 +217,7 @@ std::pair<TER,bool> DirectOfferCreateTransactor::crossOffers (
     return result;
 }
 
-TER DirectOfferCreateTransactor::doApply ()
+TER CreateOfferDirect::doApply ()
 {
     if (m_journal.debug) m_journal.debug <<
         "OfferCreate> " << mTxn.getJson (0);

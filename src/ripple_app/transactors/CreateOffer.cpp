@@ -29,7 +29,7 @@
 
 namespace ripple {
 
-OfferCreateTransactor::OfferCreateTransactor (
+CreateOffer::CreateOffer (
     SerializedTransaction const& txn,
     TransactionEngineParams params,
     TransactionEngine* engine)
@@ -37,31 +37,27 @@ OfferCreateTransactor::OfferCreateTransactor (
         txn,
         params,
         engine,
-        LogPartition::getJournal <OfferCreateTransactorLog> ())
+        LogPartition::getJournal <CreateOfferLog> ())
 {
 
 }
 
-std::unique_ptr <Transactor> make_OfferCreateTransactor (
+std::unique_ptr <Transactor> make_CreateOffer (
     SerializedTransaction const& txn,
     TransactionEngineParams params,
     TransactionEngine* engine)
 {
 #if RIPPLE_USE_OLD_CREATE_TRANSACTOR
-    return std::make_unique <ClassicOfferCreateTransactor> (txn, params, engine);
+    return std::make_unique <CreateOfferLegacy> (txn, params, engine);
 #else
     STAmount const& amount_in = txn.getFieldAmount (sfTakerPays);
     STAmount const& amount_out = txn.getFieldAmount (sfTakerGets);
     
     // Autobridging is only in effect when an offer does not involve XRP
     if (!amount_in.isNative() && !amount_out.isNative ())
-    {
-        // no autobridging transactor exists yet - we create a regular, direct
-        // transactor for now.
-        return std::make_unique <DirectOfferCreateTransactor> (txn, params, engine);
-    }
+        return std::make_unique <CreateOfferBridged> (txn, params, engine);
     
-    return std::make_unique <DirectOfferCreateTransactor> (txn, params, engine);
+    return std::make_unique <CreateOfferDirect> (txn, params, engine);
 #endif
 }
 
