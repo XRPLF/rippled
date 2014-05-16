@@ -38,9 +38,11 @@ TER PaymentTransactor::doApply ()
     else if (saDstAmount.isNative ())
         maxSourceAmount = saDstAmount;
     else
+    {
       maxSourceAmount = STAmount (
           saDstAmount.getCurrency (), mTxnAccountID, saDstAmount.getMantissa (),
           saDstAmount.getExponent (), saDstAmount < zero);
+    }
     uint160 const uSrcCurrency = maxSourceAmount.getCurrency ();
     uint160 const uDstCurrency = saDstAmount.getCurrency ();
 
@@ -155,9 +157,9 @@ TER PaymentTransactor::doApply ()
     //
     // Open a ledger for editing.
     auto const index = Ledger::getAccountRootIndex (uDstAccountID);
-    SLE::pointer sleDst (mEngine->entryCache (ltACCOUNT_ROOT, index));
+    SLE::pointer destinationAccount (mEngine->entryCache (ltACCOUNT_ROOT, index));
 
-    if (!sleDst)
+    if (!destinationAccount)
     {
         // Destination account does not exist.
         if (!saDstAmount.isNative ())
@@ -196,11 +198,11 @@ TER PaymentTransactor::doApply ()
 
         // Create the account.
         auto const newIndex = Ledger::getAccountRootIndex (uDstAccountID);
-        sleDst = mEngine->entryCreate (ltACCOUNT_ROOT, newIndex);
-        sleDst->setFieldAccount (sfAccount, uDstAccountID);
-        sleDst->setFieldU32 (sfSequence, 1);
+        destinationAccount = mEngine->entryCreate (ltACCOUNT_ROOT, newIndex);
+        destinationAccount->setFieldAccount (sfAccount, uDstAccountID);
+        destinationAccount->setFieldU32 (sfSequence, 1);
     }
-    else if ((sleDst->getFlags () & lsfRequireDestTag) &&
+    else if ((destinationAccount->getFlags () & lsfRequireDestTag) &&
              !mTxn.isFieldPresent (sfDestinationTag))
     {
         // The tag is basically account-specific information we don't
@@ -217,7 +219,7 @@ TER PaymentTransactor::doApply ()
         // Tell the engine that we are intending to change the the destination
         // account.  The source account gets always charged a fee so it's always
         // marked as modified.
-        mEngine->entryModify (sleDst);
+        mEngine->entryModify (destinationAccount);
     }
 
     TER terResult;
@@ -316,11 +318,11 @@ TER PaymentTransactor::doApply ()
             // The source account does have enough money, so do the arithmetic
             // for the transfer and make the ledger change.
             mTxnAccount->setFieldAmount (sfBalance, mSourceBalance - saDstAmount);
-            sleDst->setFieldAmount (sfBalance, sleDst->getFieldAmount (sfBalance) + saDstAmount);
+            destinationAccount->setFieldAmount (sfBalance, destinationAccount->getFieldAmount (sfBalance) + saDstAmount);
 
             // Re-arm the password change fee if we can and need to.
-            if ((sleDst->getFlags () & lsfPasswordSpent))
-                sleDst->clearFlag (lsfPasswordSpent);
+            if ((destinationAccount->getFlags () & lsfPasswordSpent))
+                destinationAccount->clearFlag (lsfPasswordSpent);
 
             terResult = tesSUCCESS;
         }
