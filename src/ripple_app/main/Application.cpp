@@ -24,7 +24,7 @@
 #include "Tuning.h"
 
 namespace ripple {
-    
+
 // VFALCO TODO Clean this global up
 static bool volatile doShutdown = false;
 
@@ -331,7 +331,7 @@ public:
         , m_txQueue (TxQueue::New ())
 
         , m_validators (add (Validators::Manager::New (
-            *this, 
+            *this,
             getConfig ().getModuleDatabasePath (),
             LogPartition::getJournal <ValidatorsLog> ())))
 
@@ -732,7 +732,7 @@ public:
         //             move the instantiation inside a conditional:
         //
         //             if (!getConfig ().RUN_STANDALONE)
-        m_peers = make_Overlay (m_mainIoPool, *m_resourceManager, 
+        m_peers = make_Overlay (m_mainIoPool, *m_resourceManager,
             *m_siteFiles, getConfig ().getModuleDatabasePath (),
             *m_resolver, m_mainIoPool, m_peerSSLContext->get ());
         // add to Stoppable
@@ -954,7 +954,7 @@ public:
         //             running the various logic threads like Validators, PeerFinder, etc.
         prepare ();
         start ();
-    
+
 
         {
             if (!getConfig ().RUN_STANDALONE)
@@ -1043,7 +1043,7 @@ public:
             }
 
             m_jobQueue->addJob(jtSWEEP, "sweep",
-                BIND_TYPE(&ApplicationImp::doSweep, this, P_1));
+                std::bind(&ApplicationImp::doSweep, this, P_1));
         }
     }
 

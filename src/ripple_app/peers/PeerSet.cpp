@@ -114,7 +114,7 @@ void PeerSet::TimerEntry (boost::weak_ptr<PeerSet> wptr, const boost::system::er
         if (ptr->mTxnData)
         {
             getApp().getJobQueue ().addJob (jtTXN_DATA, "timerEntryTxn",
-                BIND_TYPE (&PeerSet::TimerJobEntry, P_1, ptr));
+                std::bind (&PeerSet::TimerJobEntry, P_1, ptr));
         }
         else
         {
@@ -127,7 +127,7 @@ void PeerSet::TimerEntry (boost::weak_ptr<PeerSet> wptr, const boost::system::er
             }
             else
                 getApp().getJobQueue ().addJob (jtLEDGER_DATA, "timerEntryLgr",
-                    BIND_TYPE (&PeerSet::TimerJobEntry, P_1, ptr));
+                    std::bind (&PeerSet::TimerJobEntry, P_1, ptr));
 	}
     }
 }
@@ -180,7 +180,7 @@ std::size_t PeerSet::takePeerSetFrom (const PeerSet& s)
         mPeers.insert (std::make_pair (p.first, 0));
         ++ret;
     }
-    
+
     return ret;
 }
 

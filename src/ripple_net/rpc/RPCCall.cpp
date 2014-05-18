@@ -1008,7 +1008,7 @@ int RPCCall::fromCommandLine (const std::vector<std::string>& vCmd)
                     ? jvRequest["method"].asString () : vCmd[0],
                 jvParams,                               // Parsed, execute.
                 false,
-                BIND_TYPE (RPCCallImp::callRPCHandler, &jvOutput, P_1));
+                std::bind (RPCCallImp::callRPCHandler, &jvOutput, P_1));
 
             isService.run (); // This blocks until there is no more outstanding async calls.
 
@@ -1105,7 +1105,7 @@ void RPCCall::fromNetwork (
         io_service,
         strIp,
         iPort,
-        BIND_TYPE (
+        std::bind (
             &RPCCallImp::onRequest,
             strMethod,
             jvParams,
@@ -1113,7 +1113,7 @@ void RPCCall::fromNetwork (
             strPath, P_1, P_2),
         RPC_REPLY_MAX_BYTES,
         boost::posix_time::seconds (RPC_NOTIFY_SECONDS),
-        BIND_TYPE (&RPCCallImp::onResponse, callbackFuncP, P_1, P_2, P_3));
+        std::bind (&RPCCallImp::onResponse, callbackFuncP, P_1, P_2, P_3));
 }
 
 } // ripple

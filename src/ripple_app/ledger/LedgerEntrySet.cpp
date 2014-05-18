@@ -730,7 +730,7 @@ TER LedgerEntrySet::dirAdd (
     svIndexes.peekValue ().push_back (uLedgerIndex); // Append entry.
     sleNode->setFieldV256 (sfIndexes, svIndexes);   // Save entry.
 
-    WriteLog (lsTRACE, LedgerEntrySet) << 
+    WriteLog (lsTRACE, LedgerEntrySet) <<
         "dirAdd:   creating: root: " << to_string (uRootIndex);
     WriteLog (lsTRACE, LedgerEntrySet) <<
         "dirAdd:  appending: Entry: " << to_string (uLedgerIndex);
@@ -1123,7 +1123,7 @@ STAmount LedgerEntrySet::rippleOwed (const uint160& uToAccountID, const uint160&
         saBalance.clear (uCurrencyID, uToAccountID);
 
         WriteLog (lsDEBUG, LedgerEntrySet) << "rippleOwed:" <<
-            " No credit line between " << 
+            " No credit line between " <<
             RippleAddress::createHumanAccountID (uFromAccountID) <<
             " and " << RippleAddress::createHumanAccountID (uToAccountID) <<
             " for " << STAmount::createHumanCurrency (uCurrencyID);
@@ -1167,7 +1167,7 @@ std::uint32_t LedgerEntrySet::rippleTransferRate (const uint160& uIssuerID)
     SLE::pointer sleAccount (entryCache (
         ltACCOUNT_ROOT, Ledger::getAccountRootIndex (uIssuerID)));
 
-    std::uint32_t uQuality = 
+    std::uint32_t uQuality =
         sleAccount && sleAccount->isFieldPresent (sfTransferRate)
             ? sleAccount->getFieldU32 (sfTransferRate)
             : QUALITY_ONE;
@@ -1208,7 +1208,7 @@ LedgerEntrySet::rippleQualityIn (const uint160& uToAccountID,
     }
     else
     {
-        sleRippleState = entryCache (ltRIPPLE_STATE, 
+        sleRippleState = entryCache (ltRIPPLE_STATE,
             Ledger::getRippleStateIndex (uToAccountID, uFromAccountID, uCurrencyID));
 
         if (sleRippleState)
@@ -1360,11 +1360,11 @@ STAmount LedgerEntrySet::rippleTransferFee (
         {
             // NIKB use STAmount::saFromRate
             STAmount saTransitRate (
-                CURRENCY_ONE, ACCOUNT_ONE, 
+                CURRENCY_ONE, ACCOUNT_ONE,
                 static_cast<std::uint64_t> (uTransitRate), -9);
 
             STAmount saTransferTotal = STAmount::multiply (
-                saAmount, saTransitRate, 
+                saAmount, saTransitRate,
                 saAmount.getCurrency (), saAmount.getIssuer ());
             STAmount saTransferFee = saTransferTotal - saAmount;
 
@@ -1403,7 +1403,7 @@ TER LedgerEntrySet::trustCreate (
                           uLowNode,
                           Ledger::getOwnerDirIndex (uLowAccountID),
                           sleRippleState->getIndex (),
-                          BIND_TYPE (&Ledger::ownerDirDescriber, P_1, P_2, uLowAccountID));
+                          std::bind (&Ledger::ownerDirDescriber, P_1, P_2, uLowAccountID));
 
     if (tesSUCCESS == terResult)
     {
@@ -1411,7 +1411,7 @@ TER LedgerEntrySet::trustCreate (
                           uHighNode,
                           Ledger::getOwnerDirIndex (uHighAccountID),
                           sleRippleState->getIndex (),
-                          BIND_TYPE (&Ledger::ownerDirDescriber, P_1, P_2, uHighAccountID));
+                          std::bind (&Ledger::ownerDirDescriber, P_1, P_2, uHighAccountID));
     }
 
     if (tesSUCCESS == terResult)
@@ -1534,7 +1534,7 @@ TER LedgerEntrySet::rippleCredit (const uint160& uSenderID, const uint160& uRece
         saBalance   -= saAmount;
 
         WriteLog (lsTRACE, LedgerEntrySet) << "rippleCredit: " <<
-            RippleAddress::createHumanAccountID (uSenderID) << 
+            RippleAddress::createHumanAccountID (uSenderID) <<
             " -> " << RippleAddress::createHumanAccountID (uReceiverID) <<
             " : before=" << saBefore.getFullText () <<
             " amount=" << saAmount.getFullText () <<
@@ -1718,4 +1718,3 @@ TER LedgerEntrySet::accountSend (const uint160& uSenderID, const uint160& uRecei
 }
 
 } // ripple
-

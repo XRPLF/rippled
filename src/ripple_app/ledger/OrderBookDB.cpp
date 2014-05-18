@@ -59,7 +59,7 @@ void OrderBookDB::setup (Ledger::ref ledger)
         update(ledger);
     else
         getApp().getJobQueue().addJob(jtUPDATE_PF, "OrderBookDB::update",
-            BIND_TYPE(&OrderBookDB::update, this, ledger));
+            std::bind(&OrderBookDB::update, this, ledger));
 }
 
 static void updateHelper (SLE::ref entry,
@@ -108,7 +108,7 @@ void OrderBookDB::update (Ledger::pointer ledger)
 
     try
     {
-        ledger->visitStateItems(BIND_TYPE(&updateHelper, P_1, boost::ref(seen), boost::ref(destMap),
+        ledger->visitStateItems(std::bind(&updateHelper, P_1, boost::ref(seen), boost::ref(destMap),
             boost::ref(sourceMap), boost::ref(XRPBooks), boost::ref(books)));
     }
     catch (const SHAMapMissingNode&)
@@ -296,7 +296,7 @@ void OrderBookDB::processTxn (Ledger::ref ledger, const AcceptedLedgerTx& alTx, 
         }
     }
 }
-    
+
 //------------------------------------------------------------------------------
 
 BookListeners::BookListeners ()

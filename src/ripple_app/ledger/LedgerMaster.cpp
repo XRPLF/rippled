@@ -400,7 +400,7 @@ public:
 
     // Returns Ledgers we have all the nodes for and are indexed
     bool getValidatedRange (std::uint32_t& minVal, std::uint32_t& maxVal)
-    { 
+    {
         maxVal = mPubLedgerSeq.load();
 
         if (!maxVal)
@@ -681,7 +681,7 @@ public:
                 ledger = l->getLedger();
             else
             {
-                WriteLog (lsDEBUG, LedgerMaster) << 
+                WriteLog (lsDEBUG, LedgerMaster) <<
                     "checkAccept triggers acquire " << to_string (hash);
             }
         }
@@ -765,7 +765,7 @@ public:
     /** Report that the consensus process built a particular ledger */
     void consensusBuilt (Ledger::ref ledger) override
     {
- 
+
         // Because we just built a ledger, we are no longer building one
         setBuildingLedger (0);
 
@@ -939,7 +939,7 @@ public:
                                     { // Previous ledger is in DB
                                         ScopedLockType sl(m_mutex);
                                         mFillInProgress = ledger->getLedgerSeq();
-                                        getApp().getJobQueue().addJob(jtADVANCE, "tryFill", BIND_TYPE (
+                                        getApp().getJobQueue().addJob(jtADVANCE, "tryFill", std::bind (
                                             &LedgerMasterImp::tryFill, this, P_1, ledger));
                                     }
                                     progress = true;
@@ -1116,20 +1116,20 @@ public:
         {
             mAdvanceThread = true;
             getApp().getJobQueue ().addJob (jtADVANCE, "advanceLedger",
-                                            BIND_TYPE (&LedgerMasterImp::advanceThread, this));
+                                            std::bind (&LedgerMasterImp::advanceThread, this));
         }
     }
 
     // Return the hash of the valid ledger with a particular sequence, given a subsequent ledger known valid
     uint256 getLedgerHash(std::uint32_t desiredSeq, Ledger::ref knownGoodLedger)
-    { 
+    {
         assert(desiredSeq < knownGoodLedger->getLedgerSeq());
 
         uint256 hash = knownGoodLedger->getLedgerHash(desiredSeq);
 
         // Not directly in the given ledger
         if (hash.isZero ())
-        { 
+        {
             std::uint32_t seq = (desiredSeq + 255) % 256;
             assert(seq < desiredSeq);
 
@@ -1244,7 +1244,7 @@ public:
         {
             ++mPathFindThread;
             getApp().getJobQueue().addJob (jtUPDATE_PF, name,
-                BIND_TYPE (&LedgerMasterImp::updatePaths, this, P_1));
+                std::bind (&LedgerMasterImp::updatePaths, this, P_1));
         }
     }
 
@@ -1346,7 +1346,7 @@ public:
         // See if the hash for the ledger we need is in the reference ledger
         ledgerHash = referenceLedger->getLedgerHash (index);
         if (ledgerHash.isZero())
-        { 
+        {
             // No, Try to get another ledger that might have the hash we need
             // Compute the index and hash of a ledger that will have the hash we need
             LedgerIndex refIndex = (index + 255) & (~255);

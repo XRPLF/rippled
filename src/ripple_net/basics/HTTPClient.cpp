@@ -151,7 +151,7 @@ public:
         request (
             bSSL,
             deqSites,
-            BIND_TYPE (&HTTPClientImp::makeGet, shared_from_this (), strPath, P_1, P_2),
+            std::bind (&HTTPClientImp::makeGet, shared_from_this (), strPath, P_1, P_2),
             timeout,
             complete);
     }
@@ -406,7 +406,7 @@ public:
             // no body wanted or available
             invokeComplete (ecResult, mStatus);
         }
-        else if (mBody.size () >= mResponseMax) 
+        else if (mBody.size () >= mResponseMax)
         {
             // we got the whole thing
             invokeComplete (ecResult, mStatus, mBody);
@@ -611,9 +611,8 @@ void HTTPClient::sendSMS (boost::asio::io_service& io_service, const std::string
             new HTTPClientImp (io_service, iPort, maxClientHeaderBytes));
 
         client->get (bSSL, deqSites, strURI, boost::posix_time::seconds (smsTimeoutSeconds),
-                            BIND_TYPE (&HTTPClientImp::onSMSResponse, P_1, P_2, P_3));
+                            std::bind (&HTTPClientImp::onSMSResponse, P_1, P_2, P_3));
     }
 }
 
 } // ripple
-

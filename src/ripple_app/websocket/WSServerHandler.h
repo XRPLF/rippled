@@ -121,13 +121,13 @@ public:
 
     void send (connection_ptr cpClient, message_ptr mpMessage)
     {
-        cpClient->get_strand ().post (BIND_TYPE (
+        cpClient->get_strand ().post (std::bind (
                                           &WSServerHandler<endpoint_type>::ssend, cpClient, mpMessage));
     }
 
     void send (connection_ptr cpClient, const std::string& strMessage, bool broadcast)
     {
-        cpClient->get_strand ().post (BIND_TYPE (
+        cpClient->get_strand ().post (std::bind (
                                           &WSServerHandler<endpoint_type>::ssendb, cpClient, strMessage, broadcast));
     }
 
@@ -276,7 +276,7 @@ public:
 
         // Must be done without holding the websocket send lock
         getApp().getJobQueue ().addJob (jtCLIENT, "WSClient::destroy",
-                                       BIND_TYPE (&WSConnectionType <endpoint_type>::destroy, ptr));
+                                       std::bind (&WSConnectionType <endpoint_type>::destroy, ptr));
     }
 
     void on_message (connection_ptr cpClient, message_ptr mpMessage)
@@ -310,7 +310,7 @@ public:
 
         if (bRunQ)
             getApp().getJobQueue ().addJob (jtCLIENT, "WSClient::command",
-                      BIND_TYPE (&WSServerHandler<endpoint_type>::do_messages, this, P_1, cpClient));
+                      std::bind (&WSServerHandler<endpoint_type>::do_messages, this, P_1, cpClient));
     }
 
     void do_messages (Job& job, connection_ptr cpClient)
@@ -346,7 +346,7 @@ public:
 
         if (ptr->checkMessage ())
             getApp().getJobQueue ().addJob (jtCLIENT, "WSClient::more",
-                                       BIND_TYPE (&WSServerHandler<endpoint_type>::do_messages, this, P_1, cpClient));
+                                       std::bind (&WSServerHandler<endpoint_type>::do_messages, this, P_1, cpClient));
     }
 
     bool do_message (Job& job, const connection_ptr& cpClient, const wsc_ptr& conn, const message_ptr& mpMessage)

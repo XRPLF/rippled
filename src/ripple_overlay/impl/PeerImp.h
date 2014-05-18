@@ -55,7 +55,7 @@ std::ostream& operator<< (std::ostream& os, PeerImp const* peer);
 
 //------------------------------------------------------------------------------
 
-class PeerImp 
+class PeerImp
     : public Peer
     , public boost::enable_shared_from_this <PeerImp>
     , private beast::LeakChecked <Peer>
@@ -239,7 +239,7 @@ public:
             , m_was_canceled (false)
     {
     }
-        
+
     /** New outgoing peer
         @note Construction of outbound peers is a two step process: a second
               call is needed (to connect or accept) but we cannot make it from
@@ -276,7 +276,7 @@ public:
             , m_was_canceled (false)
     {
     }
-    
+
     virtual
     ~PeerImp ()
     {
@@ -318,7 +318,7 @@ public:
     {
         if (! m_strand.running_in_this_thread ())
         {
-            m_strand.post (BIND_TYPE (&PeerImp::detach,
+            m_strand.post (std::bind (&PeerImp::detach,
                 shared_from_this (), rsn, graceful));
             return;
         }
@@ -333,7 +333,7 @@ public:
                 m_peerFinder.on_cancel (m_slot);
             else
                 m_peerFinder.on_closed (m_slot);
-            
+
             if (m_state == stateActive)
                 m_overlay.onPeerDisconnect (shared_from_this ());
 
@@ -458,7 +458,7 @@ public:
         {
             if (!onStrand)
             {
-                m_strand.post (BIND_TYPE (
+                m_strand.post (std::bind (
                     &Peer::sendPacket, shared_from_this (), packet, true));
                 return;
             }
@@ -743,7 +743,7 @@ private:
             Application::ScopedLockType lock (getApp ().getMasterLock ());
             detach ("hrb");
             }
-            
+
             return;
         }
 
@@ -1043,7 +1043,7 @@ private:
             case protocol::mtGET_LEDGER:
             {
                 event->reName ("Peer::getledger");
-                boost::shared_ptr<protocol::TMGetLedger> msg ( 
+                boost::shared_ptr<protocol::TMGetLedger> msg (
                     boost::make_shared<protocol::TMGetLedger> ());
 
                 if (msg->ParseFromArray (&m_readBuffer[Message::kHeaderBytes],
@@ -1298,7 +1298,7 @@ private:
         @return true if successful, false otherwise.
     */
     bool sendHello ()
-    {        
+    {
         if (!calculateSessionCookie())
             return false;
 
@@ -1535,7 +1535,7 @@ private:
             else
                 getApp().getJobQueue ().addJob (jtTRANSACTION,
                     "recvTransaction->checkTransaction",
-                    BIND_TYPE (
+                    std::bind (
                         &PeerImp::checkTransaction, P_1, flags, stx,
                         boost::weak_ptr<Peer> (shared_from_this ())));
 
@@ -1588,7 +1588,7 @@ private:
                 getApp().getJobQueue ().addJob (
                     isTrusted ? jtVALIDATION_t : jtVALIDATION_ut,
                     "recvValidation->checkValidation",
-                    BIND_TYPE (
+                    std::bind (
                         &PeerImp::checkValidation, P_1, &m_overlay, val,
                         isTrusted, m_clusterNode, packet,
                         boost::weak_ptr<Peer> (shared_from_this ())));
@@ -1690,7 +1690,7 @@ private:
                 endpoint.address = m_remoteAddress.at_port (
                     tm.ipv4().ipv4port ());
             }
-        
+
             endpoints.push_back (endpoint);
         }
 
@@ -1817,7 +1817,7 @@ private:
         {
             packet.set_type (protocol::TMPing::ptPONG);
             sendPacket (boost::make_shared<Message> (packet, protocol::mtPING), true);
-        }        
+        }
     }
 
     void recvErrorMessage (protocol::TMErrorMsg& packet)
@@ -1930,7 +1930,7 @@ private:
             // got data for a candidate transaction set
 
             getApp().getJobQueue().addJob (jtTXN_DATA, "recvPeerData",
-                BIND_TYPE (&PeerImp::peerTXData, P_1,
+                std::bind (&PeerImp::peerTXData, P_1,
                     boost::weak_ptr<Peer> (shared_from_this ()),
                         hash, packet_ptr, m_journal));
 
@@ -2067,18 +2067,18 @@ private:
                            " proposal from " << m_shortId;
 
         uint256 consensusLCL;
-        
+
         {
             Application::ScopedLockType lock (getApp ().getMasterLock ());
             consensusLCL = getApp().getOPs ().getConsensusLCL ();
         }
-        
+
         LedgerProposal::pointer proposal = boost::make_shared<LedgerProposal> (
             prevLedger.isNonZero () ? prevLedger : consensusLCL,
             set.proposeseq (), proposeHash, set.closetime (), signerPublic, suppression);
 
         getApp().getJobQueue ().addJob (isTrusted ? jtPROPOSAL_t : jtPROPOSAL_ut,
-            "recvPropose->checkPropose", BIND_TYPE (
+            "recvPropose->checkPropose", std::bind (
                 &PeerImp::checkPropose, P_1, &m_overlay, packet, proposal, consensusLCL,
                 m_nodePublicKey, boost::weak_ptr<Peer> (shared_from_this ()), m_clusterNode));
     }
@@ -2105,7 +2105,7 @@ private:
 
         {
             Application::ScopedLockType lock (getApp ().getMasterLock ());
-            
+
             if (!getApp().getOPs ().hasTXSet (shared_from_this (), hash, packet.status ()))
                 charge (Resource::feeUnwantedData);
         }
@@ -2179,7 +2179,7 @@ private:
             getApp().getJobQueue ().addJob (
                 jtPROOFWORK,
                 "recvProof->doProof",
-                BIND_TYPE (&PeerImp::doProofOfWork, P_1, boost::weak_ptr <Peer> (shared_from_this ()), pow));
+                std::bind (&PeerImp::doProofOfWork, P_1, boost::weak_ptr <Peer> (shared_from_this ()), pow));
     #endif
 
             return;
@@ -2201,7 +2201,7 @@ private:
 
         m_recentLedgers.push_back (hash);
     }
-    
+
     void getLedger (protocol::TMGetLedger& packet)
     {
             SHAMap::pointer map;
@@ -2216,7 +2216,7 @@ private:
 	    if (packet.itype () == protocol::liTS_CANDIDATE)
 	    {
 	        // Request is for a transaction candidate set
-	        m_journal.trace << "Received request for TX candidate set data " 
+	        m_journal.trace << "Received request for TX candidate set data "
 	                        << to_string (this);
 
 	        if ((!packet.has_ledgerhash () || packet.ledgerhash ().size () != 32))
@@ -2281,7 +2281,7 @@ private:
                     return;
 	            }
 
-	            m_journal.error << "We do not have the map our peer wants " 
+	            m_journal.error << "We do not have the map our peer wants "
 	                            << to_string (this);
 
 	            charge (Resource::feeInvalidRequest);
@@ -2525,28 +2525,28 @@ private:
 	    }
 
 	    Message::pointer oPacket = boost::make_shared<Message> (reply, protocol::mtLEDGER_DATA);
-	    sendPacket (oPacket, false);    
+	    sendPacket (oPacket, false);
     }
-    
+
     // This is dispatched by the job queue
     static
     void
-    sGetLedger (boost::weak_ptr<PeerImp> wPeer, 
+    sGetLedger (boost::weak_ptr<PeerImp> wPeer,
         boost::shared_ptr <protocol::TMGetLedger> packet)
     {
         boost::shared_ptr<PeerImp> peer = wPeer.lock ();
-        
+
         if (peer)
             peer->getLedger (*packet);
     }
-    
+
     void addTxSet (uint256 const& hash)
     {
         boost::mutex::scoped_lock sl(m_recentLock);
 
         if(std::find (m_recentTxSets.begin (), m_recentTxSets.end (), hash) != m_recentTxSets.end ())
         	return;
-        
+
         if (m_recentTxSets.size () == 128)
             m_recentTxSets.pop_front ();
 
@@ -2577,7 +2577,7 @@ private:
         memcpy (hash.begin (), packet->ledgerhash ().data (), 32);
 
         getApp().getJobQueue ().addJob (jtPACK, "MakeFetchPack",
-            BIND_TYPE (&NetworkOPs::makeFetchPack, &getApp().getOPs (), P_1,
+            std::bind (&NetworkOPs::makeFetchPack, &getApp().getOPs (), P_1,
                 boost::weak_ptr<Peer> (shared_from_this ()), packet,
                     hash, UptimeTimer::getInstance ().getElapsedSeconds ()));
     }
@@ -2769,7 +2769,7 @@ private:
             {
                 pPeers->foreach (send_if_not (
                     boost::make_shared<Message> (*packet, protocol::mtVALIDATION),
-                    peer_in_set(peers))); 
+                    peer_in_set(peers)));
             }
         }
 

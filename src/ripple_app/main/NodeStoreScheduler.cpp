@@ -47,7 +47,7 @@ void NodeStoreScheduler::scheduleTask (NodeStore::Task& task)
     m_jobQueue->addJob (
         jtWRITE,
         "NodeObject::store",
-        BIND_TYPE (&NodeStoreScheduler::doTask,
+        std::bind (&NodeStoreScheduler::doTask,
             this, boost::ref(task), P_1));
 }
 
