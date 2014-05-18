@@ -1043,7 +1043,8 @@ public:
             }
 
             m_jobQueue->addJob(jtSWEEP, "sweep",
-                std::bind(&ApplicationImp::doSweep, this, P_1));
+                std::bind(&ApplicationImp::doSweep, this,
+                          std::placeholders::_1));
         }
     }
 

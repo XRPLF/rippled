@@ -181,7 +181,7 @@ bool ProofOfWork::calcResultInfo (PowResult powCode, std::string& strToken, std:
         {   powOK,                  "powOK",                    "Valid proof-of-work."                                  },
     };
 
-    int iIndex  = NUMBER (powResultInfoA);
+    int iIndex  = ARRAYSIZE (powResultInfoA);
 
     while (iIndex-- && powResultInfoA[iIndex].powCode != powCode)
         ;

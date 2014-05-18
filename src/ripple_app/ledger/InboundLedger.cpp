@@ -391,7 +391,8 @@ void InboundLedger::done ()
 
     // We hold the PeerSet lock, so must dispatch
     getApp().getJobQueue ().addJob (jtLEDGER_DATA, "triggers",
-        std::bind (LADispatch, P_1, shared_from_this (), triggers));
+        std::bind (LADispatch, std::placeholders::_1, shared_from_this (),
+                   triggers));
 }
 
 bool InboundLedger::addOnComplete (

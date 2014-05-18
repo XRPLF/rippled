@@ -3273,11 +3273,14 @@ void NetworkOPsImp::makeFetchPack (Job&, boost::weak_ptr<Peer> wPeer,
 
             wantLedger->peekAccountStateMap ()->getFetchPack
                 (haveLedger->peekAccountStateMap ().get (), true, 1024,
-                    std::bind (fpAppender, &reply, lSeq, P_1, P_2));
+                    std::bind (fpAppender, &reply, lSeq, std::placeholders::_1,
+                               std::placeholders::_2));
 
             if (wantLedger->getTransHash ().isNonZero ())
-                wantLedger->peekTransactionMap ()->getFetchPack (nullptr, true, 256,
-                        std::bind (fpAppender, &reply, lSeq, P_1, P_2));
+                wantLedger->peekTransactionMap ()->getFetchPack (
+                    nullptr, true, 256,
+                    std::bind (fpAppender, &reply, lSeq, std::placeholders::_1,
+                               std::placeholders::_2));
 
             if (reply.objects ().size () >= 256)
                 break;
@@ -3347,7 +3350,8 @@ void NetworkOPsImp::gotFetchPack (bool progress, std::uint32_t seq)
     // which is expensive. A flag should track whether we've already dispatched
 
     getApp().getJobQueue ().addJob (jtLEDGER_DATA, "gotFetchPack",
-                                   std::bind (&InboundLedgers::gotFetchPack, &getApp().getInboundLedgers (), P_1));
+                                   std::bind (&InboundLedgers::gotFetchPack,
+                                              &getApp().getInboundLedgers (), std::placeholders::_1));
 }
 
 void NetworkOPsImp::missingNodeInLedger (std::uint32_t seq)

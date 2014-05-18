@@ -628,7 +628,9 @@ static void addFPtoList (std::list<SHAMap::fetchPackEntry_t>& list, const uint25
 std::list<SHAMap::fetchPackEntry_t> SHAMap::getFetchPack (SHAMap* have, bool includeLeaves, int max)
 {
     std::list<fetchPackEntry_t> ret;
-    getFetchPack (have, includeLeaves, max, std::bind (addFPtoList, boost::ref (ret), P_1, P_2));
+    getFetchPack (have, includeLeaves, max,
+                  std::bind (addFPtoList, boost::ref (ret),
+                             std::placeholders::_1, std::placeholders::_2));
     return ret;
 }
 

@@ -25,11 +25,6 @@
 
 namespace ripple {
 
-#define P_1           std::placeholders::_1
-#define P_2           std::placeholders::_2
-#define P_3           std::placeholders::_3
-#define P_4           std::placeholders::_4
-
 template <typename X, typename Y>
 inline
 std::enable_if_t<
@@ -44,8 +39,7 @@ is_bit_set(X const x, Y const y)
 // VFALCO TODO Clean this stuff up. Remove as much as possible
 // DEPRECATED
 #define nothing()           do {} while (0)
-#define NUMBER(x)           (sizeof(x)/sizeof((x)[0]))
-#define is_bit_set(x,y)       (!!((x) & (y)))
+#define ARRAYSIZE(x) (sizeof(x) / sizeof((x)[0]))
 
 } // ripple
 

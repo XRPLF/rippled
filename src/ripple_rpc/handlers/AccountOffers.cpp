@@ -73,7 +73,9 @@ Json::Value RPCHandler::doAccountOffers (Json::Value params, Resource::Charge& l
         return rpcError (rpcACT_NOT_FOUND);
 
     Json::Value& jvsOffers = (jvResult[jss::offers] = Json::arrayValue);
-    lpLedger->visitAccountItems (raAccount.getAccountID (), std::bind (&offerAdder, boost::ref (jvsOffers), P_1));
+    lpLedger->visitAccountItems (raAccount.getAccountID (),
+                                 std::bind (&offerAdder, boost::ref (jvsOffers),
+                                            std::placeholders::_1));
 
     loadType = Resource::feeMediumBurdenRPC;
 

@@ -593,7 +593,8 @@ TER DirectOfferCreateTransactor::doApply ()
         // Add offer to owner's directory.
         terResult   = view.dirAdd (uOwnerNode,
             Ledger::getOwnerDirIndex (mTxnAccountID), uLedgerIndex,
-            std::bind (&Ledger::ownerDirDescriber, P_1, P_2, mTxnAccountID));
+            std::bind (&Ledger::ownerDirDescriber, std::placeholders::_1,
+                       std::placeholders::_2, mTxnAccountID));
 
         if (tesSUCCESS == terResult)
         {
@@ -618,9 +619,10 @@ TER DirectOfferCreateTransactor::doApply ()
 
             // Add offer to order book.
             terResult = view.dirAdd (uBookNode, uDirectory, uLedgerIndex,
-                std::bind (&Ledger::qualityDirDescriber, P_1, P_2,
-                    saTakerPays.getCurrency (), uPaysIssuerID,
-                    saTakerGets.getCurrency (), uGetsIssuerID, uRate));
+                std::bind (&Ledger::qualityDirDescriber, std::placeholders::_1,
+                           std::placeholders::_2, saTakerPays.getCurrency (),
+                           uPaysIssuerID, saTakerGets.getCurrency (),
+                           uGetsIssuerID, uRate));
         }
 
         if (tesSUCCESS == terResult)

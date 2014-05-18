@@ -496,7 +496,7 @@ public:
                     mCompleteLedgers.setRange (minHas, maxHas);
                 }
                 maxHas = minHas;
-                ledgerHashes = Ledger::getHashesByIndex ((seq < 500) 
+                ledgerHashes = Ledger::getHashesByIndex ((seq < 500)
                     ? 0
                     : (seq - 499), seq);
                 it = ledgerHashes.find (seq);
@@ -570,7 +570,7 @@ public:
                 }
                 catch (...)
                 {
-                    WriteLog (lsWARNING, LedgerMaster) << 
+                    WriteLog (lsWARNING, LedgerMaster) <<
                         "fixMismatch encounters partial ledger";
                     clearLedger(lSeq);
                     return;
@@ -945,7 +945,8 @@ public:
                                         ScopedLockType sl(m_mutex);
                                         mFillInProgress = ledger->getLedgerSeq();
                                         getApp().getJobQueue().addJob(jtADVANCE, "tryFill", std::bind (
-                                            &LedgerMasterImp::tryFill, this, P_1, ledger));
+                                            &LedgerMasterImp::tryFill, this,
+                                            std::placeholders::_1, ledger));
                                     }
                                     progress = true;
                                 }
@@ -1252,7 +1253,8 @@ public:
         {
             ++mPathFindThread;
             getApp().getJobQueue().addJob (jtUPDATE_PF, name,
-                std::bind (&LedgerMasterImp::updatePaths, this, P_1));
+                std::bind (&LedgerMasterImp::updatePaths, this,
+                           std::placeholders::_1));
         }
     }
 

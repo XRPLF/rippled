@@ -310,7 +310,8 @@ public:
 
         if (bRunQ)
             getApp().getJobQueue ().addJob (jtCLIENT, "WSClient::command",
-                      std::bind (&WSServerHandler<endpoint_type>::do_messages, this, P_1, cpClient));
+                      std::bind (&WSServerHandler<endpoint_type>::do_messages,
+                                 this, std::placeholders::_1, cpClient));
     }
 
     void do_messages (Job& job, connection_ptr cpClient)
@@ -345,8 +346,10 @@ public:
         }
 
         if (ptr->checkMessage ())
-            getApp().getJobQueue ().addJob (jtCLIENT, "WSClient::more",
-                                       std::bind (&WSServerHandler<endpoint_type>::do_messages, this, P_1, cpClient));
+            getApp().getJobQueue ().addJob (
+                jtCLIENT, "WSClient::more",
+                std::bind (&WSServerHandler<endpoint_type>::do_messages, this,
+                           std::placeholders::_1, cpClient));
     }
 
     bool do_message (Job& job, const connection_ptr& cpClient, const wsc_ptr& conn, const message_ptr& mpMessage)

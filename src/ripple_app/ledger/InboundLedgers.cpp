@@ -180,7 +180,8 @@ public:
         // Stash the data for later processing and see if we need to dispatch
         if (ledger->gotData(boost::weak_ptr<Peer>(peer), packet_ptr))
             getApp().getJobQueue().addJob (jtLEDGER_DATA, "processLedgerData",
-                std::bind (&InboundLedgers::doLedgerData, this, P_1, hash));
+                std::bind (&InboundLedgers::doLedgerData, this,
+                           std::placeholders::_1, hash));
 
         return true;
     }

@@ -1400,7 +1400,9 @@ TER LedgerEntrySet::trustCreate (
                           uLowNode,
                           Ledger::getOwnerDirIndex (uLowAccountID),
                           sleRippleState->getIndex (),
-                          std::bind (&Ledger::ownerDirDescriber, P_1, P_2, uLowAccountID));
+                          std::bind (&Ledger::ownerDirDescriber,
+                                     std::placeholders::_1, std::placeholders::_2,
+                                     uLowAccountID));
 
     if (tesSUCCESS == terResult)
     {
@@ -1408,7 +1410,9 @@ TER LedgerEntrySet::trustCreate (
                           uHighNode,
                           Ledger::getOwnerDirIndex (uHighAccountID),
                           sleRippleState->getIndex (),
-                          std::bind (&Ledger::ownerDirDescriber, P_1, P_2, uHighAccountID));
+                          std::bind (&Ledger::ownerDirDescriber,
+                                     std::placeholders::_1, std::placeholders::_2,
+                                     uHighAccountID));
     }
 
     if (tesSUCCESS == terResult)

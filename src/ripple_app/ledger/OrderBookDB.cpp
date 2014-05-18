@@ -108,7 +108,8 @@ void OrderBookDB::update (Ledger::pointer ledger)
 
     try
     {
-        ledger->visitStateItems(std::bind(&updateHelper, P_1, boost::ref(seen), boost::ref(destMap),
+        ledger->visitStateItems(std::bind(&updateHelper, std::placeholders::_1,
+                                          boost::ref(seen), boost::ref(destMap),
             boost::ref(sourceMap), boost::ref(XRPBooks), boost::ref(books)));
     }
     catch (const SHAMapMissingNode&)

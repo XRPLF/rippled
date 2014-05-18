@@ -151,7 +151,8 @@ public:
         request (
             bSSL,
             deqSites,
-            std::bind (&HTTPClientImp::makeGet, shared_from_this (), strPath, P_1, P_2),
+            std::bind (&HTTPClientImp::makeGet, shared_from_this (), strPath,
+                       std::placeholders::_1, std::placeholders::_2),
             timeout,
             complete);
     }
@@ -611,7 +612,9 @@ void HTTPClient::sendSMS (boost::asio::io_service& io_service, const std::string
             new HTTPClientImp (io_service, iPort, maxClientHeaderBytes));
 
         client->get (bSSL, deqSites, strURI, boost::posix_time::seconds (smsTimeoutSeconds),
-                            std::bind (&HTTPClientImp::onSMSResponse, P_1, P_2, P_3));
+                     std::bind (&HTTPClientImp::onSMSResponse,
+                                std::placeholders::_1, std::placeholders::_2,
+                                std::placeholders::_3));
     }
 }
 

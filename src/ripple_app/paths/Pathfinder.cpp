@@ -705,7 +705,9 @@ void Pathfinder::addLink(
                 if (!candidates.empty())
                 {
                     std::sort (candidates.begin(), candidates.end(),
-                        std::bind(candCmp, mLedger->getLedgerSeq(), P_1, P_2));
+                        std::bind(candCmp, mLedger->getLedgerSeq(),
+                                  std::placeholders::_1,
+                                  std::placeholders::_2));
 
                     int count = candidates.size();
                     if ((count > 10) && (uEndAccount != mSrcAccountID)) // allow more paths from source

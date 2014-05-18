@@ -181,7 +181,7 @@ Json::Value RPCHandler::doCommand (const Json::Value& params, int iRole, Resourc
         {   "unsubscribe",          &RPCHandler::doUnsubscribe,         false,  optNone     },
     };
 
-    int     i = NUMBER (commandsA);
+    int i = ARRAYSIZE (commandsA);
 
     while (i-- && strCommand != commandsA[i].pCommand)
         ;

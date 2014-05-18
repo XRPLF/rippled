@@ -48,7 +48,7 @@ void NodeStoreScheduler::scheduleTask (NodeStore::Task& task)
         jtWRITE,
         "NodeObject::store",
         std::bind (&NodeStoreScheduler::doTask,
-            this, boost::ref(task), P_1));
+            this, boost::ref(task), std::placeholders::_1));
 }
 
 void NodeStoreScheduler::doTask (NodeStore::Task& task, Job&)

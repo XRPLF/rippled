@@ -1536,7 +1536,8 @@ private:
                 getApp().getJobQueue ().addJob (jtTRANSACTION,
                     "recvTransaction->checkTransaction",
                     std::bind (
-                        &PeerImp::checkTransaction, P_1, flags, stx,
+                        &PeerImp::checkTransaction, std::placeholders::_1,
+                        flags, stx,
                         boost::weak_ptr<Peer> (shared_from_this ())));
 
     #ifndef TRUST_NETWORK
@@ -1589,8 +1590,8 @@ private:
                     isTrusted ? jtVALIDATION_t : jtVALIDATION_ut,
                     "recvValidation->checkValidation",
                     std::bind (
-                        &PeerImp::checkValidation, P_1, &m_overlay, val,
-                        isTrusted, m_clusterNode, packet,
+                        &PeerImp::checkValidation, std::placeholders::_1,
+                        &m_overlay, val, isTrusted, m_clusterNode, packet,
                         boost::weak_ptr<Peer> (shared_from_this ())));
             }
             else
@@ -1930,7 +1931,7 @@ private:
             // got data for a candidate transaction set
 
             getApp().getJobQueue().addJob (jtTXN_DATA, "recvPeerData",
-                std::bind (&PeerImp::peerTXData, P_1,
+                std::bind (&PeerImp::peerTXData, std::placeholders::_1,
                     boost::weak_ptr<Peer> (shared_from_this ()),
                         hash, packet_ptr, m_journal));
 
@@ -2079,8 +2080,9 @@ private:
 
         getApp().getJobQueue ().addJob (isTrusted ? jtPROPOSAL_t : jtPROPOSAL_ut,
             "recvPropose->checkPropose", std::bind (
-                &PeerImp::checkPropose, P_1, &m_overlay, packet, proposal, consensusLCL,
-                m_nodePublicKey, boost::weak_ptr<Peer> (shared_from_this ()), m_clusterNode));
+                &PeerImp::checkPropose, std::placeholders::_1, &m_overlay,
+                packet, proposal, consensusLCL, m_nodePublicKey,
+                boost::weak_ptr<Peer> (shared_from_this ()), m_clusterNode));
     }
 
     void recvHaveTxSet (protocol::TMHaveTransactionSet& packet)
@@ -2179,7 +2181,8 @@ private:
             getApp().getJobQueue ().addJob (
                 jtPROOFWORK,
                 "recvProof->doProof",
-                std::bind (&PeerImp::doProofOfWork, P_1, boost::weak_ptr <Peer> (shared_from_this ()), pow));
+                std::bind (&PeerImp::doProofOfWork, std::placeholders::_1,
+                           boost::weak_ptr <Peer> (shared_from_this ()), pow));
     #endif
 
             return;
@@ -2577,7 +2580,7 @@ private:
         memcpy (hash.begin (), packet->ledgerhash ().data (), 32);
 
         getApp().getJobQueue ().addJob (jtPACK, "MakeFetchPack",
-            std::bind (&NetworkOPs::makeFetchPack, &getApp().getOPs (), P_1,
+            std::bind (&NetworkOPs::makeFetchPack, &getApp().getOPs (), std::placeholders::_1,
                 boost::weak_ptr<Peer> (shared_from_this ()), packet,
                     hash, UptimeTimer::getInstance ().getElapsedSeconds ()));
     }

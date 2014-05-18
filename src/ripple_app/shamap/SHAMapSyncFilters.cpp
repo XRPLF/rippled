@@ -43,8 +43,11 @@ void ConsensusTransSetSF::gotNode (bool fromFilter, const SHAMapNode& id, uint25
             SerializerIterator sit (s);
             SerializedTransaction::pointer stx = boost::make_shared<SerializedTransaction> (boost::ref (sit));
             assert (stx->getTransactionID () == nodeHash);
-            getApp().getJobQueue ().addJob (jtTRANSACTION, "TXS->TXN",
-                                           std::bind (&NetworkOPs::submitTransaction, &getApp().getOPs (), P_1, stx, NetworkOPs::stCallback ()));
+            getApp().getJobQueue ().addJob (
+                jtTRANSACTION, "TXS->TXN",
+                std::bind (&NetworkOPs::submitTransaction, &getApp().getOPs (),
+                           std::placeholders::_1, stx,
+                           NetworkOPs::stCallback ()));
         }
         catch (...)
         {
