@@ -419,7 +419,8 @@ private:
 
         mWriting = true;
         getApp().getJobQueue ().addJob (jtWRITE, "Validations::doWrite",
-                                       BIND_TYPE (&ValidationsImp::doWrite, this, P_1));
+                                       std::bind (&ValidationsImp::doWrite,
+                                                  this, std::placeholders::_1));
     }
 
     void doWrite (Job&)

@@ -61,7 +61,7 @@ const char* TxnDBInit[] =
     "END TRANSACTION;"
 };
 
-int TxnDBCount = NUMBER (TxnDBInit);
+int TxnDBCount = ARRAYSIZE (TxnDBInit);
 
 // Ledger database holds ledgers and ledger confirmations
 const char* LedgerDBInit[] =
@@ -100,7 +100,7 @@ const char* LedgerDBInit[] =
     "END TRANSACTION;"
 };
 
-int LedgerDBCount = NUMBER (LedgerDBInit);
+int LedgerDBCount = ARRAYSIZE (LedgerDBInit);
 
 // RPC database holds persistent data for RPC clients.
 const char* RpcDBInit[] =
@@ -113,7 +113,7 @@ const char* RpcDBInit[] =
 	);",
 };
 
-int RpcDBCount = NUMBER (RpcDBInit);
+int RpcDBCount = ARRAYSIZE (RpcDBInit);
 
 // NodeIdentity database holds local accounts and trusted nodes
 // VFALCO NOTE but its a table not a database, so...?
@@ -273,13 +273,13 @@ const char* WalletDBInit[] =
     "END TRANSACTION;"
 };
 
-int WalletDBCount = NUMBER (WalletDBInit);
+int WalletDBCount = ARRAYSIZE (WalletDBInit);
 
 // Hash node database holds nodes indexed by hash
 // VFALCO TODO Remove this since it looks unused
 /*
 
-int HashNodeDBCount = NUMBER (HashNodeDBInit);
+int HashNodeDBCount = ARRAYSIZE (HashNodeDBInit);
 */
 
 // Net node database holds nodes seen on the network
@@ -295,7 +295,7 @@ const char* NetNodeDBInit[] =
 	);"
 };
 
-int NetNodeDBCount = NUMBER (NetNodeDBInit);
+int NetNodeDBCount = ARRAYSIZE (NetNodeDBInit);
 */
 
 // This appears to be unused
@@ -331,7 +331,7 @@ const char* PathFindDBInit[] =
     "CREATE INDEX ExTo ON Exchanges(To, Currency, Use);",
 };
 
-int PathFindDBCount = NUMBER (PathFindDBInit);
+int PathFindDBCount = ARRAYSIZE (PathFindDBInit);
 */
 
 } // ripple

@@ -624,7 +624,7 @@ bool Ledger::saveValidatedLedger (bool current)
         db->executeSQL (boost::str (deleteTrans1 % mLedgerSeq));
         db->executeSQL (boost::str (deleteTrans2 % mLedgerSeq));
 
-        BOOST_FOREACH (const AcceptedLedger::value_type & vt, aLedger->getMap ())
+        for (auto const& vt : aLedger->getMap ())
         {
             uint256 txID = vt.second->getTransactionID ();
             getApp().getMasterTransaction ().inLedger (txID, mLedgerSeq);
@@ -676,8 +676,8 @@ bool Ledger::saveValidatedLedger (bool current)
 
         getApp().getLedgerDB ()->getDB ()->executeSQL (boost::str (addLedger %
                 to_string (getHash ()) % mLedgerSeq % to_string (mParentHash) %
-                beast::lexicalCastThrow <std::string> (mTotCoins) % mCloseTime % 
-                mParentCloseTime % mCloseResolution % mCloseFlags % 
+                beast::lexicalCastThrow <std::string> (mTotCoins) % mCloseTime %
+                mParentCloseTime % mCloseResolution % mCloseFlags %
                 to_string (mAccountHash) % to_string (mTransHash)));
     }
 
@@ -1107,9 +1107,11 @@ Json::Value Ledger::getJson (int options)
     {
         Json::Value& state = (ledger[jss::accountState] = Json::arrayValue);
         if (bFull || is_bit_set (options, LEDGER_JSON_EXPAND))
-            visitStateItems(BIND_TYPE(stateItemFullAppender, std::ref(state), P_1));
+            visitStateItems(std::bind(stateItemFullAppender, std::ref(state),
+                                      std::placeholders::_1));
         else
-            mAccountStateMap->visitLeaves(BIND_TYPE(stateItemTagAppender, std::ref(state), P_1));
+            mAccountStateMap->visitLeaves(std::bind(stateItemTagAppender,
+                                                    std::ref(state), std::placeholders::_1));
     }
 
     return ledger;
@@ -1233,7 +1235,7 @@ void Ledger::visitAccountItems (const uint160& accountID, std::function<void (SL
         if (!ownerDir || (ownerDir->getType () != ltDIR_NODE))
             return;
 
-        BOOST_FOREACH (uint256 const & uNode, ownerDir->getFieldV256 (sfIndexes).peekValue ())
+        for (auto const& uNode : ownerDir->getFieldV256 (sfIndexes).peekValue ())
         {
             func (getSLEi (uNode));
         }
@@ -1243,7 +1245,7 @@ void Ledger::visitAccountItems (const uint160& accountID, std::function<void (SL
         if (!uNodeNext)
             return;
 
-        currentIndex    = Ledger::getDirNodeIndex (rootIndex, uNodeNext);
+        currentIndex = Ledger::getDirNodeIndex (rootIndex, uNodeNext);
     }
 
 }
@@ -1258,7 +1260,8 @@ void Ledger::visitStateItems (std::function<void (SLE::ref)> function)
     try
     {
         if (mAccountStateMap)
-            mAccountStateMap->visitLeaves(BIND_TYPE(&visitHelper, std::ref(function), P_1));
+            mAccountStateMap->visitLeaves(std::bind(&visitHelper,
+                                                    std::ref(function), std::placeholders::_1));
     }
     catch (SHAMapMissingNode&)
     {
@@ -1919,12 +1922,14 @@ bool Ledger::pendSaveValidated (bool isSynchronous, bool isCurrent)
     else if (isCurrent)
     {
         getApp().getJobQueue ().addJob (jtPUBLEDGER, "Ledger::pendSave",
-            BIND_TYPE (&Ledger::saveValidatedLedgerAsync, shared_from_this (), P_1, isCurrent));
+            std::bind (&Ledger::saveValidatedLedgerAsync, shared_from_this (),
+                       std::placeholders::_1, isCurrent));
     }
     else
     {
         getApp().getJobQueue ().addJob (jtPUBOLDLEDGER, "Ledger::pendOldSave",
-            BIND_TYPE (&Ledger::saveValidatedLedgerAsync, shared_from_this (), P_1, isCurrent));
+            std::bind (&Ledger::saveValidatedLedgerAsync, shared_from_this (),
+                       std::placeholders::_1, isCurrent));
     }
 
     return true;

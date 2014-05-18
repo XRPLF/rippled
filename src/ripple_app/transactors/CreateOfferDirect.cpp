@@ -193,7 +193,7 @@ std::pair<TER,bool> DirectOfferCreateTransactor::crossOffers (
 
     core::Book book (
         core::AssetRef (
-            saTakerPays.getCurrency(), saTakerPays.getIssuer()), 
+            saTakerPays.getCurrency(), saTakerPays.getIssuer()),
         core::AssetRef (
             saTakerGets.getCurrency(), saTakerGets.getIssuer()));
 
@@ -203,7 +203,7 @@ std::pair<TER,bool> DirectOfferCreateTransactor::crossOffers (
 
     auto const result (process_order (
         view, book, mTxnAccountID,
-        core::Amounts (saTakerPays, saTakerGets), cross_flow, 
+        core::Amounts (saTakerPays, saTakerGets), cross_flow,
         core::Taker::Options (mTxn.getFlags()),
         mEngine->getLedger ()->getParentCloseTimeNC (),
         m_journal));
@@ -211,14 +211,14 @@ std::pair<TER,bool> DirectOfferCreateTransactor::crossOffers (
     core::Amounts const funds (
         view.accountFunds (mTxnAccountID, saTakerPays),
         view.accountFunds (mTxnAccountID, saTakerGets));
-    
+
     if (m_journal.debug) m_journal.debug << " cross_flow: " <<
             cross_flow.in << ", " << cross_flow.out;
-    
+
     if (m_journal.debug) m_journal.debug << "   balances: " <<
         funds.in << ", " << funds.out;
 
-    saTakerPaid = cross_flow.in; 
+    saTakerPaid = cross_flow.in;
     saTakerGot = cross_flow.out;
 
     if (m_journal.debug) m_journal.debug <<
@@ -232,7 +232,7 @@ TER DirectOfferCreateTransactor::doApply ()
 {
     if (m_journal.debug) m_journal.debug <<
         "OfferCreate> " << mTxn.getJson (0);
-        
+
     std::uint32_t const uTxFlags = mTxn.getFlags ();
 
     bool const bPassive = is_bit_set (uTxFlags, tfPassive);
@@ -427,7 +427,7 @@ TER DirectOfferCreateTransactor::doApply ()
                 ? terNO_ACCOUNT
                 : tecNO_ISSUER;
         }
-        
+
         if (is_bit_set (sleTakerPays->getFieldU32 (sfFlags), lsfRequireAuth))
         {
             SLE::pointer sleRippleState (mEngine->entryCache (
@@ -593,7 +593,8 @@ TER DirectOfferCreateTransactor::doApply ()
         // Add offer to owner's directory.
         terResult   = view.dirAdd (uOwnerNode,
             Ledger::getOwnerDirIndex (mTxnAccountID), uLedgerIndex,
-            BIND_TYPE (&Ledger::ownerDirDescriber, P_1, P_2, mTxnAccountID));
+            std::bind (&Ledger::ownerDirDescriber, std::placeholders::_1,
+                       std::placeholders::_2, mTxnAccountID));
 
         if (tesSUCCESS == terResult)
         {
@@ -618,9 +619,10 @@ TER DirectOfferCreateTransactor::doApply ()
 
             // Add offer to order book.
             terResult = view.dirAdd (uBookNode, uDirectory, uLedgerIndex,
-                BIND_TYPE (&Ledger::qualityDirDescriber, P_1, P_2,
-                    saTakerPays.getCurrency (), uPaysIssuerID,
-                    saTakerGets.getCurrency (), uGetsIssuerID, uRate));
+                std::bind (&Ledger::qualityDirDescriber, std::placeholders::_1,
+                           std::placeholders::_2, saTakerPays.getCurrency (),
+                           uPaysIssuerID, saTakerGets.getCurrency (),
+                           uGetsIssuerID, uRate));
         }
 
         if (tesSUCCESS == terResult)
@@ -685,4 +687,3 @@ TER DirectOfferCreateTransactor::doApply ()
 }
 
 }
-

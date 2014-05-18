@@ -162,12 +162,12 @@ public:
         if (timer == m_scoreTimer)
         {
             getApp().getJobQueue ().addJob (jtUNL, "UNL.score",
-                BIND_TYPE (&UniqueNodeListImp::doScore, this));
+                std::bind (&UniqueNodeListImp::doScore, this));
         }
         else if (timer == m_fetchTimer)
         {
             getApp().getJobQueue ().addJob (jtUNL, "UNL.fetch",
-                BIND_TYPE (&UniqueNodeListImp::doFetch, this));
+                std::bind (&UniqueNodeListImp::doFetch, this));
         }
     }
 
@@ -572,7 +572,10 @@ public:
                 getConfig ().VALIDATORS_URI,
                 VALIDATORS_FILE_BYTES_MAX,
                 boost::posix_time::seconds (VALIDATORS_FETCH_SECONDS),
-                BIND_TYPE (&UniqueNodeListImp::validatorsResponse, this, P_1, P_2, P_3));
+                std::bind (&UniqueNodeListImp::validatorsResponse, this,
+                           std::placeholders::_1,
+                           std::placeholders::_2,
+                           std::placeholders::_3));
         }
     }
 
@@ -1412,7 +1415,9 @@ private:
             NODE_FILE_PATH,
             NODE_FILE_BYTES_MAX,
             boost::posix_time::seconds (NODE_FETCH_SECONDS),
-            BIND_TYPE (&UniqueNodeListImp::responseFetch, this, strDomain, P_1, P_2, P_3));
+            std::bind (&UniqueNodeListImp::responseFetch, this, strDomain,
+                       std::placeholders::_1, std::placeholders::_2,
+                       std::placeholders::_3));
     }
 
     //--------------------------------------------------------------------------
@@ -1451,7 +1456,10 @@ private:
                 strPath,
                 NODE_FILE_BYTES_MAX,
                 boost::posix_time::seconds (NODE_FETCH_SECONDS),
-                BIND_TYPE (&UniqueNodeListImp::responseValidators, this, strValidatorsUrl, naNodePublic, secSite, strDomain, P_1, P_2, P_3));
+                std::bind (&UniqueNodeListImp::responseValidators, this,
+                           strValidatorsUrl, naNodePublic, secSite, strDomain,
+                           std::placeholders::_1, std::placeholders::_2,
+                           std::placeholders::_3));
         }
         else
         {
@@ -1485,7 +1493,9 @@ private:
                 strPath,
                 NODE_FILE_BYTES_MAX,
                 boost::posix_time::seconds (NODE_FETCH_SECONDS),
-                BIND_TYPE (&UniqueNodeListImp::responseIps, this, strDomain, naNodePublic, P_1, P_2, P_3));
+                std::bind (&UniqueNodeListImp::responseIps, this, strDomain,
+                           naNodePublic, std::placeholders::_1,
+                           std::placeholders::_2, std::placeholders::_3));
         }
         else
         {

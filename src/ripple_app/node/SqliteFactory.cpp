@@ -41,7 +41,7 @@ static const char* s_nodeStoreDBInit [] =
     "END TRANSACTION;"
 };
 
-static int s_nodeStoreDBCount = NUMBER (s_nodeStoreDBInit);
+static int s_nodeStoreDBCount = ARRAYSIZE (s_nodeStoreDBInit);
 
 //------------------------------------------------------------------------------
 

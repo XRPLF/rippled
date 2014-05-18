@@ -533,12 +533,12 @@ void NetworkOPsImp::onDeadlineTimer (beast::DeadlineTimer& timer)
     if (timer == m_heartbeatTimer)
     {
         getApp().getJobQueue ().addJob (jtNETOP_TIMER, "NetOPs.heartbeat",
-            BIND_TYPE (&NetworkOPsImp::processHeartbeatTimer, this));
+            std::bind (&NetworkOPsImp::processHeartbeatTimer, this));
     }
     else if (timer == m_clusterTimer)
     {
         getApp().getJobQueue ().addJob (jtNETOP_CLUSTER, "NetOPs.cluster",
-            BIND_TYPE (&NetworkOPsImp::processClusterTimer, this));
+            std::bind (&NetworkOPsImp::processClusterTimer, this));
     }
 }
 
@@ -916,7 +916,7 @@ void NetworkOPsImp::runTransactionQueue ()
     }
 
     if (getApp().getTxQueue ().stopProcessing (txn))
-        getApp().getIOService ().post (BIND_TYPE (&NetworkOPsImp::runTransactionQueue, this));
+        getApp().getIOService ().post (std::bind (&NetworkOPsImp::runTransactionQueue, this));
 }
 
 Transaction::pointer NetworkOPsImp::processTransactionCb (
@@ -2436,7 +2436,7 @@ void NetworkOPsImp::reportFeeChange ()
             (getApp().getFeeTrack ().getLoadFactor () == mLastLoadFactor))
         return;
 
-    getApp().getJobQueue ().addJob (jtCLIENT, "reportFeeChange->pubServer", BIND_TYPE (&NetworkOPsImp::pubServer, this));
+    getApp().getJobQueue ().addJob (jtCLIENT, "reportFeeChange->pubServer", std::bind (&NetworkOPsImp::pubServer, this));
 }
 
 Json::Value NetworkOPsImp::transJson (const SerializedTransaction& stTxn, TER terResult, bool bValidated,
@@ -2864,15 +2864,15 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
     const uint256   uBookEnd    = Ledger::getQualityNext (uBookBase);
     uint256         uTipIndex   = uBookBase;
 
-    if (m_journal.trace) 
+    if (m_journal.trace)
     {
         m_journal.trace << "getBookPage:" <<
-            " uTakerPaysCurrencyID=" << 
+            " uTakerPaysCurrencyID=" <<
                 STAmount::createHumanCurrency (uTakerPaysCurrencyID) <<
             " uTakerPaysIssuerID=" <<
                 RippleAddress::createHumanAccountID (uTakerPaysIssuerID);
         m_journal.trace << "getBookPage:" <<
-            " uTakerGetsCurrencyID=" << 
+            " uTakerGetsCurrencyID=" <<
                 STAmount::createHumanCurrency (uTakerGetsCurrencyID) <<
             " uTakerGetsIssuerID=" <<
                 RippleAddress::createHumanAccountID (uTakerGetsIssuerID);
@@ -3016,7 +3016,7 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
                 STAmount saOwnerPays = (QUALITY_ONE == uOfferRate)
                     ? saTakerGetsFunded
                     : std::min (
-                        saOwnerFunds, 
+                        saOwnerFunds,
                         STAmount::multiply (
                             saTakerGetsFunded,
                             STAmount (CURRENCY_ONE, ACCOUNT_ONE, uOfferRate, -9)));
@@ -3273,11 +3273,14 @@ void NetworkOPsImp::makeFetchPack (Job&, boost::weak_ptr<Peer> wPeer,
 
             wantLedger->peekAccountStateMap ()->getFetchPack
                 (haveLedger->peekAccountStateMap ().get (), true, 1024,
-                    BIND_TYPE (fpAppender, &reply, lSeq, P_1, P_2));
+                    std::bind (fpAppender, &reply, lSeq, std::placeholders::_1,
+                               std::placeholders::_2));
 
             if (wantLedger->getTransHash ().isNonZero ())
-                wantLedger->peekTransactionMap ()->getFetchPack (nullptr, true, 256,
-                        BIND_TYPE (fpAppender, &reply, lSeq, P_1, P_2));
+                wantLedger->peekTransactionMap ()->getFetchPack (
+                    nullptr, true, 256,
+                    std::bind (fpAppender, &reply, lSeq, std::placeholders::_1,
+                               std::placeholders::_2));
 
             if (reply.objects ().size () >= 256)
                 break;
@@ -3347,7 +3350,8 @@ void NetworkOPsImp::gotFetchPack (bool progress, std::uint32_t seq)
     // which is expensive. A flag should track whether we've already dispatched
 
     getApp().getJobQueue ().addJob (jtLEDGER_DATA, "gotFetchPack",
-                                   BIND_TYPE (&InboundLedgers::gotFetchPack, &getApp().getInboundLedgers (), P_1));
+                                   std::bind (&InboundLedgers::gotFetchPack,
+                                              &getApp().getInboundLedgers (), std::placeholders::_1));
 }
 
 void NetworkOPsImp::missingNodeInLedger (std::uint32_t seq)

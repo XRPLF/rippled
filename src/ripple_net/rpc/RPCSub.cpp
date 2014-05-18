@@ -94,7 +94,7 @@ public:
             WriteLog (lsINFO, RPCSub) << "RPCCall::fromNetwork start";
 
             m_jobQueue.addJob (
-                jtCLIENT, "RPCSub::sendThread", BIND_TYPE (&RPCSubImp::sendThread, this));
+                jtCLIENT, "RPCSub::sendThread", std::bind (&RPCSubImp::sendThread, this));
         }
     }
 
