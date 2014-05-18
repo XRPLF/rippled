@@ -29,7 +29,9 @@ namespace ripple {
 std::pair<TER,bool>
 process_order_bridged (
     core::LedgerView& view,
-    core::BookRef const book,
+    core::BookRef const direct,
+    core::BookRef const leg1,
+    core::BookRef const leg2,
     core::Account const& account,
     core::Amounts const& amount,
     core::Amounts& cross_flow,
@@ -39,8 +41,11 @@ process_order_bridged (
 {
     TER result (tesSUCCESS);
     core::LedgerView view_cancel (view.duplicate());
-    core::OfferStream offers (view, view_cancel, book, when, journal);
-    core::Taker taker (offers.view(), account, amount, options);
+    core::OfferStream offers_direct (view, view_cancel, direct, when, journal);
+    core::OfferStream offers_leg1 (view, view_cancel, leg1, when, journal);
+    core::OfferStream offers_leg2 (view, view_cancel, leg2, when, journal);
+
+    core::Taker taker (offers_direct.view(), account, amount, options);
 
     if (journal.debug) journal.debug <<
         "process_order: " <<
@@ -181,18 +186,25 @@ std::pair<TER,bool> CreateOfferBridged::crossOffers (
 {
     if (m_journal.debug) m_journal.debug << "takeOffers: ";
 
-    core::Book book (
-        core::AssetRef (
-            saTakerPays.getCurrency(), saTakerPays.getIssuer()), 
-        core::AssetRef (
-            saTakerGets.getCurrency(), saTakerGets.getIssuer()));
+    // The three books we use for bridging:
+    core::Book book_direct (
+        core::AssetRef (saTakerPays.getCurrency(), saTakerPays.getIssuer()),
+        core::AssetRef (saTakerGets.getCurrency(), saTakerGets.getIssuer()));
+
+    core::Book book_leg1 (
+        core::AssetRef (saTakerPays.getCurrency(), saTakerPays.getIssuer()),
+        core::AssetRef (CURRENCY_XRP, ACCOUNT_XRP));
+
+    core::Book book_leg2 (
+        core::AssetRef (CURRENCY_XRP, ACCOUNT_XRP),
+        core::AssetRef (saTakerGets.getCurrency(), saTakerGets.getIssuer()));
 
     core::Amounts cross_flow (
         core::Amount (saTakerPays.getCurrency(), saTakerPays.getIssuer()),
         core::Amount (saTakerGets.getCurrency(), saTakerGets.getIssuer()));
 
     auto const result (process_order_bridged (
-        view, book, mTxnAccountID,
+        view, book_direct, book_leg1, book_leg2, mTxnAccountID,
         core::Amounts (saTakerPays, saTakerGets), cross_flow, 
         core::Taker::Options (mTxn.getFlags()),
         mEngine->getLedger ()->getParentCloseTimeNC (),
