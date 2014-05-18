@@ -244,8 +244,7 @@ public:
     */
     SHAMap::pointer getTransactionTree (uint256 const& hash, bool doAcquire)
     {
-        ripple::unordered_map<uint256, SHAMap::pointer>::iterator it
-            = mAcquired.find (hash);
+        auto it = mAcquired.find (hash);
 
         if (it != mAcquired.end ())
             return it->second;
@@ -307,8 +306,7 @@ public:
 
         assert (hash == map->getHash ());
 
-        ripple::unordered_map<uint256, SHAMap::pointer>::iterator it
-            = mAcquired.find (hash);
+        auto it = mAcquired.find (hash);
 
         if (mAcquired.find (hash) != mAcquired.end ())
         {
@@ -326,8 +324,7 @@ public:
             && (hash != mOurPosition->getCurrentHash ()))
         {
             // this could create disputed transactions
-            ripple::unordered_map<uint256, SHAMap::pointer>::iterator it2
-                = mAcquired.find (mOurPosition->getCurrentHash ());
+            auto it2 = mAcquired.find (mOurPosition->getCurrentHash ());
 
             if (it2 != mAcquired.end ())
             {
@@ -348,7 +345,7 @@ public:
 
         // Adjust tracking for each peer that takes this position
         std::vector<uint160> peers;
-        BOOST_FOREACH (u160_prop_pair & it, mPeerPositions)
+        for (auto& it : mPeerPositions)
         {
             if (it.second->getCurrentHash () == map->getHash ())
                 peers.push_back (it.second->getPeerID ());
@@ -378,7 +375,7 @@ public:
         if (mAcquired.find (hash) != mAcquired.end ())
             return false;
 
-        BOOST_FOREACH (u160_prop_pair & it, mPeerPositions)
+        for (auto const& it : mPeerPositions)
         {
             if (it.second->getCurrentHash () == hash)
                 return true;
@@ -403,10 +400,7 @@ public:
             getApp().getValidations ().getCurrentValidations
             (favoredLedger, priorLedger);
 
-        typedef std::map<uint256,
-            currentValidationCount>::value_type u256_cvc_pair;
-
-        BOOST_FOREACH (u256_cvc_pair & it, vals)
+        for (auto& it : vals)
         {
             if ((it.second.first > netLgrCount) ||
                 ((it.second.first == netLgrCount) && (it.first == mPrevLedgerHash)))
@@ -455,9 +449,9 @@ public:
 
             if (ShouldLog (lsDEBUG, LedgerConsensus))
             {
-                BOOST_FOREACH (u256_cvc_pair & it, vals)
-                WriteLog (lsDEBUG, LedgerConsensus)
-                    << "V: " << it.first << ", " << it.second.first;
+                for (auto& it : vals)
+                    WriteLog (lsDEBUG, LedgerConsensus)
+                        << "V: " << it.first << ", " << it.second.first;
             }
 
             if (mHaveCorrectLCL)
@@ -681,11 +675,8 @@ public:
                         uint256 hash = it.second->getCurrentHash();
                         WriteLog (lsDEBUG, LedgerConsensus)
                             << "We have not compared to " << hash;
-                        ripple::unordered_map<uint256, SHAMap::pointer>::iterator
-                            it1 = mAcquired.find (hash);
-                        ripple::unordered_map<uint256, SHAMap::pointer>::iterator
-                            it2 = mAcquired.find
-                            (mOurPosition->getCurrentHash ());
+                        auto it1 = mAcquired.find (hash);
+                        auto it2 = mAcquired.find(mOurPosition->getCurrentHash ());
                         if ((it1 != mAcquired.end()) && (it2 != mAcquired.end())
                             && (it1->second) && (it2->second))
                         {
@@ -788,14 +779,12 @@ public:
             return true;
 
         std::vector< boost::weak_ptr<Peer> >& set = mPeerData[hashSet];
-        BOOST_FOREACH (boost::weak_ptr<Peer>& iit, set)
+        for (boost::weak_ptr<Peer>& iit : set)
             if (iit.lock () == peer)
                 return false;
         set.push_back (peer);
 
-        ripple::unordered_map<uint256
-            , TransactionAcquire::pointer>::iterator acq
-            = mAcquiring.find (hashSet);
+        auto acq (mAcquiring.find (hashSet));
 
         if (acq != mAcquiring.end ())
             getApp().getJobQueue().addJob(jtTXN_DATA, "peerHasTxnData",
@@ -810,9 +799,7 @@ public:
         , uint256 const& setHash, const std::list<SHAMapNode>& nodeIDs
         , const std::list< Blob >& nodeData)
     {
-        ripple::unordered_map<uint256
-            , TransactionAcquire::pointer>::iterator acq
-            = mAcquiring.find (setHash);
+        auto acq (mAcquiring.find (setHash));
 
         if (acq == mAcquiring.end ())
         {
@@ -985,7 +972,7 @@ private:
 
             // Apply disputed transactions that didn't get in
             TransactionEngine engine (newOL);
-            BOOST_FOREACH (u256_lct_pair & it, mDisputes)
+            for (auto& it : mDisputes)
             {
                 if (!it.second->getOurVote ())
                 {
@@ -1039,7 +1026,7 @@ private:
                 std::uint64_t closeTotal = mCloseTime;
                 int closeCount = 1;
 
-                for (std::map<std::uint32_t, int>::iterator it = mCloseTimes.begin ()
+                for (auto it = mCloseTimes.begin ()
                     , end = mCloseTimes.end (); it != end; ++it)
                 {
                     // FIXME: Use median, not average
@@ -1068,9 +1055,7 @@ private:
     */
     void startAcquiring (TransactionAcquire::pointer acquire)
     {
-        ripple::unordered_map< uint256,
-            std::vector< boost::weak_ptr<Peer> > >::iterator it =
-            mPeerData.find (acquire->getHash ());
+        auto it = mPeerData.find (acquire->getHash ());
 
         if (it != mPeerData.end ())
         {
@@ -1134,9 +1119,7 @@ private:
         m1->compare (m2, differences, 16384);
 
         int dc = 0;
-        typedef std::map<uint256,
-            SHAMap::DeltaItem>::value_type u256_diff_pair;
-        BOOST_FOREACH (u256_diff_pair & pos, differences)
+        for (auto& pos : differences)
         {
             ++dc;
             // create disputed transactions (from the ledger that has them)
@@ -1175,8 +1158,7 @@ private:
 
         if (mOurPosition)
         {
-            ripple::unordered_map<uint256, SHAMap::pointer>::iterator mit
-                = mAcquired.find (mOurPosition->getCurrentHash ());
+            auto mit (mAcquired.find (mOurPosition->getCurrentHash ()));
 
             if (mit != mAcquired.end ())
                 ourVote = mit->second->hasItem (txID);
@@ -1188,10 +1170,9 @@ private:
             (txID, tx, ourVote);
         mDisputes[txID] = txn;
 
-        BOOST_FOREACH (u160_prop_pair & pit, mPeerPositions)
+        for (auto& pit : mPeerPositions)
         {
-            ripple::unordered_map<uint256, SHAMap::pointer>::const_iterator cit
-                = mAcquired.find (pit.second->getCurrentHash ());
+            auto cit (mAcquired.find (pit.second->getCurrentHash ()));
 
             if ((cit != mAcquired.end ()) && cit->second)
             {
@@ -1217,10 +1198,10 @@ private:
     */
     void adjustCount (SHAMap::ref map, const std::vector<uint160>& peers)
     {
-        BOOST_FOREACH (u256_lct_pair & it, mDisputes)
+        for (auto& it : mDisputes)
         {
             bool setHas = map->hasItem (it.second->getTransactionID ());
-            BOOST_FOREACH (const uint160 & pit, peers)
+            for (auto const& pit : peers)
                 it.second->setVote (pit, setHas);
         }
     }
@@ -1314,7 +1295,7 @@ private:
                 << (certainRetry ? " retriable" : " final");
             changes = 0;
 
-            CanonicalTXSet::iterator it = failedTransactions.begin ();
+            auto it = failedTransactions.begin ();
 
             while (it != failedTransactions.end ())
             {
@@ -1511,21 +1492,21 @@ private:
                 (initialLedger.getParentHash (), txSet, mCloseTime);
         }
 
-        BOOST_FOREACH (u256_lct_pair & it, mDisputes)
+        for (auto& it : mDisputes)
         {
             it.second->setOurVote (initialLedger.hasTransaction (it.first));
         }
 
         // if any peers have taken a contrary position, process disputes
         boost::unordered_set<uint256> found;
-        BOOST_FOREACH (u160_prop_pair & it, mPeerPositions)
+
+        for (auto& it : mPeerPositions)
         {
             uint256 set = it.second->getCurrentHash ();
 
             if (found.insert (set).second)
             {
-                ripple::unordered_map<uint256, SHAMap::pointer>::iterator iit
-                    = mAcquired.find (set);
+                auto iit (mAcquired.find (set));
 
                 if (iit != mAcquired.end ())
                 {
@@ -1553,19 +1534,18 @@ private:
 
         // Verify freshness of peer positions and compute close times
         std::map<std::uint32_t, int> closeTimes;
-        ripple::unordered_map<uint160, LedgerProposal::pointer>::iterator it
-            = mPeerPositions.begin ();
+        auto it = mPeerPositions.begin ();
 
         while (it != mPeerPositions.end ())
         {
             if (it->second->isStale (peerCutoff))
             {
                 // proposal is stale
-                uint160 peerID = it->second->getPeerID ();
+                auto const& peerID = it->second->getPeerID ();
                 WriteLog (lsWARNING, LedgerConsensus)
                     << "Removing stale proposal from " << peerID;
-                BOOST_FOREACH (u256_lct_pair & it, mDisputes)
-                it.second->unVote (peerID);
+                for (auto& dt : mDisputes)
+                    dt.second->unVote (peerID);
                 it = mPeerPositions.erase (it);
             }
             else
@@ -1576,7 +1556,7 @@ private:
             }
         }
 
-        BOOST_FOREACH (u256_lct_pair & it, mDisputes)
+        for (auto& it : mDisputes)
         {
             // Because the threshold for inclusion increases,
             //  time can change our position on a dispute
@@ -1654,7 +1634,7 @@ private:
                 << mPeerPositions.size () << " nw:" << neededWeight
                 << " thrV:" << threshVote << " thrC:" << threshConsensus;
 
-            for (std::map<std::uint32_t, int>::iterator it = closeTimes.begin ()
+            for (auto it = closeTimes.begin ()
                 , end = closeTimes.end (); it != end; ++it)
             {
                 WriteLog (lsDEBUG, LedgerConsensus) << "CCTime: seq"
@@ -1717,13 +1697,11 @@ private:
               std::list<LedgerProposal::pointer> > & storedProposals
               = getApp().getOPs ().peekStoredProposals ();
 
-        for (ripple::unordered_map< uint160
-            , std::list<LedgerProposal::pointer> >::iterator it
-            = storedProposals.begin ()
+        for (auto it = storedProposals.begin ()
             , end = storedProposals.end (); it != end; ++it)
         {
             bool relay = false;
-            BOOST_FOREACH (LedgerProposal::ref proposal, it->second)
+            for (auto proposal : it->second)
             {
                 if (proposal->hasSignature ())
                 {

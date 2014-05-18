@@ -432,7 +432,7 @@ public:
                 ++minVal;
 
             // Best effort for remaining exclusions
-            BOOST_FOREACH(std::uint32_t v, sPendingSaves)
+            for(auto v : sPendingSaves)
             {
                 if ((v >= minVal) && (v <= maxVal))
                 {
@@ -484,7 +484,7 @@ public:
                     break;
             }
 
-            std::map< std::uint32_t, std::pair<uint256, uint256> >::iterator it = ledgerHashes.find (seq);
+            auto it (ledgerHashes.find (seq));
 
             if (it == ledgerHashes.end ())
             {
@@ -496,7 +496,9 @@ public:
                     mCompleteLedgers.setRange (minHas, maxHas);
                 }
                 maxHas = minHas;
-                ledgerHashes = Ledger::getHashesByIndex ((seq < 500) ? 0 : (seq - 499), seq);
+                ledgerHashes = Ledger::getHashesByIndex ((seq < 500) 
+                    ? 0
+                    : (seq - 499), seq);
                 it = ledgerHashes.find (seq);
 
                 if (it == ledgerHashes.end ())
@@ -528,7 +530,7 @@ public:
         int count = 0;
 
         Overlay::PeerSequence peerList = getApp().overlay ().getActivePeers ();
-        BOOST_FOREACH (const Peer::ptr & peer, peerList)
+        for (auto const& peer : peerList)
         {
             if (peer->hasRange (nextLedger->getLedgerSeq() - 1, nextLedger->getLedgerSeq()))
             {
@@ -565,13 +567,14 @@ public:
                 try
                 {
                     hash = ledger->getLedgerHash (lSeq);
-	        }
-	        catch (...)
-	        {
-	            WriteLog (lsWARNING, LedgerMaster) << "fixMismatch encounters partial ledger";
-	            clearLedger(lSeq);
-	            return;
-	        }
+                }
+                catch (...)
+                {
+                    WriteLog (lsWARNING, LedgerMaster) << 
+                        "fixMismatch encounters partial ledger";
+                    clearLedger(lSeq);
+                    return;
+                }
 
                 if (hash.isNonZero ())
                 {
@@ -581,8 +584,9 @@ public:
                     if (otherLedger && (otherLedger->getHash () == hash))
                     {
                         // we closed the seam
-                        CondLog (invalidate != 0, lsWARNING, LedgerMaster) << "Match at " << lSeq << ", " <<
-                                invalidate << " prior ledgers invalidated";
+                        CondLog (invalidate != 0, lsWARNING, LedgerMaster) <<
+                            "Match at " << lSeq << ", " << invalidate <<
+                            " prior ledgers invalidated";
                         return;
                     }
                 }
@@ -592,7 +596,8 @@ public:
             }
 
         // all prior ledgers invalidated
-        CondLog (invalidate != 0, lsWARNING, LedgerMaster) << "All " << invalidate << " prior ledgers invalidated";
+        CondLog (invalidate != 0, lsWARNING, LedgerMaster) << "All " <<
+            invalidate << " prior ledgers invalidated";
     }
 
     void setFullLedger (Ledger::pointer ledger, bool isSynchronous, bool isCurrent)
@@ -664,9 +669,9 @@ public:
                 return;
 
             // Ledger could match the ledger we're already building
-	    if (seq == mBuildingLedgerSeq)
-	        return;
-	}
+            if (seq == mBuildingLedgerSeq)
+                return;
+        }
 
         Ledger::pointer ledger = mLedgerHistory.getLedgerByHash (hash);
 
@@ -984,12 +989,15 @@ public:
             }
             else
             {
-                WriteLog (lsTRACE, LedgerMaster) << "tryAdvance found " << pubLedgers.size() << " ledgers to publish";
-                BOOST_FOREACH(Ledger::ref ledger, pubLedgers)
+                WriteLog (lsTRACE, LedgerMaster) <<
+                    "tryAdvance found " << pubLedgers.size() <<
+                    " ledgers to publish";
+                for(auto ledger : pubLedgers)
                 {
                     {
                         ScopedUnlockType sul (m_mutex);
-                        WriteLog(lsDEBUG, LedgerMaster) << "tryAdvance publishing seq " << ledger->getLedgerSeq();
+                        WriteLog(lsDEBUG, LedgerMaster) <<
+                            "tryAdvance publishing seq " << ledger->getLedgerSeq();
 
                         setFullLedger(ledger, true, true);
                         getApp().getOPs().pubLedger(ledger);

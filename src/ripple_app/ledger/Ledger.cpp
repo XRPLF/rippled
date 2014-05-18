@@ -624,7 +624,7 @@ bool Ledger::saveValidatedLedger (bool current)
         db->executeSQL (boost::str (deleteTrans1 % mLedgerSeq));
         db->executeSQL (boost::str (deleteTrans2 % mLedgerSeq));
 
-        BOOST_FOREACH (const AcceptedLedger::value_type & vt, aLedger->getMap ())
+        for (auto const& vt : aLedger->getMap ())
         {
             uint256 txID = vt.second->getTransactionID ();
             getApp().getMasterTransaction ().inLedger (txID, mLedgerSeq);
@@ -1233,7 +1233,7 @@ void Ledger::visitAccountItems (const uint160& accountID, std::function<void (SL
         if (!ownerDir || (ownerDir->getType () != ltDIR_NODE))
             return;
 
-        BOOST_FOREACH (uint256 const & uNode, ownerDir->getFieldV256 (sfIndexes).peekValue ())
+        for (auto const& uNode : ownerDir->getFieldV256 (sfIndexes).peekValue ())
         {
             func (getSLEi (uNode));
         }
@@ -1243,7 +1243,7 @@ void Ledger::visitAccountItems (const uint160& accountID, std::function<void (SL
         if (!uNodeNext)
             return;
 
-        currentIndex    = Ledger::getDirNodeIndex (rootIndex, uNodeNext);
+        currentIndex = Ledger::getDirNodeIndex (rootIndex, uNodeNext);
     }
 
 }

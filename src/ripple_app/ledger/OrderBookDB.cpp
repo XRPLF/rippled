@@ -138,7 +138,7 @@ void OrderBookDB::addOrderBook(const uint160& ci, const uint160& co,
 
     if (toXRP)
     { // We don't want to search through all the to-XRP or from-XRP order books!
-        BOOST_FOREACH(OrderBook::ref ob, mSourceMap[RippleAssetRef(ci, ii)])
+        for (auto ob : mSourceMap[RippleAssetRef(ci, ii)])
         {
             if (ob->getCurrencyOut().isZero ()) // also to XRP
                 return;
@@ -146,7 +146,7 @@ void OrderBookDB::addOrderBook(const uint160& ci, const uint160& co,
     }
     else
     {
-        BOOST_FOREACH(OrderBook::ref ob, mDestMap[RippleAssetRef(co, io)])
+        for (auto ob : mDestMap[RippleAssetRef(co, io)])
         {
             if ((ob->getCurrencyIn() == ci) && (ob->getIssuerIn() == ii))
                 return;
@@ -168,8 +168,7 @@ void OrderBookDB::getBooksByTakerPays (RippleIssuer const& issuerID, RippleCurre
                                        std::vector<OrderBook::pointer>& bookRet)
 {
     ScopedLockType sl (mLock);
-    ripple::unordered_map< RippleAsset, std::vector<OrderBook::pointer> >::const_iterator
-    it = mSourceMap.find (RippleAssetRef (currencyID, issuerID));
+    auto it = mSourceMap.find (RippleAssetRef (currencyID, issuerID));
 
     if (it != mSourceMap.end ())
         bookRet = it->second;
@@ -189,8 +188,7 @@ void OrderBookDB::getBooksByTakerGets (RippleIssuer const& issuerID, RippleCurre
                                        std::vector<OrderBook::pointer>& bookRet)
 {
     ScopedLockType sl (mLock);
-    ripple::unordered_map< RippleAsset, std::vector<OrderBook::pointer> >::const_iterator
-    it = mDestMap.find (RippleAssetRef (currencyID, issuerID));
+    auto it = mDestMap.find (RippleAssetRef (currencyID, issuerID));
 
     if (it != mDestMap.end ())
         bookRet = it->second;
@@ -243,7 +241,7 @@ void OrderBookDB::processTxn (Ledger::ref ledger, const AcceptedLedgerTx& alTx, 
     {
         // check if this is an offer or an offer cancel or a payment that consumes an offer
         //check to see what the meta looks like
-        BOOST_FOREACH (STObject & node, alTx.getMeta ()->getNodes ())
+        for (auto& node : alTx.getMeta ()->getNodes ())
         {
             try
             {

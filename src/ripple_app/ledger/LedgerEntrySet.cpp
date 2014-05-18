@@ -71,7 +71,7 @@ void LedgerEntrySet::swapWith (LedgerEntrySet& e)
 // This is basically: copy-on-read.
 SLE::pointer LedgerEntrySet::getEntry (uint256 const& index, LedgerEntryAction& action)
 {
-    std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find (index);
+    auto it = mEntries.find (index);
 
     if (it == mEntries.end ())
     {
@@ -137,7 +137,7 @@ void LedgerEntrySet::entryCache (SLE::ref sle)
 {
     assert (mLedger);
     assert (sle->isMutable () || mImmutable); // Don't put an immutable SLE in a mutable LES
-    std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find (sle->getIndex ());
+    auto it = mEntries.find (sle->getIndex ());
 
     if (it == mEntries.end ())
     {
@@ -162,7 +162,7 @@ void LedgerEntrySet::entryCreate (SLE::ref sle)
 {
     assert (mLedger && !mImmutable);
     assert (sle->isMutable ());
-    std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find (sle->getIndex ());
+    auto it = mEntries.find (sle->getIndex ());
 
     if (it == mEntries.end ())
     {
@@ -200,7 +200,7 @@ void LedgerEntrySet::entryModify (SLE::ref sle)
 {
     assert (sle->isMutable () && !mImmutable);
     assert (mLedger);
-    std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find (sle->getIndex ());
+    auto it = mEntries.find (sle->getIndex ());
 
     if (it == mEntries.end ())
     {
@@ -236,7 +236,7 @@ void LedgerEntrySet::entryDelete (SLE::ref sle)
 {
     assert (sle->isMutable () && !mImmutable);
     assert (mLedger);
-    std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find (sle->getIndex ());
+    auto it = mEntries.find (sle->getIndex ());
 
     if (it == mEntries.end ())
     {
@@ -271,11 +271,9 @@ void LedgerEntrySet::entryDelete (SLE::ref sle)
 
 bool LedgerEntrySet::hasChanges ()
 {
-    typedef std::map<uint256, LedgerEntrySetEntry>::value_type u256_LES_pair;
-    BOOST_FOREACH (u256_LES_pair & it, mEntries)
-
-    if (it.second.mAction != taaCACHED)
-        return true;
+    for (auto const& it : mEntries)
+        if (it.second.mAction != taaCACHED)
+            return true;
 
     return false;
 }
@@ -360,7 +358,7 @@ Json::Value LedgerEntrySet::getJson (int) const
 SLE::pointer LedgerEntrySet::getForMod (uint256 const& node, Ledger::ref ledger,
                                         ripple::unordered_map<uint256, SLE::pointer>& newMods)
 {
-    std::map<uint256, LedgerEntrySetEntry>::iterator it = mEntries.find (node);
+    auto it = mEntries.find (node);
 
     if (it != mEntries.end ())
     {
@@ -382,7 +380,7 @@ SLE::pointer LedgerEntrySet::getForMod (uint256 const& node, Ledger::ref ledger,
         return it->second.mEntry;
     }
 
-    ripple::unordered_map<uint256, SLE::pointer>::iterator me = newMods.find (node);
+    auto me (newMods.find (node));
 
     if (me != newMods.end ())
     {
@@ -467,8 +465,7 @@ void LedgerEntrySet::calcRawMeta (Serializer& s, TER result, std::uint32_t index
     // Entries modified only as a result of building the transaction metadata
     ripple::unordered_map<uint256, SLE::pointer> newMod;
 
-    typedef std::map<uint256, LedgerEntrySetEntry>::value_type u256_LES_pair;
-    BOOST_FOREACH (u256_LES_pair & it, mEntries)
+    for (auto& it : mEntries)
     {
         SField::ptr type = &sfGeneric;
 
@@ -508,8 +505,9 @@ void LedgerEntrySet::calcRawMeta (Serializer& s, TER result, std::uint32_t index
         if ((type == &sfModifiedNode) && (*curNode == *origNode))
             continue;
 
-        std::uint16_t nodeType = curNode ? curNode->getFieldU16 (sfLedgerEntryType)
-                                         : origNode->getFieldU16 (sfLedgerEntryType);
+        std::uint16_t nodeType = curNode
+            ? curNode->getFieldU16 (sfLedgerEntryType)
+            : origNode->getFieldU16 (sfLedgerEntryType);
 
         mSet.setAffectedNode (it.first, *type, nodeType);
 
@@ -519,7 +517,7 @@ void LedgerEntrySet::calcRawMeta (Serializer& s, TER result, std::uint32_t index
             threadOwners (origNode, mLedger, newMod); // thread transaction to owners
 
             STObject prevs (sfPreviousFields);
-            BOOST_FOREACH (const SerializedType & obj, *origNode)
+            for (auto const& obj : *origNode)
             {
                 // go through the original node for modified fields saved on modification
                 if (obj.getFName ().shouldMeta (SField::sMD_ChangeOrig) && !curNode->hasMatchingEntry (obj))
@@ -530,7 +528,7 @@ void LedgerEntrySet::calcRawMeta (Serializer& s, TER result, std::uint32_t index
                 mSet.getAffectedNode (it.first).addObject (prevs);
 
             STObject finals (sfFinalFields);
-            BOOST_FOREACH (const SerializedType & obj, *curNode)
+            for (auto const& obj : *curNode)
             {
                 // go through the final node for final fields
                 if (obj.getFName ().shouldMeta (SField::sMD_Always | SField::sMD_DeleteFinal))
@@ -548,7 +546,7 @@ void LedgerEntrySet::calcRawMeta (Serializer& s, TER result, std::uint32_t index
                 threadTx (curNode, mLedger, newMod);
 
             STObject prevs (sfPreviousFields);
-            BOOST_FOREACH (const SerializedType & obj, *origNode)
+            for (auto const& obj : *origNode)
             {
                 // search the original node for values saved on modify
                 if (obj.getFName ().shouldMeta (SField::sMD_ChangeOrig) && !curNode->hasMatchingEntry (obj))
@@ -559,7 +557,7 @@ void LedgerEntrySet::calcRawMeta (Serializer& s, TER result, std::uint32_t index
                 mSet.getAffectedNode (it.first).addObject (prevs);
 
             STObject finals (sfFinalFields);
-            BOOST_FOREACH (const SerializedType & obj, *curNode)
+            for (auto const& obj : *curNode)
             {
                 // search the final node for values saved always
                 if (obj.getFName ().shouldMeta (SField::sMD_Always | SField::sMD_ChangeNew))
@@ -578,7 +576,7 @@ void LedgerEntrySet::calcRawMeta (Serializer& s, TER result, std::uint32_t index
                 threadTx (curNode, mLedger, newMod);
 
             STObject news (sfNewFields);
-            BOOST_FOREACH (const SerializedType & obj, *curNode)
+            for (auto const& obj : *curNode)
             {
                 // save non-default values
                 if (!obj.isDefault () && obj.getFName ().shouldMeta (SField::sMD_Create | SField::sMD_Always))
@@ -592,8 +590,7 @@ void LedgerEntrySet::calcRawMeta (Serializer& s, TER result, std::uint32_t index
     }
 
     // add any new modified nodes to the modification set
-    typedef std::map<uint256, SLE::pointer>::value_type u256_sle_pair;
-    BOOST_FOREACH (u256_sle_pair & it, newMod)
+    for (auto& it : newMod)
         entryModify (it.second);
 
     mSet.addRaw (s, result, index);
@@ -777,11 +774,10 @@ TER LedgerEntrySet::dirDelete (
         }
     }
 
-    STVector256                     svIndexes   = sleNode->getFieldV256 (sfIndexes);
-    std::vector<uint256>&           vuiIndexes  = svIndexes.peekValue ();
-    std::vector<uint256>::iterator  it;
+    STVector256 svIndexes   = sleNode->getFieldV256 (sfIndexes);
+    std::vector<uint256>& vuiIndexes  = svIndexes.peekValue ();
 
-    it = std::find (vuiIndexes.begin (), vuiIndexes.end (), uLedgerIndex);
+    auto it = std::find (vuiIndexes.begin (), vuiIndexes.end (), uLedgerIndex);
 
     if (vuiIndexes.end () == it)
     {
@@ -797,7 +793,8 @@ TER LedgerEntrySet::dirDelete (
         {
             // Go the extra mile. Even if entry not in node, try the next node.
 
-            return dirDelete (bKeepRoot, uNodeDir + 1, uRootIndex, uLedgerIndex, bStable, true);
+            return dirDelete (bKeepRoot, uNodeDir + 1, uRootIndex, uLedgerIndex,
+                bStable, true);
         }
         else
         {
