@@ -51,33 +51,33 @@ public:
         , mCurrentMSeconds (0)
         , mClosePercent (0)
         , mHaveCloseTimeConsensus (false)
-        , mConsensusStartTime 
+        , mConsensusStartTime
             (boost::posix_time::microsec_clock::universal_time ())
     {
         WriteLog (lsDEBUG, LedgerConsensus) << "Creating consensus object";
-        WriteLog (lsTRACE, LedgerConsensus) 
+        WriteLog (lsTRACE, LedgerConsensus)
             << "LCL:" << previousLedger->getHash () << ", ct=" << closeTime;
         mPreviousProposers = getApp().getOPs ().getPreviousProposers ();
         mPreviousMSeconds = getApp().getOPs ().getPreviousConvergeTime ();
         assert (mPreviousMSeconds);
 
         mCloseResolution = ContinuousLedgerTiming::getNextLedgerTimeResolution (
-            mPreviousLedger->getCloseResolution (), 
-            mPreviousLedger->getCloseAgree (), 
+            mPreviousLedger->getCloseResolution (),
+            mPreviousLedger->getCloseAgree (),
             previousLedger->getLedgerSeq () + 1);
 
-        if (mValPublic.isSet () && mValPrivate.isSet () 
+        if (mValPublic.isSet () && mValPrivate.isSet ()
             && !getApp().getOPs ().isNeedNetworkLedger ())
         {
-            WriteLog (lsINFO, LedgerConsensus) 
+            WriteLog (lsINFO, LedgerConsensus)
                 << "Entering consensus process, validating";
             mValidating = true;
-            mProposing = 
+            mProposing =
                 getApp().getOPs ().getOperatingMode () == NetworkOPs::omFULL;
         }
         else
         {
-            WriteLog (lsINFO, LedgerConsensus) 
+            WriteLog (lsINFO, LedgerConsensus)
                 << "Entering consensus process, watching";
             mProposing = mValidating = false;
         }
@@ -92,10 +92,10 @@ public:
             if (!mHaveCorrectLCL)
             {
                 //          mProposing = mValidating = false;
-                WriteLog (lsINFO, LedgerConsensus) 
-                    << "Entering consensus with: " 
+                WriteLog (lsINFO, LedgerConsensus)
+                    << "Entering consensus with: "
                     << previousLedger->getHash ();
-                WriteLog (lsINFO, LedgerConsensus) 
+                WriteLog (lsINFO, LedgerConsensus)
                     << "Correct LCL is: " << prevLCLHash;
             }
         }
@@ -239,26 +239,25 @@ public:
         return mPrevLedgerHash;
     }
 
-    /** Get a transaction tree, 
+    /** Get a transaction tree,
         fetching it from the network is required and requested
     */
     SHAMap::pointer getTransactionTree (uint256 const& hash, bool doAcquire)
     {
-        ripple::unordered_map<uint256, SHAMap::pointer>::iterator it 
-            = mAcquired.find (hash);
+        auto it = mAcquired.find (hash);
 
         if (it != mAcquired.end ())
             return it->second;
 
         if (mState == lcsPRE_CLOSE)
         {
-            SHAMap::pointer currentMap 
+            SHAMap::pointer currentMap
                 = getApp().getLedgerMaster ().getCurrentLedger ()
                     ->peekTransactionMap ();
 
             if (currentMap->getHash () == hash)
             {
-                WriteLog (lsDEBUG, LedgerConsensus) 
+                WriteLog (lsDEBUG, LedgerConsensus)
                     << "Map " << hash << " is our current";
                 currentMap = currentMap->snapShot (false);
                 mapComplete (hash, currentMap, false);
@@ -292,7 +291,7 @@ public:
     */
     void mapComplete (uint256 const& hash, SHAMap::ref map, bool acquired)
     {
-        CondLog (acquired, lsINFO, LedgerConsensus) 
+        CondLog (acquired, lsINFO, LedgerConsensus)
             << "We have acquired TXS " << hash;
 
         if (!map)
@@ -300,15 +299,14 @@ public:
             // this is an invalid/corrupt map
             mAcquired[hash] = map;
             mAcquiring.erase (hash);
-            WriteLog (lsWARNING, LedgerConsensus) 
+            WriteLog (lsWARNING, LedgerConsensus)
                 << "A trusted node directed us to acquire an invalid TXN map";
             return;
         }
 
         assert (hash == map->getHash ());
 
-        ripple::unordered_map<uint256, SHAMap::pointer>::iterator it 
-            = mAcquired.find (hash);
+        auto it = mAcquired.find (hash);
 
         if (mAcquired.find (hash) != mAcquired.end ())
         {
@@ -322,16 +320,15 @@ public:
             mAcquired.erase (hash);
         }
 
-        if (mOurPosition && (!mOurPosition->isBowOut ()) 
+        if (mOurPosition && (!mOurPosition->isBowOut ())
             && (hash != mOurPosition->getCurrentHash ()))
         {
             // this could create disputed transactions
-            ripple::unordered_map<uint256, SHAMap::pointer>::iterator it2 
-                = mAcquired.find (mOurPosition->getCurrentHash ());
+            auto it2 = mAcquired.find (mOurPosition->getCurrentHash ());
 
             if (it2 != mAcquired.end ())
             {
-                assert ((it2->first == mOurPosition->getCurrentHash ()) 
+                assert ((it2->first == mOurPosition->getCurrentHash ())
                     && it2->second);
                 mCompares.insert(hash);
                 createDisputes (it2->second, map);
@@ -340,7 +337,7 @@ public:
                 assert (false); // We don't have our own position?!
         }
         else
-            WriteLog (lsDEBUG, LedgerConsensus) 
+            WriteLog (lsDEBUG, LedgerConsensus)
                 << "Not ready to create disputes";
 
         mAcquired[hash] = map;
@@ -348,7 +345,7 @@ public:
 
         // Adjust tracking for each peer that takes this position
         std::vector<uint160> peers;
-        BOOST_FOREACH (u160_prop_pair & it, mPeerPositions)
+        for (auto& it : mPeerPositions)
         {
             if (it.second->getCurrentHash () == map->getHash ())
                 peers.push_back (it.second->getPeerID ());
@@ -360,8 +357,8 @@ public:
         }
         else
         {
-            CondLog (acquired, lsWARNING, LedgerConsensus) 
-                << "By the time we got the map " 
+            CondLog (acquired, lsWARNING, LedgerConsensus)
+                << "By the time we got the map "
                 << hash << " no peers were proposing it";
         }
 
@@ -378,7 +375,7 @@ public:
         if (mAcquired.find (hash) != mAcquired.end ())
             return false;
 
-        BOOST_FOREACH (u160_prop_pair & it, mPeerPositions)
+        for (auto const& it : mPeerPositions)
         {
             if (it.second->getCurrentHash () == hash)
                 return true;
@@ -400,13 +397,10 @@ public:
             priorLedger = mPreviousLedger->getParentHash (); // don't jump back
 
         ripple::unordered_map<uint256, currentValidationCount> vals =
-            getApp().getValidations ().getCurrentValidations 
+            getApp().getValidations ().getCurrentValidations
             (favoredLedger, priorLedger);
 
-        typedef std::map<uint256, 
-            currentValidationCount>::value_type u256_cvc_pair;
-
-        BOOST_FOREACH (u256_cvc_pair & it, vals)
+        for (auto& it : vals)
         {
             if ((it.second.first > netLgrCount) ||
                 ((it.second.first == netLgrCount) && (it.first == mPrevLedgerHash)))
@@ -443,21 +437,23 @@ public:
                 status = "unknown";
             }
 
-            WriteLog (lsWARNING, LedgerConsensus) 
-                << "View of consensus changed during " << status 
+            WriteLog (lsWARNING, LedgerConsensus)
+                << "View of consensus changed during " << status
                 << " (" << netLgrCount << ") status="
-                << status << ", " 
+                << status << ", "
                 << (mHaveCorrectLCL ? "CorrectLCL" : "IncorrectLCL");
-            WriteLog (lsWARNING, LedgerConsensus) << mPrevLedgerHash 
+            WriteLog (lsWARNING, LedgerConsensus) << mPrevLedgerHash
                 << " to " << netLgr;
-            WriteLog (lsWARNING, LedgerConsensus) 
+            WriteLog (lsWARNING, LedgerConsensus)
                 << mPreviousLedger->getJson (0);
 
             if (ShouldLog (lsDEBUG, LedgerConsensus))
             {
-                BOOST_FOREACH (u256_cvc_pair & it, vals)
-                WriteLog (lsDEBUG, LedgerConsensus) 
-                    << "V: " << it.first << ", " << it.second.first;
+                for (auto& it : vals)
+                {
+                    WriteLog (lsDEBUG, LedgerConsensus)
+                        << "V: " << it.first << ", " << it.second.first;
+                }
             }
 
             if (mHaveCorrectLCL)
@@ -541,7 +537,7 @@ public:
             checkLCL ();
 
         mCurrentMSeconds =
-            (boost::posix_time::microsec_clock::universal_time () 
+            (boost::posix_time::microsec_clock::universal_time ()
             - mConsensusStartTime).total_milliseconds ();
         mClosePercent = mCurrentMSeconds * 100 / mPreviousMSeconds;
 
@@ -577,11 +573,11 @@ public:
     void statePreClose ()
     {
         // it is shortly before ledger close time
-        bool anyTransactions 
+        bool anyTransactions
             = getApp().getLedgerMaster ().getCurrentLedger ()
             ->peekTransactionMap ()->getHash ().isNonZero ();
         int proposersClosed = mPeerPositions.size ();
-        int proposersValidated 
+        int proposersValidated
             = getApp().getValidations ().getTrustedValidationCount
             (mPrevLedgerHash);
 
@@ -592,7 +588,7 @@ public:
         if (mHaveCorrectLCL && mPreviousLedger->getCloseAgree ())
         {
             // we can use consensus timing
-            sinceClose = 1000 * (getApp().getOPs ().getCloseTimeNC () 
+            sinceClose = 1000 * (getApp().getOPs ().getCloseTimeNC ()
                 - mPreviousLedger->getCloseTimeNC ());
             idleInterval = 2 * mPreviousLedger->getCloseResolution ();
 
@@ -601,7 +597,7 @@ public:
         }
         else
         {
-            sinceClose = 1000 * (getApp().getOPs ().getCloseTimeNC () 
+            sinceClose = 1000 * (getApp().getOPs ().getCloseTimeNC ()
                 - getApp().getOPs ().getLastCloseTime ());
             idleInterval = LEDGER_IDLE_INTERVAL;
         }
@@ -630,13 +626,13 @@ public:
 
         if (!mHaveCloseTimeConsensus)
         {
-            CondLog (haveConsensus (false), lsINFO, LedgerConsensus) 
+            CondLog (haveConsensus (false), lsINFO, LedgerConsensus)
                 << "We have TX consensus but not CT consensus";
         }
         else if (haveConsensus (true))
         {
-            WriteLog (lsINFO, LedgerConsensus) 
-                << "Converge cutoff (" << mPeerPositions.size () 
+            WriteLog (lsINFO, LedgerConsensus)
+                << "Converge cutoff (" << mPeerPositions.size ()
                 << " participants)";
             mState = lcsFINISHED;
             beginAccept (false);
@@ -679,13 +675,10 @@ public:
                     if (mCompares.count(it.second->getCurrentHash()) == 0)
                     { // Make sure we have generated disputes
                         uint256 hash = it.second->getCurrentHash();
-                        WriteLog (lsDEBUG, LedgerConsensus) 
+                        WriteLog (lsDEBUG, LedgerConsensus)
                             << "We have not compared to " << hash;
-                        ripple::unordered_map<uint256, SHAMap::pointer>::iterator
-                            it1 = mAcquired.find (hash);
-                        ripple::unordered_map<uint256, SHAMap::pointer>::iterator
-                            it2 = mAcquired.find 
-                            (mOurPosition->getCurrentHash ());
+                        auto it1 = mAcquired.find (hash);
+                        auto it2 = mAcquired.find(mOurPosition->getCurrentHash ());
                         if ((it1 != mAcquired.end()) && (it2 != mAcquired.end())
                             && (it1->second) && (it2->second))
                         {
@@ -699,11 +692,11 @@ public:
         int currentValidations = getApp().getValidations ()
             .getNodesAfter (mPrevLedgerHash);
 
-        WriteLog (lsDEBUG, LedgerConsensus) 
-            << "Checking for TX consensus: agree=" << agree 
+        WriteLog (lsDEBUG, LedgerConsensus)
+            << "Checking for TX consensus: agree=" << agree
             << ", disagree=" << disagree;
 
-        return ContinuousLedgerTiming::haveConsensus (mPreviousProposers, 
+        return ContinuousLedgerTiming::haveConsensus (mPreviousProposers,
             agree + disagree, agree, currentValidations
             , mPreviousMSeconds, mCurrentMSeconds, forReal, mConsensusFail);
     }
@@ -716,7 +709,7 @@ public:
 
         if (mDeadNodes.find (peerID) != mDeadNodes.end ())
         {
-            WriteLog (lsINFO, LedgerConsensus) 
+            WriteLog (lsINFO, LedgerConsensus)
                 << "Position from dead node: " << to_string (peerID);
             return false;
         }
@@ -727,7 +720,7 @@ public:
         {
             assert (peerID == currentPosition->getPeerID ());
 
-            if (newPosition->getProposeSeq () 
+            if (newPosition->getProposeSeq ()
                 <= currentPosition->getProposeSeq ())
             {
                 return false;
@@ -737,15 +730,15 @@ public:
         if (newPosition->getProposeSeq () == 0)
         {
             // new initial close time estimate
-            WriteLog (lsTRACE, LedgerConsensus) 
-                << "Peer reports close time as " 
+            WriteLog (lsTRACE, LedgerConsensus)
+                << "Peer reports close time as "
                 << newPosition->getCloseTime ();
             ++mCloseTimes[newPosition->getCloseTime ()];
         }
         else if (newPosition->getProposeSeq () == LedgerProposal::seqLeave)
         {
             // peer bows out
-            WriteLog (lsINFO, LedgerConsensus) 
+            WriteLog (lsINFO, LedgerConsensus)
                 << "Peer bows out: " << to_string (peerID);
             for (auto& it : mDisputes)
                 it.second->unVote (peerID);
@@ -756,11 +749,11 @@ public:
 
 
         WriteLog (lsTRACE, LedgerConsensus) << "Processing peer proposal "
-            << newPosition->getProposeSeq () << "/" 
+            << newPosition->getProposeSeq () << "/"
             << newPosition->getCurrentHash ();
         currentPosition = newPosition;
 
-        SHAMap::pointer set 
+        SHAMap::pointer set
             = getTransactionTree (newPosition->getCurrentHash (), true);
 
         if (set)
@@ -770,7 +763,7 @@ public:
         }
         else
         {
-            WriteLog (lsDEBUG, LedgerConsensus) 
+            WriteLog (lsDEBUG, LedgerConsensus)
                 << "Don't have tx set for peer";
             //      BOOST_FOREACH(u256_lct_pair& it, mDisputes)
             //          it.second->unVote(peerID);
@@ -788,14 +781,12 @@ public:
             return true;
 
         std::vector< boost::weak_ptr<Peer> >& set = mPeerData[hashSet];
-        BOOST_FOREACH (boost::weak_ptr<Peer>& iit, set)
+        for (boost::weak_ptr<Peer>& iit : set)
             if (iit.lock () == peer)
                 return false;
         set.push_back (peer);
 
-        ripple::unordered_map<uint256
-            , TransactionAcquire::pointer>::iterator acq 
-            = mAcquiring.find (hashSet);
+        auto acq (mAcquiring.find (hashSet));
 
         if (acq != mAcquiring.end ())
             getApp().getJobQueue().addJob(jtTXN_DATA, "peerHasTxnData",
@@ -810,18 +801,16 @@ public:
         , uint256 const& setHash, const std::list<SHAMapNode>& nodeIDs
         , const std::list< Blob >& nodeData)
     {
-        ripple::unordered_map<uint256
-            , TransactionAcquire::pointer>::iterator acq 
-            = mAcquiring.find (setHash);
+        auto acq (mAcquiring.find (setHash));
 
         if (acq == mAcquiring.end ())
         {
-            WriteLog (lsDEBUG, LedgerConsensus) 
+            WriteLog (lsDEBUG, LedgerConsensus)
                 << "Got TX data for set no longer acquiring: " << setHash;
             return SHAMapAddNode ();
         }
         // We must keep the set around during the function
-        TransactionAcquire::pointer set = acq->second; 
+        TransactionAcquire::pointer set = acq->second;
         return set->takeNodes (nodeIDs, nodeData, peer);
     }
 
@@ -848,7 +837,7 @@ private:
     {
 
         {
-            Application::ScopedLockType lock 
+            Application::ScopedLockType lock
                 (getApp ().getMasterLock ());
 
             // put our set where others can get it later
@@ -858,7 +847,7 @@ private:
 
             assert (set->getHash () == mOurPosition->getCurrentHash ());
             // these are now obsolete
-            getApp().getOPs ().peekStoredProposals ().clear (); 
+            getApp().getOPs ().peekStoredProposals ().clear ();
 
             std::uint32_t closeTime = roundCloseTime (mOurPosition->getCloseTime ());
             bool closeTimeCorrect = true;
@@ -870,29 +859,29 @@ private:
                 closeTime = mPreviousLedger->getCloseTimeNC () + 1;
             }
 
-            WriteLog (lsDEBUG, LedgerConsensus) 
-                << "Report: Prop=" << (mProposing ? "yes" : "no") 
-                << " val=" << (mValidating ? "yes" : "no") 
-                << " corLCL=" << (mHaveCorrectLCL ? "yes" : "no") 
+            WriteLog (lsDEBUG, LedgerConsensus)
+                << "Report: Prop=" << (mProposing ? "yes" : "no")
+                << " val=" << (mValidating ? "yes" : "no")
+                << " corLCL=" << (mHaveCorrectLCL ? "yes" : "no")
                 << " fail=" << (mConsensusFail ? "yes" : "no");
-            WriteLog (lsDEBUG, LedgerConsensus) 
-                << "Report: Prev = " << mPrevLedgerHash 
+            WriteLog (lsDEBUG, LedgerConsensus)
+                << "Report: Prev = " << mPrevLedgerHash
                 << ":" << mPreviousLedger->getLedgerSeq ();
-            WriteLog (lsDEBUG, LedgerConsensus) 
-                << "Report: TxSt = " << set->getHash () 
+            WriteLog (lsDEBUG, LedgerConsensus)
+                << "Report: TxSt = " << set->getHash ()
                 << ", close " << closeTime << (closeTimeCorrect ? "" : "X");
 
             CanonicalTXSet failedTransactions (set->getHash ());
 
-            Ledger::pointer newLCL 
+            Ledger::pointer newLCL
                 = boost::make_shared<Ledger> (false
                 , boost::ref (*mPreviousLedger));
 
-            // Set up to write SHAMap changes to our database, 
+            // Set up to write SHAMap changes to our database,
             //   perform updates, extract changes
             newLCL->peekTransactionMap ()->armDirty ();
             newLCL->peekAccountStateMap ()->armDirty ();
-            WriteLog (lsDEBUG, LedgerConsensus) 
+            WriteLog (lsDEBUG, LedgerConsensus)
                 << "Applying consensus set transactions to the"
                 << " last closed ledger";
             applyTransactions (set, newLCL, newLCL, failedTransactions, false);
@@ -909,14 +898,14 @@ private:
             while ((fc = newLCL->peekAccountStateMap()->flushDirty (
                 *acctNodes, 256, hotACCOUNT_NODE, newLCL->getLedgerSeq ())) > 0)
             {
-                WriteLog (lsTRACE, LedgerConsensus) 
+                WriteLog (lsTRACE, LedgerConsensus)
                     << "Flushed " << fc << " dirty state nodes";
             }
 
             while ((fc = newLCL->peekTransactionMap()->flushDirty (
                 *txnNodes, 256, hotTRANSACTION_NODE, newLCL->getLedgerSeq ())) > 0)
             {
-                WriteLog (lsTRACE, LedgerConsensus) 
+                WriteLog (lsTRACE, LedgerConsensus)
                     << "Flushed " << fc << " dirty transaction nodes";
             }
 
@@ -932,8 +921,8 @@ private:
                 WriteLog (lsDEBUG, LedgerConsensus)
                     << "Consensus built new ledger";
 
-            WriteLog (lsDEBUG, LedgerConsensus) 
-                << "Report: NewL  = " << newLCL->getHash () 
+            WriteLog (lsDEBUG, LedgerConsensus)
+                << "Report: NewL  = " << newLCL->getHash ()
                 << ":" << newLCL->getLedgerSeq ();
             uint256 newLCLHash = newLCL->getHash ();
 
@@ -942,7 +931,7 @@ private:
             if (mValidating && !mConsensusFail)
             {
                 uint256 signingHash;
-                SerializedValidation::pointer v = 
+                SerializedValidation::pointer v =
                     boost::make_shared<SerializedValidation>
                     (newLCLHash, getApp().getOPs ().getValidationTimeNC ()
                     , mValPublic, mProposing);
@@ -950,7 +939,7 @@ private:
                 addLoad(v);
 
                 if (((newLCL->getLedgerSeq () + 1) % 256) == 0)
-                // next ledger is flag ledger   
+                // next ledger is flag ledger
                 {
                     m_feeVote.doValidation (newLCL, *v);
                     getApp().getAmendmentTable ().doValidation (newLCL, *v);
@@ -968,36 +957,36 @@ private:
                 getApp ().overlay ().foreach (send_always (
                     boost::make_shared <Message> (
                         val, protocol::mtVALIDATION)));
-                WriteLog (lsINFO, LedgerConsensus) 
+                WriteLog (lsINFO, LedgerConsensus)
                     << "CNF Val " << newLCLHash;
             }
             else
-                WriteLog (lsINFO, LedgerConsensus) 
+                WriteLog (lsINFO, LedgerConsensus)
                     << "CNF newLCL " << newLCLHash;
 
             // See if we can accept a ledger as fully-validated
             getApp().getLedgerMaster().consensusBuilt (newLCL);
 
-            Ledger::pointer newOL = boost::make_shared<Ledger> 
+            Ledger::pointer newOL = boost::make_shared<Ledger>
                 (true, boost::ref (*newLCL));
-            LedgerMaster::ScopedLockType sl 
+            LedgerMaster::ScopedLockType sl
                 (getApp().getLedgerMaster ().peekMutex ());
 
             // Apply disputed transactions that didn't get in
             TransactionEngine engine (newOL);
-            BOOST_FOREACH (u256_lct_pair & it, mDisputes)
+            for (auto& it : mDisputes)
             {
                 if (!it.second->getOurVote ())
                 {
                     // we voted NO
                     try
                     {
-                        WriteLog (lsDEBUG, LedgerConsensus) 
+                        WriteLog (lsDEBUG, LedgerConsensus)
                             << "Test applying disputed transaction that did"
                             << " not get in";
                         SerializerIterator sit (it.second->peekTransaction ());
-                        SerializedTransaction::pointer txn 
-                            = boost::make_shared<SerializedTransaction> 
+                        SerializedTransaction::pointer txn
+                            = boost::make_shared<SerializedTransaction>
                             (boost::ref (sit));
 
                         if (applyTransaction (engine, txn, newOL, true, false))
@@ -1007,13 +996,13 @@ private:
                     }
                     catch (...)
                     {
-                        WriteLog (lsDEBUG, LedgerConsensus) 
+                        WriteLog (lsDEBUG, LedgerConsensus)
                             << "Failed to apply transaction we voted NO on";
                     }
                 }
             }
 
-            WriteLog (lsDEBUG, LedgerConsensus) 
+            WriteLog (lsDEBUG, LedgerConsensus)
                 << "Applying transactions from current open ledger";
             applyTransactions (getApp().getLedgerMaster ().getCurrentLedger
                 ()->peekTransactionMap (), newOL, newLCL,
@@ -1033,31 +1022,31 @@ private:
             {
                 // see how close our close time is to other node's
                 //  close time reports
-                WriteLog (lsINFO, LedgerConsensus) 
-                    << "We closed at " 
+                WriteLog (lsINFO, LedgerConsensus)
+                    << "We closed at "
                     << beast::lexicalCastThrow <std::string> (mCloseTime);
                 std::uint64_t closeTotal = mCloseTime;
                 int closeCount = 1;
 
-                for (std::map<std::uint32_t, int>::iterator it = mCloseTimes.begin ()
+                for (auto it = mCloseTimes.begin ()
                     , end = mCloseTimes.end (); it != end; ++it)
                 {
                     // FIXME: Use median, not average
-                    WriteLog (lsINFO, LedgerConsensus) 
-                        << beast::lexicalCastThrow <std::string> (it->second) 
-                        << " time votes for " 
+                    WriteLog (lsINFO, LedgerConsensus)
+                        << beast::lexicalCastThrow <std::string> (it->second)
+                        << " time votes for "
                         << beast::lexicalCastThrow <std::string> (it->first);
                     closeCount += it->second;
-                    closeTotal += static_cast<std::uint64_t> 
+                    closeTotal += static_cast<std::uint64_t>
                         (it->first) * static_cast<std::uint64_t> (it->second);
                 }
 
                 closeTotal += (closeCount / 2);
                 closeTotal /= closeCount;
-                int offset = static_cast<int> (closeTotal) 
+                int offset = static_cast<int> (closeTotal)
                     - static_cast<int> (mCloseTime);
-                WriteLog (lsINFO, LedgerConsensus) 
-                    << "Our close offset is estimated at " 
+                WriteLog (lsINFO, LedgerConsensus)
+                    << "Our close offset is estimated at "
                     << offset << " (" << closeCount << ")";
                 getApp().getOPs ().closeTimeOffset (offset);
             }
@@ -1068,15 +1057,13 @@ private:
     */
     void startAcquiring (TransactionAcquire::pointer acquire)
     {
-        ripple::unordered_map< uint256, 
-            std::vector< boost::weak_ptr<Peer> > >::iterator it =
-            mPeerData.find (acquire->getHash ());
+        auto it = mPeerData.find (acquire->getHash ());
 
         if (it != mPeerData.end ())
         {
             // Add any peers we already know have his transaction set
             std::vector< boost::weak_ptr<Peer> >& peerList = it->second;
-            std::vector< boost::weak_ptr<Peer> >::iterator pit 
+            std::vector< boost::weak_ptr<Peer> >::iterator pit
                 = peerList.begin ();
 
             while (pit != peerList.end ())
@@ -1128,15 +1115,13 @@ private:
         if (m1->getHash() == m2->getHash())
             return;
 
-        WriteLog (lsDEBUG, LedgerConsensus) << "createDisputes " 
+        WriteLog (lsDEBUG, LedgerConsensus) << "createDisputes "
             << m1->getHash() << " to " << m2->getHash();
         SHAMap::Delta differences;
         m1->compare (m2, differences, 16384);
 
         int dc = 0;
-        typedef std::map<uint256, 
-            SHAMap::DeltaItem>::value_type u256_diff_pair;
-        BOOST_FOREACH (u256_diff_pair & pos, differences)
+        for (auto& pos : differences)
         {
             ++dc;
             // create disputed transactions (from the ledger that has them)
@@ -1160,7 +1145,7 @@ private:
         WriteLog (lsDEBUG, LedgerConsensus) << dc << " differences found";
     }
 
-    /** Add a disputed transaction (one that at least one node wants 
+    /** Add a disputed transaction (one that at least one node wants
     in the consensus set and at least one node does not) to our tracking
     */
     void addDisputedTransaction (uint256 const& txID, Blob const& tx)
@@ -1168,15 +1153,14 @@ private:
         if (mDisputes.find (txID) != mDisputes.end ())
             return;
 
-        WriteLog (lsDEBUG, LedgerConsensus) << "Transaction " 
+        WriteLog (lsDEBUG, LedgerConsensus) << "Transaction "
             << txID << " is disputed";
 
         bool ourVote = false;
 
         if (mOurPosition)
         {
-            ripple::unordered_map<uint256, SHAMap::pointer>::iterator mit 
-                = mAcquired.find (mOurPosition->getCurrentHash ());
+            auto mit (mAcquired.find (mOurPosition->getCurrentHash ()));
 
             if (mit != mAcquired.end ())
                 ourVote = mit->second->hasItem (txID);
@@ -1184,14 +1168,13 @@ private:
                 assert (false); // We don't have our own position?
         }
 
-        DisputedTx::pointer txn = boost::make_shared<DisputedTx> 
+        DisputedTx::pointer txn = boost::make_shared<DisputedTx>
             (txID, tx, ourVote);
         mDisputes[txID] = txn;
 
-        BOOST_FOREACH (u160_prop_pair & pit, mPeerPositions)
+        for (auto& pit : mPeerPositions)
         {
-            ripple::unordered_map<uint256, SHAMap::pointer>::const_iterator cit
-                = mAcquired.find (pit.second->getCurrentHash ());
+            auto cit (mAcquired.find (pit.second->getCurrentHash ()));
 
             if ((cit != mAcquired.end ()) && cit->second)
             {
@@ -1212,26 +1195,26 @@ private:
         }
     }
 
-    /** Adjust the counts on all disputed transactions based 
+    /** Adjust the counts on all disputed transactions based
         on the set of peers taking this position
     */
     void adjustCount (SHAMap::ref map, const std::vector<uint160>& peers)
     {
-        BOOST_FOREACH (u256_lct_pair & it, mDisputes)
+        for (auto& it : mDisputes)
         {
             bool setHas = map->hasItem (it.second->getTransactionID ());
-            BOOST_FOREACH (const uint160 & pit, peers)
+            for (auto const& pit : peers)
                 it.second->setVote (pit, setHas);
         }
     }
-    
+
     /** Make and send a proposal
     */
     void propose ()
     {
         WriteLog (lsTRACE, LedgerConsensus) << "We propose: " <<
-            (mOurPosition->isBowOut () 
-                ? std::string ("bowOut") 
+            (mOurPosition->isBowOut ()
+                ? std::string ("bowOut")
                 : to_string (mOurPosition->getCurrentHash ()));
         protocol::TMProposeSet prop;
 
@@ -1261,22 +1244,22 @@ private:
         msg.set_status (direct ? protocol::tsHAVE : protocol::tsCAN_GET);
         getApp ().overlay ().foreach (send_always (
             boost::make_shared <Message> (
-                msg, protocol::mtHAVE_SET)));        
+                msg, protocol::mtHAVE_SET)));
     }
 
     /** Apply a set of transactions to a ledger
     */
     void applyTransactions (SHAMap::ref set, Ledger::ref applyLedger,
-        Ledger::ref checkLedger, CanonicalTXSet& failedTransactions, 
+        Ledger::ref checkLedger, CanonicalTXSet& failedTransactions,
         bool openLgr)
     {
         TransactionEngine engine (applyLedger);
 
-        for (SHAMapItem::pointer item = set->peekFirstItem (); !!item; 
+        for (SHAMapItem::pointer item = set->peekFirstItem (); !!item;
             item = set->peekNextItem (item->getTag ()))
             if (!checkLedger->hasTransaction (item->getTag ()))
             {
-                WriteLog (lsINFO, LedgerConsensus) 
+                WriteLog (lsINFO, LedgerConsensus)
                 << "Processing candidate transaction: " << item->getTag ();
 #ifndef TRUST_NETWORK
 
@@ -1284,11 +1267,11 @@ private:
                 {
 #endif
                     SerializerIterator sit (item->peekSerializer ());
-                    SerializedTransaction::pointer txn 
-                        = boost::make_shared<SerializedTransaction> 
+                    SerializedTransaction::pointer txn
+                        = boost::make_shared<SerializedTransaction>
                         (boost::ref (sit));
 
-                    if (applyTransaction (engine, txn, 
+                    if (applyTransaction (engine, txn,
                         applyLedger, openLgr, true) == resultRetry)
                     {
                         failedTransactions.push_back (txn);
@@ -1309,18 +1292,18 @@ private:
 
         for (int pass = 0; pass < LEDGER_TOTAL_PASSES; ++pass)
         {
-            WriteLog (lsDEBUG, LedgerConsensus) << "Pass: " << pass << " Txns: " 
-                << failedTransactions.size () 
+            WriteLog (lsDEBUG, LedgerConsensus) << "Pass: " << pass << " Txns: "
+                << failedTransactions.size ()
                 << (certainRetry ? " retriable" : " final");
             changes = 0;
 
-            CanonicalTXSet::iterator it = failedTransactions.begin ();
+            auto it = failedTransactions.begin ();
 
             while (it != failedTransactions.end ())
             {
                 try
                 {
-                    switch (applyTransaction (engine, it->second, 
+                    switch (applyTransaction (engine, it->second,
                         applyLedger, openLgr, certainRetry))
                     {
                     case resultSuccess:
@@ -1338,13 +1321,13 @@ private:
                 }
                 catch (...)
                 {
-                    WriteLog (lsWARNING, LedgerConsensus) 
+                    WriteLog (lsWARNING, LedgerConsensus)
                         << "Transaction throws";
                     it = failedTransactions.erase (it);
                 }
             }
 
-            WriteLog (lsDEBUG, LedgerConsensus) << "Pass: " 
+            WriteLog (lsDEBUG, LedgerConsensus) << "Pass: "
                 << pass << " finished " << changes << " changes";
 
             // A non-retry pass made no changes
@@ -1374,10 +1357,10 @@ private:
         if (getApp().getHashRouter ().setFlag (txn->getTransactionID ()
             , SF_SIGGOOD))
         {
-            parms = static_cast<TransactionEngineParams> 
+            parms = static_cast<TransactionEngineParams>
                 (parms | tapNO_CHECK_SIGN);
         }
-        WriteLog (lsDEBUG, LedgerConsensus) << "TXN " 
+        WriteLog (lsDEBUG, LedgerConsensus) << "TXN "
             << txn->getTransactionID ()
             << (openLedger ? " open" : " closed")
             << (retryAssured ? "/retry" : "/final");
@@ -1396,21 +1379,21 @@ private:
 
             if (didApply)
             {
-                WriteLog (lsDEBUG, LedgerConsensus) 
+                WriteLog (lsDEBUG, LedgerConsensus)
                 << "Transaction success: " << transHuman (result);
                 return resultSuccess;
             }
 
-            if (isTefFailure (result) || isTemMalformed 
+            if (isTefFailure (result) || isTemMalformed
                 (result) || isTelLocal (result))
             {
                 // failure
-                WriteLog (lsDEBUG, LedgerConsensus) 
+                WriteLog (lsDEBUG, LedgerConsensus)
                     << "Transaction failure: " << transHuman (result);
                 return resultFail;
             }
 
-            WriteLog (lsDEBUG, LedgerConsensus) 
+            WriteLog (lsDEBUG, LedgerConsensus)
                 << "Transaction retry: " << transHuman (result);
             assert (!ledger->hasTransaction (txn->getTransactionID ()));
             return resultRetry;
@@ -1430,7 +1413,7 @@ private:
     {
         return Ledger::roundCloseTime (closeTime, mCloseResolution);
     }
-    
+
     /** Send a node status change message to our peers
     */
     void statusChange (protocol::NodeEvent event, Ledger& ledger)
@@ -1481,7 +1464,7 @@ private:
                 && ((mPreviousLedger->getLedgerSeq () % 256) == 0))
         {
             // previous ledger was flag ledger
-            SHAMap::pointer preSet 
+            SHAMap::pointer preSet
                 = initialLedger.peekTransactionMap ()->snapShot (true);
             m_feeVote.doVoting (mPreviousLedger, preSet);
             getApp().getAmendmentTable ().doVoting (mPreviousLedger, preSet);
@@ -1506,26 +1489,26 @@ private:
         }
         else
         {
-            mOurPosition 
-                = boost::make_shared<LedgerProposal> 
+            mOurPosition
+                = boost::make_shared<LedgerProposal>
                 (initialLedger.getParentHash (), txSet, mCloseTime);
         }
 
-        BOOST_FOREACH (u256_lct_pair & it, mDisputes)
+        for (auto& it : mDisputes)
         {
             it.second->setOurVote (initialLedger.hasTransaction (it.first));
         }
 
         // if any peers have taken a contrary position, process disputes
         boost::unordered_set<uint256> found;
-        BOOST_FOREACH (u160_prop_pair & it, mPeerPositions)
+
+        for (auto& it : mPeerPositions)
         {
             uint256 set = it.second->getCurrentHash ();
 
             if (found.insert (set).second)
             {
-                ripple::unordered_map<uint256, SHAMap::pointer>::iterator iit 
-                    = mAcquired.find (set);
+                auto iit (mAcquired.find (set));
 
                 if (iit != mAcquired.end ())
                 {
@@ -1541,9 +1524,9 @@ private:
 
     void updateOurPositions ()
     {
-        boost::posix_time::ptime peerCutoff 
+        boost::posix_time::ptime peerCutoff
             = boost::posix_time::second_clock::universal_time ();
-        boost::posix_time::ptime ourCutoff 
+        boost::posix_time::ptime ourCutoff
             = peerCutoff - boost::posix_time::seconds (PROPOSE_INTERVAL);
         peerCutoff -= boost::posix_time::seconds (PROPOSE_FRESHNESS);
 
@@ -1553,19 +1536,18 @@ private:
 
         // Verify freshness of peer positions and compute close times
         std::map<std::uint32_t, int> closeTimes;
-        ripple::unordered_map<uint160, LedgerProposal::pointer>::iterator it 
-            = mPeerPositions.begin ();
+        auto it = mPeerPositions.begin ();
 
         while (it != mPeerPositions.end ())
         {
             if (it->second->isStale (peerCutoff))
             {
                 // proposal is stale
-                uint160 peerID = it->second->getPeerID ();
-                WriteLog (lsWARNING, LedgerConsensus) 
+                auto const& peerID = it->second->getPeerID ();
+                WriteLog (lsWARNING, LedgerConsensus)
                     << "Removing stale proposal from " << peerID;
-                BOOST_FOREACH (u256_lct_pair & it, mDisputes)
-                it.second->unVote (peerID);
+                for (auto& dt : mDisputes)
+                    dt.second->unVote (peerID);
                 it = mPeerPositions.erase (it);
             }
             else
@@ -1576,9 +1558,9 @@ private:
             }
         }
 
-        BOOST_FOREACH (u256_lct_pair & it, mDisputes)
+        for (auto& it : mDisputes)
         {
-            // Because the threshold for inclusion increases, 
+            // Because the threshold for inclusion increases,
             //  time can change our position on a dispute
             if (it.second->updateVote (mClosePercent, mProposing))
             {
@@ -1630,7 +1612,7 @@ private:
             // Threshold for non-zero vote
             int threshVote = mPeerPositions.size ();
             // Threshold to declare consensus
-            int threshConsensus = mPeerPositions.size ();   
+            int threshConsensus = mPeerPositions.size ();
 
             if (mProposing)
             {
@@ -1639,9 +1621,9 @@ private:
                 ++threshConsensus;
             }
 
-            threshVote = ((threshVote * neededWeight) + (neededWeight / 2)) 
+            threshVote = ((threshVote * neededWeight) + (neededWeight / 2))
                 / 100;
-            threshConsensus = ((threshConsensus * AV_CT_CONSENSUS_PCT) 
+            threshConsensus = ((threshConsensus * AV_CT_CONSENSUS_PCT)
                 + (AV_CT_CONSENSUS_PCT / 2)) / 100;
 
             if (threshVote == 0)
@@ -1650,21 +1632,21 @@ private:
             if (threshConsensus == 0)
                 threshConsensus = 1;
 
-            WriteLog (lsINFO, LedgerConsensus) << "Proposers:" 
+            WriteLog (lsINFO, LedgerConsensus) << "Proposers:"
                 << mPeerPositions.size () << " nw:" << neededWeight
                 << " thrV:" << threshVote << " thrC:" << threshConsensus;
 
-            for (std::map<std::uint32_t, int>::iterator it = closeTimes.begin ()
+            for (auto it = closeTimes.begin ()
                 , end = closeTimes.end (); it != end; ++it)
             {
-                WriteLog (lsDEBUG, LedgerConsensus) << "CCTime: seq" 
-                    << mPreviousLedger->getLedgerSeq () + 1 << ": " 
-                    << it->first << " has " << it->second << ", " 
+                WriteLog (lsDEBUG, LedgerConsensus) << "CCTime: seq"
+                    << mPreviousLedger->getLedgerSeq () + 1 << ": "
+                    << it->first << " has " << it->second << ", "
                     << threshVote << " required";
 
                 if (it->second >= threshVote)
                 {
-                    WriteLog (lsDEBUG, LedgerConsensus) 
+                    WriteLog (lsDEBUG, LedgerConsensus)
                         << "Close time consensus reached: " << it->first;
                     closeTime = it->first;
                     threshVote = it->second;
@@ -1674,28 +1656,28 @@ private:
                 }
             }
 
-            CondLog (!mHaveCloseTimeConsensus, lsDEBUG, LedgerConsensus) 
+            CondLog (!mHaveCloseTimeConsensus, lsDEBUG, LedgerConsensus)
                 << "No CT consensus: Proposers:" << mPeerPositions.size ()
                 << " Proposing:" << (mProposing ? "yes" : "no") << " Thresh:"
                 << threshConsensus << " Pos:" << closeTime;
         }
 
         if (!changes &&
-                ((closeTime != roundCloseTime (mOurPosition->getCloseTime ())) 
+                ((closeTime != roundCloseTime (mOurPosition->getCloseTime ()))
                 || mOurPosition->isStale (ourCutoff)))
         {
             // close time changed or our position is stale
             ourPosition = mAcquired[mOurPosition->getCurrentHash ()]
                 ->snapShot (true);
             assert (ourPosition);
-            changes = true; // We pretend our position changed to force 
+            changes = true; // We pretend our position changed to force
         }                   //   a new proposal
 
         if (changes)
         {
             uint256 newHash = ourPosition->getHash ();
-            WriteLog (lsINFO, LedgerConsensus) 
-                << "Position change: CTime " << closeTime 
+            WriteLog (lsINFO, LedgerConsensus)
+                << "Position change: CTime " << closeTime
                 << ", tx " << newHash;
 
             if (mOurPosition->changePosition (newHash, closeTime))
@@ -1708,32 +1690,30 @@ private:
         }
     }
 
-    /** If we radically changed our consensus context for some reason, 
+    /** If we radically changed our consensus context for some reason,
         we need to replay recent proposals so that they're not lost.
     */
     void playbackProposals ()
     {
         ripple::unordered_map < uint160,
-              std::list<LedgerProposal::pointer> > & storedProposals 
+              std::list<LedgerProposal::pointer> > & storedProposals
               = getApp().getOPs ().peekStoredProposals ();
 
-        for (ripple::unordered_map< uint160
-            , std::list<LedgerProposal::pointer> >::iterator it 
-            = storedProposals.begin ()
+        for (auto it = storedProposals.begin ()
             , end = storedProposals.end (); it != end; ++it)
         {
             bool relay = false;
-            BOOST_FOREACH (LedgerProposal::ref proposal, it->second)
+            for (auto proposal : it->second)
             {
                 if (proposal->hasSignature ())
                 {
-                    // we have the signature but don't know the 
+                    // we have the signature but don't know the
                     //  ledger so couldn't verify
                     proposal->setPrevLedger (mPrevLedgerHash);
 
                     if (proposal->checkSign ())
                     {
-                        WriteLog (lsINFO, LedgerConsensus) 
+                        WriteLog (lsINFO, LedgerConsensus)
                             << "Applying stored proposal";
                         relay = peerPosition (proposal);
                     }
@@ -1743,12 +1723,12 @@ private:
 
                 if (relay)
                 {
-                    WriteLog (lsWARNING, LedgerConsensus) 
+                    WriteLog (lsWARNING, LedgerConsensus)
                         << "We should do delayed relay of this proposal,"
                         << " but we cannot";
                 }
 
-    #if 0 
+    #if 0
     // FIXME: We can't do delayed relay because we don't have the signature
                 std::set<Peer::ShortId> peers
 
@@ -1764,7 +1744,7 @@ private:
                     signature
                     getApp ().overlay ().foreach (send_if_not (
                         boost::make_shared<Message> (
-                            set, protocol::mtPROPOSE_LEDGER), 
+                            set, protocol::mtPROPOSE_LEDGER),
                                 peer_in_set(peers)));
                 }
 
@@ -1780,7 +1760,7 @@ private:
     {
         checkOurValidation ();
         mState = lcsESTABLISH;
-        mConsensusStartTime 
+        mConsensusStartTime
             = boost::posix_time::microsec_clock::universal_time ();
         mCloseTime = getApp().getOPs ().getCloseTimeNC ();
         getApp().getOPs ().setLastCloseTime (mCloseTime);
@@ -1792,19 +1772,19 @@ private:
     void checkOurValidation ()
     {
         // This only covers some cases - Fix for the case where we can't ever acquire the consensus ledger
-        if (!mHaveCorrectLCL || !mValPublic.isSet () 
-            || !mValPrivate.isSet () 
+        if (!mHaveCorrectLCL || !mValPublic.isSet ()
+            || !mValPrivate.isSet ()
             || getApp().getOPs ().isNeedNetworkLedger ())
         {
             return;
         }
 
-        SerializedValidation::pointer lastVal 
+        SerializedValidation::pointer lastVal
             = getApp().getOPs ().getLastValidation ();
 
         if (lastVal)
         {
-            if (lastVal->getFieldU32 (sfLedgerSequence) 
+            if (lastVal->getFieldU32 (sfLedgerSequence)
                 == mPreviousLedger->getLedgerSeq ())
             {
                 return;
@@ -1814,15 +1794,15 @@ private:
         }
 
         uint256 signingHash;
-        SerializedValidation::pointer v 
+        SerializedValidation::pointer v
             = boost::make_shared<SerializedValidation>
             (mPreviousLedger->getHash ()
             , getApp().getOPs ().getValidationTimeNC (), mValPublic, false);
         addLoad(v);
         v->setTrusted ();
         v->sign (signingHash, mValPrivate);
-            // FIXME: wrong supression     
-        getApp().getHashRouter ().addSuppression (signingHash); 
+            // FIXME: wrong supression
+        getApp().getHashRouter ().addSuppression (signingHash);
         getApp().getValidations ().addValidation (v, "localMissing");
         Blob validation = v->getSigned ();
         protocol::TMValidation val;
@@ -1840,18 +1820,18 @@ private:
     */
     void beginAccept (bool synchronous)
     {
-        SHAMap::pointer consensusSet 
+        SHAMap::pointer consensusSet
             = mAcquired[mOurPosition->getCurrentHash ()];
 
         if (!consensusSet)
         {
-            WriteLog (lsFATAL, LedgerConsensus) 
+            WriteLog (lsFATAL, LedgerConsensus)
                 << "We don't have a consensus set";
             abort ();
             return;
         }
 
-        getApp().getOPs ().newLCL 
+        getApp().getOPs ().newLCL
             (mPeerPositions.size (), mCurrentMSeconds, mNewLedgerHash);
 
         if (synchronous)
@@ -1859,7 +1839,7 @@ private:
         else
         {
             getApp().getJobQueue().addJob (jtACCEPT, "acceptLedger",
-                BIND_TYPE (&LedgerConsensusImp::accept, shared_from_this (), consensusSet));
+                std::bind (&LedgerConsensusImp::accept, shared_from_this (), consensusSet));
         }
     }
 
@@ -1887,11 +1867,11 @@ private:
     // VFALCO TODO Rename these to look pretty
     enum LCState
     {
-        lcsPRE_CLOSE,       // We haven't closed our ledger yet, 
+        lcsPRE_CLOSE,       // We haven't closed our ledger yet,
                             //  but others might have
         lcsESTABLISH,       // Establishing consensus
         lcsFINISHED,        // We have closed on a transaction set
-        lcsACCEPTED,        // We have accepted/validated 
+        lcsACCEPTED,        // We have accepted/validated
                             //  a new last closed ledger
     };
 

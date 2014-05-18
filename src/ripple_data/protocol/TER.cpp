@@ -123,7 +123,7 @@ bool transResultInfo (TER terCode, std::string& strToken, std::string& strHuman)
         {   tesSUCCESS,             "tesSUCCESS",               "The transaction was applied."                          },
     };
 
-    int iIndex  = NUMBER (transResultInfoA);
+    int iIndex = RIPPLE_ARRAYSIZE (transResultInfoA);
 
     while (iIndex-- && transResultInfoA[iIndex].terCode != terCode)
         ;

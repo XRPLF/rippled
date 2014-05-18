@@ -25,7 +25,7 @@ class InboundLedgersImp
     , public beast::LeakChecked <InboundLedgers>
 {
 public:
-    typedef std::pair<uint256, InboundLedger::pointer> u256_acq_pair;    
+    typedef std::pair<uint256, InboundLedger::pointer> u256_acq_pair;
     // How long before we try again to acquire the same ledger
     static const int kReacquireIntervalSeconds = 300;
 
@@ -171,7 +171,7 @@ public:
             if (packet.type () == protocol::liAS_NODE)
             {
                 getApp().getJobQueue().addJob(jtLEDGER_DATA, "gotStaleData",
-                    BIND_TYPE(&InboundLedgers::gotStaleData, this, packet_ptr));
+                    std::bind(&InboundLedgers::gotStaleData, this, packet_ptr));
             }
 
             return false;
@@ -180,7 +180,8 @@ public:
         // Stash the data for later processing and see if we need to dispatch
         if (ledger->gotData(boost::weak_ptr<Peer>(peer), packet_ptr))
             getApp().getJobQueue().addJob (jtLEDGER_DATA, "processLedgerData",
-                BIND_TYPE (&InboundLedgers::doLedgerData, this, P_1, hash));
+                std::bind (&InboundLedgers::doLedgerData, this,
+                           std::placeholders::_1, hash));
 
         return true;
     }

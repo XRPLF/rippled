@@ -857,7 +857,7 @@ public:
             {   "unsubscribe",          &RPCParser::parseEvented,               -1, -1  },
         };
 
-        int     i = NUMBER (commandsA);
+        int i = RIPPLE_ARRAYSIZE (commandsA);
 
         while (i-- && strMethod != commandsA[i].pCommand)
             ;
@@ -1008,7 +1008,8 @@ int RPCCall::fromCommandLine (const std::vector<std::string>& vCmd)
                     ? jvRequest["method"].asString () : vCmd[0],
                 jvParams,                               // Parsed, execute.
                 false,
-                BIND_TYPE (RPCCallImp::callRPCHandler, &jvOutput, P_1));
+                std::bind (RPCCallImp::callRPCHandler, &jvOutput,
+                           std::placeholders::_1));
 
             isService.run (); // This blocks until there is no more outstanding async calls.
 
@@ -1105,15 +1106,17 @@ void RPCCall::fromNetwork (
         io_service,
         strIp,
         iPort,
-        BIND_TYPE (
+        std::bind (
             &RPCCallImp::onRequest,
             strMethod,
             jvParams,
             mapRequestHeaders,
-            strPath, P_1, P_2),
+            strPath, std::placeholders::_1, std::placeholders::_2),
         RPC_REPLY_MAX_BYTES,
         boost::posix_time::seconds (RPC_NOTIFY_SECONDS),
-        BIND_TYPE (&RPCCallImp::onResponse, callbackFuncP, P_1, P_2, P_3));
+        std::bind (&RPCCallImp::onResponse, callbackFuncP,
+                   std::placeholders::_1, std::placeholders::_2,
+                   std::placeholders::_3));
 }
 
 } // ripple

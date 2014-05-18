@@ -61,7 +61,7 @@ const char* TxnDBInit[] =
     "END TRANSACTION;"
 };
 
-int TxnDBCount = NUMBER (TxnDBInit);
+int TxnDBCount = std::extent<decltype(TxnDBInit)>::value;
 
 // Ledger database holds ledgers and ledger confirmations
 const char* LedgerDBInit[] =
@@ -100,7 +100,7 @@ const char* LedgerDBInit[] =
     "END TRANSACTION;"
 };
 
-int LedgerDBCount = NUMBER (LedgerDBInit);
+int LedgerDBCount = std::extent<decltype(LedgerDBInit)>::value;
 
 // RPC database holds persistent data for RPC clients.
 const char* RpcDBInit[] =
@@ -113,7 +113,7 @@ const char* RpcDBInit[] =
 	);",
 };
 
-int RpcDBCount = NUMBER (RpcDBInit);
+int RpcDBCount = std::extent<decltype(RpcDBInit)>::value;
 
 // NodeIdentity database holds local accounts and trusted nodes
 // VFALCO NOTE but its a table not a database, so...?
@@ -273,13 +273,13 @@ const char* WalletDBInit[] =
     "END TRANSACTION;"
 };
 
-int WalletDBCount = NUMBER (WalletDBInit);
+int WalletDBCount = std::extent<decltype(WalletDBInit)>::value;
 
 // Hash node database holds nodes indexed by hash
 // VFALCO TODO Remove this since it looks unused
 /*
 
-int HashNodeDBCount = NUMBER (HashNodeDBInit);
+int HashNodeDBCount = std::extent<decltype(HashNodeDBInit)>::value;
 */
 
 // Net node database holds nodes seen on the network
@@ -295,7 +295,7 @@ const char* NetNodeDBInit[] =
 	);"
 };
 
-int NetNodeDBCount = NUMBER (NetNodeDBInit);
+int NetNodeDBCount = std::extent<decltype(NetNodeDBInit)>::value;
 */
 
 // This appears to be unused
@@ -331,7 +331,7 @@ const char* PathFindDBInit[] =
     "CREATE INDEX ExTo ON Exchanges(To, Currency, Use);",
 };
 
-int PathFindDBCount = NUMBER (PathFindDBInit);
+int PathFindDBCount = std::extent<decltype(PathFindDBInit)>::value;
 */
 
 } // ripple

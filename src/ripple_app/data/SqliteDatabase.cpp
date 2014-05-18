@@ -319,7 +319,7 @@ void SqliteDatabase::doHook (const char* db, int pages)
 
     if (mWalQ)
     {
-        mWalQ->addJob (jtWAL, std::string ("WAL:") + mHost, BIND_TYPE (&SqliteDatabase::runWal, this));
+        mWalQ->addJob (jtWAL, std::string ("WAL:") + mHost, std::bind (&SqliteDatabase::runWal, this));
     }
     else
     {

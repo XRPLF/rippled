@@ -25,28 +25,23 @@
 
 namespace ripple {
 
-#define BIND_TYPE     std::bind
-#define P_1           std::placeholders::_1
-#define P_2           std::placeholders::_2
-#define P_3           std::placeholders::_3
-#define P_4           std::placeholders::_4
-
 template <typename X, typename Y>
 inline
 std::enable_if_t<
-    (std::is_integral<X>::value || std::is_enum<X>::value) && 
-    (std::is_integral<Y>::value || std::is_enum<Y>::value), 
+    (std::is_integral<X>::value || std::is_enum<X>::value) &&
+    (std::is_integral<Y>::value || std::is_enum<Y>::value),
 bool>
 is_bit_set(X const x, Y const y)
 {
-    return (x & y);
+    if (x & y)
+        return true;
+    return false;
 }
 
 // VFALCO TODO Clean this stuff up. Remove as much as possible
 // DEPRECATED
 #define nothing()           do {} while (0)
-#define NUMBER(x)           (sizeof(x)/sizeof((x)[0]))
-#define is_bit_set(x,y)       (!!((x) & (y)))
+#define RIPPLE_ARRAYSIZE(x) (sizeof(x) / sizeof((x)[0]))
 
 } // ripple
 

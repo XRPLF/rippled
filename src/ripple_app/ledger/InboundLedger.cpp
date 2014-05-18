@@ -259,8 +259,8 @@ void InboundLedger::onTimer (bool wasProgress, ScopedLockType&)
         mByHash = true;
 
         std::size_t pc = getPeerCount ();
-        WriteLog (lsDEBUG, InboundLedger) << 
-            "No progress(" << pc << 
+        WriteLog (lsDEBUG, InboundLedger) <<
+            "No progress(" << pc <<
             ") for ledger " << mHash;
 
         trigger (Peer::ptr ());
@@ -278,7 +278,7 @@ void InboundLedger::addPeers ()
 
     if (vSize == 0)
     {
-        WriteLog (lsERROR, InboundLedger) << 
+        WriteLog (lsERROR, InboundLedger) <<
             "No peers to add for ledger acquisition";
         return;
     }
@@ -329,7 +329,7 @@ void InboundLedger::addPeers ()
     }
     else if (mSeq != 0)
     {
-        if (m_journal.debug) m_journal.debug << 
+        if (m_journal.debug) m_journal.debug <<
             "Found " << found << " peer(s) with ledger " << mSeq;
     }
     else
@@ -391,7 +391,8 @@ void InboundLedger::done ()
 
     // We hold the PeerSet lock, so must dispatch
     getApp().getJobQueue ().addJob (jtLEDGER_DATA, "triggers",
-        BIND_TYPE (LADispatch, P_1, shared_from_this (), triggers));
+        std::bind (LADispatch, std::placeholders::_1, shared_from_this (),
+                   triggers));
 }
 
 bool InboundLedger::addOnComplete (
@@ -1252,10 +1253,10 @@ Json::Value InboundLedger::getJson (int)
     if (mHaveBase && !mHaveState)
     {
         Json::Value hv (Json::arrayValue);
-        
+
         // VFALCO Why 16?
         auto v = mLedger->getNeededAccountStateHashes (16, nullptr);
-        
+
         for (auto const& h : v)
         {
             hv.append (to_string (h));

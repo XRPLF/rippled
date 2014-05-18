@@ -400,7 +400,7 @@ public:
 
     // Returns Ledgers we have all the nodes for and are indexed
     bool getValidatedRange (std::uint32_t& minVal, std::uint32_t& maxVal)
-    { 
+    {
         maxVal = mPubLedgerSeq.load();
 
         if (!maxVal)
@@ -432,7 +432,7 @@ public:
                 ++minVal;
 
             // Best effort for remaining exclusions
-            BOOST_FOREACH(std::uint32_t v, sPendingSaves)
+            for(auto v : sPendingSaves)
             {
                 if ((v >= minVal) && (v <= maxVal))
                 {
@@ -484,7 +484,7 @@ public:
                     break;
             }
 
-            std::map< std::uint32_t, std::pair<uint256, uint256> >::iterator it = ledgerHashes.find (seq);
+            auto it (ledgerHashes.find (seq));
 
             if (it == ledgerHashes.end ())
             {
@@ -496,7 +496,9 @@ public:
                     mCompleteLedgers.setRange (minHas, maxHas);
                 }
                 maxHas = minHas;
-                ledgerHashes = Ledger::getHashesByIndex ((seq < 500) ? 0 : (seq - 499), seq);
+                ledgerHashes = Ledger::getHashesByIndex ((seq < 500)
+                    ? 0
+                    : (seq - 499), seq);
                 it = ledgerHashes.find (seq);
 
                 if (it == ledgerHashes.end ())
@@ -528,7 +530,7 @@ public:
         int count = 0;
 
         Overlay::PeerSequence peerList = getApp().overlay ().getActivePeers ();
-        BOOST_FOREACH (const Peer::ptr & peer, peerList)
+        for (auto const& peer : peerList)
         {
             if (peer->hasRange (nextLedger->getLedgerSeq() - 1, nextLedger->getLedgerSeq()))
             {
@@ -565,13 +567,14 @@ public:
                 try
                 {
                     hash = ledger->getLedgerHash (lSeq);
-	        }
-	        catch (...)
-	        {
-	            WriteLog (lsWARNING, LedgerMaster) << "fixMismatch encounters partial ledger";
-	            clearLedger(lSeq);
-	            return;
-	        }
+                }
+                catch (...)
+                {
+                    WriteLog (lsWARNING, LedgerMaster) <<
+                        "fixMismatch encounters partial ledger";
+                    clearLedger(lSeq);
+                    return;
+                }
 
                 if (hash.isNonZero ())
                 {
@@ -581,8 +584,9 @@ public:
                     if (otherLedger && (otherLedger->getHash () == hash))
                     {
                         // we closed the seam
-                        CondLog (invalidate != 0, lsWARNING, LedgerMaster) << "Match at " << lSeq << ", " <<
-                                invalidate << " prior ledgers invalidated";
+                        CondLog (invalidate != 0, lsWARNING, LedgerMaster) <<
+                            "Match at " << lSeq << ", " << invalidate <<
+                            " prior ledgers invalidated";
                         return;
                     }
                 }
@@ -592,7 +596,8 @@ public:
             }
 
         // all prior ledgers invalidated
-        CondLog (invalidate != 0, lsWARNING, LedgerMaster) << "All " << invalidate << " prior ledgers invalidated";
+        CondLog (invalidate != 0, lsWARNING, LedgerMaster) << "All " <<
+            invalidate << " prior ledgers invalidated";
     }
 
     void setFullLedger (Ledger::pointer ledger, bool isSynchronous, bool isCurrent)
@@ -664,9 +669,9 @@ public:
                 return;
 
             // Ledger could match the ledger we're already building
-	    if (seq == mBuildingLedgerSeq)
-	        return;
-	}
+            if (seq == mBuildingLedgerSeq)
+                return;
+        }
 
         Ledger::pointer ledger = mLedgerHistory.getLedgerByHash (hash);
 
@@ -681,7 +686,7 @@ public:
                 ledger = l->getLedger();
             else
             {
-                WriteLog (lsDEBUG, LedgerMaster) << 
+                WriteLog (lsDEBUG, LedgerMaster) <<
                     "checkAccept triggers acquire " << to_string (hash);
             }
         }
@@ -765,7 +770,7 @@ public:
     /** Report that the consensus process built a particular ledger */
     void consensusBuilt (Ledger::ref ledger) override
     {
- 
+
         // Because we just built a ledger, we are no longer building one
         setBuildingLedger (0);
 
@@ -939,8 +944,9 @@ public:
                                     { // Previous ledger is in DB
                                         ScopedLockType sl(m_mutex);
                                         mFillInProgress = ledger->getLedgerSeq();
-                                        getApp().getJobQueue().addJob(jtADVANCE, "tryFill", BIND_TYPE (
-                                            &LedgerMasterImp::tryFill, this, P_1, ledger));
+                                        getApp().getJobQueue().addJob(jtADVANCE, "tryFill", std::bind (
+                                            &LedgerMasterImp::tryFill, this,
+                                            std::placeholders::_1, ledger));
                                     }
                                     progress = true;
                                 }
@@ -984,12 +990,15 @@ public:
             }
             else
             {
-                WriteLog (lsTRACE, LedgerMaster) << "tryAdvance found " << pubLedgers.size() << " ledgers to publish";
-                BOOST_FOREACH(Ledger::ref ledger, pubLedgers)
+                WriteLog (lsTRACE, LedgerMaster) <<
+                    "tryAdvance found " << pubLedgers.size() <<
+                    " ledgers to publish";
+                for(auto ledger : pubLedgers)
                 {
                     {
                         ScopedUnlockType sul (m_mutex);
-                        WriteLog(lsDEBUG, LedgerMaster) << "tryAdvance publishing seq " << ledger->getLedgerSeq();
+                        WriteLog(lsDEBUG, LedgerMaster) <<
+                            "tryAdvance publishing seq " << ledger->getLedgerSeq();
 
                         setFullLedger(ledger, true, true);
                         getApp().getOPs().pubLedger(ledger);
@@ -1116,20 +1125,20 @@ public:
         {
             mAdvanceThread = true;
             getApp().getJobQueue ().addJob (jtADVANCE, "advanceLedger",
-                                            BIND_TYPE (&LedgerMasterImp::advanceThread, this));
+                                            std::bind (&LedgerMasterImp::advanceThread, this));
         }
     }
 
     // Return the hash of the valid ledger with a particular sequence, given a subsequent ledger known valid
     uint256 getLedgerHash(std::uint32_t desiredSeq, Ledger::ref knownGoodLedger)
-    { 
+    {
         assert(desiredSeq < knownGoodLedger->getLedgerSeq());
 
         uint256 hash = knownGoodLedger->getLedgerHash(desiredSeq);
 
         // Not directly in the given ledger
         if (hash.isZero ())
-        { 
+        {
             std::uint32_t seq = (desiredSeq + 255) % 256;
             assert(seq < desiredSeq);
 
@@ -1244,7 +1253,8 @@ public:
         {
             ++mPathFindThread;
             getApp().getJobQueue().addJob (jtUPDATE_PF, name,
-                BIND_TYPE (&LedgerMasterImp::updatePaths, this, P_1));
+                std::bind (&LedgerMasterImp::updatePaths, this,
+                           std::placeholders::_1));
         }
     }
 
@@ -1346,7 +1356,7 @@ public:
         // See if the hash for the ledger we need is in the reference ledger
         ledgerHash = referenceLedger->getLedgerHash (index);
         if (ledgerHash.isZero())
-        { 
+        {
             // No, Try to get another ledger that might have the hash we need
             // Compute the index and hash of a ledger that will have the hash we need
             LedgerIndex refIndex = (index + 255) & (~255);
