@@ -118,8 +118,6 @@ process_order_direct (
         result = taker.cross (offer);
 
         if (journal.debug) journal.debug <<
-            "       flow " <<
-                ret.first.in << ", " << ret.first.out << std::endl <<
             "   balances " <<
                 view.accountFunds (taker.account(), amount.in) << ", " <<
                 view.accountFunds (taker.account(), amount.out)
@@ -132,11 +130,11 @@ process_order_direct (
         }
     }
 
-    // Figure out how much flowed during crossing
-    cross_flow = taker.total_flow ();
-
     if (result == tesSUCCESS)
     {
+        // Figure out how much flowed during crossing
+        cross_flow = taker.total_flow ();
+
         // No point in placing an offer for a fill-or-kill offer - the offer
         // will not succeed, since it wasn't filled.
         if (options.fill_or_kill)

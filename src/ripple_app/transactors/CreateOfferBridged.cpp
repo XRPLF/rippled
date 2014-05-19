@@ -19,6 +19,7 @@
 
 #include "../book/OfferStream.h"
 #include "../book/Taker.h"
+#include "../book/Quality.h"
 #include "../../beast/beast/streams/debug_ostream.h"
 
 namespace ripple {
@@ -26,12 +27,12 @@ namespace ripple {
 //------------------------------------------------------------------------------
 
 // NIKB Move this in the right place
-static Quality
-calc_bridged_quality (Offer const& leg1, Offer const& leg2)
+static core::Quality
+calc_bridged_quality (core::Offer const& leg1, core::Offer const& leg2)
 {
     // Conceptually we can do:
     //return leg1.quality () * leg2.quality ();
-    return Quality();
+    return core::Quality();
 }
 
 std::pair<TER,bool>
@@ -64,13 +65,14 @@ process_order_bridged (
             view.accountFunds (taker.account(), amount.in) << ", " <<
             view.accountFunds (taker.account(), amount.out);
 
-    bool have_direct (direct.step());
-    bool have_bridged (leg1.step() && leg2.step());
+    bool place_order (true);
+    bool have_direct (offers_direct.step());
+    bool have_bridged (offers_leg1.step() && offers_leg2.step());
 
     while (have_direct || have_bridged)
     {
+        core::Quality quality;
         bool use_direct;
-        Quality quality;
 
         // Logic:
         // We calculate the qualities of any direct and bridged offers at the
@@ -78,14 +80,14 @@ process_order_bridged (
         
         if (have_direct)
         {
-            Quality const direct_quality (direct.tip().quality());
+            core::Quality const direct_quality (offers_direct.tip().quality());
 
             if (have_bridged)
             {
-                Quality const bridged_quality (
-                    calc_bridged_quality (leg1.tip(), leg2.tip()));
+                core::Quality const bridged_quality (
+                    calc_bridged_quality (offers_leg1.tip(), offers_leg2.tip()));
 
-                if (direct_quality > bridged_quality)
+                if (bridged_quality < direct_quality)
                 {
                     use_direct = true;
                     quality = direct_quality;
@@ -99,13 +101,13 @@ process_order_bridged (
             else
             {
                 use_direct = true;
-                quality = direct.tip().quality();
+                quality = offers_direct.tip().quality();
             }
         }
         else
         {
             use_direct = false;
-            quality = calc_bridged_quality (leg1.tip(), leg2.tip());
+            quality = calc_bridged_quality (offers_leg1.tip(), offers_leg2.tip());
         }
 
         // We are always looking at the best quality available, so if we reject
@@ -115,19 +117,19 @@ process_order_bridged (
 
         if (use_direct)
         {
-            result = taker.cross(direct.tip());
+            result = taker.cross(offers_direct.tip());
 
-            if (direct.tip().fully_consumed ())
-                have_direct = direct.step();
+            if (offers_direct.tip().fully_consumed ())
+                have_direct = offers_direct.step();
         }
         else
         {
-            result = taker.cross(leg.tip(), leg2.tip ());
+            result = taker.cross(offers_leg1.tip(), offers_leg2.tip ());
 
-            if (leg1.tip().fully_consumed ())
-                have_bridged = leg1.step ();
-            if (have_bridged && leg2.tip ().fully_consumed ())
-                have_bridged = leg2.step ();
+            if (offers_leg1.tip().fully_consumed ())
+                have_bridged = offers_leg1.step ();
+            if (have_bridged && offers_leg2.tip ().fully_consumed ())
+                have_bridged = offers_leg2.step ();
         }
 
         if (result != tesSUCCESS)
@@ -139,16 +141,16 @@ process_order_bridged (
         if (taker.done())
         {
             journal.debug << "The taker reports he's done during crossing!";
-            place_offer = false;
+            place_order = false;
             break;
         }
     }
 
-    // Figure out how much flowed during crossing
-    cross_flow = taker.total_flow ();
-
     if (result == tesSUCCESS)
     {
+        // Figure out how much flowed during crossing
+        cross_flow = taker.total_flow ();
+
         // No point in placing an offer for a fill-or-kill offer - the offer
         // will not succeed, since it wasn't filled.
         if (options.fill_or_kill)
