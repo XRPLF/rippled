@@ -55,7 +55,7 @@ std::unique_ptr <Transactor> make_CreateOffer (
     
     // Autobridging is only in effect when an offer does not involve XRP
     if (!amount_in.isNative() && !amount_out.isNative ())
-        return std::make_unique <CreateOfferBridged> (txn, params, engine);
+        return std::make_unique <CreateOfferDirect> (txn, params, engine);
     
     return std::make_unique <CreateOfferDirect> (txn, params, engine);
 #endif

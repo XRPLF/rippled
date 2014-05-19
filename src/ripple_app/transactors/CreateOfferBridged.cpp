@@ -30,9 +30,7 @@ namespace ripple {
 static core::Quality
 calc_bridged_quality (core::Offer const& leg1, core::Offer const& leg2)
 {
-    // Conceptually we can do:
-    //return leg1.quality () * leg2.quality ();
-    return core::Quality();
+    return core::Quality ();
 }
 
 std::pair<TER,bool>

@@ -25,142 +25,6 @@ namespace ripple {
 
 //------------------------------------------------------------------------------
 
-// NIKB Move this in the right place
-std::pair<TER,bool>
-process_order_direct (
-    core::LedgerView& view,
-    core::BookRef const book,
-    core::Account const& account,
-    core::Amounts const& amount,
-    core::Amounts& cross_flow,
-    core::Taker::Options const options,
-    core::Clock::time_point const when,
-    beast::Journal& journal)
-{
-    TER result (tesSUCCESS);
-    core::LedgerView view_cancel (view.duplicate());
-    core::OfferStream offers (view, view_cancel, book, when, journal);
-    core::Taker taker (offers.view(), account, amount, options);
-
-    if (journal.debug) journal.debug <<
-        "process_order: " <<
-        (options.sell? "sell" : "buy") << " " <<
-        (options.passive? "passive" : "") << std::endl <<
-        "     taker: " << taker.account() << std::endl <<
-        "  balances: " <<
-            view.accountFunds (taker.account(), amount.in) << ", " <<
-            view.accountFunds (taker.account(), amount.out);
-
-    bool place_order (true);
-
-    while (true)
-    {
-        // Modifying the order or logic of these
-        // operations causes a protocol breaking change.
-
-        // Checks which remove offers are performed early so we
-        // can reduce the size of the order book as much as possible
-        // before terminating the loop.
-
-        if (taker.done())
-        {
-            journal.debug << "The taker reports he's done during crossing!";
-            place_order = false;
-            break;
-        }
-
-        // NIKB CHECKME Investigate whether we can use offer.step_account() here
-        //              or whether doing so would cause a protocol-breaking
-        //             change.
-        if (! offers.step())
-        {
-            // Place the order since there are no
-            // more offers and the order has a balance.
-            journal.debug << "No more offers to consider during crossing!";
-            break;
-        }
-
-        auto const& offer (offers.tip());
-
-        if (journal.debug) journal.debug <<
-            "Considering offer: " << std::endl <<
-            "  Id: " << offer.entry()->getIndex() << std::endl <<
-            "  In: " << offer.amount().in << std::endl <<
-            " Out: " << offer.amount().out << std::endl <<
-            "  By: " << offer.account();
-
-        if (taker.reject (offer.quality()))
-        {
-            // Place the order since there are no more offers
-            // at the desired quality, and the order has a balance.
-            break;
-        }
-
-        if (offer.account() == taker.account())
-        {
-            if (journal.debug) journal.debug <<
-                " skipping self-offer " << offer.entry()->getIndex() << std::endl <<
-                "  pays/gets " << offer.amount().in << ", " << offer.amount().out << std::endl <<
-                " during cross for " << std::endl <<
-                "   pays/gets " << amount.in << ", " << amount.out;
-                ;
-
-            // Skip offer from self.
-            // (Offer will be considered expired, and get deleted)
-            continue;
-        }
-
-        if (journal.debug) journal.debug <<
-            "   offer " << offer.entry()->getIndex() << std::endl <<
-            "  pays/gets " << offer.amount().in << ", " << offer.amount().out
-            ;
-
-        result = taker.cross (offer);
-
-        if (journal.debug) journal.debug <<
-            "   balances " <<
-                view.accountFunds (taker.account(), amount.in) << ", " <<
-                view.accountFunds (taker.account(), amount.out)
-            ;
-
-        if (result != tesSUCCESS)
-        {
-            result = tecFAILED_PROCESSING;
-            break;
-        }
-    }
-
-    if (result == tesSUCCESS)
-    {
-        // Figure out how much flowed during crossing
-        cross_flow = taker.total_flow ();
-
-        // No point in placing an offer for a fill-or-kill offer - the offer
-        // will not succeed, since it wasn't filled.
-        if (options.fill_or_kill)
-            place_order = false;
-
-        // An immediate or cancel order will fill however much it is possible
-        // to fill and the remainder is not filled.
-        if (options.immediate_or_cancel)
-            place_order = false;
-    }
-
-    if (result == tesSUCCESS)
-    {
-        if (place_order)
-        {
-
-        }
-    }
-    else
-    {
-
-    }
-
-    return std::make_pair(result,place_order);
-}
-
 /** Take as much as possible.
     We adjusts account balances and charges fees on top to taker.
 
@@ -172,7 +36,8 @@ process_order_direct (
     @return tesSUCCESS, terNO_ACCOUNT, telFAILED_PROCESSING, or
             tecFAILED_PROCESSING
 */
-std::pair<TER,bool> CreateOfferDirect::crossOffers (
+std::pair<TER, bool>
+CreateOfferDirect::crossOffers (
     core::LedgerView& view,
     const STAmount&     saTakerPays,
     const STAmount&     saTakerGets,
@@ -191,12 +56,126 @@ std::pair<TER,bool> CreateOfferDirect::crossOffers (
         core::Amount (saTakerPays.getCurrency(), saTakerPays.getIssuer()),
         core::Amount (saTakerGets.getCurrency(), saTakerGets.getIssuer()));
 
-    auto const result (process_order_direct (
-        view, book, mTxnAccountID,
-        core::Amounts (saTakerPays, saTakerGets), cross_flow, 
-        core::Taker::Options (mTxn.getFlags()),
-        mEngine->getLedger ()->getParentCloseTimeNC (),
-        m_journal));
+    core::Amounts amount (saTakerPays, saTakerGets);
+
+    core::Taker::Options const options (mTxn.getFlags());
+
+    core::Clock::time_point const when (
+        mEngine->getLedger ()->getParentCloseTimeNC ());
+
+    core::LedgerView view_cancel (view.duplicate());
+    core::OfferStream offers (view, view_cancel, book, when, m_journal);
+    core::Taker taker (offers.view(), mTxnAccountID, amount, options);
+
+    TER cross_result (tesSUCCESS);
+    bool place_order (true);
+
+    while (true)
+    {
+        // Modifying the order or logic of these
+        // operations causes a protocol breaking change.
+
+        // Checks which remove offers are performed early so we
+        // can reduce the size of the order book as much as possible
+        // before terminating the loop.
+
+        if (taker.done())
+        {
+            m_journal.debug << "The taker reports he's done during crossing!";
+            place_order = false;
+            break;
+        }
+
+        // NIKB CHECKME Investigate whether we can use offer.step_account() here
+        //              or whether doing so would cause a protocol-breaking
+        //             change.
+        if (! offers.step())
+        {
+            // Place the order since there are no
+            // more offers and the order has a balance.
+            m_journal.debug << "No more offers to consider during crossing!";
+            break;
+        }
+
+        auto const& offer (offers.tip());
+
+        if (m_journal.debug) m_journal.debug <<
+            "Considering offer: " << std::endl <<
+            "  Id: " << offer.entry()->getIndex() << std::endl <<
+            "  In: " << offer.amount().in << std::endl <<
+            " Out: " << offer.amount().out << std::endl <<
+            "  By: " << offer.account();
+
+        if (taker.reject (offer.quality()))
+        {
+            // Place the order since there are no more offers
+            // at the desired quality, and the order has a balance.
+            break;
+        }
+
+        if (offer.account() == taker.account())
+        {
+            if (m_journal.debug) m_journal.debug <<
+                " skipping self-offer " << offer.entry()->getIndex() << std::endl <<
+                "  pays/gets " << offer.amount().in << ", " << offer.amount().out << std::endl <<
+                " during cross for " << std::endl <<
+                "   pays/gets " << amount.in << ", " << amount.out;
+                ;
+
+            // Skip offer from self.
+            // (Offer will be considered expired, and get deleted)
+            continue;
+        }
+
+        if (m_journal.debug) m_journal.debug <<
+            "   offer " << offer.entry()->getIndex() << std::endl <<
+            "  pays/gets " << offer.amount().in << ", " << offer.amount().out
+            ;
+
+        cross_result = taker.cross (offer);
+
+        if (m_journal.debug) m_journal.debug <<
+            "   balances " <<
+                view.accountFunds (taker.account(), amount.in) << ", " <<
+                view.accountFunds (taker.account(), amount.out)
+            ;
+
+        if (cross_result != tesSUCCESS)
+        {
+            cross_result = tecFAILED_PROCESSING;
+            break;
+        }
+    }
+
+    if (cross_result == tesSUCCESS)
+    {
+        // Figure out how much flowed during crossing
+        cross_flow = taker.total_flow ();
+
+        // No point in placing an offer for a fill-or-kill offer - the offer
+        // will not succeed, since it wasn't filled.
+        if (options.fill_or_kill)
+            place_order = false;
+
+        // An immediate or cancel order will fill however much it is possible
+        // to fill and the remainder is not filled.
+        if (options.immediate_or_cancel)
+            place_order = false;
+    }
+
+    if (cross_result == tesSUCCESS)
+    {
+        if (place_order)
+        {
+
+        }
+    }
+    else
+    {
+
+    }
+
+    auto result (std::make_pair(cross_result, place_order));
 
     core::Amounts const funds (
         view.accountFunds (mTxnAccountID, saTakerPays),
