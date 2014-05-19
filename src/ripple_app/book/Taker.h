@@ -187,7 +187,7 @@ public:
 
     /** Returns the amount that flowed through. */
     Amounts const&
-    flow () const noexcept
+    total_flow () const noexcept
     {
         return m_flow;
     }

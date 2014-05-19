@@ -118,25 +118,25 @@ public:
     }
 
     LedgerView&
-    view() noexcept
+    view () noexcept
     {
         return m_view;
     }
 
     LedgerView&
-    view_cancel() noexcept
+    view_cancel () noexcept
     {
         return m_view_cancel;
     }
 
     Book const&
-    book() const noexcept
+    book () const noexcept
     {
         return m_book;
     }
 
 uint256 const&
-dir() const noexcept
+dir () const noexcept
 {
     return m_tip.dir();
 }
@@ -146,7 +146,7 @@ dir() const noexcept
         Only valid if step() returned `true`.
     */
     Offer const&
-    tip() const
+    tip () const
     {
         return m_offer;
     }
@@ -159,7 +159,7 @@ dir() const noexcept
         @return `true` if there is a valid offer.
     */
     bool
-    step()
+    step ()
     {
         // Modifying the order or logic of these
         // operations causes a protocol breaking change.
@@ -233,24 +233,29 @@ dir() const noexcept
                 continue;
             }
 
-#if 0
-            // Remove if its our own offer
-            //
-            // VFALCO NOTE We might not want this for payments
-            //
-            if (m_account == owner)
-            {
-                view_cancel().offerDelete (entry->getIndex());
-                if (m_journal.trace) m_journal.trace <<
-                    "Removing self offer " << entry->getIndex();
-                continue;
-            }
-#endif
-
             break;
         }
 
         return true;
+    }
+
+    /** Advance to the next valid offer that is not from the specified account.
+        This automatically removes:
+            - Offers with missing ledger entries
+            - Offers found unfunded
+            - expired offers
+        @return `true` if there is a valid offer.
+    */
+    bool
+    step_account (Account const& account)
+    {
+        while (step ())
+        {
+            if (tip ().account () != account)
+                return true;
+        }
+
+        return false;
     }
 
     /** Updates the offer to reflect remaining funds.
@@ -259,66 +264,17 @@ dir() const noexcept
         or the out amount is zero.
         @return `true` If the offer had no funds remaining.
     */
-    bool
-    fill (Amounts const& remaining_funds)
-    {
-        // Erase the offer if it is fully consumed (in==0 || out==0)
-        // This is the same as becoming unfunded
-        return false;
-    }
+    // bool
+    // fill (Amounts const& remaining_funds)
+    // {
+    //     // Erase the offer if it is fully consumed (in==0 || out==0)
+    //     // This is the same as becoming unfunded
+    //     return false;
+    // }
 };
-
-//------------------------------------------------------------------------------
-
-/**
-  Does everything an OfferStream does, and:
-  - remove offers that became unfunded (if path is used)
-*/
-#if 0
-class PaymentOfferStream : public OfferStream
-{
-public:
-    PaymentOfferStream (LedgerView& view_base, BookRef book,
-        Clock::time_point when, beast::Journal journal)
-        : m_journal (journal)
-        , m_view (view_base.duplicate())
-        , m_view_apply (view_base.duplicate())
-        , m_book (book)
-        , m_when (when)
-    {
-    }
-};
-#endif
-
-//------------------------------------------------------------------------------
-
-/*
-TakerOfferStream
-  Does everything a PaymentOfferStream does, and:
-  - remove offers owned by the taker (if tx succeeds?)
-*/
-
-//------------------------------------------------------------------------------
-
-//------------------------------------------------------------------------------
 
 }
 }
-
-/*
-OfferStream
-  - remove offers with missing ledger entries (always)
-  - remove expired offers (always)
-  - remove offers found unfunded (always)
-
-PaymentOfferStream
-  Does everything an OfferStream does, and:
-  - remove offers that became unfunded (if path is used)
-
-TakerOfferStream
-  Does everything a PaymentOfferStream does, and:
-  - remove offers owned by the taker (if tx succeeds?)
-*/
 
 #endif
 

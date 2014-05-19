@@ -128,7 +128,7 @@ public:
 
     /** Returns the quality as Amount. */
     Amount
-    rate() const
+    rate () const
     {
         return Amount::setRate (m_value);
     }

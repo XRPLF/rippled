@@ -69,6 +69,9 @@ process_order_direct (
             break;
         }
 
+        // NIKB CHECKME Investigate whether we can use offer.step_account() here
+        //              or whether doing so would cause a protocol-breaking
+        //             change.
         if (! offers.step())
         {
             // Place the order since there are no
@@ -130,7 +133,7 @@ process_order_direct (
     }
 
     // Figure out how much flowed during crossing
-    cross_flow = taker.flow ();
+    cross_flow = taker.total_flow ();
 
     if (result == tesSUCCESS)
     {

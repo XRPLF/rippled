@@ -26,6 +26,14 @@ namespace ripple {
 //------------------------------------------------------------------------------
 
 // NIKB Move this in the right place
+static Quality
+calc_bridged_quality (Offer const& leg1, Offer const& leg2)
+{
+    // Conceptually we can do:
+    //return leg1.quality () * leg2.quality ();
+    return Quality();
+}
+
 std::pair<TER,bool>
 process_order_bridged (
     core::LedgerView& view,
@@ -56,87 +64,88 @@ process_order_bridged (
             view.accountFunds (taker.account(), amount.in) << ", " <<
             view.accountFunds (taker.account(), amount.out);
 
-    bool place_order (true);
+    bool have_direct (direct.step());
+    bool have_bridged (leg1.step() && leg2.step());
 
-    while (true)
+    while (have_direct || have_bridged)
     {
-        // Modifying the order or logic of these
-        // operations causes a protocol breaking change.
+        bool use_direct;
+        Quality quality;
 
-        // Checks which remove offers are performed early so we
-        // can reduce the size of the order book as much as possible
-        // before terminating the loop.
-
-        if (taker.done())
+        // Logic:
+        // We calculate the qualities of any direct and bridged offers at the
+        // tip of the order book, and choose the best one of the two.
+        
+        if (have_direct)
         {
-            journal.debug << "The taker reports he's done during crossing!";
-            place_order = false;
+            Quality const direct_quality (direct.tip().quality());
+
+            if (have_bridged)
+            {
+                Quality const bridged_quality (
+                    calc_bridged_quality (leg1.tip(), leg2.tip()));
+
+                if (direct_quality > bridged_quality)
+                {
+                    use_direct = true;
+                    quality = direct_quality;
+                }
+                else
+                {
+                    use_direct = false;
+                    quality = bridged_quality;
+                }
+            }
+            else
+            {
+                use_direct = true;
+                quality = direct.tip().quality();
+            }
+        }
+        else
+        {
+            use_direct = false;
+            quality = calc_bridged_quality (leg1.tip(), leg2.tip());
+        }
+
+        // We are always looking at the best quality available, so if we reject
+        // that, we know that we are done.        
+        if (taker.reject(quality))
             break;
-        }
 
-        if (! offers.step())
+        if (use_direct)
         {
-            // Place the order since there are no
-            // more offers and the order has a balance.
-            journal.debug << "No more offers to consider during crossing!";
-            break;
+            result = taker.cross(direct.tip());
+
+            if (direct.tip().fully_consumed ())
+                have_direct = direct.step();
         }
-
-        auto const offer (offers.tip());
-
-        if (journal.debug) journal.debug <<
-            "Considering offer: " << std::endl <<
-            "  Id: " << offer.entry()->getIndex() << std::endl <<
-            "  In: " << offer.amount().in << std::endl <<
-            " Out: " << offer.amount().out << std::endl <<
-            "  By: " << offer.account();
-
-        if (taker.reject (offer.quality()))
+        else
         {
-            // Place the order since there are no more offers
-            // at the desired quality, and the order has a balance.
-            break;
+            result = taker.cross(leg.tip(), leg2.tip ());
+
+            if (leg1.tip().fully_consumed ())
+                have_bridged = leg1.step ();
+            if (have_bridged && leg2.tip ().fully_consumed ())
+                have_bridged = leg2.step ();
         }
-
-        if (offer.account() == taker.account())
-        {
-            if (journal.debug) journal.debug <<
-                " skipping self-offer " << offer.entry()->getIndex() << std::endl <<
-                "  pays/gets " << offer.amount().in << ", " << offer.amount().out << std::endl <<
-                " during cross for " << std::endl <<
-                "   pays/gets " << amount.in << ", " << amount.out;
-                ;
-
-            // Skip offer from self.
-            // (Offer will be considered expired, and get deleted)
-            continue;
-        }
-
-        if (journal.debug) journal.debug <<
-            "   offer " << offer.entry()->getIndex() << std::endl <<
-            "  pays/gets " << offer.amount().in << ", " << offer.amount().out
-            ;
-
-        // NIKB FIXME use the bridged version here.
-        result = taker.cross (offer);
-
-        if (journal.debug) journal.debug <<
-            "       flow " <<
-                ret.first.in << ", " << ret.first.out << std::endl <<
-            "   balances " <<
-                view.accountFunds (taker.account(), amount.in) << ", " <<
-                view.accountFunds (taker.account(), amount.out)
-            ;
 
         if (result != tesSUCCESS)
         {
             result = tecFAILED_PROCESSING;
             break;
         }
+
+        if (taker.done())
+        {
+            journal.debug << "The taker reports he's done during crossing!";
+            place_offer = false;
+            break;
+        }
     }
 
     // Figure out how much flowed during crossing
-    cross_flow = taker.flow ();
+    cross_flow = taker.total_flow ();
 
     if (result == tesSUCCESS)
     {
@@ -163,7 +172,7 @@ process_order_bridged (
 
     }
 
-    return std::make_pair(result,place_order);
+    return std::make_pair(result, place_order);
 }
 
 /** Take as much as possible.

@@ -82,6 +82,17 @@ public:
             m_entry->getFieldAmount (sfTakerGets));
     }
 
+    /** Returns true if either the in or out amounts of this offer are 0. */
+    bool
+    fully_consumed() const noexcept
+    {
+        if (m_entry->getFieldAmount (sfTakerPays) == zero)
+            return true;
+        if (m_entry->getFieldAmount (sfTakerGets) == zero)
+            return true;
+        return false;
+    }
+
     /** Returns the ledger entry underlying the offer. */
     // AVOID USING THIS
     SLE::pointer
