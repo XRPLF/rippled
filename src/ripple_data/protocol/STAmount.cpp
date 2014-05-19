@@ -920,6 +920,7 @@ STAmount operator- (const STAmount& v1, const STAmount& v2)
         return STAmount (v1.getFName (), v1.mCurrency, v1.mIssuer, -fv, ov1, true);
 }
 
+// NIKB TODO Make Amount::divide skip math if den == QUALITY_ONE
 STAmount STAmount::divide (const STAmount& num, const STAmount& den, const uint160& uCurrencyID, const uint160& uIssuerID)
 {
     if (den == zero)

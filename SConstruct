@@ -329,7 +329,7 @@ if not OSX:
         '-pthread',
         ])
 
-DEBUGFLAGS  = ['-g', '-DDEBUG', '-D_DEBUG']
+DEBUGFLAGS  = ['-g', '-ggdb', '-DDEBUG', '-D_DEBUG']
 
 env.Append(CCFLAGS = ['-pthread', '-Wall', '-Wno-sign-compare', '-Wno-char-subscripts']+DEBUGFLAGS)
 if not USING_CLANG:
@@ -342,7 +342,7 @@ else:
      env.Append(CCFLAGS = more_warnings)
 
 # add '-Wconversion' some day
-env.Append(CXXFLAGS = ['-O3', '-fno-strict-aliasing', '-pthread', '-Wno-invalid-offsetof', '-Wformat']+more_warnings+DEBUGFLAGS)
+env.Append(CXXFLAGS = ['-O0', '-fno-strict-aliasing', '-pthread', '-Wno-invalid-offsetof', '-Wformat']+more_warnings+DEBUGFLAGS)
 
 # RTTI is required for Beast and CountedObject.
 #

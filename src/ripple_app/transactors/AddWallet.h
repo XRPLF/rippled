@@ -22,20 +22,20 @@
 
 namespace ripple {
 
-class WalletAddTransactorLog;
+class AddWalletLog;
 
 template <>
 char const*
-LogPartition::getPartitionName <WalletAddTransactorLog> ()
+LogPartition::getPartitionName <AddWalletLog> ()
 {
     return "Tx/WalletAdd";
 }
 
-class WalletAddTransactor
+class AddWallet
     : public Transactor
 {
 public:
-    WalletAddTransactor (
+    AddWallet (
         SerializedTransaction const& txn,
         TransactionEngineParams params,
         TransactionEngine* engine) 
@@ -43,12 +43,22 @@ public:
             txn,
             params,
             engine,
-            LogPartition::getJournal <WalletAddTransactorLog> ())
+            LogPartition::getJournal <AddWalletLog> ())
     {
     }
 
     TER doApply ();
 };
+
+inline
+std::unique_ptr <Transactor>
+make_AddWallet (
+    SerializedTransaction const& txn,
+    TransactionEngineParams params,
+    TransactionEngine* engine)
+{
+    return std::make_unique <AddWallet> (txn, params, engine);
+}
 
 }
 

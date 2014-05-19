@@ -19,7 +19,7 @@
 
 namespace ripple {
 
-TER ChangeTransactor::doApply ()
+TER Change::doApply ()
 {
     if (mTxn.getTxnType () == ttAMENDMENT)
         return applyAmendment ();
@@ -30,7 +30,7 @@ TER ChangeTransactor::doApply ()
     return temUNKNOWN;
 }
 
-TER ChangeTransactor::checkSig ()
+TER Change::checkSig ()
 {
     if (mTxn.getFieldAccount160 (sfAccount).isNonZero ())
     {
@@ -47,7 +47,7 @@ TER ChangeTransactor::checkSig ()
     return tesSUCCESS;
 }
 
-TER ChangeTransactor::checkSeq ()
+TER Change::checkSeq ()
 {
     if ((mTxn.getSequence () != 0) || mTxn.isFieldPresent (sfPreviousTxnID))
     {
@@ -58,7 +58,7 @@ TER ChangeTransactor::checkSeq ()
     return tesSUCCESS;
 }
 
-TER ChangeTransactor::payFee ()
+TER Change::payFee ()
 {
     if (mTxn.getTransactionFee () != STAmount ())
     {
@@ -69,7 +69,7 @@ TER ChangeTransactor::payFee ()
     return tesSUCCESS;
 }
 
-TER ChangeTransactor::preCheck ()
+TER Change::preCheck ()
 {
     mTxnAccountID   = mTxn.getSourceAccount ().getAccountID ();
 
@@ -89,7 +89,7 @@ TER ChangeTransactor::preCheck ()
     return tesSUCCESS;
 }
 
-TER ChangeTransactor::applyAmendment ()
+TER Change::applyAmendment ()
 {
     uint256 amendment (mTxn.getFieldH256 (sfAmendment));
 
@@ -119,7 +119,7 @@ TER ChangeTransactor::applyAmendment ()
     return tesSUCCESS;
 }
 
-TER ChangeTransactor::applyFee ()
+TER Change::applyFee ()
 {
 
     SLE::pointer feeObject = mEngine->entryCache (

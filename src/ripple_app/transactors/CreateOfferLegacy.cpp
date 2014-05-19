@@ -22,7 +22,7 @@ namespace ripple {
 /** Determine if an order is still valid
     If the order is not valid it will be marked as unfunded.
 */
-bool ClassicOfferCreateTransactor::isValidOffer (
+bool CreateOfferLegacy::isValidOffer (
     SLE::ref sleOffer,
     uint160 const& uOfferOwnerID,
     STAmount const& saOfferPays,
@@ -97,7 +97,7 @@ bool ClassicOfferCreateTransactor::isValidOffer (
 
 /**
 */
-bool ClassicOfferCreateTransactor::canCross (
+bool CreateOfferLegacy::canCross (
     STAmount const& saTakerFunds,
     STAmount const& saSubTakerPays,
     STAmount const& saSubTakerGets,
@@ -189,7 +189,7 @@ bool ClassicOfferCreateTransactor::canCross (
     books as: "give 0.57 BTC for 400 USD" which is what is left to sell at the
     original rate.
 */
-bool ClassicOfferCreateTransactor::applyOffer (
+bool CreateOfferLegacy::applyOffer (
     const bool bSell,
     const std::uint32_t uTakerPaysRate, const std::uint32_t uOfferPaysRate,
     const STAmount& saOfferRate,
@@ -327,7 +327,7 @@ bool ClassicOfferCreateTransactor::applyOffer (
     @return tesSUCCESS, terNO_ACCOUNT, telFAILED_PROCESSING, or
             tecFAILED_PROCESSING
 */
-TER ClassicOfferCreateTransactor::takeOffers (
+TER CreateOfferLegacy::takeOffers (
     const bool          bOpenLedger,
     const bool          bPassive,
     const bool          bSell,
@@ -671,7 +671,7 @@ TER ClassicOfferCreateTransactor::takeOffers (
     return terResult;
 }
 
-TER ClassicOfferCreateTransactor::doApply ()
+TER CreateOfferLegacy::doApply ()
 {
     if (m_journal.debug) m_journal.debug <<
         "OfferCreate> " << mTxn.getJson (0);

@@ -24,16 +24,16 @@
 
 namespace ripple {
 
-class OfferCreateTransactorLog;
+class CreateOfferLog;
 
 template <>
 char const*
-LogPartition::getPartitionName <OfferCreateTransactorLog> ()
+LogPartition::getPartitionName <CreateOfferLog> ()
 {
     return "Tx/OfferCreate";
 }
 
-class OfferCreateTransactor
+class CreateOffer
     : public Transactor
 {
 private:
@@ -52,13 +52,13 @@ private:
     }
 
 public:
-    OfferCreateTransactor (
+    CreateOffer (
         SerializedTransaction const& txn,
         TransactionEngineParams params,
         TransactionEngine* engine);
 };
 
-std::unique_ptr <Transactor> make_OfferCreateTransactor (
+std::unique_ptr <Transactor> make_CreateOffer (
     SerializedTransaction const& txn,
     TransactionEngineParams params,
     TransactionEngine* engine);

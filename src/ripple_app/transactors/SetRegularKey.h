@@ -22,22 +22,22 @@
 
 namespace ripple {
 
-class RegularKeySetTransactorLog;
+class SetRegularKeyLog;
 
 template <>
 char const*
-LogPartition::getPartitionName <RegularKeySetTransactorLog> ()
+LogPartition::getPartitionName <SetRegularKeyLog> ()
 {
     return "Tx/RegularKeySet";
 }
 
-class RegularKeySetTransactor
+class SetRegularKey
     : public Transactor
 {
     std::uint64_t calculateBaseFee ();
 
 public:
-    RegularKeySetTransactor (
+    SetRegularKey (
         SerializedTransaction const& txn,
         TransactionEngineParams params,
         TransactionEngine* engine)
@@ -45,7 +45,7 @@ public:
             txn,
             params,
             engine,
-            LogPartition::getJournal <RegularKeySetTransactorLog> ())
+            LogPartition::getJournal <SetRegularKeyLog> ())
     {
 
     }
@@ -53,6 +53,16 @@ public:
     TER checkFee ();
     TER doApply ();
 };
+
+inline
+std::unique_ptr <Transactor>
+make_SetRegularKey (
+    SerializedTransaction const& txn,
+    TransactionEngineParams params,
+    TransactionEngine* engine)
+{
+    return std::make_unique <SetRegularKey> (txn, params, engine);
+}
 
 }
 

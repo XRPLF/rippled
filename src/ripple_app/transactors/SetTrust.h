@@ -22,20 +22,20 @@
 
 namespace ripple {
 
-class TrustSetTransactorLog;
+class SetTrustLog;
 
 template <>
 char const*
-LogPartition::getPartitionName <TrustSetTransactorLog> ()
+LogPartition::getPartitionName <SetTrustLog> ()
 {
     return "Tx/TrustSet";
 }
 
-class TrustSetTransactor
+class SetTrust
     : public Transactor
 {
 public:
-    TrustSetTransactor (
+    SetTrust (
         SerializedTransaction const& txn,
         TransactionEngineParams params,
         TransactionEngine* engine)
@@ -43,12 +43,22 @@ public:
             txn,
             params,
             engine,
-            LogPartition::getJournal <TrustSetTransactorLog> ())
+            LogPartition::getJournal <SetTrustLog> ())
     {
     }
 
     TER doApply ();
 };
+
+inline
+std::unique_ptr <Transactor>
+make_SetTrust (
+    SerializedTransaction const& txn,
+    TransactionEngineParams params,
+    TransactionEngine* engine)
+{
+    return std::make_unique <SetTrust> (txn, params, engine);
+}
 
 }
 

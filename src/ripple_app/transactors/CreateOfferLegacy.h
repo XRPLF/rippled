@@ -24,8 +24,8 @@
 
 namespace ripple {
 
-class ClassicOfferCreateTransactor
-    : public OfferCreateTransactor
+class CreateOfferLegacy
+    : public CreateOffer
 {
 private:
     template <class T>
@@ -43,11 +43,11 @@ private:
     }
 
 public:
-    ClassicOfferCreateTransactor (
+    CreateOfferLegacy (
         SerializedTransaction const& txn,
         TransactionEngineParams params,
         TransactionEngine* engine)
-        : OfferCreateTransactor (
+        : CreateOffer (
             txn,
             params,
             engine)
