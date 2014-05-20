@@ -336,27 +336,18 @@ void RFC1751::insert (char* s, int x, int start, int length)
 
 void RFC1751::standard (std::string& strWord)
 {
-    BOOST_FOREACH (char cLetter, strWord)
+    for (auto& letter : strWord)
     {
-        if (!isascii (cLetter))
+        if (isascii (letter))
         {
-            ;   // nothing
-        }
-        else if (islower (cLetter))
-        {
-            cLetter = toupper (cLetter);
-        }
-        else if (cLetter == '1')
-        {
-            cLetter = 'L';
-        }
-        else if (cLetter == '0')
-        {
-            cLetter = 'O';
-        }
-        else if (cLetter == '5')
-        {
-            cLetter = 'S';
+            if (islower (letter))
+                letter = toupper (letter);
+            else if (letter == '1')
+                letter = 'L';
+            else if (letter == '0')
+                letter = 'O';
+            else if (letter == '5')
+                letter = 'S';
         }
     }
 }
