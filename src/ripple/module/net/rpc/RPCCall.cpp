@@ -813,6 +813,7 @@ public:
             {   "ledger_closed",        &RPCParser::parseAsIs,                  0,  0   },
             {   "ledger_current",       &RPCParser::parseAsIs,                  0,  0   },
     //      {   "ledger_entry",         &RPCParser::parseLedgerEntry,          -1, -1   },
+            {   "ledger_get",           &RPCParser::parseLedgerId,              1,  1   },
             {   "ledger_header",        &RPCParser::parseLedgerId,              1,  1   },
             {   "log_level",            &RPCParser::parseLogLevel,              0,  2   },
             {   "logrotate",            &RPCParser::parseAsIs,                  0,  0   },
