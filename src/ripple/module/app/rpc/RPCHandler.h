@@ -87,6 +87,7 @@ private:
     Json::Value doLedgerCurrent         (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& mlh);
     Json::Value doLedgerData            (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& mlh);
     Json::Value doLedgerEntry           (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& mlh);
+    Json::Value doLedgerGet             (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& mlh);
     Json::Value doLedgerHeader          (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& mlh);
     Json::Value doLogLevel              (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& mlh);
     Json::Value doLogRotate             (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& mlh);

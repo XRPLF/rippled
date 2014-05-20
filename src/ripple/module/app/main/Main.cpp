@@ -91,6 +91,7 @@ void printHelp (const po::options_description& desc)
     cerr << "     ledger_accept" << endl;
     cerr << "     ledger_closed" << endl;
     cerr << "     ledger_current" << endl;
+    cerr << "     ledger_get <ledger>" << endl;
     cerr << "     ledger_header <ledger>" << endl;
     cerr << "     logrotate " << endl;
     cerr << "     peers" << endl;
@@ -101,6 +102,7 @@ void printHelp (const po::options_description& desc)
     cerr << "     ripple ..." << endl;
     cerr << "     ripple_path_find <json> [<ledger>]" << endl;
     //  cerr << "     send <seed> <paying_account> <account_id> <amount> [<currency>] [<send_max>] [<send_currency>]" << endl;
+    cerr << "     server_info" << endl;
     cerr << "     stop" << endl;
     cerr << "     tx <id>" << endl;
     cerr << "     unl_add <domain>|<public> [<comment>]" << endl;

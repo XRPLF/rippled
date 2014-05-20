@@ -139,6 +139,7 @@ Json::Value RPCHandler::doCommand (const Json::Value& params, int iRole, Resourc
         {   "ledger_current",       &RPCHandler::doLedgerCurrent,       false,  optCurrent  },
         {   "ledger_data",          &RPCHandler::doLedgerData,          false,  optCurrent  },
         {   "ledger_entry",         &RPCHandler::doLedgerEntry,         false,  optCurrent  },
+        {   "ledger_get",           &RPCHandler::doLedgerGet,           true,   optNone     },
         {   "ledger_header",        &RPCHandler::doLedgerHeader,        false,  optCurrent  },
         {   "log_level",            &RPCHandler::doLogLevel,            true,   optNone     },
         {   "logrotate",            &RPCHandler::doLogRotate,           true,   optNone     },
