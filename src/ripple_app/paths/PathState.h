@@ -112,6 +112,7 @@ public:
         const STAmount&         saSendMax)
         : saInReq (saSendMax)
         , saOutReq (saSend)
+        , bConsumed (false)
     {
     }
 
@@ -119,6 +120,7 @@ public:
                bool bUnused)
         : saInReq (psSrc.saInReq)
         , saOutReq (psSrc.saOutReq)
+        , bConsumed (false)
     {
     }
 
