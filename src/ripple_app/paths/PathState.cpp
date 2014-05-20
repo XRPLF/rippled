@@ -270,7 +270,7 @@ TER PathState::pushNode (
 
             if (bBckAccount)
             {
-                SLE::pointer    sleRippleState  = lesEntries.entryCache (ltRIPPLE_STATE, Ledger::getRippleStateIndex (pnBck.uAccountID, node.uAccountID, previousNode.uCurrencyID));
+                SLE::pointer    sleRippleState  = lesEntries.entryCache (ltRIPPLE_STATE, Ledger::getRippleStateIndex (pnBck.uAccountID, node.uAccountID, pnBck.uCurrencyID));
 
                 if (!sleRippleState)
                 {
