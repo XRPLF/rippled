@@ -39,7 +39,6 @@ void pathNext (
     // The next state is what is available in preference order.
     // This is calculated when referenced accounts changed.
     const unsigned int  lastNodeIndex           = pathState.vpnNodes.size () - 1;
-
     pathState.bConsumed   = false;
 
     // YYY This clearing should only be needed for nice logging.

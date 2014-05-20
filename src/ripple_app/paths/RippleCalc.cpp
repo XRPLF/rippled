@@ -315,8 +315,7 @@ TER rippleCalculate (
                     << " rate: "
                     << STAmount::saFromRate (pspCur->uQuality)
                     << " quality:" << pspCur->uQuality
-                    << " best: " << (iBest == pspCur->getIndex ())
-                    << " consumed: " << pspCur->bConsumed;
+                    << " best: " << (iBest == pspCur->getIndex ());
             }
         }
 
