@@ -338,17 +338,14 @@ void RFC1751::standard (std::string& strWord)
 {
     for (auto& letter : strWord)
     {
-        if (isascii (letter))
-        {
-            if (islower (letter))
-                letter = toupper (letter);
-            else if (letter == '1')
-                letter = 'L';
-            else if (letter == '0')
-                letter = 'O';
-            else if (letter == '5')
-                letter = 'S';
-        }
+        if (islower (letter))
+            letter = toupper (letter);
+        else if (letter == '1')
+            letter = 'L';
+        else if (letter == '0')
+            letter = 'O';
+        else if (letter == '5')
+            letter = 'S';
     }
 }
 
