@@ -53,6 +53,7 @@
 
 #include "utility/CountedObject.cpp"
 #include "utility/IniFile.cpp"
+#include "utility/Position.cpp"
 #include "utility/StringUtilities.cpp"
 #include "utility/Sustain.cpp"
 #include "utility/ThreadName.cpp"
