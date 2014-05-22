@@ -74,6 +74,8 @@ JSS ( fee_base );
 JSS ( fee_ref );
 JSS ( fetch_pack );
 JSS ( flags );
+JSS ( freeze );
+JSS ( freeze_peer );
 JSS ( hash );
 JSS ( hostid );
 JSS ( id );

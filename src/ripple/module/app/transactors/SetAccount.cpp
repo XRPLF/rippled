@@ -29,6 +29,12 @@ TER SetAccount::doApply ()
     std::uint32_t const uSetFlag = mTxn.getFieldU32 (sfSetFlag);
     std::uint32_t const uClearFlag  = mTxn.getFieldU32 (sfClearFlag);
 
+    if ((uSetFlag != 0) && (uSetFlag == uClearFlag))
+    {
+        m_journal.trace << "Malformed transaction: Set and clear same flag";
+        return temINVALID_FLAG;
+    }
+
     // legacy AccountSet flags
     bool bSetRequireDest   = (uTxFlags & TxFlag::requireDestTag) || (uSetFlag == asfRequireDest);
     bool bClearRequireDest = (uTxFlags & tfOptionalDestTag) || (uClearFlag == asfRequireDest);
@@ -139,6 +145,29 @@ TER SetAccount::doApply ()
     {
         m_journal.trace << "Clear lsfDisableMaster.";
         uFlagsOut   &= ~lsfDisableMaster;
+    }
+
+    if ((uSetFlag == asfNoFreeze) && (uClearFlag != asfNoFreeze))
+    {
+        m_journal.trace << "Set NoFreeze flag";
+        uFlagsOut   |= lsfNoFreeze;
+    }
+
+    // Anyone may set global freeze
+    if ((uSetFlag == asfGlobalFreeze) && (uClearFlag != asfGlobalFreeze))
+    {
+        m_journal.trace << "Set GlobalFreeze flag";
+        uFlagsOut   |= lsfGlobalFreeze;
+    }
+
+    // If you have set NoFreeze, you may not clear GlobalFreeze
+    // This prevents those who have set NoFreeze from using
+    // GlobalFreeze strategically.
+    if ((uSetFlag != asfGlobalFreeze) && (uClearFlag == asfGlobalFreeze) &&
+        ((uFlagsOut & lsfNoFreeze) == 0))
+    {
+        m_journal.trace << "Clear GlobalFreeze flag";
+        uFlagsOut   &= ~lsfGlobalFreeze;
     }
 
     //

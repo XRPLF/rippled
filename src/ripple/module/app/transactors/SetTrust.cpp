@@ -57,6 +57,8 @@ TER SetTrust::doApply ()
     bool const bSetAuth = (uTxFlags & tfSetfAuth);
     bool const bSetNoRipple = (uTxFlags & tfSetNoRipple);
     bool const bClearNoRipple  = (uTxFlags & tfClearNoRipple);
+    bool const bSetFreeze = (uTxFlags & tfSetFreeze);
+    bool const bClearFreeze = (uTxFlags & tfClearFreeze);
 
     if (bSetAuth && !(mTxnAccount->getFieldU32 (sfFlags) & lsfRequireAuth))
     {
@@ -242,6 +244,15 @@ TER SetTrust::doApply ()
             uFlagsOut &= ~(bHigh ? lsfHighNoRipple : lsfLowNoRipple);
         }
 
+        if (bSetFreeze && !bClearFreeze && !mTxnAccount->isFlag  (lsfNoFreeze))
+        {
+            uFlagsOut           |= (bHigh ? lsfHighFreeze : lsfLowFreeze);
+        }
+        else if (bClearFreeze && !bSetFreeze)
+        {
+            uFlagsOut           &= ~(bHigh ? lsfHighFreeze : lsfLowFreeze);
+        }
+
         if (QUALITY_ONE == uLowQualityOut)  uLowQualityOut  = 0;
 
         if (QUALITY_ONE == uHighQualityOut) uHighQualityOut = 0;
@@ -249,11 +260,13 @@ TER SetTrust::doApply ()
 
         bool const  bLowReserveSet      = uLowQualityIn || uLowQualityOut ||
                                           (uFlagsOut & lsfLowNoRipple) ||
+                                          (uFlagsOut & lsfLowFreeze) ||
                                           !!saLowLimit || saLowBalance > zero;
         bool const  bLowReserveClear    = !bLowReserveSet;
 
         bool const  bHighReserveSet     = uHighQualityIn || uHighQualityOut ||
                                           (uFlagsOut & lsfHighNoRipple) ||
+                                          (uFlagsOut & lsfHighFreeze) ||
                                           !!saHighLimit || saHighBalance > zero;
         bool const  bHighReserveClear   = !bHighReserveSet;
 
@@ -375,6 +388,7 @@ TER SetTrust::doApply ()
                           mTxnAccount,
                           bSetAuth,
                           bSetNoRipple && !bClearNoRipple,
+                          bSetFreeze && !bClearFreeze,
                           saBalance,
                           saLimitAllow,       // Limit for who is being charged.
                           uQualityIn,

@@ -102,6 +102,8 @@ enum LedgerSpecificFlags
     lsfRequireAuth      = 0x00040000,   // True, to require a authorization to hold IOUs.
     lsfDisallowXRP      = 0x00080000,   // True, to disallow sending XRP.
     lsfDisableMaster    = 0x00100000,   // True, force regular key
+    lsfNoFreeze         = 0x00200000,   // True, cannot freeze ripple states
+    lsfGlobalFreeze     = 0x00400000,   // True, all assets frozen
 
     // ltOFFER
     lsfPassive          = 0x00010000,
@@ -114,6 +116,8 @@ enum LedgerSpecificFlags
     lsfHighAuth         = 0x00080000,
     lsfLowNoRipple      = 0x00100000,
     lsfHighNoRipple     = 0x00200000,
+    lsfLowFreeze        = 0x00400000,   // True, low side has set freeze flag
+    lsfHighFreeze       = 0x00800000,   // True, high side has set freeze flag
 };
 
 //------------------------------------------------------------------------------

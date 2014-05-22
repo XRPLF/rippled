@@ -1367,6 +1367,7 @@ TER LedgerEntrySet::trustCreate (
     SLE::ref        sleAccount,         // --> the account being set.
     const bool      bAuth,              // --> authorize account.
     const bool      bNoRipple,          // --> others cannot ripple through
+    const bool      bFreeze,            // --> funds cannot leave
     const STAmount& saBalance,          // --> balance of account being set.
                                         // Issuer should be noAccount()
     const STAmount& saLimit,            // --> limit for account being set.
@@ -1434,6 +1435,10 @@ TER LedgerEntrySet::trustCreate (
         if (bNoRipple)
         {
             uFlags      |= (bSetHigh ? lsfHighNoRipple : lsfLowNoRipple);
+        }
+        if (bFreeze)
+        {
+            uFlags      |= (!bSetHigh ? lsfLowFreeze : lsfHighFreeze);
         }
 
         sleRippleState->setFieldU32 (sfFlags, uFlags);
@@ -1536,6 +1541,7 @@ TER LedgerEntrySet::rippleCredit (
             entryCache (ltACCOUNT_ROOT, Ledger::getAccountRootIndex (uReceiverID)),
             false,
             false,
+            false,
             saBalance,
             saReceiverLimit);
     }
@@ -1568,6 +1574,7 @@ TER LedgerEntrySet::rippleCredit (
             && (uFlags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve))
             // Sender reserve is set.
             && !(uFlags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple))
+            && !(uFlags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze))
             && !sleRippleState->getFieldAmount (
                 !bSenderHigh ? sfLowLimit : sfHighLimit)
             // Sender trust limit is 0.

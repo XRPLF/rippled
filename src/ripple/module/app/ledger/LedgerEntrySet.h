@@ -246,6 +246,7 @@ public:
         SLE::ref        sleAccount,
         const bool      bAuth,
         const bool      bNoRipple,
+        const bool      bFreeze,
         const STAmount& saSrcBalance,
         const STAmount& saSrcLimit,
         const std::uint32_t uSrcQualityIn = 0,

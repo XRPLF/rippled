@@ -78,6 +78,18 @@ public:
         return mFlags & (!mViewLowest ? lsfLowNoRipple : lsfHighNoRipple);
     }
 
+    /** Have we set the freeze flag on our peer */
+    bool getFreeze () const
+    {
+        return mFlags & (mViewLowest ? lsfLowFreeze : lsfHighFreeze);
+    }
+
+    /** Has the peer set the freeze flag on us */
+    bool getFreezePeer () const
+    {
+        return mFlags & (!mViewLowest ? lsfLowFreeze : lsfHighFreeze);
+    }
+
     const STAmount& getBalance () const
     {
         return mBalance;

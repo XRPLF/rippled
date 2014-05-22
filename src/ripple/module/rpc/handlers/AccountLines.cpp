@@ -106,6 +106,10 @@ Json::Value doAccountLines (RPC::Context& context)
                     jPeer[jss::no_ripple]  = true;
                 if (line->getNoRipplePeer())
                     jPeer[jss::no_ripple_peer] = true;
+                if (line->getFreeze())
+                    jPeer[jss::freeze]  = true;
+                if (line->getFreezePeer())
+                    jPeer[jss::freeze_peer] = true;
             }
         }
 
