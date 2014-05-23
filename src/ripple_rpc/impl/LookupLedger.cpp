@@ -47,25 +47,25 @@ Json::Value lookupLedger (
 {
     Json::Value jvResult;
 
-    Json::Value ledger_hash = params.get ("ledger_hash", Json::Value ("0"));
-    Json::Value ledger_index = params.get ("ledger_index", Json::Value ("current"));
+    Json::Value ledger_hash = params.get (jss::ledger_hash, Json::Value ("0"));
+    Json::Value ledger_index = params.get (jss::ledger_index, Json::Value ("current"));
 
     // Support for DEPRECATED "ledger" - attempt to deduce our input
-    if (params.isMember ("ledger"))
+    if (params.isMember (jss::ledger))
     {
-        if (params["ledger"].asString ().size () > 12)
+        if (params[jss::ledger].asString ().size () > 12)
         {
-            ledger_hash = params["ledger"];
+            ledger_hash = params[jss::ledger];
             ledger_index = Json::Value ("");
         }
-        else if (params["ledger"].isNumeric ())
+        else if (params[jss::ledger].isNumeric ())
         {
-            ledger_index = params["ledger"];
+            ledger_index = params[jss::ledger];
             ledger_hash = Json::Value ("0");
         }
         else
         {
-            ledger_index = params["ledger"];
+            ledger_index = params[jss::ledger];
             ledger_hash = Json::Value ("0");
         }
     }
@@ -74,7 +74,7 @@ Json::Value lookupLedger (
 
     if (!ledger_hash.isString() || !uLedger.SetHex (ledger_hash.asString ()))
     {
-        jvResult["error"] = "ledgerHashMalformed";
+        RPC::inject_error(rpcINVALID_PARAMS, "ledgerHashMalformed", jvResult);
         return jvResult;
     }
 
@@ -104,50 +104,54 @@ Json::Value lookupLedger (
             }
             else
             {
-                jvResult["error"] = "ledgerIndexMalformed";
+                RPC::inject_error(rpcINVALID_PARAMS, "ledgerIndexMalformed", jvResult);
                 return jvResult;
             }
         }
     }
 
     // The ledger was directly specified by hash.
-    if (!!uLedger)
+    if (uLedger.isNonZero ())
     {
         lpLedger = netOps.getLedgerByHash (uLedger);
 
         if (!lpLedger)
         {
-            jvResult["error"] = "ledgerNotFound";
+            RPC::inject_error(rpcLGR_NOT_FOUND, "ledgerNotFound", jvResult);
             return jvResult;
         }
 
         iLedgerIndex = lpLedger->getLedgerSeq ();
     }
 
+    int ledger_request = 0;
     switch (iLedgerIndex)
     {
     case LEDGER_CURRENT:
         lpLedger = netOps.getCurrentLedger ();
         iLedgerIndex = lpLedger->getLedgerSeq ();
         assert (lpLedger->isImmutable () && !lpLedger->isClosed ());
+        ledger_request = LEDGER_CURRENT;
         break;
 
     case LEDGER_CLOSED:
         lpLedger = getApp().getLedgerMaster ().getClosedLedger ();
         iLedgerIndex = lpLedger->getLedgerSeq ();
         assert (lpLedger->isImmutable () && lpLedger->isClosed ());
+        ledger_request = LEDGER_CLOSED;
         break;
 
     case LEDGER_VALIDATED:
         lpLedger = netOps.getValidatedLedger ();
         iLedgerIndex = lpLedger->getLedgerSeq ();
         assert (lpLedger->isImmutable () && lpLedger->isClosed ());
+        ledger_request = LEDGER_VALIDATED;
         break;
     }
 
     if (iLedgerIndex <= 0)
     {
-        jvResult["error"] = "ledgerIndexMalformed";
+        RPC::inject_error(rpcINVALID_PARAMS, "ledgerIndexMalformed", jvResult);
         return jvResult;
     }
 
@@ -157,22 +161,55 @@ Json::Value lookupLedger (
 
         if (!lpLedger)
         {
-            jvResult["error"] = "ledgerNotFound"; // ledger_index from future?
+            RPC::inject_error(rpcLGR_NOT_FOUND, "ledgerNotFound", jvResult);
             return jvResult;
         }
     }
 
     if (lpLedger->isClosed ())
     {
-        if (!!uLedger)
-            jvResult["ledger_hash"] = to_string (uLedger);
+        if (uLedger.isNonZero ())
+            jvResult[jss::ledger_hash] = to_string (uLedger);
 
-        jvResult["ledger_index"] = iLedgerIndex;
+        jvResult[jss::ledger_index] = iLedgerIndex;
     }
     else
     {
-        // CHECKME - What is this supposed to signify?
-        jvResult["ledger_current_index"] = iLedgerIndex;
+        jvResult[jss::ledger_current_index] = iLedgerIndex;
+    }
+
+    if (lpLedger->isValidated ())
+        jvResult[jss::validated] = true;
+    else
+    {
+        if (!lpLedger->isClosed ())
+            jvResult[jss::validated] = false;
+        else if (ledger_request == LEDGER_VALIDATED)
+        {
+            lpLedger->setValidated();
+            jvResult[jss::validated] = true;
+        }
+        else
+        {
+            try
+            {
+                // Use the skip list in the last validated ledger to see if lpLedger
+                // comes after the last validated ledger (and thus has been validated)
+                if (uLedger == getApp().getLedgerMaster ().walkHashBySeq (iLedgerIndex))
+                {
+                    lpLedger->setValidated();
+                    jvResult[jss::validated] = true;
+                }
+                else
+                {
+                    jvResult[jss::validated] = false;
+                }
+            }
+            catch (SHAMapMissingNode const&)
+            {
+                jvResult[jss::validated] = false;
+            }
+        }
     }
 
     return jvResult;
