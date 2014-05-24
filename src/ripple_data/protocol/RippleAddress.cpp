@@ -77,7 +77,7 @@ std::string RippleAddress::humanAddressType () const
 // NodePublic
 //
 
-RippleAddress RippleAddress::createNodePublic (const RippleAddress& naSeed)
+RippleAddress RippleAddress::createNodePublic (const RippleAddressSeed& naSeed)
 {
     CKey            ckSeed (naSeed.getSeed ());
     RippleAddress   naNew;
@@ -196,7 +196,7 @@ bool RippleAddress::verifyNodePublic (uint256 const& hash, const std::string& st
 // NodePrivate
 //
 
-RippleAddress RippleAddress::createNodePrivate (const RippleAddress& naSeed)
+RippleAddress RippleAddress::createNodePrivate (const RippleAddressSeed& naSeed)
 {
     uint256         uPrivKey;
     RippleAddress   naNew;
@@ -482,7 +482,7 @@ RippleAddress RippleAddress::createAccountID (const uint160& uiAccountID)
 // AccountPrivate
 //
 
-RippleAddress RippleAddress::createAccountPrivate (const RippleAddress& naGenerator, const RippleAddress& naSeed, int iSeq)
+RippleAddress RippleAddress::createAccountPrivate (const RippleAddress& naGenerator, const RippleAddressSeed& naSeed, int iSeq)
 {
     RippleAddress   naNew;
 
@@ -542,7 +542,7 @@ void RippleAddress::setAccountPrivate (uint256 hash256)
     SetData (VER_ACCOUNT_PRIVATE, hash256);
 }
 
-void RippleAddress::setAccountPrivate (const RippleAddress& naGenerator, const RippleAddress& naSeed, int seq)
+void RippleAddress::setAccountPrivate (const RippleAddress& naGenerator, const RippleAddressSeed& naSeed, int seq)
 {
     CKey    ckPubkey    = CKey (naSeed.getSeed ());
     CKey    ckPrivkey   = CKey (naGenerator, ckPubkey.GetSecretBN (), seq);
@@ -685,7 +685,7 @@ void RippleAddress::setGenerator (Blob const& vPublic)
     SetData (VER_FAMILY_GENERATOR, vPublic);
 }
 
-RippleAddress RippleAddress::createGeneratorPublic (const RippleAddress& naSeed)
+RippleAddress RippleAddress::createGeneratorPublic (const RippleAddressSeed& naSeed)
 {
     CKey            ckSeed (naSeed.getSeed ());
     RippleAddress   naNew;
@@ -699,92 +699,67 @@ RippleAddress RippleAddress::createGeneratorPublic (const RippleAddress& naSeed)
 // Seed
 //
 
-uint128 RippleAddress::getSeed () const
+uint128 RippleAddressSeed::getSeed () const
 {
-    switch (nVersion)
-    {
-    case VER_NONE:
-        throw std::runtime_error ("unset source - getSeed");
-
-    case VER_FAMILY_SEED:
-        return uint128 (vchData);
-
-    default:
-        throw std::runtime_error (str (boost::format ("bad source: %d") % int (nVersion)));
-    }
+    return m_seed;
 }
 
-std::string RippleAddress::humanSeed1751 () const
+std::string RippleAddressSeed::humanSeed1751 () const
 {
-    switch (nVersion)
-    {
-    case VER_NONE:
-        throw std::runtime_error ("unset source - humanSeed1751");
+    if (!m_valid)
+        return "";
 
-    case VER_FAMILY_SEED:
-    {
-        std::string strHuman;
-        std::string strLittle;
-        std::string strBig;
-        uint128 uSeed   = getSeed ();
-
-        strLittle.assign (uSeed.begin (), uSeed.end ());
-
-        strBig.assign (strLittle.rbegin (), strLittle.rend ());
-
-        RFC1751::getEnglishFromKey (strHuman, strBig);
-
-        return strHuman;
-    }
-
-    default:
-        throw std::runtime_error (str (boost::format ("bad source: %d") % int (nVersion)));
-    }
+    std::string const seed (m_seed.crbegin (), m_seed.crend ());
+    return RFC1751::getEnglishFromKey (seed);
 }
 
-std::string RippleAddress::humanSeed () const
+std::string RippleAddressSeed::humanSeed () const
 {
-    switch (nVersion)
-    {
-    case VER_NONE:
-        throw std::runtime_error ("unset source - humanSeed");
+    if (!m_valid)
+        return "";
 
-    case VER_FAMILY_SEED:
-        return ToString ();
+    CBase58Data base58(RippleAddress::VER_FAMILY_SEED, m_seed);
 
-    default:
-        throw std::runtime_error (str (boost::format ("bad source: %d") % int (nVersion)));
-    }
+    return base58.ToString ();
 }
 
-int RippleAddress::setSeed1751 (const std::string& strHuman1751)
+bool RippleAddressSeed::setSeed1751 (const std::string& strHuman1751)
 {
     std::string strKey;
-    int         iResult = RFC1751::getKeyFromEnglish (strKey, strHuman1751);
+    int iResult = RFC1751::getKeyFromEnglish (strKey, strHuman1751);
 
     if (1 == iResult)
     {
-        Blob    vchLittle (strKey.rbegin (), strKey.rend ());
-        uint128     uSeed (vchLittle);
-
-        setSeed (uSeed);
+        m_seed = uint128 (Blob (strKey.rbegin (), strKey.rend ()));
+        m_valid = true;
+    }
+    else
+    {
+        m_seed.zero ();
+        m_valid = false;
     }
 
-    return iResult;
+    return m_valid;
 }
 
-bool RippleAddress::setSeed (const std::string& strSeed)
+bool RippleAddressSeed::setSeed (const std::string& strSeed)
 {
-    mIsValid = SetString (strSeed, VER_FAMILY_SEED, Base58::getRippleAlphabet ());
+    CBase58Data base58;
 
-    return mIsValid;
+    m_valid = base58.SetString (strSeed, RippleAddress::VER_FAMILY_SEED, 
+        Base58::getRippleAlphabet ());
+
+    if (m_valid)
+        m_seed = uint128 (base58.getData ());
+    else
+        m_seed.zero ();
+    
+    return m_valid;
 }
 
-bool RippleAddress::setSeedGeneric (const std::string& strText)
+bool RippleAddressSeed::setSeedGeneric (const std::string& strText)
 {
-    RippleAddress   naTemp;
-    bool            bResult = true;
-    uint128         uSeed;
+    RippleAddress naTemp;
 
     if (strText.empty ()
             || naTemp.setAccountID (strText)
@@ -793,60 +768,55 @@ bool RippleAddress::setSeedGeneric (const std::string& strText)
             || naTemp.setNodePublic (strText)
             || naTemp.setNodePrivate (strText))
     {
-        bResult = false;
-    }
-    else if (strText.length () == 32 && uSeed.SetHex (strText, true))
-    {
-        setSeed (uSeed);
-    }
-    else if (setSeed (strText))
-    {
-        // Log::out() << "Recognized seed.";
-        nothing ();
-    }
-    else if (1 == setSeed1751 (strText))
-    {
-        // Log::out() << "Recognized 1751 seed.";
-        nothing ();
-    }
-    else
-    {
-        // Log::out() << "Creating seed from pass phrase.";
-        setSeed (CKey::PassPhraseToKey (strText));
+        std::cout << "Couldn't set seed from '" << strText << "'" << std::endl;
+        return false;
     }
 
-    return bResult;
+    if (strText.length () == 32 && m_seed.SetHex (strText, true))
+    {
+        m_valid = true;
+        return true;
+    }
+
+    if (setSeed (strText))
+        return true;
+    
+    if (1 == setSeed1751 (strText))
+        return true;
+    
+    m_seed = CKey::PassPhraseToKey (strText);
+    m_valid = true;
+
+    return true;
 }
 
-void RippleAddress::setSeed (uint128 hash128)
+
+// Eliminate if possible
+void RippleAddressSeed::setSeed (uint128 const& seed)
 {
-    mIsValid = true;
-
-    SetData (VER_FAMILY_SEED, hash128);
+    m_seed = seed;
+    m_valid = true;
 }
 
-void RippleAddress::setSeedRandom ()
+void RippleAddressSeed::setSeedRandom ()
 {
     // XXX Maybe we should call MakeNewKey
-    uint128 key;
-
-    RandomNumbers::getInstance ().fillBytes (key.begin (), key.size ());
-
-    RippleAddress::setSeed (key);
+    RandomNumbers::getInstance ().fillBytes (m_seed.begin (), m_seed.size ());
+    m_valid = true;
 }
 
-RippleAddress RippleAddress::createSeedRandom ()
+RippleAddressSeed RippleAddressSeed::createSeedRandom ()
 {
-    RippleAddress   naNew;
+    RippleAddressSeed   naNew;
 
     naNew.setSeedRandom ();
 
     return naNew;
 }
 
-RippleAddress RippleAddress::createSeedGeneric (const std::string& strText)
+RippleAddressSeed RippleAddressSeed::createSeedGeneric (const std::string& strText)
 {
-    RippleAddress   naNew;
+    RippleAddressSeed   naNew;
 
     naNew.setSeedGeneric (strText);
 
@@ -861,7 +831,7 @@ public:
     void run()
     {
         // Construct a seed.
-        RippleAddress naSeed;
+        RippleAddressSeed naSeed;
 
         expect (naSeed.setSeedGeneric ("masterpassphrase"));
         expect (naSeed.humanSeed () == "snoPBrXtMeMyMHUVTgbuqAfg1SUTb", naSeed.humanSeed ());
@@ -931,7 +901,7 @@ public:
     void run ()
     {
         testcase ("Seed");
-        RippleAddress seed;
+        RippleAddressSeed seed;
         expect (seed.setSeedGeneric ("masterpassphrase"));
         expect (seed.humanSeed () == "snoPBrXtMeMyMHUVTgbuqAfg1SUTb", seed.humanSeed ());
 

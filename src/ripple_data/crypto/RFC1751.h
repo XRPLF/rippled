@@ -27,7 +27,7 @@ class RFC1751
 public:
     static int getKeyFromEnglish (std::string& strKey, const std::string& strHuman);
 
-    static void getEnglishFromKey (std::string& strHuman, const std::string& strKey);
+    static std::string getEnglishFromKey (const std::string& strKey);
 
     /** Chooses a single dictionary word from the data.
 

@@ -373,7 +373,7 @@ class SerializedTransaction_test : public beast::unit_test::suite
 public:
     void run()
     {
-        RippleAddress seed;
+        RippleAddressSeed seed;
         seed.setSeedRandom ();
         RippleAddress generator = RippleAddress::createGeneratorPublic (seed);
         RippleAddress publicAcct = RippleAddress::createAccountPublic (generator, 1);

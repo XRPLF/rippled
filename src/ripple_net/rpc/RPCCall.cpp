@@ -486,8 +486,11 @@ private:
         //  int             iIndex      = jvParams.size() >= 2 ? beast::lexicalCast <int>(jvParams[1u].asString()) : 0;
 
         RippleAddress   raAddress;
+        RippleAddressSeed raAddressSeed;
 
-        if (!raAddress.setAccountPublic (strIdent) && !raAddress.setAccountID (strIdent) && !raAddress.setSeedGeneric (strIdent))
+        if (!raAddress.setAccountPublic (strIdent) &&
+            !raAddress.setAccountID (strIdent) &&
+            !raAddressSeed.setSeedGeneric (strIdent))
             return rpcError (rpcACT_MALFORMED);
 
         // Get info on account.
@@ -504,8 +507,11 @@ private:
         if (!strPeer.empty ())
         {
             RippleAddress   raPeer;
+            RippleAddressSeed raPeerSeed;
 
-            if (!raPeer.setAccountPublic (strPeer) && !raPeer.setAccountID (strPeer) && !raPeer.setSeedGeneric (strPeer))
+            if (!raPeer.setAccountPublic (strPeer) &&
+                !raPeer.setAccountID (strPeer) &&
+                !raPeerSeed.setSeedGeneric (strPeer))
                 return rpcError (rpcACT_MALFORMED);
 
             jvRequest["peer"]   = strPeer;

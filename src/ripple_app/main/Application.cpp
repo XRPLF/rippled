@@ -1112,7 +1112,7 @@ private:
 void ApplicationImp::startNewLedger ()
 {
     // New stuff.
-    RippleAddress   rootSeedMaster      = RippleAddress::createSeedGeneric ("masterpassphrase");
+    RippleAddressSeed rootSeedMaster    = RippleAddressSeed::createSeedGeneric ("masterpassphrase");
     RippleAddress   rootGeneratorMaster = RippleAddress::createGeneratorPublic (rootSeedMaster);
     RippleAddress   rootAddress         = RippleAddress::createAccountPublic (rootGeneratorMaster, 0);
 

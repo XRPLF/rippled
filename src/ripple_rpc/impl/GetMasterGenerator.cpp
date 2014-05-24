@@ -26,7 +26,7 @@ namespace RPC {
 // --> naRegularSeed
 // <-- naMasterGenerator
 Json::Value getMasterGenerator (
-    Ledger::ref lrLedger, const RippleAddress& naRegularSeed,
+    Ledger::ref lrLedger, const RippleAddressSeed& naRegularSeed,
     RippleAddress& naMasterGenerator, NetworkOPs& netOps)
 {
     RippleAddress       na0Public;      // To find the generator's index.

@@ -24,7 +24,7 @@ namespace ripple {
 // }
 Json::Value RPCHandler::doWalletSeed (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
-    RippleAddress   raSeed;
+    RippleAddressSeed   raSeed;
     bool            bSecret = params.isMember ("secret");
 
     if (bSecret && !raSeed.setSeedGeneric (params["secret"].asString ()))

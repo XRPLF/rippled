@@ -29,7 +29,7 @@ Json::Value accountFromString (Ledger::ref lrLedger, RippleAddress& naAccount,
                                bool& bIndex, const std::string& strIdent,
                                const int iIndex, const bool bStrict, NetworkOPs& netOps)
 {
-    RippleAddress   naSeed;
+    RippleAddressSeed   naSeed;
 
     if (naAccount.setAccountPublic (strIdent) || naAccount.setAccountID (strIdent))
     {

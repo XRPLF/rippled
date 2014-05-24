@@ -47,8 +47,6 @@ protected:
     unsigned char nVersion;
     Blob vchData;
 
-    CBase58Data ();
-    ~CBase58Data ();
 
     void SetData (int version, Blob const& vchDataIn)
     {
@@ -56,7 +54,7 @@ protected:
         vchData = vchDataIn;
     }
 
-    template <size_t Bits, class Tag>
+    template <size_t Bits, class Tag = void>
     void SetData (int version, base_uint<Bits, Tag> const& from)
     {
         nVersion = version;
@@ -67,6 +65,16 @@ protected:
     }
 
 public:
+    // Temporarily moved here.
+    CBase58Data ();
+    ~CBase58Data ();
+
+    template <size_t Bits, class Tag = void>
+    CBase58Data (int version, base_uint<Bits, Tag> const& from)
+        : nVersion (version), vchData (std::begin (from), std::end(from))
+    {
+    }
+
     bool SetString (std::string const& str, unsigned char version,
         Base58::Alphabet const& alphabet);
 
@@ -87,6 +95,11 @@ public:
             return  1;
 
         return 0;
+    }
+
+    Blob const& getData () const
+    {
+        return vchData;
     }
 
     friend std::size_t hash_value (const CBase58Data& b58);

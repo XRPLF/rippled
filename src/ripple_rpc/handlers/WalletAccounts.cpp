@@ -33,7 +33,7 @@ Json::Value RPCHandler::doWalletAccounts (Json::Value params, Resource::Charge& 
     if (!lpLedger)
         return jvResult;
 
-    RippleAddress   naSeed;
+    RippleAddressSeed   naSeed;
 
     if (!params.isMember ("seed") || !naSeed.setSeedGeneric (params["seed"].asString ()))
     {

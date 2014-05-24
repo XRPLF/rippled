@@ -33,13 +33,19 @@
 
 namespace ripple {
 
+class RippleAddressSeed;
+
 //
 // Used to hold addresses and parse and produce human formats.
 //
 // XXX This needs to be reworked to store data in uint160 and uint256.  Conversion to CBase58Data should happen as needed.
 class RippleAddress : public CBase58Data
 {
-private:
+protected:
+    bool    mIsValid;
+
+public:
+    // temporarily public
     typedef enum
     {
         VER_NONE                = 1,
@@ -52,9 +58,6 @@ private:
         VER_FAMILY_SEED         = 33,
     } VersionEncoding;
 
-    bool    mIsValid;
-
-public:
     RippleAddress ();
 
     // For public and private key, checks if they are legal.
@@ -81,7 +84,7 @@ public:
     bool verifyNodePublic (uint256 const& hash, Blob const& vchSig, ECDSA mustBeFullyCanonical) const;
     bool verifyNodePublic (uint256 const& hash, const std::string& strSig, ECDSA mustBeFullyCanonical) const;
 
-    static RippleAddress createNodePublic (const RippleAddress& naSeed);
+    static RippleAddress createNodePublic (const RippleAddressSeed& naSeed);
     static RippleAddress createNodePublic (Blob const& vPublic);
     static RippleAddress createNodePublic (const std::string& strPublic);
 
@@ -98,7 +101,7 @@ public:
     void setNodePrivate (uint256 hash256);
     void signNodePrivate (uint256 const& hash, Blob& vchSig) const;
 
-    static RippleAddress createNodePrivate (const RippleAddress& naSeed);
+    static RippleAddress createNodePrivate (const RippleAddressSeed& naSeed);
 
     //
     // Accounts IDs
@@ -169,7 +172,7 @@ public:
     bool setAccountPrivate (const std::string& strPrivate);
     void setAccountPrivate (Blob const& vPrivate);
     void setAccountPrivate (uint256 hash256);
-    void setAccountPrivate (const RippleAddress& naGenerator, const RippleAddress& naSeed, int seq);
+    void setAccountPrivate (const RippleAddress& naGenerator, const RippleAddressSeed& naSeed, int seq);
 
     bool accountPrivateSign (uint256 const& uHash, Blob& vucSig) const;
 
@@ -179,7 +182,7 @@ public:
     // Decrypt a message.
     Blob accountPrivateDecrypt (const RippleAddress& naPublicFrom, Blob const& vucCipherText) const;
 
-    static RippleAddress createAccountPrivate (const RippleAddress& naGenerator, const RippleAddress& naSeed, int iSeq);
+    static RippleAddress createAccountPrivate (const RippleAddress& naGenerator, const RippleAddressSeed& naSeed, int iSeq);
 
     static RippleAddress createAccountPrivate (Blob const& vPrivate)
     {
@@ -208,24 +211,47 @@ public:
     // void setGenerator(const RippleAddress& seed);
 
     // Create generator for making public deterministic keys.
-    static RippleAddress createGeneratorPublic (const RippleAddress& naSeed);
+    static RippleAddress createGeneratorPublic (const RippleAddressSeed& naSeed);
+};
 
-    //
-    // Seeds
-    // Clients must disallow reconizable entries from being seeds.
+
+// Clients must disallow reconizable entries from being seeds.
+class RippleAddressSeed
+{
+private:
+    uint128 m_seed;
+    bool m_valid;
+
+public:
+    static RippleAddressSeed createSeedRandom ();
+    static RippleAddressSeed createSeedGeneric (const std::string& strText);
+
+    RippleAddressSeed ()
+        : m_valid (false)
+    {
+    }
+
     uint128 getSeed () const;
 
     std::string humanSeed () const;
     std::string humanSeed1751 () const;
 
     bool setSeed (const std::string& strSeed);
-    int setSeed1751 (const std::string& strHuman1751);
+    bool setSeed1751 (const std::string& strHuman1751);
     bool setSeedGeneric (const std::string& strText);
-    void setSeed (uint128 hash128);
+    void setSeed (uint128 const& seed);
     void setSeedRandom ();
 
-    static RippleAddress createSeedRandom ();
-    static RippleAddress createSeedGeneric (const std::string& strText);
+    bool isValid () const
+    {
+        return m_valid;
+    }
+
+    void clear ()
+    {
+        m_seed = 0;
+        m_valid = false;
+    }
 };
 
 //------------------------------------------------------------------------------

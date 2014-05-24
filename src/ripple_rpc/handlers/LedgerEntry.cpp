@@ -106,7 +106,7 @@ Json::Value RPCHandler::doLedgerEntry (Json::Value params, Resource::Charge& loa
     }
     else if (params.isMember ("generator"))
     {
-        RippleAddress   naGeneratorID;
+        RippleAddressSeed   naGeneratorID;
 
         if (!params["generator"].isObject ())
         {

@@ -446,11 +446,15 @@ public:
     int                         PATH_SEARCH_MAX;
 
     // Validation
-    RippleAddress               VALIDATION_SEED, VALIDATION_PUB, VALIDATION_PRIV;
+    RippleAddressSeed               VALIDATION_SEED;
+    RippleAddress                   VALIDATION_PUB;
+    RippleAddress                   VALIDATION_PRIV;
 
     // Node/Cluster
     std::vector<std::string>    CLUSTER_NODES;
-    RippleAddress               NODE_SEED, NODE_PUB, NODE_PRIV;
+    RippleAddressSeed           NODE_SEED;
+    RippleAddress               NODE_PUB;
+    RippleAddress               NODE_PRIV;
 
     // Fee schedule (All below values are in fee units)
     std::uint64_t                      FEE_DEFAULT;            // Default fee.
