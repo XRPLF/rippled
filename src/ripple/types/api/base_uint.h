@@ -79,22 +79,53 @@ public:
 
     typedef Tag                     tag_type;
 
-    pointer data() { return reinterpret_cast<pointer>(pn); }
-    const_pointer data() const { return reinterpret_cast<const_pointer>(pn); }
+    pointer data () { return reinterpret_cast<pointer>(pn); }
+    const_pointer data () const { return reinterpret_cast<const_pointer>(pn); }
 
-    iterator begin() { return data(); }
-    iterator end()   { return data()+bytes; }
-    const_iterator begin()  const { return data(); }
-    const_iterator end()    const { return data()+bytes; }
-    const_iterator cbegin() const { return data(); }
-    const_iterator cend()   const { return data()+bytes; }
+    /** Forward iterators */
+    /** @{ */
+    iterator
+    begin () { return data (); }
 
-    reverse_iterator rbegin() { return end(); }
-    reverse_iterator rend()   { return begin(); }
-    const_reverse_iterator rbegin()  const { return end(); }
-    const_reverse_iterator rend()    const { return begin(); }
-    const_reverse_iterator crbegin() const { return cend(); }
-    const_reverse_iterator crend()   const { return cbegin(); }
+    iterator
+    end () { return data () + bytes; }
+    /** @} */
+
+    /** Constant forward iterators */
+    /** @{ */
+    const_iterator begin ()
+    const { return const_iterator (data ()); }
+
+    const_iterator end ()
+    const { return const_iterator (data () + bytes); }
+
+    const_iterator cbegin ()
+    const { return const_iterator (data ()); }
+
+    const_iterator cend ()
+    const { return const_iterator (data () + bytes); }
+    /** @} */
+
+    /** Reverse iterators */
+    /** @{ */
+    reverse_iterator rbegin () { return reverse_iterator (end ()); }
+    reverse_iterator rend () { return reverse_iterator (begin ()); }
+    /** @} */
+
+    /** Constant reverse iterators */
+    /** @{ */
+    const_reverse_iterator
+    rbegin () const { return const_reverse_iterator (cend()); }
+
+    const_reverse_iterator
+    rend () const { return const_reverse_iterator (cbegin()); }
+
+    const_reverse_iterator
+    crbegin () const { return const_reverse_iterator (cend()); }
+
+    const_reverse_iterator
+    crend () const { return const_reverse_iterator (cbegin()); }
+    /** @} */
 
     /** Value hashing function.
         The seed prevents crafted inputs from causing degenarate parent containers.
