@@ -381,7 +381,8 @@ void RippleAddress::setAccountID (const uint160& hash160)
 // AccountPublic
 //
 
-RippleAddress RippleAddress::createAccountPublic (const RippleAddress& naGenerator, int iSeq)
+RippleAddress RippleAddress::createAccountPublic (
+    RippleAddressGenerator const& naGenerator, int iSeq)
 {
     CKey            ckPub (naGenerator, iSeq);
     RippleAddress   naNew;
@@ -442,9 +443,9 @@ void RippleAddress::setAccountPublic (Blob const& vPublic)
     SetData (VER_ACCOUNT_PUBLIC, vPublic);
 }
 
-void RippleAddress::setAccountPublic (const RippleAddress& generator, int seq)
+void RippleAddress::setAccountPublic (RippleAddressGenerator const& generator, int seq)
 {
-    CKey    pubkey  = CKey (generator, seq);
+    CKey pubkey = CKey (generator, seq);
 
     setAccountPublic (pubkey.GetPubKey ());
 }
@@ -482,7 +483,9 @@ RippleAddress RippleAddress::createAccountID (const uint160& uiAccountID)
 // AccountPrivate
 //
 
-RippleAddress RippleAddress::createAccountPrivate (const RippleAddress& naGenerator, const RippleAddressSeed& naSeed, int iSeq)
+RippleAddress RippleAddress::createAccountPrivate (
+    RippleAddressGenerator const& naGenerator,
+    RippleAddressSeed const& naSeed, int iSeq)
 {
     RippleAddress   naNew;
 
@@ -542,7 +545,9 @@ void RippleAddress::setAccountPrivate (uint256 hash256)
     SetData (VER_ACCOUNT_PRIVATE, hash256);
 }
 
-void RippleAddress::setAccountPrivate (const RippleAddress& naGenerator, const RippleAddressSeed& naSeed, int seq)
+void RippleAddress::setAccountPrivate (
+    RippleAddressGenerator const& naGenerator, 
+    const RippleAddressSeed& naSeed, int seq)
 {
     CKey    ckPubkey    = CKey (naSeed.getSeed ());
     CKey    ckPrivkey   = CKey (naGenerator, ckPubkey.GetSecretBN (), seq);
@@ -639,59 +644,39 @@ Blob RippleAddress::accountPrivateDecrypt (const RippleAddress& naPublicFrom, Bl
 // Generators
 //
 
-Blob const& RippleAddress::getGenerator () const
+Blob const& RippleAddressGenerator::getGenerator () const
 {
     // returns the public generator
-    switch (nVersion)
-    {
-    case VER_NONE:
-        throw std::runtime_error ("unset source - getGenerator");
-
-    case VER_FAMILY_GENERATOR:
-        // Do nothing.
-        return vchData;
-
-    default:
-        throw std::runtime_error (str (boost::format ("bad source: %d") % int (nVersion)));
-    }
+    return vchData;
 }
 
-std::string RippleAddress::humanGenerator () const
+std::string RippleAddressGenerator::humanGenerator () const
 {
-    switch (nVersion)
-    {
-    case VER_NONE:
-        throw std::runtime_error ("unset source - humanGenerator");
-
-    case VER_FAMILY_GENERATOR:
-        return ToString ();
-
-    default:
-        throw std::runtime_error (str (boost::format ("bad source: %d") % int (nVersion)));
-    }
+    return ToString ();
 }
 
-bool RippleAddress::setGenerator (const std::string& strGenerator)
+bool RippleAddressGenerator::setGenerator (const std::string& strGenerator)
 {
-    mIsValid = SetString (strGenerator, VER_FAMILY_GENERATOR, Base58::getRippleAlphabet ());
+    m_valid = SetString (strGenerator, RippleAddress::VER_FAMILY_GENERATOR,
+        Base58::getRippleAlphabet ());
 
-    return mIsValid;
+    return m_valid;
 }
 
-void RippleAddress::setGenerator (Blob const& vPublic)
+void RippleAddressGenerator::setGenerator (Blob const& vPublic)
 {
-    mIsValid        = true;
+    m_valid = true;
 
-    SetData (VER_FAMILY_GENERATOR, vPublic);
+    SetData (RippleAddress::VER_FAMILY_GENERATOR, vPublic);
 }
 
-RippleAddress RippleAddress::createGeneratorPublic (const RippleAddressSeed& naSeed)
+RippleAddressGenerator
+RippleAddressGenerator::createGeneratorPublic (const RippleAddressSeed& naSeed)
 {
-    CKey            ckSeed (naSeed.getSeed ());
-    RippleAddress   naNew;
+    CKey ckSeed (naSeed.getSeed ());
 
+    RippleAddressGenerator naNew;
     naNew.setGenerator (ckSeed.GetPubKey ());
-
     return naNew;
 }
 
@@ -852,7 +837,8 @@ public:
         expect (naNodePublic.verifyNodePublic (uHash, vucTextSig, ECDSA::strict), "Verify failed.");
 
         // Construct a public generator from the seed.
-        RippleAddress   naGenerator     = RippleAddress::createGeneratorPublic (naSeed);
+        RippleAddressGenerator naGenerator (
+            RippleAddressGenerator::createGeneratorPublic (naSeed));
 
         expect (naGenerator.humanGenerator () == "fhuJKrhSDzV2SkjLn9qbwm5AaRmrxDPfFsHDCP6yfDZWcxDFz4mt", naGenerator.humanGenerator ());
 
@@ -924,7 +910,8 @@ public:
             privateKey.to_string());
 
         testcase ("Generator");
-        RippleAddress generator (RippleAddress::createGeneratorPublic (seed));
+        RippleAddressGenerator generator (
+            RippleAddressGenerator::createGeneratorPublic (seed));
         expect (generator.humanGenerator () ==
             "fhuJKrhSDzV2SkjLn9qbwm5AaRmrxDPfFsHDCP6yfDZWcxDFz4mt",
                 generator.humanGenerator ());

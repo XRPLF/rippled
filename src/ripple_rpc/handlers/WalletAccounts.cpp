@@ -41,7 +41,8 @@ Json::Value RPCHandler::doWalletAccounts (Json::Value params, Resource::Charge& 
     }
 
     // Try the seed as a master seed.
-    RippleAddress   naMasterGenerator   = RippleAddress::createGeneratorPublic (naSeed);
+    RippleAddressGenerator naMasterGenerator (
+        RippleAddressGenerator::createGeneratorPublic (naSeed));
 
     Json::Value jsonAccounts    = RPC::accounts (lpLedger, naMasterGenerator, *mNetOps);
 

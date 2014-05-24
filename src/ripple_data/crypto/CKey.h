@@ -135,18 +135,23 @@ public:
     static uint128 PassPhraseToKey (const std::string& passPhrase);
     static EC_KEY* GenerateRootDeterministicKey (const uint128& passPhrase);
     static EC_KEY* GenerateRootPubKey (BIGNUM* pubGenerator);
-    static EC_KEY* GeneratePublicDeterministicKey (const RippleAddress& generator, int n);
-    static EC_KEY* GeneratePrivateDeterministicKey (const RippleAddress& family, const BIGNUM* rootPriv, int n);
-    static EC_KEY* GeneratePrivateDeterministicKey (const RippleAddress& family, uint256 const& rootPriv, int n);
+    static EC_KEY* GeneratePublicDeterministicKey (
+        RippleAddressGenerator const& generator, int n);
+    static EC_KEY* GeneratePrivateDeterministicKey (
+        RippleAddressGenerator const& family, const BIGNUM* rootPriv, int n);
+    static EC_KEY* GeneratePrivateDeterministicKey (
+        RippleAddressGenerator const& family, uint256 const& rootPriv, int n);
 
-    CKey (const uint128& passPhrase) : fSet (false)
+    CKey (const uint128& passPhrase)
+        : fSet (false)
     {
         pkey = GenerateRootDeterministicKey (passPhrase);
         fSet = true;
         assert (pkey);
     }
 
-    CKey (const RippleAddress& generator, int n) : fSet (false)
+    CKey (const RippleAddressGenerator& generator, int n)
+        : fSet (false)
     {
         // public deterministic key
         pkey = GeneratePublicDeterministicKey (generator, n);
@@ -154,7 +159,8 @@ public:
         assert (pkey);
     }
 
-    CKey (const RippleAddress& base, const BIGNUM* rootPrivKey, int n) : fSet (false)
+    CKey (const RippleAddressGenerator& base, const BIGNUM* rootPrivKey, int n)
+        : fSet (false)
     {
         // private deterministic key
         pkey = GeneratePrivateDeterministicKey (base, rootPrivKey, n);

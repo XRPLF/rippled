@@ -54,7 +54,8 @@ Json::Value accountFromString (Ledger::ref lrLedger, RippleAddress& naAccount,
         RippleAddress       naRegular0Public;
         RippleAddress       naRegular0Private;
 
-        RippleAddress       naGenerator     = RippleAddress::createGeneratorPublic (naSeed);
+        RippleAddressGenerator naGenerator (
+            RippleAddressGenerator::createGeneratorPublic (naSeed));
 
         naRegular0Public.setAccountPublic (naGenerator, 0);
         naRegular0Private.setAccountPrivate (naGenerator, naSeed, 0);

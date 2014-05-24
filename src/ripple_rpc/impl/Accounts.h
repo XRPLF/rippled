@@ -25,7 +25,7 @@ namespace RPC {
 
 Json::Value accounts (
     Ledger::ref lrLedger,
-    const RippleAddress& naMasterGenerator,
+    RippleAddressGenerator const& naMasterGenerator,
     NetworkOPs& netOps);
 
 } // RPC

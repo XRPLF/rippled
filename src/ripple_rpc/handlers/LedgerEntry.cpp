@@ -122,8 +122,9 @@ Json::Value RPCHandler::doLedgerEntry (Json::Value params, Resource::Charge& loa
         }
         else
         {
-            RippleAddress       na0Public;      // To find the generator's index.
-            RippleAddress       naGenerator = RippleAddress::createGeneratorPublic (naGeneratorID);
+            RippleAddressGenerator naGenerator (
+                RippleAddressGenerator::createGeneratorPublic (naGeneratorID));
+            RippleAddress na0Public; // To find the generator's index.
 
             na0Public.setAccountPublic (naGenerator, 0);
 

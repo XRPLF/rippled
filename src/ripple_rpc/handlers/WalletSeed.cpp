@@ -40,7 +40,8 @@ Json::Value RPCHandler::doWalletSeed (Json::Value params, Resource::Charge& load
             raSeed.setSeedRandom ();
         }
 
-        RippleAddress   raGenerator = RippleAddress::createGeneratorPublic (raSeed);
+        RippleAddressGenerator raGenerator (
+            RippleAddressGenerator::createGeneratorPublic (raSeed));
 
         raAccount.setAccountPublic (raGenerator, 0);
 

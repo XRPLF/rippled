@@ -34,6 +34,7 @@
 namespace ripple {
 
 class RippleAddressSeed;
+class RippleAddressGenerator;
 
 //
 // Used to hold addresses and parse and produce human formats.
@@ -141,7 +142,7 @@ public:
 
     bool setAccountPublic (const std::string& strPublic);
     void setAccountPublic (Blob const& vPublic);
-    void setAccountPublic (const RippleAddress& generator, int seq);
+    void setAccountPublic (const RippleAddressGenerator& generator, int seq);
 
     bool accountPublicVerify (uint256 const& uHash, Blob const& vucSig, ECDSA mustBeFullyCanonical) const;
 
@@ -160,7 +161,8 @@ public:
     }
 
     // Create a deterministic public key from a public generator.
-    static RippleAddress createAccountPublic (const RippleAddress& naGenerator, int iSeq);
+    static RippleAddress createAccountPublic (
+        RippleAddressGenerator const& naGenerator, int iSeq);
 
     //
     // Accounts Private
@@ -172,7 +174,8 @@ public:
     bool setAccountPrivate (const std::string& strPrivate);
     void setAccountPrivate (Blob const& vPrivate);
     void setAccountPrivate (uint256 hash256);
-    void setAccountPrivate (const RippleAddress& naGenerator, const RippleAddressSeed& naSeed, int seq);
+    void setAccountPrivate (RippleAddressGenerator const& naGenerator,
+        const RippleAddressSeed& naSeed, int seq);
 
     bool accountPrivateSign (uint256 const& uHash, Blob& vucSig) const;
 
@@ -182,7 +185,9 @@ public:
     // Decrypt a message.
     Blob accountPrivateDecrypt (const RippleAddress& naPublicFrom, Blob const& vucCipherText) const;
 
-    static RippleAddress createAccountPrivate (const RippleAddress& naGenerator, const RippleAddressSeed& naSeed, int iSeq);
+    static RippleAddress createAccountPrivate (
+        RippleAddressGenerator const& naGenerator,
+        RippleAddressSeed const& naSeed, int iSeq);
 
     static RippleAddress createAccountPrivate (Blob const& vPrivate)
     {
@@ -197,23 +202,33 @@ public:
     {
         return createAccountPrivate (vPrivate).humanAccountPrivate ();
     }
+};
 
-    //
-    // Generators
-    // Use to generate a master or regular family.
-    //
+// Generators are used to generate a master or regular family
+class RippleAddressGenerator
+    : public CBase58Data
+{
+private:
+    bool m_valid;
+
+public:
+    RippleAddressGenerator ()
+        : m_valid (false)
+    {
+    }
+
     Blob const& getGenerator () const;
 
     std::string humanGenerator () const;
 
     bool setGenerator (const std::string& strGenerator);
     void setGenerator (Blob const& vPublic);
-    // void setGenerator(const RippleAddress& seed);
 
     // Create generator for making public deterministic keys.
-    static RippleAddress createGeneratorPublic (const RippleAddressSeed& naSeed);
+    static
+    RippleAddressGenerator
+    createGeneratorPublic (const RippleAddressSeed& naSeed);
 };
-
 
 // Clients must disallow reconizable entries from being seeds.
 class RippleAddressSeed
