@@ -83,7 +83,7 @@ bool LocalCredentials::nodeIdentityCreate ()
     //
     // Generate the public and private key
     //
-    RippleAddress   naSeed          = RippleAddress::createSeedRandom ();
+    RippleAddressSeed naSeed        = RippleAddressSeed::createSeedRandom ();
     RippleAddress   naNodePublic    = RippleAddress::createNodePublic (naSeed);
     RippleAddress   naNodePrivate   = RippleAddress::createNodePrivate (naSeed);
 

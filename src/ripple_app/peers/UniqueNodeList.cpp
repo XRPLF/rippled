@@ -1670,11 +1670,13 @@ private:
                 {
                     std::string     strRefered  = smMatch[1];
                     std::string     strComment  = smMatch[2];
-                    RippleAddress   naValidator;
-
-                    if (naValidator.setSeedGeneric (strRefered))
+                    RippleAddressSeed   naSeed;
+                    RippleAddress       naValidator;
+                    
+                    if (naSeed.setSeedGeneric (strRefered))
                     {
-                        WriteLog (lsWARNING, UniqueNodeList) << str (boost::format ("Bad validator: domain or public key required: %s %s") % strRefered % strComment);
+                        WriteLog (lsWARNING, UniqueNodeList) << 
+                            str (boost::format ("Bad validator: domain or public key required: %s %s") % strRefered % strComment);
                     }
                     else if (naValidator.setNodePublic (strRefered))
                     {

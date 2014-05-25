@@ -191,7 +191,7 @@ Json::Value transactionSign (
     if (! params.isMember ("tx_json"))
         return RPC::missing_field_error ("tx_json");
 
-    RippleAddress naSeed;
+    RippleAddressSeed naSeed;
 
     if (! naSeed.setSeedGeneric (params["secret"].asString ()))
         return RPC::make_error (rpcBAD_SEED,
@@ -286,12 +286,12 @@ Json::Value transactionSign (
             return rpcError (rpcSRC_ACT_NOT_FOUND);
     }
 
-    RippleAddress   naSecret = RippleAddress::createSeedGeneric (
-        params["secret"].asString ());
-    RippleAddress   naMasterGenerator = RippleAddress::createGeneratorPublic (
-        naSecret);
-    RippleAddress masterAccountPublic = RippleAddress::createAccountPublic (
-        naMasterGenerator, 0);
+    RippleAddressSeed naSecret (RippleAddressSeed::createSeedGeneric (
+        params["secret"].asString ()));
+    RippleAddressGenerator naMasterGenerator (
+        RippleAddressGenerator::createGeneratorPublic (naSecret));
+    RippleAddress masterAccountPublic (RippleAddress::createAccountPublic (
+        naMasterGenerator, 0));
 
     if (verify)
     {
@@ -415,9 +415,12 @@ class JSONRPC_test : public beast::unit_test::suite
 public:
     void testAutoFillFees ()
     {
-        RippleAddress rootSeedMaster      = RippleAddress::createSeedGeneric ("masterpassphrase");
-        RippleAddress rootGeneratorMaster = RippleAddress::createGeneratorPublic (rootSeedMaster);
-        RippleAddress rootAddress         = RippleAddress::createAccountPublic (rootGeneratorMaster, 0);
+        RippleAddressSeed rootSeedMaster (
+            RippleAddressSeed::createSeedGeneric ("masterpassphrase"));
+        RippleAddressGenerator rootGeneratorMaster (
+            RippleAddressGenerator::createGeneratorPublic (rootSeedMaster));
+        RippleAddress rootAddress (
+            RippleAddress::createAccountPublic (rootGeneratorMaster, 0));
         std::uint64_t startAmount (100000);
         Ledger::pointer ledger (boost::make_shared <Ledger> (
             rootAddress, startAmount));

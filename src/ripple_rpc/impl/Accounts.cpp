@@ -24,7 +24,7 @@ namespace RPC {
 
 Json::Value accounts (
     Ledger::ref lrLedger,
-    const RippleAddress& naMasterGenerator,
+    RippleAddressGenerator const& naMasterGenerator,
     NetworkOPs& netOps)
 {
     Json::Value jsonAccounts (Json::arrayValue);
@@ -35,11 +35,11 @@ Json::Value accounts (
 
     do
     {
-        RippleAddress       naAccount;
+        RippleAddress naAccount;
 
         naAccount.setAccountPublic (naMasterGenerator, uIndex++);
 
-        AccountState::pointer as    = netOps.getAccountState (lrLedger, naAccount);
+        AccountState::pointer as (netOps.getAccountState (lrLedger, naAccount));
 
         if (as)
         {

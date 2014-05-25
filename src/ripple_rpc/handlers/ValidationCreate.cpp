@@ -27,7 +27,7 @@ namespace ripple {
 // This command requires Config::ADMIN access because it makes no sense to ask an untrusted server for this.
 Json::Value RPCHandler::doValidationCreate (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
 {
-    RippleAddress   raSeed;
+    RippleAddressSeed   raSeed;
     Json::Value     obj (Json::objectValue);
 
     if (!params.isMember ("secret"))

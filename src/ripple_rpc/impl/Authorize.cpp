@@ -32,7 +32,7 @@ namespace RPC {
 // --> naVerifyGenerator : If provided, the found master public generator must match.
 // XXX Be more lenient, allow use of master generator on claimed accounts.
 Json::Value authorize (Ledger::ref lrLedger,
-                       const RippleAddress& naRegularSeed, const RippleAddress& naSrcAccountID,
+                       const RippleAddressSeed& naRegularSeed, const RippleAddress& naSrcAccountID,
                        RippleAddress& naAccountPublic, RippleAddress& naAccountPrivate,
                        STAmount& saSrcBalance, const STAmount& saFee, AccountState::pointer& asSrc,
                        const RippleAddress& naVerifyGenerator, NetworkOPs& netOps)
@@ -45,7 +45,7 @@ Json::Value authorize (Ledger::ref lrLedger,
         return rpcError (rpcSRC_ACT_NOT_FOUND);
     }
 
-    RippleAddress   naMasterGenerator;
+    RippleAddressGenerator naMasterGenerator;
 
     if (asSrc->haveAuthorizedKey ())
     {
@@ -57,7 +57,7 @@ Json::Value authorize (Ledger::ref lrLedger,
     else
     {
         // Try the seed as a master seed.
-        naMasterGenerator   = RippleAddress::createGeneratorPublic (naRegularSeed);
+        naMasterGenerator = RippleAddressGenerator::createGeneratorPublic (naRegularSeed);
     }
 
     // If naVerifyGenerator is provided, make sure it is the master generator.
@@ -91,7 +91,8 @@ Json::Value authorize (Ledger::ref lrLedger,
     }
 
     // Use the regular generator to determine the associated public and private keys.
-    RippleAddress       naGenerator = RippleAddress::createGeneratorPublic (naRegularSeed);
+    RippleAddressGenerator naGenerator (
+        RippleAddressGenerator::createGeneratorPublic (naRegularSeed));
 
     naAccountPublic.setAccountPublic (naGenerator, iIndex);
     naAccountPrivate.setAccountPrivate (naGenerator, naRegularSeed, iIndex);

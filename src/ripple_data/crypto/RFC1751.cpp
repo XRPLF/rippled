@@ -463,14 +463,14 @@ int RFC1751::getKeyFromEnglish (std::string& strKey, const std::string& strHuman
 
 /** Convert to human from a 128 bit key in big-endian format
 */
-void RFC1751::getEnglishFromKey (std::string& strHuman, const std::string& strKey)
+std::string RFC1751::getEnglishFromKey (const std::string& strKey)
 {
     std::string strFirst, strSecond;
 
     btoe (strFirst, strKey.substr (0, 8));
     btoe (strSecond, strKey.substr (8, 8));
 
-    strHuman    = strFirst + " " + strSecond;
+    return (strFirst + " " + strSecond);
 }
 
 beast::String RFC1751::getWordFromBlob (void const* data, size_t bytes)

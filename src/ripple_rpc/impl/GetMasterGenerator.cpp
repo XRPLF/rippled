@@ -26,17 +26,19 @@ namespace RPC {
 // --> naRegularSeed
 // <-- naMasterGenerator
 Json::Value getMasterGenerator (
-    Ledger::ref lrLedger, const RippleAddress& naRegularSeed,
-    RippleAddress& naMasterGenerator, NetworkOPs& netOps)
+    Ledger::ref lrLedger, RippleAddressSeed const& naRegularSeed,
+    RippleAddressGenerator& naMasterGenerator, NetworkOPs& netOps)
 {
+    RippleAddressGenerator naGenerator (
+        RippleAddressGenerator::createGeneratorPublic (naRegularSeed));
+
     RippleAddress       na0Public;      // To find the generator's index.
     RippleAddress       na0Private;     // To decrypt the master generator's cipher.
-    RippleAddress       naGenerator = RippleAddress::createGeneratorPublic (naRegularSeed);
 
     na0Public.setAccountPublic (naGenerator, 0);
     na0Private.setAccountPrivate (naGenerator, naRegularSeed, 0);
 
-    SLE::pointer        sleGen          = netOps.getGenerator (lrLedger, na0Public.getAccountID ());
+    SLE::pointer sleGen = netOps.getGenerator (lrLedger, na0Public.getAccountID ());
 
     if (!sleGen)
     {

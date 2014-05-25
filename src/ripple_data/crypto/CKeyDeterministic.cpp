@@ -189,7 +189,7 @@ EC_KEY* CKey::GenerateRootPubKey (BIGNUM* pubGenerator)
 }
 
 // --> public generator
-static BIGNUM* makeHash (const RippleAddress& pubGen, int seq, BIGNUM* order)
+static BIGNUM* makeHash (RippleAddressGenerator const& pubGen, int seq, BIGNUM* order)
 {
     int subSeq = 0;
     BIGNUM* ret = nullptr;
@@ -212,7 +212,8 @@ static BIGNUM* makeHash (const RippleAddress& pubGen, int seq, BIGNUM* order)
 }
 
 // --> public generator
-EC_KEY* CKey::GeneratePublicDeterministicKey (const RippleAddress& pubGen, int seq)
+EC_KEY* CKey::GeneratePublicDeterministicKey (
+    RippleAddressGenerator const& pubGen, int seq)
 {
     // publicKey(n) = rootPublicKey EC_POINT_+ Hash(pubHash|seq)*point
     BIGNUM* generator = BN_bin2bn (
@@ -285,14 +286,16 @@ EC_KEY* CKey::GeneratePublicDeterministicKey (const RippleAddress& pubGen, int s
     return success ? pkey : nullptr;
 }
 
-EC_KEY* CKey::GeneratePrivateDeterministicKey (const RippleAddress& pubGen, uint256 const& u, int seq)
+EC_KEY* CKey::GeneratePrivateDeterministicKey (
+    RippleAddressGenerator const& pubGen, uint256 const& u, int seq)
 {
     CBigNum bn (u);
     return GeneratePrivateDeterministicKey (pubGen, static_cast<BIGNUM*> (&bn), seq);
 }
 
 // --> root private key
-EC_KEY* CKey::GeneratePrivateDeterministicKey (const RippleAddress& pubGen, const BIGNUM* rootPrivKey, int seq)
+EC_KEY* CKey::GeneratePrivateDeterministicKey (
+    RippleAddressGenerator const& pubGen, const BIGNUM* rootPrivKey, int seq)
 {
     // privateKey(n) = (rootPrivateKey + Hash(pubHash|seq)) % order
     BN_CTX* ctx = BN_CTX_new ();

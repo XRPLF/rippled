@@ -27,8 +27,8 @@ Json::Value RPCHandler::doWalletPropose (Json::Value params, Resource::Charge& l
 {
     masterLockHolder.unlock ();
 
-    RippleAddress   naSeed;
-    RippleAddress   naAccount;
+    RippleAddressSeed naSeed;
+    RippleAddress naAccount;
 
     if (!params.isMember ("passphrase"))
         naSeed.setSeedRandom ();
@@ -36,7 +36,8 @@ Json::Value RPCHandler::doWalletPropose (Json::Value params, Resource::Charge& l
     else if (!naSeed.setSeedGeneric (params["passphrase"].asString ()))
         return rpcError(rpcBAD_SEED);
 
-    RippleAddress naGenerator = RippleAddress::createGeneratorPublic (naSeed);
+    RippleAddressGenerator naGenerator (
+        RippleAddressGenerator::createGeneratorPublic (naSeed));
     naAccount.setAccountPublic (naGenerator, 0);
 
     Json::Value obj (Json::objectValue);
