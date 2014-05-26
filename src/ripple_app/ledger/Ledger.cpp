@@ -632,7 +632,9 @@ bool Ledger::saveValidatedLedger (bool current)
     {
         WriteLog (lsWARNING, Ledger) << "An accepted ledger was missing nodes";
         getApp().getLedgerMaster().failedSave(mLedgerSeq, mHash);
-        { // Clients can now trust the database for information about this ledger sequence
+        { 
+            // Clients can now trust the database for information about this
+            // ledger sequence
             StaticScopedLockType sl (sPendingSaveLock);
             sPendingSaves.erase(getLedgerSeq());
         }
@@ -641,7 +643,8 @@ bool Ledger::saveValidatedLedger (bool current)
 
     {
         DeprecatedScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
-        getApp().getLedgerDB ()->getDB ()->executeSQL (boost::str (deleteLedger % mLedgerSeq));
+        getApp().getLedgerDB ()->getDB ()->executeSQL (
+            boost::str (deleteLedger % mLedgerSeq));
     }
 
     {
@@ -649,24 +652,39 @@ bool Ledger::saveValidatedLedger (bool current)
         DeprecatedScopedLock dbLock (getApp().getTxnDB ()->getDBLock ());
         db->executeSQL ("BEGIN TRANSACTION;");
 
-        db->executeSQL (boost::str (deleteTrans1 % mLedgerSeq));
-        db->executeSQL (boost::str (deleteTrans2 % mLedgerSeq));
+        db->executeSQL (boost::str (deleteTrans1 % getLedgerSeq ()));
+        db->executeSQL (boost::str (deleteTrans2 % getLedgerSeq ()));
+
+        auto const ledgerSeq (std::to_string (getLedgerSeq ()));
+
+        // Try to make an educated guess on how much space each transaction
+        // we will insert needs. In argument order we have:
+        // 64 + 34 + 10 + 10 = 118 + 10 extra = 128 bytes
+        std::size_t const txLength = 128;
 
         for (auto const& vt : aLedger->getMap ())
         {
-            uint256 txID = vt.second->getTransactionID ();
-            getApp().getMasterTransaction ().inLedger (txID, mLedgerSeq);
+            uint256 const transactionID = vt.second->getTransactionID ();
 
-            db->executeSQL (boost::str (deleteAcctTrans % to_string (txID)));
+            getApp().getMasterTransaction ().inLedger (
+                transactionID, getLedgerSeq ());
 
-            const std::vector<RippleAddress>& accts = vt.second->getAffected ();
+            auto const txnId (to_string (transactionID));
+            auto const txnSeq (std::to_string (vt.second->getTxnSeq ()));
+
+            db->executeSQL (boost::str (deleteAcctTrans % txnId));
+
+            auto const& accts = vt.second->getAffected ();
 
             if (!accts.empty ())
             {
-                std::string sql = "INSERT INTO AccountTransactions (TransID, Account, LedgerSeq, TxnSeq) VALUES ";
-                bool first = true;
+                std::string sql ("INSERT INTO AccountTransactions "
+                                 "(TransID, Account, LedgerSeq, TxnSeq) VALUES ");
 
-                for (auto it = accts.begin (), end = accts.end (); it != end; ++it)
+                sql.reserve (sql.length () + (accts.size () * txLength));
+
+                bool first = true;
+                for (auto const& it : accts)
                 {
                     if (!first)
                         sql += ", ('";
@@ -676,25 +694,32 @@ bool Ledger::saveValidatedLedger (bool current)
                         first = false;
                     }
 
-                    sql += to_string (txID);
+                    sql += txnId;
                     sql += "','";
-                    sql += it->humanAccountID ();
+                    sql += it.humanAccountID ();
                     sql += "',";
-                    sql += beast::lexicalCastThrow <std::string> (getLedgerSeq ());
+                    sql += ledgerSeq;
                     sql += ",";
-                    sql += beast::lexicalCastThrow <std::string> (vt.second->getTxnSeq ());
+                    sql += txnSeq;
                     sql += ")";
                 }
-
                 sql += ";";
-                WriteLog (lsTRACE, Ledger) << "ActTx: " << sql;
+                if (ShouldLog (lsTRACE, Ledger))
+                {
+                    WriteLog (lsTRACE, Ledger) << "ActTx: " << sql;
+                }
                 db->executeSQL (sql);
             }
             else
-                WriteLog (lsWARNING, Ledger) << "Transaction in ledger " << mLedgerSeq << " affects no accounts";
+            {
+                WriteLog (lsWARNING, Ledger) << "Transaction in ledger " <<
+                    mLedgerSeq << " affects no accounts";
+            }
 
-            db->executeSQL (SerializedTransaction::getMetaSQLInsertReplaceHeader () +
-                            vt.second->getTxn ()->getMetaSQL (getLedgerSeq (), vt.second->getEscMeta ()) + ";");
+            db->executeSQL (
+                SerializedTransaction::getMetaSQLInsertReplaceHeader () +
+                vt.second->getTxn ()->getMetaSQL (
+                    getLedgerSeq (), vt.second->getEscMeta ()) + ";");
         }
         db->executeSQL ("COMMIT TRANSACTION;");
     }
