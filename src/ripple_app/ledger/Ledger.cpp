@@ -649,24 +649,37 @@ bool Ledger::saveValidatedLedger (bool current)
         DeprecatedScopedLock dbLock (getApp().getTxnDB ()->getDBLock ());
         db->executeSQL ("BEGIN TRANSACTION;");
 
-        db->executeSQL (boost::str (deleteTrans1 % mLedgerSeq));
-        db->executeSQL (boost::str (deleteTrans2 % mLedgerSeq));
+        db->executeSQL (boost::str (deleteTrans1 % getLedgerSeq ()));
+        db->executeSQL (boost::str (deleteTrans2 % getLedgerSeq ()));
+
+        std::string const ledgerSeq (std::to_string (getLedgerSeq ()));
 
         for (auto const& vt : aLedger->getMap ())
         {
-            uint256 txID = vt.second->getTransactionID ();
-            getApp().getMasterTransaction ().inLedger (txID, mLedgerSeq);
+            uint256 transactionID = vt.second->getTransactionID ();
 
-            db->executeSQL (boost::str (deleteAcctTrans % to_string (txID)));
+            getApp().getMasterTransaction ().inLedger (
+                transactionID, getLedgerSeq ());
 
-            const std::vector<RippleAddress>& accts = vt.second->getAffected ();
+            std::string const txnId (to_string (transactionID));
+            std::string const txnSeq (std::to_string (vt.second->getTxnSeq ()));
+
+            db->executeSQL (boost::str (deleteAcctTrans % transactionID));
+
+            auto const& accts = vt.second->getAffected ();
 
             if (!accts.empty ())
             {
-                std::string sql = "INSERT INTO AccountTransactions (TransID, Account, LedgerSeq, TxnSeq) VALUES ";
-                bool first = true;
+                std::string sql ("INSERT INTO AccountTransactions "
+                                 "(TransID, Account, LedgerSeq, TxnSeq) VALUES ");
 
-                for (auto it = accts.begin (), end = accts.end (); it != end; ++it)
+                // Try to make an educated guess on how much space we'll need
+                // for our arguments. In argument order we have:
+                // 64 + 34 + 10 + 10 = 118 + 10 extra = 128 bytes
+                sql.reserve (sql.length () + (accts.size () * 128));
+
+                bool first = true;
+                for (auto const& it : accts)
                 {
                     if (!first)
                         sql += ", ('";
@@ -676,18 +689,20 @@ bool Ledger::saveValidatedLedger (bool current)
                         first = false;
                     }
 
-                    sql += to_string (txID);
+                    sql += txnId;
                     sql += "','";
-                    sql += it->humanAccountID ();
+                    sql += it.humanAccountID ();
                     sql += "',";
-                    sql += beast::lexicalCastThrow <std::string> (getLedgerSeq ());
+                    sql += ledgerSeq;
                     sql += ",";
-                    sql += beast::lexicalCastThrow <std::string> (vt.second->getTxnSeq ());
+                    sql += txnSeq;
                     sql += ")";
                 }
-
                 sql += ";";
-                WriteLog (lsTRACE, Ledger) << "ActTx: " << sql;
+                if (ShouldLog (lsTRACE, Ledger))
+                {
+                    WriteLog (lsTRACE, Ledger) << "ActTx: " << sql;
+                }
                 db->executeSQL (sql);
             }
             else
