@@ -25,11 +25,12 @@ var nodeutils     = require("./nodeutils");
 
 // Create a server object
 function Server(name, config, verbose) {
-  this.name     = name;
-  this.config   = config;
-  this.started  = false;
-  this.quiet    = !verbose;
-  this.stopping = false;
+  this.name        = name;
+  this.config      = config;
+  this.started     = false;
+  this.quiet       = !verbose;
+  this.stopping    = false;
+  this.ledger_file = null;
 
   var nodejs_version = process.version.match(/^v(\d+)+\.(\d+)\.(\d+)$/).slice(1,4);
   var wanted_version = [ 0, 8, 18 ];
@@ -78,6 +79,10 @@ Server.prototype._writeConfig = function(done) {
     'utf8', done);
 };
 
+Server.prototype.set_ledger_file = function(fn) {
+  this.ledger_file = __dirname + '/fixtures/' + fn;
+}
+
 // Spawn the server.
 Server.prototype._serverSpawnSync = function() {
   var self  = this;
@@ -87,6 +92,10 @@ Server.prototype._serverSpawnSync = function() {
     "-v",
     "--conf=rippled.cfg"
   ];
+
+  if (this.ledger_file != null) {
+    args.push('--ledgerfile=' + this.ledger_file)
+  };
 
   var options = {
     cwd: this.serverPath(),
@@ -103,8 +112,8 @@ Server.prototype._serverSpawnSync = function() {
                 this.config.rippled_path,
                 args.join(" "),
                 this.configPath());
-  
-  
+
+
   var stderr = [];
   self.child.stderr.on('data', function(buf) { stderr.push(buf); });
 
@@ -177,6 +186,7 @@ Server.prototype.stop = function () {
   // Update the on exit to invoke done.
   this.child.on('exit', function (code, signal) {
     if (!self.quiet) console.log("server: stop: server exited");
+    self.stopped = true;
     self.emit('stopped');
     delete self.child;
   });

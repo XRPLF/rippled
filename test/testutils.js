@@ -96,6 +96,11 @@ function build_setup(opts, host) {
 
         data.server = Server.from_config(host, server_config, !!opts.verbose_server);
 
+        // Setting undefined is a noop here
+        if (data.opts.ledger_file != null) {
+          data.server.set_ledger_file(data.opts.ledger_file);
+        };
+
         data.server.once('started', function() {
           callback();
         });
@@ -164,7 +169,11 @@ function build_teardown(host) {
       }
     ];
 
-    async.series(series, done);
+    if (!opts.no_server && data.server.stopped) {
+      done()
+    } else {
+      async.series(series, done);
+    }
   };
 
   return teardown;

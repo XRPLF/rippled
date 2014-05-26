@@ -32,6 +32,8 @@ exports.servers = {
     'rpc_ip' : "0.0.0.0",
     'rpc_port' : 5005,
     'local_sequence' : true,
+    'trace' : false,
+    // 'trace' : true,
     'local_fee' : true,
     // 'validation_seed' : "shhDFVsmS2GSu5vUyZSPXYfj1r79h",
     // 'validators' : "n9L8LZZCwsdXzKUN9zoVxs4YznYXZ9hEhsQZY7aVpxtFaSceiyDZ beta",
