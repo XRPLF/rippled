@@ -1,4 +1,4 @@
-{
+module.exports = {
   "Path Tests #1 (XRP -> XRP) and #2 (XRP -> IOU)": {
 
     "ledger": {"accounts": {"A1": {"balance": ["100000.0",

@@ -68,7 +68,7 @@ The tests are written in a declarative style:
                               $ signifies an order book rather than account
   
   ------------------------------------------------------------------------------
-  Tests can be written in the 'path-tests.json' file in same directory     # <--
+  Tests can be written in the 'path-tests-json.js' file in same directory   # <--
   ------------------------------------------------------------------------------
 """
 #################################### HELPERS ###################################
@@ -455,8 +455,10 @@ define_suites = (path_finding_cases) ->
 A0 = (new TestAccount('A0')).address
 assert A0 == 'rBmhuVAvi372AerwzwERGjhLjqkMmAwxX'
 
-path_finding_cases_string = fs.readFileSync(__dirname + "/path-tests.json")
-path_finding_cases = JSON.parse path_finding_cases_string
+try
+  path_finding_cases = require('./path-tests-json')
+catch e
+  console.log e
 
 # You need two gateways, same currency. A market maker. A source that trusts one
 # gateway and holds its currency, and a destination that trusts the other.
