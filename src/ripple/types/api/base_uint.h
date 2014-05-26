@@ -89,13 +89,6 @@ public:
     const_iterator cbegin() const { return data(); }
     const_iterator cend()   const { return data()+bytes; }
 
-    reverse_iterator rbegin() { return end(); }
-    reverse_iterator rend()   { return begin(); }
-    const_reverse_iterator rbegin()  const { return end(); }
-    const_reverse_iterator rend()    const { return begin(); }
-    const_reverse_iterator crbegin() const { return cend(); }
-    const_reverse_iterator crend()   const { return cbegin(); }
-
     /** Value hashing function.
         The seed prevents crafted inputs from causing degenarate parent containers.
     */
@@ -303,42 +296,26 @@ public:
         hash_append (h, a.pn);
     }
 
-    void SetHexExact (const char* psz)
+    bool SetHexExact (const char* psz)
     {
         // must be precisely the correct number of hex digits
-        static signed char phexdigit[256] =
-        {
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            0, 1, 2, 3,  4, 5, 6, 7,  8, 9, -1, -1, -1, -1, -1, -1,
-
-            -1, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            -1, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        };
-
-        char* pOut  = reinterpret_cast<char*> (pn);
+        unsigned char* pOut  = begin ();
 
         for (int i = 0; i < sizeof (pn); ++i)
         {
-            *pOut = phexdigit[*psz++] << 4;
-            *pOut++ |= phexdigit[*psz++];
+            auto cHigh = charUnHex(*psz++);
+            auto cLow  = charUnHex(*psz++);
+
+            if (cHigh == -1 || cLow == -1)
+                return false;
+
+            *pOut++ = (cHigh << 4) | cLow;
         }
 
         assert (*psz == 0);
-        assert (pOut == reinterpret_cast<char*> (end ()));
+        assert (pOut == end ());
+
+        return true;
     }
 
     // Allow leading whitespace.
@@ -355,35 +332,11 @@ public:
         if (!bStrict && psz[0] == '0' && tolower (psz[1]) == 'x')
             psz += 2;
 
-        // hex char to int
-        static signed char phexdigit[256] =
-        {
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            0, 1, 2, 3,  4, 5, 6, 7,  8, 9, -1, -1, -1, -1, -1, -1,
-
-            -1, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            -1, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        };
-
         const unsigned char* pEnd   = reinterpret_cast<const unsigned char*> (psz);
         const unsigned char* pBegin = pEnd;
 
         // Find end.
-        while (phexdigit[*pEnd] >= 0)
+        while (charUnHex(*pEnd) != -1)
             pEnd++;
 
         // Take only last digits of over long string.
@@ -395,15 +348,19 @@ public:
         zero ();
 
         if ((pEnd - pBegin) & 1)
-            *pOut++ = phexdigit[*pBegin++];
+            *pOut++ = charUnHex(*pBegin++);
 
         while (pBegin != pEnd)
         {
-            unsigned char   cHigh   = phexdigit[*pBegin++] << 4;
-            unsigned char   cLow    = pBegin == pEnd
-                                      ? 0
-                                      : phexdigit[*pBegin++];
-            *pOut++ = cHigh | cLow;
+            auto cHigh = charUnHex(*pBegin++);
+            auto cLow  = pBegin == pEnd
+                            ? 0
+                            : charUnHex(*pBegin++);
+
+            if (cHigh == -1 || cLow == -1)
+                return false;
+
+            *pOut++ = (cHigh << 4) | cLow;
         }
 
         return !*pEnd;
