@@ -157,7 +157,7 @@ window (T* blob, int start, int count )
 
 /** Calculated a windowed metric using bins.
     TODO Need reference (SMHasher?)
-*/ 
+*/
 template <class FwdIter>
 double
 windowed_score (FwdIter first, FwdIter last)
@@ -169,8 +169,6 @@ windowed_score (FwdIter first, FwdIter last)
     while (static_cast<double>(size) / (1 << maxwidth) < 5.0)
         maxwidth--;
     double worst = 0;
-    int worstStart = -1;
-    int worstWidth = -1;
     std::vector <int> bins (1 << maxwidth);
     int const hashbits = sizeof(std::size_t) * CHAR_BIT;
     for (int start = 0; start < hashbits; ++start)
@@ -185,12 +183,7 @@ windowed_score (FwdIter first, FwdIter last)
         {
             double score (detail::score (
                 bins.data(), bins.size(), size));
-            if (score > worst)
-            {
-                worst = score;
-                worstStart = start;
-                worstWidth = width;
-            }
+            worst = std::max(score, worst);
             if (--width < 8)
                 break;
             for (std::size_t i = 0, j = bins.size() / 2; j < bins.size(); ++i, ++j)
