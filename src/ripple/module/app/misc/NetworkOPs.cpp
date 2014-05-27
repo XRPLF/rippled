@@ -2963,6 +2963,9 @@ void NetworkOPsImp::getBookPage (
 
     LedgerEntrySet  lesActive (lpLedger, tapNONE, true);
 
+    const bool      bGlobalFreeze =  lesActive.isGlobalFrozen (book.out.account) ||
+                                     lesActive.isGlobalFrozen (book.in.account);
+
     bool            bDone           = false;
     bool            bDirectAdvance  = true;
 
@@ -3027,6 +3030,12 @@ void NetworkOPsImp::getBookPage (
                     // funded.
                     saOwnerFunds    = saTakerGets;
                 }
+                else if (bGlobalFreeze)
+                {
+                    // If either asset is globally frozen, consider all offers
+                    // that aren't ours to be totally unfunded
+                    saOwnerFunds.clear (IssueRef (book.out.currency, book.out.account));
+                }
                 else
                 {
                     auto umBalanceEntry  = umBalance.find (uOfferOwnerID);
@@ -3042,7 +3051,7 @@ void NetworkOPsImp::getBookPage (
 
                         saOwnerFunds = lesActive.accountHolds (
                             uOfferOwnerID, book.out.currency,
-                            book.out.account);
+                            book.out.account, true);
 
                         if (saOwnerFunds < zero)
                         {
@@ -3166,6 +3175,10 @@ void NetworkOPsImp::getBookPage (
 
     auto uTransferRate = lesActive.rippleTransferRate (book.out.account);
 
+    const bool bGlobalFreeze = lesActive.isGlobalFrozen (book.out.account) ||
+                               lesActive.isGlobalFrozen (book.in.account);
+
+
     while (iLeft-- > 0 && obIterator.nextOffer ())
     {
 
@@ -3182,6 +3195,12 @@ void NetworkOPsImp::getBookPage (
             {
                 // If offer is selling issuer's own IOUs, it is fully funded.
                 saOwnerFunds    = saTakerGets;
+            }
+            else if (bGlobalFreeze)
+            {
+                // If either asset is globally frozen, consider all offers
+                // that aren't ours to be totally unfunded
+                saOwnerFunds.clear (IssueRef (book.out.currency, book.out.account));
             }
             else
             {

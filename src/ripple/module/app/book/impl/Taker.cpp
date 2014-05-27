@@ -78,7 +78,7 @@ Amounts
 Taker::flow (Amounts amount, Offer const& offer, Account const& taker)
 {
     // Limit taker's input by available funds less fees
-    Amount const taker_funds (view ().accountFunds (taker, amount.in));
+    Amount const taker_funds (view ().accountFunds (taker, amount.in, true));
 
     // Get fee rate paid by taker
     std::uint32_t const taker_charge_rate (view ().rippleTransferRate (
@@ -102,7 +102,7 @@ Taker::flow (Amounts amount, Offer const& offer, Account const& taker)
 
     // Limit owner's output by available funds less fees
     Amount const owner_funds (view ().accountFunds (
-        offer.account (), owner_amount.out));
+        offer.account (), owner_amount.out, true));
 
     // Get fee rate paid by owner
     std::uint32_t const owner_charge_rate (view ().rippleTransferRate (
@@ -210,7 +210,7 @@ Taker::done () const
     }
 
     // We are finished if the taker is out of funds
-    return view().accountFunds (account(), m_remain.in) <= zero;
+    return view().accountFunds (account(), m_remain.in, true) <= zero;
 }
 
 TER

@@ -573,6 +573,67 @@ void PathState::expandPath (
         << ": " << getJson ();
 }
 
+
+/** Check if an expanded path violates freeze rules */
+void PathState::checkFreeze()
+{
+    assert (nodes_.size() >= 2);
+
+    // A path with no intermediaries -- pure issue/redeem
+    // cannot be frozen.
+    if (nodes_.size() == 2)
+        return;
+
+    SLE::pointer sle;
+
+    for (int i = 0; i < (nodes_.size() - 1); ++i)
+    {
+        // Check each order book for a global freeze
+        if (nodes_[i].uFlags & STPathElement::typeIssuer)
+        {
+            sle = lesEntries.entryCache (ltACCOUNT_ROOT,
+                Ledger::getAccountRootIndex (nodes_[i].issuer_));
+
+            if (sle && sle->isFlag (lsfGlobalFreeze))
+            {
+                terStatus = terNO_LINE;
+                return;
+            }
+        }
+
+        // Check each account change to make sure funds can leave
+        if (nodes_[i].uFlags & STPathElement::typeAccount)
+        {
+            Currency const& currencyID = nodes_[i].currency_;
+            Account const& inAccount = nodes_[i].account_;
+            Account const& outAccount = nodes_[i+1].account_;
+
+            if (inAccount != outAccount)
+            {
+                sle = lesEntries.entryCache (ltACCOUNT_ROOT,
+                    Ledger::getAccountRootIndex (outAccount));
+
+                if (sle && sle->isFlag (lsfGlobalFreeze))
+                {
+                    terStatus = terNO_LINE;
+                    return;
+                }
+
+                sle = lesEntries.entryCache (ltRIPPLE_STATE,
+                    Ledger::getRippleStateIndex (inAccount,
+                        outAccount, currencyID));
+
+                if (sle && sle->isFlag (
+                    (outAccount > inAccount) ? lsfHighFreeze : lsfLowFreeze))
+                {
+                    terStatus = terNO_LINE;
+                    return;
+                }
+            }
+        }
+    }
+}
+
 /** Check if a sequence of three accounts violates the no ripple constrains
     [first] -> [second] -> [third]
     Disallowed if 'second' set no ripple on [first]->[second] and
@@ -678,8 +739,8 @@ void PathState::checkNoRipple (
     }
 
     // Loop through all nodes that have a prior node and successor nodes
-    // These are the nodes whose no ripple constratints could be violated
-    for (auto i = 1; i < nodes_.size() - 1; ++i)
+    // These are the nodes whose no ripple constraints could be violated
+    for (int i = 1; i < nodes_.size() - 1; ++i)
     {
         if (nodes_[i - 1].isAccount() &&
             nodes_[i].isAccount() &&

@@ -124,6 +124,12 @@ TER rippleCalculate (
         if (tesSUCCESS == pspDirect->status())
            pspDirect->checkNoRipple (uDstAccountID, uSrcAccountID);
 
+        if ((tesSUCCESS == pspDirect->status ()) &&
+            activeLedger.getLedger()->enforceFreeze ())
+        {
+               pspDirect->checkFreeze ();
+        }
+
         pspDirect->setIndex (pathStateList.size ());
 
         WriteLog (lsDEBUG, RippleCalc)
@@ -171,6 +177,12 @@ TER rippleCalculate (
 
         if (tesSUCCESS == pspExpanded->status())
            pspExpanded->checkNoRipple (uDstAccountID, uSrcAccountID);
+
+        if ((tesSUCCESS == pspExpanded->status ()) &&
+            activeLedger.getLedger()->enforceFreeze())
+        {
+            pspExpanded->checkFreeze ();
+        }
 
         WriteLog (lsDEBUG, RippleCalc)
             << "rippleCalc:"
