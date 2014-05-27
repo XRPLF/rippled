@@ -73,10 +73,14 @@ bool Process::isRunningUnderDebugger()
     return beast_isRunningUnderDebugger();
 }
 
-static void swapUserAndEffectiveUser()
+// TODO(tom): raisePrivilege and lowerPrivilege don't seem to be called.  If we
+// start using them, we should deal with the return codes of setreuid() and
+// setregid().
+static bool swapUserAndEffectiveUser()
 {
-    (void) setreuid (geteuid(), getuid());
-    (void) setregid (getegid(), getgid());
+    auto r1 = setreuid (geteuid(), getuid());
+    auto r2 = setregid (getegid(), getgid());
+    return !(r1 || r2);
 }
 
 void Process::raisePrivilege()  { if (geteuid() != 0 && getuid() == 0) swapUserAndEffectiveUser(); }
