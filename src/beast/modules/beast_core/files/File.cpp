@@ -1064,6 +1064,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE (File,beast_core,beast);
+BEAST_DEFINE_TESTSUITE_MANUAL (File,beast_core,beast);
 
 } // beast
