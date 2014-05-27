@@ -109,22 +109,22 @@ struct LexicalCast <std::string, In>
 template <class Out>
 struct LexicalCast <Out, std::string>
 {
-    bool operator() (short& out,                std::string const& in) const { return parseSigned (out, in.data(), in.data()+in.size()); }
-    bool operator() (int& out,                  std::string const& in) const { return parseSigned (out, in.data(), in.data()+in.size()); }
-    bool operator() (long& out,                 std::string const& in) const { return parseSigned (out, in.data(), in.data()+in.size()); }
-    bool operator() (long long& out,            std::string const& in) const { return parseSigned (out, in.data(), in.data()+in.size()); }
-    bool operator() (unsigned short& out,       std::string const& in) const { return parseUnsigned (out, in.data(), in.data()+in.size()); }
-    bool operator() (unsigned int& out,         std::string const& in) const { return parseUnsigned (out, in.data(), in.data()+in.size()); }
-    bool operator() (unsigned long& out,        std::string const& in) const { return parseUnsigned (out, in.data(), in.data()+in.size()); }
-    bool operator() (unsigned long long& out,   std::string const& in) const { return parseUnsigned (out, in.data(), in.data()+in.size()); }
-    bool operator() (float& out,                std::string const& in) const { bassertfalse; return false; /* UNIMPLEMENTED! */ }
-    bool operator() (double& out,               std::string const& in) const { bassertfalse; return false; /* UNIMPLEMENTED! */ }
-    bool operator() (long double& out,          std::string const& in) const { bassertfalse; return false; /* UNIMPLEMENTED! */ }
-#if 0
-    bool operator() (bool& out,                 std::string const& in) const;
-#else
-    bool operator() (bool& out,                 std::string const& in) const { return parseUnsigned (out, in.data(), in.data()+in.size()); }
-#endif
+    static_assert (std::is_integral <Out>::value,
+        "beast::LexicalCast can only be used with integral types");
+
+    template <class Integral = Out>
+    typename std::enable_if <std::is_unsigned <Integral>::value, bool>::type
+    operator () (Integral& out, std::string const& in) const
+    {
+        return parseUnsigned (out, in.data(), in.data()+in.size());
+    }
+
+    template <class Integral = Out>
+    typename std::enable_if <std::is_signed <Integral>::value, bool>::type
+    operator () (Integral& out, std::string const& in) const
+    {
+        return parseSigned (out, in.data(), in.data()+in.size());
+    }
 };
 
 #if 0
