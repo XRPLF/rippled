@@ -61,8 +61,9 @@ CreateOfferBridged::crossOffers (
         (options.passive? "passive" : "") << std::endl <<
         "     taker: " << taker.account() << std::endl <<
         "  balances: " <<
-            view.accountFunds (taker.account(), taker_amount.in) << ", " <<
-            view.accountFunds (taker.account(), taker_amount.out);
+        view.accountFunds (taker.account(), taker_amount.in, fhIGNORE_FREEZE)
+        << ", " <<
+        view.accountFunds (taker.account(), taker_amount.out, fhIGNORE_FREEZE);
 
     TER cross_result (tesSUCCESS);
 

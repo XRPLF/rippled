@@ -124,7 +124,8 @@ TER PathCursor::advanceNode (bool const bReverse) const
                 // Funds left.
                 node().saOfferFunds = ledger().accountFunds (
                     node().offerOwnerAccount_,
-                    node().saTakerGets);
+                    node().saTakerGets,
+                    fhZERO_IF_FROZEN);
                 node().bFundsDirty = false;
 
                 WriteLog (lsTRACE, RippleCalc)
@@ -321,7 +322,9 @@ TER PathCursor::advanceNode (bool const bReverse) const
                 // Only the current node is allowed to use the source.
 
                 node().saOfferFunds = ledger().accountFunds (
-                    node().offerOwnerAccount_, node().saTakerGets);
+                    node().offerOwnerAccount_,
+                    node().saTakerGets,
+                    fhZERO_IF_FROZEN);
                 // Funds held.
 
                 if (node().saOfferFunds <= zero)

@@ -29,7 +29,10 @@ bool RippleCalc::addPathState(STPath const& path, TER& resultCode)
         saDstAmountReq_, saMaxAmountReq_);
 
     if (!pathState)
+    {
+        resultCode = temUNKNOWN;
         return false;
+    }
 
     pathState->expandPath (
         mActiveLedger,
@@ -37,8 +40,11 @@ bool RippleCalc::addPathState(STPath const& path, TER& resultCode)
         uDstAccountID_,
         uSrcAccountID_);
 
-    if (tesSUCCESS == pathState->status())
-       pathState->checkNoRipple (uDstAccountID_, uSrcAccountID_);
+    if (pathState->status() == tesSUCCESS)
+        pathState->checkNoRipple (uDstAccountID_, uSrcAccountID_);
+
+    if (pathState->status() == tesSUCCESS && mActiveLedger.enforceFreeze ())
+        pathState->checkFreeze ();
 
     pathState->setIndex (pathStateList_.size ());
 
@@ -47,17 +53,18 @@ bool RippleCalc::addPathState(STPath const& path, TER& resultCode)
         << " status: " << transToken (pathState->status());
 
     // Return if malformed.
-    if (isTemMalformed (pathState->status())) {
+    if (isTemMalformed (pathState->status()))
+    {
         resultCode = pathState->status();
         return false;
     }
 
-    if (tesSUCCESS == pathState->status())
+    if (pathState->status () == tesSUCCESS)
     {
-        resultCode   = tesSUCCESS;
+        resultCode = pathState->status();
         pathStateList_.push_back (pathState);
     }
-    else if (terNO_LINE != pathState->status())
+    else if (pathState->status () != terNO_LINE)
     {
         resultCode = pathState->status();
     }
@@ -99,7 +106,6 @@ TER RippleCalc::rippleCalculate ()
     // Build a default path.  Use saDstAmountReq_ and saMaxAmountReq_ to imply
     // nodes.
     // XXX Might also make a XRP bridge by default.
-
 
     WriteLog (lsTRACE, RippleCalc)
         << "rippleCalc: Paths in set: " << spsPaths_.size ();

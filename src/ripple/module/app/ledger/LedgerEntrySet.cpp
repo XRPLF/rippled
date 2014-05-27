@@ -1221,7 +1221,10 @@ LedgerEntrySet::rippleQualityIn (
 // negative.
 // <-- IOU's account has of issuer.
 STAmount LedgerEntrySet::rippleHolds (
-    Account const& account, Currency const& currency, Account const& issuer)
+    Account const& account,
+    Currency const& currency,
+    Account const& issuer,
+    FreezeHandling zeroIfFrozen)
 {
     STAmount saBalance;
     SLE::pointer sleRippleState = entryCache (ltRIPPLE_STATE,
@@ -1230,6 +1233,10 @@ STAmount LedgerEntrySet::rippleHolds (
     if (!sleRippleState)
     {
         saBalance.clear ({currency, issuer});
+    }
+    else if ((zeroIfFrozen == fhZERO_IF_FROZEN) && isFrozen (account, currency, issuer))
+    {
+        saBalance.clear (IssueRef (currency, issuer));
     }
     else if (account > issuer)
     {
@@ -1252,7 +1259,10 @@ STAmount LedgerEntrySet::rippleHolds (
 //
 // <-- saAmount: amount of currency held by account. May be negative.
 STAmount LedgerEntrySet::accountHolds (
-    Account const& account, Currency const& currency, Account const& issuer)
+    Account const& account,
+    Currency const& currency,
+    Account const& issuer,
+    FreezeHandling zeroIfFrozen)
 {
     STAmount    saAmount;
 
@@ -1282,7 +1292,7 @@ STAmount LedgerEntrySet::accountHolds (
     }
     else
     {
-        saAmount    = rippleHolds (account, currency, issuer);
+        saAmount    = rippleHolds (account, currency, issuer, zeroIfFrozen);
 
         WriteLog (lsTRACE, LedgerEntrySet) << "accountHolds:" <<
             " account=" << to_string (account) <<
@@ -1290,6 +1300,46 @@ STAmount LedgerEntrySet::accountHolds (
     }
 
     return saAmount;
+}
+
+bool LedgerEntrySet::isGlobalFrozen (const Account& issuer)
+{
+    if (!enforceFreeze () || isXRP (issuer))
+        return false;
+
+    SLE::pointer sle = entryCache (ltACCOUNT_ROOT, Ledger::getAccountRootIndex (issuer));
+    if (sle && sle->isFlag (lsfGlobalFreeze))
+        return true;
+
+    return false;
+}
+
+// Can the specified account spend the specified currency issued by
+// the specified issuer or does the freeze flag prohibit it?
+bool LedgerEntrySet::isFrozen(
+    Account const& account,
+    Currency const& currency,
+    Account const& issuer)
+{
+    if (!enforceFreeze () || isXRP (currency))
+        return false;
+
+    SLE::pointer sle = entryCache (ltACCOUNT_ROOT, Ledger::getAccountRootIndex (issuer));
+    if (sle && sle->isFlag (lsfGlobalFreeze))
+        return true;
+
+    if (issuer != account)
+    {
+        // Check if the issuer froze the line
+        sle = entryCache (ltRIPPLE_STATE,
+            Ledger::getRippleStateIndex (account, issuer, currency));
+        if (sle && sle->isFlag ((issuer > account) ? lsfHighFreeze : lsfLowFreeze))
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 // Returns the funds available for account for a currency/issuer.
@@ -1301,7 +1351,7 @@ STAmount LedgerEntrySet::accountHolds (
 // If the issuer is the same as account, funds are unlimited, use result is
 // saDefault.
 STAmount LedgerEntrySet::accountFunds (
-    Account const& account, const STAmount& saDefault)
+    Account const& account, const STAmount& saDefault, FreezeHandling zeroIfFrozen)
 {
     STAmount    saFunds;
 
@@ -1317,7 +1367,8 @@ STAmount LedgerEntrySet::accountFunds (
     else
     {
         saFunds = accountHolds (
-            account, saDefault.getCurrency (), saDefault.getIssuer ());
+            account, saDefault.getCurrency (), saDefault.getIssuer (),
+            zeroIfFrozen);
 
         WriteLog (lsTRACE, LedgerEntrySet) << "accountFunds:" <<
             " account=" << to_string (account) <<

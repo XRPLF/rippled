@@ -352,7 +352,8 @@ TER PathCursor::forwardLiquidityForAccount () const
                         ledger().accountHolds (
                             node().account_,
                             xrpCurrency(),
-                            xrpAccount()));
+                            xrpAccount(), 
+                            fhIGNORE_FREEZE)); // XRP can't be frozen
 
             }
 

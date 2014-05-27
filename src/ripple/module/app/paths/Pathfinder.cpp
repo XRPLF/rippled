@@ -507,31 +507,38 @@ int Pathfinder::getPathsOut (
 
     int aFlags = sleAccount->getFieldU32(sfFlags);
     bool const bAuthRequired = (aFlags & lsfRequireAuth) != 0;
+    bool const bFrozen = (aFlags & lsfGlobalFreeze) != 0;
 
     int count = 0;
-    AccountItems& rippleLines (mRLCache->getRippleLines (accountID));
 
-    for (auto const& item : rippleLines.getItems ())
+    if (!bFrozen)
     {
-        RippleState* rspEntry = (RippleState*) item.get ();
+        for (auto const& item : mRLCache->getRippleLines (accountID).getItems ())
+        {
+            RippleState* rspEntry = (RippleState*) item.get ();
 
-        if (currencyID != rspEntry->getLimit ().getCurrency ())
-        {
+            if (currencyID != rspEntry->getLimit ().getCurrency ())
+            {
+            }
+            else if (rspEntry->getBalance () <= zero &&
+                     (!rspEntry->getLimitPeer ()
+                      || -rspEntry->getBalance () >= rspEntry->getLimitPeer ()
+                      ||  (bAuthRequired && !rspEntry->getAuth ())))
+            {
+            }
+            else if (isDstCurrency && (dstAccount == rspEntry->getAccountIDPeer ()))
+                count += 10000; // count a path to the destination extra
+            else if (rspEntry->getNoRipplePeer ())
+            {
+                // This probably isn't a useful path out
+            }
+            else if (rspEntry->getFreezePeer () && mLedger->enforceFreeze ())
+            {
+                // Not a useful path out
+            }
+            else
+                ++count;
         }
-        else if (rspEntry->getBalance () <= zero &&
-                 (!rspEntry->getLimitPeer ()
-                  || -rspEntry->getBalance () >= rspEntry->getLimitPeer ()
-                  ||  (bAuthRequired && !rspEntry->getAuth ())))
-        {
-        }
-        else if (isDstCurrency && (dstAccount == rspEntry->getAccountIDPeer ()))
-            count += 10000; // count a path to the destination extra
-        else if (rspEntry->getNoRipplePeer ())
-        {
-            // This probably isn't a useful path out
-        }
-        else
-            ++count;
     }
     mPOMap[currencyAccount] = count;
     return count;
