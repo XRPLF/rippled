@@ -199,6 +199,7 @@ def config_base(env):
         env.Append(LIBPATH=[
             os.path.join(BOOST_ROOT, 'stage', 'lib'),
             ])
+        env['BOOST_ROOT'] = BOOST_ROOT
     except KeyError:
         pass
 
@@ -262,15 +263,24 @@ def config_env(toolchain, variant, env):
                 '-Wno-unused-but-set-variable'
                 ])
 
-        env.Append(LIBS=[
+        boost_libs = [
             'boost_date_time',
             'boost_filesystem',
             'boost_program_options',
             'boost_regex',
             'boost_system',
-            'boost_thread',
-            'dl',
-            ])
+            'boost_thread'
+        ]
+        # We prefer static libraries for boost
+        if env.get('BOOST_ROOT'):
+            static_libs = ['%s/stage/lib/lib%s.a' % (env['BOOST_ROOT'], l) for
+                           l in boost_libs]
+            if all(os.path.exists(f) for f in static_libs):
+                boost_libs = [File(f) for f in static_libs]
+
+        env.Append(LIBS=boost_libs)
+        env.Append(LIBS=['dl'])
+
         if Beast.system.osx:
             env.Append(LIBS=[
                 'crypto',
