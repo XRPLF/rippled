@@ -22,6 +22,7 @@
 #include <ripple_app/paths/Tuning.h>
 
 namespace ripple {
+namespace path {
 
 // At the right most node of a list of consecutive offer nodes, given the amount
 // requested to be delivered, push toward node 0 the amount requested for
@@ -33,7 +34,7 @@ namespace ripple {
 // spent on fees.  Continue processing until the request is satisified as long
 // as the rate does not increase past the initial rate.
 
-TER calcNodeDeliverRev (
+TER nodeDeliverRev (
     RippleCalc& rippleCalc,
     const unsigned int nodeIndex,
     PathState&         pathState,
@@ -45,10 +46,10 @@ TER calcNodeDeliverRev (
     STAmount&          saOutAct)       // <-- Funds actually delivered for an
                                        // increment.
 {
-    TER errorCode   = tesSUCCESS;
+    TER resultCode   = tesSUCCESS;
 
-    PathState::Node&    previousNode       = pathState.vpnNodes[nodeIndex - 1];
-    PathState::Node&    node       = pathState.vpnNodes[nodeIndex];
+    auto&    previousNode       = pathState.nodes()[nodeIndex - 1];
+    auto&    node       = pathState.nodes()[nodeIndex];
 
     const uint160&  uCurIssuerID    = node.uIssuerID;
     const uint160&  uPrvAccountID   = previousNode.uAccountID;
@@ -71,7 +72,7 @@ TER calcNodeDeliverRev (
     saOutAct.clear (saOutReq);
 
     WriteLog (lsTRACE, RippleCalc)
-        << "calcNodeDeliverRev>"
+        << "nodeDeliverRev>"
         << " saOutAct=" << saOutAct
         << " saOutReq=" << saOutReq
         << " saPrvDlvReq=" << saPrvDlvReq;
@@ -100,12 +101,12 @@ TER calcNodeDeliverRev (
         STAmount&       saTakerGets     = node.saTakerGets;
         STAmount&       saRateMax       = node.saRateMax;
 
-        errorCode = calcNodeAdvance (
+        resultCode = nodeAdvance (
             rippleCalc,
             nodeIndex, pathState, bMultiQuality || saOutAct == zero, true);
         // If needed, advance to next funded offer.
 
-        if (errorCode != tesSUCCESS || !uOfferIndex)
+        if (resultCode != tesSUCCESS || !uOfferIndex)
         {
             // Error or out of offers.
             break;
@@ -118,7 +119,7 @@ TER calcNodeDeliverRev (
             : saTransferRate;   // Transfer rate of issuer.
 
         WriteLog (lsTRACE, RippleCalc)
-            << "calcNodeDeliverRev:"
+            << "nodeDeliverRev:"
             << " uOfrOwnerID="
             << RippleAddress::createHumanAccountID (uOfrOwnerID)
             << " uOutAccountID="
@@ -138,7 +139,7 @@ TER calcNodeDeliverRev (
             saRateMax   = saOutFeeRate;
 
             WriteLog (lsTRACE, RippleCalc)
-                << "calcNodeDeliverRev: Set initial rate:"
+                << "nodeDeliverRev: Set initial rate:"
                 << " saRateMax=" << saRateMax
                 << " saOutFeeRate=" << saOutFeeRate;
         }
@@ -146,7 +147,7 @@ TER calcNodeDeliverRev (
         {
             // Offer exceeds initial rate.
             WriteLog (lsTRACE, RippleCalc)
-                << "calcNodeDeliverRev: Offer exceeds initial rate:"
+                << "nodeDeliverRev: Offer exceeds initial rate:"
                 << " saRateMax=" << saRateMax
                 << " saOutFeeRate=" << saOutFeeRate;
 
@@ -167,7 +168,7 @@ TER calcNodeDeliverRev (
             saRateMax   = saOutFeeRate;
 
             WriteLog (lsTRACE, RippleCalc)
-                << "calcNodeDeliverRev: Reducing rate:"
+                << "nodeDeliverRev: Reducing rate:"
                 << " saRateMax=" << saRateMax;
         }
 
@@ -190,7 +191,7 @@ TER calcNodeDeliverRev (
         // Offer out with fees.
 
         WriteLog (lsTRACE, RippleCalc)
-            << "calcNodeDeliverRev:"
+            << "nodeDeliverRev:"
             << " saOutReq=" << saOutReq
             << " saOutAct=" << saOutAct
             << " saTakerGets=" << saTakerGets
@@ -210,7 +211,7 @@ TER calcNodeDeliverRev (
             saOutPassAct = std::min (saOutPassReq, fee);
 
             WriteLog (lsTRACE, RippleCalc)
-                << "calcNodeDeliverRev: Total exceeds fees:"
+                << "nodeDeliverRev: Total exceeds fees:"
                 << " saOutPassAct=" << saOutPassAct
                 << " saOutPlusFees=" << saOutPlusFees
                 << " saOfferFunds=" << saOfferFunds;
@@ -223,7 +224,7 @@ TER calcNodeDeliverRev (
         STAmount saInPassAct;
 
         WriteLog (lsTRACE, RippleCalc)
-            << "calcNodeDeliverRev:"
+            << "nodeDeliverRev:"
             << " outputFee=" << outputFee
             << " saInPassReq=" << saInPassReq
             << " saOfrRate=" << saOfrRate
@@ -234,7 +235,7 @@ TER calcNodeDeliverRev (
         {
             // After rounding did not want anything.
             WriteLog (lsDEBUG, RippleCalc)
-                << "calcNodeDeliverRev: micro offer is unfunded.";
+                << "nodeDeliverRev: micro offer is unfunded.";
 
             bEntryAdvance   = true;
             continue;
@@ -257,7 +258,7 @@ TER calcNodeDeliverRev (
             saInPassAct = saInPassReq;
 
             WriteLog (lsTRACE, RippleCalc)
-                << "calcNodeDeliverRev: account --> OFFER --> ? :"
+                << "nodeDeliverRev: account --> OFFER --> ? :"
                 << " saInPassAct=" << saInPassAct;
         }
         else
@@ -265,7 +266,7 @@ TER calcNodeDeliverRev (
             // offer --> OFFER --> ?
             // Compute in previous offer node how much could come in.
 
-            errorCode   = calcNodeDeliverRev (
+            resultCode   = nodeDeliverRev (
                 rippleCalc,
                 nodeIndex - 1,
                 pathState,
@@ -275,11 +276,11 @@ TER calcNodeDeliverRev (
                 saInPassAct);
 
             WriteLog (lsTRACE, RippleCalc)
-                << "calcNodeDeliverRev: offer --> OFFER --> ? :"
+                << "nodeDeliverRev: offer --> OFFER --> ? :"
                 << " saInPassAct=" << saInPassAct;
         }
 
-        if (errorCode != tesSUCCESS)
+        if (resultCode != tesSUCCESS)
             break;
 
         if (saInPassAct < saInPassReq)
@@ -293,7 +294,7 @@ TER calcNodeDeliverRev (
             saOutPlusFees   = std::min (saOfferFunds, outputFees);
 
             WriteLog (lsTRACE, RippleCalc)
-                << "calcNodeDeliverRev: adjusted:"
+                << "nodeDeliverRev: adjusted:"
                 << " saOutPassAct=" << saOutPassAct
                 << " saOutPlusFees=" << saOutPlusFees;
         }
@@ -313,10 +314,10 @@ TER calcNodeDeliverRev (
         // visited.  However, these deductions and adjustments are tenative.
         //
         // Must reset balances when going forward to perform actual transfers.
-        errorCode   = rippleCalc.mActiveLedger.accountSend (
+        resultCode   = rippleCalc.mActiveLedger.accountSend (
             uOfrOwnerID, uCurIssuerID, saOutPassAct);
 
-        if (errorCode != tesSUCCESS)
+        if (resultCode != tesSUCCESS)
             break;
 
         // Adjust offer
@@ -326,12 +327,12 @@ TER calcNodeDeliverRev (
         if (saTakerPaysNew < zero || saTakerGetsNew < zero)
         {
             WriteLog (lsWARNING, RippleCalc)
-                << "calcNodeDeliverRev: NEGATIVE:"
+                << "nodeDeliverRev: NEGATIVE:"
                 << " saTakerPaysNew=" << saTakerPaysNew
                 << " saTakerGetsNew=%s" << saTakerGetsNew;
 
             // If mOpenLedger then ledger is not final, can vote no.
-            errorCode   = rippleCalc.mOpenLedger ? telFAILED_PROCESSING                                                           : tecFAILED_PROCESSING;
+            resultCode   = rippleCalc.mOpenLedger ? telFAILED_PROCESSING                                                           : tecFAILED_PROCESSING;
             break;
         }
 
@@ -344,7 +345,7 @@ TER calcNodeDeliverRev (
         {
             // Offer became unfunded.
             WriteLog (lsDEBUG, RippleCalc)
-                << "calcNodeDeliverRev: offer became unfunded.";
+                << "nodeDeliverRev: offer became unfunded.";
 
             bEntryAdvance   = true;     // XXX When don't we want to set advance?
         }
@@ -359,24 +360,25 @@ TER calcNodeDeliverRev (
     }
 
     CondLog (saOutAct > saOutReq, lsWARNING, RippleCalc)
-        << "calcNodeDeliverRev: TOO MUCH:"
+        << "nodeDeliverRev: TOO MUCH:"
         << " saOutAct=" << saOutAct
         << " saOutReq=" << saOutReq;
 
     assert (saOutAct <= saOutReq);
 
     // XXX Perhaps need to check if partial is okay to relax this?
-    if (errorCode == tesSUCCESS && !saOutAct)
-        errorCode = tecPATH_DRY;
+    if (resultCode == tesSUCCESS && !saOutAct)
+        resultCode = tecPATH_DRY;
     // Unable to meet request, consider path dry.
 
     WriteLog (lsTRACE, RippleCalc)
-        << "calcNodeDeliverRev<"
+        << "nodeDeliverRev<"
         << " saOutAct=" << saOutAct
         << " saOutReq=" << saOutReq
         << " saPrvDlvReq=" << saPrvDlvReq;
 
-    return errorCode;
+    return resultCode;
 }
 
+}  // path
 }  // ripple

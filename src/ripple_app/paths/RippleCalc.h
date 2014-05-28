@@ -21,6 +21,7 @@
 #define RIPPLE_RIPPLECALC_H
 
 namespace ripple {
+namespace path {
 
 /** Calculate the quality of a payment path.
 
@@ -32,7 +33,7 @@ TER rippleCalculate (
     LedgerEntrySet&                   lesActive,
     STAmount&                         saMaxAmountAct,
     STAmount&                         saDstAmountAct,
-    std::vector<PathState::pointer>&  vpsExpanded,
+    PathState::List&                  pathStateList,
     const STAmount&                   saDstAmountReq,
     const STAmount&                   saMaxAmountReq,
     const uint160&                    uDstAccountID,
@@ -47,6 +48,7 @@ TER rippleCalculate (
     const bool                        bOpenLedger = true
 );
 
+} // path
 } // ripple
 
 #endif

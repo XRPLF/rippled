@@ -22,14 +22,15 @@
 #include <ripple_app/paths/Tuning.h>
 
 namespace ripple {
+namespace path {
 
 // For current offer, get input from deliver/limbo and output to next account or
 // deliver for next offers.
 //
-// <-- node.saFwdDeliver: For calcNodeAccountFwd to know how much went through
+// <-- node.saFwdDeliver: For nodeAccountFwd to know how much went through
 // --> node.saRevDeliver: Do not exceed.
 
-TER calcNodeDeliverFwd (
+TER nodeDeliverFwd (
     RippleCalc& rippleCalc,
     const unsigned int nodeIndex,          // 0 < nodeIndex < lastNodeIndex
     PathState&         pathState,
@@ -39,11 +40,11 @@ TER calcNodeDeliverFwd (
     STAmount&          saInAct,        // <-- Amount delivered, this invokation.
     STAmount&          saInFees)       // <-- Fees charged, this invokation.
 {
-    TER errorCode   = tesSUCCESS;
+    TER resultCode   = tesSUCCESS;
 
-    PathState::Node& previousNode = pathState.vpnNodes[nodeIndex - 1];
-    PathState::Node& node = pathState.vpnNodes[nodeIndex];
-    PathState::Node& nextNode = pathState.vpnNodes[nodeIndex + 1];
+    auto& previousNode = pathState.nodes()[nodeIndex - 1];
+    auto& node = pathState.nodes()[nodeIndex];
+    auto& nextNode = pathState.nodes()[nodeIndex + 1];
 
     const uint160&  nextAccountID   = nextNode.uAccountID;
     const uint160&  uCurCurrencyID  = node.uCurrencyID;
@@ -73,34 +74,34 @@ TER calcNodeDeliverFwd (
 
     // XXX Perhaps make sure do not exceed saCurDeliverMax as another way to
     // stop?
-    while (errorCode == tesSUCCESS && saInAct + saInFees < saInReq)
+    while (resultCode == tesSUCCESS && saInAct + saInFees < saInReq)
     {
         // Did not spend all inbound deliver funds.
         if (++loopCount > CALC_NODE_DELIVER_MAX_LOOPS)
         {
             WriteLog (lsWARNING, RippleCalc)
-                << "calcNodeDeliverFwd: max loops cndf";
+                << "nodeDeliverFwd: max loops cndf";
             return rippleCalc.mOpenLedger ? telFAILED_PROCESSING : tecFAILED_PROCESSING;
         }
 
         // Determine values for pass to adjust saInAct, saInFees, and
         // saCurDeliverAct.
-        errorCode   = calcNodeAdvance (
+        resultCode   = nodeAdvance (
             rippleCalc,
             nodeIndex, pathState, bMultiQuality || saInAct == zero, false);
         // If needed, advance to next funded offer.
 
-        if (errorCode != tesSUCCESS)
+        if (resultCode != tesSUCCESS)
         {
             nothing ();
         }
         else if (!uOfferIndex)
         {
             WriteLog (lsWARNING, RippleCalc)
-                << "calcNodeDeliverFwd: INTERNAL ERROR: Ran out of offers.";
+                << "nodeDeliverFwd: INTERNAL ERROR: Ran out of offers.";
             return rippleCalc.mOpenLedger ? telFAILED_PROCESSING : tecFAILED_PROCESSING;
         }
-        else if (errorCode == tesSUCCESS)
+        else if (resultCode == tesSUCCESS)
         {
             // Doesn't charge input. Input funds are in limbo.
             bool&           bEntryAdvance   = node.bEntryAdvance;
@@ -163,7 +164,7 @@ TER calcNodeDeliverFwd (
             STAmount    saInPassFees;
 
             WriteLog (lsTRACE, RippleCalc)
-                << "calcNodeDeliverFwd:"
+                << "nodeDeliverFwd:"
                 << " nodeIndex=" << nodeIndex
                 << " saOutFunded=" << saOutFunded
                 << " saOutPassFunded=" << saOutPassFunded
@@ -182,10 +183,10 @@ TER calcNodeDeliverFwd (
             if (!saTakerPays || saInSum <= zero)
             {
                 WriteLog (lsDEBUG, RippleCalc)
-                    << "calcNodeDeliverFwd: Microscopic offer unfunded.";
+                    << "nodeDeliverFwd: Microscopic offer unfunded.";
 
                 // After math offer is effectively unfunded.
-                pathState.vUnfundedBecame.push_back (uOfferIndex);
+                pathState.becameUnfunded().push_back (uOfferIndex);
                 bEntryAdvance   = true;
                 continue;
             }
@@ -193,10 +194,10 @@ TER calcNodeDeliverFwd (
             {
                 // Previous check should catch this.
                 WriteLog (lsWARNING, RippleCalc)
-                    << "calcNodeDeliverFwd: UNREACHABLE REACHED";
+                    << "nodeDeliverFwd: UNREACHABLE REACHED";
 
                 // After math offer is effectively unfunded.
-                pathState.vUnfundedBecame.push_back (uOfferIndex);
+                pathState.becameUnfunded().push_back (uOfferIndex);
                 bEntryAdvance   = true;
                 continue;
             }
@@ -211,7 +212,7 @@ TER calcNodeDeliverFwd (
                 saInPassFees    = saInPassFeesMax;
 
                 WriteLog (lsTRACE, RippleCalc)
-                    << "calcNodeDeliverFwd: ? --> OFFER --> account:"
+                    << "nodeDeliverFwd: ? --> OFFER --> account:"
                     << " uOfrOwnerID="
                     << RippleAddress::createHumanAccountID (uOfrOwnerID)
                     << " nextAccountID="
@@ -221,10 +222,10 @@ TER calcNodeDeliverFwd (
 
                 // Output: Debit offer owner, send XRP or non-XPR to next
                 // account.
-                errorCode   = rippleCalc.mActiveLedger.accountSend (
+                resultCode   = rippleCalc.mActiveLedger.accountSend (
                     uOfrOwnerID, nextAccountID, saOutPassAct);
 
-                if (errorCode != tesSUCCESS)
+                if (resultCode != tesSUCCESS)
                     break;
             }
             else
@@ -240,7 +241,7 @@ TER calcNodeDeliverFwd (
 
                 // Output fees vary as the next nodes offer owners may vary.
                 // Therefore, immediately push through output for current offer.
-                errorCode   = calcNodeDeliverFwd (
+                resultCode   = nodeDeliverFwd (
                     rippleCalc,
                     nodeIndex + 1,
                     pathState,
@@ -250,7 +251,7 @@ TER calcNodeDeliverFwd (
                     saOutPassAct,       // <-- Amount delivered.
                     saOutPassFees);     // <-- Fees charged.
 
-                if (errorCode != tesSUCCESS)
+                if (resultCode != tesSUCCESS)
                     break;
 
                 if (saOutPassAct == saOutPassMax)
@@ -282,13 +283,13 @@ TER calcNodeDeliverFwd (
                 rippleCalc.mActiveLedger.accountSend (uOfrOwnerID, id, outPassTotal);
 
                 WriteLog (lsTRACE, RippleCalc)
-                    << "calcNodeDeliverFwd: ? --> OFFER --> offer:"
+                    << "nodeDeliverFwd: ? --> OFFER --> offer:"
                     << " saOutPassAct=" << saOutPassAct
                     << " saOutPassFees=" << saOutPassFees;
             }
 
             WriteLog (lsTRACE, RippleCalc)
-                << "calcNodeDeliverFwd: "
+                << "nodeDeliverFwd: "
                 << " nodeIndex=" << nodeIndex
                 << " saTakerGets=" << saTakerGets
                 << " saTakerPays=" << saTakerPays
@@ -310,10 +311,10 @@ TER calcNodeDeliverFwd (
                                                 // same account.
             {
                 auto id = !!uPrvCurrencyID ? uInAccountID : ACCOUNT_XRP;
-                errorCode = rippleCalc.mActiveLedger.accountSend (
+                resultCode = rippleCalc.mActiveLedger.accountSend (
                     id, uOfrOwnerID, saInPassAct);
 
-                if (errorCode != tesSUCCESS)
+                if (resultCode != tesSUCCESS)
                     break;
             }
 
@@ -327,12 +328,12 @@ TER calcNodeDeliverFwd (
             if (saTakerPaysNew < zero || saTakerGetsNew < zero)
             {
                 WriteLog (lsWARNING, RippleCalc)
-                    << "calcNodeDeliverFwd: NEGATIVE:"
+                    << "nodeDeliverFwd: NEGATIVE:"
                     << " saTakerPaysNew=" << saTakerPaysNew
                     << " saTakerGetsNew=" << saTakerGetsNew;
 
                 // If mOpenLedger, then ledger is not final, can vote no.
-                errorCode   = rippleCalc.mOpenLedger
+                resultCode   = rippleCalc.mOpenLedger
                               ? telFAILED_PROCESSING                                                          : tecFAILED_PROCESSING;
                 break;
             }
@@ -347,17 +348,17 @@ TER calcNodeDeliverFwd (
                 // Offer became unfunded.
 
                 WriteLog (lsWARNING, RippleCalc)
-                    << "calcNodeDeliverFwd: unfunded:"
+                    << "nodeDeliverFwd: unfunded:"
                     << " saOutPassAct=" << saOutPassAct
                     << " saOutFunded=" << saOutFunded;
 
-                pathState.vUnfundedBecame.push_back (uOfferIndex);
+                pathState.becameUnfunded().push_back (uOfferIndex);
                 bEntryAdvance   = true;
             }
             else
             {
                 CondLog (saOutPassAct >= saOutFunded, lsWARNING, RippleCalc)
-                    << "calcNodeDeliverFwd: TOO MUCH:"
+                    << "nodeDeliverFwd: TOO MUCH:"
                     << " saOutPassAct=" << saOutPassAct
                     << " saOutFunded=" << saOutFunded;
 
@@ -374,12 +375,13 @@ TER calcNodeDeliverFwd (
     }
 
     WriteLog (lsTRACE, RippleCalc)
-        << "calcNodeDeliverFwd<"
+        << "nodeDeliverFwd<"
         << " nodeIndex=" << nodeIndex
         << " saInAct=" << saInAct
         << " saInFees=" << saInFees;
 
-    return errorCode;
+    return resultCode;
 }
 
+} // path
 } // ripple

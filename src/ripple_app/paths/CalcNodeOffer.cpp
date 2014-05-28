@@ -22,6 +22,7 @@
 #include <ripple_app/paths/Tuning.h>
 
 namespace ripple {
+namespace path {
 
 // Called to drive the from the first offer node in a chain.
 //
@@ -31,15 +32,15 @@ namespace ripple {
 //   - Transfer fees credited to issuer.
 //   - Payout to issuer or limbo.
 // - Deliver is set without transfer fees.
-TER calcNodeOfferFwd (
+TER nodeOfferFwd (
     RippleCalc& rippleCalc,
     const unsigned int          nodeIndex,
     PathState&                  pathState,
     const bool                  bMultiQuality
 )
 {
-    TER             errorCode;
-    PathState::Node& previousNode = pathState.vpnNodes [nodeIndex - 1];
+    TER             resultCode;
+    auto& previousNode = pathState.nodes() [nodeIndex - 1];
 
     if (!!previousNode.uAccountID)
     {
@@ -47,7 +48,7 @@ TER calcNodeOfferFwd (
         STAmount        saInAct;
         STAmount        saInFees;
 
-        errorCode   = calcNodeDeliverFwd (
+        resultCode   = nodeDeliverFwd (
             rippleCalc,
             nodeIndex,
             pathState,
@@ -57,30 +58,30 @@ TER calcNodeOfferFwd (
             saInAct,
             saInFees);
 
-        assert (errorCode != tesSUCCESS ||
+        assert (resultCode != tesSUCCESS ||
                 previousNode.saFwdDeliver == saInAct + saInFees);
     }
     else
     {
         // Previous is an offer. Deliver has already been resolved.
-        errorCode   = tesSUCCESS;
+        resultCode   = tesSUCCESS;
     }
 
-    return errorCode;
+    return resultCode;
 
 }
 
 // Called to drive from the last offer node in a chain.
-TER calcNodeOfferRev (
+TER nodeOfferRev (
     RippleCalc& rippleCalc,
     const unsigned int          nodeIndex,
     PathState&                  pathState,
     const bool                  bMultiQuality)
 {
-    TER             errorCode;
+    TER             resultCode;
 
-    PathState::Node& node = pathState.vpnNodes [nodeIndex];
-    PathState::Node& nextNode = pathState.vpnNodes [nodeIndex + 1];
+    auto& node = pathState.nodes() [nodeIndex];
+    auto& nextNode = pathState.nodes() [nodeIndex + 1];
 
     if (!!nextNode.uAccountID)
     {
@@ -88,11 +89,11 @@ TER calcNodeOfferRev (
         STAmount        saDeliverAct;
 
         WriteLog (lsTRACE, RippleCalc)
-            << "calcNodeOfferRev: OFFER --> account:"
+            << "nodeOfferRev: OFFER --> account:"
             << " nodeIndex=" << nodeIndex
             << " saRevDeliver=" << node.saRevDeliver;
 
-        errorCode   = calcNodeDeliverRev (
+        resultCode   = nodeDeliverRev (
             rippleCalc,
             nodeIndex,
             pathState,
@@ -106,13 +107,14 @@ TER calcNodeOfferRev (
     else
     {
         WriteLog (lsTRACE, RippleCalc)
-            << "calcNodeOfferRev: OFFER --> offer: nodeIndex=" << nodeIndex;
+            << "nodeOfferRev: OFFER --> offer: nodeIndex=" << nodeIndex;
 
         // Next is an offer. Deliver has already been resolved.
-        errorCode   = tesSUCCESS;
+        resultCode   = tesSUCCESS;
     }
 
-    return errorCode;
+    return resultCode;
 }
 
-} // ripple
+}  // path
+}  // ripple

@@ -24,7 +24,8 @@ namespace ripple {
 
 typedef TER ErrorCode;
 
-class CalcState {
+class CalcState
+{
   public:
     CalcState(
         unsigned int nodeIndex, PathState& state, LedgerEntrySet& ledger, bool quality)
@@ -43,42 +44,6 @@ class CalcState {
     void nextPath(LedgerEntrySet const& checkpoint) const;
 
   private:
-    enum NodeCursor { FIRST, PREVIOUS, CURRENT, NEXT, LAST };
-
-    unsigned int index(NodeCursor cursor = CURRENT) const
-    {
-        switch (cursor) {
-          case FIRST:
-            return 0;
-          case PREVIOUS:
-            return nodeIndex_ ? nodeIndex_ - 1 : 0;
-          case CURRENT:
-            return nodeIndex_;
-          default:
-            break;
-        }
-        unsigned int size = pathState_.vpnNodes.size ();
-        auto last = size ? size - 1 : 0;
-        switch (cursor) {
-          case NEXT:
-              return std::min(nodeIndex_ + 1, last);
-          case LAST:
-            return last;
-          default:
-            bassert(false);
-        }
-    }
-
-    PathState::Node& node(NodeCursor cursor = CURRENT)
-    {
-        return pathState_.vpnNodes[index(cursor)];
-    }
-
-    CalcState state(NodeCursor cursor = CURRENT)
-    {
-        return CalcState(index(cursor), pathState_, ledger_, quality_);
-    }
-
     LedgerEntrySet& ledger()
     {
         return ledger_;
@@ -95,16 +60,6 @@ class CalcState {
     LedgerEntrySet& ledger_;
     bool const quality_;
 };
-
-inline bool isAccount(PathState::Node const& node)
-{
-    return is_bit_set (node.uFlags, STPathElement::typeAccount);
-}
-
-inline STAmount copyCurrencyAndIssuer(const STAmount& a)
-{
-    return STAmount(a.getCurrency(), a.getIssuer());
-}
 
 } // ripple
 

@@ -203,10 +203,10 @@ Json::Value RPCHandler::doRipplePathFind (
             }
             else
             {
-                std::vector<PathState::pointer> vpsExpanded;
-                STAmount                        saMaxAmountAct;
-                STAmount                        saDstAmountAct;
-                STAmount                        saMaxAmount (
+                PathState::List pathStateList;
+                STAmount saMaxAmountAct;
+                STAmount saDstAmountAct;
+                STAmount saMaxAmount (
                     uSrcCurrencyID,
                     !!uSrcIssuerID
                     ? uSrcIssuerID      // Use specifed issuer.
@@ -219,11 +219,11 @@ Json::Value RPCHandler::doRipplePathFind (
                 LedgerEntrySet  lesSandbox (lpLedger, tapNONE);
 
                 TER terResult   =
-                    rippleCalculate (
+                    path::rippleCalculate (
                         lesSandbox,
                         saMaxAmountAct,         // <--
                         saDstAmountAct,         // <--
-                        vpsExpanded,            // <--
+                        pathStateList,            // <--
                         saMaxAmount,            // --> Amount to send is unlimited to get an estimate.
                         saDstAmount,            // --> Amount to deliver.
                         raDst.getAccountID (),  // --> Account to deliver to.
@@ -236,7 +236,7 @@ Json::Value RPCHandler::doRipplePathFind (
                         true);                  // --> Stand alone mode, no point in deleting unfundeds.
 
                 // WriteLog (lsDEBUG, RPCHandler) << "ripple_path_find: PATHS IN: " << spsComputed.size() << " : " << spsComputed.getJson(0);
-                // WriteLog (lsDEBUG, RPCHandler) << "ripple_path_find: PATHS EXP: " << vpsExpanded.size();
+                // WriteLog (lsDEBUG, RPCHandler) << "ripple_path_find: PATHS EXP: " << pathStateList.size();
 
                 WriteLog (lsWARNING, RPCHandler)
                         << boost::str (boost::format ("ripple_path_find: saMaxAmount=%s saDstAmount=%s saMaxAmountAct=%s saDstAmountAct=%s")
@@ -249,10 +249,10 @@ Json::Value RPCHandler::doRipplePathFind (
                 {
                     WriteLog (lsDEBUG, PathRequest) << "Trying with an extra path element";
                     spsComputed.addPath(extraPath);
-                    vpsExpanded.clear ();
+                    pathStateList.clear ();
                     lesSandbox.clear ();
-                    terResult = rippleCalculate (lesSandbox, saMaxAmountAct, saDstAmountAct,
-                                                        vpsExpanded, saMaxAmount, saDstAmount,
+                    terResult = path::rippleCalculate (lesSandbox, saMaxAmountAct, saDstAmountAct,
+                                                        pathStateList, saMaxAmount, saDstAmount,
                                                         raDst.getAccountID (), raSrc.getAccountID (),
                                                         spsComputed, false, false, false, true);
                     WriteLog (lsDEBUG, PathRequest) << "Extra path element gives " << transHuman (terResult);
@@ -266,10 +266,9 @@ Json::Value RPCHandler::doRipplePathFind (
 
                     // Reuse the expanded as it would need to be calcuated anyway to produce the canonical.
                     // (At least unless we make a direct canonical.)
-                    // RippleCalc::setCanonical(spsCanonical, vpsExpanded, false);
 
                     jvEntry["source_amount"]    = saMaxAmountAct.getJson (0);
-                    //                  jvEntry["paths_expanded"]   = vpsExpanded.getJson(0);
+                    //                  jvEntry["paths_expanded"]   = pathStateList.getJson(0);
                     jvEntry["paths_canonical"]  = Json::arrayValue; // spsCanonical.getJson(0);
                     jvEntry["paths_computed"]   = spsComputed.getJson (0);
 
