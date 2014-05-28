@@ -19,7 +19,7 @@
 
 namespace ripple {
 
-std::uint64_t RegularKeySetTransactor::calculateBaseFee ()
+std::uint64_t SetRegularKey::calculateBaseFee ()
 {
     if ( mTxnAccount
             && (! (mTxnAccount->getFlags () & lsfPasswordSpent))
@@ -33,7 +33,7 @@ std::uint64_t RegularKeySetTransactor::calculateBaseFee ()
 }
 
 
-TER RegularKeySetTransactor::doApply ()
+TER SetRegularKey::doApply ()
 {
     std::uint32_t const uTxFlags = mTxn.getFlags ();
 

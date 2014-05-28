@@ -121,13 +121,44 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\beast\beast\asio\Asio.unity.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\beast\ripple_beast.unity.cpp">
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\asio\Asio.unity.cpp">
+    <ClCompile Include="..\..\src\ripple\common\impl\KeyCache.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\common\impl\ResolverAsio.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\common\MultiSocket.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\common\Resolver.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\common\impl\MultiSocket.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\common\impl\RippleSSLContext.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\common\impl\MultiSocketType.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\common\impl\TaggedCache.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\common\KeyCache.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\common\RippleSSLContext.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\common\ResolverAsio.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\common\TaggedCache.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\common\UnorderedContainers.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\boost\Boost.unity.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -247,6 +278,12 @@
     <ClCompile Include="..\..\src\beast\beast\cxx14\tests\integer_sequence.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\http\impl\basic_url.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\http\impl\get.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\http\impl\joyent_parser.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -259,7 +296,16 @@
     <ClCompile Include="..\..\src\beast\beast\http\impl\URL.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\http\tests\basic_url.test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\http\tests\client_session.test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\http\tests\ParsedURL.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\http\tests\urls_large_data.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\Insight.h">
@@ -698,6 +744,10 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\cxx14\utility.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\http\basic_url.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\http\get.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\basic_message.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\http\impl\http-parser\http_parser.c">
@@ -710,6 +760,14 @@
     <ClInclude Include="..\..\src\beast\beast\http\raw_parser.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\URL.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\memory_buffer.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\utility\ci_char_traits.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\http\client_session.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\http\tests\urls_large_data.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\insight\Collector.h">
     </ClInclude>
@@ -1059,6 +1117,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\strings\StringFromNumber.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\http\detail\header_traits.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\insight\Meter.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\insight\Base.h">
@@ -1119,6 +1179,10 @@
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\common\ripple_common.unity.cpp">
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
     <ClCompile Include="..\..\src\beast\modules\beast_sqlite\beast_sqlite.unity.c">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -1127,66 +1191,31 @@
     <ClCompile Include="..\..\src\beast\modules\beast_sqlite\sqlite\sqlite3.c">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\common\ripple_common.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\common\impl\ResolverAsio.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\common\impl\KeyCache.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\common\MultiSocket.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\common\Resolver.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\common\impl\MultiSocket.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\common\impl\RippleSSLContext.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\common\impl\MultiSocketType.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\common\impl\TaggedCache.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\common\KeyCache.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\common\RippleSSLContext.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\common\ResolverAsio.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\common\TaggedCache.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\common\UnorderedContainers.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\http\ripple_http.unity.cpp">
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple_data\protocol\SerializeDeclarations.h">
+    <ClInclude Include="..\..\src\ripple\types\api\RippleAccountPrivateKey.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\nodestore\api\Types.h">
+    <ClInclude Include="..\..\src\ripple\types\api\IdentifierType.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\nodestore\api\Scheduler.h">
+    <ClInclude Include="..\..\src\ripple\types\api\HashMaps.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\api\base_uint.h">
+    <ClInclude Include="..\..\src\ripple\types\api\RippleAccountID.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\nodestore\api\VisitCallback.h">
+    <ClInclude Include="..\..\src\ripple\types\api\RandomNumbers.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_net\ripple_net.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\http\impl\Peer.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\nodestore\api\Manager.h">
+    <ClInclude Include="..\..\src\ripple\types\api\ByteOrder.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_basics\ripple_basics.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_core\ripple_core.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\protocol\SerializedTypes.h">
+    <ClInclude Include="..\..\src\ripple_core\functional\Config.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\http\impl\Door.h">
     </ClInclude>
@@ -1206,19 +1235,61 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\http\impl\Types.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\protocol\TER.h">
+    <ClInclude Include="..\..\src\ripple_core\functional\JobQueue.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\http\ripple_http.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\protocol\Serializer.h">
+    <ClInclude Include="..\..\src\ripple_core\functional\ConfigSections.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\nodestore\api\NodeObject.h">
+    <ClInclude Include="..\..\src\ripple\types\api\CryptoIdentifier.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_data\ripple_data.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\nodestore\api\Task.h">
+    <ClInclude Include="..\..\src\ripple\types\api\IdentifierStorage.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_core\functional\Job.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_core\functional\LoadEvent.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_core\functional\LoadFeeTrack.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_core\functional\LoadMonitor.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_core\nodestore\NodeStore.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\sslutil\api\ECDSACanonical.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_data\crypto\Base58Data.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_data\crypto\RFC1751.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_data\protocol\BuildInfo.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_data\protocol\FieldNames.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_data\protocol\HashPrefix.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_data\protocol\KnownFormats.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_data\protocol\LedgerFormats.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_data\protocol\Protocol.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_data\protocol\RippleAddress.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_data\protocol\RippleSystem.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_data\protocol\SerializedObject.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_data\protocol\SerializedObjectTemplate.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_data\protocol\SerializedTypes.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_data\protocol\Serializer.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_data\protocol\STParsedJSON.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_data\protocol\TER.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_data\protocol\TxFlags.h">
     </ClInclude>
@@ -1227,48 +1298,6 @@
     <ClInclude Include="..\..\src\ripple_data\utility\UptimeTimerAdapter.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\json\api\JsonPropertyStream.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\json\api\json_config.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\json\api\json_features.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\json\api\json_forwards.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\json\api\json_reader.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\json\api\json_value.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\json\api\json_writer.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\api\AgedHistory.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\api\Base58.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\api\Blob.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\api\ByteOrder.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\api\CryptoIdentifier.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\api\HashMaps.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\api\IdentifierStorage.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\api\IdentifierType.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\api\RandomNumbers.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\api\RippleAccountID.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\api\RippleAccountPrivateKey.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\api\RippleAccountPublicKey.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\api\RippleAssets.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\api\RippleLedgerHash.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\api\RipplePrivateKey.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_websocket\autosocket\AutoSocket.h">
     </ClInclude>
@@ -1280,25 +1309,25 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_net\basics\RPCDoor.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\api\RipplePublicKeyHash.h">
+    <ClInclude Include="..\..\src\ripple\json\api\json_features.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_net\rpc\RPCCall.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\api\strHex.h">
+    <ClInclude Include="..\..\src\ripple\json\api\json_reader.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\api\RipplePublicKey.h">
+    <ClInclude Include="..\..\src\ripple\json\api\json_config.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\api\SimpleIdentifier.h">
+    <ClInclude Include="..\..\src\ripple\json\api\json_forwards.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\api\UInt160.h">
+    <ClInclude Include="..\..\src\ripple\json\api\json_value.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\nodestore\api\Backend.h">
+    <ClInclude Include="..\..\src\ripple\json\api\json_writer.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\nodestore\api\Database.h">
+    <ClInclude Include="..\..\src\ripple\types\api\AgedHistory.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\nodestore\api\DummyScheduler.h">
+    <ClInclude Include="..\..\src\ripple\types\api\Base58.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\nodestore\api\Factory.h">
+    <ClInclude Include="..\..\src\ripple\types\api\Blob.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_net\rpc\InfoSub.h">
     </ClInclude>
@@ -1312,6 +1341,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_net\rpc\RPCUtil.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\http\api\Session.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\http\api\Handler.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\http\api\Port.h">
@@ -1319,8 +1350,6 @@
     <ClInclude Include="..\..\src\ripple\http\api\ScopedStream.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\http\api\Server.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\http\api\Session.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\json\ripple_json.h">
     </ClInclude>
@@ -1380,47 +1409,47 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_basics\utility\UptimeTimer.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\functional\Config.h">
+    <ClInclude Include="..\..\src\ripple\types\api\RippleAccountPublicKey.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\functional\ConfigSections.h">
+    <ClInclude Include="..\..\src\ripple\types\api\RippleAssets.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\functional\Job.h">
+    <ClInclude Include="..\..\src\ripple\types\api\RippleLedgerHash.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\functional\JobQueue.h">
+    <ClInclude Include="..\..\src\ripple\types\api\RipplePrivateKey.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\functional\LoadEvent.h">
+    <ClInclude Include="..\..\src\ripple\types\api\RipplePublicKey.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\functional\LoadFeeTrack.h">
+    <ClInclude Include="..\..\src\ripple\types\api\RipplePublicKeyHash.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\functional\LoadMonitor.h">
+    <ClInclude Include="..\..\src\ripple\types\api\SimpleIdentifier.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\nodestore\NodeStore.h">
+    <ClInclude Include="..\..\src\ripple\types\api\strHex.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\sslutil\api\ECDSACanonical.h">
+    <ClInclude Include="..\..\src\ripple\types\api\UInt160.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\crypto\Base58Data.h">
+    <ClInclude Include="..\..\src\ripple_core\nodestore\api\Backend.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\crypto\RFC1751.h">
+    <ClInclude Include="..\..\src\ripple_core\nodestore\api\Database.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\protocol\BuildInfo.h">
+    <ClInclude Include="..\..\src\ripple_core\nodestore\api\DummyScheduler.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\protocol\FieldNames.h">
+    <ClInclude Include="..\..\src\ripple_core\nodestore\api\Factory.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\protocol\HashPrefix.h">
+    <ClInclude Include="..\..\src\ripple_core\nodestore\api\Manager.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\protocol\KnownFormats.h">
+    <ClInclude Include="..\..\src\ripple_core\nodestore\api\NodeObject.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\protocol\LedgerFormats.h">
+    <ClInclude Include="..\..\src\ripple_core\nodestore\api\Scheduler.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\protocol\Protocol.h">
+    <ClInclude Include="..\..\src\ripple_core\nodestore\api\Task.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\protocol\RippleAddress.h">
+    <ClInclude Include="..\..\src\ripple_core\nodestore\api\Types.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\protocol\RippleSystem.h">
+    <ClInclude Include="..\..\src\ripple_core\nodestore\api\VisitCallback.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\protocol\SerializedObject.h">
+    <ClInclude Include="..\..\src\ripple\types\api\base_uint.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_data\protocol\SerializedObjectTemplate.h">
+    <ClInclude Include="..\..\src\ripple_data\protocol\SerializeDeclarations.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\common\byte_view.h">
     </ClInclude>
@@ -1455,23 +1484,30 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\json\impl\json_valueiterator.inl">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\sitefiles\api\SiteFile.h">
+    <ClInclude Include="..\..\src\ripple\peerfinder\sim\FunctionQueue.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\sitefiles\api\Manager.h">
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Tuning.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\sim\NodeSnapshot.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\sim\GraphAlgorithms.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\sim\Message.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Bootcache.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\algorithm\api\CycledSet.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\api\Types.h">
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Store.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\peerfinder\impl\Livecache.cpp">
+    <ClCompile Include="..\..\src\ripple\peerfinder\sim\Tests.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Livecache.h">
+    <ClInclude Include="..\..\src\ripple\peerfinder\sim\WrappedSink.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\ripple_peerfinder.h">
-    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\peerfinder\impl\Endpoint.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\peerfinder\impl\Bootcache.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -1490,31 +1526,47 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Counts.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\sim\Message.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\peerfinder\impl\Endpoint.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\peerfinder\sim\FunctionQueue.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\sitefiles\api\Listener.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\iosformat.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\sitefiles\api\Section.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\sim\GraphAlgorithms.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\sim\NodeSnapshot.h">
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Livecache.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\sim\Params.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\iosformat.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\StoreSqdb.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\sim\Predicates.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\peerfinder\sim\Tests.cpp">
+    <ClInclude Include="..\..\src\ripple\peerfinder\ripple_peerfinder.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\peerfinder\impl\Livecache.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\peerfinder\sim\WrappedSink.h">
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Logic.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\peerfinder\impl\Manager.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\PrivateTypes.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\peerfinder\impl\RedirectHandouts.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Reporting.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\peerfinder\impl\SlotHandouts.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\peerfinder\impl\SlotImp.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\SlotImp.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Source.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\peerfinder\impl\SourceStrings.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\SourceStrings.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\ConnectHandouts.h">
     </ClInclude>
@@ -1542,43 +1594,20 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\api\Manager.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\api\Types.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\sitefiles\api\Listener.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\sitefiles\api\Manager.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\sitefiles\api\Section.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\sitefiles\api\SiteFile.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\proto\protobuf.unity.cpp">
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\peerfinder\impl\Manager.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Logic.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\PrivateTypes.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\peerfinder\impl\RedirectHandouts.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Reporting.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Source.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\SlotImp.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\peerfinder\impl\SourceStrings.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\peerfinder\impl\SlotHandouts.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\SourceStrings.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\peerfinder\impl\SlotImp.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Store.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\StoreSqdb.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Tuning.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\protobuf\src\google\protobuf\compiler\importer.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -1618,27 +1647,6 @@
     <ClCompile Include="..\..\src\protobuf\src\google\protobuf\io\zero_copy_stream.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\resource\impl\Key.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\resource\impl\Import.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\radmap\impl\BasicFullBelowCache.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\resource\impl\Logic.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\common\seconds_clock.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\resource\ripple_resource.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\resource\impl\Consumer.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\resource\impl\LegacyFees.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\protobuf\src\google\protobuf\io\zero_copy_stream_impl.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -1654,22 +1662,9 @@
     <ClCompile Include="..\..\src\protobuf\src\google\protobuf\message_lite.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\resource\impl\Manager.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\protobuf\src\google\protobuf\stubs\atomicops_internals_x86_msvc.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\resource\impl\Entry.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\resource\impl\Charge.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\resource\impl\Fees.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\resource\impl\Kind.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\protobuf\src\google\protobuf\service.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -1812,18 +1807,6 @@
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rocksdb\ripple_rocksdb.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\block_based_table_reader.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\resource\impl\Tests.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\build\proto\ripple.pb.h">
-    </ClInclude>
     <CustomBuild Include="..\..\src\ripple\proto\ripple.proto">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='debug|x64'">protoc --cpp_out=..\..\build\proto --proto_path=%(RelativeDir) %(Identity)</Command>
@@ -1840,66 +1823,69 @@
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\resource\impl\Tuning.h">
+    <ClInclude Include="..\..\build\proto\ripple.pb.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\validators\ripple_validators.unity.cpp">
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\radmap\impl\BasicFullBelowCache.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\algorithm\api\DecayingSample.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\validators\impl\ChosenList.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\validators\impl\SourceURL.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\validators\impl\Store.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\validators\impl\Count.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\validators\impl\Manager.cpp">
+    <ClCompile Include="..\..\src\ripple\resource\ripple_resource.unity.cpp">
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\resource\impl\Tests.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\validators\impl\SourceFile.h">
+    <ClInclude Include="..\..\src\ripple\resource\impl\Key.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\validators\impl\Source.cpp">
+    <ClInclude Include="..\..\src\ripple\common\seconds_clock.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\resource\impl\Charge.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\validators\impl\SourceFile.cpp">
+    <ClInclude Include="..\..\src\ripple\resource\impl\Logic.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\resource\impl\Consumer.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\validators\impl\SourceDesc.h">
+    <ClInclude Include="..\..\src\ripple\resource\impl\Entry.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\validators\impl\SourceStrings.cpp">
+    <ClCompile Include="..\..\src\ripple\resource\impl\Fees.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\validators\impl\SourceStrings.h">
+    <ClInclude Include="..\..\src\ripple\resource\impl\Import.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\validators\impl\SourceURL.cpp">
+    <ClInclude Include="..\..\src\ripple\resource\impl\Kind.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\resource\impl\LegacyFees.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\validators\impl\Logic.h">
+    <ClInclude Include="..\..\src\ripple\resource\impl\Tuning.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\string_util.cc">
+    <ClCompile Include="..\..\src\ripple\resource\impl\Manager.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\cache.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\arena.h">
-    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\rocksdb\ripple_rocksdb.unity.cpp">
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\rocksdb\ripple_rocksdb.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\vectorrep.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\dbformat.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\statistics.cc">
+    <ClCompile Include="..\..\src\ripple\common\tests\cross_offer.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\memtable.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\memtablelist.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\block_builder.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\builder.cc">
@@ -1923,25 +1909,91 @@
     <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\filename.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\format.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\log_reader.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\filter_block.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\status.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\log_writer.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\transformrep.cc">
+    <ClCompile Include="..\..\src\ripple\types\impl\Base58.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\types\impl\base_uint.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\types\impl\RandomNumbers.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\merge_operator.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\merge_helper.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\repair.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\table_cache.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\table_properties_collector.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\types\impl\ByteOrder.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\version_set_reduce_num_levels.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\types\impl\RippleAssets.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\types\impl\RippleIdentifierTests.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\types\impl\strHex.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\types\impl\UInt160.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\version_set.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\write_batch.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\transaction_log_impl.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\port\port_posix.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\version_edit.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\block.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\block_based_table_builder.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\block_based_table_factory.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\block_based_table_reader.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\block_builder.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\filter_block.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\flush_block_policy.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\format.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\iterator.cc">
@@ -2013,35 +2065,38 @@
     <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\slice.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\statistics.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\status.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\string_util.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\transformrep.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\vectorrep.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\arena.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\cache.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\compaction_filter.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\comparator.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\db.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\merge_operator.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\merge_helper.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\repair.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\table_cache.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\table_properties_collector.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\filter_policy.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\version_set_reduce_num_levels.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\iterator.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\env.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\filter_policy.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\flush_block_policy.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\iterator.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\memtablerep.h">
     </ClInclude>
@@ -2052,32 +2107,6 @@
     <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\perf_context.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\slice.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\version_set.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\write_batch.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\transaction_log_impl.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\port\port_posix.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\version_edit.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\block.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\block_based_table_builder.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\block_based_table_factory.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\compaction_filter.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\slice_transform.h">
     </ClInclude>
@@ -2205,19 +2234,12 @@
     </ClInclude>
     <ClInclude Include="..\..\src\snappy\config\snappy-stubs-public.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\sitefiles\impl\Logic.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\sitefiles\ripple_sitefiles.unity.cpp">
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\sslutil\ripple_sslutil.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\testoverlay\impl\TestOverlay.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\sitefiles\impl\Logic.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\sitefiles\impl\Section.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2229,10 +2251,10 @@
     <ClCompile Include="..\..\src\ripple\sitefiles\impl\SiteFile.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\testoverlay\api\ConfigType.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\testoverlay\api\ConnectionType.h">
-    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\sslutil\ripple_sslutil.unity.cpp">
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\sslutil\impl\CBigNum.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2257,70 +2279,79 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\sslutil\api\HashUtilities.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\testoverlay\ripple_testoverlay.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\testoverlay\ripple_testoverlay.unity.cpp">
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\testoverlay\api\PeerLogicBase.h">
+    <ClCompile Include="..\..\src\ripple\testoverlay\impl\TestOverlay.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\testoverlay\api\ConfigType.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\testoverlay\api\StateBase.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\common\tests\cross_offer.test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\types\impl\base_uint.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\testoverlay\ripple_testoverlay.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\testoverlay\api\ConnectionType.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\testoverlay\api\PeerLogicBase.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\testoverlay\api\InitPolicy.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\testoverlay\api\SimplePayload.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\testoverlay\api\MessageType.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\testoverlay\api\NetworkType.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\testoverlay\api\PeerType.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\testoverlay\api\Results.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\testoverlay\api\NetworkType.h">
+    <ClInclude Include="..\..\src\ripple\testoverlay\api\SimplePayload.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\types\impl\ByteOrder.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\types\impl\RandomNumbers.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\types\impl\strHex.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\types\impl\RippleAssets.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\types\impl\Base58.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\types\impl\RippleIdentifierTests.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\types\impl\UInt160.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\types\ripple_types.unity.cpp">
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\validators\ripple_validators.unity.cpp">
+    <ClInclude Include="..\..\src\ripple\validators\impl\Count.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\validators\impl\ChosenList.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple_app\ripple_app.unity.cpp">
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\validators\impl\Utilities.h">
+    <ClInclude Include="..\..\src\ripple\validators\impl\Logic.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\validators\impl\StoreSqdb.h">
+    <ClCompile Include="..\..\src\ripple\validators\impl\Manager.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\validators\impl\Source.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\validators\impl\SourceDesc.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\validators\impl\SourceStrings.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\validators\impl\SourceFile.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\validators\impl\SourceFile.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\validators\impl\SourceStrings.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\validators\impl\SourceURL.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\validators\impl\SourceURL.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\validators\impl\StoreSqdb.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\validators\impl\StoreSqdb.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\validators\impl\Store.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\validators\impl\Tests.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2331,35 +2362,38 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\validators\ripple_validators.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\validators\impl\Validator.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\validators\api\Manager.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\validators\impl\Validation.h">
+    <ClInclude Include="..\..\src\ripple\validators\impl\Utilities.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\validators\api\Source.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\validators\impl\Validator.h">
+    <ClInclude Include="..\..\src\ripple\validators\impl\Validation.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\validators\api\Types.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple_app\ripple_app.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt7.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\utility\ThreadName.cpp">
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\TxHistory.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\utility\Time.cpp">
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\Subscribe.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\Tx.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\TransactionEntry.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\asio\io_latency_probe.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\Stop.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple_rpc\ripple_rpc.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple_app\ledger\AcceptedLedgerTx.cpp">
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\Sign.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\main\Main.cpp">
@@ -2368,7 +2402,7 @@
     <ClCompile Include="..\..\src\ripple_app\main\NodeStoreScheduler.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\main\LocalCredentials.cpp">
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\AccountCurrencies.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\common\jsonrpc_fields.h">
@@ -2388,43 +2422,99 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\main\FatalErrorReporter.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\AccountOffers.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\main\IoServicePool.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\AccountInfo.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\SMS.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple_app\main\NodeStoreScheduler.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple_app\ledger\DirectoryEntryIterator.cpp">
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\Submit.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ledger\LedgerTiming.cpp">
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\AccountLines.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt6.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\Validations.cpp">
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\AccountTx.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\consensus\DisputedTx.cpp">
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\AccountTxOld.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\FeeVoteImpl.cpp">
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\AccountTxSwitch.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ledger\LedgerEntrySet.cpp">
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\BlackList.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\utility\Sustain.cpp">
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\BookOffers.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ledger\AcceptedLedger.cpp">
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\Connect.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ledger\OrderBookIterator.cpp">
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\ConsensusInfo.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\paths\Pathfinder.cpp">
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\Feature.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\FetchInfo.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\GetCounts.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\Ledger.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\LedgerAccept.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\LedgerCleaner.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\LedgerClosed.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\LedgerCurrent.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\LedgerData.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\LedgerEntry.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\LedgerHeader.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\LogLevel.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\LogRotate.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\NicknameInfo.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\OwnerInfo.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\PathFind.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\Peers.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\Ping.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\main\RPCHTTPServer.cpp">
@@ -2439,17 +2529,33 @@
     <ClCompile Include="..\..\src\ripple_app\node\SqliteFactory.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\Profile.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple_app\rpc\RPCHandler.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple_app\misc\Offer.cpp">
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\ProofSolve.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple_app\paths\Calculators.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple_app\misc\AmendmentTableImpl.cpp">
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\Print.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\HashRouter.cpp">
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\ProofCreate.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\ProofVerify.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\Random.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\RipplePathFind.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\ServerInfo.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_rpc\handlers\ServerState.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\rpc\RPCHandler.cpp">
@@ -2694,144 +2800,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\radmap\ripple_radmap.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\AccountCurrencies.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\AccountInfo.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\AccountLines.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\AccountOffers.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\AccountTx.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\AccountTxOld.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\AccountTxSwitch.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\BlackList.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\BookOffers.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\Connect.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\ConsensusInfo.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\Feature.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\FetchInfo.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\GetCounts.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\Ledger.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\LedgerAccept.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\LedgerCleaner.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\LedgerClosed.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\LedgerCurrent.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\LedgerData.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\LedgerEntry.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\LedgerHeader.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\LogLevel.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\LogRotate.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\NicknameInfo.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\OwnerInfo.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\PathFind.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\Peers.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\Ping.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\Print.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\Profile.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\ProofCreate.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\ProofSolve.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\ProofVerify.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\Random.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\RipplePathFind.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\ServerInfo.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\ServerState.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\Sign.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\SMS.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\Stop.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\Submit.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\Subscribe.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\TransactionEntry.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\Tx.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\handlers\TxHistory.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_rpc\handlers\UnlAdd.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2956,9 +2924,6 @@
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\contracts\Contract.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\ledger\LedgerMaster.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2985,16 +2950,17 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple_overlay\api\predicates.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple_app\data\Database.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
+    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt2.unity.cpp">
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\shamap\RadixMapTest.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\data\DBInit.cpp">
+    <ClCompile Include="..\..\src\ripple_app\data\Database.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ledger\Ledger.cpp">
+    <ClCompile Include="..\..\src\ripple_app\data\DBInit.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple_app\shamap\RadixMapTest.h">
@@ -3020,53 +2986,48 @@
     <ClCompile Include="..\..\src\ripple_app\misc\CanonicalTXSet.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\AccountState.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\misc\NicknameState.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\shamap\SHAMapNode.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\shamap\SHAMap.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt2.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\AccountItems.cpp">
+    <ClCompile Include="..\..\src\ripple_app\contracts\Operation.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\shamap\SHAMapTreeNode.cpp">
+    <ClCompile Include="..\..\src\ripple_app\contracts\Contract.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\contracts\Interpreter.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\contracts\ScriptData.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\shamap\SHAMapDelta.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\tx\TransactionMeta.cpp">
+    <ClCompile Include="..\..\src\ripple_app\ledger\Ledger.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\misc\AccountItems.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\misc\AccountState.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\shamap\SHAMapNode.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\shamap\SHAMapTreeNode.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\ripple_app_pt4.unity.cpp">
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple_app\book\BookTip.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\book\Offer.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\book\OfferStream.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\book\Amount.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\book\Quality.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\book\Amounts.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt5.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    <ClCompile Include="..\..\src\ripple_app\tx\TransactionMeta.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\shamap\SHAMapItem.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -3080,35 +3041,36 @@
     <ClCompile Include="..\..\src\ripple_app\shamap\SHAMapSync.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\contracts\Interpreter.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\ripple_app_pt3.unity.cpp">
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\contracts\Operation.cpp">
+    <ClCompile Include="..\..\src\ripple_app\tx\TransactionMaster.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\contracts\ScriptData.cpp">
+    <ClInclude Include="..\..\src\ripple_app\book\Quality.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple_app\book\tests\OfferStream.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\ledger\InboundLedger.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple_app\book\OfferStream.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple_app\tx\TransactionCheck.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\book\tests\OfferStream.test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
+    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt8.unity.cpp">
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\book\tests\Quality.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple_app\transactors\Transactor.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple_app\tx\TransactionEngine.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\tx\TransactionMaster.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ledger\InboundLedger.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\tx\Transaction.cpp">
@@ -3120,108 +3082,77 @@
     <ClCompile Include="..\..\src\ripple_app\peers\UniqueNodeList.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple_app\transactors\Transactor.h">
+    <ClCompile Include="..\..\src\ripple_app\consensus\DisputedTx.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\ledger\DirectoryEntryIterator.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\ledger\AcceptedLedger.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\ledger\LedgerEntrySet.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\misc\Offer.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\ledger\OrderBookIterator.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\misc\AmendmentTableImpl.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\misc\HashRouter.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\paths\Pathfinder.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple_app\book\Offer.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple_app\ledger\SerializedValidation.cpp">
+    <ClInclude Include="..\..\src\ripple_app\book\BookTip.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\book\Amount.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\book\Amounts.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple_app\ledger\AcceptedLedgerTx.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\tx\LocalTxs.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt8.unity.cpp">
+    <ClInclude Include="..\..\src\ripple_app\paths\Calculators.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt5.unity.cpp">
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\paths\RippleCalc.cpp">
+    <ClCompile Include="..\..\src\ripple_app\main\LocalCredentials.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\paths\CalcNode.cpp">
+    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt6.unity.cpp">
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\ledger\LedgerTiming.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\tx\TransactionAcquire.cpp">
+    <ClCompile Include="..\..\src\ripple_app\misc\Validations.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\paths\CalcNodeAccountRev.cpp">
+    <ClCompile Include="..\..\src\ripple_app\misc\FeeVoteImpl.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\ledger\InboundLedgers.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\ripple_app_pt7.unity.cpp">
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\paths\CalcNodeAdvance.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\paths\CalcNodeAccountFwd.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\ledger\LedgerHistory.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\NetworkOPs.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\paths\RippleLineCache.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\misc\SerializedLedger.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\main\ParameterTable.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\paths\PathRequests.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\paths\CalcNodeDeliverFwd.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\paths\CalcNodeDeliverRev.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\containers\RangeSet.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\paths\PathRequest.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\paths\PathState.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\system\CheckLibraryVersions.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\utility\StringUtilities.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\utility\IniFile.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\log\LogSink.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\transactors\Change.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\log\LogPartition.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple_app\book\Taker.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple_app\transactors\Transactor.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\log\Log.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\transactors\CancelOffer.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\transactors\CreateOffer.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\paths\CalcNodeRipple.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\paths\CalcNodeOffer.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\paths\PathNext.cpp">
@@ -3231,72 +3162,182 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\paths\Tuning.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple_app\transactors\CreateOfferBridged.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\ripple_app_pt9.unity.cpp">
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\transactors\CreateOfferLegacy.cpp">
+    <ClCompile Include="..\..\src\ripple_app\misc\NetworkOPs.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\ledger\LedgerHistory.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\misc\SerializedLedger.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\tx\TransactionAcquire.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\tx\LocalTxs.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\ledger\SerializedValidation.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\paths\PathRequest.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\paths\CalcNodeDeliverFwd.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\paths\CalcNodeDeliverRev.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\main\ParameterTable.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\paths\PathRequests.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\paths\CalcNode.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\paths\PathState.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\paths\RippleCalc.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\paths\RippleLineCache.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\paths\CalcNodeAccountFwd.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\paths\CalcNodeAccountRev.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\paths\CalcNodeOffer.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\book\impl\BookTip.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\book\impl\Quality.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\transactors\Payment.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\transactors\CreateOfferDirect.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\transactors\SetAccount.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\utility\CountedObject.cpp">
+    <ClCompile Include="..\..\src\ripple_app\book\impl\OfferStream.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\transactors\SetRegularKey.cpp">
+    <ClCompile Include="..\..\src\ripple_app\book\impl\Taker.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_basics\log\LogFile.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_app\transactors\SetTrust.cpp">
+    <ClCompile Include="..\..\src\ripple_app\transactors\CreateOffer.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\transactors\AddWallet.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple_app\transactors\CreateOfferDirect.h">
+    <ClCompile Include="..\..\src\ripple_app\transactors\CancelOffer.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\transactors\Change.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\transactors\CreateOfferBridged.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\transactors\CreateOfferDirect.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\transactors\SetRegularKey.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\transactors\SetTrust.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\transactors\CreateOfferLegacy.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_app\transactors\Transactor.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple_app\book\Taker.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\transactors\CreateOfferBridged.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\transactors\CreateOfferLegacy.h">
+    <ClInclude Include="..\..\src\ripple_app\transactors\CancelOffer.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\transactors\AddWallet.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\transactors\CancelOffer.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\transactors\SetAccount.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple_basics\utility\UptimeTimer.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple_app\transactors\Payment.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\transactors\SetRegularKey.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\transactors\Change.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_app\transactors\SetTrust.h">
+    <ClInclude Include="..\..\src\ripple_app\transactors\CreateOfferDirect.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_app\transactors\CreateOffer.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\transactors\CreateOfferLegacy.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\transactors\Payment.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\transactors\SetAccount.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\transactors\SetRegularKey.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_app\transactors\SetTrust.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple_basics\containers\RangeSet.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple_basics\ripple_basics.unity.cpp">
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple_basics\log\LogFile.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_basics\utility\Time.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_basics\utility\UptimeTimer.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_basics\log\Log.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_basics\log\LogPartition.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_basics\utility\IniFile.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_basics\log\LogSink.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_basics\system\CheckLibraryVersions.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_basics\utility\CountedObject.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_basics\utility\StringUtilities.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_basics\utility\Sustain.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple_core\ripple_core.unity.cpp">
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_basics\utility\ThreadName.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_core\functional\Config.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -3308,9 +3349,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_leveldb\ripple_leveldb.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple_core\nodestore\impl\DummyScheduler.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
+    <ClInclude Include="..\..\src\leveldb\include\leveldb\status.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple_core\functional\Job.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -3330,19 +3370,76 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple_core\functional\JobTypeData.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple_core\nodestore\impl\Factory.cpp">
+    <ClCompile Include="..\..\src\ripple_data\crypto\CKey.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple_core\functional\JobTypeInfo.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple_core\nodestore\impl\EncodedBlob.cpp">
+    <ClCompile Include="..\..\src\ripple_data\crypto\Base58Data.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_core\nodestore\backend\HyperDBFactory.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple_data\crypto\CKey.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple_data\ripple_data.unity.cpp">
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple_core\nodestore\backend\HyperDBFactory.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_core\functional\JobTypes.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple_core\nodestore\backend\LevelDBFactory.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple_core\nodestore\backend\LevelDBFactory.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple_core\nodestore\backend\MemoryFactory.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_core\nodestore\backend\RocksDBFactory.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple_core\nodestore\backend\NullFactory.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_core\nodestore\backend\RocksDBFactory.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple_core\nodestore\backend\MemoryFactory.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple_core\nodestore\impl\Backend.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_core\nodestore\backend\NullFactory.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_core\nodestore\impl\BatchWriter.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple_core\nodestore\impl\BatchWriter.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple_core\nodestore\impl\Database.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple_core\nodestore\impl\DatabaseImp.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple_core\nodestore\impl\DecodedBlob.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple_core\nodestore\impl\DecodedBlob.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple_core\nodestore\impl\DummyScheduler.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_core\nodestore\impl\EncodedBlob.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple_core\nodestore\impl\EncodedBlob.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple_core\nodestore\impl\Factory.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple_core\nodestore\impl\Manager.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -3401,89 +3498,33 @@
     </ClInclude>
     <ClInclude Include="..\..\src\leveldb\include\leveldb\iterator.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\nodestore\backend\HyperDBFactory.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\functional\JobTypes.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple_core\nodestore\backend\LevelDBFactory.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple_core\nodestore\backend\LevelDBFactory.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple_core\nodestore\backend\MemoryFactory.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\leveldb\include\leveldb\status.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple_core\nodestore\backend\RocksDBFactory.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\leveldb\include\leveldb\options.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple_data\ripple_data.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple_core\nodestore\backend\NullFactory.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\nodestore\backend\RocksDBFactory.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple_core\nodestore\backend\MemoryFactory.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple_core\nodestore\impl\Backend.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_core\nodestore\backend\NullFactory.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_core\nodestore\impl\BatchWriter.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple_core\nodestore\impl\BatchWriter.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple_core\nodestore\impl\Database.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple_core\nodestore\impl\DatabaseImp.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple_core\nodestore\impl\DecodedBlob.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple_core\nodestore\impl\DecodedBlob.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple_data\crypto\Base58Data.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple_data\crypto\CKey.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple_data\protocol\SerializedObject.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\protocol\SerializedObjectTemplate.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\crypto\CKey.cpp">
+    <ClCompile Include="..\..\src\ripple_data\crypto\CKeyECIES.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_data\crypto\CKeyDeterministic.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\protocol\FieldNames.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\crypto\CKeyECIES.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_data\crypto\RFC1751.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_data\protocol\LedgerFormats.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_data\protocol\BuildInfo.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple_data\protocol\FieldNames.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple_data\protocol\HashPrefix.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\protocol\LedgerFormats.cpp">
+    <ClCompile Include="..\..\src\ripple_data\protocol\RippleAddress.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_data\protocol\SerializedObject.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_data\protocol\SerializedTypes.cpp">
@@ -3492,7 +3533,7 @@
     <ClCompile Include="..\..\src\ripple_data\protocol\Serializer.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_data\protocol\RippleAddress.cpp">
+    <ClCompile Include="..\..\src\ripple_data\protocol\SerializedObjectTemplate.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_data\protocol\STAmount.cpp">
@@ -3522,10 +3563,10 @@
     <ClCompile Include="..\..\src\hyperleveldb\db\db_impl.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\hyperleveldb\db\replay_iterator.cc">
+    <ClCompile Include="..\..\src\hyperleveldb\db\version_edit.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\hyperleveldb\db\table_cache.cc">
+    <ClCompile Include="..\..\src\hyperleveldb\db\version_set.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\hyperleveldb\db\dbformat.cc">
@@ -3549,16 +3590,16 @@
     <ClCompile Include="..\..\src\hyperleveldb\db\repair.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\hyperleveldb\db\version_edit.cc">
+    <ClCompile Include="..\..\src\hyperleveldb\db\replay_iterator.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\hyperleveldb\db\write_batch.cc">
+    <ClCompile Include="..\..\src\hyperleveldb\db\table_cache.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\hyperleveldb\port\port_posix.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\hyperleveldb\db\version_set.cc">
+    <ClCompile Include="..\..\src\hyperleveldb\db\write_batch.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\hyperleveldb\table\block.cc">
@@ -3738,16 +3779,31 @@
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
+    <ClInclude Include="..\..\src\leveldb\util\random.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\leveldb\table\merger.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\leveldb\util\mutexlock.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\leveldb\table\two_level_iterator.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\leveldb\include\leveldb\table.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\leveldb\db\builder.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\db\db_impl.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\leveldb\db\memtable.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\leveldb\db\version_set.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\db\write_batch.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\leveldb\util\histogram.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\db\dbformat.cc">
@@ -3771,11 +3827,69 @@
     <ClCompile Include="..\..\src\leveldb\db\repair.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\leveldb\util\status.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\leveldb\db\table_cache.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\leveldb\util\logging.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\leveldb\db\write_batch_internal.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\leveldb\db\version_edit.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\leveldb\table\block.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\leveldb\util\options.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\leveldb\db\builder.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\leveldb\db\filename.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\leveldb\db\table_cache.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\leveldb\include\leveldb\env.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\leveldb\db\db_impl.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\leveldb\db\db_iter.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\leveldb\db\log_reader.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\leveldb\db\log_writer.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\leveldb\table\format.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\leveldb\table\block_builder.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\leveldb\table\filter_block.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\leveldb\table\iterator_wrapper.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\leveldb\util\arena.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\leveldb\util\hash.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\leveldb\util\posix_logger.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\leveldb\util\histogram.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\leveldb\db\snapshot.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\leveldb\db\log_format.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\leveldb\db\skiplist.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple_net\basics\HTTPClient.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_net\ripple_net.unity.cpp">
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="..\..\src\leveldb\port\port_win.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -3843,99 +3957,30 @@
     <ClCompile Include="..\..\src\leveldb\util\hash.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\leveldb\util\histogram.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\leveldb\util\logging.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\leveldb\util\options.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\leveldb\util\status.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\leveldb\db\builder.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\leveldb\db\filename.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\leveldb\db\table_cache.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\leveldb\include\leveldb\env.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\leveldb\db\db_impl.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\leveldb\db\db_iter.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\leveldb\db\log_reader.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\leveldb\db\log_writer.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\leveldb\db\memtable.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\leveldb\db\write_batch_internal.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\leveldb\include\leveldb\table.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\leveldb\table\block.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\leveldb\table\merger.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\leveldb\table\two_level_iterator.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\leveldb\util\mutexlock.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\leveldb\util\random.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\leveldb\util\crc32c.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\leveldb\table\format.h">
+    <ClInclude Include="..\..\src\ripple_net\basics\impl\RPCServerImp.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\leveldb\table\block_builder.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\leveldb\table\filter_block.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\leveldb\table\iterator_wrapper.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\leveldb\util\arena.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\leveldb\util\hash.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\leveldb\util\posix_logger.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\leveldb\util\histogram.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\leveldb\db\snapshot.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\leveldb\db\log_format.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\leveldb\db\skiplist.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple_net\basics\HTTPClient.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_net\ripple_net.unity.cpp">
+    <ClCompile Include="..\..\src\ripple_overlay\ripple_overlay.unity.cpp">
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_net\basics\HTTPRequest.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_net\basics\SNTPClient.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple_net\basics\RPCDoor.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple_net\basics\impl\RPCServerImp.h">
-    </ClInclude>
+    <ClCompile Include="..\..\src\ripple_net\rpc\RPCErr.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple_net\basics\SNTPClient.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple_net\rpc\InfoSub.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_net\rpc\RPCCall.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_net\rpc\RPCErr.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_net\rpc\RPCSub.cpp">
@@ -3943,10 +3988,6 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_net\rpc\RPCUtil.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple_overlay\ripple_overlay.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_overlay\impl\Message.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -3963,24 +4004,33 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_overlay\impl\PeerDoor.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple_rpc\impl\DoPrint.h">
-    </ClInclude>
+    <ClCompile Include="..\..\src\ripple_rpc\impl\ErrorCodes.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple_rpc\ripple_rpc.unity.cpp">
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\impl\Manager.cpp">
+    <ClCompile Include="..\..\src\snappy\snappy\snappy.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\snappy\snappy.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    <ClInclude Include="..\..\src\snappy\snappy\snappy-stubs-internal.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\snappy\snappy\snappy-sinksource.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\snappy\snappy\snappy-sinksource.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple_rpc\impl\DoPrint.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple_rpc\impl\Manager.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_websocket\ripple_websocket.unity.cpp">
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple_rpc\impl\ErrorCodes.cpp">
+    <ClCompile Include="..\..\src\snappy\snappy\snappy-stubs-internal.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\websocket\src\base64\base64.cpp">
@@ -4013,19 +4063,10 @@
     <ClCompile Include="..\..\src\ripple_websocket\autosocket\LogWebsockets.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\snappy\snappy\snappy-sinksource.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
+    <ClCompile Include="..\..\src\snappy\snappy.unity.cpp">
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClCompile Include="..\..\src\snappy\snappy\snappy.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\snappy\snappy\snappy-stubs-internal.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\snappy\snappy\snappy-stubs-internal.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\snappy\snappy\snappy-sinksource.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\snappy\snappy\snappy-internal.h">
     </ClInclude>
   </ItemGroup>

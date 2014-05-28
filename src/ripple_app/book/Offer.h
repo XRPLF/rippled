@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2014 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -26,6 +26,8 @@
 
 #include "../misc/SerializedLedger.h"
 #include "../../ripple_data/protocol/FieldNames.h"
+
+#include "../../beast/beast/utility/noexcept.h"
 
 #include <ostream>
 
@@ -76,10 +78,21 @@ public:
         Some or all of the out amount may be unfunded.
     */
     Amounts const
-    amount() const noexcept
+    amount() const
     {
         return Amounts (m_entry->getFieldAmount (sfTakerPays),
             m_entry->getFieldAmount (sfTakerGets));
+    }
+
+    /** Returns `true` if no more funds can flow through this offer. */
+    bool
+    fully_consumed() const
+    {
+        if (m_entry->getFieldAmount (sfTakerPays) <= zero)
+            return true;
+        if (m_entry->getFieldAmount (sfTakerGets) <= zero)
+            return true;
+        return false;
     }
 
     /** Returns the ledger entry underlying the offer. */

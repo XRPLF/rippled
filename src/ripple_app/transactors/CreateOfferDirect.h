@@ -20,22 +20,21 @@
 #ifndef RIPPLE_TX_DIRECT_OFFERCREATE_H_INCLUDED
 #define RIPPLE_TX_DIRECT_OFFERCREATE_H_INCLUDED
 
-#include "../book/OfferStream.h"
-#include "../book/Taker.h"
-    
+#include "../book/Amounts.h"
+
 #include <unordered_set>
 
 namespace ripple {
 
-class DirectOfferCreateTransactor
-    : public OfferCreateTransactor
+class CreateOfferDirect
+    : public CreateOffer
 {
 public:
-    DirectOfferCreateTransactor (
+    CreateOfferDirect (
         SerializedTransaction const& txn,
         TransactionEngineParams params,
         TransactionEngine* engine)
-        : OfferCreateTransactor (
+        : CreateOffer (
             txn,
             params,
             engine)
@@ -43,15 +42,10 @@ public:
 
     }
 
-    TER doApply () override;
-
 private:
-    std::pair<TER,bool> crossOffers (
+    std::pair<TER, core::Amounts> crossOffers (
         core::LedgerView& view,
-        STAmount const&     saTakerPays,
-        STAmount const&     saTakerGets,
-        STAmount&           saTakerPaid,
-        STAmount&           saTakerGot);
+        core::Amounts const& taker_amount) override;
 };
 
 }

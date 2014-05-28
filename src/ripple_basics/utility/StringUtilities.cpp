@@ -262,25 +262,6 @@ bool parseUrl (const std::string& strUrl, std::string& strScheme, std::string& s
     return bMatch;
 }
 
-//
-// Quality parsing
-// - integers as is.
-// - floats multiplied by a billion
-bool parseQuality (const std::string& strSource, std::uint32_t& uQuality)
-{
-    uQuality    = beast::lexicalCast <std::uint32_t> (strSource);
-
-    if (!uQuality)
-    {
-        float   fQuality    = beast::lexicalCast <float> (strSource);
-
-        if (fQuality)
-            uQuality    = (std::uint32_t) (QUALITY_ONE * fQuality);
-    }
-
-    return !!uQuality;
-}
-
 beast::StringPairArray parseDelimitedKeyValueString (beast::String parameters,
                                                    beast::beast_wchar delimiter)
 {

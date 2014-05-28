@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2014 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -191,17 +191,13 @@ public:
 
         if (sig == 0)
             return os << "0";
-        else if (sig < 0)
+        
+        if (sig < 0)
             os << "-";
-
         if (m_integral)
             return os << m_mantissa;
-
         if (m_exponent != 0 && (m_exponent < -25 || m_exponent > -5))
             return os << m_mantissa << "e" << m_exponent;
-
-        //if (m_exponent > 0)
-        //    return os <<
 
         return os;
     }

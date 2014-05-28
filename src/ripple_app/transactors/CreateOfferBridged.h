@@ -20,4 +20,34 @@
 #ifndef RIPPLE_TX_BRIDGE_OFFERCREATE_H_INCLUDED
 #define RIPPLE_TX_BRIDGE_OFFERCREATE_H_INCLUDED
 
+#include "../book/Amounts.h"
+
+#include <unordered_set>
+
+namespace ripple {
+
+class CreateOfferBridged
+    : public CreateOffer
+{
+public:
+    CreateOfferBridged (
+        SerializedTransaction const& txn,
+        TransactionEngineParams params,
+        TransactionEngine* engine)
+        : CreateOffer (
+            txn,
+            params,
+            engine)
+    {
+
+    }
+
+private:
+    std::pair<TER, core::Amounts> crossOffers (
+        core::LedgerView& view,
+        core::Amounts const& taker_amount) override;
+};
+
+}
+
 #endif

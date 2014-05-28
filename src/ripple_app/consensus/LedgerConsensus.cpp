@@ -1384,8 +1384,8 @@ private:
                 return resultSuccess;
             }
 
-            if (isTefFailure (result) || isTemMalformed
-                (result) || isTelLocal (result))
+            if (isTefFailure (result) || isTemMalformed (result) || 
+                isTelLocal (result))
             {
                 // failure
                 WriteLog (lsDEBUG, LedgerConsensus)

@@ -37,36 +37,29 @@ std::unique_ptr<Transactor> Transactor::makeTransactor (
     switch (txn.getTxnType ())
     {
     case ttPAYMENT:
-        return std::unique_ptr<Transactor> (
-            new PaymentTransactor (txn, params, engine));
+        return make_Payment (txn, params, engine);
 
     case ttACCOUNT_SET:
-        return std::unique_ptr<Transactor> (
-            new AccountSetTransactor (txn, params, engine));
+        return make_SetAccount (txn, params, engine);
 
     case ttREGULAR_KEY_SET:
-        return std::unique_ptr<Transactor> (
-            new RegularKeySetTransactor (txn, params, engine));
+        return make_SetRegularKey (txn, params, engine);
 
     case ttTRUST_SET:
-        return std::unique_ptr<Transactor> (
-            new TrustSetTransactor (txn, params, engine));
+        return make_SetTrust (txn, params, engine);
 
     case ttOFFER_CREATE:
-        return make_OfferCreateTransactor (txn, params, engine);
+        return make_CreateOffer (txn, params, engine);
 
     case ttOFFER_CANCEL:
-        return std::unique_ptr<Transactor> (
-            new OfferCancelTransactor (txn, params, engine));
+        return make_CancelOffer (txn, params, engine);
 
     case ttWALLET_ADD:
-        return std::unique_ptr<Transactor> (
-            new WalletAddTransactor (txn, params, engine));
+        return make_AddWallet (txn, params, engine);
 
     case ttAMENDMENT:
     case ttFEE:
-        return std::unique_ptr<Transactor> (
-            new ChangeTransactor (txn, params, engine));
+        return make_Change (txn, params, engine);
 
     default:
         return std::unique_ptr<Transactor> ();
@@ -229,11 +222,12 @@ TER Transactor::preCheck ()
     }
 
     // Extract signing key
-    // Transactions contain a signing key.  This allows us to trivially verify a transaction has at least been properly signed
-    // without going to disk.  Each transaction also notes a source account id.  This is used to verify that the signing key is
-    // associated with the account.
+    // Transactions contain a signing key.  This allows us to trivially verify a
+    // transaction has at least been properly signed without going to disk.
+    // Each transaction also notes a source account id. This is used to verify
+    // that the signing key is associated with the account.
     // XXX This could be a lot cleaner to prevent unnecessary copying.
-    mSigningPubKey  = RippleAddress::createAccountPublic (mTxn.getSigningPubKey ());
+    mSigningPubKey = RippleAddress::createAccountPublic (mTxn.getSigningPubKey ());
 
     // Consistency: really signed.
     if (!mTxn.isKnownGood ())
