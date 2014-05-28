@@ -88,7 +88,6 @@
 #include "node/SqliteFactory.cpp"
 
 #include "main/Application.cpp"
-
 #include "main/Main.cpp"
 
 //------------------------------------------------------------------------------
@@ -109,23 +108,6 @@ struct ProtobufLibrary
 //
 int main (int argc, char** argv)
 {
-#if defined(__GNUC__) && !defined(__clang__)
-    auto constexpr gccver = (__GNUC__ * 100 * 100) +
-                            (__GNUC_MINOR__ * 100) +
-                            __GNUC_PATCHLEVEL__;
-
-    static_assert (gccver >= 40801,
-        "GCC version 4.8.1 or later is required to compile rippled.");
-#endif
-
-#ifdef _MSC_VER
-    static_assert (_MSC_VER >= 1800,
-        "Visual Studio 2013 or later is required to compile rippled.");
-#endif
-
-    static_assert (BOOST_VERSION >= 105500,
-        "Boost version 1.55 or later is required to compile rippled");
-        
     //
     // These debug heap calls do nothing in release or non Visual Studio builds.
     //
