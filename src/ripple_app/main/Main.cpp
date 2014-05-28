@@ -19,7 +19,6 @@
 
 #include "../../beast/beast/unit_test.h"
 #include "../../beast/beast/streams/debug_ostream.h"
-#include "../../ripple_basics/system/CheckLibraryVersions.h"
 
 namespace po = boost::program_options;
 
@@ -165,8 +164,6 @@ runUnitTests (std::string pattern, std::string format)
 int run (int argc, char** argv)
 {
     // Make sure that we have the right OpenSSL and Boost libraries.
-    version::checkLibraryVersions();
-
     FatalErrorReporter reporter;
 
     using namespace std;

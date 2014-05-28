@@ -44,7 +44,6 @@
 //------------------------------------------------------------------------------
 
 #include "containers/RangeSet.cpp"
-#include "system/CheckLibraryVersions.cpp"
 
 #include "log/Log.cpp"
 #include "log/LogFile.cpp"
