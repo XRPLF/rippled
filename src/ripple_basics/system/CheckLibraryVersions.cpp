@@ -20,132 +20,50 @@
 #include <sstream>
 #include <vector>
 
-#include "../../beast/beast/unit_test/suite.h"
-#include "../../beast/modules/beast_core/diagnostic/SemanticVersion.h"
 #include <boost/version.hpp>
 #include <openssl/opensslv.h>
-
-#include "CheckLibraryVersions.h"
 
 namespace ripple {
 namespace version {
 
-/** Both Boost and OpenSSL have integral version numbers. */
-typedef unsigned long long VersionNumber;
+static const int BOOST_MINIMAL = 105500;
+static_assert (BOOST_VERSION >= BOOST_MINIMAL,
+    "Boost version 1.55.0 or later is required to compile rippled.");
 
-/** Minimal required boost version. */
-static const char boostMinimal[] = "1.55.0";
+#if defined(RIPPLE_UBUNTU) || defined(RIPPLE_DEBIAN)
 
-/** Minimal required OpenSSL version. */
-static const char openSSLMinimal[] = "1.0.1-g";
+static const int OPENSSL_MINIMAL = 0x1000106fL;
+static_assert (OPENSSL_VERSION_NUMBER >= OPENSSL_MINIMAL,
+    "openSSL version 1.0.1-f or later is required to compile rippled");
 
-std::string boostVersion(VersionNumber boostVersion = BOOST_VERSION)
-{
-    std::stringstream ss;
-    ss << (boostVersion / 100000) << "."
-       << (boostVersion / 100 % 1000) << "."
-       << (boostVersion % 100);
-    return ss.str();
-}
+#else
 
-std::string openSSLVersion(VersionNumber openSSLVersion = OPENSSL_VERSION_NUMBER)
-{
-    std::stringstream ss;
-    ss << (openSSLVersion / 0x10000000L) << "."
-       << (openSSLVersion / 0x100000 % 0x100) << "."
-       << (openSSLVersion / 0x1000 % 0x100);
-    auto patchNo = openSSLVersion % 0x10;
-    if (patchNo)
-        ss << '-' << char('a' + patchNo - 1);
-    return ss.str();
-}
+static const int OPENSSL_MINIMAL = 0x10001070L;
+static_assert (OPENSSL_VERSION_NUMBER >= OPENSSL_MINIMAL,
+    "openSSL version 1.0.1-g or later is required to compile rippled");
 
-void checkVersion(std::string name, std::string required, std::string actual)
-{
-    beast::SemanticVersion r, a;
-    if (!r.parse(required)) {
-        throw std::runtime_error("Didn't understand required version of " +
-                                 name + ": " + required);
-    }
-    if (!a.parse(actual)) {
-        throw std::runtime_error("Didn't understand actual version of " +
-                                 name + ": " + required);
-    }
+#endif
 
-    if (a < r) {
-        throw std::runtime_error("Your " + name + " library is out of date.\n" +
-                                 "Your version: " + actual + "\n" +
-                                 "Required version: " +  "\n");
-    }
-}
+#if defined(__GNUC__) && !defined(__clang__)
 
-void checkBoost(std::string version = boostVersion())
-{
-    checkVersion("Boost", boostMinimal, version);
-}
+static const int GCC_MINIMAL = 40801;
+auto constexpr GCC_VERSION_NUMBER =
+    (__GNUC__ * 100 * 100) +
+    (__GNUC_MINOR__ * 100) +
+    __GNUC_PATCHLEVEL__;
 
-void checkOpenSSL(std::string version = openSSLVersion())
-{
-    checkVersion("OpenSSL", openSSLMinimal, version);
-}
+static_assert (GCC_VERSION_NUMBER >= 40801,
+    "GCC version 4.8.1 or later is required to compile rippled.");
 
-void checkLibraryVersions()
-{
-    checkBoost();
-    checkOpenSSL();
-}
+#endif
 
-struct CheckLibraryVersions_test : beast::unit_test::suite
-{
-    void print_message()
-    {
-        log << "ssl minimal: " << openSSLMinimal << "\n"
-            << "ssl actual:  " << openSSLVersion() << "\n"
-            << "boost minimal: " << boostMinimal << "\n"
-            << "boost actual:  " << boostVersion() << "\n"
-            << std::flush;
-    }
+#ifdef _MSC_VER
 
-    void test_bad_ssl()
-    {
-        std::string error;
-        try {
-            checkOpenSSL(openSSLVersion(0x0090819fL));
-        } catch (std::runtime_error& e) {
-            error = e.what();
-        }
-        auto expectedError = "Your OpenSSL library is out of date.\n"
-          "Your version: 0.9.8-o\n"
-          "Required version: ";
-        unexpected(error.find(expectedError) != 0, error);
-    }
+static const int MSVC_MINIMAL = 1800;
+static_assert (_MSC_VER >= 1800,
+     "Visual Studio 2013 or later is required to compile rippled.");
 
-    void test_bad_boost()
-    {
-        std::string error;
-        try {
-            checkBoost(boostVersion(105400));
-        } catch (std::runtime_error& e) {
-            error = e.what();
-        }
-        auto expectedError = "Your Boost library is out of date.\n"
-          "Your version: 1.54.0\n"
-          "Required version: ";
-        unexpected(error.find(expectedError) != 0, error);
-    }
-
-
-    void run()
-    {
-        print_message();
-        checkLibraryVersions();
-
-        test_bad_ssl();
-        test_bad_boost();
-    }
-};
-
-BEAST_DEFINE_TESTSUITE(CheckLibraryVersions, ripple_basics, ripple);
+#endif
 
 }  // namespace version
 }  // namespace ripple
