@@ -193,10 +193,10 @@ def config_base(env):
 
     try:
         BOOST_ROOT = os.path.normpath(os.environ['BOOST_ROOT'])
-        env.Append(CPPPATH=[
+        env.Prepend(CPPPATH=[
             BOOST_ROOT,
             ])
-        env.Append(LIBPATH=[
+        env.Prepend(LIBPATH=[
             os.path.join(BOOST_ROOT, 'stage', 'lib'),
             ])
     except KeyError:

@@ -12,6 +12,17 @@ before_install:
   - sudo apt-get install -qq libboost1.55-all-dev 
   # We want debug symbols for boost as we install gdb later
   - sudo apt-get install -qq libboost1.55-dbg
+  - | # Setup the BOOST_ROOT
+      export BOOST_ROOT=$HOME/boost_root
+      export BOOST_LIBS=/usr/lib/x86_64-linux-gnu
+      export BOOST_SRC=/usr/include/boost
+      mkdir -p $BOOST_ROOT/stage/lib
+      ln -s BOOST_SRC $BOOST_ROOT/boost
+      for f in `ls $BOOST_LIBS/libboost*.a`; do
+          ln -s $f $BOOST_ROOT/stage/lib/`basename $f`
+      done
+      ls -lah $BOOST_ROOT
+      ls -lah $BOOST_ROOT/stage/lib
   - sudo apt-get install -qq mlocate
   - sudo updatedb
   - sudo locate libboost | grep /lib | grep -e ".a$"
