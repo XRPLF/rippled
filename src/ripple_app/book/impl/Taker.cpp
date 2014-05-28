@@ -41,7 +41,7 @@ Taker::Taker (LedgerView& view, Account const& account,
 }
 
 Amounts
-Taker::remaining_offer () const noexcept
+Taker::remaining_offer () const
 {
     // If the taker is done, then there's no offer to place.
     if (done ())

@@ -98,7 +98,7 @@ public:
         It is always at the original offer quality (m_quality)
     */
     Amounts
-    remaining_offer () const noexcept;
+    remaining_offer () const;
 
     /** Returns the account identifier of the taker. */
     Account const&

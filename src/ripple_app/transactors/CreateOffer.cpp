@@ -289,7 +289,6 @@ CreateOffer::doApply ()
     if (terResult == tesSUCCESS && !saTakerPays.isNative ())
         terResult = checkAcceptAsset (core::Asset (uPaysCurrency, uPaysIssuerID));
 
-    bool placeOffer = true;
     bool crossed = false;
     bool const bOpenLedger = is_bit_set (mParams, tapOPEN_LEDGER);
 

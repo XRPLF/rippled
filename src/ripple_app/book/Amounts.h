@@ -22,6 +22,8 @@
 
 #include "Amount.h"
 
+#include "../../beast/beast/utility/noexcept.h"
+
 namespace ripple {
 namespace core {
 

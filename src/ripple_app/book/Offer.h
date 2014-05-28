@@ -27,6 +27,8 @@
 #include "../misc/SerializedLedger.h"
 #include "../../ripple_data/protocol/FieldNames.h"
 
+#include "../../beast/beast/utility/noexcept.h"
+
 #include <ostream>
 
 namespace ripple {
@@ -76,7 +78,7 @@ public:
         Some or all of the out amount may be unfunded.
     */
     Amounts const
-    amount() const noexcept
+    amount() const
     {
         return Amounts (m_entry->getFieldAmount (sfTakerPays),
             m_entry->getFieldAmount (sfTakerGets));
@@ -84,7 +86,7 @@ public:
 
     /** Returns `true` if no more funds can flow through this offer. */
     bool
-    fully_consumed() const noexcept
+    fully_consumed() const
     {
         if (m_entry->getFieldAmount (sfTakerPays) <= zero)
             return true;
