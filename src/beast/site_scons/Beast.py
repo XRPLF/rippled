@@ -69,6 +69,8 @@ class __System(object):
         else:
             raise Exception('Unknown system platform "' + self.name + '"')
 
+        self.platform = self.distro or self.name
+
     def __str__(self):
         return self.__display
 
