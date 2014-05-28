@@ -586,7 +586,7 @@ class _ProjectGenerator(object):
             targets = config.target
             for target in targets:
                 _walk(target, items)
-        self.items = sorted(items.itervalues(), key=lambda x: x.path)
+        self.items = sorted(items.itervalues(), key=lambda x: x.path())
 
     def makeListTag(self, items, tag, prefix='', inherit=True):
         '''Builds an XML tag string from a list of items. If items is
