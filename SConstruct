@@ -46,48 +46,16 @@ TODO
 
 import collections
 import os
-import platform
 import subprocess
 import sys
 import textwrap
-import time
 import SCons.Action
 
 sys.path.append(os.path.join('src', 'beast', 'site_scons'))
 
 import Beast
 
-#------------------------------------------------------------------------------
-
-def get_platform():
-    plat = platform.system().upper()
-    if plat == 'LINUX':
-        plat = platform.linux_distribution()[0].upper()
-    return plat
-
-def parse_time(t):
-    return time.strptime(t, '%a %b %d %H:%M:%S %Z %Y')
-
-CHECK_PLATFORMS = 'DARWIN', 'DEBIAN', 'UBUNTU'
-CHECK_COMMAND = 'openssl version -a'
-CHECK_LINE = 'built on: '
-BUILD_TIME = 'Mon Apr  7 20:33:19 UTC 2014'
-OPENSSL_ERROR = (
-    'Your openSSL was built on %s but we need a version on or after %s.')
-
-def check_openssl(platform):
-    if platform in CHECK_PLATFORMS:
-        for line in subprocess.check_output(CHECK_COMMAND.split()).splitlines():
-            if line.startswith(CHECK_LINE):
-                line = line[len(CHECK_LINE):]
-                if parse_time(line) < parse_time(BUILD_TIME):
-                    raise Exception(OPENSSL_ERROR % (line, BUILD_TIME))
-                else:
-                    break
-        else:
-            raise Exception("Didn't find any '%s' line in '$ %s'" %
-                            (CHECK_LINE, CHECK_COMMAND))
-
+#-------------------------------------------------------------------------------
 
 def import_environ(env):
     '''Imports environment settings into the construction environment'''
@@ -219,10 +187,6 @@ def config_base(env):
             CXXCOMSTR='Compiling ' + Beast.blue('$SOURCES'),
             LINKCOMSTR='Linking ' + Beast.blue('$TARGET'),
             )
-    platform = get_platform()
-    check_openssl(platform)
-
-    env.Append(CPPDEFINES={'RIPPLE_' + platform: 1})
     #git = Beast.Git(env) #  TODO(TOM)
     if False: #git.exists:
         env.Append(CPPDEFINES={'GIT_COMMIT_ID' : '"%s"' % git.commit_id})

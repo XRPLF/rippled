@@ -17,44 +17,22 @@
 */
 //==============================================================================
 
-#include "../../BeastConfig.h"
+#ifndef RIPPLE_CHECKLIBRARYVERSIONS_H_INCLUDED
+#define RIPPLE_CHECKLIBRARYVERSIONS_H_INCLUDED
 
-#include "ripple_basics.h"
+#include <string>
 
-#include "../beast/modules/beast_core/system/BeforeBoost.h"
-#include <boost/asio.hpp> // For StringUtilities.cpp
+namespace ripple {
+namespace version {
 
-#include <fstream> // for Log files
+/** Check all library versions against Ripple's version requirements.
 
-//------------------------------------------------------------------------------
+    Throws std::runtime_error if one or more libraries are out-of-date and do
+    not meet the version requirements.
+ */
+void checkLibraryVersions();
 
-// For Sustain Linux variants
-//
-// VFALCO TODO Rewrite Sustain to use beast::Process
-#ifdef __linux__
-#include <sys/types.h>
-#include <sys/prctl.h>
-#include <sys/wait.h>
+}  // namespace version
+}  // namespace ripple
+
 #endif
-#ifdef __FreeBSD__
-#include <sys/types.h>
-#include <sys/wait.h>
-#endif
-
-//------------------------------------------------------------------------------
-
-#include "containers/RangeSet.cpp"
-#include "system/CheckLibraryVersions.cpp"
-
-#include "log/Log.cpp"
-#include "log/LogFile.cpp"
-#include "log/LogPartition.cpp"
-#include "log/LogSink.cpp"
-
-#include "utility/CountedObject.cpp"
-#include "utility/IniFile.cpp"
-#include "utility/StringUtilities.cpp"
-#include "utility/Sustain.cpp"
-#include "utility/ThreadName.cpp"
-#include "utility/Time.cpp"
-#include "utility/UptimeTimer.cpp"
