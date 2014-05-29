@@ -28,8 +28,12 @@
 #include "Blob.h"
 #include "strHex.h"
 #include "ByteOrder.h"
-    
+
 #include "../../../beast/beast/container/hardened_hash.h"
+#include "../../../beast/beast/utility/Zero.h"
+
+using beast::zero;
+using beast::Zero;
 
 #include <functional>
 
@@ -147,7 +151,7 @@ public:
     }
 
     base_uint (base_uint const& other) = default;
-    
+
     /* Construct from a raw pointer.
         The buffer pointed to by `data` must be at least Bits/8 bytes.
     */
@@ -385,6 +389,12 @@ public:
     {
         memset (&pn[0], 0, sizeof (pn));
     }
+
+    base_uint<Bits, Tag>& operator=(Zero)
+    {
+        zero();
+        return *this;
+    }
 };
 
 typedef base_uint<128> uint128;
@@ -396,9 +406,37 @@ extern std::size_t hash_value (uint128 const&);
 extern std::size_t hash_value (uint160 const&);
 extern std::size_t hash_value (uint256 const&);
 
+
+//------------------------------------------------------------------------------
+
+template <std::size_t Bits, class Tag>
+bool operator==(base_uint<Bits, Tag> const& u, Zero)
+{
+    return u.isZero();
+}
+
+template <std::size_t Bits, class Tag>
+bool operator==(Zero, base_uint<Bits, Tag> const& u)
+{
+    return u == zero;
+}
+
+template <std::size_t Bits, class Tag>
+bool operator!=(base_uint<Bits, Tag> const& u, Zero)
+{
+    return !(u == zero);
+}
+
+template <std::size_t Bits, class Tag>
+bool operator!=(Zero, base_uint<Bits, Tag> const& u)
+{
+    return !(u == zero);
+}
+
+
 //------------------------------------------------------------------------------
 template <std::size_t Bits, class Tag>
-int 
+int
 compare (base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
 {
     auto ret = std::mismatch (a.cbegin (), a.cend (), b.cbegin ());

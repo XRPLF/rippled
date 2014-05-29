@@ -27,10 +27,6 @@
 
 #include <atomic>
 #include "../../beast/beast/cxx14/memory.h"
-#include "../../beast/beast/utility/Zero.h"
-
-using beast::zero;
-using beast::Zero;
 
 #ifndef  RIPPLE_TRACK_MUTEXES
 # define RIPPLE_TRACK_MUTEXES 0
