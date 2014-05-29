@@ -354,24 +354,28 @@ TER PathState::pushNode (
         pnCur.saRevDeliver  = STAmount (pnCur.uCurrencyID, pnCur.uIssuerID);
         pnCur.saFwdDeliver  = pnCur.saRevDeliver;
 
-        if (!!pnCur.uCurrencyID != !!pnCur.uIssuerID)
+        if (pnCur.uCurrencyID.isZero() != pnCur.uIssuerID.isZero())
         {
-            WriteLog (lsDEBUG, RippleCalc) << "pushNode: currency is inconsistent with issuer.";
-
+            WriteLog (lsDEBUG, RippleCalc) <<
+                "pushNode: currency is inconsistent with issuer.";
             terResult   = temBAD_PATH;
         }
-        else if (!!pnPrv.uAccountID)
+        else if (pnPrv.uCurrencyID == pnCur.uCurrencyID &&
+            pnPrv.uIssuerID == pnCur.uIssuerID)
         {
-            // Previous is an account.
+            WriteLog (lsDEBUG, RippleCalc) <<
+                "pushNode: bad path: offer to same currency and issuer";
+            terResult   = temBAD_PATH;
+        }
+        else
+        {
             WriteLog (lsTRACE, RippleCalc) << "pushNode: imply for offer.";
-
             // Insert intermediary issuer account if needed.
             terResult   = pushImply (
                 ACCOUNT_XRP, // Rippling, but offers don't have an account.
                 pnPrv.uCurrencyID,
                 pnPrv.uIssuerID);
         }
-
         if (tesSUCCESS == terResult)
         {
             vpnNodes.push_back (pnCur);
