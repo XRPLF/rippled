@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "SlotImp.h"
+#include <ripple/peerfinder/impl/SlotImp.h>
 
 namespace ripple {
 namespace PeerFinder {

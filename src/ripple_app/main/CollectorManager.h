@@ -20,7 +20,7 @@
 #ifndef RIPPLE_RIPPLECOLLECTOR_H_INCLUDED
 #define RIPPLE_RIPPLECOLLECTOR_H_INCLUDED
 
-#include "../../beast/beast/Insight.h"
+#include <beast/Insight.h>
 
 namespace ripple {
 

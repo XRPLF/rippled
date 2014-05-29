@@ -18,13 +18,13 @@
 //==============================================================================
 
 #if BEAST_INCLUDE_BEASTCONFIG
-#include "../../BeastConfig.h"
+#include <BeastConfig.h>
 #endif
 
-#include "../Config.h"
+#include <beast/Config.h>
 
-#include "impl/chrono_io.cpp"
-#include "impl/RelativeTime.cpp"
+#include <beast/chrono/impl/chrono_io.cpp>
+#include <beast/chrono/impl/RelativeTime.cpp>
 
-#include "tests/abstract_clock.test.cpp"
-#include "tests/basic_seconds_clock.test.cpp"
+#include <beast/chrono/tests/abstract_clock.test.cpp>
+#include <beast/chrono/tests/basic_seconds_clock.test.cpp>

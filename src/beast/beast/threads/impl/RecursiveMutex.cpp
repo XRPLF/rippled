@@ -21,11 +21,9 @@
 */
 //==============================================================================
 
-#include "../RecursiveMutex.h"
+#include <beast/threads/RecursiveMutex.h>
 
 #if BEAST_WINDOWS
-
-#include "../StaticAssert.h"
 
 #include <Windows.h>
 #undef check
@@ -39,11 +37,7 @@ namespace beast {
 RecursiveMutex::RecursiveMutex()
 {
     // (just to check the MS haven't changed this structure and broken things...)
-#if BEAST_VC7_OR_EARLIER
-    static_bassert (sizeof (CRITICAL_SECTION) <= 24);
-#else
-    static_bassert (sizeof (CRITICAL_SECTION) <= sizeof (section));
-#endif
+    static_assert (sizeof (CRITICAL_SECTION) <= sizeof (section), "");
 
     InitializeCriticalSection ((CRITICAL_SECTION*) section);
 }

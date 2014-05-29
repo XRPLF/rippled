@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include "joyent_parser.h"
+#include <beast/http/impl/joyent_parser.h>
 
-#include "../basic_message.h"
+#include <beast/http/basic_message.h>
 
 #include <boost/system/error_code.hpp>
 
@@ -31,7 +31,7 @@ namespace joyent {
 # pragma warning (disable: 4127) // conditional expression is constant
 # pragma warning (disable: 4244) // integer conversion, possible loss of data
 #endif
-#include "http-parser/http_parser.c"
+#include <beast/http/impl/http-parser/http_parser.c>
 #ifdef _MSC_VER
 # pragma warning (pop)
 #endif

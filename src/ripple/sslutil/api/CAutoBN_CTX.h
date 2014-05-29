@@ -25,7 +25,7 @@
 #ifndef RIPPLE_SSLUTIL_CAUTOBN_CTX_H_INCLUDED
 #define RIPPLE_SSLUTIL_CAUTOBN_CTX_H_INCLUDED
 
-#include "bignum_error.h"
+#include <ripple/sslutil/api/bignum_error.h>
 
 namespace ripple {
 

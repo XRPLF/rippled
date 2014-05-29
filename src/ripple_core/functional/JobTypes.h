@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include "Job.h"
-#include "JobTypeInfo.h"
+#include <ripple_core/functional/Job.h>
+#include <ripple_core/functional/JobTypeInfo.h>
 
 namespace ripple
 {

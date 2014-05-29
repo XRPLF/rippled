@@ -20,7 +20,7 @@
 #ifndef RIPPLE_LOADEVENT_H
 #define RIPPLE_LOADEVENT_H
 
-#include "../../beast/beast/chrono/RelativeTime.h"
+#include <beast/chrono/RelativeTime.h>
 
 namespace ripple {
 

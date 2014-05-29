@@ -20,7 +20,7 @@
 #ifndef BEAST_ASIO_HTTPREQUEST_H_INCLUDED
 #define BEAST_ASIO_HTTPREQUEST_H_INCLUDED
 
-#include "HTTPMessage.h"
+#include <modules/beast_asio/http/HTTPMessage.h>
 
 namespace beast {
 

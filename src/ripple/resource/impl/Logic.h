@@ -20,9 +20,9 @@
 #ifndef RIPPLE_RESOURCE_LOGIC_H_INCLUDED
 #define RIPPLE_RESOURCE_LOGIC_H_INCLUDED
 
-#include "../../common/UnorderedContainers.h"
+#include <ripple/common/UnorderedContainers.h>
 
-#include "../../../beast/beast/chrono/abstract_clock.h"
+#include <beast/chrono/abstract_clock.h>
 
 namespace ripple {
 namespace Resource {

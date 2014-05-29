@@ -20,7 +20,7 @@
 #ifndef RIPPLE_TYPES_RIPPLEPUBLICKEYHASH_H_INCLUDED
 #define RIPPLE_TYPES_RIPPLEPUBLICKEYHASH_H_INCLUDED
 
-#include "SimpleIdentifier.h"
+#include <ripple/types/api/SimpleIdentifier.h>
 
 namespace ripple {
 

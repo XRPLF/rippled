@@ -25,14 +25,14 @@
 #include "../../BeastConfig.h"
 #endif
 
-#include "../String.h"
-#include "../NewLine.h"
+#include <beast/strings/String.h>
+#include <beast/strings/NewLine.h>
 
-#include "../../ByteOrder.h"
-#include "../../Memory.h"
-#include "../../StaticAssert.h"
-#include "../../Arithmetic.h"
-#include "../../HeapBlock.h"
+#include <beast/ByteOrder.h>
+#include <beast/Memory.h>
+#include <beast/StaticAssert.h>
+#include <beast/Arithmetic.h>
+#include <beast/HeapBlock.h>
 
 #include <stdarg.h>
 

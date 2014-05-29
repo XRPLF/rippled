@@ -20,7 +20,7 @@
 #ifndef RIPPLE_RPC_ERRORCODES_H_INCLUDED
 #define RIPPLE_RPC_ERRORCODES_H_INCLUDED
 
-#include "../../ripple/json/ripple_json.h"
+#include <ripple/json/ripple_json.h>
 
 namespace ripple {
 

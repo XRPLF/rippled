@@ -20,9 +20,9 @@
 #ifndef RIPPLE_PEERFINDER_CONNECTHANDOUTS_H_INCLUDED
 #define RIPPLE_PEERFINDER_CONNECTHANDOUTS_H_INCLUDED
 
-#include "Tuning.h"
+#include <ripple/peerfinder/impl/Tuning.h>
 
-#include "../../../beast/beast/container/aged_set.h"
+#include <beast/container/aged_set.h>
 
 namespace ripple {
 namespace PeerFinder {

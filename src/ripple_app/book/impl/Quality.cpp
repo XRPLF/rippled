@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "../Quality.h"
+#include <ripple_app/book/Quality.h>
 
 #include <cassert>
 #include <limits>

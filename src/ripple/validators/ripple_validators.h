@@ -20,12 +20,12 @@
 #ifndef RIPPLE_VALIDATORS_H_INCLUDED
 #define RIPPLE_VALIDATORS_H_INCLUDED
 
-#include "../../beast/beast/http/URL.h"
+#include <beast/http/URL.h>
 
-#include "../types/ripple_types.h"
+#include <ripple/types/ripple_types.h>
 
-# include "api/Types.h"
-# include "api/Source.h"
-#include "api/Manager.h"
+#include <ripple/validators/api/Types.h>
+#include <ripple/validators/api/Source.h>
+#include <ripple/validators/api/Manager.h>
 
 #endif

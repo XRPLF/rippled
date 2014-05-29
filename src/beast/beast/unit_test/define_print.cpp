@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include "amount.h"
-#include "global_suites.h"
-#include "suite.h"
+#include <beast/unit_test/amount.h>
+#include <beast/unit_test/global_suites.h>
+#include <beast/unit_test/suite.h>
 
 // Include this .cpp in your project to gain access to the printing suite
 

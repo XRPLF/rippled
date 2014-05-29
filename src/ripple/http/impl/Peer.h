@@ -20,12 +20,12 @@
 #ifndef RIPPLE_HTTP_PEER_H_INCLUDED
 #define RIPPLE_HTTP_PEER_H_INCLUDED
 
-#include "../api/Session.h"
-#include "../../ripple/common/MultiSocket.h"
+#include <ripple/http/api/Session.h>
+#include <ripple/common/MultiSocket.h>
 
-#include "../../beast/modules/beast_asio/async/AsyncObject.h"
-#include "../../beast/modules/beast_asio/basics/SharedArg.h"
-#include "../../beast/modules/beast_asio/http/HTTPRequestParser.h"
+#include <modules/beast_asio/async/AsyncObject.h>
+#include <modules/beast_asio/basics/SharedArg.h>
+#include <modules/beast_asio/http/HTTPRequestParser.h>
 
 #include <memory>
 

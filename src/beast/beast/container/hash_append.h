@@ -21,23 +21,23 @@
 #ifndef BEAST_CONTAINER_HASH_APPEND_H_INCLUDED
 #define BEAST_CONTAINER_HASH_APPEND_H_INCLUDED
 
-#include "../utility/meta.h"
+#include <beast/utility/meta.h>
 
-#include "impl/spookyv2.h"
+#include <beast/container/impl/spookyv2.h>
 
 #if BEAST_USE_BOOST_FEATURES
 #include <boost/shared_ptr.hpp>
 #endif
 
-#include "../utility/noexcept.h"
+#include <beast/utility/noexcept.h>
 #include <array>
 #include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>
 #include <tuple>
-#include "../cxx14/type_traits.h" // <type_traits>
-#include "../cxx14/utility.h" // <utility>
+#include <beast/cxx14/type_traits.h> // <type_traits>
+#include <beast/cxx14/utility.h> // <utility>
 #include <vector>
 
 // Set to 1 to disable variadic hash_append for tuple. When set, overloads

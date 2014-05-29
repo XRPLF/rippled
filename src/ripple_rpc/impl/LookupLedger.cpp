@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "LookupLedger.h"
+#include <ripple_rpc/impl/LookupLedger.h>
 
 namespace ripple {
 namespace RPC {

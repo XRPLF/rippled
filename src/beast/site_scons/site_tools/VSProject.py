@@ -588,12 +588,12 @@ class _ProjectGenerator(object):
                 _walk(target, items)
         self.items = sorted(items.itervalues(), key=lambda x: x.path())
 
-    def makeListTag(self, items, tag, prefix='', inherit=True):
+    def makeListTag(self, items, prefix, tag, attrs, inherit=True):
         '''Builds an XML tag string from a list of items. If items is
         empty, then the returned string is empty.'''
         if not items:
             return ''
-        s = '%(prefix)s<%(tag)s>' % locals()
+        s = '%(prefix)s<%(tag)s%(attrs)s>' % locals()
         s += ';'.join(items)
         if inherit:
             s += ';%%(%(tag)s)' % locals()
@@ -606,6 +606,13 @@ class _ProjectGenerator(object):
             if not os.path.isabs(path):
                 items.append(winpath(os.path.relpath(path, self.project_dir)))
         return items
+
+    def extraRelPaths(self, paths, base):
+        extras = []
+        for path in paths:
+            if not path in base:
+                extras.append(path)
+        return self.relPaths(extras)
 
     def writeHeader(self):
         global clSwitches
@@ -655,7 +662,7 @@ class _ProjectGenerator(object):
                     itemList(config.env['CPPDEFINES'], ';')))
             props = ''
             props += self.makeListTag(self.relPaths(sorted(config.env['CPPPATH'])),
-                'AdditionalIncludeDirectories', '      ', True)
+                '      ', 'AdditionalIncludeDirectories', '', True)
             f.write(props)
             f.write(CLSWITCHES.getXml(sorted(config.env['CCFLAGS']), '      '))
             f.write('    </ClCompile>\r\n')
@@ -663,9 +670,9 @@ class _ProjectGenerator(object):
             f.write('    <Link>\r\n')
             props = ''
             props += self.makeListTag(sorted(config.env['LIBS']),
-                'AdditionalDependencies', '      ', True)
+                '      ', 'AdditionalDependencies', '', True)
             props += self.makeListTag(self.relPaths(sorted(config.env['LIBPATH'])),
-                'AdditionalLibraryDirectories', '      ', True)
+                '      ', 'AdditionalLibraryDirectories', '', True)
             f.write(props)
             f.write(LINKSWITCHES.getXml(sorted(config.env['LINKFLAGS']), '      '))
             f.write('    </Link>\r\n')
@@ -688,8 +695,12 @@ class _ProjectGenerator(object):
                 for config, output in sorted(item.node.iteritems()):
                     name = config.name
                     env = output.get_build_env()
-                    props += self.makeListTag(self.relPaths(sorted(env['CPPPATH'])),
-                        'AdditionalIncludeDirectories', '      ', True)
+                    variant = config.variant
+                    platform = config.platform
+                    props += self.makeListTag(self.extraRelPaths(sorted(env['CPPPATH']), config.env['CPPPATH']),
+                        '      ', 'AdditionalIncludeDirectories',
+                        ''' Condition="'$(Configuration)|$(Platform)'=='%(variant)s|%(platform)s'"''' % locals(),
+                        True)
             elif item.builder() == 'Protoc':
                 for config, output in sorted(item.node.iteritems()):
                     name = config.name

@@ -20,11 +20,11 @@
 #ifndef BEAST_UNIT_TEST_PRINT_H_INLCUDED
 #define BEAST_UNIT_TEST_PRINT_H_INLCUDED
 
-#include "amount.h"
-#include "results.h"
+#include <beast/unit_test/amount.h>
+#include <beast/unit_test/results.h>
 
-#include "../streams/abstract_ostream.h"
-#include "../streams/basic_std_ostream.h"
+#include <beast/streams/abstract_ostream.h>
+#include <beast/streams/basic_std_ostream.h>
 
 #include <iostream>
 #include <string>

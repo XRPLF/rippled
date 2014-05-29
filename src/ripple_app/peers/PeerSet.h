@@ -20,7 +20,7 @@
 #ifndef RIPPLE_PEERSET_H
 #define RIPPLE_PEERSET_H
 
-#include "../../ripple_overlay/api/Peer.h"
+#include <ripple_overlay/api/Peer.h>
 
 namespace ripple {
 

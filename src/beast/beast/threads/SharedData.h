@@ -20,8 +20,8 @@
 #ifndef BEAST_THREADS_SHAREDDATA_H_INCLUDED
 #define BEAST_THREADS_SHAREDDATA_H_INCLUDED
 
-#include "RecursiveMutex.h"
-#include "SharedMutexAdapter.h"
+#include <beast/threads/RecursiveMutex.h>
+#include <beast/threads/SharedMutexAdapter.h>
 
 namespace beast {
 

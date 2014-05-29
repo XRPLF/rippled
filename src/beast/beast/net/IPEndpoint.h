@@ -20,8 +20,8 @@
 #ifndef BEAST_NET_IPENDPOINT_H_INCLUDED
 #define BEAST_NET_IPENDPOINT_H_INCLUDED
 
-#include "IPAddress.h"
-#include "../container/hash_append.h"
+#include <beast/net/IPAddress.h>
+#include <beast/container/hash_append.h>
 
 #include <cstdint>
 #include <ios>

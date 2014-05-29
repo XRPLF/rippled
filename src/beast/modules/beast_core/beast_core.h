@@ -25,12 +25,12 @@
 #define BEAST_CORE_H_INCLUDED
 
 // TargetPlatform.h should not use anything from BeastConfig.h
-#include "../../beast/Config.h"
-#include "../../beast/config/ContractChecks.h"
+#include <beast/Config.h>
+#include <beast/config/ContractChecks.h>
 
-# include "system/BeforeBoost.h"
-# include "system/BoostIncludes.h"
-#include "system/FunctionalIncludes.h"
+#include <modules/beast_core/system/BeforeBoost.h>
+#include <modules/beast_core/system/BoostIncludes.h>
+#include <modules/beast_core/system/FunctionalIncludes.h>
 
 #if BEAST_MSVC
 # pragma warning (disable: 4251) // (DLL build warning, must be disabled before pushing the warning state)
@@ -44,26 +44,26 @@
 //------------------------------------------------------------------------------
 
 // New header-only library modeled more closely according to boost
-#include "../../beast/SmartPtr.h"
-#include "../../beast/StaticAssert.h"
-#include "../../beast/Uncopyable.h"
-#include "../../beast/Atomic.h"
-#include "../../beast/Arithmetic.h"
-#include "../../beast/ByteOrder.h"
-#include "../../beast/HeapBlock.h"
-#include "../../beast/Memory.h"
-#include "../../beast/Intrusive.h"
-#include "../../beast/Strings.h"
-#include "../../beast/Threads.h"
+#include <beast/SmartPtr.h>
+#include <beast/StaticAssert.h>
+#include <beast/Uncopyable.h>
+#include <beast/Atomic.h>
+#include <beast/Arithmetic.h>
+#include <beast/ByteOrder.h>
+#include <beast/HeapBlock.h>
+#include <beast/Memory.h>
+#include <beast/Intrusive.h>
+#include <beast/Strings.h>
+#include <beast/Threads.h>
 
-#include "../../beast/utility/Debug.h"
-#include "../../beast/utility/Error.h"
-#include "../../beast/utility/Journal.h"
-#include "../../beast/utility/LeakChecked.h"
-#include "../../beast/utility/PropertyStream.h"
-#include "../../beast/utility/StaticObject.h"
+#include <beast/utility/Debug.h>
+#include <beast/utility/Error.h>
+#include <beast/utility/Journal.h>
+#include <beast/utility/LeakChecked.h>
+#include <beast/utility/PropertyStream.h>
+#include <beast/utility/StaticObject.h>
 
-#include "system/StandardIncludes.h"
+#include <modules/beast_core/system/StandardIncludes.h>
 
 namespace beast
 {
@@ -78,13 +78,13 @@ class FileOutputStream;
 // Order matters, since headers don't have their own #include lines.
 // Add new includes to the bottom.
 
-#include "system/Functional.h"
+#include <modules/beast_core/system/Functional.h>
 
-#include "time/AtExitHook.h"
-#include "time/Time.h"
-#include "threads/ScopedLock.h"
-#include "threads/CriticalSection.h"
-#include "containers/ElementComparator.h"
+#include <modules/beast_core/time/AtExitHook.h>
+#include <modules/beast_core/time/Time.h>
+#include <modules/beast_core/threads/ScopedLock.h>
+#include <modules/beast_core/threads/CriticalSection.h>
+#include <modules/beast_core/containers/ElementComparator.h>
 
 // If the MSVC debug heap headers were included, disable
 // the macros during the juce include since they conflict.
@@ -116,7 +116,7 @@ class FileOutputStream;
 #undef _aligned_offset_recalloc
 #undef _aligned_msize
 #endif
-#include "containers/ArrayAllocationBase.h"
+#include <modules/beast_core/containers/ArrayAllocationBase.h>
 #ifdef _CRTDBG_MAP_ALLOC
 #pragma pop_macro("_aligned_msize")
 #pragma pop_macro("_aligned_offset_recalloc")
@@ -133,49 +133,49 @@ class FileOutputStream;
 #pragma pop_macro("calloc")
 #endif
 
-#include "containers/Array.h"
+#include <modules/beast_core/containers/Array.h>
 
-#include "misc/Result.h"
-#include "text/StringArray.h"
-#include "memory/MemoryBlock.h"
-#include "files/File.h"
+#include <modules/beast_core/misc/Result.h>
+#include <modules/beast_core/text/StringArray.h>
+#include <modules/beast_core/memory/MemoryBlock.h>
+#include <modules/beast_core/files/File.h>
 
-#include "thread/MutexTraits.h"
-#include "diagnostic/FatalError.h"
-#include "text/LexicalCast.h"
-#include "maths/Math.h"
-#include "logging/Logger.h"
-#include "containers/LinkedListPointer.h"
-#include "maths/Random.h"
-#include "text/StringPairArray.h"
-#include "containers/ScopedValueSetter.h"
-#include "maths/Range.h"
-#include "files/DirectoryIterator.h"
-#include "streams/InputStream.h"
-#include "files/FileInputStream.h"
-#include "streams/InputSource.h"
-#include "streams/FileInputSource.h"
-#include "streams/OutputStream.h"
-#include "files/FileOutputStream.h"
-#include "files/FileSearchPath.h"
-#include "files/RandomAccessFile.h"
-#include "files/TemporaryFile.h"
-#include "logging/Logger.h"
-#include "memory/SharedSingleton.h"
-#include "misc/WindowsRegistry.h"
-#include "streams/MemoryOutputStream.h"
+#include <modules/beast_core/thread/MutexTraits.h>
+#include <modules/beast_core/diagnostic/FatalError.h>
+#include <modules/beast_core/text/LexicalCast.h>
+#include <modules/beast_core/maths/Math.h>
+#include <modules/beast_core/logging/Logger.h>
+#include <modules/beast_core/containers/LinkedListPointer.h>
+#include <modules/beast_core/maths/Random.h>
+#include <modules/beast_core/text/StringPairArray.h>
+#include <modules/beast_core/containers/ScopedValueSetter.h>
+#include <modules/beast_core/maths/Range.h>
+#include <modules/beast_core/files/DirectoryIterator.h>
+#include <modules/beast_core/streams/InputStream.h>
+#include <modules/beast_core/files/FileInputStream.h>
+#include <modules/beast_core/streams/InputSource.h>
+#include <modules/beast_core/streams/FileInputSource.h>
+#include <modules/beast_core/streams/OutputStream.h>
+#include <modules/beast_core/files/FileOutputStream.h>
+#include <modules/beast_core/files/FileSearchPath.h>
+#include <modules/beast_core/files/RandomAccessFile.h>
+#include <modules/beast_core/files/TemporaryFile.h>
+#include <modules/beast_core/logging/Logger.h>
+#include <modules/beast_core/memory/SharedSingleton.h>
+#include <modules/beast_core/misc/WindowsRegistry.h>
+#include <modules/beast_core/streams/MemoryOutputStream.h>
 
-#include "system/SystemStats.h"
-#include "diagnostic/SemanticVersion.h"
-#include "threads/DynamicLibrary.h"
-#include "threads/Process.h"
-#include "diagnostic/UnitTestUtilities.h"
+#include <modules/beast_core/system/SystemStats.h>
+#include <modules/beast_core/diagnostic/SemanticVersion.h>
+#include <modules/beast_core/threads/DynamicLibrary.h>
+#include <modules/beast_core/threads/Process.h>
+#include <modules/beast_core/diagnostic/UnitTestUtilities.h>
 
-#include "diagnostic/MeasureFunctionCallTime.h"
+#include <modules/beast_core/diagnostic/MeasureFunctionCallTime.h>
 
-#include "thread/DeadlineTimer.h"
+#include <modules/beast_core/thread/DeadlineTimer.h>
 
-#include "thread/Workers.h"
+#include <modules/beast_core/thread/Workers.h>
 
 #if BEAST_MSVC
 #pragma warning (pop)

@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "../../beast/modules/beast_core/text/LexicalCast.h"
+#include <modules/beast_core/text/LexicalCast.h>
 
 #include <string>
 

@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "../../beast/modules/beast_core/text/LexicalCast.h"
+#include <modules/beast_core/text/LexicalCast.h>
 
 namespace Json {
 
@@ -122,11 +122,11 @@ static struct DummyValueAllocatorInitializer
 // //////////////////////////////////////////////////////////////////
 // //////////////////////////////////////////////////////////////////
 #ifdef JSON_VALUE_USE_INTERNAL_MAP
-# include "json_internalarray.inl"
-# include "json_internalmap.inl"
+# include <ripple/json/impl/json_internalarray.inl>
+# include <ripple/json/impl/json_internalmap.inl>
 #endif // JSON_VALUE_USE_INTERNAL_MAP
 
-# include "json_valueiterator.inl"
+# include <ripple/json/impl/json_valueiterator.inl>
 
 
 // //////////////////////////////////////////////////////////////////

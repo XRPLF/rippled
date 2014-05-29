@@ -17,15 +17,15 @@
 */
 //==============================================================================
 
-#include "Transactor.h"
-#include "AddWallet.h"
-#include "CancelOffer.h"
-#include "Change.h"
-#include "CreateOffer.h"
-#include "Payment.h"
-#include "SetAccount.h"
-#include "SetRegularKey.h"
-#include "SetTrust.h"
+#include <ripple_app/transactors/Transactor.h>
+#include <ripple_app/transactors/AddWallet.h>
+#include <ripple_app/transactors/CancelOffer.h>
+#include <ripple_app/transactors/Change.h>
+#include <ripple_app/transactors/CreateOffer.h>
+#include <ripple_app/transactors/Payment.h>
+#include <ripple_app/transactors/SetAccount.h>
+#include <ripple_app/transactors/SetRegularKey.h>
+#include <ripple_app/transactors/SetTrust.h>
 
 namespace ripple {
 

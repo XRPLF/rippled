@@ -20,7 +20,7 @@
 #ifndef RIPPLE_SQLITEDATABASE_H_INCLUDED
 #define RIPPLE_SQLITEDATABASE_H_INCLUDED
 
-#include "../../beast/beast/threads/Thread.h"
+#include <beast/threads/Thread.h>
 
 namespace ripple {
 

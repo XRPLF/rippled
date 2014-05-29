@@ -20,7 +20,7 @@
 #ifndef BEAST_UTILITY_ISCALLPOSSIBLE_H_INCLUDED
 #define BEAST_UTILITY_ISCALLPOSSIBLE_H_INCLUDED
 
-#include "../cxx14/type_traits.h" // <type_traits>
+#include <beast/cxx14/type_traits.h> // <type_traits>
 
 namespace beast {
 

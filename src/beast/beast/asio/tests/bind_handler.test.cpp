@@ -20,12 +20,12 @@
 // LIBS: boost_system
 
 #if BEAST_INCLUDE_BEASTCONFIG
-#include "../../../BeastConfig.h"
+#include <BeastConfig.h>
 #endif
 
-#include "../../unit_test/suite.h"
+#include <beast/unit_test/suite.h>
 
-#include "../bind_handler.h"
+#include <beast/asio/bind_handler.h>
 
 #include <functional>
 

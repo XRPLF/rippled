@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "Authorize.h"
+#include <ripple_rpc/impl/Authorize.h>
 
 namespace ripple {
 namespace RPC {

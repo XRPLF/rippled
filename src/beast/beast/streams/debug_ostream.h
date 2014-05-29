@@ -20,17 +20,17 @@
 #ifndef BEAST_UTILITY_DEBUG_OSTREAM_H_INCLUDED
 #define BEAST_UTILITY_DEBUG_OSTREAM_H_INCLUDED
 
-#include "abstract_ostream.h"
+#include <beast/streams/abstract_ostream.h>
 
 #include <iostream>
 
 #ifdef _MSC_VER
 # ifndef WIN32_LEAN_AND_MEAN // VC_EXTRALEAN
 #  define WIN32_LEAN_AND_MEAN
-#  include <windows.h>
+#include <windows.h>
 #  undef WIN32_LEAN_AND_MEAN
 # else
-#  include <windows.h>
+#include <windows.h>
 # endif
 # ifdef min
 #  undef min

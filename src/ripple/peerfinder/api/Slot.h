@@ -20,9 +20,9 @@
 #ifndef RIPPLE_PEERFINDER_SLOT_H_INCLUDED
 #define RIPPLE_PEERFINDER_SLOT_H_INCLUDED
 
-#include "../../types/api/RipplePublicKey.h"
+#include <ripple/types/api/RipplePublicKey.h>
 
-#include "../../../beast/beast/net/IPEndpoint.h"
+#include <beast/net/IPEndpoint.h>
 
 #include <boost/optional.hpp>
 

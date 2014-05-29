@@ -21,7 +21,7 @@
 #define RIPPLE_PLATFORMMACROS_H
 
 #include <functional>
-#include "../../beast/beast/cxx14/type_traits.h" // <type_traits>
+#include <beast/cxx14/type_traits.h> // <type_traits>
 
 namespace ripple {
 

@@ -51,7 +51,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='debug|x64'">
     <ClCompile>
       <PreprocessorDefinitions>_WIN32_WINNT=0x6000;DEBUG;WIN32_CONSOLE;_CRTDBG_MAP_ALLOC;_CRT_SECURE_NO_WARNINGS;_DEBUG;_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\beast;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>Async</ExceptionHandling>
       <RuntimeTypeInfo>True</RuntimeTypeInfo>
       <BufferSecurityCheck>True</BufferSecurityCheck>
@@ -88,7 +88,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='release|x64'">
     <ClCompile>
       <PreprocessorDefinitions>_WIN32_WINNT=0x6000;NDEBUG;WIN32_CONSOLE;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\beast;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>Async</ExceptionHandling>
       <RuntimeTypeInfo>True</RuntimeTypeInfo>
       <CallingConvention>Cdecl</CallingConvention>
@@ -127,8 +127,6 @@
     <ClInclude Include="..\..\build\proto\ripple.pb.h">
     </ClInclude>
     <ClInclude Include="..\..\src\BeastConfig.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\BeastConfig.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\Arithmetic.h">
     </ClInclude>
@@ -1801,12 +1799,8 @@
     <ClInclude Include="..\..\src\ripple\algorithm\api\DecayingSample.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\beast\ripple_beast.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\beast\ripple_beastc.unity.c">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\common\KeyCache.h">
     </ClInclude>
@@ -1844,8 +1838,6 @@
     <ClInclude Include="..\..\src\ripple\common\jsonrpc_fields.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\common\ripple_common.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\common\seconds_clock.h">
     </ClInclude>
@@ -1885,8 +1877,6 @@
     <ClInclude Include="..\..\src\ripple\http\ripple_http.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\http\ripple_http.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\json\api\JsonPropertyStream.h">
     </ClInclude>
@@ -1928,8 +1918,6 @@
     <ClInclude Include="..\..\src\ripple\json\ripple_json.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\json\ripple_json.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\peerfinder\api\Callback.h">
     </ClInclude>
@@ -2019,8 +2007,6 @@
     <ClInclude Include="..\..\src\ripple\peerfinder\ripple_peerfinder.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\peerfinder\ripple_peerfinder.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\peerfinder\sim\FunctionQueue.h">
     </ClInclude>
@@ -2040,8 +2026,6 @@
     <ClInclude Include="..\..\src\ripple\peerfinder\sim\WrappedSink.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\proto\protobuf.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <CustomBuild Include="..\..\src\ripple\proto\ripple.proto">
       <FileType>Document</FileType>
@@ -2056,8 +2040,6 @@
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='release|x64'">false</LinkObjects>
     </CustomBuild>
     <ClCompile Include="..\..\src\ripple\proto\ripple_proto.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\radmap\api\BasicFullBelowCache.h">
     </ClInclude>
@@ -2069,8 +2051,6 @@
     <ClInclude Include="..\..\src\ripple\radmap\ripple_radmap.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\radmap\ripple_radmap.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\resource\api\Charge.h">
     </ClInclude>
@@ -2121,14 +2101,10 @@
     <ClInclude Include="..\..\src\ripple\resource\ripple_resource.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\resource\ripple_resource.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\rocksdb\ripple_rocksdb.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\rocksdb\ripple_rocksdb.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\builder.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -2481,8 +2457,6 @@
     <ClInclude Include="..\..\src\ripple\sitefiles\ripple_sitefiles.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\sitefiles\ripple_sitefiles.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\sslutil\api\CAutoBN_CTX.h">
     </ClInclude>
@@ -2511,8 +2485,6 @@
     <ClInclude Include="..\..\src\ripple\sslutil\ripple_sslutil.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\sslutil\ripple_sslutil.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\testoverlay\api\ConfigType.h">
     </ClInclude>
@@ -2540,8 +2512,6 @@
     <ClInclude Include="..\..\src\ripple\testoverlay\ripple_testoverlay.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\testoverlay\ripple_testoverlay.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\types\api\AgedHistory.h">
     </ClInclude>
@@ -2612,8 +2582,6 @@
     <ClInclude Include="..\..\src\ripple\types\ripple_types.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\types\ripple_types.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\validators\api\Manager.h">
     </ClInclude>
@@ -2674,8 +2642,6 @@
     <ClInclude Include="..\..\src\ripple\validators\ripple_validators.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\validators\ripple_validators.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple_app\book\Amount.h">
     </ClInclude>
@@ -3060,44 +3026,24 @@
     <ClInclude Include="..\..\src\ripple_app\ripple_app.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple_app\ripple_app.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\ripple_app_pt1.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\ripple_app_pt2.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\ripple_app_pt3.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\ripple_app_pt4.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\ripple_app_pt5.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\ripple_app_pt6.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\ripple_app_pt7.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\ripple_app_pt8.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\ripple_app_pt9.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_app\rpc\RPCHandler.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -3309,8 +3255,6 @@
     <ClInclude Include="..\..\src\ripple_basics\ripple_basics.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple_basics\ripple_basics.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple_basics\system\BoostIncludes.h">
     </ClInclude>
@@ -3508,8 +3452,6 @@
     <ClInclude Include="..\..\src\ripple_core\ripple_core.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple_core\ripple_core.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_data\crypto\Base58Data.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -3611,22 +3553,16 @@
     <ClInclude Include="..\..\src\ripple_data\ripple_data.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple_data\ripple_data.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple_data\utility\UptimeTimerAdapter.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple_hyperleveldb\ripple_hyperleveldb.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple_hyperleveldb\ripple_hyperleveldb.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple_leveldb\ripple_leveldb.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple_leveldb\ripple_leveldb.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_net\basics\HTTPClient.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -3655,8 +3591,6 @@
     <ClInclude Include="..\..\src\ripple_net\ripple_net.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple_net\ripple_net.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_net\rpc\InfoSub.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -3709,8 +3643,6 @@
     <ClInclude Include="..\..\src\ripple_overlay\impl\PeerImp.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple_overlay\ripple_overlay.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple_rpc\api\ErrorCodes.h">
     </ClInclude>
@@ -3951,8 +3883,6 @@
     <ClInclude Include="..\..\src\ripple_rpc\ripple_rpc.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple_rpc\ripple_rpc.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple_websocket\autosocket\AutoSocket.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -3965,14 +3895,10 @@
     <ClInclude Include="..\..\src\ripple_websocket\ripple_websocket.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple_websocket\ripple_websocket.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClInclude Include="..\..\src\snappy\config\snappy-stubs-public.h">
     </ClInclude>
     <ClCompile Include="..\..\src\snappy\snappy.unity.cpp">
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\leveldb\port;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClInclude Include="..\..\src\snappy\snappy\snappy-internal.h">
     </ClInclude>

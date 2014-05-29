@@ -17,22 +17,22 @@
 */
 //==============================================================================
 
-#include "../../BeastConfig.h"
+#include <BeastConfig.h>
 
-#include "ripple_http.h"
+#include <ripple/http/ripple_http.h>
 
-#include "../../ripple_net/ripple_net.h"
+#include <ripple_net/ripple_net.h>
 
-#include "../../beast/modules/beast_core/system/BeforeBoost.h"
+#include <modules/beast_core/system/BeforeBoost.h>
 #include <boost/asio.hpp>
 #include <boost/optional.hpp>
 
-#include "impl/Port.cpp"
-#include "impl/ScopedStream.cpp"
+#include <ripple/http/impl/Port.cpp>
+#include <ripple/http/impl/ScopedStream.cpp>
 
-# include "impl/Types.h"
-#  include "impl/ServerImpl.h"
-# include "impl/Peer.h"
-# include "impl/Door.h"
-#include "impl/ServerImpl.cpp"
-#include "impl/Server.cpp"
+#include <ripple/http/impl/Types.h>
+#include <ripple/http/impl/ServerImpl.h>
+#include <ripple/http/impl/Peer.h>
+#include <ripple/http/impl/Door.h>
+#include <ripple/http/impl/ServerImpl.cpp>
+#include <ripple/http/impl/Server.cpp>

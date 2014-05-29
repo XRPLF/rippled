@@ -19,7 +19,7 @@
 
 #include <cassert>
 
-#include "../../beast/modules/beast_core/text/LexicalCast.h"
+#include <modules/beast_core/text/LexicalCast.h>
 
 namespace ripple {
 

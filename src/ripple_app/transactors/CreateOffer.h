@@ -20,10 +20,10 @@
 #ifndef RIPPLE_TX_OFFERCREATE_H_INCLUDED
 #define RIPPLE_TX_OFFERCREATE_H_INCLUDED
 
-#include "../book/Amounts.h"
-#include "../book/Types.h"
+#include <ripple_app/book/Amounts.h>
+#include <ripple_app/book/Types.h>
 
-#include "../../beast/beast/cxx14/memory.h"
+#include <beast/cxx14/memory.h>
 
 namespace ripple {
 

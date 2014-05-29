@@ -20,13 +20,13 @@
 #ifndef RIPPLE_OVERLAY_PEER_H_INCLUDED
 #define RIPPLE_OVERLAY_PEER_H_INCLUDED
 
-#include "Message.h"
+#include <ripple_overlay/api/Message.h>
 
-#include "../../ripple/json/ripple_json.h"
-#include "../../ripple/types/api/base_uint.h"
-#include "../../ripple_data/protocol/RippleAddress.h"
+#include <ripple/json/ripple_json.h>
+#include <ripple/types/api/base_uint.h>
+#include <ripple_data/protocol/RippleAddress.h>
 
-#include "../../beast/beast/net/IPEndpoint.h"
+#include <beast/net/IPEndpoint.h>
 
 namespace ripple {
 

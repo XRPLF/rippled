@@ -91,32 +91,32 @@ class session;               // statement.h
 #pragma warning (disable: 4355) // 'this' : used in base member initializer list
 #endif
 
-#include "api/backend.h"
-#include "api/transaction.h"
-#include "detail/type_ptr.h"
+#include <modules/beast_sqdb/api/backend.h>
+#include <modules/beast_sqdb/api/transaction.h>
+#include <modules/beast_sqdb/detail/type_ptr.h>
 
-#include "api/blob.h"
-#include "api/type_conversion_traits.h"
+#include <modules/beast_sqdb/api/blob.h>
+#include <modules/beast_sqdb/api/type_conversion_traits.h>
 
-#include "detail/exchange_traits.h"
+#include <modules/beast_sqdb/detail/exchange_traits.h>
 
-#include "detail/into_type.h"
-#include "detail/use_type.h"
+#include <modules/beast_sqdb/detail/into_type.h>
+#include <modules/beast_sqdb/detail/use_type.h>
 
-#include "api/statement.h"
-#include "detail/type_conversion.h"
+#include <modules/beast_sqdb/api/statement.h>
+#include <modules/beast_sqdb/detail/type_conversion.h>
 
-#include "detail/ref_counted_statement.h"
+#include <modules/beast_sqdb/detail/ref_counted_statement.h>
 
-#include "api/into.h"
-#include "api/use.h"
-#include "detail/ref_counted_prepare_info.h"
+#include <modules/beast_sqdb/api/into.h>
+#include <modules/beast_sqdb/api/use.h>
+#include <modules/beast_sqdb/detail/ref_counted_prepare_info.h>
 
-#include "detail/prepare_temp_type.h"
+#include <modules/beast_sqdb/detail/prepare_temp_type.h>
 
-#include "detail/once_temp_type.h"
+#include <modules/beast_sqdb/detail/once_temp_type.h>
 
-#include "api/session.h"
+#include <modules/beast_sqdb/api/session.h>
 
 #if _MSC_VER
 #pragma warning (pop)

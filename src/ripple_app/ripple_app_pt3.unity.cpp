@@ -19,15 +19,15 @@
 
 #include "../../BeastConfig.h"
 
-#include "ripple_app.h"
+#include <ripple_app/ripple_app.h>
 
-#include "ledger/Ledger.cpp"
-#include "shamap/SHAMapDelta.cpp"
-#include "shamap/SHAMapNode.cpp"
-#include "shamap/SHAMapTreeNode.cpp"
-#include "misc/AccountItems.cpp"
-#include "misc/AccountState.cpp"
-#include "contracts/Contract.cpp"
-#include "contracts/Operation.cpp"
-#include "contracts/ScriptData.cpp"
-#include "contracts/Interpreter.cpp"
+#include <ripple_app/ledger/Ledger.cpp>
+#include <ripple_app/shamap/SHAMapDelta.cpp>
+#include <ripple_app/shamap/SHAMapNode.cpp>
+#include <ripple_app/shamap/SHAMapTreeNode.cpp>
+#include <ripple_app/misc/AccountItems.cpp>
+#include <ripple_app/misc/AccountState.cpp>
+#include <ripple_app/contracts/Contract.cpp>
+#include <ripple_app/contracts/Operation.cpp>
+#include <ripple_app/contracts/ScriptData.cpp>
+#include <ripple_app/contracts/Interpreter.cpp>

@@ -19,12 +19,12 @@
 
 #include "../../BeastConfig.h"
 
-#include "ripple_rpc.h"
+#include <ripple_rpc/ripple_rpc.h>
 
 // Unfortunate but necessary since RPC handlers can literally do anything
-#include "../ripple_app/ripple_app.h"
+#include <ripple_app/ripple_app.h>
 
-#include "impl/ErrorCodes.cpp"
-#include "impl/Manager.cpp"
+#include <ripple_rpc/impl/ErrorCodes.cpp>
+#include <ripple_rpc/impl/Manager.cpp>
 
 

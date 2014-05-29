@@ -20,7 +20,7 @@
 #ifndef RIPPLE_AMENDMENT_TABLE_H
 #define RIPPLE_AMENDMENT_TABLE_H
 
-#include "../book/Types.h"
+#include <ripple_app/book/Types.h>
 
 namespace ripple {
 

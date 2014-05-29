@@ -25,11 +25,11 @@
 
 #include <boost/smart_ptr.hpp>
 
-#include "../../beast/beast/chrono/abstract_clock.h"
-#include "../../beast/beast/chrono/chrono_io.h"
-#include "../../beast/beast/Insight.h"
-#include "../../beast/beast/container/hardened_hash.h"
-#include "UnorderedContainers.h"
+#include <beast/chrono/abstract_clock.h>
+#include <beast/chrono/chrono_io.h>
+#include <beast/Insight.h>
+#include <beast/container/hardened_hash.h>
+#include <ripple/common/UnorderedContainers.h>
 
 namespace ripple {
 

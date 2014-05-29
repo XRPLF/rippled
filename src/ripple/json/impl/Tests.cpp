@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include "../../../beast/beast/unit_test/suite.h"
-#include "../../../beast/beast/utility/type_name.h"
+#include <beast/unit_test/suite.h>
+#include <beast/utility/type_name.h>
 
 namespace ripple {
 

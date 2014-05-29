@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "../ServiceQueue.h"
+#include <beast/threads/ServiceQueue.h>
 
 namespace beast {
 

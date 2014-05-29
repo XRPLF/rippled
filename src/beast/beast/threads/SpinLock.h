@@ -24,8 +24,8 @@
 #ifndef BEAST_THREADS_SPINLOCK_H_INCLUDED
 #define BEAST_THREADS_SPINLOCK_H_INCLUDED
 
-#include "../Atomic.h"
-#include "UnlockGuard.h"
+#include <beast/Atomic.h>
+#include <beast/threads/UnlockGuard.h>
 
 #include <mutex>
 

@@ -32,8 +32,8 @@
 #ifndef RIPPLE_BASE58DATA_H
 #define RIPPLE_BASE58DATA_H
 
-#include "../../ripple/types/api/Base58.h"
-#include "../../ripple/types/api/base_uint.h"
+#include <ripple/types/api/Base58.h>
+#include <ripple/types/api/base_uint.h>
 
 namespace ripple {
 

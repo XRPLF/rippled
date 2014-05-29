@@ -20,7 +20,7 @@
 #ifndef __AUTOSOCKET_H_
 #define __AUTOSOCKET_H_
 
-#include "../../beast/beast/asio/bind_handler.h"
+#include <beast/asio/bind_handler.h>
 
 // Socket wrapper that supports both SSL and non-SSL connections.
 // Generally, handle it as you would an SSL connection.

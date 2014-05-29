@@ -28,8 +28,8 @@
 #include <cstdlib>
 #include <stdexcept>
 
-#include "Memory.h"
-#include "Uncopyable.h"
+#include <beast/Memory.h>
+#include <beast/Uncopyable.h>
 
 // If the MSVC debug heap headers were included, disable
 // the macros during the juce include since they conflict.

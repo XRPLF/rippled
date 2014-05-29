@@ -25,7 +25,7 @@
 #define BEAST_CONFIG_COMPILERCONFIG_H_INCLUDED
 
 #include <assert.h>
-#include "PlatformConfig.h"
+#include <beast/config/PlatformConfig.h>
 
 // This file defines miscellaneous macros for debugging, assertions, etc.
 

@@ -24,10 +24,10 @@
 #ifndef BEAST_STRINGS_STRINGFROMNUMBER_H_INCLUDED
 #define BEAST_STRINGS_STRINGFROMNUMBER_H_INCLUDED
 
-#include "../Config.h"
-#include "../Arithmetic.h"
+#include <beast/Config.h>
+#include <beast/Arithmetic.h>
 
-#include "StringCharPointerType.h"
+#include <beast/strings/StringCharPointerType.h>
 
 #include <limits>
 #include <ostream>

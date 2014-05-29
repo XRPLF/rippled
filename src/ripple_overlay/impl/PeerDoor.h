@@ -20,9 +20,9 @@
 #ifndef RIPPLE_PEERDOOR_H_INCLUDED
 #define RIPPLE_PEERDOOR_H_INCLUDED
 
-#include "OverlayImpl.h"
+#include <ripple_overlay/impl/OverlayImpl.h>
 
-#include "../../beast/beast/cxx14/memory.h" // <memory>
+#include <beast/cxx14/memory.h> // <memory>
 
 namespace ripple {
 

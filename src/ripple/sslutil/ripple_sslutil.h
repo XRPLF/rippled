@@ -20,18 +20,18 @@
 #ifndef RIPPLE_SSLUTIL_H_INCLUDED
 #define RIPPLE_SSLUTIL_H_INCLUDED
 
-#include "../types/ripple_types.h"
+#include <ripple/types/ripple_types.h>
 
 #include <openssl/bn.h>
 #include <openssl/dh.h>
 #include <openssl/ripemd.h>
 #include <openssl/sha.h>
 
-# include "api/bignum_error.h"
-#include "api/CAutoBN_CTX.h"
-#include "api/CBigNum.h"
-#include "api/DHUtil.h"
-#include "api/HashUtilities.h"
-#include "api/ECDSACanonical.h"
+#include <ripple/sslutil/api/bignum_error.h>
+#include <ripple/sslutil/api/CAutoBN_CTX.h>
+#include <ripple/sslutil/api/CBigNum.h>
+#include <ripple/sslutil/api/DHUtil.h>
+#include <ripple/sslutil/api/HashUtilities.h>
+#include <ripple/sslutil/api/ECDSACanonical.h>
 
 #endif

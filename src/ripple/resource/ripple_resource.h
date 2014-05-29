@@ -20,15 +20,15 @@
 #ifndef RIPPLE_RESOURCE_H_INCLUDED
 #define RIPPLE_RESOURCE_H_INCLUDED
 
-#include "../json/ripple_json.h"
+#include <ripple/json/ripple_json.h>
 
-# include "api/Types.h"
-# include "api/Disposition.h"
-#  include "api/Charge.h"
-# include "api/LegacyFees.h"
-# include "api/Fees.h"
-# include "api/Consumer.h"
-# include "api/Gossip.h"
-#include "api/Manager.h"
+#include <ripple/resource/api/Types.h>
+#include <ripple/resource/api/Disposition.h>
+#include <ripple/resource/api/Charge.h>
+#include <ripple/resource/api/LegacyFees.h>
+#include <ripple/resource/api/Fees.h>
+#include <ripple/resource/api/Consumer.h>
+#include <ripple/resource/api/Gossip.h>
+#include <ripple/resource/api/Manager.h>
 
 #endif

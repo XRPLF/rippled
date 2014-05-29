@@ -17,29 +17,29 @@
 */
 //==============================================================================
 
-#include "../../BeastConfig.h"
+#include <BeastConfig.h>
 
-#include "ripple_resource.h"
+#include <ripple/resource/ripple_resource.h>
 
-#include "../../beast/modules/beast_core/system/BeforeBoost.h"
+#include <modules/beast_core/system/BeforeBoost.h>
 #include <boost/utility/base_from_member.hpp>
 
-#include "../algorithm/api/DecayingSample.h"
-#include "../common/seconds_clock.h"
+#include <ripple/algorithm/api/DecayingSample.h>
+#include <ripple/common/seconds_clock.h>
 
-#include "../../beast/beast/Insight.h"
-#include "../../beast/beast/cxx14/memory.h"
-#include "../../beast/beast/chrono/chrono_io.h"
+#include <beast/Insight.h>
+#include <beast/cxx14/memory.h>
+#include <beast/chrono/chrono_io.h>
 
-#include "impl/Fees.cpp"
-#  include "impl/Kind.h"
-# include "impl/Key.h"
-#  include "impl/Tuning.h"
-# include "impl/Entry.h"
-# include "impl/Import.h"
-#include "impl/Charge.cpp"
-#  include "impl/Logic.h"
-#include "impl/Consumer.cpp"
-#include "impl/LegacyFees.cpp"
-#include "impl/Manager.cpp"
-#include "impl/Tests.cpp"
+#include <ripple/resource/impl/Fees.cpp>
+#include <ripple/resource/impl/Kind.h>
+#include <ripple/resource/impl/Key.h>
+#include <ripple/resource/impl/Tuning.h>
+#include <ripple/resource/impl/Entry.h>
+#include <ripple/resource/impl/Import.h>
+#include <ripple/resource/impl/Charge.cpp>
+#include <ripple/resource/impl/Logic.h>
+#include <ripple/resource/impl/Consumer.cpp>
+#include <ripple/resource/impl/LegacyFees.cpp>
+#include <ripple/resource/impl/Manager.cpp>
+#include <ripple/resource/impl/Tests.cpp>

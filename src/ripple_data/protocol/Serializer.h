@@ -20,7 +20,7 @@
 #ifndef RIPPLE_SERIALIZER_H
 #define RIPPLE_SERIALIZER_H
 
-#include "../../ripple/common/byte_view.h"
+#include <ripple/common/byte_view.h>
 
 namespace ripple {
 

@@ -20,7 +20,7 @@
 #ifndef RIPPLE_LOADFEETRACKIMP_H_INCLUDED
 #define RIPPLE_LOADFEETRACKIMP_H_INCLUDED
 
-#include "../../ripple/common/jsonrpc_fields.h"
+#include <ripple/common/jsonrpc_fields.h>
 
 namespace ripple {
 

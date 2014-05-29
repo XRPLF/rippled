@@ -60,7 +60,7 @@
 #ifndef BEAST_SQDB_TYPE_CONVERSION_TRAITS_H_INCLUDED
 #define BEAST_SQDB_TYPE_CONVERSION_TRAITS_H_INCLUDED
 
-#include "../../beast_core/time/Time.h"
+#include <modules/beast_core/time/Time.h>
 
 #include <cassert>
 

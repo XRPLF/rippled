@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include "../TaggedCache.h"
+#include <ripple/common/TaggedCache.h>
 
-#include "../../beast/beast/unit_test/suite.h"
-#include "../../beast/beast/chrono/manual_clock.h"
+#include <beast/unit_test/suite.h>
+#include <beast/chrono/manual_clock.h>
 
 namespace ripple {
 

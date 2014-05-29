@@ -20,13 +20,13 @@
 #ifndef RIPPLE_PEERFINDER_MANAGER_H_INCLUDED
 #define RIPPLE_PEERFINDER_MANAGER_H_INCLUDED
 
-#include "Config.h"
-#include "Slot.h"
-#include "Types.h"
+#include <ripple/peerfinder/api/Config.h>
+#include <ripple/peerfinder/api/Slot.h>
+#include <ripple/peerfinder/api/Types.h>
 
-#include "../../sitefiles/api/Manager.h"
+#include <ripple/sitefiles/api/Manager.h>
 
-#include "../../../beast/modules/beast_core/files/File.h"
+#include <modules/beast_core/files/File.h>
 
 namespace ripple {
 namespace PeerFinder {

@@ -45,6 +45,6 @@
 #include <boost/thread/recursive_mutex.hpp>
 
 // work-around for broken <boost/get_pointer.hpp>
-#include "../../beast/beast/boost/get_pointer.h"
+#include <beast/boost/get_pointer.h>
 
 #endif

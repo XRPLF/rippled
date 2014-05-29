@@ -17,16 +17,16 @@
 */
 //==============================================================================
 
-#include "CreateOfferDirect.h"
-#include "CreateOfferBridged.h"
+#include <ripple_app/transactors/CreateOfferDirect.h>
+#include <ripple_app/transactors/CreateOfferBridged.h>
 
 #if RIPPLE_USE_OLD_CREATE_TRANSACTOR
-#include "CreateOfferLegacy.h"
+#include <ripple_app/transactors/CreateOfferLegacy.h>
 #endif
 
-#include "../book/OfferStream.h"
-#include "../book/Taker.h"
-#include "../book/Types.h"
+#include <ripple_app/book/OfferStream.h>
+#include <ripple_app/book/Taker.h>
+#include <ripple_app/book/Types.h>
 
 namespace ripple {
 

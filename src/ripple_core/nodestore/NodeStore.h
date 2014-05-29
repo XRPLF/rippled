@@ -20,15 +20,15 @@
 #ifndef RIPPLE_NODESTORE_H_INCLUDED
 #define RIPPLE_NODESTORE_H_INCLUDED
 
-#include "api/NodeObject.h"
-#include "api/Types.h"
-#include "api/VisitCallback.h"
-#include "api/Backend.h"
-#  include "api/Task.h"
-# include "api/Scheduler.h"
-#include "api/DummyScheduler.h"
-#include "api/Factory.h"
-#include "api/Database.h"
-#include "api/Manager.h"
+#include <ripple_core/nodestore/api/NodeObject.h>
+#include <ripple_core/nodestore/api/Types.h>
+#include <ripple_core/nodestore/api/VisitCallback.h>
+#include <ripple_core/nodestore/api/Backend.h>
+#include <ripple_core/nodestore/api/Task.h>
+#include <ripple_core/nodestore/api/Scheduler.h>
+#include <ripple_core/nodestore/api/DummyScheduler.h>
+#include <ripple_core/nodestore/api/Factory.h>
+#include <ripple_core/nodestore/api/Database.h>
+#include <ripple_core/nodestore/api/Manager.h>
 
 #endif

@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "AccountFromString.h"
+#include <ripple_rpc/impl/AccountFromString.h>
 
 namespace ripple {
 namespace RPC {

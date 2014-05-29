@@ -20,8 +20,8 @@
 #ifndef RIPPLE_BASICS_LOGSINK_H_INCLUDED
 #define RIPPLE_BASICS_LOGSINK_H_INCLUDED
 
-#include "../../beast/beast/smart_ptr/SharedPtr.h"
-#include "../../beast/modules/beast_core/memory/SharedSingleton.h"
+#include <beast/smart_ptr/SharedPtr.h>
+#include <modules/beast_core/memory/SharedSingleton.h>
 
 namespace ripple {
 

@@ -20,7 +20,7 @@
 #ifndef RIPPLE_PEERFINDER_CHECKER_H_INCLUDED
 #define RIPPLE_PEERFINDER_CHECKER_H_INCLUDED
 
-#include "../../../beast/beast/asio/shared_handler.h"
+#include <beast/asio/shared_handler.h>
 
 namespace ripple {
 namespace PeerFinder {

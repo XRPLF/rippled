@@ -24,12 +24,12 @@
 
 // VFALCO NOTE this sucks that we have to include asio in the header
 //             just for HTTPMessage!!
-#include "../../beast/modules/beast_asio/beast_asio.h"
+#include <modules/beast_asio/beast_asio.h>
 
-# include "api/Port.h"
-# include "api/ScopedStream.h"
-# include "api/Session.h"
-# include "api/Handler.h"
-#include "api/Server.h"
+#include <ripple/http/api/Port.h>
+#include <ripple/http/api/ScopedStream.h>
+#include <ripple/http/api/Session.h>
+#include <ripple/http/api/Handler.h>
+#include <ripple/http/api/Server.h>
 
 #endif

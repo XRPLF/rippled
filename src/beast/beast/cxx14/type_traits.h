@@ -20,7 +20,7 @@
 #ifndef BEAST_CXX14_TYPE_TRAITS_H_INCLUDED
 #define BEAST_CXX14_TYPE_TRAITS_H_INCLUDED
 
-#include "config.h"
+#include <beast/cxx14/config.h>
 
 #include <tuple>
 #include <type_traits>

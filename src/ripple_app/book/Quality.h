@@ -20,8 +20,8 @@
 #ifndef RIPPLE_CORE_QUALITY_H_INCLUDED
 #define RIPPLE_CORE_QUALITY_H_INCLUDED
 
-#include "Amount.h"
-#include "Amounts.h"
+#include <ripple_app/book/Amount.h>
+#include <ripple_app/book/Amounts.h>
 
 #include <cstdint>
 #include <ostream>

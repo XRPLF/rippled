@@ -20,10 +20,10 @@
 #ifndef BEAST_ASIO_SOCKET_WRAPPER_H_INCLUDED
 #define BEAST_ASIO_SOCKET_WRAPPER_H_INCLUDED
 
-#include "abstract_socket.h"
-#include "bind_handler.h"
+#include <beast/asio/abstract_socket.h>
+#include <beast/asio/bind_handler.h>
 
-#include "../utility/noexcept.h"
+#include <beast/utility/noexcept.h>
 
 namespace beast {
 namespace asio {

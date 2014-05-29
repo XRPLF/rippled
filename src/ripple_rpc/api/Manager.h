@@ -20,7 +20,7 @@
 #ifndef RIPPLE_RPC_MANAGER_H_INCLUDED
 #define RIPPLE_RPC_MANAGER_H_INCLUDED
 
-#include "Request.h"
+#include <ripple_rpc/api/Request.h>
 
 namespace ripple {
 namespace RPC {

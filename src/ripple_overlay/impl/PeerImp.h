@@ -20,20 +20,20 @@
 #ifndef RIPPLE_OVERLAY_PEERIMP_H_INCLUDED
 #define RIPPLE_OVERLAY_PEERIMP_H_INCLUDED
 
-#include "../api/predicates.h"
+#include <ripple_overlay/api/predicates.h>
 
-#include "../../ripple/common/MultiSocket.h"
-#include "../../ripple_data/protocol/Protocol.h"
-#include "../../ripple/validators/ripple_validators.h"
-#include "../../ripple/peerfinder/ripple_peerfinder.h"
-#include "../../ripple_app/misc/ProofOfWork.h"
-#include "../../ripple_app/misc/ProofOfWorkFactory.h"
+#include <ripple/common/MultiSocket.h>
+#include <ripple_data/protocol/Protocol.h>
+#include <ripple/validators/ripple_validators.h>
+#include <ripple/peerfinder/ripple_peerfinder.h>
+#include <ripple_app/misc/ProofOfWork.h>
+#include <ripple_app/misc/ProofOfWorkFactory.h>
 
 // VFALCO This is unfortunate. Comment this out and
 //        just include what is needed.
-#include "../../ripple_app/ripple_app.h"
+#include <ripple_app/ripple_app.h>
 
-#include "../../beast/beast/asio/IPAddressConversion.h"
+#include <beast/asio/IPAddressConversion.h>
 
 #include <cstdint>
 

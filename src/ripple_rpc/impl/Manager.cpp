@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#include "../../beast/beast/cxx14/memory.h"
+#include <beast/cxx14/memory.h>
 
-#include "../api/Manager.h"
+#include <ripple_rpc/api/Manager.h>
 
-#include "DoPrint.h"
+#include <ripple_rpc/impl/DoPrint.h>
 
 namespace ripple {
 namespace RPC {

@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "../../ripple_overlay/api/predicates.h"
+#include <ripple_overlay/api/predicates.h>
 
 namespace ripple {
 

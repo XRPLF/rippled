@@ -21,46 +21,46 @@
 #include <vector>
 
 // backend support
-#include "../../ripple_hyperleveldb/ripple_hyperleveldb.h"
-#include "../../ripple_leveldb/ripple_leveldb.h"
-#include "../../ripple/rocksdb/ripple_rocksdb.h"
+#include <ripple_hyperleveldb/ripple_hyperleveldb.h>
+#include <ripple_leveldb/ripple_leveldb.h>
+#include <ripple/rocksdb/ripple_rocksdb.h>
 
-#include "../../beast/beast/cxx14/memory.h"
+#include <beast/cxx14/memory.h>
 
-#include "../../ripple/common/seconds_clock.h"
-#include "../../ripple/common/TaggedCache.h"
-#include "../../ripple/common/KeyCache.h"
+#include <ripple/common/seconds_clock.h>
+#include <ripple/common/TaggedCache.h>
+#include <ripple/common/KeyCache.h>
 
-#include "impl/Tuning.h"
-#  include "impl/DecodedBlob.h"
-#  include "impl/EncodedBlob.h"
-#  include "impl/BatchWriter.h"
-# include "backend/HyperDBFactory.h"
-#include "backend/HyperDBFactory.cpp"
-# include "backend/LevelDBFactory.h"
-#include "backend/LevelDBFactory.cpp"
-# include "backend/MemoryFactory.h"
-#include "backend/MemoryFactory.cpp"
-# include "backend/NullFactory.h"
-#include "backend/NullFactory.cpp"
-# include "backend/RocksDBFactory.h"
-#include "backend/RocksDBFactory.cpp"
+#include <ripple_core/nodestore/impl/Tuning.h>
+#include <ripple_core/nodestore/impl/DecodedBlob.h>
+#include <ripple_core/nodestore/impl/EncodedBlob.h>
+#include <ripple_core/nodestore/impl/BatchWriter.h>
+#include <ripple_core/nodestore/backend/HyperDBFactory.h>
+#include <ripple_core/nodestore/backend/HyperDBFactory.cpp>
+#include <ripple_core/nodestore/backend/LevelDBFactory.h>
+#include <ripple_core/nodestore/backend/LevelDBFactory.cpp>
+#include <ripple_core/nodestore/backend/MemoryFactory.h>
+#include <ripple_core/nodestore/backend/MemoryFactory.cpp>
+#include <ripple_core/nodestore/backend/NullFactory.h>
+#include <ripple_core/nodestore/backend/NullFactory.cpp>
+#include <ripple_core/nodestore/backend/RocksDBFactory.h>
+#include <ripple_core/nodestore/backend/RocksDBFactory.cpp>
 
-#include "impl/Backend.cpp"
-#include "impl/BatchWriter.cpp"
-# include "impl/DatabaseImp.h"
-#include "impl/Database.cpp"
-#include "impl/DummyScheduler.cpp"
-#include "impl/DecodedBlob.cpp"
-#include "impl/EncodedBlob.cpp"
-#include "impl/Factory.cpp"
-#include "impl/Manager.cpp"
-#include "impl/NodeObject.cpp"
-#include "impl/Scheduler.cpp"
-#include "impl/Task.cpp"
+#include <ripple_core/nodestore/impl/Backend.cpp>
+#include <ripple_core/nodestore/impl/BatchWriter.cpp>
+#include <ripple_core/nodestore/impl/DatabaseImp.h>
+#include <ripple_core/nodestore/impl/Database.cpp>
+#include <ripple_core/nodestore/impl/DummyScheduler.cpp>
+#include <ripple_core/nodestore/impl/DecodedBlob.cpp>
+#include <ripple_core/nodestore/impl/EncodedBlob.cpp>
+#include <ripple_core/nodestore/impl/Factory.cpp>
+#include <ripple_core/nodestore/impl/Manager.cpp>
+#include <ripple_core/nodestore/impl/NodeObject.cpp>
+#include <ripple_core/nodestore/impl/Scheduler.cpp>
+#include <ripple_core/nodestore/impl/Task.cpp>
 
-# include "tests/TestBase.h"
-#include "tests/BackendTests.cpp"
-#include "tests/BasicTests.cpp"
-#include "tests/DatabaseTests.cpp"
-#include "tests/TimingTests.cpp"
+#include <ripple_core/nodestore/tests/TestBase.h>
+#include <ripple_core/nodestore/tests/BackendTests.cpp>
+#include <ripple_core/nodestore/tests/BasicTests.cpp>
+#include <ripple_core/nodestore/tests/DatabaseTests.cpp>
+#include <ripple_core/nodestore/tests/TimingTests.cpp>

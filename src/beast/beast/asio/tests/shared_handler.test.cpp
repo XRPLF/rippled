@@ -18,12 +18,12 @@
 //==============================================================================
 
 #if BEAST_INCLUDE_BEASTCONFIG
-#include "../../../BeastConfig.h"
+#include <BeastConfig.h>
 #endif
 
-#include "../../unit_test/suite.h"
+#include <beast/unit_test/suite.h>
 
-#include "../shared_handler.h"
+#include <beast/asio/shared_handler.h>
 
 // Disables is_constructible tests for std::function
 // Visual Studio std::function fails the is_constructible tests

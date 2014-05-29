@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include "../../../beast/beast/asio/wrap_handler.h"
-#include "../../../beast/beast/asio/placeholders.h"
+#include <beast/asio/wrap_handler.h>
+#include <beast/asio/placeholders.h>
 
 namespace ripple {
 namespace PeerFinder {

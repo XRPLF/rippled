@@ -20,12 +20,12 @@
 #include <sstream>
 #include <vector>
 
-#include "../../beast/beast/unit_test/suite.h"
-#include "../../beast/modules/beast_core/diagnostic/SemanticVersion.h"
+#include <beast/unit_test/suite.h>
+#include <modules/beast_core/diagnostic/SemanticVersion.h>
 #include <boost/version.hpp>
 #include <openssl/opensslv.h>
 
-#include "CheckLibraryVersions.h"
+#include <ripple_basics/system/CheckLibraryVersions.h>
 
 namespace ripple {
 namespace version {

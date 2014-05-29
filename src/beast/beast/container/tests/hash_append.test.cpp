@@ -20,17 +20,17 @@
 // MODULES: ../impl/spookyv2.cpp
 
 #if BEAST_INCLUDE_BEASTCONFIG
-#include "../../../BeastConfig.h"
+#include <BeastConfig.h>
 #endif
 
-#include "hash_metrics.h"
+#include <beast/container/tests/hash_metrics.h>
 
-#include "../hash_append.h"
-#include "../impl/spookyv2.h"
+#include <beast/container/hash_append.h>
+#include <beast/container/impl/spookyv2.h>
 
-#include "../../chrono/chrono_io.h"
-#include "../../unit_test/suite.h"
-#include "../../utility/type_name.h"
+#include <beast/chrono/chrono_io.h>
+#include <beast/unit_test/suite.h>
+#include <beast/utility/type_name.h>
 
 #include <array>
 #include <algorithm>

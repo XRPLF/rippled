@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "../../beast/modules/beast_core/maths/Random.h"
+#include <modules/beast_core/maths/Random.h>
 
 namespace ripple {
 namespace RadixMap {

@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#include "../../ripple_overlay/api/predicates.h"
-#include "../../ripple/common/jsonrpc_fields.h"
+#include <ripple_overlay/api/predicates.h>
+#include <ripple/common/jsonrpc_fields.h>
 
-#include "../../beast/modules/beast_core/thread/DeadlineTimer.h"
-#include "../../beast/modules/beast_core/system/SystemStats.h"
+#include <modules/beast_core/thread/DeadlineTimer.h>
+#include <modules/beast_core/system/SystemStats.h>
 #include <tuple>
 
 namespace ripple {

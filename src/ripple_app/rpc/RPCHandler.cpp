@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "../../ripple_rpc/impl/Handlers.cpp"
+#include <ripple_rpc/impl/Handlers.cpp>
 
 namespace ripple {
 

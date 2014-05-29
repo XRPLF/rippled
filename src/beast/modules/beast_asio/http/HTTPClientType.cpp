@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#include "../../../beast/asio/wrap_handler.h"
-#include "../../../beast/asio/placeholders.h"
-#include "../../../beast/unit_test/suite.h"
+#include <beast/asio/wrap_handler.h>
+#include <beast/asio/placeholders.h>
+#include <beast/unit_test/suite.h>
 
-#include "../../../beast/cxx14/memory.h" // <memory>
+#include <beast/cxx14/memory.h> // <memory>
 
 namespace beast {
 namespace asio {

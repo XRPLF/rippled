@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#include "../../unit_test/suite.h"
+#include <beast/unit_test/suite.h>
 
-#include "../buffer_view.h"
+#include <beast/container/buffer_view.h>
 
-#include "../../cxx14/algorithm.h" // <algorithm>
+#include <beast/cxx14/algorithm.h> // <algorithm>
 
 namespace beast {
 

@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#include "OverlayImpl.h"
-#include "PeerDoor.h"
-#include "PeerImp.h"
+#include <ripple_overlay/impl/OverlayImpl.h>
+#include <ripple_overlay/impl/PeerDoor.h>
+#include <ripple_overlay/impl/PeerImp.h>
 
-#include "../../beast/beast/ByteOrder.h"
+#include <beast/ByteOrder.h>
 
 namespace ripple {
 

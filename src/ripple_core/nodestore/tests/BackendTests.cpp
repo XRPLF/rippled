@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "../../beast/modules/beast_core/diagnostic/UnitTestUtilities.h"
+#include <modules/beast_core/diagnostic/UnitTestUtilities.h>
 
 namespace ripple {
 namespace NodeStore {

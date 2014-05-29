@@ -20,8 +20,8 @@
 #ifndef RIPPLE_RPC_REQUEST_H_INCLUDED
 #define RIPPLE_RPC_REQUEST_H_INCLUDED
 
-#include "../../ripple/json/ripple_json.h"
-#include "../../ripple/resource/ripple_resource.h"
+#include <ripple/json/ripple_json.h>
+#include <ripple/resource/ripple_resource.h>
 
 
 namespace ripple {

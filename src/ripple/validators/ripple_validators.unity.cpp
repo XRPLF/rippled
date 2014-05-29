@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#include "../../BeastConfig.h"
+#include <BeastConfig.h>
 
-#include "ripple_validators.h"
+#include <ripple/validators/ripple_validators.h>
 
-#include "../../beast/modules/beast_core/system/BeforeBoost.h"
+#include <modules/beast_core/system/BeforeBoost.h>
 #include <boost/regex.hpp>
 #include <boost/unordered_set.hpp>
 #include <boost/multi_index_container.hpp>
@@ -30,32 +30,32 @@
 
 #include <set>
 
-#include "../../beast/beast/threads/ScopedWrapperContext.h"
-#include "../../beast/modules/beast_asio/beast_asio.h"
-#include "../../beast/modules/beast_sqdb/beast_sqdb.h"
+#include <beast/threads/ScopedWrapperContext.h>
+#include <modules/beast_asio/beast_asio.h>
+#include <modules/beast_sqdb/beast_sqdb.h>
 
-#include "../algorithm/api/CycledSet.h"
-#include "../testoverlay/ripple_testoverlay.h" // for unit test
+#include <ripple/algorithm/api/CycledSet.h>
+#include <ripple/testoverlay/ripple_testoverlay.h> // for unit test
 
-#  include "impl/Tuning.h"
-# include "impl/ChosenList.h"
-# include "impl/Count.h"
-# include "impl/SourceFile.h"
-# include "impl/SourceStrings.h"
-# include "impl/SourceURL.h"
-#  include "impl/SourceDesc.h"
-# include "impl/Store.h"
-# include "impl/StoreSqdb.h"
-# include "impl/Utilities.h"
-# include "impl/Validation.h"
-# include "impl/Validator.h"
-#include "impl/Logic.h"
+#include <ripple/validators/impl/Tuning.h>
+#include <ripple/validators/impl/ChosenList.h>
+#include <ripple/validators/impl/Count.h>
+#include <ripple/validators/impl/SourceFile.h>
+#include <ripple/validators/impl/SourceStrings.h>
+#include <ripple/validators/impl/SourceURL.h>
+#include <ripple/validators/impl/SourceDesc.h>
+#include <ripple/validators/impl/Store.h>
+#include <ripple/validators/impl/StoreSqdb.h>
+#include <ripple/validators/impl/Utilities.h>
+#include <ripple/validators/impl/Validation.h>
+#include <ripple/validators/impl/Validator.h>
+#include <ripple/validators/impl/Logic.h>
 
-#include "impl/Manager.cpp"
-#include "impl/Source.cpp"
-#include "impl/SourceFile.cpp"
-#include "impl/SourceStrings.cpp"
-#include "impl/SourceURL.cpp"
-#include "impl/StoreSqdb.cpp"
-#include "impl/Tests.cpp"
-#include "impl/Utilities.cpp"
+#include <ripple/validators/impl/Manager.cpp>
+#include <ripple/validators/impl/Source.cpp>
+#include <ripple/validators/impl/SourceFile.cpp>
+#include <ripple/validators/impl/SourceStrings.cpp>
+#include <ripple/validators/impl/SourceURL.cpp>
+#include <ripple/validators/impl/StoreSqdb.cpp>
+#include <ripple/validators/impl/Tests.cpp>
+#include <ripple/validators/impl/Utilities.cpp>

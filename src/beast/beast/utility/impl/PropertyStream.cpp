@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include "../PropertyStream.h"
-#include "../../unit_test/suite.h"
+#include <beast/utility/PropertyStream.h>
+#include <beast/unit_test/suite.h>
 
 #include <limits>
 #include <iostream>

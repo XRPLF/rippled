@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include "Calculators.h"
-#include "RippleCalc.h"
-#include "Tuning.h"
+#include <ripple_app/paths/Calculators.h>
+#include <ripple_app/paths/RippleCalc.h>
+#include <ripple_app/paths/Tuning.h>
 
 namespace ripple {
 

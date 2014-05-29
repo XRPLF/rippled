@@ -20,15 +20,15 @@
 #ifndef RIPPLE_PEERFINDER_H_INCLUDED
 #define RIPPLE_PEERFINDER_H_INCLUDED
 
-#include "../sitefiles/ripple_sitefiles.h"
+#include <ripple/sitefiles/ripple_sitefiles.h>
 
-#include "../types/api/RipplePublicKey.h"
+#include <ripple/types/api/RipplePublicKey.h>
 
-#include "api/Slot.h"
-# include "api/Endpoint.h"
-# include "api/Types.h"
-#include "api/Callback.h"
-#include "api/Config.h"
-#include "api/Manager.h"
+#include <ripple/peerfinder/api/Slot.h>
+#include <ripple/peerfinder/api/Endpoint.h>
+#include <ripple/peerfinder/api/Types.h>
+#include <ripple/peerfinder/api/Callback.h>
+#include <ripple/peerfinder/api/Config.h>
+#include <ripple/peerfinder/api/Manager.h>
 
 #endif

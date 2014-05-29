@@ -20,8 +20,8 @@
 #ifndef RIPPLE_PROOFOFWORKFACTORY_H_INCLUDED
 #define RIPPLE_PROOFOFWORKFACTORY_H_INCLUDED
 
-#include "PowResult.h"
-#include "ProofOfWork.h"
+#include <ripple_app/misc/PowResult.h>
+#include <ripple_app/misc/ProofOfWork.h>
 
 namespace ripple {
 

@@ -19,24 +19,24 @@
 
 #include "../../BeastConfig.h"
 
-#include "ripple_app.h"
+#include <ripple_app/ripple_app.h>
 
-#include "../ripple_net/ripple_net.h"
+#include <ripple_net/ripple_net.h>
 
-#include "../ripple/common/seconds_clock.h"
+#include <ripple/common/seconds_clock.h>
 
 #include <fstream> // for UniqueNodeList.cpp
 
-#include "transactors/Transactor.h"
+#include <ripple_app/transactors/Transactor.h>
 
-#include "paths/RippleState.cpp"
-#include "peers/UniqueNodeList.cpp"
-#include "ledger/InboundLedger.cpp"
-#include "tx/TransactionCheck.cpp"
-#include "tx/TransactionMaster.cpp"
-#include "tx/Transaction.cpp"
-#include "tx/TransactionEngine.cpp"
-#include "tx/TransactionMeta.cpp"
+#include <ripple_app/paths/RippleState.cpp>
+#include <ripple_app/peers/UniqueNodeList.cpp>
+#include <ripple_app/ledger/InboundLedger.cpp>
+#include <ripple_app/tx/TransactionCheck.cpp>
+#include <ripple_app/tx/TransactionMaster.cpp>
+#include <ripple_app/tx/Transaction.cpp>
+#include <ripple_app/tx/TransactionEngine.cpp>
+#include <ripple_app/tx/TransactionMeta.cpp>
 
-#include "book/tests/OfferStream.test.cpp"
-#include "book/tests/Quality.test.cpp"
+#include <ripple_app/book/tests/OfferStream.test.cpp>
+#include <ripple_app/book/tests/Quality.test.cpp>

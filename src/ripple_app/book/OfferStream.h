@@ -20,12 +20,12 @@
 #ifndef RIPPLE_CORE_OFFERSTREAM_H_INCLUDED
 #define RIPPLE_CORE_OFFERSTREAM_H_INCLUDED
 
-#include "BookTip.h"
-#include "Offer.h"
-#include "Quality.h"
-#include "Types.h"
+#include <ripple_app/book/BookTip.h>
+#include <ripple_app/book/Offer.h>
+#include <ripple_app/book/Quality.h>
+#include <ripple_app/book/Types.h>
 
-#include "../../beast/beast/utility/noexcept.h"
+#include <beast/utility/noexcept.h>
 
 #include <functional>
 

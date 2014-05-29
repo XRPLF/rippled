@@ -20,7 +20,7 @@
 #ifndef RIPPLE_NODESTORE_DATABASEIMP_H_INCLUDED
 #define RIPPLE_NODESTORE_DATABASEIMP_H_INCLUDED
 
-#include "../../beast/beast/threads/Thread.h"
+#include <beast/threads/Thread.h>
 
 #include <thread>
 #include <condition_variable>

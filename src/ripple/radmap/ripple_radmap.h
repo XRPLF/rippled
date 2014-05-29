@@ -20,7 +20,7 @@
 #ifndef RIPPLE_RADMAP_H_INCLUDED
 #define RIPPLE_RADMAP_H_INCLUDED
 
-#include "api/BasicFullBelowCache.h"
-#include "api/Tuning.h"
+#include <ripple/radmap/api/BasicFullBelowCache.h>
+#include <ripple/radmap/api/Tuning.h>
 
 #endif

@@ -18,17 +18,17 @@
 //==============================================================================
 
 #if BEAST_INCLUDE_BEASTCONFIG
-#include "../../BeastConfig.h"
+#include <BeastConfig.h>
 #endif
 
-#include "impl/basic_url.cpp"
-#include "impl/get.cpp"
-#include "impl/joyent_parser.cpp"
-#include "impl/ParsedURL.cpp"
-#include "impl/raw_parser.cpp"
-#include "impl/URL.cpp"
+#include <beast/http/impl/basic_url.cpp>
+#include <beast/http/impl/get.cpp>
+#include <beast/http/impl/joyent_parser.cpp>
+#include <beast/http/impl/ParsedURL.cpp>
+#include <beast/http/impl/raw_parser.cpp>
+#include <beast/http/impl/URL.cpp>
 
-#include "tests/basic_url.test.cpp"
-#include "tests/client_session.test.cpp"
-#include "tests/ParsedURL.cpp"
-#include "tests/urls_large_data.cpp"
+#include <beast/http/tests/basic_url.test.cpp>
+#include <beast/http/tests/client_session.test.cpp>
+#include <beast/http/tests/ParsedURL.cpp>
+#include <beast/http/tests/urls_large_data.cpp>

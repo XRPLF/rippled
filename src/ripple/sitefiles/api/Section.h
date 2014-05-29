@@ -20,7 +20,7 @@
 #ifndef RIPPLE_SITEFILES_SECTION_H_INCLUDED
 #define RIPPLE_SITEFILES_SECTION_H_INCLUDED
 
-#include "../../common/UnorderedContainers.h"
+#include <ripple/common/UnorderedContainers.h>
 #include <vector>
 
 namespace ripple {

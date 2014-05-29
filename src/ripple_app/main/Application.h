@@ -20,7 +20,7 @@
 #ifndef RIPPLE_APP_APPLICATION_H_INCLUDED
 #define RIPPLE_APP_APPLICATION_H_INCLUDED
 
-#include "FullBelowCache.h"
+#include <ripple_app/main/FullBelowCache.h>
 
 namespace ripple {
 

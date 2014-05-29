@@ -20,7 +20,7 @@
 #ifndef BEAST_THREADS_SHAREDLOCKGUARD_H_INCLUDED
 #define BEAST_THREADS_SHAREDLOCKGUARD_H_INCLUDED
 
-#include "../Uncopyable.h"
+#include <beast/Uncopyable.h>
 
 namespace beast
 {

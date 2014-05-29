@@ -20,13 +20,13 @@
 #ifndef BEAST_CHRONO_H_INCLUDED
 #define BEAST_CHRONO_H_INCLUDED
 
-#include "chrono/abstract_clock.h"
-#include "chrono/basic_seconds_clock.h"
-#include "chrono/chrono_io.h"
-#include "chrono/chrono_util.h"
-#include "chrono/manual_clock.h"
-#include "chrono/ratio_io.h"
+#include <beast/chrono/abstract_clock.h>
+#include <beast/chrono/basic_seconds_clock.h>
+#include <beast/chrono/chrono_io.h>
+#include <beast/chrono/chrono_util.h>
+#include <beast/chrono/manual_clock.h>
+#include <beast/chrono/ratio_io.h>
 
-#include "chrono/RelativeTime.h"
+#include <beast/chrono/RelativeTime.h>
 
 #endif

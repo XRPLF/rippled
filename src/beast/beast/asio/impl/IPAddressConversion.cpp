@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "../IPAddressConversion.h"
+#include <beast/asio/IPAddressConversion.h>
 
 namespace beast {
 namespace IP {

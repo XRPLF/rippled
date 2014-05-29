@@ -17,15 +17,15 @@
 */
 //==============================================================================
 
-#include "JobQueue.h"
-#include "JobTypes.h"
-#include "JobTypeInfo.h"
-#include "JobTypeData.h"
+#include <ripple_core/functional/JobQueue.h>
+#include <ripple_core/functional/JobTypes.h>
+#include <ripple_core/functional/JobTypeInfo.h>
+#include <ripple_core/functional/JobTypeData.h>
 
-#include "../../beast/beast/cxx14/memory.h"
-#include "../../beast/beast/chrono/chrono_util.h"
-#include "../../beast/modules/beast_core/thread/Workers.h"
-#include "../../beast/modules/beast_core/system/SystemStats.h"
+#include <beast/cxx14/memory.h>
+#include <beast/chrono/chrono_util.h>
+#include <modules/beast_core/thread/Workers.h>
+#include <modules/beast_core/system/SystemStats.h>
 
 #include <chrono>
 

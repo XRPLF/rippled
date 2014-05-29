@@ -20,10 +20,10 @@
 #ifndef RIPPLE_TAGGEDCACHE_H_INCLUDED
 #define RIPPLE_TAGGEDCACHE_H_INCLUDED
 
-#include "../../beast/beast/chrono/abstract_clock.h"
-#include "../../beast/beast/chrono/chrono_io.h"
-#include "../../beast/beast/Insight.h"
-#include "../../beast/beast/container/hardened_hash.h"
+#include <beast/chrono/abstract_clock.h>
+#include <beast/chrono/chrono_io.h>
+#include <beast/Insight.h>
+#include <beast/container/hardened_hash.h>
 
 #include <boost/smart_ptr.hpp>
 

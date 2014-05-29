@@ -22,14 +22,14 @@
 
 #include <vector>
 
-#include "../../beast/modules/beast_core/system/BeforeBoost.h"
+#include <modules/beast_core/system/BeforeBoost.h>
 
-#include "../../beast/beast/http/URL.h"
-#include "../../beast/beast/Threads.h"
+#include <beast/http/URL.h>
+#include <beast/Threads.h>
 
-#   include "api/Section.h"
-#  include "api/SiteFile.h"
-# include "api/Listener.h"
-#include "api/Manager.h"
+#include <ripple/sitefiles/api/Section.h>
+#include <ripple/sitefiles/api/SiteFile.h>
+#include <ripple/sitefiles/api/Listener.h>
+#include <ripple/sitefiles/api/Manager.h>
 
 #endif

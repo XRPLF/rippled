@@ -20,7 +20,7 @@
 #ifndef BEAST_HTTP_HEADER_TRAITS_H_INCLUDED
 #define BEAST_HTTP_HEADER_TRAITS_H_INCLUDED
 
-#include "../../utility/ci_char_traits.h"
+#include <beast/utility/ci_char_traits.h>
 
 #include <boost/utility/string_ref.hpp>
 

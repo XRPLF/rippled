@@ -21,7 +21,7 @@
 #ifndef BEAST_UTILITY_EMPTY_BASE_OPTIMIZATION_H_INCLUDED
 #define BEAST_UTILITY_EMPTY_BASE_OPTIMIZATION_H_INCLUDED
 
-#include "../utility/noexcept.h"
+#include <beast/utility/noexcept.h>
 #include <type_traits>
 #include <utility>
 

@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include "../basic_url.h"
+#include <beast/http/basic_url.h>
 
-#include "../../unit_test/suite.h"
+#include <beast/unit_test/suite.h>
 
 namespace beast {
 

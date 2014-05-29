@@ -21,57 +21,57 @@
 #define BEAST_ASIO_MODULE_H_INCLUDED
 
 // Must come before boost includes to fix the bost placeholders.
-#include "../beast_core/beast_core.h"
+#include <modules/beast_core/beast_core.h>
 
 // This module requires boost and possibly OpenSSL
-#include "system/BoostIncludes.h"
+#include <modules/beast_asio/system/BoostIncludes.h>
 
-#include "../../beast/http/URL.h"
-#include "../../beast/http/ParsedURL.h"
+#include <beast/http/URL.h>
+#include <beast/http/ParsedURL.h>
 
-#include "../../beast/asio/IPAddressConversion.h"
+#include <beast/asio/IPAddressConversion.h>
 
 // Order matters
-#include "async/AsyncObject.h"
+#include <modules/beast_asio/async/AsyncObject.h>
 
-#include "basics/FixedInputBuffer.h"
-#include "basics/PeerRole.h"
-#include "basics/SSLContext.h"
-#include "basics/SharedArg.h"
+#include <modules/beast_asio/basics/FixedInputBuffer.h>
+#include <modules/beast_asio/basics/PeerRole.h>
+#include <modules/beast_asio/basics/SSLContext.h>
+#include <modules/beast_asio/basics/SharedArg.h>
 
-#   include "http/HTTPVersion.h"
-#   include "http/HTTPField.h"
-#   include "http/HTTPHeaders.h"
-#  include "http/HTTPMessage.h"
-# include "http/HTTPRequest.h"
-# include "http/HTTPResponse.h"
+#include <modules/beast_asio/http/HTTPVersion.h>
+#include <modules/beast_asio/http/HTTPField.h>
+#include <modules/beast_asio/http/HTTPHeaders.h>
+#include <modules/beast_asio/http/HTTPMessage.h>
+#include <modules/beast_asio/http/HTTPRequest.h>
+#include <modules/beast_asio/http/HTTPResponse.h>
 
-# include "http/HTTPParser.h"
-#include "http/HTTPRequestParser.h"
-#include "http/HTTPResponseParser.h"
+#include <modules/beast_asio/http/HTTPParser.h>
+#include <modules/beast_asio/http/HTTPRequestParser.h>
+#include <modules/beast_asio/http/HTTPResponseParser.h>
 
-#include "http/HTTPClientType.h"
+#include <modules/beast_asio/http/HTTPClientType.h>
 
-#  include "protocol/InputParser.h"
-# include "protocol/HandshakeDetectLogic.h"
-#include "protocol/HandshakeDetectLogicPROXY.h"
-#include "protocol/HandshakeDetectLogicSSL2.h"
-#include "protocol/HandshakeDetectLogicSSL3.h"
-#include "protocol/HandshakeDetector.h"
-#include "protocol/PrefilledReadStream.h"
+#include <modules/beast_asio/protocol/InputParser.h>
+#include <modules/beast_asio/protocol/HandshakeDetectLogic.h>
+#include <modules/beast_asio/protocol/HandshakeDetectLogicPROXY.h>
+#include <modules/beast_asio/protocol/HandshakeDetectLogicSSL2.h>
+#include <modules/beast_asio/protocol/HandshakeDetectLogicSSL3.h>
+#include <modules/beast_asio/protocol/HandshakeDetector.h>
+#include <modules/beast_asio/protocol/PrefilledReadStream.h>
 
-#include "tests/TestPeerBasics.h"
-#include "tests/TestPeer.h"
-#include "tests/TestPeerDetails.h"
-#include "tests/TestPeerLogic.h"
-#include "tests/TestPeerLogicSyncServer.h"
-#include "tests/TestPeerLogicSyncClient.h"
-#include "tests/TestPeerLogicProxyClient.h"
-#include "tests/TestPeerLogicAsyncServer.h"
-#include "tests/TestPeerLogicAsyncClient.h"
-#include "tests/TestPeerType.h"
-#include "tests/TestPeerDetailsTcp.h"
-#include "tests/PeerTest.h"
+#include <modules/beast_asio/tests/TestPeerBasics.h>
+#include <modules/beast_asio/tests/TestPeer.h>
+#include <modules/beast_asio/tests/TestPeerDetails.h>
+#include <modules/beast_asio/tests/TestPeerLogic.h>
+#include <modules/beast_asio/tests/TestPeerLogicSyncServer.h>
+#include <modules/beast_asio/tests/TestPeerLogicSyncClient.h>
+#include <modules/beast_asio/tests/TestPeerLogicProxyClient.h>
+#include <modules/beast_asio/tests/TestPeerLogicAsyncServer.h>
+#include <modules/beast_asio/tests/TestPeerLogicAsyncClient.h>
+#include <modules/beast_asio/tests/TestPeerType.h>
+#include <modules/beast_asio/tests/TestPeerDetailsTcp.h>
+#include <modules/beast_asio/tests/PeerTest.h>
 
 #endif
 

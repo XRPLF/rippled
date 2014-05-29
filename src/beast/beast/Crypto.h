@@ -20,11 +20,11 @@
 #ifndef BEAST_CRYPTO_H_INCLUDED
 #define BEAST_CRYPTO_H_INCLUDED
 
-#include "crypto/BinaryEncoding.h"
-#include "crypto/MurmurHash.h"
-#include "crypto/Sha256.h"
-#include "crypto/UnsignedInteger.h"
-#include "crypto/UnsignedIntegerCalc.h"
+#include <beast/crypto/BinaryEncoding.h>
+#include <beast/crypto/MurmurHash.h>
+#include <beast/crypto/Sha256.h>
+#include <beast/crypto/UnsignedInteger.h>
+#include <beast/crypto/UnsignedIntegerCalc.h>
 
 #endif
 

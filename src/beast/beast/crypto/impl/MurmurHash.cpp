@@ -19,7 +19,7 @@
 
 // http://code.google.com/p/smhasher/
 
-#include "../MurmurHash.h"
+#include <beast/crypto/MurmurHash.h>
 
 #include <cstdint>
 

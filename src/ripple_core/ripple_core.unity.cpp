@@ -19,25 +19,25 @@
 
 #include "../../BeastConfig.h"
 
-#include "ripple_core.h"
+#include <ripple_core/ripple_core.h>
 
 #include <fstream>
 #include <map>
 #include <set>
 
-#include "../beast/modules/beast_core/system/BeforeBoost.h"
+#include <modules/beast_core/system/BeforeBoost.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
 
-#include "nodestore/NodeStore.cpp"
-#include "../beast/beast/http/ParsedURL.h"
-#include "../ripple_net/ripple_net.h" // for HTTPClient
+#include <ripple_core/nodestore/NodeStore.cpp>
+#include <beast/http/ParsedURL.h>
+#include <ripple_net/ripple_net.h> // for HTTPClient
 
-#include "functional/Config.cpp"
-# include "functional/LoadFeeTrackImp.h" // private
-#include "functional/LoadFeeTrackImp.cpp"
-#include "functional/LoadEvent.cpp"
-#include "functional/LoadMonitor.cpp"
+#include <ripple_core/functional/Config.cpp>
+#include <ripple_core/functional/LoadFeeTrackImp.h> // private
+#include <ripple_core/functional/LoadFeeTrackImp.cpp>
+#include <ripple_core/functional/LoadEvent.cpp>
+#include <ripple_core/functional/LoadMonitor.cpp>
 
-#include "functional/Job.cpp"
-#include "functional/JobQueue.cpp"
+#include <ripple_core/functional/Job.cpp>
+#include <ripple_core/functional/JobQueue.cpp>

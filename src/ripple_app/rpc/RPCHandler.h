@@ -20,13 +20,13 @@
 #ifndef RIPPLE_APP_RPC_HANDLER
 #define RIPPLE_APP_RPC_HANDLER
 
-#include "../../ripple_rpc/impl/AccountFromString.h"
-#include "../../ripple_rpc/impl/Accounts.h"
-#include "../../ripple_rpc/impl/Authorize.h"
-#include "../../ripple_rpc/impl/GetMasterGenerator.h"
-#include "../../ripple_rpc/impl/LookupLedger.h"
-#include "../../ripple_rpc/impl/ParseAccountIds.h"
-#include "../../ripple_rpc/impl/TransactionSign.h"
+#include <ripple_rpc/impl/AccountFromString.h>
+#include <ripple_rpc/impl/Accounts.h>
+#include <ripple_rpc/impl/Authorize.h>
+#include <ripple_rpc/impl/GetMasterGenerator.h>
+#include <ripple_rpc/impl/LookupLedger.h>
+#include <ripple_rpc/impl/ParseAccountIds.h>
+#include <ripple_rpc/impl/TransactionSign.h>
 
 namespace ripple {
 

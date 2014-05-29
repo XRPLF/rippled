@@ -20,10 +20,10 @@
 #ifndef RIPPLE_HTTP_SESSION_H_INCLUDED
 #define RIPPLE_HTTP_SESSION_H_INCLUDED
 
-#include "../../beast/beast/smart_ptr/SharedPtr.h"
-#include "../../beast/beast/net/IPEndpoint.h"
-#include "../../beast/beast/utility/Journal.h"
-#include "../../beast/modules/beast_asio/http/HTTPRequest.h"
+#include <beast/smart_ptr/SharedPtr.h>
+#include <beast/net/IPEndpoint.h>
+#include <beast/utility/Journal.h>
+#include <modules/beast_asio/http/HTTPRequest.h>
 
 #include <ostream>
 

@@ -20,10 +20,10 @@
 #ifndef BEAST_UTILITY_LEAKCHECKED_H_INCLUDED
 #define BEAST_UTILITY_LEAKCHECKED_H_INCLUDED
 
-#include "../Config.h"
-#include "../Atomic.h"
-#include "../intrusive/LockFreeStack.h"
-#include "StaticObject.h"
+#include <beast/Config.h>
+#include <beast/Atomic.h>
+#include <beast/intrusive/LockFreeStack.h>
+#include <beast/utility/StaticObject.h>
 
 namespace beast {
 

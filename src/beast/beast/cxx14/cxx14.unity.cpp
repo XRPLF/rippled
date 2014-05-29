@@ -17,4 +17,4 @@
 */
 //==============================================================================
 
-#include "tests/integer_sequence.test.cpp"
+#include <beast/cxx14/tests/integer_sequence.test.cpp>

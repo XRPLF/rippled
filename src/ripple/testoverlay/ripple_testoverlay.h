@@ -20,10 +20,10 @@
 #ifndef RIPPLE_TESTOVERLAY_H_INCLUDED
 #define RIPPLE_TESTOVERLAY_H_INCLUDED
 
-#include "../../beast/modules/beast_core/system/BeforeBoost.h"
+#include <modules/beast_core/system/BeforeBoost.h>
 #include <boost/unordered_set.hpp>
 
-#include "../../beast/modules/beast_core/beast_core.h"
+#include <modules/beast_core/beast_core.h>
 
 #include <memory>
 
@@ -40,16 +40,16 @@
 namespace ripple
 {
 
-#  include "api/Results.h"
-#  include "api/SimplePayload.h"
-#  include "api/MessageType.h"
-#  include "api/ConnectionType.h"
-#  include "api/PeerType.h"
-#  include "api/NetworkType.h"
-#  include "api/StateBase.h"
-#  include "api/PeerLogicBase.h"
-#  include "api/InitPolicy.h"
-# include "api/ConfigType.h"
+#include <ripple/testoverlay/api/Results.h>
+#include <ripple/testoverlay/api/SimplePayload.h>
+#include <ripple/testoverlay/api/MessageType.h>
+#include <ripple/testoverlay/api/ConnectionType.h>
+#include <ripple/testoverlay/api/PeerType.h>
+#include <ripple/testoverlay/api/NetworkType.h>
+#include <ripple/testoverlay/api/StateBase.h>
+#include <ripple/testoverlay/api/PeerLogicBase.h>
+#include <ripple/testoverlay/api/InitPolicy.h>
+#include <ripple/testoverlay/api/ConfigType.h>
 
 }
 

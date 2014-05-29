@@ -20,7 +20,7 @@
 #ifndef BEAST_THREADS_DISPATCHEDHANDLER_H_INCLUDED
 #define BEAST_THREADS_DISPATCHEDHANDLER_H_INCLUDED
 
-#include "BindHandler.h"
+#include <beast/threads/detail/BindHandler.h>
 
 namespace beast {
 namespace detail {

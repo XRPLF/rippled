@@ -17,16 +17,16 @@
 */
 //==============================================================================
 
-#include "../../unit_test.h"
-#include "../../streams/debug_ostream.h"
+#include <beast/unit_test.h>
+#include <beast/streams/debug_ostream.h>
 
 #ifdef _MSC_VER
 # ifndef WIN32_LEAN_AND_MEAN // VC_EXTRALEAN
 #  define WIN32_LEAN_AND_MEAN
-#  include <windows.h>
+#include <windows.h>
 #  undef WIN32_LEAN_AND_MEAN
 # else
-#  include <windows.h>
+#include <windows.h>
 # endif
 #endif
 

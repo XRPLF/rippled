@@ -20,7 +20,7 @@
 #ifndef BEAST_THREADS_SHAREDMUTEXADAPTER_H_INCLUDED
 #define BEAST_THREADS_SHAREDMUTEXADAPTER_H_INCLUDED
 
-#include "SharedLockGuard.h"
+#include <beast/threads/SharedLockGuard.h>
 
 #include <mutex>
 

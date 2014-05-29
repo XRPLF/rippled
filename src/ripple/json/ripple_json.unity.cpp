@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "../../BeastConfig.h"
+#include <BeastConfig.h>
 
 #include <cassert>
 #include <cstdlib>
@@ -28,22 +28,22 @@
 // For json/
 //
 #ifdef JSON_USE_CPPTL
-# include <cpptl/conststring.h>
+#include <cpptl/conststring.h>
 #endif
 #ifndef JSON_USE_SIMPLE_INTERNAL_ALLOCATOR
-#include "impl/json_batchallocator.h"
+#include <ripple/json/impl/json_batchallocator.h>
 #endif
 
-#include "ripple_json.h"
+#include <ripple/json/ripple_json.h>
 
 #define JSON_ASSERT_UNREACHABLE assert( false )
 #define JSON_ASSERT( condition ) assert( condition );  // @todo <= change this into an exception throw
 #define JSON_ASSERT_MESSAGE( condition, message ) if (!( condition )) throw std::runtime_error( message );
 
-#include "impl/json_reader.cpp"
-#include "impl/json_value.cpp"
-#include "impl/json_writer.cpp"
+#include <ripple/json/impl/json_reader.cpp>
+#include <ripple/json/impl/json_value.cpp>
+#include <ripple/json/impl/json_writer.cpp>
 
-#include "impl/Tests.cpp"
+#include <ripple/json/impl/Tests.cpp>
 
-#include "impl/JsonPropertyStream.cpp"
+#include <ripple/json/impl/JsonPropertyStream.cpp>

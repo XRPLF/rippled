@@ -20,14 +20,14 @@
 #ifndef RIPPLE_BASICS_H_INCLUDED
 #define RIPPLE_BASICS_H_INCLUDED
 
-#include "../beast/beast/Crypto.h"
+#include <beast/Crypto.h>
 
-#include "../beast/modules/beast_core/system/BeforeBoost.h"
-#include "system/BoostIncludes.h"
+#include <modules/beast_core/system/BeforeBoost.h>
+#include <ripple_basics/system/BoostIncludes.h>
 
 #include <atomic>
-#include "../../beast/beast/cxx14/memory.h"
-#include "../../beast/beast/utility/Zero.h"
+#include <beast/cxx14/memory.h>
+#include <beast/utility/Zero.h>
 
 using beast::zero;
 using beast::Zero;
@@ -38,27 +38,27 @@ using beast::Zero;
 
 //------------------------------------------------------------------------------
 
-#include "../ripple/types/ripple_types.h"
+#include <ripple/types/ripple_types.h>
 
-#include "types/BasicTypes.h"
+#include <ripple_basics/types/BasicTypes.h>
 
-#  include "log/LogSeverity.h"
-#  include "log/LogFile.h"
-# include "log/LogSink.h"
-# include "log/LogPartition.h"
-# include "log/Log.h"
-#include "log/LoggedTimings.h"
+#include <ripple_basics/log/LogSeverity.h>
+#include <ripple_basics/log/LogFile.h>
+#include <ripple_basics/log/LogSink.h>
+#include <ripple_basics/log/LogPartition.h>
+#include <ripple_basics/log/Log.h>
+#include <ripple_basics/log/LoggedTimings.h>
 
-#include "utility/CountedObject.h"
-#include "utility/IniFile.h"
-#include "utility/PlatformMacros.h"
-#include "utility/StringUtilities.h"
-#include "utility/Sustain.h"
-#include "utility/ThreadName.h"
-#include "utility/Time.h"
-#include "utility/UptimeTimer.h"
+#include <ripple_basics/utility/CountedObject.h>
+#include <ripple_basics/utility/IniFile.h>
+#include <ripple_basics/utility/PlatformMacros.h>
+#include <ripple_basics/utility/StringUtilities.h>
+#include <ripple_basics/utility/Sustain.h>
+#include <ripple_basics/utility/ThreadName.h>
+#include <ripple_basics/utility/Time.h>
+#include <ripple_basics/utility/UptimeTimer.h>
 
-#include "containers/RangeSet.h"
-#include "containers/SyncUnorderedMap.h"
+#include <ripple_basics/containers/RangeSet.h>
+#include <ripple_basics/containers/SyncUnorderedMap.h>
 
 #endif
