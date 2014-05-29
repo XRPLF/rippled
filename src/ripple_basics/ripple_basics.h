@@ -25,13 +25,15 @@
 #include <modules/beast_core/system/BeforeBoost.h>
 #include <ripple_basics/system/BoostIncludes.h>
 
-#include <atomic>
 #include <beast/cxx14/memory.h>
 #include <beast/utility/Zero.h>
+
+#include <atomic>
 
 using beast::zero;
 using beast::Zero;
 
+// VFALCO TODO Lets ditch this macro
 #ifndef  RIPPLE_TRACK_MUTEXES
 # define RIPPLE_TRACK_MUTEXES 0
 #endif
