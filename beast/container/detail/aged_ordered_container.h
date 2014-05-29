@@ -20,23 +20,23 @@
 #ifndef BEAST_CONTAINER_AGED_ORDERED_CONTAINER_H_INCLUDED
 #define BEAST_CONTAINER_AGED_ORDERED_CONTAINER_H_INCLUDED
 
-#include "aged_container_iterator.h"
-#include "aged_associative_container.h"
+#include <beast/container/detail/aged_container_iterator.h>
+#include <beast/container/detail/aged_associative_container.h>
 
-#include "../aged_container.h"
+#include <beast/container/aged_container.h>
 
-#include "../../chrono/abstract_clock.h"
-#include "../../utility/empty_base_optimization.h"
+#include <beast/chrono/abstract_clock.h>
+#include <beast/utility/empty_base_optimization.h>
 
 #include <boost/intrusive/list.hpp>
 #include <boost/intrusive/set.hpp>
 
-#include "../../cxx14/algorithm.h" // <algorithm>
+#include <beast/cxx14/algorithm.h> // <algorithm>
 #include <functional>
 #include <initializer_list>
 #include <iterator>
 #include <memory>
-#include "../../cxx14/type_traits.h" // <type_traits>
+#include <beast/cxx14/type_traits.h> // <type_traits>
 #include <utility>
 
 namespace beast {

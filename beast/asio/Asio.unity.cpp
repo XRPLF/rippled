@@ -18,15 +18,15 @@
 //==============================================================================
 
 #if BEAST_INCLUDE_BEASTCONFIG
-#include "../../BeastConfig.h"
+#include <BeastConfig.h>
 #endif
 
-#include "impl/IPAddressConversion.cpp"
+#include <beast/asio/impl/IPAddressConversion.cpp>
 
-#include "tests/wrap_handler.test.cpp"
-#include "tests/bind_handler.test.cpp"
-#include "tests/enable_wait_for_async.test.cpp"
-#include "tests/shared_handler.test.cpp"
+#include <beast/asio/tests/wrap_handler.test.cpp>
+#include <beast/asio/tests/bind_handler.test.cpp>
+#include <beast/asio/tests/enable_wait_for_async.test.cpp>
+#include <beast/asio/tests/shared_handler.test.cpp>
 
-#include "abstract_socket.cpp" // TEMPORARY!
+#include <beast/asio/abstract_socket.cpp> // TEMPORARY!
 

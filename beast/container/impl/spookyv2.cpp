@@ -10,7 +10,7 @@
 //   August 5 2012: SpookyV2: d = should be d += in short hash, and remove extra mix from long hash
 
 #include <memory.h>
-#include "spookyv2.h"
+#include <beast/container/impl/spookyv2.h>
 
 #ifdef _MSC_VER
 #pragma warning (push)

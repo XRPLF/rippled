@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#include "../ServiceQueue.h"
+#include <beast/threads/ServiceQueue.h>
 
-#include "../../unit_test/suite.h"
+#include <beast/unit_test/suite.h>
 
-#include "../../../modules/beast_core/time/Time.h"
-#include "../../../modules/beast_core/maths/Random.h"
+#include <modules/beast_core/time/Time.h>
+#include <modules/beast_core/maths/Random.h>
 
 #include <functional>
 #include <sstream>

@@ -24,7 +24,7 @@
 #ifndef BEAST_BASICNATIVEHEADERS_H_INCLUDED
 #define BEAST_BASICNATIVEHEADERS_H_INCLUDED
 
-#include "../../../beast/Config.h"
+#include <beast/Config.h>
 
 #undef T
 

@@ -20,7 +20,7 @@
 #ifndef BEAST_CXX14_FUNCTIONAL_H_INCLUDED
 #define BEAST_CXX14_FUNCTIONAL_H_INCLUDED
 
-#include "config.h"
+#include <beast/cxx14/config.h>
 
 #include <functional>
 #include <type_traits>

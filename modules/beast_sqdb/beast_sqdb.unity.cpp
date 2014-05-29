@@ -18,12 +18,12 @@
 //==============================================================================
 
 #if BEAST_INCLUDE_BEASTCONFIG
-#include "../../BeastConfig.h"
+#include <BeastConfig.h>
 #endif
 
-#include "beast_sqdb.h"
+#include <modules/beast_sqdb/beast_sqdb.h>
 
-#include "../beast_sqlite/beast_sqlite.h"
+#include <modules/beast_sqlite/beast_sqlite.h>
 
 #if BEAST_MSVC
 #pragma warning (push)
@@ -32,21 +32,21 @@
 #endif
 
 // implementation headers
-#include "detail/error_codes.h"
-#include "detail/statement_imp.h"
+#include <modules/beast_sqdb/detail/error_codes.h>
+#include <modules/beast_sqdb/detail/statement_imp.h>
 
-#include "source/blob.cpp"
-#include "source/error_codes.cpp"
-#include "source/into_type.cpp"
-#include "source/once_temp_type.cpp"
-#include "source/prepare_temp_type.cpp"
-#include "source/ref_counted_prepare_info.cpp"
-#include "source/ref_counted_statement.cpp"
-#include "source/session.cpp"
-#include "source/statement.cpp"
-#include "source/statement_imp.cpp"
-#include "source/transaction.cpp"
-#include "source/use_type.cpp"
+#include <modules/beast_sqdb/source/blob.cpp>
+#include <modules/beast_sqdb/source/error_codes.cpp>
+#include <modules/beast_sqdb/source/into_type.cpp>
+#include <modules/beast_sqdb/source/once_temp_type.cpp>
+#include <modules/beast_sqdb/source/prepare_temp_type.cpp>
+#include <modules/beast_sqdb/source/ref_counted_prepare_info.cpp>
+#include <modules/beast_sqdb/source/ref_counted_statement.cpp>
+#include <modules/beast_sqdb/source/session.cpp>
+#include <modules/beast_sqdb/source/statement.cpp>
+#include <modules/beast_sqdb/source/statement_imp.cpp>
+#include <modules/beast_sqdb/source/transaction.cpp>
+#include <modules/beast_sqdb/source/use_type.cpp>
 
 #if BEAST_MSVC
 #pragma warning (pop)

@@ -18,14 +18,14 @@
 //==============================================================================
 
 #if BEAST_INCLUDE_BEASTCONFIG
-#include "../../BeastConfig.h"
+#include <BeastConfig.h>
 #endif
 
-#include "impl/RecursiveMutex.cpp"
-#include "impl/ServiceQueue.cpp"
-#include "impl/Stoppable.cpp"
-#include "impl/Thread.cpp"
-#include "impl/WaitableEvent.cpp"
+#include <beast/threads/impl/RecursiveMutex.cpp>
+#include <beast/threads/impl/ServiceQueue.cpp>
+#include <beast/threads/impl/Stoppable.cpp>
+#include <beast/threads/impl/Thread.cpp>
+#include <beast/threads/impl/WaitableEvent.cpp>
 
-#include "tests/Atomic.test.cpp"
-#include "tests/ServiceQueue.cpp"
+#include <beast/threads/tests/Atomic.test.cpp>
+#include <beast/threads/tests/ServiceQueue.cpp>

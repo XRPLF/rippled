@@ -20,7 +20,7 @@
 #ifndef BEAST_INTRUSIVE_H_INCLUDED
 #define BEAST_INTRUSIVE_H_INCLUDED
 
-#include "intrusive/List.h"
-#include "intrusive/LockFreeStack.h"
+#include <beast/intrusive/List.h>
+#include <beast/intrusive/LockFreeStack.h>
 
 #endif

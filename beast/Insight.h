@@ -20,18 +20,18 @@
 #ifndef BEAST_INSIGHT_H_INCLUDED
 #define BEAST_INSIGHT_H_INCLUDED
 
-#include "insight/Counter.h"
-#include "insight/CounterImpl.h"
-#include "insight/Event.h"
-#include "insight/EventImpl.h"
-#include "insight/Gauge.h"
-#include "insight/GaugeImpl.h"
-#include "insight/Group.h"
-#include "insight/Groups.h"
-#include "insight/Hook.h"
-#include "insight/HookImpl.h"
-#include "insight/Collector.h"
-#include "insight/NullCollector.h"
-#include "insight/StatsDCollector.h"
+#include <beast/insight/Counter.h>
+#include <beast/insight/CounterImpl.h>
+#include <beast/insight/Event.h>
+#include <beast/insight/EventImpl.h>
+#include <beast/insight/Gauge.h>
+#include <beast/insight/GaugeImpl.h>
+#include <beast/insight/Group.h>
+#include <beast/insight/Groups.h>
+#include <beast/insight/Hook.h>
+#include <beast/insight/HookImpl.h>
+#include <beast/insight/Collector.h>
+#include <beast/insight/NullCollector.h>
+#include <beast/insight/StatsDCollector.h>
 
 #endif

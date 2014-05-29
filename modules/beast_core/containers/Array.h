@@ -24,9 +24,9 @@
 #ifndef BEAST_ARRAY_H_INCLUDED
 #define BEAST_ARRAY_H_INCLUDED
 
-#include "ArrayAllocationBase.h"
-#include "ElementComparator.h"
-#include "../threads/CriticalSection.h"
+#include <modules/beast_core/containers/ArrayAllocationBase.h>
+#include <modules/beast_core/containers/ElementComparator.h>
+#include <modules/beast_core/threads/CriticalSection.h>
 
 namespace beast {
 

@@ -24,7 +24,7 @@
 #ifndef BEAST_CRITICALSECTION_H_INCLUDED
 #define BEAST_CRITICALSECTION_H_INCLUDED
 
-#include "ScopedLock.h"
+#include <modules/beast_core/threads/ScopedLock.h>
 
 namespace beast {
 

@@ -20,7 +20,7 @@
 #ifndef BEAST_ASIO_HANDSHAKE_INPUTPARSER_H_INCLUDED
 #define BEAST_ASIO_HANDSHAKE_INPUTPARSER_H_INCLUDED
 
-#include "../basics/FixedInputBuffer.h"
+#include <modules/beast_asio/basics/FixedInputBuffer.h>
 
 namespace beast {
 namespace asio {

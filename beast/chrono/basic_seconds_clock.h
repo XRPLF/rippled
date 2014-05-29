@@ -39,22 +39,22 @@
 #endif
 
 #if BEAST_BASIC_SECONDS_CLOCK_BOOST_WORKAROUND
-# include <boost/version.hpp>
+#include <boost/version.hpp>
 # if BOOST_VERSION >= 105500
-#  include <boost/thread/thread.hpp>
-#  include <boost/thread/mutex.hpp>
-#  include <boost/thread/condition_variable.hpp>
-#  include <boost/chrono.hpp>
+#include <boost/thread/thread.hpp>
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/condition_variable.hpp>
+#include <boost/chrono.hpp>
 # else
 #  error "Boost version 1.55.0 or later is required"
 # endif
 #else
-# include <condition_variable>
-# include <mutex>
-# include <thread>
+#include <condition_variable>
+#include <mutex>
+#include <thread>
 #endif
 
-#include "../chrono/chrono_util.h"
+#include <beast/chrono/chrono_util.h>
 
 namespace beast {
 

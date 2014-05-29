@@ -20,7 +20,7 @@
 #ifndef BEAST_CRYPTO_SHA256_H_INCLUDED
 #define BEAST_CRYPTO_SHA256_H_INCLUDED
 
-#include "../Config.h"
+#include <beast/Config.h>
 
 #include <array>
 #include <cstdint>

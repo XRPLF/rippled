@@ -20,9 +20,9 @@
 #ifndef BEAST_ASIO_HTTPHEADERS_H_INCLUDED
 #define BEAST_ASIO_HTTPHEADERS_H_INCLUDED
 
-#include "HTTPField.h"
+#include <modules/beast_asio/http/HTTPField.h>
 
-#include "../../beast_core/text/StringPairArray.h"
+#include <modules/beast_core/text/StringPairArray.h>
 
 namespace beast {
 

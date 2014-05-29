@@ -20,11 +20,11 @@
 #ifndef BEAST_THREADS_STOPPABLE_H_INCLUDED
 #define BEAST_THREADS_STOPPABLE_H_INCLUDED
 
-#include "../Atomic.h"
-#include "../intrusive/LockFreeStack.h"
-#include "../utility/Journal.h"
+#include <beast/Atomic.h>
+#include <beast/intrusive/LockFreeStack.h>
+#include <beast/utility/Journal.h>
 
-#include "WaitableEvent.h"
+#include <beast/threads/WaitableEvent.h>
 
 namespace beast {
 

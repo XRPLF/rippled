@@ -21,7 +21,7 @@
 #include "../../BeastConfig.h"
 #endif
 
-#include "../DynamicBuffer.h"
+#include <beast/net/DynamicBuffer.h>
 
 #include <algorithm>
 #include <memory>

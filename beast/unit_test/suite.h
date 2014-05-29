@@ -20,9 +20,9 @@
 #ifndef BEAST_UNIT_TEST_SUITE_H_INCLUDED
 #define BEAST_UNIT_TEST_SUITE_H_INCLUDED
 
-#include "runner.h"
+#include <beast/unit_test/runner.h>
 
-#include "../utility/noexcept.h"
+#include <beast/utility/noexcept.h>
 #include <string>
 
 namespace beast {
@@ -274,7 +274,7 @@ private:
 #define BEAST_DEFINE_TESTSUITE(Class,Module,Library)
 
 #else
-#include "global_suites.h"
+#include <beast/unit_test/global_suites.h>
 #define BEAST_DEFINE_TESTSUITE(Class,Module,Library) \
         BEAST_DEFINE_TESTSUITE_INSERT(Class,Module,Library,false)
 #define BEAST_DEFINE_TESTSUITE_MANUAL(Class,Module,Library) \

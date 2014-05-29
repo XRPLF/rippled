@@ -18,11 +18,11 @@
 //==============================================================================
 
 // MODULES: ../../../modules/beast_core/beast_core.beast_core.unity.cpp ../../strings/Strings.cpp ../../chrono/Chrono.cpp ../../threads/Threads.cpp
-#include "../BinaryEncoding.h"
-#include "../UnsignedInteger.h"
+#include <beast/crypto/BinaryEncoding.h>
+#include <beast/crypto/UnsignedInteger.h>
 
-#include "../../unit_test/suite.h"
-#include "../../../modules/beast_core/maths/Random.h"
+#include <beast/unit_test/suite.h>
+#include <modules/beast_core/maths/Random.h>
 
 #include <cstddef>
 #include <string>

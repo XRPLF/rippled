@@ -20,8 +20,8 @@
 #ifndef BEAST_STRINGS_H_INCLUDED
 #define BEAST_STRINGS_H_INCLUDED
 
-#include "strings/String.h"
-#include "strings/NewLine.h"
+#include <beast/strings/String.h>
+#include <beast/strings/NewLine.h>
 
 #endif
 

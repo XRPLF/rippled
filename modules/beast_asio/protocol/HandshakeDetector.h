@@ -20,11 +20,11 @@
 #ifndef BEAST_ASIO_HANDSHAKE_HANDSHAKEDETECTOR_H_INCLUDED
 #define BEAST_ASIO_HANDSHAKE_HANDSHAKEDETECTOR_H_INCLUDED
 
-#include "../../../beast/boost/get_pointer.h"
-#include "../../../beast/asio/bind_handler.h"
-#include "../../../beast/asio/wrap_handler.h"
-#include "../../../beast/asio/placeholders.h"
-#include "../../../beast/asio/shared_handler.h"
+#include <beast/boost/get_pointer.h>
+#include <beast/asio/bind_handler.h>
+#include <beast/asio/wrap_handler.h>
+#include <beast/asio/placeholders.h>
+#include <beast/asio/shared_handler.h>
 
 #include <boost/asio/detail/handler_cont_helpers.hpp>
 

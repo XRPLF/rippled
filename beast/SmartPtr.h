@@ -20,11 +20,11 @@
 #ifndef BEAST_SMARTPTR_H_INCLUDED
 #define BEAST_SMARTPTR_H_INCLUDED
 
-#include "Config.h"
+#include <beast/Config.h>
 
-#include "smart_ptr/ContainerDeletePolicy.h"
-#include "smart_ptr/SharedObject.h"
-#include "smart_ptr/SharedPtr.h"
-#include "smart_ptr/ScopedPointer.h"
+#include <beast/smart_ptr/ContainerDeletePolicy.h>
+#include <beast/smart_ptr/SharedObject.h>
+#include <beast/smart_ptr/SharedPtr.h>
+#include <beast/smart_ptr/ScopedPointer.h>
 
 #endif

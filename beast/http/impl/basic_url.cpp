@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include "../basic_url.h"
+#include <beast/http/basic_url.h>
 
-#include "joyent_parser.h"
+#include <beast/http/impl/joyent_parser.h>
 
 namespace beast {
 namespace http {

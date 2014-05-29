@@ -20,8 +20,8 @@
 #ifndef BEAST_INSIGHT_GROUPS_H_INCLUDED
 #define BEAST_INSIGHT_GROUPS_H_INCLUDED
 
-#include "Collector.h"
-#include "Group.h"
+#include <beast/insight/Collector.h>
+#include <beast/insight/Group.h>
 
 #include <memory>
 #include <string>

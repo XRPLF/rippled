@@ -24,8 +24,8 @@
 #ifndef BEAST_STRINGARRAY_H_INCLUDED
 #define BEAST_STRINGARRAY_H_INCLUDED
 
-#include "../containers/Array.h"
-#include "../threads/CriticalSection.h"
+#include <modules/beast_core/containers/Array.h>
+#include <modules/beast_core/threads/CriticalSection.h>
 
 namespace beast {
 

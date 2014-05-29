@@ -27,7 +27,7 @@
     SQLite is public domain software, visit http://sqlite.org
 */
 
-#include "../../beast/config/PlatformConfig.h"
+#include <beast/config/PlatformConfig.h>
 
 #if BEAST_IOS || BEAST_MAC
 # define BEAST_HAVE_NATIVE_SQLITE 1
@@ -37,9 +37,9 @@
 
 #ifndef BEAST_SQLITE_CPP_INCLUDED
 # if BEAST_USE_NATIVE_SQLITE && BEAST_HAVE_NATIVE_SQLITE
-#  include <sqlite3.h>
+#include <sqlite3.h>
 # else
-#  include "sqlite/sqlite3.h" // Amalgamated
+#include <modules/beast_sqlite/sqlite/sqlite3.h> // Amalgamated
 # endif
 #endif
 

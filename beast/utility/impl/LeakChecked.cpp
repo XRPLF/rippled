@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include "../LeakChecked.h"
-#include "../../../modules/beast_core/logging/Logger.h"
+#include <beast/utility/LeakChecked.h>
+#include <modules/beast_core/logging/Logger.h>
 
 namespace beast {
 

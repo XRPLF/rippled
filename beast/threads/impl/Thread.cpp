@@ -21,10 +21,10 @@
 */
 //==============================================================================
 
-#include "../Thread.h"
-#include "../../smart_ptr/SharedObject.h"
-#include "../../smart_ptr/SharedPtr.h"
-#include "../../../modules/beast_core/time/Time.h"
+#include <beast/threads/Thread.h>
+#include <beast/smart_ptr/SharedObject.h>
+#include <beast/smart_ptr/SharedPtr.h>
+#include <modules/beast_core/time/Time.h>
 
 #include <cassert>
 
@@ -452,11 +452,11 @@ void Thread::yield()
 #include <Foundation/NSString.h>
 #import <objc/message.h>
 namespace beast{
-#include "../../../modules/beast_core/native/osx_ObjCHelpers.h"
+#include <modules/beast_core/native/osx_ObjCHelpers.h>
 }
 
 #else
-# include <sys/prctl.h>
+#include <sys/prctl.h>
 
 #endif
 

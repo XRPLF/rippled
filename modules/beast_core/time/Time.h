@@ -24,7 +24,7 @@
 #ifndef BEAST_TIME_H_INCLUDED
 #define BEAST_TIME_H_INCLUDED
 
-#include "../../../beast/chrono/RelativeTime.h"
+#include <beast/chrono/RelativeTime.h>
 
 namespace beast {
 

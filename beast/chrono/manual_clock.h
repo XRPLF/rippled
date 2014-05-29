@@ -20,7 +20,7 @@
 #ifndef BEAST_CHRONO_MANUAL_CLOCK_H_INCLUDED
 #define BEAST_CHRONO_MANUAL_CLOCK_H_INCLUDED
 
-#include "abstract_clock.h"
+#include <beast/chrono/abstract_clock.h>
 
 namespace beast {
 

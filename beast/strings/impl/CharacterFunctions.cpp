@@ -25,7 +25,7 @@
 #include "../../BeastConfig.h"
 #endif
 
-#include "../CharacterFunctions.h"
+#include <beast/strings/CharacterFunctions.h>
 
 #include <cctype>
 #include <cwctype>

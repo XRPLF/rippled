@@ -18,12 +18,12 @@
 //==============================================================================
 
 #if BEAST_INCLUDE_BEASTCONFIG
-#include "../../../BeastConfig.h"
+#include <BeastConfig.h>
 #endif
 
-#include "../../unit_test/suite.h"
+#include <beast/unit_test/suite.h>
 
-#include "../wrap_handler.h"
+#include <beast/asio/wrap_handler.h>
 
 #include <boost/version.hpp>
 

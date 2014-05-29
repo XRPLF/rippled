@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#include "../ParsedURL.h"
+#include <beast/http/ParsedURL.h>
 
-#include "../../unit_test/suite.h"
+#include <beast/unit_test/suite.h>
 
-#include "../impl/joyent_parser.h"
+#include <beast/http/impl/joyent_parser.h>
 
 namespace beast {
 

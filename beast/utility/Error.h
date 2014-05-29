@@ -20,9 +20,9 @@
 #ifndef BEAST_UTILITY_ERROR_H_INCLUDED
 #define BEAST_UTILITY_ERROR_H_INCLUDED
 
-#include "../Config.h"
+#include <beast/Config.h>
 
-#include "../strings/String.h"
+#include <beast/strings/String.h>
 
 #include <stdexcept>
 

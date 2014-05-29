@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "../Sha256.h"
+#include <beast/crypto/Sha256.h>
 
 namespace beast {
 namespace Sha256 {
@@ -39,7 +39,7 @@ namespace Sha256 {
 //#define SHA2_USE_INTTYPES_H
 
 namespace detail {
-#include "sha2/sha2.c"
+#include <beast/crypto/impl/sha2/sha2.c>
 }
 
 Context::Context ()

@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include "../ParsedURL.h"
-#include "../../strings/String.h"
+#include <beast/http/ParsedURL.h>
+#include <beast/strings/String.h>
 
-#include "joyent_parser.h"
+#include <beast/http/impl/joyent_parser.h>
 
 #include <cstdint>
 

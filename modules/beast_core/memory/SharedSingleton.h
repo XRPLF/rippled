@@ -20,9 +20,9 @@
 #ifndef BEAST_SHAREDSINGLETON_H_INCLUDED
 #define BEAST_SHAREDSINGLETON_H_INCLUDED
 
-#include "../../../beast/threads/SpinLock.h"
-#include "../../../beast/smart_ptr/SharedPtr.h"
-#include "../time/AtExitHook.h"
+#include <beast/threads/SpinLock.h>
+#include <beast/smart_ptr/SharedPtr.h>
+#include <modules/beast_core/time/AtExitHook.h>
 
 namespace beast
 {

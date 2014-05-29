@@ -24,10 +24,10 @@
 #ifndef BEAST_STRINGS_STRINGCHARPOINTERTYPE_H_INCLUDED
 #define BEAST_STRINGS_STRINGCHARPOINTERTYPE_H_INCLUDED
 
-#include "../Config.h"
-#include "CharPointer_UTF8.h"
-#include "CharPointer_UTF16.h"
-#include "CharPointer_UTF32.h"
+#include <beast/Config.h>
+#include <beast/strings/CharPointer_UTF8.h>
+#include <beast/strings/CharPointer_UTF16.h>
+#include <beast/strings/CharPointer_UTF32.h>
 
 namespace beast {
 

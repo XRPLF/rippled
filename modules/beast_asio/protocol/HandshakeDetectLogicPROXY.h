@@ -20,8 +20,8 @@
 #ifndef BEAST_ASIO_HANDSHAKE_HANDSHAKEDETECTLOGICPROXY_H_INCLUDED
 #define BEAST_ASIO_HANDSHAKE_HANDSHAKEDETECTLOGICPROXY_H_INCLUDED
 
-#include "HandshakeDetectLogic.h"
-#include "InputParser.h"
+#include <modules/beast_asio/protocol/HandshakeDetectLogic.h>
+#include <modules/beast_asio/protocol/InputParser.h>
 
 namespace beast {
 namespace asio {

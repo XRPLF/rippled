@@ -21,7 +21,7 @@
 #define BEAST_LEXICALCAST_H_INCLUDED
 
 #include <string>
-#include "../../../beast/cxx14/type_traits.h" // <type_traits>
+#include <beast/cxx14/type_traits.h> // <type_traits>
 
 #include <cerrno>
 #include <cstdlib>

@@ -24,8 +24,8 @@
 #ifndef BEAST_THREADS_WAITABLEEVENT_H_INCLUDED
 #define BEAST_THREADS_WAITABLEEVENT_H_INCLUDED
 
-#include "../Config.h"
-#include "../Uncopyable.h"
+#include <beast/Config.h>
+#include <beast/Uncopyable.h>
 
 #if ! BEAST_WINDOWS
 #include <pthread.h>

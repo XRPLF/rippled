@@ -24,9 +24,9 @@
 #ifndef BEAST_THREADS_THREADLOCALVALUE_H_INCLUDED
 #define BEAST_THREADS_THREADLOCALVALUE_H_INCLUDED
 
-#include "../Config.h"
-#include "SpinLock.h"
-#include "Thread.h"
+#include <beast/Config.h>
+#include <beast/threads/SpinLock.h>
+#include <beast/threads/Thread.h>
 
 namespace beast {
 

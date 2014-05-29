@@ -20,8 +20,8 @@
 #ifndef BEAST_ASIO_ABSTRACT_SOCKET_H_INCLUDED
 #define BEAST_ASIO_ABSTRACT_SOCKET_H_INCLUDED
 
-#include "buffer_sequence.h"
-#include "shared_handler.h"
+#include <beast/asio/buffer_sequence.h>
+#include <beast/asio/shared_handler.h>
 
 #include <boost/asio/socket_base.hpp>
 #include <boost/asio/ssl/stream_base.hpp>
