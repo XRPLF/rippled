@@ -356,13 +356,19 @@ TER PathState::pushNode (
 
         if (!!pnCur.uCurrencyID != !!pnCur.uIssuerID)
         {
-            WriteLog (lsDEBUG, RippleCalc) << "pushNode: currency is inconsistent with issuer.";
-
+            WriteLog (lsDEBUG, RippleCalc) <<
+                "pushNode: currency is inconsistent with issuer.";
             terResult   = temBAD_PATH;
         }
-        else if (!!pnPrv.uAccountID)
+        else if (pnPrv.uCurrencyID == pnCur.uCurrencyID &&
+            pnPrv.uIssuerID == pnCur.uIssuerID)
         {
-            // Previous is an account.
+            WriteLog (lsDEBUG, RippleCalc) <<
+                "pushNode: bad path: offer to same currency and issuer";
+            terResult   = temBAD_PATH;
+        }
+        else
+        {
             WriteLog (lsTRACE, RippleCalc) << "pushNode: imply for offer.";
 
             // Insert intermediary issuer account if needed.
