@@ -17,4 +17,4 @@
 */
 //==============================================================================
 
-#include "tests/basic_abstract_ostream.test.cpp"
+#include <beast/streams/tests/basic_abstract_ostream.test.cpp>

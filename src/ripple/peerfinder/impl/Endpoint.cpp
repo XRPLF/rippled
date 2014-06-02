@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "../api/Endpoint.h"
+#include <ripple/peerfinder/api/Endpoint.h>
 
 namespace ripple {
 namespace PeerFinder {

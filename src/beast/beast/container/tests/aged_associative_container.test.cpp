@@ -17,17 +17,17 @@
 */
 //==============================================================================
 
-#include "../../chrono/manual_clock.h"
-#include "../../unit_test/suite.h"
+#include <beast/chrono/manual_clock.h>
+#include <beast/unit_test/suite.h>
 
-#include "../aged_set.h"
-#include "../aged_map.h"
-#include "../aged_multiset.h"
-#include "../aged_multimap.h"
-#include "../aged_unordered_set.h"
-#include "../aged_unordered_map.h"
-#include "../aged_unordered_multiset.h"
-#include "../aged_unordered_multimap.h"
+#include <beast/container/aged_set.h>
+#include <beast/container/aged_map.h>
+#include <beast/container/aged_multiset.h>
+#include <beast/container/aged_multimap.h>
+#include <beast/container/aged_unordered_set.h>
+#include <beast/container/aged_unordered_map.h>
+#include <beast/container/aged_unordered_multiset.h>
+#include <beast/container/aged_unordered_multimap.h>
 
 #include <vector>
 #include <list>

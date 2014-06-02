@@ -38,7 +38,7 @@
   typedef  unsigned __int16 uint16;
   typedef  unsigned __int8  uint8;
 #else
-# include <stdint.h>
+#include <stdint.h>
 # define INLINE inline
   typedef  uint64_t  uint64;
   typedef  uint32_t  uint32;

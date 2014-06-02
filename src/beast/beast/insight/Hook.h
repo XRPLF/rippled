@@ -20,8 +20,8 @@
 #ifndef BEAST_INSIGHT_HOOK_H_INCLUDED
 #define BEAST_INSIGHT_HOOK_H_INCLUDED
 
-#include "Base.h"
-#include "HookImpl.h"
+#include <beast/insight/Base.h>
+#include <beast/insight/HookImpl.h>
 
 #include <memory>
 

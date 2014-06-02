@@ -17,17 +17,17 @@
 */
 //==============================================================================
 
-#include "Calculators.h"
+#include <ripple_app/paths/Calculators.h>
 
-#include "CalcNode.cpp"
-#include "CalcNodeAccountFwd.cpp"
-#include "CalcNodeAccountRev.cpp"
-#include "CalcNodeAdvance.cpp"
-#include "CalcNodeDeliverFwd.cpp"
-#include "CalcNodeDeliverRev.cpp"
-#include "CalcNodeOffer.cpp"
-#include "CalcNodeRipple.cpp"
-#include "PathNext.cpp"
+#include <ripple_app/paths/CalcNode.cpp>
+#include <ripple_app/paths/CalcNodeAccountFwd.cpp>
+#include <ripple_app/paths/CalcNodeAccountRev.cpp>
+#include <ripple_app/paths/CalcNodeAdvance.cpp>
+#include <ripple_app/paths/CalcNodeDeliverFwd.cpp>
+#include <ripple_app/paths/CalcNodeDeliverRev.cpp>
+#include <ripple_app/paths/CalcNodeOffer.cpp>
+#include <ripple_app/paths/CalcNodeRipple.cpp>
+#include <ripple_app/paths/PathNext.cpp>
 
 namespace ripple {
 

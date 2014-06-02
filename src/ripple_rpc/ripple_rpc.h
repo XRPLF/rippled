@@ -20,10 +20,8 @@
 #ifndef RIPPLE_RPC_H_INCLUDED
 #define RIPPLE_RPC_H_INCLUDED
 
-//#include "../beast/modules/beast_core/beast_core.h"
-
-#include "api/ErrorCodes.h"
-#include "api/Manager.h"
-#include "api/Request.h"
+#include <ripple_rpc/api/ErrorCodes.h>
+#include <ripple_rpc/api/Manager.h>
+#include <ripple_rpc/api/Request.h>
 
 #endif

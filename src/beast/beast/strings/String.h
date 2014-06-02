@@ -24,24 +24,24 @@
 #ifndef BEAST_STRINGS_STRING_H_INCLUDED
 #define BEAST_STRINGS_STRING_H_INCLUDED
 
-#include "../Config.h"
-#include "../Memory.h"
+#include <beast/Config.h>
+#include <beast/Memory.h>
 
-#include "CharacterFunctions.h"
+#include <beast/strings/CharacterFunctions.h>
 #if BEAST_MSVC
 # pragma warning (push)
 # pragma warning (disable: 4514 4996)
 #endif
-#include "CharPointer_UTF8.h"
-#include "CharPointer_UTF16.h"
-#include "CharPointer_UTF32.h"
-#include "CharPointer_ASCII.h"
+#include <beast/strings/CharPointer_UTF8.h>
+#include <beast/strings/CharPointer_UTF16.h>
+#include <beast/strings/CharPointer_UTF32.h>
+#include <beast/strings/CharPointer_ASCII.h>
 #if BEAST_MSVC
 # pragma warning (pop)
 #endif
-#include "StringCharPointerType.h"
-#include "StringFromNumber.h"
-#include "String.h"
+#include <beast/strings/StringCharPointerType.h>
+#include <beast/strings/StringFromNumber.h>
+#include <beast/strings/String.h>
 
 #include <cstdint>
 #include <ostream>

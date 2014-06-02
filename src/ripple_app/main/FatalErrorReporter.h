@@ -20,7 +20,7 @@
 #ifndef RIPPLE_FATALERRORREPORTER_H_INCLUDED
 #define RIPPLE_FATALERRORREPORTER_H_INCLUDED
 
-#include "../../beast/modules/beast_core/diagnostic/FatalError.h"
+#include <modules/beast_core/diagnostic/FatalError.h>
 
 namespace ripple {
 

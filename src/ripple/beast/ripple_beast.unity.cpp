@@ -25,28 +25,28 @@
 */
 
 // MUST come first!
-#include "../../BeastConfig.h"
+#include <BeastConfig.h>
 
 // Include this to get all the basic includes included, to prevent errors
-#include "../../beast/modules/beast_core/beast_core.unity.cpp"
-#include "../../beast/modules/beast_asio/beast_asio.unity.cpp"
-#include "../../beast/modules/beast_sqdb/beast_sqdb.unity.cpp"
+#include <modules/beast_core/beast_core.unity.cpp>
+#include <modules/beast_asio/beast_asio.unity.cpp>
+#include <modules/beast_sqdb/beast_sqdb.unity.cpp>
 
-#include "../../beast/beast/asio/Asio.unity.cpp"
-#include "../../beast/beast/boost/Boost.unity.cpp"
-#include "../../beast/beast/chrono/Chrono.unity.cpp"
-#include "../../beast/beast/container/Container.unity.cpp"
-#include "../../beast/beast/crypto/Crypto.unity.cpp"
-#include "../../beast/beast/http/HTTP.unity.cpp"
-#include "../../beast/beast/insight/Insight.unity.cpp"
-#include "../../beast/beast/net/Net.unity.cpp"
-#include "../../beast/beast/streams/streams.unity.cpp"
-#include "../../beast/beast/strings/Strings.unity.cpp"
-#include "../../beast/beast/threads/Threads.unity.cpp"
-#include "../../beast/beast/utility/Utility.unity.cpp"
+#include <beast/asio/Asio.unity.cpp>
+#include <beast/boost/Boost.unity.cpp>
+#include <beast/chrono/Chrono.unity.cpp>
+#include <beast/container/Container.unity.cpp>
+#include <beast/crypto/Crypto.unity.cpp>
+#include <beast/http/HTTP.unity.cpp>
+#include <beast/insight/Insight.unity.cpp>
+#include <beast/net/Net.unity.cpp>
+#include <beast/streams/streams.unity.cpp>
+#include <beast/strings/Strings.unity.cpp>
+#include <beast/threads/Threads.unity.cpp>
+#include <beast/utility/Utility.unity.cpp>
 
-#include "../../beast/beast/cxx14/cxx14.unity.cpp"
+#include <beast/cxx14/cxx14.unity.cpp>
 
-#include "../../beast/beast/unit_test/define_print.cpp"
+#include <beast/unit_test/define_print.cpp>
 
 #endif

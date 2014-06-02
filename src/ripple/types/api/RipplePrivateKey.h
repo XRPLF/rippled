@@ -20,7 +20,7 @@
 #ifndef RIPPLE_TYPES_RIPPLEPRIVATEKEY_H_INCLUDED
 #define RIPPLE_TYPES_RIPPLEPRIVATEKEY_H_INCLUDED
 
-#include "CryptoIdentifier.h"
+#include <ripple/types/api/CryptoIdentifier.h>
 
 namespace ripple {
 

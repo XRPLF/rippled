@@ -20,10 +20,10 @@
 #ifndef RIPPLE_CORE_BOOKTIP_H_INCLUDED
 #define RIPPLE_CORE_BOOKTIP_H_INCLUDED
 
-#include "Quality.h"
-#include "Types.h"
+#include <ripple_app/book/Quality.h>
+#include <ripple_app/book/Types.h>
 
-#include "../../beast/beast/utility/noexcept.h"
+#include <beast/utility/noexcept.h>
 
 #include <functional>
 

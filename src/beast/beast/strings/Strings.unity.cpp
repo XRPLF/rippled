@@ -17,5 +17,5 @@
 */
 //==============================================================================
 
-#include "impl/CharacterFunctions.cpp"
-#include "impl/String.cpp"
+#include <beast/strings/impl/CharacterFunctions.cpp>
+#include <beast/strings/impl/String.cpp>

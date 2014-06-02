@@ -17,14 +17,14 @@
 */
 //==============================================================================
 
-#include "../../../beast/beast/unit_test/suite.h"
+#include <beast/unit_test/suite.h>
 
-#include "../../../beast/beast/utility/noexcept.h"
+#include <beast/utility/noexcept.h>
 #include <algorithm>
 #include <cassert>
 #include <iostream>
 #include <iterator>
-#include "../../../beast/beast/cxx14/type_traits.h" // <type_traits>
+#include <beast/cxx14/type_traits.h> // <type_traits>
 #include <utility>
 #include <vector>
 

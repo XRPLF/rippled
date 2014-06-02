@@ -20,12 +20,12 @@
 #ifndef BEAST_ASIO_HTTPMESSAGE_H_INCLUDED
 #define BEAST_ASIO_HTTPMESSAGE_H_INCLUDED
 
-#include "HTTPHeaders.h"
-#include "HTTPVersion.h"
+#include <modules/beast_asio/http/HTTPHeaders.h>
+#include <modules/beast_asio/http/HTTPVersion.h>
 
-#include "../../../beast/smart_ptr/SharedObject.h"
-#include "../../../beast/net/DynamicBuffer.h"
-#include "../../beast_core/text/StringPairArray.h"
+#include <beast/smart_ptr/SharedObject.h>
+#include <beast/net/DynamicBuffer.h>
+#include <modules/beast_core/text/StringPairArray.h>
 
 namespace beast {
 

@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "../../beast/beast/cxx14/iterator.h"
+#include <beast/cxx14/iterator.h>
 
 namespace ripple {
 

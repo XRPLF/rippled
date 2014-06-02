@@ -22,8 +22,8 @@
 
 #include <boost/asio/io_service.hpp>
 
-#include "../../beast/beast/utility/Journal.h"
-#include "Resolver.h"
+#include <beast/utility/Journal.h>
+#include <ripple/common/Resolver.h>
 
 namespace ripple {
 

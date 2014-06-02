@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "../impl/LegacyPathFind.h"
+#include <ripple_rpc/impl/LegacyPathFind.h>
 
 namespace ripple {
 

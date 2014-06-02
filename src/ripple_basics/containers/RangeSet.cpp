@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include "../../beast/beast/unit_test/suite.h"
-#include "../../beast/modules/beast_core/text/LexicalCast.h"
+#include <beast/unit_test/suite.h>
+#include <modules/beast_core/text/LexicalCast.h>
 
 namespace ripple {
 

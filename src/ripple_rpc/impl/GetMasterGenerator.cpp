@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "GetMasterGenerator.h"
+#include <ripple_rpc/impl/GetMasterGenerator.h>
 
 namespace ripple {
 namespace RPC {

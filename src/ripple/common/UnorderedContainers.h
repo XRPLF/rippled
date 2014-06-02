@@ -20,7 +20,7 @@
 #ifndef RIPPLE_UNORDERED_CONTAINERS_H
 #define RIPPLE_UNORDERED_CONTAINERS_H
 
-#include "../../beast/beast/container/hash_append.h"
+#include <beast/container/hash_append.h>
 
 #include <unordered_map>
 #include <unordered_set>

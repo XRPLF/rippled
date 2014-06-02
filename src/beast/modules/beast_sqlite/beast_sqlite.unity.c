@@ -24,13 +24,13 @@
 */
 
 #if BEAST_INCLUDE_BEASTCONFIG
-#include "../../BeastConfig.h"
+#include <BeastConfig.h>
 #endif
 
 // Prevents sqlite.h from being included, since it screws up the .c
 #define BEAST_SQLITE_CPP_INCLUDED
 
-#include "beast_sqlite.h"
+#include <modules/beast_sqlite/beast_sqlite.h>
 
 #if ! (BEAST_USE_NATIVE_SQLITE && BEAST_HAVE_NATIVE_SQLITE)
 
@@ -64,7 +64,7 @@
 #define NDEBUG
 #endif
 
-#include "sqlite/sqlite3.c"
+#include <modules/beast_sqlite/sqlite/sqlite3.c>
 
 #if BEAST_MSVC
 #pragma warning (pop)

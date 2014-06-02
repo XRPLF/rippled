@@ -20,15 +20,15 @@
 #ifndef RIPPLE_PEERFINDER_LOGIC_H_INCLUDED
 #define RIPPLE_PEERFINDER_LOGIC_H_INCLUDED
 
-#include "Fixed.h"
-#include "SlotImp.h"
+#include <ripple/peerfinder/impl/Fixed.h>
+#include <ripple/peerfinder/impl/SlotImp.h>
 
-#include "handout.h"
-#include "ConnectHandouts.h"
-#include "RedirectHandouts.h"
-#include "SlotHandouts.h"
+#include <ripple/peerfinder/impl/handout.h>
+#include <ripple/peerfinder/impl/ConnectHandouts.h>
+#include <ripple/peerfinder/impl/RedirectHandouts.h>
+#include <ripple/peerfinder/impl/SlotHandouts.h>
 
-#include "../../../beast/beast/container/aged_container_utility.h"
+#include <beast/container/aged_container_utility.h>
 
 #include <map>
 #include <unordered_map>

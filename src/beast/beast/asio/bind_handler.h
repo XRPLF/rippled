@@ -25,8 +25,8 @@
 #include <boost/asio/detail/handler_invoke_helpers.hpp>
 
 #include <functional>
-#include "../cxx14/type_traits.h" // <type_traits>
-#include "../cxx14/utility.h" // <utility>
+#include <beast/cxx14/type_traits.h> // <type_traits>
+#include <beast/cxx14/utility.h> // <utility>
 
 namespace beast {
 namespace asio {

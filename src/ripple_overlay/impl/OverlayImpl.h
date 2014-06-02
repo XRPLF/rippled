@@ -20,19 +20,19 @@
 #ifndef RIPPLE_OVERLAY_OVERLAYIMPL_H_INCLUDED
 #define RIPPLE_OVERLAY_OVERLAYIMPL_H_INCLUDED
 
-#include "../api/Overlay.h"
+#include <ripple_overlay/api/Overlay.h>
 
-#include "../../ripple/common/Resolver.h"
-#include "../../ripple/common/seconds_clock.h"
-#include "../../ripple/peerfinder/api/Callback.h"
-#include "../../ripple/peerfinder/api/Manager.h"
-#include "../../ripple/resource/api/Manager.h"
+#include <ripple/common/Resolver.h>
+#include <ripple/common/seconds_clock.h>
+#include <ripple/peerfinder/api/Callback.h>
+#include <ripple/peerfinder/api/Manager.h>
+#include <ripple/resource/api/Manager.h>
 
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/context.hpp>
 #include <boost/unordered_map.hpp>
 
-#include "../../beast/beast/cxx14/memory.h" // <memory>
+#include <beast/cxx14/memory.h> // <memory>
 #include <cassert>
 #include <condition_variable>
 #include <mutex>

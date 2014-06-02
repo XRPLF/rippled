@@ -19,10 +19,10 @@
 
 #include <tuple>
 
-#include "CalcState.h"
-#include "Calculators.h"
-#include "RippleCalc.h"
-#include "Tuning.h"
+#include <ripple_app/paths/CalcState.h>
+#include <ripple_app/paths/Calculators.h>
+#include <ripple_app/paths/RippleCalc.h>
+#include <ripple_app/paths/Tuning.h>
 
 namespace ripple {
 

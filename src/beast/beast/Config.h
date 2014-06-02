@@ -30,34 +30,34 @@
 #define BOOST_ASIO_HAS_STD_ARRAY 1
 
 #if !defined(BEAST_COMPILER_CONFIG) && !defined(BEAST_NO_COMPILER_CONFIG) && !defined(BEAST_NO_CONFIG)
-#include "config/SelectCompilerConfig.h"
+#include <beast/config/SelectCompilerConfig.h>
 #endif
 #ifdef   BEAST_COMPILER_CONFIG
 #include BEAST_COMPILER_CONFIG
 #endif
 
 #if !defined(BEAST_STDLIB_CONFIG) && !defined(BEAST_NO_STDLIB_CONFIG) && !defined(BEAST_NO_CONFIG) && defined(__cplusplus)
-#include "config/SelectStdlibConfig.h"
+#include <beast/config/SelectStdlibConfig.h>
 #endif
 #ifdef   BEAST_STDLIB_CONFIG
 #include BEAST_STDLIB_CONFIG
 #endif
 
 #if !defined(BEAST_PLATFORM_CONFIG) && !defined(BEAST_NO_PLATFORM_CONFIG) && !defined(BEAST_NO_CONFIG)
-#include "config/SelectCompilerConfig.h"
+#include <beast/config/SelectCompilerConfig.h>
 #endif
 #ifdef   BEAST_PLATFORM_CONFIG
 #include BEAST_PLATFORM_CONFIG
 #endif
 
 // Legacy
-#include "Version.h"
-#include "config/PlatformConfig.h"
-#include "config/CompilerConfig.h"
-#include "config/StandardConfig.h"
-#include "config/ConfigCheck.h"
+#include <beast/Version.h>
+#include <beast/config/PlatformConfig.h>
+#include <beast/config/CompilerConfig.h>
+#include <beast/config/StandardConfig.h>
+#include <beast/config/ConfigCheck.h>
 
 // Suffix
-#include "config/Suffix.h"
+#include <beast/config/Suffix.h>
     
 #endif

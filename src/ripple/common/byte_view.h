@@ -20,7 +20,7 @@
 #ifndef RIPPLE_BYTE_VIEW_H_INCLUDED
 #define RIPPLE_BYTE_VIEW_H_INCLUDED
 
-#include "../../beast/beast/container/buffer_view.h"
+#include <beast/container/buffer_view.h>
 
 #include <cstdint>
 

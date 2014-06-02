@@ -20,7 +20,7 @@
 #ifndef BEAST_HTTP_URL_H_INCLUDED
 #define BEAST_HTTP_URL_H_INCLUDED
 
-#include "../strings/String.h"
+#include <beast/strings/String.h>
 
 #include <ios>
 

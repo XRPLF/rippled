@@ -20,7 +20,7 @@
 #ifndef RIPPLE_PROOFOFWORK_H
 #define RIPPLE_PROOFOFWORK_H
 
-#include "PowResult.h"
+#include <ripple_app/misc/PowResult.h>
 
 namespace ripple {
 

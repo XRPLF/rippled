@@ -20,7 +20,7 @@
 #ifndef RIPPLE_CORE_CONFIG_H_INCLUDED
 #define RIPPLE_CORE_CONFIG_H_INCLUDED
 
-#include "../../beast/modules/beast_core/files/File.h"
+#include <modules/beast_core/files/File.h>
 
 namespace ripple {
 

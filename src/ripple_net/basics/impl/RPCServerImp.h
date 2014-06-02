@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "../../beast/beast/asio/IPAddressConversion.h"
+#include <beast/asio/IPAddressConversion.h>
 
 namespace ripple {
 

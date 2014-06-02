@@ -20,9 +20,9 @@
 #ifndef BEAST_UNIT_TEST_SUITE_LIST_H_INCLUDED
 #define BEAST_UNIT_TEST_SUITE_LIST_H_INCLUDED
 
-#include "suite_info.h"
+#include <beast/unit_test/suite_info.h>
 
-#include "../container/const_container.h"
+#include <beast/container/const_container.h>
 
 #include <cassert>
 //#include <list>

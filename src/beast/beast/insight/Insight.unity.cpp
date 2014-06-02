@@ -18,17 +18,17 @@
 //==============================================================================
 
 #if BEAST_INCLUDE_BEASTCONFIG
-#include "../../BeastConfig.h"
+#include <BeastConfig.h>
 #endif
 
-#include "../Config.h"
+#include <beast/Config.h>
 
-#include "../Insight.h"
+#include <beast/Insight.h>
 
-#include "impl/Collector.cpp"
-#include "impl/Group.cpp"
-#include "impl/Groups.cpp"
-#include "impl/Hook.cpp"
-#include "impl/Metric.cpp"
-#include "impl/NullCollector.cpp"
-#include "impl/StatsDCollector.cpp"
+#include <beast/insight/impl/Collector.cpp>
+#include <beast/insight/impl/Group.cpp>
+#include <beast/insight/impl/Groups.cpp>
+#include <beast/insight/impl/Hook.cpp>
+#include <beast/insight/impl/Metric.cpp>
+#include <beast/insight/impl/NullCollector.cpp>
+#include <beast/insight/impl/StatsDCollector.cpp>

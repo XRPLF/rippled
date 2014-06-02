@@ -27,9 +27,9 @@
 #ifndef BEAST_CHRONO_CHRONO_IO_H_INCLUDED
 #define BEAST_CHRONO_CHRONO_IO_H_INCLUDED
 
-#include "../Config.h"
+#include <beast/Config.h>
 
-#include "../utility/noexcept.h"
+#include <beast/utility/noexcept.h>
 #include <ctime>
 #include <locale>
 
@@ -156,7 +156,7 @@ template <class charT, class Traits, class Duration>
 */
 
 #include <chrono>
-#include "ratio_io.h"
+#include <beast/chrono/ratio_io.h>
 
 //_LIBCPP_BEGIN_NAMESPACE_STD
 namespace std {

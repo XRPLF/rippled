@@ -20,8 +20,8 @@
 #ifndef RIPPLE_NODESTORE_TESTBASE_H_INCLUDED
 #define RIPPLE_NODESTORE_TESTBASE_H_INCLUDED
 
-#include "../../../beast/beast/unit_test/suite.h"
-#include "../../../beast/modules/beast_core/maths/Random.h"
+#include <beast/unit_test/suite.h>
+#include <modules/beast_core/maths/Random.h>
 
 namespace ripple {
 namespace NodeStore {

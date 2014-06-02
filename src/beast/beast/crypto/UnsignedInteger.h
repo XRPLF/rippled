@@ -20,13 +20,13 @@
 #ifndef BEAST_CRYPTO_UNSIGNEDINTEGER_H_INCLUDED
 #define BEAST_CRYPTO_UNSIGNEDINTEGER_H_INCLUDED
 
-#include "UnsignedIntegerCalc.h"
-#include "MurmurHash.h"
+#include <beast/crypto/UnsignedIntegerCalc.h>
+#include <beast/crypto/MurmurHash.h>
 
-#include "../ByteOrder.h"
-#include "../container/hardened_hash.h"
+#include <beast/ByteOrder.h>
+#include <beast/container/hardened_hash.h>
 
-#include "../utility/noexcept.h"
+#include <beast/utility/noexcept.h>
 #include <algorithm>
 #include <cassert>
 #include <cstdint>

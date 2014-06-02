@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "../../beast/modules/beast_core/logging/Logger.h"
+#include <modules/beast_core/logging/Logger.h>
 
 namespace ripple {
 

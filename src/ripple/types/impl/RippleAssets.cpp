@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include "../../common/UnorderedContainers.h"
+#include <ripple/common/UnorderedContainers.h>
 
-#include "../../../beast/beast/unit_test/suite.h"
+#include <beast/unit_test/suite.h>
 
 #include <boost/unordered_set.hpp>
 

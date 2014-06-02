@@ -20,7 +20,7 @@
 #ifndef BEAST_ASIO_HTTPCLIENTTYPE_H_INCLUDED
 #define BEAST_ASIO_HTTPCLIENTTYPE_H_INCLUDED
 
-#include "../../../beast/asio/shared_handler.h"
+#include <beast/asio/shared_handler.h>
 
 #include <utility>
 

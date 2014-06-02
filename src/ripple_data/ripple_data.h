@@ -20,34 +20,34 @@
 #ifndef RIPPLE_DATA_H_INCLUDED
 #define RIPPLE_DATA_H_INCLUDED
 
-#include "../ripple_basics/ripple_basics.h"
-#include "../ripple/json/ripple_json.h"
-#include "../ripple/sslutil/api/ECDSACanonical.h"
+#include <ripple_basics/ripple_basics.h>
+#include <ripple/json/ripple_json.h>
+#include <ripple/sslutil/api/ECDSACanonical.h>
 
 struct bignum_st;
 typedef struct bignum_st BIGNUM;
 
-#include "crypto/Base58Data.h"
-#include "crypto/RFC1751.h"
-#include "protocol/BuildInfo.h"
-#include "protocol/FieldNames.h"
-#include "protocol/HashPrefix.h"
-#include "protocol/Protocol.h"
-#include "protocol/RippleAddress.h"
-#include "protocol/RippleSystem.h"
-#include "protocol/Serializer.h" // needs CKey
-#include "protocol/TER.h"
-#include "protocol/SerializedTypes.h" // needs Serializer, TER
-#include "protocol/SerializedObjectTemplate.h"
- #include "protocol/KnownFormats.h"
- #include "protocol/LedgerFormats.h" // needs SOTemplate from SerializedObjectTemplate
- #include "protocol/TxFormats.h"
-#include "protocol/SerializedObject.h"
-#include "protocol/TxFlags.h"
+#include <ripple_data/crypto/Base58Data.h>
+#include <ripple_data/crypto/RFC1751.h>
+#include <ripple_data/protocol/BuildInfo.h>
+#include <ripple_data/protocol/FieldNames.h>
+#include <ripple_data/protocol/HashPrefix.h>
+#include <ripple_data/protocol/Protocol.h>
+#include <ripple_data/protocol/RippleAddress.h>
+#include <ripple_data/protocol/RippleSystem.h>
+#include <ripple_data/protocol/Serializer.h> // needs CKey
+#include <ripple_data/protocol/TER.h>
+#include <ripple_data/protocol/SerializedTypes.h> // needs Serializer, TER
+#include <ripple_data/protocol/SerializedObjectTemplate.h>
+ #include <ripple_data/protocol/KnownFormats.h>
+ #include <ripple_data/protocol/LedgerFormats.h> // needs SOTemplate from SerializedObjectTemplate
+ #include <ripple_data/protocol/TxFormats.h>
+#include <ripple_data/protocol/SerializedObject.h>
+#include <ripple_data/protocol/TxFlags.h>
 
-#include "utility/UptimeTimerAdapter.h"
+#include <ripple_data/utility/UptimeTimerAdapter.h>
 
-#include "protocol/STParsedJSON.h"
+#include <ripple_data/protocol/STParsedJSON.h>
 
 //------------------------------------------------------------------------------
 

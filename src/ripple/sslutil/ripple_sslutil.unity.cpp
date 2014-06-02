@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#include "../../BeastConfig.h"
+#include <BeastConfig.h>
 
-#include "ripple_sslutil.h"
+#include <ripple/sslutil/ripple_sslutil.h>
 
-#include "impl/CBigNum.cpp"
-#include "impl/ECDSACanonical.cpp"
-#include "impl/DHUtil.cpp"
-#include "impl/HashUtilities.cpp"
+#include <ripple/sslutil/impl/CBigNum.cpp>
+#include <ripple/sslutil/impl/ECDSACanonical.cpp>
+#include <ripple/sslutil/impl/DHUtil.cpp>
+#include <ripple/sslutil/impl/HashUtilities.cpp>

@@ -19,22 +19,22 @@
 
 #include "../../BeastConfig.h"
 
-#include "ripple_app.h"
-#include "../ripple_net/ripple_net.h"
-#include "../ripple/common/jsonrpc_fields.h"
+#include <ripple_app/ripple_app.h>
+#include <ripple_net/ripple_net.h>
+#include <ripple/common/jsonrpc_fields.h>
 
-#include "../ripple/common/seconds_clock.h"
-#include "../ripple/peerfinder/ripple_peerfinder.h"
-#include "../ripple/resource/ripple_resource.h"
-#include "../ripple/validators/ripple_validators.h"
-#include "../ripple/common/RippleSSLContext.h"
+#include <ripple/common/seconds_clock.h>
+#include <ripple/peerfinder/ripple_peerfinder.h>
+#include <ripple/resource/ripple_resource.h>
+#include <ripple/validators/ripple_validators.h>
+#include <ripple/common/RippleSSLContext.h>
 
 #include <deque>
 
-#include "misc/ProofOfWork.h"
+#include <ripple_app/misc/ProofOfWork.h>
 
-#include "ledger/LedgerTiming.cpp"
-#include "ledger/AcceptedLedgerTx.cpp"
-#include "main/LocalCredentials.cpp"
-#include "misc/Validations.cpp"
-#include "misc/FeeVoteImpl.cpp"
+#include <ripple_app/ledger/LedgerTiming.cpp>
+#include <ripple_app/ledger/AcceptedLedgerTx.cpp>
+#include <ripple_app/main/LocalCredentials.cpp>
+#include <ripple_app/misc/Validations.cpp>
+#include <ripple_app/misc/FeeVoteImpl.cpp>

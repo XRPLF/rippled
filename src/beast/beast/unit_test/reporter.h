@@ -20,11 +20,11 @@
 #ifndef BEAST_UNIT_TEST_REPORTER_H_INLCUDED
 #define BEAST_UNIT_TEST_REPORTER_H_INLCUDED
 
-#include "amount.h"
-#include "recorder.h"
+#include <beast/unit_test/amount.h>
+#include <beast/unit_test/recorder.h>
 
-#include "../streams/abstract_ostream.h"
-#include "../streams/basic_std_ostream.h"
+#include <beast/streams/abstract_ostream.h>
+#include <beast/streams/basic_std_ostream.h>
 
 #include <boost/optional.hpp>
 #include <boost/ref.hpp>

@@ -20,8 +20,8 @@
 #ifndef BEAST_WORKERS_H_INCLUDED
 #define BEAST_WORKERS_H_INCLUDED
 
-#include "../system/SystemStats.h"
-#include "../../../beast/threads/semaphore.h"
+#include <modules/beast_core/system/SystemStats.h>
+#include <beast/threads/semaphore.h>
 
 namespace beast {
 

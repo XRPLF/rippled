@@ -20,7 +20,7 @@
 #ifndef BEAST_HTTP_RAW_PARSER_H_INCLUDED
 #define BEAST_HTTP_RAW_PARSER_H_INCLUDED
 
-#include "../utility/empty_base_optimization.h"
+#include <beast/utility/empty_base_optimization.h>
 
 #include <boost/system/error_code.hpp> // change to <system_error> soon
 

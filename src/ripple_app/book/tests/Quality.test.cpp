@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include "../Quality.h"
+#include <ripple_app/book/Quality.h>
 
-#include "../../../beast/beast/unit_test/suite.h"
-#include "../../../beast/beast/cxx14/type_traits.h"
+#include <beast/unit_test/suite.h>
+#include <beast/cxx14/type_traits.h>
 
 namespace ripple {
 namespace core {

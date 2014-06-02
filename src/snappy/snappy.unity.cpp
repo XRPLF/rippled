@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "../BeastConfig.h"
+#include <BeastConfig.h>
 
 #ifdef _MSC_VER
 #include <cstddef>
@@ -26,9 +26,9 @@ typedef std::ptrdiff_t ssize_t;
 }
 #endif
 
-#include "snappy/snappy.cc"
-#include "snappy/snappy-sinksource.cc"
-#include "snappy/snappy-stubs-internal.cc"
+#include <snappy/snappy/snappy.cc>
+#include <snappy/snappy/snappy-sinksource.cc>
+#include <snappy/snappy/snappy-stubs-internal.cc>
 
 //#include "./snappy_unittest.cc"
 //#include "./snappy-test.cc"#include "./snappy-c.cc"

@@ -20,16 +20,16 @@
 #ifndef RIPPLE_RIPPLEADDRESS_H
 #define RIPPLE_RIPPLEADDRESS_H
 
-#include "../crypto/Base58Data.h"
+#include <ripple_data/crypto/Base58Data.h>
 
-#include "../../ripple/types/api/UInt160.h"
-#include "../../ripple/types/api/RippleAccountID.h"
-#include "../../ripple/types/api/RippleAccountPrivateKey.h"
-#include "../../ripple/types/api/RippleAccountPublicKey.h"
-#include "../../ripple/types/api/RipplePrivateKey.h"
-#include "../../ripple/types/api/RipplePublicKey.h"
-#include "../../ripple/types/api/RipplePublicKeyHash.h"
-#include "../../ripple/sslutil/api/ECDSACanonical.h"
+#include <ripple/types/api/UInt160.h>
+#include <ripple/types/api/RippleAccountID.h>
+#include <ripple/types/api/RippleAccountPrivateKey.h>
+#include <ripple/types/api/RippleAccountPublicKey.h>
+#include <ripple/types/api/RipplePrivateKey.h>
+#include <ripple/types/api/RipplePublicKey.h>
+#include <ripple/types/api/RipplePublicKeyHash.h>
+#include <ripple/sslutil/api/ECDSACanonical.h>
 
 namespace ripple {
 

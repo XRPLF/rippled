@@ -20,10 +20,10 @@
 #ifndef BEAST_INSIGHT_EVENT_H_INCLUDED
 #define BEAST_INSIGHT_EVENT_H_INCLUDED
 
-#include "Base.h"
-#include "EventImpl.h"
+#include <beast/insight/Base.h>
+#include <beast/insight/EventImpl.h>
 
-#include "../chrono/chrono_util.h"
+#include <beast/chrono/chrono_util.h>
 
 #include <chrono>
 #include <memory>

@@ -26,8 +26,8 @@
 
 #include <limits>
 
-#include "../Config.h"
-#include "../Memory.h"
+#include <beast/Config.h>
+#include <beast/Memory.h>
 
 #include <cstdint>
 

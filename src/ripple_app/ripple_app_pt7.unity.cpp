@@ -19,18 +19,18 @@
 
 #include "../../BeastConfig.h"
 
-#include "ripple_app.h"
+#include <ripple_app/ripple_app.h>
 
-#include "../ripple/resource/ripple_resource.h"
+#include <ripple/resource/ripple_resource.h>
 
-#include "../ripple/common/seconds_clock.h"
+#include <ripple/common/seconds_clock.h>
 
-#include "ledger/InboundLedgers.cpp"
-#include "ledger/LedgerHistory.cpp"
-#include "misc/SerializedLedger.cpp"
-#include "tx/TransactionAcquire.cpp"
+#include <ripple_app/ledger/InboundLedgers.cpp>
+#include <ripple_app/ledger/LedgerHistory.cpp>
+#include <ripple_app/misc/SerializedLedger.cpp>
+#include <ripple_app/tx/TransactionAcquire.cpp>
 
-# include "tx/TxQueueEntry.h"
-# include "tx/TxQueue.h"
-# include "tx/LocalTxs.cpp"
-#include "misc/NetworkOPs.cpp"
+#include <ripple_app/tx/TxQueueEntry.h>
+#include <ripple_app/tx/TxQueue.h>
+#include <ripple_app/tx/LocalTxs.cpp>
+#include <ripple_app/misc/NetworkOPs.cpp>

@@ -20,9 +20,9 @@
 #ifndef RIPPLE_CORE_AMOUNTS_H_INCLUDED
 #define RIPPLE_CORE_AMOUNTS_H_INCLUDED
 
-#include "Amount.h"
+#include <ripple_app/book/Amount.h>
 
-#include "../../beast/beast/utility/noexcept.h"
+#include <beast/utility/noexcept.h>
 
 namespace ripple {
 namespace core {

@@ -20,13 +20,13 @@
 #ifndef RIPPLE_COMMON_MULTISOCKETTYPE_H_INCLUDED
 #define RIPPLE_COMMON_MULTISOCKETTYPE_H_INCLUDED
 
-#include "../MultiSocket.h"
+#include <ripple/common/MultiSocket.h>
 
-#include "../../../beast/beast/boost/get_pointer.h"
-#include "../../../beast/beast/asio/wrap_handler.h"
-#include "../../../beast/beast/asio/placeholders.h"
+#include <beast/boost/get_pointer.h>
+#include <beast/asio/wrap_handler.h>
+#include <beast/asio/placeholders.h>
 
-#include "../../../beast/beast/cxx14/type_traits.h"
+#include <beast/cxx14/type_traits.h>
 
 #include <cassert>
 

@@ -24,11 +24,11 @@
 #ifndef BEAST_SMARTPTR_SCOPEDPOINTER_H_INCLUDED
 #define BEAST_SMARTPTR_SCOPEDPOINTER_H_INCLUDED
 
-#include "../Config.h"
-#include "../Uncopyable.h"
-#include "../StaticAssert.h"
+#include <beast/Config.h>
+#include <beast/Uncopyable.h>
+#include <beast/StaticAssert.h>
 
-#include "ContainerDeletePolicy.h"
+#include <beast/smart_ptr/ContainerDeletePolicy.h>
     
 namespace beast {
 

@@ -24,12 +24,12 @@
 #ifndef BEAST_FILE_H_INCLUDED
 #define BEAST_FILE_H_INCLUDED
 
-#include "../containers/Array.h"
-#include "../memory/MemoryBlock.h"
-#include "../misc/Result.h"
-#include "../time/Time.h"
-#include "../text/StringArray.h"
-#include "../threads/CriticalSection.h"
+#include <modules/beast_core/containers/Array.h>
+#include <modules/beast_core/memory/MemoryBlock.h>
+#include <modules/beast_core/misc/Result.h>
+#include <modules/beast_core/time/Time.h>
+#include <modules/beast_core/text/StringArray.h>
+#include <modules/beast_core/threads/CriticalSection.h>
 
 namespace beast {
 

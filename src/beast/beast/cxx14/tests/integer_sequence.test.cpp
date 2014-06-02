@@ -18,12 +18,12 @@
 //==============================================================================
 
 #if BEAST_INCLUDE_BEASTCONFIG
-#include "../../../BeastConfig.h"
+#include <BeastConfig.h>
 #endif
 
-#include "../utility.h"
+#include <beast/cxx14/utility.h>
 
-#include "../../unit_test/suite.h"
+#include <beast/unit_test/suite.h>
 
 namespace beast {
 namespace asio {

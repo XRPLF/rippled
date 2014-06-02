@@ -28,7 +28,7 @@
 # elif BEAST_MSVC
 #  define BEAST_FUNCTIONAL_USES_STD 1
 # elif BEAST_IOS || BEAST_MAC
-#  include <ciso646>                        // detect version of std::lib
+#include <ciso646>                        // detect version of std::lib
 #  if BEAST_IOS && BEAST_USE_BOOST_FEATURES // Work-around for iOS bugs with bind.
 #   define BEAST_FUNCTIONAL_USES_BOOST 1
 #  elif _LIBCPP_VERSION // libc++
@@ -44,9 +44,9 @@
 #endif
 
 #if BEAST_FUNCTIONAL_USES_STD
-# include <functional>
+#include <functional>
 #elif BEAST_FUNCTIONAL_USES_TR1
-# include <tr1/functional>
+#include <tr1/functional>
 #elif BEAST_FUNCTIONAL_USES_BOOST
 // included in BoostPlaceholdersFix.h
 #endif

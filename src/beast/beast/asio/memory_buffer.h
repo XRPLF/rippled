@@ -20,11 +20,11 @@
 #ifndef BEAST_ASIO_MEMORY_BUFFER_H_INCLUDED
 #define BEAST_ASIO_MEMORY_BUFFER_H_INCLUDED
 
-#include "../utility/empty_base_optimization.h"
+#include <beast/utility/empty_base_optimization.h>
 
 #include <boost/asio/buffer.hpp>
 
-#include "../utility/noexcept.h"
+#include <beast/utility/noexcept.h>
 #include <cstddef>
 #include <memory>
 #include <type_traits>

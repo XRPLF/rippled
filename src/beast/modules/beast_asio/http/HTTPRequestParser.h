@@ -20,7 +20,7 @@
 #ifndef BEAST_HTTP_REQUESTPARSER_H_INCLUDED
 #define BEAST_HTTP_REQUESTPARSER_H_INCLUDED
 
-#include "HTTPParser.h"
+#include <modules/beast_asio/http/HTTPParser.h>
 
 namespace beast {
 

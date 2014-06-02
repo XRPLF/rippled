@@ -21,7 +21,7 @@
 #include "../../BeastConfig.h"
 #endif
 
-#include "../../unit_test/suite.h"
+#include <beast/unit_test/suite.h>
 
 namespace beast {
 namespace http {

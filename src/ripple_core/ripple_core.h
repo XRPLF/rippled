@@ -20,23 +20,23 @@
 #ifndef RIPPLE_CORE_H_INCLUDED
 #define RIPPLE_CORE_H_INCLUDED
 
-#include "../ripple_basics/ripple_basics.h"
-#include "../ripple_data/ripple_data.h"
+#include <ripple_basics/ripple_basics.h>
+#include <ripple_data/ripple_data.h>
 
-#include "../beast/beast/http/URL.h" // for Config
-#include "../beast/beast/Insight.h"
+#include <beast/http/URL.h> // for Config
+#include <beast/Insight.h>
 
-#include "../ripple/resource/api/LegacyFees.h"
+#include <ripple/resource/api/LegacyFees.h>
 
-#include "nodestore/NodeStore.h"
+#include <ripple_core/nodestore/NodeStore.h>
 
-# include "functional/ConfigSections.h"
-#include "functional/Config.h"
-#include "functional/LoadFeeTrack.h"
-#  include "functional/LoadEvent.h"
-#  include "functional/LoadMonitor.h"
+#include <ripple_core/functional/ConfigSections.h>
+#include <ripple_core/functional/Config.h>
+#include <ripple_core/functional/LoadFeeTrack.h>
+#include <ripple_core/functional/LoadEvent.h>
+#include <ripple_core/functional/LoadMonitor.h>
 
-# include "functional/Job.h"
-#include "functional/JobQueue.h"
+#include <ripple_core/functional/Job.h>
+#include <ripple_core/functional/JobQueue.h>
 
 #endif

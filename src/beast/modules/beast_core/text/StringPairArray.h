@@ -24,8 +24,8 @@
 #ifndef BEAST_STRINGPAIRARRAY_H_INCLUDED
 #define BEAST_STRINGPAIRARRAY_H_INCLUDED
 
-#include "StringArray.h"
-#include "../../../beast/utility/LeakChecked.h"
+#include <modules/beast_core/text/StringArray.h>
+#include <beast/utility/LeakChecked.h>
 
 namespace beast {
 

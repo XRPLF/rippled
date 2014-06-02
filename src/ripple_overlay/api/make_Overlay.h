@@ -20,14 +20,14 @@
 #ifndef RIPPLE_OVERLAY_MAKE_OVERLAY_H_INCLUDED
 #define RIPPLE_OVERLAY_MAKE_OVERLAY_H_INCLUDED
 
-#include "Overlay.h"
+#include <ripple_overlay/api/Overlay.h>
 
-#include "../../ripple/resource/api/Manager.h"
-#include "../../ripple/sitefiles/api/Manager.h"
-#include "../../ripple/common/Resolver.h"
+#include <ripple/resource/api/Manager.h>
+#include <ripple/sitefiles/api/Manager.h>
+#include <ripple/common/Resolver.h>
 
-#include "../../beast/beast/threads/Stoppable.h"
-#include "../../beast/modules/beast_core/files/File.h"
+#include <beast/threads/Stoppable.h>
+#include <modules/beast_core/files/File.h>
 
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/ssl/context.hpp>

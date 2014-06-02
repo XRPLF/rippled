@@ -20,9 +20,9 @@
 #ifndef BEAST_NET_IPADDRESS_H_INCLUDED
 #define BEAST_NET_IPADDRESS_H_INCLUDED
 
-#include "IPAddressV4.h"
-#include "IPAddressV6.h"
-#include "../container/hash_append.h"
+#include <beast/net/IPAddressV4.h>
+#include <beast/net/IPAddressV6.h>
+#include <beast/container/hash_append.h>
 
 #include <cstdint>
 #include <ios>

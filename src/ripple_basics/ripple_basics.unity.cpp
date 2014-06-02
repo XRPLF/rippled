@@ -19,9 +19,9 @@
 
 #include "../../BeastConfig.h"
 
-#include "ripple_basics.h"
+#include <ripple_basics/ripple_basics.h>
 
-#include "../beast/modules/beast_core/system/BeforeBoost.h"
+#include <modules/beast_core/system/BeforeBoost.h>
 #include <boost/asio.hpp> // For StringUtilities.cpp
 
 #include <fstream> // for Log files
@@ -43,18 +43,18 @@
 
 //------------------------------------------------------------------------------
 
-#include "containers/RangeSet.cpp"
-#include "system/CheckLibraryVersions.cpp"
+#include <ripple_basics/containers/RangeSet.cpp>
+#include <ripple_basics/system/CheckLibraryVersions.cpp>
 
-#include "log/Log.cpp"
-#include "log/LogFile.cpp"
-#include "log/LogPartition.cpp"
-#include "log/LogSink.cpp"
+#include <ripple_basics/log/Log.cpp>
+#include <ripple_basics/log/LogFile.cpp>
+#include <ripple_basics/log/LogPartition.cpp>
+#include <ripple_basics/log/LogSink.cpp>
 
-#include "utility/CountedObject.cpp"
-#include "utility/IniFile.cpp"
-#include "utility/StringUtilities.cpp"
-#include "utility/Sustain.cpp"
-#include "utility/ThreadName.cpp"
-#include "utility/Time.cpp"
-#include "utility/UptimeTimer.cpp"
+#include <ripple_basics/utility/CountedObject.cpp>
+#include <ripple_basics/utility/IniFile.cpp>
+#include <ripple_basics/utility/StringUtilities.cpp>
+#include <ripple_basics/utility/Sustain.cpp>
+#include <ripple_basics/utility/ThreadName.cpp>
+#include <ripple_basics/utility/Time.cpp>
+#include <ripple_basics/utility/UptimeTimer.cpp>

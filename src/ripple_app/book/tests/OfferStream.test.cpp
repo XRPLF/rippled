@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include "../OfferStream.h"
+#include <ripple_app/book/OfferStream.h>
 
-#include "../../../beast/beast/unit_test/suite.h"
+#include <beast/unit_test/suite.h>
 
 namespace ripple {
 namespace core {

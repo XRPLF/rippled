@@ -20,10 +20,10 @@
 #ifndef RIPPLE_JSON_H_INCLUDED
 #define RIPPLE_JSON_H_INCLUDED
 
-#include "../../beast/beast/Config.h"
+#include <beast/Config.h>
 
-#include "../../beast/beast/strings/String.h"
-#include "../../beast/beast/utility/PropertyStream.h"
+#include <beast/strings/String.h>
+#include <beast/utility/PropertyStream.h>
 
 #include <deque>
 #include <stack>
@@ -32,22 +32,22 @@
 // For json/
 //
 // VFALCO TODO Clean up these one-offs
-#include "api/json_config.h" // Needed before these cpptl includes
+#include <ripple/json/api/json_config.h> // Needed before these cpptl includes
 #ifndef JSON_USE_CPPTL_SMALLMAP
-# include <map>
+#include <map>
 #else
-# include <cpptl/smallmap.h>
+#include <cpptl/smallmap.h>
 #endif
 #ifdef JSON_USE_CPPTL
-# include <cpptl/forwards.h>
+#include <cpptl/forwards.h>
 #endif
 
-#include "api/json_forwards.h"
-#include "api/json_features.h"
-#include "api/json_value.h"
-#include "api/json_reader.h"
-#include "api/json_writer.h"
+#include <ripple/json/api/json_forwards.h>
+#include <ripple/json/api/json_features.h>
+#include <ripple/json/api/json_value.h>
+#include <ripple/json/api/json_reader.h>
+#include <ripple/json/api/json_writer.h>
 
-#include "api/JsonPropertyStream.h"
+#include <ripple/json/api/JsonPropertyStream.h>
 
 #endif

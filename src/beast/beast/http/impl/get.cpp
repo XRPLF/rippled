@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include "../get.h"
+#include <beast/http/get.h>
 
-#include "../basic_url.h"
+#include <beast/http/basic_url.h>
 
 namespace beast {
 namespace http {

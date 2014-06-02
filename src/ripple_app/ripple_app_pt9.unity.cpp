@@ -19,26 +19,26 @@
 
 #include "../../BeastConfig.h"
 
-#include "ripple_app.h"
+#include <ripple_app/ripple_app.h>
 
-#include "book/impl/Taker.cpp"
-#include "book/impl/BookTip.cpp"
-#include "book/impl/OfferStream.cpp"
-#include "book/impl/Quality.cpp"
+#include <ripple_app/book/impl/Taker.cpp>
+#include <ripple_app/book/impl/BookTip.cpp>
+#include <ripple_app/book/impl/OfferStream.cpp>
+#include <ripple_app/book/impl/Quality.cpp>
 
-#include "transactors/Transactor.cpp"
+#include <ripple_app/transactors/Transactor.cpp>
 
-#include "transactors/Change.cpp"
-#include "transactors/CancelOffer.cpp"
-#include "transactors/Payment.cpp"
-#include "transactors/SetRegularKey.cpp"
-#include "transactors/SetAccount.cpp"
-#include "transactors/AddWallet.cpp"
-#include "transactors/SetTrust.cpp"
-#include "transactors/CreateOffer.cpp"
-#include "transactors/CreateOfferDirect.cpp"
-#include "transactors/CreateOfferBridged.cpp"
+#include <ripple_app/transactors/Change.cpp>
+#include <ripple_app/transactors/CancelOffer.cpp>
+#include <ripple_app/transactors/Payment.cpp>
+#include <ripple_app/transactors/SetRegularKey.cpp>
+#include <ripple_app/transactors/SetAccount.cpp>
+#include <ripple_app/transactors/AddWallet.cpp>
+#include <ripple_app/transactors/SetTrust.cpp>
+#include <ripple_app/transactors/CreateOffer.cpp>
+#include <ripple_app/transactors/CreateOfferDirect.cpp>
+#include <ripple_app/transactors/CreateOfferBridged.cpp>
 
 #if RIPPLE_USE_OLD_CREATE_TRANSACTOR
-#include "transactors/CreateOfferLegacy.cpp"
+#include <ripple_app/transactors/CreateOfferLegacy.cpp>
 #endif

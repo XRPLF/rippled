@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "SlotHandouts.h"
+#include <ripple/peerfinder/impl/SlotHandouts.h>
 
 namespace ripple {
 namespace PeerFinder {

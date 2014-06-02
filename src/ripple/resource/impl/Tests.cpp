@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include "../../../beast/beast/unit_test/suite.h"
-#include "../../../beast/beast/chrono/manual_clock.h"
-#include "../../../beast/modules/beast_core/maths/Random.h"
+#include <beast/unit_test/suite.h>
+#include <beast/chrono/manual_clock.h>
+#include <modules/beast_core/maths/Random.h>
 
 namespace ripple {
 namespace Resource {

@@ -20,8 +20,8 @@
 #ifndef RIPPLE_HTTP_PORT_H_INCLUDED
 #define RIPPLE_HTTP_PORT_H_INCLUDED
 
-#include "../../beast/beast/net/IPEndpoint.h"
-#include "../../beast/modules/beast_asio/basics/SSLContext.h"
+#include <beast/net/IPEndpoint.h>
+#include <modules/beast_asio/basics/SSLContext.h>
 
 #include <cstdint>
 

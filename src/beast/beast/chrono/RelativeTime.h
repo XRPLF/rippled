@@ -24,10 +24,10 @@
 #ifndef BEAST_CHRONO_RELATIVETIME_H_INCLUDED
 #define BEAST_CHRONO_RELATIVETIME_H_INCLUDED
 
-#include "../Config.h"
-#include "../strings/String.h"
+#include <beast/Config.h>
+#include <beast/strings/String.h>
 
-#include "../utility/noexcept.h"
+#include <beast/utility/noexcept.h>
 #include <string>
 #include <sstream>
 

@@ -25,8 +25,8 @@
 #ifndef RIPPLE_TYPES_UINT160_H_INCLUDED
 #define RIPPLE_TYPES_UINT160_H_INCLUDED
 
-#include "base_uint.h"
-#include "strHex.h"
+#include <ripple/types/api/base_uint.h>
+#include <ripple/types/api/strHex.h>
 
 namespace ripple {
 

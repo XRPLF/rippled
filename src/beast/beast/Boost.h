@@ -22,6 +22,6 @@
 
 // These classes require boost in order to be used.
 
-#include "boost/ErrorCode.h"
+#include <beast/boost/ErrorCode.h>
 
 #endif

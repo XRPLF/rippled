@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "Accounts.h"
+#include <ripple_rpc/impl/Accounts.h>
 
 namespace ripple {
 namespace RPC {

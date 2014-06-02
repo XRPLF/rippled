@@ -20,7 +20,7 @@
 #ifndef BEAST_CORE_ATEXITHOOK_H_INCLUDED
 #define BEAST_CORE_ATEXITHOOK_H_INCLUDED
 
-#include "../../../beast/intrusive/List.h"
+#include <beast/intrusive/List.h>
 
 namespace beast {
 

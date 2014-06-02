@@ -28,7 +28,7 @@
 
 #include "../../BeastConfig.h"
 
-#include "../beast/modules/beast_core/system/BeforeBoost.h"
+#include <modules/beast_core/system/BeforeBoost.h>
 #include <boost/version.hpp>
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/ssl.hpp>
@@ -40,25 +40,25 @@
 #include <boost/mpl/at.hpp>
 #include <boost/mpl/vector.hpp>
 
-#include "ripple_net.h"
+#include <ripple_net/ripple_net.h>
 
-#include "../ripple_websocket/ripple_websocket.h" // for HTTPClient, RPCDoor
+#include <ripple_websocket/ripple_websocket.h> // for HTTPClient, RPCDoor
 
 // VFALCO NOTE This is the "new new new" where individual headers are included
 //             directly (instead of th emodule header). The corresponding .cpp
 //             still uses the unity style inclusion.
 //
-#include "../ripple_rpc/api/ErrorCodes.h"
-#include "../ripple/common/jsonrpc_fields.h"
+#include <ripple_rpc/api/ErrorCodes.h>
+#include <ripple/common/jsonrpc_fields.h>
 
-#include "basics/HTTPRequest.cpp"
-#include "basics/HTTPClient.cpp"
-# include "basics/impl/RPCServerImp.h"
-#include "basics/SNTPClient.cpp"
-#include "rpc/RPCCall.cpp"
-#include "rpc/RPCErr.cpp"
-#include "rpc/RPCSub.cpp"
-#include "rpc/RPCUtil.cpp"
-#include "rpc/InfoSub.cpp"
+#include <ripple_net/basics/HTTPRequest.cpp>
+#include <ripple_net/basics/HTTPClient.cpp>
+#include <ripple_net/basics/impl/RPCServerImp.h>
+#include <ripple_net/basics/SNTPClient.cpp>
+#include <ripple_net/rpc/RPCCall.cpp>
+#include <ripple_net/rpc/RPCErr.cpp>
+#include <ripple_net/rpc/RPCSub.cpp>
+#include <ripple_net/rpc/RPCUtil.cpp>
+#include <ripple_net/rpc/InfoSub.cpp>
 
-#include "basics/RPCDoor.cpp"
+#include <ripple_net/basics/RPCDoor.cpp>

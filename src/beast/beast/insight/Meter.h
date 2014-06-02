@@ -22,8 +22,8 @@
 
 #include <memory>
 
-#include "Base.h"
-#include "MeterImpl.h"
+#include <beast/insight/Base.h>
+#include <beast/insight/MeterImpl.h>
 
 namespace beast {
 namespace insight {

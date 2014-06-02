@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include "../../BeastConfig.h"
+#include <BeastConfig.h>
 
-#include "ripple_testoverlay.h"
+#include <ripple/testoverlay/ripple_testoverlay.h>
 
-#include "impl/TestOverlay.cpp"
+#include <ripple/testoverlay/impl/TestOverlay.cpp>

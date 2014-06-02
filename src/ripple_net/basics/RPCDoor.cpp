@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "../../ripple/common/RippleSSLContext.h"
+#include <ripple/common/RippleSSLContext.h>
 
 namespace ripple {
 

@@ -24,14 +24,14 @@
 #include "../../BeastConfig.h"
 #endif
 
-#include "../../unit_test/suite.h"
+#include <beast/unit_test/suite.h>
 
-#include "urls_large_data.h"
-#include "../client_session.h"
-#include "../get.h"
-#include "../../asio/bind_handler.h"
-#include "../../asio/memory_buffer.h"
-#include "../../utility/ci_char_traits.h"
+#include <beast/http/tests/urls_large_data.h>
+#include <beast/http/client_session.h>
+#include <beast/http/get.h>
+#include <beast/asio/bind_handler.h>
+#include <beast/asio/memory_buffer.h>
+#include <beast/utility/ci_char_traits.h>
 
 #include <boost/asio.hpp>
 

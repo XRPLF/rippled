@@ -20,16 +20,16 @@
 #ifndef BEAST_CONTAINER_BUFFER_VIEW_H_INCLUDED
 #define BEAST_CONTAINER_BUFFER_VIEW_H_INCLUDED
 
-#include "../Config.h"
+#include <beast/Config.h>
 
 #include <array>
-#include "../cxx14/algorithm.h" // <algorithm>
+#include <beast/cxx14/algorithm.h> // <algorithm>
 #include <cstddef>
 #include <iterator>
 #include <memory>
 #include <string>
 #include <vector>
-#include "../cxx14/type_traits.h" // <type_traits>
+#include <beast/cxx14/type_traits.h> // <type_traits>
 
 namespace beast {
 

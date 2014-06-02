@@ -20,8 +20,8 @@
 #ifndef RIPPLE_PEERFINDER_REDIRECTHANDOUTS_H_INCLUDED
 #define RIPPLE_PEERFINDER_REDIRECTHANDOUTS_H_INCLUDED
 
-#include "SlotImp.h"
-#include "Tuning.h"
+#include <ripple/peerfinder/impl/SlotImp.h>
+#include <ripple/peerfinder/impl/Tuning.h>
 
 namespace ripple {
 namespace PeerFinder {

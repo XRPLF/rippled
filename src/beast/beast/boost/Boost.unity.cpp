@@ -18,10 +18,10 @@
 //==============================================================================
 
 #if BEAST_INCLUDE_BEASTCONFIG
-#include "../../BeastConfig.h"
+#include <BeastConfig.h>
 #endif
 
-#include "ErrorCode.h"
+#include <beast/boost/ErrorCode.h>
 
 namespace detail {
 

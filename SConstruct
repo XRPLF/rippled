@@ -424,9 +424,10 @@ import_environ(base)
 config_base(base)
 base.Append(CPPPATH=[
     'src',
-    os.path.join(build_dir, 'proto'),
+    os.path.join('src', 'beast'),
     os.path.join('src', 'snappy', 'snappy'),
     os.path.join('src', 'snappy', 'config'),
+    os.path.join(build_dir, 'proto'),
     ])
 base.Append(CPPPATH=[
     os.path.join('src', 'leveldb'),

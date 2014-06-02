@@ -20,17 +20,17 @@
 #ifndef BEAST_CONTAINER_HARDENED_HASH_H_INCLUDED
 #define BEAST_CONTAINER_HARDENED_HASH_H_INCLUDED
 
-#include "hash_append.h"
+#include <beast/container/hash_append.h>
 
-#include "../utility/noexcept.h"
+#include <beast/utility/noexcept.h>
 #include <cstdint>
 #include <functional>
 #include <mutex>
 #include <random>
-#include "../cxx14/type_traits.h" // <type_traits>
+#include <beast/cxx14/type_traits.h> // <type_traits>
 #include <unordered_map>
 #include <unordered_set>
-#include "../cxx14/utility.h" // <utility>
+#include <beast/cxx14/utility.h> // <utility>
 
 // When set to 1, makes the seed per-process instead
 // of per default-constructed instance of hardened_hash

@@ -19,7 +19,7 @@
 
 #include <unordered_map>
 
-#include "../../cxx14/memory.h"
+#include <beast/cxx14/memory.h>
 
 namespace beast {
 namespace insight {

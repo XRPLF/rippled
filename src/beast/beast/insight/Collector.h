@@ -20,11 +20,11 @@
 #ifndef BEAST_INSIGHT_COLLECTOR_H_INCLUDED
 #define BEAST_INSIGHT_COLLECTOR_H_INCLUDED
 
-#include "Counter.h"
-#include "Event.h"
-#include "Gauge.h"
-#include "Hook.h"
-#include "Meter.h"
+#include <beast/insight/Counter.h>
+#include <beast/insight/Event.h>
+#include <beast/insight/Gauge.h>
+#include <beast/insight/Hook.h>
+#include <beast/insight/Meter.h>
 
 #include <string>
 

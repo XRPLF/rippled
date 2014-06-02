@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "../Stoppable.h"
+#include <beast/threads/Stoppable.h>
 
 namespace beast {
 

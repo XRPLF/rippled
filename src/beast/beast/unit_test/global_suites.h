@@ -20,7 +20,7 @@
 #ifndef BEAST_UNIT_TEST_GLOBAL_SUITES_H_INCLUDED
 #define BEAST_UNIT_TEST_GLOBAL_SUITES_H_INCLUDED
 
-#include "suite_list.h"
+#include <beast/unit_test/suite_list.h>
 
 namespace beast {
 namespace unit_test {

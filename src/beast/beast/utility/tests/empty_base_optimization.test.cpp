@@ -18,12 +18,12 @@
 //==============================================================================
 
 #if BEAST_INCLUDE_BEASTCONFIG
-#include "../../../BeastConfig.h"
+#include <BeastConfig.h>
 #endif
 
-#include "../empty_base_optimization.h"
+#include <beast/utility/empty_base_optimization.h>
 
-#include "../../unit_test/suite.h"
+#include <beast/unit_test/suite.h>
 
 namespace beast {
 

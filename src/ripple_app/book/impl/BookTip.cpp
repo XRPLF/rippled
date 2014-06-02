@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "../BookTip.h"
+#include <ripple_app/book/BookTip.h>
 
 namespace ripple {
 namespace core {

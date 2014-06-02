@@ -19,16 +19,16 @@
 
 #include "../../BeastConfig.h"
 
-#include "ripple_app.h"
+#include <ripple_app/ripple_app.h>
 
-#include "../ripple/common/seconds_clock.h"
+#include <ripple/common/seconds_clock.h>
 
-#include "ledger/LedgerEntrySet.cpp"
-#include "ledger/AcceptedLedger.cpp"
-#include "ledger/DirectoryEntryIterator.cpp"
-#include "ledger/OrderBookIterator.cpp"
-#include "consensus/DisputedTx.cpp"
-#include "misc/HashRouter.cpp"
-#include "misc/Offer.cpp"
-#include "paths/Pathfinder.cpp"
-#include "misc/AmendmentTableImpl.cpp"
+#include <ripple_app/ledger/LedgerEntrySet.cpp>
+#include <ripple_app/ledger/AcceptedLedger.cpp>
+#include <ripple_app/ledger/DirectoryEntryIterator.cpp>
+#include <ripple_app/ledger/OrderBookIterator.cpp>
+#include <ripple_app/consensus/DisputedTx.cpp>
+#include <ripple_app/misc/HashRouter.cpp>
+#include <ripple_app/misc/Offer.cpp>
+#include <ripple_app/paths/Pathfinder.cpp>
+#include <ripple_app/misc/AmendmentTableImpl.cpp>

@@ -20,16 +20,16 @@
 #ifndef RIPPLE_HYPERLEVELDB_H_INCLUDED
 #define RIPPLE_HYPERLEVELDB_H_INCLUDED
 
-#include "../beast/beast/Config.h"
+#include <beast/Config.h>
 
 #if ! BEAST_WIN32
 
 #define RIPPLE_HYPERLEVELDB_AVAILABLE 1
 
-#include "../hyperleveldb/hyperleveldb/cache.h"
-#include "../hyperleveldb/hyperleveldb/filter_policy.h"
-#include "../hyperleveldb/hyperleveldb/db.h"
-#include "../hyperleveldb/hyperleveldb/write_batch.h"
+#include <hyperleveldb/hyperleveldb/cache.h>
+#include <hyperleveldb/hyperleveldb/filter_policy.h>
+#include <hyperleveldb/hyperleveldb/db.h>
+#include <hyperleveldb/hyperleveldb/write_batch.h>
 
 #else
 

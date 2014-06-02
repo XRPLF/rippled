@@ -20,7 +20,7 @@
 #ifndef BEAST_STREAMS_BASIC_ABSTRACT_OSTREAM_H_INCLUDED
 #define BEAST_STREAMS_BASIC_ABSTRACT_OSTREAM_H_INCLUDED
 
-#include "basic_scoped_ostream.h"
+#include <beast/streams/basic_scoped_ostream.h>
 
 #include <functional>
 #include <memory>

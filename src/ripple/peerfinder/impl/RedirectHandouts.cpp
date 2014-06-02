@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "RedirectHandouts.h"
+#include <ripple/peerfinder/impl/RedirectHandouts.h>
 
 namespace ripple {
 namespace PeerFinder {

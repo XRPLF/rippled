@@ -20,9 +20,9 @@
 */
 //==============================================================================
 
-#include "../UnsignedInteger.h"
+#include <beast/crypto/UnsignedInteger.h>
 
-#include "../../unit_test/suite.h"
+#include <beast/unit_test/suite.h>
 
 namespace beast {
 

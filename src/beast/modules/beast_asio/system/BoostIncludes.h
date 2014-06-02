@@ -55,6 +55,6 @@
 #include <boost/asio/detail/handler_cont_helpers.hpp>
 
 // work-around for broken <boost/get_pointer.hpp>
-#include "../../../beast/boost/get_pointer.h"
+#include <beast/boost/get_pointer.h>
 
 #endif

@@ -20,7 +20,7 @@
 #ifndef BEAST_ASIO_TESTS_TESTPEERDETAILS_H_INCLUDED
 #define BEAST_ASIO_TESTS_TESTPEERDETAILS_H_INCLUDED
 
-#include "../../../beast/asio/abstract_socket.h"
+#include <beast/asio/abstract_socket.h>
 
 namespace beast {
 namespace asio {

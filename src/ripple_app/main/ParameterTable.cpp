@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "../../ripple/common/jsonrpc_fields.h"
+#include <ripple/common/jsonrpc_fields.h>
 
 namespace ripple {
 

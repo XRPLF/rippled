@@ -22,12 +22,12 @@
 //==============================================================================
 
 #if BEAST_INCLUDE_BEASTCONFIG
-#include "../../BeastConfig.h"
+#include <BeastConfig.h>
 #endif
 
 //==============================================================================
-#include "native/BasicNativeHeaders.h"
-#include "beast_core.h"
+#include <modules/beast_core/native/BasicNativeHeaders.h>
+#include <modules/beast_core/beast_core.h>
 
 #include <locale>
 #include <cctype>
@@ -126,45 +126,45 @@
 #undef _aligned_msize
 #endif
 
-#include "diagnostic/FatalError.cpp"
-#include "diagnostic/SemanticVersion.cpp"
-#include "diagnostic/UnitTestUtilities.cpp"
+#include <modules/beast_core/diagnostic/FatalError.cpp>
+#include <modules/beast_core/diagnostic/SemanticVersion.cpp>
+#include <modules/beast_core/diagnostic/UnitTestUtilities.cpp>
 
-#include "files/DirectoryIterator.cpp"
-#include "files/File.cpp"
-#include "files/FileInputStream.cpp"
-#include "files/FileOutputStream.cpp"
-#include "files/FileSearchPath.cpp"
-#include "files/RandomAccessFile.cpp"
-#include "files/TemporaryFile.cpp"
+#include <modules/beast_core/files/DirectoryIterator.cpp>
+#include <modules/beast_core/files/File.cpp>
+#include <modules/beast_core/files/FileInputStream.cpp>
+#include <modules/beast_core/files/FileOutputStream.cpp>
+#include <modules/beast_core/files/FileSearchPath.cpp>
+#include <modules/beast_core/files/RandomAccessFile.cpp>
+#include <modules/beast_core/files/TemporaryFile.cpp>
 
-#include "logging/Logger.cpp"
+#include <modules/beast_core/logging/Logger.cpp>
 
-#include "maths/Random.cpp"
+#include <modules/beast_core/maths/Random.cpp>
 
-#include "memory/MemoryBlock.cpp"
+#include <modules/beast_core/memory/MemoryBlock.cpp>
 
-#include "misc/Result.cpp"
+#include <modules/beast_core/misc/Result.cpp>
 
-#include "streams/FileInputSource.cpp"
-#include "streams/InputStream.cpp"
-#include "streams/MemoryOutputStream.cpp"
-#include "streams/OutputStream.cpp"
+#include <modules/beast_core/streams/FileInputSource.cpp>
+#include <modules/beast_core/streams/InputStream.cpp>
+#include <modules/beast_core/streams/MemoryOutputStream.cpp>
+#include <modules/beast_core/streams/OutputStream.cpp>
 
-#include "system/SystemStats.cpp"
+#include <modules/beast_core/system/SystemStats.cpp>
 
-#include "text/LexicalCast.cpp"
-#include "text/StringArray.cpp"
-#include "text/StringPairArray.cpp"
+#include <modules/beast_core/text/LexicalCast.cpp>
+#include <modules/beast_core/text/StringArray.cpp>
+#include <modules/beast_core/text/StringPairArray.cpp>
 
-#include "thread/DeadlineTimer.cpp"
-#include "thread/Workers.cpp"
+#include <modules/beast_core/thread/DeadlineTimer.cpp>
+#include <modules/beast_core/thread/Workers.cpp>
 
-#include "time/AtExitHook.cpp"
-#include "time/Time.cpp"
+#include <modules/beast_core/time/AtExitHook.cpp>
+#include <modules/beast_core/time/Time.cpp>
 
 #if BEAST_MAC || BEAST_IOS
-#include "native/osx_ObjCHelpers.h"
+#include <modules/beast_core/native/osx_ObjCHelpers.h>
 #endif
 
 #if BEAST_ANDROID
@@ -172,31 +172,31 @@
 #endif
 
 #if ! BEAST_WINDOWS
-#include "native/posix_SharedCode.h"
+#include <modules/beast_core/native/posix_SharedCode.h>
 #endif
 
 #if BEAST_MAC || BEAST_IOS
-#include "native/mac_Files.mm"
-#include "native/mac_Strings.mm"
-#include "native/mac_SystemStats.mm"
-#include "native/mac_Threads.mm"
+#include <modules/beast_core/native/mac_Files.mm>
+#include <modules/beast_core/native/mac_Strings.mm>
+#include <modules/beast_core/native/mac_SystemStats.mm>
+#include <modules/beast_core/native/mac_Threads.mm>
 
 #elif BEAST_WINDOWS
-#include "native/win32_ComSmartPtr.h"
-#include "native/win32_Files.cpp"
-#include "native/win32_Registry.cpp"
-#include "native/win32_SystemStats.cpp"
-#include "native/win32_Threads.cpp"
+#include <modules/beast_core/native/win32_ComSmartPtr.h>
+#include <modules/beast_core/native/win32_Files.cpp>
+#include <modules/beast_core/native/win32_Registry.cpp>
+#include <modules/beast_core/native/win32_SystemStats.cpp>
+#include <modules/beast_core/native/win32_Threads.cpp>
 
 #elif BEAST_LINUX
-#include "native/linux_Files.cpp"
-#include "native/linux_SystemStats.cpp"
-#include "native/linux_Threads.cpp"
+#include <modules/beast_core/native/linux_Files.cpp>
+#include <modules/beast_core/native/linux_SystemStats.cpp>
+#include <modules/beast_core/native/linux_Threads.cpp>
 
 #elif BEAST_BSD
-#include "native/bsd_Files.cpp"
-#include "native/bsd_SystemStats.cpp"
-#include "native/bsd_Threads.cpp"
+#include <modules/beast_core/native/bsd_Files.cpp>
+#include <modules/beast_core/native/bsd_SystemStats.cpp>
+#include <modules/beast_core/native/bsd_Threads.cpp>
 
 #elif BEAST_ANDROID
 #include "native/android_Files.cpp"
@@ -234,4 +234,4 @@ void beast_reportFatalError (char const* message, char const* fileName, int line
 #endif
 
 // Must be outside the namespace
-#include "system/BoostPlaceholdersFix.cpp"
+#include <modules/beast_core/system/BoostPlaceholdersFix.cpp>

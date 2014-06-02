@@ -20,8 +20,8 @@
 #ifndef BEAST_CXX14_ALGORITHM_H_INCLUDED
 #define BEAST_CXX14_ALGORITHM_H_INCLUDED
 
-#include "config.h"
-#include "functional.h"
+#include <beast/cxx14/config.h>
+#include <beast/cxx14/functional.h>
 
 #include <algorithm>
 

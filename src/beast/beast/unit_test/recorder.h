@@ -20,8 +20,8 @@
 #ifndef BEAST_UNIT_TEST_RECORDER_H_INLCUDED
 #define BEAST_UNIT_TEST_RECORDER_H_INLCUDED
 
-#include "results.h"
-#include "runner.h"
+#include <beast/unit_test/results.h>
+#include <beast/unit_test/runner.h>
 
 namespace beast {
 namespace unit_test {

@@ -20,8 +20,8 @@
 #ifndef BEAST_HTTP_PARSEDURL_H_INCLUDED
 #define BEAST_HTTP_PARSEDURL_H_INCLUDED
 
-#include "../Strings.h"
-#include "URL.h"
+#include <beast/Strings.h>
+#include <beast/http/URL.h>
 
 namespace beast {
 

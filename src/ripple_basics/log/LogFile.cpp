@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "../../beast/beast/cxx14/memory.h" // <memory>
+#include <beast/cxx14/memory.h> // <memory>
 
 namespace ripple {
 

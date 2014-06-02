@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "../../beast/modules/beast_core/thread/DeadlineTimer.h"
+#include <modules/beast_core/thread/DeadlineTimer.h>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/regex.hpp>

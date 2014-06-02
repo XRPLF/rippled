@@ -20,7 +20,7 @@
 #ifndef BEAST_ASIO_BASICS_FIXEDINPUTBUFFER_H_INCLUDED
 #define BEAST_ASIO_BASICS_FIXEDINPUTBUFFER_H_INCLUDED
 
-#include "../../../beast/asio/buffer_sequence.h"
+#include <beast/asio/buffer_sequence.h>
 #include <array>
 
 namespace beast {

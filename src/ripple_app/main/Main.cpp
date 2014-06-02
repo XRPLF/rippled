@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include "../../beast/beast/unit_test.h"
-#include "../../beast/beast/streams/debug_ostream.h"
-#include "../../ripple_basics/system/CheckLibraryVersions.h"
+#include <beast/unit_test.h>
+#include <beast/streams/debug_ostream.h>
+#include <ripple_basics/system/CheckLibraryVersions.h>
 
 namespace po = boost::program_options;
 

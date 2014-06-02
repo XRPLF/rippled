@@ -60,8 +60,8 @@
 #ifndef BEAST_SQDB_SESSION_H_INCLUDED
 #define BEAST_SQDB_SESSION_H_INCLUDED
 
-#include "../../../beast/smart_ptr/SharedPtr.h"
-#include "../../beast_core/memory/SharedSingleton.h"
+#include <beast/smart_ptr/SharedPtr.h>
+#include <modules/beast_core/memory/SharedSingleton.h>
 
 namespace beast {
 namespace sqdb {

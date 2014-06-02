@@ -20,13 +20,13 @@
 // MODULES: ../../crypto/impl/Sha256.cpp ../../container/impl/spookyv2.cpp
 
 #if BEAST_INCLUDE_BEASTCONFIG
-#include "../../../BeastConfig.h"
+#include <BeastConfig.h>
 #endif
 
-#include "../hardened_hash.h"
-#include "../../unit_test/suite.h"
+#include <beast/container/hardened_hash.h>
+#include <beast/unit_test/suite.h>
 
-#include "../../crypto/Sha256.h"
+#include <beast/crypto/Sha256.h>
 #include <boost/functional/hash.hpp>
 
 #include <array>

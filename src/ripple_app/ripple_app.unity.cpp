@@ -19,7 +19,7 @@
 
 #include "../../BeastConfig.h"
 
-#include "../beast/modules/beast_core/system/BeforeBoost.h"
+#include <modules/beast_core/system/BeforeBoost.h>
 #include <boost/bimap.hpp>
 #include <boost/bimap/list_of.hpp>
 #include <boost/bimap/multiset_of.hpp>
@@ -27,69 +27,69 @@
 #include <boost/optional.hpp>
 #include <boost/version.hpp>
 
-#include "ripple_app.h"
+#include <ripple_app/ripple_app.h>
 
-#include "../ripple_net/ripple_net.h"
-#include "../ripple_rpc/ripple_rpc.h"
-#include "../ripple_websocket/ripple_websocket.h"
-#include "../ripple/common/jsonrpc_fields.h"
+#include <ripple_net/ripple_net.h>
+#include <ripple_rpc/ripple_rpc.h>
+#include <ripple_websocket/ripple_websocket.h>
+#include <ripple/common/jsonrpc_fields.h>
 
 // This .cpp will end up including all of the public header
 // material in Ripple since it holds the Application object.
 
-#include "../ripple/common/seconds_clock.h"
-#include "../ripple/http/ripple_http.h"
-#include "../ripple/resource/ripple_resource.h"
-#include "../ripple/sitefiles/ripple_sitefiles.h"
-#include "../ripple/validators/ripple_validators.h"
+#include <ripple/common/seconds_clock.h>
+#include <ripple/http/ripple_http.h>
+#include <ripple/resource/ripple_resource.h>
+#include <ripple/sitefiles/ripple_sitefiles.h>
+#include <ripple/validators/ripple_validators.h>
 
-#include "../beast/beast/asio/io_latency_probe.h"
-#include "../beast/beast/cxx14/memory.h"
+#include <beast/asio/io_latency_probe.h>
+#include <beast/cxx14/memory.h>
 
 #include <fstream> // For Application.cpp
 
-# include "main/CollectorManager.h"
-#include "main/CollectorManager.cpp"
+#include <ripple_app/main/CollectorManager.h>
+#include <ripple_app/main/CollectorManager.cpp>
 
-#include "misc/ProofOfWorkFactory.h"
+#include <ripple_app/misc/ProofOfWorkFactory.h>
 
-# include "main/NodeStoreScheduler.h"
-#include "main/NodeStoreScheduler.cpp"
+#include <ripple_app/main/NodeStoreScheduler.h>
+#include <ripple_app/main/NodeStoreScheduler.cpp>
 
-# include "main/IoServicePool.h"
-#include "main/IoServicePool.cpp"
+#include <ripple_app/main/IoServicePool.h>
+#include <ripple_app/main/IoServicePool.cpp>
 
-# include "main/FatalErrorReporter.h"
-#include "main/FatalErrorReporter.cpp"
+#include <ripple_app/main/FatalErrorReporter.h>
+#include <ripple_app/main/FatalErrorReporter.cpp>
 
-# include "rpc/RPCHandler.h"
-# include "rpc/RPCServerHandler.h"
-# include "main/RPCHTTPServer.h"
-#include "main/RPCHTTPServer.cpp"
-#include "rpc/RPCServerHandler.cpp"
-#include "rpc/RPCHandler.cpp"
+#include <ripple_app/rpc/RPCHandler.h>
+#include <ripple_app/rpc/RPCServerHandler.h>
+#include <ripple_app/main/RPCHTTPServer.h>
+#include <ripple_app/main/RPCHTTPServer.cpp>
+#include <ripple_app/rpc/RPCServerHandler.cpp>
+#include <ripple_app/rpc/RPCHandler.cpp>
 
-#include "websocket/WSConnection.h"
+#include <ripple_app/websocket/WSConnection.h>
 
-# include "tx/TxQueueEntry.h"
-#include "tx/TxQueueEntry.cpp"
-# include "tx/TxQueue.h"
-#include "tx/TxQueue.cpp"
+#include <ripple_app/tx/TxQueueEntry.h>
+#include <ripple_app/tx/TxQueueEntry.cpp>
+#include <ripple_app/tx/TxQueue.h>
+#include <ripple_app/tx/TxQueue.cpp>
 
-# include "websocket/WSServerHandler.h"
-#include "websocket/WSServerHandler.cpp"
-#include "websocket/WSConnection.cpp"
-# include "websocket/WSDoor.h"
-#include "websocket/WSDoor.cpp"
+#include <ripple_app/websocket/WSServerHandler.h>
+#include <ripple_app/websocket/WSServerHandler.cpp>
+#include <ripple_app/websocket/WSConnection.cpp>
+#include <ripple_app/websocket/WSDoor.h>
+#include <ripple_app/websocket/WSDoor.cpp>
 
-#include "../ripple/common/ResolverAsio.h"
+#include <ripple/common/ResolverAsio.h>
 
-# include "node/SqliteFactory.h"
-#include "node/SqliteFactory.cpp"
+#include <ripple_app/node/SqliteFactory.h>
+#include <ripple_app/node/SqliteFactory.cpp>
 
-#include "main/Application.cpp"
+#include <ripple_app/main/Application.cpp>
 
-#include "main/Main.cpp"
+#include <ripple_app/main/Main.cpp>
 
 //------------------------------------------------------------------------------
 

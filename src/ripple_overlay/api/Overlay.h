@@ -20,15 +20,15 @@
 #ifndef RIPPLE_OVERLAY_OVERLAY_H_INCLUDED
 #define RIPPLE_OVERLAY_OVERLAY_H_INCLUDED
 
-#include "Peer.h"
+#include <ripple_overlay/api/Peer.h>
 
 // VFALCO TODO Remove this include dependency it shouldn't be needed
-#include "../../ripple/peerfinder/api/Slot.h"
+#include <ripple/peerfinder/api/Slot.h>
 
-#include "../../beast/beast/threads/Stoppable.h"
-#include "../../beast/beast/utility/PropertyStream.h"
+#include <beast/threads/Stoppable.h>
+#include <beast/utility/PropertyStream.h>
 
-#include "../../beast/beast/cxx14/type_traits.h" // <type_traits>
+#include <beast/cxx14/type_traits.h> // <type_traits>
 
 namespace ripple {
 

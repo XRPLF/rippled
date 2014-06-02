@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "../api/Message.h"
+#include <ripple_overlay/api/Message.h>
 
 #include <cstdint>
 

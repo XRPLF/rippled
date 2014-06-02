@@ -20,7 +20,7 @@
 #ifndef BEAST_ASIO_TESTS_TESTPEERDETAILSTCP_H_INCLUDED
 #define BEAST_ASIO_TESTS_TESTPEERDETAILSTCP_H_INCLUDED
 
-#include "../../../beast/asio/socket_wrapper.h"
+#include <beast/asio/socket_wrapper.h>
 
 namespace beast {
 namespace asio {

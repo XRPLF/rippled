@@ -19,23 +19,23 @@
 
 #include "../../BeastConfig.h"
 
-#include "ripple_app.h"
+#include <ripple_app/ripple_app.h>
 
 #ifdef _MSC_VER
 #pragma warning (push)
 #pragma warning (disable: 4309) // truncation of constant value
 #endif
 
-#include "../ripple_rpc/api/ErrorCodes.h"
+#include <ripple_rpc/api/ErrorCodes.h>
 
-#include "paths/PathRequest.cpp"
-#include "paths/PathRequests.cpp"
-#include "paths/RippleCalc.cpp"
-#include "paths/PathState.cpp"
+#include <ripple_app/paths/PathRequest.cpp>
+#include <ripple_app/paths/PathRequests.cpp>
+#include <ripple_app/paths/RippleCalc.cpp>
+#include <ripple_app/paths/PathState.cpp>
 
-#include "main/ParameterTable.cpp"
-#include "paths/RippleLineCache.cpp"
-#include "ledger/SerializedValidation.cpp"
+#include <ripple_app/main/ParameterTable.cpp>
+#include <ripple_app/paths/RippleLineCache.cpp>
+#include <ripple_app/ledger/SerializedValidation.cpp>
 
 #ifdef _MSC_VER
 #pragma warning (pop)

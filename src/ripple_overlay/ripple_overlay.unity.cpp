@@ -19,8 +19,8 @@
 
 #include "../../BeastConfig.h"
 
-#include "impl/Message.cpp"
-#include "impl/OverlayImpl.cpp"
-#include "impl/PeerImp.h"
-#include "impl/PeerDoor.cpp"
+#include <ripple_overlay/impl/Message.cpp>
+#include <ripple_overlay/impl/OverlayImpl.cpp>
+#include <ripple_overlay/impl/PeerImp.h>
+#include <ripple_overlay/impl/PeerDoor.cpp>
 

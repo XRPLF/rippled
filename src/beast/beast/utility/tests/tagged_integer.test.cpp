@@ -18,13 +18,13 @@
 //==============================================================================
 
 #if BEAST_INCLUDE_BEASTCONFIG
-#include "../../../BeastConfig.h"
+#include <BeastConfig.h>
 #endif
 
 #include <type_traits>
 
-#include "../tagged_integer.h"
-#include "../../unit_test/suite.h"
+#include <beast/utility/tagged_integer.h>
+#include <beast/unit_test/suite.h>
 
 namespace beast {
 

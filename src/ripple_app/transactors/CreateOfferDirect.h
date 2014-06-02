@@ -20,7 +20,7 @@
 #ifndef RIPPLE_TX_DIRECT_OFFERCREATE_H_INCLUDED
 #define RIPPLE_TX_DIRECT_OFFERCREATE_H_INCLUDED
 
-#include "../book/Amounts.h"
+#include <ripple_app/book/Amounts.h>
 
 #include <unordered_set>
 

@@ -20,10 +20,10 @@
 #ifndef RIPPLE_CORE_AMOUNT_H_INCLUDED
 #define RIPPLE_CORE_AMOUNT_H_INCLUDED
 
-#include "../../ripple_data/protocol/SerializedObject.h"
+#include <ripple_data/protocol/SerializedObject.h>
 
-#include "../../beast/beast/utility/noexcept.h"
-#include "../../beast/beast/cxx14/type_traits.h" // <type_traits>
+#include <beast/utility/noexcept.h>
+#include <beast/cxx14/type_traits.h> // <type_traits>
 
 namespace ripple {
 namespace core {

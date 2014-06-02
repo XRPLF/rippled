@@ -20,16 +20,16 @@
 #ifndef BEAST_ASIO_HTTP_BASIC_SESSION_H_INCLUDED
 #define BEAST_ASIO_HTTP_BASIC_SESSION_H_INCLUDED
 
-#include "basic_url.h"
-#include "raw_parser.h"
-#include "detail/header_traits.h"
+#include <beast/http/basic_url.h>
+#include <beast/http/raw_parser.h>
+#include <beast/http/detail/header_traits.h>
 
-#include "../asio/bind_handler.h"
-#include "../asio/enable_wait_for_async.h"
-#include "../asio/placeholders.h"
-#include "../asio/shared_handler.h"
-#include "../utility/is_call_possible.h"
-#include "../utility/ci_char_traits.h"
+#include <beast/asio/bind_handler.h>
+#include <beast/asio/enable_wait_for_async.h>
+#include <beast/asio/placeholders.h>
+#include <beast/asio/shared_handler.h>
+#include <beast/utility/is_call_possible.h>
+#include <beast/utility/ci_char_traits.h>
 
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/deadline_timer.hpp>
@@ -42,8 +42,8 @@
 #include <boost/utility/string_ref.hpp>
 #include <boost/logic/tribool.hpp>
 
-#include "../cxx14/memory.h" // <memory>
-#include "../cxx14/type_traits.h" // <type_traits>
+#include <beast/cxx14/memory.h> // <memory>
+#include <beast/cxx14/type_traits.h> // <type_traits>
 
 #include <sstream> // REMOVE ASAP!
 

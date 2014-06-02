@@ -24,9 +24,9 @@
 #ifndef BEAST_CHARPOINTER_ASCII_H_INCLUDED
 #define BEAST_CHARPOINTER_ASCII_H_INCLUDED
 
-#include "../Config.h"
+#include <beast/Config.h>
 
-#include "CharacterFunctions.h"
+#include <beast/strings/CharacterFunctions.h>
 
 #include <cstdlib>
 #include <cstring>

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include "../../beast/modules/beast_asio/beast_asio.h"
-#include "../../beast/beast/asio/IPAddressConversion.h"
+#include <modules/beast_asio/beast_asio.h>
+#include <beast/asio/IPAddressConversion.h>
 
 #include <atomic>
 #include <deque>
@@ -26,7 +26,7 @@
 
 #include "boost/asio.hpp"
 
-#include "../ResolverAsio.h"
+#include <ripple/common/ResolverAsio.h>
 
 #include <cassert>
 

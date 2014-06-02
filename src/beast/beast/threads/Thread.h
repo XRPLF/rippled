@@ -24,10 +24,10 @@
 #ifndef BEAST_THREADS_THREAD_H_INCLUDED
 #define BEAST_THREADS_THREAD_H_INCLUDED
 
-#include "../strings/String.h"
-#include "../utility/LeakChecked.h"
-#include "RecursiveMutex.h"
-#include "WaitableEvent.h"
+#include <beast/strings/String.h>
+#include <beast/utility/LeakChecked.h>
+#include <beast/threads/RecursiveMutex.h>
+#include <beast/threads/WaitableEvent.h>
 
 namespace beast {
 

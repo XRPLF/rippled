@@ -19,27 +19,27 @@
 
 #include "../../BeastConfig.h"
 
-#include "ripple_app.h"
+#include <ripple_app/ripple_app.h>
 
-#include "../ripple/common/seconds_clock.h"
+#include <ripple/common/seconds_clock.h>
 
-#include "shamap/SHAMap.cpp" // Uses theApp
-#include "shamap/SHAMapItem.cpp"
-#include "shamap/SHAMapSync.cpp"
-#include "shamap/SHAMapMissingNode.cpp"
+#include <ripple_app/shamap/SHAMap.cpp> // Uses theApp
+#include <ripple_app/shamap/SHAMapItem.cpp>
+#include <ripple_app/shamap/SHAMapSync.cpp>
+#include <ripple_app/shamap/SHAMapMissingNode.cpp>
 
-#include "misc/AccountItem.cpp"
-#include "misc/CanonicalTXSet.cpp"
-#include "ledger/LedgerProposal.cpp"
-#include "main/LoadManager.cpp"
-#include "misc/NicknameState.cpp"
-#include "ledger/OrderBookDB.cpp"
+#include <ripple_app/misc/AccountItem.cpp>
+#include <ripple_app/misc/CanonicalTXSet.cpp>
+#include <ripple_app/ledger/LedgerProposal.cpp>
+#include <ripple_app/main/LoadManager.cpp>
+#include <ripple_app/misc/NicknameState.cpp>
+#include <ripple_app/ledger/OrderBookDB.cpp>
 
-#include "data/Database.cpp"
-#include "data/DatabaseCon.cpp"
-#include "data/SqliteDatabase.cpp"
-#include "data/DBInit.cpp"
+#include <ripple_app/data/Database.cpp>
+#include <ripple_app/data/DatabaseCon.cpp>
+#include <ripple_app/data/SqliteDatabase.cpp>
+#include <ripple_app/data/DBInit.cpp>
 
-# include "shamap/RadixMapTest.h"
-#include "shamap/RadixMapTest.cpp"
-#include "shamap/FetchPackTests.cpp"
+#include <ripple_app/shamap/RadixMapTest.h>
+#include <ripple_app/shamap/RadixMapTest.cpp>
+#include <ripple_app/shamap/FetchPackTests.cpp>

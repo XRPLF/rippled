@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include "../book/OfferStream.h"
-#include "../book/Taker.h"
-#include "../book/Quality.h"
-#include "../../beast/beast/streams/debug_ostream.h"
+#include <ripple_app/book/OfferStream.h>
+#include <ripple_app/book/Taker.h>
+#include <ripple_app/book/Quality.h>
+#include <beast/streams/debug_ostream.h>
 
 namespace ripple {
 

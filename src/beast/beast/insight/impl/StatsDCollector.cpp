@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include "../../asio/IPAddressConversion.h"
-#include "../../intrusive/List.h"
-#include "../../threads/SharedData.h"
+#include <beast/asio/IPAddressConversion.h>
+#include <beast/intrusive/List.h>
+#include <beast/threads/SharedData.h>
 
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/bind.hpp>

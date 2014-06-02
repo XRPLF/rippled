@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include "OverlayImpl.h"
-#include "PeerDoor.h"
+#include <ripple_overlay/impl/OverlayImpl.h>
+#include <ripple_overlay/impl/PeerDoor.h>
 
 namespace ripple {
 

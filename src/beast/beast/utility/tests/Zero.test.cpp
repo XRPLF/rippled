@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include "../Zero.h"
+#include <beast/utility/Zero.h>
 
-#include "../../unit_test/suite.h"
+#include <beast/unit_test/suite.h>
 
 namespace beast {
 

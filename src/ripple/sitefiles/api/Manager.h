@@ -20,9 +20,9 @@
 #ifndef RIPPLE_SITEFILES_MANAGER_H_INCLUDED
 #define RIPPLE_SITEFILES_MANAGER_H_INCLUDED
 
-#include "Listener.h"
+#include <ripple/sitefiles/api/Listener.h>
 
-#include "../../../beast/beast/utility/PropertyStream.h"
+#include <beast/utility/PropertyStream.h>
 
 namespace ripple {
 namespace SiteFiles {

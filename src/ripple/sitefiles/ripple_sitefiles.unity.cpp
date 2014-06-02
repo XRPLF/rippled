@@ -17,19 +17,19 @@
 */
 //==============================================================================
 
-#include "../../BeastConfig.h"
+#include <BeastConfig.h>
 
-#include "ripple_sitefiles.h"
+#include <ripple/sitefiles/ripple_sitefiles.h>
 
-#include "../../beast/modules/beast_asio/beast_asio.h" // HTTPClientBase
+#include <modules/beast_asio/beast_asio.h> // HTTPClientBase
 
-#include "../../beast/modules/beast_core/system/BeforeBoost.h"
+#include <modules/beast_core/system/BeforeBoost.h>
 #include <boost/regex.hpp>
 
 #include <set>
 
-#  include "impl/Site.h"
-# include "impl/Logic.h"
-#include "impl/Manager.cpp"
-#include "impl/Section.cpp"
-#include "impl/SiteFile.cpp"
+#include <ripple/sitefiles/impl/Site.h>
+#include <ripple/sitefiles/impl/Logic.h>
+#include <ripple/sitefiles/impl/Manager.cpp>
+#include <ripple/sitefiles/impl/Section.cpp>
+#include <ripple/sitefiles/impl/SiteFile.cpp>

@@ -20,7 +20,7 @@
 #ifndef BEAST_CORE_THREAD_DETAIL_SCOPEDLOCK_H_INCLUDED
 #define BEAST_CORE_THREAD_DETAIL_SCOPEDLOCK_H_INCLUDED
 
-#include "../MutexTraits.h"
+#include <modules/beast_core/thread/MutexTraits.h>
 
 namespace beast
 {

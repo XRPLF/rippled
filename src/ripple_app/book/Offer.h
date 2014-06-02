@@ -20,14 +20,14 @@
 #ifndef RIPPLE_CORE_OFFER_H_INCLUDED
 #define RIPPLE_CORE_OFFER_H_INCLUDED
 
-#include "Amounts.h"
-#include "Quality.h"
-#include "Types.h"
+#include <ripple_app/book/Amounts.h>
+#include <ripple_app/book/Quality.h>
+#include <ripple_app/book/Types.h>
 
-#include "../misc/SerializedLedger.h"
-#include "../../ripple_data/protocol/FieldNames.h"
+#include <ripple_app/misc/SerializedLedger.h>
+#include <ripple_data/protocol/FieldNames.h>
 
-#include "../../beast/beast/utility/noexcept.h"
+#include <beast/utility/noexcept.h>
 
 #include <ostream>
 

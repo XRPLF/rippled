@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include "../../beast/beast/unit_test/suite.h"
-#include "../../beast/modules/beast_core/diagnostic/FatalError.h"
-#include "../../beast/modules/beast_core/diagnostic/SemanticVersion.h"
+#include <beast/unit_test/suite.h>
+#include <modules/beast_core/diagnostic/FatalError.h>
+#include <modules/beast_core/diagnostic/SemanticVersion.h>
 
 namespace ripple {
 

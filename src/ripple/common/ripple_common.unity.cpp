@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include "../../BeastConfig.h"
+#include <BeastConfig.h>
 
-#include "impl/KeyCache.cpp"
-#include "impl/TaggedCache.cpp"
-#include "impl/ResolverAsio.cpp"
-#include "impl/MultiSocket.cpp"
-#include "impl/RippleSSLContext.cpp"
+#include <ripple/common/impl/KeyCache.cpp>
+#include <ripple/common/impl/TaggedCache.cpp>
+#include <ripple/common/impl/ResolverAsio.cpp>
+#include <ripple/common/impl/MultiSocket.cpp>
+#include <ripple/common/impl/RippleSSLContext.cpp>

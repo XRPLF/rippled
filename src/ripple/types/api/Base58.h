@@ -35,7 +35,7 @@
 #include <iterator>
 #include <type_traits>
 
-#include "Blob.h"
+#include <ripple/types/api/Blob.h>
 
 namespace ripple {
 

@@ -648,9 +648,6 @@
     <ClInclude Include="..\..\src\BeastConfig.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\BeastConfig.h">
-      <Filter>src\beast</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\Arithmetic.h">
       <Filter>src\beast\beast</Filter>
     </ClInclude>

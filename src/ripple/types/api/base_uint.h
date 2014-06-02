@@ -25,12 +25,12 @@
 #ifndef RIPPLE_TYPES_BASE_UINT_H_INCLUDED
 #define RIPPLE_TYPES_BASE_UINT_H_INCLUDED
 
-#include "Blob.h"
-#include "strHex.h"
-#include "ByteOrder.h"
+#include <ripple/types/api/Blob.h>
+#include <ripple/types/api/strHex.h>
+#include <ripple/types/api/ByteOrder.h>
 
-#include "../../../beast/beast/container/hardened_hash.h"
-#include "../../../beast/beast/utility/Zero.h"
+#include <beast/container/hardened_hash.h>
+#include <beast/beast/utility/Zero.h>
 
 using beast::zero;
 using beast::Zero;

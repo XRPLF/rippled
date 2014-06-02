@@ -25,11 +25,11 @@
 #include "../../BeastConfig.h"
 #endif
 
-#include "../../Atomic.h"
-#include "../../Arithmetic.h"
-#include "../../ByteOrder.h"
+#include <beast/Atomic.h>
+#include <beast/Arithmetic.h>
+#include <beast/ByteOrder.h>
 
-#include "../../unit_test/suite.h"
+#include <beast/unit_test/suite.h>
 
 namespace beast {
 

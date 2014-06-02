@@ -19,29 +19,29 @@
 
 #include "../../BeastConfig.h"
 
-#include "../beast/modules/beast_core/system/BeforeBoost.h"
+#include <modules/beast_core/system/BeforeBoost.h>
 #include <boost/bimap.hpp>
 #include <boost/bimap/multiset_of.hpp>
 #include <boost/bimap/unordered_set_of.hpp>
 
-#include "ripple_app.h"
+#include <ripple_app/ripple_app.h>
 
-#include "../ripple/validators/ripple_validators.h"
+#include <ripple/validators/ripple_validators.h>
 
-#include "misc/PowResult.h"
+#include <ripple_app/misc/PowResult.h>
 
-#include "misc/ProofOfWorkFactory.h"
+#include <ripple_app/misc/ProofOfWorkFactory.h>
 
-#include "peers/PeerSet.cpp"
-#include "misc/OrderBook.cpp"
-#include "misc/ProofOfWorkFactory.cpp"
-#include "misc/ProofOfWork.cpp"
-#include "misc/SerializedTransaction.cpp"
+#include <ripple_app/peers/PeerSet.cpp>
+#include <ripple_app/misc/OrderBook.cpp>
+#include <ripple_app/misc/ProofOfWorkFactory.cpp>
+#include <ripple_app/misc/ProofOfWork.cpp>
+#include <ripple_app/misc/SerializedTransaction.cpp>
 
-#include "shamap/SHAMapSyncFilters.cpp" // requires Application
+#include <ripple_app/shamap/SHAMapSyncFilters.cpp> // requires Application
 
-#include "consensus/LedgerConsensus.cpp"
+#include <ripple_app/consensus/LedgerConsensus.cpp>
 
-# include "ledger/LedgerCleaner.h"
-#include "ledger/LedgerCleaner.cpp"
-#include "ledger/LedgerMaster.cpp"
+#include <ripple_app/ledger/LedgerCleaner.h>
+#include <ripple_app/ledger/LedgerCleaner.cpp>
+#include <ripple_app/ledger/LedgerMaster.cpp>

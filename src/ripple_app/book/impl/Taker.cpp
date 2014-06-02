@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "../Taker.h"
+#include <ripple_app/book/Taker.h>
 
 //#include <utility>
 

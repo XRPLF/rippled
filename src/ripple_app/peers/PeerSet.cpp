@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include"../../ripple_overlay/api/Overlay.h"
+#include<ripple_overlay/api/Overlay.h>
 
 namespace ripple {
 

@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#include "../../BeastConfig.h"
+#include <BeastConfig.h>
 
-#include "ripple_peerfinder.h"
+#include <ripple/peerfinder/ripple_peerfinder.h>
 
-#include "../../ripple/algorithm/api/CycledSet.h"
-#include "../../ripple/common/Resolver.h"
+#include <ripple/algorithm/api/CycledSet.h>
+#include <ripple/common/Resolver.h>
 
 #include <deque>
 #include <fstream>
@@ -31,18 +31,18 @@
 #include <set>
 #include <unordered_set>
 
-#include "../../beast/modules/beast_core/system/BeforeBoost.h"
+#include <modules/beast_core/system/BeforeBoost.h>
 #include <boost/array.hpp>
 #include <boost/optional.hpp>
 #include <boost/regex.hpp>
 
-#include "../../beast/modules/beast_sqdb/beast_sqdb.h"
-#include "../../beast/modules/beast_asio/beast_asio.h"
+#include <modules/beast_sqdb/beast_sqdb.h>
+#include <modules/beast_asio/beast_asio.h>
 
-#include "../../beast/beast/boost/ErrorCode.h"
-#include "../../beast/beast/chrono/chrono_io.h"
+#include <beast/boost/ErrorCode.h>
+#include <beast/chrono/chrono_io.h>
 
-#include "impl/iosformat.h" // VFALCO NOTE move to beast
+#include <ripple/peerfinder/impl/iosformat.h> // VFALCO NOTE move to beast
 
 #ifndef NDEBUG
 # define consistency_check(cond) bassert(cond)
@@ -50,38 +50,38 @@
 # define consistency_check(cond)
 #endif
 
-#include "impl/PrivateTypes.h"
-#include "impl/Tuning.h"
-#include "impl/Checker.h"
-#include "impl/CheckerAdapter.h"
-#include "impl/Livecache.h"
-#include "impl/SlotImp.h"
-#include "impl/Counts.h"
-#include "impl/Source.h"
-#include "impl/SourceStrings.h"
-#include "impl/Store.h"
-#include "impl/Bootcache.h"
-#include "impl/StoreSqdb.h"
-#include "impl/Reporting.h"
-#include "impl/Logic.h"
+#include <ripple/peerfinder/impl/PrivateTypes.h>
+#include <ripple/peerfinder/impl/Tuning.h>
+#include <ripple/peerfinder/impl/Checker.h>
+#include <ripple/peerfinder/impl/CheckerAdapter.h>
+#include <ripple/peerfinder/impl/Livecache.h>
+#include <ripple/peerfinder/impl/SlotImp.h>
+#include <ripple/peerfinder/impl/Counts.h>
+#include <ripple/peerfinder/impl/Source.h>
+#include <ripple/peerfinder/impl/SourceStrings.h>
+#include <ripple/peerfinder/impl/Store.h>
+#include <ripple/peerfinder/impl/Bootcache.h>
+#include <ripple/peerfinder/impl/StoreSqdb.h>
+#include <ripple/peerfinder/impl/Reporting.h>
+#include <ripple/peerfinder/impl/Logic.h>
 
-#include "impl/Bootcache.cpp"
-#include "impl/Checker.cpp"
-#include "impl/Config.cpp"
-#include "impl/ConnectHandouts.cpp"
-#include "impl/Endpoint.cpp"
-#include "impl/Livecache.cpp"
-#include "impl/Manager.cpp"
-#include "impl/RedirectHandouts.cpp"
-#include "impl/SlotHandouts.cpp"
-#include "impl/SlotImp.cpp"
-#include "impl/SourceStrings.cpp"
+#include <ripple/peerfinder/impl/Bootcache.cpp>
+#include <ripple/peerfinder/impl/Checker.cpp>
+#include <ripple/peerfinder/impl/Config.cpp>
+#include <ripple/peerfinder/impl/ConnectHandouts.cpp>
+#include <ripple/peerfinder/impl/Endpoint.cpp>
+#include <ripple/peerfinder/impl/Livecache.cpp>
+#include <ripple/peerfinder/impl/Manager.cpp>
+#include <ripple/peerfinder/impl/RedirectHandouts.cpp>
+#include <ripple/peerfinder/impl/SlotHandouts.cpp>
+#include <ripple/peerfinder/impl/SlotImp.cpp>
+#include <ripple/peerfinder/impl/SourceStrings.cpp>
 
-#include "sim/GraphAlgorithms.h"
-#include "sim/WrappedSink.h"
-#include "sim/Predicates.h"
-#include "sim/FunctionQueue.h"
-#include "sim/Message.h"
-#include "sim/NodeSnapshot.h"
-#include "sim/Params.h"
-#include "sim/Tests.cpp"
+#include <ripple/peerfinder/sim/GraphAlgorithms.h>
+#include <ripple/peerfinder/sim/WrappedSink.h>
+#include <ripple/peerfinder/sim/Predicates.h>
+#include <ripple/peerfinder/sim/FunctionQueue.h>
+#include <ripple/peerfinder/sim/Message.h>
+#include <ripple/peerfinder/sim/NodeSnapshot.h>
+#include <ripple/peerfinder/sim/Params.h>
+#include <ripple/peerfinder/sim/Tests.cpp>

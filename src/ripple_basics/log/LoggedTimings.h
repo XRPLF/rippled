@@ -20,10 +20,10 @@
 #ifndef RIPPLE_BASICS_LOGGEDTIMINGS_H_INCLUDED
 #define RIPPLE_BASICS_LOGGEDTIMINGS_H_INCLUDED
 
-#include "../../beast/modules/beast_core/time/Time.h"
-#include "../../beast/modules/beast_core/diagnostic/MeasureFunctionCallTime.h"
-#include "../../beast/beast/utility/Debug.h"
-#include "../containers/SyncUnorderedMap.h"
+#include <modules/beast_core/time/Time.h>
+#include <modules/beast_core/diagnostic/MeasureFunctionCallTime.h>
+#include <beast/utility/Debug.h>
+#include <ripple_basics/containers/SyncUnorderedMap.h>
     
 namespace ripple {
 

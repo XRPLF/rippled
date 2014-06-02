@@ -20,11 +20,11 @@
 #ifndef RIPPLE_TYPES_H_INCLUDED
 #define RIPPLE_TYPES_H_INCLUDED
 
-#include "../json/ripple_json.h"
+#include <ripple/json/ripple_json.h>
 
-#include "../../beast/beast/Crypto.h"
+#include <beast/Crypto.h>
 
-#include "../../beast/modules/beast_core/system/BeforeBoost.h"
+#include <modules/beast_core/system/BeforeBoost.h>
 #include <boost/utility/base_from_member.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/unordered_set.hpp>
@@ -33,33 +33,33 @@
 #if BEAST_WIN32
 // (nothing)
 #elif __APPLE__
-# include <libkern/OSByteOrder.h>
+#include <libkern/OSByteOrder.h>
 #elif defined(__FreeBSD__) || defined(__NetBSD__)
-# include <sys/endian.h>
+#include <sys/endian.h>
 #elif defined(__OpenBSD__)
-# include <sys/types.h>
+#include <sys/types.h>
 #endif
 
-#include "api/AgedHistory.h"
-#  include "api/Blob.h"
-# include "api/Base58.h"
-#  include "api/ByteOrder.h"
-#  include "api/strHex.h"
-# include "api/UInt160.h"
-# include "api/RandomNumbers.h"
-#include "api/HashMaps.h"
+#include <ripple/types/api/AgedHistory.h>
+#include <ripple/types/api/Blob.h>
+#include <ripple/types/api/Base58.h>
+#include <ripple/types/api/ByteOrder.h>
+#include <ripple/types/api/strHex.h>
+#include <ripple/types/api/UInt160.h>
+#include <ripple/types/api/RandomNumbers.h>
+#include <ripple/types/api/HashMaps.h>
 
-# include "api/IdentifierType.h"
-# include "api/IdentifierStorage.h"
-# include "api/CryptoIdentifier.h"
-#include "api/RippleAccountID.h"
-#include "api/RippleAccountPublicKey.h"
-#include "api/RippleAccountPrivateKey.h"
-#include "api/RippleAssets.h"
-#include "api/RipplePublicKey.h"
-#include "api/RipplePrivateKey.h"
-# include "api/SimpleIdentifier.h"
-#include "api/RippleLedgerHash.h"
-#include "api/RipplePublicKeyHash.h"
+#include <ripple/types/api/IdentifierType.h>
+#include <ripple/types/api/IdentifierStorage.h>
+#include <ripple/types/api/CryptoIdentifier.h>
+#include <ripple/types/api/RippleAccountID.h>
+#include <ripple/types/api/RippleAccountPublicKey.h>
+#include <ripple/types/api/RippleAccountPrivateKey.h>
+#include <ripple/types/api/RippleAssets.h>
+#include <ripple/types/api/RipplePublicKey.h>
+#include <ripple/types/api/RipplePrivateKey.h>
+#include <ripple/types/api/SimpleIdentifier.h>
+#include <ripple/types/api/RippleLedgerHash.h>
+#include <ripple/types/api/RipplePublicKeyHash.h>
 
 #endif

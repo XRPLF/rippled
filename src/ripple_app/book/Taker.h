@@ -20,13 +20,13 @@
 #ifndef RIPPLE_CORE_TAKER_H_INCLUDED
 #define RIPPLE_CORE_TAKER_H_INCLUDED
 
-#include "Amounts.h"
-#include "Quality.h"
-#include "Offer.h"
-#include "Types.h"
+#include <ripple_app/book/Amounts.h>
+#include <ripple_app/book/Quality.h>
+#include <ripple_app/book/Offer.h>
+#include <ripple_app/book/Types.h>
 
-#include "../../beast/beast/streams/debug_ostream.h"
-#include "../../beast/beast/utility/noexcept.h"
+#include <beast/streams/debug_ostream.h>
+#include <beast/utility/noexcept.h>
 
 #include <functional>
 //#include <utility>

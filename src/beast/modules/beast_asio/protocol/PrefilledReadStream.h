@@ -20,7 +20,7 @@
 #ifndef BEAST_ASIO_HANDSHAKE_PREFILLEDREADSTREAM_H_INCLUDED
 #define BEAST_ASIO_HANDSHAKE_PREFILLEDREADSTREAM_H_INCLUDED
 
-#include "../../../beast/cxx14/type_traits.h" // <type_traits>
+#include <beast/cxx14/type_traits.h> // <type_traits>
 #include <utility>
 
 namespace beast {

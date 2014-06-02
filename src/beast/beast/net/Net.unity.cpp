@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#include "../Config.h"
+#include <beast/Config.h>
 
-#include "impl/DynamicBuffer.cpp"
-#include "impl/IPAddressV4.cpp"
-#include "impl/IPAddressV6.cpp"
-#include "impl/IPEndpoint.cpp"
+#include <beast/net/impl/DynamicBuffer.cpp>
+#include <beast/net/impl/IPAddressV4.cpp>
+#include <beast/net/impl/IPAddressV6.cpp>
+#include <beast/net/impl/IPEndpoint.cpp>
 
-#include "tests/IPEndpoint.test.cpp"
+#include <beast/net/tests/IPEndpoint.test.cpp>

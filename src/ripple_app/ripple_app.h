@@ -28,7 +28,7 @@
 //             purely abstract and move implementation into .cpp files.
 //
 
-#include "../beast/modules/beast_core/system/BeforeBoost.h"
+#include <modules/beast_core/system/BeforeBoost.h>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/array.hpp>
 #include <boost/asio/read_until.hpp>
@@ -45,91 +45,91 @@
 
 //------------------------------------------------------------------------------
 
-#include "../ripple_basics/ripple_basics.h"
-#include "../ripple_core/ripple_core.h"
-#include "../ripple_data/ripple_data.h"
-#include "../ripple_net/ripple_net.h"
+#include <ripple_basics/ripple_basics.h>
+#include <ripple_core/ripple_core.h>
+#include <ripple_data/ripple_data.h>
+#include <ripple_net/ripple_net.h>
 
-#include "../ripple/common/ResolverAsio.h"
+#include <ripple/common/ResolverAsio.h>
 
 // VFALCO TODO Remove this include
-#include "../beast/modules/beast_sqlite/beast_sqlite.h"
+#include <modules/beast_sqlite/beast_sqlite.h>
 
 // Order matters here. If you get compile errors,
 // reorder the include lines until the order is correct.
 
-#include "../../ripple/common/KeyCache.h"
-#include "../../ripple/common/TaggedCache.h"
+#include <ripple/common/KeyCache.h>
+#include <ripple/common/TaggedCache.h>
 
-#include "data/Database.h"
-#include "data/DatabaseCon.h"
-#include "data/SqliteDatabase.h"
-#include "data/DBInit.h"
-#include "shamap/SHAMapItem.h"
-#include "shamap/SHAMapNode.h"
-#include "shamap/SHAMapTreeNode.h"
-#include "shamap/SHAMapMissingNode.h"
-#include "shamap/SHAMapSyncFilter.h"
-#include "shamap/SHAMapAddNode.h"
-#include "shamap/SHAMap.h"
-#include "misc/SerializedTransaction.h"
-#include "misc/SerializedLedger.h"
-#include "tx/TransactionMeta.h"
-#include "tx/Transaction.h"
-#include "misc/AccountState.h"
-#include "misc/NicknameState.h"
-#include "ledger/Ledger.h"
-#include "ledger/SerializedValidation.h"
-#include "main/LoadManager.h"
-#include "misc/OrderBook.h"
-#include "shamap/SHAMapSyncFilters.h"
-#include "misc/AmendmentTable.h"
-#include "misc/FeeVote.h"
-#include "misc/IHashRouter.h"
-#include "peers/ClusterNodeStatus.h"
-#include "peers/UniqueNodeList.h"
-#include "misc/Validations.h"
-#include "peers/PeerSet.h"
-#include "ledger/InboundLedger.h"
-#include "ledger/InboundLedgers.h"
-#include "misc/AccountItem.h"
-#include "misc/AccountItems.h"
-#include "ledger/AcceptedLedgerTx.h"
-#include "ledger/AcceptedLedger.h"
-#include "ledger/LedgerEntrySet.h"
-#include "ledger/DirectoryEntryIterator.h"
-#include "ledger/OrderBookIterator.h"
-#include "tx/TransactionEngine.h"
-#include "misc/CanonicalTXSet.h"
-#include "ledger/LedgerHolder.h"
-#include "ledger/LedgerHistory.h"
-#include "ledger/LedgerCleaner.h"
-#include "ledger/LedgerMaster.h"
-#include "ledger/LedgerProposal.h"
-#include "misc/NetworkOPs.h"
-#include "tx/TransactionMaster.h"
-#include "main/LocalCredentials.h"
-#include "main/Application.h"
-#include "ledger/OrderBookDB.h"
-#include "tx/TransactionAcquire.h"
-#include "tx/LocalTxs.h"
-#include "consensus/DisputedTx.h"
-#include "consensus/LedgerConsensus.h"
-#include "ledger/LedgerTiming.h"
-#include "misc/Offer.h"
-#include "paths/RippleLineCache.h"
-#include "paths/PathRequest.h"
-#include "paths/PathRequests.h"
-#include "main/ParameterTable.h"
- #include "paths/RippleLineCache.h"
- #include "paths/PathState.h"
- #include "paths/RippleCalc.h"
-#include  "paths/Pathfinder.h"
-#include "paths/RippleState.h"
+#include <ripple_app/data/Database.h>
+#include <ripple_app/data/DatabaseCon.h>
+#include <ripple_app/data/SqliteDatabase.h>
+#include <ripple_app/data/DBInit.h>
+#include <ripple_app/shamap/SHAMapItem.h>
+#include <ripple_app/shamap/SHAMapNode.h>
+#include <ripple_app/shamap/SHAMapTreeNode.h>
+#include <ripple_app/shamap/SHAMapMissingNode.h>
+#include <ripple_app/shamap/SHAMapSyncFilter.h>
+#include <ripple_app/shamap/SHAMapAddNode.h>
+#include <ripple_app/shamap/SHAMap.h>
+#include <ripple_app/misc/SerializedTransaction.h>
+#include <ripple_app/misc/SerializedLedger.h>
+#include <ripple_app/tx/TransactionMeta.h>
+#include <ripple_app/tx/Transaction.h>
+#include <ripple_app/misc/AccountState.h>
+#include <ripple_app/misc/NicknameState.h>
+#include <ripple_app/ledger/Ledger.h>
+#include <ripple_app/ledger/SerializedValidation.h>
+#include <ripple_app/main/LoadManager.h>
+#include <ripple_app/misc/OrderBook.h>
+#include <ripple_app/shamap/SHAMapSyncFilters.h>
+#include <ripple_app/misc/AmendmentTable.h>
+#include <ripple_app/misc/FeeVote.h>
+#include <ripple_app/misc/IHashRouter.h>
+#include <ripple_app/peers/ClusterNodeStatus.h>
+#include <ripple_app/peers/UniqueNodeList.h>
+#include <ripple_app/misc/Validations.h>
+#include <ripple_app/peers/PeerSet.h>
+#include <ripple_app/ledger/InboundLedger.h>
+#include <ripple_app/ledger/InboundLedgers.h>
+#include <ripple_app/misc/AccountItem.h>
+#include <ripple_app/misc/AccountItems.h>
+#include <ripple_app/ledger/AcceptedLedgerTx.h>
+#include <ripple_app/ledger/AcceptedLedger.h>
+#include <ripple_app/ledger/LedgerEntrySet.h>
+#include <ripple_app/ledger/DirectoryEntryIterator.h>
+#include <ripple_app/ledger/OrderBookIterator.h>
+#include <ripple_app/tx/TransactionEngine.h>
+#include <ripple_app/misc/CanonicalTXSet.h>
+#include <ripple_app/ledger/LedgerHolder.h>
+#include <ripple_app/ledger/LedgerHistory.h>
+#include <ripple_app/ledger/LedgerCleaner.h>
+#include <ripple_app/ledger/LedgerMaster.h>
+#include <ripple_app/ledger/LedgerProposal.h>
+#include <ripple_app/misc/NetworkOPs.h>
+#include <ripple_app/tx/TransactionMaster.h>
+#include <ripple_app/main/LocalCredentials.h>
+#include <ripple_app/main/Application.h>
+#include <ripple_app/ledger/OrderBookDB.h>
+#include <ripple_app/tx/TransactionAcquire.h>
+#include <ripple_app/tx/LocalTxs.h>
+#include <ripple_app/consensus/DisputedTx.h>
+#include <ripple_app/consensus/LedgerConsensus.h>
+#include <ripple_app/ledger/LedgerTiming.h>
+#include <ripple_app/misc/Offer.h>
+#include <ripple_app/paths/RippleLineCache.h>
+#include <ripple_app/paths/PathRequest.h>
+#include <ripple_app/paths/PathRequests.h>
+#include <ripple_app/main/ParameterTable.h>
+ #include <ripple_app/paths/RippleLineCache.h>
+ #include <ripple_app/paths/PathState.h>
+ #include <ripple_app/paths/RippleCalc.h>
+#include  <ripple_app/paths/Pathfinder.h>
+#include <ripple_app/paths/RippleState.h>
 // VFALCO NOTE These contracts files are bunk
-#include "contracts/ScriptData.h"
-#include "contracts/Contract.h"
-#include "contracts/Interpreter.h"
-#include "contracts/Operation.h"
+#include <ripple_app/contracts/ScriptData.h>
+#include <ripple_app/contracts/Contract.h>
+#include <ripple_app/contracts/Interpreter.h>
+#include <ripple_app/contracts/Operation.h>
 
 #endif

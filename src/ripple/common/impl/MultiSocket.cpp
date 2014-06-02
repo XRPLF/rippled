@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#include "MultiSocketType.h"
+#include <ripple/common/impl/MultiSocketType.h>
 
-#include "../RippleSSLContext.h"
+#include <ripple/common/RippleSSLContext.h>
 
-#include "../../beast/beast/unit_test/suite.h"
+#include <beast/unit_test/suite.h>
 
 #include <cassert>
 

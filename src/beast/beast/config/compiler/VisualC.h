@@ -19,4 +19,4 @@
 
 // Microsoft Visual C++ compiler configuration
 
-#include "../../utility/noexcept.h"
+#include <beast/utility/noexcept.h>

@@ -20,9 +20,9 @@
 #ifndef RIPPLE_CORE_TYPES_H_INCLUDED
 #define RIPPLE_CORE_TYPES_H_INCLUDED
 
-#include "../ledger/LedgerEntrySet.h"
-#include "../../ripple/types/api/RippleAssets.h"
-#include "../../ripple/types/api/base_uint.h"
+#include <ripple_app/ledger/LedgerEntrySet.h>
+#include <ripple/types/api/RippleAssets.h>
+#include <ripple/types/api/base_uint.h>
 
 #include <chrono>
 #include <cstdint>

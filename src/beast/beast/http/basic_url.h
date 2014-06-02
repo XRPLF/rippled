@@ -23,7 +23,7 @@
 #include <boost/system/error_code.hpp>
 #include <boost/utility/string_ref.hpp>
 
-#include "../utility/noexcept.h"
+#include <beast/utility/noexcept.h>
 #include <cstdint>
 #include <functional>
 #include <memory>

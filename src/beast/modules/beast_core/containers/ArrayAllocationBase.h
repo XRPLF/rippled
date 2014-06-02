@@ -24,7 +24,7 @@
 #ifndef BEAST_ARRAYALLOCATIONBASE_H_INCLUDED
 #define BEAST_ARRAYALLOCATIONBASE_H_INCLUDED
 
-#include "../../../beast/HeapBlock.h"
+#include <beast/HeapBlock.h>
 
 namespace beast {
 

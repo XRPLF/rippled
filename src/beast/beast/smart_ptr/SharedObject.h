@@ -26,8 +26,8 @@
 
 #include <atomic>
 
-#include "../Config.h"
-#include "../Uncopyable.h"
+#include <beast/Config.h>
+#include <beast/Uncopyable.h>
 
 namespace beast {
 
