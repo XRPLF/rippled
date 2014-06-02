@@ -25,34 +25,35 @@
 #include <ripple_app/paths/Tuning.h>
 
 namespace ripple {
+namespace path {
 
-TER calcNodeFwd (
+TER nodeFwd (
     RippleCalc& rippleCalc,
     const unsigned int nodeIndex, PathState& pathState,
     const bool bMultiQuality)
 {
-    auto const& node = pathState.vpnNodes[nodeIndex];
-    auto const nodeIsAccount = isAccount(node);
+    auto const& node = pathState.nodes()[nodeIndex];
+    auto const isAccount = node.isAccount();
 
     WriteLog (lsTRACE, RippleCalc)
-        << "calcNodeFwd> nodeIndex=" << nodeIndex;
+        << "nodeFwd> nodeIndex=" << nodeIndex;
 
-    TER errorCode = nodeIsAccount
-        ? calcNodeAccountFwd (rippleCalc, nodeIndex, pathState, bMultiQuality)
-        : calcNodeOfferFwd (rippleCalc, nodeIndex, pathState, bMultiQuality);
+    TER resultCode = isAccount
+        ? nodeAccountFwd (rippleCalc, nodeIndex, pathState, bMultiQuality)
+        : nodeOfferFwd (rippleCalc, nodeIndex, pathState, bMultiQuality);
 
-    if (errorCode == tesSUCCESS && nodeIndex + 1 != pathState.vpnNodes.size ())
-        errorCode = calcNodeFwd (rippleCalc, nodeIndex + 1, pathState, bMultiQuality);
+    if (resultCode == tesSUCCESS && nodeIndex + 1 != pathState.nodes().size ())
+        resultCode = nodeFwd (rippleCalc, nodeIndex + 1, pathState, bMultiQuality);
 
-    if (errorCode == tesSUCCESS && !(pathState.saInPass && pathState.saOutPass))
-        errorCode = tecPATH_DRY;
+    if (resultCode == tesSUCCESS && !(pathState.inPass() && pathState.outPass()))
+        resultCode = tecPATH_DRY;
 
     WriteLog (lsTRACE, RippleCalc)
-        << "calcNodeFwd<"
+        << "nodeFwd<"
         << " nodeIndex:" << nodeIndex
-        << " errorCode:" << errorCode;
+        << " resultCode:" << resultCode;
 
-    return errorCode;
+    return resultCode;
 }
 
 // Calculate a node and its previous nodes.
@@ -61,51 +62,51 @@ TER calcNodeFwd (
 // must be asked for.
 //
 // Then work forward, figuring out how much can actually be delivered.
-// <-- errorCode: tesSUCCESS or tecPATH_DRY
+// <-- resultCode: tesSUCCESS or tecPATH_DRY
 // <-> pnNodes:
 //     --> [end]saWanted.mAmount
 //     --> [all]saWanted.mCurrency
 //     --> [all]saAccount
 //     <-> [0]saWanted.mAmount : --> limit, <-- actual
-TER calcNodeRev (
+TER nodeRev (
     RippleCalc& rippleCalc,
     const unsigned int nodeIndex, PathState& pathState,
     const bool bMultiQuality)
 {
-    PathState::Node& node = pathState.vpnNodes[nodeIndex];
-    bool const nodeIsAccount
-        = is_bit_set (node.uFlags,  STPathElement::typeAccount);
-    TER errorCode;
+    auto& node = pathState.nodes()[nodeIndex];
+    auto const isAccount = node.isAccount();
+    TER resultCode;
 
     node.saTransferRate = STAmount::saFromRate (
         rippleCalc.mActiveLedger.rippleTransferRate (node.uIssuerID));
 
     WriteLog (lsTRACE, RippleCalc)
-        << "calcNodeRev>"
+        << "nodeRev>"
         << " nodeIndex=" << nodeIndex
-        << " nodeIsAccount=" << nodeIsAccount
+        << " isAccount=" << isAccount
         << " uIssuerID=" << RippleAddress::createHumanAccountID (node.uIssuerID)
         << " saTransferRate=" << node.saTransferRate;
 
-    errorCode = nodeIsAccount
-            ? calcNodeAccountRev (rippleCalc, nodeIndex, pathState, bMultiQuality)
-        : calcNodeOfferRev (rippleCalc, nodeIndex, pathState, bMultiQuality);
+    resultCode = isAccount
+            ? nodeAccountRev (rippleCalc, nodeIndex, pathState, bMultiQuality)
+        : nodeOfferRev (rippleCalc, nodeIndex, pathState, bMultiQuality);
 
     // Do previous.
-    if (errorCode != tesSUCCESS)
+    if (resultCode != tesSUCCESS)
         // Error, don't continue.
         nothing ();
     else if (nodeIndex)
         // Continue in reverse.  TODO(tom): remove unnecessary recursion.
-        errorCode = calcNodeRev (rippleCalc, nodeIndex - 1, pathState, bMultiQuality);
+        resultCode = nodeRev (rippleCalc, nodeIndex - 1, pathState, bMultiQuality);
 
     WriteLog (lsTRACE, RippleCalc)
-        << "calcNodeRev< "
+        << "nodeRev< "
         << "nodeIndex=" << nodeIndex
-        << " errorCode=%s" << transToken (errorCode)
-        << "/" << errorCode;
+        << " resultCode=%s" << transToken (resultCode)
+        << "/" << resultCode;
 
-    return errorCode;
+    return resultCode;
 }
 
+} // path
 } // ripple

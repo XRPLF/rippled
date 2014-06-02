@@ -17,27 +17,27 @@
 */
 //==============================================================================
 
-#include "../../BeastConfig.h"
+#ifndef RIPPLE_TYPES_H
+#define RIPPLE_TYPES_H
 
-#include <ripple_app/ripple_app.h>
+namespace ripple {
 
-#ifdef _MSC_VER
-#pragma warning (push)
-#pragma warning (disable: 4309) // truncation of constant value
-#endif
+// account id, currency id, issuer id.
+typedef std::tuple <uint160, uint160, uint160> AccountCurrencyIssuer;
 
-#include <ripple_rpc/api/ErrorCodes.h>
+std::size_t hash_value (const AccountCurrencyIssuer& asValue);
 
-#include <ripple_app/paths/PathRequest.cpp>
-#include <ripple_app/paths/PathRequests.cpp>
-#include <ripple_app/paths/RippleCalc.cpp>
-#include <ripple_app/paths/Node.cpp>
-#include <ripple_app/paths/PathState.cpp>
+// Map of account, currency, issuer to node index.
+typedef ripple::unordered_map <AccountCurrencyIssuer, unsigned int>
+AccountCurrencyIssuerToNodeIndex;
 
-#include <ripple_app/main/ParameterTable.cpp>
-#include <ripple_app/paths/RippleLineCache.cpp>
-#include <ripple_app/ledger/SerializedValidation.cpp>
+/** Returns a copy of an STAmount with the same currency and issuer but the
+    amount set to zero. */
+inline STAmount zeroed(const STAmount& a)
+{
+    return STAmount(a.getCurrency(), a.getIssuer());
+}
 
-#ifdef _MSC_VER
-#pragma warning (pop)
+} // ripple
+
 #endif

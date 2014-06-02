@@ -50,10 +50,9 @@ public:
     // VFALCO TODO Break the cyclic dependency on InfoSub
     PathRequest (boost::shared_ptr <InfoSub> const& subscriber,
         int id, PathRequests&, beast::Journal journal);
-    
+
     ~PathRequest ();
 
-    bool        isValid (RippleLineCache::ref crCache);
     bool        isValid ();
     bool        isNew ();
     bool        needsUpdate (bool newOnly, LedgerIndex index);
@@ -68,6 +67,7 @@ public:
     InfoSub::pointer getSubscriber ();
 
 private:
+    bool isValid (RippleLineCache::ref crCache);
     void setValid ();
     void resetLevel (int level);
     int parseJson (const Json::Value&, bool complete);

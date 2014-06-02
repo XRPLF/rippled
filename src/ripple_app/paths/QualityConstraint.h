@@ -17,27 +17,15 @@
 */
 //==============================================================================
 
-#include "../../BeastConfig.h"
+#ifndef RIPPLE_QUALITY_CONSTRAINT_H
+#define RIPPLE_QUALITY_CONSTRAINT_H
 
-#include <ripple_app/ripple_app.h>
+namespace ripple {
+namespace path {
 
-#ifdef _MSC_VER
-#pragma warning (push)
-#pragma warning (disable: 4309) // truncation of constant value
-#endif
+enum class QualityConstraint { SAME_OR_BETTER, UNCONSTRAINED };
 
-#include <ripple_rpc/api/ErrorCodes.h>
+} // path
+} // ripple
 
-#include <ripple_app/paths/PathRequest.cpp>
-#include <ripple_app/paths/PathRequests.cpp>
-#include <ripple_app/paths/RippleCalc.cpp>
-#include <ripple_app/paths/Node.cpp>
-#include <ripple_app/paths/PathState.cpp>
-
-#include <ripple_app/main/ParameterTable.cpp>
-#include <ripple_app/paths/RippleLineCache.cpp>
-#include <ripple_app/ledger/SerializedValidation.cpp>
-
-#ifdef _MSC_VER
-#pragma warning (pop)
 #endif
