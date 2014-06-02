@@ -28,8 +28,12 @@
 #include <ripple/types/api/Blob.h>
 #include <ripple/types/api/strHex.h>
 #include <ripple/types/api/ByteOrder.h>
-    
+
 #include <beast/container/hardened_hash.h>
+#include <beast/beast/utility/Zero.h>
+
+using beast::zero;
+using beast::Zero;
 
 #include <functional>
 
@@ -122,7 +126,7 @@ private:
     }
 
 public:
-    base_uint () { zero (); }
+    base_uint () { *this = beast::zero; }
 
     explicit base_uint (Blob const& vch)
     {
@@ -131,7 +135,7 @@ public:
         if (vch.size () == size ())
             memcpy (pn, &vch[0], size ());
         else
-            zero ();
+            *this = beast::zero;
     }
 
     explicit base_uint (std::uint64_t b)
@@ -147,7 +151,7 @@ public:
     }
 
     base_uint (base_uint const& other) = default;
-    
+
     /* Construct from a raw pointer.
         The buffer pointed to by `data` must be at least Bits/8 bytes.
     */
@@ -157,23 +161,18 @@ public:
         return base_uint (data, VoidHelper ());
     }
 
-    bool isZero () const
+    int signum() const
     {
         for (int i = 0; i < WIDTH; i++)
             if (pn[i] != 0)
-                return false;
+                return 1;
 
-        return true;
-    }
-
-    bool isNonZero () const
-    {
-        return !isZero ();
+        return 0;
     }
 
     bool operator! () const
     {
-        return isZero ();
+        return *this == beast::zero;
     }
 
     const base_uint operator~ () const
@@ -196,7 +195,7 @@ public:
 
     base_uint& operator= (std::uint64_t uHost)
     {
-        zero ();
+        *this = beast::zero;
 
         // Put in least significant bits.
         ((std::uint64_t*) end ())[-1] = htobe64 (uHost);
@@ -345,7 +344,7 @@ public:
 
         unsigned char* pOut = end () - ((pEnd - pBegin + 1) / 2);
 
-        zero ();
+        *this = beast::zero;
 
         if ((pEnd - pBegin) & 1)
             *pOut++ = charUnHex(*pBegin++);
@@ -381,10 +380,16 @@ public:
         return sizeof (pn);
     }
 
-    void zero ()
+    base_uint<Bits, Tag>& operator=(Zero)
     {
         memset (&pn[0], 0, sizeof (pn));
+        return *this;
     }
+
+    // Deprecated.
+    bool isZero () const { return *this == beast::zero; }
+    bool isNonZero () const { return *this != beast::zero; }
+    void zero () { *this = beast::zero; }
 };
 
 typedef base_uint<128> uint128;
@@ -398,8 +403,8 @@ extern std::size_t hash_value (uint256 const&);
 
 //------------------------------------------------------------------------------
 template <std::size_t Bits, class Tag>
-int 
-compare (base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
+inline int compare (
+    base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
 {
     auto ret = std::mismatch (a.cbegin (), a.cend (), b.cbegin ());
 
@@ -415,100 +420,99 @@ compare (base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
 }
 
 template <std::size_t Bits, class Tag>
-bool
-operator< (base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
+inline bool operator< (
+    base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
 {
     return compare (a, b) < 0;
 }
 
 template <std::size_t Bits, class Tag>
-bool
-operator<= (base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
+inline bool operator<= (
+    base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
 {
     return compare (a, b) <= 0;
 }
 
 template <std::size_t Bits, class Tag>
-bool
-operator> (base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
+inline bool operator> (
+    base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
 {
     return compare (a, b) > 0;
 }
 
 template <std::size_t Bits, class Tag>
-bool
-operator>= (base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
+inline bool operator>= (
+    base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
 {
     return compare (a, b) >= 0;
 }
 
 template <std::size_t Bits, class Tag>
-bool
-operator== (base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
+inline bool operator== (
+    base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
 {
     return compare (a, b) == 0;
 }
 
 template <std::size_t Bits, class Tag>
-bool
-operator!= (base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
+inline bool operator!= (
+    base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
 {
     return compare (a, b) != 0;
 }
 
 //------------------------------------------------------------------------------
 template <std::size_t Bits, class Tag = void>
-bool
-operator== (base_uint<Bits, Tag> const& a, std::uint64_t b)
+inline bool operator== (base_uint<Bits, Tag> const& a, std::uint64_t b)
 {
     return a == base_uint<Bits, Tag>(b);
 }
 
 template <std::size_t Bits, class Tag = void>
-bool
-operator!= (base_uint<Bits, Tag> const& a, std::uint64_t b)
+inline bool operator!= (base_uint<Bits, Tag> const& a, std::uint64_t b)
 {
     return !(a == b);
 }
 
 //------------------------------------------------------------------------------
 template <std::size_t Bits, class Tag>
-const base_uint<Bits, Tag>
-operator^ (base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
+inline const base_uint<Bits, Tag> operator^ (
+    base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
 {
     return base_uint<Bits, Tag> (a) ^= b;
 }
 
 template <std::size_t Bits, class Tag>
-const base_uint<Bits, Tag>
-operator& (base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
+inline const base_uint<Bits, Tag> operator& (
+    base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
 {
     return base_uint<Bits, Tag> (a) &= b;
 }
 
 template <std::size_t Bits, class Tag>
-const base_uint<Bits, Tag>
-operator| (base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
+inline const base_uint<Bits, Tag> operator| (
+    base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
 {
     return base_uint<Bits, Tag> (a) |= b;
 }
 
 template <std::size_t Bits, class Tag>
-const base_uint<Bits, Tag>
-operator+ (base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
+inline const base_uint<Bits, Tag> operator+ (
+    base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
 {
     return base_uint<Bits, Tag> (a) += b;
 }
 
 //------------------------------------------------------------------------------
 template <std::size_t Bits, class Tag>
-std::string to_string (base_uint<Bits, Tag> const& a)
+inline std::string to_string (base_uint<Bits, Tag> const& a)
 {
     return strHex (a.begin (), a.size ());
 }
 
 template <std::size_t Bits, class Tag>
-std::ostream& operator<< (std::ostream& out, base_uint<Bits, Tag> const& u)
+inline std::ostream& operator<< (
+    std::ostream& out, base_uint<Bits, Tag> const& u)
 {
     return out << to_string (u);
 }
