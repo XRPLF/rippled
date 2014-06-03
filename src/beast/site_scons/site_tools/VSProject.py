@@ -78,7 +78,7 @@ V12DSPItemDefinitionGroup= """\
 V12CustomBuildProtoc= """\
       <FileType>Document</FileType>\r
       <Command Condition="'$(Configuration)|$(Platform)'=='%(name)s'">protoc --cpp_out=%(cpp_out)s --proto_path=%%(RelativeDir) %%(Identity)</Command>\r
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='%(name)s'">%(base_out)s.pb.h;%(base_out)s.pb.cc.</Outputs>\r
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='%(name)s'">%(base_out)s.pb.h;%(base_out)s.pb.cc</Outputs>\r
       <Message Condition="'$(Configuration)|$(Platform)'=='%(name)s'">protoc --cpp_out=%(cpp_out)s --proto_path=%%(RelativeDir) %%(Identity)</Message>\r
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='%(name)s'">false</LinkObjects>\r
 """
