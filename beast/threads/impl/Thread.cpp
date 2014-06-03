@@ -24,7 +24,7 @@
 #include <beast/threads/Thread.h>
 #include <beast/smart_ptr/SharedObject.h>
 #include <beast/smart_ptr/SharedPtr.h>
-#include <modules/beast_core/time/Time.h>
+#include <beast/module/core/time/Time.h>
 
 #include <cassert>
 
@@ -452,7 +452,7 @@ void Thread::yield()
 #include <Foundation/NSString.h>
 #import <objc/message.h>
 namespace beast{
-#include <modules/beast_core/native/osx_ObjCHelpers.h>
+#include <beast/module/core/native/osx_ObjCHelpers.h>
 }
 
 #else

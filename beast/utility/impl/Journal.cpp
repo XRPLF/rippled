@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <beast/utility/Journal.h>
-#include <modules/beast_core/memory/SharedSingleton.h>
+#include <beast/module/core/memory/SharedSingleton.h>
 
 namespace beast {
 
