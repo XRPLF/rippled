@@ -19,7 +19,7 @@
 
 #include <beast/unit_test/suite.h>
 #include <beast/chrono/manual_clock.h>
-#include <modules/beast_core/maths/Random.h>
+#include <beast/module/core/maths/Random.h>
 
 namespace ripple {
 namespace Resource {

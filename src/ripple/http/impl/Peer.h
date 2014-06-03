@@ -23,9 +23,9 @@
 #include <ripple/http/api/Session.h>
 #include <ripple/common/MultiSocket.h>
 
-#include <modules/beast_asio/async/AsyncObject.h>
-#include <modules/beast_asio/basics/SharedArg.h>
-#include <modules/beast_asio/http/HTTPRequestParser.h>
+#include <beast/module/asio/async/AsyncObject.h>
+#include <beast/module/asio/basics/SharedArg.h>
+#include <beast/module/asio/http/HTTPRequestParser.h>
 
 #include <memory>
 

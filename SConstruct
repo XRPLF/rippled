@@ -180,22 +180,6 @@ def files(base):
                 yield os.path.normpath(path)
     return list(_iter(base))
 
-def category(ext):
-    if ext in ['.c', '.cc', '.cpp']:
-        return 'compiled'
-    return 'none'
-
-def unity_category(f):
-    base, fullname = os.path.split(f)
-    name, ext = os.path.splitext(fullname)
-    if os.path.splitext(name)[1] == '.unity':
-        return category(ext)
-    return 'none'
-
-def categorize(groups, func, sources):
-    for f in sources:
-        groups.setdefault(func(f), []).append(f)
-
 def print_coms(target, source, env):
     '''Display command line exemplars for an environment'''
     print ('Target: ' + Beast.yellow(str(target[0])))
@@ -439,6 +423,14 @@ def config_env(toolchain, variant, env):
 
 #-------------------------------------------------------------------------------
 
+def addSource(path, env, variant_dirs, CPPPATH=[]):
+    if CPPPATH:
+        env = env.Clone()
+        env.Prepend(CPPPATH=CPPPATH)
+    return env.Object(Beast.variantFile(path, variant_dirs))
+
+#-------------------------------------------------------------------------------
+
 # Configure the base construction environment
 root_dir = Dir('#').srcnode().get_abspath() # Path to this SConstruct file
 build_dir = os.path.join('build')
@@ -496,35 +488,14 @@ else:
 default_variant = 'debug'
 default_target = None
 
-# Collect sources from recursive directory iteration
-groups = collections.defaultdict(list)
-categorize(groups, unity_category,
-      files('src/ripple')
-    + files('src/ripple_app')
-    + files('src/ripple_basics')
-    + files('src/ripple_core')
-    + files('src/ripple_data')
-    + files('src/ripple_hyperleveldb')
-    + files('src/ripple_leveldb')
-    + files('src/ripple_net')
-    + files('src/ripple_overlay')
-    + files('src/ripple_rpc')
-    + files('src/ripple_websocket')
-    + files('src/snappy')
-    )
-
-groups['protoc'].append (
-    os.path.join('src', 'ripple', 'proto', 'ripple.proto'))
-for source in groups['protoc']:
-    outputs = base.Protoc([],
+for source in [
+    'src/ripple/proto/ripple.proto',
+    ]:
+    base.Protoc([],
         source,
         PROTOCPROTOPATH=[os.path.dirname(source)],
         PROTOCOUTDIR=os.path.join(build_dir, 'proto'),
         PROTOCPYTHONOUTDIR=None)
-    groups['none'].extend(outputs)
-if Beast.system.osx:
-    mm = os.path.join('src', 'ripple', 'beast', 'ripple_beastobjc.unity.mm')
-    groups['compiled'].append(mm)
 
 # Declare the targets
 aliases = collections.defaultdict(list)
@@ -544,15 +515,53 @@ for toolchain in toolchains:
             }
         for dest, source in variant_dirs.iteritems():
             env.VariantDir(dest, source, duplicate=0)
-        objects = [env.Object(x) for x in Beast.variantFiles(
-            groups['compiled'], variant_dirs)]
+        objects = []
+        objects.append(addSource('src/ripple/unity/app.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/app1.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/app2.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/app3.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/app4.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/app5.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/app6.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/app7.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/app8.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/app9.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/basics.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/beast.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/beastc.c', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/common.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/core.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/data.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/http.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/hyperleveldb.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/json.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/net.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/overlay.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/rpcx.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/websocket.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/peerfinder.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/protobuf.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/ripple.proto.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/radmap.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/resource.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/rocksdb.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/sitefiles.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/snappy.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/sslutil.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/testoverlay.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/types.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/validators.cpp', env, variant_dirs))
+
+        objects.append(addSource('src/ripple/unity/leveldb.cpp', env, variant_dirs))
+
+        if Beast.system.osx:
+            objects.append(addSource('src/ripple/unity/beastobjc.mm', env, variant_dirs))
+
         target = env.Program(
             target = os.path.join(variant_dir, 'rippled'),
             source = objects
             )
-        # This causes 'msvc.debug' (e.g.) to show up in the node tree...
-        #print_action = env.Command(variant_name, [], Action(print_coms, ''))
-        #env.Depends(objects, print_action)
+
         if toolchain == default_toolchain and variant == default_variant:
             default_target = target
             install_target = env.Install (build_dir, source = default_target)
@@ -573,6 +582,6 @@ for key, value in aliases.iteritems():
 vcxproj = base.VSProject(
     os.path.join('Builds', 'VisualStudio2013', 'RippleD'),
     source = [],
-    VSPROJECT_ROOT_DIRS = ['.'],
+    VSPROJECT_ROOT_DIRS = ['src/beast', 'src', '.'],
     VSPROJECT_CONFIGS = msvc_configs)
 base.Alias('vcxproj', vcxproj)

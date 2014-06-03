@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <modules/beast_core/text/LexicalCast.h>
+#include <beast/module/core/text/LexicalCast.h>
 
 namespace Json {
 

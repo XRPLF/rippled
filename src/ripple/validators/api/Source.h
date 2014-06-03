@@ -21,7 +21,7 @@
 #define RIPPLE_VALIDATORS_SOURCE_H_INCLUDED
 
 #include <beast/smart_ptr/SharedObject.h>
-#include <modules/beast_core/time/Time.h>
+#include <beast/module/core/time/Time.h>
 
 namespace ripple {
 namespace Validators {

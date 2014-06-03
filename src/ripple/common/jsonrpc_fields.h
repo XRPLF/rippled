@@ -20,7 +20,7 @@
 #ifndef RIPPLE_COMMON_JSONRPC_FIELDS_H_INCLUDED
 #define RIPPLE_COMMON_JSONRPC_FIELDS_H_INCLUDED
 
-#include <ripple/json/ripple_json.h>
+#include <ripple/unity/json.h>
 
 namespace ripple {
 namespace jss {

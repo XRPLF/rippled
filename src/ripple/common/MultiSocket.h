@@ -22,7 +22,7 @@
 
 #include <beast/asio/abstract_socket.h>
 #include <beast/net/IPEndpoint.h>
-#include <modules/beast_asio/protocol/HandshakeDetectLogicPROXY.h>
+#include <beast/module/asio/protocol/HandshakeDetectLogicPROXY.h>
 
 #include <boost/asio/ip/tcp.hpp>
 

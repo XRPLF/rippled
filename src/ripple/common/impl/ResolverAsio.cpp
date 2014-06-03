@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <modules/beast_asio/beast_asio.h>
+#include <beast/module/asio/asio.h>
 #include <beast/asio/IPAddressConversion.h>
 
 #include <atomic>

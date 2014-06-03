@@ -21,8 +21,8 @@
 
 #include <beast/unit_test/suite.h>
 
-#include <modules/beast_core/time/Time.h>
-#include <modules/beast_core/maths/Random.h>
+#include <beast/module/core/time/Time.h>
+#include <beast/module/core/maths/Random.h>
 
 #include <functional>
 #include <sstream>

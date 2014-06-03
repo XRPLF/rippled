@@ -23,7 +23,7 @@
 #include <beast/smart_ptr/SharedPtr.h>
 #include <beast/net/IPEndpoint.h>
 #include <beast/utility/Journal.h>
-#include <modules/beast_asio/http/HTTPRequest.h>
+#include <beast/module/asio/http/HTTPRequest.h>
 
 #include <ostream>
 

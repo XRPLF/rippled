@@ -26,7 +26,7 @@
 
 #include <ripple/sitefiles/api/Manager.h>
 
-#include <modules/beast_core/files/File.h>
+#include <beast/module/core/files/File.h>
 
 namespace ripple {
 namespace PeerFinder {
