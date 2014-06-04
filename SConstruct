@@ -61,7 +61,7 @@ import Beast
 def parse_time(t):
     return time.strptime(t, '%a %b %d %H:%M:%S %Z %Y')
 
-CHECK_PLATFORMS = 'Darwin', 'Debian', 'Ubuntu'
+CHECK_PLATFORMS = 'Debian', 'Ubuntu'
 CHECK_COMMAND = 'openssl version -a'
 CHECK_LINE = 'built on: '
 BUILD_TIME = 'Mon Apr  7 20:33:19 UTC 2014'
@@ -444,23 +444,11 @@ config_base(base)
 base.Append(CPPPATH=[
     'src',
     os.path.join('src', 'beast'),
-    os.path.join('src', 'snappy', 'snappy'),
-    os.path.join('src', 'snappy', 'config'),
     os.path.join(build_dir, 'proto'),
-    ])
-base.Append(CPPPATH=[
-    os.path.join('src', 'leveldb'),
-    os.path.join('src', 'leveldb', 'port'),
-    os.path.join('src', 'leveldb', 'include'),
     ])
 if Beast.system.windows:
     base.Append(CPPPATH=[
         os.path.join('src', 'protobuf', 'src'),
-        ])
-else:
-    base.Append(CPPPATH=[
-        os.path.join('src', 'rocksdb'),
-        os.path.join('src', 'rocksdb', 'include'),
         ])
 
 # Configure the toolchains, variants, default toolchain, and default target
@@ -530,10 +518,8 @@ for toolchain in toolchains:
         objects.append(addSource('src/ripple/unity/beast.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/beastc.c', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/common.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/core.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/data.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/http.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/hyperleveldb.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/json.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/net.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/overlay.cpp', env, variant_dirs))
@@ -544,15 +530,42 @@ for toolchain in toolchains:
         objects.append(addSource('src/ripple/unity/ripple.proto.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/radmap.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/resource.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/rocksdb.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/sitefiles.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/snappy.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/sslutil.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/testoverlay.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/types.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/validators.cpp', env, variant_dirs))
 
-        objects.append(addSource('src/ripple/unity/leveldb.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/core.cpp', env, variant_dirs, [
+            'src/leveldb/include',
+            #'src/hyperleveldb/include', # hyper 
+            'src/ripple/rocksdb/rocksdb/include',
+            ]))
+
+        objects.append(addSource('src/ripple/unity/leveldb.cpp', env, variant_dirs, [
+            'src/leveldb/',
+            'src/leveldb/include',
+            'src/snappy/snappy',
+            'src/snappy/config',
+            ]))
+
+        objects.append(addSource('src/ripple/unity/hyperleveldb.cpp', env, variant_dirs, [
+            'src/hyperleveldb',
+            'src/snappy/snappy',
+            'src/snappy/config',
+            ]))
+
+        objects.append(addSource('src/ripple/unity/rocksdb.cpp', env, variant_dirs, [
+            'src/ripple/rocksdb/rocksdb',
+            'src/ripple/rocksdb/rocksdb/include',
+            'src/snappy/snappy',
+            'src/snappy/config',
+            ]))
+
+        objects.append(addSource('src/ripple/unity/snappy.cpp', env, variant_dirs, [
+            'src/snappy/snappy',
+            'src/snappy/config',
+            ]))
 
         if Beast.system.osx:
             objects.append(addSource('src/ripple/unity/beastobjc.mm', env, variant_dirs))

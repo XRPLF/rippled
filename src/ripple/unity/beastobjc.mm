@@ -24,4 +24,5 @@
 #undef BEAST_COMPILE_OBJECTIVE_CPP
 #define BEAST_COMPILE_OBJECTIVE_CPP 0
 
-#include "beast.unity.cpp"
+#include <ripple/unity/beast.cpp>
+
