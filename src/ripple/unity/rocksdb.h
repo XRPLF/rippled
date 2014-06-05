@@ -23,6 +23,18 @@
 #include <beast/Config.h>
 
 #ifndef RIPPLE_ROCKSDB_AVAILABLE
+#if BEAST_WIN32
+# define ROCKSDB_PLATFORM_WINDOWS
+#else
+# define ROCKSDB_PLATFORM_POSIX
+# if BEAST_MAC || BEAST_IOS
+#  define OS_MACOSX
+# elif BEAST_BSD
+#  define OS_FREEBSD
+# else
+#  define OS_LINUX
+# endif
+#endif
 # if BEAST_WIN32
 #  define RIPPLE_ROCKSDB_AVAILABLE 0
 # else
@@ -36,29 +48,30 @@
 
 #if RIPPLE_ROCKSDB_AVAILABLE
 #define SNAPPY
-#include <ripple/rocksdb/rocksdb/include/rocksdb/arena.h>
-#include <ripple/rocksdb/rocksdb/include/rocksdb/cache.h>
-#include <ripple/rocksdb/rocksdb/include/rocksdb/compaction_filter.h>
-#include <ripple/rocksdb/rocksdb/include/rocksdb/comparator.h>
-#include <ripple/rocksdb/rocksdb/include/rocksdb/db.h>
-#include <ripple/rocksdb/rocksdb/include/rocksdb/env.h>
-#include <ripple/rocksdb/rocksdb/include/rocksdb/filter_policy.h>
-#include <ripple/rocksdb/rocksdb/include/rocksdb/flush_block_policy.h>
-#include <ripple/rocksdb/rocksdb/include/rocksdb/iterator.h>
-#include <ripple/rocksdb/rocksdb/include/rocksdb/memtablerep.h>
-#include <ripple/rocksdb/rocksdb/include/rocksdb/merge_operator.h>
-#include <ripple/rocksdb/rocksdb/include/rocksdb/options.h>
-#include <ripple/rocksdb/rocksdb/include/rocksdb/perf_context.h>
-#include <ripple/rocksdb/rocksdb/include/rocksdb/slice.h>
-#include <ripple/rocksdb/rocksdb/include/rocksdb/slice_transform.h>
-#include <ripple/rocksdb/rocksdb/include/rocksdb/statistics.h>
-#include <ripple/rocksdb/rocksdb/include/rocksdb/status.h>
-#include <ripple/rocksdb/rocksdb/include/rocksdb/table.h>
-#include <ripple/rocksdb/rocksdb/include/rocksdb/table_properties.h>
-#include <ripple/rocksdb/rocksdb/include/rocksdb/transaction_log.h>
-#include <ripple/rocksdb/rocksdb/include/rocksdb/types.h>
-#include <ripple/rocksdb/rocksdb/include/rocksdb/universal_compaction.h>
-#include <ripple/rocksdb/rocksdb/include/rocksdb/write_batch.h>
+//#include <rocksdb/port/port_posix.h>
+#include <rocksdb/include/rocksdb/cache.h>
+#include <rocksdb/include/rocksdb/compaction_filter.h>
+#include <rocksdb/include/rocksdb/comparator.h>
+#include <rocksdb/include/rocksdb/db.h>
+#include <rocksdb/include/rocksdb/env.h>
+#include <rocksdb/include/rocksdb/filter_policy.h>
+#include <rocksdb/include/rocksdb/flush_block_policy.h>
+#include <rocksdb/include/rocksdb/iterator.h>
+#include <rocksdb/include/rocksdb/memtablerep.h>
+#include <rocksdb/include/rocksdb/merge_operator.h>
+#include <rocksdb/include/rocksdb/options.h>
+#include <rocksdb/include/rocksdb/perf_context.h>
+#include <rocksdb/include/rocksdb/slice.h>
+#include <rocksdb/include/rocksdb/slice_transform.h>
+#include <rocksdb/include/rocksdb/statistics.h>
+#include <rocksdb/include/rocksdb/status.h>
+#include <rocksdb/include/rocksdb/table.h>
+#include <rocksdb/include/rocksdb/table_properties.h>
+#include <rocksdb/include/rocksdb/transaction_log.h>
+#include <rocksdb/include/rocksdb/types.h>
+#include <rocksdb/include/rocksdb/universal_compaction.h>
+#include <rocksdb/include/rocksdb/write_batch.h>
+
 #endif
 
 #endif

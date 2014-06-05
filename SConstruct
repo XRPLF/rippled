@@ -539,7 +539,7 @@ for toolchain in toolchains:
         objects.append(addSource('src/ripple/unity/core.cpp', env, variant_dirs, [
             'src/leveldb/include',
             #'src/hyperleveldb/include', # hyper 
-            'src/ripple/rocksdb/rocksdb/include',
+            'src/rocksdb/include',
             ]))
 
         objects.append(addSource('src/ripple/unity/leveldb.cpp', env, variant_dirs, [
@@ -556,8 +556,8 @@ for toolchain in toolchains:
             ]))
 
         objects.append(addSource('src/ripple/unity/rocksdb.cpp', env, variant_dirs, [
-            'src/ripple/rocksdb/rocksdb',
-            'src/ripple/rocksdb/rocksdb/include',
+            'src/rocksdb',
+            'src/rocksdb/include',
             'src/snappy/snappy',
             'src/snappy/config',
             ]))

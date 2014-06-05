@@ -3269,333 +3269,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\resource\impl\Tuning.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\builder.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\builder.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\db_filesnapshot.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\db_impl.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\db_impl.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\db_impl_readonly.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\db_impl_readonly.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\db_iter.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\db_iter.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\db_stats_logger.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\dbformat.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\dbformat.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\filename.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\filename.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\log_format.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\log_reader.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\log_reader.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\log_writer.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\log_writer.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\memtable.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\memtable.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\memtablelist.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\memtablelist.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\merge_helper.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\merge_helper.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\merge_operator.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\prefix_filter_iterator.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\repair.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\skiplist.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\snapshot.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\table_cache.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\table_cache.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\table_properties_collector.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\table_properties_collector.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\transaction_log_impl.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\transaction_log_impl.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\version_edit.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\version_edit.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\version_set.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\version_set.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\version_set_reduce_num_levels.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\db\write_batch.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\db\write_batch_internal.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\arena.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\cache.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\compaction_filter.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\comparator.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\db.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\env.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\filter_policy.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\flush_block_policy.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\iterator.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\memtablerep.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\merge_operator.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\options.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\perf_context.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\slice.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\slice_transform.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\statistics.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\status.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\table.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\table_properties.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\transaction_log.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\types.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\universal_compaction.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\include\rocksdb\write_batch.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\port\atomic_pointer.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\port\port.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\port\port_posix.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\port\port_posix.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\block.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\table\block.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\block_based_table_builder.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\table\block_based_table_builder.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\block_based_table_factory.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\table\block_based_table_factory.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\block_based_table_reader.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\table\block_based_table_reader.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\block_builder.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\table\block_builder.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\filter_block.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\table\filter_block.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\flush_block_policy.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\format.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\table\format.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\table\iter_heap.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\iterator.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\table\iterator_wrapper.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\merger.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\table\merger.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\table\two_level_iterator.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\table\two_level_iterator.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\arena_impl.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\arena_impl.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\auto_roll_logger.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\auto_roll_logger.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\blob_store.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\blob_store.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\bloom.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\build_version.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\cache.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\coding.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\coding.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\comparator.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\crc32c.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\crc32c.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\env.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\env_posix.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\filter_policy.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\hash.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\hash.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\hash_skiplist_rep.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\histogram.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\histogram.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\logging.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\logging.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\murmurhash.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\murmurhash.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\mutexlock.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\options.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\perf_context.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\perf_context_imp.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\posix_logger.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\random.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\skiplistrep.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\slice.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\statistics.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\stats_logger.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\status.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\stl_wrappers.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rocksdb\rocksdb\util\stop_watch.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\string_util.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\transformrep.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rocksdb\rocksdb\util\vectorrep.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\sitefiles\api\Listener.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\sitefiles\api\Manager.h">
@@ -3763,8 +3436,8 @@
     <ClCompile Include="..\..\src\ripple\unity\common.cpp">
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\core.cpp">
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\src\leveldb\include;..\..\src\ripple\rocksdb\rocksdb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\leveldb\include;..\..\src\ripple\rocksdb\rocksdb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\src\leveldb\include;..\..\src\rocksdb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\leveldb\include;..\..\src\rocksdb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\unity\core.h">
     </ClInclude>
@@ -3815,8 +3488,8 @@
     <ClCompile Include="..\..\src\ripple\unity\ripple.proto.cpp">
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\rocksdb.cpp">
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\src\ripple\rocksdb\rocksdb;..\..\src\ripple\rocksdb\rocksdb\include;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\ripple\rocksdb\rocksdb;..\..\src\ripple\rocksdb\rocksdb\include;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\src\rocksdb;..\..\src\rocksdb\include;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\rocksdb;..\..\src\rocksdb\include;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\unity\rocksdb.h">
     </ClInclude>
@@ -3907,6 +3580,442 @@
     <ClInclude Include="..\..\src\ripple\validators\impl\Validation.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\validators\impl\Validator.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\db\builder.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\db\builder.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\db\column_family.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\db\column_family.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\db\compaction.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\db\compaction.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\db\compaction_picker.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\db\compaction_picker.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\db\db_filesnapshot.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb\db\db_impl.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\db\db_impl.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\db\db_impl_debug.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb\db\db_impl_readonly.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\db\db_impl_readonly.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\db\db_iter.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\db\db_iter.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\db\db_stats_logger.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb\db\dbformat.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\db\dbformat.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\db\file_indexer.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\db\file_indexer.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\db\filename.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\db\filename.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\db\forward_iterator.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\db\forward_iterator.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\db\internal_stats.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\db\internal_stats.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\db\log_format.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\db\log_reader.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\db\log_reader.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\db\log_writer.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\db\log_writer.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\db\memtable.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\db\memtable.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\db\memtable_list.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\db\memtable_list.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\db\merge_context.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\db\merge_helper.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\db\merge_helper.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\db\merge_operator.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb\db\repair.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\db\skiplist.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\db\snapshot.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\db\table_cache.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\db\table_cache.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\db\table_properties_collector.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\db\table_properties_collector.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\db\tailing_iter.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\db\tailing_iter.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\db\transaction_log_impl.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\db\transaction_log_impl.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\db\version_edit.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\db\version_edit.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\db\version_set.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\db\version_set.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\db\write_batch.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\db\write_batch_internal.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\include\rocksdb\cache.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\include\rocksdb\compaction_filter.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\include\rocksdb\comparator.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\include\rocksdb\db.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\include\rocksdb\env.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\include\rocksdb\filter_policy.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\include\rocksdb\flush_block_policy.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\include\rocksdb\iterator.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\include\rocksdb\memtablerep.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\include\rocksdb\merge_operator.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\include\rocksdb\options.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\include\rocksdb\perf_context.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\include\rocksdb\slice.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\include\rocksdb\slice_transform.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\include\rocksdb\statistics.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\include\rocksdb\status.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\include\rocksdb\table.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\include\rocksdb\table_properties.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\include\rocksdb\transaction_log.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\include\rocksdb\types.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\include\rocksdb\universal_compaction.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\include\rocksdb\version.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\include\rocksdb\write_batch.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\port\atomic_pointer.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\port\likely.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\port\port.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\port\port_posix.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\port\port_posix.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\table\block.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\table\block.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\table\block_based_table_builder.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\table\block_based_table_builder.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\table\block_based_table_factory.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\table\block_based_table_factory.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\table\block_based_table_reader.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\table\block_based_table_reader.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\table\block_builder.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\table\block_builder.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\table\block_hash_index.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\table\block_hash_index.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\table\filter_block.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\table\filter_block.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\table\flush_block_policy.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb\table\format.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\table\format.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\table\iter_heap.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\table\iterator.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\table\iterator_wrapper.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\table\merger.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\table\merger.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\table\meta_blocks.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\table\meta_blocks.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\table\plain_table_builder.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\table\plain_table_builder.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\table\plain_table_factory.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\table\plain_table_factory.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\table\plain_table_reader.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\table\plain_table_reader.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\table\table_builder.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\table\table_properties.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\table\table_reader.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\table\two_level_iterator.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\table\two_level_iterator.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\util\arena.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\util\arena.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\util\auto_roll_logger.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\util\auto_roll_logger.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\util\autovector.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\util\blob_store.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\util\blob_store.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\util\bloom.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\util\build_version.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\util\cache.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb\util\coding.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\util\coding.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\util\comparator.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb\util\crc32c.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\util\crc32c.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\util\dynamic_bloom.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\util\dynamic_bloom.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\util\env.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb\util\env_posix.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb\util\filter_policy.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb\util\hash.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\util\hash.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\util\hash_cuckoo_rep.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\util\hash_cuckoo_rep.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\util\hash_linklist_rep.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\util\hash_linklist_rep.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\util\hash_skiplist_rep.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\util\hash_skiplist_rep.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\util\histogram.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\util\histogram.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\util\log_buffer.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\util\log_buffer.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\util\logging.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\util\logging.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\util\murmurhash.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\util\murmurhash.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\util\mutexlock.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\util\options.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb\util\perf_context.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\util\perf_context_imp.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\util\posix_logger.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\util\random.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\util\skiplistrep.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb\util\slice.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb\util\statistics.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\util\statistics.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\util\stats_logger.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\util\status.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\util\stl_wrappers.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\util\stop_watch.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\util\string_util.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\util\string_util.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\util\sync_point.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\util\sync_point.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\util\thread_local.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\util\thread_local.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\util\vectorrep.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb\util\xxhash.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\util\xxhash.h">
     </ClInclude>
     <ClInclude Include="..\..\src\snappy\config\snappy-stubs-public.h">
     </ClInclude>
