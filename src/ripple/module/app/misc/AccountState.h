@@ -29,7 +29,7 @@ namespace ripple {
 class AccountState : beast::LeakChecked <AccountState>
 {
 public:
-    typedef boost::shared_ptr<AccountState> pointer;
+    typedef std::shared_ptr<AccountState> pointer;
 
 public:
     // For new accounts

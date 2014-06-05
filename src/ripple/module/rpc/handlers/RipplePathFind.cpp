@@ -94,8 +94,8 @@ Json::Value RPCHandler::doRipplePathFind (
         if (lpLedger)
         {
             // The caller specified a ledger
-            lpLedger = boost::make_shared<Ledger> (boost::ref (*lpLedger), false);
-            cache = boost::make_shared<RippleLineCache>(lpLedger);
+            lpLedger = std::make_shared<Ledger> (boost::ref (*lpLedger), false);
+            cache = std::make_shared<RippleLineCache>(lpLedger);
         }
         else
         {

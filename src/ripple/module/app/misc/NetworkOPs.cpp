@@ -232,21 +232,21 @@ public:
                       Json::Value& jvResult);
 
     // ledger proposal/close functions
-    void processTrustedProposal (LedgerProposal::pointer proposal, boost::shared_ptr<protocol::TMProposeSet> set,
+    void processTrustedProposal (LedgerProposal::pointer proposal, std::shared_ptr<protocol::TMProposeSet> set,
                                  RippleAddress nodePublic, uint256 checkLedger, bool sigGood);
-    SHAMapAddNode gotTXData (const boost::shared_ptr<Peer>& peer, uint256 const& hash,
+    SHAMapAddNode gotTXData (const std::shared_ptr<Peer>& peer, uint256 const& hash,
                              const std::list<SHAMapNode>& nodeIDs, const std::list< Blob >& nodeData);
     bool recvValidation (SerializedValidation::ref val, const std::string& source);
     void takePosition (int seq, SHAMap::ref position);
     SHAMap::pointer getTXMap (uint256 const& hash);
-    bool hasTXSet (const boost::shared_ptr<Peer>& peer, uint256 const& set, protocol::TxSetStatus status);
+    bool hasTXSet (const std::shared_ptr<Peer>& peer, uint256 const& set, protocol::TxSetStatus status);
     void mapComplete (uint256 const& hash, SHAMap::ref map);
     bool stillNeedTXSet (uint256 const& hash);
-    void makeFetchPack (Job&, boost::weak_ptr<Peer> peer, boost::shared_ptr<protocol::TMGetObjectByHash> request,
+    void makeFetchPack (Job&, std::weak_ptr<Peer> peer, std::shared_ptr<protocol::TMGetObjectByHash> request,
                         uint256 haveLedger, std::uint32_t uUptime);
     bool shouldFetchPack (std::uint32_t seq);
     void gotFetchPack (bool progress, std::uint32_t seq);
-    void addFetchPack (uint256 const& hash, boost::shared_ptr< Blob >& data);
+    void addFetchPack (uint256 const& hash, std::shared_ptr< Blob >& data);
     bool getFetchPack (uint256 const& hash, Blob& data);
     int getFetchSize ();
     void sweepFetchPack ();
@@ -474,7 +474,7 @@ private:
     boost::posix_time::ptime            mConnectTime;
     beast::DeadlineTimer                m_heartbeatTimer;
     beast::DeadlineTimer                m_clusterTimer;
-    boost::shared_ptr<LedgerConsensus>  mConsensus;
+    std::shared_ptr<LedgerConsensus>  mConsensus;
     ripple::unordered_map < uint160,
           std::list<LedgerProposal::pointer> > mStoredProposals;
 
@@ -628,7 +628,7 @@ void NetworkOPsImp::processClusterTimer ()
         node.set_cost (item.balance);
     }
     getApp ().overlay ().foreach (send_if (
-        boost::make_shared<Message>(cluster, protocol::mtCLUSTER),
+        std::make_shared<Message>(cluster, protocol::mtCLUSTER),
         peer_in_cluster ()));
     setClusterTimer ();
 }
@@ -757,7 +757,7 @@ void NetworkOPsImp::submitTransaction (Job&, SerializedTransaction::pointer iTra
     iTrans->add (s);
 
     SerializerIterator sit (s);
-    SerializedTransaction::pointer trans = boost::make_shared<SerializedTransaction> (boost::ref (sit));
+    SerializedTransaction::pointer trans = std::make_shared<SerializedTransaction> (boost::ref (sit));
 
     uint256 suppress = trans->getTransactionID ();
     int flags;
@@ -796,7 +796,7 @@ void NetworkOPsImp::submitTransaction (Job&, SerializedTransaction::pointer iTra
 
     getApp().getJobQueue().addJob (jtTRANSACTION, "submitTxn",
         std::bind (&NetworkOPsImp::processTransactionCbVoid, this,
-            boost::make_shared<Transaction> (trans, false), false, false, false, callback));
+            std::make_shared<Transaction> (trans, false), false, false, false, callback));
 }
 
 // Sterilize transaction through serialization.
@@ -903,7 +903,7 @@ void NetworkOPsImp::runTransactionQueue ()
                         tx.set_status (protocol::tsCURRENT);
                         tx.set_receivetimestamp (getNetworkTimeNC ()); // FIXME: This should be when we received it
                         getApp ().overlay ().foreach (send_if_not (
-                            boost::make_shared<Message> (tx, protocol::mtTRANSACTION),
+                            std::make_shared<Message> (tx, protocol::mtTRANSACTION),
                             peer_in_set(peers)));
                     }
                     else
@@ -1034,7 +1034,7 @@ Transaction::pointer NetworkOPsImp::processTransactionCb (
                 tx.set_status (protocol::tsCURRENT);
                 tx.set_receivetimestamp (getNetworkTimeNC ()); // FIXME: This should be when we received it
                 getApp ().overlay ().foreach (send_if_not (
-                    boost::make_shared<Message> (tx, protocol::mtTRANSACTION),
+                    std::make_shared<Message> (tx, protocol::mtTRANSACTION),
                     peer_in_set(peers)));
             }
         }
@@ -1431,7 +1431,7 @@ void NetworkOPsImp::switchLastClosedLedger (Ledger::pointer newLedger, bool duri
 
     clearNeedNetworkLedger ();
     newLedger->setClosed ();
-    Ledger::pointer openLedger = boost::make_shared<Ledger> (false, boost::ref (*newLedger));
+    Ledger::pointer openLedger = std::make_shared<Ledger> (false, boost::ref (*newLedger));
     m_ledgerMaster.switchLedgers (newLedger, openLedger);
 
     protocol::TMStatusChange s;
@@ -1444,7 +1444,7 @@ void NetworkOPsImp::switchLastClosedLedger (Ledger::pointer newLedger, bool duri
     s.set_ledgerhash (hash.begin (), hash.size ());
 
     getApp ().overlay ().foreach (send_always (
-        boost::make_shared<Message> (s, protocol::mtSTATUS_CHANGE)));
+        std::make_shared<Message> (s, protocol::mtSTATUS_CHANGE)));
 }
 
 int NetworkOPsImp::beginConsensus (uint256 const& networkClosed, Ledger::pointer closingLedger)
@@ -1519,7 +1519,7 @@ uint256 NetworkOPsImp::getConsensusLCL ()
 }
 
 void NetworkOPsImp::processTrustedProposal (LedgerProposal::pointer proposal,
-        boost::shared_ptr<protocol::TMProposeSet> set, RippleAddress nodePublic, uint256 checkLedger, bool sigGood)
+        std::shared_ptr<protocol::TMProposeSet> set, RippleAddress nodePublic, uint256 checkLedger, bool sigGood)
 {
     {
         Application::ScopedLockType lock (getApp().getMasterLock ());
@@ -1563,7 +1563,7 @@ void NetworkOPsImp::processTrustedProposal (LedgerProposal::pointer proposal,
                 proposal->getSuppressionID (), peers, SF_RELAYED))
 	    {
                 getApp ().overlay ().foreach (send_if_not (
-                    boost::make_shared<Message> (*set, protocol::mtPROPOSE_LEDGER),
+                    std::make_shared<Message> (*set, protocol::mtPROPOSE_LEDGER),
                     peer_in_set(peers)));
 	    }
         }
@@ -1611,7 +1611,7 @@ void NetworkOPsImp::takePosition (int seq, SHAMap::ref position)
 }
 
 // Call with the master lock for now
-SHAMapAddNode NetworkOPsImp::gotTXData (const boost::shared_ptr<Peer>& peer, uint256 const& hash,
+SHAMapAddNode NetworkOPsImp::gotTXData (const std::shared_ptr<Peer>& peer, uint256 const& hash,
                                      const std::list<SHAMapNode>& nodeIDs, const std::list< Blob >& nodeData)
 {
 
@@ -1624,7 +1624,7 @@ SHAMapAddNode NetworkOPsImp::gotTXData (const boost::shared_ptr<Peer>& peer, uin
     return mConsensus->peerGaveNodes (peer, hash, nodeIDs, nodeData);
 }
 
-bool NetworkOPsImp::hasTXSet (const boost::shared_ptr<Peer>& peer, uint256 const& set, protocol::TxSetStatus status)
+bool NetworkOPsImp::hasTXSet (const std::shared_ptr<Peer>& peer, uint256 const& set, protocol::TxSetStatus status)
 {
     if (mConsensus == nullptr)
     {
@@ -1664,7 +1664,7 @@ void NetworkOPsImp::endConsensus (bool correctLCL)
         }
     }
 
-    mConsensus = boost::shared_ptr<LedgerConsensus> ();
+    mConsensus = std::shared_ptr<LedgerConsensus> ();
 }
 
 void NetworkOPsImp::consensusViewChange ()
@@ -1849,7 +1849,7 @@ NetworkOPsImp::getAccountTxs (const RippleAddress& account, std::int32_t minLedg
                     ledger->pendSaveValidated(false, false);
             }
 
-            TransactionMetaSet::pointer meta = boost::make_shared<TransactionMetaSet> (txn->getID (), txn->getLedger (), rawMeta.getData ());
+            TransactionMetaSet::pointer meta = std::make_shared<TransactionMetaSet> (txn->getID (), txn->getLedger (), rawMeta.getData ());
 
             // VFALCO NOTE Use emplace instead.
             ret.push_back (std::pair<Transaction::ref, TransactionMetaSet::ref> (txn, meta));
@@ -2011,7 +2011,7 @@ NetworkOPsImp::getTxsAccount (const RippleAddress& account, std::int32_t minLedg
                 }
 
                 --numberOfResults;
-                TransactionMetaSet::pointer meta = boost::make_shared<TransactionMetaSet> (txn->getID (), txn->getLedger (), rawMeta.getData ());
+                TransactionMetaSet::pointer meta = std::make_shared<TransactionMetaSet> (txn->getID (), txn->getLedger (), rawMeta.getData ());
 
                 ret.push_back (std::pair<Transaction::ref, TransactionMetaSet::ref> (txn, meta));
             }
@@ -2523,7 +2523,7 @@ void NetworkOPsImp::pubValidatedTransaction (Ledger::ref alAccepted, const Accep
 
 void NetworkOPsImp::pubAccountTransaction (Ledger::ref lpCurrent, const AcceptedLedgerTx& alTx, bool bAccepted)
 {
-    boost::unordered_set<InfoSub::pointer>  notify;
+    std::unordered_set<InfoSub::pointer>  notify;
     int                             iProposed   = 0;
     int                             iAccepted   = 0;
 
@@ -3191,8 +3191,8 @@ static void fpAppender (protocol::TMGetObjectByHash* reply, std::uint32_t ledger
     newObj.set_data (&blob[0], blob.size ());
 }
 
-void NetworkOPsImp::makeFetchPack (Job&, boost::weak_ptr<Peer> wPeer,
-                                boost::shared_ptr<protocol::TMGetObjectByHash> request,
+void NetworkOPsImp::makeFetchPack (Job&, std::weak_ptr<Peer> wPeer,
+                                std::shared_ptr<protocol::TMGetObjectByHash> request,
                                 uint256 haveLedgerHash, std::uint32_t uUptime)
 {
     if (UptimeTimer::getInstance ().getElapsedSeconds () > (uUptime + 1))
@@ -3292,7 +3292,7 @@ void NetworkOPsImp::makeFetchPack (Job&, boost::weak_ptr<Peer> wPeer,
         while (wantLedger && (UptimeTimer::getInstance ().getElapsedSeconds () <= (uUptime + 1)));
 
         m_journal.info << "Built fetch pack with " << reply.objects ().size () << " nodes";
-        Message::pointer msg = boost::make_shared<Message> (reply, protocol::mtGET_OBJECTS);
+        Message::pointer msg = std::make_shared<Message> (reply, protocol::mtGET_OBJECTS);
         peer->sendPacket (msg, false);
     }
     catch (...)
@@ -3306,7 +3306,7 @@ void NetworkOPsImp::sweepFetchPack ()
     mFetchPack.sweep ();
 }
 
-void NetworkOPsImp::addFetchPack (uint256 const& hash, boost::shared_ptr< Blob >& data)
+void NetworkOPsImp::addFetchPack (uint256 const& hash, std::shared_ptr< Blob >& data)
 {
     mFetchPack.canonicalize (hash, data);
 }

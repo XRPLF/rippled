@@ -2,7 +2,6 @@
 /*
     This file is part of rippled: https://github.com/ripple/rippled
     Copyright (c) 2012, 2013 Ripple Labs Inc.
-
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
     copyright notice and this permission notice appear in all copies.
@@ -56,7 +55,7 @@ public:
 
     void startListening ()
     {
-        RPCServerImp::pointer new_connection (boost::make_shared <RPCServerImp> (
+        RPCServerImp::pointer new_connection (std::make_shared <RPCServerImp> (
             boost::ref (mAcceptor.get_io_service ()),
                 boost::ref (m_sslContext->get ()),
                     boost::ref (m_rpcServerHandler)));
@@ -65,8 +64,8 @@ public:
 
         mAcceptor.async_accept (new_connection->getRawSocket (), 
             new_connection->getRemoteEndpoint (),
-            boost::bind (&RPCDoorImp::handleConnect, this, 
-                new_connection, boost::asio::placeholders::error));
+            std::bind (&RPCDoorImp::handleConnect, this, 
+                new_connection, beast::asio::placeholders::error));
     }
 
     //--------------------------------------------------------------------------
@@ -104,7 +103,7 @@ public:
             }
 
             new_connection->getSocket ().async_handshake (AutoSocket::ssl_socket::server,
-                    boost::bind (&RPCServer::connected, new_connection));
+                    std::bind (&RPCServer::connected, new_connection));
         }
         else
         {
@@ -117,7 +116,7 @@ public:
         if (delay)
         {
             mDelayTimer.expires_from_now (boost::posix_time::milliseconds (1000));
-            mDelayTimer.async_wait (boost::bind (&RPCDoorImp::startListening, this));
+            mDelayTimer.async_wait (std::bind (&RPCDoorImp::startListening, this));
         }
         else
         {

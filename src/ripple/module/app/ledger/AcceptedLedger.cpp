@@ -33,7 +33,7 @@ AcceptedLedger::AcceptedLedger (Ledger::ref ledger) : mLedger (ledger)
     for (SHAMapItem::pointer item = txSet.peekFirstItem (); !!item; item = txSet.peekNextItem (item->getTag ()))
     {
         SerializerIterator sit (item->peekSerializer ());
-        insert (boost::make_shared<AcceptedLedgerTx> (ledger->getLedgerSeq (), boost::ref (sit)));
+        insert (std::make_shared<AcceptedLedgerTx> (ledger->getLedgerSeq (), boost::ref (sit)));
     }
 }
 

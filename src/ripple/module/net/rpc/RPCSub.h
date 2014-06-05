@@ -26,7 +26,7 @@ namespace ripple {
 class RPCSub : public InfoSub
 {
 public:
-    typedef boost::shared_ptr <RPCSub> pointer;
+    typedef std::shared_ptr <RPCSub> pointer;
     typedef pointer const& ref;
 
     static pointer New (InfoSub::Source& source,

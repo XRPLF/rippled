@@ -26,7 +26,7 @@ namespace ripple {
 class BookListeners
 {
 public:
-    typedef boost::shared_ptr<BookListeners> pointer;
+    typedef std::shared_ptr<BookListeners> pointer;
 
     BookListeners ();
     void addSubscriber (InfoSub::ref sub);

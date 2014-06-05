@@ -78,14 +78,14 @@ public:
         FullBelowCache fullBelowCache ("test.full_below",
             get_seconds_clock ());
 
-        boost::shared_ptr <Table> t1 (boost::make_shared <Table> (
+        std::shared_ptr <Table> t1 (std::make_shared <Table> (
             smtFREE, fullBelowCache));
         
         pass ();
 
 //         beast::Random r;
 //         add_random_items (tableItems, *t1, r);
-//         boost::shared_ptr <Table> t2 (t1->snapShot (true));
+//         std::shared_ptr <Table> t2 (t1->snapShot (true));
 //         
 //         add_random_items (tableItemsExtra, *t1, r);
 //         add_random_items (tableItemsExtra, *t2, r);
@@ -98,12 +98,12 @@ public:
 //             &FetchPack_test::on_fetch, this, std::ref (map), std::placeholders::_1, std::placeholders::_2));
 
         // try to rebuild t2 from the fetch pack
-//         boost::shared_ptr <Table> t3;
+//         std::shared_ptr <Table> t3;
 //         try
 //         {
 //             TestFilter filter (map, beast::Journal());
 // 
-//             t3 = boost::make_shared <Table> (smtFREE, t2->getHash (),
+//             t3 = std::make_shared <Table> (smtFREE, t2->getHash (),
 //                 fullBelowCache);
 // 
 //             expect (t3->fetchRoot (t2->getHash (), &filter), "unable to get root");

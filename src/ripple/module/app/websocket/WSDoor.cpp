@@ -80,7 +80,7 @@ private:
         {
             ScopedLockType lock (m_endpointLock);
 
-            m_endpoint = boost::make_shared<websocketpp::server_multitls> (handler);
+            m_endpoint = std::make_shared<websocketpp::server_multitls> (handler);
         }
 
         // Call the main-event-loop of the websocket server.
@@ -121,7 +121,7 @@ private:
 
     void onStop ()
     {
-        boost::shared_ptr<websocketpp::server_multitls> endpoint;
+        std::shared_ptr<websocketpp::server_multitls> endpoint;
 
         {
             ScopedLockType lock (m_endpointLock);
@@ -147,7 +147,7 @@ private:
     boost::asio::ssl::context& m_ssl_context;
     LockType m_endpointLock;
 
-    boost::shared_ptr<websocketpp::server_multitls> m_endpoint;
+    std::shared_ptr<websocketpp::server_multitls> m_endpoint;
     bool                            mPublic;
     bool                            mProxy;
     std::string                     mIp;

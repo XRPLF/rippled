@@ -103,8 +103,8 @@ public:
     }
 
 private:
-    static void TimerEntry (boost::weak_ptr<PeerSet>, const boost::system::error_code& result);
-    static void TimerJobEntry (Job&, boost::shared_ptr<PeerSet>);
+    static void TimerEntry (std::weak_ptr<PeerSet>, const boost::system::error_code& result);
+    static void TimerJobEntry (Job&, std::shared_ptr<PeerSet>);
 
 protected:
     // VFALCO TODO try to make some of these private
@@ -117,7 +117,7 @@ protected:
 
     virtual void newPeer (Peer::ptr const&) = 0;
     virtual void onTimer (bool progress, ScopedLockType&) = 0;
-    virtual boost::weak_ptr<PeerSet> pmDowncast () = 0;
+    virtual std::weak_ptr<PeerSet> pmDowncast () = 0;
 
     void setComplete ()
     {

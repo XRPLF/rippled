@@ -18,7 +18,8 @@
 //==============================================================================
 
 #include <boost/regex.hpp>
-
+#include <beast/asio/placeholders.h>
+    
 namespace ripple {
 
 //
@@ -82,7 +83,7 @@ void HTTPClient::initializeSSLContext ()
 //------------------------------------------------------------------------------
 
 class HTTPClientImp
-    : public boost::enable_shared_from_this <HTTPClientImp>
+    : public std::enable_shared_from_this <HTTPClientImp>
     , public HTTPClient
     , beast::LeakChecked <HTTPClientImp>
 {
@@ -163,7 +164,7 @@ public:
     {
         WriteLog (lsTRACE, HTTPClient) << "Fetch: " << mDeqSites[0];
 
-        boost::shared_ptr <boost::asio::ip::tcp::resolver::query> query (
+        std::shared_ptr <boost::asio::ip::tcp::resolver::query> query (
             new boost::asio::ip::tcp::resolver::query (
                 mDeqSites[0],
                 beast::lexicalCast <std::string> (mPort),
@@ -177,10 +178,10 @@ public:
         if (!mShutdown)
         {
             mDeadline.async_wait (
-                boost::bind (
+                std::bind (
                     &HTTPClientImp::handleDeadline,
                     shared_from_this (),
-                    boost::asio::placeholders::error));
+                    beast::asio::placeholders::error));
         }
 
         if (!mShutdown)
@@ -188,11 +189,11 @@ public:
             WriteLog (lsTRACE, HTTPClient) << "Resolving: " << mDeqSites[0];
 
             mResolver.async_resolve (*mQuery,
-                                     boost::bind (
+                                     std::bind (
                                          &HTTPClientImp::handleResolve,
                                          shared_from_this (),
-                                         boost::asio::placeholders::error,
-                                         boost::asio::placeholders::iterator));
+                                         beast::asio::placeholders::error,
+                                         beast::asio::placeholders::iterator));
         }
 
         if (mShutdown)
@@ -227,10 +228,10 @@ public:
             mResolver.cancel ();
 
             // Stop the transaction.
-            mSocket.async_shutdown (boost::bind (
+            mSocket.async_shutdown (std::bind (
                                         &HTTPClientImp::handleShutdown,
                                         shared_from_this (),
-                                        boost::asio::placeholders::error));
+                                        beast::asio::placeholders::error));
 
         }
     }
@@ -266,10 +267,10 @@ public:
             boost::asio::async_connect (
                 mSocket.lowest_layer (),
                 itrEndpoint,
-                boost::bind (
+                std::bind (
                     &HTTPClientImp::handleConnect,
                     shared_from_this (),
-                    boost::asio::placeholders::error));
+                    beast::asio::placeholders::error));
         }
     }
 
@@ -306,10 +307,10 @@ public:
         {
             mSocket.async_handshake (
                 AutoSocket::ssl_socket::client,
-                boost::bind (
+                std::bind (
                     &HTTPClientImp::handleRequest,
                     shared_from_this (),
-                    boost::asio::placeholders::error));
+                    beast::asio::placeholders::error));
         }
         else
         {
@@ -336,10 +337,10 @@ public:
 
             mSocket.async_write (
                 mRequest,
-                boost::bind (&HTTPClientImp::handleWrite,
+                std::bind (&HTTPClientImp::handleWrite,
                              shared_from_this (),
-                             boost::asio::placeholders::error,
-                             boost::asio::placeholders::bytes_transferred));
+                             beast::asio::placeholders::error,
+                             beast::asio::placeholders::bytes_transferred));
         }
     }
 
@@ -361,10 +362,10 @@ public:
             mSocket.async_read_until (
                 mHeader,
                 "\r\n\r\n",
-                boost::bind (&HTTPClientImp::handleHeader,
+                std::bind (&HTTPClientImp::handleHeader,
                              shared_from_this (),
-                             boost::asio::placeholders::error,
-                             boost::asio::placeholders::bytes_transferred));
+                             beast::asio::placeholders::error,
+                             beast::asio::placeholders::bytes_transferred));
         }
     }
 
@@ -417,10 +418,10 @@ public:
             mSocket.async_read (
                 mResponse.prepare (mResponseMax - mBody.size ()),
                 boost::asio::transfer_all (),
-                boost::bind (&HTTPClientImp::handleData,
+                std::bind (&HTTPClientImp::handleData,
                              shared_from_this (),
-                             boost::asio::placeholders::error,
-                             boost::asio::placeholders::bytes_transferred));
+                             beast::asio::placeholders::error,
+                             beast::asio::placeholders::bytes_transferred));
         }
     }
 
@@ -495,12 +496,12 @@ public:
     }
 
 private:
-    typedef boost::shared_ptr<HTTPClient> pointer;
+    typedef std::shared_ptr<HTTPClient> pointer;
 
     bool                                                        mSSL;
     AutoSocket                                                  mSocket;
     boost::asio::ip::tcp::resolver                              mResolver;
-    boost::shared_ptr<boost::asio::ip::tcp::resolver::query>    mQuery;
+    std::shared_ptr<boost::asio::ip::tcp::resolver::query>    mQuery;
     boost::asio::streambuf                                      mRequest;
     boost::asio::streambuf                                      mHeader;
     boost::asio::streambuf                                      mResponse;
@@ -533,7 +534,7 @@ void HTTPClient::get (
     std::function<bool (const boost::system::error_code& ecResult, int iStatus,
         const std::string& strData)> complete)
 {
-    boost::shared_ptr <HTTPClientImp> client (
+    std::shared_ptr <HTTPClientImp> client (
         new HTTPClientImp (io_service, port, responseMax));
 
     client->get (bSSL, deqSites, strPath, timeout, complete);
@@ -552,7 +553,7 @@ void HTTPClient::get (
 {
     std::deque<std::string> deqSites (1, strSite);
 
-    boost::shared_ptr <HTTPClientImp> client (
+    std::shared_ptr <HTTPClientImp> client (
         new HTTPClientImp (io_service, port, responseMax));
 
     client->get (bSSL, deqSites, strPath, timeout, complete);
@@ -571,7 +572,7 @@ void HTTPClient::request (
 {
     std::deque<std::string> deqSites (1, strSite);
 
-    boost::shared_ptr <HTTPClientImp> client (
+    std::shared_ptr <HTTPClientImp> client (
         new HTTPClientImp (io_service, port, responseMax));
 
     client->request (bSSL, deqSites, setRequest, timeout, complete);
@@ -608,7 +609,7 @@ void HTTPClient::sendSMS (boost::asio::io_service& io_service, const std::string
         if (iPort < 0)
             iPort = bSSL ? 443 : 80;
 
-        boost::shared_ptr <HTTPClientImp> client (
+        std::shared_ptr <HTTPClientImp> client (
             new HTTPClientImp (io_service, iPort, maxClientHeaderBytes));
 
         client->get (bSSL, deqSites, strURI, boost::posix_time::seconds (smsTimeoutSeconds),

@@ -487,7 +487,7 @@ AmendmentTableImpl::doVoting (Ledger::ref lastClosedLedger,
         Serializer s;
         trans.add (s, true);
 #if RIPPLE_PROPOSE_AMENDMENTS
-        SHAMapItem::pointer tItem = boost::make_shared<SHAMapItem> (txID, s.peekData ());
+        SHAMapItem::pointer tItem = std::make_shared<SHAMapItem> (txID, s.peekData ());
         if (!initialPosition->addGiveItem (tItem, true, false))
         {
             if (m_journal.warning) m_journal.warning <<

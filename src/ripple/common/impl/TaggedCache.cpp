@@ -99,7 +99,7 @@ public:
 
             {
                 Cache::mapped_ptr const p1 (c.fetch (3));
-                Cache::mapped_ptr p2 (boost::make_shared <Value> ("three"));
+                Cache::mapped_ptr p2 (std::make_shared <Value> ("three"));
                 c.canonicalize (3, p2);
                 expect (p1.get() == p2.get());
             }
@@ -130,7 +130,7 @@ public:
                 expect (c.getCacheSize() == 0);
                 expect (c.getTrackSize() == 1);
                 // Canonicalize a new object with the same key
-                Cache::mapped_ptr p2 (boost::make_shared <std::string> ("four"));
+                Cache::mapped_ptr p2 (std::make_shared <std::string> ("four"));
                 expect (c.canonicalize (4, p2, false));
                 expect (c.getCacheSize() == 1);
                 expect (c.getTrackSize() == 1);

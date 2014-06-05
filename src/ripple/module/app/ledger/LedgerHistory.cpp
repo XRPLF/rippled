@@ -128,7 +128,7 @@ void LedgerHistory::builtLedger (Ledger::ref ledger)
     ConsensusValidated::ScopedLockType sl (
         m_consensus_validated.peekMutex());
 
-    auto entry = boost::make_shared<std::pair< LedgerHash, LedgerHash >>();
+    auto entry = std::make_shared<std::pair< LedgerHash, LedgerHash >>();
     m_consensus_validated.canonicalize(index, entry, false);
 
     if (entry->first != hash)
@@ -153,7 +153,7 @@ void LedgerHistory::validatedLedger (Ledger::ref ledger)
     ConsensusValidated::ScopedLockType sl (
         m_consensus_validated.peekMutex());
 
-    boost::shared_ptr< std::pair< LedgerHash, LedgerHash > > entry = boost::make_shared<std::pair< LedgerHash, LedgerHash >>();
+    std::shared_ptr< std::pair< LedgerHash, LedgerHash > > entry = std::make_shared<std::pair< LedgerHash, LedgerHash >>();
     m_consensus_validated.canonicalize(index, entry, false);
 
     if (entry->second != hash)

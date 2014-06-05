@@ -39,7 +39,7 @@ TransactionAcquire::TransactionAcquire (uint256 const& hash, clock_type& clock)
         LogPartition::getJournal <TransactionAcquire> ())
     , mHaveRoot (false)
 {
-    mMap = boost::make_shared<SHAMap> (smtTRANSACTION, hash,
+    mMap = std::make_shared<SHAMap> (smtTRANSACTION, hash,
         std::ref (getApp().getFullBelowCache ()));
     mMap->setTXMap ();
 }
@@ -132,9 +132,9 @@ void TransactionAcquire::onTimer (bool progress, ScopedLockType& psl)
         trigger (Peer::ptr ());
 }
 
-boost::weak_ptr<PeerSet> TransactionAcquire::pmDowncast ()
+std::weak_ptr<PeerSet> TransactionAcquire::pmDowncast ()
 {
-    return boost::dynamic_pointer_cast<PeerSet> (shared_from_this ());
+    return std::dynamic_pointer_cast<PeerSet> (shared_from_this ());
 }
 
 void TransactionAcquire::trigger (Peer::ptr const& peer)

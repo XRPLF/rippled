@@ -1126,7 +1126,7 @@ void ApplicationImp::startNewLedger ()
     m_journal.info << "Root account: " << rootAddress.humanAccountID ();
 
     {
-        Ledger::pointer firstLedger = boost::make_shared<Ledger> (rootAddress, SYSTEM_CURRENCY_START);
+        Ledger::pointer firstLedger = std::make_shared<Ledger> (rootAddress, SYSTEM_CURRENCY_START);
         assert (!!firstLedger->getAccountState (rootAddress));
         // TODO(david): Add any default amendments
         // TODO(david): Set default fee/reserve
@@ -1135,10 +1135,10 @@ void ApplicationImp::startNewLedger ()
         firstLedger->setAccepted ();
         m_ledgerMaster->pushLedger (firstLedger);
 
-        Ledger::pointer secondLedger = boost::make_shared<Ledger> (true, boost::ref (*firstLedger));
+        Ledger::pointer secondLedger = std::make_shared<Ledger> (true, boost::ref (*firstLedger));
         secondLedger->setClosed ();
         secondLedger->setAccepted ();
-        m_ledgerMaster->pushLedger (secondLedger, boost::make_shared<Ledger> (true, boost::ref (*secondLedger)));
+        m_ledgerMaster->pushLedger (secondLedger, std::make_shared<Ledger> (true, boost::ref (*secondLedger)));
         assert (!!secondLedger->getAccountState (rootAddress));
         m_networkOPs->setLastCloseTime (secondLedger->getCloseTimeNC ());
     }
@@ -1203,7 +1203,7 @@ bool ApplicationImp::loadOldLedger (
                      }
                      else
                      {
-                         loadLedger = boost::make_shared<Ledger> (seq, closeTime);
+                         loadLedger = std::make_shared<Ledger> (seq, closeTime);
                          loadLedger->setTotalCoins(totalCoins);
 
                          for (Json::UInt index = 0; index < ledger.get().size(); ++index)
@@ -1298,7 +1298,7 @@ bool ApplicationImp::loadOldLedger (
 
         m_ledgerMaster->setLedgerRangePresent (loadLedger->getLedgerSeq (), loadLedger->getLedgerSeq ());
 
-        Ledger::pointer openLedger = boost::make_shared<Ledger> (false, boost::ref (*loadLedger));
+        Ledger::pointer openLedger = std::make_shared<Ledger> (false, boost::ref (*loadLedger));
         m_ledgerMaster->switchLedgers (loadLedger, openLedger);
         m_ledgerMaster->forceValid(loadLedger);
         m_networkOPs->setLastCloseTime (loadLedger->getCloseTimeNC ());

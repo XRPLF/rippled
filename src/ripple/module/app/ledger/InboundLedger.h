@@ -26,14 +26,14 @@ namespace ripple {
 // A ledger we are trying to acquire
 class InboundLedger
     : public PeerSet
-    , public boost::enable_shared_from_this <InboundLedger>
+    , public std::enable_shared_from_this <InboundLedger>
     , public CountedObject <InboundLedger>
 {
 public:
     static char const* getCountedObjectName () { return "InboundLedger"; }
 
-    typedef boost::shared_ptr <InboundLedger> pointer;
-    typedef std::pair < boost::weak_ptr<Peer>, boost::shared_ptr<protocol::TMLedgerData> > PeerDataPairType;
+    typedef std::shared_ptr <InboundLedger> pointer;
+    typedef std::pair < std::weak_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData> > PeerDataPairType;
 
     // These are the reasons we might acquire a ledger
     enum fcReason
@@ -88,7 +88,7 @@ public:
     bool checkLocal ();
     void init (ScopedLockType& collectionLock);
 
-    bool gotData (boost::weak_ptr<Peer>, boost::shared_ptr<protocol::TMLedgerData>);
+    bool gotData (std::weak_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData>);
 
     typedef std::pair <protocol::TMGetObjectByHash::ObjectType, uint256> neededHash_t;
 
@@ -111,9 +111,9 @@ private:
         trigger (peer);
     }
 
-    boost::weak_ptr <PeerSet> pmDowncast ();
+    std::weak_ptr <PeerSet> pmDowncast ();
 
-    int processData (boost::shared_ptr<Peer> peer, protocol::TMLedgerData& data);
+    int processData (std::shared_ptr<Peer> peer, protocol::TMLedgerData& data);
 
     bool takeBase (const std::string& data);
     bool takeTxNode (const std::list<SHAMapNode>& IDs, const std::list<Blob >& data,

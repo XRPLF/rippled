@@ -129,13 +129,13 @@ bool InboundLedger::tryLocal ()
 
             if (m_journal.trace) m_journal.trace <<
                 "Ledger base found in fetch pack";
-            mLedger = boost::make_shared<Ledger> (data, true);
+            mLedger = std::make_shared<Ledger> (data, true);
             getApp().getNodeStore ().store (hotLEDGER,
                 mLedger->getLedgerSeq (), std::move (data), mHash);
         }
         else
         {
-            mLedger = boost::make_shared<Ledger> (
+            mLedger = std::make_shared<Ledger> (
                 strCopy (node->getData ()), true);
         }
 
@@ -340,9 +340,9 @@ void InboundLedger::addPeers ()
     }
 }
 
-boost::weak_ptr<PeerSet> InboundLedger::pmDowncast ()
+std::weak_ptr<PeerSet> InboundLedger::pmDowncast ()
 {
-    return boost::dynamic_pointer_cast<PeerSet> (shared_from_this ());
+    return std::dynamic_pointer_cast<PeerSet> (shared_from_this ());
 }
 
 /** Dispatch acquire completion
@@ -487,7 +487,7 @@ void InboundLedger::trigger (Peer::ptr const& peer)
                     }
                 }
 
-                Message::pointer packet (boost::make_shared <Message> (
+                Message::pointer packet (std::make_shared <Message> (
                     tmBH, protocol::mtGET_OBJECTS));
                 {
                     ScopedLockType sl (mLock);
@@ -778,7 +778,7 @@ bool InboundLedger::takeBase (const std::string& data)
     if (mComplete || mFailed || mHaveBase)
         return true;
 
-    mLedger = boost::make_shared<Ledger> (data, false);
+    mLedger = std::make_shared<Ledger> (data, false);
 
     if (mLedger->getHash () != mHash)
     {
@@ -1040,8 +1040,8 @@ std::vector<InboundLedger::neededHash_t> InboundLedger::getNeededHashes ()
     Returns 'true' if we need to dispatch
 */
 // VFALCO TODO Why isn't the shared_ptr passed by const& ?
-bool InboundLedger::gotData (boost::weak_ptr<Peer> peer,
-    boost::shared_ptr<protocol::TMLedgerData> data)
+bool InboundLedger::gotData (std::weak_ptr<Peer> peer,
+    std::shared_ptr<protocol::TMLedgerData> data)
 {
     ScopedLockType sl (mReceivedDataLock);
 
@@ -1062,7 +1062,7 @@ bool InboundLedger::gotData (boost::weak_ptr<Peer> peer,
 //
 //        TODO Change peer to Consumer
 //
-int InboundLedger::processData (boost::shared_ptr<Peer> peer,
+int InboundLedger::processData (std::shared_ptr<Peer> peer,
     protocol::TMLedgerData& packet)
 {
     ScopedLockType sl (mLock);
@@ -1180,7 +1180,7 @@ int InboundLedger::processData (boost::shared_ptr<Peer> peer,
 */
 void InboundLedger::runData ()
 {
-    boost::shared_ptr<Peer> chosenPeer;
+    std::shared_ptr<Peer> chosenPeer;
     int chosenPeerCount = -1;
 
     std::vector <PeerDataPairType> data;

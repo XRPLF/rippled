@@ -90,7 +90,7 @@ public:
                 }
                 else
                 {
-                    ret = boost::make_shared <InboundLedger> (hash, seq, reason, std::ref (m_clock));
+                    ret = std::make_shared <InboundLedger> (hash, seq, reason, std::ref (m_clock));
                     assert (ret);
                     mLedgers.insert (std::make_pair (hash, ret));
                     ret->init (sl);
@@ -154,8 +154,8 @@ public:
     /** We received a TMLedgerData from a peer.
     */
     bool gotLedgerData (LedgerHash const& hash,
-            boost::shared_ptr<Peer> peer,
-            boost::shared_ptr<protocol::TMLedgerData> packet_ptr)
+            std::shared_ptr<Peer> peer,
+            std::shared_ptr<protocol::TMLedgerData> packet_ptr)
     {
         protocol::TMLedgerData& packet = *packet_ptr;
 
@@ -178,7 +178,7 @@ public:
         }
 
         // Stash the data for later processing and see if we need to dispatch
-        if (ledger->gotData(boost::weak_ptr<Peer>(peer), packet_ptr))
+        if (ledger->gotData(std::weak_ptr<Peer>(peer), packet_ptr))
             getApp().getJobQueue().addJob (jtLEDGER_DATA, "processLedgerData",
                 std::bind (&InboundLedgers::doLedgerData, this,
                            std::placeholders::_1, hash));
@@ -236,7 +236,7 @@ public:
         Since we paid the price to receive it, we might as well stash it in case we need it.
         Nodes are received in wire format and must be stashed/hashed in prefix format
     */
-    void gotStaleData (boost::shared_ptr<protocol::TMLedgerData> packet_ptr)
+    void gotStaleData (std::shared_ptr<protocol::TMLedgerData> packet_ptr)
     {
         const uint256 uZero;
         try
@@ -255,7 +255,7 @@ public:
                     0, snfWIRE, uZero, false);
                 newNode.addRaw(s, snfPREFIX);
 
-                boost::shared_ptr<Blob> blob = boost::make_shared<Blob> (s.begin(), s.end());
+                std::shared_ptr<Blob> blob = std::make_shared<Blob> (s.begin(), s.end());
 
                 getApp().getOPs().addFetchPack (newNode.getNodeHash(), blob);
             }

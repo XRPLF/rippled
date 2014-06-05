@@ -34,8 +34,8 @@ RippleLineCache::pointer PathRequests::getLineCache (Ledger::pointer& ledger, bo
          (authoritative && ((lgrSeq + 8)  < lineSeq)) ||   // we jumped way back for some reason
          (lgrSeq > (lineSeq + 8)))                         // we jumped way forward for some reason
     {
-        ledger = boost::make_shared<Ledger>(*ledger, false); // Take a snapshot of the ledger
-        mLineCache = boost::make_shared<RippleLineCache> (ledger);
+        ledger = std::make_shared<Ledger>(*ledger, false); // Take a snapshot of the ledger
+        mLineCache = std::make_shared<RippleLineCache> (ledger);
     }
     else
     {
@@ -161,11 +161,11 @@ void PathRequests::updateAll (Ledger::ref inLedger, CancelCallback shouldCancel)
 }
 
 Json::Value PathRequests::makePathRequest(
-    boost::shared_ptr <InfoSub> const& subscriber,
-    const boost::shared_ptr<Ledger>& inLedger,
+    std::shared_ptr <InfoSub> const& subscriber,
+    const std::shared_ptr<Ledger>& inLedger,
     const Json::Value& requestJson)
 {
-    PathRequest::pointer req = boost::make_shared<PathRequest> (
+    PathRequest::pointer req = std::make_shared<PathRequest> (
         subscriber, ++mLastIdentifier, *this, mJournal);
 
     Ledger::pointer ledger = inLedger;

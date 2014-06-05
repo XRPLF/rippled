@@ -27,7 +27,7 @@ AccountState::AccountState (RippleAddress const& naAccountID)
     {
         mValid = true;
 
-        mLedgerEntry = boost::make_shared <SerializedLedgerEntry> (
+        mLedgerEntry = std::make_shared <SerializedLedgerEntry> (
                            ltACCOUNT_ROOT, Ledger::getAccountRootIndex (naAccountID));
 
         mLedgerEntry->setFieldAccount (sfAccount, naAccountID.getAccountID ());

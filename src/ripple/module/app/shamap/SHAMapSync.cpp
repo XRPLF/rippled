@@ -355,7 +355,7 @@ SHAMapAddNode SHAMap::addRootNode (Blob const& rootNode, SHANodeFormat format,
 
     assert (mSeq >= 1);
     SHAMapTreeNode::pointer node =
-        boost::make_shared<SHAMapTreeNode> (SHAMapNode (), rootNode, mSeq - 1, format, uZero, false);
+        std::make_shared<SHAMapTreeNode> (SHAMapNode (), rootNode, mSeq - 1, format, uZero, false);
 
     if (!node)
         return SHAMapAddNode::invalid ();
@@ -395,7 +395,7 @@ SHAMapAddNode SHAMap::addRootNode (uint256 const& hash, Blob const& rootNode, SH
 
     assert (mSeq >= 1);
     SHAMapTreeNode::pointer node =
-        boost::make_shared<SHAMapTreeNode> (SHAMapNode (), rootNode, mSeq - 1, format, uZero, false);
+        std::make_shared<SHAMapTreeNode> (SHAMapNode (), rootNode, mSeq - 1, format, uZero, false);
 
     if (!node || node->getNodeHash () != hash)
         return SHAMapAddNode::invalid ();
@@ -462,7 +462,7 @@ SHAMapAddNode SHAMap::addKnownNode (const SHAMapNode& node, Blob const& rawNode,
             }
 
             SHAMapTreeNode::pointer newNode =
-                boost::make_shared<SHAMapTreeNode> (node, rawNode, 0, snfWIRE, uZero, false);
+                std::make_shared<SHAMapTreeNode> (node, rawNode, 0, snfWIRE, uZero, false);
 
             if (iNode->getChildHash (branch) != newNode->getNodeHash ())
             {
@@ -750,7 +750,7 @@ public:
 
         for (int d = 0; d < 3; ++d) s.add32 (rand ());
 
-        return boost::make_shared<SHAMapItem> (to256 (s.getRIPEMD160 ()), s.peekData ());
+        return std::make_shared<SHAMapItem> (to256 (s.getRIPEMD160 ()), s.peekData ());
     }
 
     bool confuseMap (SHAMap& map, int count)

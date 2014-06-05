@@ -41,13 +41,13 @@ Ledger::Ledger (const RippleAddress& masterID, std::uint64_t startAmount)
     , mValidHash (false)
     , mAccepted (false)
     , mImmutable (false)
-    , mTransactionMap  (boost::make_shared <SHAMap> (smtTRANSACTION,
+    , mTransactionMap  (std::make_shared <SHAMap> (smtTRANSACTION,
         std::ref (getApp().getFullBelowCache())))
-    , mAccountStateMap (boost::make_shared <SHAMap> (smtSTATE,
+    , mAccountStateMap (std::make_shared <SHAMap> (smtSTATE,
         std::ref (getApp().getFullBelowCache())))
 {
     // special case: put coins in root account
-    AccountState::pointer startAccount = boost::make_shared<AccountState> (masterID);
+    AccountState::pointer startAccount = std::make_shared<AccountState> (masterID);
 
     startAccount->peekSLE ().setFieldAmount (sfBalance, startAmount);
 
@@ -89,9 +89,9 @@ Ledger::Ledger (uint256 const& parentHash,
     , mValidHash (false)
     , mAccepted (false)
     , mImmutable (true)
-    , mTransactionMap (boost::make_shared <SHAMap> (
+    , mTransactionMap (std::make_shared <SHAMap> (
         smtTRANSACTION, transHash, std::ref (getApp().getFullBelowCache())))
-    , mAccountStateMap (boost::make_shared <SHAMap> (smtSTATE, accountHash,
+    , mAccountStateMap (std::make_shared <SHAMap> (smtSTATE, accountHash,
         std::ref (getApp().getFullBelowCache())))
 {
     updateHash ();
@@ -150,7 +150,7 @@ Ledger::Ledger (bool /* dummy */,
     , mValidHash (false)
     , mAccepted (false)
     , mImmutable (false)
-    , mTransactionMap (boost::make_shared <SHAMap> (smtTRANSACTION,
+    , mTransactionMap (std::make_shared <SHAMap> (smtTRANSACTION,
         std::ref (getApp().getFullBelowCache())))
     , mAccountStateMap (prevLedger.mAccountStateMap->snapShot (true))
 {
@@ -217,9 +217,9 @@ Ledger::Ledger (std::uint32_t ledgerSeq, std::uint32_t closeTime)
       mValidHash (false),
       mAccepted (false),
       mImmutable (false),
-      mTransactionMap (boost::make_shared <SHAMap> (
+      mTransactionMap (std::make_shared <SHAMap> (
           smtTRANSACTION, std::ref (getApp().getFullBelowCache()))),
-      mAccountStateMap (boost::make_shared <SHAMap> (
+      mAccountStateMap (std::make_shared <SHAMap> (
           smtSTATE, std::ref (getApp().getFullBelowCache())))
 {
     initializeFees ();
@@ -300,9 +300,9 @@ void Ledger::setRaw (Serializer& s, bool hasPrefix)
 
     if (mValidHash)
     {
-        mTransactionMap = boost::make_shared<SHAMap> (smtTRANSACTION, mTransHash,
+        mTransactionMap = std::make_shared<SHAMap> (smtTRANSACTION, mTransHash,
             std::ref (getApp().getFullBelowCache()));
-        mAccountStateMap = boost::make_shared<SHAMap> (smtSTATE, mAccountHash,
+        mAccountStateMap = std::make_shared<SHAMap> (smtSTATE, mAccountHash,
             std::ref (getApp().getFullBelowCache()));
     }
 }
@@ -374,7 +374,7 @@ AccountState::pointer Ledger::getAccountState (const RippleAddress& accountID)
     if (sle->getType () != ltACCOUNT_ROOT)
         return AccountState::pointer ();
 
-    return boost::make_shared<AccountState> (sle, accountID);
+    return std::make_shared<AccountState> (sle, accountID);
 }
 
 NicknameState::pointer Ledger::getNicknameState (uint256 const& uNickname)
@@ -387,17 +387,17 @@ NicknameState::pointer Ledger::getNicknameState (uint256 const& uNickname)
     }
 
     SerializedLedgerEntry::pointer sle =
-        boost::make_shared<SerializedLedgerEntry> (item->peekSerializer (), item->getTag ());
+        std::make_shared<SerializedLedgerEntry> (item->peekSerializer (), item->getTag ());
 
     if (sle->getType () != ltNICKNAME) return NicknameState::pointer ();
 
-    return boost::make_shared<NicknameState> (sle);
+    return std::make_shared<NicknameState> (sle);
 }
 
 bool Ledger::addTransaction (uint256 const& txID, const Serializer& txn)
 {
     // low-level - just add to table
-    SHAMapItem::pointer item = boost::make_shared<SHAMapItem> (txID, txn.peekData ());
+    SHAMapItem::pointer item = std::make_shared<SHAMapItem> (txID, txn.peekData ());
 
     if (!mTransactionMap->addGiveItem (item, true, false))
     {
@@ -415,7 +415,7 @@ bool Ledger::addTransaction (uint256 const& txID, const Serializer& txn, const S
     Serializer s (txn.getDataLength () + md.getDataLength () + 16);
     s.addVL (txn.peekData ());
     s.addVL (md.peekData ());
-    SHAMapItem::pointer item = boost::make_shared<SHAMapItem> (txID, s.peekData ());
+    SHAMapItem::pointer item = std::make_shared<SHAMapItem> (txID, s.peekData ());
 
     if (!mTransactionMap->addGiveItem (item, true, true))
     {
@@ -469,12 +469,12 @@ SerializedTransaction::pointer Ledger::getSTransaction (SHAMapItem::ref item, SH
     SerializerIterator sit (item->peekSerializer ());
 
     if (type == SHAMapTreeNode::tnTRANSACTION_NM)
-        return boost::make_shared<SerializedTransaction> (boost::ref (sit));
+        return std::make_shared<SerializedTransaction> (boost::ref (sit));
     else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
     {
         Serializer sTxn (sit.getVL ());
         SerializerIterator tSit (sTxn);
-        return boost::make_shared<SerializedTransaction> (boost::ref (tSit));
+        return std::make_shared<SerializedTransaction> (boost::ref (tSit));
     }
 
     return SerializedTransaction::pointer ();
@@ -488,15 +488,15 @@ SerializedTransaction::pointer Ledger::getSMTransaction (SHAMapItem::ref item, S
     if (type == SHAMapTreeNode::tnTRANSACTION_NM)
     {
         txMeta.reset ();
-        return boost::make_shared<SerializedTransaction> (boost::ref (sit));
+        return std::make_shared<SerializedTransaction> (boost::ref (sit));
     }
     else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
     {
         Serializer sTxn (sit.getVL ());
         SerializerIterator tSit (sTxn);
 
-        txMeta = boost::make_shared<TransactionMetaSet> (item->getTag (), mLedgerSeq, sit.getVL ());
-        return boost::make_shared<SerializedTransaction> (boost::ref (tSit));
+        txMeta = std::make_shared<TransactionMetaSet> (item->getTag (), mLedgerSeq, sit.getVL ());
+        return std::make_shared<SerializedTransaction> (boost::ref (tSit));
     }
 
     txMeta.reset ();
@@ -531,7 +531,7 @@ bool Ledger::getTransaction (uint256 const& txID, Transaction::pointer& txn, Tra
         else
             it.getVL (); // skip transaction
 
-        meta = boost::make_shared<TransactionMetaSet> (txID, mLedgerSeq, it.getVL ());
+        meta = std::make_shared<TransactionMetaSet> (txID, mLedgerSeq, it.getVL ());
     }
     else
         return false;
@@ -556,7 +556,7 @@ bool Ledger::getTransactionMeta (uint256 const& txID, TransactionMetaSet::pointe
 
     SerializerIterator it (item->peekSerializer ());
     it.getVL (); // skip transaction
-    meta = boost::make_shared<TransactionMetaSet> (txID, mLedgerSeq, it.getVL ());
+    meta = std::make_shared<TransactionMetaSet> (txID, mLedgerSeq, it.getVL ());
 
     return true;
 }
@@ -1209,7 +1209,7 @@ LedgerStateParms Ledger::writeBack (LedgerStateParms parms, SLE::ref entry)
         create = true;
     }
 
-    SHAMapItem::pointer item = boost::make_shared<SHAMapItem> (entry->getIndex ());
+    SHAMapItem::pointer item = std::make_shared<SHAMapItem> (entry->getIndex ());
     entry->add (item->peekSerializer ());
 
     if (create)
@@ -1241,7 +1241,7 @@ SLE::pointer Ledger::getSLE (uint256 const& uHash)
     if (!node)
         return SLE::pointer ();
 
-    return boost::make_shared<SLE> (node->peekSerializer (), node->getTag ());
+    return std::make_shared<SLE> (node->peekSerializer (), node->getTag ());
 }
 
 SLE::pointer Ledger::getSLEi (uint256 const& uId)
@@ -1257,7 +1257,7 @@ SLE::pointer Ledger::getSLEi (uint256 const& uId)
 
     if (!ret)
     {
-        ret = boost::make_shared<SLE> (node->peekSerializer (), node->getTag ());
+        ret = std::make_shared<SLE> (node->peekSerializer (), node->getTag ());
         ret->setImmutable ();
         getApp().getSLECache ().canonicalize (hash, ret);
     }
@@ -1295,7 +1295,7 @@ void Ledger::visitAccountItems (const uint160& accountID, std::function<void (SL
 
 static void visitHelper (std::function<void (SLE::ref)>& function, SHAMapItem::ref item)
 {
-    function (boost::make_shared<SLE> (item->peekSerializer (), item->getTag ()));
+    function (std::make_shared<SLE> (item->peekSerializer (), item->getTag ()));
 }
 
 void Ledger::visitStateItems (std::function<void (SLE::ref)> function)
@@ -1353,7 +1353,7 @@ private:
 
     SerializedLedgerEntry::pointer m_currentEntry;
 }
-//  typedef const boost::shared_ptr<SerializedLedgerEntry>& ref;
+//  typedef const std::shared_ptr<SerializedLedgerEntry>& ref;
 */
 
 
@@ -1426,13 +1426,13 @@ SLE::pointer Ledger::getASNode (LedgerStateParms& parms, uint256 const& nodeID,
         }
 
         parms = parms | lepCREATED | lepOKAY;
-        SLE::pointer sle = boost::make_shared<SLE> (let, nodeID);
+        SLE::pointer sle = std::make_shared<SLE> (let, nodeID);
 
         return sle;
     }
 
     SLE::pointer sle =
-        boost::make_shared<SLE> (account->peekSerializer (), nodeID);
+        std::make_shared<SLE> (account->peekSerializer (), nodeID);
 
     if (sle->getType () != let)
     {
@@ -1881,7 +1881,7 @@ void Ledger::updateSkipList ()
 
         // VFALCO TODO Document this skip list concept
         if (!skipList)
-            skipList = boost::make_shared<SLE> (ltLEDGER_HASHES, hash);
+            skipList = std::make_shared<SLE> (ltLEDGER_HASHES, hash);
         else
             hashes = skipList->getFieldV256 (sfHashes).peekValue ();
 
@@ -1905,7 +1905,7 @@ void Ledger::updateSkipList ()
 
     if (!skipList)
     {
-        skipList = boost::make_shared<SLE> (ltLEDGER_HASHES, hash);
+        skipList = std::make_shared<SLE> (ltLEDGER_HASHES, hash);
     }
     else
     {

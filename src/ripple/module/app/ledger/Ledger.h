@@ -72,7 +72,7 @@ protected:
     the object holds references to.
 */
 class Ledger
-    : public boost::enable_shared_from_this <Ledger>
+    : public std::enable_shared_from_this <Ledger>
     , public LedgerBase
     , public CountedObject <Ledger>
     , public beast::Uncopyable
@@ -80,8 +80,8 @@ class Ledger
 public:
     static char const* getCountedObjectName () { return "Ledger"; }
 
-    typedef boost::shared_ptr<Ledger>           pointer;
-    typedef const boost::shared_ptr<Ledger>&    ref;
+    typedef std::shared_ptr<Ledger>           pointer;
+    typedef const std::shared_ptr<Ledger>&    ref;
 
     enum TransResult
     {

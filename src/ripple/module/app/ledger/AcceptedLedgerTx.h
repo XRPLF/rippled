@@ -44,7 +44,7 @@ namespace ripple {
 class AcceptedLedgerTx
 {
 public:
-    typedef boost::shared_ptr <AcceptedLedgerTx> pointer;
+    typedef std::shared_ptr <AcceptedLedgerTx> pointer;
     typedef const pointer& ref;
 
 public:

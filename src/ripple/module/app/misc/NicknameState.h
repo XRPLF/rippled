@@ -30,7 +30,7 @@ namespace ripple {
 class NicknameState
 {
 public:
-    typedef boost::shared_ptr <NicknameState> pointer;
+    typedef std::shared_ptr <NicknameState> pointer;
 
 public:
     explicit NicknameState (SerializedLedgerEntry::pointer ledgerEntry);    // For accounts in a ledger

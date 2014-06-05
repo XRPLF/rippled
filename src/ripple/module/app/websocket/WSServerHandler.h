@@ -48,7 +48,7 @@ class WSServerHandler
 public:
     typedef typename endpoint_type::handler::connection_ptr     connection_ptr;
     typedef typename endpoint_type::handler::message_ptr        message_ptr;
-    typedef boost::shared_ptr< WSConnectionType <endpoint_type> >    wsc_ptr;
+    typedef std::shared_ptr< WSConnectionType <endpoint_type> >    wsc_ptr;
 
     // Private reasons to close.
     enum
@@ -72,7 +72,7 @@ private:
 protected:
     // For each connection maintain an associated object to track subscriptions.
     typedef ripple::unordered_map <connection_ptr,
-        boost::shared_ptr <WSConnectionType <endpoint_type> > > MapType;
+        std::shared_ptr <WSConnectionType <endpoint_type> > > MapType;
     MapType mMap;
     bool const mPublic;
     bool const mProxy;
@@ -194,7 +194,7 @@ public:
         {
             std::pair <typename MapType::iterator, bool> const result (
                 mMap.emplace (cpClient,
-                    boost::make_shared < WSConnectionType <endpoint_type> > (boost::ref(m_resourceManager),
+                    std::make_shared < WSConnectionType <endpoint_type> > (boost::ref(m_resourceManager),
                     boost::ref (m_source), boost::ref(*this), boost::cref(cpClient))));
             assert (result.second);
             WriteLog (lsDEBUG, WSServerHandlerLog) <<

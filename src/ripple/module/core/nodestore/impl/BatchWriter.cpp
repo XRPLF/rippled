@@ -68,7 +68,7 @@ BatchWriter::writeBatch ()
 {
     for (;;)
     {
-        std::vector< boost::shared_ptr<NodeObject> > set;
+        std::vector< std::shared_ptr<NodeObject> > set;
 
         set.reserve (batchWritePreallocationSize);
 

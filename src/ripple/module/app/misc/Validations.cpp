@@ -24,7 +24,7 @@ class ValidationsImp;
 SETUP_LOG (Validations)
 
 typedef std::map<uint160, SerializedValidation::pointer>::value_type u160_val_pair;
-typedef boost::shared_ptr<ValidationSet> VSpointer;
+typedef std::shared_ptr<ValidationSet> VSpointer;
 
 class ValidationsImp : public Validations
 {
@@ -41,20 +41,20 @@ private:
     bool mWriting;
 
 private:
-    boost::shared_ptr<ValidationSet> findCreateSet (uint256 const& ledgerHash)
+    std::shared_ptr<ValidationSet> findCreateSet (uint256 const& ledgerHash)
     {
         VSpointer j = mValidations.fetch (ledgerHash);
 
         if (!j)
         {
-            j = boost::make_shared<ValidationSet> ();
+            j = std::make_shared<ValidationSet> ();
             mValidations.canonicalize (ledgerHash, j);
         }
 
         return j;
     }
 
-    boost::shared_ptr<ValidationSet> findSet (uint256 const& ledgerHash)
+    std::shared_ptr<ValidationSet> findSet (uint256 const& ledgerHash)
     {
         return mValidations.fetch (ledgerHash);
     }

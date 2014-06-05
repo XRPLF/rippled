@@ -90,7 +90,7 @@ bool ParameterNode::addNode (const std::string& name, Parameter::ref node)
     if (it == mChildren.end ())
     {
         // create a new inner node
-        ParameterNode::pointer node = boost::make_shared<ParameterNode> (getShared (), name.substr (0, dot));
+        ParameterNode::pointer node = std::make_shared<ParameterNode> (getShared (), name.substr (0, dot));
         n = dynamic_cast<ParameterNode*> (node.get ());
         assert (n);
         mChildren[name] = node;

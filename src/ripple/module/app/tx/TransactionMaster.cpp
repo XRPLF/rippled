@@ -66,7 +66,7 @@ SerializedTransaction::pointer TransactionMaster::fetch (SHAMapItem::ref item,
         if (type == SHAMapTreeNode::tnTRANSACTION_NM)
         {
             SerializerIterator sit (item->peekSerializer ());
-            txn = boost::make_shared<SerializedTransaction> (boost::ref (sit));
+            txn = std::make_shared<SerializedTransaction> (boost::ref (sit));
         }
         else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
         {
@@ -75,7 +75,7 @@ SerializedTransaction::pointer TransactionMaster::fetch (SHAMapItem::ref item,
             item->peekSerializer ().getVL (s.modData (), 0, length);
             SerializerIterator sit (s);
 
-            txn = boost::make_shared<SerializedTransaction> (boost::ref (sit));
+            txn = std::make_shared<SerializedTransaction> (boost::ref (sit));
         }
     }
     else

@@ -547,7 +547,7 @@ public:
             tmBH.set_query (true);
             tmBH.set_type (protocol::TMGetObjectByHash::otFETCH_PACK);
             tmBH.set_ledgerhash (nextLedger->getHash().begin (), 32);
-            Message::pointer packet = boost::make_shared<Message> (tmBH, protocol::mtGET_OBJECTS);
+            Message::pointer packet = std::make_shared<Message> (tmBH, protocol::mtGET_OBJECTS);
 
             target->sendPacket (packet, false);
             WriteLog (lsTRACE, LedgerMaster) << "Requested fetch pack for " << nextLedger->getLedgerSeq() - 1;

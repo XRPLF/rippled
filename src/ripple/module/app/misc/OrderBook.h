@@ -26,9 +26,9 @@ namespace ripple {
 class OrderBook : beast::LeakChecked <OrderBook>
 {
 public:
-    typedef boost::shared_ptr <OrderBook> pointer;
+    typedef std::shared_ptr <OrderBook> pointer;
 
-    typedef boost::shared_ptr <OrderBook> const& ref;
+    typedef std::shared_ptr <OrderBook> const& ref;
 
 public:
     /** Construct from a currency specification.

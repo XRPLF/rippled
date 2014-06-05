@@ -26,8 +26,8 @@ namespace ripple {
 class TxQueueEntry
 {
 public:
-    typedef boost::shared_ptr<TxQueueEntry> pointer;
-    typedef const boost::shared_ptr<TxQueueEntry>& ref;
+    typedef std::shared_ptr<TxQueueEntry> pointer;
+    typedef const std::shared_ptr<TxQueueEntry>& ref;
     typedef std::function<void (Transaction::pointer, TER)> stCallback; // must complete immediately
 
 public:

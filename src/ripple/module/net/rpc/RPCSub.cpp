@@ -205,7 +205,7 @@ RPCSub::pointer RPCSub::New (InfoSub::Source& source,
         const std::string& strUrl, const std::string& strUsername,
         const std::string& strPassword)
 {
-    return boost::make_shared <RPCSubImp> (boost::ref (source),
+    return std::make_shared <RPCSubImp> (boost::ref (source),
         boost::ref (io_service), boost::ref (jobQueue),
             strUrl, strUsername, strPassword);
 }

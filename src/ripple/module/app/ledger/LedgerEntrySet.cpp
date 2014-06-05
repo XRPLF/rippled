@@ -82,7 +82,7 @@ SLE::pointer LedgerEntrySet::getEntry (uint256 const& index, LedgerEntryAction& 
     if (it->second.mSeq != mSeq)
     {
         assert (it->second.mSeq < mSeq);
-        it->second.mEntry = boost::make_shared<SerializedLedgerEntry> (*it->second.mEntry);
+        it->second.mEntry = std::make_shared<SerializedLedgerEntry> (*it->second.mEntry);
         it->second.mSeq = mSeq;
     }
 
@@ -93,7 +93,7 @@ SLE::pointer LedgerEntrySet::getEntry (uint256 const& index, LedgerEntryAction& 
 SLE::pointer LedgerEntrySet::entryCreate (LedgerEntryType letType, uint256 const& index)
 {
     assert (index.isNonZero ());
-    SLE::pointer sleNew = boost::make_shared<SLE> (letType, index);
+    SLE::pointer sleNew = std::make_shared<SLE> (letType, index);
     entryCreate (sleNew);
     return sleNew;
 }
@@ -373,7 +373,7 @@ SLE::pointer LedgerEntrySet::getForMod (uint256 const& node, Ledger::ref ledger,
 
         if (it->second.mSeq != mSeq)
         {
-            it->second.mEntry = boost::make_shared<SerializedLedgerEntry> (*it->second.mEntry);
+            it->second.mEntry = std::make_shared<SerializedLedgerEntry> (*it->second.mEntry);
             it->second.mSeq = mSeq;
         }
 

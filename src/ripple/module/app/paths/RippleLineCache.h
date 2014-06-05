@@ -26,7 +26,7 @@ namespace ripple {
 class RippleLineCache
 {
 public:
-    typedef boost::shared_ptr <RippleLineCache> pointer;
+    typedef std::shared_ptr <RippleLineCache> pointer;
     typedef pointer const& ref;
 
     explicit RippleLineCache (Ledger::ref l);

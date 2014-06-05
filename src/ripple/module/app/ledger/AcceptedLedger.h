@@ -41,7 +41,7 @@ namespace ripple {
 class AcceptedLedger
 {
 public:
-    typedef boost::shared_ptr<AcceptedLedger>       pointer;
+    typedef std::shared_ptr<AcceptedLedger>       pointer;
     typedef const pointer&                          ret;
     typedef std::map<int, AcceptedLedgerTx::pointer>    map_t;              // Must be an ordered map!
     typedef map_t::value_type                       value_type;

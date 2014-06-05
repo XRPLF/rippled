@@ -249,9 +249,9 @@ public:
         assert (iter != m_jobData.end ());
         
         if (iter == m_jobData.end ())
-            return boost::shared_ptr<LoadEvent> ();
+            return std::shared_ptr<LoadEvent> ();
 
-        return boost::make_shared<LoadEvent> (
+        return std::make_shared<LoadEvent> (
             boost::ref (iter-> second.load ()), name, true);
     }
 

@@ -204,10 +204,10 @@ public:
 
     // ledger proposal/close functions
     virtual void processTrustedProposal (LedgerProposal::pointer proposal,
-        boost::shared_ptr<protocol::TMProposeSet> set, RippleAddress nodePublic,
+        std::shared_ptr<protocol::TMProposeSet> set, RippleAddress nodePublic,
             uint256 checkLedger, bool sigGood) = 0;
 
-    virtual SHAMapAddNode gotTXData (const boost::shared_ptr<Peer>& peer,
+    virtual SHAMapAddNode gotTXData (const std::shared_ptr<Peer>& peer,
         uint256 const& hash, const std::list<SHAMapNode>& nodeIDs,
         const std::list< Blob >& nodeData) = 0;
 
@@ -218,7 +218,7 @@ public:
     
     virtual SHAMap::pointer getTXMap (uint256 const& hash) = 0;
 
-    virtual bool hasTXSet (const boost::shared_ptr<Peer>& peer,
+    virtual bool hasTXSet (const std::shared_ptr<Peer>& peer,
         uint256 const& set, protocol::TxSetStatus status) = 0;
 
     virtual void mapComplete (uint256 const& hash, SHAMap::ref map) = 0;
@@ -226,13 +226,13 @@ public:
     virtual bool stillNeedTXSet (uint256 const& hash) = 0;
     
     // Fetch packs
-    virtual void makeFetchPack (Job&, boost::weak_ptr<Peer> peer,
-        boost::shared_ptr<protocol::TMGetObjectByHash> request,
+    virtual void makeFetchPack (Job&, std::weak_ptr<Peer> peer,
+        std::shared_ptr<protocol::TMGetObjectByHash> request,
         uint256 wantLedger, std::uint32_t uUptime) = 0;
 
     virtual bool shouldFetchPack (std::uint32_t seq) = 0;
     virtual void gotFetchPack (bool progress, std::uint32_t seq) = 0;
-    virtual void addFetchPack (uint256 const& hash, boost::shared_ptr< Blob >& data) = 0;
+    virtual void addFetchPack (uint256 const& hash, std::shared_ptr< Blob >& data) = 0;
     virtual bool getFetchPack (uint256 const& hash, Blob& data) = 0;
     virtual int getFetchSize () = 0;
     virtual void sweepFetchPack () = 0;

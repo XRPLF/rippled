@@ -50,7 +50,7 @@ Json::Value RPCHandler::doSubmit (Json::Value params, Resource::Charge& loadType
 
     try
     {
-        stpTrans = boost::make_shared<SerializedTransaction> (boost::ref (sitTrans));
+        stpTrans = std::make_shared<SerializedTransaction> (boost::ref (sitTrans));
     }
     catch (std::exception& e)
     {
@@ -64,7 +64,7 @@ Json::Value RPCHandler::doSubmit (Json::Value params, Resource::Charge& loadType
 
     try
     {
-        tpTrans     = boost::make_shared<Transaction> (stpTrans, false);
+        tpTrans     = std::make_shared<Transaction> (stpTrans, false);
     }
     catch (std::exception& e)
     {

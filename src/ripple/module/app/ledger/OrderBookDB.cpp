@@ -82,7 +82,7 @@ static void updateHelper (SLE::ref entry,
         if (seen.insert (index).second)
         {
             // VFALCO TODO Reduce the clunkiness of these parameter wrappers
-            OrderBook::pointer book = boost::make_shared<OrderBook> (boost::cref (index),
+            OrderBook::pointer book = std::make_shared<OrderBook> (boost::cref (index),
                                       boost::cref (ci), boost::cref (co), boost::cref (ii), boost::cref (io));
 
             sourceMap[RippleAssetRef (ci, ii)].push_back (book);
@@ -155,7 +155,7 @@ void OrderBookDB::addOrderBook(const uint160& ci, const uint160& co,
     }
 
     uint256 index = Ledger::getBookBase(ci, ii, co, io);
-    OrderBook::pointer book = boost::make_shared<OrderBook> (boost::cref (index),
+    OrderBook::pointer book = std::make_shared<OrderBook> (boost::cref (index),
                               boost::cref (ci), boost::cref (co), boost::cref (ii), boost::cref (io));
 
     mSourceMap[RippleAssetRef (ci, ii)].push_back (book);
@@ -205,7 +205,7 @@ BookListeners::pointer OrderBookDB::makeBookListeners (RippleCurrency const& cur
 
     if (!ret)
     {
-        ret = boost::make_shared<BookListeners> ();
+        ret = std::make_shared<BookListeners> ();
 
         mListeners [RippleBookRef (
             RippleAssetRef (currencyPays, issuerPays),

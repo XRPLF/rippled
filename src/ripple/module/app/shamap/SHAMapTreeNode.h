@@ -38,8 +38,8 @@ class SHAMapTreeNode
 public:
     static char const* getCountedObjectName () { return "SHAMapTreeNode"; }
 
-    typedef boost::shared_ptr<SHAMapTreeNode>           pointer;
-    typedef const boost::shared_ptr<SHAMapTreeNode>&    ref;
+    typedef std::shared_ptr<SHAMapTreeNode>           pointer;
+    typedef const std::shared_ptr<SHAMapTreeNode>&    ref;
 
     enum TNType
     {

@@ -203,7 +203,7 @@ public:
             Serializer s;
             trans.add (s, true);
 
-            SHAMapItem::pointer tItem = boost::make_shared<SHAMapItem> (txID, s.peekData ());
+            SHAMapItem::pointer tItem = std::make_shared<SHAMapItem> (txID, s.peekData ());
 
             if (!initialPosition->addGiveItem (tItem, true, false))
             {

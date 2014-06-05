@@ -88,12 +88,12 @@ void InfoSub::clearPathRequest ()
     mPathRequest.reset ();
 }
 
-void InfoSub::setPathRequest (const boost::shared_ptr<PathRequest>& req)
+void InfoSub::setPathRequest (const std::shared_ptr<PathRequest>& req)
 {
     mPathRequest = req;
 }
 
-const boost::shared_ptr<PathRequest>& InfoSub::getPathRequest ()
+const std::shared_ptr<PathRequest>& InfoSub::getPathRequest ()
 {
     return mPathRequest;
 }

@@ -30,7 +30,7 @@ public:
 
     static const std::uint32_t seqLeave = 0xffffffff; // leaving the consensus process
 
-    typedef boost::shared_ptr<LedgerProposal> pointer;
+    typedef std::shared_ptr<LedgerProposal> pointer;
     typedef const pointer& ref;
 
     // proposal from peer

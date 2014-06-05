@@ -59,7 +59,7 @@ protected:
     void                txnWrite ();
 
 public:
-    typedef boost::shared_ptr<TransactionEngine> pointer;
+    typedef std::shared_ptr<TransactionEngine> pointer;
 
     TransactionEngine () : mTxnSeq (0)
     {

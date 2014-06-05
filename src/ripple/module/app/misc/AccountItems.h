@@ -26,7 +26,7 @@ namespace ripple {
 class AccountItems : beast::LeakChecked <AccountItems>
 {
 public:
-    typedef boost::shared_ptr <AccountItems> pointer;
+    typedef std::shared_ptr <AccountItems> pointer;
 
     typedef std::vector <AccountItem::pointer> Container;
 

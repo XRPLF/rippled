@@ -32,7 +32,7 @@ public:
         kMaxIterations = (1 << 23)
     };
 
-    typedef boost::shared_ptr <ProofOfWork> pointer;
+    typedef std::shared_ptr <ProofOfWork> pointer;
 
     ProofOfWork (const std::string& token,
                  int iterations,

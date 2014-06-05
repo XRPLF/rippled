@@ -65,7 +65,7 @@ Json::Value RPCHandler::doSubscribe (Json::Value params, Resource::Charge& loadT
             RPCSub::pointer rspSub = RPCSub::New (getApp ().getOPs (),
                 getApp ().getIOService (), getApp ().getJobQueue (),
                     strUrl, strUsername, strPassword);
-            ispSub  = mNetOps->addRpcSub (strUrl, boost::dynamic_pointer_cast<InfoSub> (rspSub));
+            ispSub  = mNetOps->addRpcSub (strUrl, std::dynamic_pointer_cast<InfoSub> (rspSub));
         }
         else
         {

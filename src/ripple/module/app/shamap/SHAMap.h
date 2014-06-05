@@ -106,8 +106,8 @@ public:
 
     static char const* getCountedObjectName () { return "SHAMap"; }
 
-    typedef boost::shared_ptr<SHAMap> pointer;
-    typedef const boost::shared_ptr<SHAMap>& ref;
+    typedef std::shared_ptr<SHAMap> pointer;
+    typedef const std::shared_ptr<SHAMap>& ref;
 
     typedef std::pair<SHAMapItem::pointer, SHAMapItem::pointer> DeltaItem;
     typedef std::pair<SHAMapItem::ref, SHAMapItem::ref> DeltaRef;
@@ -233,7 +233,7 @@ public:
     int armDirty ();
     int flushDirty (DirtySet & dirtySet, int maxNodes, NodeObjectType t,
                            std::uint32_t seq);
-    boost::shared_ptr<DirtySet> disarmDirty ();
+    std::shared_ptr<DirtySet> disarmDirty ();
 
     void setSeq (std::uint32_t seq)
     {
@@ -349,7 +349,7 @@ private:
     std::uint32_t mSeq;
     std::uint32_t mLedgerSeq; // sequence number of ledger this is part of
     SyncUnorderedMapType< SHAMapNode, SHAMapTreeNode::pointer, SHAMapNode_hash > mTNByID;
-    boost::shared_ptr<DirtySet> mDirtyNodes;
+    std::shared_ptr<DirtySet> mDirtyNodes;
     SHAMapTreeNode::pointer root;
     SHAMapState mState;
     SHAMapType mType;

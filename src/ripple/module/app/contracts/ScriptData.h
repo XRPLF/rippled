@@ -27,7 +27,7 @@ namespace Script
 class Data
 {
 public:
-    typedef boost::shared_ptr<Data> pointer;
+    typedef std::shared_ptr<Data> pointer;
 
     virtual ~Data ()
     {

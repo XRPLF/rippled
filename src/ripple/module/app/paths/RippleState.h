@@ -30,7 +30,7 @@ namespace ripple {
 class RippleState : public AccountItem
 {
 public:
-    typedef boost::shared_ptr <RippleState> pointer;
+    typedef std::shared_ptr <RippleState> pointer;
 
 public:
     RippleState () { }

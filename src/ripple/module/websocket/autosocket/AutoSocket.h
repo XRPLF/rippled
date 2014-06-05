@@ -32,7 +32,7 @@ class AutoSocket
 public:
     typedef boost::asio::ssl::stream<boost::asio::ip::tcp::socket>   ssl_socket;
     typedef boost::asio::ip::tcp::socket::endpoint_type endpoint_type;
-    typedef boost::shared_ptr<ssl_socket>           socket_ptr;
+    typedef std::shared_ptr<ssl_socket>           socket_ptr;
     typedef ssl_socket::next_layer_type             plain_socket;
     typedef ssl_socket::lowest_layer_type           lowest_layer_type;
     typedef ssl_socket::handshake_type              handshake_type;
@@ -44,14 +44,14 @@ public:
         : mSecure (false)
         , mBuffer (4)
     {
-        mSocket = boost::make_shared<ssl_socket> (boost::ref (s), boost::ref (c));
+        mSocket = std::make_shared<ssl_socket> (boost::ref (s), boost::ref (c));
     }
 
     AutoSocket (boost::asio::io_service& s, boost::asio::ssl::context& c, bool secureOnly, bool plainOnly)
         : mSecure (secureOnly)
         , mBuffer ((plainOnly || secureOnly) ? 0 : 4)
     {
-        mSocket = boost::make_shared<ssl_socket> (boost::ref (s), boost::ref (c));
+        mSocket = std::make_shared<ssl_socket> (boost::ref (s), boost::ref (c));
     }
 
     boost::asio::io_service& get_io_service () noexcept

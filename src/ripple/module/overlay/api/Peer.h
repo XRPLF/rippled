@@ -38,7 +38,7 @@ class Charge;
 class Peer
 {
 public:
-    typedef boost::shared_ptr <Peer> ptr;
+    typedef std::shared_ptr <Peer> ptr;
     
     /** Uniquely identifies a particular connection of a peer. */
     typedef std::uint32_t ShortId;

@@ -38,7 +38,7 @@ namespace ripple {
 class AccountItem
 {
 public:
-    typedef boost::shared_ptr <AccountItem> pointer;
+    typedef std::shared_ptr <AccountItem> pointer;
     typedef const pointer& ref;
 
 public:

@@ -25,11 +25,11 @@ SETUP_LOG (RPCServer)
 
 class RPCServerImp
     : public RPCServer
-    , public boost::enable_shared_from_this <RPCServerImp>
+    , public std::enable_shared_from_this <RPCServerImp>
     , public beast::LeakChecked <RPCServerImp>
 {
 public:
-    typedef boost::shared_ptr <RPCServerImp> pointer;
+    typedef std::shared_ptr <RPCServerImp> pointer;
 
     RPCServerImp (
         boost::asio::io_service& io_service,
@@ -54,10 +54,10 @@ public:
             mSocket,
             mLineBuffer,
             "\r\n",
-            mStrand.wrap (boost::bind (
+            mStrand.wrap (std::bind (
                 &RPCServerImp::handle_read_line,
-                boost::static_pointer_cast <RPCServerImp> (shared_from_this ()),
-                boost::asio::placeholders::error)));
+                std::static_pointer_cast <RPCServerImp> (shared_from_this ()),
+                beast::asio::placeholders::error)));
     }
 
     //--------------------------------------------------------------------------
@@ -70,10 +70,10 @@ public:
 
             if (action == HTTPRequest::haCLOSE_CONN)
             {
-                mSocket.async_shutdown (mStrand.wrap (boost::bind (
+                mSocket.async_shutdown (mStrand.wrap (std::bind (
                     &RPCServerImp::handle_shutdown,
-                    boost::static_pointer_cast <RPCServerImp> (shared_from_this()),
-                    boost::asio::placeholders::error)));
+                    std::static_pointer_cast <RPCServerImp> (shared_from_this()),
+                    beast::asio::placeholders::error)));
             }
             else
             {
@@ -81,10 +81,10 @@ public:
                     mSocket,
                     mLineBuffer,
                     "\r\n",
-                    mStrand.wrap (boost::bind (
+                    mStrand.wrap (std::bind (
                         &RPCServerImp::handle_read_line,
-                        boost::static_pointer_cast <RPCServerImp> (shared_from_this()),
-                        boost::asio::placeholders::error)));
+                        std::static_pointer_cast <RPCServerImp> (shared_from_this()),
+                        beast::asio::placeholders::error)));
             }
         }
 
@@ -109,10 +109,10 @@ public:
                 // request with no body
                 WriteLog (lsWARNING, RPCServer) << "RPC HTTP request with no body";
 
-                mSocket.async_shutdown (mStrand.wrap (boost::bind (
+                mSocket.async_shutdown (mStrand.wrap (std::bind (
                     &RPCServerImp::handle_shutdown,
-                    boost::static_pointer_cast <RPCServerImp> (shared_from_this ()),
-                    boost::asio::placeholders::error)));
+                    std::static_pointer_cast <RPCServerImp> (shared_from_this ()),
+                    beast::asio::placeholders::error)));
             }
             else if (action == HTTPRequest::haREAD_LINE)
             {
@@ -120,10 +120,10 @@ public:
                     mSocket,
                     mLineBuffer,
                     "\r\n",
-                    mStrand.wrap (boost::bind (
+                    mStrand.wrap (std::bind (
                         &RPCServerImp::handle_read_line,
-                        boost::static_pointer_cast <RPCServerImp> (shared_from_this ()),
-                        boost::asio::placeholders::error)));
+                        std::static_pointer_cast <RPCServerImp> (shared_from_this ()),
+                        beast::asio::placeholders::error)));
             }
             else if (action == HTTPRequest::haREAD_RAW)
             {
@@ -133,10 +133,10 @@ public:
                 {
                     WriteLog (lsWARNING, RPCServer) << "Illegal RPC request length " << rLen;
 
-                    mSocket.async_shutdown (mStrand.wrap (boost::bind (
+                    mSocket.async_shutdown (mStrand.wrap (std::bind (
                         &RPCServerImp::handle_shutdown,
-                        boost::static_pointer_cast <RPCServerImp> (shared_from_this ()),
-                        boost::asio::placeholders::error)));
+                        std::static_pointer_cast <RPCServerImp> (shared_from_this ()),
+                        beast::asio::placeholders::error)));
                 }
                 else
                 {
@@ -149,10 +149,10 @@ public:
                         boost::asio::async_read (
                             mSocket,
                             boost::asio::buffer (mQueryVec),
-                            mStrand.wrap (boost::bind (
+                            mStrand.wrap (std::bind (
                                 &RPCServerImp::handle_read_req,
-                                boost::static_pointer_cast <RPCServerImp> (shared_from_this ()),
-                                boost::asio::placeholders::error)));
+                                std::static_pointer_cast <RPCServerImp> (shared_from_this ()),
+                                beast::asio::placeholders::error)));
 
                         WriteLog (lsTRACE, RPCServer) << "Waiting for completed request: " << rLen;
                     }
@@ -167,10 +167,10 @@ public:
             }
             else
             {
-                mSocket.async_shutdown (mStrand.wrap (boost::bind (
+                mSocket.async_shutdown (mStrand.wrap (std::bind (
                     &RPCServerImp::handle_shutdown,
-                    boost::static_pointer_cast <RPCServerImp> (shared_from_this ()),
-                    boost::asio::placeholders::error)));
+                    std::static_pointer_cast <RPCServerImp> (shared_from_this ()),
+                    beast::asio::placeholders::error)));
             }
         }
     }
@@ -202,10 +202,10 @@ public:
         boost::asio::async_write (
             mSocket,
             boost::asio::buffer (mReplyStr),
-            mStrand.wrap (boost::bind (
+            mStrand.wrap (std::bind (
                 &RPCServerImp::handle_write,
-                boost::static_pointer_cast <RPCServerImp> (shared_from_this ()),
-                boost::asio::placeholders::error)));
+                std::static_pointer_cast <RPCServerImp> (shared_from_this ()),
+                beast::asio::placeholders::error)));
     }
 
     //--------------------------------------------------------------------------

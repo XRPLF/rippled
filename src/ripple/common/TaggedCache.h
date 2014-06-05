@@ -68,8 +68,8 @@ public:
     typedef Key key_type;
     typedef T mapped_type;
     // VFALCO TODO Use std::shared_ptr, std::weak_ptr
-    typedef boost::weak_ptr <mapped_type> weak_mapped_ptr;
-    typedef boost::shared_ptr <mapped_type> mapped_ptr;
+    typedef std::weak_ptr <mapped_type> weak_mapped_ptr;
+    typedef std::shared_ptr <mapped_type> mapped_ptr;
     typedef beast::abstract_clock <std::chrono::seconds> clock_type;
 
 public:
@@ -294,7 +294,7 @@ public:
 
         @return `true` If the key already existed.
     */
-    bool canonicalize (const key_type& key, boost::shared_ptr<T>& data, bool replace = false)
+    bool canonicalize (const key_type& key, std::shared_ptr<T>& data, bool replace = false)
     {
         // Return canonical value, store if needed, refresh in cache
         // Return values: true=we had the data already
@@ -353,7 +353,7 @@ public:
         return false;
     }
 
-    boost::shared_ptr<T> fetch (const key_type& key)
+    std::shared_ptr<T> fetch (const key_type& key)
     {
         // fetch us a shared pointer to the stored data object
         lock_guard lock (m_mutex);
@@ -395,7 +395,7 @@ public:
     */
     bool insert (key_type const& key, T const& value)
     {
-        mapped_ptr p (boost::make_shared <T> (
+        mapped_ptr p (std::make_shared <T> (
             std::cref (value)));
         return canonicalize (key, p);
     }

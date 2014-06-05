@@ -44,8 +44,8 @@ class SerializedLedgerEntry
 public:
     static char const* getCountedObjectName () { return "SerializedLedgerEntry"; }
 
-    typedef boost::shared_ptr<SerializedLedgerEntry>        pointer;
-    typedef const boost::shared_ptr<SerializedLedgerEntry>& ref;
+    typedef std::shared_ptr<SerializedLedgerEntry>        pointer;
+    typedef const std::shared_ptr<SerializedLedgerEntry>& ref;
 
 public:
     SerializedLedgerEntry (const Serializer & s, uint256 const & index);

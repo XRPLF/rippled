@@ -29,7 +29,7 @@ class CKey; // forward declaration
 class Serializer
 {
 public:
-    typedef boost::shared_ptr<Serializer> pointer;
+    typedef std::shared_ptr<Serializer> pointer;
 
 protected:
     Blob mData;

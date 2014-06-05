@@ -35,12 +35,12 @@ class InfoSub
 public:
     static char const* getCountedObjectName () { return "InfoSub"; }
 
-    typedef boost::shared_ptr<InfoSub>          pointer;
+    typedef std::shared_ptr<InfoSub>          pointer;
 
     // VFALCO TODO Standardize on the names of weak / strong pointer typedefs.
-    typedef boost::weak_ptr<InfoSub>            wptr;
+    typedef std::weak_ptr<InfoSub>            wptr;
 
-    typedef const boost::shared_ptr<InfoSub>&   ref;
+    typedef const std::shared_ptr<InfoSub>&   ref;
 
     typedef Resource::Consumer Consumer;
 
@@ -118,9 +118,9 @@ public:
 
     void clearPathRequest ();
 
-    void setPathRequest (const boost::shared_ptr<PathRequest>& req);
+    void setPathRequest (const std::shared_ptr<PathRequest>& req);
 
-    boost::shared_ptr <PathRequest> const& getPathRequest ();
+    std::shared_ptr <PathRequest> const& getPathRequest ();
 
 protected:
     typedef RippleMutex LockType;
@@ -132,7 +132,7 @@ private:
     Source& m_source;
     boost::unordered_set <RippleAddress>        mSubAccountInfo;
     boost::unordered_set <RippleAddress>        mSubAccountTransaction;
-    boost::shared_ptr <PathRequest>             mPathRequest;
+    std::shared_ptr <PathRequest>             mPathRequest;
 
     std::uint64_t                               mSeq;
 };

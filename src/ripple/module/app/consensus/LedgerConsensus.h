@@ -80,7 +80,7 @@ public:
     virtual void simulate () = 0;
 };
 
-boost::shared_ptr <LedgerConsensus>
+std::shared_ptr <LedgerConsensus>
 make_LedgerConsensus (LedgerConsensus::clock_type& clock, LocalTxs& localtx,
     LedgerHash const & prevLCLHash, Ledger::ref previousLedger,
         std::uint32_t closeTime, FeeVote& feeVote);

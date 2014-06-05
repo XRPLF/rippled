@@ -27,7 +27,7 @@ SETUP_LOG (LedgerConsensus)
 
 class LedgerConsensusImp
     : public LedgerConsensus
-    , public boost::enable_shared_from_this <LedgerConsensusImp>
+    , public std::enable_shared_from_this <LedgerConsensusImp>
     , public CountedObject <LedgerConsensusImp>
 {
 public:
@@ -273,13 +273,13 @@ public:
             {
                 if (hash.isZero ())
                 {
-                    SHAMap::pointer empty = boost::make_shared<SHAMap> (
+                    SHAMap::pointer empty = std::make_shared<SHAMap> (
                         smtTRANSACTION, std::ref (getApp().getFullBelowCache()));
                     mapComplete (hash, empty, false);
                     return empty;
                 }
 
-                acquiring = boost::make_shared<TransactionAcquire> (hash, std::ref (m_clock));
+                acquiring = std::make_shared<TransactionAcquire> (hash, std::ref (m_clock));
                 startAcquiring (acquiring);
             }
         }
@@ -780,8 +780,8 @@ public:
         if (status != protocol::tsHAVE) // Indirect requests for future support
             return true;
 
-        std::vector< boost::weak_ptr<Peer> >& set = mPeerData[hashSet];
-        for (boost::weak_ptr<Peer>& iit : set)
+        std::vector< std::weak_ptr<Peer> >& set = mPeerData[hashSet];
+        for (std::weak_ptr<Peer>& iit : set)
             if (iit.lock () == peer)
                 return false;
         set.push_back (peer);
@@ -874,7 +874,7 @@ private:
             CanonicalTXSet failedTransactions (set->getHash ());
 
             Ledger::pointer newLCL
-                = boost::make_shared<Ledger> (false
+                = std::make_shared<Ledger> (false
                 , boost::ref (*mPreviousLedger));
 
             // Set up to write SHAMap changes to our database,
@@ -887,9 +887,9 @@ private:
             applyTransactions (set, newLCL, newLCL, failedTransactions, false);
             newLCL->updateSkipList ();
             newLCL->setClosed ();
-            boost::shared_ptr<SHAMap::DirtySet> acctNodes
+            std::shared_ptr<SHAMap::DirtySet> acctNodes
                 = newLCL->peekAccountStateMap ()->disarmDirty ();
-            boost::shared_ptr<SHAMap::DirtySet> txnNodes
+            std::shared_ptr<SHAMap::DirtySet> txnNodes
                 = newLCL->peekTransactionMap ()->disarmDirty ();
 
             // write out dirty nodes (temporarily done here)
@@ -932,7 +932,7 @@ private:
             {
                 uint256 signingHash;
                 SerializedValidation::pointer v =
-                    boost::make_shared<SerializedValidation>
+                    std::make_shared<SerializedValidation>
                     (newLCLHash, getApp().getOPs ().getValidationTimeNC ()
                     , mValPublic, mProposing);
                 v->setFieldU32 (sfLedgerSequence, newLCL->getLedgerSeq ());
@@ -955,7 +955,7 @@ private:
                 protocol::TMValidation val;
                 val.set_validation (&validation[0], validation.size ());
                 getApp ().overlay ().foreach (send_always (
-                    boost::make_shared <Message> (
+                    std::make_shared <Message> (
                         val, protocol::mtVALIDATION)));
                 WriteLog (lsINFO, LedgerConsensus)
                     << "CNF Val " << newLCLHash;
@@ -967,7 +967,7 @@ private:
             // See if we can accept a ledger as fully-validated
             getApp().getLedgerMaster().consensusBuilt (newLCL);
 
-            Ledger::pointer newOL = boost::make_shared<Ledger>
+            Ledger::pointer newOL = std::make_shared<Ledger>
                 (true, boost::ref (*newLCL));
             LedgerMaster::ScopedLockType sl
                 (getApp().getLedgerMaster ().peekMutex ());
@@ -986,7 +986,7 @@ private:
                             << " not get in";
                         SerializerIterator sit (it.second->peekTransaction ());
                         SerializedTransaction::pointer txn
-                            = boost::make_shared<SerializedTransaction>
+                            = std::make_shared<SerializedTransaction>
                             (boost::ref (sit));
 
                         if (applyTransaction (engine, txn, newOL, true, false))
@@ -1062,8 +1062,8 @@ private:
         if (it != mPeerData.end ())
         {
             // Add any peers we already know have his transaction set
-            std::vector< boost::weak_ptr<Peer> >& peerList = it->second;
-            std::vector< boost::weak_ptr<Peer> >::iterator pit
+            std::vector< std::weak_ptr<Peer> >& peerList = it->second;
+            std::vector< std::weak_ptr<Peer> >::iterator pit
                 = peerList.begin ();
 
             while (pit != peerList.end ())
@@ -1168,7 +1168,7 @@ private:
                 assert (false); // We don't have our own position?
         }
 
-        DisputedTx::pointer txn = boost::make_shared<DisputedTx>
+        DisputedTx::pointer txn = std::make_shared<DisputedTx>
             (txID, tx, ourVote);
         mDisputes[txID] = txn;
 
@@ -1190,7 +1190,7 @@ private:
             msg.set_status (protocol::tsNEW);
             msg.set_receivetimestamp (getApp().getOPs ().getNetworkTimeNC ());
             getApp ().overlay ().foreach (send_always (
-                boost::make_shared<Message> (
+                std::make_shared<Message> (
                     msg, protocol::mtTRANSACTION)));
         }
     }
@@ -1230,7 +1230,7 @@ private:
         prop.set_nodepubkey (&pubKey[0], pubKey.size ());
         prop.set_signature (&sig[0], sig.size ());
         getApp ().overlay ().foreach (send_always (
-            boost::make_shared<Message> (
+            std::make_shared<Message> (
                 prop, protocol::mtPROPOSE_LEDGER)));
     }
 
@@ -1243,7 +1243,7 @@ private:
         msg.set_hash (hash.begin (), 256 / 8);
         msg.set_status (direct ? protocol::tsHAVE : protocol::tsCAN_GET);
         getApp ().overlay ().foreach (send_always (
-            boost::make_shared <Message> (
+            std::make_shared <Message> (
                 msg, protocol::mtHAVE_SET)));
     }
 
@@ -1268,7 +1268,7 @@ private:
 #endif
                     SerializerIterator sit (item->peekSerializer ());
                     SerializedTransaction::pointer txn
-                        = boost::make_shared<SerializedTransaction>
+                        = std::make_shared<SerializedTransaction>
                         (boost::ref (sit));
 
                     if (applyTransaction (engine, txn,
@@ -1448,7 +1448,7 @@ private:
         s.set_firstseq (uMin);
         s.set_lastseq (uMax);
         getApp ().overlay ().foreach (send_always (
-            boost::make_shared <Message> (
+            std::make_shared <Message> (
                 s, protocol::mtSTATUS_CHANGE)));
         WriteLog (lsTRACE, LedgerConsensus) << "send status change to peer";
     }
@@ -1482,7 +1482,7 @@ private:
 
         if (mValidating)
         {
-            mOurPosition = boost::make_shared<LedgerProposal>
+            mOurPosition = std::make_shared<LedgerProposal>
                            (mValPublic, mValPrivate
                             , initialLedger.getParentHash ()
                             , txSet, mCloseTime);
@@ -1490,7 +1490,7 @@ private:
         else
         {
             mOurPosition
-                = boost::make_shared<LedgerProposal>
+                = std::make_shared<LedgerProposal>
                 (initialLedger.getParentHash (), txSet, mCloseTime);
         }
 
@@ -1743,7 +1743,7 @@ private:
                     nodepubkey
                     signature
                     getApp ().overlay ().foreach (send_if_not (
-                        boost::make_shared<Message> (
+                        std::make_shared<Message> (
                             set, protocol::mtPROPOSE_LEDGER),
                                 peer_in_set(peers)));
                 }
@@ -1795,7 +1795,7 @@ private:
 
         uint256 signingHash;
         SerializedValidation::pointer v
-            = boost::make_shared<SerializedValidation>
+            = std::make_shared<SerializedValidation>
             (mPreviousLedger->getHash ()
             , getApp().getOPs ().getValidationTimeNC (), mValPublic, false);
         addLoad(v);
@@ -1809,7 +1809,7 @@ private:
         val.set_validation (&validation[0], validation.size ());
     #if 0
         getApp ().overlay ().visit (RelayMessage (
-            boost::make_shared <Message> (
+            std::make_shared <Message> (
                 val, protocol::mtVALIDATION)));
     #endif
         getApp().getOPs ().setLastValidation (v);
@@ -1899,7 +1899,7 @@ private:
 
     // Peer sets
     ripple::unordered_map<uint256
-        , std::vector< boost::weak_ptr<Peer> > > mPeerData;
+        , std::vector< std::weak_ptr<Peer> > > mPeerData;
 
     // Disputed transactions
     ripple::unordered_map<uint256, DisputedTx::pointer> mDisputes;
@@ -1918,12 +1918,12 @@ LedgerConsensus::~LedgerConsensus ()
 {
 }
 
-boost::shared_ptr <LedgerConsensus>
+std::shared_ptr <LedgerConsensus>
 make_LedgerConsensus (LedgerConsensus::clock_type& clock, LocalTxs& localtx,
     LedgerHash const &prevLCLHash, Ledger::ref previousLedger,
         std::uint32_t closeTime, FeeVote& feeVote)
 {
-    return boost::make_shared <LedgerConsensusImp> (clock, localtx,
+    return std::make_shared <LedgerConsensusImp> (clock, localtx,
         prevLCLHash, previousLedger, closeTime, feeVote);
 }
 

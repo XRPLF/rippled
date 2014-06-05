@@ -70,7 +70,7 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapNode& id, Blob const& rawNode, std::
         if (type == 0)
         {
             // transaction
-            mItem = boost::make_shared<SHAMapItem> (s.getPrefixHash (HashPrefix::transactionID), s.peekData ());
+            mItem = std::make_shared<SHAMapItem> (s.getPrefixHash (HashPrefix::transactionID), s.peekData ());
             mType = tnTRANSACTION_NM;
         }
         else if (type == 1)
@@ -85,7 +85,7 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapNode& id, Blob const& rawNode, std::
 
             if (u.isZero ()) throw std::runtime_error ("invalid AS node");
 
-            mItem = boost::make_shared<SHAMapItem> (u, s.peekData ());
+            mItem = std::make_shared<SHAMapItem> (u, s.peekData ());
             mType = tnACCOUNT_STATE;
         }
         else if (type == 2)
@@ -135,7 +135,7 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapNode& id, Blob const& rawNode, std::
             if (u.isZero ())
                 throw std::runtime_error ("invalid TM node");
 
-            mItem = boost::make_shared<SHAMapItem> (u, s.peekData ());
+            mItem = std::make_shared<SHAMapItem> (u, s.peekData ());
             mType = tnTRANSACTION_MD;
         }
     }
@@ -159,7 +159,7 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapNode& id, Blob const& rawNode, std::
 
         if (prefix == HashPrefix::transactionID)
         {
-            mItem = boost::make_shared<SHAMapItem> (Serializer::getSHA512Half (rawNode), s.peekData ());
+            mItem = std::make_shared<SHAMapItem> (Serializer::getSHA512Half (rawNode), s.peekData ());
             mType = tnTRANSACTION_NM;
         }
         else if (prefix == HashPrefix::leafNode)
@@ -177,7 +177,7 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapNode& id, Blob const& rawNode, std::
                 throw std::runtime_error ("invalid PLN node");
             }
 
-            mItem = boost::make_shared<SHAMapItem> (u, s.peekData ());
+            mItem = std::make_shared<SHAMapItem> (u, s.peekData ());
             mType = tnACCOUNT_STATE;
         }
         else if (prefix == HashPrefix::innerNode)
@@ -204,7 +204,7 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapNode& id, Blob const& rawNode, std::
             uint256 txID;
             s.get256 (txID, s.getLength () - 32);
             s.chop (32);
-            mItem = boost::make_shared<SHAMapItem> (txID, s.peekData ());
+            mItem = std::make_shared<SHAMapItem> (txID, s.peekData ());
             mType = tnTRANSACTION_MD;
         }
         else

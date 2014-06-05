@@ -21,10 +21,6 @@
 
 #include <beast/unit_test/suite.h>
 
-#include <boost/ref.hpp>
-#include <boost/make_shared.hpp>
-#include <boost/shared_ptr.hpp>
-
 namespace ripple {
 namespace TestOverlay {
 

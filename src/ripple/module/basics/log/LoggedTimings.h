@@ -35,12 +35,12 @@ namespace detail {
 template <typename Object>
 struct Destroyer;
 
-/** Specialization for boost::shared_ptr.
+/** Specialization for std::shared_ptr.
 */
 template <typename Object>
-struct Destroyer <boost::shared_ptr <Object> >
+struct Destroyer <std::shared_ptr <Object> >
 {
-    static void destroy (boost::shared_ptr <Object>& p)
+    static void destroy (std::shared_ptr <Object>& p)
     {
         p.reset ();
     }

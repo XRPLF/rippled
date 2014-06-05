@@ -37,7 +37,7 @@ public:
     {
         // The held ledger must always be immutable
         if (ledger && !ledger->isImmutable ())
-           ledger = boost::make_shared <Ledger> (*ledger, false);
+           ledger = std::make_shared <Ledger> (*ledger, false);
 
         {
             ScopedLockType sl (m_lock);
@@ -58,7 +58,7 @@ public:
     Ledger::pointer getMutable ()
     {
         Ledger::pointer ret = get ();
-        return ret ? boost::make_shared <Ledger> (*ret, true) : ret;
+        return ret ? std::make_shared <Ledger> (*ret, true) : ret;
     }
 
 

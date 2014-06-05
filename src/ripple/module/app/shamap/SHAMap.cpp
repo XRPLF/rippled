@@ -44,7 +44,7 @@ SHAMap::SHAMap (SHAMapType t, FullBelowCache& fullBelowCache, std::uint32_t seq,
     if (t == smtSTATE)
         mTNByID.rehash (STATE_MAP_BUCKETS);
 
-    root = boost::make_shared<SHAMapTreeNode> (mSeq, SHAMapNode (0, uint256 ()));
+    root = std::make_shared<SHAMapTreeNode> (mSeq, SHAMapNode (0, uint256 ()));
     root->makeInner ();
     mTNByID.replace(*root, root);
 }
@@ -62,7 +62,7 @@ SHAMap::SHAMap (SHAMapType t, uint256 const& hash, FullBelowCache& fullBelowCach
     if (t == smtSTATE)
         mTNByID.rehash (STATE_MAP_BUCKETS);
 
-    root = boost::make_shared<SHAMapTreeNode> (mSeq, SHAMapNode (0, uint256 ()));
+    root = std::make_shared<SHAMapTreeNode> (mSeq, SHAMapNode (0, uint256 ()));
     root->makeInner ();
     mTNByID.replace(*root, root);
 }
@@ -116,7 +116,7 @@ std::size_t hash_value (const SHAMapNode& mn)
 
 SHAMap::pointer SHAMap::snapShot (bool isMutable)
 {
-    SHAMap::pointer ret = boost::make_shared<SHAMap> (mType,
+    SHAMap::pointer ret = std::make_shared<SHAMap> (mType,
         std::ref (m_fullBelowCache));
     SHAMap& newMap = *ret;
 
@@ -138,7 +138,7 @@ SHAMap::pointer SHAMap::snapShot (bool isMutable)
             {
                 if (nodeIt.second->getSeq() == mSeq)
                 { // We might modify this node, so duplicate it in the snapShot
-                    SHAMapTreeNode::pointer newNode = boost::make_shared<SHAMapTreeNode> (*nodeIt.second, mSeq);
+                    SHAMapTreeNode::pointer newNode = std::make_shared<SHAMapTreeNode> (*nodeIt.second, mSeq);
                     newMap.mTNByID.replace (*newNode, newNode);
                     if (newNode->isRoot ())
                         newMap.root = newNode;
@@ -343,7 +343,7 @@ SHAMapTreeNode* SHAMap::getNodePointerNT (const SHAMapNode& id, uint256 const& h
 
         if (filter->haveNode (id, hash, nodeData))
         {
-            SHAMapTreeNode::pointer node = boost::make_shared<SHAMapTreeNode> (
+            SHAMapTreeNode::pointer node = std::make_shared<SHAMapTreeNode> (
                     boost::cref (id), boost::cref (nodeData), 0, snfPREFIX, boost::cref (hash), true);
             canonicalize (hash, node);
 
@@ -372,7 +372,7 @@ void SHAMap::returnNode (SHAMapTreeNode::pointer& node, bool modify)
         assert (node->getSeq () < mSeq);
         assert (mState != smsImmutable);
 
-        node = boost::make_shared<SHAMapTreeNode> (*node, mSeq); // here's to the new node, same as the old node
+        node = std::make_shared<SHAMapTreeNode> (*node, mSeq); // here's to the new node, same as the old node
         assert (node->isValid ());
 
         mTNByID.replace (*node, node);
@@ -785,7 +785,7 @@ bool SHAMap::addGiveItem (SHAMapItem::ref item, bool isTransaction, bool hasMeta
         int branch = node->selectBranch (tag);
         assert (node->isEmptyBranch (branch));
         SHAMapTreeNode::pointer newNode =
-            boost::make_shared<SHAMapTreeNode> (node->getChildNodeID (branch), item, type, mSeq);
+            std::make_shared<SHAMapTreeNode> (node->getChildNodeID (branch), item, type, mSeq);
 
         if (!mTNByID.peekMap().emplace (SHAMapNode (*newNode), newNode).second)
         {
@@ -813,7 +813,7 @@ bool SHAMap::addGiveItem (SHAMapItem::ref item, bool isTransaction, bool hasMeta
         {
             // we need a new inner node, since both go on same branch at this level
             SHAMapTreeNode::pointer newNode =
-                boost::make_shared<SHAMapTreeNode> (mSeq, node->getChildNodeID (b1));
+                std::make_shared<SHAMapTreeNode> (mSeq, node->getChildNodeID (b1));
             newNode->makeInner ();
 
             if (!mTNByID.peekMap().emplace (SHAMapNode (*newNode), newNode).second)
@@ -827,7 +827,7 @@ bool SHAMap::addGiveItem (SHAMapItem::ref item, bool isTransaction, bool hasMeta
         // we can add the two leaf nodes here
         assert (node->isInner ());
         SHAMapTreeNode::pointer newNode =
-            boost::make_shared<SHAMapTreeNode> (node->getChildNodeID (b1), item, type, mSeq);
+            std::make_shared<SHAMapTreeNode> (node->getChildNodeID (b1), item, type, mSeq);
         assert (newNode->isValid () && newNode->isLeaf ());
 
         if (!mTNByID.peekMap().emplace (SHAMapNode (*newNode), newNode).second)
@@ -836,7 +836,7 @@ bool SHAMap::addGiveItem (SHAMapItem::ref item, bool isTransaction, bool hasMeta
         node->setChildHash (b1, newNode->getNodeHash ()); // OPTIMIZEME hash op not needed
         trackNewNode (newNode);
 
-        newNode = boost::make_shared<SHAMapTreeNode> (node->getChildNodeID (b2), otherItem, type, mSeq);
+        newNode = std::make_shared<SHAMapTreeNode> (node->getChildNodeID (b2), otherItem, type, mSeq);
         assert (newNode->isValid () && newNode->isLeaf ());
 
         if (!mTNByID.peekMap().emplace (SHAMapNode (*newNode), newNode).second)
@@ -852,7 +852,7 @@ bool SHAMap::addGiveItem (SHAMapItem::ref item, bool isTransaction, bool hasMeta
 
 bool SHAMap::addItem (const SHAMapItem& i, bool isTransaction, bool hasMetaData)
 {
-    return addGiveItem (boost::make_shared<SHAMapItem> (i), isTransaction, hasMetaData);
+    return addGiveItem (std::make_shared<SHAMapItem> (i), isTransaction, hasMetaData);
 }
 
 bool SHAMap::updateGiveItem (SHAMapItem::ref item, bool isTransaction, bool hasMeta)
@@ -931,7 +931,7 @@ SHAMapTreeNode* SHAMap::getNodeAsync (
             Blob nodeData;
             if (filter->haveNode (id, hash, nodeData))
             {
-                ptr = boost::make_shared <SHAMapTreeNode> (
+                ptr = std::make_shared <SHAMapTreeNode> (
                     boost::cref (id), boost::cref (nodeData), 0, snfPREFIX, boost::cref (hash), true);
                 filter->gotNode (true, id, hash, nodeData, ptr->getType ());
             }
@@ -957,7 +957,7 @@ SHAMapTreeNode* SHAMap::getNodeAsync (
             if (!obj)
                 return nullptr;
 
-            ptr = boost::make_shared <SHAMapTreeNode> (id, obj->getData(), 0, snfPREFIX, hash, true);
+            ptr = std::make_shared <SHAMapTreeNode> (id, obj->getData(), 0, snfPREFIX, hash, true);
             if (id != *ptr)
             {
                 assert (false);
@@ -1019,7 +1019,7 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternalNT (const SHAMapNode& id, uint2
         {
             // We make this node immutable (seq == 0) so that it can be shared
             // CoW is needed if it is modified
-            ret = boost::make_shared<SHAMapTreeNode> (id, obj->getData (), 0, snfPREFIX, hash, true);
+            ret = std::make_shared<SHAMapTreeNode> (id, obj->getData (), 0, snfPREFIX, hash, true);
 
             if (id != *ret)
             {
@@ -1083,7 +1083,7 @@ bool SHAMap::fetchRoot (uint256 const& hash, SHAMapSyncFilter* filter)
         if (!filter || !filter->haveNode (SHAMapNode (), hash, nodeData))
             return false;
 
-        root = boost::make_shared<SHAMapTreeNode> (SHAMapNode (), nodeData,
+        root = std::make_shared<SHAMapTreeNode> (SHAMapNode (), nodeData,
                 mSeq - 1, snfPREFIX, hash, true);
         mTNByID.replace(*root, root);
         filter->gotNode (true, SHAMapNode (), hash, nodeData, root->getType ());
@@ -1096,7 +1096,7 @@ bool SHAMap::fetchRoot (uint256 const& hash, SHAMapSyncFilter* filter)
 /** Begin saving dirty nodes to be written later */
 int SHAMap::armDirty ()
 {
-    mDirtyNodes = boost::make_shared <DirtySet> ();
+    mDirtyNodes = std::make_shared <DirtySet> ();
     return ++mSeq;
 }
 
@@ -1137,7 +1137,7 @@ int SHAMap::flushDirty (DirtySet& set, int maxNodes, NodeObjectType t, std::uint
         {
             // Node is not shareable
             // Make and share a shareable copy
-            node = boost::make_shared <SHAMapTreeNode> (*node, 0);
+            node = std::make_shared <SHAMapTreeNode> (*node, 0);
             canonicalize (node->getNodeHash(), node);
             mTNByID.replace (*node, node);
         }
@@ -1152,11 +1152,11 @@ int SHAMap::flushDirty (DirtySet& set, int maxNodes, NodeObjectType t, std::uint
 }
 
 /** Stop saving dirty nodes */
-boost::shared_ptr<SHAMap::DirtySet> SHAMap::disarmDirty ()
+std::shared_ptr<SHAMap::DirtySet> SHAMap::disarmDirty ()
 {
     ScopedWriteLockType sl (mLock);
 
-    boost::shared_ptr<DirtySet> ret;
+    std::shared_ptr<DirtySet> ret;
     ret.swap (mDirtyNodes);
     return ret;
 }
@@ -1294,7 +1294,7 @@ SHAMapTreeNode::pointer SHAMap::getCache (uint256 const& hash, SHAMapNode const&
     {
         // We have the data, but with a different node ID
         WriteLog (lsTRACE, SHAMap) << "ID mismatch: " << id << " != " << *ret;
-        ret = boost::make_shared <SHAMapTreeNode> (*ret, 0);
+        ret = std::make_shared <SHAMapTreeNode> (*ret, 0);
         ret->set(id);
 
         // Future fetches are likely to use the "new" ID
@@ -1317,7 +1317,7 @@ void SHAMap::canonicalize (uint256 const& hash, SHAMapTreeNode::pointer& node)
     if (id != *node)
     {
         // The cache has the node with a different ID
-        node = boost::make_shared <SHAMapTreeNode> (*node, 0);
+        node = std::make_shared <SHAMapTreeNode> (*node, 0);
         node->set (id);
 
         // Future fetches are likely to use the newer ID

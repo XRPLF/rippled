@@ -55,13 +55,13 @@ public:
     // VFALCO TODO Remove the dependency on the Peer object.
     //
     virtual bool gotLedgerData (LedgerHash const& ledgerHash,
-        boost::shared_ptr<Peer>,
-        boost::shared_ptr <protocol::TMLedgerData>) = 0;
+        std::shared_ptr<Peer>,
+        std::shared_ptr <protocol::TMLedgerData>) = 0;
 
     virtual void doLedgerData (Job&, LedgerHash hash) = 0;
 
     virtual void gotStaleData (
-        boost::shared_ptr <protocol::TMLedgerData> packet) = 0;
+        std::shared_ptr <protocol::TMLedgerData> packet) = 0;
 
     virtual int getFetchCount (int& timeoutCount) = 0;
 

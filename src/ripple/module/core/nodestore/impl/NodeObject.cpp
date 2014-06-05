@@ -42,7 +42,7 @@ NodeObject::Ptr NodeObject::createObject (
     Blob&& data,
     uint256 const & hash)
 {
-    return boost::make_shared <NodeObject> (
+    return std::make_shared <NodeObject> (
         type, ledgerIndex, std::move (data), hash, PrivateAccess ());
 }
 

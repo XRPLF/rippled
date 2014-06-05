@@ -40,7 +40,7 @@ public:
     //
     //             Why both kinds of containers?
     //
-    typedef boost::shared_ptr <LoadEvent> pointer;
+    typedef std::shared_ptr <LoadEvent> pointer;
     typedef std::unique_ptr <LoadEvent>            autoptr;
 
 public:

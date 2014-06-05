@@ -26,13 +26,13 @@ namespace ripple {
 // A transaction set we are trying to acquire
 class TransactionAcquire
     : public PeerSet
-    , public boost::enable_shared_from_this <TransactionAcquire>
+    , public std::enable_shared_from_this <TransactionAcquire>
     , public CountedObject <TransactionAcquire>
 {
 public:
     static char const* getCountedObjectName () { return "TransactionAcquire"; }
 
-    typedef boost::shared_ptr<TransactionAcquire> pointer;
+    typedef std::shared_ptr<TransactionAcquire> pointer;
 
 public:
     TransactionAcquire (uint256 const& hash, clock_type& clock);
@@ -58,7 +58,7 @@ private:
 
     void done ();
     void trigger (Peer::ptr const&);
-    boost::weak_ptr<PeerSet> pmDowncast ();
+    std::weak_ptr<PeerSet> pmDowncast ();
 };
 
 } // ripple

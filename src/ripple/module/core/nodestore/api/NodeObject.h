@@ -60,10 +60,10 @@ public:
     };
 
     // Please use this one. For a reference use Ptr const&
-    typedef boost::shared_ptr <NodeObject> Ptr;
+    typedef std::shared_ptr <NodeObject> Ptr;
 
     // These are DEPRECATED, type names are capitalized.
-    typedef boost::shared_ptr <NodeObject> pointer;
+    typedef std::shared_ptr <NodeObject> pointer;
     typedef pointer const& ref;
 
 private:

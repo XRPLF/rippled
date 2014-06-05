@@ -28,7 +28,7 @@ typedef SHAMapItem Item;
 // Utility functions for RadixMap::Table (a.k.a. SHAMap) unit tests
 
 /** Returns a pseudo random Table item. */
-boost::shared_ptr <Item> make_random_item (beast::Random& r);
+std::shared_ptr <Item> make_random_item (beast::Random& r);
 
 /** Adds a set of random items to the Table.
     @param n The number of items to add.

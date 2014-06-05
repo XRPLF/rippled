@@ -152,7 +152,7 @@ Json::Value WSConnection::invokeCommand (Json::Value& jvRequest)
     }
 
     Resource::Charge loadType = Resource::feeReferenceRPC;
-    RPCHandler  mRPCHandler (&this->m_netOPs, boost::dynamic_pointer_cast<InfoSub> (this->shared_from_this ()));
+    RPCHandler  mRPCHandler (&this->m_netOPs, std::dynamic_pointer_cast<InfoSub> (this->shared_from_this ()));
     Json::Value jvResult (Json::objectValue);
 
     Config::Role const role = m_isPublic

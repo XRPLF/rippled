@@ -24,9 +24,9 @@ AcceptedLedgerTx::AcceptedLedgerTx (std::uint32_t seq, SerializerIterator& sit)
     Serializer          txnSer (sit.getVL ());
     SerializerIterator  txnIt (txnSer);
 
-    mTxn =      boost::make_shared<SerializedTransaction> (boost::ref (txnIt));
+    mTxn =      std::make_shared<SerializedTransaction> (boost::ref (txnIt));
     mRawMeta =  sit.getVL ();
-    mMeta =     boost::make_shared<TransactionMetaSet> (mTxn->getTransactionID (), seq, mRawMeta);
+    mMeta =     std::make_shared<TransactionMetaSet> (mTxn->getTransactionID (), seq, mRawMeta);
     mAffected = mMeta->getAffectedAccounts ();
     mResult =   mMeta->getResultTER ();
     buildJson ();

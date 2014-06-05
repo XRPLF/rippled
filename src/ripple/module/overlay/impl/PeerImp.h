@@ -34,7 +34,8 @@
 #include <ripple/unity/app.h>
 
 #include <beast/asio/IPAddressConversion.h>
-
+#include <beast/asio/placeholders.h>
+    
 #include <cstdint>
 
 namespace ripple {
@@ -59,7 +60,7 @@ std::ostream& operator<< (std::ostream& os, PeerImp const* peer);
 
 class PeerImp
     : public Peer
-    , public boost::enable_shared_from_this <PeerImp>
+    , public std::enable_shared_from_this <PeerImp>
     , private beast::LeakChecked <Peer>
 {
 private:
@@ -85,10 +86,10 @@ private:
         m_socket->set_verify_mode (boost::asio::ssl::verify_none);
         m_socket->async_handshake (
             boost::asio::ssl::stream_base::server,
-            m_strand.wrap (boost::bind (
+            m_strand.wrap (std::bind (
                 &PeerImp::handleStart,
-                boost::static_pointer_cast <PeerImp> (shared_from_this ()),
-                boost::asio::placeholders::error)));
+                std::static_pointer_cast <PeerImp> (shared_from_this ()),
+                beast::asio::placeholders::error)));
     }
 
     /** Attempt an outbound connection.
@@ -107,9 +108,9 @@ private:
 
         m_timer.expires_from_now (nodeVerifySeconds, err);
 
-        m_timer.async_wait (m_strand.wrap (boost::bind (
+        m_timer.async_wait (m_strand.wrap (std::bind (
             &PeerImp::handleVerifyTimer,
-            shared_from_this (), boost::asio::placeholders::error)));
+            shared_from_this (), beast::asio::placeholders::error)));
 
         if (err)
         {
@@ -120,8 +121,8 @@ private:
 
         m_socket->next_layer <NativeSocketType>().async_connect (
             beast::IPAddressConversion::to_asio_endpoint (m_remoteAddress),
-                m_strand.wrap (boost::bind (&PeerImp::onConnect,
-                    shared_from_this (), boost::asio::placeholders::error)));
+                m_strand.wrap (std::bind (&PeerImp::onConnect,
+                    shared_from_this (), beast::asio::placeholders::error)));
     }
 
 public:
@@ -144,7 +145,7 @@ public:
         ,stateGracefulClose
     };
 
-    typedef boost::shared_ptr <PeerImp> ptr;
+    typedef std::shared_ptr <PeerImp> ptr;
 
     NativeSocketType m_owned_socket;
 
@@ -352,10 +353,10 @@ public:
             if (graceful)
             {
                 m_socket->async_shutdown (
-                    m_strand.wrap ( boost::bind(
+                    m_strand.wrap ( std::bind(
                         &PeerImp::handleShutdown,
-                        boost::static_pointer_cast <PeerImp> (shared_from_this ()),
-                        boost::asio::placeholders::error)));
+                        std::static_pointer_cast <PeerImp> (shared_from_this ()),
+                        beast::asio::placeholders::error)));
             }
             else
             {
@@ -419,9 +420,9 @@ public:
         m_socket->set_verify_mode (boost::asio::ssl::verify_none);
         m_socket->async_handshake (
             boost::asio::ssl::stream_base::client,
-            m_strand.wrap (boost::bind (&PeerImp::handleStart,
-                boost::static_pointer_cast <PeerImp> (shared_from_this ()),
-                    boost::asio::placeholders::error)));
+            m_strand.wrap (std::bind (&PeerImp::handleStart,
+                std::static_pointer_cast <PeerImp> (shared_from_this ()),
+                    beast::asio::placeholders::error)));
     }
 
     /** Indicates that the peer must be activated.
@@ -483,7 +484,7 @@ public:
 
         msg.set_doweneedthis (1);
 
-        Message::pointer packet = boost::make_shared<Message> (
+        Message::pointer packet = std::make_shared<Message> (
             msg, protocol::mtGET_PEERS);
 
         sendPacket (packet, true);
@@ -495,7 +496,7 @@ public:
              detach ("resource");
     }
 
-    static void charge (boost::weak_ptr <Peer>& peer, Resource::Charge const& fee)
+    static void charge (std::weak_ptr <Peer>& peer, Resource::Charge const& fee)
     {
         Peer::ptr p (peer.lock());
 
@@ -1031,8 +1032,8 @@ private:
             case protocol::mtPROPOSE_LEDGER:
             {
                 event->reName ("Peer::propose");
-                boost::shared_ptr<protocol::TMProposeSet> msg (
-                	boost::make_shared<protocol::TMProposeSet> ());
+                std::shared_ptr<protocol::TMProposeSet> msg (
+                	std::make_shared<protocol::TMProposeSet> ());
 
                 if (msg->ParseFromArray (&m_readBuffer[Message::kHeaderBytes],
                                          msgLen))
@@ -1045,8 +1046,8 @@ private:
             case protocol::mtGET_LEDGER:
             {
                 event->reName ("Peer::getledger");
-                boost::shared_ptr<protocol::TMGetLedger> msg (
-                    boost::make_shared<protocol::TMGetLedger> ());
+                std::shared_ptr<protocol::TMGetLedger> msg (
+                    std::make_shared<protocol::TMGetLedger> ());
 
                 if (msg->ParseFromArray (&m_readBuffer[Message::kHeaderBytes],
                                         msgLen))
@@ -1059,8 +1060,8 @@ private:
             case protocol::mtLEDGER_DATA:
             {
                 event->reName ("Peer::ledgerdata");
-                boost::shared_ptr<protocol::TMLedgerData> msg (
-                	boost::make_shared<protocol::TMLedgerData> ());
+                std::shared_ptr<protocol::TMLedgerData> msg (
+                	std::make_shared<protocol::TMLedgerData> ());
 
                 if (msg->ParseFromArray (&m_readBuffer[Message::kHeaderBytes],
                                          msgLen))
@@ -1086,8 +1087,8 @@ private:
             case protocol::mtVALIDATION:
             {
                 event->reName ("Peer::validation");
-                boost::shared_ptr<protocol::TMValidation> msg (
-                	boost::make_shared<protocol::TMValidation> ());
+                std::shared_ptr<protocol::TMValidation> msg (
+                	std::make_shared<protocol::TMValidation> ());
 
                 if (msg->ParseFromArray (&m_readBuffer[Message::kHeaderBytes],
                                          msgLen))
@@ -1114,8 +1115,8 @@ private:
             case protocol::mtGET_OBJECTS:
             {
                 event->reName ("Peer::getobjects");
-                boost::shared_ptr<protocol::TMGetObjectByHash> msg =
-                    boost::make_shared<protocol::TMGetObjectByHash> ();
+                std::shared_ptr<protocol::TMGetObjectByHash> msg =
+                    std::make_shared<protocol::TMGetObjectByHash> ();
 
                 if (msg->ParseFromArray (&m_readBuffer[Message::kHeaderBytes],
                                          msgLen))
@@ -1156,10 +1157,10 @@ private:
 
             boost::asio::async_read (getStream (),
                 boost::asio::buffer (m_readBuffer),
-                m_strand.wrap (boost::bind (&PeerImp::handleReadHeader,
-                    boost::static_pointer_cast <PeerImp> (shared_from_this ()),
-                    boost::asio::placeholders::error,
-                    boost::asio::placeholders::bytes_transferred)));
+                m_strand.wrap (std::bind (&PeerImp::handleReadHeader,
+                    std::static_pointer_cast <PeerImp> (shared_from_this ()),
+                    beast::asio::placeholders::error,
+                    beast::asio::placeholders::bytes_transferred)));
         }
     }
 
@@ -1176,11 +1177,11 @@ private:
             boost::asio::async_read (getStream (),
                 boost::asio::buffer (
                     &m_readBuffer [Message::kHeaderBytes], msg_len),
-                m_strand.wrap (boost::bind (
+                m_strand.wrap (std::bind (
                     &PeerImp::handleReadBody,
-                    boost::static_pointer_cast <PeerImp> (shared_from_this ()),
-                    boost::asio::placeholders::error,
-                    boost::asio::placeholders::bytes_transferred)));
+                    std::static_pointer_cast <PeerImp> (shared_from_this ()),
+                    beast::asio::placeholders::error,
+                    beast::asio::placeholders::bytes_transferred)));
         }
     }
 
@@ -1193,11 +1194,11 @@ private:
 
             boost::asio::async_write (getStream (),
                 boost::asio::buffer (packet->getBuffer ()),
-                m_strand.wrap (boost::bind (
+                m_strand.wrap (std::bind (
                     &PeerImp::handleWrite,
-                    boost::static_pointer_cast <PeerImp> (shared_from_this ()),
-                    boost::asio::placeholders::error,
-                    boost::asio::placeholders::bytes_transferred)));
+                    std::static_pointer_cast <PeerImp> (shared_from_this ()),
+                    beast::asio::placeholders::error,
+                    beast::asio::placeholders::bytes_transferred)));
         }
     }
 
@@ -1333,7 +1334,7 @@ private:
             h.set_ledgerprevious (hash.begin (), hash.size ());
         }
 
-        Message::pointer packet = boost::make_shared<Message> (
+        Message::pointer packet = std::make_shared<Message> (
             h, protocol::mtHELLO);
         sendPacket (packet, true);
 
@@ -1507,7 +1508,7 @@ private:
         {
     #endif
             SerializerIterator sit (s);
-            SerializedTransaction::pointer stx = boost::make_shared<SerializedTransaction> (boost::ref (sit));
+            SerializedTransaction::pointer stx = std::make_shared<SerializedTransaction> (boost::ref (sit));
             uint256 txID = stx->getTransactionID();
 
             int flags;
@@ -1540,7 +1541,7 @@ private:
                     std::bind (
                         &PeerImp::checkTransaction, std::placeholders::_1,
                         flags, stx,
-                        boost::weak_ptr<Peer> (shared_from_this ())));
+                        std::weak_ptr<Peer> (shared_from_this ())));
 
     #ifndef TRUST_NETWORK
         }
@@ -1552,7 +1553,7 @@ private:
     #endif
     }
 
-    void recvValidation (const boost::shared_ptr<protocol::TMValidation>& packet)
+    void recvValidation (const std::shared_ptr<protocol::TMValidation>& packet)
     {
         std::uint32_t closeTime = getApp().getOPs().getCloseTimeNC();
 
@@ -1570,7 +1571,7 @@ private:
         {
             Serializer s (packet->validation ());
             SerializerIterator sit (s);
-            SerializedValidation::pointer val = boost::make_shared<SerializedValidation> (boost::ref (sit), false);
+            SerializedValidation::pointer val = std::make_shared<SerializedValidation> (boost::ref (sit), false);
 
             if (closeTime > (120 + val->getFieldU32(sfSigningTime)))
             {
@@ -1594,7 +1595,7 @@ private:
                     std::bind (
                         &PeerImp::checkValidation, std::placeholders::_1,
                         &m_overlay, val, isTrusted, m_clusterNode, packet,
-                        boost::weak_ptr<Peer> (shared_from_this ())));
+                        std::weak_ptr<Peer> (shared_from_this ())));
             }
             else
                 m_journal.debug << "Dropping UNTRUSTED validation due to load";
@@ -1633,7 +1634,7 @@ private:
         // response with some data here anyways, and send if non-empty.
 
         sendPacket (
-            boost::make_shared<Message> (peers, protocol::mtPEERS),
+            std::make_shared<Message> (peers, protocol::mtPEERS),
             true);
 #endif
     }
@@ -1701,7 +1702,7 @@ private:
             m_peerFinder.on_endpoints (m_slot, endpoints);
     }
 
-    void recvGetObjectByHash (const boost::shared_ptr<protocol::TMGetObjectByHash>& ptr)
+    void recvGetObjectByHash (const std::shared_ptr<protocol::TMGetObjectByHash>& ptr)
     {
         protocol::TMGetObjectByHash& packet = *ptr;
 
@@ -1756,7 +1757,7 @@ private:
                                " of " << packet.objects_size () <<
                                " for " << to_string (this);
             sendPacket (
-                boost::make_shared<Message> (reply, protocol::mtGET_OBJECTS),
+                std::make_shared<Message> (reply, protocol::mtGET_OBJECTS),
                 true);
         }
         else
@@ -1796,8 +1797,8 @@ private:
                         uint256 hash;
                         memcpy (hash.begin (), obj.hash ().data (), 256 / 8);
 
-                        boost::shared_ptr< Blob > data (
-                            boost::make_shared< Blob > (
+                        std::shared_ptr< Blob > data (
+                            std::make_shared< Blob > (
                                 obj.data ().begin (), obj.data ().end ()));
 
                         getApp().getOPs ().addFetchPack (hash, data);
@@ -1819,7 +1820,7 @@ private:
         if (packet.type () == protocol::TMPing::ptPING)
         {
             packet.set_type (protocol::TMPing::ptPONG);
-            sendPacket (boost::make_shared<Message> (packet, protocol::mtPING), true);
+            sendPacket (std::make_shared<Message> (packet, protocol::mtPING), true);
         }
     }
 
@@ -1839,20 +1840,20 @@ private:
     {
     }
 
-    void recvGetLedger (boost::shared_ptr<protocol::TMGetLedger> const& packet)
+    void recvGetLedger (std::shared_ptr<protocol::TMGetLedger> const& packet)
     {
         getApp().getJobQueue().addJob (jtPACK, "recvGetLedger",
-        	std::bind (&sGetLedger, boost::weak_ptr<PeerImp> (shared_from_this ()), packet));
+        	std::bind (&sGetLedger, std::weak_ptr<PeerImp> (shared_from_this ()), packet));
     }
 
     /** A peer has sent us transaction set data */
     static void peerTXData (Job&,
-        boost::weak_ptr <Peer> wPeer,
+        std::weak_ptr <Peer> wPeer,
         uint256 const& hash,
-        boost::shared_ptr <protocol::TMLedgerData> pPacket,
+        std::shared_ptr <protocol::TMLedgerData> pPacket,
         beast::Journal journal)
     {
-        boost::shared_ptr <Peer> peer = wPeer.lock ();
+        std::shared_ptr <Peer> peer = wPeer.lock ();
         if (!peer)
             return;
 
@@ -1889,7 +1890,7 @@ private:
 
     }
 
-    void recvLedger (boost::shared_ptr<protocol::TMLedgerData> const& packet_ptr)
+    void recvLedger (std::shared_ptr<protocol::TMLedgerData> const& packet_ptr)
     {
         protocol::TMLedgerData& packet = *packet_ptr;
 
@@ -1906,7 +1907,7 @@ private:
             if (target)
             {
                 packet.clear_requestcookie ();
-                target->sendPacket (boost::make_shared<Message> (packet, protocol::mtLEDGER_DATA), false);
+                target->sendPacket (std::make_shared<Message> (packet, protocol::mtLEDGER_DATA), false);
             }
             else
             {
@@ -1934,7 +1935,7 @@ private:
 
             getApp().getJobQueue().addJob (jtTXN_DATA, "recvPeerData",
                 std::bind (&PeerImp::peerTXData, std::placeholders::_1,
-                    boost::weak_ptr<Peer> (shared_from_this ()),
+                    std::weak_ptr<Peer> (shared_from_this ()),
                         hash, packet_ptr, m_journal));
 
             return;
@@ -2011,7 +2012,7 @@ private:
         }
     }
 
-    void recvPropose (const boost::shared_ptr<protocol::TMProposeSet>& packet)
+    void recvPropose (const std::shared_ptr<protocol::TMProposeSet>& packet)
     {
         assert (packet);
         protocol::TMProposeSet& set = *packet;
@@ -2076,7 +2077,7 @@ private:
             consensusLCL = getApp().getOPs ().getConsensusLCL ();
         }
 
-        LedgerProposal::pointer proposal = boost::make_shared<LedgerProposal> (
+        LedgerProposal::pointer proposal = std::make_shared<LedgerProposal> (
             prevLedger.isNonZero () ? prevLedger : consensusLCL,
             set.proposeseq (), proposeHash, set.closetime (), signerPublic, suppression);
 
@@ -2084,7 +2085,7 @@ private:
             "recvPropose->checkPropose", std::bind (
                 &PeerImp::checkPropose, std::placeholders::_1, &m_overlay,
                 packet, proposal, consensusLCL, m_nodePublicKey,
-                boost::weak_ptr<Peer> (shared_from_this ()), m_clusterNode));
+                std::weak_ptr<Peer> (shared_from_this ()), m_clusterNode));
     }
 
     void recvHaveTxSet (protocol::TMHaveTransactionSet& packet)
@@ -2170,7 +2171,7 @@ private:
 
             memcpy (challenge.begin (), packet.challenge ().data (), 256 / 8);
             memcpy (target.begin (), packet.target ().data (), 256 / 8);
-            ProofOfWork::pointer pow = boost::make_shared<ProofOfWork> (packet.token (), packet.iterations (),
+            ProofOfWork::pointer pow = std::make_shared<ProofOfWork> (packet.token (), packet.iterations (),
                                        challenge, target);
 
             if (!pow->isValid ())
@@ -2184,7 +2185,7 @@ private:
                 jtPROOFWORK,
                 "recvProof->doProof",
                 std::bind (&PeerImp::doProofOfWork, std::placeholders::_1,
-                           boost::weak_ptr <Peer> (shared_from_this ()), pow));
+                           std::weak_ptr <Peer> (shared_from_this ()), pow));
     #endif
 
             return;
@@ -2281,7 +2282,7 @@ private:
                     Peer::ptr const& selectedPeer = usablePeers[rand () % usablePeers.size ()];
                     packet.set_requestcookie (getShortId ());
                     selectedPeer->sendPacket (
-                        boost::make_shared<Message> (packet, protocol::mtGET_LEDGER),
+                        std::make_shared<Message> (packet, protocol::mtGET_LEDGER),
                         false);
                     return;
 	            }
@@ -2355,7 +2356,7 @@ private:
                         Peer::ptr const& selectedPeer = usablePeers[rand () % usablePeers.size ()];
                         packet.set_requestcookie (getShortId ());
                         selectedPeer->sendPacket (
-                            boost::make_shared<Message> (packet, protocol::mtGET_LEDGER), false);
+                            std::make_shared<Message> (packet, protocol::mtGET_LEDGER), false);
                         m_journal.debug << "Ledger request routed";
                         return;
                     }
@@ -2445,7 +2446,7 @@ private:
 	                }
 	            }
 
-	            Message::pointer oPacket = boost::make_shared<Message> (reply, protocol::mtLEDGER_DATA);
+	            Message::pointer oPacket = std::make_shared<Message> (reply, protocol::mtLEDGER_DATA);
 	            sendPacket (oPacket, false);
 	            return;
 	        }
@@ -2529,17 +2530,17 @@ private:
 	        }
 	    }
 
-	    Message::pointer oPacket = boost::make_shared<Message> (reply, protocol::mtLEDGER_DATA);
+	    Message::pointer oPacket = std::make_shared<Message> (reply, protocol::mtLEDGER_DATA);
 	    sendPacket (oPacket, false);
     }
 
     // This is dispatched by the job queue
     static
     void
-    sGetLedger (boost::weak_ptr<PeerImp> wPeer,
-        boost::shared_ptr <protocol::TMGetLedger> packet)
+    sGetLedger (std::weak_ptr<PeerImp> wPeer,
+        std::shared_ptr <protocol::TMGetLedger> packet)
     {
-        boost::shared_ptr<PeerImp> peer = wPeer.lock ();
+        std::shared_ptr<PeerImp> peer = wPeer.lock ();
 
         if (peer)
             peer->getLedger (*packet);
@@ -2558,7 +2559,7 @@ private:
         m_recentTxSets.push_back (hash);
     }
 
-    void doFetchPack (const boost::shared_ptr<protocol::TMGetObjectByHash>& packet)
+    void doFetchPack (const std::shared_ptr<protocol::TMGetObjectByHash>& packet)
     {
         // VFALCO TODO Invert this dependency using an observer and shared state object.
         // Don't queue fetch pack jobs if we're under load or we already have
@@ -2583,11 +2584,11 @@ private:
 
         getApp().getJobQueue ().addJob (jtPACK, "MakeFetchPack",
             std::bind (&NetworkOPs::makeFetchPack, &getApp().getOPs (), std::placeholders::_1,
-                boost::weak_ptr<Peer> (shared_from_this ()), packet,
+                std::weak_ptr<Peer> (shared_from_this ()), packet,
                     hash, UptimeTimer::getInstance ().getElapsedSeconds ()));
     }
 
-    void doProofOfWork (Job&, boost::weak_ptr <Peer> peer, ProofOfWork::pointer pow)
+    void doProofOfWork (Job&, std::weak_ptr <Peer> peer, ProofOfWork::pointer pow)
     {
         if (peer.expired ())
             return;
@@ -2607,7 +2608,7 @@ private:
                 protocol::TMProofWork reply;
                 reply.set_token (pow->getToken ());
                 reply.set_response (solution.begin (), solution.size ());
-                pptr->sendPacket (boost::make_shared<Message> (reply, protocol::mtPROOFOFWORK), false);
+                pptr->sendPacket (std::make_shared<Message> (reply, protocol::mtPROOFOFWORK), false);
             }
             else
             {
@@ -2616,7 +2617,7 @@ private:
         }
     }
 
-    static void checkTransaction (Job&, int flags, SerializedTransaction::pointer stx, boost::weak_ptr<Peer> peer)
+    static void checkTransaction (Job&, int flags, SerializedTransaction::pointer stx, std::weak_ptr<Peer> peer)
     {
     #ifndef TRUST_NETWORK
         try
@@ -2634,7 +2635,7 @@ private:
 
             bool needCheck = ! is_bit_set (flags, SF_SIGGOOD);
             Transaction::pointer tx =
-                boost::make_shared<Transaction> (stx, needCheck);
+                std::make_shared<Transaction> (stx, needCheck);
 
             if (tx->getStatus () == INVALID)
             {
@@ -2659,9 +2660,9 @@ private:
     }
 
     // Called from our JobQueue
-    static void checkPropose (Job& job, Overlay* pPeers, boost::shared_ptr<protocol::TMProposeSet> packet,
+    static void checkPropose (Job& job, Overlay* pPeers, std::shared_ptr<protocol::TMProposeSet> packet,
                               LedgerProposal::pointer proposal, uint256 consensusLCL, RippleAddress nodePublic,
-                              boost::weak_ptr<Peer> peer, bool fromCluster)
+                              std::weak_ptr<Peer> peer, bool fromCluster)
     {
         bool sigGood = false;
         bool isTrusted = (job.getType () == jtPROPOSAL_t);
@@ -2721,7 +2722,7 @@ private:
                 proposal->getSuppressionID (), peers, SF_RELAYED))
             {
                 pPeers->foreach (send_if_not (
-                    boost::make_shared<Message> (set, protocol::mtPROPOSE_LEDGER),
+                    std::make_shared<Message> (set, protocol::mtPROPOSE_LEDGER),
                     peer_in_set(peers)));
 	    }
         }
@@ -2732,7 +2733,7 @@ private:
     }
 
     static void checkValidation (Job&, Overlay* pPeers, SerializedValidation::pointer val, bool isTrusted, bool isCluster,
-                                 boost::shared_ptr<protocol::TMValidation> packet, boost::weak_ptr<Peer> peer)
+                                 std::shared_ptr<protocol::TMValidation> packet, std::weak_ptr<Peer> peer)
     {
     #ifndef TRUST_NETWORK
 
@@ -2773,7 +2774,7 @@ private:
                     getApp().getHashRouter ().swapSet (signingHash, peers, SF_RELAYED))
             {
                 pPeers->foreach (send_if_not (
-                    boost::make_shared<Message> (*packet, protocol::mtVALIDATION),
+                    std::make_shared<Message> (*packet, protocol::mtVALIDATION),
                     peer_in_set(peers)));
             }
         }

@@ -44,14 +44,14 @@ Transaction::pointer Transaction::sharedTransaction (Blob const& vucTransaction,
         Serializer          s (vucTransaction);
         SerializerIterator  sit (s);
 
-        SerializedTransaction::pointer  st  = boost::make_shared<SerializedTransaction> (boost::ref (sit));
+        SerializedTransaction::pointer  st  = std::make_shared<SerializedTransaction> (boost::ref (sit));
 
-        return boost::make_shared<Transaction> (st, bValidate);
+        return std::make_shared<Transaction> (st, bValidate);
     }
     catch (...)
     {
         Log (lsWARNING) << "Exception constructing transaction";
-        return boost::shared_ptr<Transaction> ();
+        return std::shared_ptr<Transaction> ();
     }
 }
 
@@ -70,7 +70,7 @@ Transaction::Transaction (
 {
     assert (mFromPubKey.isValid ());
 
-    mTransaction    = boost::make_shared<SerializedTransaction> (ttKind);
+    mTransaction    = std::make_shared<SerializedTransaction> (ttKind);
 
     // Log(lsINFO) << str(boost::format("Transaction: account: %s") % naSourceAccount.humanAccountID());
     // Log(lsINFO) << str(boost::format("Transaction: mAccountFrom: %s") % mAccountFrom.humanAccountID());
@@ -158,8 +158,8 @@ Transaction::pointer Transaction::transactionFromSQL (Database* db, bool bValida
     rawTxn.resize (txSize);
 
     SerializerIterator it (rawTxn);
-    SerializedTransaction::pointer txn = boost::make_shared<SerializedTransaction> (boost::ref (it));
-    Transaction::pointer tr = boost::make_shared<Transaction> (txn, bValidate);
+    SerializedTransaction::pointer txn = std::make_shared<SerializedTransaction> (boost::ref (it));
+    Transaction::pointer tr = std::make_shared<Transaction> (txn, bValidate);
 
     TransStatus st (INVALID);
 
@@ -229,8 +229,8 @@ Transaction::pointer Transaction::transactionFromSQL (const std::string& sql)
     rawTxn.resize (txSize);
 
     SerializerIterator it (rawTxn);
-    SerializedTransaction::pointer txn = boost::make_shared<SerializedTransaction> (boost::ref (it));
-    Transaction::pointer tr = boost::make_shared<Transaction> (txn, true);
+    SerializedTransaction::pointer txn = std::make_shared<SerializedTransaction> (boost::ref (it));
+    Transaction::pointer tr = std::make_shared<Transaction> (txn, true);
 
     TransStatus st (INVALID);
 

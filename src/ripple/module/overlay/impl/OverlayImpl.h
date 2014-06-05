@@ -51,7 +51,7 @@ public:
     typedef boost::asio::ip::tcp::socket socket_type;
 
     typedef std::unordered_map <PeerFinder::Slot::ptr,
-        boost::weak_ptr <PeerImp>> PeersBySlot;
+        std::weak_ptr <PeerImp>> PeersBySlot;
 
     typedef boost::unordered_map <
         RippleAddress, Peer::ptr> PeerByPublicKey;

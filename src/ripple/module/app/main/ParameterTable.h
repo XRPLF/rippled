@@ -22,12 +22,12 @@
 
 namespace ripple {
 
-class Parameter : public boost::enable_shared_from_this<Parameter>
+class Parameter : public std::enable_shared_from_this<Parameter>
 {
     // abstract base class parameters are derived from
 public:
-    typedef boost::shared_ptr<Parameter> pointer;
-    typedef const boost::shared_ptr<Parameter>& ref;
+    typedef std::shared_ptr<Parameter> pointer;
+    typedef const std::shared_ptr<Parameter>& ref;
 
 public:
     Parameter (Parameter::ref parent, const std::string& name) : mParent (parent), mName (name)

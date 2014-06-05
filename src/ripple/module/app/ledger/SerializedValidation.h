@@ -32,8 +32,8 @@ class SerializedValidation
 public:
     static char const* getCountedObjectName () { return "SerializedValidation"; }
 
-    typedef boost::shared_ptr<SerializedValidation>         pointer;
-    typedef const boost::shared_ptr<SerializedValidation>&  ref;
+    typedef std::shared_ptr<SerializedValidation>         pointer;
+    typedef const std::shared_ptr<SerializedValidation>&  ref;
 
     enum
     {

@@ -141,7 +141,7 @@ OverlayImpl::accept (bool proxyHandshake, socket_type&& socket)
     if (proxyHandshake)
         flags = flags.with (MultiSocket::Flag::proxy);
 
-    PeerImp::ptr const peer (boost::make_shared <PeerImp> (
+    PeerImp::ptr const peer (std::make_shared <PeerImp> (
         std::move (socket), remote_endpoint, *this, m_resourceManager,
             *m_peerFinder, slot, m_ssl_context, flags));
 
@@ -180,7 +180,7 @@ OverlayImpl::connect (beast::IP::Endpoint const& remote_endpoint)
     MultiSocket::Flag const flags (
         MultiSocket::Flag::client_role | MultiSocket::Flag::ssl);
 
-    PeerImp::ptr const peer (boost::make_shared <PeerImp> (
+    PeerImp::ptr const peer (std::make_shared <PeerImp> (
         remote_endpoint, m_io_service, *this, m_resourceManager,
             *m_peerFinder, slot, m_ssl_context, flags));
 
@@ -297,7 +297,7 @@ OverlayImpl::send (PeerFinder::Slot::ptr const& slot,
     tm.set_version (1);
 
     Message::pointer msg (
-        boost::make_shared <Message> (
+        std::make_shared <Message> (
             tm, protocol::mtENDPOINTS));
 
     {

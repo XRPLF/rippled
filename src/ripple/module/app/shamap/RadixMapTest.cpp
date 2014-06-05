@@ -22,12 +22,12 @@
 namespace ripple {
 namespace RadixMap {
 
-boost::shared_ptr <Item> make_random_item (beast::Random& r)
+std::shared_ptr <Item> make_random_item (beast::Random& r)
 {
     Serializer s;
     for (int d = 0; d < 3; ++d)
         s.add32 (r.nextInt ());
-    return boost::make_shared <Item> (
+    return std::make_shared <Item> (
         to256(s.getRIPEMD160()), s.peekData ());
 }
 
@@ -37,7 +37,7 @@ void add_random_items (std::size_t n, Table& t, beast::Random& r)
 {
     while (n--)
     {
-        boost::shared_ptr <SHAMapItem> item (
+        std::shared_ptr <SHAMapItem> item (
             make_random_item (r));
         auto const result (t.addItem (*item, false, false));
         assert (result);

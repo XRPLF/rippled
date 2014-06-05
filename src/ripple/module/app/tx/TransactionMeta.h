@@ -25,7 +25,7 @@ namespace ripple {
 class TransactionMetaSet : beast::LeakChecked <TransactionMetaSet>
 {
 public:
-    typedef boost::shared_ptr<TransactionMetaSet> pointer;
+    typedef std::shared_ptr<TransactionMetaSet> pointer;
     typedef const pointer& ref;
 
 public:

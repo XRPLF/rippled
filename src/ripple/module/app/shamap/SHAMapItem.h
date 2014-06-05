@@ -29,8 +29,8 @@ class SHAMapItem
 public:
     static char const* getCountedObjectName () { return "SHAMapItem"; }
 
-    typedef boost::shared_ptr<SHAMapItem>           pointer;
-    typedef const boost::shared_ptr<SHAMapItem>&    ref;
+    typedef std::shared_ptr<SHAMapItem>           pointer;
+    typedef const std::shared_ptr<SHAMapItem>&    ref;
 
 public:
     explicit SHAMapItem (uint256 const & tag) : mTag (tag)

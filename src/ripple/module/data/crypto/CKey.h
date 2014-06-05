@@ -90,7 +90,7 @@ protected:
 
 
 public:
-    typedef boost::shared_ptr<CKey> pointer;
+    typedef std::shared_ptr<CKey> pointer;
 
     CKey ()
     {

@@ -148,7 +148,7 @@ static Json::Value signPayment(
                 return rpcError (rpcTOO_BUSY);
 
             bool bValid;
-            auto cache = boost::make_shared<RippleLineCache> (lSnapshot);
+            auto cache = std::make_shared<RippleLineCache> (lSnapshot);
             Pathfinder pf (cache, raSrcAddressID, dstAccountID,
                            saSendMax.getCurrency (), saSendMax.getIssuer (),
                            amount, bValid);
@@ -328,7 +328,7 @@ Json::Value transactionSign (
 
     try
     {
-        stpTrans = boost::make_shared<SerializedTransaction> (*sopTrans);
+        stpTrans = std::make_shared<SerializedTransaction> (*sopTrans);
     }
     catch (std::exception&)
     {
@@ -357,7 +357,7 @@ Json::Value transactionSign (
 
     try
     {
-        tpTrans     = boost::make_shared<Transaction> (stpTrans, false);
+        tpTrans     = std::make_shared<Transaction> (stpTrans, false);
     }
     catch (std::exception&)
     {
@@ -419,7 +419,7 @@ public:
         RippleAddress rootGeneratorMaster = RippleAddress::createGeneratorPublic (rootSeedMaster);
         RippleAddress rootAddress         = RippleAddress::createAccountPublic (rootGeneratorMaster, 0);
         std::uint64_t startAmount (100000);
-        Ledger::pointer ledger (boost::make_shared <Ledger> (
+        Ledger::pointer ledger (std::make_shared <Ledger> (
             rootAddress, startAmount));
 
         {

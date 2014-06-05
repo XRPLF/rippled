@@ -26,7 +26,7 @@ namespace ripple {
     This handles everything that is independent of the endpint_type.
 */
 class WSConnection
-    : public boost::enable_shared_from_this <WSConnection>
+    : public std::enable_shared_from_this <WSConnection>
     , public InfoSub
     , public CountedObject <WSConnection>
     , public beast::Uncopyable
@@ -119,7 +119,7 @@ public:
         }
     }
 
-    static void destroy (boost::shared_ptr <WSConnectionType <endpoint_type> >)
+    static void destroy (std::shared_ptr <WSConnectionType <endpoint_type> >)
     {
         // Just discards the reference
     }

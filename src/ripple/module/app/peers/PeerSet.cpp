@@ -98,12 +98,12 @@ void PeerSet::invokeOnTimer ()
         setTimer ();
 }
 
-void PeerSet::TimerEntry (boost::weak_ptr<PeerSet> wptr, const boost::system::error_code& result)
+void PeerSet::TimerEntry (std::weak_ptr<PeerSet> wptr, const boost::system::error_code& result)
 {
     if (result == boost::asio::error::operation_aborted)
         return;
 
-    boost::shared_ptr<PeerSet> ptr = wptr.lock ();
+    std::shared_ptr<PeerSet> ptr = wptr.lock ();
 
     if (ptr)
     {
@@ -134,7 +134,7 @@ void PeerSet::TimerEntry (boost::weak_ptr<PeerSet> wptr, const boost::system::er
     }
 }
 
-void PeerSet::TimerJobEntry (Job&, boost::shared_ptr<PeerSet> ptr)
+void PeerSet::TimerJobEntry (Job&, std::shared_ptr<PeerSet> ptr)
 {
     ptr->invokeOnTimer ();
 }
@@ -150,7 +150,7 @@ void PeerSet::sendRequest (const protocol::TMGetLedger& tmGL, Peer::ptr const& p
     if (!peer)
         sendRequest (tmGL);
     else
-        peer->sendPacket (boost::make_shared<Message> (tmGL, protocol::mtGET_LEDGER), false);
+        peer->sendPacket (std::make_shared<Message> (tmGL, protocol::mtGET_LEDGER), false);
 }
 
 void PeerSet::sendRequest (const protocol::TMGetLedger& tmGL)
@@ -161,7 +161,7 @@ void PeerSet::sendRequest (const protocol::TMGetLedger& tmGL)
         return;
 
     Message::pointer packet (
-        boost::make_shared<Message> (tmGL, protocol::mtGET_LEDGER));
+        std::make_shared<Message> (tmGL, protocol::mtGET_LEDGER));
 
     for (auto const& p : mPeers)
     {

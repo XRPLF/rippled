@@ -38,8 +38,8 @@ class SerializedTransaction
 public:
     static char const* getCountedObjectName () { return "SerializedTransaction"; }
 
-    typedef boost::shared_ptr<SerializedTransaction>        pointer;
-    typedef const boost::shared_ptr<SerializedTransaction>& ref;
+    typedef std::shared_ptr<SerializedTransaction>        pointer;
+    typedef const std::shared_ptr<SerializedTransaction>& ref;
 
 public:
     SerializedTransaction (SerializerIterator & sit);

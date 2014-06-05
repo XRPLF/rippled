@@ -34,21 +34,21 @@ class PathRequests;
 #define PFR_PJ_CHANGE               1
 
 class PathRequest :
-    public boost::enable_shared_from_this <PathRequest>,
+    public std::enable_shared_from_this <PathRequest>,
     public CountedObject <PathRequest>
 {
 public:
     static char const* getCountedObjectName () { return "PathRequest"; }
 
-    typedef boost::weak_ptr<PathRequest>    wptr;
-    typedef boost::shared_ptr<PathRequest>  pointer;
+    typedef std::weak_ptr<PathRequest>    wptr;
+    typedef std::shared_ptr<PathRequest>  pointer;
     typedef const pointer&                  ref;
     typedef const wptr&                     wref;
     typedef std::pair<uint160, uint160>     currIssuer_t;
 
 public:
     // VFALCO TODO Break the cyclic dependency on InfoSub
-    PathRequest (boost::shared_ptr <InfoSub> const& subscriber,
+    PathRequest (std::shared_ptr <InfoSub> const& subscriber,
         int id, PathRequests&, beast::Journal journal);
     
     ~PathRequest ();
@@ -60,11 +60,11 @@ public:
     void        updateComplete ();
     Json::Value getStatus ();
 
-    Json::Value doCreate (const boost::shared_ptr<Ledger>&, const RippleLineCache::pointer&,
+    Json::Value doCreate (const std::shared_ptr<Ledger>&, const RippleLineCache::pointer&,
         const Json::Value&, bool&);
     Json::Value doClose (const Json::Value&);
     Json::Value doStatus (const Json::Value&);
-    Json::Value doUpdate (const boost::shared_ptr<RippleLineCache>&, bool fast); // update jvStatus
+    Json::Value doUpdate (const std::shared_ptr<RippleLineCache>&, bool fast); // update jvStatus
     InfoSub::pointer getSubscriber ();
 
 private:
@@ -80,7 +80,7 @@ private:
 
     PathRequests&                   mOwner;
 
-    boost::weak_ptr<InfoSub>        wpSubscriber;               // Who this request came from
+    std::weak_ptr<InfoSub>        wpSubscriber;               // Who this request came from
     Json::Value                     jvId;
     Json::Value                     jvStatus;                   // Last result
 

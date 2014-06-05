@@ -43,13 +43,13 @@ enum TransStatus
 
 // This class is for constructing and examining transactions.  Transactions are static so manipulation functions are unnecessary.
 class Transaction
-    : public boost::enable_shared_from_this<Transaction>
+    : public std::enable_shared_from_this<Transaction>
     , public CountedObject <Transaction>
 {
 public:
     static char const* getCountedObjectName () { return "Transaction"; }
 
-    typedef boost::shared_ptr<Transaction> pointer;
+    typedef std::shared_ptr<Transaction> pointer;
     typedef const pointer& ref;
 
 public:
