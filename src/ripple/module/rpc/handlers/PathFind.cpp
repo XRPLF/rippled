@@ -56,7 +56,7 @@ Json::Value RPCHandler::doPathFind (Json::Value params, Resource::Charge& loadTy
         PathRequest::pointer request = mInfoSub->getPathRequest ();
 
         if (!request)
-            return rpcNO_PF_REQUEST;
+            return rpcError (rpcNO_PF_REQUEST);
 
         return request->doStatus (params);
     }
