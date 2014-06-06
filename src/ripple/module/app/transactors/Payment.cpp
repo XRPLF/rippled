@@ -232,7 +232,7 @@ TER Payment::doApply ()
 
         // Copy paths into an editable class.
         STPathSet spsPaths = mTxn.getFieldPathSet (sfPaths);
-        std::vector<PathState::pointer> vpsExpanded;
+        PathState::List pathStateList;
         STAmount maxSourceAmountAct;
         STAmount saDstAmountAct;
 
@@ -243,11 +243,11 @@ TER Payment::doApply ()
 
             terResult = openLedger && tooManyPaths
                         ? telBAD_PATH_COUNT // Too many paths for proposed ledger.
-                        : rippleCalculate (
+                        : path::rippleCalculate (
                               mEngine->view (),
                               maxSourceAmountAct,
                               saDstAmountAct,
-                              vpsExpanded,  // Vector for saving expanded path.
+                              pathStateList,  // Vector for saving expanded path.
                               maxSourceAmount,
                               saDstAmount,
                               uDstAccountID,

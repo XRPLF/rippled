@@ -22,6 +22,7 @@
 #include <ripple/module/app/paths/Tuning.h>
 
 namespace ripple {
+namespace path {
 
 // Compute how much might flow for the node for the pass. Does not actually
 // adjust balances.
@@ -45,7 +46,7 @@ namespace ripple {
 // This routine is called one or two times for a node in a pass. If called once,
 // it will work and set a rate.  If called again, the new work must not worsen
 // the previous rate.
-void calcNodeRipple (
+void nodeRipple (
     RippleCalc& rippleCalc,
     const std::uint32_t uQualityIn,
     const std::uint32_t uQualityOut,
@@ -56,7 +57,7 @@ void calcNodeRipple (
     std::uint64_t& uRateMax)
 {
     WriteLog (lsTRACE, RippleCalc)
-        << "calcNodeRipple>"
+        << "nodeRipple>"
         << " uQualityIn=" << uQualityIn
         << " uQualityOut=" << uQualityOut
         << " saPrvReq=" << saPrvReq
@@ -75,7 +76,7 @@ void calcNodeRipple (
     const STAmount  saCur           = saCurReq - saCurAct;
 
     WriteLog (lsTRACE, RippleCalc)
-        << "calcNodeRipple: "
+        << "nodeRipple: "
         << " bPrvUnlimited=" << bPrvUnlimited
         << " saPrv=" << saPrv
         << " saCur=" << saCur;
@@ -83,7 +84,7 @@ void calcNodeRipple (
     if (uQualityIn >= uQualityOut)
     {
         // No fee.
-        WriteLog (lsTRACE, RippleCalc) << "calcNodeRipple: No fees";
+        WriteLog (lsTRACE, RippleCalc) << "nodeRipple: No fees";
 
         // Only process if we are not worsing previously processed.
         if (!uRateMax || STAmount::uRateOne <= uRateMax)
@@ -109,7 +110,7 @@ void calcNodeRipple (
     else
     {
         // Fee.
-        WriteLog (lsTRACE, RippleCalc) << "calcNodeRipple: Fee";
+        WriteLog (lsTRACE, RippleCalc) << "nodeRipple: Fee";
 
         std::uint64_t uRate = STAmount::getRate (
             STAmount (uQualityOut), STAmount (uQualityIn));
@@ -127,7 +128,7 @@ void calcNodeRipple (
                 someFee, uQualityIn, uCurrencyID, uCurIssuerID, true);
 
             WriteLog (lsTRACE, RippleCalc)
-                << "calcNodeRipple:"
+                << "nodeRipple:"
                 << " bPrvUnlimited=" << bPrvUnlimited
                 << " saPrv=" << saPrv
                 << " saCurIn=" << saCurIn;
@@ -138,7 +139,7 @@ void calcNodeRipple (
                 saCurAct += saCur;
                 saPrvAct += saCurIn;
                 WriteLog (lsTRACE, RippleCalc)
-                    << "calcNodeRipple:3c:"
+                    << "nodeRipple:3c:"
                     << " saCurReq=" << saCurReq
                     << " saPrvAct=" << saPrvAct;
             }
@@ -151,7 +152,7 @@ void calcNodeRipple (
                 STAmount    saCurOut    = STAmount::divRound (
                     someFee, uQualityOut, uCurrencyID, uCurIssuerID, true);
                 WriteLog (lsTRACE, RippleCalc)
-                    << "calcNodeRipple:4: saCurReq=" << saCurReq;
+                    << "nodeRipple:4: saCurReq=" << saCurReq;
 
                 saCurAct    += saCurOut;
                 saPrvAct    = saPrvReq;
@@ -163,7 +164,7 @@ void calcNodeRipple (
     }
 
     WriteLog (lsTRACE, RippleCalc)
-        << "calcNodeRipple<"
+        << "nodeRipple<"
         << " uQualityIn=" << uQualityIn
         << " uQualityOut=" << uQualityOut
         << " saPrvReq=" << saPrvReq
@@ -172,4 +173,5 @@ void calcNodeRipple (
         << " saCurAct=" << saCurAct;
 }
 
+} // path
 } // ripple

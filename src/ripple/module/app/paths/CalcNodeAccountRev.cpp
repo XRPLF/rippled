@@ -22,6 +22,7 @@
 #include <ripple/module/app/paths/Tuning.h>
 
 namespace ripple {
+namespace path {
 
 // Calculate saPrvRedeemReq, saPrvIssueReq, saPrvDeliver from saCur, based on
 // required deliverable, propagate redeem, issue, and deliver requests to the
@@ -36,26 +37,24 @@ namespace ripple {
 //
 // <-- tesSUCCESS or tecPATH_DRY
 
-TER calcNodeAccountRev (
+TER nodeAccountRev (
     RippleCalc& rippleCalc,
     const unsigned int nodeIndex, PathState& pathState,
     const bool bMultiQuality)
 {
     TER terResult = tesSUCCESS;
-    auto const lastNodeIndex = pathState.vpnNodes.size () - 1;
+    auto const lastNodeIndex = pathState.nodes().size () - 1;
     auto const isFinalNode = (nodeIndex == lastNodeIndex);
 
     std::uint64_t uRateMax = 0;
 
-    auto& previousNode = pathState.vpnNodes[nodeIndex ? nodeIndex - 1 : 0];
-    auto& node = pathState.vpnNodes[nodeIndex];
-    auto& nextNode = pathState.vpnNodes[isFinalNode ? lastNodeIndex : nodeIndex + 1];
+    auto& previousNode = pathState.nodes()[nodeIndex ? nodeIndex - 1 : 0];
+    auto& node = pathState.nodes()[nodeIndex];
+    auto& nextNode = pathState.nodes()[isFinalNode ? lastNodeIndex : nodeIndex + 1];
 
     // Current is allowed to redeem to next.
-    const bool previousNodeIsAccount = !nodeIndex ||
-        is_bit_set (previousNode.uFlags, STPathElement::typeAccount);
-    const bool nextNodeIsAccount = isFinalNode ||
-        is_bit_set (nextNode.uFlags, STPathElement::typeAccount);
+    const bool previousNodeIsAccount = !nodeIndex || previousNode.isAccount();
+    const bool nextNodeIsAccount = isFinalNode || nextNode.isAccount();
 
     const uint160& previousAccountID = previousNodeIsAccount
         ? previousNode.uAccountID : node.uAccountID;
@@ -92,7 +91,7 @@ TER calcNodeAccountRev (
         : STAmount (node.uCurrencyID, node.uAccountID);
 
     WriteLog (lsTRACE, RippleCalc)
-        << "calcNodeAccountRev>"
+        << "nodeAccountRev>"
         << " nodeIndex=%d/%d" << nodeIndex << "/" << lastNodeIndex
         << " previousAccountID="
         << RippleAddress::createHumanAccountID (previousAccountID)
@@ -143,7 +142,7 @@ TER calcNodeAccountRev (
         saCurDeliverReq.getCurrency (), saCurDeliverReq.getIssuer ());
 
     WriteLog (lsTRACE, RippleCalc)
-        << "calcNodeAccountRev:"
+        << "nodeAccountRev:"
         << " saPrvRedeemReq:" << saPrvRedeemReq
         << " saPrvIssueReq:" << saPrvIssueReq
         << " saPrvDeliverAct:" << saPrvDeliverAct
@@ -178,12 +177,12 @@ TER calcNodeAccountRev (
             // Overall deliverable.
              // If previous is an account, limit.
             const STAmount saCurWantedReq = std::min (
-                pathState.saOutReq - pathState.saOutAct, saPrvLimit + saPrvOwed);
+                pathState.outReq() - pathState.outAct(), saPrvLimit + saPrvOwed);
             STAmount        saCurWantedAct (
                 saCurWantedReq.getCurrency (), saCurWantedReq.getIssuer ());
 
             WriteLog (lsTRACE, RippleCalc)
-                << "calcNodeAccountRev: account --> ACCOUNT --> $ :"
+                << "nodeAccountRev: account --> ACCOUNT --> $ :"
                 << " saCurWantedReq=" << saCurWantedReq;
 
             // Calculate redeem
@@ -197,7 +196,7 @@ TER calcNodeAccountRev (
                 uRateMax = STAmount::uRateOne;
 
                 WriteLog (lsTRACE, RippleCalc)
-                    << "calcNodeAccountRev: Redeem at 1:1"
+                    << "nodeAccountRev: Redeem at 1:1"
                     << " saPrvRedeemReq=" << saPrvRedeemReq
                     << " (available) saPrvRedeemAct=" << saPrvRedeemAct
                     << " uRateMax="
@@ -218,13 +217,13 @@ TER calcNodeAccountRev (
 
                 // If we previously redeemed and this has a poorer rate, this
                 // won't be included the current increment.
-                calcNodeRipple (
+                nodeRipple (
                     rippleCalc,
                     uQualityIn, QUALITY_ONE, saPrvIssueReq, saCurWantedReq,
                     saPrvIssueAct, saCurWantedAct, uRateMax);
 
                 WriteLog (lsTRACE, RippleCalc)
-                    << "calcNodeAccountRev: Issuing: Rate: quality in : 1.0"
+                    << "nodeAccountRev: Issuing: Rate: quality in : 1.0"
                     << " saPrvIssueAct:" << saPrvIssueAct
                     << " saCurWantedAct:" << saCurWantedAct;
             }
@@ -246,13 +245,13 @@ TER calcNodeAccountRev (
                 && saPrvRedeemReq)  // Previous has IOUs to redeem.
             {
                 // Rate : 1.0 : quality out
-                calcNodeRipple (
+                nodeRipple (
                     rippleCalc,
                     QUALITY_ONE, uQualityOut, saPrvRedeemReq, saCurRedeemReq,
                     saPrvRedeemAct, saCurRedeemAct, uRateMax);
 
                 WriteLog (lsTRACE, RippleCalc)
-                    << "calcNodeAccountRev: Rate : 1.0 : quality out"
+                    << "nodeAccountRev: Rate : 1.0 : quality out"
                     << " saPrvRedeemAct:" << saPrvRedeemAct
                     << " saCurRedeemAct:" << saCurRedeemAct;
             }
@@ -264,13 +263,13 @@ TER calcNodeAccountRev (
                 // Previous has no IOUs to redeem remaining.
             {
                 // Rate: quality in : quality out
-                calcNodeRipple (
+                nodeRipple (
                     rippleCalc,
                     uQualityIn, uQualityOut, saPrvIssueReq, saCurRedeemReq,
                     saPrvIssueAct, saCurRedeemAct, uRateMax);
 
                 WriteLog (lsTRACE, RippleCalc)
-                    << "calcNodeAccountRev: Rate: quality in : quality out:"
+                    << "nodeAccountRev: Rate: quality in : quality out:"
                     << " saPrvIssueAct:" << saPrvIssueAct
                     << " saCurRedeemAct:" << saCurRedeemAct;
             }
@@ -283,7 +282,7 @@ TER calcNodeAccountRev (
                 // Did not complete redeeming previous IOUs.
             {
                 // Rate : 1.0 : transfer_rate
-                calcNodeRipple (
+                nodeRipple (
                     rippleCalc,
                     QUALITY_ONE,
                     rippleCalc.mActiveLedger.rippleTransferRate (node.uAccountID),
@@ -291,7 +290,7 @@ TER calcNodeAccountRev (
                     saCurIssueAct, uRateMax);
 
                 WriteLog (lsDEBUG, RippleCalc)
-                    << "calcNodeAccountRev: Rate : 1.0 : transfer_rate:"
+                    << "nodeAccountRev: Rate : 1.0 : transfer_rate:"
                     << " saPrvRedeemAct:" << saPrvRedeemAct
                     << " saCurIssueAct:" << saCurIssueAct;
             }
@@ -307,13 +306,13 @@ TER calcNodeAccountRev (
                 // Previous can issue.
             {
                 // Rate: quality in : 1.0
-                calcNodeRipple (
+                nodeRipple (
                     rippleCalc,
                     uQualityIn, QUALITY_ONE, saPrvIssueReq, saCurIssueReq,
                     saPrvIssueAct, saCurIssueAct, uRateMax);
 
                 WriteLog (lsTRACE, RippleCalc)
-                    << "calcNodeAccountRev: Rate: quality in : 1.0:"
+                    << "nodeAccountRev: Rate: quality in : 1.0:"
                     << " saPrvIssueAct:" << saPrvIssueAct
                     << " saCurIssueAct:" << saCurIssueAct;
             }
@@ -325,7 +324,7 @@ TER calcNodeAccountRev (
             }
 
             WriteLog (lsTRACE, RippleCalc)
-                << "calcNodeAccountRev: ^|account --> ACCOUNT --> account :"
+                << "nodeAccountRev: ^|account --> ACCOUNT --> account :"
                 << " saCurRedeemReq:" << saCurRedeemReq
                 << " saCurIssueReq:" << saCurIssueReq
                 << " saPrvOwed:" << saPrvOwed
@@ -339,7 +338,7 @@ TER calcNodeAccountRev (
         // Note: deliver is always issue as ACCOUNT is the issuer for the offer
         // input.
         WriteLog (lsTRACE, RippleCalc)
-            << "calcNodeAccountRev: account --> ACCOUNT --> offer";
+            << "nodeAccountRev: account --> ACCOUNT --> offer";
 
         saPrvRedeemAct.clear (saPrvRedeemReq);
         saPrvIssueAct.clear (saPrvIssueReq);
@@ -349,7 +348,7 @@ TER calcNodeAccountRev (
             && saCurDeliverReq)                 // Need some issued.
         {
             // Rate : 1.0 : transfer_rate
-            calcNodeRipple (
+            nodeRipple (
                 rippleCalc, QUALITY_ONE,
                 rippleCalc.mActiveLedger.rippleTransferRate (node.uAccountID),
                 saPrvRedeemReq, saCurDeliverReq, saPrvRedeemAct,
@@ -361,7 +360,7 @@ TER calcNodeAccountRev (
             && saCurDeliverReq != saCurDeliverAct)  // Still need some issued.
         {
             // Rate: quality in : 1.0
-            calcNodeRipple (
+            nodeRipple (
                 rippleCalc,
                 uQualityIn, QUALITY_ONE, saPrvIssueReq, saCurDeliverReq,
                 saPrvIssueAct, saCurDeliverAct, uRateMax);
@@ -374,7 +373,7 @@ TER calcNodeAccountRev (
         }
 
         WriteLog (lsTRACE, RippleCalc)
-            << "calcNodeAccountRev: "
+            << "nodeAccountRev: "
             << " saCurDeliverReq:" << saCurDeliverReq
             << " saCurDeliverAct:" << saCurDeliverAct
             << " saPrvOwed:" << saPrvOwed;
@@ -385,15 +384,15 @@ TER calcNodeAccountRev (
         {
             // offer --> ACCOUNT --> $
             // Previous is an offer, no limit: redeem own IOUs.
-            const STAmount& saCurWantedReq  = pathState.saOutReq - pathState.saOutAct;
+            const STAmount& saCurWantedReq  = pathState.outReq() - pathState.outAct();
             STAmount saCurWantedAct (
                 saCurWantedReq.getCurrency (), saCurWantedReq.getIssuer ());
 
             WriteLog (lsTRACE, RippleCalc)
-                << "calcNodeAccountRev: offer --> ACCOUNT --> $ :"
+                << "nodeAccountRev: offer --> ACCOUNT --> $ :"
                 << " saCurWantedReq:" << saCurWantedReq
-                << " saOutAct:" << pathState.saOutAct
-                << " saOutReq:" << pathState.saOutReq;
+                << " saOutAct:" << pathState.outAct()
+                << " saOutReq:" << pathState.outReq();
 
             if (saCurWantedReq <= zero)
             {
@@ -406,7 +405,7 @@ TER calcNodeAccountRev (
             // TODO(tom): can only be a race condition if true!
 
             // Rate: quality in : 1.0
-            calcNodeRipple (
+            nodeRipple (
                 rippleCalc,
                 uQualityIn, QUALITY_ONE, saPrvDeliverReq, saCurWantedReq,
                 saPrvDeliverAct, saCurWantedAct, uRateMax);
@@ -418,7 +417,7 @@ TER calcNodeAccountRev (
             }
 
             WriteLog (lsTRACE, RippleCalc)
-                << "calcNodeAccountRev:"
+                << "nodeAccountRev:"
                 << " saPrvDeliverAct:" << saPrvDeliverAct
                 << " saPrvDeliverReq:" << saPrvDeliverReq
                 << " saCurWantedAct:" << saCurWantedAct
@@ -429,7 +428,7 @@ TER calcNodeAccountRev (
             // offer --> ACCOUNT --> account
             // Note: offer is always delivering(redeeming) as account is issuer.
             WriteLog (lsTRACE, RippleCalc)
-                << "calcNodeAccountRev: offer --> ACCOUNT --> account :"
+                << "nodeAccountRev: offer --> ACCOUNT --> account :"
                 << " saCurRedeemReq:" << saCurRedeemReq
                 << " saCurIssueReq:" << saCurIssueReq;
 
@@ -437,7 +436,7 @@ TER calcNodeAccountRev (
             if (saCurRedeemReq)  // Next wants us to redeem.
             {
                 // Rate : 1.0 : quality out
-                calcNodeRipple (
+                nodeRipple (
                     rippleCalc,
                     QUALITY_ONE, uQualityOut, saPrvDeliverReq, saCurRedeemReq,
                     saPrvDeliverAct, saCurRedeemAct, uRateMax);
@@ -450,7 +449,7 @@ TER calcNodeAccountRev (
                 // Need some issued.
             {
                 // Rate : 1.0 : transfer_rate
-                calcNodeRipple (
+                nodeRipple (
                     rippleCalc,
                     QUALITY_ONE,
                     rippleCalc.mActiveLedger.rippleTransferRate (node.uAccountID),
@@ -459,7 +458,7 @@ TER calcNodeAccountRev (
             }
 
             WriteLog (lsTRACE, RippleCalc)
-                << "calcNodeAccountRev:"
+                << "nodeAccountRev:"
                 << " saCurRedeemAct:" << saCurRedeemAct
                 << " saCurRedeemReq:" << saCurRedeemReq
                 << " saPrvDeliverAct:" << saPrvDeliverAct
@@ -477,10 +476,10 @@ TER calcNodeAccountRev (
         // offer --> ACCOUNT --> offer
         // deliver/redeem -> deliver/issue.
         WriteLog (lsTRACE, RippleCalc)
-            << "calcNodeAccountRev: offer --> ACCOUNT --> offer";
+            << "nodeAccountRev: offer --> ACCOUNT --> offer";
 
         // Rate : 1.0 : transfer_rate
-        calcNodeRipple (
+        nodeRipple (
             rippleCalc,
             QUALITY_ONE,
             rippleCalc.mActiveLedger.rippleTransferRate (node.uAccountID),
@@ -497,4 +496,5 @@ TER calcNodeAccountRev (
     return terResult;
 }
 
+} // path
 } // ripple

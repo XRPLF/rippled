@@ -1,4 +1,3 @@
-
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
@@ -243,14 +242,14 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
     try
     {
         STAmount saMaxAmountAct, saDstAmountAct;
-        std::vector<PathState::pointer> vpsExpanded;
+        PathState::List pathStateList;
         LedgerEntrySet lesSandbox (mLedger, tapNONE);
 
-        TER result = rippleCalculate (
+        TER result = path::rippleCalculate (
                  lesSandbox,
                  saMaxAmountAct,
                  saDstAmountAct,
-                 vpsExpanded,
+                 pathStateList,
                  mSrcAmount,
                  mDstAmount,
                  mDstAccountID,
@@ -286,23 +285,23 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
     {
         STAmount    saMaxAmountAct;
         STAmount    saDstAmountAct;
-        std::vector<PathState::pointer> vpsExpanded;
+        PathState::List pathStateList;
         STPathSet   spsPaths;
         STPath&     spCurrent   = mCompletePaths[i];
 
         spsPaths.addPath (spCurrent);               // Just checking the current path.
 
-        TER         errorCode;
+        TER         resultCode;
 
         try
         {
             LedgerEntrySet lesSandbox (mLedger, tapNONE);
 
-            errorCode   = rippleCalculate (
+            resultCode   = path::rippleCalculate (
                               lesSandbox,
                               saMaxAmountAct,     // --> computed input
                               saDstAmountAct,     // --> computed output
-                              vpsExpanded,
+                              pathStateList,
                               mSrcAmount,         // --> amount to send max.
                               mDstAmount,         // --> amount to deliver.
                               mDstAccountID,
@@ -317,13 +316,13 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
         {
             WriteLog (lsINFO, Pathfinder) << "findPaths: Caught throw: " << e.what ();
 
-            errorCode   = tefEXCEPTION;
+            resultCode   = tefEXCEPTION;
         }
 
-        if (errorCode != tesSUCCESS)
+        if (resultCode != tesSUCCESS)
         {
             WriteLog (lsDEBUG, Pathfinder) <<
-                "findPaths: dropping: " << transToken (errorCode) <<
+                "findPaths: dropping: " << transToken (resultCode) <<
                 ": " << spCurrent.getJson (0);
         }
         else if (saDstAmountAct < saMinDstAmount)

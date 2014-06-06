@@ -22,6 +22,7 @@
 #include <ripple/module/app/paths/Tuning.h>
 
 namespace ripple {
+namespace path {
 
 // OPTIMIZE: When calculating path increment, note if increment consumes all
 // liquidity. No need to revisit path in the future if all liquidity is used.
@@ -37,15 +38,15 @@ namespace ripple {
 // - Automatically advances to first offer.
 // --> bEntryAdvance: true, to advance to next entry. false, recalculate.
 // <-- uOfferIndex : 0=end of list.
-TER calcNodeAdvance (
+TER nodeAdvance (
     RippleCalc& rippleCalc,
     const unsigned int          nodeIndex,
     PathState&                  pathState,
     const bool                  bMultiQuality,
     const bool                  bReverse)
 {
-    auto& previousNode = pathState.vpnNodes[nodeIndex - 1];
-    auto& node = pathState.vpnNodes[nodeIndex];
+    auto& previousNode = pathState.nodes()[nodeIndex - 1];
+    auto& node = pathState.nodes()[nodeIndex];
 
     uint256&        uDirectTip      = node.uDirectTip;
     uint256&        uDirectEnd      = node.uDirectEnd;
@@ -64,10 +65,10 @@ TER calcNodeAdvance (
     STAmount&       saTakerGets     = node.saTakerGets;
     bool&           bFundsDirty     = node.bFundsDirty;
 
-    TER             errorCode       = tesSUCCESS;
+    TER             resultCode       = tesSUCCESS;
 
     WriteLog (lsTRACE, RippleCalc)
-            << "calcNodeAdvance: TakerPays:"
+            << "nodeAdvance: TakerPays:"
             << saTakerPays << " TakerGets:" << saTakerGets;
 
     int loopCount = 0;
@@ -109,7 +110,7 @@ TER calcNodeAdvance (
             bDirectRestart  = false;
 
             WriteLog (lsTRACE, RippleCalc)
-                << "calcNodeAdvance: Initialize node:"
+                << "nodeAdvance: Initialize node:"
                 << " uDirectTip=" << uDirectTip
                 <<" uDirectEnd=" << uDirectEnd
                 << " bDirectAdvance=" << bDirectAdvance;
@@ -132,7 +133,7 @@ TER calcNodeAdvance (
             {
                 // Have another quality directory.
                 WriteLog (lsTRACE, RippleCalc)
-                    << "calcNodeAdvance: Quality advance: uDirectTip="
+                    << "nodeAdvance: Quality advance: uDirectTip="
                     << uDirectTip;
 
                 sleDirectDir = rippleCalc.mActiveLedger.entryCache (ltDIR_NODE, uDirectTip);
@@ -140,7 +141,7 @@ TER calcNodeAdvance (
             else if (bReverse)
             {
                 WriteLog (lsTRACE, RippleCalc)
-                    << "calcNodeAdvance: No more offers.";
+                    << "nodeAdvance: No more offers.";
 
                 uOfferIndex = 0;
                 break;
@@ -150,7 +151,7 @@ TER calcNodeAdvance (
                 // No more offers. Should be done rather than fall off end of
                 // book.
                 WriteLog (lsWARNING, RippleCalc)
-                    << "calcNodeAdvance: Unreachable: "
+                    << "nodeAdvance: Unreachable: "
                     << "Fell off end of order book.";
                 // FIXME: why?
                 return rippleCalc.mOpenLedger ? telFAILED_PROCESSING :
@@ -166,7 +167,7 @@ TER calcNodeAdvance (
             bEntryAdvance   = true;
 
             WriteLog (lsTRACE, RippleCalc)
-                << "calcNodeAdvance: directory dirty: saOfrRate="
+                << "nodeAdvance: directory dirty: saOfrRate="
                 << saOfrRate;
         }
 
@@ -185,12 +186,12 @@ TER calcNodeAdvance (
                 bFundsDirty     = false;
 
                 WriteLog (lsTRACE, RippleCalc)
-                    << "calcNodeAdvance: funds dirty: saOfrRate="
+                    << "nodeAdvance: funds dirty: saOfrRate="
                     << saOfrRate;
             }
             else
             {
-                WriteLog (lsTRACE, RippleCalc) << "calcNodeAdvance: as is";
+                WriteLog (lsTRACE, RippleCalc) << "nodeAdvance: as is";
             }
         }
         else if (!rippleCalc.mActiveLedger.dirNext (
@@ -203,13 +204,13 @@ TER calcNodeAdvance (
                 // We are allowed to process multiple qualities if this is the
                 // only path.
                 WriteLog (lsTRACE, RippleCalc)
-                    << "calcNodeAdvance: next quality";
+                    << "nodeAdvance: next quality";
                 bDirectAdvance  = true;         // Process next quality.
             }
             else if (!bReverse)
             {
                 WriteLog (lsWARNING, RippleCalc)
-                    << "calcNodeAdvance: unreachable: ran out of offers";
+                    << "nodeAdvance: unreachable: ran out of offers";
                 return rippleCalc.mOpenLedger ? telFAILED_PROCESSING :
                     tecFAILED_PROCESSING;
                 // TEMPORARY
@@ -242,7 +243,7 @@ TER calcNodeAdvance (
                     uOfrOwnerID, node.uCurrencyID, node.uIssuerID);
 
                 WriteLog (lsTRACE, RippleCalc)
-                    << "calcNodeAdvance: uOfrOwnerID="
+                    << "nodeAdvance: uOfrOwnerID="
                     << RippleAddress::createHumanAccountID (uOfrOwnerID)
                     << " saTakerPays=" << saTakerPays
                     << " saTakerGets=" << saTakerGets
@@ -254,7 +255,7 @@ TER calcNodeAdvance (
                 {
                     // Offer is expired.
                     WriteLog (lsTRACE, RippleCalc)
-                        << "calcNodeAdvance: expired offer";
+                        << "nodeAdvance: expired offer";
                     rippleCalc.mUnfundedOffers.insert(uOfferIndex);
                     continue;
                 }
@@ -267,7 +268,7 @@ TER calcNodeAdvance (
                     {
                         // Past internal error, offer had bad amounts.
                         WriteLog (lsWARNING, RippleCalc)
-                            << "calcNodeAdvance: PAST INTERNAL ERROR:"
+                            << "nodeAdvance: PAST INTERNAL ERROR:"
                             << " OFFER NON-POSITIVE:"
                             << " saTakerPays=" << saTakerPays
                             << " saTakerGets=%s" << saTakerGets;
@@ -282,7 +283,7 @@ TER calcNodeAdvance (
                         // this in mUnfundedOffers.
                         // Just skip it. It will be deleted.
                         WriteLog (lsDEBUG, RippleCalc)
-                            << "calcNodeAdvance: PAST INTERNAL ERROR:"
+                            << "nodeAdvance: PAST INTERNAL ERROR:"
                             << " OFFER NON-POSITIVE:"
                             << " saTakerPays=" << saTakerPays
                             << " saTakerGets=" << saTakerGets;
@@ -293,14 +294,14 @@ TER calcNodeAdvance (
                         // Reverse should have previously put bad offer in list.
                         // An internal error previously left a bad offer.
                         WriteLog (lsWARNING, RippleCalc)
-                            << "calcNodeAdvance: INTERNAL ERROR:"
+                            << "nodeAdvance: INTERNAL ERROR:"
                             <<" OFFER NON-POSITIVE:"
                             << " saTakerPays=" << saTakerPays
                             << " saTakerGets=" << saTakerGets;
 
                         // Don't process at all, things are in an unexpected
                         // state for this transactions.
-                        errorCode = tefEXCEPTION;
+                        resultCode = tefEXCEPTION;
                     }
 
                     continue;
@@ -314,8 +315,8 @@ TER calcNodeAdvance (
                 // XXX Going forward could we fund something with a worse
                 // quality which was previously skipped? Might need to check
                 // quality.
-                auto itForward = pathState.umForward.find (asLine);
-                const bool bFoundForward = itForward != pathState.umForward.end ();
+                auto itForward = pathState.forward().find (asLine);
+                const bool bFoundForward = itForward != pathState.forward().end ();
 
                 // Only allow a source to be used once, in the first node
                 // encountered from initial path scan.  This prevents
@@ -328,15 +329,15 @@ TER calcNodeAdvance (
                     // Temporarily unfunded. Another node uses this source,
                     // ignore in this offer.
                     WriteLog (lsTRACE, RippleCalc)
-                        << "calcNodeAdvance: temporarily unfunded offer"
+                        << "nodeAdvance: temporarily unfunded offer"
                         << " (forward)";
                     continue;
                 }
 
                 // This is overly strict. For contributions to past. We should
                 // only count source if actually used.
-                auto itReverse = pathState.umReverse.find (asLine);
-                bool bFoundReverse = itReverse != pathState.umReverse.end ();
+                auto itReverse = pathState.reverse().find (asLine);
+                bool bFoundReverse = itReverse != pathState.reverse().end ();
 
                 // For this quality increment, only allow a source to be used
                 // from a single node, in the first node encountered from
@@ -348,7 +349,7 @@ TER calcNodeAdvance (
                     // Temporarily unfunded. Another node uses this source,
                     // ignore in this offer.
                     WriteLog (lsTRACE, RippleCalc)
-                        << "calcNodeAdvance: temporarily unfunded offer"
+                        << "nodeAdvance: temporarily unfunded offer"
                         <<" (reverse)";
                     continue;
                 }
@@ -367,7 +368,7 @@ TER calcNodeAdvance (
                 {
                     // Offer is unfunded.
                     WriteLog (lsTRACE, RippleCalc)
-                        << "calcNodeAdvance: unfunded offer";
+                        << "nodeAdvance: unfunded offer";
 
                     if (bReverse && !bFoundReverse && !bFoundPast)
                     {
@@ -393,14 +394,14 @@ TER calcNodeAdvance (
                 {
                     // Consider source mentioned by current path state.
                     WriteLog (lsTRACE, RippleCalc)
-                        << "calcNodeAdvance: remember="
+                        << "nodeAdvance: remember="
                         <<  RippleAddress::createHumanAccountID (uOfrOwnerID)
                         << "/"
                         << STAmount::createHumanCurrency (node.uCurrencyID)
                         << "/"
                         << RippleAddress::createHumanAccountID (node.uIssuerID);
 
-                    pathState.umReverse.insert (std::make_pair (asLine, nodeIndex));
+                    pathState.reverse().insert (std::make_pair (asLine, nodeIndex));
                 }
 
                 bFundsDirty     = false;
@@ -408,20 +409,21 @@ TER calcNodeAdvance (
             }
         }
     }
-    while (errorCode == tesSUCCESS && (bEntryAdvance || bDirectAdvance));
+    while (resultCode == tesSUCCESS && (bEntryAdvance || bDirectAdvance));
 
-    if (errorCode == tesSUCCESS)
+    if (resultCode == tesSUCCESS)
     {
         WriteLog (lsTRACE, RippleCalc)
-            << "calcNodeAdvance: uOfferIndex=" << uOfferIndex;
+            << "nodeAdvance: uOfferIndex=" << uOfferIndex;
     }
     else
     {
         WriteLog (lsDEBUG, RippleCalc)
-            << "calcNodeAdvance: errorCode=" << transToken (errorCode);
+            << "nodeAdvance: resultCode=" << transToken (resultCode);
     }
 
-    return errorCode;
+    return resultCode;
 }
 
+}  // path
 }  // ripple
