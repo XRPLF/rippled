@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/module/rpc/impl/TransactionSign.h>
+#include <beast/unit_test.h>
 
 namespace ripple {
 

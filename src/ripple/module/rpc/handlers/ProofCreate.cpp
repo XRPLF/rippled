@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
+#include <ripple/module/app/misc/ProofOfWorkFactory.h>
 
 namespace ripple {
-
 
 // {
 //   // if either of these parameters is set, a custom generator is used
