@@ -54,8 +54,8 @@
 #include <ripple/module/rpc/handlers/LedgerCurrent.cpp>
 #include <ripple/module/rpc/handlers/LedgerData.cpp>
 #include <ripple/module/rpc/handlers/LedgerEntry.cpp>
-#include <ripple/module/rpc/handlers/LedgerGet.cpp>
 #include <ripple/module/rpc/handlers/LedgerHeader.cpp>
+#include <ripple/module/rpc/handlers/LedgerRequest.cpp>
 #include <ripple/module/rpc/handlers/LogLevel.cpp>
 #include <ripple/module/rpc/handlers/LogRotate.cpp>
 #include <ripple/module/rpc/handlers/NicknameInfo.cpp>

@@ -88,7 +88,7 @@ void printHelp (const po::options_description& desc)
            "     ledger_accept\n"
            "     ledger_closed\n"
            "     ledger_current\n"
-           "     ledger_get <ledger>\n"
+           "     ledger_request <ledger>\n"
            "     ledger_header <ledger>\n"
            "     logrotate \n"
            "     peers\n"

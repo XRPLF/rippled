@@ -24,7 +24,7 @@ namespace ripple {
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 // }
-Json::Value RPCHandler::doLedgerGet (
+Json::Value RPCHandler::doLedgerRequest (
     Json::Value params,
     Resource::Charge&,
     Application::ScopedLockType& masterLockHolder)
