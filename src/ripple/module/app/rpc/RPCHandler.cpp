@@ -17,8 +17,6 @@
 */
 //==============================================================================
 
-#include <ripple/module/rpc/impl/Handlers.cpp>
-
 namespace ripple {
 
 //

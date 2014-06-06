@@ -43,15 +43,12 @@ Json::Value RPCHandler::doLedgerGet (
             "Exactly one of ledger_hash and ledger_index can be set.");
     }
 
-    if (hasHas)
+    if (hasHash)
     {
         auto const& jsonHash = params[jss::ledger_hash];
         if (!jsonHash.isString() || !ledgerHash.SetHex (jsonHash.asString ()))
             return RPC::invalid_field_message ("ledger_hash");
-    }
-    else
-    {
-
+    } else {
         auto const& jsonIndex = params[jss::ledger_index];
         if (!jsonIndex.isNumeric ())
             return RPC::invalid_field_message ("ledger_index");
@@ -69,7 +66,7 @@ Json::Value RPCHandler::doLedgerGet (
         // Try to get the hash of the desired ledger from the validated ledger
         ledgerHash = ledger->getLedgerHash (ledgerIndex);
 
-        if (ledgerHash.isZero ())
+        if (ledgerHash == zero)
         {
             // Find a ledger more likely to have the hash of the desired ledger
             auto refIndex = (ledgerIndex + 255) & (~255);
@@ -79,8 +76,8 @@ Json::Value RPCHandler::doLedgerGet (
             ledger = ledgerMaster.getLedgerByHash (refHash);
             if (!ledger)
             {
-                // We don't have the ledger we need to figure out whihc
-                // ledger they want. Try to get it.
+                // We don't have the ledger we need to figure out which ledger
+                // they want. Try to get it.
                 getApp().getInboundLedgers().findCreate (
                     refHash, refIndex, InboundLedger::fcGENERIC);
 
@@ -92,7 +89,6 @@ Json::Value RPCHandler::doLedgerGet (
             ledgerHash = ledger->getLedgerHash (ledgerIndex);
             assert (ledgerHash.isNonZero ());
         }
-
     }
 
     auto ledger = ledgerMaster.getLedgerByHash (ledgerHash);
@@ -111,7 +107,6 @@ Json::Value RPCHandler::doLedgerGet (
             ledgerHash, 0, InboundLedger::fcGENERIC);
         return il->getJson (0);
     }
-
 }
 
 } // ripple
