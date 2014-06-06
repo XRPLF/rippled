@@ -3207,12 +3207,12 @@
     <CustomBuild Include="..\..\src\ripple\proto\ripple.proto">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='debug|x64'">protoc --cpp_out=..\..\build\proto --proto_path=%(RelativeDir) %(Identity)</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\build\proto\ripple.pb.h;..\..\build\proto\ripple.pb.cc.</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\build\proto\ripple.pb.h;..\..\build\proto\ripple.pb.cc</Outputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='debug|x64'">protoc --cpp_out=..\..\build\proto --proto_path=%(RelativeDir) %(Identity)</Message>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='debug|x64'">false</LinkObjects>
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='release|x64'">protoc --cpp_out=..\..\build\proto --proto_path=%(RelativeDir) %(Identity)</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\build\proto\ripple.pb.h;..\..\build\proto\ripple.pb.cc.</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\build\proto\ripple.pb.h;..\..\build\proto\ripple.pb.cc</Outputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='release|x64'">protoc --cpp_out=..\..\build\proto --proto_path=%(RelativeDir) %(Identity)</Message>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='release|x64'">false</LinkObjects>
     </CustomBuild>
