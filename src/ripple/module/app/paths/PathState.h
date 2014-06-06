@@ -20,109 +20,33 @@
 #ifndef RIPPLE_PATHSTATE_H
 #define RIPPLE_PATHSTATE_H
 
+#include <ripple/module/app/paths/Node.h>
+#include <ripple/module/app/paths/Types.h>
+
 namespace ripple {
-
-// account id, currency id, issuer id :: node
-typedef std::tuple <uint160, uint160, uint160> AccountCurrencyIssuer;
-
-// Map of currency, issuer to node index.
-typedef ripple::unordered_map <AccountCurrencyIssuer, unsigned int>
-AccountCurrencyIssuerToNodeIndex;
-
-extern std::size_t hash_value (const AccountCurrencyIssuer& asValue);
 
 // Holds a path state under incremental application.
 class PathState : public CountedObject <PathState>
 {
-public:
+  public:
+    typedef std::vector<uint256> OfferIndexList;
+    typedef std::vector<std::shared_ptr<PathState>> List;
 
-    static char const* getCountedObjectName () { return "PathState"; }
-
-    class Node
-    {
-    public:
-        bool operator == (Node const& pnOther) const;
-
-        Json::Value                     getJson () const;
-
-    public:
-        std::uint16_t                   uFlags;             // --> From path.
-
-        uint160                         uAccountID;         // --> Accounts: Recieving/sending account.
-        uint160                         uCurrencyID;        // --> Accounts: Receive and send, Offers: send.
-        // --- For offer's next has currency out.
-        uint160                         uIssuerID;          // --> Currency's issuer
-
-        STAmount                        saTransferRate;     // Transfer rate for uIssuerID.
-
-        // Computed by Reverse.
-        STAmount                        saRevRedeem;        // <-- Amount to redeem to next.
-        STAmount                        saRevIssue;         // <-- Amount to issue to next limited by credit and outstanding IOUs.
-        //     Issue isn't used by offers.
-        STAmount                        saRevDeliver;       // <-- Amount to deliver to next regardless of fee.
-
-        // Computed by forward.
-        STAmount                        saFwdRedeem;        // <-- Amount node will redeem to next.
-        STAmount                        saFwdIssue;         // <-- Amount node will issue to next.
-        //     Issue isn't used by offers.
-        STAmount                        saFwdDeliver;       // <-- Amount to deliver to next regardless of fee.
-
-        // For offers:
-
-        STAmount                        saRateMax;
-
-        // Directory
-        uint256                         uDirectTip;         // Current directory.
-        uint256                         uDirectEnd;         // Next order book.
-        bool                            bDirectAdvance;     // Need to advance directory.
-        bool                            bDirectRestart;     // Need to restart directory.
-        SLE::pointer                    sleDirectDir;
-        STAmount                        saOfrRate;          // For correct ratio.
-
-        // PaymentNode
-        bool                            bEntryAdvance;      // Need to advance entry.
-        unsigned int                    uEntry;
-        uint256                         uOfferIndex;
-        SLE::pointer                    sleOffer;
-        uint160                         uOfrOwnerID;
-        bool                            bFundsDirty;        // Need to refresh saOfferFunds, saTakerPays, & saTakerGets.
-        STAmount                        saOfferFunds;
-        STAmount                        saTakerPays;
-        STAmount                        saTakerGets;
-
-    };
-
-    typedef std::shared_ptr<PathState>        pointer;
-    typedef const std::shared_ptr<PathState>& ref;
-
-    PathState*  setIndex (const int iIndex)
-    {
-        mIndex  = iIndex;
-
-        return this;
-    }
-
-    int getIndex ()
-    {
-        return mIndex;
-    };
-
-    PathState (
-        const STAmount&         saSend,
-        const STAmount&         saSendMax)
+    PathState (const STAmount& saSend, const STAmount& saSendMax)
         : saInReq (saSendMax)
         , saOutReq (saSend)
-        , bConsumed (false)
+        , allLiquidityConsumed_ (false)
     {
     }
 
-    PathState (const PathState& psSrc,
-               bool bUnused)
+    PathState (const PathState& psSrc, bool bUnused)
         : saInReq (psSrc.saInReq)
         , saOutReq (psSrc.saOutReq)
-        , bConsumed (false)
+        , allLiquidityConsumed_ (false)
     {
     }
+
+    void clear();
 
     void setExpanded (
         const LedgerEntrySet&   lesSource,
@@ -131,23 +55,53 @@ public:
         const uint160&          uSenderID
     );
 
-    void checkNoRipple (uint160 const& destinationAccountID, uint160 const& sourceAccountID);
-    void checkNoRipple (uint160 const&, uint160 const&, uint160 const&, uint160 const&);
+    path::Node::List& nodes() { return nodes_; }
 
-    void setCanonical (const PathState& psExpanded);
+    STAmount& inPass() { return saInPass; }
+    STAmount& outPass() { return saOutPass; }
+    const STAmount& outReq() const { return saOutReq; }
 
+    STAmount& inAct() { return saInAct; }
+    STAmount& outAct() { return saOutAct; }
+    const STAmount& inReq() const { return saInReq; }
+
+    AccountCurrencyIssuerToNodeIndex& forward() { return umForward; }
+    AccountCurrencyIssuerToNodeIndex& reverse() { return umReverse; }
     Json::Value getJson () const;
 
+    static char const* getCountedObjectName () { return "PathState"; }
+    OfferIndexList& becameUnfunded() { return vUnfundedBecame; }
+
+    void setStatus(TER status) { terStatus = status; }
+    TER status() const { return terStatus; }
+
+    std::uint64_t quality() const { return uQuality; }
+    void setQuality (std::uint64_t q) { uQuality = q; }
+
+    bool allLiquidityConsumed() const { return allLiquidityConsumed_; }
+    void consumeAllLiqudity () { allLiquidityConsumed_ = true; }
+
+    void setIndex (int i) { mIndex  = i; }
+    int index() const { return mIndex; }
+
+    void checkNoRipple (uint160 const& destinationAccountID,
+                        uint160 const& sourceAccountID);
     static bool lessPriority (PathState& lhs, PathState& rhs);
 
-    TER                  terStatus;
-    std::vector<Node>    vpnNodes;
+    LedgerEntrySet& ledgerEntries() { return lesEntries; }
+
+  private:
+    void checkNoRipple (uint160 const&, uint160 const&, uint160 const&, uint160 const&);
+
+    TER terStatus;
+    path::Node::List nodes_;
 
     // When processing, don't want to complicate directory walking with deletion.
-    std::vector<uint256>        vUnfundedBecame;    // Offers that became unfunded or were completely consumed.
+    // Offers that became unfunded or were completely consumed.
+    OfferIndexList        vUnfundedBecame;
 
-    // First time scanning foward, as part of path contruction, a funding source was mentioned for accounts. Source may only be
-    // used there.
+    // First time scanning foward, as part of path construction, a funding
+    // source was mentioned for accounts. Source may only be used there.
     AccountCurrencyIssuerToNodeIndex umForward;
 
     // First time working in reverse a funding source was used.
@@ -164,11 +118,17 @@ public:
     const STAmount&             saOutReq;           // --> Amount to send.
     STAmount                    saOutAct;           // --> Amount actually sent so far.
     STAmount                    saOutPass;          // <-- Amount actually sent.
-    bool                        bConsumed;          // If true, use consumes full liquidity. False, may or may not.
 
-private:
-    TER pushNode (const int iType, const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID);
-    TER pushImply (const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID);
+    // If true, all liquidity on this path has been consumed.
+    bool allLiquidityConsumed_;
+
+    TER pushNode (
+        const int iType, const uint160& uAccountID, const uint160& uCurrencyID,
+        const uint160& uIssuerID);
+
+    TER pushImply (
+        const uint160& uAccountID, const uint160& uCurrencyID,
+        const uint160& uIssuerID);
 };
 
 } // ripple

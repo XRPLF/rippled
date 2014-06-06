@@ -17,36 +17,13 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RIPPLECALC_H
-#define RIPPLE_RIPPLECALC_H
+#ifndef RIPPLE_QUALITY_CONSTRAINT_H
+#define RIPPLE_QUALITY_CONSTRAINT_H
 
 namespace ripple {
 namespace path {
 
-/** Calculate the quality of a payment path.
-
-    The quality is a synonym for price. Specifically, the amount of
-    input required to produce a given output along a specified path.
-*/
-
-TER rippleCalculate (
-    LedgerEntrySet&                   lesActive,
-    STAmount&                         saMaxAmountAct,
-    STAmount&                         saDstAmountAct,
-    PathState::List&                  pathStateList,
-    const STAmount&                   saDstAmountReq,
-    const STAmount&                   saMaxAmountReq,
-    const uint160&                    uDstAccountID,
-    const uint160&                    uSrcAccountID,
-    const STPathSet&                  spsPaths,
-    const bool                        bPartialPayment,
-    const bool                        bLimitQuality,
-    const bool                        bNoRippleDirect,
-    // --> True, not to affect accounts.
-    const bool                        bStandAlone,
-    // --> What kind of errors to return.
-    const bool                        bOpenLedger = true
-);
+enum class QualityConstraint { SAME_OR_BETTER, UNCONSTRAINED };
 
 } // path
 } // ripple

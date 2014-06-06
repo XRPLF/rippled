@@ -2233,6 +2233,11 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\app\paths\Calculators.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\Node.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\module\app\paths\Node.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\paths\PathNext.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2256,6 +2261,8 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\app\paths\Pathfinder.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\module\app\paths\QualityConstraint.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\paths\RippleCalc.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2272,6 +2279,8 @@
     <ClInclude Include="..\..\src\ripple\module\app\paths\RippleState.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\app\paths\Tuning.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\module\app\paths\Types.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\app\peers\ClusterNodeStatus.h">
     </ClInclude>
@@ -2932,6 +2941,9 @@
     <ClCompile Include="..\..\src\ripple\module\rpc\handlers\LedgerHeader.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\module\rpc\handlers\LedgerRequest.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\module\rpc\handlers\LogLevel.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -3068,9 +3080,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\rpc\impl\GetMasterGenerator.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\rpc\impl\Handlers.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\module\rpc\impl\LegacyPathFind.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>

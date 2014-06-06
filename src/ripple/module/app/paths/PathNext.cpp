@@ -23,6 +23,7 @@
 #include <ripple/module/app/paths/Tuning.h>
 
 namespace ripple {
+namespace path {
 
 // Calculate the next increment of a path.
 //
@@ -38,28 +39,19 @@ void pathNext (
 {
     // The next state is what is available in preference order.
     // This is calculated when referenced accounts changed.
-    const unsigned int  lastNodeIndex           = pathState.vpnNodes.size () - 1;
-    pathState.bConsumed   = false;
-
-    // YYY This clearing should only be needed for nice logging.
-    pathState.saInPass = STAmount (
-        pathState.saInReq.getCurrency (), pathState.saInReq.getIssuer ());
-    pathState.saOutPass = STAmount (
-        pathState.saOutReq.getCurrency (), pathState.saOutReq.getIssuer ());
-
-    pathState.vUnfundedBecame.clear ();
-    pathState.umReverse.clear ();
+    const unsigned int  lastNodeIndex = pathState.nodes().size () - 1;
+    pathState.clear();
 
     WriteLog (lsTRACE, RippleCalc)
         << "pathNext: Path In: " << pathState.getJson ();
 
-    assert (pathState.vpnNodes.size () >= 2);
+    assert (pathState.nodes().size () >= 2);
 
     lesCurrent  = lesCheckpoint.duplicate ();  // Restore from checkpoint.
 
-    for (unsigned int uIndex = pathState.vpnNodes.size (); uIndex--;)
+    for (unsigned int uIndex = pathState.nodes().size (); uIndex--;)
     {
-        auto& node   = pathState.vpnNodes[uIndex];
+        auto& node   = pathState.nodes()[uIndex];
 
         node.saRevRedeem.clear ();
         node.saRevIssue.clear ();
@@ -67,40 +59,41 @@ void pathNext (
         node.saFwdDeliver.clear ();
     }
 
-    pathState.terStatus = calcNodeRev (rippleCalc, lastNodeIndex, pathState, bMultiQuality);
+    pathState.setStatus(nodeRev (rippleCalc, lastNodeIndex, pathState, bMultiQuality));
 
     WriteLog (lsTRACE, RippleCalc)
         << "pathNext: Path after reverse: " << pathState.getJson ();
 
-    if (tesSUCCESS == pathState.terStatus)
+    if (tesSUCCESS == pathState.status())
     {
         // Do forward.
         lesCurrent = lesCheckpoint.duplicate ();   // Restore from checkpoint.
 
-        pathState.terStatus = calcNodeFwd (rippleCalc, 0, pathState, bMultiQuality);
+        pathState.setStatus(nodeFwd (rippleCalc, 0, pathState, bMultiQuality));
     }
 
-    if (tesSUCCESS == pathState.terStatus)
+    if (tesSUCCESS == pathState.status())
     {
-        CondLog (!pathState.saInPass || !pathState.saOutPass, lsDEBUG, RippleCalc)
-            << "pathNext: Error calcNodeFwd reported success for nothing:"
-            << " saOutPass=" << pathState.saOutPass
-            << " saInPass=" << pathState.saInPass;
+        CondLog (!pathState.inPass() || !pathState.outPass(), lsDEBUG, RippleCalc)
+            << "pathNext: Error nodeFwd reported success for nothing:"
+            << " saOutPass=" << pathState.outPass()
+            << " inPass()=" << pathState.inPass();
 
-        if (!pathState.saOutPass || !pathState.saInPass)
+        if (!pathState.outPass() || !pathState.inPass())
             throw std::runtime_error ("Made no progress.");
 
         // Calculate relative quality.
-        pathState.uQuality = STAmount::getRate (
-            pathState.saOutPass, pathState.saInPass);
+        pathState.setQuality(STAmount::getRate (
+            pathState.outPass(), pathState.inPass()));
 
         WriteLog (lsTRACE, RippleCalc)
             << "pathNext: Path after forward: " << pathState.getJson ();
     }
     else
     {
-        pathState.uQuality    = 0;
+        pathState.setQuality(0);
     }
 }
 
+} // path
 } // ripple

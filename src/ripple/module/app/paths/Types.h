@@ -17,49 +17,26 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CALCSTATE_H
-#define RIPPLE_CALCSTATE_H
+#ifndef RIPPLE_TYPES_H
+#define RIPPLE_TYPES_H
 
 namespace ripple {
 
-typedef TER ErrorCode;
+// account id, currency id, issuer id.
+typedef std::tuple <uint160, uint160, uint160> AccountCurrencyIssuer;
 
-class CalcState
+std::size_t hash_value (const AccountCurrencyIssuer& asValue);
+
+// Map of account, currency, issuer to node index.
+typedef ripple::unordered_map <AccountCurrencyIssuer, unsigned int>
+AccountCurrencyIssuerToNodeIndex;
+
+/** Returns a copy of an STAmount with the same currency and issuer but the
+    amount set to zero. */
+inline STAmount zeroed(const STAmount& a)
 {
-  public:
-    CalcState(
-        unsigned int nodeIndex, PathState& state, LedgerEntrySet& ledger, bool quality)
-            : nodeIndex_(nodeIndex),
-              pathState_(state),
-              ledger_(ledger),
-              quality_(quality)
-    {}
-
-    enum Direction { BACKWARD, FORWARD };
-    TER calc(Direction);
-    TER calcAccount(Direction);
-    TER calcOffer(Direction);
-    TER calcDeliver(Direction);
-    TER calcAdvance(Direction);
-    void nextPath(LedgerEntrySet const& checkpoint) const;
-
-  private:
-    LedgerEntrySet& ledger()
-    {
-        return ledger_;
-    }
-
-    bool quality() const
-    {
-        return quality_;
-    }
-
-  private:
-    unsigned int const nodeIndex_;
-    PathState& pathState_;
-    LedgerEntrySet& ledger_;
-    bool const quality_;
-};
+    return STAmount(a.getCurrency(), a.getIssuer());
+}
 
 } // ripple
 

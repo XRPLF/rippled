@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <tuple>
+#include <boost/log/trivial.hpp>
 
 #include <ripple/module/app/paths/Calculators.h>
 
@@ -417,34 +418,34 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
         STPath extraPath;
         if (valid && pf.findPaths (iLevel, 4, spsPaths, extraPath))
         {
-            LedgerEntrySet                      lesSandbox (cache->getLedger (), tapNONE);
-            std::vector<PathState::pointer>     vpsExpanded;
-            STAmount                            saMaxAmountAct;
-            STAmount                            saDstAmountAct;
-            STAmount                            saMaxAmount (currIssuer.first,
+            LedgerEntrySet lesSandbox (cache->getLedger (), tapNONE);
+            PathState::List pathStateList;
+            STAmount saMaxAmountAct;
+            STAmount saDstAmountAct;
+            STAmount saMaxAmount (currIssuer.first,
                     currIssuer.second.isNonZero () ? currIssuer.second :
                     (currIssuer.first.isZero () ? ACCOUNT_XRP : raSrcAccount.getAccountID ()), 1);
             saMaxAmount.negate ();
             m_journal.debug << iIdentifier << " Paths found, calling rippleCalc";
-            TER errorCode = rippleCalculate (lesSandbox, saMaxAmountAct, saDstAmountAct,
-                                                    vpsExpanded, saMaxAmount, saDstAmount,
+            TER resultCode = path::rippleCalculate (lesSandbox, saMaxAmountAct, saDstAmountAct,
+                                                    pathStateList, saMaxAmount, saDstAmount,
                                                     raDstAccount.getAccountID (), raSrcAccount.getAccountID (),
                                                     spsPaths, false, false, false, true);
 
 
-            if ((extraPath.size() > 0) && ((errorCode == terNO_LINE) || (errorCode == tecPATH_PARTIAL)))
+            if ((extraPath.size() > 0) && ((resultCode == terNO_LINE) || (resultCode == tecPATH_PARTIAL)))
             {
                 m_journal.debug << iIdentifier << " Trying with an extra path element";
                 spsPaths.addPath(extraPath);
-                vpsExpanded.clear ();
-                errorCode = rippleCalculate (lesSandbox, saMaxAmountAct, saDstAmountAct,
-                                                    vpsExpanded, saMaxAmount, saDstAmount,
+                pathStateList.clear ();
+                resultCode = path::rippleCalculate (lesSandbox, saMaxAmountAct, saDstAmountAct,
+                                                    pathStateList, saMaxAmount, saDstAmount,
                                                     raDstAccount.getAccountID (), raSrcAccount.getAccountID (),
                                                     spsPaths, false, false, false, true);
-                m_journal.debug << iIdentifier << " Extra path element gives " << transHuman (errorCode);
+                m_journal.debug << iIdentifier << " Extra path element gives " << transHuman (resultCode);
             }
 
-            if (errorCode == tesSUCCESS)
+            if (resultCode == tesSUCCESS)
             {
                 Json::Value jvEntry (Json::objectValue);
                 jvEntry["source_amount"]    = saMaxAmountAct.getJson (0);
@@ -454,7 +455,7 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
             }
             else
             {
-                m_journal.debug << iIdentifier << " rippleCalc returns " << transHuman (errorCode);
+                m_journal.debug << iIdentifier << " rippleCalc returns " << transHuman (resultCode);
             }
         }
         else
