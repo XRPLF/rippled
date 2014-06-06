@@ -89,6 +89,14 @@ public:
         return 0;
     }
 
+    template <class Hasher>
+    friend
+    void
+    hash_append(Hasher& hasher, CBase58Data const& value)
+    {
+        beast::hash_append(hasher, value.vchData);
+    }
+
     friend std::size_t hash_value (const CBase58Data& b58);
 };
 
