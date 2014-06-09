@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "../../BeastConfig.h"
+#include <BeastConfig.h>
 
 #include <ripple/unity/app.h>
 #include <ripple/unity/net.h>

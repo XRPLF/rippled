@@ -19,7 +19,7 @@
 
 // Unity build file for LevelDB
 
-#include "../../BeastConfig.h"
+#include <BeastConfig.h>
 
 #include <ripple/unity/leveldb.h>
 

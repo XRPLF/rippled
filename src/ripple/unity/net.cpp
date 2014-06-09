@@ -26,7 +26,7 @@
 #undef DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER
 #define DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER /**/
 
-#include "../../BeastConfig.h"
+#include <BeastConfig.h>
 
 #include <beast/module/core/system/BeforeBoost.h>
 #include <boost/version.hpp>

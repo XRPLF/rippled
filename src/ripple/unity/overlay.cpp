@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "../../BeastConfig.h"
+#include <BeastConfig.h>
 
 #include <ripple/module/overlay/impl/Message.cpp>
 #include <ripple/module/overlay/impl/OverlayImpl.cpp>

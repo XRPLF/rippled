@@ -19,7 +19,7 @@
 
 // Unity build file for HyperLevelDB
 
-#include "../../BeastConfig.h"
+#include <BeastConfig.h>
 
 #include <ripple/unity/hyperleveldb.h>
 
