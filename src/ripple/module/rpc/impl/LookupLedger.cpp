@@ -171,7 +171,7 @@ Json::Value lookupLedger (
         try
         {
             // Use the skip list in the last validated ledger to see if ledger
-            // comes after the last validated ledger (and thus has been
+            // comes before the last validated ledger (and thus has been
             // validated).
             auto next = getApp().getLedgerMaster ().walkHashBySeq (ledgerIndex);
             if (ledgerHash == next)
