@@ -46,6 +46,7 @@ Json::Value lookupLedger (
     NetworkOPs& netOps)
 {
     using RPC::make_error;
+    ledger.reset();
 
     auto jsonHash = params.get (jss::ledger_hash, Json::Value ("0"));
     auto jsonIndex = params.get (jss::ledger_index, Json::Value ("current"));
@@ -110,32 +111,31 @@ Json::Value lookupLedger (
     }
 
     int ledgerRequest = 0;
-    switch (ledgerIndex)
-    {
-    case LEDGER_CURRENT:
-        ledger = netOps.getCurrentLedger ();
-        ledgerIndex = ledger->getLedgerSeq ();
-        assert (ledger->isImmutable () && !ledger->isClosed ());
-        ledgerRequest = LEDGER_CURRENT;
-        break;
 
-    case LEDGER_CLOSED:
-        ledger = getApp().getLedgerMaster ().getClosedLedger ();
-        ledgerIndex = ledger->getLedgerSeq ();
-        assert (ledger->isImmutable () && ledger->isClosed ());
-        ledgerRequest = LEDGER_CLOSED;
-        break;
+    if (ledgerIndex <= 0) {
+        switch (ledgerIndex)
+        {
+        case LEDGER_CURRENT:
+            ledger = netOps.getCurrentLedger ();
+            break;
 
-    case LEDGER_VALIDATED:
-        ledger = netOps.getValidatedLedger ();
+        case LEDGER_CLOSED:
+            ledger = getApp().getLedgerMaster ().getClosedLedger ();
+            break;
+
+        case LEDGER_VALIDATED:
+            ledger = netOps.getValidatedLedger ();
+            break;
+
+        default:
+            return make_error(rpcINVALID_PARAMS, "ledgerIndexMalformed");
+        }
+
+        assert (ledger->isImmutable());
+        assert (ledger->isClosed() == (ledgerIndex != LEDGER_CURRENT));
+        ledgerRequest = ledgerIndex;
         ledgerIndex = ledger->getLedgerSeq ();
-        assert (ledger->isImmutable () && ledger->isClosed ());
-        ledgerRequest = LEDGER_VALIDATED;
-        break;
     }
-
-    if (ledgerIndex <= 0)
-        return make_error(rpcINVALID_PARAMS, "ledgerIndexMalformed");
 
     if (!ledger)
     {
@@ -165,11 +165,6 @@ Json::Value lookupLedger (
     else if (!ledger->isClosed ())
     {
         jsonResult[jss::validated] = false;
-    }
-    else if (ledgerRequest == LEDGER_VALIDATED)
-    {
-        ledger->setValidated();
-        jsonResult[jss::validated] = true;
     }
     else
     {
