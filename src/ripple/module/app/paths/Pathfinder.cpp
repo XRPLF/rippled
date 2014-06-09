@@ -912,7 +912,7 @@ void Pathfinder::initPathTable()
         list.push_back(CostedPath_t(4, makePath("safd")));              // source -> gateway -> book -> destination
         list.push_back(CostedPath_t(4, makePath("sfad")));
         list.push_back(CostedPath_t(5, makePath("saad")));
-        list.push_back(CostedPath_t(5, makePath("sxfd")));
+        list.push_back(CostedPath_t(5, makePath("sbfd")));
         list.push_back(CostedPath_t(6, makePath("sxfad")));
         list.push_back(CostedPath_t(6, makePath("safad")));
         list.push_back(CostedPath_t(6, makePath("saxfd")));             // source -> gateway -> book to XRP -> book -> destination
@@ -930,6 +930,7 @@ void Pathfinder::initPathTable()
         list.push_back(CostedPath_t(5, makePath("saxfd")));
         list.push_back(CostedPath_t(5, makePath("sxfad")));
         list.push_back(CostedPath_t(6, makePath("saxfad")));
+        list.push_back(CostedPath_t(6, makePath("sbfd")));
         list.push_back(CostedPath_t(7, makePath("saafd")));
         list.push_back(CostedPath_t(8, makePath("saafad")));
         list.push_back(CostedPath_t(9, makePath("safaad")));
