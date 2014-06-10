@@ -239,23 +239,25 @@ public:
     void gotStaleData (std::shared_ptr<protocol::TMLedgerData> packet_ptr)
     {
         const uint256 uZero;
+        Serializer s;
         try
         {
             for (int i = 0; i < packet_ptr->nodes ().size (); ++i)
             {
-                const protocol::TMLedgerNode& node = packet_ptr->nodes (i);
+                auto const& node = packet_ptr->nodes (i);
 
                 if (!node.has_nodeid () || !node.has_nodedata ())
                     return;
 
-                Serializer s;
                 SHAMapTreeNode newNode(
                     SHAMapNode (node.nodeid().data(), node.nodeid().size()),
                     Blob (node.nodedata().begin(), node.nodedata().end()),
                     0, snfWIRE, uZero, false);
+
+                s.erase();
                 newNode.addRaw(s, snfPREFIX);
 
-                std::shared_ptr<Blob> blob = std::make_shared<Blob> (s.begin(), s.end());
+                auto blob = std::make_shared<Blob> (s.begin(), s.end());
 
                 getApp().getOPs().addFetchPack (newNode.getNodeHash(), blob);
             }
