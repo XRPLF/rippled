@@ -150,7 +150,7 @@ public:
         SetHex (str);
     }
 
-    base_uint (base_uint<Bits, Tag> const& other) = default;
+    base_uint (base_uint const& other) = default;
 
     template <
         class OtherTag,
