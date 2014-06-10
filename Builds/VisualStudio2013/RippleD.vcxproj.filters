@@ -433,15 +433,6 @@
     <Filter Include="ripple\module\net\rpc">
       <UniqueIdentifier>{643F2F19-8319-49F7-7DF1-4BF4F52BF4BF}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ripple\module\overlay">
-      <UniqueIdentifier>{AE687926-F53E-728F-2D48-A1DEC283E86E}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ripple\module\overlay\api">
-      <UniqueIdentifier>{909364A1-443C-393A-3505-D36E048D7181}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ripple\module\overlay\impl">
-      <UniqueIdentifier>{C04BC25B-9F43-7B79-91FE-6C62B0E206EE}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ripple\module\rpc">
       <UniqueIdentifier>{4DB18141-EDCD-D13F-A8D3-407F5EF72217}</UniqueIdentifier>
     </Filter>
@@ -468,6 +459,12 @@
     </Filter>
     <Filter Include="ripple\nodestore\tests">
       <UniqueIdentifier>{3FDC73B9-A9C7-3533-FD40-E4032B9FA9FB}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ripple\overlay">
+      <UniqueIdentifier>{51E817F6-DC2E-045A-9009-37E3D16D0990}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ripple\overlay\impl">
+      <UniqueIdentifier>{07E4BC73-2B68-D0D1-D922-FEBBB573F503}</UniqueIdentifier>
     </Filter>
     <Filter Include="ripple\peerfinder">
       <UniqueIdentifier>{186385AD-A056-FA3A-7E0E-759EB55E9EAB}</UniqueIdentifier>
@@ -3858,39 +3855,6 @@
     <ClInclude Include="..\..\src\ripple\module\net\rpc\RPCUtil.h">
       <Filter>ripple\module\net\rpc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\overlay\api\Message.h">
-      <Filter>ripple\module\overlay\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\overlay\api\Overlay.h">
-      <Filter>ripple\module\overlay\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\overlay\api\Peer.h">
-      <Filter>ripple\module\overlay\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\overlay\api\make_Overlay.h">
-      <Filter>ripple\module\overlay\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\overlay\api\predicates.h">
-      <Filter>ripple\module\overlay\api</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\overlay\impl\Message.cpp">
-      <Filter>ripple\module\overlay\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\overlay\impl\OverlayImpl.cpp">
-      <Filter>ripple\module\overlay\impl</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\overlay\impl\OverlayImpl.h">
-      <Filter>ripple\module\overlay\impl</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\overlay\impl\PeerDoor.cpp">
-      <Filter>ripple\module\overlay\impl</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\overlay\impl\PeerDoor.h">
-      <Filter>ripple\module\overlay\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\overlay\impl\PeerImp.h">
-      <Filter>ripple\module\overlay\impl</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\rpc\ErrorCodes.h">
       <Filter>ripple\module\rpc</Filter>
     </ClInclude>
@@ -4293,6 +4257,63 @@
     <ClCompile Include="..\..\src\ripple\nodestore\tests\TimingTests.cpp">
       <Filter>ripple\nodestore\tests</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\overlay\Message.h">
+      <Filter>ripple\overlay</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\overlay\Overlay.h">
+      <Filter>ripple\overlay</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\overlay\Peer.h">
+      <Filter>ripple\overlay</Filter>
+    </ClInclude>
+    <None Include="..\..\src\ripple\overlay\README.md">
+      <Filter>ripple\overlay</Filter>
+    </None>
+    <ClCompile Include="..\..\src\ripple\overlay\impl\Message.cpp">
+      <Filter>ripple\overlay\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\overlay\impl\OverlayImpl.cpp">
+      <Filter>ripple\overlay\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\OverlayImpl.h">
+      <Filter>ripple\overlay\impl</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\overlay\impl\PeerDoor.cpp">
+      <Filter>ripple\overlay\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\PeerDoor.h">
+      <Filter>ripple\overlay\impl</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\overlay\impl\PeerImp.cpp">
+      <Filter>ripple\overlay\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\PeerImp.h">
+      <Filter>ripple\overlay\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\Tuning.h">
+      <Filter>ripple\overlay\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\abstract_protocol_handler.h">
+      <Filter>ripple\overlay\impl</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\overlay\impl\message_name.cpp">
+      <Filter>ripple\overlay\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\message_name.h">
+      <Filter>ripple\overlay\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\message_stream.h">
+      <Filter>ripple\overlay\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\peer_protocol_detector.h">
+      <Filter>ripple\overlay\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\overlay\make_Overlay.h">
+      <Filter>ripple\overlay</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\overlay\predicates.h">
+      <Filter>ripple\overlay</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\api\Callback.h">
       <Filter>ripple\peerfinder\api</Filter>
     </ClInclude>

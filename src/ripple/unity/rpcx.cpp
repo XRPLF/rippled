@@ -28,7 +28,9 @@
 
 #include <ripple/unity/rpcx.h>
 
-#include <ripple/module/overlay/api/Overlay.h>
+#include <ripple/module/rpc/RPCHandler.h>
+#include <ripple/overlay/Overlay.h>
+#include <tuple>
 
 #include <ripple/module/rpc/RPCHandler.h>
 #include <ripple/module/rpc/impl/ErrorCodes.cpp>

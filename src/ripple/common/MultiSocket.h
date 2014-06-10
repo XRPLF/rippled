@@ -23,8 +23,8 @@
 #include <beast/asio/abstract_socket.h>
 #include <beast/net/IPEndpoint.h>
 #include <beast/module/asio/protocol/HandshakeDetectLogicPROXY.h>
-
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/ssl/context.hpp>
 
 namespace ripple {
 

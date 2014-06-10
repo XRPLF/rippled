@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <ripple/basics/utility/Time.h>
+#include <ripple/overlay/predicates.h>
 #include <ripple/common/jsonrpc_fields.h>
-#include <ripple/module/overlay/api/predicates.h>
 #include <beast/module/core/thread/DeadlineTimer.h>
 #include <beast/module/core/system/SystemStats.h>
 #include <tuple>
@@ -3288,7 +3288,7 @@ void NetworkOPsImp::makeFetchPack (Job&, std::weak_ptr<Peer> wPeer,
 
         m_journal.info << "Built fetch pack with " << reply.objects ().size () << " nodes";
         Message::pointer msg = std::make_shared<Message> (reply, protocol::mtGET_OBJECTS);
-        peer->sendPacket (msg, false);
+        peer->send (msg);
     }
     catch (...)
     {

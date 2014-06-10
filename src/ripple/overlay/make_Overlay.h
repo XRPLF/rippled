@@ -20,7 +20,7 @@
 #ifndef RIPPLE_OVERLAY_MAKE_OVERLAY_H_INCLUDED
 #define RIPPLE_OVERLAY_MAKE_OVERLAY_H_INCLUDED
 
-#include <ripple/module/overlay/api/Overlay.h>
+#include <ripple/overlay/Overlay.h>
 
 #include <ripple/resource/api/Manager.h>
 #include <ripple/sitefiles/api/Manager.h>

@@ -20,8 +20,8 @@
 #ifndef RIPPLE_OVERLAY_PREDICATES_H_INCLUDED
 #define RIPPLE_OVERLAY_PREDICATES_H_INCLUDED
 
-#include <ripple/module/overlay/api/Message.h>
-#include <ripple/module/overlay/api/Peer.h>
+#include <ripple/overlay/Message.h>
+#include <ripple/overlay/Peer.h>
 
 #include <set>
 
@@ -40,7 +40,7 @@ struct send_always
 
     void operator()(Peer::ptr const& peer) const
     {
-        peer->sendPacket (msg, false);
+        peer->send (msg);
     }
 };
 
@@ -62,7 +62,7 @@ struct send_if_pred
     void operator()(Peer::ptr const& peer) const
     {
         if (predicate (peer))
-            peer->sendPacket (msg, false);
+            peer->send (msg);
     }
 };
 
@@ -93,7 +93,7 @@ struct send_if_not_pred
     void operator()(Peer::ptr const& peer) const
     {
         if (!predicate (peer))
-            peer->sendPacket (msg, false);
+            peer->send (msg);
     }
 };
 

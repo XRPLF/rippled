@@ -17,11 +17,14 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
+#ifndef RIPPLE_OVERLAY_MESSAGE_NAME_H_INCLUDED
+#define RIPPLE_OVERLAY_MESSAGE_NAME_H_INCLUDED
 
-#include <ripple/overlay/impl/Message.cpp>
-#include <ripple/overlay/impl/message_name.cpp>
-#include <ripple/overlay/impl/OverlayImpl.cpp>
-#include <ripple/overlay/impl/PeerImp.cpp>
-#include <ripple/overlay/impl/PeerDoor.cpp>
+namespace ripple {
 
+char const*
+protocol_message_name (int type);
+
+}
+
+#endif

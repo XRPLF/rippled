@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/module/overlay/api/Overlay.h>
+#include <ripple/overlay/Overlay.h>
 #include <beast/asio/placeholders.h>
 
 namespace ripple {
@@ -151,7 +151,7 @@ void PeerSet::sendRequest (const protocol::TMGetLedger& tmGL, Peer::ptr const& p
     if (!peer)
         sendRequest (tmGL);
     else
-        peer->sendPacket (std::make_shared<Message> (tmGL, protocol::mtGET_LEDGER), false);
+        peer->send (std::make_shared<Message> (tmGL, protocol::mtGET_LEDGER));
 }
 
 void PeerSet::sendRequest (const protocol::TMGetLedger& tmGL)
@@ -169,7 +169,7 @@ void PeerSet::sendRequest (const protocol::TMGetLedger& tmGL)
         Peer::ptr peer (getApp().overlay ().findPeerByShortID (p.first));
 
         if (peer)
-            peer->sendPacket (packet, false);
+            peer->send (packet);
     }
 }
 

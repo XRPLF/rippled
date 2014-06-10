@@ -17,36 +17,36 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PEERDOOR_H_INCLUDED
-#define RIPPLE_PEERDOOR_H_INCLUDED
-
-#include <ripple/module/overlay/impl/OverlayImpl.h>
-
-#include <beast/cxx14/memory.h> // <memory>
+#ifndef RIPPLE_OVERLAY_MESSAGE_NAME_H_INCLUDED
+#define RIPPLE_OVERLAY_MESSAGE_NAME_H_INCLUDED
 
 namespace ripple {
 
-/** Handles incoming connections from peers. */
-class PeerDoor
+char const*
+protocol_message_name (int type)
 {
-public:
-    virtual ~PeerDoor () = default;
-
-    enum Kind
+    switch (type)
     {
-        sslRequired,
-        sslAndPROXYRequired
+    case protocol::mtHELLO:             return "hello";
+    case protocol::mtPING:              return "ping";
+    case protocol::mtPROOFOFWORK:       return "proof_of_work";
+    case protocol::mtCLUSTER:           return "cluster";
+    case protocol::mtGET_PEERS:         return "get_peers";
+    case protocol::mtPEERS:             return "peers";
+    case protocol::mtENDPOINTS:         return "endpoints";
+    case protocol::mtTRANSACTION:       return "tx";
+    case protocol::mtGET_LEDGER:        return "get_ledger";
+    case protocol::mtLEDGER_DATA:       return "ledger_data";
+    case protocol::mtPROPOSE_LEDGER:    return "propose";
+    case protocol::mtSTATUS_CHANGE:     return "status";
+    case protocol::mtHAVE_SET:          return "have_set";
+    case protocol::mtVALIDATION:        return "validation";
+    case protocol::mtGET_OBJECTS:       return "get_objects";
+    default:
+        break;
     };
-
-    virtual
-    void stop() = 0;
-};
-
-std::unique_ptr <PeerDoor>
-make_PeerDoor (
-    PeerDoor::Kind kind, OverlayImpl& overlay,
-        std::string const& ip, int port,
-            boost::asio::io_service& io_service);
+    return "uknown";
+}
 
 }
 

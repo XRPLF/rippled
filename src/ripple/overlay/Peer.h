@@ -20,7 +20,7 @@
 #ifndef RIPPLE_OVERLAY_PEER_H_INCLUDED
 #define RIPPLE_OVERLAY_PEER_H_INCLUDED
 
-#include <ripple/module/overlay/api/Message.h>
+#include <ripple/overlay/Message.h>
 
 #include <ripple/unity/json.h>
 #include <ripple/types/api/base_uint.h>
@@ -47,7 +47,7 @@ public:
     // Network
     //
 
-    virtual void sendPacket (const Message::pointer& packet, bool onStrand) = 0;
+    virtual void send (Message::pointer const& m) = 0;
     virtual beast::IP::Endpoint getRemoteAddress() const = 0;
 
     /** Adjust this peer's load balance based on the type of load imposed. */

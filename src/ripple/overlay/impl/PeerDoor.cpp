@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/module/overlay/impl/OverlayImpl.h>
-#include <ripple/module/overlay/impl/PeerDoor.h>
+#include <ripple/overlay/impl/OverlayImpl.h>
+#include <ripple/overlay/impl/PeerDoor.h>
 #include <beast/asio/placeholders.h>
 
 namespace ripple {

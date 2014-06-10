@@ -17,11 +17,22 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
+#ifndef RIPPLE_OVERLAY_TUNING_H_INCLUDED
+#define RIPPLE_OVERLAY_TUNING_H_INCLUDED
 
-#include <ripple/overlay/impl/Message.cpp>
-#include <ripple/overlay/impl/message_name.cpp>
-#include <ripple/overlay/impl/OverlayImpl.cpp>
-#include <ripple/overlay/impl/PeerImp.cpp>
-#include <ripple/overlay/impl/PeerDoor.cpp>
+namespace ripple {
 
+namespace Tuning
+{
+
+enum
+{
+    /** Size of buffer used to read from the socket. */
+    readBufferBytes     = 4096
+};
+
+} // Tuning
+
+} // ripple
+
+#endif

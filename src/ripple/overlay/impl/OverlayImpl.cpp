@@ -17,11 +17,15 @@
 */
 //==============================================================================
 
-#include <ripple/module/overlay/impl/OverlayImpl.h>
-#include <ripple/module/overlay/impl/PeerDoor.h>
-#include <ripple/module/overlay/impl/PeerImp.h>
+#include <ripple/overlay/impl/OverlayImpl.h>
+#include <ripple/overlay/impl/PeerDoor.h>
+#include <ripple/overlay/impl/PeerImp.h>
 
 #include <beast/ByteOrder.h>
+
+#if DOXYGEN
+#include <ripple/overlay/README.md>
+#endif
 
 namespace ripple {
 
@@ -306,7 +310,7 @@ OverlayImpl::send (PeerFinder::Slot::ptr const& slot,
         assert (iter != m_peers.end ());
         PeerImp::ptr const peer (iter->second.lock());
         assert (peer != nullptr);
-        peer->sendPacket (msg, false);
+        peer->send (msg);
     }
 }
 

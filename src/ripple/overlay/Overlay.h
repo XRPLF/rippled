@@ -20,7 +20,7 @@
 #ifndef RIPPLE_OVERLAY_OVERLAY_H_INCLUDED
 #define RIPPLE_OVERLAY_OVERLAY_H_INCLUDED
 
-#include <ripple/module/overlay/api/Peer.h>
+#include <ripple/overlay/Peer.h>
 
 // VFALCO TODO Remove this include dependency it shouldn't be needed
 #include <ripple/peerfinder/api/Slot.h>
@@ -52,27 +52,43 @@ protected:
 public:
     typedef std::vector <Peer::ptr> PeerSequence;
 
-    virtual ~Overlay () = default;
+    virtual
+    ~Overlay () = default;
 
-    // VFALCO NOTE These should be a private API
-    /** @{ */
-    virtual void remove (PeerFinder::Slot::ptr const& slot) = 0;
-    /** @} */
+    /** Establish a peer connection to the specified endpoint.
+        The call returns immediately, the connection attempt is
+        performed asynchronously.
+    */
+    virtual
+    void
+    connect (beast::IP::Endpoint const& address) = 0;
 
-    virtual void connect (beast::IP::Endpoint const& address) = 0;
+    /** Returns the number of active peers.
+        Active peers are only those peers that have completed the
+        handshake and are using the peer protocol.
+    */
+    virtual
+    std::size_t
+    size () = 0;
 
-    // Notification that a peer has connected.
-    virtual void onPeerActivated (Peer::ptr const& peer) = 0;
+    /** Return diagnostics on the status of all peers.
+        @deprecated This is superceded by PropertyStream
+    */
+    virtual
+    Json::Value
+    json () = 0;
 
-    // Notification that a peer has disconnected.
-    virtual void onPeerDisconnect (Peer::ptr const& peer) = 0;
+    /** Returns a sequence representing the current list of peers.
+        The snapshot is made at the time of the call.
+    */
+    virtual
+    PeerSequence
+    getActivePeers () = 0;
 
-    virtual std::size_t size () = 0;
-    virtual Json::Value json () = 0;
-    virtual PeerSequence getActivePeers () = 0;
-
-    // Peer 64-bit ID function
-    virtual Peer::ptr findPeerByShortID (Peer::ShortId const& id) = 0;
+    /** Returns the peer with the matching short id, or null. */
+    virtual
+    Peer::ptr
+    findPeerByShortID (Peer::ShortId const& id) = 0;
 
     /** Visit every active peer and return a value
         The functor must:
@@ -96,10 +112,8 @@ public:
     foreach(Function f)
     {
         PeerSequence peers (getActivePeers());
-
         for(PeerSequence::const_iterator i = peers.begin(); i != peers.end(); ++i)
             f (*i);
-
         return f();
     }
 

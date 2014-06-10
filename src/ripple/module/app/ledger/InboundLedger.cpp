@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/module/overlay/api/Overlay.h>
+#include <ripple/overlay/Overlay.h>
 #include <ripple/nodestore/Database.h>
 
 namespace ripple {
@@ -502,7 +502,7 @@ void InboundLedger::trigger (Peer::ptr const& peer)
                         if (iPeer)
                         {
                             mByHash = false;
-                            iPeer->sendPacket (packet, false);
+                            iPeer->send (packet);
                         }
                     }
                 }

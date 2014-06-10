@@ -20,7 +20,7 @@
 #ifndef RIPPLE_OVERLAY_OVERLAYIMPL_H_INCLUDED
 #define RIPPLE_OVERLAY_OVERLAYIMPL_H_INCLUDED
 
-#include <ripple/module/overlay/api/Overlay.h>
+#include <ripple/overlay/Overlay.h>
 
 #include <ripple/common/Resolver.h>
 #include <ripple/common/seconds_clock.h>
@@ -47,7 +47,7 @@ class OverlayImpl
     : public Overlay
     , public PeerFinder::Callback
 {    
-public:
+private:
     typedef boost::asio::ip::tcp::socket socket_type;
 
     typedef std::unordered_map <PeerFinder::Slot::ptr,
@@ -98,6 +98,7 @@ public:
 
     //--------------------------------------------------------------------------
 
+public:
     OverlayImpl (Stoppable& parent,
         Resource::Manager& resourceManager,
         SiteFiles::Manager& siteFiles,
@@ -111,6 +112,22 @@ public:
     OverlayImpl (OverlayImpl const&) = delete;
     OverlayImpl& operator= (OverlayImpl const&) = delete;
 
+    void
+    connect (beast::IP::Endpoint const& remote_endpoint) override;
+
+    std::size_t
+    size() override;
+
+    Json::Value
+    json() override;
+
+    PeerSequence
+    getActivePeers () override;
+
+    Peer::ptr
+    findPeerByShortID (Peer::ShortId const& id) override;
+
+public:
     /** Process an incoming connection using the Peer protocol.
         The caller transfers ownership of the socket via rvalue move.
         @param proxyHandshake `true` If a PROXY handshake is required.
@@ -119,9 +136,6 @@ public:
     void
     accept (bool proxyHandshake,
         socket_type&& socket);
-
-    void
-    connect (beast::IP::Endpoint const& remote_endpoint);
 
     Peer::ShortId
     next_id();
@@ -187,7 +201,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    /** A peer has connected successfully
+    /** Called when a peer has connected successfully
         This is called after the peer handshake has been completed and during
         peer activation. At this point, the peer address and the public key
         are known.
@@ -203,22 +217,7 @@ public:
     void
     onPeerDisconnect (Peer::ptr const& peer);
 
-    /** The number of active peers on the network
-        Active peers are only those peers that have completed the handshake
-        and are running the Ripple protocol.
-    */
-    std::size_t
-    size ();
-
-    // Returns information on verified peers.
-    Json::Value
-    json ();
-
-    Overlay::PeerSequence
-    getActivePeers ();
-
-    Peer::ptr
-    findPeerByShortID (Peer::ShortId const& id);
+private:
 };
 
 } // ripple

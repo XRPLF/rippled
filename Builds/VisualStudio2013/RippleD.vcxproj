@@ -2720,31 +2720,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\net\rpc\RPCUtil.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\overlay\api\Message.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\overlay\api\Overlay.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\overlay\api\Peer.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\overlay\api\make_Overlay.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\overlay\api\predicates.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\overlay\impl\Message.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\overlay\impl\OverlayImpl.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\overlay\impl\OverlayImpl.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\overlay\impl\PeerDoor.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\overlay\impl\PeerDoor.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\overlay\impl\PeerImp.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\rpc\ErrorCodes.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\rpc\Manager.h">
@@ -3108,6 +3083,49 @@
     <ClCompile Include="..\..\src\ripple\nodestore\tests\TimingTests.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\overlay\Message.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\overlay\Overlay.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\overlay\Peer.h">
+    </ClInclude>
+    <None Include="..\..\src\ripple\overlay\README.md">
+    </None>
+    <ClCompile Include="..\..\src\ripple\overlay\impl\Message.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\overlay\impl\OverlayImpl.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\OverlayImpl.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\overlay\impl\PeerDoor.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\PeerDoor.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\overlay\impl\PeerImp.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\PeerImp.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\Tuning.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\abstract_protocol_handler.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\overlay\impl\message_name.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\message_name.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\message_stream.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\peer_protocol_detector.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\overlay\make_Overlay.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\overlay\predicates.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\api\Callback.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\api\Config.h">
