@@ -125,8 +125,7 @@ public:
     {
         ScopedLockType sl (mLock);
 
-        typename std::pair < typename map_type::iterator, bool > it =
-            mMap.insert (typename map_type::value_type (key, *value));
+        auto it = mMap.emplace (key, *value);
 
         if (!it.second) // Value was not added, take existing value
             *value = it.first->second;
@@ -139,12 +138,16 @@ public:
     data_type retrieve (key_type const& key)
     {
         data_type ret;
+
         {
             ScopedLockType sl (mLock);
-            typename map_type::iterator it = mMap.find (key);
+
+            auto it = mMap.find (key);
+
             if (it != mMap.end ())
                ret = it->second;
         }
+
         return ret;
     }
 
