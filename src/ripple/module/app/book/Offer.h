@@ -80,7 +80,8 @@ public:
     Amounts const
     amount() const
     {
-        return Amounts (m_entry->getFieldAmount (sfTakerPays),
+        return Amounts (
+            m_entry->getFieldAmount (sfTakerPays),
             m_entry->getFieldAmount (sfTakerGets));
     }
 

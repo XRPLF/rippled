@@ -69,10 +69,11 @@ CreateOfferBridged::crossOffers (
 
     TER cross_result (tesSUCCESS);
 
-    bool have_bridged (
-        offers_leg1.step_account (taker.account()) &&
-        offers_leg2.step_account (taker.account()));
-    bool have_direct (offers_direct.step_account (taker.account()));
+    /* Note the subtle distinction here: self-offers encountered in the bridge
+     * are taken, but self-offers encountered in the direct book are not.
+     */
+    bool have_bridged (offers_leg1.step () && offers_leg2.step ());
+    bool have_direct (offers_direct.step_account (taker.account ()));
     bool place_order (true);
 
     while (have_direct || have_bridged)
@@ -129,7 +130,7 @@ CreateOfferBridged::crossOffers (
 
         if (use_direct)
         {
-            if (m_journal.debug) m_journal.debug <<
+            if (m_journal.debug) m_journal.debug << "Direct:" << std::endl <<
                 "  Offer: " << offers_direct.tip () << std::endl <<
                 "         " << offers_direct.tip ().amount().in <<
                 " : " << offers_direct.tip ().amount ().out;
@@ -144,7 +145,7 @@ CreateOfferBridged::crossOffers (
         }
         else
         {
-            if (m_journal.debug) m_journal.debug <<
+            if (m_journal.debug) m_journal.debug << "Bridge:" << std::endl <<
                 " Offer1: " << offers_leg1.tip () << std::endl <<
                 "         " << offers_leg1.tip ().amount().in <<
                 " : " << offers_leg1.tip ().amount ().out << std::endl <<
@@ -157,12 +158,12 @@ CreateOfferBridged::crossOffers (
             if (offers_leg1.tip ().fully_consumed ())
             {
                 leg1_consumed = true;
-                have_bridged = offers_leg1.step_account (taker.account ());
+                have_bridged = offers_leg1.step ();
             }
             if (have_bridged && offers_leg2.tip ().fully_consumed ())
             {
                 leg2_consumed = true;
-                have_bridged = offers_leg2.step_account (taker.account ());
+                have_bridged = offers_leg2.step ();
             }
         }
 
@@ -179,9 +180,15 @@ CreateOfferBridged::crossOffers (
             break;
         }
 
-        // Postcondition: If we aren't done, then we must have consumed at
+        // Postcondition: If we aren't done, then we *must* have consumed at
         //                least one offer fully.
         assert (direct_consumed || leg1_consumed || leg2_consumed);
+
+        if (!direct_consumed && !leg1_consumed && !leg2_consumed)
+        {
+            cross_result = tefINTERNAL;
+            break;
+        }
     }
 
     return std::make_pair(cross_result, taker.remaining_offer ());

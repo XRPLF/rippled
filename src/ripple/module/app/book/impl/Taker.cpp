@@ -19,8 +19,6 @@
 
 #include <ripple/module/app/book/Taker.h>
 
-//#include <utility>
-
 namespace ripple {
 namespace core {
 
@@ -34,6 +32,9 @@ Taker::Taker (LedgerView& view, Account const& account,
     , m_amount (amount)
     , m_remain (amount)
 {
+    assert (m_remain.in > zero);
+    assert (m_remain.out > zero);
+
     // If this is a passive order (tfPassive), this prevents
     // offers at the same quality level from being consumed.
     if (m_options.passive)
@@ -71,11 +72,12 @@ Taker::remaining_offer () const
         m_remain.out, m_quality.rate (), m_remain.in, true), m_remain.out);
 }
 
-// Calculate the amount particular user could get through an offer.
-//   @param amount the maximum flow that is available to the taker.
-//   @param offer the offer to flow through.
-//   @param taker the person taking the offer.
-//   @return the maximum amount that can flow through this offer.
+/** Calculate the amount particular user could get through an offer.
+    @param amount the maximum flow that is available to the taker.
+    @param offer the offer to flow through.
+    @param taker the person taking the offer.
+    @return the maximum amount that can flow through this offer.
+*/
 Amounts
 Taker::flow (Amounts amount, Offer const& offer, Account const& taker)
 {
@@ -129,6 +131,24 @@ Taker::flow (Amounts amount, Offer const& offer, Account const& taker)
         : amount;
 }
 
+// Adjust an offer to indicate that we are consuming some (or all) of it.
+void
+Taker::consume (Offer const& offer, Amounts const& consumed) const
+{
+    Amounts const& remaining (offer.amount ());
+
+    assert (remaining.in > zero && remaining.out > zero);
+    assert (remaining.in >= consumed.in && remaining.out >= consumed.out);
+
+    offer.entry ()->setFieldAmount (sfTakerPays, remaining.in - consumed.in);
+    offer.entry ()->setFieldAmount (sfTakerGets, remaining.out - consumed.out);
+
+    view ().entryModify (offer.entry());
+
+    assert (offer.entry ()->getFieldAmount (sfTakerPays) >= zero);
+    assert (offer.entry ()->getFieldAmount (sfTakerGets) >= zero);
+}
+
 // Fill a direct offer.
 //   @param offer the offer we are going to use.
 //   @param amount the amount to flow through the offer.
@@ -136,18 +156,10 @@ Taker::flow (Amounts amount, Offer const& offer, Account const& taker)
 TER
 Taker::fill (Offer const& offer, Amounts const& amount)
 {
-    TER result (tesSUCCESS);
-    
-    Amounts const remain (
-        offer.entry ()->getFieldAmount (sfTakerPays) - amount.in,
-        offer.entry ()->getFieldAmount (sfTakerGets) - amount.out);
-
-    offer.entry ()->setFieldAmount (sfTakerPays, remain.in);
-    offer.entry ()->setFieldAmount (sfTakerGets, remain.out);
-    view ().entryModify (offer.entry());
+    consume (offer, amount);
 
     // Pay the taker, then the owner
-    result = view ().accountSend (offer.account(), account(), amount.out);
+    TER result = view ().accountSend (offer.account(), account(), amount.out);
 
     if (result == tesSUCCESS)
         result = view ().accountSend (account(), offer.account(), amount.in);
@@ -168,27 +180,14 @@ Taker::fill (
 {
     assert (amount1.out == amount2.in);
 
-    TER result (tesSUCCESS);
+    consume (leg1, amount1);
+    consume (leg2, amount2);
 
-    Amounts const remain1 (
-        leg1.entry ()->getFieldAmount (sfTakerPays) - amount1.in,
-        leg1.entry ()->getFieldAmount (sfTakerGets) - amount1.out);
-
-    leg1.entry ()->setFieldAmount (sfTakerPays, remain1.in);
-    leg1.entry ()->setFieldAmount (sfTakerGets, remain1.out);
-    view ().entryModify (leg1.entry());
-
-    Amounts const remain2 (
-        leg2.entry ()->getFieldAmount (sfTakerPays) - amount2.in,
-        leg2.entry ()->getFieldAmount (sfTakerGets) - amount2.out);
-    view ().entryModify (leg2.entry ());
-
-    // Execute the payments in order:
-    // Taker pays Leg1 (amount1.in - A currency)
-    // Leg1 pays Leg2 (amount1.out == amount2.in, XRP)
-    // Leg2 pays Taker (amount2.out - B currency)
-
-    result = view ().accountSend (m_account, leg1.account (), amount1.in);
+    /* It is possible that m_account is the same as leg1.account, leg2.account
+     * or both. This could happen when bridging over one's own offer. In that
+     * case, accountSend won't actually do a send, which is what we want.
+     */
+    TER result = view ().accountSend (m_account, leg1.account (), amount1.in);
 
     if (result == tesSUCCESS)
         result = view ().accountSend (leg1.account (), leg2.account (), amount1.out);
@@ -202,17 +201,15 @@ Taker::fill (
 bool
 Taker::done () const
 {
-    if (m_options.sell)
+    if (m_options.sell && (m_remain.in <= zero))
     {
-        // With the sell option, we are finished when
-        // we have consumed all the input currency.
-        if (m_remain.in <= zero)
-            return true;
+        // Sell semantics: we consumed all the input currency
+        return true;
     }
-    else if (m_remain.out <= zero)
+
+    if (!m_options.sell && (m_remain.out <= zero))
     {
-        // With the buy option (!sell) we are finished when we
-        // have received the desired amount of output currency.
+        // Buy semantics: we received the desired amount of output currency
         return true;
     }
 
@@ -224,18 +221,25 @@ TER
 Taker::cross (Offer const& offer)
 {
     assert (!done ());
-    Amounts limit (offer.amount());
-    if (m_options.sell)
-        limit = offer.quality().ceil_in (limit, m_remain.in);
-    else
-        limit = offer.quality ().ceil_out (limit, m_remain.out);
 
-    assert (limit.out <= offer.amount().out);
+    /* Before we call flow we must set the limit right; for buy semantics we
+       need to clamp the output. And we always want to clamp the input.
+     */
+    Amounts limit (offer.amount());
+
+    if (! m_options.sell)
+        limit = offer.quality ().ceil_out (limit, m_remain.out);
+    limit = offer.quality().ceil_in (limit, m_remain.in);
+
     assert (limit.in <= offer.amount().in);
+    assert (limit.out <= offer.amount().out);
+    assert (limit.in <= m_remain.in);
 
     Amounts const amount (flow (limit, offer, account ()));
+
     m_remain.out -= amount.out;
     m_remain.in -= amount.in;
+
     assert (m_remain.in >= zero);
     return fill (offer, amount);
 }

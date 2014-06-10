@@ -29,7 +29,6 @@
 #include <beast/utility/noexcept.h>
 
 #include <functional>
-//#include <utility>
 
 namespace ripple {
 namespace core {
@@ -79,6 +78,9 @@ private:
     TER
     fill (Offer const& leg1, Amounts const& amount1,
         Offer const& leg2, Amounts const& amount2);
+
+    void
+    consume (Offer const& offer, Amounts const& consumed) const;
 
 public:
     Taker (LedgerView& view, Account const& account,

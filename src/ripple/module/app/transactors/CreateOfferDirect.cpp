@@ -73,9 +73,6 @@ CreateOfferDirect::crossOffers (
             break;
         }
 
-        // NIKB CHECKME Investigate whether we can use offer.step_account() here
-        //              or whether doing so would cause a protocol-breaking
-        //             change.
         if (! offers.step ())
         {
             // Place the order since there are no

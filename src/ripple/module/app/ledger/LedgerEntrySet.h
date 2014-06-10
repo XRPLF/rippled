@@ -84,8 +84,8 @@ public:
     static char const* getCountedObjectName () { return "LedgerEntrySet"; }
 
     LedgerEntrySet (
-        Ledger::ref ledger, TransactionEngineParams tep, bool immutable = false) :
-        mLedger (ledger), mParams (tep), mSeq (0), mImmutable (immutable)
+        Ledger::ref ledger, TransactionEngineParams tep, bool immutable = false) 
+        : mLedger (ledger), mParams (tep), mSeq (0), mImmutable (immutable)
     {
     }
 
@@ -145,11 +145,6 @@ public:
         return mLedger;
     }
 
-    Ledger::ref getLedgerRef () const
-    {
-        return mLedger;
-    }
-
     // basic entry functions
     SLE::pointer getEntry (uint256 const & index, LedgerEntryAction&);
     LedgerEntryAction hasEntry (uint256 const & index) const;
@@ -165,32 +160,35 @@ public:
 
     // Directory functions.
     TER dirAdd (
-        std::uint64_t &                      uNodeDir,      // Node of entry.
-        uint256 const &                      uRootIndex,
-        uint256 const &                      uLedgerIndex,
+        std::uint64_t&                      uNodeDir,      // Node of entry.
+        uint256 const&                      uRootIndex,
+        uint256 const&                      uLedgerIndex,
         std::function<void (SLE::ref, bool)> fDescriber);
 
     TER dirDelete (
-        const bool                      bKeepRoot,
-        const std::uint64_t &           uNodeDir,      // Node item is mentioned in.
-        uint256 const &                  uRootIndex,
-        uint256 const &                  uLedgerIndex,  // Item being deleted
-        const bool                      bStable,
-        const bool                      bSoft);
+        const bool                     bKeepRoot,
+        const std::uint64_t&           uNodeDir,      // Node item is mentioned in.
+        uint256 const&                 uRootIndex,
+        uint256 const&                 uLedgerIndex,  // Item being deleted
+        const bool                     bStable,
+        const bool                     bSoft);
 
-    bool                dirFirst (uint256 const & uRootIndex, SLE::pointer & sleNode, unsigned int & uDirEntry, uint256 & uEntryIndex);
-    bool                dirNext (uint256 const & uRootIndex, SLE::pointer & sleNode, unsigned int & uDirEntry, uint256 & uEntryIndex);
-    bool                dirIsEmpty (uint256 const & uDirIndex);
-    TER                 dirCount (uint256 const & uDirIndex, std::uint32_t & uCount);
+    bool dirFirst (uint256 const& uRootIndex, SLE::pointer& sleNode,
+        unsigned int & uDirEntry, uint256 & uEntryIndex);
+    bool dirNext (uint256 const& uRootIndex, SLE::pointer& sleNode,
+        unsigned int & uDirEntry, uint256 & uEntryIndex);
+    bool dirIsEmpty (uint256 const& uDirIndex);
+    TER dirCount (uint256 const& uDirIndex, std::uint32_t & uCount);
 
-    uint256             getNextLedgerIndex (uint256 const & uHash);
-    uint256             getNextLedgerIndex (uint256 const & uHash, uint256 const & uEnd);
+    uint256 getNextLedgerIndex (uint256 const & uHash);
+    uint256 getNextLedgerIndex (uint256 const & uHash, uint256 const & uEnd);
 
-    void                ownerCountAdjust (Account const& uOwnerID, int iAmount, SLE::ref sleAccountRoot = SLE::pointer ());
+    void ownerCountAdjust (Account const& uOwnerID, int iAmount,
+        SLE::ref sleAccountRoot = SLE::pointer ());
 
     // Offer functions.
-    TER                 offerDelete (uint256 const & offerIndex);
-    TER                 offerDelete (SLE::pointer sleOffer);
+    TER offerDelete (uint256 const & offerIndex);
+    TER offerDelete (SLE::pointer sleOffer);
 
     // Balance functions.
     std::uint32_t rippleTransferRate (Account const& issuer);
@@ -220,10 +218,6 @@ public:
             sfLowQualityOut, sfHighQualityOut);
     }
 
-    STAmount rippleHolds (
-        Account const& account, Currency const& currency,
-        Account const& issuer);
-
     STAmount rippleTransferFee (
         Account const& uSenderID, Account const& uReceiverID,
         Account const& issuer, const STAmount & saAmount);
@@ -231,10 +225,6 @@ public:
     TER rippleCredit (
         Account const& uSenderID, Account const& uReceiverID,
         const STAmount & saAmount, bool bCheckIssuer = true);
-
-    TER rippleSend (
-        Account const& uSenderID, Account const& uReceiverID,
-        const STAmount & saAmount, STAmount & saActual);
 
     STAmount accountHolds (
         Account const& account, Currency const& currency,
@@ -249,12 +239,12 @@ public:
         const bool      bSrcHigh,
         Account const&  uSrcAccountID,
         Account const&  uDstAccountID,
-        uint256 const &  uIndex,
+        uint256 const&  uIndex,
         SLE::ref        sleAccount,
         const bool      bAuth,
         const bool      bNoRipple,
-        const STAmount & saSrcBalance,
-        const STAmount & saSrcLimit,
+        const STAmount& saSrcBalance,
+        const STAmount& saSrcLimit,
         const std::uint32_t uSrcQualityIn = 0,
         const std::uint32_t uSrcQualityOut = 0);
     TER trustDelete (
@@ -266,26 +256,25 @@ public:
 
     // iterator functions
     typedef std::map<uint256, LedgerEntrySetEntry>::iterator iterator;
-    typedef std::map<uint256, LedgerEntrySetEntry>::const_iterator
-    const_iterator;
+    typedef std::map<uint256, LedgerEntrySetEntry>::const_iterator const_iterator;
 
     bool isEmpty () const
     {
         return mEntries.empty ();
     }
-    std::map<uint256, LedgerEntrySetEntry>::const_iterator begin () const
+    const_iterator begin () const
     {
         return mEntries.begin ();
     }
-    std::map<uint256, LedgerEntrySetEntry>::const_iterator end () const
+    const_iterator end () const
     {
         return mEntries.end ();
     }
-    std::map<uint256, LedgerEntrySetEntry>::iterator begin ()
+    iterator begin ()
     {
         return mEntries.begin ();
     }
-    std::map<uint256, LedgerEntrySetEntry>::iterator end ()
+    iterator end ()
     {
         return mEntries.end ();
     }
@@ -326,16 +315,15 @@ private:
 
     bool threadOwners (
         SLE::ref node, Ledger::ref ledger, NodeToLedgerEntry& newMods);
-};
 
-inline LedgerEntrySet::iterator range_begin (LedgerEntrySet& x)
-{
-    return x.begin ();
-}
-inline LedgerEntrySet::iterator range_end (LedgerEntrySet& x)
-{
-    return x.end ();
-}
+    TER rippleSend (
+        Account const& uSenderID, Account const& uReceiverID,
+        const STAmount & saAmount, STAmount & saActual);
+
+    STAmount rippleHolds (
+        Account const& account, Currency const& currency,
+        Account const& issuer);
+};
 
 } // ripple
 
