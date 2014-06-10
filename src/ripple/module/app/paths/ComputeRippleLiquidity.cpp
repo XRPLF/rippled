@@ -35,29 +35,29 @@ namespace path {
 // to the sender, moving forward it propagates the actual send toward the
 // receiver.
 //
-// This routine works backwards:
-// - cur is the driver: it calculates previous wants based on previous credit
-//   limits and current wants.
+// When this routine works backwards, saCurReq is the driving variable: it
+// calculates previous wants based on previous credit limits and current wants.
 //
-// This routine works forwards:
-// - prv is the driver: it calculates current deliver based on previous delivery
-//   limits and current wants.
+// When this routine works forwards, saPrvReq is the driving variable: it
+//   calculates current deliver based on previous delivery limits and current
+//   wants.
 //
 // This routine is called one or two times for a node in a pass. If called once,
 // it will work and set a rate.  If called again, the new work must not worsen
 // the previous rate.
-void nodeRipple (
+
+void computeRippleLiquidity (
     RippleCalc& rippleCalc,
     const std::uint32_t uQualityIn,
     const std::uint32_t uQualityOut,
     const STAmount& saPrvReq,   // --> in limit including fees, <0 = unlimited
-    const STAmount& saCurReq,   // --> out limit (driver)
+    const STAmount& saCurReq,   // --> out limit
     STAmount& saPrvAct,  // <-> in limit including achieved so far: <-- <= -->
-    STAmount& saCurAct,  // <-> out limit including achieved : <-- <= -->
+    STAmount& saCurAct,  // <-> out limit including achieved so far: <-- <= -->
     std::uint64_t& uRateMax)
 {
     WriteLog (lsTRACE, RippleCalc)
-        << "nodeRipple>"
+        << "computeRippleLiquidity>"
         << " uQualityIn=" << uQualityIn
         << " uQualityOut=" << uQualityOut
         << " saPrvReq=" << saPrvReq
@@ -65,31 +65,45 @@ void nodeRipple (
         << " saPrvAct=" << saPrvAct
         << " saCurAct=" << saCurAct;
 
-    assert (saCurReq > zero); // FIXME: saCurReq was zero
+    // saCurAct was once zero in a production server.
+    assert (saCurReq != zero);
+    assert (saCurReq > zero);
+
     assert (saPrvReq.getCurrency () == saCurReq.getCurrency ());
     assert (saPrvReq.getCurrency () == saPrvAct.getCurrency ());
     assert (saPrvReq.getIssuer () == saPrvAct.getIssuer ());
 
-    const bool      bPrvUnlimited   = saPrvReq < zero;
-    const STAmount  saPrv           = bPrvUnlimited ? STAmount (saPrvReq)
-        : saPrvReq - saPrvAct;
-    const STAmount  saCur           = saCurReq - saCurAct;
+    const bool bPrvUnlimited = (saPrvReq < zero);  // -1 means unlimited.
+
+    // Unlimited stays unlimited - don't do calculations.
+
+    // How much could possibly flow through the previous node?
+    const STAmount saPrv = bPrvUnlimited ? saPrvReq : saPrvReq - saPrvAct;
+
+    // How much could possibly flow through the current node?
+    const STAmount  saCur = saCurReq - saCurAct;
 
     WriteLog (lsTRACE, RippleCalc)
-        << "nodeRipple: "
+        << "computeRippleLiquidity: "
         << " bPrvUnlimited=" << bPrvUnlimited
         << " saPrv=" << saPrv
         << " saCur=" << saCur;
 
+    // If nothing can flow, we might as well not do any work.
+    if (saPrv == zero || saCur == zero)
+        return;
+
     if (uQualityIn >= uQualityOut)
     {
-        // No fee.
-        WriteLog (lsTRACE, RippleCalc) << "nodeRipple: No fees";
+        // You're getting better quality than you asked for, so no fee.
+        WriteLog (lsTRACE, RippleCalc) << "computeRippleLiquidity: No fees";
 
-        // Only process if we are not worsing previously processed.
+        // Only process if the current rate, 1:1, is not worse than the previous
+        // rate, uRateMax - otherwise there is no flow.
         if (!uRateMax || STAmount::uRateOne <= uRateMax)
         {
-            // Limit amount to transfer if need.
+            // Limit amount to transfer if need - the minimum of amount being
+            // paid and the amount that's wanted.
             STAmount saTransfer = bPrvUnlimited ? saCur
                 : std::min (saPrv, saCur);
 
@@ -98,73 +112,84 @@ void nodeRipple (
             //
             // In forward, we want to propagate the limited prv to cur and set
             // actual prv.
+            //
+            // This is the actual flow.
             saPrvAct += saTransfer;
             saCurAct += saTransfer;
 
             // If no rate limit, set rate limit to avoid combining with
             // something with a worse rate.
-            if (!uRateMax)
+            if (uRateMax == 0)
                 uRateMax = STAmount::uRateOne;
         }
     }
     else
     {
-        // Fee.
-        WriteLog (lsTRACE, RippleCalc) << "nodeRipple: Fee";
+        // If the quality is worse than the previous
+        WriteLog (lsTRACE, RippleCalc) << "computeRippleLiquidity: Fee";
 
         std::uint64_t uRate = STAmount::getRate (
             STAmount (uQualityOut), STAmount (uQualityIn));
 
+        // If the next rate is at least as good as the current rate, process.
         if (!uRateMax || uRate <= uRateMax)
         {
-            const uint160   uCurrencyID     = saCur.getCurrency ();
+            const uint160 currency     = saCur.getCurrency ();
             const uint160   uCurIssuerID    = saCur.getIssuer ();
 
-            // TODO(tom): what's this?
-            auto someFee = STAmount::mulRound (
-                saCur, uQualityOut, uCurrencyID, uCurIssuerID, true);
+            // current actual = current request * (quality out / quality in).
+            auto numerator = STAmount::mulRound (
+                saCur, uQualityOut, currency, uCurIssuerID, true);
+            // True means "round up" to get best flow.
 
             STAmount saCurIn = STAmount::divRound (
-                someFee, uQualityIn, uCurrencyID, uCurIssuerID, true);
+                numerator, uQualityIn, currency, uCurIssuerID, true);
 
             WriteLog (lsTRACE, RippleCalc)
-                << "nodeRipple:"
+                << "computeRippleLiquidity:"
                 << " bPrvUnlimited=" << bPrvUnlimited
                 << " saPrv=" << saPrv
                 << " saCurIn=" << saCurIn;
 
             if (bPrvUnlimited || saCurIn <= saPrv)
             {
-                // All of cur. Some amount of prv.
+                // All of current. Some amount of previous.
                 saCurAct += saCur;
                 saPrvAct += saCurIn;
                 WriteLog (lsTRACE, RippleCalc)
-                    << "nodeRipple:3c:"
+                    << "computeRippleLiquidity:3c:"
                     << " saCurReq=" << saCurReq
                     << " saPrvAct=" << saPrvAct;
             }
             else
             {
-                // TODO(tom): what's this?
-                auto someFee = STAmount::mulRound (
-                    saPrv, uQualityIn, uCurrencyID, uCurIssuerID, true);
-                // A part of cur. All of prv. (cur as driver)
-                STAmount    saCurOut    = STAmount::divRound (
-                    someFee, uQualityOut, uCurrencyID, uCurIssuerID, true);
+                // There wasn't enough money to start with - so given the
+                // limited input, how much could we deliver?
+                // current actual = previous request
+                //                  * (quality in / quality out).
+                // This is inverted compared to the code above because we're
+                // going the other way
+
+                auto numerator = STAmount::mulRound (
+                    saPrv, uQualityIn, currency, uCurIssuerID, true);
+                // A part of current. All of previous. (Cur is the driver
+                // variable.)
+                STAmount saCurOut = STAmount::divRound (
+                    numerator, uQualityOut, currency, uCurIssuerID, true);
+
                 WriteLog (lsTRACE, RippleCalc)
-                    << "nodeRipple:4: saCurReq=" << saCurReq;
+                    << "computeRippleLiquidity:4: saCurReq=" << saCurReq;
 
-                saCurAct    += saCurOut;
-                saPrvAct    = saPrvReq;
-
+                saCurAct += saCurOut;
+                saPrvAct = saPrvReq;
             }
             if (!uRateMax)
-                uRateMax    = uRate;
+                uRateMax = uRate;
         }
     }
 
     WriteLog (lsTRACE, RippleCalc)
-        << "nodeRipple<"
+        << "computeRippleLiquidity<"
         << " uQualityIn=" << uQualityIn
         << " uQualityOut=" << uQualityOut
         << " saPrvReq=" << saPrvReq

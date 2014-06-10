@@ -1535,12 +1535,12 @@ uint256 Ledger::getQualityNext (uint256 const& uBase)
     return uResult;
 }
 
-uint256 Ledger::getAccountRootIndex (const uint160& uAccountID)
+uint256 Ledger::getAccountRootIndex (const uint160& account)
 {
     Serializer  s (22);
 
     s.add16 (spaceAccount); //  2
-    s.add160 (uAccountID);  // 20
+    s.add160 (account);  // 20
 
     return s.getSHA512Half ();
 }
@@ -1782,23 +1782,23 @@ uint256 Ledger::getNicknameIndex (uint256 const& uNickname)
     return s.getSHA512Half ();
 }
 
-uint256 Ledger::getOfferIndex (const uint160& uAccountID, std::uint32_t uSequence)
+uint256 Ledger::getOfferIndex (const uint160& account, std::uint32_t uSequence)
 {
     Serializer  s (26);
 
     s.add16 (spaceOffer);       //  2
-    s.add160 (uAccountID);      // 20
+    s.add160 (account);      // 20
     s.add32 (uSequence);        //  4
 
     return s.getSHA512Half ();
 }
 
-uint256 Ledger::getOwnerDirIndex (const uint160& uAccountID)
+uint256 Ledger::getOwnerDirIndex (const uint160& account)
 {
     Serializer  s (22);
 
     s.add16 (spaceOwnerDir);    //  2
-    s.add160 (uAccountID);      // 20
+    s.add160 (account);      // 20
 
     return s.getSHA512Half ();
 }

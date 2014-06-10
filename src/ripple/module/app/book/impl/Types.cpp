@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2014 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,28 +17,13 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TYPES_H
-#define RIPPLE_TYPES_H
+#include <ripple/module/app/book/Types.h>
 
 namespace ripple {
+namespace core {
 
-// account id, currency id, issuer id.
-typedef std::tuple <uint160, uint160, uint160> AccountCurrencyIssuer;
+const path::Account XRP_ACCOUNT(0);
+const path::Currency XRP_CURRENCY(0);
 
-// Map of account, currency, issuer to node index.
-typedef ripple::unordered_map <AccountCurrencyIssuer, unsigned int>
-AccountCurrencyIssuerToNodeIndex;
-
-namespace path {
-
-typedef core::Account Account;
-typedef core::Currency Currency;
-
-} // path
-
-extern const path::Account XRP_ACCOUNT;
-extern const path::Currency XRP_CURRENCY;
-
-} // ripple
-
-#endif
+}
+}

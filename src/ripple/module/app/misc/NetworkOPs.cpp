@@ -2882,7 +2882,7 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
     bool            bDirectAdvance  = true;
 
     SLE::pointer    sleOfferDir;
-    uint256         uOfferIndex;
+    uint256         offerIndex;
     unsigned int    uBookEntry;
     STAmount        saDirRate;
 
@@ -2913,16 +2913,16 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
                 uTipIndex       = sleOfferDir->getIndex ();
                 saDirRate       = STAmount::setRate (Ledger::getQuality (uTipIndex));
 
-                lesActive.dirFirst (uTipIndex, sleOfferDir, uBookEntry, uOfferIndex);
+                lesActive.dirFirst (uTipIndex, sleOfferDir, uBookEntry, offerIndex);
 
                 m_journal.trace << "getBookPage:   uTipIndex=" << uTipIndex;
-                m_journal.trace << "getBookPage: uOfferIndex=" << uOfferIndex;
+                m_journal.trace << "getBookPage: offerIndex=" << offerIndex;
             }
         }
 
         if (!bDone)
         {
-            SLE::pointer    sleOffer        = lesActive.entryCache (ltOFFER, uOfferIndex);
+            SLE::pointer    sleOffer        = lesActive.entryCache (ltOFFER, offerIndex);
 
             if (sleOffer)
             {
@@ -3030,13 +3030,13 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
                 m_journal.warning << "Missing offer";
         }
 
-            if (!lesActive.dirNext (uTipIndex, sleOfferDir, uBookEntry, uOfferIndex))
+            if (!lesActive.dirNext (uTipIndex, sleOfferDir, uBookEntry, offerIndex))
             {
                 bDirectAdvance  = true;
             }
             else
             {
-                m_journal.trace << "getBookPage: uOfferIndex=" << uOfferIndex;
+                m_journal.trace << "getBookPage: offerIndex=" << offerIndex;
             }
         }
     }

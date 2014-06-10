@@ -1835,6 +1835,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\utility\PlatformMacros.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\basics\utility\StringConcat.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\basics\utility\StringUtilities.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -1854,6 +1856,8 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\basics\utility\Time.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\basics\utility\ToString.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\basics\utility\UptimeTimer.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -1993,6 +1997,9 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\module\app\book\impl\Taker.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\module\app\book\impl\Types.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\module\app\book\tests\OfferStream.test.cpp">
@@ -2267,15 +2274,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\app\node\SqliteFactory.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\CalcNode.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\CalcNodeAccountFwd.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\CalcNodeAccountRev.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\module\app\paths\CalcNodeAdvance.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2285,16 +2283,25 @@
     <ClCompile Include="..\..\src\ripple\module\app\paths\CalcNodeDeliverRev.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\CalcNodeOffer.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\CalcNodeRipple.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\app\paths\CalcState.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\app\paths\Calculators.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\ComputeAccountLiquidityForward.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\ComputeAccountLiquidityReverse.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\ComputeLiquidity.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\ComputeOfferLiquidity.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\ComputeRippleLiquidity.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\module\app\paths\Node.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2342,6 +2349,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\app\paths\Tuning.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\Types.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\app\paths\Types.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\app\peers\ClusterNodeStatus.h">

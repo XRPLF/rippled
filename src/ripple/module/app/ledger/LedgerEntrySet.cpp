@@ -356,7 +356,7 @@ Json::Value LedgerEntrySet::getJson (int) const
 }
 
 SLE::pointer LedgerEntrySet::getForMod (uint256 const& node, Ledger::ref ledger,
-                                        ripple::unordered_map<uint256, SLE::pointer>& newMods)
+                                        NodeToLedgerEntry& newMods)
 {
     auto it = mEntries.find (node);
 
@@ -380,7 +380,7 @@ SLE::pointer LedgerEntrySet::getForMod (uint256 const& node, Ledger::ref ledger,
         return it->second.mEntry;
     }
 
-    auto me (newMods.find (node));
+    auto me = newMods.find (node);
 
     if (me != newMods.end ())
     {
@@ -398,7 +398,7 @@ SLE::pointer LedgerEntrySet::getForMod (uint256 const& node, Ledger::ref ledger,
 }
 
 bool LedgerEntrySet::threadTx (const RippleAddress& threadTo, Ledger::ref ledger,
-                               ripple::unordered_map<uint256, SLE::pointer>& newMods)
+                               NodeToLedgerEntry& newMods)
 {
 #ifdef META_DEBUG
     WriteLog (lsTRACE, LedgerEntrySet) << "Thread to " << threadTo.getAccountID ();
@@ -416,7 +416,7 @@ bool LedgerEntrySet::threadTx (const RippleAddress& threadTo, Ledger::ref ledger
 }
 
 bool LedgerEntrySet::threadTx (SLE::ref threadTo, Ledger::ref ledger,
-                               ripple::unordered_map<uint256, SLE::pointer>& newMods)
+                               NodeToLedgerEntry& newMods)
 {
     // node = the node that was modified/deleted/created
     // threadTo = the node that needs to know
@@ -435,7 +435,7 @@ bool LedgerEntrySet::threadTx (SLE::ref threadTo, Ledger::ref ledger,
 }
 
 bool LedgerEntrySet::threadOwners (SLE::ref node, Ledger::ref ledger,
-                                   ripple::unordered_map<uint256, SLE::pointer>& newMods)
+                                   NodeToLedgerEntry& newMods)
 {
     // thread new or modified node to owner or owners
     if (node->hasOneOwner ()) // thread to owner's account
@@ -463,7 +463,7 @@ void LedgerEntrySet::calcRawMeta (Serializer& s, TER result, std::uint32_t index
     // calculate the raw meta data and return it. This must be called before the set is committed
 
     // Entries modified only as a result of building the transaction metadata
-    ripple::unordered_map<uint256, SLE::pointer> newMod;
+    NodeToLedgerEntry newMod;
 
     for (auto& it : mEntries)
     {
@@ -986,6 +986,7 @@ bool LedgerEntrySet::dirNext (
             }
 
             sleNode = sleNext;
+            // TODO(tom): make this iterative.
             return dirNext (uRootIndex, sleNode, uDirEntry, uEntryIndex);
         }
     }
@@ -1063,13 +1064,18 @@ TER LedgerEntrySet::offerDelete (SLE::pointer sleOffer)
 
     uint256 offerIndex = sleOffer->getIndex ();
     uint160 uOwnerID   = sleOffer->getFieldAccount160 (sfAccount);
-    bool    bOwnerNode = sleOffer->isFieldPresent (sfOwnerNode);   // Detect legacy dirs.
+
+    // Detect legacy directories.
+    bool bOwnerNode = sleOffer->isFieldPresent (sfOwnerNode);
     std::uint64_t uOwnerNode = sleOffer->getFieldU64 (sfOwnerNode);
     uint256 uDirectory = sleOffer->getFieldH256 (sfBookDirectory);
     std::uint64_t uBookNode  = sleOffer->getFieldU64 (sfBookNode);
 
-    TER     terResult  = dirDelete (false, uOwnerNode, Ledger::getOwnerDirIndex (uOwnerID), offerIndex, false, !bOwnerNode);
-    TER     terResult2 = dirDelete (false, uBookNode, uDirectory, offerIndex, true, false);
+    TER terResult  = dirDelete (
+        false, uOwnerNode,
+        Ledger::getOwnerDirIndex (uOwnerID), offerIndex, false, !bOwnerNode);
+    TER terResult2 = dirDelete (
+        false, uBookNode, uDirectory, offerIndex, true, false);
 
     if (tesSUCCESS == terResult)
         ownerCountAdjust (uOwnerID, -1);
@@ -1079,9 +1085,9 @@ TER LedgerEntrySet::offerDelete (SLE::pointer sleOffer)
     return (terResult == tesSUCCESS) ? terResult2 : terResult;
 }
 
-TER LedgerEntrySet::offerDelete (uint256 const& uOfferIndex)
+TER LedgerEntrySet::offerDelete (uint256 const& offerIndex)
 {
-    SLE::pointer    sleOffer    = entryCache (ltOFFER, uOfferIndex);
+    SLE::pointer    sleOffer    = entryCache (ltOFFER, offerIndex);
 
     if (!sleOffer)
         return tesSUCCESS;
@@ -1090,11 +1096,18 @@ TER LedgerEntrySet::offerDelete (uint256 const& uOfferIndex)
 }
 
 // Returns amount owed by uToAccountID to uFromAccountID.
-// <-- $owed/uCurrencyID/uToAccountID: positive: uFromAccountID holds IOUs., negative: uFromAccountID owes IOUs.
-STAmount LedgerEntrySet::rippleOwed (const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID)
+// <-- $owed/currency/uToAccountID:
+// positive: uFromAccountID holds IOUs.,
+// negative: uFromAccountID owes IOUs.
+STAmount LedgerEntrySet::rippleOwed (
+    const uint160& uToAccountID, const uint160& uFromAccountID,
+    const uint160& currency)
 {
-    STAmount        saBalance;
-    SLE::pointer    sleRippleState  = entryCache (ltRIPPLE_STATE, Ledger::getRippleStateIndex (uToAccountID, uFromAccountID, uCurrencyID));
+    STAmount saBalance;
+    SLE::pointer sleRippleState  = entryCache (
+        ltRIPPLE_STATE,
+        Ledger::getRippleStateIndex (
+            uToAccountID, uFromAccountID, currency));
 
     if (sleRippleState)
     {
@@ -1107,52 +1120,49 @@ STAmount LedgerEntrySet::rippleOwed (const uint160& uToAccountID, const uint160&
     }
     else
     {
-        saBalance.clear (uCurrencyID, uToAccountID);
+        saBalance.clear (currency, uToAccountID);
 
         WriteLog (lsDEBUG, LedgerEntrySet) << "rippleOwed:" <<
             " No credit line between " <<
             RippleAddress::createHumanAccountID (uFromAccountID) <<
             " and " << RippleAddress::createHumanAccountID (uToAccountID) <<
-            " for " << STAmount::createHumanCurrency (uCurrencyID);
-#if 0
-        // We could cut off coming here if we test for no line sooner.
-
-        assert (false);
-#endif
+            " for " << STAmount::createHumanCurrency (currency);
     }
 
     return saBalance;
 }
 
 // Maximum amount of IOUs uToAccountID will hold from uFromAccountID.
-// <-- $amount/uCurrencyID/uToAccountID.
-STAmount LedgerEntrySet::rippleLimit (const uint160& uToAccountID, const uint160& uFromAccountID, const uint160& uCurrencyID)
+// <-- $amount/currency/uToAccountID.
+STAmount LedgerEntrySet::rippleLimit (
+    const uint160& uToAccountID, const uint160& uFromAccountID,
+    const uint160& currency)
 {
-    STAmount        saLimit;
-    SLE::pointer    sleRippleState  = entryCache (ltRIPPLE_STATE, Ledger::getRippleStateIndex (uToAccountID, uFromAccountID, uCurrencyID));
+    STAmount saLimit;
+    auto sleRippleState  = entryCache (
+        ltRIPPLE_STATE,
+        Ledger::getRippleStateIndex (
+            uToAccountID, uFromAccountID, currency));
 
     if (sleRippleState)
     {
-        saLimit = sleRippleState->getFieldAmount (uToAccountID < uFromAccountID ? sfLowLimit : sfHighLimit);
+        saLimit = sleRippleState->getFieldAmount (
+            uToAccountID < uFromAccountID ? sfLowLimit : sfHighLimit);
         saLimit.setIssuer (uToAccountID);
     }
     else
     {
-        saLimit.clear (uCurrencyID, uToAccountID);
-#if 0
-        // We could cut off coming here if we test for no line sooner.
-        assert (false);
-#endif
+        saLimit.clear (currency, uToAccountID);
     }
 
     return saLimit;
 
 }
 
-std::uint32_t LedgerEntrySet::rippleTransferRate (const uint160& uIssuerID)
+std::uint32_t LedgerEntrySet::rippleTransferRate (const uint160& issuer)
 {
     SLE::pointer sleAccount (entryCache (
-        ltACCOUNT_ROOT, Ledger::getAccountRootIndex (uIssuerID)));
+        ltACCOUNT_ROOT, Ledger::getAccountRootIndex (issuer)));
 
     std::uint32_t uQuality =
         sleAccount && sleAccount->isFieldPresent (sfTransferRate)
@@ -1160,7 +1170,7 @@ std::uint32_t LedgerEntrySet::rippleTransferRate (const uint160& uIssuerID)
             : QUALITY_ONE;
 
     WriteLog (lsTRACE, LedgerEntrySet) << "rippleTransferRate:" <<
-        " uIssuerID=" << RippleAddress::createHumanAccountID (uIssuerID) <<
+        " issuer=" << RippleAddress::createHumanAccountID (issuer) <<
         " account_exists=" << std::boolalpha << !!sleAccount <<
         " transfer_rate=" << (uQuality / 1000000000.0);
 
@@ -1170,21 +1180,21 @@ std::uint32_t LedgerEntrySet::rippleTransferRate (const uint160& uIssuerID)
 std::uint32_t
 LedgerEntrySet::rippleTransferRate (const uint160& uSenderID,
                                     const uint160& uReceiverID,
-                                    const uint160& uIssuerID)
+                                    const uint160& issuer)
 {
     // If calculating the transfer rate from or to the issuer of the currency
     // no fees are assessed.
-    return uSenderID == uIssuerID || uReceiverID == uIssuerID
+    return uSenderID == issuer || uReceiverID == issuer
            ? QUALITY_ONE
-           : rippleTransferRate (uIssuerID);
+           : rippleTransferRate (issuer);
 }
 
 // XXX Might not need this, might store in nodes on calc reverse.
 std::uint32_t
 LedgerEntrySet::rippleQualityIn (const uint160& uToAccountID,
                                  const uint160& uFromAccountID,
-                                 const uint160& uCurrencyID, SField::ref sfLow,
-                                 SField::ref sfHigh)
+                                 const uint160& uCurrencyID,
+                                 SField::ref sfLow, SField::ref sfHigh)
 {
     std::uint32_t uQuality (QUALITY_ONE);
 
@@ -1210,7 +1220,7 @@ LedgerEntrySet::rippleQualityIn (const uint160& uToAccountID,
         // XXX Ideally, catch no before this. So we can assert to be stricter.
         uQuality    = QUALITY_ONE;
     }
-    
+
     WriteLog (lsTRACE, LedgerEntrySet) << "rippleQuality: " <<
         (sfLow == sfLowQualityIn ? "in" : "out") <<
         " uToAccountID=" << RippleAddress::createHumanAccountID (uToAccountID) <<
@@ -1222,30 +1232,30 @@ LedgerEntrySet::rippleQualityIn (const uint160& uToAccountID,
     return uQuality;
 }
 
-// Return how much of uIssuerID's uCurrencyID IOUs that uAccountID holds.  May be negative.
-// <-- IOU's uAccountID has of uIssuerID.
-STAmount LedgerEntrySet::rippleHolds (const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID)
+// Return how much of issuer's currency IOUs that account holds.  May be negative.
+// <-- IOU's account has of issuer.
+STAmount LedgerEntrySet::rippleHolds (const uint160& account, const uint160& currency, const uint160& issuer)
 {
     STAmount saBalance;
     SLE::pointer sleRippleState = entryCache (ltRIPPLE_STATE,
-        Ledger::getRippleStateIndex (uAccountID, uIssuerID, uCurrencyID));
+        Ledger::getRippleStateIndex (account, issuer, currency));
 
     if (!sleRippleState)
     {
-        saBalance.clear (uCurrencyID, uIssuerID);
+        saBalance.clear (currency, issuer);
     }
-    else if (uAccountID > uIssuerID)
+    else if (account > issuer)
     {
         saBalance   = sleRippleState->getFieldAmount (sfBalance);
-        saBalance.negate ();    // Put balance in uAccountID terms.
+        saBalance.negate ();    // Put balance in account terms.
 
-        saBalance.setIssuer (uIssuerID);
+        saBalance.setIssuer (issuer);
     }
     else
     {
         saBalance   = sleRippleState->getFieldAmount (sfBalance);
 
-        saBalance.setIssuer (uIssuerID);
+        saBalance.setIssuer (issuer);
     }
 
     return saBalance;
@@ -1253,16 +1263,19 @@ STAmount LedgerEntrySet::rippleHolds (const uint160& uAccountID, const uint160& 
 
 // Returns the amount an account can spend without going into debt.
 //
-// <-- saAmount: amount of uCurrencyID held by uAccountID. May be negative.
-STAmount LedgerEntrySet::accountHolds (const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID)
+// <-- saAmount: amount of currency held by account. May be negative.
+STAmount LedgerEntrySet::accountHolds (
+    const uint160& account, const uint160& currency,
+    const uint160& issuer)
 {
     STAmount    saAmount;
 
-    if (!uCurrencyID)
+    if (!currency)
     {
         SLE::pointer sleAccount = entryCache (ltACCOUNT_ROOT,
-            Ledger::getAccountRootIndex (uAccountID));
-        std::uint64_t uReserve = mLedger->getReserve (sleAccount->getFieldU32 (sfOwnerCount));
+            Ledger::getAccountRootIndex (account));
+        std::uint64_t uReserve = mLedger->getReserve (
+            sleAccount->getFieldU32 (sfOwnerCount));
 
         STAmount saBalance   = sleAccount->getFieldAmount (sfBalance);
 
@@ -1276,48 +1289,52 @@ STAmount LedgerEntrySet::accountHolds (const uint160& uAccountID, const uint160&
         }
 
         WriteLog (lsTRACE, LedgerEntrySet) << "accountHolds:" <<
-            " uAccountID=" << RippleAddress::createHumanAccountID (uAccountID) <<
+            " account=" << RippleAddress::createHumanAccountID (account) <<
             " saAmount=" << saAmount.getFullText () <<
             " saBalance=" << saBalance.getFullText () <<
             " uReserve=" << uReserve;
     }
     else
     {
-        saAmount    = rippleHolds (uAccountID, uCurrencyID, uIssuerID);
+        saAmount    = rippleHolds (account, currency, issuer);
 
         WriteLog (lsTRACE, LedgerEntrySet) << "accountHolds:" <<
-            " uAccountID=" << RippleAddress::createHumanAccountID (uAccountID) <<
+            " account=" << RippleAddress::createHumanAccountID (account) <<
             " saAmount=" << saAmount.getFullText ();
     }
 
     return saAmount;
 }
 
-// Returns the funds available for uAccountID for a currency/issuer.
-// Use when you need a default for rippling uAccountID's currency.
+// Returns the funds available for account for a currency/issuer.
+// Use when you need a default for rippling account's currency.
 // XXX Should take into account quality?
 // --> saDefault/currency/issuer
 // <-- saFunds: Funds available. May be negative.
-//              If the issuer is the same as uAccountID, funds are unlimited, use result is saDefault.
-STAmount LedgerEntrySet::accountFunds (const uint160& uAccountID, const STAmount& saDefault)
+//
+// If the issuer is the same as account, funds are unlimited, use result is
+// saDefault.
+STAmount LedgerEntrySet::accountFunds (
+    const uint160& account, const STAmount& saDefault)
 {
     STAmount    saFunds;
 
-    if (!saDefault.isNative () && saDefault.getIssuer () == uAccountID)
+    if (!saDefault.isNative () && saDefault.getIssuer () == account)
     {
         saFunds = saDefault;
 
         WriteLog (lsTRACE, LedgerEntrySet) << "accountFunds:" <<
-            " uAccountID=" << RippleAddress::createHumanAccountID (uAccountID) <<
+            " account=" << RippleAddress::createHumanAccountID (account) <<
             " saDefault=" << saDefault.getFullText () <<
             " SELF-FUNDED";
     }
     else
     {
-        saFunds = accountHolds (uAccountID, saDefault.getCurrency (), saDefault.getIssuer ());
+        saFunds = accountHolds (
+            account, saDefault.getCurrency (), saDefault.getIssuer ());
 
         WriteLog (lsTRACE, LedgerEntrySet) << "accountFunds:" <<
-            " uAccountID=" << RippleAddress::createHumanAccountID (uAccountID) <<
+            " account=" << RippleAddress::createHumanAccountID (account) <<
             " saDefault=" << saDefault.getFullText () <<
             " saFunds=" << saFunds.getFullText ();
     }
@@ -1329,12 +1346,12 @@ STAmount LedgerEntrySet::accountFunds (const uint160& uAccountID, const STAmount
 STAmount LedgerEntrySet::rippleTransferFee (
     const uint160& uSenderID,
     const uint160& uReceiverID,
-    const uint160& uIssuerID,
+    const uint160& issuer,
     const STAmount& saAmount)
 {
-    if (uSenderID != uIssuerID && uReceiverID != uIssuerID)
+    if (uSenderID != issuer && uReceiverID != issuer)
     {
-        std::uint32_t uTransitRate = rippleTransferRate (uIssuerID);
+        std::uint32_t uTransitRate = rippleTransferRate (issuer);
 
         if (QUALITY_ONE != uTransitRate)
         {
@@ -1366,8 +1383,10 @@ TER LedgerEntrySet::trustCreate (
     SLE::ref        sleAccount,         // --> the account being set.
     const bool      bAuth,              // --> authorize account.
     const bool      bNoRipple,          // --> others cannot ripple through
-    const STAmount& saBalance,          // --> balance of account being set. Issuer should be ACCOUNT_ONE
-    const STAmount& saLimit,            // --> limit for account being set. Issuer should be the account being set.
+    const STAmount& saBalance,          // --> balance of account being set.
+                                        // Issuer should be ACCOUNT_ONE
+    const STAmount& saLimit,            // --> limit for account being set.
+                                        // Issuer should be the account being set.
     const std::uint32_t uQualityIn,
     const std::uint32_t uQualityOut)
 {
@@ -1403,17 +1422,24 @@ TER LedgerEntrySet::trustCreate (
         const bool  bSetDst     = saLimit.getIssuer () == uDstAccountID;
         const bool  bSetHigh    = bSrcHigh ^ bSetDst;
 
-        sleRippleState->setFieldU64 (sfLowNode, uLowNode);  // Remember deletion hints.
+        // Remember deletion hints.
+        sleRippleState->setFieldU64 (sfLowNode, uLowNode);
         sleRippleState->setFieldU64 (sfHighNode, uHighNode);
 
-        sleRippleState->setFieldAmount (!bSetHigh ? sfLowLimit : sfHighLimit, saLimit);
-        sleRippleState->setFieldAmount ( bSetHigh ? sfLowLimit : sfHighLimit, STAmount (saBalance.getCurrency (), bSetDst ? uSrcAccountID : uDstAccountID));
+        sleRippleState->setFieldAmount (
+            !bSetHigh ? sfLowLimit : sfHighLimit, saLimit);
+        sleRippleState->setFieldAmount (
+            bSetHigh ? sfLowLimit : sfHighLimit,
+            STAmount (saBalance.getCurrency (),
+                      bSetDst ? uSrcAccountID : uDstAccountID));
 
         if (uQualityIn)
-            sleRippleState->setFieldU32 (!bSetHigh ? sfLowQualityIn : sfHighQualityIn, uQualityIn);
+            sleRippleState->setFieldU32 (
+                !bSetHigh ? sfLowQualityIn : sfHighQualityIn, uQualityIn);
 
         if (uQualityOut)
-            sleRippleState->setFieldU32 (!bSetHigh ? sfLowQualityOut : sfHighQualityOut, uQualityOut);
+            sleRippleState->setFieldU32 (
+                !bSetHigh ? sfLowQualityOut : sfHighQualityOut, uQualityOut);
 
         std::uint32_t  uFlags  = !bSetHigh ? lsfLowReserve : lsfHighReserve;
 
@@ -1427,30 +1453,49 @@ TER LedgerEntrySet::trustCreate (
         }
 
         sleRippleState->setFieldU32 (sfFlags, uFlags);
+        ownerCountAdjust (
+            !bSetDst ? uSrcAccountID : uDstAccountID, 1, sleAccount);
 
-        ownerCountAdjust (!bSetDst ? uSrcAccountID : uDstAccountID, 1, sleAccount);
-
-        sleRippleState->setFieldAmount (sfBalance, bSetHigh ? -saBalance : saBalance);  // ONLY: Create ripple balance.
+        // ONLY: Create ripple balance.
+        sleRippleState->setFieldAmount (
+            sfBalance, bSetHigh ? -saBalance : saBalance);
     }
 
     return terResult;
 }
 
-TER LedgerEntrySet::trustDelete (SLE::ref sleRippleState, const uint160& uLowAccountID, const uint160& uHighAccountID)
+TER LedgerEntrySet::trustDelete (
+    SLE::ref sleRippleState, const uint160& uLowAccountID,
+    const uint160& uHighAccountID)
 {
-    bool        bLowNode    = sleRippleState->isFieldPresent (sfLowNode);   // Detect legacy dirs.
+    // Detect legacy dirs.
+    bool        bLowNode    = sleRippleState->isFieldPresent (sfLowNode);
     bool        bHighNode   = sleRippleState->isFieldPresent (sfHighNode);
     std::uint64_t uLowNode    = sleRippleState->getFieldU64 (sfLowNode);
     std::uint64_t uHighNode   = sleRippleState->getFieldU64 (sfHighNode);
     TER         terResult;
 
-    WriteLog (lsTRACE, LedgerEntrySet) << "trustDelete: Deleting ripple line: low";
-    terResult   = dirDelete (false, uLowNode, Ledger::getOwnerDirIndex (uLowAccountID), sleRippleState->getIndex (), false, !bLowNode);
+    WriteLog (lsTRACE, LedgerEntrySet)
+        << "trustDelete: Deleting ripple line: low";
+    terResult   = dirDelete (
+        false,
+        uLowNode,
+        Ledger::getOwnerDirIndex (uLowAccountID),
+        sleRippleState->getIndex (),
+        false,
+        !bLowNode);
 
     if (tesSUCCESS == terResult)
     {
-        WriteLog (lsTRACE, LedgerEntrySet) << "trustDelete: Deleting ripple line: high";
-        terResult   = dirDelete (false, uHighNode, Ledger::getOwnerDirIndex (uHighAccountID), sleRippleState->getIndex (), false, !bHighNode);
+        WriteLog (lsTRACE, LedgerEntrySet)
+                << "trustDelete: Deleting ripple line: high";
+        terResult   = dirDelete (
+            false,
+            uHighNode,
+            Ledger::getOwnerDirIndex (uHighAccountID),
+            sleRippleState->getIndex (),
+            false,
+            !bHighNode);
     }
 
     WriteLog (lsTRACE, LedgerEntrySet) << "trustDelete: Deleting ripple line: state";
@@ -1463,29 +1508,33 @@ TER LedgerEntrySet::trustDelete (SLE::ref sleRippleState, const uint160& uLowAcc
 // - Redeeming IOUs and/or sending sender's own IOUs.
 // - Create trust line of needed.
 // --> bCheckIssuer : normally require issuer to be involved.
-TER LedgerEntrySet::rippleCredit (const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount, bool bCheckIssuer)
+TER LedgerEntrySet::rippleCredit (
+    const uint160& uSenderID, const uint160& uReceiverID,
+    const STAmount& saAmount, bool bCheckIssuer)
 {
-    uint160             uIssuerID       = saAmount.getIssuer ();
-    uint160             uCurrencyID     = saAmount.getCurrency ();
+    uint160 issuer = saAmount.getIssuer ();
+    uint160 currency = saAmount.getCurrency ();
 
     // Make sure issuer is involved.
-    assert (!bCheckIssuer || uSenderID == uIssuerID || uReceiverID == uIssuerID);
+    assert (
+        !bCheckIssuer || uSenderID == issuer || uReceiverID == issuer);
 
     // Disallow sending to self.
     assert (uSenderID != uReceiverID);
 
-    bool                bSenderHigh     = uSenderID > uReceiverID;
-    uint256             uIndex          = Ledger::getRippleStateIndex (uSenderID, uReceiverID, saAmount.getCurrency ());
-    SLE::pointer        sleRippleState  = entryCache (ltRIPPLE_STATE, uIndex);
+    bool bSenderHigh = uSenderID > uReceiverID;
+    uint256 uIndex = Ledger::getRippleStateIndex (
+        uSenderID, uReceiverID, saAmount.getCurrency ());
+    auto sleRippleState  = entryCache (ltRIPPLE_STATE, uIndex);
 
-    TER                 terResult;
+    TER terResult;
 
     assert (!!uSenderID && uSenderID != ACCOUNT_ONE);
     assert (!!uReceiverID && uReceiverID != ACCOUNT_ONE);
 
     if (!sleRippleState)
     {
-        STAmount    saReceiverLimit = STAmount (uCurrencyID, uReceiverID);
+        STAmount    saReceiverLimit = STAmount (currency, uReceiverID);
         STAmount    saBalance       = saAmount;
 
         saBalance.setIssuer (ACCOUNT_ONE);
@@ -1528,41 +1577,57 @@ TER LedgerEntrySet::rippleCredit (const uint160& uSenderID, const uint160& uRece
         bool bDelete = false;
 
         // YYY Could skip this if rippling in reverse.
-        if (saBefore > zero                                                                              // Sender balance was positive.
-                && saBalance <= zero                                                                         // Sender is zero or negative.
-                && (uFlags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve)) // Sender reserve is set.
-                && !(uFlags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple))
-                && !sleRippleState->getFieldAmount (!bSenderHigh ? sfLowLimit : sfHighLimit)                        // Sender trust limit is 0.
-                && !sleRippleState->getFieldU32 (!bSenderHigh ? sfLowQualityIn : sfHighQualityIn)                   // Sender quality in is 0.
-                && !sleRippleState->getFieldU32 (!bSenderHigh ? sfLowQualityOut : sfHighQualityOut))                // Sender quality out is 0.
+        if (saBefore > zero
+            // Sender balance was positive.
+            && saBalance <= zero
+            // Sender is zero or negative.
+            && (uFlags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve))
+            // Sender reserve is set.
+            && !(uFlags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple))
+            && !sleRippleState->getFieldAmount (
+                !bSenderHigh ? sfLowLimit : sfHighLimit)
+            // Sender trust limit is 0.
+            && !sleRippleState->getFieldU32 (
+                !bSenderHigh ? sfLowQualityIn : sfHighQualityIn)
+            // Sender quality in is 0.
+            && !sleRippleState->getFieldU32 (
+                !bSenderHigh ? sfLowQualityOut : sfHighQualityOut))
+            // Sender quality out is 0.
         {
             // Clear the reserve of the sender, possibly delete the line!
-            SLE::pointer    sleSender   = entryCache (ltACCOUNT_ROOT, Ledger::getAccountRootIndex (uSenderID));
+            auto sleSender = entryCache (
+                ltACCOUNT_ROOT, Ledger::getAccountRootIndex (uSenderID));
 
             ownerCountAdjust (uSenderID, -1, sleSender);
 
-            sleRippleState->setFieldU32 (sfFlags, uFlags & (!bSenderHigh ? ~lsfLowReserve : ~lsfHighReserve));  // Clear reserve flag.
+            // Clear reserve flag.
+            sleRippleState->setFieldU32 (
+                sfFlags,
+                uFlags & (!bSenderHigh ? ~lsfLowReserve : ~lsfHighReserve));
 
+            // Balance is zero, receiver reserve is clear.
             bDelete = !saBalance        // Balance is zero.
-                      && !(uFlags & (bSenderHigh ? lsfLowReserve : lsfHighReserve)); // Receiver reserve is clear.
+                && !(uFlags & (bSenderHigh ? lsfLowReserve : lsfHighReserve));
+            // Receiver reserve is clear.
         }
 
         if (bSenderHigh)
             saBalance.negate ();
 
         // Want to reflect balance to zero even if we are deleting line.
-        sleRippleState->setFieldAmount (sfBalance, saBalance);  // ONLY: Adjust ripple balance.
+        sleRippleState->setFieldAmount (sfBalance, saBalance);
+        // ONLY: Adjust ripple balance.
 
         if (bDelete)
         {
-            terResult   = trustDelete (sleRippleState,
-                                       bSenderHigh ? uReceiverID : uSenderID,
-                                       !bSenderHigh ? uReceiverID : uSenderID);
+            terResult   = trustDelete (
+                sleRippleState,
+                bSenderHigh ? uReceiverID : uSenderID,
+                !bSenderHigh ? uReceiverID : uSenderID);
         }
         else
         {
             entryModify (sleRippleState);
-
             terResult   = tesSUCCESS;
         }
     }
@@ -1573,15 +1638,18 @@ TER LedgerEntrySet::rippleCredit (const uint160& uSenderID, const uint160& uRece
 // Send regardless of limits.
 // --> saAmount: Amount/currency/issuer to deliver to reciever.
 // <-- saActual: Amount actually cost.  Sender pay's fees.
-TER LedgerEntrySet::rippleSend (const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount, STAmount& saActual)
+TER LedgerEntrySet::rippleSend (
+    const uint160& uSenderID, const uint160& uReceiverID,
+    const STAmount& saAmount, STAmount& saActual)
 {
-    const uint160   uIssuerID   = saAmount.getIssuer ();
+    const uint160   issuer   = saAmount.getIssuer ();
     TER             terResult;
 
     assert (!!uSenderID && !!uReceiverID);
     assert (uSenderID != uReceiverID);
 
-    if (uSenderID == uIssuerID || uReceiverID == uIssuerID || uIssuerID == ACCOUNT_ONE)
+    if (uSenderID == issuer || uReceiverID == issuer ||
+        issuer == ACCOUNT_ONE)
     {
         // Direct send: redeeming IOUs and/or sending own IOUs.
         terResult   = rippleCredit (uSenderID, uReceiverID, saAmount, false);
@@ -1594,11 +1662,12 @@ TER LedgerEntrySet::rippleSend (const uint160& uSenderID, const uint160& uReceiv
     {
         // Sending 3rd party IOUs: transit.
 
-        STAmount        saTransitFee    = rippleTransferFee (uSenderID, uReceiverID, uIssuerID, saAmount);
+        STAmount saTransitFee = rippleTransferFee (
+            uSenderID, uReceiverID, issuer, saAmount);
 
-        saActual    = !saTransitFee ? saAmount : saAmount + saTransitFee;
+        saActual = !saTransitFee ? saAmount : saAmount + saTransitFee;
 
-        saActual.setIssuer (uIssuerID); // XXX Make sure this done in + above.
+        saActual.setIssuer (issuer); // XXX Make sure this done in + above.
 
         WriteLog (lsDEBUG, LedgerEntrySet) << "rippleSend> " <<
             RippleAddress::createHumanAccountID (uSenderID) <<
@@ -1607,16 +1676,18 @@ TER LedgerEntrySet::rippleSend (const uint160& uSenderID, const uint160& uReceiv
             " fee=" << saTransitFee.getFullText () <<
             " cost=" << saActual.getFullText ();
 
-        terResult   = rippleCredit (uIssuerID, uReceiverID, saAmount);
+        terResult   = rippleCredit (issuer, uReceiverID, saAmount);
 
         if (tesSUCCESS == terResult)
-            terResult   = rippleCredit (uSenderID, uIssuerID, saActual);
+            terResult   = rippleCredit (uSenderID, issuer, saActual);
     }
 
     return terResult;
 }
 
-TER LedgerEntrySet::accountSend (const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount)
+TER LedgerEntrySet::accountSend (
+    const uint160& uSenderID, const uint160& uReceiverID,
+    const STAmount& saAmount)
 {
     TER terResult = tesSUCCESS;
 
@@ -1624,15 +1695,17 @@ TER LedgerEntrySet::accountSend (const uint160& uSenderID, const uint160& uRecei
 
     if (!saAmount || (uSenderID == uReceiverID))
         return tesSUCCESS;
-    
+
     if (saAmount.isNative ())
     {
         // XRP send which does not check reserve and can do pure adjustment.
         SLE::pointer sleSender = !!uSenderID
-            ? entryCache (ltACCOUNT_ROOT, Ledger::getAccountRootIndex (uSenderID))
+            ? entryCache (ltACCOUNT_ROOT,
+                          Ledger::getAccountRootIndex (uSenderID))
             : SLE::pointer ();
         SLE::pointer sleReceiver = !!uReceiverID
-            ? entryCache (ltACCOUNT_ROOT, Ledger::getAccountRootIndex (uReceiverID))
+            ? entryCache (ltACCOUNT_ROOT,
+                          Ledger::getAccountRootIndex (uReceiverID))
             : SLE::pointer ();
 
         auto get_balance = [](SLE::pointer acct)

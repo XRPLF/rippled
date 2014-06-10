@@ -26,7 +26,7 @@ TER CancelOffer::doApply ()
     std::uint32_t const uAccountSequenceNext = mTxnAccount->getFieldU32 (sfSequence);
 
     m_journal.debug <<
-        "uAccountSequenceNext=" << uAccountSequenceNext << 
+        "uAccountSequenceNext=" << uAccountSequenceNext <<
         " uOfferSequence=" << uOfferSequence;
 
     std::uint32_t const uTxFlags (mTxn.getFlags ());
@@ -41,16 +41,16 @@ TER CancelOffer::doApply ()
     if (!uOfferSequence || uAccountSequenceNext - 1 <= uOfferSequence)
     {
         m_journal.trace <<
-            "uAccountSequenceNext=" << uAccountSequenceNext << 
+            "uAccountSequenceNext=" << uAccountSequenceNext <<
             " uOfferSequence=" << uOfferSequence;
         return temBAD_SEQUENCE;
     }
 
-    uint256 const uOfferIndex (
+    uint256 const offerIndex (
         Ledger::getOfferIndex (mTxnAccountID, uOfferSequence));
-    
+
     SLE::pointer sleOffer (
-        mEngine->entryCache (ltOFFER, uOfferIndex));
+        mEngine->entryCache (ltOFFER, offerIndex));
 
     if (sleOffer)
     {
@@ -62,9 +62,9 @@ TER CancelOffer::doApply ()
 
     m_journal.warning <<
         "OfferCancel: offer not found: " <<
-        RippleAddress::createHumanAccountID (mTxnAccountID) << 
+        RippleAddress::createHumanAccountID (mTxnAccountID) <<
         " : " << uOfferSequence <<
-        " : " << to_string (uOfferIndex);
+        " : " << to_string (offerIndex);
 
     return tesSUCCESS;
 }

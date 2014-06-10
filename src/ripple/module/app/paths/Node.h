@@ -20,6 +20,8 @@
 #ifndef RIPPLE_APP_PATH_NODE_H
 #define RIPPLE_APP_PATH_NODE_H
 
+#include <ripple/module/app/paths/Types.h>
+
 namespace ripple {
 namespace path {
 
@@ -36,27 +38,29 @@ struct Node
 
     bool operator == (Node const&) const;
 
-    std::uint16_t uFlags;             // --> From path.
+    std::uint16_t uFlags;       // --> From path.
 
-    uint160 uAccountID;         // --> Accounts: Recieving/sending account.
-    uint160 uCurrencyID;        // --> Accounts: Receive and send, Offers: send.
+    Account account_;           // --> Accounts: Receiving/sending account.
+    Currency currency_;         // --> Accounts: Receive and send, Offers: send.
                                 // --- For offer's next has currency out.
-    uint160 uIssuerID;          // --> Currency's issuer
+    Account issuer_;            // --> Currency's issuer
 
-    STAmount saTransferRate;     // Transfer rate for uIssuerID.
+    STAmount transferRate_;    // Transfer rate for issuer.
 
     // Computed by Reverse.
     STAmount saRevRedeem;        // <-- Amount to redeem to next.
     STAmount saRevIssue;         // <-- Amount to issue to next, limited by
                                  //     credit and outstanding IOUs.  Issue
                                  //     isn't used by offers.
-    STAmount saRevDeliver;       // <-- Amount to deliver to next regardless of fee.
+    STAmount saRevDeliver;       // <-- Amount to deliver to next regardless of
+                                 // fee.
 
     // Computed by forward.
     STAmount saFwdRedeem;        // <-- Amount node will redeem to next.
     STAmount saFwdIssue;         // <-- Amount node will issue to next.
                                  //     Issue isn't used by offers.
-    STAmount saFwdDeliver;       // <-- Amount to deliver to next regardless of fee.
+    STAmount saFwdDeliver;       // <-- Amount to deliver to next regardless of
+                                 // fee.
 
     // For offers:
 
@@ -70,8 +74,16 @@ struct Node
     // The "directories" are ordered in "increasing" "quality" value, which
     // means that the first "directory" has the "best" (i.e. numerically least)
     // "quality".
-    uint256 uDirectTip;         // Current directory.
-    uint256 uDirectEnd;         // Next order book.
+    // https://ripple.com/wiki/Ledger_Format#Prioritizing_a_continuous_key_space
+
+    // Current directory - the last 64 bits of this are the quality.
+    uint256 uDirectTip;
+
+    // Start of the next order book - one past the worst quality possible for
+    // the current order book.
+    uint256 uDirectEnd;
+
+
     bool bDirectAdvance;        // Need to advance directory.
     bool bDirectRestart;        // Need to restart directory.
     SLE::pointer sleDirectDir;
@@ -80,10 +92,12 @@ struct Node
     // PaymentNode
     bool bEntryAdvance;          // Need to advance entry.
     unsigned int uEntry;
-    uint256 uOfferIndex;
+    uint256 offerIndex_;
     SLE::pointer sleOffer;
-    uint160 uOfrOwnerID;
-    bool bFundsDirty;            // Need to refresh saOfferFunds, saTakerPays, & saTakerGets.
+    Account offerOwnerAccount_;
+
+    // Do we need to refresh saOfferFunds, saTakerPays, & saTakerGets?
+    bool bFundsDirty;
     STAmount saOfferFunds;
     STAmount saTakerPays;
     STAmount saTakerGets;

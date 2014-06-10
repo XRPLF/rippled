@@ -19,16 +19,17 @@
 
 #include <ripple/module/app/paths/Calculators.h>
 
-#include <ripple/module/app/paths/CalcNode.cpp>
-#include <ripple/module/app/paths/CalcNodeAccountFwd.cpp>
-#include <ripple/module/app/paths/CalcNodeAccountRev.cpp>
 #include <ripple/module/app/paths/CalcNodeAdvance.cpp>
 #include <ripple/module/app/paths/CalcNodeDeliverFwd.cpp>
 #include <ripple/module/app/paths/CalcNodeDeliverRev.cpp>
-#include <ripple/module/app/paths/CalcNodeOffer.cpp>
-#include <ripple/module/app/paths/CalcNodeRipple.cpp>
+#include <ripple/module/app/paths/ComputeRippleLiquidity.cpp>
+#include <ripple/module/app/paths/ComputeAccountLiquidityForward.cpp>
+#include <ripple/module/app/paths/ComputeAccountLiquidityReverse.cpp>
+#include <ripple/module/app/paths/ComputeLiquidity.cpp>
+#include <ripple/module/app/paths/ComputeOfferLiquidity.cpp>
 #include <ripple/module/app/paths/Node.cpp>
 #include <ripple/module/app/paths/PathNext.cpp>
+#include <ripple/module/app/paths/Types.cpp>
 
 namespace ripple {
 
@@ -57,13 +58,13 @@ TER rippleCalculate (
     PathState::List&  pathStateList,
 
     // Issuer:
-    //      XRP: ACCOUNT_XRP
+    //      XRP: XRP_ACCOUNT
     //  non-XRP: uSrcAccountID (for any issuer) or another account with trust
     //           node.
     const STAmount&     saMaxAmountReq,             // --> -1 = no limit.
 
     // Issuer:
-    //      XRP: ACCOUNT_XRP
+    //      XRP: XRP_ACCOUNT
     //  non-XRP: uDstAccountID (for any issuer) or another account with trust
     //           node.
     const STAmount&     saDstAmountReq,
@@ -119,7 +120,7 @@ TER rippleCalculate (
         if (!pspDirect)
             return temUNKNOWN;
 
-        pspDirect->setExpanded (
+        pspDirect->expandPath (
             activeLedger, STPath (), uDstAccountID, uSrcAccountID);
 
         if (tesSUCCESS == pspDirect->status())
@@ -167,7 +168,7 @@ TER rippleCalculate (
             << " uSrcAccountID:"
             << RippleAddress::createHumanAccountID (uSrcAccountID);
 
-        pspExpanded->setExpanded (
+        pspExpanded->expandPath (
             activeLedger, spPath, uDstAccountID, uSrcAccountID);
 
         if (tesSUCCESS == pspExpanded->status())
@@ -200,8 +201,8 @@ TER rippleCalculate (
     else
         resultCode   = temUNCERTAIN;
 
-    saMaxAmountAct = zeroed(saMaxAmountReq);
-    saDstAmountAct = zeroed(saDstAmountReq);
+    saMaxAmountAct = saMaxAmountReq.zeroed();
+    saDstAmountAct = saDstAmountReq.zeroed();
 
     // When processing, we don't want to complicate directory walking with
     // deletion.
@@ -426,25 +427,25 @@ TER rippleCalculate (
         if (resultCode == tesSUCCESS)
         {
             // Delete became unfunded offers.
-            for (auto const& uOfferIndex: vuUnfundedBecame)
+            for (auto const& offerIndex: vuUnfundedBecame)
             {
                 if (resultCode == tesSUCCESS)
                 {
                     WriteLog (lsDEBUG, RippleCalc)
-                        << "Became unfunded " << to_string (uOfferIndex);
-                    resultCode = activeLedger.offerDelete (uOfferIndex);
+                        << "Became unfunded " << to_string (offerIndex);
+                    resultCode = activeLedger.offerDelete (offerIndex);
                 }
             }
         }
 
         // Delete found unfunded offers.
-        for (auto const& uOfferIndex: rc.mUnfundedOffers)
+        for (auto const& offerIndex: rc.mUnfundedOffers)
         {
             if (resultCode == tesSUCCESS)
             {
                 WriteLog (lsDEBUG, RippleCalc)
-                    << "Delete unfunded " << to_string (uOfferIndex);
-                resultCode = activeLedger.offerDelete (uOfferIndex);
+                    << "Delete unfunded " << to_string (offerIndex);
+                resultCode = activeLedger.offerDelete (offerIndex);
             }
         }
     }

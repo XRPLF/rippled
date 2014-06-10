@@ -427,7 +427,7 @@ STPathSet* STPathSet::construct (SerializerIterator& s, SField::ref name)
     {
         int iType   = s.get8 ();
 
-        if (iType == STPathElement::typeEnd || iType == STPathElement::typeBoundary)
+        if (iType == STPathElement::typeNone || iType == STPathElement::typeBoundary)
         {
             if (path.empty ())
             {
@@ -439,12 +439,12 @@ STPathSet* STPathSet::construct (SerializerIterator& s, SField::ref name)
             paths.push_back (path);
             path.clear ();
 
-            if (iType == STPathElement::typeEnd)
+            if (iType == STPathElement::typeNone)
             {
                 return new STPathSet (name, paths);
             }
         }
-        else if (iType & ~STPathElement::typeValidBits)
+        else if (iType & ~STPathElement::typeAll)
         {
             WriteLog (lsINFO, SerializedType) << "STPathSet: Bad path element: " << iType;
 
@@ -456,20 +456,20 @@ STPathSet* STPathSet::construct (SerializerIterator& s, SField::ref name)
             const bool  bCurrency   = !! (iType & STPathElement::typeCurrency);
             const bool  bIssuer     = !! (iType & STPathElement::typeIssuer);
 
-            uint160 uAccountID;
+            uint160 account;
             uint160 uCurrency;
-            uint160 uIssuerID;
+            uint160 issuer;
 
             if (bAccount)
-                uAccountID  = s.get160 ();
+                account  = s.get160 ();
 
             if (bCurrency)
                 uCurrency   = s.get160 ();
 
             if (bIssuer)
-                uIssuerID   = s.get160 ();
+                issuer   = s.get160 ();
 
-            path.push_back (STPathElement (uAccountID, uCurrency, uIssuerID, bCurrency));
+            path.push_back (STPathElement (account, uCurrency, issuer, bCurrency));
         }
     }
     while (1);
@@ -481,15 +481,17 @@ bool STPathSet::isEquivalent (const SerializedType& t) const
     return v && (value == v->value);
 }
 
-bool STPath::hasSeen (const uint160& uAccountId, const uint160& uCurrencyID, const uint160& uIssuerID) const
+bool STPath::hasSeen (
+    const uint160& uAccountId, const uint160& currency,
+    const uint160& issuer) const
 {
     for (int i = 0; i < mPath.size (); ++i)
     {
         const STPathElement& ele = getElement (i);
 
         if (ele.getAccountID () == uAccountId
-                && ele.getCurrency () == uCurrencyID
-                && ele.getIssuerID () == uIssuerID)
+                && ele.getCurrency () == currency
+                && ele.getIssuerID () == issuer)
             return true;
     }
 
@@ -619,7 +621,7 @@ void STPathSet::add (Serializer& s) const
 
         bFirst = false;
     }
-    s.add8 (STPathElement::typeEnd);
+    s.add8 (STPathElement::typeNone);
 }
 
 } // ripple

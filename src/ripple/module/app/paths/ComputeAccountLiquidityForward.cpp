@@ -39,7 +39,7 @@ namespace path {
 //   do not need to push funds.
 // - If next node is an offer and output is XRP then we need to deliver funds to
 //   limbo.
-TER nodeAccountFwd (
+TER computeForwardLiquidityForAccount (
     RippleCalc& rippleCalc,
     const unsigned int nodeIndex,   // 0 <= nodeIndex <= lastNodeIndex
     PathState& pathState,
@@ -58,18 +58,18 @@ TER nodeAccountFwd (
     const bool nextNodeIsAccount = nextNode.isAccount();
 
     const uint160& previousAccountID
-        = previousNodeIsAccount ? previousNode.uAccountID : node.uAccountID;
+        = previousNodeIsAccount ? previousNode.account_ : node.account_;
     // Offers are always issue.
     const uint160& nextAccountID
-        = nextNodeIsAccount ? nextNode.uAccountID : node.uAccountID;
+        = nextNodeIsAccount ? nextNode.account_ : node.account_;
 
     std::uint32_t uQualityIn = nodeIndex
         ? rippleCalc.mActiveLedger.rippleQualityIn (
-            node.uAccountID, previousAccountID, node.uCurrencyID)
+            node.account_, previousAccountID, node.currency_)
         : QUALITY_ONE;
     std::uint32_t  uQualityOut = (nodeIndex == lastNodeIndex)
         ? rippleCalc.mActiveLedger.rippleQualityOut (
-            node.uAccountID, nextAccountID, node.uCurrencyID)
+            node.account_, nextAccountID, node.currency_)
         : QUALITY_ONE;
 
     // When looking backward (prv) for req we care about what we just
@@ -92,7 +92,7 @@ TER nodeAccountFwd (
         previousNode.saFwdDeliver.getIssuer ());
 
     WriteLog (lsTRACE, RippleCalc)
-        << "nodeAccountFwd> "
+        << "computeForwardLiquidityForAccount> "
         << "nodeIndex=" << nodeIndex << "/" << lastNodeIndex
         << " previousNode.saFwdRedeem:" << previousNode.saFwdRedeem
         << " saPrvIssueReq:" << previousNode.saFwdIssue
@@ -139,7 +139,7 @@ TER nodeAccountFwd (
             pathState.inPass() += node.saFwdIssue;
 
             WriteLog (lsTRACE, RippleCalc)
-                << "nodeAccountFwd: ^ --> ACCOUNT --> account :"
+                << "computeForwardLiquidityForAccount: ^ --> ACCOUNT --> account :"
                 << " saInReq=" << pathState.inReq()
                 << " saInAct=" << pathState.inAct()
                 << " node.saFwdRedeem:" << node.saFwdRedeem
@@ -151,11 +151,11 @@ TER nodeAccountFwd (
         {
             // account --> ACCOUNT --> $
             WriteLog (lsTRACE, RippleCalc)
-                << "nodeAccountFwd: account --> ACCOUNT --> $ :"
+                << "computeForwardLiquidityForAccount: account --> ACCOUNT --> $ :"
                 << " previousAccountID="
                 << RippleAddress::createHumanAccountID (previousAccountID)
-                << " node.uAccountID="
-                << RippleAddress::createHumanAccountID (node.uAccountID)
+                << " node.account_="
+                << RippleAddress::createHumanAccountID (node.account_)
                 << " previousNode.saFwdRedeem:" << previousNode.saFwdRedeem
                 << " previousNode.saFwdIssue:" << previousNode.saFwdIssue;
 
@@ -177,7 +177,7 @@ TER nodeAccountFwd (
             {
                 // Actually receive.
                 resultCode = rippleCalc.mActiveLedger.rippleCredit (
-                    previousAccountID, node.uAccountID,
+                    previousAccountID, node.account_,
                     previousNode.saFwdRedeem + previousNode.saFwdIssue, false);
             }
             else
@@ -190,7 +190,7 @@ TER nodeAccountFwd (
         {
             // account --> ACCOUNT --> account
             WriteLog (lsTRACE, RippleCalc)
-                << "nodeAccountFwd: account --> ACCOUNT --> account";
+                << "computeForwardLiquidityForAccount: account --> ACCOUNT --> account";
 
             node.saFwdRedeem.clear (node.saRevRedeem);
             node.saFwdIssue.clear (node.saRevIssue);
@@ -200,7 +200,7 @@ TER nodeAccountFwd (
                 // Previous wants to redeem.
             {
                 // Rate : 1.0 : quality out
-                nodeRipple (
+                computeRippleLiquidity (
                     rippleCalc,
                     QUALITY_ONE, uQualityOut, previousNode.saFwdRedeem, node.saRevRedeem,
                     saPrvRedeemAct, node.saFwdRedeem, uRateMax);
@@ -213,7 +213,7 @@ TER nodeAccountFwd (
                 // Current has more to redeem to next.
             {
                 // Rate: quality in : quality out
-                nodeRipple (
+                computeRippleLiquidity (
                     rippleCalc,
                     uQualityIn, uQualityOut, previousNode.saFwdIssue, node.saRevRedeem,
                     saPrvIssueAct, node.saFwdRedeem, uRateMax);
@@ -228,9 +228,9 @@ TER nodeAccountFwd (
                 // Current wants to issue.
             {
                 // Rate : 1.0 : transfer_rate
-                nodeRipple (
+                computeRippleLiquidity (
                     rippleCalc, QUALITY_ONE,
-                    rippleCalc.mActiveLedger.rippleTransferRate (node.uAccountID),
+                    rippleCalc.mActiveLedger.rippleTransferRate (node.account_),
                     previousNode.saFwdRedeem, node.saRevIssue, saPrvRedeemAct,
                     node.saFwdIssue, uRateMax);
             }
@@ -244,7 +244,7 @@ TER nodeAccountFwd (
                 // Current wants to issue.
             {
                 // Rate: quality in : 1.0
-                nodeRipple (
+                computeRippleLiquidity (
                     rippleCalc,
                     uQualityIn, QUALITY_ONE, previousNode.saFwdIssue, node.saRevIssue,
                     saPrvIssueAct, node.saFwdIssue, uRateMax);
@@ -255,7 +255,7 @@ TER nodeAccountFwd (
             // Adjust prv --> cur balance : take all inbound
             resultCode   = saProvide
                 ? rippleCalc.mActiveLedger.rippleCredit (
-                    previousAccountID, node.uAccountID,
+                    previousAccountID, node.account_,
                     previousNode.saFwdRedeem + previousNode.saFwdIssue, false)
                 : tecPATH_DRY;
         }
@@ -272,7 +272,7 @@ TER nodeAccountFwd (
         {
             // Non-XRP, current node is the issuer.
             WriteLog (lsTRACE, RippleCalc)
-                << "nodeAccountFwd: account --> ACCOUNT --> offer";
+                << "computeForwardLiquidityForAccount: account --> ACCOUNT --> offer";
 
             node.saFwdDeliver.clear (node.saRevDeliver);
 
@@ -285,9 +285,9 @@ TER nodeAccountFwd (
             {
                 // Rate : 1.0 : transfer_rate
                 // XXX Is having the transfer rate here correct?
-                nodeRipple (
+                computeRippleLiquidity (
                     rippleCalc, QUALITY_ONE,
-                    rippleCalc.mActiveLedger.rippleTransferRate (node.uAccountID),
+                    rippleCalc.mActiveLedger.rippleTransferRate (node.account_),
                     previousNode.saFwdRedeem, node.saRevDeliver, saPrvRedeemAct,
                     node.saFwdDeliver, uRateMax);
             }
@@ -299,7 +299,7 @@ TER nodeAccountFwd (
                 // Previous wants to issue. To next must be ok.
             {
                 // Rate: quality in : 1.0
-                nodeRipple (
+                computeRippleLiquidity (
                     rippleCalc,
                     uQualityIn, QUALITY_ONE, previousNode.saFwdIssue, node.saRevDeliver,
                     saPrvIssueAct, node.saFwdDeliver, uRateMax);
@@ -308,7 +308,7 @@ TER nodeAccountFwd (
             // Adjust prv --> cur balance : take all inbound
             resultCode   = node.saFwdDeliver
                 ? rippleCalc.mActiveLedger.rippleCredit (
-                    previousAccountID, node.uAccountID,
+                    previousAccountID, node.account_,
                     previousNode.saFwdRedeem + previousNode.saFwdIssue, false)
                 : tecPATH_DRY;  // Didn't actually deliver anything.
         }
@@ -325,11 +325,11 @@ TER nodeAccountFwd (
                                               pathState.inReq() - pathState.inAct());
 
                 // Limit XRP by available. No limit for non-XRP as issuer.
-                if (node.uCurrencyID.isZero ())
+                if (node.currency_.isZero ())
                     node.saFwdDeliver = std::min (
                         node.saFwdDeliver,
                         rippleCalc.mActiveLedger.accountHolds (
-                            node.uAccountID, CURRENCY_XRP, ACCOUNT_XRP));
+                            node.account_, XRP_CURRENCY, XRP_ACCOUNT));
 
             }
 
@@ -340,14 +340,14 @@ TER nodeAccountFwd (
             {
                 resultCode   = tecPATH_DRY;
             }
-            else if (!!node.uCurrencyID)
+            else if (!!node.currency_)
             {
                 // Non-XRP, current node is the issuer.
                 // We could be delivering to multiple accounts, so we don't know
                 // which ripple balance will be adjusted.  Assume just issuing.
 
                 WriteLog (lsTRACE, RippleCalc)
-                    << "nodeAccountFwd: ^ --> ACCOUNT -- !XRP --> offer";
+                    << "computeForwardLiquidityForAccount: ^ --> ACCOUNT -- !XRP --> offer";
 
                 // As the issuer, would only issue.
                 // Don't need to actually deliver. As from delivering leave in
@@ -356,11 +356,11 @@ TER nodeAccountFwd (
             else
             {
                 WriteLog (lsTRACE, RippleCalc)
-                    << "nodeAccountFwd: ^ --> ACCOUNT -- XRP --> offer";
+                    << "computeForwardLiquidityForAccount: ^ --> ACCOUNT -- XRP --> offer";
 
                 // Deliver XRP to limbo.
                 resultCode = rippleCalc.mActiveLedger.accountSend (
-                    node.uAccountID, ACCOUNT_XRP, node.saFwdDeliver);
+                    node.account_, XRP_ACCOUNT, node.saFwdDeliver);
             }
         }
     }
@@ -370,7 +370,7 @@ TER nodeAccountFwd (
         {
             // offer --> ACCOUNT --> $
             WriteLog (lsTRACE, RippleCalc)
-                << "nodeAccountFwd: offer --> ACCOUNT --> $ : "
+                << "computeForwardLiquidityForAccount: offer --> ACCOUNT --> $ : "
                 << previousNode.saFwdDeliver;
 
             STAmount& saCurReceive = pathState.outPass();
@@ -385,7 +385,7 @@ TER nodeAccountFwd (
         {
             // offer --> ACCOUNT --> account
             WriteLog (lsTRACE, RippleCalc)
-                << "nodeAccountFwd: offer --> ACCOUNT --> account";
+                << "computeForwardLiquidityForAccount: offer --> ACCOUNT --> account";
 
             node.saFwdRedeem.clear (node.saRevRedeem);
             node.saFwdIssue.clear (node.saRevIssue);
@@ -395,7 +395,7 @@ TER nodeAccountFwd (
                 // Previous wants to deliver and can current redeem.
             {
                 // Rate : 1.0 : quality out
-                nodeRipple (
+                computeRippleLiquidity (
                     rippleCalc,
                     QUALITY_ONE, uQualityOut, previousNode.saFwdDeliver, node.saRevRedeem,
                     saPrvDeliverAct, node.saFwdRedeem, uRateMax);
@@ -411,9 +411,9 @@ TER nodeAccountFwd (
                 // Current wants issue.
             {
                 // Rate : 1.0 : transfer_rate
-                nodeRipple (
+                computeRippleLiquidity (
                     rippleCalc, QUALITY_ONE,
-                    rippleCalc.mActiveLedger.rippleTransferRate (node.uAccountID),
+                    rippleCalc.mActiveLedger.rippleTransferRate (node.account_),
                     previousNode.saFwdDeliver, node.saRevIssue, saPrvDeliverAct,
                     node.saFwdIssue, uRateMax);
             }
@@ -431,7 +431,7 @@ TER nodeAccountFwd (
         // offer --> ACCOUNT --> offer
         // deliver/redeem -> deliver/issue.
         WriteLog (lsTRACE, RippleCalc)
-            << "nodeAccountFwd: offer --> ACCOUNT --> offer";
+            << "computeForwardLiquidityForAccount: offer --> ACCOUNT --> offer";
 
         node.saFwdDeliver.clear (node.saRevDeliver);
 
@@ -441,9 +441,9 @@ TER nodeAccountFwd (
             // Current wants issue.
         {
             // Rate : 1.0 : transfer_rate
-            nodeRipple (
+            computeRippleLiquidity (
                 rippleCalc, QUALITY_ONE,
-                rippleCalc.mActiveLedger.rippleTransferRate (node.uAccountID),
+                rippleCalc.mActiveLedger.rippleTransferRate (node.account_),
                 previousNode.saFwdDeliver, node.saRevDeliver, saPrvDeliverAct,
                 node.saFwdDeliver, uRateMax);
         }

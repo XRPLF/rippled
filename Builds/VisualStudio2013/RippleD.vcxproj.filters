@@ -2781,6 +2781,9 @@
     <ClInclude Include="..\..\src\ripple\basics\utility\PlatformMacros.h">
       <Filter>ripple\basics\utility</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\basics\utility\StringConcat.h">
+      <Filter>ripple\basics\utility</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\basics\utility\StringUtilities.cpp">
       <Filter>ripple\basics\utility</Filter>
     </ClCompile>
@@ -2803,6 +2806,9 @@
       <Filter>ripple\basics\utility</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\basics\utility\Time.h">
+      <Filter>ripple\basics\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\basics\utility\ToString.h">
       <Filter>ripple\basics\utility</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\basics\utility\UptimeTimer.cpp">
@@ -2983,6 +2989,9 @@
       <Filter>ripple\module\app\book\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\module\app\book\impl\Taker.cpp">
+      <Filter>ripple\module\app\book\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\module\app\book\impl\Types.cpp">
       <Filter>ripple\module\app\book\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\module\app\book\tests\OfferStream.test.cpp">
@@ -3312,15 +3321,6 @@
     <ClInclude Include="..\..\src\ripple\module\app\node\SqliteFactory.h">
       <Filter>ripple\module\app\node</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\CalcNode.cpp">
-      <Filter>ripple\module\app\paths</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\CalcNodeAccountFwd.cpp">
-      <Filter>ripple\module\app\paths</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\CalcNodeAccountRev.cpp">
-      <Filter>ripple\module\app\paths</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\module\app\paths\CalcNodeAdvance.cpp">
       <Filter>ripple\module\app\paths</Filter>
     </ClCompile>
@@ -3330,18 +3330,27 @@
     <ClCompile Include="..\..\src\ripple\module\app\paths\CalcNodeDeliverRev.cpp">
       <Filter>ripple\module\app\paths</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\CalcNodeOffer.cpp">
-      <Filter>ripple\module\app\paths</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\CalcNodeRipple.cpp">
-      <Filter>ripple\module\app\paths</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\app\paths\CalcState.h">
       <Filter>ripple\module\app\paths</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\app\paths\Calculators.h">
       <Filter>ripple\module\app\paths</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\ComputeAccountLiquidityForward.cpp">
+      <Filter>ripple\module\app\paths</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\ComputeAccountLiquidityReverse.cpp">
+      <Filter>ripple\module\app\paths</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\ComputeLiquidity.cpp">
+      <Filter>ripple\module\app\paths</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\ComputeOfferLiquidity.cpp">
+      <Filter>ripple\module\app\paths</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\ComputeRippleLiquidity.cpp">
+      <Filter>ripple\module\app\paths</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\module\app\paths\Node.cpp">
       <Filter>ripple\module\app\paths</Filter>
     </ClCompile>
@@ -3399,6 +3408,9 @@
     <ClInclude Include="..\..\src\ripple\module\app\paths\Tuning.h">
       <Filter>ripple\module\app\paths</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\Types.cpp">
+      <Filter>ripple\module\app\paths</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\app\paths\Types.h">
       <Filter>ripple\module\app\paths</Filter>
     </ClInclude>

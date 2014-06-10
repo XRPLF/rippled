@@ -32,6 +32,9 @@ class PathState : public CountedObject <PathState>
     typedef std::vector<uint256> OfferIndexList;
     typedef std::vector<std::shared_ptr<PathState>> List;
 
+    typedef path::Account Account;
+    typedef path::Currency Currency;
+
     PathState (const STAmount& saSend, const STAmount& saSendMax)
         : saInReq (saSendMax)
         , saOutReq (saSend)
@@ -48,11 +51,11 @@ class PathState : public CountedObject <PathState>
 
     void clear();
 
-    void setExpanded (
-        const LedgerEntrySet&   lesSource,
-        const STPath&           spSourcePath,
-        const uint160&          uReceiverID,
-        const uint160&          uSenderID
+    void expandPath (
+        LedgerEntrySet const&   lesSource,
+        STPath const&           spSourcePath,
+        Account const&          uReceiverID,
+        Account const&          uSenderID
     );
 
     path::Node::List& nodes() { return nodes_; }
@@ -84,14 +87,15 @@ class PathState : public CountedObject <PathState>
     void setIndex (int i) { mIndex  = i; }
     int index() const { return mIndex; }
 
-    void checkNoRipple (uint160 const& destinationAccountID,
-                        uint160 const& sourceAccountID);
+    void checkNoRipple (Account const& destinationAccountID,
+                        Account const& sourceAccountID);
     static bool lessPriority (PathState& lhs, PathState& rhs);
 
     LedgerEntrySet& ledgerEntries() { return lesEntries; }
 
   private:
-    void checkNoRipple (uint160 const&, uint160 const&, uint160 const&, uint160 const&);
+    void checkNoRipple (
+        Account const&, Account const&, Account const&, Currency const&);
 
     TER terStatus;
     path::Node::List nodes_;
@@ -110,25 +114,28 @@ class PathState : public CountedObject <PathState>
 
     LedgerEntrySet              lesEntries;
 
-    int                         mIndex;             // Index/rank amoung siblings.
-    std::uint64_t               uQuality;           // 0 = no quality/liquity left.
-    const STAmount&             saInReq;            // --> Max amount to spend by sender.
-    STAmount                    saInAct;            // --> Amount spent by sender so far.
-    STAmount                    saInPass;           // <-- Amount spent by sender.
-    const STAmount&             saOutReq;           // --> Amount to send.
-    STAmount                    saOutAct;           // --> Amount actually sent so far.
-    STAmount                    saOutPass;          // <-- Amount actually sent.
+    int                         mIndex;    // Index/rank amoung siblings.
+    std::uint64_t               uQuality;  // 0 = no quality/liquity left.
+    const STAmount&             saInReq;   // --> Max amount to spend by sender.
+    STAmount                    saInAct;   // --> Amount spent by sender so far.
+    STAmount                    saInPass;  // <-- Amount spent by sender.
+    const STAmount&             saOutReq;  // --> Amount to send.
+    STAmount                    saOutAct;  // --> Amount actually sent so far.
+    STAmount                    saOutPass; // <-- Amount actually sent.
 
     // If true, all liquidity on this path has been consumed.
     bool allLiquidityConsumed_;
 
     TER pushNode (
-        const int iType, const uint160& uAccountID, const uint160& uCurrencyID,
-        const uint160& uIssuerID);
+        int const iType,
+        Account const& account,
+        Currency const& currency,
+        Account const& issuer);
 
-    TER pushImply (
-        const uint160& uAccountID, const uint160& uCurrencyID,
-        const uint160& uIssuerID);
+    TER pushImpliedNodes (
+        Account const& account,
+        Currency const& currency,
+        Account const& issuer);
 };
 
 } // ripple

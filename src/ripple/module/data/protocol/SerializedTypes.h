@@ -495,16 +495,16 @@ public:
         set (v);
     }
 
-    STAmount (const uint160& uCurrencyID, const uint160& uIssuerID,
+    STAmount (const uint160& currency, const uint160& issuer,
               std::uint64_t uV = 0, int iOff = 0, bool bNegative = false)
-        : mCurrency (uCurrencyID), mIssuer (uIssuerID), mValue (uV), mOffset (iOff), mIsNegative (bNegative)
+        : mCurrency (currency), mIssuer (issuer), mValue (uV), mOffset (iOff), mIsNegative (bNegative)
     {
         canonicalize ();
     }
 
-    STAmount (const uint160& uCurrencyID, const uint160& uIssuerID,
+    STAmount (const uint160& currency, const uint160& issuer,
               std::uint32_t uV, int iOff = 0, bool bNegative = false)
-        : mCurrency (uCurrencyID), mIssuer (uIssuerID), mValue (uV), mOffset (iOff), mIsNegative (bNegative)
+        : mCurrency (currency), mIssuer (issuer), mValue (uV), mOffset (iOff), mIsNegative (bNegative)
     {
         canonicalize ();
     }
@@ -516,8 +516,8 @@ public:
         canonicalize ();
     }
 
-    STAmount (const uint160& uCurrencyID, const uint160& uIssuerID, std::int64_t v, int iOff = 0)
-        : mCurrency (uCurrencyID), mIssuer (uIssuerID), mOffset (iOff)
+    STAmount (const uint160& currency, const uint160& issuer, std::int64_t v, int iOff = 0)
+        : mCurrency (currency), mIssuer (issuer), mOffset (iOff)
     {
         set (v);
         canonicalize ();
@@ -530,8 +530,8 @@ public:
         canonicalize ();
     }
 
-    STAmount (const uint160& uCurrencyID, const uint160& uIssuerID, int v, int iOff = 0)
-        : mCurrency (uCurrencyID), mIssuer (uIssuerID), mOffset (iOff)
+    STAmount (const uint160& currency, const uint160& issuer, int v, int iOff = 0)
+        : mCurrency (currency), mIssuer (issuer), mOffset (iOff)
     {
         set (v);
         canonicalize ();
@@ -621,6 +621,15 @@ public:
             mIsNegative = !mIsNegative;
     }
 
+    // Return a copy of amount with the same Issuer and Currency but zero value.
+    STAmount zeroed() const
+    {
+        STAmount c(mCurrency, mIssuer);
+        c = zero;
+        // See https://ripplelabs.atlassian.net/browse/WC-1847?jql=
+        return c;
+    }
+
     void clear ()
     {
         // VFALCO: Why -100?
@@ -637,11 +646,11 @@ public:
         mIsNative = saTmpl.mIsNative;
         clear ();
     }
-    void clear (const uint160& uCurrencyID, const uint160& uIssuerID)
+    void clear (const uint160& currency, const uint160& issuer)
     {
-        mCurrency = uCurrencyID;
-        mIssuer = uIssuerID;
-        mIsNative = !uCurrencyID;
+        mCurrency = currency;
+        mIssuer = issuer;
+        mIsNative = !currency;
         clear ();
     }
 
@@ -706,8 +715,12 @@ public:
     friend STAmount operator+ (const STAmount& v1, const STAmount& v2);
     friend STAmount operator- (const STAmount& v1, const STAmount& v2);
 
-    static STAmount divide (const STAmount& v1, const STAmount& v2, const uint160& uCurrencyID, const uint160& uIssuerID);
-    static STAmount divide (const STAmount& v1, const STAmount& v2, const STAmount& saUnit)
+    static STAmount divide (
+        const STAmount& v1, const STAmount& v2,
+        const uint160& currency, const uint160& issuer);
+
+    static STAmount divide (
+        const STAmount& v1, const STAmount& v2, const STAmount& saUnit)
     {
         return divide (v1, v2, saUnit.getCurrency (), saUnit.getIssuer ());
     }
@@ -716,8 +729,12 @@ public:
         return divide (v1, v2, v1);
     }
 
-    static STAmount multiply (const STAmount& v1, const STAmount& v2, const uint160& uCurrencyID, const uint160& uIssuerID);
-    static STAmount multiply (const STAmount& v1, const STAmount& v2, const STAmount& saUnit)
+    static STAmount multiply (
+        const STAmount& v1, const STAmount& v2,
+        const uint160& currency, const uint160& issuer);
+
+    static STAmount multiply (
+        const STAmount& v1, const STAmount& v2, const STAmount& saUnit)
     {
         return multiply (v1, v2, saUnit.getCurrency (), saUnit.getIssuer ());
     }
@@ -1193,33 +1210,35 @@ private:
     friend class Pathfinder;
 
 public:
-    enum
+    enum Type
     {
-        typeEnd         = 0x00,
+        typeNone        = 0x00,
         typeAccount     = 0x01, // Rippling through an account (vs taking an offer).
         typeCurrency    = 0x10, // Currency follows.
         typeIssuer      = 0x20, // Issuer follows.
         typeBoundary    = 0xFF, // Boundary between alternate paths.
-        typeValidBits   = (
-                              typeAccount
-                              | typeCurrency
-                              | typeIssuer
-                          ),  // Bits that may be non-zero.
+        typeAll = typeAccount | typeCurrency | typeIssuer,
+                                // Combination of all types.
     };
 
 public:
-    STPathElement (const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID,
-                   bool forceCurrency = false)
-        : mAccountID (uAccountID), mCurrencyID (uCurrencyID), mIssuerID (uIssuerID)
+    STPathElement (
+        const uint160& account, const uint160& currency,
+        const uint160& issuer, bool forceCurrency = false)
+        : mAccountID (account), mCurrencyID (currency), mIssuerID (issuer)
     {
         mType   =
-            (uAccountID.isZero () ? 0 : STPathElement::typeAccount)
-            | ((uCurrencyID.isZero () && !forceCurrency) ? 0 : STPathElement::typeCurrency)
-            | (uIssuerID.isZero () ? 0 : STPathElement::typeIssuer);
+            (account.isZero () ? 0 : STPathElement::typeAccount)
+            | ((currency.isZero () && !forceCurrency) ? 0 :
+               STPathElement::typeCurrency)
+            | (issuer.isZero () ? 0 : STPathElement::typeIssuer);
     }
 
-    STPathElement (unsigned int uType, const uint160& uAccountID, const uint160& uCurrencyID, const uint160& uIssuerID)
-        : mType (uType), mAccountID (uAccountID), mCurrencyID (uCurrencyID), mIssuerID (uIssuerID)
+    STPathElement (
+        unsigned int uType, const uint160& account, const uint160& currency,
+        const uint160& issuer)
+        : mType (uType), mAccountID (account), mCurrencyID (currency),
+          mIssuerID (issuer)
     {
         ;
     }
@@ -1259,8 +1278,10 @@ public:
 
     bool operator== (const STPathElement& t) const
     {
-        return ((mType & typeAccount) == (t.mType & typeAccount)) &&
-            (mAccountID == t.mAccountID) && (mCurrencyID == t.mCurrencyID) && (mIssuerID == t.mIssuerID);
+        return ((mType & typeAccount) == (t.mType & typeAccount))
+                && (mAccountID == t.mAccountID)
+                && (mCurrencyID == t.mCurrencyID)
+                && (mIssuerID == t.mIssuerID);
     }
 
 private:
@@ -1313,12 +1334,9 @@ public:
     {
         mPath.clear ();
     }
-    bool hasSeen (const uint160& uAccountId, const uint160& uCurrencyID, const uint160& uIssuerID) const;
-    //  std::string getText() const;
+    bool hasSeen (const uint160& account, const uint160& currency,
+                  const uint160& issuer) const;
     Json::Value getJson (int) const;
-
-    //  uint160 mCurrencyID;
-    //  uint160 mCurrentAccount; // what account is at the end of the path
 
     std::vector<STPathElement>::iterator begin ()
     {

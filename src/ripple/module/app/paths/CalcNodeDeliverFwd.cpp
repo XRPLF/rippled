@@ -27,7 +27,8 @@ namespace path {
 // For current offer, get input from deliver/limbo and output to next account or
 // deliver for next offers.
 //
-// <-- node.saFwdDeliver: For nodeAccountFwd to know how much went through
+// <-- node.saFwdDeliver: For computeForwardLiquidityForAccount to know
+//                        how much went through
 // --> node.saRevDeliver: Do not exceed.
 
 TER nodeDeliverFwd (
@@ -46,33 +47,19 @@ TER nodeDeliverFwd (
     auto& node = pathState.nodes()[nodeIndex];
     auto& nextNode = pathState.nodes()[nodeIndex + 1];
 
-    const uint160&  nextAccountID   = nextNode.uAccountID;
-    const uint160&  uCurCurrencyID  = node.uCurrencyID;
-    const uint160&  uCurIssuerID    = node.uIssuerID;
-    uint256 const&  uOfferIndex     = node.uOfferIndex;
-    const uint160&  uPrvCurrencyID  = previousNode.uCurrencyID;
-    const uint160&  uPrvIssuerID    = previousNode.uIssuerID;
-    const STAmount& saInTransRate   = previousNode.saTransferRate;
-    const STAmount& saCurDeliverMax = node.saRevDeliver;
     // Don't deliver more than wanted.
-
-    STAmount&       saCurDeliverAct = node.saFwdDeliver;
     // Zeroed in reverse pass.
-
-    uint256&        uDirectTip      = node.uDirectTip;
-    bool&           bDirectRestart  = node.bDirectRestart;
-
     if (bMultiQuality)
-        uDirectTip      = 0;                        // Restart book searching.
+        node.uDirectTip      = 0;     // Restart book searching.
     else
-        bDirectRestart  = true;                     // Restart at same quality.
+        node.bDirectRestart  = true;  // Restart at same quality.
 
     saInAct.clear (saInReq);
     saInFees.clear (saInReq);
 
     int loopCount = 0;
 
-    // XXX Perhaps make sure do not exceed saCurDeliverMax as another way to
+    // XXX Perhaps make sure do not exceed node.saRevDeliver as another way to
     // stop?
     while (resultCode == tesSUCCESS && saInAct + saInFees < saInReq)
     {
@@ -81,11 +68,12 @@ TER nodeDeliverFwd (
         {
             WriteLog (lsWARNING, RippleCalc)
                 << "nodeDeliverFwd: max loops cndf";
-            return rippleCalc.mOpenLedger ? telFAILED_PROCESSING : tecFAILED_PROCESSING;
+            return rippleCalc.mOpenLedger ? telFAILED_PROCESSING :
+                    tecFAILED_PROCESSING;
         }
 
         // Determine values for pass to adjust saInAct, saInFees, and
-        // saCurDeliverAct.
+        // node.saFwdDeliver.
         resultCode   = nodeAdvance (
             rippleCalc,
             nodeIndex, pathState, bMultiQuality || saInAct == zero, false);
@@ -94,31 +82,30 @@ TER nodeDeliverFwd (
         if (resultCode != tesSUCCESS)
         {
         }
-        else if (!uOfferIndex)
+        else if (!node.offerIndex_)
         {
             WriteLog (lsWARNING, RippleCalc)
                 << "nodeDeliverFwd: INTERNAL ERROR: Ran out of offers.";
-            return rippleCalc.mOpenLedger ? telFAILED_PROCESSING : tecFAILED_PROCESSING;
+            return rippleCalc.mOpenLedger ? telFAILED_PROCESSING
+                    : tecFAILED_PROCESSING;
         }
         else if (resultCode == tesSUCCESS)
         {
             // Doesn't charge input. Input funds are in limbo.
-            bool&           bEntryAdvance   = node.bEntryAdvance;
             STAmount&       saOfrRate       = node.saOfrRate;
-            uint256&        uOfferIndex     = node.uOfferIndex;
             SLE::pointer&   sleOffer        = node.sleOffer;
-            const uint160&  uOfrOwnerID     = node.uOfrOwnerID;
             bool&           bFundsDirty     = node.bFundsDirty;
             STAmount&       saOfferFunds    = node.saOfferFunds;
             STAmount&       saTakerPays     = node.saTakerPays;
             STAmount&       saTakerGets     = node.saTakerGets;
 
-            const STAmount  saInFeeRate
-                = !uPrvCurrencyID                   // XRP.
-                  || uInAccountID == uPrvIssuerID   // Sender is issuer.
-                  || uOfrOwnerID == uPrvIssuerID    // Reciever is issuer.
-                  ? saOne                           // No fee.
-                  : saInTransRate;                  // Transfer rate of issuer.
+            // There's no fee if we're transferring XRP, if the sender is the
+            // issuer, or if the receiver is the issuer.
+            bool noFee = isXRP(previousNode.currency_)
+                || uInAccountID == previousNode.issuer_
+                || node.offerOwnerAccount_ == previousNode.issuer_;
+            const STAmount saInFeeRate = noFee ? saOne
+                : previousNode.transferRate_;  // Transfer rate of issuer.
 
             // First calculate assuming no output fees: saInPassAct,
             // saInPassFees, saOutPassAct.
@@ -128,7 +115,7 @@ TER nodeDeliverFwd (
 
             // Offer maximum out - limit by most to deliver.
             STAmount    saOutPassFunded = std::min (
-                saOutFunded, saCurDeliverMax - saCurDeliverAct);
+                saOutFunded, node.saRevDeliver - node.saFwdDeliver);
 
             // Offer maximum in - Limited by by payout.
             STAmount    saInFunded      = STAmount::mulRound (
@@ -185,8 +172,8 @@ TER nodeDeliverFwd (
                     << "nodeDeliverFwd: Microscopic offer unfunded.";
 
                 // After math offer is effectively unfunded.
-                pathState.becameUnfunded().push_back (uOfferIndex);
-                bEntryAdvance   = true;
+                pathState.becameUnfunded().push_back (node.offerIndex_);
+                node.bEntryAdvance   = true;
                 continue;
             }
             else if (!saInFunded)
@@ -196,11 +183,11 @@ TER nodeDeliverFwd (
                     << "nodeDeliverFwd: UNREACHABLE REACHED";
 
                 // After math offer is effectively unfunded.
-                pathState.becameUnfunded().push_back (uOfferIndex);
-                bEntryAdvance   = true;
+                pathState.becameUnfunded().push_back (node.offerIndex_);
+                node.bEntryAdvance   = true;
                 continue;
             }
-            else if (!!nextAccountID)
+            else if (!!nextNode.account_)
             {
                 // ? --> OFFER --> account
                 // Input fees: vary based upon the consumed offer's owner.
@@ -212,17 +199,17 @@ TER nodeDeliverFwd (
 
                 WriteLog (lsTRACE, RippleCalc)
                     << "nodeDeliverFwd: ? --> OFFER --> account:"
-                    << " uOfrOwnerID="
-                    << RippleAddress::createHumanAccountID (uOfrOwnerID)
-                    << " nextAccountID="
-                    << RippleAddress::createHumanAccountID (nextAccountID)
+                    << " offerOwnerAccount_="
+                    << RippleAddress::createHumanAccountID (node.offerOwnerAccount_)
+                    << " nextNode.account_="
+                    << RippleAddress::createHumanAccountID (nextNode.account_)
                     << " saOutPassAct=" << saOutPassAct
                     << " saOutFunded=%s" << saOutFunded;
 
                 // Output: Debit offer owner, send XRP or non-XPR to next
                 // account.
                 resultCode   = rippleCalc.mActiveLedger.accountSend (
-                    uOfrOwnerID, nextAccountID, saOutPassAct);
+                    node.offerOwnerAccount_, nextNode.account_, saOutPassAct);
 
                 if (resultCode != tesSUCCESS)
                     break;
@@ -245,7 +232,7 @@ TER nodeDeliverFwd (
                     nodeIndex + 1,
                     pathState,
                     bMultiQuality,
-                    uOfrOwnerID,        // --> Current holder.
+                    node.offerOwnerAccount_,        // --> Current holder.
                     saOutPassMax,       // --> Amount available.
                     saOutPassAct,       // <-- Amount delivered.
                     saOutPassFees);     // <-- Fees charged.
@@ -277,9 +264,9 @@ TER nodeDeliverFwd (
                 // Do outbound debiting.
                 // Send to issuer/limbo total amount including fees (issuer gets
                 // fees).
-                auto id = !!uCurCurrencyID ? uCurIssuerID : ACCOUNT_XRP;
+                auto id = !!node.currency_ ? Account(node.issuer_) : XRP_ACCOUNT;
                 auto outPassTotal = saOutPassAct + saOutPassFees;
-                rippleCalc.mActiveLedger.accountSend (uOfrOwnerID, id, outPassTotal);
+                rippleCalc.mActiveLedger.accountSend (node.offerOwnerAccount_, id, outPassTotal);
 
                 WriteLog (lsTRACE, RippleCalc)
                     << "nodeDeliverFwd: ? --> OFFER --> offer:"
@@ -305,13 +292,12 @@ TER nodeDeliverFwd (
             // Credit offer owner from in issuer/limbo (input transfer fees left
             // with owner).  Don't attempt to have someone credit themselves, it
             // is redundant.
-            if (!uPrvCurrencyID                 // Always credit XRP from limbo.
-                || uInAccountID != uOfrOwnerID) // Never send non-XRP to the
-                                                // same account.
+            if (!previousNode.currency_
+                || uInAccountID != node.offerOwnerAccount_)
             {
-                auto id = !!uPrvCurrencyID ? uInAccountID : ACCOUNT_XRP;
+                auto id = !!previousNode.currency_ ? uInAccountID : ACCOUNT_XRP;
                 resultCode = rippleCalc.mActiveLedger.accountSend (
-                    id, uOfrOwnerID, saInPassAct);
+                    id, node.offerOwnerAccount_, saInPassAct);
 
                 if (resultCode != tesSUCCESS)
                     break;
@@ -333,7 +319,8 @@ TER nodeDeliverFwd (
 
                 // If mOpenLedger, then ledger is not final, can vote no.
                 resultCode   = rippleCalc.mOpenLedger
-                              ? telFAILED_PROCESSING                                                          : tecFAILED_PROCESSING;
+                        ? telFAILED_PROCESSING
+                        : tecFAILED_PROCESSING;
                 break;
             }
 
@@ -351,8 +338,8 @@ TER nodeDeliverFwd (
                     << " saOutPassAct=" << saOutPassAct
                     << " saOutFunded=" << saOutFunded;
 
-                pathState.becameUnfunded().push_back (uOfferIndex);
-                bEntryAdvance   = true;
+                pathState.becameUnfunded().push_back (node.offerIndex_);
+                node.bEntryAdvance   = true;
             }
             else
             {
@@ -368,8 +355,8 @@ TER nodeDeliverFwd (
             saInFees        += saInPassFees;
 
             // Adjust amount available to next node.
-            saCurDeliverAct = std::min (saCurDeliverMax,
-                                        saCurDeliverAct + saOutPassAct);
+            node.saFwdDeliver = std::min (node.saRevDeliver,
+                                        node.saFwdDeliver + saOutPassAct);
         }
     }
 

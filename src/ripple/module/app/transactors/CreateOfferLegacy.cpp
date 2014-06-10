@@ -280,38 +280,49 @@ bool CreateOfferLegacy::applyOffer (
     {
         // Compute fees in a rounding safe way.
 
-        STAmount    saTransferRate  = STAmount (CURRENCY_ONE, ACCOUNT_ONE, uTakerPaysRate, -9);
-        m_journal.info << "applyOffer: saTransferRate=" << saTransferRate.getFullText ();
+        STAmount transferRate (CURRENCY_ONE, ACCOUNT_ONE, uTakerPaysRate, -9);
+        m_journal.info << "applyOffer: transferRate="
+                       << transferRate.getFullText ();
 
         // TakerCost includes transfer fees.
-        STAmount    saTakerCost     = STAmount::mulRound (saTakerPaid, saTransferRate, true);
+        STAmount saTakerCost = STAmount::mulRound (
+            saTakerPaid, transferRate, true);
 
-        m_journal.info << "applyOffer: saTakerCost=" << saTakerCost.getFullText ();
-        m_journal.info << "applyOffer: saTakerFunds=" << saTakerFunds.getFullText ();
+        m_journal.info << "applyOffer: saTakerCost="
+                       << saTakerCost.getFullText ();
+        m_journal.info << "applyOffer: saTakerFunds="
+                       << saTakerFunds.getFullText ();
         saTakerIssuerFee    = saTakerCost > saTakerFunds
-                              ? saTakerFunds - saTakerPaid // Not enough funds to cover fee, stiff issuer the rounding error.
+                              ? saTakerFunds - saTakerPaid
+            // Not enough funds to cover fee, stiff issuer the rounding error.
                               : saTakerCost - saTakerPaid;
-        m_journal.info << "applyOffer: saTakerIssuerFee=" << saTakerIssuerFee.getFullText ();
+        m_journal.info << "applyOffer: saTakerIssuerFee="
+                       << saTakerIssuerFee.getFullText ();
         assert (saTakerIssuerFee >= zero);
     }
 
     if (uOfferPaysRate == QUALITY_ONE)
     {
-        saOfferIssuerFee    = STAmount (saTakerGot.getCurrency (), saTakerGot.getIssuer ());
+        saOfferIssuerFee = STAmount (
+            saTakerGot.getCurrency (), saTakerGot.getIssuer ());
     }
     else
     {
         // Compute fees in a rounding safe way.
-        STAmount    saOfferCost = STAmount::mulRound (saTakerGot, STAmount (CURRENCY_ONE, ACCOUNT_ONE, uOfferPaysRate, -9), true);
+        STAmount saOfferCost = STAmount::mulRound (
+            saTakerGot, STAmount (CURRENCY_ONE, ACCOUNT_ONE, uOfferPaysRate, -9),
+            true);
 
-        saOfferIssuerFee    = saOfferCost > saOfferFunds
-                              ? saOfferFunds - saTakerGot // Not enough funds to cover fee, stiff issuer the rounding error.
-                              : saOfferCost - saTakerGot;
+        saOfferIssuerFee = saOfferCost > saOfferFunds
+            ? saOfferFunds - saTakerGot
+            // Not enough funds to cover fee, stiff issuer the rounding error.
+            : saOfferCost - saTakerGot;
     }
 
     m_journal.info << "applyOffer: saTakerGot=" << saTakerGot.getFullText ();
 
-    return saTakerGot >= saOfferPaysAvailable;              // True, if consumed offer.
+    return saTakerGot >= saOfferPaysAvailable;
+    // True, if consumed offer.
 }
 
 /** Take as much as possible.
@@ -366,8 +377,10 @@ TER CreateOfferLegacy::takeOffers (
     // Accounts touched.
     std::unordered_set<uint160, beast::hardened_hash<uint160>> usAccountTouched;
 
-    saTakerPaid = STAmount (saTakerPays.getCurrency (), saTakerPays.getIssuer ());
-    saTakerGot = STAmount (saTakerGets.getCurrency (), saTakerGets.getIssuer ());
+    saTakerPaid = STAmount (
+        saTakerPays.getCurrency (), saTakerPays.getIssuer ());
+    saTakerGot = STAmount (
+        saTakerGets.getCurrency (), saTakerGets.getIssuer ());
     bUnfunded = false;
 
     // TODO: need to track the synthesized book (source->XRP + XRP->target)
@@ -654,14 +667,14 @@ TER CreateOfferLegacy::takeOffers (
     if (tesSUCCESS == terResult)
     {
         // On success, delete offers that became unfunded.
-        for (auto uOfferIndex : usOfferUnfundedBecame)
+        for (auto offerIndex : usOfferUnfundedBecame)
         {
             m_journal.debug <<
 
                 "takeOffers: became unfunded: " <<
-                    to_string (uOfferIndex);
+                    to_string (offerIndex);
 
-            lesActive.offerDelete (uOfferIndex);
+            lesActive.offerDelete (offerIndex);
         }
     }
 
@@ -1116,11 +1129,11 @@ TER CreateOfferLegacy::doApply ()
     {
 
         // Go through the list of unfunded offers and remove them
-        for (auto const& uOfferIndex : usOfferUnfundedFound)
+        for (auto const& offerIndex : usOfferUnfundedFound)
         {
             m_journal.trace <<
-                "takeOffers: found unfunded: " << to_string (uOfferIndex);
-            lesActive.offerDelete (uOfferIndex);
+                "takeOffers: found unfunded: " << to_string (offerIndex);
+            lesActive.offerDelete (offerIndex);
         }
 
         // Go through the list of offers not found and remove them from the
