@@ -28,7 +28,7 @@
 #include <ripple/types/api/Blob.h>
 #include <ripple/types/api/strHex.h>
 #include <ripple/types/api/ByteOrder.h>
-    
+
 #include <beast/container/hardened_hash.h>
 #include <beast/utility/Zero.h>
 
@@ -150,7 +150,18 @@ public:
         SetHex (str);
     }
 
-    base_uint (base_uint const& other) = default;
+    base_uint (base_uint<Bits, Tag> const& other) = default;
+
+    template <
+        class OtherTag,
+        class = std::enable_if_t <
+            std::is_same <OtherTag, void>::value !=
+            std::is_same <Tag, void>::value>
+    >
+    base_uint (base_uint<Bits, OtherTag> const& other)
+    {
+        memcpy (&pn [0], other.data(), Bits / 8);
+    }
 
     /* Construct from a raw pointer.
         The buffer pointed to by `data` must be at least Bits/8 bytes.
@@ -402,9 +413,14 @@ extern std::size_t hash_value (uint160 const&);
 extern std::size_t hash_value (uint256 const&);
 
 //------------------------------------------------------------------------------
-template <std::size_t Bits, class Tag>
+template <std::size_t Bits, class Tag, class OtherTag,
+          class = std::enable_if_t <
+              std::is_same <OtherTag, Tag>::value ||
+              std::is_same <OtherTag, void>::value ||
+              std::is_same <Tag, void>::value>
+>
 inline int compare (
-    base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
+    base_uint<Bits, Tag> const& a, base_uint<Bits, OtherTag> const& b)
 {
     auto ret = std::mismatch (a.cbegin (), a.cend (), b.cbegin ());
 
@@ -419,44 +435,74 @@ inline int compare (
     return -1;
 }
 
-template <std::size_t Bits, class Tag>
+template <std::size_t Bits, class Tag, class OtherTag,
+          class = std::enable_if_t <
+              std::is_same <OtherTag, Tag>::value ||
+              std::is_same <OtherTag, void>::value ||
+              std::is_same <Tag, void>::value>
+>
 inline bool operator< (
-    base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
+    base_uint<Bits, Tag> const& a, base_uint<Bits, OtherTag> const& b)
 {
     return compare (a, b) < 0;
 }
 
-template <std::size_t Bits, class Tag>
+template <std::size_t Bits, class Tag, class OtherTag,
+          class = std::enable_if_t <
+              std::is_same <OtherTag, Tag>::value ||
+              std::is_same <OtherTag, void>::value ||
+              std::is_same <Tag, void>::value>
+>
 inline bool operator<= (
-    base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
+    base_uint<Bits, Tag> const& a, base_uint<Bits, OtherTag> const& b)
 {
     return compare (a, b) <= 0;
 }
 
-template <std::size_t Bits, class Tag>
+template <std::size_t Bits, class Tag, class OtherTag,
+          class = std::enable_if_t <
+              std::is_same <OtherTag, Tag>::value ||
+              std::is_same <OtherTag, void>::value ||
+              std::is_same <Tag, void>::value>
+>
 inline bool operator> (
-    base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
+    base_uint<Bits, Tag> const& a, base_uint<Bits, OtherTag> const& b)
 {
     return compare (a, b) > 0;
 }
 
-template <std::size_t Bits, class Tag>
+template <std::size_t Bits, class Tag, class OtherTag,
+          class = std::enable_if_t <
+              std::is_same <OtherTag, Tag>::value ||
+              std::is_same <OtherTag, void>::value ||
+              std::is_same <Tag, void>::value>
+>
 inline bool operator>= (
-    base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
+    base_uint<Bits, Tag> const& a, base_uint<Bits, OtherTag> const& b)
 {
     return compare (a, b) >= 0;
 }
 
-template <std::size_t Bits, class Tag>
+template <std::size_t Bits, class Tag, class OtherTag,
+          class = std::enable_if_t <
+              std::is_same <OtherTag, Tag>::value ||
+              std::is_same <OtherTag, void>::value ||
+              std::is_same <Tag, void>::value>
+>
 inline bool operator== (
-    base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
+    base_uint<Bits, Tag> const& a, base_uint<Bits, OtherTag> const& b)
 {
     return compare (a, b) == 0;
 }
 
-template <std::size_t Bits, class Tag>
+template <std::size_t Bits, class Tag, class OtherTag,
+          class = std::enable_if_t <
+              std::is_same <OtherTag, Tag>::value ||
+              std::is_same <OtherTag, void>::value ||
+              std::is_same <Tag, void>::value>
+>
 inline bool operator!= (
-    base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
+    base_uint<Bits, Tag> const& a, base_uint<Bits, OtherTag> const& b)
 {
     return compare (a, b) != 0;
 }
