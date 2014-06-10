@@ -1683,85 +1683,97 @@ TER LedgerEntrySet::accountSend (
     Account const& uSenderID, Account const& uReceiverID,
     const STAmount& saAmount)
 {
-    TER terResult = tesSUCCESS;
-
     assert (saAmount >= zero);
 
+    /* If we aren't sending anything or if the sender is the same as the
+     * receiver then we don't need to do anything.
+     */
     if (!saAmount || (uSenderID == uReceiverID))
         return tesSUCCESS;
 
-    if (saAmount.isNative ())
-    {
-        // XRP send which does not check reserve and can do pure adjustment.
-        SLE::pointer sleSender = !!uSenderID
-            ? entryCache (ltACCOUNT_ROOT,
-                          Ledger::getAccountRootIndex (uSenderID))
-            : SLE::pointer ();
-        SLE::pointer sleReceiver = !!uReceiverID
-            ? entryCache (ltACCOUNT_ROOT,
-                          Ledger::getAccountRootIndex (uReceiverID))
-            : SLE::pointer ();
-
-        auto get_balance = [](SLE::pointer acct)
-        {
-            std::string ret ("-");
-
-            if (acct)
-                ret = acct->getFieldAmount (sfBalance).getFullText ();
-
-            return ret;
-        };
-
-        WriteLog (lsTRACE, LedgerEntrySet) << "accountSend> " <<
-            to_string (uSenderID) <<
-            " (" << get_balance(sleSender) <<
-            ") -> " << to_string (uReceiverID) <<
-            " (" << get_balance(sleReceiver) <<
-            ") : " << saAmount.getFullText ();
-
-        if (sleSender)
-        {
-            if (sleSender->getFieldAmount (sfBalance) < saAmount)
-            {
-                terResult = (mParams & tapOPEN_LEDGER)
-                    ? telFAILED_PROCESSING
-                    : tecFAILED_PROCESSING;
-            }
-            else
-            {
-                // Decrement XRP balance.
-                sleSender->setFieldAmount (sfBalance,
-                    sleSender->getFieldAmount (sfBalance) - saAmount);
-                entryModify (sleSender);
-            }
-        }
-
-        if (tesSUCCESS == terResult && sleReceiver)
-        {
-            // Increment XRP balance.
-            sleReceiver->setFieldAmount (sfBalance,
-                sleReceiver->getFieldAmount (sfBalance) + saAmount);
-            entryModify (sleReceiver);
-        }
-
-        WriteLog (lsTRACE, LedgerEntrySet) << "accountSend< " <<
-            to_string (uSenderID) <<
-            " (" << get_balance(sleSender) <<
-            ") -> " << to_string (uReceiverID) <<
-            " (" << get_balance(sleReceiver) <<
-            ") : " << saAmount.getFullText ();
-    }
-    else
+    if (!saAmount.isNative ())
     {
         STAmount saActual;
 
         WriteLog (lsTRACE, LedgerEntrySet) << "accountSend: " <<
-            to_string (uSenderID) <<
-            " -> " << to_string (uReceiverID) <<
+            to_string (uSenderID) << " -> " << to_string (uReceiverID) <<
             " : " << saAmount.getFullText ();
 
+        return rippleSend (uSenderID, uReceiverID, saAmount, saActual);
+    }
 
-        terResult = rippleSend (uSenderID, uReceiverID, saAmount, saActual);
+    /* XRP send which does not check reserve and can do pure adjustment.
+     * Note that sender or receiver may be null and this not a mistake; this
+     * setup is used during pathfinding and it is carefully controlled to
+     * ensure that transfers are balanced.
+     */
+
+    TER terResult (tesSUCCESS);
+
+    SLE::pointer sender = uSenderID != beast::zero
+        ? entryCache (ltACCOUNT_ROOT, Ledger::getAccountRootIndex (uSenderID))
+        : SLE::pointer ();
+    SLE::pointer receiver = uReceiverID != beast::zero
+        ? entryCache (ltACCOUNT_ROOT, Ledger::getAccountRootIndex (uReceiverID))
+        : SLE::pointer ();
+
+    if (ShouldLog (lsTRACE, LedgerEntrySet))
+    {
+        std::string sender_bal ("-");
+        std::string receiver_bal ("-");
+
+        if (sender)
+            sender_bal = sender->getFieldAmount (sfBalance).getFullText ();
+
+        if (receiver)
+            receiver_bal = receiver->getFieldAmount (sfBalance).getFullText ();
+
+        WriteLog (lsTRACE, LedgerEntrySet) << "accountSend> " <<
+            to_string (uSenderID) << " (" << sender_bal <<
+            ") -> " << to_string (uReceiverID) << " (" << receiver_bal <<
+            ") : " << saAmount.getFullText ();
+    }
+
+    if (sender)
+    {
+        if (sender->getFieldAmount (sfBalance) < saAmount)
+        {
+            terResult = (mParams & tapOPEN_LEDGER)
+                ? telFAILED_PROCESSING
+                : tecFAILED_PROCESSING;
+        }
+        else
+        {
+            // Decrement XRP balance.
+            sender->setFieldAmount (sfBalance,
+                sender->getFieldAmount (sfBalance) - saAmount);
+            entryModify (sender);
+        }
+    }
+
+    if (tesSUCCESS == terResult && receiver)
+    {
+        // Increment XRP balance.
+        receiver->setFieldAmount (sfBalance,
+            receiver->getFieldAmount (sfBalance) + saAmount);
+        entryModify (receiver);
+    }
+
+    if (ShouldLog (lsTRACE, LedgerEntrySet))
+    {
+        std::string sender_bal ("-");
+        std::string receiver_bal ("-");
+
+        if (sender)
+            sender_bal = sender->getFieldAmount (sfBalance).getFullText ();
+
+        if (receiver)
+            receiver_bal = receiver->getFieldAmount (sfBalance).getFullText ();
+
+        WriteLog (lsTRACE, LedgerEntrySet) << "accountSend< " <<
+            to_string (uSenderID) << " (" << sender_bal <<
+            ") -> " << to_string (uReceiverID) << " (" << receiver_bal <<
+            ") : " << saAmount.getFullText ();
     }
 
     return terResult;

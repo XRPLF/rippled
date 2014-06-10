@@ -205,11 +205,11 @@ This determines whether to add any features to the proposed transaction set.
 #define RIPPLE_PROPOSE_AMENDMENTS 0
 #endif
 
-/** Config: RIPPLE_USE_OLD_CREATE_TRANSACTOR
-This determines whether ripple uses the legacy OfferCreate transactor.
+/** Config: RIPPLE_ENABLE_AUTOBRIDGING
+This determines whether ripple implements offer autobridging via XRP.
 */
-#ifndef RIPPLE_USE_OLD_CREATE_TRANSACTOR
-#define RIPPLE_USE_OLD_CREATE_TRANSACTOR 1
+#ifndef RIPPLE_ENABLE_AUTOBRIDGING
+#define RIPPLE_ENABLE_AUTOBRIDGING 0
 #endif
 
 #endif

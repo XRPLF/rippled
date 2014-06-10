@@ -2402,11 +2402,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\app\transactors\CreateOfferDirect.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\transactors\CreateOfferLegacy.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\transactors\CreateOfferLegacy.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\Payment.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>

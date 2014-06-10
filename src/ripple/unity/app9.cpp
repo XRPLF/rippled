@@ -38,7 +38,3 @@
 #include <ripple/module/app/transactors/CreateOffer.cpp>
 #include <ripple/module/app/transactors/CreateOfferDirect.cpp>
 #include <ripple/module/app/transactors/CreateOfferBridged.cpp>
-
-#if RIPPLE_USE_OLD_CREATE_TRANSACTOR
-#include <ripple/module/app/transactors/CreateOfferLegacy.cpp>
-#endif

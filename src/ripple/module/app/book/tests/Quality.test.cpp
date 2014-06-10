@@ -222,6 +222,8 @@ public:
     void
     test_raw()
     {
+        testcase ("raw");
+
         {
             Quality q (0x5d048191fb9130daull);      // 126836389.7680090
             Amounts const value (
@@ -235,11 +237,84 @@ public:
     }
 
     void
+    test_comparisons()
+    {
+        testcase ("comparisons");
+
+        Amount const amount1 (noCurrency (), noAccount (), 231);
+        Amount const amount2 (noCurrency (), noAccount (), 462);
+        Amount const amount3 (noCurrency (), noAccount (), 924);
+
+        Quality const q11 (core::Amounts (amount1, amount1));
+        Quality const q12 (core::Amounts (amount1, amount2));
+        Quality const q13 (core::Amounts (amount1, amount3));
+        Quality const q21 (core::Amounts (amount2, amount1));
+        Quality const q31 (core::Amounts (amount3, amount1));
+
+        expect (q11 == q11);
+        expect (q11 < q12);
+        expect (q12 < q13);
+        expect (q31 < q21);
+        expect (q21 < q11);
+        expect (q31 != q21);
+    }
+
+    void
+    test_composition ()
+    {
+        testcase ("composition");
+
+        Amount const amount1 (noCurrency (), noAccount (), 231);
+        Amount const amount2 (noCurrency (), noAccount (), 462);
+        Amount const amount3 (noCurrency (), noAccount (), 924);
+
+        Quality const q11 (core::Amounts (amount1, amount1));
+        Quality const q12 (core::Amounts (amount1, amount2));
+        Quality const q13 (core::Amounts (amount1, amount3));
+        Quality const q21 (core::Amounts (amount2, amount1));
+        Quality const q31 (core::Amounts (amount3, amount1));
+
+        expect (composed_quality (q12, q21) == q11);
+
+        Quality const q13_31 (composed_quality (q13, q31));
+        Quality const q31_13 (composed_quality (q31, q13));
+
+        expect (q13_31 == q31_13);
+        expect (q13_31 == q11);
+    }
+
+    void
+    test_operations ()
+    {
+        testcase ("operations");
+
+        Quality const q11 (core::Amounts (
+            Amount (noCurrency (), noAccount (), 731),
+            Amount (noCurrency (), noAccount (), 731)));
+
+        Quality qa (q11);
+        Quality qb (q11);
+
+        expect (qa == qb);
+        expect (++qa != q11);
+        expect (qa != qb);
+        expect (--qb != q11);
+        expect (qa != qb);
+        expect (qb < qa);
+        expect (qb++ < qa);
+        expect (qb++ < qa);
+        expect (qb++ == qa);
+        expect (qa < qb);
+    }
+    void
     run()
     {
+        test_comparisons ();
+        test_composition ();
+        test_operations ();
         test_ceil_in ();
         test_ceil_out ();
-        test_raw();
+        test_raw ();
     }
 };
 

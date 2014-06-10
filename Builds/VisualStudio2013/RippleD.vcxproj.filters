@@ -3468,12 +3468,6 @@
     <ClInclude Include="..\..\src\ripple\module\app\transactors\CreateOfferDirect.h">
       <Filter>ripple\module\app\transactors</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\transactors\CreateOfferLegacy.cpp">
-      <Filter>ripple\module\app\transactors</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\transactors\CreateOfferLegacy.h">
-      <Filter>ripple\module\app\transactors</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\Payment.cpp">
       <Filter>ripple\module\app\transactors</Filter>
     </ClCompile>

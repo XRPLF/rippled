@@ -47,7 +47,7 @@ Quality
 Quality::operator++ (int)
 {
     Quality prev (*this);
-    --*this;
+    ++*this;
     return prev;
 }
 
@@ -63,7 +63,7 @@ Quality
 Quality::operator-- (int)
 {
     Quality prev (*this);
-    ++*this;
+    --*this;
     return prev;
 }
 
@@ -77,8 +77,10 @@ Quality::ceil_in (Amounts const& amount, Amount const& limit) const
         // Clamp out
         if (result.out > amount.out)
             result.out = amount.out;
+        assert (result.in == limit);
         return result;
     }
+    assert (amount.in <= limit);
     return amount;
 }
 
@@ -92,8 +94,10 @@ Quality::ceil_out (Amounts const& amount, Amount const& limit) const
         // Clamp in
         if (result.in > amount.in)
             result.in = amount.in;
+        assert (result.out == limit);
         return result;
     }
+    assert (amount.out <= limit);
     return amount;
 }
 

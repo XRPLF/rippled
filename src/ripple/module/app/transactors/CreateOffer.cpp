@@ -20,10 +20,6 @@
 #include <ripple/module/app/transactors/CreateOfferDirect.h>
 #include <ripple/module/app/transactors/CreateOfferBridged.h>
 
-#if RIPPLE_USE_OLD_CREATE_TRANSACTOR
-#include <ripple/module/app/transactors/CreateOfferLegacy.h>
-#endif
-
 #include <ripple/module/app/book/OfferStream.h>
 #include <ripple/module/app/book/Taker.h>
 #include <ripple/module/app/book/Types.h>
@@ -156,9 +152,6 @@ CreateOffer::doApply ()
     std::uint64_t const uRate = STAmount::getRate (saTakerGets, saTakerPays);
 
     TER terResult (tesSUCCESS);
-    uint256 uDirectory;
-    std::uint64_t uOwnerNode;
-    std::uint64_t uBookNode;
 
     // This is the ledger view that we work against. Transactions are applied
     // as we go on processing transactions.
@@ -199,14 +192,14 @@ CreateOffer::doApply ()
         m_journal.warning <<
             "Malformed offer: XRP for XRP";
 
-        terResult   = temBAD_OFFER;
+        terResult = temBAD_OFFER;
     }
     else if (saTakerPays <= zero || saTakerGets <= zero)
     {
         m_journal.warning <<
             "Malformed offer: bad amount";
 
-        terResult   = temBAD_OFFER;
+        terResult = temBAD_OFFER;
     }
     else if (uPaysCurrency == uGetsCurrency && uPaysIssuerID == uGetsIssuerID)
     {
@@ -360,6 +353,21 @@ CreateOffer::doApply ()
             view.accountFunds (mTxnAccountID, saTakerGets).getFullText ();
     }
 
+    if (saTakerPays < zero || saTakerGets < zero)
+    {
+        // Earlier, we verified that the amounts, as specified in the offer,
+        // were not negative. That they are now suggests that something went
+        // very wrong with offer crossing.
+        m_journal.fatal << (crossed ? "Partially consumed" : "Full") << 
+            " offer has negative component:" <<
+            " pays=" << saTakerPays.getFullText () <<
+            " gets=" << saTakerGets.getFullText ();
+
+        assert (saTakerPays >= zero);
+        assert (saTakerGets >= zero);
+        return tefINTERNAL;
+    }
+
     if (bFillOrKill && (saTakerPays != zero || saTakerGets != zero))
     {
         // Fill or kill and have leftovers.
@@ -371,8 +379,8 @@ CreateOffer::doApply ()
     auto const accountReserve (mEngine->getLedger ()->getReserve (
         sleCreator->getFieldU32 (sfOwnerCount) + 1));
 
-    if (saTakerPays <= zero ||                // Wants nothing more.
-        saTakerGets <= zero ||                // Offering nothing more.
+    if (saTakerPays == zero ||                // Wants nothing more.
+        saTakerGets == zero ||                // Offering nothing more.
         bImmediateOrCancel)                   // Do not persist.
     {
         // Complete as is.
@@ -408,26 +416,34 @@ CreateOffer::doApply ()
     }
     else
     {
+        assert (saTakerPays > zero);
+        assert (saTakerGets > zero);
+
         // We need to place the remainder of the offer into its order book.
         if (m_journal.debug) m_journal.debug <<
             "offer not fully consumed:" <<
             " saTakerPays=" << saTakerPays.getFullText () <<
             " saTakerGets=" << saTakerGets.getFullText ();
 
+        std::uint64_t uOwnerNode;
+        std::uint64_t uBookNode;
+        uint256 uDirectory;
+
         // Add offer to owner's directory.
-        terResult   = view.dirAdd (uOwnerNode,
+        terResult = view.dirAdd (uOwnerNode,
             Ledger::getOwnerDirIndex (mTxnAccountID), uLedgerIndex,
-            std::bind (&Ledger::ownerDirDescriber, std::placeholders::_1,
-                       std::placeholders::_2, mTxnAccountID));
+            std::bind (
+                &Ledger::ownerDirDescriber, std::placeholders::_1,
+                std::placeholders::_2, mTxnAccountID));
 
         if (tesSUCCESS == terResult)
         {
             // Update owner count.
             view.ownerCountAdjust (mTxnAccountID, 1, sleCreator);
 
-            uint256 uBookBase = Ledger::getBookBase (
+            uint256 const uBookBase (Ledger::getBookBase (
                 uPaysCurrency, uPaysIssuerID,
-                uGetsCurrency, uGetsIssuerID);
+                uGetsCurrency, uGetsIssuerID));
 
             if (m_journal.debug) m_journal.debug <<
                 "adding to book: " << to_string (uBookBase) <<
@@ -441,10 +457,11 @@ CreateOffer::doApply ()
 
             // Add offer to order book.
             terResult = view.dirAdd (uBookNode, uDirectory, uLedgerIndex,
-                std::bind (&Ledger::qualityDirDescriber, std::placeholders::_1,
-                           std::placeholders::_2, saTakerPays.getCurrency (),
-                           uPaysIssuerID, saTakerGets.getCurrency (),
-                           uGetsIssuerID, uRate));
+                std::bind (
+                    &Ledger::qualityDirDescriber, std::placeholders::_1,
+                    std::placeholders::_2, saTakerPays.getCurrency (),
+                    uPaysIssuerID, saTakerGets.getCurrency (),
+                    uGetsIssuerID, uRate));
         }
 
         if (tesSUCCESS == terResult)
@@ -513,18 +530,16 @@ std::unique_ptr <Transactor> make_CreateOffer (
     TransactionEngineParams params,
     TransactionEngine* engine)
 {
-#if RIPPLE_USE_OLD_CREATE_TRANSACTOR
-    return std::make_unique <CreateOfferLegacy> (txn, params, engine);
-#else
+#if RIPPLE_ENABLE_AUTOBRIDGING
     STAmount const& amount_in = txn.getFieldAmount (sfTakerPays);
     STAmount const& amount_out = txn.getFieldAmount (sfTakerGets);
 
     // Autobridging is only in effect when an offer does not involve XRP
     if (!amount_in.isNative() && !amount_out.isNative ())
         return std::make_unique <CreateOfferBridged> (txn, params, engine);
+#endif
 
     return std::make_unique <CreateOfferDirect> (txn, params, engine);
-#endif
 }
 
 }
