@@ -181,37 +181,69 @@ public:
     uint256             getNextLedgerIndex (uint256 const & uHash);
     uint256             getNextLedgerIndex (uint256 const & uHash, uint256 const & uEnd);
 
-    void                ownerCountAdjust (const uint160 & uOwnerID, int iAmount, SLE::ref sleAccountRoot = SLE::pointer ());
+    void                ownerCountAdjust (uint160 const& uOwnerID, int iAmount, SLE::ref sleAccountRoot = SLE::pointer ());
 
     // Offer functions.
-    TER                 offerDelete (uint256 const & uOfferIndex);
+    TER                 offerDelete (uint256 const & offerIndex);
     TER                 offerDelete (SLE::pointer sleOffer);
 
     // Balance functions.
-    std::uint32_t       rippleTransferRate (const uint160 & uIssuerID);
-    std::uint32_t       rippleTransferRate (const uint160 & uSenderID, const uint160 & uReceiverID, const uint160 & uIssuerID);
-    STAmount            rippleOwed (const uint160 & uToAccountID, const uint160 & uFromAccountID, const uint160 & uCurrencyID);
-    STAmount            rippleLimit (const uint160 & uToAccountID, const uint160 & uFromAccountID, const uint160 & uCurrencyID);
-    std::uint32_t       rippleQualityIn (const uint160 & uToAccountID, const uint160 & uFromAccountID, const uint160 & uCurrencyID,
-                                         SField::ref sfLow = sfLowQualityIn, SField::ref sfHigh = sfHighQualityIn);
-    std::uint32_t       rippleQualityOut (const uint160 & uToAccountID, const uint160 & uFromAccountID, const uint160 & uCurrencyID)
+    std::uint32_t rippleTransferRate (uint160 const& issuer);
+    std::uint32_t rippleTransferRate (
+        uint160 const& uSenderID, uint160 const& uReceiverID,
+        uint160 const& issuer);
+
+    STAmount rippleOwed (
+        uint160 const& uToAccountID, uint160 const& uFromAccountID,
+        uint160 const& currency);
+    STAmount rippleLimit (
+        uint160 const& uToAccountID, uint160 const& uFromAccountID,
+        uint160 const& currency);
+
+    std::uint32_t rippleQualityIn (
+        uint160 const& uToAccountID, uint160 const& uFromAccountID,
+        uint160 const& currency,
+        SField::ref sfLow = sfLowQualityIn,
+        SField::ref sfHigh = sfHighQualityIn);
+
+    std::uint32_t rippleQualityOut (
+        uint160 const& uToAccountID, uint160 const& uFromAccountID,
+        uint160 const& currency)
     {
-        return rippleQualityIn (uToAccountID, uFromAccountID, uCurrencyID, sfLowQualityOut, sfHighQualityOut);
+        return rippleQualityIn (
+            uToAccountID, uFromAccountID, currency,
+            sfLowQualityOut, sfHighQualityOut);
     }
 
-    STAmount            rippleHolds (const uint160 & uAccountID, const uint160 & uCurrencyID, const uint160 & uIssuerID);
-    STAmount            rippleTransferFee (const uint160 & uSenderID, const uint160 & uReceiverID, const uint160 & uIssuerID, const STAmount & saAmount);
-    TER                 rippleCredit (const uint160 & uSenderID, const uint160 & uReceiverID, const STAmount & saAmount, bool bCheckIssuer = true);
-    TER                 rippleSend (const uint160 & uSenderID, const uint160 & uReceiverID, const STAmount & saAmount, STAmount & saActual);
+    STAmount rippleHolds (
+        uint160 const& account, uint160 const& currency,
+        uint160 const& issuer);
 
-    STAmount            accountHolds (const uint160 & uAccountID, const uint160 & uCurrencyID, const uint160 & uIssuerID);
-    STAmount            accountFunds (const uint160 & uAccountID, const STAmount & saDefault);
-    TER                 accountSend (const uint160 & uSenderID, const uint160 & uReceiverID, const STAmount & saAmount);
+    STAmount rippleTransferFee (
+        uint160 const& uSenderID, uint160 const& uReceiverID,
+        uint160 const& issuer, const STAmount & saAmount);
 
-    TER                 trustCreate (
+    TER rippleCredit (
+        uint160 const& uSenderID, uint160 const& uReceiverID,
+        const STAmount & saAmount, bool bCheckIssuer = true);
+
+    TER rippleSend (
+        uint160 const& uSenderID, uint160 const& uReceiverID,
+        const STAmount & saAmount, STAmount & saActual);
+
+    STAmount accountHolds (
+        uint160 const& account, uint160 const& currency,
+        uint160 const& issuer);
+    STAmount accountFunds (
+        uint160 const& account, const STAmount & saDefault);
+    TER accountSend (
+        uint160 const& uSenderID, uint160 const& uReceiverID,
+        const STAmount & saAmount);
+
+    TER trustCreate (
         const bool      bSrcHigh,
-        const uint160 &  uSrcAccountID,
-        const uint160 &  uDstAccountID,
+        uint160 const&  uSrcAccountID,
+        uint160 const&  uDstAccountID,
         uint256 const &  uIndex,
         SLE::ref        sleAccount,
         const bool      bAuth,
@@ -220,14 +252,18 @@ public:
         const STAmount & saSrcLimit,
         const std::uint32_t uSrcQualityIn = 0,
         const std::uint32_t uSrcQualityOut = 0);
-    TER                 trustDelete (SLE::ref sleRippleState, const uint160 & uLowAccountID, const uint160 & uHighAccountID);
+    TER trustDelete (
+        SLE::ref sleRippleState, uint160 const& uLowAccountID,
+        uint160 const& uHighAccountID);
 
     Json::Value getJson (int) const;
     void calcRawMeta (Serializer&, TER result, std::uint32_t index);
 
     // iterator functions
-    typedef std::map<uint256, LedgerEntrySetEntry>::iterator                iterator;
-    typedef std::map<uint256, LedgerEntrySetEntry>::const_iterator          const_iterator;
+    typedef std::map<uint256, LedgerEntrySetEntry>::iterator iterator;
+    typedef std::map<uint256, LedgerEntrySetEntry>::const_iterator
+    const_iterator;
+
     bool isEmpty () const
     {
         return mEntries.empty ();
@@ -257,27 +293,34 @@ public:
 private:
     Ledger::pointer mLedger;
     std::map<uint256, LedgerEntrySetEntry>  mEntries; // cannot be unordered!
+
+    typedef ripple::unordered_map<uint256, SLE::pointer> NodeToLedgerEntry;
+
     TransactionMetaSet mSet;
     TransactionEngineParams mParams;
     int mSeq;
     bool mImmutable;
 
-    LedgerEntrySet (Ledger::ref ledger, const std::map<uint256, LedgerEntrySetEntry>& e,
-                    const TransactionMetaSet & s, int m) :
-        mLedger (ledger), mEntries (e), mSet (s), mParams (tapNONE), mSeq (m), mImmutable (false)
-    {
-        ;
-    }
+    LedgerEntrySet (
+        Ledger::ref ledger, const std::map<uint256, LedgerEntrySetEntry>& e,
+        const TransactionMetaSet & s, int m) :
+        mLedger (ledger), mEntries (e), mSet (s), mParams (tapNONE), mSeq (m),
+        mImmutable (false)
+    {}
 
-    SLE::pointer getForMod (uint256 const & node, Ledger::ref ledger,
-                            ripple::unordered_map<uint256, SLE::pointer>& newMods);
+    SLE::pointer getForMod (
+        uint256 const & node, Ledger::ref ledger,
+        NodeToLedgerEntry& newMods);
 
-    bool threadTx (const RippleAddress & threadTo, Ledger::ref ledger,
-                   ripple::unordered_map<uint256, SLE::pointer>& newMods);
+    bool threadTx (
+        const RippleAddress & threadTo, Ledger::ref ledger,
+        NodeToLedgerEntry& newMods);
 
-    bool threadTx (SLE::ref threadTo, Ledger::ref ledger, ripple::unordered_map<uint256, SLE::pointer>& newMods);
+    bool threadTx (
+        SLE::ref threadTo, Ledger::ref ledger, NodeToLedgerEntry& newMods);
 
-    bool threadOwners (SLE::ref node, Ledger::ref ledger, ripple::unordered_map<uint256, SLE::pointer>& newMods);
+    bool threadOwners (
+        SLE::ref node, Ledger::ref ledger, NodeToLedgerEntry& newMods);
 };
 
 inline LedgerEntrySet::iterator range_begin (LedgerEntrySet& x)

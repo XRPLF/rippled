@@ -27,7 +27,7 @@ TER SetTrust::doApply ()
     bool const bQualityIn (mTxn.isFieldPresent (sfQualityIn));
     bool const bQualityOut (mTxn.isFieldPresent (sfQualityOut));
 
-    uint160 const uCurrencyID (saLimitAmount.getCurrency ());
+    uint160 const currency (saLimitAmount.getCurrency ());
     uint160 uDstAccountID (saLimitAmount.getIssuer ());
 
     // true, iff current is high account.
@@ -94,7 +94,7 @@ TER SetTrust::doApply ()
         SLE::pointer selDelete (
             mEngine->entryCache (ltRIPPLE_STATE,
                 Ledger::getRippleStateIndex (
-                    mTxnAccountID, uDstAccountID, uCurrencyID)));
+                    mTxnAccountID, uDstAccountID, currency)));
 
         if (selDelete)
         {
@@ -133,7 +133,7 @@ TER SetTrust::doApply ()
     saLimitAllow.setIssuer (mTxnAccountID);
 
     SLE::pointer sleRippleState (mEngine->entryCache (ltRIPPLE_STATE,
-        Ledger::getRippleStateIndex (mTxnAccountID, uDstAccountID, uCurrencyID)));
+        Ledger::getRippleStateIndex (mTxnAccountID, uDstAccountID, currency)));
 
     if (sleRippleState)
     {
@@ -310,7 +310,7 @@ TER SetTrust::doApply ()
         if (uFlagsIn != uFlagsOut)
             sleRippleState->setFieldU32 (sfFlags, uFlagsOut);
 
-        if (bDefault || CURRENCY_BAD == uCurrencyID)
+        if (bDefault || CURRENCY_BAD == currency)
         {
             // Delete.
 
@@ -350,17 +350,17 @@ TER SetTrust::doApply ()
         // Another transaction could create the account and then this transaction would succeed.
         terResult = tecNO_LINE_INSUF_RESERVE;
     }
-    else if (CURRENCY_BAD == uCurrencyID)
+    else if (CURRENCY_BAD == currency)
     {
         terResult   = temBAD_CURRENCY;
     }
     else
     {
         // Zero balance in currency.
-        STAmount saBalance (STAmount (uCurrencyID, ACCOUNT_ONE));
+        STAmount saBalance (STAmount (currency, ACCOUNT_ONE));
 
         uint256 index (Ledger::getRippleStateIndex (
-            mTxnAccountID, uDstAccountID, uCurrencyID));
+            mTxnAccountID, uDstAccountID, currency));
 
         m_journal.trace <<
             "doTrustSet: Creating ripple line: " <<

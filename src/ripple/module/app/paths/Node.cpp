@@ -24,12 +24,13 @@ namespace path {
 bool Node::operator== (const Node& other) const
 {
     return other.uFlags == uFlags
-       && other.uAccountID == uAccountID
-       && other.uCurrencyID == uCurrencyID
-       && other.uIssuerID == uIssuerID;
+       && other.account_ == account_
+       && other.currency_ == currency_
+       && other.issuer_ == issuer_;
 }
 
-// This is for debugging not end users. Output names can be changed without warning.
+// This is for debugging not end users. Output names can be changed without
+// warning.
 Json::Value Node::getJson () const
 {
     Json::Value jvNode (Json::objectValue);
@@ -37,9 +38,9 @@ Json::Value Node::getJson () const
 
     jvNode["type"]  = uFlags;
 
-    bool const hasCurrency (uCurrencyID != zero);
-    bool const hasAccount (uAccountID != zero);
-    bool const hasIssuer (uIssuerID != zero);
+    bool const hasCurrency = (currency_ != zero);
+    bool const hasAccount = (account_ != zero);
+    bool const hasIssuer = (issuer_ != zero);
 
     if (isAccount() || hasAccount)
     {
@@ -62,14 +63,14 @@ Json::Value Node::getJson () const
 
     jvNode["flags"] = jvFlags;
 
-    if (!!uAccountID)
-        jvNode["account"] = RippleAddress::createHumanAccountID (uAccountID);
+    if (!!account_)
+        jvNode["account"] = RippleAddress::createHumanAccountID (account_);
 
-    if (!!uCurrencyID)
-        jvNode["currency"] = STAmount::createHumanCurrency (uCurrencyID);
+    if (!!currency_)
+        jvNode["currency"] = STAmount::createHumanCurrency (currency_);
 
-    if (!!uIssuerID)
-        jvNode["issuer"] = RippleAddress::createHumanAccountID (uIssuerID);
+    if (!!issuer_)
+        jvNode["issuer"] = RippleAddress::createHumanAccountID (issuer_);
 
     if (saRevRedeem)
         jvNode["rev_redeem"] = saRevRedeem.getFullText ();

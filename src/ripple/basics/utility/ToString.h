@@ -17,29 +17,45 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
+#ifndef RIPPLE_TOSTRING_H
+#define RIPPLE_TOSTRING_H
 
-#include <ripple/unity/app.h>
+namespace ripple {
 
-#include <ripple/module/app/book/impl/BookTip.cpp>
-#include <ripple/module/app/book/impl/OfferStream.cpp>
-#include <ripple/module/app/book/impl/Quality.cpp>
-#include <ripple/module/app/book/impl/Taker.cpp>
-#include <ripple/module/app/book/impl/Types.cpp>
+/** to_string() generalizes std::to_string to handle bools, chars, and strings.
 
-#include <ripple/module/app/transactors/Transactor.cpp>
+    It's also possible to provide implementation of to_string for a class
+    which needs a string implementation.
+ */
 
-#include <ripple/module/app/transactors/Change.cpp>
-#include <ripple/module/app/transactors/CancelOffer.cpp>
-#include <ripple/module/app/transactors/Payment.cpp>
-#include <ripple/module/app/transactors/SetRegularKey.cpp>
-#include <ripple/module/app/transactors/SetAccount.cpp>
-#include <ripple/module/app/transactors/AddWallet.cpp>
-#include <ripple/module/app/transactors/SetTrust.cpp>
-#include <ripple/module/app/transactors/CreateOffer.cpp>
-#include <ripple/module/app/transactors/CreateOfferDirect.cpp>
-#include <ripple/module/app/transactors/CreateOfferBridged.cpp>
+template <class T>
+typename std::enable_if<std::is_arithmetic<T>::value,
+                        std::string>::type
+to_string(T t)
+{
+    return std::to_string(t);
+}
 
-#if RIPPLE_USE_OLD_CREATE_TRANSACTOR
-#include <ripple/module/app/transactors/CreateOfferLegacy.cpp>
+inline std::string to_string(bool b)
+{
+    return b ? "true" : "false";
+}
+
+inline std::string to_string(char c)
+{
+    return std::string(1, c);
+}
+
+inline std::string to_string(std::string s)
+{
+    return s;
+}
+
+inline std::string to_string(char const* s)
+{
+    return s;
+}
+
+} // ripple
+
 #endif

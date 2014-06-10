@@ -31,6 +31,9 @@ namespace path {
 // the best quality.
 //
 // <-- pathState.uQuality
+//
+// This is the wrapper that restores a checkpointed version of the ledger so we
+// can write all over it without consequence.
 
 void pathNext (
     RippleCalc& rippleCalc,
@@ -59,7 +62,7 @@ void pathNext (
         node.saFwdDeliver.clear ();
     }
 
-    pathState.setStatus(nodeRev (rippleCalc, lastNodeIndex, pathState, bMultiQuality));
+    pathState.setStatus(computeReverseLiqudity (rippleCalc, lastNodeIndex, pathState, bMultiQuality));
 
     WriteLog (lsTRACE, RippleCalc)
         << "pathNext: Path after reverse: " << pathState.getJson ();
@@ -69,13 +72,13 @@ void pathNext (
         // Do forward.
         lesCurrent = lesCheckpoint.duplicate ();   // Restore from checkpoint.
 
-        pathState.setStatus(nodeFwd (rippleCalc, 0, pathState, bMultiQuality));
+        pathState.setStatus(computeForwardLiqudity (rippleCalc, 0, pathState, bMultiQuality));
     }
 
     if (tesSUCCESS == pathState.status())
     {
         CondLog (!pathState.inPass() || !pathState.outPass(), lsDEBUG, RippleCalc)
-            << "pathNext: Error nodeFwd reported success for nothing:"
+            << "pathNext: Error computeForwardLiqudity reported success for nothing:"
             << " saOutPass=" << pathState.outPass()
             << " inPass()=" << pathState.inPass();
 

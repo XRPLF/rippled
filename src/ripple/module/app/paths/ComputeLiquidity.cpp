@@ -27,79 +27,94 @@
 namespace ripple {
 namespace path {
 
-TER nodeFwd (
+TER computeForwardLiqudity (
     RippleCalc& rippleCalc,
     const unsigned int nodeIndex, PathState& pathState,
     const bool bMultiQuality)
 {
     auto const& node = pathState.nodes()[nodeIndex];
-    auto const isAccount = node.isAccount();
-
     WriteLog (lsTRACE, RippleCalc)
-        << "nodeFwd> nodeIndex=" << nodeIndex;
+        << "computeForwardLiqudity> nodeIndex=" << nodeIndex;
 
-    TER resultCode = isAccount
-        ? nodeAccountFwd (rippleCalc, nodeIndex, pathState, bMultiQuality)
-        : nodeOfferFwd (rippleCalc, nodeIndex, pathState, bMultiQuality);
+    TER resultCode = node.isAccount()
+        ? computeForwardLiquidityForAccount (
+            rippleCalc, nodeIndex, pathState, bMultiQuality)
+        : computeForwardLiquidityForOffer (
+              rippleCalc, nodeIndex, pathState, bMultiQuality);
 
     if (resultCode == tesSUCCESS && nodeIndex + 1 != pathState.nodes().size ())
-        resultCode = nodeFwd (rippleCalc, nodeIndex + 1, pathState, bMultiQuality);
+        resultCode = computeForwardLiqudity (rippleCalc, nodeIndex + 1, pathState, bMultiQuality);
 
     if (resultCode == tesSUCCESS && !(pathState.inPass() && pathState.outPass()))
         resultCode = tecPATH_DRY;
 
     WriteLog (lsTRACE, RippleCalc)
-        << "nodeFwd<"
+        << "computeForwardLiqudity<"
         << " nodeIndex:" << nodeIndex
         << " resultCode:" << resultCode;
 
     return resultCode;
 }
 
-// Calculate a node and its previous nodes.
+// Calculate a node and its previous nodes.  The eventual goal is to determine
+// how much input currency we need in the forward direction to satisfy the
+// output.
 //
 // From the destination work in reverse towards the source calculating how much
-// must be asked for.
+// must be asked for.  As we move backwards, individual nodes may further limit
+// the amount of liquidity available.
 //
-// Then work forward, figuring out how much can actually be delivered.
+// This is just a controlling loop that sets things up and then hands the work
+// off to either computeReverseLiquidityForAccount or computeReverseLiquidityForOffer.
+//
+// Later on the result of this will be used to work forward, figuring out how
+// much can actually be delivered.
+//
 // <-- resultCode: tesSUCCESS or tecPATH_DRY
 // <-> pnNodes:
 //     --> [end]saWanted.mAmount
 //     --> [all]saWanted.mCurrency
 //     --> [all]saAccount
 //     <-> [0]saWanted.mAmount : --> limit, <-- actual
-TER nodeRev (
+
+TER computeReverseLiqudity (
     RippleCalc& rippleCalc,
     const unsigned int nodeIndex, PathState& pathState,
     const bool bMultiQuality)
 {
     auto& node = pathState.nodes()[nodeIndex];
-    auto const isAccount = node.isAccount();
-    TER resultCode;
 
-    node.saTransferRate = STAmount::saFromRate (
-        rippleCalc.mActiveLedger.rippleTransferRate (node.uIssuerID));
+    // Every account has a transfer rate for its issuances.
+
+    // TOMOVE: The account charges
+    // a fee when third parties transfer that account's own issuances.
+
+    // node.transferRate_ caches the output transfer rate for this node.
+    node.transferRate_ = STAmount::saFromRate (
+        rippleCalc.mActiveLedger.rippleTransferRate (node.issuer_));
 
     WriteLog (lsTRACE, RippleCalc)
-        << "nodeRev>"
+        << "computeReverseLiqudity>"
         << " nodeIndex=" << nodeIndex
-        << " isAccount=" << isAccount
-        << " uIssuerID=" << RippleAddress::createHumanAccountID (node.uIssuerID)
-        << " saTransferRate=" << node.saTransferRate;
+        << " issuer_=" << RippleAddress::createHumanAccountID (node.issuer_)
+        << " transferRate_=" << node.transferRate_;
 
-    resultCode = isAccount
-            ? nodeAccountRev (rippleCalc, nodeIndex, pathState, bMultiQuality)
-        : nodeOfferRev (rippleCalc, nodeIndex, pathState, bMultiQuality);
+    auto resultCode = node.isAccount()
+        ? computeReverseLiquidityForAccount (
+            rippleCalc, nodeIndex, pathState, bMultiQuality)
+        : computeReverseLiquidityForOffer (
+            rippleCalc, nodeIndex, pathState, bMultiQuality);
 
     // Do previous.
     if (resultCode == tesSUCCESS && nodeIndex)
     {
         // Continue in reverse.  TODO(tom): remove unnecessary recursion.
-        resultCode = nodeRev (rippleCalc, nodeIndex - 1, pathState, bMultiQuality);
+        resultCode = computeReverseLiqudity (
+            rippleCalc, nodeIndex - 1, pathState, bMultiQuality);
     }
-    
+
     WriteLog (lsTRACE, RippleCalc)
-        << "nodeRev< "
+        << "computeReverseLiqudity< "
         << "nodeIndex=" << nodeIndex
         << " resultCode=%s" << transToken (resultCode)
         << "/" << resultCode;

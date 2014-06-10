@@ -200,13 +200,14 @@ STAmount STAmount::subRound (const STAmount& v1, const STAmount& v2, bool roundU
     }
 }
 
-STAmount STAmount::mulRound (const STAmount& v1, const STAmount& v2,
-                             const uint160& uCurrencyID, const uint160& uIssuerID, bool roundUp)
+STAmount STAmount::mulRound (
+    const STAmount& v1, const STAmount& v2, const uint160& currency,
+    const uint160& issuer, bool roundUp)
 {
     if (v1 == zero || v2 == zero)
-        return STAmount (uCurrencyID, uIssuerID);
+        return STAmount (currency, issuer);
 
-    if (v1.mIsNative && v2.mIsNative && uCurrencyID.isZero ())
+    if (v1.mIsNative && v2.mIsNative && currency.isZero ())
     {
         std::uint64_t minV = (v1.getSNValue () < v2.getSNValue ()) ? v1.getSNValue () : v2.getSNValue ();
         std::uint64_t maxV = (v1.getSNValue () < v2.getSNValue ()) ? v2.getSNValue () : v1.getSNValue ();
@@ -260,18 +261,19 @@ STAmount STAmount::mulRound (const STAmount& v1, const STAmount& v2,
 
     std::uint64_t amount = v.getuint64 ();
     int offset = offset1 + offset2 + 14;
-    canonicalizeRound (uCurrencyID.isZero (), amount, offset, resultNegative != roundUp);
-    return STAmount (uCurrencyID, uIssuerID, amount, offset, resultNegative);
+    canonicalizeRound (currency.isZero (), amount, offset, resultNegative != roundUp);
+    return STAmount (currency, issuer, amount, offset, resultNegative);
 }
 
-STAmount STAmount::divRound (const STAmount& num, const STAmount& den,
-                             const uint160& uCurrencyID, const uint160& uIssuerID, bool roundUp)
+STAmount STAmount::divRound (
+    const STAmount& num, const STAmount& den,
+    const uint160& currency, const uint160& issuer, bool roundUp)
 {
     if (den == zero)
         throw std::runtime_error ("division by zero");
 
     if (num == zero)
-        return STAmount (uCurrencyID, uIssuerID);
+        return STAmount (currency, issuer);
 
     std::uint64_t numVal = num.mValue, denVal = den.mValue;
     int numOffset = num.mOffset, denOffset = den.mOffset;
@@ -309,8 +311,8 @@ STAmount STAmount::divRound (const STAmount& num, const STAmount& den,
 
     std::uint64_t amount = v.getuint64 ();
     int offset = numOffset - denOffset - 17;
-    canonicalizeRound (uCurrencyID.isZero (), amount, offset, resultNegative != roundUp);
-    return STAmount (uCurrencyID, uIssuerID, amount, offset, resultNegative);
+    canonicalizeRound (currency.isZero (), amount, offset, resultNegative != roundUp);
+    return STAmount (currency, issuer, amount, offset, resultNegative);
 }
 
 } // ripple

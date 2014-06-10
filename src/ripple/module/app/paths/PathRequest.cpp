@@ -355,7 +355,7 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
             if (!sameAccount || (c != saDstAmount.getCurrency ()))
             {
                 if (c.isZero ())
-                    sourceCurrencies.insert (std::make_pair (c, ACCOUNT_XRP));
+                    sourceCurrencies.insert (std::make_pair (c, XRP_ACCOUNT));
                 else
                     sourceCurrencies.insert (std::make_pair (c, raSrcAccount.getAccountID ()));
             }
@@ -426,7 +426,8 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
             STAmount saDstAmountAct;
             STAmount saMaxAmount (currIssuer.first,
                     currIssuer.second.isNonZero () ? currIssuer.second :
-                    (currIssuer.first.isZero () ? ACCOUNT_XRP : raSrcAccount.getAccountID ()), 1);
+                                  (currIssuer.first.isZero () ? ACCOUNT_XRP :
+                                   raSrcAccount.getAccountID ()), 1);
             saMaxAmount.negate ();
             m_journal.debug << iIdentifier << " Paths found, calling rippleCalc";
             TER resultCode = path::rippleCalculate (lesSandbox, saMaxAmountAct, saDstAmountAct,

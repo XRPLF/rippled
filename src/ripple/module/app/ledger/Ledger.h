@@ -317,7 +317,7 @@ public:
     std::vector<uint256> getNeededAccountStateHashes (int max, SHAMapSyncFilter * filter);
 
     // index calculation functions
-    static uint256 getAccountRootIndex (const uint160 & uAccountID);
+    static uint256 getAccountRootIndex (const uint160 & account);
 
     static uint256 getAccountRootIndex (const RippleAddress & account)
     {
@@ -373,13 +373,13 @@ public:
 
     SLE::pointer getOffer (uint256 const & uIndex);
 
-    SLE::pointer getOffer (const uint160 & uAccountID, std::uint32_t uSequence)
+    SLE::pointer getOffer (const uint160 & account, std::uint32_t uSequence)
     {
-        return getOffer (getOfferIndex (uAccountID, uSequence));
+        return getOffer (getOfferIndex (account, uSequence));
     }
 
     // The index of an offer.
-    static uint256 getOfferIndex (const uint160 & uAccountID, std::uint32_t uSequence);
+    static uint256 getOfferIndex (const uint160 & account, std::uint32_t uSequence);
 
     //
     // Owner functions
@@ -389,7 +389,7 @@ public:
     //             into a 256 bit object (I think....need to research this)
     //
     // All items controlled by an account are here: offers
-    static uint256 getOwnerDirIndex (const uint160 & uAccountID);
+    static uint256 getOwnerDirIndex (const uint160 & account);
 
     //
     // Directory functions

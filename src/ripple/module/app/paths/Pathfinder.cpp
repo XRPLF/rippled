@@ -405,7 +405,7 @@ boost::unordered_set<uint160> usAccountSourceCurrencies (
 
     // YYY Only bother if they are above reserve
     if (includeXRP)
-        usCurrencies.insert (uint160 (CURRENCY_XRP));
+        usCurrencies.insert (uint160 (XRP_CURRENCY));
 
     // List of ripple lines.
     AccountItems& rippleLines (lrCache->getRippleLines (raAccountID.getAccountID ()));
@@ -436,7 +436,7 @@ boost::unordered_set<uint160> usAccountDestCurrencies (
     boost::unordered_set<uint160>   usCurrencies;
 
     if (includeXRP)
-        usCurrencies.insert (uint160 (CURRENCY_XRP)); // Even if account doesn't exist
+        usCurrencies.insert (uint160 (XRP_CURRENCY)); // Even if account doesn't exist
 
     // List of ripple lines.
     AccountItems& rippleLines (lrCache->getRippleLines (raAccountID.getAccountID ()));
@@ -744,7 +744,10 @@ void Pathfinder::addLink(
         { // to XRP only
             if (!bOnXRP && getApp().getOrderBookDB().isBookToXRP(uEndIssuer, uEndCurrency))
             {
-                incompletePaths.assembleAdd(currentPath, STPathElement(STPathElement::typeCurrency, ACCOUNT_XRP, CURRENCY_XRP, ACCOUNT_XRP));
+                STPathElement pathElement(
+                    STPathElement::typeCurrency,
+                    XRP_ACCOUNT, XRP_CURRENCY, XRP_ACCOUNT);
+                incompletePaths.assembleAdd(currentPath, pathElement);
             }
         }
         else
@@ -755,9 +758,15 @@ void Pathfinder::addLink(
             WriteLog (lsTRACE, Pathfinder) << books.size() << " books found from this currency/issuer";
             BOOST_FOREACH(OrderBook::ref book, books)
             {
-                if (!currentPath.hasSeen (ACCOUNT_XRP, book->getCurrencyOut(), book->getIssuerOut()) &&
-                        !matchesOrigin(book->getCurrencyOut(), book->getIssuerOut()) &&
-                        (!bDestOnly || (book->getCurrencyOut() == mDstAmount.getCurrency())))
+                if (!currentPath.hasSeen (
+                        XRP_ACCOUNT,
+                        book->getCurrencyOut(),
+                        book->getIssuerOut()) &&
+                    !matchesOrigin(
+                        book->getCurrencyOut(),
+                        book->getIssuerOut()) &&
+                    (!bDestOnly ||
+                     (book->getCurrencyOut() == mDstAmount.getCurrency())))
                 {
                     STPath newPath(currentPath);
 
@@ -765,7 +774,9 @@ void Pathfinder::addLink(
                     { // to XRP
 
                         // add the order book itself
-                        newPath.addElement(STPathElement(STPathElement::typeCurrency, ACCOUNT_XRP, CURRENCY_XRP, ACCOUNT_XRP));
+                        newPath.addElement(STPathElement(
+                            STPathElement::typeCurrency,
+                            XRP_ACCOUNT, XRP_CURRENCY, XRP_ACCOUNT));
 
                         if (mDstAmount.getCurrency().isZero())
                         { // destination is XRP, add account and path is complete
@@ -779,7 +790,7 @@ void Pathfinder::addLink(
                     { // Don't want the book if we've already seen the issuer
                         // add the order book itself
                         newPath.addElement(STPathElement(STPathElement::typeCurrency | STPathElement::typeIssuer,
-                            ACCOUNT_XRP, book->getCurrencyOut(), book->getIssuerOut()));
+                            XRP_ACCOUNT, book->getCurrencyOut(), book->getIssuerOut()));
 
                         if ((book->getIssuerOut() == mDstAccountID) && book->getCurrencyOut() == mDstAmount.getCurrency())
                         { // with the destination account, this path is complete

@@ -23,6 +23,9 @@
 #include <boost/regex.hpp>
 #include <cstdarg>
 
+#include <ripple/basics/utility/ToString.h>
+#include <ripple/basics/utility/StringConcat.h>
+
 namespace ripple {
 
 // VFALCO TODO Replace these with something more robust and without macros.
@@ -415,7 +418,7 @@ public:
     void testToString ()
     {
         testcase ("toString");
-        auto result = toString("hello");
+        auto result = to_string("hello");
         expect(result == "hello", result);
     }
 

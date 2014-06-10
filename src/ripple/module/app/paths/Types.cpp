@@ -17,29 +17,11 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
+#include <ripple/module/app/paths/Types.h>
 
-#include <ripple/unity/app.h>
+namespace ripple {
 
-#include <ripple/module/app/book/impl/BookTip.cpp>
-#include <ripple/module/app/book/impl/OfferStream.cpp>
-#include <ripple/module/app/book/impl/Quality.cpp>
-#include <ripple/module/app/book/impl/Taker.cpp>
-#include <ripple/module/app/book/impl/Types.cpp>
+const path::Account XRP_ACCOUNT(0);
+const path::Currency XRP_CURRENCY(0);
 
-#include <ripple/module/app/transactors/Transactor.cpp>
-
-#include <ripple/module/app/transactors/Change.cpp>
-#include <ripple/module/app/transactors/CancelOffer.cpp>
-#include <ripple/module/app/transactors/Payment.cpp>
-#include <ripple/module/app/transactors/SetRegularKey.cpp>
-#include <ripple/module/app/transactors/SetAccount.cpp>
-#include <ripple/module/app/transactors/AddWallet.cpp>
-#include <ripple/module/app/transactors/SetTrust.cpp>
-#include <ripple/module/app/transactors/CreateOffer.cpp>
-#include <ripple/module/app/transactors/CreateOfferDirect.cpp>
-#include <ripple/module/app/transactors/CreateOfferBridged.cpp>
-
-#if RIPPLE_USE_OLD_CREATE_TRANSACTOR
-#include <ripple/module/app/transactors/CreateOfferLegacy.cpp>
-#endif
+} // ripple

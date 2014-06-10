@@ -533,12 +533,12 @@ STAmount* STAmount::construct (SerializerIterator& sit, SField::ref name)
         return new STAmount (name, value, true); // negative
     }
 
-    uint160 uCurrencyID = sit.get160 ();
+    uint160 currency = sit.get160 ();
 
-    if (!uCurrencyID)
+    if (!currency)
         throw std::runtime_error ("invalid non-native currency");
 
-    uint160 uIssuerID = sit.get160 ();
+    uint160 issuer = sit.get160 ();
 
     int offset = static_cast<int> (value >> (64 - 10)); // 10 bits for the offset, sign and "not native" flag
     value &= ~ (1023ull << (64 - 10));
@@ -551,13 +551,13 @@ STAmount* STAmount::construct (SerializerIterator& sit, SField::ref name)
         if ((value < cMinValue) || (value > cMaxValue) || (offset < cMinOffset) || (offset > cMaxOffset))
             throw std::runtime_error ("invalid currency value");
 
-        return new STAmount (name, uCurrencyID, uIssuerID, value, offset, isNegative);
+        return new STAmount (name, currency, issuer, value, offset, isNegative);
     }
 
     if (offset != 512)
         throw std::runtime_error ("invalid currency value");
 
-    return new STAmount (name, uCurrencyID, uIssuerID);
+    return new STAmount (name, currency, issuer);
 }
 
 std::int64_t STAmount::getSNValue () const
@@ -921,13 +921,15 @@ STAmount operator- (const STAmount& v1, const STAmount& v2)
 }
 
 // NIKB TODO Make Amount::divide skip math if den == QUALITY_ONE
-STAmount STAmount::divide (const STAmount& num, const STAmount& den, const uint160& uCurrencyID, const uint160& uIssuerID)
+STAmount STAmount::divide (
+    const STAmount& num, const STAmount& den, const uint160& currency,
+    const uint160& issuer)
 {
     if (den == zero)
         throw std::runtime_error ("division by zero");
 
     if (num == zero)
-        return STAmount (uCurrencyID, uIssuerID);
+        return STAmount (currency, issuer);
 
     std::uint64_t numVal = num.mValue, denVal = den.mValue;
     int numOffset = num.mOffset, denOffset = den.mOffset;
@@ -960,16 +962,18 @@ STAmount STAmount::divide (const STAmount& num, const STAmount& den, const uint1
     // 10^16 <= quotient <= 10^18
     assert (BN_num_bytes (&v) <= 64);
 
-    return STAmount (uCurrencyID, uIssuerID, v.getuint64 () + 5,
+    return STAmount (currency, issuer, v.getuint64 () + 5,
                      numOffset - denOffset - 17, num.mIsNegative != den.mIsNegative);
 }
 
-STAmount STAmount::multiply (const STAmount& v1, const STAmount& v2, const uint160& uCurrencyID, const uint160& uIssuerID)
+STAmount STAmount::multiply (
+    const STAmount& v1, const STAmount& v2, const uint160& currency,
+    const uint160& issuer)
 {
     if (v1 == zero || v2 == zero)
-        return STAmount (uCurrencyID, uIssuerID);
+        return STAmount (currency, issuer);
 
-    if (v1.mIsNative && v2.mIsNative && uCurrencyID.isZero ())
+    if (v1.mIsNative && v2.mIsNative && currency.isZero ())
     {
         std::uint64_t minV = (v1.getSNValue () < v2.getSNValue ()) ? v1.getSNValue () : v2.getSNValue ();
         std::uint64_t maxV = (v1.getSNValue () < v2.getSNValue ()) ? v2.getSNValue () : v1.getSNValue ();
@@ -1018,7 +1022,7 @@ STAmount STAmount::multiply (const STAmount& v1, const STAmount& v2, const uint1
     // 10^16 <= product <= 10^18
     assert (BN_num_bytes (&v) <= 64);
 
-    return STAmount (uCurrencyID, uIssuerID, v.getuint64 () + 7, offset1 + offset2 + 14,
+    return STAmount (currency, issuer, v.getuint64 () + 7, offset1 + offset2 + 14,
                      v1.mIsNegative != v2.mIsNegative);
 }
 
