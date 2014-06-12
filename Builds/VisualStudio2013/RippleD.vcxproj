@@ -1142,6 +1142,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\utility\tagged_integer.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\utility\tests\Journal.test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\utility\tests\Zero.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>

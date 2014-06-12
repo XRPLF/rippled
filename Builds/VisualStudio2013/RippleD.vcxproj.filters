@@ -1926,6 +1926,9 @@
     <ClInclude Include="..\..\src\beast\beast\utility\tagged_integer.h">
       <Filter>beast\utility</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\utility\tests\Journal.test.cpp">
+      <Filter>beast\utility\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\utility\tests\Zero.test.cpp">
       <Filter>beast\utility\tests</Filter>
     </ClCompile>
