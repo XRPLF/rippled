@@ -1522,6 +1522,14 @@ private:
             propose ();
     }
 
+    // For a given number of participants and required percent
+    // for consensus, how many participants must agree?
+    static int computePercent (int size, int percent)
+    {
+        int result = ((size * percent) + (percent / 2)) / 100;
+        return (result == 0) ? 1 : result;
+    }
+
     void updateOurPositions ()
     {
         boost::posix_time::ptime peerCutoff
@@ -1609,28 +1617,18 @@ private:
         }
         else
         {
-            // Threshold for non-zero vote
-            int threshVote = mPeerPositions.size ();
-            // Threshold to declare consensus
-            int threshConsensus = mPeerPositions.size ();
-
+            int participants = mPeerPositions.size ();
             if (mProposing)
             {
                 ++closeTimes[roundCloseTime (mOurPosition->getCloseTime ())];
-                ++threshVote;
-                ++threshConsensus;
+                ++participants;
             }
 
-            threshVote = ((threshVote * neededWeight) + (neededWeight / 2))
-                / 100;
-            threshConsensus = ((threshConsensus * AV_CT_CONSENSUS_PCT)
-                + (AV_CT_CONSENSUS_PCT / 2)) / 100;
+            // Threshold for non-zero vote
+            int threshVote = computePercent (participants, neededWeight);
 
-            if (threshVote == 0)
-                threshVote = 1;
-
-            if (threshConsensus == 0)
-                threshConsensus = 1;
+            // Threshold to declare consensus
+            int threshConsensus = computePercent (participants, AV_CT_CONSENSUS_PCT);
 
             WriteLog (lsINFO, LedgerConsensus) << "Proposers:"
                 << mPeerPositions.size () << " nw:" << neededWeight
@@ -1654,6 +1652,13 @@ private:
                     if (threshVote >= threshConsensus)
                         mHaveCloseTimeConsensus = true;
                 }
+            }
+
+            // If we agree to disagree on the close time, don't delay consensus
+            if (!mHaveCloseTimeConsensus && (closeTimes[0] > threshConsensus))
+            {
+                closeTime = 0;
+                mHaveCloseTimeConsensus = true;
             }
 
             CondLog (!mHaveCloseTimeConsensus, lsDEBUG, LedgerConsensus)
