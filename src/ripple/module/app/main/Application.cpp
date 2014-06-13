@@ -17,12 +17,11 @@
 */
 //==============================================================================
 
-#include <fstream>
-
 #include <beast/asio/io_latency_probe.h>
 #include <beast/module/core/thread/DeadlineTimer.h>
 #include <ripple/basics/utility/Sustain.h>
 #include <ripple/common/seconds_clock.h>
+#include <ripple/module/basics/log/Log.h>
 #include <ripple/module/app/main/Tuning.h>
 #include <ripple/module/app/misc/ProofOfWorkFactory.h>
 #include <ripple/module/rpc/Manager.h>
@@ -30,8 +29,6 @@
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/Manager.h>
 #include <ripple/overlay/make_Overlay.h>
-#include <beast/asio/io_latency_probe.h>
-#include <beast/module/core/thread/DeadlineTimer.h>
 #include <fstream>
     
 namespace ripple {
@@ -182,6 +179,7 @@ private:
     };
 
 public:
+    Logs& m_logs;
     beast::Journal m_journal;
     Application::LockType m_masterMutex;
 
@@ -260,8 +258,10 @@ public:
 
     //--------------------------------------------------------------------------
 
-    ApplicationImp ()
+    ApplicationImp (Logs& logs)
         : RootStoppable ("Application")
+        , m_logs (logs)
+
         , m_journal (LogPartition::getJournal <ApplicationLog> ())
 
         , m_nodeStoreManager (NodeStore::make_Manager (
@@ -641,7 +641,7 @@ public:
         if (!getConfig ().DEBUG_LOGFILE.empty ())
         {
             // Let debug messages go to the file but only WARNING or higher to regular output (unless verbose)
-            LogSink::get()->setLogFile (getConfig ().DEBUG_LOGFILE);
+            m_logs.open(getConfig ().DEBUG_LOGFILE);
 
             if (LogSink::get()->getMinSeverity () > lsDEBUG)
                 LogPartition::setSeverity (lsDEBUG);
@@ -1565,9 +1565,10 @@ Application::Application ()
 {
 }
 
-std::unique_ptr <Application> make_Application ()
+std::unique_ptr <Application>
+make_Application (Logs& logs)
 {
-    return std::make_unique <ApplicationImp> ();
+    return std::make_unique <ApplicationImp> (logs);
 }
 
 Application& getApp ()

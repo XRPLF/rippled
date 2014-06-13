@@ -136,7 +136,7 @@ runUnitTests (std::string pattern, std::string format)
     // Config needs to be set up before creating Application
     setupConfigForUnitTests (&getConfig ());
     // VFALCO TODO Remove dependence on constructing Application object
-    auto app (make_Application());
+    std::unique_ptr <Application> app (make_Application (deprecatedLogs()));
     using namespace beast::unit_test;
     beast::debug_ostream stream;
     reporter r (stream);
@@ -352,7 +352,7 @@ int run (int argc, char** argv)
         if (!vm.count ("parameters"))
         {
             // No arguments. Run server.
-            std::unique_ptr <Application> app (make_Application ());
+            std::unique_ptr <Application> app (make_Application (deprecatedLogs()));
             setupServer ();
             startServer ();
         }
