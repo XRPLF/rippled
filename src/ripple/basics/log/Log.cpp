@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+// VFALCO TODO Use std::chrono
+#include <boost/date_time/posix_time/posix_time.hpp>
+
 namespace ripple {
 
 Logs::Sink::Sink (std::string const& partition, Logs& logs)
@@ -61,7 +64,7 @@ Logs::Logs()
 void
 Logs::open (boost::filesystem::path const& pathToLogFile)
 {
-    out_.setLogFile (pathToLogFile);
+    file_.open(pathToLogFile);
 }
 
 Logs::Sink&
@@ -114,18 +117,23 @@ void
 Logs::write (beast::Journal::Severity level, std::string const& partition,
     std::string const& text, bool console)
 {
-    std::lock_guard <std::mutex> lock (mutex_);
     std::string s;
-    out_.format (s, text, fromSeverity(level), partition);
-    out_.write (s);
-    if (console)
-        out_.write_console(s);
+    format (s, text, level, partition);
+    std::lock_guard <std::mutex> lock (mutex_);
+    file_.writeln (s);
+    // VFALCO TODO Fix console output
+    //if (console)
+    //    out_.write_console(s);
 }
 
 std::string
 Logs::rotate()
 {
-    return out_.rotateLog();
+    std::lock_guard <std::mutex> lock (mutex_);
+    bool const wasOpened = file_.closeAndReopen ();
+    if (wasOpened)
+        return "The log file was closed and reopened.";
+    return "The log file could not be closed and reopened.";
 }
 
 LogSeverity
@@ -208,6 +216,60 @@ Logs::fromString (std::string const& s)
         return lsFATAL;
 
     return lsINVALID;
+}
+
+// Replace the first secret, if any, with asterisks
+std::string
+Logs::scrub (std::string s)
+{
+    using namespace std;
+    char const* secretToken = "\"secret\"";
+    // Look for the first occurrence of "secret" in the string.
+    size_t startingPosition = s.find (secretToken);
+    if (startingPosition != string::npos)
+    {
+        // Found it, advance past the token.
+        startingPosition += strlen (secretToken);
+        // Replace the next 35 characters at most, without overwriting the end.
+        size_t endingPosition = std::min (startingPosition + 35, s.size () - 1);
+        for (size_t i = startingPosition; i < endingPosition; ++i)
+            s [i] = '*';
+    }
+    return s;
+}
+
+void
+Logs::format (std::string& output, std::string const& message,
+    beast::Journal::Severity severity, std::string const& partition)
+{
+    output.reserve (message.size() + partition.size() + 100);
+
+    output = boost::posix_time::to_simple_string (
+        boost::posix_time::second_clock::universal_time ());
+
+    output += " ";
+    if (! partition.empty ())
+        output += partition + ":";
+
+    switch (severity)
+    {
+    case beast::Journal::kTrace:    output += "TRC "; break;
+    case beast::Journal::kDebug:    output += "DBG "; break;
+    case beast::Journal::kInfo:     output += "NFO "; break;
+    case beast::Journal::kWarning:  output += "WRN "; break;
+    case beast::Journal::kError:    output += "ERR "; break;
+    default:
+        bassertfalse;
+    case beast::Journal::kFatal:    output += "FTL "; break;
+    }
+
+    output += scrub (message);
+
+    if (output.size() > maximumMessageCharacters)
+    {
+        output.resize (maximumMessageCharacters - 3);
+        output += "...";
+    }
 }
 
 } // ripple

@@ -20,6 +20,7 @@
 #ifndef RIPPLE_BASICS_LOG_H_INCLUDED
 #define RIPPLE_BASICS_LOG_H_INCLUDED
 
+#include <ripple/module/basics/log/LogFile.h>
 #include <beast/utility/Journal.h>
 #include <ripple/basics/log/LogSeverity.h>
 #include <ripple/basics/log/LogSink.h>
@@ -64,7 +65,7 @@ private:
     std::mutex mutable mutex_;
     std::unordered_map <std::string, Sink> sinks_;
     beast::Journal::Severity level_;
-    LogSink out_;
+    LogFile file_;
 
 public:
     Logs();
@@ -116,6 +117,23 @@ public:
     static
     LogSeverity
     fromString (std::string const& s);
+
+private:
+    enum
+    {
+        // Maximum line length for log messages.
+        // If the message exceeds this length it will be truncated with elipses.
+        maximumMessageCharacters = 12 * 1024
+    };
+
+    static
+    std::string
+    scrub (std::string s);
+
+    static
+    void
+    format (std::string& output, std::string const& message,
+        beast::Journal::Severity severity, std::string const& partition);
 };
 
 //------------------------------------------------------------------------------
