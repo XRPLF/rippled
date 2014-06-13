@@ -21,8 +21,6 @@ namespace ripple {
 
 // VFALCO TODO rename class to TransactionMeta
 
-SETUP_LOG (TransactionMetaSet)
-
 TransactionMetaSet::TransactionMetaSet (uint256 const& txid, std::uint32_t ledger, Blob const& vec) :
     mTransactionID (txid), mLedger (ledger), mNodes (sfAffectedNodes, 32)
 {

@@ -21,8 +21,6 @@
 
 namespace ripple {
 
-SETUP_LOG (Serializer)
-
 int Serializer::addZeros (size_t uBytes)
 {
     int ret = mData.size ();

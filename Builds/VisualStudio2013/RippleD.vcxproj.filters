@@ -1926,6 +1926,9 @@
     <ClInclude Include="..\..\src\beast\beast\utility\tagged_integer.h">
       <Filter>beast\utility</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\utility\tests\Journal.test.cpp">
+      <Filter>beast\utility\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\utility\tests\Zero.test.cpp">
       <Filter>beast\utility\tests</Filter>
     </ClCompile>
@@ -2725,27 +2728,6 @@
       <Filter>ripple\basics\log</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\basics\log\Log.h">
-      <Filter>ripple\basics\log</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\basics\log\LogFile.cpp">
-      <Filter>ripple\basics\log</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\basics\log\LogFile.h">
-      <Filter>ripple\basics\log</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\basics\log\LogPartition.cpp">
-      <Filter>ripple\basics\log</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\basics\log\LogPartition.h">
-      <Filter>ripple\basics\log</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\basics\log\LogSeverity.h">
-      <Filter>ripple\basics\log</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\basics\log\LogSink.cpp">
-      <Filter>ripple\basics\log</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\basics\log\LogSink.h">
       <Filter>ripple\basics\log</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\log\LoggedTimings.h">

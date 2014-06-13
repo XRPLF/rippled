@@ -34,6 +34,7 @@ namespace RPC { class Manager; }
 class CollectorManager;
 class AmendmentTable;
 class IHashRouter;
+class Logs;
 class LoadFeeTrack;
 class Overlay;
 class UniqueNodeList;
@@ -77,7 +78,7 @@ public:
 public:
     Application ();
 
-    virtual ~Application () { }
+    virtual ~Application () = default;
 
     virtual boost::asio::io_service& getIOService () = 0;
     virtual CollectorManager&       getCollectorManager () = 0;
@@ -134,7 +135,8 @@ public:
     As long as there are legacy calls to getApp it is not safe
     to create more than one Application object at a time.
 */
-std::unique_ptr <Application> make_Application();
+std::unique_ptr <Application>
+make_Application(Logs& logs);
 
 // VFALCO DEPRECATED
 //

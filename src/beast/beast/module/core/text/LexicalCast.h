@@ -20,12 +20,13 @@
 #ifndef BEAST_LEXICALCAST_H_INCLUDED
 #define BEAST_LEXICALCAST_H_INCLUDED
 
-#include <string>
+#include <beast/Config.h>
 #include <beast/cxx14/type_traits.h> // <type_traits>
 
 #include <cerrno>
 #include <cstdlib>
 #include <limits>
+#include <string>
 #include <utility>
 
 namespace beast {

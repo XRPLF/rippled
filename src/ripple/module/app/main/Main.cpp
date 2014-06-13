@@ -56,7 +56,7 @@ void startServer ()
             const Json::Value& jvCommand    = getConfig ().RPC_STARTUP[i];
 
             if (!getConfig ().QUIET)
-                Log::out() << "Startup RPC: " << jvCommand;
+                std::cerr << "Startup RPC: " << jvCommand << std::endl;
 
             RPCHandler  rhHandler (getApp().getOPs ());
 
@@ -64,7 +64,7 @@ void startServer ()
             Json::Value jvResult    = rhHandler.doCommand (jvCommand, Config::ADMIN, loadType);
 
             if (!getConfig ().QUIET)
-                Log::out() << "Result: " << jvResult;
+                std::cerr << "Result: " << jvResult << std::endl;
         }
     }
 
@@ -136,7 +136,7 @@ runUnitTests (std::string pattern, std::string format)
     // Config needs to be set up before creating Application
     setupConfigForUnitTests (&getConfig ());
     // VFALCO TODO Remove dependence on constructing Application object
-    auto app (make_Application());
+    std::unique_ptr <Application> app (make_Application (deprecatedLogs()));
     using namespace beast::unit_test;
     beast::debug_ostream stream;
     reporter r (stream);
@@ -205,7 +205,7 @@ int run (int argc, char** argv)
 
     if (! RandomNumbers::getInstance ().initialize ())
     {
-        Log::out() << "Unable to add system entropy";
+        std::cerr << "Unable to add system entropy" << std::endl;
         iResult = 2;
     }
 
@@ -251,20 +251,20 @@ int run (int argc, char** argv)
         std::string logMe = DoSustain (getConfig ().DEBUG_LOGFILE.string());
 
         if (!logMe.empty ())
-            Log (lsWARNING) << logMe;
+            std::cerr << logMe;
     }
 
     if (vm.count ("quiet"))
     {
-        LogSink::get()->setMinSeverity (lsFATAL, true);
+        deprecatedLogs().severity(beast::Journal::kFatal);
     }
     else if (vm.count ("verbose"))
     {
-        LogSink::get()->setMinSeverity (lsTRACE, true);
+        deprecatedLogs().severity(beast::Journal::kTrace);
     }
     else
     {
-        LogSink::get()->setMinSeverity (lsINFO, true);
+        deprecatedLogs().severity(beast::Journal::kInfo);
     }
 
     // Run the unit tests if requested.
@@ -352,7 +352,7 @@ int run (int argc, char** argv)
         if (!vm.count ("parameters"))
         {
             // No arguments. Run server.
-            std::unique_ptr <Application> app (make_Application ());
+            std::unique_ptr <Application> app (make_Application (deprecatedLogs()));
             setupServer ();
             startServer ();
         }

@@ -19,8 +19,6 @@
 
 namespace ripple {
 
-SETUP_LOG (LedgerEntrySet)
-
 // #define META_DEBUG
 
 // VFALCO TODO Replace this macro with a documented language constant

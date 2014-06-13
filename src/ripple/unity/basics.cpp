@@ -21,9 +21,6 @@
 
 #include <ripple/basics/containers/RangeSet.cpp>
 #include <ripple/basics/log/Log.cpp>
-#include <ripple/basics/log/LogFile.cpp>
-#include <ripple/basics/log/LogPartition.cpp>
-#include <ripple/basics/log/LogSink.cpp>
 #include <ripple/basics/system/CheckLibraryVersions.cpp>
 #include <ripple/basics/utility/CountedObject.cpp>
 #include <ripple/basics/utility/IniFile.cpp>

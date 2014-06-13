@@ -19,8 +19,6 @@
 
 namespace ripple {
 
-SETUP_LOG (SqliteDatabase)
-
 SqliteStatement::SqliteStatement (SqliteDatabase* db, const char* sql, bool aux)
 {
     assert (db);

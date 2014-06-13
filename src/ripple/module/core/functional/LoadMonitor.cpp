@@ -42,8 +42,6 @@ LoadMonitor::Stats::Stats()
 
 //------------------------------------------------------------------------------
 
-SETUP_LOG (LoadMonitor)
-
 LoadMonitor::LoadMonitor ()
     : mCounts (0)
     , mLatencyEvents (0)

@@ -36,10 +36,6 @@ using beast::Zero;
 
 #include <ripple/basics/types/BasicTypes.h>
 
-#include <ripple/basics/log/LogSeverity.h>
-#include <ripple/basics/log/LogFile.h>
-#include <ripple/basics/log/LogSink.h>
-#include <ripple/basics/log/LogPartition.h>
 #include <ripple/basics/log/Log.h>
 #include <ripple/basics/log/LoggedTimings.h>
 #include <ripple/basics/utility/CountedObject.h>

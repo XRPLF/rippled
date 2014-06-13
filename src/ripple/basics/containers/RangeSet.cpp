@@ -26,8 +26,6 @@
 
 namespace ripple {
 
-SETUP_LOG (RangeSet)
-
 // VFALCO NOTE std::min and std::max not good enough?
 //        NOTE Why isn't this written as a template?
 //        TODO Replace this with std calls.

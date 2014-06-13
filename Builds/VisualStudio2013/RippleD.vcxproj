@@ -75,13 +75,14 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>advapi32.lib;comdlg32.lib;gdi32.lib;kernel32.lib;libeay32MT.lib;odbc32.lib;odbccp32.lib;ole32.lib;oleaut32.lib;shell32.lib;Shlwapi.lib;ssleay32MT.lib;user32.lib;uuid.lib;winspool.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <SuppressStartupBanner>True</SuppressStartupBanner>
       <ErrorReporting>NoErrorReport</ErrorReporting>
       <SubSystem>Console</SubSystem>
       <RandomizedBaseAddress>True</RandomizedBaseAddress>
       <DataExecutionPrevention>true</DataExecutionPrevention>
       <GenerateDebugInformation>True</GenerateDebugInformation>
       <TargetMachine>MachineX64</TargetMachine>
-      <AdditionalOptions>/MANIFEST /nologo /TLBID:1 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/MANIFEST /TLBID:1 %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='release|x64'">
@@ -109,13 +110,14 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>advapi32.lib;comdlg32.lib;gdi32.lib;kernel32.lib;libeay32MT.lib;odbc32.lib;odbccp32.lib;ole32.lib;oleaut32.lib;shell32.lib;Shlwapi.lib;ssleay32MT.lib;user32.lib;uuid.lib;winspool.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <SuppressStartupBanner>True</SuppressStartupBanner>
       <ErrorReporting>NoErrorReport</ErrorReporting>
       <SubSystem>Console</SubSystem>
       <RandomizedBaseAddress>True</RandomizedBaseAddress>
       <DataExecutionPrevention>true</DataExecutionPrevention>
       <GenerateDebugInformation>True</GenerateDebugInformation>
       <TargetMachine>MachineX64</TargetMachine>
-      <AdditionalOptions>/MANIFEST /nologo /TLBID:1 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/MANIFEST /TLBID:1 %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -1142,6 +1144,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\utility\tagged_integer.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\utility\tests\Journal.test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\utility\tests\Zero.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -1790,23 +1795,6 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\basics\log\Log.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\basics\log\LogFile.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\basics\log\LogFile.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\basics\log\LogPartition.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\basics\log\LogPartition.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\basics\log\LogSeverity.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\basics\log\LogSink.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\basics\log\LogSink.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\log\LoggedTimings.h">
     </ClInclude>

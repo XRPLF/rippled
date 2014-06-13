@@ -350,7 +350,6 @@ public:
     bool                        QUIET;
 
     boost::filesystem::path     DEBUG_LOGFILE;
-    std::string                 CONSOLE_LOG_OUTPUT;
 
     bool                        ELB_SUPPORT;            // Support Amazon ELB
 

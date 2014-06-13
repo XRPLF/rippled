@@ -60,8 +60,6 @@ namespace ripple {
 #define REFERRAL_VALIDATORS_MAX 50
 #define REFERRAL_IPS_MAX        50
 
-SETUP_LOG (UniqueNodeList)
-
 // VFALCO TODO move all function definitions inlined into the class.
 class UniqueNodeListImp
     : public UniqueNodeList

@@ -27,15 +27,6 @@
 
 namespace ripple {
 
-class CreateOfferLog;
-
-template <>
-char const*
-LogPartition::getPartitionName <CreateOfferLog> ()
-{
-    return "Tx/OfferCreate";
-}
-
 class CreateOffer
     : public Transactor
 {

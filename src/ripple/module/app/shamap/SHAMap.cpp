@@ -22,8 +22,6 @@
 
 namespace ripple {
 
-SETUP_LOG (SHAMap)
-
 void SHAMap::DefaultMissingNodeHandler::operator() (std::uint32_t refNUm)
 {
     getApp().getOPs ().missingNodeInLedger (refNUm);
@@ -71,7 +69,7 @@ SHAMap::SHAMap (SHAMapType t, uint256 const& hash, FullBelowCache& fullBelowCach
 TaggedCache <uint256, SHAMapTreeNode>
     SHAMap::treeNodeCache ("TreeNodeCache", 65536, 60,
         get_seconds_clock (),
-            LogPartition::getJournal <TaggedCacheLog> ());
+            deprecatedLogs().journal("TaggedCache"));
 
 SHAMap::~SHAMap ()
 {

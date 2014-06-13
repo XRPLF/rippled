@@ -19,10 +19,6 @@
 
 namespace ripple {
 
-struct SerializedLedgerLog; // for Log
-
-SETUP_LOGN (SerializedLedgerLog,"SerializedLedger")
-
 SerializedLedgerEntry::SerializedLedgerEntry (
     SerializerIterator& sit, uint256 const& index)
     : STObject (sfLedgerEntry), mIndex (index), mMutable (true)
@@ -59,9 +55,9 @@ void SerializedLedgerEntry::setSLEType ()
     mType = item->getType ();
     if (!setType (item->elements))
     {
-        WriteLog (lsWARNING, SerializedLedgerLog)
+        WriteLog (lsWARNING, SerializedLedger)
             << "Ledger entry not valid for type " << mFormat->getName ();
-        WriteLog (lsWARNING, SerializedLedgerLog) << getJson (0);
+        WriteLog (lsWARNING, SerializedLedger) << getJson (0);
         throw std::runtime_error ("ledger entry not valid for type");
     }
 }
@@ -143,7 +139,7 @@ bool SerializedLedgerEntry::thread (uint256 const& txID, std::uint32_t ledgerSeq
                                     uint256& prevTxID, std::uint32_t& prevLedgerID)
 {
     uint256 oldPrevTxID = getFieldH256 (sfPreviousTxnID);
-    WriteLog (lsTRACE, SerializedLedgerLog) << "Thread Tx:" << txID << " prev:" << oldPrevTxID;
+    WriteLog (lsTRACE, SerializedLedger) << "Thread Tx:" << txID << " prev:" << oldPrevTxID;
 
     if (oldPrevTxID == txID)
     {

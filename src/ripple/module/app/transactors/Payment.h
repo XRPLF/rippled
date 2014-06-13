@@ -22,15 +22,6 @@
 
 namespace ripple {
 
-class PaymentLog;
-
-template <>
-char const*
-LogPartition::getPartitionName <PaymentLog> ()
-{
-    return "Tx/Payment";
-}
-
 class Payment 
     : public Transactor
 {
@@ -46,7 +37,7 @@ public:
             txn,
             params,
             engine,
-            LogPartition::getJournal <PaymentLog> ())
+            deprecatedLogs().journal("Payment"))
     {
 
     }

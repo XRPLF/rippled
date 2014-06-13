@@ -33,9 +33,9 @@ namespace ripple {
 
 LedgerHistory::LedgerHistory ()
     : m_ledgers_by_hash ("LedgerCache", CACHED_LEDGER_NUM, CACHED_LEDGER_AGE,
-        get_seconds_clock (), LogPartition::getJournal <TaggedCacheLog> ())
+        get_seconds_clock (), deprecatedLogs().journal("TaggedCache"))
     , m_consensus_validated ("ConsensusValidated", 64, 300,
-        get_seconds_clock (), LogPartition::getJournal <TaggedCacheLog> ())
+        get_seconds_clock (), deprecatedLogs().journal("TaggedCache"))
 {
 }
 

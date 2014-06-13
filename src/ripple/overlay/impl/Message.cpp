@@ -36,10 +36,6 @@ Message::Message (::google::protobuf::Message const& message, int type)
     if (messageBytes != 0)
     {
         message.SerializeToArray (&mBuffer [Message::kHeaderBytes], messageBytes);
-
-#ifdef BEAST_DEBUG
-        //Log::out() << "Message: type=" << type << ", datalen=" << msg_size;
-#endif
     }
 }
 

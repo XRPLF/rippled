@@ -21,10 +21,6 @@
 
 namespace ripple {
 
-SETUP_LOG (LedgerConsensus)
-
-// #define TRUST_NETWORK
-
 class LedgerConsensusImp
     : public LedgerConsensus
     , public std::enable_shared_from_this <LedgerConsensusImp>

@@ -22,14 +22,6 @@
 
 namespace ripple {
 
-class ChangeLog;
-
-template <>
-char const*
-LogPartition::getPartitionName <ChangeLog> ()
-{
-    return "Tx/Change";
-}
 
 class Change
     : public Transactor
@@ -43,7 +35,7 @@ public:
             txn,
             params,
             engine,
-            LogPartition::getJournal <ChangeLog> ())
+            deprecatedLogs().journal("Change"))
     {
     }
 
