@@ -153,7 +153,6 @@ public:
     bool delItem (uint256 const & id);
     bool addItem (const SHAMapItem & i, bool isTransaction, bool hasMeta);
     bool updateItem (const SHAMapItem & i, bool isTransaction, bool hasMeta);
-    SHAMapItem getItem (uint256 const & id);
     uint256 getHash () const
     {
         return root->getNodeHash ();
