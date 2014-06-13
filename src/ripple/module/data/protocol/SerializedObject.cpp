@@ -19,8 +19,6 @@
 
 namespace ripple {
 
-SETUP_LOG (STObject)
-
 std::unique_ptr<SerializedType> STObject::makeDefaultObject (SerializedTypeID id, SField::ref name)
 {
     assert ((id == STI_NOTPRESENT) || (id == name.fieldType));

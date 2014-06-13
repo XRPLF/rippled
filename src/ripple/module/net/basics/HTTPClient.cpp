@@ -26,10 +26,6 @@ namespace ripple {
 // Fetch a web page via http or https.
 //
 
-SETUP_LOG (HTTPClient)
-
-//------------------------------------------------------------------------------
-
 class HTTPClientSSLContext
 {
 public:

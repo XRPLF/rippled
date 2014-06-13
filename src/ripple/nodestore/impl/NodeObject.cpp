@@ -19,8 +19,6 @@
 
 namespace ripple {
 
-SETUP_LOG (NodeObject)
-
 //------------------------------------------------------------------------------
 
 NodeObject::NodeObject (

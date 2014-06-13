@@ -21,8 +21,6 @@
 
 namespace ripple {
 
-SETUP_LOG (SerializedTransaction)
-
 SerializedTransaction::SerializedTransaction (TxType type)
     : STObject (sfTransaction)
     , mType (type)

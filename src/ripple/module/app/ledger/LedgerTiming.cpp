@@ -21,10 +21,6 @@ namespace ripple {
 
 // VFALCO Should rename ContinuousLedgerTiming to LedgerTiming
 
-struct LedgerTiming; // for Log
-
-SETUP_LOG (LedgerTiming)
-
 // NOTE: First and last times must be repeated
 int ContinuousLedgerTiming::LedgerTimeResolution[] = { 10, 10, 20, 30, 60, 90, 120, 120 };
 

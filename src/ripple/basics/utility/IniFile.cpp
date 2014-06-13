@@ -25,10 +25,6 @@ namespace ripple {
 
 #define SECTION_DEFAULT_NAME    ""
 
-struct ParseSectionLog; // for Log
-
-SETUP_LOGN (ParseSectionLog,"ParseSection")
-
 Section ParseSection (const std::string& strInput, const bool bTrim)
 {
     std::string strData (strInput);
@@ -137,7 +133,7 @@ bool SectionSingleB (Section& secSource, const std::string& strSection, std::str
     }
     else if (pmtEntries)
     {
-        WriteLog (lsWARNING, ParseSectionLog) << boost::str (boost::format ("Section [%s]: requires 1 line not %d lines.")
+        WriteLog (lsWARNING, ParseSection) << boost::str (boost::format ("Section [%s]: requires 1 line not %d lines.")
                                               % strSection
                                               % pmtEntries->size ());
     }

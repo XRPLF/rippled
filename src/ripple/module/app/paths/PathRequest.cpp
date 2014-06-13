@@ -24,8 +24,6 @@
 
 namespace ripple {
 
-SETUP_LOG (PathRequest)
-
 PathRequest::PathRequest (
 const std::shared_ptr<InfoSub>& subscriber, int id, PathRequests& owner,
     beast::Journal journal)

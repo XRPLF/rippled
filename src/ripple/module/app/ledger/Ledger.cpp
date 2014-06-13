@@ -24,8 +24,6 @@
 
 namespace ripple {
 
-SETUP_LOG (Ledger)
-
 LedgerBase::LedgerBase ()
 {
 }

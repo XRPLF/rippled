@@ -23,8 +23,6 @@ namespace ripple {
 
 class ValidationsImp;
 
-SETUP_LOG (Validations)
-
 typedef std::map<uint160, SerializedValidation::pointer>::value_type u160_val_pair;
 typedef std::shared_ptr<ValidationSet> VSpointer;
 

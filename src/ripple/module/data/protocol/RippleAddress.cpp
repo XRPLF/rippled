@@ -21,8 +21,6 @@
 
 namespace ripple {
 
-SETUP_LOG (RippleAddress)
-
 RippleAddress::RippleAddress ()
     : mIsValid (false)
 {

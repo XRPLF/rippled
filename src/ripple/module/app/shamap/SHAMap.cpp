@@ -22,8 +22,6 @@
 
 namespace ripple {
 
-SETUP_LOG (SHAMap)
-
 void SHAMap::DefaultMissingNodeHandler::operator() (std::uint32_t refNUm)
 {
     getApp().getOPs ().missingNodeInLedger (refNUm);

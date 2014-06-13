@@ -23,8 +23,6 @@ namespace ripple {
 // XXX Make sure all fields are recognized in transactions.
 //
 
-SETUP_LOG (TransactionEngine)
-
 void TransactionEngine::txnWrite ()
 {
     // Write back the account states

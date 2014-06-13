@@ -19,8 +19,6 @@
 
 namespace ripple {
 
-SETUP_LOG (SerializedType)
-
 const STAmount saZero (CURRENCY_ONE, ACCOUNT_ONE, 0);
 const STAmount saOne (CURRENCY_ONE, ACCOUNT_ONE, 1);
 

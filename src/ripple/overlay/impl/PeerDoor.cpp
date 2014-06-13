@@ -23,8 +23,6 @@
 
 namespace ripple {
 
-SETUP_LOG (PeerDoor)
-
 class PeerDoorImp
     : public PeerDoor
     , public beast::LeakChecked <PeerDoorImp>

@@ -21,8 +21,6 @@
 
 namespace ripple {
 
-SETUP_LOG (STAmount)
-
 std::uint64_t STAmount::uRateOne  = STAmount::getRate (STAmount (1), STAmount (1));
 
 bool STAmount::issuerFromString (uint160& uDstIssuer, const std::string& sIssuer)

@@ -100,40 +100,6 @@ private:
     std::string         mName;
 };
 
-//------------------------------------------------------------------------------
-
-namespace detail {
-
-template <class Key>
-struct LogPartitionType : LogPartition
-{
-    LogPartitionType () : LogPartition (getPartitionName <Key> ())
-        { }
-};
-
-}
-
-template <class Key>
-LogPartition& LogPartition::get ()
-{
-    return *beast::SharedSingleton <
-      detail::LogPartitionType <Key>>::getInstance();
-}
-
-//------------------------------------------------------------------------------
-
-// VFALCO These macros are deprecated. Use the Journal class instead.
-
-#define SETUP_LOG(Class) \
-    template <> char const* LogPartition::getPartitionName <Class> () { return #Class; } \
-    struct Class##Instantiator { Class##Instantiator () { LogPartition::get <Class> (); } }; \
-    static Class##Instantiator Class##Instantiator_instance;
-
-#define SETUP_LOGN(Class,Name) \
-    template <> char const* LogPartition::getPartitionName <Class> () { return Name; } \
-    struct Class##Instantiator { Class##Instantiator () { LogPartition::get <Class> (); } }; \
-    static Class##Instantiator Class##Instantiator_instance;
-
 } // ripple
 
 #endif

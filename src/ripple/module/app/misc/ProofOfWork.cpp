@@ -22,8 +22,6 @@
 
 namespace ripple {
 
-SETUP_LOG (ProofOfWork)
-
 // VFALCO TODO Move these to a header
 const uint256 ProofOfWork::sMinTarget ("00000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
 

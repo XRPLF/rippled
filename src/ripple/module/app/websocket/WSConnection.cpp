@@ -21,10 +21,6 @@
 
 namespace ripple {
 
-SETUP_LOGN (WSConnection, "WSConnection")
-
-//------------------------------------------------------------------------------
-
 WSConnection::WSConnection (Resource::Manager& resourceManager,
     Resource::Consumer usage, InfoSub::Source& source, bool isPublic,
         beast::IP::Endpoint const& remoteAddress, boost::asio::io_service& io_service)
