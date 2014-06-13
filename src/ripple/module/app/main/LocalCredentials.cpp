@@ -39,7 +39,7 @@ void LocalCredentials::start ()
     }
 
     if (!getConfig ().QUIET)
-        Log::out() << "NodeIdentity: " << mNodePublicKey.humanNodePublic ();
+        std::cerr << "NodeIdentity: " << mNodePublicKey.humanNodePublic () << std::endl;
 
     getApp().getUNL ().start ();
 }
@@ -78,7 +78,7 @@ bool LocalCredentials::nodeIdentityLoad ()
 bool LocalCredentials::nodeIdentityCreate ()
 {
     if (!getConfig ().QUIET)
-        Log::out() << "NodeIdentity: Creating.";
+        std::cerr << "NodeIdentity: Creating." << std::endl;
 
     //
     // Generate the public and private key
@@ -115,7 +115,7 @@ bool LocalCredentials::nodeIdentityCreate ()
     // XXX Check error result.
 
     if (!getConfig ().QUIET)
-        Log::out() << "NodeIdentity: Created.";
+        std::cerr << "NodeIdentity: Created." << std::endl;
 
     return true;
 }

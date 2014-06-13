@@ -243,19 +243,6 @@ public:
     static std::string severityToString (LogSeverity);
     static LogSeverity stringToSeverity (std::string const&);
 
-    // VFALCO DEPRECATED
-    class out
-    {
-    public:
-        out () { }
-        ~out () { LogSink::get()->write (m_ss.str ()); }
-        template <class T>
-        out& operator<< (T t)
-            { m_ss << t; return *this; }
-    private:
-        std::stringstream m_ss;
-    };
-
 private:
     static std::string replaceFirstSecretWithAsterisks (std::string s);
 

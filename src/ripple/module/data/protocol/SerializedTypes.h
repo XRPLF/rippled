@@ -1305,7 +1305,6 @@ public:
         ;
     }
 
-    void printDebug ();
     int size () const
     {
         return mPath.size ();
@@ -1492,8 +1491,6 @@ public:
     {
         return value.empty ();
     }
-
-    void printDebug ();
 
     STPath& operator[](size_t n)
     {

@@ -56,7 +56,7 @@ void startServer ()
             const Json::Value& jvCommand    = getConfig ().RPC_STARTUP[i];
 
             if (!getConfig ().QUIET)
-                Log::out() << "Startup RPC: " << jvCommand;
+                std::cerr << "Startup RPC: " << jvCommand << std::endl;
 
             RPCHandler  rhHandler (getApp().getOPs ());
 
@@ -64,7 +64,7 @@ void startServer ()
             Json::Value jvResult    = rhHandler.doCommand (jvCommand, Config::ADMIN, loadType);
 
             if (!getConfig ().QUIET)
-                Log::out() << "Result: " << jvResult;
+                std::cerr << "Result: " << jvResult << std::endl;
         }
     }
 
@@ -205,7 +205,7 @@ int run (int argc, char** argv)
 
     if (! RandomNumbers::getInstance ().initialize ())
     {
-        Log::out() << "Unable to add system entropy";
+        std::cerr << "Unable to add system entropy" << std::endl;
         iResult = 2;
     }
 

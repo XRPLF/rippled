@@ -35,7 +35,7 @@ FatalErrorReporter::~FatalErrorReporter ()
 
 void FatalErrorReporter::reportMessage (beast::String& formattedMessage)
 {
-    Log::out() << formattedMessage.toRawUTF8 ();
+    std::cerr << formattedMessage.toRawUTF8 () << std::endl;
 }
 
 //------------------------------------------------------------------------------

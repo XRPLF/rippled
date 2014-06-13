@@ -151,8 +151,8 @@ int SHAMapNode::selectBranch (uint256 const& hash) const
 
     if ((hash & smMasks[mDepth]) != mNodeID)
     {
-        Log::out() << "selectBranch(" << getString ();
-        Log::out() << "  " << hash << " off branch";
+        std::cerr << "selectBranch(" << getString () << std::endl;
+        std::cerr << "  " << hash << " off branch" << std::endl;
         assert (false);
         return -1;  // does not go under this node
     }

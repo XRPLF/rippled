@@ -1078,10 +1078,7 @@ void RPCCall::fromNetwork (
     // Connect to localhost
     if (!getConfig ().QUIET)
     {
-        Log::out() << "Connecting to: " << strIp << ":" << iPort;
-        //  Log::out() << "Username: " << strUsername << ":" << strPassword;
-        //  Log::out() << "Path: " << strPath;
-        //  Log::out() << "Method: " << strMethod;
+        std::cerr << "Connecting to: " << strIp << ":" << iPort << std::endl;
     }
 
     // HTTP basic authentication

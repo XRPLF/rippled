@@ -355,10 +355,6 @@ bool Ledger::addSLE (SLE const& sle)
 
 AccountState::pointer Ledger::getAccountState (const RippleAddress& accountID)
 {
-#ifdef BEAST_DEBUG
-    //  Log::out() << "Ledger:getAccountState(" << accountID.humanAccountID() << ")";
-#endif
-
     SLE::pointer sle = getSLEi (Ledger::getAccountRootIndex (accountID));
 
     if (!sle)
