@@ -20,12 +20,8 @@
 // VFALCO NOTE this looks like some facility for giving websocket
 //         a way to produce logging output.
 //
-namespace websocketpp
-{
-namespace log
-{
-
-ripple::LogPartition websocketPartition ("WebSocket");
+namespace websocketpp {
+namespace log {
 
 void websocketLog (websocketpp::log::alevel::value v, const std::string& entry)
 {
@@ -33,11 +29,12 @@ void websocketLog (websocketpp::log::alevel::value v, const std::string& entry)
 
     if ((v == websocketpp::log::alevel::DEVEL) || (v == websocketpp::log::alevel::DEBUG_CLOSE))
     {
-        if (websocketPartition.doLog (lsTRACE))
-            Log (lsDEBUG, websocketPartition) << entry;
+        WriteLog(lsTRACE, WebSocket) << entry;
     }
-    else if (websocketPartition.doLog (lsDEBUG))
-        Log (lsDEBUG, websocketPartition) << entry;
+    else
+    {
+        WriteLog(lsDEBUG, WebSocket) << entry;
+    }
 }
 
 void websocketLog (websocketpp::log::elevel::value v, const std::string& entry)
@@ -55,8 +52,7 @@ void websocketLog (websocketpp::log::elevel::value v, const std::string& entry)
     else if ((v & websocketpp::log::elevel::WARN) != 0)
         s = lsWARNING;
 
-    if (websocketPartition.doLog (s))
-        Log (s, websocketPartition) << entry;
+    WriteLog(s, WebSocket) << entry;
 }
 
 }
