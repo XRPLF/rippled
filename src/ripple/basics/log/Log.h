@@ -24,6 +24,8 @@
 #include <ripple/basics/log/LogSeverity.h>
 #include <ripple/basics/log/LogSink.h>
 #include <ripple/basics/log/LogPartition.h>
+#include <boost/algorithm/string.hpp>
+#include <boost/filesystem.hpp>
 #include <mutex>
 #include <unordered_map>
 #include <utility>
@@ -50,23 +52,39 @@ private:
         Sink (Sink const&) = delete;
         Sink& operator= (Sink const&) = delete;
 
+        bool
+        active (beast::Journal::Severity level) const override
+        {
+            return logs_.severity() <= level &&
+                this->Sink::severity() <= level;
+        }
+
         void
         write (beast::Journal::Severity level, std::string const& text)
         {
-            logs_.write (level, partition_, text);
+            logs_.write (level, partition_, text, console());
         }
     };
 
     std::mutex mutex_;
     std::unordered_map <std::string, Sink> sinks_;
+    beast::Journal::Severity level_;
+    LogSink out_;
 
 public:
     Logs()
+        : level_ (beast::Journal::kAll) // default severity
     {
     }
 
     Logs (Logs const&) = delete;
     Logs& operator= (Logs const&) = delete;
+    
+    void
+    open (boost::filesystem::path const& pathToLogFile)
+    {
+        out_.setLogFile (pathToLogFile);
+    }
 
     Sink&
     operator[] (std::string const& name)
@@ -79,10 +97,26 @@ public:
 
     void
     write (beast::Journal::Severity level, std::string const& partition,
-        std::string const& text)
+        std::string const& text, bool console)
     {
         std::lock_guard <std::mutex> lock (mutex_);
-        //
+        std::string s;
+        out_.format (s, text, fromSeverity(level), partition);
+        out_.write (s);
+        if (console)
+            out_.write_console(s);
+    }
+
+    beast::Journal::Severity
+    severity() const
+    {
+        return level_;
+    }
+
+    void
+    severity (beast::Journal::Severity level)
+    {
+        level_ = level;
     }
 
     static
@@ -126,6 +160,49 @@ public:
         }
 
         return Journal::kFatal;
+    }
+
+    static
+    std::string
+    toString (LogSeverity s)
+    {
+        switch (s)
+        {
+        case lsTRACE:   return "Trace";
+        case lsDEBUG:   return "Debug";
+        case lsINFO:    return "Info";
+        case lsWARNING: return "Warning";
+        case lsERROR:   return "Error";
+        case lsFATAL:   return "Fatal";
+        default:
+            assert (false);
+            return "Unknown";
+        }
+    }
+
+    static
+    LogSeverity
+    toSeverity (std::string const& s)
+    {
+        if (boost::iequals (s, "trace"))
+            return lsTRACE;
+
+        if (boost::iequals (s, "debug"))
+            return lsDEBUG;
+
+        if (boost::iequals (s, "info") || boost::iequals (s, "information"))
+            return lsINFO;
+
+        if (boost::iequals (s, "warn") || boost::iequals (s, "warning") || boost::iequals (s, "warnings"))
+            return lsWARNING;
+
+        if (boost::iequals (s, "error") || boost::iequals (s, "errors"))
+            return lsERROR;
+
+        if (boost::iequals (s, "fatal") || boost::iequals (s, "fatals"))
+            return lsFATAL;
+
+        return lsINVALID;
     }
 };
 
