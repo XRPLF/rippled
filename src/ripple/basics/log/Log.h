@@ -21,10 +21,6 @@
 #define RIPPLE_BASICS_LOG_H_INCLUDED
 
 #include <beast/utility/Journal.h>
-#include <ripple/basics/log/LogSeverity.h>
-#include <ripple/basics/log/LogSink.h>
-#include <ripple/basics/log/LogPartition.h>
-#include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include <mutex>
 #include <unordered_map>
