@@ -251,7 +251,7 @@ int run (int argc, char** argv)
         std::string logMe = DoSustain (getConfig ().DEBUG_LOGFILE.string());
 
         if (!logMe.empty ())
-            Log (lsWARNING) << logMe;
+            std::cerr << logMe;
     }
 
     if (vm.count ("quiet"))

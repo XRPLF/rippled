@@ -21,12 +21,6 @@
 
 namespace ripple {
 
-Log::Log (LogSeverity s)
-    : m_level (s)
-    , m_partition (nullptr)
-{
-}
-
 Log::Log (LogSeverity s, LogPartition& partition)
     : m_level (s)
     , m_partition (&partition)
@@ -35,16 +29,9 @@ Log::Log (LogSeverity s, LogPartition& partition)
 
 Log::~Log ()
 {
-    if (m_partition != nullptr)
-    {
-        if (m_partition->doLog (m_level))
-            m_partition->write (
-                LogPartition::convertLogSeverity (m_level), m_os.str());
-    }
-    else
-    {
-        LogSink::get()->write (m_os.str(), m_level, "");
-    }
+    if (m_partition->doLog (m_level))
+        m_partition->write (
+            LogPartition::convertLogSeverity (m_level), m_os.str());
 }
 
 //------------------------------------------------------------------------------
@@ -74,59 +61,6 @@ std::string Log::replaceFirstSecretWithAsterisks (std::string s)
     }
 
     return s;
-}
-
-//------------------------------------------------------------------------------
-
-std::string Log::severityToString (LogSeverity s)
-{
-    switch (s)
-    {
-    case lsTRACE:
-        return "Trace";
-
-    case lsDEBUG:
-        return "Debug";
-
-    case lsINFO:
-        return "Info";
-
-    case lsWARNING:
-        return "Warning";
-
-    case lsERROR:
-        return "Error";
-
-    case lsFATAL:
-        return "Fatal";
-
-    default:
-        assert (false);
-        return "Unknown";
-    }
-}
-
-LogSeverity Log::stringToSeverity (const std::string& s)
-{
-    if (boost::iequals (s, "trace"))
-        return lsTRACE;
-
-    if (boost::iequals (s, "debug"))
-        return lsDEBUG;
-
-    if (boost::iequals (s, "info") || boost::iequals (s, "information"))
-        return lsINFO;
-
-    if (boost::iequals (s, "warn") || boost::iequals (s, "warning") || boost::iequals (s, "warnings"))
-        return lsWARNING;
-
-    if (boost::iequals (s, "error") || boost::iequals (s, "errors"))
-        return lsERROR;
-
-    if (boost::iequals (s, "fatal") || boost::iequals (s, "fatals"))
-        return lsFATAL;
-
-    return lsINVALID;
 }
 
 } // ripple

@@ -50,7 +50,7 @@ Transaction::pointer Transaction::sharedTransaction (Blob const& vucTransaction,
     }
     catch (...)
     {
-        Log (lsWARNING) << "Exception constructing transaction";
+        WriteLog (lsWARNING, Ledger) << "Exception constructing transaction";
         return std::shared_ptr<Transaction> ();
     }
 }
@@ -93,7 +93,7 @@ bool Transaction::sign (const RippleAddress& naAccountPrivate)
 
     if (!naAccountPrivate.isValid ())
     {
-        Log (lsWARNING) << "No private key for signing";
+        WriteLog (lsWARNING, Ledger) << "No private key for signing";
         bResult = false;
     }
 
@@ -123,7 +123,7 @@ bool Transaction::checkSign () const
 {
     if (!mFromPubKey.isValid ())
     {
-        Log (lsWARNING) << "Transaction has bad source public key";
+        WriteLog (lsWARNING, Ledger) << "Transaction has bad source public key";
         return false;
     }
 

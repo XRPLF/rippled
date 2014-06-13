@@ -1108,7 +1108,7 @@ bool STObject::operator== (const STObject& obj) const
 
         if (!match)
         {
-            Log (lsTRACE) << "STObject::operator==: no match for " << t.getFName ().getName ();
+            WriteLog (lsTRACE, STObject) << "STObject::operator==: no match for " << t.getFName ().getName ();
             return false;
         }
     }
@@ -1121,7 +1121,7 @@ bool STObject::operator== (const STObject& obj) const
 
     if (fields != matches)
     {
-        Log (lsTRACE) << "STObject::operator==: " << fields << " fields, " << matches << " matches";
+        WriteLog (lsTRACE, STObject) << "STObject::operator==: " << fields << " fields, " << matches << " matches";
         return false;
     }
 

@@ -67,7 +67,7 @@ SerializedTransaction::SerializedTransaction (SerializerIterator& sit) : STObjec
 
     if ((length < Protocol::txMinSizeBytes) || (length > Protocol::txMaxSizeBytes))
     {
-        Log (lsERROR) << "Transaction has invalid length: " << length;
+        WriteLog (lsERROR, SerializedTransaction) << "Transaction has invalid length: " << length;
         throw std::runtime_error ("Transaction length invalid");
     }
 

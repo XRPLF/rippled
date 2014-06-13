@@ -1388,7 +1388,7 @@ static bool schemaHas (DatabaseCon* dbc, const std::string& dbName, int line, co
 
     if (static_cast<int> (schema.size ()) <= line)
     {
-        Log (lsFATAL) << "Schema for " << dbName << " has too few lines";
+        WriteLog (lsFATAL, Application) << "Schema for " << dbName << " has too few lines";
         throw std::runtime_error ("bad schema");
     }
 
@@ -1400,14 +1400,14 @@ static void addTxnSeqField ()
     if (schemaHas (getApp().getTxnDB (), "AccountTransactions", 0, "TxnSeq"))
         return;
 
-    Log (lsWARNING) << "Transaction sequence field is missing";
+    WriteLog (lsWARNING, Application) << "Transaction sequence field is missing";
 
     Database* db = getApp().getTxnDB ()->getDB ();
 
     std::vector< std::pair<uint256, int> > txIDs;
     txIDs.reserve (300000);
 
-    Log (lsINFO) << "Parsing transactions";
+    WriteLog (lsINFO, Application) << "Parsing transactions";
     int i = 0;
     uint256 transID;
     SQL_FOREACH (db, "SELECT TransID,TxnMeta FROM Transactions;")
@@ -1431,7 +1431,7 @@ static void addTxnSeqField ()
         if (rawMeta.size () == 0)
         {
             txIDs.push_back (std::make_pair (transID, -1));
-            Log (lsINFO) << "No metadata for " << transID;
+            WriteLog (lsINFO, Application) << "No metadata for " << transID;
         }
         else
         {
@@ -1440,17 +1440,17 @@ static void addTxnSeqField ()
         }
 
         if ((++i % 1000) == 0)
-            Log (lsINFO) << i << " transactions read";
+            WriteLog (lsINFO, Application) << i << " transactions read";
     }
 
-    Log (lsINFO) << "All " << i << " transactions read";
+    WriteLog (lsINFO, Application) << "All " << i << " transactions read";
 
     db->executeSQL ("BEGIN TRANSACTION;");
 
-    Log (lsINFO) << "Dropping old index";
+    WriteLog (lsINFO, Application) << "Dropping old index";
     db->executeSQL ("DROP INDEX AcctTxIndex;");
 
-    Log (lsINFO) << "Altering table";
+    WriteLog (lsINFO, Application) << "Altering table";
     db->executeSQL ("ALTER TABLE AccountTransactions ADD COLUMN TxnSeq INTEGER;");
 
     boost::format fmt ("UPDATE AccountTransactions SET TxnSeq = %d WHERE TransID = '%s';");
@@ -1460,10 +1460,10 @@ static void addTxnSeqField ()
         db->executeSQL (boost::str (fmt % t.second % to_string (t.first)));
 
         if ((++i % 1000) == 0)
-            Log (lsINFO) << i << " transactions updated";
+            WriteLog (lsINFO, Application) << i << " transactions updated";
     }
 
-    Log (lsINFO) << "Building new index";
+    WriteLog (lsINFO, Application) << "Building new index";
     db->executeSQL ("CREATE INDEX AcctTxIndex ON AccountTransactions(Account, LedgerSeq, TxnSeq, TransID);");
     db->executeSQL ("END TRANSACTION;");
 }
@@ -1472,7 +1472,7 @@ void ApplicationImp::updateTables ()
 {
     if (getConfig ().nodeDatabase.size () <= 0)
     {
-        Log (lsFATAL) << "The [node_db] configuration setting has been updated and must be set";
+        WriteLog (lsFATAL, Application) << "The [node_db] configuration setting has been updated and must be set";
         StopSustain ();
         exit (1);
     }
@@ -1484,7 +1484,7 @@ void ApplicationImp::updateTables ()
 
     if (schemaHas (getApp().getTxnDB (), "AccountTransactions", 0, "PRIMARY"))
     {
-        Log (lsFATAL) << "AccountTransactions database should not have a primary key";
+        WriteLog (lsFATAL, Application) << "AccountTransactions database should not have a primary key";
         StopSustain ();
         exit (1);
     }

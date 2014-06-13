@@ -250,7 +250,6 @@ public:
 class Log : public beast::Uncopyable
 {
 public:
-    explicit Log (LogSeverity s);
     Log (LogSeverity s, LogPartition& partition);
     ~Log ();
 
@@ -264,10 +263,6 @@ public:
     {
         return m_os;
     }
-
-public:
-    static std::string severityToString (LogSeverity);
-    static LogSeverity stringToSeverity (std::string const&);
 
 private:
     static std::string replaceFirstSecretWithAsterisks (std::string s);

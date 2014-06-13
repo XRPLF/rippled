@@ -28,7 +28,7 @@ SerializedValidation::SerializedValidation (SerializerIterator& sit, bool checkS
 
     if  (checkSignature && !isValid ())
     {
-        Log (lsTRACE) << "Invalid validation " << getJson (0);
+        WriteLog (lsTRACE, Ledger) << "Invalid validation " << getJson (0);
         throw std::runtime_error ("Invalid validation");
     }
 }
@@ -104,7 +104,7 @@ bool SerializedValidation::isValid (uint256 const& signingHash) const
     }
     catch (...)
     {
-        Log (lsINFO) << "exception validating validation";
+        WriteLog (lsINFO, Ledger) << "exception validating validation";
         return false;
     }
 }

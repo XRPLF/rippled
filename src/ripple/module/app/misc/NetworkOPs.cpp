@@ -1736,7 +1736,8 @@ void NetworkOPsImp::setMode (OperatingMode om)
 
     mMode = om;
 
-    Log ((om < mMode) ? lsWARNING : lsINFO) << "STATE->" << strOperatingMode ();
+    m_journal.stream((om < mMode) ? beast::Journal::kWarning : beast::Journal::kInfo) <<
+        "STATE->" << strOperatingMode ();
     pubServer ();
 }
 

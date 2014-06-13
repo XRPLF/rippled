@@ -43,9 +43,7 @@ void LogSink::setLogFile (boost::filesystem::path const& path)
     bool const wasOpened = m_logFile.open (path.c_str ());
 
     if (! wasOpened)
-    {
-        Log (lsFATAL) << "Unable to open logfile " << path;
-    }
+        std::cerr << "Unable to open logfile " << path;
 }
 
 std::string LogSink::rotateLog ()
