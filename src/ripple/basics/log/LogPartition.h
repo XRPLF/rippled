@@ -58,10 +58,6 @@ public:
 
     //--------------------------------------------------------------------------
 
-    /** Returns the LogPartition based on a type key. */
-    template <class Key>
-    static LogPartition& get ();
-
     /** Returns a cleaned up source code file name. */
     static std::string canonicalFileName (char const* fileName);
 

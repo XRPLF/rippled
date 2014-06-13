@@ -38,16 +38,6 @@ LogSeverity LogSink::getMinSeverity ()
     return m_minSeverity;
 }
 
-void LogSink::setMinSeverity (LogSeverity s, bool all)
-{
-    ScopedLockType lock (m_mutex);
-
-    m_minSeverity = s;
-
-    if (all)
-        LogPartition::setSeverity (s);
-}
-
 void LogSink::setLogFile (boost::filesystem::path const& path)
 {
     bool const wasOpened = m_logFile.open (path.c_str ());

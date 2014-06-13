@@ -589,9 +589,6 @@ void Config::load ()
 
             if (SectionSingleB (secConfig, SECTION_DEBUG_LOGFILE, strTemp))
                 DEBUG_LOGFILE       = strTemp;
-
-            if (SectionSingleB (secConfig, SECTION_CONSOLE_LOG_OUTPUT, strTemp))
-                CONSOLE_LOG_OUTPUT     = strTemp;
         }
     }
 }

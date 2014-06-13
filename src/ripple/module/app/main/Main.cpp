@@ -256,15 +256,15 @@ int run (int argc, char** argv)
 
     if (vm.count ("quiet"))
     {
-        LogSink::get()->setMinSeverity (lsFATAL, true);
+        deprecatedLogs().severity(beast::Journal::kFatal);
     }
     else if (vm.count ("verbose"))
     {
-        LogSink::get()->setMinSeverity (lsTRACE, true);
+        deprecatedLogs().severity(beast::Journal::kTrace);
     }
     else
     {
-        LogSink::get()->setMinSeverity (lsINFO, true);
+        deprecatedLogs().severity(beast::Journal::kInfo);
     }
 
     // Run the unit tests if requested.

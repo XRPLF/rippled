@@ -40,7 +40,6 @@ struct ConfigSection
 #define SECTION_CLUSTER_NODES           "cluster_nodes"
 #define SECTION_DATABASE_PATH           "database_path"
 #define SECTION_DEBUG_LOGFILE           "debug_logfile"
-#define SECTION_CONSOLE_LOG_OUTPUT      "console_log_output"
 #define SECTION_ELB_SUPPORT             "elb_support"
 #define SECTION_FEE_DEFAULT             "fee_default"
 #define SECTION_FEE_NICKNAME_CREATE     "fee_nickname_create"

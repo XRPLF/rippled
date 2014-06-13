@@ -56,11 +56,24 @@ private:
         active (beast::Journal::Severity level) const override
         {
             return logs_.severity() <= level &&
-                this->Sink::severity() <= level;
+                beast::Journal::Sink::severity() <= level;
+        }
+        
+        beast::Journal::Severity
+        severity() const
+        {
+            return beast::Journal::Sink::severity();
         }
 
         void
-        write (beast::Journal::Severity level, std::string const& text)
+        severity (beast::Journal::Severity level)
+        {
+            std::lock_guard <std::mutex> lock (logs_.mutex_);
+            beast::Journal::Sink::severity(level);
+        }
+
+        void
+        write (beast::Journal::Severity level, std::string const& text) override
         {
             logs_.write (level, partition_, text, console());
         }
@@ -107,18 +120,6 @@ public:
         return beast::Journal (get(name));
     }
 
-    void
-    write (beast::Journal::Severity level, std::string const& partition,
-        std::string const& text, bool console)
-    {
-        std::lock_guard <std::mutex> lock (mutex_);
-        std::string s;
-        out_.format (s, text, fromSeverity(level), partition);
-        out_.write (s);
-        if (console)
-            out_.write_console(s);
-    }
-
     beast::Journal::Severity
     severity() const
     {
@@ -128,6 +129,7 @@ public:
     void
     severity (beast::Journal::Severity level)
     {
+        // VFALCO Do we need the lock?
         level_ = level;
     }
 
@@ -141,6 +143,18 @@ public:
             list.push_back(std::make_pair(e.first,
                 toString(fromSeverity(e.second.severity()))));
         return list;
+    }
+
+    void
+    write (beast::Journal::Severity level, std::string const& partition,
+        std::string const& text, bool console)
+    {
+        std::lock_guard <std::mutex> lock (mutex_);
+        std::string s;
+        out_.format (s, text, fromSeverity(level), partition);
+        out_.write (s);
+        if (console)
+            out_.write_console(s);
     }
 
     static
@@ -206,7 +220,7 @@ public:
 
     static
     LogSeverity
-    toSeverity (std::string const& s)
+    fromString (std::string const& s)
     {
         if (boost::iequals (s, "trace"))
             return lsTRACE;

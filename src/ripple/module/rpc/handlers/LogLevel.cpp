@@ -29,7 +29,7 @@ Json::Value doLogLevel (RPC::Context& context)
         Json::Value ret (Json::objectValue);
         Json::Value lev (Json::objectValue);
 
-        lev["base"] = Log::severityToString (LogSink::get()->getMinSeverity ());
+        lev["base"] = Logs::toString(Logs::fromSeverity(deprecatedLogs().severity()));
         std::vector< std::pair<std::string, std::string> > logTable (
             deprecatedLogs().partition_severities());
         typedef std::map<std::string, std::string>::value_type stringPair;
@@ -40,7 +40,7 @@ Json::Value doLogLevel (RPC::Context& context)
         return ret;
     }
 
-    LogSeverity sv = Log::stringToSeverity (context.params_["severity"].asString ());
+    LogSeverity const sv (Logs::fromString (context.params_["severity"].asString ()));
 
     if (sv == lsINVALID)
         return rpcError (rpcINVALID_PARAMS);
@@ -49,7 +49,7 @@ Json::Value doLogLevel (RPC::Context& context)
     if (!context.params_.isMember ("partition"))
     {
         // set base log severity
-        LogSink::get()->setMinSeverity (sv, true);
+        deprecatedLogs().severity(Logs::toSeverity(sv));
         return Json::objectValue;
     }
 
@@ -60,9 +60,9 @@ Json::Value doLogLevel (RPC::Context& context)
         std::string partition (context.params_["partition"].asString ());
 
         if (boost::iequals (partition, "base"))
-            LogSink::get()->setMinSeverity (sv, false);
-        else if (!LogPartition::setSeverity (partition, sv))
-            return rpcError (rpcINVALID_PARAMS);
+            deprecatedLogs().severity (Logs::toSeverity(sv));
+        else
+            deprecatedLogs().get(partition).severity(Logs::toSeverity(sv));
 
         return Json::objectValue;
     }

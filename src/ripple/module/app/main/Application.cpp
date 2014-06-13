@@ -600,13 +600,8 @@ public:
             // Let debug messages go to the file but only WARNING or higher to regular output (unless verbose)
             m_logs.open(getConfig ().DEBUG_LOGFILE);
 
-            if (LogSink::get()->getMinSeverity () > lsDEBUG)
-                LogPartition::setSeverity (lsDEBUG);
-        }
-
-        if (!getConfig().CONSOLE_LOG_OUTPUT.empty())
-        {
-            LogPartition::setConsoleOutput (getConfig().CONSOLE_LOG_OUTPUT);
+            if (m_logs.severity() > beast::Journal::kDebug)
+                m_logs.severity (beast::Journal::kDebug);
         }
 
         if (!getConfig ().RUN_STANDALONE)

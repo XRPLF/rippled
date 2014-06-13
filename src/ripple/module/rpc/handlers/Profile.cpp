@@ -60,8 +60,6 @@ Json::Value doProfile (RPC::Context& context)
     if (iArgs >= 8 && "false" != context.params_[7u].asString())
         bSubmit = true;
 
-    LogSink::get()->setMinSeverity(lsFATAL,true);
-
     boost::posix_time::ptime            ptStart(boost::posix_time::microsec_clock::local_time());
 
     for(unsigned int n=0; n<iCount; n++)

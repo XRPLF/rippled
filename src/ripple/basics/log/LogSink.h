@@ -38,12 +38,6 @@ public:
     /** Returns the minimum severity required for also writing to stderr. */
     LogSeverity getMinSeverity ();
 
-    /** Sets the minimum severity required for also writing to stderr.
-        If 'all' is true this will set the minimum reporting severity for
-        all partitions.
-    */
-    void setMinSeverity (LogSeverity, bool all);
-
     /** Sets the path to the log file. */
     void setLogFile (boost::filesystem::path const& pathToLogFile);
 
