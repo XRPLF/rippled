@@ -245,34 +245,6 @@ public:
 };
 
 //------------------------------------------------------------------------------
-
-/** RAII helper for writing to the LogSink. */
-class Log : public beast::Uncopyable
-{
-public:
-    Log (LogSeverity s, LogPartition& partition);
-    ~Log ();
-
-    template <class T>
-    std::ostream& operator<< (const T& t) const
-    {
-        return m_os << t;
-    }
-
-    std::ostringstream& ref () const
-    {
-        return m_os;
-    }
-
-private:
-    static std::string replaceFirstSecretWithAsterisks (std::string s);
-
-    mutable std::ostringstream  m_os;
-    LogSeverity                 m_level;
-    LogPartition* m_partition;
-};
-
-//------------------------------------------------------------------------------
 /*  DEPRECATED
     Inject beast::Journal instead
 */

@@ -1089,8 +1089,6 @@ void RPCCall::fromNetwork (
     mapRequestHeaders["Authorization"] = std::string ("Basic ") + strUserPass64;
 
     // Send request
-    // Log(lsDEBUG) << "requesting" << std::endl;
-    // WriteLog (lsDEBUG, RPCParser) << "send request " << strMethod << " : " << strRequest << std::endl;
 
     const int RPC_REPLY_MAX_BYTES (256*1024*1024);
     const int RPC_NOTIFY_SECONDS (600);

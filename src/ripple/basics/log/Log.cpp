@@ -17,50 +17,6 @@
 */
 //==============================================================================
 
-#include <boost/algorithm/string.hpp>
-
 namespace ripple {
-
-Log::Log (LogSeverity s, LogPartition& partition)
-    : m_level (s)
-    , m_partition (&partition)
-{
-}
-
-Log::~Log ()
-{
-    if (m_partition->doLog (m_level))
-        m_partition->write (
-            LogPartition::convertLogSeverity (m_level), m_os.str());
-}
-
-//------------------------------------------------------------------------------
-
-std::string Log::replaceFirstSecretWithAsterisks (std::string s)
-{
-    using namespace std;
-
-    char const* secretToken = "\"secret\"";
-
-    // Look for the first occurrence of "secret" in the string.
-    //
-    size_t startingPosition = s.find (secretToken);
-
-    if (startingPosition != string::npos)
-    {
-        // Found it, advance past the token.
-        //
-        startingPosition += strlen (secretToken);
-
-        // Replace the next 35 characters at most, without overwriting the end.
-        //
-        size_t endingPosition = std::min (startingPosition + 35, s.size () - 1);
-
-        for (size_t i = startingPosition; i < endingPosition; ++i)
-            s [i] = '*';
-    }
-
-    return s;
-}
 
 } // ripple
