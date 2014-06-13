@@ -30,10 +30,11 @@ Json::Value doLogLevel (RPC::Context& context)
         Json::Value lev (Json::objectValue);
 
         lev["base"] = Log::severityToString (LogSink::get()->getMinSeverity ());
-        std::vector< std::pair<std::string, std::string> > logTable = LogPartition::getSeverities ();
+        std::vector< std::pair<std::string, std::string> > logTable (
+            deprecatedLogs().partition_severities());
         typedef std::map<std::string, std::string>::value_type stringPair;
         BOOST_FOREACH (const stringPair & it, logTable)
-        lev[it.first] = it.second;
+            lev[it.first] = it.second;
 
         ret["levels"] = lev;
         return ret;

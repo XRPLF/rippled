@@ -126,17 +126,6 @@ void LogPartition::setConsoleOutput (std::string const& list)
     }
 }
 
-LogPartition::Severities LogPartition::getSeverities ()
-{
-    LogPartition::Severities result;
-
-    for (LogPartition* l = headLog; l != nullptr; l = l->mNextLog)
-        result.push_back (std::make_pair (
-            l->mName, Log::severityToString (l->getSeverity ())));
-
-    return result;
-}
-
 //------------------------------------------------------------------------------
 
 LogSeverity LogPartition::convertSeverity (beast::Journal::Severity level)

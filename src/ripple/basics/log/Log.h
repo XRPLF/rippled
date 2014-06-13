@@ -66,7 +66,7 @@ private:
         }
     };
 
-    std::mutex mutex_;
+    std::mutex mutable mutex_;
     std::unordered_map <std::string, Sink> sinks_;
     beast::Journal::Severity level_;
     LogSink out_;
@@ -129,6 +129,18 @@ public:
     severity (beast::Journal::Severity level)
     {
         level_ = level;
+    }
+
+    std::vector<std::pair<std::string, std::string>>
+    partition_severities() const
+    {
+        std::vector<std::pair<std::string, std::string>> list;
+        std::lock_guard <std::mutex> lock (mutex_);
+        list.reserve (sinks_.size());
+        for (auto const& e : sinks_)
+            list.push_back(std::make_pair(e.first,
+                toString(fromSeverity(e.second.severity()))));
+        return list;
     }
 
     static

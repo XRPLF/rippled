@@ -77,10 +77,6 @@ public:
     /** Activate console output for the specified comma-separated partition list. */
     static void setConsoleOutput (std::string const& list);
 
-    /** Returns a list of all partitions and their severity levels. */
-    typedef std::vector <std::pair <std::string, std::string> > Severities;
-    static Severities getSeverities ();
-
     /** Convert the Journal::Severity to and from a LogSeverity. */
     /** @{ */
     static LogSeverity convertSeverity (beast::Journal::Severity level);
