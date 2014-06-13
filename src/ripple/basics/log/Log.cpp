@@ -28,8 +28,8 @@ Logs::Sink::Sink (std::string const& partition, Logs& logs)
 bool
 Logs::Sink::active (beast::Journal::Severity level) const
 {
-    return logs_.severity() <= level &&
-        beast::Journal::Sink::severity() <= level;
+    return level >= logs_.severity() &&
+           level >= beast::Journal::Sink::severity();
 }
         
 beast::Journal::Severity
