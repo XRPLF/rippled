@@ -122,6 +122,12 @@ Logs::write (beast::Journal::Severity level, std::string const& partition,
         out_.write_console(s);
 }
 
+std::string
+Logs::rotate()
+{
+    return out_.rotateLog();
+}
+
 LogSeverity
 Logs::fromSeverity (beast::Journal::Severity level)
 {

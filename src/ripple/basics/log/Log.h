@@ -97,6 +97,10 @@ public:
     write (beast::Journal::Severity level, std::string const& partition,
         std::string const& text, bool console);
 
+    std::string
+    rotate();
+
+public:
     static
     LogSeverity
     fromSeverity (beast::Journal::Severity level);

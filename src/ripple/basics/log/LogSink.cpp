@@ -169,11 +169,4 @@ std::string LogSink::replaceFirstSecretWithAsterisks (std::string s)
     return s;
 }
 
-//------------------------------------------------------------------------------
-
-LogSink::Ptr LogSink::get ()
-{
-    return beast::SharedSingleton <LogSink>::getInstance ();
-}
-
 } // ripple

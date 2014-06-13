@@ -73,10 +73,6 @@ public:
     /** Hides secret keys from log output. */
     static std::string replaceFirstSecretWithAsterisks (std::string s);
 
-    /** Returns a pointer to the singleton. */
-    typedef beast::SharedPtr <beast::SharedSingleton <LogSink> > Ptr;
-    static Ptr get ();
-
 private:
     typedef std::recursive_mutex LockType;
     typedef std::lock_guard <LockType> ScopedLockType;
