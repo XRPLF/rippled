@@ -42,7 +42,7 @@ public:
         boost::asio::ip::tcp::endpoint const &ep,
             boost::asio::io_service& io_service)
         : m_overlay (overlay)
-        , m_journal (LogPartition::getJournal <PeerDoor> ())
+        , m_journal (deprecatedLogs().journal("PeerDoor"))
         , m_kind (kind)
         , m_acceptor (io_service, ep)
         , m_acceptDelay (io_service)

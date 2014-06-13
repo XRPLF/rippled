@@ -22,15 +22,6 @@
 
 namespace ripple {
 
-class AddWalletLog;
-
-template <>
-char const*
-LogPartition::getPartitionName <AddWalletLog> ()
-{
-    return "Tx/WalletAdd";
-}
-
 class AddWallet
     : public Transactor
 {
@@ -43,7 +34,7 @@ public:
             txn,
             params,
             engine,
-            LogPartition::getJournal <AddWalletLog> ())
+            deprecatedLogs().journal("AddWallet"))
     {
     }
 

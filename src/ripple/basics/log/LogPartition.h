@@ -62,13 +62,6 @@ public:
     template <class Key>
     static LogPartition& get ();
 
-    /** Returns a Journal using the specified LogPartition type key. */
-    template <class Key>
-    static beast::Journal getJournal ()
-    {
-        return beast::Journal (get <Key> ());
-    }
-
     /** Returns a cleaned up source code file name. */
     static std::string canonicalFileName (char const* fileName);
 

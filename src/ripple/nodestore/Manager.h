@@ -23,17 +23,7 @@
 namespace ripple {
 namespace NodeStore {
 
-/** Singleton for managing NodeStore factories and back ends.
-    Create a Manager like this:
-    @code
-    NodeStore::DummyScheduler scheduler;
-    std::unique_ptr <NodeStore::Manager> m (NodeStore::make_Manager());
-
-    std::unique_ptr <NodeStore::Database> nodeStore (m->make_Database ("nodeStore",
-        scheduler, LogPartition::getJournal <NodeObject> (), 4,
-        getConfig ().nodeDatabase));
-    @endcode
-*/
+/** Singleton for managing NodeStore factories and back ends. */
 class Manager
 {
 public:

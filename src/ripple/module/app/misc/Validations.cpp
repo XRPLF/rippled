@@ -64,7 +64,7 @@ private:
 public:
     ValidationsImp ()
         : mValidations ("Validations", 128, 600, get_seconds_clock (),
-            LogPartition::getJournal <TaggedCacheLog> ())
+            deprecatedLogs().journal("TaggedCache"))
         , mWriting (false)
     {
         mStaleValidations.reserve (512);

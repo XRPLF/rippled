@@ -69,7 +69,7 @@ public:
         , m_backend (std::move (backend))
         , m_fastBackend (std::move (fastBackend))
         , m_cache ("NodeStore", cacheTargetSize, cacheTargetSeconds,
-            get_seconds_clock (), LogPartition::getJournal <TaggedCacheLog> ())
+            get_seconds_clock (), deprecatedLogs().journal("TaggedCache"))
         , m_negCache ("NodeStore", get_seconds_clock (),
             cacheTargetSize, cacheTargetSeconds)
         , m_readShut (false)

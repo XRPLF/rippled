@@ -127,7 +127,7 @@ std::string RPCServerHandler::processRequest (std::string const& request,
             return HTTPReply (400, "params must be an object");
 
         ripple_params ["command"] = strMethod;
-        RPC::Request req (LogPartition::getJournal <RPCServer> (),
+        RPC::Request req (deprecatedLogs().journal("RPCServer"),
             strMethod, ripple_params, getApp ());
 
         // VFALCO Try processing the command using the new code

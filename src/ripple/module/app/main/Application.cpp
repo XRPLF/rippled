@@ -38,46 +38,6 @@ static bool volatile doShutdown = false;
 
 static int const MAJORITY_FRACTION (204);
 
-//------------------------------------------------------------------------------
-//
-// Specializations for LogPartition names
-
-// VFALCO NOTE This is temporary, until I refactor LogPartition
-//            and LogPartition::getJournal() to take a string
-//
-class ApplicationLog;
-template <> char const* LogPartition::getPartitionName <ApplicationLog> () { return "Application"; }
-class SiteFilesLog;
-template <> char const* LogPartition::getPartitionName <SiteFilesLog> () { return "SiteFiles"; }
-class ValidatorsLog;
-template <> char const* LogPartition::getPartitionName <ValidatorsLog> () { return "Validators"; }
-class JobQueueLog;
-template <> char const* LogPartition::getPartitionName <JobQueueLog> () { return "JobQueue"; }
-class NetworkOPsLog;
-template <> char const* LogPartition::getPartitionName <NetworkOPsLog> () { return "NetworkOPs"; }
-class RPCServiceManagerLog;
-template <> char const* LogPartition::getPartitionName <RPCServiceManagerLog> () { return "RPCServiceManager"; }
-class HTTPServerLog;
-template <> char const* LogPartition::getPartitionName <HTTPServerLog> () { return "RPCServer"; }
-class LoadManagerLog;
-template <> char const* LogPartition::getPartitionName <LoadManagerLog> () { return "LoadManager"; }
-class ResourceManagerLog;
-template <> char const* LogPartition::getPartitionName <ResourceManagerLog> () { return "ResourceManager"; }
-class PathRequestLog;
-template <> char const* LogPartition::getPartitionName <PathRequestLog> () { return "PathRequest"; }
-class RPCManagerLog;
-template <> char const* LogPartition::getPartitionName <RPCManagerLog> () { return "RPCManager"; }
-class AmendmentTableLog;
-template <> char const* LogPartition::getPartitionName <AmendmentTableLog>() { return "AmendmentTable"; }
-
-template <> char const* LogPartition::getPartitionName <CollectorManager> () { return "Collector"; }
-
-struct TaggedCacheLog;
-template <> char const* LogPartition::getPartitionName <TaggedCacheLog> () { return "TaggedCache"; }
-
-//
-//------------------------------------------------------------------------------
-
 // This hack lets the s_instance variable remain set during
 // the call to ~Application
 class ApplicationImpBase : public Application
@@ -262,24 +222,22 @@ public:
         : RootStoppable ("Application")
         , m_logs (logs)
 
-        , m_journal (LogPartition::getJournal <ApplicationLog> ())
+        , m_journal (m_logs.journal("Application"))
 
         , m_nodeStoreManager (NodeStore::make_Manager (
             std::move (make_Factories ())))
 
         , m_tempNodeCache ("NodeCache", 16384, 90, get_seconds_clock (),
-            LogPartition::getJournal <TaggedCacheLog> ())
+            m_logs.journal("TaggedCache"))
 
         , m_sleCache ("LedgerEntryCache", 4096, 120, get_seconds_clock (),
-            LogPartition::getJournal <TaggedCacheLog> ())
+            m_logs.journal("TaggedCache"))
 
         , m_collectorManager (CollectorManager::New (
-            getConfig().insightSettings,
-                LogPartition::getJournal <CollectorManager> ()))
+            getConfig().insightSettings, m_logs.journal("Collector")))
 
         , m_resourceManager (Resource::make_Manager (
-            m_collectorManager->collector(),
-                LogPartition::getJournal <ResourceManagerLog> ()))
+            m_collectorManager->collector(), m_logs.journal("Resource")))
 
         , m_fullBelowCache (std::make_unique <FullBelowCache> (
             "full_below", get_seconds_clock (), m_collectorManager->collector (),
@@ -291,7 +249,7 @@ public:
         // almost everything is a Stoppable child of the JobQueue.
         //
         , m_jobQueue (make_JobQueue (m_collectorManager->group ("jobq"),
-            m_nodeStoreScheduler, LogPartition::getJournal <JobQueueLog> ()))
+            m_nodeStoreScheduler, m_logs.journal("JobQueue")))
 
         // The io_service must be a child of the JobQueue since we call addJob
         // in response to newtwork data from peers and also client requests.
@@ -303,17 +261,17 @@ public:
         //
 
         , m_siteFiles (SiteFiles::Manager::New (
-            *this, LogPartition::getJournal <SiteFilesLog> ()))
+            *this, m_logs.journal("SiteFiles")))
 
-        , m_rpcManager (RPC::make_Manager (LogPartition::getJournal <RPCManagerLog> ()))
+        , m_rpcManager (RPC::make_Manager (m_logs.journal("RPCManager")))
 
         , m_orderBookDB (*m_jobQueue)
 
-        , m_pathRequests ( new PathRequests (
-            LogPartition::getJournal <PathRequestLog> (), m_collectorManager->collector ()))
+        , m_pathRequests (new PathRequests (
+            m_logs.journal("PathRequest"), m_collectorManager->collector ()))
 
         , m_ledgerMaster (LedgerMaster::New (
-            *m_jobQueue, LogPartition::getJournal <LedgerMaster> ()))
+            *m_jobQueue, m_logs.journal("LedgerMaster")))
 
         // VFALCO NOTE must come before NetworkOPs to prevent a crash due
         //             to dependencies in the destructor.
@@ -323,18 +281,18 @@ public:
 
         // VFALCO NOTE Does NetworkOPs depend on LedgerMaster?
         , m_networkOPs (NetworkOPs::New (get_seconds_clock (), *m_ledgerMaster,
-            *m_jobQueue, LogPartition::getJournal <NetworkOPsLog> ()))
+            *m_jobQueue, m_logs.journal("NetworkOPs")))
 
         // VFALCO NOTE LocalCredentials starts the deprecated UNL service
         , m_deprecatedUNL (UniqueNodeList::New (*m_jobQueue))
 
         , m_rpcHTTPServer (RPCHTTPServer::New (*m_networkOPs,
-            LogPartition::getJournal <HTTPServerLog> (), *m_jobQueue, *m_networkOPs, *m_resourceManager))
+            m_logs.journal("HTTPServer"), *m_jobQueue, *m_networkOPs, *m_resourceManager))
 
         , m_rpcServerHandler (*m_networkOPs, *m_resourceManager) // passive object, not a Service
 
         , m_nodeStore (m_nodeStoreManager->make_Database ("NodeStore.main", m_nodeStoreScheduler,
-            LogPartition::getJournal <NodeObject> (), 4, // four read threads for now
+            m_logs.journal("NodeObject"), 4, // four read threads for now
                 getConfig ().nodeDatabase, getConfig ().ephemeralNodeDatabase))
 
         , m_sntpClient (SNTPClient::New (*this))
@@ -344,12 +302,12 @@ public:
         , m_validators (add (Validators::Manager::New (
             *this,
             getConfig ().getModuleDatabasePath (),
-            LogPartition::getJournal <ValidatorsLog> ())))
+            m_logs.journal("Validators"))))
 
         , m_amendmentTable (make_AmendmentTable (weeks(2), MAJORITY_FRACTION, // 204/256 about 80%
-            LogPartition::getJournal <AmendmentTableLog> ()))
+            m_logs.journal("AmendmentTable")))
 
-        , mFeeTrack (LoadFeeTrack::New (LogPartition::getJournal <LoadManagerLog> ()))
+        , mFeeTrack (LoadFeeTrack::New (m_logs.journal("LoadManager")))
 
         , mHashRouter (IHashRouter::New (IHashRouter::getDefaultHoldTime ()))
 
@@ -357,7 +315,7 @@ public:
 
         , mProofOfWorkFactory (ProofOfWorkFactory::New ())
 
-        , m_loadManager (LoadManager::New (*this, LogPartition::getJournal <LoadManagerLog> ()))
+        , m_loadManager (LoadManager::New (*this, m_logs.journal("LoadManager")))
 
         , m_sweepTimer (this)
 
@@ -366,8 +324,7 @@ public:
         , m_resolver (ResolverAsio::New (m_mainIoPool.getService (), beast::Journal ()))
 
         , m_io_latency_sampler (m_collectorManager->collector()->make_event ("ios_latency"),
-            LogPartition::getJournal <ApplicationLog> (),
-                std::chrono::milliseconds (100), m_mainIoPool.getService())
+            m_logs.journal("Application"), std::chrono::milliseconds (100), m_mainIoPool.getService())
     {
         add (m_resourceManager.get ());
 
@@ -1542,7 +1499,7 @@ void ApplicationImp::updateTables ()
         NodeStore::DummyScheduler scheduler;
         std::unique_ptr <NodeStore::Database> source (
             m_nodeStoreManager->make_Database ("NodeStore.import", scheduler,
-                LogPartition::getJournal <NodeObject> (), 0,
+                deprecatedLogs().journal("NodeObject"), 0,
                     getConfig ().importNodeDatabase));
 
         WriteLog (lsWARNING, NodeObject) <<

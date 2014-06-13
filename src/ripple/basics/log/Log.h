@@ -87,12 +87,24 @@ public:
     }
 
     Sink&
-    operator[] (std::string const& name)
+    get (std::string const& name)
     {
         std::lock_guard <std::mutex> lock (mutex_);
         auto const result (sinks_.emplace(std::piecewise_construct,
             std::forward_as_tuple(name), std::forward_as_tuple(name, *this)));
         return result.first->second;
+    }
+
+    Sink&
+    operator[] (std::string const& name)
+    {
+        return get(name);
+    }
+
+    beast::Journal
+    journal (std::string const& name)
+    {
+        return beast::Journal (get(name));
     }
 
     void

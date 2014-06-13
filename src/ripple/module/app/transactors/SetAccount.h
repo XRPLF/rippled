@@ -22,15 +22,6 @@
 
 namespace ripple {
 
-class SetAccountLog;
-
-template <>
-char const*
-LogPartition::getPartitionName <SetAccountLog> ()
-{
-    return "Tx/AccountSet";
-}
-
 class SetAccount
     : public Transactor
 {
@@ -43,7 +34,7 @@ public:
             txn,
             params,
             engine,
-            LogPartition::getJournal <SetAccountLog> ())
+            deprecatedLogs().journal("SetAccount"))
     {
 
     }

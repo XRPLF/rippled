@@ -29,35 +29,6 @@
 
 namespace ripple {
 
-SETUP_LOG (Peer)
-
-class PeersLog;
-template <> char const* LogPartition::getPartitionName <PeersLog> () { return "Overlay"; }
-
-class PeerFinderLog;
-template <> char const* LogPartition::getPartitionName <PeerFinderLog> () { return "PeerFinder"; }
-
-class NameResolverLog;
-template <> char const* LogPartition::getPartitionName <NameResolverLog> () { return "NameResolver"; }
-
-/** Calls a function during static initialization. */
-struct static_call
-{
-    // Function must be callable as
-    //      void f (void) const
-    //
-    template <class Function>
-    static_call (Function const& f)
-    {
-        f ();
-    }
-};
-
-static static_call init_PeerFinderLog (&LogPartition::get <PeerFinderLog>);
-static static_call init_NameResolverLog (&LogPartition::get <NameResolverLog>);
-
-//------------------------------------------------------------------------------
-
 /** A functor to visit all active peers and retrieve their JSON data */
 struct get_peer_json
 {
@@ -90,7 +61,7 @@ OverlayImpl::OverlayImpl (Stoppable& parent,
     boost::asio::ssl::context& ssl_context)
     : Overlay (parent)
     , m_child_count (1)
-    , m_journal (LogPartition::getJournal <PeersLog> ())
+    , m_journal (deprecatedLogs().journal("Overlay"))
     , m_resourceManager (resourceManager)
     , m_peerFinder (add (PeerFinder::Manager::New (
         *this,
@@ -98,7 +69,7 @@ OverlayImpl::OverlayImpl (Stoppable& parent,
         pathToDbFileOrDirectory,
         *this,
         get_seconds_clock (),
-        LogPartition::getJournal <PeerFinderLog> ())))
+        deprecatedLogs().journal("PeerFinder"))))
     , m_io_service (io_service)
     , m_ssl_context (ssl_context)
     , m_resolver (resolver)

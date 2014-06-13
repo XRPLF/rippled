@@ -22,15 +22,6 @@
 
 namespace ripple {
 
-class CancelOfferLog;
-
-template <>
-char const*
-LogPartition::getPartitionName <CancelOfferLog> ()
-{
-    return "Tx/OfferCancel";
-}
-
 class CancelOffer
     : public Transactor
 {
@@ -43,7 +34,7 @@ public:
             txn,
             params,
             engine,
-            LogPartition::getJournal <CancelOfferLog> ())
+            deprecatedLogs().journal("CancelOffer"))
     {
 
     }

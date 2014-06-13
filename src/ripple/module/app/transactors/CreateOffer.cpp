@@ -38,7 +38,7 @@ CreateOffer::CreateOffer (
         txn,
         params,
         engine,
-        LogPartition::getJournal <CreateOfferLog> ())
+        deprecatedLogs().journal("CreateOffer"))
 {
 
 }
