@@ -106,8 +106,9 @@ public:
         if (boost::asio::ssl::rfc2818_verification (domain) (preverified, ctx))
             return true;
 
-        Log (lsWARNING, AutoSocketPartition) << "Outbound SSL connection to " <<
-                                             domain << " fails certificate verification";
+        WriteLog (lsWARNING, AutoSocket) <<
+            "Outbound SSL connection to " << domain <<
+            " fails certificate verification";
         return false;
     }
 
@@ -274,7 +275,8 @@ protected:
 
         if (ec)
         {
-            Log (lsWARNING, AutoSocketPartition) << "Handle autodetect error: " << ec;
+            WriteLog (lsWARNING, AutoSocket) <<
+                "Handle autodetect error: " << ec;
             cbFunc (ec);
         }
         else if ((mBuffer[0] < 127) && (mBuffer[0] > 31) &&
@@ -283,25 +285,20 @@ protected:
                  ((bytesTransferred < 4) || ((mBuffer[3] < 127) && (mBuffer[3] > 31))))
         {
             // not ssl
-            if (AutoSocketPartition.doLog (lsTRACE))
-                Log (lsTRACE, AutoSocketPartition) << "non-SSL";
-
+            WriteLog (lsTRACE, AutoSocket) << "non-SSL";
             mSecure = false;
             cbFunc (ec);
         }
         else
         {
             // ssl
-            if (AutoSocketPartition.doLog (lsTRACE))
-                Log (lsTRACE, AutoSocketPartition) << "SSL";
-
+            WriteLog (lsTRACE, AutoSocket) << "SSL";
             mSecure = true;
             mSocket->async_handshake (ssl_socket::server, cbFunc);
         }
     }
 
 private:
-    static ripple::LogPartition AutoSocketPartition;
     socket_ptr          mSocket;
     bool                mSecure;
     std::vector<char>   mBuffer;
