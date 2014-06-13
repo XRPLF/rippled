@@ -3627,7 +3627,6 @@
     <ClInclude Include="..\..\src\ripple\module\app\websocket\WSServerHandler.h">
       <Filter>ripple\module\app\websocket</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\functional\Config.cpp">
       <Filter>ripple\module\core\functional</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\core\functional\Config.h">
@@ -5611,4 +5610,3 @@
       <Filter>websocket\src</Filter>
     </ClInclude>
   </ItemGroup>
-</Project>
