@@ -43,40 +43,22 @@ private:
         std::string partition_;
 
     public:
-        Sink (std::string const& partition, Logs& logs)
-            : logs_(logs)
-            , partition_(partition)
-        {
-        }
+        Sink (std::string const& partition, Logs& logs);
 
         Sink (Sink const&) = delete;
         Sink& operator= (Sink const&) = delete;
 
         bool
-        active (beast::Journal::Severity level) const override
-        {
-            return logs_.severity() <= level &&
-                beast::Journal::Sink::severity() <= level;
-        }
+        active (beast::Journal::Severity level) const override;
         
         beast::Journal::Severity
-        severity() const
-        {
-            return beast::Journal::Sink::severity();
-        }
+        severity() const override;
 
         void
-        severity (beast::Journal::Severity level)
-        {
-            std::lock_guard <std::mutex> lock (logs_.mutex_);
-            beast::Journal::Sink::severity(level);
-        }
+        severity (beast::Journal::Severity level) override;
 
         void
-        write (beast::Journal::Severity level, std::string const& text) override
-        {
-            logs_.write (level, partition_, text, console());
-        }
+        write (beast::Journal::Severity level, std::string const& text) override;
     };
 
     std::mutex mutable mutex_;
@@ -85,171 +67,55 @@ private:
     LogSink out_;
 
 public:
-    Logs()
-        : level_ (beast::Journal::kAll) // default severity
-    {
-    }
+    Logs();
 
     Logs (Logs const&) = delete;
     Logs& operator= (Logs const&) = delete;
     
     void
-    open (boost::filesystem::path const& pathToLogFile)
-    {
-        out_.setLogFile (pathToLogFile);
-    }
+    open (boost::filesystem::path const& pathToLogFile);
 
     Sink&
-    get (std::string const& name)
-    {
-        std::lock_guard <std::mutex> lock (mutex_);
-        auto const result (sinks_.emplace(std::piecewise_construct,
-            std::forward_as_tuple(name), std::forward_as_tuple(name, *this)));
-        return result.first->second;
-    }
+    get (std::string const& name);
 
     Sink&
-    operator[] (std::string const& name)
-    {
-        return get(name);
-    }
+    operator[] (std::string const& name);
 
     beast::Journal
-    journal (std::string const& name)
-    {
-        return beast::Journal (get(name));
-    }
+    journal (std::string const& name);
 
     beast::Journal::Severity
-    severity() const
-    {
-        return level_;
-    }
+    severity() const;
 
     void
-    severity (beast::Journal::Severity level)
-    {
-        // VFALCO Do we need the lock?
-        level_ = level;
-    }
+    severity (beast::Journal::Severity level);
 
     std::vector<std::pair<std::string, std::string>>
-    partition_severities() const
-    {
-        std::vector<std::pair<std::string, std::string>> list;
-        std::lock_guard <std::mutex> lock (mutex_);
-        list.reserve (sinks_.size());
-        for (auto const& e : sinks_)
-            list.push_back(std::make_pair(e.first,
-                toString(fromSeverity(e.second.severity()))));
-        return list;
-    }
+    partition_severities() const;
 
     void
     write (beast::Journal::Severity level, std::string const& partition,
-        std::string const& text, bool console)
-    {
-        std::lock_guard <std::mutex> lock (mutex_);
-        std::string s;
-        out_.format (s, text, fromSeverity(level), partition);
-        out_.write (s);
-        if (console)
-            out_.write_console(s);
-    }
+        std::string const& text, bool console);
 
     static
     LogSeverity
-    fromSeverity (beast::Journal::Severity level)
-    {
-        using beast::Journal;
-        switch (level)
-        {
-        case Journal::kTrace:   return lsTRACE;
-        case Journal::kDebug:   return lsDEBUG;
-        case Journal::kInfo:    return lsINFO;
-        case Journal::kWarning: return lsWARNING;
-        case Journal::kError:   return lsERROR;
-
-        default:
-            bassertfalse;
-        case Journal::kFatal:
-            break;
-        }
-
-        return lsFATAL;
-    }
+    fromSeverity (beast::Journal::Severity level);
 
     static
     beast::Journal::Severity
-    toSeverity (LogSeverity level)
-    {
-        using beast::Journal;
-        switch (level)
-        {
-        case lsTRACE:   return Journal::kTrace;
-        case lsDEBUG:   return Journal::kDebug;
-        case lsINFO:    return Journal::kInfo;
-        case lsWARNING: return Journal::kWarning;
-        case lsERROR:   return Journal::kError;
-        default:
-            bassertfalse;
-        case lsFATAL:
-            break;
-        }
-
-        return Journal::kFatal;
-    }
+    toSeverity (LogSeverity level);
 
     static
     std::string
-    toString (LogSeverity s)
-    {
-        switch (s)
-        {
-        case lsTRACE:   return "Trace";
-        case lsDEBUG:   return "Debug";
-        case lsINFO:    return "Info";
-        case lsWARNING: return "Warning";
-        case lsERROR:   return "Error";
-        case lsFATAL:   return "Fatal";
-        default:
-            assert (false);
-            return "Unknown";
-        }
-    }
+    toString (LogSeverity s);
 
     static
     LogSeverity
-    fromString (std::string const& s)
-    {
-        if (boost::iequals (s, "trace"))
-            return lsTRACE;
-
-        if (boost::iequals (s, "debug"))
-            return lsDEBUG;
-
-        if (boost::iequals (s, "info") || boost::iequals (s, "information"))
-            return lsINFO;
-
-        if (boost::iequals (s, "warn") || boost::iequals (s, "warning") || boost::iequals (s, "warnings"))
-            return lsWARNING;
-
-        if (boost::iequals (s, "error") || boost::iequals (s, "errors"))
-            return lsERROR;
-
-        if (boost::iequals (s, "fatal") || boost::iequals (s, "fatals"))
-            return lsFATAL;
-
-        return lsINVALID;
-    }
+    fromString (std::string const& s);
 };
 
 //------------------------------------------------------------------------------
-/*  DEPRECATED
-    Inject beast::Journal instead
-*/
-
-// This is here temporarily until an interface is available to all clients
+// VFALCO DEPRECATED Temporary transition function until interfaces injected
 inline
 Logs&
 deprecatedLogs()
@@ -257,12 +123,10 @@ deprecatedLogs()
     static Logs logs;
     return logs;
 }
-
+// VFALCO DEPRECATED Inject beast::Journal instead
 #define ShouldLog(s, k) deprecatedLogs()[#k].active(Logs::toSeverity(s))
-
 #define WriteLog(s, k) if (!ShouldLog (s, k)) do {} while (0); else \
     beast::Journal::Stream(deprecatedLogs()[#k], Logs::toSeverity(s))
-
 #define CondLog(c, s, k) if (!ShouldLog (s, k) || !(c)) do {} while(0); else \
     beast::Journal::Stream(deprecatedLogs()[#k], Logs::toSeverity(s))
 
