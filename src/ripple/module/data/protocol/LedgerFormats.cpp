@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <beast/module/core/memory/SharedSingleton.h>
+
 namespace ripple {
 
 LedgerFormats::LedgerFormats ()

@@ -48,10 +48,75 @@ Logs::Sink::severity (beast::Journal::Severity level)
     beast::Journal::Sink::severity(level);
 }
 
+//------------------------------------------------------------------------------
+
 void
 Logs::Sink::write (beast::Journal::Severity level, std::string const& text)
 {
     logs_.write (level, partition_, text, console());
+}
+
+Logs::File::File()
+    : m_stream (nullptr)
+{
+}
+
+Logs::File::~File()
+{
+}
+
+bool Logs::File::isOpen () const noexcept
+{
+    return m_stream != nullptr;
+}
+
+bool Logs::File::open (boost::filesystem::path const& path)
+{
+    close ();
+
+    bool wasOpened = false;
+
+    // VFALCO TODO Make this work with Unicode file paths
+    std::unique_ptr <std::ofstream> stream (
+        new std::ofstream (path.c_str (), std::fstream::app));
+
+    if (stream->good ())
+    {
+        m_path = path;
+
+        m_stream = std::move (stream);
+
+        wasOpened = true;
+    }
+
+    return wasOpened;
+}
+
+bool Logs::File::closeAndReopen ()
+{
+    close ();
+
+    return open (m_path);
+}
+
+void Logs::File::close ()
+{
+    m_stream = nullptr;
+}
+
+void Logs::File::write (char const* text)
+{
+    if (m_stream != nullptr)
+        (*m_stream) << text;
+}
+
+void Logs::File::writeln (char const* text)
+{
+    if (m_stream != nullptr)
+    {
+        (*m_stream) << text;
+        (*m_stream) << std::endl;
+    }
 }
 
 //------------------------------------------------------------------------------

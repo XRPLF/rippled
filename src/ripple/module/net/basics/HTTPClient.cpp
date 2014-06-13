@@ -19,6 +19,7 @@
 
 #include <boost/regex.hpp>
 #include <beast/asio/placeholders.h>
+#include <beast/module/core/memory/SharedSingleton.h>
     
 namespace ripple {
 
