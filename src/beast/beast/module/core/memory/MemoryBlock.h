@@ -24,7 +24,9 @@
 #ifndef BEAST_MEMORYBLOCK_H_INCLUDED
 #define BEAST_MEMORYBLOCK_H_INCLUDED
 
+#include <beast/HeapBlock.h>
 #include <beast/utility/LeakChecked.h>
+#include <beast/strings/String.h>
 
 namespace beast {
 
