@@ -518,25 +518,26 @@ for toolchain in toolchains:
         objects.append(addSource('src/ripple/unity/beast.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/beastc.c', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/common.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/core.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/data.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/http.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/json.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/net.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/overlay.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/rpcx.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/websocket.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/peerfinder.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/protobuf.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/ripple.proto.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/radmap.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/resource.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/rpcx.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/sitefiles.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/sslutil.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/testoverlay.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/types.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/validators.cpp', env, variant_dirs))
+        objects.append(addSource('src/ripple/unity/websocket.cpp', env, variant_dirs))
 
-        objects.append(addSource('src/ripple/unity/core.cpp', env, variant_dirs, [
+        objects.append(addSource('src/ripple/unity/nodestore.cpp', env, variant_dirs, [
             'src/leveldb/include',
             #'src/hyperleveldb/include', # hyper 
             'src/rocksdb/include',

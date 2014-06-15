@@ -17,18 +17,22 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NODESTORE_MEMORYFACTORY_H_INCLUDED
-#define RIPPLE_NODESTORE_MEMORYFACTORY_H_INCLUDED
+#ifndef RIPPLE_NODESTORE_NULLFACTORY_H_INCLUDED
+#define RIPPLE_NODESTORE_NULLFACTORY_H_INCLUDED
+
+#include <ripple/nodestore/Factory.h>
 
 namespace ripple {
 namespace NodeStore {
 
-/** Factory to produce a RAM based backend for the NodeStore.
+/** Factory to produce a null backend.
+    This is for standalone / testing mode.
     @see Database
 */
-std::unique_ptr <Factory> make_MemoryFactory ();
+std::unique_ptr <Factory> make_NullFactory ();
 
 }
 }
 
 #endif
+

@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/nodestore/Database.h>
 
 namespace ripple {
 

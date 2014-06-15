@@ -17,20 +17,24 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NODESTORE_NULLFACTORY_H_INCLUDED
-#define RIPPLE_NODESTORE_NULLFACTORY_H_INCLUDED
+#ifndef RIPPLE_NODESTORE_HYPERDBFACTORY_H_INCLUDED
+#define RIPPLE_NODESTORE_HYPERDBFACTORY_H_INCLUDED
+
+#if RIPPLE_HYPERLEVELDB_AVAILABLE
+
+#include <ripple/nodestore/Factory.h>
 
 namespace ripple {
 namespace NodeStore {
 
-/** Factory to produce a null backend.
-    This is for standalone / testing mode.
+/** Factory to produce HyperLevelDB backends for the NodeStore.
     @see Database
 */
-std::unique_ptr <Factory> make_NullFactory ();
+std::unique_ptr <Factory> make_HyperDBFactory ();
 
 }
 }
 
 #endif
 
+#endif

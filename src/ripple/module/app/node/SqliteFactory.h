@@ -20,6 +20,8 @@
 #ifndef RIPPLE_APP_SQLITEFACTORY_H_INCLUDED
 #define RIPPLE_APP_SQLITEFACTORY_H_INCLUDED
 
+#include <ripple/nodestore/Factory.h>
+
 namespace ripple {
 
 /** Factory to produce SQLite backends for the NodeStore.

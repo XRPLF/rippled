@@ -412,21 +412,6 @@
     <Filter Include="ripple\module\core\functional">
       <UniqueIdentifier>{61C8064B-23D8-A490-1614-9D2BA78ADB68}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ripple\module\core\nodestore">
-      <UniqueIdentifier>{4AE7A273-D9A0-B02D-B176-CC21D166C84B}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ripple\module\core\nodestore\api">
-      <UniqueIdentifier>{AC237386-B045-74E2-4CDE-8DDA6A0A71B8}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ripple\module\core\nodestore\backend">
-      <UniqueIdentifier>{0ED4B0B8-7611-3F48-E160-2A56D338F097}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ripple\module\core\nodestore\impl">
-      <UniqueIdentifier>{88114987-28FC-EE27-4F1D-8759061A3F77}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ripple\module\core\nodestore\tests">
-      <UniqueIdentifier>{7BE989C9-84A9-AF45-2261-A1A45D2AF3FA}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ripple\module\data">
       <UniqueIdentifier>{FB5092D7-3AA5-4E7F-F783-C8A929D8B588}</UniqueIdentifier>
     </Filter>
@@ -477,6 +462,18 @@
     </Filter>
     <Filter Include="ripple\module\websocket\autosocket">
       <UniqueIdentifier>{587F434F-850E-8776-A958-745B41B9C407}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ripple\nodestore">
+      <UniqueIdentifier>{D3E78215-1C49-D4FB-E9FC-5074083D184F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ripple\nodestore\backend">
+      <UniqueIdentifier>{B79A9145-D4DD-8A3C-59ED-AF8BEE7AD7A3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ripple\nodestore\impl">
+      <UniqueIdentifier>{9D691DE1-17A1-5989-3E2E-F69B3E43152F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ripple\nodestore\tests">
+      <UniqueIdentifier>{3FDC73B9-A9C7-3533-FD40-E4032B9FA9FB}</UniqueIdentifier>
     </Filter>
     <Filter Include="ripple\peerfinder">
       <UniqueIdentifier>{186385AD-A056-FA3A-7E0E-759EB55E9EAB}</UniqueIdentifier>
@@ -3711,135 +3708,6 @@
     <ClInclude Include="..\..\src\ripple\module\core\functional\LoadMonitor.h">
       <Filter>ripple\module\core\functional</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\NodeStore.cpp">
-      <Filter>ripple\module\core\nodestore</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\NodeStore.h">
-      <Filter>ripple\module\core\nodestore</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\api\Backend.h">
-      <Filter>ripple\module\core\nodestore\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\api\Database.h">
-      <Filter>ripple\module\core\nodestore\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\api\DummyScheduler.h">
-      <Filter>ripple\module\core\nodestore\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\api\Factory.h">
-      <Filter>ripple\module\core\nodestore\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\api\Manager.h">
-      <Filter>ripple\module\core\nodestore\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\api\NodeObject.h">
-      <Filter>ripple\module\core\nodestore\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\api\Scheduler.h">
-      <Filter>ripple\module\core\nodestore\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\api\Task.h">
-      <Filter>ripple\module\core\nodestore\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\api\Types.h">
-      <Filter>ripple\module\core\nodestore\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\api\VisitCallback.h">
-      <Filter>ripple\module\core\nodestore\api</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\backend\HyperDBFactory.cpp">
-      <Filter>ripple\module\core\nodestore\backend</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\backend\HyperDBFactory.h">
-      <Filter>ripple\module\core\nodestore\backend</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\backend\LevelDBFactory.cpp">
-      <Filter>ripple\module\core\nodestore\backend</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\backend\LevelDBFactory.h">
-      <Filter>ripple\module\core\nodestore\backend</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\backend\MemoryFactory.cpp">
-      <Filter>ripple\module\core\nodestore\backend</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\backend\MemoryFactory.h">
-      <Filter>ripple\module\core\nodestore\backend</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\backend\NullFactory.cpp">
-      <Filter>ripple\module\core\nodestore\backend</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\backend\NullFactory.h">
-      <Filter>ripple\module\core\nodestore\backend</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\backend\RocksDBFactory.cpp">
-      <Filter>ripple\module\core\nodestore\backend</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\backend\RocksDBFactory.h">
-      <Filter>ripple\module\core\nodestore\backend</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\impl\Backend.cpp">
-      <Filter>ripple\module\core\nodestore\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\impl\BatchWriter.cpp">
-      <Filter>ripple\module\core\nodestore\impl</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\impl\BatchWriter.h">
-      <Filter>ripple\module\core\nodestore\impl</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\impl\Database.cpp">
-      <Filter>ripple\module\core\nodestore\impl</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\impl\DatabaseImp.h">
-      <Filter>ripple\module\core\nodestore\impl</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\impl\DecodedBlob.cpp">
-      <Filter>ripple\module\core\nodestore\impl</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\impl\DecodedBlob.h">
-      <Filter>ripple\module\core\nodestore\impl</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\impl\DummyScheduler.cpp">
-      <Filter>ripple\module\core\nodestore\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\impl\EncodedBlob.cpp">
-      <Filter>ripple\module\core\nodestore\impl</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\impl\EncodedBlob.h">
-      <Filter>ripple\module\core\nodestore\impl</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\impl\Factory.cpp">
-      <Filter>ripple\module\core\nodestore\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\impl\Manager.cpp">
-      <Filter>ripple\module\core\nodestore\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\impl\NodeObject.cpp">
-      <Filter>ripple\module\core\nodestore\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\impl\Scheduler.cpp">
-      <Filter>ripple\module\core\nodestore\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\impl\Task.cpp">
-      <Filter>ripple\module\core\nodestore\impl</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\impl\Tuning.h">
-      <Filter>ripple\module\core\nodestore\impl</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\tests\BackendTests.cpp">
-      <Filter>ripple\module\core\nodestore\tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\tests\BasicTests.cpp">
-      <Filter>ripple\module\core\nodestore\tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\tests\DatabaseTests.cpp">
-      <Filter>ripple\module\core\nodestore\tests</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\tests\TestBase.h">
-      <Filter>ripple\module\core\nodestore\tests</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\tests\TimingTests.cpp">
-      <Filter>ripple\module\core\nodestore\tests</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\module\data\crypto\Base58Data.cpp">
       <Filter>ripple\module\data\crypto</Filter>
     </ClCompile>
@@ -4310,6 +4178,126 @@
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\websocket\autosocket\LogWebsockets.cpp">
       <Filter>ripple\module\websocket\autosocket</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\nodestore\Backend.h">
+      <Filter>ripple\nodestore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\nodestore\Database.h">
+      <Filter>ripple\nodestore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\nodestore\DummyScheduler.h">
+      <Filter>ripple\nodestore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\nodestore\Factory.h">
+      <Filter>ripple\nodestore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\nodestore\Manager.h">
+      <Filter>ripple\nodestore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\nodestore\NodeObject.h">
+      <Filter>ripple\nodestore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\nodestore\Scheduler.h">
+      <Filter>ripple\nodestore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\nodestore\Task.h">
+      <Filter>ripple\nodestore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\nodestore\Types.h">
+      <Filter>ripple\nodestore</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\nodestore\backend\HyperDBFactory.cpp">
+      <Filter>ripple\nodestore\backend</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\nodestore\backend\HyperDBFactory.h">
+      <Filter>ripple\nodestore\backend</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\nodestore\backend\LevelDBFactory.cpp">
+      <Filter>ripple\nodestore\backend</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\nodestore\backend\LevelDBFactory.h">
+      <Filter>ripple\nodestore\backend</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\nodestore\backend\MemoryFactory.cpp">
+      <Filter>ripple\nodestore\backend</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\nodestore\backend\MemoryFactory.h">
+      <Filter>ripple\nodestore\backend</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\nodestore\backend\NullFactory.cpp">
+      <Filter>ripple\nodestore\backend</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\nodestore\backend\NullFactory.h">
+      <Filter>ripple\nodestore\backend</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\nodestore\backend\RocksDBFactory.cpp">
+      <Filter>ripple\nodestore\backend</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\nodestore\backend\RocksDBFactory.h">
+      <Filter>ripple\nodestore\backend</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\nodestore\impl\Backend.cpp">
+      <Filter>ripple\nodestore\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\nodestore\impl\BatchWriter.cpp">
+      <Filter>ripple\nodestore\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\nodestore\impl\BatchWriter.h">
+      <Filter>ripple\nodestore\impl</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\nodestore\impl\Database.cpp">
+      <Filter>ripple\nodestore\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\nodestore\impl\DatabaseImp.h">
+      <Filter>ripple\nodestore\impl</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\nodestore\impl\DecodedBlob.cpp">
+      <Filter>ripple\nodestore\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\nodestore\impl\DecodedBlob.h">
+      <Filter>ripple\nodestore\impl</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\nodestore\impl\DummyScheduler.cpp">
+      <Filter>ripple\nodestore\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\nodestore\impl\EncodedBlob.cpp">
+      <Filter>ripple\nodestore\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\nodestore\impl\EncodedBlob.h">
+      <Filter>ripple\nodestore\impl</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\nodestore\impl\Factory.cpp">
+      <Filter>ripple\nodestore\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\nodestore\impl\Manager.cpp">
+      <Filter>ripple\nodestore\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\nodestore\impl\NodeObject.cpp">
+      <Filter>ripple\nodestore\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\nodestore\impl\Scheduler.cpp">
+      <Filter>ripple\nodestore\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\nodestore\impl\Task.cpp">
+      <Filter>ripple\nodestore\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\nodestore\impl\Tuning.h">
+      <Filter>ripple\nodestore\impl</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\nodestore\tests\BackendTests.cpp">
+      <Filter>ripple\nodestore\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\nodestore\tests\BasicTests.cpp">
+      <Filter>ripple\nodestore\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\nodestore\tests\DatabaseTests.cpp">
+      <Filter>ripple\nodestore\tests</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\nodestore\tests\TestBase.h">
+      <Filter>ripple\nodestore\tests</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\nodestore\tests\TimingTests.cpp">
+      <Filter>ripple\nodestore\tests</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\peerfinder\api\Callback.h">
       <Filter>ripple\peerfinder\api</Filter>
@@ -4785,6 +4773,9 @@
     <ClInclude Include="..\..\src\ripple\unity\net.h">
       <Filter>ripple\unity</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\unity\nodestore.cpp">
+      <Filter>ripple\unity</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\overlay.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>

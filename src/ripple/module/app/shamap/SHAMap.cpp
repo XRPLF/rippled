@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/nodestore/Database.h>
 #include <beast/unit_test/suite.h>
 
 namespace ripple {

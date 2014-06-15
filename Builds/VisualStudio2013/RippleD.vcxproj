@@ -2587,113 +2587,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\core\functional\LoadMonitor.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\NodeStore.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\NodeStore.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\api\Backend.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\api\Database.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\api\DummyScheduler.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\api\Factory.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\api\Manager.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\api\NodeObject.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\api\Scheduler.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\api\Task.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\api\Types.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\api\VisitCallback.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\backend\HyperDBFactory.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\backend\HyperDBFactory.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\backend\LevelDBFactory.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\backend\LevelDBFactory.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\backend\MemoryFactory.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\backend\MemoryFactory.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\backend\NullFactory.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\backend\NullFactory.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\backend\RocksDBFactory.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\backend\RocksDBFactory.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\impl\Backend.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\impl\BatchWriter.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\impl\BatchWriter.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\impl\Database.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\impl\DatabaseImp.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\impl\DecodedBlob.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\impl\DecodedBlob.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\impl\DummyScheduler.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\impl\EncodedBlob.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\impl\EncodedBlob.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\impl\Factory.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\impl\Manager.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\impl\NodeObject.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\impl\Scheduler.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\impl\Task.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\impl\Tuning.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\tests\BackendTests.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\tests\BasicTests.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\tests\DatabaseTests.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\core\nodestore\tests\TestBase.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\nodestore\tests\TimingTests.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\module\data\crypto\Base58Data.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -3111,6 +3004,106 @@
     <ClCompile Include="..\..\src\ripple\module\websocket\autosocket\LogWebsockets.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\nodestore\Backend.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\nodestore\Database.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\nodestore\DummyScheduler.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\nodestore\Factory.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\nodestore\Manager.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\nodestore\NodeObject.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\nodestore\Scheduler.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\nodestore\Task.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\nodestore\Types.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\nodestore\backend\HyperDBFactory.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\nodestore\backend\HyperDBFactory.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\nodestore\backend\LevelDBFactory.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\nodestore\backend\LevelDBFactory.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\nodestore\backend\MemoryFactory.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\nodestore\backend\MemoryFactory.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\nodestore\backend\NullFactory.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\nodestore\backend\NullFactory.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\nodestore\backend\RocksDBFactory.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\nodestore\backend\RocksDBFactory.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\nodestore\impl\Backend.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\nodestore\impl\BatchWriter.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\nodestore\impl\BatchWriter.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\nodestore\impl\Database.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\nodestore\impl\DatabaseImp.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\nodestore\impl\DecodedBlob.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\nodestore\impl\DecodedBlob.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\nodestore\impl\DummyScheduler.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\nodestore\impl\EncodedBlob.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\nodestore\impl\EncodedBlob.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\nodestore\impl\Factory.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\nodestore\impl\Manager.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\nodestore\impl\NodeObject.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\nodestore\impl\Scheduler.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\nodestore\impl\Task.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\nodestore\impl\Tuning.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\nodestore\tests\BackendTests.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\nodestore\tests\BasicTests.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\nodestore\tests\DatabaseTests.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\nodestore\tests\TestBase.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\nodestore\tests\TimingTests.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\peerfinder\api\Callback.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\api\Config.h">
@@ -3445,8 +3438,6 @@
     <ClCompile Include="..\..\src\ripple\unity\common.cpp">
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\core.cpp">
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\src\leveldb\include;..\..\src\rocksdb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\leveldb\include;..\..\src\rocksdb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\unity\core.h">
     </ClInclude>
@@ -3478,6 +3469,10 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\unity\net.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\unity\nodestore.cpp">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\src\leveldb\include;..\..\src\rocksdb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\leveldb\include;..\..\src\rocksdb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\overlay.cpp">
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\peerfinder.cpp">

@@ -19,8 +19,8 @@
 
 #if RIPPLE_ROCKSDB_AVAILABLE
 
+#include <ripple/module/core/functional/Config.h>
 #include <beast/threads/Thread.h>
-
 #include <atomic>
 
 namespace ripple {

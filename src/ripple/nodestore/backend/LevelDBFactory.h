@@ -17,38 +17,24 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_NODESTORE_LEVELDBFACTORY_H_INCLUDED
+#define RIPPLE_NODESTORE_LEVELDBFACTORY_H_INCLUDED
+
+#if RIPPLE_LEVELDB_AVAILABLE
+
+#include <ripple/nodestore/Factory.h>
+
 namespace ripple {
 namespace NodeStore {
 
-DummyScheduler::DummyScheduler ()
-{
-}
-
-DummyScheduler::~DummyScheduler ()
-{
-}
-
-void
-DummyScheduler::scheduleTask (Task& task)
-{
-    // Invoke the task synchronously.
-    task.performScheduledTask();
-}
-
-void
-DummyScheduler::scheduledTasksStopped ()
-{
-}
-
-void
-DummyScheduler::onFetch (const FetchReport& report)
-{
-}
-
-void
-DummyScheduler::onBatchWrite (const BatchWriteReport& report)
-{
-}
+/** Factory to produce LevelDBFactory backends for the NodeStore.
+    @see Database
+*/
+std::unique_ptr <Factory> make_LevelDBFactory ();
 
 }
 }
+
+#endif
+
+#endif

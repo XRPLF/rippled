@@ -21,7 +21,7 @@
 #define RIPPLE_OVERLAY_PEERIMP_H_INCLUDED
 
 #include <ripple/module/overlay/api/predicates.h>
-
+#include <ripple/nodestore/Database.h>
 #include <ripple/common/MultiSocket.h>
 #include <ripple/module/data/protocol/Protocol.h>
 #include <ripple/unity/validators.h>
@@ -1736,6 +1736,8 @@ private:
                 if (obj.has_hash () && (obj.hash ().size () == (256 / 8)))
                 {
                     memcpy (hash.begin (), obj.hash ().data (), 256 / 8);
+                    // VFALCO TODO Move this someplace more sensible so we dont
+                    //             need to inject the NodeStore interfaces.
                     NodeObject::pointer hObj = getApp().getNodeStore ().fetch (hash);
 
                     if (hObj)

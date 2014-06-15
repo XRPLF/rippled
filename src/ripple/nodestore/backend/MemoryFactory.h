@@ -17,16 +17,18 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NODESTORE_LEVELDBFACTORY_H_INCLUDED
-#define RIPPLE_NODESTORE_LEVELDBFACTORY_H_INCLUDED
+#ifndef RIPPLE_NODESTORE_MEMORYFACTORY_H_INCLUDED
+#define RIPPLE_NODESTORE_MEMORYFACTORY_H_INCLUDED
+
+#include <ripple/nodestore/Factory.h>
 
 namespace ripple {
 namespace NodeStore {
 
-/** Factory to produce LevelDBFactory backends for the NodeStore.
+/** Factory to produce a RAM based backend for the NodeStore.
     @see Database
 */
-std::unique_ptr <Factory> make_LevelDBFactory ();
+std::unique_ptr <Factory> make_MemoryFactory ();
 
 }
 }

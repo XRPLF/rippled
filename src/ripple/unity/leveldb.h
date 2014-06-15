@@ -20,10 +20,18 @@
 #ifndef RIPPLE_LEVELDB_H_INCLUDED
 #define RIPPLE_LEVELDB_H_INCLUDED
 
+#ifndef RIPPLE_LEVELDB_AVAILABLE
+# define RIPPLE_LEVELDB_AVAILABLE 1
+#endif
+
+#if RIPPLE_LEVELDB_AVAILABLE
+
 #define SNAPPY
 #include "leveldb/cache.h"
 #include "leveldb/filter_policy.h"
 #include "leveldb/db.h"
 #include "leveldb/write_batch.h"
+
+#endif
 
 #endif

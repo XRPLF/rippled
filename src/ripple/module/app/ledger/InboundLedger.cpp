@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/module/overlay/api/Overlay.h>
+#include <ripple/nodestore/Database.h>
 
 namespace ripple {
 

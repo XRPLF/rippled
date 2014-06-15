@@ -17,33 +17,24 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NODESTORE_FACTORY_H_INCLUDED
-#define RIPPLE_NODESTORE_FACTORY_H_INCLUDED
+#ifndef RIPPLE_NODESTORE_ROCKSDBFACTORY_H_INCLUDED
+#define RIPPLE_NODESTORE_ROCKSDBFACTORY_H_INCLUDED
+
+#if RIPPLE_ROCKSDB_AVAILABLE
+
+#include <ripple/nodestore/Factory.h>
 
 namespace ripple {
 namespace NodeStore {
 
-/** Factory to produce backends. */
-class Factory
-{
-public:
-    virtual ~Factory () = 0;
-
-    /** Retrieve the name of this factory. */
-    virtual beast::String getName () const = 0;
-
-    /** Create an instance of this factory's backend.
-        @param keyBytes The fixed number of bytes per key.
-        @param keyValues A set of key/value configuration pairs.
-        @param scheduler The scheduler to use for running tasks.
-        @return A pointer to the Backend object.
-    */
-    virtual std::unique_ptr <Backend> createInstance (size_t keyBytes,
-        Parameters const& parameters, Scheduler& scheduler,
-            beast::Journal journal) = 0;
-};
+/** Factory to produce RocksDB backends for the NodeStore.
+    @see Database
+*/
+std::unique_ptr <Factory> make_RocksDBFactory ();
 
 }
 }
+
+#endif
 
 #endif

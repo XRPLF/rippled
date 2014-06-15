@@ -20,13 +20,12 @@
 #ifndef RIPPLE_TAGGEDCACHE_H_INCLUDED
 #define RIPPLE_TAGGEDCACHE_H_INCLUDED
 
+#include <ripple/common/UnorderedContainers.h>
 #include <beast/chrono/abstract_clock.h>
 #include <beast/chrono/chrono_io.h>
 #include <beast/Insight.h>
 #include <beast/container/hardened_hash.h>
-
 #include <boost/smart_ptr.hpp>
-
 #include <functional>
 #include <mutex>
 #include <unordered_map>

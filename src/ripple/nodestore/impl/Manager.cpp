@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/nodestore/Manager.h>
+
 namespace ripple {
 namespace NodeStore {
 

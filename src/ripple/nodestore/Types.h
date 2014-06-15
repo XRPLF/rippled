@@ -17,29 +17,41 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NODESTORE_ENCODEDBLOB_H_INCLUDED
-#define RIPPLE_NODESTORE_ENCODEDBLOB_H_INCLUDED
+#ifndef RIPPLE_NODESTORE_TYPES_H_INCLUDED
+#define RIPPLE_NODESTORE_TYPES_H_INCLUDED
+
+#include <ripple/nodestore/NodeObject.h>
+#include <beast/module/core/text/StringPairArray.h>
+#include <vector>
 
 namespace ripple {
 namespace NodeStore {
 
-/** Utility for producing flattened node objects.
-    @note This defines the database format of a NodeObject!
-*/
-// VFALCO TODO Make allocator aware and use short_alloc
-struct EncodedBlob
+enum
 {
-public:
-    void prepare (NodeObject::Ptr const& object);
-    void const* getKey () const noexcept { return m_key; }
-    size_t getSize () const noexcept { return m_size; }
-    void const* getData () const noexcept { return m_data.getData (); }
-
-private:
-    void const* m_key;
-    beast::MemoryBlock m_data;
-    size_t m_size;
+    // This is only used to pre-allocate the array for
+    // batch objects and does not affect the amount written.
+    //
+    batchWritePreallocationSize = 128
 };
+
+/** Return codes from Backend operations. */
+enum Status
+{
+    ok,
+    notFound,
+    dataCorrupt,
+    unknown,
+
+    customCode = 100
+};
+
+/** A batch of NodeObjects to write at once. */
+typedef std::vector <NodeObject::Ptr> Batch;
+
+/** A list of key/value parameter pairs passed to the backend. */
+// VFALCO TODO Use std::string, pair, vector
+typedef beast::StringPairArray Parameters;
 
 }
 }

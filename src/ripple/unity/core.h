@@ -28,8 +28,6 @@
 
 #include <ripple/resource/api/LegacyFees.h>
 
-#include <ripple/module/core/nodestore/NodeStore.h>
-
 #include <ripple/module/core/functional/ConfigSections.h>
 #include <ripple/module/core/functional/Config.h>
 #include <ripple/module/core/functional/LoadFeeTrack.h>

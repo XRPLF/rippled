@@ -17,42 +17,32 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NODESTORE_DECODEDBLOB_H_INCLUDED
-#define RIPPLE_NODESTORE_DECODEDBLOB_H_INCLUDED
+#ifndef RIPPLE_NODESTORE_FACTORY_H_INCLUDED
+#define RIPPLE_NODESTORE_FACTORY_H_INCLUDED
+
+#include <ripple/nodestore/Backend.h>
 
 namespace ripple {
 namespace NodeStore {
 
-/** Parsed key/value blob into NodeObject components.
-
-    This will extract the information required to construct a NodeObject. It
-    also does consistency checking and returns the result, so it is possible
-    to determine if the data is corrupted without throwing an exception. Not
-    all forms of corruption are detected so further analysis will be needed
-    to eliminate false negatives.
-
-    @note This defines the database format of a NodeObject!
-*/
-class DecodedBlob
+/** Factory to produce backends. */
+class Factory
 {
 public:
-    /** Construct the decoded blob from raw data. */
-    DecodedBlob (void const* key, void const* value, int valueBytes);
+    virtual ~Factory () = 0;
 
-    /** Determine if the decoding was successful. */
-    bool wasOk () const noexcept { return m_success; }
+    /** Retrieve the name of this factory. */
+    virtual beast::String getName () const = 0;
 
-    /** Create a NodeObject from this data. */
-    NodeObject::Ptr createObject ();
-
-private:
-    bool m_success;
-
-    void const* m_key;
-    LedgerIndex m_ledgerIndex;
-    NodeObjectType m_objectType;
-    unsigned char const* m_objectData;
-    int m_dataBytes;
+    /** Create an instance of this factory's backend.
+        @param keyBytes The fixed number of bytes per key.
+        @param keyValues A set of key/value configuration pairs.
+        @param scheduler The scheduler to use for running tasks.
+        @return A pointer to the Backend object.
+    */
+    virtual std::unique_ptr <Backend> createInstance (size_t keyBytes,
+        Parameters const& parameters, Scheduler& scheduler,
+            beast::Journal journal) = 0;
 };
 
 }

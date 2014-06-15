@@ -17,39 +17,40 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NODESTORE_TYPES_H_INCLUDED
-#define RIPPLE_NODESTORE_TYPES_H_INCLUDED
+#include <ripple/nodestore/DummyScheduler.h>
 
 namespace ripple {
 namespace NodeStore {
 
-enum
+DummyScheduler::DummyScheduler ()
 {
-    // This is only used to pre-allocate the array for
-    // batch objects and does not affect the amount written.
-    //
-    batchWritePreallocationSize = 128
-};
+}
 
-/** Return codes from Backend operations. */
-enum Status
+DummyScheduler::~DummyScheduler ()
 {
-    ok,
-    notFound,
-    dataCorrupt,
-    unknown,
+}
 
-    customCode = 100
-};
+void
+DummyScheduler::scheduleTask (Task& task)
+{
+    // Invoke the task synchronously.
+    task.performScheduledTask();
+}
 
-/** A batch of NodeObjects to write at once. */
-typedef std::vector <NodeObject::Ptr> Batch;
+void
+DummyScheduler::scheduledTasksStopped ()
+{
+}
 
-/** A list of key/value parameter pairs passed to the backend. */
-// VFALCO TODO Use std::string, pair, vector
-typedef beast::StringPairArray Parameters;
+void
+DummyScheduler::onFetch (const FetchReport& report)
+{
+}
+
+void
+DummyScheduler::onBatchWrite (const BatchWriteReport& report)
+{
+}
 
 }
 }
-
-#endif

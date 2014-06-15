@@ -17,13 +17,17 @@
 */
 //==============================================================================
 
+#if RIPPLE_HYPERLEVELDB_AVAILABLE
+
+#include <ripple/module/core/functional/Config.h>
+
 namespace ripple {
 namespace NodeStore {
 
-class LevelDBBackend
+class HyperDBBackend
     : public Backend
     , public BatchWriter::Callback
-    , public beast::LeakChecked <LevelDBBackend>
+    , public beast::LeakChecked <HyperDBBackend>
 {
 public:
     beast::Journal m_journal;
@@ -31,9 +35,9 @@ public:
     Scheduler& m_scheduler;
     BatchWriter m_batch;
     std::string m_name;
-    std::unique_ptr <leveldb::DB> m_db;
+    std::unique_ptr <hyperleveldb::DB> m_db;
 
-    LevelDBBackend (int keyBytes, Parameters const& keyValues,
+    HyperDBBackend (size_t keyBytes, Parameters const& keyValues,
         Scheduler& scheduler, beast::Journal journal)
         : m_journal (journal)
         , m_keyBytes (keyBytes)
@@ -41,50 +45,47 @@ public:
         , m_batch (*this, scheduler)
         , m_name (keyValues ["path"].toStdString ())
     {
-        if (m_name.empty())
+        if (m_name.empty ())
             throw std::runtime_error ("Missing path in LevelDBFactory backend");
 
-        leveldb::Options options;
+        hyperleveldb::Options options;
         options.create_if_missing = true;
 
-        if (keyValues["cache_mb"].isEmpty())
+        if (keyValues ["cache_mb"].isEmpty ())
         {
-            options.block_cache = leveldb::NewLRUCache (getConfig ().getSize (siHashNodeDBCache) * 1024 * 1024);
+            options.block_cache = hyperleveldb::NewLRUCache (getConfig ().getSize (siHashNodeDBCache) * 1024 * 1024);
         }
         else
         {
-            options.block_cache = leveldb::NewLRUCache (keyValues["cache_mb"].getIntValue() * 1024L * 1024L);
+            options.block_cache = hyperleveldb::NewLRUCache (keyValues["cache_mb"].getIntValue() * 1024L * 1024L);
         }
 
-        if (keyValues["filter_bits"].isEmpty())
+        if (keyValues ["filter_bits"].isEmpty())
         {
             if (getConfig ().NODE_SIZE >= 2)
-                options.filter_policy = leveldb::NewBloomFilterPolicy (10);
+                options.filter_policy = hyperleveldb::NewBloomFilterPolicy (10);
         }
-        else if (keyValues["filter_bits"].getIntValue() != 0)
+        else if (keyValues ["filter_bits"].getIntValue() != 0)
         {
-            options.filter_policy = leveldb::NewBloomFilterPolicy (keyValues["filter_bits"].getIntValue());
+            options.filter_policy = hyperleveldb::NewBloomFilterPolicy (keyValues ["filter_bits"].getIntValue ());
         }
 
-        if (! keyValues["open_files"].isEmpty())
+        if (! keyValues["open_files"].isEmpty ())
         {
-            options.max_open_files = keyValues["open_files"].getIntValue();
+            options.max_open_files = keyValues ["open_files"].getIntValue();
         }
 
-        if (! keyValues["compression"].isEmpty ())
-        {
-            if (keyValues["compression"].getIntValue () == 0)
-            {
-                options.compression = leveldb::kNoCompression;
-            }
-        }
-
-        leveldb::DB* db = nullptr;
-        leveldb::Status status = leveldb::DB::Open (options, m_name, &db);
+        hyperleveldb::DB* db = nullptr;
+        hyperleveldb::Status status = hyperleveldb::DB::Open (options, m_name, &db);
         if (!status.ok () || !db)
-            throw std::runtime_error (std::string("Unable to open/create leveldb: ") + status.ToString());
+            throw std::runtime_error (std::string (
+                "Unable to open/create hyperleveldb: ") + status.ToString());
 
         m_db.reset (db);
+    }
+
+    ~HyperDBBackend ()
+    {
     }
 
     std::string
@@ -102,11 +103,12 @@ public:
 
         Status status (ok);
 
-        leveldb::ReadOptions const options;
-        leveldb::Slice const slice (static_cast <char const*> (key), m_keyBytes);
+        hyperleveldb::ReadOptions const options;
+        hyperleveldb::Slice const slice (static_cast <char const*> (key), m_keyBytes);
+
         std::string string;
 
-        leveldb::Status getStatus = m_db->Get (options, slice, &string);
+        hyperleveldb::Status getStatus = m_db->Get (options, slice, &string);
 
         if (getStatus.ok ())
         {
@@ -151,7 +153,7 @@ public:
     void
     storeBatch (Batch const& batch)
     {
-        leveldb::WriteBatch wb;
+        hyperleveldb::WriteBatch wb;
 
         EncodedBlob encoded;
 
@@ -160,31 +162,30 @@ public:
             encoded.prepare (e);
 
             wb.Put (
-                leveldb::Slice (reinterpret_cast <char const*> (
+                hyperleveldb::Slice (reinterpret_cast <char const*> (
                     encoded.getKey ()), m_keyBytes),
-                leveldb::Slice (reinterpret_cast <char const*> (
+                hyperleveldb::Slice (reinterpret_cast <char const*> (
                     encoded.getData ()), encoded.getSize ()));
         }
 
-        leveldb::WriteOptions const options;
+        hyperleveldb::WriteOptions const options;
 
         m_db->Write (options, &wb).ok ();
     }
 
     void
-    for_each (std::function <void(NodeObject::Ptr)> f)
+    for_each (std::function <void (NodeObject::Ptr)> f)
     {
-        leveldb::ReadOptions const options;
+        hyperleveldb::ReadOptions const options;
 
-        std::unique_ptr <leveldb::Iterator> it (m_db->NewIterator (options));
+        std::unique_ptr <hyperleveldb::Iterator> it (m_db->NewIterator (options));
 
         for (it->SeekToFirst (); it->Valid (); it->Next ())
         {
             if (it->key ().size () == m_keyBytes)
             {
                 DecodedBlob decoded (it->key ().data (),
-                                                it->value ().data (),
-                                                it->value ().size ());
+                    it->value ().data (), it->value ().size ());
 
                 if (decoded.wasOk ())
                 {
@@ -193,16 +194,16 @@ public:
                 else
                 {
                     // Uh oh, corrupted data!
-                    if (m_journal.fatal) m_journal.fatal <<
-                        "Corrupt NodeObject #" << uint256(it->key ().data ());
+                    m_journal.fatal <<
+                        "Corrupt NodeObject #" << uint256::fromVoid (it->key ().data ());
                 }
             }
             else
             {
                 // VFALCO NOTE What does it mean to find an
                 //             incorrectly sized key? Corruption?
-                if (m_journal.fatal) m_journal.fatal <<
-                    "Bad key size = " << it->key().size();
+                m_journal.fatal <<
+                    "Bad key size = " << it->key ().size ();
             }
         }
     }
@@ -224,41 +225,23 @@ public:
 
 //------------------------------------------------------------------------------
 
-class LevelDBFactory : public Factory
+class HyperDBFactory : public NodeStore::Factory
 {
 public:
-    std::unique_ptr <leveldb::Cache> m_lruCache;
-
-    class BackendImp;
-
-    LevelDBFactory ()
-        : m_lruCache (nullptr)
-    {
-        leveldb::Options options;
-        options.create_if_missing = true;
-        options.block_cache = leveldb::NewLRUCache (
-            getConfig ().getSize (siHashNodeDBCache) * 1024 * 1024);
-        m_lruCache.reset (options.block_cache);
-    }
-
-    ~LevelDBFactory()
-    {
-    }
-
     beast::String
     getName () const
     {
-        return "LevelDB";
+        return "HyperLevelDB";
     }
 
-    std::unique_ptr <Backend>    
-    createInstance(
+    std::unique_ptr <Backend>
+    createInstance (
         size_t keyBytes,
         Parameters const& keyValues,
         Scheduler& scheduler,
         beast::Journal journal)
     {
-        return std::make_unique <LevelDBBackend> (
+        return std::make_unique <HyperDBBackend> (
             keyBytes, keyValues, scheduler, journal);
     }
 };
@@ -266,10 +249,12 @@ public:
 //------------------------------------------------------------------------------
 
 std::unique_ptr <Factory>
-make_LevelDBFactory ()
+make_HyperDBFactory ()
 {
-    return std::make_unique <LevelDBFactory> ();
+    return std::make_unique <HyperDBFactory> ();
 }
 
 }
 }
+
+#endif

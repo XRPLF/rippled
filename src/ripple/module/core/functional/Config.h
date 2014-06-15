@@ -20,7 +20,13 @@
 #ifndef RIPPLE_CORE_CONFIG_H_INCLUDED
 #define RIPPLE_CORE_CONFIG_H_INCLUDED
 
+#include <ripple/unity/json.h>
+#include <ripple/module/data/protocol/RippleAddress.h>
 #include <beast/module/core/files/File.h>
+#include <beast/http/URL.h>
+#include <boost/filesystem.hpp>
+#include <cstdint>
+#include <string>
 
 namespace ripple {
 

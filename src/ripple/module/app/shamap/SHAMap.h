@@ -21,7 +21,7 @@
 #define RIPPLE_SHAMAP_H
 
 #include <ripple/module/app/main/FullBelowCache.h>
-
+#include <ripple/nodestore/NodeObject.h>
 #include <ripple/unity/radmap.h>
 
 #include <unordered_map>

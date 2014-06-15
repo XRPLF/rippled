@@ -22,9 +22,11 @@
 #include <ripple/common/seconds_clock.h>
 #include <ripple/module/rpc/api/Manager.h>
 #include <ripple/module/overlay/api/make_Overlay.h>
-#include <ripple/module/overlay/api/make_Overlay.h>
 #include <ripple/common/seconds_clock.h>
 #include <ripple/module/rpc/api/Manager.h>
+#include <ripple/nodestore/Database.h>
+#include <ripple/nodestore/DummyScheduler.h>
+#include <ripple/nodestore/Manager.h>
 
 #include <beast/module/core/thread/DeadlineTimer.h>
 

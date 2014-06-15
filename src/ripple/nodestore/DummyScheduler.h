@@ -17,16 +17,25 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NODESTORE_ROCKSDBFACTORY_H_INCLUDED
-#define RIPPLE_NODESTORE_ROCKSDBFACTORY_H_INCLUDED
+#ifndef RIPPLE_NODESTORE_DUMMYSCHEDULER_H_INCLUDED
+#define RIPPLE_NODESTORE_DUMMYSCHEDULER_H_INCLUDED
+
+#include <ripple/nodestore/Scheduler.h>
 
 namespace ripple {
 namespace NodeStore {
 
-/** Factory to produce RocksDB backends for the NodeStore.
-    @see Database
-*/
-std::unique_ptr <Factory> make_RocksDBFactory ();
+/** Simple NodeStore Scheduler that just peforms the tasks synchronously. */
+class DummyScheduler : public Scheduler
+{
+public:
+    DummyScheduler ();
+    ~DummyScheduler ();
+    void scheduleTask (Task& task);
+    void scheduledTasksStopped ();
+    void onFetch (FetchReport const& report) override;
+    void onBatchWrite (BatchWriteReport const& report) override;
+};
 
 }
 }

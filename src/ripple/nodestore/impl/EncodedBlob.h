@@ -17,22 +17,33 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NODESTORE_HYPERDBFACTORY_H_INCLUDED
-#define RIPPLE_NODESTORE_HYPERDBFACTORY_H_INCLUDED
+#ifndef RIPPLE_NODESTORE_ENCODEDBLOB_H_INCLUDED
+#define RIPPLE_NODESTORE_ENCODEDBLOB_H_INCLUDED
 
-#if RIPPLE_HYPERLEVELDB_AVAILABLE
+#include <beast/module/core/memory/MemoryBlock.h>
 
 namespace ripple {
 namespace NodeStore {
 
-/** Factory to produce HyperLevelDB backends for the NodeStore.
-    @see Database
+/** Utility for producing flattened node objects.
+    @note This defines the database format of a NodeObject!
 */
-std::unique_ptr <Factory> make_HyperDBFactory ();
+// VFALCO TODO Make allocator aware and use short_alloc
+struct EncodedBlob
+{
+public:
+    void prepare (NodeObject::Ptr const& object);
+    void const* getKey () const noexcept { return m_key; }
+    size_t getSize () const noexcept { return m_size; }
+    void const* getData () const noexcept { return m_data.getData (); }
+
+private:
+    void const* m_key;
+    beast::MemoryBlock m_data;
+    size_t m_size;
+};
 
 }
 }
-
-#endif
 
 #endif

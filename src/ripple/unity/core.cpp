@@ -29,7 +29,6 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
 
-#include <ripple/module/core/nodestore/NodeStore.cpp>
 #include <beast/http/ParsedURL.h>
 #include <ripple/unity/net.h> // for HTTPClient
 

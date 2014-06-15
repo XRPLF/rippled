@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/nodestore/Database.h>
+
 namespace ripple {
 
 ConsensusTransSetSF::ConsensusTransSetSF (NodeCache& nodeCache)

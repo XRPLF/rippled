@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_H
 #define RIPPLE_PROTOCOL_H
 
+#include <ripple/types/api/base_uint.h>
 #include <cstdint>
 
 namespace ripple {
