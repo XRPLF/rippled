@@ -21,6 +21,7 @@
 #define BEAST_WORKERS_H_INCLUDED
 
 #include <beast/module/core/system/SystemStats.h>
+#include <beast/threads/Thread.h>
 #include <beast/threads/semaphore.h>
 
 namespace beast {
