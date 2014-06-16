@@ -582,7 +582,7 @@ for toolchain in ['gcc', 'clang', 'msvc']:
             env.Alias ('install', install_target)
             env.Default (install_target)
             aliases['all'].extend(install_target)
-        if toolchain == 'msvc' and 'msvc' in toolchains:
+        if toolchain == 'msvc':
             config = env.VSProjectConfig(variant, 'x64', target, env)
             msvc_configs.append(config)
         if toolchain in toolchains:
