@@ -95,7 +95,7 @@ def is_subdir(child, parent):
     return os.path.commonprefix([parent, child]) == parent
 
 def itemList(items, sep):
-    if type(items) == str:  # Won't work in Python 3.
+    if isinstance(items, str):      # Should work in Python 3, unlike 'type(items) == str'
         return items
     def gen():
         for item in sorted(items):
@@ -122,9 +122,20 @@ class SwitchConverter(object):
             self.table[key + '-'] = [value[0], 'False']
 
     def getXml(self, switches, prefix = ''):
-        if type(switches) != list:
+        if not isinstance(switches, list):
             switches = list(switches)
         xml = []
+        for regex, tag in self.retable:
+            matches = []
+            for switch in switches[:]:
+                match = regex.match(switch)
+                if match:
+                    matches.append(match.group(1))
+                    switches.remove(switch)
+            if len(matches) > 0:
+                xml.append (
+                    '%s<%s>%s</%s>\r\n' % (
+                        prefix, tag, ';'.join(matches), tag))
         unknown = []
         for switch in switches:
             try:
@@ -236,6 +247,9 @@ class ClSwitchConverter(SwitchConverter):
             '/errorReport:queue'  : ['ErrorReporting', 'Queue'],
             '/errorReport:send'   : ['ErrorReporting', 'Send'],
         }
+        retable = [
+            (re.compile(r'/wd\"(\d+)\"'), 'DisableSpecificWarnings'),
+        ]
         # Ideas from Google's Generate Your Project
         '''
         _Same(_compile, 'AdditionalIncludeDirectories', _folder_list)  # /I

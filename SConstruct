@@ -488,7 +488,7 @@ for source in [
 # Declare the targets
 aliases = collections.defaultdict(list)
 msvc_configs = []
-for toolchain in toolchains:
+for toolchain in ['gcc', 'clang', 'msvc']:
     for variant in variants:
         # Configure this variant's construction environment
         env = base.Clone()
@@ -582,14 +582,15 @@ for toolchain in toolchains:
             env.Alias ('install', install_target)
             env.Default (install_target)
             aliases['all'].extend(install_target)
-        if toolchain == 'msvc':
+        if toolchain == 'msvc' and has_msvc:
             config = env.VSProjectConfig(variant, 'x64', target, env)
             msvc_configs.append(config)
         if toolchain in toolchains:
             aliases['all'].extend(target)
-        aliases[variant].extend(target)
-        aliases[toolchain].extend(target)
-        env.Alias(variant_name, target)
+            aliases[variant].extend(target)
+            aliases[toolchain].extend(target)
+            env.Alias(variant_name, target)
+
 for key, value in aliases.iteritems():
     env.Alias(key, value)
 
