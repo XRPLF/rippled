@@ -17,11 +17,13 @@
 */
 //==============================================================================
 
+#if _MSC_VER
+
+#include <windows.h>
+
 namespace ripple {
 
 // VFALCO TODO use beast::Thread::setCurrentThreadName() or something similar.
-
-#if _MSC_VER
 
 void setCallingThreadName (char const* threadName)
 {
@@ -50,7 +52,12 @@ void setCallingThreadName (char const* threadName)
     }
 }
 
+} // ripple
+
 #else
+
+namespace ripple {
+
 #ifdef PR_SET_NAME
 #define HAVE_NAME_THREAD
 extern void setCallingThreadName (const char* n)
@@ -89,9 +96,9 @@ extern void setCallingThreadName (const char* n)
 #ifndef HAVE_NAME_THREAD
 extern void setCallingThreadName (const char*)
 {
-    ;
 }
-#endif
 #endif
 
 } // ripple
+
+#endif

@@ -17,6 +17,20 @@
 */
 //==============================================================================
 
+#include <ripple/module/basics/utility/ThreadName.h>
+    
+// For Sustain Linux variants
+// VFALCO TODO Rewrite Sustain to use beast::Process
+#ifdef __linux__
+#include <sys/types.h>
+#include <sys/prctl.h>
+#include <sys/wait.h>
+#endif
+#ifdef __FreeBSD__
+#include <sys/types.h>
+#include <sys/wait.h>
+#endif
+
 namespace ripple {
 
 #ifdef __unix__

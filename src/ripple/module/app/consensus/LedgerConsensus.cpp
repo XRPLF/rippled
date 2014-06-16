@@ -875,7 +875,7 @@ private:
 
             Ledger::pointer newLCL
                 = std::make_shared<Ledger> (false
-                , boost::ref (*mPreviousLedger));
+                , std::ref (*mPreviousLedger));
 
             // Set up to write SHAMap changes to our database,
             //   perform updates, extract changes
@@ -968,7 +968,7 @@ private:
             getApp().getLedgerMaster().consensusBuilt (newLCL);
 
             Ledger::pointer newOL = std::make_shared<Ledger>
-                (true, boost::ref (*newLCL));
+                (true, std::ref (*newLCL));
             LedgerMaster::ScopedLockType sl
                 (getApp().getLedgerMaster ().peekMutex ());
 
@@ -987,7 +987,7 @@ private:
                         SerializerIterator sit (it.second->peekTransaction ());
                         SerializedTransaction::pointer txn
                             = std::make_shared<SerializedTransaction>
-                            (boost::ref (sit));
+                            (std::ref (sit));
 
                         if (applyTransaction (engine, txn, newOL, true, false))
                         {
@@ -1269,7 +1269,7 @@ private:
                     SerializerIterator sit (item->peekSerializer ());
                     SerializedTransaction::pointer txn
                         = std::make_shared<SerializedTransaction>
-                        (boost::ref (sit));
+                        (std::ref (sit));
 
                     if (applyTransaction (engine, txn,
                         applyLedger, openLgr, true) == resultRetry)

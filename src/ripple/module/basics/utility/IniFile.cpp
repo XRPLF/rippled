@@ -17,7 +17,9 @@
 */
 //==============================================================================
 
+#include <ripple/module/basics/utility/IniFile.h>
 #include <boost/algorithm/string.hpp>
+#include <boost/format.hpp>
 
 namespace ripple {
 
@@ -53,8 +55,6 @@ Section ParseSection (const std::string& strInput, const bool bTrim)
         if (strValue.empty () || strValue[0] == '#')
         {
             // Blank line or comment, do nothing.
-
-            nothing ();
         }
         else if (strValue[0] == '[' && strValue[strValue.length () - 1] == ']')
         {

@@ -20,6 +20,8 @@
 #ifndef BEAST_ASIO_TESTS_TESTPEERBASICS_H_INCLUDED
 #define BEAST_ASIO_TESTS_TESTPEERBASICS_H_INCLUDED
 
+#include <boost/asio/ssl/stream_base.hpp>
+
 namespace beast {
 namespace asio {
 

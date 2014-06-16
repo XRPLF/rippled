@@ -20,16 +20,18 @@
 #ifndef RIPPLE_BASICTYPES_H
 #define RIPPLE_BASICTYPES_H
 
+#include <mutex>
+
 namespace ripple {
 
 /** Synchronization primitives.
     This lets us switch between tracked and untracked mutexes.
 */
 typedef std::mutex RippleMutex;
-typedef boost::recursive_mutex RippleRecursiveMutex;
+typedef std::recursive_mutex RippleRecursiveMutex;
 
-typedef boost::recursive_mutex DeprecatedRecursiveMutex;
-typedef DeprecatedRecursiveMutex::scoped_lock DeprecatedScopedLock;
+typedef std::recursive_mutex DeprecatedRecursiveMutex;
+typedef std::lock_guard<DeprecatedRecursiveMutex> DeprecatedScopedLock;
 
 //------------------------------------------------------------------------------
 

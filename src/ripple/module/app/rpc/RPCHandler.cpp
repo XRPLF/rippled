@@ -17,6 +17,11 @@
 */
 //==============================================================================
 
+#include <ripple/common/jsonrpc_fields.h>
+#include <ripple/module/app/rpc/RPCHandler.h>
+#include <ripple/module/app/rpc/RPCServerHandler.h>
+#include <ripple/module/app/main/RPCHTTPServer.h>
+
 namespace ripple {
 
 //

@@ -28,13 +28,11 @@
 
 #include <BeastConfig.h>
 
-#include <beast/module/core/system/BeforeBoost.h>
 #include <boost/version.hpp>
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/asio.hpp>
 #include <boost/make_shared.hpp>
-#include <boost/bind.hpp>
 #include <boost/array.hpp>
 #include <boost/foreach.hpp>
 #include <boost/mpl/at.hpp>

@@ -20,6 +20,11 @@
 #ifndef RIPPLE_RANGESET_H_INCLUDED
 #define RIPPLE_RANGESET_H_INCLUDED
 
+#include <beast/utility/noexcept.h>
+#include <cstdint>
+#include <map>
+#include <string>
+
 namespace ripple {
 
 /** A sparse set of integers. */

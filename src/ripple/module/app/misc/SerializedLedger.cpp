@@ -86,7 +86,7 @@ SerializedLedgerEntry::SerializedLedgerEntry (LedgerEntryType type, uint256 cons
 
 SerializedLedgerEntry::pointer SerializedLedgerEntry::getMutable () const
 {
-    SerializedLedgerEntry::pointer ret = std::make_shared<SerializedLedgerEntry> (boost::cref (*this));
+    SerializedLedgerEntry::pointer ret = std::make_shared<SerializedLedgerEntry> (std::cref (*this));
     ret->mMutable = true;
     return ret;
 }

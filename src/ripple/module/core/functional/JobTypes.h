@@ -17,8 +17,12 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_JOBTYPES_H_INCLUDED
+#define RIPPLE_JOBTYPES_H_INCLUDED
+
 #include <ripple/module/core/functional/Job.h>
 #include <ripple/module/core/functional/JobTypeInfo.h>
+#include <map>
 
 namespace ripple
 {
@@ -224,3 +228,5 @@ private:
 };
 
 }
+
+#endif

@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/module/basics/utility/CountedObject.h>
+
 namespace ripple {
 
 CountedObjects& CountedObjects::getInstance ()

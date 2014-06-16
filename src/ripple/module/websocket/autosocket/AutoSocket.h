@@ -21,6 +21,7 @@
 #define __AUTOSOCKET_H_
 
 #include <beast/asio/bind_handler.h>
+#include <beast/asio/placeholders.h>
 
 // Socket wrapper that supports both SSL and non-SSL connections.
 // Generally, handle it as you would an SSL connection.
@@ -44,14 +45,14 @@ public:
         : mSecure (false)
         , mBuffer (4)
     {
-        mSocket = std::make_shared<ssl_socket> (boost::ref (s), boost::ref (c));
+        mSocket = std::make_shared<ssl_socket> (s, c);
     }
 
     AutoSocket (boost::asio::io_service& s, boost::asio::ssl::context& c, bool secureOnly, bool plainOnly)
         : mSecure (secureOnly)
         , mBuffer ((plainOnly || secureOnly) ? 0 : 4)
     {
-        mSocket = std::make_shared<ssl_socket> (boost::ref (s), boost::ref (c));
+        mSocket = std::make_shared<ssl_socket> (s, c);
     }
 
     boost::asio::io_service& get_io_service () noexcept
@@ -117,7 +118,7 @@ public:
         mSocket->set_verify_mode (boost::asio::ssl::verify_peer);
 
         // XXX Verify semantics of RFC 2818 are what we want.
-        mSocket->set_verify_callback (boost::bind (&rfc2818_verify, strDomain, boost::placeholders::_1, boost::placeholders::_2), ec);
+        mSocket->set_verify_callback (std::bind (&rfc2818_verify, strDomain, std::placeholders::_1, std::placeholders::_2), ec);
 
         return ec;
     }
@@ -150,8 +151,8 @@ public:
         {
             // autodetect
             mSocket->next_layer ().async_receive (boost::asio::buffer (mBuffer), boost::asio::socket_base::message_peek,
-                                                  boost::bind (&AutoSocket::handle_autodetect, this, cbFunc,
-                                                          boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+                                                  std::bind (&AutoSocket::handle_autodetect, this, cbFunc,
+                                                          beast::asio::placeholders::error, beast::asio::placeholders::bytes_transferred));
         }
     }
 

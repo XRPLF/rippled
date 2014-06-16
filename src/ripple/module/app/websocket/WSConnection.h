@@ -20,6 +20,8 @@
 #ifndef RIPPLE_WSCONNECTION_H
 #define RIPPLE_WSCONNECTION_H
 
+#include <beast/asio/placeholders.h>
+
 namespace ripple {
 
 /** A Ripple WebSocket connection handler.
@@ -146,7 +148,7 @@ public:
         connection_ptr ptr = m_connection.lock ();
 
         if (ptr)
-            m_io_service.dispatch (ptr->get_strand ().wrap (boost::bind (
+            m_io_service.dispatch (ptr->get_strand ().wrap (std::bind (
                 &WSConnectionType <endpoint_type>::handle_disconnect,
                     m_connection)));
     }
@@ -193,8 +195,8 @@ public:
                 (getConfig ().WEBSOCKET_PING_FREQ));
 
             m_pingTimer.async_wait (ptr->get_strand ().wrap (
-                boost::bind (&WSConnectionType <endpoint_type>::pingTimer,
-                    m_connection, &m_serverHandler, boost::asio::placeholders::error)));
+                std::bind (&WSConnectionType <endpoint_type>::pingTimer,
+                    m_connection, &m_serverHandler, beast::asio::placeholders::error)));
         }
     }
 

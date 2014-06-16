@@ -24,7 +24,6 @@
 
 #include <beast/Crypto.h>
 
-#include <beast/module/core/system/BeforeBoost.h>
 #include <boost/utility/base_from_member.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/unordered_set.hpp>

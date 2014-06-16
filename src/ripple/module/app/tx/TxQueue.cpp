@@ -17,6 +17,11 @@
 */
 //==============================================================================
 
+#include <ripple/module/app/tx/TxQueue.h>
+#include <boost/bimap.hpp>
+#include <boost/bimap/unordered_set_of.hpp>
+#include <boost/bimap/list_of.hpp>
+
 namespace ripple {
 
 class TxQueueImp

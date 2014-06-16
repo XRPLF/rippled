@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <beast/asio/placeholders.h>
 #include <beast/threads/Thread.h>
 
 namespace ripple {
@@ -91,13 +92,13 @@ public:
         mSocket.open (boost::asio::ip::udp::v4 ());
 
         mSocket.async_receive_from (boost::asio::buffer (mReceiveBuffer, 256),
-            mReceiveEndpoint, boost::bind (
+            mReceiveEndpoint, std::bind (
                 &SNTPClientImp::receivePacket, this,
-                    boost::asio::placeholders::error,
-                        boost::asio::placeholders::bytes_transferred));
+                    beast::asio::placeholders::error,
+                        beast::asio::placeholders::bytes_transferred));
 
         mTimer.expires_from_now (boost::posix_time::seconds (NTP_QUERY_FREQUENCY));
-        mTimer.async_wait (boost::bind (&SNTPClientImp::timerEntry, this, boost::asio::placeholders::error));
+        mTimer.async_wait (std::bind (&SNTPClientImp::timerEntry, this, beast::asio::placeholders::error));
     }
 
     ~SNTPClientImp ()
@@ -193,8 +194,8 @@ public:
 
         boost::asio::ip::udp::resolver::query query (boost::asio::ip::udp::v4 (), best->first, "ntp");
         mResolver.async_resolve (query,
-                                 boost::bind (&SNTPClientImp::resolveComplete, this,
-                                              boost::asio::placeholders::error, boost::asio::placeholders::iterator));
+                                 std::bind (&SNTPClientImp::resolveComplete, this,
+                                              beast::asio::placeholders::error, beast::asio::placeholders::iterator));
     #ifdef SNTP_DEBUG
         WriteLog (lsTRACE, SNTPClient) << "SNTP: Resolve pending for " << best->first;
     #endif
@@ -231,8 +232,8 @@ public:
                 reinterpret_cast<std::uint32_t*> (SNTPQueryData)[NTP_OFF_XMITTS_INT] = static_cast<std::uint32_t> (time (nullptr)) + NTP_UNIX_OFFSET;
                 reinterpret_cast<std::uint32_t*> (SNTPQueryData)[NTP_OFF_XMITTS_FRAC] = query.mQueryNonce;
                 mSocket.async_send_to (boost::asio::buffer (SNTPQueryData, 48), *sel,
-                                       boost::bind (&SNTPClientImp::sendComplete, this,
-                                                    boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+                                       std::bind (&SNTPClientImp::sendComplete, this,
+                                                    beast::asio::placeholders::error, beast::asio::placeholders::bytes_transferred));
             }
         }
     }
@@ -268,8 +269,8 @@ public:
         }
 
         mSocket.async_receive_from (boost::asio::buffer (mReceiveBuffer, 256), mReceiveEndpoint,
-                                    boost::bind (&SNTPClientImp::receivePacket, this, boost::asio::placeholders::error,
-                                            boost::asio::placeholders::bytes_transferred));
+                                    std::bind (&SNTPClientImp::receivePacket, this, beast::asio::placeholders::error,
+                                            beast::asio::placeholders::bytes_transferred));
     }
 
     void sendComplete (const boost::system::error_code& error, std::size_t)
@@ -336,7 +337,7 @@ public:
         {
             doQuery ();
             mTimer.expires_from_now (boost::posix_time::seconds (NTP_QUERY_FREQUENCY));
-            mTimer.async_wait (boost::bind (&SNTPClientImp::timerEntry, this, boost::asio::placeholders::error));
+            mTimer.async_wait (std::bind (&SNTPClientImp::timerEntry, this, beast::asio::placeholders::error));
         }
     }
 

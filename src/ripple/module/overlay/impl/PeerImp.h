@@ -192,7 +192,7 @@ public:
 
     std::list<uint256>    m_recentLedgers;
     std::list<uint256>    m_recentTxSets;
-    mutable boost::mutex  m_recentLock;
+    mutable std::mutex  m_recentLock;
 
     boost::asio::deadline_timer         m_timer;
 
@@ -586,7 +586,7 @@ public:
 
     bool hasLedger (uint256 const& hash, std::uint32_t seq) const
     {
-        boost::mutex::scoped_lock sl(m_recentLock);
+        std::lock_guard<std::mutex> sl(m_recentLock);
 
         if ((seq != 0) && (seq >= m_minLedger) && (seq <= m_maxLedger))
             return true;
@@ -602,7 +602,7 @@ public:
 
     void ledgerRange (std::uint32_t& minSeq, std::uint32_t& maxSeq) const
     {
-        boost::mutex::scoped_lock sl(m_recentLock);
+        std::lock_guard<std::mutex> sl(m_recentLock);
 
         minSeq = m_minLedger;
         maxSeq = m_maxLedger;
@@ -610,7 +610,7 @@ public:
 
     bool hasTxSet (uint256 const& hash) const
     {
-        boost::mutex::scoped_lock sl(m_recentLock);
+        std::lock_guard<std::mutex> sl(m_recentLock);
         BOOST_FOREACH (uint256 const & set, m_recentTxSets)
 
         if (set == hash)
@@ -1508,7 +1508,7 @@ private:
         {
     #endif
             SerializerIterator sit (s);
-            SerializedTransaction::pointer stx = std::make_shared<SerializedTransaction> (boost::ref (sit));
+            SerializedTransaction::pointer stx = std::make_shared<SerializedTransaction> (std::ref (sit));
             uint256 txID = stx->getTransactionID();
 
             int flags;
@@ -1571,7 +1571,7 @@ private:
         {
             Serializer s (packet->validation ());
             SerializerIterator sit (s);
-            SerializedValidation::pointer val = std::make_shared<SerializedValidation> (boost::ref (sit), false);
+            SerializedValidation::pointer val = std::make_shared<SerializedValidation> (std::ref (sit), false);
 
             if (closeTime > (120 + val->getFieldU32(sfSigningTime)))
             {
@@ -2198,7 +2198,7 @@ private:
 
     void addLedger (uint256 const& hash)
     {
-        boost::mutex::scoped_lock sl(m_recentLock);
+        std::lock_guard<std::mutex> sl(m_recentLock);
         BOOST_FOREACH (uint256 const & ledger, m_recentLedgers)
 
         if (ledger == hash)
@@ -2550,7 +2550,7 @@ private:
 
     void addTxSet (uint256 const& hash)
     {
-        boost::mutex::scoped_lock sl(m_recentLock);
+        std::lock_guard<std::mutex> sl(m_recentLock);
 
         if(std::find (m_recentTxSets.begin (), m_recentTxSets.end (), hash) != m_recentTxSets.end ())
         	return;

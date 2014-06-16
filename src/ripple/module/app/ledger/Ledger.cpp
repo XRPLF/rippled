@@ -469,12 +469,12 @@ SerializedTransaction::pointer Ledger::getSTransaction (SHAMapItem::ref item, SH
     SerializerIterator sit (item->peekSerializer ());
 
     if (type == SHAMapTreeNode::tnTRANSACTION_NM)
-        return std::make_shared<SerializedTransaction> (boost::ref (sit));
+        return std::make_shared<SerializedTransaction> (std::ref (sit));
     else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
     {
         Serializer sTxn (sit.getVL ());
         SerializerIterator tSit (sTxn);
-        return std::make_shared<SerializedTransaction> (boost::ref (tSit));
+        return std::make_shared<SerializedTransaction> (std::ref (tSit));
     }
 
     return SerializedTransaction::pointer ();
@@ -488,7 +488,7 @@ SerializedTransaction::pointer Ledger::getSMTransaction (SHAMapItem::ref item, S
     if (type == SHAMapTreeNode::tnTRANSACTION_NM)
     {
         txMeta.reset ();
-        return std::make_shared<SerializedTransaction> (boost::ref (sit));
+        return std::make_shared<SerializedTransaction> (std::ref (sit));
     }
     else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
     {
@@ -496,7 +496,7 @@ SerializedTransaction::pointer Ledger::getSMTransaction (SHAMapItem::ref item, S
         SerializerIterator tSit (sTxn);
 
         txMeta = std::make_shared<TransactionMetaSet> (item->getTag (), mLedgerSeq, sit.getVL ());
-        return std::make_shared<SerializedTransaction> (boost::ref (tSit));
+        return std::make_shared<SerializedTransaction> (std::ref (tSit));
     }
 
     txMeta.reset ();

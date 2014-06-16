@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/module/app/main/IoServicePool.h>
+#include <beast/threads/Thread.h>
 #include <beast/cxx14/memory.h> // <memory>
 
 namespace ripple {
@@ -25,7 +27,7 @@ class IoServicePool::ServiceThread : private beast::Thread
 {
 public:
     explicit ServiceThread (
-        beast::String const& name,
+        std::string const& name,
         IoServicePool& owner,
         boost::asio::io_service& service)
         : Thread (name)
@@ -60,12 +62,12 @@ private:
 
 //------------------------------------------------------------------------------
 
-IoServicePool::IoServicePool (Stoppable& parent, beast::String const& name,
+IoServicePool::IoServicePool (Stoppable& parent, std::string const& name,
                               int numberOfThreads)
-    : Stoppable (name.toStdString().c_str(), parent)
+    : Stoppable (name.c_str(), parent)
     , m_name (name)
     , m_service (numberOfThreads)
-    , m_work (boost::ref (m_service))
+    , m_work (std::ref (m_service))
     , m_threadsDesired (numberOfThreads)
 {
     bassert (m_threadsDesired > 0);

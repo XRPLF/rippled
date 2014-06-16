@@ -757,7 +757,7 @@ void NetworkOPsImp::submitTransaction (Job&, SerializedTransaction::pointer iTra
     iTrans->add (s);
 
     SerializerIterator sit (s);
-    SerializedTransaction::pointer trans = std::make_shared<SerializedTransaction> (boost::ref (sit));
+    SerializedTransaction::pointer trans = std::make_shared<SerializedTransaction> (std::ref (sit));
 
     uint256 suppress = trans->getTransactionID ();
     int flags;
@@ -1431,7 +1431,7 @@ void NetworkOPsImp::switchLastClosedLedger (Ledger::pointer newLedger, bool duri
 
     clearNeedNetworkLedger ();
     newLedger->setClosed ();
-    Ledger::pointer openLedger = std::make_shared<Ledger> (false, boost::ref (*newLedger));
+    Ledger::pointer openLedger = std::make_shared<Ledger> (false, std::ref (*newLedger));
     m_ledgerMaster.switchLedgers (newLedger, openLedger);
 
     protocol::TMStatusChange s;

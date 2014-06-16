@@ -20,26 +20,11 @@
 #ifndef RIPPLE_BOOSTINCLUDES_H_INCLUDED
 #define RIPPLE_BOOSTINCLUDES_H_INCLUDED
 
-// All Boost includes used throughout Ripple.
-//
-// This shows all the dependencies in one place. Please do not add
-// boost includes anywhere else in the source code. If possible, do
-// not add any more includes.
-//
-
-// This is better than setting it in some Makefile or IDE Project file.
-//
 #define BOOST_FILESYSTEM_NO_DEPRECATED
 
-#include <boost/bind.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/filesystem.hpp>
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
-#include <boost/function.hpp>
-#include <boost/ref.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/recursive_mutex.hpp>
 
 // work-around for broken <boost/get_pointer.hpp>
 #include <beast/boost/get_pointer.h>

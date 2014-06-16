@@ -17,7 +17,8 @@
 */
 //==============================================================================
 
-#include<ripple/module/overlay/api/Overlay.h>
+#include <ripple/module/overlay/api/Overlay.h>
+#include <beast/asio/placeholders.h>
 
 namespace ripple {
 
@@ -72,7 +73,7 @@ void PeerSet::badPeer (Peer::ptr const& ptr)
 void PeerSet::setTimer ()
 {
     mTimer.expires_from_now (boost::posix_time::milliseconds (mTimerInterval));
-    mTimer.async_wait (boost::bind (&PeerSet::TimerEntry, pmDowncast (), boost::asio::placeholders::error));
+    mTimer.async_wait (std::bind (&PeerSet::TimerEntry, pmDowncast (), beast::asio::placeholders::error));
 }
 
 void PeerSet::invokeOnTimer ()

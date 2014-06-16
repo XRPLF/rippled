@@ -19,38 +19,12 @@
 
 #include <BeastConfig.h>
 
-#include <ripple/unity/basics.h>
-
-#include <beast/module/core/system/BeforeBoost.h>
-#include <boost/asio.hpp> // For StringUtilities.cpp
-
-#include <fstream> // for Log files
-
-//------------------------------------------------------------------------------
-
-// For Sustain Linux variants
-//
-// VFALCO TODO Rewrite Sustain to use beast::Process
-#ifdef __linux__
-#include <sys/types.h>
-#include <sys/prctl.h>
-#include <sys/wait.h>
-#endif
-#ifdef __FreeBSD__
-#include <sys/types.h>
-#include <sys/wait.h>
-#endif
-
-//------------------------------------------------------------------------------
-
 #include <ripple/module/basics/containers/RangeSet.cpp>
-#include <ripple/module/basics/system/CheckLibraryVersions.cpp>
-
 #include <ripple/module/basics/log/Log.cpp>
 #include <ripple/module/basics/log/LogFile.cpp>
 #include <ripple/module/basics/log/LogPartition.cpp>
 #include <ripple/module/basics/log/LogSink.cpp>
-
+#include <ripple/module/basics/system/CheckLibraryVersions.cpp>
 #include <ripple/module/basics/utility/CountedObject.cpp>
 #include <ripple/module/basics/utility/IniFile.cpp>
 #include <ripple/module/basics/utility/StringUtilities.cpp>

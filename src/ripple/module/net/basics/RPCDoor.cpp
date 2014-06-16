@@ -56,9 +56,9 @@ public:
     void startListening ()
     {
         RPCServerImp::pointer new_connection (std::make_shared <RPCServerImp> (
-            boost::ref (mAcceptor.get_io_service ()),
-                boost::ref (m_sslContext->get ()),
-                    boost::ref (m_rpcServerHandler)));
+            std::ref (mAcceptor.get_io_service ()),
+                std::ref (m_sslContext->get ()),
+                    std::ref (m_rpcServerHandler)));
 
         mAcceptor.set_option (boost::asio::ip::tcp::acceptor::reuse_address (true));
 

@@ -23,6 +23,8 @@
 #include <ripple/module/basics/log/LogSeverity.h>
 #include <beast/module/core/memory/SharedSingleton.h>
 #include <beast/utility/Journal.h>
+#include <vector>
+#include <string>
 
 namespace ripple {
 

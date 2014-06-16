@@ -28,7 +28,6 @@
 //             purely abstract and move implementation into .cpp files.
 //
 
-#include <beast/module/core/system/BeforeBoost.h>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/array.hpp>
 #include <boost/asio/read_until.hpp>

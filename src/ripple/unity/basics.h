@@ -22,7 +22,6 @@
 
 #include <beast/Crypto.h>
 
-#include <beast/module/core/system/BeforeBoost.h>
 #include <ripple/module/basics/system/BoostIncludes.h>
 
 #include <beast/cxx14/memory.h>
@@ -32,13 +31,6 @@
 
 using beast::zero;
 using beast::Zero;
-
-// VFALCO TODO Lets ditch this macro
-#ifndef  RIPPLE_TRACK_MUTEXES
-# define RIPPLE_TRACK_MUTEXES 0
-#endif
-
-//------------------------------------------------------------------------------
 
 #include <ripple/unity/types.h>
 

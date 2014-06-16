@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/common/jsonrpc_fields.h>
+
 namespace ripple {
 
 SETUP_LOGN (WSConnection, "WSConnection")

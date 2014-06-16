@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/module/app/websocket/WSServerHandler.h>
+
 namespace ripple {
 
 SETUP_LOGN (WSServerHandlerLog,"WSServerHandler")

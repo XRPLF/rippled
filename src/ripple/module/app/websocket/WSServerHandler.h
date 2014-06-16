@@ -20,6 +20,8 @@
 #ifndef RIPPLE_WSSERVERHANDLER_H_INCLUDED
 #define RIPPLE_WSSERVERHANDLER_H_INCLUDED
 
+#include <ripple/module/app/websocket/WSConnection.h>
+
 namespace ripple {
 
 extern bool serverOkay (std::string& reason);
@@ -194,8 +196,8 @@ public:
         {
             std::pair <typename MapType::iterator, bool> const result (
                 mMap.emplace (cpClient,
-                    std::make_shared < WSConnectionType <endpoint_type> > (boost::ref(m_resourceManager),
-                    boost::ref (m_source), boost::ref(*this), boost::cref(cpClient))));
+                    std::make_shared < WSConnectionType <endpoint_type> > (std::ref(m_resourceManager),
+                    std::ref (m_source), std::ref(*this), std::cref(cpClient))));
             assert (result.second);
             WriteLog (lsDEBUG, WSServerHandlerLog) <<
                 "Ws:: on_open(" << cpClient->get_socket ().remote_endpoint ().to_string () << ")";

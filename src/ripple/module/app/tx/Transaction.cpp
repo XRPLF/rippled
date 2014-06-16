@@ -44,7 +44,7 @@ Transaction::pointer Transaction::sharedTransaction (Blob const& vucTransaction,
         Serializer          s (vucTransaction);
         SerializerIterator  sit (s);
 
-        SerializedTransaction::pointer  st  = std::make_shared<SerializedTransaction> (boost::ref (sit));
+        SerializedTransaction::pointer  st  = std::make_shared<SerializedTransaction> (std::ref (sit));
 
         return std::make_shared<Transaction> (st, bValidate);
     }
@@ -158,7 +158,7 @@ Transaction::pointer Transaction::transactionFromSQL (Database* db, bool bValida
     rawTxn.resize (txSize);
 
     SerializerIterator it (rawTxn);
-    SerializedTransaction::pointer txn = std::make_shared<SerializedTransaction> (boost::ref (it));
+    SerializedTransaction::pointer txn = std::make_shared<SerializedTransaction> (std::ref (it));
     Transaction::pointer tr = std::make_shared<Transaction> (txn, bValidate);
 
     TransStatus st (INVALID);
@@ -229,7 +229,7 @@ Transaction::pointer Transaction::transactionFromSQL (const std::string& sql)
     rawTxn.resize (txSize);
 
     SerializerIterator it (rawTxn);
-    SerializedTransaction::pointer txn = std::make_shared<SerializedTransaction> (boost::ref (it));
+    SerializedTransaction::pointer txn = std::make_shared<SerializedTransaction> (std::ref (it));
     Transaction::pointer tr = std::make_shared<Transaction> (txn, true);
 
     TransStatus st (INVALID);

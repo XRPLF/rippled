@@ -124,13 +124,13 @@ public:
         iterator iter (m_back.find (value.first));
         if (iter != m_back.end())
             return std::make_pair (
-            boost::ref (iter->second),
-            boost::ref (m_back_info));
+            std::ref (iter->second),
+            std::ref (m_back_info));
         std::pair <iterator, bool> result (
             m_front.insert (value));
         return std::make_pair (
-            boost::ref (result.first->second),
-            boost::ref (m_front_info));
+            std::ref (result.first->second),
+            std::ref (m_front_info));
     }
 
     void cycle ()

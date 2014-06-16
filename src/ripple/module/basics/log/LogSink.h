@@ -20,8 +20,11 @@
 #ifndef RIPPLE_BASICS_LOGSINK_H_INCLUDED
 #define RIPPLE_BASICS_LOGSINK_H_INCLUDED
 
+#include <ripple/module/basics/log/LogFile.h>
 #include <beast/smart_ptr/SharedPtr.h>
 #include <beast/module/core/memory/SharedSingleton.h>
+#include <boost/filesystem.hpp>
+#include <mutex>
 
 namespace ripple {
 
@@ -81,7 +84,7 @@ public:
     static Ptr get ();
 
 private:
-    typedef RippleRecursiveMutex LockType;
+    typedef std::recursive_mutex LockType;
     typedef std::lock_guard <LockType> ScopedLockType;
 
     enum

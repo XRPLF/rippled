@@ -19,6 +19,7 @@
 
 #include <ripple/module/overlay/impl/OverlayImpl.h>
 #include <ripple/module/overlay/impl/PeerDoor.h>
+#include <beast/asio/placeholders.h>
 
 namespace ripple {
 
@@ -77,8 +78,8 @@ public:
     void async_accept ()
     {
         m_acceptor.async_accept (m_socket,
-            boost::bind (&PeerDoorImp::handleAccept, this,
-                boost::asio::placeholders::error));
+            std::bind (&PeerDoorImp::handleAccept, this,
+                beast::asio::placeholders::error));
     }
 
     //--------------------------------------------------------------------------
@@ -121,8 +122,8 @@ public:
         if (delay)
         {
             m_acceptDelay.expires_from_now (boost::posix_time::milliseconds (500));
-            m_acceptDelay.async_wait (boost::bind (&PeerDoorImp::handleTimer,
-                this, boost::asio::placeholders::error));
+            m_acceptDelay.async_wait (std::bind (&PeerDoorImp::handleTimer,
+                this, beast::asio::placeholders::error));
         }
         else
         {

@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/module/app/main/CollectorManager.h>
+
 namespace ripple {
 
 class CollectorManagerImp

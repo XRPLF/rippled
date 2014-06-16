@@ -18,7 +18,8 @@
 //==============================================================================
 
 #include <beast/cxx14/memory.h> // <memory>
-
+#include <fstream>
+    
 namespace ripple {
 
 LogFile::LogFile ()

@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <beast/asio/placeholders.h>
+
 namespace beast {
 namespace asio {
 
@@ -43,8 +45,8 @@ void TestPeerLogicAsyncServer::on_connect_async (error_code const& ec)
     if (socket ().needs_handshake ())
     {
         socket ().async_handshake (abstract_socket::server,
-            boost::bind (&TestPeerLogicAsyncServer::on_handshake, this,
-            boost::asio::placeholders::error));
+            std::bind (&TestPeerLogicAsyncServer::on_handshake, this,
+                beast::asio::placeholders::error));
     }
     else
     {
@@ -58,8 +60,8 @@ void TestPeerLogicAsyncServer::on_handshake (error_code const& ec)
         return finished ();
 
     boost::asio::async_read_until (socket (), m_buf, std::string ("hello"),
-        boost::bind (&TestPeerLogicAsyncServer::on_read, this,
-        boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+        std::bind (&TestPeerLogicAsyncServer::on_read, this,
+            beast::asio::placeholders::error, beast::asio::placeholders::bytes_transferred));
 }
 
 void TestPeerLogicAsyncServer::on_read (error_code const& ec, std::size_t bytes_transferred)
@@ -71,8 +73,8 @@ void TestPeerLogicAsyncServer::on_read (error_code const& ec, std::size_t bytes_
         return finished ();
 
     boost::asio::async_write (socket (), boost::asio::buffer ("goodbye", 7),
-        boost::bind (&TestPeerLogicAsyncServer::on_write, this,
-        boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+        std::bind (&TestPeerLogicAsyncServer::on_write, this,
+            beast::asio::placeholders::error, beast::asio::placeholders::bytes_transferred));
 }
 
 void TestPeerLogicAsyncServer::on_write (error_code const& ec, std::size_t bytes_transferred)
@@ -85,8 +87,8 @@ void TestPeerLogicAsyncServer::on_write (error_code const& ec, std::size_t bytes
 
     if (socket ().needs_handshake ())
     {
-        socket ().async_shutdown (boost::bind (&TestPeerLogicAsyncServer::on_shutdown, this,
-            boost::asio::placeholders::error));
+        socket ().async_shutdown (std::bind (&TestPeerLogicAsyncServer::on_shutdown, this,
+            beast::asio::placeholders::error));
     }
     else
     {

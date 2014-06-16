@@ -22,8 +22,6 @@
 
 #include <vector>
 
-#include <beast/module/core/system/BeforeBoost.h>
-
 #include <beast/http/URL.h>
 #include <beast/Threads.h>
 

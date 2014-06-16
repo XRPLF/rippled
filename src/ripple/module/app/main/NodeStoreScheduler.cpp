@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/module/app/main/NodeStoreScheduler.h>
+
 namespace ripple {
 
 NodeStoreScheduler::NodeStoreScheduler (Stoppable& parent)
@@ -48,7 +50,7 @@ void NodeStoreScheduler::scheduleTask (NodeStore::Task& task)
         jtWRITE,
         "NodeObject::store",
         std::bind (&NodeStoreScheduler::doTask,
-            this, boost::ref(task), std::placeholders::_1));
+            this, std::ref(task), std::placeholders::_1));
 }
 
 void NodeStoreScheduler::doTask (NodeStore::Task& task, Job&)

@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/module/app/node/SqliteFactory.h>
+
 namespace ripple {
 
 static const char* s_nodeStoreDBInit [] =

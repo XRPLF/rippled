@@ -25,7 +25,6 @@
 #include <map>
 #include <set>
 
-#include <beast/module/core/system/BeforeBoost.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
 

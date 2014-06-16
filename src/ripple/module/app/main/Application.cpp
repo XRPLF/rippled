@@ -17,19 +17,19 @@
 */
 //==============================================================================
 
+#include <ripple/common/seconds_clock.h>
 #include <ripple/module/app/main/Tuning.h>
-
-#include <ripple/common/seconds_clock.h>
-#include <ripple/module/rpc/api/Manager.h>
+#include <ripple/module/app/misc/ProofOfWorkFactory.h>
 #include <ripple/module/overlay/api/make_Overlay.h>
-#include <ripple/common/seconds_clock.h>
+#include <ripple/module/rpc/api/Manager.h>
 #include <ripple/module/rpc/api/Manager.h>
 #include <ripple/nodestore/Database.h>
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/Manager.h>
-
+#include <beast/asio/io_latency_probe.h>
 #include <beast/module/core/thread/DeadlineTimer.h>
-
+#include <fstream>
+    
 namespace ripple {
 
 // VFALCO TODO Clean this global up
@@ -1070,25 +1070,25 @@ public:
 
         m_fullBelowCache->sweep ();
 
-        logTimedCall (m_journal.warning, "TransactionMaster::sweep", __FILE__, __LINE__, boost::bind (
+        logTimedCall (m_journal.warning, "TransactionMaster::sweep", __FILE__, __LINE__, std::bind (
             &TransactionMaster::sweep, &m_txMaster));
 
-        logTimedCall (m_journal.warning, "NodeStore::sweep", __FILE__, __LINE__, boost::bind (
+        logTimedCall (m_journal.warning, "NodeStore::sweep", __FILE__, __LINE__, std::bind (
             &NodeStore::Database::sweep, m_nodeStore.get ()));
 
-        logTimedCall (m_journal.warning, "LedgerMaster::sweep", __FILE__, __LINE__, boost::bind (
+        logTimedCall (m_journal.warning, "LedgerMaster::sweep", __FILE__, __LINE__, std::bind (
             &LedgerMaster::sweep, m_ledgerMaster.get()));
 
-        logTimedCall (m_journal.warning, "TempNodeCache::sweep", __FILE__, __LINE__, boost::bind (
+        logTimedCall (m_journal.warning, "TempNodeCache::sweep", __FILE__, __LINE__, std::bind (
             &NodeCache::sweep, &m_tempNodeCache));
 
-        logTimedCall (m_journal.warning, "Validations::sweep", __FILE__, __LINE__, boost::bind (
+        logTimedCall (m_journal.warning, "Validations::sweep", __FILE__, __LINE__, std::bind (
             &Validations::sweep, mValidations.get ()));
 
-        logTimedCall (m_journal.warning, "InboundLedgers::sweep", __FILE__, __LINE__, boost::bind (
+        logTimedCall (m_journal.warning, "InboundLedgers::sweep", __FILE__, __LINE__, std::bind (
             &InboundLedgers::sweep, &getInboundLedgers ()));
 
-        logTimedCall (m_journal.warning, "SLECache::sweep", __FILE__, __LINE__, boost::bind (
+        logTimedCall (m_journal.warning, "SLECache::sweep", __FILE__, __LINE__, std::bind (
             &SLECache::sweep, &m_sleCache));
 
         logTimedCall (m_journal.warning, "AcceptedLedger::sweep", __FILE__, __LINE__,
@@ -1097,7 +1097,7 @@ public:
         logTimedCall (m_journal.warning, "SHAMap::sweep", __FILE__, __LINE__,
             &SHAMap::sweep);
 
-        logTimedCall (m_journal.warning, "NetworkOPs::sweepFetchPack", __FILE__, __LINE__, boost::bind (
+        logTimedCall (m_journal.warning, "NetworkOPs::sweepFetchPack", __FILE__, __LINE__, std::bind (
             &NetworkOPs::sweepFetchPack, m_networkOPs.get ()));
 
         // VFALCO NOTE does the call to sweep() happen on another thread?
@@ -1137,10 +1137,10 @@ void ApplicationImp::startNewLedger ()
         firstLedger->setAccepted ();
         m_ledgerMaster->pushLedger (firstLedger);
 
-        Ledger::pointer secondLedger = std::make_shared<Ledger> (true, boost::ref (*firstLedger));
+        Ledger::pointer secondLedger = std::make_shared<Ledger> (true, std::ref (*firstLedger));
         secondLedger->setClosed ();
         secondLedger->setAccepted ();
-        m_ledgerMaster->pushLedger (secondLedger, std::make_shared<Ledger> (true, boost::ref (*secondLedger)));
+        m_ledgerMaster->pushLedger (secondLedger, std::make_shared<Ledger> (true, std::ref (*secondLedger)));
         assert (!!secondLedger->getAccountState (rootAddress));
         m_networkOPs->setLastCloseTime (secondLedger->getCloseTimeNC ());
     }
@@ -1300,7 +1300,7 @@ bool ApplicationImp::loadOldLedger (
 
         m_ledgerMaster->setLedgerRangePresent (loadLedger->getLedgerSeq (), loadLedger->getLedgerSeq ());
 
-        Ledger::pointer openLedger = std::make_shared<Ledger> (false, boost::ref (*loadLedger));
+        Ledger::pointer openLedger = std::make_shared<Ledger> (false, std::ref (*loadLedger));
         m_ledgerMaster->switchLedgers (loadLedger, openLedger);
         m_ledgerMaster->forceValid(loadLedger);
         m_networkOPs->setLastCloseTime (loadLedger->getCloseTimeNC ());

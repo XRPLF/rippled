@@ -23,6 +23,9 @@
 #include <ripple/module/app/main/FullBelowCache.h>
 #include <ripple/nodestore/NodeObject.h>
 #include <ripple/unity/radmap.h>
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/shared_lock_guard.hpp>
+#include <boost/thread/shared_mutex.hpp>
 
 #include <unordered_map>
 

@@ -20,6 +20,9 @@
 #ifndef RIPPLE_BASICS_LOGFILE_H_INCLUDED
 #define RIPPLE_BASICS_LOGFILE_H_INCLUDED
 
+#include <beast/utility/noexcept.h>
+#include <boost/filesystem.hpp>
+
 namespace ripple {
 
 /** Manages a system file containing logged output.
@@ -32,7 +35,7 @@ namespace ripple {
 
     @note None of the listed interfaces are thread-safe.
 */
-class LogFile : public beast::Uncopyable
+class LogFile
 {
 public:
     /** Construct with no associated system file.

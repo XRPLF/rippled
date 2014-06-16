@@ -20,6 +20,7 @@
 #ifndef RIPPLE_RIPPLECOLLECTOR_H_INCLUDED
 #define RIPPLE_RIPPLECOLLECTOR_H_INCLUDED
 
+#include <beast/module/core/text/StringPairArray.h>
 #include <beast/Insight.h>
 
 namespace ripple {

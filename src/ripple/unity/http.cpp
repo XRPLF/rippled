@@ -23,7 +23,6 @@
 
 #include <ripple/unity/net.h>
 
-#include <beast/module/core/system/BeforeBoost.h>
 #include <boost/asio.hpp>
 #include <boost/optional.hpp>
 

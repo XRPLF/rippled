@@ -23,7 +23,6 @@
 
 #include <beast/module/asio/asio.h> // HTTPClientBase
 
-#include <beast/module/core/system/BeforeBoost.h>
 #include <boost/regex.hpp>
 
 #include <set>

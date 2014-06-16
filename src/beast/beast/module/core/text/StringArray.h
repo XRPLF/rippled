@@ -24,6 +24,7 @@
 #ifndef BEAST_STRINGARRAY_H_INCLUDED
 #define BEAST_STRINGARRAY_H_INCLUDED
 
+#include <beast/strings/String.h>
 #include <beast/module/core/containers/Array.h>
 #include <beast/module/core/threads/CriticalSection.h>
 

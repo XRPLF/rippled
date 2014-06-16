@@ -26,7 +26,7 @@ ServerImpl::ServerImpl (Server& server, Handler& handler, beast::Journal journal
     , m_handler (handler)
     , m_journal (journal)
     , m_strand (m_io_service)
-    , m_work (boost::in_place (boost::ref (m_io_service)))
+    , m_work (boost::in_place (std::ref (m_io_service)))
     , m_stopped (true)
 {
     startThread ();
@@ -213,7 +213,7 @@ void ServerImpl::handle_update ()
 //
 void ServerImpl::update ()
 {
-    m_io_service.post (m_strand.wrap (boost::bind (
+    m_io_service.post (m_strand.wrap (std::bind (
         &ServerImpl::handle_update, this)));
 }
 

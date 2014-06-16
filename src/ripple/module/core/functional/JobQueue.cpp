@@ -75,7 +75,7 @@ public:
         , m_invalidJobData (getJobTypes ().getInvalid (), collector)
         , m_processCount (0)
         , m_workers (*this, "JobQueue", 0)
-        , m_cancelCallback (boost::bind (&Stoppable::isStopping, this))
+        , m_cancelCallback (std::bind (&Stoppable::isStopping, this))
         , m_collector (collector)
     {
         hook = m_collector->make_hook (std::bind (
@@ -252,7 +252,7 @@ public:
             return std::shared_ptr<LoadEvent> ();
 
         return std::make_shared<LoadEvent> (
-            boost::ref (iter-> second.load ()), name, true);
+            std::ref (iter-> second.load ()), name, true);
     }
 
     LoadEvent::autoptr getLoadEventAP (JobType t, const std::string& name)

@@ -19,7 +19,6 @@
 
 #include <BeastConfig.h>
 
-#include <beast/module/core/system/BeforeBoost.h>
 #include <boost/bimap.hpp>
 #include <boost/bimap/multiset_of.hpp>
 #include <boost/bimap/unordered_set_of.hpp>

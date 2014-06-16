@@ -18,17 +18,15 @@
 //==============================================================================
 
 #include <beast/asio/IPAddressConversion.h>
+#include <beast/asio/placeholders.h>
 #include <beast/intrusive/List.h>
 #include <beast/threads/SharedData.h>
-
 #include <boost/asio/ip/tcp.hpp>
-#include <boost/bind.hpp>
-#include <boost/move/move.hpp>
 #include <boost/optional.hpp>
-
 #include <cassert>
 #include <climits>
 #include <deque>
+#include <functional>
 #include <set>
 #include <sstream>
 #include <thread>
@@ -238,7 +236,7 @@ public:
         : m_journal (journal)
         , m_address (address)
         , m_prefix (prefix)
-        , m_work (boost::ref (m_io_service))
+        , m_work (std::ref (m_io_service))
         , m_timer (m_io_service)
         , m_socket (m_io_service)
         , m_thread (&StatsDCollectorImp::run, this)
@@ -372,10 +370,10 @@ public:
 #if BEAST_STATSDCOLLECTOR_TRACING_ENABLED
                 log (buffers);
 #endif
-                m_socket.async_send (buffers, boost::bind (
+                m_socket.async_send (buffers, std::bind (
                     &StatsDCollectorImp::on_send, this,
-                        boost::asio::placeholders::error,
-                            boost::asio::placeholders::bytes_transferred));
+                        beast::asio::placeholders::error,
+                            beast::asio::placeholders::bytes_transferred));
                 buffers.clear ();
                 size = 0;
             }
@@ -387,10 +385,10 @@ public:
 #if BEAST_STATSDCOLLECTOR_TRACING_ENABLED
             log (buffers);
 #endif
-            m_socket.async_send (buffers, boost::bind (
+            m_socket.async_send (buffers, std::bind (
                 &StatsDCollectorImp::on_send, this,
-                    boost::asio::placeholders::error,
-                        boost::asio::placeholders::bytes_transferred));
+                    beast::asio::placeholders::error,
+                        beast::asio::placeholders::bytes_transferred));
         }
         m_data.clear ();
     }
@@ -398,9 +396,9 @@ public:
     void set_timer ()
     {
         m_timer.expires_from_now (boost::posix_time::seconds (1));
-        m_timer.async_wait (boost::bind (
+        m_timer.async_wait (std::bind (
             &StatsDCollectorImp::on_timer, this,
-                boost::asio::placeholders::error));
+                beast::asio::placeholders::error));
     }
 
     void on_timer (boost::system::error_code ec)

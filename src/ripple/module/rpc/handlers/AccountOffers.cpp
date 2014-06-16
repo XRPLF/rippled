@@ -74,7 +74,7 @@ Json::Value RPCHandler::doAccountOffers (Json::Value params, Resource::Charge& l
 
     Json::Value& jvsOffers = (jvResult[jss::offers] = Json::arrayValue);
     lpLedger->visitAccountItems (raAccount.getAccountID (),
-                                 std::bind (&offerAdder, boost::ref (jvsOffers),
+                                 std::bind (&offerAdder, std::ref (jvsOffers),
                                             std::placeholders::_1));
 
     loadType = Resource::feeMediumBurdenRPC;

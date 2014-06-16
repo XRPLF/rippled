@@ -50,7 +50,7 @@ Json::Value RPCHandler::doSubmit (Json::Value params, Resource::Charge& loadType
 
     try
     {
-        stpTrans = std::make_shared<SerializedTransaction> (boost::ref (sitTrans));
+        stpTrans = std::make_shared<SerializedTransaction> (std::ref (sitTrans));
     }
     catch (std::exception& e)
     {

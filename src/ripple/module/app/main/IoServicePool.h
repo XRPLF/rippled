@@ -20,13 +20,17 @@
 #ifndef RIPPLE_APP_IOSERVICEPOOL_H_INCLUDED
 #define RIPPLE_APP_IOSERVICEPOOL_H_INCLUDED
 
+#include <beast/threads/Stoppable.h>
+#include <boost/asio/io_service.hpp>
+#include <boost/optional.hpp>
+
 namespace ripple {
 
 /** An io_service with an associated group of threads. */
 class IoServicePool : public beast::Stoppable
 {
 public:
-    IoServicePool (Stoppable& parent, beast::String const& name, int numberOfThreads);
+    IoServicePool (Stoppable& parent, std::string const& name, int numberOfThreads);
     ~IoServicePool ();
 
     boost::asio::io_service& getService ();
@@ -41,7 +45,7 @@ private:
 
     void onThreadExit();
 
-    beast::String m_name;
+    std::string m_name;
     boost::asio::io_service m_service;
     boost::optional <boost::asio::io_service::work> m_work;
     std::vector <std::unique_ptr <ServiceThread>> m_threads;

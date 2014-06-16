@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <beast/module/core/logging/Logger.h>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 namespace ripple {
 

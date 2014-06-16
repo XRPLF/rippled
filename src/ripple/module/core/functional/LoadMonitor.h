@@ -20,6 +20,8 @@
 #ifndef RIPPLE_LOADMONITOR_H_INCLUDED
 #define RIPPLE_LOADMONITOR_H_INCLUDED
 
+#include <ripple/module/core/functional/LoadEvent.h>
+
 namespace ripple {
 
 // Monitors load levels and response times

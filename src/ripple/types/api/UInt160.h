@@ -27,6 +27,7 @@
 
 #include <ripple/types/api/base_uint.h>
 #include <ripple/types/api/strHex.h>
+#include <boost/functional/hash.hpp>
 
 namespace ripple {
 

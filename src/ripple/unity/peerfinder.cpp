@@ -31,7 +31,6 @@
 #include <set>
 #include <unordered_set>
 
-#include <beast/module/core/system/BeforeBoost.h>
 #include <boost/array.hpp>
 #include <boost/optional.hpp>
 #include <boost/regex.hpp>

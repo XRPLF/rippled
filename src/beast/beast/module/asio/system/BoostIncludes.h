@@ -38,22 +38,6 @@
 # endif
 #endif
 
-// Unfortunately, we use some boost detail elements
-//
-// https://svn.boost.org/trac/boost/ticket/9024
-
-#include <boost/version.hpp>
-#include <boost/array.hpp>
-#include <boost/asio.hpp>
-#include <boost/asio/ssl.hpp>
-#include <boost/bind.hpp>
-#include <boost/foreach.hpp>
-#include <boost/function.hpp>
-#include <boost/type_traits.hpp>
-#include <boost/asio/detail/handler_alloc_helpers.hpp>
-#include <boost/asio/detail/handler_invoke_helpers.hpp>
-#include <boost/asio/detail/handler_cont_helpers.hpp>
-
 // work-around for broken <boost/get_pointer.hpp>
 #include <beast/boost/get_pointer.h>
 

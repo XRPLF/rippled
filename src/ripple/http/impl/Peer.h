@@ -22,11 +22,10 @@
 
 #include <ripple/http/api/Session.h>
 #include <ripple/common/MultiSocket.h>
-
 #include <beast/module/asio/async/AsyncObject.h>
 #include <beast/module/asio/basics/SharedArg.h>
 #include <beast/module/asio/http/HTTPRequestParser.h>
-
+#include <boost/bind.hpp>
 #include <memory>
 
 namespace ripple {
@@ -186,7 +185,7 @@ public:
             // The work object will be destroyed with the Peer
             // after the Session is closed and handlers complete.
             //
-            m_work = boost::in_place (boost::ref (
+            m_work = boost::in_place (std::ref (
                 m_impl.get_io_service()));
         }
     }

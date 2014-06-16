@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/module/basics/utility/UptimeTimer.h>
+
 namespace ripple {
 
 UptimeTimer::UptimeTimer ()

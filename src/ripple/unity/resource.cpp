@@ -21,7 +21,6 @@
 
 #include <ripple/unity/resource.h>
 
-#include <beast/module/core/system/BeforeBoost.h>
 #include <boost/utility/base_from_member.hpp>
 
 #include <ripple/algorithm/api/DecayingSample.h>

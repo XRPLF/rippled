@@ -25,7 +25,6 @@
 #include <beast/chrono/chrono_io.h>
 #include <beast/Insight.h>
 #include <beast/container/hardened_hash.h>
-#include <boost/smart_ptr.hpp>
 #include <functional>
 #include <mutex>
 #include <unordered_map>

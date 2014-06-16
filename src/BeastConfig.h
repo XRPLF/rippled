@@ -166,16 +166,6 @@
 #define RIPPLE_DUMP_LEAKS_ON_EXIT 1
 #endif
 
-/** Config: RIPPLE_TRACK_MUTEXES
-    Turns on a feature that enables tracking and diagnostics for mutex
-    and recursive mutex objects. This affects the type of lock used
-    by RippleMutex and RippleRecursiveMutex
-    @note This can slow down performance considerably.
-*/
-#ifndef RIPPLE_TRACK_MUTEXES
-#define RIPPLE_TRACK_MUTEXES 0
-#endif
-
 //------------------------------------------------------------------------------
 
 // These control whether or not certain functionality gets

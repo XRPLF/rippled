@@ -22,8 +22,6 @@
 
 #include "ripple.pb.h"
     
-#include <beast/module/core/system/BeforeBoost.h>
-
 #include <memory>
 
 namespace ripple {

@@ -23,8 +23,6 @@
 #include <mutex>
 #include <unordered_map>
 
-#include <boost/smart_ptr.hpp>
-
 #include <beast/chrono/abstract_clock.h>
 #include <beast/chrono/chrono_io.h>
 #include <beast/Insight.h>

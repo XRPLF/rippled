@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/module/basics/log/Log.h>
+#include <ripple/module/app/main/FatalErrorReporter.h>
 #include <beast/unit_test/suite.h>
 
 namespace ripple {

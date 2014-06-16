@@ -1485,24 +1485,6 @@
     <ClInclude Include="..\..\src\beast\beast\module\core\streams\OutputStream.h">
       <Filter>beast\module\core\streams</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\system\BeforeBoost.h">
-      <Filter>beast\module\core\system</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\system\BoostIncludes.h">
-      <Filter>beast\module\core\system</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\system\BoostPlaceholdersFix.cpp">
-      <Filter>beast\module\core\system</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\core\system\BoostPlaceholdersFix.h">
-      <Filter>beast\module\core\system</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\system\Functional.h">
-      <Filter>beast\module\core\system</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\system\FunctionalIncludes.h">
-      <Filter>beast\module\core\system</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\module\core\system\StandardIncludes.h">
       <Filter>beast\module\core\system</Filter>
     </ClInclude>

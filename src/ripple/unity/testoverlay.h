@@ -20,7 +20,6 @@
 #ifndef RIPPLE_TESTOVERLAY_H_INCLUDED
 #define RIPPLE_TESTOVERLAY_H_INCLUDED
 
-#include <beast/module/core/system/BeforeBoost.h>
 #include <boost/unordered_set.hpp>
 
 #include <beast/module/core/core.h>

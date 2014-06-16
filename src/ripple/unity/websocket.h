@@ -28,7 +28,6 @@
 #include <ripple/unity/net.h>
 
 #include <beast/module/core/text/LexicalCast.h>
-#include <beast/module/core/system/BeforeBoost.h>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 

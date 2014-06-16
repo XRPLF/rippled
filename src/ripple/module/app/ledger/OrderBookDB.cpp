@@ -82,8 +82,8 @@ static void updateHelper (SLE::ref entry,
         if (seen.insert (index).second)
         {
             // VFALCO TODO Reduce the clunkiness of these parameter wrappers
-            OrderBook::pointer book = std::make_shared<OrderBook> (boost::cref (index),
-                                      boost::cref (ci), boost::cref (co), boost::cref (ii), boost::cref (io));
+            OrderBook::pointer book = std::make_shared<OrderBook> (std::cref (index),
+                                      std::cref (ci), std::cref (co), std::cref (ii), std::cref (io));
 
             sourceMap[RippleAssetRef (ci, ii)].push_back (book);
             destMap[RippleAssetRef (co, io)].push_back (book);
@@ -109,8 +109,8 @@ void OrderBookDB::update (Ledger::pointer ledger)
     try
     {
         ledger->visitStateItems(std::bind(&updateHelper, std::placeholders::_1,
-                                          boost::ref(seen), boost::ref(destMap),
-            boost::ref(sourceMap), boost::ref(XRPBooks), boost::ref(books)));
+                                          std::ref(seen), std::ref(destMap),
+            std::ref(sourceMap), std::ref(XRPBooks), std::ref(books)));
     }
     catch (const SHAMapMissingNode&)
     {
@@ -155,8 +155,8 @@ void OrderBookDB::addOrderBook(const uint160& ci, const uint160& co,
     }
 
     uint256 index = Ledger::getBookBase(ci, ii, co, io);
-    OrderBook::pointer book = std::make_shared<OrderBook> (boost::cref (index),
-                              boost::cref (ci), boost::cref (co), boost::cref (ii), boost::cref (io));
+    OrderBook::pointer book = std::make_shared<OrderBook> (std::cref (index),
+                              std::cref (ci), std::cref (co), std::cref (ii), std::cref (io));
 
     mSourceMap[RippleAssetRef (ci, ii)].push_back (book);
     mDestMap[RippleAssetRef (co, io)].push_back (book);

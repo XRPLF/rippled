@@ -44,7 +44,7 @@ Job::Job (JobType type,
     , mName (name)
     , m_queue_time (clock_type::now ())
 {
-    m_loadEvent = std::make_shared <LoadEvent> (boost::ref (lm), name, false);
+    m_loadEvent = std::make_shared <LoadEvent> (std::ref (lm), name, false);
 }
 
 JobType Job::getType () const

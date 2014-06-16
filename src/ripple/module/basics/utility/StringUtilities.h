@@ -20,12 +20,17 @@
 #ifndef RIPPLE_STRINGUTILITIES_H
 #define RIPPLE_STRINGUTILITIES_H
 
+#include <ripple/types/api/Blob.h>
+#include <ripple/types/api/ByteOrder.h>
+#include <ripple/types/api/strHex.h>
+
 namespace ripple {
 
 // String utility functions.
 
 // Ripple specific constant used for parsing qualities and other things
 //
+// VFALCO NOTE This does not belong here!
 // NIKB TODO Why is this here instead of somewhere more sensible? What
 // "other things" is this being used for?
 #define QUALITY_ONE         1000000000  // 10e9

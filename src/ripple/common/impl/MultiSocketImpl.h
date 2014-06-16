@@ -21,13 +21,11 @@
 #define RIPPLE_COMMON_MULTISOCKETIMPL_H_INCLUDED
 
 #include <ripple/common/MultiSocket.h>
-
 #include <beast/boost/get_pointer.h>
 #include <beast/asio/wrap_handler.h>
 #include <beast/asio/placeholders.h>
-
 #include <beast/cxx14/type_traits.h>
-
+#include <boost/asio/ssl/stream.hpp>
 #include <cassert>
 
 #ifndef RIPPLE_MULTISOCKET_NO_ALLOCATOR

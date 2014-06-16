@@ -21,7 +21,6 @@
 
 #include <ripple/unity/validators.h>
 
-#include <beast/module/core/system/BeforeBoost.h>
 #include <boost/regex.hpp>
 #include <boost/unordered_set.hpp>
 #include <boost/multi_index_container.hpp>

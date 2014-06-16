@@ -794,19 +794,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\module\core\streams\OutputStream.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\system\BeforeBoost.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\system\BoostIncludes.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\system\BoostPlaceholdersFix.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\core\system\BoostPlaceholdersFix.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\system\Functional.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\system\FunctionalIncludes.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\module\core\system\StandardIncludes.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\system\SystemStats.cpp">

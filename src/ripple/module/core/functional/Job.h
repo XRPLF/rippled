@@ -20,6 +20,10 @@
 #ifndef RIPPLE_JOB_H
 #define RIPPLE_JOB_H
 
+#include <ripple/module/basics/types/BasicTypes.h>
+#include <ripple/module/core/functional/LoadMonitor.h>
+#include <ripple/unity/json.h>
+
 namespace ripple {
 
 // Note that this queue should only be used for CPU-bound jobs

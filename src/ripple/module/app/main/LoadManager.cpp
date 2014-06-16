@@ -147,17 +147,6 @@ public:
     void logDeadlock (int dlTime)
     {
         m_journal.warning << "Server stalled for " << dlTime << " seconds.";
-
-#if RIPPLE_TRACK_MUTEXES
-        StringArray report;
-        TrackedMutex::generateGlobalBlockedReport (report);
-        if (report.size () > 0)
-        {
-            report.insert (0, String::empty);
-            report.insert (-1, String::empty);
-            Log::print (report);
-        }
-#endif
     }
 
     // VFALCO NOTE Where's the thread object? It's not a data member...

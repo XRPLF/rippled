@@ -345,7 +345,7 @@ SHAMapTreeNode* SHAMap::getNodePointerNT (const SHAMapNode& id, uint256 const& h
         if (filter->haveNode (id, hash, nodeData))
         {
             SHAMapTreeNode::pointer node = std::make_shared<SHAMapTreeNode> (
-                    boost::cref (id), boost::cref (nodeData), 0, snfPREFIX, boost::cref (hash), true);
+                    std::cref (id), std::cref (nodeData), 0, snfPREFIX, std::cref (hash), true);
             canonicalize (hash, node);
 
             // Canonicalize the node with mTNByID to make sure all threads gets the same node
@@ -933,7 +933,7 @@ SHAMapTreeNode* SHAMap::getNodeAsync (
             if (filter->haveNode (id, hash, nodeData))
             {
                 ptr = std::make_shared <SHAMapTreeNode> (
-                    boost::cref (id), boost::cref (nodeData), 0, snfPREFIX, boost::cref (hash), true);
+                    std::cref (id), std::cref (nodeData), 0, snfPREFIX, std::cref (hash), true);
                 filter->gotNode (true, id, hash, nodeData, ptr->getType ());
             }
         }

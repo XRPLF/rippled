@@ -57,7 +57,7 @@ private:
     bool    nodeIdentityCreate ();
 
 private:
-    boost::recursive_mutex mLock;
+    std::recursive_mutex mLock;
 
     RippleAddress   mNodePublicKey;
     RippleAddress   mNodePrivateKey;
