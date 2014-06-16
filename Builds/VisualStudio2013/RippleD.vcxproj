@@ -52,6 +52,7 @@
     <ClCompile>
       <PreprocessorDefinitions>_WIN32_WINNT=0x6000;DEBUG;WIN32_CONSOLE;_CRTDBG_MAP_ALLOC;_CRT_SECURE_NO_WARNINGS;_DEBUG;_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\beast;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4018;4244;4267;4800</DisableSpecificWarnings>
       <ExceptionHandling>Async</ExceptionHandling>
       <RuntimeTypeInfo>True</RuntimeTypeInfo>
       <BufferSecurityCheck>True</BufferSecurityCheck>
@@ -71,7 +72,7 @@
       <SuppressStartupBanner>True</SuppressStartupBanner>
       <SuppressStartupBanner>True</SuppressStartupBanner>
       <OpenMPSupport>False</OpenMPSupport>
-      <AdditionalOptions>/FS /bigobj /wd"4018" /wd"4244" /wd"4267" %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/FS /bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <AdditionalDependencies>Shlwapi.lib;advapi32.lib;comdlg32.lib;gdi32.lib;kernel32.lib;libeay32MT.lib;odbc32.lib;odbccp32.lib;ole32.lib;oleaut32.lib;shell32.lib;ssleay32MT.lib;user32.lib;uuid.lib;winspool.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -89,6 +90,7 @@
     <ClCompile>
       <PreprocessorDefinitions>_WIN32_WINNT=0x6000;NDEBUG;WIN32_CONSOLE;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\beast;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4018;4244;4267;4800</DisableSpecificWarnings>
       <ExceptionHandling>Async</ExceptionHandling>
       <RuntimeTypeInfo>True</RuntimeTypeInfo>
       <CallingConvention>Cdecl</CallingConvention>
@@ -106,7 +108,7 @@
       <SuppressStartupBanner>True</SuppressStartupBanner>
       <SuppressStartupBanner>True</SuppressStartupBanner>
       <OpenMPSupport>False</OpenMPSupport>
-      <AdditionalOptions>/FS /bigobj /wd"4018" /wd"4244" /wd"4267" %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/FS /bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <AdditionalDependencies>Shlwapi.lib;advapi32.lib;comdlg32.lib;gdi32.lib;kernel32.lib;libeay32MT.lib;odbc32.lib;odbccp32.lib;ole32.lib;oleaut32.lib;shell32.lib;ssleay32MT.lib;user32.lib;uuid.lib;winspool.lib;%(AdditionalDependencies)</AdditionalDependencies>

@@ -359,9 +359,10 @@ def config_env(toolchain, variant, env):
             #'/Fd${TARGET}.pdb',     # Path: Program Database (.pdb)
             '/W3',                  # Warning level 3
             '/WX-',                 # Disable warnings as errors
-            '/wd"4018"',            # Disable warning C4018
-            '/wd"4244"',            # Disable warning C4244
-            '/wd"4267"',            # Disable warning 4267
+            '/wd"4018"',
+            '/wd"4244"',
+            '/wd"4267"',
+            '/wd"4800"',            # Disable C4800 (int to bool performance)
             ])
         env.Append(CPPDEFINES={
             '_WIN32_WINNT' : '0x6000',
