@@ -22,9 +22,7 @@
 
 #include <beast/Config.h>
 
-#include <beast/smart_ptr/ContainerDeletePolicy.h>
 #include <beast/smart_ptr/SharedObject.h>
 #include <beast/smart_ptr/SharedPtr.h>
-#include <beast/smart_ptr/ScopedPointer.h>
 
 #endif

@@ -1698,12 +1698,6 @@
     <ClCompile Include="..\..\src\beast\beast\net\tests\IPEndpoint.test.cpp">
       <Filter>beast\net\tests</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\smart_ptr\ContainerDeletePolicy.h">
-      <Filter>beast\smart_ptr</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\smart_ptr\ScopedPointer.h">
-      <Filter>beast\smart_ptr</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\smart_ptr\SharedObject.h">
       <Filter>beast\smart_ptr</Filter>
     </ClInclude>

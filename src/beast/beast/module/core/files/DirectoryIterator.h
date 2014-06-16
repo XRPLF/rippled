@@ -24,8 +24,9 @@
 #ifndef BEAST_DIRECTORYITERATOR_H_INCLUDED
 #define BEAST_DIRECTORYITERATOR_H_INCLUDED
 
-namespace beast
-{
+#include <memory>
+
+namespace beast {
 
 //==============================================================================
 /**
@@ -129,11 +130,9 @@ private:
 
     private:
         friend class DirectoryIterator;
-        friend class ScopedPointer<Pimpl>;
-        ScopedPointer<Pimpl> pimpl;
+        std::unique_ptr<Pimpl> pimpl;
     };
 
-    friend class ScopedPointer<NativeIterator::Pimpl>;
     StringArray wildCards;
     NativeIterator fileFinder;
     String wildCard, path;
@@ -142,7 +141,7 @@ private:
     const int whatToLookFor;
     const bool isRecursive;
     bool hasBeenAdvanced;
-    ScopedPointer <DirectoryIterator> subIterator;
+    std::unique_ptr <DirectoryIterator> subIterator;
     File currentFile;
 };
 
