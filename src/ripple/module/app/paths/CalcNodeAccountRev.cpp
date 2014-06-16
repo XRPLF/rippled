@@ -166,8 +166,6 @@ TER nodeAccountRev (
     {
         // ^ --> ACCOUNT -->  account|offer
         // Nothing to do, there is no previous to adjust.
-
-        nothing ();
     }
     else if (previousNodeIsAccount && nextNodeIsAccount)
     {

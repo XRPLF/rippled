@@ -164,12 +164,14 @@ bool PathRequest::isValid (RippleLineCache::ref crCache)
             }
             else
             {
-                bool includeXRP = !is_bit_set (asDst->peekSLE ().getFlags(), lsfDisallowXRP);
-                boost::unordered_set<uint160> usDestCurrID =
-                    usAccountDestCurrencies (raDstAccount, crCache, includeXRP);
+                bool const disallowXRP (
+                    asDst->peekSLE ().getFlags() & lsfDisallowXRP);
 
-                BOOST_FOREACH (const uint160 & uCurrency, usDestCurrID)
-                    jvDestCur.append (STAmount::createHumanCurrency (uCurrency));
+                boost::unordered_set<uint160> usDestCurrID =
+                    usAccountDestCurrencies (raDstAccount, crCache, !disallowXRP);
+
+                for (auto const& currency : usDestCurrID)
+                    jvDestCur.append (STAmount::createHumanCurrency (currency));
 
                 jvStatus["destination_tag"] = (asDst->peekSLE ().getFlags () & lsfRequireDestTag) != 0;
             }

@@ -1516,13 +1516,13 @@ private:
             if (! getApp().getHashRouter ().addSuppressionPeer (txID, m_shortId, flags))
             {
                 // we have seen this transaction recently
-                if (is_bit_set (flags, SF_BAD))
+                if (flags & SF_BAD)
                 {
                     charge (Resource::feeInvalidSignature);
                     return;
                 }
 
-                if (!is_bit_set (flags, SF_RETRY))
+                if (!(flags & SF_RETRY))
                     return;
             }
 
@@ -2635,7 +2635,7 @@ private:
                 return;
             }
 
-            bool needCheck = ! is_bit_set (flags, SF_SIGGOOD);
+            bool const needCheck = !(flags & SF_SIGGOOD);
             Transaction::pointer tx =
                 std::make_shared<Transaction> (stx, needCheck);
 
@@ -2648,7 +2648,8 @@ private:
             else
                 getApp().getHashRouter ().setFlag (stx->getTransactionID (), SF_SIGGOOD);
 
-            getApp().getOPs ().processTransaction (tx, is_bit_set (flags, SF_TRUSTED), false, false);
+            bool const trusted (flags & SF_TRUSTED);
+            getApp().getOPs ().processTransaction (tx, trusted, false, false);
 
     #ifndef TRUST_NETWORK
         }

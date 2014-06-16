@@ -53,23 +53,23 @@ TER SetAccount::doApply ()
         return temINVALID_FLAG;
     }
 
-    if (bSetRequireAuth && !is_bit_set (uFlagsIn, lsfRequireAuth))
+    if (bSetRequireAuth && !(uFlagsIn & lsfRequireAuth))
     {
         if (!mEngine->view().dirIsEmpty (Ledger::getOwnerDirIndex (mTxnAccountID)))
         {
             m_journal.trace << "Retry: Owner directory not empty.";
 
-            return is_bit_set(mParams, tapRETRY) ? terOWNERS : tecOWNERS;
+            return (mParams & tapRETRY) ? terOWNERS : tecOWNERS;
         }
 
         m_journal.trace << "Set RequireAuth.";
         uFlagsOut   |= lsfRequireAuth;
     }
 
-    if (bClearRequireAuth && is_bit_set (uFlagsIn, lsfRequireAuth))
+    if (bClearRequireAuth && (uFlagsIn & lsfRequireAuth))
     {
         m_journal.trace << "Clear RequireAuth.";
-        uFlagsOut   &= ~lsfRequireAuth;
+        uFlagsOut &= ~lsfRequireAuth;
     }
 
     //
@@ -82,13 +82,13 @@ TER SetAccount::doApply ()
         return temINVALID_FLAG;
     }
 
-    if (bSetRequireDest && !is_bit_set (uFlagsIn, lsfRequireDestTag))
+    if (bSetRequireDest && !(uFlagsIn & lsfRequireDestTag))
     {
         m_journal.trace << "Set lsfRequireDestTag.";
         uFlagsOut   |= lsfRequireDestTag;
     }
 
-    if (bClearRequireDest && is_bit_set (uFlagsIn, lsfRequireDestTag))
+    if (bClearRequireDest && (uFlagsIn & lsfRequireDestTag))
     {
         m_journal.trace << "Clear lsfRequireDestTag.";
         uFlagsOut   &= ~lsfRequireDestTag;
@@ -104,13 +104,13 @@ TER SetAccount::doApply ()
         return temINVALID_FLAG;
     }
 
-    if (bSetDisallowXRP && !is_bit_set (uFlagsIn, lsfDisallowXRP))
+    if (bSetDisallowXRP && !(uFlagsIn & lsfDisallowXRP))
     {
         m_journal.trace << "Set lsfDisallowXRP.";
         uFlagsOut   |= lsfDisallowXRP;
     }
 
-    if (bClearDisallowXRP && is_bit_set (uFlagsIn, lsfDisallowXRP))
+    if (bClearDisallowXRP && (uFlagsIn & lsfDisallowXRP))
     {
         m_journal.trace << "Clear lsfDisallowXRP.";
         uFlagsOut   &= ~lsfDisallowXRP;
@@ -126,7 +126,7 @@ TER SetAccount::doApply ()
         return temINVALID_FLAG;
     }
 
-    if ((uSetFlag == asfDisableMaster) && !is_bit_set (uFlagsIn, lsfDisableMaster))
+    if ((uSetFlag == asfDisableMaster) && !(uFlagsIn & lsfDisableMaster))
     {
         if (!mTxnAccount->isFieldPresent (sfRegularKey))
             return tecNO_REGULAR_KEY;
@@ -135,7 +135,7 @@ TER SetAccount::doApply ()
         uFlagsOut   |= lsfDisableMaster;
     }
 
-    if ((uClearFlag == asfDisableMaster) && is_bit_set (uFlagsIn, lsfDisableMaster))
+    if ((uClearFlag == asfDisableMaster) && (uFlagsIn & lsfDisableMaster))
     {
         m_journal.trace << "Clear lsfDisableMaster.";
         uFlagsOut   &= ~lsfDisableMaster;

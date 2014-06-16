@@ -25,9 +25,9 @@ TER Payment::doApply ()
 {
     // Ripple if source or destination is non-native or if there are paths.
     std::uint32_t const uTxFlags = mTxn.getFlags ();
-    bool const bPartialPayment = is_bit_set (uTxFlags, tfPartialPayment);
-    bool const bLimitQuality = is_bit_set (uTxFlags, tfLimitQuality);
-    bool const bNoRippleDirect = is_bit_set (uTxFlags, tfNoRippleDirect);
+    bool const bPartialPayment (uTxFlags & tfPartialPayment);
+    bool const bLimitQuality (uTxFlags & tfLimitQuality);
+    bool const bNoRippleDirect (uTxFlags & tfNoRippleDirect);
     bool const bPaths = mTxn.isFieldPresent (sfPaths);
     bool const bMax = mTxn.isFieldPresent (sfSendMax);
     uint160 const uDstAccountID = mTxn.getFieldAccount160 (sfDestination);
@@ -168,7 +168,7 @@ TER Payment::doApply ()
             // Another transaction could create the account and then this transaction would succeed.
             return tecNO_DST;
         }
-        else if (is_bit_set (mParams, tapOPEN_LEDGER) && bPartialPayment)
+        else if (mParams & tapOPEN_LEDGER && bPartialPayment)
         {
             // You cannot fund an account with a partial payment.
             // Make retry work smaller, by rejecting this.
@@ -238,7 +238,7 @@ TER Payment::doApply ()
 
         try
         {
-            bool const openLedger = is_bit_set (mParams, tapOPEN_LEDGER);
+            bool const openLedger = (mParams & tapOPEN_LEDGER);
             bool const tooManyPaths = spsPaths.size () > MaxPathSize;
 
             terResult = openLedger && tooManyPaths
@@ -257,7 +257,7 @@ TER Payment::doApply ()
                               bLimitQuality,
                               bNoRippleDirect, // Always compute for finalizing ledger.
                               false, // Not standalone, delete unfundeds.
-                              is_bit_set (mParams, tapOPEN_LEDGER));
+                              openLedger);
 
             // Not standalone means: If we discover an offer that's unfunded, we
             // should delete it as soon as we can.

@@ -352,7 +352,6 @@ TER nodeAccountFwd (
                 // As the issuer, would only issue.
                 // Don't need to actually deliver. As from delivering leave in
                 // the issuer as limbo.
-                nothing ();
             }
             else
             {

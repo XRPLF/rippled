@@ -59,22 +59,22 @@ public:
     // True, Provided auth to peer.
     bool getAuth () const
     {
-        return is_bit_set (mFlags,  mViewLowest ? lsfLowAuth : lsfHighAuth);
+        return mFlags & (mViewLowest ? lsfLowAuth : lsfHighAuth);
     }
 
     bool getAuthPeer () const
     {
-        return is_bit_set (mFlags, !mViewLowest ? lsfLowAuth : lsfHighAuth);
+        return mFlags & (!mViewLowest ? lsfLowAuth : lsfHighAuth);
     }
 
     bool getNoRipple () const
     {
-        return is_bit_set (mFlags, mViewLowest ? lsfLowNoRipple : lsfHighNoRipple);
+        return mFlags & (mViewLowest ? lsfLowNoRipple : lsfHighNoRipple);
     }
 
     bool getNoRipplePeer () const
     {
-        return is_bit_set (mFlags, !mViewLowest ? lsfLowNoRipple : lsfHighNoRipple);
+        return mFlags & (!mViewLowest ? lsfLowNoRipple : lsfHighNoRipple);
     }
 
     const STAmount& getBalance () const
@@ -94,6 +94,7 @@ public:
 
     std::uint32_t getQualityIn () const
     {
+        return ((std::uint32_t) (mViewLowest ? mLowQualityIn : mHighQualityIn));
         return ((std::uint32_t) (mViewLowest ? mLowQualityIn : mHighQualityIn));
     }
     

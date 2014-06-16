@@ -842,14 +842,10 @@ TER LedgerEntrySet::dirDelete (
             else if (bKeepRoot)
             {
                 // If root overflowed and not allowed to delete overflowed root node.
-
-                nothing ();
             }
             else if (uNodePrevious != uNodeNext)
             {
                 // Have more than 2 nodes.  Can't delete root node.
-
-                nothing ();
             }
             else
             {
@@ -868,8 +864,6 @@ TER LedgerEntrySet::dirDelete (
                 else
                 {
                     // Have an entry, can't delete root node.
-
-                    nothing ();
                 }
             }
         }
@@ -916,8 +910,6 @@ TER LedgerEntrySet::dirDelete (
         {
             // Not allowed to delete last node as root was overflowed.
             // Or, have pervious entries preventing complete delete.
-
-            nothing ();
         }
         else
         {
@@ -936,8 +928,6 @@ TER LedgerEntrySet::dirDelete (
             else
             {
                 // Root has an entry, can't delete.
-
-                nothing ();
             }
         }
     }
@@ -1196,36 +1186,31 @@ LedgerEntrySet::rippleQualityIn (const uint160& uToAccountID,
                                  const uint160& uCurrencyID, SField::ref sfLow,
                                  SField::ref sfHigh)
 {
-    std::uint32_t   uQuality        = QUALITY_ONE;
-    SLE::pointer    sleRippleState;
+    std::uint32_t uQuality (QUALITY_ONE);
 
     if (uToAccountID == uFromAccountID)
+        return uQuality;
+
+    SLE::pointer sleRippleState (entryCache (ltRIPPLE_STATE,
+        Ledger::getRippleStateIndex (uToAccountID, uFromAccountID, uCurrencyID)));
+
+    if (sleRippleState)
     {
-        nothing ();
+        SField::ref sfField = uToAccountID < uFromAccountID ? sfLow : sfHigh;
+
+        uQuality    = sleRippleState->isFieldPresent (sfField)
+                      ? sleRippleState->getFieldU32 (sfField)
+                      : QUALITY_ONE;
+
+        if (!uQuality)
+            uQuality    = 1;    // Avoid divide by zero.
     }
     else
     {
-        sleRippleState = entryCache (ltRIPPLE_STATE,
-            Ledger::getRippleStateIndex (uToAccountID, uFromAccountID, uCurrencyID));
-
-        if (sleRippleState)
-        {
-            SField::ref sfField = uToAccountID < uFromAccountID ? sfLow : sfHigh;
-
-            uQuality    = sleRippleState->isFieldPresent (sfField)
-                          ? sleRippleState->getFieldU32 (sfField)
-                          : QUALITY_ONE;
-
-            if (!uQuality)
-                uQuality    = 1;    // Avoid divide by zero.
-        }
-        else
-        {
-            // XXX Ideally, catch no before this. So we can assert to be stricter.
-            uQuality    = QUALITY_ONE;
-        }
+        // XXX Ideally, catch no before this. So we can assert to be stricter.
+        uQuality    = QUALITY_ONE;
     }
-
+    
     WriteLog (lsTRACE, LedgerEntrySet) << "rippleQuality: " <<
         (sfLow == sfLowQualityIn ? "in" : "out") <<
         " uToAccountID=" << RippleAddress::createHumanAccountID (uToAccountID) <<
@@ -1233,8 +1218,6 @@ LedgerEntrySet::rippleQualityIn (const uint160& uToAccountID,
         " uCurrencyID=" << STAmount::createHumanCurrency (uCurrencyID) <<
         " bLine=" << std::boolalpha << !!sleRippleState <<
         " uQuality=" << (uQuality / 1000000000.0);
-
-    //  assert(uToAccountID == uFromAccountID || !!sleRippleState);
 
     return uQuality;
 }
@@ -1541,14 +1524,14 @@ TER LedgerEntrySet::rippleCredit (const uint160& uSenderID, const uint160& uRece
             " amount=" << saAmount.getFullText () <<
             " after=" << saBalance.getFullText ();
 
-        bool    bDelete = false;
-        std::uint32_t  uFlags;
+        std::uint32_t const uFlags (sleRippleState->getFieldU32 (sfFlags));
+        bool bDelete = false;
 
         // YYY Could skip this if rippling in reverse.
         if (saBefore > zero                                                                              // Sender balance was positive.
                 && saBalance <= zero                                                                         // Sender is zero or negative.
-                && is_bit_set ((uFlags = sleRippleState->getFieldU32 (sfFlags)), !bSenderHigh ? lsfLowReserve : lsfHighReserve) // Sender reserve is set.
-                && !is_bit_set (uFlags, !bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)
+                && (uFlags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve)) // Sender reserve is set.
+                && !(uFlags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple))
                 && !sleRippleState->getFieldAmount (!bSenderHigh ? sfLowLimit : sfHighLimit)                        // Sender trust limit is 0.
                 && !sleRippleState->getFieldU32 (!bSenderHigh ? sfLowQualityIn : sfHighQualityIn)                   // Sender quality in is 0.
                 && !sleRippleState->getFieldU32 (!bSenderHigh ? sfLowQualityOut : sfHighQualityOut))                // Sender quality out is 0.
@@ -1561,7 +1544,7 @@ TER LedgerEntrySet::rippleCredit (const uint160& uSenderID, const uint160& uRece
             sleRippleState->setFieldU32 (sfFlags, uFlags & (!bSenderHigh ? ~lsfLowReserve : ~lsfHighReserve));  // Clear reserve flag.
 
             bDelete = !saBalance        // Balance is zero.
-                      && !is_bit_set (uFlags, bSenderHigh ? lsfLowReserve : lsfHighReserve); // Receiver reserve is clear.
+                      && !(uFlags & (bSenderHigh ? lsfLowReserve : lsfHighReserve)); // Receiver reserve is clear.
         }
 
         if (bSenderHigh)
@@ -1635,15 +1618,14 @@ TER LedgerEntrySet::rippleSend (const uint160& uSenderID, const uint160& uReceiv
 
 TER LedgerEntrySet::accountSend (const uint160& uSenderID, const uint160& uReceiverID, const STAmount& saAmount)
 {
-    TER terResult   = tesSUCCESS;
+    TER terResult = tesSUCCESS;
 
     assert (saAmount >= zero);
 
     if (!saAmount || (uSenderID == uReceiverID))
-    {
-        nothing ();
-    }
-    else if (saAmount.isNative ())
+        return tesSUCCESS;
+    
+    if (saAmount.isNative ())
     {
         // XRP send which does not check reserve and can do pure adjustment.
         SLE::pointer sleSender = !!uSenderID
@@ -1674,7 +1656,7 @@ TER LedgerEntrySet::accountSend (const uint160& uSenderID, const uint160& uRecei
         {
             if (sleSender->getFieldAmount (sfBalance) < saAmount)
             {
-                terResult = is_bit_set (mParams, tapOPEN_LEDGER)
+                terResult = (mParams & tapOPEN_LEDGER)
                     ? telFAILED_PROCESSING
                     : tecFAILED_PROCESSING;
             }
@@ -1704,7 +1686,7 @@ TER LedgerEntrySet::accountSend (const uint160& uSenderID, const uint160& uRecei
     }
     else
     {
-        STAmount    saActual;
+        STAmount saActual;
 
         WriteLog (lsTRACE, LedgerEntrySet) << "accountSend: " <<
             RippleAddress::createHumanAccountID (uSenderID) <<
@@ -1712,7 +1694,7 @@ TER LedgerEntrySet::accountSend (const uint160& uSenderID, const uint160& uRecei
             " : " << saAmount.getFullText ();
 
 
-        terResult   = rippleSend (uSenderID, uReceiverID, saAmount, saActual);
+        terResult = rippleSend (uSenderID, uReceiverID, saAmount, saActual);
     }
 
     return terResult;

@@ -495,16 +495,20 @@ int Pathfinder::getPathsOut (RippleCurrency const& currencyID, const uint160& ac
         RippleState* rspEntry = (RippleState*) item.get ();
 
         if (currencyID != rspEntry->getLimit ().getCurrency ())
-            nothing ();
+        {
+        }
         else if (rspEntry->getBalance () <= zero &&
                  (!rspEntry->getLimitPeer ()
                   || -rspEntry->getBalance () >= rspEntry->getLimitPeer ()
                   ||  (bAuthRequired && !rspEntry->getAuth ())))
-            nothing ();
+        {
+        }
         else if (isDstCurrency && (dstAccount == rspEntry->getAccountIDPeer ()))
             count += 10000; // count a path to the destination extra
         else if (rspEntry->getNoRipplePeer ())
-            nothing (); // This probably isn't a useful path out
+        {
+            // This probably isn't a useful path out
+        }
         else
             ++count;
     }
@@ -593,9 +597,12 @@ STPathSet& Pathfinder::getPaths(PathType_t const& type, bool addComplete)
 
 bool Pathfinder::isNoRipple (const uint160& setByID, const uint160& setOnID, const uint160& currencyID)
 {
-    SLE::pointer sleRipple = mLedger->getSLEi (Ledger::getRippleStateIndex (setByID, setOnID, currencyID));
-    return sleRipple &&
-        is_bit_set (sleRipple->getFieldU32 (sfFlags), (setByID > setOnID) ? lsfHighNoRipple : lsfLowNoRipple);
+    SLE::pointer sleRipple = mLedger->getSLEi (
+        Ledger::getRippleStateIndex (setByID, setOnID, currencyID));
+
+    auto const flag ((setByID > setOnID) ? lsfHighNoRipple : lsfLowNoRipple);
+
+    return sleRipple && (sleRipple->getFieldU32 (sfFlags) & flag);
 }
 
 // Does this path end on an account-to-account link whose last account
@@ -608,7 +615,7 @@ bool Pathfinder::isNoRippleOut (const STPath& currentPath)
 
     // Last link must be an account
     STPathElement const& endElement = *(currentPath.end() - 1);
-    if (!is_bit_set(endElement.getNodeType(), STPathElement::typeAccount))
+    if (!(endElement.getNodeType() & STPathElement::typeAccount))
         return false;
 
     // What account are we leaving?
@@ -647,16 +654,16 @@ void Pathfinder::addLink(
             SLE::pointer sleEnd = mLedger->getSLEi(Ledger::getAccountRootIndex(uEndAccount));
             if (sleEnd)
             {
-                bool const bRequireAuth = is_bit_set(sleEnd->getFieldU32(sfFlags), lsfRequireAuth);
-                bool const bIsEndCurrency = (uEndCurrency == mDstAmount.getCurrency());
-                bool const bIsNoRippleOut = isNoRippleOut (currentPath);
+                bool const bRequireAuth (sleEnd->getFieldU32(sfFlags) & lsfRequireAuth);
+                bool const bIsEndCurrency (uEndCurrency == mDstAmount.getCurrency());
+                bool const bIsNoRippleOut (isNoRippleOut (currentPath));
 
                 AccountItems& rippleLines (mRLCache->getRippleLines(uEndAccount));
 
                 std::vector< std::pair<int, uint160> > candidates;
                 candidates.reserve(rippleLines.getItems().size());
 
-                BOOST_FOREACH(AccountItem::ref item, rippleLines.getItems())
+                for(auto item : rippleLines.getItems())
                 {
                     RippleState const& rspEntry = * reinterpret_cast<RippleState const *>(item.get());
                     uint160 const& acctID = rspEntry.getAccountIDPeer();

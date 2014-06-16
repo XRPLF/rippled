@@ -597,7 +597,6 @@ Blob RippleAddress::accountPrivateEncrypt (const RippleAddress& naPublicTo, Blob
         }
         catch (...)
         {
-            nothing ();
         }
     }
 
@@ -628,7 +627,6 @@ Blob RippleAddress::accountPrivateDecrypt (const RippleAddress& naPublicFrom, Bl
         }
         catch (...)
         {
-            nothing ();
         }
     }
 
@@ -802,12 +800,10 @@ bool RippleAddress::setSeedGeneric (const std::string& strText)
     else if (setSeed (strText))
     {
         // Log::out() << "Recognized seed.";
-        nothing ();
     }
     else if (1 == setSeed1751 (strText))
     {
         // Log::out() << "Recognized 1751 seed.";
-        nothing ();
     }
     else
     {

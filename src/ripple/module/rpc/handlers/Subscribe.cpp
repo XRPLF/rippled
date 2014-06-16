@@ -85,7 +85,6 @@ Json::Value RPCHandler::doSubscribe (Json::Value params, Resource::Charge& loadT
 
     if (!params.isMember ("streams"))
     {
-        nothing ();
     }
     else if (!params["streams"].isArray ())
     {
@@ -136,7 +135,6 @@ Json::Value RPCHandler::doSubscribe (Json::Value params, Resource::Charge& loadT
 
     if (!params.isMember (strAccountsProposed))
     {
-        nothing ();
     }
     else if (!params[strAccountsProposed].isArray ())
     {
@@ -158,8 +156,6 @@ Json::Value RPCHandler::doSubscribe (Json::Value params, Resource::Charge& loadT
 
     if (!params.isMember ("accounts"))
     {
-        nothing ();
-
     }
     else if (!params["accounts"].isArray ())
     {
@@ -184,7 +180,6 @@ Json::Value RPCHandler::doSubscribe (Json::Value params, Resource::Charge& loadT
     bool bHaveMasterLock = true;
     if (!params.isMember ("books"))
     {
-        nothing ();
     }
     else if (!params["books"].isArray ())
     {

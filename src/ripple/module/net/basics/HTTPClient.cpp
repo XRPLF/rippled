@@ -207,7 +207,7 @@ public:
             // Timer canceled because deadline no longer needed.
             WriteLog (lsTRACE, HTTPClient) << "Deadline cancelled.";
 
-            nothing (); // Aborter is done.
+            // Aborter is done.
         }
         else if (ecResult)
         {
@@ -441,8 +441,6 @@ public:
             if (mShutdown)
             {
                 WriteLog (lsTRACE, HTTPClient) << "Complete.";
-
-                nothing ();
             }
             else
             {

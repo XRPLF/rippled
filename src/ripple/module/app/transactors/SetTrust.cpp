@@ -54,11 +54,11 @@ TER SetTrust::doApply ()
         return temINVALID_FLAG;
     }
 
-    bool const bSetAuth = is_bit_set (uTxFlags, tfSetfAuth);
-    bool const bSetNoRipple = is_bit_set (uTxFlags, tfSetNoRipple);
-    bool const bClearNoRipple  = is_bit_set (uTxFlags, tfClearNoRipple);
+    bool const bSetAuth = (uTxFlags & tfSetfAuth);
+    bool const bSetNoRipple = (uTxFlags & tfSetNoRipple);
+    bool const bClearNoRipple  = (uTxFlags & tfClearNoRipple);
 
-    if (bSetAuth && !is_bit_set (mTxnAccount->getFieldU32 (sfFlags), lsfRequireAuth))
+    if (bSetAuth && !(mTxnAccount->getFieldU32 (sfFlags) & lsfRequireAuth))
     {
         m_journal.trace <<
             "Retry: Auth not required.";
@@ -235,11 +235,11 @@ TER SetTrust::doApply ()
 
         if (bSetNoRipple && !bClearNoRipple && (bHigh ? saHighBalance : saLowBalance) >= zero)
         {
-            uFlagsOut           |= (bHigh ? lsfHighNoRipple : lsfLowNoRipple);
+            uFlagsOut |= (bHigh ? lsfHighNoRipple : lsfLowNoRipple);
         }
         else if (bClearNoRipple && !bSetNoRipple)
         {
-            uFlagsOut           &= ~(bHigh ? lsfHighNoRipple : lsfLowNoRipple);
+            uFlagsOut &= ~(bHigh ? lsfHighNoRipple : lsfLowNoRipple);
         }
 
         if (QUALITY_ONE == uLowQualityOut)  uLowQualityOut  = 0;
@@ -248,25 +248,25 @@ TER SetTrust::doApply ()
 
 
         bool const  bLowReserveSet      = uLowQualityIn || uLowQualityOut ||
-                                          is_bit_set (uFlagsOut, lsfLowNoRipple) ||
+                                          (uFlagsOut & lsfLowNoRipple) ||
                                           !!saLowLimit || saLowBalance > zero;
         bool const  bLowReserveClear    = !bLowReserveSet;
 
         bool const  bHighReserveSet     = uHighQualityIn || uHighQualityOut ||
-                                          is_bit_set (uFlagsOut, lsfHighNoRipple) ||
+                                          (uFlagsOut & lsfHighNoRipple) ||
                                           !!saHighLimit || saHighBalance > zero;
         bool const  bHighReserveClear   = !bHighReserveSet;
 
         bool const  bDefault            = bLowReserveClear && bHighReserveClear;
 
-        bool const  bLowReserved        = is_bit_set (uFlagsIn, lsfLowReserve);
-        bool const  bHighReserved       = is_bit_set (uFlagsIn, lsfHighReserve);
+        bool const  bLowReserved = (uFlagsIn & lsfLowReserve);
+        bool const  bHighReserved = (uFlagsIn & lsfHighReserve);
 
         bool        bReserveIncrease    = false;
 
         if (bSetAuth)
         {
-            uFlagsOut           |= (bHigh ? lsfHighAuth : lsfLowAuth);
+            uFlagsOut |= (bHigh ? lsfHighAuth : lsfLowAuth);
         }
 
         if (bLowReserveSet && !bLowReserved)
@@ -274,10 +274,10 @@ TER SetTrust::doApply ()
             // Set reserve for low account.
 
             mEngine->view ().ownerCountAdjust (uLowAccountID, 1, sleLowAccount);
-            uFlagsOut           |= lsfLowReserve;
+            uFlagsOut |= lsfLowReserve;
 
             if (!bHigh)
-                bReserveIncrease    = true;
+                bReserveIncrease = true;
         }
 
         if (bLowReserveClear && bLowReserved)
@@ -285,7 +285,7 @@ TER SetTrust::doApply ()
             // Clear reserve for low account.
 
             mEngine->view ().ownerCountAdjust (uLowAccountID, -1, sleLowAccount);
-            uFlagsOut   &= ~lsfLowReserve;
+            uFlagsOut &= ~lsfLowReserve;
         }
 
         if (bHighReserveSet && !bHighReserved)
@@ -293,7 +293,7 @@ TER SetTrust::doApply ()
             // Set reserve for high account.
 
             mEngine->view ().ownerCountAdjust (uHighAccountID, 1, sleHighAccount);
-            uFlagsOut   |= lsfHighReserve;
+            uFlagsOut |= lsfHighReserve;
 
             if (bHigh)
                 bReserveIncrease    = true;
@@ -304,7 +304,7 @@ TER SetTrust::doApply ()
             // Clear reserve for high account.
 
             mEngine->view ().ownerCountAdjust (uHighAccountID, -1, sleHighAccount);
-            uFlagsOut   &= ~lsfHighReserve;
+            uFlagsOut &= ~lsfHighReserve;
         }
 
         if (uFlagsIn != uFlagsOut)
@@ -314,7 +314,7 @@ TER SetTrust::doApply ()
         {
             // Delete.
 
-            terResult   = mEngine->view ().trustDelete (sleRippleState, uLowAccountID, uHighAccountID);
+            terResult = mEngine->view ().trustDelete (sleRippleState, uLowAccountID, uHighAccountID);
         }
         else if (bReserveIncrease
                  && mPriorBalance.getNValue () < uReserveCreate) // Reserve is not scaled by load.
@@ -324,26 +324,25 @@ TER SetTrust::doApply ()
 
             // Another transaction could provide XRP to the account and then
             // this transaction would succeed.
-            terResult   = tecINSUF_RESERVE_LINE;
+            terResult = tecINSUF_RESERVE_LINE;
         }
         else
         {
             mEngine->entryModify (sleRippleState);
 
-            m_journal.trace <<
-                "Modify ripple line";
+            m_journal.trace << "Modify ripple line";
         }
     }
     // Line does not exist.
-    else if (!saLimitAmount                                     // Setting default limit.
-             && (!bQualityIn || !uQualityIn)                         // Not setting quality in or setting default quality in.
-             && (!bQualityOut || !uQualityOut))                      // Not setting quality out or setting default quality out.
+    else if (!saLimitAmount                       // Setting default limit.
+             && (!bQualityIn || !uQualityIn)      // Not setting quality in or setting default quality in.
+             && (!bQualityOut || !uQualityOut))   // Not setting quality out or setting default quality out.
     {
         m_journal.trace <<
             "Redundant: Setting non-existent ripple line to defaults.";
         return tecNO_LINE_REDUNDANT;
     }
-    else if (mPriorBalance.getNValue () < uReserveCreate)       // Reserve is not scaled by load.
+    else if (mPriorBalance.getNValue () < uReserveCreate) // Reserve is not scaled by load.
     {
         m_journal.trace <<
             "Delay transaction: Line does not exist. Insufficent reserve to create line.";

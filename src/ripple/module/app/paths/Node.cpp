@@ -37,14 +37,28 @@ Json::Value Node::getJson () const
 
     jvNode["type"]  = uFlags;
 
-    if (isAccount() || !!uAccountID)
-        jvFlags.append (!isAccount() == !!uAccountID ? "account" : "-account");
+    bool const hasCurrency (uCurrencyID != zero);
+    bool const hasAccount (uAccountID != zero);
+    bool const hasIssuer (uIssuerID != zero);
 
-    if (is_bit_set (uFlags, STPathElement::typeCurrency) || !!uCurrencyID)
-        jvFlags.append (!!is_bit_set (uFlags, STPathElement::typeCurrency) == !!uCurrencyID ? "currency" : "-currency");
+    if (isAccount() || hasAccount)
+    {
+        jvFlags.append (!isAccount() == hasAccount ? "account" : "-account");
+    }
 
-    if (is_bit_set (uFlags, STPathElement::typeIssuer) || !!uIssuerID)
-        jvFlags.append (!!is_bit_set (uFlags, STPathElement::typeIssuer) == !!uIssuerID ? "issuer" : "-issuer");
+    if (uFlags & STPathElement::typeCurrency || hasCurrency)
+    {
+        jvFlags.append ((uFlags & STPathElement::typeCurrency) && hasCurrency
+            ? "currency"
+            : "-currency");
+    }
+
+    if (uFlags & STPathElement::typeIssuer || hasIssuer)
+    {
+        jvFlags.append ((uFlags & STPathElement::typeIssuer) && hasIssuer
+            ? "issuer"
+            : "-issuer");
+    }
 
     jvNode["flags"] = jvFlags;
 

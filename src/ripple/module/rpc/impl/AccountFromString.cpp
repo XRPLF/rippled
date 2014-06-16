@@ -65,7 +65,6 @@ Json::Value accountFromString (Ledger::ref lrLedger, RippleAddress& naAccount,
         if (!sleGen)
         {
             // Didn't find a generator map, assume it is a master generator.
-            nothing ();
         }
         else
         {
