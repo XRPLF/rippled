@@ -1232,7 +1232,8 @@ bool ApplicationImp::loadOldLedger (
                                  m_journal.warning << "Invalid entry in ledger";
                              }
                          }
-                         // TODO(david): close ledger, update hash
+
+                         loadLedger->setAccepted();
                      }
                  }
             }
@@ -1245,6 +1246,16 @@ bool ApplicationImp::loadOldLedger (
             uint256 hash;
             hash.SetHex (ledgerID);
             loadLedger = Ledger::loadByHash (hash);
+
+            if (!loadLedger)
+            {
+                // Try to build the ledger from the back end
+                auto il = std::make_shared <InboundLedger> (hash, 0, InboundLedger::fcGENERIC,
+                    get_seconds_clock ());
+                if (il->checkLocal ())
+                    loadLedger = il->getLedger ();
+            }
+
         }
         else // assume by sequence
             loadLedger = Ledger::loadByIndex (
@@ -1265,12 +1276,23 @@ bool ApplicationImp::loadOldLedger (
             replayLedger = loadLedger;
 
             // this is the prior ledger
-            loadLedger = Ledger::loadByIndex (replayLedger->getLedgerSeq() - 1);
-            if (!loadLedger || (replayLedger->getParentHash() != loadLedger->getHash()))
+            loadLedger = Ledger::loadByHash (replayLedger->getParentHash ());
+            if (!loadLedger)
             {
-                m_journal.fatal << "Replay ledger missing/damaged";
-                assert (false);
-                return false;
+
+                // Try to build the ledger from the back end
+                auto il = std::make_shared <InboundLedger> (
+                    replayLedger->getParentHash(), 0, InboundLedger::fcGENERIC,
+                    get_seconds_clock ());
+                if (il->checkLocal ())
+                    loadLedger = il->getLedger ();
+
+                if (!loadLedger)
+                {
+                    m_journal.fatal << "Replay ledger missing/damaged";
+                    assert (false);
+                    return false;
+                }
             }
         }
 
@@ -1308,9 +1330,13 @@ bool ApplicationImp::loadOldLedger (
 
         if (replay)
         {
-            // inject transaction from replayLedger into consensus set
+            // inject transaction(s) from the replayLedger into our open ledger
             SHAMap::ref txns = replayLedger->peekTransactionMap();
-            Ledger::ref cur = getLedgerMaster().getCurrentLedger();
+
+            // Get a mutable snapshot of the open ledger
+            Ledger::pointer cur = getLedgerMaster().getCurrentLedger();
+            cur = std::make_shared <Ledger> (*cur, true);
+            assert (!cur->isImmutable());
 
             for (auto it = txns->peekFirstItem(); it != nullptr;
                  it = txns->peekNextItem(it->getTag()))
@@ -1322,6 +1348,9 @@ bool ApplicationImp::loadOldLedger (
                 if (!cur->addTransaction(it->getTag(), s))
                     m_journal.warning << "Unable to add transaction " << it->getTag();
             }
+
+            // Switch to the mutable snapshot
+            m_ledgerMaster->switchLedgers (loadLedger, cur);
         }
     }
     catch (SHAMapMissingNode&)
