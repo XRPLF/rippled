@@ -640,7 +640,7 @@ class _ProjectGenerator(object):
             variant_dir = os.path.relpath(os.path.dirname(
                 config.target[0].get_abspath()), self.project_dir)
             out_dir = winpath(variant_dir) + ntpath.sep
-            int_dir = winpath(os.path.join(variant_dir, 'src')) + ntpath.sep
+            int_dir = winpath(ntpath.join(variant_dir, 'src')) + ntpath.sep
             f.write(V12DSPPropertyGroup % locals())
 
         f.write('  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />\r\n')
@@ -706,7 +706,9 @@ class _ProjectGenerator(object):
                     name = config.name
                     out_dir = os.path.relpath(os.path.dirname(str(output)), self.project_dir)
                     cpp_out = winpath(out_dir)
-                    base_out = os.path.join(out_dir, os.path.splitext(os.path.basename(item.path()))[0])
+                    out_parts = out_dir.split(os.sep)
+                    out_parts.append(os.path.splitext(os.path.basename(item.path()))[0])
+                    base_out = ntpath.join(*out_parts)
                     props += V12CustomBuildProtoc % locals()
  
             f.write('    <%(tag)s Include="%(path)s">\r\n' % locals())
