@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <boost/thread.hpp>
+
 namespace ripple {
 
 class LoadManagerImp

@@ -20,41 +20,14 @@
 #ifndef BEAST_CHRONO_BASIC_SECONDS_CLOCK_H_INCLUDED
 #define BEAST_CHRONO_BASIC_SECONDS_CLOCK_H_INCLUDED
 
+#include <beast/chrono/chrono_util.h>
+
 #include <algorithm>
 #include <chrono>
-#include <vector>
-
-#ifndef BEAST_BASIC_SECONDS_CLOCK_BOOST_WORKAROUND
-# ifdef _MSC_VER
-// Visual Studio 2012, 2013 have a bug in std::thread that
-// causes a hang on exit, in the library function atexit()
-#  if BEAST_USE_BOOST_FEATURES
-#   define BEAST_BASIC_SECONDS_CLOCK_BOOST_WORKAROUND 1
-#  else
-#   define BEAST_BASIC_SECONDS_CLOCK_BOOST_WORKAROUND 0
-#  endif
-# else
-#  define BEAST_BASIC_SECONDS_CLOCK_BOOST_WORKAROUND 0
-# endif
-#endif
-
-#if BEAST_BASIC_SECONDS_CLOCK_BOOST_WORKAROUND
-#include <boost/version.hpp>
-# if BOOST_VERSION >= 105500
-#include <boost/thread/thread.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/condition_variable.hpp>
-#include <boost/chrono.hpp>
-# else
-#  error "Boost version 1.55.0 or later is required"
-# endif
-#else
 #include <condition_variable>
 #include <mutex>
 #include <thread>
-#endif
-
-#include <beast/chrono/chrono_util.h>
+#include <vector>
 
 namespace beast {
 
@@ -72,15 +45,6 @@ public:
 class seconds_clock_thread
 {
 public:
-#if BEAST_BASIC_SECONDS_CLOCK_BOOST_WORKAROUND
-    typedef boost::mutex mutex;
-    typedef boost::condition_variable cond_var;
-    typedef boost::lock_guard <mutex> lock_guard;
-    typedef boost::unique_lock <mutex> unique_lock;
-    typedef boost::chrono::steady_clock clock_type;
-    typedef boost::chrono::seconds seconds;
-    typedef boost::thread thread;
-#else
     typedef std::mutex mutex;
     typedef std::condition_variable cond_var;
     typedef std::lock_guard <mutex> lock_guard;
@@ -88,7 +52,6 @@ public:
     typedef std::chrono::steady_clock clock_type;
     typedef std::chrono::seconds seconds;
     typedef std::thread thread;
-#endif
     typedef std::vector <seconds_clock_worker*> workers;
 
     bool m_stop;
@@ -106,12 +69,7 @@ public:
 
     ~seconds_clock_thread ()
     {
-        {
-            lock_guard lock (m_mutex);
-            m_stop = true;
-        }
-        m_cond.notify_all();
-        m_thread.join ();
+        stop();
     }
 
     void add (seconds_clock_worker& w)
@@ -127,7 +85,20 @@ public:
             m_workers.begin (), m_workers.end(), &w));
     }
 
-    void run ()
+    void stop()
+    {
+        if (m_thread.joinable())
+        {
+            {
+                lock_guard lock (m_mutex);
+                m_stop = true;
+            }
+            m_cond.notify_all();
+            m_thread.join();
+        }
+    }
+
+    void run()
     {
         unique_lock lock (m_mutex);;
 
@@ -156,6 +127,20 @@ public:
 }
 
 //------------------------------------------------------------------------------
+
+/** Called before main exits to terminate the utility thread.
+    This is a workaround for Visual Studio 2013:
+    http://connect.microsoft.com/VisualStudio/feedback/details/786016/creating-a-global-c-object-that-used-thread-join-in-its-destructor-causes-a-lockup
+    http://stackoverflow.com/questions/10915233/stdthreadjoin-hangs-if-called-after-main-exits-when-using-vs2012-rc
+*/
+inline
+void
+basic_seconds_clock_main_hook()
+{
+#ifdef _MSC_VER
+    detail::seconds_clock_thread::instance().stop();
+#endif
+}
 
 /** A clock whose minimum resolution is one second.
     The purpose of this class is to optimize the performance of the now()

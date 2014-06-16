@@ -102,5 +102,9 @@ int main (int argc, char** argv)
 
     beast::SharedSingleton <ProtobufLibrary>::get ();
 
-    return ripple::run (argc, argv);
+    auto const result (ripple::run (argc, argv));
+
+    beast::basic_seconds_clock_main_hook();
+
+    return result;
 }

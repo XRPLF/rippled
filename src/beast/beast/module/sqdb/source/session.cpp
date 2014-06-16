@@ -114,14 +114,6 @@ Error session::clone()
     return open(m_fileName, m_connectString);
 }
 
-/*
-static int infiniteBusyHandler (void* data, int tries)
-{
-  boost::this_thread::sleep (boost::posix_time::seconds(1));
-  return 1; // try again
-}
-*/
-
 Error session::open(String fileName, std::string options)
 {
     Error err;

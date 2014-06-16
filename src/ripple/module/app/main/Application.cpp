@@ -1021,7 +1021,7 @@ public:
             // VFALCO NOTE This is a sign that something is wrong somewhere, it
             //             shouldn't be necessary to sleep until some flag is set.
             while (mShutdown)
-                boost::this_thread::sleep (boost::posix_time::milliseconds (100));
+                std::this_thread::sleep_for (std::chrono::milliseconds (100));
         }
     }
 
