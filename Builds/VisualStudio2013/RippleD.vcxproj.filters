@@ -4704,6 +4704,9 @@
     <ClCompile Include="..\..\src\ripple\unity\beastc.c">
       <Filter>ripple\unity</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\unity\beastobjc.mm">
+      <Filter>ripple\unity</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\common.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
