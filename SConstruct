@@ -488,10 +488,7 @@ for source in [
 # Declare the targets
 aliases = collections.defaultdict(list)
 msvc_configs = []
-has_msvc = 'msvc' in toolchains     # This variable defines whether or not msvc is actually a toolchain, because we're going to add msvc to toolchains regardless
-if not has_msvc:
-    toolchains.append('msvc')       # We need to always describe the visual studio file, even if msvc isn't present
-for toolchain in toolchains:
+for toolchain in ['gcc', 'clang', 'msvc']:
     for variant in variants:
         # Configure this variant's construction environment
         env = base.Clone()
@@ -588,14 +585,12 @@ for toolchain in toolchains:
         if toolchain == 'msvc' and has_msvc:
             config = env.VSProjectConfig(variant, 'x64', target, env)
             msvc_configs.append(config)
-        if toolchain != 'msvc' or has_msvc:     # If msvc was added just to allow describing of the visual studio file, we don't want to add it to aliases
-            if toolchain in toolchains:
-                aliases['all'].extend(target)
+        if toolchain in toolchains:
+            aliases['all'].extend(target)
             aliases[variant].extend(target)
             aliases[toolchain].extend(target)
             env.Alias(variant_name, target)
-if not has_msvc:
-    toolchains.remove('msvc')                   # Make sure we take msvc out of the toolchains if we put it in there just to describe the visual studio file
+
 for key, value in aliases.iteritems():
     env.Alias(key, value)
 
