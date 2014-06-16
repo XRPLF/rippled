@@ -24,13 +24,13 @@ namespace ripple {
 //   tx_json: <object>,
 //   secret: <secret>
 // }
-Json::Value RPCHandler::doSign (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doSign (RPC::Context& context)
 {
-    masterLockHolder.unlock ();
+    context.lock_.unlock ();
 
-    loadType = Resource::feeHighBurdenRPC;
-    bool bFailHard = params.isMember ("fail_hard") && params["fail_hard"].asBool ();
-    return RPC::transactionSign (params, false, bFailHard, masterLockHolder, *mNetOps, mRole);
+    context.loadType_ = Resource::feeHighBurdenRPC;
+    bool bFailHard = context.params_.isMember ("fail_hard") && context.params_["fail_hard"].asBool ();
+    return RPC::transactionSign (context.params_, false, bFailHard, context.lock_, context.netOps_, context.role_);
 }
 
 } // ripple

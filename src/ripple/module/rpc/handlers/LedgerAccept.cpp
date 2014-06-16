@@ -20,7 +20,7 @@
 
 namespace ripple {
 
-Json::Value RPCHandler::doLedgerAccept (Json::Value, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doLedgerAccept (RPC::Context& context)
 {
     Json::Value jvResult;
 
@@ -30,9 +30,9 @@ Json::Value RPCHandler::doLedgerAccept (Json::Value, Resource::Charge& loadType,
     }
     else
     {
-        mNetOps->acceptLedger ();
+        context.netOps_.acceptLedger ();
 
-        jvResult["ledger_current_index"]    = mNetOps->getCurrentLedgerID ();
+        jvResult["ledger_current_index"]    = context.netOps_.getCurrentLedgerID ();
     }
 
     return jvResult;

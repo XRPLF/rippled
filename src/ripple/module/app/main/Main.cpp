@@ -58,7 +58,7 @@ void startServer ()
             if (!getConfig ().QUIET)
                 Log::out() << "Startup RPC: " << jvCommand;
 
-            RPCHandler  rhHandler (&getApp().getOPs ());
+            RPCHandler  rhHandler (getApp().getOPs ());
 
             Resource::Charge loadType = Resource::feeReferenceRPC;
             Json::Value jvResult    = rhHandler.doCommand (jvCommand, Config::ADMIN, loadType);

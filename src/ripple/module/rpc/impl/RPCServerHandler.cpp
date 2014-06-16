@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/module/app/rpc/RPCHandler.h>
-#include <ripple/module/app/rpc/RPCServerHandler.h>
 #include <ripple/module/app/main/RPCHTTPServer.h>
+#include <ripple/module/rpc/RPCHandler.h>
+#include <ripple/module/rpc/RPCServerHandler.h>
 
 namespace ripple {
 
@@ -57,7 +57,7 @@ std::string RPCServerHandler::processRequest (std::string const& request,
             return createResponse (400, "Unable to parse request");
         }
     }
-    
+
     Config::Role const role (getConfig ().getAdminRole (jsonRequest, remoteIPAddress));
 
     Resource::Consumer usage;
@@ -117,7 +117,7 @@ std::string RPCServerHandler::processRequest (std::string const& request,
     }
 
     std::string response;
-   
+
     WriteLog (lsDEBUG, RPCServer) << "Query: " << strMethod << params;
 
     {
@@ -142,7 +142,7 @@ std::string RPCServerHandler::processRequest (std::string const& request,
 
     // legacy dispatcher
     Resource::Charge fee (Resource::feeReferenceRPC);
-    RPCHandler rpcHandler (&m_networkOPs);
+    RPCHandler rpcHandler (m_networkOPs);
     Json::Value const result = rpcHandler.doRpcCommand (
         strMethod, params, role, fee);
 

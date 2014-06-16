@@ -25,21 +25,21 @@ namespace ripple {
 //   ledger_index : <ledger_index>
 // }
 // XXX In this case, not specify either ledger does not mean ledger current. It means any ledger.
-Json::Value RPCHandler::doTransactionEntry (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doTransactionEntry (RPC::Context& context)
 {
-    masterLockHolder.unlock ();
+    context.lock_.unlock ();
 
     Ledger::pointer     lpLedger;
-    Json::Value         jvResult    = RPC::lookupLedger (params, lpLedger, *mNetOps);
+    Json::Value         jvResult    = RPC::lookupLedger (context.params_, lpLedger, context.netOps_);
 
     if (!lpLedger)
         return jvResult;
 
-    if (!params.isMember ("tx_hash"))
+    if (!context.params_.isMember ("tx_hash"))
     {
         jvResult["error"]   = "fieldNotFoundTransaction";
     }
-    else if (!params.isMember ("ledger_hash") && !params.isMember ("ledger_index"))
+    else if (!context.params_.isMember ("ledger_hash") && !context.params_.isMember ("ledger_index"))
     {
         // We don't work on ledger current.
 
@@ -49,7 +49,7 @@ Json::Value RPCHandler::doTransactionEntry (Json::Value params, Resource::Charge
     {
         uint256                     uTransID;
         // XXX Relying on trusted WSS client. Would be better to have a strict routine, returning success or failure.
-        uTransID.SetHex (params["tx_hash"].asString ());
+        uTransID.SetHex (context.params_["tx_hash"].asString ());
 
         if (!lpLedger)
         {

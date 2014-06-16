@@ -42,7 +42,7 @@
 #include <openssl/err.h>
 
 #include <ripple/unity/sslutil.h>
-#include <ripple/module/rpc/api/ErrorCodes.h>
+#include <ripple/module/rpc/ErrorCodes.h>
 #include <ripple/common/jsonrpc_fields.h>
 
 // VFALCO TODO fix these warnings!

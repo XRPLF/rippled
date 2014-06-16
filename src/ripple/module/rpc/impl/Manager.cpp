@@ -19,8 +19,7 @@
 
 #include <beast/cxx14/memory.h>
 
-#include <ripple/module/rpc/api/Manager.h>
-
+#include <ripple/module/rpc/Manager.h>
 #include <ripple/module/rpc/impl/DoPrint.h>
 
 namespace ripple {

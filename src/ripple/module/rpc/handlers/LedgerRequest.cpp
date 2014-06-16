@@ -24,15 +24,12 @@ namespace ripple {
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 // }
-Json::Value RPCHandler::doLedgerRequest (
-    Json::Value params,
-    Resource::Charge&,
-    Application::ScopedLockType& masterLockHolder)
+Json::Value doLedgerRequest (RPC::Context& context)
 {
-    masterLockHolder.unlock ();
+    context.lock_.unlock ();
 
-    auto const hasHash = params.isMember (jss::ledger_hash);
-    auto const hasIndex = params.isMember (jss::ledger_index);
+    auto const hasHash = context.params_.isMember (jss::ledger_hash);
+    auto const hasIndex = context.params_.isMember (jss::ledger_index);
 
     auto& ledgerMaster = getApp().getLedgerMaster();
     LedgerHash ledgerHash;
@@ -45,11 +42,11 @@ Json::Value RPCHandler::doLedgerRequest (
 
     if (hasHash)
     {
-        auto const& jsonHash = params[jss::ledger_hash];
+        auto const& jsonHash = context.params_[jss::ledger_hash];
         if (!jsonHash.isString() || !ledgerHash.SetHex (jsonHash.asString ()))
             return RPC::invalid_field_message ("ledger_hash");
     } else {
-        auto const& jsonIndex = params[jss::ledger_index];
+        auto const& jsonIndex = context.params_[jss::ledger_index];
         if (!jsonIndex.isNumeric ())
             return RPC::invalid_field_message ("ledger_index");
 

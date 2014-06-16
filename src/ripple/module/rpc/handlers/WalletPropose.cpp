@@ -23,17 +23,17 @@ namespace ripple {
 // {
 //  passphrase: <string>
 // }
-Json::Value RPCHandler::doWalletPropose (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doWalletPropose (RPC::Context& context)
 {
-    masterLockHolder.unlock ();
+    context.lock_.unlock ();
 
     RippleAddress   naSeed;
     RippleAddress   naAccount;
 
-    if (!params.isMember ("passphrase"))
+    if (!context.params_.isMember ("passphrase"))
         naSeed.setSeedRandom ();
 
-    else if (!naSeed.setSeedGeneric (params["passphrase"].asString ()))
+    else if (!naSeed.setSeedGeneric (context.params_["passphrase"].asString ()))
         return rpcError(rpcBAD_SEED);
 
     RippleAddress naGenerator = RippleAddress::createGeneratorPublic (naSeed);

@@ -24,12 +24,12 @@ namespace ripple {
 // {
 //   min_count: <number>  // optional, defaults to 10
 // }
-Json::Value RPCHandler::doGetCounts (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doGetCounts (RPC::Context& context)
 {
     int minCount = 10;
 
-    if (params.isMember ("min_count"))
-        minCount = params["min_count"].asUInt ();
+    if (context.params_.isMember ("min_count"))
+        minCount = context.params_["min_count"].asUInt ();
 
     CountedObjects::List objectCounts = CountedObjects::getInstance ().getCounts (minCount);
 

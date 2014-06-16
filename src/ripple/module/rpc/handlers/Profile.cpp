@@ -25,10 +25,10 @@ namespace ripple {
 // issuer is the offering account
 // --> submit: 'submit|true|false': defaults to false
 // Prior to running allow each to have a credit line of what they will be getting from the other account.
-Json::Value RPCHandler::doProfile (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doProfile (RPC::Context& context)
 {
     /* need to fix now that sharedOfferCreate is gone
-    int             iArgs   = params.size();
+    int             iArgs   = context.params_.size();
     RippleAddress   naSeedA;
     RippleAddress   naAccountA;
     uint160         uCurrencyOfferA;
@@ -38,26 +38,26 @@ Json::Value RPCHandler::doProfile (Json::Value params, Resource::Charge& loadTyp
     uint32          iCount  = 100;
     bool            bSubmit = false;
 
-    if (iArgs < 6 || "offers" != params[0u].asString())
+    if (iArgs < 6 || "offers" != context.params_[0u].asString())
     {
         return rpcError(rpcINVALID_PARAMS);
     }
 
-    if (!naSeedA.setSeedGeneric(params[1u].asString()))                          // <pass_a>
+    if (!naSeedA.setSeedGeneric(context.params_[1u].asString()))                          // <pass_a>
         return rpcError(rpcINVALID_PARAMS);
 
-    naAccountA.setAccountID(params[2u].asString());                              // <account_a>
+    naAccountA.setAccountID(context.params_[2u].asString());                              // <account_a>
 
-    if (!STAmount::currencyFromString(uCurrencyOfferA, params[3u].asString()))   // <currency_offer_a>
+    if (!STAmount::currencyFromString(uCurrencyOfferA, context.params_[3u].asString()))   // <currency_offer_a>
         return rpcError(rpcINVALID_PARAMS);
 
-    naAccountB.setAccountID(params[4u].asString());                              // <account_b>
-    if (!STAmount::currencyFromString(uCurrencyOfferB, params[5u].asString()))   // <currency_offer_b>
+    naAccountB.setAccountID(context.params_[4u].asString());                              // <account_b>
+    if (!STAmount::currencyFromString(uCurrencyOfferB, context.params_[5u].asString()))   // <currency_offer_b>
         return rpcError(rpcINVALID_PARAMS);
 
-    iCount  = lexicalCast <uint32>(params[6u].asString());
+    iCount  = lexicalCast <uint32>(context.params_[6u].asString());
 
-    if (iArgs >= 8 && "false" != params[7u].asString())
+    if (iArgs >= 8 && "false" != context.params_[7u].asString())
         bSubmit = true;
 
     LogSink::get()->setMinSeverity(lsFATAL,true);
@@ -90,7 +90,7 @@ Json::Value RPCHandler::doProfile (Json::Value params, Resource::Charge& loadTyp
             0);                                                         // uExpiration
 
         if (bSubmit)
-            tpOfferA    = mNetOps->submitTransactionSync(tpOfferA); // FIXME: Don't use synch interface
+            tpOfferA    = context.netOps_.submitTransactionSync(tpOfferA); // FIXME: Don't use synch interface
     }
 
     boost::posix_time::ptime            ptEnd(boost::posix_time::microsec_clock::local_time());

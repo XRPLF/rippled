@@ -25,10 +25,10 @@ namespace ripple {
 //    ledger: 'current' | 'closed' | <uint256> | <number>,  // optional
 //    full: true | false    // optional, defaults to false.
 // }
-Json::Value RPCHandler::doLedger (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doLedger (RPC::Context& context)
 {
-    masterLockHolder.unlock ();
-    if (!params.isMember ("ledger") && !params.isMember ("ledger_hash") && !params.isMember ("ledger_index"))
+    context.lock_.unlock ();
+    if (!context.params_.isMember ("ledger") && !context.params_.isMember ("ledger_hash") && !context.params_.isMember ("ledger_index"))
     {
         Json::Value ret (Json::objectValue), current (Json::objectValue), closed (Json::objectValue);
 
@@ -42,15 +42,15 @@ Json::Value RPCHandler::doLedger (Json::Value params, Resource::Charge& loadType
     }
 
     Ledger::pointer     lpLedger;
-    Json::Value         jvResult    = RPC::lookupLedger (params, lpLedger, *mNetOps);
+    Json::Value         jvResult    = RPC::lookupLedger (context.params_, lpLedger, context.netOps_);
 
     if (!lpLedger)
         return jvResult;
 
-    bool    bFull           = params.isMember ("full") && params["full"].asBool ();
-    bool    bTransactions   = params.isMember ("transactions") && params["transactions"].asBool ();
-    bool    bAccounts       = params.isMember ("accounts") && params["accounts"].asBool ();
-    bool    bExpand         = params.isMember ("expand") && params["expand"].asBool ();
+    bool    bFull           = context.params_.isMember ("full") && context.params_["full"].asBool ();
+    bool    bTransactions   = context.params_.isMember ("transactions") && context.params_["transactions"].asBool ();
+    bool    bAccounts       = context.params_.isMember ("accounts") && context.params_["accounts"].asBool ();
+    bool    bExpand         = context.params_.isMember ("expand") && context.params_["expand"].asBool ();
     int     iOptions        = (bFull ? LEDGER_JSON_FULL : 0)
                               | (bExpand ? LEDGER_JSON_EXPAND : 0)
                               | (bTransactions ? LEDGER_JSON_DUMP_TXRP : 0)
@@ -59,19 +59,19 @@ Json::Value RPCHandler::doLedger (Json::Value params, Resource::Charge& loadType
     if (bFull || bAccounts)
     {
 
-        if (mRole != Config::ADMIN)
+        if (context.role_ != Config::ADMIN)
         {
             // Until some sane way to get full ledgers has been implemented, disallow
             // retrieving all state nodes
             return rpcError (rpcNO_PERMISSION);
         }
 
-        if (getApp().getFeeTrack().isLoadedLocal() && (mRole != Config::ADMIN))
+        if (getApp().getFeeTrack().isLoadedLocal() && (context.role_ != Config::ADMIN))
         {
             WriteLog (lsDEBUG, Peer) << "Too busy to give full ledger";
             return rpcError(rpcTOO_BUSY);
         }
-        loadType = Resource::feeHighBurdenRPC;
+        context.loadType_ = Resource::feeHighBurdenRPC;
     }
 
 

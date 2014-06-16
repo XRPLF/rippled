@@ -22,12 +22,12 @@ namespace ripple {
 // {
 //   secret: <string>
 // }
-Json::Value RPCHandler::doWalletSeed (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doWalletSeed (RPC::Context& context)
 {
     RippleAddress   raSeed;
-    bool            bSecret = params.isMember ("secret");
+    bool            bSecret = context.params_.isMember ("secret");
 
-    if (bSecret && !raSeed.setSeedGeneric (params["secret"].asString ()))
+    if (bSecret && !raSeed.setSeedGeneric (context.params_["secret"].asString ()))
     {
         return rpcError (rpcBAD_SEED);
     }

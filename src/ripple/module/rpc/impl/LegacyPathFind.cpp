@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/module/rpc/Tuning.h>
 #include <ripple/module/rpc/impl/LegacyPathFind.h>
-#include <ripple/module/rpc/api/Tuning.h>
 
 namespace ripple {
 namespace RPC {

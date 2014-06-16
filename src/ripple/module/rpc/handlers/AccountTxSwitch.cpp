@@ -20,12 +20,17 @@
 namespace ripple {
 
 // Temporary switching code until the old account_tx is removed
-Json::Value RPCHandler::doAccountTxSwitch (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doAccountTxSwitch (RPC::Context& context)
 {
-    if (params.isMember("offset") || params.isMember("count") || params.isMember("descending") ||
-            params.isMember("ledger_max") || params.isMember("ledger_min"))
-        return doAccountTxOld(params, loadType, masterLockHolder);
-    return doAccountTx(params, loadType, masterLockHolder);
+    if (context.params_.isMember("offset") ||
+        context.params_.isMember("count") ||
+        context.params_.isMember("descending") ||
+        context.params_.isMember("ledger_max") ||
+        context.params_.isMember("ledger_min"))
+    {
+        return doAccountTxOld(context);
+    }
+    return doAccountTx(context);
 }
 
 } // ripple

@@ -24,21 +24,21 @@ namespace ripple {
 //   tx_json: <object>,
 //   secret: <secret>
 // }
-Json::Value RPCHandler::doSubmit (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doSubmit (RPC::Context& context)
 {
-    masterLockHolder.unlock ();
+    context.lock_.unlock ();
 
-    loadType = Resource::feeMediumBurdenRPC;
+    context.loadType_ = Resource::feeMediumBurdenRPC;
 
-    if (!params.isMember ("tx_blob"))
+    if (!context.params_.isMember ("tx_blob"))
     {
-        bool bFailHard = params.isMember ("fail_hard") && params["fail_hard"].asBool ();
-        return RPC::transactionSign (params, true, bFailHard, masterLockHolder, *mNetOps, mRole);
+        bool bFailHard = context.params_.isMember ("fail_hard") && context.params_["fail_hard"].asBool ();
+        return RPC::transactionSign (context.params_, true, bFailHard, context.lock_, context.netOps_, context.role_);
     }
 
     Json::Value                 jvResult;
 
-    std::pair<Blob, bool> ret(strUnHex (params["tx_blob"].asString ()));
+    std::pair<Blob, bool> ret(strUnHex (context.params_["tx_blob"].asString ()));
 
     if (!ret.second || !ret.first.size ())
         return rpcError (rpcINVALID_PARAMS);
@@ -76,8 +76,8 @@ Json::Value RPCHandler::doSubmit (Json::Value params, Resource::Charge& loadType
 
     try
     {
-        (void) mNetOps->processTransaction (tpTrans, mRole == Config::ADMIN, true,
-            params.isMember ("fail_hard") && params["fail_hard"].asBool ());
+        (void) context.netOps_.processTransaction (tpTrans, context.role_ == Config::ADMIN, true,
+            context.params_.isMember ("fail_hard") && context.params_["fail_hard"].asBool ());
     }
     catch (std::exception& e)
     {

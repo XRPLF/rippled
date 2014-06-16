@@ -40,26 +40,26 @@ static void textTime (std::string& text, int& seconds, const char* unitName, int
         text += "s";
 }
 
-Json::Value RPCHandler::doFeature (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& mlh)
+Json::Value doFeature (RPC::Context& context)
 {
-    if (!params.isMember ("feature"))
+    if (!context.params_.isMember ("feature"))
     {
         Json::Value jvReply = Json::objectValue;
         jvReply["features"] = getApp().getAmendmentTable ().getJson(0);
         return jvReply;
     }
 
-    uint256 uFeature = getApp().getAmendmentTable ().get(params["feature"].asString());
+    uint256 uFeature = getApp().getAmendmentTable ().get(context.params_["feature"].asString());
 
     if (uFeature.isZero ())
     {
-        uFeature.SetHex (params["feature"].asString ());
+        uFeature.SetHex (context.params_["feature"].asString ());
 
         if (uFeature.isZero ())
             return rpcError (rpcBAD_FEATURE);
     }
 
-    if (!params.isMember ("vote"))
+    if (!context.params_.isMember ("vote"))
         return getApp().getAmendmentTable ().getJson(uFeature);
 
     // WRITEME

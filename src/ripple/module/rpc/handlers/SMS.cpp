@@ -20,13 +20,13 @@
 
 namespace ripple {
 
-Json::Value RPCHandler::doSMS (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doSMS (RPC::Context& context)
 {
-    masterLockHolder.unlock ();
-    if (!params.isMember ("text"))
+    context.lock_.unlock ();
+    if (!context.params_.isMember ("text"))
         return rpcError (rpcINVALID_PARAMS);
 
-    HTTPClient::sendSMS (getApp().getIOService (), params["text"].asString ());
+    HTTPClient::sendSMS (getApp().getIOService (), context.params_["text"].asString ());
 
     return "sms dispatched";
 }

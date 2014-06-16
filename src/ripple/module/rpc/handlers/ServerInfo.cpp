@@ -20,11 +20,11 @@
 
 namespace ripple {
 
-Json::Value RPCHandler::doServerInfo (Json::Value, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doServerInfo (RPC::Context& context)
 {
     Json::Value ret (Json::objectValue);
 
-    ret["info"] = mNetOps->getServerInfo (true, mRole == Config::ADMIN);
+    ret["info"] = context.netOps_.getServerInfo (true, context.role_ == Config::ADMIN);
 
     return ret;
 }

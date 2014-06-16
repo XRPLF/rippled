@@ -29,19 +29,19 @@ namespace ripple {
 //   limit: integer,                 // optional
 //   marker: opaque                  // optional, resume previous query
 // }
-Json::Value RPCHandler::doAccountTx (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doAccountTx (RPC::Context& context)
 {
-    masterLockHolder.unlock ();
+    context.lock_.unlock ();
 
     RippleAddress   raAccount;
-    int             limit       = params.isMember (jss::limit) ? params[jss::limit].asUInt () : -1;
-    bool            bBinary     = params.isMember ("binary") && params["binary"].asBool ();
-    bool            bForward    = params.isMember ("forward") && params["forward"].asBool ();
+    int             limit       = context.params_.isMember (jss::limit) ? context.params_[jss::limit].asUInt () : -1;
+    bool            bBinary     = context.params_.isMember ("binary") && context.params_["binary"].asBool ();
+    bool            bForward    = context.params_.isMember ("forward") && context.params_["forward"].asBool ();
     std::uint32_t   uLedgerMin;
     std::uint32_t   uLedgerMax;
     std::uint32_t   uValidatedMin;
     std::uint32_t   uValidatedMax;
-    bool            bValidated  = mNetOps->getValidatedRange (uValidatedMin, uValidatedMax);
+    bool            bValidated  = context.netOps_.getValidatedRange (uValidatedMin, uValidatedMax);
 
     if (!bValidated)
     {
@@ -49,18 +49,18 @@ Json::Value RPCHandler::doAccountTx (Json::Value params, Resource::Charge& loadT
         return rpcError (rpcLGR_IDXS_INVALID);
     }
 
-    if (!params.isMember ("account"))
+    if (!context.params_.isMember ("account"))
         return rpcError (rpcINVALID_PARAMS);
 
-    if (!raAccount.setAccountID (params["account"].asString ()))
+    if (!raAccount.setAccountID (context.params_["account"].asString ()))
         return rpcError (rpcACT_MALFORMED);
 
-    loadType = Resource::feeMediumBurdenRPC;
+    context.loadType_ = Resource::feeMediumBurdenRPC;
 
-    if (params.isMember ("ledger_index_min") || params.isMember ("ledger_index_max"))
+    if (context.params_.isMember ("ledger_index_min") || context.params_.isMember ("ledger_index_max"))
     {
-        std::int64_t iLedgerMin  = params.isMember ("ledger_index_min") ? params["ledger_index_min"].asInt () : -1;
-        std::int64_t iLedgerMax  = params.isMember ("ledger_index_max") ? params["ledger_index_max"].asInt () : -1;
+        std::int64_t iLedgerMin  = context.params_.isMember ("ledger_index_min") ? context.params_["ledger_index_min"].asInt () : -1;
+        std::int64_t iLedgerMax  = context.params_.isMember ("ledger_index_max") ? context.params_["ledger_index_max"].asInt () : -1;
 
 
         uLedgerMin  = iLedgerMin == -1 ? uValidatedMin : iLedgerMin;
@@ -74,7 +74,7 @@ Json::Value RPCHandler::doAccountTx (Json::Value params, Resource::Charge& loadT
     else
     {
         Ledger::pointer l;
-        Json::Value ret = RPC::lookupLedger (params, l, *mNetOps);
+        Json::Value ret = RPC::lookupLedger (context.params_, l, context.netOps_);
 
         if (!l)
             return ret;
@@ -84,9 +84,9 @@ Json::Value RPCHandler::doAccountTx (Json::Value params, Resource::Charge& loadT
 
     Json::Value resumeToken;
 
-    if (params.isMember(jss::marker))
+    if (context.params_.isMember(jss::marker))
     {
-         resumeToken = params[jss::marker];
+         resumeToken = context.params_[jss::marker];
     }
 
 #ifndef BEAST_DEBUG
@@ -102,7 +102,7 @@ Json::Value RPCHandler::doAccountTx (Json::Value params, Resource::Charge& loadT
         if (bBinary)
         {
             std::vector<NetworkOPs::txnMetaLedgerType> txns =
-                mNetOps->getTxsAccountB (raAccount, uLedgerMin, uLedgerMax, bForward, resumeToken, limit, mRole == Config::ADMIN);
+                context.netOps_.getTxsAccountB (raAccount, uLedgerMin, uLedgerMax, bForward, resumeToken, limit, context.role_ == Config::ADMIN);
 
             for (std::vector<NetworkOPs::txnMetaLedgerType>::const_iterator it = txns.begin (), end = txns.end ();
                     it != end; ++it)
@@ -120,7 +120,7 @@ Json::Value RPCHandler::doAccountTx (Json::Value params, Resource::Charge& loadT
         else
         {
             std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > txns =
-                 mNetOps->getTxsAccount (raAccount, uLedgerMin, uLedgerMax, bForward, resumeToken, limit, mRole == Config::ADMIN);
+                 context.netOps_.getTxsAccount (raAccount, uLedgerMin, uLedgerMax, bForward, resumeToken, limit, context.role_ == Config::ADMIN);
 
             for (std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >::iterator it = txns.begin (), end = txns.end (); it != end; ++it)
             {
@@ -143,7 +143,7 @@ Json::Value RPCHandler::doAccountTx (Json::Value params, Resource::Charge& loadT
         //Add information about the original query
         ret[jss::ledger_index_min] = uLedgerMin;
         ret[jss::ledger_index_max] = uLedgerMax;
-        if (params.isMember (jss::limit))
+        if (context.params_.isMember (jss::limit))
             ret[jss::limit]        = limit;
         if (!resumeToken.isNull())
             ret[jss::marker] = resumeToken;

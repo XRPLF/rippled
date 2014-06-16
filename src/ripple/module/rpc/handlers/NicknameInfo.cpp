@@ -24,9 +24,9 @@ namespace ripple {
 // XXX Needs to be revised for new paradigm
 // nickname_info <nickname>
 // Note: Nicknames are not automatically looked up by commands as they are advisory and can be changed.
-Json::Value RPCHandler::doNicknameInfo (Json::Value params)
+Json::Value doNicknameInfo (Json::Value params)
 {
-    std::string strNickname = params[0u].asString ();
+    std::string strNickname = context.params_[0u].asString ();
     boost::trim (strNickname);
 
     if (strNickname.empty ())
@@ -34,7 +34,7 @@ Json::Value RPCHandler::doNicknameInfo (Json::Value params)
         return rpcError (rpcNICKNAME_MALFORMED);
     }
 
-    NicknameState::pointer  nsSrc   = mNetOps->getNicknameState (uint256 (0), strNickname);
+    NicknameState::pointer  nsSrc   = context.netOps_.getNicknameState (uint256 (0), strNickname);
 
     if (!nsSrc)
     {

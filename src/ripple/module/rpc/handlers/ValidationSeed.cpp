@@ -23,11 +23,11 @@ namespace ripple {
 // {
 //   secret: <string>
 // }
-Json::Value RPCHandler::doValidationSeed (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doValidationSeed (RPC::Context& context)
 {
     Json::Value obj (Json::objectValue);
 
-    if (!params.isMember ("secret"))
+    if (!context.params_.isMember ("secret"))
     {
         Log::out() << "Unset validation seed.";
 
@@ -35,7 +35,7 @@ Json::Value RPCHandler::doValidationSeed (Json::Value params, Resource::Charge& 
         getConfig ().VALIDATION_PUB.clear ();
         getConfig ().VALIDATION_PRIV.clear ();
     }
-    else if (!getConfig ().VALIDATION_SEED.setSeedGeneric (params["secret"].asString ()))
+    else if (!getConfig ().VALIDATION_SEED.setSeedGeneric (context.params_["secret"].asString ()))
     {
         getConfig ().VALIDATION_PUB.clear ();
         getConfig ().VALIDATION_PRIV.clear ();

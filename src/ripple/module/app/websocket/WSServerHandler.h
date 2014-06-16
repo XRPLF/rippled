@@ -20,6 +20,7 @@
 #ifndef RIPPLE_WSSERVERHANDLER_H_INCLUDED
 #define RIPPLE_WSSERVERHANDLER_H_INCLUDED
 
+#include <ripple/common/jsonrpc_fields.h>
 #include <ripple/module/app/websocket/WSConnection.h>
 
 namespace ripple {

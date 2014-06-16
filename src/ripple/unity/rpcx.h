@@ -20,8 +20,8 @@
 #ifndef RIPPLE_RPC_H_INCLUDED
 #define RIPPLE_RPC_H_INCLUDED
 
-#include <ripple/module/rpc/api/ErrorCodes.h>
-#include <ripple/module/rpc/api/Manager.h>
-#include <ripple/module/rpc/api/Request.h>
+#include <ripple/module/rpc/ErrorCodes.h>
+#include <ripple/module/rpc/Manager.h>
+#include <ripple/module/rpc/Request.h>
 
 #endif

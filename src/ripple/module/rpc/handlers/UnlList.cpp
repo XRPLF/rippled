@@ -20,7 +20,7 @@
 
 namespace ripple {
 
-Json::Value RPCHandler::doUnlList (Json::Value, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doUnlList (RPC::Context& context)
 {
     Json::Value obj (Json::objectValue);
 

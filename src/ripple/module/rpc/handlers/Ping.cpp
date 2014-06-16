@@ -20,7 +20,7 @@
 
 namespace ripple {
 
-Json::Value RPCHandler::doPing (Json::Value, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doPing (RPC::Context& context)
 {
     return Json::Value (Json::objectValue);
 }

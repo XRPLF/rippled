@@ -33,8 +33,6 @@
 #include <ripple/module/app/main/IoServicePool.cpp>
 #include <ripple/module/app/main/FatalErrorReporter.cpp>
 #include <ripple/module/app/main/RPCHTTPServer.cpp>
-#include <ripple/module/app/rpc/RPCServerHandler.cpp>
-#include <ripple/module/app/rpc/RPCHandler.cpp>
 #include <ripple/module/app/tx/TxQueueEntry.h>
 #include <ripple/module/app/tx/TxQueueEntry.cpp>
 #include <ripple/module/app/tx/TxQueue.cpp>
@@ -79,7 +77,7 @@ int main (int argc, char** argv)
 
     static_assert (BOOST_VERSION >= 105500,
         "Boost version 1.55 or later is required to compile rippled");
-        
+
     //
     // These debug heap calls do nothing in release or non Visual Studio builds.
     //

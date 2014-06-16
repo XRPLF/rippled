@@ -21,37 +21,37 @@
 namespace ripple {
 
 // FIXME: This leaks RPCSub objects for JSON-RPC.  Shouldn't matter for anyone sane.
-Json::Value RPCHandler::doUnsubscribe (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doUnsubscribe (RPC::Context& context)
 {
     InfoSub::pointer ispSub;
     Json::Value jvResult (Json::objectValue);
 
-    if (!mInfoSub && !params.isMember ("url"))
+    if (!context.infoSub_ && !context.params_.isMember ("url"))
     {
         // Must be a JSON-RPC call.
         return rpcError (rpcINVALID_PARAMS);
     }
 
-    if (params.isMember ("url"))
+    if (context.params_.isMember ("url"))
     {
-        if (mRole != Config::ADMIN)
+        if (context.role_ != Config::ADMIN)
             return rpcError (rpcNO_PERMISSION);
 
-        std::string strUrl  = params["url"].asString ();
+        std::string strUrl  = context.params_["url"].asString ();
 
-        ispSub  = mNetOps->findRpcSub (strUrl);
+        ispSub  = context.netOps_.findRpcSub (strUrl);
 
         if (!ispSub)
             return jvResult;
     }
     else
     {
-        ispSub  = mInfoSub;
+        ispSub  = context.infoSub_;
     }
 
-    if (params.isMember ("streams"))
+    if (context.params_.isMember ("streams"))
     {
-        for (Json::Value::iterator it = params["streams"].begin (); it != params["streams"].end (); it++)
+        for (Json::Value::iterator it = context.params_["streams"].begin (); it != context.params_["streams"].end (); it++)
         {
             if ((*it).isString ())
             {
@@ -59,20 +59,20 @@ Json::Value RPCHandler::doUnsubscribe (Json::Value params, Resource::Charge& loa
 
                 if (streamName == "server")
                 {
-                    mNetOps->unsubServer (ispSub->getSeq ());
+                    context.netOps_.unsubServer (ispSub->getSeq ());
                 }
                 else if (streamName == "ledger")
                 {
-                    mNetOps->unsubLedger (ispSub->getSeq ());
+                    context.netOps_.unsubLedger (ispSub->getSeq ());
                 }
                 else if (streamName == "transactions")
                 {
-                    mNetOps->unsubTransactions (ispSub->getSeq ());
+                    context.netOps_.unsubTransactions (ispSub->getSeq ());
                 }
                 else if (streamName == "transactions_proposed"
                          || streamName == "rt_transactions")         // DEPRECATED
                 {
-                    mNetOps->unsubRTTransactions (ispSub->getSeq ());
+                    context.netOps_.unsubRTTransactions (ispSub->getSeq ());
                 }
                 else
                 {
@@ -86,12 +86,12 @@ Json::Value RPCHandler::doUnsubscribe (Json::Value params, Resource::Charge& loa
         }
     }
 
-    if (params.isMember ("accounts_proposed") || params.isMember ("rt_accounts"))
+    if (context.params_.isMember ("accounts_proposed") || context.params_.isMember ("rt_accounts"))
     {
         boost::unordered_set<RippleAddress> usnaAccoundIds  = RPC::parseAccountIds (
-                    params.isMember ("accounts_proposed")
-                    ? params["accounts_proposed"]
-                    : params["rt_accounts"]);                    // DEPRECATED
+                    context.params_.isMember ("accounts_proposed")
+                    ? context.params_["accounts_proposed"]
+                    : context.params_["rt_accounts"]);                    // DEPRECATED
 
         if (usnaAccoundIds.empty ())
         {
@@ -99,13 +99,13 @@ Json::Value RPCHandler::doUnsubscribe (Json::Value params, Resource::Charge& loa
         }
         else
         {
-            mNetOps->unsubAccount (ispSub->getSeq (), usnaAccoundIds, true);
+            context.netOps_.unsubAccount (ispSub->getSeq (), usnaAccoundIds, true);
         }
     }
 
-    if (params.isMember ("accounts"))
+    if (context.params_.isMember ("accounts"))
     {
-        boost::unordered_set<RippleAddress> usnaAccoundIds  = RPC::parseAccountIds (params["accounts"]);
+        boost::unordered_set<RippleAddress> usnaAccoundIds  = RPC::parseAccountIds (context.params_["accounts"]);
 
         if (usnaAccoundIds.empty ())
         {
@@ -113,20 +113,20 @@ Json::Value RPCHandler::doUnsubscribe (Json::Value params, Resource::Charge& loa
         }
         else
         {
-            mNetOps->unsubAccount (ispSub->getSeq (), usnaAccoundIds, false);
+            context.netOps_.unsubAccount (ispSub->getSeq (), usnaAccoundIds, false);
         }
     }
 
-    if (!params.isMember ("books"))
+    if (!context.params_.isMember ("books"))
     {
     }
-    else if (!params["books"].isArray ())
+    else if (!context.params_["books"].isArray ())
     {
         return rpcError (rpcINVALID_PARAMS);
     }
     else
     {
-        for (Json::Value::iterator it = params["books"].begin (); it != params["books"].end (); it++)
+        for (Json::Value::iterator it = context.params_["books"].begin (); it != context.params_["books"].end (); it++)
         {
             Json::Value&    jvSubRequest    = *it;
 
@@ -197,9 +197,9 @@ Json::Value RPCHandler::doUnsubscribe (Json::Value params, Resource::Charge& loa
                 return rpcError (rpcBAD_MARKET);
             }
 
-            mNetOps->unsubBook (ispSub->getSeq (), pay_currency, get_currency, pay_issuer, get_issuer);
+            context.netOps_.unsubBook (ispSub->getSeq (), pay_currency, get_currency, pay_issuer, get_issuer);
 
-            if (bBoth) mNetOps->unsubBook (ispSub->getSeq (), get_currency, pay_currency, get_issuer, pay_issuer);
+            if (bBoth) context.netOps_.unsubBook (ispSub->getSeq (), get_currency, pay_currency, get_issuer, pay_issuer);
         }
     }
 
