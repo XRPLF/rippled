@@ -214,9 +214,7 @@ def config_base(env):
     except KeyError:
         pass
 
-    if Beast.system.linux:
-        env.ParseConfig('pkg-config --static --cflags --libs openssl')
-    elif Beast.system.windows:
+    if Beast.system.windows:
         try:
             OPENSSL_ROOT = os.path.normpath(os.environ['OPENSSL_ROOT'])
             env.Append(CPPPATH=[
@@ -245,6 +243,7 @@ def config_env(toolchain, variant, env):
     if toolchain in Split('clang gcc'):
 
         if Beast.system.linux:
+            env.ParseConfig('pkg-config --static --cflags --libs openssl')
             env.ParseConfig('pkg-config --static --cflags --libs protobuf')
 
         env.Append(CCFLAGS=[
