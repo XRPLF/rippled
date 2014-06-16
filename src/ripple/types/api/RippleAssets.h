@@ -20,6 +20,7 @@
 #ifndef RIPPLE_TYPES_RIPPLEASSETS_H_INCLUDED
 #define RIPPLE_TYPES_RIPPLEASSETS_H_INCLUDED
 
+#include <cassert>
 #include <functional>
 #include <type_traits>
 
@@ -66,6 +67,9 @@ public:
         : currency (currency_)
         , issuer (issuer_)
     {
+        // Either XRP and (currency == zero && issuer == zero) or some custom
+        // currency and (currency != 0 && issuer != 0)
+        assert (currency.isZero () == issuer.isZero ());
     }
 
     template <bool OtherByValue>
@@ -75,11 +79,10 @@ public:
     {
     }
 
-    /** Assignment.
-        This is only valid when ByValue == `true`
-    */
-    template <bool OtherByValue>
-    RippleAssetType& operator= (RippleAssetType <OtherByValue> const& other)
+    /** Assignment. */
+    template <bool MaybeByValue = ByValue, bool OtherByValue>
+    std::enable_if_t <MaybeByValue, RippleAssetType&>
+    operator= (RippleAssetType <OtherByValue> const& other)
     {
         currency = other.currency;
         issuer = other.issuer;
@@ -88,9 +91,19 @@ public:
 
     bool is_xrp () const
     {
+        assert (currency.isZero () == issuer.isZero ());
         if (currency.isZero ())
             return true;
         return false;
+    }
+
+    template <class Hasher>
+    friend
+    void
+    hash_append (Hasher& h, RippleAssetType const& r)
+    {
+        using beast::hash_append;
+        hash_append (h, r.currency, r.issuer);
     }
 };
 
@@ -225,6 +238,15 @@ public:
         in = other.in;
         out = other.out;
         return *this;
+    }
+
+    template <class Hasher>
+    friend
+    void
+    hash_append (Hasher& h, RippleBookType const& b)
+    {
+        using beast::hash_append;
+        hash_append (h, b.in, b.out);
     }
 };
 

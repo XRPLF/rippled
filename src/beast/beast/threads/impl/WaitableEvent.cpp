@@ -21,7 +21,7 @@
 */
 //==============================================================================
 
-#include "../WaitableEvent.h"
+#include <beast/threads/WaitableEvent.h>
 
 #if BEAST_WINDOWS
 

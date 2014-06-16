@@ -28,8 +28,8 @@
 #include <cstdlib>
 #include <stdexcept>
 
-#include "Memory.h"
-#include "Uncopyable.h"
+#include <beast/Memory.h>
+#include <beast/Uncopyable.h>
 
 // If the MSVC debug heap headers were included, disable
 // the macros during the juce include since they conflict.
@@ -294,7 +294,7 @@ public:
         The semantics of this method are the same as malloc() and calloc(), but it
         uses realloc() to keep as much of the existing data as possible.
     */
-    void realloc (const size_t newNumElements, const size_t elementSize = sizeof (ElementType))
+    void reallocate (const size_t newNumElements, const size_t elementSize = sizeof (ElementType))
     {
         data = static_cast <ElementType*> (data == nullptr ? std::malloc (newNumElements * elementSize)
                                                            : std::realloc (data, newNumElements * elementSize));
@@ -304,7 +304,7 @@ public:
     /** Frees any currently-allocated data.
         This will free the data and reset this object to be a null pointer.
     */
-    void free()
+    void free_up()
     {
         std::free (data);
         data = nullptr;

@@ -26,8 +26,8 @@
 
 #include <cstring>
     
-#include "Config.h"
-#include "Uncopyable.h"
+#include <beast/Config.h>
+#include <beast/Uncopyable.h>
 
 namespace beast {
 
@@ -43,7 +43,7 @@ void zerostruct (Type& structure) noexcept
 
 /** Delete an object pointer, and sets the pointer to null.
 
-    Remember that it's not good c++ practice to use delete directly - always try to use a ScopedPointer
+    Remember that it's not good c++ practice to use delete directly - always try to use a std::unique_ptr
     or other automatic lifetime-management system rather than resorting to deleting raw pointers!
 */
 template <typename Type>

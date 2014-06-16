@@ -20,7 +20,11 @@
 #ifndef RIPPLE_COMMON_MULTISOCKET_H_INCLUDED
 #define RIPPLE_COMMON_MULTISOCKET_H_INCLUDED
 
-#include "../beast/modules/beast_asio/beast_asio.h"
+#include <beast/asio/abstract_socket.h>
+#include <beast/net/IPEndpoint.h>
+#include <beast/module/asio/protocol/HandshakeDetectLogicPROXY.h>
+
+#include <boost/asio/ip/tcp.hpp>
 
 namespace ripple {
 

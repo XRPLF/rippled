@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include "../raw_parser.h"
+#include <beast/http/raw_parser.h>
 
-#include "joyent_parser.h"
+#include <beast/http/impl/joyent_parser.h>
 
 #include <utility>
 

@@ -22,10 +22,10 @@
 
 #include <boost/asio/buffer.hpp>
 
-#include "../utility/noexcept.h"
+#include <beast/utility/noexcept.h>
 #include <algorithm>
 #include <iterator>
-#include "../cxx14/type_traits.h" // <type_traits>
+#include <beast/cxx14/type_traits.h> // <type_traits>
 #include <vector>
 
 namespace beast {

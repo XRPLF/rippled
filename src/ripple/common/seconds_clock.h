@@ -20,12 +20,18 @@
 #ifndef RIPPLE_SECONDS_CLOCK_H_INCLUDED
 #define RIPPLE_SECONDS_CLOCK_H_INCLUDED
 
-#include "../../beast/beast/chrono/abstract_clock.h"
-#include "../../beast/beast/chrono/basic_seconds_clock.h"
+#include <beast/chrono/abstract_clock.h>
+#include <beast/chrono/basic_seconds_clock.h>
 
 #include <chrono>
 
 namespace ripple {
+
+using days = std::chrono::duration
+    <int, std::ratio_multiply<std::chrono::hours::period, std::ratio<24>>>;
+
+using weeks = std::chrono::duration
+    <int, std::ratio_multiply<days::period, std::ratio<7>>>;
 
 /** Returns an abstract_clock optimized for counting seconds. */
 inline beast::abstract_clock <std::chrono::seconds>& get_seconds_clock ()

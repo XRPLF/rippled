@@ -20,8 +20,8 @@
 #ifndef BEAST_INSIGHT_COUNTER_H_INCLUDED
 #define BEAST_INSIGHT_COUNTER_H_INCLUDED
 
-#include "Base.h"
-#include "CounterImpl.h"
+#include <beast/insight/Base.h>
+#include <beast/insight/CounterImpl.h>
 
 #include <memory>
 

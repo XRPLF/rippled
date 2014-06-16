@@ -20,6 +20,12 @@
 #ifndef RIPPLE_SITEFILES_SITEFILE_H_INCLUDED
 #define RIPPLE_SITEFILES_SITEFILE_H_INCLUDED
 
+#include <ripple/sitefiles/api/Section.h>
+#include <ripple/common/UnorderedContainers.h>
+
+#include <string>
+#include <unordered_map>
+
 namespace ripple {
 namespace SiteFiles {
 
@@ -28,7 +34,7 @@ class SiteFile
 public:
     SiteFile (int = 0); // dummy argument for emplace
 
-    typedef boost::unordered_map <std::string, Section> SectionsType;
+    typedef ripple::unordered_map <std::string, Section> SectionsType;
 
     /** Retrieve a section by name. */
     /** @{ */

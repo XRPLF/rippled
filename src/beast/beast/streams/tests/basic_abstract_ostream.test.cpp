@@ -21,9 +21,9 @@
 #include "../../BeastConfig.h"
 #endif
 
-#include "../basic_abstract_ostream.h"
+#include <beast/streams/basic_abstract_ostream.h>
 
-#include "../../unit_test/suite.h"
+#include <beast/unit_test/suite.h>
 
 namespace beast {
 

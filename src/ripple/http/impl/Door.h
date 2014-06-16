@@ -20,6 +20,8 @@
 #ifndef RIPPLE_HTTP_DOOR_H_INCLUDED
 #define RIPPLE_HTTP_DOOR_H_INCLUDED
 
+#include <beast/asio/placeholders.h>
+
 namespace ripple {
 namespace HTTP {
 
@@ -94,9 +96,9 @@ public:
     void async_accept ()
     {
         Peer* peer (new Peer (m_impl, m_port));
-        m_acceptor.async_accept (peer->get_socket(), boost::bind (
+        m_acceptor.async_accept (peer->get_socket(), std::bind (
             &Door::handle_accept, Ptr(this),
-                boost::asio::placeholders::error,
+                beast::asio::placeholders::error,
                     Peer::Ptr (peer), CompletionCounter (this)));
     }
 

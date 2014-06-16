@@ -20,12 +20,12 @@
 #ifndef BEAST_THREADS_SERVICEQUEUE_H_INCLUDED
 #define BEAST_THREADS_SERVICEQUEUE_H_INCLUDED
 
-#include "../intrusive/List.h"
-#include "SharedData.h"
-#include "ThreadLocalValue.h"
-#include "WaitableEvent.h"
+#include <beast/intrusive/List.h>
+#include <beast/threads/SharedData.h>
+#include <beast/threads/ThreadLocalValue.h>
+#include <beast/threads/WaitableEvent.h>
 
-#include "detail/DispatchedHandler.h"
+#include <beast/threads/detail/DispatchedHandler.h>
 
 namespace beast {
 
@@ -430,7 +430,7 @@ private:
 public:
     typedef Allocator allocator_type; // for std::uses_allocator<>
 
-    explicit ServiceQueueType (int expectedConcurrency = 1,
+    explicit ServiceQueueType (std::size_t expectedConcurrency = 1,
         Allocator alloc = Allocator())
         : m_alloc (alloc)
     {

@@ -20,7 +20,7 @@
 #ifndef BEAST_UTILITY_DEBUG_H_INCLUDED
 #define BEAST_UTILITY_DEBUG_H_INCLUDED
 
-#include "../strings/String.h"
+#include <beast/strings/String.h>
     
 namespace beast {
 

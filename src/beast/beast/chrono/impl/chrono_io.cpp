@@ -24,7 +24,7 @@
 //  Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
 //  http://www.boost.org/LICENSE_1_0.txt).
 
-#include "../chrono_io.h"
+#include <beast/chrono/chrono_io.h>
 
 //_LIBCPP_BEGIN_NAMESPACE_STD
 namespace std {

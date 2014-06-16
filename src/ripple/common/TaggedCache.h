@@ -20,13 +20,11 @@
 #ifndef RIPPLE_TAGGEDCACHE_H_INCLUDED
 #define RIPPLE_TAGGEDCACHE_H_INCLUDED
 
-#include "../../beast/beast/chrono/abstract_clock.h"
-#include "../../beast/beast/chrono/chrono_io.h"
-#include "../../beast/beast/Insight.h"
-#include "../../beast/beast/container/hardened_hash.h"
-
-#include <boost/smart_ptr.hpp>
-
+#include <ripple/common/UnorderedContainers.h>
+#include <beast/chrono/abstract_clock.h>
+#include <beast/chrono/chrono_io.h>
+#include <beast/Insight.h>
+#include <beast/container/hardened_hash.h>
 #include <functional>
 #include <mutex>
 #include <unordered_map>
@@ -68,8 +66,8 @@ public:
     typedef Key key_type;
     typedef T mapped_type;
     // VFALCO TODO Use std::shared_ptr, std::weak_ptr
-    typedef boost::weak_ptr <mapped_type> weak_mapped_ptr;
-    typedef boost::shared_ptr <mapped_type> mapped_ptr;
+    typedef std::weak_ptr <mapped_type> weak_mapped_ptr;
+    typedef std::shared_ptr <mapped_type> mapped_ptr;
     typedef beast::abstract_clock <std::chrono::seconds> clock_type;
 
 public:
@@ -145,7 +143,8 @@ public:
     float getHitRate ()
     {
         lock_guard lock (m_mutex);
-        return (static_cast<float> (m_hits) * 100) / (1.0f + m_hits + m_misses);
+        auto const total = static_cast<float> (m_hits + m_misses);
+        return m_hits * (100.0f / std::max (1.0f, total));
     }
 
     void clearStats ()
@@ -293,7 +292,7 @@ public:
 
         @return `true` If the key already existed.
     */
-    bool canonicalize (const key_type& key, boost::shared_ptr<T>& data, bool replace = false)
+    bool canonicalize (const key_type& key, std::shared_ptr<T>& data, bool replace = false)
     {
         // Return canonical value, store if needed, refresh in cache
         // Return values: true=we had the data already
@@ -352,7 +351,7 @@ public:
         return false;
     }
 
-    boost::shared_ptr<T> fetch (const key_type& key)
+    std::shared_ptr<T> fetch (const key_type& key)
     {
         // fetch us a shared pointer to the stored data object
         lock_guard lock (m_mutex);
@@ -394,7 +393,7 @@ public:
     */
     bool insert (key_type const& key, T const& value)
     {
-        mapped_ptr p (boost::make_shared <T> (
+        mapped_ptr p (std::make_shared <T> (
             std::cref (value)));
         return canonicalize (key, p);
     }
@@ -529,7 +528,7 @@ private:
     };
 
     typedef std::pair <key_type, Entry> cache_pair;
-    typedef std::unordered_map <key_type, Entry, Hash, KeyEqual> cache_type;
+    typedef ripple::unordered_map <key_type, Entry, Hash, KeyEqual> cache_type;
     typedef typename cache_type::iterator cache_iterator;
 
     beast::Journal m_journal;

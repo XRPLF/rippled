@@ -20,6 +20,8 @@
 #ifndef RIPPLE_SITEFILES_LISTENER_H_INCLUDED
 #define RIPPLE_SITEFILES_LISTENER_H_INCLUDED
 
+#include <ripple/sitefiles/api/SiteFile.h>
+
 namespace ripple {
 namespace SiteFiles {
 

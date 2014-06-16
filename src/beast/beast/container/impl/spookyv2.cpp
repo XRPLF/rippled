@@ -10,7 +10,7 @@
 //   August 5 2012: SpookyV2: d = should be d += in short hash, and remove extra mix from long hash
 
 #include <memory.h>
-#include "spookyv2.h"
+#include <beast/container/impl/spookyv2.h>
 
 #ifdef _MSC_VER
 #pragma warning (push)
@@ -183,7 +183,8 @@ void SpookyHash::Hash128(
     remainder = (length - ((const uint8 *)end-(const uint8 *)message));
     memcpy(buf, end, remainder);
     memset(((uint8 *)buf)+remainder, 0, sc_blockSize-remainder);
-    ((uint8 *)buf)[sc_blockSize-1] = remainder;
+    ((uint8 *)buf)[sc_blockSize-1] =
+        static_cast<uint8>(remainder);
     
     // do some final mixing 
     End(buf, h0,h1,h2,h3,h4,h5,h6,h7,h8,h9,h10,h11);

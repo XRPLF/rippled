@@ -20,9 +20,9 @@
 #ifndef BEAST_UNIT_TEST_RUNNER_H_INCLUDED
 #define BEAST_UNIT_TEST_RUNNER_H_INCLUDED
 
-#include "suite_info.h"
+#include <beast/unit_test/suite_info.h>
 
-#include "../streams/abstract_ostream.h"
+#include <beast/streams/abstract_ostream.h>
 
 #include <cassert>
 #include <string>

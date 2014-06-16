@@ -38,7 +38,7 @@ class Network
 public:
     typedef std::list <Node> Peers;
 
-    typedef boost::unordered_map <
+    typedef ripple::unordered_map <
         IP::Endpoint, boost::reference_wrapper <Node>> Table;
 
     explicit Network (Params const& params,
@@ -188,7 +188,7 @@ public:
         , m_journal (Journal (m_sink, journal.severity()), Reporting::node)
         , m_next_port (m_config.listening_endpoint.port() + 1)
         , m_logic (boost::in_place (
-            boost::ref (clock), boost::ref (*this), boost::ref (*this), boost::ref (*this), m_journal))
+            std::ref (clock), std::ref (*this), std::ref (*this), std::ref (*this), m_journal))
         , m_when_expire (m_network.now() + std::chrono::seconds (1))
     {
         logic().setConfig (m_config.config);
@@ -408,7 +408,7 @@ public:
             m_network.post (std::bind (&Logic::on_connected,
                 &logic(), local_endpoint, remote_endpoint));
             m_network.post (std::bind (&Node::doCheckAccept,
-                remote_node, boost::ref (*this), local_endpoint));
+                remote_node, std::ref (*this), local_endpoint));
         }
     }
 
@@ -603,7 +603,7 @@ void Network::prepare ()
                 config,
                 m_clock,
                 m_journal);
-            m_table.emplace (address, boost::ref (m_nodes.back()));
+            m_table.emplace (address, std::ref (m_nodes.back()));
             address = next_endpoint (address);
         }
 
@@ -624,7 +624,7 @@ void Network::prepare ()
                 config,
                 m_clock,
                 m_journal);
-            m_table.emplace (address, boost::ref (m_nodes.back()));
+            m_table.emplace (address, std::ref (m_nodes.back()));
             address = next_endpoint (address);
         }
     }

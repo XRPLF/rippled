@@ -23,10 +23,10 @@
 #include "../../BeastConfig.h"
 #endif
 
-#include "../IPEndpoint.h"
-#include "../detail/Parse.h"
+#include <beast/net/IPEndpoint.h>
+#include <beast/net/detail/Parse.h>
 
-#include "../../unit_test/suite.h"
+#include <beast/unit_test/suite.h>
 
 #include <typeinfo>
 

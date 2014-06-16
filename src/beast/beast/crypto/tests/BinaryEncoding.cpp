@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-// MODULES: ../../../modules/beast_core/beast_core.cpp ../../strings/Strings.cpp ../../chrono/Chrono.cpp ../../threads/Threads.cpp
-#include "../BinaryEncoding.h"
-#include "../UnsignedInteger.h"
+// MODULES: ../../../modules/beast_core/beast_core.beast_core.unity.cpp ../../strings/Strings.cpp ../../chrono/Chrono.cpp ../../threads/Threads.cpp
+#include <beast/crypto/BinaryEncoding.h>
+#include <beast/crypto/UnsignedInteger.h>
 
-#include "../../unit_test/suite.h"
-#include "../../../modules/beast_core/maths/Random.h"
+#include <beast/unit_test/suite.h>
+#include <beast/module/core/maths/Random.h>
 
 #include <cstddef>
 #include <string>
@@ -114,10 +114,11 @@ public:
     }
 
     /** Build the inverse mapping table from characters to digits. */
-    static std::vector <int> invert (std::string const& alphabet, std::size_t radix)
+    static std::vector <int>
+    invert (std::string const& alphabet, int radix)
     {
         std::vector <int> table (256, -1);
-        for (std::size_t i (0); i < radix; ++i)
+        for (int i (0); i < radix; ++i)
             table [alphabet [i]] = i;
         return table;
     }
@@ -183,11 +184,12 @@ public:
     }
 
     /** Build the inverse mapping table from characters to digits. */
-    static std::vector <int> invert (std::string const& alphabet, std::size_t radix)
+    static std::vector <int>
+    invert (std::string const& alphabet, int radix)
     {
         std::vector <int> table (256, -1);
-        for (std::size_t i (0); i < radix; ++i)
-            table [alphabet [i]] = i;
+        for (int i (0); i < radix; ++i)
+            table [alphabet [i]] = int(i);
         return table;
     }
 };

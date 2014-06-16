@@ -51,8 +51,8 @@ struct Key
         }
 
     private:
-        std::hash <beast::IP::Endpoint> m_addr_hash;
-        boost::hash <std::string> m_name_hash;
+        beast::uhash <> m_addr_hash;
+        beast::uhash <> m_name_hash;
     };
 
     struct key_equal

@@ -20,7 +20,7 @@
 #ifndef BEAST_HTTP_URL_H_INCLUDED
 #define BEAST_HTTP_URL_H_INCLUDED
 
-#include "../strings/String.h"
+#include <beast/strings/String.h>
 
 #include <ios>
 
@@ -122,6 +122,15 @@ inline bool operator>= (URL const& lhs, URL const& rhs) { return ! (lhs.toString
 std::ostream& operator<< (std::ostream& os, URL const& url);
 
 /** boost::hash support */
+template <class Hasher>
+inline
+void
+hash_append (Hasher& h, URL const& url)
+{
+    using beast::hash_append;
+    hash_append (h, url.toString());
+}
+
 extern std::size_t hash_value (beast::URL const& url);
 
 }

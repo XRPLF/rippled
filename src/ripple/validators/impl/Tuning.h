@@ -20,6 +20,8 @@
 #ifndef RIPPLE_VALIDATORS_TUNING_H_INCLUDED
 #define RIPPLE_VALIDATORS_TUNING_H_INCLUDED
 
+#include <ripple/common/UnorderedContainers.h>
+
 #include <boost/version.hpp>
 
 namespace ripple {
@@ -61,11 +63,11 @@ template <class Key,
           class Info, // per-container info
           class Hash = typename Key::hasher,
           class KeyEqual = std::equal_to <Key>,
-          class Allocator = std::allocator <Key> >
+          class Allocator = std::allocator <std::pair <Key const, T> > >
 class CycledMap
 {
 private:
-    typedef boost::unordered_map <
+    typedef ripple::unordered_map <
         Key, T, Hash, KeyEqual, Allocator>                  ContainerType;
     typedef typename ContainerType::iterator                iterator;
 
@@ -122,13 +124,13 @@ public:
         iterator iter (m_back.find (value.first));
         if (iter != m_back.end())
             return std::make_pair (
-            boost::ref (iter->second),
-            boost::ref (m_back_info));
+            std::ref (iter->second),
+            std::ref (m_back_info));
         std::pair <iterator, bool> result (
             m_front.insert (value));
         return std::make_pair (
-            boost::ref (result.first->second),
-            boost::ref (m_front_info));
+            std::ref (result.first->second),
+            std::ref (m_front_info));
     }
 
     void cycle ()

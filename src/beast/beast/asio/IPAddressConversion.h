@@ -20,7 +20,7 @@
 #ifndef BEAST_ASIO_IPADDRESSCONVERSION_H_INCLUDED
 #define BEAST_ASIO_IPADDRESSCONVERSION_H_INCLUDED
 
-#include "../net/IPEndpoint.h"
+#include <beast/net/IPEndpoint.h>
 
 #include <sstream>
 

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include "../Error.h"
-#include "../Debug.h"
+#include <beast/utility/Error.h>
+#include <beast/utility/Debug.h>
 
 #include <ostream>
 

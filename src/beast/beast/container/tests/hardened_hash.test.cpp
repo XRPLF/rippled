@@ -17,16 +17,16 @@
 */
 //==============================================================================
 
-// MODULES: ../../crypto/impl/Sha256.cpp
+// MODULES: ../../crypto/impl/Sha256.cpp ../../container/impl/spookyv2.cpp
 
 #if BEAST_INCLUDE_BEASTCONFIG
-#include "../../../BeastConfig.h"
+#include <BeastConfig.h>
 #endif
 
-#include "../hardened_hash.h"
-#include "../../unit_test/suite.h"
+#include <beast/container/hardened_hash.h>
+#include <beast/unit_test/suite.h>
 
-#include "../../crypto/Sha256.h"
+#include <beast/crypto/Sha256.h>
 #include <boost/functional/hash.hpp>
 
 #include <array>
@@ -131,7 +131,7 @@ public:
     static std::size_t const bytes = bits / 8;
 
     template <class Int>
-    static 
+    static
     unsigned_integer
     from_number (Int v)
     {
@@ -167,7 +167,7 @@ public:
     {
         for (std::size_t i (0); i < size; ++i)
             s <<
-                std::hex << 
+                std::hex <<
                 std::setfill ('0') <<
                 std::setw (2*sizeof(UInt)) <<
                 v.m_vec[i]
@@ -293,7 +293,7 @@ public:
                 "i=" << std::setw(2) << i << " " <<
                 "sha256=0x" << d_ << " " <<
                 "hash=0x" <<
-                    std::setfill ('0') << 
+                    std::setfill ('0') <<
                     std::setw (2*sizeof(std::size_t)) << result
                 ;
             pass();

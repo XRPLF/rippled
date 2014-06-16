@@ -20,10 +20,10 @@
 #ifndef RIPPLE_PEERFINDER_SLOTIMP_H_INCLUDED
 #define RIPPLE_PEERFINDER_SLOTIMP_H_INCLUDED
 
-#include "../api/Slot.h"
+#include <ripple/peerfinder/api/Slot.h>
 
-#include "../../../beast/beast/container/aged_unordered_map.h"
-#include "../../../beast/beast/container/aged_container_utility.h"
+#include <beast/container/aged_unordered_map.h>
+#include <beast/container/aged_container_utility.h>
 
 #include <boost/optional.hpp>
 

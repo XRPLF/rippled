@@ -20,6 +20,8 @@
 #ifndef BEAST_NET_IPADDRESSV4_H_INCLUDED
 #define BEAST_NET_IPADDRESSV4_H_INCLUDED
 
+#include <beast/container/hash_append.h>
+
 #include <cstdint>
 #include <ios>
 #include <string>
@@ -178,6 +180,13 @@ OutputStream& operator<< (OutputStream& os, AddressV4 const& addr)
 std::istream& operator>> (std::istream& is, AddressV4& addr);
 
 }
+
+template <>
+struct is_contiguously_hashable<IP::AddressV4>
+    : public std::integral_constant<bool, sizeof(IP::AddressV4) == sizeof(std::uint32_t)>
+{
+};
+
 }
 
 //------------------------------------------------------------------------------

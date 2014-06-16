@@ -20,9 +20,12 @@
 #ifndef RIPPLE_RESOURCE_MANAGER_H_INCLUDED
 #define RIPPLE_RESOURCE_MANAGER_H_INCLUDED
 
-#include "../../beast/beast/insight/Collector.h"
-#include "../../beast/beast/net/IPEndpoint.h"
-#include "../../beast/beast/utility/Journal.h"
+#include <ripple/resource/api/Consumer.h>
+#include <ripple/resource/api/Gossip.h>
+
+#include <beast/insight/Collector.h>
+#include <beast/net/IPEndpoint.h>
+#include <beast/utility/Journal.h>
 
 namespace ripple {
 namespace Resource {

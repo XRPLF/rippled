@@ -87,7 +87,7 @@ public:
     {
         m_queue.dispatch (
             m_context.wrap (
-                boost::bind (&Logic::addFixedPeer, &m_logic,
+                std::bind (&Logic::addFixedPeer, &m_logic,
                     name, addresses)));
     }
 

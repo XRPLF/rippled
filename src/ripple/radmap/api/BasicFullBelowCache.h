@@ -20,11 +20,11 @@
 #ifndef RIPPLE_RADMAP_BASICFULLBELOWCACHE_H_INCLUDED
 #define RIPPLE_RADMAP_BASICFULLBELOWCACHE_H_INCLUDED
 
-#include "../../beast/beast/insight/Collector.h"
+#include <beast/insight/Collector.h>
 
-#include "../../common/KeyCache.h"
+#include <ripple/common/KeyCache.h>
 
-#include "Tuning.h"
+#include <ripple/radmap/api/Tuning.h>
 
 namespace ripple {
 namespace RadMap {

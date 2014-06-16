@@ -166,16 +166,6 @@
 #define RIPPLE_DUMP_LEAKS_ON_EXIT 1
 #endif
 
-/** Config: RIPPLE_TRACK_MUTEXES
-    Turns on a feature that enables tracking and diagnostics for mutex
-    and recursive mutex objects. This affects the type of lock used
-    by RippleMutex and RippleRecursiveMutex
-    @note This can slow down performance considerably.
-*/
-#ifndef RIPPLE_TRACK_MUTEXES
-#define RIPPLE_TRACK_MUTEXES 0
-#endif
-
 //------------------------------------------------------------------------------
 
 // These control whether or not certain functionality gets
@@ -197,6 +187,29 @@
 //
 #ifndef RIPPLE_USE_VALIDATORS
 #define RIPPLE_USE_VALIDATORS 0
+#endif
+
+/** Config: BEAST_USE_BOOST_FEATURES
+This activates boost specific features and improvements. If this is
+turned on, the include paths for your build environment must be set
+correctly to find the boost headers.
+*/
+#ifndef   BEAST_USE_BOOST_FEATURES
+//#define BEAST_USE_BOOST_FEATURES 1
+#endif
+
+/** Config: RIPPLE_PROPOSE_FEATURES
+This determines whether to add any features to the proposed transaction set.
+*/
+#ifndef RIPPLE_PROPOSE_AMENDMENTS
+#define RIPPLE_PROPOSE_AMENDMENTS 0
+#endif
+
+/** Config: RIPPLE_USE_OLD_CREATE_TRANSACTOR
+This determines whether ripple uses the legacy OfferCreate transactor.
+*/
+#ifndef RIPPLE_USE_OLD_CREATE_TRANSACTOR
+#define RIPPLE_USE_OLD_CREATE_TRANSACTOR 1
 #endif
 
 #endif

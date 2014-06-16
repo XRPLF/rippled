@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include "../../unit_test/suite.h"
+#include <beast/unit_test/suite.h>
 
-#include "../basic_seconds_clock.h"
+#include <beast/chrono/basic_seconds_clock.h>
 
 namespace beast {
 

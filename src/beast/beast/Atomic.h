@@ -24,10 +24,10 @@
 #ifndef BEAST_ATOMIC_H_INCLUDED
 #define BEAST_ATOMIC_H_INCLUDED
 
-#include "Config.h"
-#include "StaticAssert.h"
+#include <beast/Config.h>
+#include <beast/StaticAssert.h>
 
-#include "utility/noexcept.h"
+#include <beast/utility/noexcept.h>
 
 #include <cstdint>
 

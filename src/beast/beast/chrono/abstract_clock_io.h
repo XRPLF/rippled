@@ -20,7 +20,7 @@
 #ifndef BEAST_CHRONO_ABSTRACT_CLOCK_IO_H_INCLUDED
 #define BEAST_CHRONO_ABSTRACT_CLOCK_IO_H_INCLUDED
 
-#include "chrono_io.h"
+#include <beast/chrono/chrono_io.h>
 
 namespace beast {
 

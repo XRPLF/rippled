@@ -17,18 +17,15 @@
 */
 //==============================================================================
 
-#include "../../beast/modules/beast_asio/beast_asio.h"
-#include "../../beast/beast/asio/IPAddressConversion.h"
-
+#include <ripple/common/ResolverAsio.h>
+#include <beast/asio/IPAddressConversion.h>
+#include <beast/asio/placeholders.h>
+#include <beast/module/asio/asio.h>
+#include <boost/asio.hpp>
 #include <atomic>
+#include <cassert>
 #include <deque>
 #include <locale>
-
-#include "boost/asio.hpp"
-
-#include "../ResolverAsio.h"
-
-#include <cassert>
 
 namespace ripple {
 
@@ -117,7 +114,7 @@ public:
     {
         if (m_stop_called.exchange (true) == false)
         {
-            m_io_service.dispatch (m_strand.wrap (boost::bind (
+            m_io_service.dispatch (m_strand.wrap (std::bind (
                 &ResolverAsioImpl::do_stop,
                     this, CompletionCounter (this))));
 
@@ -144,7 +141,7 @@ public:
 
         // TODO NIKB use rvalue references to construct and move
         //           reducing cost.
-        m_io_service.dispatch (m_strand.wrap (boost::bind (
+        m_io_service.dispatch (m_strand.wrap (std::bind (
             &ResolverAsioImpl::do_resolve, this,
                 names, handler, CompletionCounter (this))));
     }
@@ -189,7 +186,7 @@ public:
 
         handler (name, addresses);
 
-        m_io_service.post (m_strand.wrap (boost::bind (
+        m_io_service.post (m_strand.wrap (std::bind (
             &ResolverAsioImpl::do_work, this,
                 CompletionCounter (this))));
     }
@@ -259,7 +256,7 @@ public:
             m_journal.error <<
                 "Unable to parse '" << name << "'";
 
-            m_io_service.post (m_strand.wrap (boost::bind (
+            m_io_service.post (m_strand.wrap (std::bind (
                 &ResolverAsioImpl::do_work, this,
                 CompletionCounter (this))));
 
@@ -269,10 +266,10 @@ public:
         boost::asio::ip::tcp::resolver::query query (
             hp.first, hp.second);
 
-        m_resolver.async_resolve (query, boost::bind (
+        m_resolver.async_resolve (query, std::bind (
             &ResolverAsioImpl::do_finish, this, name,
-                boost::asio::placeholders::error, handler,
-                    boost::asio::placeholders::iterator,
+                beast::asio::placeholders::error, handler,
+                    beast::asio::placeholders::iterator,
                         CompletionCounter (this)));
     }
 
@@ -291,7 +288,7 @@ public:
 
             if (m_work.size() == 1)
             {
-                m_io_service.post (m_strand.wrap (boost::bind (
+                m_io_service.post (m_strand.wrap (std::bind (
                     &ResolverAsioImpl::do_work, this,
                         CompletionCounter (this))));
             }

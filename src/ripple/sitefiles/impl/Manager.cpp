@@ -61,19 +61,19 @@ public:
 
     void addListener (SiteFiles::Listener& listener)
     {
-        m_queue.post (beast::bind (
+        m_queue.post (std::bind (
             &Logic::addListener, &m_logic, std::ref (listener)));
     }
 
     void removeListener (SiteFiles::Listener& listener)
     {
-        m_queue.post (beast::bind (
+        m_queue.post (std::bind (
             &Logic::removeListener, &m_logic, std::ref (listener)));
     }
 
     void addURL (std::string const& urlstr)
     {
-        m_queue.post (beast::bind (&Logic::addURL, &m_logic, urlstr));
+        m_queue.post (std::bind (&Logic::addURL, &m_logic, urlstr));
     }
 
     //--------------------------------------------------------------------------

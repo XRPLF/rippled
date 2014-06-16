@@ -17,12 +17,15 @@
 */
 //==============================================================================
 
-#include "../../../beast/beast/unit_test/suite.h"
+#include <ripple/common/UnorderedContainers.h>
+
+#include <beast/unit_test/suite.h>
+
+#include <boost/unordered_set.hpp>
 
 #include <set>
 #include <typeinfo>
 #include <unordered_set>
-#include <boost/unordered_set.hpp>
 
 #if BEAST_MSVC
 # define STL_SET_HAS_EMPLACE 1
@@ -190,7 +193,7 @@ public:
 
         {
             Map c;
-        
+
             c.insert (std::make_pair (a1, 1));
             if (! expect (c.size () == 1)) return;
             c.insert (std::make_pair (a2, 2));
@@ -241,13 +244,13 @@ public:
         testcase ("std::unordered_map <RippleAssetRef, int>");
         testAssetMap <std::unordered_map <RippleAssetRef, int>> ();
 
-        testcase ("boost::unordered_map <RippleAsset, int>");
-        testAssetMap <boost::unordered_map <RippleAsset, int>> ();
+        testcase ("ripple::unordered_map <RippleAsset, int>");
+        testAssetMap <ripple::unordered_map <RippleAsset, int>> ();
 
-        testcase ("boost::unordered_map <RippleAssetRef, int>");
-        testAssetMap <boost::unordered_map <RippleAssetRef, int>> ();
+        testcase ("ripple::unordered_map <RippleAssetRef, int>");
+        testAssetMap <ripple::unordered_map <RippleAssetRef, int>> ();
 
-#endif        
+#endif
     }
 
     //--------------------------------------------------------------------------
@@ -278,19 +281,19 @@ public:
 
 //         log << std::hex << hash (Book (a1, a2));
 //         log << std::hex << hash (Book (a1, a2));
-// 
+//
 //         log << std::hex << hash (Book (a1, a3));
 //         log << std::hex << hash (Book (a1, a3));
-// 
+//
 //         log << std::hex << hash (Book (a1, a4));
 //         log << std::hex << hash (Book (a1, a4));
-// 
+//
 //         log << std::hex << hash (Book (a2, a3));
 //         log << std::hex << hash (Book (a2, a3));
-// 
+//
 //         log << std::hex << hash (Book (a2, a4));
 //         log << std::hex << hash (Book (a2, a4));
-// 
+//
 //         log << std::hex << hash (Book (a3, a4));
 //         log << std::hex << hash (Book (a3, a4));
 
@@ -444,11 +447,11 @@ public:
         testcase ("std::unordered_map <RippleBookRef, int>");
         testBookMap <std::unordered_map <RippleBookRef, int>> ();
 
-        testcase ("boost::unordered_map <RippleBook, int>");
-        testBookMap <boost::unordered_map <RippleBook, int>> ();
+        testcase ("ripple::unordered_map <RippleBook, int>");
+        testBookMap <ripple::unordered_map <RippleBook, int>> ();
 
-        testcase ("boost::unordered_map <RippleBookRef, int>");
-        testBookMap <boost::unordered_map <RippleBookRef, int>> ();
+        testcase ("ripple::unordered_map <RippleBookRef, int>");
+        testBookMap <ripple::unordered_map <RippleBookRef, int>> ();
 #endif
     }
 

@@ -24,9 +24,9 @@
 #ifndef BEAST_THREADS_RECURSIVEMUTEX_H_INCLUDED
 #define BEAST_THREADS_RECURSIVEMUTEX_H_INCLUDED
 
-#include "../Config.h"
-#include "UnlockGuard.h"
-#include "TryLockGuard.h"
+#include <beast/Config.h>
+#include <beast/threads/UnlockGuard.h>
+#include <beast/threads/TryLockGuard.h>
 
 #include <mutex>
 

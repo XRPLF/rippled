@@ -20,7 +20,9 @@
 #ifndef RIPPLE_RESOURCE_LOGIC_H_INCLUDED
 #define RIPPLE_RESOURCE_LOGIC_H_INCLUDED
 
-#include "../../beast/beast/chrono/abstract_clock.h"
+#include <ripple/common/UnorderedContainers.h>
+
+#include <beast/chrono/abstract_clock.h>
 
 namespace ripple {
 namespace Resource {
@@ -29,8 +31,8 @@ class Logic
 {
 public:
     typedef beast::abstract_clock <std::chrono::seconds> clock_type;
-    typedef boost::unordered_map <std::string, Import> Imports;
-    typedef boost::unordered_map <Key, Entry, Key::hasher, Key::key_equal> Table;
+    typedef ripple::unordered_map <std::string, Import> Imports;
+    typedef ripple::unordered_map <Key, Entry, Key::hasher, Key::key_equal> Table;
 
     struct State
     {
@@ -593,17 +595,17 @@ public:
             beast::PropertyStream::Set s ("inbound", map);
             writeList (now, s, state->inbound);
         }
-        
+
         {
             beast::PropertyStream::Set s ("outbound", map);
             writeList (now, s, state->outbound);
         }
-        
+
         {
             beast::PropertyStream::Set s ("admin", map);
             writeList (now, s, state->admin);
         }
-        
+
         {
             beast::PropertyStream::Set s ("inactive", map);
             writeList (now, s, state->inactive);

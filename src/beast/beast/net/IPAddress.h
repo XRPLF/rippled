@@ -20,8 +20,9 @@
 #ifndef BEAST_NET_IPADDRESS_H_INCLUDED
 #define BEAST_NET_IPADDRESS_H_INCLUDED
 
-#include "IPAddressV4.h"
-#include "IPAddressV6.h"
+#include <beast/net/IPAddressV4.h>
+#include <beast/net/IPAddressV6.h>
+#include <beast/container/hash_append.h>
 
 #include <cstdint>
 #include <ios>
@@ -134,6 +135,18 @@ public:
         if (m_type != ipv6)
             throw std::bad_cast();
         return m_v6;
+    }
+
+    template <class Hasher>
+    friend
+    void
+    hash_append(Hasher& h, Address const& addr)
+    {
+        using beast::hash_append;
+        if (addr.is_v4 ())
+            hash_append(h, addr.to_v4 ());
+        else
+            hash_append(h, addr.to_v6 ());
     }
 
     /** Arithmetic comparison. */

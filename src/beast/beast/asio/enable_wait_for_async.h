@@ -20,9 +20,9 @@
 #ifndef BEAST_ASIO_ENABLE_WAIT_FOR_ASYNC_H_INCLUDED
 #define BEAST_ASIO_ENABLE_WAIT_FOR_ASYNC_H_INCLUDED
 
-#include "wrap_handler.h"
+#include <beast/asio/wrap_handler.h>
 
-#include "../utility/is_call_possible.h"
+#include <beast/utility/is_call_possible.h>
 
 #include <boost/asio/detail/handler_alloc_helpers.hpp>
 #include <boost/asio/detail/handler_cont_helpers.hpp>
@@ -31,7 +31,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <mutex>
-#include "../cxx14/type_traits.h" // <type_traits>
+#include <beast/cxx14/type_traits.h> // <type_traits>
 
 namespace beast {
 namespace asio {

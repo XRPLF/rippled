@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "Bootcache.h"
+#include <ripple/peerfinder/impl/Bootcache.h>
 
 namespace ripple {
 namespace PeerFinder {

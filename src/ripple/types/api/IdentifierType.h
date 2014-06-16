@@ -161,9 +161,19 @@ public:
         return Traits::from_string (s);
     }
 
+
 private:
     value_type m_value;
 };
+
+template <class Hasher, class Traits>
+inline
+void
+hash_append(Hasher& h, IdentifierType<Traits> const& id)
+{
+    using beast::hash_append;
+    hash_append (h, id.value());
+}
 
 //------------------------------------------------------------------------------
 

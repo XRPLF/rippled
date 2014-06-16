@@ -24,13 +24,8 @@
 #ifndef BEAST_CONFIG_COMPILERCONFIG_H_INCLUDED
 #define BEAST_CONFIG_COMPILERCONFIG_H_INCLUDED
 
-// This file has to work when included in a C source file.
-
-#ifndef BEAST_CONFIG_PLATFORMCONFIG_H_INCLUDED
-#error "PlatformConfig.h must come first!"
-#endif
-
 #include <assert.h>
+#include <beast/config/PlatformConfig.h>
 
 // This file defines miscellaneous macros for debugging, assertions, etc.
 
@@ -46,6 +41,15 @@
 #else
 # define BEAST_CDECL
 #endif
+
+/** This macro fixes C++'s constexpr for VS2012, which doesn't understand it.
+*/
+#if BEAST_MSVC
+# define BEAST_CONSTEXPR const
+#else
+# define BEAST_CONSTEXPR constexpr
+#endif
+
 
 // Debugging and assertion macros
 

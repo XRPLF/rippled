@@ -20,7 +20,7 @@
 #ifndef BEAST_CRYPTO_UNSIGNEDINTEGERCALC_H_INCLUDED
 #define BEAST_CRYPTO_UNSIGNEDINTEGERCALC_H_INCLUDED
 
-#include "../ByteOrder.h"
+#include <beast/ByteOrder.h>
 
 #include <algorithm>
 #include <cassert>

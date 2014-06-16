@@ -20,7 +20,7 @@
 #ifndef BEAST_HTTP_JOYENT_PARSER_H_INCLUDED
 #define BEAST_HTTP_JOYENT_PARSER_H_INCLUDED
 
-#include "../basic_message.h"
+#include <beast/http/basic_message.h>
 
 // TODO Use <system_error>
 #include <boost/system/error_code.hpp>
@@ -30,7 +30,7 @@
 namespace beast {
 namespace joyent {
 
-#include "http-parser/http_parser.h"
+#include <beast/http/impl/http-parser/http_parser.h>
 
 http::method::methodc_t
 convert_http_method (joyent::http_method m);

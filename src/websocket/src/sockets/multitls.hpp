@@ -28,8 +28,10 @@
 #ifndef WEBSOCKETPP_SOCKET_MULTITLS_HPP
 #define WEBSOCKETPP_SOCKET_MULTITLS_HPP
 
-#include "../../ripple/common/MultiSocket.h"
-
+// VFALCO NOTE This is a prohibited dependency direction! 
+#include <ripple/common/MultiSocket.h>
+#include <boost/bind.hpp>
+ 
 namespace websocketpp {
 namespace socket {
 

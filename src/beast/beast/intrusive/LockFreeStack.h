@@ -20,8 +20,8 @@
 #ifndef BEAST_INTRUSIVE_LOCKFREESTACK_H_INCLUDED
 #define BEAST_INTRUSIVE_LOCKFREESTACK_H_INCLUDED
 
-#include "../Atomic.h"
-#include "../Uncopyable.h"
+#include <beast/Atomic.h>
+#include <beast/Uncopyable.h>
 
 #include <iterator>
 #include <type_traits>

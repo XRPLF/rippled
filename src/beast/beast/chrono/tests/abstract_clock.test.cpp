@@ -19,11 +19,11 @@
 
 // MODULES: ../impl/chrono_io.cpp
 
-#include "../abstract_clock.h"
-#include "../abstract_clock_io.h"
-#include "../manual_clock.h"
+#include <beast/chrono/abstract_clock.h>
+#include <beast/chrono/abstract_clock_io.h>
+#include <beast/chrono/manual_clock.h>
 
-#include "../../unit_test/suite.h"
+#include <beast/unit_test/suite.h>
 
 #include <sstream>
 #include <string>

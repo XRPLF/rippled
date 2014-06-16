@@ -23,12 +23,11 @@
 #include <mutex>
 #include <unordered_map>
 
-#include <boost/smart_ptr.hpp>
-
-#include "../../beast/beast/chrono/abstract_clock.h"
-#include "../../beast/beast/chrono/chrono_io.h"
-#include "../../beast/beast/Insight.h"
-#include "../../beast/beast/container/hardened_hash.h"
+#include <beast/chrono/abstract_clock.h>
+#include <beast/chrono/chrono_io.h>
+#include <beast/Insight.h>
+#include <beast/container/hardened_hash.h>
+#include <ripple/common/UnorderedContainers.h>
 
 namespace ripple {
 
@@ -83,7 +82,7 @@ private:
         clock_type::time_point last_access;
     };
 
-    typedef std::unordered_map <key_type, Entry, Hash, KeyEqual> map_type;
+    typedef ripple::unordered_map <key_type, Entry, Hash, KeyEqual> map_type;
     typedef typename map_type::iterator iterator;
     typedef std::lock_guard <Mutex> lock_guard;
 

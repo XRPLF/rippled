@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include "../StaticObject.h"
-#include "../../threads/Thread.h"
+#include <beast/utility/StaticObject.h>
+#include <beast/threads/Thread.h>
 
 namespace beast {
 

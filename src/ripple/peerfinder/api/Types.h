@@ -20,7 +20,9 @@
 #ifndef RIPPLE_PEERFINDER_TYPES_H_INCLUDED
 #define RIPPLE_PEERFINDER_TYPES_H_INCLUDED
 
-#include "../../beast/beast/chrono/abstract_clock.h"
+#include <ripple/peerfinder/api/Endpoint.h>
+
+#include <beast/chrono/abstract_clock.h>
 
 namespace ripple {
 namespace PeerFinder {

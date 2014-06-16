@@ -20,7 +20,8 @@
 #ifndef BEAST_NET_IPENDPOINT_H_INCLUDED
 #define BEAST_NET_IPENDPOINT_H_INCLUDED
 
-#include "IPAddress.h"
+#include <beast/net/IPAddress.h>
+#include <beast/container/hash_append.h>
 
 #include <cstdint>
 #include <ios>
@@ -90,6 +91,15 @@ public:
     friend bool operator>= (Endpoint const& lhs, Endpoint const& rhs)
         { return ! (rhs > lhs); }
     /** @} */
+
+    template <class Hasher>
+    friend
+    void
+    hash_append (Hasher& h, Endpoint const& endpoint)
+    {
+        using beast::hash_append;
+        hash_append(h, endpoint.m_addr, endpoint.m_port);
+    }
 
 private:
     Address m_addr;

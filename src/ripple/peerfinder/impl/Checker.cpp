@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include "../../../beast/beast/asio/wrap_handler.h"
-#include "../../../beast/beast/asio/placeholders.h"
+#include <beast/asio/wrap_handler.h>
+#include <beast/asio/placeholders.h>
 
 namespace ripple {
 namespace PeerFinder {
@@ -129,7 +129,7 @@ private:
 public:
     CheckerImp ()
         : Thread ("PeerFinder::Checker")
-        , m_work (boost::in_place (boost::ref (m_io_service)))
+        , m_work (boost::in_place (std::ref (m_io_service)))
     {
         startThread ();
     }

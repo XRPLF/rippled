@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef BEAST_ASIO_HTTP_BASIC_MESSAGE_H_INCLUDED
-#define BEAST_ASIO_HTTP_BASIC_MESSAGE_H_INCLUDED
+#ifndef BEAST_HTTP_BASIC_MESSAGE_H_INCLUDED
+#define BEAST_HTTP_BASIC_MESSAGE_H_INCLUDED
 
 #include <memory>
 

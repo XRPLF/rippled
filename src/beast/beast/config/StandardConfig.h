@@ -35,28 +35,28 @@
 #endif
 
 #if BEAST_USE_INTRINSICS
-# include <intrin.h>
+#include <intrin.h>
 #endif
 
 #if BEAST_MAC || BEAST_IOS
-# include <libkern/OSAtomic.h>
+#include <libkern/OSAtomic.h>
 #endif
 
 #if BEAST_LINUX
-# include <signal.h>
+#include <signal.h>
 # if __INTEL_COMPILER
 #  if __ia64__
-#   include <ia64intrin.h>
+#include <ia64intrin.h>
 #  else
-#   include <ia32intrin.h>
+#include <ia32intrin.h>
 #  endif
 # endif
 #endif
 
 #if BEAST_MSVC && BEAST_DEBUG
-# include <crtdbg.h>
-# include <stdlib.h>
-# include <malloc.h>
+#include <crtdbg.h>
+#include <stdlib.h>
+#include <malloc.h>
 #endif
 
 #if BEAST_MSVC

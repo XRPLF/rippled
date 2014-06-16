@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "ConnectHandouts.h"
+#include <ripple/peerfinder/impl/ConnectHandouts.h>
 
 namespace ripple {
 namespace PeerFinder {

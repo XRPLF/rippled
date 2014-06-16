@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "../RippleSSLContext.h"
+#include <ripple/common/RippleSSLContext.h>
 
 #include <cstdint>
 #include <sstream>
