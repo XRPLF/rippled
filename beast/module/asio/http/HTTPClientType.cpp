@@ -20,7 +20,7 @@
 #include <beast/asio/wrap_handler.h>
 #include <beast/asio/placeholders.h>
 #include <beast/unit_test/suite.h>
-
+#include <boost/asio/ssl/stream.hpp>
 #include <beast/cxx14/memory.h> // <memory>
 
 namespace beast {
@@ -71,8 +71,8 @@ public:
     {
         result_type result;
         boost::asio::io_service io_service;
-        async_get (io_service, url, beast::bind (
-            &HTTPClientType::handle_get, beast::placeholders::_1, &result));
+        async_get (io_service, url, std::bind (
+            &HTTPClientType::handle_get, std::placeholders::_1, &result));
         io_service.run ();
         return result;
     }
@@ -656,8 +656,8 @@ public:
             HTTPClientBase::New (Journal(), timeoutSeconds));
 
         client->async_get (t.get_io_service (), ParsedURL (s).url (),
-            beast::bind (&HTTPClient_test::handle_get, this,
-                beast::_1));
+            std::bind (&HTTPClient_test::handle_get, this,
+                std::placeholders::_1));
 
         t.start ();
         t.join ();

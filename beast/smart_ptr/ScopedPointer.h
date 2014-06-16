@@ -27,9 +27,9 @@
 #include <beast/Config.h>
 #include <beast/Uncopyable.h>
 #include <beast/StaticAssert.h>
-
 #include <beast/smart_ptr/ContainerDeletePolicy.h>
-    
+#include <utility>
+
 namespace beast {
 
 //==============================================================================

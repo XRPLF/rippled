@@ -28,10 +28,6 @@
 #include <beast/Config.h>
 #include <beast/config/ContractChecks.h>
 
-#include <beast/module/core/system/BeforeBoost.h>
-#include <beast/module/core/system/BoostIncludes.h>
-#include <beast/module/core/system/FunctionalIncludes.h>
-
 #if BEAST_MSVC
 # pragma warning (disable: 4251) // (DLL build warning, must be disabled before pushing the warning state)
 # pragma warning (push)
@@ -77,8 +73,6 @@ class FileOutputStream;
 
 // Order matters, since headers don't have their own #include lines.
 // Add new includes to the bottom.
-
-#include <beast/module/core/system/Functional.h>
 
 #include <beast/module/core/time/AtExitHook.h>
 #include <beast/module/core/time/Time.h>

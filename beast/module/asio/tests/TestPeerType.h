@@ -20,6 +20,8 @@
 #ifndef BEAST_ASIO_TESTS_TESTPEERTYPE_H_INCLUDED
 #define BEAST_ASIO_TESTS_TESTPEERTYPE_H_INCLUDED
 
+#include <beast/asio/placeholders.h>
+
 namespace beast {
 namespace asio {
 
@@ -98,8 +100,8 @@ public:
                 m_timer.expires_from_now (
                     boost::posix_time::seconds (timeoutSeconds));
 
-                m_timer.async_wait (boost::bind (&This::on_deadline,
-                    this, boost::asio::placeholders::error));
+                m_timer.async_wait (std::bind (&This::on_deadline,
+                    this, beast::asio::placeholders::error));
 
                 m_timer_set = true;
             }
@@ -270,8 +272,8 @@ public:
         if (failure (error ()))
             return finished ();
 
-        get_acceptor ().async_accept (get_socket (), boost::bind (
-            &This::on_accept, this, boost::asio::placeholders::error));
+        get_acceptor ().async_accept (get_socket (), std::bind (
+            &This::on_accept, this, beast::asio::placeholders::error));
     }
 
     //--------------------------------------------------------------------------
@@ -289,7 +291,8 @@ public:
     void run_async_client ()
     {
         get_native_socket ().async_connect (get_endpoint (get_role ()),
-            boost::bind (&Logic::on_connect_async, this, boost::asio::placeholders::error));
+            std::bind (&Logic::on_connect_async, this,
+                beast::asio::placeholders::error));
     }
 
     //--------------------------------------------------------------------------

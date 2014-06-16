@@ -20,8 +20,11 @@
 #ifndef BEAST_SEMANTICVERSION_H_INCLUDED
 #define BEAST_SEMANTICVERSION_H_INCLUDED
 
-namespace beast
-{
+#include <beast/strings/String.h>
+#include <beast/module/core/text/StringArray.h>
+#include <beast/utility/noexcept.h>
+
+namespace beast {
 
 /** A Semantic Version number.
 

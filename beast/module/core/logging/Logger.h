@@ -24,6 +24,8 @@
 #ifndef BEAST_LOGGER_H_INCLUDED
 #define BEAST_LOGGER_H_INCLUDED
 
+#include <beast/strings/String.h>
+
 namespace beast
 {
 

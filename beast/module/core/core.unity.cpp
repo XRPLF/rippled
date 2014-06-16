@@ -232,6 +232,3 @@ void beast_reportFatalError (char const* message, char const* fileName, int line
 #pragma pop_macro("_aligned_offset_recalloc")
 #pragma pop_macro("_aligned_msize")
 #endif
-
-// Must be outside the namespace
-#include <beast/module/core/system/BoostPlaceholdersFix.cpp>

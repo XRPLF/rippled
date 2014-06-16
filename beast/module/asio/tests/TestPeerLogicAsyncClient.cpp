@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <beast/asio/placeholders.h>
+
 namespace beast {
 namespace asio {
 
@@ -43,8 +45,8 @@ void TestPeerLogicAsyncClient::on_connect_async (error_code const& ec)
     if (socket ().needs_handshake ())
     {
         socket ().async_handshake (abstract_socket::client,
-            boost::bind (&TestPeerLogicAsyncClient::on_handshake, this,
-            boost::asio::placeholders::error));
+            std::bind (&TestPeerLogicAsyncClient::on_handshake, this,
+                beast::asio::placeholders::error));
     }
     else
     {
@@ -58,8 +60,9 @@ void TestPeerLogicAsyncClient::on_handshake (error_code const& ec)
         return finished ();
 
     boost::asio::async_write (socket (), boost::asio::buffer ("hello", 5),
-        boost::bind (&TestPeerLogicAsyncClient::on_write, this,
-        boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+        std::bind (&TestPeerLogicAsyncClient::on_write, this,
+            beast::asio::placeholders::error,
+                beast::asio::placeholders::bytes_transferred));
 }
 
 void TestPeerLogicAsyncClient::on_write (error_code const& ec, std::size_t bytes_transferred)
@@ -71,8 +74,8 @@ void TestPeerLogicAsyncClient::on_write (error_code const& ec, std::size_t bytes
         return finished ();
 
     boost::asio::async_read_until (socket (), m_buf, std::string ("goodbye"),
-        boost::bind (&TestPeerLogicAsyncClient::on_read, this,
-        boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+        std::bind (&TestPeerLogicAsyncClient::on_read, this,
+        beast::asio::placeholders::error, beast::asio::placeholders::bytes_transferred));
 }
 
 void TestPeerLogicAsyncClient::on_read (error_code const& ec, std::size_t bytes_transferred)
@@ -89,8 +92,8 @@ void TestPeerLogicAsyncClient::on_read (error_code const& ec, std::size_t bytes_
     // Fire up a 1 byte read, to wait for the server to
     // shut down its end of the connection.
     boost::asio::async_read (socket (), m_buf.prepare (1),
-        boost::bind (&TestPeerLogicAsyncClient::on_read_final, this,
-        boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+        std::bind (&TestPeerLogicAsyncClient::on_read_final, this,
+        beast::asio::placeholders::error, beast::asio::placeholders::bytes_transferred));
 }
 
 void TestPeerLogicAsyncClient::on_read_final (error_code const& ec, std::size_t)
@@ -104,8 +107,8 @@ void TestPeerLogicAsyncClient::on_read_final (error_code const& ec, std::size_t)
     {
         if (socket ().needs_handshake ())
         {
-            socket ().async_shutdown (boost::bind (&TestPeerLogicAsyncClient::on_shutdown, this,
-                boost::asio::placeholders::error));
+            socket ().async_shutdown (std::bind (&TestPeerLogicAsyncClient::on_shutdown, this,
+                beast::asio::placeholders::error));
         }
         else
         {
