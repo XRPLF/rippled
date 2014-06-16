@@ -21,8 +21,9 @@
 */
 //==============================================================================
 
-namespace beast
-{
+#include <beast/cxx14/memory.h> // <memory>
+
+namespace beast {
 
 static StringArray parseWildcards (const String& pattern)
 {
@@ -97,8 +98,9 @@ bool DirectoryIterator::next (bool* const isDirResult, bool* const isHiddenResul
             if (isDirectory)
             {
                 if (isRecursive && ((whatToLookFor & File::ignoreHiddenFiles) == 0 || ! isHidden))
-                    subIterator = new DirectoryIterator (File::createFileWithoutCheckingPath (path + filename),
-                                                         true, wildCard, whatToLookFor);
+                    subIterator = std::make_unique <DirectoryIterator> (
+                        File::createFileWithoutCheckingPath (path + filename),
+                            true, wildCard, whatToLookFor);
 
                 matches = (whatToLookFor & File::findDirectories) != 0;
             }
