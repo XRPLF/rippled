@@ -842,14 +842,10 @@ TER LedgerEntrySet::dirDelete (
             else if (bKeepRoot)
             {
                 // If root overflowed and not allowed to delete overflowed root node.
-
-                nothing ();
             }
             else if (uNodePrevious != uNodeNext)
             {
                 // Have more than 2 nodes.  Can't delete root node.
-
-                nothing ();
             }
             else
             {
@@ -868,8 +864,6 @@ TER LedgerEntrySet::dirDelete (
                 else
                 {
                     // Have an entry, can't delete root node.
-
-                    nothing ();
                 }
             }
         }
@@ -916,8 +910,6 @@ TER LedgerEntrySet::dirDelete (
         {
             // Not allowed to delete last node as root was overflowed.
             // Or, have pervious entries preventing complete delete.
-
-            nothing ();
         }
         else
         {
@@ -936,8 +928,6 @@ TER LedgerEntrySet::dirDelete (
             else
             {
                 // Root has an entry, can't delete.
-
-                nothing ();
             }
         }
     }
@@ -1541,14 +1531,14 @@ TER LedgerEntrySet::rippleCredit (const uint160& uSenderID, const uint160& uRece
             " amount=" << saAmount.getFullText () <<
             " after=" << saBalance.getFullText ();
 
-        bool    bDelete = false;
-        std::uint32_t  uFlags;
+        std::uint32_t const uFlags (sleRippleState->getFieldU32 (sfFlags));
+        bool bDelete = false;
 
         // YYY Could skip this if rippling in reverse.
         if (saBefore > zero                                                                              // Sender balance was positive.
                 && saBalance <= zero                                                                         // Sender is zero or negative.
-                && is_bit_set ((uFlags = sleRippleState->getFieldU32 (sfFlags)), !bSenderHigh ? lsfLowReserve : lsfHighReserve) // Sender reserve is set.
-                && !is_bit_set (uFlags, !bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)
+                && (uFlags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve)) // Sender reserve is set.
+                && !(uFlags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple))
                 && !sleRippleState->getFieldAmount (!bSenderHigh ? sfLowLimit : sfHighLimit)                        // Sender trust limit is 0.
                 && !sleRippleState->getFieldU32 (!bSenderHigh ? sfLowQualityIn : sfHighQualityIn)                   // Sender quality in is 0.
                 && !sleRippleState->getFieldU32 (!bSenderHigh ? sfLowQualityOut : sfHighQualityOut))                // Sender quality out is 0.
@@ -1561,7 +1551,7 @@ TER LedgerEntrySet::rippleCredit (const uint160& uSenderID, const uint160& uRece
             sleRippleState->setFieldU32 (sfFlags, uFlags & (!bSenderHigh ? ~lsfLowReserve : ~lsfHighReserve));  // Clear reserve flag.
 
             bDelete = !saBalance        // Balance is zero.
-                      && !is_bit_set (uFlags, bSenderHigh ? lsfLowReserve : lsfHighReserve); // Receiver reserve is clear.
+                      && !(uFlags & (bSenderHigh ? lsfLowReserve : lsfHighReserve)); // Receiver reserve is clear.
         }
 
         if (bSenderHigh)
@@ -1674,7 +1664,7 @@ TER LedgerEntrySet::accountSend (const uint160& uSenderID, const uint160& uRecei
         {
             if (sleSender->getFieldAmount (sfBalance) < saAmount)
             {
-                terResult = is_bit_set (mParams, tapOPEN_LEDGER)
+                terResult = (mParams & tapOPEN_LEDGER)
                     ? telFAILED_PROCESSING
                     : tecFAILED_PROCESSING;
             }

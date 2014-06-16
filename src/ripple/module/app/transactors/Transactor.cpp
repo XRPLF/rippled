@@ -84,7 +84,7 @@ Transactor::Transactor (
 void Transactor::calculateFee ()
 {
     mFeeDue = STAmount (mEngine->getLedger ()->scaleFeeLoad (
-        calculateBaseFee (), is_bit_set (mParams, tapADMIN)));
+        calculateBaseFee (), mParams & tapADMIN));
 }
 
 std::uint64_t Transactor::calculateBaseFee ()
@@ -100,7 +100,7 @@ TER Transactor::payFee ()
         return temBAD_AMOUNT;
 
     // Only check fee is sufficient when the ledger is open.
-    if (is_bit_set (mParams, tapOPEN_LEDGER) && saPaid < mFeeDue)
+    if ((mParams & tapOPEN_LEDGER) && saPaid < mFeeDue)
     {
         m_journal.trace << "Insufficient fee paid: " <<
             saPaid.getText () << "/" << mFeeDue.getText ();
@@ -232,7 +232,8 @@ TER Transactor::preCheck ()
     // Consistency: really signed.
     if (!mTxn.isKnownGood ())
     {
-        if (mTxn.isKnownBad () || (!is_bit_set (mParams, tapNO_CHECK_SIGN) && !mTxn.checkSign (mSigningPubKey)))
+        if (mTxn.isKnownBad () || 
+            (!(mParams & tapNO_CHECK_SIGN) && !mTxn.checkSign (mSigningPubKey)))
         {
             mTxn.setBad ();
             m_journal.warning << "apply: Invalid transaction (bad signature)";

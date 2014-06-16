@@ -140,13 +140,13 @@ TER PathState::pushNode (
     auto const& previousNode = bFirst ? path::Node () : nodes_.back ();
 
     // true, iff node is a ripple account. false, iff node is an offer node.
-    const bool bAccount    = is_bit_set (iType, STPathElement::typeAccount);
+    const bool bAccount (iType & STPathElement::typeAccount);
 
     // Is currency specified for the output of the current node?
-    const bool bCurrency   = is_bit_set (iType, STPathElement::typeCurrency);
+    const bool bCurrency (iType & STPathElement::typeCurrency);
 
     // Issuer is specified for the output of the current node.
-    const bool bIssuer     = is_bit_set (iType, STPathElement::typeIssuer);
+    const bool bIssuer (iType & STPathElement::typeIssuer);
 
     TER resultCode   = tesSUCCESS;
 
@@ -273,8 +273,8 @@ TER PathState::pushNode (
 
                         resultCode   = terNO_ACCOUNT;
                     }
-                    else if ((is_bit_set (sleBck->getFieldU32 (sfFlags), lsfRequireAuth)
-                             && !is_bit_set (sleRippleState->getFieldU32 (sfFlags), (bHigh ? lsfHighAuth : lsfLowAuth)))
+                    else if (sleBck->getFieldU32 (sfFlags) & lsfRequireAuth
+                             && !(sleRippleState->getFieldU32 (sfFlags) & (bHigh ? lsfHighAuth : lsfLowAuth))
                              && sleRippleState->getFieldAmount(sfBalance) == zero) // CHECKME
                     {
                         WriteLog (lsWARNING, RippleCalc) << "pushNode: delay: can't receive IOUs from issuer without auth.";
@@ -559,10 +559,10 @@ void PathState::checkNoRipple (
         terStatus = terNO_LINE;
     }
     else if (
-        is_bit_set (sleIn->getFieldU32 (sfFlags),
-            (secondAccount > firstAccount) ? lsfHighNoRipple : lsfLowNoRipple) &&
-        is_bit_set (sleOut->getFieldU32 (sfFlags),
-            (secondAccount > thirdAccount) ? lsfHighNoRipple : lsfLowNoRipple))
+        sleIn->getFieldU32 (sfFlags) &
+            ((secondAccount > firstAccount) ? lsfHighNoRipple : lsfLowNoRipple) &&
+        sleOut->getFieldU32 (sfFlags) &
+            ((secondAccount > thirdAccount) ? lsfHighNoRipple : lsfLowNoRipple))
     {
         WriteLog (lsINFO, RippleCalc) << "Path violates noRipple constraint between " <<
             RippleAddress::createHumanAccountID (firstAccount) << ", " <<

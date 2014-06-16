@@ -58,12 +58,12 @@ CreateOffer::checkAcceptAsset(core::AssetRef asset) const
             "delay: can't receive IOUs from non-existent issuer: " <<
             RippleAddress::createHumanAccountID (asset.issuer);
 
-        return is_bit_set (mParams, tapRETRY)
+        return (mParams & tapRETRY)
             ? terNO_ACCOUNT
             : tecNO_ISSUER;
     }
 
-    if (is_bit_set (issuerAccount->getFieldU32 (sfFlags), lsfRequireAuth))
+    if (issuerAccount->getFieldU32 (sfFlags) & lsfRequireAuth)
     {
         SLE::pointer const trustLine (mEngine->entryCache (
             ltRIPPLE_STATE, Ledger::getRippleStateIndex (
@@ -71,7 +71,7 @@ CreateOffer::checkAcceptAsset(core::AssetRef asset) const
 
         if (!trustLine)
         {
-            return is_bit_set (mParams, tapRETRY)
+            return (mParams & tapRETRY)
                 ? terNO_LINE
                 : tecNO_LINE;
         }
@@ -81,16 +81,15 @@ CreateOffer::checkAcceptAsset(core::AssetRef asset) const
         // ordering. Determine which entry we need to access.
         bool const canonical_gt (mTxnAccountID > asset.issuer);
 
-        bool const need_auth (is_bit_set (
-            trustLine->getFieldU32 (sfFlags),
-            (canonical_gt ? lsfLowAuth : lsfHighAuth)));
+        bool const need_auth (trustLine->getFieldU32 (sfFlags) &
+            (canonical_gt ? lsfLowAuth : lsfHighAuth));
 
         if (need_auth)
         {
             if (m_journal.debug) m_journal.debug <<
                 "delay: can't receive IOUs from issuer without auth.";
 
-            return is_bit_set (mParams, tapRETRY)
+            return (mParams & tapRETRY)
                 ? terNO_AUTH
                 : tecNO_AUTH;
         }
@@ -107,10 +106,10 @@ CreateOffer::doApply ()
 
     std::uint32_t const uTxFlags = mTxn.getFlags ();
 
-    bool const bPassive = is_bit_set (uTxFlags, tfPassive);
-    bool const bImmediateOrCancel = is_bit_set (uTxFlags, tfImmediateOrCancel);
-    bool const bFillOrKill = is_bit_set (uTxFlags, tfFillOrKill);
-    bool const bSell = is_bit_set (uTxFlags, tfSell);
+    bool const bPassive (uTxFlags & tfPassive);
+    bool const bImmediateOrCancel (uTxFlags & tfImmediateOrCancel);
+    bool const bFillOrKill (uTxFlags & tfFillOrKill);
+    bool const bSell  (uTxFlags & tfSell);
 
     STAmount saTakerPays = mTxn.getFieldAmount (sfTakerPays);
     STAmount saTakerGets = mTxn.getFieldAmount (sfTakerGets);
@@ -290,7 +289,7 @@ CreateOffer::doApply ()
         terResult = checkAcceptAsset (core::Asset (uPaysCurrency, uPaysIssuerID));
 
     bool crossed = false;
-    bool const bOpenLedger = is_bit_set (mParams, tapOPEN_LEDGER);
+    bool const bOpenLedger (mParams & tapOPEN_LEDGER);
 
     if (terResult == tesSUCCESS)
     {

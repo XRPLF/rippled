@@ -25,23 +25,6 @@
 
 namespace ripple {
 
-//
-// VFALCO DEPRECATED, this should all be removed.
-//
-
-template <typename X, typename Y>
-inline
-std::enable_if_t<
-    (std::is_integral<X>::value || std::is_enum<X>::value) &&
-    (std::is_integral<Y>::value || std::is_enum<Y>::value),
-bool>
-is_bit_set(X const x, Y const y)
-{
-    if (x & y)
-        return true;
-    return false;
-}
-
 // VFALCO TODO Clean this stuff up. Remove as much as possible
 // DEPRECATED
 #define nothing()           do {} while (0)

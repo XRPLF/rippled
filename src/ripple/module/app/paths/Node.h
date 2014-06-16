@@ -29,7 +29,7 @@ struct Node
 
     inline bool isAccount() const
     {
-        return is_bit_set (uFlags, STPathElement::typeAccount);
+        return (uFlags & STPathElement::typeAccount);
     }
 
     Json::Value getJson () const;

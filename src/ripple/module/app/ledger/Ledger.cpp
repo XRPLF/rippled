@@ -1070,7 +1070,8 @@ Json::Value Ledger::getJson (int options)
 {
     Json::Value ledger (Json::objectValue);
 
-    bool bFull = is_bit_set (options, LEDGER_JSON_FULL);
+    bool const bFull (options & LEDGER_JSON_FULL);
+    bool const bExpand (options & LEDGER_JSON_EXPAND);
 
     ScopedLockType sl (mLock);
 
@@ -1106,7 +1107,7 @@ Json::Value Ledger::getJson (int options)
         ledger[jss::closed] = false;
     }
 
-    if (mTransactionMap && (bFull || is_bit_set (options, LEDGER_JSON_DUMP_TXRP)))
+    if (mTransactionMap && (bFull || options & LEDGER_JSON_DUMP_TXRP))
     {
         Json::Value& txns = (ledger[jss::transactions] = Json::arrayValue);
         SHAMapTreeNode::TNType type;
@@ -1114,7 +1115,7 @@ Json::Value Ledger::getJson (int options)
         for (SHAMapItem::pointer item = mTransactionMap->peekFirstItem (type); !!item;
                 item = mTransactionMap->peekNextItem (item->getTag (), type))
         {
-            if (bFull || is_bit_set (options, LEDGER_JSON_EXPAND))
+            if (bFull || bExpand)
             {
                 if (type == SHAMapTreeNode::tnTRANSACTION_NM)
                 {
@@ -1147,10 +1148,10 @@ Json::Value Ledger::getJson (int options)
 
     }
 
-    if (mAccountStateMap && (bFull || is_bit_set (options, LEDGER_JSON_DUMP_STATE)))
+    if (mAccountStateMap && (bFull || options & LEDGER_JSON_DUMP_STATE))
     {
         Json::Value& state = (ledger[jss::accountState] = Json::arrayValue);
-        if (bFull || is_bit_set (options, LEDGER_JSON_EXPAND))
+        if (bFull || bExpand)
             visitStateItems(std::bind(stateItemFullAppender, std::ref(state),
                                       std::placeholders::_1));
         else
