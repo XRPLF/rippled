@@ -41,11 +41,11 @@
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
-#include <boost/thread.hpp>
 #include <boost/thread/recursive_mutex.hpp>
 
 #include <iostream>
 #include <stdexcept>
+#include <thread>
 
 #ifdef _MSC_VER
 // Disable "warning C4355: 'this' : used in base member initializer list".
@@ -306,7 +306,7 @@ private:
     
     boost::asio::deadline_timer     m_timer;
 
-    std::vector< boost::shared_ptr<boost::thread> > m_listening_threads;
+    std::vector< boost::shared_ptr<std::thread> > m_listening_threads;
 };
 
 template <class endpoint>
@@ -333,8 +333,8 @@ void server<endpoint>::start_listen(const boost::asio::ip::tcp::endpoint& e,size
     m_state = LISTENING;
 
     for (std::size_t i = 0; i < num_threads; ++i) {
-        boost::shared_ptr<boost::thread> thread(
-            new boost::thread(boost::bind(
+        boost::shared_ptr<std::thread> thread(
+            new std::thread(boost::bind(
                     &endpoint_type::run_internal,
                     &m_endpoint
             ))
