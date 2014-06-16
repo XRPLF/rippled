@@ -206,8 +206,6 @@ TER PathState::pushNode (
         if (bFirst)
         {
             // The first node is always correct as is.
-
-            nothing ();
         }
         else if (!uAccountID)
         {

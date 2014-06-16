@@ -209,21 +209,17 @@ int run (int argc, char** argv)
         iResult = 2;
     }
 
-    if (iResult)
-    {
-        nothing ();
-    }
-    else
+    if (!iResult)
     {
         // Parse options, if no error.
         try
         {
             po::store (po::command_line_parser (argc, argv)
-                       .options (desc)                                         // Parse options.
-                       .positional (p)                                         // Remainder as --parameters.
-                       .run (),
-                       vm);
-            po::notify (vm);                                            // Invoke option notify functions.
+                .options (desc)               // Parse options.
+                .positional (p)               // Remainder as --parameters.
+                .run (),
+                vm);
+            po::notify (vm);                  // Invoke option notify functions.
         }
         catch (...)
         {
@@ -231,11 +227,7 @@ int run (int argc, char** argv)
         }
     }
 
-    if (iResult)
-    {
-        nothing ();
-    }
-    else if (vm.count ("help"))
+    if (!iResult && vm.count ("help"))
     {
         iResult = 1;
     }

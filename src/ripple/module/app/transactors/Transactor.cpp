@@ -139,12 +139,11 @@ TER Transactor::checkSig ()
         // Authorized to continue.
         mSigMaster = true;
         if (mTxnAccount->isFlag(lsfDisableMaster))
-	    return tefMASTER_DISABLED;
+        return tefMASTER_DISABLED;
     }
     else if (mHasAuthKey && mSigningPubKey.getAccountID () == mTxnAccount->getFieldAccount160 (sfRegularKey))
     {
         // Authorized to continue.
-        nothing ();
     }
     else if (mHasAuthKey)
     {

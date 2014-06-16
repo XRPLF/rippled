@@ -93,7 +93,6 @@ TER nodeDeliverFwd (
 
         if (resultCode != tesSUCCESS)
         {
-            nothing ();
         }
         else if (!uOfferIndex)
         {

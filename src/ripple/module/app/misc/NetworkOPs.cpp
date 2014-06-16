@@ -806,14 +806,15 @@ Transaction::pointer NetworkOPsImp::submitTransactionSync (Transaction::ref tpTr
     Serializer s;
     tpTrans->getSTransaction ()->add (s);
 
-    Transaction::pointer    tpTransNew  = Transaction::sharedTransaction (s.getData (), true);
+    Transaction::pointer tpTransNew = Transaction::sharedTransaction (s.getData (), true);
 
     if (!tpTransNew)
     {
         // Could not construct transaction.
-        nothing ();
+        return tpTransNew;
     }
-    else if (tpTransNew->getSTransaction ()->isEquivalent (*tpTrans->getSTransaction ()))
+
+    if (tpTransNew->getSTransaction ()->isEquivalent (*tpTrans->getSTransaction ()))
     {
         if (bSubmit)
             (void) NetworkOPsImp::processTransaction (tpTransNew, bAdmin, bLocal, bFailHard);
@@ -2660,17 +2661,11 @@ void NetworkOPsImp::unsubAccount (std::uint64_t uSeq,
 
     ScopedLockType sl (mLock);
 
-    BOOST_FOREACH (const RippleAddress & naAccountID, vnaAccountIDs)
+    for (auto const& naAccountID : vnaAccountIDs)
     {
-        SubInfoMapType::iterator    simIterator = subMap.find (naAccountID.getAccountID ());
+        auto simIterator = subMap.find (naAccountID.getAccountID ());
 
-
-        if (simIterator == subMap.end ())
-        {
-            // Not found.  Done.
-            nothing ();
-        }
-        else
+        if (simIterator != subMap.end ())
         {
             // Found
             simIterator->second.erase (uSeq);

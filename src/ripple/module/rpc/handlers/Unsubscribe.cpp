@@ -119,7 +119,6 @@ Json::Value RPCHandler::doUnsubscribe (Json::Value params, Resource::Charge& loa
 
     if (!params.isMember ("books"))
     {
-        nothing ();
     }
     else if (!params["books"].isArray ())
     {

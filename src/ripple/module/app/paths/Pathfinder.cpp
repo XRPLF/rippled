@@ -495,16 +495,20 @@ int Pathfinder::getPathsOut (RippleCurrency const& currencyID, const uint160& ac
         RippleState* rspEntry = (RippleState*) item.get ();
 
         if (currencyID != rspEntry->getLimit ().getCurrency ())
-            nothing ();
+        {
+        }
         else if (rspEntry->getBalance () <= zero &&
                  (!rspEntry->getLimitPeer ()
                   || -rspEntry->getBalance () >= rspEntry->getLimitPeer ()
                   ||  (bAuthRequired && !rspEntry->getAuth ())))
-            nothing ();
+        {
+        }
         else if (isDstCurrency && (dstAccount == rspEntry->getAccountIDPeer ()))
             count += 10000; // count a path to the destination extra
         else if (rspEntry->getNoRipplePeer ())
-            nothing (); // This probably isn't a useful path out
+        {
+            // This probably isn't a useful path out
+        }
         else
             ++count;
     }

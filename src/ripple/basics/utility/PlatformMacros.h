@@ -27,7 +27,6 @@ namespace ripple {
 
 // VFALCO TODO Clean this stuff up. Remove as much as possible
 // DEPRECATED
-#define nothing()           do {} while (0)
 #define RIPPLE_ARRAYSIZE(x) (sizeof(x) / sizeof((x)[0]))
 
 } // ripple

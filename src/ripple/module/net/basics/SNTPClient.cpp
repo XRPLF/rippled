@@ -152,7 +152,8 @@ public:
     void queryAll ()
     {
         while (doQuery ())
-            nothing ();
+        {
+        }
     }
 
     bool getOffset (int& offset)

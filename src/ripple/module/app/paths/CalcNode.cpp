@@ -92,13 +92,12 @@ TER nodeRev (
         : nodeOfferRev (rippleCalc, nodeIndex, pathState, bMultiQuality);
 
     // Do previous.
-    if (resultCode != tesSUCCESS)
-        // Error, don't continue.
-        nothing ();
-    else if (nodeIndex)
+    if (resultCode == tesSUCCESS && nodeIndex)
+    {
         // Continue in reverse.  TODO(tom): remove unnecessary recursion.
         resultCode = nodeRev (rippleCalc, nodeIndex - 1, pathState, bMultiQuality);
-
+    }
+    
     WriteLog (lsTRACE, RippleCalc)
         << "nodeRev< "
         << "nodeIndex=" << nodeIndex

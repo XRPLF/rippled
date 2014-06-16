@@ -166,7 +166,6 @@ private:
 
         if (1 == iParams)
         {
-            nothing ();
         }
         else if (2 == iParams)
         {
@@ -235,7 +234,6 @@ private:
 
         if (1 == iParams)
         {
-            nothing ();
         }
         else if (2 == iParams)
         {

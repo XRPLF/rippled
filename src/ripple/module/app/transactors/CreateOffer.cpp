@@ -376,7 +376,6 @@ CreateOffer::doApply ()
         bImmediateOrCancel)                   // Do not persist.
     {
         // Complete as is.
-        nothing ();
     }
     else if (mPriorBalance.getNValue () < accountReserve)
     {
@@ -405,7 +404,6 @@ CreateOffer::doApply ()
             // something.
 
             // Consider the offer unfunded. Treat as tesSUCCESS.
-            nothing ();
         }
     }
     else

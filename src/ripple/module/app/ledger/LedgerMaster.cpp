@@ -1076,7 +1076,6 @@ public:
 
                         if (!acq->isDone ())
                         {
-                            nothing ();
                         }
                         else if (acq->isComplete () && !acq->isFailed ())
                         {

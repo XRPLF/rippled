@@ -958,12 +958,10 @@ TER CreateOfferLegacy::doApply ()
     if (tesSUCCESS != terResult)
     {
         // Fail as is.
-        nothing ();
     }
     else if (bExpired)
     {
         // nothing to do
-        nothing ();
     }
     else if (saTakerPays < zero || saTakerGets < zero)
     {
@@ -986,7 +984,6 @@ TER CreateOfferLegacy::doApply ()
         || bUnfunded)                                                   // Consider unfunded.
     {
         // Complete as is.
-        nothing ();
     }
     else if (mPriorBalance.getNValue () < mEngine->getLedger ()->getReserve (sleCreator->getFieldU32 (sfOwnerCount) + 1))
     {
@@ -1016,7 +1013,6 @@ TER CreateOfferLegacy::doApply ()
             // something.
 
             // Consider the offer unfunded. Treat as tesSUCCESS.
-            nothing ();
         }
     }
     else
