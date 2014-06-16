@@ -95,7 +95,7 @@ def is_subdir(child, parent):
     return os.path.commonprefix([parent, child]) == parent
 
 def itemList(items, sep):
-    if type(items) == str:  # Won't work in Python 3.
+    if isinstance(items, str):      # Should work in Python 3, unlike 'type(items) == str'
         return items
     def gen():
         for item in sorted(items):
