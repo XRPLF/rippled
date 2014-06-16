@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/module/basics/utility/IniFile.h>
+#include <ripple/basics/utility/IniFile.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
 

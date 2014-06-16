@@ -20,7 +20,7 @@
 #ifndef RIPPLE_BASICS_LOGPARTITION_H_INCLUDED
 #define RIPPLE_BASICS_LOGPARTITION_H_INCLUDED
 
-#include <ripple/module/basics/log/LogSeverity.h>
+#include <ripple/basics/log/LogSeverity.h>
 #include <beast/module/core/memory/SharedSingleton.h>
 #include <beast/utility/Journal.h>
 #include <vector>

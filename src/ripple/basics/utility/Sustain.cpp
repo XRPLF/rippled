@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/module/basics/utility/ThreadName.h>
+#include <ripple/basics/utility/ThreadName.h>
     
 // For Sustain Linux variants
 // VFALCO TODO Rewrite Sustain to use beast::Process

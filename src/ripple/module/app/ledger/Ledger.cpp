@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/basics/utility/Time.h>
 #include <ripple/common/jsonrpc_fields.h>
 #include <ripple/nodestore/Database.h>
 #include <beast/unit_test/suite.h>

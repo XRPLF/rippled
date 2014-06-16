@@ -20,6 +20,8 @@
 #ifndef RIPPLE_UPTIMETIMERADAPTER_H
 #define RIPPLE_UPTIMETIMERADAPTER_H
 
+#include <ripple/basics/utility/UptimeTimer.h>
+
 namespace ripple {
 
 /** Adapter providing uptime measurements for template classes. */

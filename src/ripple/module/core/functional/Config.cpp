@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/basics/utility/IniFile.h>
 #include <beast/module/core/text/LexicalCast.h>
 
 namespace ripple {

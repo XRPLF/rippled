@@ -25,7 +25,7 @@
 #include <boost/version.hpp>
 #include <openssl/opensslv.h>
 
-#include <ripple/module/basics/system/CheckLibraryVersions.h>
+#include <ripple/basics/system/CheckLibraryVersions.h>
 
 namespace ripple {
 namespace version {

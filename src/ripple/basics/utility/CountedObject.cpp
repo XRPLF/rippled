@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/module/basics/utility/CountedObject.h>
+#include <ripple/basics/utility/CountedObject.h>
 
 namespace ripple {
 

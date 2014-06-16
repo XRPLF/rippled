@@ -20,7 +20,7 @@
 #ifndef RIPPLE_BASICS_LOGSINK_H_INCLUDED
 #define RIPPLE_BASICS_LOGSINK_H_INCLUDED
 
-#include <ripple/module/basics/log/LogFile.h>
+#include <ripple/basics/log/LogFile.h>
 #include <beast/smart_ptr/SharedPtr.h>
 #include <beast/module/core/memory/SharedSingleton.h>
 #include <boost/filesystem.hpp>

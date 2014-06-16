@@ -23,6 +23,8 @@
 #include <ripple/types/api/Blob.h>
 #include <ripple/types/api/ByteOrder.h>
 #include <ripple/types/api/strHex.h>
+#include <beast/module/core/text/StringPairArray.h>
+#include <string>
 
 namespace ripple {
 

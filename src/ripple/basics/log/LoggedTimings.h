@@ -23,7 +23,7 @@
 #include <beast/module/core/time/Time.h>
 #include <beast/module/core/diagnostic/MeasureFunctionCallTime.h>
 #include <beast/utility/Debug.h>
-#include <ripple/module/basics/containers/SyncUnorderedMap.h>
+#include <ripple/basics/containers/SyncUnorderedMap.h>
     
 namespace ripple {
 

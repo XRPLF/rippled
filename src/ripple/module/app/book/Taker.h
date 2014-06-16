@@ -44,10 +44,10 @@ public:
 
         explicit
         Options (std::uint32_t tx_flags)
-            : sell (is_bit_set (tx_flags, tfSell))
-            , passive (is_bit_set (tx_flags, tfPassive))
-            , fill_or_kill (is_bit_set (tx_flags, tfFillOrKill))
-            , immediate_or_cancel (is_bit_set (tx_flags, tfImmediateOrCancel))
+            : sell (tx_flags & tfSell)
+            , passive (tx_flags & tfPassive)
+            , fill_or_kill (tx_flags & tfFillOrKill)
+            , immediate_or_cancel (tx_flags & tfImmediateOrCancel)
         {
         }
 

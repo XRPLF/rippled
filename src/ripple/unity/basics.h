@@ -22,7 +22,7 @@
 
 #include <beast/Crypto.h>
 
-#include <ripple/module/basics/system/BoostIncludes.h>
+#include <ripple/basics/system/BoostIncludes.h>
 
 #include <beast/cxx14/memory.h>
 #include <beast/utility/Zero.h>
@@ -34,25 +34,16 @@ using beast::Zero;
 
 #include <ripple/unity/types.h>
 
-#include <ripple/module/basics/types/BasicTypes.h>
+#include <ripple/basics/types/BasicTypes.h>
 
-#include <ripple/module/basics/log/LogSeverity.h>
-#include <ripple/module/basics/log/LogFile.h>
-#include <ripple/module/basics/log/LogSink.h>
-#include <ripple/module/basics/log/LogPartition.h>
-#include <ripple/module/basics/log/Log.h>
-#include <ripple/module/basics/log/LoggedTimings.h>
-
-#include <ripple/module/basics/utility/CountedObject.h>
-#include <ripple/module/basics/utility/IniFile.h>
-#include <ripple/module/basics/utility/PlatformMacros.h>
-#include <ripple/module/basics/utility/StringUtilities.h>
-#include <ripple/module/basics/utility/Sustain.h>
-#include <ripple/module/basics/utility/ThreadName.h>
-#include <ripple/module/basics/utility/Time.h>
-#include <ripple/module/basics/utility/UptimeTimer.h>
-
-#include <ripple/module/basics/containers/RangeSet.h>
-#include <ripple/module/basics/containers/SyncUnorderedMap.h>
+#include <ripple/basics/log/LogSeverity.h>
+#include <ripple/basics/log/LogFile.h>
+#include <ripple/basics/log/LogSink.h>
+#include <ripple/basics/log/LogPartition.h>
+#include <ripple/basics/log/Log.h>
+#include <ripple/basics/log/LoggedTimings.h>
+#include <ripple/basics/utility/CountedObject.h>
+#include <ripple/basics/utility/PlatformMacros.h>
+#include <ripple/basics/utility/StringUtilities.h>
 
 #endif

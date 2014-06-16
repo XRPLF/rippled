@@ -1781,6 +1781,83 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\algorithm\api\DecayingSample.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\basics\containers\RangeSet.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\basics\containers\RangeSet.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\basics\containers\SyncUnorderedMap.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\basics\log\Log.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\basics\log\Log.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\basics\log\LogFile.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\basics\log\LogFile.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\basics\log\LogPartition.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\basics\log\LogPartition.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\basics\log\LogSeverity.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\basics\log\LogSink.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\basics\log\LogSink.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\basics\log\LoggedTimings.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\basics\system\BoostIncludes.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\basics\system\CheckLibraryVersions.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\basics\system\CheckLibraryVersions.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\basics\types\BasicTypes.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\basics\utility\CountedObject.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\basics\utility\CountedObject.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\basics\utility\IniFile.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\basics\utility\IniFile.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\basics\utility\PlatformMacros.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\basics\utility\StringUtilities.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\basics\utility\StringUtilities.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\basics\utility\Sustain.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\basics\utility\Sustain.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\basics\utility\ThreadName.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\basics\utility\ThreadName.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\basics\utility\Time.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\basics\utility\Time.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\basics\utility\UptimeTimer.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\basics\utility\UptimeTimer.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\common\KeyCache.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\common\MultiSocket.h">
@@ -2452,83 +2529,6 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\app\websocket\WSServerHandler.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\basics\containers\RangeSet.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\basics\containers\RangeSet.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\basics\containers\SyncUnorderedMap.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\basics\log\Log.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\basics\log\Log.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\basics\log\LogFile.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\basics\log\LogFile.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\basics\log\LogPartition.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\basics\log\LogPartition.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\basics\log\LogSeverity.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\basics\log\LogSink.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\basics\log\LogSink.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\basics\log\LoggedTimings.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\basics\system\BoostIncludes.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\basics\system\CheckLibraryVersions.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\basics\system\CheckLibraryVersions.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\basics\types\BasicTypes.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\basics\utility\CountedObject.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\basics\utility\CountedObject.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\basics\utility\IniFile.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\basics\utility\IniFile.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\basics\utility\PlatformMacros.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\basics\utility\StringUtilities.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\basics\utility\StringUtilities.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\basics\utility\Sustain.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\basics\utility\Sustain.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\basics\utility\ThreadName.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\basics\utility\ThreadName.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\basics\utility\Time.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\basics\utility\Time.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\basics\utility\UptimeTimer.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\basics\utility\UptimeTimer.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\core\functional\Config.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>

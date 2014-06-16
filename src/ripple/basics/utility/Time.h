@@ -17,31 +17,14 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PLATFORMMACROS_H
-#define RIPPLE_PLATFORMMACROS_H
-
-#include <functional>
-#include <beast/cxx14/type_traits.h> // <type_traits>
+#ifndef RIPPLE_TIME_H
+#define RIPPLE_TIME_H
 
 namespace ripple {
 
-template <typename X, typename Y>
-inline
-std::enable_if_t<
-    (std::is_integral<X>::value || std::is_enum<X>::value) &&
-    (std::is_integral<Y>::value || std::is_enum<Y>::value),
-bool>
-is_bit_set(X const x, Y const y)
-{
-    if (x & y)
-        return true;
-    return false;
-}
-
-// VFALCO TODO Clean this stuff up. Remove as much as possible
-// DEPRECATED
-#define nothing()           do {} while (0)
-#define RIPPLE_ARRAYSIZE(x) (sizeof(x) / sizeof((x)[0]))
+int iToSeconds (boost::posix_time::ptime ptWhen);
+boost::posix_time::ptime ptFromSeconds (int iSeconds);
+uint64_t utFromSeconds (int iSeconds);
 
 } // ripple
 

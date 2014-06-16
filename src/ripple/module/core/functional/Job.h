@@ -20,7 +20,7 @@
 #ifndef RIPPLE_JOB_H
 #define RIPPLE_JOB_H
 
-#include <ripple/module/basics/types/BasicTypes.h>
+#include <ripple/basics/types/BasicTypes.h>
 #include <ripple/module/core/functional/LoadMonitor.h>
 #include <ripple/unity/json.h>
 

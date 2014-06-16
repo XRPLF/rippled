@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/module/basics/utility/StringUtilities.h>
+#include <ripple/basics/utility/StringUtilities.h>
 #include <beast/unit_test/suite.h>
 #include <boost/asio/ip/address.hpp>
 #include <boost/regex.hpp>

@@ -19,16 +19,16 @@
 
 #include <BeastConfig.h>
 
-#include <ripple/module/basics/containers/RangeSet.cpp>
-#include <ripple/module/basics/log/Log.cpp>
-#include <ripple/module/basics/log/LogFile.cpp>
-#include <ripple/module/basics/log/LogPartition.cpp>
-#include <ripple/module/basics/log/LogSink.cpp>
-#include <ripple/module/basics/system/CheckLibraryVersions.cpp>
-#include <ripple/module/basics/utility/CountedObject.cpp>
-#include <ripple/module/basics/utility/IniFile.cpp>
-#include <ripple/module/basics/utility/StringUtilities.cpp>
-#include <ripple/module/basics/utility/Sustain.cpp>
-#include <ripple/module/basics/utility/ThreadName.cpp>
-#include <ripple/module/basics/utility/Time.cpp>
-#include <ripple/module/basics/utility/UptimeTimer.cpp>
+#include <ripple/basics/containers/RangeSet.cpp>
+#include <ripple/basics/log/Log.cpp>
+#include <ripple/basics/log/LogFile.cpp>
+#include <ripple/basics/log/LogPartition.cpp>
+#include <ripple/basics/log/LogSink.cpp>
+#include <ripple/basics/system/CheckLibraryVersions.cpp>
+#include <ripple/basics/utility/CountedObject.cpp>
+#include <ripple/basics/utility/IniFile.cpp>
+#include <ripple/basics/utility/StringUtilities.cpp>
+#include <ripple/basics/utility/Sustain.cpp>
+#include <ripple/basics/utility/ThreadName.cpp>
+#include <ripple/basics/utility/Time.cpp>
+#include <ripple/basics/utility/UptimeTimer.cpp>

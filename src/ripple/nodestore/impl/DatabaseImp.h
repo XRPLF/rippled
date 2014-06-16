@@ -20,7 +20,7 @@
 #ifndef RIPPLE_NODESTORE_DATABASEIMP_H_INCLUDED
 #define RIPPLE_NODESTORE_DATABASEIMP_H_INCLUDED
 
-#include <ripple/module/basics/log/LogPartition.h>
+#include <ripple/basics/log/LogPartition.h>
 #include <ripple/nodestore/Database.h>
 #include <beast/threads/Thread.h>
 #include <chrono>

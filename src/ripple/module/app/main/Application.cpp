@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/basics/utility/Sustain.h>
 #include <ripple/common/seconds_clock.h>
 #include <ripple/module/app/main/Tuning.h>
 #include <ripple/module/app/misc/ProofOfWorkFactory.h>

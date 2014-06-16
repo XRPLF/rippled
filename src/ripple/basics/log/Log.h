@@ -20,9 +20,9 @@
 #ifndef RIPPLE_BASICS_LOG_H_INCLUDED
 #define RIPPLE_BASICS_LOG_H_INCLUDED
 
-#include <ripple/module/basics/log/LogSeverity.h>
-#include <ripple/module/basics/log/LogSink.h>
-#include <ripple/module/basics/log/LogPartition.h>
+#include <ripple/basics/log/LogSeverity.h>
+#include <ripple/basics/log/LogSink.h>
+#include <ripple/basics/log/LogPartition.h>
 
 namespace ripple {
 
