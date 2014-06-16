@@ -245,7 +245,7 @@ def config_env(toolchain, variant, env):
     if toolchain in Split('clang gcc'):
 
         if Beast.system.linux:
-		    env.ParseConfig('pkg-config --static --cflags --libs protobuf')
+            env.ParseConfig('pkg-config --static --cflags --libs protobuf')
 
         env.Append(CCFLAGS=[
             '-Wall',
