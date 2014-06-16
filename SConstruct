@@ -216,7 +216,6 @@ def config_base(env):
 
     if Beast.system.linux:
         env.ParseConfig('pkg-config --static --cflags --libs openssl')
-        env.ParseConfig('pkg-config --static --cflags --libs protobuf')
     elif Beast.system.windows:
         try:
             OPENSSL_ROOT = os.path.normpath(os.environ['OPENSSL_ROOT'])
@@ -244,6 +243,10 @@ def config_env(toolchain, variant, env):
         env.Append(CPPDEFINES=['NDEBUG'])
 
     if toolchain in Split('clang gcc'):
+
+        if Beast.system.linux:
+		    env.ParseConfig('pkg-config --static --cflags --libs protobuf')
+
         env.Append(CCFLAGS=[
             '-Wall',
             '-Wno-sign-compare',
