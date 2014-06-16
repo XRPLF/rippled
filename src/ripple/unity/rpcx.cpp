@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <tuple>
+
 #include <BeastConfig.h>
 
 // Unfortunate but necessary since RPC handlers can literally do anything
@@ -26,13 +28,15 @@
 
 #include <ripple/unity/rpcx.h>
 
-#include <ripple/module/app/rpc/RPCHandler.h>
 #include <ripple/module/overlay/api/Overlay.h>
-#include <tuple>
 
+#include <ripple/module/rpc/RPCHandler.h>
 #include <ripple/module/rpc/impl/ErrorCodes.cpp>
 #include <ripple/module/rpc/impl/Manager.cpp>
+#include <ripple/module/rpc/impl/RPCServerHandler.cpp>
+#include <ripple/module/rpc/impl/RPCHandler.cpp>
 
+#include <ripple/module/rpc/handlers/Handlers.h>
 #include <ripple/module/rpc/handlers/AccountCurrencies.cpp>
 #include <ripple/module/rpc/handlers/AccountInfo.cpp>
 #include <ripple/module/rpc/handlers/AccountLines.cpp>
@@ -98,6 +102,7 @@
 #include <ripple/module/rpc/impl/Accounts.cpp>
 #include <ripple/module/rpc/impl/Authorize.cpp>
 #include <ripple/module/rpc/impl/GetMasterGenerator.cpp>
+#include <ripple/module/rpc/impl/Handler.cpp>
 #include <ripple/module/rpc/impl/LegacyPathFind.cpp>
 #include <ripple/module/rpc/impl/LookupLedger.cpp>
 #include <ripple/module/rpc/impl/ParseAccountIds.cpp>

@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/module/app/rpc/RPCHandler.h>
-#include <ripple/module/app/rpc/RPCServerHandler.h>
-#include <ripple/module/app/main/RPCHTTPServer.h>
 #include <ripple/common/RippleSSLContext.h>
+#include <ripple/module/app/main/RPCHTTPServer.h>
+#include <ripple/module/rpc/RPCHandler.h>
+#include <ripple/module/rpc/RPCServerHandler.h>
 
 namespace ripple {
 
@@ -259,7 +259,7 @@ public:
 
         m_journal.debug << "Query: " << strMethod << params;
 
-        RPCHandler rpcHandler (&m_networkOPs);
+        RPCHandler rpcHandler (m_networkOPs);
 
         Resource::Charge loadType = Resource::feeReferenceRPC;
 

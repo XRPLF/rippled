@@ -20,10 +20,10 @@
 
 namespace ripple {
 
-Json::Value RPCHandler::doLogLevel (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doLogLevel (RPC::Context& context)
 {
     // log_level
-    if (!params.isMember ("severity"))
+    if (!context.params_.isMember ("severity"))
     {
         // get log severities
         Json::Value ret (Json::objectValue);
@@ -39,13 +39,13 @@ Json::Value RPCHandler::doLogLevel (Json::Value params, Resource::Charge& loadTy
         return ret;
     }
 
-    LogSeverity sv = Log::stringToSeverity (params["severity"].asString ());
+    LogSeverity sv = Log::stringToSeverity (context.params_["severity"].asString ());
 
     if (sv == lsINVALID)
         return rpcError (rpcINVALID_PARAMS);
 
     // log_level severity
-    if (!params.isMember ("partition"))
+    if (!context.params_.isMember ("partition"))
     {
         // set base log severity
         LogSink::get()->setMinSeverity (sv, true);
@@ -53,10 +53,10 @@ Json::Value RPCHandler::doLogLevel (Json::Value params, Resource::Charge& loadTy
     }
 
     // log_level partition severity base?
-    if (params.isMember ("partition"))
+    if (context.params_.isMember ("partition"))
     {
         // set partition severity
-        std::string partition (params["partition"].asString ());
+        std::string partition (context.params_["partition"].asString ());
 
         if (boost::iequals (partition, "base"))
             LogSink::get()->setMinSeverity (sv, false);

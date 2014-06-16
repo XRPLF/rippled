@@ -2356,16 +2356,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\app\peers\UniqueNodeList.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\rpc\RPCHandler.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\rpc\RPCHandler.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\rpc\RPCServerHandler.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\rpc\RPCServerHandler.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\shamap\FetchPackTests.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2745,13 +2735,17 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\overlay\impl\PeerImp.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\rpc\api\ErrorCodes.h">
+    <ClInclude Include="..\..\src\ripple\module\rpc\ErrorCodes.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\rpc\api\Manager.h">
+    <ClInclude Include="..\..\src\ripple\module\rpc\Manager.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\rpc\api\Request.h">
+    <ClInclude Include="..\..\src\ripple\module\rpc\RPCHandler.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\rpc\api\Tuning.h">
+    <ClInclude Include="..\..\src\ripple\module\rpc\RPCServerHandler.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\module\rpc\Request.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\module\rpc\Tuning.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\rpc\handlers\AccountCurrencies.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -2795,6 +2789,8 @@
     <ClCompile Include="..\..\src\ripple\module\rpc\handlers\GetCounts.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\module\rpc\handlers\Handlers.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\rpc\handlers\Ledger.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2948,6 +2944,8 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\rpc\impl\Authorize.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\module\rpc\impl\Context.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\rpc\impl\DoPrint.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\rpc\impl\ErrorCodes.cpp">
@@ -2957,6 +2955,11 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\rpc\impl\GetMasterGenerator.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\module\rpc\impl\Handler.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\module\rpc\impl\Handler.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\rpc\impl\LegacyPathFind.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -2976,6 +2979,12 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\rpc\impl\ParseAccountIds.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\module\rpc\impl\RPCHandler.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\module\rpc\impl\RPCServerHandler.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\module\rpc\impl\TransactionSign.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>

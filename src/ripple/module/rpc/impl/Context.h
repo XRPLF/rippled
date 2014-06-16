@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2014 Ripple Labs Inc.
+    Copyright (c) 2012, 2013 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,35 +17,25 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_RPC_CONTEXT
+#define RIPPLE_RPC_CONTEXT
 
 namespace ripple {
+namespace RPC {
 
-// {
-//   secret: <string>   // optional
-// }
-//
-// This command requires Config::ADMIN access because it makes no sense to ask an untrusted server for this.
-Json::Value doValidationCreate (RPC::Context& context)
-{
-    RippleAddress   raSeed;
-    Json::Value     obj (Json::objectValue);
+/** The context of information needed to call an RPC. */
+struct Context {
+    Json::Value params_;
+    Resource::Charge& loadType_;
+    Application::ScopedLockType& lock_;
+    NetworkOPs& netOps_;
+    InfoSub::pointer infoSub_;
+    Config::Role role_;
+};
 
-    if (!context.params_.isMember ("secret"))
-    {
-        WriteLog (lsDEBUG, RPCHandler) << "Creating random validation seed.";
-
-        raSeed.setSeedRandom ();                // Get a random seed.
-    }
-    else if (!raSeed.setSeedGeneric (context.params_["secret"].asString ()))
-    {
-        return rpcError (rpcBAD_SEED);
-    }
-
-    obj["validation_public_key"]    = RippleAddress::createNodePublic (raSeed).humanNodePublic ();
-    obj["validation_seed"]          = raSeed.humanSeed ();
-    obj["validation_key"]           = raSeed.humanSeed1751 ();
-
-    return obj;
-}
-
+} // RPC
 } // ripple
+
+
+
+#endif

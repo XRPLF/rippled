@@ -20,10 +20,10 @@
 
 namespace ripple {
 
-Json::Value RPCHandler::doLedgerCleaner (Json::Value parameters, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doLedgerCleaner (RPC::Context& context)
 {
-    masterLockHolder.unlock();
-    getApp().getLedgerMaster().doLedgerCleaner (parameters);
+    context.lock_.unlock();
+    getApp().getLedgerMaster().doLedgerCleaner (context.params_);
     return "Cleaner configured";
 }
 

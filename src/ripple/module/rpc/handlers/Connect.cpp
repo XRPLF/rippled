@@ -26,27 +26,25 @@ namespace ripple {
 //   port: <number>
 // }
 // XXX Might allow domain for manual connections.
-Json::Value RPCHandler::doConnect (Json::Value params,
-                                   Resource::Charge& loadType,
-                                   Application::ScopedLockType& masterLockHolder)
+Json::Value doConnect (RPC::Context& context)
 {
     if (getConfig ().RUN_STANDALONE)
         return "cannot connect in standalone mode";
 
-    if (!params.isMember ("ip"))
+    if (!context.params_.isMember ("ip"))
         return RPC::missing_field_error ("ip");
 
-    if (params.isMember ("port") && !params["port"].isConvertibleTo (Json::intValue))
+    if (context.params_.isMember ("port") && !context.params_["port"].isConvertibleTo (Json::intValue))
         return rpcError (rpcINVALID_PARAMS);
 
     int iPort;
 
-    if(params.isMember ("port"))
-        iPort = params["port"].asInt ();
+    if(context.params_.isMember ("port"))
+        iPort = context.params_["port"].asInt ();
     else
         iPort = SYSTEM_PEER_PORT;
 
-    beast::IP::Endpoint ip (beast::IP::Endpoint::from_string(params["ip"].asString ()));
+    beast::IP::Endpoint ip (beast::IP::Endpoint::from_string(context.params_["ip"].asString ()));
 
     if (! is_unspecified (ip))
         getApp().overlay ().connect (ip.at_port(iPort));

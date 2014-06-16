@@ -26,33 +26,33 @@ namespace ripple {
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 // }
-Json::Value RPCHandler::doAccountInfo (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doAccountInfo (RPC::Context& context)
 {
-    masterLockHolder.unlock ();
+    context.lock_.unlock ();
 
     Ledger::pointer     lpLedger;
-    Json::Value         jvResult    = RPC::lookupLedger (params, lpLedger, *mNetOps);
+    Json::Value         jvResult    = RPC::lookupLedger (context.params_, lpLedger, context.netOps_);
 
     if (!lpLedger)
         return jvResult;
 
-    if (!params.isMember ("account") && !params.isMember ("ident"))
+    if (!context.params_.isMember ("account") && !context.params_.isMember ("ident"))
         return RPC::missing_field_error ("account");
 
-    std::string     strIdent    = params.isMember ("account") ? params["account"].asString () : params["ident"].asString ();
+    std::string     strIdent    = context.params_.isMember ("account") ? context.params_["account"].asString () : context.params_["ident"].asString ();
     bool            bIndex;
-    int             iIndex      = params.isMember ("account_index") ? params["account_index"].asUInt () : 0;
-    bool            bStrict     = params.isMember ("strict") && params["strict"].asBool ();
+    int             iIndex      = context.params_.isMember ("account_index") ? context.params_["account_index"].asUInt () : 0;
+    bool            bStrict     = context.params_.isMember ("strict") && context.params_["strict"].asBool ();
     RippleAddress   naAccount;
 
     // Get info on account.
 
-    Json::Value     jvAccepted      = RPC::accountFromString (lpLedger, naAccount, bIndex, strIdent, iIndex, bStrict, *mNetOps);
+    Json::Value     jvAccepted      = RPC::accountFromString (lpLedger, naAccount, bIndex, strIdent, iIndex, bStrict, context.netOps_);
 
     if (!jvAccepted.empty ())
         return jvAccepted;
 
-    AccountState::pointer asAccepted    = mNetOps->getAccountState (lpLedger, naAccount);
+    AccountState::pointer asAccepted    = context.netOps_.getAccountState (lpLedger, naAccount);
 
     if (asAccepted)
     {

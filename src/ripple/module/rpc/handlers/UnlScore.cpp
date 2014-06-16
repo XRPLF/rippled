@@ -21,7 +21,7 @@
 namespace ripple {
 
 // unl_score
-Json::Value RPCHandler::doUnlScore (Json::Value, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doUnlScore (RPC::Context& context)
 {
     getApp().getUNL ().nodeScore ();
 

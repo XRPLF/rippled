@@ -19,11 +19,11 @@
 
 namespace ripple {
 
-Json::Value RPCHandler::doConsensusInfo (Json::Value, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doConsensusInfo (RPC::Context& context)
 {
     Json::Value ret (Json::objectValue);
 
-    ret["info"] = mNetOps->getConsensusInfo ();
+    ret["info"] = context.netOps_.getConsensusInfo ();
 
     return ret;
 }

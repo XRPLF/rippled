@@ -20,14 +20,14 @@
 
 namespace ripple {
 
-Json::Value RPCHandler::doLedgerClosed (Json::Value, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doLedgerClosed (RPC::Context& context)
 {
-    masterLockHolder.unlock ();
+    context.lock_.unlock ();
     Json::Value jvResult;
 
-    uint256 uLedger = mNetOps->getClosedLedgerHash ();
+    uint256 uLedger = context.netOps_.getClosedLedgerHash ();
 
-    jvResult["ledger_index"]        = mNetOps->getLedgerID (uLedger);
+    jvResult["ledger_index"]        = context.netOps_.getLedgerID (uLedger);
     jvResult["ledger_hash"]         = to_string (uLedger);
     //jvResult["ledger_time"]       = uLedger.
 

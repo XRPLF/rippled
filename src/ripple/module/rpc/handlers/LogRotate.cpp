@@ -20,9 +20,9 @@
 
 namespace ripple {
 
-Json::Value RPCHandler::doLogRotate (Json::Value, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doLogRotate (RPC::Context& context)
 {
-    masterLockHolder.unlock ();
+    context.lock_.unlock ();
     return LogSink::get()->rotateLog ();
 }
 

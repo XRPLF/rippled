@@ -23,12 +23,12 @@ namespace ripple {
 // {
 //   node: <domain>|<public_key>
 // }
-Json::Value RPCHandler::doUnlDelete (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doUnlDelete (RPC::Context& context)
 {
-    if (!params.isMember ("node"))
+    if (!context.params_.isMember ("node"))
         return rpcError (rpcINVALID_PARAMS);
 
-    std::string strNode     = params["node"].asString ();
+    std::string strNode     = context.params_["node"].asString ();
 
     RippleAddress   raNodePublic;
 

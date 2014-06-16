@@ -24,9 +24,9 @@ namespace ripple {
 // {
 //   random: <uint256>
 // }
-Json::Value RPCHandler::doRandom (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doRandom (RPC::Context& context)
 {
-    masterLockHolder.unlock ();
+    context.lock_.unlock ();
     uint256         uRandom;
 
     try

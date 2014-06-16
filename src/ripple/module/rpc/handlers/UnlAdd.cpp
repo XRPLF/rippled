@@ -24,10 +24,10 @@ namespace ripple {
 //   node: <domain>|<node_public>,
 //   comment: <comment>             // optional
 // }
-Json::Value RPCHandler::doUnlAdd (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doUnlAdd (RPC::Context& context)
 {
-    std::string strNode     = params.isMember ("node") ? params["node"].asString () : "";
-    std::string strComment  = params.isMember ("comment") ? params["comment"].asString () : "";
+    std::string strNode     = context.params_.isMember ("node") ? context.params_["node"].asString () : "";
+    std::string strComment  = context.params_.isMember ("comment") ? context.params_["comment"].asString () : "";
 
     RippleAddress   raNodePublic;
 

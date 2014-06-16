@@ -20,19 +20,19 @@
 
 namespace ripple {
 
-Json::Value RPCHandler::doFetchInfo (Json::Value jvParams, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doFetchInfo (RPC::Context& context)
 {
-    masterLockHolder.unlock ();
+    context.lock_.unlock ();
 
     Json::Value ret (Json::objectValue);
 
-    if (jvParams.isMember("clear") && jvParams["clear"].asBool())
+    if (context.params_.isMember("clear") && context.params_["clear"].asBool())
     {
-        mNetOps->clearLedgerFetch();
+        context.netOps_.clearLedgerFetch();
         ret["clear"] = true;
     }
 
-    ret["info"] = mNetOps->getLedgerFetchInfo();
+    ret["info"] = context.netOps_.getLedgerFetchInfo();
 
     return ret;
 }

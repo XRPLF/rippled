@@ -20,11 +20,11 @@
 
 namespace ripple {
 
-Json::Value RPCHandler::doBlackList (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doBlackList (RPC::Context& context)
 {
-    masterLockHolder.unlock();
-    if (params.isMember("threshold"))
-        return getApp().getResourceManager().getJson(params["threshold"].asInt());
+    context.lock_.unlock();
+    if (context.params_.isMember("threshold"))
+        return getApp().getResourceManager().getJson(context.params_["threshold"].asInt());
     else
         return getApp().getResourceManager().getJson();
 }

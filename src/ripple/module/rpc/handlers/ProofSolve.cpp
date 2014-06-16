@@ -23,16 +23,16 @@ namespace ripple {
 // {
 //   token: <token>
 // }
-Json::Value RPCHandler::doProofSolve (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doProofSolve (RPC::Context& context)
 {
-    masterLockHolder.unlock ();
+    context.lock_.unlock ();
 
     Json::Value         jvResult;
 
-    if (!params.isMember ("token"))
+    if (!context.params_.isMember ("token"))
         return RPC::missing_field_error ("token");
 
-    std::string         strToken        = params["token"].asString ();
+    std::string         strToken        = context.params_["token"].asString ();
 
     if (!ProofOfWork::validateToken (strToken))
         return RPC::invalid_field_error ("token");

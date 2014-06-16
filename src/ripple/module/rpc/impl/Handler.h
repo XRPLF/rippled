@@ -17,47 +17,35 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_MANAGER_H_INCLUDED
-#define RIPPLE_RPC_MANAGER_H_INCLUDED
+#ifndef RIPPLE_RPC_HANDLER
+#define RIPPLE_RPC_HANDLER
 
-#include <ripple/module/rpc/api/Request.h>
+#include <ripple/module/rpc/RPCHandler.h>
 
 namespace ripple {
 namespace RPC {
 
-/** Processes RPC commands. */
-class Manager
-{
-public:
-    typedef std::function <void (Request&)> handler_type;
-
-    virtual ~Manager () = 0;
-
-    /** Add a handler for the specified JSON-RPC command. */
-    /** @{ */
-    template <class Handler>
-    void add (std::string const& method)
-    {
-        add (method, handler_type (
-        [](Request& req)
-        {
-            Handler h;
-            h (req);
-        }));
-    }
-
-    virtual void add (std::string const& method, handler_type&& handler) = 0;
-    /** @} */
-
-    /** Dispatch the JSON-RPC request.
-        @return `true` If the command was found.
-    */
-    virtual bool dispatch (Request& req) = 0;
+// Under what condition can we call this RPC?
+enum Condition {
+    NO_CONDITION     = 0,
+    NEEDS_NETWORK_CONNECTION  = 1,
+    NEEDS_CURRENT_LEDGER  = 2 + NEEDS_NETWORK_CONNECTION,
+    NEEDS_CLOSED_LEDGER   = 4 + NEEDS_NETWORK_CONNECTION,
 };
 
-std::unique_ptr <Manager> make_Manager (beast::Journal journal);
+struct Handler
+{
+    typedef Json::Value (*Method) (Context&);
 
-}
-}
+    const char* name_;
+    Method method_;
+    Config::Role role_;
+    RPC::Condition condition_;
+};
+
+const Handler* getHandler(std::string name);
+
+} // RPC
+} // ripple
 
 #endif

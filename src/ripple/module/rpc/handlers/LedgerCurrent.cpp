@@ -20,12 +20,12 @@
 
 namespace ripple {
 
-Json::Value RPCHandler::doLedgerCurrent (Json::Value, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doLedgerCurrent (RPC::Context& context)
 {
-    masterLockHolder.unlock ();
+    context.lock_.unlock ();
     Json::Value jvResult;
 
-    jvResult["ledger_current_index"]    = mNetOps->getCurrentLedgerID ();
+    jvResult["ledger_current_index"]    = context.netOps_.getCurrentLedgerID ();
 
     return jvResult;
 }

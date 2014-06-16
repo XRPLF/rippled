@@ -23,16 +23,16 @@ namespace ripple {
 // {
 //   transaction: <hex>
 // }
-Json::Value RPCHandler::doTx (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doTx (RPC::Context& context)
 {
-    masterLockHolder.unlock ();
+    context.lock_.unlock ();
 
-    if (!params.isMember (jss::transaction))
+    if (!context.params_.isMember (jss::transaction))
         return rpcError (rpcINVALID_PARAMS);
 
-    bool binary = params.isMember (jss::binary) && params[jss::binary].asBool ();
+    bool binary = context.params_.isMember (jss::binary) && context.params_[jss::binary].asBool ();
 
-    std::string strTransaction  = params[jss::transaction].asString ();
+    std::string strTransaction  = context.params_[jss::transaction].asString ();
 
     if (Transaction::isHexTxID (strTransaction))
     {
@@ -53,7 +53,7 @@ Json::Value RPCHandler::doTx (Json::Value params, Resource::Charge& loadType, Ap
 
         if (txn->getLedger () != 0)
         {
-            Ledger::pointer lgr = mNetOps->getLedgerBySeq (txn->getLedger ());
+            Ledger::pointer lgr = context.netOps_.getLedgerBySeq (txn->getLedger ());
 
             if (lgr)
             {
@@ -81,7 +81,7 @@ Json::Value RPCHandler::doTx (Json::Value params, Resource::Charge& loadType, Ap
                 }
 
                 if (okay)
-                    ret[jss::validated] = mNetOps->isValidated (lgr);
+                    ret[jss::validated] = context.netOps_.isValidated (lgr);
             }
         }
 

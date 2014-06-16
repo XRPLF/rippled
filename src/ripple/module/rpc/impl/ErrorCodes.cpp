@@ -20,7 +20,7 @@
 #include <unordered_map>
 #include <utility>
 
-#include <ripple/module/rpc/api/ErrorCodes.h>
+#include <ripple/module/rpc/ErrorCodes.h>
 
 namespace std {
 

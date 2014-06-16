@@ -23,17 +23,17 @@ namespace ripple {
 // {
 //   start: <index>
 // }
-Json::Value RPCHandler::doTxHistory (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doTxHistory (RPC::Context& context)
 {
-    masterLockHolder.unlock ();
-    loadType = Resource::feeMediumBurdenRPC;
+    context.lock_.unlock ();
+    context.loadType_ = Resource::feeMediumBurdenRPC;
 
-    if (!params.isMember ("start"))
+    if (!context.params_.isMember ("start"))
         return rpcError (rpcINVALID_PARAMS);
 
-    unsigned int startIndex = params["start"].asUInt ();
+    unsigned int startIndex = context.params_["start"].asUInt ();
 
-    if ((startIndex > 10000) &&  (mRole != Config::ADMIN))
+    if ((startIndex > 10000) &&  (context.role_ != Config::ADMIN))
         return rpcError (rpcNO_PERMISSION);
 
     Json::Value obj;

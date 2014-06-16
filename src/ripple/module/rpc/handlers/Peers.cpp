@@ -21,7 +21,7 @@
 
 namespace ripple {
 
-Json::Value RPCHandler::doPeers (Json::Value, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doPeers (RPC::Context& context)
 {
     Json::Value jvResult (Json::objectValue);
 

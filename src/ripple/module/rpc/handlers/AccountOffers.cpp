@@ -38,26 +38,26 @@ static void offerAdder (Json::Value& jvLines, SLE::ref offer)
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 // }
-Json::Value RPCHandler::doAccountOffers (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doAccountOffers (RPC::Context& context)
 {
-    masterLockHolder.unlock ();
+    context.lock_.unlock ();
 
     Ledger::pointer     lpLedger;
-    Json::Value         jvResult    = RPC::lookupLedger (params, lpLedger, *mNetOps);
+    Json::Value         jvResult    = RPC::lookupLedger (context.params_, lpLedger, context.netOps_);
 
     if (!lpLedger)
         return jvResult;
 
-    if (!params.isMember (jss::account))
+    if (!context.params_.isMember (jss::account))
         return RPC::missing_field_error ("account");
 
-    std::string     strIdent    = params[jss::account].asString ();
-    bool            bIndex      = params.isMember (jss::account_index);
-    int             iIndex      = bIndex ? params[jss::account_index].asUInt () : 0;
+    std::string     strIdent    = context.params_[jss::account].asString ();
+    bool            bIndex      = context.params_.isMember (jss::account_index);
+    int             iIndex      = bIndex ? context.params_[jss::account_index].asUInt () : 0;
 
     RippleAddress   raAccount;
 
-    jvResult    = RPC::accountFromString (lpLedger, raAccount, bIndex, strIdent, iIndex, false, *mNetOps);
+    jvResult    = RPC::accountFromString (lpLedger, raAccount, bIndex, strIdent, iIndex, false, context.netOps_);
 
     if (!jvResult.empty ())
         return jvResult;
@@ -77,7 +77,7 @@ Json::Value RPCHandler::doAccountOffers (Json::Value params, Resource::Charge& l
                                  std::bind (&offerAdder, std::ref (jvsOffers),
                                             std::placeholders::_1));
 
-    loadType = Resource::feeMediumBurdenRPC;
+    context.loadType_ = Resource::feeMediumBurdenRPC;
 
     return jvResult;
 }

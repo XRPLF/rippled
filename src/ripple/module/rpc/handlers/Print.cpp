@@ -20,13 +20,13 @@
 
 namespace ripple {
 
-Json::Value RPCHandler::doPrint (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doPrint (RPC::Context& context)
 {
-    masterLockHolder.unlock ();
+    context.lock_.unlock ();
 
     JsonPropertyStream stream;
-    if (params.isObject() && params["params"].isArray() && params["params"][0u].isString ())
-        getApp().write (stream, params["params"][0u].asString());
+    if (context.params_.isObject() && context.params_["params"].isArray() && context.params_["params"][0u].isString ())
+        getApp().write (stream, context.params_["params"][0u].asString());
     else
         getApp().write (stream);
 

@@ -20,7 +20,7 @@
 
 namespace ripple {
 
-Json::Value RPCHandler::doStop (Json::Value, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doStop (RPC::Context& context)
 {
     getApp().signalStop ();
 

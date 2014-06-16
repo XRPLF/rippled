@@ -24,12 +24,12 @@ namespace ripple {
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 // }
-Json::Value RPCHandler::doLedgerHeader (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doLedgerHeader (RPC::Context& context)
 {
-    masterLockHolder.unlock ();
+    context.lock_.unlock ();
 
     Ledger::pointer     lpLedger;
-    Json::Value         jvResult    = RPC::lookupLedger (params, lpLedger, *mNetOps);
+    Json::Value         jvResult    = RPC::lookupLedger (context.params_, lpLedger, context.netOps_);
 
     if (!lpLedger)
         return jvResult;

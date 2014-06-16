@@ -25,12 +25,12 @@ namespace ripple {
 //   ledger_index : <ledger_index>
 //   ...
 // }
-Json::Value RPCHandler::doLedgerEntry (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doLedgerEntry (RPC::Context& context)
 {
-    masterLockHolder.unlock ();
+    context.lock_.unlock ();
 
     Ledger::pointer     lpLedger;
-    Json::Value         jvResult    = RPC::lookupLedger (params, lpLedger, *mNetOps);
+    Json::Value         jvResult    = RPC::lookupLedger (context.params_, lpLedger, context.netOps_);
 
     if (!lpLedger)
         return jvResult;
@@ -38,17 +38,17 @@ Json::Value RPCHandler::doLedgerEntry (Json::Value params, Resource::Charge& loa
     uint256     uNodeIndex;
     bool        bNodeBinary = false;
 
-    if (params.isMember ("index"))
+    if (context.params_.isMember ("index"))
     {
         // XXX Needs to provide proof.
-        uNodeIndex.SetHex (params["index"].asString ());
+        uNodeIndex.SetHex (context.params_["index"].asString ());
         bNodeBinary = true;
     }
-    else if (params.isMember ("account_root"))
+    else if (context.params_.isMember ("account_root"))
     {
         RippleAddress   naAccount;
 
-        if (!naAccount.setAccountID (params["account_root"].asString ())
+        if (!naAccount.setAccountID (context.params_["account_root"].asString ())
                 || !naAccount.getAccountID ())
         {
             jvResult["error"]   = "malformedAddress";
@@ -58,36 +58,36 @@ Json::Value RPCHandler::doLedgerEntry (Json::Value params, Resource::Charge& loa
             uNodeIndex = Ledger::getAccountRootIndex (naAccount.getAccountID ());
         }
     }
-    else if (params.isMember ("directory"))
+    else if (context.params_.isMember ("directory"))
     {
-        if (!params["directory"].isObject ())
+        if (!context.params_["directory"].isObject ())
         {
-            uNodeIndex.SetHex (params["directory"].asString ());
+            uNodeIndex.SetHex (context.params_["directory"].asString ());
         }
-        else if (params["directory"].isMember ("sub_index")
-                 && !params["directory"]["sub_index"].isIntegral ())
+        else if (context.params_["directory"].isMember ("sub_index")
+                 && !context.params_["directory"]["sub_index"].isIntegral ())
         {
             jvResult["error"]   = "malformedRequest";
         }
         else
         {
-            std::uint64_t  uSubIndex = params["directory"].isMember ("sub_index")
-                                ? params["directory"]["sub_index"].asUInt ()
+            std::uint64_t  uSubIndex = context.params_["directory"].isMember ("sub_index")
+                                ? context.params_["directory"]["sub_index"].asUInt ()
                                 : 0;
 
-            if (params["directory"].isMember ("dir_root"))
+            if (context.params_["directory"].isMember ("dir_root"))
             {
                 uint256 uDirRoot;
 
-                uDirRoot.SetHex (params["dir_root"].asString ());
+                uDirRoot.SetHex (context.params_["dir_root"].asString ());
 
                 uNodeIndex  = Ledger::getDirNodeIndex (uDirRoot, uSubIndex);
             }
-            else if (params["directory"].isMember ("owner"))
+            else if (context.params_["directory"].isMember ("owner"))
             {
                 RippleAddress   naOwnerID;
 
-                if (!naOwnerID.setAccountID (params["directory"]["owner"].asString ()))
+                if (!naOwnerID.setAccountID (context.params_["directory"]["owner"].asString ()))
                 {
                     jvResult["error"]   = "malformedAddress";
                 }
@@ -104,19 +104,19 @@ Json::Value RPCHandler::doLedgerEntry (Json::Value params, Resource::Charge& loa
             }
         }
     }
-    else if (params.isMember ("generator"))
+    else if (context.params_.isMember ("generator"))
     {
         RippleAddress   naGeneratorID;
 
-        if (!params["generator"].isObject ())
+        if (!context.params_["generator"].isObject ())
         {
-            uNodeIndex.SetHex (params["generator"].asString ());
+            uNodeIndex.SetHex (context.params_["generator"].asString ());
         }
-        else if (!params["generator"].isMember ("regular_seed"))
+        else if (!context.params_["generator"].isMember ("regular_seed"))
         {
             jvResult["error"]   = "malformedRequest";
         }
-        else if (!naGeneratorID.setSeedGeneric (params["generator"]["regular_seed"].asString ()))
+        else if (!naGeneratorID.setSeedGeneric (context.params_["generator"]["regular_seed"].asString ()))
         {
             jvResult["error"]   = "malformedAddress";
         }
@@ -130,37 +130,37 @@ Json::Value RPCHandler::doLedgerEntry (Json::Value params, Resource::Charge& loa
             uNodeIndex  = Ledger::getGeneratorIndex (na0Public.getAccountID ());
         }
     }
-    else if (params.isMember ("offer"))
+    else if (context.params_.isMember ("offer"))
     {
         RippleAddress   naAccountID;
 
-        if (!params["offer"].isObject ())
+        if (!context.params_["offer"].isObject ())
         {
-            uNodeIndex.SetHex (params["offer"].asString ());
+            uNodeIndex.SetHex (context.params_["offer"].asString ());
         }
-        else if (!params["offer"].isMember ("account")
-                 || !params["offer"].isMember ("seq")
-                 || !params["offer"]["seq"].isIntegral ())
+        else if (!context.params_["offer"].isMember ("account")
+                 || !context.params_["offer"].isMember ("seq")
+                 || !context.params_["offer"]["seq"].isIntegral ())
         {
             jvResult["error"]   = "malformedRequest";
         }
-        else if (!naAccountID.setAccountID (params["offer"]["account"].asString ()))
+        else if (!naAccountID.setAccountID (context.params_["offer"]["account"].asString ()))
         {
             jvResult["error"]   = "malformedAddress";
         }
         else
         {
-            std::uint32_t      uSequence   = params["offer"]["seq"].asUInt ();
+            std::uint32_t      uSequence   = context.params_["offer"]["seq"].asUInt ();
 
             uNodeIndex  = Ledger::getOfferIndex (naAccountID.getAccountID (), uSequence);
         }
     }
-    else if (params.isMember ("ripple_state"))
+    else if (context.params_.isMember ("ripple_state"))
     {
         RippleAddress   naA;
         RippleAddress   naB;
         uint160         uCurrency;
-        Json::Value     jvRippleState   = params["ripple_state"];
+        Json::Value     jvRippleState   = context.params_["ripple_state"];
 
         if (!jvRippleState.isObject ()
                 || !jvRippleState.isMember ("currency")
@@ -195,10 +195,10 @@ Json::Value RPCHandler::doLedgerEntry (Json::Value params, Resource::Charge& loa
 
     if (uNodeIndex.isNonZero ())
     {
-        SLE::pointer    sleNode = mNetOps->getSLEi (lpLedger, uNodeIndex);
+        SLE::pointer    sleNode = context.netOps_.getSLEi (lpLedger, uNodeIndex);
 
-        if (params.isMember("binary"))
-            bNodeBinary = params["binary"].asBool();
+        if (context.params_.isMember("binary"))
+            bNodeBinary = context.params_["binary"].asBool();
 
         if (!sleNode)
         {

@@ -25,17 +25,17 @@ namespace ripple {
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 // }
-Json::Value RPCHandler::doWalletAccounts (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doWalletAccounts (RPC::Context& context)
 {
     Ledger::pointer     lpLedger;
-    Json::Value         jvResult    = RPC::lookupLedger (params, lpLedger, *mNetOps);
+    Json::Value         jvResult    = RPC::lookupLedger (context.params_, lpLedger, context.netOps_);
 
     if (!lpLedger)
         return jvResult;
 
     RippleAddress   naSeed;
 
-    if (!params.isMember ("seed") || !naSeed.setSeedGeneric (params["seed"].asString ()))
+    if (!context.params_.isMember ("seed") || !naSeed.setSeedGeneric (context.params_["seed"].asString ()))
     {
         return rpcError (rpcBAD_SEED);
     }
@@ -43,17 +43,17 @@ Json::Value RPCHandler::doWalletAccounts (Json::Value params, Resource::Charge& 
     // Try the seed as a master seed.
     RippleAddress   naMasterGenerator   = RippleAddress::createGeneratorPublic (naSeed);
 
-    Json::Value jsonAccounts    = RPC::accounts (lpLedger, naMasterGenerator, *mNetOps);
+    Json::Value jsonAccounts    = RPC::accounts (lpLedger, naMasterGenerator, context.netOps_);
 
     if (jsonAccounts.empty ())
     {
         // No account via seed as master, try seed a regular.
-        Json::Value ret = RPC::getMasterGenerator (lpLedger, naSeed, naMasterGenerator, *mNetOps);
+        Json::Value ret = RPC::getMasterGenerator (lpLedger, naSeed, naMasterGenerator, context.netOps_);
 
         if (!ret.empty ())
             return ret;
 
-        ret["accounts"] = RPC::accounts (lpLedger, naMasterGenerator, *mNetOps);
+        ret["accounts"] = RPC::accounts (lpLedger, naMasterGenerator, context.netOps_);
 
         return ret;
     }

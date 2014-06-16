@@ -20,45 +20,45 @@
 
 namespace ripple {
 
-Json::Value RPCHandler::doPathFind (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doPathFind (RPC::Context& context)
 {
-    Ledger::pointer lpLedger = mNetOps->getClosedLedger();
-    masterLockHolder.unlock();
+    Ledger::pointer lpLedger = context.netOps_.getClosedLedger();
+    context.lock_.unlock();
 
-    if (!params.isMember ("subcommand") || !params["subcommand"].isString ())
+    if (!context.params_.isMember ("subcommand") || !context.params_["subcommand"].isString ())
         return rpcError (rpcINVALID_PARAMS);
 
-    if (!mInfoSub)
+    if (!context.infoSub_)
         return rpcError (rpcNO_EVENTS);
 
-    std::string sSubCommand = params["subcommand"].asString ();
+    std::string sSubCommand = context.params_["subcommand"].asString ();
 
     if (sSubCommand == "create")
     {
-        loadType = Resource::feeHighBurdenRPC;
-        mInfoSub->clearPathRequest ();
-        return getApp().getPathRequests().makePathRequest (mInfoSub, lpLedger, params);
+        context.loadType_ = Resource::feeHighBurdenRPC;
+        context.infoSub_->clearPathRequest ();
+        return getApp().getPathRequests().makePathRequest (context.infoSub_, lpLedger, context.params_);
     }
 
     if (sSubCommand == "close")
     {
-        PathRequest::pointer request = mInfoSub->getPathRequest ();
+        PathRequest::pointer request = context.infoSub_->getPathRequest ();
 
         if (!request)
             return rpcError (rpcNO_PF_REQUEST);
 
-        mInfoSub->clearPathRequest ();
-        return request->doClose (params);
+        context.infoSub_->clearPathRequest ();
+        return request->doClose (context.params_);
     }
 
     if (sSubCommand == "status")
     {
-        PathRequest::pointer request = mInfoSub->getPathRequest ();
+        PathRequest::pointer request = context.infoSub_->getPathRequest ();
 
         if (!request)
             return rpcError (rpcNO_PF_REQUEST);
 
-        return request->doStatus (params);
+        return request->doStatus (context.params_);
     }
 
     return rpcError (rpcINVALID_PARAMS);

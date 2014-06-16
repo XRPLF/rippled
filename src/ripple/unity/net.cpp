@@ -46,7 +46,7 @@
 //             directly (instead of the module header). The corresponding .cpp
 //             still uses the unity style inclusion.
 //
-#include <ripple/module/rpc/api/ErrorCodes.h>
+#include <ripple/module/rpc/ErrorCodes.h>
 #include <ripple/common/jsonrpc_fields.h>
 
 #include <ripple/module/net/basics/HTTPRequest.cpp>

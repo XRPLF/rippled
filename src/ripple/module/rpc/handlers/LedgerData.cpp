@@ -30,23 +30,23 @@ namespace ripple {
 //     ledger_index: chosen ledger's index
 //     state:        array of state nodes
 //     marker:       resume point, if any
-Json::Value RPCHandler::doLedgerData (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doLedgerData (RPC::Context& context)
 {
-    masterLockHolder.unlock ();
+    context.lock_.unlock ();
 
     int const BINARY_PAGE_LENGTH = 256;
     int const JSON_PAGE_LENGTH = 2048;
 
     Ledger::pointer lpLedger;
 
-    Json::Value jvResult = RPC::lookupLedger (params, lpLedger, *mNetOps);
+    Json::Value jvResult = RPC::lookupLedger (context.params_, lpLedger, context.netOps_);
     if (!lpLedger)
         return jvResult;
 
     uint256 resumePoint;
-    if (params.isMember ("marker"))
+    if (context.params_.isMember ("marker"))
     {
-        Json::Value const& jMarker = params["marker"];
+        Json::Value const& jMarker = context.params_["marker"];
         if (!jMarker.isString ())
             return RPC::expected_field_error ("marker", "valid");
         if (!resumePoint.SetHex (jMarker.asString ()))
@@ -54,9 +54,9 @@ Json::Value RPCHandler::doLedgerData (Json::Value params, Resource::Charge& load
     }
 
     bool isBinary = false;
-    if (params.isMember ("binary"))
+    if (context.params_.isMember ("binary"))
     {
-        Json::Value const& jBinary = params["binary"];
+        Json::Value const& jBinary = context.params_["binary"];
         if (!jBinary.isBool ())
             return RPC::expected_field_error ("binary", "bool");
         isBinary = jBinary.asBool ();
@@ -65,16 +65,16 @@ Json::Value RPCHandler::doLedgerData (Json::Value params, Resource::Charge& load
     int limit = -1;
     int maxLimit = isBinary ? BINARY_PAGE_LENGTH : JSON_PAGE_LENGTH;
 
-    if (params.isMember ("limit"))
+    if (context.params_.isMember ("limit"))
     {
-        Json::Value const& jLimit = params["limit"];
+        Json::Value const& jLimit = context.params_["limit"];
         if (!jLimit.isIntegral ())
             return RPC::expected_field_error ("limit", "integer");
 
         limit = jLimit.asInt ();
     }
 
-    if ((limit < 0) || ((limit > maxLimit) && (mRole != Config::ADMIN)))
+    if ((limit < 0) || ((limit > maxLimit) && (context.role_ != Config::ADMIN)))
         limit = maxLimit;
 
     Json::Value jvReply = Json::objectValue;

@@ -20,7 +20,7 @@
 
 namespace ripple {
 
-Json::Value RPCHandler::doUnlReset (Json::Value params, Resource::Charge& loadType, Application::ScopedLockType& masterLockHolder)
+Json::Value doUnlReset (RPC::Context& context)
 {
     getApp().getUNL ().nodeReset ();
 
