@@ -122,6 +122,8 @@ class SwitchConverter(object):
             self.table[key + '-'] = [value[0], 'False']
         if retable != None:
             self.retable = retable
+        else:
+            self.retable = []
 
     def getXml(self, switches, prefix = ''):
         if not isinstance(switches, list):
