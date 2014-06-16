@@ -112,7 +112,7 @@ def itemList(items, sep):
 class SwitchConverter(object):
     '''Converts command line switches to MSBuild XML, using tables'''
 
-    def __init__(self, table, booltable):
+    def __init__(self, table, booltable, retable=None):
         self.table = {}
         for key in table:
             self.table[key] = table[key]
@@ -120,11 +120,26 @@ class SwitchConverter(object):
             value = booltable[key]
             self.table[key] = [value[0], 'True']
             self.table[key + '-'] = [value[0], 'False']
+        if retable != None:
+            self.retable = retable
+        else:
+            self.retable = []
 
     def getXml(self, switches, prefix = ''):
-        if type(switches) != list:
+        if not isinstance(switches, list):
             switches = list(switches)
         xml = []
+        for regex, tag in self.retable:
+            matches = []
+            for switch in switches[:]:
+                match = regex.match(switch)
+                if None != match:
+                    matches.append(match.group(1))
+                    switches.remove(switch)
+            if len(matches) > 0:
+                xml.append (
+                    '%s<%s>%s</%s>\r\n' % (
+                        prefix, tag, ';'.join(matches), tag))
         unknown = []
         for switch in switches:
             try:
@@ -236,12 +251,14 @@ class ClSwitchConverter(SwitchConverter):
             '/errorReport:queue'  : ['ErrorReporting', 'Queue'],
             '/errorReport:send'   : ['ErrorReporting', 'Send'],
         }
+        retable = [
+            (re.compile(r'/wd\"(\d+)\"'), 'DisableSpecificWarnings'),
+        ]
         # Ideas from Google's Generate Your Project
         '''
         _Same(_compile, 'AdditionalIncludeDirectories', _folder_list)  # /I
 
         _Same(_compile, 'PreprocessorDefinitions', _string_list)  # /D
-        _Same(_compile, 'DisableSpecificWarnings', _string_list)  # /wd
         _Same(_compile, 'ProgramDataBaseFileName', _file_name)  # /Fd
 
         _Same(_compile, 'AdditionalOptions', _string_list)
@@ -264,7 +281,7 @@ class ClSwitchConverter(SwitchConverter):
         _MSBuildOnly(_compile, 'TreatSpecificWarningsAsErrors', _string_list)  # /we
         _MSBuildOnly(_compile, 'PreprocessOutputPath', _string)  # /Fi
         '''
-        SwitchConverter.__init__(self, table, booltable)
+        SwitchConverter.__init__(self, table, booltable, retable)
 
 class LinkSwitchConverter(SwitchConverter):
     def __init__(self):
