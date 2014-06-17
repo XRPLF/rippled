@@ -829,7 +829,7 @@ private:
             // and it must be received *exactly* once during a connection; any
             // other scenario constitutes a protocol violation.
 
-            if ((m_state == stateHandshaked) && (type == protocol::mtHELLO))
+            if ((m_state == stateConnected) && (type != protocol::mtHELLO))
             {
                 m_journal.warning << "Protocol: HELLO expected!";
                 detach ("prb-hello-expected");
