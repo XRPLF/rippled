@@ -21,6 +21,9 @@
 #define BEAST_ASIO_HANDSHAKE_INPUTPARSER_H_INCLUDED
 
 #include <beast/module/asio/basics/FixedInputBuffer.h>
+#include <beast/strings/String.h>
+
+#include <cctype>
 
 namespace beast {
 namespace asio {
