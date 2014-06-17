@@ -22,7 +22,7 @@
 
 #include <beast/asio/buffer_sequence.h>
 #include <beast/asio/shared_handler.h>
-
+#include <boost/asio/io_service.hpp>
 #include <boost/asio/socket_base.hpp>
 #include <boost/asio/ssl/stream_base.hpp>
 
