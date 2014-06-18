@@ -571,7 +571,7 @@ for toolchain in ['gcc', 'clang', 'msvc']:
             'src/snappy/config',
             ]))
 
-        if Beast.system.osx:
+        if toolchain == "clang" and Beast.system.osx:
             objects.append(addSource('src/ripple/unity/beastobjc.mm', env, variant_dirs))
 
         target = env.Program(
