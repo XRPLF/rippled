@@ -449,10 +449,6 @@ base.Append(CPPPATH=[
     os.path.join('src', 'beast'),
     os.path.join(build_dir, 'proto'),
     ])
-if Beast.system.windows:
-    base.Append(CPPPATH=[
-        os.path.join('src', 'protobuf', 'src'),
-        ])
 
 # Configure the toolchains, variants, default toolchain, and default target
 variants = ['debug', 'release']
