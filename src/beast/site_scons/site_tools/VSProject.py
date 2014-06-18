@@ -134,6 +134,7 @@ class SwitchConverter(object):
     def getXml(self, switches, prefix = ''):
         if type(switches) != list:
             switches = list(switches)
+        switches = list(set(switches))      # Filter dupes because on windows platforms, /nologo is added automatically to the environment.
         xml = []
         unknown = []
         for switch in switches:
@@ -281,10 +282,6 @@ class LinkSwitchConverter(SwitchConverter):
         # Based on code in Generate Your Project
         booltable = {
             '/DEBUG'                : ['GenerateDebugInformation'],
-            '/DYNAMICBASE'          : ['RandomizedBaseAddress'],
-            '/DYNAMICBASE'          : ['RandomizedBaseAddress'],
-            '/DYNAMICBASE'          : ['RandomizedBaseAddress'],
-            '/DYNAMICBASE'          : ['RandomizedBaseAddress'],
             '/DYNAMICBASE'          : ['RandomizedBaseAddress'],
             '/NOLOGO'               : ['SuppressStartupBanner'],
         }
