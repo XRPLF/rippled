@@ -400,7 +400,7 @@ def config_env(toolchain, variant, env):
             '/MACHINE:X64',
             '/MANIFEST',
             #'''/MANIFESTUAC:"level='asInvoker' uiAccess='false'"''',
-            '/NOLOGO',
+            '/nologo',
             '/NXCOMPAT',
             '/SUBSYSTEM:CONSOLE',
             '/TLBID:1',
