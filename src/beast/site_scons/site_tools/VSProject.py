@@ -287,7 +287,6 @@ class LinkSwitchConverter(SwitchConverter):
             '/DYNAMICBASE'          : ['RandomizedBaseAddress'],
             '/DYNAMICBASE'          : ['RandomizedBaseAddress'],
             '/NOLOGO'               : ['SuppressStartupBanner'],
-            '/nologo'               : ['SuppressStartupBanner'],
         }
         table = {
             '/ERRORREPORT:NONE'     : ['ErrorReporting', 'NoErrorReport'],
