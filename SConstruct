@@ -214,10 +214,7 @@ def config_base(env):
     except KeyError:
         pass
 
-    if Beast.system.linux:
-        env.ParseConfig('pkg-config --static --cflags --libs openssl')
-        env.ParseConfig('pkg-config --static --cflags --libs protobuf')
-    elif Beast.system.windows:
+    if Beast.system.windows:
         try:
             OPENSSL_ROOT = os.path.normpath(os.environ['OPENSSL_ROOT'])
             env.Append(CPPPATH=[
@@ -244,6 +241,11 @@ def config_env(toolchain, variant, env):
         env.Append(CPPDEFINES=['NDEBUG'])
 
     if toolchain in Split('clang gcc'):
+
+        if Beast.system.linux:
+            env.ParseConfig('pkg-config --static --cflags --libs openssl')
+            env.ParseConfig('pkg-config --static --cflags --libs protobuf')
+
         env.Append(CCFLAGS=[
             '-Wall',
             '-Wno-sign-compare',
@@ -322,7 +324,7 @@ def config_env(toolchain, variant, env):
         if toolchain == 'clang':
             if Beast.system.osx:
                 env.Replace(CC='clang', CXX='clang++', LINK='clang++')
-            else:
+            elif 'CLANG_CC' in env and 'CLANG_CXX' in env and 'CLANG_LINK' in env:
                 env.Replace(CC=env['CLANG_CC'], CXX=env['CLANG_CXX'], LINK=env['CLANG_LINK'])
             # C and C++
             # Add '-Wshorten-64-to-32'
@@ -332,7 +334,8 @@ def config_env(toolchain, variant, env):
             env.Append(CXXFLAGS=['-Wno-mismatched-tags'])
 
         elif toolchain == 'gcc':
-            env.Replace(CC=env['GNU_CC'], CXX=env['GNU_CXX'], LINK=env['GNU_LINK'])
+            if 'GNU_CC' in env and 'GNU_CXX' in env and 'GNU_LINK' in env:
+                env.Replace(CC=env['GNU_CC'], CXX=env['GNU_CXX'], LINK=env['GNU_LINK'])
             # Why is this only for gcc?!
             env.Append(CCFLAGS=['-Wno-unused-local-typedefs'])
 
@@ -397,7 +400,7 @@ def config_env(toolchain, variant, env):
             '/MACHINE:X64',
             '/MANIFEST',
             #'''/MANIFESTUAC:"level='asInvoker' uiAccess='false'"''',
-            #'/NOLOGO',
+            '/nologo',
             '/NXCOMPAT',
             '/SUBSYSTEM:CONSOLE',
             '/TLBID:1',
@@ -447,10 +450,6 @@ base.Append(CPPPATH=[
     os.path.join('src', 'beast'),
     os.path.join(build_dir, 'proto'),
     ])
-if Beast.system.windows:
-    base.Append(CPPPATH=[
-        os.path.join('src', 'protobuf', 'src'),
-        ])
 
 # Configure the toolchains, variants, default toolchain, and default target
 variants = ['debug', 'release']
@@ -489,7 +488,7 @@ for source in [
 # Declare the targets
 aliases = collections.defaultdict(list)
 msvc_configs = []
-for toolchain in toolchains:
+for toolchain in ['gcc', 'clang', 'msvc']:
     for variant in variants:
         # Configure this variant's construction environment
         env = base.Clone()
@@ -569,7 +568,7 @@ for toolchain in toolchains:
             'src/snappy/config',
             ]))
 
-        if Beast.system.osx:
+        if toolchain == "clang" and Beast.system.osx:
             objects.append(addSource('src/ripple/unity/beastobjc.mm', env, variant_dirs))
 
         target = env.Program(
@@ -588,9 +587,10 @@ for toolchain in toolchains:
             msvc_configs.append(config)
         if toolchain in toolchains:
             aliases['all'].extend(target)
-        aliases[variant].extend(target)
-        aliases[toolchain].extend(target)
-        env.Alias(variant_name, target)
+            aliases[variant].extend(target)
+            aliases[toolchain].extend(target)
+            env.Alias(variant_name, target)
+
 for key, value in aliases.iteritems():
     env.Alias(key, value)
 
