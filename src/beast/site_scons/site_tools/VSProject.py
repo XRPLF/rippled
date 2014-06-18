@@ -95,13 +95,13 @@ def is_subdir(child, parent):
     return os.path.commonprefix([parent, child]) == parent
 
 def xsorted(*args, **kwargs):
-    """Performs sorted in a deterministic manner."""
-    if not "key" in kwargs:
+    '''Performs sorted in a deterministic manner.'''
+    if not 'key' in kwargs:
         def _lower(item):
             if isinstance(item, str):
                 return (item.lower(), item)
             return (item, item)
-        kwargs["key"] = _lower
+        kwargs['key'] = _lower
     return sorted(*args, **kwargs)
 
 def itemList(items, sep):
