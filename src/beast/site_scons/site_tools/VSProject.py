@@ -99,8 +99,8 @@ def xsorted(*args, **kwargs):
     if not "key" in kwargs:
         def _lower(item):
             if isinstance(item, str):
-                return item.lower()
-            return item
+                return (item.lower(), item)
+            return (item, item)
         kwargs["key"] = _lower
     return sorted(*args, **kwargs)
 
