@@ -50,76 +50,72 @@
   <PropertyGroup Label="UserMacros" />
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='debug|x64'">
     <ClCompile>
-      <PreprocessorDefinitions>_WIN32_WINNT=0x6000;DEBUG;WIN32_CONSOLE;_CRTDBG_MAP_ALLOC;_CRT_SECURE_NO_WARNINGS;_DEBUG;_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\beast;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <DisableSpecificWarnings>4018;4244;4267;4800</DisableSpecificWarnings>
+      <PreprocessorDefinitions>_WIN32_WINNT=0x6000;_CRT_SECURE_NO_WARNINGS;_CRTDBG_MAP_ALLOC;_DEBUG;_SCL_SECURE_NO_WARNINGS;DEBUG;WIN32_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\beast;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4800;4244;4267;4018</DisableSpecificWarnings>
       <ExceptionHandling>Async</ExceptionHandling>
-      <RuntimeTypeInfo>True</RuntimeTypeInfo>
-      <BufferSecurityCheck>True</BufferSecurityCheck>
-      <CallingConvention>Cdecl</CallingConvention>
-      <MinimalRebuild>False</MinimalRebuild>
-      <FunctionLevelLinking>False</FunctionLevelLinking>
-      <MultiProcessorCompilation>True</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <Optimization>Disabled</Optimization>
-      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-      <WarningLevel>Level3</WarningLevel>
-      <TreatWarningAsError>False</TreatWarningAsError>
-      <ForceConformanceInForLoopScope>True</ForceConformanceInForLoopScope>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <ErrorReporting>None</ErrorReporting>
       <FloatingPointModel>Precise</FloatingPointModel>
+      <MinimalRebuild>False</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <ErrorReporting>None</ErrorReporting>
+      <BufferSecurityCheck>True</BufferSecurityCheck>
+      <RuntimeTypeInfo>True</RuntimeTypeInfo>
+      <MultiProcessorCompilation>True</MultiProcessorCompilation>
+      <FunctionLevelLinking>False</FunctionLevelLinking>
       <SuppressStartupBanner>True</SuppressStartupBanner>
-      <SuppressStartupBanner>True</SuppressStartupBanner>
+      <Optimization>Disabled</Optimization>
       <OpenMPSupport>False</OpenMPSupport>
-      <AdditionalOptions>/FS /bigobj %(AdditionalOptions)</AdditionalOptions>
+      <TreatWarningAsError>False</TreatWarningAsError>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <CallingConvention>Cdecl</CallingConvention>
+      <ForceConformanceInForLoopScope>True</ForceConformanceInForLoopScope>
+      <WarningLevel>Level3</WarningLevel>
+      <AdditionalOptions>/bigobj /FS %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>Shlwapi.lib;advapi32.lib;comdlg32.lib;gdi32.lib;kernel32.lib;libeay32MT.lib;odbc32.lib;odbccp32.lib;ole32.lib;oleaut32.lib;shell32.lib;ssleay32MT.lib;user32.lib;uuid.lib;winspool.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <GenerateDebugInformation>True</GenerateDebugInformation>
-      <RandomizedBaseAddress>True</RandomizedBaseAddress>
+      <AdditionalDependencies>advapi32.lib;comdlg32.lib;gdi32.lib;kernel32.lib;libeay32MT.lib;odbc32.lib;odbccp32.lib;ole32.lib;oleaut32.lib;shell32.lib;Shlwapi.lib;ssleay32MT.lib;user32.lib;uuid.lib;winspool.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ErrorReporting>NoErrorReport</ErrorReporting>
-      <TargetMachine>MachineX64</TargetMachine>
-      <DataExecutionPrevention>true</DataExecutionPrevention>
       <SubSystem>Console</SubSystem>
-      <SuppressStartupBanner>True</SuppressStartupBanner>
-      <AdditionalOptions>/MANIFEST /TLBID:1 %(AdditionalOptions)</AdditionalOptions>
+      <RandomizedBaseAddress>True</RandomizedBaseAddress>
+      <DataExecutionPrevention>true</DataExecutionPrevention>
+      <GenerateDebugInformation>True</GenerateDebugInformation>
+      <TargetMachine>MachineX64</TargetMachine>
+      <AdditionalOptions>/MANIFEST /nologo /TLBID:1 %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='release|x64'">
     <ClCompile>
-      <PreprocessorDefinitions>_WIN32_WINNT=0x6000;NDEBUG;WIN32_CONSOLE;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\beast;..\..\src\protobuf\src;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <DisableSpecificWarnings>4018;4244;4267;4800</DisableSpecificWarnings>
+      <PreprocessorDefinitions>_WIN32_WINNT=0x6000;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;NDEBUG;WIN32_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\beast;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4800;4244;4267;4018</DisableSpecificWarnings>
       <ExceptionHandling>Async</ExceptionHandling>
-      <RuntimeTypeInfo>True</RuntimeTypeInfo>
-      <CallingConvention>Cdecl</CallingConvention>
+      <FloatingPointModel>Precise</FloatingPointModel>
       <MinimalRebuild>False</MinimalRebuild>
-      <FunctionLevelLinking>False</FunctionLevelLinking>
+      <ErrorReporting>None</ErrorReporting>
+      <RuntimeTypeInfo>True</RuntimeTypeInfo>
       <MultiProcessorCompilation>True</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <Optimization>Full</Optimization>
-      <WarningLevel>Level3</WarningLevel>
-      <TreatWarningAsError>False</TreatWarningAsError>
-      <ForceConformanceInForLoopScope>True</ForceConformanceInForLoopScope>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <ErrorReporting>None</ErrorReporting>
-      <FloatingPointModel>Precise</FloatingPointModel>
-      <SuppressStartupBanner>True</SuppressStartupBanner>
+      <FunctionLevelLinking>False</FunctionLevelLinking>
       <SuppressStartupBanner>True</SuppressStartupBanner>
       <OpenMPSupport>False</OpenMPSupport>
-      <AdditionalOptions>/FS /bigobj %(AdditionalOptions)</AdditionalOptions>
+      <TreatWarningAsError>False</TreatWarningAsError>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <CallingConvention>Cdecl</CallingConvention>
+      <ForceConformanceInForLoopScope>True</ForceConformanceInForLoopScope>
+      <Optimization>Full</Optimization>
+      <WarningLevel>Level3</WarningLevel>
+      <AdditionalOptions>/bigobj /FS %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>Shlwapi.lib;advapi32.lib;comdlg32.lib;gdi32.lib;kernel32.lib;libeay32MT.lib;odbc32.lib;odbccp32.lib;ole32.lib;oleaut32.lib;shell32.lib;ssleay32MT.lib;user32.lib;uuid.lib;winspool.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <GenerateDebugInformation>True</GenerateDebugInformation>
-      <RandomizedBaseAddress>True</RandomizedBaseAddress>
+      <AdditionalDependencies>advapi32.lib;comdlg32.lib;gdi32.lib;kernel32.lib;libeay32MT.lib;odbc32.lib;odbccp32.lib;ole32.lib;oleaut32.lib;shell32.lib;Shlwapi.lib;ssleay32MT.lib;user32.lib;uuid.lib;winspool.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ErrorReporting>NoErrorReport</ErrorReporting>
-      <TargetMachine>MachineX64</TargetMachine>
-      <DataExecutionPrevention>true</DataExecutionPrevention>
       <SubSystem>Console</SubSystem>
-      <SuppressStartupBanner>True</SuppressStartupBanner>
-      <AdditionalOptions>/MANIFEST /TLBID:1 %(AdditionalOptions)</AdditionalOptions>
+      <RandomizedBaseAddress>True</RandomizedBaseAddress>
+      <DataExecutionPrevention>true</DataExecutionPrevention>
+      <GenerateDebugInformation>True</GenerateDebugInformation>
+      <TargetMachine>MachineX64</TargetMachine>
+      <AdditionalOptions>/MANIFEST /nologo /TLBID:1 %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
