@@ -20,6 +20,8 @@
 #ifndef RIPPLE_FIELDNAMES_H
 #define RIPPLE_FIELDNAMES_H
 
+#include <ripple/basics/types/BasicTypes.h>
+
 namespace ripple {
 
 // VFALCO TODO lose the macro.

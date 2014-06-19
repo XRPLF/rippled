@@ -19,33 +19,6 @@
 
 namespace ripple {
 
-template <class UnsignedInteger>
-inline bool is_xrp (UnsignedInteger const& value)
-{
-    return value.isZero();
-}
-
-template <class UnsignedInteger>
-inline bool is_not_xrp (UnsignedInteger const& value)
-{
-    return ! is_xrp (value);
-}
-
-inline uint160 const& xrp_issuer ()
-{
-    return ACCOUNT_XRP;
-}
-
-inline uint160 const& xrp_currency ()
-{
-    return CURRENCY_XRP;
-}
-
-inline uint160 const& neutral_issuer ()
-{
-    return ACCOUNT_ONE;
-}
-
 Json::Value doBookOffers (RPC::Context& context)
 {
     context.lock_.unlock ();
@@ -122,20 +95,20 @@ Json::Value doBookOffers (RPC::Context& context)
             return RPC::make_error (rpcSRC_ISR_MALFORMED,
                 "Invalid field 'taker_pays.issuer', bad issuer.");
 
-        if (pay_issuer == neutral_issuer ())
+        if (pay_issuer == noAccount ())
             return RPC::make_error (rpcSRC_ISR_MALFORMED,
                 "Invalid field 'taker_pays.issuer', bad issuer account one.");
     }
     else
     {
-        pay_issuer = xrp_issuer ();
+        pay_issuer = xrpIssuer ();
     }
 
-    if (is_xrp (pay_currency) && ! is_xrp (pay_issuer))
+    if (isXRP (pay_currency) && ! isXRP (pay_issuer))
         return RPC::make_error (rpcSRC_ISR_MALFORMED,
             "Unneeded field 'taker_pays.issuer' for XRP currency specification.");
 
-    if (is_not_xrp (pay_currency) && is_xrp (pay_issuer))
+    if (!isXRP (pay_currency) && isXRP (pay_issuer))
         return RPC::make_error (rpcSRC_ISR_MALFORMED,
             "Invalid field 'taker_pays.issuer', expected non-XRP issuer.");
 
@@ -151,21 +124,21 @@ Json::Value doBookOffers (RPC::Context& context)
             return RPC::make_error (rpcDST_ISR_MALFORMED,
                 "Invalid field 'taker_gets.issuer', bad issuer.");
 
-        if (get_issuer == neutral_issuer ())
+        if (get_issuer == noAccount ())
             return RPC::make_error (rpcDST_ISR_MALFORMED,
                 "Invalid field 'taker_gets.issuer', bad issuer account one.");
     }
     else
     {
-        get_issuer = xrp_issuer ();
+        get_issuer = xrpIssuer ();
     }
 
 
-    if (is_xrp (get_currency) && ! is_xrp (get_issuer))
+    if (isXRP (get_currency) && ! isXRP (get_issuer))
         return RPC::make_error (rpcDST_ISR_MALFORMED,
             "Unneeded field 'taker_gets.issuer' for XRP currency specification.");
 
-    if (is_not_xrp (get_currency) && is_xrp (get_issuer))
+    if (!isXRP (get_currency) && isXRP (get_issuer))
         return RPC::make_error (rpcDST_ISR_MALFORMED,
             "Invalid field 'taker_gets.issuer', expected non-XRP issuer.");
 
@@ -181,7 +154,7 @@ Json::Value doBookOffers (RPC::Context& context)
     }
     else
     {
-        raTakerID.setAccountID (ACCOUNT_ONE);
+        raTakerID.setAccountID (noAccount());
     }
 
     if (pay_currency == get_currency && pay_issuer == get_issuer)

@@ -97,8 +97,8 @@ private:
 
     bool matchesOrigin (const uint160& currency, const uint160& issuer);
 
-    int getPathsOut (const uint160& currency, const uint160& accountID,
-                     bool isDestCurrency, const uint160& dest);
+    int getPathsOut (Currency const& currency, Account const& accountID,
+                     bool isDestCurrency, Account const& dest);
 
     void addLink(const STPath& currentPath, STPathSet& incompletePaths, int addFlags);
     void addLink(const STPathSet& currentPaths, STPathSet& incompletePaths, int addFlags);

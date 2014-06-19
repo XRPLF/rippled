@@ -20,6 +20,7 @@
 #include <tuple>
 #include <boost/log/trivial.hpp>
 
+#include <ripple/types/api/UintTypes.h>
 #include <ripple/module/app/paths/Calculators.h>
 
 namespace ripple {
@@ -256,7 +257,7 @@ int PathRequest::parseJson (const Json::Value& jvParams, bool complete)
     {
         if (!saDstAmount.bSetJson (jvParams["destination_amount"]) ||
                 (saDstAmount.getCurrency ().isZero () && saDstAmount.getIssuer ().isNonZero ()) ||
-                (saDstAmount.getCurrency () == CURRENCY_BAD) ||
+                (saDstAmount.getCurrency () == badCurrency()) ||
                 saDstAmount <= zero)
         {
             jvStatus = rpcError (rpcDST_AMT_MALFORMED);
@@ -353,7 +354,7 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
             if (!sameAccount || (c != saDstAmount.getCurrency ()))
             {
                 if (c.isZero ())
-                    sourceCurrencies.insert (std::make_pair (c, XRP_ACCOUNT));
+                    sourceCurrencies.insert (std::make_pair (c, xrpIssuer()));
                 else
                     sourceCurrencies.insert (std::make_pair (c, raSrcAccount.getAccountID ()));
             }
@@ -424,7 +425,7 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
             STAmount saDstAmountAct;
             STAmount saMaxAmount (currIssuer.first,
                     currIssuer.second.isNonZero () ? currIssuer.second :
-                                  (currIssuer.first.isZero () ? ACCOUNT_XRP :
+                                  (currIssuer.first.isZero () ? uint160(xrpIssuer()) :
                                    raSrcAccount.getAccountID ()), 1);
             saMaxAmount.negate ();
             m_journal.debug << iIdentifier << " Paths found, calling rippleCalc";

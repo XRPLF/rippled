@@ -1355,7 +1355,7 @@ STAmount LedgerEntrySet::rippleTransferFee (
         {
             // NIKB use STAmount::saFromRate
             STAmount saTransitRate (
-                CURRENCY_ONE, ACCOUNT_ONE,
+                noCurrency(), noAccount(),
                 static_cast<std::uint64_t> (uTransitRate), -9);
 
             STAmount saTransferTotal = STAmount::multiply (
@@ -1382,7 +1382,7 @@ TER LedgerEntrySet::trustCreate (
     const bool      bAuth,              // --> authorize account.
     const bool      bNoRipple,          // --> others cannot ripple through
     const STAmount& saBalance,          // --> balance of account being set.
-                                        // Issuer should be ACCOUNT_ONE
+                                        // Issuer should be noAccount()
     const STAmount& saLimit,            // --> limit for account being set.
                                         // Issuer should be the account being set.
     const std::uint32_t uQualityIn,
@@ -1527,15 +1527,15 @@ TER LedgerEntrySet::rippleCredit (
 
     TER terResult;
 
-    assert (!!uSenderID && uSenderID != ACCOUNT_ONE);
-    assert (!!uReceiverID && uReceiverID != ACCOUNT_ONE);
+    assert (!!uSenderID && uSenderID != noAccount());
+    assert (!!uReceiverID && uReceiverID != noAccount());
 
     if (!sleRippleState)
     {
         STAmount    saReceiverLimit = STAmount (currency, uReceiverID);
         STAmount    saBalance       = saAmount;
 
-        saBalance.setIssuer (ACCOUNT_ONE);
+        saBalance.setIssuer (noAccount());
 
         WriteLog (lsDEBUG, LedgerEntrySet) << "rippleCredit: "
             "create line: " << RippleAddress::createHumanAccountID (uSenderID) <<
@@ -1647,7 +1647,7 @@ TER LedgerEntrySet::rippleSend (
     assert (uSenderID != uReceiverID);
 
     if (uSenderID == issuer || uReceiverID == issuer ||
-        issuer == ACCOUNT_ONE)
+        issuer == noAccount())
     {
         // Direct send: redeeming IOUs and/or sending own IOUs.
         terResult   = rippleCredit (uSenderID, uReceiverID, saAmount, false);

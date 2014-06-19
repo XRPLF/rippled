@@ -20,6 +20,8 @@
 #ifndef RIPPLE_SERIALIZER_H
 #define RIPPLE_SERIALIZER_H
 
+#include <iomanip>
+
 #include <ripple/common/byte_view.h>
 
 namespace ripple {
@@ -224,7 +226,7 @@ public:
     std::string getHex () const
     {
         std::stringstream h;
-        
+
         for (unsigned char const& element : mData)
         {
             h <<
@@ -307,4 +309,3 @@ public:
 } // ripple
 
 #endif
-

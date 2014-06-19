@@ -21,6 +21,7 @@
 #define RIPPLE_APP_PATH_NODE_H
 
 #include <ripple/module/app/paths/Types.h>
+#include <ripple/types/api/UintTypes.h>
 
 namespace ripple {
 namespace path {
@@ -77,12 +78,11 @@ struct Node
     // https://ripple.com/wiki/Ledger_Format#Prioritizing_a_continuous_key_space
 
     // Current directory - the last 64 bits of this are the quality.
-    uint256 uDirectTip;
+    Directory currentDirectory_;
 
     // Start of the next order book - one past the worst quality possible for
     // the current order book.
-    uint256 uDirectEnd;
-
+    Directory nextDirectory_;
 
     bool bDirectAdvance;        // Need to advance directory.
     bool bDirectRestart;        // Need to restart directory.

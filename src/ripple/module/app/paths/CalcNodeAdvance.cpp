@@ -67,21 +67,21 @@ TER nodeAdvance (
 
         bool bDirectDirDirty = false;
 
-        if (!node.uDirectTip)
+        if (!node.currentDirectory_)
         {
             // Need to initialize current node.
 
-            node.uDirectTip = Ledger::getBookBase (
+            node.currentDirectory_ = Ledger::getBookBase (
                 previousNode.currency_, previousNode.issuer_,
                 node.currency_,
                 node.issuer_);
-            node.uDirectEnd = Ledger::getQualityNext (node.uDirectTip);
+            node.nextDirectory_ = Ledger::getQualityNext (node.currentDirectory_);
 
             // TODO(tom): it seems impossible that any actual offers with
             // quality == 0 could occur - we should disallow them, and clear
             // sleDirectDir without the database call in the next line.
             node.sleDirectDir    = rippleCalc.mActiveLedger.entryCache (
-                ltDIR_NODE, node.uDirectTip);
+                ltDIR_NODE, node.currentDirectory_);
 
             // Associated vars are dirty, if found it.
             bDirectDirDirty = !!node.sleDirectDir;
@@ -93,8 +93,8 @@ TER nodeAdvance (
 
             WriteLog (lsTRACE, RippleCalc)
                 << "nodeAdvance: Initialize node:"
-                << " node.uDirectTip=" << node.uDirectTip
-                <<" node.uDirectEnd=" << node.uDirectEnd
+                << " node.currentDirectory_=" << node.currentDirectory_
+                <<" node.nextDirectory_=" << node.nextDirectory_
                 << " node.bDirectAdvance=" << node.bDirectAdvance;
         }
 
@@ -105,23 +105,23 @@ TER nodeAdvance (
             {
                 // This works because the Merkel radix tree is ordered by key so
                 // we can go to the next one in O(1).
-                node.uDirectTip  = rippleCalc.mActiveLedger.getNextLedgerIndex (
-                    node.uDirectTip, node.uDirectEnd);
+                node.currentDirectory_  = rippleCalc.mActiveLedger.getNextLedgerIndex (
+                    node.currentDirectory_, node.nextDirectory_);
             }
 
             bDirectDirDirty = true;
             node.bDirectAdvance  = false;
             node.bDirectRestart  = false;
 
-            if (node.uDirectTip != zero)
+            if (node.currentDirectory_ != zero)
             {
                 // We didn't run off the end of this order book and found
                 // another quality directory.
                 WriteLog (lsTRACE, RippleCalc)
-                    << "nodeAdvance: Quality advance: node.uDirectTip="
-                    << node.uDirectTip;
+                    << "nodeAdvance: Quality advance: node.currentDirectory_="
+                    << node.currentDirectory_;
 
-                node.sleDirectDir = rippleCalc.mActiveLedger.entryCache (ltDIR_NODE, node.uDirectTip);
+                node.sleDirectDir = rippleCalc.mActiveLedger.entryCache (ltDIR_NODE, node.currentDirectory_);
             }
             else if (bReverse)
             {
@@ -148,7 +148,7 @@ TER nodeAdvance (
         {
             // Our quality changed since last iteration.
             // Use the rate from the directory.
-            node.saOfrRate = STAmount::setRate (Ledger::getQuality (node.uDirectTip));
+            node.saOfrRate = STAmount::setRate (Ledger::getQuality (node.currentDirectory_));
             // For correct ratio
             node.uEntry          = 0;
             node.bEntryAdvance   = true;
@@ -182,7 +182,7 @@ TER nodeAdvance (
             }
         }
         else if (!rippleCalc.mActiveLedger.dirNext (
-            node.uDirectTip, node.sleDirectDir, node.uEntry, node.offerIndex_))
+            node.currentDirectory_, node.sleDirectDir, node.uEntry, node.offerIndex_))
             // This is the only place that offerIndex_ changes.
         {
             // Failed to find an entry in directory.

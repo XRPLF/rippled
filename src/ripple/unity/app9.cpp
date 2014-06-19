@@ -25,7 +25,6 @@
 #include <ripple/module/app/book/impl/OfferStream.cpp>
 #include <ripple/module/app/book/impl/Quality.cpp>
 #include <ripple/module/app/book/impl/Taker.cpp>
-#include <ripple/module/app/book/impl/Types.cpp>
 
 #include <ripple/module/app/transactors/Transactor.cpp>
 

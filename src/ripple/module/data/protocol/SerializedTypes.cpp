@@ -19,8 +19,8 @@
 
 namespace ripple {
 
-const STAmount saZero (CURRENCY_ONE, ACCOUNT_ONE, 0);
-const STAmount saOne (CURRENCY_ONE, ACCOUNT_ONE, 1);
+const STAmount saZero (noCurrency(), noAccount(), 0);
+const STAmount saOne (noCurrency(), noAccount(), 1);
 
 SerializedType& SerializedType::operator= (const SerializedType& t)
 {

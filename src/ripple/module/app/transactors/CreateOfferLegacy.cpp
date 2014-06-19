@@ -208,7 +208,7 @@ bool CreateOfferLegacy::applyOffer (
     // Limit offerer funds available, by transfer fees.
     STAmount    saOfferFundsAvailable   = QUALITY_ONE == uOfferPaysRate
                                           ? saOfferFunds          // As is.
-                                          : STAmount::divide (saOfferFunds, STAmount (CURRENCY_ONE, ACCOUNT_ONE, uOfferPaysRate, -9)); // Reduce by offer fees.
+                                          : STAmount::divide (saOfferFunds, STAmount (noCurrency(), noAccount(), uOfferPaysRate, -9)); // Reduce by offer fees.
 
     m_journal.info << "applyOffer: uOfferPaysRate=" << uOfferPaysRate;
     m_journal.info << "applyOffer: saOfferFundsAvailable=" << saOfferFundsAvailable.getFullText ();
@@ -216,9 +216,9 @@ bool CreateOfferLegacy::applyOffer (
     // Limit taker funds available, by transfer fees.
     STAmount    saTakerFundsAvailable   = QUALITY_ONE == uTakerPaysRate
                                           ? saTakerFunds          // As is.
-                                          : STAmount::divide (saTakerFunds, STAmount (CURRENCY_ONE, ACCOUNT_ONE, uTakerPaysRate, -9)); // Reduce by taker fees.
+                                          : STAmount::divide (saTakerFunds, STAmount (noCurrency(), noAccount(), uTakerPaysRate, -9)); // Reduce by taker fees.
 
-    m_journal.info << "applyOffer: TAKER_FEES=" << STAmount (CURRENCY_ONE, ACCOUNT_ONE, uTakerPaysRate, -9).getFullText ();
+    m_journal.info << "applyOffer: TAKER_FEES=" << STAmount (noCurrency(), noAccount(), uTakerPaysRate, -9).getFullText ();
     m_journal.info << "applyOffer: uTakerPaysRate=" << uTakerPaysRate;
     m_journal.info << "applyOffer: saTakerFundsAvailable=" << saTakerFundsAvailable.getFullText ();
 
@@ -280,7 +280,7 @@ bool CreateOfferLegacy::applyOffer (
     {
         // Compute fees in a rounding safe way.
 
-        STAmount transferRate (CURRENCY_ONE, ACCOUNT_ONE, uTakerPaysRate, -9);
+        STAmount transferRate (noCurrency(), noAccount(), uTakerPaysRate, -9);
         m_journal.info << "applyOffer: transferRate="
                        << transferRate.getFullText ();
 
@@ -310,7 +310,7 @@ bool CreateOfferLegacy::applyOffer (
     {
         // Compute fees in a rounding safe way.
         STAmount saOfferCost = STAmount::mulRound (
-            saTakerGot, STAmount (CURRENCY_ONE, ACCOUNT_ONE, uOfferPaysRate, -9),
+            saTakerGot, STAmount (noCurrency(), noAccount(), uOfferPaysRate, -9),
             true);
 
         saOfferIssuerFee = saOfferCost > saOfferFunds
@@ -785,7 +785,7 @@ TER CreateOfferLegacy::doApply ()
         terResult   = temREDUNDANT;
     }
     // FIXME: XRP is not a bad currency, not not allowed as IOU
-    else if (CURRENCY_BAD == uPaysCurrency || CURRENCY_BAD == uGetsCurrency)
+    else if (badCurrency() == uPaysCurrency || badCurrency() == uGetsCurrency)
     {
         m_journal.warning <<
             "Malformed offer: Bad currency.";

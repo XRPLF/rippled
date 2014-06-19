@@ -20,6 +20,9 @@
 #ifndef RIPPLE_SERIALIZEDTYPES_H
 #define RIPPLE_SERIALIZEDTYPES_H
 
+#include <ripple/module/data/protocol/FieldNames.h>
+#include <ripple/module/data/protocol/Serializer.h>
+
 namespace ripple {
 
 // VFALCO TODO fix this restriction on copy assignment.
@@ -48,24 +51,6 @@ enum PathFlags
     PF_ISSUE            = 0x80,
 };
 */
-
-// VFALCO TODO make these non static or otherwise clean constants.
-static const uint160 u160_zero (0), u160_one (1);
-static inline const uint160& get_u160_zero ()
-{
-    return u160_zero;
-}
-static inline const uint160& get_u160_one ()
-{
-    return u160_one;
-}
-
-// VFALCO TODO replace these with language constructs
-#define CURRENCY_XRP        get_u160_zero()
-#define CURRENCY_ONE        get_u160_one()                  // Used as a place holder.
-#define CURRENCY_BAD        uint160(0x5852500000000000)     // Do not allow XRP as an IOU currency.
-#define ACCOUNT_XRP         get_u160_zero()
-#define ACCOUNT_ONE         get_u160_one()                  // Used as a place holder.
 
 //------------------------------------------------------------------------------
 
@@ -557,7 +542,7 @@ public:
 
     static STAmount saFromRate (std::uint64_t uRate = 0)
     {
-        return STAmount (CURRENCY_ONE, ACCOUNT_ONE, uRate, -9, false);
+        return STAmount (noCurrency(), noAccount(), uRate, -9, false);
     }
 
     SerializedTypeID getSType () const
@@ -1317,6 +1302,11 @@ public:
     {
         return mPath.empty ();
     }
+    bool empty() const
+    {
+        return mPath.empty ();
+    }
+
     const STPathElement& getElement (int offset) const
     {
         return mPath[offset];
@@ -1457,7 +1447,7 @@ public:
     }
     void addUniquePath (const STPath& e)
     {
-        BOOST_FOREACH(const STPath& p, value)
+        for (auto const& p: value)
         {
             if (p == e)
                 return;

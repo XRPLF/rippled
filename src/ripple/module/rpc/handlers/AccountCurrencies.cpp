@@ -63,8 +63,8 @@ Json::Value doAccountCurrencies (RPC::Context& context)
     }
 
 
-    send.erase (CURRENCY_BAD);
-    receive.erase (CURRENCY_BAD);
+    send.erase (badCurrency());
+    receive.erase (badCurrency());
 
     Json::Value& sendCurrencies = (jvResult["send_currencies"] = Json::arrayValue);
     BOOST_FOREACH(uint160 const& c, send)

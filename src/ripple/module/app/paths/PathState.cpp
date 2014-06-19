@@ -78,7 +78,7 @@ TER PathState::pushImpliedNodes (
     if (nodes_.back ().currency_ != currency)
     {
         // Currency is different, need to convert via an offer from an order
-        // book.  XRP_ACCOUNT does double duty as signaling "this is an order
+        // book.  xrpIssuer() does double duty as signaling "this is an order
         // book".
 
         // Corresponds to "Implies an offer directory" in the diagram, currently
@@ -88,8 +88,8 @@ TER PathState::pushImpliedNodes (
             : STPathElement::typeCurrency | STPathElement::typeIssuer;
 
         // The offer's output is what is now wanted.
-        // XRP_ACCOUNT is a placeholder for offers.
-        resultCode = pushNode (type, XRP_ACCOUNT, currency, issuer);
+        // xrpIssuer() is a placeholder for offers.
+        resultCode = pushNode (type, xrpIssuer(), currency, issuer);
     }
 
 
@@ -193,7 +193,7 @@ TER PathState::pushNode (
                               ? issuer
                 : !!node.currency_  // Not XRP.
                               ? account
-                              : XRP_ACCOUNT;
+                              : xrpIssuer();
         // Zero value - for accounts.
         node.saRevRedeem   = STAmount (node.currency_, account);
         node.saRevIssue    = node.saRevRedeem;
@@ -220,7 +220,7 @@ TER PathState::pushNode (
 
             resultCode = pushImpliedNodes (
                 node.account_, node.currency_,
-                isXRP(node.currency_) ? XRP_ACCOUNT : account);
+                isXRP(node.currency_) ? xrpIssuer() : account);
 
             // Note: previousNode may no longer be the immediately previous node.
         }
@@ -322,7 +322,7 @@ TER PathState::pushNode (
             ? Account(previousNode.issuer_)   // Default to previous issuer
             : Account(previousNode.account_)
             // Or previous account if no previous issuer.
-                  : XRP_ACCOUNT;
+                  : xrpIssuer();
         node.saRateMax = saZero;
         node.saRevDeliver = STAmount (node.currency_, node.issuer_);
         node.saFwdDeliver = node.saRevDeliver;
@@ -345,7 +345,7 @@ TER PathState::pushNode (
 
             // Insert intermediary issuer account if needed.
             resultCode   = pushImpliedNodes (
-                XRP_ACCOUNT, // Rippling, but offers don't have an account.
+                xrpIssuer(), // Rippling, but offers don't have an account.
                 previousNode.currency_,
                 previousNode.issuer_);
         }
@@ -389,7 +389,7 @@ void PathState::expandPath (
     const Currency uOutCurrencyID = saOutReq.getCurrency ();
     const Account uOutIssuerID = saOutReq.getIssuer ();
     const Account uSenderIssuerID
-        = isXRP(uMaxCurrencyID) ? XRP_ACCOUNT : uSenderID;
+        = isXRP(uMaxCurrencyID) ? xrpIssuer() : uSenderID;
     // Sender is always issuer for non-XRP.
 
     WriteLog (lsTRACE, RippleCalc)
@@ -450,7 +450,7 @@ void PathState::expandPath (
                 ? (uOutIssuerID == uReceiverID)
                 ? Account(uReceiverID)
                 : Account(uOutIssuerID)                      // Use implied node.
-                : XRP_ACCOUNT;
+                : xrpIssuer();
 
         WriteLog (lsDEBUG, RippleCalc)
             << "expandPath: implied check:"

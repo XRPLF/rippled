@@ -69,7 +69,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
         !context.params_.isMember ("destination_amount")
         || !saDstAmount.bSetJson (context.params_["destination_amount"])
         || saDstAmount <= zero
-        || (!!saDstAmount.getCurrency () && (!saDstAmount.getIssuer () || ACCOUNT_ONE == saDstAmount.getIssuer ())))
+        || (!!saDstAmount.getCurrency () && (!saDstAmount.getIssuer () || noAccount() == saDstAmount.getIssuer ())))
     {
         WriteLog (lsINFO, RPCHandler) << "Bad destination_amount.";
         jvResult    = rpcError (rpcINVALID_PARAMS);
@@ -164,7 +164,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
                     ((!jvSource["issuer"].isString () ||
                       !STAmount::issuerFromString (uSrcIssuerID, jvSource["issuer"].asString ())) ||
                      (uSrcIssuerID.isZero () != uSrcCurrencyID.isZero ()) ||
-                     (ACCOUNT_ONE == uSrcIssuerID)))
+                     (noAccount() == uSrcIssuerID)))
             {
                 WriteLog (lsINFO, RPCHandler) << "Bad issuer.";
 
@@ -210,7 +210,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
                     ? uSrcIssuerID      // Use specifed issuer.
                     : !!uSrcCurrencyID  // Default to source account.
                     ? raSrc.getAccountID ()
-                    : ACCOUNT_XRP,
+                    : uint160(xrpIssuer()),
                     1);
                 saMaxAmount.negate ();
 

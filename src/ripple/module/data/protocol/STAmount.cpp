@@ -19,6 +19,8 @@
 
 #include <beast/cxx14/iterator.h>
 
+#include <ripple/types/api/UintTypes.h>
+
 namespace ripple {
 
 std::uint64_t STAmount::uRateOne  = STAmount::getRate (STAmount (1), STAmount (1));
@@ -225,7 +227,7 @@ std::string STAmount::createHumanCurrency (const uint160& uCurrency)
         return SYSTEM_CURRENCY_CODE;
     }
 
-    if (CURRENCY_ONE == uCurrency)
+    if (noCurrency() == uCurrency)
     {
         return "1";
     }
@@ -1039,7 +1041,7 @@ std::uint64_t STAmount::getRate (const STAmount& offerOut, const STAmount& offer
 
     try
     {
-        STAmount r = divide (offerIn, offerOut, CURRENCY_ONE, ACCOUNT_ONE);
+        STAmount r = divide (offerIn, offerOut, noCurrency(), noAccount());
 
         if (r == zero) // offer is too good
             return 0;
@@ -1060,12 +1062,12 @@ std::uint64_t STAmount::getRate (const STAmount& offerOut, const STAmount& offer
 STAmount STAmount::setRate (std::uint64_t rate)
 {
     if (rate == 0)
-        return STAmount (CURRENCY_ONE, ACCOUNT_ONE);
+        return STAmount (noCurrency(), noAccount());
 
     std::uint64_t mantissa = rate & ~ (255ull << (64 - 8));
     int exponent = static_cast<int> (rate >> (64 - 8)) - 100;
 
-    return STAmount (CURRENCY_ONE, ACCOUNT_ONE, mantissa, exponent);
+    return STAmount (noCurrency(), noAccount(), mantissa, exponent);
 }
 
 STAmount STAmount::getPay (const STAmount& offerOut, const STAmount& offerIn, const STAmount& needed)
@@ -1080,7 +1082,7 @@ STAmount STAmount::getPay (const STAmount& offerOut, const STAmount& offerIn, co
         return needed;
     }
 
-    STAmount ret = divide (multiply (needed, offerIn, CURRENCY_ONE, ACCOUNT_ONE), offerOut, offerIn.getCurrency (), offerIn.getIssuer ());
+    STAmount ret = divide (multiply (needed, offerIn, noCurrency(), noAccount()), offerOut, offerIn.getCurrency (), offerIn.getIssuer ());
 
     return (ret > offerIn) ? offerIn : ret;
 }
@@ -1105,7 +1107,7 @@ std::string STAmount::getFullText () const
 
         if (!mIssuer)
             ret += "0";
-        else if (mIssuer == ACCOUNT_ONE)
+        else if (mIssuer == noAccount())
             ret += "1";
         else
             ret += RippleAddress::createHumanAccountID (mIssuer);
@@ -1198,17 +1200,17 @@ public:
     bool roundTest (int n, int d, int m)
     {
         // check STAmount rounding
-        STAmount num (CURRENCY_ONE, ACCOUNT_ONE, n);
-        STAmount den (CURRENCY_ONE, ACCOUNT_ONE, d);
-        STAmount mul (CURRENCY_ONE, ACCOUNT_ONE, m);
-        STAmount quot = STAmount::divide (n, d, CURRENCY_ONE, ACCOUNT_ONE);
-        STAmount res = STAmount::multiply (quot, mul, CURRENCY_ONE, ACCOUNT_ONE);
+        STAmount num (noCurrency(), noAccount(), n);
+        STAmount den (noCurrency(), noAccount(), d);
+        STAmount mul (noCurrency(), noAccount(), m);
+        STAmount quot = STAmount::divide (n, d, noCurrency(), noAccount());
+        STAmount res = STAmount::multiply (quot, mul, noCurrency(), noAccount());
 
         expect (! res.isNative (), "Product should not be native");
 
         res.roundSelf ();
 
-        STAmount cmp (CURRENCY_ONE, ACCOUNT_ONE, (n * m) / d);
+        STAmount cmp (noCurrency(), noAccount(), (n * m) / d);
 
         expect (! cmp.isNative (), "Comparison amount should not be native");
 
@@ -1233,13 +1235,13 @@ public:
 
     void mulTest (int a, int b)
     {
-        STAmount aa (CURRENCY_ONE, ACCOUNT_ONE, a);
-        STAmount bb (CURRENCY_ONE, ACCOUNT_ONE, b);
-        STAmount prod1 (STAmount::multiply (aa, bb, CURRENCY_ONE, ACCOUNT_ONE));
+        STAmount aa (noCurrency(), noAccount(), a);
+        STAmount bb (noCurrency(), noAccount(), b);
+        STAmount prod1 (STAmount::multiply (aa, bb, noCurrency(), noAccount()));
 
         expect (! prod1.isNative ());
 
-        STAmount prod2 (CURRENCY_ONE, ACCOUNT_ONE, static_cast<std::uint64_t> (a) * static_cast<std::uint64_t> (b));
+        STAmount prod2 (noCurrency(), noAccount(), static_cast<std::uint64_t> (a) * static_cast<std::uint64_t> (b));
 
         if (prod1 != prod2)
         {
@@ -1254,7 +1256,7 @@ public:
         }
 
         aa = a;
-        prod1 = STAmount::multiply (aa, bb, CURRENCY_ONE, ACCOUNT_ONE);
+        prod1 = STAmount::multiply (aa, bb, noCurrency(), noAccount());
 
         if (prod1 != prod2)
         {
@@ -1449,7 +1451,7 @@ public:
     {
         testcase ("custom currency");
 
-        STAmount zeroSt (CURRENCY_ONE, ACCOUNT_ONE), one (CURRENCY_ONE, ACCOUNT_ONE, 1), hundred (CURRENCY_ONE, ACCOUNT_ONE, 100);
+        STAmount zeroSt (noCurrency(), noAccount()), one (noCurrency(), noAccount(), 1), hundred (noCurrency(), noAccount(), 100);
 
         unexpected (serializeAndDeserialize (zeroSt) != zeroSt, "STAmount fail");
 
@@ -1575,33 +1577,33 @@ public:
 
         unexpected ((hundred != hundred), "STAmount fail");
 
-        unexpected (STAmount (CURRENCY_ONE, ACCOUNT_ONE).getText () != "0", "STAmount fail");
+        unexpected (STAmount (noCurrency(), noAccount()).getText () != "0", "STAmount fail");
 
-        unexpected (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 31).getText () != "31", "STAmount fail");
+        unexpected (STAmount (noCurrency(), noAccount(), 31).getText () != "31", "STAmount fail");
 
-        unexpected (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 31, 1).getText () != "310", "STAmount fail");
+        unexpected (STAmount (noCurrency(), noAccount(), 31, 1).getText () != "310", "STAmount fail");
 
-        unexpected (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 31, -1).getText () != "3.1", "STAmount fail");
+        unexpected (STAmount (noCurrency(), noAccount(), 31, -1).getText () != "3.1", "STAmount fail");
 
-        unexpected (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 31, -2).getText () != "0.31", "STAmount fail");
+        unexpected (STAmount (noCurrency(), noAccount(), 31, -2).getText () != "0.31", "STAmount fail");
 
-        unexpected (STAmount::multiply (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 20), STAmount (3), CURRENCY_ONE, ACCOUNT_ONE).getText () != "60",
+        unexpected (STAmount::multiply (STAmount (noCurrency(), noAccount(), 20), STAmount (3), noCurrency(), noAccount()).getText () != "60",
             "STAmount multiply fail 1");
 
-        unexpected (STAmount::multiply (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 20), STAmount (3), uint160 (), ACCOUNT_XRP).getText () != "60",
+        unexpected (STAmount::multiply (STAmount (noCurrency(), noAccount(), 20), STAmount (3), uint160 (), xrpIssuer()).getText () != "60",
             "STAmount multiply fail 2");
 
-        unexpected (STAmount::multiply (STAmount (20), STAmount (3), CURRENCY_ONE, ACCOUNT_ONE).getText () != "60",
+        unexpected (STAmount::multiply (STAmount (20), STAmount (3), noCurrency(), noAccount()).getText () != "60",
             "STAmount multiply fail 3");
 
-        unexpected (STAmount::multiply (STAmount (20), STAmount (3), uint160 (), ACCOUNT_XRP).getText () != "60",
+        unexpected (STAmount::multiply (STAmount (20), STAmount (3), uint160 (), xrpIssuer()).getText () != "60",
             "STAmount multiply fail 4");
 
-        if (STAmount::divide (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 60), STAmount (3), CURRENCY_ONE, ACCOUNT_ONE).getText () != "20")
+        if (STAmount::divide (STAmount (noCurrency(), noAccount(), 60), STAmount (3), noCurrency(), noAccount()).getText () != "20")
         {
             WriteLog (lsFATAL, STAmount) << "60/3 = " <<
-                                         STAmount::divide (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 60),
-                                                 STAmount (3), CURRENCY_ONE, ACCOUNT_ONE).getText ();
+                                         STAmount::divide (STAmount (noCurrency(), noAccount(), 60),
+                                                 STAmount (3), noCurrency(), noAccount()).getText ();
             fail ("STAmount divide fail");
         }
         else
@@ -1609,21 +1611,21 @@ public:
             pass ();
         }
 
-        unexpected (STAmount::divide (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 60), STAmount (3), uint160 (), ACCOUNT_XRP).getText () != "20",
+        unexpected (STAmount::divide (STAmount (noCurrency(), noAccount(), 60), STAmount (3), uint160 (), xrpIssuer()).getText () != "20",
             "STAmount divide fail");
 
-        unexpected (STAmount::divide (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 60), STAmount (CURRENCY_ONE, ACCOUNT_ONE, 3), CURRENCY_ONE, ACCOUNT_ONE).getText () != "20",
+        unexpected (STAmount::divide (STAmount (noCurrency(), noAccount(), 60), STAmount (noCurrency(), noAccount(), 3), noCurrency(), noAccount()).getText () != "20",
             "STAmount divide fail");
 
-        unexpected (STAmount::divide (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 60), STAmount (CURRENCY_ONE, ACCOUNT_ONE, 3), uint160 (), ACCOUNT_XRP).getText () != "20",
+        unexpected (STAmount::divide (STAmount (noCurrency(), noAccount(), 60), STAmount (noCurrency(), noAccount(), 3), uint160 (), xrpIssuer()).getText () != "20",
             "STAmount divide fail");
 
-        STAmount a1 (CURRENCY_ONE, ACCOUNT_ONE, 60), a2 (CURRENCY_ONE, ACCOUNT_ONE, 10, -1);
+        STAmount a1 (noCurrency(), noAccount(), 60), a2 (noCurrency(), noAccount(), 10, -1);
 
-        unexpected (STAmount::divide (a2, a1, CURRENCY_ONE, ACCOUNT_ONE) != STAmount::setRate (STAmount::getRate (a1, a2)),
+        unexpected (STAmount::divide (a2, a1, noCurrency(), noAccount()) != STAmount::setRate (STAmount::getRate (a1, a2)),
             "STAmount setRate(getRate) fail");
 
-        unexpected (STAmount::divide (a1, a2, CURRENCY_ONE, ACCOUNT_ONE) != STAmount::setRate (STAmount::getRate (a2, a1)),
+        unexpected (STAmount::divide (a1, a2, noCurrency(), noAccount()) != STAmount::setRate (STAmount::getRate (a2, a1)),
             "STAmount setRate(getRate) fail");
     }
 
@@ -1662,22 +1664,22 @@ public:
         unexpected (STAmount::getRate (STAmount (10), STAmount (1)) != (((100ull - 16) << (64 - 8)) | 1000000000000000ull),
             "STAmount getRate fail 2");
 
-        unexpected (STAmount::getRate (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 1), STAmount (CURRENCY_ONE, ACCOUNT_ONE, 10)) != (((100ull - 14) << (64 - 8)) | 1000000000000000ull),
+        unexpected (STAmount::getRate (STAmount (noCurrency(), noAccount(), 1), STAmount (noCurrency(), noAccount(), 10)) != (((100ull - 14) << (64 - 8)) | 1000000000000000ull),
             "STAmount getRate fail 3");
 
-        unexpected (STAmount::getRate (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 10), STAmount (CURRENCY_ONE, ACCOUNT_ONE, 1)) != (((100ull - 16) << (64 - 8)) | 1000000000000000ull),
+        unexpected (STAmount::getRate (STAmount (noCurrency(), noAccount(), 10), STAmount (noCurrency(), noAccount(), 1)) != (((100ull - 16) << (64 - 8)) | 1000000000000000ull),
             "STAmount getRate fail 4");
 
-        unexpected (STAmount::getRate (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 1), STAmount (10)) != (((100ull - 14) << (64 - 8)) | 1000000000000000ull),
+        unexpected (STAmount::getRate (STAmount (noCurrency(), noAccount(), 1), STAmount (10)) != (((100ull - 14) << (64 - 8)) | 1000000000000000ull),
             "STAmount getRate fail 5");
 
-        unexpected (STAmount::getRate (STAmount (CURRENCY_ONE, ACCOUNT_ONE, 10), STAmount (1)) != (((100ull - 16) << (64 - 8)) | 1000000000000000ull),
+        unexpected (STAmount::getRate (STAmount (noCurrency(), noAccount(), 10), STAmount (1)) != (((100ull - 16) << (64 - 8)) | 1000000000000000ull),
             "STAmount getRate fail 6");
 
-        unexpected (STAmount::getRate (STAmount (1), STAmount (CURRENCY_ONE, ACCOUNT_ONE, 10)) != (((100ull - 14) << (64 - 8)) | 1000000000000000ull),
+        unexpected (STAmount::getRate (STAmount (1), STAmount (noCurrency(), noAccount(), 10)) != (((100ull - 14) << (64 - 8)) | 1000000000000000ull),
             "STAmount getRate fail 7");
 
-        unexpected (STAmount::getRate (STAmount (10), STAmount (CURRENCY_ONE, ACCOUNT_ONE, 1)) != (((100ull - 16) << (64 - 8)) | 1000000000000000ull),
+        unexpected (STAmount::getRate (STAmount (10), STAmount (noCurrency(), noAccount(), 1)) != (((100ull - 16) << (64 - 8)) | 1000000000000000ull),
             "STAmount getRate fail 8");
 
         roundTest (1, 3, 3);
@@ -1712,21 +1714,21 @@ public:
         testcase ("underflow");
 
         STAmount bigNative (STAmount::cMaxNative / 2);
-        STAmount bigValue (CURRENCY_ONE, ACCOUNT_ONE,
+        STAmount bigValue (noCurrency(), noAccount(),
                            (STAmount::cMinValue + STAmount::cMaxValue) / 2, STAmount::cMaxOffset - 1);
-        STAmount smallValue (CURRENCY_ONE, ACCOUNT_ONE,
+        STAmount smallValue (noCurrency(), noAccount(),
                              (STAmount::cMinValue + STAmount::cMaxValue) / 2, STAmount::cMinOffset + 1);
-        STAmount zeroSt (CURRENCY_ONE, ACCOUNT_ONE, 0);
+        STAmount zeroSt (noCurrency(), noAccount(), 0);
 
-        STAmount smallXsmall = STAmount::multiply (smallValue, smallValue, CURRENCY_ONE, ACCOUNT_ONE);
+        STAmount smallXsmall = STAmount::multiply (smallValue, smallValue, noCurrency(), noAccount());
 
         expect (smallXsmall == zero, "smallXsmall != 0");
 
-        STAmount bigDsmall = STAmount::divide (smallValue, bigValue, CURRENCY_ONE, ACCOUNT_ONE);
+        STAmount bigDsmall = STAmount::divide (smallValue, bigValue, noCurrency(), noAccount());
 
         expect (bigDsmall == zero, beast::String ("small/big != 0: ") + bigDsmall.getText ());
 
-        bigDsmall = STAmount::divide (smallValue, bigNative, CURRENCY_ONE, uint160 ());
+        bigDsmall = STAmount::divide (smallValue, bigNative, noCurrency(), uint160 ());
 
         expect (bigDsmall == zero, beast::String ("small/bigNative != 0: ") + bigDsmall.getText ());
 
@@ -1763,27 +1765,27 @@ public:
         int offset = -14;
         STAmount::canonicalizeRound (false, value, offset, true);
 
-        STAmount one (CURRENCY_ONE, ACCOUNT_ONE, 1);
-        STAmount two (CURRENCY_ONE, ACCOUNT_ONE, 2);
-        STAmount three (CURRENCY_ONE, ACCOUNT_ONE, 3);
+        STAmount one (noCurrency(), noAccount(), 1);
+        STAmount two (noCurrency(), noAccount(), 2);
+        STAmount three (noCurrency(), noAccount(), 3);
 
-        STAmount oneThird1 = STAmount::divRound (one, three, CURRENCY_ONE, ACCOUNT_ONE, false);
-        STAmount oneThird2 = STAmount::divide (one, three, CURRENCY_ONE, ACCOUNT_ONE);
-        STAmount oneThird3 = STAmount::divRound (one, three, CURRENCY_ONE, ACCOUNT_ONE, true);
+        STAmount oneThird1 = STAmount::divRound (one, three, noCurrency(), noAccount(), false);
+        STAmount oneThird2 = STAmount::divide (one, three, noCurrency(), noAccount());
+        STAmount oneThird3 = STAmount::divRound (one, three, noCurrency(), noAccount(), true);
         WriteLog (lsINFO, STAmount) << oneThird1;
         WriteLog (lsINFO, STAmount) << oneThird2;
         WriteLog (lsINFO, STAmount) << oneThird3;
 
-        STAmount twoThird1 = STAmount::divRound (two, three, CURRENCY_ONE, ACCOUNT_ONE, false);
-        STAmount twoThird2 = STAmount::divide (two, three, CURRENCY_ONE, ACCOUNT_ONE);
-        STAmount twoThird3 = STAmount::divRound (two, three, CURRENCY_ONE, ACCOUNT_ONE, true);
+        STAmount twoThird1 = STAmount::divRound (two, three, noCurrency(), noAccount(), false);
+        STAmount twoThird2 = STAmount::divide (two, three, noCurrency(), noAccount());
+        STAmount twoThird3 = STAmount::divRound (two, three, noCurrency(), noAccount(), true);
         WriteLog (lsINFO, STAmount) << twoThird1;
         WriteLog (lsINFO, STAmount) << twoThird2;
         WriteLog (lsINFO, STAmount) << twoThird3;
 
-        STAmount oneA = STAmount::mulRound (oneThird1, three, CURRENCY_ONE, ACCOUNT_ONE, false);
-        STAmount oneB = STAmount::multiply (oneThird2, three, CURRENCY_ONE, ACCOUNT_ONE);
-        STAmount oneC = STAmount::mulRound (oneThird3, three, CURRENCY_ONE, ACCOUNT_ONE, true);
+        STAmount oneA = STAmount::mulRound (oneThird1, three, noCurrency(), noAccount(), false);
+        STAmount oneB = STAmount::multiply (oneThird2, three, noCurrency(), noAccount());
+        STAmount oneC = STAmount::mulRound (oneThird3, three, noCurrency(), noAccount(), true);
         WriteLog (lsINFO, STAmount) << oneA;
         WriteLog (lsINFO, STAmount) << oneB;
         WriteLog (lsINFO, STAmount) << oneC;

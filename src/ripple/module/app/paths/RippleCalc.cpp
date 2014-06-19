@@ -29,7 +29,6 @@
 #include <ripple/module/app/paths/ComputeOfferLiquidity.cpp>
 #include <ripple/module/app/paths/Node.cpp>
 #include <ripple/module/app/paths/PathNext.cpp>
-#include <ripple/module/app/paths/Types.cpp>
 
 namespace ripple {
 
@@ -56,13 +55,13 @@ TER rippleCalculate (
     PathState::List&  pathStateList,
 
     // Issuer:
-    //      XRP: XRP_ACCOUNT
+    //      XRP: xrpIssuer()
     //  non-XRP: uSrcAccountID (for any issuer) or another account with trust
     //           node.
     const STAmount&     saMaxAmountReq,             // --> -1 = no limit.
 
     // Issuer:
-    //      XRP: XRP_ACCOUNT
+    //      XRP: xrpIssuer()
     //  non-XRP: uDstAccountID (for any issuer) or another account with trust
     //           node.
     const STAmount&     saDstAmountReq,

@@ -24,6 +24,8 @@
 #include <functional>
 #include <type_traits>
 
+#include <ripple/types/api/UintTypes.h>
+
 namespace ripple {
 
 /** Identifies a currency in the payment network.

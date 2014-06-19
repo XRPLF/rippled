@@ -29,16 +29,6 @@ typedef std::tuple <uint160, uint160, uint160> AccountCurrencyIssuer;
 typedef ripple::unordered_map <AccountCurrencyIssuer, unsigned int>
 AccountCurrencyIssuerToNodeIndex;
 
-namespace path {
-
-typedef core::Account Account;
-typedef core::Currency Currency;
-
-} // path
-
-extern const path::Account XRP_ACCOUNT;
-extern const path::Currency XRP_CURRENCY;
-
 } // ripple
 
 #endif

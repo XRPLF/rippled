@@ -40,7 +40,7 @@ TER nodeDeliverRev (
     PathState&         pathState,
     const bool         bMultiQuality,  // True, if not constrained to the same
                                        // or better quality.
-    const uint160&     uOutAccountID,  // --> Output owner's account.
+    Account const&     uOutAccountID,  // --> Output owner's account.
     const STAmount&    saOutReq,       // --> Funds requested to be
                                        // delivered for an increment.
     STAmount&          saOutAct)       // <-- Funds actually delivered for an
@@ -48,20 +48,12 @@ TER nodeDeliverRev (
 {
     TER resultCode   = tesSUCCESS;
 
-    auto&    previousNode       = pathState.nodes()[nodeIndex - 1];
-    auto&    node       = pathState.nodes()[nodeIndex];
+    auto& previousNode = pathState.nodes()[nodeIndex - 1];
+    auto& node = pathState.nodes()[nodeIndex];
 
-    STAmount&       saPrvDlvReq     = previousNode.saRevDeliver;
+    STAmount& saPrvDlvReq = previousNode.saRevDeliver;
+
     // Accumulation of what the previous node must deliver.
-
-    uint256&        uDirectTip      = node.uDirectTip;
-    bool&           bDirectRestart  = node.bDirectRestart;
-
-    if (bMultiQuality)
-        uDirectTip      = 0;                        // Restart book searching.
-    else
-        bDirectRestart  = true;                     // Restart at same quality.
-
     // Possible optimization: Note this gets zeroed on each increment, ideally
     // only on first increment, then it could be a limit on the forward pass.
     saOutAct.clear (saOutReq);

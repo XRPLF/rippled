@@ -82,7 +82,7 @@ TER Payment::doApply ()
 
         return temBAD_AMOUNT;
     }
-    else if (CURRENCY_BAD == uSrcCurrency || CURRENCY_BAD == uDstCurrency)
+    else if (badCurrency() == uSrcCurrency || badCurrency() == uDstCurrency)
     {
         m_journal.trace <<
             "Malformed transaction: Bad currency.";

@@ -81,7 +81,7 @@ TER SetTrust::doApply ()
     }
 
     // Check if destination makes sense.
-    if (!uDstAccountID || uDstAccountID == ACCOUNT_ONE)
+    if (!uDstAccountID || uDstAccountID == noAccount())
     {
         m_journal.trace <<
             "Malformed transaction: Destination account not specified.";
@@ -310,7 +310,7 @@ TER SetTrust::doApply ()
         if (uFlagsIn != uFlagsOut)
             sleRippleState->setFieldU32 (sfFlags, uFlagsOut);
 
-        if (bDefault || CURRENCY_BAD == currency)
+        if (bDefault || badCurrency() == currency)
         {
             // Delete.
 
@@ -350,14 +350,14 @@ TER SetTrust::doApply ()
         // Another transaction could create the account and then this transaction would succeed.
         terResult = tecNO_LINE_INSUF_RESERVE;
     }
-    else if (CURRENCY_BAD == currency)
+    else if (badCurrency() == currency)
     {
         terResult   = temBAD_CURRENCY;
     }
     else
     {
         // Zero balance in currency.
-        STAmount saBalance (STAmount (currency, ACCOUNT_ONE));
+        STAmount saBalance (STAmount (currency, noAccount()));
 
         uint256 index (Ledger::getRippleStateIndex (
             mTxnAccountID, uDstAccountID, currency));

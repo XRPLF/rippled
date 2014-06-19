@@ -2972,7 +2972,7 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
                 {
                     // Need to charge a transfer fee to offer owner.
                     uOfferRate          = uTransferRate;
-                    saOwnerFundsLimit   = STAmount::divide (saOwnerFunds, STAmount (CURRENCY_ONE, ACCOUNT_ONE, uOfferRate, -9));
+                    saOwnerFundsLimit   = STAmount::divide (saOwnerFunds, STAmount (noCurrency(), noAccount(), uOfferRate, -9));
                 }
                 else
                 {
@@ -3010,7 +3010,7 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
                         saOwnerFunds,
                         STAmount::multiply (
                             saTakerGetsFunded,
-                            STAmount (CURRENCY_ONE, ACCOUNT_ONE, uOfferRate, -9)));
+                            STAmount (noCurrency(), noAccount(), uOfferRate, -9)));
 
                 umBalance[uOfferOwnerID]    = saOwnerFunds - saOwnerPays;
 
@@ -3121,7 +3121,7 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
             {
                 // Need to charge a transfer fee to offer owner.
                 uOfferRate          = uTransferRate;
-                saOwnerFundsLimit   = STAmount::divide (saOwnerFunds, STAmount (CURRENCY_ONE, ACCOUNT_ONE, uOfferRate, -9));
+                saOwnerFundsLimit   = STAmount::divide (saOwnerFunds, STAmount (noCurrency(), noAccount(), uOfferRate, -9));
             }
             else
             {
@@ -3153,7 +3153,7 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
 
             STAmount    saOwnerPays     = (QUALITY_ONE == uOfferRate)
                                           ? saTakerGetsFunded
-                                          : std::min (saOwnerFunds, STAmount::multiply (saTakerGetsFunded, STAmount (CURRENCY_ONE, ACCOUNT_ONE, uOfferRate, -9)));
+                                          : std::min (saOwnerFunds, STAmount::multiply (saTakerGetsFunded, STAmount (noCurrency(), noAccount(), uOfferRate, -9)));
 
             umBalance[uOfferOwnerID]    = saOwnerFunds - saOwnerPays;
 

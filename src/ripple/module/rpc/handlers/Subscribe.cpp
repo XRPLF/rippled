@@ -226,7 +226,7 @@ Json::Value doSubscribe (RPC::Context& context)
                           || !STAmount::issuerFromString (pay_issuer, taker_pays[jss::issuer].asString ())))
                      // Don't allow illegal issuers.
                      || (!pay_currency != !pay_issuer)
-                     || ACCOUNT_ONE == pay_issuer)
+                     || noAccount() == pay_issuer)
             {
                 WriteLog (lsINFO, RPCHandler) << "Bad taker_pays issuer.";
 
@@ -247,7 +247,7 @@ Json::Value doSubscribe (RPC::Context& context)
                           || !STAmount::issuerFromString (get_issuer, taker_gets[jss::issuer].asString ())))
                      // Don't allow illegal issuers.
                      || (!get_currency != !get_issuer)
-                     || ACCOUNT_ONE == get_issuer)
+                     || noAccount() == get_issuer)
             {
                 WriteLog (lsINFO, RPCHandler) << "Bad taker_gets issuer.";
 
@@ -266,7 +266,7 @@ Json::Value doSubscribe (RPC::Context& context)
 
             if (!jvSubRequest.isMember ("taker"))
             {
-                raTakerID.setAccountID (ACCOUNT_ONE);
+                raTakerID.setAccountID (noAccount());
             }
             else if (!raTakerID.setAccountID (jvSubRequest["taker"].asString ()))
             {

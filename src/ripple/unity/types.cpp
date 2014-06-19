@@ -45,8 +45,8 @@
 #include <ripple/types/impl/strHex.cpp>
 #include <ripple/types/impl/base_uint.cpp>
 #include <ripple/types/impl/UInt160.cpp>
+#include <ripple/types/impl/UintTypes.cpp>
 #include <ripple/types/impl/RippleIdentifierTests.cpp>
 #include <ripple/types/impl/RippleAssets.cpp>
 
 #include <ripple/common/tests/cross_offer.test.cpp>
-
