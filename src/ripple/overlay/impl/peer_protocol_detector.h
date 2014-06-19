@@ -42,7 +42,8 @@ public:
     operator() (ConstBufferSequence const& buffers)
     {
         std::array <std::uint8_t, 6> data;
-        std::size_t const n (boost::asio::buffer_copy (data, buffers));
+        auto const n (boost::asio::buffer_copy (
+            boost::asio::buffer(data), buffers));
         /*
         Protocol messages are framed by a 6 byte header which includes
         a big-endian 4-byte length followed by a big-endian 2-byte type.

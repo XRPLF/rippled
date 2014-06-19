@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{26B7D9AC-1A80-8EF8-6703-D061F1BECB75}</ProjectGuid>
+    <ProjectGuid>{B7F39ECD-473C-484D-BC34-31F8362506A5}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>RippleD</RootNamespace>
     <IgnoreWarnCompileDuplicatedFilename>true</IgnoreWarnCompileDuplicatedFilename>
@@ -373,8 +373,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\URL.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\http\basic_message.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\basic_url.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\client_session.h">
@@ -405,9 +403,16 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\http\impl\joyent_parser.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\http\impl\message_parser.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\http\impl\raw_parser.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\http\message_parser.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\http\method.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\raw_parser.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\http\tests\ParsedURL.cpp">
@@ -3065,6 +3070,8 @@
     <ClInclude Include="..\..\src\ripple\overlay\impl\Tuning.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\overlay\impl\abstract_protocol_handler.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\basic_message.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\overlay\impl\message_name.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>

@@ -412,16 +412,133 @@ sGetLedger (std::weak_ptr<PeerImp> wPeer,
 //------------------------------------------------------------------------------
 
 void
-PeerImp::async_read_some()
+PeerImp::start_read()
 {
+#if RIPPLE_STRUCTURED_OVERLAY
+    std::stringstream ss;
+
+/*
+    ss <<
+        "HTTP/1.0 GET\n\n"
+        "\n\n"
+        ;
+*/
+    //basic_message m;
+    //m.request (beast::http::method_t::http_get, "/peer/leaf");
+    //m.method(beast::
+    ss <<
+        "GET / HTTP/1.0\r\n"
+        "User-Agent: Ripple 0.26.0-rc1\r\n"
+        //"Connection: Upgrade\r\n"
+        //"Upgrade: Ripple/1.1\r\n"
+        "X-Connect-As: Leaf\r\n"
+        "X-Try-IPs: 192.168.0.1:51234,208.239.114.74:51234\r\n"
+        "Content-Length: 2\r\n"
+        "\r\n"
+        "xy"
+        ;
+
+    std::string const s (ss.str());
+    boost::asio::buffer_copy (read_buffer_.prepare(s.size()),
+        boost::asio::buffer(s));
+    read_buffer_.commit(s.size());
+
     m_socket->async_read_some (read_buffer_.prepare (Tuning::readBufferBytes),
-        m_strand.wrap (std::bind (&PeerImp::on_read_some,
+        m_strand.wrap (std::bind (&PeerImp::on_read_detect,
+            shared_from_this(), beast::asio::placeholders::error,
+                beast::asio::placeholders::bytes_transferred)));
+#else
+    m_socket->async_read_some (read_buffer_.prepare (Tuning::readBufferBytes),
+        m_strand.wrap (std::bind (&PeerImp::on_read_protocol,
+            shared_from_this(), beast::asio::placeholders::error,
+                beast::asio::placeholders::bytes_transferred)));
+
+#endif
+}
+
+void
+PeerImp::on_read_detect (error_code ec, std::size_t bytes_transferred)
+{
+    if (m_detaching)
+        return;
+
+    if (ec == boost::asio::error::operation_aborted)
+        return;
+
+    if (ec)
+    {
+        m_journal.info <<
+            "on_read_detect: " << ec.message();
+        detach("on_read_detect");
+        return;
+    }
+
+    read_buffer_.commit (bytes_transferred);
+    peer_protocol_detector detector;
+    auto const is_peer_protocol (detector (read_buffer_.data()));
+    
+    if (is_peer_protocol)
+    {
+        on_read_protocol (error_code(), 0);
+        return;
+    }
+    else if (! is_peer_protocol)
+    {
+        http_message_ = boost::in_place ();
+        http_parser_ = boost::in_place (std::ref(*http_message_), true);
+        on_read_http (error_code(), 0);
+        return;
+    }
+
+    m_socket->async_read_some (read_buffer_.prepare (Tuning::readBufferBytes),
+        m_strand.wrap (std::bind (&PeerImp::on_read_detect,
             shared_from_this(), beast::asio::placeholders::error,
                 beast::asio::placeholders::bytes_transferred)));
 }
 
 void
-PeerImp::on_read_some (error_code ec, std::size_t bytes_transferred)
+PeerImp::on_read_http (error_code ec, std::size_t bytes_transferred)
+{
+    if (m_detaching)
+        return;
+
+    if (ec == boost::asio::error::operation_aborted)
+        return;
+
+    if (! ec)
+    {
+        read_buffer_.commit (bytes_transferred);
+        std::size_t bytes_consumed;
+        std::tie (ec, bytes_consumed) = http_parser_->write (read_buffer_.data());
+        if (! ec)
+        {
+            read_buffer_.consume (bytes_consumed);
+            if (http_parser_->complete())
+            {
+                // TODO Apply headers to connection state.
+                // TODO Send response if this is an incoming connection.
+                on_read_protocol (error_code(), 0);
+                return;
+            }
+        }
+    }
+
+    if (ec)
+    {
+        m_journal.info <<
+            "on_read_some: " << ec.message();
+        detach("on_read_some");
+        return;
+    }
+
+    m_socket->async_read_some (read_buffer_.prepare (Tuning::readBufferBytes),
+        m_strand.wrap (std::bind (&PeerImp::on_read_http,
+            shared_from_this(), beast::asio::placeholders::error,
+                beast::asio::placeholders::bytes_transferred)));
+}
+
+void
+PeerImp::on_read_protocol (error_code ec, std::size_t bytes_transferred)
 {
     if (m_detaching)
         return;
@@ -433,7 +550,7 @@ PeerImp::on_read_some (error_code ec, std::size_t bytes_transferred)
     {
         read_buffer_.commit (bytes_transferred);
         ec = message_stream_.write_one (read_buffer_.data());
-        read_buffer_.consume (bytes_transferred);
+        read_buffer_.consume (read_buffer_.size());
     }
 
     if (ec)
@@ -444,7 +561,10 @@ PeerImp::on_read_some (error_code ec, std::size_t bytes_transferred)
         return;
     }
 
-    async_read_some();
+    m_socket->async_read_some (read_buffer_.prepare (Tuning::readBufferBytes),
+        m_strand.wrap (std::bind (&PeerImp::on_read_protocol,
+            shared_from_this(), beast::asio::placeholders::error,
+                beast::asio::placeholders::bytes_transferred)));
 }
 
 //------------------------------------------------------------------------------

@@ -23,6 +23,7 @@
 #include <ripple/common/MultiSocket.h>
 #include <ripple/nodestore/Database.h>
 #include <ripple/overlay/predicates.h>
+#include <ripple/overlay/impl/basic_message.h>
 #include <ripple/overlay/impl/message_name.h>
 #include <ripple/overlay/impl/message_stream.h>
 #include <ripple/overlay/impl/OverlayImpl.h>
@@ -39,7 +40,8 @@
 
 #include <beast/asio/IPAddressConversion.h>
 #include <beast/asio/placeholders.h>
-    
+#include <beast/http/message_parser.h>
+
 #include <cstdint>
 
 namespace ripple {
@@ -216,6 +218,8 @@ public:
     bool m_was_canceled;
 
     boost::asio::streambuf read_buffer_;
+    boost::optional <basic_message> http_message_;
+    boost::optional <basic_message::parser> http_parser_;
     message_stream message_stream_;
     std::unique_ptr <LoadEvent> load_event_;
 
@@ -314,10 +318,16 @@ public:
     //
 
     void
-    async_read_some();
+    start_read();
 
     void
-    on_read_some (error_code ec, std::size_t bytes_transferred);
+    on_read_detect (error_code ec, std::size_t bytes_transferred);
+
+    void
+    on_read_http (error_code ec, std::size_t bytes_transferred);
+
+    void
+    on_read_protocol (error_code ec, std::size_t bytes_transferred);
 
     //--------------------------------------------------------------------------
     //
@@ -801,7 +811,7 @@ private:
             return;
         }
 
-        async_read_some();
+        start_read();
     }
 
     void handleVerifyTimer (boost::system::error_code const& ec)

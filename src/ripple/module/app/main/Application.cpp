@@ -219,6 +219,17 @@ public:
 
     //--------------------------------------------------------------------------
 
+    static
+    int
+    calculateNumberOfIoServiceThreads()
+    {
+    #if RIPPLE_SINGLE_IO_SERVICE_THREAD
+        return 1;
+    #else
+        return (getConfig ().NODE_SIZE >= 2) ? 2 : 1;
+    #endif
+    }
+
     ApplicationImp (Logs& logs)
         : RootStoppable ("Application")
         , m_logs (logs)
@@ -258,7 +269,7 @@ public:
         // The io_service must be a child of the JobQueue since we call addJob
         // in response to newtwork data from peers and also client requests.
         //
-        , m_mainIoPool (*m_jobQueue, "io", (getConfig ().NODE_SIZE >= 2) ? 2 : 1)
+        , m_mainIoPool (*m_jobQueue, "io", calculateNumberOfIoServiceThreads())
 
         //
         // Anything which calls addJob must be a descendant of the JobQueue

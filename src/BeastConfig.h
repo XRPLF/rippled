@@ -190,26 +190,41 @@
 #endif
 
 /** Config: BEAST_USE_BOOST_FEATURES
-This activates boost specific features and improvements. If this is
-turned on, the include paths for your build environment must be set
-correctly to find the boost headers.
+    This activates boost specific features and improvements. If this is
+    turned on, the include paths for your build environment must be set
+    correctly to find the boost headers.
 */
 #ifndef   BEAST_USE_BOOST_FEATURES
 //#define BEAST_USE_BOOST_FEATURES 1
 #endif
 
 /** Config: RIPPLE_PROPOSE_FEATURES
-This determines whether to add any features to the proposed transaction set.
+    This determines whether to add any features to the proposed transaction set.
 */
 #ifndef RIPPLE_PROPOSE_AMENDMENTS
 #define RIPPLE_PROPOSE_AMENDMENTS 0
 #endif
 
 /** Config: RIPPLE_ENABLE_AUTOBRIDGING
-This determines whether ripple implements offer autobridging via XRP.
+    This determines whether ripple implements offer autobridging via XRP.
 */
 #ifndef RIPPLE_ENABLE_AUTOBRIDGING
 #define RIPPLE_ENABLE_AUTOBRIDGING 0
+#endif
+
+/** Config: RIPPLE_SINGLE_IO_SERVICE_THREAD
+    When set, restricts the number of threads calling io_service::run to one.
+    This is useful when debugging.
+*/
+#ifndef RIPPLE_SINGLE_IO_SERVICE_THREAD
+#define RIPPLE_SINGLE_IO_SERVICE_THREAD 0
+#endif
+
+/** Config: RIPPLE_STRUCTURED_OVERLAY
+    Enables Structured Overlay support (unfinished)
+*/
+#ifndef RIPPLE_STRUCTURED_OVERLAY
+#define RIPPLE_STRUCTURED_OVERLAY 0
 #endif
 
 #endif
