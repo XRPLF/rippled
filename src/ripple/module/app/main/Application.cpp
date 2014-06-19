@@ -19,9 +19,9 @@
 
 #include <beast/asio/io_latency_probe.h>
 #include <beast/module/core/thread/DeadlineTimer.h>
+#include <ripple/basics/log/Log.h>
 #include <ripple/basics/utility/Sustain.h>
 #include <ripple/common/seconds_clock.h>
-#include <ripple/module/basics/log/Log.h>
 #include <ripple/module/app/main/Tuning.h>
 #include <ripple/module/app/misc/ProofOfWorkFactory.h>
 #include <ripple/module/rpc/Manager.h>
@@ -1440,7 +1440,9 @@ static void addTxnSeqField ()
         }
 
         if ((++i % 1000) == 0)
+        {
             WriteLog (lsINFO, Application) << i << " transactions read";
+        }
     }
 
     WriteLog (lsINFO, Application) << "All " << i << " transactions read";
@@ -1460,7 +1462,9 @@ static void addTxnSeqField ()
         db->executeSQL (boost::str (fmt % t.second % to_string (t.first)));
 
         if ((++i % 1000) == 0)
+        {
             WriteLog (lsINFO, Application) << i << " transactions updated";
+        }
     }
 
     WriteLog (lsINFO, Application) << "Building new index";
