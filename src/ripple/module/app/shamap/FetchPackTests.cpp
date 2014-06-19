@@ -75,18 +75,21 @@ public:
     {
         using namespace RadixMap;
 
-        FullBelowCache fullBelowCache ("test.full_below",
-            get_seconds_clock ());
+        beast::manual_clock <std::chrono::seconds> clock;  // manual advance clock
+        beast::Journal const j;                            // debug journal
+
+        FullBelowCache fullBelowCache ("test.full_below", clock);
+        TreeNodeCache treeNodeCache ("test.tree_node_cache", 65536, 60, clock, j);
 
         std::shared_ptr <Table> t1 (std::make_shared <Table> (
-            smtFREE, fullBelowCache));
-        
+            smtFREE, fullBelowCache, treeNodeCache));
+
         pass ();
 
 //         beast::Random r;
 //         add_random_items (tableItems, *t1, r);
 //         std::shared_ptr <Table> t2 (t1->snapShot (true));
-//         
+//
 //         add_random_items (tableItemsExtra, *t1, r);
 //         add_random_items (tableItemsExtra, *t2, r);
 
@@ -102,16 +105,16 @@ public:
 //         try
 //         {
 //             TestFilter filter (map, beast::Journal());
-// 
+//
 //             t3 = std::make_shared <Table> (smtFREE, t2->getHash (),
 //                 fullBelowCache);
-// 
+//
 //             expect (t3->fetchRoot (t2->getHash (), &filter), "unable to get root");
-// 
+//
 //             // everything should be in the pack, no hashes should be needed
 //             std::vector <uint256> hashes = t3->getNeededHashes(1, &filter);
 //             expect (hashes.empty(), "missing hashes");
-// 
+//
 //             expect (t3->getHash () == t2->getHash (), "root hashes do not match");
 //             expect (t3->deepCompare (*t2), "failed compare");
 //         }

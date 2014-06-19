@@ -41,9 +41,11 @@ Ledger::Ledger (const RippleAddress& masterID, std::uint64_t startAmount)
     , mAccepted (false)
     , mImmutable (false)
     , mTransactionMap  (std::make_shared <SHAMap> (smtTRANSACTION,
-        std::ref (getApp().getFullBelowCache())))
+        getApp().getFullBelowCache(),
+        getApp().getTreeNodeCache()))
     , mAccountStateMap (std::make_shared <SHAMap> (smtSTATE,
-        std::ref (getApp().getFullBelowCache())))
+        getApp().getFullBelowCache(),
+        getApp().getTreeNodeCache()))
 {
     // special case: put coins in root account
     auto startAccount = std::make_shared<AccountState> (masterID);
@@ -91,9 +93,12 @@ Ledger::Ledger (uint256 const& parentHash,
     , mAccepted (false)
     , mImmutable (true)
     , mTransactionMap (std::make_shared <SHAMap> (
-        smtTRANSACTION, transHash, std::ref (getApp().getFullBelowCache())))
+        smtTRANSACTION, transHash,
+        getApp().getFullBelowCache(),
+        getApp().getTreeNodeCache()))
     , mAccountStateMap (std::make_shared <SHAMap> (smtSTATE, accountHash,
-        std::ref (getApp().getFullBelowCache())))
+        getApp().getFullBelowCache(),
+        getApp().getTreeNodeCache()))
 {
     updateHash ();
     loaded = true;
@@ -154,7 +159,8 @@ Ledger::Ledger (bool /* dummy */,
     , mAccepted (false)
     , mImmutable (false)
     , mTransactionMap (std::make_shared <SHAMap> (smtTRANSACTION,
-        std::ref (getApp().getFullBelowCache())))
+        getApp().getFullBelowCache(),
+        getApp().getTreeNodeCache()))
     , mAccountStateMap (prevLedger.mAccountStateMap->snapShot (true))
 {
     prevLedger.updateHash ();
@@ -222,9 +228,11 @@ Ledger::Ledger (std::uint32_t ledgerSeq, std::uint32_t closeTime)
       mAccepted (false),
       mImmutable (false),
       mTransactionMap (std::make_shared <SHAMap> (
-          smtTRANSACTION, std::ref (getApp().getFullBelowCache()))),
+          smtTRANSACTION, getApp().getFullBelowCache(),
+          getApp().getTreeNodeCache())),
       mAccountStateMap (std::make_shared <SHAMap> (
-          smtSTATE, std::ref (getApp().getFullBelowCache())))
+          smtSTATE, getApp().getFullBelowCache(),
+          getApp().getTreeNodeCache()))
 {
     initializeFees ();
 }
@@ -304,10 +312,13 @@ void Ledger::setRaw (Serializer& s, bool hasPrefix)
 
     if (mValidHash)
     {
+        Application& app = getApp();
         mTransactionMap = std::make_shared<SHAMap> (smtTRANSACTION, mTransHash,
-            std::ref (getApp().getFullBelowCache()));
+            app.getFullBelowCache(),
+            app.getTreeNodeCache());
         mAccountStateMap = std::make_shared<SHAMap> (smtSTATE, mAccountHash,
-            std::ref (getApp().getFullBelowCache()));
+            app.getFullBelowCache(),
+            app.getTreeNodeCache());
     }
 }
 
@@ -476,13 +487,13 @@ SerializedTransaction::pointer Ledger::getSTransaction (
     SerializerIterator sit (item->peekSerializer ());
 
     if (type == SHAMapTreeNode::tnTRANSACTION_NM)
-        return std::make_shared<SerializedTransaction> (std::ref (sit));
+        return std::make_shared<SerializedTransaction> (sit);
 
     if (type == SHAMapTreeNode::tnTRANSACTION_MD)
     {
         Serializer sTxn (sit.getVL ());
         SerializerIterator tSit (sTxn);
-        return std::make_shared<SerializedTransaction> (std::ref (tSit));
+        return std::make_shared<SerializedTransaction> (tSit);
     }
 
     return SerializedTransaction::pointer ();
@@ -497,7 +508,7 @@ SerializedTransaction::pointer Ledger::getSMTransaction (
     if (type == SHAMapTreeNode::tnTRANSACTION_NM)
     {
         txMeta.reset ();
-        return std::make_shared<SerializedTransaction> (std::ref (sit));
+        return std::make_shared<SerializedTransaction> (sit);
     }
     else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
     {

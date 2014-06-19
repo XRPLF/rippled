@@ -40,36 +40,37 @@ Json::Value doGetCounts (RPC::Context& context)
         ret [it.first] = it.second;
     }
 
-    int dbKB = getApp().getLedgerDB ()->getDB ()->getKBUsedAll ();
+    Application& app = getApp();
+    int dbKB = app.getLedgerDB ()->getDB ()->getKBUsedAll ();
 
     if (dbKB > 0)
         ret["dbKBTotal"] = dbKB;
 
-    dbKB = getApp().getLedgerDB ()->getDB ()->getKBUsedDB ();
+    dbKB = app.getLedgerDB ()->getDB ()->getKBUsedDB ();
 
     if (dbKB > 0)
         ret["dbKBLedger"] = dbKB;
 
-    dbKB = getApp().getTxnDB ()->getDB ()->getKBUsedDB ();
+    dbKB = app.getTxnDB ()->getDB ()->getKBUsedDB ();
 
     if (dbKB > 0)
         ret["dbKBTransaction"] = dbKB;
 
     {
-        std::size_t c = getApp().getOPs().getLocalTxCount ();
+        std::size_t c = app.getOPs().getLocalTxCount ();
         if (c > 0)
             ret["local_txs"] = static_cast<Json::UInt> (c);
     }
 
-    ret["write_load"] = getApp().getNodeStore ().getWriteLoad ();
+    ret["write_load"] = app.getNodeStore ().getWriteLoad ();
 
-    ret["SLE_hit_rate"] = getApp().getSLECache ().getHitRate ();
-    ret["node_hit_rate"] = getApp().getNodeStore ().getCacheHitRate ();
-    ret["ledger_hit_rate"] = getApp().getLedgerMaster ().getCacheHitRate ();
+    ret["SLE_hit_rate"] = app.getSLECache ().getHitRate ();
+    ret["node_hit_rate"] = app.getNodeStore ().getCacheHitRate ();
+    ret["ledger_hit_rate"] = app.getLedgerMaster ().getCacheHitRate ();
     ret["AL_hit_rate"] = AcceptedLedger::getCacheHitRate ();
 
-    ret["fullbelow_size"] = int(getApp().getFullBelowCache().size());
-    ret["treenode_size"] = SHAMap::getTreeNodeSize ();
+    ret["fullbelow_size"] = static_cast<int>(app.getFullBelowCache().size());
+    ret["treenode_size"] = app.getTreeNodeCache().getCacheSize();
 
     std::string uptime;
     int s = UptimeTimer::getInstance ().getElapsedSeconds ();

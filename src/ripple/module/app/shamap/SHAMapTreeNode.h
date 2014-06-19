@@ -196,6 +196,8 @@ private:
     bool updateHash ();
 };
 
+using TreeNodeCache = TaggedCache <uint256, SHAMapTreeNode>;
+
 } // ripple
 
 #endif

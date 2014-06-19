@@ -270,13 +270,16 @@ public:
             {
                 if (hash.isZero ())
                 {
+                    Application& app = getApp();
                     SHAMap::pointer empty = std::make_shared<SHAMap> (
-                        smtTRANSACTION, std::ref (getApp().getFullBelowCache()));
+                        smtTRANSACTION,
+                        app.getFullBelowCache(),
+                        app.getTreeNodeCache());
                     mapComplete (hash, empty, false);
                     return empty;
                 }
 
-                acquiring = std::make_shared<TransactionAcquire> (hash, std::ref (m_clock));
+                acquiring = std::make_shared<TransactionAcquire> (hash, m_clock);
                 startAcquiring (acquiring);
             }
         }
@@ -870,7 +873,7 @@ private:
 
             Ledger::pointer newLCL
                 = std::make_shared<Ledger> (false
-                , std::ref (*mPreviousLedger));
+                , *mPreviousLedger);
 
             // Set up to write SHAMap changes to our database,
             //   perform updates, extract changes
@@ -963,7 +966,7 @@ private:
             getApp().getLedgerMaster().consensusBuilt (newLCL);
 
             Ledger::pointer newOL = std::make_shared<Ledger>
-                (true, std::ref (*newLCL));
+                (true, *newLCL);
             LedgerMaster::ScopedLockType sl
                 (getApp().getLedgerMaster ().peekMutex ());
 
@@ -981,8 +984,7 @@ private:
                             << " not get in";
                         SerializerIterator sit (it.second->peekTransaction ());
                         SerializedTransaction::pointer txn
-                            = std::make_shared<SerializedTransaction>
-                            (std::ref (sit));
+                            = std::make_shared<SerializedTransaction>(sit);
 
                         if (applyTransaction (engine, txn, newOL, true, false))
                         {
@@ -1263,8 +1265,7 @@ private:
 #endif
                     SerializerIterator sit (item->peekSerializer ());
                     SerializedTransaction::pointer txn
-                        = std::make_shared<SerializedTransaction>
-                        (std::ref (sit));
+                        = std::make_shared<SerializedTransaction>(sit);
 
                     if (applyTransaction (engine, txn,
                         applyLedger, openLgr, true) == resultRetry)
