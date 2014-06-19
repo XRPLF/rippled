@@ -299,6 +299,7 @@ class LinkSwitchConverter(SwitchConverter):
             '/DEBUG'                : ['GenerateDebugInformation'],
             '/DYNAMICBASE'          : ['RandomizedBaseAddress'],
             '/NOLOGO'               : ['SuppressStartupBanner'],
+            '/nologo'               : ['SuppressStartupBanner'],
         }
         table = {
             '/ERRORREPORT:NONE'     : ['ErrorReporting', 'NoErrorReport'],
