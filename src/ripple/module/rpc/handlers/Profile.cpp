@@ -31,10 +31,10 @@ Json::Value doProfile (RPC::Context& context)
     int             iArgs   = context.params_.size();
     RippleAddress   naSeedA;
     RippleAddress   naAccountA;
-    uint160         uCurrencyOfferA;
+    Currency        uCurrencyOfferA;
     RippleAddress   naSeedB;
     RippleAddress   naAccountB;
-    uint160         uCurrencyOfferB;
+    Currency        uCurrencyOfferB;
     uint32          iCount  = 100;
     bool            bSubmit = false;
 
@@ -48,11 +48,11 @@ Json::Value doProfile (RPC::Context& context)
 
     naAccountA.setAccountID(context.params_[2u].asString());                              // <account_a>
 
-    if (!STAmount::currencyFromString(uCurrencyOfferA, context.params_[3u].asString()))   // <currency_offer_a>
+    if (!to_currency(uCurrencyOfferA, context.params_[3u].asString()))   // <currency_offer_a>
         return rpcError(rpcINVALID_PARAMS);
 
     naAccountB.setAccountID(context.params_[4u].asString());                              // <account_b>
-    if (!STAmount::currencyFromString(uCurrencyOfferB, context.params_[5u].asString()))   // <currency_offer_b>
+    if (!to_currency(uCurrencyOfferB, context.params_[5u].asString()))   // <currency_offer_b>
         return rpcError(rpcINVALID_PARAMS);
 
     iCount  = lexicalCast <uint32>(context.params_[6u].asString());

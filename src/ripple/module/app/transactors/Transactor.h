@@ -37,7 +37,7 @@ protected:
     TransactionEngine*              mEngine;
     TransactionEngineParams         mParams;
 
-    uint160                         mTxnAccountID;
+    Account                         mTxnAccountID;
     STAmount                        mFeeDue;
     STAmount                        mPriorBalance;  // Balance before fees.
     STAmount                        mSourceBalance; // Balance after fees.
@@ -47,7 +47,7 @@ protected:
     RippleAddress                   mSigningPubKey;
 
     beast::Journal m_journal;
-    
+
     virtual TER preCheck ();
     virtual TER checkSeq ();
     virtual TER payFee ();
@@ -61,7 +61,7 @@ protected:
     virtual TER doApply () = 0;
 
     Transactor (
-        const SerializedTransaction& txn, 
+        const SerializedTransaction& txn,
         TransactionEngineParams params,
         TransactionEngine* engine,
         beast::Journal journal = beast::Journal ());

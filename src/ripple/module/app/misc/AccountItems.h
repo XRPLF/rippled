@@ -30,8 +30,7 @@ public:
 
     typedef std::vector <AccountItem::pointer> Container;
 
-    // VFALCO TODO Create a typedef uint160 AccountID and replace
-    AccountItems (uint160 const& accountID,
+    AccountItems (Account const& accountID,
                   Ledger::ref ledger,
                   AccountItem::pointer ofType);
 
@@ -47,7 +46,7 @@ public:
     Json::Value getJson (int);
 
 private:
-    void fillItems (const uint160& accountID, Ledger::ref ledger);
+    void fillItems (Account const& accountID, Ledger::ref ledger);
 
 private:
     // VFALCO TODO This looks like its used as an exemplar, rename appropriately

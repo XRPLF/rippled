@@ -20,6 +20,7 @@
 #include <tuple>
 #include <boost/log/trivial.hpp>
 
+#include <ripple/types/api/UintTypes.h>
 #include <ripple/module/app/paths/Calculators.h>
 
 namespace ripple {
@@ -43,14 +44,18 @@ const std::shared_ptr<InfoSub>& subscriber, int id, PathRequests& owner,
     ptCreated = boost::posix_time::microsec_clock::universal_time ();
 }
 
-static std::string const get_milli_diff (boost::posix_time::ptime const& after, boost::posix_time::ptime const& before)
+static std::string const get_milli_diff (
+    boost::posix_time::ptime const& after, boost::posix_time::ptime
+    const& before)
 {
-    return beast::lexicalCastThrow <std::string> (static_cast <unsigned> ((after - before).total_milliseconds()));
+    return beast::lexicalCastThrow <std::string> (
+        static_cast <unsigned> ((after - before).total_milliseconds()));
 }
 
 static std::string const get_milli_diff (boost::posix_time::ptime const& before)
 {
-    return get_milli_diff(boost::posix_time::microsec_clock::universal_time(), before);
+    return get_milli_diff(
+        boost::posix_time::microsec_clock::universal_time(), before);
 }
 
 PathRequest::~PathRequest()
@@ -165,11 +170,11 @@ bool PathRequest::isValid (RippleLineCache::ref crCache)
                 bool const disallowXRP (
                     asDst->peekSLE ().getFlags() & lsfDisallowXRP);
 
-                boost::unordered_set<uint160> usDestCurrID =
+                CurrencySet usDestCurrID =
                     usAccountDestCurrencies (raDstAccount, crCache, !disallowXRP);
 
                 for (auto const& currency : usDestCurrID)
-                    jvDestCur.append (STAmount::createHumanCurrency (currency));
+                    jvDestCur.append (to_string (currency));
 
                 jvStatus["destination_tag"] = (asDst->peekSLE ().getFlags () & lsfRequireDestTag) != 0;
             }
@@ -256,7 +261,7 @@ int PathRequest::parseJson (const Json::Value& jvParams, bool complete)
     {
         if (!saDstAmount.bSetJson (jvParams["destination_amount"]) ||
                 (saDstAmount.getCurrency ().isZero () && saDstAmount.getIssuer ().isNonZero ()) ||
-                (saDstAmount.getCurrency () == CURRENCY_BAD) ||
+                (saDstAmount.getCurrency () == badCurrency()) ||
                 saDstAmount <= zero)
         {
             jvStatus = rpcError (rpcDST_AMT_MALFORMED);
@@ -284,15 +289,18 @@ int PathRequest::parseJson (const Json::Value& jvParams, bool complete)
         for (unsigned i = 0; i < jvSrcCur.size (); ++i)
         {
             const Json::Value& jvCur = jvSrcCur[i];
-            uint160 uCur, uIss;
+            Currency uCur;
+            Account uIss;
 
-            if (!jvCur.isObject() || !jvCur.isMember ("currency") || !STAmount::currencyFromString (uCur, jvCur["currency"].asString ()))
+            if (!jvCur.isObject() || !jvCur.isMember ("currency") ||
+                !to_currency (uCur, jvCur["currency"].asString ()))
             {
                 jvStatus = rpcError (rpcSRC_CUR_MALFORMED);
                 return PFR_PJ_INVALID;
             }
 
-            if (jvCur.isMember ("issuer") && !STAmount::issuerFromString (uIss, jvCur["issuer"].asString ()))
+            if (jvCur.isMember ("issuer") &&
+                !to_issuer (uIss, jvCur["issuer"].asString ()))
             {
                 jvStatus = rpcError (rpcSRC_ISR_MALFORMED);
             }
@@ -303,7 +311,7 @@ int PathRequest::parseJson (const Json::Value& jvParams, bool complete)
                 return PFR_PJ_INVALID;
             }
 
-            sciSourceCurrencies.insert (currIssuer_t (uCur, uIss));
+            sciSourceCurrencies.insert ({uCur, uIss});
         }
     }
 
@@ -341,19 +349,19 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
         return jvStatus;
     jvStatus = Json::objectValue;
 
-    std::set<currIssuer_t> sourceCurrencies (sciSourceCurrencies);
+    auto sourceCurrencies = sciSourceCurrencies;
 
     if (sourceCurrencies.empty ())
     {
-        boost::unordered_set<uint160> usCurrencies =
-            usAccountSourceCurrencies (raSrcAccount, cache, true);
+        auto usCurrencies =
+                usAccountSourceCurrencies (raSrcAccount, cache, true);
         bool sameAccount = raSrcAccount == raDstAccount;
-        BOOST_FOREACH (const uint160 & c, usCurrencies)
+        for (auto const& c: usCurrencies)
         {
             if (!sameAccount || (c != saDstAmount.getCurrency ()))
             {
                 if (c.isZero ())
-                    sourceCurrencies.insert (std::make_pair (c, XRP_ACCOUNT));
+                    sourceCurrencies.insert (std::make_pair (c, xrpIssuer()));
                 else
                     sourceCurrencies.insert (std::make_pair (c, raSrcAccount.getAccountID ()));
             }
@@ -387,7 +395,8 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
     }
     else if (bLastSuccess)
     { // decrement, if possible
-        if ((iLevel > getConfig().PATH_SEARCH) || (loaded && (iLevel > getConfig().PATH_SEARCH_FAST)))
+        if (iLevel > getConfig().PATH_SEARCH ||
+            (loaded && (iLevel > getConfig().PATH_SEARCH_FAST)))
             --iLevel;
     }
     else
@@ -402,18 +411,23 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
 
     bool found = false;
 
-    BOOST_FOREACH (const currIssuer_t & currIssuer, sourceCurrencies)
+    for (auto const& currIssuer: sourceCurrencies)
     {
         {
             STAmount test (currIssuer.first, currIssuer.second, 1);
             if (m_journal.debug)
-                m_journal.debug << iIdentifier << " Trying to find paths: " << test.getFullText ();
+            {
+                m_journal.debug
+                        << iIdentifier
+                        << " Trying to find paths: " << test.getFullText ();
+            }
         }
         bool valid;
         STPathSet& spsPaths = mContext[currIssuer];
         Pathfinder pf (cache, raSrcAccount, raDstAccount,
                        currIssuer.first, currIssuer.second, saDstAmount, valid);
-        CondLog (!valid, lsDEBUG, PathRequest) << iIdentifier << " PF request not valid";
+        CondLog (!valid, lsDEBUG, PathRequest)
+                << iIdentifier << " PF request not valid";
 
         STPath extraPath;
         if (valid && pf.findPaths (iLevel, 4, spsPaths, extraPath))
@@ -422,28 +436,34 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
             PathState::List pathStateList;
             STAmount saMaxAmountAct;
             STAmount saDstAmountAct;
-            STAmount saMaxAmount (currIssuer.first,
-                    currIssuer.second.isNonZero () ? currIssuer.second :
-                                  (currIssuer.first.isZero () ? ACCOUNT_XRP :
-                                   raSrcAccount.getAccountID ()), 1);
+            STAmount saMaxAmount (
+                currIssuer.first,
+                currIssuer.second.isNonZero () ? Account(currIssuer.second) :
+                (currIssuer.first.isZero () ? xrpIssuer() :
+                 raSrcAccount.getAccountID ()), 1);
+
             saMaxAmount.negate ();
             m_journal.debug << iIdentifier << " Paths found, calling rippleCalc";
-            TER resultCode = path::rippleCalculate (lesSandbox, saMaxAmountAct, saDstAmountAct,
-                                                    pathStateList, saMaxAmount, saDstAmount,
-                                                    raDstAccount.getAccountID (), raSrcAccount.getAccountID (),
-                                                    spsPaths, false, false, false, true);
-
+            TER resultCode = path::rippleCalculate (
+                lesSandbox, saMaxAmountAct, saDstAmountAct,
+                pathStateList, saMaxAmount, saDstAmount,
+                raDstAccount.getAccountID (), raSrcAccount.getAccountID (),
+                spsPaths, false, false, false, true);
 
             if ((extraPath.size() > 0) && ((resultCode == terNO_LINE) || (resultCode == tecPATH_PARTIAL)))
             {
-                m_journal.debug << iIdentifier << " Trying with an extra path element";
+                m_journal.debug
+                        << iIdentifier << " Trying with an extra path element";
                 spsPaths.addPath(extraPath);
                 pathStateList.clear ();
-                resultCode = path::rippleCalculate (lesSandbox, saMaxAmountAct, saDstAmountAct,
-                                                    pathStateList, saMaxAmount, saDstAmount,
-                                                    raDstAccount.getAccountID (), raSrcAccount.getAccountID (),
-                                                    spsPaths, false, false, false, true);
-                m_journal.debug << iIdentifier << " Extra path element gives " << transHuman (resultCode);
+                resultCode = path::rippleCalculate (
+                    lesSandbox, saMaxAmountAct, saDstAmountAct,
+                    pathStateList, saMaxAmount, saDstAmount,
+                    raDstAccount.getAccountID (), raSrcAccount.getAccountID (),
+                    spsPaths, false, false, false, true);
+                m_journal.debug
+                        << iIdentifier << " Extra path element gives "
+                        << transHuman (resultCode);
             }
 
             if (resultCode == tesSUCCESS)
@@ -456,7 +476,8 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
             }
             else
             {
-                m_journal.debug << iIdentifier << " rippleCalc returns " << transHuman (resultCode);
+                m_journal.debug << iIdentifier << " rippleCalc returns "
+                                << transHuman (resultCode);
             }
         }
         else

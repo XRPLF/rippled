@@ -113,7 +113,7 @@ std::vector<RippleAddress> TransactionMetaSet::getAffectedAccounts ()
 
                         if (lim != nullptr)
                         {
-                            uint160 issuer = lim->getIssuer ();
+                            auto issuer = lim->getIssuer ();
 
                             if (issuer.isNonZero ())
                             {

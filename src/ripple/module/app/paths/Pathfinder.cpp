@@ -28,7 +28,8 @@ we just need to find a succession of the highest quality paths there until we fi
 
 Don't do branching within each path
 
-We have a list of paths we are working on but how do we compare the ones that are terminating in a different currency?
+We have a list of paths we are working on but how do we compare the ones that
+are terminating in a different currency?
 
 Loops
 
@@ -81,8 +82,12 @@ static bool bQualityCmp (const path_LQ_t& a, const path_LQ_t& b)
     return std::get<3> (a) > std::get<3> (b);
 }
 
-typedef std::pair<int, uint160> candidate_t;
-static bool candCmp (std::uint32_t seq, const candidate_t& first, const candidate_t& second)
+typedef std::pair<int, Account> AccountCandidate;
+typedef std::vector<AccountCandidate> AccountCandidates;
+
+static bool candCmp (
+    std::uint32_t seq,
+    const AccountCandidate& first, const AccountCandidate& second)
 {
     if (first.first < second.first)
         return false;
@@ -93,9 +98,14 @@ static bool candCmp (std::uint32_t seq, const candidate_t& first, const candidat
     return (first.first ^ seq) < (second.first ^ seq);
 }
 
-Pathfinder::Pathfinder (RippleLineCache::ref cache,
-                        const RippleAddress& uSrcAccountID, const RippleAddress& uDstAccountID,
-                        const uint160& uSrcCurrencyID, const uint160& uSrcIssuerID, const STAmount& saDstAmount, bool& bValid)
+Pathfinder::Pathfinder (
+    RippleLineCache::ref cache,
+    const RippleAddress& uSrcAccountID,
+    const RippleAddress& uDstAccountID,
+    Currency const& uSrcCurrencyID,
+    Account const& uSrcIssuerID,
+    const STAmount& saDstAmount,
+    bool& bValid)
     :   mSrcAccountID (uSrcAccountID.getAccountID ()),
         mDstAccountID (uDstAccountID.getAccountID ()),
         mDstAmount (saDstAmount),
@@ -105,7 +115,8 @@ Pathfinder::Pathfinder (RippleLineCache::ref cache,
         mLedger (cache->getLedger ()), mRLCache (cache)
 {
 
-    if ((mSrcAccountID == mDstAccountID && mSrcCurrencyID == mDstAmount.getCurrency ()) || mDstAmount == zero)
+    if ((mSrcAccountID == mDstAccountID &&
+         mSrcCurrencyID == mDstAmount.getCurrency ()) || mDstAmount == zero)
     {
         // no need to send to same account with same currency, must send non-zero
         bValid = false;
@@ -115,26 +126,37 @@ Pathfinder::Pathfinder (RippleLineCache::ref cache,
 
     bValid = true;
 
-    m_loadEvent = getApp().getJobQueue ().getLoadEvent (jtPATH_FIND, "FindPath");
+    m_loadEvent = getApp().getJobQueue ().getLoadEvent (
+        jtPATH_FIND, "FindPath");
 
-    bool bIssuer = mSrcCurrencyID.isNonZero() && mSrcIssuerID.isNonZero() && (mSrcIssuerID != mSrcAccountID);
-    mSource = STPathElement(                       // Where does an empty path start?
-        bIssuer ? mSrcIssuerID : mSrcAccountID,    // On the source account or issuer account
-        mSrcCurrencyID,                            // In the source currency
-        mSrcCurrencyID.isZero() ? uint160() : (bIssuer ? mSrcIssuerID : mSrcAccountID));
-
+    bool bIssuer = mSrcCurrencyID.isNonZero() &&
+            mSrcIssuerID.isNonZero() &&
+            (mSrcIssuerID != mSrcAccountID);
+    mSource = STPathElement(
+        // Where does an empty path start?
+        bIssuer ? mSrcIssuerID : mSrcAccountID,
+        // On the source account or issuer account
+        mSrcCurrencyID,
+        // In the source currency
+        mSrcCurrencyID.isZero() ? Account() :
+        (bIssuer ? mSrcIssuerID : mSrcAccountID));
 }
 
-bool Pathfinder::findPaths (int iLevel, const unsigned int iMaxPaths, STPathSet& pathsOut, STPath& extraPath)
-{ // pathsOut contains only non-default paths without source or destiation
-// On input, pathsOut contains any paths you want to ensure are included if still good
+bool Pathfinder::findPaths (
+    int iLevel, const unsigned int iMaxPaths,
+    STPathSet& pathsOut, STPath& extraPath)
+{
+    // pathsOut contains only non-default paths without source or
+    // destination. On input, pathsOut contains any paths you want to ensure are
+    // included if still good.
 
-    WriteLog (lsTRACE, Pathfinder) << "findPaths>"
-        " mSrcAccountID=" << RippleAddress::createHumanAccountID (mSrcAccountID) <<
-        " mDstAccountID=" << RippleAddress::createHumanAccountID (mDstAccountID) <<
-        " mDstAmount=" << mDstAmount.getFullText () <<
-        " mSrcCurrencyID=" << STAmount::createHumanCurrency (mSrcCurrencyID) <<
-        " mSrcIssuerID=" << RippleAddress::createHumanAccountID (mSrcIssuerID);
+    WriteLog (lsTRACE, Pathfinder)
+            << "findPaths>"
+            << " mSrcAccountID=" << mSrcAccountID
+            << " mDstAccountID=" << mDstAccountID
+            << " mDstAmount=" << mDstAmount.getFullText ()
+            << " mSrcCurrencyID=" << mSrcCurrencyID
+            << " mSrcIssuerID=" << mSrcIssuerID;
 
     if (!mLedger)
     {
@@ -146,11 +168,11 @@ bool Pathfinder::findPaths (int iLevel, const unsigned int iMaxPaths, STPathSet&
     bool bSrcXrp       = mSrcCurrencyID.isZero();
     bool bDstXrp       = mDstAmount.getCurrency().isZero();
 
-    SLE::pointer sleSrc = mLedger->getSLEi(Ledger::getAccountRootIndex(mSrcAccountID));
+    auto sleSrc = mLedger->getSLEi(Ledger::getAccountRootIndex(mSrcAccountID));
     if (!sleSrc)
         return false;
 
-    SLE::pointer sleDest = mLedger->getSLEi(Ledger::getAccountRootIndex(mDstAccountID));
+    auto sleDest = mLedger->getSLEi(Ledger::getAccountRootIndex(mDstAccountID));
     if (!sleDest && (!bDstXrp || (mDstAmount < mLedger->getReserve(0))))
         return false;
 
@@ -199,7 +221,8 @@ bool Pathfinder::findPaths (int iLevel, const unsigned int iMaxPaths, STPathSet&
        }
     }
 
-    WriteLog (lsDEBUG, Pathfinder) << mCompletePaths.size() << " complete paths found";
+    WriteLog (lsDEBUG, Pathfinder)
+            << mCompletePaths.size() << " complete paths found";
 
     BOOST_FOREACH(const STPath& path, pathsOut)
     { // make sure no paths were lost
@@ -226,7 +249,9 @@ bool Pathfinder::findPaths (int iLevel, const unsigned int iMaxPaths, STPathSet&
     else
         pathsOut = mCompletePaths;
 
-    return true; // Even if we find no paths, default paths may work, and we don't check them currently
+    // Even if we find no paths, default paths may work, and we don't check them
+    // currently.
+    return true;
 }
 
 STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
@@ -260,12 +285,14 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
 
         if (tesSUCCESS == result)
         {
-            WriteLog (lsDEBUG, Pathfinder) << "Default path contributes: " << saDstAmountAct;
+            WriteLog (lsDEBUG, Pathfinder)
+                    << "Default path contributes: " << saDstAmountAct;
             remaining -= saDstAmountAct;
         }
         else
         {
-            WriteLog (lsDEBUG, Pathfinder) << "Default path fails: " << transToken (result);
+            WriteLog (lsDEBUG, Pathfinder)
+                    << "Default path fails: " << transToken (result);
         }
     }
     catch (...)
@@ -276,7 +303,8 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
     std::vector<path_LQ_t> vMap;
 
     // Ignore paths that move only very small amounts
-    STAmount saMinDstAmount = STAmount::divide(mDstAmount, STAmount(iMaxPaths + 2), mDstAmount);
+    auto saMinDstAmount = STAmount::divide(
+        mDstAmount, STAmount(iMaxPaths + 2), mDstAmount);
 
     // Build map of quality to entry.
     for (int i = mCompletePaths.size (); i--;)
@@ -296,24 +324,24 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
             LedgerEntrySet lesSandbox (mLedger, tapNONE);
 
             resultCode   = path::rippleCalculate (
-                              lesSandbox,
-                              saMaxAmountAct,     // --> computed input
-                              saDstAmountAct,     // --> computed output
-                              pathStateList,
-                              mSrcAmount,         // --> amount to send max.
-                              mDstAmount,         // --> amount to deliver.
-                              mDstAccountID,
-                              mSrcAccountID,
-                              spsPaths,
-                              true,               // --> bPartialPayment: Allow, it might contribute.
-                              false,              // --> bLimitQuality: Assume normal transaction.
-                              true,               // --> bNoRippleDirect: Providing the only path.
-                              true);              // --> bStandAlone: Don't need to delete unfundeds.
+                lesSandbox,
+                saMaxAmountAct,     // --> computed input
+                saDstAmountAct,     // --> computed output
+                pathStateList,
+                mSrcAmount,         // --> amount to send max.
+                mDstAmount,         // --> amount to deliver.
+                mDstAccountID,
+                mSrcAccountID,
+                spsPaths,
+                true,      // --> bPartialPayment: Allow, it might contribute.
+                false,     // --> bLimitQuality: Assume normal transaction.
+                true,      // --> bNoRippleDirect: Providing the only path.
+                true);     // --> bStandAlone: Don't need to delete unfundeds.
         }
         catch (const std::exception& e)
         {
-            WriteLog (lsINFO, Pathfinder) << "findPaths: Caught throw: " << e.what ();
-
+            WriteLog (lsINFO, Pathfinder)
+                    << "findPaths: Caught throw: " << e.what ();
             resultCode   = tefEXCEPTION;
         }
 
@@ -347,22 +375,25 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
 
     if (vMap.size())
     {
-        std::sort (vMap.begin (), vMap.end (), bQualityCmp); // Lower is better and should be first.
+        // Lower is better and should be first.
+        std::sort (vMap.begin (), vMap.end (), bQualityCmp);
 
 
         for (int i = 0, iPathsLeft = iMaxPaths;
-            ((iPathsLeft > 0) || (extraPath.size() == 0)) && (i < vMap.size ()); ++i)
+             (iPathsLeft > 0 || extraPath.empty()) && i < vMap.size (); ++i)
         {
             path_LQ_t& lqt = vMap[i];
 
-            if ((iPathsLeft > 1) || ((iPathsLeft > 0) && (std::get<2> (lqt) >= remaining)))
+            if (iPathsLeft > 1 ||
+                (iPathsLeft > 0 && std::get<2> (lqt) >= remaining))
             {
                 // last path must fill
                 --iPathsLeft;
                 remaining -= std::get<2> (lqt);
                 spsDst.addPath (mCompletePaths[std::get<3> (lqt)]);
             }
-            else if ((iPathsLeft == 0) && (std::get<2>(lqt) >= mDstAmount) && (extraPath.size() == 0))
+            else if (iPathsLeft == 0 && std::get<2>(lqt) >= mDstAmount &&
+                     extraPath.empty())
             {
                 // found an extra path that can move the whole amount
                 extraPath = mCompletePaths[std::get<3>(lqt)];
@@ -395,51 +426,54 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
     return spsDst;
 }
 
-boost::unordered_set<uint160> usAccountSourceCurrencies (
+CurrencySet usAccountSourceCurrencies (
         const RippleAddress& raAccountID, RippleLineCache::ref lrCache,
         bool includeXRP)
 {
-    boost::unordered_set<uint160>   usCurrencies;
+    CurrencySet usCurrencies;
 
     // YYY Only bother if they are above reserve
     if (includeXRP)
-        usCurrencies.insert (uint160 (XRP_CURRENCY));
+        usCurrencies.insert (xrpCurrency());
 
     // List of ripple lines.
-    AccountItems& rippleLines (lrCache->getRippleLines (raAccountID.getAccountID ()));
+    auto& rippleLines (lrCache->getRippleLines (raAccountID.getAccountID ()));
 
-    BOOST_FOREACH (AccountItem::ref item, rippleLines.getItems ())
+    for (auto item: rippleLines.getItems ())
     {
         RippleState*    rspEntry    = (RippleState*) item.get ();
         const STAmount& saBalance   = rspEntry->getBalance ();
 
         // Filter out non
-        if (saBalance > zero                             // Have IOUs to send.
-                || (rspEntry->getLimitPeer ()                       // Peer extends credit.
-                    && ((-saBalance) < rspEntry->getLimitPeer ()))) // Credit left.
+        if (saBalance > zero
+            // Have IOUs to send.
+            || (rspEntry->getLimitPeer ()
+                // Peer extends credit.
+                && ((-saBalance) < rspEntry->getLimitPeer ()))) // Credit left.
         {
             usCurrencies.insert (saBalance.getCurrency ());
         }
     }
 
-    usCurrencies.erase (CURRENCY_BAD);
+    usCurrencies.erase (badCurrency());
     return usCurrencies;
 }
 
-boost::unordered_set<uint160> usAccountDestCurrencies (
+CurrencySet usAccountDestCurrencies (
         const RippleAddress& raAccountID,
         RippleLineCache::ref lrCache,
         bool includeXRP)
 {
-    boost::unordered_set<uint160>   usCurrencies;
+    CurrencySet usCurrencies;
 
     if (includeXRP)
-        usCurrencies.insert (uint160 (XRP_CURRENCY)); // Even if account doesn't exist
+        usCurrencies.insert (xrpCurrency());
+    // Even if account doesn't exist
 
     // List of ripple lines.
-    AccountItems& rippleLines (lrCache->getRippleLines (raAccountID.getAccountID ()));
+    auto& rippleLines (lrCache->getRippleLines (raAccountID.getAccountID ()));
 
-    BOOST_FOREACH (AccountItem::ref item, rippleLines.getItems ())
+    for (auto item: rippleLines.getItems ())
     {
         RippleState*    rspEntry    = (RippleState*) item.get ();
         const STAmount& saBalance   = rspEntry->getBalance ();
@@ -448,11 +482,11 @@ boost::unordered_set<uint160> usAccountDestCurrencies (
             usCurrencies.insert (saBalance.getCurrency ());
     }
 
-    usCurrencies.erase (CURRENCY_BAD);
+    usCurrencies.erase (badCurrency());
     return usCurrencies;
 }
 
-bool Pathfinder::matchesOrigin (const uint160& currency, const uint160& issuer)
+bool Pathfinder::matchesOrigin (Currency const& currency, Account const& issuer)
 {
     if (currency != mSrcCurrencyID)
         return false;
@@ -463,22 +497,22 @@ bool Pathfinder::matchesOrigin (const uint160& currency, const uint160& issuer)
     return (issuer == mSrcIssuerID) || (issuer == mSrcAccountID);
 }
 
-// VFALCO TODO Use RippleCurrency, RippleAccount, et. al. in argument list here
-int Pathfinder::getPathsOut (RippleCurrency const& currencyID, const uint160& accountID,
-                             bool isDstCurrency, const uint160& dstAccount)
+// VFALCO TODO Use Currency, RippleAccount, et. al. in argument list here
+int Pathfinder::getPathsOut (
+    Currency const& currencyID, Account const& accountID,
+    bool isDstCurrency, Account const& dstAccount)
 {
     // VFALCO TODO Use RippleAsset here
-    std::pair<const uint160&, const uint160&> accountCurrency (currencyID, accountID);
-    // VFALCO TODO Use RippleAsset here
-    ripple::unordered_map<std::pair<uint160, uint160>, int>::iterator it = mPOMap.find (accountCurrency);
+    auto currencyAccount = std::make_pair(currencyID, accountID);
+    auto it = mPOMap.find (currencyAccount);
 
     if (it != mPOMap.end ())
         return it->second;
 
-    SLE::pointer sleAccount = mLedger->getSLEi(Ledger::getAccountRootIndex(accountID));
+    auto sleAccount = mLedger->getSLEi(Ledger::getAccountRootIndex(accountID));
     if (!sleAccount)
     {
-        mPOMap[accountCurrency] = 0;
+        mPOMap[currencyAccount] = 0;
         return 0;
     }
 
@@ -510,7 +544,7 @@ int Pathfinder::getPathsOut (RippleCurrency const& currencyID, const uint160& ac
         else
             ++count;
     }
-    mPOMap[accountCurrency] = count;
+    mPOMap[currencyAccount] = count;
     return count;
 }
 
@@ -593,7 +627,8 @@ STPathSet& Pathfinder::getPaths(PathType_t const& type, bool addComplete)
     return pathsOut;
 }
 
-bool Pathfinder::isNoRipple (const uint160& setByID, const uint160& setOnID, const uint160& currencyID)
+bool Pathfinder::isNoRipple (
+    Account const& setByID, Account const& setOnID, Currency const& currencyID)
 {
     SLE::pointer sleRipple = mLedger->getSLEi (
         Ledger::getRippleStateIndex (setByID, setOnID, currencyID));
@@ -617,7 +652,7 @@ bool Pathfinder::isNoRippleOut (const STPath& currentPath)
         return false;
 
     // What account are we leaving?
-    uint160 const& fromAccount =
+    auto const& fromAccount =
         (currentPath.size() == 1) ? mSrcAccountID : (currentPath.end() - 2)->mAccountID;
 
     return isNoRipple (endElement.mAccountID, fromAccount, endElement.mCurrencyID);
@@ -629,9 +664,9 @@ void Pathfinder::addLink(
     int addFlags)
 {
     STPathElement const& pathEnd   = currentPath.isEmpty() ? mSource : currentPath.mPath.back ();
-    uint160 const& uEndCurrency    = pathEnd.mCurrencyID;
-    uint160 const& uEndIssuer      = pathEnd.mIssuerID;
-    uint160 const& uEndAccount     = pathEnd.mAccountID;
+    auto const& uEndCurrency    = pathEnd.mCurrencyID;
+    auto const& uEndIssuer      = pathEnd.mIssuerID;
+    auto const& uEndAccount     = pathEnd.mAccountID;
     bool const bOnXRP              = uEndCurrency.isZero();
 
     WriteLog (lsTRACE, Pathfinder) << "addLink< flags=" << addFlags << " onXRP=" << bOnXRP;
@@ -649,34 +684,44 @@ void Pathfinder::addLink(
         }
         else
         { // search for accounts to add
-            SLE::pointer sleEnd = mLedger->getSLEi(Ledger::getAccountRootIndex(uEndAccount));
+            auto sleEnd = mLedger->getSLEi(
+                Ledger::getAccountRootIndex(uEndAccount));
             if (sleEnd)
             {
-                bool const bRequireAuth (sleEnd->getFieldU32(sfFlags) & lsfRequireAuth);
-                bool const bIsEndCurrency (uEndCurrency == mDstAmount.getCurrency());
-                bool const bIsNoRippleOut (isNoRippleOut (currentPath));
+                bool const bRequireAuth (
+                    sleEnd->getFieldU32(sfFlags) & lsfRequireAuth);
+                bool const bIsEndCurrency (
+                    uEndCurrency == mDstAmount.getCurrency());
+                bool const bIsNoRippleOut (
+                    isNoRippleOut (currentPath));
 
-                AccountItems& rippleLines (mRLCache->getRippleLines(uEndAccount));
+                auto& rippleLines (mRLCache->getRippleLines(uEndAccount));
 
-                std::vector< std::pair<int, uint160> > candidates;
+                AccountCandidates candidates;
                 candidates.reserve(rippleLines.getItems().size());
 
-                for(auto item : rippleLines.getItems())
+                for(auto const& item : rippleLines.getItems())
                 {
-                    RippleState const& rspEntry = * reinterpret_cast<RippleState const *>(item.get());
-                    uint160 const& acctID = rspEntry.getAccountIDPeer();
+                    auto* rs = dynamic_cast<RippleState const *> (item.get());
+                    if (!rs)
+                    {
+                        WriteLog (lsERROR, Pathfinder)
+                                << "Couldn't decipher RippleState";
+                        continue;
+                    }
+                    auto const& acctID = rs->getAccountIDPeer();
 
-                    if ((uEndCurrency == rspEntry.getLimit().getCurrency()) &&
+                    if ((uEndCurrency == rs->getLimit().getCurrency()) &&
                         !currentPath.hasSeen(acctID, uEndCurrency, acctID))
                     { // path is for correct currency and has not been seen
-                        if (rspEntry.getBalance() <= zero
-                            && (!rspEntry.getLimitPeer()
-                                || -rspEntry.getBalance() >= rspEntry.getLimitPeer()
-                                || (bRequireAuth && !rspEntry.getAuth())))
+                        if (rs->getBalance() <= zero
+                            && (!rs->getLimitPeer()
+                                || -rs->getBalance() >= rs->getLimitPeer()
+                                || (bRequireAuth && !rs->getAuth())))
                         {
                             // path has no credit
                         }
-                        else if (bIsNoRippleOut && rspEntry.getNoRipple())
+                        else if (bIsNoRippleOut && rs->getNoRipple())
                         {
                             // Can't leave on this path
                         }
@@ -686,7 +731,9 @@ void Pathfinder::addLink(
                             { // this is a complete path
                                 if (!currentPath.isEmpty())
                                 {
-                                    WriteLog (lsTRACE, Pathfinder) << "complete path found ae: " << currentPath.getJson(0);
+                                    WriteLog (lsTRACE, Pathfinder)
+                                            << "complete path found ae: "
+                                            << currentPath.getJson(0);
                                     mCompletePaths.addUniquePath(currentPath);
                                 }
                             }
@@ -721,7 +768,7 @@ void Pathfinder::addLink(
                     else if (count > 50)
                         count = 50;
 
-                    std::vector< std::pair<int, uint160> >::const_iterator it = candidates.begin();
+                    auto it = candidates.begin();
                     while (count-- != 0)
                     { // Add accounts to incompletePaths
                         incompletePaths.assembleAdd(currentPath, STPathElement(STPathElement::typeAccount, it->second, uEndCurrency, it->second));
@@ -744,7 +791,7 @@ void Pathfinder::addLink(
             {
                 STPathElement pathElement(
                     STPathElement::typeCurrency,
-                    XRP_ACCOUNT, XRP_CURRENCY, XRP_ACCOUNT);
+                    xrpIssuer(), xrpCurrency(), xrpIssuer());
                 incompletePaths.assembleAdd(currentPath, pathElement);
             }
         }
@@ -757,7 +804,7 @@ void Pathfinder::addLink(
             BOOST_FOREACH(OrderBook::ref book, books)
             {
                 if (!currentPath.hasSeen (
-                        XRP_ACCOUNT,
+                        xrpIssuer(),
                         book->getCurrencyOut(),
                         book->getIssuerOut()) &&
                     !matchesOrigin(
@@ -774,7 +821,7 @@ void Pathfinder::addLink(
                         // add the order book itself
                         newPath.addElement(STPathElement(
                             STPathElement::typeCurrency,
-                            XRP_ACCOUNT, XRP_CURRENCY, XRP_ACCOUNT));
+                            xrpIssuer(), xrpCurrency(), xrpIssuer()));
 
                         if (mDstAmount.getCurrency().isZero())
                         { // destination is XRP, add account and path is complete
@@ -788,7 +835,7 @@ void Pathfinder::addLink(
                     { // Don't want the book if we've already seen the issuer
                         // add the order book itself
                         newPath.addElement(STPathElement(STPathElement::typeCurrency | STPathElement::typeIssuer,
-                            XRP_ACCOUNT, book->getCurrencyOut(), book->getIssuerOut()));
+                            xrpIssuer(), book->getCurrencyOut(), book->getIssuerOut()));
 
                         if ((book->getIssuerOut() == mDstAccountID) && book->getCurrencyOut() == mDstAmount.getCurrency())
                         { // with the destination account, this path is complete

@@ -183,15 +183,15 @@ RippleAddress SerializedLedgerEntry::getSecondOwner ()
 std::vector<uint256> SerializedLedgerEntry::getOwners ()
 {
     std::vector<uint256> owners;
-    uint160 account;
+    Account account;
 
     for (int i = 0, fields = getCount (); i < fields; ++i)
     {
-        SField::ref fc = getFieldSType (i);
+        auto const& fc = getFieldSType (i);
 
         if ((fc == sfAccount) || (fc == sfOwner))
         {
-            const STAccount* entry = dynamic_cast<const STAccount*> (peekAtPIndex (i));
+            auto entry = dynamic_cast<const STAccount*> (peekAtPIndex (i));
 
             if ((entry != nullptr) && entry->getValueH160 (account))
                 owners.push_back (Ledger::getAccountRootIndex (account));
@@ -199,11 +199,11 @@ std::vector<uint256> SerializedLedgerEntry::getOwners ()
 
         if ((fc == sfLowLimit) || (fc == sfHighLimit))
         {
-            const STAmount* entry = dynamic_cast<const STAmount*> (peekAtPIndex (i));
+            auto entry = dynamic_cast<const STAmount*> (peekAtPIndex (i));
 
             if ((entry != nullptr))
             {
-                uint160 issuer = entry->getIssuer ();
+                auto issuer = entry->getIssuer ();
 
                 if (issuer.isNonZero ())
                     owners.push_back (Ledger::getAccountRootIndex (issuer));

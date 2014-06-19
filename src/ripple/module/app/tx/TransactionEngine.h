@@ -39,21 +39,11 @@ private:
     TER setAuthorized (const SerializedTransaction & txn, bool bMustSetGenerator);
     TER checkSig (const SerializedTransaction & txn);
 
-    TER takeOffers (
-        bool                bPassive,
-        uint256 const &      uBookBase,
-        const uint160 &      uTakerAccountID,
-        SLE::ref            sleTakerAccount,
-        const STAmount &     saTakerPays,
-        const STAmount &     saTakerGets,
-        STAmount &           saTakerPaid,
-        STAmount &           saTakerGot);
-
 protected:
     Ledger::pointer     mLedger;
     int                 mTxnSeq;
 
-    uint160             mTxnAccountID;
+    Account             mTxnAccountID;
     SLE::pointer        mTxnAccount;
 
     void                txnWrite ();

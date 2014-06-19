@@ -24,48 +24,38 @@
 #include <functional>
 #include <type_traits>
 
+#include <ripple/types/api/UintTypes.h>
+
 namespace ripple {
-
-/** Identifies a currency in the payment network.
-    Currencies are associated with issuers.
-    @see RippleIssuer
-*/
-typedef uint160 RippleCurrency;
-
-/** Identifies the account of a currency issuer.
-    Currency IOUs are issued by account holders.
-    @see RippleCurrency
-*/
-typedef uint160 RippleIssuer;
 
 //------------------------------------------------------------------------------
 
 /** Ripple asset specifier, expressed as a currency issuer pair.
     When ByValue is `false`, this only stores references, and the caller
     is responsible for managing object lifetime.
-    @see RippleCurrency, RippleIssuer, RippleAssset, RippleAssetRef
+    @see Currency, Account, RippleAssset, RippleAssetRef
 */
 template <bool ByValue>
 class RippleAssetType
 {
 public:
-    typedef typename std::conditional <ByValue,
-        RippleCurrency, RippleCurrency const&>::type Currency;
+    typedef typename
+    std::conditional <ByValue, Currency, Currency const&>::type
+    AssetCurrency;
 
-    typedef typename std::conditional <ByValue,
-        RippleIssuer, RippleIssuer const&>::type Issuer;
+    typedef typename
+    std::conditional <ByValue, Account, Account const&>::type
+    AssetIssuer;
 
-    Currency currency;
-    Issuer issuer;
+    AssetCurrency currency;
+    AssetIssuer issuer;
 
     RippleAssetType ()
     {
     }
 
-    RippleAssetType (RippleCurrency const& currency_,
-        RippleIssuer const& issuer_)
-        : currency (currency_)
-        , issuer (issuer_)
+    RippleAssetType (Currency const& currency_, Account const& issuer_)
+        : currency (currency_), issuer (issuer_)
     {
         // Either XRP and (currency == zero && issuer == zero) or some custom
         // currency and (currency != 0 && issuer != 0)
@@ -193,7 +183,7 @@ RippleAsset make_asset (Json::Value json,
 /** Returns an asset specifier that represents XRP. */
 inline RippleAssetRef xrp_asset ()
 {
-    static RippleAsset asset (RippleCurrency (0), RippleIssuer (0));
+    static RippleAsset asset (Currency (0), Account (0));
     return asset;
 }
 
@@ -327,14 +317,14 @@ namespace std {
 
 template <bool ByValue>
 struct hash <ripple::RippleAssetType <ByValue>>
-    : private boost::base_from_member <std::hash <ripple::RippleCurrency>, 0>
-    , private boost::base_from_member <std::hash <ripple::RippleIssuer>, 1>
+    : private boost::base_from_member <std::hash <ripple::Currency>, 0>
+    , private boost::base_from_member <std::hash <ripple::Account>, 1>
 {
 private:
     typedef boost::base_from_member <
-        std::hash <ripple::RippleCurrency>, 0> currency_hash_type;
+        std::hash <ripple::Currency>, 0> currency_hash_type;
     typedef boost::base_from_member <
-        std::hash <ripple::RippleIssuer>, 1> issuer_hash_type;
+        std::hash <ripple::Account>, 1> issuer_hash_type;
 
 public:
     typedef std::size_t value_type;

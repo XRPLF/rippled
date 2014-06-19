@@ -771,27 +771,24 @@ RippleAddress STObject::getFieldAccount (SField::ref field) const
     return cf->getValueNCA ();
 }
 
-uint160 STObject::getFieldAccount160 (SField::ref field) const
+Account STObject::getFieldAccount160 (SField::ref field) const
 {
-    uint160 a;
-    const SerializedType* rf = peekAtPField (field);
-
+    auto rf = peekAtPField (field);
     if (!rf)
         throw std::runtime_error ("Field not found");
 
-    SerializedTypeID id = rf->getSType ();
-
-    if (id != STI_NOTPRESENT)
+    Account account;
+    if (rf->getSType () != STI_NOTPRESENT)
     {
         const STAccount* cf = dynamic_cast<const STAccount*> (rf);
 
         if (!cf)
             throw std::runtime_error ("Wrong field type");
 
-        cf->getValueH160 (a);
+        cf->getValueH160 (account);
     }
 
-    return a;
+    return account;
 }
 
 Blob STObject::getFieldVL (SField::ref field) const
@@ -962,21 +959,6 @@ void STObject::setFieldH128 (SField::ref field, const uint128& v)
     cf->setValue (v);
 }
 
-void STObject::setFieldH160 (SField::ref field, const uint160& v)
-{
-    SerializedType* rf = getPField (field, true);
-
-    if (!rf) throw std::runtime_error ("Field not found");
-
-    if (rf->getSType () == STI_NOTPRESENT) rf = makeFieldPresent (field);
-
-    STHash160* cf = dynamic_cast<STHash160*> (rf);
-
-    if (!cf) throw std::runtime_error ("Wrong field type");
-
-    cf->setValue (v);
-}
-
 void STObject::setFieldH256 (SField::ref field, uint256 const& v)
 {
     SerializedType* rf = getPField (field, true);
@@ -1007,17 +989,20 @@ void STObject::setFieldV256 (SField::ref field, const STVector256& v)
     cf->setValue (v);
 }
 
-void STObject::setFieldAccount (SField::ref field, const uint160& v)
+void STObject::setFieldAccount (SField::ref field, Account const& v)
 {
     SerializedType* rf = getPField (field, true);
 
-    if (!rf) throw std::runtime_error ("Field not found");
+    if (!rf)
+        throw std::runtime_error ("Field not found");
 
-    if (rf->getSType () == STI_NOTPRESENT) rf = makeFieldPresent (field);
+    if (rf->getSType () == STI_NOTPRESENT)
+        rf = makeFieldPresent (field);
 
     STAccount* cf = dynamic_cast<STAccount*> (rf);
 
-    if (!cf) throw std::runtime_error ("Wrong field type");
+    if (!cf)
+        throw std::runtime_error ("Wrong field type");
 
     cf->setValueH160 (v);
 }
@@ -1070,15 +1055,17 @@ void STObject::setFieldPathSet (SField::ref field, const STPathSet& v)
 Json::Value STObject::getJson (int options) const
 {
     Json::Value ret (Json::objectValue);
+
+    // TODO(tom): this variable is never changed...?
     int index = 1;
-    BOOST_FOREACH (const SerializedType & it, mData)
+    for (auto const& it: mData)
     {
         if (it.getSType () != STI_NOTPRESENT)
         {
-            if (!it.getFName ().hasName ())
-                ret[beast::lexicalCast <std::string> (index)] = it.getJson (options);
-            else
-                ret[it.getJsonName ()] = it.getJson (options);
+            auto const& n = it.getFName ();
+            auto key = n.hasName () ? std::string(n.getJsonName ()) :
+                    std::to_string (index);
+            ret[key] = it.getJson (options);
         }
     }
     return ret;
@@ -1178,17 +1165,14 @@ Json::Value STArray::getJson (int p) const
 {
     Json::Value v = Json::arrayValue;
     int index = 1;
-    BOOST_FOREACH (const STObject & object, value)
+    for (auto const& object: value)
     {
         if (object.getSType () != STI_NOTPRESENT)
         {
             Json::Value inner = Json::objectValue;
-
-            if (!object.getFName ().hasName ())
-                inner[beast::lexicalCast <std::string> (index)] = object.getJson (p);
-            else
-                inner[object.getName ()] = object.getJson (p);
-
+            auto const& fname = object.getFName ();
+            auto k = fname.hasName () ? fname.fieldName : std::to_string(index);
+            inner[k] = object.getJson (p);
             v.append (inner);
             index++;
         }

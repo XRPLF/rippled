@@ -69,7 +69,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
         !context.params_.isMember ("destination_amount")
         || !saDstAmount.bSetJson (context.params_["destination_amount"])
         || saDstAmount <= zero
-        || (!!saDstAmount.getCurrency () && (!saDstAmount.getIssuer () || ACCOUNT_ONE == saDstAmount.getIssuer ())))
+        || (!!saDstAmount.getCurrency () && (!saDstAmount.getIssuer () || noAccount() == saDstAmount.getIssuer ())))
     {
         WriteLog (lsINFO, RPCHandler) << "Bad destination_amount.";
         jvResult    = rpcError (rpcINVALID_PARAMS);
@@ -111,16 +111,14 @@ Json::Value doRipplePathFind (RPC::Context& context)
         }
         else
         {
-            boost::unordered_set<uint160>   usCurrencies    = usAccountSourceCurrencies (raSrc, cache, true);
+            auto usCurrencies = usAccountSourceCurrencies (raSrc, cache, true);
 
-            jvSrcCurrencies             = Json::Value (Json::arrayValue);
+            jvSrcCurrencies = Json::Value (Json::arrayValue);
 
-            BOOST_FOREACH (const uint160 & uCurrency, usCurrencies)
+            for (auto const& uCurrency: usCurrencies)
             {
                 Json::Value jvCurrency (Json::objectValue);
-
-                jvCurrency["currency"]  = STAmount::createHumanCurrency (uCurrency);
-
+                jvCurrency["currency"] = to_string(uCurrency);
                 jvSrcCurrencies.append (jvCurrency);
             }
         }
@@ -128,9 +126,9 @@ Json::Value doRipplePathFind (RPC::Context& context)
         // Fill in currencies destination will accept
         Json::Value jvDestCur (Json::arrayValue);
 
-        boost::unordered_set<uint160> usDestCurrID = usAccountDestCurrencies (raDst, cache, true);
-        BOOST_FOREACH (const uint160 & uCurrency, usDestCurrID)
-        jvDestCur.append (STAmount::createHumanCurrency (uCurrency));
+        auto usDestCurrID = usAccountDestCurrencies (raDst, cache, true);
+        for (auto const& uCurrency: usDestCurrID)
+                jvDestCur.append (to_string (uCurrency));
 
         jvResult["destination_currencies"] = jvDestCur;
         jvResult["destination_account"] = raDst.humanAccountID ();
@@ -141,15 +139,16 @@ Json::Value doRipplePathFind (RPC::Context& context)
         {
             Json::Value jvSource        = jvSrcCurrencies[i];
 
-            uint160     uSrcCurrencyID;
-            uint160     uSrcIssuerID;
+            Currency uSrcCurrencyID;
+            Account uSrcIssuerID;
 
             if (!jvSource.isObject ())
                 return rpcError (rpcINVALID_PARAMS);
 
             // Parse mandatory currency.
             if (!jvSource.isMember ("currency")
-                    || !STAmount::currencyFromString (uSrcCurrencyID, jvSource["currency"].asString ()))
+                || !to_currency (
+                    uSrcCurrencyID, jvSource["currency"].asString ()))
             {
                 WriteLog (lsINFO, RPCHandler) << "Bad currency.";
 
@@ -162,9 +161,9 @@ Json::Value doRipplePathFind (RPC::Context& context)
             // Parse optional issuer.
             if (jvSource.isMember ("issuer") &&
                     ((!jvSource["issuer"].isString () ||
-                      !STAmount::issuerFromString (uSrcIssuerID, jvSource["issuer"].asString ())) ||
+                      !to_issuer (uSrcIssuerID, jvSource["issuer"].asString ())) ||
                      (uSrcIssuerID.isZero () != uSrcCurrencyID.isZero ()) ||
-                     (ACCOUNT_ONE == uSrcIssuerID)))
+                     (noAccount() == uSrcIssuerID)))
             {
                 WriteLog (lsINFO, RPCHandler) << "Bad issuer.";
 
@@ -209,8 +208,8 @@ Json::Value doRipplePathFind (RPC::Context& context)
                     !!uSrcIssuerID
                     ? uSrcIssuerID      // Use specifed issuer.
                     : !!uSrcCurrencyID  // Default to source account.
-                    ? raSrc.getAccountID ()
-                    : ACCOUNT_XRP,
+                    ? Account(raSrc.getAccountID ())
+                    : xrpIssuer(),
                     1);
                 saMaxAmount.negate ();
 

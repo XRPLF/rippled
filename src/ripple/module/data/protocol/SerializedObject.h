@@ -107,6 +107,8 @@ public:
 
     std::string getFullText () const;
     std::string getText () const;
+
+    // TODO(tom): options should be an enum.
     virtual Json::Value getJson (int options) const;
 
     int addObject (const SerializedType & t)
@@ -195,10 +197,12 @@ public:
     std::uint32_t getFieldU32 (SField::ref field) const;
     std::uint64_t getFieldU64 (SField::ref field) const;
     uint128 getFieldH128 (SField::ref field) const;
+
     uint160 getFieldH160 (SField::ref field) const;
     uint256 getFieldH256 (SField::ref field) const;
     RippleAddress getFieldAccount (SField::ref field) const;
-    uint160 getFieldAccount160 (SField::ref field) const;
+    Account getFieldAccount160 (SField::ref field) const;
+
     Blob getFieldVL (SField::ref field) const;
     const STAmount& getFieldAmount (SField::ref field) const;
     const STPathSet& getFieldPathSet (SField::ref field) const;
@@ -210,10 +214,9 @@ public:
     void setFieldU32 (SField::ref field, std::uint32_t);
     void setFieldU64 (SField::ref field, std::uint64_t);
     void setFieldH128 (SField::ref field, const uint128&);
-    void setFieldH160 (SField::ref field, const uint160&);
     void setFieldH256 (SField::ref field, uint256 const& );
     void setFieldVL (SField::ref field, Blob const&);
-    void setFieldAccount (SField::ref field, const uint160&);
+    void setFieldAccount (SField::ref field, Account const&);
     void setFieldAccount (SField::ref field, const RippleAddress & addr)
     {
         setFieldAccount (field, addr.getAccountID ());
@@ -221,6 +224,23 @@ public:
     void setFieldAmount (SField::ref field, const STAmount&);
     void setFieldPathSet (SField::ref field, const STPathSet&);
     void setFieldV256 (SField::ref field, const STVector256 & v);
+
+    template <class Tag>
+    void setFieldH160 (SField::ref field, base_uint<160, Tag> const& v)
+    {
+        SerializedType* rf = getPField (field, true);
+
+        if (!rf)
+            throw std::runtime_error ("Field not found");
+
+        if (rf->getSType () == STI_NOTPRESENT)
+            rf = makeFieldPresent (field);
+
+        if (auto cf = dynamic_cast<STHash160*> (rf))
+            cf->setValue (v);
+        else
+            throw std::runtime_error ("Wrong field type");
+    }
 
     STObject& peekFieldObject (SField::ref field);
 
@@ -479,7 +499,8 @@ public:
 
     virtual std::string getFullText () const;
     virtual std::string getText () const;
-    virtual Json::Value getJson (int) const;
+
+    virtual Json::Value getJson (int index) const;
     virtual void add (Serializer & s) const;
 
     void sort (bool (*compare) (const STObject & o1, const STObject & o2));

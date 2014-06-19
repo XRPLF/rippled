@@ -27,7 +27,6 @@ class OrderBook : beast::LeakChecked <OrderBook>
 {
 public:
     typedef std::shared_ptr <OrderBook> pointer;
-
     typedef std::shared_ptr <OrderBook> const& ref;
 
 public:
@@ -42,44 +41,42 @@ public:
     // VFALCO NOTE what is the meaning of the index parameter?
     // VFALCO TODO Replace with RippleAsset
     OrderBook (uint256 const& index,
-               uint160 const& currencyIn,
-               uint160 const& currencyOut,
-               uint160 const& issuerIn,
-               uint160 const& issuerOut);
+               Currency const& currencyIn,
+               Currency const& currencyOut,
+               Account const& issuerIn,
+               Account const& issuerOut);
 
     uint256 const& getBookBase () const
     {
         return mBookBase;
     }
 
-    uint160 const& getCurrencyIn () const
+    Currency const& getCurrencyIn () const
     {
         return mCurrencyIn;
     }
 
-    uint160 const& getCurrencyOut () const
+    Currency const& getCurrencyOut () const
     {
         return mCurrencyOut;
     }
 
-    uint160 const& getIssuerIn () const
+    Account const& getIssuerIn () const
     {
         return mIssuerIn;
     }
 
-    uint160 const& getIssuerOut () const
+    Account const& getIssuerOut () const
     {
         return mIssuerOut;
     }
 
-
 private:
-    // VFALCO TODO Replace these with RippleAsset
     uint256 const mBookBase;
-    uint160 const mCurrencyIn;
-    uint160 const mCurrencyOut;
-    uint160 const mIssuerIn;
-    uint160 const mIssuerOut;
+    Currency const mCurrencyIn;
+    Currency const mCurrencyOut;
+    Account const mIssuerIn;
+    Account const mIssuerOut;
 };
 
 } // ripple

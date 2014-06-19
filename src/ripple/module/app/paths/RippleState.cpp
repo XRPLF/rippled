@@ -19,7 +19,8 @@
 
 namespace ripple {
 
-AccountItem::pointer RippleState::makeItem (const uint160& accountID, SerializedLedgerEntry::ref ledgerEntry)
+AccountItem::pointer RippleState::makeItem (
+    Account const& accountID, SerializedLedgerEntry::ref ledgerEntry)
 {
     if (!ledgerEntry || ledgerEntry->getType () != ltRIPPLE_STATE)
         return AccountItem::pointer ();
@@ -30,7 +31,8 @@ AccountItem::pointer RippleState::makeItem (const uint160& accountID, Serialized
     return AccountItem::pointer (rs);
 }
 
-RippleState::RippleState (SerializedLedgerEntry::ref ledgerEntry) : AccountItem (ledgerEntry),
+RippleState::RippleState (SerializedLedgerEntry::ref ledgerEntry)
+        : AccountItem (ledgerEntry),
     mValid (false),
     mViewLowest (true),
 
@@ -53,7 +55,7 @@ RippleState::RippleState (SerializedLedgerEntry::ref ledgerEntry) : AccountItem 
     mValid      = true;
 }
 
-void RippleState::setViewAccount (const uint160& accountID)
+void RippleState::setViewAccount (Account const& accountID)
 {
     bool    bViewLowestNew  = mLowID == accountID;
 

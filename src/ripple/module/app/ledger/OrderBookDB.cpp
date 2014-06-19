@@ -23,7 +23,6 @@ OrderBookDB::OrderBookDB (Stoppable& parent)
     : Stoppable ("OrderBookDB", parent)
     , mSeq (0)
 {
-
 }
 
 void OrderBookDB::invalidate ()
@@ -70,10 +69,13 @@ static void updateHelper (SLE::ref entry,
     if ((entry->getType () == ltDIR_NODE) && (entry->isFieldPresent (sfExchangeRate)) &&
             (entry->getFieldH256 (sfRootIndex) == entry->getIndex()))
     {
-        const uint160& ci = entry->getFieldH160 (sfTakerPaysCurrency);
-        const uint160& co = entry->getFieldH160 (sfTakerGetsCurrency);
-        const uint160& ii = entry->getFieldH160 (sfTakerPaysIssuer);
-        const uint160& io = entry->getFieldH160 (sfTakerGetsIssuer);
+        Currency ci, co;
+        ci.copyFrom (entry->getFieldH160 (sfTakerPaysCurrency));
+        co.copyFrom (entry->getFieldH160 (sfTakerGetsCurrency));
+
+        Account ii, io;
+        ii.copyFrom (entry->getFieldH160 (sfTakerPaysIssuer));
+        io.copyFrom (entry->getFieldH160 (sfTakerGetsIssuer));
 
         uint256 index = Ledger::getBookBase (ci, ii, co, io);
 
@@ -129,8 +131,8 @@ void OrderBookDB::update (Ledger::pointer ledger)
     getApp().getLedgerMaster().newOrderBookDB();
 }
 
-void OrderBookDB::addOrderBook(const uint160& ci, const uint160& co,
-    const uint160& ii, const uint160& io)
+void OrderBookDB::addOrderBook(Currency const& ci, Currency const& co,
+    Account const& ii, Account const& io)
 {
     bool toXRP = co.isZero();
     ScopedLockType sl (mLock);
@@ -153,8 +155,7 @@ void OrderBookDB::addOrderBook(const uint160& ci, const uint160& co,
     }
 
     uint256 index = Ledger::getBookBase(ci, ii, co, io);
-    OrderBook::pointer book = std::make_shared<OrderBook> (std::cref (index),
-                              std::cref (ci), std::cref (co), std::cref (ii), std::cref (io));
+    auto book = std::make_shared<OrderBook> (index, ci, co, ii, io);
 
     mSourceMap[RippleAssetRef (ci, ii)].push_back (book);
     mDestMap[RippleAssetRef (co, io)].push_back (book);
@@ -163,7 +164,7 @@ void OrderBookDB::addOrderBook(const uint160& ci, const uint160& co,
 }
 
 // return list of all orderbooks that want this issuerID and currencyID
-void OrderBookDB::getBooksByTakerPays (RippleIssuer const& issuerID, RippleCurrency const& currencyID,
+void OrderBookDB::getBooksByTakerPays (Account const& issuerID, Currency const& currencyID,
                                        std::vector<OrderBook::pointer>& bookRet)
 {
     ScopedLockType sl (mLock);
@@ -175,7 +176,7 @@ void OrderBookDB::getBooksByTakerPays (RippleIssuer const& issuerID, RippleCurre
         bookRet.clear ();
 }
 
-bool OrderBookDB::isBookToXRP(RippleIssuer const& issuerID, RippleCurrency const& currencyID)
+bool OrderBookDB::isBookToXRP(Account const& issuerID, Currency const& currencyID)
 {
     ScopedLockType sl (mLock);
 
@@ -183,7 +184,7 @@ bool OrderBookDB::isBookToXRP(RippleIssuer const& issuerID, RippleCurrency const
 }
 
 // return list of all orderbooks that give this issuerID and currencyID
-void OrderBookDB::getBooksByTakerGets (RippleIssuer const& issuerID, RippleCurrency const& currencyID,
+void OrderBookDB::getBooksByTakerGets (Account const& issuerID, Currency const& currencyID,
                                        std::vector<OrderBook::pointer>& bookRet)
 {
     ScopedLockType sl (mLock);
@@ -195,8 +196,8 @@ void OrderBookDB::getBooksByTakerGets (RippleIssuer const& issuerID, RippleCurre
         bookRet.clear ();
 }
 
-BookListeners::pointer OrderBookDB::makeBookListeners (RippleCurrency const& currencyPays, RippleCurrency const& currencyGets,
-        RippleIssuer const& issuerPays, RippleIssuer const& issuerGets)
+BookListeners::pointer OrderBookDB::makeBookListeners (Currency const& currencyPays, Currency const& currencyGets,
+        Account const& issuerPays, Account const& issuerGets)
 {
     ScopedLockType sl (mLock);
     BookListeners::pointer ret = getBookListeners (currencyPays, currencyGets, issuerPays, issuerGets);
@@ -214,13 +215,13 @@ BookListeners::pointer OrderBookDB::makeBookListeners (RippleCurrency const& cur
     return ret;
 }
 
-BookListeners::pointer OrderBookDB::getBookListeners (RippleCurrency const& currencyPays, RippleCurrency const& currencyGets,
-        RippleIssuer const& issuerPays, RippleIssuer const& issuerGets)
+BookListeners::pointer OrderBookDB::getBookListeners (Currency const& currencyPays, Currency const& currencyGets,
+        Account const& issuerPays, Account const& issuerGets)
 {
     BookListeners::pointer ret;
     ScopedLockType sl (mLock);
 
-    MapType::iterator it0 (mListeners.find (RippleBookRef (
+    auto it0 (mListeners.find (RippleBookRef (
         RippleAssetRef (currencyPays, issuerPays),
             RippleAssetRef (currencyGets, issuerGets))));
 
@@ -269,12 +270,12 @@ void OrderBookDB::processTxn (Ledger::ref ledger, const AcceptedLedgerTx& alTx, 
                         if (data)
                         {
                             const STAmount& takerGets = data->getFieldAmount (sfTakerGets);
-                            RippleCurrency const& currencyGets = takerGets.getCurrency ();
-                            RippleIssuer const& issuerGets = takerGets.getIssuer ();
+                            Currency const& currencyGets = takerGets.getCurrency ();
+                            Account const& issuerGets = takerGets.getIssuer ();
 
                             const STAmount& takerPays = data->getFieldAmount (sfTakerPays);
-                            RippleCurrency const& currencyPays = takerPays.getCurrency ();
-                            RippleIssuer const& issuerPays = takerPays.getIssuer ();
+                            Currency const& currencyPays = takerPays.getCurrency ();
+                            Account const& issuerPays = takerPays.getIssuer ();
 
                             // determine the OrderBook
                             BookListeners::pointer book =

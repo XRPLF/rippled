@@ -32,9 +32,6 @@ class PathState : public CountedObject <PathState>
     typedef std::vector<uint256> OfferIndexList;
     typedef std::vector<std::shared_ptr<PathState>> List;
 
-    typedef path::Account Account;
-    typedef path::Currency Currency;
-
     PathState (const STAmount& saSend, const STAmount& saSendMax)
         : saInReq (saSendMax)
         , saOutReq (saSend)

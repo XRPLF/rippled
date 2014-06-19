@@ -199,10 +199,10 @@ Json::Value doSubscribe (RPC::Context& context)
                 return rpcError (rpcINVALID_PARAMS);
 
             // VFALCO TODO Use RippleAsset here
-            RippleCurrency pay_currency;
-            RippleIssuer   pay_issuer;
-            RippleCurrency get_currency;
-            RippleIssuer   get_issuer;
+            Currency pay_currency;
+            Account   pay_issuer;
+            Currency get_currency;
+            Account   get_issuer;
 
             bool            bBoth           = (jvSubRequest.isMember ("both") && jvSubRequest["both"].asBool ())
                                               || (jvSubRequest.isMember ("both_sides") && jvSubRequest["both_sides"].asBool ());  // DEPRECATED
@@ -214,7 +214,7 @@ Json::Value doSubscribe (RPC::Context& context)
 
             // Parse mandatory currency.
             if (!taker_pays.isMember (jss::currency)
-                    || !STAmount::currencyFromString (pay_currency, taker_pays[jss::currency].asString ()))
+                    || !to_currency (pay_currency, taker_pays[jss::currency].asString ()))
             {
                 WriteLog (lsINFO, RPCHandler) << "Bad taker_pays currency.";
 
@@ -223,10 +223,10 @@ Json::Value doSubscribe (RPC::Context& context)
             // Parse optional issuer.
             else if (((taker_pays.isMember (jss::issuer))
                       && (!taker_pays[jss::issuer].isString ()
-                          || !STAmount::issuerFromString (pay_issuer, taker_pays[jss::issuer].asString ())))
+                          || !to_issuer (pay_issuer, taker_pays[jss::issuer].asString ())))
                      // Don't allow illegal issuers.
                      || (!pay_currency != !pay_issuer)
-                     || ACCOUNT_ONE == pay_issuer)
+                     || noAccount() == pay_issuer)
             {
                 WriteLog (lsINFO, RPCHandler) << "Bad taker_pays issuer.";
 
@@ -235,7 +235,7 @@ Json::Value doSubscribe (RPC::Context& context)
 
             // Parse mandatory currency.
             if (!taker_gets.isMember (jss::currency)
-                    || !STAmount::currencyFromString (get_currency, taker_gets[jss::currency].asString ()))
+                    || !to_currency (get_currency, taker_gets[jss::currency].asString ()))
             {
                 WriteLog (lsINFO, RPCHandler) << "Bad taker_pays currency.";
 
@@ -244,10 +244,10 @@ Json::Value doSubscribe (RPC::Context& context)
             // Parse optional issuer.
             else if (((taker_gets.isMember (jss::issuer))
                       && (!taker_gets[jss::issuer].isString ()
-                          || !STAmount::issuerFromString (get_issuer, taker_gets[jss::issuer].asString ())))
+                          || !to_issuer (get_issuer, taker_gets[jss::issuer].asString ())))
                      // Don't allow illegal issuers.
                      || (!get_currency != !get_issuer)
-                     || ACCOUNT_ONE == get_issuer)
+                     || noAccount() == get_issuer)
             {
                 WriteLog (lsINFO, RPCHandler) << "Bad taker_gets issuer.";
 
@@ -266,7 +266,7 @@ Json::Value doSubscribe (RPC::Context& context)
 
             if (!jvSubRequest.isMember ("taker"))
             {
-                raTakerID.setAccountID (ACCOUNT_ONE);
+                raTakerID.setAccountID (noAccount());
             }
             else if (!raTakerID.setAccountID (jvSubRequest["taker"].asString ()))
             {

@@ -1983,9 +1983,6 @@
     <ClCompile Include="..\..\src\ripple\module\app\book\impl\Taker.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\app\book\impl\Types.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\module\app\book\tests\OfferStream.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2001,26 +1998,6 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\app\consensus\LedgerConsensus.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\contracts\Contract.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\contracts\Contract.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\contracts\Interpreter.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\contracts\Interpreter.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\contracts\Operation.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\contracts\Operation.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\contracts\ScriptData.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\contracts\ScriptData.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\data\DBInit.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -2333,9 +2310,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\app\paths\Tuning.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\Types.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\app\paths\Types.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\app\peers\ClusterNodeStatus.h">
@@ -2378,10 +2352,10 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\app\shamap\SHAMapMissingNode.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\shamap\SHAMapNode.cpp">
+    <ClCompile Include="..\..\src\ripple\module\app\shamap\SHAMapNodeID.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\shamap\SHAMapNode.h">
+    <ClInclude Include="..\..\src\ripple\module\app\shamap\SHAMapNodeID.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\shamap\SHAMapSync.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -3383,6 +3357,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\api\UInt160.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\types\api\UintTypes.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\api\base_uint.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\api\strHex.h">
@@ -3402,7 +3378,7 @@
     <ClCompile Include="..\..\src\ripple\types\impl\RippleIdentifierTests.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\types\impl\UInt160.cpp">
+    <ClCompile Include="..\..\src\ripple\types\impl\UintTypes.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\types\impl\base_uint.cpp">

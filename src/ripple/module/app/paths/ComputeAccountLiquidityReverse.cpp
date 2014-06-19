@@ -60,9 +60,9 @@ TER computeReverseLiquidityForAccount (
     const bool previousNodeIsAccount = !nodeIndex || previousNode.isAccount();
     const bool nextNodeIsAccount = isFinalNode || nextNode.isAccount();
 
-    const uint160& previousAccountID = previousNodeIsAccount
+    Account const& previousAccountID = previousNodeIsAccount
         ? previousNode.account_ : node.account_;
-    const uint160& nextAccountID = nextNodeIsAccount ? nextNode.account_
+    Account const& nextAccountID = nextNodeIsAccount ? nextNode.account_
         : node.account_;   // Offers are always issue.
 
     // This is the quality from from the previous node to this one.

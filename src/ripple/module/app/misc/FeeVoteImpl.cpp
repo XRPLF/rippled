@@ -24,12 +24,12 @@ class FeaturesImpl;
 class FeeVoteImpl : public FeeVote
 {
 private:
-    
+
     template <typename Integer>
     class VotableInteger
     {
     public:
-        VotableInteger (Integer current, Integer target) 
+        VotableInteger (Integer current, Integer target)
             : mCurrent (current)
             , mTarget (target)
         {
@@ -103,7 +103,7 @@ public:
         {
             if (m_journal.info) m_journal.info <<
                 "Voting for base fee of " << mTargetBaseFee;
-            
+
             baseValidation.setFieldU64 (sfBaseFee, mTargetBaseFee);
         }
 
@@ -189,7 +189,7 @@ public:
                 "/" << incReserve;
 
             SerializedTransaction trans (ttFEE);
-            trans.setFieldAccount (sfAccount, uint160 ());
+            trans.setFieldAccount (sfAccount, Account ());
             trans.setFieldU64 (sfBaseFee, baseFee);
             trans.setFieldU32 (sfReferenceFeeUnits, 10);
             trans.setFieldU32 (sfReserveBase, baseReserve);
@@ -197,8 +197,8 @@ public:
 
             uint256 txID = trans.getTransactionID ();
 
-            if (m_journal.warning) m_journal.warning <<
-                "Vote: " << txID;
+            if (m_journal.warning)
+                m_journal.warning << "Vote: " << txID;
 
             Serializer s;
             trans.add (s, true);

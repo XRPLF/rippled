@@ -23,6 +23,7 @@
 #include <ripple/module/data/crypto/Base58Data.h>
 
 #include <ripple/types/api/UInt160.h>
+#include <ripple/types/api/UintTypes.h>
 #include <ripple/types/api/RippleAccountID.h>
 #include <ripple/types/api/RippleAccountPrivateKey.h>
 #include <ripple/types/api/RippleAccountPublicKey.h>
@@ -36,7 +37,9 @@ namespace ripple {
 //
 // Used to hold addresses and parse and produce human formats.
 //
-// XXX This needs to be reworked to store data in uint160 and uint256.  Conversion to CBase58Data should happen as needed.
+// XXX This needs to be reworked to store data in uint160 and uint256.
+// Conversion to CBase58Data should only happen as needed.
+
 class RippleAddress : public CBase58Data
 {
 private:
@@ -71,15 +74,17 @@ public:
     //
     // Node Public - Also used for Validators
     //
-    uint160 getNodeID () const;
+    NodeID getNodeID () const;
     Blob const& getNodePublic () const;
 
     std::string humanNodePublic () const;
 
     bool setNodePublic (const std::string& strPublic);
     void setNodePublic (Blob const& vPublic);
-    bool verifyNodePublic (uint256 const& hash, Blob const& vchSig, ECDSA mustBeFullyCanonical) const;
-    bool verifyNodePublic (uint256 const& hash, const std::string& strSig, ECDSA mustBeFullyCanonical) const;
+    bool verifyNodePublic (uint256 const& hash, Blob const& vchSig,
+                           ECDSA mustBeFullyCanonical) const;
+    bool verifyNodePublic (uint256 const& hash, const std::string& strSig,
+                           ECDSA mustBeFullyCanonical) const;
 
     static RippleAddress createNodePublic (const RippleAddress& naSeed);
     static RippleAddress createNodePublic (Blob const& vPublic);
@@ -103,31 +108,25 @@ public:
     //
     // Accounts IDs
     //
-    uint160 getAccountID () const;
+    Account getAccountID () const;
 
     std::string humanAccountID () const;
 
-    bool setAccountID (const std::string& strAccountID, Base58::Alphabet const& alphabet = Base58::getRippleAlphabet());
-    void setAccountID (const uint160& hash160In);
+    bool setAccountID (
+        const std::string& strAccountID,
+        Base58::Alphabet const& alphabet = Base58::getRippleAlphabet());
+    void setAccountID (Account const& hash160In);
 
+    #if 0
     static RippleAddress createAccountID (const std::string& strAccountID)
     {
         RippleAddress na;
         na.setAccountID (strAccountID);
         return na;
     }
+    #endif
 
-    static RippleAddress createAccountID (const uint160& uiAccountID);
-
-    static std::string createHumanAccountID (const uint160& uiAccountID)
-    {
-        return createAccountID (uiAccountID).humanAccountID ();
-    }
-
-    static std::string createHumanAccountID (Blob const& vPrivate)
-    {
-        return createAccountPrivate (vPrivate).humanAccountID ();
-    }
+    static RippleAddress createAccountID (Account const& uiAccountID);
 
     //
     // Accounts Public
@@ -140,14 +139,13 @@ public:
     void setAccountPublic (Blob const& vPublic);
     void setAccountPublic (const RippleAddress& generator, int seq);
 
-    bool accountPublicVerify (uint256 const& uHash, Blob const& vucSig, ECDSA mustBeFullyCanonical) const;
+    bool accountPublicVerify (uint256 const& uHash, Blob const& vucSig,
+                              ECDSA mustBeFullyCanonical) const;
 
     static RippleAddress createAccountPublic (Blob const& vPublic)
     {
-        RippleAddress   naNew;
-
+        RippleAddress naNew;
         naNew.setAccountPublic (vPublic);
-
         return naNew;
     }
 
@@ -157,7 +155,8 @@ public:
     }
 
     // Create a deterministic public key from a public generator.
-    static RippleAddress createAccountPublic (const RippleAddress& naGenerator, int iSeq);
+    static RippleAddress createAccountPublic (
+        const RippleAddress& naGenerator, int iSeq);
 
     //
     // Accounts Private
@@ -169,17 +168,21 @@ public:
     bool setAccountPrivate (const std::string& strPrivate);
     void setAccountPrivate (Blob const& vPrivate);
     void setAccountPrivate (uint256 hash256);
-    void setAccountPrivate (const RippleAddress& naGenerator, const RippleAddress& naSeed, int seq);
+    void setAccountPrivate (const RippleAddress& naGenerator,
+                            const RippleAddress& naSeed, int seq);
 
     bool accountPrivateSign (uint256 const& uHash, Blob& vucSig) const;
 
     // Encrypt a message.
-    Blob accountPrivateEncrypt (const RippleAddress& naPublicTo, Blob const& vucPlainText) const;
+    Blob accountPrivateEncrypt (
+        const RippleAddress& naPublicTo, Blob const& vucPlainText) const;
 
     // Decrypt a message.
-    Blob accountPrivateDecrypt (const RippleAddress& naPublicFrom, Blob const& vucCipherText) const;
+    Blob accountPrivateDecrypt (
+        const RippleAddress& naPublicFrom, Blob const& vucCipherText) const;
 
-    static RippleAddress createAccountPrivate (const RippleAddress& naGenerator, const RippleAddress& naSeed, int iSeq);
+    static RippleAddress createAccountPrivate (
+        const RippleAddress& generator, const RippleAddress& seed, int iSeq);
 
     static RippleAddress createAccountPrivate (Blob const& vPrivate)
     {
@@ -247,7 +250,7 @@ struct RipplePublicKeyHashTraits::assign <RippleAddress>
 {
     void operator() (value_type& value, RippleAddress const& v) const
     {
-        uint160 const ui (v.getNodeID ());
+        auto const ui (v.getNodeID ());
         construct (ui.begin(), ui.end(), value);
     }
 };
@@ -269,7 +272,7 @@ struct RippleAccountIDTraits::assign <RippleAddress>
 {
     void operator() (value_type& value, RippleAddress const& v) const
     {
-        uint160 const ui (v.getAccountID ());
+        auto const ui (v.getAccountID ());
         construct (ui.begin(), ui.end(), value);
     }
 };

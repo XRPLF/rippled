@@ -37,7 +37,8 @@
 #include <ripple/module/app/misc/ProofOfWork.cpp>
 #include <ripple/module/app/misc/SerializedTransaction.cpp>
 
-#include <ripple/module/app/shamap/SHAMapSyncFilters.cpp> // requires Application
+// requires Application
+#include <ripple/module/app/shamap/SHAMapSyncFilters.cpp>
 
 #include <ripple/module/app/consensus/LedgerConsensus.cpp>
 

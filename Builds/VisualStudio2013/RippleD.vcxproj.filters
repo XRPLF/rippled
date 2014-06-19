@@ -367,9 +367,6 @@
     <Filter Include="ripple\module\app\consensus">
       <UniqueIdentifier>{28E35C4D-F39A-6C32-60CB-B29F44A08B72}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ripple\module\app\contracts">
-      <UniqueIdentifier>{4EC681B8-69F8-73E2-8E0E-FD12EEC5AD2C}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ripple\module\app\data">
       <UniqueIdentifier>{22718803-3748-7147-16F9-822D9BBFA8DC}</UniqueIdentifier>
     </Filter>
@@ -2970,9 +2967,6 @@
     <ClCompile Include="..\..\src\ripple\module\app\book\impl\Taker.cpp">
       <Filter>ripple\module\app\book\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\app\book\impl\Types.cpp">
-      <Filter>ripple\module\app\book\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\module\app\book\tests\OfferStream.test.cpp">
       <Filter>ripple\module\app\book\tests</Filter>
     </ClCompile>
@@ -2990,30 +2984,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\app\consensus\LedgerConsensus.h">
       <Filter>ripple\module\app\consensus</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\contracts\Contract.cpp">
-      <Filter>ripple\module\app\contracts</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\contracts\Contract.h">
-      <Filter>ripple\module\app\contracts</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\contracts\Interpreter.cpp">
-      <Filter>ripple\module\app\contracts</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\contracts\Interpreter.h">
-      <Filter>ripple\module\app\contracts</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\contracts\Operation.cpp">
-      <Filter>ripple\module\app\contracts</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\contracts\Operation.h">
-      <Filter>ripple\module\app\contracts</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\contracts\ScriptData.cpp">
-      <Filter>ripple\module\app\contracts</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\contracts\ScriptData.h">
-      <Filter>ripple\module\app\contracts</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\data\DBInit.cpp">
       <Filter>ripple\module\app\data</Filter>
@@ -3387,9 +3357,6 @@
     <ClInclude Include="..\..\src\ripple\module\app\paths\Tuning.h">
       <Filter>ripple\module\app\paths</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\Types.cpp">
-      <Filter>ripple\module\app\paths</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\app\paths\Types.h">
       <Filter>ripple\module\app\paths</Filter>
     </ClInclude>
@@ -3441,10 +3408,10 @@
     <ClInclude Include="..\..\src\ripple\module\app\shamap\SHAMapMissingNode.h">
       <Filter>ripple\module\app\shamap</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\shamap\SHAMapNode.cpp">
+    <ClCompile Include="..\..\src\ripple\module\app\shamap\SHAMapNodeID.cpp">
       <Filter>ripple\module\app\shamap</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\shamap\SHAMapNode.h">
+    <ClInclude Include="..\..\src\ripple\module\app\shamap\SHAMapNodeID.h">
       <Filter>ripple\module\app\shamap</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\shamap\SHAMapSync.cpp">
@@ -4650,6 +4617,9 @@
     <ClInclude Include="..\..\src\ripple\types\api\UInt160.h">
       <Filter>ripple\types\api</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\types\api\UintTypes.h">
+      <Filter>ripple\types\api</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\api\base_uint.h">
       <Filter>ripple\types\api</Filter>
     </ClInclude>
@@ -4671,7 +4641,7 @@
     <ClCompile Include="..\..\src\ripple\types\impl\RippleIdentifierTests.cpp">
       <Filter>ripple\types\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\types\impl\UInt160.cpp">
+    <ClCompile Include="..\..\src\ripple\types\impl\UintTypes.cpp">
       <Filter>ripple\types\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\types\impl\base_uint.cpp">

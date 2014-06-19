@@ -37,21 +37,22 @@ public:
 
     virtual ~RippleState () { }
 
-    AccountItem::pointer makeItem (const uint160& accountID, SerializedLedgerEntry::ref ledgerEntry);
+    AccountItem::pointer makeItem (
+        Account const& accountID, SerializedLedgerEntry::ref ledgerEntry);
 
     LedgerEntryType getType ()
     {
         return ltRIPPLE_STATE;
     }
 
-    void setViewAccount (const uint160& accountID);
+    void setViewAccount (Account const& accountID);
 
-    const uint160& getAccountID () const
+    Account const& getAccountID () const
     {
         return  mViewLowest ? mLowID : mHighID;
     }
-    
-    const uint160& getAccountIDPeer () const
+
+    Account const& getAccountIDPeer () const
     {
         return !mViewLowest ? mLowID : mHighID;
     }
@@ -97,7 +98,7 @@ public:
         return ((std::uint32_t) (mViewLowest ? mLowQualityIn : mHighQualityIn));
         return ((std::uint32_t) (mViewLowest ? mLowQualityIn : mHighQualityIn));
     }
-    
+
     std::uint32_t getQualityOut () const
     {
         return ((std::uint32_t) (mViewLowest ? mLowQualityOut : mHighQualityOut));
@@ -107,17 +108,17 @@ public:
     {
         return mLedgerEntry;
     }
-    
+
     const SerializedLedgerEntry& peekSLE () const
     {
         return *mLedgerEntry;
     }
-    
+
     SerializedLedgerEntry& peekSLE ()
     {
         return *mLedgerEntry;
     }
-    
+
     Json::Value getJson (int);
 
     Blob getRaw () const;
@@ -134,8 +135,8 @@ private:
     STAmount                        mLowLimit;
     STAmount                        mHighLimit;
 
-    uint160                         mLowID;
-    uint160                         mHighID;
+    Account                         mLowID;
+    Account                         mHighID;
 
     std::uint64_t                   mLowQualityIn;
     std::uint64_t                   mLowQualityOut;

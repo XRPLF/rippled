@@ -30,7 +30,7 @@ TER Payment::doApply ()
     bool const bNoRippleDirect (uTxFlags & tfNoRippleDirect);
     bool const bPaths = mTxn.isFieldPresent (sfPaths);
     bool const bMax = mTxn.isFieldPresent (sfSendMax);
-    uint160 const uDstAccountID = mTxn.getFieldAccount160 (sfDestination);
+    Account const& uDstAccountID = mTxn.getFieldAccount160 (sfDestination);
     STAmount const saDstAmount = mTxn.getFieldAmount (sfAmount);
     STAmount maxSourceAmount;
     if (bMax)
@@ -41,8 +41,8 @@ TER Payment::doApply ()
       maxSourceAmount = STAmount (
           saDstAmount.getCurrency (), mTxnAccountID, saDstAmount.getMantissa (),
           saDstAmount.getExponent (), saDstAmount < zero);
-    uint160 const uSrcCurrency = maxSourceAmount.getCurrency ();
-    uint160 const uDstCurrency = saDstAmount.getCurrency ();
+    auto const& uSrcCurrency = maxSourceAmount.getCurrency ();
+    auto const& uDstCurrency = saDstAmount.getCurrency ();
 
     // isZero() is XRP.  FIX!
     bool const bXRPDirect = uSrcCurrency.isZero () && uDstCurrency.isZero ();
@@ -82,7 +82,7 @@ TER Payment::doApply ()
 
         return temBAD_AMOUNT;
     }
-    else if (CURRENCY_BAD == uSrcCurrency || CURRENCY_BAD == uDstCurrency)
+    else if (badCurrency() == uSrcCurrency || badCurrency() == uDstCurrency)
     {
         m_journal.trace <<
             "Malformed transaction: Bad currency.";

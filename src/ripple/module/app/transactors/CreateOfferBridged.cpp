@@ -52,7 +52,7 @@ CreateOfferBridged::crossOffers (
 
     core::OfferStream offers_leg1 (view, view_cancel,
         core::Book (asset_in, xrp_asset ()), when, m_journal);
-    
+
     core::OfferStream offers_leg2 (view, view_cancel,
         core::Book (xrp_asset (), asset_out), when, m_journal);
 
@@ -86,7 +86,7 @@ CreateOfferBridged::crossOffers (
         // Logic:
         // We calculate the qualities of any direct and bridged offers at the
         // tip of the order book, and choose the best one of the two.
-        
+
         if (have_direct)
         {
             core::Quality const direct_quality (offers_direct.tip ().quality ());
@@ -188,4 +188,3 @@ CreateOfferBridged::crossOffers (
 }
 
 }
-

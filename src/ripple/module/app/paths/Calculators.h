@@ -121,7 +121,7 @@ TER nodeDeliverRev (
     const unsigned int          nodeIndex,
     PathState&                  pathState,
     const bool                  bMultiQuality,
-    const uint160&              uOutAccountID,
+    Account const&              uOutAccountID,
     const STAmount&             saOutReq,
     STAmount&                   saOutAct);
 
@@ -130,7 +130,7 @@ TER nodeDeliverFwd (
     const unsigned int          nodeIndex,
     PathState&                  pathState,
     const bool                  bMultiQuality,
-    const uint160&              uInAccountID,
+    Account const&              uInAccountID,
     const STAmount&             saInReq,
     STAmount&                   saInAct,
     STAmount&                   saInFees);

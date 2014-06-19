@@ -96,7 +96,7 @@ TER computeReverseLiqudity (
     WriteLog (lsTRACE, RippleCalc)
         << "computeReverseLiqudity>"
         << " nodeIndex=" << nodeIndex
-        << " issuer_=" << RippleAddress::createHumanAccountID (node.issuer_)
+        << " issuer_=" << to_string (node.issuer_)
         << " transferRate_=" << node.transferRate_;
 
     auto resultCode = node.isAccount()

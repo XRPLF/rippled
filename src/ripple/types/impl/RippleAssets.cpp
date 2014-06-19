@@ -79,9 +79,9 @@ public:
     template <class Asset>
     void testAssetType ()
     {
-        RippleCurrency const c1 (1); RippleIssuer const i1 (1);
-        RippleCurrency const c2 (2); RippleIssuer const i2 (2);
-        RippleCurrency const c3 (3); RippleIssuer const i3 (3);
+        Currency const c1 (1); Account const i1 (1);
+        Currency const c2 (2); Account const i2 (2);
+        Currency const c3 (3); Account const i3 (3);
 
         expect (Asset (c1, i1) != Asset (c2, i1));
         expect (Asset (c1, i1) <  Asset (c2, i1));
@@ -124,10 +124,10 @@ public:
     template <class Set>
     void testAssetSet ()
     {
-        RippleCurrency const c1 (1);
-        RippleIssuer   const i1 (1);
-        RippleCurrency const c2 (2);
-        RippleIssuer   const i2 (2);
+        Currency const c1 (1);
+        Account   const i1 (1);
+        Currency const c2 (2);
+        Account   const i2 (2);
         RippleAssetRef const a1 (c1, i1);
         RippleAssetRef const a2 (c2, i2);
 
@@ -170,10 +170,10 @@ public:
     template <class Map>
     void testAssetMap ()
     {
-        RippleCurrency const c1 (1);
-        RippleIssuer   const i1 (1);
-        RippleCurrency const c2 (2);
-        RippleIssuer   const i2 (2);
+        Currency const c1 (1);
+        Account   const i1 (1);
+        Currency const c2 (2);
+        Account   const i2 (2);
         RippleAssetRef const a1 (c1, i1);
         RippleAssetRef const a2 (c2, i2);
 
@@ -259,9 +259,9 @@ public:
     template <class Book>
     void testBook ()
     {
-        RippleCurrency const c1 (1); RippleIssuer const i1 (1);
-        RippleCurrency const c2 (2); RippleIssuer const i2 (2);
-        RippleCurrency const c3 (3); RippleIssuer const i3 (3);
+        Currency const c1 (1); Account const i1 (1);
+        Currency const c2 (2); Account const i2 (2);
+        Currency const c3 (3); Account const i3 (3);
 
         RippleAsset a1 (c1, i1);
         RippleAsset a2 (c1, i2);
@@ -316,10 +316,10 @@ public:
     template <class Set>
     void testBookSet ()
     {
-        RippleCurrency const c1 (1);
-        RippleIssuer   const i1 (1);
-        RippleCurrency const c2 (2);
-        RippleIssuer   const i2 (2);
+        Currency const c1 (1);
+        Account   const i1 (1);
+        Currency const c2 (2);
+        Account   const i2 (2);
         RippleAssetRef const a1 (c1, i1);
         RippleAssetRef const a2 (c2, i2);
         RippleBookRef  const b1 (a1, a2);
@@ -364,10 +364,10 @@ public:
     template <class Map>
     void testBookMap ()
     {
-        RippleCurrency const c1 (1);
-        RippleIssuer   const i1 (1);
-        RippleCurrency const c2 (2);
-        RippleIssuer   const i2 (2);
+        Currency const c1 (1);
+        Account   const i1 (1);
+        Currency const c2 (2);
+        Account   const i2 (2);
         RippleAssetRef const a1 (c1, i1);
         RippleAssetRef const a2 (c2, i2);
         RippleBookRef  const b1 (a1, a2);
@@ -459,11 +459,11 @@ public:
 
     void run()
     {
-        testcase ("RippleCurrency");
-        testUnsigned <RippleCurrency> ();
+        testcase ("Currency");
+        testUnsigned <Currency> ();
 
-        testcase ("RippleIssuer");
-        testUnsigned <RippleIssuer> ();
+        testcase ("Account");
+        testUnsigned <Account> ();
 
         // ---
 

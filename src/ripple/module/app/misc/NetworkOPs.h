@@ -164,7 +164,7 @@ public:
     virtual AccountState::pointer getAccountState (Ledger::ref lrLedger,
         const RippleAddress& accountID) = 0;
     virtual SLE::pointer getGenerator (Ledger::ref lrLedger,
-        uint160 const& uGeneratorID) = 0;
+        Account const& uGeneratorID) = 0;
 
     //--------------------------------------------------------------------------
     //
@@ -190,12 +190,12 @@ public:
 
     virtual void getBookPage (
         Ledger::pointer lpLedger,
-        const uint160& uTakerPaysCurrencyID,
-        const uint160& uTakerPaysIssuerID,
-        const uint160& uTakerGetsCurrencyID,
-        const uint160& uTakerGetsIssuerID,
-        const uint160& uTakerID,
-        const bool bProof,
+        Currency const& uTakerPaysCurrencyID,
+        Account const& uTakerPaysIssuerID,
+        Currency const& uTakerGetsCurrencyID,
+        Account const& uTakerGetsIssuerID,
+        Account const& uTakerID,
+        bool const bProof,
         const unsigned int iLimit,
         const Json::Value& jvMarker,
         Json::Value& jvResult) = 0;
@@ -215,16 +215,16 @@ public:
         const std::string& source) = 0;
 
     virtual void takePosition (int seq, SHAMap::ref position) = 0;
-    
+
     virtual SHAMap::pointer getTXMap (uint256 const& hash) = 0;
 
     virtual bool hasTXSet (const std::shared_ptr<Peer>& peer,
         uint256 const& set, protocol::TxSetStatus status) = 0;
 
     virtual void mapComplete (uint256 const& hash, SHAMap::ref map) = 0;
-    
+
     virtual bool stillNeedTXSet (uint256 const& hash) = 0;
-    
+
     // Fetch packs
     virtual void makeFetchPack (Job&, std::weak_ptr<Peer> peer,
         std::shared_ptr<protocol::TMGetObjectByHash> request,
@@ -241,7 +241,7 @@ public:
     virtual void endConsensus (bool correctLCL) = 0;
     virtual void setStandAlone () = 0;
     virtual void setStateTimer () = 0;
-    
+
     virtual void newLCL (int proposers, int convergeTime, uint256 const& ledgerHash) = 0;
     // VFALCO TODO rename to setNeedNetworkLedger
     virtual void needNetworkLedger () = 0;
@@ -265,14 +265,15 @@ public:
     virtual Json::Value getLedgerFetchInfo () = 0;
     virtual std::uint32_t acceptLedger () = 0;
 
-    typedef ripple::unordered_map <uint160, std::list<LedgerProposal::pointer> > Proposals;
+    typedef ripple::unordered_map <NodeID, std::list<LedgerProposal::pointer>>
+            Proposals;
     virtual Proposals& peekStoredProposals () = 0;
 
     virtual void storeProposal (LedgerProposal::ref proposal,
         const RippleAddress& peerPublic) = 0;
 
     virtual uint256 getConsensusLCL () = 0;
-    
+
     virtual void reportFeeChange () = 0;
 
     virtual void updateLocalTx (Ledger::ref newValidLedger) = 0;
