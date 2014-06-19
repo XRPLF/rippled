@@ -166,12 +166,12 @@ public:
         std::function<void (SLE::ref, bool)> fDescriber);
 
     TER dirDelete (
-        const bool                     bKeepRoot,
-        const std::uint64_t&           uNodeDir,      // Node item is mentioned in.
-        uint256 const&                 uRootIndex,
-        uint256 const&                 uLedgerIndex,  // Item being deleted
-        const bool                     bStable,
-        const bool                     bSoft);
+        const bool           bKeepRoot,
+        const std::uint64_t& uNodeDir,      // Node item is mentioned in.
+        uint256 const&       uRootIndex,
+        uint256 const&       uLedgerIndex,  // Item being deleted
+        const bool           bStable,
+        const bool           bSoft);
 
     bool dirFirst (uint256 const& uRootIndex, SLE::pointer& sleNode,
         unsigned int & uDirEntry, uint256 & uEntryIndex);
