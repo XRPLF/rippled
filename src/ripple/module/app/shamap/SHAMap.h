@@ -89,7 +89,6 @@ enum SHAMapState
     See https://en.wikipedia.org/wiki/Merkle_tree
  */
 class SHAMap
-//     : public CountedObject <SHAMap>
 {
 private:
     /** Function object which handles missing nodes. */
@@ -124,10 +123,18 @@ public:
 
 public:
     // build new map
-    explicit SHAMap (SHAMapType t, FullBelowCache& fullBelowCache,
-        std::uint32_t seq = 1, MissingNodeHandler missing_node_handler = DefaultMissingNodeHandler());
+    SHAMap (
+        SHAMapType t,
+        FullBelowCache& fullBelowCache,
+        TreeNodeCache& treeNodeCache,
+        std::uint32_t seq = 1,
+        MissingNodeHandler missing_node_handler = DefaultMissingNodeHandler());
 
-    SHAMap (SHAMapType t, uint256 const& hash, FullBelowCache& fullBelowCache,
+    SHAMap (
+        SHAMapType t,
+        uint256 const& hash,
+        FullBelowCache& fullBelowCache,
+        TreeNodeCache& treeNodeCache,
         MissingNodeHandler missing_node_handler = DefaultMissingNodeHandler());
 
     ~SHAMap ();
@@ -148,19 +155,14 @@ public:
         mLedgerSeq = lseq;
     }
 
-    bool hasNode (const SHAMapNodeID & id);
     bool fetchRoot (uint256 const & hash, SHAMapSyncFilter * filter);
 
     // normal hash access functions
     bool hasItem (uint256 const & id);
     bool delItem (uint256 const & id);
     bool addItem (const SHAMapItem & i, bool isTransaction, bool hasMeta);
-    bool updateItem (const SHAMapItem & i, bool isTransaction, bool hasMeta);
+
     uint256 getHash () const
-    {
-        return root->getNodeHash ();
-    }
-    uint256 getHash ()
     {
         return root->getNodeHash ();
     }
@@ -203,10 +205,6 @@ public:
         assert (mState != smsInvalid);
         mState = smsImmutable;
     }
-    bool isImmutable ()
-    {
-        return mState == smsImmutable;
-    }
     bool isSynching () const
     {
         return (mState == smsFloating) || (mState == smsSynching);
@@ -214,10 +212,6 @@ public:
     void setSynching ()
     {
         mState = smsSynching;
-    }
-    void setFloating ()
-    {
-        mState = smsFloating;
     }
     void clearSynching ()
     {
@@ -234,78 +228,37 @@ public:
 
     int armDirty ();
     int flushDirty (DirtySet & dirtySet, int maxNodes, NodeObjectType t,
-                           std::uint32_t seq);
+                    std::uint32_t seq);
     std::shared_ptr<DirtySet> disarmDirty ();
-
-    void setSeq (std::uint32_t seq)
-    {
-        mSeq = seq;
-        assert (seq != 0);
-    }
-    std::uint32_t getSeq ()
-    {
-        return mSeq;
-    }
-
-    // overloads for backed maps
-    SHAMapTreeNode::pointer fetchNodeExternal (const SHAMapNodeID & id, uint256 const & hash); // throws
-    SHAMapTreeNode::pointer fetchNodeExternalNT (const SHAMapNodeID & id, uint256 const & hash); // no throw
-
-    bool operator== (const SHAMap & s)
-    {
-        return getHash () == s.getHash ();
-    }
-
-    // trusted path operations - prove a particular node is in a particular ledger
-    std::list<Blob > getTrustedPath (uint256 const & index);
-    static Blob checkTrustedPath (uint256 const & ledgerHash, uint256 const & leafIndex,
-                                  const std::list<Blob >& path);
 
     void walkMap (std::vector<SHAMapMissingNode>& missingNodes, int maxMissing);
 
-    bool getPath (uint256 const & index, std::vector< Blob >& nodes, SHANodeFormat format);
-
     bool deepCompare (SHAMap & other);
-
-    virtual void dump (bool withHashes = false);
 
     typedef std::pair <uint256, Blob> fetchPackEntry_t;
 
-    std::list<fetchPackEntry_t> getFetchPack (SHAMap * have, bool includeLeaves, int max);
     void getFetchPack (SHAMap * have, bool includeLeaves, int max, std::function<void (const uint256&, const Blob&)>);
-
-    // VFALCO NOTE These static members should be moved into a
-    //             new Application singleton class.
-    //
-    // tree node cache operations
-    static SHAMapTreeNode::pointer getCache (uint256 const& hash, SHAMapNodeID const& id);
-    static void canonicalize (uint256 const& hash, SHAMapTreeNode::pointer&);
-
-    static int getTreeNodeSize ()
-    {
-        return treeNodeCache.getCacheSize ();
-    }
-
-    static void sweep ()
-    {
-        treeNodeCache.sweep ();
-    }
-
-    static void setTreeCache (int size, int age)
-    {
-        treeNodeCache.setTargetSize (size);
-        treeNodeCache.setTargetAge (age);
-    }
 
     void setTXMap ()
     {
         mTXMap = true;
     }
 
-    typedef std::pair<uint256, SHAMapNodeID> TNIndex;
-
 private:
-    static TaggedCache <uint256, SHAMapTreeNode> treeNodeCache;
+    // trusted path operations - prove a particular node is in a particular ledger
+    std::list<Blob > getTrustedPath (uint256 const & index);
+
+    SHAMapTreeNode::pointer fetchNodeExternal (const SHAMapNodeID & id,
+                                               uint256 const & hash); // throws
+    SHAMapTreeNode::pointer fetchNodeExternalNT (const SHAMapNodeID & id,
+                                                 uint256 const & hash); // no throw
+
+    bool getPath (uint256 const & index, std::vector< Blob >& nodes, SHANodeFormat format);
+    void dump (bool withHashes = false);
+
+     // tree node cache operations
+    SHAMapTreeNode::pointer getCache (uint256 const& hash, SHAMapNodeID const& id);
+    void canonicalize (uint256 const& hash, SHAMapTreeNode::pointer&);
 
     void dirtyUp (std::stack<SHAMapTreeNode::pointer>& stack, uint256 const & target, uint256 prevHash);
     std::stack<SHAMapTreeNode::pointer> getStack (uint256 const & id, bool include_nonmatching_leaf);
@@ -352,6 +305,7 @@ private:
     std::uint32_t mLedgerSeq; // sequence number of ledger this is part of
     SyncUnorderedMapType< SHAMapNodeID, SHAMapTreeNode::pointer, SHAMapNode_hash > mTNByID;
     std::shared_ptr<DirtySet> mDirtyNodes;
+    TreeNodeCache& mTreeNodeCache;
     SHAMapTreeNode::pointer root;
     SHAMapState mState;
     SHAMapType mType;

@@ -30,7 +30,7 @@
 #include <ripple/nodestore/Manager.h>
 #include <ripple/overlay/make_Overlay.h>
 #include <fstream>
-    
+
 namespace ripple {
 
 // VFALCO TODO Clean this global up
@@ -147,6 +147,7 @@ public:
     std::unique_ptr <NodeStore::Manager> m_nodeStoreManager;
 
     NodeCache m_tempNodeCache;
+    TreeNodeCache m_treeNodeCache;
     SLECache m_sleCache;
     LocalCredentials m_localCredentials;
     TransactionMaster m_txMaster;
@@ -229,6 +230,9 @@ public:
 
         , m_tempNodeCache ("NodeCache", 16384, 90, get_seconds_clock (),
             m_logs.journal("TaggedCache"))
+
+        , m_treeNodeCache ("TreeNodeCache", 65536, 60, get_seconds_clock (),
+            LogPartition::getJournal <TaggedCacheLog> ())
 
         , m_sleCache ("LedgerEntryCache", 4096, 120, get_seconds_clock (),
             m_logs.journal("TaggedCache"))
@@ -419,6 +423,11 @@ public:
     NodeCache& getTempNodeCache ()
     {
         return m_tempNodeCache;
+    }
+
+    TreeNodeCache&  getTreeNodeCache ()
+    {
+        return m_treeNodeCache;
     }
 
     NodeStore::Database& getNodeStore ()
@@ -679,7 +688,8 @@ public:
         m_ledgerMaster->tune (getConfig ().getSize (siLedgerSize), getConfig ().getSize (siLedgerAge));
         m_sleCache.setTargetSize (getConfig ().getSize (siSLECacheSize));
         m_sleCache.setTargetAge (getConfig ().getSize (siSLECacheAge));
-        SHAMap::setTreeCache (getConfig ().getSize (siTreeCacheSize), getConfig ().getSize (siTreeCacheAge));
+        m_treeNodeCache.setTargetSize (getConfig ().getSize (siTreeCacheSize));
+        m_treeNodeCache.setTargetAge (getConfig ().getSize (siTreeCacheAge));
 
 
         //----------------------------------------------------------------------
@@ -1050,8 +1060,8 @@ public:
         logTimedCall (m_journal.warning, "AcceptedLedger::sweep", __FILE__, __LINE__,
             &AcceptedLedger::sweep);
 
-        logTimedCall (m_journal.warning, "SHAMap::sweep", __FILE__, __LINE__,
-            &SHAMap::sweep);
+        logTimedCall (m_journal.warning, "SHAMap::sweep", __FILE__, __LINE__,std::bind (
+            &TreeNodeCache::sweep, &m_treeNodeCache));
 
         logTimedCall (m_journal.warning, "NetworkOPs::sweepFetchPack", __FILE__, __LINE__, std::bind (
             &NetworkOPs::sweepFetchPack, m_networkOPs.get ()));

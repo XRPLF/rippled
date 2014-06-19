@@ -634,15 +634,6 @@ static void addFPtoList (std::list<SHAMap::fetchPackEntry_t>& list, const uint25
     list.push_back (SHAMap::fetchPackEntry_t (hash, blob));
 }
 
-std::list<SHAMap::fetchPackEntry_t> SHAMap::getFetchPack (SHAMap* have, bool includeLeaves, int max)
-{
-    std::list<fetchPackEntry_t> ret;
-    getFetchPack (have, includeLeaves, max,
-                  std::bind (addFPtoList, std::ref (ret),
-                             std::placeholders::_1, std::placeholders::_2));
-    return ret;
-}
-
 void SHAMap::getFetchPack (SHAMap* have, bool includeLeaves, int max,
                            std::function<void (const uint256&, const Blob&)> func)
 {
@@ -811,11 +802,14 @@ public:
         RAND_pseudo_bytes (reinterpret_cast<unsigned char*> (&seed), sizeof (seed));
         srand (seed);
 
-        FullBelowCache fullBelowCache ("test.full_below",
-            get_seconds_clock ());
+        beast::manual_clock <std::chrono::seconds> clock;  // manual advance clock
+        beast::Journal const j;                            // debug journal
 
-        SHAMap source (smtFREE, fullBelowCache);
-        SHAMap destination (smtFREE, fullBelowCache);
+        FullBelowCache fullBelowCache ("test.full_below", clock);
+        TreeNodeCache treeNodeCache ("test.tree_node_cache", 65536, 60, clock, j);
+
+        SHAMap source (smtFREE, fullBelowCache, treeNodeCache);
+        SHAMap destination (smtFREE, fullBelowCache, treeNodeCache);
 
         int items = 10000;
         for (int i = 0; i < items; ++i)
@@ -853,6 +847,7 @@ public:
 
         do
         {
+            ++clock;
             ++passes;
             hashes.clear ();
 

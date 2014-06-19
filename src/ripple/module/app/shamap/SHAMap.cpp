@@ -19,6 +19,7 @@
 
 #include <ripple/nodestore/Database.h>
 #include <beast/unit_test/suite.h>
+#include <beast/chrono/manual_clock.h>
 
 namespace ripple {
 
@@ -29,11 +30,16 @@ void SHAMap::DefaultMissingNodeHandler::operator() (std::uint32_t refNUm)
 
 //------------------------------------------------------------------------------
 
-SHAMap::SHAMap (SHAMapType t, FullBelowCache& fullBelowCache, std::uint32_t seq,
+SHAMap::SHAMap (
+    SHAMapType t,
+    FullBelowCache& fullBelowCache,
+    TreeNodeCache& treeNodeCache,
+    std::uint32_t seq,
     MissingNodeHandler missing_node_handler)
     : m_fullBelowCache (fullBelowCache)
     , mSeq (seq)
     , mLedgerSeq (0)
+    , mTreeNodeCache (treeNodeCache)
     , mState (smsModifying)
     , mType (t)
     , mTXMap (false)
@@ -48,11 +54,16 @@ SHAMap::SHAMap (SHAMapType t, FullBelowCache& fullBelowCache, std::uint32_t seq,
     mTNByID.replace(root->getID(), root);
 }
 
-SHAMap::SHAMap (SHAMapType t, uint256 const& hash, FullBelowCache& fullBelowCache,
+SHAMap::SHAMap (
+    SHAMapType t,
+    uint256 const& hash,
+    FullBelowCache& fullBelowCache,
+    TreeNodeCache& treeNodeCache,
     MissingNodeHandler missing_node_handler)
     : m_fullBelowCache (fullBelowCache)
     , mSeq (1)
     , mLedgerSeq (0)
+    , mTreeNodeCache (treeNodeCache)
     , mState (smsSynching)
     , mType (t)
     , mTXMap (false)
@@ -65,11 +76,6 @@ SHAMap::SHAMap (SHAMapType t, uint256 const& hash, FullBelowCache& fullBelowCach
     root->makeInner ();
     mTNByID.replace(root->getID(), root);
 }
-
-TaggedCache <uint256, SHAMapTreeNode>
-    SHAMap::treeNodeCache ("TreeNodeCache", 65536, 60,
-        get_seconds_clock (),
-            deprecatedLogs().journal("TaggedCache"));
 
 SHAMap::~SHAMap ()
 {
@@ -116,7 +122,7 @@ std::size_t hash_value (const SHAMapNodeID& mn)
 SHAMap::pointer SHAMap::snapShot (bool isMutable)
 {
     SHAMap::pointer ret = std::make_shared<SHAMap> (mType,
-        std::ref (m_fullBelowCache));
+        m_fullBelowCache, mTreeNodeCache);
     SHAMap& newMap = *ret;
 
     // Return a new SHAMap that is a snapshot of this one
@@ -346,7 +352,7 @@ SHAMapTreeNode* SHAMap::getNodePointerNT (const SHAMapNodeID& id, uint256 const&
         if (filter->haveNode (id, hash, nodeData))
         {
             SHAMapTreeNode::pointer node = std::make_shared<SHAMapTreeNode> (
-                    std::cref (id), std::cref (nodeData), 0, snfPREFIX, std::cref (hash), true);
+                    id, nodeData, 0, snfPREFIX, hash, true);
             canonicalize (hash, node);
 
             // Canonicalize the node with mTNByID to make sure all threads gets the same node
@@ -944,7 +950,7 @@ SHAMapTreeNode* SHAMap::getNodeAsync (
             if (filter->haveNode (id, hash, nodeData))
             {
                 ptr = std::make_shared <SHAMapTreeNode> (
-                    std::cref (id), std::cref (nodeData), 0, snfPREFIX, std::cref (hash), true);
+                    id, nodeData, 0, snfPREFIX, hash, true);
                 filter->gotNode (true, id, hash, nodeData, ptr->getType ());
             }
         }
@@ -1083,7 +1089,7 @@ bool SHAMap::fetchRoot (uint256 const& hash, SHAMapSyncFilter* filter)
     }
 
     SHAMapTreeNode::pointer newRoot = fetchNodeExternalNT(SHAMapNodeID(), hash);
-    
+
     if (newRoot)
     {
         root = newRoot;
@@ -1302,7 +1308,7 @@ void SHAMap::dump (bool hash)
 
 SHAMapTreeNode::pointer SHAMap::getCache (uint256 const& hash, SHAMapNodeID const& id)
 {
-    SHAMapTreeNode::pointer ret = treeNodeCache.fetch (hash);
+    SHAMapTreeNode::pointer ret = mTreeNodeCache.fetch (hash);
     assert (!ret || !ret->getSeq());
 
     if (ret && (ret->getID() != id))
@@ -1313,7 +1319,7 @@ SHAMapTreeNode::pointer SHAMap::getCache (uint256 const& hash, SHAMapNodeID cons
         ret->setID(id);
 
         // Future fetches are likely to use the "new" ID
-        treeNodeCache.canonicalize (hash, ret, true);
+        mTreeNodeCache.canonicalize (hash, ret, true);
         assert (ret->getID() == id);
         assert (ret->getNodeHash() == hash);
     }
@@ -1327,7 +1333,7 @@ void SHAMap::canonicalize (uint256 const& hash, SHAMapTreeNode::pointer& node)
 
     SHAMapNodeID id = node->getID();
 
-    treeNodeCache.canonicalize (hash, node);
+    mTreeNodeCache.canonicalize (hash, node);
 
     if (id != node->getID())
     {
@@ -1336,7 +1342,7 @@ void SHAMap::canonicalize (uint256 const& hash, SHAMapTreeNode::pointer& node)
         node->setID(id);
 
         // Future fetches are likely to use the newer ID
-        treeNodeCache.canonicalize (hash, node, true);
+        mTreeNodeCache.canonicalize (hash, node, true);
         assert (id == node->getID());
     }
 }
@@ -1362,8 +1368,11 @@ public:
     {
         testcase ("add/traverse");
 
-        FullBelowCache fullBelowCache ("test.full_below",
-            get_seconds_clock ());
+        beast::manual_clock <std::chrono::seconds> clock;  // manual advance clock
+        beast::Journal const j;                            // debug journal
+
+        FullBelowCache fullBelowCache ("test.full_below", clock);
+        TreeNodeCache treeNodeCache ("test.tree_node_cache", 65536, 60, clock, j);
 
         // h3 and h4 differ only in the leaf, same terminal node (level 19)
         uint256 h1, h2, h3, h4, h5;
@@ -1373,7 +1382,7 @@ public:
         h4.SetHex ("b92891fe4ef6cee585fdc6fda2e09eb4d386363158ec3321b8123e5a772c6ca8");
         h5.SetHex ("a92891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
 
-        SHAMap sMap (smtFREE, fullBelowCache);
+        SHAMap sMap (smtFREE, fullBelowCache, treeNodeCache);
         SHAMapItem i1 (h1, IntToVUC (1)), i2 (h2, IntToVUC (2)), i3 (h3, IntToVUC (3)), i4 (h4, IntToVUC (4)), i5 (h5, IntToVUC (5));
 
         unexpected (!sMap.addItem (i2, true, false), "no add");

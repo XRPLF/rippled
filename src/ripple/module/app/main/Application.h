@@ -53,8 +53,8 @@ class PathRequests;
 
 class DatabaseCon;
 
-typedef TaggedCache <uint256, Blob> NodeCache;
-typedef TaggedCache <uint256, SerializedLedgerEntry> SLECache;
+using NodeCache     = TaggedCache <uint256, Blob>;
+using SLECache      = TaggedCache <uint256, SerializedLedgerEntry>;
 
 class Application : public beast::PropertyStream::Source
 {
@@ -87,6 +87,7 @@ public:
     virtual RPC::Manager&           getRPCManager () = 0;
     virtual SiteFiles::Manager&     getSiteFiles () = 0;
     virtual NodeCache&              getTempNodeCache () = 0;
+    virtual TreeNodeCache&          getTreeNodeCache () = 0;
     virtual SLECache&               getSLECache () = 0;
     virtual Validators::Manager&    getValidators () = 0;
     virtual AmendmentTable&         getAmendmentTable() = 0;

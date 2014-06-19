@@ -33,8 +33,9 @@ TransactionAcquire::TransactionAcquire (uint256 const& hash, clock_type& clock)
         deprecatedLogs().journal("TransactionAcquire"))
     , mHaveRoot (false)
 {
+    Application& app = getApp();
     mMap = std::make_shared<SHAMap> (smtTRANSACTION, hash,
-        std::ref (getApp().getFullBelowCache ()));
+        app.getFullBelowCache (), app.getTreeNodeCache());
     mMap->setTXMap ();
 }
 
