@@ -67,7 +67,7 @@ Journal::Sink& Journal::getNullSink ()
 //------------------------------------------------------------------------------
 
 Journal::Sink::Sink ()
-    : m_level (kAll)
+    : m_level (kWarning)
     , m_console (false)
 {
 }
