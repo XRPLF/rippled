@@ -111,6 +111,16 @@ public:
         return n == mNodeID;
     }
     bool operator!= (uint256 const& n) const {return !(*this == n);}
+<<<<<<< HEAD
+=======
+
+    void set (SHAMapNodeID const& from)
+    {
+        mNodeID = from.mNodeID;
+        mDepth = from.mDepth;
+        mHash = from.mHash;
+    }
+>>>>>>> Basic hygiene upgrade.
 
     virtual std::string getString () const;
     void dump () const;
