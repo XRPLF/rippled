@@ -32,9 +32,10 @@ SField::StaticLockType& SField::getMutex ()
 }
 
 SField sfInvalid (-1), sfGeneric (0);
-SField sfLedgerEntry (STI_LEDGERENTRY, 1, "LedgerEntry");
-SField sfTransaction (STI_TRANSACTION, 1, "Transaction");
-SField sfValidation (STI_VALIDATION, 1, "Validation");
+SField sfLedgerEntry (STI_LEDGERENTRY, 257, "LedgerEntry");
+SField sfTransaction (STI_TRANSACTION, 257, "Transaction");
+SField sfValidation (STI_VALIDATION, 257, "Validation");
+SField sfMetadata (STI_METADATA, 257, "Metadata");
 SField sfHash (STI_HASH256, 257, "hash");
 SField sfIndex (STI_HASH256, 258, "index");
 

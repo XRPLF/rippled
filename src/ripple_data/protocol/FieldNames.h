@@ -39,9 +39,11 @@ enum SerializedTypeID
 #undef FIELD
 
     // high level types
+    // cannot be serialized inside other types
     STI_TRANSACTION = 10001,
     STI_LEDGERENTRY = 10002,
     STI_VALIDATION  = 10003,
+    STI_METADATA    = 10004,
 };
 
 /** Identifies fields.
@@ -239,7 +241,9 @@ protected:
     SField (SerializedTypeID id, int val);
 };
 
-extern SField sfInvalid, sfGeneric, sfLedgerEntry, sfTransaction, sfValidation;
+extern SField
+    sfInvalid, sfGeneric,
+    sfLedgerEntry, sfTransaction, sfValidation, sfMetadata;
 
 #define FIELD(name, type, index) extern SField sf##name;
 #define TYPE(name, type, index)

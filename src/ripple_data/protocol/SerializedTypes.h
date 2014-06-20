@@ -146,13 +146,14 @@ public:
 
     virtual void add (Serializer& s) const
     {
-        ;
+        assert (false);
     }
 
     virtual bool isEquivalent (const SerializedType& t) const;
 
     void addFieldID (Serializer& s) const
     {
+        assert (fName->isBinary ());
         s.addFieldID (fName->fieldType, fName->fieldValue);
     }
 
@@ -247,6 +248,8 @@ public:
     Json::Value getJson (int) const;
     void add (Serializer& s) const
     {
+        assert (fName->isBinary ());
+        assert (fName->fieldType == STI_UINT8);
         s.add8 (value);
     }
 
@@ -306,6 +309,8 @@ public:
     Json::Value getJson (int) const;
     void add (Serializer& s) const
     {
+        assert (fName->isBinary ());
+        assert (fName->fieldType == STI_UINT16);
         s.add16 (value);
     }
 
@@ -365,6 +370,8 @@ public:
     Json::Value getJson (int) const;
     void add (Serializer& s) const
     {
+        assert (fName->isBinary ());
+        assert (fName->fieldType == STI_UINT32);
         s.add32 (value);
     }
 
@@ -423,6 +430,8 @@ public:
     Json::Value getJson (int) const;
     void add (Serializer& s) const
     {
+        assert (fName->isBinary ());
+        assert (fName->fieldType == STI_UINT64);
         s.add64 (value);
     }
 
@@ -881,6 +890,8 @@ public:
     virtual std::string getText () const;
     void add (Serializer& s) const
     {
+        assert (fName->isBinary ());
+        assert (fName->fieldType == STI_HASH128);
         s.add128 (value);
     }
 
@@ -954,6 +965,8 @@ public:
     virtual std::string getText () const;
     void add (Serializer& s) const
     {
+        assert (fName->isBinary ());
+        assert (fName->fieldType == STI_HASH160);
         s.add160 (value);
     }
 
@@ -1027,6 +1040,8 @@ public:
     std::string getText () const;
     void add (Serializer& s) const
     {
+        assert (fName->isBinary ());
+        assert (fName->fieldType == STI_HASH256);
         s.add256 (value);
     }
 
@@ -1094,6 +1109,9 @@ public:
     virtual std::string getText () const;
     void add (Serializer& s) const
     {
+        assert (fName->isBinary ());
+        assert ((fName->fieldType == STI_VL) ||
+            (fName->fieldType == STI_ACCOUNT));
         s.addVL (value);
     }
 

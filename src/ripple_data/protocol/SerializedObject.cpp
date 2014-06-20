@@ -277,6 +277,12 @@ bool STObject::set (SerializerIterator& sit, int depth)
 
         reachedEndOfObject = (type == STI_OBJECT) && (field == 1);
 
+        if ((type == STI_ARRAY) && (field == 1))
+        {
+            WriteLog (lsWARNING, STObject) << "Encountered object with end of array marker";
+            throw std::runtime_error ("Illegal terminator in object");
+        }
+
         if (!reachedEndOfObject)
         {
             // Figure out the field
@@ -360,6 +366,12 @@ void STObject::add (Serializer& s, bool withSigningFields) const
     {
         // insert them in sorted order
         const SerializedType* field = it.second;
+
+        // When we serialize an object inside another object,
+        // the type associated by rule with this field name
+        // must be OBJECT, or the object cannot be deserialized
+        assert ((field->getSType() != STI_OBJECT) ||
+            (field->getFName().fieldType == STI_OBJECT));
 
         field->addFieldID (s);
         field->add (s);
@@ -1233,12 +1245,24 @@ STArray* STArray::construct (SerializerIterator& sit, SField::ref field)
         if ((type == STI_ARRAY) && (field == 1))
             break;
 
+        if ((type == STI_OBJECT) && (field == 1))
+        {
+            WriteLog (lsWARNING, STObject) << "Encountered array with end of object marker";
+            throw std::runtime_error ("Illegal terminator in array");
+        }
+
         SField::ref fn = SField::getField (type, field);
 
         if (fn.isInvalid ())
         {
             WriteLog (lsTRACE, STObject) << "Unknown field: " << type << "/" << field;
             throw std::runtime_error ("Unknown field");
+        }
+
+        if (fn.fieldType != STI_OBJECT)
+        {
+            WriteLog (lsTRACE, STObject) << "Array contains non-object";
+            throw std::runtime_error ("Non-object in array");
         }
 
         value.push_back (new STObject (fn));
