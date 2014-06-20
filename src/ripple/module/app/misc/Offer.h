@@ -29,7 +29,8 @@ public:
 
     virtual ~Offer () {}
 
-    AccountItem::pointer makeItem (const uint160&, SerializedLedgerEntry::ref ledgerEntry);
+    AccountItem::pointer makeItem (
+        Account const&, SerializedLedgerEntry::ref ledgerEntry);
 
     LedgerEntryType getType ()
     {

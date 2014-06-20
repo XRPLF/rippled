@@ -19,12 +19,15 @@
 
 namespace ripple {
 
-void STAmount::canonicalizeRound (bool isNative, std::uint64_t& value, int& offset, bool roundUp)
+void STAmount::canonicalizeRound (
+    bool isNative, std::uint64_t& value, int& offset, bool roundUp)
 {
     if (!roundUp) // canonicalize already rounds down
         return;
 
-    WriteLog (lsTRACE, STAmount) << "canonicalize< " << value << ":" << offset << (roundUp ? " up" : " down");
+    WriteLog (lsTRACE, STAmount)
+            << "canonicalize< " << value
+            << ":" << offset << (roundUp ? " up" : " down");
 
     if (isNative)
     {
@@ -57,7 +60,9 @@ void STAmount::canonicalizeRound (bool isNative, std::uint64_t& value, int& offs
         ++offset;
     }
 
-    WriteLog (lsTRACE, STAmount) << "canonicalize> " << value << ":" << offset << (roundUp ? " up" : " down");
+    WriteLog (lsTRACE, STAmount)
+            << "canonicalize> " << value
+            << ":" << offset << (roundUp ? " up" : " down");
 }
 
 STAmount STAmount::addRound (const STAmount& v1, const STAmount& v2, bool roundUp)
@@ -68,13 +73,15 @@ STAmount STAmount::addRound (const STAmount& v1, const STAmount& v2, bool roundU
         return v1;
 
     if (v1.mValue == 0)
-        return STAmount (v1.getFName (), v1.mCurrency, v1.mIssuer, v2.mValue, v2.mOffset, v2.mIsNegative);
+        return STAmount (v1.getFName (), v1.mCurrency, v1.mIssuer, v2.mValue,
+                         v2.mOffset, v2.mIsNegative);
 
     if (v1.mIsNative)
         return STAmount (v1.getFName (), v1.getSNValue () + v2.getSNValue ());
 
     int ov1 = v1.mOffset, ov2 = v2.mOffset;
-    std::int64_t vv1 = static_cast<std::int64_t> (v1.mValue), vv2 = static_cast<std::uint64_t> (v2.mValue);
+    auto vv1 = static_cast<std::int64_t> (v1.mValue);
+    auto vv2 = static_cast<std::uint64_t> (v2.mValue);
 
     if (v1.mIsNegative)
         vv1 = -vv1;
@@ -138,13 +145,15 @@ STAmount STAmount::subRound (const STAmount& v1, const STAmount& v2, bool roundU
         return v1;
 
     if (v1.mValue == 0)
-        return STAmount (v1.getFName (), v1.mCurrency, v1.mIssuer, v2.mValue, v2.mOffset, !v2.mIsNegative);
+        return STAmount (v1.getFName (), v1.mCurrency, v1.mIssuer, v2.mValue,
+                         v2.mOffset, !v2.mIsNegative);
 
     if (v1.mIsNative)
         return STAmount (v1.getFName (), v1.getSNValue () - v2.getSNValue ());
 
     int ov1 = v1.mOffset, ov2 = v2.mOffset;
-    std::int64_t vv1 = static_cast<std::int64_t> (v1.mValue), vv2 = static_cast<std::uint64_t> (v2.mValue);
+    auto vv1 = static_cast<std::int64_t> (v1.mValue);
+    auto vv2 = static_cast<std::uint64_t> (v2.mValue);
 
     if (v1.mIsNegative)
         vv1 = -vv1;
@@ -201,16 +210,18 @@ STAmount STAmount::subRound (const STAmount& v1, const STAmount& v2, bool roundU
 }
 
 STAmount STAmount::mulRound (
-    const STAmount& v1, const STAmount& v2, const uint160& currency,
-    const uint160& issuer, bool roundUp)
+    const STAmount& v1, const STAmount& v2, Currency const& currency,
+    Account const& issuer, bool roundUp)
 {
     if (v1 == zero || v2 == zero)
         return STAmount (currency, issuer);
 
     if (v1.mIsNative && v2.mIsNative && currency.isZero ())
     {
-        std::uint64_t minV = (v1.getSNValue () < v2.getSNValue ()) ? v1.getSNValue () : v2.getSNValue ();
-        std::uint64_t maxV = (v1.getSNValue () < v2.getSNValue ()) ? v2.getSNValue () : v1.getSNValue ();
+        std::uint64_t minV = (v1.getSNValue () < v2.getSNValue ()) ?
+                v1.getSNValue () : v2.getSNValue ();
+        std::uint64_t maxV = (v1.getSNValue () < v2.getSNValue ()) ?
+                v2.getSNValue () : v1.getSNValue ();
 
         if (minV > 3000000000ull) // sqrt(cMaxNative)
             throw std::runtime_error ("Native value overflow");
@@ -261,13 +272,14 @@ STAmount STAmount::mulRound (
 
     std::uint64_t amount = v.getuint64 ();
     int offset = offset1 + offset2 + 14;
-    canonicalizeRound (currency.isZero (), amount, offset, resultNegative != roundUp);
+    canonicalizeRound (
+        currency.isZero (), amount, offset, resultNegative != roundUp);
     return STAmount (currency, issuer, amount, offset, resultNegative);
 }
 
 STAmount STAmount::divRound (
     const STAmount& num, const STAmount& den,
-    const uint160& currency, const uint160& issuer, bool roundUp)
+    Currency const& currency, Account const& issuer, bool roundUp)
 {
     if (den == zero)
         throw std::runtime_error ("division by zero");
@@ -311,7 +323,8 @@ STAmount STAmount::divRound (
 
     std::uint64_t amount = v.getuint64 ();
     int offset = numOffset - denOffset - 17;
-    canonicalizeRound (currency.isZero (), amount, offset, resultNegative != roundUp);
+    canonicalizeRound (
+        currency.isZero (), amount, offset, resultNegative != roundUp);
     return STAmount (currency, issuer, amount, offset, resultNegative);
 }
 

@@ -137,19 +137,22 @@ Json::Value doUnsubscribe (RPC::Context& context)
                     || !jvSubRequest["taker_gets"].isObject ())
                 return rpcError (rpcINVALID_PARAMS);
 
-            uint160         pay_currency;
-            uint160         pay_issuer;
-            uint160         get_currency;
-            uint160         get_issuer;
-            bool            bBoth           = (jvSubRequest.isMember ("both") && jvSubRequest["both"].asBool ())
-                                              || (jvSubRequest.isMember ("both_sides") && jvSubRequest["both_sides"].asBool ());  // DEPRECATED
+            Currency pay_currency;
+            Account pay_issuer;
+            Currency get_currency;
+            Account get_issuer;
+            bool bBoth = (jvSubRequest.isMember ("both") &&
+                          jvSubRequest["both"].asBool ())
+                    || (jvSubRequest.isMember ("both_sides") &&
+                        jvSubRequest["both_sides"].asBool ());  // DEPRECATED
 
             Json::Value     taker_pays     = jvSubRequest["taker_pays"];
             Json::Value     taker_gets     = jvSubRequest["taker_gets"];
 
             // Parse mandatory currency.
             if (!taker_pays.isMember ("currency")
-                    || !STAmount::currencyFromString (pay_currency, taker_pays["currency"].asString ()))
+                || !to_currency (
+                    pay_currency, taker_pays["currency"].asString ()))
             {
                 WriteLog (lsINFO, RPCHandler) << "Bad taker_pays currency.";
 
@@ -158,7 +161,8 @@ Json::Value doUnsubscribe (RPC::Context& context)
             // Parse optional issuer.
             else if (((taker_pays.isMember ("issuer"))
                       && (!taker_pays["issuer"].isString ()
-                          || !STAmount::issuerFromString (pay_issuer, taker_pays["issuer"].asString ())))
+                          || !to_issuer (
+                              pay_issuer, taker_pays["issuer"].asString ())))
                      // Don't allow illegal issuers.
                      || (!pay_currency != !pay_issuer)
                      || noAccount() == pay_issuer)
@@ -170,7 +174,8 @@ Json::Value doUnsubscribe (RPC::Context& context)
 
             // Parse mandatory currency.
             if (!taker_gets.isMember ("currency")
-                    || !STAmount::currencyFromString (get_currency, taker_gets["currency"].asString ()))
+                    || !to_currency (get_currency,
+                                     taker_gets["currency"].asString ()))
             {
                 WriteLog (lsINFO, RPCHandler) << "Bad taker_pays currency.";
 
@@ -179,7 +184,8 @@ Json::Value doUnsubscribe (RPC::Context& context)
             // Parse optional issuer.
             else if (((taker_gets.isMember ("issuer"))
                       && (!taker_gets["issuer"].isString ()
-                          || !STAmount::issuerFromString (get_issuer, taker_gets["issuer"].asString ())))
+                          || !to_issuer (get_issuer,
+                                         taker_gets["issuer"].asString ())))
                      // Don't allow illegal issuers.
                      || (!get_currency != !get_issuer)
                      || noAccount() == get_issuer)
@@ -197,9 +203,18 @@ Json::Value doUnsubscribe (RPC::Context& context)
                 return rpcError (rpcBAD_MARKET);
             }
 
-            context.netOps_.unsubBook (ispSub->getSeq (), pay_currency, get_currency, pay_issuer, get_issuer);
+            context.netOps_.unsubBook (
+                ispSub->getSeq (),
+                pay_currency, get_currency,
+                pay_issuer, get_issuer);
 
-            if (bBoth) context.netOps_.unsubBook (ispSub->getSeq (), get_currency, pay_currency, get_issuer, pay_issuer);
+            if (bBoth)
+            {
+                context.netOps_.unsubBook (
+                    ispSub->getSeq (),
+                    get_currency, pay_currency,
+                    get_issuer, pay_issuer);
+            }
         }
     }
 

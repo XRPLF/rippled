@@ -200,9 +200,9 @@ TER nodeDeliverFwd (
                 WriteLog (lsTRACE, RippleCalc)
                     << "nodeDeliverFwd: ? --> OFFER --> account:"
                     << " offerOwnerAccount_="
-                    << RippleAddress::createHumanAccountID (node.offerOwnerAccount_)
+                    << to_string (node.offerOwnerAccount_)
                     << " nextNode.account_="
-                    << RippleAddress::createHumanAccountID (nextNode.account_)
+                    << to_string (nextNode.account_)
                     << " saOutPassAct=" << saOutPassAct
                     << " saOutFunded=%s" << saOutFunded;
 

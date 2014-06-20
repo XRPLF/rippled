@@ -66,8 +66,6 @@ public:
     static const int sMD_Always         = 0x10; // value when node containing it is affected at all
     static const int sMD_Default        = sMD_ChangeOrig | sMD_ChangeNew | sMD_DeleteFinal | sMD_Create;
 
-public:
-
     const int               fieldCode;      // (type<<16)|index
     const SerializedTypeID  fieldType;      // STI_*
     const int               fieldValue;     // Code number for protocol
@@ -236,12 +234,13 @@ protected:
     static StaticLockType& getMutex ();
 
     // VFALCO NOTE can this be replaced with an atomic int???!
-    static int                  num;
+    static int num;
 
     SField (SerializedTypeID id, int val);
 };
 
-extern SField sfInvalid, sfGeneric, sfLedgerEntry, sfTransaction, sfValidation;
+extern const SField sfInvalid, sfGeneric, sfLedgerEntry, sfTransaction,
+    sfValidation;
 
 #define FIELD(name, type, index) extern SField sf##name;
 #define TYPE(name, type, index)

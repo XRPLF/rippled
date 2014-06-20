@@ -31,14 +31,16 @@ SField::StaticLockType& SField::getMutex ()
     return mutex;
 }
 
-SField sfInvalid (-1), sfGeneric (0);
-SField sfLedgerEntry (STI_LEDGERENTRY, 1, "LedgerEntry");
-SField sfTransaction (STI_TRANSACTION, 1, "Transaction");
-SField sfValidation (STI_VALIDATION, 1, "Validation");
-SField sfHash (STI_HASH256, 257, "hash");
-SField sfIndex (STI_HASH256, 258, "index");
+const SField sfInvalid (-1), sfGeneric (0);
+const SField sfLedgerEntry (STI_LEDGERENTRY, 1, "LedgerEntry");
+const SField sfTransaction (STI_TRANSACTION, 1, "Transaction");
+const SField sfValidation (STI_VALIDATION, 1, "Validation");
+const SField sfHash (STI_HASH256, 257, "hash");
+const SField sfIndex (STI_HASH256, 258, "index");
 
-#define FIELD(name, type, index) SField sf##name(FIELD_CODE(STI_##type, index), STI_##type, index, #name);
+// TODO(tom): Remove this horrorr.
+#define FIELD(name, type, index) \
+    SField sf##name(FIELD_CODE(STI_##type, index), STI_##type, index, #name);
 #define TYPE(name, type, index)
 #include <ripple/module/data/protocol/SerializeDeclarations.h>
 #undef FIELD
@@ -58,11 +60,15 @@ static int initFields ()
 
     return 0;
 }
-static const int f = initFields ();
 
+static const int forceInitializionOfFields = initFields ();
 
-SField::SField (SerializedTypeID tid, int fv) : fieldCode (FIELD_CODE (tid, fv)), fieldType (tid), fieldValue (fv),
-    fieldMeta (sMD_Default), fieldNum (++num), signingField (true), jsonName (nullptr)
+SField::SField (SerializedTypeID tid, int fv)
+        : fieldCode (FIELD_CODE (tid, fv)), fieldType (tid), fieldValue (fv),
+          fieldMeta (sMD_Default),
+          fieldNum (++num),
+          signingField (true),
+          jsonName (nullptr)
 {
     // call with the map mutex
     fieldName = beast::lexicalCast <std::string> (tid) + "/" +
@@ -88,13 +94,14 @@ SField::ref SField::getField (int code)
     if (it != codeToField.end ())
         return * (it->second);
 
-    if (field > 255)        // don't dynamically extend types that have no binary encoding
+    // Don't dynamically extend types that have no binary encoding.
+    if (field > 255)
         return sfInvalid;
 
     switch (type)
     {
-        // types we are willing to dynamically extend
-
+        // Types we are willing to dynamically extend
+        // TODO(tom): Remove this horrorr.
 #define FIELD(name, type, index)
 #define TYPE(name, type, index) case STI_##type:
 #include <ripple/module/data/protocol/SerializeDeclarations.h>
@@ -133,8 +140,8 @@ std::string SField::getName () const
     if (fieldValue == 0)
         return "";
 
-    return beast::lexicalCastThrow <std::string> (static_cast<int> (fieldType)) + "/" +
-           beast::lexicalCastThrow <std::string> (fieldValue);
+    return std::to_string(static_cast<int> (fieldType)) + "/" +
+            std::to_string(fieldValue);
 }
 
 SField::ref SField::getField (const std::string& fieldName)
@@ -160,4 +167,3 @@ SField::~SField ()
 }
 
 } // ripple
-

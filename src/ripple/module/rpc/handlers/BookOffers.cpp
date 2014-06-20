@@ -63,34 +63,32 @@ Json::Value doBookOffers (RPC::Context& context)
     if (! taker_gets ["currency"].isString ())
         return RPC::expected_field_error ("taker_gets.currency", "string");
 
-    uint160 pay_currency;
+    Currency pay_currency;
 
-    if (! STAmount::currencyFromString (
-        pay_currency, taker_pays ["currency"].asString ()))
+    if (!to_currency (pay_currency, taker_pays ["currency"].asString ()))
     {
         WriteLog (lsINFO, RPCHandler) << "Bad taker_pays currency.";
         return RPC::make_error (rpcSRC_CUR_MALFORMED,
             "Invalid field 'taker_pays.currency', bad currency.");
     }
 
-    uint160 get_currency;
+    Currency get_currency;
 
-    if (! STAmount::currencyFromString (
-        get_currency, taker_gets ["currency"].asString ()))
+    if (!to_currency (get_currency, taker_gets ["currency"].asString ()))
     {
         WriteLog (lsINFO, RPCHandler) << "Bad taker_gets currency.";
         return RPC::make_error (rpcDST_AMT_MALFORMED,
             "Invalid field 'taker_gets.currency', bad currency.");
     }
 
-    uint160 pay_issuer;
+    Account pay_issuer;
 
     if (taker_pays.isMember ("issuer"))
     {
         if (! taker_pays ["issuer"].isString())
             return RPC::expected_field_error ("taker_pays.issuer", "string");
 
-        if (! STAmount::issuerFromString (
+        if (!to_issuer(
             pay_issuer, taker_pays ["issuer"].asString ()))
             return RPC::make_error (rpcSRC_ISR_MALFORMED,
                 "Invalid field 'taker_pays.issuer', bad issuer.");
@@ -112,14 +110,14 @@ Json::Value doBookOffers (RPC::Context& context)
         return RPC::make_error (rpcSRC_ISR_MALFORMED,
             "Invalid field 'taker_pays.issuer', expected non-XRP issuer.");
 
-    uint160 get_issuer;
+    Account get_issuer;
 
     if (taker_gets.isMember ("issuer"))
     {
         if (! taker_gets ["issuer"].isString())
             return RPC::expected_field_error ("taker_gets.issuer", "string");
 
-        if (! STAmount::issuerFromString (
+        if (! to_issuer (
             get_issuer, taker_gets ["issuer"].asString ()))
             return RPC::make_error (rpcDST_ISR_MALFORMED,
                 "Invalid field 'taker_gets.issuer', bad issuer.");

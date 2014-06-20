@@ -49,9 +49,11 @@ Json::Value doAccountCurrencies (RPC::Context& context)
     if (!jvAccepted.empty ())
         return jvAccepted;
 
-    std::set<uint160> send, receive;
-    AccountItems rippleLines (naAccount.getAccountID (), lpLedger, AccountItem::pointer (new RippleState ()));
-    BOOST_FOREACH(AccountItem::ref item, rippleLines.getItems ())
+    std::set<Currency> send, receive;
+    AccountItems rippleLines (
+        naAccount.getAccountID (), lpLedger,
+        AccountItem::pointer (new RippleState ()));
+    for (auto item: rippleLines.getItems ())
     {
         RippleState* rspEntry = (RippleState*) item.get ();
         const STAmount& saBalance = rspEntry->getBalance ();
@@ -66,17 +68,15 @@ Json::Value doAccountCurrencies (RPC::Context& context)
     send.erase (badCurrency());
     receive.erase (badCurrency());
 
-    Json::Value& sendCurrencies = (jvResult["send_currencies"] = Json::arrayValue);
-    BOOST_FOREACH(uint160 const& c, send)
-    {
-        sendCurrencies.append (STAmount::createHumanCurrency (c));
-    }
+    Json::Value& sendCurrencies =
+            (jvResult["send_currencies"] = Json::arrayValue);
+    for (auto const& c: send)
+        sendCurrencies.append (to_string (c));
 
-    Json::Value& recvCurrencies = (jvResult["receive_currencies"] = Json::arrayValue);
-    BOOST_FOREACH(uint160 const& c, receive)
-    {
-        recvCurrencies.append (STAmount::createHumanCurrency (c));
-    }
+    Json::Value& recvCurrencies =
+            (jvResult["receive_currencies"] = Json::arrayValue);
+    for (auto const& c: receive)
+        recvCurrencies.append (to_string (c));
 
 
     return jvResult;

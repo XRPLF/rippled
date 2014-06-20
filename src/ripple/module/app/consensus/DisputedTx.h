@@ -66,8 +66,8 @@ public:
 
     // VFALCO NOTE its not really a peer, its the 160 bit hash of the validator's public key
     //
-    void setVote (uint160 const& peer, bool votesYes);
-    void unVote (uint160 const& peer);
+    void setVote (NodeID const& peer, bool votesYes);
+    void unVote (NodeID const& peer);
 
     bool updateVote (int percentTime, bool proposing);
     Json::Value getJson ();
@@ -78,12 +78,10 @@ private:
     int mNays;
     bool mOurVote;
     Serializer transaction;
-    ripple::unordered_map <uint160, bool> mVotes;
+
+    ripple::unordered_map <NodeID, bool> mVotes;
 };
 
-// VFALCO TODO Rename and put these in a tidy place
-typedef std::map<uint256, DisputedTx::pointer>::value_type u256_lct_pair;
-typedef std::map<uint160, LedgerProposal::pointer>::value_type u160_prop_pair;
 #define LEDGER_TOTAL_PASSES 8
 #define LEDGER_RETRY_PASSES 5
 

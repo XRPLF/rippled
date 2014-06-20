@@ -27,8 +27,8 @@ TER SetTrust::doApply ()
     bool const bQualityIn (mTxn.isFieldPresent (sfQualityIn));
     bool const bQualityOut (mTxn.isFieldPresent (sfQualityOut));
 
-    uint160 const currency (saLimitAmount.getCurrency ());
-    uint160 uDstAccountID (saLimitAmount.getIssuer ());
+    Currency const currency (saLimitAmount.getCurrency ());
+    Account uDstAccountID (saLimitAmount.getIssuer ());
 
     // true, iff current is high account.
     bool const bHigh = mTxnAccountID > uDstAccountID;
@@ -145,8 +145,8 @@ TER SetTrust::doApply ()
         std::uint32_t   uLowQualityOut;
         std::uint32_t   uHighQualityIn;
         std::uint32_t   uHighQualityOut;
-        const uint160&  uLowAccountID   = !bHigh ? mTxnAccountID : uDstAccountID;
-        const uint160&  uHighAccountID  =  bHigh ? mTxnAccountID : uDstAccountID;
+        auto const& uLowAccountID   = !bHigh ? mTxnAccountID : uDstAccountID;
+        auto const& uHighAccountID  =  bHigh ? mTxnAccountID : uDstAccountID;
         SLE::ref        sleLowAccount   = !bHigh ? mTxnAccount : sleDst;
         SLE::ref        sleHighAccount  =  bHigh ? mTxnAccount : sleDst;
 

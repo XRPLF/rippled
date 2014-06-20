@@ -44,7 +44,9 @@ public:
     typedef std::shared_ptr<PathRequest>  pointer;
     typedef const pointer&                  ref;
     typedef const wptr&                     wref;
-    typedef std::pair<uint160, uint160>     currIssuer_t;
+
+    // TODO(tom): Use RippleAsset instead!
+    typedef std::pair<Currency, Account> CurrencyIssuer;
 
 public:
     // VFALCO TODO Break the cyclic dependency on InfoSub
@@ -88,9 +90,9 @@ private:
     RippleAddress                     raSrcAccount;
     RippleAddress                     raDstAccount;
     STAmount                          saDstAmount;
-    std::set<currIssuer_t>            sciSourceCurrencies;
+    std::set<CurrencyIssuer>            sciSourceCurrencies;
     // std::vector<Json::Value>          vjvBridges;
-    std::map<currIssuer_t, STPathSet> mContext;
+    std::map<CurrencyIssuer, STPathSet> mContext;
 
     bool                            bValid;
 

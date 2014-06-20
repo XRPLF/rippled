@@ -78,11 +78,14 @@ struct Node
     // https://ripple.com/wiki/Ledger_Format#Prioritizing_a_continuous_key_space
 
     // Current directory - the last 64 bits of this are the quality.
-    Directory currentDirectory_;
+    uint256 currentDirectory_;
 
     // Start of the next order book - one past the worst quality possible for
     // the current order book.
-    Directory nextDirectory_;
+    uint256 nextDirectory_;
+
+    // TODO(tom): currentDirectory_ and nextDirectory_ should be of type
+    // Directory.
 
     bool bDirectAdvance;        // Need to advance directory.
     bool bDirectRestart;        // Need to restart directory.

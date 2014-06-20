@@ -71,16 +71,17 @@ TER nodeAdvance (
         {
             // Need to initialize current node.
 
-            node.currentDirectory_ = Ledger::getBookBase (
+            node.currentDirectory_.copyFrom(Ledger::getBookBase (
                 previousNode.currency_, previousNode.issuer_,
                 node.currency_,
-                node.issuer_);
-            node.nextDirectory_ = Ledger::getQualityNext (node.currentDirectory_);
+                node.issuer_));
+            node.nextDirectory_.copyFrom(
+                Ledger::getQualityNext (node.currentDirectory_));
 
             // TODO(tom): it seems impossible that any actual offers with
             // quality == 0 could occur - we should disallow them, and clear
             // sleDirectDir without the database call in the next line.
-            node.sleDirectDir    = rippleCalc.mActiveLedger.entryCache (
+            node.sleDirectDir = rippleCalc.mActiveLedger.entryCache (
                 ltDIR_NODE, node.currentDirectory_);
 
             // Associated vars are dirty, if found it.
@@ -239,7 +240,7 @@ TER nodeAdvance (
 
                 WriteLog (lsTRACE, RippleCalc)
                     << "nodeAdvance: offerOwnerAccount_="
-                    << RippleAddress::createHumanAccountID (node.offerOwnerAccount_)
+                    << to_string (node.offerOwnerAccount_)
                     << " node.saTakerPays=" << node.saTakerPays
                     << " node.saTakerGets=" << node.saTakerGets
                     << " node.offerIndex_=" << node.offerIndex_;
@@ -393,11 +394,11 @@ TER nodeAdvance (
                     // Consider source mentioned by current path state.
                     WriteLog (lsTRACE, RippleCalc)
                         << "nodeAdvance: remember="
-                        <<  RippleAddress::createHumanAccountID (node.offerOwnerAccount_)
+                        <<  to_string (node.offerOwnerAccount_)
                         << "/"
-                        << STAmount::createHumanCurrency (node.currency_)
+                        << to_string (node.currency_)
                         << "/"
-                        << RippleAddress::createHumanAccountID (node.issuer_);
+                        << to_string (node.issuer_);
 
                     pathState.reverse().insert (std::make_pair (asLine, nodeIndex));
                 }

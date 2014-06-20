@@ -55,7 +55,7 @@ public:
         return checkSign (mSignature, getSigningHash ());
     }
 
-    const uint160& getPeerID () const
+    NodeID const& getPeerID () const
     {
         return mPeerID;
     }
@@ -135,7 +135,7 @@ private:
     uint256 mPreviousLedger, mCurrentHash, mSuppression;
     std::uint32_t mCloseTime, mProposeSeq;
 
-    uint160         mPeerID;
+    NodeID         mPeerID;
     RippleAddress   mPublicKey;
     RippleAddress   mPrivateKey;    // If ours
 

@@ -20,10 +20,10 @@
 namespace ripple {
 
 OrderBook::OrderBook (uint256 const& index,
-                      uint160 const& currencyIn,
-                      uint160 const& currencyOut,
-                      uint160 const& issuerIn,
-                      uint160 const& issuerOut)
+                      Currency const& currencyIn,
+                      Currency const& currencyOut,
+                      Account const& issuerIn,
+                      Account const& issuerOut)
     : mBookBase (index)
     , mCurrencyIn (currencyIn)
     , mCurrencyOut (currencyOut)

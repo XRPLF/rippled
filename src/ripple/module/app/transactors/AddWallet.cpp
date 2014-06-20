@@ -34,14 +34,15 @@ TER AddWallet::doApply ()
     Blob const vucPubKey    = mTxn.getFieldVL (sfPublicKey);
     Blob const vucSignature = mTxn.getFieldVL (sfSignature);
 
-    uint160 const uAuthKeyID (mTxn.getFieldAccount160 (sfRegularKey));
-    RippleAddress const naMasterPubKey (
-        RippleAddress::createAccountPublic (vucPubKey));
-    uint160 const uDstAccountID (naMasterPubKey.getAccountID ());
+    auto const uAuthKeyID = mTxn.getFieldAccount160 (sfRegularKey);
+    auto const naMasterPubKey =
+        RippleAddress::createAccountPublic (vucPubKey);
+    auto const uDstAccountID = naMasterPubKey.getAccountID ();
 
-    // FIXME: This should be moved to the transaction's signature check logic and cached
+    // FIXME: This should be moved to the transaction's signature check logic
+    // and cached.
     if (!naMasterPubKey.accountPublicVerify (
-        Serializer::getSHA512Half (uAuthKeyID.begin (), uAuthKeyID.size ()), 
+        Serializer::getSHA512Half (uAuthKeyID.begin (), uAuthKeyID.size ()),
         vucSignature, ECDSA::not_strict))
     {
         m_journal.trace <<
@@ -66,7 +67,7 @@ TER AddWallet::doApply ()
     STAmount const saSrcBalance = mTxnAccount->getFieldAmount (sfBalance);
     std::uint32_t const uOwnerCount = mTxnAccount->getFieldU32 (sfOwnerCount);
     std::uint64_t const uReserve = mEngine->getLedger ()->getReserve (uOwnerCount);
-    
+
 
     // Make sure have enough reserve to send. Allow final spend to use reserve
     // for fee.

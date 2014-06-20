@@ -81,11 +81,12 @@ static bool bQualityCmp (const path_LQ_t& a, const path_LQ_t& b)
     return std::get<3> (a) > std::get<3> (b);
 }
 
-// TODO(tom): this uint160 is probably an Account.
-typedef std::pair<int, uint160> candidate_t;
+typedef std::pair<int, Account> AccountCandidate;
+typedef std::vector<AccountCandidate> AccountCandidates;
 
 static bool candCmp (
-    std::uint32_t seq, const candidate_t& first, const candidate_t& second)
+    std::uint32_t seq,
+    const AccountCandidate& first, const AccountCandidate& second)
 {
     if (first.first < second.first)
         return false;
@@ -98,9 +99,12 @@ static bool candCmp (
 
 Pathfinder::Pathfinder (
     RippleLineCache::ref cache,
-    const RippleAddress& uSrcAccountID, const RippleAddress& uDstAccountID,
-    const uint160& uSrcCurrencyID, const uint160& uSrcIssuerID,
-    const STAmount& saDstAmount, bool& bValid)
+    const RippleAddress& uSrcAccountID,
+    const RippleAddress& uDstAccountID,
+    Currency const& uSrcCurrencyID,
+    Account const& uSrcIssuerID,
+    const STAmount& saDstAmount,
+    bool& bValid)
     :   mSrcAccountID (uSrcAccountID.getAccountID ()),
         mDstAccountID (uDstAccountID.getAccountID ()),
         mDstAmount (saDstAmount),
@@ -133,7 +137,7 @@ Pathfinder::Pathfinder (
         // On the source account or issuer account
         mSrcCurrencyID,
         // In the source currency
-        mSrcCurrencyID.isZero() ? uint160() :
+        mSrcCurrencyID.isZero() ? Account() :
         (bIssuer ? mSrcIssuerID : mSrcAccountID));
 }
 
@@ -421,15 +425,15 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
     return spsDst;
 }
 
-boost::unordered_set<uint160> usAccountSourceCurrencies (
+CurrencySet usAccountSourceCurrencies (
         const RippleAddress& raAccountID, RippleLineCache::ref lrCache,
         bool includeXRP)
 {
-    boost::unordered_set<uint160>   usCurrencies;
+    CurrencySet usCurrencies;
 
     // YYY Only bother if they are above reserve
     if (includeXRP)
-        usCurrencies.insert (uint160 (xrpCurrency()));
+        usCurrencies.insert (xrpCurrency());
 
     // List of ripple lines.
     auto& rippleLines (lrCache->getRippleLines (raAccountID.getAccountID ()));
@@ -454,15 +458,15 @@ boost::unordered_set<uint160> usAccountSourceCurrencies (
     return usCurrencies;
 }
 
-boost::unordered_set<uint160> usAccountDestCurrencies (
+CurrencySet usAccountDestCurrencies (
         const RippleAddress& raAccountID,
         RippleLineCache::ref lrCache,
         bool includeXRP)
 {
-    boost::unordered_set<uint160>   usCurrencies;
+    CurrencySet usCurrencies;
 
     if (includeXRP)
-        usCurrencies.insert (uint160 (xrpCurrency()));
+        usCurrencies.insert (xrpCurrency());
     // Even if account doesn't exist
 
     // List of ripple lines.
@@ -481,7 +485,7 @@ boost::unordered_set<uint160> usAccountDestCurrencies (
     return usCurrencies;
 }
 
-bool Pathfinder::matchesOrigin (const uint160& currency, const uint160& issuer)
+bool Pathfinder::matchesOrigin (Currency const& currency, Account const& issuer)
 {
     if (currency != mSrcCurrencyID)
         return false;
@@ -492,23 +496,22 @@ bool Pathfinder::matchesOrigin (const uint160& currency, const uint160& issuer)
     return (issuer == mSrcIssuerID) || (issuer == mSrcAccountID);
 }
 
-// VFALCO TODO Use RippleCurrency, RippleAccount, et. al. in argument list here
+// VFALCO TODO Use Currency, RippleAccount, et. al. in argument list here
 int Pathfinder::getPathsOut (
     Currency const& currencyID, Account const& accountID,
     bool isDstCurrency, Account const& dstAccount)
 {
     // VFALCO TODO Use RippleAsset here
-    std::pair<const uint160&, const uint160&> accountCurrency (currencyID, accountID);
-    // VFALCO TODO Use RippleAsset here
-    ripple::unordered_map<std::pair<uint160, uint160>, int>::iterator it = mPOMap.find (accountCurrency);
+    auto currencyAccount = std::make_pair(currencyID, accountID);
+    auto it = mPOMap.find (currencyAccount);
 
     if (it != mPOMap.end ())
         return it->second;
 
-    SLE::pointer sleAccount = mLedger->getSLEi(Ledger::getAccountRootIndex(accountID));
+    auto sleAccount = mLedger->getSLEi(Ledger::getAccountRootIndex(accountID));
     if (!sleAccount)
     {
-        mPOMap[accountCurrency] = 0;
+        mPOMap[currencyAccount] = 0;
         return 0;
     }
 
@@ -540,7 +543,7 @@ int Pathfinder::getPathsOut (
         else
             ++count;
     }
-    mPOMap[accountCurrency] = count;
+    mPOMap[currencyAccount] = count;
     return count;
 }
 
@@ -623,7 +626,8 @@ STPathSet& Pathfinder::getPaths(PathType_t const& type, bool addComplete)
     return pathsOut;
 }
 
-bool Pathfinder::isNoRipple (const uint160& setByID, const uint160& setOnID, const uint160& currencyID)
+bool Pathfinder::isNoRipple (
+    Account const& setByID, Account const& setOnID, Currency const& currencyID)
 {
     SLE::pointer sleRipple = mLedger->getSLEi (
         Ledger::getRippleStateIndex (setByID, setOnID, currencyID));
@@ -647,7 +651,7 @@ bool Pathfinder::isNoRippleOut (const STPath& currentPath)
         return false;
 
     // What account are we leaving?
-    uint160 const& fromAccount =
+    auto const& fromAccount =
         (currentPath.size() == 1) ? mSrcAccountID : (currentPath.end() - 2)->mAccountID;
 
     return isNoRipple (endElement.mAccountID, fromAccount, endElement.mCurrencyID);
@@ -659,9 +663,9 @@ void Pathfinder::addLink(
     int addFlags)
 {
     STPathElement const& pathEnd   = currentPath.isEmpty() ? mSource : currentPath.mPath.back ();
-    uint160 const& uEndCurrency    = pathEnd.mCurrencyID;
-    uint160 const& uEndIssuer      = pathEnd.mIssuerID;
-    uint160 const& uEndAccount     = pathEnd.mAccountID;
+    auto const& uEndCurrency    = pathEnd.mCurrencyID;
+    auto const& uEndIssuer      = pathEnd.mIssuerID;
+    auto const& uEndAccount     = pathEnd.mAccountID;
     bool const bOnXRP              = uEndCurrency.isZero();
 
     WriteLog (lsTRACE, Pathfinder) << "addLink< flags=" << addFlags << " onXRP=" << bOnXRP;
@@ -688,13 +692,15 @@ void Pathfinder::addLink(
 
                 AccountItems& rippleLines (mRLCache->getRippleLines(uEndAccount));
 
-                std::vector< std::pair<int, uint160> > candidates;
+                AccountCandidates candidates;
                 candidates.reserve(rippleLines.getItems().size());
 
                 for(auto item : rippleLines.getItems())
                 {
-                    RippleState const& rspEntry = * reinterpret_cast<RippleState const *>(item.get());
-                    uint160 const& acctID = rspEntry.getAccountIDPeer();
+                    // TODO(tom): check the return value of the reinterpret_cast.
+                    auto const& rspEntry = *reinterpret_cast<RippleState const *>(
+                        item.get());
+                    auto const& acctID = rspEntry.getAccountIDPeer();
 
                     if ((uEndCurrency == rspEntry.getLimit().getCurrency()) &&
                         !currentPath.hasSeen(acctID, uEndCurrency, acctID))
@@ -751,7 +757,7 @@ void Pathfinder::addLink(
                     else if (count > 50)
                         count = 50;
 
-                    std::vector< std::pair<int, uint160> >::const_iterator it = candidates.begin();
+                    auto it = candidates.begin();
                     while (count-- != 0)
                     { // Add accounts to incompletePaths
                         incompletePaths.assembleAdd(currentPath, STPathElement(STPathElement::typeAccount, it->second, uEndCurrency, it->second));

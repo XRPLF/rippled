@@ -33,8 +33,8 @@ public:
     }
 
     BookDirIterator (
-        uint160 const& uInCurrency, uint160 const& uInIssuer,
-        uint160 const& uOutCurrency, uint160 const& uOutIssuer);
+        Currency const& currencyIn, Account const& issuerIn,
+        Currency const& currencyOut, Account const& issuerOut);
 
     uint256 const& getBookBase () const
     {
@@ -90,7 +90,6 @@ public:
     std::uint64_t getRate () const;
 
     bool addJson (Json::Value&) const;
-
     bool setJson (Json::Value const&);
 
     // Does this iterator currently point to a valid directory
@@ -98,17 +97,15 @@ public:
     operator bool () const
     {
         return mOfferDir &&  (mOfferDir->getIndex() == mIndex);
-    }    
+    }
 
-    bool
-    operator== (BookDirIterator const& other) const
+    bool operator== (BookDirIterator const& other) const
     {
         assert (! mIndex.isZero() && ! other.mIndex.isZero());
         return mIndex == other.mIndex;
     }
 
-    bool
-    operator!= (BookDirIterator const& other) const
+    bool operator!= (BookDirIterator const& other) const
     {
         return ! (*this == other);
     }
@@ -130,12 +127,12 @@ class OrderBookIterator
 public:
     OrderBookIterator (
         LedgerEntrySet& set,
-        uint160 const& uInCurrency,
-        uint160 const& uInIssuer,
-        uint160 const& uOutCurrency,
-        uint160 const& uOutIssuer) :
+        Currency const& currencyIn,
+        Account const& issuerIn,
+        Currency const& currencyOut,
+        Account const& issuerOut) :
             mEntrySet (set),
-            mDirectoryIterator (uInCurrency, uInIssuer, uOutCurrency, uOutIssuer)
+            mDirectoryIterator (currencyIn, issuerIn, currencyOut, issuerOut)
     {
     }
 

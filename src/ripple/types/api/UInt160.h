@@ -31,7 +31,13 @@
 
 namespace ripple {
 
-uint256 to256 (uint160 const& a);
+template <class Tag>
+uint256 to256 (base_uint<160, Tag> const& a)
+{
+    uint256 m;
+    memcpy (m.begin (), a.begin (), a.size ());
+    return m;
+}
 
 }
 

@@ -52,7 +52,7 @@ TER SetRegularKey::doApply ()
 
     if (mTxn.isFieldPresent (sfRegularKey))
     {
-        uint160 uAuthKeyID = mTxn.getFieldAccount160 (sfRegularKey);
+        Account uAuthKeyID = mTxn.getFieldAccount160 (sfRegularKey);
         mTxnAccount->setFieldAccount (sfRegularKey, uAuthKeyID);
     }
     else

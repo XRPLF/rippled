@@ -23,75 +23,12 @@
 
 namespace ripple {
 
-std::uint64_t STAmount::uRateOne  = STAmount::getRate (STAmount (1), STAmount (1));
-
-bool STAmount::issuerFromString (uint160& uDstIssuer, const std::string& sIssuer)
-{
-    bool    bSuccess    = true;
-
-    if (sIssuer.size () == (160 / 4))
-    {
-        uDstIssuer.SetHex (sIssuer);
-    }
-    else
-    {
-        RippleAddress raIssuer;
-
-        if (raIssuer.setAccountID (sIssuer))
-        {
-            uDstIssuer  = raIssuer.getAccountID ();
-        }
-        else
-        {
-            bSuccess    = false;
-        }
-    }
-
-    return bSuccess;
-}
-
-// --> sCurrency: "", "XRP", or three letter ISO code.
-bool STAmount::currencyFromString (uint160& uDstCurrency, const std::string& sCurrency)
-{
-    bool    bSuccess    = true;
-
-    if (sCurrency.empty () || !sCurrency.compare (SYSTEM_CURRENCY_CODE))
-    {
-        uDstCurrency.zero ();
-    }
-    else if (3 == sCurrency.size ())
-    {
-        Blob    vucIso (3);
-
-        std::transform (sCurrency.begin (), sCurrency.end (), vucIso.begin (), ::toupper);
-
-        // std::string  sIso;
-        // sIso.assign(vucIso.begin(), vucIso.end());
-
-        Serializer  s;
-
-        s.addZeros (96 / 8);
-        s.addRaw (vucIso);
-        s.addZeros (16 / 8);
-        s.addZeros (24 / 8);
-
-        s.get160 (uDstCurrency, 0);
-    }
-    else if (40 == sCurrency.size ())
-    {
-        bSuccess    = uDstCurrency.SetHex (sCurrency);
-    }
-    else
-    {
-        bSuccess    = false;
-    }
-
-    return bSuccess;
-}
+std::uint64_t STAmount::uRateOne =
+        STAmount::getRate (STAmount (1), STAmount (1));
 
 std::string STAmount::getHumanCurrency () const
 {
-    return createHumanCurrency (mCurrency);
+    return to_string (mCurrency);
 }
 
 bool STAmount::bSetJson (const Json::Value& jvSource)
@@ -154,7 +91,7 @@ STAmount::STAmount (SField::ref n, const Json::Value& v)
     else
         value = v;
 
-    mIsNative = !currency.isString () || currency.asString ().empty () || (currency.asString () == SYSTEM_CURRENCY_CODE);
+    mIsNative = !currency.isString () || currency.asString ().empty () || (currency.asString () == systemCurrencyCode());
 
     if (mIsNative)
     {
@@ -164,11 +101,11 @@ STAmount::STAmount (SField::ref n, const Json::Value& v)
     else
     {
         // non-XRP
-        if (!currencyFromString (mCurrency, currency.asString ()))
+        if (!to_currency (mCurrency, currency.asString ()))
             throw std::runtime_error ("invalid currency");
 
         if (!issuer.isString ()
-                || !issuerFromString (mIssuer, issuer.asString ()))
+                || !to_issuer (mIssuer, issuer.asString ()))
             throw std::runtime_error ("invalid issuer");
 
         if (mIssuer.isZero ())
@@ -218,53 +155,30 @@ STAmount::STAmount (SField::ref n, const Json::Value& v)
         throw std::runtime_error ("invalid amount type");
 }
 
-std::string STAmount::createHumanCurrency (const uint160& uCurrency)
-{
-    static uint160 const sIsoBits ("FFFFFFFFFFFFFFFFFFFFFFFF000000FFFFFFFFFF");
-
-    if (uCurrency.isZero ())
-    {
-        return SYSTEM_CURRENCY_CODE;
-    }
-
-    if (noCurrency() == uCurrency)
-    {
-        return "1";
-    }
-
-    if ((uCurrency & sIsoBits).isZero ())
-    {
-        // The offset of the 3 character ISO code in the currency descriptor
-        int const isoOffset = 12;
-
-        std::string const iso(
-            uCurrency.data () + isoOffset,
-            uCurrency.data () + isoOffset + 3);
-
-        // Specifying the system currency code using ISO-style representation
-        // is not allowed.
-        if (iso != SYSTEM_CURRENCY_CODE)
-            return iso;
-    }
-
-    return to_string (uCurrency);
-}
-
 bool STAmount::setValue (const std::string& sAmount)
 {
     // Note: mIsNative and mCurrency must be set already!
 
-    static boost::regex reNumber ("\\`([+-]?)(\\d*)(\\.(\\d*))?([eE]([+-]?)(\\d+))?\\'");
+    static boost::regex reNumber (
+        "\\`([+-]?)(\\d*)(\\.(\\d*))?([eE]([+-]?)(\\d+))?\\'");
     boost::smatch smMatch;
 
     if (!boost::regex_match (sAmount, smMatch, reNumber))
     {
-        WriteLog (lsWARNING, STAmount) << "Number not valid: \"" << sAmount << "\"";
+        WriteLog (lsWARNING, STAmount)
+                << "Number not valid: \"" << sAmount << "\"";
         return false;
     }
 
-    // Match fields: 0 = whole input, 1 = sign, 2 = integer portion, 3 = whole fraction (with '.')
-    // 4 = fraction (without '.'), 5 = whole exponent (with 'e'), 6 = exponent sign, 7 = exponent number
+    // Match fields:
+    //   0 = whole input
+    //   1 = sign
+    //   2 = integer portion
+    //   3 = whole fraction (with '.')
+    //   4 = fraction (without '.')
+    //   5 = whole exponent (with 'e')
+    //   6 = exponent sign
+    //   7 = exponent number
 
     try
     {
@@ -339,7 +253,7 @@ bool STAmount::setFullValue (const std::string& sAmount, const std::string& sCur
     //
     // Figure out the currency.
     //
-    if (!currencyFromString (mCurrency, sCurrency))
+    if (!to_currency (mCurrency, sCurrency))
     {
         WriteLog (lsINFO, STAmount) << "Currency malformed: " << sCurrency;
 
@@ -532,14 +446,18 @@ STAmount* STAmount::construct (SerializerIterator& sit, SField::ref name)
         return new STAmount (name, value, true); // negative
     }
 
-    uint160 currency = sit.get160 ();
+    Currency currency;
+    currency.copyFrom (sit.get160 ());
 
     if (!currency)
         throw std::runtime_error ("invalid non-native currency");
 
-    uint160 issuer = sit.get160 ();
+    Account issuer;
+    issuer.copyFrom (sit.get160 ());
 
-    int offset = static_cast<int> (value >> (64 - 10)); // 10 bits for the offset, sign and "not native" flag
+    // 10 bits for the offset, sign and "not native" flag
+    int offset = static_cast<int> (value >> (64 - 10));
+
     value &= ~ (1023ull << (64 - 10));
 
     if (value)
@@ -547,8 +465,13 @@ STAmount* STAmount::construct (SerializerIterator& sit, SField::ref name)
         bool isNegative = (offset & 256) == 0;
         offset = (offset & 255) - 97; // center the range
 
-        if ((value < cMinValue) || (value > cMaxValue) || (offset < cMinOffset) || (offset > cMaxOffset))
+        if (value < cMinValue ||
+            value > cMaxValue ||
+            offset < cMinOffset ||
+            offset > cMaxOffset)
+        {
             throw std::runtime_error ("invalid currency value");
+        }
 
         return new STAmount (name, currency, issuer, value, offset, isNegative);
     }
@@ -921,8 +844,8 @@ STAmount operator- (const STAmount& v1, const STAmount& v2)
 
 // NIKB TODO Make Amount::divide skip math if den == QUALITY_ONE
 STAmount STAmount::divide (
-    const STAmount& num, const STAmount& den, const uint160& currency,
-    const uint160& issuer)
+    const STAmount& num, const STAmount& den, Currency const& currency,
+    Account const& issuer)
 {
     if (den == zero)
         throw std::runtime_error ("division by zero");
@@ -966,8 +889,8 @@ STAmount STAmount::divide (
 }
 
 STAmount STAmount::multiply (
-    const STAmount& v1, const STAmount& v2, const uint160& currency,
-    const uint160& issuer)
+    const STAmount& v1, const STAmount& v2, Currency const& currency,
+    Account const& issuer)
 {
     if (v1 == zero || v2 == zero)
         return STAmount (currency, issuer);
@@ -1110,7 +1033,7 @@ std::string STAmount::getFullText () const
         else if (mIssuer == noAccount())
             ret += "1";
         else
-            ret += RippleAddress::createHumanAccountID (mIssuer);
+            ret += to_string (mIssuer);
     }
 
     return ret;
@@ -1164,7 +1087,7 @@ void STAmount::setJson (Json::Value& elem) const
 
         elem[jss::value]      = getText ();
         elem[jss::currency]   = getHumanCurrency ();
-        elem[jss::issuer]     = RippleAddress::createHumanAccountID (mIssuer);
+        elem[jss::issuer]     = to_string (mIssuer);
     }
     else
     {
@@ -1433,16 +1356,16 @@ public:
 
         unexpected (STAmount (310).getText () != "310", "STAmount fail");
 
-        unexpected (STAmount::createHumanCurrency (uint160 ()) != "XRP", "cHC(XRP)");
+        unexpected (to_string (Currency ()) != "XRP", "cHC(XRP)");
 
-        uint160 c;
-        unexpected (!STAmount::currencyFromString (c, "USD"), "create USD currency");
-        unexpected (STAmount::createHumanCurrency (c) != "USD", "check USD currency");
+        Currency c;
+        unexpected (!to_currency (c, "USD"), "create USD currency");
+        unexpected (to_string (c) != "USD", "check USD currency");
 
         const std::string cur = "015841551A748AD2C1F76FF6ECB0CCCD00000000";
-        unexpected (!STAmount::currencyFromString (c, cur), "create custom currency");
-        unexpected (STAmount::createHumanCurrency (c) != cur, "check custom currency");
-        unexpected (c != uint160 (cur), "check custom currency");
+        unexpected (!to_currency (c, cur), "create custom currency");
+        unexpected (to_string (c) != cur, "check custom currency");
+        unexpected (c != Currency (cur), "check custom currency");
     }
 
     //--------------------------------------------------------------------------
@@ -1590,13 +1513,13 @@ public:
         unexpected (STAmount::multiply (STAmount (noCurrency(), noAccount(), 20), STAmount (3), noCurrency(), noAccount()).getText () != "60",
             "STAmount multiply fail 1");
 
-        unexpected (STAmount::multiply (STAmount (noCurrency(), noAccount(), 20), STAmount (3), uint160 (), xrpIssuer()).getText () != "60",
+        unexpected (STAmount::multiply (STAmount (noCurrency(), noAccount(), 20), STAmount (3), xrpCurrency (), xrpIssuer()).getText () != "60",
             "STAmount multiply fail 2");
 
         unexpected (STAmount::multiply (STAmount (20), STAmount (3), noCurrency(), noAccount()).getText () != "60",
             "STAmount multiply fail 3");
 
-        unexpected (STAmount::multiply (STAmount (20), STAmount (3), uint160 (), xrpIssuer()).getText () != "60",
+        unexpected (STAmount::multiply (STAmount (20), STAmount (3), xrpCurrency (), xrpIssuer()).getText () != "60",
             "STAmount multiply fail 4");
 
         if (STAmount::divide (STAmount (noCurrency(), noAccount(), 60), STAmount (3), noCurrency(), noAccount()).getText () != "20")
@@ -1611,13 +1534,13 @@ public:
             pass ();
         }
 
-        unexpected (STAmount::divide (STAmount (noCurrency(), noAccount(), 60), STAmount (3), uint160 (), xrpIssuer()).getText () != "20",
+        unexpected (STAmount::divide (STAmount (noCurrency(), noAccount(), 60), STAmount (3), xrpCurrency (), xrpIssuer()).getText () != "20",
             "STAmount divide fail");
 
         unexpected (STAmount::divide (STAmount (noCurrency(), noAccount(), 60), STAmount (noCurrency(), noAccount(), 3), noCurrency(), noAccount()).getText () != "20",
             "STAmount divide fail");
 
-        unexpected (STAmount::divide (STAmount (noCurrency(), noAccount(), 60), STAmount (noCurrency(), noAccount(), 3), uint160 (), xrpIssuer()).getText () != "20",
+        unexpected (STAmount::divide (STAmount (noCurrency(), noAccount(), 60), STAmount (noCurrency(), noAccount(), 3), xrpCurrency (), xrpIssuer()).getText () != "20",
             "STAmount divide fail");
 
         STAmount a1 (noCurrency(), noAccount(), 60), a2 (noCurrency(), noAccount(), 10, -1);
@@ -1728,15 +1651,15 @@ public:
 
         expect (bigDsmall == zero, beast::String ("small/big != 0: ") + bigDsmall.getText ());
 
-        bigDsmall = STAmount::divide (smallValue, bigNative, noCurrency(), uint160 ());
+        bigDsmall = STAmount::divide (smallValue, bigNative, noCurrency(), xrpIssuer ());
 
         expect (bigDsmall == zero, beast::String ("small/bigNative != 0: ") + bigDsmall.getText ());
 
-        bigDsmall = STAmount::divide (smallValue, bigValue, uint160 (), uint160 ());
+        bigDsmall = STAmount::divide (smallValue, bigValue, xrpCurrency (), xrpIssuer ());
 
         expect (bigDsmall == zero, beast::String ("(small/big)->N != 0: ") + bigDsmall.getText ());
 
-        bigDsmall = STAmount::divide (smallValue, bigNative, uint160 (), uint160 ());
+        bigDsmall = STAmount::divide (smallValue, bigNative, xrpCurrency (), xrpIssuer ());
 
         expect (bigDsmall == zero, beast::String ("(small/bigNative)->N != 0: ") + bigDsmall.getText ());
 
@@ -1797,9 +1720,9 @@ public:
         WriteLog (lsINFO, STAmount) << fourThirdsB;
         WriteLog (lsINFO, STAmount) << fourThirdsC;
 
-        STAmount dripTest1 = STAmount::mulRound (twoThird2, two, uint160 (), uint160 (), false);
-        STAmount dripTest2 = STAmount::multiply (twoThird2, two, uint160 (), uint160 ());
-        STAmount dripTest3 = STAmount::mulRound (twoThird2, two, uint160 (), uint160 (), true);
+        STAmount dripTest1 = STAmount::mulRound (twoThird2, two, xrpCurrency (), xrpIssuer (), false);
+        STAmount dripTest2 = STAmount::multiply (twoThird2, two, xrpCurrency (), xrpIssuer ());
+        STAmount dripTest3 = STAmount::mulRound (twoThird2, two, xrpCurrency (), xrpIssuer (), true);
         WriteLog (lsINFO, STAmount) << dripTest1;
         WriteLog (lsINFO, STAmount) << dripTest2;
         WriteLog (lsINFO, STAmount) << dripTest3;

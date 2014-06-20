@@ -20,10 +20,11 @@
 namespace ripple {
 
 /** Iterate through the directories in an order book */
-BookDirIterator::BookDirIterator(uint160 const& uInCurrency, uint160 const& uInIssuer,
-    uint160 const& uOutCurrency, uint160 const& uOutIssuer)
+BookDirIterator::BookDirIterator(
+    Currency const& currencyIn, Account const& issuerIn,
+    Currency const& currencyOut, Account const& issuerOut)
 {
-    mBase = Ledger::getBookBase(uInCurrency, uInIssuer, uOutCurrency, uOutIssuer);
+    mBase = Ledger::getBookBase(currencyIn, issuerIn, currencyOut, issuerOut);
     mEnd = Ledger::getQualityNext(mBase);
     mIndex = mBase;
 }
@@ -85,7 +86,7 @@ bool BookDirIterator::resync (LedgerEntrySet& les)
 
 DirectoryEntryIterator BookDirIterator::getOfferIterator () const
 {
-    WriteLog (lsTRACE, Ledger) << "BookDirIterator(" << 
+    WriteLog (lsTRACE, Ledger) << "BookDirIterator(" <<
         to_string (mBase) << ") get offer iterator";
     return DirectoryEntryIterator (mOfferDir);
 }

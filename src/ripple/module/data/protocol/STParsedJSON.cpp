@@ -421,7 +421,7 @@ bool STParsedJSON::parse (std::string const& json_name,
                 error = array_expected (json_name, fieldName);
                 return false;
             }
-            
+
             try
             {
                 data.push_back (new STVector256 (field));
@@ -490,7 +490,8 @@ bool STParsedJSON::parse (std::string const& json_name,
                         const Json::Value& currency = pathEl["currency"];
                         const Json::Value& issuer   = pathEl["issuer"];
                         bool hasCurrency            = false;
-                        uint160 uAccount, uCurrency, uIssuer;
+                        Account uAccount, uIssuer;
+                        Currency uCurrency;
 
                         if (! account.isNull ())
                         {
@@ -534,8 +535,7 @@ bool STParsedJSON::parse (std::string const& json_name,
                             {
                                 uCurrency.SetHex (currency.asString ());
                             }
-                            else if (!STAmount::currencyFromString (
-                                uCurrency, currency.asString ()))
+                            else if (!to_currency (uCurrency, currency.asString ()))
                             {
                                 error = invalid_data (element_name, "currency");
                                 return false;
@@ -597,9 +597,9 @@ bool STParsedJSON::parse (std::string const& json_name,
             {
                 if (value.size () == 40) // 160-bit hex account value
                 {
-                    uint160 v;
-                    v.SetHex (strValue);
-                    data.push_back (new STAccount (field, v));
+                    Account account;
+                    account.SetHex (strValue);
+                    data.push_back (new STAccount (field, account));
                 }
                 else
                 {

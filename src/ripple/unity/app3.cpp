@@ -27,7 +27,3 @@
 #include <ripple/module/app/shamap/SHAMapTreeNode.cpp>
 #include <ripple/module/app/misc/AccountItems.cpp>
 #include <ripple/module/app/misc/AccountState.cpp>
-#include <ripple/module/app/contracts/Contract.cpp>
-#include <ripple/module/app/contracts/Operation.cpp>
-#include <ripple/module/app/contracts/ScriptData.cpp>
-#include <ripple/module/app/contracts/Interpreter.cpp>

@@ -122,8 +122,8 @@ static Json::Value signPayment(
     {
         // Need a ripple path.
         STPathSet   spsPaths;
-        uint160     uSrcCurrencyID;
-        uint160     uSrcIssuerID;
+        Currency uSrcCurrencyID;
+        Account uSrcIssuerID;
 
         STAmount    saSendMax;
 

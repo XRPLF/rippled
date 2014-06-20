@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/overlay/predicates.h>
+#include <ripple/types/api/UintTypes.h>
 
 namespace ripple {
 
@@ -340,7 +341,7 @@ public:
         mAcquiring.erase (hash);
 
         // Adjust tracking for each peer that takes this position
-        std::vector<uint160> peers;
+        std::vector<NodeID> peers;
         for (auto& it : mPeerPositions)
         {
             if (it.second->getCurrentHash () == map->getHash ())
@@ -392,7 +393,7 @@ public:
         if (mHaveCorrectLCL)
             priorLedger = mPreviousLedger->getParentHash (); // don't jump back
 
-        ripple::unordered_map<uint256, currentValidationCount> vals =
+        ripple::unordered_map<uint256, ValidationCounter> vals =
             getApp().getValidations ().getCurrentValidations
             (favoredLedger, priorLedger);
 
@@ -701,7 +702,7 @@ public:
     */
     bool peerPosition (LedgerProposal::ref newPosition)
     {
-        uint160 peerID = newPosition->getPeerID ();
+        auto peerID = newPosition->getPeerID ();
 
         if (mDeadNodes.find (peerID) != mDeadNodes.end ())
         {
@@ -761,8 +762,6 @@ public:
         {
             WriteLog (lsDEBUG, LedgerConsensus)
                 << "Don't have tx set for peer";
-            //      BOOST_FOREACH(u256_lct_pair& it, mDisputes)
-            //          it.second->unVote(peerID);
         }
 
         return true;
@@ -1194,7 +1193,7 @@ private:
     /** Adjust the counts on all disputed transactions based
         on the set of peers taking this position
     */
-    void adjustCount (SHAMap::ref map, const std::vector<uint160>& peers)
+    void adjustCount (SHAMap::ref map, const std::vector<NodeID>& peers)
     {
         for (auto& it : mDisputes)
         {
@@ -1380,7 +1379,7 @@ private:
                 return resultSuccess;
             }
 
-            if (isTefFailure (result) || isTemMalformed (result) || 
+            if (isTefFailure (result) || isTemMalformed (result) ||
                 isTelLocal (result))
             {
                 // failure
@@ -1696,15 +1695,10 @@ private:
     */
     void playbackProposals ()
     {
-        ripple::unordered_map < uint160,
-              std::list<LedgerProposal::pointer> > & storedProposals
-              = getApp().getOPs ().peekStoredProposals ();
-
-        for (auto it = storedProposals.begin ()
-            , end = storedProposals.end (); it != end; ++it)
+        for (auto it: getApp().getOPs ().peekStoredProposals ())
         {
             bool relay = false;
-            for (auto proposal : it->second)
+            for (auto proposal : it.second)
             {
                 if (proposal->hasSignature ())
                 {
@@ -1892,7 +1886,7 @@ private:
     int                             mPreviousMSeconds;
 
     // Convergence tracking, trusted peers indexed by hash of public key
-    ripple::unordered_map<uint160, LedgerProposal::pointer> mPeerPositions;
+    ripple::unordered_map<NodeID, LedgerProposal::pointer>  mPeerPositions;
 
     // Transaction Sets, indexed by hash of transaction tree
     ripple::unordered_map<uint256, SHAMap::pointer> mAcquired;
@@ -1910,7 +1904,7 @@ private:
     std::map<std::uint32_t, int> mCloseTimes;
 
     // nodes that have bowed out of this consensus process
-    boost::unordered_set<uint160> mDeadNodes;
+    NodeIDSet mDeadNodes;
 };
 
 //------------------------------------------------------------------------------

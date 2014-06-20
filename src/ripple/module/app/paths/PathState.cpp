@@ -386,8 +386,8 @@ void PathState::expandPath (
     const Currency uMaxCurrencyID = saInReq.getCurrency ();
     const Account uMaxIssuerID = saInReq.getIssuer ();
 
-    const Currency uOutCurrencyID = saOutReq.getCurrency ();
-    const Account uOutIssuerID = saOutReq.getIssuer ();
+    const Currency currencyOutID = saOutReq.getCurrency ();
+    const Account issuerOutID = saOutReq.getIssuer ();
     const Account uSenderIssuerID
         = isXRP(uMaxCurrencyID) ? xrpIssuer() : uSenderID;
     // Sender is always issuer for non-XRP.
@@ -401,7 +401,7 @@ void PathState::expandPath (
 
     // XRP with issuer is malformed.
     if ((!uMaxCurrencyID && !!uMaxIssuerID)
-        || (!uOutCurrencyID && !!uOutIssuerID))
+        || (!currencyOutID && !!issuerOutID))
     {
         terStatus   = temBAD_PATH;
     }
@@ -439,17 +439,17 @@ void PathState::expandPath (
         const auto uNxtCurrencyID  = spSourcePath.size ()
                 ? Currency(spSourcePath.getElement (0).getCurrency ())
                 // Use next node.
-                : uOutCurrencyID;
+                : currencyOutID;
                 // Use send.
 
         // TODO(tom): complexify this next logic further in case someone
         // understands it.
         const auto nextAccountID   = spSourcePath.size ()
                 ? Account(spSourcePath.getElement (0).getAccountID ())
-                : !isXRP(uOutCurrencyID)
-                ? (uOutIssuerID == uReceiverID)
+                : !isXRP(currencyOutID)
+                ? (issuerOutID == uReceiverID)
                 ? Account(uReceiverID)
-                : Account(uOutIssuerID)                      // Use implied node.
+                : Account(issuerOutID)                      // Use implied node.
                 : xrpIssuer();
 
         WriteLog (lsDEBUG, RippleCalc)
@@ -500,28 +500,28 @@ void PathState::expandPath (
     auto const& previousNode = nodes_.back ();
 
     if (terStatus == tesSUCCESS
-        && !isXRP(uOutCurrencyID)                         // Next is not XRP
-        && uOutIssuerID != uReceiverID              // Out issuer is not receiver
-        && (previousNode.currency_ != uOutCurrencyID
+        && !isXRP(currencyOutID)                         // Next is not XRP
+        && issuerOutID != uReceiverID              // Out issuer is not receiver
+        && (previousNode.currency_ != currencyOutID
         // Previous will be an offer.
-            || previousNode.account_ != uOutIssuerID))
+            || previousNode.account_ != issuerOutID))
         // Need the implied issuer.
     {
         // Add implied account.
         WriteLog (lsDEBUG, RippleCalc)
             << "expandPath: receiver implied:"
-            << " account=" << uOutIssuerID
-            << " currency=" << uOutCurrencyID
-            << " issuer=" << uOutIssuerID;
+            << " account=" << issuerOutID
+            << " currency=" << currencyOutID
+            << " issuer=" << issuerOutID;
 
         terStatus   = pushNode (
-            !isXRP(uOutCurrencyID)
+            !isXRP(currencyOutID)
                 ? STPathElement::typeAccount | STPathElement::typeCurrency |
                   STPathElement::typeIssuer
                 : STPathElement::typeAccount | STPathElement::typeCurrency,
-            uOutIssuerID,
-            uOutCurrencyID,
-            uOutIssuerID);
+            issuerOutID,
+            currencyOutID,
+            issuerOutID);
     }
 
     if (terStatus == tesSUCCESS)
@@ -530,12 +530,12 @@ void PathState::expandPath (
         // Last node is always an account.
 
         terStatus   = pushNode (
-            !isXRP(uOutCurrencyID)
+            !isXRP(currencyOutID)
                 ? STPathElement::typeAccount | STPathElement::typeCurrency |
                    STPathElement::typeIssuer
                : STPathElement::typeAccount | STPathElement::typeCurrency,
             uReceiverID,                                    // Receive to output
-            uOutCurrencyID,                                 // Desired currency
+            currencyOutID,                                 // Desired currency
             uReceiverID);
     }
 
@@ -568,8 +568,8 @@ void PathState::expandPath (
         << "expandPath:"
         << " in=" << uMaxCurrencyID
         << "/" << uMaxIssuerID
-        << " out=" << uOutCurrencyID
-        << "/" << uOutIssuerID
+        << " out=" << currencyOutID
+        << "/" << issuerOutID
         << ": " << getJson ();
 }
 
@@ -679,14 +679,14 @@ void PathState::checkNoRipple (
 
     // Loop through all nodes that have a prior node and successor nodes
     // These are the nodes whose no ripple constratints could be violated
-    for (int i = 1; i < nodes_.size() - 1; ++i)
+    for (auto i = 1; i < nodes_.size() - 1; ++i)
     {
         if (nodes_[i - 1].isAccount() &&
             nodes_[i].isAccount() &&
             nodes_[i + 1].isAccount())
         { // Two consecutive account-to-account links
 
-            uint160 const& currencyID = nodes_[i].currency_;
+            auto const& currencyID = nodes_[i].currency_;
             if ((nodes_[i-1].currency_ != currencyID) ||
                 (nodes_[i+1].currency_ != currencyID))
             {

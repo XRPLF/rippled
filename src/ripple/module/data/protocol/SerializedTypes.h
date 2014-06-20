@@ -27,13 +27,14 @@ namespace ripple {
 
 // VFALCO TODO fix this restriction on copy assignment.
 //
-// CAUTION: Do not create a vector (or similar container) of any object derived from
-// SerializedType. Use Boost ptr_* containers. The copy assignment operator of
-// SerializedType has semantics that will cause contained types to change their names
-// when an object is deleted because copy assignment is used to "slide down" the
-// remaining types and this will not copy the field name. Changing the copy assignment
-// operator to copy the field name breaks the use of copy assignment just to copy values,
-// which is used in the transaction engine code.
+// CAUTION: Do not create a vector (or similar container) of any object derived
+// from SerializedType. Use Boost ptr_* containers. The copy assignment operator
+// of SerializedType has semantics that will cause contained types to change
+// their names when an object is deleted because copy assignment is used to
+// "slide down" the remaining types and this will not copy the field
+// name. Changing the copy assignment operator to copy the field name breaks the
+// use of copy assignment just to copy values, which is used in the transaction
+// engine code.
 
 // VFALCO TODO Remove this unused enum
 /*
@@ -101,15 +102,6 @@ public:
     {
         return *fName;
     }
-    std::string getName () const
-    {
-        return fName->fieldName;
-    }
-    Json::StaticString const& getJsonName () const
-    {
-        return fName->getJsonName ();
-    }
-
     virtual SerializedTypeID getSType () const
     {
         return STI_NOTPRESENT;
@@ -464,7 +456,8 @@ public:
 
     static std::uint64_t   uRateOne;
 
-    STAmount (std::uint64_t v = 0, bool isNeg = false) : mValue (v), mOffset (0), mIsNative (true), mIsNegative (isNeg)
+    STAmount (std::uint64_t v = 0, bool isNeg = false)
+            : mValue (v), mOffset (0), mIsNative (true), mIsNegative (isNeg)
     {
         if (v == 0) mIsNegative = false;
     }
@@ -480,49 +473,49 @@ public:
         set (v);
     }
 
-    STAmount (const uint160& currency, const uint160& issuer,
+    STAmount (Currency const& currency, Account const& issuer,
               std::uint64_t uV = 0, int iOff = 0, bool bNegative = false)
         : mCurrency (currency), mIssuer (issuer), mValue (uV), mOffset (iOff), mIsNegative (bNegative)
     {
         canonicalize ();
     }
 
-    STAmount (const uint160& currency, const uint160& issuer,
+    STAmount (Currency const& currency, Account const& issuer,
               std::uint32_t uV, int iOff = 0, bool bNegative = false)
         : mCurrency (currency), mIssuer (issuer), mValue (uV), mOffset (iOff), mIsNegative (bNegative)
     {
         canonicalize ();
     }
 
-    STAmount (SField::ref n, const uint160& currency, const uint160& issuer,
+    STAmount (SField::ref n, Currency const& currency, Account const& issuer,
               std::uint64_t v = 0, int off = 0, bool isNeg = false) :
         SerializedType (n), mCurrency (currency), mIssuer (issuer), mValue (v), mOffset (off), mIsNegative (isNeg)
     {
         canonicalize ();
     }
 
-    STAmount (const uint160& currency, const uint160& issuer, std::int64_t v, int iOff = 0)
+    STAmount (Currency const& currency, Account const& issuer, std::int64_t v, int iOff = 0)
         : mCurrency (currency), mIssuer (issuer), mOffset (iOff)
     {
         set (v);
         canonicalize ();
     }
 
-    STAmount (SField::ref n, const uint160& currency, const uint160& issuer, std::int64_t v, int off = 0)
+    STAmount (SField::ref n, Currency const& currency, Account const& issuer, std::int64_t v, int off = 0)
         : SerializedType (n), mCurrency (currency), mIssuer (issuer), mOffset (off)
     {
         set (v);
         canonicalize ();
     }
 
-    STAmount (const uint160& currency, const uint160& issuer, int v, int iOff = 0)
+    STAmount (Currency const& currency, Account const& issuer, int v, int iOff = 0)
         : mCurrency (currency), mIssuer (issuer), mOffset (iOff)
     {
         set (v);
         canonicalize ();
     }
 
-    STAmount (SField::ref n, const uint160& currency, const uint160& issuer, int v, int off = 0)
+    STAmount (SField::ref n, Currency const& currency, Account const& issuer, int v, int off = 0)
         : SerializedType (n), mCurrency (currency), mIssuer (issuer), mOffset (off)
     {
         set (v);
@@ -631,7 +624,7 @@ public:
         mIsNative = saTmpl.mIsNative;
         clear ();
     }
-    void clear (const uint160& currency, const uint160& issuer)
+    void clear (Currency const& currency, Account const& issuer)
     {
         mCurrency = currency;
         mIssuer = issuer;
@@ -647,22 +640,24 @@ public:
 
     int compare (const STAmount&) const;
 
-    const uint160& getIssuer () const
+    Account const& getIssuer () const
     {
         return mIssuer;
     }
-    STAmount* setIssuer (const uint160& uIssuer)
+    STAmount* setIssuer (Account const& uIssuer)
     {
         mIssuer   = uIssuer;
         return this;
     }
 
-    const uint160& getCurrency () const
+    Currency const& getCurrency () const
     {
         return mCurrency;
     }
     bool setValue (const std::string& sAmount);
-    bool setFullValue (const std::string& sAmount, const std::string& sCurrency = "", const std::string& sIssuer = "");
+    bool setFullValue (
+        const std::string& sAmount, const std::string& sCurrency = "",
+        const std::string& sIssuer = "");
     void setValue (const STAmount&);
 
     virtual bool isEquivalent (const SerializedType& t) const;
@@ -702,7 +697,7 @@ public:
 
     static STAmount divide (
         const STAmount& v1, const STAmount& v2,
-        const uint160& currency, const uint160& issuer);
+        Currency const& currency, Account const& issuer);
 
     static STAmount divide (
         const STAmount& v1, const STAmount& v2, const STAmount& saUnit)
@@ -716,7 +711,7 @@ public:
 
     static STAmount multiply (
         const STAmount& v1, const STAmount& v2,
-        const uint160& currency, const uint160& issuer);
+        Currency const& currency, Account const& issuer);
 
     static STAmount multiply (
         const STAmount& v1, const STAmount& v2, const STAmount& saUnit)
@@ -737,9 +732,9 @@ public:
     static STAmount addRound (const STAmount& v1, const STAmount& v2, bool roundUp);
     static STAmount subRound (const STAmount& v1, const STAmount& v2, bool roundUp);
     static STAmount mulRound (const STAmount& v1, const STAmount& v2,
-                              const uint160& currency, const uint160& issuer, bool roundUp);
+                              Currency const& currency, Account const& issuer, bool roundUp);
     static STAmount divRound (const STAmount& v1, const STAmount& v2,
-                              const uint160& currency, const uint160& issuer, bool roundUp);
+                              Currency const& currency, Account const& issuer, bool roundUp);
 
     static STAmount mulRound (const STAmount& v1, const STAmount& v2, const STAmount& saUnit, bool roundUp)
     {
@@ -764,18 +759,10 @@ public:
     static STAmount setRate (std::uint64_t rate);
 
     // Someone is offering X for Y, I need Z, how much do I pay
-    static STAmount getPay (const STAmount& offerOut, const STAmount& offerIn, const STAmount& needed);
-
-    static std::string createHumanCurrency (const uint160& uCurrency);
-    static Json::Value createJsonCurrency (const uint160& uCurrency)
-    // XXX Punted.
-    {
-        return createHumanCurrency (uCurrency);
-    }
+    static STAmount getPay (
+        const STAmount& offerOut, const STAmount& offerIn, const STAmount& needed);
 
     static STAmount deserialize (SerializerIterator&);
-    static bool currencyFromString (uint160& uDstCurrency, const std::string& sCurrency);
-    static bool issuerFromString (uint160& uDstIssuer, const std::string& sIssuer);
 
     Json::Value getJson (int) const;
     void setJson (Json::Value&) const;
@@ -783,11 +770,12 @@ public:
     STAmount getRound () const;
     void roundSelf ();
 
-    static void canonicalizeRound (bool isNative, std::uint64_t& value, int& offset, bool roundUp);
+    static void canonicalizeRound (
+        bool isNative, std::uint64_t& value, int& offset, bool roundUp);
 
 private:
-    uint160 mCurrency;      // Compared by ==. Always update mIsNative.
-    uint160 mIssuer;        // Not compared by ==. 0 for XRP.
+    Currency mCurrency;      // Compared by ==. Always update mIsNative.
+    Account mIssuer;        // Not compared by ==. 0 for XRP.
 
     std::uint64_t  mValue;
     int            mOffset;
@@ -801,10 +789,10 @@ private:
     }
     static STAmount* construct (SerializerIterator&, SField::ref name);
 
-    STAmount (SField::ref name, const uint160& cur, const uint160& iss,
+    STAmount (SField::ref name, Currency const& cur, Account const& iss,
               std::uint64_t val, int off, bool isNat, bool isNeg)
-        : SerializedType (name), mCurrency (cur), mIssuer (iss),  mValue (val), mOffset (off),
-          mIsNative (isNat), mIsNegative (isNeg)
+        : SerializedType (name), mCurrency (cur), mIssuer (iss),  mValue (val),
+          mOffset (off), mIsNative (isNat), mIsNegative (isNeg)
     {
         ;
     }
@@ -844,6 +832,8 @@ extern const STAmount saOne;
 
 //------------------------------------------------------------------------------
 
+// TODO(tom): make STHash128, STHash160 and STHash256 a single templated class
+// to reduce the triple redundancy we have all over the rippled code.
 class STHash128 : public SerializedType
 {
 public:
@@ -920,11 +910,11 @@ private:
 class STHash160 : public SerializedType
 {
 public:
-    STHash160 (const uint160& v) : value (v)
+    STHash160 (uint160 const& v) : value (v)
     {
         ;
     }
-    STHash160 (SField::ref n, const uint160& v) : SerializedType (n), value (v)
+    STHash160 (SField::ref n, uint160 const& v) : SerializedType (n), value (v)
     {
         ;
     }
@@ -959,13 +949,15 @@ public:
         s.add160 (value);
     }
 
-    const uint160& getValue () const
+    uint160 const& getValue () const
     {
         return value;
     }
-    void setValue (const uint160& v)
+
+    template <class Tag>
+    void setValue (base_uint<160, Tag> const& v)
     {
-        value = v;
+        value.copyFrom(v);
     }
 
     operator uint160 () const
@@ -1149,7 +1141,7 @@ public:
     {
         ;
     }
-    STAccount (SField::ref n, const uint160& v);
+    STAccount (SField::ref n, Account const& v);
     STAccount (SField::ref n) : STVariableLength (n)
     {
         ;
@@ -1172,8 +1164,23 @@ public:
     RippleAddress getValueNCA () const;
     void setValueNCA (const RippleAddress& nca);
 
-    void setValueH160 (const uint160& v);
-    bool getValueH160 (uint160&) const;
+    template <typename Tag>
+    void setValueH160 (base_uint<160, Tag> const& v)
+    {
+        peekValue ().clear ();
+        peekValue ().insert (peekValue ().end (), v.begin (), v.end ());
+        assert (peekValue ().size () == (160 / 8));
+    }
+
+    template <typename Tag>
+    bool getValueH160 (base_uint<160, Tag>& v) const
+    {
+        auto success = isValueH160 ();
+        if (success)
+            memcpy (v.begin (), & (peekValue ().front ()), (160 / 8));
+        return success;
+    }
+
     bool isValueH160 () const;
 
 private:
@@ -1208,8 +1215,8 @@ public:
 
 public:
     STPathElement (
-        const uint160& account, const uint160& currency,
-        const uint160& issuer, bool forceCurrency = false)
+        Account const& account, Currency const& currency,
+        Account const& issuer, bool forceCurrency = false)
         : mAccountID (account), mCurrencyID (currency), mIssuerID (issuer)
     {
         mType   =
@@ -1220,19 +1227,15 @@ public:
     }
 
     STPathElement (
-        unsigned int uType, const uint160& account, const uint160& currency,
-        const uint160& issuer)
+        unsigned int uType, Account const& account, Currency const& currency,
+        Account const& issuer)
         : mType (uType), mAccountID (account), mCurrencyID (currency),
           mIssuerID (issuer)
-    {
-        ;
-    }
+    {}
 
     STPathElement ()
         : mType (0)
-    {
-        ;
-    }
+    {}
 
     int getNodeType () const
     {
@@ -1247,33 +1250,34 @@ public:
         return !isOffer ();
     }
 
-    // Nodes are either an account ID or a offer prefix. Offer prefixs denote a class of offers.
-    const uint160& getAccountID () const
+    // Nodes are either an account ID or a offer prefix. Offer prefixs denote a
+    // class of offers.
+    Account const& getAccountID () const
     {
         return mAccountID;
     }
-    const uint160& getCurrency () const
+    Currency const& getCurrency () const
     {
         return mCurrencyID;
     }
-    const uint160& getIssuerID () const
+    Account const& getIssuerID () const
     {
         return mIssuerID;
     }
 
     bool operator== (const STPathElement& t) const
     {
-        return ((mType & typeAccount) == (t.mType & typeAccount))
-                && (mAccountID == t.mAccountID)
-                && (mCurrencyID == t.mCurrencyID)
-                && (mIssuerID == t.mIssuerID);
+        return (mType & typeAccount) == (t.mType & typeAccount)
+                && mAccountID == t.mAccountID
+                && mCurrencyID == t.mCurrencyID
+                && mIssuerID == t.mIssuerID;
     }
 
 private:
-    unsigned int    mType;
-    uint160         mAccountID;
-    uint160         mCurrencyID;
-    uint160         mIssuerID;
+    unsigned int mType;
+    Account mAccountID;
+    Currency mCurrencyID;
+    Account mIssuerID;
 };
 
 //------------------------------------------------------------------------------
@@ -1323,8 +1327,8 @@ public:
     {
         mPath.clear ();
     }
-    bool hasSeen (const uint160& account, const uint160& currency,
-                  const uint160& issuer) const;
+    bool hasSeen (Account const& account, Currency const& currency,
+                  Account const& issuer) const;
     Json::Value getJson (int) const;
 
     std::vector<STPathElement>::iterator begin ()

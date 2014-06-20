@@ -381,10 +381,10 @@ AmendmentTableImpl::reportValidations (const AmendmentSet& set)
         {
             AmendmentState& fState = m_amendmentMap[hash];
             db->executeSQL (boost::str (boost::format (
-                "UPDATE Features SET FirstMajority = %d WHERE Hash = '%s';") % 
+                "UPDATE Features SET FirstMajority = %d WHERE Hash = '%s';") %
                 fState.m_firstMajority % to_string (hash)));
             db->executeSQL (boost::str (boost::format (
-                "UPDATE Features SET LastMajority = %d WHERE Hash = '%s';") % 
+                "UPDATE Features SET LastMajority = %d WHERE Hash = '%s';") %
                 fState.m_lastMajority % to_string(hash)));
         }
         db->executeSQL ("END TRANSACTION;");
@@ -476,7 +476,7 @@ AmendmentTableImpl::doVoting (Ledger::ref lastClosedLedger,
 
         // Create the transaction to enable the amendment
         SerializedTransaction trans (ttAMENDMENT);
-        trans.setFieldAccount (sfAccount, uint160 ());
+        trans.setFieldAccount (sfAccount, Account ());
         trans.setFieldH256 (sfAmendment, uAmendment);
         uint256 txID = trans.getTransactionID ();
 

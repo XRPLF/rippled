@@ -19,7 +19,8 @@
 
 namespace ripple {
 
-AccountItem::pointer Offer::makeItem (const uint160& , SerializedLedgerEntry::ref ledgerEntry)
+AccountItem::pointer Offer::makeItem (
+    Account const& , SerializedLedgerEntry::ref ledgerEntry)
 {
     if (!ledgerEntry || ledgerEntry->getType () != ltOFFER) return (AccountItem::pointer ());
 

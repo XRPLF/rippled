@@ -153,9 +153,9 @@ TER computeForwardLiquidityForAccount (
             WriteLog (lsTRACE, RippleCalc)
                 << "computeForwardLiquidityForAccount: account --> ACCOUNT --> $ :"
                 << " previousAccountID="
-                << RippleAddress::createHumanAccountID (previousAccountID)
+                << to_string (previousAccountID)
                 << " node.account_="
-                << RippleAddress::createHumanAccountID (node.account_)
+                << to_string (node.account_)
                 << " previousNode.saFwdRedeem:" << previousNode.saFwdRedeem
                 << " previousNode.saFwdIssue:" << previousNode.saFwdIssue;
 

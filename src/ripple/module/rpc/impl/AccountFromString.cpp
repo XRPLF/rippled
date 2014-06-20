@@ -59,7 +59,7 @@ Json::Value accountFromString (Ledger::ref lrLedger, RippleAddress& naAccount,
         naRegular0Public.setAccountPublic (naGenerator, 0);
         naRegular0Private.setAccountPrivate (naGenerator, naSeed, 0);
 
-        //      uint160             uGeneratorID    = naRegular0Public.getAccountID();
+        //      Account uGeneratorID    = naRegular0Public.getAccountID();
         SLE::pointer        sleGen          = netOps.getGenerator (lrLedger, naRegular0Public.getAccountID ());
 
         if (!sleGen)

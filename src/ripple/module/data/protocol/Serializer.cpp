@@ -70,13 +70,6 @@ int Serializer::add128 (const uint128& i)
     return ret;
 }
 
-int Serializer::add160 (const uint160& i)
-{
-    int ret = mData.size ();
-    mData.insert (mData.end (), i.begin (), i.end ());
-    return ret;
-}
-
 int Serializer::add256 (uint256 const& i)
 {
     int ret = mData.size ();
@@ -159,14 +152,6 @@ bool Serializer::get128 (uint128& o, int offset) const
     if ((offset + (128 / 8)) > mData.size ()) return false;
 
     memcpy (o.begin (), & (mData.front ()) + offset, (128 / 8));
-    return true;
-}
-
-bool Serializer::get160 (uint160& o, int offset) const
-{
-    if ((offset + (160 / 8)) > mData.size ()) return false;
-
-    memcpy (o.begin (), & (mData.front ()) + offset, (160 / 8));
     return true;
 }
 

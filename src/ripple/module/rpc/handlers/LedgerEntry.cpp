@@ -159,7 +159,7 @@ Json::Value doLedgerEntry (RPC::Context& context)
     {
         RippleAddress   naA;
         RippleAddress   naB;
-        uint160         uCurrency;
+        Currency         uCurrency;
         Json::Value     jvRippleState   = context.params_["ripple_state"];
 
         if (!jvRippleState.isObject ()
@@ -179,7 +179,8 @@ Json::Value doLedgerEntry (RPC::Context& context)
         {
             jvResult["error"]   = "malformedAddress";
         }
-        else if (!STAmount::currencyFromString (uCurrency, jvRippleState["currency"].asString ()))
+        else if (!to_currency (
+            uCurrency, jvRippleState["currency"].asString ()))
         {
             jvResult["error"]   = "malformedCurrency";
         }

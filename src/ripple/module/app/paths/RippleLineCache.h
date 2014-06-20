@@ -36,16 +36,16 @@ public:
         return mLedger;
     }
 
-    AccountItems& getRippleLines (const uint160& accountID);
+    AccountItems& getRippleLines (Account const& accountID);
 
 private:
     typedef RippleMutex LockType;
     typedef std::lock_guard <LockType> ScopedLockType;
     LockType mLock;
-   
+
     Ledger::pointer mLedger;
-    
-    ripple::unordered_map <uint160, AccountItems::pointer> mRLMap;
+
+    ripple::unordered_map <Account, AccountItems::pointer> mRLMap;
 };
 
 } // ripple

@@ -107,11 +107,11 @@ TER nodeDeliverRev (
         WriteLog (lsTRACE, RippleCalc)
             << "nodeDeliverRev:"
             << " offerOwnerAccount_="
-            << RippleAddress::createHumanAccountID (node.offerOwnerAccount_)
+            << to_string (node.offerOwnerAccount_)
             << " uOutAccountID="
-            << RippleAddress::createHumanAccountID (uOutAccountID)
+            << to_string (uOutAccountID)
             << " node.issuer_="
-            << RippleAddress::createHumanAccountID (node.issuer_)
+            << to_string (node.issuer_)
             << " node.transferRate_=" << node.transferRate_
             << " saOutFeeRate=" << saOutFeeRate;
 

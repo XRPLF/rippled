@@ -66,8 +66,8 @@ TER rippleCalculate (
     //           node.
     const STAmount&     saDstAmountReq,
 
-    const uint160&      uDstAccountID,
-    const uint160&      uSrcAccountID,
+    Account const&      uDstAccountID,
+    Account const&      uSrcAccountID,
 
     // A set of paths that are included in the transaction that we'll explore
     // for liquidity.
@@ -161,9 +161,9 @@ TER rippleCalculate (
             << " saDstAmountReq:" << saDstAmountReq
             << " saMaxAmountReq:" << saMaxAmountReq
             << " uDstAccountID:"
-            << RippleAddress::createHumanAccountID (uDstAccountID)
+            << to_string (uDstAccountID)
             << " uSrcAccountID:"
-            << RippleAddress::createHumanAccountID (uSrcAccountID);
+            << to_string (uSrcAccountID);
 
         pspExpanded->expandPath (
             activeLedger, spPath, uDstAccountID, uSrcAccountID);
