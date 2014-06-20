@@ -19,8 +19,8 @@
 
 namespace ripple {
 
-SHAMapTreeNode::SHAMapTreeNode (std::uint32_t seq, const SHAMapNode& nodeID)
-    : SHAMapNode (nodeID)
+SHAMapTreeNode::SHAMapTreeNode (std::uint32_t seq, const SHAMapNodeID& nodeID)
+    : mID (nodeID)
     , mHash (std::uint64_t(0))
     , mSeq (seq)
     , mAccessSeq (seq)
@@ -30,8 +30,13 @@ SHAMapTreeNode::SHAMapTreeNode (std::uint32_t seq, const SHAMapNode& nodeID)
 {
 }
 
-SHAMapTreeNode::SHAMapTreeNode (const SHAMapTreeNode& node, std::uint32_t seq) : SHAMapNode (node),
-    mHash (node.mHash), mSeq (seq), mType (node.mType), mIsBranch (node.mIsBranch), mFullBelow (false)
+SHAMapTreeNode::SHAMapTreeNode (const SHAMapTreeNode& node, std::uint32_t seq)
+    : mID (node.getID())
+    , mHash (node.mHash)
+    , mSeq (seq)
+    , mType (node.mType)
+    , mIsBranch (node.mIsBranch)
+    , mFullBelow (false)
 {
     if (node.mItem)
         mItem = node.mItem;
@@ -39,17 +44,27 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapTreeNode& node, std::uint32_t seq) :
         memcpy (mHashes, node.mHashes, sizeof (mHashes));
 }
 
-SHAMapTreeNode::SHAMapTreeNode (const SHAMapNode& node, SHAMapItem::ref item,
-                                TNType type, std::uint32_t seq) :
-    SHAMapNode (node), mItem (item), mSeq (seq), mType (type), mIsBranch (0), mFullBelow (false)
+SHAMapTreeNode::SHAMapTreeNode (const SHAMapNodeID& id, SHAMapItem::ref item,
+                                TNType type, std::uint32_t seq)
+    : mID (id)
+    , mItem (item)
+    , mSeq (seq)
+    , mType (type)
+    , mIsBranch (0)
+    , mFullBelow (false)
 {
     assert (item->peekData ().size () >= 12);
     updateHash ();
 }
 
-SHAMapTreeNode::SHAMapTreeNode (const SHAMapNode& id, Blob const& rawNode, std::uint32_t seq,
-                                SHANodeFormat format, uint256 const& hash, bool hashValid) :
-    SHAMapNode (id), mSeq (seq), mType (tnERROR), mIsBranch (0), mFullBelow (false)
+SHAMapTreeNode::SHAMapTreeNode (const SHAMapNodeID& id, Blob const& rawNode,
+                                std::uint32_t seq, SHANodeFormat format,
+                                uint256 const& hash, bool hashValid)
+    : mID (id)
+    , mSeq (seq)
+    , mType (tnERROR)
+    , mIsBranch (0)
+    , mFullBelow (false)
 {
     if (format == snfWIRE)
     {
@@ -144,7 +159,7 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapNode& id, Blob const& rawNode, std::
     {
         if (rawNode.size () < 4)
         {
-            WriteLog (lsINFO, SHAMapNode) << "size < 4";
+            WriteLog (lsINFO, SHAMapNodeID) << "size < 4";
             throw std::runtime_error ("invalid P node");
         }
 
@@ -173,7 +188,7 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapNode& id, Blob const& rawNode, std::
 
             if (u.isZero ())
             {
-                WriteLog (lsINFO, SHAMapNode) << "invalid PLN node";
+                WriteLog (lsINFO, SHAMapNodeID) << "invalid PLN node";
                 throw std::runtime_error ("invalid PLN node");
             }
 
@@ -209,7 +224,7 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapNode& id, Blob const& rawNode, std::
         }
         else
         {
-            WriteLog (lsINFO, SHAMapNode) << "Unknown node prefix " << std::hex << prefix << std::dec;
+            WriteLog (lsINFO, SHAMapNodeID) << "Unknown node prefix " << std::hex << prefix << std::dec;
             throw std::runtime_error ("invalid node prefix");
         }
     }
@@ -413,15 +428,15 @@ void SHAMapTreeNode::makeInner ()
 
 void SHAMapTreeNode::dump ()
 {
-    WriteLog (lsDEBUG, SHAMapNode) << "SHAMapTreeNode(" << getNodeID () << ")";
+    WriteLog (lsDEBUG, SHAMapNodeID) << "SHAMapTreeNode(" << mID.getNodeID () << ")";
 }
 
 std::string SHAMapTreeNode::getString () const
 {
     std::string ret = "NodeID(";
-    ret += beast::lexicalCastThrow <std::string> (getDepth ());
+    ret += beast::lexicalCastThrow <std::string> (mID.getDepth ());
     ret += ",";
-    ret += to_string (getNodeID ());
+    ret += to_string (mID.getNodeID ());
     ret += ")";
 
     if (isInner ())

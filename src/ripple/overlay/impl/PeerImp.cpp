@@ -39,7 +39,7 @@ static void peerTXData (Job&,
 
     protocol::TMLedgerData& packet = *pPacket;
 
-    std::list<SHAMapNode> nodeIDs;
+    std::list<SHAMapNodeID> nodeIDs;
     std::list< Blob > nodeData;
     for (int i = 0; i < packet.nodes ().size (); ++i)
     {
@@ -52,7 +52,8 @@ static void peerTXData (Job&,
             return;
         }
 
-        nodeIDs.push_back (SHAMapNode (node.nodeid ().data (), node.nodeid ().size ()));
+        nodeIDs.push_back (SHAMapNodeID {node.nodeid ().data (),
+                           static_cast<int>(node.nodeid ().size ())});
         nodeData.push_back (Blob (node.nodedata ().begin (), node.nodedata ().end ()));
     }
 
@@ -338,7 +339,7 @@ PeerImp::getLedger (protocol::TMGetLedger& packet)
 
 	for (int i = 0; i < packet.nodeids ().size (); ++i)
 	{
-	    SHAMapNode mn (packet.nodeids (i).data (), packet.nodeids (i).size ());
+	    SHAMapNodeID mn (packet.nodeids (i).data (), packet.nodeids (i).size ());
 
 	    if (!mn.isValid ())
 	    {
@@ -347,7 +348,7 @@ PeerImp::getLedger (protocol::TMGetLedger& packet)
 	        return;
 	    }
 
-	    std::vector<SHAMapNode> nodeIDs;
+	    std::vector<SHAMapNodeID> nodeIDs;
 	    std::list< Blob > rawNodes;
 
 	    try
@@ -356,7 +357,7 @@ PeerImp::getLedger (protocol::TMGetLedger& packet)
 	        {
 	            assert (nodeIDs.size () == rawNodes.size ());
 	            m_journal.trace << "getNodeFat got " << rawNodes.size () << " nodes";
-	            std::vector<SHAMapNode>::iterator nodeIDIterator;
+	            std::vector<SHAMapNodeID>::iterator nodeIDIterator;
 	            std::list< Blob >::iterator rawNodeIterator;
 
 	            for (nodeIDIterator = nodeIDs.begin (), rawNodeIterator = rawNodes.begin ();

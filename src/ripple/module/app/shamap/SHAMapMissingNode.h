@@ -33,7 +33,7 @@ class SHAMapMissingNode : public std::runtime_error
 {
 public:
     SHAMapMissingNode (SHAMapType t,
-                       SHAMapNode const& nodeID,
+                       SHAMapNodeID const& nodeID,
                        uint256 const& nodeHash)
         : std::runtime_error ("SHAMapMissingNode")
         , mType (t)
@@ -43,7 +43,7 @@ public:
     }
 
     SHAMapMissingNode (SHAMapType t,
-                       SHAMapNode const& nodeID,
+                       SHAMapNodeID const& nodeID,
                        uint256 const& nodeHash,
                        uint256 const& targetIndex)
         : std::runtime_error (nodeID.getString ())
@@ -68,7 +68,7 @@ public:
         return mType;
     }
 
-    SHAMapNode const& getNodeID () const
+    SHAMapNodeID const& getNodeID () const
     {
         return mNodeID;
     }
@@ -90,7 +90,7 @@ public:
 
 private:
     SHAMapType mType;
-    SHAMapNode mNodeID;
+    SHAMapNodeID mNodeID;
     uint256 mNodeHash;
     uint256 mTargetIndex;
 };

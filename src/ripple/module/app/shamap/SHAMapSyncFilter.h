@@ -30,12 +30,12 @@ public:
 
     // Note that the nodeData is overwritten by this call
     virtual void gotNode (bool fromFilter,
-                          SHAMapNode const& id,
+                          SHAMapNodeID const& id,
                           uint256 const& nodeHash,
                           Blob& nodeData,
                           SHAMapTreeNode::TNType type) = 0;
 
-    virtual bool haveNode (SHAMapNode const& id,
+    virtual bool haveNode (SHAMapNodeID const& id,
                            uint256 const& nodeHash,
                            Blob& nodeData) = 0;
 };

@@ -20,6 +20,8 @@
 #ifndef RIPPLE_SHAMAPTREENODE_H
 #define RIPPLE_SHAMAPTREENODE_H
 
+#include <ripple/module/app/shamap/SHAMapNodeID.h>
+
 namespace ripple {
 
 class SHAMap;
@@ -32,8 +34,7 @@ enum SHANodeFormat
 };
 
 class SHAMapTreeNode
-    : public SHAMapNode
-    , public CountedObject <SHAMapTreeNode>
+    : public CountedObject <SHAMapTreeNode>
 {
 public:
     static char const* getCountedObjectName () { return "SHAMapTreeNode"; }
@@ -51,13 +52,13 @@ public:
     };
 
 public:
-    SHAMapTreeNode (std::uint32_t seq, const SHAMapNode & nodeID); // empty node
+    SHAMapTreeNode (std::uint32_t seq, const SHAMapNodeID & nodeID); // empty node
     SHAMapTreeNode (const SHAMapTreeNode & node, std::uint32_t seq); // copy node from older tree
-    SHAMapTreeNode (const SHAMapNode & nodeID, SHAMapItem::ref item, TNType type,
+    SHAMapTreeNode (const SHAMapNodeID & nodeID, SHAMapItem::ref item, TNType type,
                     std::uint32_t seq);
 
     // raw node functions
-    SHAMapTreeNode (const SHAMapNode & id, Blob const & data, std::uint32_t seq,
+    SHAMapTreeNode (const SHAMapNodeID & id, Blob const & data, std::uint32_t seq,
                     SHANodeFormat format, uint256 const & hash, bool hashValid);
     void addRaw (Serializer&, SHANodeFormat format);
 
@@ -102,7 +103,7 @@ public:
     bool isInBounds () const
     {
         // Nodes at depth 64 must be leaves
-        return (!isInner() || (getDepth() < 64));
+        return (!isInner() || (mID.getDepth() < 64));
     }
     bool isValid () const
     {
@@ -172,6 +173,9 @@ public:
     virtual void dump ();
     virtual std::string getString () const;
 
+    SHAMapNodeID const& getID() const {return mID;}
+    void setID(SHAMapNodeID const& id) {mID = id;}
+
 private:
     // VFALCO TODO derive from Uncopyable
     SHAMapTreeNode (const SHAMapTreeNode&); // no implementation
@@ -180,6 +184,7 @@ private:
     // VFALCO TODO remove the use of friend
     friend class SHAMap;
 
+    SHAMapNodeID        mID;
     uint256             mHash;
     uint256             mHashes[16];
     SHAMapItem::pointer mItem;

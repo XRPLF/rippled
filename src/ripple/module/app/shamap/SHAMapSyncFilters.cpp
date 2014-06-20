@@ -26,7 +26,7 @@ ConsensusTransSetSF::ConsensusTransSetSF (NodeCache& nodeCache)
 {
 }
 
-void ConsensusTransSetSF::gotNode (bool fromFilter, const SHAMapNode& id, uint256 const& nodeHash,
+void ConsensusTransSetSF::gotNode (bool fromFilter, const SHAMapNodeID& id, uint256 const& nodeHash,
                                    Blob& nodeData, SHAMapTreeNode::TNType type)
 {
     if (fromFilter)
@@ -58,7 +58,7 @@ void ConsensusTransSetSF::gotNode (bool fromFilter, const SHAMapNode& id, uint25
     }
 }
 
-bool ConsensusTransSetSF::haveNode (const SHAMapNode& id, uint256 const& nodeHash,
+bool ConsensusTransSetSF::haveNode (const SHAMapNodeID& id, uint256 const& nodeHash,
                                     Blob& nodeData)
 {
     if (m_nodeCache.retrieve (nodeHash, nodeData))
@@ -90,7 +90,7 @@ AccountStateSF::AccountStateSF (std::uint32_t ledgerSeq)
 }
 
 void AccountStateSF::gotNode (bool fromFilter,
-                              SHAMapNode const& id,
+                              SHAMapNodeID const& id,
                               uint256 const& nodeHash,
                               Blob& nodeData,
                               SHAMapTreeNode::TNType)
@@ -98,7 +98,7 @@ void AccountStateSF::gotNode (bool fromFilter,
     getApp().getNodeStore ().store (hotACCOUNT_NODE, mLedgerSeq, std::move (nodeData), nodeHash);
 }
 
-bool AccountStateSF::haveNode (SHAMapNode const& id,
+bool AccountStateSF::haveNode (SHAMapNodeID const& id,
                                uint256 const& nodeHash,
                                Blob& nodeData)
 {
@@ -113,7 +113,7 @@ TransactionStateSF::TransactionStateSF (std::uint32_t ledgerSeq)
 }
 
 void TransactionStateSF::gotNode (bool fromFilter,
-                                  SHAMapNode const& id,
+                                  SHAMapNodeID const& id,
                                   uint256 const& nodeHash,
                                   Blob& nodeData,
                                   SHAMapTreeNode::TNType type)
@@ -125,7 +125,7 @@ void TransactionStateSF::gotNode (bool fromFilter,
         nodeHash);
 }
 
-bool TransactionStateSF::haveNode (SHAMapNode const& id,
+bool TransactionStateSF::haveNode (SHAMapNodeID const& id,
                                    uint256 const& nodeHash,
                                    Blob& nodeData)
 {

@@ -71,7 +71,7 @@ public:
 
     virtual SHAMapAddNode peerGaveNodes (Peer::ptr const& peer, 
         uint256 const & setHash,
-        const std::list<SHAMapNode>& nodeIDs, 
+        const std::list<SHAMapNodeID>& nodeIDs, 
         const std::list< Blob >& nodeData) = 0;
 
     virtual bool isOurPubKey (const RippleAddress & k) = 0;

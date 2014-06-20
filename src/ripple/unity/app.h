@@ -65,7 +65,7 @@
 #include <ripple/module/app/data/SqliteDatabase.h>
 #include <ripple/module/app/data/DBInit.h>
 #include <ripple/module/app/shamap/SHAMapItem.h>
-#include <ripple/module/app/shamap/SHAMapNode.h>
+#include <ripple/module/app/shamap/SHAMapNodeID.h>
 #include <ripple/module/app/shamap/SHAMapTreeNode.h>
 #include <ripple/module/app/shamap/SHAMapMissingNode.h>
 #include <ripple/module/app/shamap/SHAMapSyncFilter.h>

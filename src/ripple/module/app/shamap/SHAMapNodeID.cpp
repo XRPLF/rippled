@@ -17,26 +17,34 @@
 */
 //==============================================================================
 
+#include <beast/module/core/text/LexicalCast.h>
+#include <ripple/module/app/shamap/SHAMapNodeID.h>
+#include <boost/format.hpp>
+#include <cassert>
+#include <cstring>
+
 namespace ripple {
 
 // canonicalize the hash to a node ID for this depth
-SHAMapNode::SHAMapNode (int depth, uint256 const& hash) : mNodeID (hash), mDepth (depth), mHash (0)
+SHAMapNodeID::SHAMapNodeID (int depth, uint256 const& hash)
+    : mNodeID (hash), mDepth (depth), mHash (0)
 {
     assert ((depth >= 0) && (depth < 65));
     mNodeID &= smMasks[depth];
 }
 
-SHAMapNode::SHAMapNode (const void* ptr, int len) : mHash (0)
+SHAMapNodeID::SHAMapNodeID (void const* ptr, int len) : mHash (0)
 {
     if (len < 33)
         mDepth = -1;
     else
     {
-        memcpy (mNodeID.begin (), ptr, 32);
-        mDepth = * (static_cast<const unsigned char*> (ptr) + 32);
+        std::memcpy (mNodeID.begin (), ptr, 32);
+        mDepth = * (static_cast<unsigned char const*> (ptr) + 32);
     }
 }
-std::string SHAMapNode::getString () const
+
+std::string SHAMapNodeID::getString () const
 {
     static boost::format NodeID ("NodeID(%s,%s)");
 
@@ -48,13 +56,13 @@ std::string SHAMapNode::getString () const
                 % to_string (mNodeID));
 }
 
-uint256 SHAMapNode::smMasks[65];
+uint256 SHAMapNodeID::smMasks[65];
 
 // VFALCO TODO use a static initializer to do this instead
-bool SMN_j = SHAMapNode::ClassInit ();
+bool SMN_j = SHAMapNodeID::ClassInit ();
 
 // set up the depth masks
-bool SHAMapNode::ClassInit ()
+bool SHAMapNodeID::ClassInit ()
 {
     uint256 selector;
 
@@ -71,56 +79,19 @@ bool SHAMapNode::ClassInit ()
     return true;
 }
 
-
-bool SHAMapNode::operator< (const SHAMapNode& s) const
-{
-    if (s.mDepth < mDepth) return true;
-
-    if (s.mDepth > mDepth) return false;
-
-    return mNodeID < s.mNodeID;
-}
-
-bool SHAMapNode::operator> (const SHAMapNode& s) const
-{
-    if (s.mDepth < mDepth) return false;
-
-    if (s.mDepth > mDepth) return true;
-
-    return mNodeID > s.mNodeID;
-}
-
-bool SHAMapNode::operator<= (const SHAMapNode& s) const
-{
-    if (s.mDepth < mDepth) return true;
-
-    if (s.mDepth > mDepth) return false;
-
-    return mNodeID <= s.mNodeID;
-}
-
-bool SHAMapNode::operator>= (const SHAMapNode& s) const
-{
-    if (s.mDepth < mDepth) return false;
-
-    if (s.mDepth > mDepth) return true;
-
-    return mNodeID >= s.mNodeID;
-}
-
-uint256 SHAMapNode::getNodeID (int depth, uint256 const& hash)
+uint256 SHAMapNodeID::getNodeID (int depth, uint256 const& hash)
 {
     assert ((depth >= 0) && (depth <= 64));
     return hash & smMasks[depth];
 }
 
-void SHAMapNode::addIDRaw (Serializer& s) const
+void SHAMapNodeID::addIDRaw (Serializer& s) const
 {
     s.add256 (mNodeID);
     s.add8 (mDepth);
 }
 
-std::string SHAMapNode::getRawString () const
+std::string SHAMapNodeID::getRawString () const
 {
     Serializer s (33);
     addIDRaw (s);
@@ -128,18 +99,18 @@ std::string SHAMapNode::getRawString () const
 }
 
 // This can be optimized to avoid the << if needed
-SHAMapNode SHAMapNode::getChildNodeID (int m) const
+SHAMapNodeID SHAMapNodeID::getChildNodeID (int m) const
 {
     assert ((m >= 0) && (m < 16));
 
     uint256 child (mNodeID);
     child.begin ()[mDepth / 2] |= (mDepth & 1) ? m : (m << 4);
 
-    return SHAMapNode (mDepth + 1, child, true);
+    return SHAMapNodeID (mDepth + 1, child, true);
 }
 
 // Which branch would contain the specified hash
-int SHAMapNode::selectBranch (uint256 const& hash) const
+int SHAMapNodeID::selectBranch (uint256 const& hash) const
 {
 #if RIPPLE_VERIFY_NODEOBJECT_KEYS
 
@@ -171,9 +142,9 @@ int SHAMapNode::selectBranch (uint256 const& hash) const
     return branch;
 }
 
-void SHAMapNode::dump () const
+void SHAMapNodeID::dump () const
 {
-    WriteLog (lsDEBUG, SHAMapNode) << getString ();
+    WriteLog (lsDEBUG, SHAMapNodeID) << getString ();
 }
 
 } // ripple

@@ -23,7 +23,7 @@
 
 #include <ripple/module/app/ledger/Ledger.cpp>
 #include <ripple/module/app/shamap/SHAMapDelta.cpp>
-#include <ripple/module/app/shamap/SHAMapNode.cpp>
+#include <ripple/module/app/shamap/SHAMapNodeID.cpp>
 #include <ripple/module/app/shamap/SHAMapTreeNode.cpp>
 #include <ripple/module/app/misc/AccountItems.cpp>
 #include <ripple/module/app/misc/AccountState.cpp>

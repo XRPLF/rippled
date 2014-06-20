@@ -546,7 +546,7 @@ void InboundLedger::trigger (Peer::ptr const& peer)
         {
             // we need the root node
             tmGL.set_itype (protocol::liAS_NODE);
-            * (tmGL.add_nodeids ()) = SHAMapNode ().getRawString ();
+            *tmGL.add_nodeids () = SHAMapNodeID ().getRawString ();
             if (m_journal.trace) m_journal.trace <<
                 "Sending AS root request to " << (peer ? "selected peer" : "all peers");
             sendRequest (tmGL, peer);
@@ -554,7 +554,7 @@ void InboundLedger::trigger (Peer::ptr const& peer)
         }
         else
         {
-            std::vector<SHAMapNode> nodeIDs;
+            std::vector<SHAMapNodeID> nodeIDs;
             std::vector<uint256> nodeHashes;
             // VFALCO Why 256? Make this a constant
             nodeIDs.reserve (256);
@@ -592,7 +592,7 @@ void InboundLedger::trigger (Peer::ptr const& peer)
                     if (!nodeIDs.empty ())
                     {
                         tmGL.set_itype (protocol::liAS_NODE);
-                        BOOST_FOREACH (SHAMapNode const& it, nodeIDs)
+                        BOOST_FOREACH (SHAMapNodeID const& it, nodeIDs)
                         {
                             * (tmGL.add_nodeids ()) = it.getRawString ();
                         }
@@ -625,7 +625,7 @@ void InboundLedger::trigger (Peer::ptr const& peer)
         {
             // we need the root node
             tmGL.set_itype (protocol::liTX_NODE);
-            * (tmGL.add_nodeids ()) = SHAMapNode ().getRawString ();
+            * (tmGL.add_nodeids ()) = SHAMapNodeID ().getRawString ();
             if (m_journal.trace) m_journal.trace <<
                 "Sending TX root request to " << (
                     peer ? "selected peer" : "all peers");
@@ -634,7 +634,7 @@ void InboundLedger::trigger (Peer::ptr const& peer)
         }
         else
         {
-            std::vector<SHAMapNode> nodeIDs;
+            std::vector<SHAMapNodeID> nodeIDs;
             std::vector<uint256> nodeHashes;
             nodeIDs.reserve (256);
             nodeHashes.reserve (256);
@@ -663,7 +663,7 @@ void InboundLedger::trigger (Peer::ptr const& peer)
                 if (!nodeIDs.empty ())
                 {
                     tmGL.set_itype (protocol::liTX_NODE);
-                    BOOST_FOREACH (SHAMapNode const& it, nodeIDs)
+                    BOOST_FOREACH (SHAMapNodeID const& it, nodeIDs)
                     {
                         * (tmGL.add_nodeids ()) = it.getRawString ();
                     }
@@ -692,8 +692,8 @@ void InboundLedger::trigger (Peer::ptr const& peer)
     }
 }
 
-void InboundLedger::filterNodes (std::vector<SHAMapNode>& nodeIDs,
-    std::vector<uint256>& nodeHashes, std::set<SHAMapNode>& recentNodes,
+void InboundLedger::filterNodes (std::vector<SHAMapNodeID>& nodeIDs,
+    std::vector<uint256>& nodeHashes, std::set<SHAMapNodeID>& recentNodes,
     int max, bool aggressive)
 {
     // ask for new nodes in preference to ones we've already asked for
@@ -704,7 +704,7 @@ void InboundLedger::filterNodes (std::vector<SHAMapNode>& nodeIDs,
 
     int dupCount = 0;
 
-    BOOST_FOREACH(SHAMapNode const& nodeID, nodeIDs)
+    BOOST_FOREACH(SHAMapNodeID const& nodeID, nodeIDs)
     {
         if (recentNodes.count (nodeID) != 0)
         {
@@ -757,7 +757,7 @@ void InboundLedger::filterNodes (std::vector<SHAMapNode>& nodeIDs,
         nodeHashes.resize (max);
     }
 
-    BOOST_FOREACH (const SHAMapNode & n, nodeIDs)
+    BOOST_FOREACH (const SHAMapNodeID & n, nodeIDs)
     {
         recentNodes.insert (n);
     }
@@ -814,7 +814,7 @@ bool InboundLedger::takeBase (const std::string& data)
 /** Process TX data received from a peer
     Call with a lock
 */
-bool InboundLedger::takeTxNode (const std::list<SHAMapNode>& nodeIDs,
+bool InboundLedger::takeTxNode (const std::list<SHAMapNodeID>& nodeIDs,
     const std::list< Blob >& data, SHAMapAddNode& san)
 {
     if (!mHaveBase)
@@ -831,7 +831,7 @@ bool InboundLedger::takeTxNode (const std::list<SHAMapNode>& nodeIDs,
         return true;
     }
 
-    std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin ();
+    std::list<SHAMapNodeID>::const_iterator nodeIDit = nodeIDs.begin ();
     std::list< Blob >::const_iterator nodeDatait = data.begin ();
     TransactionStateSF tFilter (mLedger->getLedgerSeq ());
 
@@ -874,7 +874,7 @@ bool InboundLedger::takeTxNode (const std::list<SHAMapNode>& nodeIDs,
 /** Process AS data received from a peer
     Call with a lock
 */
-bool InboundLedger::takeAsNode (const std::list<SHAMapNode>& nodeIDs,
+bool InboundLedger::takeAsNode (const std::list<SHAMapNodeID>& nodeIDs,
     const std::list< Blob >& data, SHAMapAddNode& san)
 {
     if (m_journal.trace) m_journal.trace <<
@@ -898,7 +898,7 @@ bool InboundLedger::takeAsNode (const std::list<SHAMapNode>& nodeIDs,
         return true;
     }
 
-    std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin ();
+    std::list<SHAMapNodeID>::const_iterator nodeIDit = nodeIDs.begin ();
     std::list< Blob >::const_iterator nodeDatait = data.begin ();
     AccountStateSF tFilter (mLedger->getLedgerSeq ());
 
@@ -1117,7 +1117,7 @@ int InboundLedger::processData (std::shared_ptr<Peer> peer,
     if ((packet.type () == protocol::liTX_NODE) || (
         packet.type () == protocol::liAS_NODE))
     {
-        std::list<SHAMapNode> nodeIDs;
+        std::list<SHAMapNodeID> nodeIDs;
         std::list< Blob > nodeData;
 
         if (packet.nodes ().size () == 0)
@@ -1140,7 +1140,7 @@ int InboundLedger::processData (std::shared_ptr<Peer> peer,
                 return -1;
             }
 
-            nodeIDs.push_back (SHAMapNode (node.nodeid ().data (),
+            nodeIDs.push_back (SHAMapNodeID (node.nodeid ().data (),
                 node.nodeid ().size ()));
             nodeData.push_back (Blob (node.nodedata ().begin (),
                 node.nodedata ().end ()));

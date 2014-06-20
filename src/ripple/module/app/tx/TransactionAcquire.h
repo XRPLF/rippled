@@ -43,7 +43,7 @@ public:
         return mMap;
     }
 
-    SHAMapAddNode takeNodes (const std::list<SHAMapNode>& IDs,
+    SHAMapAddNode takeNodes (const std::list<SHAMapNodeID>& IDs,
                              const std::list< Blob >& data, Peer::ptr const&);
 
 private:

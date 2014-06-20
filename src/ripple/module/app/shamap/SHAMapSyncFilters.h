@@ -37,12 +37,12 @@ public:
 
     // Note that the nodeData is overwritten by this call
     void gotNode (bool fromFilter,
-                  SHAMapNode const& id,
+                  SHAMapNodeID const& id,
                   uint256 const& nodeHash,
                   Blob& nodeData,
                   SHAMapTreeNode::TNType);
 
-    bool haveNode (SHAMapNode const& id,
+    bool haveNode (SHAMapNodeID const& id,
                    uint256 const& nodeHash,
                    Blob& nodeData);
 
@@ -59,12 +59,12 @@ public:
 
     // Note that the nodeData is overwritten by this call
     void gotNode (bool fromFilter,
-                  SHAMapNode const& id,
+                  SHAMapNodeID const& id,
                   uint256 const& nodeHash,
                   Blob& nodeData,
                   SHAMapTreeNode::TNType);
 
-    bool haveNode (SHAMapNode const& id,
+    bool haveNode (SHAMapNodeID const& id,
                    uint256 const& nodeHash,
                    Blob& nodeData);
 
@@ -81,12 +81,12 @@ public:
 
     // Note that the nodeData is overwritten by this call
     void gotNode (bool fromFilter,
-                  SHAMapNode const& id,
+                  SHAMapNodeID const& id,
                   uint256 const& nodeHash,
                   Blob& nodeData,
                   SHAMapTreeNode::TNType);
 
-    bool haveNode (SHAMapNode const& id,
+    bool haveNode (SHAMapNodeID const& id,
                    uint256 const& nodeHash,
                    Blob& nodeData);
 

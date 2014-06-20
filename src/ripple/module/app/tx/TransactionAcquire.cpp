@@ -157,7 +157,7 @@ void TransactionAcquire::trigger (Peer::ptr const& peer)
         if (getTimeouts () != 0)
             tmGL.set_querytype (protocol::qtINDIRECT);
 
-        * (tmGL.add_nodeids ()) = SHAMapNode ().getRawString ();
+        * (tmGL.add_nodeids ()) = SHAMapNodeID ().getRawString ();
         sendRequest (tmGL, peer);
     }
     else if (!mMap->isValid ())
@@ -167,7 +167,7 @@ void TransactionAcquire::trigger (Peer::ptr const& peer)
     }
     else
     {
-        std::vector<SHAMapNode> nodeIDs;
+        std::vector<SHAMapNodeID> nodeIDs;
         std::vector<uint256> nodeHashes;
         // VFALCO TODO Use a dependency injection on the temp node cache
         ConsensusTransSetSF sf (getApp().getTempNodeCache ());
@@ -191,15 +191,15 @@ void TransactionAcquire::trigger (Peer::ptr const& peer)
         if (getTimeouts () != 0)
             tmGL.set_querytype (protocol::qtINDIRECT);
 
-        BOOST_FOREACH (SHAMapNode & it, nodeIDs)
+        for (SHAMapNodeID& it : nodeIDs)
         {
-            * (tmGL.add_nodeids ()) = it.getRawString ();
+            *tmGL.add_nodeids () = it.getRawString ();
         }
         sendRequest (tmGL, peer);
     }
 }
 
-SHAMapAddNode TransactionAcquire::takeNodes (const std::list<SHAMapNode>& nodeIDs,
+SHAMapAddNode TransactionAcquire::takeNodes (const std::list<SHAMapNodeID>& nodeIDs,
         const std::list< Blob >& data, Peer::ptr const& peer)
 {
     if (mComplete)
@@ -219,7 +219,7 @@ SHAMapAddNode TransactionAcquire::takeNodes (const std::list<SHAMapNode>& nodeID
         if (nodeIDs.empty ())
             return SHAMapAddNode::invalid ();
 
-        std::list<SHAMapNode>::const_iterator nodeIDit = nodeIDs.begin ();
+        std::list<SHAMapNodeID>::const_iterator nodeIDit = nodeIDs.begin ();
         std::list< Blob >::const_iterator nodeDatait = data.begin ();
         ConsensusTransSetSF sf (getApp().getTempNodeCache ());
 

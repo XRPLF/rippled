@@ -41,12 +41,12 @@ public:
         }
 
         void gotNode (bool fromFilter,
-            SHAMapNode const& id, uint256 const& nodeHash,
+            SHAMapNodeID const& id, uint256 const& nodeHash,
                 Blob& nodeData, SHAMapTreeNode::TNType type)
         {
         }
 
-        bool haveNode (SHAMapNode const& id,
+        bool haveNode (SHAMapNodeID const& id,
             uint256 const& nodeHash, Blob& nodeData)
         {
             Map::iterator it = mMap.find (nodeHash);

@@ -208,7 +208,7 @@ public:
             uint256 checkLedger, bool sigGood) = 0;
 
     virtual SHAMapAddNode gotTXData (const std::shared_ptr<Peer>& peer,
-        uint256 const& hash, const std::list<SHAMapNode>& nodeIDs,
+        uint256 const& hash, const std::list<SHAMapNodeID>& nodeIDs,
         const std::list< Blob >& nodeData) = 0;
 
     virtual bool recvValidation (SerializedValidation::ref val,

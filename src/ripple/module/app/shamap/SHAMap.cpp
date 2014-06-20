@@ -43,9 +43,9 @@ SHAMap::SHAMap (SHAMapType t, FullBelowCache& fullBelowCache, std::uint32_t seq,
     if (t == smtSTATE)
         mTNByID.rehash (STATE_MAP_BUCKETS);
 
-    root = std::make_shared<SHAMapTreeNode> (mSeq, SHAMapNode (0, uint256 ()));
+    root = std::make_shared<SHAMapTreeNode> (mSeq, SHAMapNodeID (0, uint256 ()));
     root->makeInner ();
-    mTNByID.replace(*root, root);
+    mTNByID.replace(root->getID(), root);
 }
 
 SHAMap::SHAMap (SHAMapType t, uint256 const& hash, FullBelowCache& fullBelowCache,
@@ -61,9 +61,9 @@ SHAMap::SHAMap (SHAMapType t, uint256 const& hash, FullBelowCache& fullBelowCach
     if (t == smtSTATE)
         mTNByID.rehash (STATE_MAP_BUCKETS);
 
-    root = std::make_shared<SHAMapTreeNode> (mSeq, SHAMapNode (0, uint256 ()));
+    root = std::make_shared<SHAMapTreeNode> (mSeq, SHAMapNodeID (0, uint256 ()));
     root->makeInner ();
-    mTNByID.replace(*root, root);
+    mTNByID.replace(root->getID(), root);
 }
 
 TaggedCache <uint256, SHAMapTreeNode>
@@ -93,7 +93,7 @@ SHAMap::~SHAMap ()
     }
 }
 
-void SHAMapNode::setMHash () const
+void SHAMapNodeID::setMHash () const
 {
     using namespace std;
 
@@ -108,7 +108,7 @@ void SHAMapNode::setMHash () const
     mHash = h;
 }
 
-std::size_t hash_value (const SHAMapNode& mn)
+std::size_t hash_value (const SHAMapNodeID& mn)
 {
     return mn.getMHash ();
 }
@@ -138,8 +138,8 @@ SHAMap::pointer SHAMap::snapShot (bool isMutable)
                 if (nodeIt.second->getSeq() == mSeq)
                 { // We might modify this node, so duplicate it in the snapShot
                     SHAMapTreeNode::pointer newNode = std::make_shared<SHAMapTreeNode> (*nodeIt.second, mSeq);
-                    newMap.mTNByID.replace (*newNode, newNode);
-                    if (newNode->isRoot ())
+                    newMap.mTNByID.replace (newNode->getID(), newNode);
+                    if (newNode->getID().isRoot ())
                         newMap.root = newNode;
                 }
             }
@@ -162,7 +162,7 @@ std::stack<SHAMapTreeNode::pointer> SHAMap::getStack (uint256 const& id, bool in
     {
         stack.push (node);
 
-        int branch = node->selectBranch (id);
+        int branch = node->getID().selectBranch (id);
         assert (branch >= 0);
 
         if (node->isEmptyBranch (branch))
@@ -170,7 +170,8 @@ std::stack<SHAMapTreeNode::pointer> SHAMap::getStack (uint256 const& id, bool in
 
         try
         {
-            node = getNode (node->getChildNodeID (branch), node->getChildHash (branch), false);
+            node = getNode (node->getID().getChildNodeID (branch),
+                            node->getChildHash (branch), false);
         }
         catch (SHAMapMissingNode& mn)
         {
@@ -198,7 +199,7 @@ void SHAMap::dirtyUp (std::stack<SHAMapTreeNode::pointer>& stack, uint256 const&
         stack.pop ();
         assert (node->isInnerNode ());
 
-        int branch = node->selectBranch (target);
+        int branch = node->getID().selectBranch (target);
         assert (branch >= 0);
 
         returnNode (node, true);
@@ -218,7 +219,7 @@ void SHAMap::dirtyUp (std::stack<SHAMapTreeNode::pointer>& stack, uint256 const&
     }
 }
 
-SHAMapTreeNode::pointer SHAMap::checkCacheNode (const SHAMapNode& iNode)
+SHAMapTreeNode::pointer SHAMap::checkCacheNode (const SHAMapNodeID& iNode)
 {
     SHAMapTreeNode::pointer ret = mTNByID.retrieve(iNode);
     if (ret && (ret->getSeq()!= 0))
@@ -234,14 +235,15 @@ SHAMapTreeNode::pointer SHAMap::walkTo (uint256 const& id, bool modify)
 
     while (!inNode->isLeaf ())
     {
-        int branch = inNode->selectBranch (id);
+        int branch = inNode->getID().selectBranch (id);
 
         if (inNode->isEmptyBranch (branch))
             return inNode;
 
         try
         {
-            inNode = getNode (inNode->getChildNodeID (branch), inNode->getChildHash (branch), false);
+            inNode = getNode (inNode->getID().getChildNodeID (branch),
+                              inNode->getChildHash (branch), false);
         }
         catch (SHAMapMissingNode& mn)
         {
@@ -265,19 +267,20 @@ SHAMapTreeNode* SHAMap::walkToPointer (uint256 const& id)
 
     while (!inNode->isLeaf ())
     {
-        int branch = inNode->selectBranch (id);
+        int branch = inNode->getID().selectBranch (id);
 
         if (inNode->isEmptyBranch (branch))
             return nullptr;
 
-        inNode = getNodePointer (inNode->getChildNodeID (branch), inNode->getChildHash (branch));
+        inNode = getNodePointer (inNode->getID().getChildNodeID (branch),
+                                 inNode->getChildHash (branch));
         assert (inNode);
     }
 
     return (inNode->getTag () == id) ? inNode : nullptr;
 }
 
-SHAMapTreeNode::pointer SHAMap::getNode (const SHAMapNode& id, uint256 const& hash, bool modify)
+SHAMapTreeNode::pointer SHAMap::getNode (const SHAMapNodeID& id, uint256 const& hash, bool modify)
 {
     // retrieve a node whose node hash is known
     SHAMapTreeNode::pointer node = checkCacheNode (id);
@@ -303,7 +306,7 @@ SHAMapTreeNode::pointer SHAMap::getNode (const SHAMapNode& id, uint256 const& ha
     return fetchNodeExternal (id, hash);
 }
 
-SHAMapTreeNode* SHAMap::getNodePointer (const SHAMapNode& id, uint256 const& hash)
+SHAMapTreeNode* SHAMap::getNodePointer (const SHAMapNodeID& id, uint256 const& hash)
 {
     // fast, but you do not hold a reference
     SHAMapTreeNode* ret = getNodePointerNT (id, hash);
@@ -314,7 +317,7 @@ SHAMapTreeNode* SHAMap::getNodePointer (const SHAMapNode& id, uint256 const& has
     return ret;
 }
 
-SHAMapTreeNode* SHAMap::getNodePointerNT (const SHAMapNode& id, uint256 const& hash)
+SHAMapTreeNode* SHAMap::getNodePointerNT (const SHAMapNodeID& id, uint256 const& hash)
 {
     SHAMapTreeNode::pointer ret = mTNByID.retrieve (id);
     if (!ret)
@@ -322,7 +325,7 @@ SHAMapTreeNode* SHAMap::getNodePointerNT (const SHAMapNode& id, uint256 const& h
     return ret ? ret.get() : nullptr;
 }
 
-SHAMapTreeNode* SHAMap::getNodePointer (const SHAMapNode& id, uint256 const& hash, SHAMapSyncFilter* filter)
+SHAMapTreeNode* SHAMap::getNodePointer (const SHAMapNodeID& id, uint256 const& hash, SHAMapSyncFilter* filter)
 {
     SHAMapTreeNode* ret = getNodePointerNT (id, hash, filter);
 
@@ -332,7 +335,7 @@ SHAMapTreeNode* SHAMap::getNodePointer (const SHAMapNode& id, uint256 const& has
     return ret;
 }
 
-SHAMapTreeNode* SHAMap::getNodePointerNT (const SHAMapNode& id, uint256 const& hash, SHAMapSyncFilter* filter)
+SHAMapTreeNode* SHAMap::getNodePointerNT (const SHAMapNodeID& id, uint256 const& hash, SHAMapSyncFilter* filter)
 {
     SHAMapTreeNode* node = getNodePointerNT (id, hash);
 
@@ -374,13 +377,13 @@ void SHAMap::returnNode (SHAMapTreeNode::pointer& node, bool modify)
         node = std::make_shared<SHAMapTreeNode> (*node, mSeq); // here's to the new node, same as the old node
         assert (node->isValid ());
 
-        mTNByID.replace (*node, node);
+        mTNByID.replace (node->getID(), node);
 
-        if (node->isRoot ())
+        if (node->getID().isRoot ())
             root = node;
 
         if (mDirtyNodes)
-            mDirtyNodes->insert (*node);
+            mDirtyNodes->insert (node->getID());
     }
 }
 
@@ -388,7 +391,7 @@ void SHAMap::trackNewNode (SHAMapTreeNode::pointer& node)
 {
     assert (node->getSeq() == mSeq);
     if (mDirtyNodes)
-        mDirtyNodes->insert (*node);
+        mDirtyNodes->insert (node->getID());
 }
 
 SHAMapTreeNode* SHAMap::firstBelow (SHAMapTreeNode* node)
@@ -405,7 +408,8 @@ SHAMapTreeNode* SHAMap::firstBelow (SHAMapTreeNode* node)
         for (int i = 0; i < 16; ++i)
             if (!node->isEmptyBranch (i))
             {
-                node = getNodePointer (node->getChildNodeID (i), node->getChildHash (i));
+                node = getNodePointer (node->getID().getChildNodeID (i),
+                                       node->getChildHash (i));
                 foundNode = true;
                 break;
             }
@@ -429,7 +433,8 @@ SHAMapTreeNode* SHAMap::lastBelow (SHAMapTreeNode* node)
         for (int i = 15; i >= 0; ++i)
             if (!node->isEmptyBranch (i))
             {
-                node = getNodePointer (node->getChildNodeID (i), node->getChildHash (i));
+                node = getNodePointer (node->getID().getChildNodeID (i),
+                                       node->getChildHash (i));
                 foundNode = true;
                 break;
             }
@@ -453,12 +458,13 @@ SHAMapItem::pointer SHAMap::onlyBelow (SHAMapTreeNode* node)
                 if (nextNode)
                     return SHAMapItem::pointer (); // two leaves below
 
-                nextNode = getNodePointer (node->getChildNodeID (i), node->getChildHash (i));
+                nextNode = getNodePointer (node->getID().getChildNodeID (i),
+                                           node->getChildHash (i));
             }
 
         if (!nextNode)
         {
-            WriteLog (lsFATAL, SHAMap) << *node;
+            WriteLog (lsFATAL, SHAMap) << node->getID();
             assert (false);
             return SHAMapItem::pointer ();
         }
@@ -480,13 +486,14 @@ void SHAMap::eraseChildren (SHAMapTreeNode::pointer node)
         for (int i = 0; i < 16; ++i)
             if (!node->isEmptyBranch (i))
             {
-                SHAMapTreeNode::pointer nextNode = getNode (node->getChildNodeID (i), node->getChildHash (i), false);
+                SHAMapTreeNode::pointer nextNode = getNode (node->getID().getChildNodeID (i),
+                                                            node->getChildHash (i), false);
 
                 if (erase)
                 {
                     returnNode (node, true);
 
-                    if (mTNByID.erase (*node))
+                    if (mTNByID.erase (node->getID()))
                         assert (false);
                 }
 
@@ -498,7 +505,7 @@ void SHAMap::eraseChildren (SHAMapTreeNode::pointer node)
 
     returnNode (node, true);
 
-    if (mTNByID.erase (*node) == 0)
+    if (mTNByID.erase (node->getID()) == 0)
         assert (false);
 
     return;
@@ -571,10 +578,11 @@ SHAMapItem::pointer SHAMap::peekNextItem (uint256 const& id, SHAMapTreeNode::TNT
             }
         }
         else
-            for (int i = node->selectBranch (id) + 1; i < 16; ++i)
+            for (int i = node->getID().selectBranch (id) + 1; i < 16; ++i)
                 if (!node->isEmptyBranch (i))
                 {
-                    SHAMapTreeNode* firstNode = getNodePointer (node->getChildNodeID (i), node->getChildHash (i));
+                    SHAMapTreeNode* firstNode = getNodePointer (node->getID().getChildNodeID (i),
+                                                                node->getChildHash (i));
                     assert (firstNode);
                     firstNode = firstBelow (firstNode);
 
@@ -609,11 +617,12 @@ SHAMapItem::pointer SHAMap::peekPrevItem (uint256 const& id)
         }
         else
         {
-            for (int i = node->selectBranch (id) - 1; i >= 0; --i)
+            for (int i = node->getID().selectBranch (id) - 1; i >= 0; --i)
             {
                 if (!node->isEmptyBranch (i))
                 {
-                    node = getNode (node->getChildNodeID (i), node->getChildHash (i), false);
+                    node = getNode (node->getID().getChildNodeID (i),
+                                    node->getChildHash (i), false);
                     SHAMapTreeNode* item = firstBelow (node.get ());
 
                     if (!item)
@@ -697,7 +706,7 @@ bool SHAMap::delItem (uint256 const& id)
     SHAMapTreeNode::TNType type = leaf->getType ();
     returnNode (leaf, true);
 
-    if (mTNByID.erase (*leaf) == 0)
+    if (mTNByID.erase (leaf->getID()) == 0)
         assert (false);
 
     uint256 prevHash;
@@ -709,13 +718,13 @@ bool SHAMap::delItem (uint256 const& id)
         returnNode (node, true);
         assert (node->isInner ());
 
-        if (!node->setChildHash (node->selectBranch (id), prevHash))
+        if (!node->setChildHash (node->getID().selectBranch (id), prevHash))
         {
             assert (false);
             return true;
         }
 
-        if (!node->isRoot ())
+        if (!node->getID().isRoot ())
         {
             // we may have made this a node with 1 or 0 children
             int bc = node->getBranchCount ();
@@ -724,7 +733,7 @@ bool SHAMap::delItem (uint256 const& id)
             {
                 prevHash = uint256 ();
 
-                if (!mTNByID.erase (*node))
+                if (!mTNByID.erase (node->getID()))
                     assert (false);
             }
             else if (bc == 1)
@@ -781,15 +790,16 @@ bool SHAMap::addGiveItem (SHAMapItem::ref item, bool isTransaction, bool hasMeta
     if (node->isInner ())
     {
         // easy case, we end on an inner node
-        int branch = node->selectBranch (tag);
+        int branch = node->getID().selectBranch (tag);
         assert (node->isEmptyBranch (branch));
         SHAMapTreeNode::pointer newNode =
-            std::make_shared<SHAMapTreeNode> (node->getChildNodeID (branch), item, type, mSeq);
+            std::make_shared<SHAMapTreeNode> (node->getID().getChildNodeID (branch),
+                                              item, type, mSeq);
 
-        if (!mTNByID.peekMap().emplace (SHAMapNode (*newNode), newNode).second)
+        if (!mTNByID.peekMap().emplace (SHAMapNodeID (newNode->getID()), newNode).second)
         {
-            WriteLog (lsFATAL, SHAMap) << "Node: " << *node;
-            WriteLog (lsFATAL, SHAMap) << "NewNode: " << *newNode;
+            WriteLog (lsFATAL, SHAMap) << "Node: " << node->getID();
+            WriteLog (lsFATAL, SHAMap) << "NewNode: " << newNode->getID();
             dump ();
             assert (false);
             throw (std::runtime_error ("invalid inner node"));
@@ -808,14 +818,15 @@ bool SHAMap::addGiveItem (SHAMapItem::ref item, bool isTransaction, bool hasMeta
 
         int b1, b2;
 
-        while ((b1 = node->selectBranch (tag)) == (b2 = node->selectBranch (otherItem->getTag ())))
+        while ((b1 = node->getID().selectBranch (tag)) ==
+               (b2 = node->getID().selectBranch (otherItem->getTag ())))
         {
             // we need a new inner node, since both go on same branch at this level
             SHAMapTreeNode::pointer newNode =
-                std::make_shared<SHAMapTreeNode> (mSeq, node->getChildNodeID (b1));
+                std::make_shared<SHAMapTreeNode> (mSeq, node->getID().getChildNodeID (b1));
             newNode->makeInner ();
 
-            if (!mTNByID.peekMap().emplace (SHAMapNode (*newNode), newNode).second)
+            if (!mTNByID.peekMap().emplace (SHAMapNodeID (newNode->getID()), newNode).second)
                 assert (false);
 
             stack.push (node);
@@ -826,19 +837,21 @@ bool SHAMap::addGiveItem (SHAMapItem::ref item, bool isTransaction, bool hasMeta
         // we can add the two leaf nodes here
         assert (node->isInner ());
         SHAMapTreeNode::pointer newNode =
-            std::make_shared<SHAMapTreeNode> (node->getChildNodeID (b1), item, type, mSeq);
+            std::make_shared<SHAMapTreeNode> (node->getID().getChildNodeID (b1),
+                                              item, type, mSeq);
         assert (newNode->isValid () && newNode->isLeaf ());
 
-        if (!mTNByID.peekMap().emplace (SHAMapNode (*newNode), newNode).second)
+        if (!mTNByID.peekMap().emplace (SHAMapNodeID (newNode->getID()), newNode).second)
             assert (false);
 
         node->setChildHash (b1, newNode->getNodeHash ()); // OPTIMIZEME hash op not needed
         trackNewNode (newNode);
 
-        newNode = std::make_shared<SHAMapTreeNode> (node->getChildNodeID (b2), otherItem, type, mSeq);
+        newNode = std::make_shared<SHAMapTreeNode> (node->getID().getChildNodeID (b2),
+                                                    otherItem, type, mSeq);
         assert (newNode->isValid () && newNode->isLeaf ());
 
-        if (!mTNByID.peekMap().emplace (SHAMapNode (*newNode), newNode).second)
+        if (!mTNByID.peekMap().emplace (SHAMapNodeID (newNode->getID()), newNode).second)
             assert (false);
 
         node->setChildHash (b2, newNode->getNodeHash ());
@@ -894,7 +907,7 @@ void SHAMapItem::dump ()
     WriteLog (lsINFO, SHAMap) << "SHAMapItem(" << mTag << ") " << mData.size () << "bytes";
 }
 
-SHAMapTreeNode::pointer SHAMap::fetchNodeExternal (const SHAMapNode& id, uint256 const& hash)
+SHAMapTreeNode::pointer SHAMap::fetchNodeExternal (const SHAMapNodeID& id, uint256 const& hash)
 {
     SHAMapTreeNode::pointer ret = fetchNodeExternalNT (id, hash);
 
@@ -906,7 +919,7 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternal (const SHAMapNode& id, uint256
 
 // Non-blocking version
 SHAMapTreeNode* SHAMap::getNodeAsync (
-    const SHAMapNode& id,
+    const SHAMapNodeID& id,
     uint256 const& hash,
     SHAMapSyncFilter *filter,
     bool& pending)
@@ -957,7 +970,7 @@ SHAMapTreeNode* SHAMap::getNodeAsync (
                 return nullptr;
 
             ptr = std::make_shared <SHAMapTreeNode> (id, obj->getData(), 0, snfPREFIX, hash, true);
-            if (id != *ptr)
+            if (id != ptr->getID())
             {
                 assert (false);
                 return nullptr;
@@ -986,7 +999,7 @@ SHAMapTreeNode* SHAMap::getNodeAsync (
     get a shared pointer to the same underlying node.
     This function does not throw.
 */
-SHAMapTreeNode::pointer SHAMap::fetchNodeExternalNT (const SHAMapNode& id, uint256 const& hash)
+SHAMapTreeNode::pointer SHAMap::fetchNodeExternalNT (const SHAMapNodeID& id, uint256 const& hash)
 {
     SHAMapTreeNode::pointer ret;
 
@@ -998,7 +1011,7 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternalNT (const SHAMapNode& id, uint2
     if (ret)
     { // The node was found in the TreeNodeCache
         assert (ret->getSeq() == 0);
-        assert (id == *ret);
+        assert (id == ret->getID());
     }
     else
     { // Check the back end
@@ -1020,9 +1033,9 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternalNT (const SHAMapNode& id, uint2
             // CoW is needed if it is modified
             ret = std::make_shared<SHAMapTreeNode> (id, obj->getData (), 0, snfPREFIX, hash, true);
 
-            if (id != *ret)
+            if (id != ret->getID())
             {
-                WriteLog (lsFATAL, SHAMap) << "id:" << id << ", got:" << *ret;
+                WriteLog (lsFATAL, SHAMap) << "id:" << id << ", got:" << ret->getID();
                 assert (false);
                 return SHAMapTreeNode::pointer ();
             }
@@ -1069,7 +1082,7 @@ bool SHAMap::fetchRoot (uint256 const& hash, SHAMapSyncFilter* filter)
             WriteLog (lsTRACE, SHAMap) << "Fetch root SHAMap node " << hash;
     }
 
-    SHAMapTreeNode::pointer newRoot = fetchNodeExternalNT(SHAMapNode(), hash);
+    SHAMapTreeNode::pointer newRoot = fetchNodeExternalNT(SHAMapNodeID(), hash);
     
     if (newRoot)
     {
@@ -1079,13 +1092,13 @@ bool SHAMap::fetchRoot (uint256 const& hash, SHAMapSyncFilter* filter)
     {
         Blob nodeData;
 
-        if (!filter || !filter->haveNode (SHAMapNode (), hash, nodeData))
+        if (!filter || !filter->haveNode (SHAMapNodeID (), hash, nodeData))
             return false;
 
-        root = std::make_shared<SHAMapTreeNode> (SHAMapNode (), nodeData,
+        root = std::make_shared<SHAMapTreeNode> (SHAMapNodeID (), nodeData,
                 mSeq - 1, snfPREFIX, hash, true);
-        mTNByID.replace(*root, root);
-        filter->gotNode (true, SHAMapNode (), hash, nodeData, root->getType ());
+        mTNByID.replace(root->getID(), root);
+        filter->gotNode (true, SHAMapNodeID (), hash, nodeData, root->getType ());
     }
 
     assert (root->getNodeHash () == hash);
@@ -1124,7 +1137,7 @@ int SHAMap::flushDirty (DirtySet& set, int maxNodes, NodeObjectType t, std::uint
 
         if (s.getSHA512Half () != nodeHash)
         {
-            WriteLog (lsFATAL, SHAMap) << *node;
+            WriteLog (lsFATAL, SHAMap) << node->getID();
             WriteLog (lsFATAL, SHAMap) << beast::lexicalCast <std::string> (s.getDataLength ());
             WriteLog (lsFATAL, SHAMap) << s.getSHA512Half () << " != " << nodeHash;
             assert (false);
@@ -1138,7 +1151,7 @@ int SHAMap::flushDirty (DirtySet& set, int maxNodes, NodeObjectType t, std::uint
             // Make and share a shareable copy
             node = std::make_shared <SHAMapTreeNode> (*node, 0);
             canonicalize (node->getNodeHash(), node);
-            mTNByID.replace (*node, node);
+            mTNByID.replace (node->getID(), node);
         }
 
         getApp().getNodeStore ().store (t, seq, std::move (s.modData ()), nodeHash);
@@ -1160,7 +1173,7 @@ std::shared_ptr<SHAMap::DirtySet> SHAMap::disarmDirty ()
     return ret;
 }
 
-SHAMapTreeNode::pointer SHAMap::getNode (const SHAMapNode& nodeID)
+SHAMapTreeNode::pointer SHAMap::getNode (const SHAMapNodeID& nodeID)
 {
 
     SHAMapTreeNode::pointer node = checkCacheNode (nodeID);
@@ -1170,15 +1183,16 @@ SHAMapTreeNode::pointer SHAMap::getNode (const SHAMapNode& nodeID)
 
     node = root;
 
-    while (nodeID != *node)
+    while (nodeID != node->getID())
     {
-        int branch = node->selectBranch (nodeID.getNodeID ());
+        int branch = node->getID().selectBranch (nodeID.getNodeID ());
         assert (branch >= 0);
 
         if ((branch < 0) || node->isEmptyBranch (branch))
             return SHAMapTreeNode::pointer ();
 
-        node = getNode (node->getChildNodeID (branch), node->getChildHash (branch), false);
+        node = getNode (node->getID().getChildNodeID (branch),
+                        node->getChildHash (branch), false);
         assert (node);
     }
 
@@ -1187,7 +1201,7 @@ SHAMapTreeNode::pointer SHAMap::getNode (const SHAMapNode& nodeID)
 
 // This function returns NULL if no node with that ID exists in the map
 // It throws if the map is incomplete
-SHAMapTreeNode* SHAMap::getNodePointer (const SHAMapNode& nodeID)
+SHAMapTreeNode* SHAMap::getNodePointer (const SHAMapNodeID& nodeID)
 {
     SHAMapTreeNode::pointer nodeptr = mTNByID.retrieve (nodeID);
     if (nodeptr)
@@ -1199,18 +1213,19 @@ SHAMapTreeNode* SHAMap::getNodePointer (const SHAMapNode& nodeID)
 
     SHAMapTreeNode* node = root.get();
 
-    while (nodeID != *node)
+    while (nodeID != node->getID())
     {
         if (node->isLeaf ())
             return nullptr;
 
-        int branch = node->selectBranch (nodeID.getNodeID ());
+        int branch = node->getID().selectBranch (nodeID.getNodeID ());
         assert (branch >= 0);
 
         if ((branch < 0) || node->isEmptyBranch (branch))
             return nullptr;
 
-        node = getNodePointer (node->getChildNodeID (branch), node->getChildHash (branch));
+        node = getNodePointer (node->getID().getChildNodeID (branch),
+                               node->getChildHash (branch));
         assert (node);
     }
 
@@ -1232,12 +1247,13 @@ bool SHAMap::getPath (uint256 const& index, std::vector< Blob >& nodes, SHANodeF
         inNode->addRaw (s, format);
         nodes.push_back (s.peekData ());
 
-        int branch = inNode->selectBranch (index);
+        int branch = inNode->getID().selectBranch (index);
 
         if (inNode->isEmptyBranch (branch)) // paths leads to empty branch
             return false;
 
-        inNode = getNodePointer (inNode->getChildNodeID (branch), inNode->getChildHash (branch));
+        inNode = getNodePointer (inNode->getID().getChildNodeID (branch),
+                                 inNode->getChildHash (branch));
         assert (inNode);
     }
 
@@ -1259,7 +1275,7 @@ void SHAMap::dropCache ()
     mTNByID.clear ();
 
     if (root)
-        mTNByID.canonicalize(*root, &root);
+        mTNByID.canonicalize(root->getID(), &root);
 }
 
 void SHAMap::dropBelow (SHAMapTreeNode* d)
@@ -1267,7 +1283,7 @@ void SHAMap::dropBelow (SHAMapTreeNode* d)
     if (d->isInner ())
         for (int i = 0 ; i < 16; ++i)
             if (!d->isEmptyBranch (i))
-                mTNByID.erase (d->getChildNodeID (i));
+                mTNByID.erase (d->getID().getChildNodeID (i));
 }
 
 void SHAMap::dump (bool hash)
@@ -1275,7 +1291,7 @@ void SHAMap::dump (bool hash)
     WriteLog (lsINFO, SHAMap) << " MAP Contains";
     ScopedWriteLockType sl (mLock);
 
-    for (ripple::unordered_map<SHAMapNode, SHAMapTreeNode::pointer, SHAMapNode_hash>::iterator it = mTNByID.peekMap().begin ();
+    for (ripple::unordered_map<SHAMapNodeID, SHAMapTreeNode::pointer, SHAMapNode_hash>::iterator it = mTNByID.peekMap().begin ();
             it != mTNByID.peekMap().end (); ++it)
     {
         WriteLog (lsINFO, SHAMap) << it->second->getString ();
@@ -1284,21 +1300,21 @@ void SHAMap::dump (bool hash)
 
 }
 
-SHAMapTreeNode::pointer SHAMap::getCache (uint256 const& hash, SHAMapNode const& id)
+SHAMapTreeNode::pointer SHAMap::getCache (uint256 const& hash, SHAMapNodeID const& id)
 {
     SHAMapTreeNode::pointer ret = treeNodeCache.fetch (hash);
     assert (!ret || !ret->getSeq());
 
-    if (ret && (*ret != id))
+    if (ret && (ret->getID() != id))
     {
         // We have the data, but with a different node ID
-        WriteLog (lsTRACE, SHAMap) << "ID mismatch: " << id << " != " << *ret;
+        WriteLog (lsTRACE, SHAMap) << "ID mismatch: " << id << " != " << ret->getID();
         ret = std::make_shared <SHAMapTreeNode> (*ret, 0);
-        ret->set(id);
+        ret->setID(id);
 
         // Future fetches are likely to use the "new" ID
         treeNodeCache.canonicalize (hash, ret, true);
-        assert (*ret == id);
+        assert (ret->getID() == id);
         assert (ret->getNodeHash() == hash);
     }
 
@@ -1309,19 +1325,19 @@ void SHAMap::canonicalize (uint256 const& hash, SHAMapTreeNode::pointer& node)
 {
     assert (node->getSeq() == 0);
 
-    SHAMapNode id = *node;
+    SHAMapNodeID id = node->getID();
 
     treeNodeCache.canonicalize (hash, node);
 
-    if (id != *node)
+    if (id != node->getID())
     {
         // The cache has the node with a different ID
         node = std::make_shared <SHAMapTreeNode> (*node, 0);
-        node->set (id);
+        node->setID(id);
 
         // Future fetches are likely to use the newer ID
         treeNodeCache.canonicalize (hash, node, true);
-        assert (id == *node);
+        assert (id == node->getID());
     }
 }
 
