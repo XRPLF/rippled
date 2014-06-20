@@ -705,7 +705,7 @@ bool STParsedJSON::parse (std::string const& json_name,
                             "[" << i << "]." << objectName;
                         bool const success (parse (ss.str (), objectFields,
                             nameField, depth + 1, sub_object_));
-                        if (! success)
+                        if (! success || (sub_object_->getFName().fieldType != STI_OBJECT))
                             return false;
                     }
                     tail->push_back (*sub_object_);

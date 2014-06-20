@@ -31,14 +31,15 @@ SField::StaticLockType& SField::getMutex ()
     return mutex;
 }
 
-const SField sfInvalid (-1), sfGeneric (0);
-const SField sfLedgerEntry (STI_LEDGERENTRY, 1, "LedgerEntry");
-const SField sfTransaction (STI_TRANSACTION, 1, "Transaction");
-const SField sfValidation (STI_VALIDATION, 1, "Validation");
-const SField sfHash (STI_HASH256, 257, "hash");
-const SField sfIndex (STI_HASH256, 258, "index");
+SField const sfInvalid (-1), sfGeneric (0);
+SField const sfLedgerEntry (STI_LEDGERENTRY, 257, "LedgerEntry");
+SField const sfTransaction (STI_TRANSACTION, 257, "Transaction");
+SField const sfValidation (STI_VALIDATION, 257, "Validation");
+SField const sfMetadata (STI_METADATA, 257, "Metadata");
+SField const sfHash (STI_HASH256, 257, "hash");
+SField const sfIndex (STI_HASH256, 258, "index");
 
-// TODO(tom): Remove this horrorr.
+// TODO(tom): Remove this horror.
 #define FIELD(name, type, index) \
     SField sf##name(FIELD_CODE(STI_##type, index), STI_##type, index, #name);
 #define TYPE(name, type, index)
