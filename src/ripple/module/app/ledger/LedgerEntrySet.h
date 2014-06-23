@@ -26,17 +26,20 @@ enum TransactionEngineParams
 {
     tapNONE             = 0x00,
 
-    tapNO_CHECK_SIGN    = 0x01,     // Signature already checked
+    // Signature already checked
+    tapNO_CHECK_SIGN    = 0x01,
 
-    tapOPEN_LEDGER      = 0x10,
     // Transaction is running against an open ledger
     // true = failures are not forwarded, check transaction fee
     // false = debit ledger for consumed funds
+    tapOPEN_LEDGER      = 0x10,
 
-    tapRETRY            = 0x20,     // This is not the transaction's last pass
+    // This is not the transaction's last pass
     // Transaction can be retried, soft failures allowed
+    tapRETRY            = 0x20,
 
-    tapADMIN            = 0x400,    // Transaction came from a privileged source
+    // Transaction came from a privileged source
+    tapADMIN            = 0x400,
 };
 
 enum LedgerEntryAction
@@ -103,9 +106,6 @@ public:
 
     // Make a duplicate of this set.
     LedgerEntrySet duplicate () const;
-
-    // Set this set to have the same contents as another
-    void setTo (const LedgerEntrySet&);
 
     // Swap the contents of two sets
     void swapWith (LedgerEntrySet&);

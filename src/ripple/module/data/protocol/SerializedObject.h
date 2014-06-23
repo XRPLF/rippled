@@ -197,6 +197,7 @@ public:
     std::uint32_t getFieldU32 (SField::ref field) const;
     std::uint64_t getFieldU64 (SField::ref field) const;
     uint128 getFieldH128 (SField::ref field) const;
+
     uint160 getFieldH160 (SField::ref field) const;
     uint256 getFieldH256 (SField::ref field) const;
     RippleAddress getFieldAccount (SField::ref field) const;

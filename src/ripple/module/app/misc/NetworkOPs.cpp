@@ -1210,7 +1210,7 @@ public:
     {
     }
 
-    bool operator> (const ValidationCount& v)
+    bool operator> (const ValidationCount& v) const
     {
         if (trustedValidations > v.trustedValidations)
             return true;
@@ -1344,7 +1344,7 @@ bool NetworkOPsImp::checkLastClosedLedger (const Overlay::PeerSequence& peerList
     // 3) Is there a network ledger we'd like to switch to? If so, do we have it?
     bool switchLedgers = false;
 
-    for (auto& it: ledgers)
+    for (auto const& it: ledgers)
     {
         m_journal.debug << "L: " << it.first
                         << " t=" << it.second.trustedValidations

@@ -47,15 +47,6 @@ LedgerEntrySet LedgerEntrySet::duplicate () const
     return LedgerEntrySet (mLedger, mEntries, mSet, mSeq + 1);
 }
 
-void LedgerEntrySet::setTo (const LedgerEntrySet& e)
-{
-    mLedger = e.mLedger;
-    mEntries = e.mEntries;
-    mSet = e.mSet;
-    mParams = e.mParams;
-    mSeq = e.mSeq;
-}
-
 void LedgerEntrySet::swapWith (LedgerEntrySet& e)
 {
     std::swap (mLedger, e.mLedger);
