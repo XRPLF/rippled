@@ -318,13 +318,40 @@ bool isMemoOkay (STObject const& st)
 {
     if (!st.isFieldPresent (sfMemos))
         return true;
+
+    const STArray& memos = st.getFieldArray (sfMemos);
     // The number 2048 is a preallocation hint, not a hard limit
     // to avoid allocate/copy/free's
     Serializer s (2048);
-    st.getFieldArray (sfMemos).add (s);
+    memos.add (s);
     // FIXME move the memo limit into a config tunable
     if (s.getDataLength () > 1024)
         return false;
+
+    for (auto const& memo : memos)
+    {
+        auto memoObj = dynamic_cast <STObject const*> (&memo);
+
+        // Memos array must consist solely of Memo objects
+        if (!memoObj || (memoObj->getFName() != sfMemo))
+        {
+            return false;
+        }
+
+        // Memo objects may only contain
+        // MemoType, MemoData, and MemoFormat fields
+        for (auto const& memoElement : *memoObj)
+        {
+            if ((memoElement.getFName() != sfMemoType) &&
+                (memoElement.getFName() != sfMemoData) &&
+                (memoElement.getFName() != sfMemoFormat))
+            {
+                return false;
+            }
+        }
+
+    }
+
     return true;
 }
 
