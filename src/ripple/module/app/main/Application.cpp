@@ -1183,6 +1183,8 @@ bool ApplicationImp::loadOldLedger (
 
                      std::uint32_t seq = 1;
                      std::uint32_t closeTime = getApp().getOPs().getCloseTimeNC ();
+                     std::uint32_t closeTimeResolution = 30;
+                     bool closeTimeEstimated = false;
                      std::uint64_t totalCoins = 0;
 
                      if (ledger.get().isMember ("accountState"))
@@ -1194,6 +1196,16 @@ bool ApplicationImp::loadOldLedger (
                           if (ledger.get().isMember ("close_time"))
                           {
                               closeTime = ledger.get()["close_time"].asUInt();
+                          }
+                          if (ledger.get().isMember ("close_time_resolution"))
+                          {
+                              closeTimeResolution =
+                                  ledger.get()["close_time_resolution"].asUInt();
+                          }
+                          if (ledger.get().isMember ("close_time_estimated"))
+                          {
+                              closeTimeEstimated =
+                                  ledger.get()["close_time_estimated"].asBool();
                           }
                           if (ledger.get().isMember ("total_coins"))
                           {
@@ -1236,7 +1248,8 @@ bool ApplicationImp::loadOldLedger (
                              }
                          }
 
-                         loadLedger->setAccepted();
+                         loadLedger->setAccepted (closeTime,
+                             closeTimeResolution, ! closeTimeEstimated);
                      }
                  }
             }
