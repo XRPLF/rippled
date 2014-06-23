@@ -75,10 +75,9 @@ Json::Value doLedgerRequest (RPC::Context& context)
             {
                 // We don't have the ledger we need to figure out which ledger
                 // they want. Try to get it.
-                getApp().getInboundLedgers().findCreate (
-                    refHash, refIndex, InboundLedger::fcGENERIC);
+                Json::Value jvResult =  getApp().getInboundLedgers().findCreate (
+                    refHash, refIndex, InboundLedger::fcGENERIC)->getJson (0);
 
-                Json::Value jvResult;
                 jvResult[jss::error] = "ledgerNotFound";
                 return jvResult;
             }
