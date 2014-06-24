@@ -9,7 +9,7 @@ suite('WebSocket connection', function() {
   var server;
 
   setup(function(done) {
-    this.timeout(1000);
+    this.timeout(2000);
 
     var cfg = extend({}, config.default_server_config, config.servers.alpha);
     if (cfg.no_server) {
@@ -22,7 +22,7 @@ suite('WebSocket connection', function() {
   });
 
   teardown(function(done) {
-    this.timeout(1000);
+    this.timeout(2000);
     
     if (config.servers.alpha.no_server) {
       done();
@@ -33,7 +33,7 @@ suite('WebSocket connection', function() {
   });
 
   test('WebSocket connect and disconnect', function(done) {
-    this.timeout(1000);
+    this.timeout(2000);
 
     var alpha = Remote.from_config("alpha");
 
