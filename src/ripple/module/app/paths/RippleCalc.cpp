@@ -214,7 +214,7 @@ TER rippleCalculate (
     while (resultCode == temUNCERTAIN)
     {
         int iBest = -1;
-        const LedgerEntrySet lesCheckpoint = activeLedger;
+        LedgerEntrySet lesCheckpoint = activeLedger;
         int iDry = 0;
 
         // True, if ever computed multi-quality.
@@ -415,6 +415,10 @@ TER rippleCalculate (
         }
         else
         {
+            // We must restore the activeLedger from lesCheckpoint in the case
+            // when iBest is -1 and just before the result is set to tesSUCCESS.
+
+            activeLedger.swapWith (lesCheckpoint);
             resultCode   = tesSUCCESS;
         }
     }
