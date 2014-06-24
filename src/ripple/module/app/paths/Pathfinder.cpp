@@ -697,22 +697,26 @@ void Pathfinder::addLink(
 
                 for(auto item : rippleLines.getItems())
                 {
-                    // TODO(tom): check the return value of the reinterpret_cast.
-                    auto const& rspEntry = *reinterpret_cast<RippleState const *>(
-                        item.get());
-                    auto const& acctID = rspEntry.getAccountIDPeer();
+                    auto* rs = dynamic_cast<RippleState const *> (item.get());
+                    if (!rs)
+                    {
+                        WriteLog (lsERROR, Pathfinder)
+                                << "Couldn't decipher RippleState";
+                        continue;
+                    }
+                    auto const& acctID = rs->getAccountIDPeer();
 
-                    if ((uEndCurrency == rspEntry.getLimit().getCurrency()) &&
+                    if ((uEndCurrency == rs->getLimit().getCurrency()) &&
                         !currentPath.hasSeen(acctID, uEndCurrency, acctID))
                     { // path is for correct currency and has not been seen
-                        if (rspEntry.getBalance() <= zero
-                            && (!rspEntry.getLimitPeer()
-                                || -rspEntry.getBalance() >= rspEntry.getLimitPeer()
-                                || (bRequireAuth && !rspEntry.getAuth())))
+                        if (rs->getBalance() <= zero
+                            && (!rs->getLimitPeer()
+                                || -rs->getBalance() >= rs->getLimitPeer()
+                                || (bRequireAuth && !rs->getAuth())))
                         {
                             // path has no credit
                         }
-                        else if (bIsNoRippleOut && rspEntry.getNoRipple())
+                        else if (bIsNoRippleOut && rs->getNoRipple())
                         {
                             // Can't leave on this path
                         }

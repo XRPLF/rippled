@@ -81,7 +81,7 @@ STAmount STAmount::addRound (const STAmount& v1, const STAmount& v2, bool roundU
 
     int ov1 = v1.mOffset, ov2 = v2.mOffset;
     auto vv1 = static_cast<std::int64_t> (v1.mValue);
-    auto vv2 = static_cast<std::uint64_t> (v2.mValue);
+    auto vv2 = static_cast<std::int64_t> (v2.mValue);
 
     if (v1.mIsNegative)
         vv1 = -vv1;
@@ -153,7 +153,7 @@ STAmount STAmount::subRound (const STAmount& v1, const STAmount& v2, bool roundU
 
     int ov1 = v1.mOffset, ov2 = v2.mOffset;
     auto vv1 = static_cast<std::int64_t> (v1.mValue);
-    auto vv2 = static_cast<std::uint64_t> (v2.mValue);
+    auto vv2 = static_cast<std::int64_t> (v2.mValue);
 
     if (v1.mIsNegative)
         vv1 = -vv1;
@@ -195,7 +195,8 @@ STAmount STAmount::subRound (const STAmount& v1, const STAmount& v2, bool roundU
 
     if ((fv >= -10) && (fv <= 10))
         return STAmount (v1.getFName (), v1.mCurrency, v1.mIssuer);
-    else if (fv >= 0)
+
+    if (fv >= 0)
     {
         std::uint64_t v = static_cast<std::uint64_t> (fv);
         canonicalizeRound (false, v, ov1, roundUp);
