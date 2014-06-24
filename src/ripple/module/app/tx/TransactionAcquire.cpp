@@ -21,9 +21,6 @@
 
 namespace ripple {
 
-//SETUP_LOG (TransactionAcquire)
-template <> char const* LogPartition::getPartitionName <TransactionAcquire> () { return "TxAcquire"; }
-
 enum
 {
     // VFALCO NOTE This should be a std::chrono::duration constant.
@@ -36,7 +33,7 @@ typedef std::map<uint256, DisputedTx::pointer>::value_type u256_lct_pair;
 
 TransactionAcquire::TransactionAcquire (uint256 const& hash, clock_type& clock)
     : PeerSet (hash, TX_ACQUIRE_TIMEOUT, true, clock,
-        LogPartition::getJournal <TransactionAcquire> ())
+        deprecatedLogs().journal("TransactionAcquire"))
     , mHaveRoot (false)
 {
     mMap = std::make_shared<SHAMap> (smtTRANSACTION, hash,

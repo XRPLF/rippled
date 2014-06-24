@@ -60,8 +60,8 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapNode& id, Blob const& rawNode, std::
         if ((type < 0) || (type > 4))
         {
 #ifdef BEAST_DEBUG
-            Log::out() << "Invalid wire format node";
-            Log::out() << strHex (rawNode);
+            deprecatedLogs().journal("SHAMapTreeNode").fatal <<
+                "Invalid wire format node" << strHex (rawNode);
             assert (false);
 #endif
             throw std::runtime_error ("invalid node AW type");

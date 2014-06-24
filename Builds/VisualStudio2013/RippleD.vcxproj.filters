@@ -1926,6 +1926,9 @@
     <ClInclude Include="..\..\src\beast\beast\utility\tagged_integer.h">
       <Filter>beast\utility</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\utility\tests\Journal.test.cpp">
+      <Filter>beast\utility\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\utility\tests\Zero.test.cpp">
       <Filter>beast\utility\tests</Filter>
     </ClCompile>
@@ -3624,7 +3627,6 @@
     <ClInclude Include="..\..\src\ripple\module\app\websocket\WSServerHandler.h">
       <Filter>ripple\module\app\websocket</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\functional\Config.cpp">
       <Filter>ripple\module\core\functional</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\core\functional\Config.h">
@@ -5608,4 +5610,3 @@
       <Filter>websocket\src</Filter>
     </ClInclude>
   </ItemGroup>
-</Project>

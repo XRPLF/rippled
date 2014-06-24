@@ -24,7 +24,7 @@ namespace ripple {
 //
 TaggedCache <uint256, AcceptedLedger> AcceptedLedger::s_cache (
     "AcceptedLedger", 4, 60, get_seconds_clock (),
-        LogPartition::getJournal <TaggedCacheLog> ());
+        deprecatedLogs().journal("TaggedCache"));
 
 AcceptedLedger::AcceptedLedger (Ledger::ref ledger) : mLedger (ledger)
 {

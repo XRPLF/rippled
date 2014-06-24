@@ -25,10 +25,6 @@ namespace ripple {
 
 #define SECTION_DEFAULT_NAME    ""
 
-struct ParseSectionLog; // for Log
-
-SETUP_LOGN (ParseSectionLog,"ParseSection")
-
 Section ParseSection (const std::string& strInput, const bool bTrim)
 {
     std::string strData (strInput);
@@ -77,27 +73,6 @@ Section ParseSection (const std::string& strInput, const bool bTrim)
     return secResult;
 }
 
-void SectionEntriesPrint (std::vector<std::string>* vspEntries, const std::string& strSection)
-{
-    Log::out() << "[" << strSection << "]";
-
-    if (vspEntries)
-    {
-        BOOST_FOREACH (std::string & strValue, *vspEntries)
-        {
-            Log::out() << strValue;
-        }
-    }
-}
-
-void SectionPrint (Section secInput)
-{
-    BOOST_FOREACH (Section::value_type & pairSection, secInput)
-    {
-        SectionEntriesPrint (&pairSection.second, pairSection.first);
-    }
-}
-
 Section::mapped_type* SectionEntries (Section& secSource, const std::string& strSection)
 {
     Section::iterator       it;
@@ -137,7 +112,7 @@ bool SectionSingleB (Section& secSource, const std::string& strSection, std::str
     }
     else if (pmtEntries)
     {
-        WriteLog (lsWARNING, ParseSectionLog) << boost::str (boost::format ("Section [%s]: requires 1 line not %d lines.")
+        WriteLog (lsWARNING, ParseSection) << boost::str (boost::format ("Section [%s]: requires 1 line not %d lines.")
                                               % strSection
                                               % pmtEntries->size ());
     }

@@ -19,11 +19,6 @@
 
 namespace ripple {
 
-// Used for logging
-struct RPCLog;
-
-SETUP_LOGN (RPCLog, "RPC")
-
 unsigned int const gMaxHTTPHeaderSize = 0x02000000;
 
 std::string gFormatStr ("v1");
@@ -101,9 +96,9 @@ std::string getHTTPHeaderTimestamp ()
 
 std::string HTTPReply (int nStatus, const std::string& strMsg)
 {
-    if (ShouldLog (lsTRACE, RPCLog))
+    if (ShouldLog (lsTRACE, RPC))
     {
-        WriteLog (lsTRACE, RPCLog) << "HTTP Reply " << nStatus << " " << strMsg;
+        WriteLog (lsTRACE, RPC) << "HTTP Reply " << nStatus << " " << strMsg;
     }
 
     std::string ret;

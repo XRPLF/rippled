@@ -257,10 +257,7 @@ bool parseUrl (const std::string& strUrl, std::string& strScheme, std::string& s
         boost::algorithm::to_lower (strScheme);
 
         iPort   = strPort.empty () ? -1 : beast::lexicalCast <int> (strPort);
-        // Log::out() << strUrl << " : " << bMatch << " : '" << strDomain << "' : '" << strPort << "' : " << iPort << " : '" << strPath << "'";
     }
-
-    // Log::out() << strUrl << " : " << bMatch << " : '" << strDomain << "' : '" << strPath << "'";
 
     return bMatch;
 }

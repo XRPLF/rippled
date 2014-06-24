@@ -17,4 +17,4 @@
 */
 //==============================================================================
 
-ripple::LogPartition AutoSocket::AutoSocketPartition ("AutoSocket");
+// VFALCO - Empty file?

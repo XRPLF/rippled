@@ -21,8 +21,6 @@
 
 namespace ripple {
 
-SETUP_LOG (STAmount)
-
 std::uint64_t STAmount::uRateOne  = STAmount::getRate (STAmount (1), STAmount (1));
 
 bool STAmount::issuerFromString (uint160& uDstIssuer, const std::string& sIssuer)
@@ -67,7 +65,6 @@ bool STAmount::currencyFromString (uint160& uDstCurrency, const std::string& sCu
 
         // std::string  sIso;
         // sIso.assign(vucIso.begin(), vucIso.end());
-        // Log::out() << "currency: " << sIso;
 
         Serializer  s;
 

@@ -22,15 +22,6 @@
 
 namespace ripple {
 
-class SetRegularKeyLog;
-
-template <>
-char const*
-LogPartition::getPartitionName <SetRegularKeyLog> ()
-{
-    return "Tx/RegularKeySet";
-}
-
 class SetRegularKey
     : public Transactor
 {
@@ -45,7 +36,7 @@ public:
             txn,
             params,
             engine,
-            LogPartition::getJournal <SetRegularKeyLog> ())
+            deprecatedLogs().journal("SetRegularKey"))
     {
 
     }

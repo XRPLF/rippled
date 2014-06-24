@@ -21,8 +21,6 @@
 
 namespace ripple {
 
-SETUP_LOG (RPCServer)
-
 class RPCServerImp
     : public RPCServer
     , public std::enable_shared_from_this <RPCServerImp>

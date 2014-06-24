@@ -19,8 +19,6 @@
 
 namespace ripple {
 
-SETUP_LOG (SerializedType)
-
 const STAmount saZero (CURRENCY_ONE, ACCOUNT_ONE, 0);
 const STAmount saOne (CURRENCY_ONE, ACCOUNT_ONE, 1);
 
@@ -44,40 +42,6 @@ bool SerializedType::isEquivalent (const SerializedType& t) const
         return true;
     WriteLog (lsDEBUG, SerializedType) << "notEquiv " << getFullText() << " not STI_NOTPRESENT";
     return false;
-}
-
-void STPathSet::printDebug ()
-{
-    // VFALCO NOTE Can't use Log::out() because of std::endl
-    //
-    for (int i = 0; i < value.size (); i++)
-    {
-        std::cerr << i << ": ";
-
-        for (int j = 0; j < value[i].mPath.size (); j++)
-        {
-            //STPathElement pe = value[i].mPath[j];
-            RippleAddress nad;
-            nad.setAccountID (value[i].mPath[j].mAccountID);
-            std::cerr << "    " << nad.humanAccountID ();
-            //std::cerr << "    " << pe.mAccountID.GetHex();
-        }
-
-        std::cerr << std::endl;
-    }
-
-}
-
-void STPath::printDebug ()
-{
-    Log::out() << "STPath:";
-
-    for (int i = 0; i < mPath.size (); i++)
-    {
-        RippleAddress nad;
-        nad.setAccountID (mPath[i].mAccountID);
-        Log::out() << "   " << i << ": " << nad.humanAccountID ();
-    }
 }
 
 std::string SerializedType::getFullText () const

@@ -105,9 +105,7 @@ void logTimedDestroy (
 
     if (seconds > thresholdSeconds)
     {
-        LogSeverity const severity = lsWARNING;
-
-        Log (severity, LogPartition::get <PartitionKey> ()) <<
+        deprecatedLogs().journal("LoggedTimings").warning <<
             objectDescription << " took "<<
             beast::String (detail::cleanElapsed (seconds)) <<
             " seconds to destroy";

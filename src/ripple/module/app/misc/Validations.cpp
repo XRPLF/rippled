@@ -23,8 +23,6 @@ namespace ripple {
 
 class ValidationsImp;
 
-SETUP_LOG (Validations)
-
 typedef std::map<uint160, SerializedValidation::pointer>::value_type u160_val_pair;
 typedef std::shared_ptr<ValidationSet> VSpointer;
 
@@ -64,7 +62,7 @@ private:
 public:
     ValidationsImp ()
         : mValidations ("Validations", 128, 600, get_seconds_clock (),
-            LogPartition::getJournal <TaggedCacheLog> ())
+            deprecatedLogs().journal("TaggedCache"))
         , mWriting (false)
     {
         mStaleValidations.reserve (512);

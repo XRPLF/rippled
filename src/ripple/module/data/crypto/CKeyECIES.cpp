@@ -292,7 +292,6 @@ bool checkECIES (void)
         if ((i % 100) == 0)
         {
             // generate new keys every 100 times
-            //          Log::out() << "new keys";
             senderPriv.MakeNewKey ();
             recipientPriv.MakeNewKey ();
 
@@ -321,8 +320,6 @@ bool checkECIES (void)
             assert (false);
             return false;
         }
-
-        //Log::out() << "Msg(" << msglen << ") ok " << ciphertext.size();
     }
 
     return true;

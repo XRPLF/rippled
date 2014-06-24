@@ -22,15 +22,6 @@
 
 namespace ripple {
 
-class SetTrustLog;
-
-template <>
-char const*
-LogPartition::getPartitionName <SetTrustLog> ()
-{
-    return "Tx/TrustSet";
-}
-
 class SetTrust
     : public Transactor
 {
@@ -43,7 +34,7 @@ public:
             txn,
             params,
             engine,
-            LogPartition::getJournal <SetTrustLog> ())
+            deprecatedLogs().journal("SetTrust"))
     {
     }
 

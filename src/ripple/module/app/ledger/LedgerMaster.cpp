@@ -25,11 +25,6 @@ namespace ripple {
 #define MIN_VALIDATION_RATIO    150     // 150/256ths of validations of previous ledger
 #define MAX_LEDGER_GAP          100     // Don't catch up more than 100 ledgers  (cannot exceed 256)
 
-SETUP_LOG (LedgerMaster)
-
-class LedgerCleanerLog;
-template <> char const* LogPartition::getPartitionName <LedgerCleanerLog> () { return "LedgerCleaner"; }
-
 class LedgerMasterImp
     : public LedgerMaster
     , public beast::LeakChecked <LedgerMasterImp>
@@ -85,7 +80,7 @@ public:
         : LedgerMaster (parent)
         , m_journal (journal)
         , mHeldTransactions (uint256 ())
-        , mLedgerCleaner (LedgerCleaner::New(*this, LogPartition::getJournal<LedgerCleanerLog>()))
+        , mLedgerCleaner (LedgerCleaner::New(*this, deprecatedLogs().journal("LedgerCleaner")))
         , mMinValidations (0)
         , mLastValidateSeq (0)
         , mAdvanceThread (false)

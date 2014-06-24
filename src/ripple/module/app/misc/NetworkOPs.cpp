@@ -26,11 +26,6 @@
 
 namespace ripple {
 
-class FeeVoteLog;
-template <>
-char const*
-LogPartition::getPartitionName <FeeVoteLog>() { return "FeeVote"; }
-
 class NetworkOPsImp
     : public NetworkOPs
     , public beast::DeadlineTimer::Listener
@@ -54,7 +49,7 @@ public:
         , m_journal (journal)
         , m_localTX (LocalTxs::New ())
         , m_feeVote (make_FeeVote(10, 20 * SYSTEM_CURRENCY_PARTS,
-            5 * SYSTEM_CURRENCY_PARTS, LogPartition::getJournal <FeeVoteLog>()))
+            5 * SYSTEM_CURRENCY_PARTS, deprecatedLogs().journal("FeeVote")))
         , mMode (omDISCONNECTED)
         , mNeedNetworkLedger (false)
         , mProposing (false)
@@ -69,7 +64,7 @@ public:
         , mLastCloseTime (0)
         , mLastValidationTime (0)
         , mFetchPack ("FetchPack", 65536, 45, clock,
-            LogPartition::getJournal <TaggedCacheLog> ())
+            deprecatedLogs().journal("TaggedCache"))
         , mFetchSeq (0)
         , mLastLoadBase (256)
         , mLastLoadFactor (256)
@@ -1741,7 +1736,8 @@ void NetworkOPsImp::setMode (OperatingMode om)
 
     mMode = om;
 
-    Log ((om < mMode) ? lsWARNING : lsINFO) << "STATE->" << strOperatingMode ();
+    m_journal.stream((om < mMode) ? beast::Journal::kWarning : beast::Journal::kInfo) <<
+        "STATE->" << strOperatingMode ();
     pubServer ();
 }
 

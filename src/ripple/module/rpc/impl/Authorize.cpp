@@ -98,10 +98,6 @@ Json::Value authorize (Ledger::ref lrLedger,
 
     if (asSrc->haveAuthorizedKey () && (asSrc->getAuthorizedKey ().getAccountID () != naAccountPublic.getAccountID ()))
     {
-        // Log::out() << "iIndex: " << iIndex;
-        // Log::out() << "sfAuthorizedKey: " << strHex(asSrc->getAuthorizedKey().getAccountID());
-        // Log::out() << "naAccountPublic: " << strHex(naAccountPublic.getAccountID());
-
         return rpcError (rpcPASSWD_CHANGED);
     }
 

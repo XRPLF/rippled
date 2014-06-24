@@ -22,9 +22,6 @@
 
 namespace ripple {
 
-//SETUP_LOG (InboundLedger)
-template <> char const* LogPartition::getPartitionName <InboundLedger> () { return "InLedger"; }
-
 enum
 {
     // millisecond for each ledger timeout
@@ -40,7 +37,7 @@ enum
 InboundLedger::InboundLedger (uint256 const& hash, std::uint32_t seq, fcReason reason,
     clock_type& clock)
     : PeerSet (hash, ledgerAcquireTimeoutMillis, false, clock,
-        LogPartition::getJournal <InboundLedger> ())
+        deprecatedLogs().journal("InboundLedger"))
     , mHaveBase (false)
     , mHaveState (false)
     , mHaveTransactions (false)

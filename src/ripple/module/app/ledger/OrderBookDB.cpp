@@ -19,8 +19,6 @@
 
 namespace ripple {
 
-SETUP_LOG (OrderBookDB)
-
 OrderBookDB::OrderBookDB (Stoppable& parent)
     : Stoppable ("OrderBookDB", parent)
     , mSeq (0)

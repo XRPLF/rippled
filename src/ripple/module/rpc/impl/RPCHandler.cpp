@@ -30,8 +30,6 @@ namespace ripple {
 // Carries out the RPC.
 //
 
-SETUP_LOG (RPCHandler)
-
 RPCHandler::RPCHandler (NetworkOPs& netOps)
     : mNetOps (&netOps)
     , mRole (Config::FORBID)

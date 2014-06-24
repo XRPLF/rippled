@@ -21,8 +21,6 @@ namespace ripple {
 
 struct RPCErr;
 
-SETUP_LOG (RPCErr)
-
 // VFALCO NOTE Deprecated function
 Json::Value rpcError (int iError, Json::Value jvResult)
 {

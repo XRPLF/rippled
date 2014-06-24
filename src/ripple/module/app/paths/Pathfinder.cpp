@@ -23,8 +23,6 @@
 
 namespace ripple {
 
-SETUP_LOG (Pathfinder)
-
 /*
 we just need to find a succession of the highest quality paths there until we find enough width
 

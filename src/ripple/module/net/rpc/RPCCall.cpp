@@ -23,8 +23,6 @@ namespace ripple {
 
 class RPCParser;
 
-SETUP_LOG (RPCParser)
-
 static inline bool isSwitchChar (char c)
 {
 #ifdef __WXMSW__
@@ -1080,10 +1078,7 @@ void RPCCall::fromNetwork (
     // Connect to localhost
     if (!getConfig ().QUIET)
     {
-        Log::out() << "Connecting to: " << strIp << ":" << iPort;
-        //  Log::out() << "Username: " << strUsername << ":" << strPassword;
-        //  Log::out() << "Path: " << strPath;
-        //  Log::out() << "Method: " << strMethod;
+        std::cerr << "Connecting to: " << strIp << ":" << iPort << std::endl;
     }
 
     // HTTP basic authentication
@@ -1094,8 +1089,6 @@ void RPCCall::fromNetwork (
     mapRequestHeaders["Authorization"] = std::string ("Basic ") + strUserPass64;
 
     // Send request
-    // Log(lsDEBUG) << "requesting" << std::endl;
-    // WriteLog (lsDEBUG, RPCParser) << "send request " << strMethod << " : " << strRequest << std::endl;
 
     const int RPC_REPLY_MAX_BYTES (256*1024*1024);
     const int RPC_NOTIFY_SECONDS (600);

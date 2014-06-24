@@ -20,8 +20,6 @@
 
 namespace ripple {
 
-SETUP_LOG (RPCDoor)
-
 class RPCDoorImp : public RPCDoor, public beast::LeakChecked <RPCDoorImp>
 {
 public:

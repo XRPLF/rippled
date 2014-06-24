@@ -235,10 +235,6 @@ void Config::setup (const std::string& strConf, bool bQuiet)
     // Update default values
     load ();
 
-    // Log::out() << "CONFIG FILE: " << CONFIG_FILE;
-    // Log::out() << "CONFIG DIR: " << CONFIG_DIR;
-    // Log::out() << "DATA DIR: " << DATA_DIR;
-
     boost::filesystem::create_directories (DATA_DIR, ec);
 
     if (ec)
@@ -257,13 +253,13 @@ void Config::setup (const std::string& strConf, bool bQuiet)
 void Config::load ()
 {
     if (!QUIET)
-        Log::out() << "Loading: " << CONFIG_FILE;
+        std::cerr << "Loading: " << CONFIG_FILE << std::endl;
 
     std::ifstream   ifsConfig (CONFIG_FILE.c_str (), std::ios::in);
 
     if (!ifsConfig)
     {
-        Log::out() << "Failed to open '" << CONFIG_FILE << "'.";
+        std::cerr << "Failed to open '" << CONFIG_FILE << "'." << std::endl;
     }
     else
     {
@@ -274,7 +270,7 @@ void Config::load ()
 
         if (ifsConfig.bad ())
         {
-            Log::out() << "Failed to read '" << CONFIG_FILE << "'.";
+           std::cerr << "Failed to read '" << CONFIG_FILE << "'." << std::endl;
         }
         else
         {
@@ -593,9 +589,6 @@ void Config::load ()
 
             if (SectionSingleB (secConfig, SECTION_DEBUG_LOGFILE, strTemp))
                 DEBUG_LOGFILE       = strTemp;
-
-            if (SectionSingleB (secConfig, SECTION_CONSOLE_LOG_OUTPUT, strTemp))
-                CONSOLE_LOG_OUTPUT     = strTemp;
         }
     }
 }

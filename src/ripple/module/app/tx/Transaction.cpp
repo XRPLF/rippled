@@ -50,7 +50,7 @@ Transaction::pointer Transaction::sharedTransaction (Blob const& vucTransaction,
     }
     catch (...)
     {
-        Log (lsWARNING) << "Exception constructing transaction";
+        WriteLog (lsWARNING, Ledger) << "Exception constructing transaction";
         return std::shared_ptr<Transaction> ();
     }
 }
@@ -72,9 +72,6 @@ Transaction::Transaction (
 
     mTransaction    = std::make_shared<SerializedTransaction> (ttKind);
 
-    // Log(lsINFO) << str(boost::format("Transaction: account: %s") % naSourceAccount.humanAccountID());
-    // Log(lsINFO) << str(boost::format("Transaction: mAccountFrom: %s") % mAccountFrom.humanAccountID());
-
     mTransaction->setSigningPubKey (mFromPubKey);
     mTransaction->setSourceAccount (mAccountFrom);
     mTransaction->setSequence (uSeq);
@@ -93,7 +90,7 @@ bool Transaction::sign (const RippleAddress& naAccountPrivate)
 
     if (!naAccountPrivate.isValid ())
     {
-        Log (lsWARNING) << "No private key for signing";
+        WriteLog (lsWARNING, Ledger) << "No private key for signing";
         bResult = false;
     }
 
@@ -123,7 +120,7 @@ bool Transaction::checkSign () const
 {
     if (!mFromPubKey.isValid ())
     {
-        Log (lsWARNING) << "Transaction has bad source public key";
+        WriteLog (lsWARNING, Ledger) << "Transaction has bad source public key";
         return false;
     }
 

@@ -19,16 +19,13 @@
 
 #include <boost/regex.hpp>
 #include <beast/asio/placeholders.h>
+#include <beast/module/core/memory/SharedSingleton.h>
     
 namespace ripple {
 
 //
 // Fetch a web page via http or https.
 //
-
-SETUP_LOG (HTTPClient)
-
-//------------------------------------------------------------------------------
 
 class HTTPClientSSLContext
 {

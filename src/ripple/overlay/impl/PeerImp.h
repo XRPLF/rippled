@@ -231,7 +231,7 @@ public:
         boost::asio::ssl::context& ssl_context,
         MultiSocket::Flag flags)
             : m_owned_socket (std::move (socket))
-            , m_journal (LogPartition::getJournal <Peer> ())
+            , m_journal (deprecatedLogs().journal("Peer"))
             , m_shortId (0)
             , m_remoteAddress (remoteAddress)
             , m_resourceManager (resourceManager)
@@ -269,7 +269,7 @@ public:
         boost::asio::ssl::context& ssl_context,
         MultiSocket::Flag flags)
             : m_owned_socket (io_service)
-            , m_journal (LogPartition::getJournal <Peer> ())
+            , m_journal (deprecatedLogs().journal("Peer"))
             , m_shortId (0)
             , m_remoteAddress (remoteAddress)
             , m_resourceManager (resourceManager)

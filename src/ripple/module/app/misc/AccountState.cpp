@@ -78,7 +78,7 @@ void AccountState::dump ()
 {
     Json::Value j (Json::objectValue);
     addJson (j);
-    Log (lsINFO) << j;
+    WriteLog (lsINFO, Ledger) << j;
 }
 
 } // ripple

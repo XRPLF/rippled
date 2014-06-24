@@ -29,7 +29,7 @@ Json::Value doValidationSeed (RPC::Context& context)
 
     if (!context.params_.isMember ("secret"))
     {
-        Log::out() << "Unset validation seed.";
+        std::cerr << "Unset validation seed." << std::endl;
 
         getConfig ().VALIDATION_SEED.clear ();
         getConfig ().VALIDATION_PUB.clear ();

@@ -33,8 +33,6 @@
 
 namespace ripple {
 
-SETUP_LOG (RippleCalc)
-
 namespace path {
 
 // OPTIMIZE: When calculating path increment, note if increment consumes all

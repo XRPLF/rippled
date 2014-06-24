@@ -19,8 +19,6 @@
 
 namespace ripple {
 
-SETUP_LOG (RPCSub)
-
 // Subscription object for JSON-RPC
 class RPCSubImp
     : public RPCSub

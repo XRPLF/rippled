@@ -20,8 +20,9 @@
 #ifndef BEAST_DEADLINETIMER_H_INCLUDED
 #define BEAST_DEADLINETIMER_H_INCLUDED
 
-namespace beast
-{
+#include <beast/module/core/memory/SharedSingleton.h>
+
+namespace beast {
 
 /** Provides periodic or one time notifications at a specified time interval.
 */

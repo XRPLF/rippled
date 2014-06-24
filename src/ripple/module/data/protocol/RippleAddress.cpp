@@ -21,8 +21,6 @@
 
 namespace ripple {
 
-SETUP_LOG (RippleAddress)
-
 RippleAddress::RippleAddress ()
     : mIsValid (false)
 {
@@ -807,7 +805,6 @@ bool RippleAddress::setSeedGeneric (const std::string& strText)
     }
     else
     {
-        // Log::out() << "Creating seed from pass phrase.";
         setSeed (CKey::PassPhraseToKey (strText));
     }
 

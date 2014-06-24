@@ -24,8 +24,6 @@
 
 namespace ripple {
 
-SETUP_LOG (Ledger)
-
 LedgerBase::LedgerBase ()
 {
 }
@@ -357,10 +355,6 @@ bool Ledger::addSLE (SLE const& sle)
 
 AccountState::pointer Ledger::getAccountState (const RippleAddress& accountID)
 {
-#ifdef BEAST_DEBUG
-    //  Log::out() << "Ledger:getAccountState(" << accountID.humanAccountID() << ")";
-#endif
-
     SLE::pointer sle = getSLEi (Ledger::getAccountRootIndex (accountID));
 
     if (!sle)
@@ -861,10 +855,10 @@ Ledger::pointer Ledger::getSQL (const std::string& sql)
     {
         if (ShouldLog (lsERROR, Ledger))
         {
-            Log (lsERROR) << "Failed on ledger";
+            WriteLog (lsERROR, Ledger) << "Failed on ledger";
             Json::Value p;
             ret->addJson (p, LEDGER_JSON_FULL);
-            Log (lsERROR) << p;
+            WriteLog (lsERROR, Ledger) << p;
         }
 
         assert (false);
@@ -1204,7 +1198,7 @@ LedgerStateParms Ledger::writeBack (LedgerStateParms parms, SLE::ref entry)
     {
         if ((parms & lepCREATE) == 0)
         {
-            Log (lsERROR) << "WriteBack non-existent node without create";
+            WriteLog (lsERROR, Ledger) << "WriteBack non-existent node without create";
             return lepMISSING;
         }
 
@@ -1827,16 +1821,16 @@ bool Ledger::walkLedger ()
 
     if (ShouldLog (lsINFO, Ledger) && !missingNodes1.empty ())
     {
-        Log (lsINFO) << missingNodes1.size () << " missing account node(s)";
-        Log (lsINFO) << "First: " << missingNodes1[0];
+        WriteLog (lsINFO, Ledger) << missingNodes1.size () << " missing account node(s)";
+        WriteLog (lsINFO, Ledger) << "First: " << missingNodes1[0];
     }
 
     mTransactionMap->walkMap (missingNodes2, 32);
 
     if (ShouldLog (lsINFO, Ledger) && !missingNodes2.empty ())
     {
-        Log (lsINFO) << missingNodes2.size () << " missing transaction node(s)";
-        Log (lsINFO) << "First: " << missingNodes2[0];
+        WriteLog (lsINFO, Ledger) << missingNodes2.size () << " missing transaction node(s)";
+        WriteLog (lsINFO, Ledger) << "First: " << missingNodes2[0];
     }
 
     return missingNodes1.empty () && missingNodes2.empty ();
@@ -1854,7 +1848,7 @@ bool Ledger::assertSane ()
         return true;
     }
 
-    Log (lsFATAL) << "ledger is not sane";
+    WriteLog (lsFATAL, Ledger) << "ledger is not sane";
 
     Json::Value j = getJson (0);
 

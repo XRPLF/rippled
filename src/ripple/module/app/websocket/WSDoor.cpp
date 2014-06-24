@@ -22,8 +22,6 @@
 
 namespace ripple {
 
-SETUP_LOG (WSDoor)
-
 //
 // This is a light weight, untrusted interface for web clients.
 // For now we don't provide proof.  Later we will.
