@@ -22,14 +22,15 @@ exports.default_server_config = {
 exports.servers = {
   // A local test server.
   "alpha" : {
+    //'trace': true,
+    'websocket_ip': "127.0.0.1",
+    'websocket_port': 5006,
+    'websocket_ssl': false,
     'trusted' : true,
     // "peer_ip" : "0.0.0.0",
     // "peer_port" : 51235,
     'rpc_ip' : "0.0.0.0",
     'rpc_port' : 5005,
-    'websocket_ip' : "127.0.0.1",
-    'websocket_port' : 5006,
-    'websocket_ssl' : false,
     'local_sequence' : true,
     'local_fee' : true,
     // 'validation_seed' : "shhDFVsmS2GSu5vUyZSPXYfj1r79h",

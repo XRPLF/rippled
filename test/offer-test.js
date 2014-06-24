@@ -699,8 +699,7 @@ suite("Offer tests", function() {
         });
     });
 
-  test("//new user offer_create then ledger_accept then offer_cancel then ledger_accept.", function (done) {
-    return done();
+  test.skip("new user offer_create then ledger_accept then offer_cancel then ledger_accept.", function (done) {
 
       var self = this;
       var final_create;
@@ -1415,7 +1414,7 @@ suite("Offer cross currency", function() {
             $.remote.transaction()
               .payment("alice", "bob", "30/EUR/bitstamp")
               .send_max("333/USD/mtgox")
-              .path_add( [ { currency: "XRP" } ])
+              .pathAdd( [ { currency: "XRP" } ])
               .once('submitted', function (m) {
                   //console.log("PROPOSED: %s", JSON.stringify(m));
 

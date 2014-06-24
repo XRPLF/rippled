@@ -1127,7 +1127,7 @@ suite('Indirect ripple', function() {
 
         $.remote.transaction()
         .payment("alice", "bob", "5/USD/mtgox")
-        .path_add( [ { account: "mtgox" } ])
+        .pathAdd( [ { account: "mtgox" } ])
         .on('proposed', function (m) {
           // console.log("proposed: %s", JSON.stringify(m));
 
@@ -1185,8 +1185,8 @@ suite('Indirect ripple', function() {
 
         $.remote.transaction()
         .payment("alice", "amazon", "150/USD/mtgox")
-        .path_add( [ { account: "bob" } ])
-        .path_add( [ { account: "carol" } ])
+        .pathAdd( [ { account: "bob" } ])
+        .pathAdd( [ { account: "carol" } ])
         .on('proposed', function (m) {
           // console.log("proposed: %s", JSON.stringify(m));
 
@@ -1251,8 +1251,8 @@ suite('Indirect ripple', function() {
         $.remote.transaction()
         .payment("alice", "amazon", "150/USD/mtgox")
         .send_max("200/USD/alice")
-        .path_add( [ { account: "bob" } ])
-        .path_add( [ { account: "carol" } ])
+        .pathAdd( [ { account: "bob" } ])
+        .pathAdd( [ { account: "carol" } ])
         .on('proposed', function (m) {
           // console.log("proposed: %s", JSON.stringify(m));
 
@@ -1291,6 +1291,50 @@ suite('Indirect ripple', function() {
       done();
     });
   })
+});
+
+suite('Invoice ID', function() {
+  var $ = { };
+
+  setup(function(done) {
+    testutils.build_setup().call($, done);
+  });
+
+  teardown(function(done) {
+    testutils.build_teardown().call($, done);
+  });
+
+  test('set InvoiceID on payment', function(done) {
+    var self = this;
+
+    var steps = [
+      function (callback) {
+        self.what = 'Create accounts';
+        testutils.create_accounts($.remote, 'root', '10000.0', [ 'alice' ], callback);
+      },
+
+      function (callback) {
+        self.what = 'Send a payment with InvoiceID';
+
+        var tx = $.remote.transaction();
+        tx.payment('root', 'alice', '10000');
+        tx.invoiceID('DEADBEEF');
+
+        tx.once('submitted', function(m) {
+          assert.strictEqual(m.engine_result, 'tesSUCCESS');
+          assert.strictEqual(m.tx_json.InvoiceID, 'DEADBEEF00000000000000000000000000000000000000000000000000000000');
+          callback();
+        });
+
+        tx.submit();
+      }
+    ]
+
+    async.series(steps, function(err) {
+      assert(!err, self.what + ': ' + err);
+      done();
+    });
+  });
 });
 
 // vim:sw=2:sts=2:ts=8:et
