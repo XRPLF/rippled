@@ -28,9 +28,6 @@ enum
     TX_ACQUIRE_TIMEOUT = 250
 };
 
-typedef std::map<uint160, LedgerProposal::pointer>::value_type u160_prop_pair;
-typedef std::map<uint256, DisputedTx::pointer>::value_type u256_lct_pair;
-
 TransactionAcquire::TransactionAcquire (uint256 const& hash, clock_type& clock)
     : PeerSet (hash, TX_ACQUIRE_TIMEOUT, true, clock,
         deprecatedLogs().journal("TransactionAcquire"))

@@ -51,7 +51,7 @@ public:
     std::uint32_t   getSignTime ()       const;
     std::uint32_t   getFlags ()          const;
     RippleAddress   getSignerPublic ()   const;
-    uint160         getNodeID ()         const
+    NodeID          getNodeID ()         const
     {
         return mNodeID;
     }
@@ -93,7 +93,7 @@ private:
     void setNode ();
 
     uint256 mPreviousHash;
-    uint160 mNodeID;
+    NodeID mNodeID;
     bool mTrusted;
 };
 

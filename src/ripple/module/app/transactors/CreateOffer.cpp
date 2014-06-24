@@ -56,7 +56,7 @@ CreateOffer::checkAcceptAsset(core::AssetRef asset) const
     {
         if (m_journal.warning) m_journal.warning <<
             "delay: can't receive IOUs from non-existent issuer: " <<
-            RippleAddress::createHumanAccountID (asset.issuer);
+            to_string (asset.issuer);
 
         return (mParams & tapRETRY)
             ? terNO_ACCOUNT
@@ -117,11 +117,11 @@ CreateOffer::doApply ()
     if (!saTakerPays.isLegalNet () || !saTakerGets.isLegalNet ())
         return temBAD_AMOUNT;
 
-    uint160 const& uPaysIssuerID = saTakerPays.getIssuer ();
-    uint160 const& uPaysCurrency = saTakerPays.getCurrency ();
+    auto const& uPaysIssuerID = saTakerPays.getIssuer ();
+    auto const& uPaysCurrency = saTakerPays.getCurrency ();
 
-    uint160 const& uGetsIssuerID = saTakerGets.getIssuer ();
-    uint160 const& uGetsCurrency = saTakerGets.getCurrency ();
+    auto const& uGetsIssuerID = saTakerGets.getIssuer ();
+    auto const& uGetsCurrency = saTakerGets.getCurrency ();
 
     bool const bHaveExpiration (mTxn.isFieldPresent (sfExpiration));
     bool const bHaveCancel (mTxn.isFieldPresent (sfOfferSequence));
@@ -216,7 +216,7 @@ CreateOffer::doApply ()
         terResult = temREDUNDANT;
     }
     // We don't allow a non-native currency to use the currency code XRP.
-    else if (CURRENCY_BAD == uPaysCurrency || CURRENCY_BAD == uGetsCurrency)
+    else if (badCurrency() == uPaysCurrency || badCurrency() == uGetsCurrency)
     {
         m_journal.warning <<
             "Malformed offer: Bad currency.";
@@ -295,7 +295,7 @@ CreateOffer::doApply ()
     {
         // We reverse gets and pays because during offer crossing we are taking.
         core::Amounts const taker_amount (saTakerGets, saTakerPays);
-        
+
         // The amount of the offer that we will need to place, after we finish
         // offer crossing processing. It may be equal to the original amount,
         // empty (fully crossed), or something in-between.
@@ -324,10 +324,10 @@ CreateOffer::doApply ()
 
                 if (terResult == tesSUCCESS)
                 {
-                    m_journal.debug << 
+                    m_journal.debug <<
                         "    takerPays: " << saTakerPays.getFullText () <<
                         " -> " << place_offer.out.getFullText ();
-                    m_journal.debug << 
+                    m_journal.debug <<
                         "    takerGets: " << saTakerGets.getFullText () <<
                         " -> " << place_offer.in.getFullText ();
                 }
@@ -354,7 +354,7 @@ CreateOffer::doApply ()
             "takeOffers: saTakerGets=" << saTakerGets.getFullText ();
         m_journal.debug <<
             "takeOffers: mTxnAccountID=" <<
-            RippleAddress::createHumanAccountID (mTxnAccountID);
+            to_string (mTxnAccountID);
         m_journal.debug <<
             "takeOffers:         FUNDS=" <<
             view.accountFunds (mTxnAccountID, saTakerGets).getFullText ();
@@ -432,9 +432,9 @@ CreateOffer::doApply ()
             if (m_journal.debug) m_journal.debug <<
                 "adding to book: " << to_string (uBookBase) <<
                 " : " << saTakerPays.getHumanCurrency () <<
-                "/" << RippleAddress::createHumanAccountID (saTakerPays.getIssuer ()) <<
+                "/" << to_string (saTakerPays.getIssuer ()) <<
                 " -> " << saTakerGets.getHumanCurrency () <<
-                "/" << RippleAddress::createHumanAccountID (saTakerGets.getIssuer ());
+                "/" << to_string (saTakerGets.getIssuer ());
 
             // We use the original rate to place the offer.
             uDirectory = Ledger::getQualityIndex (uBookBase, uRate);
@@ -453,13 +453,13 @@ CreateOffer::doApply ()
             {
                 m_journal.debug <<
                     "sfAccount=" <<
-                    RippleAddress::createHumanAccountID (mTxnAccountID);
+                    to_string (mTxnAccountID);
                 m_journal.debug <<
                     "uPaysIssuerID=" <<
-                    RippleAddress::createHumanAccountID (uPaysIssuerID);
+                    to_string (uPaysIssuerID);
                 m_journal.debug <<
                     "uGetsIssuerID=" <<
-                    RippleAddress::createHumanAccountID (uGetsIssuerID);
+                    to_string (uGetsIssuerID);
                 m_journal.debug <<
                     "saTakerPays.isNative()=" <<
                     saTakerPays.isNative ();
@@ -518,11 +518,11 @@ std::unique_ptr <Transactor> make_CreateOffer (
 #else
     STAmount const& amount_in = txn.getFieldAmount (sfTakerPays);
     STAmount const& amount_out = txn.getFieldAmount (sfTakerGets);
-    
+
     // Autobridging is only in effect when an offer does not involve XRP
     if (!amount_in.isNative() && !amount_out.isNative ())
         return std::make_unique <CreateOfferBridged> (txn, params, engine);
-    
+
     return std::make_unique <CreateOfferDirect> (txn, params, engine);
 #endif
 }

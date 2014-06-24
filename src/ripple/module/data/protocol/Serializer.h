@@ -20,6 +20,8 @@
 #ifndef RIPPLE_SERIALIZER_H
 #define RIPPLE_SERIALIZER_H
 
+#include <iomanip>
+
 #include <ripple/common/byte_view.h>
 
 namespace ripple {
@@ -64,12 +66,20 @@ public:
     int add32 (std::uint32_t);      // ledger indexes, account sequence, timestamps
     int add64 (std::uint64_t);      // native currency amounts
     int add128 (const uint128&);    // private key generators
-    int add160 (const uint160&);    // account names, hankos
     int add256 (uint256 const& );       // transaction and ledger hashes
     int addRaw (Blob const& vector);
     int addRaw (const void* ptr, int len);
     int addRaw (const Serializer& s);
     int addZeros (size_t uBytes);
+
+    // TODO(tom): merge with add128 and add256.
+    template <class Tag>
+    int add160 (base_uint<160, Tag> const& i)
+    {
+        int ret = mData.size ();
+        mData.insert (mData.end (), i.begin (), i.end ());
+        return ret;
+    }
 
     int addVL (Blob const& vector);
     int addVL (const std::string& string);
@@ -82,9 +92,19 @@ public:
     bool get32 (std::uint32_t&, int offset) const;
     bool get64 (std::uint64_t&, int offset) const;
     bool get128 (uint128&, int offset) const;
-    bool get160 (uint160&, int offset) const;
     bool get256 (uint256&, int offset) const;
     uint256 get256 (int offset) const;
+
+    // TODO(tom): merge with get128 and get256.
+    template <class Tag>
+    bool get160 (base_uint<160, Tag>& o, int offset) const
+    {
+        auto success = (offset + (160 / 8)) <= mData.size ();
+        if (success)
+            memcpy (o.begin (), & (mData.front ()) + offset, (160 / 8));
+        return success;
+    }
+
     bool getRaw (Blob&, int offset, int length) const;
     Blob getRaw (int offset, int length) const;
 
@@ -224,7 +244,7 @@ public:
     std::string getHex () const
     {
         std::stringstream h;
-        
+
         for (unsigned char const& element : mData)
         {
             h <<
@@ -307,4 +327,3 @@ public:
 } // ripple
 
 #endif
-

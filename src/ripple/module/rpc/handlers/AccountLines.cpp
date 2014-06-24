@@ -89,7 +89,7 @@ Json::Value doAccountLines (RPC::Context& context)
 
                 Json::Value&    jPeer   = jsonLines.append (Json::objectValue);
 
-                jPeer[jss::account]       = RippleAddress::createHumanAccountID (line->getAccountIDPeer ());
+                jPeer[jss::account]       = to_string (line->getAccountIDPeer ());
                 // Amount reported is positive if current account holds other account's IOUs.
                 // Amount reported is negative if other account holds current account's IOUs.
                 jPeer[jss::balance]       = saBalance.getText ();

@@ -24,12 +24,12 @@ namespace ripple {
 */
 bool CreateOfferLegacy::isValidOffer (
     SLE::ref sleOffer,
-    uint160 const& uOfferOwnerID,
+    Account const& uOfferOwnerID,
     STAmount const& saOfferPays,
     STAmount const& saOfferGets,
-    uint160 const& uTakerAccountID,
-    std::unordered_set<uint256, beast::hardened_hash<uint256>>& usOfferUnfundedBecame,
-    std::unordered_set<uint160, beast::hardened_hash<uint160>>& usAccountTouched,
+    Account const& uTakerAccountID,
+    HardenedOfferSet& usOfferUnfundedBecame,
+    HardenedAccountSet& usAccountTouched,
     STAmount& saOfferFunds)
 {
     if (sleOffer->isFieldPresent (sfExpiration) &&
@@ -208,7 +208,7 @@ bool CreateOfferLegacy::applyOffer (
     // Limit offerer funds available, by transfer fees.
     STAmount    saOfferFundsAvailable   = QUALITY_ONE == uOfferPaysRate
                                           ? saOfferFunds          // As is.
-                                          : STAmount::divide (saOfferFunds, STAmount (CURRENCY_ONE, ACCOUNT_ONE, uOfferPaysRate, -9)); // Reduce by offer fees.
+                                          : STAmount::divide (saOfferFunds, STAmount (noCurrency(), noAccount(), uOfferPaysRate, -9)); // Reduce by offer fees.
 
     m_journal.info << "applyOffer: uOfferPaysRate=" << uOfferPaysRate;
     m_journal.info << "applyOffer: saOfferFundsAvailable=" << saOfferFundsAvailable.getFullText ();
@@ -216,9 +216,9 @@ bool CreateOfferLegacy::applyOffer (
     // Limit taker funds available, by transfer fees.
     STAmount    saTakerFundsAvailable   = QUALITY_ONE == uTakerPaysRate
                                           ? saTakerFunds          // As is.
-                                          : STAmount::divide (saTakerFunds, STAmount (CURRENCY_ONE, ACCOUNT_ONE, uTakerPaysRate, -9)); // Reduce by taker fees.
+                                          : STAmount::divide (saTakerFunds, STAmount (noCurrency(), noAccount(), uTakerPaysRate, -9)); // Reduce by taker fees.
 
-    m_journal.info << "applyOffer: TAKER_FEES=" << STAmount (CURRENCY_ONE, ACCOUNT_ONE, uTakerPaysRate, -9).getFullText ();
+    m_journal.info << "applyOffer: TAKER_FEES=" << STAmount (noCurrency(), noAccount(), uTakerPaysRate, -9).getFullText ();
     m_journal.info << "applyOffer: uTakerPaysRate=" << uTakerPaysRate;
     m_journal.info << "applyOffer: saTakerFundsAvailable=" << saTakerFundsAvailable.getFullText ();
 
@@ -280,7 +280,7 @@ bool CreateOfferLegacy::applyOffer (
     {
         // Compute fees in a rounding safe way.
 
-        STAmount transferRate (CURRENCY_ONE, ACCOUNT_ONE, uTakerPaysRate, -9);
+        STAmount transferRate (noCurrency(), noAccount(), uTakerPaysRate, -9);
         m_journal.info << "applyOffer: transferRate="
                        << transferRate.getFullText ();
 
@@ -310,7 +310,7 @@ bool CreateOfferLegacy::applyOffer (
     {
         // Compute fees in a rounding safe way.
         STAmount saOfferCost = STAmount::mulRound (
-            saTakerGot, STAmount (CURRENCY_ONE, ACCOUNT_ONE, uOfferPaysRate, -9),
+            saTakerGot, STAmount (noCurrency(), noAccount(), uOfferPaysRate, -9),
             true);
 
         saOfferIssuerFee = saOfferCost > saOfferFunds
@@ -343,7 +343,7 @@ TER CreateOfferLegacy::takeOffers (
     const bool          bPassive,
     const bool          bSell,
     uint256 const&      uBookBase,
-    const uint160&      uTakerAccountID,
+    Account const&      uTakerAccountID,
     SLE::ref            sleTakerAccount,
     const STAmount&     saTakerPays,
     const STAmount&     saTakerGets,
@@ -367,15 +367,15 @@ TER CreateOfferLegacy::takeOffers (
     LedgerEntrySet& lesActive = mEngine->view ();
     std::uint64_t const uTakeQuality = STAmount::getRate (saTakerGets, saTakerPays);
     STAmount saTakerRate = STAmount::setRate (uTakeQuality);
-    uint160 const uTakerPaysAccountID = saTakerPays.getIssuer ();
-    uint160 const uTakerGetsAccountID = saTakerGets.getIssuer ();
+    auto const uTakerPaysAccountID = saTakerPays.getIssuer ();
+    auto const uTakerGetsAccountID = saTakerGets.getIssuer ();
     TER terResult = temUNCERTAIN;
 
     // Offers that became unfunded.
-    std::unordered_set<uint256, beast::hardened_hash<uint256>> usOfferUnfundedBecame;
+    HardenedOfferSet usOfferUnfundedBecame;
 
     // Accounts touched.
-    std::unordered_set<uint160, beast::hardened_hash<uint160>> usAccountTouched;
+    HardenedAccountSet usAccountTouched;
 
     saTakerPaid = STAmount (
         saTakerPays.getCurrency (), saTakerPays.getIssuer ());
@@ -430,7 +430,7 @@ TER CreateOfferLegacy::takeOffers (
             "takeOffers: considering offer : " <<
             sleOffer->getJson (0);
 
-        uint160 const&  uOfferOwnerID = sleOffer->getFieldAccount160 (sfAccount);
+        auto const&  uOfferOwnerID = sleOffer->getFieldAccount160 (sfAccount);
         STAmount saOfferPays = sleOffer->getFieldAmount (sfTakerGets);
         STAmount saOfferGets = sleOffer->getFieldAmount (sfTakerPays);
 
@@ -704,8 +704,8 @@ TER CreateOfferLegacy::doApply ()
         "saTakerPays=" << saTakerPays.getFullText () <<
         " saTakerGets=" << saTakerGets.getFullText ();
 
-    uint160 const uPaysIssuerID = saTakerPays.getIssuer ();
-    uint160 const uGetsIssuerID = saTakerGets.getIssuer ();
+    auto const uPaysIssuerID = saTakerPays.getIssuer ();
+    auto const uGetsIssuerID = saTakerGets.getIssuer ();
 
     bool const bHaveExpiration (mTxn.isFieldPresent (sfExpiration));
     bool const bHaveCancel (mTxn.isFieldPresent (sfOfferSequence));
@@ -726,8 +726,8 @@ TER CreateOfferLegacy::doApply ()
         "Creating offer node: " << to_string (uLedgerIndex) <<
         " uSequence=" << uSequence;
 
-    const uint160 uPaysCurrency = saTakerPays.getCurrency ();
-    const uint160 uGetsCurrency = saTakerGets.getCurrency ();
+    auto const uPaysCurrency = saTakerPays.getCurrency ();
+    auto const uGetsCurrency = saTakerGets.getCurrency ();
     const std::uint64_t uRate = STAmount::getRate (saTakerGets, saTakerPays);
 
     TER                        terResult                = tesSUCCESS;
@@ -785,7 +785,7 @@ TER CreateOfferLegacy::doApply ()
         terResult   = temREDUNDANT;
     }
     // FIXME: XRP is not a bad currency, not not allowed as IOU
-    else if (CURRENCY_BAD == uPaysCurrency || CURRENCY_BAD == uGetsCurrency)
+    else if (badCurrency() == uPaysCurrency || badCurrency() == uGetsCurrency)
     {
         m_journal.warning <<
             "Malformed offer: Bad currency.";
@@ -838,7 +838,7 @@ TER CreateOfferLegacy::doApply ()
 
             if (m_journal.warning) m_journal.warning <<
                 "offer not found: " <<
-                RippleAddress::createHumanAccountID (mTxnAccountID) <<
+                to_string (mTxnAccountID) <<
                 " : " << uCancelSequence <<
                 " : " << to_string (uCancelIndex);
         }
@@ -863,7 +863,7 @@ TER CreateOfferLegacy::doApply ()
         {
             m_journal.warning <<
                 "delay: can't receive IOUs from non-existent issuer: " <<
-                RippleAddress::createHumanAccountID (uPaysIssuerID);
+                to_string (uPaysIssuerID);
 
             terResult   = (mParams & tapRETRY) ? terNO_ACCOUNT : tecNO_ISSUER;
         }
@@ -962,7 +962,7 @@ TER CreateOfferLegacy::doApply ()
             "takeOffers: saTakerGets=" << saTakerGets.getFullText ();
         m_journal.debug <<
             "takeOffers: mTxnAccountID=" <<
-            RippleAddress::createHumanAccountID (mTxnAccountID);
+            to_string (mTxnAccountID);
         m_journal.debug <<
             "takeOffers:         FUNDS=" <<
             lesActive.accountFunds (mTxnAccountID, saTakerGets).getFullText ();
@@ -1057,9 +1057,9 @@ TER CreateOfferLegacy::doApply ()
             if (m_journal.trace) m_journal.trace <<
                 "adding to book: " << to_string (uBookBase) <<
                 " : " << saTakerPays.getHumanCurrency () <<
-                "/" << RippleAddress::createHumanAccountID (saTakerPays.getIssuer ()) <<
+                "/" << to_string (saTakerPays.getIssuer ()) <<
                 " -> " << saTakerGets.getHumanCurrency () <<
-                "/" << RippleAddress::createHumanAccountID (saTakerGets.getIssuer ());
+                "/" << to_string (saTakerGets.getIssuer ());
 
             uDirectory  = Ledger::getQualityIndex (uBookBase, uRate);   // Use original rate.
 
@@ -1077,13 +1077,13 @@ TER CreateOfferLegacy::doApply ()
             {
                 m_journal.debug <<
                     "sfAccount=" <<
-                    RippleAddress::createHumanAccountID (mTxnAccountID);
+                    to_string (mTxnAccountID);
                 m_journal.debug <<
                     "uPaysIssuerID=" <<
-                    RippleAddress::createHumanAccountID (uPaysIssuerID);
+                    to_string (uPaysIssuerID);
                 m_journal.debug <<
                     "uGetsIssuerID=" <<
-                    RippleAddress::createHumanAccountID (uGetsIssuerID);
+                    to_string (uGetsIssuerID);
                 m_journal.debug <<
                     "saTakerPays.isNative()=" <<
                     saTakerPays.isNative ();

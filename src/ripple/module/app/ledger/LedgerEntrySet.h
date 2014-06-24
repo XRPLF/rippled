@@ -26,16 +26,20 @@ enum TransactionEngineParams
 {
     tapNONE             = 0x00,
 
-    tapNO_CHECK_SIGN    = 0x01,     // Signature already checked
+    // Signature already checked
+    tapNO_CHECK_SIGN    = 0x01,
 
-    tapOPEN_LEDGER      = 0x10,     // Transaction is running against an open ledger
+    // Transaction is running against an open ledger
     // true = failures are not forwarded, check transaction fee
     // false = debit ledger for consumed funds
+    tapOPEN_LEDGER      = 0x10,
 
-    tapRETRY            = 0x20,     // This is not the transaction's last pass
+    // This is not the transaction's last pass
     // Transaction can be retried, soft failures allowed
+    tapRETRY            = 0x20,
 
-    tapADMIN            = 0x400,    // Transaction came from a privileged source
+    // Transaction came from a privileged source
+    tapADMIN            = 0x400,
 };
 
 enum LedgerEntryAction
@@ -79,7 +83,8 @@ class LedgerEntrySet
 public:
     static char const* getCountedObjectName () { return "LedgerEntrySet"; }
 
-    LedgerEntrySet (Ledger::ref ledger, TransactionEngineParams tep, bool immutable = false) :
+    LedgerEntrySet (
+        Ledger::ref ledger, TransactionEngineParams tep, bool immutable = false) :
         mLedger (ledger), mParams (tep), mSeq (0), mImmutable (immutable)
     {
     }
@@ -99,11 +104,11 @@ public:
         return mImmutable;
     }
 
-    LedgerEntrySet duplicate () const;  // Make a duplicate of this set
+    // Make a duplicate of this set.
+    LedgerEntrySet duplicate () const;
 
-    void setTo (const LedgerEntrySet&); // Set this set to have the same contents as another
-
-    void swapWith (LedgerEntrySet&);    // Swap the contents of two sets
+    // Swap the contents of two sets
+    void swapWith (LedgerEntrySet&);
 
     void invalidate ()
     {
@@ -181,34 +186,34 @@ public:
     uint256             getNextLedgerIndex (uint256 const & uHash);
     uint256             getNextLedgerIndex (uint256 const & uHash, uint256 const & uEnd);
 
-    void                ownerCountAdjust (uint160 const& uOwnerID, int iAmount, SLE::ref sleAccountRoot = SLE::pointer ());
+    void                ownerCountAdjust (Account const& uOwnerID, int iAmount, SLE::ref sleAccountRoot = SLE::pointer ());
 
     // Offer functions.
     TER                 offerDelete (uint256 const & offerIndex);
     TER                 offerDelete (SLE::pointer sleOffer);
 
     // Balance functions.
-    std::uint32_t rippleTransferRate (uint160 const& issuer);
+    std::uint32_t rippleTransferRate (Account const& issuer);
     std::uint32_t rippleTransferRate (
-        uint160 const& uSenderID, uint160 const& uReceiverID,
-        uint160 const& issuer);
+        Account const& uSenderID, Account const& uReceiverID,
+        Account const& issuer);
 
     STAmount rippleOwed (
-        uint160 const& uToAccountID, uint160 const& uFromAccountID,
-        uint160 const& currency);
+        Account const& uToAccountID, Account const& uFromAccountID,
+        Currency const& currency);
     STAmount rippleLimit (
-        uint160 const& uToAccountID, uint160 const& uFromAccountID,
-        uint160 const& currency);
+        Account const& uToAccountID, Account const& uFromAccountID,
+        Currency const& currency);
 
     std::uint32_t rippleQualityIn (
-        uint160 const& uToAccountID, uint160 const& uFromAccountID,
-        uint160 const& currency,
+        Account const& uToAccountID, Account const& uFromAccountID,
+        Currency const& currency,
         SField::ref sfLow = sfLowQualityIn,
         SField::ref sfHigh = sfHighQualityIn);
 
     std::uint32_t rippleQualityOut (
-        uint160 const& uToAccountID, uint160 const& uFromAccountID,
-        uint160 const& currency)
+        Account const& uToAccountID, Account const& uFromAccountID,
+        Currency const& currency)
     {
         return rippleQualityIn (
             uToAccountID, uFromAccountID, currency,
@@ -216,34 +221,34 @@ public:
     }
 
     STAmount rippleHolds (
-        uint160 const& account, uint160 const& currency,
-        uint160 const& issuer);
+        Account const& account, Currency const& currency,
+        Account const& issuer);
 
     STAmount rippleTransferFee (
-        uint160 const& uSenderID, uint160 const& uReceiverID,
-        uint160 const& issuer, const STAmount & saAmount);
+        Account const& uSenderID, Account const& uReceiverID,
+        Account const& issuer, const STAmount & saAmount);
 
     TER rippleCredit (
-        uint160 const& uSenderID, uint160 const& uReceiverID,
+        Account const& uSenderID, Account const& uReceiverID,
         const STAmount & saAmount, bool bCheckIssuer = true);
 
     TER rippleSend (
-        uint160 const& uSenderID, uint160 const& uReceiverID,
+        Account const& uSenderID, Account const& uReceiverID,
         const STAmount & saAmount, STAmount & saActual);
 
     STAmount accountHolds (
-        uint160 const& account, uint160 const& currency,
-        uint160 const& issuer);
+        Account const& account, Currency const& currency,
+        Account const& issuer);
     STAmount accountFunds (
-        uint160 const& account, const STAmount & saDefault);
+        Account const& account, const STAmount & saDefault);
     TER accountSend (
-        uint160 const& uSenderID, uint160 const& uReceiverID,
+        Account const& uSenderID, Account const& uReceiverID,
         const STAmount & saAmount);
 
     TER trustCreate (
         const bool      bSrcHigh,
-        uint160 const&  uSrcAccountID,
-        uint160 const&  uDstAccountID,
+        Account const&  uSrcAccountID,
+        Account const&  uDstAccountID,
         uint256 const &  uIndex,
         SLE::ref        sleAccount,
         const bool      bAuth,
@@ -253,8 +258,8 @@ public:
         const std::uint32_t uSrcQualityIn = 0,
         const std::uint32_t uSrcQualityOut = 0);
     TER trustDelete (
-        SLE::ref sleRippleState, uint160 const& uLowAccountID,
-        uint160 const& uHighAccountID);
+        SLE::ref sleRippleState, Account const& uLowAccountID,
+        Account const& uHighAccountID);
 
     Json::Value getJson (int) const;
     void calcRawMeta (Serializer&, TER result, std::uint32_t index);

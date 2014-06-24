@@ -30,38 +30,6 @@
 namespace ripple {
 namespace core {
 
-namespace detail {
-
-class AccountTag {};
-class CurrencyTag {};
-
-} // detail
-
-typedef base_uint<160, detail::AccountTag> Account;
-typedef base_uint<160, detail::CurrencyTag> Currency;
-
-inline std::string to_string(Currency const& c)
-{
-    return STAmount::createHumanCurrency(c);
-}
-
-inline std::string to_string(Account const& a)
-{
-    return RippleAddress::createHumanAccountID(a);
-}
-
-inline std::ostream& operator<< (std::ostream& os, Account const& x)
-{
-    os << to_string (x);
-    return os;
-}
-
-inline std::ostream& operator<< (std::ostream& os, Currency const& x)
-{
-    os << to_string (x);
-    return os;
-}
-
 /** A mutable view that overlays an immutable ledger to track changes. */
 typedef LedgerEntrySet LedgerView;
 
@@ -85,12 +53,6 @@ public:
 };
 
 } // core
-
-inline bool isXRP(core::Currency const& c)
-{
-    return c == zero;
-}
-
 } // ripple
 
 #endif

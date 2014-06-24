@@ -133,7 +133,7 @@ std::vector<RippleAddress> SerializedTransaction::getMentionedAccounts () const
 
         if (sam)
         {
-            uint160 issuer = sam->getIssuer ();
+            auto issuer = sam->getIssuer ();
 
             if (issuer.isNonZero ())
             {

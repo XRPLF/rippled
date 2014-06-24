@@ -64,13 +64,13 @@ Json::Value Node::getJson () const
     jvNode["flags"] = jvFlags;
 
     if (!!account_)
-        jvNode["account"] = RippleAddress::createHumanAccountID (account_);
+        jvNode["account"] = to_string (account_);
 
     if (!!currency_)
-        jvNode["currency"] = STAmount::createHumanCurrency (currency_);
+        jvNode["currency"] = to_string (currency_);
 
     if (!!issuer_)
-        jvNode["issuer"] = RippleAddress::createHumanAccountID (issuer_);
+        jvNode["issuer"] = to_string (issuer_);
 
     if (saRevRedeem)
         jvNode["rev_redeem"] = saRevRedeem.getFullText ();

@@ -22,30 +22,31 @@ namespace ripple {
 // #define TRUST_NETWORK
 
 // Track a peer's yes/no vote on a particular disputed transaction
-void DisputedTx::setVote (const uint160& peer, bool votesYes)
+void DisputedTx::setVote (NodeID const& peer, bool votesYes)
 {
-    // VFALCO TODO Simplify this declaration. It doesn't exactly roll off the tongue!
-    std::pair <ripple::unordered_map <uint160, bool>::iterator, bool> res =
-        mVotes.insert (std::make_pair (peer, votesYes));
+    auto res = mVotes.insert (std::make_pair (peer, votesYes));
 
     // new vote
     if (res.second)
     {
         if (votesYes)
         {
-            WriteLog (lsDEBUG, LedgerConsensus) << "Peer " << peer << " votes YES on " << mTransactionID;
+            WriteLog (lsDEBUG, LedgerConsensus)
+                    << "Peer " << peer << " votes YES on " << mTransactionID;
             ++mYays;
         }
         else
         {
-            WriteLog (lsDEBUG, LedgerConsensus) << "Peer " << peer << " votes NO on " << mTransactionID;
+            WriteLog (lsDEBUG, LedgerConsensus)
+                    << "Peer " << peer << " votes NO on " << mTransactionID;
             ++mNays;
         }
     }
     // changes vote to yes
     else if (votesYes && !res.first->second)
     {
-        WriteLog (lsDEBUG, LedgerConsensus) << "Peer " << peer << " now votes YES on " << mTransactionID;
+        WriteLog (lsDEBUG, LedgerConsensus)
+                << "Peer " << peer << " now votes YES on " << mTransactionID;
         --mNays;
         ++mYays;
         res.first->second = true;
@@ -53,7 +54,8 @@ void DisputedTx::setVote (const uint160& peer, bool votesYes)
     // changes vote to no
     else if (!votesYes && res.first->second)
     {
-        WriteLog (lsDEBUG, LedgerConsensus) << "Peer " << peer << " now votes NO on " << mTransactionID;
+        WriteLog (lsDEBUG, LedgerConsensus) << "Peer " << peer
+                                            << " now votes NO on " << mTransactionID;
         ++mNays;
         --mYays;
         res.first->second = false;
@@ -61,9 +63,9 @@ void DisputedTx::setVote (const uint160& peer, bool votesYes)
 }
 
 // Remove a peer's vote on this disputed transasction
-void DisputedTx::unVote (const uint160& peer)
+void DisputedTx::unVote (NodeID const& peer)
 {
-    ripple::unordered_map<uint160, bool>::iterator it = mVotes.find (peer);
+    auto it = mVotes.find (peer);
 
     if (it != mVotes.end ())
     {
@@ -95,10 +97,12 @@ bool DisputedTx::updateVote (int percentTime, bool proposing)
         // This is basically the percentage of nodes voting 'yes' (including us)
         weight = (mYays * 100 + (mOurVote ? 100 : 0)) / (mNays + mYays + 1);
 
-        // VFALCO TODO Rename these macros and turn them into language constructs.
-        //             consolidate them into a class that collects all these related values.
+        // VFALCO TODO Rename these macros and turn them into language
+        //             constructs.  consolidate them into a class that collects
+        //             all these related values.
         //
-        // To prevent avalanche stalls, we increase the needed weight slightly over time
+        // To prevent avalanche stalls, we increase the needed weight slightly
+        // over time.
         if (percentTime < AV_MID_CONSENSUS_TIME)
             newPosition = weight >  AV_INIT_CONSENSUS_PCT;
         else if (percentTime < AV_LATE_CONSENSUS_TIME)
@@ -116,14 +120,17 @@ bool DisputedTx::updateVote (int percentTime, bool proposing)
 
     if (newPosition == mOurVote)
     {
-        WriteLog (lsINFO, LedgerConsensus) <<
-                                           "No change (" << (mOurVote ? "YES" : "NO") << ") : weight " << weight << ", percent " << percentTime;
+        WriteLog (lsINFO, LedgerConsensus)
+                << "No change (" << (mOurVote ? "YES" : "NO") << ") : weight "
+                << weight << ", percent " << percentTime;
         WriteLog (lsDEBUG, LedgerConsensus) << getJson ();
         return false;
     }
 
     mOurVote = newPosition;
-    WriteLog (lsDEBUG, LedgerConsensus) << "We now vote " << (mOurVote ? "YES" : "NO") << " on " << mTransactionID;
+    WriteLog (lsDEBUG, LedgerConsensus)
+            << "We now vote " << (mOurVote ? "YES" : "NO")
+            << " on " << mTransactionID;
     WriteLog (lsDEBUG, LedgerConsensus) << getJson ();
     return true;
 }
@@ -140,9 +147,7 @@ Json::Value DisputedTx::getJson ()
     {
         Json::Value votesj (Json::objectValue);
         for (auto& vote : mVotes)
-        {
             votesj[to_string (vote.first)] = vote.second;
-        }
         ret["votes"] = votesj;
     }
 
@@ -150,4 +155,3 @@ Json::Value DisputedTx::getJson ()
 }
 
 } // ripple
-

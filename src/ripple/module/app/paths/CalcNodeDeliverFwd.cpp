@@ -36,7 +36,7 @@ TER nodeDeliverFwd (
     const unsigned int nodeIndex,          // 0 < nodeIndex < lastNodeIndex
     PathState&         pathState,
     const bool         bMultiQuality,
-    const uint160&     uInAccountID,   // --> Input owner's account.
+    Account const&     uInAccountID,   // --> Input owner's account.
     const STAmount&    saInReq,        // --> Amount to deliver.
     STAmount&          saInAct,        // <-- Amount delivered, this invokation.
     STAmount&          saInFees)       // <-- Fees charged, this invokation.
@@ -50,7 +50,7 @@ TER nodeDeliverFwd (
     // Don't deliver more than wanted.
     // Zeroed in reverse pass.
     if (bMultiQuality)
-        node.uDirectTip      = 0;     // Restart book searching.
+        node.currentDirectory_      = 0;     // Restart book searching.
     else
         node.bDirectRestart  = true;  // Restart at same quality.
 
@@ -200,9 +200,9 @@ TER nodeDeliverFwd (
                 WriteLog (lsTRACE, RippleCalc)
                     << "nodeDeliverFwd: ? --> OFFER --> account:"
                     << " offerOwnerAccount_="
-                    << RippleAddress::createHumanAccountID (node.offerOwnerAccount_)
+                    << to_string (node.offerOwnerAccount_)
                     << " nextNode.account_="
-                    << RippleAddress::createHumanAccountID (nextNode.account_)
+                    << to_string (nextNode.account_)
                     << " saOutPassAct=" << saOutPassAct
                     << " saOutFunded=%s" << saOutFunded;
 
@@ -264,7 +264,7 @@ TER nodeDeliverFwd (
                 // Do outbound debiting.
                 // Send to issuer/limbo total amount including fees (issuer gets
                 // fees).
-                auto id = !!node.currency_ ? Account(node.issuer_) : XRP_ACCOUNT;
+                auto id = !!node.currency_ ? Account(node.issuer_) : xrpIssuer();
                 auto outPassTotal = saOutPassAct + saOutPassFees;
                 rippleCalc.mActiveLedger.accountSend (node.offerOwnerAccount_, id, outPassTotal);
 
@@ -295,7 +295,8 @@ TER nodeDeliverFwd (
             if (!previousNode.currency_
                 || uInAccountID != node.offerOwnerAccount_)
             {
-                auto id = !!previousNode.currency_ ? uInAccountID : ACCOUNT_XRP;
+                auto id = !isXRP(previousNode.currency_) ?
+                        uInAccountID : xrpIssuer();
                 resultCode = rippleCalc.mActiveLedger.accountSend (
                     id, node.offerOwnerAccount_, saInPassAct);
 

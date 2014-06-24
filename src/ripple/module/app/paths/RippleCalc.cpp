@@ -29,7 +29,6 @@
 #include <ripple/module/app/paths/ComputeOfferLiquidity.cpp>
 #include <ripple/module/app/paths/Node.cpp>
 #include <ripple/module/app/paths/PathNext.cpp>
-#include <ripple/module/app/paths/Types.cpp>
 
 namespace ripple {
 
@@ -56,19 +55,19 @@ TER rippleCalculate (
     PathState::List&  pathStateList,
 
     // Issuer:
-    //      XRP: XRP_ACCOUNT
+    //      XRP: xrpIssuer()
     //  non-XRP: uSrcAccountID (for any issuer) or another account with trust
     //           node.
     const STAmount&     saMaxAmountReq,             // --> -1 = no limit.
 
     // Issuer:
-    //      XRP: XRP_ACCOUNT
+    //      XRP: xrpIssuer()
     //  non-XRP: uDstAccountID (for any issuer) or another account with trust
     //           node.
     const STAmount&     saDstAmountReq,
 
-    const uint160&      uDstAccountID,
-    const uint160&      uSrcAccountID,
+    Account const&      uDstAccountID,
+    Account const&      uSrcAccountID,
 
     // A set of paths that are included in the transaction that we'll explore
     // for liquidity.
@@ -162,9 +161,9 @@ TER rippleCalculate (
             << " saDstAmountReq:" << saDstAmountReq
             << " saMaxAmountReq:" << saMaxAmountReq
             << " uDstAccountID:"
-            << RippleAddress::createHumanAccountID (uDstAccountID)
+            << to_string (uDstAccountID)
             << " uSrcAccountID:"
-            << RippleAddress::createHumanAccountID (uSrcAccountID);
+            << to_string (uSrcAccountID);
 
         pspExpanded->expandPath (
             activeLedger, spPath, uDstAccountID, uSrcAccountID);

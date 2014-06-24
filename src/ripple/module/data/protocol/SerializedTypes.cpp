@@ -19,8 +19,8 @@
 
 namespace ripple {
 
-const STAmount saZero (CURRENCY_ONE, ACCOUNT_ONE, 0);
-const STAmount saOne (CURRENCY_ONE, ACCOUNT_ONE, 1);
+const STAmount saZero (noCurrency(), noAccount(), 0);
+const STAmount saOne (noCurrency(), noAccount(), 1);
 
 SerializedType& SerializedType::operator= (const SerializedType& t)
 {
@@ -271,7 +271,7 @@ bool STVariableLength::isEquivalent (const SerializedType& t) const
 
 std::string STAccount::getText () const
 {
-    uint160 u;
+    Account u;
     RippleAddress a;
 
     if (!getValueH160 (u))
@@ -341,7 +341,7 @@ bool STVector256::hasValue (uint256 const& v) const
 // STAccount
 //
 
-STAccount::STAccount (SField::ref n, const uint160& v) : STVariableLength (n)
+STAccount::STAccount (SField::ref n, Account const& v) : STVariableLength (n)
 {
     peekValue ().insert (peekValue ().end (), v.begin (), v.end ());
 }
@@ -351,28 +351,13 @@ bool STAccount::isValueH160 () const
     return peekValue ().size () == (160 / 8);
 }
 
-void STAccount::setValueH160 (const uint160& v)
-{
-    peekValue ().clear ();
-    peekValue ().insert (peekValue ().end (), v.begin (), v.end ());
-    assert (peekValue ().size () == (160 / 8));
-}
-
-bool STAccount::getValueH160 (uint160& v) const
-{
-    if (!isValueH160 ()) return false;
-
-    memcpy (v.begin (), & (peekValue ().front ()), (160 / 8));
-    return true;
-}
-
 RippleAddress STAccount::getValueNCA () const
 {
     RippleAddress a;
-    uint160 v;
+    Account account;
 
-    if (getValueH160 (v))
-        a.setAccountID (v);
+    if (getValueH160 (account))
+        a.setAccountID (account);
 
     return a;
 }
@@ -391,7 +376,8 @@ STPathSet* STPathSet::construct (SerializerIterator& s, SField::ref name)
     {
         int iType   = s.get8 ();
 
-        if (iType == STPathElement::typeNone || iType == STPathElement::typeBoundary)
+        if (iType == STPathElement::typeNone ||
+            iType == STPathElement::typeBoundary)
         {
             if (path.empty ())
             {
@@ -410,30 +396,31 @@ STPathSet* STPathSet::construct (SerializerIterator& s, SField::ref name)
         }
         else if (iType & ~STPathElement::typeAll)
         {
-            WriteLog (lsINFO, SerializedType) << "STPathSet: Bad path element: " << iType;
+            WriteLog (lsINFO, SerializedType)
+                    << "STPathSet: Bad path element: " << iType;
 
             throw std::runtime_error ("bad path element");
         }
         else
         {
-            const bool  bAccount    = !! (iType & STPathElement::typeAccount);
-            const bool  bCurrency   = !! (iType & STPathElement::typeCurrency);
-            const bool  bIssuer     = !! (iType & STPathElement::typeIssuer);
+            auto hasAccount = iType & STPathElement::typeAccount;
+            auto hasCurrency = iType & STPathElement::typeCurrency;
+            auto hasIssuer = iType & STPathElement::typeIssuer;
 
-            uint160 account;
-            uint160 uCurrency;
-            uint160 issuer;
+            Account account;
+            Currency currency;
+            Account issuer;
 
-            if (bAccount)
-                account  = s.get160 ();
+            if (hasAccount)
+                account.copyFrom (s.get160 ());
 
-            if (bCurrency)
-                uCurrency   = s.get160 ();
+            if (hasCurrency)
+                currency.copyFrom (s.get160 ());
 
-            if (bIssuer)
-                issuer   = s.get160 ();
+            if (hasIssuer)
+                issuer.copyFrom (s.get160 ());
 
-            path.push_back (STPathElement (account, uCurrency, issuer, bCurrency));
+            path.push_back ({account, currency, issuer, hasCurrency});
         }
     }
     while (1);
@@ -446,16 +433,14 @@ bool STPathSet::isEquivalent (const SerializedType& t) const
 }
 
 bool STPath::hasSeen (
-    const uint160& uAccountId, const uint160& currency,
-    const uint160& issuer) const
+    Account const& account, Currency const& currency,
+    Account const& issuer) const
 {
-    for (int i = 0; i < mPath.size (); ++i)
+    for (auto& p: mPath)
     {
-        const STPathElement& ele = getElement (i);
-
-        if (ele.getAccountID () == uAccountId
-                && ele.getCurrency () == currency
-                && ele.getIssuerID () == issuer)
+        if (p.getAccountID () == account
+            && p.getCurrency () == currency
+            && p.getIssuerID () == issuer)
             return true;
     }
 
@@ -466,7 +451,7 @@ Json::Value STPath::getJson (int) const
 {
     Json::Value ret (Json::arrayValue);
 
-    BOOST_FOREACH (std::vector<STPathElement>::const_iterator::value_type it, mPath)
+    for (auto it: mPath)
     {
         Json::Value elem (Json::objectValue);
         int         iType   = it.getNodeType ();
@@ -475,13 +460,13 @@ Json::Value STPath::getJson (int) const
         elem[jss::type_hex]  = strHex (iType);
 
         if (iType & STPathElement::typeAccount)
-            elem[jss::account]  = RippleAddress::createHumanAccountID (it.getAccountID ());
+            elem[jss::account]  = to_string (it.getAccountID ());
 
         if (iType & STPathElement::typeCurrency)
-            elem[jss::currency] = STAmount::createHumanCurrency (it.getCurrency ());
+            elem[jss::currency] = to_string (it.getCurrency ());
 
         if (iType & STPathElement::typeIssuer)
-            elem[jss::issuer]   = RippleAddress::createHumanAccountID (it.getIssuerID ());
+            elem[jss::issuer]   = to_string (it.getIssuerID ());
 
         ret.append (elem);
     }
@@ -492,9 +477,8 @@ Json::Value STPath::getJson (int) const
 Json::Value STPathSet::getJson (int options) const
 {
     Json::Value ret (Json::arrayValue);
-
-    BOOST_FOREACH (std::vector<STPath>::const_iterator::value_type it, value)
-    ret.append (it.getJson (options));
+    for (auto it: value)
+        ret.append (it.getJson (options));
 
     return ret;
 }
@@ -513,7 +497,7 @@ std::string STPath::getText () const
         {
         case STPathElement::typeAccount:
         {
-            ret += RippleAddress::createHumanAccountID (it.getNode ());
+            ret += to_string (it.getNode ());
             break;
         }
 

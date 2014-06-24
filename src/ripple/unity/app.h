@@ -125,10 +125,5 @@
  #include <ripple/module/app/paths/RippleCalc.h>
 #include  <ripple/module/app/paths/Pathfinder.h>
 #include <ripple/module/app/paths/RippleState.h>
-// VFALCO NOTE These contracts files are bunk
-#include <ripple/module/app/contracts/ScriptData.h>
-#include <ripple/module/app/contracts/Contract.h>
-#include <ripple/module/app/contracts/Interpreter.h>
-#include <ripple/module/app/contracts/Operation.h>
 
 #endif

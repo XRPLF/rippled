@@ -57,10 +57,10 @@ TER computeForwardLiquidityForAccount (
     const bool previousNodeIsAccount = previousNode.isAccount();
     const bool nextNodeIsAccount = nextNode.isAccount();
 
-    const uint160& previousAccountID
+    Account const& previousAccountID
         = previousNodeIsAccount ? previousNode.account_ : node.account_;
     // Offers are always issue.
-    const uint160& nextAccountID
+    Account const& nextAccountID
         = nextNodeIsAccount ? nextNode.account_ : node.account_;
 
     std::uint32_t uQualityIn = nodeIndex
@@ -153,9 +153,9 @@ TER computeForwardLiquidityForAccount (
             WriteLog (lsTRACE, RippleCalc)
                 << "computeForwardLiquidityForAccount: account --> ACCOUNT --> $ :"
                 << " previousAccountID="
-                << RippleAddress::createHumanAccountID (previousAccountID)
+                << to_string (previousAccountID)
                 << " node.account_="
-                << RippleAddress::createHumanAccountID (node.account_)
+                << to_string (node.account_)
                 << " previousNode.saFwdRedeem:" << previousNode.saFwdRedeem
                 << " previousNode.saFwdIssue:" << previousNode.saFwdIssue;
 
@@ -167,7 +167,7 @@ TER computeForwardLiquidityForAccount (
                     ? previousNode.saFwdIssue  // No fee.
                     : STAmount::mulRound (
                           previousNode.saFwdIssue,
-                          STAmount (CURRENCY_ONE, ACCOUNT_ONE, uQualityIn, -9),
+                          STAmount (noCurrency(), noAccount(), uQualityIn, -9),
                           true); // Amount to credit.
 
             // Amount to credit. Credit for less than received as a surcharge.
@@ -329,7 +329,7 @@ TER computeForwardLiquidityForAccount (
                     node.saFwdDeliver = std::min (
                         node.saFwdDeliver,
                         rippleCalc.mActiveLedger.accountHolds (
-                            node.account_, XRP_CURRENCY, XRP_ACCOUNT));
+                            node.account_, xrpCurrency(), xrpIssuer()));
 
             }
 
@@ -360,7 +360,7 @@ TER computeForwardLiquidityForAccount (
 
                 // Deliver XRP to limbo.
                 resultCode = rippleCalc.mActiveLedger.accountSend (
-                    node.account_, XRP_ACCOUNT, node.saFwdDeliver);
+                    node.account_, xrpIssuer(), node.saFwdDeliver);
             }
         }
     }

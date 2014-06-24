@@ -62,13 +62,6 @@ typedef uint256 TxID;
 */
 typedef std::uint32_t TxSeq; // VFALCO NOTE Should read TxIndex or TxNum
 
-/** An account hash.
-
-    The hash is used to uniquely identify the account.
-*/
-//typedef uint160 AccountHash;
-//typedef uint260 ValidatorID;
-
 } // ripple
 
 #endif

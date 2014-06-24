@@ -21,11 +21,6 @@
 
 namespace ripple {
 
-class ValidationsImp;
-
-typedef std::map<uint160, SerializedValidation::pointer>::value_type u160_val_pair;
-typedef std::shared_ptr<ValidationSet> VSpointer;
-
 class ValidationsImp : public Validations
 {
 private:
@@ -34,16 +29,16 @@ private:
     typedef beast::GenericScopedUnlock <LockType> ScopedUnlockType;
     LockType mLock;
 
-    TaggedCache<uint256, ValidationSet>     mValidations;
-    ripple::unordered_map<uint160, SerializedValidation::pointer>   mCurrentValidations;
-    std::vector<SerializedValidation::pointer>                      mStaleValidations;
+    TaggedCache<uint256, ValidationSet> mValidations;
+    ValidationSet mCurrentValidations;
+    ValidationVector mStaleValidations;
 
     bool mWriting;
 
 private:
     std::shared_ptr<ValidationSet> findCreateSet (uint256 const& ledgerHash)
     {
-        VSpointer j = mValidations.fetch (ledgerHash);
+        auto j = mValidations.fetch (ledgerHash);
 
         if (!j)
         {
@@ -91,8 +86,8 @@ private:
                                             ", hash=" << val->getLedgerHash () << ", shash=" << val->getSigningHash () << " src=" << source;
         }
 
-        uint256 hash = val->getLedgerHash ();
-        uint160 node = signer.getNodeID ();
+        auto hash = val->getLedgerHash ();
+        auto node = signer.getNodeID ();
 
         if (val->isTrusted () && isCurrent)
         {
@@ -151,7 +146,7 @@ private:
     {
         {
             ScopedLockType sl (mLock);
-            VSpointer set = findSet (ledger);
+            auto set = findSet (ledger);
 
             if (set)
                 return *set;
@@ -163,12 +158,12 @@ private:
     {
         trusted = untrusted = 0;
         ScopedLockType sl (mLock);
-        VSpointer set = findSet (ledger);
+        auto set = findSet (ledger);
 
         if (set)
         {
             std::uint32_t now = getApp().getOPs ().getNetworkTimeNC ();
-            BOOST_FOREACH (u160_val_pair & it, *set)
+            for (auto& it: *set)
             {
                 bool isTrusted = it.second->isTrusted ();
 
@@ -198,11 +193,11 @@ private:
     {
         full = partial = 0;
         ScopedLockType sl (mLock);
-        VSpointer set = findSet (ledger);
+        auto set = findSet (ledger);
 
         if (set)
         {
-            BOOST_FOREACH (u160_val_pair & it, *set)
+            for (auto& it:*set)
             {
                 if (it.second->isTrusted ())
                 {
@@ -222,11 +217,11 @@ private:
     {
         int trusted = 0;
         ScopedLockType sl (mLock);
-        VSpointer set = findSet (ledger);
+        auto set = findSet (ledger);
 
         if (set)
         {
-            BOOST_FOREACH (u160_val_pair & it, *set)
+            for (auto& it: *set)
             {
                 if (it.second->isTrusted ())
                     ++trusted;
@@ -242,11 +237,11 @@ private:
         fee = 0;
 
         ScopedLockType sl (mLock);
-        VSpointer set = findSet (ledger);
+        auto set = findSet (ledger);
 
         if (set)
         {
-            BOOST_FOREACH (u160_val_pair & it, *set)
+            for (auto& it: *set)
             {
                 if (it.second->isTrusted ())
                 {
@@ -271,7 +266,7 @@ private:
         // Number of trusted nodes that have moved past this ledger
         int count = 0;
         ScopedLockType sl (mLock);
-        BOOST_FOREACH (u160_val_pair & it, mCurrentValidations)
+        for (auto& it: mCurrentValidations)
         {
             if (it.second->isTrusted () && it.second->isPreviousHash (ledger))
                 ++count;
@@ -286,7 +281,7 @@ private:
         int badNodes = overLoaded ? 0 : 1;
         {
             ScopedLockType sl (mLock);
-            BOOST_FOREACH (u160_val_pair & it, mCurrentValidations)
+            for (auto& it: mCurrentValidations)
             {
                 if (it.second->isTrusted ())
                 {
@@ -307,7 +302,7 @@ private:
         std::list<SerializedValidation::pointer> ret;
 
         ScopedLockType sl (mLock);
-        ripple::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.begin ();
+        auto it = mCurrentValidations.begin ();
 
         while (it != mCurrentValidations.end ())
         {
@@ -334,17 +329,17 @@ private:
         return ret;
     }
 
-    ripple::unordered_map<uint256, currentValidationCount>
-    getCurrentValidations (uint256 currentLedger, uint256 priorLedger)
+    LedgerToValidationCounter getCurrentValidations (
+        uint256 currentLedger, uint256 priorLedger)
     {
         std::uint32_t cutoff = getApp().getOPs ().getNetworkTimeNC () - LEDGER_VAL_INTERVAL;
         bool valCurrentLedger = currentLedger.isNonZero ();
         bool valPriorLedger = priorLedger.isNonZero ();
 
-        ripple::unordered_map<uint256, currentValidationCount> ret;
+        LedgerToValidationCounter ret;
 
         ScopedLockType sl (mLock);
-        ripple::unordered_map<uint160, SerializedValidation::pointer>::iterator it = mCurrentValidations.begin ();
+        auto it = mCurrentValidations.begin ();
 
         while (it != mCurrentValidations.end ())
         {
@@ -371,9 +366,9 @@ private:
                     WriteLog (lsTRACE, Validations) << "Counting for " << currentLedger << " not " << it->second->getLedgerHash ();
                 }
 
-                currentValidationCount& p = countPreferred ? ret[currentLedger] : ret[it->second->getLedgerHash ()];
+                ValidationCounter& p = countPreferred ? ret[currentLedger] : ret[it->second->getLedgerHash ()];
                 ++ (p.first);
-                uint160 ni = it->second->getNodeID ();
+                auto ni = it->second->getNodeID ();
 
                 if (ni > p.second)
                     p.second = ni;
@@ -391,7 +386,7 @@ private:
 
         WriteLog (lsINFO, Validations) << "Flushing validations";
         ScopedLockType sl (mLock);
-        BOOST_FOREACH (u160_val_pair & it, mCurrentValidations)
+        for (auto& it: mCurrentValidations)
         {
             if (it.second)
                 mStaleValidations.push_back (it.second);
@@ -434,7 +429,7 @@ private:
 
         while (!mStaleValidations.empty ())
         {
-            std::vector<SerializedValidation::pointer> vector;
+            ValidationVector vector;
             vector.reserve (512);
             mStaleValidations.swap (vector);
 
@@ -446,7 +441,7 @@ private:
 
                     Serializer s (1024);
                     db->executeSQL ("BEGIN TRANSACTION;");
-                    BOOST_FOREACH (SerializedValidation::ref it, vector)
+                    for (auto it: vector)
                     {
                         s.erase ();
                         it->add (s);

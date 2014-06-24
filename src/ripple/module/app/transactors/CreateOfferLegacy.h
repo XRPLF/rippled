@@ -50,14 +50,20 @@ public:
     }
 
 private:
+    typedef std::unordered_set<Account, beast::hardened_hash<Account>>
+            HardenedAccountSet;
+
+    typedef std::unordered_set<uint256, beast::hardened_hash<uint256>>
+            HardenedOfferSet;
+
     bool isValidOffer (
         SLE::ref            sleOfferDir,
-        uint160 const&      uOfferOwnerID,
+        Account const&      uOfferOwnerID,
         STAmount const&     saOfferPays,
         STAmount const&     saOfferGets,
-        uint160 const&      uTakerAccountID,
-        std::unordered_set<uint256, beast::hardened_hash<uint256>>&  usOfferUnfundedBecame,
-        std::unordered_set<uint160, beast::hardened_hash<uint160>>&  usAccountTouched,
+        Account const&      uTakerAccountID,
+        HardenedOfferSet&  usOfferUnfundedBecame,
+        HardenedAccountSet&  usAccountTouched,
         STAmount&           saOfferFunds);
 
     bool applyOffer (
@@ -79,13 +85,13 @@ private:
         bool isPassive,
         bool& isUnfunded,
         TER& terResult) const;
-        
+
     TER takeOffers (
         bool const bOpenLedger,
         bool const bPassive,
         bool const bSell,
         uint256 const&      uBookBase,
-        uint160 const&      uTakerAccountID,
+        Account const&      uTakerAccountID,
         SLE::ref            sleTakerAccount,
         STAmount const&     saTakerPays,
         STAmount const&     saTakerGets,
@@ -94,7 +100,7 @@ private:
         bool&               bUnfunded);
 
     // Offers found unfunded.
-    std::unordered_set<uint256, beast::hardened_hash<uint256>> usOfferUnfundedFound;
+    HardenedOfferSet usOfferUnfundedFound;
 
     typedef std::pair <uint256, uint256> missingOffer_t;
     std::set<missingOffer_t> usMissingOffers;

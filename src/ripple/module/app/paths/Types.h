@@ -23,21 +23,11 @@
 namespace ripple {
 
 // account id, currency id, issuer id.
-typedef std::tuple <uint160, uint160, uint160> AccountCurrencyIssuer;
+typedef std::tuple <Account, Currency, Account> AccountCurrencyIssuer;
 
 // Map of account, currency, issuer to node index.
 typedef ripple::unordered_map <AccountCurrencyIssuer, unsigned int>
 AccountCurrencyIssuerToNodeIndex;
-
-namespace path {
-
-typedef core::Account Account;
-typedef core::Currency Currency;
-
-} // path
-
-extern const path::Account XRP_ACCOUNT;
-extern const path::Currency XRP_CURRENCY;
 
 } // ripple
 

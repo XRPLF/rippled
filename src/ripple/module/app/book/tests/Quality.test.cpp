@@ -32,7 +32,7 @@ public:
     Amount
     static raw (std::uint64_t mantissa, int exponent)
     {
-        return Amount (uint160(3), uint160(3), mantissa, exponent);
+        return Amount (Currency(3), Account(3), mantissa, exponent);
     }
 
     template <class Integer>

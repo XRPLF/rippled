@@ -89,34 +89,48 @@ public:
         TR_SUCCESS  = 0,
         TR_NOTFOUND = 1,
         TR_ALREADY  = 2,
-        TR_BADTRANS = 3,    // the transaction itself is corrupt
-        TR_BADACCT  = 4,    // one of the accounts is invalid
-        TR_INSUFF   = 5,    // the sending(apply)/receiving(remove) account is broke
-        TR_PASTASEQ = 6,    // account is past this transaction
-        TR_PREASEQ  = 7,    // account is missing transactions before this
-        TR_BADLSEQ  = 8,    // ledger too early
-        TR_TOOSMALL = 9,    // amount is less than Tx fee
+
+        // the transaction itself is corrupt
+        TR_BADTRANS = 3,
+
+        // one of the accounts is invalid
+        TR_BADACCT  = 4,
+
+        // the sending(apply)/receiving(remove) account is broke
+        TR_INSUFF   = 5,
+
+        // account is past this transaction
+        TR_PASTASEQ = 6,
+
+        // account is missing transactions before this
+        TR_PREASEQ  = 7,
+
+        // ledger too early
+        TR_BADLSEQ  = 8,
+
+        // amount is less than Tx fee
+        TR_TOOSMALL = 9,
     };
 
     // ledger close flags
     static const std::uint32_t sLCF_NoConsensusTime = 1;
 
 public:
-    Ledger (const RippleAddress & masterID, std::uint64_t startAmount); // used for the starting bootstrap ledger
 
-    Ledger (uint256 const & parentHash, uint256 const & transHash, uint256 const & accountHash,
-            std::uint64_t totCoins, std::uint32_t closeTime, std::uint32_t parentCloseTime,
-            int closeFlags, int closeResolution,
-            std::uint32_t ledgerSeq, bool & loaded); // used for database ledgers
+    // used for the starting bootstrap ledger
+    Ledger (const RippleAddress & masterID, std::uint64_t startAmount);
+
+    Ledger (uint256 const & parentHash, uint256 const & transHash,
+            uint256 const & accountHash,
+            std::uint64_t totCoins, std::uint32_t closeTime,
+            std::uint32_t parentCloseTime, int closeFlags, int closeResolution,
+            std::uint32_t ledgerSeq, bool & loaded);
+    // used for database ledgers
 
     Ledger (std::uint32_t ledgerSeq, std::uint32_t closeTime);
-
     Ledger (Blob const & rawLedger, bool hasPrefix);
-
     Ledger (const std::string & rawLedger, bool hasPrefix);
-
     Ledger (bool dummy, Ledger & previous); // ledger after this one
-
     Ledger (Ledger & target, bool isMutable); // snapshot
 
     ~Ledger ();
@@ -125,7 +139,8 @@ public:
     static Ledger::pointer getSQL1 (SqliteStatement*);
     static void getSQL2 (Ledger::ref);
     static Ledger::pointer getLastFullLedger ();
-    static std::uint32_t roundCloseTime (std::uint32_t closeTime, std::uint32_t closeResolution);
+    static std::uint32_t roundCloseTime (
+        std::uint32_t closeTime, std::uint32_t closeResolution);
 
     void updateHash ();
     void setClosed ()
@@ -136,7 +151,9 @@ public:
     {
         mValidated = true;
     }
-    void setAccepted (std::uint32_t closeTime, int closeResolution, bool correctCloseTime);
+    void setAccepted (
+        std::uint32_t closeTime, int closeResolution, bool correctCloseTime);
+
     void setAccepted ();
     void setImmutable ();
     bool isClosed ()
@@ -254,36 +271,44 @@ public:
     bool isAcquiringAS (void);
 
     // Transaction Functions
-    bool addTransaction (uint256 const & id, const Serializer & txn);
-    bool addTransaction (uint256 const & id, const Serializer & txn, const Serializer & metaData);
+    bool addTransaction (uint256 const& id, Serializer const& txn);
+    bool addTransaction (
+        const uint256& id, Serializer const& txn, Serializer const& metaData);
     bool hasTransaction (uint256 const & TransID) const
     {
         return mTransactionMap->hasItem (TransID);
     }
     Transaction::pointer getTransaction (uint256 const & transID) const;
-    bool getTransaction (uint256 const & transID, Transaction::pointer & txn, TransactionMetaSet::pointer & txMeta);
-    bool getTransactionMeta (uint256 const & transID, TransactionMetaSet::pointer & txMeta);
+    bool getTransaction (
+        uint256 const & transID,
+        Transaction::pointer & txn, TransactionMetaSet::pointer & txMeta);
+    bool getTransactionMeta (
+        uint256 const & transID, TransactionMetaSet::pointer & txMeta);
     bool getMetaHex (uint256 const & transID, std::string & hex);
 
-    static SerializedTransaction::pointer getSTransaction (SHAMapItem::ref, SHAMapTreeNode::TNType);
-    SerializedTransaction::pointer getSMTransaction (SHAMapItem::ref, SHAMapTreeNode::TNType,
-            TransactionMetaSet::pointer & txMeta);
+    static SerializedTransaction::pointer getSTransaction (
+        SHAMapItem::ref, SHAMapTreeNode::TNType);
+    SerializedTransaction::pointer getSMTransaction (
+        SHAMapItem::ref, SHAMapTreeNode::TNType,
+        TransactionMetaSet::pointer & txMeta);
 
     // high-level functions
     bool hasAccount (const RippleAddress & acctID);
     AccountState::pointer getAccountState (const RippleAddress & acctID);
     LedgerStateParms writeBack (LedgerStateParms parms, SLE::ref);
-    SLE::pointer getAccountRoot (const uint160 & accountID);
+    SLE::pointer getAccountRoot (Account const& accountID);
     SLE::pointer getAccountRoot (const RippleAddress & naAccountID);
     void updateSkipList ();
-    void visitAccountItems (const uint160 & acctID, std::function<void (SLE::ref)>);
+    void visitAccountItems (
+        Account const& acctID, std::function<void (SLE::ref)>);
     void visitStateItems (std::function<void (SLE::ref)>);
 
     // database functions (low-level)
     static Ledger::pointer loadByIndex (std::uint32_t ledgerIndex);
     static Ledger::pointer loadByHash (uint256 const & ledgerHash);
     static uint256 getHashByIndex (std::uint32_t index);
-    static bool getHashesByIndex (std::uint32_t index, uint256 & ledgerHash, uint256 & parentHash);
+    static bool getHashesByIndex (
+        std::uint32_t index, uint256 & ledgerHash, uint256 & parentHash);
     static std::map< std::uint32_t, std::pair<uint256, uint256> >
                   getHashesByIndex (std::uint32_t minSeq, std::uint32_t maxSeq);
     bool pendSaveValidated (bool isSynchronous, bool isCurrent);
@@ -296,16 +321,26 @@ public:
     //
     uint256 getFirstLedgerIndex ();
     uint256 getLastLedgerIndex ();
-    uint256 getNextLedgerIndex (uint256 const & uHash);                         // first node >hash
-    uint256 getNextLedgerIndex (uint256 const & uHash, uint256 const & uEnd);   // first node >hash, <end
-    uint256 getPrevLedgerIndex (uint256 const & uHash);                         // last node <hash
-    uint256 getPrevLedgerIndex (uint256 const & uHash, uint256 const & uBegin); // last node <hash, >begin
+
+    // first node >hash
+    uint256 getNextLedgerIndex (uint256 const & uHash);
+
+    // first node >hash, <end
+    uint256 getNextLedgerIndex (uint256 const & uHash, uint256 const & uEnd);
+
+    // last node <hash
+    uint256 getPrevLedgerIndex (uint256 const & uHash);
+
+    // last node <hash, >begin
+    uint256 getPrevLedgerIndex (uint256 const & uHash, uint256 const & uBegin);
 
     // Ledger hash table function
     static uint256 getLedgerHashIndex ();
     static uint256 getLedgerHashIndex (std::uint32_t desiredLedgerIndex);
     static int getLedgerHashOffset (std::uint32_t desiredLedgerIndex);
-    static int getLedgerHashOffset (std::uint32_t desiredLedgerIndex, std::uint32_t currentLedgerIndex);
+    static int getLedgerHashOffset (
+        std::uint32_t desiredLedgerIndex, std::uint32_t currentLedgerIndex);
+
     uint256 getLedgerHash (std::uint32_t ledgerIndex);
     std::vector< std::pair<std::uint32_t, uint256> > getLedgerHashes ();
 
@@ -313,11 +348,13 @@ public:
     static uint256 getLedgerFeeIndex ();
     std::vector<uint256> getLedgerAmendments ();
 
-    std::vector<uint256> getNeededTransactionHashes (int max, SHAMapSyncFilter * filter);
-    std::vector<uint256> getNeededAccountStateHashes (int max, SHAMapSyncFilter * filter);
+    std::vector<uint256> getNeededTransactionHashes (
+        int max, SHAMapSyncFilter* filter);
+    std::vector<uint256> getNeededAccountStateHashes (
+        int max, SHAMapSyncFilter* filter);
 
     // index calculation functions
-    static uint256 getAccountRootIndex (const uint160 & account);
+    static uint256 getAccountRootIndex (Account const&);
 
     static uint256 getAccountRootIndex (const RippleAddress & account)
     {
@@ -328,9 +365,8 @@ public:
     // Generator Map functions
     //
 
-    SLE::pointer getGenerator (const uint160 & uGeneratorID);
-
-    static uint256 getGeneratorIndex (const uint160 & uGeneratorID);
+    SLE::pointer getGenerator (Account const& uGeneratorID);
+    static uint256 getGeneratorIndex (Account const& uGeneratorID);
 
     //
     // Nickname functions
@@ -360,26 +396,29 @@ public:
     // Order book functions
     //
 
-    // Order book dirs have a base so we can use next to step through them in quality order.
-    static bool isValidBook (const uint160 & uTakerPaysCurrency, const uint160 & uTakerPaysIssuerID,
-                             const uint160 & uTakerGetsCurrency, const uint160 & uTakerGetsIssuerID);
+    // Order book dirs have a base so we can use next to step through them in
+    // quality order.
+    static bool isValidBook (
+        Currency const& uTakerPaysCurrency, Account const& uTakerPaysIssuerID,
+        Currency const& uTakerGetsCurrency, Account const& uTakerGetsIssuerID);
 
-    static uint256 getBookBase (const uint160 & uTakerPaysCurrency, const uint160 & uTakerPaysIssuerID,
-                                const uint160 & uTakerGetsCurrency, const uint160 & uTakerGetsIssuerID);
+    static uint256 getBookBase (
+        Currency const& uTakerPaysCurrency, Account const& uTakerPaysIssuerID,
+        Currency const& uTakerGetsCurrency, Account const& uTakerGetsIssuerID);
 
     //
     // Offer functions
     //
 
     SLE::pointer getOffer (uint256 const & uIndex);
-
-    SLE::pointer getOffer (const uint160 & account, std::uint32_t uSequence)
+    SLE::pointer getOffer (Account const & account, std::uint32_t uSequence)
     {
         return getOffer (getOfferIndex (account, uSequence));
     }
 
     // The index of an offer.
-    static uint256 getOfferIndex (const uint160 & account, std::uint32_t uSequence);
+    static uint256 getOfferIndex (
+        Account const & account, std::uint32_t uSequence);
 
     //
     // Owner functions
@@ -389,15 +428,16 @@ public:
     //             into a 256 bit object (I think....need to research this)
     //
     // All items controlled by an account are here: offers
-    static uint256 getOwnerDirIndex (const uint160 & account);
+    static uint256 getOwnerDirIndex (Account const &account);
 
     //
     // Directory functions
     // Directories are doubly linked lists of nodes.
 
     // Given a directory root and and index compute the index of a node.
-    static uint256 getDirNodeIndex (uint256 const & uDirRoot, const std::uint64_t uNodeIndex = 0);
-    static void ownerDirDescriber (SLE::ref, bool, const uint160 & owner);
+    static uint256 getDirNodeIndex (
+        uint256 const & uDirRoot, const std::uint64_t uNodeIndex = 0);
+    static void ownerDirDescriber (SLE::ref, bool, Account const& owner);
 
     // Return a node: root or normal
     SLE::pointer getDirNode (uint256 const & uNodeIndex);
@@ -406,65 +446,76 @@ public:
     // Quality
     //
 
-    static uint256  getQualityIndex (uint256 const & uBase, const std::uint64_t uNodeDir = 0);
-    static uint256  getQualityNext (uint256 const & uBase);
-    static std::uint64_t   getQuality (uint256 const & uBase);
-    static void     qualityDirDescriber (SLE::ref, bool,
-                                         const uint160 & uTakerPaysCurrency, const uint160 & uTakerPaysIssuer,
-                                         const uint160 & uTakerGetsCurrency, const uint160 & uTakerGetsIssuer,
-                                         const std::uint64_t & uRate);
+    static uint256 getQualityIndex (
+        uint256 const & uBase, const std::uint64_t uNodeDir = 0);
+    static uint256 getQualityNext (uint256 const & uBase);
+    static std::uint64_t getQuality (uint256 const & uBase);
+    static void qualityDirDescriber (
+        SLE::ref, bool,
+        Currency const& uTakerPaysCurrency, Account const& uTakerPaysIssuer,
+        Currency const& uTakerGetsCurrency, Account const& uTakerGetsIssuer,
+        const std::uint64_t & uRate);
 
     //
     // Ripple functions : credit lines
     //
-
-    // Index of node which is the ripple state between two accounts for a currency.
-    // VFALCO NOTE Rename these to make it clear they are simple functions that
-    //             don't access global variables. e.g. "calculateKeyFromRippleStateAndAddress"
     //
-    static uint256 getRippleStateIndex (const RippleAddress & naA, const RippleAddress & naB, const uint160 & uCurrency);
-    static uint256 getRippleStateIndex (const uint160 & uiA, const uint160 & uiB, const uint160 & uCurrency)
+    // Index of node which is the ripple state between two accounts for a
+    // currency.
+    //
+    // VFALCO NOTE Rename these to make it clear they are simple functions that
+    //             don't access global variables. e.g.
+    //             "calculateKeyFromRippleStateAndAddress"
+    static uint256 getRippleStateIndex (
+        const RippleAddress&, const RippleAddress&, Currency const&);
+    static uint256 getRippleStateIndex (
+        Account const& a, Account const& b, Currency const& uCurrency)
     {
-        return getRippleStateIndex (RippleAddress::createAccountID (uiA), RippleAddress::createAccountID (uiB), uCurrency);
+        return getRippleStateIndex (
+            RippleAddress::createAccountID (a),
+            RippleAddress::createAccountID (b), uCurrency);
     }
 
     SLE::pointer getRippleState (uint256 const & uNode);
 
-    SLE::pointer getRippleState (const RippleAddress & naA, const RippleAddress & naB, const uint160 & uCurrency)
+    SLE::pointer getRippleState (
+        RippleAddress const& a, RippleAddress const& b,
+        Currency const& currency)
     {
-        return getRippleState (getRippleStateIndex (naA, naB, uCurrency));
+        return getRippleState (getRippleStateIndex (a, b, currency));
     }
 
-    SLE::pointer getRippleState (const uint160 & uiA, const uint160 & uiB, const uint160 & uCurrency)
+    SLE::pointer getRippleState (
+        Account const& a, Account const& b, Currency const& currency)
     {
-        return getRippleState (getRippleStateIndex (RippleAddress::createAccountID (uiA), RippleAddress::createAccountID (uiB), uCurrency));
+        return getRippleState (getRippleStateIndex (
+            RippleAddress::createAccountID (a),
+            RippleAddress::createAccountID (b), currency));
     }
 
     std::uint32_t getReferenceFeeUnits ()
     {
-        if (!mBaseFee) updateFees ();
-
+        updateFees ();
         return mReferenceFeeUnits;
     }
 
     std::uint64_t getBaseFee ()
     {
-        if (!mBaseFee) updateFees ();
-
+        updateFees ();
         return mBaseFee;
     }
 
     std::uint64_t getReserve (int increments)
     {
-        if (!mBaseFee) updateFees ();
-
-        return scaleFeeBase (static_cast<std::uint64_t> (increments) * mReserveIncrement + mReserveBase);
+        updateFees ();
+        return scaleFeeBase (
+            static_cast<std::uint64_t> (increments) * mReserveIncrement
+            + mReserveBase);
     }
 
     std::uint64_t getReserveInc ()
     {
-        if (!mBaseFee) updateFees ();
-
+        updateFees ();
         return mReserveIncrement;
     }
 
@@ -480,10 +531,11 @@ public:
     bool assertSane ();
 
 protected:
-    SLE::pointer getASNode (LedgerStateParms & parms, uint256 const & nodeID, LedgerEntryType let);
+    SLE::pointer getASNode (
+        LedgerStateParms& parms, uint256 const& nodeID, LedgerEntryType let);
 
     // returned SLE is immutable
-    SLE::pointer getASNodeI (uint256 const & nodeID, LedgerEntryType let);
+    SLE::pointer getASNodeI (uint256 const& nodeID, LedgerEntryType let);
 
     void saveValidatedLedgerAsync(Job&, bool current)
     {
@@ -491,12 +543,10 @@ protected:
     }
     bool saveValidatedLedger (bool current);
 
-    void updateFees ();
-
 private:
     void initializeFees ();
+    void updateFees ();
 
-private:
     // The basic Ledger structure, can be opened, closed, or synching
     uint256       mHash;
     uint256       mParentHash;
@@ -504,35 +554,54 @@ private:
     uint256       mAccountHash;
     std::uint64_t mTotCoins;
     std::uint32_t mLedgerSeq;
-    std::uint32_t mCloseTime;         // when this ledger closed
-    std::uint32_t mParentCloseTime;   // when the previous ledger closed
-    int           mCloseResolution;   // the resolution for this ledger close time (2-120 seconds)
-    std::uint32_t mCloseFlags;        // flags indicating how this ledger close took place
+
+    // when this ledger closed
+    std::uint32_t mCloseTime;
+
+    // when the previous ledger closed
+    std::uint32_t mParentCloseTime;
+
+    // the resolution for this ledger close time (2-120 seconds)
+    int           mCloseResolution;
+
+    // flags indicating how this ledger close took place
+    std::uint32_t mCloseFlags;
     bool          mClosed, mValidated, mValidHash, mAccepted, mImmutable;
 
-    std::uint32_t mReferenceFeeUnits;                 // Fee units for the reference transaction
-    std::uint32_t mReserveBase, mReserveIncrement;    // Reserve basse and increment in fee units
-    std::uint64_t mBaseFee;                           // Ripple cost of the reference transaction
+    // Fee units for the reference transaction
+    std::uint32_t mReferenceFeeUnits;
+
+    // Reserve basse and increment in fee units
+    std::uint32_t mReserveBase, mReserveIncrement;
+
+    // Ripple cost of the reference transaction
+    std::uint64_t mBaseFee;
 
     SHAMap::pointer mTransactionMap;
     SHAMap::pointer mAccountStateMap;
 
     typedef RippleMutex StaticLockType;
     typedef std::lock_guard <StaticLockType> StaticScopedLockType;
-    // ledgers not fully saved, validated ledger present but DB may not be correct yet
+
+    // Ledgers not fully saved, validated ledger present but DB may not be
+    // correct yet.
     static StaticLockType sPendingSaveLock;
 
     static std::set<std::uint32_t>  sPendingSaves;
 };
 
-inline LedgerStateParms operator| (const LedgerStateParms& l1, const LedgerStateParms& l2)
+inline LedgerStateParms operator| (
+    const LedgerStateParms& l1, const LedgerStateParms& l2)
 {
-    return static_cast<LedgerStateParms> (static_cast<int> (l1) | static_cast<int> (l2));
+    return static_cast<LedgerStateParms> (
+        static_cast<int> (l1) | static_cast<int> (l2));
 }
 
-inline LedgerStateParms operator& (const LedgerStateParms& l1, const LedgerStateParms& l2)
+inline LedgerStateParms operator& (
+    const LedgerStateParms& l1, const LedgerStateParms& l2)
 {
-    return static_cast<LedgerStateParms> (static_cast<int> (l1) & static_cast<int> (l2));
+    return static_cast<LedgerStateParms> (
+        static_cast<int> (l1) & static_cast<int> (l2));
 }
 
 } // ripple

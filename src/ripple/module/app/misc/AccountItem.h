@@ -42,19 +42,15 @@ public:
     typedef const pointer& ref;
 
 public:
-    AccountItem ()
-    { }
-
     /** Construct from a flat ledger entry.
     */
     explicit AccountItem (SerializedLedgerEntry::ref ledger);
 
-    virtual ~AccountItem ()
-    {
-        ;
-    }
+    AccountItem () {}
+    virtual ~AccountItem () {}
 
-    virtual AccountItem::pointer makeItem (const uint160& accountID, SerializedLedgerEntry::ref ledgerEntry) = 0;
+    virtual AccountItem::pointer makeItem (
+        Account const& accountID, SerializedLedgerEntry::ref ledgerEntry) = 0;
 
     // VFALCO TODO Make this const and change derived classes
     virtual LedgerEntryType getType () = 0;

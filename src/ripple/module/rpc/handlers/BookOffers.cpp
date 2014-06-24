@@ -19,33 +19,6 @@
 
 namespace ripple {
 
-template <class UnsignedInteger>
-inline bool is_xrp (UnsignedInteger const& value)
-{
-    return value.isZero();
-}
-
-template <class UnsignedInteger>
-inline bool is_not_xrp (UnsignedInteger const& value)
-{
-    return ! is_xrp (value);
-}
-
-inline uint160 const& xrp_issuer ()
-{
-    return ACCOUNT_XRP;
-}
-
-inline uint160 const& xrp_currency ()
-{
-    return CURRENCY_XRP;
-}
-
-inline uint160 const& neutral_issuer ()
-{
-    return ACCOUNT_ONE;
-}
-
 Json::Value doBookOffers (RPC::Context& context)
 {
     context.lock_.unlock ();
@@ -90,82 +63,80 @@ Json::Value doBookOffers (RPC::Context& context)
     if (! taker_gets ["currency"].isString ())
         return RPC::expected_field_error ("taker_gets.currency", "string");
 
-    uint160 pay_currency;
+    Currency pay_currency;
 
-    if (! STAmount::currencyFromString (
-        pay_currency, taker_pays ["currency"].asString ()))
+    if (!to_currency (pay_currency, taker_pays ["currency"].asString ()))
     {
         WriteLog (lsINFO, RPCHandler) << "Bad taker_pays currency.";
         return RPC::make_error (rpcSRC_CUR_MALFORMED,
             "Invalid field 'taker_pays.currency', bad currency.");
     }
 
-    uint160 get_currency;
+    Currency get_currency;
 
-    if (! STAmount::currencyFromString (
-        get_currency, taker_gets ["currency"].asString ()))
+    if (!to_currency (get_currency, taker_gets ["currency"].asString ()))
     {
         WriteLog (lsINFO, RPCHandler) << "Bad taker_gets currency.";
         return RPC::make_error (rpcDST_AMT_MALFORMED,
             "Invalid field 'taker_gets.currency', bad currency.");
     }
 
-    uint160 pay_issuer;
+    Account pay_issuer;
 
     if (taker_pays.isMember ("issuer"))
     {
         if (! taker_pays ["issuer"].isString())
             return RPC::expected_field_error ("taker_pays.issuer", "string");
 
-        if (! STAmount::issuerFromString (
+        if (!to_issuer(
             pay_issuer, taker_pays ["issuer"].asString ()))
             return RPC::make_error (rpcSRC_ISR_MALFORMED,
                 "Invalid field 'taker_pays.issuer', bad issuer.");
 
-        if (pay_issuer == neutral_issuer ())
+        if (pay_issuer == noAccount ())
             return RPC::make_error (rpcSRC_ISR_MALFORMED,
                 "Invalid field 'taker_pays.issuer', bad issuer account one.");
     }
     else
     {
-        pay_issuer = xrp_issuer ();
+        pay_issuer = xrpIssuer ();
     }
 
-    if (is_xrp (pay_currency) && ! is_xrp (pay_issuer))
+    if (isXRP (pay_currency) && ! isXRP (pay_issuer))
         return RPC::make_error (rpcSRC_ISR_MALFORMED,
             "Unneeded field 'taker_pays.issuer' for XRP currency specification.");
 
-    if (is_not_xrp (pay_currency) && is_xrp (pay_issuer))
+    if (!isXRP (pay_currency) && isXRP (pay_issuer))
         return RPC::make_error (rpcSRC_ISR_MALFORMED,
             "Invalid field 'taker_pays.issuer', expected non-XRP issuer.");
 
-    uint160 get_issuer;
+    Account get_issuer;
 
     if (taker_gets.isMember ("issuer"))
     {
         if (! taker_gets ["issuer"].isString())
             return RPC::expected_field_error ("taker_gets.issuer", "string");
 
-        if (! STAmount::issuerFromString (
+        if (! to_issuer (
             get_issuer, taker_gets ["issuer"].asString ()))
             return RPC::make_error (rpcDST_ISR_MALFORMED,
                 "Invalid field 'taker_gets.issuer', bad issuer.");
 
-        if (get_issuer == neutral_issuer ())
+        if (get_issuer == noAccount ())
             return RPC::make_error (rpcDST_ISR_MALFORMED,
                 "Invalid field 'taker_gets.issuer', bad issuer account one.");
     }
     else
     {
-        get_issuer = xrp_issuer ();
+        get_issuer = xrpIssuer ();
     }
 
 
-    if (is_xrp (get_currency) && ! is_xrp (get_issuer))
+    if (isXRP (get_currency) && ! isXRP (get_issuer))
         return RPC::make_error (rpcDST_ISR_MALFORMED,
             "Unneeded field 'taker_gets.issuer' for XRP currency specification.");
 
-    if (is_not_xrp (get_currency) && is_xrp (get_issuer))
+    if (!isXRP (get_currency) && isXRP (get_issuer))
         return RPC::make_error (rpcDST_ISR_MALFORMED,
             "Invalid field 'taker_gets.issuer', expected non-XRP issuer.");
 
@@ -181,7 +152,7 @@ Json::Value doBookOffers (RPC::Context& context)
     }
     else
     {
-        raTakerID.setAccountID (ACCOUNT_ONE);
+        raTakerID.setAccountID (noAccount());
     }
 
     if (pay_currency == get_currency && pay_issuer == get_issuer)

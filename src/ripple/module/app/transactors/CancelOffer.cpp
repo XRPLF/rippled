@@ -62,7 +62,7 @@ TER CancelOffer::doApply ()
 
     m_journal.warning <<
         "OfferCancel: offer not found: " <<
-        RippleAddress::createHumanAccountID (mTxnAccountID) <<
+        to_string (mTxnAccountID) <<
         " : " << uOfferSequence <<
         " : " << to_string (offerIndex);
 

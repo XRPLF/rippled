@@ -187,15 +187,18 @@ public:
     // Account functions
     //
 
-    AccountState::pointer   getAccountState (Ledger::ref lrLedger, const RippleAddress& accountID);
-    SLE::pointer            getGenerator (Ledger::ref lrLedger, const uint160& uGeneratorID);
+    AccountState::pointer getAccountState (
+        Ledger::ref lrLedger, const RippleAddress& accountID);
+    SLE::pointer getGenerator (
+        Ledger::ref lrLedger, Account const& uGeneratorID);
 
     //
     // Directory functions
     //
 
-    STVector256             getDirNodeInfo (Ledger::ref lrLedger, uint256 const& uRootIndex,
-                                            std::uint64_t& uNodePrevious, std::uint64_t& uNodeNext);
+    STVector256 getDirNodeInfo (
+        Ledger::ref lrLedger, uint256 const& uRootIndex,
+        std::uint64_t& uNodePrevious, std::uint64_t& uNodeNext);
 
 #if 0
     //
@@ -216,11 +219,11 @@ public:
     //
 
     void getBookPage (Ledger::pointer lpLedger,
-                      const uint160& uTakerPaysCurrencyID,
-                      const uint160& uTakerPaysIssuerID,
-                      const uint160& uTakerGetsCurrencyID,
-                      const uint160& uTakerGetsIssuerID,
-                      const uint160& uTakerID,
+                      Currency const& uTakerPaysCurrencyID,
+                      Account const& uTakerPaysIssuerID,
+                      Currency const& uTakerGetsCurrencyID,
+                      Account const& uTakerGetsIssuerID,
+                      Account const& uTakerID,
                       const bool bProof,
                       const unsigned int iLimit,
                       const Json::Value& jvMarker,
@@ -322,8 +325,7 @@ public:
     void clearLedgerFetch ();
     Json::Value getLedgerFetchInfo ();
     std::uint32_t acceptLedger ();
-    ripple::unordered_map < uint160,
-          std::list<LedgerProposal::pointer> > & peekStoredProposals ()
+    Proposals & peekStoredProposals ()
     {
         return mStoredProposals;
     }
@@ -396,11 +398,11 @@ public:
     bool subServer (InfoSub::ref ispListener, Json::Value& jvResult);
     bool unsubServer (std::uint64_t uListener);
 
-    bool subBook (InfoSub::ref ispListener, RippleCurrency const& currencyPays, RippleCurrency const& currencyGets,
-                  RippleIssuer const& issuerPays, RippleIssuer const& issuerGets);
-    bool unsubBook (std::uint64_t uListener, RippleCurrency const& currencyPays,
-                    RippleCurrency const& currencyGets,
-                    RippleIssuer const& issuerPays, RippleIssuer const& issuerGets);
+    bool subBook (InfoSub::ref ispListener, Currency const& currencyPays, Currency const& currencyGets,
+                  Account const& issuerPays, Account const& issuerGets);
+    bool unsubBook (std::uint64_t uListener, Currency const& currencyPays,
+                    Currency const& currencyGets,
+                    Account const& issuerPays, Account const& issuerGets);
 
     bool subTransactions (InfoSub::ref ispListener);
     bool unsubTransactions (std::uint64_t uListener);
@@ -432,23 +434,26 @@ private:
 
     void setMode (OperatingMode);
 
-    Json::Value transJson (const SerializedTransaction& stTxn, TER terResult, bool bValidated, Ledger::ref lpCurrent);
+    Json::Value transJson (
+        const SerializedTransaction& stTxn, TER terResult, bool bValidated,
+        Ledger::ref lpCurrent);
     bool haveConsensusObject ();
 
-    Json::Value pubBootstrapAccountInfo (Ledger::ref lpAccepted, const RippleAddress& naAccountID);
+    Json::Value pubBootstrapAccountInfo (
+        Ledger::ref lpAccepted, const RippleAddress& naAccountID);
 
-    void pubValidatedTransaction (Ledger::ref alAccepted, const AcceptedLedgerTx& alTransaction);
-    void pubAccountTransaction (Ledger::ref lpCurrent, const AcceptedLedgerTx& alTransaction, bool isAccepted);
+    void pubValidatedTransaction (
+        Ledger::ref alAccepted, const AcceptedLedgerTx& alTransaction);
+    void pubAccountTransaction (
+        Ledger::ref lpCurrent, const AcceptedLedgerTx& alTransaction, bool isAccepted);
 
     void pubServer ();
 
 private:
     clock_type& m_clock;
 
-    typedef ripple::unordered_map <uint160, SubMapType>               SubInfoMapType;
-    typedef ripple::unordered_map <uint160, SubMapType>::iterator     SubInfoMapIterator;
-
-    typedef ripple::unordered_map<std::string, InfoSub::pointer>     subRpcMapType;
+    typedef ripple::unordered_map <Account, SubMapType> SubInfoMapType;
+    typedef ripple::unordered_map<std::string, InfoSub::pointer> subRpcMapType;
 
     // XXX Split into more locks.
     typedef RippleRecursiveMutex LockType;
@@ -469,9 +474,8 @@ private:
     boost::posix_time::ptime            mConnectTime;
     beast::DeadlineTimer                m_heartbeatTimer;
     beast::DeadlineTimer                m_clusterTimer;
-    std::shared_ptr<LedgerConsensus>  mConsensus;
-    ripple::unordered_map < uint160,
-          std::list<LedgerProposal::pointer> > mStoredProposals;
+    std::shared_ptr<LedgerConsensus>    mConsensus;
+    NetworkOPs::Proposals               mStoredProposals;
 
     LedgerMaster&                       m_ledgerMaster;
     InboundLedger::pointer              mAcquiringLedger;
@@ -1056,12 +1060,14 @@ int NetworkOPsImp::findTransactionsByDestination (std::list<Transaction::pointer
 // Account functions
 //
 
-AccountState::pointer NetworkOPsImp::getAccountState (Ledger::ref lrLedger, const RippleAddress& accountID)
+AccountState::pointer NetworkOPsImp::getAccountState (
+    Ledger::ref lrLedger, const RippleAddress& accountID)
 {
     return lrLedger->getAccountState (accountID);
 }
 
-SLE::pointer NetworkOPsImp::getGenerator (Ledger::ref lrLedger, const uint160& uGeneratorID)
+SLE::pointer NetworkOPsImp::getGenerator (
+    Ledger::ref lrLedger, Account const& uGeneratorID)
 {
     if (!lrLedger)
         return SLE::pointer ();
@@ -1198,13 +1204,13 @@ class ValidationCount
 {
 public:
     int trustedValidations, nodesUsing;
-    uint160 highNodeUsing, highValidation;
+    NodeID highNodeUsing, highValidation;
 
     ValidationCount () : trustedValidations (0), nodesUsing (0)
     {
     }
 
-    bool operator> (const ValidationCount& v)
+    bool operator> (const ValidationCount& v) const
     {
         if (trustedValidations > v.trustedValidations)
             return true;
@@ -1283,9 +1289,9 @@ bool NetworkOPsImp::checkLastClosedLedger (const Overlay::PeerSequence& peerList
 
     ripple::unordered_map<uint256, ValidationCount> ledgers;
     {
-        ripple::unordered_map<uint256, currentValidationCount> current =
+        ripple::unordered_map<uint256, ValidationCounter> current =
             getApp().getValidations ().getCurrentValidations (closedLedger, prevClosedLedger);
-        typedef std::map<uint256, currentValidationCount>::value_type u256_cvc_pair;
+        typedef std::map<uint256, ValidationCounter>::value_type u256_cvc_pair;
         BOOST_FOREACH (const u256_cvc_pair & it, current)
         {
             ValidationCount& vc = ledgers[it.first];
@@ -1301,7 +1307,8 @@ bool NetworkOPsImp::checkLastClosedLedger (const Overlay::PeerSequence& peerList
     if (mMode >= omTRACKING)
     {
         ++ourVC.nodesUsing;
-        uint160 ourAddress = getApp().getLocalCredentials ().getNodePublic ().getNodeID ();
+        auto ourAddress =
+                getApp().getLocalCredentials ().getNodePublic ().getNodeID ();
 
         if (ourAddress > ourVC.highNodeUsing)
             ourVC.highNodeUsing = ourAddress;
@@ -1317,15 +1324,18 @@ bool NetworkOPsImp::checkLastClosedLedger (const Overlay::PeerSequence& peerList
             {
                 ValidationCount& vc = ledgers[peerLedger];
 
-                if ((vc.nodesUsing == 0) || (peer->getNodePublic ().getNodeID () > vc.highNodeUsing))
+                if (vc.nodesUsing == 0 ||
+                    peer->getNodePublic ().getNodeID () > vc.highNodeUsing)
+                {
                     vc.highNodeUsing = peer->getNodePublic ().getNodeID ();
+                }
 
                 ++vc.nodesUsing;
-	    }
-	    catch (...)
-	    {
-	        // Peer is likely not connected anymore
-	    }
+            }
+            catch (...)
+            {
+                // Peer is likely not connected anymore
+            }
         }
     }
 
@@ -1334,25 +1344,25 @@ bool NetworkOPsImp::checkLastClosedLedger (const Overlay::PeerSequence& peerList
     // 3) Is there a network ledger we'd like to switch to? If so, do we have it?
     bool switchLedgers = false;
 
-    for (ripple::unordered_map<uint256, ValidationCount>::iterator it = ledgers.begin (), end = ledgers.end ();
-            it != end; ++it)
+    for (auto const& it: ledgers)
     {
-        m_journal.debug << "L: " << it->first << " t=" << it->second.trustedValidations <<
-                                       ", n=" << it->second.nodesUsing;
+        m_journal.debug << "L: " << it.first
+                        << " t=" << it.second.trustedValidations
+                        << ", n=" << it.second.nodesUsing;
 
         // Temporary logging to make sure tiebreaking isn't broken
-        if (it->second.trustedValidations > 0)
-            m_journal.trace << "  TieBreakTV: " << it->second.highValidation;
+        if (it.second.trustedValidations > 0)
+            m_journal.trace << "  TieBreakTV: " << it.second.highValidation;
         else
         {
-            if (it->second.nodesUsing > 0)
-                m_journal.trace << "  TieBreakNU: " << it->second.highNodeUsing;
+            if (it.second.nodesUsing > 0)
+                m_journal.trace << "  TieBreakNU: " << it.second.highNodeUsing;
         }
 
-        if (it->second > bestVC)
+        if (it.second > bestVC)
         {
-            bestVC = it->second;
-            closedLedger = it->first;
+            bestVC = it.second;
+            closedLedger = it.first;
             switchLedgers = true;
         }
     }
@@ -1573,7 +1583,7 @@ void NetworkOPsImp::processTrustedProposal (LedgerProposal::pointer proposal,
 // Must be called while holding the master lock
 SHAMap::pointer NetworkOPsImp::getTXMap (uint256 const& hash)
 {
-    std::map<uint256, std::pair<int, SHAMap::pointer> >::iterator it = mRecentPositions.find (hash);
+    auto it = mRecentPositions.find (hash);
 
     if (it != mRecentPositions.end ())
         return it->second.second;
@@ -2531,13 +2541,13 @@ void NetworkOPsImp::pubAccountTransaction (Ledger::ref lpCurrent, const Accepted
 
         if (!mSubAccount.empty () || (!mSubRTAccount.empty ()) )
         {
-            BOOST_FOREACH (const RippleAddress & affectedAccount, alTx.getAffected ())
+            for (auto const& affectedAccount: alTx.getAffected ())
             {
-                SubInfoMapIterator  simiIt  = mSubRTAccount.find (affectedAccount.getAccountID ());
+                auto simiIt  = mSubRTAccount.find (affectedAccount.getAccountID ());
 
                 if (simiIt != mSubRTAccount.end ())
                 {
-                    NetworkOPsImp::SubMapType::const_iterator it = simiIt->second.begin ();
+                    auto it = simiIt->second.begin ();
 
                     while (it != simiIt->second.end ())
                     {
@@ -2675,8 +2685,8 @@ void NetworkOPsImp::unsubAccount (std::uint64_t uSeq,
     }
 }
 
-bool NetworkOPsImp::subBook (InfoSub::ref isrListener, RippleCurrency const& currencyPays, RippleCurrency const& currencyGets,
-                          RippleIssuer const& issuerPays, RippleIssuer const& issuerGets)
+bool NetworkOPsImp::subBook (InfoSub::ref isrListener, Currency const& currencyPays, Currency const& currencyGets,
+                          Account const& issuerPays, Account const& issuerGets)
 {
     BookListeners::pointer listeners =
         getApp().getOrderBookDB ().makeBookListeners (currencyPays, currencyGets, issuerPays, issuerGets);
@@ -2689,7 +2699,7 @@ bool NetworkOPsImp::subBook (InfoSub::ref isrListener, RippleCurrency const& cur
 }
 
 bool NetworkOPsImp::unsubBook (std::uint64_t uSeq,
-                            RippleCurrency const& currencyPays, RippleCurrency const& currencyGets, RippleIssuer const& issuerPays, RippleIssuer const& issuerGets)
+                            Currency const& currencyPays, Currency const& currencyGets, Account const& issuerPays, Account const& issuerGets)
 {
     BookListeners::pointer listeners =
         getApp().getOrderBookDB ().getBookListeners (currencyPays, currencyGets, issuerPays, issuerGets);
@@ -2716,9 +2726,10 @@ std::uint32_t NetworkOPsImp::acceptLedger ()
     return m_ledgerMaster.getCurrentLedger ()->getLedgerSeq ();
 }
 
-void NetworkOPsImp::storeProposal (LedgerProposal::ref proposal, const RippleAddress& peerPublic)
+void NetworkOPsImp::storeProposal (
+    LedgerProposal::ref proposal, const RippleAddress& peerPublic)
 {
-    std::list<LedgerProposal::pointer>& props = mStoredProposals[peerPublic.getNodeID ()];
+    auto& props = mStoredProposals[peerPublic.getNodeID ()];
 
     if (props.size () >= (unsigned) (mLastCloseProposers + 10))
         props.pop_front ();
@@ -2727,7 +2738,8 @@ void NetworkOPsImp::storeProposal (LedgerProposal::ref proposal, const RippleAdd
 }
 
 #if 0
-void NetworkOPsImp::subAccountChanges (InfoSub* isrListener, const uint256 uLedgerHash)
+void NetworkOPsImp::subAccountChanges (
+    InfoSub* isrListener, const uint256 uLedgerHash)
 {
 }
 
@@ -2846,12 +2858,25 @@ InfoSub::pointer NetworkOPsImp::addRpcSub (const std::string& strUrl, InfoSub::r
 //            work, but it demonstrated poor performance.
 //
 // FIXME : support iLimit.
-void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTakerPaysCurrencyID, const uint160& uTakerPaysIssuerID, const uint160& uTakerGetsCurrencyID, const uint160& uTakerGetsIssuerID, const uint160& uTakerID, const bool bProof, const unsigned int iLimit, const Json::Value& jvMarker, Json::Value& jvResult)
+void NetworkOPsImp::getBookPage (
+    Ledger::pointer lpLedger,
+    Currency const& uTakerPaysCurrencyID,
+    Account const& uTakerPaysIssuerID,
+    Currency const& uTakerGetsCurrencyID,
+    Account const& uTakerGetsIssuerID,
+    Account const& uTakerID,
+    bool const bProof,
+    const unsigned int iLimit,
+    const Json::Value& jvMarker,
+    Json::Value& jvResult)
 { // CAUTION: This is the old get book page logic
-    Json::Value&    jvOffers    = (jvResult[jss::offers] = Json::Value (Json::arrayValue));
+    Json::Value& jvOffers =
+            (jvResult[jss::offers] = Json::Value (Json::arrayValue));
 
-    std::map<uint160, STAmount> umBalance;
-    const uint256   uBookBase   = Ledger::getBookBase (uTakerPaysCurrencyID, uTakerPaysIssuerID, uTakerGetsCurrencyID, uTakerGetsIssuerID);
+    std::map<Account, STAmount> umBalance;
+    const uint256   uBookBase   = Ledger::getBookBase (
+        uTakerPaysCurrencyID, uTakerPaysIssuerID,
+        uTakerGetsCurrencyID, uTakerGetsIssuerID);
     const uint256   uBookEnd    = Ledger::getQualityNext (uBookBase);
     uint256         uTipIndex   = uBookBase;
 
@@ -2859,14 +2884,14 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
     {
         m_journal.trace << "getBookPage:" <<
             " uTakerPaysCurrencyID=" <<
-                STAmount::createHumanCurrency (uTakerPaysCurrencyID) <<
+                to_string (uTakerPaysCurrencyID) <<
             " uTakerPaysIssuerID=" <<
-                RippleAddress::createHumanAccountID (uTakerPaysIssuerID);
+                to_string (uTakerPaysIssuerID);
         m_journal.trace << "getBookPage:" <<
             " uTakerGetsCurrencyID=" <<
-                STAmount::createHumanCurrency (uTakerGetsCurrencyID) <<
+                to_string (uTakerGetsCurrencyID) <<
             " uTakerGetsIssuerID=" <<
-                RippleAddress::createHumanAccountID (uTakerGetsIssuerID);
+                to_string (uTakerGetsIssuerID);
         m_journal.trace << "getBookPage: uBookBase=" << uBookBase;
         m_journal.trace << "getBookPage: uBookEnd=" << uBookEnd;
         m_journal.trace << "getBookPage: uTipIndex=" << uTipIndex;
@@ -2918,14 +2943,17 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
 
         if (!bDone)
         {
-            SLE::pointer    sleOffer        = lesActive.entryCache (ltOFFER, offerIndex);
+            auto sleOffer = lesActive.entryCache (ltOFFER, offerIndex);
 
             if (sleOffer)
             {
-                const uint160   uOfferOwnerID   = sleOffer->getFieldAccount160 (sfAccount);
-                const STAmount& saTakerGets     = sleOffer->getFieldAmount (sfTakerGets);
-                const STAmount& saTakerPays     = sleOffer->getFieldAmount (sfTakerPays);
-                STAmount        saOwnerFunds;
+                auto const uOfferOwnerID =
+                        sleOffer->getFieldAccount160 (sfAccount);
+                auto const& saTakerGets =
+                        sleOffer->getFieldAmount (sfTakerGets);
+                auto const& saTakerPays =
+                        sleOffer->getFieldAmount (sfTakerPays);
+                STAmount saOwnerFunds;
 
                 if (uTakerGetsIssuerID == uOfferOwnerID)
                 {
@@ -2934,22 +2962,25 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
                 }
                 else
                 {
-                    std::map<uint160, STAmount>::const_iterator umBalanceEntry  = umBalance.find (uOfferOwnerID);
-
+                    auto umBalanceEntry  = umBalance.find (uOfferOwnerID);
                     if (umBalanceEntry != umBalance.end ())
                     {
                         // Found in running balance table.
 
                         saOwnerFunds    = umBalanceEntry->second;
-                        // m_journal.info << boost::str(boost::format("getBookPage: saOwnerFunds=%s (cached)") % saOwnerFunds.getFullText());
+                        // m_journal.info << "getBookPage: saOwnerFunds=%s
+                        // (cached)") % saOwnerFunds.getFullText());
                     }
                     else
                     {
                         // Did not find balance in table.
 
-                        saOwnerFunds    = lesActive.accountHolds (uOfferOwnerID, uTakerGetsCurrencyID, uTakerGetsIssuerID);
+                        saOwnerFunds = lesActive.accountHolds (
+                            uOfferOwnerID, uTakerGetsCurrencyID,
+                            uTakerGetsIssuerID);
 
-                        // m_journal.info << boost::str(boost::format("getBookPage: saOwnerFunds=%s (new)") % saOwnerFunds.getFullText());
+                        // m_journal.info << boost::format(getBookPage:
+                        // saOwnerFunds=%s (new)") % saOwnerFunds.getFullText());
                         if (saOwnerFunds < zero)
                         {
                             // Treat negative funds as zero.
@@ -2972,7 +3003,10 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
                 {
                     // Need to charge a transfer fee to offer owner.
                     uOfferRate          = uTransferRate;
-                    saOwnerFundsLimit   = STAmount::divide (saOwnerFunds, STAmount (CURRENCY_ONE, ACCOUNT_ONE, uOfferRate, -9));
+                    saOwnerFundsLimit   = STAmount::divide (
+                        saOwnerFunds, STAmount (noCurrency(), noAccount(),
+                                                uOfferRate, -9));
+                    // TODO(tom): why -9?
                 }
                 else
                 {
@@ -2987,20 +3021,14 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
                 }
                 else
                 {
-                    // m_journal.info << boost::str(boost::format("getBookPage:  saTakerGets=%s") % saTakerGets.getFullText());
-                    // m_journal.info << boost::str(boost::format("getBookPage:  saTakerPays=%s") % saTakerPays.getFullText());
-                    // m_journal.info << boost::str(boost::format("getBookPage: saOwnerFunds=%s") % saOwnerFunds.getFullText());
-                    // m_journal.info << boost::str(boost::format("getBookPage:    saDirRate=%s") % saDirRate.getText());
-                    // m_journal.info << boost::str(boost::format("getBookPage:     multiply=%s") % STAmount::multiply(saTakerGetsFunded, saDirRate).getFullText());
-                    // m_journal.info << boost::str(boost::format("getBookPage:     multiply=%s") % STAmount::multiply(saTakerGetsFunded, saDirRate, saTakerPays).getFullText());
-
                     // Only provide, if not fully funded.
 
                     saTakerGetsFunded   = saOwnerFundsLimit;
 
                     saTakerGetsFunded.setJson (jvOffer[jss::taker_gets_funded]);
-                    std::min (saTakerPays,
-                        STAmount::multiply (saTakerGetsFunded, saDirRate, saTakerPays)).setJson
+                    std::min (
+                        saTakerPays, STAmount::multiply (
+                            saTakerGetsFunded, saDirRate, saTakerPays)).setJson
                             (jvOffer[jss::taker_pays_funded]);
                 }
 
@@ -3010,7 +3038,8 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
                         saOwnerFunds,
                         STAmount::multiply (
                             saTakerGetsFunded,
-                            STAmount (CURRENCY_ONE, ACCOUNT_ONE, uOfferRate, -9)));
+                            STAmount (noCurrency(), noAccount(),
+                                      uOfferRate, -9)));
 
                 umBalance[uOfferOwnerID]    = saOwnerFunds - saOwnerPays;
 
@@ -3048,21 +3077,33 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
 // It has temporarily been disabled
 
 // FIXME : support iLimit.
-void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTakerPaysCurrencyID, const uint160& uTakerPaysIssuerID, const uint160& uTakerGetsCurrencyID, const uint160& uTakerGetsIssuerID, const uint160& uTakerID, const bool bProof, const unsigned int iLimit, const Json::Value& jvMarker, Json::Value& jvResult)
+void NetworkOPsImp::getBookPage (
+    Ledger::pointer lpLedger,
+    Currency const& uTakerPaysCurrencyID,
+    Account const& uTakerPaysIssuerID,
+    Currency const& uTakerGetsCurrencyID,
+    Account const& uTakerGetsIssuerID,
+    Account const& uTakerID,
+    bool const bProof,
+    const unsigned int iLimit,
+    const Json::Value& jvMarker,
+    Json::Value& jvResult)
 {
-    Json::Value&    jvOffers    = (jvResult[jss::offers] = Json::Value (Json::arrayValue));
+    auto& jvOffers = (jvResult[jss::offers] = Json::Value (Json::arrayValue));
 
-    std::map<uint160, STAmount> umBalance;
+    std::map<Account, STAmount> umBalance;
 
     LedgerEntrySet  lesActive (lpLedger, tapNONE, true);
-    OrderBookIterator obIterator (lesActive, uTakerPaysCurrencyID, uTakerPaysIssuerID, uTakerGetsCurrencyID, uTakerGetsIssuerID);
+    OrderBookIterator obIterator (
+        lesActive, uTakerPaysCurrencyID, uTakerPaysIssuerID,
+        uTakerGetsCurrencyID, uTakerGetsIssuerID);
 
-    unsigned int    iLeft           = iLimit;
+    unsigned int iLeft = iLimit;
 
     if ((iLeft == 0) || (iLeft > 300))
         iLeft = 300;
 
-    std::uint32_t  uTransferRate   = lesActive.rippleTransferRate (uTakerGetsIssuerID);
+    auto uTransferRate = lesActive.rippleTransferRate (uTakerGetsIssuerID);
 
     while ((--iLeft > 0) && obIterator.nextOffer ())
     {
@@ -3070,11 +3111,11 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
         SLE::pointer    sleOffer        = obIterator.getCurrentOffer();
         if (sleOffer)
         {
-            const uint160   uOfferOwnerID   = sleOffer->getFieldAccount160 (sfAccount);
-            const STAmount& saTakerGets     = sleOffer->getFieldAmount (sfTakerGets);
-            const STAmount& saTakerPays     = sleOffer->getFieldAmount (sfTakerPays);
-            STAmount        saDirRate       = obIterator.getCurrentRate ();
-            STAmount        saOwnerFunds;
+            auto const uOfferOwnerID = sleOffer->getFieldAccount160 (sfAccount);
+            auto const& saTakerGets = sleOffer->getFieldAmount (sfTakerGets);
+            auto const& saTakerPays = sleOffer->getFieldAmount (sfTakerPays);
+            STAmount saDirRate = obIterator.getCurrentRate ();
+            STAmount saOwnerFunds;
 
             if (uTakerGetsIssuerID == uOfferOwnerID)
             {
@@ -3083,22 +3124,21 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
             }
             else
             {
-                std::map<uint160, STAmount>::const_iterator umBalanceEntry  = umBalance.find (uOfferOwnerID);
+                auto umBalanceEntry = umBalance.find (uOfferOwnerID);
 
                 if (umBalanceEntry != umBalance.end ())
                 {
                     // Found in running balance table.
 
                     saOwnerFunds    = umBalanceEntry->second;
-                    // m_journal.info << boost::str(boost::format("getBookPage: saOwnerFunds=%s (cached)") % saOwnerFunds.getFullText());
                 }
                 else
                 {
                     // Did not find balance in table.
 
-                    saOwnerFunds    = lesActive.accountHolds (uOfferOwnerID, uTakerGetsCurrencyID, uTakerGetsIssuerID);
+                    saOwnerFunds = lesActive.accountHolds (
+                        uOfferOwnerID, uTakerGetsCurrencyID, uTakerGetsIssuerID);
 
-                    // m_journal.info << boost::str(boost::format("getBookPage: saOwnerFunds=%s (new)") % saOwnerFunds.getFullText());
                     if (saOwnerFunds.isNegative ())
                     {
                         // Treat negative funds as zero.
@@ -3115,13 +3155,18 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
             std::uint32_t uOfferRate;
 
 
-            if (uTransferRate != QUALITY_ONE                // Have a tranfer fee.
-                    && uTakerID != uTakerGetsIssuerID           // Not taking offers of own IOUs.
-                    && uTakerGetsIssuerID != uOfferOwnerID)     // Offer owner not issuing ownfunds
+            if (uTransferRate != QUALITY_ONE
+                // Have a tranfer fee.
+                && uTakerID != uTakerGetsIssuerID
+                // Not taking offers of own IOUs.
+                && uTakerGetsIssuerID != uOfferOwnerID)
+                // Offer owner not issuing ownfunds
             {
                 // Need to charge a transfer fee to offer owner.
-                uOfferRate          = uTransferRate;
-                saOwnerFundsLimit   = STAmount::divide (saOwnerFunds, STAmount (CURRENCY_ONE, ACCOUNT_ONE, uOfferRate, -9));
+                uOfferRate = uTransferRate;
+                // TODO(tom): where does -9 come from?!
+                STAmount amount (noCurrency(), noAccount(), uOfferRate, -9);
+                saOwnerFundsLimit = STAmount::divide (saOwnerFunds, amount);
             }
             else
             {
@@ -3136,24 +3181,25 @@ void NetworkOPsImp::getBookPage (Ledger::pointer lpLedger, const uint160& uTaker
             }
             else
             {
-                // m_journal.info << boost::str(boost::format("getBookPage:  saTakerGets=%s") % saTakerGets.getFullText());
-                // m_journal.info << boost::str(boost::format("getBookPage:  saTakerPays=%s") % saTakerPays.getFullText());
-                // m_journal.info << boost::str(boost::format("getBookPage: saOwnerFunds=%s") % saOwnerFunds.getFullText());
-                // m_journal.info << boost::str(boost::format("getBookPage:    saDirRate=%s") % saDirRate.getText());
-                // m_journal.info << boost::str(boost::format("getBookPage:     multiply=%s") % STAmount::multiply(saTakerGetsFunded, saDirRate).getFullText());
-                // m_journal.info << boost::str(boost::format("getBookPage:     multiply=%s") % STAmount::multiply(saTakerGetsFunded, saDirRate, saTakerPays).getFullText());
-
                 // Only provide, if not fully funded.
-
                 saTakerGetsFunded   = saOwnerFundsLimit;
 
                 saTakerGetsFunded.setJson (jvOffer[jss::taker_gets_funded]);
-                std::min (saTakerPays, STAmount::multiply (saTakerGetsFunded, saDirRate, saTakerPays)).setJson (jvOffer[jss::taker_pays_funded]);
+
+                // TOOD(tom): The result of this expression is not used - what's
+                // going on here?
+                std::min (saTakerPays, STAmount::multiply (
+                    saTakerGetsFunded, saDirRate, saTakerPays)).setJson (
+                        jvOffer[jss::taker_pays_funded]);
             }
 
-            STAmount    saOwnerPays     = (QUALITY_ONE == uOfferRate)
-                                          ? saTakerGetsFunded
-                                          : std::min (saOwnerFunds, STAmount::multiply (saTakerGetsFunded, STAmount (CURRENCY_ONE, ACCOUNT_ONE, uOfferRate, -9)));
+            STAmount saOwnerPays = (uOfferRate == QUALITY_ONE)
+                    ? saTakerGetsFunded
+                    : std::min (saOwnerFunds,
+                                STAmount::multiply (
+                                    saTakerGetsFunded, STAmount (
+                                        noCurrency(), noAccount(), uOfferRate,
+                                        -9)));
 
             umBalance[uOfferOwnerID]    = saOwnerFunds - saOwnerPays;
 

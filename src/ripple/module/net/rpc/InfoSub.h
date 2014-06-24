@@ -57,7 +57,7 @@ public:
         virtual void subAccount (ref ispListener,
             const boost::unordered_set<RippleAddress>& vnaAccountIDs,
                 std::uint32_t uLedgerIndex, bool rt) = 0;
-        
+
         virtual void unsubAccount (std::uint64_t uListener,
             const boost::unordered_set<RippleAddress>& vnaAccountIDs,
                 bool rt) = 0;
@@ -65,28 +65,28 @@ public:
         // VFALCO TODO Document the bool return value
         virtual bool subLedger (ref ispListener,
             Json::Value& jvResult) = 0;
-        
+
         virtual bool unsubLedger (std::uint64_t uListener) = 0;
 
         virtual bool subServer (ref ispListener,
             Json::Value& jvResult) = 0;
-        
+
         virtual bool unsubServer (std::uint64_t uListener) = 0;
 
         virtual bool subBook (ref ispListener,
-            RippleCurrency const& currencyPays, RippleCurrency const& currencyGets,
-                RippleIssuer const& issuerPays, RippleIssuer const& issuerGets) = 0;
-        
+            Currency const& currencyPays, Currency const& currencyGets,
+                Account const& issuerPays, Account const& issuerGets) = 0;
+
         virtual bool unsubBook (std::uint64_t uListener,
-            RippleCurrency const& currencyPays, RippleCurrency const& currencyGets,
-                RippleIssuer const& issuerPays, RippleIssuer const& issuerGets) = 0;
+            Currency const& currencyPays, Currency const& currencyGets,
+                Account const& issuerPays, Account const& issuerGets) = 0;
 
         virtual bool subTransactions (ref ispListener) = 0;
-        
+
         virtual bool unsubTransactions (std::uint64_t uListener) = 0;
 
         virtual bool subRTTransactions (ref ispListener) = 0;
-        
+
         virtual bool unsubRTTransactions (std::uint64_t uListener) = 0;
 
         // VFALCO TODO Remove

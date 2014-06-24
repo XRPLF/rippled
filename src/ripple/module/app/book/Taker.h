@@ -70,7 +70,6 @@ private:
     // The amounts still left over for us to try and take.
     Amounts m_remain;
 
-private:
     Amounts
     flow (Amounts amount, Offer const& offer, Account const& taker);
 

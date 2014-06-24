@@ -134,8 +134,8 @@ void computeRippleLiquidity (
         // If the next rate is at least as good as the current rate, process.
         if (!uRateMax || uRate <= uRateMax)
         {
-            const uint160 currency     = saCur.getCurrency ();
-            const uint160   uCurIssuerID    = saCur.getIssuer ();
+            auto currency = saCur.getCurrency ();
+            auto uCurIssuerID = saCur.getIssuer ();
 
             // current actual = current request * (quality out / quality in).
             auto numerator = STAmount::mulRound (

@@ -23,8 +23,13 @@
 namespace ripple {
 
 // VFALCO TODO rename and move these typedefs into the Validations interface
-typedef ripple::unordered_map<uint160, SerializedValidation::pointer> ValidationSet;
-typedef std::pair<int, uint160> currentValidationCount; // nodes validating and highest node ID validating
+
+// nodes validating and highest node ID validating
+typedef unordered_map<NodeID, SerializedValidation::pointer> ValidationSet;
+
+typedef std::pair<int, NodeID> ValidationCounter;
+typedef unordered_map<uint256, ValidationCounter> LedgerToValidationCounter;
+typedef std::vector<SerializedValidation::pointer> ValidationVector;
 
 class Validations : beast::LeakChecked <Validations>
 {
@@ -37,21 +42,26 @@ public:
 
     virtual ValidationSet getValidations (uint256 const& ledger) = 0;
 
-    virtual void getValidationCount (uint256 const& ledger, bool currentOnly, int& trusted, int& untrusted) = 0;
-    virtual void getValidationTypes (uint256 const& ledger, int& full, int& partial) = 0;
+    virtual void getValidationCount (
+        uint256 const& ledger, bool currentOnly, int& trusted,
+        int& untrusted) = 0;
+    virtual void getValidationTypes (
+        uint256 const& ledger, int& full, int& partial) = 0;
 
     virtual int getTrustedValidationCount (uint256 const& ledger) = 0;
 
-    virtual int getFeeAverage(uint256 const& ledger, std::uint64_t ref, std::uint64_t& fee) = 0;
+    virtual int getFeeAverage(
+        uint256 const& ledger, std::uint64_t ref, std::uint64_t& fee) = 0;
 
     virtual int getNodesAfter (uint256 const& ledger) = 0;
     virtual int getLoadRatio (bool overLoaded) = 0;
 
     // VFALCO TODO make a typedef for this ugly return value!
-    virtual ripple::unordered_map<uint256, currentValidationCount> getCurrentValidations (
+    virtual LedgerToValidationCounter getCurrentValidations (
         uint256 currentLedger, uint256 previousLedger) = 0;
 
-    virtual std::list <SerializedValidation::pointer> getCurrentTrustedValidations () = 0;
+    virtual std::list <SerializedValidation::pointer>
+    getCurrentTrustedValidations () = 0;
 
     virtual void tune (int size, int age) = 0;
 

@@ -19,7 +19,7 @@
 
 namespace ripple {
 
-AccountItems::AccountItems (uint160 const& accountID,
+AccountItems::AccountItems (Account const& accountID,
                             Ledger::ref ledger,
                             AccountItem::pointer ofType)
 {
@@ -28,7 +28,7 @@ AccountItems::AccountItems (uint160 const& accountID,
     fillItems (accountID, ledger);
 }
 
-void AccountItems::fillItems (const uint160& accountID, Ledger::ref ledger)
+void AccountItems::fillItems (Account const& accountID, Ledger::ref ledger)
 {
     uint256 const rootIndex = Ledger::getOwnerDirIndex (accountID);
     uint256 currentIndex    = rootIndex;
@@ -44,32 +44,27 @@ void AccountItems::fillItems (const uint160& accountID, Ledger::ref ledger)
         if (!ownerDir)
             return;
 
-        BOOST_FOREACH (uint256 const & uNode, ownerDir->getFieldV256 (sfIndexes).peekValue ())
+        for (auto const& uNode: ownerDir->getFieldV256 (sfIndexes).peekValue ())
         {
             // VFALCO TODO rename getSLEi() to something legible.
             SLE::pointer sleCur = ledger->getSLEi (uNode);
 
-            if (!sleCur)
+            if (sleCur)
             {
-                // item in directory not in ledger
-            }
-            else
-            {
-                AccountItem::pointer item = mOfType->makeItem (accountID, sleCur);
+                // The item in the directory is in ledger
+                auto item = mOfType->makeItem (accountID, sleCur);
 
-                // VFALCO NOTE Under what conditions would makeItem() return nullptr?
-                // DJS NOTE If the item wasn't one this particular AccountItems was interested in
-                // (For example, if the owner is only interested in ripple lines and this is an offer)
+                // makeItem() returns nullptr if the item wasn't one this
+                // particular AccountItems was interested in - for example, if
+                // the owner is only interested in ripple lines and this is an
+                // offer.
                 if (item)
-                {
                     mItems.push_back (item);
-                }
             }
         }
 
         std::uint64_t uNodeNext    = ownerDir->getFieldU64 (sfIndexNext);
 
-        // VFALCO TODO Rewrite to not return from the middle of the function
         if (!uNodeNext)
             return;
 
@@ -81,13 +76,10 @@ Json::Value AccountItems::getJson (int v)
 {
     Json::Value ret (Json::arrayValue);
 
-    BOOST_FOREACH (AccountItem::ref ai, mItems)
-    {
+    for (auto ai: mItems)
         ret.append (ai->getJson (v));
-    }
 
     return ret;
 }
 
 } // ripple
-
