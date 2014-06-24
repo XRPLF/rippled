@@ -28,7 +28,8 @@ we just need to find a succession of the highest quality paths there until we fi
 
 Don't do branching within each path
 
-We have a list of paths we are working on but how do we compare the ones that are terminating in a different currency?
+We have a list of paths we are working on but how do we compare the ones that
+are terminating in a different currency?
 
 Loops
 
@@ -683,19 +684,23 @@ void Pathfinder::addLink(
         }
         else
         { // search for accounts to add
-            SLE::pointer sleEnd = mLedger->getSLEi(Ledger::getAccountRootIndex(uEndAccount));
+            auto sleEnd = mLedger->getSLEi(
+                Ledger::getAccountRootIndex(uEndAccount));
             if (sleEnd)
             {
-                bool const bRequireAuth (sleEnd->getFieldU32(sfFlags) & lsfRequireAuth);
-                bool const bIsEndCurrency (uEndCurrency == mDstAmount.getCurrency());
-                bool const bIsNoRippleOut (isNoRippleOut (currentPath));
+                bool const bRequireAuth (
+                    sleEnd->getFieldU32(sfFlags) & lsfRequireAuth);
+                bool const bIsEndCurrency (
+                    uEndCurrency == mDstAmount.getCurrency());
+                bool const bIsNoRippleOut (
+                    isNoRippleOut (currentPath));
 
-                AccountItems& rippleLines (mRLCache->getRippleLines(uEndAccount));
+                auto& rippleLines (mRLCache->getRippleLines(uEndAccount));
 
                 AccountCandidates candidates;
                 candidates.reserve(rippleLines.getItems().size());
 
-                for(auto item : rippleLines.getItems())
+                for(auto const& item : rippleLines.getItems())
                 {
                     auto* rs = dynamic_cast<RippleState const *> (item.get());
                     if (!rs)
@@ -726,7 +731,9 @@ void Pathfinder::addLink(
                             { // this is a complete path
                                 if (!currentPath.isEmpty())
                                 {
-                                    WriteLog (lsTRACE, Pathfinder) << "complete path found ae: " << currentPath.getJson(0);
+                                    WriteLog (lsTRACE, Pathfinder)
+                                            << "complete path found ae: "
+                                            << currentPath.getJson(0);
                                     mCompletePaths.addUniquePath(currentPath);
                                 }
                             }
