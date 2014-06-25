@@ -27,32 +27,35 @@
 namespace ripple {
 namespace path {
 
-TER computeForwardLiqudity (
-    RippleCalc& rippleCalc,
-    const unsigned int nodeIndex, PathState& pathState,
-    const bool bMultiQuality)
+TER computeForwardLiquidity (
+    RippleCalc& rippleCalc, PathState& pathState, const bool bMultiQuality)
 {
-    auto const& node = pathState.nodes()[nodeIndex];
-    WriteLog (lsTRACE, RippleCalc)
-        << "computeForwardLiqudity> nodeIndex=" << nodeIndex;
+    TER resultCode;
+    for (auto nodeIndex = 0; nodeIndex < pathState.nodes().size(); ++nodeIndex)
+    {
+        auto const& node = pathState.nodes()[nodeIndex];
+        WriteLog (lsTRACE, RippleCalc)
+            << "computeForwardLiquidity> nodeIndex=" << nodeIndex;
 
-    TER resultCode = node.isAccount()
-        ? computeForwardLiquidityForAccount (
-            rippleCalc, nodeIndex, pathState, bMultiQuality)
-        : computeForwardLiquidityForOffer (
-              rippleCalc, nodeIndex, pathState, bMultiQuality);
+        resultCode = node.isAccount()
+            ? computeForwardLiquidityForAccount (
+                rippleCalc, nodeIndex, pathState, bMultiQuality)
+            : computeForwardLiquidityForOffer (
+                  rippleCalc, nodeIndex, pathState, bMultiQuality);
 
-    if (resultCode == tesSUCCESS && nodeIndex + 1 != pathState.nodes().size ())
-        resultCode = computeForwardLiqudity (rippleCalc, nodeIndex + 1, pathState, bMultiQuality);
+        bool success = (resultCode == tesSUCCESS);
 
-    if (resultCode == tesSUCCESS && !(pathState.inPass() && pathState.outPass()))
-        resultCode = tecPATH_DRY;
+        if (success && !(pathState.inPass() && pathState.outPass()))
+            resultCode = tecPATH_DRY;
 
-    WriteLog (lsTRACE, RippleCalc)
-        << "computeForwardLiqudity<"
-        << " nodeIndex:" << nodeIndex
-        << " resultCode:" << resultCode;
+        WriteLog (lsTRACE, RippleCalc)
+            << "computeForwardLiquidity<"
+            << " nodeIndex:" << nodeIndex
+            << " resultCode:" << resultCode;
 
+        if (!success)
+            return resultCode;
+    }
     return resultCode;
 }
 
@@ -65,7 +68,8 @@ TER computeForwardLiqudity (
 // the amount of liquidity available.
 //
 // This is just a controlling loop that sets things up and then hands the work
-// off to either computeReverseLiquidityForAccount or computeReverseLiquidityForOffer.
+// off to either computeReverseLiquidityForAccount or
+// computeReverseLiquidityForOffer.
 //
 // Later on the result of this will be used to work forward, figuring out how
 // much can actually be delivered.
@@ -77,49 +81,47 @@ TER computeForwardLiqudity (
 //     --> [all]saAccount
 //     <-> [0]saWanted.mAmount : --> limit, <-- actual
 
-TER computeReverseLiqudity (
+TER computeReverseLiquidity (
     RippleCalc& rippleCalc,
-    const unsigned int nodeIndex, PathState& pathState,
+    PathState& pathState,
     const bool bMultiQuality)
 {
-    auto& node = pathState.nodes()[nodeIndex];
-
-    // Every account has a transfer rate for its issuances.
-
-    // TOMOVE: The account charges
-    // a fee when third parties transfer that account's own issuances.
-
-    // node.transferRate_ caches the output transfer rate for this node.
-    node.transferRate_ = STAmount::saFromRate (
-        rippleCalc.mActiveLedger.rippleTransferRate (node.issuer_));
-
-    WriteLog (lsTRACE, RippleCalc)
-        << "computeReverseLiqudity>"
-        << " nodeIndex=" << nodeIndex
-        << " issuer_=" << to_string (node.issuer_)
-        << " transferRate_=" << node.transferRate_;
-
-    auto resultCode = node.isAccount()
-        ? computeReverseLiquidityForAccount (
-            rippleCalc, nodeIndex, pathState, bMultiQuality)
-        : computeReverseLiquidityForOffer (
-            rippleCalc, nodeIndex, pathState, bMultiQuality);
-
-    // Do previous.
-    if (resultCode == tesSUCCESS && nodeIndex)
+    for (int nodeIndex = pathState.nodes().size(); nodeIndex--; )
     {
-        // Continue in reverse.  TODO(tom): remove unnecessary recursion.
-        resultCode = computeReverseLiqudity (
-            rippleCalc, nodeIndex - 1, pathState, bMultiQuality);
+        auto& node = pathState.nodes()[nodeIndex];
+
+        // Every account has a transfer rate for its issuances.
+
+        // TOMOVE: The account charges
+        // a fee when third parties transfer that account's own issuances.
+
+        // node.transferRate_ caches the output transfer rate for this node.
+        node.transferRate_ = STAmount::saFromRate (
+            rippleCalc.mActiveLedger.rippleTransferRate (node.issuer_));
+
+        WriteLog (lsTRACE, RippleCalc)
+            << "computeReverseLiquidity>"
+            << " nodeIndex=" << nodeIndex
+            << " issuer_=" << to_string (node.issuer_)
+            << " transferRate_=" << node.transferRate_;
+
+        auto resultCode = node.isAccount()
+            ? computeReverseLiquidityForAccount (
+                rippleCalc, nodeIndex, pathState, bMultiQuality)
+            : computeReverseLiquidityForOffer (
+                rippleCalc, nodeIndex, pathState, bMultiQuality);
+
+        WriteLog (lsTRACE, RippleCalc)
+            << "computeReverseLiquidity< "
+            << "nodeIndex=" << nodeIndex
+            << " resultCode=%s" << transToken (resultCode)
+            << "/" << resultCode;
+
+        if (resultCode != tesSUCCESS)
+            return resultCode;
+
     }
-
-    WriteLog (lsTRACE, RippleCalc)
-        << "computeReverseLiqudity< "
-        << "nodeIndex=" << nodeIndex
-        << " resultCode=%s" << transToken (resultCode)
-        << "/" << resultCode;
-
-    return resultCode;
+    return tesSUCCESS;
 }
 
 } // path
