@@ -232,7 +232,7 @@ public:
             m_logs.journal("TaggedCache"))
 
         , m_treeNodeCache ("TreeNodeCache", 65536, 60, get_seconds_clock (),
-            LogPartition::getJournal <TaggedCacheLog> ())
+            deprecatedLogs().journal("TaggedCache"))
 
         , m_sleCache ("LedgerEntryCache", 4096, 120, get_seconds_clock (),
             m_logs.journal("TaggedCache"))
