@@ -2617,7 +2617,7 @@ TER RippleCalc::rippleCalc (
     while (temUNCERTAIN == terResult)
     {
         int iBest = -1;
-        const LedgerEntrySet lesCheckpoint = activeLedger;
+        LedgerEntrySet lesCheckpoint = activeLedger;
         int iDry = 0;
 
         // True, if ever computed multi-quality.
@@ -2821,11 +2821,8 @@ TER RippleCalc::rippleCalc (
         {
             // We must restore the activeLedger from lesCheckpoint in the case
             // when iBest is -1 and just before the result is set to tesSUCCESS.
-            // There was an issue when not on the first increment and there was
-            // no best path, where we did not restore the ledger to the last
-            // checkpoint.
 
-            activeLedger = lesCheckpoint.duplicate ();
+            activeLedger.swapWith (lesCheckpoint);
             terResult   = tesSUCCESS;
         }
     }
