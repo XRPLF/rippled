@@ -30,7 +30,7 @@ suite('Remote functions', function() {
     request.callback(function(err, m) {
       assert(err);
       assert.strictEqual(err.error, 'remoteError');
-      assert.strictEqual(err.remote.error, 'ledgerIndexMalformed');
+      assert.strictEqual(err.remote.error, 'invalidParams');
       done();
     });
   });
