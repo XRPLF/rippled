@@ -51,7 +51,16 @@ TER nodeDeliverRev (
     auto& previousNode = pathState.nodes()[nodeIndex - 1];
     auto& node = pathState.nodes()[nodeIndex];
 
-    STAmount& saPrvDlvReq = previousNode.saRevDeliver;
+    STAmount& saPrvDlvReq    = previousNode.saRevDeliver;
+    uint256&  uDirectTip     = node.currentDirectory_;
+    bool&     bDirectRestart = node.bDirectRestart;
+
+    if (bMultiQuality)
+        // node.currentDirectory_ = 0;
+        uDirectTip      = 0;                        // Restart book searching.
+    else
+        // node.bDirectRestart = true;
+        bDirectRestart  = true;                     // Restart at same quality.
 
     // Accumulation of what the previous node must deliver.
     // Possible optimization: Note this gets zeroed on each increment, ideally
