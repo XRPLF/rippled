@@ -693,8 +693,11 @@ class _ProjectGenerator(object):
             props = ''
             props += self.makeListTag(xsorted(config.env['LIBS']),
                 '      ', 'AdditionalDependencies', '', True)
-            props += self.makeListTag(self.relPaths(xsorted(config.env['LIBPATH'])),
-                '      ', 'AdditionalLibraryDirectories', '', True)
+            try:
+                props += self.makeListTag(self.relPaths(xsorted(config.env['LIBPATH'])),
+                    '      ', 'AdditionalLibraryDirectories', '', True)
+            except:
+                pass
             f.write(props)
             f.write(LINKSWITCHES.getXml(xsorted(config.env['LINKFLAGS']), '      '))
             f.write('    </Link>\r\n')
