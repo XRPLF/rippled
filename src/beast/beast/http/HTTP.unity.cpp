@@ -24,6 +24,7 @@
 #include <beast/http/impl/basic_url.cpp>
 #include <beast/http/impl/get.cpp>
 #include <beast/http/impl/joyent_parser.cpp>
+#include <beast/http/impl/message_parser.cpp>
 #include <beast/http/impl/ParsedURL.cpp>
 #include <beast/http/impl/raw_parser.cpp>
 #include <beast/http/impl/URL.cpp>
@@ -32,3 +33,4 @@
 #include <beast/http/tests/client_session.test.cpp>
 #include <beast/http/tests/ParsedURL.cpp>
 #include <beast/http/tests/urls_large_data.cpp>
+

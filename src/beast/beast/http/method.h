@@ -17,16 +17,15 @@
 */
 //==============================================================================
 
-#ifndef BEAST_HTTP_BASIC_MESSAGE_H_INCLUDED
-#define BEAST_HTTP_BASIC_MESSAGE_H_INCLUDED
+#ifndef BEAST_HTTP_METHOD_H_INCLUDED
+#define BEAST_HTTP_METHOD_H_INCLUDED
 
 #include <memory>
 
 namespace beast {
 namespace http {
 
-namespace method {
-enum methodc_t
+enum class method_t
 {
     http_delete,
     http_get,
@@ -64,20 +63,6 @@ enum methodc_t
     // RFC-5789
     http_patch,
     http_purge
-};
-} // method
-
-class basic_message
-{
-private:
-
-public:
-};
-
-class basic_request
-{
-public:
-
 };
 
 }
