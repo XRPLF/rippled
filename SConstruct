@@ -488,7 +488,7 @@ for source in [
 # Declare the targets
 aliases = collections.defaultdict(list)
 msvc_configs = []
-for toolchain in ['gcc', 'clang', 'msvc']:
+for toolchain in all_toolchains:
     for variant in variants:
         # Configure this variant's construction environment
         env = base.Clone()
