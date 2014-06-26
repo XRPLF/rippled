@@ -1216,7 +1216,8 @@ Json::Value Ledger::getJson (int options)
                                       std::placeholders::_1));
         else
             mAccountStateMap->visitLeaves(
-                std::bind(stateItemTagAppender, state, std::placeholders::_1));
+                std::bind(stateItemTagAppender, std::ref(state),
+                          std::placeholders::_1));
     }
 
     return ledger;
