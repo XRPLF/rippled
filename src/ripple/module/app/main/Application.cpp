@@ -1210,6 +1210,7 @@ bool ApplicationImp::loadOldLedger (
                              }
                          }
 
+                         loadLedger->setClosed ();
                          loadLedger->setAccepted (closeTime,
                              closeTimeResolution, ! closeTimeEstimated);
                      }
