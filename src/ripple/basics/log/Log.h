@@ -52,19 +52,11 @@ private:
         std::string partition_;
 
     public:
-        Sink (std::string const& partition, Logs& logs);
+        Sink (std::string const& partition,
+            beast::Journal::Severity severity, Logs& logs);
 
         Sink (Sink const&) = delete;
         Sink& operator= (Sink const&) = delete;
-
-        bool
-        active (beast::Journal::Severity level) const override;
-        
-        beast::Journal::Severity
-        severity() const override;
-
-        void
-        severity (beast::Journal::Severity level) override;
 
         void
         write (beast::Journal::Severity level, std::string const& text) override;
