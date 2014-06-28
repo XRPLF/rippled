@@ -24,39 +24,21 @@
 
 namespace ripple {
 
-Logs::Sink::Sink (std::string const& partition, Logs& logs)
+Logs::Sink::Sink (std::string const& partition,
+    beast::Journal::Severity severity, Logs& logs)
     : logs_(logs)
     , partition_(partition)
 {
+    beast::Journal::Sink::severity (severity);
 }
-
-bool
-Logs::Sink::active (beast::Journal::Severity level) const
-{
-    return level >= logs_.severity() &&
-           level >= beast::Journal::Sink::severity();
-}
-        
-beast::Journal::Severity
-Logs::Sink::severity() const
-{
-    return beast::Journal::Sink::severity();
-}
-
-void
-Logs::Sink::severity (beast::Journal::Severity level)
-{
-    std::lock_guard <std::mutex> lock (logs_.mutex_);
-    beast::Journal::Sink::severity(level);
-}
-
-//------------------------------------------------------------------------------
 
 void
 Logs::Sink::write (beast::Journal::Severity level, std::string const& text)
 {
     logs_.write (level, partition_, text, console());
 }
+
+//------------------------------------------------------------------------------
 
 Logs::File::File()
     : m_stream (nullptr)
@@ -138,8 +120,9 @@ Logs::Sink&
 Logs::get (std::string const& name)
 {
     std::lock_guard <std::mutex> lock (mutex_);
-    auto const result (sinks_.emplace(std::piecewise_construct,
-        std::forward_as_tuple(name), std::forward_as_tuple(name, *this)));
+    auto const result (sinks_.emplace (std::piecewise_construct,
+        std::forward_as_tuple(name), std::forward_as_tuple (name,
+            level_, *this)));
     return result.first->second;
 }
 
@@ -164,8 +147,10 @@ Logs::severity() const
 void
 Logs::severity (beast::Journal::Severity level)
 {
-    // VFALCO Do we need the lock?
+    std::lock_guard <std::mutex> lock (mutex_);
     level_ = level;
+    for (auto& sink : sinks_)
+        sink.second.severity (level);
 }
 
 std::vector<std::pair<std::string, std::string>>
