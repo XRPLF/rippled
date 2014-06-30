@@ -67,22 +67,6 @@ bool SHAMap::walkBranch (SHAMapTreeNode* node, SHAMapItem::ref otherMapItem, boo
             // This is a leaf node, process its item
             SHAMapItem::pointer item = node->peekItem ();
 
-            if (!emptyBranch && (otherMapItem->getTag () < item->getTag ()))
-            {
-                // this item comes after the item from the other map, so add the other item
-                if (isFirstMap) // this is first map, so other item is from second
-                    differences.insert (std::make_pair (otherMapItem->getTag (),
-                                                        DeltaRef (SHAMapItem::pointer (), otherMapItem)));
-                else
-                    differences.insert (std::make_pair (otherMapItem->getTag (),
-                                                        DeltaRef (otherMapItem, SHAMapItem::pointer ())));
-
-                if (--maxCount <= 0)
-                    return false;
-
-                emptyBranch = true;
-            }
-
             if (emptyBranch || (item->getTag () != otherMapItem->getTag ()))
             {
                 // unmatched
@@ -94,20 +78,22 @@ bool SHAMap::walkBranch (SHAMapTreeNode* node, SHAMapItem::ref otherMapItem, boo
                 if (--maxCount <= 0)
                     return false;
             }
+            else if (item->peekData () != otherMapItem->peekData ())
+            {
+                // non-matching items with same tag
+                if (isFirstMap)
+                    differences.insert (std::make_pair (item->getTag (), DeltaRef (item, otherMapItem)));
+                else
+                    differences.insert (std::make_pair (item->getTag (), DeltaRef (otherMapItem, item)));
+
+                if (--maxCount <= 0)
+                    return false;
+
+                emptyBranch = true;
+            }
             else
             {
-                if (item->peekData () != otherMapItem->peekData ())
-                {
-                    // non-matching items
-                    if (isFirstMap)
-                        differences.insert (std::make_pair (otherMapItem->getTag (), DeltaRef (item, otherMapItem)));
-                    else
-                        differences.insert (std::make_pair (otherMapItem->getTag (), DeltaRef (otherMapItem, item)));
-
-                    if (--maxCount <= 0)
-                        return false;
-                }
-
+                // exact match
                 emptyBranch = true;
             }
         }
