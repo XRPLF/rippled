@@ -98,7 +98,8 @@ int main (int argc, char** argv)
 
     auto const result (ripple::run (argc, argv));
 
-    beast::basic_seconds_clock_main_hook();
+    // This can probably be removed now.  Removal needs testing on VC++.
+    beast::basic_seconds_clock<std::chrono::steady_clock>::stop();
 
     return result;
 }
