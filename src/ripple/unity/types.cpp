@@ -43,7 +43,6 @@
 #include <ripple/types/impl/ByteOrder.cpp>
 #include <ripple/types/impl/RandomNumbers.cpp>
 #include <ripple/types/impl/strHex.cpp>
-#include <ripple/types/impl/base_uint.cpp>
 #include <ripple/types/impl/UintTypes.cpp>
 #include <ripple/types/impl/RippleIdentifierTests.cpp>
 #include <ripple/types/impl/RippleAssets.cpp>

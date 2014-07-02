@@ -96,8 +96,6 @@ public:
     {
         beast::hash_append(hasher, value.vchData);
     }
-
-    friend std::size_t hash_value (const CBase58Data& b58);
 };
 
 inline bool
@@ -135,8 +133,6 @@ operator>= (CBase58Data const& lhs, CBase58Data const& rhs)
 {
     return lhs.compare (rhs) >= 0;
 }
-
-extern std::size_t hash_value (const CBase58Data& b58);
 
 } // ripple
 

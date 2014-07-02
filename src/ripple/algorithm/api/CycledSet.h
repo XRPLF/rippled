@@ -21,6 +21,7 @@
 #define RIPPLE_TYPES_CYCLEDSET_H_INCLUDED
 
 #include <boost/unordered_set.hpp>
+#include <unordered_set>
 
 namespace ripple {
 
@@ -37,6 +38,9 @@ template <class Key,
 class CycledSet
 {
 private:
+    // HH This unordered_set can't be changed from boost until gcc allows for
+    //    stateful hash functions (or until rippled eliminates stateful hash
+    //    functions).
     typedef boost::unordered_set<
         Key, Hash, KeyEqual, Allocator>                     ContainerType;
     typedef typename ContainerType::iterator                iterator;

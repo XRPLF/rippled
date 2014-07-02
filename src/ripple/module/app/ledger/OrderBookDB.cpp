@@ -60,10 +60,10 @@ void OrderBookDB::setup (Ledger::ref ledger)
 }
 
 static void updateHelper (SLE::ref entry,
-    boost::unordered_set< uint256 >& seen,
+    ripple::unordered_set< uint256 >& seen,
     ripple::unordered_map< RippleAsset, std::vector<OrderBook::pointer> >& destMap,
     ripple::unordered_map< RippleAsset, std::vector<OrderBook::pointer> >& sourceMap,
-    boost::unordered_set< RippleAsset >& XRPBooks,
+    ripple::unordered_set< RippleAsset >& XRPBooks,
     int& books)
 {
     if ((entry->getType () == ltDIR_NODE) && (entry->isFieldPresent (sfExchangeRate)) &&
@@ -96,10 +96,10 @@ static void updateHelper (SLE::ref entry,
 
 void OrderBookDB::update (Ledger::pointer ledger)
 {
-    boost::unordered_set< uint256 > seen;
+    ripple::unordered_set< uint256 > seen;
     ripple::unordered_map< RippleAsset, std::vector<OrderBook::pointer> > destMap;
     ripple::unordered_map< RippleAsset, std::vector<OrderBook::pointer> > sourceMap;
-    boost::unordered_set< RippleAsset > XRPBooks;
+    ripple::unordered_set< RippleAsset > XRPBooks;
 
     WriteLog (lsDEBUG, OrderBookDB) << "OrderBookDB::update>";
 

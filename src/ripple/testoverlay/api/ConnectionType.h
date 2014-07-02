@@ -20,6 +20,13 @@
 #ifndef RIPPLE_TESTOVERLAY_CONNECTIONTYPE_H_INCLUDED
 #define RIPPLE_TESTOVERLAY_CONNECTIONTYPE_H_INCLUDED
 
+// HH Todo:  Stop the practice of opening a namespace and #include
+}  // namespace ripple
+
+#include <ripple/common/UnorderedContainers.h>
+
+namespace ripple {
+
 namespace TestOverlay
 {
 
@@ -34,7 +41,7 @@ public:
     typedef typename State::UniqueID UniqueID;
 
     typedef std::vector <Message> Messages;
-    typedef boost::unordered_set <UniqueID> MessageTable;
+    typedef ripple::unordered_set <UniqueID> MessageTable;
 
     /** Create the 'no connection' object. */
     ConnectionType ()

@@ -23,6 +23,7 @@
 #include <beast/container/hash_append.h>
 
 #include <cstdint>
+#include <functional>
 #include <ios>
 #include <string>
 #include <utility>
@@ -164,10 +165,6 @@ bool is_public (AddressV4 const& addr);
 
 //------------------------------------------------------------------------------
 
-/** boost::hash support. */
-inline std::size_t hash_value (AddressV4 const& addr)
-    { return addr.value; }
-
 /** Returns the address represented as a string. */
 std::string to_string (AddressV4 const& addr);
 
@@ -197,7 +194,7 @@ template <>
 struct hash <beast::IP::AddressV4>
 {
     std::size_t operator() (beast::IP::AddressV4 const& addr) const
-        { return hash_value (addr); }
+        { return addr.value; }
 };
 }
 

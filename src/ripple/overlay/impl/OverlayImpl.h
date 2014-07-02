@@ -30,7 +30,6 @@
 
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/context.hpp>
-#include <boost/unordered_map.hpp>
 
 #include <beast/cxx14/memory.h> // <memory>
 #include <cassert>
@@ -53,7 +52,7 @@ private:
     typedef std::unordered_map <PeerFinder::Slot::ptr,
         std::weak_ptr <PeerImp>> PeersBySlot;
 
-    typedef boost::unordered_map <
+    typedef ripple::unordered_map <
         RippleAddress, Peer::ptr> PeerByPublicKey;
 
     typedef std::unordered_map <

@@ -114,11 +114,6 @@ void SHAMapNodeID::setMHash () const
     mHash = h;
 }
 
-std::size_t hash_value (const SHAMapNodeID& mn)
-{
-    return mn.getMHash ();
-}
-
 SHAMap::pointer SHAMap::snapShot (bool isMutable)
 {
     SHAMap::pointer ret = std::make_shared<SHAMap> (mType,

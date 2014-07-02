@@ -130,8 +130,6 @@ private:
     void setMHash () const;
 };
 
-extern std::size_t hash_value (SHAMapNodeID const& mn);
-
 inline std::ostream& operator<< (std::ostream& out, SHAMapNodeID const& node)
 {
     return out << node.getString ();

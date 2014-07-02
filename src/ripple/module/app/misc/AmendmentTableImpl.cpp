@@ -31,7 +31,7 @@ protected:
 
     typedef ripple::unordered_map<uint256, AmendmentState> amendmentMap_t;
     typedef std::pair<const uint256, AmendmentState> amendmentIt_t;
-    typedef boost::unordered_set<uint256> amendmentList_t;
+    typedef ripple::unordered_set<uint256> amendmentList_t;
 
     typedef RippleMutex LockType;
     typedef std::lock_guard <LockType> ScopedLockType;

@@ -479,9 +479,9 @@ OverlayImpl::onPeerActivated (Peer::ptr const& peer)
 
     {
         auto const result (m_publicKeyMap.emplace (
-            boost::unordered::piecewise_construct,
-                boost::make_tuple (peer->getNodePublic()),
-                    boost::make_tuple (peer)));
+            std::piecewise_construct,
+                std::make_tuple (peer->getNodePublic()),
+                    std::make_tuple (peer)));
         assert(result.second);
     }
 
