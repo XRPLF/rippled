@@ -50,9 +50,9 @@ public:
 
     ~InboundLedger ();
 
-    bool isBase () const
+    bool isHeader () const
     {
-        return mHaveBase;
+        return mHaveHeader;
     }
     bool isAcctStComplete () const
     {
@@ -115,7 +115,7 @@ private:
 
     int processData (std::shared_ptr<Peer> peer, protocol::TMLedgerData& data);
 
-    bool takeBase (const std::string& data);
+    bool takeHeader (const std::string& data);
     bool takeTxNode (const std::list<SHAMapNodeID>& IDs, const std::list<Blob >& data,
                      SHAMapAddNode&);
     bool takeTxRootNode (Blob const& data, SHAMapAddNode&);
@@ -130,7 +130,7 @@ private:
 
 private:
     Ledger::pointer    mLedger;
-    bool               mHaveBase;
+    bool               mHaveHeader;
     bool               mHaveState;
     bool               mHaveTransactions;
     bool               mAborted;
