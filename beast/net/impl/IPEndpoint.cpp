@@ -137,15 +137,6 @@ bool operator<  (Endpoint const& lhs, Endpoint const& rhs)
 
 //------------------------------------------------------------------------------
 
-std::size_t hash_value (Endpoint const& endpoint)
-{
-    std::size_t seed (hash_value (endpoint.address ()));
-    // boost::hash_combine()
-    seed ^= (std::hash <Port> () (endpoint.port ()))
-        + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-    return seed;
-}
-
 std::istream& operator>> (std::istream& is, Endpoint& endpoint)
 {
     // VFALCO TODO Support ipv6!

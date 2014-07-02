@@ -131,8 +131,6 @@ hash_append (Hasher& h, URL const& url)
     hash_append (h, url.toString());
 }
 
-extern std::size_t hash_value (beast::URL const& url);
-
 }
 
 //------------------------------------------------------------------------------
@@ -143,7 +141,7 @@ template <>
 struct hash <beast::URL>
 {
     std::size_t operator() (beast::URL const& v) const
-        { return beast::hash_value (v); }
+        { return v.toString().hash(); }
 };
 
 }

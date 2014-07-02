@@ -164,14 +164,4 @@ std::ostream& operator<< (std::ostream &os, URL const& url)
     return os;
 }
 
-//------------------------------------------------------------------------------
-
-std::size_t hash_value (URL const& v)
-{
-    return std::size_t (v.toString().hash());
 }
-
-}
-
-
-// boost::hash support

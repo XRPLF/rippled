@@ -702,16 +702,6 @@ struct uhash
     }
 };
 
-struct call_hash_value
-{
-    template <class T>
-    std::size_t
-    operator()(T const& t) const noexcept
-    {
-        return hash_value(t);
-    }
-};
-
 } // beast
 
 #endif
