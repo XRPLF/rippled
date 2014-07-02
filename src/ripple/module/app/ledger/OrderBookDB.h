@@ -89,7 +89,7 @@ private:
     AssetToOrderBook mDestMap;
 
     // does an order book to XRP exist
-    boost::unordered_set <RippleAsset> mXRPBooks;
+    ripple::unordered_set <RippleAsset> mXRPBooks;
 
     typedef RippleRecursiveMutex LockType;
     typedef std::lock_guard <LockType> ScopedLockType;

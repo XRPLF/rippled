@@ -1496,7 +1496,7 @@ private:
         }
 
         // if any peers have taken a contrary position, process disputes
-        boost::unordered_set<uint256> found;
+        ripple::unordered_set<uint256> found;
 
         for (auto& it : mPeerPositions)
         {
@@ -1899,7 +1899,7 @@ private:
 
     // Disputed transactions
     ripple::unordered_map<uint256, DisputedTx::pointer> mDisputes;
-    boost::unordered_set<uint256> mCompares;
+    ripple::unordered_set<uint256> mCompares;
 
     // Close time estimates
     std::map<std::uint32_t, int> mCloseTimes;

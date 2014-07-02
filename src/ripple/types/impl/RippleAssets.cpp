@@ -222,11 +222,11 @@ public:
         testAssetSet <std::unordered_set <RippleAssetRef>> ();
 #endif
 
-        testcase ("boost::unordered_set <RippleAsset>");
-        testAssetSet <boost::unordered_set <RippleAsset>> ();
+        testcase ("ripple::unordered_set <RippleAsset>");
+        testAssetSet <ripple::unordered_set <RippleAsset>> ();
 
-        testcase ("boost::unordered_set <RippleAssetRef>");
-        testAssetSet <boost::unordered_set <RippleAssetRef>> ();
+        testcase ("ripple::unordered_set <RippleAssetRef>");
+        testAssetSet <ripple::unordered_set <RippleAssetRef>> ();
     }
 
     void testAssetMaps ()
@@ -425,11 +425,11 @@ public:
         testBookSet <std::unordered_set <RippleBookRef>> ();
 #endif
 
-        testcase ("boost::unordered_set <RippleBook>");
-        testBookSet <boost::unordered_set <RippleBook>> ();
+        testcase ("ripple::unordered_set <RippleBook>");
+        testBookSet <ripple::unordered_set <RippleBook>> ();
 
-        testcase ("boost::unordered_set <RippleBookRef>");
-        testBookSet <boost::unordered_set <RippleBookRef>> ();
+        testcase ("ripple::unordered_set <RippleBookRef>");
+        testBookSet <ripple::unordered_set <RippleBookRef>> ();
     }
 
     void testBookMaps ()

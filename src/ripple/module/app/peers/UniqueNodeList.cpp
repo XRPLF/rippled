@@ -1025,7 +1025,7 @@ private:
             }
         }
 
-        boost::unordered_set<std::string>   usUNL;
+        ripple::unordered_set<std::string>   usUNL;
 
         if (!vsnNodes.empty ())
         {
@@ -2025,7 +2025,7 @@ private:
 
     // XXX Make this faster, make this the contents vector unsigned char or raw public key.
     // XXX Contents needs to based on score.
-    boost::unordered_set<std::string>   mUNL;
+    ripple::unordered_set<std::string>   mUNL;
 
     boost::posix_time::ptime        mtpScoreNext;       // When to start scoring.
     boost::posix_time::ptime        mtpScoreStart;      // Time currently started scoring.

@@ -32,6 +32,8 @@
 #include <beast/container/hardened_hash.h>
 #include <beast/utility/Zero.h>
 
+#include <boost/functional/hash.hpp>
+
 #include <functional>
 
 using beast::zero;
@@ -402,13 +404,6 @@ typedef base_uint<128> uint128;
 typedef base_uint<160> uint160;
 typedef base_uint<256> uint256;
 
-//------------------------------------------------------------------------------
-extern std::size_t hash_value (uint128 const&);
-extern std::size_t hash_value (uint160 const&);
-extern std::size_t hash_value (uint256 const&);
-
-//------------------------------------------------------------------------------
-
 template <std::size_t Bits, class Tag>
 inline int compare (
     base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
@@ -525,5 +520,22 @@ inline std::ostream& operator<< (
 }
 
 } // rippled
+
+namespace boost
+{
+
+template <std::size_t Bits, class Tag>
+struct hash<ripple::base_uint<Bits, Tag>>
+{
+    using argument_type = ripple::base_uint<Bits, Tag>; 
+
+    std::size_t
+    operator()(argument_type const& u) const
+    {
+        return beast::hardened_hash<argument_type>{}(u);
+    }
+};
+
+}  // boost
 
 #endif

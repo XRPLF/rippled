@@ -77,14 +77,4 @@ std::string CBase58Data::ToString () const
     return Base58::encodeWithCheck (vch);
 }
 
-std::size_t hash_value (const CBase58Data& b58)
-{
-    std::size_t seed = HashMaps::getInstance ().getNonce <size_t> ()
-                       + (b58.nVersion * HashMaps::goldenRatio);
-
-    boost::hash_combine (seed, b58.vchData);
-
-    return seed;
-}
-
 } // ripple

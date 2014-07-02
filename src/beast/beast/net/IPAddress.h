@@ -24,6 +24,8 @@
 #include <beast/net/IPAddressV6.h>
 #include <beast/container/hash_append.h>
 
+#include <boost/functional/hash.hpp>
+
 #include <cstdint>
 #include <ios>
 #include <string>
@@ -277,16 +279,6 @@ is_public (Address const& addr)
 
 //------------------------------------------------------------------------------
 
-/** boost::hash support. */
-inline
-std::size_t
-hash_value (Address const& addr)
-{
-    return (addr.is_v4 ())
-        ? hash_value (addr.to_v4())
-        : hash_value (addr.to_v6());
-}
-
 /** Returns the address represented as a string. */
 inline std::string to_string (Address const& addr)
 {
@@ -337,7 +329,19 @@ struct hash <beast::IP::Address>
     std::size_t
     operator() (beast::IP::Address const& addr) const
     {
-        return hash_value (addr);
+        return beast::uhash<>{} (addr);
+    }
+};
+}
+
+namespace boost {
+template <>
+struct hash <beast::IP::Address>
+{
+    std::size_t
+    operator() (beast::IP::Address const& addr) const
+    {
+        return beast::uhash<>{} (addr);
     }
 };
 }

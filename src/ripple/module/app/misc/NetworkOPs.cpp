@@ -386,10 +386,10 @@ public:
     // InfoSub::Source
     //
     void subAccount (InfoSub::ref ispListener,
-                     const boost::unordered_set<RippleAddress>& vnaAccountIDs,
+                     const ripple::unordered_set<RippleAddress>& vnaAccountIDs,
                      std::uint32_t uLedgerIndex, bool rt);
     void unsubAccount (std::uint64_t uListener,
-                       const boost::unordered_set<RippleAddress>& vnaAccountIDs,
+                       const ripple::unordered_set<RippleAddress>& vnaAccountIDs,
                        bool rt);
 
     bool subLedger (InfoSub::ref ispListener, Json::Value& jvResult);
@@ -2617,7 +2617,7 @@ void NetworkOPsImp::pubAccountTransaction (Ledger::ref lpCurrent, const Accepted
 //
 
 void NetworkOPsImp::subAccount (InfoSub::ref isrListener,
-    const boost::unordered_set<RippleAddress>& vnaAccountIDs,
+    const ripple::unordered_set<RippleAddress>& vnaAccountIDs,
     std::uint32_t uLedgerIndex, bool rt)
 {
     SubInfoMapType& subMap = rt ? mSubRTAccount : mSubAccount;
@@ -2653,7 +2653,7 @@ void NetworkOPsImp::subAccount (InfoSub::ref isrListener,
 }
 
 void NetworkOPsImp::unsubAccount (std::uint64_t uSeq,
-                                  const boost::unordered_set<RippleAddress>& vnaAccountIDs,
+                                  const ripple::unordered_set<RippleAddress>& vnaAccountIDs,
                                   bool rt)
 {
     SubInfoMapType& subMap = rt ? mSubRTAccount : mSubAccount;
