@@ -80,9 +80,8 @@ void pathNext (
 // Many of these routines use recursion to loop over all nodes in a path.
 // TODO(tom): replace this recursion with a loop.
 
-TER computeReverseLiqudity (
-    RippleCalc&,
-    unsigned int nodeIndex, PathState& pathState, bool bMultiQuality);
+TER computeReverseLiquidity (
+    RippleCalc&, PathState& pathState, bool bMultiQuality);
 TER computeForwardLiqudity (
     RippleCalc&,
     unsigned int nodeIndex, PathState& pathState, bool bMultiQuality);

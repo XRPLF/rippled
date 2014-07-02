@@ -42,7 +42,6 @@ void pathNext (
 {
     // The next state is what is available in preference order.
     // This is calculated when referenced accounts changed.
-    const unsigned int  lastNodeIndex = pathState.nodes().size () - 1;
     pathState.clear();
 
     WriteLog (lsTRACE, RippleCalc)
@@ -62,7 +61,8 @@ void pathNext (
         node.saFwdDeliver.clear ();
     }
 
-    pathState.setStatus(computeReverseLiqudity (rippleCalc, lastNodeIndex, pathState, bMultiQuality));
+    pathState.setStatus(computeReverseLiquidity (
+        rippleCalc, pathState, bMultiQuality));
 
     WriteLog (lsTRACE, RippleCalc)
         << "pathNext: Path after reverse: " << pathState.getJson ();
@@ -72,7 +72,8 @@ void pathNext (
         // Do forward.
         lesCurrent = lesCheckpoint.duplicate ();   // Restore from checkpoint.
 
-        pathState.setStatus(computeForwardLiqudity (rippleCalc, 0, pathState, bMultiQuality));
+        pathState.setStatus(computeForwardLiqudity (
+            rippleCalc, pathState, bMultiQuality));
     }
 
     if (tesSUCCESS == pathState.status())
