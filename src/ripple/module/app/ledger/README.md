@@ -94,6 +94,20 @@ of the consensus process.
 A signed statement of which transactions it believes should be included in
 the next consensus ledger.
 
+## Ledger Header ##
+
+The "ledger header" is the chunk of data that hashes to the
+ledger's hash. It contains the sequence number, parent hash,
+hash of the previous ledger, hash of the root node of the
+state tree, and so on.
+
+## Ledger Base ##
+
+The term "ledger base" refers to a particular type of query
+and response used in the ledger fetch process that includes
+the ledger header but may also contain other information
+such as the root node of the state tree.
+
 ---
 
 # References
