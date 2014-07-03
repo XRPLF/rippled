@@ -1,0 +1,10 @@
+--- /usr/include/boost/bimap/detail/debug/static_error.hpp   2008-03-22 17:45:55.000000000 -0400
++++ /usr/include/boost/bimap/detail/debug/static_error.rippled.hpp   2014-03-12 19:40:05.000000000 -0400
+@@ -25,7 +25,6 @@
+ // a static error.
+ /*===========================================================================*/
+ #define BOOST_BIMAP_STATIC_ERROR(MESSAGE,VARIABLES)                           \
+-        struct BOOST_PP_CAT(BIMAP_STATIC_ERROR__,MESSAGE) {};                 \
+         BOOST_MPL_ASSERT_MSG(false,                                           \
+                              BOOST_PP_CAT(BIMAP_STATIC_ERROR__,MESSAGE),      \
+                              VARIABLES)

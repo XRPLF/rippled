@@ -17,6 +17,9 @@ before_install:
       mkdir -p $BOOST_ROOT/stage
       ln -s /usr/lib/x86_64-linux-gnu $BOOST_ROOT/stage/lib
       ln -s /usr/include/boost $BOOST_ROOT/boost
+  - | # Try to patch boost
+      sudo patch /usr/include/boost/bimap/detail/debug/static_error.hpp Builds/travis/static_error.boost.patch
+      sudo patch /usr/include/boost/config/compiler/clang.hpp Builds/travis/clang.boost.patch
   - sudo apt-get install -qq mlocate
   - sudo updatedb
   - sudo locate libboost | grep /lib | grep -e ".a$"
