@@ -61,9 +61,9 @@ void OrderBookDB::setup (Ledger::ref ledger)
 
 static void updateHelper (SLE::ref entry,
     ripple::unordered_set< uint256 >& seen,
-    ripple::unordered_map< RippleAsset, std::vector<OrderBook::pointer> >& destMap,
-    ripple::unordered_map< RippleAsset, std::vector<OrderBook::pointer> >& sourceMap,
-    ripple::unordered_set< RippleAsset >& XRPBooks,
+    ripple::unordered_map< Issue, std::vector<OrderBook::pointer> >& destMap,
+    ripple::unordered_map< Issue, std::vector<OrderBook::pointer> >& sourceMap,
+    ripple::unordered_set< Issue >& XRPBooks,
     int& books)
 {
     if ((entry->getType () == ltDIR_NODE) && (entry->isFieldPresent (sfExchangeRate)) &&
@@ -85,10 +85,10 @@ static void updateHelper (SLE::ref entry,
             OrderBook::pointer book = std::make_shared<OrderBook> (std::cref (index),
                                       std::cref (ci), std::cref (co), std::cref (ii), std::cref (io));
 
-            sourceMap[RippleAssetRef (ci, ii)].push_back (book);
-            destMap[RippleAssetRef (co, io)].push_back (book);
+            sourceMap[IssueRef (ii, ci)].push_back (book);
+            destMap[IssueRef (io, co)].push_back (book);
             if (co.isZero())
-                XRPBooks.insert(RippleAssetRef (ci, ii));
+                XRPBooks.insert(IssueRef (ii, ci));
             ++books;
         }
     }
@@ -97,9 +97,9 @@ static void updateHelper (SLE::ref entry,
 void OrderBookDB::update (Ledger::pointer ledger)
 {
     ripple::unordered_set< uint256 > seen;
-    ripple::unordered_map< RippleAsset, std::vector<OrderBook::pointer> > destMap;
-    ripple::unordered_map< RippleAsset, std::vector<OrderBook::pointer> > sourceMap;
-    ripple::unordered_set< RippleAsset > XRPBooks;
+    ripple::unordered_map< Issue, std::vector<OrderBook::pointer> > destMap;
+    ripple::unordered_map< Issue, std::vector<OrderBook::pointer> > sourceMap;
+    ripple::unordered_set< Issue > XRPBooks;
 
     WriteLog (lsDEBUG, OrderBookDB) << "OrderBookDB::update>";
 
@@ -139,7 +139,7 @@ void OrderBookDB::addOrderBook(Currency const& ci, Currency const& co,
 
     if (toXRP)
     { // We don't want to search through all the to-XRP or from-XRP order books!
-        for (auto ob : mSourceMap[RippleAssetRef(ci, ii)])
+        for (auto ob : mSourceMap[{ii, ci}])
         {
             if (ob->getCurrencyOut().isZero ()) // also to XRP
                 return;
@@ -147,7 +147,7 @@ void OrderBookDB::addOrderBook(Currency const& ci, Currency const& co,
     }
     else
     {
-        for (auto ob : mDestMap[RippleAssetRef(co, io)])
+        for (auto ob : mDestMap[{io, co}])
         {
             if ((ob->getCurrencyIn() == ci) && (ob->getIssuerIn() == ii))
                 return;
@@ -157,10 +157,10 @@ void OrderBookDB::addOrderBook(Currency const& ci, Currency const& co,
     uint256 index = Ledger::getBookBase(ci, ii, co, io);
     auto book = std::make_shared<OrderBook> (index, ci, co, ii, io);
 
-    mSourceMap[RippleAssetRef (ci, ii)].push_back (book);
-    mDestMap[RippleAssetRef (co, io)].push_back (book);
+    mSourceMap[{ii, ci}].push_back (book);
+    mDestMap[{io, co}].push_back (book);
     if (toXRP)
-        mXRPBooks.insert(RippleAssetRef (ci, ii));
+        mXRPBooks.insert({ii, ci});
 }
 
 // return list of all orderbooks that want this issuerID and currencyID
@@ -168,8 +168,7 @@ void OrderBookDB::getBooksByTakerPays (Account const& issuerID, Currency const& 
                                        std::vector<OrderBook::pointer>& bookRet)
 {
     ScopedLockType sl (mLock);
-    auto it = mSourceMap.find (RippleAssetRef (currencyID, issuerID));
-
+    auto it = mSourceMap.find ({issuerID, currencyID});
     if (it != mSourceMap.end ())
         bookRet = it->second;
     else
@@ -180,7 +179,7 @@ bool OrderBookDB::isBookToXRP(Account const& issuerID, Currency const& currencyI
 {
     ScopedLockType sl (mLock);
 
-    return mXRPBooks.count(RippleAssetRef(currencyID, issuerID)) > 0;
+    return mXRPBooks.count({issuerID, currencyID}) > 0;
 }
 
 // return list of all orderbooks that give this issuerID and currencyID
@@ -188,7 +187,7 @@ void OrderBookDB::getBooksByTakerGets (Account const& issuerID, Currency const& 
                                        std::vector<OrderBook::pointer>& bookRet)
 {
     ScopedLockType sl (mLock);
-    auto it = mDestMap.find (RippleAssetRef (currencyID, issuerID));
+    auto it = mDestMap.find ({issuerID, currencyID});
 
     if (it != mDestMap.end ())
         bookRet = it->second;
@@ -206,9 +205,8 @@ BookListeners::pointer OrderBookDB::makeBookListeners (Currency const& currencyP
     {
         ret = std::make_shared<BookListeners> ();
 
-        mListeners [RippleBookRef (
-            RippleAssetRef (currencyPays, issuerPays),
-            RippleAssetRef (currencyGets, issuerGets))] = ret;
+        mListeners [BookRef ({issuerPays, currencyPays},
+                             {issuerGets, currencyGets})] = ret;
         assert (getBookListeners (currencyPays, currencyGets, issuerPays, issuerGets) == ret);
     }
 
@@ -221,9 +219,8 @@ BookListeners::pointer OrderBookDB::getBookListeners (Currency const& currencyPa
     BookListeners::pointer ret;
     ScopedLockType sl (mLock);
 
-    auto it0 (mListeners.find (RippleBookRef (
-        RippleAssetRef (currencyPays, issuerPays),
-            RippleAssetRef (currencyGets, issuerGets))));
+    auto it0 (mListeners.find (BookRef (
+        {issuerPays, currencyPays}, {issuerGets, currencyGets})));
 
     if (it0 != mListeners.end ())
         ret = it0->second;

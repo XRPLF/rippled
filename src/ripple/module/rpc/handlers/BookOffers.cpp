@@ -99,7 +99,7 @@ Json::Value doBookOffers (RPC::Context& context)
     }
     else
     {
-        pay_issuer = xrpIssuer ();
+        pay_issuer = xrpAccount ();
     }
 
     if (isXRP (pay_currency) && ! isXRP (pay_issuer))
@@ -128,7 +128,7 @@ Json::Value doBookOffers (RPC::Context& context)
     }
     else
     {
-        get_issuer = xrpIssuer ();
+        get_issuer = xrpAccount ();
     }
 
 

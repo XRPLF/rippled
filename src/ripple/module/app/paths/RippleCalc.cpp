@@ -55,13 +55,13 @@ TER rippleCalculate (
     PathState::List&  pathStateList,
 
     // Issuer:
-    //      XRP: xrpIssuer()
+    //      XRP: xrpAccount()
     //  non-XRP: uSrcAccountID (for any issuer) or another account with trust
     //           node.
     const STAmount&     saMaxAmountReq,             // --> -1 = no limit.
 
     // Issuer:
-    //      XRP: xrpIssuer()
+    //      XRP: xrpAccount()
     //  non-XRP: uDstAccountID (for any issuer) or another account with trust
     //           node.
     const STAmount&     saDstAmountReq,

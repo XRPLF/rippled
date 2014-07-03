@@ -1513,13 +1513,13 @@ public:
         unexpected (STAmount::multiply (STAmount (noCurrency(), noAccount(), 20), STAmount (3), noCurrency(), noAccount()).getText () != "60",
             "STAmount multiply fail 1");
 
-        unexpected (STAmount::multiply (STAmount (noCurrency(), noAccount(), 20), STAmount (3), xrpCurrency (), xrpIssuer()).getText () != "60",
+        unexpected (STAmount::multiply (STAmount (noCurrency(), noAccount(), 20), STAmount (3), xrpCurrency (), xrpAccount()).getText () != "60",
             "STAmount multiply fail 2");
 
         unexpected (STAmount::multiply (STAmount (20), STAmount (3), noCurrency(), noAccount()).getText () != "60",
             "STAmount multiply fail 3");
 
-        unexpected (STAmount::multiply (STAmount (20), STAmount (3), xrpCurrency (), xrpIssuer()).getText () != "60",
+        unexpected (STAmount::multiply (STAmount (20), STAmount (3), xrpCurrency (), xrpAccount()).getText () != "60",
             "STAmount multiply fail 4");
 
         if (STAmount::divide (STAmount (noCurrency(), noAccount(), 60), STAmount (3), noCurrency(), noAccount()).getText () != "20")
@@ -1534,13 +1534,13 @@ public:
             pass ();
         }
 
-        unexpected (STAmount::divide (STAmount (noCurrency(), noAccount(), 60), STAmount (3), xrpCurrency (), xrpIssuer()).getText () != "20",
+        unexpected (STAmount::divide (STAmount (noCurrency(), noAccount(), 60), STAmount (3), xrpCurrency (), xrpAccount()).getText () != "20",
             "STAmount divide fail");
 
         unexpected (STAmount::divide (STAmount (noCurrency(), noAccount(), 60), STAmount (noCurrency(), noAccount(), 3), noCurrency(), noAccount()).getText () != "20",
             "STAmount divide fail");
 
-        unexpected (STAmount::divide (STAmount (noCurrency(), noAccount(), 60), STAmount (noCurrency(), noAccount(), 3), xrpCurrency (), xrpIssuer()).getText () != "20",
+        unexpected (STAmount::divide (STAmount (noCurrency(), noAccount(), 60), STAmount (noCurrency(), noAccount(), 3), xrpCurrency (), xrpAccount()).getText () != "20",
             "STAmount divide fail");
 
         STAmount a1 (noCurrency(), noAccount(), 60), a2 (noCurrency(), noAccount(), 10, -1);
@@ -1651,15 +1651,15 @@ public:
 
         expect (bigDsmall == zero, beast::String ("small/big != 0: ") + bigDsmall.getText ());
 
-        bigDsmall = STAmount::divide (smallValue, bigNative, noCurrency(), xrpIssuer ());
+        bigDsmall = STAmount::divide (smallValue, bigNative, noCurrency(), xrpAccount ());
 
         expect (bigDsmall == zero, beast::String ("small/bigNative != 0: ") + bigDsmall.getText ());
 
-        bigDsmall = STAmount::divide (smallValue, bigValue, xrpCurrency (), xrpIssuer ());
+        bigDsmall = STAmount::divide (smallValue, bigValue, xrpCurrency (), xrpAccount ());
 
         expect (bigDsmall == zero, beast::String ("(small/big)->N != 0: ") + bigDsmall.getText ());
 
-        bigDsmall = STAmount::divide (smallValue, bigNative, xrpCurrency (), xrpIssuer ());
+        bigDsmall = STAmount::divide (smallValue, bigNative, xrpCurrency (), xrpAccount ());
 
         expect (bigDsmall == zero, beast::String ("(small/bigNative)->N != 0: ") + bigDsmall.getText ());
 
@@ -1720,9 +1720,9 @@ public:
         WriteLog (lsINFO, STAmount) << fourThirdsB;
         WriteLog (lsINFO, STAmount) << fourThirdsC;
 
-        STAmount dripTest1 = STAmount::mulRound (twoThird2, two, xrpCurrency (), xrpIssuer (), false);
-        STAmount dripTest2 = STAmount::multiply (twoThird2, two, xrpCurrency (), xrpIssuer ());
-        STAmount dripTest3 = STAmount::mulRound (twoThird2, two, xrpCurrency (), xrpIssuer (), true);
+        STAmount dripTest1 = STAmount::mulRound (twoThird2, two, xrpCurrency (), xrpAccount (), false);
+        STAmount dripTest2 = STAmount::multiply (twoThird2, two, xrpCurrency (), xrpAccount ());
+        STAmount dripTest3 = STAmount::mulRound (twoThird2, two, xrpCurrency (), xrpAccount (), true);
         WriteLog (lsINFO, STAmount) << dripTest1;
         WriteLog (lsINFO, STAmount) << dripTest2;
         WriteLog (lsINFO, STAmount) << dripTest3;

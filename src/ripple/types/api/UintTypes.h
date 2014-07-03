@@ -51,7 +51,7 @@ typedef std::unordered_set<Currency> CurrencySet;
 typedef std::unordered_set<NodeID> NodeIDSet;
 
 /** A special account that's used as the "issuer" for XRP. */
-Account const& xrpIssuer();
+Account const& xrpAccount();
 
 /** XRP currency. */
 Currency const& xrpCurrency();
@@ -64,6 +64,8 @@ Currency const& noCurrency();
 
 /** We deliberately disallow the currency that looks like "XRP" because too
     many people were using it instead of the correct XRP currency. */
+
+
 Currency const& badCurrency();
 
 inline bool isXRP(Currency const& c)

@@ -361,7 +361,7 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
             if (!sameAccount || (c != saDstAmount.getCurrency ()))
             {
                 if (c.isZero ())
-                    sourceCurrencies.insert (std::make_pair (c, xrpIssuer()));
+                    sourceCurrencies.insert (std::make_pair (c, xrpAccount()));
                 else
                     sourceCurrencies.insert (std::make_pair (c, raSrcAccount.getAccountID ()));
             }
@@ -439,7 +439,7 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
             STAmount saMaxAmount (
                 currIssuer.first,
                 currIssuer.second.isNonZero () ? Account(currIssuer.second) :
-                (currIssuer.first.isZero () ? xrpIssuer() :
+                (currIssuer.first.isZero () ? xrpAccount() :
                  raSrcAccount.getAccountID ()), 1);
 
             saMaxAmount.negate ();

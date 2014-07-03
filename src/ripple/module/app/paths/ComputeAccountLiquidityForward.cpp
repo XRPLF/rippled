@@ -329,7 +329,7 @@ TER computeForwardLiquidityForAccount (
                     node.saFwdDeliver = std::min (
                         node.saFwdDeliver,
                         rippleCalc.mActiveLedger.accountHolds (
-                            node.account_, xrpCurrency(), xrpIssuer()));
+                            node.account_, xrpCurrency(), xrpAccount()));
 
             }
 
@@ -360,7 +360,7 @@ TER computeForwardLiquidityForAccount (
 
                 // Deliver XRP to limbo.
                 resultCode = rippleCalc.mActiveLedger.accountSend (
-                    node.account_, xrpIssuer(), node.saFwdDeliver);
+                    node.account_, xrpAccount(), node.saFwdDeliver);
             }
         }
     }

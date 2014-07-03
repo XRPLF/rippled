@@ -43,7 +43,7 @@
 
 namespace ripple {
 
-class RippleAsset_test : public beast::unit_test::suite
+class Issue_test : public beast::unit_test::suite
 {
 public:
     // Comparison, hash tests for uint60 (via base_uint)
@@ -75,7 +75,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    // Comparison, hash tests for RippleAssetType
+    // Comparison, hash tests for IssueType
     template <class Asset>
     void testAssetType ()
     {
@@ -83,42 +83,42 @@ public:
         Currency const c2 (2); Account const i2 (2);
         Currency const c3 (3); Account const i3 (3);
 
-        expect (Asset (c1, i1) != Asset (c2, i1));
-        expect (Asset (c1, i1) <  Asset (c2, i1));
-        expect (Asset (c1, i1) <= Asset (c2, i1));
-        expect (Asset (c2, i1) <= Asset (c2, i1));
-        expect (Asset (c2, i1) == Asset (c2, i1));
-        expect (Asset (c2, i1) >= Asset (c2, i1));
-        expect (Asset (c3, i1) >= Asset (c2, i1));
-        expect (Asset (c3, i1) >  Asset (c2, i1));
-        expect (Asset (c1, i1) != Asset (c1, i2));
-        expect (Asset (c1, i1) <  Asset (c1, i2));
-        expect (Asset (c1, i1) <= Asset (c1, i2));
-        expect (Asset (c1, i2) <= Asset (c1, i2));
-        expect (Asset (c1, i2) == Asset (c1, i2));
-        expect (Asset (c1, i2) >= Asset (c1, i2));
-        expect (Asset (c1, i3) >= Asset (c1, i2));
-        expect (Asset (c1, i3) >  Asset (c1, i2));
+        expect (Asset (i1, c1) != Asset (i1, c2));
+        expect (Asset (i1, c1) <  Asset (i1, c2));
+        expect (Asset (i1, c1) <= Asset (i1, c2));
+        expect (Asset (i1, c2) <= Asset (i1, c2));
+        expect (Asset (i1, c2) == Asset (i1, c2));
+        expect (Asset (i1, c2) >= Asset (i1, c2));
+        expect (Asset (i1, c3) >= Asset (i1, c2));
+        expect (Asset (i1, c3) >  Asset (i1, c2));
+        expect (Asset (i1, c1) != Asset (i2, c1));
+        expect (Asset (i1, c1) <  Asset (i2, c1));
+        expect (Asset (i1, c1) <= Asset (i2, c1));
+        expect (Asset (i2, c1) <= Asset (i2, c1));
+        expect (Asset (i2, c1) == Asset (i2, c1));
+        expect (Asset (i2, c1) >= Asset (i2, c1));
+        expect (Asset (i3, c1) >= Asset (i2, c1));
+        expect (Asset (i3, c1) >  Asset (i2, c1));
 
         std::hash <Asset> hash;
 
-        expect (hash (Asset (c1, i1)) == hash (Asset (c1, i1)));
-        expect (hash (Asset (c1, i2)) == hash (Asset (c1, i2)));
-        expect (hash (Asset (c1, i3)) == hash (Asset (c1, i3)));
-        expect (hash (Asset (c2, i1)) == hash (Asset (c2, i1)));
-        expect (hash (Asset (c2, i2)) == hash (Asset (c2, i2)));
-        expect (hash (Asset (c2, i3)) == hash (Asset (c2, i3)));
-        expect (hash (Asset (c3, i1)) == hash (Asset (c3, i1)));
-        expect (hash (Asset (c3, i2)) == hash (Asset (c3, i2)));
-        expect (hash (Asset (c3, i3)) == hash (Asset (c3, i3)));
-        expect (hash (Asset (c1, i1)) != hash (Asset (c1, i2)));
-        expect (hash (Asset (c1, i1)) != hash (Asset (c1, i3)));
-        expect (hash (Asset (c1, i1)) != hash (Asset (c2, i1)));
-        expect (hash (Asset (c1, i1)) != hash (Asset (c2, i2)));
-        expect (hash (Asset (c1, i1)) != hash (Asset (c2, i3)));
-        expect (hash (Asset (c1, i1)) != hash (Asset (c3, i1)));
-        expect (hash (Asset (c1, i1)) != hash (Asset (c3, i2)));
-        expect (hash (Asset (c1, i1)) != hash (Asset (c3, i3)));
+        expect (hash (Asset (i1, c1)) == hash (Asset (i1, c1)));
+        expect (hash (Asset (i2, c1)) == hash (Asset (i2, c1)));
+        expect (hash (Asset (i3, c1)) == hash (Asset (i3, c1)));
+        expect (hash (Asset (i1, c2)) == hash (Asset (i1, c2)));
+        expect (hash (Asset (i2, c2)) == hash (Asset (i2, c2)));
+        expect (hash (Asset (i3, c2)) == hash (Asset (i3, c2)));
+        expect (hash (Asset (i1, c3)) == hash (Asset (i1, c3)));
+        expect (hash (Asset (i2, c3)) == hash (Asset (i2, c3)));
+        expect (hash (Asset (i3, c3)) == hash (Asset (i3, c3)));
+        expect (hash (Asset (i1, c1)) != hash (Asset (i2, c1)));
+        expect (hash (Asset (i1, c1)) != hash (Asset (i3, c1)));
+        expect (hash (Asset (i1, c1)) != hash (Asset (i1, c2)));
+        expect (hash (Asset (i1, c1)) != hash (Asset (i2, c2)));
+        expect (hash (Asset (i1, c1)) != hash (Asset (i3, c2)));
+        expect (hash (Asset (i1, c1)) != hash (Asset (i1, c3)));
+        expect (hash (Asset (i1, c1)) != hash (Asset (i2, c3)));
+        expect (hash (Asset (i1, c1)) != hash (Asset (i3, c3)));
     }
 
     template <class Set>
@@ -128,8 +128,8 @@ public:
         Account   const i1 (1);
         Currency const c2 (2);
         Account   const i2 (2);
-        RippleAssetRef const a1 (c1, i1);
-        RippleAssetRef const a2 (c2, i2);
+        IssueRef const a1 (i1, c1);
+        IssueRef const a2 (i2, c2);
 
         {
             Set c;
@@ -139,9 +139,9 @@ public:
             c.insert (a2);
             if (! expect (c.size () == 2)) return;
 
-            if (! expect (c.erase (RippleAsset (c1, i2)) == 0)) return;
-            if (! expect (c.erase (RippleAsset (c1, i1)) == 1)) return;
-            if (! expect (c.erase (RippleAsset (c2, i2)) == 1)) return;
+            if (! expect (c.erase (Issue (i2, c1)) == 0)) return;
+            if (! expect (c.erase (Issue (i1, c1)) == 1)) return;
+            if (! expect (c.erase (Issue (i2, c2)) == 1)) return;
             if (! expect (c.empty ())) return;
         }
 
@@ -153,9 +153,9 @@ public:
             c.insert (a2);
             if (! expect (c.size () == 2)) return;
 
-            if (! expect (c.erase (RippleAssetRef (c1, i2)) == 0)) return;
-            if (! expect (c.erase (RippleAssetRef (c1, i1)) == 1)) return;
-            if (! expect (c.erase (RippleAssetRef (c2, i2)) == 1)) return;
+            if (! expect (c.erase (IssueRef (i2, c1)) == 0)) return;
+            if (! expect (c.erase (IssueRef (i1, c1)) == 1)) return;
+            if (! expect (c.erase (IssueRef (i2, c2)) == 1)) return;
             if (! expect (c.empty ())) return;
 
     #if STL_SET_HAS_EMPLACE
@@ -174,8 +174,8 @@ public:
         Account   const i1 (1);
         Currency const c2 (2);
         Account   const i2 (2);
-        RippleAssetRef const a1 (c1, i1);
-        RippleAssetRef const a2 (c2, i2);
+        IssueRef const a1 (i1, c1);
+        IssueRef const a2 (i2, c2);
 
         {
             Map c;
@@ -185,9 +185,9 @@ public:
             c.insert (std::make_pair (a2, 2));
             if (! expect (c.size () == 2)) return;
 
-            if (! expect (c.erase (RippleAsset (c1, i2)) == 0)) return;
-            if (! expect (c.erase (RippleAsset (c1, i1)) == 1)) return;
-            if (! expect (c.erase (RippleAsset (c2, i2)) == 1)) return;
+            if (! expect (c.erase (Issue (i2, c1)) == 0)) return;
+            if (! expect (c.erase (Issue (i1, c1)) == 1)) return;
+            if (! expect (c.erase (Issue (i2, c2)) == 1)) return;
             if (! expect (c.empty ())) return;
         }
 
@@ -199,63 +199,63 @@ public:
             c.insert (std::make_pair (a2, 2));
             if (! expect (c.size () == 2)) return;
 
-            if (! expect (c.erase (RippleAssetRef (c1, i2)) == 0)) return;
-            if (! expect (c.erase (RippleAssetRef (c1, i1)) == 1)) return;
-            if (! expect (c.erase (RippleAssetRef (c2, i2)) == 1)) return;
+            if (! expect (c.erase (IssueRef (i2, c1)) == 0)) return;
+            if (! expect (c.erase (IssueRef (i1, c1)) == 1)) return;
+            if (! expect (c.erase (IssueRef (i2, c2)) == 1)) return;
             if (! expect (c.empty ())) return;
         }
     }
 
     void testAssetSets ()
     {
-        testcase ("std::set <RippleAsset>");
-        testAssetSet <std::set <RippleAsset>> ();
+        testcase ("std::set <Issue>");
+        testAssetSet <std::set <Issue>> ();
 
-        testcase ("std::set <RippleAssetRef>");
-        testAssetSet <std::set <RippleAssetRef>> ();
+        testcase ("std::set <IssueRef>");
+        testAssetSet <std::set <IssueRef>> ();
 
 #if RIPPLE_ASSETS_ENABLE_STD_HASH
-        testcase ("std::unordered_set <RippleAsset>");
-        testAssetSet <std::unordered_set <RippleAsset>> ();
+        testcase ("std::unordered_set <Issue>");
+        testAssetSet <std::unordered_set <Issue>> ();
 
-        testcase ("std::unordered_set <RippleAssetRef>");
-        testAssetSet <std::unordered_set <RippleAssetRef>> ();
+        testcase ("std::unordered_set <IssueRef>");
+        testAssetSet <std::unordered_set <IssueRef>> ();
 #endif
 
-        testcase ("ripple::unordered_set <RippleAsset>");
-        testAssetSet <ripple::unordered_set <RippleAsset>> ();
+        testcase ("ripple::unordered_set <Issue>");
+        testAssetSet <ripple::unordered_set <Issue>> ();
 
-        testcase ("ripple::unordered_set <RippleAssetRef>");
-        testAssetSet <ripple::unordered_set <RippleAssetRef>> ();
+        testcase ("ripple::unordered_set <IssueRef>");
+        testAssetSet <ripple::unordered_set <IssueRef>> ();
     }
 
     void testAssetMaps ()
     {
-        testcase ("std::map <RippleAsset, int>");
-        testAssetMap <std::map <RippleAsset, int>> ();
+        testcase ("std::map <Issue, int>");
+        testAssetMap <std::map <Issue, int>> ();
 
-        testcase ("std::map <RippleAssetRef, int>");
-        testAssetMap <std::map <RippleAssetRef, int>> ();
+        testcase ("std::map <IssueRef, int>");
+        testAssetMap <std::map <IssueRef, int>> ();
 
 #if RIPPLE_ASSETS_ENABLE_STD_HASH
-        testcase ("std::unordered_map <RippleAsset, int>");
-        testAssetMap <std::unordered_map <RippleAsset, int>> ();
+        testcase ("std::unordered_map <Issue, int>");
+        testAssetMap <std::unordered_map <Issue, int>> ();
 
-        testcase ("std::unordered_map <RippleAssetRef, int>");
-        testAssetMap <std::unordered_map <RippleAssetRef, int>> ();
+        testcase ("std::unordered_map <IssueRef, int>");
+        testAssetMap <std::unordered_map <IssueRef, int>> ();
 
-        testcase ("ripple::unordered_map <RippleAsset, int>");
-        testAssetMap <ripple::unordered_map <RippleAsset, int>> ();
+        testcase ("ripple::unordered_map <Issue, int>");
+        testAssetMap <ripple::unordered_map <Issue, int>> ();
 
-        testcase ("ripple::unordered_map <RippleAssetRef, int>");
-        testAssetMap <ripple::unordered_map <RippleAssetRef, int>> ();
+        testcase ("ripple::unordered_map <IssueRef, int>");
+        testAssetMap <ripple::unordered_map <IssueRef, int>> ();
 
 #endif
     }
 
     //--------------------------------------------------------------------------
 
-    // Comparison, hash tests for RippleBookType
+    // Comparison, hash tests for BookType
     template <class Book>
     void testBook ()
     {
@@ -263,10 +263,10 @@ public:
         Currency const c2 (2); Account const i2 (2);
         Currency const c3 (3); Account const i3 (3);
 
-        RippleAsset a1 (c1, i1);
-        RippleAsset a2 (c1, i2);
-        RippleAsset a3 (c2, i2);
-        RippleAsset a4 (c3, i2);
+        Issue a1 (i1, c1);
+        Issue a2 (i2, c1);
+        Issue a3 (i2, c2);
+        Issue a4 (i2, c3);
 
         expect (Book (a1, a2) != Book (a2, a3));
         expect (Book (a1, a2) <  Book (a2, a3));
@@ -320,10 +320,10 @@ public:
         Account   const i1 (1);
         Currency const c2 (2);
         Account   const i2 (2);
-        RippleAssetRef const a1 (c1, i1);
-        RippleAssetRef const a2 (c2, i2);
-        RippleBookRef  const b1 (a1, a2);
-        RippleBookRef  const b2 (a2, a1);
+        IssueRef const a1 (i1, c1);
+        IssueRef const a2 (i2, c2);
+        BookRef  const b1 (a1, a2);
+        BookRef  const b2 (a2, a1);
 
         {
             Set c;
@@ -333,9 +333,9 @@ public:
             c.insert (b2);
             if (! expect (c.size () == 2)) return;
 
-            if (! expect (c.erase (RippleBook (a1, a1)) == 0)) return;
-            if (! expect (c.erase (RippleBook (a1, a2)) == 1)) return;
-            if (! expect (c.erase (RippleBook (a2, a1)) == 1)) return;
+            if (! expect (c.erase (Book (a1, a1)) == 0)) return;
+            if (! expect (c.erase (Book (a1, a2)) == 1)) return;
+            if (! expect (c.erase (Book (a2, a1)) == 1)) return;
             if (! expect (c.empty ())) return;
         }
 
@@ -347,9 +347,9 @@ public:
             c.insert (b2);
             if (! expect (c.size () == 2)) return;
 
-            if (! expect (c.erase (RippleBookRef (a1, a1)) == 0)) return;
-            if (! expect (c.erase (RippleBookRef (a1, a2)) == 1)) return;
-            if (! expect (c.erase (RippleBookRef (a2, a1)) == 1)) return;
+            if (! expect (c.erase (BookRef (a1, a1)) == 0)) return;
+            if (! expect (c.erase (BookRef (a1, a2)) == 1)) return;
+            if (! expect (c.erase (BookRef (a2, a1)) == 1)) return;
             if (! expect (c.empty ())) return;
 
     #if STL_SET_HAS_EMPLACE
@@ -368,13 +368,13 @@ public:
         Account   const i1 (1);
         Currency const c2 (2);
         Account   const i2 (2);
-        RippleAssetRef const a1 (c1, i1);
-        RippleAssetRef const a2 (c2, i2);
-        RippleBookRef  const b1 (a1, a2);
-        RippleBookRef  const b2 (a2, a1);
+        IssueRef const a1 (i1, c1);
+        IssueRef const a2 (i2, c2);
+        BookRef  const b1 (a1, a2);
+        BookRef  const b2 (a2, a1);
 
         //typename Map::value_type value_type;
-        //std::pair <RippleBookRef const, int> value_type;
+        //std::pair <BookRef const, int> value_type;
 
         {
             Map c;
@@ -386,9 +386,9 @@ public:
             c.insert (std::make_pair (b2, 1));
             if (! expect (c.size () == 2)) return;
 
-            if (! expect (c.erase (RippleBook (a1, a1)) == 0)) return;
-            if (! expect (c.erase (RippleBook (a1, a2)) == 1)) return;
-            if (! expect (c.erase (RippleBook (a2, a1)) == 1)) return;
+            if (! expect (c.erase (Book (a1, a1)) == 0)) return;
+            if (! expect (c.erase (Book (a1, a2)) == 1)) return;
+            if (! expect (c.erase (Book (a2, a1)) == 1)) return;
             if (! expect (c.empty ())) return;
         }
 
@@ -402,56 +402,56 @@ public:
             c.insert (std::make_pair (b2, 1));
             if (! expect (c.size () == 2)) return;
 
-            if (! expect (c.erase (RippleBookRef (a1, a1)) == 0)) return;
-            if (! expect (c.erase (RippleBookRef (a1, a2)) == 1)) return;
-            if (! expect (c.erase (RippleBookRef (a2, a1)) == 1)) return;
+            if (! expect (c.erase (BookRef (a1, a1)) == 0)) return;
+            if (! expect (c.erase (BookRef (a1, a2)) == 1)) return;
+            if (! expect (c.erase (BookRef (a2, a1)) == 1)) return;
             if (! expect (c.empty ())) return;
         }
     }
 
     void testBookSets ()
     {
-        testcase ("std::set <RippleBook>");
-        testBookSet <std::set <RippleBook>> ();
+        testcase ("std::set <Book>");
+        testBookSet <std::set <Book>> ();
 
-        testcase ("std::set <RippleBookRef>");
-        testBookSet <std::set <RippleBookRef>> ();
+        testcase ("std::set <BookRef>");
+        testBookSet <std::set <BookRef>> ();
 
 #if RIPPLE_ASSETS_ENABLE_STD_HASH
-        testcase ("std::unordered_set <RippleBook>");
-        testBookSet <std::unordered_set <RippleBook>> ();
+        testcase ("std::unordered_set <Book>");
+        testBookSet <std::unordered_set <Book>> ();
 
-        testcase ("std::unordered_set <RippleBookRef>");
-        testBookSet <std::unordered_set <RippleBookRef>> ();
+        testcase ("std::unordered_set <BookRef>");
+        testBookSet <std::unordered_set <BookRef>> ();
 #endif
 
-        testcase ("ripple::unordered_set <RippleBook>");
-        testBookSet <ripple::unordered_set <RippleBook>> ();
+        testcase ("ripple::unordered_set <Book>");
+        testBookSet <ripple::unordered_set <Book>> ();
 
-        testcase ("ripple::unordered_set <RippleBookRef>");
-        testBookSet <ripple::unordered_set <RippleBookRef>> ();
+        testcase ("ripple::unordered_set <BookRef>");
+        testBookSet <ripple::unordered_set <BookRef>> ();
     }
 
     void testBookMaps ()
     {
-        testcase ("std::map <RippleBook, int>");
-        testBookMap <std::map <RippleBook, int>> ();
+        testcase ("std::map <Book, int>");
+        testBookMap <std::map <Book, int>> ();
 
-        testcase ("std::map <RippleBookRef, int>");
-        testBookMap <std::map <RippleBookRef, int>> ();
+        testcase ("std::map <BookRef, int>");
+        testBookMap <std::map <BookRef, int>> ();
 
 #if RIPPLE_ASSETS_ENABLE_STD_HASH
-        testcase ("std::unordered_map <RippleBook, int>");
-        testBookMap <std::unordered_map <RippleBook, int>> ();
+        testcase ("std::unordered_map <Book, int>");
+        testBookMap <std::unordered_map <Book, int>> ();
 
-        testcase ("std::unordered_map <RippleBookRef, int>");
-        testBookMap <std::unordered_map <RippleBookRef, int>> ();
+        testcase ("std::unordered_map <BookRef, int>");
+        testBookMap <std::unordered_map <BookRef, int>> ();
 
-        testcase ("ripple::unordered_map <RippleBook, int>");
-        testBookMap <ripple::unordered_map <RippleBook, int>> ();
+        testcase ("ripple::unordered_map <Book, int>");
+        testBookMap <ripple::unordered_map <Book, int>> ();
 
-        testcase ("ripple::unordered_map <RippleBookRef, int>");
-        testBookMap <ripple::unordered_map <RippleBookRef, int>> ();
+        testcase ("ripple::unordered_map <BookRef, int>");
+        testBookMap <ripple::unordered_map <BookRef, int>> ();
 #endif
     }
 
@@ -467,28 +467,28 @@ public:
 
         // ---
 
-        testcase ("RippleAsset");
-        testAssetType <RippleAsset> ();
+        testcase ("Issue");
+        testAssetType <Issue> ();
 
-        testcase ("RippleAssetRef");
-        testAssetType <RippleAssetRef> ();
+        testcase ("IssueRef");
+        testAssetType <IssueRef> ();
 
         testAssetSets ();
         testAssetMaps ();
 
         // ---
 
-        testcase ("RippleBook");
-        testBook <RippleBook> ();
+        testcase ("Book");
+        testBook <Book> ();
 
-        testcase ("RippleBookRef");
-        testBook <RippleBookRef> ();
+        testcase ("BookRef");
+        testBook <BookRef> ();
 
         testBookSets ();
         testBookMaps ();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(RippleAsset,types,ripple);
+BEAST_DEFINE_TESTSUITE(Issue,types,ripple);
 
 }

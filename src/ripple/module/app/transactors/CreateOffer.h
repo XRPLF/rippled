@@ -32,7 +32,7 @@ class CreateOffer
 {
 protected:
     /** Determine if we are authorized to hold the asset we want to get */
-    TER checkAcceptAsset(core::AssetRef asset) const;
+    TER checkAcceptAsset(IssueRef asset) const;
 
     /** Fill offer as much as possible by consuming offers already on the books.
         We adjusts account balances and charges fees on top to taker.
@@ -65,4 +65,3 @@ std::unique_ptr <Transactor> make_CreateOffer (
 }
 
 #endif
-

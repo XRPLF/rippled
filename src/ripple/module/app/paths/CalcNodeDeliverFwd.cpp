@@ -264,7 +264,7 @@ TER nodeDeliverFwd (
                 // Do outbound debiting.
                 // Send to issuer/limbo total amount including fees (issuer gets
                 // fees).
-                auto id = !!node.currency_ ? Account(node.issuer_) : xrpIssuer();
+                auto id = !!node.currency_ ? Account(node.issuer_) : xrpAccount();
                 auto outPassTotal = saOutPassAct + saOutPassFees;
                 rippleCalc.mActiveLedger.accountSend (node.offerOwnerAccount_, id, outPassTotal);
 
@@ -296,7 +296,7 @@ TER nodeDeliverFwd (
                 || uInAccountID != node.offerOwnerAccount_)
             {
                 auto id = !isXRP(previousNode.currency_) ?
-                        uInAccountID : xrpIssuer();
+                        uInAccountID : xrpAccount();
                 resultCode = rippleCalc.mActiveLedger.accountSend (
                     id, node.offerOwnerAccount_, saInPassAct);
 

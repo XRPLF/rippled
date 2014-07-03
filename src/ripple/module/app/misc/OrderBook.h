@@ -39,7 +39,7 @@ public:
         @param issuerOut   The destination issuer.
     */
     // VFALCO NOTE what is the meaning of the index parameter?
-    // VFALCO TODO Replace with RippleAsset
+    // VFALCO TODO Replace with Issue
     OrderBook (uint256 const& index,
                Currency const& currencyIn,
                Currency const& currencyOut,

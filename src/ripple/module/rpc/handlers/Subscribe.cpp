@@ -198,7 +198,7 @@ Json::Value doSubscribe (RPC::Context& context)
                     || !jvSubRequest[jss::taker_gets].isObject ())
                 return rpcError (rpcINVALID_PARAMS);
 
-            // VFALCO TODO Use RippleAsset here
+            // VFALCO TODO Use Issue here
             Currency pay_currency;
             Account   pay_issuer;
             Currency get_currency;
