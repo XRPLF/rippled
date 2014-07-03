@@ -246,11 +246,14 @@ def config_env(toolchain, variant, env):
             env.ParseConfig('pkg-config --static --cflags --libs openssl')
             env.ParseConfig('pkg-config --static --cflags --libs protobuf')
 
+        env.Prepend(CFLAGS=['-Wall'])
+        env.Prepend(CXXFLAGS=['-Wall'])
+
         env.Append(CCFLAGS=[
-            '-Wall',
             '-Wno-sign-compare',
             '-Wno-char-subscripts',
             '-Wno-format',
+            '-Wno-deprecated-register'
             ])
 
         env.Append(CXXFLAGS=[
@@ -272,9 +275,10 @@ def config_env(toolchain, variant, env):
                 '-Wno-unused-function',
                 ])
         else:
-            env.Append(CCFLAGS=[
-                '-Wno-unused-but-set-variable'
-                ])
+            if toolchain == 'gcc':
+                env.Append(CCFLAGS=[
+                    '-Wno-unused-but-set-variable'
+                    ])
 
         boost_libs = [
             'boost_date_time',
@@ -330,7 +334,6 @@ def config_env(toolchain, variant, env):
             # Add '-Wshorten-64-to-32'
             env.Append(CCFLAGS=[])
             # C++ only
-            # Why is this only for clang?
             env.Append(CXXFLAGS=['-Wno-mismatched-tags'])
 
         elif toolchain == 'gcc':
