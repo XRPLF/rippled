@@ -6,7 +6,7 @@ The SHAMap is a Merkle tree (http://en.wikipedia.org/wiki/Merkle_tree).
 The SHAMap is also a radix tree of radix 16
 (http://en.wikipedia.org/wiki/Radix_tree).
 
-** We need some kind of sensible summary of the SHAMap here. **
+*We need some kind of sensible summary of the SHAMap here.*
 
 A given SHAMap always stores only one of three kinds of data:
 
@@ -87,8 +87,8 @@ thread safe.
 
 ## Walking a SHAMap ##
 
-* We need a good description of why someone would walk a SHAMap and *
-* how it works in the code *
+*We need a good description of why someone would walk a SHAMap and*
+*how it works in the code*
 
 
 ## Late-arriving Nodes ##
@@ -96,12 +96,12 @@ thread safe.
 As we noted earlier, SHAMaps (even immutable ones) may grow.  If a SHAMap
 is searching for a node and runs into an empty spot in the tree, then the
 SHAMap looks to see if the node exists but has not yet been made part of
-the map.  This operation is performed in the SHAMap::fetchNodeExternalNT()
+the map.  This operation is performed in the `SHAMap::fetchNodeExternalNT()`
 method.  The *NT* is this case stands for 'No Throw'.
 
-The fetchNodeExternalNT() method goes through three phases:
+The `fetchNodeExternalNT()` method goes through three phases:
 
- 1. By calling getCache() we attempt to locate the missing node in the
+ 1. By calling `getCache()` we attempt to locate the missing node in the
     TreeNodeCache.  The TreeNodeCache is a cache of immutable
     SHAMapTreeNodes that are shared across all SHAMaps.
 
@@ -112,7 +112,7 @@ The fetchNodeExternalNT() method goes through three phases:
 
  2. If the node is not in the TreeNodeCache, we attempt to locate the node
     in the historic data stored by the data base.  The call to
-    'getApp().getNodeStore().fetch(hash)' does that work for us.
+    to `getApp().getNodeStore().fetch(hash)` does that work for us.
 
  3. Finally, if mLedgerSeq is non-zero and we did't locate the node in the
     historic data, then we call a MissingNodeHandler.
@@ -129,7 +129,7 @@ If phase 1 returned a node, then we already know that the node is immutable.
 However, if either phase 2 executes successfully, then we need to turn the
 returned node into an immutable node.  That's handled by the call to
 `make_shared<SHAMapTreeNode>` inside the try block.  That code is inside
-a try block because the fetchNodeExternalNT method promises not to throw.
+a try block because the `fetchNodeExternalNT` method promises not to throw.
 In case the constructor called by `make_shared` throws we don't want to
 break our promise.
 
@@ -173,7 +173,7 @@ ask each node for information that we could determine locally.  We know
 the depth because we know how many nodes we have traversed.  We know the
 ID that we need because that's how we're steering.  So we don't need to
 store the ID in the node.  The next refactor should remove all calls to
-SHAMapTreeNode::GetID().
+`SHAMapTreeNode::GetID()`.
 
 Then we can remove the NodeID member from SHAMapTreeNode.
 
@@ -182,4 +182,6 @@ Then we can change the SHAMap::mTNBtID  member to be mTNByHash.
 An additional possible refactor would be to have a base type, SHAMapTreeNode,
 and derive from that InnerNode and LeafNode types.  That would remove
 some storage (the array of 16 hashes) from the LeafNodes.  That refactor
-would also have the effect of simplifying methods like isLeaf() and hasItem().
+would also have the effect of simplifying methods like `isLeaf()` and
+`hasItem()`.
+
