@@ -111,7 +111,7 @@ Pathfinder::Pathfinder (
         mDstAmount (saDstAmount),
         mSrcCurrencyID (uSrcCurrencyID),
         mSrcIssuerID (uSrcIssuerID),
-        mSrcAmount (uSrcCurrencyID, uSrcIssuerID, 1u, 0, true),
+        mSrcAmount ({uSrcCurrencyID, uSrcIssuerID}, 1u, 0, true),
         mLedger (cache->getLedger ()), mRLCache (cache)
 {
 
@@ -502,7 +502,7 @@ int Pathfinder::getPathsOut (
     Currency const& currencyID, Account const& accountID,
     bool isDstCurrency, Account const& dstAccount)
 {
-    // VFALCO TODO Use RippleAsset here
+    // VFALCO TODO Use Issue here
     auto currencyAccount = std::make_pair(currencyID, accountID);
     auto it = mPOMap.find (currencyAccount);
 
@@ -791,7 +791,7 @@ void Pathfinder::addLink(
             {
                 STPathElement pathElement(
                     STPathElement::typeCurrency,
-                    xrpIssuer(), xrpCurrency(), xrpIssuer());
+                    xrpAccount(), xrpCurrency(), xrpAccount());
                 incompletePaths.assembleAdd(currentPath, pathElement);
             }
         }
@@ -804,7 +804,7 @@ void Pathfinder::addLink(
             BOOST_FOREACH(OrderBook::ref book, books)
             {
                 if (!currentPath.hasSeen (
-                        xrpIssuer(),
+                        xrpAccount(),
                         book->getCurrencyOut(),
                         book->getIssuerOut()) &&
                     !matchesOrigin(
@@ -821,7 +821,7 @@ void Pathfinder::addLink(
                         // add the order book itself
                         newPath.addElement(STPathElement(
                             STPathElement::typeCurrency,
-                            xrpIssuer(), xrpCurrency(), xrpIssuer()));
+                            xrpAccount(), xrpCurrency(), xrpAccount()));
 
                         if (mDstAmount.getCurrency().isZero())
                         { // destination is XRP, add account and path is complete
@@ -835,7 +835,7 @@ void Pathfinder::addLink(
                     { // Don't want the book if we've already seen the issuer
                         // add the order book itself
                         newPath.addElement(STPathElement(STPathElement::typeCurrency | STPathElement::typeIssuer,
-                            xrpIssuer(), book->getCurrencyOut(), book->getIssuerOut()));
+                            xrpAccount(), book->getCurrencyOut(), book->getIssuerOut()));
 
                         if ((book->getIssuerOut() == mDstAccountID) && book->getCurrencyOut() == mDstAmount.getCurrency())
                         { // with the destination account, this path is complete

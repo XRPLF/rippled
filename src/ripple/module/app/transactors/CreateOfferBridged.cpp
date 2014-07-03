@@ -41,20 +41,17 @@ CreateOfferBridged::crossOffers (
 
     core::LedgerView view_cancel (view.duplicate());
 
-    core::AssetRef const asset_in (
-        taker_amount.in.getCurrency(), taker_amount.in.getIssuer());
-
-    core::AssetRef const asset_out (
-        taker_amount.out.getCurrency(), taker_amount.out.getIssuer());
+    auto& asset_in = taker_amount.in.issue();
+    auto& asset_out = taker_amount.out.issue();
 
     core::OfferStream offers_direct (view, view_cancel,
-        core::Book (asset_in, asset_out), when, m_journal);
+        Book (asset_in, asset_out), when, m_journal);
 
     core::OfferStream offers_leg1 (view, view_cancel,
-        core::Book (asset_in, xrp_asset ()), when, m_journal);
+        Book (asset_in, xrpIssue ()), when, m_journal);
 
     core::OfferStream offers_leg2 (view, view_cancel,
-        core::Book (xrp_asset (), asset_out), when, m_journal);
+        Book (xrpIssue (), asset_out), when, m_journal);
 
     core::Taker taker (view, mTxnAccountID, taker_amount, options);
 

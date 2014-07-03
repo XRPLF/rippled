@@ -42,6 +42,7 @@
 #include <ripple/types/api/AgedHistory.h>
 #include <ripple/types/api/Blob.h>
 #include <ripple/types/api/Base58.h>
+#include <ripple/types/api/Book.h>
 #include <ripple/types/api/ByteOrder.h>
 #include <ripple/types/api/strHex.h>
 #include <ripple/types/api/UInt160.h>
@@ -54,7 +55,6 @@
 #include <ripple/types/api/RippleAccountID.h>
 #include <ripple/types/api/RippleAccountPublicKey.h>
 #include <ripple/types/api/RippleAccountPrivateKey.h>
-#include <ripple/types/api/RippleAssets.h>
 #include <ripple/types/api/RipplePublicKey.h>
 #include <ripple/types/api/RipplePrivateKey.h>
 #include <ripple/types/api/SimpleIdentifier.h>

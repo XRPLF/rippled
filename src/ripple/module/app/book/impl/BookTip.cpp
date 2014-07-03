@@ -26,8 +26,8 @@ BookTip::BookTip (LedgerView& view, BookRef book)
     : m_view (view)
     , m_valid (false)
     , m_book (Ledger::getBookBase (
-        book.in.currency, book.in.issuer,
-        book.out.currency, book.out.issuer))
+        book.in.currency, book.in.account,
+        book.out.currency, book.out.account))
     , m_end (Ledger::getQualityNext (m_book))
 {
 }
@@ -65,7 +65,7 @@ BookTip::step ()
             m_book = page;
 
             // The quality immediately before the next quality
-            --m_book; 
+            --m_book;
 
             break;
         }

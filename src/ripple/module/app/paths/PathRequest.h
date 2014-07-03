@@ -45,7 +45,7 @@ public:
     typedef const pointer&                  ref;
     typedef const wptr&                     wref;
 
-    // TODO(tom): Use RippleAsset instead!
+    // TODO(tom): Use Issue instead!
     typedef std::pair<Currency, Account> CurrencyIssuer;
 
 public:

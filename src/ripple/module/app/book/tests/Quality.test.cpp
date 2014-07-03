@@ -32,7 +32,7 @@ public:
     Amount
     static raw (std::uint64_t mantissa, int exponent)
     {
-        return Amount (Currency(3), Account(3), mantissa, exponent);
+        return Amount ({Currency(3), Account(3)}, mantissa, exponent);
     }
 
     template <class Integer>
@@ -241,9 +241,9 @@ public:
     {
         testcase ("comparisons");
 
-        Amount const amount1 (noCurrency (), noAccount (), 231);
-        Amount const amount2 (noCurrency (), noAccount (), 462);
-        Amount const amount3 (noCurrency (), noAccount (), 924);
+        Amount const amount1 (noIssue(), 231);
+        Amount const amount2 (noIssue(), 462);
+        Amount const amount3 (noIssue(), 924);
 
         Quality const q11 (core::Amounts (amount1, amount1));
         Quality const q12 (core::Amounts (amount1, amount2));
@@ -264,9 +264,9 @@ public:
     {
         testcase ("composition");
 
-        Amount const amount1 (noCurrency (), noAccount (), 231);
-        Amount const amount2 (noCurrency (), noAccount (), 462);
-        Amount const amount3 (noCurrency (), noAccount (), 924);
+        Amount const amount1 (noIssue(), 231);
+        Amount const amount2 (noIssue(), 462);
+        Amount const amount3 (noIssue(), 924);
 
         Quality const q11 (core::Amounts (amount1, amount1));
         Quality const q12 (core::Amounts (amount1, amount2));
@@ -289,8 +289,8 @@ public:
         testcase ("operations");
 
         Quality const q11 (core::Amounts (
-            Amount (noCurrency (), noAccount (), 731),
-            Amount (noCurrency (), noAccount (), 731)));
+            Amount (noIssue(), 731),
+            Amount (noIssue(), 731)));
 
         Quality qa (q11);
         Quality qb (q11);

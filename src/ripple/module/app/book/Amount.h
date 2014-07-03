@@ -191,7 +191,7 @@ public:
 
         if (sig == 0)
             return os << "0";
-        
+
         if (sig < 0)
             os << "-";
         if (m_integral)
@@ -204,10 +204,11 @@ public:
 };
 
 //------------------------------------------------------------------------------
+// TODO(tom): remove this typedef and have exactly one name for STAmount.
 
 typedef STAmount Amount;
 
-}
-}
+} // core
+} // ripple
 
 #endif

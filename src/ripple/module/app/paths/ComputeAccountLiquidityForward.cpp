@@ -78,18 +78,11 @@ TER computeForwardLiquidityForAccount (
     // rev.
 
     // For nextNodeIsAccount
-    STAmount saPrvRedeemAct (
-        previousNode.saFwdRedeem.getCurrency (),
-        previousNode.saFwdRedeem.getIssuer ());
-
-    STAmount saPrvIssueAct (
-        previousNode.saFwdIssue.getCurrency (),
-        previousNode.saFwdIssue.getIssuer ());
+    auto saPrvRedeemAct = previousNode.saFwdRedeem.zeroed();
+    auto saPrvIssueAct = previousNode.saFwdIssue.zeroed();
 
     // For !previousNodeIsAccount
-    STAmount saPrvDeliverAct (
-        previousNode.saFwdDeliver.getCurrency (),
-        previousNode.saFwdDeliver.getIssuer ());
+    auto saPrvDeliverAct = previousNode.saFwdDeliver.zeroed ();
 
     WriteLog (lsTRACE, RippleCalc)
         << "computeForwardLiquidityForAccount> "
@@ -167,7 +160,7 @@ TER computeForwardLiquidityForAccount (
                     ? previousNode.saFwdIssue  // No fee.
                     : STAmount::mulRound (
                           previousNode.saFwdIssue,
-                          STAmount (noCurrency(), noAccount(), uQualityIn, -9),
+                          STAmount (noIssue(), uQualityIn, -9),
                           true); // Amount to credit.
 
             // Amount to credit. Credit for less than received as a surcharge.
@@ -329,7 +322,7 @@ TER computeForwardLiquidityForAccount (
                     node.saFwdDeliver = std::min (
                         node.saFwdDeliver,
                         rippleCalc.mActiveLedger.accountHolds (
-                            node.account_, xrpCurrency(), xrpIssuer()));
+                            node.account_, xrpCurrency(), xrpAccount()));
 
             }
 
@@ -360,7 +353,7 @@ TER computeForwardLiquidityForAccount (
 
                 // Deliver XRP to limbo.
                 resultCode = rippleCalc.mActiveLedger.accountSend (
-                    node.account_, xrpIssuer(), node.saFwdDeliver);
+                    node.account_, xrpAccount(), node.saFwdDeliver);
             }
         }
     }

@@ -79,7 +79,7 @@ public:
     void processTxn (Ledger::ref ledger, const AcceptedLedgerTx& alTx, Json::Value const& jvObj);
 
 private:
-    typedef ripple::unordered_map <RippleAsset, std::vector<OrderBook::pointer>>
+    typedef ripple::unordered_map <Issue, std::vector<OrderBook::pointer>>
             AssetToOrderBook;
 
     // by ci/ii
@@ -89,13 +89,13 @@ private:
     AssetToOrderBook mDestMap;
 
     // does an order book to XRP exist
-    ripple::unordered_set <RippleAsset> mXRPBooks;
+    ripple::unordered_set <Issue> mXRPBooks;
 
     typedef RippleRecursiveMutex LockType;
     typedef std::lock_guard <LockType> ScopedLockType;
     LockType mLock;
 
-    typedef ripple::unordered_map <RippleBook, BookListeners::pointer>
+    typedef ripple::unordered_map <Book, BookListeners::pointer>
     BookToListenersMap;
 
     BookToListenersMap mListeners;

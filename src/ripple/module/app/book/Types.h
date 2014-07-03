@@ -21,8 +21,7 @@
 #define RIPPLE_CORE_TYPES_H_INCLUDED
 
 #include <ripple/module/app/ledger/LedgerEntrySet.h>
-#include <ripple/types/api/RippleAssets.h>
-#include <ripple/types/api/base_uint.h>
+#include <ripple/types/api/Book.h>
 
 #include <chrono>
 #include <cstdint>
@@ -32,14 +31,6 @@ namespace core {
 
 /** A mutable view that overlays an immutable ledger to track changes. */
 typedef LedgerEntrySet LedgerView;
-
-/** Asset identifiers. */
-typedef RippleAsset Asset;
-typedef RippleAssetRef AssetRef;
-
-/** Uniquely identifies an order book. */
-typedef RippleBook Book;
-typedef RippleBookRef BookRef;
 
 /** A clock representing network time.
     This measures seconds since the Ripple epoch as seen

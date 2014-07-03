@@ -45,16 +45,11 @@ CreateOfferDirect::crossOffers (
         mEngine->getLedger ()->getParentCloseTimeNC ());
 
     core::LedgerView view_cancel (view.duplicate());
-    core::OfferStream offers (view, view_cancel,
-        core::Book (
-            core::AssetRef (
-                taker_amount.in.getCurrency(), taker_amount.in.getIssuer()),
-            core::AssetRef (
-                taker_amount.out.getCurrency(), taker_amount.out.getIssuer())),
+    core::OfferStream offers (
+        view, view_cancel,
+        Book (taker_amount.in.issue(), taker_amount.out.issue()),
         when, m_journal);
-    Account& account = mTxnAccountID;
-    // TODO(tom): why is that last line needed?
-    core::Taker taker (offers.view(), account, taker_amount, options);
+    core::Taker taker (offers.view(), mTxnAccountID, taker_amount, options);
 
     TER cross_result (tesSUCCESS);
 

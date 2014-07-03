@@ -40,19 +40,19 @@ CreateOffer::CreateOffer (
 }
 
 TER
-CreateOffer::checkAcceptAsset(core::AssetRef asset) const
+CreateOffer::checkAcceptAsset(IssueRef issue) const
 {
     /* Only valid for custom currencies */
-    assert (!asset.is_xrp ());
+    assert (!isXRP (issue.currency));
 
     SLE::pointer const issuerAccount = mEngine->entryCache (
-        ltACCOUNT_ROOT, Ledger::getAccountRootIndex (asset.issuer));
+        ltACCOUNT_ROOT, Ledger::getAccountRootIndex (issue.account));
 
     if (!issuerAccount)
     {
         if (m_journal.warning) m_journal.warning <<
             "delay: can't receive IOUs from non-existent issuer: " <<
-            to_string (asset.issuer);
+            to_string (issue.account);
 
         return (mParams & tapRETRY)
             ? terNO_ACCOUNT
@@ -63,7 +63,7 @@ CreateOffer::checkAcceptAsset(core::AssetRef asset) const
     {
         SLE::pointer const trustLine (mEngine->entryCache (
             ltRIPPLE_STATE, Ledger::getRippleStateIndex (
-                mTxnAccountID, asset.issuer, asset.currency)));
+                mTxnAccountID, issue.account, issue.currency)));
 
         if (!trustLine)
         {
@@ -75,7 +75,7 @@ CreateOffer::checkAcceptAsset(core::AssetRef asset) const
         // Entries have a canonical representation, determined by a
         // lexicographical "greater than" comparison employing strict weak
         // ordering. Determine which entry we need to access.
-        bool const canonical_gt (mTxnAccountID > asset.issuer);
+        bool const canonical_gt (mTxnAccountID > issue.account);
 
         bool const need_auth (trustLine->getFieldU32 (sfFlags) &
             (canonical_gt ? lsfLowAuth : lsfHighAuth));
@@ -279,7 +279,7 @@ CreateOffer::doApply ()
 
     // Make sure that we are authorized to hold what the taker will pay us.
     if (terResult == tesSUCCESS && !saTakerPays.isNative ())
-        terResult = checkAcceptAsset (core::Asset (uPaysCurrency, uPaysIssuerID));
+        terResult = checkAcceptAsset (Issue (uPaysCurrency, uPaysIssuerID));
 
     bool crossed = false;
     bool const bOpenLedger (mParams & tapOPEN_LEDGER);
@@ -358,7 +358,7 @@ CreateOffer::doApply ()
         // Earlier, we verified that the amounts, as specified in the offer,
         // were not negative. That they are now suggests that something went
         // very wrong with offer crossing.
-        m_journal.fatal << (crossed ? "Partially consumed" : "Full") << 
+        m_journal.fatal << (crossed ? "Partially consumed" : "Full") <<
             " offer has negative component:" <<
             " pays=" << saTakerPays.getFullText () <<
             " gets=" << saTakerGets.getFullText ();

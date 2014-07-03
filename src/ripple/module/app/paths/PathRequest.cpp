@@ -361,7 +361,7 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
             if (!sameAccount || (c != saDstAmount.getCurrency ()))
             {
                 if (c.isZero ())
-                    sourceCurrencies.insert (std::make_pair (c, xrpIssuer()));
+                    sourceCurrencies.insert (std::make_pair (c, xrpAccount()));
                 else
                     sourceCurrencies.insert (std::make_pair (c, raSrcAccount.getAccountID ()));
             }
@@ -414,7 +414,7 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
     for (auto const& currIssuer: sourceCurrencies)
     {
         {
-            STAmount test (currIssuer.first, currIssuer.second, 1);
+            STAmount test ({currIssuer.first, currIssuer.second}, 1);
             if (m_journal.debug)
             {
                 m_journal.debug
@@ -436,11 +436,12 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
             PathState::List pathStateList;
             STAmount saMaxAmountAct;
             STAmount saDstAmountAct;
-            STAmount saMaxAmount (
-                currIssuer.first,
-                currIssuer.second.isNonZero () ? Account(currIssuer.second) :
-                (currIssuer.first.isZero () ? xrpIssuer() :
-                 raSrcAccount.getAccountID ()), 1);
+            auto& account = currIssuer.second.isNonZero ()
+                    ? Account(currIssuer.second)
+                    : isXRP (currIssuer.first)
+                        ? xrpAccount()
+                        : raSrcAccount.getAccountID ();
+            STAmount saMaxAmount ({currIssuer.first, account}, 1);
 
             saMaxAmount.negate ();
             m_journal.debug << iIdentifier << " Paths found, calling rippleCalc";

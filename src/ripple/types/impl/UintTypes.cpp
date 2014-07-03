@@ -129,7 +129,7 @@ const char* systemCurrencyCode() {
     return "XRP";
 }
 
-Account const& xrpIssuer()
+Account const& xrpAccount()
 {
     static const Account account(0);
     return account;

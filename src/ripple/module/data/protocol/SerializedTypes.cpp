@@ -19,8 +19,8 @@
 
 namespace ripple {
 
-const STAmount saZero (noCurrency(), noAccount(), 0);
-const STAmount saOne (noCurrency(), noAccount(), 1);
+const STAmount saZero (noIssue(), 0);
+const STAmount saOne (noIssue(), 1);
 
 SerializedType& SerializedType::operator= (const SerializedType& t)
 {
@@ -519,26 +519,6 @@ std::string STPath::getText () const
     }
 
     return ret + "]";
-}
-#endif
-
-#if 0
-std::string STPathSet::getText () const
-{
-    std::string ret ("{");
-    bool firstPath = true;
-
-    BOOST_FOREACH (std::vector<STPath>::const_iterator::value_type it, value)
-    {
-        if (!firstPath)
-        {
-            ret += ", ";
-            firstPath = false;
-        }
-
-        ret += it.getText ();
-    }
-    return ret + "}";
 }
 #endif
 
