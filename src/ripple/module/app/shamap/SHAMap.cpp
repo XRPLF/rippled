@@ -1004,6 +1004,8 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeExternalNT (const SHAMapNodeID& id, uin
 {
     SHAMapTreeNode::pointer ret;
 
+    // This if allows us to use the SHAMap in unit tests.  So we don't attempt
+    // to fetch external nodes if we're not running in the application.
     if (!getApp().running ())
         return ret;
 
