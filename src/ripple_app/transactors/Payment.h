@@ -37,6 +37,9 @@ class PaymentTransactor
     /* The largest number of paths we allow */
     static std::size_t const MaxPathSize = 6;
 
+    /* The longest path we allow */
+    static std::size_t const MaxPathLength = 8;
+
 public:
     PaymentTransactor (
         SerializedTransaction const& txn,

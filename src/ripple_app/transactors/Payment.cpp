@@ -212,9 +212,14 @@ TER PaymentTransactor::doApply ()
         try
         {
             bool const openLedger = is_bit_set (mParams, tapOPEN_LEDGER);
-            bool const tooManyPaths = spsPaths.size () > MaxPathSize;
 
-            terResult = openLedger && tooManyPaths
+            bool pathTooBig = spsPaths.size () > MaxPathSize;
+
+            for (auto const& path : spsPaths)
+                if (path.size () > MaxPathLength)
+                    pathTooBig = true;
+
+            terResult = openLedger && pathTooBig
                         ? telBAD_PATH_COUNT // Too many paths for proposed ledger.
                         : RippleCalc::rippleCalc (
                               mEngine->view (),
