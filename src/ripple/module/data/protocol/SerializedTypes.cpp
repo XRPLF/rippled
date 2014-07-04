@@ -522,26 +522,6 @@ std::string STPath::getText () const
 }
 #endif
 
-#if 0
-std::string STPathSet::getText () const
-{
-    std::string ret ("{");
-    bool firstPath = true;
-
-    BOOST_FOREACH (std::vector<STPath>::const_iterator::value_type it, value)
-    {
-        if (!firstPath)
-        {
-            ret += ", ";
-            firstPath = false;
-        }
-
-        ret += it.getText ();
-    }
-    return ret + "}";
-}
-#endif
-
 void STPathSet::add (Serializer& s) const
 {
     assert (fName->isBinary ());

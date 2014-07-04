@@ -35,10 +35,12 @@ template <bool ByValue> class IssueType;
 template <bool ByValue>
 bool isConsistent(IssueType<ByValue> const&);
 
-/** An issue of currency from a given account.
+/** A currency issued by an account.
+
     When ByValue is `false`, this only stores references, and the caller
     is responsible for managing object lifetime.
-    @see Currency, Account, Issue, IssueRef.
+
+    @see Currency, Account, Issue, IssueRef, Book
 */
 template <bool ByValue>
 class IssueType
