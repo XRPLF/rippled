@@ -20,6 +20,8 @@
 #ifndef RIPPLE_LEDGERCLEANER_H_INCLUDED
 #define RIPPLE_LEDGERCLEANER_H_INCLUDED
 
+#include <beast/cxx14/memory.h> // <memory>
+
 namespace ripple {
 
 /** Check the ledger/transaction databases to make sure they have continuity */
@@ -31,13 +33,6 @@ protected:
     explicit LedgerCleaner (Stoppable& parent);
 
 public:
-    /** Create a new object.
-        The caller receives ownership and must delete the object when done.
-    */
-    static LedgerCleaner* New (
-        Stoppable& parent,
-        beast::Journal journal);
-
     /** Destroy the object. */
     virtual ~LedgerCleaner () = 0;
 
@@ -53,6 +48,9 @@ public:
     */
     virtual void doClean (Json::Value const& parameters) = 0;
 };
+
+std::unique_ptr<LedgerCleaner> make_LedgerCleaner (beast::Stoppable& parent,
+    beast::Journal journal);
 
 } // ripple
 

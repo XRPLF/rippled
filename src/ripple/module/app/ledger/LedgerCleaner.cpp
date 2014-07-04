@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <beast/cxx14/memory.h> // <memory>
+
 namespace ripple {
 
 /*
@@ -440,11 +442,10 @@ LedgerCleaner::~LedgerCleaner ()
 {
 }
 
-LedgerCleaner* LedgerCleaner::New (
-    Stoppable& parent,
-    beast::Journal journal)
+std::unique_ptr<LedgerCleaner>
+make_LedgerCleaner (beast::Stoppable& parent, beast::Journal journal)
 {
-    return new LedgerCleanerImp (parent, journal);
+    return std::make_unique <LedgerCleanerImp> (parent, journal);
 }
 
 } // ripple

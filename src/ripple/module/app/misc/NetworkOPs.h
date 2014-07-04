@@ -20,6 +20,7 @@
 #ifndef RIPPLE_NETWORKOPS_H
 #define RIPPLE_NETWORKOPS_H
 
+#include <beast/cxx14/memory.h> // <memory>
 #include <tuple>
 
 namespace ripple {
@@ -84,10 +85,6 @@ public:
     typedef hash_map <std::uint64_t, InfoSub::wptr> SubMapType;
 
 public:
-    static std::unique_ptr<NetworkOPs>
-    make_new (bool standlone, clock_type& clock, std::size_t network_quorum,
-        LedgerMaster& ledgerMaster, Stoppable& parent, beast::Journal journal);
-
     virtual ~NetworkOPs () = 0;
 
     //--------------------------------------------------------------------------
@@ -323,6 +320,11 @@ public:
     virtual void pubProposedTransaction (Ledger::ref lpCurrent,
         SerializedTransaction::ref stTxn, TER terResult) = 0;
 };
+
+std::unique_ptr<NetworkOPs>
+make_NetworkOPs (bool standlone, NetworkOPs::clock_type& clock,
+    std::size_t network_quorum, LedgerMaster& ledgerMaster,
+    beast::Stoppable& parent, beast::Journal journal);
 
 } // ripple
 

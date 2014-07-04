@@ -292,15 +292,15 @@ public:
         // VFALCO NOTE must come before NetworkOPs to prevent a crash due
         //             to dependencies in the destructor.
         //
-        , m_inboundLedgers (InboundLedgers::New (get_seconds_clock (), *m_jobQueue,
+        , m_inboundLedgers (make_InboundLedgers (get_seconds_clock (), *m_jobQueue,
                             m_collectorManager->collector ()))
 
-        , m_networkOPs (NetworkOPs::make_new (getConfig ().RUN_STANDALONE,
+        , m_networkOPs (make_NetworkOPs (getConfig ().RUN_STANDALONE,
             get_seconds_clock (), getConfig ().NETWORK_QUORUM, *m_ledgerMaster,
             *m_jobQueue, m_logs.journal("NetworkOPs")))
 
         // VFALCO NOTE LocalCredentials starts the deprecated UNL service
-        , m_deprecatedUNL (UniqueNodeList::New (*m_jobQueue))
+        , m_deprecatedUNL (make_UniqueNodeList (*m_jobQueue))
 
         , m_rpcHTTPServer (make_RPCHTTPServer (*m_networkOPs,
             m_logs.journal("HTTPServer"), *m_jobQueue, *m_networkOPs, *m_resourceManager))
@@ -327,9 +327,9 @@ public:
 
         , mHashRouter (IHashRouter::New (IHashRouter::getDefaultHoldTime ()))
 
-        , mValidations (Validations::New ())
+        , mValidations (make_Validations ())
 
-        , mProofOfWorkFactory (ProofOfWorkFactory::New ())
+        , mProofOfWorkFactory (make_ProofOfWorkFactory ())
 
         , m_loadManager (LoadManager::New (*this, m_logs.journal("LoadManager")))
 

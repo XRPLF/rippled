@@ -22,6 +22,7 @@
 #include <beast/module/core/thread/DeadlineTimer.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/regex.hpp>
+#include <beast/cxx14/memory.h> // <memory>
 
 namespace ripple {
 
@@ -2048,9 +2049,10 @@ UniqueNodeList::UniqueNodeList (Stoppable& parent)
 
 //------------------------------------------------------------------------------
 
-UniqueNodeList* UniqueNodeList::New (Stoppable& parent)
+std::unique_ptr<UniqueNodeList>
+make_UniqueNodeList (beast::Stoppable& parent)
 {
-    return new UniqueNodeListImp (parent);
+    return std::make_unique<UniqueNodeListImp> (parent);
 }
 
 } // ripple

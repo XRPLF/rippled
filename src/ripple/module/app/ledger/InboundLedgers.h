@@ -20,6 +20,8 @@
 #ifndef RIPPLE_INBOUNDLEDGERS_H
 #define RIPPLE_INBOUNDLEDGERS_H
 
+#include <beast/cxx14/memory.h> // <memory>
+
 namespace ripple {
 
 /** Manages the lifetime of inbound ledgers.
@@ -32,13 +34,6 @@ public:
     typedef beast::abstract_clock <std::chrono::seconds> clock_type;
 
     virtual ~InboundLedgers() = 0;
-
-    // VFALCO TODO Make this a free function outside the class:
-    //             std::unique_ptr <InboundLedger> make_InboundLedgers (...)
-    //
-    static InboundLedgers* New (clock_type& clock, beast::Stoppable& parent,
-                                beast::insight::Collector::ptr const& collector);
-
 
     // VFALCO TODO Should this be called findOrAdd ?
     //
@@ -78,6 +73,11 @@ public:
 
     virtual void onStop() = 0;
 };
+
+std::unique_ptr<InboundLedgers>
+make_InboundLedgers (InboundLedgers::clock_type& clock, beast::Stoppable& parent,
+                     beast::insight::Collector::ptr const& collector);
+
 
 } // ripple
 

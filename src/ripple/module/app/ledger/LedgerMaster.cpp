@@ -85,7 +85,8 @@ public:
         , m_journal (journal)
         , mLedgerHistory (collector)
         , mHeldTransactions (uint256 ())
-        , mLedgerCleaner (LedgerCleaner::New(*this, deprecatedLogs().journal("LedgerCleaner")))
+        , mLedgerCleaner (make_LedgerCleaner (
+            *this, deprecatedLogs().journal("LedgerCleaner")))
         , mMinValidations (0)
         , mLastValidateSeq (0)
         , mAdvanceThread (false)

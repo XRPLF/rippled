@@ -20,6 +20,8 @@
 #ifndef RIPPLE_UNIQUENODELIST_H_INCLUDED
 #define RIPPLE_UNIQUENODELIST_H_INCLUDED
 
+#include <beast/cxx14/memory.h> // <memory>
+
 namespace ripple {
 
 class UniqueNodeList : public beast::Stoppable
@@ -43,9 +45,6 @@ public:
     typedef long score;
 
 public:
-    // VFALCO TODO make this not use boost::asio...
-    static UniqueNodeList* New (Stoppable& parent);
-
     virtual ~UniqueNodeList () { }
 
     // VFALCO TODO Roll this into the constructor so there is one less state.
@@ -76,6 +75,9 @@ public:
 
     virtual int iSourceScore (ValidatorSource vsWhy) = 0;
 };
+
+std::unique_ptr<UniqueNodeList>
+make_UniqueNodeList (beast::Stoppable& parent);
 
 } // ripple
 

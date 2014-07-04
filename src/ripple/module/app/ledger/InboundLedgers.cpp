@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <beast/cxx14/memory.h> // <memory>
+
 namespace ripple {
 
 class InboundLedgersImp
@@ -397,10 +399,11 @@ InboundLedgers::~InboundLedgers()
 {
 }
 
-InboundLedgers* InboundLedgers::New (clock_type& clock, beast::Stoppable& parent,
-                                     beast::insight::Collector::ptr const& collector)
+std::unique_ptr<InboundLedgers>
+make_InboundLedgers (InboundLedgers::clock_type& clock, beast::Stoppable& parent,
+                     beast::insight::Collector::ptr const& collector)
 {
-    return new InboundLedgersImp (clock, parent, collector);
+    return std::make_unique<InboundLedgersImp> (clock, parent, collector);
 }
 
 } // ripple

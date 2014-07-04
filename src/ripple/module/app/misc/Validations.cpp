@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <thread>
+#include <beast/cxx14/memory.h> // <memory>
 
 namespace ripple {
 
@@ -465,9 +466,9 @@ private:
     }
 };
 
-Validations* Validations::New ()
+std::unique_ptr <Validations> make_Validations ()
 {
-    return new ValidationsImp;
+    return std::make_unique <ValidationsImp> ();
 }
 
 } // ripple

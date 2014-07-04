@@ -22,6 +22,7 @@
 #include <ripple/common/jsonrpc_fields.h>
 #include <beast/module/core/thread/DeadlineTimer.h>
 #include <beast/module/core/system/SystemStats.h>
+#include <beast/cxx14/memory.h> // <memory>
 #include <tuple>
 
 namespace ripple {
@@ -3652,11 +3653,12 @@ NetworkOPs::~NetworkOPs ()
 //------------------------------------------------------------------------------
 
 std::unique_ptr<NetworkOPs>
-NetworkOPs::make_new (bool standalone, clock_type& clock, std::size_t network_quorum,
-    LedgerMaster& ledgerMaster, Stoppable& parent, beast::Journal journal)
+make_NetworkOPs (bool standalone, NetworkOPs::clock_type& clock,
+    std::size_t network_quorum, LedgerMaster& ledgerMaster,
+    beast::Stoppable& parent, beast::Journal journal)
 {
-    return std::make_unique<NetworkOPsImp> (
-        standalone, clock, network_quorum, ledgerMaster, parent, journal);
+    return std::make_unique<NetworkOPsImp> (standalone, clock, network_quorum,
+        ledgerMaster, parent, journal);
 }
 
 } // ripple
