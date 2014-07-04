@@ -28,13 +28,6 @@
 
 namespace ripple {
 
-//------------------------------------------------------------------------------
-
-template <bool ByValue> class IssueType;
-
-template <bool ByValue>
-bool isConsistent(IssueType<ByValue> const&);
-
 /** A currency issued by an account.
 
     When ByValue is `false`, this only stores references, and the caller
@@ -64,7 +57,6 @@ public:
     IssueType (Account const& a, Currency const& c)
             : account (a), currency (c)
     {
-        assert(isConsistent(*this));
     }
 
     template <bool OtherByValue>
@@ -72,7 +64,6 @@ public:
         : account (other.account)
         , currency (other.currency)
     {
-        assert(isConsistent(*this));
     }
 
     /** Assignment. */
@@ -89,14 +80,7 @@ public:
 template <bool ByValue>
 bool isConsistent(IssueType<ByValue> const& ac)
 {
-    return isXRP(ac.currency) == isXRP(ac.account);
-}
-
-template <bool ByValue>
-bool isXRP (IssueType<ByValue> const& ac)
-{
-    assert(isConsistent(ac));
-    return isXRP(ac.currency);
+    return isXRP (ac.currency) == isXRP (ac.account);
 }
 
 template <bool ByValue>
@@ -128,10 +112,10 @@ template <bool LhsByValue, bool RhsByValue>
 int compare (IssueType <LhsByValue> const& lhs,
     IssueType <RhsByValue> const& rhs)
 {
-    int const diff (compare (lhs.currency, rhs.currency));
+    int diff = compare (lhs.currency, rhs.currency);
     if (diff != 0)
         return diff;
-    if (isXRP(lhs))
+    if (isXRP (lhs.currency))
         return 0;
     return compare (lhs.account, rhs.account);
 }

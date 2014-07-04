@@ -111,7 +111,7 @@ Pathfinder::Pathfinder (
         mDstAmount (saDstAmount),
         mSrcCurrencyID (uSrcCurrencyID),
         mSrcIssuerID (uSrcIssuerID),
-        mSrcAmount (uSrcCurrencyID, uSrcIssuerID, 1u, 0, true),
+        mSrcAmount ({uSrcIssuerID, uSrcCurrencyID}, 1u, 0, true),
         mLedger (cache->getLedger ()), mRLCache (cache)
 {
 

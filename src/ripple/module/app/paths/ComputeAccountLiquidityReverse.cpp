@@ -84,19 +84,19 @@ TER computeReverseLiquidityForAccount (
     const STAmount saPrvOwed = (previousNodeIsAccount && nodeIndex != 0)
         ? rippleCalc.mActiveLedger.rippleOwed (
             node.account_, previousAccountID, node.currency_)
-        : STAmount (node.currency_, node.account_);
+        : STAmount ({node.account_, node.currency_});
 
     // The limit amount that the previous account may owe.
     const STAmount saPrvLimit = (previousNodeIsAccount && nodeIndex != 0)
         ? rippleCalc.mActiveLedger.rippleLimit (
             node.account_, previousAccountID, node.currency_)
-        : STAmount (node.currency_, node.account_);
+        : STAmount ({node.account_, node.currency_});
 
     // Next account is owed.
     const STAmount saNxtOwed = (nextNodeIsAccount && nodeIndex != lastNodeIndex)
         ? rippleCalc.mActiveLedger.rippleOwed (
             node.account_, nextAccountID, node.currency_)
-        : STAmount (node.currency_, node.account_);
+        : STAmount ({node.account_, node.currency_});
 
     WriteLog (lsTRACE, RippleCalc)
         << "computeReverseLiquidityForAccount>"
@@ -114,7 +114,7 @@ TER computeReverseLiquidityForAccount (
     // Previous can redeem the owed IOUs it holds.
     const STAmount saPrvRedeemReq  = (saPrvOwed > zero)
         ? saPrvOwed
-        : STAmount (saPrvOwed.getCurrency (), saPrvOwed.getIssuer ());
+        : STAmount (saPrvOwed.issue ());
 
     // This is the amount we're actually going to be setting for the previous
     // node.
@@ -129,7 +129,7 @@ TER computeReverseLiquidityForAccount (
     // Precompute these values in case we have an order book.
     auto deliverCurrency = previousNode.saRevDeliver.getCurrency ();
     const STAmount saPrvDeliverReq (
-        deliverCurrency, previousNode.saRevDeliver.getIssuer (), -1);
+        {previousNode.saRevDeliver.getIssuer (), deliverCurrency}, -1);
     // Unlimited delivery.
 
     STAmount&       saPrvDeliverAct = previousNode.saRevDeliver;
@@ -138,18 +138,16 @@ TER computeReverseLiquidityForAccount (
     const STAmount& saCurRedeemReq  = node.saRevRedeem;
 
     // Set to zero, because we're trying to hit the previous node.
-    STAmount saCurRedeemAct (
-        saCurRedeemReq.getCurrency (), saCurRedeemReq.getIssuer ());
+    auto saCurRedeemAct = saCurRedeemReq.zeroed();
 
     const STAmount& saCurIssueReq = node.saRevIssue;
+
     // Track the amount we actually redeem.
-    STAmount saCurIssueAct (
-        saCurIssueReq.getCurrency (), saCurIssueReq.getIssuer ());
+    auto saCurIssueAct = saCurIssueReq.zeroed();
 
     // For !nextNodeIsAccount
     const STAmount& saCurDeliverReq = node.saRevDeliver;
-    STAmount saCurDeliverAct (
-        saCurDeliverReq.getCurrency (), saCurDeliverReq.getIssuer ());
+    auto saCurDeliverAct  = saCurDeliverReq.zeroed();
 
     WriteLog (lsTRACE, RippleCalc)
         << "computeReverseLiquidityForAccount:"
@@ -192,8 +190,7 @@ TER computeReverseLiquidityForAccount (
             const STAmount saCurWantedReq = std::min (
                 pathState.outReq() - pathState.outAct(),
                 saPrvLimit + saPrvOwed);
-            STAmount saCurWantedAct (
-                saCurWantedReq.getCurrency (), saCurWantedReq.getIssuer ());
+            auto saCurWantedAct = saCurWantedReq.zeroed ();
 
             WriteLog (lsTRACE, RippleCalc)
                 << "computeReverseLiquidityForAccount: account --> ACCOUNT --> $ :"

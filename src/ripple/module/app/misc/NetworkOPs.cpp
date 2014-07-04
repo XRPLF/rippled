@@ -3004,8 +3004,7 @@ void NetworkOPsImp::getBookPage (
                     // Need to charge a transfer fee to offer owner.
                     uOfferRate          = uTransferRate;
                     saOwnerFundsLimit   = STAmount::divide (
-                        saOwnerFunds, STAmount (noCurrency(), noAccount(),
-                                                uOfferRate, -9));
+                        saOwnerFunds, STAmount (noIssue(), uOfferRate, -9));
                     // TODO(tom): why -9?
                 }
                 else
@@ -3038,7 +3037,7 @@ void NetworkOPsImp::getBookPage (
                         saOwnerFunds,
                         STAmount::multiply (
                             saTakerGetsFunded,
-                            STAmount (noCurrency(), noAccount(),
+                            STAmount (noIssue(),
                                       uOfferRate, -9)));
 
                 umBalance[uOfferOwnerID]    = saOwnerFunds - saOwnerPays;
@@ -3165,7 +3164,7 @@ void NetworkOPsImp::getBookPage (
                 // Need to charge a transfer fee to offer owner.
                 uOfferRate = uTransferRate;
                 // TODO(tom): where does -9 come from?!
-                STAmount amount (noCurrency(), noAccount(), uOfferRate, -9);
+                STAmount amount (noIssue(), uOfferRate, -9);
                 saOwnerFundsLimit = STAmount::divide (saOwnerFunds, amount);
             }
             else
@@ -3198,7 +3197,7 @@ void NetworkOPsImp::getBookPage (
                     : std::min (saOwnerFunds,
                                 STAmount::multiply (
                                     saTakerGetsFunded, STAmount (
-                                        noCurrency(), noAccount(), uOfferRate,
+                                        noIssue(), uOfferRate,
                                         -9)));
 
             umBalance[uOfferOwnerID]    = saOwnerFunds - saOwnerPays;

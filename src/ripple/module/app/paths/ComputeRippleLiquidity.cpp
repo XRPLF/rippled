@@ -139,11 +139,11 @@ void computeRippleLiquidity (
 
             // current actual = current request * (quality out / quality in).
             auto numerator = STAmount::mulRound (
-                saCur, uQualityOut, currency, uCurIssuerID, true);
+                saCur, uQualityOut, {uCurIssuerID, currency}, true);
             // True means "round up" to get best flow.
 
             STAmount saCurIn = STAmount::divRound (
-                numerator, uQualityIn, currency, uCurIssuerID, true);
+                numerator, uQualityIn, {uCurIssuerID, currency}, true);
 
             WriteLog (lsTRACE, RippleCalc)
                 << "computeRippleLiquidity:"
@@ -170,12 +170,13 @@ void computeRippleLiquidity (
                 // This is inverted compared to the code above because we're
                 // going the other way
 
+                Issue issue{uCurIssuerID, currency};
                 auto numerator = STAmount::mulRound (
-                    saPrv, uQualityIn, currency, uCurIssuerID, true);
+                    saPrv, uQualityIn, issue, true);
                 // A part of current. All of previous. (Cur is the driver
                 // variable.)
                 STAmount saCurOut = STAmount::divRound (
-                    numerator, uQualityOut, currency, uCurIssuerID, true);
+                    numerator, uQualityOut, issue, true);
 
                 WriteLog (lsTRACE, RippleCalc)
                     << "computeRippleLiquidity:4: saCurReq=" << saCurReq;

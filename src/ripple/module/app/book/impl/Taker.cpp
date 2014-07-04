@@ -46,11 +46,7 @@ Taker::remaining_offer () const
 {
     // If the taker is done, then there's no offer to place.
     if (done ())
-    {
-        return Amounts (
-            Amount (m_amount.in.getCurrency (), m_amount.in.getIssuer ()),
-            Amount (m_amount.out.getCurrency (), m_amount.out.getIssuer ()));
-    }
+        return Amounts (m_amount.in.zeroed(), m_amount.out.zeroed());
 
     // Avoid math altogether if we didn't cross.
    if (m_amount == m_remain)
@@ -272,7 +268,7 @@ Taker::cross (Offer const& leg1, Offer const& leg2)
     Amounts flow1 (flow (amount1, leg1, m_account));
 
     amount2 = leg2.quality().ceil_in (amount2, flow1.out);
-    
+
     Amounts flow2 (flow (amount2, leg2, m_account));
 
     m_remain.out -= amount2.out;

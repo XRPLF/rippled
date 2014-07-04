@@ -39,76 +39,83 @@ namespace ripple {
 class STAmount : public SerializedType
 {
 public:
-    static const int cMinOffset            = -96, cMaxOffset = 80;
-    static const std::uint64_t cMinValue   = 1000000000000000ull, cMaxValue = 9999999999999999ull;
+    static const int cMinOffset = -96;
+    static const int cMaxOffset = 80;
+
+    static const std::uint64_t cMinValue   = 1000000000000000ull;
+    static const std::uint64_t cMaxValue   = 9999999999999999ull;
     static const std::uint64_t cMaxNative  = 9000000000000000000ull;
-    static const std::uint64_t cMaxNativeN = 100000000000000000ull; // max native value on network
+
+    // Max native value on network.
+    static const std::uint64_t cMaxNativeN = 100000000000000000ull;
     static const std::uint64_t cNotNative  = 0x8000000000000000ull;
     static const std::uint64_t cPosNative  = 0x4000000000000000ull;
 
     static std::uint64_t   uRateOne;
 
-    STAmount (std::uint64_t v = 0, bool isNeg = false)
-            : mValue (v), mOffset (0), mIsNative (true), mIsNegative (isNeg)
+    STAmount (std::uint64_t v = 0, bool negative = false)
+            : mValue (v), mOffset (0), mIsNative (true), mIsNegative (negative)
     {
         if (v == 0) mIsNegative = false;
     }
 
-    STAmount (SField::ref n, std::uint64_t v = 0, bool isNeg = false)
-        : SerializedType (n), mValue (v), mOffset (0), mIsNative (true), mIsNegative (isNeg)
+    STAmount (SField::ref n, std::uint64_t v = 0, bool negative = false)
+        : SerializedType (n), mValue (v), mOffset (0), mIsNative (true),
+          mIsNegative (negative)
     {
-        ;
     }
 
-    STAmount (SField::ref n, std::int64_t v) : SerializedType (n), mOffset (0), mIsNative (true)
-    {
-        set (v);
-    }
-
-    STAmount (Currency const& currency, Account const& issuer,
-              std::uint64_t uV = 0, int iOff = 0, bool bNegative = false)
-        : mCurrency (currency), mIssuer (issuer), mValue (uV), mOffset (iOff), mIsNegative (bNegative)
-    {
-        canonicalize ();
-    }
-
-    STAmount (Currency const& currency, Account const& issuer,
-              std::uint32_t uV, int iOff = 0, bool bNegative = false)
-        : mCurrency (currency), mIssuer (issuer), mValue (uV), mOffset (iOff), mIsNegative (bNegative)
-    {
-        canonicalize ();
-    }
-
-    STAmount (SField::ref n, Currency const& currency, Account const& issuer,
-              std::uint64_t v = 0, int off = 0, bool isNeg = false) :
-        SerializedType (n), mCurrency (currency), mIssuer (issuer), mValue (v), mOffset (off), mIsNegative (isNeg)
-    {
-        canonicalize ();
-    }
-
-    STAmount (Currency const& currency, Account const& issuer, std::int64_t v, int iOff = 0)
-        : mCurrency (currency), mIssuer (issuer), mOffset (iOff)
+    STAmount (SField::ref n, std::int64_t v)
+        : SerializedType (n), mOffset (0), mIsNative (true)
     {
         set (v);
+    }
+
+    STAmount (Issue const& issue,
+              std::uint64_t uV = 0, int iOff = 0, bool negative = false)
+            : mIssue(issue), mValue (uV), mOffset (iOff), mIsNegative (negative)
+    {
         canonicalize ();
     }
 
-    STAmount (SField::ref n, Currency const& currency, Account const& issuer, std::int64_t v, int off = 0)
-        : SerializedType (n), mCurrency (currency), mIssuer (issuer), mOffset (off)
+    STAmount (Issue const& issue,
+              std::uint32_t uV, int iOff = 0, bool negative = false)
+        : mIssue(issue), mValue (uV), mOffset (iOff), mIsNegative (negative)
+    {
+        canonicalize ();
+    }
+
+    STAmount (SField::ref n, Issue const& issue,
+              std::uint64_t v = 0, int off = 0, bool negative = false) :
+        SerializedType (n), mIssue(issue), mValue (v), mOffset (off),
+        mIsNegative (negative)
+    {
+        canonicalize ();
+    }
+
+    STAmount (Issue const& issue, std::int64_t v, int iOff = 0)
+        : mIssue(issue), mOffset (iOff)
     {
         set (v);
         canonicalize ();
     }
 
-    STAmount (Currency const& currency, Account const& issuer, int v, int iOff = 0)
-        : mCurrency (currency), mIssuer (issuer), mOffset (iOff)
+    STAmount (SField::ref n, Issue const& issue, std::int64_t v, int off = 0)
+        : SerializedType (n), mIssue(issue), mOffset (off)
     {
         set (v);
         canonicalize ();
     }
 
-    STAmount (SField::ref n, Currency const& currency, Account const& issuer, int v, int off = 0)
-        : SerializedType (n), mCurrency (currency), mIssuer (issuer), mOffset (off)
+    STAmount (Issue const& issue, int v, int iOff = 0)
+        : mIssue(issue), mOffset (iOff)
+    {
+        set (v);
+        canonicalize ();
+    }
+
+    STAmount (SField::ref n, Issue const& issue, int v, int off = 0)
+        : SerializedType (n), mIssue(issue), mOffset (off)
     {
         set (v);
         canonicalize ();
@@ -118,7 +125,8 @@ public:
 
     static STAmount createFromInt64 (SField::ref n, std::int64_t v);
 
-    static std::unique_ptr<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
+    static std::unique_ptr<SerializedType> deserialize (
+        SerializerIterator& sit, SField::ref name)
     {
         return std::unique_ptr<SerializedType> (construct (sit, name));
     }
@@ -127,7 +135,7 @@ public:
 
     static STAmount saFromRate (std::uint64_t uRate = 0)
     {
-        return STAmount (noCurrency(), noAccount(), uRate, -9, false);
+        return STAmount (noIssue(), uRate, -9, false);
     }
 
     SerializedTypeID getSType () const
@@ -155,13 +163,15 @@ public:
     // When the currency is XRP, the value in raw units. S=signed
     std::uint64_t getNValue () const
     {
-        if (!mIsNative) throw std::runtime_error ("not native");
+        if (!mIsNative)
+            throw std::runtime_error ("not native");
 
         return mValue;
     }
     void setNValue (std::uint64_t v)
     {
-        if (!mIsNative) throw std::runtime_error ("not native");
+        if (!mIsNative)
+            throw std::runtime_error ("not native");
 
         mValue = v;
     }
@@ -191,13 +201,13 @@ public:
             mIsNegative = !mIsNegative;
     }
 
-    // Return a copy of amount with the same Issuer and Currency but zero value.
+    /** @return a copy of amount with the same Issuer and Currency but zero
+        value. */
     STAmount zeroed() const
     {
-        STAmount c(mCurrency, mIssuer);
-        c = zero;
+        // TODO(tom): what does this next comment mean here?
         // See https://ripplelabs.atlassian.net/browse/WC-1847?jql=
-        return c;
+        return STAmount (mIssue);
     }
 
     void clear ()
@@ -211,16 +221,12 @@ public:
     // Zero while copying currency and issuer.
     void clear (const STAmount& saTmpl)
     {
-        mCurrency = saTmpl.mCurrency;
-        mIssuer = saTmpl.mIssuer;
-        mIsNative = saTmpl.mIsNative;
-        clear ();
+        clear(saTmpl.mIssue);
     }
-    void clear (Currency const& currency, Account const& issuer)
+
+    void clear (Issue const& issue)
     {
-        mCurrency = currency;
-        mIssuer = issuer;
-        mIsNative = !currency;
+        setIssue(issue);
         clear ();
     }
 
@@ -234,18 +240,28 @@ public:
 
     Account const& getIssuer () const
     {
-        return mIssuer;
+        return mIssue.account;
     }
-    STAmount* setIssuer (Account const& uIssuer)
+
+    void setIssuer (Account const& uIssuer)
     {
-        mIssuer   = uIssuer;
-        return this;
+        mIssue.account = uIssuer;
+        setIssue(mIssue);
     }
+
+    /** Set the Issue for this amount and update mIsNative. */
+    void setIssue (Issue const& issue);
 
     Currency const& getCurrency () const
     {
-        return mCurrency;
+        return mIssue.currency;
     }
+
+    Issue const& issue () const
+    {
+        return mIssue;
+    }
+
     bool setValue (const std::string& sAmount);
     bool setFullValue (
         const std::string& sAmount, const std::string& sCurrency = "",
@@ -255,7 +271,7 @@ public:
     virtual bool isEquivalent (const SerializedType& t) const;
     virtual bool isDefault () const
     {
-        return (mValue == 0) && mIssuer.isZero () && mCurrency.isZero ();
+        return (mValue == 0) && mIsNative;
     }
 
     bool operator== (const STAmount&) const;
@@ -288,13 +304,12 @@ public:
     friend STAmount operator- (const STAmount& v1, const STAmount& v2);
 
     static STAmount divide (
-        const STAmount& v1, const STAmount& v2,
-        Currency const& currency, Account const& issuer);
+        const STAmount& v1, const STAmount& v2, Issue const& issue);
 
     static STAmount divide (
         const STAmount& v1, const STAmount& v2, const STAmount& saUnit)
     {
-        return divide (v1, v2, saUnit.getCurrency (), saUnit.getIssuer ());
+        return divide (v1, v2, saUnit.issue ());
     }
     static STAmount divide (const STAmount& v1, const STAmount& v2)
     {
@@ -302,13 +317,12 @@ public:
     }
 
     static STAmount multiply (
-        const STAmount& v1, const STAmount& v2,
-        Currency const& currency, Account const& issuer);
+        const STAmount& v1, const STAmount& v2, Issue const& issue);
 
     static STAmount multiply (
         const STAmount& v1, const STAmount& v2, const STAmount& saUnit)
     {
-        return multiply (v1, v2, saUnit.getCurrency (), saUnit.getIssuer ());
+        return multiply (v1, v2, saUnit.issue());
     }
     static STAmount multiply (const STAmount& v1, const STAmount& v2)
     {
@@ -321,38 +335,52 @@ public:
        If you ask to round up, (X+d) should never be X unless d is zero. (Assuming X and d are positive).
     */
     // Add, subtract, multiply, or divide rounding result in specified direction
-    static STAmount addRound (const STAmount& v1, const STAmount& v2, bool roundUp);
-    static STAmount subRound (const STAmount& v1, const STAmount& v2, bool roundUp);
-    static STAmount mulRound (const STAmount& v1, const STAmount& v2,
-                              Currency const& currency, Account const& issuer, bool roundUp);
-    static STAmount divRound (const STAmount& v1, const STAmount& v2,
-                              Currency const& currency, Account const& issuer, bool roundUp);
+    static STAmount addRound (
+        const STAmount& v1, const STAmount& v2, bool roundUp);
+    static STAmount subRound (
+        const STAmount& v1, const STAmount& v2, bool roundUp);
+    static STAmount mulRound (
+        const STAmount& v1, const STAmount& v2, Issue const& issue,
+        bool roundUp);
+    static STAmount divRound (
+        const STAmount& v1, const STAmount& v2, Issue const& issue,
+        bool roundUp);
 
-    static STAmount mulRound (const STAmount& v1, const STAmount& v2, const STAmount& saUnit, bool roundUp)
+    static STAmount mulRound (
+        const STAmount& v1, const STAmount& v2, const STAmount& saUnit,
+        bool roundUp)
     {
-        return mulRound (v1, v2, saUnit.getCurrency (), saUnit.getIssuer (), roundUp);
+        return mulRound (v1, v2, saUnit.issue (), roundUp);
     }
-    static STAmount mulRound (const STAmount& v1, const STAmount& v2, bool roundUp)
+    static STAmount mulRound (
+        const STAmount& v1, const STAmount& v2, bool roundUp)
     {
-        return mulRound (v1, v2, v1.getCurrency (), v1.getIssuer (), roundUp);
+        return mulRound (v1, v2, v1.issue (), roundUp);
     }
-    static STAmount divRound (const STAmount& v1, const STAmount& v2, const STAmount& saUnit, bool roundUp)
+    static STAmount divRound (
+        const STAmount& v1, const STAmount& v2, const STAmount& saUnit,
+        bool roundUp)
     {
-        return divRound (v1, v2, saUnit.getCurrency (), saUnit.getIssuer (), roundUp);
+        return divRound (v1, v2, saUnit.issue (), roundUp);
     }
-    static STAmount divRound (const STAmount& v1, const STAmount& v2, bool roundUp)
+    static STAmount divRound (
+        const STAmount& v1, const STAmount& v2, bool roundUp)
     {
-        return divRound (v1, v2, v1.getCurrency (), v1.getIssuer (), roundUp);
+        return divRound (v1, v2, v1.issue (), roundUp);
     }
 
     // Someone is offering X for Y, what is the rate?
     // Rate: smaller is better, the taker wants the most out: in/out
-    static std::uint64_t getRate (const STAmount& offerOut, const STAmount& offerIn);
+    static std::uint64_t getRate (
+        const STAmount& offerOut, const STAmount& offerIn);
     static STAmount setRate (std::uint64_t rate);
 
     // Someone is offering X for Y, I need Z, how much do I pay
+
+    // WARNING: most methods in rippled have parameters ordered "in, out" - this
+    // one is ordered "out, in".
     static STAmount getPay (
-        const STAmount& offerOut, const STAmount& offerIn, const STAmount& needed);
+        const STAmount& out, const STAmount& in, const STAmount& needed);
 
     static STAmount deserialize (SerializerIterator&);
 
@@ -366,12 +394,11 @@ public:
         bool isNative, std::uint64_t& value, int& offset, bool roundUp);
 
 private:
-    Currency mCurrency;      // Compared by ==. Always update mIsNative.
-    Account mIssuer;        // Not compared by ==. 0 for XRP.
+    Issue mIssue;
 
     std::uint64_t  mValue;
     int            mOffset;
-    bool           mIsNative;      // Always !mCurrency. Native is XRP.
+    bool           mIsNative;      // A shorthand for isXRP(mIssue).
     bool           mIsNegative;
 
     void canonicalize ();
@@ -381,12 +408,11 @@ private:
     }
     static STAmount* construct (SerializerIterator&, SField::ref name);
 
-    STAmount (SField::ref name, Currency const& cur, Account const& iss,
-              std::uint64_t val, int off, bool isNat, bool isNeg)
-        : SerializedType (name), mCurrency (cur), mIssuer (iss),  mValue (val),
-          mOffset (off), mIsNative (isNat), mIsNegative (isNeg)
+    STAmount (SField::ref name, Issue const& issue,
+              std::uint64_t val, int off, bool isNat, bool negative)
+        : SerializedType (name), mIssue(issue),  mValue (val),
+          mOffset (off), mIsNative (isNat), mIsNegative (negative)
     {
-        ;
     }
 
     void set (std::int64_t v)
@@ -417,6 +443,11 @@ private:
         }
     }
 };
+
+inline bool isXRP(STAmount const& amount)
+{
+    return isXRP (amount.issue().currency);
+}
 
 // VFALCO TODO Make static member accessors for these in STAmount
 extern const STAmount saZero;

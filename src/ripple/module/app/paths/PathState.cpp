@@ -195,11 +195,11 @@ TER PathState::pushNode (
                               ? account
                               : xrpAccount();
         // Zero value - for accounts.
-        node.saRevRedeem   = STAmount (node.currency_, account);
+        node.saRevRedeem   = STAmount ({account, node.currency_});
         node.saRevIssue    = node.saRevRedeem;
 
         // For order books only - zero currency with the issuer ID.
-        node.saRevDeliver  = STAmount (node.currency_, node.issuer_);
+        node.saRevDeliver  = STAmount ({node.issuer_, node.currency_});
         node.saFwdDeliver  = node.saRevDeliver;
 
         if (pathIsEmpty)
@@ -324,7 +324,7 @@ TER PathState::pushNode (
             // Or previous account if no previous issuer.
                   : xrpAccount();
         node.saRateMax = saZero;
-        node.saRevDeliver = STAmount (node.currency_, node.issuer_);
+        node.saRevDeliver = STAmount({node.issuer_, node.currency_});
         node.saFwdDeliver = node.saRevDeliver;
 
         if (node.currency_.isZero() != node.issuer_.isZero())

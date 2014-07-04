@@ -204,12 +204,12 @@ Json::Value doRipplePathFind (RPC::Context& context)
                 STAmount saMaxAmountAct;
                 STAmount saDstAmountAct;
                 STAmount saMaxAmount (
-                    uSrcCurrencyID,
-                    !!uSrcIssuerID
+                    {!!uSrcIssuerID
                     ? uSrcIssuerID      // Use specifed issuer.
                     : !!uSrcCurrencyID  // Default to source account.
                     ? Account(raSrc.getAccountID ())
                     : xrpAccount(),
+                    uSrcCurrencyID},
                     1);
                 saMaxAmount.negate ();
 

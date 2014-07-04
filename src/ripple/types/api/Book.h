@@ -179,7 +179,7 @@ public:
     value_type operator() (argument_type const& value) const
     {
         value_type result (currency_hash_type::member (value.currency));
-        if (!isXRP(value))
+        if (!isXRP (value.currency))
             boost::hash_combine (result,
                 issuer_hash_type::member (value.account));
         return result;

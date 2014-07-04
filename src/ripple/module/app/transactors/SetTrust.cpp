@@ -352,12 +352,12 @@ TER SetTrust::doApply ()
     }
     else if (badCurrency() == currency)
     {
-        terResult   = temBAD_CURRENCY;
+        terResult = temBAD_CURRENCY;
     }
     else
     {
         // Zero balance in currency.
-        STAmount saBalance (STAmount (currency, noAccount()));
+        STAmount saBalance ({noAccount(), currency});
 
         uint256 index (Ledger::getRippleStateIndex (
             mTxnAccountID, uDstAccountID, currency));

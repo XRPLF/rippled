@@ -43,7 +43,7 @@ TER
 CreateOffer::checkAcceptAsset(IssueRef issue) const
 {
     /* Only valid for custom currencies */
-    assert (!isXRP(issue));
+    assert (!isXRP (issue.currency));
 
     SLE::pointer const issuerAccount = mEngine->entryCache (
         ltACCOUNT_ROOT, Ledger::getAccountRootIndex (issue.account));

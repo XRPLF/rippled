@@ -1114,7 +1114,7 @@ STAmount LedgerEntrySet::rippleOwed (
     }
     else
     {
-        saBalance.clear (currency, uToAccountID);
+        saBalance.clear ({uToAccountID, currency});
 
         WriteLog (lsDEBUG, LedgerEntrySet) << "rippleOwed:" <<
             " No credit line between " <<
@@ -1146,7 +1146,7 @@ STAmount LedgerEntrySet::rippleLimit (
     }
     else
     {
-        saLimit.clear (currency, uToAccountID);
+        saLimit.clear ({uToAccountID, currency});
     }
 
     return saLimit;
@@ -1237,7 +1237,7 @@ STAmount LedgerEntrySet::rippleHolds (
 
     if (!sleRippleState)
     {
-        saBalance.clear (currency, issuer);
+        saBalance.clear ({issuer, currency});
     }
     else if (account > issuer)
     {
@@ -1351,12 +1351,10 @@ STAmount LedgerEntrySet::rippleTransferFee (
         {
             // NIKB use STAmount::saFromRate
             STAmount saTransitRate (
-                noCurrency(), noAccount(),
-                static_cast<std::uint64_t> (uTransitRate), -9);
+                noIssue(), static_cast<std::uint64_t> (uTransitRate), -9);
 
             STAmount saTransferTotal = STAmount::multiply (
-                saAmount, saTransitRate,
-                saAmount.getCurrency (), saAmount.getIssuer ());
+                saAmount, saTransitRate, saAmount.issue ());
             STAmount saTransferFee = saTransferTotal - saAmount;
 
             WriteLog (lsDEBUG, LedgerEntrySet) << "rippleTransferFee:" <<
@@ -1366,7 +1364,7 @@ STAmount LedgerEntrySet::rippleTransferFee (
         }
     }
 
-    return STAmount (saAmount.getCurrency (), saAmount.getIssuer ());
+    return saAmount.zeroed();
 }
 
 TER LedgerEntrySet::trustCreate (
@@ -1413,42 +1411,42 @@ TER LedgerEntrySet::trustCreate (
 
     if (tesSUCCESS == terResult)
     {
-        const bool  bSetDst     = saLimit.getIssuer () == uDstAccountID;
-        const bool  bSetHigh    = bSrcHigh ^ bSetDst;
+        const bool bSetDst = saLimit.getIssuer () == uDstAccountID;
+        const bool bSetHigh = bSrcHigh ^ bSetDst;
 
         // Remember deletion hints.
         sleRippleState->setFieldU64 (sfLowNode, uLowNode);
         sleRippleState->setFieldU64 (sfHighNode, uHighNode);
 
         sleRippleState->setFieldAmount (
-            !bSetHigh ? sfLowLimit : sfHighLimit, saLimit);
+            bSetHigh ? sfHighLimit : sfLowLimit, saLimit);
         sleRippleState->setFieldAmount (
             bSetHigh ? sfLowLimit : sfHighLimit,
-            STAmount (saBalance.getCurrency (),
-                      bSetDst ? uSrcAccountID : uDstAccountID));
+            STAmount ({bSetDst ? uSrcAccountID : uDstAccountID,
+                       saBalance.getCurrency ()}));
 
         if (uQualityIn)
             sleRippleState->setFieldU32 (
-                !bSetHigh ? sfLowQualityIn : sfHighQualityIn, uQualityIn);
+                bSetHigh ? sfHighQualityIn : sfLowQualityIn, uQualityIn);
 
         if (uQualityOut)
             sleRippleState->setFieldU32 (
-                !bSetHigh ? sfLowQualityOut : sfHighQualityOut, uQualityOut);
+                bSetHigh ? sfHighQualityOut : sfLowQualityOut, uQualityOut);
 
-        std::uint32_t  uFlags  = !bSetHigh ? lsfLowReserve : lsfHighReserve;
+        std::uint32_t  uFlags  = bSetHigh ? lsfHighReserve : lsfLowReserve;
 
         if (bAuth)
         {
-            uFlags      |= (!bSetHigh ? lsfLowAuth : lsfHighAuth);
+            uFlags      |= (bSetHigh ? lsfHighAuth : lsfLowAuth);
         }
         if (bNoRipple)
         {
-            uFlags      |= (!bSetHigh ? lsfLowNoRipple : lsfHighNoRipple);
+            uFlags      |= (bSetHigh ? lsfHighNoRipple : lsfLowNoRipple);
         }
 
         sleRippleState->setFieldU32 (sfFlags, uFlags);
         ownerCountAdjust (
-            !bSetDst ? uSrcAccountID : uDstAccountID, 1, sleAccount);
+            bSetDst ? uDstAccountID : uSrcAccountID, 1, sleAccount);
 
         // ONLY: Create ripple balance.
         sleRippleState->setFieldAmount (
@@ -1528,8 +1526,8 @@ TER LedgerEntrySet::rippleCredit (
 
     if (!sleRippleState)
     {
-        STAmount    saReceiverLimit = STAmount (currency, uReceiverID);
-        STAmount    saBalance       = saAmount;
+        STAmount saReceiverLimit({uReceiverID, currency});
+        STAmount saBalance = saAmount;
 
         saBalance.setIssuer (noAccount());
 
