@@ -85,6 +85,7 @@
 #include <rocksdb/table/block_based_table_reader.cc>
 #include <rocksdb/table/block_builder.cc>
 #include <rocksdb/table/block_hash_index.cc>
+#include <rocksdb/table/block_prefix_index.cc>
 #include <rocksdb/table/filter_block.cc>
 #include <rocksdb/table/flush_block_policy.cc>
 #include <rocksdb/table/format.cc>
@@ -93,6 +94,7 @@
 #include <rocksdb/table/meta_blocks.cc>
 #include <rocksdb/table/plain_table_builder.cc>
 #include <rocksdb/table/plain_table_factory.cc>
+#include <rocksdb/table/plain_table_key_coding.cc>
 #include <rocksdb/table/plain_table_reader.cc>
 #include <rocksdb/table/table_properties.cc>
 #include <rocksdb/table/two_level_iterator.cc>
@@ -114,6 +116,7 @@
 #include <rocksdb/util/hash_linklist_rep.cc>
 #include <rocksdb/util/hash_skiplist_rep.cc>
 #include <rocksdb/util/histogram.cc>
+#include <rocksdb/util/iostats_context.cc>
 #include <rocksdb/util/log_buffer.cc>
 #include <rocksdb/util/logging.cc>
 #include <rocksdb/util/murmurhash.cc>
