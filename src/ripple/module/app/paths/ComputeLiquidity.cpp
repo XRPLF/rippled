@@ -27,7 +27,7 @@
 namespace ripple {
 namespace path {
 
-TER computeForwardLiqudity (
+TER computeForwardLiquidity (
     RippleCalc& rippleCalc, PathState& pathState, const bool bMultiQuality)
 {
     TER resultCode;
@@ -35,7 +35,7 @@ TER computeForwardLiqudity (
     {
         auto const& node = pathState.nodes()[nodeIndex];
         WriteLog (lsTRACE, RippleCalc)
-            << "computeForwardLiqudity> nodeIndex=" << nodeIndex;
+            << "computeForwardLiquidity> nodeIndex=" << nodeIndex;
 
         resultCode = node.isAccount()
             ? computeForwardLiquidityForAccount (
@@ -49,7 +49,7 @@ TER computeForwardLiqudity (
             resultCode = tecPATH_DRY;
 
         WriteLog (lsTRACE, RippleCalc)
-            << "computeForwardLiqudity<"
+            << "computeForwardLiquidity<"
             << " nodeIndex:" << nodeIndex
             << " resultCode:" << resultCode;
 

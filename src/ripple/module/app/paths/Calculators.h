@@ -82,7 +82,7 @@ void pathNext (
 
 TER computeReverseLiquidity (
     RippleCalc&, PathState& pathState, bool bMultiQuality);
-TER computeForwardLiqudity (
+TER computeForwardLiquidity (
     RippleCalc&, PathState& pathState, bool bMultiQuality);
 TER computeReverseLiquidityForOffer (
     RippleCalc&,

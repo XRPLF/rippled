@@ -79,7 +79,7 @@ class PathState : public CountedObject <PathState>
     void setQuality (std::uint64_t q) { uQuality = q; }
 
     bool allLiquidityConsumed() const { return allLiquidityConsumed_; }
-    void consumeAllLiqudity () { allLiquidityConsumed_ = true; }
+    void consumeAllLiquidity () { allLiquidityConsumed_ = true; }
 
     void setIndex (int i) { mIndex  = i; }
     int index() const { return mIndex; }

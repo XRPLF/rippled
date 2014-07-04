@@ -72,14 +72,14 @@ void pathNext (
         // Do forward.
         lesCurrent = lesCheckpoint.duplicate ();   // Restore from checkpoint.
 
-        pathState.setStatus(computeForwardLiqudity (
+        pathState.setStatus(computeForwardLiquidity (
             rippleCalc, pathState, bMultiQuality));
     }
 
     if (tesSUCCESS == pathState.status())
     {
         CondLog (!pathState.inPass() || !pathState.outPass(), lsDEBUG, RippleCalc)
-            << "pathNext: Error computeForwardLiqudity reported success for nothing:"
+            << "pathNext: Error computeForwardLiquidity reported success for nothing:"
             << " saOutPass=" << pathState.outPass()
             << " inPass()=" << pathState.inPass();
 
