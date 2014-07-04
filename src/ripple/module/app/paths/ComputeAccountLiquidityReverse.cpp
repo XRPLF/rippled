@@ -84,19 +84,19 @@ TER computeReverseLiquidityForAccount (
     const STAmount saPrvOwed = (previousNodeIsAccount && nodeIndex != 0)
         ? rippleCalc.mActiveLedger.rippleOwed (
             node.account_, previousAccountID, node.currency_)
-        : STAmount ({node.account_, node.currency_});
+        : STAmount ({node.currency_, node.account_});
 
     // The limit amount that the previous account may owe.
     const STAmount saPrvLimit = (previousNodeIsAccount && nodeIndex != 0)
         ? rippleCalc.mActiveLedger.rippleLimit (
             node.account_, previousAccountID, node.currency_)
-        : STAmount ({node.account_, node.currency_});
+        : STAmount ({node.currency_, node.account_});
 
     // Next account is owed.
     const STAmount saNxtOwed = (nextNodeIsAccount && nodeIndex != lastNodeIndex)
         ? rippleCalc.mActiveLedger.rippleOwed (
             node.account_, nextAccountID, node.currency_)
-        : STAmount ({node.account_, node.currency_});
+        : STAmount ({node.currency_, node.account_});
 
     WriteLog (lsTRACE, RippleCalc)
         << "computeReverseLiquidityForAccount>"
@@ -129,10 +129,10 @@ TER computeReverseLiquidityForAccount (
     // Precompute these values in case we have an order book.
     auto deliverCurrency = previousNode.saRevDeliver.getCurrency ();
     const STAmount saPrvDeliverReq (
-        {previousNode.saRevDeliver.getIssuer (), deliverCurrency}, -1);
+        {deliverCurrency, previousNode.saRevDeliver.getIssuer ()}, -1);
     // Unlimited delivery.
 
-    STAmount&       saPrvDeliverAct = previousNode.saRevDeliver;
+    STAmount& saPrvDeliverAct = previousNode.saRevDeliver;
 
     // For nextNodeIsAccount
     const STAmount& saCurRedeemReq  = node.saRevRedeem;

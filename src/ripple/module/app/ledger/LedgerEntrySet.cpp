@@ -1114,7 +1114,7 @@ STAmount LedgerEntrySet::rippleOwed (
     }
     else
     {
-        saBalance.clear ({uToAccountID, currency});
+        saBalance.clear ({currency, uToAccountID});
 
         WriteLog (lsDEBUG, LedgerEntrySet) << "rippleOwed:" <<
             " No credit line between " <<
@@ -1146,7 +1146,7 @@ STAmount LedgerEntrySet::rippleLimit (
     }
     else
     {
-        saLimit.clear ({uToAccountID, currency});
+        saLimit.clear ({currency, uToAccountID});
     }
 
     return saLimit;
@@ -1237,7 +1237,7 @@ STAmount LedgerEntrySet::rippleHolds (
 
     if (!sleRippleState)
     {
-        saBalance.clear ({issuer, currency});
+        saBalance.clear ({currency, issuer});
     }
     else if (account > issuer)
     {
@@ -1422,8 +1422,8 @@ TER LedgerEntrySet::trustCreate (
             bSetHigh ? sfHighLimit : sfLowLimit, saLimit);
         sleRippleState->setFieldAmount (
             bSetHigh ? sfLowLimit : sfHighLimit,
-            STAmount ({bSetDst ? uSrcAccountID : uDstAccountID,
-                       saBalance.getCurrency ()}));
+            STAmount ({saBalance.getCurrency (),
+                       bSetDst ? uSrcAccountID : uDstAccountID}));
 
         if (uQualityIn)
             sleRippleState->setFieldU32 (
@@ -1526,7 +1526,7 @@ TER LedgerEntrySet::rippleCredit (
 
     if (!sleRippleState)
     {
-        STAmount saReceiverLimit({uReceiverID, currency});
+        STAmount saReceiverLimit({currency, uReceiverID});
         STAmount saBalance = saAmount;
 
         saBalance.setIssuer (noAccount());

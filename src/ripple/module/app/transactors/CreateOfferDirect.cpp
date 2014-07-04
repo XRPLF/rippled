@@ -45,10 +45,9 @@ CreateOfferDirect::crossOffers (
         mEngine->getLedger ()->getParentCloseTimeNC ());
 
     core::LedgerView view_cancel (view.duplicate());
-    core::OfferStream offers (view, view_cancel,
-        Book (
-            {taker_amount.in.getIssuer(), taker_amount.in.getCurrency()},
-            {taker_amount.out.getIssuer(), taker_amount.out.getCurrency()}),
+    core::OfferStream offers (
+        view, view_cancel,
+        Book (taker_amount.in.issue(), taker_amount.out.issue()),
         when, m_journal);
     core::Taker taker (offers.view(), mTxnAccountID, taker_amount, options);
 

@@ -41,11 +41,8 @@ CreateOfferBridged::crossOffers (
 
     core::LedgerView view_cancel (view.duplicate());
 
-    IssueRef const asset_in (
-        taker_amount.in.getIssuer(), taker_amount.in.getCurrency());
-
-    IssueRef const asset_out (
-        taker_amount.out.getIssuer(), taker_amount.out.getCurrency());
+    auto& asset_in = taker_amount.in.issue();
+    auto& asset_out = taker_amount.out.issue();
 
     core::OfferStream offers_direct (view, view_cancel,
         Book (asset_in, asset_out), when, m_journal);

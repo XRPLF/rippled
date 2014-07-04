@@ -39,7 +39,7 @@ TER Payment::doApply ()
         maxSourceAmount = saDstAmount;
     else
       maxSourceAmount = STAmount (
-          {mTxnAccountID, saDstAmount.getCurrency ()},
+          {saDstAmount.getCurrency (), mTxnAccountID},
           saDstAmount.getMantissa (), saDstAmount.getExponent (),
           saDstAmount < zero);
     auto const& uSrcCurrency = maxSourceAmount.getCurrency ();

@@ -47,22 +47,22 @@ public:
     std::conditional <ByValue, Account, Account const&>::type
     IssueAccount;
 
-    IssueAccount account;
     IssueCurrency currency;
+    IssueAccount account;
 
     IssueType ()
     {
     }
 
-    IssueType (Account const& a, Currency const& c)
-            : account (a), currency (c)
+    IssueType (Currency const& c, Account const& a)
+            : currency (c), account (a)
     {
     }
 
     template <bool OtherByValue>
     IssueType (IssueType <OtherByValue> const& other)
-        : account (other.account)
-        , currency (other.currency)
+        : currency (other.currency)
+        , account (other.account)
     {
     }
 
@@ -178,15 +178,15 @@ typedef IssueType <false> IssueRef;
 /** Returns an asset specifier that represents XRP. */
 inline Issue const& xrpIssue ()
 {
-    static Issue ac {xrpAccount(), xrpCurrency()};
-    return ac;
+    static Issue issue {xrpCurrency(), xrpAccount()};
+    return issue;
 }
 
 /** Returns an asset specifier that represents no account and currency. */
 inline Issue const& noIssue ()
 {
-    static Issue ac {noAccount(), noCurrency()};
-    return ac;
+    static Issue issue {noCurrency(), noAccount()};
+    return issue;
 }
 
 }

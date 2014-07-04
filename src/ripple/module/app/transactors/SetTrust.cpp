@@ -357,7 +357,7 @@ TER SetTrust::doApply ()
     else
     {
         // Zero balance in currency.
-        STAmount saBalance ({noAccount(), currency});
+        STAmount saBalance ({currency, noAccount()});
 
         uint256 index (Ledger::getRippleStateIndex (
             mTxnAccountID, uDstAccountID, currency));

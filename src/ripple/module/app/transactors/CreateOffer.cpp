@@ -279,7 +279,7 @@ CreateOffer::doApply ()
 
     // Make sure that we are authorized to hold what the taker will pay us.
     if (terResult == tesSUCCESS && !saTakerPays.isNative ())
-        terResult = checkAcceptAsset (Issue (uPaysIssuerID, uPaysCurrency));
+        terResult = checkAcceptAsset (Issue (uPaysCurrency, uPaysIssuerID));
 
     bool crossed = false;
     bool const bOpenLedger (mParams & tapOPEN_LEDGER);

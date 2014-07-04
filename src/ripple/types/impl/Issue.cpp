@@ -76,60 +76,60 @@ public:
     //--------------------------------------------------------------------------
 
     // Comparison, hash tests for IssueType
-    template <class Asset>
-    void testAssetType ()
+    template <class Issue>
+    void testIssueType ()
     {
         Currency const c1 (1); Account const i1 (1);
         Currency const c2 (2); Account const i2 (2);
         Currency const c3 (3); Account const i3 (3);
 
-        expect (Asset (i1, c1) != Asset (i1, c2));
-        expect (Asset (i1, c1) <  Asset (i1, c2));
-        expect (Asset (i1, c1) <= Asset (i1, c2));
-        expect (Asset (i1, c2) <= Asset (i1, c2));
-        expect (Asset (i1, c2) == Asset (i1, c2));
-        expect (Asset (i1, c2) >= Asset (i1, c2));
-        expect (Asset (i1, c3) >= Asset (i1, c2));
-        expect (Asset (i1, c3) >  Asset (i1, c2));
-        expect (Asset (i1, c1) != Asset (i2, c1));
-        expect (Asset (i1, c1) <  Asset (i2, c1));
-        expect (Asset (i1, c1) <= Asset (i2, c1));
-        expect (Asset (i2, c1) <= Asset (i2, c1));
-        expect (Asset (i2, c1) == Asset (i2, c1));
-        expect (Asset (i2, c1) >= Asset (i2, c1));
-        expect (Asset (i3, c1) >= Asset (i2, c1));
-        expect (Asset (i3, c1) >  Asset (i2, c1));
+        expect (Issue (c1, i1) != Issue (c2, i1));
+        expect (Issue (c1, i1) <  Issue (c2, i1));
+        expect (Issue (c1, i1) <= Issue (c2, i1));
+        expect (Issue (c2, i1) <= Issue (c2, i1));
+        expect (Issue (c2, i1) == Issue (c2, i1));
+        expect (Issue (c2, i1) >= Issue (c2, i1));
+        expect (Issue (c3, i1) >= Issue (c2, i1));
+        expect (Issue (c3, i1) >  Issue (c2, i1));
+        expect (Issue (c1, i1) != Issue (c1, i2));
+        expect (Issue (c1, i1) <  Issue (c1, i2));
+        expect (Issue (c1, i1) <= Issue (c1, i2));
+        expect (Issue (c1, i2) <= Issue (c1, i2));
+        expect (Issue (c1, i2) == Issue (c1, i2));
+        expect (Issue (c1, i2) >= Issue (c1, i2));
+        expect (Issue (c1, i3) >= Issue (c1, i2));
+        expect (Issue (c1, i3) >  Issue (c1, i2));
 
-        std::hash <Asset> hash;
+        std::hash <Issue> hash;
 
-        expect (hash (Asset (i1, c1)) == hash (Asset (i1, c1)));
-        expect (hash (Asset (i2, c1)) == hash (Asset (i2, c1)));
-        expect (hash (Asset (i3, c1)) == hash (Asset (i3, c1)));
-        expect (hash (Asset (i1, c2)) == hash (Asset (i1, c2)));
-        expect (hash (Asset (i2, c2)) == hash (Asset (i2, c2)));
-        expect (hash (Asset (i3, c2)) == hash (Asset (i3, c2)));
-        expect (hash (Asset (i1, c3)) == hash (Asset (i1, c3)));
-        expect (hash (Asset (i2, c3)) == hash (Asset (i2, c3)));
-        expect (hash (Asset (i3, c3)) == hash (Asset (i3, c3)));
-        expect (hash (Asset (i1, c1)) != hash (Asset (i2, c1)));
-        expect (hash (Asset (i1, c1)) != hash (Asset (i3, c1)));
-        expect (hash (Asset (i1, c1)) != hash (Asset (i1, c2)));
-        expect (hash (Asset (i1, c1)) != hash (Asset (i2, c2)));
-        expect (hash (Asset (i1, c1)) != hash (Asset (i3, c2)));
-        expect (hash (Asset (i1, c1)) != hash (Asset (i1, c3)));
-        expect (hash (Asset (i1, c1)) != hash (Asset (i2, c3)));
-        expect (hash (Asset (i1, c1)) != hash (Asset (i3, c3)));
+        expect (hash (Issue (c1, i1)) == hash (Issue (c1, i1)));
+        expect (hash (Issue (c1, i2)) == hash (Issue (c1, i2)));
+        expect (hash (Issue (c1, i3)) == hash (Issue (c1, i3)));
+        expect (hash (Issue (c2, i1)) == hash (Issue (c2, i1)));
+        expect (hash (Issue (c2, i2)) == hash (Issue (c2, i2)));
+        expect (hash (Issue (c2, i3)) == hash (Issue (c2, i3)));
+        expect (hash (Issue (c3, i1)) == hash (Issue (c3, i1)));
+        expect (hash (Issue (c3, i2)) == hash (Issue (c3, i2)));
+        expect (hash (Issue (c3, i3)) == hash (Issue (c3, i3)));
+        expect (hash (Issue (c1, i1)) != hash (Issue (c1, i2)));
+        expect (hash (Issue (c1, i1)) != hash (Issue (c1, i3)));
+        expect (hash (Issue (c1, i1)) != hash (Issue (c2, i1)));
+        expect (hash (Issue (c1, i1)) != hash (Issue (c2, i2)));
+        expect (hash (Issue (c1, i1)) != hash (Issue (c2, i3)));
+        expect (hash (Issue (c1, i1)) != hash (Issue (c3, i1)));
+        expect (hash (Issue (c1, i1)) != hash (Issue (c3, i2)));
+        expect (hash (Issue (c1, i1)) != hash (Issue (c3, i3)));
     }
 
     template <class Set>
-    void testAssetSet ()
+    void testIssueSet ()
     {
         Currency const c1 (1);
         Account   const i1 (1);
         Currency const c2 (2);
         Account   const i2 (2);
-        IssueRef const a1 (i1, c1);
-        IssueRef const a2 (i2, c2);
+        IssueRef const a1 (c1, i1);
+        IssueRef const a2 (c2, i2);
 
         {
             Set c;
@@ -139,9 +139,9 @@ public:
             c.insert (a2);
             if (! expect (c.size () == 2)) return;
 
-            if (! expect (c.erase (Issue (i2, c1)) == 0)) return;
-            if (! expect (c.erase (Issue (i1, c1)) == 1)) return;
-            if (! expect (c.erase (Issue (i2, c2)) == 1)) return;
+            if (! expect (c.erase (Issue (c1, i2)) == 0)) return;
+            if (! expect (c.erase (Issue (c1, i1)) == 1)) return;
+            if (! expect (c.erase (Issue (c2, i2)) == 1)) return;
             if (! expect (c.empty ())) return;
         }
 
@@ -153,9 +153,9 @@ public:
             c.insert (a2);
             if (! expect (c.size () == 2)) return;
 
-            if (! expect (c.erase (IssueRef (i2, c1)) == 0)) return;
-            if (! expect (c.erase (IssueRef (i1, c1)) == 1)) return;
-            if (! expect (c.erase (IssueRef (i2, c2)) == 1)) return;
+            if (! expect (c.erase (IssueRef (c1, i2)) == 0)) return;
+            if (! expect (c.erase (IssueRef (c1, i1)) == 1)) return;
+            if (! expect (c.erase (IssueRef (c2, i2)) == 1)) return;
             if (! expect (c.empty ())) return;
 
     #if STL_SET_HAS_EMPLACE
@@ -168,14 +168,14 @@ public:
     }
 
     template <class Map>
-    void testAssetMap ()
+    void testIssueMap ()
     {
         Currency const c1 (1);
         Account   const i1 (1);
         Currency const c2 (2);
         Account   const i2 (2);
-        IssueRef const a1 (i1, c1);
-        IssueRef const a2 (i2, c2);
+        IssueRef const a1 (c1, i1);
+        IssueRef const a2 (c2, i2);
 
         {
             Map c;
@@ -185,9 +185,9 @@ public:
             c.insert (std::make_pair (a2, 2));
             if (! expect (c.size () == 2)) return;
 
-            if (! expect (c.erase (Issue (i2, c1)) == 0)) return;
-            if (! expect (c.erase (Issue (i1, c1)) == 1)) return;
-            if (! expect (c.erase (Issue (i2, c2)) == 1)) return;
+            if (! expect (c.erase (Issue (c1, i2)) == 0)) return;
+            if (! expect (c.erase (Issue (c1, i1)) == 1)) return;
+            if (! expect (c.erase (Issue (c2, i2)) == 1)) return;
             if (! expect (c.empty ())) return;
         }
 
@@ -199,56 +199,56 @@ public:
             c.insert (std::make_pair (a2, 2));
             if (! expect (c.size () == 2)) return;
 
-            if (! expect (c.erase (IssueRef (i2, c1)) == 0)) return;
-            if (! expect (c.erase (IssueRef (i1, c1)) == 1)) return;
-            if (! expect (c.erase (IssueRef (i2, c2)) == 1)) return;
+            if (! expect (c.erase (IssueRef (c1, i2)) == 0)) return;
+            if (! expect (c.erase (IssueRef (c1, i1)) == 1)) return;
+            if (! expect (c.erase (IssueRef (c2, i2)) == 1)) return;
             if (! expect (c.empty ())) return;
         }
     }
 
-    void testAssetSets ()
+    void testIssueSets ()
     {
         testcase ("std::set <Issue>");
-        testAssetSet <std::set <Issue>> ();
+        testIssueSet <std::set <Issue>> ();
 
         testcase ("std::set <IssueRef>");
-        testAssetSet <std::set <IssueRef>> ();
+        testIssueSet <std::set <IssueRef>> ();
 
 #if RIPPLE_ASSETS_ENABLE_STD_HASH
         testcase ("std::unordered_set <Issue>");
-        testAssetSet <std::unordered_set <Issue>> ();
+        testIssueSet <std::unordered_set <Issue>> ();
 
         testcase ("std::unordered_set <IssueRef>");
-        testAssetSet <std::unordered_set <IssueRef>> ();
+        testIssueSet <std::unordered_set <IssueRef>> ();
 #endif
 
         testcase ("ripple::unordered_set <Issue>");
-        testAssetSet <ripple::unordered_set <Issue>> ();
+        testIssueSet <ripple::unordered_set <Issue>> ();
 
         testcase ("ripple::unordered_set <IssueRef>");
-        testAssetSet <ripple::unordered_set <IssueRef>> ();
+        testIssueSet <ripple::unordered_set <IssueRef>> ();
     }
 
-    void testAssetMaps ()
+    void testIssueMaps ()
     {
         testcase ("std::map <Issue, int>");
-        testAssetMap <std::map <Issue, int>> ();
+        testIssueMap <std::map <Issue, int>> ();
 
         testcase ("std::map <IssueRef, int>");
-        testAssetMap <std::map <IssueRef, int>> ();
+        testIssueMap <std::map <IssueRef, int>> ();
 
 #if RIPPLE_ASSETS_ENABLE_STD_HASH
         testcase ("std::unordered_map <Issue, int>");
-        testAssetMap <std::unordered_map <Issue, int>> ();
+        testIssueMap <std::unordered_map <Issue, int>> ();
 
         testcase ("std::unordered_map <IssueRef, int>");
-        testAssetMap <std::unordered_map <IssueRef, int>> ();
+        testIssueMap <std::unordered_map <IssueRef, int>> ();
 
         testcase ("ripple::unordered_map <Issue, int>");
-        testAssetMap <ripple::unordered_map <Issue, int>> ();
+        testIssueMap <ripple::unordered_map <Issue, int>> ();
 
         testcase ("ripple::unordered_map <IssueRef, int>");
-        testAssetMap <ripple::unordered_map <IssueRef, int>> ();
+        testIssueMap <ripple::unordered_map <IssueRef, int>> ();
 
 #endif
     }
@@ -263,10 +263,10 @@ public:
         Currency const c2 (2); Account const i2 (2);
         Currency const c3 (3); Account const i3 (3);
 
-        Issue a1 (i1, c1);
-        Issue a2 (i2, c1);
-        Issue a3 (i2, c2);
-        Issue a4 (i2, c3);
+        Issue a1 (c1, i1);
+        Issue a2 (c1, i2);
+        Issue a3 (c2, i2);
+        Issue a4 (c3, i2);
 
         expect (Book (a1, a2) != Book (a2, a3));
         expect (Book (a1, a2) <  Book (a2, a3));
@@ -320,8 +320,8 @@ public:
         Account   const i1 (1);
         Currency const c2 (2);
         Account   const i2 (2);
-        IssueRef const a1 (i1, c1);
-        IssueRef const a2 (i2, c2);
+        IssueRef const a1 (c1, i1);
+        IssueRef const a2 (c2, i2);
         BookRef  const b1 (a1, a2);
         BookRef  const b2 (a2, a1);
 
@@ -368,8 +368,8 @@ public:
         Account   const i1 (1);
         Currency const c2 (2);
         Account   const i2 (2);
-        IssueRef const a1 (i1, c1);
-        IssueRef const a2 (i2, c2);
+        IssueRef const a1 (c1, i1);
+        IssueRef const a2 (c2, i2);
         BookRef  const b1 (a1, a2);
         BookRef  const b2 (a2, a1);
 
@@ -468,13 +468,13 @@ public:
         // ---
 
         testcase ("Issue");
-        testAssetType <Issue> ();
+        testIssueType <Issue> ();
 
         testcase ("IssueRef");
-        testAssetType <IssueRef> ();
+        testIssueType <IssueRef> ();
 
-        testAssetSets ();
-        testAssetMaps ();
+        testIssueSets ();
+        testIssueMaps ();
 
         // ---
 

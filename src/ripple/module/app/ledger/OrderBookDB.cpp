@@ -85,10 +85,10 @@ static void updateHelper (SLE::ref entry,
             OrderBook::pointer book = std::make_shared<OrderBook> (std::cref (index),
                                       std::cref (ci), std::cref (co), std::cref (ii), std::cref (io));
 
-            sourceMap[IssueRef (ii, ci)].push_back (book);
-            destMap[IssueRef (io, co)].push_back (book);
+            sourceMap[IssueRef (ci, ii)].push_back (book);
+            destMap[IssueRef (co, io)].push_back (book);
             if (co.isZero())
-                XRPBooks.insert(IssueRef (ii, ci));
+                XRPBooks.insert(IssueRef (ci, ii));
             ++books;
         }
     }
@@ -139,7 +139,7 @@ void OrderBookDB::addOrderBook(Currency const& ci, Currency const& co,
 
     if (toXRP)
     { // We don't want to search through all the to-XRP or from-XRP order books!
-        for (auto ob : mSourceMap[{ii, ci}])
+        for (auto ob : mSourceMap[{ci, ii}])
         {
             if (ob->getCurrencyOut().isZero ()) // also to XRP
                 return;
@@ -147,7 +147,7 @@ void OrderBookDB::addOrderBook(Currency const& ci, Currency const& co,
     }
     else
     {
-        for (auto ob : mDestMap[{io, co}])
+        for (auto ob : mDestMap[{co, io}])
         {
             if ((ob->getCurrencyIn() == ci) && (ob->getIssuerIn() == ii))
                 return;
@@ -157,10 +157,10 @@ void OrderBookDB::addOrderBook(Currency const& ci, Currency const& co,
     uint256 index = Ledger::getBookBase(ci, ii, co, io);
     auto book = std::make_shared<OrderBook> (index, ci, co, ii, io);
 
-    mSourceMap[{ii, ci}].push_back (book);
-    mDestMap[{io, co}].push_back (book);
+    mSourceMap[{ci, ii}].push_back (book);
+    mDestMap[{co, io}].push_back (book);
     if (toXRP)
-        mXRPBooks.insert({ii, ci});
+        mXRPBooks.insert({ci, ii});
 }
 
 // return list of all orderbooks that want this issuerID and currencyID
@@ -168,7 +168,7 @@ void OrderBookDB::getBooksByTakerPays (Account const& issuerID, Currency const& 
                                        std::vector<OrderBook::pointer>& bookRet)
 {
     ScopedLockType sl (mLock);
-    auto it = mSourceMap.find ({issuerID, currencyID});
+    auto it = mSourceMap.find ({currencyID, issuerID});
     if (it != mSourceMap.end ())
         bookRet = it->second;
     else
@@ -179,7 +179,7 @@ bool OrderBookDB::isBookToXRP(Account const& issuerID, Currency const& currencyI
 {
     ScopedLockType sl (mLock);
 
-    return mXRPBooks.count({issuerID, currencyID}) > 0;
+    return mXRPBooks.count({currencyID, issuerID}) > 0;
 }
 
 // return list of all orderbooks that give this issuerID and currencyID
@@ -187,7 +187,7 @@ void OrderBookDB::getBooksByTakerGets (Account const& issuerID, Currency const& 
                                        std::vector<OrderBook::pointer>& bookRet)
 {
     ScopedLockType sl (mLock);
-    auto it = mDestMap.find ({issuerID, currencyID});
+    auto it = mDestMap.find ({currencyID, issuerID});
 
     if (it != mDestMap.end ())
         bookRet = it->second;
@@ -205,8 +205,8 @@ BookListeners::pointer OrderBookDB::makeBookListeners (Currency const& currencyP
     {
         ret = std::make_shared<BookListeners> ();
 
-        mListeners [BookRef ({issuerPays, currencyPays},
-                             {issuerGets, currencyGets})] = ret;
+        mListeners [BookRef ({currencyPays, issuerPays},
+                             {currencyGets, issuerGets})] = ret;
         assert (getBookListeners (currencyPays, currencyGets, issuerPays, issuerGets) == ret);
     }
 
@@ -220,7 +220,7 @@ BookListeners::pointer OrderBookDB::getBookListeners (Currency const& currencyPa
     ScopedLockType sl (mLock);
 
     auto it0 (mListeners.find (BookRef (
-        {issuerPays, currencyPays}, {issuerGets, currencyGets})));
+        {currencyPays, issuerPays}, {currencyGets, issuerGets})));
 
     if (it0 != mListeners.end ())
         ret = it0->second;

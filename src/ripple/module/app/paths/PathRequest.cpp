@@ -414,7 +414,7 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
     for (auto const& currIssuer: sourceCurrencies)
     {
         {
-            STAmount test ({currIssuer.second, currIssuer.first}, 1);
+            STAmount test ({currIssuer.first, currIssuer.second}, 1);
             if (m_journal.debug)
             {
                 m_journal.debug
@@ -441,7 +441,7 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
                     : isXRP (currIssuer.first)
                         ? xrpAccount()
                         : raSrcAccount.getAccountID ();
-            STAmount saMaxAmount ({account, currIssuer.first}, 1);
+            STAmount saMaxAmount ({currIssuer.first, account}, 1);
 
             saMaxAmount.negate ();
             m_journal.debug << iIdentifier << " Paths found, calling rippleCalc";
