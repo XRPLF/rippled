@@ -117,8 +117,6 @@ value for outPeers:
 
 **(Need example here)**
 
-
-
 ### Livecache
 
 The Livecache holds relayed IP addresses that have been received recently in

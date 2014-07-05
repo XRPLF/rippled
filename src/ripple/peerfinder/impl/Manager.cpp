@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#if DOXYGEN
+#include <ripple/overlay/README.md>
+#endif
+
 namespace ripple {
 namespace PeerFinder {
 
