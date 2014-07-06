@@ -253,7 +253,23 @@ def config_env(toolchain, variant, env):
             '-Wno-sign-compare',
             '-Wno-char-subscripts',
             '-Wno-format',
+            '-Wno-deprecated-register'
             ])
+
+        # Supress certain (less important) things for Travis builds to keep the
+        # noise down. These are enabled for developer builds because we want to
+        # squash warnings.
+        if Beast.system.travis:
+            env.Append(CCFLAGS=[
+                '-Wno-unused-variable',
+                '-Wno-unused-function'
+                ])
+
+            if toolchain == 'clang':
+                env.Append(CCFLAGS=[
+                    '-Wno-unused-private-field',
+                    '-Wno-unused-const-variable',
+                    ])
 
         env.Append(CXXFLAGS=[
             '-frtti',
