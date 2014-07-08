@@ -63,6 +63,11 @@ int Serializer::add64 (std::uint64_t i)
     return ret;
 }
 
+template <> int Serializer::addInteger(unsigned char i) { return add8(i); }
+template <> int Serializer::addInteger(std::uint16_t i) { return add16(i); }
+template <> int Serializer::addInteger(std::uint32_t i) { return add32(i); }
+template <> int Serializer::addInteger(std::uint64_t i) { return add64(i); }
+
 int Serializer::add128 (const uint128& i)
 {
     int ret = mData.size ();
@@ -617,36 +622,6 @@ std::uint64_t SerializerIterator::get64 ()
     if (!mSerializer.get64 (val, mPos)) throw std::runtime_error ("invalid serializer get64");
 
     mPos += 64 / 8;
-    return val;
-}
-
-uint128 SerializerIterator::get128 ()
-{
-    uint128 val;
-
-    if (!mSerializer.get128 (val, mPos)) throw std::runtime_error ("invalid serializer get128");
-
-    mPos += 128 / 8;
-    return val;
-}
-
-uint160 SerializerIterator::get160 ()
-{
-    uint160 val;
-
-    if (!mSerializer.get160 (val, mPos)) throw std::runtime_error ("invalid serializer get160");
-
-    mPos += 160 / 8;
-    return val;
-}
-
-uint256 SerializerIterator::get256 ()
-{
-    uint256 val;
-
-    if (!mSerializer.get256 (val, mPos)) throw std::runtime_error ("invalid serializer get256");
-
-    mPos += 256 / 8;
     return val;
 }
 
