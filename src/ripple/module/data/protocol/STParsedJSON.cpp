@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <cassert>
-
+#include <ripple/module/data/protocol/STInteger.h>
 #include <beast/module/core/text/LexicalCast.h>
+#include <cassert>
 
 namespace ripple {
 

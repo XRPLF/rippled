@@ -71,6 +71,7 @@
 #include <ripple/module/data/protocol/HashPrefix.cpp>
 #include <ripple/module/data/protocol/LedgerFormats.cpp>
 #include <ripple/module/data/protocol/RippleAddress.cpp>
+#include <ripple/module/data/protocol/STInteger.cpp>
 #include <ripple/module/data/protocol/SerializedTypes.cpp>
 #include <ripple/module/data/protocol/Serializer.cpp>
 #include <ripple/module/data/protocol/SerializedObjectTemplate.cpp>

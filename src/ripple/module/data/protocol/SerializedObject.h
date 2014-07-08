@@ -236,7 +236,8 @@ public:
         if (rf->getSType () == STI_NOTPRESENT)
             rf = makeFieldPresent (field);
 
-        if (auto cf = dynamic_cast<STHash160*> (rf))
+        using Bits = STBitString<160>;
+        if (auto cf = dynamic_cast<Bits*> (rf))
             cf->setValue (v);
         else
             throw std::runtime_error ("Wrong field type");

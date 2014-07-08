@@ -67,19 +67,28 @@ public:
     int add64 (std::uint64_t);      // native currency amounts
     int add128 (const uint128&);    // private key generators
     int add256 (uint256 const& );       // transaction and ledger hashes
-    int addRaw (Blob const& vector);
-    int addRaw (const void* ptr, int len);
-    int addRaw (const Serializer& s);
-    int addZeros (size_t uBytes);
+
+    template <typename Integer>
+    int addInteger(Integer);
+
+    template <int Bits, class Tag>
+    int addBitString(base_uint<Bits, Tag> const& v) {
+        int ret = mData.size ();
+        mData.insert (mData.end (), v.begin (), v.end ());
+        return ret;
+    }
 
     // TODO(tom): merge with add128 and add256.
     template <class Tag>
     int add160 (base_uint<160, Tag> const& i)
     {
-        int ret = mData.size ();
-        mData.insert (mData.end (), i.begin (), i.end ());
-        return ret;
+        return addBitString<160, Tag>(i);
     }
+
+    int addRaw (Blob const& vector);
+    int addRaw (const void* ptr, int len);
+    int addRaw (const Serializer& s);
+    int addZeros (size_t uBytes);
 
     int addVL (Blob const& vector);
     int addVL (const std::string& string);
@@ -93,16 +102,39 @@ public:
     bool get64 (std::uint64_t&, int offset) const;
     bool get128 (uint128&, int offset) const;
     bool get256 (uint256&, int offset) const;
+
+    template <typename Integer>
+    bool getInteger(Integer& number, int offset) {
+        static const auto bytes = sizeof(Integer);
+        if ((offset + bytes) > mData.size ())
+            return false;
+        number = 0;
+
+        auto ptr = &mData[offset];
+        for (auto i = 0; i < bytes; ++i)
+        {
+            if (i)
+                number <<= 8;
+            number |= *ptr++;
+        }
+        return true;
+    }
+
+    template <int Bits, typename Tag = void>
+    bool getBitString(base_uint<Bits, Tag>& data, int offset) const {
+        auto success = (offset + (Bits / 8)) <= mData.size ();
+        if (success)
+            memcpy (data.begin (), & (mData.front ()) + offset, (Bits / 8));
+        return success;
+    }
+
     uint256 get256 (int offset) const;
 
     // TODO(tom): merge with get128 and get256.
     template <class Tag>
     bool get160 (base_uint<160, Tag>& o, int offset) const
     {
-        auto success = (offset + (160 / 8)) <= mData.size ();
-        if (success)
-            memcpy (o.begin (), & (mData.front ()) + offset, (160 / 8));
-        return success;
+        return getBitString<160, Tag>(o, offset);
     }
 
     bool getRaw (Blob&, int offset, int length) const;
@@ -313,9 +345,25 @@ public:
     std::uint16_t get16 ();
     std::uint32_t get32 ();
     std::uint64_t get64 ();
-    uint128 get128 ();
-    uint160 get160 ();
-    uint256 get256 ();
+
+    uint128 get128 () { return getBitString<128>(); }
+    uint160 get160 () { return getBitString<160>(); }
+    uint256 get256 () { return getBitString<256>(); }
+
+    template <std::size_t Bits, typename Tag = void>
+    void getBitString (base_uint<Bits, Tag>& bits) {
+        if (!mSerializer.getBitString<Bits> (bits, mPos))
+            throw std::runtime_error ("invalid serializer getBitString");
+
+        mPos += Bits / 8;
+    }
+
+    template <std::size_t Bits, typename Tag = void>
+    base_uint<Bits, Tag> getBitString () {
+        base_uint<Bits, Tag> bits;
+        getBitString(bits);
+        return bits;
+    }
 
     void getFieldID (int& type, int& field);
 
