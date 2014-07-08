@@ -1856,10 +1856,8 @@ NetworkOPsImp::getAccountTxs (const RippleAddress& account, std::int32_t minLedg
                     ledger->pendSaveValidated(false, false);
             }
 
-            TransactionMetaSet::pointer meta = std::make_shared<TransactionMetaSet> (txn->getID (), txn->getLedger (), rawMeta.getData ());
-
-            // VFALCO NOTE Use emplace instead.
-            ret.push_back (std::pair<Transaction::ref, TransactionMetaSet::ref> (txn, meta));
+            ret.emplace_back (txn, std::make_shared<TransactionMetaSet> (
+                txn->getID (), txn->getLedger (), rawMeta.getData ()));
         }
     }
 
@@ -1906,11 +1904,8 @@ std::vector<NetworkOPsImp::txnMetaLedgerType> NetworkOPsImp::getAccountTxsB (
             else
                 rawMeta.resize (metaSize);
 
-            // VFALCO TODO Change the container's type to be std::tuple so
-            //             we can use std::forward_as_tuple here
-            //
-            ret.push_back (std::make_tuple (
-                strHex (rawTxn), strHex (rawMeta), db->getInt ("LedgerSeq")));
+            ret.emplace_back (
+                strHex (rawTxn), strHex (rawMeta), db->getInt ("LedgerSeq"));
         }
     }
 
@@ -1926,7 +1921,7 @@ NetworkOPsImp::getTxsAccount (const RippleAddress& account, std::int32_t minLedg
     std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > ret;
 
     std::uint32_t NONBINARY_PAGE_LENGTH = 200;
-    std::uint32_t EXTRA_LENGTH = 20;
+    std::uint32_t EXTRA_LENGTH = 100;
 
     bool foundResume = token.isNull() || !token.isObject();
 
@@ -2018,9 +2013,9 @@ NetworkOPsImp::getTxsAccount (const RippleAddress& account, std::int32_t minLedg
                 }
 
                 --numberOfResults;
-                TransactionMetaSet::pointer meta = std::make_shared<TransactionMetaSet> (txn->getID (), txn->getLedger (), rawMeta.getData ());
 
-                ret.push_back (std::pair<Transaction::ref, TransactionMetaSet::ref> (txn, meta));
+                ret.emplace_back (std::move (txn),
+                    std::make_shared<TransactionMetaSet> (txn->getID (), txn->getLedger (), rawMeta.getData ()));
             }
         }
     }
@@ -2036,7 +2031,7 @@ NetworkOPsImp::getTxsAccountB (const RippleAddress& account, std::int32_t minLed
     std::vector<txnMetaLedgerType> ret;
 
     std::uint32_t BINARY_PAGE_LENGTH = 500;
-    std::uint32_t EXTRA_LENGTH = 20;
+    std::uint32_t EXTRA_LENGTH = 100;
 
     bool foundResume = token.isNull() || !token.isObject();
 
@@ -2125,8 +2120,7 @@ NetworkOPsImp::getTxsAccountB (const RippleAddress& account, std::int32_t minLed
                 else
                     rawMeta.resize (metaSize);
 
-                ret.push_back (std::make_tuple (
-                    strHex (rawTxn), strHex (rawMeta), db->getInt ("LedgerSeq")));
+                ret.emplace_back (strHex (rawTxn), strHex (rawMeta), db->getInt ("LedgerSeq"));
                 --numberOfResults;
             }
         }
