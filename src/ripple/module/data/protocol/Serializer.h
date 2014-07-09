@@ -45,7 +45,8 @@ public:
     {
         ;
     }
-    Serializer (const std::string& data) : mData (data.data (), (data.data ()) + data.size ())
+    Serializer (const std::string& data) :
+            mData (data.data (), (data.data ()) + data.size ())
     {
         ;
     }
@@ -60,29 +61,22 @@ public:
         ;
     }
 
-    // assemble functions
+    /** Add specific integer types to the serializer.
+        Prefer these more specific methods to the generic addInt(). */
     int add8 (unsigned char byte);
     int add16 (std::uint16_t);
     int add32 (std::uint32_t);      // ledger indexes, account sequence, timestamps
     int add64 (std::uint64_t);      // native currency amounts
-    int add128 (const uint128&);    // private key generators
-    int add256 (uint256 const& );       // transaction and ledger hashes
 
-    template <typename Integer>
-    int addInteger(Integer);
+    /** Add a generic integer to the Serializer. */
+    template <typename Int>
+    int addInt(Int);
 
     template <int Bits, class Tag>
-    int addBitString(base_uint<Bits, Tag> const& v) {
+    int add(base_uint<Bits, Tag> const& v) {
         int ret = mData.size ();
         mData.insert (mData.end (), v.begin (), v.end ());
         return ret;
-    }
-
-    // TODO(tom): merge with add128 and add256.
-    template <class Tag>
-    int add160 (base_uint<160, Tag> const& i)
-    {
-        return addBitString<160, Tag>(i);
     }
 
     int addRaw (Blob const& vector);
@@ -100,11 +94,9 @@ public:
     bool get16 (std::uint16_t&, int offset) const;
     bool get32 (std::uint32_t&, int offset) const;
     bool get64 (std::uint64_t&, int offset) const;
-    bool get128 (uint128&, int offset) const;
-    bool get256 (uint256&, int offset) const;
 
     template <typename Integer>
-    bool getInteger(Integer& number, int offset) {
+    bool getInt(Integer& number, int offset) {
         static const auto bytes = sizeof(Integer);
         if ((offset + bytes) > mData.size ())
             return false;
@@ -121,20 +113,11 @@ public:
     }
 
     template <int Bits, typename Tag = void>
-    bool getBitString(base_uint<Bits, Tag>& data, int offset) const {
+    bool get(base_uint<Bits, Tag>& data, int offset) const {
         auto success = (offset + (Bits / 8)) <= mData.size ();
         if (success)
             memcpy (data.begin (), & (mData.front ()) + offset, (Bits / 8));
         return success;
-    }
-
-    uint256 get256 (int offset) const;
-
-    // TODO(tom): merge with get128 and get256.
-    template <class Tag>
-    bool get160 (base_uint<160, Tag>& o, int offset) const
-    {
-        return getBitString<160, Tag>(o, offset);
     }
 
     bool getRaw (Blob&, int offset, int length) const;
@@ -159,7 +142,8 @@ public:
     static uint256 getSHA512Half (const unsigned char* data, int len);
 
     // prefix hash functions
-    static uint256 getPrefixHash (std::uint32_t prefix, const unsigned char* data, int len);
+    static uint256 getPrefixHash (
+        std::uint32_t prefix, const unsigned char* data, int len);
     uint256 getPrefixHash (std::uint32_t prefix) const
     {
         return getPrefixHash (prefix, & (mData.front ()), mData.size ());
@@ -168,9 +152,11 @@ public:
     {
         return getPrefixHash (prefix, & (data.front ()), data.size ());
     }
-    static uint256 getPrefixHash (std::uint32_t prefix, const std::string& strData)
+    static uint256 getPrefixHash (
+        std::uint32_t prefix, const std::string& strData)
     {
-        return getPrefixHash (prefix, reinterpret_cast<const unsigned char*> (strData.data ()), strData.size ());
+        return getPrefixHash (prefix, reinterpret_cast<const unsigned char*> (
+            strData.data ()), strData.size ());
     }
 
     // totality functions
@@ -314,7 +300,6 @@ public:
     // Reference is not const because we don't want to bind to a temporary
     SerializerIterator (Serializer& s) : mSerializer (s), mPos (0)
     {
-        ;
     }
 
     const Serializer& operator* (void)
@@ -346,22 +331,13 @@ public:
     std::uint32_t get32 ();
     std::uint64_t get64 ();
 
-    uint128 get128 () { return getBitString<128>(); }
-    uint160 get160 () { return getBitString<160>(); }
-    uint256 get256 () { return getBitString<256>(); }
-
     template <std::size_t Bits, typename Tag = void>
-    void getBitString (base_uint<Bits, Tag>& bits) {
-        if (!mSerializer.getBitString<Bits> (bits, mPos))
-            throw std::runtime_error ("invalid serializer getBitString");
+    base_uint<Bits, Tag> get () {
+        base_uint<Bits, Tag> bits;
+        if (!mSerializer.get<Bits> (bits, mPos))
+            throw std::runtime_error ("invalid serializer get");
 
         mPos += Bits / 8;
-    }
-
-    template <std::size_t Bits, typename Tag = void>
-    base_uint<Bits, Tag> getBitString () {
-        base_uint<Bits, Tag> bits;
-        getBitString(bits);
         return bits;
     }
 

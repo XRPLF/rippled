@@ -81,7 +81,7 @@ EC_KEY* CKey::GenerateRootDeterministicKey (const uint128& seed)
     {
         // private key must be non-zero and less than the curve's order
         Serializer s ((128 + 32) / 8);
-        s.add128 (seed);
+        s.add<128> (seed);
         s.add32 (seq++);
         uint256 root = s.getSHA512Half ();
         s.secureErase ();

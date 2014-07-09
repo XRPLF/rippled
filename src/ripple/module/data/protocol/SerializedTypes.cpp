@@ -232,13 +232,13 @@ STPathSet* STPathSet::construct (SerializerIterator& s, SField::ref name)
             Account issuer;
 
             if (hasAccount)
-                account.copyFrom (s.get160 ());
+                account.copyFrom (s.get<160> ());
 
             if (hasCurrency)
-                currency.copyFrom (s.get160 ());
+                currency.copyFrom (s.get<160> ());
 
             if (hasIssuer)
-                issuer.copyFrom (s.get160 ());
+                issuer.copyFrom (s.get<160> ());
 
             path.emplace_back (account, currency, issuer, hasCurrency);
         }
@@ -360,13 +360,13 @@ void STPathSet::add (Serializer& s) const
             s.add8 (iType);
 
             if (iType & STPathElement::typeAccount)
-                s.add160 (speElement.getAccountID ());
+                s.add<160> (speElement.getAccountID ());
 
             if (iType & STPathElement::typeCurrency)
-                s.add160 (speElement.getCurrency ());
+                s.add<160> (speElement.getCurrency ());
 
             if (iType & STPathElement::typeIssuer)
-                s.add160 (speElement.getIssuerID ());
+                s.add<160> (speElement.getIssuerID ());
         }
 
         bFirst = false;

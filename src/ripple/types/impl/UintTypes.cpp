@@ -93,7 +93,7 @@ bool to_currency(Currency& currency, std::string const& code)
         s.addZeros (16 / 8);
         s.addZeros (24 / 8);
 
-        s.get160 (currency, 0);
+        s.get<160> (currency, 0);
         return true;
     }
 

@@ -58,8 +58,8 @@ uint256 LedgerProposal::getSigningHash () const
     s.add32 (getConfig ().SIGN_PROPOSAL);
     s.add32 (mProposeSeq);
     s.add32 (mCloseTime);
-    s.add256 (mPreviousLedger);
-    s.add256 (mCurrentHash);
+    s.add<256> (mPreviousLedger);
+    s.add<256> (mCurrentHash);
 
     return s.getSHA512Half ();
 }
@@ -75,8 +75,8 @@ uint256 LedgerProposal::computeSuppressionID (
 {
 
     Serializer s (512);
-    s.add256 (proposeHash);
-    s.add256 (previousLedger);
+    s.add<256> (proposeHash);
+    s.add<256> (previousLedger);
     s.add32 (proposeSeq);
     s.add32 (closeTime);
     s.addVL (pubKey);

@@ -54,7 +54,7 @@ public:
     {
         assert (fName->isBinary ());
         assert (fName->fieldType == getSType ());
-        s.addInteger (value_);
+        s.addInt (value_);
     }
 
     Integer getValue () const

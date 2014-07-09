@@ -95,7 +95,7 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapNodeID& id, Blob const& rawNode,
                 throw std::runtime_error ("short AS node");
 
             uint256 u;
-            s.get256 (u, len - (256 / 8));
+            s.get<256> (u, len - (256 / 8));
             s.chop (256 / 8);
 
             if (u.isZero ()) throw std::runtime_error ("invalid AS node");
@@ -111,7 +111,7 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapNodeID& id, Blob const& rawNode,
 
             for (int i = 0; i < 16; ++i)
             {
-                s.get256 (mHashes[i], i * 32);
+                s.get<256> (mHashes[i], i * 32);
 
                 if (mHashes[i].isNonZero ())
                     mIsBranch |= (1 << i);
@@ -129,7 +129,7 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapNodeID& id, Blob const& rawNode,
 
                 if ((pos < 0) || (pos >= 16)) throw std::runtime_error ("invalid CI node");
 
-                s.get256 (mHashes[pos], i * 33);
+                s.get<256> (mHashes[pos], i * 33);
 
                 if (mHashes[pos].isNonZero ())
                     mIsBranch |= (1 << pos);
@@ -144,7 +144,7 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapNodeID& id, Blob const& rawNode,
                 throw std::runtime_error ("short TM node");
 
             uint256 u;
-            s.get256 (u, len - (256 / 8));
+            s.get<256> (u, len - (256 / 8));
             s.chop (256 / 8);
 
             if (u.isZero ())
@@ -183,7 +183,7 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapNodeID& id, Blob const& rawNode,
                 throw std::runtime_error ("short PLN node");
 
             uint256 u;
-            s.get256 (u, s.getLength () - 32);
+            s.get<256> (u, s.getLength () - 32);
             s.chop (32);
 
             if (u.isZero ())
@@ -202,7 +202,7 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapNodeID& id, Blob const& rawNode,
 
             for (int i = 0; i < 16; ++i)
             {
-                s.get256 (mHashes[i], i * 32);
+                s.get<256> (mHashes[i], i * 32);
 
                 if (mHashes[i].isNonZero ())
                     mIsBranch |= (1 << i);
@@ -217,7 +217,7 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapNodeID& id, Blob const& rawNode,
                 throw std::runtime_error ("short TXN node");
 
             uint256 txID;
-            s.get256 (txID, s.getLength () - 32);
+            s.get<256> (txID, s.getLength () - 32);
             s.chop (32);
             mItem = std::make_shared<SHAMapItem> (txID, s.peekData ());
             mType = tnTRANSACTION_MD;
@@ -261,7 +261,7 @@ bool SHAMapTreeNode::updateHash ()
             s.add32 (HashPrefix::innerNode);
 
             for (int i = 0; i < 16; ++i)
-                s.add256 (mHashes[i]);
+                s.add (mHashes[i]);
 
             assert (nh == s.getSHA512Half ());
 #endif
@@ -278,7 +278,7 @@ bool SHAMapTreeNode::updateHash ()
         Serializer s (mItem->peekSerializer ().getDataLength () + (256 + 32) / 8);
         s.add32 (HashPrefix::leafNode);
         s.addRaw (mItem->peekData ());
-        s.add256 (mItem->getTag ());
+        s.add<256> (mItem->getTag ());
         nh = s.getSHA512Half ();
     }
     else if (mType == tnTRANSACTION_MD)
@@ -286,7 +286,7 @@ bool SHAMapTreeNode::updateHash ()
         Serializer s (mItem->peekSerializer ().getDataLength () + (256 + 32) / 8);
         s.add32 (HashPrefix::txNode);
         s.addRaw (mItem->peekData ());
-        s.add256 (mItem->getTag ());
+        s.add<256> (mItem->getTag ());
         nh = s.getSHA512Half ();
     }
     else
@@ -308,7 +308,7 @@ void SHAMapTreeNode::addRaw (Serializer& s, SHANodeFormat format)
 
     if (format == snfHASH)
     {
-        s.add256 (getNodeHash ());
+        s.add<256> (getNodeHash ());
     }
     else if (mType == tnINNER)
     {
@@ -319,7 +319,7 @@ void SHAMapTreeNode::addRaw (Serializer& s, SHANodeFormat format)
             s.add32 (HashPrefix::innerNode);
 
             for (int i = 0; i < 16; ++i)
-                s.add256 (mHashes[i]);
+                s.add<256> (mHashes[i]);
         }
         else
         {
@@ -329,7 +329,7 @@ void SHAMapTreeNode::addRaw (Serializer& s, SHANodeFormat format)
                 for (int i = 0; i < 16; ++i)
                     if (!isEmptyBranch (i))
                     {
-                        s.add256 (mHashes[i]);
+                        s.add<256> (mHashes[i]);
                         s.add8 (i);
                     }
 
@@ -338,7 +338,7 @@ void SHAMapTreeNode::addRaw (Serializer& s, SHANodeFormat format)
             else
             {
                 for (int i = 0; i < 16; ++i)
-                    s.add256 (mHashes[i]);
+                    s.add<256> (mHashes[i]);
 
                 s.add8 (2);
             }
@@ -350,12 +350,12 @@ void SHAMapTreeNode::addRaw (Serializer& s, SHANodeFormat format)
         {
             s.add32 (HashPrefix::leafNode);
             s.addRaw (mItem->peekData ());
-            s.add256 (mItem->getTag ());
+            s.add<256> (mItem->getTag ());
         }
         else
         {
             s.addRaw (mItem->peekData ());
-            s.add256 (mItem->getTag ());
+            s.add<256> (mItem->getTag ());
             s.add8 (1);
         }
     }
@@ -378,12 +378,12 @@ void SHAMapTreeNode::addRaw (Serializer& s, SHANodeFormat format)
         {
             s.add32 (HashPrefix::txNode);
             s.addRaw (mItem->peekData ());
-            s.add256 (mItem->getTag ());
+            s.add<256> (mItem->getTag ());
         }
         else
         {
             s.addRaw (mItem->peekData ());
-            s.add256 (mItem->getTag ());
+            s.add<256> (mItem->getTag ());
             s.add8 (4);
         }
     }

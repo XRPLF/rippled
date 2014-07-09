@@ -72,7 +72,7 @@ public:
     {
         assert (fName->isBinary ());
         assert (fName->fieldType == getSType());
-        s.addBitString<Bits> (bitString_);
+        s.add<Bits> (bitString_);
     }
 
     const BitString& getValue () const
@@ -106,7 +106,7 @@ private:
 
     static STBitString* construct (SerializerIterator& u, SField::ref name)
     {
-        return new STBitString (name, u.getBitString<Bits> ());
+        return new STBitString (name, u.get<Bits> ());
     }
 };
 
