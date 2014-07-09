@@ -34,15 +34,15 @@ protected:
 
 public:
     // Called for messages of unknown type
-    virtual error_code on_message_unknown (std::uint16_t type) = 0;
+    virtual error_code on_message_unknown (uint16 type) = 0;
 
     // Called before a specific message handler is invoked
-    virtual error_code on_message_begin (std::uint16_t type,
+    virtual error_code on_message_begin (uint16 type,
         std::shared_ptr <::google::protobuf::Message> const& m) = 0;
 
     // Called after a specific message handler is invoked,
     // if on_message_begin did not return an error.
-    virtual void on_message_end (std::uint16_t type,
+    virtual void on_message_end (uint16 type,
         std::shared_ptr <::google::protobuf::Message> const& m) = 0;
 
     virtual error_code on_message (std::shared_ptr <protocol::TMHello> const& m) { return error_code(); }

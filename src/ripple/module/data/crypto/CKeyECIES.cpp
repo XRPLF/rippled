@@ -78,13 +78,13 @@ void CKey::getECIESSecret (CKey& otherKey, ECIES_ENC_KEY_TYPE& enc_key, ECIES_HM
     }
     else throw std::runtime_error ("no private key");
 
-    unsigned char rawbuf[512];
+    uint8 rawbuf[512];
     int buflen = ECDH_compute_key (rawbuf, 512, EC_KEY_get0_public_key (pubkey), privkey, nullptr);
 
     if (buflen < ECIES_MIN_SEC)
         throw std::runtime_error ("ecdh key failed");
 
-    unsigned char hbuf[ECIES_KEY_LENGTH];
+    uint8 hbuf[ECIES_KEY_LENGTH];
     ECIES_KEY_HASH (rawbuf, buflen, hbuf);
     memset (rawbuf, 0, ECIES_HMAC_KEY_SIZE);
 

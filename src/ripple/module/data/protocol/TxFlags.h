@@ -36,52 +36,52 @@ namespace ripple {
 class TxFlag
 {
 public:
-    static std::uint32_t const requireDestTag = 0x00010000;
+    static uint32 const requireDestTag = 0x00010000;
 };
 // VFALCO TODO Move all flags into this container after some study.
 
 // Universal Transaction flags:
-const std::uint32_t tfFullyCanonicalSig    = 0x80000000;
-const std::uint32_t tfUniversal            = tfFullyCanonicalSig;
-const std::uint32_t tfUniversalMask        = ~ tfUniversal;
+const uint32 tfFullyCanonicalSig    = 0x80000000;
+const uint32 tfUniversal            = tfFullyCanonicalSig;
+const uint32 tfUniversalMask        = ~ tfUniversal;
 
 // AccountSet flags:
 // VFALCO TODO Javadoc comment every one of these constants
-//const std::uint32_t TxFlag::requireDestTag       = 0x00010000;
-const std::uint32_t tfOptionalDestTag      = 0x00020000;
-const std::uint32_t tfRequireAuth          = 0x00040000;
-const std::uint32_t tfOptionalAuth         = 0x00080000;
-const std::uint32_t tfDisallowXRP          = 0x00100000;
-const std::uint32_t tfAllowXRP             = 0x00200000;
-const std::uint32_t tfAccountSetMask       = ~ (tfUniversal | TxFlag::requireDestTag | tfOptionalDestTag
+//const uint32 TxFlag::requireDestTag       = 0x00010000;
+const uint32 tfOptionalDestTag      = 0x00020000;
+const uint32 tfRequireAuth          = 0x00040000;
+const uint32 tfOptionalAuth         = 0x00080000;
+const uint32 tfDisallowXRP          = 0x00100000;
+const uint32 tfAllowXRP             = 0x00200000;
+const uint32 tfAccountSetMask       = ~ (tfUniversal | TxFlag::requireDestTag | tfOptionalDestTag
                                              | tfRequireAuth | tfOptionalAuth
                                              | tfDisallowXRP | tfAllowXRP);
 
 // AccountSet SetFlag/ClearFlag values
-const std::uint32_t asfRequireDest         = 1;
-const std::uint32_t asfRequireAuth         = 2;
-const std::uint32_t asfDisallowXRP         = 3;
-const std::uint32_t asfDisableMaster       = 4;
-const std::uint32_t asfAccountTxnID        = 5;
+const uint32 asfRequireDest         = 1;
+const uint32 asfRequireAuth         = 2;
+const uint32 asfDisallowXRP         = 3;
+const uint32 asfDisableMaster       = 4;
+const uint32 asfAccountTxnID        = 5;
 
 // OfferCreate flags:
-const std::uint32_t tfPassive              = 0x00010000;
-const std::uint32_t tfImmediateOrCancel    = 0x00020000;
-const std::uint32_t tfFillOrKill           = 0x00040000;
-const std::uint32_t tfSell                 = 0x00080000;
-const std::uint32_t tfOfferCreateMask      = ~ (tfUniversal | tfPassive | tfImmediateOrCancel | tfFillOrKill | tfSell);
+const uint32 tfPassive              = 0x00010000;
+const uint32 tfImmediateOrCancel    = 0x00020000;
+const uint32 tfFillOrKill           = 0x00040000;
+const uint32 tfSell                 = 0x00080000;
+const uint32 tfOfferCreateMask      = ~ (tfUniversal | tfPassive | tfImmediateOrCancel | tfFillOrKill | tfSell);
 
 // Payment flags:
-const std::uint32_t tfNoRippleDirect       = 0x00010000;
-const std::uint32_t tfPartialPayment       = 0x00020000;
-const std::uint32_t tfLimitQuality         = 0x00040000;
-const std::uint32_t tfPaymentMask          = ~ (tfUniversal | tfPartialPayment | tfLimitQuality | tfNoRippleDirect);
+const uint32 tfNoRippleDirect       = 0x00010000;
+const uint32 tfPartialPayment       = 0x00020000;
+const uint32 tfLimitQuality         = 0x00040000;
+const uint32 tfPaymentMask          = ~ (tfUniversal | tfPartialPayment | tfLimitQuality | tfNoRippleDirect);
 
 // TrustSet flags:
-const std::uint32_t tfSetfAuth             = 0x00010000;
-const std::uint32_t tfSetNoRipple          = 0x00020000;
-const std::uint32_t tfClearNoRipple        = 0x00040000;
-const std::uint32_t tfTrustSetMask         = ~ (tfUniversal | tfSetfAuth | tfSetNoRipple | tfClearNoRipple);
+const uint32 tfSetfAuth             = 0x00010000;
+const uint32 tfSetNoRipple          = 0x00020000;
+const uint32 tfClearNoRipple        = 0x00040000;
+const uint32 tfTrustSetMask         = ~ (tfUniversal | tfSetfAuth | tfSetNoRipple | tfClearNoRipple);
 
 } // ripple
 

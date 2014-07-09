@@ -22,9 +22,9 @@ namespace ripple {
 uint160 Hash160 (Blob const& vch)
 {
     uint256 hash1;
-    SHA256 (&vch[0], vch.size (), (unsigned char*)&hash1);
+    SHA256 (&vch[0], vch.size (), (uint8*)&hash1);
     uint160 hash2;
-    RIPEMD160 ((unsigned char*)&hash1, sizeof (hash1), (unsigned char*)&hash2);
+    RIPEMD160 ((uint8*)&hash1, sizeof (hash1), (uint8*)&hash2);
     return hash2;
 }
 

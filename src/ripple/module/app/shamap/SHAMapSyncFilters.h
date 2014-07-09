@@ -55,7 +55,7 @@ private:
 class AccountStateSF : public SHAMapSyncFilter
 {
 public:
-    explicit AccountStateSF (std::uint32_t ledgerSeq);
+    explicit AccountStateSF (uint32 ledgerSeq);
 
     // Note that the nodeData is overwritten by this call
     void gotNode (bool fromFilter,
@@ -69,7 +69,7 @@ public:
                    Blob& nodeData);
 
 private:
-    std::uint32_t mLedgerSeq;
+    uint32 mLedgerSeq;
 };
 
 // This class is only needed on add functions
@@ -77,7 +77,7 @@ private:
 class TransactionStateSF : public SHAMapSyncFilter
 {
 public:
-    explicit TransactionStateSF (std::uint32_t ledgerSeq);
+    explicit TransactionStateSF (uint32 ledgerSeq);
 
     // Note that the nodeData is overwritten by this call
     void gotNode (bool fromFilter,
@@ -91,7 +91,7 @@ public:
                    Blob& nodeData);
 
 private:
-    std::uint32_t mLedgerSeq;
+    uint32 mLedgerSeq;
 };
 
 } // ripple

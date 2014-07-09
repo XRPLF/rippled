@@ -85,8 +85,8 @@ private:
     };
 
 public:
-    FeeVoteImpl (std::uint64_t targetBaseFee, std::uint32_t targetReserveBase,
-             std::uint32_t targetReserveIncrement, beast::Journal journal)
+    FeeVoteImpl (uint64 targetBaseFee, uint32 targetReserveBase,
+             uint32 targetReserveIncrement, beast::Journal journal)
         : mTargetBaseFee (targetBaseFee)
         , mTargetReserveBase (targetReserveBase)
         , mTargetReserveIncrement (targetReserveIncrement)
@@ -132,9 +132,9 @@ public:
         // LCL must be flag ledger
         assert ((lastClosedLedger->getLedgerSeq () % 256) == 0);
 
-        VotableInteger<std::uint64_t> baseFeeVote (lastClosedLedger->getBaseFee (), mTargetBaseFee);
-        VotableInteger<std::uint32_t> baseReserveVote (lastClosedLedger->getReserve (0), mTargetReserveBase);
-        VotableInteger<std::uint32_t> incReserveVote (lastClosedLedger->getReserveInc (), mTargetReserveIncrement);
+        VotableInteger<uint64> baseFeeVote (lastClosedLedger->getBaseFee (), mTargetBaseFee);
+        VotableInteger<uint32> baseReserveVote (lastClosedLedger->getReserve (0), mTargetReserveBase);
+        VotableInteger<uint32> incReserveVote (lastClosedLedger->getReserveInc (), mTargetReserveIncrement);
 
         // get validations for ledger before flag
         ValidationSet set = getApp().getValidations ().getValidations (lastClosedLedger->getParentHash ());
@@ -174,9 +174,9 @@ public:
         }
 
         // choose our positions
-        std::uint64_t baseFee = baseFeeVote.getVotes ();
-        std::uint32_t baseReserve = baseReserveVote.getVotes ();
-        std::uint32_t incReserve = incReserveVote.getVotes ();
+        uint64 baseFee = baseFeeVote.getVotes ();
+        uint32 baseReserve = baseReserveVote.getVotes ();
+        uint32 incReserve = incReserveVote.getVotes ();
 
         // add transactions to our position
         if ((baseFee != lastClosedLedger->getBaseFee ()) ||
@@ -214,17 +214,17 @@ public:
     }
 
 private:
-    std::uint64_t mTargetBaseFee;
-    std::uint32_t mTargetReserveBase;
-    std::uint32_t mTargetReserveIncrement;
+    uint64 mTargetBaseFee;
+    uint32 mTargetReserveBase;
+    uint32 mTargetReserveIncrement;
     beast::Journal m_journal;
 };
 
 //------------------------------------------------------------------------------
 
 std::unique_ptr<FeeVote>
-make_FeeVote (std::uint64_t targetBaseFee, std::uint32_t targetReserveBase,
-    std::uint32_t targetReserveIncrement, beast::Journal journal)
+make_FeeVote (uint64 targetBaseFee, uint32 targetReserveBase,
+    uint32 targetReserveIncrement, beast::Journal journal)
 {
     return std::make_unique<FeeVoteImpl> (targetBaseFee, targetReserveBase,
         targetReserveIncrement, journal);

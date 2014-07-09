@@ -42,7 +42,7 @@ public:
         Options() = delete;
 
         explicit
-        Options (std::uint32_t tx_flags)
+        Options (uint32 tx_flags)
             : sell (tx_flags & tfSell)
             , passive (tx_flags & tfPassive)
             , fill_or_kill (tx_flags & tfFillOrKill)

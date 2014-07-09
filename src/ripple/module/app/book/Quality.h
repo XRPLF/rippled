@@ -39,7 +39,7 @@ class Quality
 public:
     // Type of the internal representation. Higher qualities
     // have lower unsigned integer representations.
-    typedef std::uint64_t value_type;
+    typedef uint64 value_type;
 
 private:
     value_type m_value;
@@ -49,7 +49,7 @@ public:
 
     /** Create a quality from the integer encoding of an Amount */
     explicit
-    Quality (std::uint64_t value);
+    Quality (uint64 value);
 
     /** Create a quality from the ratio of two amounts. */
     explicit

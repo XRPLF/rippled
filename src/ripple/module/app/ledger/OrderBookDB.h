@@ -30,7 +30,7 @@ public:
 
     BookListeners ();
     void addSubscriber (InfoSub::ref sub);
-    void removeSubscriber (std::uint64_t sub);
+    void removeSubscriber (uint64 sub);
     void publish (Json::Value const& jvObj);
 
 private:
@@ -40,7 +40,7 @@ private:
 
     // VFALCO TODO Use a typedef for the uint64
     //             Use a typedef for the container
-    ripple::unordered_map<std::uint64_t, InfoSub::wptr> mListeners;
+    ripple::unordered_map<uint64, InfoSub::wptr> mListeners;
 };
 
 //------------------------------------------------------------------------------
@@ -100,7 +100,7 @@ private:
 
     BookToListenersMap mListeners;
 
-    std::uint32_t mSeq;
+    uint32 mSeq;
 
 };
 

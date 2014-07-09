@@ -143,19 +143,19 @@ private:
     ripple::unordered_map<std::pair<Currency, Account>, int>  mPOMap;
 
     // Add ripple paths
-    static const std::uint32_t afADD_ACCOUNTS = 0x001;
+    static const uint32 afADD_ACCOUNTS = 0x001;
 
     // Add order books
-    static const std::uint32_t afADD_BOOKS    = 0x002;
+    static const uint32 afADD_BOOKS    = 0x002;
 
     // Add order book to XRP only
-    static const std::uint32_t afOB_XRP       = 0x010;
+    static const uint32 afOB_XRP       = 0x010;
 
     // Must link to destination currency
-    static const std::uint32_t afOB_LAST      = 0x040;
+    static const uint32 afOB_LAST      = 0x040;
 
     // Destination account only
-    static const std::uint32_t afAC_LAST      = 0x080;
+    static const uint32 afAC_LAST      = 0x080;
 };
 
 CurrencySet usAccountDestCurrencies

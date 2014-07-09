@@ -59,7 +59,7 @@ public:
         `nullptr` is returned.
 
         @note This can be called concurrently.
-        @param hash The key of the object to retrieve.  
+        @param hash The key of the object to retrieve.
         @return The object, or nullptr if it couldn't be retrieved.
     */
     virtual NodeObject::pointer fetch (uint256 const& hash) = 0;
@@ -96,10 +96,10 @@ public:
                     variable is overwritten.
         @param hash The 256-bit hash of the payload data.
 
-        @return `true` if the object was stored?              
+        @return `true` if the object was stored?
     */
     virtual void store (NodeObjectType type,
-                        std::uint32_t ledgerIndex,
+                        uint32 ledgerIndex,
                         Blob&& data,
                         uint256 const& hash) = 0;
 
@@ -124,7 +124,7 @@ public:
     virtual float getCacheHitRate () = 0;
 
     /** Set the maximum number of entries and maximum cache age for both caches.
-        
+
         @param size Number of cache entries (0 = ignore)
         @param age Maximum cache age in seconds
     */

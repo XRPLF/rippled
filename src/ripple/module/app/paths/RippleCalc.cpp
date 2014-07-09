@@ -204,7 +204,7 @@ TER rippleCalculate (
 
     // When processing, we don't want to complicate directory walking with
     // deletion.
-    const std::uint64_t uQualityLimit = bLimitQuality
+    const uint64 uQualityLimit = bLimitQuality
         ? STAmount::getRate (saDstAmountReq, saMaxAmountReq) : 0;
 
     // Offers that became unfunded.

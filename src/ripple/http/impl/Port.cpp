@@ -45,7 +45,7 @@ Port& Port::operator= (Port const& other)
 }
 
 Port::Port (
-    std::uint16_t port_,
+    uint16 port_,
     beast::IP::Endpoint const& addr_,
     Security security_,
     beast::asio::SSLContext* context_)

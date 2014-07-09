@@ -69,11 +69,11 @@ static void autofill_fee (Json::Value& request,
         }
     }
 
-    std::uint64_t const feeDefault = getConfig().FEE_DEFAULT;
+    uint64 const feeDefault = getConfig().FEE_DEFAULT;
 
     // Administrative endpoints are exempt from local fees
-    std::uint64_t const fee = ledger->scaleFeeLoad (feeDefault, admin);
-    std::uint64_t const limit = mult * feeDefault;
+    uint64 const fee = ledger->scaleFeeLoad (feeDefault, admin);
+    uint64 const limit = mult * feeDefault;
 
     if (fee > limit)
     {
@@ -419,7 +419,7 @@ public:
         RippleAddress rootSeedMaster      = RippleAddress::createSeedGeneric ("masterpassphrase");
         RippleAddress rootGeneratorMaster = RippleAddress::createGeneratorPublic (rootSeedMaster);
         RippleAddress rootAddress         = RippleAddress::createAccountPublic (rootGeneratorMaster, 0);
-        std::uint64_t startAmount (100000);
+        uint64 startAmount (100000);
         Ledger::pointer ledger (std::make_shared <Ledger> (
             rootAddress, startAmount));
 

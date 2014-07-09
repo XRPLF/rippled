@@ -59,7 +59,7 @@ bool ProofOfWork::isValid () const
     return false;
 }
 
-std::uint64_t ProofOfWork::getDifficulty (uint256 const& target, int iterations)
+uint64 ProofOfWork::getDifficulty (uint256 const& target, int iterations)
 {
     // calculate the approximate number of hashes required to solve this proof of work
     if ((iterations > kMaxIterations) || (target < sMinTarget))
@@ -72,10 +72,10 @@ std::uint64_t ProofOfWork::getDifficulty (uint256 const& target, int iterations)
     }
 
     // more iterations means more hashes per iteration but also a larger final hash
-    std::uint64_t difficulty = iterations + (iterations / 8);
+    uint64 difficulty = iterations + (iterations / 8);
 
     // Multiply the number of hashes needed by 256 for each leading zero byte in the difficulty
-    const unsigned char* ptr = target.begin ();
+    const uint8* ptr = target.begin ();
 
     while (*ptr == 0)
     {

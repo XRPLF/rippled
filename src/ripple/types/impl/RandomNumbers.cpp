@@ -79,7 +79,7 @@ void RandomNumbers::fillBytes (void* destinationBuffer, int numberOfBytes)
     memset (destinationBuffer, 0, numberOfBytes);
 #endif
 
-    if (RAND_bytes (reinterpret_cast <unsigned char*> (destinationBuffer), numberOfBytes) != 1)
+    if (RAND_bytes (reinterpret_cast <uint8*> (destinationBuffer), numberOfBytes) != 1)
     {
         assert (false);
 
@@ -180,7 +180,7 @@ void RandomNumbers::platformAddPerformanceMonitorEntropy ()
     // VFALCO TODO Remove all this fancy stuff
     struct
     {
-        std::int64_t operator () () const
+        int64 operator () () const
         {
             return time (nullptr);
         }
@@ -193,9 +193,9 @@ void RandomNumbers::platformAddPerformanceMonitorEntropy ()
             struct
             {
                 // VFALCO TODO clean this up
-                std::int64_t operator () () const
+                int64 operator () () const
                 {
-                    std::int64_t nCounter = 0;
+                    int64 nCounter = 0;
 #if BEAST_WIN32
                     QueryPerformanceCounter ((LARGE_INTEGER*)&nCounter);
 #else
@@ -208,7 +208,7 @@ void RandomNumbers::platformAddPerformanceMonitorEntropy ()
             } GetPerformanceCounter;
 
             // Seed with CPU performance counter
-            std::int64_t nCounter = GetPerformanceCounter ();
+            int64 nCounter = GetPerformanceCounter ();
             RAND_add (&nCounter, sizeof (nCounter), 1.5);
             memset (&nCounter, 0, sizeof (nCounter));
         }
@@ -217,7 +217,7 @@ void RandomNumbers::platformAddPerformanceMonitorEntropy ()
     RandAddSeed ();
 
     // This can take up to 2 seconds, so only do it every 10 minutes
-    static std::int64_t nLastPerfmon;
+    static int64 nLastPerfmon;
 
     if (GetTime () < nLastPerfmon + 10 * 60)
         return;
@@ -227,7 +227,7 @@ void RandomNumbers::platformAddPerformanceMonitorEntropy ()
 #if BEAST_WIN32
     // Don't need this on Linux, OpenSSL automatically uses /dev/urandom
     // Seed with the entire set of perfmon data
-    unsigned char pdata[250000];
+    uint8 pdata[250000];
     memset (pdata, 0, sizeof (pdata));
     unsigned long nSize = sizeof (pdata);
     long ret = RegQueryValueExA (HKEY_PERFORMANCE_DATA, "Global", nullptr, nullptr, pdata, &nSize);

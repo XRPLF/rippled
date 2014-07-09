@@ -39,7 +39,7 @@ typedef LedgerEntrySet LedgerView;
 class Clock // : public abstract_clock <std::chrono::seconds>
 {
 public:
-    typedef std::uint32_t time_point;
+    typedef uint32 time_point;
     typedef std::chrono::seconds duration;
 };
 

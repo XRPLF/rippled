@@ -24,7 +24,7 @@
 #include <beast/module/core/diagnostic/MeasureFunctionCallTime.h>
 #include <beast/utility/Debug.h>
 #include <ripple/basics/containers/SyncUnorderedMap.h>
-    
+
 namespace ripple {
 
 namespace detail {
@@ -87,7 +87,7 @@ inline double cleanElapsed (double seconds) noexcept
 template <typename Object>
 double timedDestroy (Object& object)
 {
-    std::int64_t const startTime (beast::Time::getHighResolutionTicks ());
+    int64 const startTime (beast::Time::getHighResolutionTicks ());
 
     detail::Destroyer <Object>::destroy (object);
 

@@ -24,7 +24,7 @@ namespace ripple {
 TER Payment::doApply ()
 {
     // Ripple if source or destination is non-native or if there are paths.
-    std::uint32_t const uTxFlags = mTxn.getFlags ();
+    uint32 const uTxFlags = mTxn.getFlags ();
     bool const bPartialPayment (uTxFlags & tfPartialPayment);
     bool const bLimitQuality (uTxFlags & tfLimitQuality);
     bool const bNoRippleDirect (uTxFlags & tfNoRippleDirect);
@@ -290,11 +290,11 @@ TER Payment::doApply ()
         // uOwnerCount is the number of entries in this legder for this account
         // that require a reserve.
 
-        std::uint32_t const uOwnerCount (mTxnAccount->getFieldU32 (sfOwnerCount));
+        uint32 const uOwnerCount (mTxnAccount->getFieldU32 (sfOwnerCount));
 
         // This is the total reserve in drops.
         // TODO(tom): there should be a class for this.
-        std::uint64_t const uReserve (mEngine->getLedger ()->getReserve (uOwnerCount));
+        uint64 const uReserve (mEngine->getLedger ()->getReserve (uOwnerCount));
 
         // mPriorBalance is the balance on the sending account BEFORE the fees were charged.
         //

@@ -48,13 +48,13 @@ namespace path {
 
 void computeRippleLiquidity (
     RippleCalc& rippleCalc,
-    const std::uint32_t uQualityIn,
-    const std::uint32_t uQualityOut,
+    const uint32 uQualityIn,
+    const uint32 uQualityOut,
     const STAmount& saPrvReq,   // --> in limit including fees, <0 = unlimited
     const STAmount& saCurReq,   // --> out limit
     STAmount& saPrvAct,  // <-> in limit including achieved so far: <-- <= -->
     STAmount& saCurAct,  // <-> out limit including achieved so far: <-- <= -->
-    std::uint64_t& uRateMax)
+    uint64& uRateMax)
 {
     WriteLog (lsTRACE, RippleCalc)
         << "computeRippleLiquidity>"
@@ -128,7 +128,7 @@ void computeRippleLiquidity (
         // If the quality is worse than the previous
         WriteLog (lsTRACE, RippleCalc) << "computeRippleLiquidity: Fee";
 
-        std::uint64_t uRate = STAmount::getRate (
+        uint64 uRate = STAmount::getRate (
             STAmount (uQualityOut), STAmount (uQualityIn));
 
         // If the next rate is at least as good as the current rate, process.

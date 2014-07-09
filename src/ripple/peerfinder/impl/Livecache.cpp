@@ -30,7 +30,7 @@ public:
 
     // Add the address as an endpoint
     template <class C>
-    void add (std::uint32_t index, std::uint16_t port, C& c)
+    void add (uint32 index, uint16 port, C& c)
     {
         Endpoint ep;
         ep.hops = 0;

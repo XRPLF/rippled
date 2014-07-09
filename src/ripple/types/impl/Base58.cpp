@@ -26,8 +26,8 @@ namespace ripple {
 
 void Base58::fourbyte_hash256 (void* out, void const* in, std::size_t bytes)
 {
-    unsigned char const* const p (
-        static_cast <unsigned char const*>(in));
+    uint8 const* const p (
+        static_cast <uint8 const*>(in));
     uint256 hash (SHA256Hash (p, p + bytes));
     memcpy (out, hash.begin(), 4);
 }
@@ -49,7 +49,7 @@ Base58::Alphabet const& Base58::getRippleAlphabet ()
 }
 
 std::string Base58::raw_encode (
-    unsigned char const* begin, unsigned char const* end,
+    uint8 const* begin, uint8 const* end,
         Alphabet const& alphabet, bool withCheck)
 {
     CAutoBN_CTX pctx;
@@ -77,8 +77,8 @@ std::string Base58::raw_encode (
         unsigned int c = rem.getuint ();
         str += alphabet [c];
     }
-    
-    for (const unsigned char* p = end-2; p >= begin && *p == 0; p--)
+
+    for (const uint8* p = end-2; p >= begin && *p == 0; p--)
         str += alphabet [0];
 
     // Convert little endian std::string to big endian
@@ -238,4 +238,3 @@ bool Base58::decodeWithCheck (const std::string& str, Blob& vchRet, Alphabet con
 }
 
 }
-

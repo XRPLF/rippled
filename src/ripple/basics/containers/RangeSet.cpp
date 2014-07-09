@@ -30,16 +30,16 @@ namespace ripple {
 //        NOTE Why isn't this written as a template?
 //        TODO Replace this with std calls.
 //
-inline std::uint32_t min (std::uint32_t x, std::uint32_t y)
+inline uint32 min (uint32 x, uint32 y)
 {
     return (x < y) ? x : y;
 }
-inline std::uint32_t max (std::uint32_t x, std::uint32_t y)
+inline uint32 max (uint32 x, uint32 y)
 {
     return (x > y) ? x : y;
 }
 
-bool RangeSet::hasValue (std::uint32_t v) const
+bool RangeSet::hasValue (uint32 v) const
 {
     BOOST_FOREACH (const value_type & it, mRanges)
     {
@@ -49,7 +49,7 @@ bool RangeSet::hasValue (std::uint32_t v) const
     return false;
 }
 
-std::uint32_t RangeSet::getFirst () const
+uint32 RangeSet::getFirst () const
 {
     const_iterator it = mRanges.begin ();
 
@@ -59,7 +59,7 @@ std::uint32_t RangeSet::getFirst () const
     return it->first;
 }
 
-std::uint32_t RangeSet::getNext (std::uint32_t v) const
+uint32 RangeSet::getNext (uint32 v) const
 {
     BOOST_FOREACH (const value_type & it, mRanges)
     {
@@ -72,7 +72,7 @@ std::uint32_t RangeSet::getNext (std::uint32_t v) const
     return absent;
 }
 
-std::uint32_t RangeSet::getLast () const
+uint32 RangeSet::getLast () const
 {
     const_reverse_iterator it = mRanges.rbegin ();
 
@@ -82,7 +82,7 @@ std::uint32_t RangeSet::getLast () const
     return it->second;
 }
 
-std::uint32_t RangeSet::getPrev (std::uint32_t v) const
+uint32 RangeSet::getPrev (uint32 v) const
 {
     BOOST_REVERSE_FOREACH (const value_type & it, mRanges)
     {
@@ -97,9 +97,9 @@ std::uint32_t RangeSet::getPrev (std::uint32_t v) const
 
 // Return the largest number not in the set that is less than the given number
 //
-std::uint32_t RangeSet::prevMissing (std::uint32_t v) const
+uint32 RangeSet::prevMissing (uint32 v) const
 {
-    std::uint32_t result = absent;
+    uint32 result = absent;
 
     if (v != 0)
     {
@@ -125,17 +125,17 @@ std::uint32_t RangeSet::prevMissing (std::uint32_t v) const
     return result;
 }
 
-void RangeSet::setValue (std::uint32_t v)
+void RangeSet::setValue (uint32 v)
 {
     if (!hasValue (v))
     {
         mRanges[v] = v;
-        
+
         simplify ();
     }
 }
 
-void RangeSet::setRange (std::uint32_t minV, std::uint32_t maxV)
+void RangeSet::setRange (uint32 minV, uint32 maxV)
 {
     while (hasValue (minV))
     {
@@ -150,7 +150,7 @@ void RangeSet::setRange (std::uint32_t minV, std::uint32_t maxV)
     simplify ();
 }
 
-void RangeSet::clearValue (std::uint32_t v)
+void RangeSet::clearValue (uint32 v)
 {
     for (iterator it = mRanges.begin (); it != mRanges.end (); ++it)
     {
@@ -164,7 +164,7 @@ void RangeSet::clearValue (std::uint32_t v)
                 }
                 else
                 {
-                    std::uint32_t oldEnd = it->second;
+                    uint32 oldEnd = it->second;
                     mRanges.erase(it);
                     mRanges[v + 1] = oldEnd;
                 }
@@ -175,7 +175,7 @@ void RangeSet::clearValue (std::uint32_t v)
             }
             else
             {
-                std::uint32_t oldEnd = it->second;
+                uint32 oldEnd = it->second;
                 it->second = v - 1;
                 mRanges[v + 1] = oldEnd;
             }
@@ -332,4 +332,3 @@ public:
 BEAST_DEFINE_TESTSUITE(RangeSet,ripple_basics,ripple);
 
 } // ripple
-

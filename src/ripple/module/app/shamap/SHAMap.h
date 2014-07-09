@@ -92,12 +92,12 @@ class SHAMap
 {
 private:
     /** Function object which handles missing nodes. */
-    typedef std::function <void (std::uint32_t refNum)> MissingNodeHandler;
+    typedef std::function <void (uint32 refNum)> MissingNodeHandler;
 
     /** Default handler which calls NetworkOPs. */
     struct DefaultMissingNodeHandler
     {
-        void operator() (std::uint32_t refNUm);
+        void operator() (uint32 refNUm);
     };
 
 public:
@@ -127,7 +127,7 @@ public:
         SHAMapType t,
         FullBelowCache& fullBelowCache,
         TreeNodeCache& treeNodeCache,
-        std::uint32_t seq = 1,
+        uint32 seq = 1,
         MissingNodeHandler missing_node_handler = DefaultMissingNodeHandler());
 
     SHAMap (
@@ -150,7 +150,7 @@ public:
     // Remove nodes from memory
     void dropCache ();
 
-    void setLedgerSeq (std::uint32_t lseq)
+    void setLedgerSeq (uint32 lseq)
     {
         mLedgerSeq = lseq;
     }
@@ -228,7 +228,7 @@ public:
 
     int armDirty ();
     int flushDirty (DirtySet & dirtySet, int maxNodes, NodeObjectType t,
-                    std::uint32_t seq);
+                    uint32 seq);
     std::shared_ptr<DirtySet> disarmDirty ();
 
     void walkMap (std::vector<SHAMapMissingNode>& missingNodes, int maxMissing);
@@ -301,8 +301,8 @@ private:
     mutable LockType mLock;
 
     FullBelowCache& m_fullBelowCache;
-    std::uint32_t mSeq;
-    std::uint32_t mLedgerSeq; // sequence number of ledger this is part of
+    uint32 mSeq;
+    uint32 mLedgerSeq; // sequence number of ledger this is part of
     SyncUnorderedMapType< SHAMapNodeID, SHAMapTreeNode::pointer, SHAMapNode_hash > mTNByID;
     std::shared_ptr<DirtySet> mDirtyNodes;
     TreeNodeCache& mTreeNodeCache;

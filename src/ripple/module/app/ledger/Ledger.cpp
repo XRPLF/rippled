@@ -28,7 +28,7 @@ LedgerBase::LedgerBase ()
 {
 }
 
-Ledger::Ledger (const RippleAddress& masterID, std::uint64_t startAmount)
+Ledger::Ledger (const RippleAddress& masterID, uint64 startAmount)
     : mTotCoins (startAmount)
     , mLedgerSeq (1) // First Ledger
     , mCloseTime (0)
@@ -71,12 +71,12 @@ Ledger::Ledger (const RippleAddress& masterID, std::uint64_t startAmount)
 Ledger::Ledger (uint256 const& parentHash,
                 uint256 const& transHash,
                 uint256 const& accountHash,
-                std::uint64_t totCoins,
-                std::uint32_t closeTime,
-                std::uint32_t parentCloseTime,
+                uint64 totCoins,
+                uint32 closeTime,
+                uint32 parentCloseTime,
                 int closeFlags,
                 int closeResolution,
-                std::uint32_t ledgerSeq,
+                uint32 ledgerSeq,
                 bool& loaded)
     : mParentHash (parentHash)
     , mTransHash (transHash)
@@ -215,7 +215,7 @@ Ledger::Ledger (const std::string& rawLedger, bool hasPrefix)
 }
 
 /** Used for ledgers loaded from JSON files */
-Ledger::Ledger (std::uint32_t ledgerSeq, std::uint32_t closeTime)
+Ledger::Ledger (uint32 ledgerSeq, uint32 closeTime)
     : mTotCoins (0),
       mLedgerSeq (ledgerSeq),
       mCloseTime (closeTime),
@@ -336,7 +336,7 @@ void Ledger::addRaw (Serializer& s) const
 }
 
 void Ledger::setAccepted (
-    std::uint32_t closeTime, int closeResolution, bool correctCloseTime)
+    uint32 closeTime, int closeResolution, bool correctCloseTime)
 {
     // Used when we witnessed the consensus.  Rounds the close time, updates the
     // hash, and sets the ledger accepted and immutable.
@@ -768,7 +768,7 @@ bool Ledger::saveValidatedLedger (bool current)
 
 #ifndef NO_SQLITE3_PREPARE
 
-Ledger::pointer Ledger::loadByIndex (std::uint32_t ledgerIndex)
+Ledger::pointer Ledger::loadByIndex (uint32 ledgerIndex)
 {
     Ledger::pointer ledger;
     {
@@ -823,7 +823,7 @@ Ledger::pointer Ledger::loadByHash (uint256 const& ledgerHash)
 
 #else
 
-Ledger::pointer Ledger::loadByIndex (std::uint32_t ledgerIndex)
+Ledger::pointer Ledger::loadByIndex (uint32 ledgerIndex)
 {
     // This is a low-level function with no caching.
     std::string sql = "SELECT * from Ledgers WHERE LedgerSeq='";
@@ -848,8 +848,8 @@ Ledger::pointer Ledger::getSQL (const std::string& sql)
 {
     // only used with sqlite3 prepared statements not used
     uint256 ledgerHash, prevHash, accountHash, transHash;
-    std::uint64_t totCoins;
-    std::uint32_t closingTime, prevClosingTime, ledgerSeq;
+    uint64 totCoins;
+    uint32 closingTime, prevClosingTime, ledgerSeq;
     int closeResolution;
     unsigned closeFlags;
     std::string hash;
@@ -929,8 +929,8 @@ Ledger::pointer Ledger::getSQL1 (SqliteStatement* stmt)
     }
 
     uint256 ledgerHash, prevHash, accountHash, transHash;
-    std::uint64_t totCoins;
-    std::uint32_t closingTime, prevClosingTime, ledgerSeq;
+    uint64 totCoins;
+    uint32 closingTime, prevClosingTime, ledgerSeq;
     int closeResolution;
     unsigned closeFlags;
 
@@ -969,7 +969,7 @@ void Ledger::getSQL2 (Ledger::ref ret)
             << "Loaded ledger: " << to_string (ret->getHash ());
 }
 
-uint256 Ledger::getHashByIndex (std::uint32_t ledgerIndex)
+uint256 Ledger::getHashByIndex (uint32 ledgerIndex)
 {
     uint256 ret;
 
@@ -995,7 +995,7 @@ uint256 Ledger::getHashByIndex (std::uint32_t ledgerIndex)
 }
 
 bool Ledger::getHashesByIndex (
-    std::uint32_t ledgerIndex, uint256& ledgerHash, uint256& parentHash)
+    uint32 ledgerIndex, uint256& ledgerHash, uint256& parentHash)
 {
 #ifndef NO_SQLITE3_PREPARE
 
@@ -1059,10 +1059,10 @@ bool Ledger::getHashesByIndex (
 #endif
 }
 
-std::map< std::uint32_t, std::pair<uint256, uint256> >
-Ledger::getHashesByIndex (std::uint32_t minSeq, std::uint32_t maxSeq)
+std::map< uint32, std::pair<uint256, uint256> >
+Ledger::getHashesByIndex (uint32 minSeq, uint32 maxSeq)
 {
-    std::map< std::uint32_t, std::pair<uint256, uint256> > ret;
+    std::map< uint32, std::pair<uint256, uint256> > ret;
 
     std::string sql =
         "SELECT LedgerSeq,LedgerHash,PrevHash FROM Ledgers WHERE LedgerSeq >= ";
@@ -1348,7 +1348,7 @@ void Ledger::visitAccountItems (
             func (getSLEi (uNode));
         }
 
-        std::uint64_t uNodeNext = ownerDir->getFieldU64 (sfIndexNext);
+        uint64 uNodeNext = ownerDir->getFieldU64 (sfIndexNext);
 
         if (!uNodeNext)
             return;
@@ -1556,7 +1556,7 @@ SLE::pointer Ledger::getRippleState (uint256 const& uNode)
 
 // For an entry put in the 64 bit index or quality.
 uint256 Ledger::getQualityIndex (
-    uint256 const& uBase, const std::uint64_t uNodeDir)
+    uint256 const& uBase, const uint64 uNodeDir)
 {
     // Indexes are stored in big endian format: they print as hex as stored.
     // Most significant bytes are first.  Least significant bytes represent
@@ -1566,15 +1566,15 @@ uint256 Ledger::getQualityIndex (
     uint256 uNode (uBase);
 
     // TODO(tom): there must be a better way.
-    ((std::uint64_t*) uNode.end ())[-1] = htobe64 (uNodeDir);
+    ((uint64*) uNode.end ())[-1] = htobe64 (uNodeDir);
 
     return uNode;
 }
 
 // Return the last 64 bits.
-std::uint64_t Ledger::getQuality (uint256 const& uBase)
+uint64 Ledger::getQuality (uint256 const& uBase)
 {
-    return be64toh (((std::uint64_t*) uBase.end ())[-1]);
+    return be64toh (((uint64*) uBase.end ())[-1]);
 }
 
 uint256 Ledger::getQualityNext (uint256 const& uBase)
@@ -1617,7 +1617,7 @@ uint256 Ledger::getLedgerHashIndex ()
     return s.getSHA512Half ();
 }
 
-uint256 Ledger::getLedgerHashIndex (std::uint32_t desiredLedgerIndex)
+uint256 Ledger::getLedgerHashIndex (uint32 desiredLedgerIndex)
 {
     // Get the index of the node that holds the set of 256 ledgers that includes
     // this ledger's hash (or the first ledger after it if it's not a multiple
@@ -1628,7 +1628,7 @@ uint256 Ledger::getLedgerHashIndex (std::uint32_t desiredLedgerIndex)
     return s.getSHA512Half ();
 }
 
-uint256 Ledger::getLedgerHash (std::uint32_t ledgerIndex)
+uint256 Ledger::getLedgerHash (uint32 ledgerIndex)
 {
     // Return the hash of the specified ledger, 0 if not available
 
@@ -1703,9 +1703,9 @@ uint256 Ledger::getLedgerHash (std::uint32_t ledgerIndex)
     return uint256 ();
 }
 
-std::vector< std::pair<std::uint32_t, uint256> > Ledger::getLedgerHashes ()
+std::vector< std::pair<uint32, uint256> > Ledger::getLedgerHashes ()
 {
-    std::vector< std::pair<std::uint32_t, uint256> > ret;
+    std::vector< std::pair<uint32, uint256> > ret;
     SLE::pointer hashIndex = getSLEi (getLedgerHashIndex ());
 
     if (hashIndex)
@@ -1806,7 +1806,7 @@ uint256 Ledger::getBookBase (
 }
 
 uint256 Ledger::getDirNodeIndex (
-    uint256 const& uDirRoot, const std::uint64_t uNodeIndex)
+    uint256 const& uDirRoot, const uint64 uNodeIndex)
 {
     if (uNodeIndex)
     {
@@ -1847,7 +1847,7 @@ uint256 Ledger::getNicknameIndex (uint256 const& uNickname)
     return s.getSHA512Half ();
 }
 
-uint256 Ledger::getOfferIndex (Account const& account, std::uint32_t uSequence)
+uint256 Ledger::getOfferIndex (Account const& account, uint32 uSequence)
 {
     Serializer  s (26);
 
@@ -1939,7 +1939,7 @@ void Ledger::updateSkipList ()
     if (mLedgerSeq == 0) // genesis ledger has no previous ledger
         return;
 
-    std::uint32_t prevIndex = mLedgerSeq - 1;
+    uint32 prevIndex = mLedgerSeq - 1;
 
     // update record of every 256th ledger
     if ((prevIndex & 0xff) == 0)
@@ -1996,7 +1996,7 @@ void Ledger::updateSkipList ()
     }
 }
 
-std::uint32_t Ledger::roundCloseTime (std::uint32_t closeTime, std::uint32_t closeResolution)
+uint32 Ledger::roundCloseTime (uint32 closeTime, uint32 closeResolution)
 {
     if (closeTime == 0)
         return 0;
@@ -2047,7 +2047,7 @@ bool Ledger::pendSaveValidated (bool isSynchronous, bool isCurrent)
     return true;
 }
 
-std::set<std::uint32_t> Ledger::getPendingSaves()
+std::set<uint32> Ledger::getPendingSaves()
 {
    StaticScopedLockType sl (sPendingSaveLock);
    return sPendingSaves;
@@ -2062,7 +2062,7 @@ void Ledger::qualityDirDescriber (
     SLE::ref sle, bool isNew,
     Currency const& uTakerPaysCurrency, Account const& uTakerPaysIssuer,
     Currency const& uTakerGetsCurrency, Account const& uTakerGetsIssuer,
-    const std::uint64_t& uRate)
+    const uint64& uRate)
 {
     sle->setFieldH160 (sfTakerPaysCurrency, uTakerPaysCurrency);
     sle->setFieldH160 (sfTakerPaysIssuer, uTakerPaysIssuer);
@@ -2089,10 +2089,10 @@ void Ledger::updateFees ()
 {
     if (mBaseFee)
         return;
-    std::uint64_t baseFee = getConfig ().FEE_DEFAULT;
-    std::uint32_t referenceFeeUnits = 10;
-    std::uint32_t reserveBase = getConfig ().FEE_ACCOUNT_RESERVE;
-    std::int64_t reserveIncrement = getConfig ().FEE_OWNER_RESERVE;
+    uint64 baseFee = getConfig ().FEE_DEFAULT;
+    uint32 referenceFeeUnits = 10;
+    uint32 reserveBase = getConfig ().FEE_ACCOUNT_RESERVE;
+    int64 reserveIncrement = getConfig ().FEE_OWNER_RESERVE;
 
     LedgerStateParms p = lepNONE;
     auto sle = getASNode (p, Ledger::getLedgerFeeIndex (), ltFEE_SETTINGS);
@@ -2124,14 +2124,14 @@ void Ledger::updateFees ()
     }
 }
 
-std::uint64_t Ledger::scaleFeeBase (std::uint64_t fee)
+uint64 Ledger::scaleFeeBase (uint64 fee)
 {
     updateFees ();
     return getApp().getFeeTrack ().scaleFeeBase (
         fee, mBaseFee, mReferenceFeeUnits);
 }
 
-std::uint64_t Ledger::scaleFeeLoad (std::uint64_t fee, bool bAdmin)
+uint64 Ledger::scaleFeeLoad (uint64 fee, bool bAdmin)
 {
     updateFees ();
     return getApp().getFeeTrack ().scaleFeeLoad (
@@ -2188,6 +2188,6 @@ public:
 BEAST_DEFINE_TESTSUITE(Ledger,ripple_app,ripple);
 
 Ledger::StaticLockType Ledger::sPendingSaveLock;
-std::set<std::uint32_t> Ledger::sPendingSaves;
+std::set<uint32> Ledger::sPendingSaves;
 
 } // ripple

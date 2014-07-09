@@ -22,14 +22,14 @@ namespace ripple {
 
 TER CancelOffer::doApply ()
 {
-    std::uint32_t const uOfferSequence = mTxn.getFieldU32 (sfOfferSequence);
-    std::uint32_t const uAccountSequenceNext = mTxnAccount->getFieldU32 (sfSequence);
+    uint32 const uOfferSequence = mTxn.getFieldU32 (sfOfferSequence);
+    uint32 const uAccountSequenceNext = mTxnAccount->getFieldU32 (sfSequence);
 
     m_journal.debug <<
         "uAccountSequenceNext=" << uAccountSequenceNext <<
         " uOfferSequence=" << uOfferSequence;
 
-    std::uint32_t const uTxFlags (mTxn.getFlags ());
+    uint32 const uTxFlags (mTxn.getFlags ());
 
     if (uTxFlags & tfUniversalMask)
     {

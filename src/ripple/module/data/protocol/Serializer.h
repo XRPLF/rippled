@@ -22,6 +22,7 @@
 
 #include <iomanip>
 
+#include <ripple/basics/types/BasicTypes.h>
 #include <ripple/common/byte_view.h>
 
 namespace ripple {
@@ -61,10 +62,10 @@ public:
     }
 
     // assemble functions
-    int add8 (unsigned char byte);
-    int add16 (std::uint16_t);
-    int add32 (std::uint32_t);      // ledger indexes, account sequence, timestamps
-    int add64 (std::uint64_t);      // native currency amounts
+    int add8 (uint8 byte);
+    int add16 (uint16);
+    int add32 (uint32);      // ledger indexes, account sequence, timestamps
+    int add64 (uint64);      // native currency amounts
     int add128 (const uint128&);    // private key generators
     int add256 (uint256 const& );       // transaction and ledger hashes
     int addRaw (Blob const& vector);
@@ -87,10 +88,10 @@ public:
 
     // disassemble functions
     bool get8 (int&, int offset) const;
-    bool get8 (unsigned char&, int offset) const;
-    bool get16 (std::uint16_t&, int offset) const;
-    bool get32 (std::uint32_t&, int offset) const;
-    bool get64 (std::uint64_t&, int offset) const;
+    bool get8 (uint8&, int offset) const;
+    bool get16 (uint16&, int offset) const;
+    bool get32 (uint32&, int offset) const;
+    bool get64 (uint64&, int offset) const;
     bool get128 (uint128&, int offset) const;
     bool get256 (uint256&, int offset) const;
     uint256 get256 (int offset) const;
@@ -124,21 +125,21 @@ public:
     uint256 getSHA512Half (int size = -1) const;
     static uint256 getSHA512Half (const_byte_view v);
 
-    static uint256 getSHA512Half (const unsigned char* data, int len);
+    static uint256 getSHA512Half (const uint8* data, int len);
 
     // prefix hash functions
-    static uint256 getPrefixHash (std::uint32_t prefix, const unsigned char* data, int len);
-    uint256 getPrefixHash (std::uint32_t prefix) const
+    static uint256 getPrefixHash (uint32 prefix, const uint8* data, int len);
+    uint256 getPrefixHash (uint32 prefix) const
     {
         return getPrefixHash (prefix, & (mData.front ()), mData.size ());
     }
-    static uint256 getPrefixHash (std::uint32_t prefix, Blob const& data)
+    static uint256 getPrefixHash (uint32 prefix, Blob const& data)
     {
         return getPrefixHash (prefix, & (data.front ()), data.size ());
     }
-    static uint256 getPrefixHash (std::uint32_t prefix, const std::string& strData)
+    static uint256 getPrefixHash (uint32 prefix, const std::string& strData)
     {
-        return getPrefixHash (prefix, reinterpret_cast<const unsigned char*> (strData.data ()), strData.size ());
+        return getPrefixHash (prefix, reinterpret_cast<const uint8*> (strData.data ()), strData.size ());
     }
 
     // totality functions
@@ -245,7 +246,7 @@ public:
     {
         std::stringstream h;
 
-        for (unsigned char const& element : mData)
+        for (uint8 const& element : mData)
         {
             h <<
                 std::setw (2) <<
@@ -309,10 +310,10 @@ public:
     int getBytesLeft ();
 
     // get functions throw on error
-    unsigned char get8 ();
-    std::uint16_t get16 ();
-    std::uint32_t get32 ();
-    std::uint64_t get64 ();
+    uint8 get8 ();
+    uint16 get16 ();
+    uint32 get32 ();
+    uint64 get64 ();
     uint128 get128 ();
     uint160 get160 ();
     uint256 get256 ();

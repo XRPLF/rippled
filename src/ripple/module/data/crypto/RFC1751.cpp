@@ -253,9 +253,9 @@ char const* RFC1751::s_dictionary [2048] =
    starting with bit 'start' */
 unsigned long RFC1751::extract (char* s, int start, int length)
 {
-    unsigned char cl;
-    unsigned char cc;
-    unsigned char cr;
+    uint8 cl;
+    uint8 cc;
+    uint8 cr;
     unsigned long x;
 
     assert (length <= 11);
@@ -300,9 +300,9 @@ void RFC1751::btoe (std::string& strHuman, const std::string& strData)
 
 void RFC1751::insert (char* s, int x, int start, int length)
 {
-    unsigned char cl;
-    unsigned char cc;
-    unsigned char cr;
+    uint8 cl;
+    uint8 cc;
+    uint8 cr;
     unsigned long y;
     int shift;
 
@@ -475,7 +475,7 @@ void RFC1751::getEnglishFromKey (std::string& strHuman, const std::string& strKe
 
 beast::String RFC1751::getWordFromBlob (void const* data, size_t bytes)
 {
-    std::uint32_t hash;
+    uint32 hash;
 
     beast::Murmur::Hash (data, bytes, 0, &hash);
 

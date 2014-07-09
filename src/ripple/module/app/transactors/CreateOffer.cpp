@@ -100,7 +100,7 @@ CreateOffer::doApply ()
     if (m_journal.debug) m_journal.debug <<
         "OfferCreate> " << mTxn.getJson (0);
 
-    std::uint32_t const uTxFlags = mTxn.getFlags ();
+    uint32 const uTxFlags = mTxn.getFlags ();
 
     bool const bPassive (uTxFlags & tfPassive);
     bool const bImmediateOrCancel (uTxFlags & tfImmediateOrCancel);
@@ -122,15 +122,15 @@ CreateOffer::doApply ()
     bool const bHaveExpiration (mTxn.isFieldPresent (sfExpiration));
     bool const bHaveCancel (mTxn.isFieldPresent (sfOfferSequence));
 
-    std::uint32_t const uExpiration = mTxn.getFieldU32 (sfExpiration);
-    std::uint32_t const uCancelSequence = mTxn.getFieldU32 (sfOfferSequence);
+    uint32 const uExpiration = mTxn.getFieldU32 (sfExpiration);
+    uint32 const uCancelSequence = mTxn.getFieldU32 (sfOfferSequence);
 
     // FIXME understand why we use SequenceNext instead of current transaction
     //       sequence to determine the transaction. Why is the offer seuqnce
     //       number insufficient?
 
-    std::uint32_t const uAccountSequenceNext = mTxnAccount->getFieldU32 (sfSequence);
-    std::uint32_t const uSequence = mTxn.getSequence ();
+    uint32 const uAccountSequenceNext = mTxnAccount->getFieldU32 (sfSequence);
+    uint32 const uSequence = mTxn.getSequence ();
 
     const uint256 uLedgerIndex = Ledger::getOfferIndex (mTxnAccountID, uSequence);
 
@@ -149,7 +149,7 @@ CreateOffer::doApply ()
 
     // This is the original rate of this offer, and is the rate at which it will
     // be placed, even if crossing offers change the amounts.
-    std::uint64_t const uRate = STAmount::getRate (saTakerGets, saTakerPays);
+    uint64 const uRate = STAmount::getRate (saTakerGets, saTakerPays);
 
     TER terResult (tesSUCCESS);
 
@@ -425,8 +425,8 @@ CreateOffer::doApply ()
             " saTakerPays=" << saTakerPays.getFullText () <<
             " saTakerGets=" << saTakerGets.getFullText ();
 
-        std::uint64_t uOwnerNode;
-        std::uint64_t uBookNode;
+        uint64 uOwnerNode;
+        uint64 uBookNode;
         uint256 uDirectory;
 
         // Add offer to owner's directory.

@@ -180,7 +180,7 @@ extern std::string urlEncode (const std::string& strSrc)
 
     for (int iInput = 0; iInput < iSize; iInput++)
     {
-        unsigned char c = strSrc[iInput];
+        uint8 c = strSrc[iInput];
 
         if (c == ' ')
         {

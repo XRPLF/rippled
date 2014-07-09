@@ -35,15 +35,15 @@ Json::Value doAccountTxOld (RPC::Context& context)
     context.lock_.unlock ();
 
     RippleAddress   raAccount;
-    std::uint32_t   offset      = context.params_.isMember ("offset") ? context.params_["offset"].asUInt () : 0;
+    uint32   offset      = context.params_.isMember ("offset") ? context.params_["offset"].asUInt () : 0;
     int             limit       = context.params_.isMember ("limit") ? context.params_["limit"].asUInt () : -1;
     bool            bBinary     = context.params_.isMember ("binary") && context.params_["binary"].asBool ();
     bool            bDescending = context.params_.isMember ("descending") && context.params_["descending"].asBool ();
     bool            bCount      = context.params_.isMember ("count") && context.params_["count"].asBool ();
-    std::uint32_t   uLedgerMin;
-    std::uint32_t   uLedgerMax;
-    std::uint32_t   uValidatedMin;
-    std::uint32_t   uValidatedMax;
+    uint32   uLedgerMin;
+    uint32   uLedgerMax;
+    uint32   uValidatedMin;
+    uint32   uValidatedMax;
     bool            bValidated  = context.netOps_.getValidatedRange (uValidatedMin, uValidatedMax);
 
     if (!context.params_.isMember ("account"))
@@ -73,8 +73,8 @@ Json::Value doAccountTxOld (RPC::Context& context)
 
     if (context.params_.isMember ("ledger_index_min") || context.params_.isMember ("ledger_index_max"))
     {
-        std::int64_t iLedgerMin  = context.params_.isMember ("ledger_index_min") ? context.params_["ledger_index_min"].asInt () : -1;
-        std::int64_t iLedgerMax  = context.params_.isMember ("ledger_index_max") ? context.params_["ledger_index_max"].asInt () : -1;
+        int64 iLedgerMin  = context.params_.isMember ("ledger_index_min") ? context.params_["ledger_index_min"].asInt () : -1;
+        int64 iLedgerMax  = context.params_.isMember ("ledger_index_max") ? context.params_["ledger_index_max"].asInt () : -1;
 
         if (!bValidated && (iLedgerMin == -1 || iLedgerMax == -1))
         {
@@ -125,7 +125,7 @@ Json::Value doAccountTxOld (RPC::Context& context)
                 ++count;
                 Json::Value& jvObj = jvTxns.append (Json::objectValue);
 
-                std::uint32_t  uLedgerIndex = std::get<2> (*it);
+                uint32  uLedgerIndex = std::get<2> (*it);
                 jvObj["tx_blob"]            = std::get<0> (*it);
                 jvObj["meta"]               = std::get<1> (*it);
                 jvObj["ledger_index"]       = uLedgerIndex;
@@ -147,7 +147,7 @@ Json::Value doAccountTxOld (RPC::Context& context)
 
                 if (it->second)
                 {
-                    std::uint32_t uLedgerIndex = it->second->getLgrSeq ();
+                    uint32 uLedgerIndex = it->second->getLgrSeq ();
 
                     jvObj["meta"]           = it->second->getJson (0);
                     jvObj["validated"]      = bValidated && uValidatedMin <= uLedgerIndex && uValidatedMax >= uLedgerIndex;

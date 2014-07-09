@@ -27,7 +27,7 @@
 
 namespace ripple {
 
-/** Converts an integer to the corresponding hex digit 
+/** Converts an integer to the corresponding hex digit
     @param iDigit 0-15 inclusive
     @return a character from '0'-'9' or 'A'-'F' on success; 0 on failure.
 */
@@ -50,7 +50,7 @@ std::string strHex (Iterator first, int iSize)
 
     for (int i = 0; i < iSize; i++)
     {
-        unsigned char c = *first++;
+        uint8 c = *first++;
 
         strDst[i * 2]     = charHex (c >> 4);
         strDst[i * 2 + 1] = charHex (c & 15);

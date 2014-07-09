@@ -56,9 +56,9 @@ public:
         // VFALCO TODO Rename the 'rt' parameters to something meaningful.
         virtual void subAccount (ref ispListener,
             const ripple::unordered_set<RippleAddress>& vnaAccountIDs,
-                std::uint32_t uLedgerIndex, bool rt) = 0;
+                uint32 uLedgerIndex, bool rt) = 0;
 
-        virtual void unsubAccount (std::uint64_t uListener,
+        virtual void unsubAccount (uint64 uListener,
             const ripple::unordered_set<RippleAddress>& vnaAccountIDs,
                 bool rt) = 0;
 
@@ -66,28 +66,28 @@ public:
         virtual bool subLedger (ref ispListener,
             Json::Value& jvResult) = 0;
 
-        virtual bool unsubLedger (std::uint64_t uListener) = 0;
+        virtual bool unsubLedger (uint64 uListener) = 0;
 
         virtual bool subServer (ref ispListener,
             Json::Value& jvResult) = 0;
 
-        virtual bool unsubServer (std::uint64_t uListener) = 0;
+        virtual bool unsubServer (uint64 uListener) = 0;
 
         virtual bool subBook (ref ispListener,
             Currency const& currencyPays, Currency const& currencyGets,
                 Account const& issuerPays, Account const& issuerGets) = 0;
 
-        virtual bool unsubBook (std::uint64_t uListener,
+        virtual bool unsubBook (uint64 uListener,
             Currency const& currencyPays, Currency const& currencyGets,
                 Account const& issuerPays, Account const& issuerGets) = 0;
 
         virtual bool subTransactions (ref ispListener) = 0;
 
-        virtual bool unsubTransactions (std::uint64_t uListener) = 0;
+        virtual bool unsubTransactions (uint64 uListener) = 0;
 
         virtual bool subRTTransactions (ref ispListener) = 0;
 
-        virtual bool unsubRTTransactions (std::uint64_t uListener) = 0;
+        virtual bool unsubRTTransactions (uint64 uListener) = 0;
 
         // VFALCO TODO Remove
         //             This was added for one particular partner, it
@@ -110,11 +110,11 @@ public:
     // VFALCO NOTE Why is this virtual?
     virtual void send (const Json::Value & jvObj, const std::string & sObj, bool broadcast);
 
-    std::uint64_t getSeq ();
+    uint64 getSeq ();
 
     void onSendEmpty ();
 
-    void insertSubAccountInfo (RippleAddress addr, std::uint32_t uLedgerIndex);
+    void insertSubAccountInfo (RippleAddress addr, uint32 uLedgerIndex);
 
     void clearPathRequest ();
 
@@ -134,7 +134,7 @@ private:
     ripple::unordered_set <RippleAddress>     mSubAccountTransaction;
     std::shared_ptr <PathRequest>             mPathRequest;
 
-    std::uint64_t                             mSeq;
+    uint64                             mSeq;
 };
 
 } // ripple

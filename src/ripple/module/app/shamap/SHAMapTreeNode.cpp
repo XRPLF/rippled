@@ -19,9 +19,9 @@
 
 namespace ripple {
 
-SHAMapTreeNode::SHAMapTreeNode (std::uint32_t seq, const SHAMapNodeID& nodeID)
+SHAMapTreeNode::SHAMapTreeNode (uint32 seq, const SHAMapNodeID& nodeID)
     : mID (nodeID)
-    , mHash (std::uint64_t(0))
+    , mHash (uint64(0))
     , mSeq (seq)
     , mAccessSeq (seq)
     , mType (tnERROR)
@@ -30,7 +30,7 @@ SHAMapTreeNode::SHAMapTreeNode (std::uint32_t seq, const SHAMapNodeID& nodeID)
 {
 }
 
-SHAMapTreeNode::SHAMapTreeNode (const SHAMapTreeNode& node, std::uint32_t seq)
+SHAMapTreeNode::SHAMapTreeNode (const SHAMapTreeNode& node, uint32 seq)
     : mID (node.getID())
     , mHash (node.mHash)
     , mSeq (seq)
@@ -45,7 +45,7 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapTreeNode& node, std::uint32_t seq)
 }
 
 SHAMapTreeNode::SHAMapTreeNode (const SHAMapNodeID& id, SHAMapItem::ref item,
-                                TNType type, std::uint32_t seq)
+                                TNType type, uint32 seq)
     : mID (id)
     , mItem (item)
     , mSeq (seq)
@@ -58,7 +58,7 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapNodeID& id, SHAMapItem::ref item,
 }
 
 SHAMapTreeNode::SHAMapTreeNode (const SHAMapNodeID& id, Blob const& rawNode,
-                                std::uint32_t seq, SHANodeFormat format,
+                                uint32 seq, SHANodeFormat format,
                                 uint256 const& hash, bool hashValid)
     : mID (id)
     , mSeq (seq)
@@ -163,7 +163,7 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapNodeID& id, Blob const& rawNode,
             throw std::runtime_error ("invalid P node");
         }
 
-        std::uint32_t prefix = rawNode[0];
+        uint32 prefix = rawNode[0];
         prefix <<= 8;
         prefix |= rawNode[1];
         prefix <<= 8;
@@ -255,7 +255,7 @@ bool SHAMapTreeNode::updateHash ()
     {
         if (mIsBranch != 0)
         {
-            nh = Serializer::getPrefixHash (HashPrefix::innerNode, reinterpret_cast<unsigned char*> (mHashes), sizeof (mHashes));
+            nh = Serializer::getPrefixHash (HashPrefix::innerNode, reinterpret_cast<uint8*> (mHashes), sizeof (mHashes));
 #if RIPPLE_VERIFY_NODEOBJECT_KEYS
             Serializer s;
             s.add32 (HashPrefix::innerNode);

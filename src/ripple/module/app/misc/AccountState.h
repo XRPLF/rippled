@@ -53,7 +53,7 @@ public:
         return mLedgerEntry->getFieldAmount (sfBalance);
     }
 
-    std::uint32_t getSeq () const
+    uint32 getSeq () const
     {
         return mLedgerEntry->getFieldU32 (sfSequence);
     }

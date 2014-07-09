@@ -71,7 +71,7 @@ Json::Value doLedgerEntry (RPC::Context& context)
         }
         else
         {
-            std::uint64_t  uSubIndex = context.params_["directory"].isMember ("sub_index")
+            uint64  uSubIndex = context.params_["directory"].isMember ("sub_index")
                                 ? context.params_["directory"]["sub_index"].asUInt ()
                                 : 0;
 
@@ -150,7 +150,7 @@ Json::Value doLedgerEntry (RPC::Context& context)
         }
         else
         {
-            std::uint32_t      uSequence   = context.params_["offer"]["seq"].asUInt ();
+            uint32      uSequence   = context.params_["offer"]["seq"].asUInt ();
 
             uNodeIndex  = Ledger::getOfferIndex (naAccountID.getAccountID (), uSequence);
         }

@@ -99,13 +99,13 @@ TER computeForwardLiquidityForAccount (
 
 void computeRippleLiquidity (
     RippleCalc&,
-    const std::uint32_t uQualityIn,
-    const std::uint32_t uQualityOut,
+    const uint32 uQualityIn,
+    const uint32 uQualityOut,
     const STAmount& saPrvReq,
     const STAmount& saCurReq,
     STAmount& saPrvAct,
     STAmount& saCurAct,
-    std::uint64_t& uRateMax);
+    uint64& uRateMax);
 
 // To send money out of an account.
 TER nodeAdvance (

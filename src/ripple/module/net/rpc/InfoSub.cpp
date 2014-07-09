@@ -67,7 +67,7 @@ void InfoSub::send (const Json::Value& jvObj, const std::string& sObj, bool broa
     send (jvObj, broadcast);
 }
 
-std::uint64_t InfoSub::getSeq ()
+uint64 InfoSub::getSeq ()
 {
     return mSeq;
 }
@@ -76,7 +76,7 @@ void InfoSub::onSendEmpty ()
 {
 }
 
-void InfoSub::insertSubAccountInfo (RippleAddress addr, std::uint32_t uLedgerIndex)
+void InfoSub::insertSubAccountInfo (RippleAddress addr, uint32 uLedgerIndex)
 {
     ScopedLockType sl (mLock);
 

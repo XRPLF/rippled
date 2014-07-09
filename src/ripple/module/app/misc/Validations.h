@@ -51,7 +51,7 @@ public:
     virtual int getTrustedValidationCount (uint256 const& ledger) = 0;
 
     virtual int getFeeAverage(
-        uint256 const& ledger, std::uint64_t ref, std::uint64_t& fee) = 0;
+        uint256 const& ledger, uint64 ref, uint64& fee) = 0;
 
     virtual int getNodesAfter (uint256 const& ledger) = 0;
     virtual int getLoadRatio (bool overLoaded) = 0;

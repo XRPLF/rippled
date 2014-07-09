@@ -1154,11 +1154,11 @@ bool ApplicationImp::loadOldLedger (
                          ledger = ledger.get()["ledger"];
 
 
-                     std::uint32_t seq = 1;
-                     std::uint32_t closeTime = getApp().getOPs().getCloseTimeNC ();
-                     std::uint32_t closeTimeResolution = 30;
+                     uint32 seq = 1;
+                     uint32 closeTime = getApp().getOPs().getCloseTimeNC ();
+                     uint32 closeTimeResolution = 30;
                      bool closeTimeEstimated = false;
-                     std::uint64_t totalCoins = 0;
+                     uint64 totalCoins = 0;
 
                      if (ledger.get().isMember ("accountState"))
                      {
@@ -1183,7 +1183,7 @@ bool ApplicationImp::loadOldLedger (
                           if (ledger.get().isMember ("total_coins"))
                           {
                               totalCoins =
-                                beast::lexicalCastThrow<std::uint64_t>
+                                beast::lexicalCastThrow<uint64>
                                     (ledger.get()["total_coins"].asString());
                           }
                          ledger = ledger.get()["accountState"];
@@ -1249,7 +1249,7 @@ bool ApplicationImp::loadOldLedger (
         }
         else // assume by sequence
             loadLedger = Ledger::loadByIndex (
-                beast::lexicalCastThrow <std::uint32_t> (ledgerID));
+                beast::lexicalCastThrow <uint32> (ledgerID));
 
         if (!loadLedger)
         {

@@ -32,10 +32,10 @@
 #ifndef RIPPLE_TYPES_BASE58_H
 #define RIPPLE_TYPES_BASE58_H
 
+#include <ripple/basics/types/BasicTypes.h>
+
 #include <iterator>
 #include <type_traits>
-
-#include <ripple/types/api/Blob.h>
 
 namespace ripple {
 
@@ -77,7 +77,7 @@ public:
     static Alphabet const& getRippleAlphabet ();
 
     static std::string raw_encode (
-        unsigned char const* begin, unsigned char const* end,
+        uint8 const* begin, uint8 const* end,
             Alphabet const& alphabet, bool withCheck);
 
     static void fourbyte_hash256 (void* out, void const* in, std::size_t bytes);
@@ -93,12 +93,12 @@ public:
         {
             v.reserve (size + 1 + 4);
             v.insert (v.begin(), first, last);
-            unsigned char hash [4];
+            uint8 hash [4];
             fourbyte_hash256 (hash, &v.front(), v.size());
             v.resize (0);
             // Place the hash reversed in the front
-            std::copy (std::reverse_iterator <unsigned char const*> (hash+4),
-                       std::reverse_iterator <unsigned char const*> (hash),
+            std::copy (std::reverse_iterator <uint8 const*> (hash+4),
+                       std::reverse_iterator <uint8 const*> (hash),
                        std::back_inserter (v));
         }
         else
@@ -128,7 +128,7 @@ public:
             getRippleAlphabet(), true);
     }
 
-    static std::string encode (const unsigned char* pbegin, const unsigned char* pend)
+    static std::string encode (const uint8* pbegin, const uint8* pend)
     {
         return encode (pbegin, pend, getRippleAlphabet(), false);
     }

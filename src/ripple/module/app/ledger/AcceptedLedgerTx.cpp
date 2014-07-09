@@ -19,7 +19,7 @@
 
 namespace ripple {
 
-AcceptedLedgerTx::AcceptedLedgerTx (std::uint32_t seq, SerializerIterator& sit)
+AcceptedLedgerTx::AcceptedLedgerTx (uint32 seq, SerializerIterator& sit)
 {
     Serializer          txnSer (sit.getVL ());
     SerializerIterator  txnIt (txnSer);

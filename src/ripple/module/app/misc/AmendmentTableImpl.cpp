@@ -45,7 +45,7 @@ protected:
     beast::Journal m_journal;
 
     AmendmentState* getCreate (uint256 const& amendment, bool create);
-    bool shouldEnable (std::uint32_t closeTime, const AmendmentState& fs);
+    bool shouldEnable (uint32 closeTime, const AmendmentState& fs);
     void setJson (Json::Value& v, const AmendmentState&);
 
 public:
@@ -265,7 +265,7 @@ AmendmentTableImpl::getEnabled ()
 }
 
 bool
-AmendmentTableImpl::shouldEnable (std::uint32_t closeTime,
+AmendmentTableImpl::shouldEnable (uint32 closeTime,
     const AmendmentState& fs)
 {
     if (fs.mVetoed || fs.mEnabled || !fs.mSupported || (fs.m_lastMajority != m_lastReport))

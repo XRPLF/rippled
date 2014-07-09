@@ -61,7 +61,7 @@ Test USD to EUR
 //    correct currency at the end
 
 // quality, length, liquidity, index
-typedef std::tuple<std::uint64_t, int, STAmount, unsigned int> path_LQ_t;
+typedef std::tuple<uint64, int, STAmount, unsigned int> path_LQ_t;
 
 // Lower numbers have better quality. Sort higher quality first.
 static bool bQualityCmp (const path_LQ_t& a, const path_LQ_t& b)
@@ -86,7 +86,7 @@ typedef std::pair<int, Account> AccountCandidate;
 typedef std::vector<AccountCandidate> AccountCandidates;
 
 static bool candCmp (
-    std::uint32_t seq,
+    uint32 seq,
     const AccountCandidate& first, const AccountCandidate& second)
 {
     if (first.first < second.first)
@@ -359,7 +359,7 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
         }
         else
         {
-            std::uint64_t  uQuality (
+            uint64  uQuality (
                 STAmount::getRate (saDstAmountAct, saMaxAmountAct));
 
             WriteLog (lsDEBUG, Pathfinder) <<

@@ -21,13 +21,13 @@ namespace ripple {
 
 TER SetAccount::doApply ()
 {
-    std::uint32_t const uTxFlags = mTxn.getFlags ();
+    uint32 const uTxFlags = mTxn.getFlags ();
 
-    std::uint32_t const uFlagsIn = mTxnAccount->getFieldU32 (sfFlags);
-    std::uint32_t uFlagsOut = uFlagsIn;
+    uint32 const uFlagsIn = mTxnAccount->getFieldU32 (sfFlags);
+    uint32 uFlagsOut = uFlagsIn;
 
-    std::uint32_t const uSetFlag = mTxn.getFieldU32 (sfSetFlag);
-    std::uint32_t const uClearFlag  = mTxn.getFieldU32 (sfClearFlag);
+    uint32 const uSetFlag = mTxn.getFieldU32 (sfSetFlag);
+    uint32 const uClearFlag  = mTxn.getFieldU32 (sfClearFlag);
 
     // legacy AccountSet flags
     bool bSetRequireDest   = (uTxFlags & TxFlag::requireDestTag) || (uSetFlag == asfRequireDest);
@@ -259,7 +259,7 @@ TER SetAccount::doApply ()
 
     if (mTxn.isFieldPresent (sfTransferRate))
     {
-        std::uint32_t      uRate   = mTxn.getFieldU32 (sfTransferRate);
+        uint32      uRate   = mTxn.getFieldU32 (sfTransferRate);
 
         if (!uRate || uRate == QUALITY_ONE)
         {

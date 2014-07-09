@@ -27,7 +27,7 @@ namespace NodeStore {
 class Backend_test : public TestBase
 {
 public:
-    void testBackend (beast::String type, std::int64_t const seedValue,
+    void testBackend (beast::String type, int64 const seedValue,
                       int numObjectsToTest = 2000)
     {
         std::unique_ptr <Manager> manager (make_Manager ());

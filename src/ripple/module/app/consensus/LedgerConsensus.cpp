@@ -34,7 +34,7 @@ public:
 
     LedgerConsensusImp (clock_type& clock, LocalTxs& localtx,
         LedgerHash const & prevLCLHash, Ledger::ref previousLedger,
-            std::uint32_t closeTime, FeeVote& feeVote)
+            uint32 closeTime, FeeVote& feeVote)
         : m_clock (clock)
         , m_localTX (localtx)
         , m_feeVote (feeVote)
@@ -847,7 +847,7 @@ private:
             // these are now obsolete
             getApp().getOPs ().peekStoredProposals ().clear ();
 
-            std::uint32_t closeTime = roundCloseTime (mOurPosition->getCloseTime ());
+            uint32 closeTime = roundCloseTime (mOurPosition->getCloseTime ());
             bool closeTimeCorrect = true;
 
             if (closeTime == 0)
@@ -1022,7 +1022,7 @@ private:
                 WriteLog (lsINFO, LedgerConsensus)
                     << "We closed at "
                     << beast::lexicalCastThrow <std::string> (mCloseTime);
-                std::uint64_t closeTotal = mCloseTime;
+                uint64 closeTotal = mCloseTime;
                 int closeCount = 1;
 
                 for (auto it = mCloseTimes.begin ()
@@ -1034,8 +1034,8 @@ private:
                         << " time votes for "
                         << beast::lexicalCastThrow <std::string> (it->first);
                     closeCount += it->second;
-                    closeTotal += static_cast<std::uint64_t>
-                        (it->first) * static_cast<std::uint64_t> (it->second);
+                    closeTotal += static_cast<uint64>
+                        (it->first) * static_cast<uint64> (it->second);
                 }
 
                 closeTotal += (closeCount / 2);
@@ -1405,7 +1405,7 @@ private:
 #endif
     }
 
-    std::uint32_t roundCloseTime (std::uint32_t closeTime)
+    uint32 roundCloseTime (uint32 closeTime)
     {
         return Ledger::roundCloseTime (closeTime, mCloseResolution);
     }
@@ -1428,7 +1428,7 @@ private:
         hash = ledger.getHash ();
         s.set_ledgerhash (hash.begin (), hash.size ());
 
-        std::uint32_t uMin, uMax;
+        uint32 uMin, uMax;
         if (!getApp().getOPs ().getFullValidatedRange (uMin, uMax))
         {
             uMin = 0;
@@ -1437,7 +1437,7 @@ private:
         else
         {
             // Don't advertise ledgers we're not willing to serve
-            std::uint32_t early = getApp().getLedgerMaster().getEarliestFetch ();
+            uint32 early = getApp().getLedgerMaster().getEarliestFetch ();
             if (uMin < early)
                uMin = early;
         }
@@ -1539,7 +1539,7 @@ private:
         //  std::vector<uint256> addedTx, removedTx;
 
         // Verify freshness of peer positions and compute close times
-        std::map<std::uint32_t, int> closeTimes;
+        std::map<uint32, int> closeTimes;
         auto it = mPeerPositions.begin ();
 
         while (it != mPeerPositions.end ())
@@ -1602,7 +1602,7 @@ private:
         else
             neededWeight = AV_STUCK_CONSENSUS_PCT;
 
-        std::uint32_t closeTime = 0;
+        uint32 closeTime = 0;
         mHaveCloseTimeConsensus = false;
 
         if (mPeerPositions.empty ())
@@ -1848,10 +1848,10 @@ private:
     */
     void addLoad(SerializedValidation::ref val)
     {
-        std::uint32_t fee = std::max(
+        uint32 fee = std::max(
             getApp().getFeeTrack().getLocalFee(),
             getApp().getFeeTrack().getClusterFee());
-        std::uint32_t ref = getApp().getFeeTrack().getLoadBase();
+        uint32 ref = getApp().getFeeTrack().getLoadBase();
         if (fee > ref)
             val->setFieldU32(sfLoadFee, fee);
     }
@@ -1872,7 +1872,7 @@ private:
     };
 
     LCState mState;
-    std::uint32_t mCloseTime;      // The wall time this ledger closed
+    uint32 mCloseTime;      // The wall time this ledger closed
     uint256 mPrevLedgerHash, mNewLedgerHash, mAcquiringLedger;
     Ledger::pointer mPreviousLedger;
     LedgerProposal::pointer mOurPosition;
@@ -1902,7 +1902,7 @@ private:
     ripple::unordered_set<uint256> mCompares;
 
     // Close time estimates
-    std::map<std::uint32_t, int> mCloseTimes;
+    std::map<uint32, int> mCloseTimes;
 
     // nodes that have bowed out of this consensus process
     NodeIDSet mDeadNodes;
@@ -1917,7 +1917,7 @@ LedgerConsensus::~LedgerConsensus ()
 std::shared_ptr <LedgerConsensus>
 make_LedgerConsensus (LedgerConsensus::clock_type& clock, LocalTxs& localtx,
     LedgerHash const &prevLCLHash, Ledger::ref previousLedger,
-        std::uint32_t closeTime, FeeVote& feeVote)
+        uint32 closeTime, FeeVote& feeVote)
 {
     return std::make_shared <LedgerConsensusImp> (clock, localtx,
         prevLCLHash, previousLedger, closeTime, feeVote);

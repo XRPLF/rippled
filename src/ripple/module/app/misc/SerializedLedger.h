@@ -84,7 +84,7 @@ public:
     {
         return mType;
     }
-    std::uint16_t getVersion () const
+    uint16 getVersion () const
     {
         return getFieldU16 (sfLedgerEntryType);
     }
@@ -101,9 +101,9 @@ public:
     RippleAddress getFirstOwner ();
     RippleAddress getSecondOwner ();
     uint256 getThreadedTransaction ();
-    std::uint32_t getThreadedLedger ();
-    bool thread (uint256 const & txID, std::uint32_t ledgerSeq, uint256 & prevTxID,
-                 std::uint32_t & prevLedgerID);
+    uint32 getThreadedLedger ();
+    bool thread (uint256 const & txID, uint32 ledgerSeq, uint256 & prevTxID,
+                 uint32 & prevLedgerID);
     std::vector<uint256> getOwners ();  // nodes notified if this node is deleted
 
 private:
@@ -129,4 +129,3 @@ typedef SerializedLedgerEntry SLE;
 } // ripple
 
 #endif
-

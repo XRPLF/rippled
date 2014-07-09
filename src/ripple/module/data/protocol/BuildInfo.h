@@ -55,7 +55,7 @@ struct BuildInfo
         //----
 
         /** The serialized format of the protocol version. */
-        typedef std::uint32_t PackedFormat;
+        typedef uint32 PackedFormat;
 
         Protocol ();
         Protocol (unsigned short vmajor, unsigned short vminor);

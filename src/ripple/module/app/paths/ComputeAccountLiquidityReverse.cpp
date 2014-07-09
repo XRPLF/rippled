@@ -50,7 +50,7 @@ TER computeReverseLiquidityForAccount (
     auto const isFinalNode = (nodeIndex == lastNodeIndex);
 
     // 0 quality means none has yet been determined.
-    std::uint64_t uRateMax = 0;
+    uint64 uRateMax = 0;
 
     auto& previousNode = pathState.nodes()[nodeIndex ? nodeIndex - 1 : 0];
     auto& node = pathState.nodes()[nodeIndex];
@@ -66,14 +66,14 @@ TER computeReverseLiquidityForAccount (
         : node.account_;   // Offers are always issue.
 
     // This is the quality from from the previous node to this one.
-    const std::uint32_t uQualityIn
+    const uint32 uQualityIn
          = (nodeIndex != 0)
             ? rippleCalc.mActiveLedger.rippleQualityIn (
                 node.account_, previousAccountID, node.currency_)
             : QUALITY_ONE;
 
     // And this is the quality from the next one to this one.
-    const std::uint32_t uQualityOut
+    const uint32 uQualityOut
         = (nodeIndex != lastNodeIndex)
             ? rippleCalc.mActiveLedger.rippleQualityOut (
                 node.account_, nextAccountID, node.currency_)

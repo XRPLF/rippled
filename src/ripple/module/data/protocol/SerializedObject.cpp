@@ -436,7 +436,7 @@ bool STObject::isEquivalent (const SerializedType& t) const
     return (it1 == end1) && (it2 == end2);
 }
 
-uint256 STObject::getHash (std::uint32_t prefix) const
+uint256 STObject::getHash (uint32 prefix) const
 {
     Serializer s;
     s.add32 (prefix);
@@ -444,7 +444,7 @@ uint256 STObject::getHash (std::uint32_t prefix) const
     return s.getSHA512Half ();
 }
 
-uint256 STObject::getSigningHash (std::uint32_t prefix) const
+uint256 STObject::getSigningHash (uint32 prefix) const
 {
     Serializer s;
     s.add32 (prefix);
@@ -546,7 +546,7 @@ STObject& STObject::peekFieldObject (SField::ref field)
     return *cf;
 }
 
-bool STObject::setFlag (std::uint32_t f)
+bool STObject::setFlag (uint32 f)
 {
     STUInt32* t = dynamic_cast<STUInt32*> (getPField (sfFlags, true));
 
@@ -557,7 +557,7 @@ bool STObject::setFlag (std::uint32_t f)
     return true;
 }
 
-bool STObject::clearFlag (std::uint32_t f)
+bool STObject::clearFlag (uint32 f)
 {
     STUInt32* t = dynamic_cast<STUInt32*> (getPField (sfFlags));
 
@@ -568,12 +568,12 @@ bool STObject::clearFlag (std::uint32_t f)
     return true;
 }
 
-bool STObject::isFlag (std::uint32_t f) const
+bool STObject::isFlag (uint32 f) const
 {
     return (getFlags () & f) == f;
 }
 
-std::uint32_t STObject::getFlags (void) const
+uint32 STObject::getFlags (void) const
 {
     const STUInt32* t = dynamic_cast<const STUInt32*> (peekAtPField (sfFlags));
 
@@ -644,7 +644,7 @@ std::string STObject::getFieldString (SField::ref field) const
     return rf->getText ();
 }
 
-unsigned char STObject::getFieldU8 (SField::ref field) const
+uint8 STObject::getFieldU8 (SField::ref field) const
 {
     const SerializedType* rf = peekAtPField (field);
 
@@ -661,7 +661,7 @@ unsigned char STObject::getFieldU8 (SField::ref field) const
     return cf->getValue ();
 }
 
-std::uint16_t STObject::getFieldU16 (SField::ref field) const
+uint16 STObject::getFieldU16 (SField::ref field) const
 {
     const SerializedType* rf = peekAtPField (field);
 
@@ -678,7 +678,7 @@ std::uint16_t STObject::getFieldU16 (SField::ref field) const
     return cf->getValue ();
 }
 
-std::uint32_t STObject::getFieldU32 (SField::ref field) const
+uint32 STObject::getFieldU32 (SField::ref field) const
 {
     const SerializedType* rf = peekAtPField (field);
 
@@ -695,7 +695,7 @@ std::uint32_t STObject::getFieldU32 (SField::ref field) const
     return cf->getValue ();
 }
 
-std::uint64_t STObject::getFieldU64 (SField::ref field) const
+uint64 STObject::getFieldU64 (SField::ref field) const
 {
     const SerializedType* rf = peekAtPField (field);
 
@@ -896,7 +896,7 @@ const STVector256& STObject::getFieldV256 (SField::ref field) const
     return *cf;
 }
 
-void STObject::setFieldU8 (SField::ref field, unsigned char v)
+void STObject::setFieldU8 (SField::ref field, uint8 v)
 {
     SerializedType* rf = getPField (field, true);
 
@@ -911,7 +911,7 @@ void STObject::setFieldU8 (SField::ref field, unsigned char v)
     cf->setValue (v);
 }
 
-void STObject::setFieldU16 (SField::ref field, std::uint16_t v)
+void STObject::setFieldU16 (SField::ref field, uint16 v)
 {
     SerializedType* rf = getPField (field, true);
 
@@ -926,7 +926,7 @@ void STObject::setFieldU16 (SField::ref field, std::uint16_t v)
     cf->setValue (v);
 }
 
-void STObject::setFieldU32 (SField::ref field, std::uint32_t v)
+void STObject::setFieldU32 (SField::ref field, uint32 v)
 {
     SerializedType* rf = getPField (field, true);
 
@@ -941,7 +941,7 @@ void STObject::setFieldU32 (SField::ref field, std::uint32_t v)
     cf->setValue (v);
 }
 
-void STObject::setFieldU64 (SField::ref field, std::uint64_t v)
+void STObject::setFieldU64 (SField::ref field, uint64 v)
 {
     SerializedType* rf = getPField (field, true);
 

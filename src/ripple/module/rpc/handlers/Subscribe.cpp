@@ -27,7 +27,7 @@ Json::Value doSubscribe (RPC::Context& context)
 
     InfoSub::pointer ispSub;
     Json::Value jvResult (Json::objectValue);
-    std::uint32_t uLedgerIndex = context.params_.isMember (jss::ledger_index) && context.params_[jss::ledger_index].isNumeric ()
+    uint32 uLedgerIndex = context.params_.isMember (jss::ledger_index) && context.params_[jss::ledger_index].isNumeric ()
                                ? context.params_[jss::ledger_index].asUInt ()
                                : 0;
 

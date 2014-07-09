@@ -23,7 +23,7 @@
 
 namespace ripple {
 
-void SHAMap::DefaultMissingNodeHandler::operator() (std::uint32_t refNUm)
+void SHAMap::DefaultMissingNodeHandler::operator() (uint32 refNUm)
 {
     getApp().getOPs ().missingNodeInLedger (refNUm);
 };
@@ -34,7 +34,7 @@ SHAMap::SHAMap (
     SHAMapType t,
     FullBelowCache& fullBelowCache,
     TreeNodeCache& treeNodeCache,
-    std::uint32_t seq,
+    uint32 seq,
     MissingNodeHandler missing_node_handler)
     : m_fullBelowCache (fullBelowCache)
     , mSeq (seq)
@@ -1116,7 +1116,7 @@ int SHAMap::armDirty ()
 }
 
 /** Write all modified nodes to the node store */
-int SHAMap::flushDirty (DirtySet& set, int maxNodes, NodeObjectType t, std::uint32_t seq)
+int SHAMap::flushDirty (DirtySet& set, int maxNodes, NodeObjectType t, uint32 seq)
 {
     int flushed = 0;
     Serializer s;
@@ -1349,14 +1349,14 @@ void SHAMap::canonicalize (uint256 const& hash, SHAMapTreeNode::pointer& node)
 class SHAMap_test : public beast::unit_test::suite
 {
 public:
-    // VFALCO TODO Rename this to createFilledVector and pass an unsigned char, tidy up
+    // VFALCO TODO Rename this to createFilledVector and pass an uint8, tidy up
     //
     static Blob IntToVUC (int v)
     {
         Blob vuc;
 
         for (int i = 0; i < 32; ++i)
-            vuc.push_back (static_cast<unsigned char> (v));
+            vuc.push_back (static_cast<uint8> (v));
 
         return vuc;
     }

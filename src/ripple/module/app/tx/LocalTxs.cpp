@@ -74,7 +74,7 @@ public:
         return m_id;
     }
 
-    std::uint32_t getSeq ()
+    uint32 getSeq ()
     {
         return m_seq;
     }
@@ -100,7 +100,7 @@ private:
     LedgerIndex                    m_expire;
     uint256                        m_id;
     RippleAddress                  m_account;
-    std::uint32_t                  m_seq;
+    uint32                  m_seq;
 };
 
 class LocalTxsImp : public LocalTxs

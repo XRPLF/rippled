@@ -162,7 +162,7 @@ public:
         {
             return m_fileName;
         }
-        
+
         int lineNumber () const
         {
             return m_lineNumber;
@@ -458,25 +458,25 @@ public:
     RippleAddress               NODE_SEED, NODE_PUB, NODE_PRIV;
 
     // Fee schedule (All below values are in fee units)
-    std::uint64_t                      FEE_DEFAULT;            // Default fee.
-    std::uint64_t                      FEE_ACCOUNT_RESERVE;    // Amount of units not allowed to send.
-    std::uint64_t                      FEE_OWNER_RESERVE;      // Amount of units not allowed to send per owner entry.
-    std::uint64_t                      FEE_NICKNAME_CREATE;    // Fee to create a nickname.
-    std::uint64_t                      FEE_OFFER;              // Rate per day.
+    uint64                      FEE_DEFAULT;            // Default fee.
+    uint64                      FEE_ACCOUNT_RESERVE;    // Amount of units not allowed to send.
+    uint64                      FEE_OWNER_RESERVE;      // Amount of units not allowed to send per owner entry.
+    uint64                      FEE_NICKNAME_CREATE;    // Fee to create a nickname.
+    uint64                      FEE_OFFER;              // Rate per day.
     int                         FEE_CONTRACT_OPERATION; // fee for each contract operation
 
     // Node storage configuration
-    std::uint32_t                      LEDGER_HISTORY;
-    std::uint32_t                      FETCH_DEPTH;
+    uint32                      LEDGER_HISTORY;
+    uint32                      FETCH_DEPTH;
     int                         NODE_SIZE;
 
     // Client behavior
     int                         ACCOUNT_PROBE_MAX;      // How far to scan for accounts.
 
     // Signing signatures.
-    std::uint32_t                      SIGN_TRANSACTION;
-    std::uint32_t                      SIGN_VALIDATION;
-    std::uint32_t                      SIGN_PROPOSAL;
+    uint32                      SIGN_TRANSACTION;
+    uint32                      SIGN_VALIDATION;
+    uint32                      SIGN_PROPOSAL;
 
     bool                        SSL_VERIFY;
     std::string                 SSL_VERIFY_FILE;

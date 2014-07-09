@@ -37,7 +37,7 @@ enum JobType
     // Job types - the position in this enum indicates the job priority with
     // earlier jobs having lower priority than later jobs. If you wish to
     // insert a job at a specific priority, simply add it at the right location.
-    
+
     jtPACK,          // Make a fetch pack for a peer
     jtPUBOLDLEDGER,  // An old ledger has been accepted
     jtVALIDATION_ut, // A validation from an untrusted source
@@ -99,12 +99,12 @@ public:
 
     //Job (Job const& other);
 
-    Job (JobType type, std::uint64_t index);
+    Job (JobType type, uint64 index);
 
     // VFALCO TODO try to remove the dependency on LoadMonitor.
     Job (JobType type,
          std::string const& name,
-         std::uint64_t index,
+         uint64 index,
          LoadMonitor& lm,
          std::function <void (Job&)> const& job,
          CancelCallback cancelCallback);
@@ -135,7 +135,7 @@ public:
 private:
     CancelCallback m_cancelCallback;
     JobType                     mType;
-    std::uint64_t               mJobIndex;
+    uint64               mJobIndex;
     std::function <void (Job&)> mJob;
     LoadEvent::pointer          m_loadEvent;
     std::string                 mName;

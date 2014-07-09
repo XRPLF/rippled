@@ -42,65 +42,65 @@ public:
     static const int cMinOffset = -96;
     static const int cMaxOffset = 80;
 
-    static const std::uint64_t cMinValue   = 1000000000000000ull;
-    static const std::uint64_t cMaxValue   = 9999999999999999ull;
-    static const std::uint64_t cMaxNative  = 9000000000000000000ull;
+    static const uint64 cMinValue   = 1000000000000000ull;
+    static const uint64 cMaxValue   = 9999999999999999ull;
+    static const uint64 cMaxNative  = 9000000000000000000ull;
 
     // Max native value on network.
-    static const std::uint64_t cMaxNativeN = 100000000000000000ull;
-    static const std::uint64_t cNotNative  = 0x8000000000000000ull;
-    static const std::uint64_t cPosNative  = 0x4000000000000000ull;
+    static const uint64 cMaxNativeN = 100000000000000000ull;
+    static const uint64 cNotNative  = 0x8000000000000000ull;
+    static const uint64 cPosNative  = 0x4000000000000000ull;
 
-    static std::uint64_t   uRateOne;
+    static uint64   uRateOne;
 
-    STAmount (std::uint64_t v = 0, bool negative = false)
+    STAmount (uint64 v = 0, bool negative = false)
             : mValue (v), mOffset (0), mIsNative (true), mIsNegative (negative)
     {
         if (v == 0) mIsNegative = false;
     }
 
-    STAmount (SField::ref n, std::uint64_t v = 0, bool negative = false)
+    STAmount (SField::ref n, uint64 v = 0, bool negative = false)
         : SerializedType (n), mValue (v), mOffset (0), mIsNative (true),
           mIsNegative (negative)
     {
     }
 
-    STAmount (SField::ref n, std::int64_t v)
+    STAmount (SField::ref n, int64 v)
         : SerializedType (n), mOffset (0), mIsNative (true)
     {
         set (v);
     }
 
     STAmount (Issue const& issue,
-              std::uint64_t uV = 0, int iOff = 0, bool negative = false)
+              uint64 uV = 0, int iOff = 0, bool negative = false)
             : mIssue(issue), mValue (uV), mOffset (iOff), mIsNegative (negative)
     {
         canonicalize ();
     }
 
     STAmount (Issue const& issue,
-              std::uint32_t uV, int iOff = 0, bool negative = false)
+              uint32 uV, int iOff = 0, bool negative = false)
         : mIssue(issue), mValue (uV), mOffset (iOff), mIsNegative (negative)
     {
         canonicalize ();
     }
 
     STAmount (SField::ref n, Issue const& issue,
-              std::uint64_t v = 0, int off = 0, bool negative = false) :
+              uint64 v = 0, int off = 0, bool negative = false) :
         SerializedType (n), mIssue(issue), mValue (v), mOffset (off),
         mIsNegative (negative)
     {
         canonicalize ();
     }
 
-    STAmount (Issue const& issue, std::int64_t v, int iOff = 0)
+    STAmount (Issue const& issue, int64 v, int iOff = 0)
         : mIssue(issue), mOffset (iOff)
     {
         set (v);
         canonicalize ();
     }
 
-    STAmount (SField::ref n, Issue const& issue, std::int64_t v, int off = 0)
+    STAmount (SField::ref n, Issue const& issue, int64 v, int off = 0)
         : SerializedType (n), mIssue(issue), mOffset (off)
     {
         set (v);
@@ -123,7 +123,7 @@ public:
 
     STAmount (SField::ref, const Json::Value&);
 
-    static STAmount createFromInt64 (SField::ref n, std::int64_t v);
+    static STAmount createFromInt64 (SField::ref n, int64 v);
 
     static std::unique_ptr<SerializedType> deserialize (
         SerializerIterator& sit, SField::ref name)
@@ -133,7 +133,7 @@ public:
 
     bool bSetJson (const Json::Value& jvSource);
 
-    static STAmount saFromRate (std::uint64_t uRate = 0)
+    static STAmount saFromRate (uint64 uRate = 0)
     {
         return STAmount (noIssue(), uRate, -9, false);
     }
@@ -150,7 +150,7 @@ public:
     {
         return mOffset;
     }
-    std::uint64_t getMantissa () const
+    uint64 getMantissa () const
     {
         return mValue;
     }
@@ -161,22 +161,22 @@ public:
     }
 
     // When the currency is XRP, the value in raw units. S=signed
-    std::uint64_t getNValue () const
+    uint64 getNValue () const
     {
         if (!mIsNative)
             throw std::runtime_error ("not native");
 
         return mValue;
     }
-    void setNValue (std::uint64_t v)
+    void setNValue (uint64 v)
     {
         if (!mIsNative)
             throw std::runtime_error ("not native");
 
         mValue = v;
     }
-    std::int64_t getSNValue () const;
-    void setSNValue (std::int64_t);
+    int64 getSNValue () const;
+    void setSNValue (int64);
 
     std::string getHumanCurrency () const;
 
@@ -284,19 +284,19 @@ public:
     void throwComparable (const STAmount&) const;
 
     // native currency only
-    bool operator< (std::uint64_t) const;
-    bool operator> (std::uint64_t) const;
-    bool operator<= (std::uint64_t) const;
-    bool operator>= (std::uint64_t) const;
-    STAmount operator+ (std::uint64_t) const;
-    STAmount operator- (std::uint64_t) const;
+    bool operator< (uint64) const;
+    bool operator> (uint64) const;
+    bool operator<= (uint64) const;
+    bool operator>= (uint64) const;
+    STAmount operator+ (uint64) const;
+    STAmount operator- (uint64) const;
     STAmount operator- (void) const;
 
     STAmount& operator+= (const STAmount&);
     STAmount& operator-= (const STAmount&);
-    STAmount& operator+= (std::uint64_t);
-    STAmount& operator-= (std::uint64_t);
-    STAmount& operator= (std::uint64_t);
+    STAmount& operator+= (uint64);
+    STAmount& operator-= (uint64);
+    STAmount& operator= (uint64);
 
     operator double () const;
 
@@ -371,9 +371,9 @@ public:
 
     // Someone is offering X for Y, what is the rate?
     // Rate: smaller is better, the taker wants the most out: in/out
-    static std::uint64_t getRate (
+    static uint64 getRate (
         const STAmount& offerOut, const STAmount& offerIn);
-    static STAmount setRate (std::uint64_t rate);
+    static STAmount setRate (uint64 rate);
 
     // Someone is offering X for Y, I need Z, how much do I pay
 
@@ -391,12 +391,12 @@ public:
     void roundSelf ();
 
     static void canonicalizeRound (
-        bool isNative, std::uint64_t& value, int& offset, bool roundUp);
+        bool isNative, uint64& value, int& offset, bool roundUp);
 
 private:
     Issue mIssue;
 
-    std::uint64_t  mValue;
+    uint64  mValue;
     int            mOffset;
     bool           mIsNative;      // A shorthand for isXRP(mIssue).
     bool           mIsNegative;
@@ -409,23 +409,23 @@ private:
     static STAmount* construct (SerializerIterator&, SField::ref name);
 
     STAmount (SField::ref name, Issue const& issue,
-              std::uint64_t val, int off, bool isNat, bool negative)
+              uint64 val, int off, bool isNat, bool negative)
         : SerializedType (name), mIssue(issue),  mValue (val),
           mOffset (off), mIsNative (isNat), mIsNegative (negative)
     {
     }
 
-    void set (std::int64_t v)
+    void set (int64 v)
     {
         if (v < 0)
         {
             mIsNegative = true;
-            mValue = static_cast<std::uint64_t> (-v);
+            mValue = static_cast<uint64> (-v);
         }
         else
         {
             mIsNegative = false;
-            mValue = static_cast<std::uint64_t> (v);
+            mValue = static_cast<uint64> (v);
         }
     }
 
@@ -434,12 +434,12 @@ private:
         if (v < 0)
         {
             mIsNegative = true;
-            mValue = static_cast<std::uint64_t> (-v);
+            mValue = static_cast<uint64> (-v);
         }
         else
         {
             mIsNegative = false;
-            mValue = static_cast<std::uint64_t> (v);
+            mValue = static_cast<uint64> (v);
         }
     }
 };

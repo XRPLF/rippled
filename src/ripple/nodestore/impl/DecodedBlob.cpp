@@ -50,13 +50,13 @@ DecodedBlob::DecodedBlob (void const* key, void const* value, int valueBytes)
 
     if (valueBytes > 8)
     {
-        unsigned char const* byte = static_cast <unsigned char const*> (value);
+        uint8 const* byte = static_cast <uint8 const*> (value);
         m_objectType = static_cast <NodeObjectType> (byte [8]);
     }
 
     if (valueBytes > 9)
     {
-        m_objectData = static_cast <unsigned char const*> (value) + 9;
+        m_objectData = static_cast <uint8 const*> (value) + 9;
 
         switch (m_objectType)
         {

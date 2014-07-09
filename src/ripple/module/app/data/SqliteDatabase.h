@@ -52,13 +52,13 @@ public:
 
     bool getNull (int colIndex);
     char* getStr (int colIndex, std::string& retStr);
-    std::int32_t getInt (int colIndex);
+    int32 getInt (int colIndex);
     float getFloat (int colIndex);
     bool getBool (int colIndex);
     // returns amount stored in buf
-    int getBinary (int colIndex, unsigned char* buf, int maxSize);
+    int getBinary (int colIndex, uint8* buf, int maxSize);
     Blob getBinary (int colIndex);
-    std::uint64_t getBigInt (int colIndex);
+    uint64 getBigInt (int colIndex);
 
     sqlite3* peekConnection ()
     {
@@ -106,7 +106,7 @@ protected:
     sqlite3_stmt* statement;
 
 public:
-    // VFALCO TODO This is quite a convoluted interface. A mysterious "aux" connection? 
+    // VFALCO TODO This is quite a convoluted interface. A mysterious "aux" connection?
     //             Why not just have two SqliteDatabase objects?
     //
     SqliteStatement (SqliteDatabase* db, const char* statement, bool aux = false);
@@ -123,7 +123,7 @@ public:
     int bind (int position, const std::string& value);
     int bindStatic (int position, const std::string& value);
 
-    int bind (int position, std::uint32_t value);
+    int bind (int position, uint32 value);
     int bind (int position);
 
     // columns start at 0
@@ -134,8 +134,8 @@ public:
 
     std::string getString (int column);
     const char* peekString (int column);
-    std::uint32_t getUInt32 (int column);
-    std::int64_t getInt64 (int column);
+    uint32 getUInt32 (int column);
+    int64 getInt64 (int column);
 
     int step ();
     int reset ();

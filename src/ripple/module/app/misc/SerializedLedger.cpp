@@ -72,7 +72,7 @@ SerializedLedgerEntry::SerializedLedgerEntry (LedgerEntryType type, uint256 cons
     {
         set (item->elements);
 
-        setFieldU16 (sfLedgerEntryType, static_cast <std::uint16_t> (item->getType ()));
+        setFieldU16 (sfLedgerEntryType, static_cast <uint16> (item->getType ()));
     }
     else
     {
@@ -130,13 +130,13 @@ uint256 SerializedLedgerEntry::getThreadedTransaction ()
     return getFieldH256 (sfPreviousTxnID);
 }
 
-std::uint32_t SerializedLedgerEntry::getThreadedLedger ()
+uint32 SerializedLedgerEntry::getThreadedLedger ()
 {
     return getFieldU32 (sfPreviousTxnLgrSeq);
 }
 
-bool SerializedLedgerEntry::thread (uint256 const& txID, std::uint32_t ledgerSeq,
-                                    uint256& prevTxID, std::uint32_t& prevLedgerID)
+bool SerializedLedgerEntry::thread (uint256 const& txID, uint32 ledgerSeq,
+                                    uint256& prevTxID, uint32& prevLedgerID)
 {
     uint256 oldPrevTxID = getFieldH256 (sfPreviousTxnID);
     WriteLog (lsTRACE, SerializedLedger) << "Thread Tx:" << txID << " prev:" << oldPrevTxID;

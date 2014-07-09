@@ -93,7 +93,7 @@
         * Measurements of constructive/destructive behavior is
           calculated in units of percentage of ledgers for which
           the behavior is measured.
-          
+
     What we want from the unique node list:
       - Some number of trusted roots (known by domain)
         probably organizations whose job is to provide a list of validators
@@ -151,8 +151,8 @@ public:
     bool m_checkSources;
 
     ManagerImp (
-        Stoppable& parent, 
-        beast::File const& pathToDbFileOrDirectory, 
+        Stoppable& parent,
+        beast::File const& pathToDbFileOrDirectory,
         beast::Journal journal)
         : Stoppable ("Validators::Manager", parent)
         , Thread ("Validators")
@@ -283,7 +283,7 @@ public:
     {
         Context::Scope scope (m_context);
 
-        map ["trusted"] = std::uint32_t (
+        map ["trusted"] = uint32 (
             m_logic.m_chosenList ?
                 m_logic.m_chosenList->size() : 0);
 
@@ -317,7 +317,7 @@ public:
     void init ()
     {
         beast::Error error (m_store.open (m_databaseFile));
-        
+
         if (! error)
         {
             m_logic.load ();
@@ -383,7 +383,7 @@ Manager::Manager ()
 }
 
 Validators::Manager* Validators::Manager::New (
-    beast::Stoppable& parent, 
+    beast::Stoppable& parent,
     beast::File const& pathToDbFileOrDirectory,
     beast::Journal journal)
 {

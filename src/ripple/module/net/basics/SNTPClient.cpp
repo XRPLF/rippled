@@ -67,7 +67,7 @@ public:
     public:
         bool                mReceivedReply;
         time_t              mLocalTimeSent;
-        std::uint32_t              mQueryNonce;
+        uint32              mQueryNonce;
 
         SNTPQuery (time_t j = (time_t) - 1)   : mReceivedReply (false), mLocalTimeSent (j)
         {
@@ -228,8 +228,8 @@ public:
                 query.mReceivedReply = false;
                 query.mLocalTimeSent = now;
                 RandomNumbers::getInstance ().fill (&query.mQueryNonce);
-                reinterpret_cast<std::uint32_t*> (SNTPQueryData)[NTP_OFF_XMITTS_INT] = static_cast<std::uint32_t> (time (nullptr)) + NTP_UNIX_OFFSET;
-                reinterpret_cast<std::uint32_t*> (SNTPQueryData)[NTP_OFF_XMITTS_FRAC] = query.mQueryNonce;
+                reinterpret_cast<uint32*> (SNTPQueryData)[NTP_OFF_XMITTS_INT] = static_cast<uint32> (time (nullptr)) + NTP_UNIX_OFFSET;
+                reinterpret_cast<uint32*> (SNTPQueryData)[NTP_OFF_XMITTS_FRAC] = query.mQueryNonce;
                 mSocket.async_send_to (boost::asio::buffer (SNTPQueryData, 48), *sel,
                                        std::bind (&SNTPClientImp::sendComplete, this,
                                                     beast::asio::placeholders::error, beast::asio::placeholders::bytes_transferred));
@@ -260,7 +260,7 @@ public:
                 else if (bytes_xferd < 48)
                     WriteLog (lsWARNING, SNTPClient) << "SNTP: Short reply from " << mReceiveEndpoint
                                                      << " (" << bytes_xferd << ") " << mReceiveBuffer.size ();
-                else if (reinterpret_cast<std::uint32_t*> (&mReceiveBuffer[0])[NTP_OFF_ORGTS_FRAC] != query->second.mQueryNonce)
+                else if (reinterpret_cast<uint32*> (&mReceiveBuffer[0])[NTP_OFF_ORGTS_FRAC] != query->second.mQueryNonce)
                     WriteLog (lsWARNING, SNTPClient) << "SNTP: Reply from " << mReceiveEndpoint << "had wrong nonce";
                 else
                     processReply ();
@@ -280,7 +280,7 @@ public:
     void processReply ()
     {
         assert (mReceiveBuffer.size () >= 48);
-        std::uint32_t* recvBuffer = reinterpret_cast<std::uint32_t*> (&mReceiveBuffer.front ());
+        uint32* recvBuffer = reinterpret_cast<uint32*> (&mReceiveBuffer.front ());
 
         unsigned info = ntohl (recvBuffer[NTP_OFF_INFO]);
         int64_t timev = ntohl (recvBuffer[NTP_OFF_RECVTS_INT]);
@@ -298,7 +298,7 @@ public:
             return;
         }
 
-        std::int64_t now = static_cast<int> (time (nullptr));
+        int64 now = static_cast<int> (time (nullptr));
         timev -= now;
         timev -= NTP_UNIX_OFFSET;
 

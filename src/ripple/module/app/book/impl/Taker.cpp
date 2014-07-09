@@ -81,7 +81,7 @@ Taker::flow (Amounts amount, Offer const& offer, Account const& taker)
     Amount const taker_funds (view ().accountFunds (taker, amount.in));
 
     // Get fee rate paid by taker
-    std::uint32_t const taker_charge_rate (view ().rippleTransferRate (
+    uint32 const taker_charge_rate (view ().rippleTransferRate (
         taker, offer.account (), amount.in.getIssuer()));
 
     // Skip some math when there's no fee
@@ -105,7 +105,7 @@ Taker::flow (Amounts amount, Offer const& offer, Account const& taker)
         offer.account (), owner_amount.out));
 
     // Get fee rate paid by owner
-    std::uint32_t const owner_charge_rate (view ().rippleTransferRate (
+    uint32 const owner_charge_rate (view ().rippleTransferRate (
         offer.account (), taker, amount.out.getIssuer()));
 
     if (owner_charge_rate == QUALITY_ONE)

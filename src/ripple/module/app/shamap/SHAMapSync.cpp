@@ -799,7 +799,7 @@ public:
         unsigned int seed;
 
         // VFALCO TODO Replace this with beast::Random
-        RAND_pseudo_bytes (reinterpret_cast<unsigned char*> (&seed), sizeof (seed));
+        RAND_pseudo_bytes (reinterpret_cast<uint8*> (&seed), sizeof (seed));
         srand (seed);
 
         beast::manual_clock <std::chrono::seconds> clock;  // manual advance clock

@@ -75,7 +75,7 @@ private:
     static const boost::posix_time::seconds nodeVerifySeconds;
 
     /** The clock drift we allow a remote peer to have */
-    static const std::uint32_t clockToleranceDeltaSeconds = 20;
+    static const uint32 clockToleranceDeltaSeconds = 20;
 
     /** The length of the smallest valid finished message */
     static const size_t sslMinimumFinishedLength = 12;
@@ -344,14 +344,14 @@ public:
     }
 
     error_code
-    on_message_unknown (std::uint16_t type) override;
+    on_message_unknown (uint16 type) override;
 
     error_code
-    on_message_begin (std::uint16_t type,
+    on_message_begin (uint16 type,
         std::shared_ptr <::google::protobuf::Message> const& m) override;
 
     void
-    on_message_end (std::uint16_t type,
+    on_message_end (uint16 type,
         std::shared_ptr <::google::protobuf::Message> const& m) override;
 
     error_code on_message (std::shared_ptr <protocol::TMHello> const& m) override;
@@ -603,7 +603,7 @@ public:
             ret["protocol"] = BuildInfo::Protocol (mHello.protoversion ()).toStdString ();
         }
 
-        std::uint32_t minSeq, maxSeq;
+        uint32 minSeq, maxSeq;
         ledgerRange(minSeq, maxSeq);
 
         if ((minSeq != 0) || (maxSeq != 0))
@@ -656,7 +656,7 @@ public:
         return m_closedLedgerHash;
     }
 
-    bool hasLedger (uint256 const& hash, std::uint32_t seq) const
+    bool hasLedger (uint256 const& hash, uint32 seq) const
     {
         std::lock_guard<std::mutex> sl(m_recentLock);
 
@@ -672,7 +672,7 @@ public:
         return false;
     }
 
-    void ledgerRange (std::uint32_t& minSeq, std::uint32_t& maxSeq) const
+    void ledgerRange (uint32& minSeq, uint32& maxSeq) const
     {
         std::lock_guard<std::mutex> sl(m_recentLock);
 
@@ -712,7 +712,7 @@ public:
         return mHello.has_protoversion () && (mHello.protoversion () >= version);
     }
 
-    bool hasRange (std::uint32_t uMin, std::uint32_t uMax)
+    bool hasRange (uint32 uMin, uint32 uMax)
     {
         return (uMin >= m_minLedger) && (uMax <= m_maxLedger);
     }
@@ -866,10 +866,10 @@ private:
         @return `true` if successful, `false` otherwise.
 
     */
-    bool hashLatestFinishedMessage (const SSL *sslSession, unsigned char *hash,
+    bool hashLatestFinishedMessage (const SSL *sslSession, uint8 *hash,
         size_t (*getFinishedMessage)(const SSL *, void *buf, size_t))
     {
-        unsigned char buf[1024];
+        uint8 buf[1024];
 
         // Get our finished message and hash it.
         std::memset(hash, 0, 64);
@@ -909,8 +909,8 @@ private:
             return false;
         }
 
-        unsigned char sha1[64];
-        unsigned char sha2[64];
+        uint8 sha1[64];
+        uint8 sha2[64];
 
         if (!hashLatestFinishedMessage(ssl, sha1, SSL_get_finished))
         {

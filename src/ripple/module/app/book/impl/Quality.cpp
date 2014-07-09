@@ -25,7 +25,7 @@
 namespace ripple {
 namespace core {
 
-Quality::Quality (std::uint64_t value)
+Quality::Quality (uint64 value)
     : m_value (value)
 {
 }
@@ -112,8 +112,8 @@ composed_quality (Quality const& lhs, Quality const& rhs)
 
     Amount const rate (Amount::mulRound (lhs_rate, rhs_rate, true));
 
-    std::uint64_t const stored_exponent (rate.getExponent () + 100);
-    std::uint64_t const stored_mantissa (rate.getMantissa ());
+    uint64 const stored_exponent (rate.getExponent () + 100);
+    uint64 const stored_mantissa (rate.getMantissa ());
 
     assert ((stored_exponent >= 0) && (stored_exponent <= 255));
 

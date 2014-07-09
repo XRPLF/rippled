@@ -84,7 +84,7 @@ public:
     static char const* getCountedObjectName () { return "LedgerEntrySet"; }
 
     LedgerEntrySet (
-        Ledger::ref ledger, TransactionEngineParams tep, bool immutable = false) 
+        Ledger::ref ledger, TransactionEngineParams tep, bool immutable = false)
         : mLedger (ledger), mParams (tep), mSeq (0), mImmutable (immutable)
     {
     }
@@ -136,7 +136,7 @@ public:
     }
 
     void init (Ledger::ref ledger, uint256 const & transactionID,
-               std::uint32_t ledgerID, TransactionEngineParams params);
+               uint32 ledgerID, TransactionEngineParams params);
 
     void clear ();
 
@@ -160,14 +160,14 @@ public:
 
     // Directory functions.
     TER dirAdd (
-        std::uint64_t&                      uNodeDir,      // Node of entry.
+        uint64&                      uNodeDir,      // Node of entry.
         uint256 const&                      uRootIndex,
         uint256 const&                      uLedgerIndex,
         std::function<void (SLE::ref, bool)> fDescriber);
 
     TER dirDelete (
         const bool           bKeepRoot,
-        const std::uint64_t& uNodeDir,      // Node item is mentioned in.
+        const uint64& uNodeDir,      // Node item is mentioned in.
         uint256 const&       uRootIndex,
         uint256 const&       uLedgerIndex,  // Item being deleted
         const bool           bStable,
@@ -178,7 +178,7 @@ public:
     bool dirNext (uint256 const& uRootIndex, SLE::pointer& sleNode,
         unsigned int & uDirEntry, uint256 & uEntryIndex);
     bool dirIsEmpty (uint256 const& uDirIndex);
-    TER dirCount (uint256 const& uDirIndex, std::uint32_t & uCount);
+    TER dirCount (uint256 const& uDirIndex, uint32 & uCount);
 
     uint256 getNextLedgerIndex (uint256 const & uHash);
     uint256 getNextLedgerIndex (uint256 const & uHash, uint256 const & uEnd);
@@ -191,8 +191,8 @@ public:
     TER offerDelete (SLE::pointer sleOffer);
 
     // Balance functions.
-    std::uint32_t rippleTransferRate (Account const& issuer);
-    std::uint32_t rippleTransferRate (
+    uint32 rippleTransferRate (Account const& issuer);
+    uint32 rippleTransferRate (
         Account const& uSenderID, Account const& uReceiverID,
         Account const& issuer);
 
@@ -203,13 +203,13 @@ public:
         Account const& uToAccountID, Account const& uFromAccountID,
         Currency const& currency);
 
-    std::uint32_t rippleQualityIn (
+    uint32 rippleQualityIn (
         Account const& uToAccountID, Account const& uFromAccountID,
         Currency const& currency,
         SField::ref sfLow = sfLowQualityIn,
         SField::ref sfHigh = sfHighQualityIn);
 
-    std::uint32_t rippleQualityOut (
+    uint32 rippleQualityOut (
         Account const& uToAccountID, Account const& uFromAccountID,
         Currency const& currency)
     {
@@ -245,14 +245,14 @@ public:
         const bool      bNoRipple,
         const STAmount& saSrcBalance,
         const STAmount& saSrcLimit,
-        const std::uint32_t uSrcQualityIn = 0,
-        const std::uint32_t uSrcQualityOut = 0);
+        const uint32 uSrcQualityIn = 0,
+        const uint32 uSrcQualityOut = 0);
     TER trustDelete (
         SLE::ref sleRippleState, Account const& uLowAccountID,
         Account const& uHighAccountID);
 
     Json::Value getJson (int) const;
-    void calcRawMeta (Serializer&, TER result, std::uint32_t index);
+    void calcRawMeta (Serializer&, TER result, uint32 index);
 
     // iterator functions
     typedef std::map<uint256, LedgerEntrySetEntry>::iterator iterator;

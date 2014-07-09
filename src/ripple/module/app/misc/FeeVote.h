@@ -54,8 +54,8 @@ public:
 };
 
 std::unique_ptr<FeeVote>
-make_FeeVote (std::uint64_t targetBaseFee, std::uint32_t targetReserveBase,
-    std::uint32_t targetReserveIncrement, beast::Journal journal);
+make_FeeVote (uint64 targetBaseFee, uint32 targetReserveBase,
+    uint32 targetReserveIncrement, beast::Journal journal);
 
 } // ripple
 

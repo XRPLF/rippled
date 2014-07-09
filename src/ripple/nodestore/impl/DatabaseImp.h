@@ -122,7 +122,7 @@ public:
             std::unique_lock <std::mutex> lock (m_readLock);
 
             // Wake in two generations
-            std::uint64_t const wakeGeneration = m_readGen + 2;
+            uint64 const wakeGeneration = m_readGen + 2;
 
             while (!m_readShut && !m_readSet.empty () && (m_readGen < wakeGeneration))
                 m_readGenCondVar.wait (lock);
@@ -265,7 +265,7 @@ public:
     //------------------------------------------------------------------------------
 
     void store (NodeObjectType type,
-                std::uint32_t index,
+                uint32 index,
                 Blob&& data,
                 uint256 const& hash)
     {

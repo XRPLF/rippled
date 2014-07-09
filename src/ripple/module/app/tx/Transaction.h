@@ -62,9 +62,9 @@ public:
         TxType ttKind,
         const RippleAddress &    naPublicKey,       // To prove transaction is consistent and authorized.
         const RippleAddress &    naSourceAccount,   // To identify the paying account.
-        std::uint32_t            uSeq,               // To order transactions.
+        uint32            uSeq,               // To order transactions.
         const STAmount &         saFee,             // Transaction fee.
-        std::uint32_t            uSourceTag);        // User call back value.
+        uint32            uSourceTag);        // User call back value.
 
 
     bool sign (const RippleAddress & naAccountPrivate);
@@ -101,12 +101,12 @@ public:
         return mTransaction->getTransactionFee ();
     }
 
-    std::uint32_t getFromAccountSeq () const
+    uint32 getFromAccountSeq () const
     {
         return mTransaction->getSequence ();
     }
 
-    std::uint32_t getSourceTag () const
+    uint32 getSourceTag () const
     {
         return mTransaction->getFieldU32 (sfSourceTag);
     }
@@ -137,7 +137,7 @@ public:
         mResult = terResult;
     }
 
-    void setStatus (TransStatus status, std::uint32_t ledgerSeq);
+    void setStatus (TransStatus status, uint32 ledgerSeq);
 
     void setStatus (TransStatus status)
     {
@@ -161,8 +161,8 @@ public:
     static Transaction::pointer load (uint256 const & id);
 
     // conversion function
-    static bool convertToTransactions (std::uint32_t ourLedgerSeq,
-                                       std::uint32_t otherLedgerSeq,
+    static bool convertToTransactions (uint32 ourLedgerSeq,
+                                       uint32 otherLedgerSeq,
                                        bool checkFirstTransactions,
                                        bool checkSecondTransactions,
                                        const SHAMap::Delta & inMap,

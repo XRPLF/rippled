@@ -48,7 +48,7 @@ TER computeForwardLiquidityForAccount (
     TER                 resultCode   = tesSUCCESS;
     const unsigned int  lastNodeIndex       = pathState.nodes().size () - 1;
 
-    std::uint64_t       uRateMax    = 0;
+    uint64       uRateMax    = 0;
 
     auto& previousNode = pathState.nodes()[nodeIndex ? nodeIndex - 1 : 0];
     auto& node = pathState.nodes()[nodeIndex];
@@ -63,11 +63,11 @@ TER computeForwardLiquidityForAccount (
     Account const& nextAccountID
         = nextNodeIsAccount ? nextNode.account_ : node.account_;
 
-    std::uint32_t uQualityIn = nodeIndex
+    uint32 uQualityIn = nodeIndex
         ? rippleCalc.mActiveLedger.rippleQualityIn (
             node.account_, previousAccountID, node.currency_)
         : QUALITY_ONE;
-    std::uint32_t  uQualityOut = (nodeIndex == lastNodeIndex)
+    uint32  uQualityOut = (nodeIndex == lastNodeIndex)
         ? rippleCalc.mActiveLedger.rippleQualityOut (
             node.account_, nextAccountID, node.currency_)
         : QUALITY_ONE;

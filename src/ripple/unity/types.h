@@ -40,7 +40,6 @@
 #endif
 
 #include <ripple/types/api/AgedHistory.h>
-#include <ripple/types/api/Blob.h>
 #include <ripple/types/api/Base58.h>
 #include <ripple/types/api/Book.h>
 #include <ripple/types/api/ByteOrder.h>

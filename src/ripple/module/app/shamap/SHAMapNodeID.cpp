@@ -40,7 +40,7 @@ SHAMapNodeID::SHAMapNodeID (void const* ptr, int len) : mHash (0)
     else
     {
         std::memcpy (mNodeID.begin (), ptr, 32);
-        mDepth = * (static_cast<unsigned char const*> (ptr) + 32);
+        mDepth = * (static_cast<uint8 const*> (ptr) + 32);
     }
 }
 

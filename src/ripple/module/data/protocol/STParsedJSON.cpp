@@ -151,7 +151,7 @@ bool STParsedJSON::parse (std::string const& json_name,
                     }
 
                     data.push_back (new STUInt8 (field,
-                        range_check_cast <unsigned char> (
+                        range_check_cast <uint8> (
                             value.asInt (), 0, 255)));
                 }
                 else if (value.isUInt ())
@@ -163,7 +163,7 @@ bool STParsedJSON::parse (std::string const& json_name,
                     }
 
                     data.push_back (new STUInt8 (field,
-                        range_check_cast <unsigned char> (
+                        range_check_cast <uint8> (
                             value.asUInt (), 0, 255)));
                 }
                 else
@@ -196,7 +196,7 @@ bool STParsedJSON::parse (std::string const& json_name,
                                 findTypeByName (strValue));
 
                             data.push_back (new STUInt16 (field,
-                                static_cast <std::uint16_t> (txType)));
+                                static_cast <uint16> (txType)));
 
                             if (*name == sfGeneric)
                                 name = &sfTransaction;
@@ -207,7 +207,7 @@ bool STParsedJSON::parse (std::string const& json_name,
                                 findTypeByName (strValue));
 
                             data.push_back (new STUInt16 (field,
-                                static_cast <std::uint16_t> (type)));
+                                static_cast <uint16> (type)));
 
                             if (*name == sfGeneric)
                                 name = &sfLedgerEntry;
@@ -221,19 +221,19 @@ bool STParsedJSON::parse (std::string const& json_name,
                     else
                     {
                         data.push_back (new STUInt16 (field,
-                            beast::lexicalCastThrow <std::uint16_t> (strValue)));
+                            beast::lexicalCastThrow <uint16> (strValue)));
                     }
                 }
                 else if (value.isInt ())
                 {
                     data.push_back (new STUInt16 (field,
-                        range_check_cast <std::uint16_t> (
+                        range_check_cast <uint16> (
                             value.asInt (), 0, 65535)));
                 }
                 else if (value.isUInt ())
                 {
                     data.push_back (new STUInt16 (field,
-                        range_check_cast <std::uint16_t> (
+                        range_check_cast <uint16> (
                             value.asUInt (), 0, 65535)));
                 }
                 else
@@ -256,17 +256,17 @@ bool STParsedJSON::parse (std::string const& json_name,
                 if (value.isString ())
                 {
                     data.push_back (new STUInt32 (field,
-                        beast::lexicalCastThrow <std::uint32_t> (value.asString ())));
+                        beast::lexicalCastThrow <uint32> (value.asString ())));
                 }
                 else if (value.isInt ())
                 {
                     data.push_back (new STUInt32 (field,
-                        range_check_cast <std::uint32_t> (value.asInt (), 0u, 4294967295u)));
+                        range_check_cast <uint32> (value.asInt (), 0u, 4294967295u)));
                 }
                 else if (value.isUInt ())
                 {
                     data.push_back (new STUInt32 (field,
-                        static_cast <std::uint32_t> (value.asUInt ())));
+                        static_cast <uint32> (value.asUInt ())));
                 }
                 else
                 {
@@ -293,13 +293,13 @@ bool STParsedJSON::parse (std::string const& json_name,
                 else if (value.isInt ())
                 {
                     data.push_back (new STUInt64 (field,
-                        range_check_cast<std::uint64_t> (
+                        range_check_cast<uint64> (
                             value.asInt (), 0, 18446744073709551615ull)));
                 }
                 else if (value.isUInt ())
                 {
                     data.push_back (new STUInt64 (field,
-                        static_cast <std::uint64_t> (value.asUInt ())));
+                        static_cast <uint64> (value.asUInt ())));
                 }
                 else
                 {

@@ -381,11 +381,11 @@ public:
 
     //--------------------------------------------------------------------------
 
-    std::uint32_t getClusterFee ()
+    uint32 getClusterFee ()
     {
         int thresh = getApp().getOPs().getNetworkTimeNC() - 90;
 
-        std::vector<std::uint32_t> fees;
+        std::vector<uint32> fees;
         {
             ScopedUNLLockType sl (mUNLLock);
             {
@@ -412,7 +412,7 @@ public:
         if (m_clusterNodes.size() > 1) // nodes other than us
         {
             int          now   = getApp().getOPs().getNetworkTimeNC();
-            std::uint32_t ref   = getApp().getFeeTrack().getLoadBase();
+            uint32 ref   = getApp().getFeeTrack().getLoadBase();
             Json::Value& nodes = (obj["cluster"] = Json::objectValue);
 
             for (std::map<RippleAddress, ClusterNodeStatus>::iterator it = m_clusterNodes.begin(),
@@ -2023,7 +2023,7 @@ private:
     boost::posix_time::ptime        mtpScoreUpdated;
     boost::posix_time::ptime        mtpFetchUpdated;
 
-    // XXX Make this faster, make this the contents vector unsigned char or raw public key.
+    // XXX Make this faster, make this the contents vector uint8 or raw public key.
     // XXX Contents needs to based on score.
     ripple::unordered_set<std::string>   mUNL;
 

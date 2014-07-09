@@ -137,8 +137,8 @@ TER TransactionEngine::applyTransaction (const SerializedTransaction& txn, Trans
             terResult = terNO_ACCOUNT;
         else
         {
-            std::uint32_t t_seq = txn.getSequence ();
-            std::uint32_t a_seq = txnAcct->getFieldU32 (sfSequence);
+            uint32 t_seq = txn.getSequence ();
+            uint32 a_seq = txnAcct->getFieldU32 (sfSequence);
 
             if (a_seq < t_seq)
                 terResult = terPRE_SEQ;

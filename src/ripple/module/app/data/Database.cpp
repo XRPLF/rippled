@@ -53,7 +53,7 @@ char* Database::getStr (const char* colName, std::string& retStr)
     return nullptr;
 }
 
-std::int32_t Database::getInt (const char* colName)
+int32 Database::getInt (const char* colName)
 {
     int index;
 
@@ -89,7 +89,7 @@ bool Database::getBool (const char* colName)
     return 0;
 }
 
-int Database::getBinary (const char* colName, unsigned char* buf, int maxSize)
+int Database::getBinary (const char* colName, uint8* buf, int maxSize)
 {
     int index;
 
@@ -119,7 +119,7 @@ std::string Database::getStrBinary (const std::string& strColName)
     return strCopy (getBinary (strColName.c_str ()));
 }
 
-std::uint64_t Database::getBigInt (const char* colName)
+uint64 Database::getBigInt (const char* colName)
 {
     int index;
 

@@ -25,7 +25,7 @@ namespace ripple {
 class SetRegularKey
     : public Transactor
 {
-    std::uint64_t calculateBaseFee ();
+    uint64 calculateBaseFee ();
 
 public:
     SetRegularKey (

@@ -274,14 +274,14 @@ std::string SerializedTransaction::getMetaSQLInsertReplaceHeader ()
     return "INSERT OR REPLACE INTO Transactions " + getMetaSQLValueHeader () + " VALUES ";
 }
 
-std::string SerializedTransaction::getSQL (std::uint32_t inLedger, char status) const
+std::string SerializedTransaction::getSQL (uint32 inLedger, char status) const
 {
     Serializer s;
     add (s);
     return getSQL (s, inLedger, status);
 }
 
-std::string SerializedTransaction::getMetaSQL (std::uint32_t inLedger,
+std::string SerializedTransaction::getMetaSQL (uint32 inLedger,
                                                const std::string& escapedMetaData) const
 {
     Serializer s;
@@ -289,7 +289,7 @@ std::string SerializedTransaction::getMetaSQL (std::uint32_t inLedger,
     return getMetaSQL (s, inLedger, TXN_SQL_VALIDATED, escapedMetaData);
 }
 
-std::string SerializedTransaction::getSQL (Serializer rawTxn, std::uint32_t inLedger, char status) const
+std::string SerializedTransaction::getSQL (Serializer rawTxn, uint32 inLedger, char status) const
 {
     static boost::format bfTrans ("('%s', '%s', '%s', '%d', '%d', '%c', %s)");
     std::string rTxn    = sqlEscape (rawTxn.peekData ());
@@ -300,7 +300,7 @@ std::string SerializedTransaction::getSQL (Serializer rawTxn, std::uint32_t inLe
                 % getSequence () % inLedger % status % rTxn);
 }
 
-std::string SerializedTransaction::getMetaSQL (Serializer rawTxn, std::uint32_t inLedger, char status,
+std::string SerializedTransaction::getMetaSQL (Serializer rawTxn, uint32 inLedger, char status,
         const std::string& escapedMetaData) const
 {
     static boost::format bfTrans ("('%s', '%s', '%s', '%d', '%d', '%c', %s, %s)");
