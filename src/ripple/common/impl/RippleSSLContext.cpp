@@ -19,8 +19,12 @@
 
 #include <ripple/common/RippleSSLContext.h>
 
+#include <ripple/common/seconds_clock.h>
+#include <beast/container/aged_unordered_set.h>
+
 #include <cstdint>
 #include <sstream>
+
 
 namespace ripple {
 
@@ -28,6 +32,8 @@ class RippleSSLContextImp : public RippleSSLContext
 {
 private:
     boost::asio::ssl::context m_context;
+
+    // track when SSL connections have last negotiated
 
 public:
     RippleSSLContextImp ()
@@ -43,6 +49,55 @@ public:
     static DH* tmp_dh_handler (SSL*, int, int key_length)
     {
         return DHparams_dup (getDH (key_length));
+    }
+
+    static bool disallowRenegotiation (SSL const* ssl, bool isNew)
+    {
+        // Do not allow a connection to renegotiate
+        // more than once every 4 minutes
+
+        static std::mutex negotiationSetLock;
+        static beast::aged_unordered_set <SSL const*> negotiationSet (ripple::get_seconds_clock ());
+        static std::chrono::seconds const minRenegotiationSeconds = std::chrono::minutes (4);
+
+        std::lock_guard <std::mutex> locker (negotiationSetLock);
+
+        auto const expired = (negotiationSet.clock().now() - minRenegotiationSeconds);
+
+        // Remove expired entries
+        for (auto iter (negotiationSet.chronological.begin ());
+            (iter != negotiationSet.chronological.end ()) && (iter.when () <= expired);
+            iter = negotiationSet.chronological.begin ())
+        {
+            negotiationSet.erase (iter);
+        }
+
+        auto iter = negotiationSet.find (ssl);
+        if (iter != negotiationSet.end ())
+        {
+            if (!isNew)
+            {
+                // This is a renegotiation and the last negotiation was recent
+                return true;
+            }
+
+            negotiationSet.touch (iter);
+        }
+        else
+        {
+            negotiationSet.emplace (ssl);
+        }
+
+        return false;
+    }
+
+    static void info_handler (SSL const* ssl, int event, int)
+    {
+        if ((ssl->s3) && (event & SSL_CB_HANDSHAKE_START))
+        {
+            if (disallowRenegotiation (ssl, SSL_in_before (ssl)))
+                ssl->s3->flags |= SSL3_FLAGS_NO_RENEGOTIATE_CIPHERS;
+        }
     }
 
     // Pretty prints an error message
@@ -105,6 +160,10 @@ public:
         SSL_CTX_set_tmp_dh_callback (
             m_context.native_handle (),
             tmp_dh_handler);
+
+        SSL_CTX_set_info_callback (
+            m_context.native_handle (),
+            info_handler);
     }
 
     //--------------------------------------------------------------------------
