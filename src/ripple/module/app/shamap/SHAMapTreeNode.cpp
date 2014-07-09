@@ -31,7 +31,7 @@ SHAMapTreeNode::SHAMapTreeNode (std::uint32_t seq, const SHAMapNodeID& nodeID)
 }
 
 SHAMapTreeNode::SHAMapTreeNode (const SHAMapTreeNode& node, std::uint32_t seq)
-    : mID (node.getID())
+    : mID (node.mID)
     , mHash (node.mHash)
     , mSeq (seq)
     , mType (node.mType)
@@ -490,6 +490,25 @@ bool SHAMapTreeNode::setChildHash (int m, uint256 const& hash)
         mIsBranch &= ~ (1 << m);
 
     return updateHash ();
+}
+
+// Descends along the specified branch
+// On invocation, nodeID must be the ID of this node
+// Returns false if there is no node down that branch
+// Otherwise, returns true and fills in the node's ID and hash
+
+bool
+SHAMapTreeNode::descend (int branch, SHAMapNodeID& nodeID, uint256& nodeHash)
+{
+    assert (isInnerNode ());
+
+    if (isEmptyBranch (branch))
+        return false;
+
+    nodeID = nodeID.getChildNodeID (branch);
+    nodeHash = mHashes [branch];
+
+    return true;
 }
 
 } // ripple

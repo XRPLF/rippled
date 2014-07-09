@@ -52,6 +52,9 @@ public:
     };
 
 public:
+    SHAMapTreeNode (const SHAMapTreeNode&) = delete;
+    SHAMapTreeNode& operator= (const SHAMapTreeNode&) = delete;
+
     SHAMapTreeNode (std::uint32_t seq, const SHAMapNodeID & nodeID); // empty node
     SHAMapTreeNode (const SHAMapTreeNode & node, std::uint32_t seq); // copy node from older tree
     SHAMapTreeNode (const SHAMapNodeID & nodeID, SHAMapItem::ref item, TNType type,
@@ -176,10 +179,19 @@ public:
     SHAMapNodeID const& getID() const {return mID;}
     void setID(SHAMapNodeID const& id) {mID = id;}
 
+    /** Descends along the specified branch
+    * On invocation, nodeID must be the ID of this node
+    * Returns false if there is no node down that branch
+    * Otherwise, returns true and fills in the node's ID and hash
+    *
+    * @param branch   the branch to descend [0, 15]
+    * @param nodeID   on entry the ID of the parent. On exit the ID of the child
+    * @param nodeHash on exit the hash of the child node.
+    * @return true if nodeID and nodeHash are altered.
+    */
+    bool descend (int branch, SHAMapNodeID& nodeID, uint256& nodeHash);
+
 private:
-    // VFALCO TODO derive from Uncopyable
-    SHAMapTreeNode (const SHAMapTreeNode&); // no implementation
-    SHAMapTreeNode& operator= (const SHAMapTreeNode&); // no implementation
 
     // VFALCO TODO remove the use of friend
     friend class SHAMap;
