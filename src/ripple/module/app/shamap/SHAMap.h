@@ -188,7 +188,7 @@ public:
     // comparison/sync functions
     void getMissingNodes (std::vector<SHAMapNodeID>& nodeIDs, std::vector<uint256>& hashes, int max,
                           SHAMapSyncFilter * filter);
-    bool getNodeFat (SHAMapNodeID const& node, std::vector<SHAMapNodeID>& nodeIDs,
+    bool getNodeFat (SHAMapNodeID node, std::vector<SHAMapNodeID>& nodeIDs,
                      std::list<Blob >& rawNode, bool fatRoot, bool fatLeaves);
     bool getRootNode (Serializer & s, SHANodeFormat format);
     std::vector<uint256> getNeededHashes (int max, SHAMapSyncFilter * filter);
@@ -260,13 +260,16 @@ private:
     SHAMapTreeNode::pointer getCache (uint256 const& hash, SHAMapNodeID const& id);
     void canonicalize (uint256 const& hash, SHAMapTreeNode::pointer&);
 
-    void dirtyUp (std::stack<SHAMapTreeNode::pointer>& stack, uint256 const & target, uint256 prevHash);
-    std::stack<SHAMapTreeNode::pointer> getStack (uint256 const & id, bool include_nonmatching_leaf);
+    void dirtyUp (std::stack<std::pair<SHAMapTreeNode::pointer, SHAMapNodeID>>& stack,
+                  uint256 const & target, uint256 prevHash);
+    std::stack<std::pair<SHAMapTreeNode::pointer, SHAMapNodeID>>
+        getStack (uint256 const & id, bool include_nonmatching_leaf);
     SHAMapTreeNode::pointer walkTo (uint256 const & id, bool modify);
     SHAMapTreeNode* walkToPointer (uint256 const & id);
     SHAMapTreeNode::pointer checkCacheNode (const SHAMapNodeID&);
-    void returnNode (SHAMapTreeNode::pointer&, bool modify);
-    void trackNewNode (SHAMapTreeNode::pointer&);
+    void returnNode (SHAMapTreeNode::pointer&, SHAMapNodeID const& nodeID,
+                                                                   bool modify);
+    void trackNewNode (SHAMapTreeNode::pointer&, SHAMapNodeID const&);
 
     SHAMapTreeNode::pointer getNode (const SHAMapNodeID & id);
     SHAMapTreeNode::pointer getNode (const SHAMapNodeID & id, uint256 const & hash, bool modify);
@@ -275,20 +278,21 @@ private:
     SHAMapTreeNode* getNodePointerNT (const SHAMapNodeID & id, uint256 const & hash);
     SHAMapTreeNode* getNodePointer (const SHAMapNodeID & id, uint256 const & hash, SHAMapSyncFilter * filter);
     SHAMapTreeNode* getNodePointerNT (const SHAMapNodeID & id, uint256 const & hash, SHAMapSyncFilter * filter);
-    SHAMapTreeNode* firstBelow (SHAMapTreeNode*);
-    SHAMapTreeNode* lastBelow (SHAMapTreeNode*);
+    SHAMapTreeNode* firstBelow (SHAMapTreeNode*, SHAMapNodeID);
+    SHAMapTreeNode* lastBelow (SHAMapTreeNode*, SHAMapNodeID);
 
     // Non-blocking version of getNodePointerNT
     SHAMapTreeNode* getNodeAsync (
         const SHAMapNodeID & id, uint256 const & hash, SHAMapSyncFilter * filter, bool& pending);
 
-    SHAMapItem::pointer onlyBelow (SHAMapTreeNode*);
-    void eraseChildren (SHAMapTreeNode::pointer);
-    void dropBelow (SHAMapTreeNode*);
+    SHAMapItem::pointer onlyBelow (SHAMapTreeNode*, SHAMapNodeID);
+    void eraseChildren (SHAMapTreeNode::pointer, SHAMapNodeID);
+    void dropBelow (SHAMapTreeNode*, SHAMapNodeID);
     bool hasInnerNode (const SHAMapNodeID & nodeID, uint256 const & hash);
     bool hasLeafNode (uint256 const & tag, uint256 const & hash);
 
-    bool walkBranch (SHAMapTreeNode * node, SHAMapItem::ref otherMapItem, bool isFirstMap,
+    bool walkBranch (SHAMapTreeNode* node, SHAMapNodeID nodeID,
+                     SHAMapItem::ref otherMapItem, bool isFirstMap,
                      Delta & differences, int & maxCount);
 
     void visitLeavesInternal (std::function<void (SHAMapItem::ref item)>& function);

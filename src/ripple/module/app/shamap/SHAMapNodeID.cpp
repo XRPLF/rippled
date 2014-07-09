@@ -25,12 +25,41 @@
 
 namespace ripple {
 
+static std::size_t const mask_size = 65;
+
+static
+bool
+MasksInit (uint256 (&masks)[mask_size])
+{
+    uint256 selector;
+
+    for (int i = 0; i < mask_size-1; i += 2)
+    {
+        masks[i] = selector;
+        * (selector.begin () + (i / 2)) = 0xF0;
+        masks[i + 1] = selector;
+        * (selector.begin () + (i / 2)) = 0xFF;
+    }
+
+    masks[mask_size-1] = selector;
+    return true;
+}
+
+static
+uint256 const&
+Masks (int depth)
+{
+    static uint256 masks[mask_size];
+    static bool initialized = MasksInit(masks);
+    return masks[depth];
+}
+
 // canonicalize the hash to a node ID for this depth
 SHAMapNodeID::SHAMapNodeID (int depth, uint256 const& hash)
     : mNodeID (hash), mDepth (depth), mHash (0)
 {
     assert ((depth >= 0) && (depth < 65));
-    mNodeID &= smMasks[depth];
+    mNodeID &= Masks(depth);
 }
 
 SHAMapNodeID::SHAMapNodeID (void const* ptr, int len) : mHash (0)
@@ -56,33 +85,10 @@ std::string SHAMapNodeID::getString () const
                 % to_string (mNodeID));
 }
 
-uint256 SHAMapNodeID::smMasks[65];
-
-// VFALCO TODO use a static initializer to do this instead
-bool SMN_j = SHAMapNodeID::ClassInit ();
-
-// set up the depth masks
-bool SHAMapNodeID::ClassInit ()
-{
-    uint256 selector;
-
-    for (int i = 0; i < 64; i += 2)
-    {
-        // VFALCO TODO group these statics together in an object
-        smMasks[i] = selector;
-        * (selector.begin () + (i / 2)) = 0xF0;
-        smMasks[i + 1] = selector;
-        * (selector.begin () + (i / 2)) = 0xFF;
-    }
-
-    smMasks[64] = selector;
-    return true;
-}
-
 uint256 SHAMapNodeID::getNodeID (int depth, uint256 const& hash)
 {
     assert ((depth >= 0) && (depth <= 64));
-    return hash & smMasks[depth];
+    return hash & Masks(depth);
 }
 
 void SHAMapNodeID::addIDRaw (Serializer& s) const
@@ -120,7 +126,7 @@ int SHAMapNodeID::selectBranch (uint256 const& hash) const
         return -1;
     }
 
-    if ((hash & smMasks[mDepth]) != mNodeID)
+    if ((hash & Masks(mDepth)) != mNodeID)
     {
         std::cerr << "selectBranch(" << getString () << std::endl;
         std::cerr << "  " << hash << " off branch" << std::endl;

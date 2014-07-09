@@ -31,7 +31,6 @@ namespace ripple {
 class SHAMapNodeID
 {
 private:
-    static uint256 smMasks[65]; // AND with hash to get node id
 
     uint256 mNodeID;
     int     mDepth;
@@ -115,7 +114,6 @@ public:
     virtual std::string getString () const;
     void dump () const;
 
-    static bool ClassInit ();
     static uint256 getNodeID (int depth, uint256 const& hash);
 
     // Convert to/from wire format (256-bit nodeID, 1-byte depth)
