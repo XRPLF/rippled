@@ -928,6 +928,13 @@ std::string Pathfinder::pathTypeToString(PathType_t const& type)
     return ret;
 }
 
+void Pathfinder::fillPaths(PaymentType type, PathCostList const& costs)
+{
+    auto& list = mPathTable[type];
+    for (auto& cost: costs)
+        list.push_back ({cost.first, makePath(cost.second)});
+}
+
 // Costs:
 // 0 = minimum to make some payments possible
 // 1 = include trivial paths to make common cases work
@@ -936,71 +943,77 @@ std::string Pathfinder::pathTypeToString(PathType_t const& type)
 // 10 = most agressive
 
 void Pathfinder::initPathTable()
-{ // CAUTION: Do not include rules that build default paths
-    { // XRP to XRP
-        // do not remove this - it's necessary to build the table.
-        /*CostedPathList_t& list =*/ mPathTable[pt_XRP_to_XRP];
-//        list.push_back(CostedPath_t(8, makePath("sbxd")));   // source -> book -> book_to_XRP -> destination
-//        list.push_back(CostedPath_t(9, makePath("sbaxd")));  // source -> book -> gateway -> to_XRP ->destination
-    }
+{
+    // CAUTION: Do not include rules that build default paths
+    fillPaths(
+        pt_XRP_to_XRP, {});
 
-    { // XRP to non-XRP
-        CostedPathList_t& list = mPathTable[pt_XRP_to_nonXRP];
+    fillPaths(
+        pt_XRP_to_nonXRP, {
+            {1, "sfd"},       // source -> book -> gateway
+            {3, "sfad"},      // source -> book -> account -> destination
+            {5, "sfaad"},     // source -> book -> account -> account -> destination
+            {6, "sbfd"},      // source -> book -> book -> destination
+            {8, "sbafd"},     // source -> book -> account -> book -> destination
+            {9, "sbfad"},     // source -> book -> book -> account -> destination
+            {10, "sbafad"}
+        });
 
-        list.push_back(CostedPath_t(1,  makePath("sfd")));       // source -> book -> gateway
-        list.push_back(CostedPath_t(3,  makePath("sfad")));      // source -> book -> account -> destination
-        list.push_back(CostedPath_t(5,  makePath("sfaad")));     // source -> book -> account -> account -> destination
-        list.push_back(CostedPath_t(6,  makePath("sbfd")));      // source -> book -> book -> destination
-        list.push_back(CostedPath_t(8,  makePath("sbafd")));     // source -> book -> account -> book -> destination
-        list.push_back(CostedPath_t(9,  makePath("sbfad")));     // source -> book -> book -> account -> destination
-        list.push_back(CostedPath_t(10, makePath("sbafad")));
-    }
+    fillPaths(
+        pt_XRP_to_nonXRP, {
+            {1, "sfd"},
+            {3, "sfad"},      // source -> book -> account -> destination
+            {5, "sfaad"},     // source -> book -> account -> account -> destination
+            {6, "sbfd"},      // source -> book -> book -> destination
+            {8, "sbafd"},     // source -> book -> account -> book -> destination
+            {9, "sbfad"},     // source -> book -> book -> account -> destination
+            {10, "sbafad"}
+        });
 
-    { // non-XRP to XRP
-        CostedPathList_t& list = mPathTable[pt_nonXRP_to_XRP];
+    fillPaths(
+        pt_nonXRP_to_XRP, {
+            {1, "sxd"},       // gateway buys XRP
+            {2, "saxd"},      // source -> gateway -> book(XRP) -> dest
+            {6, "saaxd"},
+            {7, "sbxd"},
+            {8, "sabxd"},
+            {9, "sabaxd"}
+        });
 
-        list.push_back(CostedPath_t(1, makePath("sxd")));              // gateway buys XRP
-        list.push_back(CostedPath_t(2, makePath("saxd")));             // source -> gateway -> book(XRP) -> dest
-        list.push_back(CostedPath_t(6, makePath("saaxd")));
-        list.push_back(CostedPath_t(7, makePath("sbxd")));
-        list.push_back(CostedPath_t(8, makePath("sabxd")));
-        list.push_back(CostedPath_t(9, makePath("sabaxd")));
-    }
+    // non-XRP to non-XRP (same currency)
+    fillPaths(
+        pt_nonXRP_to_same,  {
+            {1, "sad"},     // source -> gateway -> destination
+            {1, "sfd"},     // source -> book -> destination
+            {4, "safd"},    // source -> gateway -> book -> destination
+            {4, "sfad"},
+            {5, "saad"},
+            {5, "sbfd"},
+            {6, "sxfad"},
+            {6, "safad"},
+            {6, "saxfd"},   // source -> gateway -> book to XRP -> book ->
+                            // destination
+            {6, "saxfad"},
+            {6, "sabfd"},   // source -> gateway -> book -> book -> destination
+            {6, "sabfd"},
+            {7, "saaad"},
+        });
 
-    { // non-XRP to non-XRP (same currency)
-        CostedPathList_t& list = mPathTable[pt_nonXRP_to_same];
-
-        list.push_back(CostedPath_t(1, makePath("sad")));               // source -> gateway -> destination
-        list.push_back(CostedPath_t(1, makePath("sfd")));               // source -> book -> destination
-        list.push_back(CostedPath_t(4, makePath("safd")));              // source -> gateway -> book -> destination
-        list.push_back(CostedPath_t(4, makePath("sfad")));
-        list.push_back(CostedPath_t(5, makePath("saad")));
-        list.push_back(CostedPath_t(5, makePath("sbfd")));
-        list.push_back(CostedPath_t(6, makePath("sxfad")));
-        list.push_back(CostedPath_t(6, makePath("safad")));
-        list.push_back(CostedPath_t(6, makePath("saxfd")));             // source -> gateway -> book to XRP -> book -> destination
-        list.push_back(CostedPath_t(6, makePath("saxfad")));
-        list.push_back(CostedPath_t(6, makePath("sabfd")));             // source -> gateway -> book -> book -> destination
-        list.push_back(CostedPath_t(7, makePath("saaad")));
-    }
-
-    { // non-XRP to non-XRP (different currency)
-        CostedPathList_t& list = mPathTable[pt_nonXRP_to_nonXRP];
-
-        list.push_back(CostedPath_t(1, makePath("sfad")));
-        list.push_back(CostedPath_t(1, makePath("safd")));
-        list.push_back(CostedPath_t(3, makePath("safad")));
-        list.push_back(CostedPath_t(4, makePath("sxfd")));
-        list.push_back(CostedPath_t(5, makePath("saxfd")));
-        list.push_back(CostedPath_t(5, makePath("sxfad")));
-        list.push_back(CostedPath_t(5, makePath("sbfd")));
-        list.push_back(CostedPath_t(6, makePath("saxfad")));
-        list.push_back(CostedPath_t(6, makePath("sabfd")));
-        list.push_back(CostedPath_t(7, makePath("saafd")));
-        list.push_back(CostedPath_t(8, makePath("saafad")));
-        list.push_back(CostedPath_t(9, makePath("safaad")));
-    }
-
+    // non-XRP to non-XRP (different currency)
+    fillPaths(
+        pt_nonXRP_to_nonXRP, {
+            {1, "sfad"},
+            {1, "safd"},
+            {3, "safad"},
+            {4, "sxfd"},
+            {5, "saxfd"},
+            {5, "sxfad"},
+            {6, "saxfad"},
+            {6, "sabfd"},
+            {7, "saafd"},
+            {8, "saafad"},
+            {9, "safaad"},
+        });
 }
 
 } // ripple

@@ -97,7 +97,13 @@ private:
     typedef std::pair<int, PathType_t>    CostedPath_t;
     typedef std::vector<CostedPath_t>     CostedPathList_t;
 
-    // returns true if any building paths are now complete?
+    typedef std::pair<int, const char*> PathCost;
+    typedef std::vector<PathCost> PathCostList;
+
+    /** Fill a CostedPathList_t from its description. */
+    static void fillPaths(PaymentType type, PathCostList const& costs);
+
+    /** @return true if any building paths are now complete. */
     bool checkComplete (STPathSet& retPathSet);
 
     static std::string pathTypeToString(PathType_t const&);
