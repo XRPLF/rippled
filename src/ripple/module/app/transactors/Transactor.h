@@ -55,7 +55,7 @@ protected:
     void calculateFee ();
 
     // Returns the fee, not scaled for load (Should be in fee units. FIXME)
-    virtual std::uint64_t calculateBaseFee ();
+    virtual uint64 calculateBaseFee ();
 
     virtual TER checkSig ();
     virtual TER doApply () = 0;

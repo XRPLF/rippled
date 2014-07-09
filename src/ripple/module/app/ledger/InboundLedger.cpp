@@ -34,7 +34,7 @@ enum
     ,ledgerBecomeAggressiveThreshold = 6
 };
 
-InboundLedger::InboundLedger (uint256 const& hash, std::uint32_t seq, fcReason reason,
+InboundLedger::InboundLedger (uint256 const& hash, uint32 seq, fcReason reason,
     clock_type& clock)
     : PeerSet (hash, ledgerAcquireTimeoutMillis, false, clock,
         deprecatedLogs().journal("InboundLedger"))

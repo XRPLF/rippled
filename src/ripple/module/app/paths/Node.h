@@ -39,7 +39,7 @@ struct Node
 
     bool operator == (Node const&) const;
 
-    std::uint16_t uFlags;       // --> From path.
+    uint16 uFlags;       // --> From path.
 
     Account account_;           // --> Accounts: Receiving/sending account.
     Currency currency_;         // --> Accounts: Receive and send, Offers: send.

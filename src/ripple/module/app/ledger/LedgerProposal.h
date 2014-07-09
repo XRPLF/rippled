@@ -28,21 +28,21 @@ class LedgerProposal
 public:
     static char const* getCountedObjectName () { return "LedgerProposal"; }
 
-    static const std::uint32_t seqLeave = 0xffffffff; // leaving the consensus process
+    static const uint32 seqLeave = 0xffffffff; // leaving the consensus process
 
     typedef std::shared_ptr<LedgerProposal> pointer;
     typedef const pointer& ref;
 
     // proposal from peer
-    LedgerProposal (uint256 const & prevLgr, std::uint32_t proposeSeq, uint256 const & propose,
-                    std::uint32_t closeTime, const RippleAddress & naPeerPublic, uint256 const & suppress);
+    LedgerProposal (uint256 const & prevLgr, uint32 proposeSeq, uint256 const & propose,
+                    uint32 closeTime, const RippleAddress & naPeerPublic, uint256 const & suppress);
 
     // our first proposal
     LedgerProposal (const RippleAddress & pubKey, const RippleAddress & privKey,
-                    uint256 const & prevLedger, uint256 const & position, std::uint32_t closeTime);
+                    uint256 const & prevLedger, uint256 const & position, uint32 closeTime);
 
     // an unsigned "dummy" proposal for nodes not validating
-    LedgerProposal (uint256 const & prevLedger, uint256 const & position, std::uint32_t closeTime);
+    LedgerProposal (uint256 const & prevLedger, uint256 const & position, uint32 closeTime);
 
     uint256 getSigningHash () const;
     bool checkSign (const std::string & signature, uint256 const & signingHash);
@@ -71,11 +71,11 @@ public:
     {
         return mSuppression;
     }
-    std::uint32_t getProposeSeq () const
+    uint32 getProposeSeq () const
     {
         return mProposeSeq;
     }
-    std::uint32_t getCloseTime () const
+    uint32 getCloseTime () const
     {
         return mCloseTime;
     }
@@ -119,21 +119,21 @@ public:
         return mTime <= cutoff;
     }
 
-    bool changePosition (uint256 const & newPosition, std::uint32_t newCloseTime);
+    bool changePosition (uint256 const & newPosition, uint32 newCloseTime);
     void bowOut ();
     Json::Value getJson () const;
 
     static uint256 computeSuppressionID (
         uint256 const& proposeHash,
         uint256 const& previousLedger,
-        std::uint32_t proposeSeq,
-        std::uint32_t closeTime,
+        uint32 proposeSeq,
+        uint32 closeTime,
         Blob const& pubKey,
         Blob const& signature);
 
 private:
     uint256 mPreviousLedger, mCurrentHash, mSuppression;
-    std::uint32_t mCloseTime, mProposeSeq;
+    uint32 mCloseTime, mProposeSeq;
 
     NodeID         mPeerID;
     RippleAddress   mPublicKey;

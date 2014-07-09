@@ -30,7 +30,7 @@ class Quality_test : public beast::unit_test::suite
 public:
     // Create a raw, non-integral amount from mantissa and exponent
     Amount
-    static raw (std::uint64_t mantissa, int exponent)
+    static raw (uint64 mantissa, int exponent)
     {
         return Amount ({Currency(3), Account(3)}, mantissa, exponent);
     }

@@ -44,7 +44,7 @@ protected:
     //            unnecessary and is replaced by a couple of helper functions
     //            that operate on a Blob.
 
-    unsigned char nVersion;
+    uint8 nVersion;
     Blob vchData;
 
     CBase58Data ();
@@ -67,7 +67,7 @@ protected:
     }
 
 public:
-    bool SetString (std::string const& str, unsigned char version,
+    bool SetString (std::string const& str, uint8 version,
         Base58::Alphabet const& alphabet);
 
     std::string ToString () const;

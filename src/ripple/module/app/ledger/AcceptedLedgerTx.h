@@ -77,7 +77,7 @@ public:
     {
         return mResult;
     }
-    std::uint32_t getTxnSeq () const
+    uint32 getTxnSeq () const
     {
         return mMeta->getIndex ();
     }

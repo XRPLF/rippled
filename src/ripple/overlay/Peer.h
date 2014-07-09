@@ -39,9 +39,9 @@ class Peer
 {
 public:
     typedef std::shared_ptr <Peer> ptr;
-    
+
     /** Uniquely identifies a particular connection of a peer. */
-    typedef std::uint32_t ShortId;
+    typedef uint32 ShortId;
 
     //
     // Network
@@ -68,12 +68,12 @@ public:
     //
 
     virtual uint256 const& getClosedLedgerHash () const = 0;
-    virtual bool hasLedger (uint256 const& hash, std::uint32_t seq) const = 0;
-    virtual void ledgerRange (std::uint32_t& minSeq, std::uint32_t& maxSeq) const = 0;
+    virtual bool hasLedger (uint256 const& hash, uint32 seq) const = 0;
+    virtual void ledgerRange (uint32& minSeq, uint32& maxSeq) const = 0;
     virtual bool hasTxSet (uint256 const& hash) const = 0;
     virtual void cycleStatus () = 0;
     virtual bool supportsVersion (int version) = 0;
-    virtual bool hasRange (std::uint32_t uMin, std::uint32_t uMax) = 0;
+    virtual bool hasRange (uint32 uMin, uint32 uMax) = 0;
 };
 
 }

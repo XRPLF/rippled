@@ -38,8 +38,8 @@ private:
     abstract_protocol_handler& handler_;
     std::size_t header_bytes_;
     std::size_t body_bytes_;
-    std::uint32_t length_;
-    std::uint16_t type_;
+    uint32 length_;
+    uint16 type_;
     std::vector <std::uint8_t> header_; // VFALCO TODO Use std::array
     std::vector <std::uint8_t> body_;
 

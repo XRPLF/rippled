@@ -197,7 +197,7 @@ PeerImp::getLedger (protocol::TMGetLedger& packet)
 
 	        if (!ledger && (packet.has_querytype () && !packet.has_requestcookie ()))
 	        {
-	            std::uint32_t seq = 0;
+	            uint32 seq = 0;
 
 	            if (packet.has_ledgerseq ())
 	                seq = packet.ledgerseq ();
@@ -476,7 +476,7 @@ PeerImp::on_read_detect (error_code ec, std::size_t bytes_transferred)
     read_buffer_.commit (bytes_transferred);
     peer_protocol_detector detector;
     auto const is_peer_protocol (detector (read_buffer_.data()));
-    
+
     if (is_peer_protocol)
     {
         on_read_protocol (error_code(), 0);
@@ -574,7 +574,7 @@ PeerImp::on_read_protocol (error_code ec, std::size_t bytes_transferred)
 //------------------------------------------------------------------------------
 
 PeerImp::error_code
-PeerImp::on_message_unknown (std::uint16_t type)
+PeerImp::on_message_unknown (uint16 type)
 {
     error_code ec;
     // TODO
@@ -582,7 +582,7 @@ PeerImp::on_message_unknown (std::uint16_t type)
 }
 
 PeerImp::error_code
-PeerImp::on_message_begin (std::uint16_t type,
+PeerImp::on_message_begin (uint16 type,
     std::shared_ptr <::google::protobuf::Message> const& m)
 {
     error_code ec;
@@ -615,7 +615,7 @@ PeerImp::on_message_begin (std::uint16_t type,
 }
 
 void
-PeerImp::on_message_end (std::uint16_t,
+PeerImp::on_message_end (uint16,
     std::shared_ptr <::google::protobuf::Message> const&)
 {
     load_event_.reset();
@@ -630,14 +630,14 @@ PeerImp::on_message (std::shared_ptr <protocol::TMHello> const& m)
 
     m_timer.cancel ();
 
-    std::uint32_t const ourTime (getApp().getOPs ().getNetworkTimeNC ());
-    std::uint32_t const minTime (ourTime - clockToleranceDeltaSeconds);
-    std::uint32_t const maxTime (ourTime + clockToleranceDeltaSeconds);
+    uint32 const ourTime (getApp().getOPs ().getNetworkTimeNC ());
+    uint32 const minTime (ourTime - clockToleranceDeltaSeconds);
+    uint32 const maxTime (ourTime + clockToleranceDeltaSeconds);
 
 #ifdef BEAST_DEBUG
     if (m->has_nettime ())
     {
-        std::int64_t to = ourTime;
+        int64 to = ourTime;
         to -= m->nettime ();
         m_journal.debug <<
             "Connect: time offset " << to;
@@ -1278,7 +1278,7 @@ PeerImp::error_code
 PeerImp::on_message (std::shared_ptr <protocol::TMValidation> const& m)
 {
     error_code ec;
-    std::uint32_t closeTime = getApp().getOPs().getCloseTimeNC();
+    uint32 closeTime = getApp().getOPs().getCloseTimeNC();
 
     if (m->validation ().size () < 50)
     {
@@ -1396,7 +1396,7 @@ PeerImp::on_message (std::shared_ptr <protocol::TMGetObjectByHash> const& m)
     else
     {
         // this is a reply
-        std::uint32_t pLSeq = 0;
+        uint32 pLSeq = 0;
         bool pLDo = true;
         bool progress = false;
 

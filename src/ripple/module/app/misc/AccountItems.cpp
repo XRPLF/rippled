@@ -63,7 +63,7 @@ void AccountItems::fillItems (Account const& accountID, Ledger::ref ledger)
             }
         }
 
-        std::uint64_t uNodeNext    = ownerDir->getFieldU64 (sfIndexNext);
+        uint64 uNodeNext    = ownerDir->getFieldU64 (sfIndexNext);
 
         if (!uNodeNext)
             return;

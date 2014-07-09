@@ -192,7 +192,7 @@ Bootcache::periodicActivity ()
 void
 Bootcache::onWrite (beast::PropertyStream::Map& map)
 {
-    map ["entries"] = std::uint32_t (m_map.size());
+    map ["entries"] = uint32 (m_map.size());
 }
 
     // Checks the cache size and prunes if its over the limit.

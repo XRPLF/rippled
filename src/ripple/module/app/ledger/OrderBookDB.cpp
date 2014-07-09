@@ -304,7 +304,7 @@ void BookListeners::addSubscriber (InfoSub::ref sub)
     mListeners[sub->getSeq ()] = sub;
 }
 
-void BookListeners::removeSubscriber (std::uint64_t seq)
+void BookListeners::removeSubscriber (uint64 seq)
 {
     ScopedLockType sl (mLock);
     mListeners.erase (seq);

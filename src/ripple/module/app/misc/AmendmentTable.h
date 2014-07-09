@@ -28,11 +28,11 @@ namespace ripple {
 class AmendmentSet
 {
 public:
-    std::uint32_t mCloseTime;
+    uint32 mCloseTime;
     int mTrustedValidations;                    // number of trusted validations
     ripple::unordered_map<uint256, int> mVotes; // yes votes by amendment
 
-    AmendmentSet (std::uint32_t ct) : mCloseTime (ct), mTrustedValidations (0)
+    AmendmentSet (uint32 ct) : mCloseTime (ct), mTrustedValidations (0)
     {
         ;
     }
@@ -47,7 +47,7 @@ public:
 };
 
 /** Current state of an amendment.
-    Tells if a amendment is supported, enabled or vetoed. A vetoed amendment 
+    Tells if a amendment is supported, enabled or vetoed. A vetoed amendment
     means the node will never announce its support.
 */
 class AmendmentState

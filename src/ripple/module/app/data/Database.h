@@ -69,23 +69,23 @@ public:
     bool getNull (const char* colName);
     char* getStr (const char* colName, std::string& retStr);
     std::string getStrBinary (const std::string& strColName);
-    std::int32_t getInt (const char* colName);
+    int32 getInt (const char* colName);
     float getFloat (const char* colName);
     bool getBool (const char* colName);
 
     // returns amount stored in buf
-    int getBinary (const char* colName, unsigned char* buf, int maxSize);
+    int getBinary (const char* colName, uint8* buf, int maxSize);
     Blob getBinary (const std::string& strColName);
 
-    std::uint64_t getBigInt (const char* colName);
+    uint64 getBigInt (const char* colName);
 
     virtual bool getNull (int colIndex) = 0;
     virtual char* getStr (int colIndex, std::string& retStr) = 0;
-    virtual std::int32_t getInt (int colIndex) = 0;
+    virtual int32 getInt (int colIndex) = 0;
     virtual float getFloat (int colIndex) = 0;
     virtual bool getBool (int colIndex) = 0;
-    virtual int getBinary (int colIndex, unsigned char* buf, int maxSize) = 0;
-    virtual std::uint64_t getBigInt (int colIndex) = 0;
+    virtual int getBinary (int colIndex, uint8* buf, int maxSize) = 0;
+    virtual uint64 getBigInt (int colIndex) = 0;
     virtual Blob getBinary (int colIndex) = 0;
 
     // int getSingleDBValueInt(const char* sql);

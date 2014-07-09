@@ -79,10 +79,10 @@
 #include <ripple/module/data/protocol/TxFormats.cpp>
 
 // These are for STAmount
-static const std::uint64_t tenTo14 = 100000000000000ull;
-static const std::uint64_t tenTo14m1 = tenTo14 - 1;
-static const std::uint64_t tenTo17 = tenTo14 * 1000;
-static const std::uint64_t tenTo17m1 = tenTo17 - 1;
+static const uint64 tenTo14 = 100000000000000ull;
+static const uint64 tenTo14m1 = tenTo14 - 1;
+static const uint64 tenTo17 = tenTo14 * 1000;
+static const uint64 tenTo17m1 = tenTo17 - 1;
 #include <ripple/module/data/protocol/STAmount.cpp>
 #include <ripple/module/data/protocol/STAmountRound.cpp>
 

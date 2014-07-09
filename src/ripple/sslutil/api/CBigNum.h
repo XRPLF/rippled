@@ -25,6 +25,8 @@
 #ifndef RIPPLE_SSLUTIL_CBIGNUM_H_INCLUDED
 #define RIPPLE_SSLUTIL_CBIGNUM_H_INCLUDED
 
+#include <ripple/basics/types/BasicTypes.h>
+
 namespace ripple {
 
 // VFALCO TODO figure out a way to remove the dependency on openssl in the
@@ -41,24 +43,24 @@ public:
     CBigNum (int n);
     CBigNum (long n);
     CBigNum (long long n);
-    CBigNum (unsigned char n);
+    CBigNum (uint8 n);
     CBigNum (unsigned short n);
     CBigNum (unsigned int n);
     CBigNum (unsigned long long n);
     explicit CBigNum (uint256 n);
     explicit CBigNum (Blob const& vch);
-    CBigNum (unsigned char const* begin, unsigned char const* end);
+    CBigNum (uint8 const* begin, uint8 const* end);
     ~CBigNum ();
 
     void setuint (unsigned int n);
     unsigned int getuint () const;
     int getint () const;
-    void setint64 (std::int64_t n);
-    std::uint64_t getuint64 () const;
-    void setuint64 (std::uint64_t n);
+    void setint64 (int64 n);
+    uint64 getuint64 () const;
+    void setuint64 (uint64 n);
     void setuint256 (uint256 const& n);
     uint256 getuint256 ();
-    void setvch (unsigned char const* begin, unsigned char const* end);
+    void setvch (uint8 const* begin, uint8 const* end);
     void setvch (Blob const& vch);
     Blob getvch () const;
     CBigNum& SetCompact (unsigned int nCompact);
@@ -109,10 +111,10 @@ bool operator> (const CBigNum& a, const CBigNum& b);
 //------------------------------------------------------------------------------
 
 // VFALCO I believe only STAmount uses these
-int BN_add_word64 (BIGNUM* a, std::uint64_t w);
-int BN_sub_word64 (BIGNUM* a, std::uint64_t w);
-int BN_mul_word64 (BIGNUM* a, std::uint64_t w);
-std::uint64_t BN_div_word64 (BIGNUM* a, std::uint64_t w);
+int BN_add_word64 (BIGNUM* a, uint64 w);
+int BN_sub_word64 (BIGNUM* a, uint64 w);
+int BN_mul_word64 (BIGNUM* a, uint64 w);
+uint64 BN_div_word64 (BIGNUM* a, uint64 w);
 
 }
 

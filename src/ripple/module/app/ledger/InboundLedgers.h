@@ -42,8 +42,8 @@ public:
 
     // VFALCO TODO Should this be called findOrAdd ?
     //
-    virtual InboundLedger::pointer findCreate (uint256 const& hash, 
-        std::uint32_t seq, InboundLedger::fcReason) = 0;
+    virtual InboundLedger::pointer findCreate (uint256 const& hash,
+        uint32 seq, InboundLedger::fcReason) = 0;
 
     virtual InboundLedger::pointer find (LedgerHash const& hash) = 0;
 

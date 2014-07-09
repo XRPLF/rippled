@@ -35,7 +35,7 @@ std::string DH_der_gen (int iKeyLength)
 
     strDer.resize (i2d_DHparams (dh, nullptr));
 
-    unsigned char* next = reinterpret_cast<unsigned char*> (&strDer[0]);
+    uint8* next = reinterpret_cast<uint8*> (&strDer[0]);
 
     (void) i2d_DHparams (dh, &next);
 
@@ -44,7 +44,7 @@ std::string DH_der_gen (int iKeyLength)
 
 DH* DH_der_load (const std::string& strDer)
 {
-    const unsigned char* pbuf   = reinterpret_cast<const unsigned char*> (&strDer[0]);
+    const uint8* pbuf   = reinterpret_cast<const uint8*> (&strDer[0]);
 
     return d2i_DHparams (nullptr, &pbuf, strDer.size ());
 }

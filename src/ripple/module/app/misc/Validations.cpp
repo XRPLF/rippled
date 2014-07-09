@@ -72,8 +72,8 @@ private:
         if (!val->isTrusted() && getApp().getUNL().nodeInUNL (signer))
             val->setTrusted();
 
-        std::uint32_t now = getApp().getOPs().getCloseTimeNC();
-        std::uint32_t valClose = val->getSignTime();
+        uint32 now = getApp().getOPs().getCloseTimeNC();
+        uint32 valClose = val->getSignTime();
 
         if ((now > (valClose - LEDGER_EARLY_INTERVAL)) && (now < (valClose + LEDGER_VAL_INTERVAL)))
             isCurrent = true;
@@ -162,14 +162,14 @@ private:
 
         if (set)
         {
-            std::uint32_t now = getApp().getOPs ().getNetworkTimeNC ();
+            uint32 now = getApp().getOPs ().getNetworkTimeNC ();
             for (auto& it: *set)
             {
                 bool isTrusted = it.second->isTrusted ();
 
                 if (isTrusted && currentOnly)
                 {
-                    std::uint32_t closeTime = it.second->getSignTime ();
+                    uint32 closeTime = it.second->getSignTime ();
 
                     if ((now < (closeTime - LEDGER_EARLY_INTERVAL)) || (now > (closeTime + LEDGER_VAL_INTERVAL)))
                         isTrusted = false;
@@ -231,7 +231,7 @@ private:
         return trusted;
     }
 
-    int getFeeAverage (uint256 const& ledger, std::uint64_t ref, std::uint64_t& fee)
+    int getFeeAverage (uint256 const& ledger, uint64 ref, uint64& fee)
     {
         int trusted = 0;
         fee = 0;
@@ -297,7 +297,7 @@ private:
 
     std::list<SerializedValidation::pointer> getCurrentTrustedValidations ()
     {
-        std::uint32_t cutoff = getApp().getOPs ().getNetworkTimeNC () - LEDGER_VAL_INTERVAL;
+        uint32 cutoff = getApp().getOPs ().getNetworkTimeNC () - LEDGER_VAL_INTERVAL;
 
         std::list<SerializedValidation::pointer> ret;
 
@@ -332,7 +332,7 @@ private:
     LedgerToValidationCounter getCurrentValidations (
         uint256 currentLedger, uint256 priorLedger)
     {
-        std::uint32_t cutoff = getApp().getOPs ().getNetworkTimeNC () - LEDGER_VAL_INTERVAL;
+        uint32 cutoff = getApp().getOPs ().getNetworkTimeNC () - LEDGER_VAL_INTERVAL;
         bool valCurrentLedger = currentLedger.isNonZero ();
         bool valPriorLedger = priorLedger.isNonZero ();
 

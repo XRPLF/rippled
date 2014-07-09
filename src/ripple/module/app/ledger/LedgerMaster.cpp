@@ -57,7 +57,7 @@ public:
 
     int                         mMinValidations;    // The minimum validations to publish a ledger
     uint256                     mLastValidateHash;
-    std::uint32_t               mLastValidateSeq;
+    uint32               mLastValidateSeq;
     std::list<callback>         mOnValidate;        // Called when a ledger has enough validations
 
     bool                        mAdvanceThread;     // Publish thread is running
@@ -68,11 +68,11 @@ public:
     bool                        mPathFindNewLedger;
     bool                        mPathFindNewRequest;
 
-    std::atomic <std::uint32_t> mPubLedgerClose;
-    std::atomic <std::uint32_t> mPubLedgerSeq;
-    std::atomic <std::uint32_t> mValidLedgerClose;
-    std::atomic <std::uint32_t> mValidLedgerSeq;
-    std::atomic <std::uint32_t> mBuildingLedgerSeq;
+    std::atomic <uint32> mPubLedgerClose;
+    std::atomic <uint32> mPubLedgerSeq;
+    std::atomic <uint32> mValidLedgerClose;
+    std::atomic <uint32> mValidLedgerSeq;
+    std::atomic <uint32> mBuildingLedgerSeq;
 
     //--------------------------------------------------------------------------
 
@@ -112,15 +112,15 @@ public:
 
     int getPublishedLedgerAge ()
     {
-        std::uint32_t pubClose = mPubLedgerClose.load();
+        uint32 pubClose = mPubLedgerClose.load();
         if (!pubClose)
         {
             WriteLog (lsDEBUG, LedgerMaster) << "No published ledger";
             return 999999;
         }
 
-        std::int64_t ret = getApp().getOPs ().getCloseTimeNC ();
-        ret -= static_cast<std::int64_t> (pubClose);
+        int64 ret = getApp().getOPs ().getCloseTimeNC ();
+        ret -= static_cast<int64> (pubClose);
         ret = (ret > 0) ? ret : 0;
 
         WriteLog (lsTRACE, LedgerMaster) << "Published ledger age is " << ret;
@@ -129,15 +129,15 @@ public:
 
     int getValidatedLedgerAge ()
     {
-        std::uint32_t valClose = mValidLedgerClose.load();
+        uint32 valClose = mValidLedgerClose.load();
         if (!valClose)
         {
             WriteLog (lsDEBUG, LedgerMaster) << "No validated ledger";
             return 999999;
         }
 
-        std::int64_t ret = getApp().getOPs ().getCloseTimeNC ();
-        ret -= static_cast<std::int64_t> (valClose);
+        int64 ret = getApp().getOPs ().getCloseTimeNC ();
+        ret -= static_cast<int64> (valClose);
         ret = (ret > 0) ? ret : 0;
 
         WriteLog (lsTRACE, LedgerMaster) << "Validated ledger age is " << ret;
@@ -151,8 +151,8 @@ public:
             reason = "No recently-published ledger";
             return false;
         }
-        std::uint32_t validClose = mValidLedgerClose.load();
-        std::uint32_t pubClose = mPubLedgerClose.load();
+        uint32 validClose = mValidLedgerClose.load();
+        uint32 pubClose = mPubLedgerClose.load();
         if (!validClose || !pubClose)
         {
             reason = "No published ledger";
@@ -354,27 +354,27 @@ public:
         return result;
     }
 
-    bool haveLedgerRange (std::uint32_t from, std::uint32_t to)
+    bool haveLedgerRange (uint32 from, uint32 to)
     {
         ScopedLockType sl (mCompleteLock);
-        std::uint32_t prevMissing = mCompleteLedgers.prevMissing (to + 1);
+        uint32 prevMissing = mCompleteLedgers.prevMissing (to + 1);
         return (prevMissing == RangeSet::absent) || (prevMissing < from);
     }
 
-    bool haveLedger (std::uint32_t seq)
+    bool haveLedger (uint32 seq)
     {
         ScopedLockType sl (mCompleteLock);
         return mCompleteLedgers.hasValue (seq);
     }
 
-    void clearLedger (std::uint32_t seq)
+    void clearLedger (uint32 seq)
     {
         ScopedLockType sl (mCompleteLock);
         return mCompleteLedgers.clearValue (seq);
     }
 
     // returns Ledgers we have all the nodes for
-    bool getFullValidatedRange (std::uint32_t& minVal, std::uint32_t& maxVal)
+    bool getFullValidatedRange (uint32& minVal, uint32& maxVal)
     {
         maxVal = mPubLedgerSeq.load();
 
@@ -395,7 +395,7 @@ public:
     }
 
     // Returns Ledgers we have all the nodes for and are indexed
-    bool getValidatedRange (std::uint32_t& minVal, std::uint32_t& maxVal)
+    bool getValidatedRange (uint32& minVal, uint32& maxVal)
     {
         maxVal = mPubLedgerSeq.load();
 
@@ -415,7 +415,7 @@ public:
         // Remove from the validated range any ledger sequences that may not be
         // fully updated in the database yet
 
-        std::set<std::uint32_t> sPendingSaves = Ledger::getPendingSaves();
+        std::set<uint32> sPendingSaves = Ledger::getPendingSaves();
 
         if (!sPendingSaves.empty() && ((minVal != 0) || (maxVal != 0)))
         {
@@ -447,11 +447,11 @@ public:
     }
 
     // Get the earliest ledger we will let peers fetch
-    std::uint32_t getEarliestFetch ()
+    uint32 getEarliestFetch ()
     {
         // The earliest ledger we will let people fetch is ledger zero,
         // unless that creates a larger range than allowed
-        std::uint32_t e = getClosedLedger()->getLedgerSeq();
+        uint32 e = getClosedLedger()->getLedgerSeq();
         if (e > getConfig().FETCH_DEPTH)
             e -= getConfig().FETCH_DEPTH;
         else
@@ -461,13 +461,13 @@ public:
 
     void tryFill (Job& job, Ledger::pointer ledger)
     {
-        std::uint32_t seq = ledger->getLedgerSeq ();
+        uint32 seq = ledger->getLedgerSeq ();
         uint256 prevHash = ledger->getParentHash ();
 
-        std::map< std::uint32_t, std::pair<uint256, uint256> > ledgerHashes;
+        std::map< uint32, std::pair<uint256, uint256> > ledgerHashes;
 
-        std::uint32_t minHas = ledger->getLedgerSeq ();
-        std::uint32_t maxHas = ledger->getLedgerSeq ();
+        uint32 minHas = ledger->getLedgerSeq ();
+        uint32 maxHas = ledger->getLedgerSeq ();
 
         while (! job.shouldCancel() && seq > 0)
         {
@@ -557,7 +557,7 @@ public:
         int invalidate = 0;
         uint256 hash;
 
-        for (std::uint32_t lSeq = ledger->getLedgerSeq () - 1; lSeq > 0; --lSeq)
+        for (uint32 lSeq = ledger->getLedgerSeq () - 1; lSeq > 0; --lSeq)
             if (haveLedger (lSeq))
             {
                 try
@@ -648,14 +648,14 @@ public:
         //--------------------------------------------------------------------------
     }
 
-    void failedSave(std::uint32_t seq, uint256 const& hash)
+    void failedSave(uint32 seq, uint256 const& hash)
     {
         clearLedger(seq);
         getApp().getInboundLedgers().findCreate(hash, seq, InboundLedger::fcGENERIC);
     }
 
     // Check if the specified ledger can become the new last fully-validated ledger
-    void checkAccept (uint256 const& hash, std::uint32_t seq)
+    void checkAccept (uint256 const& hash, uint32 seq)
     {
 
         if (seq != 0)
@@ -750,7 +750,7 @@ public:
             getApp().getOrderBookDB().setup(ledger);
         }
 
-        std::uint64_t fee, fee2, ref;
+        uint64 fee, fee2, ref;
         ref = getApp().getFeeTrack().getLoadBase();
         int count = getApp().getValidations().getFeeAverage(ledger->getHash(), ref, fee);
         int count2 = getApp().getValidations().getFeeAverage(ledger->getParentHash(), ref, fee2);
@@ -892,7 +892,7 @@ public:
                     (getApp().getJobQueue().getJobCount(jtPUBOLDLEDGER) < 10) &&
                     (mValidLedgerSeq == mPubLedgerSeq))
                 { // We are in sync, so can acquire
-                    std::uint32_t missing;
+                    uint32 missing;
                     {
                         ScopedLockType sl (mCompleteLock);
                         missing = mCompleteLedgers.prevMissing(mPubLedger->getLedgerSeq());
@@ -952,7 +952,7 @@ public:
                                     {
                                         for (int i = 0; i < getConfig().getSize(siLedgerFetch); ++i)
                                         {
-                                            std::uint32_t seq = missing - i;
+                                            uint32 seq = missing - i;
                                             uint256 hash = nextLedger->getLedgerHash(seq);
                                             if (hash.isNonZero())
                                                 getApp().getInboundLedgers().findCreate(hash,
@@ -1035,14 +1035,14 @@ public:
         {
             int acqCount = 0;
 
-            std::uint32_t pubSeq = mPubLedgerSeq + 1; // Next sequence to publish
+            uint32 pubSeq = mPubLedgerSeq + 1; // Next sequence to publish
             Ledger::pointer valLedger = mValidLedger.get ();
-            std::uint32_t valSeq = valLedger->getLedgerSeq ();
+            uint32 valSeq = valLedger->getLedgerSeq ();
 
             ScopedUnlockType sul(m_mutex);
             try
             {
-                for (std::uint32_t seq = pubSeq; seq <= valSeq; ++seq)
+                for (uint32 seq = pubSeq; seq <= valSeq; ++seq)
                 {
                     WriteLog (lsTRACE, LedgerMaster) << "Trying to fetch/publish valid ledger " << seq;
 
@@ -1125,7 +1125,7 @@ public:
     }
 
     // Return the hash of the valid ledger with a particular sequence, given a subsequent ledger known valid
-    uint256 getLedgerHash(std::uint32_t desiredSeq, Ledger::ref knownGoodLedger)
+    uint256 getLedgerHash(uint32 desiredSeq, Ledger::ref knownGoodLedger)
     {
         assert(desiredSeq < knownGoodLedger->getLedgerSeq());
 
@@ -1134,7 +1134,7 @@ public:
         // Not directly in the given ledger
         if (hash.isZero ())
         {
-            std::uint32_t seq = (desiredSeq + 255) % 256;
+            uint32 seq = (desiredSeq + 255) % 256;
             assert(seq < desiredSeq);
 
             uint256 i = knownGoodLedger->getLedgerHash(seq);
@@ -1191,8 +1191,8 @@ public:
 
             if (!getConfig().RUN_STANDALONE)
             { // don't pathfind with a ledger that's more than 60 seconds old
-                std::int64_t age = getApp().getOPs().getCloseTimeNC();
-                age -= static_cast<std::int64_t> (lastLedger->getCloseTimeNC());
+                int64 age = getApp().getOPs().getCloseTimeNC();
+                age -= static_cast<int64> (lastLedger->getCloseTimeNC());
                 if (age > 60)
                 {
                     WriteLog (lsDEBUG, LedgerMaster) << "Published ledger too old for updating paths";
@@ -1301,7 +1301,7 @@ public:
     /** Find or acquire the ledger with the specified index and the specified hash
         Return a pointer to that ledger if it is immediately available
     */
-    Ledger::pointer findAcquireLedger (std::uint32_t index, uint256 const& hash)
+    Ledger::pointer findAcquireLedger (uint32 index, uint256 const& hash)
     {
         Ledger::pointer ledger (getLedgerByHash (hash));
         if (!ledger)
@@ -1314,7 +1314,7 @@ public:
         return ledger;
     }
 
-    uint256 getHashBySeq (std::uint32_t index)
+    uint256 getHashBySeq (uint32 index)
     {
         uint256 hash = mLedgerHistory.getLedgerHash (index);
 
@@ -1324,7 +1324,7 @@ public:
         return Ledger::getHashByIndex (index);
     }
 
-    uint256 walkHashBySeq (std::uint32_t index)
+    uint256 walkHashBySeq (uint32 index)
     {
         uint256 ledgerHash;
         Ledger::pointer referenceLedger;
@@ -1342,7 +1342,7 @@ public:
         from the reference ledger or any prior ledger are not present
         in the node store.
     */
-    uint256 walkHashBySeq (std::uint32_t index, Ledger::ref referenceLedger)
+    uint256 walkHashBySeq (uint32 index, Ledger::ref referenceLedger)
     {
         uint256 ledgerHash;
         if (!referenceLedger || (referenceLedger->getLedgerSeq() < index))
@@ -1373,7 +1373,7 @@ public:
         return ledgerHash;
     }
 
-    Ledger::pointer getLedgerBySeq (std::uint32_t index)
+    Ledger::pointer getLedgerBySeq (uint32 index)
     {
         Ledger::pointer ret = mLedgerHistory.getLedgerBySeq (index);
         if (ret)
@@ -1416,7 +1416,7 @@ public:
         mLedgerCleaner->doClean (parameters);
     }
 
-    void setLedgerRangePresent (std::uint32_t minV, std::uint32_t maxV)
+    void setLedgerRangePresent (uint32 minV, uint32 maxV)
     {
         ScopedLockType sl (mCompleteLock);
         mCompleteLedgers.setRange (minV, maxV);
@@ -1459,7 +1459,7 @@ LedgerMaster::~LedgerMaster ()
 }
 
 bool LedgerMaster::shouldAcquire (
-    std::uint32_t currentLedger, std::uint32_t ledgerHistory, std::uint32_t candidateLedger)
+    uint32 currentLedger, uint32 ledgerHistory, uint32 candidateLedger)
 {
     bool ret;
 

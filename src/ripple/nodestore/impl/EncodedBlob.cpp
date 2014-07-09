@@ -31,19 +31,19 @@ EncodedBlob::prepare (NodeObject::Ptr const& object)
     m_data.ensureSize (m_size);
 
     // These sizes must be the same!
-    static_bassert (sizeof (std::uint32_t) == sizeof (object->getLedgerIndex ()));
+    static_bassert (sizeof (uint32) == sizeof (object->getLedgerIndex ()));
 
     {
-        std::uint32_t* buf = static_cast <std::uint32_t*> (m_data.getData ());
+        uint32* buf = static_cast <uint32*> (m_data.getData ());
 
         buf [0] = beast::ByteOrder::swapIfLittleEndian (object->getLedgerIndex ());
         buf [1] = beast::ByteOrder::swapIfLittleEndian (object->getLedgerIndex ());
     }
 
     {
-        unsigned char* buf = static_cast <unsigned char*> (m_data.getData ());
+        uint8* buf = static_cast <uint8*> (m_data.getData ());
 
-        buf [8] = static_cast <unsigned char> (object->getType ());
+        buf [8] = static_cast <uint8> (object->getType ());
 
         memcpy (&buf [9], object->getData ().data (), object->getData ().size ());
     }

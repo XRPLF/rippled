@@ -31,7 +31,7 @@ public:
     // Identifies messages and peers.
     // Always starts at 1 and increases incrementally.
     //
-    typedef std::uint64_t UniqueID;
+    typedef uint64 UniqueID;
 
     StateBase ()
         : m_random (Params::randomSeedValue)

@@ -20,7 +20,7 @@
 #ifndef RIPPLE_STRINGUTILITIES_H
 #define RIPPLE_STRINGUTILITIES_H
 
-#include <ripple/types/api/Blob.h>
+#include <ripple/basics/types/BasicTypes.h>
 #include <ripple/types/api/ByteOrder.h>
 #include <ripple/types/api/strHex.h>
 #include <beast/module/core/text/StringPairArray.h>
@@ -69,11 +69,11 @@ inline std::string strHex (Blob const& vucData)
     return strHex (vucData.begin (), vucData.size ());
 }
 
-inline std::string strHex (const std::uint64_t uiHost)
+inline std::string strHex (const uint64 uiHost)
 {
     uint64_t    uBig    = htobe64 (uiHost);
 
-    return strHex ((unsigned char*) &uBig, sizeof (uBig));
+    return strHex ((uint8*) &uBig, sizeof (uBig));
 }
 
 inline static std::string sqlEscape (const std::string& strSrc)
@@ -91,15 +91,15 @@ inline static std::string sqlEscape (Blob const& vecSrc)
 
     std::string j (size * 2 + 3, 0);
 
-    unsigned char* oPtr = reinterpret_cast<unsigned char*> (&*j.begin ());
-    const unsigned char* iPtr = &vecSrc[0];
+    uint8* oPtr = reinterpret_cast<uint8*> (&*j.begin ());
+    const uint8* iPtr = &vecSrc[0];
 
     *oPtr++ = 'X';
     *oPtr++ = '\'';
 
     for (int i = size; i != 0; --i)
     {
-        unsigned char c = *iPtr++;
+        uint8 c = *iPtr++;
         *oPtr++ = charHex (c >> 4);
         *oPtr++ = charHex (c & 15);
     }

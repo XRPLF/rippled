@@ -46,7 +46,7 @@ public:
     };
 
 public:
-    InboundLedger (uint256 const& hash, std::uint32_t seq, fcReason reason, clock_type& clock);
+    InboundLedger (uint256 const& hash, uint32 seq, fcReason reason, clock_type& clock);
 
     ~InboundLedger ();
 
@@ -74,7 +74,7 @@ public:
     {
         mAborted = true;
     }
-    std::uint32_t getSeq ()
+    uint32 getSeq ()
     {
         return mSeq;
     }
@@ -136,7 +136,7 @@ private:
     bool               mAborted;
     bool               mSignaled;
     bool               mByHash;
-    std::uint32_t      mSeq;
+    uint32      mSeq;
     fcReason           mReason;
 
     std::set <SHAMapNodeID> mRecentTXNodes;

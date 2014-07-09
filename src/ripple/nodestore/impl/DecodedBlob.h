@@ -53,7 +53,7 @@ private:
     void const* m_key;
     LedgerIndex m_ledgerIndex;
     NodeObjectType m_objectType;
-    unsigned char const* m_objectData;
+    uint8 const* m_objectData;
     int m_dataBytes;
 };
 

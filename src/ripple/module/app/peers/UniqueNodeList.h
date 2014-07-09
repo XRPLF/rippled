@@ -65,7 +65,7 @@ public:
     virtual bool nodeInCluster (const RippleAddress& naNodePublic, std::string& name) = 0;
     virtual bool nodeUpdate (const RippleAddress& naNodePublic, ClusterNodeStatus const& cnsStatus) = 0;
     virtual std::map<RippleAddress, ClusterNodeStatus> getClusterStatus () = 0;
-    virtual std::uint32_t getClusterFee () = 0;
+    virtual uint32 getClusterFee () = 0;
     virtual void addClusterStatus (Json::Value&) = 0;
 
     virtual void nodeBootstrap () = 0;

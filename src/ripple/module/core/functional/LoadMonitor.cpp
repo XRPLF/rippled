@@ -84,7 +84,7 @@ void LoadMonitor::update ()
     // do exponential decay
     /*
         David:
-        
+
         "Imagine if you add 10 to something every second. And you
          also reduce it by 1/4 every second. It will "idle" at 40,
          correponding to 10 counts per second."
@@ -188,13 +188,13 @@ void LoadMonitor::addSamples (int count, std::chrono::milliseconds latency)
         mLatencyMSPeak = latencyPeak;
 }
 
-void LoadMonitor::setTargetLatency (std::uint64_t avg, std::uint64_t pk)
+void LoadMonitor::setTargetLatency (uint64 avg, uint64 pk)
 {
     mTargetLatencyAvg  = avg;
     mTargetLatencyPk = pk;
 }
 
-bool LoadMonitor::isOverTarget (std::uint64_t avg, std::uint64_t peak)
+bool LoadMonitor::isOverTarget (uint64 avg, uint64 peak)
 {
     return (mTargetLatencyPk && (peak > mTargetLatencyPk)) ||
            (mTargetLatencyAvg && (avg > mTargetLatencyAvg));

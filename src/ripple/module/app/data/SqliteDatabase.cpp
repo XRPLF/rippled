@@ -233,7 +233,7 @@ char* SqliteDatabase::getStr (int colIndex, std::string& retStr)
     return const_cast<char*> (retStr.c_str ());
 }
 
-std::int32_t SqliteDatabase::getInt (int colIndex)
+int32 SqliteDatabase::getInt (int colIndex)
 {
     return (sqlite3_column_int (mCurrentStmt, colIndex));
 }
@@ -248,7 +248,7 @@ bool SqliteDatabase::getBool (int colIndex)
     return (sqlite3_column_int (mCurrentStmt, colIndex) ? true : false);
 }
 
-int SqliteDatabase::getBinary (int colIndex, unsigned char* buf, int maxSize)
+int SqliteDatabase::getBinary (int colIndex, uint8* buf, int maxSize)
 {
     const void* blob = sqlite3_column_blob (mCurrentStmt, colIndex);
     int size = sqlite3_column_bytes (mCurrentStmt, colIndex);
@@ -261,7 +261,7 @@ int SqliteDatabase::getBinary (int colIndex, unsigned char* buf, int maxSize)
 
 Blob SqliteDatabase::getBinary (int colIndex)
 {
-    const unsigned char*        blob    = reinterpret_cast<const unsigned char*> (sqlite3_column_blob (mCurrentStmt, colIndex));
+    const uint8*        blob    = reinterpret_cast<const uint8*> (sqlite3_column_blob (mCurrentStmt, colIndex));
     size_t                      iSize   = sqlite3_column_bytes (mCurrentStmt, colIndex);
     Blob    vucResult;
 
@@ -271,7 +271,7 @@ Blob SqliteDatabase::getBinary (int colIndex)
     return vucResult;
 }
 
-std::uint64_t SqliteDatabase::getBigInt (int colIndex)
+uint64 SqliteDatabase::getBigInt (int colIndex)
 {
     return (sqlite3_column_int64 (mCurrentStmt, colIndex));
 }
@@ -380,7 +380,7 @@ int SqliteStatement::bindStatic (int position, Blob const& value)
     return sqlite3_bind_blob (statement, position, &value.front (), value.size (), SQLITE_STATIC);
 }
 
-int SqliteStatement::bind (int position, std::uint32_t value)
+int SqliteStatement::bind (int position, uint32 value)
 {
     return sqlite3_bind_int64 (statement, position, static_cast<sqlite3_int64> (value));
 }
@@ -428,12 +428,12 @@ const char* SqliteStatement::peekString (int column)
     return reinterpret_cast<const char*> (sqlite3_column_text (statement, column));
 }
 
-std::uint32_t SqliteStatement::getUInt32 (int column)
+uint32 SqliteStatement::getUInt32 (int column)
 {
-    return static_cast<std::uint32_t> (sqlite3_column_int64 (statement, column));
+    return static_cast<uint32> (sqlite3_column_int64 (statement, column));
 }
 
-std::int64_t SqliteStatement::getInt64 (int column)
+int64 SqliteStatement::getInt64 (int column)
 {
     return sqlite3_column_int64 (statement, column);
 }

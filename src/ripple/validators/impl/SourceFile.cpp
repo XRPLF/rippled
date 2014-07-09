@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/basics/types/BasicTypes.h>
+
 namespace ripple {
 namespace Validators {
 
@@ -33,7 +35,7 @@ public:
     ~SourceFileImp ()
     {
     }
-    
+
     std::string to_string () const
     {
         std::stringstream ss;
@@ -51,14 +53,14 @@ public:
     {
         return m_file.getFullPathName ();
     }
-    
+
     void fetch (Results& results, beast::Journal journal)
     {
-        std::int64_t const fileSize (m_file.getSize ());
+        int64 const fileSize (m_file.getSize ());
 
         if (fileSize != 0)
         {
-            if (fileSize < std::numeric_limits<std::int32_t>::max())
+            if (fileSize < std::numeric_limits<int32>::max())
             {
                 beast::MemoryBlock buffer (fileSize);
                 beast::RandomAccessFile f;

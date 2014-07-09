@@ -41,7 +41,7 @@ public:
 
     // VFALCO TODO Should this be called findOrAdd ?
     //
-    InboundLedger::pointer findCreate (uint256 const& hash, std::uint32_t seq, InboundLedger::fcReason reason)
+    InboundLedger::pointer findCreate (uint256 const& hash, uint32 seq, InboundLedger::fcReason reason)
     {
         assert (hash.isNonZero ());
         InboundLedger::pointer ret;
@@ -293,7 +293,7 @@ public:
 
         for (auto const& it : acquires)
         {
-            std::uint32_t seq = it.second->getSeq();
+            uint32 seq = it.second->getSeq();
             if (seq > 1)
                 ret[beast::lexicalCastThrow <std::string>(seq)] = it.second->getJson(0);
             else

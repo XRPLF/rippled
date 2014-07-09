@@ -84,7 +84,7 @@ bool ConsensusTransSetSF::haveNode (const SHAMapNodeID& id, uint256 const& nodeH
 
 //------------------------------------------------------------------------------
 
-AccountStateSF::AccountStateSF (std::uint32_t ledgerSeq)
+AccountStateSF::AccountStateSF (uint32 ledgerSeq)
     : mLedgerSeq (ledgerSeq)
 {
 }
@@ -107,7 +107,7 @@ bool AccountStateSF::haveNode (SHAMapNodeID const& id,
 
 //------------------------------------------------------------------------------
 
-TransactionStateSF::TransactionStateSF (std::uint32_t ledgerSeq)
+TransactionStateSF::TransactionStateSF (uint32 ledgerSeq)
     : mLedgerSeq (ledgerSeq)
 {
 }

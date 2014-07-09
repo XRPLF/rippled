@@ -35,11 +35,11 @@ class STUInt8 : public SerializedType
 {
 public:
 
-    STUInt8 (unsigned char v = 0) : value (v)
+    STUInt8 (uint8 v = 0) : value (v)
     {
         ;
     }
-    STUInt8 (SField::ref n, unsigned char v = 0) : SerializedType (n), value (v)
+    STUInt8 (SField::ref n, uint8 v = 0) : SerializedType (n), value (v)
     {
         ;
     }
@@ -61,16 +61,16 @@ public:
         s.add8 (value);
     }
 
-    unsigned char getValue () const
+    uint8 getValue () const
     {
         return value;
     }
-    void setValue (unsigned char v)
+    void setValue (uint8 v)
     {
         value = v;
     }
 
-    operator unsigned char () const
+    operator uint8 () const
     {
         return value;
     }
@@ -81,7 +81,7 @@ public:
     }
 
 private:
-    unsigned char value;
+    uint8 value;
 
     STUInt8* duplicate () const
     {
@@ -96,11 +96,11 @@ class STUInt16 : public SerializedType
 {
 public:
 
-    STUInt16 (std::uint16_t v = 0) : value (v)
+    STUInt16 (uint16 v = 0) : value (v)
     {
         ;
     }
-    STUInt16 (SField::ref n, std::uint16_t v = 0) : SerializedType (n), value (v)
+    STUInt16 (SField::ref n, uint16 v = 0) : SerializedType (n), value (v)
     {
         ;
     }
@@ -122,16 +122,16 @@ public:
         s.add16 (value);
     }
 
-    std::uint16_t getValue () const
+    uint16 getValue () const
     {
         return value;
     }
-    void setValue (std::uint16_t v)
+    void setValue (uint16 v)
     {
         value = v;
     }
 
-    operator std::uint16_t () const
+    operator uint16 () const
     {
         return value;
     }
@@ -142,7 +142,7 @@ public:
     }
 
 private:
-    std::uint16_t value;
+    uint16 value;
 
     STUInt16* duplicate () const
     {
@@ -157,11 +157,11 @@ class STUInt32 : public SerializedType
 {
 public:
 
-    STUInt32 (std::uint32_t v = 0) : value (v)
+    STUInt32 (uint32 v = 0) : value (v)
     {
         ;
     }
-    STUInt32 (SField::ref n, std::uint32_t v = 0) : SerializedType (n), value (v)
+    STUInt32 (SField::ref n, uint32 v = 0) : SerializedType (n), value (v)
     {
         ;
     }
@@ -183,16 +183,16 @@ public:
         s.add32 (value);
     }
 
-    std::uint32_t getValue () const
+    uint32 getValue () const
     {
         return value;
     }
-    void setValue (std::uint32_t v)
+    void setValue (uint32 v)
     {
         value = v;
     }
 
-    operator std::uint32_t () const
+    operator uint32 () const
     {
         return value;
     }
@@ -203,7 +203,7 @@ public:
     }
 
 private:
-    std::uint32_t value;
+    uint32 value;
 
     STUInt32* duplicate () const
     {
@@ -217,11 +217,11 @@ private:
 class STUInt64 : public SerializedType
 {
 public:
-    STUInt64 (std::uint64_t v = 0) : value (v)
+    STUInt64 (uint64 v = 0) : value (v)
     {
         ;
     }
-    STUInt64 (SField::ref n, std::uint64_t v = 0) : SerializedType (n), value (v)
+    STUInt64 (SField::ref n, uint64 v = 0) : SerializedType (n), value (v)
     {
         ;
     }
@@ -243,16 +243,16 @@ public:
         s.add64 (value);
     }
 
-    std::uint64_t getValue () const
+    uint64 getValue () const
     {
         return value;
     }
-    void setValue (std::uint64_t v)
+    void setValue (uint64 v)
     {
         value = v;
     }
 
-    operator std::uint64_t () const
+    operator uint64 () const
     {
         return value;
     }
@@ -263,7 +263,7 @@ public:
     }
 
 private:
-    std::uint64_t value;
+    uint64 value;
 
     STUInt64* duplicate () const
     {

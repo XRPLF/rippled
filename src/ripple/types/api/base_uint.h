@@ -25,15 +25,12 @@
 #ifndef RIPPLE_TYPES_BASE_UINT_H_INCLUDED
 #define RIPPLE_TYPES_BASE_UINT_H_INCLUDED
 
-#include <ripple/types/api/Blob.h>
+#include <ripple/basics/types/BasicTypes.h>
 #include <ripple/types/api/strHex.h>
 #include <ripple/types/api/ByteOrder.h>
-
 #include <beast/container/hardened_hash.h>
 #include <beast/utility/Zero.h>
-
 #include <boost/functional/hash.hpp>
-
 #include <functional>
 
 using beast::zero;
@@ -71,7 +68,7 @@ public:
 
     typedef std::size_t             size_type;
     typedef std::ptrdiff_t          difference_type;
-    typedef unsigned char           value_type;
+    typedef uint8           value_type;
     typedef value_type*             pointer;
     typedef value_type&             reference;
     typedef value_type const*       const_pointer;
@@ -116,7 +113,7 @@ private:
     /** Construct from a raw pointer.
         The buffer pointed to by `data` must be at least Bits/8 bytes.
 
-        @note the structure is used to disambiguate this from the std::uint64_t
+        @note the structure is used to disambiguate this from the uint64
               constructor: something like base_uint(0) is ambiguous.
     */
     // NIKB TODO Remove the need for this constructor.
@@ -140,7 +137,7 @@ public:
             *this = beast::zero;
     }
 
-    explicit base_uint (std::uint64_t b)
+    explicit base_uint (uint64 b)
     {
         *this = b;
     }
@@ -201,12 +198,12 @@ public:
         return *this;
     }
 
-    base_uint& operator= (std::uint64_t uHost)
+    base_uint& operator= (uint64 uHost)
     {
         *this = beast::zero;
 
         // Put in least significant bits.
-        ((std::uint64_t*) end ())[-1] = htobe64 (uHost);
+        ((uint64*) end ())[-1] = htobe64 (uHost);
 
         return *this;
     }
@@ -262,7 +259,7 @@ public:
     {
         for (int i = WIDTH - 1; i >= 0; --i)
         {
-            std::uint32_t prev = pn[i];
+            uint32 prev = pn[i];
             pn[i] = htobe32 (be32toh (pn[i]) - 1);
 
             if (prev != 0)
@@ -283,11 +280,11 @@ public:
 
     base_uint& operator+= (const base_uint& b)
     {
-        std::uint64_t carry = 0;
+        uint64 carry = 0;
 
         for (int i = WIDTH; i--;)
         {
-            std::uint64_t n = carry + be32toh (pn[i]) + be32toh (b.pn[i]);
+            uint64 n = carry + be32toh (pn[i]) + be32toh (b.pn[i]);
 
             pn[i] = htobe32 (n & 0xffffffff);
             carry = n >> 32;
@@ -306,7 +303,7 @@ public:
     bool SetHexExact (const char* psz)
     {
         // must be precisely the correct number of hex digits
-        unsigned char* pOut  = begin ();
+        uint8* pOut  = begin ();
 
         for (int i = 0; i < sizeof (pn); ++i)
         {
@@ -339,8 +336,8 @@ public:
         if (!bStrict && psz[0] == '0' && tolower (psz[1]) == 'x')
             psz += 2;
 
-        const unsigned char* pEnd   = reinterpret_cast<const unsigned char*> (psz);
-        const unsigned char* pBegin = pEnd;
+        const uint8* pEnd   = reinterpret_cast<const uint8*> (psz);
+        const uint8* pBegin = pEnd;
 
         // Find end.
         while (charUnHex(*pEnd) != -1)
@@ -350,7 +347,7 @@ public:
         if ((unsigned int) (pEnd - pBegin) > 2 * size ())
             pBegin = pEnd - 2 * size ();
 
-        unsigned char* pOut = end () - ((pEnd - pBegin + 1) / 2);
+        uint8* pOut = end () - ((pEnd - pBegin + 1) / 2);
 
         *this = beast::zero;
 
@@ -465,13 +462,13 @@ inline bool operator!= (
 
 //------------------------------------------------------------------------------
 template <std::size_t Bits, class Tag>
-inline bool operator== (base_uint<Bits, Tag> const& a, std::uint64_t b)
+inline bool operator== (base_uint<Bits, Tag> const& a, uint64 b)
 {
     return a == base_uint<Bits, Tag>(b);
 }
 
 template <std::size_t Bits, class Tag>
-inline bool operator!= (base_uint<Bits, Tag> const& a, std::uint64_t b)
+inline bool operator!= (base_uint<Bits, Tag> const& a, uint64 b)
 {
     return !(a == b);
 }
@@ -527,7 +524,7 @@ namespace boost
 template <std::size_t Bits, class Tag>
 struct hash<ripple::base_uint<Bits, Tag>>
 {
-    using argument_type = ripple::base_uint<Bits, Tag>; 
+    using argument_type = ripple::base_uint<Bits, Tag>;
 
     std::size_t
     operator()(argument_type const& u) const

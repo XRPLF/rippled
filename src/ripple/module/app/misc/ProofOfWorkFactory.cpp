@@ -157,7 +157,7 @@ public:
 
         ScopedLockType sl (mLock);
 
-        std::string s = boost::str (boost::format (f) % to_string (challenge) % 
+        std::string s = boost::str (boost::format (f) % to_string (challenge) %
             to_string (mTarget) % mIterations % now);
         std::string c = to_string (mSecret) + s;
         s += "-" + to_string (Serializer::getSHA512Half (c));
@@ -183,7 +183,7 @@ public:
             return powCORRUPT;
         }
 
-        std::string v = to_string (mSecret) + fields[0] + "-" + 
+        std::string v = to_string (mSecret) + fields[0] + "-" +
                         fields[1] + "-" + fields[2] + "-" + fields[3];
 
         if (fields[4] != to_string (Serializer::getSHA512Half (v)))
@@ -201,7 +201,7 @@ public:
         // Broken with lexicalCast<> changes
         t = beast::lexicalCast <time_t> (fields[3]);
     #else
-        t = static_cast <time_t> (beast::lexicalCast <std::uint64_t> (fields [3]));
+        t = static_cast <time_t> (beast::lexicalCast <uint64> (fields [3]));
     #endif
 
         time_t now = time (nullptr);
@@ -322,7 +322,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    std::uint64_t getDifficulty ()
+    uint64 getDifficulty ()
     {
         return ProofOfWork::getDifficulty (mTarget, mIterations);
     }
@@ -372,7 +372,7 @@ public:
         ProofOfWork pow = gen.getProof ();
 
         beast::String s;
-        
+
         s << "solve difficulty " << beast::String (pow.getDifficulty ());
 
         uint256 solution = pow.solve (16777216);

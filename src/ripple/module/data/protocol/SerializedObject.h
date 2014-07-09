@@ -156,13 +156,13 @@ public:
         return mData.size ();
     }
 
-    bool setFlag (std::uint32_t);
-    bool clearFlag (std::uint32_t);
-    bool isFlag(std::uint32_t) const;
-    std::uint32_t getFlags () const;
+    bool setFlag (uint32);
+    bool clearFlag (uint32);
+    bool isFlag(uint32) const;
+    uint32 getFlags () const;
 
-    uint256 getHash (std::uint32_t prefix) const;
-    uint256 getSigningHash (std::uint32_t prefix) const;
+    uint256 getHash (uint32 prefix) const;
+    uint256 getSigningHash (uint32 prefix) const;
 
     const SerializedType& peekAtIndex (int offset) const
     {
@@ -192,10 +192,10 @@ public:
     // these throw if the field type doesn't match, or return default values if the
     // field is optional but not present
     std::string getFieldString (SField::ref field) const;
-    unsigned char getFieldU8 (SField::ref field) const;
-    std::uint16_t getFieldU16 (SField::ref field) const;
-    std::uint32_t getFieldU32 (SField::ref field) const;
-    std::uint64_t getFieldU64 (SField::ref field) const;
+    uint8 getFieldU8 (SField::ref field) const;
+    uint16 getFieldU16 (SField::ref field) const;
+    uint32 getFieldU32 (SField::ref field) const;
+    uint64 getFieldU64 (SField::ref field) const;
     uint128 getFieldH128 (SField::ref field) const;
 
     uint160 getFieldH160 (SField::ref field) const;
@@ -209,10 +209,10 @@ public:
     const STVector256& getFieldV256 (SField::ref field) const;
     const STArray& getFieldArray (SField::ref field) const;
 
-    void setFieldU8 (SField::ref field, unsigned char);
-    void setFieldU16 (SField::ref field, std::uint16_t);
-    void setFieldU32 (SField::ref field, std::uint32_t);
-    void setFieldU64 (SField::ref field, std::uint64_t);
+    void setFieldU8 (SField::ref field, uint8);
+    void setFieldU16 (SField::ref field, uint16);
+    void setFieldU32 (SField::ref field, uint32);
+    void setFieldU64 (SField::ref field, uint64);
     void setFieldH128 (SField::ref field, const uint128&);
     void setFieldH256 (SField::ref field, uint256 const& );
     void setFieldVL (SField::ref field, Blob const&);

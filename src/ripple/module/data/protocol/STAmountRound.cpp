@@ -20,7 +20,7 @@
 namespace ripple {
 
 void STAmount::canonicalizeRound (
-    bool isNative, std::uint64_t& value, int& offset, bool roundUp)
+    bool isNative, uint64& value, int& offset, bool roundUp)
 {
     if (!roundUp) // canonicalize already rounds down
         return;
@@ -80,8 +80,8 @@ STAmount STAmount::addRound (const STAmount& v1, const STAmount& v2, bool roundU
         return STAmount (v1.getFName (), v1.getSNValue () + v2.getSNValue ());
 
     int ov1 = v1.mOffset, ov2 = v2.mOffset;
-    auto vv1 = static_cast<std::int64_t> (v1.mValue);
-    auto vv2 = static_cast<std::int64_t> (v2.mValue);
+    auto vv1 = static_cast<int64> (v1.mValue);
+    auto vv2 = static_cast<int64> (v2.mValue);
 
     if (v1.mIsNegative)
         vv1 = -vv1;
@@ -119,19 +119,19 @@ STAmount STAmount::addRound (const STAmount& v1, const STAmount& v2, bool roundU
         ++ov2;
     }
 
-    std::int64_t fv = vv1 + vv2;
+    int64 fv = vv1 + vv2;
 
     if ((fv >= -10) && (fv <= 10))
         return STAmount (v1.getFName (), v1.mIssue);
     else if (fv >= 0)
     {
-        std::uint64_t v = static_cast<std::uint64_t> (fv);
+        uint64 v = static_cast<uint64> (fv);
         canonicalizeRound (false, v, ov1, roundUp);
         return STAmount (v1.getFName (), v1.mIssue, v, ov1, false);
     }
     else
     {
-        std::uint64_t v = static_cast<std::uint64_t> (-fv);
+        uint64 v = static_cast<uint64> (-fv);
         canonicalizeRound (false, v, ov1, !roundUp);
         return STAmount (v1.getFName (), v1.mIssue, v, ov1, true);
     }
@@ -152,8 +152,8 @@ STAmount STAmount::subRound (const STAmount& v1, const STAmount& v2, bool roundU
         return STAmount (v1.getFName (), v1.getSNValue () - v2.getSNValue ());
 
     int ov1 = v1.mOffset, ov2 = v2.mOffset;
-    auto vv1 = static_cast<std::int64_t> (v1.mValue);
-    auto vv2 = static_cast<std::int64_t> (v2.mValue);
+    auto vv1 = static_cast<int64> (v1.mValue);
+    auto vv2 = static_cast<int64> (v2.mValue);
 
     if (v1.mIsNegative)
         vv1 = -vv1;
@@ -191,20 +191,20 @@ STAmount STAmount::subRound (const STAmount& v1, const STAmount& v2, bool roundU
         ++ov2;
     }
 
-    std::int64_t fv = vv1 + vv2;
+    int64 fv = vv1 + vv2;
 
     if ((fv >= -10) && (fv <= 10))
         return STAmount (v1.getFName (), v1.mIssue);
 
     if (fv >= 0)
     {
-        std::uint64_t v = static_cast<std::uint64_t> (fv);
+        uint64 v = static_cast<uint64> (fv);
         canonicalizeRound (false, v, ov1, roundUp);
         return STAmount (v1.getFName (), v1.mIssue, v, ov1, false);
     }
     else
     {
-        std::uint64_t v = static_cast<std::uint64_t> (-fv);
+        uint64 v = static_cast<uint64> (-fv);
         canonicalizeRound (false, v, ov1, !roundUp);
         return STAmount (v1.getFName (), v1.mIssue, v, ov1, true);
     }
@@ -218,9 +218,9 @@ STAmount STAmount::mulRound (
 
     if (v1.mIsNative && v2.mIsNative && isXRP (issue))
     {
-        std::uint64_t minV = (v1.getSNValue () < v2.getSNValue ()) ?
+        uint64 minV = (v1.getSNValue () < v2.getSNValue ()) ?
                 v1.getSNValue () : v2.getSNValue ();
-        std::uint64_t maxV = (v1.getSNValue () < v2.getSNValue ()) ?
+        uint64 maxV = (v1.getSNValue () < v2.getSNValue ()) ?
                 v2.getSNValue () : v1.getSNValue ();
 
         if (minV > 3000000000ull) // sqrt(cMaxNative)
@@ -232,7 +232,7 @@ STAmount STAmount::mulRound (
         return STAmount (v1.getFName (), minV * maxV);
     }
 
-    std::uint64_t value1 = v1.mValue, value2 = v2.mValue;
+    uint64 value1 = v1.mValue, value2 = v2.mValue;
     int offset1 = v1.mOffset, offset2 = v2.mOffset;
 
     if (v1.mIsNative)
@@ -264,13 +264,13 @@ STAmount STAmount::mulRound (
     if (resultNegative != roundUp) // rounding down is automatic when we divide
         BN_add_word64 (&v, tenTo14m1);
 
-    if  (BN_div_word64 (&v, tenTo14) == ((std::uint64_t) - 1))
+    if  (BN_div_word64 (&v, tenTo14) == ((uint64) - 1))
         throw std::runtime_error ("internal bn error");
 
     // 10^16 <= product <= 10^18
     assert (BN_num_bytes (&v) <= 64);
 
-    std::uint64_t amount = v.getuint64 ();
+    uint64 amount = v.getuint64 ();
     int offset = offset1 + offset2 + 14;
     canonicalizeRound (
         isXRP (issue), amount, offset, resultNegative != roundUp);
@@ -287,7 +287,7 @@ STAmount STAmount::divRound (
     if (num == zero)
         return {issue};
 
-    std::uint64_t numVal = num.mValue, denVal = den.mValue;
+    uint64 numVal = num.mValue, denVal = den.mValue;
     int numOffset = num.mOffset, denOffset = den.mOffset;
 
     if (num.mIsNative)
@@ -315,13 +315,13 @@ STAmount STAmount::divRound (
     if (resultNegative != roundUp) // Rounding down is automatic when we divide
         BN_add_word64 (&v, denVal - 1);
 
-    if (BN_div_word64 (&v, denVal) == ((std::uint64_t) - 1))
+    if (BN_div_word64 (&v, denVal) == ((uint64) - 1))
         throw std::runtime_error ("internal bn error");
 
     // 10^16 <= quotient <= 10^18
     assert (BN_num_bytes (&v) <= 64);
 
-    std::uint64_t amount = v.getuint64 ();
+    uint64 amount = v.getuint64 ();
     int offset = numOffset - denOffset - 17;
     canonicalizeRound (
         isXRP (issue), amount, offset, resultNegative != roundUp);

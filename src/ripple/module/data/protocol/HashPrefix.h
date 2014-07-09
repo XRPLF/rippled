@@ -40,7 +40,7 @@ namespace ripple {
 class HashPrefix
 {
 private:
-    std::uint32_t m_prefix;
+    uint32 m_prefix;
 
 public:
     HashPrefix (char a, char b, char c)
@@ -53,7 +53,7 @@ public:
     }
 
     /** Returns the hash prefix associated with this object */
-    operator std::uint32_t () const
+    operator uint32 () const
     {
         return m_prefix;
     }

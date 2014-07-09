@@ -21,7 +21,7 @@ namespace ripple {
 
 // VFALCO TODO rename class to TransactionMeta
 
-TransactionMetaSet::TransactionMetaSet (uint256 const& txid, std::uint32_t ledger, Blob const& vec) :
+TransactionMetaSet::TransactionMetaSet (uint256 const& txid, uint32 ledger, Blob const& vec) :
     mTransactionID (txid), mLedger (ledger), mNodes (sfAffectedNodes, 32)
 {
     Serializer s (vec);
@@ -52,7 +52,7 @@ bool TransactionMetaSet::isNodeAffected (uint256 const& node) const
 }
 
 void TransactionMetaSet::setAffectedNode (uint256 const& node, SField::ref type,
-                                          std::uint16_t nodeType)
+                                          uint16 nodeType)
 {
     // make sure the node exists and force its type
     BOOST_FOREACH (STObject & it, mNodes)
@@ -176,7 +176,7 @@ const STObject& TransactionMetaSet::peekAffectedNode (uint256 const& node) const
     throw std::runtime_error ("Affected node not found");
 }
 
-void TransactionMetaSet::init (uint256 const& id, std::uint32_t ledger)
+void TransactionMetaSet::init (uint256 const& id, uint32 ledger)
 {
     mTransactionID = id;
     mLedger = ledger;
@@ -190,7 +190,7 @@ void TransactionMetaSet::swap (TransactionMetaSet& s)
     mNodes.swap (s.mNodes);
 }
 
-bool TransactionMetaSet::thread (STObject& node, uint256 const& prevTxID, std::uint32_t prevLgrID)
+bool TransactionMetaSet::thread (STObject& node, uint256 const& prevTxID, uint32 prevLgrID)
 {
     if (node.getFieldIndex (sfPreviousTxnID) == -1)
     {
@@ -222,7 +222,7 @@ STObject TransactionMetaSet::getAsObject () const
     return metaData;
 }
 
-void TransactionMetaSet::addRaw (Serializer& s, TER result, std::uint32_t index)
+void TransactionMetaSet::addRaw (Serializer& s, TER result, uint32 index)
 {
     mResult = static_cast<int> (result);
     mIndex = index;

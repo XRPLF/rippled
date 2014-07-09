@@ -45,7 +45,7 @@ CBase58Data::~CBase58Data ()
 
 bool CBase58Data::SetString (
     std::string const& str,
-    unsigned char version, 
+    uint8 version,
     Base58::Alphabet const& alphabet)
 {
     Blob vchTemp;

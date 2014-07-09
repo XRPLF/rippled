@@ -31,10 +31,10 @@ public:
 
     Transaction::pointer            fetch (uint256 const& , bool checkDisk);
     SerializedTransaction::pointer  fetch (SHAMapItem::ref item, SHAMapTreeNode:: TNType type,
-                                           bool checkDisk, std::uint32_t uCommitLedger);
+                                           bool checkDisk, uint32 uCommitLedger);
 
     // return value: true = we had the transaction already
-    bool inLedger (uint256 const& hash, std::uint32_t ledger);
+    bool inLedger (uint256 const& hash, uint32 ledger);
     bool canonicalize (Transaction::pointer* pTransaction);
     void sweep (void);
 

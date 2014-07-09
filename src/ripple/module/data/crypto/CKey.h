@@ -234,7 +234,7 @@ public:
 
     bool SetPubKey (const void* ptr, size_t len)
     {
-        const unsigned char* pbegin = static_cast<const unsigned char*> (ptr);
+        const uint8* pbegin = static_cast<const uint8*> (ptr);
 
         if (!o2i_ECPublicKey (&pkey, &pbegin, len))
             return false;
@@ -263,7 +263,7 @@ public:
             throw key_error ("CKey::GetPubKey() : i2o_ECPublicKey failed");
 
         Blob vchPubKey (33, 0);
-        unsigned char* pbegin = &vchPubKey[0];
+        uint8* pbegin = &vchPubKey[0];
 
         if (i2o_ECPublicKey (pkey, &pbegin) != nSize)
             throw key_error ("CKey::GetPubKey() : i2o_ECPublicKey returned unexpected size");
@@ -274,10 +274,10 @@ public:
 
     bool Sign (uint256 const& hash, Blob& vchSig)
     {
-        unsigned char pchSig[128];
+        uint8 pchSig[128];
         unsigned int nSize = sizeof(pchSig)/sizeof(pchSig[0]) - 1;
 
-        if (!ECDSA_sign (0, (unsigned char*)hash.begin (), hash.size (), pchSig, &nSize, pkey))
+        if (!ECDSA_sign (0, (uint8*)hash.begin (), hash.size (), pchSig, &nSize, pkey))
             return false;
 
         size_t len = nSize;
@@ -291,7 +291,7 @@ public:
     bool Verify (uint256 const& hash, const void* sig, size_t sigLen) const
     {
         // -1 = error, 0 = bad sig, 1 = good
-        if (ECDSA_verify (0, hash.begin (), hash.size (), (const unsigned char*) sig, sigLen, pkey) != 1)
+        if (ECDSA_verify (0, hash.begin (), hash.size (), (const uint8*) sig, sigLen, pkey) != 1)
             return false;
 
         return true;

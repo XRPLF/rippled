@@ -27,7 +27,7 @@ namespace ripple {
 #define DIR_NODE_MAX        32
 
 void LedgerEntrySet::init (Ledger::ref ledger, uint256 const& transactionID,
-                           std::uint32_t ledgerID, TransactionEngineParams params)
+                           uint32 ledgerID, TransactionEngineParams params)
 {
     mEntries.clear ();
     mLedger = ledger;
@@ -410,7 +410,7 @@ bool LedgerEntrySet::threadTx (SLE::ref threadTo, Ledger::ref ledger,
     // node = the node that was modified/deleted/created
     // threadTo = the node that needs to know
     uint256 prevTxID;
-    std::uint32_t prevLgrID;
+    uint32 prevLgrID;
 
     if (!threadTo->thread (mSet.getTxID (), mSet.getLgrSeq (), prevTxID, prevLgrID))
         return false;
@@ -447,7 +447,7 @@ bool LedgerEntrySet::threadOwners (SLE::ref node, Ledger::ref ledger,
         return false;
 }
 
-void LedgerEntrySet::calcRawMeta (Serializer& s, TER result, std::uint32_t index)
+void LedgerEntrySet::calcRawMeta (Serializer& s, TER result, uint32 index)
 {
     // calculate the raw meta data and return it. This must be called before the set is committed
 
@@ -494,7 +494,7 @@ void LedgerEntrySet::calcRawMeta (Serializer& s, TER result, std::uint32_t index
         if ((type == &sfModifiedNode) && (*curNode == *origNode))
             continue;
 
-        std::uint16_t nodeType = curNode
+        uint16 nodeType = curNode
             ? curNode->getFieldU16 (sfLedgerEntryType)
             : origNode->getFieldU16 (sfLedgerEntryType);
 
@@ -586,9 +586,9 @@ void LedgerEntrySet::calcRawMeta (Serializer& s, TER result, std::uint32_t index
     WriteLog (lsTRACE, LedgerEntrySet) << "Metadata:" << mSet.getJson (0);
 }
 
-TER LedgerEntrySet::dirCount (uint256 const& uRootIndex, std::uint32_t& uCount)
+TER LedgerEntrySet::dirCount (uint256 const& uRootIndex, uint32& uCount)
 {
-    std::uint64_t  uNodeDir    = 0;
+    uint64  uNodeDir    = 0;
 
     uCount  = 0;
 
@@ -618,7 +618,7 @@ TER LedgerEntrySet::dirCount (uint256 const& uRootIndex, std::uint32_t& uCount)
 
 bool LedgerEntrySet::dirIsEmpty (uint256 const& uRootIndex)
 {
-    std::uint64_t  uNodeDir = 0;
+    uint64  uNodeDir = 0;
 
     SLE::pointer sleNode = entryCache (ltDIR_NODE, Ledger::getDirNodeIndex (uRootIndex, uNodeDir));
 
@@ -638,7 +638,7 @@ bool LedgerEntrySet::dirIsEmpty (uint256 const& uRootIndex)
 // Only append. This allow for things that watch append only structure to just monitor from the last node on ward.
 // Within a node with no deletions order of elements is sequential.  Otherwise, order of elements is random.
 TER LedgerEntrySet::dirAdd (
-    std::uint64_t&                          uNodeDir,
+    uint64&                          uNodeDir,
     uint256 const&                          uRootIndex,
     uint256 const&                          uLedgerIndex,
     std::function<void (SLE::ref, bool)>    fDescriber)
@@ -730,13 +730,13 @@ TER LedgerEntrySet::dirAdd (
 // Ledger must be in a state for this to work.
 TER LedgerEntrySet::dirDelete (
     const bool                      bKeepRoot,      // --> True, if we never completely clean up, after we overflow the root node.
-    const std::uint64_t&            uNodeDir,       // --> Node containing entry.
+    const uint64&            uNodeDir,       // --> Node containing entry.
     uint256 const&                  uRootIndex,     // --> The index of the base of the directory.  Nodes are based off of this.
     uint256 const&                  uLedgerIndex,   // --> Value to remove from directory.
     const bool                      bStable,        // --> True, not to change relative order of entries.
     const bool                      bSoft)          // --> True, uNodeDir is not hard and fast (pass uNodeDir=0).
 {
-    std::uint64_t       uNodeCur    = uNodeDir;
+    uint64       uNodeCur    = uNodeDir;
     SLE::pointer        sleNode     = entryCache (ltDIR_NODE, Ledger::getDirNodeIndex (uRootIndex, uNodeCur));
 
     if (!sleNode)
@@ -815,8 +815,8 @@ TER LedgerEntrySet::dirDelete (
     if (vuiIndexes.empty ())
     {
         // May be able to delete nodes.
-        std::uint64_t       uNodePrevious   = sleNode->getFieldU64 (sfIndexPrevious);
-        std::uint64_t       uNodeNext       = sleNode->getFieldU64 (sfIndexNext);
+        uint64       uNodePrevious   = sleNode->getFieldU64 (sfIndexPrevious);
+        uint64       uNodeNext       = sleNode->getFieldU64 (sfIndexNext);
 
         if (!uNodeCur)
         {
@@ -955,7 +955,7 @@ bool LedgerEntrySet::dirNext (
 
     if (uDirEntry >= vuiIndexes.size ())
     {
-        std::uint64_t         uNodeNext   = sleNode->getFieldU64 (sfIndexNext);
+        uint64         uNodeNext   = sleNode->getFieldU64 (sfIndexNext);
 
         if (!uNodeNext)
         {
@@ -1040,9 +1040,9 @@ void LedgerEntrySet::ownerCountAdjust (
                               ? sleAccountRoot
                               : sleHold;
 
-    const std::uint32_t uOwnerCount = sleRoot->getFieldU32 (sfOwnerCount);
+    const uint32 uOwnerCount = sleRoot->getFieldU32 (sfOwnerCount);
 
-    const std::uint32_t uNew        = iAmount + int (uOwnerCount) > 0
+    const uint32 uNew        = iAmount + int (uOwnerCount) > 0
                                       ? uOwnerCount + iAmount
                                       : 0;
 
@@ -1061,9 +1061,9 @@ TER LedgerEntrySet::offerDelete (SLE::pointer sleOffer)
 
     // Detect legacy directories.
     bool bOwnerNode = sleOffer->isFieldPresent (sfOwnerNode);
-    std::uint64_t uOwnerNode = sleOffer->getFieldU64 (sfOwnerNode);
+    uint64 uOwnerNode = sleOffer->getFieldU64 (sfOwnerNode);
     uint256 uDirectory = sleOffer->getFieldH256 (sfBookDirectory);
-    std::uint64_t uBookNode  = sleOffer->getFieldU64 (sfBookNode);
+    uint64 uBookNode  = sleOffer->getFieldU64 (sfBookNode);
 
     TER terResult  = dirDelete (
         false, uOwnerNode,
@@ -1153,12 +1153,12 @@ STAmount LedgerEntrySet::rippleLimit (
 
 }
 
-std::uint32_t LedgerEntrySet::rippleTransferRate (Account const& issuer)
+uint32 LedgerEntrySet::rippleTransferRate (Account const& issuer)
 {
     SLE::pointer sleAccount (entryCache (
         ltACCOUNT_ROOT, Ledger::getAccountRootIndex (issuer)));
 
-    std::uint32_t uQuality =
+    uint32 uQuality =
         sleAccount && sleAccount->isFieldPresent (sfTransferRate)
             ? sleAccount->getFieldU32 (sfTransferRate)
             : QUALITY_ONE;
@@ -1171,7 +1171,7 @@ std::uint32_t LedgerEntrySet::rippleTransferRate (Account const& issuer)
     return uQuality;
 }
 
-std::uint32_t
+uint32
 LedgerEntrySet::rippleTransferRate (Account const& uSenderID,
                                     Account const& uReceiverID,
                                     Account const& issuer)
@@ -1184,12 +1184,12 @@ LedgerEntrySet::rippleTransferRate (Account const& uSenderID,
 }
 
 // XXX Might not need this, might store in nodes on calc reverse.
-std::uint32_t
+uint32
 LedgerEntrySet::rippleQualityIn (
     Account const& uToAccountID, Account const& uFromAccountID,
     Currency const& uCurrencyID, SField::ref sfLow, SField::ref sfHigh)
 {
-    std::uint32_t uQuality (QUALITY_ONE);
+    uint32 uQuality (QUALITY_ONE);
 
     if (uToAccountID == uFromAccountID)
         return uQuality;
@@ -1268,7 +1268,7 @@ STAmount LedgerEntrySet::accountHolds (
     {
         SLE::pointer sleAccount = entryCache (ltACCOUNT_ROOT,
             Ledger::getAccountRootIndex (account));
-        std::uint64_t uReserve = mLedger->getReserve (
+        uint64 uReserve = mLedger->getReserve (
             sleAccount->getFieldU32 (sfOwnerCount));
 
         STAmount saBalance   = sleAccount->getFieldAmount (sfBalance);
@@ -1345,13 +1345,13 @@ STAmount LedgerEntrySet::rippleTransferFee (
 {
     if (uSenderID != issuer && uReceiverID != issuer)
     {
-        std::uint32_t uTransitRate = rippleTransferRate (issuer);
+        uint32 uTransitRate = rippleTransferRate (issuer);
 
         if (QUALITY_ONE != uTransitRate)
         {
             // NIKB use STAmount::saFromRate
             STAmount saTransitRate (
-                noIssue(), static_cast<std::uint64_t> (uTransitRate), -9);
+                noIssue(), static_cast<uint64> (uTransitRate), -9);
 
             STAmount saTransferTotal = STAmount::multiply (
                 saAmount, saTransitRate, saAmount.issue ());
@@ -1379,16 +1379,16 @@ TER LedgerEntrySet::trustCreate (
                                         // Issuer should be noAccount()
     const STAmount& saLimit,            // --> limit for account being set.
                                         // Issuer should be the account being set.
-    const std::uint32_t uQualityIn,
-    const std::uint32_t uQualityOut)
+    const uint32 uQualityIn,
+    const uint32 uQualityOut)
 {
     auto const& uLowAccountID   = !bSrcHigh ? uSrcAccountID : uDstAccountID;
     auto const& uHighAccountID  =  bSrcHigh ? uSrcAccountID : uDstAccountID;
 
     SLE::pointer sleRippleState  = entryCreate (ltRIPPLE_STATE, uIndex);
 
-    std::uint64_t   uLowNode;
-    std::uint64_t   uHighNode;
+    uint64   uLowNode;
+    uint64   uHighNode;
 
     TER terResult = dirAdd (
         uLowNode,
@@ -1433,7 +1433,7 @@ TER LedgerEntrySet::trustCreate (
             sleRippleState->setFieldU32 (
                 bSetHigh ? sfHighQualityOut : sfLowQualityOut, uQualityOut);
 
-        std::uint32_t  uFlags  = bSetHigh ? lsfHighReserve : lsfLowReserve;
+        uint32  uFlags  = bSetHigh ? lsfHighReserve : lsfLowReserve;
 
         if (bAuth)
         {
@@ -1463,8 +1463,8 @@ TER LedgerEntrySet::trustDelete (
     // Detect legacy dirs.
     bool        bLowNode    = sleRippleState->isFieldPresent (sfLowNode);
     bool        bHighNode   = sleRippleState->isFieldPresent (sfHighNode);
-    std::uint64_t uLowNode    = sleRippleState->getFieldU64 (sfLowNode);
-    std::uint64_t uHighNode   = sleRippleState->getFieldU64 (sfHighNode);
+    uint64 uLowNode    = sleRippleState->getFieldU64 (sfLowNode);
+    uint64 uHighNode   = sleRippleState->getFieldU64 (sfHighNode);
     TER         terResult;
 
     WriteLog (lsTRACE, LedgerEntrySet)
@@ -1565,7 +1565,7 @@ TER LedgerEntrySet::rippleCredit (
             " amount=" << saAmount.getFullText () <<
             " after=" << saBalance.getFullText ();
 
-        std::uint32_t const uFlags (sleRippleState->getFieldU32 (sfFlags));
+        uint32 const uFlags (sleRippleState->getFieldU32 (sfFlags));
         bool bDelete = false;
 
         // YYY Could skip this if rippling in reverse.

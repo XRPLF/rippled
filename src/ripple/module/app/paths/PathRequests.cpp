@@ -26,8 +26,8 @@ RippleLineCache::pointer PathRequests::getLineCache (Ledger::pointer& ledger, bo
 {
     ScopedLockType sl (mLock);
 
-    std::uint32_t lineSeq = mLineCache ? mLineCache->getLedger()->getLedgerSeq() : 0;
-    std::uint32_t lgrSeq = ledger->getLedgerSeq();
+    uint32 lineSeq = mLineCache ? mLineCache->getLedger()->getLedgerSeq() : 0;
+    uint32 lgrSeq = ledger->getLedgerSeq();
 
     if ( (lineSeq == 0) ||                                 // no ledger
          (authoritative && (lgrSeq > lineSeq)) ||          // newer authoritative ledger

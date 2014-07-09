@@ -76,7 +76,7 @@ Json::Value lookupLedger (
     if (!jsonHash.isString() || !ledgerHash.SetHex (jsonHash.asString ()))
         return make_error(rpcINVALID_PARAMS, "ledgerHashMalformed");
 
-    std::int32_t ledgerIndex = LEDGER_CURRENT;
+    int32 ledgerIndex = LEDGER_CURRENT;
 
     // We only try to parse a ledger index if we have not already
     // determined that we have a ledger hash.

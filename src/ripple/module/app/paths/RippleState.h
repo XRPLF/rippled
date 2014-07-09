@@ -93,15 +93,15 @@ public:
         return !mViewLowest ? mLowLimit : mHighLimit;
     }
 
-    std::uint32_t getQualityIn () const
+    uint32 getQualityIn () const
     {
-        return ((std::uint32_t) (mViewLowest ? mLowQualityIn : mHighQualityIn));
-        return ((std::uint32_t) (mViewLowest ? mLowQualityIn : mHighQualityIn));
+        return ((uint32) (mViewLowest ? mLowQualityIn : mHighQualityIn));
+        return ((uint32) (mViewLowest ? mLowQualityIn : mHighQualityIn));
     }
 
-    std::uint32_t getQualityOut () const
+    uint32 getQualityOut () const
     {
-        return ((std::uint32_t) (mViewLowest ? mLowQualityOut : mHighQualityOut));
+        return ((uint32) (mViewLowest ? mLowQualityOut : mHighQualityOut));
     }
 
     SerializedLedgerEntry::pointer getSLE ()
@@ -130,7 +130,7 @@ private:
     bool                            mValid;
     bool                            mViewLowest;
 
-    std::uint32_t                   mFlags;
+    uint32                   mFlags;
 
     STAmount                        mLowLimit;
     STAmount                        mHighLimit;
@@ -138,10 +138,10 @@ private:
     Account                         mLowID;
     Account                         mHighID;
 
-    std::uint64_t                   mLowQualityIn;
-    std::uint64_t                   mLowQualityOut;
-    std::uint64_t                   mHighQualityIn;
-    std::uint64_t                   mHighQualityOut;
+    uint64                   mLowQualityIn;
+    uint64                   mLowQualityOut;
+    uint64                   mHighQualityIn;
+    uint64                   mHighQualityOut;
 
     STAmount                        mBalance;
 };

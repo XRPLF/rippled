@@ -87,7 +87,7 @@ void Transactor::calculateFee ()
         calculateBaseFee (), mParams & tapADMIN));
 }
 
-std::uint64_t Transactor::calculateBaseFee ()
+uint64 Transactor::calculateBaseFee ()
 {
     return getConfig ().FEE_DEFAULT;
 }
@@ -162,8 +162,8 @@ TER Transactor::checkSig ()
 
 TER Transactor::checkSeq ()
 {
-    std::uint32_t t_seq = mTxn.getSequence ();
-    std::uint32_t a_seq = mTxnAccount->getFieldU32 (sfSequence);
+    uint32 t_seq = mTxn.getSequence ();
+    uint32 a_seq = mTxnAccount->getFieldU32 (sfSequence);
 
     m_journal.trace << "Aseq=" << a_seq << ", Tseq=" << t_seq;
 
@@ -231,7 +231,7 @@ TER Transactor::preCheck ()
     // Consistency: really signed.
     if (!mTxn.isKnownGood ())
     {
-        if (mTxn.isKnownBad () || 
+        if (mTxn.isKnownBad () ||
             (!(mParams & tapNO_CHECK_SIGN) && !mTxn.checkSign (mSigningPubKey)))
         {
             mTxn.setBad ();

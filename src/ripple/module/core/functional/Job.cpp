@@ -25,7 +25,7 @@ Job::Job ()
 {
 }
 
-Job::Job (JobType type, std::uint64_t index)
+Job::Job (JobType type, uint64 index)
     : mType (type)
     , mJobIndex (index)
 {
@@ -33,7 +33,7 @@ Job::Job (JobType type, std::uint64_t index)
 
 Job::Job (JobType type,
           std::string const& name,
-          std::uint64_t index,
+          uint64 index,
           LoadMonitor& lm,
           std::function <void (Job&)> const& job,
           CancelCallback cancelCallback)

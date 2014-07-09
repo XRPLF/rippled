@@ -36,12 +36,12 @@ namespace core {
 class AmountType
 {
 private:
-    std::uint64_t m_mantissa;
+    uint64 m_mantissa;
     int m_exponent;
     bool m_negative;
     bool m_integral;
 
-    AmountType (std::uint64_t mantissa,
+    AmountType (uint64 mantissa,
         int exponent, bool negative, bool integral)
         : m_mantissa (mantissa)
         , m_exponent (exponent)

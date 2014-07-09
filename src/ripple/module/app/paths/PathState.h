@@ -75,8 +75,8 @@ class PathState : public CountedObject <PathState>
     void setStatus(TER status) { terStatus = status; }
     TER status() const { return terStatus; }
 
-    std::uint64_t quality() const { return uQuality; }
-    void setQuality (std::uint64_t q) { uQuality = q; }
+    uint64 quality() const { return uQuality; }
+    void setQuality (uint64 q) { uQuality = q; }
 
     bool allLiquidityConsumed() const { return allLiquidityConsumed_; }
     void consumeAllLiquidity () { allLiquidityConsumed_ = true; }
@@ -112,7 +112,7 @@ class PathState : public CountedObject <PathState>
     LedgerEntrySet              lesEntries;
 
     int                         mIndex;    // Index/rank amoung siblings.
-    std::uint64_t               uQuality;  // 0 = no quality/liquity left.
+    uint64               uQuality;  // 0 = no quality/liquity left.
     const STAmount&             saInReq;   // --> Max amount to spend by sender.
     STAmount                    saInAct;   // --> Amount spent by sender so far.
     STAmount                    saInPass;  // <-- Amount spent by sender.

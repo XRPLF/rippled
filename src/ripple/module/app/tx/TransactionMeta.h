@@ -31,22 +31,22 @@ public:
 public:
     TransactionMetaSet ()
         : mLedger (0)
-        , mIndex (static_cast<std::uint32_t> (-1))
+        , mIndex (static_cast<uint32> (-1))
         , mResult (255)
     {
     }
 
-    TransactionMetaSet (uint256 const& txID, std::uint32_t ledger, std::uint32_t index)
+    TransactionMetaSet (uint256 const& txID, uint32 ledger, uint32 index)
         : mTransactionID (txID)
         , mLedger (ledger)
-        , mIndex (static_cast<std::uint32_t> (-1))
+        , mIndex (static_cast<uint32> (-1))
         , mResult (255)
     {
     }
 
-    TransactionMetaSet (uint256 const& txID, std::uint32_t ledger, Blob const&);
+    TransactionMetaSet (uint256 const& txID, uint32 ledger, Blob const&);
 
-    void init (uint256 const& transactionID, std::uint32_t ledger);
+    void init (uint256 const& transactionID, uint32 ledger);
     void clear ()
     {
         mNodes.clear ();
@@ -57,7 +57,7 @@ public:
     {
         return mTransactionID;
     }
-    std::uint32_t getLgrSeq ()
+    uint32 getLgrSeq ()
     {
         return mLedger;
     }
@@ -69,13 +69,13 @@ public:
     {
         return static_cast<TER> (mResult);
     }
-    std::uint32_t getIndex () const
+    uint32 getIndex () const
     {
         return mIndex;
     }
 
     bool isNodeAffected (uint256 const& ) const;
-    void setAffectedNode (uint256 const& , SField::ref type, std::uint16_t nodeType);
+    void setAffectedNode (uint256 const& , SField::ref type, uint16 nodeType);
     STObject& getAffectedNode (SLE::ref node, SField::ref type); // create if needed
     STObject& getAffectedNode (uint256 const& );
     const STObject& peekAffectedNode (uint256 const& ) const;
@@ -86,7 +86,7 @@ public:
     {
         return getAsObject ().getJson (p);
     }
-    void addRaw (Serializer&, TER, std::uint32_t index);
+    void addRaw (Serializer&, TER, uint32 index);
 
     STObject getAsObject () const;
     STArray& getNodes ()
@@ -110,12 +110,12 @@ public:
          return mDelivered;
     }
 
-    static bool thread (STObject& node, uint256 const& prevTxID, std::uint32_t prevLgrID);
+    static bool thread (STObject& node, uint256 const& prevTxID, uint32 prevLgrID);
 
 private:
     uint256       mTransactionID;
-    std::uint32_t mLedger;
-    std::uint32_t mIndex;
+    uint32 mLedger;
+    uint32 mIndex;
     int           mResult;
 
     boost::optional <STAmount> mDelivered;

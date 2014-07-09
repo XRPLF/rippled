@@ -63,9 +63,9 @@ Transaction::Transaction (
     TxType ttKind,
     const RippleAddress&    naPublicKey,
     const RippleAddress&    naSourceAccount,
-    std::uint32_t           uSeq,
+    uint32           uSeq,
     const STAmount&         saFee,
-    std::uint32_t           uSourceTag) :
+    uint32           uSourceTag) :
     mAccountFrom (naSourceAccount), mFromPubKey (naPublicKey), mInLedger (0), mStatus (NEW), mResult (temUNCERTAIN)
 {
     assert (mFromPubKey.isValid ());
@@ -127,7 +127,7 @@ bool Transaction::checkSign () const
     return mTransaction->checkSign (mFromPubKey);
 }
 
-void Transaction::setStatus (TransStatus ts, std::uint32_t lseq)
+void Transaction::setStatus (TransStatus ts, uint32 lseq)
 {
     mStatus     = ts;
     mInLedger   = lseq;
@@ -137,7 +137,7 @@ Transaction::pointer Transaction::transactionFromSQL (Database* db, bool bValida
 {
     Serializer rawTxn;
     std::string status;
-    std::uint32_t inLedger;
+    uint32 inLedger;
 
     int txSize = 2048;
     rawTxn.resize (txSize);
@@ -199,7 +199,7 @@ Transaction::pointer Transaction::transactionFromSQL (const std::string& sql)
 {
     Serializer rawTxn;
     std::string status;
-    std::uint32_t inLedger;
+    uint32 inLedger;
 
     int txSize = 2048;
     rawTxn.resize (txSize);
@@ -274,7 +274,7 @@ Transaction::pointer Transaction::load (uint256 const& id)
     return transactionFromSQL (sql);
 }
 
-bool Transaction::convertToTransactions (std::uint32_t firstLedgerSeq, std::uint32_t secondLedgerSeq,
+bool Transaction::convertToTransactions (uint32 firstLedgerSeq, uint32 secondLedgerSeq,
         bool checkFirstTransactions, bool checkSecondTransactions, const SHAMap::Delta& inMap,
         std::map<uint256, std::pair<Transaction::pointer, Transaction::pointer> >& outMap)
 {
@@ -350,7 +350,7 @@ Json::Value Transaction::getJson (int options, bool binary) const
 
 bool Transaction::isHexTxID (const std::string& txid)
 {
-    if (txid.size () != 64) 
+    if (txid.size () != 64)
         return false;
 
     auto const ret = std::find_if_not (txid.begin (), txid.end (),

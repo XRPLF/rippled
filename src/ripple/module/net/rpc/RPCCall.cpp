@@ -49,7 +49,7 @@ private:
         }
         else
         {
-            jvRequest["ledger_index"]   = beast::lexicalCast <std::uint32_t> (strLedger);
+            jvRequest["ledger_index"]   = beast::lexicalCast <uint32> (strLedger);
         }
 
         return true;
@@ -172,8 +172,8 @@ private:
         }
         else
         {
-            std::int64_t   uLedgerMin  = jvParams[1u].asInt ();
-            std::int64_t   uLedgerMax  = jvParams[2u].asInt ();
+            int64   uLedgerMin  = jvParams[1u].asInt ();
+            int64   uLedgerMax  = jvParams[2u].asInt ();
 
             if (uLedgerMax != -1 && uLedgerMax < uLedgerMin)
             {
@@ -240,8 +240,8 @@ private:
         }
         else
         {
-            std::int64_t   uLedgerMin  = jvParams[1u].asInt ();
-            std::int64_t   uLedgerMax  = jvParams[2u].asInt ();
+            int64   uLedgerMin  = jvParams[1u].asInt ();
+            int64   uLedgerMax  = jvParams[2u].asInt ();
 
             if (uLedgerMax != -1 && uLedgerMax < uLedgerMin)
             {
@@ -414,7 +414,7 @@ private:
         }
         else
         {
-            jvRequest["ledger_index"]   = beast::lexicalCast <std::uint32_t> (strLedger);
+            jvRequest["ledger_index"]   = beast::lexicalCast <uint32> (strLedger);
         }
 
         return jvRequest;

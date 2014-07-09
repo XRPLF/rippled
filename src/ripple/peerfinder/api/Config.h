@@ -51,11 +51,11 @@ struct Config
     bool autoConnect;
 
     /** The listening port number. */
-    std::uint16_t listeningPort;
+    uint16 listeningPort;
 
     /** The set of features we advertise. */
     std::string features;
-    
+
     //--------------------------------------------------------------------------
 
     /** Create a configuration with default values. */

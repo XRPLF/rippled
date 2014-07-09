@@ -85,7 +85,7 @@ EC_KEY* CKey::GenerateRootDeterministicKey (const uint128& seed)
         s.add32 (seq++);
         uint256 root = s.getSHA512Half ();
         s.secureErase ();
-        privKey = BN_bin2bn ((const unsigned char*) &root, sizeof (root), privKey);
+        privKey = BN_bin2bn ((const uint8*) &root, sizeof (root), privKey);
 
         if (privKey == nullptr)
         {
@@ -202,7 +202,7 @@ static BIGNUM* makeHash (const RippleAddress& pubGen, int seq, BIGNUM* order)
         s.add32 (subSeq++);
         uint256 root = s.getSHA512Half ();
         s.secureErase ();
-        ret = BN_bin2bn ((const unsigned char*) &root, sizeof (root), ret);
+        ret = BN_bin2bn ((const uint8*) &root, sizeof (root), ret);
 
         if (!ret) return nullptr;
     }

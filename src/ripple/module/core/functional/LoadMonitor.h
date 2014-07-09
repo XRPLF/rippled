@@ -41,18 +41,18 @@ public:
 
     void addSamples (int count, std::chrono::milliseconds latency);
 
-    void setTargetLatency (std::uint64_t avg, std::uint64_t pk);
+    void setTargetLatency (uint64 avg, uint64 pk);
 
-    bool isOverTarget (std::uint64_t avg, std::uint64_t peak);
+    bool isOverTarget (uint64 avg, uint64 peak);
 
     // VFALCO TODO make this return the values in a struct.
     struct Stats
     {
         Stats();
 
-        std::uint64_t count;
-        std::uint64_t latencyAvg;
-        std::uint64_t latencyPeak;
+        uint64 count;
+        uint64 latencyAvg;
+        uint64 latencyPeak;
         bool isOverloaded;
     };
 
@@ -69,12 +69,12 @@ private:
     typedef std::lock_guard <LockType> ScopedLockType;
     LockType mLock;
 
-    std::uint64_t mCounts;
+    uint64 mCounts;
     int           mLatencyEvents;
-    std::uint64_t mLatencyMSAvg;
-    std::uint64_t mLatencyMSPeak;
-    std::uint64_t mTargetLatencyAvg;
-    std::uint64_t mTargetLatencyPk;
+    uint64 mLatencyMSAvg;
+    uint64 mLatencyMSPeak;
+    uint64 mTargetLatencyAvg;
+    uint64 mTargetLatencyPk;
     int           mLastUpdate;
 };
 

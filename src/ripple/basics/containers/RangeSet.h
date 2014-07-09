@@ -20,6 +20,7 @@
 #ifndef RIPPLE_RANGESET_H_INCLUDED
 #define RIPPLE_RANGESET_H_INCLUDED
 
+#include <ripple/basics/types/BasicTypes.h>
 #include <beast/utility/noexcept.h>
 #include <cstdint>
 #include <map>
@@ -32,28 +33,28 @@ namespace ripple {
 class RangeSet
 {
 public:
-    static const std::uint32_t absent = static_cast <std::uint32_t> (-1);
+    static const uint32 absent = static_cast <uint32> (-1);
 
 public:
     RangeSet () { }
 
-    bool hasValue (std::uint32_t) const;
+    bool hasValue (uint32) const;
 
-    std::uint32_t getFirst () const;
-    std::uint32_t getNext (std::uint32_t) const;
-    std::uint32_t getLast () const;
-    std::uint32_t getPrev (std::uint32_t) const;
+    uint32 getFirst () const;
+    uint32 getNext (uint32) const;
+    uint32 getLast () const;
+    uint32 getPrev (uint32) const;
 
     // largest number not in the set that is less than the given number
-    std::uint32_t prevMissing (std::uint32_t) const;
+    uint32 prevMissing (uint32) const;
 
     // Add an item to the set
-    void setValue (std::uint32_t);
+    void setValue (uint32);
 
     // Add the closed interval to the set
-    void setRange (std::uint32_t, std::uint32_t);
+    void setRange (uint32, uint32);
 
-    void clearValue (std::uint32_t);
+    void clearValue (uint32);
 
     std::string toString () const;
 
@@ -67,14 +68,14 @@ private:
     void simplify ();
 
 private:
-    typedef std::map <std::uint32_t, std::uint32_t> Map;
+    typedef std::map <uint32, uint32> Map;
 
     typedef Map::const_iterator            const_iterator;
     typedef Map::const_reverse_iterator    const_reverse_iterator;
     typedef Map::value_type                value_type;
     typedef Map::iterator                  iterator;
 
-    static bool contains (value_type const& it, std::uint32_t v)
+    static bool contains (value_type const& it, uint32 v)
     {
         return (it.first <= v) && (it.second >= v);
     }

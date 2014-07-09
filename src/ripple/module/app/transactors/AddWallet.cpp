@@ -21,7 +21,7 @@ namespace ripple {
 
 TER AddWallet::doApply ()
 {
-    std::uint32_t const uTxFlags = mTxn.getFlags ();
+    uint32 const uTxFlags = mTxn.getFlags ();
 
     if (uTxFlags & tfUniversalMask)
     {
@@ -65,8 +65,8 @@ TER AddWallet::doApply ()
     STAmount saDstAmount = mTxn.getFieldAmount (sfAmount);
     STAmount saPaid = mTxn.getTransactionFee ();
     STAmount const saSrcBalance = mTxnAccount->getFieldAmount (sfBalance);
-    std::uint32_t const uOwnerCount = mTxnAccount->getFieldU32 (sfOwnerCount);
-    std::uint64_t const uReserve = mEngine->getLedger ()->getReserve (uOwnerCount);
+    uint32 const uOwnerCount = mTxnAccount->getFieldU32 (sfOwnerCount);
+    uint64 const uReserve = mEngine->getLedger ()->getReserve (uOwnerCount);
 
 
     // Make sure have enough reserve to send. Allow final spend to use reserve

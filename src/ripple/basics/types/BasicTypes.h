@@ -24,6 +24,21 @@
 
 namespace ripple {
 
+typedef unsigned char uint8;
+typedef std::uint16_t uint16;
+typedef std::uint32_t uint32;
+typedef std::uint64_t uint64;
+
+typedef char int8;
+typedef std::int16_t int16;
+typedef std::int32_t int32;
+typedef std::int64_t int64;
+
+/** Storage for linear binary data.
+    Blocks of binary data appear often in various idioms and structures.
+*/
+typedef std::vector <uint8> Blob;
+
 /** Synchronization primitives.
     This lets us switch between tracked and untracked mutexes.
 */

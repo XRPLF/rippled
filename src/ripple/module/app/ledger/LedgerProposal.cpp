@@ -19,8 +19,8 @@
 
 namespace ripple {
 
-LedgerProposal::LedgerProposal (uint256 const& pLgr, std::uint32_t seq,
-                                uint256 const& tx, std::uint32_t closeTime,
+LedgerProposal::LedgerProposal (uint256 const& pLgr, uint32 seq,
+                                uint256 const& tx, uint32 closeTime,
                                 const RippleAddress& naPeerPublic, uint256 const& suppression) :
     mPreviousLedger (pLgr), mCurrentHash (tx), mSuppression (suppression), mCloseTime (closeTime),
     mProposeSeq (seq), mPublicKey (naPeerPublic)
@@ -36,7 +36,7 @@ LedgerProposal::LedgerProposal (uint256 const& pLgr, std::uint32_t seq,
 
 LedgerProposal::LedgerProposal (const RippleAddress& naPub, const RippleAddress& naPriv,
                                 uint256 const& prevLgr, uint256 const& position,
-                                std::uint32_t closeTime) :
+                                uint32 closeTime) :
     mPreviousLedger (prevLgr), mCurrentHash (position), mCloseTime (closeTime), mProposeSeq (0),
     mPublicKey (naPub), mPrivateKey (naPriv)
 {
@@ -45,7 +45,7 @@ LedgerProposal::LedgerProposal (const RippleAddress& naPub, const RippleAddress&
 }
 
 LedgerProposal::LedgerProposal (uint256 const& prevLgr, uint256 const& position,
-                                std::uint32_t closeTime) :
+                                uint32 closeTime) :
     mPreviousLedger (prevLgr), mCurrentHash (position), mCloseTime (closeTime), mProposeSeq (0)
 {
     mTime       = boost::posix_time::second_clock::universal_time ();
@@ -68,8 +68,8 @@ uint256 LedgerProposal::getSigningHash () const
 uint256 LedgerProposal::computeSuppressionID (
     uint256 const& proposeHash,
     uint256 const& previousLedger,
-    std::uint32_t proposeSeq,
-    std::uint32_t closeTime,
+    uint32 proposeSeq,
+    uint32 closeTime,
     Blob const& pubKey,
     Blob const& signature)
 {
@@ -90,7 +90,7 @@ bool LedgerProposal::checkSign (const std::string& signature, uint256 const& sig
     return mPublicKey.verifyNodePublic (signingHash, signature, ECDSA::not_strict);
 }
 
-bool LedgerProposal::changePosition (uint256 const& newPosition, std::uint32_t closeTime)
+bool LedgerProposal::changePosition (uint256 const& newPosition, uint32 closeTime)
 {
     if (mProposeSeq == seqLeave)
         return false;

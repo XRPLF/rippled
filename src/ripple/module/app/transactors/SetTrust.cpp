@@ -33,8 +33,8 @@ TER SetTrust::doApply ()
     // true, iff current is high account.
     bool const bHigh = mTxnAccountID > uDstAccountID;
 
-    std::uint32_t uQualityIn (bQualityIn ? mTxn.getFieldU32 (sfQualityIn) : 0);
-    std::uint32_t uQualityOut (bQualityOut ? mTxn.getFieldU32 (sfQualityOut) : 0);
+    uint32 uQualityIn (bQualityIn ? mTxn.getFieldU32 (sfQualityIn) : 0);
+    uint32 uQualityOut (bQualityOut ? mTxn.getFieldU32 (sfQualityOut) : 0);
 
     if (!saLimitAmount.isLegalNet ())
         return temBAD_AMOUNT;
@@ -45,7 +45,7 @@ TER SetTrust::doApply ()
     if (bQualityOut && QUALITY_ONE == uQualityOut)
         uQualityOut = 0;
 
-    std::uint32_t const uTxFlags = mTxn.getFlags ();
+    uint32 const uTxFlags = mTxn.getFlags ();
 
     if (uTxFlags & tfTrustSetMask)
     {
@@ -122,9 +122,9 @@ TER SetTrust::doApply ()
         return tecNO_DST;
     }
 
-    std::uint32_t const uOwnerCount (mTxnAccount->getFieldU32 (sfOwnerCount));
+    uint32 const uOwnerCount (mTxnAccount->getFieldU32 (sfOwnerCount));
     // The reserve required to create the line.
-    std::uint64_t const uReserveCreate =
+    uint64 const uReserveCreate =
         (uOwnerCount < 2)
             ? 0
             : mEngine->getLedger ()->getReserve (uOwnerCount + 1);
@@ -141,10 +141,10 @@ TER SetTrust::doApply ()
         STAmount        saLowLimit;
         STAmount        saHighBalance;
         STAmount        saHighLimit;
-        std::uint32_t   uLowQualityIn;
-        std::uint32_t   uLowQualityOut;
-        std::uint32_t   uHighQualityIn;
-        std::uint32_t   uHighQualityOut;
+        uint32   uLowQualityIn;
+        uint32   uLowQualityOut;
+        uint32   uHighQualityIn;
+        uint32   uHighQualityOut;
         auto const& uLowAccountID   = !bHigh ? mTxnAccountID : uDstAccountID;
         auto const& uHighAccountID  =  bHigh ? mTxnAccountID : uDstAccountID;
         SLE::ref        sleLowAccount   = !bHigh ? mTxnAccount : sleDst;
@@ -230,8 +230,8 @@ TER SetTrust::doApply ()
             uHighQualityOut =  bHigh ? 0 : sleRippleState->getFieldU32 (sfHighQualityOut);
         }
 
-        std::uint32_t const uFlagsIn (sleRippleState->getFieldU32 (sfFlags));
-        std::uint32_t uFlagsOut (uFlagsIn);
+        uint32 const uFlagsIn (sleRippleState->getFieldU32 (sfFlags));
+        uint32 uFlagsOut (uFlagsIn);
 
         if (bSetNoRipple && !bClearNoRipple && (bHigh ? saHighBalance : saLowBalance) >= zero)
         {

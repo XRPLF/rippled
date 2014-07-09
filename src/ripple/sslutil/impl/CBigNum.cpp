@@ -86,7 +86,7 @@ CBigNum::CBigNum (long long n)
     BN_init (this);
     setint64 (n);
 }
-CBigNum::CBigNum (unsigned char n)
+CBigNum::CBigNum (uint8 n)
 {
     BN_init (this);
     setulong (n);
@@ -118,7 +118,7 @@ CBigNum::CBigNum (Blob const& vch)
     setvch (&vch.front(), &vch.back()+1);
 }
 
-CBigNum::CBigNum (unsigned char const* begin, unsigned char const* end)
+CBigNum::CBigNum (uint8 const* begin, uint8 const* end)
 {
     BN_init (this);
     setvch (begin, end);
@@ -144,13 +144,13 @@ int CBigNum::getint () const
         return (n > INT_MAX ? INT_MIN : - (int)n);
 }
 
-void CBigNum::setint64 (std::int64_t n)
+void CBigNum::setint64 (int64 n)
 {
-    unsigned char pch[sizeof (n) + 6];
-    unsigned char* p = pch + 4;
+    uint8 pch[sizeof (n) + 6];
+    uint8* p = pch + 4;
     bool fNegative = false;
 
-    if (n < (std::int64_t)0)
+    if (n < (int64)0)
     {
         n = -n;
         fNegative = true;
@@ -160,7 +160,7 @@ void CBigNum::setint64 (std::int64_t n)
 
     for (int i = 0; i < 8; i++)
     {
-        unsigned char c = (n >> 56) & 0xff;
+        uint8 c = (n >> 56) & 0xff;
         n <<= 8;
 
         if (fLeadingZeroes)
@@ -187,41 +187,41 @@ void CBigNum::setint64 (std::int64_t n)
     BN_mpi2bn (pch, p - pch, this);
 }
 
-std::uint64_t CBigNum::getuint64 () const
+uint64 CBigNum::getuint64 () const
 {
 #if (ULONG_MAX > UINT_MAX)
-    return static_cast<std::uint64_t> (getulong ());
+    return static_cast<uint64> (getulong ());
 #else
     int len = BN_num_bytes (this);
 
     if (len > 8)
         throw std::runtime_error ("BN getuint64 overflow");
 
-    unsigned char buf[8];
+    uint8 buf[8];
     memset (buf, 0, sizeof (buf));
     BN_bn2bin (this, buf + 8 - len);
     return
-        static_cast<std::uint64_t> (buf[0]) << 56 | static_cast<std::uint64_t> (buf[1]) << 48 |
-        static_cast<std::uint64_t> (buf[2]) << 40 | static_cast<std::uint64_t> (buf[3]) << 32 |
-        static_cast<std::uint64_t> (buf[4]) << 24 | static_cast<std::uint64_t> (buf[5]) << 16 |
-        static_cast<std::uint64_t> (buf[6]) << 8 | static_cast<std::uint64_t> (buf[7]);
+        static_cast<uint64> (buf[0]) << 56 | static_cast<uint64> (buf[1]) << 48 |
+        static_cast<uint64> (buf[2]) << 40 | static_cast<uint64> (buf[3]) << 32 |
+        static_cast<uint64> (buf[4]) << 24 | static_cast<uint64> (buf[5]) << 16 |
+        static_cast<uint64> (buf[6]) << 8 | static_cast<uint64> (buf[7]);
 #endif
 }
 
-void CBigNum::setuint64 (std::uint64_t n)
+void CBigNum::setuint64 (uint64 n)
 {
 #if (ULONG_MAX > UINT_MAX)
     setulong (static_cast<unsigned long> (n));
 #else
-    unsigned char buf[8];
-    buf[0] = static_cast<unsigned char> ((n >> 56) & 0xff);
-    buf[1] = static_cast<unsigned char> ((n >> 48) & 0xff);
-    buf[2] = static_cast<unsigned char> ((n >> 40) & 0xff);
-    buf[3] = static_cast<unsigned char> ((n >> 32) & 0xff);
-    buf[4] = static_cast<unsigned char> ((n >> 24) & 0xff);
-    buf[5] = static_cast<unsigned char> ((n >> 16) & 0xff);
-    buf[6] = static_cast<unsigned char> ((n >> 8) & 0xff);
-    buf[7] = static_cast<unsigned char> ((n) & 0xff);
+    uint8 buf[8];
+    buf[0] = static_cast<uint8> ((n >> 56) & 0xff);
+    buf[1] = static_cast<uint8> ((n >> 48) & 0xff);
+    buf[2] = static_cast<uint8> ((n >> 40) & 0xff);
+    buf[3] = static_cast<uint8> ((n >> 32) & 0xff);
+    buf[4] = static_cast<uint8> ((n >> 24) & 0xff);
+    buf[5] = static_cast<uint8> ((n >> 16) & 0xff);
+    buf[6] = static_cast<uint8> ((n >> 8) & 0xff);
+    buf[7] = static_cast<uint8> ((n) & 0xff);
     BN_bin2bn (buf, 8, this);
 #endif
 }
@@ -243,7 +243,7 @@ uint256 CBigNum::getuint256 ()
     return ret;
 }
 
-void CBigNum::setvch (unsigned char const* begin, unsigned char const* end)
+void CBigNum::setvch (uint8 const* begin, uint8 const* end)
 {
     std::size_t const size (std::distance (begin, end));
     Blob vch2 (size + 4);
@@ -619,52 +619,52 @@ bool operator>  (const CBigNum& a, const CBigNum& b)
 
 #if (ULONG_MAX > UINT_MAX)
 
-int BN_add_word64 (BIGNUM* bn, std::uint64_t word)
+int BN_add_word64 (BIGNUM* bn, uint64 word)
 {
     return BN_add_word (bn, word);
 }
 
-int BN_sub_word64 (BIGNUM* bn, std::uint64_t word)
+int BN_sub_word64 (BIGNUM* bn, uint64 word)
 {
     return BN_sub_word (bn, word);
 }
 
-int BN_mul_word64 (BIGNUM* bn, std::uint64_t word)
+int BN_mul_word64 (BIGNUM* bn, uint64 word)
 {
     return BN_mul_word (bn, word);
 }
 
-std::uint64_t BN_div_word64 (BIGNUM* bn, std::uint64_t word)
+uint64 BN_div_word64 (BIGNUM* bn, uint64 word)
 {
     return BN_div_word (bn, word);
 }
 
 #else
 
-int BN_add_word64 (BIGNUM* a, std::uint64_t w)
+int BN_add_word64 (BIGNUM* a, uint64 w)
 {
     CBigNum bn (w);
     return BN_add (a, &bn, a);
 }
 
-int BN_sub_word64 (BIGNUM* a, std::uint64_t w)
+int BN_sub_word64 (BIGNUM* a, uint64 w)
 {
     CBigNum bn (w);
     return BN_sub (a, &bn, a);
 }
 
-int BN_mul_word64 (BIGNUM* a, std::uint64_t w)
+int BN_mul_word64 (BIGNUM* a, uint64 w)
 {
     CBigNum bn (w);
     CAutoBN_CTX ctx;
     return BN_mul (a, &bn, a, ctx);
 }
 
-std::uint64_t BN_div_word64 (BIGNUM* a, std::uint64_t w)
+uint64 BN_div_word64 (BIGNUM* a, uint64 w)
 {
     CBigNum bn (w);
     CAutoBN_CTX ctx;
-    return (BN_div (a, nullptr, a, &bn, ctx) == 1) ? 0 : ((std::uint64_t) - 1);
+    return (BN_div (a, nullptr, a, &bn, ctx) == 1) ? 0 : ((uint64) - 1);
 }
 
 #endif

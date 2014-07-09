@@ -242,10 +242,10 @@ void Config::setup (const std::string& strConf, bool bQuiet)
 
     // Create the new unified database
     m_moduleDbPath = getDatabaseDir();
- 
+
     // This code is temporarily disabled, and modules will fall back to using
     // per-module databases (e.g. "peerfinder.sqlite") under the module db path
-    //    
+    //
     //if (m_moduleDbPath.isDirectory ())
     //    m_moduleDbPath = m_moduleDbPath.getChildFile("rippled.sqlite");
 }
@@ -352,7 +352,7 @@ void Config::load ()
             if (smtTmp)
             {
                 std::vector<beast::IP::Endpoint> parsedAddresses;
-                //parseAddresses<std::vector<beast::IP::Endpoint>, std::vector<std::string>::const_iterator> 
+                //parseAddresses<std::vector<beast::IP::Endpoint>, std::vector<std::string>::const_iterator>
                 //    (parsedAddresses, (*smtTmp).cbegin(), (*smtTmp).cend());
                 parseAddresses (parsedAddresses, (*smtTmp).cbegin(), (*smtTmp).cend());
                 RPC_ADMIN_ALLOW.insert (RPC_ADMIN_ALLOW.end(),
@@ -521,10 +521,10 @@ void Config::load ()
                 VALIDATION_QUORUM   = std::max (0, beast::lexicalCastThrow <int> (strTemp));
 
             if (SectionSingleB (secConfig, SECTION_FEE_ACCOUNT_RESERVE, strTemp))
-                FEE_ACCOUNT_RESERVE = beast::lexicalCastThrow <std::uint64_t> (strTemp);
+                FEE_ACCOUNT_RESERVE = beast::lexicalCastThrow <uint64> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_FEE_OWNER_RESERVE, strTemp))
-                FEE_OWNER_RESERVE   = beast::lexicalCastThrow <std::uint64_t> (strTemp);
+                FEE_OWNER_RESERVE   = beast::lexicalCastThrow <uint64> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_FEE_NICKNAME_CREATE, strTemp))
                 FEE_NICKNAME_CREATE = beast::lexicalCastThrow <int> (strTemp);
@@ -547,7 +547,7 @@ void Config::load ()
                 else if (strTemp == "none")
                     LEDGER_HISTORY = 0;
                 else
-                    LEDGER_HISTORY = beast::lexicalCastThrow <std::uint32_t> (strTemp);
+                    LEDGER_HISTORY = beast::lexicalCastThrow <uint32> (strTemp);
             }
             if (SectionSingleB (secConfig, SECTION_FETCH_DEPTH, strTemp))
             {
@@ -558,7 +558,7 @@ void Config::load ()
                 else if (strTemp == "full")
                     FETCH_DEPTH = 1000000000u;
                 else
-                    FETCH_DEPTH = beast::lexicalCastThrow <std::uint32_t> (strTemp);
+                    FETCH_DEPTH = beast::lexicalCastThrow <uint32> (strTemp);
 
                 if (FETCH_DEPTH < 10)
                     FETCH_DEPTH = 10;
@@ -681,7 +681,7 @@ beast::URL Config::getValidatorsURL () const
 void Config::setRpcIpAndOptionalPort (std::string const& newAddress)
 {
     beast::String const s (newAddress.c_str ());
-    
+
     int const colonPosition = s.lastIndexOfChar (':');
 
     if (colonPosition != -1)
@@ -734,7 +734,7 @@ Config::Role Config::getAdminRole (Json::Value const& params, beast::IP::Endpoin
     }
     else
     {
-        // Required but not supplied, 
+        // Required but not supplied,
         bPasswordWrong = bPasswordRequired;
     }
 
@@ -777,4 +777,3 @@ beast::File const& Config::getModuleDatabasePath ()
 //------------------------------------------------------------------------------
 
 } // ripple
-
