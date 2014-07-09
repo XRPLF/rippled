@@ -3690,6 +3690,9 @@
     <ClCompile Include="..\..\src\ripple\module\data\protocol\STAmount.cpp">
       <Filter>ripple\module\data\protocol</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\module\data\protocol\STAmount.h">
+      <Filter>ripple\module\data\protocol</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\data\protocol\STAmountRound.cpp">
       <Filter>ripple\module\data\protocol</Filter>
     </ClCompile>
@@ -3712,6 +3715,9 @@
       <Filter>ripple\module\data\protocol</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\data\protocol\SerializedObjectTemplate.h">
+      <Filter>ripple\module\data\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\module\data\protocol\SerializedType.h">
       <Filter>ripple\module\data\protocol</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\data\protocol\SerializedTypes.cpp">
@@ -4572,6 +4578,9 @@
     <ClInclude Include="..\..\src\ripple\types\api\Blob.h">
       <Filter>ripple\types\api</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\types\api\Book.h">
+      <Filter>ripple\types\api</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\api\ByteOrder.h">
       <Filter>ripple\types\api</Filter>
     </ClInclude>
@@ -4587,6 +4596,9 @@
     <ClInclude Include="..\..\src\ripple\types\api\IdentifierType.h">
       <Filter>ripple\types\api</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\types\api\Issue.h">
+      <Filter>ripple\types\api</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\api\RandomNumbers.h">
       <Filter>ripple\types\api</Filter>
     </ClInclude>
@@ -4597,9 +4609,6 @@
       <Filter>ripple\types\api</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\api\RippleAccountPublicKey.h">
-      <Filter>ripple\types\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\api\RippleAssets.h">
       <Filter>ripple\types\api</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\api\RippleLedgerHash.h">
@@ -4635,10 +4644,10 @@
     <ClCompile Include="..\..\src\ripple\types\impl\ByteOrder.cpp">
       <Filter>ripple\types\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\types\impl\RandomNumbers.cpp">
+    <ClCompile Include="..\..\src\ripple\types\impl\Issue.cpp">
       <Filter>ripple\types\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\types\impl\RippleAssets.cpp">
+    <ClCompile Include="..\..\src\ripple\types\impl\RandomNumbers.cpp">
       <Filter>ripple\types\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\types\impl\RippleIdentifierTests.cpp">
@@ -5085,6 +5094,9 @@
     <ClInclude Include="..\..\src\rocksdb\include\rocksdb\flush_block_policy.h">
       <Filter>rocksdb\include\rocksdb</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\include\rocksdb\iostats_context.h">
+      <Filter>rocksdb\include\rocksdb</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\rocksdb\include\rocksdb\iterator.h">
       <Filter>rocksdb\include\rocksdb</Filter>
     </ClInclude>
@@ -5184,6 +5196,12 @@
     <ClInclude Include="..\..\src\rocksdb\table\block_hash_index.h">
       <Filter>rocksdb\table</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\table\block_prefix_index.cc">
+      <Filter>rocksdb\table</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\table\block_prefix_index.h">
+      <Filter>rocksdb\table</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\rocksdb\table\filter_block.cc">
       <Filter>rocksdb\table</Filter>
     </ClCompile>
@@ -5230,6 +5248,12 @@
       <Filter>rocksdb\table</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\rocksdb\table\plain_table_factory.h">
+      <Filter>rocksdb\table</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\table\plain_table_key_coding.cc">
+      <Filter>rocksdb\table</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\table\plain_table_key_coding.h">
       <Filter>rocksdb\table</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\rocksdb\table\plain_table_reader.cc">
@@ -5341,6 +5365,12 @@
       <Filter>rocksdb\util</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\rocksdb\util\histogram.h">
+      <Filter>rocksdb\util</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\util\iostats_context.cc">
+      <Filter>rocksdb\util</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\util\iostats_context_imp.h">
       <Filter>rocksdb\util</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\rocksdb\util\log_buffer.cc">

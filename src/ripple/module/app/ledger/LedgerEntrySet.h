@@ -84,7 +84,7 @@ public:
     static char const* getCountedObjectName () { return "LedgerEntrySet"; }
 
     LedgerEntrySet (
-        Ledger::ref ledger, TransactionEngineParams tep, bool immutable = false) 
+        Ledger::ref ledger, TransactionEngineParams tep, bool immutable = false)
         : mLedger (ledger), mParams (tep), mSeq (0), mImmutable (immutable)
     {
     }
@@ -180,15 +180,18 @@ public:
     bool dirIsEmpty (uint256 const& uDirIndex);
     TER dirCount (uint256 const& uDirIndex, std::uint32_t & uCount);
 
-    uint256 getNextLedgerIndex (uint256 const & uHash);
-    uint256 getNextLedgerIndex (uint256 const & uHash, uint256 const & uEnd);
+    uint256 getNextLedgerIndex (uint256 const& uHash);
+    uint256 getNextLedgerIndex (uint256 const& uHash, uint256 const & uEnd);
 
     void ownerCountAdjust (Account const& uOwnerID, int iAmount,
         SLE::ref sleAccountRoot = SLE::pointer ());
 
     // Offer functions.
-    TER offerDelete (uint256 const & offerIndex);
-    TER offerDelete (SLE::pointer sleOffer);
+    TER offerDelete (SLE::pointer);
+    TER offerDelete (uint256 const& offerIndex)
+    {
+        return offerDelete( entryCache (ltOFFER, offerIndex));
+    }
 
     // Balance functions.
     std::uint32_t rippleTransferRate (Account const& issuer);

@@ -72,8 +72,9 @@ message_parser::check_url()
     {
         checked_url_ = true;
         auto const p (reinterpret_cast <joyent::http_parser const*> (&state_));
-        ec_ = on_request (joyent::convert_http_method (
-            joyent::http_method(p->method)), p->http_major, p->http_minor, url_);
+        ec_ = on_request (
+            joyent::convert_http_method (joyent::http_method(p->method)),
+            p->http_major, p->http_minor, url_);
         if (ec_)
             return 1;
     }
@@ -96,7 +97,6 @@ message_parser::do_url (char const* in, std::size_t bytes)
 int
 message_parser::do_status (char const* in, std::size_t bytes)
 {
-    auto const p (reinterpret_cast <joyent::http_parser const*> (&state_));
     return ec_ ? 1 : 0;
 }
 
@@ -132,8 +132,6 @@ message_parser::do_headers_done ()
 {
     if (check_url())
         return 1;
-    auto const p (reinterpret_cast <joyent::http_parser const*> (&state_));
-    bool const keep_alive (joyent::http_should_keep_alive (p) != 0);
     if (! value_.empty())
     {
         ec_ = on_field (field_, value_);
@@ -148,17 +146,12 @@ message_parser::do_headers_done ()
 int
 message_parser::do_body (char const* in, std::size_t bytes)
 {
-    auto const p (reinterpret_cast <joyent::http_parser const*> (&state_));
-    bool const is_final (
-        joyent::http_body_is_final (p) != 0);
     return ec_ ? 1 : 0;
 }
 
 int
 message_parser::do_message_complete ()
 {
-    auto const p (reinterpret_cast <joyent::http_parser const*> (&state_));
-    bool const keep_alive (joyent::http_should_keep_alive (p) != 0);
     complete_ = true;
     return 0;
 }

@@ -1055,6 +1055,8 @@ void LedgerEntrySet::ownerCountAdjust (
 
 TER LedgerEntrySet::offerDelete (SLE::pointer sleOffer)
 {
+    if (!sleOffer)
+        return tesSUCCESS;
 
     auto offerIndex = sleOffer->getIndex ();
     auto owner = sleOffer->getFieldAccount160  (sfAccount);
@@ -1077,16 +1079,6 @@ TER LedgerEntrySet::offerDelete (SLE::pointer sleOffer)
     entryDelete (sleOffer);
 
     return (terResult == tesSUCCESS) ? terResult2 : terResult;
-}
-
-TER LedgerEntrySet::offerDelete (uint256 const& offerIndex)
-{
-    SLE::pointer    sleOffer    = entryCache (ltOFFER, offerIndex);
-
-    if (!sleOffer)
-        return tesSUCCESS;
-
-    return offerDelete (sleOffer);
 }
 
 // Returns amount owed by uToAccountID to uFromAccountID.
