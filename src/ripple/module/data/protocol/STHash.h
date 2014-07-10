@@ -25,26 +25,26 @@
 namespace ripple {
 
 template <std::size_t Bits>
-class STBitString : public SerializedType
+class STHash : public SerializedType
 {
 public:
     typedef base_uint<Bits> BitString;
 
-    STBitString ()                                    {}
-    STBitString (SField::ref n) : SerializedType (n)  {}
-    STBitString (const BitString& v) : bitString_ (v) {}
+    STHash ()                                    {}
+    STHash (SField::ref n) : SerializedType (n)  {}
+    STHash (const BitString& v) : bitString_ (v) {}
 
-    STBitString (SField::ref n, const BitString& v)
-            : SerializedType (n), bitString_ (v)
+    STHash (SField::ref n, const BitString& v)
+        : SerializedType (n), bitString_ (v)
     {
     }
 
-    STBitString (SField::ref n, const char* v) : SerializedType (n)
+    STHash (SField::ref n, const char* v) : SerializedType (n)
     {
         bitString_.SetHex (v);
     }
 
-    STBitString (SField::ref n, const std::string& v) : SerializedType (n)
+    STHash (SField::ref n, const std::string& v) : SerializedType (n)
     {
         bitString_.SetHex (v);
     }
@@ -64,7 +64,7 @@ public:
 
     bool isEquivalent (const SerializedType& t) const
     {
-        const STBitString* v = dynamic_cast<const STBitString*> (&t);
+        const STHash* v = dynamic_cast<const STHash*> (&t);
         return v && (bitString_ == v->bitString_);
     }
 
@@ -99,38 +99,34 @@ public:
 private:
     BitString bitString_;
 
-    STBitString* duplicate () const
+    STHash* duplicate () const
     {
-        return new STBitString (*this);
+        return new STHash (*this);
     }
 
-    static STBitString* construct (SerializerIterator& u, SField::ref name)
+    static STHash* construct (SerializerIterator& u, SField::ref name)
     {
-        return new STBitString (name, u.get<Bits> ());
+        return new STHash (name, u.get<Bits> ());
     }
 };
 
 template <>
-inline SerializedTypeID STBitString<128>::getSType () const
+inline SerializedTypeID STHash<128>::getSType () const
 {
     return STI_HASH128;
 }
 
 template <>
-inline SerializedTypeID STBitString<160>::getSType () const
+inline SerializedTypeID STHash<160>::getSType () const
 {
     return STI_HASH160;
 }
 
 template <>
-inline SerializedTypeID STBitString<256>::getSType () const
+inline SerializedTypeID STHash<256>::getSType () const
 {
     return STI_HASH256;
 }
-
-using STHash128 = STBitString<128>;
-using STHash160 = STBitString<160>;
-using STHash256 = STBitString<256>;
 
 } // ripple
 

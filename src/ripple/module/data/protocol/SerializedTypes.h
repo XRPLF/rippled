@@ -22,7 +22,7 @@
 
 #include <ripple/module/data/protocol/FieldNames.h>
 #include <ripple/module/data/protocol/Serializer.h>
-#include <ripple/module/data/protocol/STBitString.h>
+#include <ripple/module/data/protocol/STHash.h>
 #include <ripple/module/data/protocol/STInteger.h>
 #include <ripple/module/data/protocol/SerializedType.h>
 #include <ripple/module/data/protocol/STAmount.h>

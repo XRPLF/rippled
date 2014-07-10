@@ -2590,7 +2590,7 @@
     <ClCompile Include="..\..\src\ripple\module\data\protocol\STAmountRound.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\data\protocol\STBitString.h">
+    <ClInclude Include="..\..\src\ripple\module\data\protocol\STHash.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\data\protocol\STInteger.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>

@@ -3696,7 +3696,7 @@
     <ClCompile Include="..\..\src\ripple\module\data\protocol\STAmountRound.cpp">
       <Filter>ripple\module\data\protocol</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\data\protocol\STBitString.h">
+    <ClInclude Include="..\..\src\ripple\module\data\protocol\STHash.h">
       <Filter>ripple\module\data\protocol</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\data\protocol\STInteger.cpp">
