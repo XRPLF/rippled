@@ -35,37 +35,31 @@ to the general public.
 
 ## Resource Loading ##
 
-It is expected that when a client first connects to a server it will
-impose a higher load on the server.  The client may need to catch up
-on transactions they've missed.  The client may need to get trust lines
-or transfer fees.  The Manager must expect this initial peak load, but
-not allow that high load to continue because, over the long term, that
-would unduly stress the server.
+It is expected that a client will impose a higher load on the server
+when it first connects: the client may need to catch up on transactions
+it has missed, or get trust lines, or transfer fees.  The Manager must
+expect this initial peak load, but not allow that high load to continue
+because over the long term that would unduly stress the server.
 
 If a client places a sustained high load on the server, that client
-is initially given a warning message.  If the high load continues
+is initially given a warning message.  If that high load continues
 the Manager may tell the heavily loaded server to drop the connection
 entirely and not allow re-connection for some amount of time.
 
-Each load is monitored using a "peaking" scheme implemented using the
-DecayingSample class.  DecayingSample captures peaks and then decays
-those peak values over time.
+Each load is monitored by capturing peaks and then decaying those peak
+values over time: this is implemented by the DecayingSample class.
 
 ## Gossip ##
 
 Each server in a cluster creates a list of IP addresses of end points
-that are imposing a significant load.  The server passes that list to
-other servers in the cluster.  Those lists are called "Gossip".  They
-allow the individual servers in the cluster to potentially identify a
-set of IP addresses that are unduly loading the entire cluster.  Again
-the recourse of the individual servers is to drop connections to those
-IP addresses that occur commonly in the gossip.
-identify
+that are imposing a significant load.  This list is called Gossip, which
+is passed to other nodes in that cluster.  Gossip helps individual
+servers in the cluster identify IP addreses that might be unduly loading
+the entire cluster.  Again the recourse of the individual servers is to
+drop connections to those IP addresses that occur commonly in the gossip.
 
 ## Access ##
 
-Although the Resource::Manager does nothing to enforce this, in
-rippled there is a single instance of the Resource::Manager.  That
-Resource::Manager is held by the Application.  Entities that wish
-to use the shared Resource::Manager can access it by calling
-getResourceManager() on the Application.
+In rippled, the Application holds a unique instance of Resource::Manager,
+which may be retrieved by calling the method
+`Application::getResourceManager()`.

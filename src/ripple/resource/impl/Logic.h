@@ -102,6 +102,29 @@ public:
         state->table.clear();
     }
 
+private:
+    // Helper functions to emplace a Key and Entry in state.table.
+    //
+    // The Table is passed in, even though it's a member, because we
+    // need the table to be locked.
+    std::pair <Table::iterator, bool>
+    emplaceNonAdminInTable (Table& t, Kind k,
+        beast::IP::Endpoint const& addr)
+    {
+        return t.emplace (std::piecewise_construct,
+            std::make_tuple (k, addr),              // Key
+            std::make_tuple (m_clock.now()));       // Entry
+    }
+
+    std::pair <Table::iterator, bool>
+    emplaceAdminInTable (Table& t, const std::string& name)
+    {
+        return t.emplace (std::piecewise_construct,
+            std::make_tuple (kindAdmin, name),      // Key
+            std::make_tuple (m_clock.now()));       // Entry
+    }
+
+public:
     Consumer newInboundEndpoint (beast::IP::Endpoint const& address)
     {
         if (isWhitelisted (address))
@@ -112,9 +135,9 @@ public:
         {
             SharedState::Access state (m_state);
             std::pair <Table::iterator, bool> result (
-                state->table.emplace (std::piecewise_construct,
-                    std::make_tuple(kindInbound, address.at_port (0)), // Key
-                    std::make_tuple(m_clock.now())));                  // Entry
+                emplaceNonAdminInTable (state->table,
+                    kindInbound, address.at_port (0)));
+
             entry = &result.first->second;
             entry->key = &result.first->first;
             ++entry->refcount;
@@ -143,9 +166,9 @@ public:
         {
             SharedState::Access state (m_state);
             std::pair <Table::iterator, bool> result (
-                state->table.emplace (std::piecewise_construct,
-                    std::make_tuple(kindOutbound, address),  // Key
-                    std::make_tuple(m_clock.now())));        // Entry
+                emplaceNonAdminInTable (
+                    state->table, kindOutbound, address));
+
             entry = &result.first->second;
             entry->key = &result.first->first;
             ++entry->refcount;
@@ -171,9 +194,8 @@ public:
         {
             SharedState::Access state (m_state);
             std::pair <Table::iterator, bool> result (
-                state->table.emplace (std::piecewise_construct,
-                    std::make_tuple(kindAdmin, name),
-                    std::make_tuple(m_clock.now())));
+                emplaceAdminInTable (state->table, name));
+
             entry = &result.first->second;
             entry->key = &result.first->first;
             ++entry->refcount;
@@ -202,9 +224,8 @@ public:
         {
             SharedState::Access state (m_state);
             std::pair <Table::iterator, bool> result (
-                state->table.emplace (std::piecewise_construct,
-                    std::make_tuple(kindAdmin, name),
-                    std::make_tuple(m_clock.now())));
+                emplaceAdminInTable (state->table, name));
+
             entry = &result.first->second;
             entry->key = &result.first->first;
             ++entry->refcount;
@@ -234,7 +255,7 @@ public:
         Json::Value ret (Json::objectValue);
         SharedState::Access state (m_state);
 
-        for (EntryIntrusiveList::iterator iter (state->inbound.begin());
+        for (auto iter (state->inbound.begin());
             iter != state->inbound.end(); ++iter)
         {
             int localBalance = iter->local_balance.value (now);
@@ -247,7 +268,7 @@ public:
             }
 
         }
-        for (EntryIntrusiveList::iterator iter (state->outbound.begin());
+        for (auto iter (state->outbound.begin());
             iter != state->outbound.end(); ++iter)
         {
             int localBalance = iter->local_balance.value (now);
@@ -260,7 +281,7 @@ public:
             }
 
         }
-        for (EntryIntrusiveList::iterator iter (state->admin.begin());
+        for (auto iter (state->admin.begin());
             iter != state->admin.end(); ++iter)
         {
             int localBalance = iter->local_balance.value (now);
@@ -286,7 +307,7 @@ public:
 
         gossip.items.reserve (state->inbound.size());
 
-        for (EntryIntrusiveList::iterator iter (state->inbound.begin());
+        for (auto iter (state->inbound.begin());
             iter != state->inbound.end(); ++iter)
         {
             Gossip::Item item;
@@ -311,7 +332,7 @@ public:
             std::pair <Imports::iterator, bool> result (
                 state->import_table.emplace (std::piecewise_construct,
                     std::make_tuple(origin),                  // Key
-                    std::make_tuple(m_clock.elapsed())));         // Import
+                    std::make_tuple(m_clock.elapsed())));     // Import
 
             if (result.second)
             {
@@ -337,7 +358,7 @@ public:
                 Import next;
                 next.whenExpires = elapsed + gossipExpirationSeconds;
                 next.items.reserve (gossip.items.size());
-                for (std::vector <Gossip::Item>::const_iterator iter (gossip.items.begin());
+                for (auto iter (gossip.items.begin());
                     iter != gossip.items.end(); ++iter)
                 {
                     Import::Item item;
@@ -348,7 +369,7 @@ public:
                 }
 
                 Import& prev (result.first->second);
-                for (std::vector <Import::Item>::iterator iter (prev.items.begin());
+                for (auto iter (prev.items.begin());
                     iter != prev.items.end(); ++iter)
                 {
                     iter->consumer.entry().remote_balance -= iter->balance;
@@ -377,7 +398,7 @@ public:
 
         clock_type::rep const elapsed (m_clock.elapsed());
 
-        for (EntryIntrusiveList::iterator iter (
+        for (auto iter (
             state->inactive.begin()); iter != state->inactive.end();)
         {
             if (iter->whenExpires <= elapsed)
@@ -400,7 +421,7 @@ public:
             Import& import (iter->second);
             if (iter->second.whenExpires <= elapsed)
             {
-                for (std::vector <Import::Item>::iterator item_iter (import.items.begin());
+                for (auto item_iter (import.items.begin());
                     item_iter != import.items.end(); ++item_iter)
                 {
                     item_iter->consumer.entry().remote_balance -= item_iter->balance;
@@ -572,8 +593,7 @@ public:
             beast::PropertyStream::Set& items,
                 EntryIntrusiveList& list)
     {
-        for (EntryIntrusiveList::iterator iter (list.begin());
-            iter != list.end(); ++iter)
+        for (auto iter (list.begin()); iter != list.end(); ++iter)
         {
             beast::PropertyStream::Map item (items);
             if (iter->refcount != 0)

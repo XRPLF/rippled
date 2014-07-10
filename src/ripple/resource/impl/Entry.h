@@ -28,10 +28,9 @@ typedef beast::abstract_clock <std::chrono::seconds> clock_type;
 // An entry in the table
 struct Entry : public beast::List <Entry>::Node
 {
-    // No default constructor
     Entry () = delete;
 
-    // Each Entry needs to know what time it is constructed
+    /** Each Entry needs to know the time when it is constructed. */
     explicit Entry(clock_type::time_point const now)
         : refcount (0)
         , local_balance (now)
