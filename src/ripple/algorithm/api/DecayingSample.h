@@ -27,7 +27,7 @@ template <int Window, typename Clock, typename Value = int>
 class DecayingSample
 {
 public:
-    typedef Value                      value_type;
+    typedef Value value_type;
     typedef typename Clock::time_point time_point;
 
     // No default constructed DecayingSamples allowed
@@ -75,7 +75,9 @@ private:
             //
             typename Clock::duration window (Window);
             if (n > 4 * window)
+            {
                 m_value = value_type();
+            }
             else
             {
                 value_type const tick_value = 1;
