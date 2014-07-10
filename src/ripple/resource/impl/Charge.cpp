@@ -22,10 +22,6 @@
 namespace ripple {
 namespace Resource {
 
-Charge::Charge ()
-    : m_cost (0)
-{
-}
 
 Charge::Charge (value_type cost, std::string const& label)
     : m_cost (cost)

@@ -1,4 +1,4 @@
-# ResourceManager
+# Resource::Manager #
 
 The ResourceManager module has these responsibilities:
 
@@ -7,11 +7,11 @@ The ResourceManager module has these responsibilities:
 - Provide an interface to share load information in a cluster.
 - Warn and/or disconnect endpoints for imposing load.
 
-## Description
+## Description ##
 
 To prevent monopolization of server resources or attacks on servers,
 resource consumption is monitored at each endpoint. When consumption
-exceeds certain thresholds, costs are imposed. Costs include charging
+exceeds certain thresholds, costs are imposed. Costs could include charging
 additional XRP for transactions, requiring a proof of work to be
 performed, or simply disconnecting the endpoint.
 
@@ -23,8 +23,49 @@ The current "balance" of a Consumer represents resource consumption
 debt or credit. Debt is accrued when bad loads are imposed. Credit is
 granted when good loads are imposed. When the balance crosses heuristic
 thresholds, costs are increased on the endpoint. The balance is
-represented as a unitless relative quantity.
+represented as a unitless relative quantity. This balance is currently
+held by the Entry struct in the impl/Entry.h file.
+
+Costs associated with specific transactions are defined in the
+impl/Fees files.
 
 Although RPC connections consume resources, they are transient and
 cannot be rate limited. It is advised not to expose RPC interfaces
 to the general public.
+
+## Resource Loading ##
+
+It is expected that when a client first connects to a server it will
+impose a higher load on the server.  The client may need to catch up
+on transactions they've missed.  The client may need to get trust lines
+or transfer fees.  The Manager must expect this initial peak load, but
+not allow that high load to continue because, over the long term, that
+would unduly stress the server.
+
+If a client places a sustained high load on the server, that client
+is initially given a warning message.  If the high load continues
+the Manager may tell the heavily loaded server to drop the connection
+entirely and not allow re-connection for some amount of time.
+
+Each load is monitored using a "peaking" scheme implemented using the
+DecayingSample class.  DecayingSample captures peaks and then decays
+those peak values over time.
+
+## Gossip ##
+
+Each server in a cluster creates a list of IP addresses of end points
+that are imposing a significant load.  The server passes that list to
+other servers in the cluster.  Those lists are called "Gossip".  They
+allow the individual servers in the cluster to potentially identify a
+set of IP addresses that are unduly loading the entire cluster.  Again
+the recourse of the individual servers is to drop connections to those
+IP addresses that occur commonly in the gossip.
+identify
+
+## Access ##
+
+Although the Resource::Manager does nothing to enforce this, in
+rippled there is a single instance of the Resource::Manager.  That
+Resource::Manager is held by the Application.  Entities that wish
+to use the shared Resource::Manager can access it by calling
+getResourceManager() on the Application.
