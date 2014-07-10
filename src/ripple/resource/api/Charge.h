@@ -33,8 +33,8 @@ public:
     /** The type used to hold a consumption charge. */
     typedef int value_type;
 
-    /** Create a new charge with no cost (yet). */
-    Charge ();
+    // A default constructed Charge has no way to get a label.  Delete
+    Charge () = delete;
 
     /** Create a charge with the specified cost and name. */
     Charge (value_type cost, std::string const& label = std::string());
