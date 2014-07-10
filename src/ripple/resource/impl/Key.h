@@ -30,10 +30,9 @@ struct Key
     beast::IP::Endpoint address;
     std::string name;
 
-    // No default constructor
     Key () = delete;
 
-    // Convenience constructors
+    // Constructor for Inbound and Outbound (non-Admin) keys
     Key (Kind k, beast::IP::Endpoint const& addr)
         : kind(k)
         , address(addr)
@@ -42,6 +41,7 @@ struct Key
         assert(kind != kindAdmin);
     }
 
+    // Constructor for Admin keys
     Key (Kind k, const std::string& n)
         : kind(k)
         , address()

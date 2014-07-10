@@ -36,43 +36,31 @@ Consumer::Consumer (Consumer const& other)
     : m_logic (other.m_logic)
     , m_entry (nullptr)
 {
-    if (m_logic != nullptr)
+    if (m_logic && other.m_entry)
     {
-        if (other.m_entry != nullptr)
-        {
-            m_entry = other.m_entry;
-            m_logic->acquire (*m_entry);
-        }
+        m_entry = other.m_entry;
+        m_logic->acquire (*m_entry);
     }
 }
 
 Consumer::~Consumer()
 {
-    if (m_logic != nullptr)
-    {
-        if (m_entry != nullptr)
-            m_logic->release (*m_entry);
-    }
+    if (m_logic && m_entry)
+        m_logic->release (*m_entry);
 }
 
 Consumer& Consumer::operator= (Consumer const& other)
 {
     // remove old ref
-    if (m_logic != nullptr)
-    {
-        if (m_entry != nullptr)
-            m_logic->release (*m_entry);
-    }
+    if (m_logic && m_entry)
+        m_logic->release (*m_entry);
 
     m_logic = other.m_logic;
     m_entry = other.m_entry;
-   
+
     // add new ref
-    if (m_logic != nullptr)
-    {
-        if (m_entry != nullptr)
-            m_logic->acquire (*m_entry);
-    }
+    if (m_logic && m_entry)
+        m_logic->acquire (*m_entry);
 
     return *this;
 }
@@ -87,7 +75,7 @@ std::string Consumer::to_string () const
 
 bool Consumer::admin () const
 {
-    if (m_entry != nullptr)
+    if (m_entry)
         return m_entry->admin();
 
     return false;
@@ -101,7 +89,11 @@ void Consumer::elevate (std::string const& name)
 
 Disposition Consumer::disposition() const
 {
-    return ok;
+    Disposition d = ok;
+    if (m_logic && m_entry)
+        d =  m_logic->charge(*m_entry, Charge(0));
+
+    return d;
 }
 
 Disposition Consumer::charge (Charge const& what)

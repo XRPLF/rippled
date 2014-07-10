@@ -28,15 +28,15 @@ typedef beast::abstract_clock <std::chrono::seconds> clock_type;
 // An entry in the table
 struct Entry : public beast::List <Entry>::Node
 {
-    // No default constructor
     Entry () = delete;
 
-    // Each Entry needs to know what time it is constructed
+    /**
+       @param now Construction time of Entry.
+    */
     explicit Entry(clock_type::time_point const now)
         : refcount (0)
         , local_balance (now)
         , remote_balance (0)
-        , disposition (ok)
         , lastWarningTime (0)
         , whenExpires (0)
     {
@@ -86,9 +86,6 @@ struct Entry : public beast::List <Entry>::Node
 
     // Normalized balance contribution from imports
     int remote_balance;
-
-    // Disposition
-    Disposition disposition;
 
     // Time of the last warning
     clock_type::rep lastWarningTime;
