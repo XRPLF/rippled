@@ -24,10 +24,6 @@ namespace ripple {
 
 // See https://ripple.com/wiki/Transaction_errors
 
-// VFALCO TODO do not use auto-incrementing. Explicitly assign each
-//              constant so there is no possibility of someone coming in
-//              and screwing it up.
-//
 // VFALCO TODO consider renaming TER to TxErr or TxResult for clarity.
 //
 enum TER    // aka TransactionEngineResult
@@ -40,7 +36,7 @@ enum TER    // aka TransactionEngineResult
     // - Not forwarded
     // - No fee check
     telLOCAL_ERROR  = -399,
-    telBAD_DOMAIN, // VFALCO TODO should read "telBAD_DOMAIN = -398," etc...
+    telBAD_DOMAIN,
     telBAD_PATH_COUNT,
     telBAD_PUBLIC_KEY,
     telFAILED_PROCESSING,
@@ -56,26 +52,26 @@ enum TER    // aka TransactionEngineResult
     // - Reject
     // - Can not succeed in any imagined ledger.
     temMALFORMED    = -299,
+
     temBAD_AMOUNT,
     temBAD_AUTH_MASTER,
     temBAD_CURRENCY,
-    temBAD_FEE,
     temBAD_EXPIRATION,
+    temBAD_FEE,
     temBAD_ISSUER,
     temBAD_LIMIT,
     temBAD_OFFER,
     temBAD_PATH,
     temBAD_PATH_LOOP,
-    temBAD_PUBLISH,
-    temBAD_TRANSFER_RATE,
     temBAD_SEND_XRP_LIMIT,
     temBAD_SEND_XRP_MAX,
     temBAD_SEND_XRP_NO_DIRECT,
     temBAD_SEND_XRP_PARTIAL,
     temBAD_SEND_XRP_PATHS,
+    temBAD_SEQUENCE,
     temBAD_SIGNATURE,
     temBAD_SRC_ACCOUNT,
-    temBAD_SEQUENCE,
+    temBAD_TRANSFER_RATE,
     temDST_IS_SRC,
     temDST_NEEDED,
     temINVALID,
@@ -83,14 +79,19 @@ enum TER    // aka TransactionEngineResult
     temREDUNDANT,
     temREDUNDANT_SEND_MAX,
     temRIPPLE_EMPTY,
-    temUNCERTAIN,       // An intermediate result used internally, should never be returned.
+
+    // An intermediate result used internally, should never be returned.
+    temUNCERTAIN,
     temUNKNOWN,
 
-    // -199 .. -100: F Failure (sequence number previously used)
+    // -199 .. -100: F
+    //    Failure (sequence number previously used)
+    //
     // Causes:
     // - Transaction cannot succeed because of ledger state.
     // - Unexpected ledger state.
     // - C++ exception.
+    //
     // Implications:
     // - Not applied
     // - Not forwarded
@@ -99,14 +100,10 @@ enum TER    // aka TransactionEngineResult
     tefALREADY,
     tefBAD_ADD_AUTH,
     tefBAD_AUTH,
-    tefBAD_CLAIM_ID,
-    tefBAD_GEN_AUTH,
     tefBAD_LEDGER,
-    tefCLAIMED,
     tefCREATED,
     tefDST_TAG_NEEDED,
     tefEXCEPTION,
-    tefGEN_IN_USE,
     tefINTERNAL,
     tefNO_AUTH_REQUIRED,    // Can't set auth if auth is not required.
     tefPAST_SEQ,
@@ -114,9 +111,14 @@ enum TER    // aka TransactionEngineResult
     tefMASTER_DISABLED,
     tefMAX_LEDGER,
 
-    // -99 .. -1: R Retry (sequence too high, no funds for txn fee, originating account non-existent)
-    // Causes:
-    // - Prior application of another, possibly non-existant, another transaction could allow this transaction to succeed.
+    // -99 .. -1: R Retry
+    //   sequence too high, no funds for txn fee, originating -account
+    //   non-existent
+    //
+    // Cause:
+    //   Prior application of another, possibly non-existent, transaction could
+    //   allow this transaction to succeed.
+    //
     // Implications:
     // - Not applied
     // - Not forwarded
@@ -124,15 +126,16 @@ enum TER    // aka TransactionEngineResult
     // - Hold
     // - Makes hole in sequence which jams transactions.
     terRETRY        = -99,
-    terFUNDS_SPENT,         // This is a free transaction, therefore don't burden network.
-    terINSUF_FEE_B,         // Can't pay fee, therefore don't burden network.
-    terNO_ACCOUNT,          // Can't pay fee, therefore don't burden network.
-    terNO_AUTH,             // Not authorized to hold IOUs.
-    terNO_LINE,             // Internal flag.
-    terOWNERS,              // Can't succeed with non-zero owner count.
-    terPRE_SEQ,             // Can't pay fee, no point in forwarding, therefore don't burden network.
-    terLAST,                // Process after all other transactions
-    terNO_RIPPLE,           // Rippling not allowed
+    terFUNDS_SPENT,      // This is a free transaction, so don't burden network.
+    terINSUF_FEE_B,      // Can't pay fee, therefore don't burden network.
+    terNO_ACCOUNT,       // Can't pay fee, therefore don't burden network.
+    terNO_AUTH,          // Not authorized to hold IOUs.
+    terNO_LINE,          // Internal flag.
+    terOWNERS,           // Can't succeed with non-zero owner count.
+    terPRE_SEQ,          // Can't pay fee, no point in forwarding, so don't
+                         // burden network.
+    terLAST,             // Process after all other transactions
+    terNO_RIPPLE,        // Rippling not allowed
 
     // 0: S Success (success)
     // Causes:
@@ -142,14 +145,21 @@ enum TER    // aka TransactionEngineResult
     // - Forwarded
     tesSUCCESS      = 0,
 
-    // 100 .. 159 C Claim fee only (ripple transaction with no good paths, pay to non-existent account, no path)
+    // 100 .. 159 C
+    //   Claim fee only (ripple transaction with no good paths, pay to
+    //   non-existent account, no path)
+    //
     // Causes:
     // - Success, but does not achieve optimal result.
-    // - Invalid transaction or no effect, but claim fee to use the sequence number.
+    // - Invalid transaction or no effect, but claim fee to use the sequence
+    //   number.
+    //
     // Implications:
     // - Applied
     // - Forwarded
-    // Only allowed as a return code of appliedTransaction when !tapRetry. Otherwise, treated as terRETRY.
+    //
+    // Only allowed as a return code of appliedTransaction when !tapRetry.
+    // Otherwise, treated as terRETRY.
     //
     // DO NOT CHANGE THESE NUMBERS: They appear in ledger meta data.
     tecCLAIM                    = 100,
@@ -175,13 +185,35 @@ enum TER    // aka TransactionEngineResult
     tecNO_LINE                  = 135,
 };
 
-// VFALCO TODO change these to normal functions.
-#define isTelLocal(x)       ((x) >= telLOCAL_ERROR && (x) < temMALFORMED)
-#define isTemMalformed(x)   ((x) >= temMALFORMED && (x) < tefFAILURE)
-#define isTefFailure(x)     ((x) >= tefFAILURE && (x) < terRETRY)
-#define isTerRetry(x)       ((x) >= terRETRY && (x) < tesSUCCESS)
-#define isTesSuccess(x)     ((x) == tesSUCCESS)
-#define isTecClaim(x)       ((x) >= tecCLAIM)
+inline bool isTelLocal(TER x)
+{
+    return ((x) >= telLOCAL_ERROR && (x) < temMALFORMED);
+}
+
+inline bool isTemMalformed(TER x)
+{
+    return ((x) >= temMALFORMED && (x) < tefFAILURE);
+}
+
+inline bool isTefFailure(TER x)
+{
+    return ((x) >= tefFAILURE && (x) < terRETRY);
+}
+
+inline bool isTerRetry(TER x)
+{
+    return ((x) >= terRETRY && (x) < tesSUCCESS);
+}
+
+inline bool isTesSuccess(TER x)
+{
+    return ((x) == tesSUCCESS);
+}
+
+inline bool isTecClaim(TER x)
+{
+    return ((x) >= tecCLAIM);
+}
 
 // VFALCO TODO group these into a shell class along with the defines above.
 extern bool transResultInfo (TER terCode, std::string& strToken, std::string& strHuman);
