@@ -23,26 +23,27 @@
 namespace ripple {
 
 /** Sampling function using exponential decay to provide a continuous value. */
-template <int Window,
-          typename Value = int,
-          typename Elapsed = int>
+template <int Window, typename Clock, typename Value = int>
 class DecayingSample
 {
 public:
-    typedef Value   value_type;
-    typedef Elapsed elapsed_type;
+    typedef Value value_type;
+    typedef typename Clock::time_point time_point;
+
+    // No default constructed DecayingSamples allowed
+    DecayingSample () = delete;
 
     /** Create a default constructed sample. */
-    DecayingSample ()
+    DecayingSample (time_point now)
         : m_value (value_type())
-        , m_when (elapsed_type())
+        , m_when (now)
     {
     }
 
     /** Add a new sample.
         The value is first aged according to the specified time.
     */
-    Value add (value_type value, elapsed_type now)
+    Value add (value_type value, time_point now)
     {
         decay (now);
         m_value += value;
@@ -52,7 +53,7 @@ public:
     /** Retrieve the current value in normalized units.
         The samples are first aged according to the specified time.
     */
-    Value value (elapsed_type now)
+    Value value (time_point now)
     {
         decay (now);
         return m_value / Window;
@@ -60,24 +61,33 @@ public:
 
 private:
     // Apply exponential decay based on the specified time.
-    void decay (elapsed_type now)
+    void decay (time_point now)
     {
         if (now == m_when)
             return;
 
         if (m_value != value_type())
         {
-            elapsed_type n (now - m_when);
+            typename Clock::duration n (now - m_when);
 
             // A span larger than four times the window decays the
             // value to an insignificant amount so just reset it.
             //
-            if (n > 4 * Window)
+            typename Clock::duration window (Window);
+            if (n > 4 * window)
+            {
                 m_value = value_type();
+            }
             else
             {
-                while (n--)
-                    m_value -= (m_value + Window - 1) / Window;
+                value_type const tick_value = 1;
+                typename Clock::duration const tick (tick_value);
+                typename Clock::duration const zero (0);
+                while (n > zero)
+                {
+                    n -= tick;
+                    m_value -= (m_value + Window - tick_value) / Window;
+                }
             }
         }
 
@@ -88,7 +98,7 @@ private:
     value_type m_value;
 
     // Last time the aging function was applied
-    elapsed_type m_when;
+    time_point m_when;
 };
 
 }

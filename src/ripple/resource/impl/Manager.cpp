@@ -26,10 +26,10 @@ class ManagerImp
     : public Manager
     , public beast::Thread
 {
-public:
+private:
     beast::Journal m_journal;
     Logic m_logic;
-
+public:
     ManagerImp (beast::insight::Collector::ptr const& collector,
         beast::Journal journal)
         : Thread ("Resource::Manager")
@@ -63,7 +63,7 @@ public:
     {
         return m_logic.exportConsumers();
     }
-    
+
     void importConsumers (std::string const& origin, Gossip const& gossip)
     {
         m_logic.importConsumers (origin, gossip);

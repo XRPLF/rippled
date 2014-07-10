@@ -30,6 +30,26 @@ struct Key
     beast::IP::Endpoint address;
     std::string name;
 
+    Key () = delete;
+
+    // Constructor for non-Admin keys
+    Key (Kind k, beast::IP::Endpoint const& addr)
+        : kind(k)
+        , address(addr)
+        , name()
+    {
+        assert(kind != kindAdmin);
+    }
+
+    // Constructor for Admin keys
+    Key (Kind k, const std::string& n)
+        : kind(k)
+        , address()
+        , name(n)
+    {
+        assert(kind == kindAdmin);
+    }
+
     struct hasher
     {
         std::size_t operator() (Key const& v) const

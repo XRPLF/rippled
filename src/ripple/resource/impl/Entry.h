@@ -28,9 +28,12 @@ typedef beast::abstract_clock <std::chrono::seconds> clock_type;
 // An entry in the table
 struct Entry : public beast::List <Entry>::Node
 {
-    // Dummy argument is necessary for zero-copy construction of elements
-    Entry (int)
+    Entry () = delete;
+
+    /** Each Entry needs to know the time when it is constructed. */
+    explicit Entry(clock_type::time_point const now)
         : refcount (0)
+        , local_balance (now)
         , remote_balance (0)
         , disposition (ok)
         , lastWarningTime (0)
@@ -59,14 +62,14 @@ struct Entry : public beast::List <Entry>::Node
     }
 
     // Balance including remote contributions
-    int balance (clock_type::rep const now)
+    int balance (clock_type::time_point const now)
     {
         return local_balance.value (now) + remote_balance;
     }
 
     // Add a charge and return normalized balance
     // including contributions from imports.
-    int add (int charge, clock_type::rep const now)
+    int add (int charge, clock_type::time_point const now)
     {
         return local_balance.add (charge, now) + remote_balance;
     }
@@ -78,7 +81,7 @@ struct Entry : public beast::List <Entry>::Node
     int refcount;
 
     // Exponentially decaying balance of resource consumption
-    DecayingSample <decayWindowSeconds> local_balance;
+    DecayingSample <decayWindowSeconds, clock_type> local_balance;
 
     // Normalized balance contribution from imports
     int remote_balance;
