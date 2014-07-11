@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <cassert>
-
+#include <ripple/module/data/protocol/STInteger.h>
 #include <beast/module/core/text/LexicalCast.h>
+#include <cassert>
 
 namespace ripple {
 
@@ -320,7 +320,7 @@ bool STParsedJSON::parse (std::string const& json_name,
             {
                 if (value.isString ())
                 {
-                    data.push_back (new STHash128 (field, value.asString ()));
+                    data.push_back (new STHash<128> (field, value.asString ()));
                 }
                 else
                 {
@@ -341,7 +341,7 @@ bool STParsedJSON::parse (std::string const& json_name,
             {
                 if (value.isString ())
                 {
-                    data.push_back (new STHash160 (field, value.asString ()));
+                    data.push_back (new STHash<160> (field, value.asString ()));
                 }
                 else
                 {
@@ -362,7 +362,7 @@ bool STParsedJSON::parse (std::string const& json_name,
             {
                 if (value.isString ())
                 {
-                    data.push_back (new STHash256 (field, value.asString ()));
+                    data.push_back (new STHash<256> (field, value.asString ()));
                 }
                 else
                 {

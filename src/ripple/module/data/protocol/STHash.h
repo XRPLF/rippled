@@ -1,0 +1,139 @@
+//------------------------------------------------------------------------------
+/*
+    This file is part of rippled: https://github.com/ripple/rippled
+    Copyright (c) 2012, 2013 Ripple Labs Inc.
+
+    Permission to use, copy, modify, and/or distribute this software for any
+    purpose  with  or without fee is hereby granted, provided that the above
+    copyright notice and this permission notice appear in all copies.
+
+    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
+    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
+    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
+//==============================================================================
+
+#ifndef RIPPLE_STBITS_H
+#define RIPPLE_STBITS_H
+
+#include <ripple/module/data/protocol/SerializedType.h>
+
+namespace ripple {
+
+template <std::size_t Bits>
+class STHash : public SerializedType
+{
+public:
+    typedef base_uint<Bits> BitString;
+
+    STHash () = default;
+
+    STHash (SField::ref n) : SerializedType (n)
+    {
+    }
+
+    STHash (const BitString& v) : bitString_ (v)
+    {
+    }
+
+    STHash (SField::ref n, const BitString& v)
+        : SerializedType (n), bitString_ (v)
+    {
+    }
+
+    STHash (SField::ref n, const char* v) : SerializedType (n)
+    {
+        bitString_.SetHex (v);
+    }
+
+    STHash (SField::ref n, const std::string& v) : SerializedType (n)
+    {
+        bitString_.SetHex (v);
+    }
+
+    static std::unique_ptr<SerializedType> deserialize (
+        SerializerIterator& sit, SField::ref name)
+    {
+        return std::unique_ptr<SerializedType> (construct (sit, name));
+    }
+
+    SerializedTypeID getSType () const;
+
+    std::string getText () const
+    {
+        return to_string (bitString_);
+    }
+
+    bool isEquivalent (const SerializedType& t) const
+    {
+        auto v = dynamic_cast<const STHash*> (&t);
+        return v && (bitString_ == v->bitString_);
+    }
+
+    void add (Serializer& s) const
+    {
+        assert (fName->isBinary ());
+        assert (fName->fieldType == getSType());
+        s.add<Bits> (bitString_);
+    }
+
+    const BitString& getValue () const
+    {
+        return bitString_;
+    }
+
+    template <typename Tag>
+    void setValue (base_uint<Bits, Tag> const& v)
+    {
+        bitString_.copyFrom(v);
+    }
+
+    operator BitString () const
+    {
+        return bitString_;
+    }
+
+    virtual bool isDefault () const
+    {
+        return bitString_ == zero;
+    }
+
+private:
+    BitString bitString_;
+
+    STHash* duplicate () const
+    {
+        return new STHash (*this);
+    }
+
+    static STHash* construct (SerializerIterator& u, SField::ref name)
+    {
+        return new STHash (name, u.get<Bits> ());
+    }
+};
+
+template <>
+inline SerializedTypeID STHash<128>::getSType () const
+{
+    return STI_HASH128;
+}
+
+template <>
+inline SerializedTypeID STHash<160>::getSType () const
+{
+    return STI_HASH160;
+}
+
+template <>
+inline SerializedTypeID STHash<256>::getSType () const
+{
+    return STI_HASH256;
+}
+
+} // ripple
+
+#endif

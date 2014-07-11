@@ -386,8 +386,8 @@ void STAmount::add (Serializer& s) const
         else // 256 = positive
             s.add64 (mValue | (static_cast<std::uint64_t> (mOffset + 512 + 256 + 97) << (64 - 10)));
 
-        s.add160 (mIssue.currency);
-        s.add160 (mIssue.account);
+        s.add<160> (mIssue.currency);
+        s.add<160> (mIssue.account);
     }
 }
 
@@ -454,12 +454,12 @@ STAmount* STAmount::construct (SerializerIterator& sit, SField::ref name)
     }
 
     Issue issue;
-    issue.currency.copyFrom (sit.get160 ());
+    issue.currency.copyFrom (sit.get<160> ());
 
     if (isXRP (issue.currency))
         throw std::runtime_error ("invalid native currency");
 
-    issue.account.copyFrom (sit.get160 ());
+    issue.account.copyFrom (sit.get<160> ());
 
     if (isXRP (issue.account))
         throw std::runtime_error ("invalid native account");

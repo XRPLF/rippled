@@ -63,19 +63,10 @@ int Serializer::add64 (std::uint64_t i)
     return ret;
 }
 
-int Serializer::add128 (const uint128& i)
-{
-    int ret = mData.size ();
-    mData.insert (mData.end (), i.begin (), i.end ());
-    return ret;
-}
-
-int Serializer::add256 (uint256 const& i)
-{
-    int ret = mData.size ();
-    mData.insert (mData.end (), i.begin (), i.end ());
-    return ret;
-}
+template <> int Serializer::addInt(unsigned char i) { return add8(i); }
+template <> int Serializer::addInt(std::uint16_t i) { return add16(i); }
+template <> int Serializer::addInt(std::uint32_t i) { return add32(i); }
+template <> int Serializer::addInt(std::uint64_t i) { return add64(i); }
 
 int Serializer::addRaw (Blob const& vector)
 {
@@ -145,32 +136,6 @@ bool Serializer::get64 (std::uint64_t& o, int offset) const
     o <<= 8;
     o |= *ptr;
     return true;
-}
-
-bool Serializer::get128 (uint128& o, int offset) const
-{
-    if ((offset + (128 / 8)) > mData.size ()) return false;
-
-    memcpy (o.begin (), & (mData.front ()) + offset, (128 / 8));
-    return true;
-}
-
-bool Serializer::get256 (uint256& o, int offset) const
-{
-    if ((offset + (256 / 8)) > mData.size ()) return false;
-
-    memcpy (o.begin (), & (mData.front ()) + offset, (256 / 8));
-    return true;
-}
-
-uint256 Serializer::get256 (int offset) const
-{
-    uint256 ret;
-
-    if ((offset + (256 / 8)) > mData.size ()) return ret;
-
-    memcpy (ret.begin (), & (mData.front ()) + offset, (256 / 8));
-    return ret;
 }
 
 int Serializer::addFieldID (int type, int name)
@@ -620,36 +585,6 @@ std::uint64_t SerializerIterator::get64 ()
     return val;
 }
 
-uint128 SerializerIterator::get128 ()
-{
-    uint128 val;
-
-    if (!mSerializer.get128 (val, mPos)) throw std::runtime_error ("invalid serializer get128");
-
-    mPos += 128 / 8;
-    return val;
-}
-
-uint160 SerializerIterator::get160 ()
-{
-    uint160 val;
-
-    if (!mSerializer.get160 (val, mPos)) throw std::runtime_error ("invalid serializer get160");
-
-    mPos += 160 / 8;
-    return val;
-}
-
-uint256 SerializerIterator::get256 ()
-{
-    uint256 val;
-
-    if (!mSerializer.get256 (val, mPos)) throw std::runtime_error ("invalid serializer get256");
-
-    mPos += 256 / 8;
-    return val;
-}
-
 Blob SerializerIterator::getVL ()
 {
     int length;
@@ -678,7 +613,7 @@ public:
     {
         Serializer s1;
         s1.add32 (3);
-        s1.add256 (uint256 ());
+        s1.add<256> (uint256 ());
 
         Serializer s2;
         s2.add32 (0x12345600);

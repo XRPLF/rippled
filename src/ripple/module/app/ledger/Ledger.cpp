@@ -301,9 +301,9 @@ void Ledger::setRaw (Serializer& s, bool hasPrefix)
 
     mLedgerSeq =        sit.get32 ();
     mTotCoins =         sit.get64 ();
-    mParentHash =       sit.get256 ();
-    mTransHash =        sit.get256 ();
-    mAccountHash =      sit.get256 ();
+    mParentHash =       sit.get<256> ();
+    mTransHash =        sit.get<256> ();
+    mAccountHash =      sit.get<256> ();
     mParentCloseTime =  sit.get32 ();
     mCloseTime =        sit.get32 ();
     mCloseResolution =  sit.get8 ();
@@ -326,9 +326,9 @@ void Ledger::addRaw (Serializer& s) const
 {
     s.add32 (mLedgerSeq);
     s.add64 (mTotCoins);
-    s.add256 (mParentHash);
-    s.add256 (mTransHash);
-    s.add256 (mAccountHash);
+    s.add<256> (mParentHash);
+    s.add<256> (mTransHash);
+    s.add<256> (mAccountHash);
     s.add32 (mParentCloseTime);
     s.add32 (mCloseTime);
     s.add8 (mCloseResolution);
@@ -1588,7 +1588,7 @@ uint256 Ledger::getAccountRootIndex (Account const& account)
     Serializer  s (22);
 
     s.add16 (spaceAccount); //  2
-    s.add160 (account);  // 20
+    s.add<160> (account);  // 20
 
     return s.getSHA512Half ();
 }
@@ -1784,10 +1784,10 @@ uint256 Ledger::getBookBase (
     Serializer  s (82);
 
     s.add16 (spaceBookDir);         //  2
-    s.add160 (uTakerPaysCurrency);  // 20
-    s.add160 (uTakerGetsCurrency);  // 20
-    s.add160 (uTakerPaysIssuerID);  // 20
-    s.add160 (uTakerGetsIssuerID);  // 20
+    s.add<160> (uTakerPaysCurrency);  // 20
+    s.add<160> (uTakerGetsCurrency);  // 20
+    s.add<160> (uTakerPaysIssuerID);  // 20
+    s.add<160> (uTakerGetsIssuerID);  // 20
 
     uint256 uBaseIndex  = getQualityIndex (s.getSHA512Half ()); // Return with quality 0.
 
@@ -1813,7 +1813,7 @@ uint256 Ledger::getDirNodeIndex (
         Serializer  s (42);
 
         s.add16 (spaceDirNode);     //  2
-        s.add256 (uDirRoot);        // 32
+        s.add<256> (uDirRoot);        // 32
         s.add64 (uNodeIndex);       //  8
 
         return s.getSHA512Half ();
@@ -1829,7 +1829,7 @@ uint256 Ledger::getGeneratorIndex (Account const& uGeneratorID)
     Serializer  s (22);
 
     s.add16 (spaceGenerator);   //  2
-    s.add160 (uGeneratorID);    // 20
+    s.add<160> (uGeneratorID);    // 20
 
     return s.getSHA512Half ();
 }
@@ -1842,7 +1842,7 @@ uint256 Ledger::getNicknameIndex (uint256 const& uNickname)
     Serializer  s (34);
 
     s.add16 (spaceNickname);    //  2
-    s.add256 (uNickname);       // 32
+    s.add<256> (uNickname);       // 32
 
     return s.getSHA512Half ();
 }
@@ -1852,7 +1852,7 @@ uint256 Ledger::getOfferIndex (Account const& account, std::uint32_t uSequence)
     Serializer  s (26);
 
     s.add16 (spaceOffer);       //  2
-    s.add160 (account);      // 20
+    s.add<160> (account);      // 20
     s.add32 (uSequence);        //  4
 
     return s.getSHA512Half ();
@@ -1863,7 +1863,7 @@ uint256 Ledger::getOwnerDirIndex (Account const& account)
     Serializer  s (22);
 
     s.add16 (spaceOwnerDir);    //  2
-    s.add160 (account);      // 20
+    s.add<160> (account);      // 20
 
     return s.getSHA512Half ();
 }
@@ -1878,9 +1878,9 @@ uint256 Ledger::getRippleStateIndex (
     Serializer  s (62);
 
     s.add16 (spaceRipple);          //  2
-    s.add160 (bAltB ? uAID : uBID); // 20
-    s.add160 (bAltB ? uBID : uAID); // 20
-    s.add160 (currency);           // 20
+    s.add<160> (bAltB ? uAID : uBID); // 20
+    s.add<160> (bAltB ? uBID : uAID); // 20
+    s.add<160> (currency);           // 20
 
     return s.getSHA512Half ();
 }

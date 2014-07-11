@@ -87,7 +87,7 @@ uint256 SHAMapNodeID::getNodeID (int depth, uint256 const& hash)
 
 void SHAMapNodeID::addIDRaw (Serializer& s) const
 {
-    s.add256 (mNodeID);
+    s.add<256> (mNodeID);
     s.add8 (mDepth);
 }
 

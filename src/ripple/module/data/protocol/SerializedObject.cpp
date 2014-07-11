@@ -44,13 +44,13 @@ std::unique_ptr<SerializedType> STObject::makeDefaultObject (SerializedTypeID id
         return std::unique_ptr<SerializedType> (new STAmount (name));
 
     case STI_HASH128:
-        return std::unique_ptr<SerializedType> (new STHash128 (name));
+        return std::unique_ptr<SerializedType> (new STHash<128> (name));
 
     case STI_HASH160:
-        return std::unique_ptr<SerializedType> (new STHash160 (name));
+        return std::unique_ptr<SerializedType> (new STHash<160> (name));
 
     case STI_HASH256:
-        return std::unique_ptr<SerializedType> (new STHash256 (name));
+        return std::unique_ptr<SerializedType> (new STHash<256> (name));
 
     case STI_VECTOR256:
         return std::unique_ptr<SerializedType> (new STVector256 (name));
@@ -102,13 +102,13 @@ std::unique_ptr<SerializedType> STObject::makeDeserializedObject (SerializedType
         return STAmount::deserialize (sit, name);
 
     case STI_HASH128:
-        return STHash128::deserialize (sit, name);
+        return STHash<128>::deserialize (sit, name);
 
     case STI_HASH160:
-        return STHash160::deserialize (sit, name);
+        return STHash<160>::deserialize (sit, name);
 
     case STI_HASH256:
-        return STHash256::deserialize (sit, name);
+        return STHash<256>::deserialize (sit, name);
 
     case STI_VECTOR256:
         return STVector256::deserialize (sit, name);
@@ -722,7 +722,7 @@ uint128 STObject::getFieldH128 (SField::ref field) const
 
     if (id == STI_NOTPRESENT) return uint128 (); // optional field not present
 
-    const STHash128* cf = dynamic_cast<const STHash128*> (rf);
+    const STHash<128>* cf = dynamic_cast<const STHash<128>*> (rf);
 
     if (!cf) throw std::runtime_error ("Wrong field type");
 
@@ -739,7 +739,7 @@ uint160 STObject::getFieldH160 (SField::ref field) const
 
     if (id == STI_NOTPRESENT) return uint160 (); // optional field not present
 
-    const STHash160* cf = dynamic_cast<const STHash160*> (rf);
+    const STHash<160>* cf = dynamic_cast<const STHash<160>*> (rf);
 
     if (!cf) throw std::runtime_error ("Wrong field type");
 
@@ -757,7 +757,7 @@ uint256 STObject::getFieldH256 (SField::ref field) const
 
     if (id == STI_NOTPRESENT) return uint256 (); // optional field not present
 
-    const STHash256* cf = dynamic_cast<const STHash256*> (rf);
+    const STHash<256>* cf = dynamic_cast<const STHash<256>*> (rf);
 
     if (!cf) throw std::runtime_error ("Wrong field type");
 
@@ -964,7 +964,7 @@ void STObject::setFieldH128 (SField::ref field, const uint128& v)
 
     if (rf->getSType () == STI_NOTPRESENT) rf = makeFieldPresent (field);
 
-    STHash128* cf = dynamic_cast<STHash128*> (rf);
+    STHash<128>* cf = dynamic_cast<STHash<128>*> (rf);
 
     if (!cf) throw std::runtime_error ("Wrong field type");
 
@@ -979,7 +979,7 @@ void STObject::setFieldH256 (SField::ref field, uint256 const& v)
 
     if (rf->getSType () == STI_NOTPRESENT) rf = makeFieldPresent (field);
 
-    STHash256* cf = dynamic_cast<STHash256*> (rf);
+    STHash<256>* cf = dynamic_cast<STHash<256>*> (rf);
 
     if (!cf) throw std::runtime_error ("Wrong field type");
 
