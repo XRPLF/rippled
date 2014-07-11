@@ -102,9 +102,15 @@ def xsorted(tosort, **kwargs):
         if isinstance(item, (str, unicode)):
             return ("s", item.upper(), item)
         elif isinstance(item, (list, tuple)):
-            return ("c", map(_key, item))
+            return ("l", map(_key, item))
         elif isinstance(item, dict):
             return ("d", xsorted(item.keys()), xsorted(item.values()))
+        elif isinstance(item, Configuration):
+            return ("c", item.target, item.platform, item.variant)
+        elif isinstance(item, Item):
+            return ("i", item._path, item._builder)
+        elif isinstance(item, SCons.Node.FS.File):
+            return ("f", item.name, item.suffix)
         else:
             return ("x", item)
     kwargs['key'] = _key
