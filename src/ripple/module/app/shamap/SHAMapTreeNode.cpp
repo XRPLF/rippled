@@ -261,7 +261,7 @@ bool SHAMapTreeNode::updateHash ()
             s.add32 (HashPrefix::innerNode);
 
             for (int i = 0; i < 16; ++i)
-                s.add (mHashes[i]);
+                s.add<256> (mHashes[i]);
 
             assert (nh == s.getSHA512Half ());
 #endif
