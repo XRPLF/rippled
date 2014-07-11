@@ -252,9 +252,11 @@ def config_env(toolchain, variant, env):
         env.Append(CCFLAGS=[
             '-Wno-sign-compare',
             '-Wno-char-subscripts',
-            '-Wno-format',
-            '-Wno-deprecated-register'
+            '-Wno-format'
             ])
+
+        if toolchain == 'clang':
+            env.Append(CCFLAGS=['-Wno-deprecated-register'])
 
         env.Append(CXXFLAGS=[
             '-frtti',

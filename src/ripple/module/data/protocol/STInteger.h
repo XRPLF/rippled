@@ -28,7 +28,7 @@ template <typename Integer>
 class STInteger : public SerializedType
 {
 public:
-    STInteger (Integer v = 0) : value_ (v)
+    explicit STInteger (Integer v = 0) : value_ (v)
     {
     }
 
