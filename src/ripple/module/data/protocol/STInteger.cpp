@@ -44,7 +44,7 @@ std::string STUInt8::getText () const
             return human;
     }
 
-    return beast::lexicalCastThrow <std::string> (value_);
+    return std::to_string (value_);
 }
 
 template <>
@@ -99,7 +99,7 @@ std::string STUInt16::getText () const
             return item->getName ();
     }
 
-    return beast::lexicalCastThrow <std::string> (value_);
+    return std::to_string (value_);
 }
 
 template <>
@@ -143,7 +143,7 @@ STUInt32* STUInt32::construct (SerializerIterator& u, SField::ref name)
 template <>
 std::string STUInt32::getText () const
 {
-    return beast::lexicalCastThrow <std::string> (value_);
+    return std::to_string (value_);
 }
 
 template <>
@@ -167,7 +167,7 @@ STUInt64* STUInt64::construct (SerializerIterator& u, SField::ref name)
 template <>
 std::string STUInt64::getText () const
 {
-    return beast::lexicalCastThrow <std::string> (value_);
+    return std::to_string (value_);
 }
 
 template <>

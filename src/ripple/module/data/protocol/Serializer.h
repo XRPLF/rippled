@@ -105,8 +105,7 @@ public:
         auto ptr = &mData[offset];
         for (auto i = 0; i < bytes; ++i)
         {
-            if (i)
-                number <<= 8;
+            number <<= 8;
             number |= *ptr++;
         }
         return true;

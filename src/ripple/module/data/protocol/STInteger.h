@@ -28,11 +28,12 @@ template <typename Integer>
 class STInteger : public SerializedType
 {
 public:
-    STInteger (Integer v = 0) : value_ (v)
+    explicit STInteger (Integer v = 0) : value_ (v)
     {
     }
 
-    STInteger (SField::ref n, Integer v = 0) : SerializedType (n), value_ (v)
+    explicit STInteger (SField::ref n, Integer v = 0)
+            : SerializedType (n), value_ (v)
     {
     }
 
@@ -77,7 +78,7 @@ public:
 
     bool isEquivalent (const SerializedType& t) const
     {
-        const STInteger* v = dynamic_cast<const STInteger*> (&t);
+        auto v = dynamic_cast<const STInteger*> (&t);
         return v && (value_ == v->value_);
     }
 

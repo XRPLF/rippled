@@ -30,9 +30,15 @@ class STHash : public SerializedType
 public:
     typedef base_uint<Bits> BitString;
 
-    STHash ()                                    {}
-    STHash (SField::ref n) : SerializedType (n)  {}
-    STHash (const BitString& v) : bitString_ (v) {}
+    STHash () = default;
+
+    STHash (SField::ref n) : SerializedType (n)
+    {
+    }
+
+    STHash (const BitString& v) : bitString_ (v)
+    {
+    }
 
     STHash (SField::ref n, const BitString& v)
         : SerializedType (n), bitString_ (v)
@@ -64,7 +70,7 @@ public:
 
     bool isEquivalent (const SerializedType& t) const
     {
-        const STHash* v = dynamic_cast<const STHash*> (&t);
+        auto v = dynamic_cast<const STHash*> (&t);
         return v && (bitString_ == v->bitString_);
     }
 
