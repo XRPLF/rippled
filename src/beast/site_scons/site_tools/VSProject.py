@@ -94,15 +94,21 @@ def is_subdir(child, parent):
     '''Determine if child is a subdirectory of parent'''
     return os.path.commonprefix([parent, child]) == parent
 
-def xsorted(*args, **kwargs):
+def xsorted(tosort, **kwargs):
     '''Performs sorted in a deterministic manner.'''
-    if not 'key' in kwargs:
-        def _lower(item):
-            if isinstance(item, str):
-                return (item.lower(), item)
-            return (item, item)
-        kwargs['key'] = _lower
-    return sorted(*args, **kwargs)
+    if 'key' in kwargs:
+        map(kwargs['key'], tosort)
+    def _key(item):
+        if isinstance(item, (str, unicode)):
+            return ("s", item.upper(), item)
+        elif isinstance(item, (list, tuple)):
+            return ("c", map(_key, item))
+        elif isinstance(item, dict):
+            return ("d", xsorted(item.keys()), xsorted(item.values()))
+        else:
+            return ("x", item)
+    kwargs['key'] = _key
+    return sorted(tosort, **kwargs)
 
 def itemList(items, sep):
     if type(items) == str:  # Won't work in Python 3.
@@ -608,7 +614,7 @@ class _ProjectGenerator(object):
             targets = config.target
             for target in targets:
                 _walk(target, items)
-        self.items = xsorted(items.itervalues(), key=lambda x: x.path())
+        self.items = xsorted(items.values(), key=lambda x: x.path())
 
     def makeListTag(self, items, prefix, tag, attrs, inherit=True):
         '''Builds an XML tag string from a list of items. If items is
@@ -717,7 +723,7 @@ class _ProjectGenerator(object):
                 props = '      <ExcludedFromBuild>True</ExcludedFromBuild>\r\n'
             elif item.builder() == 'Object':
                 props = ''
-                for config, output in xsorted(item.node.iteritems()):
+                for config, output in xsorted(item.node.items()):
                     name = config.name
                     env = output.get_build_env()
                     variant = config.variant
@@ -727,7 +733,7 @@ class _ProjectGenerator(object):
                         ''' Condition="'$(Configuration)|$(Platform)'=='%(variant)s|%(platform)s'"''' % locals(),
                         True)
             elif item.builder() == 'Protoc':
-                for config, output in xsorted(item.node.iteritems()):
+                for config, output in xsorted(item.node.items()):
                     name = config.name
                     out_dir = os.path.relpath(os.path.dirname(str(output)), self.project_dir)
                     cpp_out = winpath(out_dir)
