@@ -28,55 +28,53 @@ class OrderBook : beast::LeakChecked <OrderBook>
 public:
     typedef std::shared_ptr <OrderBook> pointer;
     typedef std::shared_ptr <OrderBook> const& ref;
+    typedef std::vector<pointer> List;
 
 public:
     /** Construct from a currency specification.
 
         @param index ???
-        @param currencyIn  The base currency.
-        @param currencyOut The destination currency.
-        @param issuerIn    The base issuer.
-        @param issuerOut   The destination issuer.
+        @param book in and out currency/issuer pairs.
     */
     // VFALCO NOTE what is the meaning of the index parameter?
-    // VFALCO TODO Replace with Issue
-    OrderBook (uint256 const& index,
-               Currency const& currencyIn,
-               Currency const& currencyOut,
-               Account const& issuerIn,
-               Account const& issuerOut);
+    OrderBook (uint256 const& base, Book const& book)
+            : mBookBase(base), mBook(book)
+    {
+    }
 
     uint256 const& getBookBase () const
     {
         return mBookBase;
     }
 
+    Book const& book() const
+    {
+        return mBook;
+    }
+
     Currency const& getCurrencyIn () const
     {
-        return mCurrencyIn;
+        return mBook.in.currency;
     }
 
     Currency const& getCurrencyOut () const
     {
-        return mCurrencyOut;
+        return mBook.out.currency;
     }
 
     Account const& getIssuerIn () const
     {
-        return mIssuerIn;
+        return mBook.in.account;
     }
 
     Account const& getIssuerOut () const
     {
-        return mIssuerOut;
+        return mBook.out.account;
     }
 
 private:
     uint256 const mBookBase;
-    Currency const mCurrencyIn;
-    Currency const mCurrencyOut;
-    Account const mIssuerIn;
-    Account const mIssuerOut;
+    Book const mBook;
 };
 
 } // ripple

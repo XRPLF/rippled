@@ -17,30 +17,31 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
+#ifndef RIPPLE_BOOKLISTENERS_H
+#define RIPPLE_BOOKLISTENERS_H
 
-#include <boost/bimap.hpp>
-#include <boost/bimap/multiset_of.hpp>
-#include <boost/bimap/unordered_set_of.hpp>
+namespace ripple {
 
-#include <ripple/unity/app.h>
+/** Listen to public/subscribe messages from a book. */
+class BookListeners
+{
+public:
+    typedef std::shared_ptr<BookListeners> pointer;
 
-#include <ripple/unity/validators.h>
+    BookListeners () {}
 
-#include <ripple/module/app/misc/PowResult.h>
+    void addSubscriber (InfoSub::ref sub);
+    void removeSubscriber (std::uint64_t sub);
+    void publish (Json::Value const& jvObj);
 
-#include <ripple/module/app/misc/ProofOfWorkFactory.h>
+private:
+    typedef RippleRecursiveMutex LockType;
+    typedef std::lock_guard <LockType> ScopedLockType;
+    LockType mLock;
 
-#include <ripple/module/app/peers/PeerSet.cpp>
-#include <ripple/module/app/misc/ProofOfWorkFactory.cpp>
-#include <ripple/module/app/misc/ProofOfWork.cpp>
-#include <ripple/module/app/misc/SerializedTransaction.cpp>
+    ripple::unordered_map<std::uint64_t, InfoSub::wptr> mListeners;
+};
 
-// requires Application
-#include <ripple/module/app/shamap/SHAMapSyncFilters.cpp>
+} // ripple
 
-#include <ripple/module/app/consensus/LedgerConsensus.cpp>
-
-#include <ripple/module/app/ledger/LedgerCleaner.h>
-#include <ripple/module/app/ledger/LedgerCleaner.cpp>
-#include <ripple/module/app/ledger/LedgerMaster.cpp>
+#endif

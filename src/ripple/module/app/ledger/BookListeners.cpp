@@ -19,17 +19,38 @@
 
 namespace ripple {
 
-OrderBook::OrderBook (uint256 const& index,
-                      Currency const& currencyIn,
-                      Currency const& currencyOut,
-                      Account const& issuerIn,
-                      Account const& issuerOut)
-    : mBookBase (index)
-    , mCurrencyIn (currencyIn)
-    , mCurrencyOut (currencyOut)
-    , mIssuerIn (issuerIn)
-    , mIssuerOut (issuerOut)
+void BookListeners::addSubscriber (InfoSub::ref sub)
 {
+    ScopedLockType sl (mLock);
+    mListeners[sub->getSeq ()] = sub;
+}
+
+void BookListeners::removeSubscriber (std::uint64_t seq)
+{
+    ScopedLockType sl (mLock);
+    mListeners.erase (seq);
+}
+
+void BookListeners::publish (Json::Value const& jvObj)
+{
+    Json::FastWriter jfwWriter;
+    std::string sObj = jfwWriter.write (jvObj);
+
+    ScopedLockType sl (mLock);
+    NetworkOPs::SubMapType::const_iterator it = mListeners.begin ();
+
+    while (it != mListeners.end ())
+    {
+        InfoSub::pointer p = it->second.lock ();
+
+        if (p)
+        {
+            p->send (jvObj, sObj, true);
+            ++it;
+        }
+        else
+            it = mListeners.erase (it);
+    }
 }
 
 } // ripple

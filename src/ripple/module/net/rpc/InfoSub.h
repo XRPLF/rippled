@@ -63,30 +63,19 @@ public:
                 bool rt) = 0;
 
         // VFALCO TODO Document the bool return value
-        virtual bool subLedger (ref ispListener,
-            Json::Value& jvResult) = 0;
-
+        virtual bool subLedger (ref ispListener, Json::Value& jvResult) = 0;
         virtual bool unsubLedger (std::uint64_t uListener) = 0;
 
-        virtual bool subServer (ref ispListener,
-            Json::Value& jvResult) = 0;
-
+        virtual bool subServer (ref ispListener, Json::Value& jvResult) = 0;
         virtual bool unsubServer (std::uint64_t uListener) = 0;
 
-        virtual bool subBook (ref ispListener,
-            Currency const& currencyPays, Currency const& currencyGets,
-                Account const& issuerPays, Account const& issuerGets) = 0;
-
-        virtual bool unsubBook (std::uint64_t uListener,
-            Currency const& currencyPays, Currency const& currencyGets,
-                Account const& issuerPays, Account const& issuerGets) = 0;
+        virtual bool subBook (ref ispListener, Book const&) = 0;
+        virtual bool unsubBook (std::uint64_t uListener, Book const&) = 0;
 
         virtual bool subTransactions (ref ispListener) = 0;
-
         virtual bool unsubTransactions (std::uint64_t uListener) = 0;
 
         virtual bool subRTTransactions (ref ispListener) = 0;
-
         virtual bool unsubRTTransactions (std::uint64_t uListener) = 0;
 
         // VFALCO TODO Remove
@@ -94,7 +83,6 @@ public:
         //             "pushes" subscription data to a particular URL.
         //
         virtual pointer findRpcSub (const std::string& strUrl) = 0;
-
         virtual pointer addRpcSub (const std::string& strUrl, ref rspEntry) = 0;
     };
 
@@ -108,7 +96,8 @@ public:
     virtual void send (const Json::Value & jvObj, bool broadcast) = 0;
 
     // VFALCO NOTE Why is this virtual?
-    virtual void send (const Json::Value & jvObj, const std::string & sObj, bool broadcast);
+    virtual void send (
+        const Json::Value & jvObj, const std::string & sObj, bool broadcast);
 
     std::uint64_t getSeq ();
 

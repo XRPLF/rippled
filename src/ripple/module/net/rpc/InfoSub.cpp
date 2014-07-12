@@ -62,7 +62,8 @@ Resource::Consumer& InfoSub::getConsumer()
     return m_consumer;
 }
 
-void InfoSub::send (const Json::Value& jvObj, const std::string& sObj, bool broadcast)
+void InfoSub::send (
+    const Json::Value& jvObj, const std::string& sObj, bool broadcast)
 {
     send (jvObj, broadcast);
 }
@@ -76,7 +77,8 @@ void InfoSub::onSendEmpty ()
 {
 }
 
-void InfoSub::insertSubAccountInfo (RippleAddress addr, std::uint32_t uLedgerIndex)
+void InfoSub::insertSubAccountInfo (
+    RippleAddress addr, std::uint32_t uLedgerIndex)
 {
     ScopedLockType sl (mLock);
 

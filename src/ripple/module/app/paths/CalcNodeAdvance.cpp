@@ -71,10 +71,9 @@ TER nodeAdvance (
         {
             // Need to initialize current node.
 
-            node.currentDirectory_.copyFrom(Ledger::getBookBase (
-                previousNode.currency_, previousNode.issuer_,
-                node.currency_,
-                node.issuer_));
+            node.currentDirectory_.copyFrom(Ledger::getBookBase ({
+                        {previousNode.currency_, previousNode.issuer_},
+                            {node.currency_, node.issuer_}}));
             node.nextDirectory_.copyFrom(
                 Ledger::getQualityNext (node.currentDirectory_));
 

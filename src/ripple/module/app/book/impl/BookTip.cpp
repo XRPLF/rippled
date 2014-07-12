@@ -25,9 +25,7 @@ namespace core {
 BookTip::BookTip (LedgerView& view, BookRef book)
     : m_view (view)
     , m_valid (false)
-    , m_book (Ledger::getBookBase (
-        book.in.currency, book.in.account,
-        book.out.currency, book.out.account))
+    , m_book (Ledger::getBookBase (book))
     , m_end (Ledger::getQualityNext (m_book))
 {
 }

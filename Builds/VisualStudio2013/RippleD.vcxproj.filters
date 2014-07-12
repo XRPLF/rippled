@@ -3027,6 +3027,9 @@
     <ClInclude Include="..\..\src\ripple\module\app\ledger\AcceptedLedgerTx.h">
       <Filter>ripple\module\app\ledger</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\module\app\ledger\BookListeners.cpp">
+      <Filter>ripple\module\app\ledger</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\module\app\ledger\DirectoryEntryIterator.cpp">
       <Filter>ripple\module\app\ledger</Filter>
     </ClCompile>
