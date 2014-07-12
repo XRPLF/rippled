@@ -20,32 +20,10 @@
 #ifndef RIPPLE_ORDERBOOKDB_H_INCLUDED
 #define RIPPLE_ORDERBOOKDB_H_INCLUDED
 
+#include <ripple/module/app/ledger/BookListeners.h>
+
 namespace ripple {
 
-// VFALCO TODO Add Javadoc comment explaining what this class does
-class BookListeners
-{
-public:
-    typedef std::shared_ptr<BookListeners> pointer;
-
-    BookListeners ();
-    void addSubscriber (InfoSub::ref sub);
-    void removeSubscriber (std::uint64_t sub);
-    void publish (Json::Value const& jvObj);
-
-private:
-    typedef RippleRecursiveMutex LockType;
-    typedef std::lock_guard <LockType> ScopedLockType;
-    LockType mLock;
-
-    // VFALCO TODO Use a typedef for the uint64
-    //             Use a typedef for the container
-    ripple::unordered_map<std::uint64_t, InfoSub::wptr> mListeners;
-};
-
-//------------------------------------------------------------------------------
-
-// VFALCO TODO Add Javadoc comment explaining what this class does
 class OrderBookDB
     : public beast::Stoppable
     , public beast::LeakChecked <OrderBookDB>
@@ -57,36 +35,32 @@ public:
     void update (Ledger::pointer ledger);
     void invalidate ();
 
-    void addOrderBook(
-        Currency const& takerPaysCurrency, Currency const& takerGetsCurrency,
-        Account const& takerPaysIssuer, Account const& takerGetsIssuer);
+    void addOrderBook(Book const&);
 
     // return list of all orderbooks that want this issuerID and currencyID
-    void getBooksByTakerPays (Account const& issuerID, Currency const& currencyID,
-                              std::vector<OrderBook::pointer>& bookRet);
-    void getBooksByTakerGets (Account const& issuerID, Currency const& currencyID,
-                              std::vector<OrderBook::pointer>& bookRet);
+    void getBooksByTakerPays (Issue const&, OrderBook::List&);
+    void getBooksByTakerGets (Issue const&, OrderBook::List&);
 
-    bool isBookToXRP (Account const& issuerID, Currency const& currencyID);
+    bool isBookToXRP (Issue const&);
 
-    BookListeners::pointer getBookListeners (Currency const& currencyPays, Currency const& currencyGets,
-            Account const& issuerPays, Account const& issuerGets);
-
-    BookListeners::pointer makeBookListeners (Currency const& currencyPays, Currency const& currencyGets,
-            Account const& issuerPays, Account const& issuerGets);
+    BookListeners::pointer getBookListeners (Book const&);
+    BookListeners::pointer makeBookListeners (Book const&);
 
     // see if this txn effects any orderbook
-    void processTxn (Ledger::ref ledger, const AcceptedLedgerTx& alTx, Json::Value const& jvObj);
+    void processTxn (
+        Ledger::ref ledger, const AcceptedLedgerTx& alTx,
+        Json::Value const& jvObj);
+
+    typedef ripple::unordered_map <Issue, OrderBook::List> IssueToOrderBook;
 
 private:
-    typedef ripple::unordered_map <Issue, std::vector<OrderBook::pointer>>
-            AssetToOrderBook;
+    void rawAddBook(Book const&);
 
     // by ci/ii
-    AssetToOrderBook mSourceMap;
+    IssueToOrderBook mSourceMap;
 
     // by co/io
-    AssetToOrderBook mDestMap;
+    IssueToOrderBook mDestMap;
 
     // does an order book to XRP exist
     ripple::unordered_set <Issue> mXRPBooks;
@@ -101,7 +75,6 @@ private:
     BookToListenersMap mListeners;
 
     std::uint32_t mSeq;
-
 };
 
 } // ripple

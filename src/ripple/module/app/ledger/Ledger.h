@@ -342,7 +342,8 @@ public:
         std::uint32_t desiredLedgerIndex, std::uint32_t currentLedgerIndex);
 
     uint256 getLedgerHash (std::uint32_t ledgerIndex);
-    std::vector< std::pair<std::uint32_t, uint256> > getLedgerHashes ();
+    typedef std::vector<std::pair<std::uint32_t, uint256>> LedgerHashes;
+    LedgerHashes getLedgerHashes ();
 
     static uint256 getLedgerAmendmentIndex ();
     static uint256 getLedgerFeeIndex ();
@@ -398,13 +399,7 @@ public:
 
     // Order book dirs have a base so we can use next to step through them in
     // quality order.
-    static bool isValidBook (
-        Currency const& uTakerPaysCurrency, Account const& uTakerPaysIssuerID,
-        Currency const& uTakerGetsCurrency, Account const& uTakerGetsIssuerID);
-
-    static uint256 getBookBase (
-        Currency const& uTakerPaysCurrency, Account const& uTakerPaysIssuerID,
-        Currency const& uTakerGetsCurrency, Account const& uTakerGetsIssuerID);
+    static uint256 getBookBase (Book const&);
 
     //
     // Offer functions

@@ -442,8 +442,8 @@ CreateOffer::doApply ()
             view.ownerCountAdjust (mTxnAccountID, 1, sleCreator);
 
             uint256 const uBookBase (Ledger::getBookBase (
-                uPaysCurrency, uPaysIssuerID,
-                uGetsCurrency, uGetsIssuerID));
+                {{uPaysCurrency, uPaysIssuerID},
+                    {uGetsCurrency, uGetsIssuerID}}));
 
             if (m_journal.debug) m_journal.debug <<
                 "adding to book: " << to_string (uBookBase) <<

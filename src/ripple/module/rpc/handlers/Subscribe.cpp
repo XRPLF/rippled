@@ -27,14 +27,16 @@ Json::Value doSubscribe (RPC::Context& context)
 
     InfoSub::pointer ispSub;
     Json::Value jvResult (Json::objectValue);
-    std::uint32_t uLedgerIndex = context.params_.isMember (jss::ledger_index) && context.params_[jss::ledger_index].isNumeric ()
-                               ? context.params_[jss::ledger_index].asUInt ()
-                               : 0;
+    std::uint32_t uLedgerIndex = context.params_.isMember (jss::ledger_index)
+            && context.params_[jss::ledger_index].isNumeric ()
+            ? context.params_[jss::ledger_index].asUInt ()
+            : 0;
 
     if (!context.infoSub_ && !context.params_.isMember ("url"))
     {
         // Must be a JSON-RPC call.
-        WriteLog (lsINFO, RPCHandler) << boost::str (boost::format ("doSubscribe: RPC subscribe requires a url"));
+        WriteLog (lsINFO, RPCHandler)
+            << "doSubscribe: RPC subscribe requires a url";
 
         return rpcError (rpcINVALID_PARAMS);
     }
@@ -45,8 +47,10 @@ Json::Value doSubscribe (RPC::Context& context)
             return rpcError (rpcNO_PERMISSION);
 
         std::string strUrl      = context.params_["url"].asString ();
-        std::string strUsername = context.params_.isMember ("url_username") ? context.params_["url_username"].asString () : "";
-        std::string strPassword = context.params_.isMember ("url_password") ? context.params_["url_password"].asString () : "";
+        std::string strUsername = context.params_.isMember ("url_username") ?
+                context.params_["url_username"].asString () : "";
+        std::string strPassword = context.params_.isMember ("url_password") ?
+                context.params_["url_password"].asString () : "";
 
         // DEPRECATED
         if (context.params_.isMember ("username"))
@@ -60,16 +64,19 @@ Json::Value doSubscribe (RPC::Context& context)
 
         if (!ispSub)
         {
-            WriteLog (lsDEBUG, RPCHandler) << boost::str (boost::format ("doSubscribe: building: %s") % strUrl);
+            WriteLog (lsDEBUG, RPCHandler)
+                << "doSubscribe: building: " << strUrl;
 
             RPCSub::pointer rspSub = RPCSub::New (getApp ().getOPs (),
                 getApp ().getIOService (), getApp ().getJobQueue (),
                     strUrl, strUsername, strPassword);
-            ispSub  = context.netOps_.addRpcSub (strUrl, std::dynamic_pointer_cast<InfoSub> (rspSub));
+            ispSub  = context.netOps_.addRpcSub (
+                strUrl, std::dynamic_pointer_cast<InfoSub> (rspSub));
         }
         else
         {
-            WriteLog (lsTRACE, RPCHandler) << boost::str (boost::format ("doSubscribe: reusing: %s") % strUrl);
+            WriteLog (lsTRACE, RPCHandler)
+                << "doSubscribe: reusing: " << strUrl;
 
             if (context.params_.isMember ("username"))
                 dynamic_cast<RPCSub*> (&*ispSub)->setUsername (strUsername);
@@ -88,17 +95,18 @@ Json::Value doSubscribe (RPC::Context& context)
     }
     else if (!context.params_["streams"].isArray ())
     {
-        WriteLog (lsINFO, RPCHandler) << boost::str (boost::format ("doSubscribe: streams requires an array."));
+        WriteLog (lsINFO, RPCHandler)
+            << "doSubscribe: streams requires an array.";
 
         return rpcError (rpcINVALID_PARAMS);
     }
     else
     {
-        for (Json::Value::iterator it = context.params_["streams"].begin (); it != context.params_["streams"].end (); it++)
+        for (auto& it: context.params_["streams"])
         {
-            if ((*it).isString ())
+            if (it.isString ())
             {
-                std::string streamName = (*it).asString ();
+                std::string streamName = it.asString ();
 
                 if (streamName == "server")
                 {
@@ -129,9 +137,9 @@ Json::Value doSubscribe (RPC::Context& context)
         }
     }
 
-    std::string strAccountsProposed = context.params_.isMember ("accounts_proposed")
-                                      ? "accounts_proposed"
-                                      : "rt_accounts";                                    // DEPRECATED
+    std::string strAccountsProposed =
+               context.params_.isMember ("accounts_proposed")
+               ? "accounts_proposed" : "rt_accounts";  // DEPRECATED
 
     if (!context.params_.isMember (strAccountsProposed))
     {
@@ -142,16 +150,12 @@ Json::Value doSubscribe (RPC::Context& context)
     }
     else
     {
-        ripple::unordered_set<RippleAddress> usnaAccoundIds  = RPC::parseAccountIds (context.params_[strAccountsProposed]);
+        auto ids  = RPC::parseAccountIds (context.params_[strAccountsProposed]);
 
-        if (usnaAccoundIds.empty ())
-        {
-            jvResult[jss::error]   = "malformedAccount";
-        }
+        if (ids.empty ())
+            jvResult[jss::error] = "malformedAccount";
         else
-        {
-            context.netOps_.subAccount (ispSub, usnaAccoundIds, uLedgerIndex, true);
-        }
+            context.netOps_.subAccount (ispSub, ids, uLedgerIndex, true);
     }
 
     if (!context.params_.isMember ("accounts"))
@@ -163,17 +167,17 @@ Json::Value doSubscribe (RPC::Context& context)
     }
     else
     {
-        ripple::unordered_set<RippleAddress> usnaAccoundIds  = RPC::parseAccountIds (context.params_["accounts"]);
+        auto ids  = RPC::parseAccountIds (context.params_["accounts"]);
 
-        if (usnaAccoundIds.empty ())
+        if (ids.empty ())
         {
             jvResult[jss::error]   = "malformedAccount";
         }
         else
         {
-            context.netOps_.subAccount (ispSub, usnaAccoundIds, uLedgerIndex, false);
-
-            WriteLog (lsDEBUG, RPCHandler) << boost::str (boost::format ("doSubscribe: accounts: %d") % usnaAccoundIds.size ());
+            context.netOps_.subAccount (ispSub, ids, uLedgerIndex, false);
+            WriteLog (lsDEBUG, RPCHandler)
+                << "doSubscribe: accounts: " << ids.size ();
         }
     }
 
@@ -187,34 +191,32 @@ Json::Value doSubscribe (RPC::Context& context)
     }
     else
     {
-        for (Json::Value::iterator it = context.params_["books"].begin (); it != context.params_["books"].end (); it++)
+        for (auto& j: context.params_["books"])
         {
-            Json::Value&    jvSubRequest    = *it;
-
-            if (!jvSubRequest.isObject ()
-                    || !jvSubRequest.isMember (jss::taker_pays)
-                    || !jvSubRequest.isMember (jss::taker_gets)
-                    || !jvSubRequest[jss::taker_pays].isObject ()
-                    || !jvSubRequest[jss::taker_gets].isObject ())
+            if (!j.isObject ()
+                    || !j.isMember (jss::taker_pays)
+                    || !j.isMember (jss::taker_gets)
+                    || !j[jss::taker_pays].isObject ()
+                    || !j[jss::taker_gets].isObject ())
                 return rpcError (rpcINVALID_PARAMS);
 
-            // VFALCO TODO Use Issue here
-            Currency pay_currency;
-            Account   pay_issuer;
-            Currency get_currency;
-            Account   get_issuer;
+            Book book;
+            bool bBoth =
+                    (j.isMember ("both") && j["both"].asBool ()) ||
+                    (j.isMember ("both_sides") && j["both_sides"].asBool ());
+            bool bSnapshot =
+                    (j.isMember ("snapshot") && j["snapshot"].asBool ()) ||
+                    (j.isMember ("state_now") && j["state_now"].asBool ());
+            // TODO(tom): both_sides and state_now are apparently deprecated...
+            // where is this documented?
 
-            bool            bBoth           = (jvSubRequest.isMember ("both") && jvSubRequest["both"].asBool ())
-                                              || (jvSubRequest.isMember ("both_sides") && jvSubRequest["both_sides"].asBool ());  // DEPRECATED
-            bool            bSnapshot       = (jvSubRequest.isMember ("snapshot") && jvSubRequest["snapshot"].asBool ())
-                                              || (jvSubRequest.isMember ("state_now") && jvSubRequest["state_now"].asBool ());    // DEPRECATED
-
-            Json::Value     taker_pays     = jvSubRequest[jss::taker_pays];
-            Json::Value     taker_gets     = jvSubRequest[jss::taker_gets];
+            Json::Value taker_pays = j[jss::taker_pays];
+            Json::Value taker_gets = j[jss::taker_gets];
 
             // Parse mandatory currency.
             if (!taker_pays.isMember (jss::currency)
-                    || !to_currency (pay_currency, taker_pays[jss::currency].asString ()))
+                    || !to_currency (book.in.currency,
+                                     taker_pays[jss::currency].asString ()))
             {
                 WriteLog (lsINFO, RPCHandler) << "Bad taker_pays currency.";
 
@@ -223,10 +225,11 @@ Json::Value doSubscribe (RPC::Context& context)
             // Parse optional issuer.
             else if (((taker_pays.isMember (jss::issuer))
                       && (!taker_pays[jss::issuer].isString ()
-                          || !to_issuer (pay_issuer, taker_pays[jss::issuer].asString ())))
+                          || !to_issuer (book.in.account,
+                                         taker_pays[jss::issuer].asString ())))
                      // Don't allow illegal issuers.
-                     || (!pay_currency != !pay_issuer)
-                     || noAccount() == pay_issuer)
+                     || (!book.in.currency != !book.in.account)
+                     || noAccount() == book.in.account)
             {
                 WriteLog (lsINFO, RPCHandler) << "Bad taker_pays issuer.";
 
@@ -235,7 +238,8 @@ Json::Value doSubscribe (RPC::Context& context)
 
             // Parse mandatory currency.
             if (!taker_gets.isMember (jss::currency)
-                    || !to_currency (get_currency, taker_gets[jss::currency].asString ()))
+                    || !to_currency (book.out.currency,
+                                     taker_gets[jss::currency].asString ()))
             {
                 WriteLog (lsINFO, RPCHandler) << "Bad taker_pays currency.";
 
@@ -244,18 +248,19 @@ Json::Value doSubscribe (RPC::Context& context)
             // Parse optional issuer.
             else if (((taker_gets.isMember (jss::issuer))
                       && (!taker_gets[jss::issuer].isString ()
-                          || !to_issuer (get_issuer, taker_gets[jss::issuer].asString ())))
+                          || !to_issuer (book.out.account,
+                                         taker_gets[jss::issuer].asString ())))
                      // Don't allow illegal issuers.
-                     || (!get_currency != !get_issuer)
-                     || noAccount() == get_issuer)
+                     || (!book.out.currency != !book.out.account)
+                     || noAccount() == book.out.account)
             {
                 WriteLog (lsINFO, RPCHandler) << "Bad taker_gets issuer.";
 
                 return rpcError (rpcDST_ISR_MALFORMED);
             }
 
-            if (pay_currency == get_currency
-                    && pay_issuer == get_issuer)
+            if (book.in.currency == book.out.currency
+                    && book.in.account == book.out.account)
             {
                 WriteLog (lsINFO, RPCHandler) << "taker_gets same as taker_pays.";
 
@@ -264,26 +269,21 @@ Json::Value doSubscribe (RPC::Context& context)
 
             RippleAddress   raTakerID;
 
-            if (!jvSubRequest.isMember ("taker"))
-            {
+            if (!j.isMember ("taker"))
                 raTakerID.setAccountID (noAccount());
-            }
-            else if (!raTakerID.setAccountID (jvSubRequest["taker"].asString ()))
-            {
+            else if (!raTakerID.setAccountID (j["taker"].asString ()))
                 return rpcError (rpcBAD_ISSUER);
-            }
 
-            if (!Ledger::isValidBook (pay_currency, pay_issuer, get_currency, get_issuer))
+            if (!isConsistent (book))
             {
-                WriteLog (lsWARNING, RPCHandler) << "Bad market: " <<
-                                                 pay_currency << ":" << pay_issuer << " -> " <<
-                                                 get_currency << ":" << get_issuer;
+                WriteLog (lsWARNING, RPCHandler) << "Bad market: " << book;
                 return rpcError (rpcBAD_MARKET);
             }
 
-            context.netOps_.subBook (ispSub, pay_currency, get_currency, pay_issuer, get_issuer);
+            context.netOps_.subBook (ispSub, book);
 
-            if (bBoth) context.netOps_.subBook (ispSub, get_currency, pay_currency, get_issuer, pay_issuer);
+            if (bBoth)
+                context.netOps_.subBook (ispSub, book);
 
             if (bSnapshot)
             {
@@ -294,27 +294,36 @@ Json::Value doSubscribe (RPC::Context& context)
                 }
 
                 context.loadType_ = Resource::feeMediumBurdenRPC;
-                Ledger::pointer     lpLedger = getApp().getLedgerMaster ().getPublishedLedger ();
+                auto lpLedger = getApp().getLedgerMaster ().
+                        getPublishedLedger ();
                 if (lpLedger)
                 {
-                    const Json::Value   jvMarker = Json::Value (Json::nullValue);
+                    const Json::Value jvMarker = Json::Value (Json::nullValue);
 
                     if (bBoth)
                     {
                         Json::Value jvBids (Json::objectValue);
                         Json::Value jvAsks (Json::objectValue);
 
-                        context.netOps_.getBookPage (lpLedger, pay_currency, pay_issuer, get_currency, get_issuer, raTakerID.getAccountID (), false, 0, jvMarker, jvBids);
+                        context.netOps_.getBookPage (
+                            lpLedger, book, raTakerID.getAccountID (), false, 0,
+                            jvMarker, jvBids);
 
-                        if (jvBids.isMember (jss::offers)) jvResult[jss::bids] = jvBids[jss::offers];
+                        if (jvBids.isMember (jss::offers))
+                            jvResult[jss::bids] = jvBids[jss::offers];
 
-                        context.netOps_.getBookPage (lpLedger, get_currency, get_issuer, pay_currency, pay_issuer, raTakerID.getAccountID (), false, 0, jvMarker, jvAsks);
+                        context.netOps_.getBookPage (
+                            lpLedger, book, raTakerID.getAccountID (),
+                            false, 0, jvMarker, jvAsks);
 
-                        if (jvAsks.isMember (jss::offers)) jvResult[jss::asks] = jvAsks[jss::offers];
+                        if (jvAsks.isMember (jss::offers))
+                            jvResult[jss::asks] = jvAsks[jss::offers];
                     }
                     else
                     {
-                        context.netOps_.getBookPage (lpLedger, pay_currency, pay_issuer, get_currency, get_issuer, raTakerID.getAccountID (), false, 0, jvMarker, jvResult);
+                        context.netOps_.getBookPage (
+                            lpLedger, book, raTakerID.getAccountID (), false, 0,
+                            jvMarker, jvResult);
                     }
                 }
             }

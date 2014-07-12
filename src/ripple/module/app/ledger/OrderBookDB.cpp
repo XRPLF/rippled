@@ -33,23 +33,25 @@ void OrderBookDB::invalidate ()
 
 void OrderBookDB::setup (Ledger::ref ledger)
 {
+    auto seq = ledger->getLedgerSeq ();
     {
         ScopedLockType sl (mLock);
 
         // Do a full update every 256 ledgers
         if (mSeq != 0)
         {
-            if (ledger->getLedgerSeq () == mSeq)
+            if (seq == mSeq)
                 return;
-            if ((ledger->getLedgerSeq () > mSeq) && ((ledger->getLedgerSeq () - mSeq) < 256))
+            if ((seq > mSeq) && ((seq - mSeq) < 256))
                 return;
-            if ((ledger->getLedgerSeq () < mSeq) && ((mSeq - ledger->getLedgerSeq ()) < 16))
+            if ((seq < mSeq) && ((mSeq - seq) < 16))
                 return;
         }
 
-        WriteLog (lsDEBUG, OrderBookDB) << "Advancing from " << mSeq << " to " << ledger->getLedgerSeq();
+        WriteLog (lsDEBUG, OrderBookDB)
+            << "Advancing from " << mSeq << " to " << seq;
 
-        mSeq = ledger->getLedgerSeq ();
+        mSeq = seq;
     }
 
     if (getConfig().RUN_STANDALONE)
@@ -61,34 +63,29 @@ void OrderBookDB::setup (Ledger::ref ledger)
 
 static void updateHelper (SLE::ref entry,
     ripple::unordered_set< uint256 >& seen,
-    ripple::unordered_map< Issue, std::vector<OrderBook::pointer> >& destMap,
-    ripple::unordered_map< Issue, std::vector<OrderBook::pointer> >& sourceMap,
+    OrderBookDB::IssueToOrderBook& destMap,
+    OrderBookDB::IssueToOrderBook& sourceMap,
     ripple::unordered_set< Issue >& XRPBooks,
     int& books)
 {
-    if ((entry->getType () == ltDIR_NODE) && (entry->isFieldPresent (sfExchangeRate)) &&
-            (entry->getFieldH256 (sfRootIndex) == entry->getIndex()))
+    if (entry->getType () == ltDIR_NODE &&
+        entry->isFieldPresent (sfExchangeRate) &&
+        entry->getFieldH256 (sfRootIndex) == entry->getIndex())
     {
-        Currency ci, co;
-        ci.copyFrom (entry->getFieldH160 (sfTakerPaysCurrency));
-        co.copyFrom (entry->getFieldH160 (sfTakerGetsCurrency));
+        Book book;
+        book.in.currency.copyFrom (entry->getFieldH160 (sfTakerPaysCurrency));
+        book.in.account.copyFrom (entry->getFieldH160 (sfTakerPaysIssuer));
+        book.out.account.copyFrom (entry->getFieldH160 (sfTakerGetsIssuer));
+        book.out.currency.copyFrom (entry->getFieldH160 (sfTakerGetsCurrency));
 
-        Account ii, io;
-        ii.copyFrom (entry->getFieldH160 (sfTakerPaysIssuer));
-        io.copyFrom (entry->getFieldH160 (sfTakerGetsIssuer));
-
-        uint256 index = Ledger::getBookBase (ci, ii, co, io);
-
+        uint256 index = Ledger::getBookBase (book);
         if (seen.insert (index).second)
         {
-            // VFALCO TODO Reduce the clunkiness of these parameter wrappers
-            OrderBook::pointer book = std::make_shared<OrderBook> (std::cref (index),
-                                      std::cref (ci), std::cref (co), std::cref (ii), std::cref (io));
-
-            sourceMap[IssueRef (ci, ii)].push_back (book);
-            destMap[IssueRef (co, io)].push_back (book);
-            if (co.isZero())
-                XRPBooks.insert(IssueRef (ci, ii));
+            auto orderBook = std::make_shared<OrderBook> (index, book);
+            sourceMap[book.in].push_back (orderBook);
+            destMap[book.out].push_back (orderBook);
+            if (isXRP(book.out))
+                XRPBooks.insert(book.in);
             ++books;
         }
     }
@@ -97,8 +94,8 @@ static void updateHelper (SLE::ref entry,
 void OrderBookDB::update (Ledger::pointer ledger)
 {
     ripple::unordered_set< uint256 > seen;
-    ripple::unordered_map< Issue, std::vector<OrderBook::pointer> > destMap;
-    ripple::unordered_map< Issue, std::vector<OrderBook::pointer> > sourceMap;
+    OrderBookDB::IssueToOrderBook destMap;
+    OrderBookDB::IssueToOrderBook sourceMap;
     ripple::unordered_set< Issue > XRPBooks;
 
     WriteLog (lsDEBUG, OrderBookDB) << "OrderBookDB::update>";
@@ -114,13 +111,15 @@ void OrderBookDB::update (Ledger::pointer ledger)
     }
     catch (const SHAMapMissingNode&)
     {
-        WriteLog (lsINFO, OrderBookDB) << "OrderBookDB::update encountered a missing node";
+        WriteLog (lsINFO, OrderBookDB)
+            << "OrderBookDB::update encountered a missing node";
         ScopedLockType sl (mLock);
         mSeq = 0;
         return;
     }
 
-    WriteLog (lsDEBUG, OrderBookDB) << "OrderBookDB::update< " << books << " books found";
+    WriteLog (lsDEBUG, OrderBookDB)
+        << "OrderBookDB::update< " << books << " books found";
     {
         ScopedLockType sl (mLock);
 
@@ -131,63 +130,66 @@ void OrderBookDB::update (Ledger::pointer ledger)
     getApp().getLedgerMaster().newOrderBookDB();
 }
 
-void OrderBookDB::addOrderBook(Currency const& ci, Currency const& co,
-    Account const& ii, Account const& io)
+void OrderBookDB::addOrderBook(Book const& book)
 {
-    bool toXRP = co.isZero();
+    bool toXRP = isXRP (book.out);
     ScopedLockType sl (mLock);
 
     if (toXRP)
-    { // We don't want to search through all the to-XRP or from-XRP order books!
-        for (auto ob : mSourceMap[{ci, ii}])
+    {
+        // We don't want to search through all the to-XRP or from-XRP order
+        // books!
+        for (auto ob: mSourceMap[book.in])
         {
-            if (ob->getCurrencyOut().isZero ()) // also to XRP
+            if (isXRP (ob->getCurrencyOut ())) // also to XRP
                 return;
         }
     }
     else
     {
-        for (auto ob : mDestMap[{co, io}])
+        for (auto ob: mDestMap[book.out])
         {
-            if ((ob->getCurrencyIn() == ci) && (ob->getIssuerIn() == ii))
+            if (ob->getCurrencyIn() == book.in.currency &&
+                ob->getIssuerIn() == book.in.account)
+            {
                 return;
+            }
         }
     }
+    uint256 index = Ledger::getBookBase(book);
+    auto orderBook = std::make_shared<OrderBook> (index, book);
 
-    uint256 index = Ledger::getBookBase(ci, ii, co, io);
-    auto book = std::make_shared<OrderBook> (index, ci, co, ii, io);
-
-    mSourceMap[{ci, ii}].push_back (book);
-    mDestMap[{co, io}].push_back (book);
+    mSourceMap[book.in].push_back (orderBook);
+    mDestMap[book.out].push_back (orderBook);
     if (toXRP)
-        mXRPBooks.insert({ci, ii});
+        mXRPBooks.insert(book.in);
 }
 
 // return list of all orderbooks that want this issuerID and currencyID
-void OrderBookDB::getBooksByTakerPays (Account const& issuerID, Currency const& currencyID,
-                                       std::vector<OrderBook::pointer>& bookRet)
+void OrderBookDB::getBooksByTakerPays (
+    Issue const& issue, OrderBook::List& bookRet)
 {
     ScopedLockType sl (mLock);
-    auto it = mSourceMap.find ({currencyID, issuerID});
+    auto it = mSourceMap.find (issue);
     if (it != mSourceMap.end ())
         bookRet = it->second;
     else
         bookRet.clear ();
 }
 
-bool OrderBookDB::isBookToXRP(Account const& issuerID, Currency const& currencyID)
+bool OrderBookDB::isBookToXRP(Issue const& issue)
 {
     ScopedLockType sl (mLock);
 
-    return mXRPBooks.count({currencyID, issuerID}) > 0;
+    return mXRPBooks.count(issue) > 0;
 }
 
 // return list of all orderbooks that give this issuerID and currencyID
-void OrderBookDB::getBooksByTakerGets (Account const& issuerID, Currency const& currencyID,
-                                       std::vector<OrderBook::pointer>& bookRet)
+void OrderBookDB::getBooksByTakerGets (
+    Issue const& issue, OrderBook::List& bookRet)
 {
     ScopedLockType sl (mLock);
-    auto it = mDestMap.find ({currencyID, issuerID});
+    auto it = mDestMap.find (issue);
 
     if (it != mDestMap.end ())
         bookRet = it->second;
@@ -195,49 +197,46 @@ void OrderBookDB::getBooksByTakerGets (Account const& issuerID, Currency const& 
         bookRet.clear ();
 }
 
-BookListeners::pointer OrderBookDB::makeBookListeners (Currency const& currencyPays, Currency const& currencyGets,
-        Account const& issuerPays, Account const& issuerGets)
+BookListeners::pointer OrderBookDB::makeBookListeners (Book const& book)
 {
     ScopedLockType sl (mLock);
-    BookListeners::pointer ret = getBookListeners (currencyPays, currencyGets, issuerPays, issuerGets);
+    auto ret = getBookListeners (book);
 
     if (!ret)
     {
         ret = std::make_shared<BookListeners> ();
 
-        mListeners [BookRef ({currencyPays, issuerPays},
-                             {currencyGets, issuerGets})] = ret;
-        assert (getBookListeners (currencyPays, currencyGets, issuerPays, issuerGets) == ret);
+        mListeners [book] = ret;
+        assert (getBookListeners (book) == ret);
     }
 
     return ret;
 }
 
-BookListeners::pointer OrderBookDB::getBookListeners (Currency const& currencyPays, Currency const& currencyGets,
-        Account const& issuerPays, Account const& issuerGets)
+BookListeners::pointer OrderBookDB::getBookListeners (Book const& book)
 {
     BookListeners::pointer ret;
     ScopedLockType sl (mLock);
 
-    auto it0 (mListeners.find (BookRef (
-        {currencyPays, issuerPays}, {currencyGets, issuerGets})));
-
+    auto it0 = mListeners.find (book);
     if (it0 != mListeners.end ())
         ret = it0->second;
 
     return ret;
 }
 
-// Based on the meta, send the meta to the streams that are listening
-// We need to determine which streams a given meta effects
-void OrderBookDB::processTxn (Ledger::ref ledger, const AcceptedLedgerTx& alTx, Json::Value const& jvObj)
+// Based on the meta, send the meta to the streams that are listening.
+// We need to determine which streams a given meta effects.
+void OrderBookDB::processTxn (
+    Ledger::ref ledger, const AcceptedLedgerTx& alTx, Json::Value const& jvObj)
 {
     ScopedLockType sl (mLock);
 
     if (alTx.getResult () == tesSUCCESS)
     {
-        // check if this is an offer or an offer cancel or a payment that consumes an offer
-        //check to see what the meta looks like
+        // Check if this is an offer or an offer cancel or a payment that
+        // consumes an offer.
+        // Check to see what the meta looks like.
         for (auto& node : alTx.getMeta ()->getNodes ())
         {
             try
@@ -246,89 +245,39 @@ void OrderBookDB::processTxn (Ledger::ref ledger, const AcceptedLedgerTx& alTx, 
                 {
                     SField* field = nullptr;
 
-                    // We need a field that contains the TakerGets and TakerPays parameters
+                    // We need a field that contains the TakerGets and TakerPays
+                    // parameters.
                     if (node.getFName () == sfModifiedNode)
-                    {
                         field = &sfPreviousFields;
-                    }
                     else if (node.getFName () == sfCreatedNode)
-                    {
                         field = &sfNewFields;
-                    }
                     else if (node.getFName () == sfDeletedNode)
-                    {
                         field = &sfFinalFields;
-                    }
 
                     if (field)
                     {
-                        const STObject* data = dynamic_cast<const STObject*> (node.peekAtPField (*field));
+                        auto data = dynamic_cast<const STObject*> (
+                            node.peekAtPField (*field));
 
                         if (data)
                         {
-                            const STAmount& takerGets = data->getFieldAmount (sfTakerGets);
-                            Currency const& currencyGets = takerGets.getCurrency ();
-                            Account const& issuerGets = takerGets.getIssuer ();
-
-                            const STAmount& takerPays = data->getFieldAmount (sfTakerPays);
-                            Currency const& currencyPays = takerPays.getCurrency ();
-                            Account const& issuerPays = takerPays.getIssuer ();
-
                             // determine the OrderBook
-                            BookListeners::pointer book =
-                                getBookListeners (currencyPays, currencyGets, issuerPays, issuerGets);
+                            auto listeners = getBookListeners (
+                                {data->getFieldAmount (sfTakerGets).issue(),
+                                 data->getFieldAmount (sfTakerPays).issue()});
 
-                            if (book)
-                                book->publish (jvObj);
+                            if (listeners)
+                                listeners->publish (jvObj);
                         }
                     }
                 }
             }
             catch (...)
             {
-                WriteLog (lsINFO, OrderBookDB) << "Fields not found in OrderBookDB::processTxn";
+                WriteLog (lsINFO, OrderBookDB)
+                    << "Fields not found in OrderBookDB::processTxn";
             }
         }
-    }
-}
-
-//------------------------------------------------------------------------------
-
-BookListeners::BookListeners ()
-{
-}
-
-void BookListeners::addSubscriber (InfoSub::ref sub)
-{
-    ScopedLockType sl (mLock);
-    mListeners[sub->getSeq ()] = sub;
-}
-
-void BookListeners::removeSubscriber (std::uint64_t seq)
-{
-    ScopedLockType sl (mLock);
-    mListeners.erase (seq);
-}
-
-void BookListeners::publish (Json::Value const& jvObj)
-{
-    Json::FastWriter jfwWriter;
-    std::string sObj = jfwWriter.write (jvObj);
-
-    ScopedLockType sl (mLock);
-    NetworkOPs::SubMapType::const_iterator it = mListeners.begin ();
-
-    while (it != mListeners.end ())
-    {
-        InfoSub::pointer p = it->second.lock ();
-
-        if (p)
-        {
-            p->send (jvObj, sObj, true);
-            ++it;
-        }
-        else
-            it = mListeners.erase (it);
     }
 }
 

@@ -161,9 +161,11 @@ Json::Value doBookOffers (RPC::Context& context)
         return RPC::make_error (rpcBAD_MARKET);
     }
 
-    if (context.params_.isMember ("limit") && ! context.params_ ["limit"].isIntegral())
-        return RPC::expected_field_error (
-        "limit", "integer");
+    if (context.params_.isMember ("limit") &&
+        !context.params_ ["limit"].isIntegral())
+    {
+        return RPC::expected_field_error ("limit", "integer");
+    }
 
     unsigned int const iLimit (context.params_.isMember ("limit")
         ? context.params_ ["limit"].asUInt ()
@@ -175,9 +177,10 @@ Json::Value doBookOffers (RPC::Context& context)
         ? context.params_["marker"]
         : Json::Value (Json::nullValue));
 
-    context.netOps_.getBookPage (lpLedger, pay_currency, pay_issuer,
-        get_currency, get_issuer, raTakerID.getAccountID (),
-            bProof, iLimit, jvMarker, jvResult);
+    context.netOps_.getBookPage (
+        lpLedger,
+        {{pay_currency, pay_issuer}, {get_currency, get_issuer}},
+        raTakerID.getAccountID (), bProof, iLimit, jvMarker, jvResult);
 
     context.loadType_ = Resource::feeMediumBurdenRPC;
 

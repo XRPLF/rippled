@@ -203,18 +203,11 @@ Json::Value doUnsubscribe (RPC::Context& context)
                 return rpcError (rpcBAD_MARKET);
             }
 
-            context.netOps_.unsubBook (
-                ispSub->getSeq (),
-                pay_currency, get_currency,
-                pay_issuer, get_issuer);
+            Book book{{pay_currency, pay_issuer}, {get_currency, get_issuer}};
+            context.netOps_.unsubBook (ispSub->getSeq (), book);
 
             if (bBoth)
-            {
-                context.netOps_.unsubBook (
-                    ispSub->getSeq (),
-                    get_currency, pay_currency,
-                    get_issuer, pay_issuer);
-            }
+                context.netOps_.unsubBook (ispSub->getSeq (), book);
         }
     }
 
