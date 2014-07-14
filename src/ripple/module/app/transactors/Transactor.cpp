@@ -111,18 +111,28 @@ TER Transactor::payFee ()
     if (saPaid < zero || !saPaid.isNative ())
         return temBAD_FEE;
 
-    if (!saPaid) return tesSUCCESS;
+    if (!saPaid)
+        return tesSUCCESS;
 
-    // Deduct the fee, so it's not available during the transaction.
-    // Will only write the account back, if the transaction succeeds.
     if (mSourceBalance < saPaid)
     {
         m_journal.trace << "Insufficient balance:" <<
             " balance=" << mSourceBalance.getText () <<
             " paid=" << saPaid.getText ();
 
+        if ((mSourceBalance > zero) && (!(mParams & tapOPEN_LEDGER)))
+        {
+            // Closed ledger, non-zero balance, less than fee
+            mSourceBalance.clear ();
+            mTxnAccount->setFieldAmount (sfBalance, mSourceBalance);
+            return tecINSUFF_FEE;
+        }
+
         return terINSUF_FEE_B;
     }
+
+    // Deduct the fee, so it's not available during the transaction.
+    // Will only write the account back, if the transaction succeeds.
 
     mSourceBalance -= saPaid;
     mTxnAccount->setFieldAmount (sfBalance, mSourceBalance);

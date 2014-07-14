@@ -50,6 +50,7 @@ bool transResultInfo (TER terCode, std::string& strToken, std::string& strHuman)
         {   tecNO_ISSUER,           "tecNO_ISSUER",             "Issuer account does not exist."                        },
         {   tecNO_AUTH,             "tecNO_AUTH",               "Not authorized to hold asset."                         },
         {   tecNO_LINE,             "tecNO_LINE",               "No such line."                                         },
+        {   tecINSUFF_FEE,          "tecINSUFF_FEE",            "Insufficient balance to pay fee."                      },
 
         {   tefALREADY,             "tefALREADY",               "The exact transaction was already in this ledger."     },
         {   tefBAD_ADD_AUTH,        "tefBAD_ADD_AUTH",          "Not authorized to add account."                        },

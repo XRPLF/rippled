@@ -82,8 +82,13 @@ private:
     ripple::unordered_map <NodeID, bool> mVotes;
 };
 
-#define LEDGER_TOTAL_PASSES 8
-#define LEDGER_RETRY_PASSES 5
+// How many total extra passes we make
+// We must ensure we make at least one non-retriable pass
+#define LEDGER_TOTAL_PASSES 3
+
+// How many extra retry passes we
+// make if the previous retry pass made changes
+#define LEDGER_RETRY_PASSES 1
 
 } // ripple
 

@@ -149,10 +149,19 @@ TER TransactionEngine::applyTransaction (const SerializedTransaction& txn, Trans
                 STAmount fee        = txn.getTransactionFee ();
                 STAmount balance    = txnAcct->getFieldAmount (sfBalance);
 
-                if (balance < fee)
+                // We retry/reject the transaction if the account
+                // balance is zero or we're applying against an open
+                // ledger and the balance is less than the fee
+                if ((balance == zero) ||
+                    ((params & tapOPEN_LEDGER) && (balance < fee)))
+                {
+                    // Account has no funds or ledger is open
                     terResult = terINSUF_FEE_B;
+                }
                 else
                 {
+                    if (fee > balance)
+                        fee = balance;
                     txnAcct->setFieldAmount (sfBalance, balance - fee);
                     txnAcct->setFieldU32 (sfSequence, t_seq + 1);
                     entryModify (txnAcct);

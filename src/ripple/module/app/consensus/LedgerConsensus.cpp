@@ -972,6 +972,7 @@ private:
 
             // Apply disputed transactions that didn't get in
             TransactionEngine engine (newOL);
+            bool anyDisputes = false;
             for (auto& it : mDisputes)
             {
                 if (!it.second->getOurVote ())
@@ -986,10 +987,8 @@ private:
                         SerializedTransaction::pointer txn
                             = std::make_shared<SerializedTransaction>(sit);
 
-                        if (applyTransaction (engine, txn, newOL, true, false))
-                        {
-                            failedTransactions.push_back (txn);
-                        }
+                        failedTransactions.push_back (txn);
+                        anyDisputes = true;
                     }
                     catch (...)
                     {
@@ -998,12 +997,22 @@ private:
                     }
                 }
             }
+            if (anyDisputes)
+            {
+                applyTransactions (std::shared_ptr<SHAMap>(),
+                    newOL, newLCL, failedTransactions, true);
+            }
 
-            WriteLog (lsDEBUG, LedgerConsensus)
-                << "Applying transactions from current open ledger";
-            applyTransactions (getApp().getLedgerMaster ().getCurrentLedger
-                ()->peekTransactionMap (), newOL, newLCL,
-                failedTransactions, true);
+	    {
+	        Ledger::pointer oldOL = getApp().getLedgerMaster().getCurrentLedger();
+	        if (oldOL->peekTransactionMap()->getHash().isNonZero ())
+	        {
+                    WriteLog (lsDEBUG, LedgerConsensus)
+                        << "Applying transactions from current open ledger";
+                    applyTransactions (oldOL->peekTransactionMap (),
+                        newOL, newLCL, failedTransactions, true);
+                }
+	    }
 
             {
                 TransactionEngine engine (newOL);
@@ -1252,6 +1261,7 @@ private:
     {
         TransactionEngine engine (applyLedger);
 
+        if (set)
         for (SHAMapItem::pointer item = set->peekFirstItem (); !!item;
             item = set->peekNextItem (item->getTag ()))
             if (!checkLedger->hasTransaction (item->getTag ()))
@@ -1334,6 +1344,10 @@ private:
             if ((!changes) || (pass >= LEDGER_RETRY_PASSES))
                 certainRetry = false;
         }
+
+        // If there are any transactions left, we must have
+        // tried them in at least one final pass
+        assert (failedTransactions.empty() || !certainRetry);
     }
 
     /** Apply a transaction to a ledger
