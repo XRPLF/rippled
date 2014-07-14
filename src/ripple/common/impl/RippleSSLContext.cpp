@@ -22,9 +22,10 @@
 #include <ripple/common/seconds_clock.h>
 #include <beast/container/aged_unordered_set.h>
 
+#include <beast/utility/static_initializer.h>
+
 #include <cstdint>
 #include <sstream>
-
 
 namespace ripple {
 
@@ -34,6 +35,16 @@ private:
     boost::asio::ssl::context m_context;
 
     // track when SSL connections have last negotiated
+
+    struct StaticData
+    {
+        StaticData() : set (ripple::get_seconds_clock ())
+        {
+        }
+
+        std::mutex lock;
+        beast::aged_unordered_set <SSL const*> set;
+    };
 
 public:
     RippleSSLContextImp ()
@@ -56,36 +67,34 @@ public:
         // Do not allow a connection to renegotiate
         // more than once every 4 minutes
 
-        static std::mutex negotiationSetLock;
-        static beast::aged_unordered_set <SSL const*> negotiationSet (ripple::get_seconds_clock ());
-        static std::chrono::seconds const minRenegotiationSeconds = std::chrono::minutes (4);
+        static beast::static_initializer <StaticData> static_data;
 
-        std::lock_guard <std::mutex> locker (negotiationSetLock);
-
-        auto const expired = (negotiationSet.clock().now() - minRenegotiationSeconds);
+        auto& sd (static_data.get ());
+        std::lock_guard <std::mutex> lock (sd.lock);
+        auto const expired (sd.set.clock().now() - std::chrono::minutes (4));
 
         // Remove expired entries
-        for (auto iter (negotiationSet.chronological.begin ());
-            (iter != negotiationSet.chronological.end ()) && (iter.when () <= expired);
-            iter = negotiationSet.chronological.begin ())
+        for (auto iter (sd.set.chronological.begin ());
+            (iter != sd.set.chronological.end ()) && (iter.when () <= expired);
+            iter = sd.set.chronological.begin ())
         {
-            negotiationSet.erase (iter);
+            sd.set.erase (iter);
         }
 
-        auto iter = negotiationSet.find (ssl);
-        if (iter != negotiationSet.end ())
+        auto iter = sd.set.find (ssl);
+        if (iter != sd.set.end ())
         {
-            if (!isNew)
+            if (! isNew)
             {
                 // This is a renegotiation and the last negotiation was recent
                 return true;
             }
 
-            negotiationSet.touch (iter);
+            sd.set.touch (iter);
         }
         else
         {
-            negotiationSet.emplace (ssl);
+            sd.set.emplace (ssl);
         }
 
         return false;
