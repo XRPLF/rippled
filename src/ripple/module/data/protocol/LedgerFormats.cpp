@@ -100,6 +100,14 @@ LedgerFormats::LedgerFormats ()
             << SOElement (sfReserveBase,         SOE_REQUIRED)
             << SOElement (sfReserveIncrement,    SOE_REQUIRED)
             ;
+
+    add ("Ticket", ltTICKET)
+            << SOElement (sfAccount,             SOE_REQUIRED)
+            << SOElement (sfSequence,            SOE_REQUIRED)
+            << SOElement (sfOwnerNode,           SOE_REQUIRED)
+            << SOElement (sfTarget,              SOE_OPTIONAL)
+            << SOElement (sfExpiration,          SOE_OPTIONAL)
+            ;
 }
 
 void LedgerFormats::addCommonFields (Item& item)
