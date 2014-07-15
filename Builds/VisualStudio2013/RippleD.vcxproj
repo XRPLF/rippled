@@ -1147,6 +1147,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\utility\noexcept.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\utility\static_initializer.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\utility\tagged_integer.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\utility\tests\Journal.test.cpp">
@@ -1159,6 +1161,9 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\utility\tests\empty_base_optimization.test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\utility\tests\static_initializer.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\utility\tests\tagged_integer.test.cpp">
@@ -2037,6 +2042,8 @@
     <ClCompile Include="..\..\src\ripple\module\app\ledger\BookListeners.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\module\app\ledger\BookListeners.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\ledger\DirectoryEntryIterator.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2206,9 +2213,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\app\misc\Offer.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\misc\OrderBook.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\app\misc\OrderBook.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\app\misc\PowResult.h">
@@ -3204,15 +3208,15 @@
     </ClInclude>
     <CustomBuild Include="..\..\src\ripple\proto\ripple.proto">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='release|x64'">protoc --cpp_out=..\..\build\proto --proto_path=%(RelativeDir) %(Identity)</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\build\proto\ripple.pb.h;..\..\build\proto\ripple.pb.cc</Outputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='release|x64'">protoc --cpp_out=..\..\build\proto --proto_path=%(RelativeDir) %(Identity)</Message>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='release|x64'">false</LinkObjects>
-      <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='debug|x64'">protoc --cpp_out=..\..\build\proto --proto_path=%(RelativeDir) %(Identity)</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\build\proto\ripple.pb.h;..\..\build\proto\ripple.pb.cc</Outputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='debug|x64'">protoc --cpp_out=..\..\build\proto --proto_path=%(RelativeDir) %(Identity)</Message>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='debug|x64'">false</LinkObjects>
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='release|x64'">protoc --cpp_out=..\..\build\proto --proto_path=%(RelativeDir) %(Identity)</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\build\proto\ripple.pb.h;..\..\build\proto\ripple.pb.cc</Outputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='release|x64'">protoc --cpp_out=..\..\build\proto --proto_path=%(RelativeDir) %(Identity)</Message>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='release|x64'">false</LinkObjects>
     </CustomBuild>
     <ClInclude Include="..\..\src\ripple\radmap\api\BasicFullBelowCache.h">
     </ClInclude>
@@ -3447,8 +3451,8 @@
     <ClInclude Include="..\..\src\ripple\unity\http.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\hyperleveldb.cpp">
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\hyperleveldb;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\src\hyperleveldb;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\hyperleveldb;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\unity\hyperleveldb.h">
     </ClInclude>
@@ -3457,8 +3461,8 @@
     <ClInclude Include="..\..\src\ripple\unity\json.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\leveldb.cpp">
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\unity\leveldb.h">
     </ClInclude>
@@ -3467,8 +3471,8 @@
     <ClInclude Include="..\..\src\ripple\unity\net.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\nodestore.cpp">
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\leveldb\include;..\..\src\rocksdb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\src\leveldb\include;..\..\src\rocksdb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\leveldb\include;..\..\src\rocksdb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\overlay.cpp">
     </ClCompile>
@@ -3489,8 +3493,8 @@
     <ClCompile Include="..\..\src\ripple\unity\ripple.proto.cpp">
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\rocksdb.cpp">
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\rocksdb;..\..\src\rocksdb\include;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\src\rocksdb;..\..\src\rocksdb\include;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\rocksdb;..\..\src\rocksdb\include;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\unity\rocksdb.h">
     </ClInclude>
@@ -3503,8 +3507,8 @@
     <ClInclude Include="..\..\src\ripple\unity\sitefiles.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\snappy.cpp">
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\sslutil.cpp">
     </ClCompile>

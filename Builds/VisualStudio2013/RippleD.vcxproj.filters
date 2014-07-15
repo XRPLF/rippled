@@ -1926,6 +1926,9 @@
     <ClInclude Include="..\..\src\beast\beast\utility\noexcept.h">
       <Filter>beast\utility</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\utility\static_initializer.h">
+      <Filter>beast\utility</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\utility\tagged_integer.h">
       <Filter>beast\utility</Filter>
     </ClInclude>
@@ -1939,6 +1942,9 @@
       <Filter>beast\utility\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\utility\tests\empty_base_optimization.test.cpp">
+      <Filter>beast\utility\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\utility\tests\static_initializer.test.cpp">
       <Filter>beast\utility\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\utility\tests\tagged_integer.test.cpp">
@@ -3030,6 +3036,9 @@
     <ClCompile Include="..\..\src\ripple\module\app\ledger\BookListeners.cpp">
       <Filter>ripple\module\app\ledger</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\module\app\ledger\BookListeners.h">
+      <Filter>ripple\module\app\ledger</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\ledger\DirectoryEntryIterator.cpp">
       <Filter>ripple\module\app\ledger</Filter>
     </ClCompile>
@@ -3234,9 +3243,6 @@
     <ClInclude Include="..\..\src\ripple\module\app\misc\Offer.h">
       <Filter>ripple\module\app\misc</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\misc\OrderBook.cpp">
-      <Filter>ripple\module\app\misc</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\app\misc\OrderBook.h">
       <Filter>ripple\module\app\misc</Filter>
     </ClInclude>

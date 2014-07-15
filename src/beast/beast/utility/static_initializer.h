@@ -20,14 +20,16 @@
 #ifndef BEAST_UTILITY_STATIC_INITIALIZER_H_INCLUDED
 #define BEAST_UTILITY_STATIC_INITIALIZER_H_INCLUDED
 
-#ifdef _MSC_VER
-
 #include <beast/utility/noexcept.h>
-#include <atomic>
-#include <chrono>
+#include <utility>
+
+#ifdef _MSC_VER
+#include <cassert>
 #include <new>
 #include <thread>
 #include <type_traits>
+#include <intrin.h>
+#endif
 
 namespace beast {
 
@@ -44,7 +46,129 @@ namespace beast {
     }
     @endcode
 */
-template <class T, class Tag = void>
+#ifdef _MSC_VER
+template <
+    class T,
+    class Tag = void
+>
+class static_initializer
+{
+private:
+    struct data_t
+    {
+        //  0 = unconstructed
+        //  1 = constructing
+        //  2 = constructed
+        long volatile state;
+
+        typename std::aligned_storage <sizeof(T),
+            std::alignment_of <T>::value>::type storage;
+    };
+
+    struct destroyer
+    {
+        T* t_;
+        explicit destroyer (T* t) : t_(t) { }
+        ~destroyer() { t_->~T(); }
+    };
+
+    static
+    data_t&
+    data() noexcept;
+
+public:
+    template <class... Args>
+    explicit static_initializer (Args&&... args);
+
+    T&
+    get() noexcept;
+
+    T&
+    operator*() noexcept
+    {
+        return get();
+    }
+
+    T*
+    operator->() noexcept
+    {
+        return &get();
+    }
+};
+
+//------------------------------------------------------------------------------
+
+template <class T, class Tag>
+auto
+static_initializer <T, Tag>::data() noexcept ->
+    data_t&
+{
+    static data_t _; // zero-initialized
+    return _;
+}
+
+template <class T, class Tag>
+template <class... Args>
+static_initializer <T, Tag>::static_initializer (Args&&... args)
+{
+    data_t& _(data());
+
+    // Double Checked Locking Pattern
+
+    if (_.state != 2)
+    {
+        T* const t (reinterpret_cast<T*>(&_.storage));
+
+        for(;;)
+        {
+            long prev;
+            prev = InterlockedCompareExchange(&_.state, 1, 0);
+            if (prev == 0)
+            {
+                try
+                {
+                    ::new(t) T (std::forward<Args>(args)...);                   
+                    static destroyer on_exit (t);
+                    InterlockedIncrement(&_.state);
+                }
+                catch(...)
+                {
+                    // Constructors that throw exceptions are unsupported
+                    std::terminate();
+                }
+            }
+            else if (prev == 1)
+            {
+                std::this_thread::yield();
+            }
+            else
+            {
+                assert(prev == 2);
+                break;
+            }
+        }
+    }
+}
+
+template <class T, class Tag>
+T&
+static_initializer <T, Tag>::get() noexcept
+{
+    data_t& _(data());
+    for(;;)
+    {
+        if (_.state == 2)
+            break;
+        std::this_thread::yield();
+    }
+    return *reinterpret_cast<T*>(&_.storage);
+}
+
+#else
+template <
+    class T,
+    class Tag = void
+>
 class static_initializer
 {
 private:
@@ -52,53 +176,8 @@ private:
 
 public:
     template <class... Args>
-    static_initializer(Args&&... args)
-    {
-        static std::aligned_storage <sizeof(T),
-            std::alignment_of <T>::value>::type storage;
-        instance_ = reinterpret_cast<T*>(&storage);
-
-        // double checked lock
-        static bool volatile initialized;
-        if (! initialized)
-        {
-            static std::atomic_flag lock;
-            while (lock.test_and_set())
-                std::this_thread::sleep_for (
-                    std::chrono::milliseconds(10));
-            if (! initialized)
-            {
-                try
-                {
-                    ::new(instance_) T(std::forward<Args>(args)...);
-                    
-                    struct destroyer
-                    {
-                        T* t_;
-
-                        destroyer (T* t)
-                            : t_(t)
-                        {
-                        }
-
-                        ~destroyer()
-                        {
-                            t_->~T();
-                        }
-                    };
-
-                    static destroyer on_exit (instance_);
-                }
-                catch(...)
-                {
-                    lock.clear();
-                    throw;
-                }
-                initialized = true;
-            }
-            lock.clear();
-        }
-    }
+    explicit
+    static_initializer (Args&&... args);
 
     T&
     get() noexcept
@@ -109,12 +188,26 @@ public:
     T&
     operator*() noexcept
     {
-        return *instance_;
+        return get();
+    }
+
+    T*
+    operator->() noexcept
+    {
+        return &get();
     }
 };
 
+template <class T, class Tag>
+template <class... Args>
+static_initializer <T, Tag>::static_initializer (Args&&... args)
+{
+    static T t (std::forward<Args>(args)...);
+    instance_ = &t;
 }
 
 #endif
+
+}
 
 #endif
