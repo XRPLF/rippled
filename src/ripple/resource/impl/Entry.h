@@ -35,7 +35,6 @@ struct Entry : public beast::List <Entry>::Node
         : refcount (0)
         , local_balance (now)
         , remote_balance (0)
-        , disposition (ok)
         , lastWarningTime (0)
         , whenExpires (0)
     {
@@ -86,10 +85,7 @@ struct Entry : public beast::List <Entry>::Node
     // Normalized balance contribution from imports
     int remote_balance;
 
-    // Disposition
-    Disposition disposition;
-
-    // Time of the last warning
+   // Time of the last warning
     clock_type::rep lastWarningTime;
 
     // For inactive entries, time after which this entry will be erased

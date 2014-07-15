@@ -30,11 +30,10 @@ public:
     typedef Value value_type;
     typedef typename Clock::time_point time_point;
 
-    // No default constructed DecayingSamples allowed
     DecayingSample () = delete;
 
-    /** Create a default constructed sample. */
-    DecayingSample (time_point now)
+    /** DecayingSamples must know their starting time. */
+    explicit DecayingSample (time_point now)
         : m_value (value_type())
         , m_when (now)
     {

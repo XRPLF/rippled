@@ -66,7 +66,7 @@ Consumer& Consumer::operator= (Consumer const& other)
 
     m_logic = other.m_logic;
     m_entry = other.m_entry;
-   
+
     // add new ref
     if (m_logic != nullptr)
     {
@@ -101,7 +101,12 @@ void Consumer::elevate (std::string const& name)
 
 Disposition Consumer::disposition() const
 {
-    return ok;
+    Disposition d = ok;
+    if ((m_logic != nullptr) && (m_entry != nullptr))
+    {
+        d =  m_logic->charge(*m_entry, Charge(0));
+    }
+    return d;
 }
 
 Disposition Consumer::charge (Charge const& what)

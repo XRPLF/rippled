@@ -144,8 +144,10 @@ public:
             if (entry->refcount == 1)
             {
                 if (! result.second)
+                {
                     state->inactive.erase (
                         state->inactive.iterator_to (*entry));
+                }
                 state->inbound.push_back (*entry);
             }
         }
@@ -527,13 +529,20 @@ public:
     {
         bool drop (false);
         clock_type::time_point const now (m_clock.now());
-        if (entry.balance (now) >= dropThreshold)
+        int const balance (entry.balance (now));
+        if (balance >= dropThreshold)
         {
+            m_journal.warning << "Consumer entry " << entry <<
+                " dropped with balance " << balance <<
+                " at or above drop threshold " << dropThreshold;
+
+            // Adding feeDrop at this point keeps the dropped connection
+            // from re-connecting for at least a little while after they are
+            // dropped.
             charge (entry, feeDrop, state);
+            ++m_stats.drop;
             drop = true;
         }
-        if (drop)
-            ++m_stats.drop;
         return drop;
     }
 

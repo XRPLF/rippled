@@ -87,12 +87,13 @@ public:
         Charge const fee (dropThreshold + 1);
         beast::IP::Endpoint const addr (
             beast::IP::Endpoint::from_string ("207.127.82.2"));
-        
+
         {
             Consumer c (logic.newInboundEndpoint (addr));
 
             // Create load until we get a warning
-            for (std::size_t n (maxLoopCount); true; --n)
+            std::size_t n (maxLoopCount);
+            while (--n > 0)
             {
                 if (n == 0)
                 {
@@ -109,7 +110,7 @@ public:
             }
 
             // Create load until we get dropped
-            for (std::size_t n (maxLoopCount); true; --n)
+            while (--n > 0)
             {
                 if (n == 0)
                 {
@@ -119,34 +120,50 @@ public:
 
                 if (c.charge (fee) == drop)
                 {
+                    // Disconnect abusive Consumer
+                    logic.disconnect(c.entry());
                     pass ();
                     break;
                 }
                 ++logic.clock ();
             }
-
         }
 
+        // Make sure the consumer is on the blacklist for a while.
         {
             Consumer c (logic.newInboundEndpoint (addr));
-            expect (c.disconnect ());
-        }
-
-        for (std::size_t n (maxLoopCount); true; --n)
-        {
-            Consumer c (logic.newInboundEndpoint (addr));
-            if (n == 0)
+            logic.periodicActivity();
+            if (c.disposition () != drop)
             {
-                fail ("Loop count exceeded without expiring black list");
+                fail ("Dropped consumer not put on blacklist");
                 return;
             }
+        }
 
-            if (c.disposition() != drop)
+        // Makes sure teh Consumer is eventually removed from blacklist
+        bool consumerUnDropped = false;
+        {
+            // Give Consumer time to become un-dropped.  Shouold never
+            // exceed expiration time.
+            std::size_t n (secondsUntilExpiration + 1);
+            while (--n > 0)
             {
-                pass ();
-                break;
+                ++logic.clock ();
+                logic.periodicActivity();
+                Consumer c (logic.newInboundEndpoint (addr));
+                if (c.disposition () != drop)
+                {
+                    consumerUnDropped = true;
+                    break;
+                }
             }
         }
+        if (consumerUnDropped == false)
+        {
+            fail ("Dropped Consumer left on blacklist too long");
+            return;
+        }
+        pass();
     }
 
     void testImports (beast::Journal j)
