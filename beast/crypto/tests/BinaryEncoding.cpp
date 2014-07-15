@@ -362,10 +362,14 @@ public:
     {
         typedef UnsignedInteger <Bytes> UInt;
 
+#if 0
         std::stringstream ss;
         ss <<
             c.name() << " <" << Bytes << ">";
         testcase (ss.str());
+#else
+        testcase << c.name() << " <" << Bytes << ">";
+#endif
 
         Random r;
         for (int i = 0; i < 50; ++i)

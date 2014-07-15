@@ -41,59 +41,43 @@ private:
     class stream_t : public abstract_ostream
     {
     private:
-        runner& m_owner;
+        runner& owner_;
 
     public:
         stream_t() = delete;
         stream_t& operator= (stream_t const&) = delete;
 
         stream_t (runner& owner)
-            : m_owner (owner)
+            : owner_ (owner)
         {
         }
 
         void
         write (string_type const& s)
         {
-            m_owner.log (s);
+            owner_.log (s);
         }
     };
 
-    stream_t m_stream;
-    bool m_default;
-    bool m_failed;
-    bool m_cond;
+    stream_t stream_;
+    bool default_;
+    bool failed_;
+    bool cond_;
 
 public:
     virtual ~runner() = default;
     runner (runner const&) = default;
     runner& operator= (runner const&) = default;
 
-    runner()
-        : m_stream (*this)
-        , m_default (false)
-        , m_failed (false)
-        , m_cond (false)
-    {
-    }
+    template <class = void>
+    runner();
 
     /** Run the specified suite.
         @return `true` if any conditions failed.
     */
+    template <class = void>
     bool
-    run (suite_info const& s)
-    {
-        // Enable 'default' testcase
-        m_default = true;
-        m_failed = false;
-        on_suite_begin (s);
-        s.run (*this);
-        // Forgot to call pass or fail.
-        assert (m_cond);
-        on_case_end();
-        on_suite_end();
-        return m_failed;
-    }
+    run (suite_info const& s);
 
     /** Run a sequence of suites.
         The expression
@@ -103,13 +87,7 @@ public:
     */
     template <class FwdIter>
     bool
-    run (FwdIter first, FwdIter last)
-    {
-        bool failed (false);
-        for (;first != last; ++first)
-            failed = run (*first) || failed;
-        return failed;
-    }
+    run (FwdIter first, FwdIter last);
 
     /** Conditionally run a sequence of suites.
         pred will be called as:
@@ -120,27 +98,14 @@ public:
     */
     template <class FwdIter, class Pred>
     bool
-    run_if (FwdIter first, FwdIter last, Pred pred = Pred())
-    {
-        bool failed (false);
-        for (;first != last; ++first)
-            if (pred (*first))
-                failed = run (*first) || failed;
-        return failed;
-    }
+    run_if (FwdIter first, FwdIter last, Pred pred = Pred{});
 
     /** Run all suites in a container.
         @return `true` if any conditions failed.
     */
     template <class SequenceContainer>
     bool
-    run_each (SequenceContainer const& c)
-    {
-        bool failed (false);
-        for (auto const& s : c)
-            failed = run (s) || failed;
-        return failed;
-    }
+    run_each (SequenceContainer const& c);
 
     /** Conditionally run suites in a container.
         pred will be called as:
@@ -151,14 +116,7 @@ public:
     */
     template <class SequenceContainer, class Pred>
     bool
-    run_each_if (SequenceContainer const& c, Pred pred = Pred())
-    {
-        bool failed (false);
-        for (auto const& s : c)
-            if (pred (s))
-                failed = run (s) || failed;
-        return failed;
-    }
+    run_each_if (SequenceContainer const& c, Pred pred = Pred{});
 
 private:
     //
@@ -220,51 +178,140 @@ private:
     abstract_ostream&
     stream()
     {
-        return m_stream;
+        return stream_;
     }
 
     // Start a new testcase.
+    template <class = void>
     void
-    testcase (std::string const& name)
-    {
-        // Name may not be empty
-        assert (m_default || ! name.empty());
-        // Forgot to call pass or fail
-        assert (m_default || m_cond);
-        if (! m_default)
-            on_case_end();
-        m_default = false;
-        m_cond = false;
-        on_case_begin (name);
-    }
+    testcase (std::string const& name);
 
+    template <class = void>
     void
-    pass()
-    {
-        if (m_default)
-            testcase ("");
-        on_pass();
-        m_cond = true;
-    }
+    pass();
 
+    template <class = void>
     void
-    fail (std::string const& reason)
-    {
-        if (m_default)
-            testcase ("");
-        on_fail (reason);
-        m_failed = true;
-        m_cond = true;
-    }
+    fail (std::string const& reason);
 
+    template <class = void>
     void
-    log (std::string const& s)
-    {
-        if (m_default)
-            testcase ("");
-        on_log (s);
-    }
+    log (std::string const& s);
 };
+
+//------------------------------------------------------------------------------
+
+template <class>
+runner::runner()
+    : stream_ (*this)
+    , default_ (false)
+    , failed_ (false)
+    , cond_ (false)
+{
+}
+
+template <class>
+bool
+runner::run (suite_info const& s)
+{
+    // Enable 'default' testcase
+    default_ = true;
+    failed_ = false;
+    on_suite_begin (s);
+    s.run (*this);
+    // Forgot to call pass or fail.
+    assert (cond_);
+    on_case_end();
+    on_suite_end();
+    return failed_;
+}
+
+template <class FwdIter>
+bool
+runner::run (FwdIter first, FwdIter last)
+{
+    bool failed (false);
+    for (;first != last; ++first)
+        failed = run (*first) || failed;
+    return failed;
+}
+
+template <class FwdIter, class Pred>
+bool
+runner::run_if (FwdIter first, FwdIter last, Pred pred)
+{
+    bool failed (false);
+    for (;first != last; ++first)
+        if (pred (*first))
+            failed = run (*first) || failed;
+    return failed;
+}
+
+template <class SequenceContainer>
+bool
+runner::run_each (SequenceContainer const& c)
+{
+    bool failed (false);
+    for (auto const& s : c)
+        failed = run (s) || failed;
+    return failed;
+}
+
+template <class SequenceContainer, class Pred>
+bool
+runner::run_each_if (SequenceContainer const& c, Pred pred)
+{
+    bool failed (false);
+    for (auto const& s : c)
+        if (pred (s))
+            failed = run (s) || failed;
+    return failed;
+}
+
+template <class>
+void
+runner::testcase (std::string const& name)
+{
+    // Name may not be empty
+    assert (default_ || ! name.empty());
+    // Forgot to call pass or fail
+    assert (default_ || cond_);
+    if (! default_)
+        on_case_end();
+    default_ = false;
+    cond_ = false;
+    on_case_begin (name);
+}
+
+template <class>
+void
+runner::pass()
+{
+    if (default_)
+        testcase ("");
+    on_pass();
+    cond_ = true;
+}
+
+template <class>
+void
+runner::fail (std::string const& reason)
+{
+    if (default_)
+        testcase ("");
+    on_fail (reason);
+    failed_ = true;
+    cond_ = true;
+}
+
+template <class>
+void
+runner::log (std::string const& s)
+{
+    if (default_)
+        testcase ("");
+    on_log (s);
+}
 
 } // unit_test
 } // beast

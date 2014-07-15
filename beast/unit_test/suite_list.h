@@ -35,15 +35,12 @@ namespace unit_test {
 
 /** A container of test suites. */
 class suite_list
-    : public const_container <
-        std::set <suite_info>
-        //std::list <suite_info>
-    >
+    : public const_container <std::set <suite_info>>
 {
 private:
 #ifndef NDEBUG
-    std::unordered_set <std::string> m_names;
-    std::unordered_set <std::type_index> m_classes;
+    std::unordered_set <std::string> names_;
+    std::unordered_set <std::type_index> classes_;
 #endif
 
 public:
@@ -52,27 +49,33 @@ public:
     */
     template <class Suite>
     void
-    insert (char const* name,
-        char const* module, char const* library,
-            bool manual)
-    {
-    #ifndef NDEBUG
-        {
-            auto const result (m_names.insert (name));
-            assert (result.second); // Duplicate name
-        }
-
-        {
-            auto const result (m_classes.insert (
-                std::type_index (typeid(Suite))));
-            assert (result.second); // Duplicate type
-        }
-    #endif
-
-        cont().emplace (std::move (make_suite_info <Suite> (
-            name, module, library, manual)));
-    }
+    insert (char const* name, char const* module, char const* library,
+        bool manual);
 };
+
+//------------------------------------------------------------------------------
+
+template <class Suite>
+void
+suite_list::insert (char const* name, char const* module, char const* library,
+    bool manual)
+{
+#ifndef NDEBUG
+    {
+        auto const result (names_.insert (name));
+        assert (result.second); // Duplicate name
+    }
+
+    {
+        auto const result (classes_.insert (
+            std::type_index (typeid(Suite))));
+        assert (result.second); // Duplicate type
+    }
+#endif
+
+    cont().emplace (std::move (make_suite_info <Suite> (
+        name, module, library, manual)));
+}
 
 } // unit_test
 } // beast
