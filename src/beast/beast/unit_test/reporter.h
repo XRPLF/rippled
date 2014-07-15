@@ -127,7 +127,8 @@ public:
             ;
     }
 
-    explicit reporter (abstract_ostream& stream)
+    explicit
+    reporter (abstract_ostream& stream)
         : m_stream (stream)
     {
     }

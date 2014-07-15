@@ -97,7 +97,7 @@ bool PeerTest::Results::report (unit_test::suite& suite,
         bool beginTestCase) const
 {
     if (beginTestCase)
-        suite.testcase (name.toStdString());
+        suite.testcase << name.toStdString();
     bool success = true;
     if (! client.report (suite))
         success = false;

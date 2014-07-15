@@ -34,7 +34,7 @@ namespace unit_test {
 
 /** Write test results to the specified output stream. */
 /** @{ */
-inline
+template <class = void>
 void
 print (results const& r, abstract_ostream& stream)
 {
@@ -66,7 +66,7 @@ print (results const& r, abstract_ostream& stream)
         ;
 }
 
-inline
+template <class = void>
 void
 print (results const& r, std::ostream& stream = std::cout)
 {
