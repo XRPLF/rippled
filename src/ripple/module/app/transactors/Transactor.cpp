@@ -26,6 +26,8 @@
 #include <ripple/module/app/transactors/SetAccount.h>
 #include <ripple/module/app/transactors/SetRegularKey.h>
 #include <ripple/module/app/transactors/SetTrust.h>
+#include <ripple/module/app/transactors/CreateTicket.h>
+#include <ripple/module/app/transactors/CancelTicket.h>
 
 namespace ripple {
 
@@ -60,6 +62,12 @@ std::unique_ptr<Transactor> Transactor::makeTransactor (
     case ttAMENDMENT:
     case ttFEE:
         return make_Change (txn, params, engine);
+
+    case ttTICKET_CREATE:
+        return make_CreateTicket (txn, params, engine);
+
+    case ttTICKET_CANCEL:
+        return make_CancelTicket (txn, params, engine);
 
     default:
         return std::unique_ptr<Transactor> ();

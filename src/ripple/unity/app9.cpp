@@ -38,3 +38,5 @@
 #include <ripple/module/app/transactors/CreateOffer.cpp>
 #include <ripple/module/app/transactors/CreateOfferDirect.cpp>
 #include <ripple/module/app/transactors/CreateOfferBridged.cpp>
+#include <ripple/module/app/transactors/CreateTicket.cpp>
+#include <ripple/module/app/transactors/CancelTicket.cpp>

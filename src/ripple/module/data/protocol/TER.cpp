@@ -52,6 +52,9 @@ bool transResultInfo (TER terCode, std::string& strToken, std::string& strHuman)
         {   tecNO_LINE,             "tecNO_LINE",               "No such line."                                         },
         {   tecINSUFF_FEE,          "tecINSUFF_FEE",            "Insufficient balance to pay fee."                      },
         {   tecFROZEN,              "tecFROZEN",                "Asset is frozen."                                      },
+        {   tecNO_TARGET,           "tecNO_TARGET",             "Target account does not exist."                        },
+        {   tecNO_PERMISSION,       "tecNO_PERMISSION",         "No permission to perform requested operation."         },
+        {   tecNO_ENTRY,            "tecNO_ENTRY",              "No matching entry found."                              },
 
         {   tefALREADY,             "tefALREADY",               "The exact transaction was already in this ledger."     },
         {   tefBAD_ADD_AUTH,        "tefBAD_ADD_AUTH",          "Not authorized to add account."                        },

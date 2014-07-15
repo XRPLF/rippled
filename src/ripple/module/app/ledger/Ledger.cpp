@@ -1758,7 +1758,7 @@ uint256 Ledger::getOfferIndex (Account const& account, std::uint32_t uSequence)
     Serializer  s (26);
 
     s.add16 (spaceOffer);       //  2
-    s.add160 (account);      // 20
+    s.add160 (account);         // 20
     s.add32 (uSequence);        //  4
 
     return s.getSHA512Half ();
@@ -1787,6 +1787,18 @@ uint256 Ledger::getRippleStateIndex (
     s.add160 (bAltB ? uAID : uBID); // 20
     s.add160 (bAltB ? uBID : uAID); // 20
     s.add160 (currency);           // 20
+
+    return s.getSHA512Half ();
+}
+
+uint256 Ledger::getTicketIndex (
+    Account const& account, std::uint32_t uSequence)
+{
+    Serializer  s (26);
+
+    s.add16 (spaceTicket);       //  2
+    s.add160 (account);         // 20
+    s.add32 (uSequence);        //  4
 
     return s.getSHA512Half ();
 }
