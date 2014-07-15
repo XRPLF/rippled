@@ -2979,7 +2979,7 @@ void NetworkOPsImp::getBookPage (
 
     std::uint32_t  uTransferRate   = lesActive.rippleTransferRate (book.out.account);
 
-    while (!bDone && (--iLeft > 0))
+    while (! bDone && --iLeft >= 0)
     {
         if (bDirectAdvance)
         {
@@ -3119,7 +3119,7 @@ void NetworkOPsImp::getBookPage (
             else
             {
                 m_journal.warning << "Missing offer";
-        }
+            }
 
             if (!lesActive.dirNext (
                     uTipIndex, sleOfferDir, uBookEntry, offerIndex))
@@ -3167,7 +3167,7 @@ void NetworkOPsImp::getBookPage (
 
     auto uTransferRate = lesActive.rippleTransferRate (book.out.account);
 
-    while ((--iLeft > 0) && obIterator.nextOffer ())
+    while (--iLeft >= 0 && obIterator.nextOffer ())
     {
 
         SLE::pointer    sleOffer        = obIterator.getCurrentOffer();
