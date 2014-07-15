@@ -85,7 +85,7 @@ struct Entry : public beast::List <Entry>::Node
     // Normalized balance contribution from imports
     int remote_balance;
 
-   // Time of the last warning
+    // Time of the last warning
     clock_type::rep lastWarningTime;
 
     // For inactive entries, time after which this entry will be erased

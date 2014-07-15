@@ -121,8 +121,7 @@ public:
                 if (c.charge (fee) == drop)
                 {
                     // Disconnect abusive Consumer
-                    logic.disconnect(c.entry());
-                    pass ();
+                    expect (c.disconnect ());
                     break;
                 }
                 ++logic.clock ();
@@ -140,7 +139,7 @@ public:
             }
         }
 
-        // Makes sure teh Consumer is eventually removed from blacklist
+        // Makes sure the Consumer is eventually removed from blacklist
         bool consumerUnDropped = false;
         {
             // Give Consumer time to become un-dropped.  Shouold never
