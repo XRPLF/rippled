@@ -2974,12 +2974,12 @@ void NetworkOPsImp::getBookPage (
 
     unsigned int    iLeft           = iLimit;
 
-    if ((iLeft == 0) || (iLeft > 300))
+    if (iLeft == 0 || iLeft > 300)
         iLeft = 300;
 
     std::uint32_t  uTransferRate   = lesActive.rippleTransferRate (book.out.account);
 
-    while (! bDone && --iLeft >= 0)
+    while (! bDone && iLeft-- > 0)
     {
         if (bDirectAdvance)
         {
@@ -3162,12 +3162,12 @@ void NetworkOPsImp::getBookPage (
 
     unsigned int iLeft = iLimit;
 
-    if ((iLeft == 0) || (iLeft > 300))
+    if (iLeft == 0 || iLeft > 300)
         iLeft = 300;
 
     auto uTransferRate = lesActive.rippleTransferRate (book.out.account);
 
-    while (--iLeft >= 0 && obIterator.nextOffer ())
+    while (iLeft-- > 0 && obIterator.nextOffer ())
     {
 
         SLE::pointer    sleOffer        = obIterator.getCurrentOffer();
