@@ -3363,6 +3363,15 @@ void NetworkOPsImp::makeFetchPack (
         reply.set_ledgerhash (request->ledgerhash ());
         reply.set_type (protocol::TMGetObjectByHash::otFETCH_PACK);
 
+        // Building a fetch pack:
+        //  1. Add the header for the requested ledger.
+        //  2. Add the nodes for the AccountStateMap of that ledger.
+        //  3. If there are transactions, add the nodes for the
+        //     transactions of the ledger.
+        //  4. If the FetchPack now contains greater than or equal to
+        //     256 entries then stop.
+        //  5. If not very much time has elapsed, then loop back and repeat
+        //     the same process adding the previous ledger to the FetchPack.
         do
         {
             std::uint32_t lSeq = wantLedger->getLedgerSeq ();

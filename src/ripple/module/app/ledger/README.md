@@ -1,9 +1,9 @@
 
-# Ledger Process
+# Ledger Process #
 
-## Introduction
+## Introduction ##
 
-## Life Cycle
+## Life Cycle ##
 
 Every server always has an open ledger. All received new transactions are
 applied to the open ledger. The open ledger can't close until we reach
@@ -40,7 +40,7 @@ The purpose of the open ledger is as follows:
 - Forms the basis of the initial proposal during consensus
 - Used to decide if we can reject the transaction without relaying it
 
-## Byzantine Failures
+## Byzantine Failures ##
 
 Byzantine failures are resolved as follows. If there is a supermajority ledger,
 then a minority of validators will discover that the consensus round is
@@ -52,26 +52,167 @@ If there is no majority ledger, then starting on the next consensus round there
 will not be a consensus on the last closed ledger. Another avalanche process
 is started.
 
-## Validators
+## Validators ##
 
 The only meaningful difference between a validator and a 'regular' server is
 that the validator sends its proposals and validations to the network.
 
 ---
 
-# Definitions
+# The Ledger Stream #
 
-## Open Ledger
+## Ledger Priorities ##
+
+There are two ledgers that are the most important for a rippled server to have:
+
+ - The consensus ledger and
+ - The last validated ledger.
+
+If we need either of those two ledgers they are fetched with the highest
+priority.  Also, when they arrive, they replace their earlier counterparts
+(if they exist).
+
+The `LedgerMaster` object tracks
+ - the last published ledger,
+ - the last validated ledger, and
+ - ledger history.
+So the `LedgerMaster` is at the center of fetching historical ledger data.
+
+In specific, the `LedgerMaster::doAdvance()` method triggers the code that
+fetches historical data and controls the state machine for ledger acquisition.
+
+The server tries to publish an on-going stream of consecutive ledgers to its
+clients.  After the server has started and caught up with network
+activity, say when ledger 500 is being settled, then the server puts its best
+effort into publishing validated ledger 500 followed by validated ledger 501
+and then 502.  This effort continues until the server is shut down.
+
+But loading or network connectivity may sometimes interfere with that ledger
+stream.  So suppose the server publishes validated ledger 600 and then
+receives validated ledger 603.  Then the server wants to back fill its ledger
+history with ledgers 601 and 602.
+
+The server prioritizes keeping up with current ledgers.  But if it is caught
+up on the current ledger, and there are no higher priority demands on the
+server, then it will attempt to back fill its historical ledgers.  It fills
+in the historical ledger data first by attempting to retrieve it from the
+local database.  If the local database does not have all of the necessary data
+then the server requests the remaining information from network peers.
+
+Suppose the server is missing multiple historical ledgers.  Take the previous
+example where we have ledgers 603 and 600, but we're missing 601 and 602.  In
+that case the server requests information for ledger 602 first, before
+back-filling ledger 601.  We want to expand the contiguous range of
+most-recent ledgers that the server has locally.  There's also a limit to
+how much historical ledger data is useful.  So if we're on ledger 603, but
+we're missing ledger 4 we may not bother asking for ledger 4.
+
+## Assembling a Ledger ##
+
+When data for a ledger arrives from a peer, it may take a while before the
+server can apply that data.  So when ledger data arrives we schedule a job
+thread to apply that data.  If more data arrives before the job starts we add
+that data to the job.  We defer requesting more ledger data until all of the
+data we have for that ledger has been processed.  Once all of that data is
+processed we can intelligently request only the additional data that we need
+to fill in the ledger.  This reduces network traffic and minimizes the load
+on peers supplying the data.
+
+If we receive data for a ledger that is not currently under construction,
+we don't just throw the data away.  In particular the AccountStateNodes
+may be useful, since they can be re-used across ledgers.  This data is
+stashed in memory (not the database) where the acquire process can find
+it.
+
+Peers deliver ledger data in the order in which the data can be validated.
+Data arrives in the following order:
+
+ 1. The hash of the ledger header
+ 2. The ledger header
+ 3. The root nodes of the transaction tree and state tree
+ 4. The lower (non-root) nodes of the state tree
+ 5. The lower (non-root) nodes of the transaction tree
+
+Inner-most nodes are supplied before outer nodes.  This allows the
+requesting server to hook things up (and validate) in the order in which
+data arrives.
+
+If this process fails, then a server can also ask for ledger data by hash,
+rather than by asking for specific nodes in a ledger.  Asking for information
+by hash is less efficient, but it allows a peer to return the information
+even if the information is not assembled into a tree.  All the peer needs is
+the raw data.
+
+## Which Peer To Ask ##
+
+Peers go though state transitions as the network goes through its state
+transitions.  Peer's provide their state to their directly connected peers.
+By monitoring the state of each connected peer a server can tell which of
+its peers has the information that it needs.
+
+Therefore if a server suffers a byzantine failure the server can tell which
+of its peers did not suffer that same failure.  So the server knows which
+peer(s) to ask for the missing information.
+
+Peers also report their contiguous range of ledgers.  This is another way that
+a server can determine which peer to ask for a particular ledger or piece of
+a ledger.
+
+There are also indirect peer queries.  If there have been timeouts while
+acquiring ledger data then a server may issue indirect queries.  In that
+case the server receiving the indirect query passes the query along to any
+of its peers that may have the requested data.  This is important if the
+network has a byzantine failure.  If also helps protect the validation
+network.  A validator may need to get a peer set from one of the other
+validators, and indirect queries improve the likelihood of success with
+that.
+
+## Kinds of Fetch Packs ##
+
+A FetchPack is the way that peers send partial ledger data to other peers
+so the receiving peer can reconstruct a ledger.
+
+A 'normal' FetchPack is a bucket of nodes indexed by hash.  The server
+building the FetchPack puts information into the FetchPack that the
+destination server is likely to need.  Normally they contain all of the
+missing nodes needed to fill in a ledger.
+
+A 'compact' FetchPack, on the other hand, contains only leaf nodes, no
+inner nodes.  Because there are no inner nodes, the ledger information that
+it contains cannot be validated as the ledger is assembled.  We have to,
+initially, take the accuracy of the FetchPack for granted and assemble the
+ledger.  Once the entire ledger is assembled the entire ledger can be
+validated.  But if the ledger does not validate then there's nothing to be
+done but throw the entire FetchPack away; there's no way to save a portion
+of the FetchPack.
+
+The FetchPacks just described could be termed 'reverse FetchPacks.'  They
+only provide historical data.  There may be a use for what could be called a
+'forward FetchPack.'  A forward FetchPack would contain the information that
+is needed to build a new ledger out of the preceding ledger.
+
+A forward compact FetchPack would need to contain:
+ - The header for the new ledger,
+ - The leaf nodes of the transaction tree (if there is one),
+ - The index of deleted nodes in the state tree,
+ - The index and data for new nodes in the state tree, and
+ - The index and new data of modified nodes in the state tree.
+
+---
+
+# Definitions #
+
+## Open Ledger ##
 
 The open ledger is the ledger that the server applies all new incoming
 transactions to.
 
-## Last Validated Ledger
+## Last Validated Ledger ##
 
 The most recent ledger that the server is certain will always remain part
 of the permanent, public history.
 
-## Last Closed Ledger
+## Last Closed Ledger ##
 
 The most recent ledger that the server believes the network reached consensus
 on. Different servers can arrive at a different conclusion about the last
@@ -79,17 +220,17 @@ closed ledger. This is a consequence of Byzantanine failure. The purpose of
 validations is to resolve the differences between servers and come to a common
 conclusion about which last closed ledger is authoritative.
 
-## Consensus
+## Consensus ##
 
 A distributed agreement protocol. Ripple uses the consensus process to solve
 the problem of double-spending.
 
-## Validation
+## Validation ##
 
 A signed statement indicating that it built a particular ledger as a result
 of the consensus process.
 
-## Proposal
+## Proposal ##
 
 A signed statement of which transactions it believes should be included in
 the next consensus ledger.
@@ -153,7 +294,7 @@ same value as a trust line between accounts B and A.
 **Balance:**
  - **currency:** String identifying a valid currency, e.g., "BTC".
  - **issuer:** There is no issuer, really, this entry is "NoAccount".
- - **value:** 
+ - **value:**
 
 **Flags:** ???
 

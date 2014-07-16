@@ -103,8 +103,9 @@ void SHAMap::visitLeavesInternal (std::function<void (SHAMapItem::ref item)>& fu
     }
 }
 
-/** Get a list of node IDs and hashes for nodes that are part of this SHAMap but not available locally.
-    The filter can hold alternate sources of nodes that are not permanently stored locally
+/** Get a list of node IDs and hashes for nodes that are part of this SHAMap
+    but not available locally.  The filter can hold alternate sources of
+    nodes that are not permanently stored locally
 */
 void SHAMap::getMissingNodes (std::vector<SHAMapNodeID>& nodeIDs, std::vector<uint256>& hashes, int max,
                               SHAMapSyncFilter* filter)
@@ -144,6 +145,12 @@ void SHAMap::getMissingNodes (std::vector<SHAMapNodeID>& nodeIDs, std::vector<ui
 
         SHAMapTreeNode *node = root.get ();
         SHAMapNodeID nodeID;
+
+        // The firstChild value is selected randomly so if multiple threads
+        // are traversing the map, each thread will start at a different
+        // (randomly selected) inner node.  This increases the likelihood
+        // that the two threads will produce different request sets (which is
+        // more efficient than sending identical requests).
         int firstChild = rand() % 256;
         int currentChild = 0;
         bool fullBelow = true;
@@ -649,6 +656,15 @@ static void addFPtoList (std::list<SHAMap::fetchPackEntry_t>& list, const uint25
     list.push_back (SHAMap::fetchPackEntry_t (hash, blob));
 }
 
+/**
+@param have A pointer to the map that the recipient already has (if any).
+@param includeLeaves True if leaf nodes should be included.
+@param max The maximum number of nodes to return.
+@param func The functor to call for each node added to the FetchPack.
+
+Note: a caller should set includeLeaves to false for transaction trees.
+There's no point in including the leaves of transaction trees.
+*/
 void SHAMap::getFetchPack (SHAMap* have, bool includeLeaves, int max,
                            std::function<void (const uint256&, const Blob&)> func)
 {
