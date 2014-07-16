@@ -19,9 +19,8 @@
 
 namespace ripple {
 
-SHAMapTreeNode::SHAMapTreeNode (std::uint32_t seq, const SHAMapNodeID& nodeID)
-    : mID (nodeID)
-    , mHash (std::uint64_t(0))
+SHAMapTreeNode::SHAMapTreeNode (std::uint32_t seq)
+    : mHash (std::uint64_t(0))
     , mSeq (seq)
     , mAccessSeq (seq)
     , mType (tnERROR)
@@ -31,8 +30,7 @@ SHAMapTreeNode::SHAMapTreeNode (std::uint32_t seq, const SHAMapNodeID& nodeID)
 }
 
 SHAMapTreeNode::SHAMapTreeNode (const SHAMapTreeNode& node, std::uint32_t seq)
-    : mID (node.mID)
-    , mHash (node.mHash)
+    : mHash (node.mHash)
     , mSeq (seq)
     , mType (node.mType)
     , mIsBranch (node.mIsBranch)
@@ -44,10 +42,9 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapTreeNode& node, std::uint32_t seq)
         memcpy (mHashes, node.mHashes, sizeof (mHashes));
 }
 
-SHAMapTreeNode::SHAMapTreeNode (const SHAMapNodeID& id, SHAMapItem::ref item,
+SHAMapTreeNode::SHAMapTreeNode (SHAMapItem::ref item,
                                 TNType type, std::uint32_t seq)
-    : mID (id)
-    , mItem (item)
+    : mItem (item)
     , mSeq (seq)
     , mType (type)
     , mIsBranch (0)
@@ -57,11 +54,10 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapNodeID& id, SHAMapItem::ref item,
     updateHash ();
 }
 
-SHAMapTreeNode::SHAMapTreeNode (const SHAMapNodeID& id, Blob const& rawNode,
+SHAMapTreeNode::SHAMapTreeNode (Blob const& rawNode,
                                 std::uint32_t seq, SHANodeFormat format,
                                 uint256 const& hash, bool hashValid)
-    : mID (id)
-    , mSeq (seq)
+    : mSeq (seq)
     , mType (tnERROR)
     , mIsBranch (0)
     , mFullBelow (false)
@@ -426,17 +422,17 @@ void SHAMapTreeNode::makeInner ()
     mHash.zero ();
 }
 
-void SHAMapTreeNode::dump ()
+void SHAMapTreeNode::dump (const SHAMapNodeID & id)
 {
-    WriteLog (lsDEBUG, SHAMapNodeID) << "SHAMapTreeNode(" << mID.getNodeID () << ")";
+    WriteLog (lsDEBUG, SHAMapNodeID) << "SHAMapTreeNode(" << id.getNodeID () << ")";
 }
 
-std::string SHAMapTreeNode::getString () const
+std::string SHAMapTreeNode::getString (const SHAMapNodeID & id) const
 {
     std::string ret = "NodeID(";
-    ret += beast::lexicalCastThrow <std::string> (mID.getDepth ());
+    ret += beast::lexicalCastThrow <std::string> (id.getDepth ());
     ret += ",";
-    ret += to_string (mID.getNodeID ());
+    ret += to_string (id.getNodeID ());
     ret += ")";
 
     if (isInner ())

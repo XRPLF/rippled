@@ -353,14 +353,14 @@ SHAMapAddNode SHAMap::addRootNode (Blob const& rootNode, SHANodeFormat format,
 
     assert (mSeq >= 1);
     SHAMapTreeNode::pointer node =
-        std::make_shared<SHAMapTreeNode> (SHAMapNodeID (), rootNode, mSeq - 1,
+        std::make_shared<SHAMapTreeNode> (rootNode, mSeq - 1,
                                           format, uZero, false);
 
     if (!node)
         return SHAMapAddNode::invalid ();
 
 #ifdef BEAST_DEBUG
-    node->dump ();
+    node->dump (SHAMapNodeID ());
 #endif
 
     root = node;
@@ -395,7 +395,7 @@ SHAMapAddNode SHAMap::addRootNode (uint256 const& hash, Blob const& rootNode, SH
 
     assert (mSeq >= 1);
     SHAMapTreeNode::pointer node =
-        std::make_shared<SHAMapTreeNode> (SHAMapNodeID (), rootNode, mSeq - 1,
+        std::make_shared<SHAMapTreeNode> (rootNode, mSeq - 1,
                                           format, uZero, false);
 
     if (!node || node->getNodeHash () != hash)
@@ -477,7 +477,7 @@ SHAMap::addKnownNode (const SHAMapNodeID& node, Blob const& rawNode,
             }
 
             SHAMapTreeNode::pointer newNode =
-                std::make_shared<SHAMapTreeNode> (node, rawNode, 0, snfWIRE,
+                std::make_shared<SHAMapTreeNode> (rawNode, 0, snfWIRE,
                                                   uZero, false);
 
             if (childHash != newNode->getNodeHash ())
@@ -488,7 +488,7 @@ SHAMap::addKnownNode (const SHAMapNodeID& node, Blob const& rawNode,
 
             canonicalize (childHash, newNode);
 
-            if (!iNode->isInBounds ())
+            if (!iNode->isInBounds (iNodeID))
             {
                 // Map is provably invalid
                 mState = smsInvalid;

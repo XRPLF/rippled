@@ -250,7 +250,6 @@ public:
                     return;
 
                 SHAMapTreeNode newNode(
-                    SHAMapNodeID (node.nodeid().data(), node.nodeid().size()),
                     Blob (node.nodedata().begin(), node.nodedata().end()),
                     0, snfWIRE, uZero, false);
 

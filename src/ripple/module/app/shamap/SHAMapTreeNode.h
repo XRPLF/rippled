@@ -55,13 +55,12 @@ public:
     SHAMapTreeNode (const SHAMapTreeNode&) = delete;
     SHAMapTreeNode& operator= (const SHAMapTreeNode&) = delete;
 
-    SHAMapTreeNode (std::uint32_t seq, const SHAMapNodeID & nodeID); // empty node
+    SHAMapTreeNode (std::uint32_t seq); // empty node
     SHAMapTreeNode (const SHAMapTreeNode & node, std::uint32_t seq); // copy node from older tree
-    SHAMapTreeNode (const SHAMapNodeID & nodeID, SHAMapItem::ref item, TNType type,
-                    std::uint32_t seq);
+    SHAMapTreeNode (SHAMapItem::ref item, TNType type, std::uint32_t seq);
 
     // raw node functions
-    SHAMapTreeNode (const SHAMapNodeID & id, Blob const & data, std::uint32_t seq,
+    SHAMapTreeNode (Blob const & data, std::uint32_t seq,
                     SHANodeFormat format, uint256 const & hash, bool hashValid);
     void addRaw (Serializer&, SHANodeFormat format);
 
@@ -103,10 +102,10 @@ public:
     {
         return mType == tnINNER;
     }
-    bool isInBounds () const
+    bool isInBounds (SHAMapNodeID const &id) const
     {
         // Nodes at depth 64 must be leaves
-        return (!isInner() || (mID.getDepth() < 64));
+        return (!isInner() || (id.getDepth() < 64));
     }
     bool isValid () const
     {
@@ -173,11 +172,8 @@ public:
         mFullBelow = true;
     }
 
-    virtual void dump ();
-    virtual std::string getString () const;
-
-    SHAMapNodeID const& getID() const {return mID;}
-    void setID(SHAMapNodeID const& id) {mID = id;}
+    virtual void dump (SHAMapNodeID const&);
+    virtual std::string getString (SHAMapNodeID const&) const;
 
     /** Descends along the specified branch
     * On invocation, nodeID must be the ID of this node
@@ -196,7 +192,6 @@ private:
     // VFALCO TODO remove the use of friend
     friend class SHAMap;
 
-    SHAMapNodeID        mID;
     uint256             mHash;
     uint256             mHashes[16];
     SHAMapItem::pointer mItem;

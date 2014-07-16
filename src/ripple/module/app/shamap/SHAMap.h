@@ -114,7 +114,7 @@ public:
     typedef std::pair<SHAMapItem::pointer, SHAMapItem::pointer> DeltaItem;
     typedef std::pair<SHAMapItem::ref, SHAMapItem::ref> DeltaRef;
     typedef std::map<uint256, DeltaItem> Delta;
-    typedef ripple::unordered_map<SHAMapNodeID, SHAMapTreeNode::pointer, SHAMapNode_hash> NodeMap;
+    typedef ripple::unordered_map<SHAMapNodeID, SHAMapTreeNode::pointer> NodeMap;
     typedef std::unordered_set<SHAMapNodeID, SHAMapNode_hash> DirtySet;
 
     typedef boost::shared_mutex LockType;
@@ -257,7 +257,7 @@ private:
     void dump (bool withHashes = false);
 
      // tree node cache operations
-    SHAMapTreeNode::pointer getCache (uint256 const& hash, SHAMapNodeID const& id);
+    SHAMapTreeNode::pointer getCache (uint256 const& hash);
     void canonicalize (uint256 const& hash, SHAMapTreeNode::pointer&);
 
     void dirtyUp (std::stack<std::pair<SHAMapTreeNode::pointer, SHAMapNodeID>>& stack,

@@ -50,7 +50,7 @@ SHAMap::SHAMap (
         mTNByID.rehash (STATE_MAP_BUCKETS);
 
     SHAMapNodeID rootID{};
-    root = std::make_shared<SHAMapTreeNode> (mSeq, rootID);
+    root = std::make_shared<SHAMapTreeNode> (mSeq);
     root->makeInner ();
     mTNByID.replace(rootID, root);
 }
@@ -74,7 +74,7 @@ SHAMap::SHAMap (
         mTNByID.rehash (STATE_MAP_BUCKETS);
 
     SHAMapNodeID rootID{};
-    root = std::make_shared<SHAMapTreeNode> (mSeq, rootID);
+    root = std::make_shared<SHAMapTreeNode> (mSeq);
     root->makeInner ();
     mTNByID.replace(rootID, root);
 }
@@ -357,7 +357,7 @@ SHAMapTreeNode* SHAMap::getNodePointerNT (const SHAMapNodeID& id, uint256 const&
         if (filter->haveNode (id, hash, nodeData))
         {
             SHAMapTreeNode::pointer node = std::make_shared<SHAMapTreeNode> (
-                    id, nodeData, 0, snfPREFIX, hash, true);
+                    nodeData, 0, snfPREFIX, hash, true);
             canonicalize (hash, node);
 
             // Canonicalize the node with mTNByID to make sure all threads gets the same node
@@ -821,7 +821,7 @@ bool SHAMap::addGiveItem (SHAMapItem::ref item, bool isTransaction, bool hasMeta
         assert (node->isEmptyBranch (branch));
         SHAMapNodeID newNodeID = nodeID.getChildNodeID (branch);
         SHAMapTreeNode::pointer newNode =
-            std::make_shared<SHAMapTreeNode> (newNodeID, item, type, mSeq);
+            std::make_shared<SHAMapTreeNode> (item, type, mSeq);
 
         if (!mTNByID.peekMap().emplace (newNodeID, newNode).second)
         {
@@ -851,7 +851,7 @@ bool SHAMap::addGiveItem (SHAMapItem::ref item, bool isTransaction, bool hasMeta
             // we need a new inner node, since both go on same branch at this level
             SHAMapNodeID newNodeID = nodeID.getChildNodeID (b1);
             SHAMapTreeNode::pointer newNode =
-                std::make_shared<SHAMapTreeNode> (mSeq, newNodeID);
+                std::make_shared<SHAMapTreeNode> (mSeq);
             newNode->makeInner ();
 
             if (!mTNByID.peekMap().emplace (newNodeID, newNode).second)
@@ -867,7 +867,7 @@ bool SHAMap::addGiveItem (SHAMapItem::ref item, bool isTransaction, bool hasMeta
         assert (node->isInner ());
         SHAMapNodeID newNodeID = nodeID.getChildNodeID (b1);
         SHAMapTreeNode::pointer newNode =
-            std::make_shared<SHAMapTreeNode> (newNodeID, item, type, mSeq);
+            std::make_shared<SHAMapTreeNode> (item, type, mSeq);
         assert (newNode->isValid () && newNode->isLeaf ());
 
         if (!mTNByID.peekMap().emplace (newNodeID, newNode).second)
@@ -876,8 +876,7 @@ bool SHAMap::addGiveItem (SHAMapItem::ref item, bool isTransaction, bool hasMeta
         node->setChildHash (b1, newNode->getNodeHash ()); // OPTIMIZEME hash op not needed
         trackNewNode (newNode, newNodeID);
         newNodeID = nodeID.getChildNodeID (b2);
-        newNode = std::make_shared<SHAMapTreeNode> (newNodeID, otherItem, type,
-                                                                          mSeq);
+        newNode = std::make_shared<SHAMapTreeNode> (otherItem, type, mSeq);
         assert (newNode->isValid () && newNode->isLeaf ());
 
         if (!mTNByID.peekMap().emplace (newNodeID, newNode).second)
@@ -962,7 +961,7 @@ SHAMapTreeNode* SHAMap::getNodeAsync (
         return ptr.get ();
 
     // Try the tree node cache
-    ptr = getCache (hash, id);
+    ptr = getCache (hash);
 
     if (!ptr)
     {
@@ -974,7 +973,7 @@ SHAMapTreeNode* SHAMap::getNodeAsync (
             if (filter->haveNode (id, hash, nodeData))
             {
                 ptr = std::make_shared <SHAMapTreeNode> (
-                    id, nodeData, 0, snfPREFIX, hash, true);
+                    nodeData, 0, snfPREFIX, hash, true);
                 filter->gotNode (true, id, hash, nodeData, ptr->getType ());
             }
         }
@@ -999,7 +998,7 @@ SHAMapTreeNode* SHAMap::getNodeAsync (
             if (!obj)
                 return nullptr;
 
-            ptr = std::make_shared <SHAMapTreeNode> (id, obj->getData(), 0,
+            ptr = std::make_shared <SHAMapTreeNode> (obj->getData(), 0,
                                                      snfPREFIX, hash, true);
         }
 
@@ -1036,7 +1035,7 @@ SHAMap::fetchNodeExternalNT (const SHAMapNodeID& id, uint256 const& hash)
         return ret;
 
     // Check the cache of shared, immutable tree nodes
-    ret = getCache (hash, id);
+    ret = getCache (hash);
     if (ret)
     { // The node was found in the TreeNodeCache
         assert (ret->getSeq() == 0);
@@ -1059,7 +1058,7 @@ SHAMap::fetchNodeExternalNT (const SHAMapNodeID& id, uint256 const& hash)
         {
             // We make this node immutable (seq == 0) so that it can be shared
             // CoW is needed if it is modified
-            ret = std::make_shared<SHAMapTreeNode> (id, obj->getData (), 0, snfPREFIX, hash, true);
+            ret = std::make_shared<SHAMapTreeNode> (obj->getData (), 0, snfPREFIX, hash, true);
 
             if (ret->getNodeHash () != hash)
             {
@@ -1116,7 +1115,7 @@ bool SHAMap::fetchRoot (uint256 const& hash, SHAMapSyncFilter* filter)
         if (!filter || !filter->haveNode (SHAMapNodeID (), hash, nodeData))
             return false;
 
-        root = std::make_shared<SHAMapTreeNode> (SHAMapNodeID (), nodeData,
+        root = std::make_shared<SHAMapTreeNode> (nodeData,
                 mSeq - 1, snfPREFIX, hash, true);
         mTNByID.replace(SHAMapNodeID (), root);
         filter->gotNode (true, SHAMapNodeID (), hash, nodeData, root->getType ());
@@ -1316,34 +1315,16 @@ void SHAMap::dump (bool hash)
     for (ripple::unordered_map<SHAMapNodeID, SHAMapTreeNode::pointer, SHAMapNode_hash>::iterator it = mTNByID.peekMap().begin ();
             it != mTNByID.peekMap().end (); ++it)
     {
-        WriteLog (lsINFO, SHAMap) << it->second->getString ();
+        WriteLog (lsINFO, SHAMap) << it->second->getString (it->first);
         CondLog (hash, lsINFO, SHAMap) << it->second->getNodeHash ();
     }
 
 }
 
-SHAMapTreeNode::pointer SHAMap::getCache (uint256 const& hash, SHAMapNodeID const& id)
+SHAMapTreeNode::pointer SHAMap::getCache (uint256 const& hash)
 {
     SHAMapTreeNode::pointer ret = mTreeNodeCache.fetch (hash);
     assert (!ret || !ret->getSeq());
-
-    if (ret != nullptr)
-    {
-        SHAMapNodeID retID = ret->getID();
-        if (retID != id)
-        {
-            // We have the data, but with a different node ID
-            WriteLog (lsTRACE, SHAMap) << "ID mismatch: " << id << " != " << retID;
-            ret = std::make_shared <SHAMapTreeNode> (*ret, 0);
-            ret->setID(id);
-
-            // Future fetches are likely to use the "new" ID
-            mTreeNodeCache.canonicalize (hash, ret, true);
-            // HH I see no way to assure this at the moment
-            assert (ret->getID() == id);
-            assert (ret->getNodeHash() == hash);
-        }
-    }
     return ret;
 }
 
@@ -1351,22 +1332,7 @@ void SHAMap::canonicalize (uint256 const& hash, SHAMapTreeNode::pointer& node)
 {
     assert (node->getSeq() == 0);
 
-    SHAMapNodeID id = node->getID();
-
     mTreeNodeCache.canonicalize (hash, node);
-
-    // HH I don't see how to ensure that id has not changed under mTreeNodeCache.canonicalize
-    if (id != node->getID())
-    {
-        // The cache has the node with a different ID
-        node = std::make_shared <SHAMapTreeNode> (*node, 0);
-        node->setID(id);
-
-        // Future fetches are likely to use the newer ID
-        mTreeNodeCache.canonicalize (hash, node, true);
-        // HH I don't see how to ensure that id has not changed under mTreeNodeCache.canonicalize
-        assert (id == node->getID());
-    }
 }
 
 //------------------------------------------------------------------------------
