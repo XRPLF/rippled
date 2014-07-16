@@ -213,7 +213,7 @@ bool Pathfinder::findPaths (
 
     }
 
-    BOOST_FOREACH(CostedPath_t const& costedPath, mPathTable[paymentType])
+    for (auto const& costedPath : mPathTable[paymentType])
     {
        if (costedPath.first <= iLevel)
        {
@@ -226,12 +226,12 @@ bool Pathfinder::findPaths (
     WriteLog (lsDEBUG, Pathfinder)
             << mCompletePaths.size() << " complete paths found";
 
-    BOOST_FOREACH(const STPath& path, pathsOut)
+    for (auto const& path : pathsOut)
     { // make sure no paths were lost
         bool found = false;
         if (!path.isEmpty ())
         {
-            BOOST_FOREACH(const STPath& ePath, mCompletePaths)
+            for (auto const& ePath : mCompletePaths)
             {
                 if (ePath == path)
                 {
@@ -524,7 +524,7 @@ int Pathfinder::getPathsOut (
     int count = 0;
     AccountItems& rippleLines (mRLCache->getRippleLines (accountID));
 
-    BOOST_FOREACH (AccountItem::ref item, rippleLines.getItems ())
+    for (auto const& item : rippleLines.getItems ())
     {
         RippleState* rspEntry = (RippleState*) item.get ();
 
@@ -556,7 +556,7 @@ void Pathfinder::addLink(
     int addFlags)
 {
     WriteLog (lsDEBUG, Pathfinder) << "addLink< on " << currentPaths.size() << " source(s), flags=" << addFlags;
-    BOOST_FOREACH(const STPath& path, currentPaths)
+    for (auto const& path : currentPaths)
     {
         addLink(path, incompletePaths, addFlags);
     }
@@ -696,6 +696,8 @@ void Pathfinder::addLink(
                     uEndCurrency == mDstAmount.getCurrency());
                 bool const bIsNoRippleOut (
                     isNoRippleOut (currentPath));
+                bool const bDestOnly (
+                    addFlags & afAC_LAST);
 
                 auto& rippleLines (mRLCache->getRippleLines(uEndAccount));
 
@@ -712,10 +714,17 @@ void Pathfinder::addLink(
                         continue;
                     }
                     auto const& acctID = rs->getAccountIDPeer();
+                    bool const bToDestination = acctID == mDstAccountID;
+
+                    if (bDestOnly && !bToDestination)
+                    {
+                        continue;
+                    }
 
                     if ((uEndCurrency == rs->getLimit().getCurrency()) &&
                         !currentPath.hasSeen(acctID, uEndCurrency, acctID))
-                    { // path is for correct currency and has not been seen
+                    {
+                        // path is for correct currency and has not been seen
                         if (rs->getBalance() <= zero
                             && (!rs->getLimitPeer()
                                 || -rs->getBalance() >= rs->getLimitPeer()
@@ -727,10 +736,12 @@ void Pathfinder::addLink(
                         {
                             // Can't leave on this path
                         }
-                        else if (acctID == mDstAccountID)
-                        { // destination is always worth trying
+                        else if (bToDestination)
+                        {
+                            // destination is always worth trying
                             if (uEndCurrency == mDstAmount.getCurrency())
-                            { // this is a complete path
+                            {
+                                // this is a complete path
                                 if (!currentPath.isEmpty())
                                 {
                                     WriteLog (lsTRACE, Pathfinder)
@@ -739,8 +750,9 @@ void Pathfinder::addLink(
                                     mCompletePaths.addUniquePath(currentPath);
                                 }
                             }
-                            else if ((addFlags & afAC_LAST) == 0)
-                            { // this is a high-priority candidate
+                            else if (!bDestOnly)
+                            {
+                                // this is a high-priority candidate
                                 candidates.push_back(std::make_pair(100000, acctID));
                             }
                         }
@@ -748,8 +760,9 @@ void Pathfinder::addLink(
                         {
                             // going back to the source is bad
                         }
-                        else if ((addFlags & afAC_LAST) == 0)
-                        { // save this candidate
+                        else
+                        {
+                            // save this candidate
                             int out = getPathsOut(uEndCurrency, acctID, bIsEndCurrency, mDstAccountID);
                             if (out)
                                 candidates.push_back(std::make_pair(out, acctID));
@@ -803,7 +816,7 @@ void Pathfinder::addLink(
             std::vector<OrderBook::pointer> books;
             getApp().getOrderBookDB().getBooksByTakerPays({uEndCurrency, uEndIssuer}, books);
             WriteLog (lsTRACE, Pathfinder) << books.size() << " books found from this currency/issuer";
-            BOOST_FOREACH(OrderBook::ref book, books)
+            for (auto const& book : books)
             {
                 if (!currentPath.hasSeen (
                         xrpAccount(),
@@ -902,7 +915,7 @@ std::string Pathfinder::pathTypeToString(PathType_t const& type)
 {
     std::string ret;
 
-    BOOST_FOREACH(NodeType const& node, type)
+    for (auto const& node : type)
     {
         switch (node)
         {
