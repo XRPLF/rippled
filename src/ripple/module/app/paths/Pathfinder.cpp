@@ -218,6 +218,8 @@ bool Pathfinder::findPaths (
        if (costedPath.first <= iLevel)
        {
            getPaths(costedPath.second);
+           if (mCompletePaths.size () > PATHFINDER_MAX_COMPLETE_PATHS)
+               break;
        }
     }
 
