@@ -248,31 +248,38 @@ Taker::cross (Offer const& leg1, Offer const& leg2)
     assert (leg1.amount ().out.isNative ());
     assert (leg2.amount ().in.isNative ());
 
-    Amounts amount1 (leg1.amount());
-    Amounts amount2 (leg2.amount());
+    Amounts limit1 (leg1.amount());
+    Amounts limit2 (leg2.amount());
 
-    if (m_options.sell)
-        amount1 = leg1.quality().ceil_in (amount1, m_remain.in);
+    /* Before we call flow we must set the limit right; for buy semantics we
+       need to clamp the output. And we always want to clamp the input.
+    */
+    if (!m_options.sell)
+        limit2 = leg2.quality().ceil_out (limit2, m_remain.out);
+    limit1 = leg1.quality().ceil_in (limit1, m_remain.in);
+
+    if (limit1.out <= limit2.in)
+        limit2 = leg2.quality().ceil_in (limit2, limit1.out);
     else
-        amount2 = leg2.quality().ceil_out (amount2, m_remain.out);
+        limit1 = leg1.quality().ceil_out (limit1, limit2.in);
 
-    if (amount1.out <= amount2.in)
-        amount2 = leg2.quality().ceil_in (amount2, amount1.out);
-    else
-        amount1 = leg1.quality().ceil_out (amount1, amount2.in);
-
-    assert (amount1.out == amount2.in);
+    assert (limit1.out == limit2.in);
+    assert (limit1.in <= leg1.amount().in);
+    assert (limit1.out <= leg1.amount().out);
+    assert (limit2.in <= leg2.amount().in);
+    assert (limit2.out <= leg2.amount().out);
+    assert (limit1.in <= m_remain.in);
 
     // As written, flow can't handle a 3-party transfer, but this works for
     // us because the output of leg1 and the input leg2 are XRP.
-    Amounts flow1 (flow (amount1, leg1, m_account));
+    Amounts flow1 (flow (limit1, leg1, m_account));
 
-    amount2 = leg2.quality().ceil_in (amount2, flow1.out);
+    limit2 = leg2.quality().ceil_in (limit2, flow1.out);
 
-    Amounts flow2 (flow (amount2, leg2, m_account));
+    Amounts flow2 (flow (limit2, leg2, m_account));
 
-    m_remain.out -= amount2.out;
-    m_remain.in -= amount1.in;
+    m_remain.out -= limit2.out;
+    m_remain.in -= limit1.in;
 
     return fill (leg1, flow1, leg2, flow2);
 }
