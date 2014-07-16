@@ -242,16 +242,18 @@ Ledger::~Ledger ()
 {
     if (mTransactionMap)
     {
-        logTimedDestroy <Ledger> (mTransactionMap,
-            beast::String ("mTransactionMap with ") +
-                beast::String::fromNumber (mTransactionMap->size ()) + " items");
+        logTimedDestroy <Ledger> (
+            mTransactionMap,
+            "mTransactionMap with "
+            + std::to_string(mTransactionMap->size ()) + " items");
     }
 
     if (mAccountStateMap)
     {
-        logTimedDestroy <Ledger> (mAccountStateMap,
-            beast::String ("mAccountStateMap with ") +
-                beast::String::fromNumber (mAccountStateMap->size ()) + " items");
+        logTimedDestroy <Ledger> (
+            mAccountStateMap,
+            "mAccountStateMap with "
+            + std::to_string (mAccountStateMap->size ()) + " items");
     }
 }
 
@@ -614,17 +616,27 @@ uint256 Ledger::getHash ()
 bool Ledger::saveValidatedLedger (bool current)
 {
     // TODO(tom): Fix this hard-coded SQL!
-    WriteLog (lsTRACE, Ledger) << "saveValidatedLedger " << (current ? "" : "fromAcquire ") << getLedgerSeq ();
-    static boost::format deleteLedger ("DELETE FROM Ledgers WHERE LedgerSeq = %u;");
-    static boost::format deleteTrans1 ("DELETE FROM Transactions WHERE LedgerSeq = %u;");
-    static boost::format deleteTrans2 ("DELETE FROM AccountTransactions WHERE LedgerSeq = %u;");
-    static boost::format deleteAcctTrans ("DELETE FROM AccountTransactions WHERE TransID = '%s';");
-    static boost::format transExists ("SELECT Status FROM Transactions WHERE TransID = '%s';");
-    static boost::format
-    updateTx ("UPDATE Transactions SET LedgerSeq = %u, Status = '%c', TxnMeta = %s WHERE TransID = '%s';");
-    static boost::format addLedger ("INSERT OR REPLACE INTO Ledgers "
-                                    "(LedgerHash,LedgerSeq,PrevHash,TotalCoins,ClosingTime,PrevClosingTime,CloseTimeRes,CloseFlags,"
-                                    "AccountSetHash,TransSetHash) VALUES ('%s','%u','%s','%s','%u','%u','%d','%u','%s','%s');");
+    WriteLog (lsTRACE, Ledger)
+        << "saveValidatedLedger "
+        << (current ? "" : "fromAcquire ") << getLedgerSeq ();
+    static boost::format deleteLedger (
+        "DELETE FROM Ledgers WHERE LedgerSeq = %u;");
+    static boost::format deleteTrans1 (
+        "DELETE FROM Transactions WHERE LedgerSeq = %u;");
+    static boost::format deleteTrans2 (
+        "DELETE FROM AccountTransactions WHERE LedgerSeq = %u;");
+    static boost::format deleteAcctTrans (
+        "DELETE FROM AccountTransactions WHERE TransID = '%s';");
+    static boost::format transExists (
+        "SELECT Status FROM Transactions WHERE TransID = '%s';");
+    static boost::format updateTx (
+        "UPDATE Transactions SET LedgerSeq = %u, Status = '%c', TxnMeta = %s "
+        "WHERE TransID = '%s';");
+    static boost::format addLedger (
+        "INSERT OR REPLACE INTO Ledgers "
+        "(LedgerHash,LedgerSeq,PrevHash,TotalCoins,ClosingTime,PrevClosingTime,"
+        "CloseTimeRes,CloseFlags,AccountSetHash,TransSetHash) VALUES "
+        "('%s','%u','%s','%s','%u','%u','%d','%u','%s','%s');");
 
     if (!getAccountHash ().isNonZero ())
     {
@@ -738,10 +750,14 @@ bool Ledger::saveValidatedLedger (bool current)
                 db->executeSQL (sql);
             }
             else
-                WriteLog (lsWARNING, Ledger) << "Transaction in ledger " << mLedgerSeq << " affects no accounts";
+                WriteLog (lsWARNING, Ledger)
+                    << "Transaction in ledger " << mLedgerSeq
+                    << " affects no accounts";
 
-            db->executeSQL (SerializedTransaction::getMetaSQLInsertReplaceHeader () +
-                            vt.second->getTxn ()->getMetaSQL (getLedgerSeq (), vt.second->getEscMeta ()) + ";");
+            db->executeSQL (
+                SerializedTransaction::getMetaSQLInsertReplaceHeader () +
+                vt.second->getTxn ()->getMetaSQL (
+                    getLedgerSeq (), vt.second->getEscMeta ()) + ";");
         }
         db->executeSQL ("COMMIT TRANSACTION;");
     }
@@ -749,7 +765,7 @@ bool Ledger::saveValidatedLedger (bool current)
     {
         DeprecatedScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
 
-        // TODO(tom): ARG!
+        // TODO(tom): ARG!!
         getApp().getLedgerDB ()->getDB ()->executeSQL (boost::str (addLedger %
                 to_string (getHash ()) % mLedgerSeq % to_string (mParentHash) %
                 beast::lexicalCastThrow <std::string> (mTotCoins) % mCloseTime %
@@ -1266,7 +1282,8 @@ LedgerStateParms Ledger::writeBack (LedgerStateParms parms, SLE::ref entry)
     {
         if ((parms & lepCREATE) == 0)
         {
-            WriteLog (lsERROR, Ledger) << "WriteBack non-existent node without create";
+            WriteLog (lsERROR, Ledger)
+                << "WriteBack non-existent node without create";
             return lepMISSING;
         }
 
@@ -1343,9 +1360,9 @@ void Ledger::visitAccountItems (
         if (!ownerDir || (ownerDir->getType () != ltDIR_NODE))
             return;
 
-        for (auto const& uNode : ownerDir->getFieldV256 (sfIndexes).peekValue ())
+        for (auto const& node : ownerDir->getFieldV256 (sfIndexes).peekValue ())
         {
-            func (getSLEi (uNode));
+            func (getSLEi (node));
         }
 
         std::uint64_t uNodeNext = ownerDir->getFieldU64 (sfIndexNext);
@@ -1385,49 +1402,6 @@ void Ledger::visitStateItems (std::function<void (SLE::ref)> function)
         throw;
     }
 }
-
-/*
-// VFALCO: A proof of concept for making an iterator instead of a visitor
-class AccountItemIterator
-{
-public:
-    explicit AccountItemIterator (Account const& accountID)
-    {
-        // Convert the account ID to the root hash
-        //
-        m_rootKey = Ledger::getOwnerDirIndex (accountID);
-
-        // Start iterating from the root
-        //
-        m_currentKey = rootKey;
-
-    }
-
-    SerializedLedgerEntry::ref operator* () const
-    {
-        return m_currentEntry;
-    }
-
-    SerializedLedgerEntry::ref end () const
-    {
-        return s_end;
-    }
-
-    AccountItemIterator& operator++ (int)
-    {
-    }
-
-private:
-    static SerializedLedgerEntry s_end;
-
-    uint256 m_rootKey;
-    uint256 m_currentKey;
-
-    SerializedLedgerEntry::pointer m_currentEntry;
-}
-//  typedef const std::shared_ptr<SerializedLedgerEntry>& ref;
-*/
-
 
 uint256 Ledger::getFirstLedgerIndex ()
 {
@@ -1703,9 +1677,9 @@ uint256 Ledger::getLedgerHash (std::uint32_t ledgerIndex)
     return uint256 ();
 }
 
-std::vector< std::pair<std::uint32_t, uint256> > Ledger::getLedgerHashes ()
+Ledger::LedgerHashes Ledger::getLedgerHashes ()
 {
-    std::vector< std::pair<std::uint32_t, uint256> > ret;
+    LedgerHashes ret;
     SLE::pointer hashIndex = getSLEi (getLedgerHashIndex ());
 
     if (hashIndex)
@@ -1733,74 +1707,23 @@ std::vector<uint256> Ledger::getLedgerAmendments ()
     return usAmendments;
 }
 
-// XRP to XRP not allowed.
-// Currencies must have appropriate issuer.
-// Currencies or accounts must differ.
-bool Ledger::isValidBook (
-    Currency const& uTakerPaysCurrency, Account const& uTakerPaysIssuerID,
-    Currency const& uTakerGetsCurrency, Account const& uTakerGetsIssuerID)
-{
-    // TODO(tom): refactor to use == zero, better boolean logic.
-    if (uTakerPaysCurrency.isZero ())
-    {
-        // XRP in
-
-        if (uTakerPaysIssuerID.isNonZero ())    // XRP cannot have an issuer
-            return false;
-
-        if (uTakerGetsCurrency.isZero ())       // XRP to XRP not allowed
-            return false;
-
-        if (uTakerGetsIssuerID.isZero ())       // non-XRP must have issuer
-            return false;
-
-        return true;
-    }
-
-    // non-XRP in
-    if (uTakerPaysIssuerID.isZero ())           // non-XRP must have issuer
-        return false;
-
-    if (uTakerGetsCurrency.isZero ())           // non-XRP to XRP
-    {
-        if (uTakerGetsIssuerID.isNonZero ())    // XRP cannot have issuer
-            return false;
-    }
-    else                                        // non-XRP to non-XRP
-    {
-        // Input and output cannot be identical
-        if ((uTakerPaysCurrency == uTakerGetsCurrency) &&
-            (uTakerGetsIssuerID == uTakerPaysIssuerID))
-            return false;
-    }
-
-    return true;
-}
-
-uint256 Ledger::getBookBase (
-    Currency const& uTakerPaysCurrency, Account const& uTakerPaysIssuerID,
-    Currency const& uTakerGetsCurrency, Account const& uTakerGetsIssuerID)
+uint256 Ledger::getBookBase (Book const& book)
 {
     Serializer  s (82);
 
-    s.add16 (spaceBookDir);         //  2
-    s.add160 (uTakerPaysCurrency);  // 20
-    s.add160 (uTakerGetsCurrency);  // 20
-    s.add160 (uTakerPaysIssuerID);  // 20
-    s.add160 (uTakerGetsIssuerID);  // 20
+    s.add16 (spaceBookDir);        //  2
+    s.add160 (book.in.currency);   // 20
+    s.add160 (book.out.currency);  // 20
+    s.add160 (book.in.account);    // 20
+    s.add160 (book.out.account);   // 20
 
-    uint256 uBaseIndex  = getQualityIndex (s.getSHA512Half ()); // Return with quality 0.
+    // Return with quality 0.
+    uint256 uBaseIndex  = getQualityIndex (s.getSHA512Half ());
 
     WriteLog (lsTRACE, Ledger)
-            << "getBookBase"
-            << "(" << uTakerPaysCurrency
-            << "," << uTakerPaysIssuerID
-            << "," << uTakerGetsCurrency
-            << "," << uTakerGetsIssuerID
-            << ") = " << to_string (uBaseIndex);
+            << "getBookBase (" << book << ") = " << to_string (uBaseIndex);
 
-    assert (isValidBook (uTakerPaysCurrency, uTakerPaysIssuerID,
-                         uTakerGetsCurrency, uTakerGetsIssuerID));
+    assert (isConsistent (book));
 
     return uBaseIndex;
 }
@@ -1894,16 +1817,20 @@ bool Ledger::walkLedger ()
 
     if (ShouldLog (lsINFO, Ledger) && !missingNodes1.empty ())
     {
-        WriteLog (lsINFO, Ledger) << missingNodes1.size () << " missing account node(s)";
-        WriteLog (lsINFO, Ledger) << "First: " << missingNodes1[0];
+        WriteLog (lsINFO, Ledger)
+            << missingNodes1.size () << " missing account node(s)";
+        WriteLog (lsINFO, Ledger)
+            << "First: " << missingNodes1[0];
     }
 
     mTransactionMap->walkMap (missingNodes2, 32);
 
     if (ShouldLog (lsINFO, Ledger) && !missingNodes2.empty ())
     {
-        WriteLog (lsINFO, Ledger) << missingNodes2.size () << " missing transaction node(s)";
-        WriteLog (lsINFO, Ledger) << "First: " << missingNodes2[0];
+        WriteLog (lsINFO, Ledger)
+            << missingNodes2.size () << " missing transaction node(s)";
+        WriteLog (lsINFO, Ledger)
+            << "First: " << missingNodes2[0];
     }
 
     return missingNodes1.empty () && missingNodes2.empty ();
@@ -1996,7 +1923,8 @@ void Ledger::updateSkipList ()
     }
 }
 
-std::uint32_t Ledger::roundCloseTime (std::uint32_t closeTime, std::uint32_t closeResolution)
+std::uint32_t Ledger::roundCloseTime (
+    std::uint32_t closeTime, std::uint32_t closeResolution)
 {
     if (closeTime == 0)
         return 0;
@@ -2022,7 +1950,8 @@ bool Ledger::pendSaveValidated (bool isSynchronous, bool isCurrent)
         StaticScopedLockType sl (sPendingSaveLock);
         if (!sPendingSaves.insert(getLedgerSeq()).second)
         {
-            WriteLog (lsDEBUG, Ledger) << "Pend save with seq in pending saves " << getLedgerSeq();
+            WriteLog (lsDEBUG, Ledger)
+                << "Pend save with seq in pending saves " << getLedgerSeq();
             return true;
         }
     }
@@ -2072,8 +2001,8 @@ void Ledger::qualityDirDescriber (
     if (isNew)
     {
         getApp().getOrderBookDB().addOrderBook(
-            uTakerPaysCurrency, uTakerGetsCurrency,
-            uTakerPaysIssuer, uTakerGetsIssuer);
+            {{uTakerPaysCurrency, uTakerPaysIssuer},
+                {uTakerGetsCurrency, uTakerGetsIssuer}});
     }
 }
 

@@ -190,10 +190,7 @@ public:
 
     virtual void getBookPage (
         Ledger::pointer lpLedger,
-        Currency const& uTakerPaysCurrencyID,
-        Account const& uTakerPaysIssuerID,
-        Currency const& uTakerGetsCurrencyID,
-        Account const& uTakerGetsIssuerID,
+        Book const& book,
         Account const& uTakerID,
         bool const bProof,
         const unsigned int iLimit,
@@ -232,7 +229,8 @@ public:
 
     virtual bool shouldFetchPack (std::uint32_t seq) = 0;
     virtual void gotFetchPack (bool progress, std::uint32_t seq) = 0;
-    virtual void addFetchPack (uint256 const& hash, std::shared_ptr< Blob >& data) = 0;
+    virtual void addFetchPack (
+        uint256 const& hash, std::shared_ptr< Blob >& data) = 0;
     virtual bool getFetchPack (uint256 const& hash, Blob& data) = 0;
     virtual int getFetchSize () = 0;
     virtual void sweepFetchPack () = 0;
@@ -242,7 +240,8 @@ public:
     virtual void setStandAlone () = 0;
     virtual void setStateTimer () = 0;
 
-    virtual void newLCL (int proposers, int convergeTime, uint256 const& ledgerHash) = 0;
+    virtual void newLCL (
+        int proposers, int convergeTime, uint256 const& ledgerHash) = 0;
     // VFALCO TODO rename to setNeedNetworkLedger
     virtual void needNetworkLedger () = 0;
     virtual void clearNeedNetworkLedger () = 0;
@@ -287,18 +286,29 @@ public:
             bool count, bool bAdmin) = 0;
 
     // client information retrieval functions
-    typedef std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > AccountTxs;
-    virtual AccountTxs getAccountTxs (const RippleAddress& account,
-        std::int32_t minLedger, std::int32_t maxLedger,  bool descending, std::uint32_t offset,
-            int limit, bool bAdmin) = 0;
+    typedef std::vector<
+        std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
+    AccountTxs;
 
-    typedef std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > TxsAccount;
-    virtual TxsAccount getTxsAccount (const RippleAddress& account,
-        std::int32_t minLedger, std::int32_t maxLedger, bool forward, Json::Value& token,
-        int limit, bool bAdmin) = 0;
+    virtual AccountTxs getAccountTxs (
+        const RippleAddress& account,
+        std::int32_t minLedger, std::int32_t maxLedger,  bool descending,
+        std::uint32_t offset, int limit, bool bAdmin) = 0;
 
-    typedef std::tuple<std::string, std::string, std::uint32_t> txnMetaLedgerType;
+    typedef std::vector<
+        std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
+    TxsAccount;
+
+    virtual TxsAccount getTxsAccount (
+        const RippleAddress& account,
+        std::int32_t minLedger, std::int32_t maxLedger, bool forward,
+        Json::Value& token, int limit, bool bAdmin) = 0;
+
+    typedef std::tuple<std::string, std::string, std::uint32_t>
+    txnMetaLedgerType;
+
     typedef std::vector<txnMetaLedgerType> MetaTxsList;
+
     virtual MetaTxsList getAccountTxsB (const RippleAddress& account,
         std::int32_t minLedger, std::int32_t maxLedger,  bool descending,
             std::uint32_t offset, int limit, bool bAdmin) = 0;
@@ -307,7 +317,8 @@ public:
         std::int32_t minLedger, std::int32_t maxLedger,  bool forward,
         Json::Value& token, int limit, bool bAdmin) = 0;
 
-    virtual std::vector<RippleAddress> getLedgerAffectedAccounts (std::uint32_t ledgerSeq) = 0;
+    virtual std::vector<RippleAddress> getLedgerAffectedAccounts (
+        std::uint32_t ledgerSeq) = 0;
 
     //--------------------------------------------------------------------------
     //

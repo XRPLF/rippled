@@ -24,7 +24,8 @@ BookDirIterator::BookDirIterator(
     Currency const& currencyIn, Account const& issuerIn,
     Currency const& currencyOut, Account const& issuerOut)
 {
-    mBase = Ledger::getBookBase(currencyIn, issuerIn, currencyOut, issuerOut);
+    mBase = Ledger::getBookBase({{currencyIn, issuerIn},
+            {currencyOut, issuerOut}});
     mEnd = Ledger::getQualityNext(mBase);
     mIndex = mBase;
 }

@@ -787,7 +787,7 @@ void Pathfinder::addLink(
     { // add order books
         if (addFlags & afOB_XRP)
         { // to XRP only
-            if (!bOnXRP && getApp().getOrderBookDB().isBookToXRP(uEndIssuer, uEndCurrency))
+            if (!bOnXRP && getApp().getOrderBookDB().isBookToXRP({uEndCurrency, uEndIssuer}))
             {
                 STPathElement pathElement(
                     STPathElement::typeCurrency,
@@ -799,7 +799,7 @@ void Pathfinder::addLink(
         {
             bool bDestOnly = (addFlags & afOB_LAST) != 0;
             std::vector<OrderBook::pointer> books;
-            getApp().getOrderBookDB().getBooksByTakerPays(uEndIssuer, uEndCurrency, books);
+            getApp().getOrderBookDB().getBooksByTakerPays({uEndCurrency, uEndIssuer}, books);
             WriteLog (lsTRACE, Pathfinder) << books.size() << " books found from this currency/issuer";
             BOOST_FOREACH(OrderBook::ref book, books)
             {
