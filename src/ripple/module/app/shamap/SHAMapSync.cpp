@@ -637,19 +637,17 @@ static void addFPtoList (std::list<SHAMap::fetchPackEntry_t>& list, const uint25
 void SHAMap::getFetchPack (SHAMap* have, bool includeLeaves, int max,
                            std::function<void (const uint256&, const Blob&)> func)
 {
-    ScopedReadLockType ul1 (mLock), ul2;
+    ScopedReadLockType ul1 (mLock, boost::defer_lock);
+    ScopedReadLockType ul2;
 
     if (have)
     {
-        ul2 = std::move (ScopedReadLockType (have->mLock, boost::try_to_lock));
-
-        if (! ul2.owns_lock ())
-        {
-            WriteLog (lsINFO, SHAMap) << "Unable to create pack due to lock";
-            return;
-        }
+        assert(this != have);
+        ul2 = ScopedReadLockType (have->mLock, boost::defer_lock);
+        std::lock(ul1, ul2);
     }
-
+    else
+        ul1.lock();
 
     if (root->getNodeHash ().isZero ())
         return;
