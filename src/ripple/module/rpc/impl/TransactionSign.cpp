@@ -179,8 +179,8 @@ static Json::Value signPayment(
 //             submit the tranaction
 //
 Json::Value transactionSign (
-    Json::Value params, bool bSubmit, bool bFailHard,
-    Application::ScopedLockType& mlh, NetworkOPs& netOps, int role)
+    Json::Value params, bool bSubmit, bool bFailHard, NetworkOPs& netOps,
+    int role)
 {
     Json::Value jvResult;
 

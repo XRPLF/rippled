@@ -32,14 +32,13 @@ namespace ripple {
 //     marker:       resume point, if any
 Json::Value doLedgerData (RPC::Context& context)
 {
-    context.lock_.unlock ();
-
     int const BINARY_PAGE_LENGTH = 256;
     int const JSON_PAGE_LENGTH = 2048;
 
     Ledger::pointer lpLedger;
 
-    Json::Value jvResult = RPC::lookupLedger (context.params_, lpLedger, context.netOps_);
+    Json::Value jvResult = RPC::lookupLedger (
+        context.params_, lpLedger, context.netOps_);
     if (!lpLedger)
         return jvResult;
 
@@ -80,7 +79,7 @@ Json::Value doLedgerData (RPC::Context& context)
     Json::Value jvReply = Json::objectValue;
 
     jvReply["ledger_hash"] = to_string (lpLedger->getHash());
-    jvReply["ledger_index"] = beast::lexicalCastThrow <std::string> (lpLedger->getLedgerSeq ());
+    jvReply["ledger_index"] = std::to_string( lpLedger->getLedgerSeq ());
 
     Json::Value& nodes = (jvReply["state"] = Json::arrayValue);
     SHAMap& map = *(lpLedger->peekAccountStateMap ());
@@ -102,7 +101,8 @@ Json::Value doLedgerData (RPC::Context& context)
        if (isBinary)
        {
            Json::Value& entry = nodes.append (Json::objectValue);
-           entry["data"] = strHex (item->peekData().begin(), item->peekData().size());
+           entry["data"] = strHex (
+               item->peekData().begin(), item->peekData().size());
            entry["index"] = to_string (item->getTag ());
        }
        else

@@ -27,7 +27,6 @@ Json::Value transactionSign (
     Json::Value jvRequest,
     bool bSubmit,
     bool bFailHard,
-    Application::ScopedLockType& mlh,
     NetworkOPs& netOps,
     int role);
 

@@ -27,7 +27,6 @@ namespace RPC {
 struct Context {
     Json::Value params_;
     Resource::Charge& loadType_;
-    Application::ScopedLockType& lock_;
     NetworkOPs& netOps_;
     InfoSub::pointer infoSub_;
     Config::Role role_;

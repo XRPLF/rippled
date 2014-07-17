@@ -22,6 +22,7 @@ namespace ripple {
 
 Json::Value doLedgerAccept (RPC::Context& context)
 {
+    auto lock = getApp().masterLock();
     Json::Value jvResult;
 
     if (!getConfig ().RUN_STANDALONE)
@@ -32,7 +33,8 @@ Json::Value doLedgerAccept (RPC::Context& context)
     {
         context.netOps_.acceptLedger ();
 
-        jvResult["ledger_current_index"]    = context.netOps_.getCurrentLedgerID ();
+        jvResult["ledger_current_index"]
+                = context.netOps_.getCurrentLedgerID ();
     }
 
     return jvResult;

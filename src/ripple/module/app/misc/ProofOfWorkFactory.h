@@ -33,7 +33,7 @@ public:
         kMaxDifficulty = 30,
     };
 
-    static ProofOfWorkFactory* New ();
+    static std::unique_ptr<ProofOfWorkFactory> New ();
 
     virtual ~ProofOfWorkFactory () { }
 

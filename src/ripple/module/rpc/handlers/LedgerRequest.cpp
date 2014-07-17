@@ -26,8 +26,6 @@ namespace ripple {
 // }
 Json::Value doLedgerRequest (RPC::Context& context)
 {
-    context.lock_.unlock ();
-
     auto const hasHash = context.params_.isMember (jss::ledger_hash);
     auto const hasIndex = context.params_.isMember (jss::ledger_index);
 
@@ -75,8 +73,10 @@ Json::Value doLedgerRequest (RPC::Context& context)
             {
                 // We don't have the ledger we need to figure out which ledger
                 // they want. Try to get it.
-                Json::Value jvResult =  getApp().getInboundLedgers().findCreate (
-                    refHash, refIndex, InboundLedger::fcGENERIC)->getJson (0);
+                Json::Value jvResult
+                        =  getApp().getInboundLedgers().findCreate (
+                            refHash, refIndex, InboundLedger::fcGENERIC)
+                        ->getJson (0);
 
                 jvResult[jss::error] = "ledgerNotFound";
                 return jvResult;

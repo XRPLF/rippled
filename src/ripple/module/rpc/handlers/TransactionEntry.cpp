@@ -24,13 +24,14 @@ namespace ripple {
 //   ledger_hash : <ledger>,
 //   ledger_index : <ledger_index>
 // }
-// XXX In this case, not specify either ledger does not mean ledger current. It means any ledger.
+//
+// XXX In this case, not specify either ledger does not mean ledger current. It
+// means any ledger.
 Json::Value doTransactionEntry (RPC::Context& context)
 {
-    context.lock_.unlock ();
-
     Ledger::pointer     lpLedger;
-    Json::Value         jvResult    = RPC::lookupLedger (context.params_, lpLedger, context.netOps_);
+    Json::Value jvResult
+            = RPC::lookupLedger (context.params_, lpLedger, context.netOps_);
 
     if (!lpLedger)
         return jvResult;
@@ -39,16 +40,19 @@ Json::Value doTransactionEntry (RPC::Context& context)
     {
         jvResult["error"]   = "fieldNotFoundTransaction";
     }
-    else if (!context.params_.isMember ("ledger_hash") && !context.params_.isMember ("ledger_index"))
+    else if (!context.params_.isMember ("ledger_hash")
+             && !context.params_.isMember ("ledger_index"))
     {
         // We don't work on ledger current.
 
-        jvResult["error"]   = "notYetImplemented";  // XXX We don't support any transaction yet.
+        // XXX We don't support any transaction yet.
+        jvResult["error"]   = "notYetImplemented";
     }
     else
     {
-        uint256                     uTransID;
-        // XXX Relying on trusted WSS client. Would be better to have a strict routine, returning success or failure.
+        uint256 uTransID;
+        // XXX Relying on trusted WSS client. Would be better to have a strict
+        // routine, returning success or failure.
         uTransID.SetHex (context.params_["tx_hash"].asString ());
 
         if (!lpLedger)

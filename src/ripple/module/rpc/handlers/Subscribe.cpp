@@ -22,6 +22,8 @@ namespace ripple {
 
 Json::Value doSubscribe (RPC::Context& context)
 {
+    auto lock = getApp().masterLock();
+
     // FIXME: This needs to release the master lock immediately
     // Subscriptions need to be protected by their own lock
 
@@ -262,8 +264,8 @@ Json::Value doSubscribe (RPC::Context& context)
             if (book.in.currency == book.out.currency
                     && book.in.account == book.out.account)
             {
-                WriteLog (lsINFO, RPCHandler) << "taker_gets same as taker_pays.";
-
+                WriteLog (lsINFO, RPCHandler)
+                    << "taker_gets same as taker_pays.";
                 return rpcError (rpcBAD_MARKET);
             }
 
@@ -289,7 +291,7 @@ Json::Value doSubscribe (RPC::Context& context)
             {
                 if (bHaveMasterLock)
                 {
-                    context.lock_.unlock ();
+                    lock->unlock ();
                     bHaveMasterLock = false;
                 }
 

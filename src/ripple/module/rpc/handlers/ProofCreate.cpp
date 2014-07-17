@@ -28,15 +28,14 @@ namespace ripple {
 // }
 Json::Value doProofCreate (RPC::Context& context)
 {
-    context.lock_.unlock ();
     // XXX: Add ability to create proof with arbitrary time
-
     Json::Value     jvResult (Json::objectValue);
 
-    if (context.params_.isMember ("difficulty") || context.params_.isMember ("secret"))
+    if (context.params_.isMember ("difficulty") ||
+        context.params_.isMember ("secret"))
     {
         // VFALCO TODO why aren't we using the app's factory?
-        std::unique_ptr <ProofOfWorkFactory> pgGen (ProofOfWorkFactory::New ());
+        auto pgGen = ProofOfWorkFactory::New ();
 
         if (context.params_.isMember ("difficulty"))
         {
@@ -45,8 +44,11 @@ Json::Value doProofCreate (RPC::Context& context)
 
             int const iDifficulty (context.params_["difficulty"].asInt ());
 
-            if (iDifficulty < 0 || iDifficulty > ProofOfWorkFactory::kMaxDifficulty)
+            if (iDifficulty < 0 ||
+                iDifficulty > ProofOfWorkFactory::kMaxDifficulty)
+            {
                 return RPC::invalid_field_error ("difficulty");
+            }
 
             pgGen->setDifficulty (iDifficulty);
         }
@@ -62,7 +64,8 @@ Json::Value doProofCreate (RPC::Context& context)
     }
     else
     {
-        jvResult["token"]   = getApp().getProofOfWorkFactory ().getProof ().getToken ();
+        jvResult["token"]
+                = getApp().getProofOfWorkFactory ().getProof ().getToken ();
     }
 
     return jvResult;

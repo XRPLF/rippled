@@ -285,20 +285,17 @@ public:
             bool count, bool bAdmin) = 0;
 
     // client information retrieval functions
-    typedef std::vector<
-        std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
-    AccountTxs;
+    typedef std::pair<Transaction::pointer, TransactionMetaSet::pointer>
+    AccountTx;
+
+    typedef std::vector<AccountTx> AccountTxs;
 
     virtual AccountTxs getAccountTxs (
         const RippleAddress& account,
         std::int32_t minLedger, std::int32_t maxLedger,  bool descending,
         std::uint32_t offset, int limit, bool bAdmin) = 0;
 
-    typedef std::vector<
-        std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
-    TxsAccount;
-
-    virtual TxsAccount getTxsAccount (
+    virtual AccountTxs getTxsAccount (
         const RippleAddress& account,
         std::int32_t minLedger, std::int32_t maxLedger, bool forward,
         Json::Value& token, int limit, bool bAdmin) = 0;

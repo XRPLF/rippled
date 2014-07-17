@@ -25,7 +25,6 @@ namespace ripple {
 // }
 Json::Value doTxHistory (RPC::Context& context)
 {
-    context.lock_.unlock ();
     context.loadType_ = Resource::feeMediumBurdenRPC;
 
     if (!context.params_.isMember ("start"))
@@ -42,7 +41,8 @@ Json::Value doTxHistory (RPC::Context& context)
     obj["index"] = startIndex;
 
     std::string sql =
-        boost::str (boost::format ("SELECT * FROM Transactions ORDER BY LedgerSeq desc LIMIT %u,20")
+        boost::str (boost::format (
+            "SELECT * FROM Transactions ORDER BY LedgerSeq desc LIMIT %u,20")
                     % startIndex);
 
     {
@@ -51,9 +51,8 @@ Json::Value doTxHistory (RPC::Context& context)
 
         SQL_FOREACH (db, sql)
         {
-            Transaction::pointer trans = Transaction::transactionFromSQL (db, false);
-
-            if (trans) txs.append (trans->getJson (0));
+            if (auto trans = Transaction::transactionFromSQL (db, false))
+                txs.append (trans->getJson (0));
         }
     }
 

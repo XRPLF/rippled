@@ -40,46 +40,46 @@ static void offerAdder (Json::Value& jvLines, SLE::ref offer)
 // }
 Json::Value doAccountOffers (RPC::Context& context)
 {
-    context.lock_.unlock ();
+    Ledger::pointer ledger;
+    Json::Value result
+            = RPC::lookupLedger (context.params_, ledger, context.netOps_);
 
-    Ledger::pointer     lpLedger;
-    Json::Value         jvResult    = RPC::lookupLedger (context.params_, lpLedger, context.netOps_);
-
-    if (!lpLedger)
-        return jvResult;
+    if (!ledger)
+        return result;
 
     if (!context.params_.isMember (jss::account))
         return RPC::missing_field_error ("account");
 
-    std::string     strIdent    = context.params_[jss::account].asString ();
-    bool            bIndex      = context.params_.isMember (jss::account_index);
-    int             iIndex      = bIndex ? context.params_[jss::account_index].asUInt () : 0;
+    std::string strIdent = context.params_[jss::account].asString ();
+    bool bIndex = context.params_.isMember (jss::account_index);
+    int iIndex = bIndex ? context.params_[jss::account_index].asUInt () : 0;
 
     RippleAddress   raAccount;
 
-    jvResult    = RPC::accountFromString (lpLedger, raAccount, bIndex, strIdent, iIndex, false, context.netOps_);
+    result = RPC::accountFromString (
+        ledger, raAccount, bIndex, strIdent, iIndex, false, context.netOps_);
 
-    if (!jvResult.empty ())
-        return jvResult;
+    if (!result.empty ())
+        return result;
 
     // Get info on account.
 
-    jvResult[jss::account] = raAccount.humanAccountID ();
+    result[jss::account] = raAccount.humanAccountID ();
 
     if (bIndex)
-        jvResult[jss::account_index]   = iIndex;
+        result[jss::account_index]   = iIndex;
 
-    if (!lpLedger->hasAccount (raAccount))
+    if (!ledger->hasAccount (raAccount))
         return rpcError (rpcACT_NOT_FOUND);
 
-    Json::Value& jvsOffers = (jvResult[jss::offers] = Json::arrayValue);
-    lpLedger->visitAccountItems (raAccount.getAccountID (),
-                                 std::bind (&offerAdder, std::ref (jvsOffers),
-                                            std::placeholders::_1));
+    Json::Value& jvsOffers = (result[jss::offers] = Json::arrayValue);
+    ledger->visitAccountItems (raAccount.getAccountID (),
+                               std::bind (&offerAdder, std::ref (jvsOffers),
+                                          std::placeholders::_1));
 
     context.loadType_ = Resource::feeMediumBurdenRPC;
 
-    return jvResult;
+    return result;
 }
 
 } // ripple

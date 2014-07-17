@@ -21,37 +21,40 @@ namespace ripple {
 
 Json::Value doAccountCurrencies (RPC::Context& context)
 {
-    context.lock_.unlock ();
-    // Get the current ledger
-    Ledger::pointer lpLedger;
-    Json::Value jvResult (RPC::lookupLedger (context.params_, lpLedger, context.netOps_));
-    if (!lpLedger)
-        return jvResult;
+    auto& params = context.params_;
 
-    if (! context.params_.isMember ("account") && ! context.params_.isMember ("ident"))
+    // Get the current ledger
+    Ledger::pointer ledger;
+    Json::Value result (RPC::lookupLedger (params, ledger, context.netOps_));
+
+    if (!ledger)
+        return result;
+
+    if (!(params.isMember ("account") || params.isMember ("ident")))
         return RPC::missing_field_error ("account");
 
-    std::string const strIdent (context.params_.isMember ("account")
-        ? context.params_["account"].asString ()
-        : context.params_["ident"].asString ());
+    std::string const strIdent (params.isMember ("account")
+        ? params["account"].asString ()
+        : params["ident"].asString ());
 
-    int const iIndex (context.params_.isMember ("account_index")
-        ? context.params_["account_index"].asUInt ()
+    int const iIndex (params.isMember ("account_index")
+        ? params["account_index"].asUInt ()
         : 0);
-    bool const bStrict (context.params_.isMember ("strict") && context.params_["strict"].asBool ());
+    bool const bStrict = params.isMember ("strict") &&
+            params["strict"].asBool ();
 
     // Get info on account.
     bool bIndex; // out param
     RippleAddress naAccount; // out param
     Json::Value jvAccepted (RPC::accountFromString (
-        lpLedger, naAccount, bIndex, strIdent, iIndex, bStrict, context.netOps_));
+        ledger, naAccount, bIndex, strIdent, iIndex, bStrict, context.netOps_));
 
     if (!jvAccepted.empty ())
         return jvAccepted;
 
     std::set<Currency> send, receive;
     AccountItems rippleLines (
-        naAccount.getAccountID (), lpLedger,
+        naAccount.getAccountID (), ledger,
         AccountItem::pointer (new RippleState ()));
     for (auto item: rippleLines.getItems ())
     {
@@ -64,22 +67,20 @@ Json::Value doAccountCurrencies (RPC::Context& context)
             send.insert (saBalance.getCurrency ());
     }
 
-
     send.erase (badCurrency());
     receive.erase (badCurrency());
 
     Json::Value& sendCurrencies =
-            (jvResult["send_currencies"] = Json::arrayValue);
+            (result["send_currencies"] = Json::arrayValue);
     for (auto const& c: send)
         sendCurrencies.append (to_string (c));
 
     Json::Value& recvCurrencies =
-            (jvResult["receive_currencies"] = Json::arrayValue);
+            (result["receive_currencies"] = Json::arrayValue);
     for (auto const& c: receive)
         recvCurrencies.append (to_string (c));
 
-
-    return jvResult;
+    return result;
 }
 
 } // ripple

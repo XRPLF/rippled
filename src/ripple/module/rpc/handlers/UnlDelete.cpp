@@ -25,6 +25,8 @@ namespace ripple {
 // }
 Json::Value doUnlDelete (RPC::Context& context)
 {
+    auto lock = getApp().masterLock();
+
     if (!context.params_.isMember ("node"))
         return rpcError (rpcINVALID_PARAMS);
 

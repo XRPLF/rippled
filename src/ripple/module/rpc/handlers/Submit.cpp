@@ -26,14 +26,14 @@ namespace ripple {
 // }
 Json::Value doSubmit (RPC::Context& context)
 {
-    context.lock_.unlock ();
-
     context.loadType_ = Resource::feeMediumBurdenRPC;
 
     if (!context.params_.isMember ("tx_blob"))
     {
-        bool bFailHard = context.params_.isMember ("fail_hard") && context.params_["fail_hard"].asBool ();
-        return RPC::transactionSign (context.params_, true, bFailHard, context.lock_, context.netOps_, context.role_);
+        bool bFailHard = context.params_.isMember ("fail_hard")
+                && context.params_["fail_hard"].asBool ();
+        return RPC::transactionSign (
+            context.params_, true, bFailHard, context.netOps_, context.role_);
     }
 
     Json::Value                 jvResult;
@@ -76,8 +76,10 @@ Json::Value doSubmit (RPC::Context& context)
 
     try
     {
-        (void) context.netOps_.processTransaction (tpTrans, context.role_ == Config::ADMIN, true,
-            context.params_.isMember ("fail_hard") && context.params_["fail_hard"].asBool ());
+        (void) context.netOps_.processTransaction (
+            tpTrans, context.role_ == Config::ADMIN, true,
+            context.params_.isMember ("fail_hard")
+            && context.params_["fail_hard"].asBool ());
     }
     catch (std::exception& e)
     {
@@ -90,8 +92,9 @@ Json::Value doSubmit (RPC::Context& context)
 
     try
     {
-        jvResult[jss::tx_json]     = tpTrans->getJson (0);
-        jvResult[jss::tx_blob]     = strHex (tpTrans->getSTransaction ()->getSerializer ().peekData ());
+        jvResult[jss::tx_json] = tpTrans->getJson (0);
+        jvResult[jss::tx_blob] = strHex (
+            tpTrans->getSTransaction ()->getSerializer ().peekData ());
 
         if (temUNCERTAIN != tpTrans->getResult ())
         {

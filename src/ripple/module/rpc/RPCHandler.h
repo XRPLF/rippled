@@ -66,7 +66,8 @@ public:
 
 public:
     RPCInternalHandler (const std::string& name, handler_t handler);
-    static Json::Value runHandler (const std::string& name, const Json::Value& params);
+    static Json::Value runHandler (
+        const std::string& name, const Json::Value& params);
 
 private:
     // VFALCO TODO Replace with a singleton with a well defined interface and

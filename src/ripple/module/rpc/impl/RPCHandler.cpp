@@ -21,6 +21,7 @@
 #include <ripple/module/app/main/RPCHTTPServer.h>
 #include <ripple/module/rpc/RPCHandler.h>
 #include <ripple/module/rpc/RPCServerHandler.h>
+#include <ripple/module/rpc/Tuning.h>
 #include <ripple/module/rpc/impl/Context.h>
 #include <ripple/module/rpc/impl/Handler.h>
 
@@ -51,8 +52,8 @@ RPCHandler::RPCHandler (NetworkOPs& netOps, InfoSub::pointer infoSub)
 // transport for a command and a request object. The command is the method. The
 // request object is supplied as the first element of the params.
 Json::Value RPCHandler::doRpcCommand (
-    const std::string& strMethod, Json::Value const& jvParams, Config::Role iRole,
-    Resource::Charge& loadType)
+    const std::string& strMethod, Json::Value const& jvParams,
+    Config::Role iRole, Resource::Charge& loadType)
 {
     WriteLog (lsTRACE, RPCHandler)
         << "doRpcCommand:" << strMethod << ":" << jvParams;
@@ -105,8 +106,7 @@ Json::Value RPCHandler::doCommand (
         // VFALCO NOTE Should we also add up the jtRPC jobs?
         //
         int jc = getApp().getJobQueue ().getJobCountGE (jtCLIENT);
-
-        if (jc > 500)
+        if (jc > RPC::MAX_JOB_QUEUE_CLIENTS)
         {
             WriteLog (lsDEBUG, RPCHandler) << "Too busy for command: " << jc;
             return rpcError (rpcTOO_BUSY);
@@ -131,8 +131,6 @@ Json::Value RPCHandler::doCommand (
     if (handler->role_ == Config::ADMIN && mRole != Config::ADMIN)
         return rpcError (rpcNO_PERMISSION);
 
-    Application::ScopedLockType lock (getApp().getMasterLock ());
-
     if ((handler->condition_ & RPC::NEEDS_NETWORK_CONNECTION) &&
         (mNetOps->getOperatingMode () < NetworkOPs::omSYNCING))
     {
@@ -145,7 +143,8 @@ Json::Value RPCHandler::doCommand (
 
     if (!getConfig ().RUN_STANDALONE
         && (handler->condition_ & RPC::NEEDS_CURRENT_LEDGER)
-        && (getApp().getLedgerMaster().getValidatedLedgerAge() > 120))
+        && (getApp().getLedgerMaster().getValidatedLedgerAge() >
+            RPC::MAX_VALIDATED_LEDGER_AGE))
     {
         return rpcError (rpcNO_CURRENT);
     }
@@ -159,25 +158,19 @@ Json::Value RPCHandler::doCommand (
     try
     {
         LoadEvent::autoptr ev = getApp().getJobQueue().getLoadEventAP(
-            jtGENERIC, std::string("cmd:") + strCommand);
-        RPC::Context context{params, loadType, lock, *mNetOps, mInfoSub, mRole};
+            jtGENERIC, "cmd:" + strCommand);
+        RPC::Context context{params, loadType, *mNetOps, mInfoSub, mRole};
         Json::Value jvRaw = handler->method_(context);
 
         // Regularize result.
         if (jvRaw.isObject ())
-        {
-            // Got an object.
             return jvRaw;
-        }
-        else
-        {
-            // Probably got a string.
-            Json::Value jvResult (Json::objectValue);
 
-            jvResult[jss::message] = jvRaw;
+        // Probably got a string.
+        Json::Value jvResult (Json::objectValue);
+        jvResult[jss::message] = jvRaw;
 
-            return jvResult;
-        }
+        return jvResult;
     }
     catch (std::exception& e)
     {
@@ -204,8 +197,7 @@ RPCInternalHandler::RPCInternalHandler (
 Json::Value RPCInternalHandler::runHandler (
     const std::string& name, const Json::Value& params)
 {
-    RPCInternalHandler* h = sHeadHandler;
-    while (h != nullptr)
+    for (RPCInternalHandler* h = sHeadHandler; h != nullptr; )
     {
         if (name == h->mName)
         {

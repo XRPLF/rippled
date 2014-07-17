@@ -24,8 +24,6 @@ namespace ripple {
 // This interface is deprecated.
 Json::Value doRipplePathFind (RPC::Context& context)
 {
-    context.lock_.unlock ();
-
     RPC::LegacyPathFind lpf (context.role_ == Config::ADMIN);
     if (!lpf.isOk ())
         return rpcError (rpcTOO_BUSY);
@@ -39,9 +37,14 @@ Json::Value doRipplePathFind (RPC::Context& context)
 
     Json::Value     jvResult;
 
-    if (getConfig().RUN_STANDALONE || context.params_.isMember("ledger") || context.params_.isMember("ledger_index") || context.params_.isMember("ledger_hash"))
-    { // The caller specified a ledger
-        jvResult = RPC::lookupLedger (context.params_, lpLedger, context.netOps_);
+    if (getConfig().RUN_STANDALONE
+        || context.params_.isMember("ledger")
+        || context.params_.isMember("ledger_index")
+        || context.params_.isMember("ledger_hash"))
+    {
+        // The caller specified a ledger
+        jvResult = RPC::lookupLedger (
+            context.params_, lpLedger, context.netOps_);
         if (!lpLedger)
             return jvResult;
     }
@@ -51,7 +54,8 @@ Json::Value doRipplePathFind (RPC::Context& context)
         jvResult    = rpcError (rpcSRC_ACT_MISSING);
     }
     else if (!context.params_["source_account"].isString ()
-             || !raSrc.setAccountID (context.params_["source_account"].asString ()))
+             || !raSrc.setAccountID (
+                 context.params_["source_account"].asString ()))
     {
         jvResult    = rpcError (rpcSRC_ACT_MALFORMED);
     }
@@ -60,7 +64,8 @@ Json::Value doRipplePathFind (RPC::Context& context)
         jvResult    = rpcError (rpcDST_ACT_MISSING);
     }
     else if (!context.params_["destination_account"].isString ()
-             || !raDst.setAccountID (context.params_["destination_account"].asString ()))
+             || !raDst.setAccountID (
+                 context.params_["destination_account"].asString ()))
     {
         jvResult    = rpcError (rpcDST_ACT_MALFORMED);
     }
@@ -69,7 +74,9 @@ Json::Value doRipplePathFind (RPC::Context& context)
         !context.params_.isMember ("destination_amount")
         || !saDstAmount.bSetJson (context.params_["destination_amount"])
         || saDstAmount <= zero
-        || (!!saDstAmount.getCurrency () && (!saDstAmount.getIssuer () || noAccount() == saDstAmount.getIssuer ())))
+        || (!!saDstAmount.getCurrency () &&
+            (!saDstAmount.getIssuer ()
+             || noAccount() == saDstAmount.getIssuer ())))
     {
         WriteLog (lsINFO, RPCHandler) << "Bad destination_amount.";
         jvResult    = rpcError (rpcINVALID_PARAMS);
@@ -78,8 +85,8 @@ Json::Value doRipplePathFind (RPC::Context& context)
         // Checks on source_currencies.
         context.params_.isMember ("source_currencies")
         && (!context.params_["source_currencies"].isArray ()
-            || !context.params_["source_currencies"].size ()) // Don't allow empty currencies.
-    )
+            || !context.params_["source_currencies"].size ()))
+        // Don't allow empty currencies.
     {
         WriteLog (lsINFO, RPCHandler) << "Bad source_currencies.";
         jvResult    = rpcError (rpcINVALID_PARAMS);
@@ -160,24 +167,29 @@ Json::Value doRipplePathFind (RPC::Context& context)
 
             // Parse optional issuer.
             if (jvSource.isMember ("issuer") &&
-                    ((!jvSource["issuer"].isString () ||
-                      !to_issuer (uSrcIssuerID, jvSource["issuer"].asString ())) ||
-                     (uSrcIssuerID.isZero () != uSrcCurrencyID.isZero ()) ||
-                     (noAccount() == uSrcIssuerID)))
+                ((!jvSource["issuer"].isString () ||
+                  !to_issuer (uSrcIssuerID, jvSource["issuer"].asString ())) ||
+                 (uSrcIssuerID.isZero () != uSrcCurrencyID.isZero ()) ||
+                 (noAccount() == uSrcIssuerID)))
             {
                 WriteLog (lsINFO, RPCHandler) << "Bad issuer.";
 
                 return rpcError (rpcSRC_ISR_MALFORMED);
             }
 
-            STPathSet   spsComputed;
-            bool        bValid;
-            Pathfinder  pf (cache, raSrc, raDst, uSrcCurrencyID, uSrcIssuerID, saDstAmount, bValid);
+            STPathSet spsComputed;
+            bool bValid;
+            Pathfinder pf (
+                cache, raSrc, raDst, uSrcCurrencyID, uSrcIssuerID, saDstAmount, bValid);
 
             int level = getConfig().PATH_SEARCH_OLD;
-            if ((getConfig().PATH_SEARCH_MAX > level) && !getApp().getFeeTrack().isLoadedLocal())
+            if ((getConfig().PATH_SEARCH_MAX > level)
+                && !getApp().getFeeTrack().isLoadedLocal())
+            {
                 ++level;
-            if (context.params_.isMember("depth") && context.params_["depth"].isIntegral())
+            }
+            if (context.params_.isMember("depth")
+                && context.params_["depth"].isIntegral())
             {
                 int rLev = context.params_["search_depth"].asInt ();
                 if ((rLev < level) || (context.role_ == Config::ADMIN))
@@ -196,7 +208,8 @@ Json::Value doRipplePathFind (RPC::Context& context)
             STPath extraPath;
             if (!bValid || !pf.findPaths (level, 4, spsComputed, extraPath))
             {
-                WriteLog (lsWARNING, RPCHandler) << "ripple_path_find: No paths found.";
+                WriteLog (lsWARNING, RPCHandler)
+                    << "ripple_path_find: No paths found.";
             }
             else
             {
@@ -248,11 +261,23 @@ Json::Value doRipplePathFind (RPC::Context& context)
                     spsComputed.addPath(extraPath);
                     pathStateList.clear ();
                     lesSandbox.clear ();
-                    terResult = path::rippleCalculate (lesSandbox, saMaxAmountAct, saDstAmountAct,
-                                                        pathStateList, saMaxAmount, saDstAmount,
-                                                        raDst.getAccountID (), raSrc.getAccountID (),
-                                                        spsComputed, false, false, false, true);
-                    WriteLog (lsDEBUG, PathRequest) << "Extra path element gives " << transHuman (terResult);
+                    terResult = path::rippleCalculate (
+                        lesSandbox,
+                        saMaxAmountAct,
+                        saDstAmountAct,
+                        pathStateList,
+                        saMaxAmount,
+                        saDstAmount,
+                        raDst.getAccountID (),
+                        raSrc.getAccountID (),
+                        spsComputed,
+                        false,
+                        false,
+                        false,
+                        true);
+                    WriteLog (lsDEBUG, PathRequest)
+                        << "Extra path element gives "
+                        << transHuman (terResult);
                 }
 
                 if (tesSUCCESS == terResult)
@@ -261,13 +286,14 @@ Json::Value doRipplePathFind (RPC::Context& context)
 
                     STPathSet   spsCanonical;
 
-                    // Reuse the expanded as it would need to be calcuated anyway to produce the canonical.
-                    // (At least unless we make a direct canonical.)
+                    // Reuse the expanded as it would need to be calcuated
+                    // anyway to produce the canonical.  (At least unless we
+                    // make a direct canonical.)
 
-                    jvEntry["source_amount"]    = saMaxAmountAct.getJson (0);
-                    //                  jvEntry["paths_expanded"]   = pathStateList.getJson(0);
-                    jvEntry["paths_canonical"]  = Json::arrayValue; // spsCanonical.getJson(0);
-                    jvEntry["paths_computed"]   = spsComputed.getJson (0);
+                    jvEntry["source_amount"] = saMaxAmountAct.getJson (0);
+                    jvEntry["paths_canonical"]
+                            = Json::arrayValue; // spsCanonical.getJson(0);
+                    jvEntry["paths_computed"] = spsComputed.getJson (0);
 
                     jvArray.append (jvEntry);
                 }
@@ -279,10 +305,10 @@ Json::Value doRipplePathFind (RPC::Context& context)
                     transResultInfo (terResult, strToken, strHuman);
 
                     WriteLog (lsDEBUG, RPCHandler)
-                            << boost::str (boost::format ("ripple_path_find: %s %s %s")
-                                           % strToken
-                                           % strHuman
-                                           % spsComputed.getJson (0));
+                        << "ripple_path_find: "
+                        << strToken << " "
+                        << strHuman << " "
+                        << spsComputed.getJson (0);
                 }
             }
         }

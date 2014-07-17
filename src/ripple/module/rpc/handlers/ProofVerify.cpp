@@ -29,10 +29,9 @@ namespace ripple {
 // }
 Json::Value doProofVerify (RPC::Context& context)
 {
-    context.lock_.unlock ();
     // XXX Add ability to check proof against arbitrary time
 
-    Json::Value         jvResult;
+    Json::Value jvResult;
 
     if (!context.params_.isMember ("token"))
         return RPC::missing_field_error ("token");
@@ -40,15 +39,16 @@ Json::Value doProofVerify (RPC::Context& context)
     if (!context.params_.isMember ("solution"))
         return RPC::missing_field_error ("solution");
 
-    std::string     strToken    = context.params_["token"].asString ();
-    uint256         uSolution (context.params_["solution"].asString ());
+    std::string strToken    = context.params_["token"].asString ();
+    uint256 uSolution (context.params_["solution"].asString ());
 
-    PowResult       prResult;
+    PowResult prResult;
 
-    if (context.params_.isMember ("difficulty") || context.params_.isMember ("secret"))
+    if (context.params_.isMember ("difficulty") ||
+        context.params_.isMember ("secret"))
     {
         // VFALCO TODO why aren't we using the app's factory?
-        std::unique_ptr <ProofOfWorkFactory> pgGen (ProofOfWorkFactory::New ());
+        auto pgGen (ProofOfWorkFactory::New ());
 
         if (context.params_.isMember ("difficulty"))
         {
@@ -57,8 +57,11 @@ Json::Value doProofVerify (RPC::Context& context)
 
             int iDifficulty = context.params_["difficulty"].asInt ();
 
-            if (iDifficulty < 0 || iDifficulty > ProofOfWorkFactory::kMaxDifficulty)
+            if (iDifficulty < 0 ||
+                iDifficulty > ProofOfWorkFactory::kMaxDifficulty)
+            {
                 return RPC::missing_field_error ("difficulty");
+            }
 
             pgGen->setDifficulty (iDifficulty);
         }
@@ -70,13 +73,13 @@ Json::Value doProofVerify (RPC::Context& context)
         }
 
         prResult                = pgGen->checkProof (strToken, uSolution);
-
         jvResult["secret"]      = to_string (pgGen->getSecret ());
     }
     else
     {
         // XXX Proof should not be marked as used from this
-        prResult = getApp().getProofOfWorkFactory ().checkProof (strToken, uSolution);
+        prResult = getApp().getProofOfWorkFactory ().checkProof (
+            strToken, uSolution);
     }
 
     std::string sToken;

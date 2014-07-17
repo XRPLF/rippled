@@ -25,12 +25,11 @@ namespace ripple {
 // }
 Json::Value doTx (RPC::Context& context)
 {
-    context.lock_.unlock ();
-
     if (!context.params_.isMember (jss::transaction))
         return rpcError (rpcINVALID_PARAMS);
 
-    bool binary = context.params_.isMember (jss::binary) && context.params_[jss::binary].asBool ();
+    bool binary = context.params_.isMember (jss::binary)
+            && context.params_[jss::binary].asBool ();
 
     std::string strTransaction  = context.params_[jss::transaction].asString ();
 
@@ -39,7 +38,7 @@ Json::Value doTx (RPC::Context& context)
         // transaction by ID
         uint256 txid (strTransaction);
 
-        Transaction::pointer txn = getApp().getMasterTransaction ().fetch (txid, true);
+        auto txn = getApp().getMasterTransaction ().fetch (txid, true);
 
         if (!txn)
             return rpcError (rpcTXN_NOT_FOUND);
@@ -53,7 +52,7 @@ Json::Value doTx (RPC::Context& context)
 
         if (txn->getLedger () != 0)
         {
-            Ledger::pointer lgr = context.netOps_.getLedgerBySeq (txn->getLedger ());
+            auto lgr = context.netOps_.getLedgerBySeq (txn->getLedger ());
 
             if (lgr)
             {

@@ -20,11 +20,18 @@
 
 namespace ripple {
 
-// profile offers <pass_a> <account_a> <currency_offer_a> <account_b> <currency_offer_b> <count> [submit]
-// profile 0:offers 1:pass_a 2:account_a 3:currency_offer_a 4:account_b 5:currency_offer_b 6:<count> 7:[submit]
+// profile offers <pass_a> <account_a> <currency_offer_a> <account_b>
+// <currency_offer_b> <count> [submit]
+//
+// profile 0:offers 1:pass_a 2:account_a 3:currency_offer_a 4:account_b
+// 5:currency_offer_b 6:<count> 7:[submit]
+//
 // issuer is the offering account
+//
 // --> submit: 'submit|true|false': defaults to false
-// Prior to running allow each to have a credit line of what they will be getting from the other account.
+//
+// Prior to running allow each to have a credit line of what they will be
+// getting from the other account.
 Json::Value doProfile (RPC::Context& context)
 {
     /* need to fix now that sharedOfferCreate is gone
