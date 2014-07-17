@@ -215,8 +215,8 @@ public:
     bool SetPrivateKeyU (uint256 const& key, bool bThrow = false)
     {
         // XXX Broken if pkey is not set.
-        BIGNUM* bn          = BN_bin2bn (key.begin (), key.size (), nullptr);
-        bool    bSuccess    = !!EC_KEY_set_private_key (pkey, bn);
+        BIGNUM* bn = BN_bin2bn (key.begin (), key.size (), nullptr);
+        bool bSuccess = EC_KEY_set_private_key (pkey, bn);
 
         BN_clear_free (bn);
 

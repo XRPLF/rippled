@@ -17,26 +17,29 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_PATHS_CALCULATORS_H
+#define RIPPLE_PATHS_CALCULATORS_H
+
+#include <boost/log/trivial.hpp>
+
+#include <ripple/module/app/paths/cursor/PathCursor.h>
+#include <ripple/module/app/paths/RippleCalc.h>
+#include <ripple/module/app/paths/Tuning.h>
+
 namespace ripple {
+namespace path {
 
-RippleLineCache::RippleLineCache (Ledger::ref l)
-    : mLedger (l)
-{
-}
+void rippleLiquidity (
+    RippleCalc&,
+    const std::uint32_t uQualityIn,
+    const std::uint32_t uQualityOut,
+    const STAmount& saPrvReq,
+    const STAmount& saCurReq,
+    STAmount& saPrvAct,
+    STAmount& saCurAct,
+    std::uint64_t& uRateMax);
 
-AccountItems& RippleLineCache::getRippleLines (Account const& accountID)
-{
-    ScopedLockType sl (mLock);
-
-    auto it = mRLMap.find (accountID);
-
-    if (it == mRLMap.end ())
-    {
-        auto accountItems = std::make_shared<AccountItems> (
-            accountID, mLedger, AccountItem::pointer (new RippleState ()));
-        it = mRLMap.insert ({accountID, accountItems}).first;
-    }
-    return *it->second;
-}
-
+} // path
 } // ripple
+
+#endif

@@ -17,83 +17,77 @@
 */
 //==============================================================================
 
-#include <ripple/module/app/paths/Calculators.h>
-
-#include <ripple/module/app/paths/CalcNodeAdvance.cpp>
-#include <ripple/module/app/paths/CalcNodeDeliverFwd.cpp>
-#include <ripple/module/app/paths/CalcNodeDeliverRev.cpp>
-#include <ripple/module/app/paths/ComputeRippleLiquidity.cpp>
-#include <ripple/module/app/paths/ComputeAccountLiquidityForward.cpp>
-#include <ripple/module/app/paths/ComputeAccountLiquidityReverse.cpp>
-#include <ripple/module/app/paths/ComputeLiquidity.cpp>
-#include <ripple/module/app/paths/ComputeOfferLiquidity.cpp>
-#include <ripple/module/app/paths/Node.cpp>
-#include <ripple/module/app/paths/PathNext.cpp>
+#include <ripple/module/app/paths/RippleCalc.h>
+#include <ripple/module/app/paths/cursor/PathCursor.h>
 
 namespace ripple {
-
 namespace path {
+
+bool RippleCalc::addPathState(STPath const& path, TER& resultCode)
+{
+    auto pathState = std::make_shared<PathState> (
+        saDstAmountReq_, saMaxAmountReq_);
+
+    if (!pathState)
+        return false;
+
+    pathState->expandPath (
+        mActiveLedger,
+        path,
+        uDstAccountID_,
+        uSrcAccountID_);
+
+    if (tesSUCCESS == pathState->status())
+       pathState->checkNoRipple (uDstAccountID_, uSrcAccountID_);
+
+    pathState->setIndex (pathStateList_.size ());
+
+    WriteLog (lsDEBUG, RippleCalc)
+        << "rippleCalc: Build direct:"
+        << " status: " << transToken (pathState->status());
+
+    // Return if malformed.
+    if (isTemMalformed (pathState->status())) {
+        resultCode = pathState->status();
+        return false;
+    }
+
+    if (tesSUCCESS == pathState->status())
+    {
+        resultCode   = tesSUCCESS;
+        pathStateList_.push_back (pathState);
+    }
+    else if (terNO_LINE != pathState->status())
+    {
+        resultCode = pathState->status();
+    }
+
+    return true;
+}
 
 // OPTIMIZE: When calculating path increment, note if increment consumes all
 // liquidity. No need to revisit path in the future if all liquidity is used.
 
-// <-- TER: Only returns tepPATH_PARTIAL if !bPartialPayment.
-TER rippleCalculate (
-    // Compute paths vs this ledger entry set.  Up to caller to actually apply
-    // to ledger.
-    LedgerEntrySet& activeLedger,
-    // <-> --> = Fee already applied to src balance.
-
-    STAmount&       saMaxAmountAct,         // <-- The computed input amount.
-    STAmount&       saDstAmountAct,         // <-- The computed output amount.
-
-    // Expanded path with all the actual nodes in it.
-    // TODO(tom): does it put in default paths?
-
-    // A path starts with the source account, ends with the destination account
-    // and goes through other acounts or order books.
-    PathState::List&  pathStateList,
-
-    // Issuer:
-    //      XRP: xrpAccount()
-    //  non-XRP: uSrcAccountID (for any issuer) or another account with trust
-    //           node.
-    STAmount const&     saMaxAmountReq,             // --> -1 = no limit.
-
-    // Issuer:
-    //      XRP: xrpAccount()
-    //  non-XRP: uDstAccountID (for any issuer) or another account with trust
-    //           node.
-    STAmount const&     saDstAmountReq,
-
-    Account const&      uDstAccountID,
-    Account const&      uSrcAccountID,
-
-    // A set of paths that are included in the transaction that we'll explore
-    // for liquidity.
-    STPathSet const&    spsPaths,
-
-    bool const bPartialPayment,
-    bool const bLimitQuality,
-    bool const bNoRippleDirect,
-    bool const bStandAlone,
-
-    // True, not to delete unfundeds.
-    bool const          bOpenLedger)
+// <-- TER: Only returns tepPATH_PARTIAL if partialPaymentAllowed.
+TER RippleCalc::rippleCalculate ()
 {
-    assert (activeLedger.isValid ());
-    RippleCalc  rc (activeLedger, bOpenLedger);
-
+    assert (mActiveLedger.isValid ());
     WriteLog (lsTRACE, RippleCalc)
         << "rippleCalc>"
-        << " saMaxAmountReq:" << saMaxAmountReq
-        << " saDstAmountReq:" << saDstAmountReq;
+        << " saMaxAmountReq_:" << saMaxAmountReq_
+        << " saDstAmountReq_:" << saDstAmountReq_;
 
-    TER         resultCode   = temUNCERTAIN;
+    TER resultCode = temUNCERTAIN;
 
     // YYY Might do basic checks on src and dst validity as per doPayment.
 
-    if (bNoRippleDirect && spsPaths.isEmpty ())
+    // Incrementally search paths.
+    if (defaultPathsAllowed_)
+    {
+        if (!addPathState (STPath(), resultCode))
+            return resultCode;
+    }
+    else if (spsPaths_.isEmpty ())
     {
         WriteLog (lsDEBUG, RippleCalc)
             << "rippleCalc: Invalid transaction:"
@@ -102,173 +96,78 @@ TER rippleCalculate (
         return temRIPPLE_EMPTY;
     }
 
-    // Incrementally search paths.
+    // Build a default path.  Use saDstAmountReq_ and saMaxAmountReq_ to imply
+    // nodes.
+    // XXX Might also make a XRP bridge by default.
 
-    // bNoRippleDirect is a slight misnomer, it really means make no ripple
-    // default path.
-    if (!bNoRippleDirect)
-    {
-        // Build a default path.  Use saDstAmountReq and saMaxAmountReq to imply
-        // nodes.
-        // XXX Might also make a XRP bridge by default.
-
-        auto pspDirect = std::make_shared<PathState> (
-            saDstAmountReq, saMaxAmountReq);
-
-        if (!pspDirect)
-            return temUNKNOWN;
-
-        pspDirect->expandPath (
-            activeLedger, STPath (), uDstAccountID, uSrcAccountID);
-
-        if (tesSUCCESS == pspDirect->status())
-           pspDirect->checkNoRipple (uDstAccountID, uSrcAccountID);
-
-        pspDirect->setIndex (pathStateList.size ());
-
-        WriteLog (lsDEBUG, RippleCalc)
-            << "rippleCalc: Build direct:"
-            << " status: " << transToken (pspDirect->status());
-
-        // Return if malformed.
-        if (isTemMalformed (pspDirect->status()))
-            return pspDirect->status();
-
-        if (tesSUCCESS == pspDirect->status())
-        {
-            resultCode   = tesSUCCESS;
-            pathStateList.push_back (pspDirect);
-        }
-        else if (terNO_LINE != pspDirect->status())
-        {
-            resultCode   = pspDirect->status();
-        }
-    }
 
     WriteLog (lsTRACE, RippleCalc)
-        << "rippleCalc: Paths in set: " << spsPaths.size ();
+        << "rippleCalc: Paths in set: " << spsPaths_.size ();
 
-    int iIndex  = 0;
-    for (auto const& spPath: spsPaths)
+    // Now expand the path state.
+    for (auto const& spPath: spsPaths_)
     {
-        auto pspExpanded = std::make_shared<PathState> (
-            saDstAmountReq, saMaxAmountReq);
-
-        if (!pspExpanded)
-            return temUNKNOWN;
-
-        WriteLog (lsTRACE, RippleCalc)
-            << "rippleCalc: EXPAND: "
-            << " saDstAmountReq:" << saDstAmountReq
-            << " saMaxAmountReq:" << saMaxAmountReq
-            << " uDstAccountID:"
-            << to_string (uDstAccountID)
-            << " uSrcAccountID:"
-            << to_string (uSrcAccountID);
-
-        pspExpanded->expandPath (
-            activeLedger, spPath, uDstAccountID, uSrcAccountID);
-
-        if (tesSUCCESS == pspExpanded->status())
-           pspExpanded->checkNoRipple (uDstAccountID, uSrcAccountID);
-
-        WriteLog (lsDEBUG, RippleCalc)
-            << "rippleCalc:"
-            << " Build path:" << ++iIndex
-            << " status: " << transToken (pspExpanded->status());
-
-        // Return, if the path specification was malformed.
-        if (isTemMalformed (pspExpanded->status()))
-            return pspExpanded->status();
-
-        if (tesSUCCESS == pspExpanded->status())
-        {
-            resultCode   = tesSUCCESS;           // Had a success.
-
-            pspExpanded->setIndex (pathStateList.size ());
-            pathStateList.push_back (pspExpanded);
-        }
-        else if (terNO_LINE != pspExpanded->status())
-        {
-            resultCode   = pspExpanded->status();
-        }
+        if (!addPathState (spPath, resultCode))
+            return resultCode;
     }
 
     if (resultCode != tesSUCCESS)
-        return resultCode == temUNCERTAIN ? terNO_LINE : resultCode;
-    else
-        resultCode   = temUNCERTAIN;
+        return (resultCode == temUNCERTAIN) ? terNO_LINE : resultCode;
 
-    saMaxAmountAct = saMaxAmountReq.zeroed();
-    saDstAmountAct = saDstAmountReq.zeroed();
+    resultCode = temUNCERTAIN;
+
+    actualAmountIn_ = saMaxAmountReq_.zeroed();
+    actualAmountOut_ = saDstAmountReq_.zeroed();
 
     // When processing, we don't want to complicate directory walking with
     // deletion.
-    const std::uint64_t uQualityLimit = bLimitQuality
-        ? STAmount::getRate (saDstAmountReq, saMaxAmountReq) : 0;
+    const std::uint64_t uQualityLimit = limitQuality_ ?
+            STAmount::getRate (saDstAmountReq_, saMaxAmountReq_) : 0;
 
     // Offers that became unfunded.
-    std::vector<uint256>    vuUnfundedBecame;
+    std::vector<uint256> unfundedOffers;
 
-    int iPass   = 0;
+    int iPass = 0;
 
     while (resultCode == temUNCERTAIN)
     {
         int iBest = -1;
-        LedgerEntrySet lesCheckpoint = activeLedger;
+        LedgerEntrySet lesCheckpoint = mActiveLedger;
         int iDry = 0;
 
         // True, if ever computed multi-quality.
-        bool bMultiQuality   = false;
+        bool multiQuality = false;
 
         // Find the best path.
-        for (auto pspCur: pathStateList)
+        for (auto pathState: pathStateList_)
         {
-            if (pspCur->quality())
+            if (pathState->quality())
                 // Only do active paths.
             {
-                bMultiQuality       = 1 == pathStateList.size () - iDry;
-                // Computing the only non-dry path, compute multi-quality.
+                // If computing the only non-dry path, compute multi-quality.
+                multiQuality = ((pathStateList_.size () - iDry) == 1);
 
-                pspCur->inAct() = saMaxAmountAct;
                 // Update to current amount processed.
+                pathState->reset (actualAmountIn_, actualAmountOut_);
 
-                pspCur->outAct() = saDstAmountAct;
-
-                CondLog (pspCur->inReq() > zero
-                         && pspCur->inAct() >= pspCur->inReq(),
-                         lsWARNING, RippleCalc)
-                    << "rippleCalc: DONE:"
-                    << " inAct()=" << pspCur->inAct()
-                    << " inReq()=" << pspCur->inReq();
-
-                assert (pspCur->inReq() < zero ||
-                        pspCur->inAct() < pspCur->inReq()); // Error if done.
-
-                CondLog (pspCur->outAct() >= pspCur->outReq(),
-                         lsWARNING, RippleCalc)
-                    << "rippleCalc: ALREADY DONE:"
-                    << " saOutAct=" << pspCur->outAct()
-                    << " saOutReq=%s" << pspCur->outReq();
-
-                assert (pspCur->outAct() < pspCur->outReq());
                 // Error if done, output met.
+                PathCursor pc(*this, *pathState, multiQuality);
+                pc.nextIncrement (lesCheckpoint);
 
-                pathNext (rc, *pspCur, bMultiQuality, lesCheckpoint, rc.mActiveLedger);
                 // Compute increment.
                 WriteLog (lsDEBUG, RippleCalc)
                     << "rippleCalc: AFTER:"
-                    << " mIndex=" << pspCur->index()
-                    << " uQuality=" << pspCur->quality()
-                    << " rate=%s" << STAmount::saFromRate (pspCur->quality());
+                    << " mIndex=" << pathState->index()
+                    << " uQuality=" << pathState->quality()
+                    << " rate=" << STAmount::saFromRate (pathState->quality());
 
-                if (!pspCur->quality())
+                if (!pathState->quality())
                 {
                     // Path was dry.
 
                     ++iDry;
                 }
-                else if (pspCur->outPass() == zero)
+                else if (pathState->outPass() == zero)
                 {
                     // Path is not dry, but moved no funds
                     // This should never happen. Consider the path dry
@@ -278,45 +177,46 @@ TER rippleCalculate (
 
                     assert (false);
 
-                    pspCur->setQuality (0);
+                    pathState->setQuality (0);
                     ++iDry;
                 }
                 else
                 {
-                    CondLog (!pspCur->inPass() || !pspCur->outPass(),
+                    CondLog (!pathState->inPass() || !pathState->outPass(),
                              lsDEBUG, RippleCalc)
                         << "rippleCalc: better:"
                         << " uQuality="
-                        << STAmount::saFromRate (pspCur->quality())
-                        << " inPass()=" << pspCur->inPass()
-                        << " saOutPass=" << pspCur->outPass();
+                        << STAmount::saFromRate (pathState->quality())
+                        << " inPass()=" << pathState->inPass()
+                        << " saOutPass=" << pathState->outPass();
 
-                    assert (!!pspCur->inPass() && !!pspCur->outPass());
+                    assert (pathState->inPass() && pathState->outPass());
 
-                    if ((!bLimitQuality || pspCur->quality() <= uQualityLimit)
+                    if ((!limitQuality_ ||
+                         pathState->quality() <= uQualityLimit)
                         // Quality is not limited or increment has allowed
                         // quality.
                         && (iBest < 0
                             // Best is not yet set.
-                            || PathState::lessPriority (*pathStateList[iBest],
-                                                        *pspCur)))
+                            || PathState::lessPriority (
+                                *pathStateList_[iBest], *pathState)))
                         // Current is better than set.
                     {
                         WriteLog (lsDEBUG, RippleCalc)
                             << "rippleCalc: better:"
-                            << " mIndex=" << pspCur->index()
-                            << " uQuality=" << pspCur->quality()
+                            << " mIndex=" << pathState->index()
+                            << " uQuality=" << pathState->quality()
                             << " rate="
-                            << STAmount::saFromRate (pspCur->quality())
-                            << " inPass()=" << pspCur->inPass()
-                            << " saOutPass=" << pspCur->outPass();
+                            << STAmount::saFromRate (pathState->quality())
+                            << " inPass()=" << pathState->inPass()
+                            << " saOutPass=" << pathState->outPass();
 
-                        assert (activeLedger.isValid ());
-                        activeLedger.swapWith (pspCur->ledgerEntries());
+                        assert (mActiveLedger.isValid ());
+                        mActiveLedger.swapWith (pathState->ledgerEntries());
                         // For the path, save ledger state.
-                        activeLedger.invalidate ();
+                        mActiveLedger.invalidate ();
 
-                        iBest   = pspCur->index ();
+                        iBest   = pathState->index ();
                     }
                 }
             }
@@ -328,81 +228,81 @@ TER rippleCalculate (
                 << "rippleCalc: Summary:"
                 << " Pass: " << ++iPass
                 << " Dry: " << iDry
-                << " Paths: " << pathStateList.size ();
-            for (auto pspCur: pathStateList)
+                << " Paths: " << pathStateList_.size ();
+            for (auto pathState: pathStateList_)
             {
                 WriteLog (lsDEBUG, RippleCalc)
                     << "rippleCalc: "
-                    << "Summary: " << pspCur->index()
+                    << "Summary: " << pathState->index()
                     << " rate: "
-                    << STAmount::saFromRate (pspCur->quality())
-                    << " quality:" << pspCur->quality()
-                    << " best: " << (iBest == pspCur->index ());
+                    << STAmount::saFromRate (pathState->quality())
+                    << " quality:" << pathState->quality()
+                    << " best: " << (iBest == pathState->index ());
             }
         }
 
         if (iBest >= 0)
         {
             // Apply best path.
-            auto pspBest = pathStateList[iBest];
+            auto pathState = pathStateList_[iBest];
 
             WriteLog (lsDEBUG, RippleCalc)
                 << "rippleCalc: best:"
                 << " uQuality="
-                << STAmount::saFromRate (pspBest->quality())
-                << " inPass()=" << pspBest->inPass()
-                << " saOutPass=" << pspBest->outPass();
+                << STAmount::saFromRate (pathState->quality())
+                << " inPass()=" << pathState->inPass()
+                << " saOutPass=" << pathState->outPass();
 
             // Record best pass' offers that became unfunded for deletion on
             // success.
-            vuUnfundedBecame.insert (
-                vuUnfundedBecame.end (),
-                pspBest->becameUnfunded().begin (),
-                pspBest->becameUnfunded().end ());
+            unfundedOffers.insert (
+                unfundedOffers.end (),
+                pathState->unfundedOffers().begin (),
+                pathState->unfundedOffers().end ());
 
             // Record best pass' LedgerEntrySet to build off of and potentially
             // return.
-            assert (pspBest->ledgerEntries().isValid ());
-            activeLedger.swapWith (pspBest->ledgerEntries());
-            pspBest->ledgerEntries().invalidate ();
+            assert (pathState->ledgerEntries().isValid ());
+            mActiveLedger.swapWith (pathState->ledgerEntries());
+            pathState->ledgerEntries().invalidate ();
 
-            saMaxAmountAct  += pspBest->inPass();
-            saDstAmountAct  += pspBest->outPass();
+            actualAmountIn_ += pathState->inPass();
+            actualAmountOut_ += pathState->outPass();
 
-            if (pspBest->allLiquidityConsumed() || bMultiQuality)
+            if (pathState->allLiquidityConsumed() || multiQuality)
             {
                 ++iDry;
-                pspBest->setQuality(0);
+                pathState->setQuality(0);
             }
 
-            if (saDstAmountAct == saDstAmountReq)
+            if (actualAmountOut_ == saDstAmountReq_)
             {
                 // Done. Delivered requested amount.
 
                 resultCode   = tesSUCCESS;
             }
-            else if (saDstAmountAct > saDstAmountReq)
+            else if (actualAmountOut_ > saDstAmountReq_)
             {
                 WriteLog (lsFATAL, RippleCalc)
                     << "rippleCalc: TOO MUCH:"
-                    << " saDstAmountAct:" << saDstAmountAct
-                    << " saDstAmountReq:" << saDstAmountReq;
+                    << " actualAmountOut_:" << actualAmountOut_
+                    << " saDstAmountReq_:" << saDstAmountReq_;
 
                 return tefEXCEPTION;  // TEMPORARY
                 assert (false);
             }
-            else if (saMaxAmountAct != saMaxAmountReq &&
-                     iDry != pathStateList.size ())
+            else if (actualAmountIn_ != saMaxAmountReq_ &&
+                     iDry != pathStateList_.size ())
             {
                 // Have not met requested amount or max send, try to do
                 // more. Prepare for next pass.
                 //
                 // Merge best pass' umReverse.
-                rc.mumSource.insert (
-                    pspBest->reverse().begin (), pspBest->reverse().end ());
+                mumSource.insert (
+                    pathState->reverse().begin (), pathState->reverse().end ());
 
             }
-            else if (!bPartialPayment)
+            else if (!partialPaymentAllowed_)
             {
                 // Have sent maximum allowed. Partial payment not allowed.
 
@@ -416,55 +316,58 @@ TER rippleCalculate (
             }
         }
         // Not done and ran out of paths.
-        else if (!bPartialPayment)
+        else if (!partialPaymentAllowed_)
         {
             // Partial payment not allowed.
-            resultCode   = tecPATH_PARTIAL;
+            resultCode = tecPATH_PARTIAL;
         }
         // Partial payment ok.
-        else if (!saDstAmountAct)
+        else if (!actualAmountOut_)
         {
             // No payment at all.
-            resultCode   = tecPATH_DRY;
+            resultCode = tecPATH_DRY;
         }
         else
         {
             // We must restore the activeLedger from lesCheckpoint in the case
             // when iBest is -1 and just before the result is set to tesSUCCESS.
 
-            activeLedger.swapWith (lesCheckpoint);
+            mActiveLedger.swapWith (lesCheckpoint);
             resultCode   = tesSUCCESS;
         }
     }
 
-    if (!bStandAlone)
+    if (deleteUnfundedOffers_)
     {
         if (resultCode == tesSUCCESS)
         {
-            // Delete became unfunded offers.
-            for (auto const& offerIndex: vuUnfundedBecame)
+            // Delete offers that became unfunded.
+            for (auto const& offerIndex: unfundedOffers)
             {
                 if (resultCode == tesSUCCESS)
                 {
                     WriteLog (lsDEBUG, RippleCalc)
                         << "Became unfunded " << to_string (offerIndex);
-                    resultCode = activeLedger.offerDelete (offerIndex);
+                    resultCode = mActiveLedger.offerDelete (offerIndex);
                 }
             }
         }
 
         // Delete found unfunded offers.
-        for (auto const& offerIndex: rc.mUnfundedOffers)
+        for (auto const& offerIndex: unfundedOffers)
         {
             if (resultCode == tesSUCCESS)
             {
                 WriteLog (lsDEBUG, RippleCalc)
                     << "Delete unfunded " << to_string (offerIndex);
-                resultCode = activeLedger.offerDelete (offerIndex);
+                resultCode = mActiveLedger.offerDelete (offerIndex);
             }
         }
     }
 
+    // If isOpenLedger, then ledger is not final, can vote no.
+    if (resultCode == telFAILED_PROCESSING && !isLedgerOpen_)
+        return tecFAILED_PROCESSING;
     return resultCode;
 }
 

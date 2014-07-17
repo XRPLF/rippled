@@ -30,7 +30,6 @@ public:
     typedef std::shared_ptr <OrderBook> const& ref;
     typedef std::vector<pointer> List;
 
-public:
     /** Construct from a currency specification.
 
         @param index ???

@@ -146,10 +146,12 @@ public:
     // item node function
     bool hasItem () const
     {
-        return !!mItem;
+        return bool(mItem);
     }
     SHAMapItem::ref peekItem ()
-    { // CAUTION: Do not modify the item
+    {
+        // CAUTION: Do not modify the item TODO(tom): a comment in the code does
+        // nothing - this should return a const reference.
         return mItem;
     }
     bool setItem (SHAMapItem::ref i, TNType type);

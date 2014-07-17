@@ -28,10 +28,21 @@
 
 #include <ripple/module/rpc/ErrorCodes.h>
 
+#include <ripple/module/app/paths/Node.cpp>
 #include <ripple/module/app/paths/PathRequest.cpp>
 #include <ripple/module/app/paths/PathRequests.cpp>
-#include <ripple/module/app/paths/RippleCalc.cpp>
 #include <ripple/module/app/paths/PathState.cpp>
+#include <ripple/module/app/paths/RippleCalc.cpp>
+#include <ripple/module/app/paths/cursor/AdvanceNode.cpp>
+#include <ripple/module/app/paths/cursor/DeliverNodeForward.cpp>
+#include <ripple/module/app/paths/cursor/DeliverNodeReverse.cpp>
+#include <ripple/module/app/paths/cursor/ForwardLiquidity.cpp>
+#include <ripple/module/app/paths/cursor/ForwardLiquidityForAccount.cpp>
+#include <ripple/module/app/paths/cursor/Liquidity.cpp>
+#include <ripple/module/app/paths/cursor/NextIncrement.cpp>
+#include <ripple/module/app/paths/cursor/ReverseLiquidity.cpp>
+#include <ripple/module/app/paths/cursor/ReverseLiquidityForAccount.cpp>
+#include <ripple/module/app/paths/cursor/RippleLiquidity.cpp>
 
 #include <ripple/module/app/main/ParameterTable.cpp>
 #include <ripple/module/app/paths/RippleLineCache.cpp>

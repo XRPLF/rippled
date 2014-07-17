@@ -25,9 +25,9 @@ TER Payment::doApply ()
 {
     // Ripple if source or destination is non-native or if there are paths.
     std::uint32_t const uTxFlags = mTxn.getFlags ();
-    bool const bPartialPayment (uTxFlags & tfPartialPayment);
-    bool const bLimitQuality (uTxFlags & tfLimitQuality);
-    bool const bNoRippleDirect (uTxFlags & tfNoRippleDirect);
+    bool const partialPaymentAllowed = uTxFlags & tfPartialPayment;
+    bool const limitQuality = uTxFlags & tfLimitQuality;
+    bool const defaultPathsAllowed = !(uTxFlags & tfNoRippleDirect);
     bool const bPaths = mTxn.isFieldPresent (sfPaths);
     bool const bMax = mTxn.isFieldPresent (sfSendMax);
     Account const& uDstAccountID = mTxn.getFieldAccount160 (sfDestination);
@@ -128,7 +128,7 @@ TER Payment::doApply ()
 
         return temBAD_SEND_XRP_PATHS;
     }
-    else if (bXRPDirect && bPartialPayment)
+    else if (bXRPDirect && partialPaymentAllowed)
     {
         // Consistent but redundant transaction.
         m_journal.trace <<
@@ -136,7 +136,7 @@ TER Payment::doApply ()
 
         return temBAD_SEND_XRP_PARTIAL;
     }
-    else if (bXRPDirect && bLimitQuality)
+    else if (bXRPDirect && limitQuality)
     {
         // Consistent but redundant transaction.
         m_journal.trace <<
@@ -144,7 +144,7 @@ TER Payment::doApply ()
 
         return temBAD_SEND_XRP_LIMIT;
     }
-    else if (bXRPDirect && bNoRippleDirect)
+    else if (bXRPDirect && !defaultPathsAllowed)
     {
         // Consistent but redundant transaction.
         m_journal.trace <<
@@ -166,10 +166,11 @@ TER Payment::doApply ()
             m_journal.trace <<
                 "Delay transaction: Destination account does not exist.";
 
-            // Another transaction could create the account and then this transaction would succeed.
+            // Another transaction could create the account and then this
+            // transaction would succeed.
             return tecNO_DST;
         }
-        else if (mParams & tapOPEN_LEDGER && bPartialPayment)
+        else if (mParams & tapOPEN_LEDGER && partialPaymentAllowed)
         {
             // You cannot fund an account with a partial payment.
             // Make retry work smaller, by rejecting this.
@@ -233,43 +234,31 @@ TER Payment::doApply ()
 
         // Copy paths into an editable class.
         STPathSet spsPaths = mTxn.getFieldPathSet (sfPaths);
-        PathState::List pathStateList;
-        STAmount maxSourceAmountAct;
-        STAmount saDstAmountAct;
+        path::RippleCalc rc(
+            mEngine->view (),
+            maxSourceAmount,
+            saDstAmount,
+            uDstAccountID,
+            mTxnAccountID,
+            spsPaths);
+
+        rc.partialPaymentAllowed_ = partialPaymentAllowed;
+        rc.limitQuality_ = limitQuality;
+        rc.defaultPathsAllowed_ = defaultPathsAllowed;
+        rc.deleteUnfundedOffers_ = true;
+        rc.isLedgerOpen_ = (mParams & tapOPEN_LEDGER);
 
         try
         {
-            bool const openLedger = (mParams & tapOPEN_LEDGER);
-
             bool pathTooBig = spsPaths.size () > MaxPathSize;
 
             for (auto const& path : spsPaths)
                 if (path.size () > MaxPathLength)
                     pathTooBig = true;
 
-            terResult = openLedger && pathTooBig
+            terResult = rc.isLedgerOpen_ && pathTooBig
                         ? telBAD_PATH_COUNT // Too many paths for proposed ledger.
-                        : path::rippleCalculate (
-                              mEngine->view (),
-                              maxSourceAmountAct,
-                              saDstAmountAct,
-                              pathStateList,  // Vector for saving expanded path.
-                              maxSourceAmount,
-                              saDstAmount,
-                              uDstAccountID,
-                              mTxnAccountID,
-                              spsPaths,
-                              bPartialPayment,
-                              bLimitQuality,
-                              bNoRippleDirect, // Always compute for finalizing ledger.
-                              false, // Not standalone, delete unfundeds.
-                              openLedger);
-
-            // Not standalone means: If we discover an offer that's unfunded, we
-            // should delete it as soon as we can.
-
-            // If you're not modifying the ledger, you don't need to delete
-            // unfunded.
+                        : rc.rippleCalculate ();
 
             // TODO(tom): what's going on here?
             if (isTerRetry(terResult))
@@ -277,8 +266,8 @@ TER Payment::doApply ()
 
             // TODO: is this right?  If the amount is the correct amount, was
             // the delivered amount previously set?
-            if (terResult == tesSUCCESS && saDstAmountAct != saDstAmount)
-                mEngine->view().setDeliveredAmount (saDstAmountAct);
+            if (terResult == tesSUCCESS && rc.actualAmountOut_ != saDstAmount)
+                mEngine->view().setDeliveredAmount (rc.actualAmountOut_);
         }
         catch (std::exception const& e)
         {

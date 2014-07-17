@@ -261,13 +261,13 @@ TER SetTrust::doApply ()
         bool const  bLowReserveSet      = uLowQualityIn || uLowQualityOut ||
                                           (uFlagsOut & lsfLowNoRipple) ||
                                           (uFlagsOut & lsfLowFreeze) ||
-                                          !!saLowLimit || saLowBalance > zero;
+                                          saLowLimit || saLowBalance > zero;
         bool const  bLowReserveClear    = !bLowReserveSet;
 
         bool const  bHighReserveSet     = uHighQualityIn || uHighQualityOut ||
                                           (uFlagsOut & lsfHighNoRipple) ||
                                           (uFlagsOut & lsfHighFreeze) ||
-                                          !!saHighLimit || saHighBalance > zero;
+                                          saHighLimit || saHighBalance > zero;
         bool const  bHighReserveClear   = !bHighReserveSet;
 
         bool const  bDefault            = bLowReserveClear && bHighReserveClear;

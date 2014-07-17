@@ -1049,7 +1049,7 @@ Transaction::pointer NetworkOPsImp::processTransactionCb (
             m_journal.info << "Transaction is now included in open ledger";
             trans->setStatus (INCLUDED);
 
-            // VFALCO NOTE The value of trans can be changed here!!
+            // VFALCO NOTE The value of trans can be changed here!
             getApp().getMasterTransaction ().canonicalize (&trans);
         }
         else if (r == tefPAST_SEQ)
@@ -2942,7 +2942,7 @@ bool NetworkOPsImp::subLedger (InfoSub::ref isrListener, Json::Value& jvResult)
 bool NetworkOPsImp::unsubLedger (std::uint64_t uSeq)
 {
     ScopedLockType sl (mLock);
-    return !!mSubLedger.erase (uSeq);
+    return mSubLedger.erase (uSeq);
 }
 
 // <-- bool: true=added, false=already there
@@ -2968,7 +2968,7 @@ bool NetworkOPsImp::subServer (InfoSub::ref isrListener, Json::Value& jvResult)
 bool NetworkOPsImp::unsubServer (std::uint64_t uSeq)
 {
     ScopedLockType sl (mLock);
-    return !!mSubServer.erase (uSeq);
+    return mSubServer.erase (uSeq);
 }
 
 // <-- bool: true=added, false=already there
@@ -2983,7 +2983,7 @@ bool NetworkOPsImp::subTransactions (InfoSub::ref isrListener)
 bool NetworkOPsImp::unsubTransactions (std::uint64_t uSeq)
 {
     ScopedLockType sl (mLock);
-    return !!mSubTransactions.erase (uSeq);
+    return mSubTransactions.erase (uSeq);
 }
 
 // <-- bool: true=added, false=already there
@@ -2998,7 +2998,7 @@ bool NetworkOPsImp::subRTTransactions (InfoSub::ref isrListener)
 bool NetworkOPsImp::unsubRTTransactions (std::uint64_t uSeq)
 {
     ScopedLockType sl (mLock);
-    return !!mSubRTTransactions.erase (uSeq);
+    return mSubRTTransactions.erase (uSeq);
 }
 
 InfoSub::pointer NetworkOPsImp::findRpcSub (const std::string& strUrl)

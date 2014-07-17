@@ -21,7 +21,6 @@
 #include <boost/log/trivial.hpp>
 
 #include <ripple/types/api/UintTypes.h>
-#include <ripple/module/app/paths/Calculators.h>
 
 namespace ripple {
 
@@ -128,12 +127,14 @@ void PathRequest::updateComplete ()
 bool PathRequest::isValid (RippleLineCache::ref crCache)
 {
     ScopedLockType sl (mLock);
-    bValid = raSrcAccount.isSet () && raDstAccount.isSet () && saDstAmount > zero;
+    bValid = raSrcAccount.isSet () && raDstAccount.isSet () &&
+            saDstAmount > zero;
     Ledger::pointer lrLedger = crCache->getLedger ();
 
     if (bValid)
     {
-        AccountState::pointer asSrc = getApp().getOPs ().getAccountState (crCache->getLedger(), raSrcAccount);
+        auto asSrc = getApp().getOPs ().getAccountState (
+            crCache->getLedger(), raSrcAccount);
 
         if (!asSrc)
         {
@@ -143,9 +144,11 @@ bool PathRequest::isValid (RippleLineCache::ref crCache)
         }
         else
         {
-            AccountState::pointer asDst = getApp().getOPs ().getAccountState (lrLedger, raDstAccount);
+            auto asDst = getApp().getOPs ().getAccountState (
+                lrLedger, raDstAccount);
 
-            Json::Value& jvDestCur = (jvStatus["destination_currencies"] = Json::arrayValue);
+            Json::Value& jvDestCur =
+                    (jvStatus["destination_currencies"] = Json::arrayValue);
 
             if (!asDst)
             {
@@ -170,13 +173,15 @@ bool PathRequest::isValid (RippleLineCache::ref crCache)
                 bool const disallowXRP (
                     asDst->peekSLE ().getFlags() & lsfDisallowXRP);
 
-                CurrencySet usDestCurrID =
-                    usAccountDestCurrencies (raDstAccount, crCache, !disallowXRP);
+                auto usDestCurrID = usAccountDestCurrencies (
+                        raDstAccount, crCache, !disallowXRP);
 
                 for (auto const& currency : usDestCurrID)
                     jvDestCur.append (to_string (currency));
 
-                jvStatus["destination_tag"] = (asDst->peekSLE ().getFlags () & lsfRequireDestTag) != 0;
+                jvStatus["destination_tag"] =
+                        (asDst->peekSLE ().getFlags () & lsfRequireDestTag)
+                        != 0;
             }
         }
     }
@@ -189,8 +194,11 @@ bool PathRequest::isValid (RippleLineCache::ref crCache)
     return bValid;
 }
 
-Json::Value PathRequest::doCreate (Ledger::ref lrLedger, RippleLineCache::ref& cache,
-    const Json::Value& value, bool& valid)
+Json::Value PathRequest::doCreate (
+    Ledger::ref lrLedger,
+    RippleLineCache::ref& cache,
+    Json::Value const& value,
+    bool& valid)
 {
 
     Json::Value status;
@@ -433,9 +441,6 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
         if (valid && pf.findPaths (iLevel, 4, spsPaths, extraPath))
         {
             LedgerEntrySet lesSandbox (cache->getLedger (), tapNONE);
-            PathState::List pathStateList;
-            STAmount saMaxAmountAct;
-            STAmount saDstAmountAct;
             auto& account = currIssuer.second.isNonZero ()
                     ? Account(currIssuer.second)
                     : isXRP (currIssuer.first)
@@ -445,23 +450,23 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
 
             saMaxAmount.negate ();
             m_journal.debug << iIdentifier << " Paths found, calling rippleCalc";
-            TER resultCode = path::rippleCalculate (
-                lesSandbox, saMaxAmountAct, saDstAmountAct,
-                pathStateList, saMaxAmount, saDstAmount,
-                raDstAccount.getAccountID (), raSrcAccount.getAccountID (),
-                spsPaths, false, false, false, true);
+            path::RippleCalc rc (
+                lesSandbox,
+                saMaxAmount,
+                saDstAmount,
+                raDstAccount.getAccountID (),
+                raSrcAccount.getAccountID (),
+                spsPaths);
+            TER resultCode = rc.rippleCalculate ();
 
-            if ((extraPath.size() > 0) && ((resultCode == terNO_LINE) || (resultCode == tecPATH_PARTIAL)))
+            if (!extraPath.empty() &&
+                (resultCode == terNO_LINE || resultCode == tecPATH_PARTIAL))
             {
                 m_journal.debug
                         << iIdentifier << " Trying with an extra path element";
                 spsPaths.addPath(extraPath);
-                pathStateList.clear ();
-                resultCode = path::rippleCalculate (
-                    lesSandbox, saMaxAmountAct, saDstAmountAct,
-                    pathStateList, saMaxAmount, saDstAmount,
-                    raDstAccount.getAccountID (), raSrcAccount.getAccountID (),
-                    spsPaths, false, false, false, true);
+                rc.pathStateList_.clear ();
+                resultCode = rc.rippleCalculate ();
                 m_journal.debug
                         << iIdentifier << " Extra path element gives "
                         << transHuman (resultCode);
@@ -470,7 +475,7 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
             if (resultCode == tesSUCCESS)
             {
                 Json::Value jvEntry (Json::objectValue);
-                jvEntry["source_amount"]    = saMaxAmountAct.getJson (0);
+                jvEntry["source_amount"]    = rc.actualAmountIn_.getJson (0);
                 jvEntry["paths_computed"]   = spsPaths.getJson (0);
                 found  = true;
                 jvArray.append (jvEntry);
