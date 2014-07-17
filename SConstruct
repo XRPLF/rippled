@@ -198,6 +198,8 @@ def config_base(env):
             )
     check_openssl()
 
+    env.Append(CPPDEFINES=['OPENSSL_NO_SSL2'])
+
     #git = Beast.Git(env) #  TODO(TOM)
     if False: #git.exists:
         env.Append(CPPDEFINES={'GIT_COMMIT_ID' : '"%s"' % git.commit_id})
@@ -241,13 +243,11 @@ def config_env(toolchain, variant, env):
         env.Append(CPPDEFINES=['NDEBUG'])
 
     if toolchain in Split('clang gcc'):
-
         if Beast.system.linux:
             env.ParseConfig('pkg-config --static --cflags --libs openssl')
             env.ParseConfig('pkg-config --static --cflags --libs protobuf')
 
-        env.Prepend(CFLAGS=['-Wall'])
-        env.Prepend(CXXFLAGS=['-Wall'])
+        env.Prepend(CCFLAGS=['-Wall'])
 
         env.Append(CCFLAGS=[
             '-Wno-sign-compare',
