@@ -19,6 +19,8 @@
 
 #include <ripple/module/app/book/Taker.h>
 
+#include <sstream>
+
 namespace ripple {
 namespace core {
 
@@ -216,7 +218,15 @@ Taker::done () const
 TER
 Taker::cross (Offer const& offer)
 {
+    m_details.empty ();
+
+    std::stringstream ss;
+
     assert (!done ());
+
+    ss << "Taker::cross: " << std::endl <<
+        "    m_remain: " << m_remain.in << " : " << m_remain.out << std::endl <<
+        "       offer: " << offer.amount().in << " : " << offer.amount().out << std::endl;
 
     /* Before we call flow we must set the limit right; for buy semantics we
        need to clamp the output. And we always want to clamp the input.
@@ -227,14 +237,30 @@ Taker::cross (Offer const& offer)
         limit = offer.quality ().ceil_out (limit, m_remain.out);
     limit = offer.quality().ceil_in (limit, m_remain.in);
 
+    ss << "Taker::cross: " << std::endl <<
+        "       limit: " << limit.in << " : " << limit.out << std::endl;
+
     assert (limit.in <= offer.amount().in);
     assert (limit.out <= offer.amount().out);
     assert (limit.in <= m_remain.in);
 
-    Amounts const amount (flow (limit, offer, account ()));
+    Amounts const amount (flow (limit, offer, m_account));
+    Amounts const remain (m_remain);
+
+    ss << "Taker::cross: " << std::endl <<
+        "      amount: " << amount.in << " : " << amount.out << std::endl;
 
     m_remain.out -= amount.out;
     m_remain.in -= amount.in;
+
+    assert (m_remain.out != remain.out);
+    assert (m_remain.in != remain.in);
+
+    ss << "Taker::cross: " << std::endl <<
+        "    m_remain (before): " << remain.in << " : " << remain.out << std::endl <<
+        "     m_remain (after): " << m_remain.in << " : " << m_remain.out << std::endl;
+
+    m_details = ss.str ();
 
     assert (m_remain.in >= zero);
     return fill (offer, amount);
@@ -243,10 +269,19 @@ Taker::cross (Offer const& offer)
 TER
 Taker::cross (Offer const& leg1, Offer const& leg2)
 {
+    m_details.empty ();
+
+    std::stringstream ss;
+
     assert (!done ());
 
     assert (leg1.amount ().out.isNative ());
     assert (leg2.amount ().in.isNative ());
+
+    ss << "Taker::cross: " << std::endl <<
+        "    m_remain: " << m_remain.in << " : " << m_remain.out << std::endl <<
+        "        leg1: " << leg1.amount().in << " : " << leg1.amount().out << std::endl <<
+        "        leg2: " << leg2.amount().in << " : " << leg2.amount().out << std::endl;
 
     Amounts limit1 (leg1.amount());
     Amounts limit2 (leg2.amount());
@@ -258,10 +293,18 @@ Taker::cross (Offer const& leg1, Offer const& leg2)
         limit2 = leg2.quality().ceil_out (limit2, m_remain.out);
     limit1 = leg1.quality().ceil_in (limit1, m_remain.in);
 
+    ss << "Taker::cross: " << std::endl <<
+        "      limit1: " << limit1.in << " : " << limit1.out << std::endl <<
+        "      limit2: " << limit2.in << " : " << limit2.out << std::endl;
+
     if (limit1.out <= limit2.in)
         limit2 = leg2.quality().ceil_in (limit2, limit1.out);
     else
         limit1 = leg1.quality().ceil_out (limit1, limit2.in);
+
+    ss << "Taker::cross: " << std::endl <<
+        "      limit1: " << limit1.in << " : " << limit1.out << std::endl <<
+        "      limit2: " << limit2.in << " : " << limit2.out << std::endl;
 
     assert (limit1.out == limit2.in);
     assert (limit1.in <= leg1.amount().in);
@@ -271,15 +314,33 @@ Taker::cross (Offer const& leg1, Offer const& leg2)
     assert (limit1.in <= m_remain.in);
 
     // As written, flow can't handle a 3-party transfer, but this works for
-    // us because the output of leg1 and the input leg2 are XRP.
+    // us because the output of leg1 and the input of leg2 are XRP.
     Amounts flow1 (flow (limit1, leg1, m_account));
+
+    ss << "Taker::cross: " << std::endl <<
+        "       flow1: " << flow1.in << " : " << flow1.out << std::endl <<
+        "      limit2: " << limit2.in << " : " << limit2.out << std::endl;
 
     limit2 = leg2.quality().ceil_in (limit2, flow1.out);
 
-    Amounts flow2 (flow (limit2, leg2, m_account));
+    Amounts flow2 (flow (limit2, leg2, leg1.account ()));
 
-    m_remain.out -= limit2.out;
-    m_remain.in -= limit1.in;
+    ss << "Taker::cross: " << std::endl <<
+        "       flow2: " << flow2.in << " : " << flow2.out << std::endl;
+
+    Amounts const remain (m_remain);
+
+    m_remain.out -= flow2.out;
+    m_remain.in -= flow1.in;
+
+    assert (m_remain.out != remain.out);
+    assert (m_remain.in != remain.in);
+
+    ss << "Taker::cross: " << std::endl <<
+        "    m_remain (before): " << remain.in << " : " << remain.out << std::endl <<
+        "     m_remain (after): " << m_remain.in << " : " << m_remain.out << std::endl;
+
+    m_details = ss.str ();
 
     return fill (leg1, flow1, leg2, flow2);
 }

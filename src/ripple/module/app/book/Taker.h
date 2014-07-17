@@ -69,6 +69,8 @@ private:
     // The amounts still left over for us to try and take.
     Amounts m_remain;
 
+    std::string m_details;
+
     Amounts
     flow (Amounts amount, Offer const& offer, Account const& taker);
 
@@ -85,6 +87,11 @@ private:
 public:
     Taker (LedgerView& view, Account const& account,
         Amounts const& amount, Options const& options);
+
+    std::string details () const
+    {
+        return m_details;
+    }
 
     LedgerView&
     view () const noexcept
