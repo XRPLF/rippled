@@ -26,20 +26,26 @@ namespace ripple {
 // }
 Json::Value doUnlAdd (RPC::Context& context)
 {
-    std::string strNode     = context.params_.isMember ("node") ? context.params_["node"].asString () : "";
-    std::string strComment  = context.params_.isMember ("comment") ? context.params_["comment"].asString () : "";
+    Application::ScopedLockType lock (getApp().getMasterLock ());
 
-    RippleAddress   raNodePublic;
+    std::string strNode = context.params_.isMember ("node") ?
+            context.params_["node"].asString () : "";
+    std::string strComment  = context.params_.isMember ("comment") ?
+            context.params_["comment"].asString () : "";
+
+    RippleAddress raNodePublic;
 
     if (raNodePublic.setNodePublic (strNode))
     {
-        getApp().getUNL ().nodeAddPublic (raNodePublic, UniqueNodeList::vsManual, strComment);
+        getApp().getUNL ().nodeAddPublic (
+            raNodePublic, UniqueNodeList::vsManual, strComment);
 
         return "adding node by public key";
     }
     else
     {
-        getApp().getUNL ().nodeAddDomain (strNode, UniqueNodeList::vsManual, strComment);
+        getApp().getUNL ().nodeAddDomain (
+            strNode, UniqueNodeList::vsManual, strComment);
 
         return "adding node by domain";
     }

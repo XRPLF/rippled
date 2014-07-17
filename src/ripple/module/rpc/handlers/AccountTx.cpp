@@ -31,8 +31,6 @@ namespace ripple {
 // }
 Json::Value doAccountTx (RPC::Context& context)
 {
-    context.lock_.unlock ();
-
     RippleAddress   raAccount;
     int             limit       = context.params_.isMember (jss::limit) ? context.params_[jss::limit].asUInt () : -1;
     bool            bBinary     = context.params_.isMember ("binary") && context.params_["binary"].asBool ();

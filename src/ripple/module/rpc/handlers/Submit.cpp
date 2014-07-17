@@ -26,19 +26,20 @@ namespace ripple {
 // }
 Json::Value doSubmit (RPC::Context& context)
 {
-    context.lock_.unlock ();
-
     context.loadType_ = Resource::feeMediumBurdenRPC;
 
     if (!context.params_.isMember ("tx_blob"))
     {
-        bool bFailHard = context.params_.isMember ("fail_hard") && context.params_["fail_hard"].asBool ();
-        return RPC::transactionSign (context.params_, true, bFailHard, context.lock_, context.netOps_, context.role_);
+        bool bFailHard = context.params_.isMember ("fail_hard") &&
+                context.params_["fail_hard"].asBool ();
+        return RPC::transactionSign (
+            context.params_, true, bFailHard, context.netOps_, context.role_);
     }
 
     Json::Value                 jvResult;
 
-    std::pair<Blob, bool> ret(strUnHex (context.params_["tx_blob"].asString ()));
+    std::pair<Blob, bool> ret =
+            strUnHex (context.params_["tx_blob"].asString ());
 
     if (!ret.second || !ret.first.size ())
         return rpcError (rpcINVALID_PARAMS);
@@ -50,7 +51,8 @@ Json::Value doSubmit (RPC::Context& context)
 
     try
     {
-        stpTrans = std::make_shared<SerializedTransaction> (std::ref (sitTrans));
+        stpTrans = std::make_shared<SerializedTransaction> (
+            std::ref (sitTrans));
     }
     catch (std::exception& e)
     {
@@ -60,15 +62,15 @@ Json::Value doSubmit (RPC::Context& context)
         return jvResult;
     }
 
-    Transaction::pointer            tpTrans;
+    Transaction::pointer tpTrans;
 
     try
     {
-        tpTrans     = std::make_shared<Transaction> (stpTrans, false);
+        tpTrans = std::make_shared<Transaction> (stpTrans, false);
     }
     catch (std::exception& e)
     {
-        jvResult[jss::error]           = "internalTransaction";
+        jvResult[jss::error] = "internalTransaction";
         jvResult["error_exception"] = e.what ();
 
         return jvResult;
@@ -76,12 +78,14 @@ Json::Value doSubmit (RPC::Context& context)
 
     try
     {
-        (void) context.netOps_.processTransaction (tpTrans, context.role_ == Config::ADMIN, true,
-            context.params_.isMember ("fail_hard") && context.params_["fail_hard"].asBool ());
+        (void) context.netOps_.processTransaction (
+            tpTrans, context.role_ == Config::ADMIN, true,
+            context.params_.isMember ("fail_hard") &&
+            context.params_["fail_hard"].asBool ());
     }
     catch (std::exception& e)
     {
-        jvResult[jss::error]           = "internalSubmit";
+        jvResult[jss::error] = "internalSubmit";
         jvResult[jss::error_exception] = e.what ();
 
         return jvResult;
@@ -90,8 +94,9 @@ Json::Value doSubmit (RPC::Context& context)
 
     try
     {
-        jvResult[jss::tx_json]     = tpTrans->getJson (0);
-        jvResult[jss::tx_blob]     = strHex (tpTrans->getSTransaction ()->getSerializer ().peekData ());
+        jvResult[jss::tx_json] = tpTrans->getJson (0);
+        jvResult[jss::tx_blob] = strHex (
+            tpTrans->getSTransaction ()->getSerializer ().peekData ());
 
         if (temUNCERTAIN != tpTrans->getResult ())
         {
@@ -100,16 +105,16 @@ Json::Value doSubmit (RPC::Context& context)
 
             transResultInfo (tpTrans->getResult (), sToken, sHuman);
 
-            jvResult[jss::engine_result]           = sToken;
-            jvResult[jss::engine_result_code]      = tpTrans->getResult ();
-            jvResult[jss::engine_result_message]   = sHuman;
+            jvResult[jss::engine_result] = sToken;
+            jvResult[jss::engine_result_code] = tpTrans->getResult ();
+            jvResult[jss::engine_result_message] = sHuman;
         }
 
         return jvResult;
     }
     catch (std::exception& e)
     {
-        jvResult[jss::error]           = "internalJson";
+        jvResult[jss::error] = "internalJson";
         jvResult[jss::error_exception] = e.what ();
 
         return jvResult;

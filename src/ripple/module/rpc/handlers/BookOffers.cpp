@@ -21,8 +21,6 @@ namespace ripple {
 
 Json::Value doBookOffers (RPC::Context& context)
 {
-    context.lock_.unlock ();
-
     // VFALCO TODO Here is a terrible place for this kind of business
     //             logic. It needs to be moved elsewhere and documented,
     //             and encapsulated into a function.

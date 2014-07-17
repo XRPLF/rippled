@@ -20,6 +20,7 @@
 
 namespace ripple {
 
+// DEPRECATED.
 // profile offers <pass_a> <account_a> <currency_offer_a> <account_b> <currency_offer_b> <count> [submit]
 // profile 0:offers 1:pass_a 2:account_a 3:currency_offer_a 4:account_b 5:currency_offer_b 6:<count> 7:[submit]
 // issuer is the offering account
@@ -27,85 +28,6 @@ namespace ripple {
 // Prior to running allow each to have a credit line of what they will be getting from the other account.
 Json::Value doProfile (RPC::Context& context)
 {
-    /* need to fix now that sharedOfferCreate is gone
-    int             iArgs   = context.params_.size();
-    RippleAddress   naSeedA;
-    RippleAddress   naAccountA;
-    Currency        uCurrencyOfferA;
-    RippleAddress   naSeedB;
-    RippleAddress   naAccountB;
-    Currency        uCurrencyOfferB;
-    uint32          iCount  = 100;
-    bool            bSubmit = false;
-
-    if (iArgs < 6 || "offers" != context.params_[0u].asString())
-    {
-        return rpcError(rpcINVALID_PARAMS);
-    }
-
-    if (!naSeedA.setSeedGeneric(context.params_[1u].asString()))                          // <pass_a>
-        return rpcError(rpcINVALID_PARAMS);
-
-    naAccountA.setAccountID(context.params_[2u].asString());                              // <account_a>
-
-    if (!to_currency(uCurrencyOfferA, context.params_[3u].asString()))   // <currency_offer_a>
-        return rpcError(rpcINVALID_PARAMS);
-
-    naAccountB.setAccountID(context.params_[4u].asString());                              // <account_b>
-    if (!to_currency(uCurrencyOfferB, context.params_[5u].asString()))   // <currency_offer_b>
-        return rpcError(rpcINVALID_PARAMS);
-
-    iCount  = lexicalCast <uint32>(context.params_[6u].asString());
-
-    if (iArgs >= 8 && "false" != context.params_[7u].asString())
-        bSubmit = true;
-
-    boost::posix_time::ptime            ptStart(boost::posix_time::microsec_clock::local_time());
-
-    for(unsigned int n=0; n<iCount; n++)
-    {
-        RippleAddress           naMasterGeneratorA;
-        RippleAddress           naAccountPublicA;
-        RippleAddress           naAccountPrivateA;
-        AccountState::pointer   asSrcA;
-        STAmount                saSrcBalanceA;
-
-        Json::Value             jvObjA      = authorize(uint256(0), naSeedA, naAccountA, naAccountPublicA, naAccountPrivateA,
-            saSrcBalanceA, getConfig ().FEE_DEFAULT, asSrcA, naMasterGeneratorA);
-
-        if (!jvObjA.empty())
-            return jvObjA;
-
-        Transaction::pointer    tpOfferA    = Transaction::sharedOfferCreate(
-            naAccountPublicA, naAccountPrivateA,
-            naAccountA,                                                 // naSourceAccount,
-            asSrcA->getSeq(),                                           // uSeq
-            getConfig ().FEE_DEFAULT,
-            0,                                                          // uSourceTag,
-            false,                                                      // bPassive
-            STAmount(uCurrencyOfferA, naAccountA.getAccountID(), 1),    // saTakerPays
-            STAmount(uCurrencyOfferB, naAccountB.getAccountID(), 1+n),  // saTakerGets
-            0);                                                         // uExpiration
-
-        if (bSubmit)
-            tpOfferA    = context.netOps_.submitTransactionSync(tpOfferA); // FIXME: Don't use synch interface
-    }
-
-    boost::posix_time::ptime            ptEnd(boost::posix_time::microsec_clock::local_time());
-    boost::posix_time::time_duration    tdInterval      = ptEnd-ptStart;
-    long                                lMicroseconds   = tdInterval.total_microseconds();
-    int                                 iTransactions   = iCount;
-    float                               fRate           = lMicroseconds ? iTransactions/(lMicroseconds/1000000.0) : 0.0;
-
-    Json::Value obj(Json::objectValue);
-
-    obj["transactions"]     = iTransactions;
-    obj["submit"]           = bSubmit;
-    obj["start"]            = boost::posix_time::to_simple_string(ptStart);
-    obj["end"]              = boost::posix_time::to_simple_string(ptEnd);
-    obj["interval"]         = boost::posix_time::to_simple_string(tdInterval);
-    obj["rate_per_second"]  = fRate;
-    */
     Json::Value obj (Json::objectValue);
     return obj;
 }

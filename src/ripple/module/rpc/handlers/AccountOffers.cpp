@@ -40,10 +40,9 @@ static void offerAdder (Json::Value& jvLines, SLE::ref offer)
 // }
 Json::Value doAccountOffers (RPC::Context& context)
 {
-    context.lock_.unlock ();
-
     Ledger::pointer     lpLedger;
-    Json::Value         jvResult    = RPC::lookupLedger (context.params_, lpLedger, context.netOps_);
+    auto jvResult = RPC::lookupLedger (
+        context.params_, lpLedger, context.netOps_);
 
     if (!lpLedger)
         return jvResult;
@@ -51,13 +50,14 @@ Json::Value doAccountOffers (RPC::Context& context)
     if (!context.params_.isMember (jss::account))
         return RPC::missing_field_error ("account");
 
-    std::string     strIdent    = context.params_[jss::account].asString ();
-    bool            bIndex      = context.params_.isMember (jss::account_index);
-    int             iIndex      = bIndex ? context.params_[jss::account_index].asUInt () : 0;
+    std::string strIdent = context.params_[jss::account].asString ();
+    bool bIndex = context.params_.isMember (jss::account_index);
+    int iIndex = bIndex ? context.params_[jss::account_index].asUInt () : 0;
 
-    RippleAddress   raAccount;
+    RippleAddress raAccount;
 
-    jvResult    = RPC::accountFromString (lpLedger, raAccount, bIndex, strIdent, iIndex, false, context.netOps_);
+    jvResult = RPC::accountFromString (
+        lpLedger, raAccount, bIndex, strIdent, iIndex, false, context.netOps_);
 
     if (!jvResult.empty ())
         return jvResult;

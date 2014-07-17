@@ -26,7 +26,6 @@ namespace ripple {
 // }
 Json::Value doRandom (RPC::Context& context)
 {
-    context.lock_.unlock ();
     uint256         uRandom;
 
     try

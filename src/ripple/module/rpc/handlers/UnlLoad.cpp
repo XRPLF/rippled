@@ -23,7 +23,9 @@ namespace ripple {
 // Populate the UNL from a local validators.txt file.
 Json::Value doUnlLoad (RPC::Context& context)
 {
-    if (getConfig ().VALIDATORS_FILE.empty () || !getApp().getUNL ().nodeLoad (getConfig ().VALIDATORS_FILE))
+    Application::ScopedLockType lock (getApp().getMasterLock ());
+    if (getConfig ().VALIDATORS_FILE.empty () ||
+        !getApp().getUNL ().nodeLoad (getConfig ().VALIDATORS_FILE))
     {
         return rpcError (rpcLOAD_FAILED);
     }

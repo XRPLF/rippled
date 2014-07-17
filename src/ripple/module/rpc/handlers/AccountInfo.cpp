@@ -22,48 +22,57 @@ namespace ripple {
 // {
 //   account: <indent>,
 //   account_index : <index> // optional
-//   strict: <bool>                 // true, only allow public keys and addresses. false, default.
+//   strict: <bool>          // true, only allow public keys and addresses.
+//                           // default is false.
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 // }
 Json::Value doAccountInfo (RPC::Context& context)
 {
-    context.lock_.unlock ();
-
-    Ledger::pointer     lpLedger;
-    Json::Value         jvResult    = RPC::lookupLedger (context.params_, lpLedger, context.netOps_);
+    Ledger::pointer lpLedger;
+    Json::Value jvResult = RPC::lookupLedger (
+        context.params_, lpLedger, context.netOps_);
 
     if (!lpLedger)
         return jvResult;
 
-    if (!context.params_.isMember ("account") && !context.params_.isMember ("ident"))
+    if (!context.params_.isMember ("account") &&
+        !context.params_.isMember ("ident"))
+    {
         return RPC::missing_field_error ("account");
+    }
 
-    std::string     strIdent    = context.params_.isMember ("account") ? context.params_["account"].asString () : context.params_["ident"].asString ();
-    bool            bIndex;
-    int             iIndex      = context.params_.isMember ("account_index") ? context.params_["account_index"].asUInt () : 0;
-    bool            bStrict     = context.params_.isMember ("strict") && context.params_["strict"].asBool ();
+    auto strIdent = context.params_.isMember ("account") ?
+            context.params_["account"].asString () :
+            context.params_["ident"].asString ();
+    bool bIndex;
+    int iIndex = context.params_.isMember ("account_index") ?
+            context.params_["account_index"].asUInt () : 0;
+    bool bStrict = context.params_.isMember ("strict") &&
+            context.params_["strict"].asBool ();
     RippleAddress   naAccount;
 
     // Get info on account.
 
-    Json::Value     jvAccepted      = RPC::accountFromString (lpLedger, naAccount, bIndex, strIdent, iIndex, bStrict, context.netOps_);
+    Json::Value jvAccepted = RPC::accountFromString (
+        lpLedger, naAccount, bIndex, strIdent, iIndex, bStrict,
+        context.netOps_);
 
     if (!jvAccepted.empty ())
         return jvAccepted;
 
-    AccountState::pointer asAccepted    = context.netOps_.getAccountState (lpLedger, naAccount);
+    auto asAccepted = context.netOps_.getAccountState (lpLedger, naAccount);
 
     if (asAccepted)
     {
         asAccepted->addJson (jvAccepted);
 
-        jvResult["account_data"]    = jvAccepted;
+        jvResult["account_data"] = jvAccepted;
     }
     else
     {
         jvResult["account"] = naAccount.humanAccountID ();
-        jvResult            = rpcError (rpcACT_NOT_FOUND, jvResult);
+        jvResult = rpcError (rpcACT_NOT_FOUND, jvResult);
     }
 
     return jvResult;

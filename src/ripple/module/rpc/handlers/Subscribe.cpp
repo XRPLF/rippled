@@ -22,6 +22,8 @@ namespace ripple {
 
 Json::Value doSubscribe (RPC::Context& context)
 {
+    Application::ScopedLockType lock (getApp().getMasterLock ());
+
     // FIXME: This needs to release the master lock immediately
     // Subscriptions need to be protected by their own lock
 
@@ -289,7 +291,7 @@ Json::Value doSubscribe (RPC::Context& context)
             {
                 if (bHaveMasterLock)
                 {
-                    context.lock_.unlock ();
+                    lock.unlock ();
                     bHaveMasterLock = false;
                 }
 

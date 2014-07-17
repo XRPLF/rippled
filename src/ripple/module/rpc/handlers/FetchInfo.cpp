@@ -22,8 +22,6 @@ namespace ripple {
 
 Json::Value doFetchInfo (RPC::Context& context)
 {
-    context.lock_.unlock ();
-
     Json::Value ret (Json::objectValue);
 
     if (context.params_.isMember("clear") && context.params_["clear"].asBool())

@@ -131,8 +131,6 @@ Json::Value RPCHandler::doCommand (
     if (handler->role_ == Config::ADMIN && mRole != Config::ADMIN)
         return rpcError (rpcNO_PERMISSION);
 
-    Application::ScopedLockType lock (getApp().getMasterLock ());
-
     if ((handler->condition_ & RPC::NEEDS_NETWORK_CONNECTION) &&
         (mNetOps->getOperatingMode () < NetworkOPs::omSYNCING))
     {
@@ -160,24 +158,18 @@ Json::Value RPCHandler::doCommand (
     {
         LoadEvent::autoptr ev = getApp().getJobQueue().getLoadEventAP(
             jtGENERIC, std::string("cmd:") + strCommand);
-        RPC::Context context{params, loadType, lock, *mNetOps, mInfoSub, mRole};
+
+        RPC::Context context{params, loadType, *mNetOps, mInfoSub, mRole};
         Json::Value jvRaw = handler->method_(context);
 
         // Regularize result.
         if (jvRaw.isObject ())
-        {
-            // Got an object.
             return jvRaw;
-        }
-        else
-        {
-            // Probably got a string.
-            Json::Value jvResult (Json::objectValue);
 
-            jvResult[jss::message] = jvRaw;
-
-            return jvResult;
-        }
+        // Probably got a string.
+        Json::Value jvResult (Json::objectValue);
+        jvResult[jss::message] = jvRaw;
+        return jvResult;
     }
     catch (std::exception& e)
     {

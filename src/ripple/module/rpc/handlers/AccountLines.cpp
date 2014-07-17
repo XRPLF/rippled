@@ -28,10 +28,9 @@ namespace ripple {
 // }
 Json::Value doAccountLines (RPC::Context& context)
 {
-    context.lock_.unlock ();
-
     Ledger::pointer     lpLedger;
-    Json::Value         jvResult    = RPC::lookupLedger (context.params_, lpLedger, context.netOps_);
+    auto jvResult = RPC::lookupLedger (
+        context.params_, lpLedger, context.netOps_);
 
     if (!lpLedger)
         return jvResult;
@@ -39,31 +38,35 @@ Json::Value doAccountLines (RPC::Context& context)
     if (!context.params_.isMember (jss::account))
         return RPC::missing_field_error ("account");
 
-    std::string     strIdent    = context.params_[jss::account].asString ();
-    bool            bIndex      = context.params_.isMember (jss::account_index);
-    int             iIndex      = bIndex ? context.params_[jss::account_index].asUInt () : 0;
+    std::string strIdent = context.params_[jss::account].asString ();
+    bool bIndex = context.params_.isMember (jss::account_index);
+    int iIndex = bIndex ? context.params_[jss::account_index].asUInt () : 0;
 
     RippleAddress   raAccount;
 
-    jvResult    = RPC::accountFromString (lpLedger, raAccount, bIndex, strIdent, iIndex, false, context.netOps_);
+    jvResult = RPC::accountFromString (
+        lpLedger, raAccount, bIndex, strIdent, iIndex, false, context.netOps_);
 
     if (!jvResult.empty ())
         return jvResult;
 
-    std::string     strPeer     = context.params_.isMember (jss::peer) ? context.params_[jss::peer].asString () : "";
-    bool            bPeerIndex      = context.params_.isMember (jss::peer_index);
-    int             iPeerIndex      = bIndex ? context.params_[jss::peer_index].asUInt () : 0;
+    auto strPeer = context.params_.isMember (jss::peer) ?
+            context.params_[jss::peer].asString () : "";
+    bool bPeerIndex = context.params_.isMember (jss::peer_index);
+    int iPeerIndex = bIndex ? context.params_[jss::peer_index].asUInt () : 0;
 
-    RippleAddress   raPeer;
+    RippleAddress raPeer;
 
     if (!strPeer.empty ())
     {
-        jvResult[jss::peer]    = raAccount.humanAccountID ();
+        jvResult[jss::peer] = raAccount.humanAccountID ();
 
         if (bPeerIndex)
-            jvResult[jss::peer_index]  = iPeerIndex;
+            jvResult[jss::peer_index] = iPeerIndex;
 
-        jvResult    = RPC::accountFromString (lpLedger, raPeer, bPeerIndex, strPeer, iPeerIndex, false, context.netOps_);
+        jvResult = RPC::accountFromString (
+            lpLedger, raPeer, bPeerIndex, strPeer, iPeerIndex, false,
+            context.netOps_);
 
         if (!jvResult.empty ())
             return jvResult;
@@ -71,17 +74,20 @@ Json::Value doAccountLines (RPC::Context& context)
 
     if (lpLedger->hasAccount (raAccount))
     {
-        AccountItems rippleLines (raAccount.getAccountID (), lpLedger, AccountItem::pointer (new RippleState ()));
+        AccountItems rippleLines (
+            raAccount.getAccountID (), lpLedger,
+            AccountItem::pointer(new RippleState));
 
         jvResult[jss::account] = raAccount.humanAccountID ();
         Json::Value& jsonLines = (jvResult[jss::lines] = Json::arrayValue);
 
 
-        BOOST_FOREACH (AccountItem::ref item, rippleLines.getItems ())
+        for (auto& item: rippleLines.getItems ())
         {
             RippleState* line = (RippleState*)item.get ();
 
-            if (!raPeer.isValid () || raPeer.getAccountID () == line->getAccountIDPeer ())
+            if (!raPeer.isValid () ||
+                raPeer.getAccountID () == line->getAccountIDPeer ())
             {
                 const STAmount&     saBalance   = line->getBalance ();
                 const STAmount&     saLimit     = line->getLimit ();
@@ -89,15 +95,20 @@ Json::Value doAccountLines (RPC::Context& context)
 
                 Json::Value&    jPeer   = jsonLines.append (Json::objectValue);
 
-                jPeer[jss::account]       = to_string (line->getAccountIDPeer ());
-                // Amount reported is positive if current account holds other account's IOUs.
-                // Amount reported is negative if other account holds current account's IOUs.
-                jPeer[jss::balance]       = saBalance.getText ();
-                jPeer[jss::currency]      = saBalance.getHumanCurrency ();
-                jPeer[jss::limit]         = saLimit.getText ();
-                jPeer[jss::limit_peer]     = saLimitPeer.getText ();
-                jPeer[jss::quality_in]     = static_cast<Json::UInt> (line->getQualityIn ());
-                jPeer[jss::quality_out]    = static_cast<Json::UInt> (line->getQualityOut ());
+                jPeer[jss::account] = to_string (line->getAccountIDPeer ());
+                // Amount reported is positive if current account holds other
+                // account's IOUs.
+                //
+                // Amount reported is negative if other account holds current
+                // account's IOUs.
+                jPeer[jss::balance] = saBalance.getText ();
+                jPeer[jss::currency] = saBalance.getHumanCurrency ();
+                jPeer[jss::limit] = saLimit.getText ();
+                jPeer[jss::limit_peer] = saLimitPeer.getText ();
+                jPeer[jss::quality_in] = static_cast<Json::UInt> (
+                    line->getQualityIn ());
+                jPeer[jss::quality_out] = static_cast<Json::UInt> (
+                    line->getQualityOut ());
                 if (line->getAuth())
                     jPeer[jss::authorized] = true;
                 if (line->getAuthPeer())

@@ -27,8 +27,6 @@ namespace ripple {
 // XXX In this case, not specify either ledger does not mean ledger current. It means any ledger.
 Json::Value doTransactionEntry (RPC::Context& context)
 {
-    context.lock_.unlock ();
-
     Ledger::pointer     lpLedger;
     Json::Value         jvResult    = RPC::lookupLedger (context.params_, lpLedger, context.netOps_);
 

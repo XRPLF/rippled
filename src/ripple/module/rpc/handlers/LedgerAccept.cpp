@@ -30,9 +30,9 @@ Json::Value doLedgerAccept (RPC::Context& context)
     }
     else
     {
+        Application::ScopedLockType lock (getApp().getMasterLock ());
         context.netOps_.acceptLedger ();
-
-        jvResult["ledger_current_index"]    = context.netOps_.getCurrentLedgerID ();
+        jvResult["ledger_current_index"] = context.netOps_.getCurrentLedgerID ();
     }
 
     return jvResult;

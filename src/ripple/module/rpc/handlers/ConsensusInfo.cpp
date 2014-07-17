@@ -21,10 +21,10 @@ namespace ripple {
 
 Json::Value doConsensusInfo (RPC::Context& context)
 {
+    Application::ScopedLockType lock (getApp().getMasterLock ());
+
     Json::Value ret (Json::objectValue);
-
     ret["info"] = context.netOps_.getConsensusInfo ();
-
     return ret;
 }
 

@@ -26,8 +26,6 @@ namespace ripple {
 // }
 Json::Value doLedgerHeader (RPC::Context& context)
 {
-    context.lock_.unlock ();
-
     Ledger::pointer     lpLedger;
     Json::Value         jvResult    = RPC::lookupLedger (context.params_, lpLedger, context.netOps_);
 

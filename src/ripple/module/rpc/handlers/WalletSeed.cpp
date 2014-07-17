@@ -25,32 +25,31 @@ namespace ripple {
 Json::Value doWalletSeed (RPC::Context& context)
 {
     RippleAddress   raSeed;
-    bool            bSecret = context.params_.isMember ("secret");
+    bool bSecret = context.params_.isMember ("secret");
 
-    if (bSecret && !raSeed.setSeedGeneric (context.params_["secret"].asString ()))
+    if (bSecret && !raSeed.setSeedGeneric (
+            context.params_["secret"].asString ()))
     {
         return rpcError (rpcBAD_SEED);
     }
-    else
-    {
-        RippleAddress   raAccount;
 
-        if (!bSecret)
-        {
-            raSeed.setSeedRandom ();
-        }
+    RippleAddress   raAccount;
 
-        RippleAddress   raGenerator = RippleAddress::createGeneratorPublic (raSeed);
+    if (!bSecret)
+        raSeed.setSeedRandom ();
 
-        raAccount.setAccountPublic (raGenerator, 0);
+    Application::ScopedLockType lock (getApp().getMasterLock ());
 
-        Json::Value obj (Json::objectValue);
+    RippleAddress raGenerator = RippleAddress::createGeneratorPublic (raSeed);
+    raAccount.setAccountPublic (raGenerator, 0);
 
-        obj["seed"]     = raSeed.humanSeed ();
-        obj["key"]      = raSeed.humanSeed1751 ();
-        obj["deprecated"] = "Use wallet_propose instead";
+    Json::Value obj (Json::objectValue);
 
-        return obj;
-    }
+    obj["seed"]     = raSeed.humanSeed ();
+    obj["key"]      = raSeed.humanSeed1751 ();
+    obj["deprecated"] = "Use wallet_propose instead";
+
+    return obj;
 }
+
 } // ripple
