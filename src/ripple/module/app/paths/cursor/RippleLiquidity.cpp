@@ -17,9 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/module/app/paths/Calculators.h>
-#include <ripple/module/app/paths/RippleCalc.h>
-#include <ripple/module/app/paths/Tuning.h>
+#include <ripple/module/app/paths/cursor/RippleLiquidity.h>
 
 namespace ripple {
 namespace path {
@@ -46,18 +44,18 @@ namespace path {
 // it will work and set a rate.  If called again, the new work must not worsen
 // the previous rate.
 
-void computeRippleLiquidity (
+void rippleLiquidity (
     RippleCalc& rippleCalc,
-    const std::uint32_t uQualityIn,
-    const std::uint32_t uQualityOut,
-    const STAmount& saPrvReq,   // --> in limit including fees, <0 = unlimited
-    const STAmount& saCurReq,   // --> out limit
+    std::uint32_t const uQualityIn,
+    std::uint32_t const uQualityOut,
+    STAmount const& saPrvReq,   // --> in limit including fees, <0 = unlimited
+    STAmount const& saCurReq,   // --> out limit
     STAmount& saPrvAct,  // <-> in limit including achieved so far: <-- <= -->
     STAmount& saCurAct,  // <-> out limit including achieved so far: <-- <= -->
     std::uint64_t& uRateMax)
 {
     WriteLog (lsTRACE, RippleCalc)
-        << "computeRippleLiquidity>"
+        << "rippleLiquidity>"
         << " uQualityIn=" << uQualityIn
         << " uQualityOut=" << uQualityOut
         << " saPrvReq=" << saPrvReq
@@ -84,7 +82,7 @@ void computeRippleLiquidity (
     const STAmount  saCur = saCurReq - saCurAct;
 
     WriteLog (lsTRACE, RippleCalc)
-        << "computeRippleLiquidity: "
+        << "rippleLiquidity: "
         << " bPrvUnlimited=" << bPrvUnlimited
         << " saPrv=" << saPrv
         << " saCur=" << saCur;
@@ -96,7 +94,7 @@ void computeRippleLiquidity (
     if (uQualityIn >= uQualityOut)
     {
         // You're getting better quality than you asked for, so no fee.
-        WriteLog (lsTRACE, RippleCalc) << "computeRippleLiquidity: No fees";
+        WriteLog (lsTRACE, RippleCalc) << "rippleLiquidity: No fees";
 
         // Only process if the current rate, 1:1, is not worse than the previous
         // rate, uRateMax - otherwise there is no flow.
@@ -126,7 +124,7 @@ void computeRippleLiquidity (
     else
     {
         // If the quality is worse than the previous
-        WriteLog (lsTRACE, RippleCalc) << "computeRippleLiquidity: Fee";
+        WriteLog (lsTRACE, RippleCalc) << "rippleLiquidity: Fee";
 
         std::uint64_t uRate = STAmount::getRate (
             STAmount (uQualityOut), STAmount (uQualityIn));
@@ -146,7 +144,7 @@ void computeRippleLiquidity (
                 numerator, uQualityIn, {currency, uCurIssuerID}, true);
 
             WriteLog (lsTRACE, RippleCalc)
-                << "computeRippleLiquidity:"
+                << "rippleLiquidity:"
                 << " bPrvUnlimited=" << bPrvUnlimited
                 << " saPrv=" << saPrv
                 << " saCurIn=" << saCurIn;
@@ -157,7 +155,7 @@ void computeRippleLiquidity (
                 saCurAct += saCur;
                 saPrvAct += saCurIn;
                 WriteLog (lsTRACE, RippleCalc)
-                    << "computeRippleLiquidity:3c:"
+                    << "rippleLiquidity:3c:"
                     << " saCurReq=" << saCurReq
                     << " saPrvAct=" << saPrvAct;
             }
@@ -179,7 +177,7 @@ void computeRippleLiquidity (
                     numerator, uQualityOut, issue, true);
 
                 WriteLog (lsTRACE, RippleCalc)
-                    << "computeRippleLiquidity:4: saCurReq=" << saCurReq;
+                    << "rippleLiquidity:4: saCurReq=" << saCurReq;
 
                 saCurAct += saCurOut;
                 saPrvAct = saPrvReq;
@@ -190,7 +188,7 @@ void computeRippleLiquidity (
     }
 
     WriteLog (lsTRACE, RippleCalc)
-        << "computeRippleLiquidity<"
+        << "rippleLiquidity<"
         << " uQualityIn=" << uQualityIn
         << " uQualityOut=" << uQualityOut
         << " saPrvReq=" << saPrvReq

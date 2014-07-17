@@ -25,12 +25,42 @@ namespace ripple {
 
 class RippleCalc; // for logging
 
-void PathState::clear() {
+void PathState::clear()
+{
     allLiquidityConsumed_ = false;
     saInPass = saInReq.zeroed();
     saOutPass = saOutReq.zeroed();
-    vUnfundedBecame.clear ();
+    unfundedOffers_.clear ();
     umReverse.clear ();
+
+    for (auto& node: nodes_)
+        node.clear();
+}
+
+void PathState::reset(STAmount const& in, STAmount const& out)
+{
+    clear();
+
+    // Update to current amount processed.
+    saInAct = in;
+    saOutAct = out;
+
+    CondLog (inReq() > zero && inAct() >= inReq(),
+             lsWARNING, RippleCalc)
+        << "rippleCalc: DONE:"
+        << " inAct()=" << inAct()
+        << " inReq()=" << inReq();
+
+    assert (inReq() < zero || inAct() < inReq());
+    // Error if done.
+
+    CondLog (outAct() >= outReq(), lsWARNING, RippleCalc)
+        << "rippleCalc: ALREADY DONE:"
+        << " saOutAct=" << outAct()
+        << " saOutReq=%s" << outReq();
+
+    assert (outAct() < outReq());
+    assert (nodes().size () >= 2);
 }
 
 // Return true, iff lhs has less priority than rhs.
@@ -48,7 +78,7 @@ bool PathState::lessPriority (PathState& lhs, PathState& rhs)
     return lhs.mIndex > rhs.mIndex;             // Bigger is worse.
 }
 
-// Make sure last path node delivers to account_: currency_ from issuer_.
+// Make sure last path node delivers to account_: currency from.issue_.account.
 //
 // If the unadded next node as specified by arguments would not work as is, then
 // add the necessary nodes so it would work.
@@ -75,7 +105,7 @@ TER PathState::pushImpliedNodes (
          " " << currency <<
          " " << issuer;
 
-    if (nodes_.back ().currency_ != currency)
+    if (nodes_.back ().issue_.currency != currency)
     {
         // Currency is different, need to convert via an offer from an order
         // book.  xrpAccount() does double duty as signaling "this is an order
@@ -134,7 +164,7 @@ TER PathState::pushNode (
     // TODO(tom): if pathIsEmpty, we probably don't need to do ANYTHING below.
     // Indeed, we might just not even call pushNode in the first place!
 
-    auto const& previousNode = pathIsEmpty ? path::Node () : nodes_.back ();
+    auto const& backNode = pathIsEmpty ? path::Node () : nodes_.back ();
 
     // true, iff node is a ripple account. false, iff node is an offer node.
     const bool hasAccount = (iType & STPathElement::typeAccount);
@@ -154,7 +184,8 @@ TER PathState::pushNode (
          << (hasIssuer ? to_string(issuer) : std::string("-")) << "/";
 
     node.uFlags = iType;
-    node.currency_ = hasCurrency ? currency : Currency(previousNode.currency_);
+    node.issue_.currency = hasCurrency ?
+            currency : backNode.issue_.currency;
 
     // TODO(tom): we can probably just return immediately whenever we hit an
     // error in these next pages.
@@ -163,19 +194,19 @@ TER PathState::pushNode (
     {
         // Of course, this could never happen.
         WriteLog (lsDEBUG, RippleCalc) << "pushNode: bad bits.";
-        resultCode   = temBAD_PATH;
+        resultCode = temBAD_PATH;
     }
-    else if (hasIssuer && !node.currency_)
+    else if (hasIssuer && isXRP (node.issue_))
     {
         WriteLog (lsDEBUG, RippleCalc) << "pushNode: issuer specified for XRP.";
 
-        resultCode   = temBAD_PATH;
+        resultCode = temBAD_PATH;
     }
     else if (hasIssuer && !issuer)
     {
         WriteLog (lsDEBUG, RippleCalc) << "pushNode: specified bad issuer.";
 
-        resultCode   = temBAD_PATH;
+        resultCode = temBAD_PATH;
     }
     else if (!hasAccount && !hasCurrency && !hasIssuer)
     {
@@ -183,24 +214,21 @@ TER PathState::pushNode (
         // no progress.
         WriteLog (lsDEBUG, RippleCalc)
             << "pushNode: offer must specify at least currency or issuer.";
-        resultCode   = temBAD_PATH;
+        resultCode = temBAD_PATH;
     }
     else if (hasAccount)
     {
         // Account link
-        node.account_    = account;
-        node.issuer_     = hasIssuer
-                              ? issuer
-                : !!node.currency_  // Not XRP.
-                              ? account
-                              : xrpAccount();
+        node.account_ = account;
+        node.issue_.account = hasIssuer ? issuer :
+                (isXRP (node.issue_) ? xrpAccount() : account);
         // Zero value - for accounts.
-        node.saRevRedeem   = STAmount ({node.currency_, account});
-        node.saRevIssue    = node.saRevRedeem;
+        node.saRevRedeem = STAmount ({node.issue_.currency, account});
+        node.saRevIssue = node.saRevRedeem;
 
         // For order books only - zero currency with the issuer ID.
-        node.saRevDeliver  = STAmount ({node.currency_, node.issuer_});
-        node.saFwdDeliver  = node.saRevDeliver;
+        node.saRevDeliver = STAmount (node.issue_);
+        node.saFwdDeliver = node.saRevDeliver;
 
         if (pathIsEmpty)
         {
@@ -210,7 +238,7 @@ TER PathState::pushNode (
         {
             WriteLog (lsDEBUG, RippleCalc)
                 << "pushNode: specified bad account.";
-            resultCode   = temBAD_PATH;
+            resultCode = temBAD_PATH;
         }
         else
         {
@@ -219,10 +247,11 @@ TER PathState::pushNode (
                 << "pushNode: imply for account.";
 
             resultCode = pushImpliedNodes (
-                node.account_, node.currency_,
-                isXRP(node.currency_) ? xrpAccount() : account);
+                node.account_,
+                node.issue_.currency,
+                isXRP(node.issue_.currency) ? xrpAccount() : account);
 
-            // Note: previousNode may no longer be the immediately previous node.
+            // Note: backNode may no longer be the immediately previous node.
         }
 
         if (resultCode == tesSUCCESS && !nodes_.empty ())
@@ -233,7 +262,9 @@ TER PathState::pushNode (
                 auto sleRippleState = lesEntries.entryCache (
                     ltRIPPLE_STATE,
                     Ledger::getRippleStateIndex (
-                        backNode.account_, node.account_, backNode.currency_));
+                        backNode.account_,
+                        node.account_,
+                        backNode.issue_.currency));
 
                 // A "RippleState" means a balance betweeen two accounts for a
                 // specific currency.
@@ -242,7 +273,7 @@ TER PathState::pushNode (
                     WriteLog (lsTRACE, RippleCalc)
                             << "pushNode: No credit line between "
                             << backNode.account_ << " and " << node.account_
-                            << " for " << node.currency_ << "." ;
+                            << " for " << node.issue_.currency << "." ;
 
                     WriteLog (lsTRACE, RippleCalc) << getJson ();
 
@@ -253,7 +284,7 @@ TER PathState::pushNode (
                     WriteLog (lsTRACE, RippleCalc)
                             << "pushNode: Credit line found between "
                             << backNode.account_ << " and " << node.account_
-                            << " for " << node.currency_ << "." ;
+                            << " for " << node.issue_.currency << "." ;
 
                     auto sleBck  = lesEntries.entryCache (
                         ltACCOUNT_ROOT,
@@ -284,13 +315,15 @@ TER PathState::pushNode (
                     if (resultCode == tesSUCCESS)
                     {
                         STAmount saOwed = lesEntries.rippleOwed (
-                            node.account_, backNode.account_, node.currency_);
+                            node.account_, backNode.account_,
+                            node.issue_.currency);
                         STAmount saLimit;
 
                         if (saOwed <= zero) {
                             saLimit = lesEntries.rippleLimit (
-                                node.account_, backNode.account_,
-                                node.currency_);
+                                node.account_,
+                                backNode.account_,
+                                node.issue_.currency);
                             if (-saOwed >= saLimit)
                             {
                                 WriteLog (lsWARNING, RippleCalc) <<
@@ -315,45 +348,44 @@ TER PathState::pushNode (
         //
         // Offers bridge a change in currency and issuer, or just a change in
         // issuer.
-        node.issuer_ = hasIssuer
-            ? issuer
-            : !!node.currency_
-            ? !!previousNode.issuer_
-            ? Account(previousNode.issuer_)   // Default to previous issuer
-            : Account(previousNode.account_)
-            // Or previous account if no previous issuer.
-                  : xrpAccount();
+        if (hasIssuer)
+            node.issue_.account = issuer;
+        else if (isXRP (node.issue_.currency))
+            node.issue_.account = xrpAccount();
+        else if (isXRP (backNode.issue_.account))
+            node.issue_.account = backNode.account_;
+        else
+            node.issue_.account = backNode.issue_.account;
+
         node.saRateMax = saZero;
-        node.saRevDeliver = STAmount({node.currency_, node.issuer_});
+        node.saRevDeliver = STAmount (node.issue_);
         node.saFwdDeliver = node.saRevDeliver;
 
-        if (node.currency_.isZero() != node.issuer_.isZero())
+        if (!isConsistent (node.issue_))
         {
             WriteLog (lsDEBUG, RippleCalc)
                 << "pushNode: currency is inconsistent with issuer.";
 
             resultCode = temBAD_PATH;
         }
-        else if (previousNode.currency_ == node.currency_ &&
-                 previousNode.issuer_ == node.issuer_)
+        else if (backNode.issue_ == node.issue_)
         {
             WriteLog (lsDEBUG, RippleCalc) <<
                 "pushNode: bad path: offer to same currency and issuer";
             resultCode = temBAD_PATH;
-        } else {
+        }
+        else {
             WriteLog (lsTRACE, RippleCalc) << "pushNode: imply for offer.";
 
             // Insert intermediary issuer account if needed.
             resultCode   = pushImpliedNodes (
                 xrpAccount(), // Rippling, but offers don't have an account.
-                previousNode.currency_,
-                previousNode.issuer_);
+                backNode.issue_.currency,
+                backNode.issue_.account);
         }
 
         if (resultCode == tesSUCCESS)
-        {
             nodes_.push_back (node);
-        }
     }
 
     WriteLog (lsTRACE, RippleCalc) << "pushNode< : " << transToken (resultCode);
@@ -373,22 +405,23 @@ TER PathState::pushNode (
 //
 // If you're paying USD and getting bitcoins, there has to be an order book in
 // between.
+//
 // terStatus = tesSUCCESS, temBAD_PATH, terNO_LINE, terNO_ACCOUNT, terNO_AUTH,
 // or temBAD_PATH_LOOP
-void PathState::expandPath (
+TER PathState::expandPath (
     const LedgerEntrySet& lesSource,
-    const STPath& spSourcePath,
+    STPath const& spSourcePath,
     Account const& uReceiverID,
     Account const& uSenderID)
 {
     uQuality = 1;            // Mark path as active.
 
-    const Currency uMaxCurrencyID = saInReq.getCurrency ();
-    const Account uMaxIssuerID = saInReq.getIssuer ();
+    Currency const& uMaxCurrencyID = saInReq.getCurrency ();
+    Account const& uMaxIssuerID = saInReq.getIssuer ();
 
-    const Currency currencyOutID = saOutReq.getCurrency ();
-    const Account issuerOutID = saOutReq.getIssuer ();
-    const Account uSenderIssuerID
+    Currency const& currencyOutID = saOutReq.getCurrency ();
+    Account const& issuerOutID = saOutReq.getIssuer ();
+    Account const& uSenderIssuerID
         = isXRP(uMaxCurrencyID) ? xrpAccount() : uSenderID;
     // Sender is always issuer for non-XRP.
 
@@ -400,8 +433,8 @@ void PathState::expandPath (
     terStatus = tesSUCCESS;
 
     // XRP with issuer is malformed.
-    if ((!uMaxCurrencyID && !!uMaxIssuerID)
-        || (!currencyOutID && !!issuerOutID))
+    if ((isXRP (uMaxCurrencyID) && !isXRP (uMaxIssuerID))
+        || (isXRP (currencyOutID) && !isXRP (issuerOutID)))
     {
         terStatus   = temBAD_PATH;
     }
@@ -497,14 +530,14 @@ void PathState::expandPath (
         }
     }
 
-    auto const& previousNode = nodes_.back ();
+    auto const& backNode = nodes_.back ();
 
     if (terStatus == tesSUCCESS
         && !isXRP(currencyOutID)                         // Next is not XRP
         && issuerOutID != uReceiverID              // Out issuer is not receiver
-        && (previousNode.currency_ != currencyOutID
+        && (backNode.issue_.currency != currencyOutID
         // Previous will be an offer.
-            || previousNode.account_ != issuerOutID))
+            || backNode.account_ != issuerOutID))
         // Need the implied issuer.
     {
         // Add implied account.
@@ -543,23 +576,18 @@ void PathState::expandPath (
     {
         // Look for first mention of source in nodes and detect loops.
         // Note: The output is not allowed to be a source.
-
-        const unsigned int  uNodes  = nodes_.size ();
-
-        for (unsigned int nodeIndex = 0;
-             tesSUCCESS == terStatus && nodeIndex != uNodes; ++nodeIndex)
+        unsigned int index = 0;
+        for (auto& node: nodes_)
         {
-            const auto&  node   = nodes_[nodeIndex];
-
-            AccountCurrencyIssuer aci(
-                node.account_, node.currency_, node.issuer_);
-            if (!umForward.insert (std::make_pair (aci, nodeIndex)).second)
+            AccountIssue accountIssue (node.account_, node.issue_);
+            if (!umForward.insert ({accountIssue, index++}).second)
             {
                 // Failed to insert. Have a loop.
                 WriteLog (lsDEBUG, RippleCalc) <<
                     "expandPath: loop detected: " << getJson ();
 
-                terStatus   = temBAD_PATH_LOOP;
+                terStatus = temBAD_PATH_LOOP;
+                break;
             }
         }
     }
@@ -571,6 +599,7 @@ void PathState::expandPath (
         << " out=" << currencyOutID
         << "/" << issuerOutID
         << ": " << getJson ();
+    return terStatus;
 }
 
 /** Check if a sequence of three accounts violates the no ripple constrains
@@ -578,7 +607,7 @@ void PathState::expandPath (
     Disallowed if 'second' set no ripple on [first]->[second] and
     [second]->[third]
 */
-void PathState::checkNoRipple (
+TER PathState::checkNoRipple (
     Account const& firstAccount,
     Account const& secondAccount,
     // This is the account whose constraints we are checking
@@ -609,17 +638,19 @@ void PathState::checkNoRipple (
 
         terStatus = terNO_RIPPLE;
     }
+    return terStatus;
 }
 
 // Check a fully-expanded path to make sure it doesn't violate no-Ripple
 // settings.
-void PathState::checkNoRipple (
-    Account const& uDstAccountID, Account const& uSrcAccountID)
+TER PathState::checkNoRipple (
+    Account const& uDstAccountID,
+    Account const& uSrcAccountID)
 {
     // There must be at least one node for there to be two consecutive ripple
     // lines.
     if (nodes_.size() == 0)
-       return;
+       return terStatus;
 
     if (nodes_.size() == 1)
     {
@@ -630,12 +661,17 @@ void PathState::checkNoRipple (
             (nodes_[0].account_ != uDstAccountID))
         {
             if (saInReq.getCurrency() != saOutReq.getCurrency())
+            {
                 terStatus = terNO_LINE;
+            }
             else
-                checkNoRipple (uSrcAccountID, nodes_[0].account_, uDstAccountID,
-                               nodes_[0].currency_);
+            {
+                terStatus = checkNoRipple (
+                    uSrcAccountID, nodes_[0].account_, uDstAccountID,
+                    nodes_[0].issue_.currency);
+            }
         }
-        return;
+        return terStatus;
     }
 
     // Check source <-> first <-> second
@@ -643,17 +679,18 @@ void PathState::checkNoRipple (
         nodes_[1].isAccount() &&
         (nodes_[0].account_ != uSrcAccountID))
     {
-        if ((nodes_[0].currency_ != nodes_[1].currency_))
+        if ((nodes_[0].issue_.currency != nodes_[1].issue_.currency))
         {
             terStatus = terNO_LINE;
-            return;
+            return terStatus;
         }
         else
         {
-            checkNoRipple (uSrcAccountID, nodes_[0].account_, nodes_[1].account_,
-                nodes_[0].currency_);
-            if (tesSUCCESS != terStatus)
-                return;
+            terStatus = checkNoRipple (
+                uSrcAccountID, nodes_[0].account_, nodes_[1].account_,
+                nodes_[0].issue_.currency);
+            if (terStatus != tesSUCCESS)
+                return terStatus;
         }
     }
 
@@ -663,17 +700,18 @@ void PathState::checkNoRipple (
         nodes_[s + 1].isAccount() &&
         (uDstAccountID != nodes_[s+1].account_))
     {
-        if ((nodes_[s].currency_ != nodes_[s+1].currency_))
+        if ((nodes_[s].issue_.currency != nodes_[s+1].issue_.currency))
         {
             terStatus = terNO_LINE;
-            return;
+            return terStatus;
         }
         else
         {
-            checkNoRipple (nodes_[s].account_, nodes_[s+1].account_,
-                           uDstAccountID, nodes_[s].currency_);
+            terStatus = checkNoRipple (
+                nodes_[s].account_, nodes_[s+1].account_,
+                uDstAccountID, nodes_[s].issue_.currency);
             if (tesSUCCESS != terStatus)
-                return;
+                return terStatus;
         }
     }
 
@@ -686,21 +724,22 @@ void PathState::checkNoRipple (
             nodes_[i + 1].isAccount())
         { // Two consecutive account-to-account links
 
-            auto const& currencyID = nodes_[i].currency_;
-            if ((nodes_[i-1].currency_ != currencyID) ||
-                (nodes_[i+1].currency_ != currencyID))
+            auto const& currencyID = nodes_[i].issue_.currency;
+            if ((nodes_[i-1].issue_.currency != currencyID) ||
+                (nodes_[i+1].issue_.currency != currencyID))
             {
                 terStatus = temBAD_PATH;
-                return;
+                return terStatus;
             }
-            checkNoRipple (
+            terStatus = checkNoRipple (
                 nodes_[i-1].account_, nodes_[i].account_, nodes_[i+1].account_,
                 currencyID);
             if (terStatus != tesSUCCESS)
-                return;
+                return terStatus;
         }
-
     }
+
+    return tesSUCCESS;
 }
 
 // This is for debugging not end users. Output names can be changed without

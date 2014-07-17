@@ -24,13 +24,13 @@ namespace ripple {
 
 /**
   Provides the implementation for LedgerConsensus.
- 
+
   Achieves consensus on the next ledger.
   This object is created when the consensus process starts, and
   is destroyed when the process is complete.
- 
+
   Nearly everything herein is invoked with the master lock.
- 
+
   Two things need consensus:
     1.  The set of transactions.
     2.  The close time for the ledger.
@@ -53,7 +53,7 @@ public:
 
     /**
       The result of applying a transaction to a ledger.
-     
+
       @param clock          The clock which will be used to measure time.
       @param localtx        A set of local transactions to apply.
       @param prevLCLHash    The hash of the Last Closed Ledger (LCL).
@@ -139,7 +139,7 @@ public:
 
     /**
       This function is called, but its return value is always ignored.
-     
+
       @return 1.
     */
     int startup ()
@@ -150,7 +150,7 @@ public:
     /**
       Get the Json state of the consensus process.
       Called by the consensus_info RPC.
-     
+
       @param full True if verbose response desired.
       @return     The Json state.
     */
@@ -290,7 +290,7 @@ public:
       Get a transaction tree, fetching it from the network if required and
       requested.  When the transaction acquire engine successfully acquires
       a transaction set, it will call back.
-     
+
       @param hash      hash of the requested transaction tree.
       @param doAcquire true if we should get this from the network if we don't
                        already have it.
@@ -347,7 +347,7 @@ public:
 
     /**
       We have a complete transaction set, typically acquired from the network
-     
+
       @param hash     hash of the transaction set.
       @param map      the transaction set.
       @param acquired true if we have acquired the transaction set.
@@ -438,7 +438,7 @@ public:
       If a transaction set is popular, we probably have it. If it's unpopular,
       we probably don't need it (and the peer that initially made us
       retrieve it has probably already changed its position).
-     
+
       @param hash hash of the transaction set.
       @return     true if we need to acquire it, else false.
     */
@@ -546,7 +546,7 @@ public:
 
     /**
       Change our view of the last closed ledger
-     
+
       @param lclHash Hash of the last closed ledger.
     */
     void handleLCL (uint256 const& lclHash)
@@ -707,7 +707,7 @@ public:
 
     /** We are establishing a consensus
        Update our position only on the timer, and in this state.
-       If we have consensus, move to the finish state 
+       If we have consensus, move to the finish state
     */
     void stateEstablish ()
     {
@@ -800,7 +800,7 @@ public:
     /**
       A server has taken a new position, adjust our tracking
       Called when a peer takes a new postion.
-     
+
       @param newPosition the new position
       @return            true if we should do delayed relay of this position.
     */
@@ -873,7 +873,7 @@ public:
 
     /**
       A peer has informed us that it can give us a transaction set
-     
+
       @param peer    The peer we can get it from.
       @param hashSet The transaction set we can get.
       @param status  Says whether or not the peer has the transaction set
@@ -903,7 +903,7 @@ public:
 
     /**
       A peer has sent us some nodes from a transaction set
-     
+
       @param peer     The peer which has sent the nodes
       @param setHash  The transaction set
       @param nodeIDs  The nodes in the transaction set
@@ -945,7 +945,7 @@ public:
     }
 private:
     /** We have a new last closed ledger, process it. Final accept logic
-     
+
       @param set Our consensus set
     */
     void accept (SHAMap::pointer set)
@@ -1189,7 +1189,7 @@ private:
 
     /**
       Begin acquiring a transaction set
-     
+
       @param acquire The transaction set to acquire.
     */
     void startAcquiring (TransactionAcquire::pointer acquire)
@@ -1244,7 +1244,7 @@ private:
     /**
       Compare two proposed transaction sets and create disputed
         transctions structures for any mismatches
-     
+
       @param m1 One transaction set
       @param m2 The other transaction set
     */
@@ -1287,7 +1287,7 @@ private:
     /**
       Add a disputed transaction (one that at least one node wants
       in the consensus set and at least one node does not) to our tracking
-     
+
       @param txID The ID of the disputed transaction
       @param tx   The data of the disputed transaction
     */
@@ -1343,7 +1343,7 @@ private:
     /**
       Adjust the votes on all disputed transactions based
         on the set of peers taking this position
-     
+
       @param map   A disputed position
       @param peers peers which are taking the position map
     */
@@ -1385,7 +1385,7 @@ private:
 
     /** Let peers know that we a particular transactions set so they
        can fetch it from us.
-     
+
       @param hash   The ID of the transaction.
       @param direct true if we have this transaction set locally, else a
                     directly connected peer has it.
@@ -1401,7 +1401,7 @@ private:
     }
 
     /** Apply a set of transactions to a ledger
-     
+
       @param set                   The set of transactions to apply
       @param applyLedger           The ledger to which the transactions should
                                    be applied.
@@ -1510,7 +1510,7 @@ private:
     }
 
     /** Apply a transaction to a ledger
-     
+
       @param engine       The transaction engine containing the ledger.
       @param txn          The transaction to be applied to ledger.
       @param openLedger   true if ledger is open
@@ -1584,9 +1584,9 @@ private:
 
     /**
       Round the close time to the close time resolution.
-     
+
       @param closeTime The time to be rouned.
-      @return          The rounded close time. 
+      @return          The rounded close time.
     */
     std::uint32_t roundCloseTime (std::uint32_t closeTime)
     {
@@ -1594,7 +1594,7 @@ private:
     }
 
     /** Send a node status change message to our directly connected peers
-     
+
       @param event   The event which caused the status change.  This is
                      typically neACCEPTED_LEDGER or neCLOSING_LEDGER.
       @param ledger  The ledger associated with the event.
@@ -1638,7 +1638,7 @@ private:
 
     /** Take an initial position on what we think the consensus should be
         based on the transactions that made it into our open ledger
-     
+
       @param initialLedger The ledger that contains our initial position.
     */
     void takeInitialPosition (Ledger& initialLedger)
@@ -1710,7 +1710,7 @@ private:
     /**
       For a given number of participants and required percent
       for consensus, how many participants must agree?
-     
+
       @param size    number of validators
       @param percent desired percent for consensus
       @return number of participates which must agree

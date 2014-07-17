@@ -1157,7 +1157,7 @@ std::uint32_t LedgerEntrySet::rippleTransferRate (Account const& issuer)
 
     WriteLog (lsTRACE, LedgerEntrySet) << "rippleTransferRate:" <<
         " issuer=" << to_string (issuer) <<
-        " account_exists=" << std::boolalpha << !!sleAccount <<
+        " account_exists=" << std::boolalpha << bool(sleAccount) <<
         " transfer_rate=" << (uQuality / 1000000000.0);
 
     return uQuality;
@@ -1211,7 +1211,7 @@ LedgerEntrySet::rippleQualityIn (
         " uToAccountID=" << to_string (uToAccountID) <<
         " uFromAccountID=" << to_string (uFromAccountID) <<
         " uCurrencyID=" << to_string (uCurrencyID) <<
-        " bLine=" << std::boolalpha << !!sleRippleState <<
+        " bLine=" << std::boolalpha << bool(sleRippleState) <<
         " uQuality=" << (uQuality / 1000000000.0);
 
     return uQuality;
@@ -1518,8 +1518,8 @@ TER LedgerEntrySet::rippleCredit (
 
     TER terResult;
 
-    assert (!!uSenderID && uSenderID != noAccount());
-    assert (!!uReceiverID && uReceiverID != noAccount());
+    assert (!isXRP (uSenderID) && uSenderID != noAccount());
+    assert (!isXRP (uReceiverID) && uReceiverID != noAccount());
 
     if (!sleRippleState)
     {
@@ -1636,17 +1636,14 @@ TER LedgerEntrySet::rippleSend (
     auto const issuer   = saAmount.getIssuer ();
     TER             terResult;
 
-    assert (!!uSenderID && !!uReceiverID);
+    assert (!isXRP (uSenderID) && !isXRP (uReceiverID));
     assert (uSenderID != uReceiverID);
 
-    if (uSenderID == issuer || uReceiverID == issuer ||
-        issuer == noAccount())
+    if (uSenderID == issuer || uReceiverID == issuer || issuer == noAccount())
     {
         // Direct send: redeeming IOUs and/or sending own IOUs.
         terResult   = rippleCredit (uSenderID, uReceiverID, saAmount, false);
-
         saActual    = saAmount;
-
         terResult   = tesSUCCESS;
     }
     else

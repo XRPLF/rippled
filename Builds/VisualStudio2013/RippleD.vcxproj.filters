@@ -382,6 +382,9 @@
     <Filter Include="ripple\module\app\paths">
       <UniqueIdentifier>{4A33F050-B4FA-BECE-FA9B-963BE4AAF1A0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ripple\module\app\paths\cursor">
+      <UniqueIdentifier>{1ADC0318-326E-565A-CF79-DF72B8D889DB}</UniqueIdentifier>
+    </Filter>
     <Filter Include="ripple\module\app\peers">
       <UniqueIdentifier>{08C8AFC4-AE5D-8717-F687-1E7D1900FCC2}</UniqueIdentifier>
     </Filter>
@@ -3282,45 +3285,15 @@
     <ClInclude Include="..\..\src\ripple\module\app\node\SqliteFactory.h">
       <Filter>ripple\module\app\node</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\CalcNodeAdvance.cpp">
-      <Filter>ripple\module\app\paths</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\CalcNodeDeliverFwd.cpp">
-      <Filter>ripple\module\app\paths</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\CalcNodeDeliverRev.cpp">
-      <Filter>ripple\module\app\paths</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\paths\CalcState.h">
-      <Filter>ripple\module\app\paths</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\app\paths\Calculators.h">
-      <Filter>ripple\module\app\paths</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\ComputeAccountLiquidityForward.cpp">
-      <Filter>ripple\module\app\paths</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\ComputeAccountLiquidityReverse.cpp">
-      <Filter>ripple\module\app\paths</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\ComputeLiquidity.cpp">
-      <Filter>ripple\module\app\paths</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\ComputeOfferLiquidity.cpp">
-      <Filter>ripple\module\app\paths</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\ComputeRippleLiquidity.cpp">
-      <Filter>ripple\module\app\paths</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\module\app\paths\Node.cpp">
       <Filter>ripple\module\app\paths</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\app\paths\Node.h">
       <Filter>ripple\module\app\paths</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\PathNext.cpp">
+    <ClInclude Include="..\..\src\ripple\module\app\paths\NodeDirectory.h">
       <Filter>ripple\module\app\paths</Filter>
-    </ClCompile>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\paths\PathRequest.cpp">
       <Filter>ripple\module\app\paths</Filter>
     </ClCompile>
@@ -3343,9 +3316,6 @@
       <Filter>ripple\module\app\paths</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\app\paths\Pathfinder.h">
-      <Filter>ripple\module\app\paths</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\app\paths\QualityConstraint.h">
       <Filter>ripple\module\app\paths</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\paths\RippleCalc.cpp">
@@ -3371,6 +3341,42 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\app\paths\Types.h">
       <Filter>ripple\module\app\paths</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\cursor\AdvanceNode.cpp">
+      <Filter>ripple\module\app\paths\cursor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\cursor\DeliverNodeForward.cpp">
+      <Filter>ripple\module\app\paths\cursor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\cursor\DeliverNodeReverse.cpp">
+      <Filter>ripple\module\app\paths\cursor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\cursor\ForwardLiquidity.cpp">
+      <Filter>ripple\module\app\paths\cursor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\cursor\ForwardLiquidityForAccount.cpp">
+      <Filter>ripple\module\app\paths\cursor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\cursor\Liquidity.cpp">
+      <Filter>ripple\module\app\paths\cursor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\cursor\NextIncrement.cpp">
+      <Filter>ripple\module\app\paths\cursor</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\module\app\paths\cursor\PathCursor.h">
+      <Filter>ripple\module\app\paths\cursor</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\cursor\ReverseLiquidity.cpp">
+      <Filter>ripple\module\app\paths\cursor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\cursor\ReverseLiquidityForAccount.cpp">
+      <Filter>ripple\module\app\paths\cursor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\cursor\RippleLiquidity.cpp">
+      <Filter>ripple\module\app\paths\cursor</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\module\app\paths\cursor\RippleLiquidity.h">
+      <Filter>ripple\module\app\paths\cursor</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\app\peers\ClusterNodeStatus.h">
       <Filter>ripple\module\app\peers</Filter>

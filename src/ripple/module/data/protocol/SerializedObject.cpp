@@ -860,7 +860,7 @@ const STArray& STObject::getFieldArray (SField::ref field) const
     return *cf;
 }
 
-const STPathSet& STObject::getFieldPathSet (SField::ref field) const
+STPathSet const& STObject::getFieldPathSet (SField::ref field) const
 {
     static STPathSet empty;
     const SerializedType* rf = peekAtPField (field);
@@ -1049,7 +1049,7 @@ void STObject::setFieldAmount (SField::ref field, const STAmount& v)
     (*cf) = v;
 }
 
-void STObject::setFieldPathSet (SField::ref field, const STPathSet& v)
+void STObject::setFieldPathSet (SField::ref field, STPathSet const& v)
 {
     SerializedType* rf = getPField (field, true);
 

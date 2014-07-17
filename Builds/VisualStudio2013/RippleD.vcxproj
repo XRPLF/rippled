@@ -7,27 +7,16 @@
     <IgnoreWarnCompileDuplicatedFilename>true</IgnoreWarnCompileDuplicatedFilename>
   </PropertyGroup>
   <ItemGroup Label="ProjectConfigurations">
-    <ProjectConfiguration Include="debug|x64">
-      <Configuration>debug</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
     <ProjectConfiguration Include="release|x64">
       <Configuration>release</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="debug|x64">
+      <Configuration>debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='debug|x64'" Label="Configuration">
-    <CharacterSet>MultiByte</CharacterSet>
-    <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v120</PlatformToolset>
-    <LinkIncremental>False</LinkIncremental>
-    <UseDebugLibraries>False</UseDebugLibraries>
-    <UseOfMfc>False</UseOfMfc>
-    <WholeProgramOptimization>false</WholeProgramOptimization>
-    <IntDir>..\..\build\msvc.debug\src\</IntDir>
-    <OutDir>..\..\build\msvc.debug\</OutDir>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='release|x64'" Label="Configuration">
     <CharacterSet>MultiByte</CharacterSet>
     <ConfigurationType>Application</ConfigurationType>
@@ -39,15 +28,61 @@
     <IntDir>..\..\build\msvc.release\src\</IntDir>
     <OutDir>..\..\build\msvc.release\</OutDir>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='debug|x64'" Label="Configuration">
+    <CharacterSet>MultiByte</CharacterSet>
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <LinkIncremental>False</LinkIncremental>
+    <UseDebugLibraries>False</UseDebugLibraries>
+    <UseOfMfc>False</UseOfMfc>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
+    <IntDir>..\..\build\msvc.debug\src\</IntDir>
+    <OutDir>..\..\build\msvc.debug\</OutDir>
+  </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings" />
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='debug|x64'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='release|x64'">
+    <ClCompile>
+      <PreprocessorDefinitions>_WIN32_WINNT=0x6000;NDEBUG;OPENSSL_NO_SSL2;WIN32_CONSOLE;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\beast;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4800;4244;4267;4018</DisableSpecificWarnings>
+      <ExceptionHandling>Async</ExceptionHandling>
+      <FloatingPointModel>Precise</FloatingPointModel>
+      <MinimalRebuild>False</MinimalRebuild>
+      <ErrorReporting>None</ErrorReporting>
+      <RuntimeTypeInfo>True</RuntimeTypeInfo>
+      <MultiProcessorCompilation>True</MultiProcessorCompilation>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <FunctionLevelLinking>False</FunctionLevelLinking>
+      <SuppressStartupBanner>True</SuppressStartupBanner>
+      <OpenMPSupport>False</OpenMPSupport>
+      <TreatWarningAsError>False</TreatWarningAsError>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <CallingConvention>Cdecl</CallingConvention>
+      <ForceConformanceInForLoopScope>True</ForceConformanceInForLoopScope>
+      <Optimization>Full</Optimization>
+      <WarningLevel>Level3</WarningLevel>
+      <AdditionalOptions>/bigobj /FS %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>advapi32.lib;comdlg32.lib;gdi32.lib;kernel32.lib;libeay32MT.lib;odbc32.lib;odbccp32.lib;ole32.lib;oleaut32.lib;shell32.lib;Shlwapi.lib;ssleay32MT.lib;user32.lib;uuid.lib;winspool.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <SuppressStartupBanner>True</SuppressStartupBanner>
+      <ErrorReporting>NoErrorReport</ErrorReporting>
+      <SubSystem>Console</SubSystem>
+      <RandomizedBaseAddress>True</RandomizedBaseAddress>
+      <DataExecutionPrevention>true</DataExecutionPrevention>
+      <GenerateDebugInformation>True</GenerateDebugInformation>
+      <TargetMachine>MachineX64</TargetMachine>
+      <AdditionalOptions>/MANIFEST /TLBID:1 %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='debug|x64'">
     <ClCompile>
       <PreprocessorDefinitions>_WIN32_WINNT=0x6000;DEBUG;OPENSSL_NO_SSL2;WIN32_CONSOLE;_CRTDBG_MAP_ALLOC;_CRT_SECURE_NO_WARNINGS;_DEBUG;_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -70,41 +105,6 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CallingConvention>Cdecl</CallingConvention>
       <ForceConformanceInForLoopScope>True</ForceConformanceInForLoopScope>
-      <WarningLevel>Level3</WarningLevel>
-      <AdditionalOptions>/bigobj /FS %(AdditionalOptions)</AdditionalOptions>
-    </ClCompile>
-    <Link>
-      <AdditionalDependencies>advapi32.lib;comdlg32.lib;gdi32.lib;kernel32.lib;libeay32MT.lib;odbc32.lib;odbccp32.lib;ole32.lib;oleaut32.lib;shell32.lib;Shlwapi.lib;ssleay32MT.lib;user32.lib;uuid.lib;winspool.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <SuppressStartupBanner>True</SuppressStartupBanner>
-      <ErrorReporting>NoErrorReport</ErrorReporting>
-      <SubSystem>Console</SubSystem>
-      <RandomizedBaseAddress>True</RandomizedBaseAddress>
-      <DataExecutionPrevention>true</DataExecutionPrevention>
-      <GenerateDebugInformation>True</GenerateDebugInformation>
-      <TargetMachine>MachineX64</TargetMachine>
-      <AdditionalOptions>/MANIFEST /TLBID:1 %(AdditionalOptions)</AdditionalOptions>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='release|x64'">
-    <ClCompile>
-      <PreprocessorDefinitions>_WIN32_WINNT=0x6000;NDEBUG;OPENSSL_NO_SSL2;WIN32_CONSOLE;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\build\proto;..\..\src;..\..\src\beast;..\..\src\protobuf\src;..\..\src\protobuf\vsprojects;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <DisableSpecificWarnings>4800;4244;4267;4018</DisableSpecificWarnings>
-      <ExceptionHandling>Async</ExceptionHandling>
-      <FloatingPointModel>Precise</FloatingPointModel>
-      <MinimalRebuild>False</MinimalRebuild>
-      <ErrorReporting>None</ErrorReporting>
-      <RuntimeTypeInfo>True</RuntimeTypeInfo>
-      <MultiProcessorCompilation>True</MultiProcessorCompilation>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <FunctionLevelLinking>False</FunctionLevelLinking>
-      <SuppressStartupBanner>True</SuppressStartupBanner>
-      <OpenMPSupport>False</OpenMPSupport>
-      <TreatWarningAsError>False</TreatWarningAsError>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <CallingConvention>Cdecl</CallingConvention>
-      <ForceConformanceInForLoopScope>True</ForceConformanceInForLoopScope>
-      <Optimization>Full</Optimization>
       <WarningLevel>Level3</WarningLevel>
       <AdditionalOptions>/bigobj /FS %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
@@ -2250,42 +2250,13 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\app\node\SqliteFactory.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\CalcNodeAdvance.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\CalcNodeDeliverFwd.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\CalcNodeDeliverRev.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\paths\CalcState.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\app\paths\Calculators.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\ComputeAccountLiquidityForward.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\ComputeAccountLiquidityReverse.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\ComputeLiquidity.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\ComputeOfferLiquidity.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\ComputeRippleLiquidity.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\module\app\paths\Node.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\app\paths\Node.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\PathNext.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\module\app\paths\NodeDirectory.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\paths\PathRequest.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2306,8 +2277,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\app\paths\Pathfinder.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\app\paths\QualityConstraint.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\paths\RippleCalc.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2326,6 +2295,40 @@
     <ClInclude Include="..\..\src\ripple\module\app\paths\Tuning.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\app\paths\Types.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\cursor\AdvanceNode.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\cursor\DeliverNodeForward.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\cursor\DeliverNodeReverse.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\cursor\ForwardLiquidity.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\cursor\ForwardLiquidityForAccount.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\cursor\Liquidity.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\cursor\NextIncrement.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\module\app\paths\cursor\PathCursor.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\cursor\ReverseLiquidity.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\cursor\ReverseLiquidityForAccount.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\cursor\RippleLiquidity.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\module\app\paths\cursor\RippleLiquidity.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\app\peers\ClusterNodeStatus.h">
     </ClInclude>
@@ -3211,15 +3214,15 @@
     </ClInclude>
     <CustomBuild Include="..\..\src\ripple\proto\ripple.proto">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='debug|x64'">protoc --cpp_out=..\..\build\proto --proto_path=%(RelativeDir) %(Identity)</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\build\proto\ripple.pb.h;..\..\build\proto\ripple.pb.cc</Outputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='debug|x64'">protoc --cpp_out=..\..\build\proto --proto_path=%(RelativeDir) %(Identity)</Message>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='debug|x64'">false</LinkObjects>
-      <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='release|x64'">protoc --cpp_out=..\..\build\proto --proto_path=%(RelativeDir) %(Identity)</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\build\proto\ripple.pb.h;..\..\build\proto\ripple.pb.cc</Outputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='release|x64'">protoc --cpp_out=..\..\build\proto --proto_path=%(RelativeDir) %(Identity)</Message>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='release|x64'">false</LinkObjects>
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='debug|x64'">protoc --cpp_out=..\..\build\proto --proto_path=%(RelativeDir) %(Identity)</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\build\proto\ripple.pb.h;..\..\build\proto\ripple.pb.cc</Outputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='debug|x64'">protoc --cpp_out=..\..\build\proto --proto_path=%(RelativeDir) %(Identity)</Message>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='debug|x64'">false</LinkObjects>
     </CustomBuild>
     <ClInclude Include="..\..\src\ripple\radmap\api\BasicFullBelowCache.h">
     </ClInclude>
@@ -3452,8 +3455,8 @@
     <ClCompile Include="..\..\src\ripple\unity\http.cpp">
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\hyperleveldb.cpp">
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\src\hyperleveldb;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\hyperleveldb;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\src\hyperleveldb;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\unity\hyperleveldb.h">
     </ClInclude>
@@ -3462,8 +3465,8 @@
     <ClInclude Include="..\..\src\ripple\unity\json.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\leveldb.cpp">
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\src\leveldb;..\..\src\leveldb\include;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\unity\leveldb.h">
     </ClInclude>
@@ -3472,8 +3475,8 @@
     <ClInclude Include="..\..\src\ripple\unity\net.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\nodestore.cpp">
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\src\leveldb\include;..\..\src\rocksdb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\leveldb\include;..\..\src\rocksdb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\src\leveldb\include;..\..\src\rocksdb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\overlay.cpp">
     </ClCompile>
@@ -3494,8 +3497,8 @@
     <ClCompile Include="..\..\src\ripple\unity\ripple.proto.cpp">
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\rocksdb.cpp">
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\src\rocksdb;..\..\src\rocksdb\include;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\rocksdb;..\..\src\rocksdb\include;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\src\rocksdb;..\..\src\rocksdb\include;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\unity\rocksdb.h">
     </ClInclude>
@@ -3508,8 +3511,8 @@
     <ClInclude Include="..\..\src\ripple\unity\sitefiles.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\snappy.cpp">
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\sslutil.cpp">
     </ClCompile>

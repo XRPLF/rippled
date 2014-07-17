@@ -282,9 +282,11 @@ int run (int argc, char** argv)
 
     if (!iResult)
     {
-        getConfig ().setup (
-            vm.count ("conf") ? vm["conf"].as<std::string> () : "", // Config file.
-            !!vm.count ("quiet"));                                  // Quiet flag.
+        auto configFile = vm.count ("conf") ?
+                vm["conf"].as<std::string> () : std::string();
+
+        // config file, quiet flag.
+        getConfig ().setup (configFile, bool (vm.count ("quiet")));
 
         if (vm.count ("standalone"))
         {

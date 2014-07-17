@@ -17,50 +17,19 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CALCSTATE_H
-#define RIPPLE_CALCSTATE_H
+#ifndef RIPPLE_HTTP_H_INCLUDED
+#define RIPPLE_HTTP_H_INCLUDED
 
-namespace ripple {
+// VFALCO This entire file is deprecated now, I'm working on a replacement
 
-typedef TER ErrorCode;
+// VFALCO NOTE this sucks that we have to include asio in the header
+//             just for HTTPMessage!
+#include <beast/module/asio/asio.h>
 
-class CalcState
-{
-  public:
-    CalcState(
-        unsigned int nodeIndex, PathState& state, LedgerEntrySet& ledger, bool quality)
-            : nodeIndex_(nodeIndex),
-              pathState_(state),
-              ledger_(ledger),
-              quality_(quality)
-    {}
-
-    enum Direction { BACKWARD, FORWARD };
-    TER calc(Direction);
-    TER calcAccount(Direction);
-    TER calcOffer(Direction);
-    TER calcDeliver(Direction);
-    TER calcAdvance(Direction);
-    void nextPath(LedgerEntrySet const& checkpoint) const;
-
-  private:
-    LedgerEntrySet& ledger()
-    {
-        return ledger_;
-    }
-
-    bool quality() const
-    {
-        return quality_;
-    }
-
-  private:
-    unsigned int const nodeIndex_;
-    PathState& pathState_;
-    LedgerEntrySet& ledger_;
-    bool const quality_;
-};
-
-} // ripple
+#include <ripple/http/api/Port.h>
+#include <ripple/http/api/ScopedStream.h>
+#include <ripple/http/api/Session.h>
+#include <ripple/http/api/Handler.h>
+#include <ripple/http/api/Server.h>
 
 #endif

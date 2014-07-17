@@ -20,6 +20,7 @@
 #ifndef RIPPLE_APP_PATH_NODE_H
 #define RIPPLE_APP_PATH_NODE_H
 
+#include <ripple/module/app/paths/NodeDirectory.h>
 #include <ripple/module/app/paths/Types.h>
 #include <ripple/types/api/UintTypes.h>
 
@@ -42,9 +43,9 @@ struct Node
     std::uint16_t uFlags;       // --> From path.
 
     Account account_;           // --> Accounts: Receiving/sending account.
-    Currency currency_;         // --> Accounts: Receive and send, Offers: send.
+
+    Issue issue_;               // --> Accounts: Receive and send, Offers: send.
                                 // --- For offer's next has currency out.
-    Account issuer_;            // --> Currency's issuer
 
     STAmount transferRate_;    // Transfer rate for issuer.
 
@@ -77,19 +78,8 @@ struct Node
     // "quality".
     // https://ripple.com/wiki/Ledger_Format#Prioritizing_a_continuous_key_space
 
-    // Current directory - the last 64 bits of this are the quality.
-    uint256 currentDirectory_;
+    NodeDirectory directory;
 
-    // Start of the next order book - one past the worst quality possible for
-    // the current order book.
-    uint256 nextDirectory_;
-
-    // TODO(tom): currentDirectory_ and nextDirectory_ should be of type
-    // Directory.
-
-    bool bDirectAdvance;        // Need to advance directory.
-    bool bDirectRestart;        // Need to restart directory.
-    SLE::pointer sleDirectDir;
     STAmount saOfrRate;          // For correct ratio.
 
     // PaymentNode
@@ -104,6 +94,15 @@ struct Node
     STAmount saOfferFunds;
     STAmount saTakerPays;
     STAmount saTakerGets;
+
+    /** Clear input and output amounts. */
+    void clear()
+    {
+        saRevRedeem.clear ();
+        saRevIssue.clear ();
+        saRevDeliver.clear ();
+        saFwdDeliver.clear ();
+    }
 };
 
 } // path

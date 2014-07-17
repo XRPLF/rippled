@@ -610,7 +610,7 @@ public:
             ret["complete_ledgers"] = boost::lexical_cast<std::string>(minSeq) + " - " +
                                       boost::lexical_cast<std::string>(maxSeq);
 
-        if (!!m_closedLedgerHash)
+        if (m_closedLedgerHash != zero)
             ret["ledger"] = to_string (m_closedLedgerHash);
 
         if (mLastStatus.has_newstatus ())
