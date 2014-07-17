@@ -53,7 +53,7 @@ CreateOfferBridged::crossOffers (
     core::OfferStream offers_leg2 (view, view_cancel,
         Book (xrpIssue (), asset_out), when, m_journal);
 
-    core::Taker taker (view, mTxnAccountID, taker_amount, options);
+    core::Taker taker (view, mTxnAccountID, taker_amount, options, m_journal);
 
     if (m_journal.debug) m_journal.debug <<
         "process_order: " <<
@@ -175,12 +175,6 @@ CreateOfferBridged::crossOffers (
                 "    Leg2: " << (offers_leg2.tip ().fully_consumed () ? "Fully Consumed" : "Not Filled") << std::endl <<
                 "          " << offers_leg2.tip ().amount().in << " : " << std::endl <<
                 "          " << offers_leg2.tip ().amount ().out << std::endl;
-                
-            if (m_journal.debug) m_journal.debug << "Crossing returned:" << std::endl <<
-                "  Result: " << transHuman (cross_result) <<
-                "     Tip: " << 
-                    offers_direct.tip ().amount().in << " : " <<
-                    offers_direct.tip ().amount ().out;
 
             if (offers_leg1.tip ().fully_consumed ())
             {
@@ -231,8 +225,6 @@ CreateOfferBridged::crossOffers (
                         "[" << offers_leg2.tip ().amount ().in <<
                         ":" << offers_leg2.tip ().amount ().out << "]";
             }
-
-            m_journal.debug << "Cross Details: " << taker.details ();
         }
 
         assert (direct_consumed || leg1_consumed || leg2_consumed);

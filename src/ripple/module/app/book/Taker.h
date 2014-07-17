@@ -26,6 +26,7 @@
 #include <ripple/module/app/book/Types.h>
 
 #include <beast/streams/debug_ostream.h>
+#include <beast/utility/Journal.h>
 #include <beast/utility/noexcept.h>
 
 #include <functional>
@@ -69,7 +70,7 @@ private:
     // The amounts still left over for us to try and take.
     Amounts m_remain;
 
-    std::string m_details;
+    beast::Journal m_journal;
 
     Amounts
     flow (Amounts amount, Offer const& offer, Account const& taker);
@@ -86,12 +87,8 @@ private:
 
 public:
     Taker (LedgerView& view, Account const& account,
-        Amounts const& amount, Options const& options);
-
-    std::string details () const
-    {
-        return m_details;
-    }
+        Amounts const& amount, Options const& options,
+        beast::Journal journal = beast::Journal ());
 
     LedgerView&
     view () const noexcept
