@@ -30,7 +30,9 @@ struct Entry : public beast::List <Entry>::Node
 {
     Entry () = delete;
 
-    /** Each Entry needs to know the time when it is constructed. */
+    /**
+       @param now Construction time of Entry.
+    */
     explicit Entry(clock_type::time_point const now)
         : refcount (0)
         , local_balance (now)

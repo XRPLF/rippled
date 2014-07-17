@@ -33,6 +33,18 @@ Although RPC connections consume resources, they are transient and
 cannot be rate limited. It is advised not to expose RPC interfaces
 to the general public.
 
+## Consumer Types ##
+
+Consumers are placed into three classifications (as identified by the
+Resource::Kind enumeration):
+
+ - InBound,
+ - OutBound, and
+ - Admin
+
+ Each caller determines for itself the classification of the Consumer it is
+ creating.
+
 ## Resource Loading ##
 
 It is expected that a client will impose a higher load on the server

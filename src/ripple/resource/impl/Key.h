@@ -32,7 +32,7 @@ struct Key
 
     Key () = delete;
 
-    // Constructor for non-Admin keys
+    // Constructor for Inbound and Outbound (non-Admin) keys
     Key (Kind k, beast::IP::Endpoint const& addr)
         : kind(k)
         , address(addr)

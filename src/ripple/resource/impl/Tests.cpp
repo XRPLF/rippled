@@ -140,9 +140,9 @@ public:
         }
 
         // Makes sure the Consumer is eventually removed from blacklist
-        bool consumerUnDropped = false;
+        bool readmitted = false;
         {
-            // Give Consumer time to become un-dropped.  Shouold never
+            // Give Consumer time to become readmitted.  Should never
             // exceed expiration time.
             std::size_t n (secondsUntilExpiration + 1);
             while (--n > 0)
@@ -152,12 +152,12 @@ public:
                 Consumer c (logic.newInboundEndpoint (addr));
                 if (c.disposition () != drop)
                 {
-                    consumerUnDropped = true;
+                    readmitted = true;
                     break;
                 }
             }
         }
-        if (consumerUnDropped == false)
+        if (readmitted == false)
         {
             fail ("Dropped Consumer left on blacklist too long");
             return;

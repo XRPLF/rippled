@@ -23,16 +23,18 @@
 namespace ripple {
 
 /** Sampling function using exponential decay to provide a continuous value. */
-template <int Window, typename Clock, typename Value = int>
+template <int Window, typename Clock>
 class DecayingSample
 {
 public:
-    typedef Value value_type;
+    typedef typename Clock::duration::rep value_type;
     typedef typename Clock::time_point time_point;
 
     DecayingSample () = delete;
 
-    /** DecayingSamples must know their starting time. */
+    /**
+        @param now Start time of DecayingSample.
+    */
     explicit DecayingSample (time_point now)
         : m_value (value_type())
         , m_when (now)
@@ -42,7 +44,7 @@ public:
     /** Add a new sample.
         The value is first aged according to the specified time.
     */
-    Value add (value_type value, time_point now)
+    value_type add (value_type value, time_point now)
     {
         decay (now);
         m_value += value;
@@ -52,7 +54,7 @@ public:
     /** Retrieve the current value in normalized units.
         The samples are first aged according to the specified time.
     */
-    Value value (time_point now)
+    value_type value (time_point now)
     {
         decay (now);
         return m_value / Window;
