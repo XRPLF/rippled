@@ -179,6 +179,8 @@ public:
     explicit
     static_initializer (Args&&... args);
 
+    static_initializer ();
+    
     T&
     get() noexcept
     {
@@ -197,6 +199,13 @@ public:
         return &get();
     }
 };
+
+template <class T, class Tag>
+static_initializer <T, Tag>::static_initializer ()
+{
+    static T t;
+    instance_ = &t;
+}
 
 template <class T, class Tag>
 template <class... Args>
