@@ -28,9 +28,7 @@ namespace ripple {
 // }
 Json::Value doProofCreate (RPC::Context& context)
 {
-    context.lock_.unlock ();
     // XXX: Add ability to create proof with arbitrary time
-
     Json::Value     jvResult (Json::objectValue);
 
     if (context.params_.isMember ("difficulty") || context.params_.isMember ("secret"))

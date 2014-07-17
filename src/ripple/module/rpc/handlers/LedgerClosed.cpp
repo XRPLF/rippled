@@ -22,7 +22,6 @@ namespace ripple {
 
 Json::Value doLedgerClosed (RPC::Context& context)
 {
-    context.lock_.unlock ();
     Json::Value jvResult;
 
     uint256 uLedger = context.netOps_.getClosedLedgerHash ();

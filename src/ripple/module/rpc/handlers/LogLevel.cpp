@@ -29,9 +29,9 @@ Json::Value doLogLevel (RPC::Context& context)
         Json::Value ret (Json::objectValue);
         Json::Value lev (Json::objectValue);
 
-        lev["base"] = Logs::toString(Logs::fromSeverity(deprecatedLogs().severity()));
-        std::vector< std::pair<std::string, std::string> > logTable (
-            deprecatedLogs().partition_severities());
+        lev["base"] = Logs::toString(
+            Logs::fromSeverity(deprecatedLogs().severity()));
+        auto logTable = deprecatedLogs().partition_severities();
         typedef std::map<std::string, std::string>::value_type stringPair;
         BOOST_FOREACH (const stringPair & it, logTable)
             lev[it.first] = it.second;
@@ -40,16 +40,19 @@ Json::Value doLogLevel (RPC::Context& context)
         return ret;
     }
 
-    LogSeverity const sv (Logs::fromString (context.params_["severity"].asString ()));
+    LogSeverity const sv (
+        Logs::fromString (context.params_["severity"].asString ()));
 
     if (sv == lsINVALID)
         return rpcError (rpcINVALID_PARAMS);
+
+    auto severity = Logs::toSeverity(sv);
 
     // log_level severity
     if (!context.params_.isMember ("partition"))
     {
         // set base log severity
-        deprecatedLogs().severity(Logs::toSeverity(sv));
+        deprecatedLogs().severity(severity);
         return Json::objectValue;
     }
 
@@ -60,9 +63,9 @@ Json::Value doLogLevel (RPC::Context& context)
         std::string partition (context.params_["partition"].asString ());
 
         if (boost::iequals (partition, "base"))
-            deprecatedLogs().severity (Logs::toSeverity(sv));
+            deprecatedLogs().severity (severity);
         else
-            deprecatedLogs().get(partition).severity(Logs::toSeverity(sv));
+            deprecatedLogs().get(partition).severity(severity);
 
         return Json::objectValue;
     }

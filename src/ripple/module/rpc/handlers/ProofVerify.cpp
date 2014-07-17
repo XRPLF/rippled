@@ -29,9 +29,7 @@ namespace ripple {
 // }
 Json::Value doProofVerify (RPC::Context& context)
 {
-    context.lock_.unlock ();
     // XXX Add ability to check proof against arbitrary time
-
     Json::Value         jvResult;
 
     if (!context.params_.isMember ("token"))

@@ -26,19 +26,18 @@ namespace ripple {
 // }
 Json::Value doGetCounts (RPC::Context& context)
 {
+    Application::ScopedLockType lock (getApp().getMasterLock ());
     int minCount = 10;
 
     if (context.params_.isMember ("min_count"))
         minCount = context.params_["min_count"].asUInt ();
 
-    CountedObjects::List objectCounts = CountedObjects::getInstance ().getCounts (minCount);
+    auto objectCounts = CountedObjects::getInstance ().getCounts (minCount);
 
     Json::Value ret (Json::objectValue);
 
-    BOOST_FOREACH (CountedObjects::Entry& it, objectCounts)
-    {
+    for (auto& it: objectCounts)
         ret [it.first] = it.second;
-    }
 
     Application& app = getApp();
     int dbKB = app.getLedgerDB ()->getDB ()->getKBUsedAll ();

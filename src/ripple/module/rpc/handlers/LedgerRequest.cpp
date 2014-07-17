@@ -26,8 +26,6 @@ namespace ripple {
 // }
 Json::Value doLedgerRequest (RPC::Context& context)
 {
-    context.lock_.unlock ();
-
     auto const hasHash = context.params_.isMember (jss::ledger_hash);
     auto const hasIndex = context.params_.isMember (jss::ledger_index);
 

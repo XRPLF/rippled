@@ -27,10 +27,12 @@ namespace ripple {
 // }
 Json::Value doLedger (RPC::Context& context)
 {
-    context.lock_.unlock ();
-    if (!context.params_.isMember ("ledger") && !context.params_.isMember ("ledger_hash") && !context.params_.isMember ("ledger_index"))
+    if (!(context.params_.isMember ("ledger") ||
+          context.params_.isMember ("ledger_hash") ||
+          context.params_.isMember ("ledger_index")))
     {
-        Json::Value ret (Json::objectValue), current (Json::objectValue), closed (Json::objectValue);
+        Json::Value ret (Json::objectValue), current (Json::objectValue),
+                closed (Json::objectValue);
 
         getApp().getLedgerMaster ().getCurrentLedger ()->addJson (current, 0);
         getApp().getLedgerMaster ().getClosedLedger ()->addJson (closed, 0);

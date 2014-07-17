@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-
 namespace ripple {
 
 #if 0
+
 // XXX Needs to be revised for new paradigm
 // nickname_info <nickname>
 // Note: Nicknames are not automatically looked up by commands as they are advisory and can be changed.

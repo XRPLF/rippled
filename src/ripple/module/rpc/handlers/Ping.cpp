@@ -22,7 +22,7 @@ namespace ripple {
 
 Json::Value doPing (RPC::Context& context)
 {
-    return Json::Value (Json::objectValue);
+    return Json::objectValue;
 }
 
 } // ripple

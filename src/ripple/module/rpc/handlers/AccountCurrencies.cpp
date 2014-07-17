@@ -21,14 +21,15 @@ namespace ripple {
 
 Json::Value doAccountCurrencies (RPC::Context& context)
 {
-    context.lock_.unlock ();
     // Get the current ledger
     Ledger::pointer lpLedger;
-    Json::Value jvResult (RPC::lookupLedger (context.params_, lpLedger, context.netOps_));
+    Json::Value jvResult (RPC::lookupLedger (
+        context.params_, lpLedger, context.netOps_));
     if (!lpLedger)
         return jvResult;
 
-    if (! context.params_.isMember ("account") && ! context.params_.isMember ("ident"))
+    if (! context.params_.isMember ("account") &&
+        ! context.params_.isMember ("ident"))
         return RPC::missing_field_error ("account");
 
     std::string const strIdent (context.params_.isMember ("account")
@@ -38,13 +39,15 @@ Json::Value doAccountCurrencies (RPC::Context& context)
     int const iIndex (context.params_.isMember ("account_index")
         ? context.params_["account_index"].asUInt ()
         : 0);
-    bool const bStrict (context.params_.isMember ("strict") && context.params_["strict"].asBool ());
+    bool const bStrict (context.params_.isMember ("strict") &&
+                        context.params_["strict"].asBool ());
 
     // Get info on account.
     bool bIndex; // out param
     RippleAddress naAccount; // out param
     Json::Value jvAccepted (RPC::accountFromString (
-        lpLedger, naAccount, bIndex, strIdent, iIndex, bStrict, context.netOps_));
+        lpLedger, naAccount, bIndex, strIdent,
+        iIndex, bStrict, context.netOps_));
 
     if (!jvAccepted.empty ())
         return jvAccepted;

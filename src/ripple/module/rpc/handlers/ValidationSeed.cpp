@@ -25,6 +25,7 @@ namespace ripple {
 // }
 Json::Value doValidationSeed (RPC::Context& context)
 {
+    Application::ScopedLockType lock (getApp().getMasterLock ());
     Json::Value obj (Json::objectValue);
 
     if (!context.params_.isMember ("secret"))
@@ -35,7 +36,8 @@ Json::Value doValidationSeed (RPC::Context& context)
         getConfig ().VALIDATION_PUB.clear ();
         getConfig ().VALIDATION_PRIV.clear ();
     }
-    else if (!getConfig ().VALIDATION_SEED.setSeedGeneric (context.params_["secret"].asString ()))
+    else if (!getConfig ().VALIDATION_SEED.setSeedGeneric (
+        context.params_["secret"].asString ()))
     {
         getConfig ().VALIDATION_PUB.clear ();
         getConfig ().VALIDATION_PRIV.clear ();
@@ -44,12 +46,15 @@ Json::Value doValidationSeed (RPC::Context& context)
     }
     else
     {
-        getConfig ().VALIDATION_PUB = RippleAddress::createNodePublic (getConfig ().VALIDATION_SEED);
-        getConfig ().VALIDATION_PRIV = RippleAddress::createNodePrivate (getConfig ().VALIDATION_SEED);
+        getConfig ().VALIDATION_PUB = RippleAddress::createNodePublic (
+            getConfig ().VALIDATION_SEED);
+        getConfig ().VALIDATION_PRIV = RippleAddress::createNodePrivate (
+            getConfig ().VALIDATION_SEED);
 
-        obj["validation_public_key"]    = getConfig ().VALIDATION_PUB.humanNodePublic ();
-        obj["validation_seed"]          = getConfig ().VALIDATION_SEED.humanSeed ();
-        obj["validation_key"]           = getConfig ().VALIDATION_SEED.humanSeed1751 ();
+        obj["validation_public_key"]
+                = getConfig ().VALIDATION_PUB.humanNodePublic ();
+        obj["validation_seed"] = getConfig ().VALIDATION_SEED.humanSeed ();
+        obj["validation_key"] = getConfig ().VALIDATION_SEED.humanSeed1751 ();
     }
 
     return obj;

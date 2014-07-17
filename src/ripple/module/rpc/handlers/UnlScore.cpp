@@ -23,6 +23,7 @@ namespace ripple {
 // unl_score
 Json::Value doUnlScore (RPC::Context& context)
 {
+    Application::ScopedLockType lock (getApp().getMasterLock ());
     getApp().getUNL ().nodeScore ();
 
     return "scoring requested";

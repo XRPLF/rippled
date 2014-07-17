@@ -22,7 +22,6 @@ namespace ripple {
 
 Json::Value doLogRotate (RPC::Context& context)
 {
-    context.lock_.unlock ();
     return deprecatedLogs().rotate();
 }
 

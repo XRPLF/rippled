@@ -20,9 +20,12 @@
 
 namespace ripple {
 
-// FIXME: This leaks RPCSub objects for JSON-RPC.  Shouldn't matter for anyone sane.
+// FIXME: This leaks RPCSub objects for JSON-RPC.  Shouldn't matter for anyone
+// sane.
 Json::Value doUnsubscribe (RPC::Context& context)
 {
+    Application::ScopedLockType lock (getApp().getMasterLock ());
+
     InfoSub::pointer ispSub;
     Json::Value jvResult (Json::objectValue);
 
@@ -51,33 +54,27 @@ Json::Value doUnsubscribe (RPC::Context& context)
 
     if (context.params_.isMember ("streams"))
     {
-        for (Json::Value::iterator it = context.params_["streams"].begin (); it != context.params_["streams"].end (); it++)
+        for (auto& it: context.params_["streams"])
         {
-            if ((*it).isString ())
+            if (it.isString ())
             {
-                std::string streamName = (*it).asString ();
+                std::string streamName = it.asString ();
 
                 if (streamName == "server")
-                {
                     context.netOps_.unsubServer (ispSub->getSeq ());
-                }
+
                 else if (streamName == "ledger")
-                {
                     context.netOps_.unsubLedger (ispSub->getSeq ());
-                }
+
                 else if (streamName == "transactions")
-                {
                     context.netOps_.unsubTransactions (ispSub->getSeq ());
-                }
+
                 else if (streamName == "transactions_proposed"
-                         || streamName == "rt_transactions")         // DEPRECATED
-                {
+                         || streamName == "rt_transactions") // DEPRECATED
                     context.netOps_.unsubRTTransactions (ispSub->getSeq ());
-                }
+
                 else
-                {
-                    jvResult["error"]   = str (boost::format ("Unknown stream: %s") % streamName);
-                }
+                    jvResult["error"] = "Unknown stream: " + streamName;
             }
             else
             {
@@ -86,35 +83,28 @@ Json::Value doUnsubscribe (RPC::Context& context)
         }
     }
 
-    if (context.params_.isMember ("accounts_proposed") || context.params_.isMember ("rt_accounts"))
+    if (context.params_.isMember ("accounts_proposed") ||
+        context.params_.isMember ("rt_accounts"))
     {
-        ripple::unordered_set<RippleAddress> usnaAccoundIds  = RPC::parseAccountIds (
+        auto accounts = RPC::parseAccountIds (
                     context.params_.isMember ("accounts_proposed")
                     ? context.params_["accounts_proposed"]
-                    : context.params_["rt_accounts"]);                    // DEPRECATED
+                    : context.params_["rt_accounts"]); // DEPRECATED
 
-        if (usnaAccoundIds.empty ())
-        {
+        if (accounts.empty ())
             jvResult["error"]   = "malformedAccount";
-        }
         else
-        {
-            context.netOps_.unsubAccount (ispSub->getSeq (), usnaAccoundIds, true);
-        }
+            context.netOps_.unsubAccount (ispSub->getSeq (), accounts, true);
     }
 
     if (context.params_.isMember ("accounts"))
     {
-        ripple::unordered_set<RippleAddress> usnaAccoundIds  = RPC::parseAccountIds (context.params_["accounts"]);
+        auto accounts = RPC::parseAccountIds (context.params_["accounts"]);
 
-        if (usnaAccoundIds.empty ())
-        {
+        if (accounts.empty ())
             jvResult["error"]   = "malformedAccount";
-        }
         else
-        {
-            context.netOps_.unsubAccount (ispSub->getSeq (), usnaAccoundIds, false);
-        }
+            context.netOps_.unsubAccount (ispSub->getSeq (), accounts, false);
     }
 
     if (!context.params_.isMember ("books"))
@@ -126,10 +116,8 @@ Json::Value doUnsubscribe (RPC::Context& context)
     }
     else
     {
-        for (Json::Value::iterator it = context.params_["books"].begin (); it != context.params_["books"].end (); it++)
+        for (auto& jvSubRequest: context.params_["books"])
         {
-            Json::Value&    jvSubRequest    = *it;
-
             if (!jvSubRequest.isObject ()
                     || !jvSubRequest.isMember ("taker_pays")
                     || !jvSubRequest.isMember ("taker_gets")

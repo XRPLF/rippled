@@ -32,8 +32,6 @@ namespace ripple {
 // }
 Json::Value doAccountTxOld (RPC::Context& context)
 {
-    context.lock_.unlock ();
-
     RippleAddress   raAccount;
     std::uint32_t   offset      = context.params_.isMember ("offset") ? context.params_["offset"].asUInt () : 0;
     int             limit       = context.params_.isMember ("limit") ? context.params_["limit"].asUInt () : -1;

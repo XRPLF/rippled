@@ -25,8 +25,6 @@ namespace ripple {
 // }
 Json::Value doProofSolve (RPC::Context& context)
 {
-    context.lock_.unlock ();
-
     Json::Value         jvResult;
 
     if (!context.params_.isMember ("token"))

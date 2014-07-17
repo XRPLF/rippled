@@ -32,14 +32,13 @@ namespace ripple {
 //     marker:       resume point, if any
 Json::Value doLedgerData (RPC::Context& context)
 {
-    context.lock_.unlock ();
-
     int const BINARY_PAGE_LENGTH = 256;
     int const JSON_PAGE_LENGTH = 2048;
 
     Ledger::pointer lpLedger;
 
-    Json::Value jvResult = RPC::lookupLedger (context.params_, lpLedger, context.netOps_);
+    auto jvResult = RPC::lookupLedger (
+        context.params_, lpLedger, context.netOps_);
     if (!lpLedger)
         return jvResult;
 

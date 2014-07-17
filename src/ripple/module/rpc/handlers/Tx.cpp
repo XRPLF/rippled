@@ -25,8 +25,6 @@ namespace ripple {
 // }
 Json::Value doTx (RPC::Context& context)
 {
-    context.lock_.unlock ();
-
     if (!context.params_.isMember (jss::transaction))
         return rpcError (rpcINVALID_PARAMS);
 

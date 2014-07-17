@@ -22,7 +22,6 @@ namespace ripple {
 
 Json::Value doLedgerCleaner (RPC::Context& context)
 {
-    context.lock_.unlock();
     getApp().getLedgerMaster().doLedgerCleaner (context.params_);
     return "Cleaner configured";
 }

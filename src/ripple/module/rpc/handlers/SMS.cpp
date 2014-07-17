@@ -22,7 +22,6 @@ namespace ripple {
 
 Json::Value doSMS (RPC::Context& context)
 {
-    context.lock_.unlock ();
     if (!context.params_.isMember ("text"))
         return rpcError (rpcINVALID_PARAMS);
 

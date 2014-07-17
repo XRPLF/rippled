@@ -24,16 +24,17 @@ namespace ripple {
 //   secret: <string>   // optional
 // }
 //
-// This command requires Config::ADMIN access because it makes no sense to ask an untrusted server for this.
+// This command requires Config::ADMIN access because it makes no sense to ask
+// an untrusted server for this.
 Json::Value doValidationCreate (RPC::Context& context)
 {
+    Application::ScopedLockType lock (getApp().getMasterLock ());
     RippleAddress   raSeed;
     Json::Value     obj (Json::objectValue);
 
     if (!context.params_.isMember ("secret"))
     {
         WriteLog (lsDEBUG, RPCHandler) << "Creating random validation seed.";
-
         raSeed.setSeedRandom ();                // Get a random seed.
     }
     else if (!raSeed.setSeedGeneric (context.params_["secret"].asString ()))
@@ -41,9 +42,10 @@ Json::Value doValidationCreate (RPC::Context& context)
         return rpcError (rpcBAD_SEED);
     }
 
-    obj["validation_public_key"]    = RippleAddress::createNodePublic (raSeed).humanNodePublic ();
-    obj["validation_seed"]          = raSeed.humanSeed ();
-    obj["validation_key"]           = raSeed.humanSeed1751 ();
+    obj["validation_public_key"]
+            = RippleAddress::createNodePublic (raSeed).humanNodePublic ();
+    obj["validation_seed"] = raSeed.humanSeed ();
+    obj["validation_key"] = raSeed.humanSeed1751 ();
 
     return obj;
 }

@@ -27,33 +27,37 @@ namespace ripple {
 // }
 Json::Value doWalletAccounts (RPC::Context& context)
 {
-    Ledger::pointer     lpLedger;
-    Json::Value         jvResult    = RPC::lookupLedger (context.params_, lpLedger, context.netOps_);
+    Application::ScopedLockType lock (getApp().getMasterLock ());
+    Ledger::pointer lpLedger;
+    Json::Value jvResult = RPC::lookupLedger (
+        context.params_, lpLedger, context.netOps_);
 
     if (!lpLedger)
         return jvResult;
 
     RippleAddress   naSeed;
 
-    if (!context.params_.isMember ("seed") || !naSeed.setSeedGeneric (context.params_["seed"].asString ()))
+    if (!(context.params_.isMember ("seed") &&
+          naSeed.setSeedGeneric (context.params_["seed"].asString ())))
     {
         return rpcError (rpcBAD_SEED);
     }
 
     // Try the seed as a master seed.
-    RippleAddress   naMasterGenerator   = RippleAddress::createGeneratorPublic (naSeed);
-
-    Json::Value jsonAccounts    = RPC::accounts (lpLedger, naMasterGenerator, context.netOps_);
+    // The master generator for the account.
+    RippleAddress generator = RippleAddress::createGeneratorPublic (naSeed);
+    auto jsonAccounts = RPC::accounts (lpLedger, generator, context.netOps_);
 
     if (jsonAccounts.empty ())
     {
         // No account via seed as master, try seed a regular.
-        Json::Value ret = RPC::getMasterGenerator (lpLedger, naSeed, naMasterGenerator, context.netOps_);
+        Json::Value ret = RPC::getMasterGenerator (
+            lpLedger, naSeed, generator, context.netOps_);
 
         if (!ret.empty ())
             return ret;
 
-        ret["accounts"] = RPC::accounts (lpLedger, naMasterGenerator, context.netOps_);
+        ret["accounts"] = RPC::accounts (lpLedger, generator, context.netOps_);
 
         return ret;
     }
@@ -61,7 +65,6 @@ Json::Value doWalletAccounts (RPC::Context& context)
     {
         // Had accounts via seed as master, return them.
         Json::Value ret (Json::objectValue);
-
         ret["accounts"] = jsonAccounts;
 
         return ret;

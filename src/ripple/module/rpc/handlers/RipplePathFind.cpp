@@ -24,8 +24,6 @@ namespace ripple {
 // This interface is deprecated.
 Json::Value doRipplePathFind (RPC::Context& context)
 {
-    context.lock_.unlock ();
-
     RPC::LegacyPathFind lpf (context.role_ == Config::ADMIN);
     if (!lpf.isOk ())
         return rpcError (rpcTOO_BUSY);

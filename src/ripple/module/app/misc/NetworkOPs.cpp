@@ -506,7 +506,7 @@ private:
 
     LockType mLock;
 
-    OperatingMode mMode;
+    std::atomic<OperatingMode> mMode;
 
     bool mNeedNetworkLedger;
     bool mProposing;

@@ -23,6 +23,7 @@ namespace ripple {
 // Populate the UNL from ripple.com's validators.txt file.
 Json::Value doUnlNetwork (RPC::Context& context)
 {
+    Application::ScopedLockType lock (getApp().getMasterLock ());
     getApp().getUNL ().nodeNetwork ();
 
     return "fetching";

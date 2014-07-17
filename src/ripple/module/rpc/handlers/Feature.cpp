@@ -49,7 +49,9 @@ Json::Value doFeature (RPC::Context& context)
         return jvReply;
     }
 
-    uint256 uFeature = getApp().getAmendmentTable ().get(context.params_["feature"].asString());
+    Application::ScopedLockType lock (getApp().getMasterLock ());
+    uint256 uFeature = getApp().getAmendmentTable ().get(
+        context.params_["feature"].asString());
 
     if (uFeature.isZero ())
     {

@@ -25,7 +25,6 @@ namespace ripple {
 // }
 Json::Value doTxHistory (RPC::Context& context)
 {
-    context.lock_.unlock ();
     context.loadType_ = Resource::feeMediumBurdenRPC;
 
     if (!context.params_.isMember ("start"))
