@@ -22,8 +22,8 @@
 namespace ripple {
 namespace core {
 
-Taker::Taker (LedgerView& view, Account const& account,
-    Amounts const& amount, Options const& options)
+Taker::Taker (LedgerView& view, Account const& account, Amounts const& amount,
+    Options const& options, beast::Journal journal)
     : m_view (view)
     , m_account (account)
     , m_options (options)
@@ -31,6 +31,7 @@ Taker::Taker (LedgerView& view, Account const& account,
     , m_threshold (m_quality)
     , m_amount (amount)
     , m_remain (amount)
+    , m_journal (journal)
 {
     assert (m_remain.in > zero);
     assert (m_remain.out > zero);
@@ -145,55 +146,6 @@ Taker::consume (Offer const& offer, Amounts const& consumed) const
     assert (offer.entry ()->getFieldAmount (sfTakerGets) >= zero);
 }
 
-// Fill a direct offer.
-//   @param offer the offer we are going to use.
-//   @param amount the amount to flow through the offer.
-//   @returns: tesSUCCESS if successful, or an error code otherwise.
-TER
-Taker::fill (Offer const& offer, Amounts const& amount)
-{
-    consume (offer, amount);
-
-    // Pay the taker, then the owner
-    TER result = view ().accountSend (offer.account(), account(), amount.out);
-
-    if (result == tesSUCCESS)
-        result = view ().accountSend (account(), offer.account(), amount.in);
-
-    return result;
-}
-
-// Fill a bridged offer.
-//   @param leg1 the first leg we are going to use.
-//   @param amount1 the amount to flow through the first leg of the offer.
-//   @param leg2 the second leg we are going to use.
-//   @param amount2 the amount to flow through the second leg of the offer.
-//   @return tesSUCCESS if successful, or an error code otherwise.
-TER
-Taker::fill (
-    Offer const& leg1, Amounts const& amount1,
-    Offer const& leg2, Amounts const& amount2)
-{
-    assert (amount1.out == amount2.in);
-
-    consume (leg1, amount1);
-    consume (leg2, amount2);
-
-    /* It is possible that m_account is the same as leg1.account, leg2.account
-     * or both. This could happen when bridging over one's own offer. In that
-     * case, accountSend won't actually do a send, which is what we want.
-     */
-    TER result = view ().accountSend (m_account, leg1.account (), amount1.in);
-
-    if (result == tesSUCCESS)
-        result = view ().accountSend (leg1.account (), leg2.account (), amount1.out);
-
-    if (result == tesSUCCESS)
-        result = view ().accountSend (leg2.account (), m_account, amount2.out);
-
-    return result;
-}
-
 bool
 Taker::done () const
 {
@@ -231,13 +183,37 @@ Taker::cross (Offer const& offer)
     assert (limit.out <= offer.amount().out);
     assert (limit.in <= m_remain.in);
 
-    Amounts const amount (flow (limit, offer, account ()));
+    Amounts const amount (flow (limit, offer, m_account));
+
+    if (m_journal.trace) m_journal.trace << "Direct Cross:" << std::endl <<
+        "    m_remain: " << m_remain.in <<
+        " : " << m_remain.out << std::endl <<
+        "       offer: " << offer.amount().in <<
+        " : " << offer.amount().out << std::endl <<
+        "       limit: " << limit.in <<
+        " : " << limit.out << std::endl;
+
+    assert (amount.in != zero);
+    assert (amount.out != zero);
 
     m_remain.out -= amount.out;
     m_remain.in -= amount.in;
 
     assert (m_remain.in >= zero);
-    return fill (offer, amount);
+
+    consume (offer, amount);
+
+    // Pay the taker, then the owner
+    TER result = view ().accountSend (offer.account(), account(), amount.out);
+
+    if (result == tesSUCCESS)
+        result = view ().accountSend (account(), offer.account(), amount.in);
+
+    m_journal.debug << "Direct Cross: " << transHuman (result) << std::endl <<
+        "    flow: " << amount.in <<
+        " : " << amount.out;
+
+    return result;
 }
 
 TER
@@ -248,33 +224,79 @@ Taker::cross (Offer const& leg1, Offer const& leg2)
     assert (leg1.amount ().out.isNative ());
     assert (leg2.amount ().in.isNative ());
 
-    Amounts amount1 (leg1.amount());
-    Amounts amount2 (leg2.amount());
+    Amounts limit1 (leg1.amount());
+    Amounts limit2 (leg2.amount());
 
-    if (m_options.sell)
-        amount1 = leg1.quality().ceil_in (amount1, m_remain.in);
+    /* Before we call flow we must set the limit right; for buy semantics we
+       need to clamp the output. And we always want to clamp the input.
+    */
+    if (!m_options.sell)
+        limit2 = leg2.quality().ceil_out (limit2, m_remain.out);
+    limit1 = leg1.quality().ceil_in (limit1, m_remain.in);
+
+    if (limit1.out <= limit2.in)
+        limit2 = leg2.quality().ceil_in (limit2, limit1.out);
     else
-        amount2 = leg2.quality().ceil_out (amount2, m_remain.out);
+        limit1 = leg1.quality().ceil_out (limit1, limit2.in);
 
-    if (amount1.out <= amount2.in)
-        amount2 = leg2.quality().ceil_in (amount2, amount1.out);
-    else
-        amount1 = leg1.quality().ceil_out (amount1, amount2.in);
+    if (m_journal.trace) m_journal.trace << "Bridged Cross:" << std::endl <<
+        "    m_remain: " << m_remain.in <<
+        " : " << m_remain.out << std::endl <<
+        "        leg1: " << leg1.amount().in <<
+        " : " << leg1.amount().out << std::endl <<
+        "      limit1: " << limit1.in <<
+        " : " << limit1.out << std::endl <<
+        "        leg2: " << leg2.amount().in <<
+        " : " << leg2.amount().out << std::endl <<
+        "      limit2: " << limit2.in <<
+        " : " << limit2.out << std::endl;
 
-    assert (amount1.out == amount2.in);
+    assert (limit1.out == limit2.in);
+    assert (limit1.in <= leg1.amount().in);
+    assert (limit1.out <= leg1.amount().out);
+    assert (limit2.in <= leg2.amount().in);
+    assert (limit2.out <= leg2.amount().out);
+    assert (limit1.in <= m_remain.in);
 
     // As written, flow can't handle a 3-party transfer, but this works for
-    // us because the output of leg1 and the input leg2 are XRP.
-    Amounts flow1 (flow (amount1, leg1, m_account));
+    // us because the output of leg1 and the input of leg2 are XRP.
+    Amounts flow1 (flow (limit1, leg1, account ()));
 
-    amount2 = leg2.quality().ceil_in (amount2, flow1.out);
+    TER result = view ().accountSend (account (), leg1.account (), flow1.in);
 
-    Amounts flow2 (flow (amount2, leg2, m_account));
+    if (result != tesSUCCESS)
+        return result;
 
-    m_remain.out -= amount2.out;
-    m_remain.in -= amount1.in;
+    result = view ().accountSend (leg1.account (), leg2.account (), flow1.out);
 
-    return fill (leg1, flow1, leg2, flow2);
+    if (result != tesSUCCESS)
+        return result;
+
+    limit2 = leg2.quality().ceil_in (limit2, flow1.out);
+
+    Amounts flow2 (flow (limit2, leg2, leg1.account ()));
+
+    if (m_journal.trace) m_journal.trace << "Bridged Cross:" << std::endl <<
+        "    flow1: " << flow1.in << " : " << flow1.out << std::endl <<
+        "   limit2: " << limit2.in << " : " << limit2.out << std::endl <<
+        "    flow2: " << flow2.in << " : " << flow2.out;
+
+    if (result == tesSUCCESS)
+        result = view ().accountSend (leg2.account (), account (), flow2.out);
+
+    assert (flow1.out == flow2.in);
+
+    m_remain.out -= flow2.out;
+    m_remain.in -= flow1.in;
+
+    consume (leg1, flow1);
+    consume (leg2, flow2);
+
+    m_journal.debug << "Direct Cross: " << transHuman (result) << std::endl <<
+        "    flow: " << flow1.in <<
+        " : " << flow2.out;
+
+    return tesSUCCESS;
 }
 
 }

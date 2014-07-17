@@ -53,15 +53,18 @@ CreateOfferBridged::crossOffers (
     core::OfferStream offers_leg2 (view, view_cancel,
         Book (xrpIssue (), asset_out), when, m_journal);
 
-    core::Taker taker (view, mTxnAccountID, taker_amount, options);
+    core::Taker taker (view, mTxnAccountID, taker_amount, options, m_journal);
 
     if (m_journal.debug) m_journal.debug <<
         "process_order: " <<
-        (options.sell? "sell" : "buy") << " " <<
+        (options.sell? "sell" : "buy") <<
         (options.passive? "passive" : "") << std::endl <<
         "     taker: " << taker.account() << std::endl <<
+        " remaining: " << 
+            taker.remaining_offer ().in << " : " <<
+            taker_amount.out << std::endl <<
         "  balances: " <<
-            view.accountFunds (taker.account(), taker_amount.in) << ", " <<
+            view.accountFunds (taker.account(), taker_amount.in) << " : " <<
             view.accountFunds (taker.account(), taker_amount.out);
 
     TER cross_result (tesSUCCESS);
@@ -71,7 +74,6 @@ CreateOfferBridged::crossOffers (
      */
     bool have_bridged (offers_leg1.step () && offers_leg2.step ());
     bool have_direct (offers_direct.step_account (taker.account ()));
-    bool place_order (true);
 
     while (have_direct || have_bridged)
     {
@@ -109,7 +111,7 @@ CreateOfferBridged::crossOffers (
             else
             {
                 use_direct = true;
-                quality = offers_direct.tip ().quality ();
+                quality = direct_quality;
             }
         }
         else
@@ -119,6 +121,13 @@ CreateOfferBridged::crossOffers (
                     offers_leg1.tip ().quality (),
                     offers_leg2.tip ().quality ());
         }
+
+        if (m_journal.debug) m_journal.debug <<
+            "Using " << (use_direct ? "direct" : "bridge") <<
+            "   quality: " << quality <<
+            " remaining: " << 
+                taker.remaining_offer ().in << " : " <<
+                taker_amount.out << std::endl;
 
         // We are always looking at the best quality available, so if we reject
         // that, we know that we are done.
@@ -133,6 +142,12 @@ CreateOfferBridged::crossOffers (
                 " : " << offers_direct.tip ().amount ().out;
 
             cross_result = taker.cross(offers_direct.tip ());
+
+            if (m_journal.debug) m_journal.debug << "Crossing returned:" << std::endl <<
+                "  Result: " << transHuman (cross_result) <<
+                "     Tip: " << (offers_direct.tip ().fully_consumed () ? "Fully Consumed" : "Not Filled") << std::endl <<
+                "          " << offers_direct.tip ().amount().in << " : " << std::endl <<
+                "          " << offers_direct.tip ().amount ().out << std::endl;
 
             if (offers_direct.tip ().fully_consumed ())
             {
@@ -152,15 +167,24 @@ CreateOfferBridged::crossOffers (
 
             cross_result = taker.cross(offers_leg1.tip (), offers_leg2.tip ());
 
+            if (m_journal.debug) m_journal.debug << "Crossing returned:" << std::endl <<
+                "  Result: " << transHuman (cross_result) <<
+                "    Leg1: " << (offers_leg1.tip ().fully_consumed () ? "Fully Consumed" : "Not Filled") << std::endl <<
+                "          " << offers_leg1.tip ().amount().in << " : " << std::endl <<
+                "          " << offers_leg1.tip ().amount ().out << std::endl <<
+                "    Leg2: " << (offers_leg2.tip ().fully_consumed () ? "Fully Consumed" : "Not Filled") << std::endl <<
+                "          " << offers_leg2.tip ().amount().in << " : " << std::endl <<
+                "          " << offers_leg2.tip ().amount ().out << std::endl;
+
             if (offers_leg1.tip ().fully_consumed ())
             {
                 leg1_consumed = true;
-                have_bridged = offers_leg1.step ();
+                have_bridged = offers_leg1.step (); 
             }
-            if (have_bridged && offers_leg2.tip ().fully_consumed ())
+            if (offers_leg2.tip ().fully_consumed ())
             {
                 leg2_consumed = true;
-                have_bridged = offers_leg2.step ();
+                have_bridged = offers_leg2.step () && have_bridged;
             }
         }
 
@@ -172,13 +196,37 @@ CreateOfferBridged::crossOffers (
 
         if (taker.done())
         {
-            m_journal.debug << "The taker reports he's done during crossing!";
-            place_order = false;
+            m_journal.debug << "Taker done during crossing!";
             break;
         }
 
         // Postcondition: If we aren't done, then we *must* have consumed at
         //                least one offer fully.
+        if (!direct_consumed && !leg1_consumed && !leg2_consumed)
+        {
+            m_journal.debug << "Taker still wants: " <<
+                "[" << taker.remaining_offer ().in <<
+                ":" << taker.remaining_offer ().out << "]";
+
+            if (use_direct && !direct_consumed)
+                m_journal.debug << "Direct Unconsumed: " <<
+                    "[" << offers_direct.tip ().amount ().in <<
+                    ":" << offers_direct.tip ().amount ().out << "]";
+
+            if (!use_direct)
+            {
+                if (!leg1_consumed)
+                    m_journal.debug << "Bridge Leg 1 Unconsumed: " <<
+                        "[" << offers_leg1.tip ().amount ().in <<
+                        ":" << offers_leg1.tip ().amount ().out << "]";
+
+                if (!leg2_consumed)
+                    m_journal.debug << "Bridge Leg 2 Unconsumed: " <<
+                        "[" << offers_leg2.tip ().amount ().in <<
+                        ":" << offers_leg2.tip ().amount ().out << "]";
+            }
+        }
+
         assert (direct_consumed || leg1_consumed || leg2_consumed);
 
         if (!direct_consumed && !leg1_consumed && !leg2_consumed)

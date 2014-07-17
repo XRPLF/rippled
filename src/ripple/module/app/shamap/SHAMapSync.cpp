@@ -629,11 +629,6 @@ bool SHAMap::hasLeafNode (uint256 const& tag, uint256 const& nodeHash)
     return false; // If this was a matching leaf, we would have caught it already
 }
 
-static void addFPtoList (std::list<SHAMap::fetchPackEntry_t>& list, const uint256& hash, const Blob& blob)
-{
-    list.push_back (SHAMap::fetchPackEntry_t (hash, blob));
-}
-
 void SHAMap::getFetchPack (SHAMap* have, bool includeLeaves, int max,
                            std::function<void (const uint256&, const Blob&)> func)
 {
