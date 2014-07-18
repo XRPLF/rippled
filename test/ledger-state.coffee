@@ -497,7 +497,7 @@ exports.LedgerState = class LedgerState
 
   add_transaction_fees: ->
     extra_fees = {}
-    fee = Amount.from_json('15')
+    fee = Amount.from_json(@remote.fee_cushion * 10)
     for list in [@trusts, @iou_payments, @offers]
       for [src, args...] in list
         extra = extra_fees[src]

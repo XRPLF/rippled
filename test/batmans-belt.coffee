@@ -68,10 +68,10 @@ exports.suite_test_bailer = () ->
   bailed = false
   bail = (e) -> bailed = true
 
-  suiteSetup 'suite_test_bailer', ->
+  suiteSetup ->
     process.on 'uncaughtException', bail
 
-  suiteTeardown 'suite_test_bailer', ->
+  suiteTeardown ->
     process.removeListener 'uncaughtException', bail
 
   wrapper = (test_func) ->

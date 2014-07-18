@@ -289,7 +289,7 @@ book_offers_factory = (remote) ->
       pays: asset(pays)
       gets: asset(gets)
 
-    remote.request_book_offers book, null, null, (err, book) ->
+    remote.request_book_offers book, (err, book) ->
       if err
         assert !err, "error with request_book_offers #{err}"
 
@@ -346,14 +346,28 @@ suite_setup = (state) ->
 
 execute_if_enabled = (fn) ->
   path = "#{__dirname}/../src/ripple/module/data/protocol/TxFlags.h"
-  if /asfGlobalFreeze/.exec(fs.readFileSync(path)) == null
-    suite = global.suite.skip
-  fn(suite)
+  skip_it = /asfGlobalFreeze/.exec(fs.readFileSync(path)) == null
+  func = if skip_it then global.suite.skip else global.suite
+  enforced = false
+  fn(func, skip_it, enforced)
 
-execute_if_enabled (suite) ->
+conditional_test_factory = ->
+  test = suite_test_bailer()
+  test_if = (b, args...) ->
+    if b
+      test(args...)
+    else
+      test.skip(args...)
+  [test, test_if]
+
+execute_if_enabled (suite, skipped, enforced) ->
   suite 'Freeze Feature', ->
+    if not skipped and not enforced
+      console.warn("\tWarning: freeze enforcement tests skipped")
+
     suite 'RippleState Freeze', ->
-      test = suite_test_bailer()
+      # test = suite_test_bailer()
+      [test, test_if] = conditional_test_factory()
       h = null
 
       {get_helpers} = suite_setup
@@ -391,6 +405,7 @@ execute_if_enabled (suite) ->
           submit_for_final tx, (m) ->
             assert.equal m.metadata?.TransactionResult, 'tesSUCCESS'
             affected = m.metadata.AffectedNodes
+            assert affected.length > 1, "only one affected node implies a noop"
             ripple_state = affected[1].ModifiedNode
             final = ripple_state.FinalFields
             assert.equal h.alias_for(final.LowLimit.issuer), 'G1'
@@ -409,7 +424,7 @@ execute_if_enabled (suite) ->
             assert.equal line.Balance.value, '-15' # HighLimit means balance inverted
             done()
 
-        test 'can not sell assets from that line', (done) ->
+        test_if enforced, 'can not sell assets from that line', (done) ->
           h.create_offer 'bob', '1.0', '5/USD/G1', (m) ->
             assert.equal m.engine_result, 'tecUNFUNDED_OFFER'
             done()
@@ -419,7 +434,7 @@ execute_if_enabled (suite) ->
             assert.equal m.metadata?.TransactionResult, 'tesSUCCESS'
             done()
 
-        test 'can not make Payment from that line', (done) ->
+        test_if enforced, 'can not make Payment from that line', (done) ->
           h.make_payment 'bob', 'alice', '1/USD/G1', (m) ->
             assert.equal m.engine_result, 'tecPATH_DRY'
             done()
@@ -472,7 +487,8 @@ execute_if_enabled (suite) ->
       # NoFreeze:        0x00200000
       # GlobalFreeze:    0x00400000
 
-      test = suite_test_bailer()
+      # test = suite_test_bailer()
+      [test, test_if] = conditional_test_factory()
       h = null
 
       {get_helpers} = suite_setup
@@ -593,31 +609,31 @@ execute_if_enabled (suite) ->
               done()
 
         suite 'it\'s assets can\'t be', ->
-          test 'bought on the market', (next) ->
+          test_if enforced, 'bought on the market', (next) ->
             h.create_offer 'A3', '1/BTC/G1', '1.0', (m) ->
               assert.equal m.engine_result, 'tecFROZEN'
               next()
 
-          test 'sold on the market', (next) ->
+          test_if enforced, 'sold on the market', (next) ->
             h.create_offer 'A4', '1.0', '1/BTC/G1', (m) ->
               assert.equal m.engine_result, 'tecFROZEN'
               next()
 
         suite 'it\'s offers are filtered', ->
-          test ':TODO:verify: books_offers(*, $frozen_account/*) shows offers '+
+          test_if enforced, ':TODO:verify: books_offers(*, $frozen_account/*) shows offers '+
                'owned by $frozen_account ', (done) ->
 
             h.book_offers 'XRP', 'USD/G1', (book) ->
               assert.equal book.offers.length, 1
               done()
 
-          test ':TODO:verify: books_offers($frozen_account/*, *) shows no offers', (done) ->
+          test_if enforced, ':TODO:verify: books_offers($frozen_account/*, *) shows no offers', (done) ->
 
             h.book_offers 'USD/G1', 'XRP', (book) ->
               assert.equal book.offers.length, 0
               done()
 
-          test 'account_offers always shows their own offers', (done) ->
+          test_if enforced, 'account_offers always shows their own offers', (done) ->
             {remote} = h = get_helpers()
 
             remote.request_account_offers 'G1', null, 'validated', (err, res) ->
@@ -637,12 +653,12 @@ execute_if_enabled (suite) ->
               assert.equal m.metadata?.TransactionResult, 'tesSUCCESS'
               done()
 
-          test 'via rippling cant be sent',  (done) ->
+          test_if enforced, 'via rippling cant be sent',  (done) ->
             h.make_payment 'A2', 'A1', '1/USD/G1', (m) ->
               assert.equal m.engine_result, 'tecPATH_DRY'
               done()
 
-    suite 'Accounts with NoFreeze', ->
+    suite  'Accounts with NoFreeze', ->
       test = suite_test_bailer()
       h = null
 
@@ -709,7 +725,8 @@ execute_if_enabled (suite) ->
             done()
 
     suite 'Offers for frozen trustlines (not GlobalFreeze)', ->
-      test = suite_test_bailer()
+      # test = suite_test_bailer()
+      [test, test_if] = conditional_test_factory()
       remote = h = null
 
       {get_helpers} = suite_setup
@@ -776,13 +793,13 @@ execute_if_enabled (suite) ->
             assert.equal m.metadata.TransactionResult, 'tesSUCCESS' # tecPATH_DRY
             done()
 
-        test 'Partially consumed offer was removed by tes* payment', (done) ->
+        test_if enforced, 'Partially consumed offer was removed by tes* payment', (done) ->
           remote.request_account_offers 'A3', null, 'validated', (err, res) ->
             assert res.offers.length == 0
             done()
 
       suite 'will be removed by OfferCreate with tesSUCCESS', ->
-        test 'freeze the new offer', (done) ->
+        test_if enforced, 'freeze the new offer', (done) ->
           tx = remote.transaction()
           tx.ripple_line_set('G1', '0/USD/A4')
           tx.set_flags('SetFreeze')
@@ -798,7 +815,7 @@ execute_if_enabled (suite) ->
 
             done()
 
-        test 'can no longer create a crossing offer', (done) ->
+        test_if enforced, 'can no longer create a crossing offer', (done) ->
           h.create_offer 'A2', '999/USD/G1', '999.0', (m) ->
             assert.equal m.metadata?.TransactionResult, 'tesSUCCESS'
             affected = m.metadata.AffectedNodes
@@ -807,7 +824,7 @@ execute_if_enabled (suite) ->
             assert.equal h.alias_for(new_fields.Account), 'A2'
             done()
 
-        test 'offer was removed by offer_create', (done) ->
+        test_if enforced, 'offer was removed by offer_create', (done) ->
           remote.request_account_offers 'A4', null, 'validated', (err, res) ->
             assert res.offers.length == 0
             done()
