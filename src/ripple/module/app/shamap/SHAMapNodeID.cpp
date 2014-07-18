@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <beast/module/core/text/LexicalCast.h>
+#include <beast/utility/static_initializer.h>
 #include <ripple/module/app/shamap/SHAMapNodeID.h>
 #include <boost/format.hpp>
 #include <cassert>
@@ -25,33 +26,33 @@
 
 namespace ripple {
 
-static std::size_t const mask_size = 65;
-
-static
-bool
-MasksInit (uint256 (&masks)[mask_size])
-{
-    uint256 selector;
-
-    for (int i = 0; i < mask_size-1; i += 2)
-    {
-        masks[i] = selector;
-        * (selector.begin () + (i / 2)) = 0xF0;
-        masks[i + 1] = selector;
-        * (selector.begin () + (i / 2)) = 0xFF;
-    }
-
-    masks[mask_size-1] = selector;
-    return true;
-}
-
-static
 uint256 const&
-Masks (int depth)
+SHAMapNodeID::Masks (int depth)
 {
-    static uint256 masks[mask_size];
-    static bool initialized = MasksInit(masks);
-    return masks[depth];
+    enum
+    {
+        mask_size = 65
+    };
+
+    struct masks_t
+    {
+        uint256 entry [mask_size];
+
+        masks_t()
+        {
+            uint256 selector;
+            for (int i = 0; i < mask_size-1; i += 2)
+            {
+                entry[i] = selector;
+                * (selector.begin () + (i / 2)) = 0xF0;
+                entry[i + 1] = selector;
+                * (selector.begin () + (i / 2)) = 0xFF;
+            }
+            entry[mask_size-1] = selector;
+        }
+    };
+    static beast::static_initializer <masks_t> masks;
+    return masks->entry[depth];
 }
 
 // canonicalize the hash to a node ID for this depth

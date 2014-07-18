@@ -31,10 +31,10 @@ namespace ripple {
 class SHAMapNodeID
 {
 private:
-
     uint256 mNodeID;
-    int     mDepth;
+    int mDepth;
     mutable size_t  mHash;
+
 public:
     SHAMapNodeID () : mDepth (0), mHash (0)
     {
@@ -125,13 +125,21 @@ public:
     }
 
 private:
+    static
+    uint256 const&
+    Masks (int depth);
+
     void setMHash () const;
 };
+
+//------------------------------------------------------------------------------
 
 inline std::ostream& operator<< (std::ostream& out, SHAMapNodeID const& node)
 {
     return out << node.getString ();
 }
+
+//------------------------------------------------------------------------------
 
 class SHAMapNode_hash
 {
@@ -146,36 +154,6 @@ public:
     }
 };
 
-}  // ripple
-
-//------------------------------------------------------------------------------
-
-/*
-namespace std {
-
-template <>
-struct hash <ripple::SHAMapNodeID>
-{
-    std::size_t operator() (ripple::SHAMapNodeID const& value) const
-    {
-        return value.getMHash ();
-    }
-};
-
-}
-*/
-
-//------------------------------------------------------------------------------
-
-/*
-namespace boost {
-
-template <>
-struct hash <ripple::SHAMapNodeID> : std::hash <ripple::SHAMapNodeID>
-{
-};
-
-}
-*/
+} // ripple
 
 #endif

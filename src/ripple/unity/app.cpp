@@ -70,16 +70,6 @@ int main (int argc, char** argv)
         "GCC version 4.8.1 or later is required to compile rippled.");
 #endif
 
-#ifdef _MSC_VER
-    static_assert (_MSC_VER >= 1800,
-        "Visual Studio 2013 or later is required to compile rippled.");
-    // Warm up a function-local static under SHAMapNodeID to workaround
-    //   vc++ lack of support for thread safe function-local statics
-    {
-        SHAMapNodeID node{0, uint256{}};
-    }
-#endif
-
     static_assert (BOOST_VERSION >= 105500,
         "Boost version 1.55 or later is required to compile rippled");
 
