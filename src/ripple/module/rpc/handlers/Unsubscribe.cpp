@@ -88,7 +88,7 @@ Json::Value doUnsubscribe (RPC::Context& context)
 
     if (context.params_.isMember ("accounts_proposed") || context.params_.isMember ("rt_accounts"))
     {
-        ripple::unordered_set<RippleAddress> usnaAccoundIds  = RPC::parseAccountIds (
+        hash_set<RippleAddress> usnaAccoundIds  = RPC::parseAccountIds (
                     context.params_.isMember ("accounts_proposed")
                     ? context.params_["accounts_proposed"]
                     : context.params_["rt_accounts"]);                    // DEPRECATED
@@ -105,7 +105,7 @@ Json::Value doUnsubscribe (RPC::Context& context)
 
     if (context.params_.isMember ("accounts"))
     {
-        ripple::unordered_set<RippleAddress> usnaAccoundIds  = RPC::parseAccountIds (context.params_["accounts"]);
+        hash_set<RippleAddress> usnaAccoundIds  = RPC::parseAccountIds (context.params_["accounts"]);
 
         if (usnaAccoundIds.empty ())
         {

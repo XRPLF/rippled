@@ -818,7 +818,7 @@ public:
         };
 
         // Count the number of current, trusted validations
-        ripple::unordered_map <uint256, valSeq> count;
+        hash_map <uint256, valSeq> count;
         for (auto const& v : val)
         {
             valSeq& vs = count[v->getLedgerHash()];

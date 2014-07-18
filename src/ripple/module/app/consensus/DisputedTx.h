@@ -79,7 +79,7 @@ private:
     bool mOurVote;
     Serializer transaction;
 
-    ripple::unordered_map <NodeID, bool> mVotes;
+    hash_map <NodeID, bool> mVotes;
 };
 
 // How many total extra passes we make

@@ -21,8 +21,6 @@
 
 #include <beast/unit_test/suite.h>
 
-#include <boost/unordered_set.hpp>
-
 #include <set>
 #include <typeinfo>
 #include <unordered_set>
@@ -222,11 +220,11 @@ public:
         testIssueSet <std::unordered_set <IssueRef>> ();
 #endif
 
-        testcase ("ripple::unordered_set <Issue>");
-        testIssueSet <ripple::unordered_set <Issue>> ();
+        testcase ("hash_set <Issue>");
+        testIssueSet <hash_set <Issue>> ();
 
-        testcase ("ripple::unordered_set <IssueRef>");
-        testIssueSet <ripple::unordered_set <IssueRef>> ();
+        testcase ("hash_set <IssueRef>");
+        testIssueSet <hash_set <IssueRef>> ();
     }
 
     void testIssueMaps ()
@@ -244,11 +242,11 @@ public:
         testcase ("std::unordered_map <IssueRef, int>");
         testIssueMap <std::unordered_map <IssueRef, int>> ();
 
-        testcase ("ripple::unordered_map <Issue, int>");
-        testIssueMap <ripple::unordered_map <Issue, int>> ();
+        testcase ("hash_map <Issue, int>");
+        testIssueMap <hash_map <Issue, int>> ();
 
-        testcase ("ripple::unordered_map <IssueRef, int>");
-        testIssueMap <ripple::unordered_map <IssueRef, int>> ();
+        testcase ("hash_map <IssueRef, int>");
+        testIssueMap <hash_map <IssueRef, int>> ();
 
 #endif
     }
@@ -425,11 +423,11 @@ public:
         testBookSet <std::unordered_set <BookRef>> ();
 #endif
 
-        testcase ("ripple::unordered_set <Book>");
-        testBookSet <ripple::unordered_set <Book>> ();
+        testcase ("hash_set <Book>");
+        testBookSet <hash_set <Book>> ();
 
-        testcase ("ripple::unordered_set <BookRef>");
-        testBookSet <ripple::unordered_set <BookRef>> ();
+        testcase ("hash_set <BookRef>");
+        testBookSet <hash_set <BookRef>> ();
     }
 
     void testBookMaps ()
@@ -447,11 +445,11 @@ public:
         testcase ("std::unordered_map <BookRef, int>");
         testBookMap <std::unordered_map <BookRef, int>> ();
 
-        testcase ("ripple::unordered_map <Book, int>");
-        testBookMap <ripple::unordered_map <Book, int>> ();
+        testcase ("hash_map <Book, int>");
+        testBookMap <hash_map <Book, int>> ();
 
-        testcase ("ripple::unordered_map <BookRef, int>");
-        testBookMap <ripple::unordered_map <BookRef, int>> ();
+        testcase ("hash_map <BookRef, int>");
+        testBookMap <hash_map <BookRef, int>> ();
 #endif
     }
 

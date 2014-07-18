@@ -20,14 +20,13 @@
 #ifndef RIPPLE_SHAMAP_H
 #define RIPPLE_SHAMAP_H
 
+#include <ripple/common/UnorderedContainers.h>
 #include <ripple/module/app/main/FullBelowCache.h>
 #include <ripple/nodestore/NodeObject.h>
 #include <ripple/unity/radmap.h>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/shared_lock_guard.hpp>
 #include <boost/thread/shared_mutex.hpp>
-
-#include <unordered_map>
 
 namespace std {
 
@@ -114,8 +113,8 @@ public:
     typedef std::pair<SHAMapItem::pointer, SHAMapItem::pointer> DeltaItem;
     typedef std::pair<SHAMapItem::ref, SHAMapItem::ref> DeltaRef;
     typedef std::map<uint256, DeltaItem> Delta;
-    typedef ripple::unordered_map<SHAMapNodeID, SHAMapTreeNode::pointer> NodeMap;
-    typedef std::unordered_set<SHAMapNodeID, SHAMapNode_hash> DirtySet;
+    typedef hash_map<SHAMapNodeID, SHAMapTreeNode::pointer, SHAMapNode_hash> NodeMap;
+    typedef hash_set<SHAMapNodeID, SHAMapNode_hash> DirtySet;
 
     typedef boost::shared_mutex LockType;
     typedef boost::shared_lock<LockType> ScopedReadLockType;

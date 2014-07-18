@@ -67,8 +67,7 @@ template <class Key,
 class CycledMap
 {
 private:
-    typedef ripple::unordered_map <
-        Key, T, Hash, KeyEqual, Allocator>                  ContainerType;
+    typedef hash_map <Key, T, Hash, KeyEqual, Allocator>    ContainerType;
     typedef typename ContainerType::iterator                iterator;
 
 public:

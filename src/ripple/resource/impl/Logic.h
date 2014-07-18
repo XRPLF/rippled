@@ -31,8 +31,8 @@ class Logic
 {
 private:
     typedef beast::abstract_clock <std::chrono::seconds> clock_type;
-    typedef ripple::unordered_map <std::string, Import> Imports;
-    typedef ripple::unordered_map <Key, Entry, Key::hasher, Key::key_equal> Table;
+    typedef hash_map <std::string, Import> Imports;
+    typedef hash_map <Key, Entry, Key::hasher, Key::key_equal> Table;
     typedef beast::List <Entry> EntryIntrusiveList;
 
     struct State

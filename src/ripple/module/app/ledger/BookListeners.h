@@ -39,7 +39,7 @@ private:
     typedef std::lock_guard <LockType> ScopedLockType;
     LockType mLock;
 
-    ripple::unordered_map<std::uint64_t, InfoSub::wptr> mListeners;
+    hash_map<std::uint64_t, InfoSub::wptr> mListeners;
 };
 
 } // ripple

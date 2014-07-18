@@ -24,6 +24,7 @@
 
 #include <ripple/common/Resolver.h>
 #include <ripple/common/seconds_clock.h>
+#include <ripple/common/UnorderedContainers.h>
 #include <ripple/peerfinder/api/Callback.h>
 #include <ripple/peerfinder/api/Manager.h>
 #include <ripple/resource/api/Manager.h>
@@ -49,14 +50,12 @@ class OverlayImpl
 private:
     typedef boost::asio::ip::tcp::socket socket_type;
 
-    typedef std::unordered_map <PeerFinder::Slot::ptr,
-        std::weak_ptr <PeerImp>> PeersBySlot;
+    typedef hash_map <PeerFinder::Slot::ptr,
+                      std::weak_ptr <PeerImp>> PeersBySlot;
 
-    typedef ripple::unordered_map <
-        RippleAddress, Peer::ptr> PeerByPublicKey;
+    typedef hash_map <RippleAddress, Peer::ptr> PeerByPublicKey;
 
-    typedef std::unordered_map <
-        Peer::ShortId, Peer::ptr> PeerByShortId;
+    typedef hash_map <Peer::ShortId, Peer::ptr> PeerByShortId;
 
     std::recursive_mutex m_mutex;
 

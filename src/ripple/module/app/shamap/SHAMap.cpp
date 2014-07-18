@@ -1318,11 +1318,10 @@ void SHAMap::dump (bool hash)
     WriteLog (lsINFO, SHAMap) << " MAP Contains";
     ScopedWriteLockType sl (mLock);
 
-    for (ripple::unordered_map<SHAMapNodeID, SHAMapTreeNode::pointer, SHAMapNode_hash>::iterator it = mTNByID.peekMap().begin ();
-            it != mTNByID.peekMap().end (); ++it)
+    for (auto const& p : mTNByID.peekMap())
     {
-        WriteLog (lsINFO, SHAMap) << it->second->getString (it->first);
-        CondLog (hash, lsINFO, SHAMap) << it->second->getNodeHash ();
+        WriteLog (lsINFO, SHAMap) << p.second->getString (p.first);
+        CondLog (hash, lsINFO, SHAMap) << p.second->getNodeHash ();
     }
 
 }

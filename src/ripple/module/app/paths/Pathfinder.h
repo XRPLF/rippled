@@ -146,7 +146,7 @@ private:
     STPathSet                         mCompletePaths;
     std::map< PathType_t, STPathSet > mPaths;
 
-    ripple::unordered_map<std::pair<Currency, Account>, int>  mPOMap;
+    hash_map<std::pair<Currency, Account>, int>  mPOMap;
 
     // Add ripple paths
     static const std::uint32_t afADD_ACCOUNTS = 0x001;

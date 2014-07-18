@@ -411,7 +411,7 @@ public:
         }
     };
 
-    typedef ripple::unordered_map <Peer, Logic> PeerMap;
+    typedef hash_map <Peer, Logic> PeerMap;
 
     BasicNetwork()
     {

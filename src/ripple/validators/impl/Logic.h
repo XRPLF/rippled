@@ -21,7 +21,6 @@
 #define RIPPLE_VALIDATORS_LOGIC_H_INCLUDED
 
 #include <memory>
-#include <unordered_map>
 
 namespace ripple {
 namespace Validators {
@@ -68,9 +67,7 @@ public:
 
     // Holds the internal list of trusted validators
     //
-    typedef ripple::unordered_map <
-        RipplePublicKey, Validator,
-            beast::hardened_hash<RipplePublicKey>> ValidatorTable;
+    typedef hardened_hash_map <RipplePublicKey, Validator> ValidatorTable;
     ValidatorTable m_validators;
 
     // Filters duplicate validations

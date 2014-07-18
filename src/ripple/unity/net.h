@@ -20,8 +20,6 @@
 #ifndef RIPPLE_NET_H_INCLUDED
 #define RIPPLE_NET_H_INCLUDED
 
-#include <boost/unordered_set.hpp> // For InfoSub
-
 #include <boost/asio.hpp>
 #undef DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER
 #define DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER /**/

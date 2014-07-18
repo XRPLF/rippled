@@ -81,7 +81,7 @@ public:
 
     // VFALCO TODO Fix OrderBookDB to not need this unrelated type.
     //
-    typedef ripple::unordered_map <std::uint64_t, InfoSub::wptr> SubMapType;
+    typedef hash_map <std::uint64_t, InfoSub::wptr> SubMapType;
 
 public:
     // VFALCO TODO Make LedgerMaster a SharedPtr or a reference.
@@ -264,8 +264,7 @@ public:
     virtual Json::Value getLedgerFetchInfo () = 0;
     virtual std::uint32_t acceptLedger () = 0;
 
-    typedef ripple::unordered_map <NodeID, std::list<LedgerProposal::pointer>>
-            Proposals;
+    typedef hash_map <NodeID, std::list<LedgerProposal::pointer>> Proposals;
     virtual Proposals& peekStoredProposals () = 0;
 
     virtual void storeProposal (LedgerProposal::ref proposal,

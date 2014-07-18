@@ -396,7 +396,7 @@ public:
         if (mHaveCorrectLCL)
             priorLedger = mPreviousLedger->getParentHash (); // don't jump back
 
-        ripple::unordered_map<uint256, ValidationCounter> vals =
+        hash_map<uint256, ValidationCounter> vals =
             getApp().getValidations ().getCurrentValidations
             (favoredLedger, priorLedger);
 
@@ -1510,7 +1510,7 @@ private:
         }
 
         // if any peers have taken a contrary position, process disputes
-        ripple::unordered_set<uint256> found;
+        hash_set<uint256> found;
 
         for (auto& it : mPeerPositions)
         {
@@ -1901,19 +1901,18 @@ private:
     int                             mPreviousMSeconds;
 
     // Convergence tracking, trusted peers indexed by hash of public key
-    ripple::unordered_map<NodeID, LedgerProposal::pointer>  mPeerPositions;
+    hash_map<NodeID, LedgerProposal::pointer>  mPeerPositions;
 
     // Transaction Sets, indexed by hash of transaction tree
-    ripple::unordered_map<uint256, SHAMap::pointer> mAcquired;
-    ripple::unordered_map<uint256, TransactionAcquire::pointer> mAcquiring;
+    hash_map<uint256, SHAMap::pointer> mAcquired;
+    hash_map<uint256, TransactionAcquire::pointer> mAcquiring;
 
     // Peer sets
-    ripple::unordered_map<uint256
-        , std::vector< std::weak_ptr<Peer> > > mPeerData;
+    hash_map<uint256, std::vector< std::weak_ptr<Peer> > > mPeerData;
 
     // Disputed transactions
-    ripple::unordered_map<uint256, DisputedTx::pointer> mDisputes;
-    ripple::unordered_set<uint256> mCompares;
+    hash_map<uint256, DisputedTx::pointer> mDisputes;
+    hash_set<uint256> mCompares;
 
     // Close time estimates
     std::map<std::uint32_t, int> mCloseTimes;

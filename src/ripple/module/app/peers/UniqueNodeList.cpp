@@ -103,9 +103,9 @@ private:
         std::vector<int>    viReferrals;
     } scoreNode;
 
-    typedef ripple::unordered_map<std::string, int> strIndex;
+    typedef hash_map<std::string, int> strIndex;
     typedef std::pair<std::string, int> IPAndPortNumber;
-    typedef ripple::unordered_map<std::pair< std::string, int>, score>   epScore;
+    typedef hash_map<std::pair< std::string, int>, score>   epScore;
 
 public:
     explicit UniqueNodeListImp (Stoppable& parent)
@@ -1025,7 +1025,7 @@ private:
             }
         }
 
-        ripple::unordered_set<std::string>   usUNL;
+        hash_set<std::string>   usUNL;
 
         if (!vsnNodes.empty ())
         {
@@ -1058,7 +1058,7 @@ private:
             mUNL.swap (usUNL);
         }
 
-        ripple::unordered_map<std::string, int>  umValidators;
+        hash_map<std::string, int>  umValidators;
 
         if (!vsnNodes.empty ())
         {
@@ -1077,7 +1077,7 @@ private:
         // map of pair<IP,Port> :: score
         epScore umScore;
 
-        typedef ripple::unordered_map<std::string, int>::value_type vcType;
+        typedef hash_map<std::string, int>::value_type vcType;
         BOOST_FOREACH (vcType & vc, umValidators)
         {
             std::string strValidator    = vc.first;
@@ -2025,7 +2025,7 @@ private:
 
     // XXX Make this faster, make this the contents vector unsigned char or raw public key.
     // XXX Contents needs to based on score.
-    ripple::unordered_set<std::string>   mUNL;
+    hash_set<std::string>   mUNL;
 
     boost::posix_time::ptime        mtpScoreNext;       // When to start scoring.
     boost::posix_time::ptime        mtpScoreStart;      // Time currently started scoring.

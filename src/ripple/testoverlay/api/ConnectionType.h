@@ -41,7 +41,7 @@ public:
     typedef typename State::UniqueID UniqueID;
 
     typedef std::vector <Message> Messages;
-    typedef ripple::unordered_set <UniqueID> MessageTable;
+    typedef hash_set <UniqueID> MessageTable;
 
     /** Create the 'no connection' object. */
     ConnectionType ()

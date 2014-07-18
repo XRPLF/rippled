@@ -20,23 +20,69 @@
 #ifndef RIPPLE_UNORDERED_CONTAINERS_H
 #define RIPPLE_UNORDERED_CONTAINERS_H
 
+#include <beast/container/hardened_hash.h>
 #include <beast/container/hash_append.h>
 
 #include <unordered_map>
 #include <unordered_set>
 
+/**
+* Use hash_* containers for keys that do not need a cryptographically secure
+* hashing algorithm.
+*
+* Use hardened_hash_* containers for keys that do need a secure hashing algorithm.
+*
+* The cryptographic security of containers where a hash function is used as a
+* template parameter depends entirely on that hash function and not at all on
+* what container it is.
+*/
+
 namespace ripple
 {
+
+// hash containers
 
 template <class Key, class Value, class Hash = beast::uhash<>,
           class Pred = std::equal_to<Key>,
           class Allocator = std::allocator<std::pair<Key const, Value>>>
-using unordered_map = std::unordered_map <Key, Value, Hash, Pred, Allocator>;
+using hash_map = std::unordered_map <Key, Value, Hash, Pred, Allocator>;
+
+template <class Key, class Value, class Hash = beast::uhash<>,
+          class Pred = std::equal_to<Key>,
+          class Allocator = std::allocator<std::pair<Key const, Value>>>
+using hash_multimap = std::unordered_multimap <Key, Value, Hash, Pred, Allocator>;
 
 template <class Value, class Hash = beast::uhash<>,
           class Pred = std::equal_to<Value>,
           class Allocator = std::allocator<Value>>
-using unordered_set = std::unordered_set <Value, Hash, Pred, Allocator>;
+using hash_set = std::unordered_set <Value, Hash, Pred, Allocator>;
+
+template <class Value, class Hash = beast::uhash<>,
+          class Pred = std::equal_to<Value>,
+          class Allocator = std::allocator<Value>>
+using hash_multiset = std::unordered_multiset <Value, Hash, Pred, Allocator>;
+
+// hardened_hash containers
+
+template <class Key, class Value, class Hash = beast::hardened_hash<>,
+          class Pred = std::equal_to<Key>,
+          class Allocator = std::allocator<std::pair<Key const, Value>>>
+using hardened_hash_map = std::unordered_map <Key, Value, Hash, Pred, Allocator>;
+
+template <class Key, class Value, class Hash = beast::hardened_hash<>,
+          class Pred = std::equal_to<Key>,
+          class Allocator = std::allocator<std::pair<Key const, Value>>>
+using hardened_hash_multimap = std::unordered_multimap <Key, Value, Hash, Pred, Allocator>;
+
+template <class Value, class Hash = beast::hardened_hash<>,
+          class Pred = std::equal_to<Value>,
+          class Allocator = std::allocator<Value>>
+using hardened_hash_set = std::unordered_set <Value, Hash, Pred, Allocator>;
+
+template <class Value, class Hash = beast::hardened_hash<>,
+          class Pred = std::equal_to<Value>,
+          class Allocator = std::allocator<Value>>
+using hardened_hash_multiset = std::unordered_multiset <Value, Hash, Pred, Allocator>;
 
 } // ripple
 

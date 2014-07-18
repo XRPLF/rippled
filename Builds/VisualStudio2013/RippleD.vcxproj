@@ -294,6 +294,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\container\hash_append.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\container\impl\siphash.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\container\impl\spookyv2.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>

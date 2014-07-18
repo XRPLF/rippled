@@ -50,7 +50,7 @@ public:
     // unfunded offers.
     //
     // Offers that were found unfunded.
-    unordered_set<uint256> mUnfundedOffers;
+    hash_set<uint256> mUnfundedOffers;
 
     RippleCalc (LedgerEntrySet& activeLedger, const bool bOpenLedger)
         : mActiveLedger (activeLedger), mOpenLedger (bOpenLedger)

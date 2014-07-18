@@ -30,7 +30,7 @@ class AmendmentSet
 public:
     std::uint32_t mCloseTime;
     int mTrustedValidations;                    // number of trusted validations
-    ripple::unordered_map<uint256, int> mVotes; // yes votes by amendment
+    hash_map<uint256, int> mVotes; // yes votes by amendment
 
     AmendmentSet (std::uint32_t ct) : mCloseTime (ct), mTrustedValidations (0)
     {

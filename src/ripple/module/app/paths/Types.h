@@ -26,7 +26,7 @@ namespace ripple {
 typedef std::tuple <Account, Currency, Account> AccountCurrencyIssuer;
 
 // Map of account, currency, issuer to node index.
-typedef ripple::unordered_map <AccountCurrencyIssuer, unsigned int>
+typedef hash_map <AccountCurrencyIssuer, unsigned int>
 AccountCurrencyIssuerToNodeIndex;
 
 } // ripple

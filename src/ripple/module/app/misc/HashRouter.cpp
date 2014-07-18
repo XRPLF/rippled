@@ -107,7 +107,7 @@ private:
     LockType mLock;
 
     // Stores all suppressed hashes and their expiration time
-    ripple::unordered_map <uint256, Entry> mSuppressionMap;
+    hash_map <uint256, Entry> mSuppressionMap;
 
     // Stores all expiration times and the hashes indexed for them
     std::map< int, std::list<uint256> > mSuppressionTimes;
@@ -119,7 +119,7 @@ private:
 
 HashRouter::Entry& HashRouter::findCreateEntry (uint256 const& index, bool& created)
 {
-    ripple::unordered_map<uint256, Entry>::iterator fit = mSuppressionMap.find (index);
+    hash_map<uint256, Entry>::iterator fit = mSuppressionMap.find (index);
 
     if (fit != mSuppressionMap.end ())
     {

@@ -55,11 +55,11 @@ public:
     public:
         // VFALCO TODO Rename the 'rt' parameters to something meaningful.
         virtual void subAccount (ref ispListener,
-            const ripple::unordered_set<RippleAddress>& vnaAccountIDs,
+            const hash_set<RippleAddress>& vnaAccountIDs,
                 std::uint32_t uLedgerIndex, bool rt) = 0;
 
         virtual void unsubAccount (std::uint64_t uListener,
-            const ripple::unordered_set<RippleAddress>& vnaAccountIDs,
+            const hash_set<RippleAddress>& vnaAccountIDs,
                 bool rt) = 0;
 
         // VFALCO TODO Document the bool return value
@@ -117,13 +117,12 @@ protected:
     LockType mLock;
 
 private:
-    Consumer m_consumer;
-    Source& m_source;
-    ripple::unordered_set <RippleAddress>     mSubAccountInfo;
-    ripple::unordered_set <RippleAddress>     mSubAccountTransaction;
-    std::shared_ptr <PathRequest>             mPathRequest;
-
-    std::uint64_t                             mSeq;
+    Consumer                      m_consumer;
+    Source&                       m_source;
+    hash_set <RippleAddress>      mSubAccountInfo;
+    hash_set <RippleAddress>      mSubAccountTransaction;
+    std::shared_ptr <PathRequest> mPathRequest;
+    std::uint64_t                 mSeq;
 };
 
 } // ripple

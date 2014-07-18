@@ -62,7 +62,7 @@ class Logic
 {
 public:
     typedef std::set <Listener*> Listeners;
-    typedef ripple::unordered_map <beast::URL, SiteFile> SiteFiles;
+    typedef hash_map <beast::URL, SiteFile> SiteFiles;
 
     struct State
     {

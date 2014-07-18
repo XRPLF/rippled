@@ -32,7 +32,6 @@
 
 #include <functional>
 #include <map>
-#include <unordered_map>
 
 namespace ripple {
 namespace PeerFinder {

@@ -33,7 +33,7 @@ namespace SiteFiles {
 class Section
 {
 public:
-    typedef ripple::unordered_map <std::string, std::string> MapType;
+    typedef hash_map <std::string, std::string> MapType;
     typedef std::vector <std::string> DataType;
 
     Section(int = 0); // dummy argument for emplace()

@@ -51,7 +51,7 @@ public:
         Ledger::ref ledger, const AcceptedLedgerTx& alTx,
         Json::Value const& jvObj);
 
-    typedef ripple::unordered_map <Issue, OrderBook::List> IssueToOrderBook;
+    typedef hash_map <Issue, OrderBook::List> IssueToOrderBook;
 
 private:
     void rawAddBook(Book const&);
@@ -63,13 +63,13 @@ private:
     IssueToOrderBook mDestMap;
 
     // does an order book to XRP exist
-    ripple::unordered_set <Issue> mXRPBooks;
+    hash_set <Issue> mXRPBooks;
 
     typedef RippleRecursiveMutex LockType;
     typedef std::lock_guard <LockType> ScopedLockType;
     LockType mLock;
 
-    typedef ripple::unordered_map <Book, BookListeners::pointer>
+    typedef hash_map <Book, BookListeners::pointer>
     BookToListenersMap;
 
     BookToListenersMap mListeners;

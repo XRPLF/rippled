@@ -74,8 +74,7 @@ private:
 
 protected:
     // For each connection maintain an associated object to track subscriptions.
-    typedef ripple::unordered_map <connection_ptr,
-        std::shared_ptr <WSConnectionType <endpoint_type> > > MapType;
+    typedef hash_map <connection_ptr, wsc_ptr> MapType;
     MapType mMap;
     bool const mPublic;
     bool const mProxy;
@@ -148,7 +147,7 @@ public:
         wsc_ptr ptr;
         {
             ScopedLockType sl (mLock);
-            typename ripple::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find (cpClient);
+            auto it = mMap.find (cpClient);
 
             if (it == mMap.end ())
                 return;
@@ -178,7 +177,7 @@ public:
         wsc_ptr ptr;
         {
             ScopedLockType sl (mLock);
-            typename ripple::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find (cpClient);
+            auto it = mMap.find (cpClient);
 
             if (it == mMap.end ())
                 return;
@@ -213,7 +212,7 @@ public:
         wsc_ptr ptr;
         {
             ScopedLockType   sl (mLock);
-            typename ripple::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find (cpClient);
+            auto it = mMap.find (cpClient);
 
             if (it == mMap.end ())
                 return;
@@ -247,7 +246,7 @@ public:
         wsc_ptr ptr;
         {
             ScopedLockType   sl (mLock);
-            typename ripple::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find (cpClient);
+            auto it = mMap.find (cpClient);
 
             if (it == mMap.end ())
             {
@@ -287,7 +286,7 @@ public:
         wsc_ptr ptr;
         {
             ScopedLockType   sl (mLock);
-            typename ripple::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find (cpClient);
+            auto it = mMap.find (cpClient);
 
             if (it == mMap.end ())
                 return;
@@ -322,7 +321,7 @@ public:
         wsc_ptr ptr;
         {
             ScopedLockType   sl (mLock);
-            typename ripple::unordered_map<connection_ptr, wsc_ptr>::iterator it = mMap.find (cpClient);
+            auto it = mMap.find (cpClient);
 
             if (it == mMap.end ())
                 return;

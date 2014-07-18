@@ -20,8 +20,7 @@
 #ifndef RIPPLE_TYPES_BASICS
 #define RIPPLE_TYPES_BASICS
 
-#include <unordered_set>
-
+#include <ripple/common/UnorderedContainers.h>
 #include <ripple/types/api/base_uint.h>
 
 namespace ripple {
@@ -47,8 +46,8 @@ typedef base_uint<160, detail::CurrencyTag> Currency;
 /** NodeID is a 160-bit hash representing one node. */
 typedef base_uint<160, detail::NodeIDTag> NodeID;
 
-typedef std::unordered_set<Currency> CurrencySet;
-typedef std::unordered_set<NodeID> NodeIDSet;
+typedef hash_set<Currency> CurrencySet;
+typedef hash_set<NodeID> NodeIDSet;
 
 /** A special account that's used as the "issuer" for XRP. */
 Account const& xrpAccount();

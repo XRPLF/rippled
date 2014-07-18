@@ -38,7 +38,6 @@
 #include <boost/program_options.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
-#include <boost/unordered_set.hpp>
 #include <boost/weak_ptr.hpp>
 #include <boost/thread/shared_mutex.hpp>
 

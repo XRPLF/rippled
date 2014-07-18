@@ -62,10 +62,10 @@ void OrderBookDB::setup (Ledger::ref ledger)
 }
 
 static void updateHelper (SLE::ref entry,
-    ripple::unordered_set< uint256 >& seen,
+    hash_set< uint256 >& seen,
     OrderBookDB::IssueToOrderBook& destMap,
     OrderBookDB::IssueToOrderBook& sourceMap,
-    ripple::unordered_set< Issue >& XRPBooks,
+    hash_set< Issue >& XRPBooks,
     int& books)
 {
     if (entry->getType () == ltDIR_NODE &&
@@ -93,10 +93,10 @@ static void updateHelper (SLE::ref entry,
 
 void OrderBookDB::update (Ledger::pointer ledger)
 {
-    ripple::unordered_set< uint256 > seen;
+    hash_set< uint256 > seen;
     OrderBookDB::IssueToOrderBook destMap;
     OrderBookDB::IssueToOrderBook sourceMap;
-    ripple::unordered_set< Issue > XRPBooks;
+    hash_set< Issue > XRPBooks;
 
     WriteLog (lsDEBUG, OrderBookDB) << "OrderBookDB::update>";
 
