@@ -444,7 +444,7 @@ SHAMap::lastBelow (SHAMapTreeNode* node, SHAMapNodeID nodeID)
         if (node->hasItem ())
             return node;
         bool foundNode = false;
-        for (int i = 15; i >= 0; ++i)
+        for (int i = 15; i >= 0; --i)
         {
             uint256 nodeHash;
             if (node->descend (i, nodeID, nodeHash))
@@ -467,14 +467,17 @@ SHAMap::onlyBelow (SHAMapTreeNode* node, SHAMapNodeID nodeID)
     while (!node->isLeaf ())
     {
         SHAMapTreeNode* nextNode = nullptr;
+        SHAMapNodeID nextNodeID;
         for (int i = 0; i < 16; ++i)
         {
+            SHAMapNodeID tempNodeID = nodeID;
             uint256 nodeHash;
-            if (node->descend (i, nodeID, nodeHash))
+            if (node->descend (i, tempNodeID, nodeHash))
             {
                 if (nextNode)
                     return SHAMapItem::pointer (); // two leaves below
-                nextNode = getNodePointer (nodeID, nodeHash);
+                nextNode = getNodePointer (tempNodeID, nodeHash);
+                nextNodeID = tempNodeID;
             }
         }
         if (!nextNode)
@@ -485,6 +488,7 @@ SHAMap::onlyBelow (SHAMapTreeNode* node, SHAMapNodeID nodeID)
         }
 
         node = nextNode;
+        nodeID = nextNodeID;
     }
 
     assert (node->hasItem ());
@@ -600,14 +604,16 @@ SHAMapItem::pointer SHAMap::peekNextItem (uint256 const& id, SHAMapTreeNode::TNT
         else
         {
             uint256 nodeHash;
+            // breadth-first
             for (int i = nodeID.selectBranch (id) + 1; i < 16; ++i)
             {
-                if (node->descend (i, nodeID, nodeHash))
+                SHAMapNodeID childNodeID = nodeID;
+                if (node->descend (i, childNodeID, nodeHash))
                 {
-                    SHAMapTreeNode* firstNode = getNodePointer (nodeID,
-                                                                      nodeHash);
+                    SHAMapTreeNode* firstNode = getNodePointer (
+                        childNodeID, nodeHash);
                     assert (firstNode);
-                    firstNode = firstBelow (firstNode, nodeID);
+                    firstNode = firstBelow (firstNode, childNodeID);
 
                     if (!firstNode || firstNode->isInner ())
                         throw (std::runtime_error ("missing/corrupt node"));

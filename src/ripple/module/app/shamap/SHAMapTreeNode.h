@@ -175,15 +175,15 @@ public:
     virtual void dump (SHAMapNodeID const&);
     virtual std::string getString (SHAMapNodeID const&) const;
 
-    /** Descends along the specified branch
-    * On invocation, nodeID must be the ID of this node
-    * Returns false if there is no node down that branch
-    * Otherwise, returns true and fills in the node's ID and hash
-    *
-    * @param branch   the branch to descend [0, 15]
-    * @param nodeID   on entry the ID of the parent. On exit the ID of the child
-    * @param nodeHash on exit the hash of the child node.
-    * @return true if nodeID and nodeHash are altered.
+    /** Descend along the specified branch
+        On invocation, nodeID must be the ID of this node
+        Returns `false` if there is no node down that branch
+        Otherwise, returns `true` and fills in the node's ID and hash
+
+        @param branch   The branch to descend [0, 15]
+        @param nodeID   On entry the ID of the parent. On exit the ID of the child
+        @param nodeHash On exit the hash of the child node.
+        @return `true` if nodeID and nodeHash are altered.
     */
     bool descend (int branch, SHAMapNodeID& nodeID, uint256& nodeHash);
 

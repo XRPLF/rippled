@@ -496,6 +496,7 @@ bool SHAMapTreeNode::setChildHash (int m, uint256 const& hash)
 bool
 SHAMapTreeNode::descend (int branch, SHAMapNodeID& nodeID, uint256& nodeHash)
 {
+    assert (branch >= 0 && branch < 16);
     assert (isInnerNode ());
 
     if (isEmptyBranch (branch))
