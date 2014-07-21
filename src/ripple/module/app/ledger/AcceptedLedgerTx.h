@@ -48,9 +48,10 @@ public:
     typedef const pointer& ref;
 
 public:
-    AcceptedLedgerTx (LedgerIndex ledgerSeq, SerializerIterator& sit);
-    AcceptedLedgerTx (SerializedTransaction::ref, TransactionMetaSet::ref);
-    AcceptedLedgerTx (SerializedTransaction::ref, TER result);
+    AcceptedLedgerTx (Ledger::ref ledger, SerializerIterator& sit);
+    AcceptedLedgerTx (Ledger::ref ledger, SerializedTransaction::ref,
+        TransactionMetaSet::ref);
+    AcceptedLedgerTx (Ledger::ref ledger, SerializedTransaction::ref, TER result);
 
     SerializedTransaction::ref getTxn () const
     {
@@ -97,6 +98,7 @@ public:
     }
 
 private:
+    Ledger::pointer                 mLedger;
     SerializedTransaction::pointer  mTxn;
     TransactionMetaSet::pointer     mMeta;
     TER                             mResult;

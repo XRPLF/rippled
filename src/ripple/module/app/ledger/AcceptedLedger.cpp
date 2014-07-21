@@ -34,8 +34,7 @@ AcceptedLedger::AcceptedLedger (Ledger::ref ledger) : mLedger (ledger)
          item = txSet.peekNextItem (item->getTag ()))
     {
         SerializerIterator sit (item->peekSerializer ());
-        insert (std::make_shared<AcceptedLedgerTx> (
-            ledger->getLedgerSeq (), sit));
+        insert (std::make_shared<AcceptedLedgerTx> (ledger, std::ref (sit)));
     }
 }
 

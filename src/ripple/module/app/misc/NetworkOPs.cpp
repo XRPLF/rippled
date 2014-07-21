@@ -2546,7 +2546,7 @@ void NetworkOPsImp::pubProposedTransaction (
             }
         }
     }
-    AcceptedLedgerTx alt (stTxn, terResult);
+    AcceptedLedgerTx alt (lpCurrent, stTxn, terResult);
     m_journal.trace << "pubProposed: " << alt.getJson ();
     pubAccountTransaction (lpCurrent, alt, false);
 }
@@ -3133,6 +3133,7 @@ void NetworkOPsImp::getBookPage (
                 auto const& saTakerPays =
                         sleOffer->getFieldAmount (sfTakerPays);
                 STAmount saOwnerFunds;
+                bool firstOwnerOffer (true);
 
                 if (book.out.account == uOfferOwnerID)
                 {
@@ -3154,6 +3155,7 @@ void NetworkOPsImp::getBookPage (
                         // Found in running balance table.
 
                         saOwnerFunds    = umBalanceEntry->second;
+                        firstOwnerOffer = false;
                     }
                     else
                     {
@@ -3227,12 +3229,12 @@ void NetworkOPsImp::getBookPage (
 
                 umBalance[uOfferOwnerID]    = saOwnerFunds - saOwnerPays;
 
-                if (saOwnerFunds != zero || uOfferOwnerID == uTakerID)
-                {
-                    // Only provide funded offers and offers of the taker.
-                    Json::Value& jvOf   = jvOffers.append (jvOffer);
-                    jvOf[jss::quality]     = saDirRate.getText ();
-                }
+                // Include all offers funded and unfunded
+                Json::Value& jvOf = jvOffers.append (jvOffer);
+                jvOf[jss::quality] = saDirRate.getText ();
+
+                if (firstOwnerOffer)
+                    jvOf[jss::owner_funds] = saOwnerFunds.getText ();
             }
             else
             {
