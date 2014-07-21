@@ -94,7 +94,7 @@ void AcceptedLedgerTx::buildJson ()
             LedgerEntrySet les (mLedger, tapNONE, true);
             auto const ownerFunds (les.accountFunds (account, amount, fhIGNORE_FREEZE));  
 
-            mJson[jss::owner_funds] = ownerFunds.getText ();
+            mJson[jss::transaction][jss::owner_funds] = ownerFunds.getText ();
         }
     }
 }
