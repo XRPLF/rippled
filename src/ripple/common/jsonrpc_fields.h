@@ -111,6 +111,7 @@ JSS ( none );
 JSS ( no_ripple );
 JSS ( no_ripple_peer );
 JSS ( offers );
+JSS ( owner_funds );
 JSS ( params );
 JSS ( parent_hash );
 JSS ( peer );

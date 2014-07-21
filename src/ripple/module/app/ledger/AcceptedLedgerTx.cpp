@@ -19,28 +19,38 @@
 
 namespace ripple {
 
-AcceptedLedgerTx::AcceptedLedgerTx (std::uint32_t seq, SerializerIterator& sit)
+AcceptedLedgerTx::AcceptedLedgerTx (Ledger::ref ledger, SerializerIterator& sit)
+    : mLedger (ledger)
 {
     Serializer          txnSer (sit.getVL ());
     SerializerIterator  txnIt (txnSer);
 
     mTxn =      std::make_shared<SerializedTransaction> (std::ref (txnIt));
     mRawMeta =  sit.getVL ();
-    mMeta =     std::make_shared<TransactionMetaSet> (mTxn->getTransactionID (), seq, mRawMeta);
+    mMeta =     std::make_shared<TransactionMetaSet> (mTxn->getTransactionID (),
+        ledger->getLedgerSeq (), mRawMeta);
     mAffected = mMeta->getAffectedAccounts ();
     mResult =   mMeta->getResultTER ();
     buildJson ();
 }
 
-AcceptedLedgerTx::AcceptedLedgerTx (SerializedTransaction::ref txn, TransactionMetaSet::ref met) :
-    mTxn (txn), mMeta (met), mAffected (met->getAffectedAccounts ())
+AcceptedLedgerTx::AcceptedLedgerTx (Ledger::ref ledger,
+    SerializedTransaction::ref txn, TransactionMetaSet::ref met)
+    : mLedger (ledger)
+    , mTxn (txn)
+    , mMeta (met)
+    , mAffected (met->getAffectedAccounts ())
 {
     mResult = mMeta->getResultTER ();
     buildJson ();
 }
 
-AcceptedLedgerTx::AcceptedLedgerTx (SerializedTransaction::ref txn, TER result) :
-    mTxn (txn), mResult (result), mAffected (txn->getMentionedAccounts ())
+AcceptedLedgerTx::AcceptedLedgerTx (Ledger::ref ledger,
+    SerializedTransaction::ref txn, TER result)
+    : mLedger (ledger)
+    , mTxn (txn)
+    , mResult (result)
+    , mAffected (txn->getMentionedAccounts ())
 {
     buildJson ();
 }
@@ -70,6 +80,21 @@ void AcceptedLedgerTx::buildJson ()
         BOOST_FOREACH (const RippleAddress & ra, mAffected)
         {
             affected.append (ra.humanAccountID ());
+        }
+    }    
+
+    if (mTxn->getTxnType () == ttOFFER_CREATE)
+    {
+        auto const account (mTxn->getSourceAccount ().getAccountID ());
+        auto const amount (mTxn->getFieldAmount (sfTakerGets));
+
+        // If the offer create is not self funded then add the owner balance
+        if (account != amount.issue ().account)
+        {
+            LedgerEntrySet les (mLedger, tapNONE, true);
+            auto const ownerFunds (les.accountFunds (account, amount, fhIGNORE_FREEZE));  
+
+            mJson[jss::owner_funds] = ownerFunds.getText ();
         }
     }
 }
