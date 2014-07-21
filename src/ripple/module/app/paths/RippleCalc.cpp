@@ -268,6 +268,19 @@ TER rippleCalculate (
 
                     ++iDry;
                 }
+                else if (pspCur->outPass() == zero)
+                {
+                    // Path is not dry, but moved no funds
+                    // This should never happen. Consider the path dry
+
+                    WriteLog (lsWARNING, RippleCalc)
+                        << "rippelCalc: Non-dry path moves no funds";
+
+                    assert (false);
+
+                    pspCur->setQuality (0);
+                    ++iDry;
+                }
                 else
                 {
                     CondLog (!pspCur->inPass() || !pspCur->outPass(),
