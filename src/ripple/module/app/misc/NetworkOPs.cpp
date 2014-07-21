@@ -2619,12 +2619,12 @@ void NetworkOPsImp::reportFeeChange ()
         std::bind (&NetworkOPsImp::pubServer, this));
 }
 
-Json::Value NetworkOPsImp::transJson (
+// This routine should only be used to publish accepted or validated
+// transactions.
+Json::Value NetworkOPsImp::transJson(
     const SerializedTransaction& stTxn, TER terResult, bool bValidated,
     Ledger::ref lpCurrent)
 {
-    // This routine should only be used to publish accepted or validated
-    // transactions.
     Json::Value jvObj (Json::objectValue);
     std::string sToken;
     std::string sHuman;
@@ -2654,6 +2654,21 @@ Json::Value NetworkOPsImp::transJson (
     jvObj[jss::engine_result]          = sToken;
     jvObj[jss::engine_result_code]     = terResult;
     jvObj[jss::engine_result_message]  = sHuman;
+
+    if (stTxn.getTxnType() == ttOFFER_CREATE)
+    {
+        auto const account (stTxn.getSourceAccount ().getAccountID ());
+        auto const amount (stTxn.getFieldAmount (sfTakerGets));
+
+        // If the offer create is not self funded then add the owner balance
+        if (account != amount.issue ().account)
+        {
+            LedgerEntrySet les (lpCurrent, tapNONE, true);
+            auto const ownerFunds (les.accountFunds (account, amount, fhIGNORE_FREEZE));  
+
+            jvObj[jss::transaction][jss::owner_funds] = ownerFunds.getText ();
+        }
+    }
 
     return jvObj;
 }
