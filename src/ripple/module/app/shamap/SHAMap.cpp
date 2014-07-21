@@ -175,15 +175,7 @@ SHAMap::getStack (uint256 const& id, bool include_nonmatching_leaf)
         if (!node->descend (branch, nodeID, nodeHash))
             return stack;
 
-        try
-        {
-            node = getNode (nodeID, nodeHash, false);
-        }
-        catch (SHAMapMissingNode& mn)
-        {
-            mn.setTargetNode (id);
-            throw;
-        }
+        node = getNode (nodeID, nodeHash, false);
     }
 
     if (include_nonmatching_leaf || (node->peekItem ()->getTag () == id))
@@ -251,15 +243,7 @@ SHAMapTreeNode::pointer SHAMap::walkTo (uint256 const& id, bool modify)
         if (!inNode->descend (branch, nodeID, nodeHash))
             return inNode;
 
-        try
-        {
-            inNode = getNode (nodeID, nodeHash, false);
-        }
-        catch (SHAMapMissingNode& mn)
-        {
-            mn.setTargetNode (id);
-            throw;
-        }
+        inNode = getNode (nodeID, nodeHash, false);
     }
 
     if (inNode->getTag () != id)

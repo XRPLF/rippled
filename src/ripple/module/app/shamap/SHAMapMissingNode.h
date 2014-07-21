@@ -42,25 +42,8 @@ public:
     {
     }
 
-    SHAMapMissingNode (SHAMapType t,
-                       SHAMapNodeID const& nodeID,
-                       uint256 const& nodeHash,
-                       uint256 const& targetIndex)
-        : std::runtime_error (nodeID.getString ())
-        , mType (t)
-        , mNodeID (nodeID)
-        , mNodeHash (nodeHash)
-        , mTargetIndex (targetIndex)
-    {
-    }
-
     virtual ~SHAMapMissingNode () throw ()
     {
-    }
-
-    void setTargetNode (uint256 const& tn)
-    {
-        mTargetIndex = tn;
     }
 
     SHAMapType getMapType () const
@@ -78,21 +61,10 @@ public:
         return mNodeHash;
     }
 
-    uint256 const& getTargetIndex () const
-    {
-        return mTargetIndex;
-    }
-
-    bool hasTargetIndex () const
-    {
-        return !mTargetIndex.isZero ();
-    }
-
 private:
     SHAMapType mType;
     SHAMapNodeID mNodeID;
     uint256 mNodeHash;
-    uint256 mTargetIndex;
 };
 
 extern std::ostream& operator<< (std::ostream&, SHAMapMissingNode const&);
