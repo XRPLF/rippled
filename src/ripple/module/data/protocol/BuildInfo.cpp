@@ -31,7 +31,7 @@ char const* BuildInfo::getRawVersionString ()
     //
     //  The build version number (edit this for each release)
     //
-        "0.26.0-rc2"
+        "0.26.0"
     //
     //  Must follow the format described here:
     //
