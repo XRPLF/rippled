@@ -48,7 +48,7 @@ void LocalCredentials::start ()
 bool LocalCredentials::nodeIdentityLoad ()
 {
     Database*   db = getApp().getWalletDB ()->getDB ();
-    DeprecatedScopedLock  sl (getApp().getWalletDB ()->getDBLock ());
+    auto  sl (getApp().getWalletDB ()->lock ());
     bool        bSuccess    = false;
 
     if (db->executeSQL ("SELECT * FROM NodeIdentity;") && db->startIterRows ())
@@ -106,7 +106,7 @@ bool LocalCredentials::nodeIdentityCreate ()
     //
     Database* db    = getApp().getWalletDB ()->getDB ();
 
-    DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+    auto sl (getApp().getWalletDB ()->lock ());
     db->executeSQL (str (boost::format ("INSERT INTO NodeIdentity (PublicKey,PrivateKey,Dh512,Dh1024) VALUES ('%s','%s',%s,%s);")
                          % naNodePublic.humanNodePublic ()
                          % naNodePrivate.humanNodePrivate ()
@@ -124,7 +124,7 @@ bool LocalCredentials::dataDelete (const std::string& strKey)
 {
     Database* db    = getApp().getRpcDB ()->getDB ();
 
-    DeprecatedScopedLock sl (getApp().getRpcDB ()->getDBLock ());
+    auto sl (getApp().getRpcDB ()->lock ());
 
     return db->executeSQL (str (boost::format ("DELETE FROM RPCData WHERE Key=%s;")
                                 % sqlEscape (strKey)));
@@ -134,7 +134,7 @@ bool LocalCredentials::dataFetch (const std::string& strKey, std::string& strVal
 {
     Database* db    = getApp().getRpcDB ()->getDB ();
 
-    DeprecatedScopedLock sl (getApp().getRpcDB ()->getDBLock ());
+    auto sl (getApp().getRpcDB ()->lock ());
 
     bool        bSuccess    = false;
 
@@ -156,7 +156,7 @@ bool LocalCredentials::dataStore (const std::string& strKey, const std::string& 
 {
     Database* db    = getApp().getRpcDB ()->getDB ();
 
-    DeprecatedScopedLock sl (getApp().getRpcDB ()->getDBLock ());
+    auto sl (getApp().getRpcDB ()->lock ());
 
     bool        bSuccess    = false;
 

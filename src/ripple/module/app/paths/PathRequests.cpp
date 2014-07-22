@@ -44,7 +44,8 @@ RippleLineCache::pointer PathRequests::getLineCache (Ledger::pointer& ledger, bo
     return mLineCache;
 }
 
-void PathRequests::updateAll (Ledger::ref inLedger, CancelCallback shouldCancel)
+void PathRequests::updateAll (Ledger::ref inLedger,
+                              Job::CancelCallback shouldCancel)
 {
     std::vector<PathRequest::wptr> requests;
 
