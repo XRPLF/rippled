@@ -199,7 +199,7 @@ suite("Offer tests", function() {
       });
     });
 
-  test("offer create then crossing offer with XRP. Negative balance.", function (done) {
+  test.skip("offer create then crossing offer with XRP. Negative balance.", function (done) {
       var self = this;
 
       var alices_initial_balance = 499946999680;
