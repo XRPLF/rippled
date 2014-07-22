@@ -30,13 +30,7 @@ namespace ripple {
 typedef std::mutex RippleMutex;
 typedef std::recursive_mutex RippleRecursiveMutex;
 
-typedef std::recursive_mutex DeprecatedRecursiveMutex;
-typedef std::lock_guard<DeprecatedRecursiveMutex> DeprecatedScopedLock;
-
 //------------------------------------------------------------------------------
-
-/** A callback used to check for canceling an operation. */
-typedef std::function <bool(void)> CancelCallback;
 
 } // ripple
 

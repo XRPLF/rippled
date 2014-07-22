@@ -47,7 +47,7 @@ Json::Value doTxHistory (RPC::Context& context)
 
     {
         Database* db = getApp().getTxnDB ()->getDB ();
-        DeprecatedScopedLock sl (getApp().getTxnDB ()->getDBLock ());
+        auto sl (getApp().getTxnDB ()->lock ());
 
         SQL_FOREACH (db, sql)
         {

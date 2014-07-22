@@ -80,7 +80,7 @@ public:
         pObject->reset ();
 
         {
-            DeprecatedScopedLock sl (m_db->getDBLock());
+            auto sl (m_db->lock());
 
             uint256 const hash (uint256::fromVoid (key));
 
@@ -124,7 +124,7 @@ public:
     {
         // VFALCO TODO Rewrite this to use Beast::db
 
-        DeprecatedScopedLock sl (m_db->getDBLock());
+        auto sl (m_db->lock());
 
         static SqliteStatement pStB (m_db->getDB()->getSqliteDB(), "BEGIN TRANSACTION;");
         static SqliteStatement pStE (m_db->getDB()->getSqliteDB(), "END TRANSACTION;");

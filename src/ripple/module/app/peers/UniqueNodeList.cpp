@@ -272,7 +272,7 @@ public:
     {
         {
             Database* db = getApp().getWalletDB ()->getDB ();
-            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+            auto sl (getApp().getWalletDB ()->lock ());
 
             db->executeSQL (str (boost::format ("DELETE FROM SeedNodes WHERE PublicKey=%s") % sqlEscape (naNodePublic.humanNodePublic ())));
             db->executeSQL (str (boost::format ("DELETE FROM TrustedNodes WHERE PublicKey=%s") % sqlEscape (naNodePublic.humanNodePublic ())));
@@ -294,7 +294,7 @@ public:
 
         {
             Database* db = getApp().getWalletDB ()->getDB ();
-            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+            auto sl (getApp().getWalletDB ()->lock ());
 
             db->executeSQL (str (boost::format ("DELETE FROM SeedDomains WHERE Domain=%s") % sqlEscape (strDomain)));
         }
@@ -310,7 +310,7 @@ public:
         {
             Database* db = getApp().getWalletDB ()->getDB ();
 
-            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+            auto sl (getApp().getWalletDB ()->lock ());
 
             // XXX Check results.
             db->executeSQL ("DELETE FROM SeedDomains");
@@ -444,7 +444,7 @@ public:
 
 #if 0
         {
-            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+            auto sl (getApp().getWalletDB ()->lock ());
             Database* db = getApp().getWalletDB ()->getDB ();
 
             if (db->executeSQL (str (boost::format ("SELECT COUNT(*) AS Count FROM SeedDomains WHERE Source='%s' OR Source='%c';") % vsManual % vsValidator)) && db->startIterRows ())
@@ -586,7 +586,7 @@ public:
 
         Json::Value ret (Json::arrayValue);
 
-        DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+        auto sl (getApp().getWalletDB ()->lock ());
         SQL_FOREACH (db, "SELECT * FROM TrustedNodes;")
         {
             Json::Value node (Json::objectValue);
@@ -649,7 +649,7 @@ private:
     // Load information about when we last updated.
     bool miscLoad ()
     {
-        DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+        auto sl (getApp().getWalletDB ()->lock ());
         Database* db = getApp().getWalletDB ()->getDB ();
 
         if (!db->executeSQL ("SELECT * FROM Misc WHERE Magic=1;")) return false;
@@ -672,7 +672,7 @@ private:
     bool miscSave ()
     {
         Database*   db = getApp().getWalletDB ()->getDB ();
-        DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+        auto sl (getApp().getWalletDB ()->lock ());
 
         db->executeSQL (str (boost::format ("REPLACE INTO Misc (Magic,FetchUpdated,ScoreUpdated) VALUES (1,%d,%d);")
                              % iToSeconds (mtpFetchUpdated)
@@ -702,7 +702,7 @@ private:
         }
 
         Database*   db = getApp().getWalletDB ()->getDB ();
-        DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+        auto sl (getApp().getWalletDB ()->lock ());
         ScopedUNLLockType slUNL (mUNLLock);
 
         mUNL.clear ();
@@ -803,7 +803,7 @@ private:
         // For each entry in SeedDomains with a PublicKey:
         // - Add an entry in umPulicIdx, umDomainIdx, and vsnNodes.
         {
-            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+            auto sl (getApp().getWalletDB ()->lock ());
 
             SQL_FOREACH (db, "SELECT Domain,PublicKey,Source FROM SeedDomains;")
             {
@@ -856,7 +856,7 @@ private:
         // For each entry in SeedNodes:
         // - Add an entry in umPulicIdx, umDomainIdx, and vsnNodes.
         {
-            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+            auto sl (getApp().getWalletDB ()->lock ());
 
             SQL_FOREACH (db, "SELECT PublicKey,Source FROM SeedNodes;")
             {
@@ -920,7 +920,7 @@ private:
             std::string&        strValidator    = sn.strValidator;
             std::vector<int>&   viReferrals     = sn.viReferrals;
 
-            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+            auto sl (getApp().getWalletDB ()->lock ());
 
             SQL_FOREACH (db, boost::str (boost::format ("SELECT Referral FROM ValidatorReferrals WHERE Validator=%s ORDER BY Entry;")
                                          % sqlEscape (strValidator)))
@@ -1001,7 +1001,7 @@ private:
         }
 
         // Persist validator scores.
-        DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+        auto sl (getApp().getWalletDB ()->lock ());
 
         db->executeSQL ("BEGIN;");
         db->executeSQL ("UPDATE TrustedNodes SET Score = 0 WHERE Score != 0;");
@@ -1287,7 +1287,7 @@ private:
             boost::posix_time::ptime tpNext (boost::posix_time::min_date_time);
             boost::posix_time::ptime tpNow (boost::posix_time::second_clock::universal_time ());
 
-            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+            auto sl (getApp().getWalletDB ()->lock ());
             Database* db = getApp().getWalletDB ()->getDB ();
 
             if (db->executeSQL ("SELECT Domain,Next FROM SeedDomains INDEXED BY SeedDomainNext ORDER BY Next LIMIT 1;")
@@ -1559,7 +1559,7 @@ private:
 
         // Remove all current Validator's entries in IpReferrals
         {
-            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+            auto sl (getApp().getWalletDB ()->lock ());
             db->executeSQL (str (boost::format ("DELETE FROM IpReferrals WHERE Validator=%s;") % strEscNodePublic));
             // XXX Check result.
         }
@@ -1602,7 +1602,7 @@ private:
             {
                 vstrValues.resize (iValues);
 
-                DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+                auto sl (getApp().getWalletDB ()->lock ());
                 db->executeSQL (str (boost::format ("INSERT INTO IpReferrals (Validator,Entry,IP,Port) VALUES %s;")
                                      % strJoin (vstrValues.begin (), vstrValues.end (), ",")));
                 // XXX Check result.
@@ -1633,7 +1633,7 @@ private:
 
         // Remove all current Validator's entries in ValidatorReferrals
         {
-            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+            auto sl (getApp().getWalletDB ()->lock ());
 
             db->executeSQL (str (boost::format ("DELETE FROM ValidatorReferrals WHERE Validator='%s';") % strNodePublic));
             // XXX Check result.
@@ -1704,7 +1704,7 @@ private:
                 std::string strSql  = str (boost::format ("INSERT INTO ValidatorReferrals (Validator,Entry,Referral) VALUES %s;")
                                            % strJoin (vstrValues.begin (), vstrValues.end (), ","));
 
-                DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+                auto sl (getApp().getWalletDB ()->lock ());
 
                 db->executeSQL (strSql);
                 // XXX Check result.
@@ -1756,7 +1756,7 @@ private:
         std::string strSql  = boost::str (boost::format ("SELECT * FROM SeedDomains WHERE Domain=%s;")
                                           % sqlEscape (strDomain));
 
-        DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+        auto sl (getApp().getWalletDB ()->lock ());
 
         bResult = db->executeSQL (strSql) && db->startIterRows ();
 
@@ -1830,7 +1830,7 @@ private:
                                           % sqlEscape (sdSource.strComment)
                                          );
 
-        DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+        auto sl (getApp().getWalletDB ()->lock ());
 
         if (!db->executeSQL (strSql))
         {
@@ -1857,7 +1857,7 @@ private:
         std::string strSql  = str (boost::format ("SELECT * FROM SeedNodes WHERE PublicKey='%s';")
                                    % naNodePublic.humanNodePublic ());
 
-        DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+        auto sl (getApp().getWalletDB ()->lock ());
 
         bResult = db->executeSQL (strSql) && db->startIterRows ();
 
@@ -1933,7 +1933,7 @@ private:
                                   );
 
         {
-            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+            auto sl (getApp().getWalletDB ()->lock ());
 
             if (!db->executeSQL (strSql))
             {
