@@ -20,6 +20,8 @@
 #ifndef BEAST_ASIO_SHAREDARG_H_INCLUDED
 #define BEAST_ASIO_SHAREDARG_H_INCLUDED
 
+#include <beast/smart_ptr/SharedPtr.h>
+
 namespace beast {
 namespace asio {
 
