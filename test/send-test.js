@@ -948,6 +948,11 @@ suite('Gateway', function() {
       //              .submit();
       //          },
 
+      // We now need to ensure that all prior transactions have executed before
+      // the next transaction is submitted, as txn application logic has
+      // changed.
+      function(next){$.remote.ledger_accept(function(){next();});},
+
       function (callback) {
         self.what = "Bob sends Alice 0.5 AUD";
 
