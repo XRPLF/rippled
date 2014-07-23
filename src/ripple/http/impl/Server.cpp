@@ -17,11 +17,15 @@
 */
 //==============================================================================
 
+#include <ripple/http/Server.h>
+#include <ripple/http/impl/ServerImpl.h>
+#include <beast/cxx14/memory.h> // <memory>
+
 namespace ripple {
 namespace HTTP {
 
 Server::Server (Handler& handler, beast::Journal journal)
-    : m_impl (new ServerImpl (*this, handler, journal))
+    : m_impl (std::make_unique <ServerImpl> (*this, handler, journal))
 {
 }
 
@@ -30,27 +34,32 @@ Server::~Server ()
     stop();
 }
 
-beast::Journal const& Server::journal () const
+beast::Journal
+Server::journal () const
 {
     return m_impl->journal();
 }
 
-Ports const& Server::getPorts () const
+Ports const&
+Server::getPorts () const
 {
     return m_impl->getPorts();
 }
 
-void Server::setPorts (Ports const& ports)
+void
+Server::setPorts (Ports const& ports)
 {
     m_impl->setPorts (ports);
 }
 
-void Server::stopAsync ()
+void
+Server::stopAsync ()
 {
     m_impl->stop(false);
 }
 
-void Server::stop ()
+void
+Server::stop ()
 {
     m_impl->stop(true);
 }

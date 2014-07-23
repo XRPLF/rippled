@@ -20,8 +20,14 @@
 #ifndef RIPPLE_HTTP_SERVERIMPL_H_INCLUDED
 #define RIPPLE_HTTP_SERVERIMPL_H_INCLUDED
 
+#include <ripple/http/Server.h>
+#include <beast/intrusive/List.h>
+#include <beast/threads/SharedData.h>
 #include <beast/threads/Thread.h>
 #include <beast/module/asio/basics/SharedArg.h>
+#include <boost/asio.hpp>
+#include <boost/optional.hpp>
+#include <thread>
 
 namespace ripple {
 namespace HTTP {
@@ -31,7 +37,7 @@ class Peer;
 
 class ServerImpl : public beast::Thread
 {
-public:
+private:
     struct State
     {
         // Attributes for our listening ports
@@ -49,7 +55,7 @@ public:
 
     Server& m_server;
     Handler& m_handler;
-    beast::Journal m_journal;
+    beast::Journal journal_;
     boost::asio::io_service m_io_service;
     boost::asio::io_service::strand m_strand;
     boost::optional <boost::asio::io_service::work> m_work;
@@ -57,24 +63,54 @@ public:
     SharedState m_state;
     Doors m_doors;
 
+public:
     ServerImpl (Server& server, Handler& handler, beast::Journal journal);
     ~ServerImpl ();
-    beast::Journal const& journal() const;
-    Ports const& getPorts () const;
-    void setPorts (Ports const& ports);
-    bool stopping () const;
-    void stop (bool wait);
 
-    Handler& handler();
-    boost::asio::io_service& get_io_service();
-    void add (Peer& peer);
-    void add (Door& door);
-    void remove (Peer& peer);
-    void remove (Door& door);
+    beast::Journal
+    journal() const
+    {
+        return journal_;
+    }
 
-    void handle_update ();
-    void update ();
-    void run ();
+    Ports const&
+    getPorts () const;
+
+    void
+    setPorts (Ports const& ports);
+
+    bool
+    stopping () const;
+
+    void
+    stop (bool wait);
+
+    Handler&
+    handler();
+
+    boost::asio::io_service&
+    get_io_service();
+
+    void
+    add (Peer& peer);
+
+    void
+    add (Door& door);
+
+    void
+    remove (Peer& peer);
+
+    void
+    remove (Door& door);
+
+    void
+    handle_update ();
+
+    void
+    update ();
+
+    void
+    run ();
 
     static int compare (Port const& lhs, Port const& rhs);
 };

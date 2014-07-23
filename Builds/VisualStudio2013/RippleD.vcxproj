@@ -1898,18 +1898,18 @@
     <ClCompile Include="..\..\src\ripple\common\tests\cross_offer.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\http\api\Handler.h">
+    <ClInclude Include="..\..\src\ripple\http\Server.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\http\api\Port.h">
+    <ClInclude Include="..\..\src\ripple\http\Session.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\http\api\ScopedStream.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\http\api\Server.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\http\api\Session.h">
-    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\http\impl\Door.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\http\impl\Door.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\http\impl\Peer.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\http\impl\Peer.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\http\impl\Port.cpp">
@@ -3448,8 +3448,6 @@
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\http.cpp">
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\unity\http.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\hyperleveldb.cpp">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\src\hyperleveldb;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\hyperleveldb;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

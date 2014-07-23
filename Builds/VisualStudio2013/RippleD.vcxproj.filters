@@ -334,9 +334,6 @@
     <Filter Include="ripple\http">
       <UniqueIdentifier>{8601C61D-413C-725E-C9E6-BD4F97E40032}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ripple\http\api">
-      <UniqueIdentifier>{F98B3E94-4FB9-98FF-C625-533A969D1210}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ripple\http\impl">
       <UniqueIdentifier>{43D68742-4714-D103-EE00-EB10BD045FB6}</UniqueIdentifier>
     </Filter>
@@ -2856,24 +2853,21 @@
     <ClCompile Include="..\..\src\ripple\common\tests\cross_offer.test.cpp">
       <Filter>ripple\common\tests</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\http\api\Handler.h">
-      <Filter>ripple\http\api</Filter>
+    <ClInclude Include="..\..\src\ripple\http\Server.h">
+      <Filter>ripple\http</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\http\api\Port.h">
-      <Filter>ripple\http\api</Filter>
+    <ClInclude Include="..\..\src\ripple\http\Session.h">
+      <Filter>ripple\http</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\http\api\ScopedStream.h">
-      <Filter>ripple\http\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\http\api\Server.h">
-      <Filter>ripple\http\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\http\api\Session.h">
-      <Filter>ripple\http\api</Filter>
-    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\http\impl\Door.cpp">
+      <Filter>ripple\http\impl</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\http\impl\Door.h">
       <Filter>ripple\http\impl</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\http\impl\Peer.cpp">
+      <Filter>ripple\http\impl</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\http\impl\Peer.h">
       <Filter>ripple\http\impl</Filter>
     </ClInclude>
@@ -4740,9 +4734,6 @@
     <ClCompile Include="..\..\src\ripple\unity\http.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\unity\http.h">
-      <Filter>ripple\unity</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\hyperleveldb.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>

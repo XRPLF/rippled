@@ -19,19 +19,9 @@
 
 #include <BeastConfig.h>
 
-#include <ripple/unity/http.h>
-
-#include <ripple/unity/net.h>
-
-#include <boost/asio.hpp>
-#include <boost/optional.hpp>
-
+#include <ripple/http/impl/Door.cpp>
+#include <ripple/http/impl/Peer.cpp>
 #include <ripple/http/impl/Port.cpp>
 #include <ripple/http/impl/ScopedStream.cpp>
-
-#include <ripple/http/impl/Types.h>
-#include <ripple/http/impl/ServerImpl.h>
-#include <ripple/http/impl/Peer.h>
-#include <ripple/http/impl/Door.h>
 #include <ripple/http/impl/ServerImpl.cpp>
 #include <ripple/http/impl/Server.cpp>
