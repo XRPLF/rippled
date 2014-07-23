@@ -37,7 +37,7 @@ namespace detail {
 template <
     bool is_const,
     class Iterator,
-    class Base = 
+    class Base =
         std::iterator <
             typename std::iterator_traits <Iterator>::iterator_category,
             typename std::conditional <is_const,
@@ -51,20 +51,46 @@ class aged_container_iterator
 public:
     typedef typename Iterator::value_type::stashed::time_point time_point;
 
+    // Could be '= default', but Visual Studio 2013 chokes on it [Aug 2014]
     aged_container_iterator ()
     {
     }
 
-    template <class OtherIterator, class OtherBase>
-    aged_container_iterator (aged_container_iterator <
-        false, OtherIterator, OtherBase> const& other)
+    // copy constructor
+    aged_container_iterator (
+        aged_container_iterator<is_const, Iterator, Base>
+            const& other) = default;
+
+    // Disable constructing a const_iterator from a non-const_iterator.
+    // Converting between reverse and non-reverse iterators should be explicit.
+    template <bool other_is_const, class OtherIterator, class OtherBase,
+        class = typename std::enable_if <
+            (other_is_const == false || is_const == true) &&
+                std::is_same<Iterator, OtherIterator>::value == false>::type>
+    explicit aged_container_iterator (aged_container_iterator <
+        other_is_const, OtherIterator, OtherBase> const& other)
         : m_iter (other.m_iter)
     {
     }
 
+    // Disable constructing a const_iterator from a non-const_iterator.
+    template <bool other_is_const, class OtherBase,
+        class = typename std::enable_if <
+            other_is_const == false || is_const == true>::type>
+    aged_container_iterator (aged_container_iterator <
+        other_is_const, Iterator, OtherBase> const& other)
+        : m_iter (other.m_iter)
+    {
+    }
+
+    // Disable assigning a const_iterator to a non-const iterator
     template <bool other_is_const, class OtherIterator, class OtherBase>
-    aged_container_iterator& operator= (aged_container_iterator <
-        other_is_const, OtherIterator, OtherBase> const& other)
+    auto
+    operator= (aged_container_iterator <
+        other_is_const, OtherIterator, OtherBase> const& other) ->
+            typename std::enable_if <
+                other_is_const == false || is_const == true,
+                    aged_container_iterator&>::type
     {
         m_iter = other.m_iter;
         return *this;

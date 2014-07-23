@@ -147,7 +147,7 @@ public:
             return static_cast <T*> (
                 ::operator new (n * sizeof(T)));
         }
-        
+
         void deallocate (T* p, std::size_t)
         {
             ::operator delete (p);
@@ -482,6 +482,23 @@ public:
 
     //--------------------------------------------------------------------------
 
+    template <bool IsUnordered, bool IsMulti, bool IsMap>
+    void
+    testIterator ();
+
+    // Unordered containers don't have reverse iterators
+    template <bool IsUnordered, bool IsMulti, bool IsMap>
+    typename std::enable_if <! IsUnordered>::type
+    testReverseIterator();
+
+    template <bool IsUnordered, bool IsMulti, bool IsMap>
+    typename std::enable_if <IsUnordered>::type
+    testReverseIterator()
+    {
+    }
+
+    //--------------------------------------------------------------------------
+
     template <class Container, class Values>
     void checkInsertCopy (Container& c, Values const& v);
 
@@ -521,6 +538,31 @@ public:
     testArrayCreate()
     {
     }
+
+    //--------------------------------------------------------------------------
+
+    // Helpers for erase tests
+    template <class Container, class Values>
+    void reverseFillAgedContainer(Container& c, Values const& v);
+
+    template <class Iter>
+    Iter nextToEndIter (Iter const beginIter, Iter const endItr);
+
+   //--------------------------------------------------------------------------
+
+    template <class Container, class Iter>
+    bool doElementErase (Container& c, Iter const beginItr, Iter const endItr);
+
+    template <bool IsUnordered, bool IsMulti, bool IsMap>
+    void testElementErase();
+
+    //--------------------------------------------------------------------------
+
+    template <class Container, class BeginEndSrc>
+    void doRangeErase (Container& c, BeginEndSrc const& beginEndSrc);
+
+    template <bool IsUnordered, bool IsMulti, bool IsMap>
+    void testRangeErase();
 
     //--------------------------------------------------------------------------
 
@@ -1085,6 +1127,163 @@ testCopyMove ()
 
 //------------------------------------------------------------------------------
 //
+// Iterator construction and assignment
+//
+//------------------------------------------------------------------------------
+
+template <bool IsUnordered, bool IsMulti, bool IsMap>
+void
+aged_associative_container_test_base::
+testIterator()
+{
+    typedef TestTraits <IsUnordered, IsMulti, IsMap> Traits;
+    typedef typename Traits::Value Value;
+    typedef typename Traits::Alloc Alloc;
+    typename Traits::Clock clock;
+    auto const v (Traits::values());
+
+    //testcase (Traits::name() + " iterators");
+    testcase ("iterator");
+
+    typename Traits::template Cont <> c {clock};
+
+    using iterator = decltype (c.begin());
+    using const_iterator = decltype (c.cbegin());
+
+    // Should be able to construct or assign an iterator from an iterator.
+    iterator nnIt_0 {c.begin()};
+    iterator nnIt_1 {nnIt_0};
+    expect (nnIt_0 == nnIt_1, "iterator constructor failed");
+    iterator nnIt_2;
+    nnIt_2 = nnIt_1;
+    expect (nnIt_1 == nnIt_2, "iterator assignment failed");
+
+    // Should be able to construct or assign a const_iterator from a
+    // const_iterator.
+    const_iterator ccIt_0 {c.cbegin()};
+    const_iterator ccIt_1 {ccIt_0};
+    expect (ccIt_0 == ccIt_1, "const_iterator constructor failed");
+    const_iterator ccIt_2;
+    ccIt_2 = ccIt_1;
+    expect (ccIt_1 == ccIt_2, "const_iterator assignment failed");
+
+    // Comparison between iterator and const_iterator is okay
+    expect (nnIt_0 == ccIt_0,
+        "Comparing an iterator to a const_iterator failed");
+    expect (ccIt_1 == nnIt_1,
+        "Comparing a const_iterator to an iterator failed");
+
+    // Should be able to construct a const_iterator from an iterator.
+    const_iterator ncIt_3 {c.begin()};
+    const_iterator ncIt_4 {nnIt_0};
+    expect (ncIt_3 == ncIt_4,
+        "const_iterator construction from iterator failed");
+    const_iterator ncIt_5;
+    ncIt_5 = nnIt_2;
+    expect (ncIt_5 == ncIt_4,
+        "const_iterator assignment from iterator failed");
+
+    // None of these should compile because they construct or assign to a
+    // non-const iterator with a const_iterator.
+
+//  iterator cnIt_0 {c.cbegin()};
+
+//  iterator cnIt_1 {ccIt_0};
+
+//  iterator cnIt_2;
+//  cnIt_2 = ccIt_2;
+}
+
+template <bool IsUnordered, bool IsMulti, bool IsMap>
+typename std::enable_if <! IsUnordered>::type
+aged_associative_container_test_base::
+testReverseIterator()
+{
+    typedef TestTraits <IsUnordered, IsMulti, IsMap> Traits;
+    typedef typename Traits::Value Value;
+    typedef typename Traits::Alloc Alloc;
+    typename Traits::Clock clock;
+    auto const v (Traits::values());
+
+    //testcase (Traits::name() + " reverse_iterators");
+    testcase ("reverse_iterator");
+
+    typename Traits::template Cont <> c {clock};
+
+    using iterator = decltype (c.begin());
+    using const_iterator = decltype (c.cbegin());
+    using reverse_iterator = decltype (c.rbegin());
+    using const_reverse_iterator = decltype (c.crbegin());
+
+    // Naming decoder ring
+    //       constructed from ------+ +----- constructed type
+    //                              /\/\  -- character pairs
+    //                              xAyBit
+    //  r (reverse) or f (forward)--^-^
+    //                               ^-^------ C (const) or N (non-const)
+
+    // Should be able to construct or assign a reverse_iterator from a
+    // reverse_iterator.
+    reverse_iterator rNrNit_0 {c.rbegin()};
+    reverse_iterator rNrNit_1 {rNrNit_0};
+    expect (rNrNit_0 == rNrNit_1, "reverse_iterator constructor failed");
+    reverse_iterator xXrNit_2;
+    xXrNit_2 = rNrNit_1;
+    expect (rNrNit_1 == xXrNit_2, "reverse_iterator assignment failed");
+
+    // Should be able to construct or assign a const_reverse_iterator from a
+    // const_reverse_iterator
+    const_reverse_iterator rCrCit_0 {c.crbegin()};
+    const_reverse_iterator rCrCit_1 {rCrCit_0};
+    expect (rCrCit_0 == rCrCit_1, "reverse_iterator constructor failed");
+    const_reverse_iterator xXrCit_2;
+    xXrCit_2 = rCrCit_1;
+    expect (rCrCit_1 == xXrCit_2, "reverse_iterator assignment failed");
+
+    // Comparison between reverse_iterator and const_reverse_iterator is okay
+    expect (rNrNit_0 == rCrCit_0,
+        "Comparing an iterator to a const_iterator failed");
+    expect (rCrCit_1 == rNrNit_1,
+        "Comparing a const_iterator to an iterator failed");
+
+    // Should be able to construct or assign a const_reverse_iterator from a
+    // reverse_iterator
+    const_reverse_iterator rNrCit_0 {c.rbegin()};
+    const_reverse_iterator rNrCit_1 {rNrNit_0};
+    expect (rNrCit_0 == rNrCit_1,
+        "const_reverse_iterator construction from reverse_iterator failed");
+    xXrCit_2 = rNrNit_1;
+    expect (rNrCit_1 == xXrCit_2,
+        "const_reverse_iterator assignment from reverse_iterator failed");
+
+    // The standard allows these conversions:
+    //  o reverse_iterator is explicitly constructible from iterator.
+    //  o const_reverse_iterator is explicitly constructible from const_iterator.
+    // Should be able to construct or assign reverse_iterators from
+    // non-reverse iterators.
+    reverse_iterator fNrNit_0 {c.begin()};
+    const_reverse_iterator fNrCit_0 {c.begin()};
+    expect (fNrNit_0 == fNrCit_0,
+        "reverse_iterator construction from iterator failed");
+    const_reverse_iterator fCrCit_0 {c.cbegin()};
+    expect (fNrCit_0 == fCrCit_0,
+        "const_reverse_iterator construction from const_iterator failed");
+
+    // None of these should compile because they construct a non-reverse
+    // iterator from a reverse_iterator.
+//  iterator rNfNit_0 {c.rbegin()};
+//  const_iterator rNfCit_0 {c.rbegin()};
+//  const_iterator rCfCit_0 {c.crbegin()};
+
+    // You should not be able to assign an iterator to a reverse_iterator or
+    // vise-versa.  So the following lines should not compile.
+    iterator xXfNit_0;
+//  xXfNit_0 = xXrNit_2;
+//  xXrNit_2 = xXfNit_0;
+}
+
+//------------------------------------------------------------------------------
+//
 // Modifiers
 //
 //------------------------------------------------------------------------------
@@ -1232,9 +1431,12 @@ testChronological ()
         c.chronological.cbegin(), c.chronological.cend(),
             v.begin(), v.end(), equal_value <Traits> ()));
 
-    for (auto iter (v.rbegin()); iter != v.rend(); ++iter)
+    // Test touch() with a non-const iterator.
+    for (auto iter (v.crbegin()); iter != v.crend(); ++iter)
     {
-        auto found (c.find (Traits::extract (*iter)));
+        using iterator = typename decltype (c)::iterator;
+        iterator found (c.find (Traits::extract (*iter)));
+
         expect (found != c.cend());
         if (found == c.cend())
             return;
@@ -1243,7 +1445,30 @@ testChronological ()
 
     expect (std::equal (
         c.chronological.cbegin(), c.chronological.cend(),
-            v.rbegin(), v.rend(), equal_value <Traits> ()));
+            v.crbegin(), v.crend(), equal_value <Traits> ()));
+
+    // Test touch() with a const_iterator
+    for (auto iter (v.cbegin()); iter != v.cend(); ++iter)
+    {
+        using const_iterator = typename decltype (c)::const_iterator;
+        const_iterator found (c.find (Traits::extract (*iter)));
+
+        expect (found != c.cend());
+        if (found == c.cend())
+            return;
+        c.touch (found);
+    }
+
+    expect (std::equal (
+        c.chronological.cbegin(), c.chronological.cend(),
+            v.cbegin(), v.cend(), equal_value <Traits> ()));
+
+    {
+        // Because touch (reverse_iterator pos) is not allowed, the following
+        // lines should not compile for any aged_container type.
+//      c.touch (c.rbegin());
+//      c.touch (c.crbegin());
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -1279,6 +1504,270 @@ testArrayCreate()
         for (auto e : v)
             c [std::move (e.first)] = e.second;
         checkContents (c, v);
+    }
+}
+
+//------------------------------------------------------------------------------
+//
+// Helpers for erase tests
+//
+//------------------------------------------------------------------------------
+
+template <class Container, class Values>
+void
+aged_associative_container_test_base::
+reverseFillAgedContainer (Container& c, Values const& values)
+{
+    // Just in case the passed in container was not empty.
+    c.clear();
+
+    // c.clock() returns an abstract_clock, so dynamic_cast to manual_clock.
+    typedef TestTraitsBase::Clock Clock;
+    Clock& clk (dynamic_cast <Clock&> (c.clock ()));
+    clk.set (0);
+
+    Values rev (values);
+    std::sort (rev.begin (), rev.end ());
+    std::reverse (rev.begin (), rev.end ());
+    for (auto& v : rev)
+    {
+        // Add values in reverse order so they are reversed chronologically.
+        ++clk;
+        c.insert (v);
+    }
+}
+
+// Get one iterator before endIter.  We have to use operator++ because you
+// cannot use operator-- with unordered container iterators.
+template <class Iter>
+Iter
+aged_associative_container_test_base::
+nextToEndIter (Iter beginIter, Iter const endIter)
+{
+    if (beginIter == endIter)
+    {
+        fail ("Internal test failure. Cannot advance beginIter");
+        return beginIter;
+    }
+
+    //
+    Iter nextToEnd = beginIter;
+    do
+    {
+        nextToEnd = beginIter++;
+    } while (beginIter != endIter);
+    return nextToEnd;
+}
+
+// Implementation for the element erase tests
+//
+// This test accepts:
+//  o the container from which we will erase elements
+//  o iterators into that container defining the range of the erase
+//
+// This implementation does not declare a pass, since it wants to allow
+// the caller to examine the size of the container and the returned iterator
+//
+// Note that this test works on the aged_associative containers because an
+// erase only invalidates references and iterators to the erased element
+// (see 23.2.4/13).  Therefore the passed-in end iterator stays valid through
+// the whole test.
+template <class Container, class Iter>
+bool aged_associative_container_test_base::
+doElementErase (Container& c, Iter const beginItr, Iter const endItr)
+{
+    auto it (beginItr);
+    size_t count = c.size();
+    while (it != endItr)
+    {
+        auto expectIt = it;
+        ++expectIt;
+        it = c.erase (it);
+
+        if (it != expectIt)
+        {
+            fail ("Unexpected returned iterator from element erase");
+            return false;
+        }
+
+        --count;
+        if (count != c.size())
+        {
+            fail ("Failed to erase element");
+            return false;
+        }
+
+        if (c.empty ())
+        {
+            if (it != endItr)
+            {
+                fail ("Erase of last element didn't produce end");
+                return false;
+            }
+        }
+    }
+   return true;
+}
+
+//------------------------------------------------------------------------------
+//
+// Erase of individual elements
+//
+//------------------------------------------------------------------------------
+
+template <bool IsUnordered, bool IsMulti, bool IsMap>
+void
+aged_associative_container_test_base::
+testElementErase ()
+{
+    typedef TestTraits <IsUnordered, IsMulti, IsMap> Traits;
+
+    //testcase (Traits::name() + " element erase"
+    testcase ("element erase");
+
+    // Make and fill the container
+    typename Traits::Clock ck;
+    typename Traits::template Cont <> c {ck};
+    reverseFillAgedContainer (c, Traits::values());
+
+    {
+        // Test standard iterators
+        auto tempContainer (c);
+        if (! doElementErase (tempContainer,
+            tempContainer.cbegin(), tempContainer.cend()))
+            return; // Test failed
+
+        expect (tempContainer.empty(), "Failed to erase all elements");
+        pass();
+    }
+    {
+        // Test chronological iterators
+        auto tempContainer (c);
+        auto& chron (tempContainer.chronological);
+        if (! doElementErase (tempContainer, chron.begin(), chron.end()))
+            return; // Test failed
+
+        expect (tempContainer.empty(),
+            "Failed to chronologically erase all elements");
+        pass();
+    }
+    {
+        // Test standard iterator partial erase
+        auto tempContainer (c);
+        expect (tempContainer.size() > 2,
+            "Internal failure.  Container too small.");
+        if (! doElementErase (tempContainer, ++tempContainer.begin(),
+            nextToEndIter (tempContainer.begin(), tempContainer.end())))
+            return; // Test failed
+
+        expect (tempContainer.size() == 2,
+            "Failed to erase expected number of elements");
+        pass();
+    }
+    {
+        // Test chronological iterator partial erase
+        auto tempContainer (c);
+        expect (tempContainer.size() > 2,
+            "Internal failure.  Container too small.");
+        auto& chron (tempContainer.chronological);
+        if (! doElementErase (tempContainer, ++chron.begin(),
+            nextToEndIter (chron.begin(), chron.end())))
+            return; // Test failed
+
+        expect (tempContainer.size() == 2,
+            "Failed to chronologically erase expected number of elements");
+        pass();
+    }
+    {
+        auto tempContainer (c);
+        expect (tempContainer.size() > 4,
+            "Internal failure.  Container too small.");
+        // erase(reverse_iterator) is not allowed.  None of the following
+        // should compile for any aged_container type.
+//      c.erase (c.rbegin());
+//      c.erase (c.crbegin());
+//      c.erase(c.rbegin(), ++c.rbegin());
+//      c.erase(c.crbegin(), ++c.crbegin());
+    }
+}
+
+// Implementation for the range erase tests
+//
+// This test accepts:
+//
+//  o A container with more than 2 elements and
+//  o An object to ask for begin() and end() iterators in the passed container
+//
+// This peculiar interface allows either the container itself to be passed as
+// the second argument or the container's "chronological" element.  Both
+// sources of iterators need to be tested on the container.
+//
+// The test locates iterators such that a range-based delete leaves the first
+// and last elements in the container.  It then validates that the container
+// ended up with the expected contents.
+//
+template <class Container, class BeginEndSrc>
+void
+aged_associative_container_test_base::
+doRangeErase (Container& c, BeginEndSrc const& beginEndSrc)
+{
+    expect (c.size () > 2,
+        "Internal test failure. Container must have more than 2 elements");
+    auto itBeginPlusOne (beginEndSrc.begin ());
+    auto const valueFront = *itBeginPlusOne;
+    ++itBeginPlusOne;
+
+    // Get one iterator before end()
+    auto itBack (nextToEndIter (itBeginPlusOne, beginEndSrc.end ()));
+    auto const valueBack = *itBack;
+
+    // Erase all elements but first and last
+    auto const retIter = c.erase (itBeginPlusOne, itBack);
+
+    expect (c.size() == 2,
+        "Unexpected size for range-erased container");
+
+    expect (valueFront == *(beginEndSrc.begin()),
+        "Unexpected first element in range-erased container");
+
+    expect (valueBack == *(++beginEndSrc.begin()),
+        "Unexpected last element in range-erased container");
+
+    expect (retIter == (++beginEndSrc.begin()),
+        "Unexpected return iterator from erase");
+
+    pass ();
+}
+
+//------------------------------------------------------------------------------
+//
+// Erase range of elements
+//
+//------------------------------------------------------------------------------
+
+template <bool IsUnordered, bool IsMulti, bool IsMap>
+void
+aged_associative_container_test_base::
+testRangeErase ()
+{
+    typedef TestTraits <IsUnordered, IsMulti, IsMap> Traits;
+
+    //testcase (Traits::name() + " element erase"
+    testcase ("range erase");
+
+    // Make and fill the container
+    typename Traits::Clock ck;
+    typename Traits::template Cont <> c {ck};
+    reverseFillAgedContainer (c, Traits::values());
+
+    // Not bothering to test range erase with reverse iterators.
+    {
+        auto tempContainer (c);
+        doRangeErase (tempContainer, tempContainer);
+    }
+    {
+        auto tempContainer (c);
+        doRangeErase (tempContainer, tempContainer.chronological);
     }
 }
 
@@ -1378,9 +1867,13 @@ testMaybeUnorderedMultiMap ()
     testConstructRange      <IsUnordered, IsMulti, IsMap> ();
     testConstructInitList   <IsUnordered, IsMulti, IsMap> ();
     testCopyMove            <IsUnordered, IsMulti, IsMap> ();
+    testIterator            <IsUnordered, IsMulti, IsMap> ();
+    testReverseIterator     <IsUnordered, IsMulti, IsMap> ();
     testModifiers           <IsUnordered, IsMulti, IsMap> ();
     testChronological       <IsUnordered, IsMulti, IsMap> ();
     testArrayCreate         <IsUnordered, IsMulti, IsMap> ();
+    testElementErase        <IsUnordered, IsMulti, IsMap> ();
+    testRangeErase          <IsUnordered, IsMulti, IsMap> ();
     testCompare             <IsUnordered, IsMulti, IsMap> ();
     testObservers           <IsUnordered, IsMulti, IsMap> ();
 }
@@ -1514,4 +2007,4 @@ BEAST_DEFINE_TESTSUITE(aged_unordered_map,container,beast);
 BEAST_DEFINE_TESTSUITE(aged_unordered_multiset,container,beast);
 BEAST_DEFINE_TESTSUITE(aged_unordered_multimap,container,beast);
 
-}
+} // namespace beast
