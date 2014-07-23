@@ -227,4 +227,10 @@
 #define RIPPLE_STRUCTURED_OVERLAY 0
 #endif
 
+/** Config: RIPPLE_ASYNC_RPC_HANDLER
+*/
+#ifndef RIPPLE_ASYNC_RPC_HANDLER
+#define RIPPLE_ASYNC_RPC_HANDLER 1
+#endif
+
 #endif

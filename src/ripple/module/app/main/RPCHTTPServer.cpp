@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/common/RippleSSLContext.h>
+#include <ripple/http/Session.h>
 #include <ripple/module/app/main/RPCHTTPServer.h>
 #include <ripple/module/rpc/RPCHandler.h>
 #include <ripple/module/rpc/RPCServerHandler.h>
@@ -75,9 +76,12 @@ public:
               getConfig ().getRpcPort() != 0)
         {
             beast::IP::Endpoint ep (beast::IP::Endpoint::from_string (getConfig().getRpcIP()));
-            if (! is_unspecified (ep))
+
+            // VFALCO TODO IP address should not have an "unspecified" state
+            //if (! is_unspecified (ep))
             {
                 HTTP::Port port;
+                port.security = HTTP::Port::allow_ssl;
                 port.addr = ep.at_port(0);
                 if (getConfig ().getRpcPort() != 0)
                     port.port = getConfig ().getRpcPort();
@@ -131,16 +135,24 @@ public:
 
     void onRequest (HTTP::Session& session)
     {
+        // Check user/password authorization
+        auto const headers (session.request()->headers().build_map());
+        if (! HTTPAuthorized (headers))
+        {
+            session.write (HTTPReply (403, "Forbidden"));
+            session.close();
+            return;
+        }
+
 #if 0
+        // Synchronous version that doesn't use job queue
         Job job;
         processSession (job, session);
+
 #else
         session.detach();
 
-        // The "boost::"'s are a workaround for broken versions of tr1::functional that
-        // require the reference wrapper to be callable. HTTP::Session has abstract functions
-        // and so references to it are not callable.
-        m_jobQueue.addJob (jtRPC, "RPC", std::bind (
+        m_jobQueue.addJob (jtCLIENT, "RPC-Client", std::bind (
             &RPCHTTPServerImp::processSession, this, std::placeholders::_1,
                 std::ref (session)));
 #endif
@@ -159,8 +171,14 @@ public:
 
     void processSession (Job& job, HTTP::Session& session)
     {
+#if 0
+        // Goes through the old code
         session.write (m_deprecatedHandler.processRequest (
             session.content(), session.remoteAddress().at_port(0)));
+#else
+        session.write (processRequest (session.content(),
+            session.remoteAddress().at_port(0)));
+#endif
 
         session.close();
     }
@@ -172,14 +190,10 @@ public:
         return HTTPReply (statusCode, description);
     }
 
-    bool isAuthorized (
-        std::map <std::string, std::string> const& headers)
-    {
-        return HTTPAuthorized (headers);
-    }
-
     // Stolen directly from RPCServerHandler
-    std::string processRequest (std::string const& request, beast::IP::Endpoint const& remoteIPAddress)
+    std::string
+    processRequest (std::string const& request,
+        beast::IP::Endpoint const& remoteIPAddress)
     {
         Json::Value jvRequest;
         {
@@ -245,14 +259,6 @@ public:
             // FIXME Needs implementing
             // XXX This needs rate limiting to prevent brute forcing password.
             return HTTPReply (403, "Forbidden");
-        }
-
-        // This code does all the work on the io_service thread and
-        // has no rate-limiting based on source IP or anything.
-        // This is a temporary safety
-        if ((role != Config::ADMIN) && (getApp().getFeeTrack().isLoadedLocal()))
-        {
-            return HTTPReply (503, "Unable to service at this time");
         }
 
         std::string response;

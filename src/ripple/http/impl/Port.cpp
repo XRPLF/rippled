@@ -21,16 +21,16 @@ namespace ripple {
 namespace HTTP {
 
 Port::Port ()
-    : port (0)
-    , security (no_ssl)
+    : security (no_ssl)
+    , port (0)
     , context (nullptr)
 {
 }
 
 Port::Port (Port const& other)
-    : port (other.port)
+    : security (other.security)
+    , port (other.port)
     , addr (other.addr)
-    , security (other.security)
     , context (other.context)
 {
 }
@@ -44,14 +44,11 @@ Port& Port::operator= (Port const& other)
     return *this;
 }
 
-Port::Port (
-    std::uint16_t port_,
-    beast::IP::Endpoint const& addr_,
-    Security security_,
-    beast::asio::SSLContext* context_)
-    : port (port_)
+Port::Port (std::uint16_t port_, beast::IP::Endpoint const& addr_,
+        Security security_, beast::asio::SSLContext* context_)
+    : security (security_)
+    , port (port_)
     , addr (addr_)
-    , security (security_)
     , context (context_)
 {
 }
@@ -87,19 +84,6 @@ bool operator< (Port const& lhs, Port const& rhs)
 
     return true;
 }
-
-bool operator!= (Port const& lhs, Port const& rhs)
-    { return ! (lhs == rhs); }
-
-bool operator> (Port const& lhs, Port const& rhs)
-    { return rhs < lhs; }
-
-bool operator<= (Port const& lhs, Port const& rhs)
-    { return ! (rhs < lhs); }
-
-bool operator>= (Port const& lhs, Port const& rhs)
-    { return ! (lhs < rhs); }
-
 
 }
 }

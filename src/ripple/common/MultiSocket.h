@@ -96,15 +96,6 @@ public:
     private:
         int m_flags;
     };
- 
-    enum Flags
-    {
-        none = 0,
-        client_ssl = 1,
-        server_ssl = 2,
-        server_ssl_required = 4,
-        server_proxy = 8
-    };
 
     typedef beast::asio::HandshakeDetectLogicPROXY::ProxyInfo ProxyInfo;
 

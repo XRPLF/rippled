@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/http/impl/ServerImpl.h>
+
 namespace ripple {
 namespace HTTP {
 
@@ -24,7 +26,7 @@ ServerImpl::ServerImpl (Server& server, Handler& handler, beast::Journal journal
     : Thread ("HTTP::Server")
     , m_server (server)
     , m_handler (handler)
-    , m_journal (journal)
+    , journal_ (journal)
     , m_strand (m_io_service)
     , m_work (boost::in_place (std::ref (m_io_service)))
     , m_stopped (true)
@@ -35,11 +37,6 @@ ServerImpl::ServerImpl (Server& server, Handler& handler, beast::Journal journal
 ServerImpl::~ServerImpl ()
 {
     stopThread ();
-}
-
-beast::Journal const& ServerImpl::journal() const
-{
-    return m_journal;
 }
 
 Ports const& ServerImpl::getPorts () const
@@ -129,7 +126,7 @@ int ServerImpl::compare (Port const& lhs, Port const& rhs)
 {
     if (lhs < rhs)
         return -1;
-    else if (lhs > rhs)
+    else if (rhs < lhs)
         return 1;
     return 0;
 }
