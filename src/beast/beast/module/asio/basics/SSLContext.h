@@ -20,6 +20,7 @@
 #ifndef BEAST_ASIO_BASICS_SSLCONTEXT_H_INCLUDED
 #define BEAST_ASIO_BASICS_SSLCONTEXT_H_INCLUDED
 
+#include <beast/Uncopyable.h>
 #include <boost/asio/ssl/context.hpp>
 
 namespace beast {
