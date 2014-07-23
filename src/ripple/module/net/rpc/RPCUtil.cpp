@@ -262,10 +262,14 @@ std::string DecodeBase64 (std::string s)
 
 bool HTTPAuthorized (const std::map<std::string, std::string>& mapHeaders)
 {
-    std::map<std::string, std::string>::const_iterator it = mapHeaders.find ("authorization");
+    bool const credentialsRequired (! getConfig().RPC_USER.empty() &&
+        ! getConfig().RPC_PASSWORD.empty());
+    if (! credentialsRequired)
+        return true;
 
+    auto const it = mapHeaders.find ("authorization");
     if ((it == mapHeaders.end ()) || (it->second.substr (0, 6) != "Basic "))
-        return getConfig ().RPC_USER.empty () && getConfig ().RPC_PASSWORD.empty ();
+        return false;
 
     std::string strUserPass64 = it->second.substr (6);
     boost::trim (strUserPass64);

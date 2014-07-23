@@ -801,6 +801,10 @@ public:
         //
         // Allow RPC connections.
         //
+#if RIPPLE_ASYNC_RPC_HANDLER
+        m_rpcHTTPServer->setup (m_journal);
+
+#else
         if (! getConfig ().getRpcIP().empty () && getConfig ().getRpcPort() != 0)
         {
             try
@@ -820,6 +824,7 @@ public:
         {
             m_journal.info << "RPC interface: disabled";
         }
+#endif
 
         //
         // Begin connecting to network.

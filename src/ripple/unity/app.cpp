@@ -23,10 +23,11 @@
 #include <ripple/unity/net.h>
 #include <ripple/unity/rpcx.h>
 #include <ripple/unity/websocket.h>
-#include <ripple/unity/http.h>
 #include <ripple/unity/resource.h>
 #include <ripple/unity/sitefiles.h>
 #include <ripple/unity/validators.h>
+
+#include <ripple/http/Server.h>
 
 #include <ripple/module/app/main/CollectorManager.cpp>
 #include <ripple/module/app/main/NodeStoreScheduler.cpp>
