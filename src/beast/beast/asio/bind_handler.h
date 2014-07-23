@@ -56,6 +56,7 @@ private:
 public:
     typedef void result_type;
 
+    explicit
     bound_handler (DeducedHandler&& handler, Args&&... args)
         : m_handler (std::forward <DeducedHandler> (handler))
         , m_args (std::forward <Args> (args)...)
