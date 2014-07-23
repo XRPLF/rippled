@@ -38,11 +38,9 @@ public:
     }
 
     typedef std::recursive_mutex mutex;
-    typedef std::lock_guard<mutex> lock_guard;
-
-    std::unique_ptr<lock_guard> lock()
+    std::unique_lock<mutex> lock()
     {
-        return std::make_unique<lock_guard>(mLock);
+        return std::unique_lock<mutex> (mLock);
     }
 
 private:
