@@ -117,7 +117,7 @@ AmendmentTableImpl::getCreate (uint256 const& amendmentHash, bool create)
             query.append (to_string (amendmentHash));
             query.append ("';");
 
-            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+            auto sl (getApp().getWalletDB ()->lock ());
             Database* db = getApp().getWalletDB ()->getDB ();
 
             if (db->executeSQL (query) && db->startIterRows ())
@@ -373,7 +373,7 @@ AmendmentTableImpl::reportValidations (const AmendmentSet& set)
 
     if (!changedAmendments.empty())
     {
-        DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+        auto sl (getApp().getWalletDB ()->lock ());
         Database* db = getApp().getWalletDB ()->getDB ();
 
         db->executeSQL ("BEGIN TRANSACTION;");

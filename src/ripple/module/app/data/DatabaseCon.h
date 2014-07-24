@@ -20,6 +20,8 @@
 #ifndef RIPPLE_DATABASECON_H
 #define RIPPLE_DATABASECON_H
 
+#include <mutex>
+
 namespace ripple {
 
 // VFALCO NOTE This looks like a pointless class. Figure out
@@ -29,22 +31,23 @@ class DatabaseCon : beast::LeakChecked <DatabaseCon>
 public:
     DatabaseCon (const std::string& name, const char* initString[], int countInit);
     ~DatabaseCon ();
+
     Database* getDB ()
     {
         return mDatabase;
     }
-    DeprecatedRecursiveMutex& getDBLock ()
+
+    typedef std::recursive_mutex mutex;
+    std::unique_lock<mutex> lock()
     {
-        return mLock;
+        return std::unique_lock<mutex> (mLock);
     }
 
-    // VFALCO TODO change "protected" to "private" throughout the code
 private:
-    Database*               mDatabase;
-    DeprecatedRecursiveMutex  mLock;
+    Database* mDatabase;
+    mutex  mLock;
 };
 
 } // ripple
 
 #endif
-

@@ -52,7 +52,7 @@ JobType Job::getType () const
     return mType;
 }
 
-CancelCallback Job::getCancelCallback () const
+Job::CancelCallback Job::getCancelCallback () const
 {
     bassert (m_cancelCallback);
     return m_cancelCallback;

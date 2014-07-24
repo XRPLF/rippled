@@ -683,14 +683,14 @@ bool Ledger::saveValidatedLedger (bool current)
     }
 
     {
-        DeprecatedScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
+        auto sl (getApp().getLedgerDB ()->lock ());
         getApp().getLedgerDB ()->getDB ()->executeSQL (
             boost::str (deleteLedger % mLedgerSeq));
     }
 
     {
         Database* db = getApp().getTxnDB ()->getDB ();
-        DeprecatedScopedLock dbLock (getApp().getTxnDB ()->getDBLock ());
+        auto dbLock (getApp().getTxnDB ()->lock ());
         db->executeSQL ("BEGIN TRANSACTION;");
 
         db->executeSQL (boost::str (deleteTrans1 % getLedgerSeq ()));
@@ -763,7 +763,7 @@ bool Ledger::saveValidatedLedger (bool current)
     }
 
     {
-        DeprecatedScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
+        auto sl (getApp().getLedgerDB ()->lock ());
 
         // TODO(tom): ARG!!
         getApp().getLedgerDB ()->getDB ()->executeSQL (boost::str (addLedger %
@@ -789,7 +789,7 @@ Ledger::pointer Ledger::loadByIndex (std::uint32_t ledgerIndex)
     Ledger::pointer ledger;
     {
         Database* db = getApp().getLedgerDB ()->getDB ();
-        DeprecatedScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
+        auto sl (getApp().getLedgerDB ()->lock ());
 
         SqliteStatement pSt (
             db->getSqliteDB (), "SELECT "
@@ -815,7 +815,7 @@ Ledger::pointer Ledger::loadByHash (uint256 const& ledgerHash)
     Ledger::pointer ledger;
     {
         Database* db = getApp().getLedgerDB ()->getDB ();
-        DeprecatedScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
+        auto sl (getApp().getLedgerDB ()->lock ());
 
         SqliteStatement pSt (
             db->getSqliteDB (), "SELECT "
@@ -872,7 +872,7 @@ Ledger::pointer Ledger::getSQL (const std::string& sql)
 
     {
         Database* db = getApp().getLedgerDB ()->getDB ();
-        DeprecatedScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
+        auto sl (getApp().getLedgerDB ()->lock ());
 
         if (!db->executeSQL (sql) || !db->startIterRows ())
             return Ledger::pointer ();
@@ -997,7 +997,7 @@ uint256 Ledger::getHashByIndex (std::uint32_t ledgerIndex)
     std::string hash;
     {
         Database* db = getApp().getLedgerDB ()->getDB ();
-        DeprecatedScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
+        auto sl (getApp().getLedgerDB ()->lock ());
 
         if (!db->executeSQL (sql) || !db->startIterRows ())
             return ret;
@@ -1016,7 +1016,7 @@ bool Ledger::getHashesByIndex (
 #ifndef NO_SQLITE3_PREPARE
 
     DatabaseCon* con = getApp().getLedgerDB ();
-    DeprecatedScopedLock sl (con->getDBLock ());
+    auto sl (con->lock ());
 
     SqliteStatement pSt (con->getDB ()->getSqliteDB (),
                          "SELECT LedgerHash,PrevHash FROM Ledgers "
@@ -1054,7 +1054,7 @@ bool Ledger::getHashesByIndex (
     std::string hash, prevHash;
     {
         Database* db = getApp().getLedgerDB ()->getDB ();
-        DeprecatedScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
+        auto sl (getApp().getLedgerDB ()->lock ());
 
         if (!db->executeSQL (sql) || !db->startIterRows ())
             return false;
@@ -1088,7 +1088,7 @@ Ledger::getHashesByIndex (std::uint32_t minSeq, std::uint32_t maxSeq)
     sql.append (";");
 
     DatabaseCon* con = getApp().getLedgerDB ();
-    DeprecatedScopedLock sl (con->getDBLock ());
+    auto sl (con->lock ());
 
     SqliteStatement pSt (con->getDB ()->getSqliteDB (), sql);
 

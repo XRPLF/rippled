@@ -1918,7 +1918,7 @@ NetworkOPs::AccountTxs NetworkOPsImp::getAccountTxs (
 
     {
         Database* db = getApp().getTxnDB ()->getDB ();
-        DeprecatedScopedLock sl (getApp().getTxnDB ()->getDBLock ());
+        auto sl (getApp().getTxnDB ()->lock ());
 
         SQL_FOREACH (db, sql)
         {
@@ -1967,7 +1967,7 @@ std::vector<NetworkOPsImp::txnMetaLedgerType> NetworkOPsImp::getAccountTxsB (
 
     {
         Database* db = getApp().getTxnDB ()->getDB ();
-        DeprecatedScopedLock sl (getApp().getTxnDB ()->getDBLock ());
+        auto sl (getApp().getTxnDB ()->lock ());
 
         SQL_FOREACH (db, sql)
         {
@@ -2060,7 +2060,7 @@ NetworkOPsImp::getTxsAccount (const RippleAddress& account, std::int32_t minLedg
              % queryLimit);
     {
         Database* db = getApp().getTxnDB ()->getDB ();
-        DeprecatedScopedLock sl (getApp().getTxnDB ()->getDBLock ());
+        auto sl (getApp().getTxnDB ()->lock ());
 
         SQL_FOREACH (db, sql)
         {
@@ -2168,7 +2168,7 @@ NetworkOPsImp::getTxsAccountB (const RippleAddress& account, std::int32_t minLed
              % queryLimit);
     {
         Database* db = getApp().getTxnDB ()->getDB ();
-        DeprecatedScopedLock sl (getApp().getTxnDB ()->getDBLock ());
+        auto sl (getApp().getTxnDB ()->lock ());
 
         SQL_FOREACH (db, sql)
         {
@@ -2231,7 +2231,7 @@ NetworkOPsImp::getLedgerAffectedAccounts (std::uint32_t ledgerSeq)
     RippleAddress acct;
     {
         Database* db = getApp().getTxnDB ()->getDB ();
-        DeprecatedScopedLock sl (getApp().getTxnDB ()->getDBLock ());
+        auto sl (getApp().getTxnDB ()->lock ());
         SQL_FOREACH (db, sql)
         {
             if (acct.setAccountID (db->getStrBinary ("Account")))

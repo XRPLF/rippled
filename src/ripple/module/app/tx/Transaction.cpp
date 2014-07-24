@@ -205,7 +205,7 @@ Transaction::pointer Transaction::transactionFromSQL (const std::string& sql)
     rawTxn.resize (txSize);
 
     {
-        DeprecatedScopedLock sl (getApp().getTxnDB ()->getDBLock ());
+        auto sl (getApp().getTxnDB ()->lock ());
         Database* db = getApp().getTxnDB ()->getDB ();
 
         if (!db->executeSQL (sql, true) || !db->startIterRows ())
@@ -350,7 +350,7 @@ Json::Value Transaction::getJson (int options, bool binary) const
 
 bool Transaction::isHexTxID (const std::string& txid)
 {
-    if (txid.size () != 64) 
+    if (txid.size () != 64)
         return false;
 
     auto const ret = std::find_if_not (txid.begin (), txid.end (),
