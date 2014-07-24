@@ -19,6 +19,7 @@
 *.o
 build
 tags
+TAGS
 bin/rippled
 Debug/*.*
 Release/*.*
