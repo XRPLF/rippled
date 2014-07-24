@@ -59,9 +59,8 @@ private:
     // request
     beast::http::method_t method_;
     std::string url_;
-    
+
     // response
-    int status_;
     std::string reason_;
 
     // message
@@ -102,7 +101,6 @@ public:
 
     basic_message()
         : method_ (beast::http::method_t::http_get)
-        , status_ (200)
         , version_ (1, 1)
     {
     }

@@ -42,7 +42,7 @@ namespace beast {
 namespace http {
 
 /** Allows thread-safe forward traversal of a sequence.
-    
+
     Each time the shared_iterator is dereferenced it provides an element in
     the sequence or the one-past-the-end iterator if there are no elements
     remaining in the sequence. Access to the shared iterator is thread safe:
@@ -285,7 +285,7 @@ public:
 
             Response resp;
             ec = session.get (req, resp);
-            
+
             if (ec)
             {
                 // hack
@@ -318,7 +318,7 @@ public:
             std::string const base (*cur);
             std::string url;
             url = "www." + base;
-            auto const ec (visit (session, url));
+            visit (session, url);
         }
     }
 
@@ -345,7 +345,7 @@ std::advance (last, 3000);
 #else
         std::size_t const hardware_concurrency (1);
 #endif
-        
+
         for (std::size_t n (hardware_concurrency); n--;)
             pool.emplace_back (std::bind (
                 &client_session_test::concurrent_get <Iterator>, this,
