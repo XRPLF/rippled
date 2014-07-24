@@ -651,10 +651,14 @@ bool SHAMap::hasLeafNode (uint256 const& tag, uint256 const& targetNodeHash)
     return false; // If this was a matching leaf, we would have caught it already
 }
 
-static void addFPtoList (std::list<SHAMap::fetchPackEntry_t>& list, const uint256& hash, const Blob& blob)
+#if 0
+static
+void addFPtoList (std::list<SHAMap::fetchPackEntry_t>& list,
+                  const uint256& hash, const Blob& blob)
 {
     list.push_back (SHAMap::fetchPackEntry_t (hash, blob));
 }
+#endif
 
 /**
 @param have A pointer to the map that the recipient already has (if any).
