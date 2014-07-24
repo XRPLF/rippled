@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <algorithm>
+
 namespace beast {
 
 HTTPHeaders::HTTPHeaders ()
@@ -84,6 +86,22 @@ String HTTPHeaders::toString () const
         s << field.name() << ": " << field.value() << newLine;
     }
     return s;
+}
+
+std::map <std::string, std::string>
+HTTPHeaders::build_map() const
+{
+    std::map <std::string, std::string> c;
+    auto const& k (m_fields.getAllKeys());
+    auto const& v (m_fields.getAllValues());
+    for (std::size_t i = 0; i < m_fields.size(); ++i)
+    {
+        auto key (k[i].toStdString());
+        auto const value (v[i].toStdString());
+        std::transform (key.begin(), key.end(), key.begin(), ::tolower);
+        c[key] = value;
+    }
+    return c;
 }
 
 }

@@ -21,8 +21,8 @@
 #define BEAST_ASIO_HTTPHEADERS_H_INCLUDED
 
 #include <beast/module/asio/http/HTTPField.h>
-
 #include <beast/module/core/text/StringPairArray.h>
+#include <map>
 
 namespace beast {
 
@@ -69,6 +69,10 @@ public:
 
     /** Outputs all the headers into one string. */
     String toString () const;
+
+    // VFALCO HACK to present the headers in a useful format
+    std::map <std::string, std::string>
+    build_map() const;
 
 private:
     StringPairArray m_fields;
