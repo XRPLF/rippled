@@ -241,7 +241,6 @@ def config_env(toolchain, variant, env):
         env.Append(CPPDEFINES=['NDEBUG'])
 
     if toolchain in Split('clang gcc'):
-
         if Beast.system.linux:
             env.ParseConfig('pkg-config --static --cflags --libs openssl')
             env.ParseConfig('pkg-config --static --cflags --libs protobuf')
@@ -253,8 +252,11 @@ def config_env(toolchain, variant, env):
             '-Wno-sign-compare',
             '-Wno-char-subscripts',
             '-Wno-format',
-            '-Wno-deprecated-register'
+            '-Wno-deprecated-register',
             ])
+
+        if toolchain == 'clang':
+            env.Append(CCFLAGS=['-Wno-redeclared-class-member'])
 
         env.Append(CXXFLAGS=[
             '-frtti',
@@ -329,7 +331,9 @@ def config_env(toolchain, variant, env):
             if Beast.system.osx:
                 env.Replace(CC='clang', CXX='clang++', LINK='clang++')
             elif 'CLANG_CC' in env and 'CLANG_CXX' in env and 'CLANG_LINK' in env:
-                env.Replace(CC=env['CLANG_CC'], CXX=env['CLANG_CXX'], LINK=env['CLANG_LINK'])
+                env.Replace(CC=env['CLANG_CC'],
+                            CXX=env['CLANG_CXX'],
+                            LINK=env['CLANG_LINK'])
             # C and C++
             # Add '-Wshorten-64-to-32'
             env.Append(CCFLAGS=[])
@@ -338,7 +342,9 @@ def config_env(toolchain, variant, env):
 
         elif toolchain == 'gcc':
             if 'GNU_CC' in env and 'GNU_CXX' in env and 'GNU_LINK' in env:
-                env.Replace(CC=env['GNU_CC'], CXX=env['GNU_CXX'], LINK=env['GNU_LINK'])
+                env.Replace(CC=env['GNU_CC'],
+                            CXX=env['GNU_CXX'],
+                            LINK=env['GNU_LINK'])
             # Why is this only for gcc?!
             env.Append(CCFLAGS=['-Wno-unused-local-typedefs'])
 
@@ -542,7 +548,7 @@ for toolchain in all_toolchains:
 
         objects.append(addSource('src/ripple/unity/nodestore.cpp', env, variant_dirs, [
             'src/leveldb/include',
-            #'src/hyperleveldb/include', # hyper 
+            #'src/hyperleveldb/include', # hyper
             'src/rocksdb/include',
             ]))
 
