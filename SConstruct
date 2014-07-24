@@ -247,13 +247,13 @@ def config_env(toolchain, variant, env):
             env.ParseConfig('pkg-config --static --cflags --libs openssl')
             env.ParseConfig('pkg-config --static --cflags --libs protobuf')
 
-        env.Prepend(CCFLAGS=['-Wall'])
+        env.Prepend(CFLAGS=['-Wall'])
+        env.Prepend(CXXFLAGS=['-Wall'])
 
         env.Append(CCFLAGS=[
             '-Wno-sign-compare',
             '-Wno-char-subscripts',
-            '-Wno-format',
-            '-Wno-deprecated-register'
+            '-Wno-format'
             ])
 
         env.Append(CXXFLAGS=[
@@ -334,7 +334,10 @@ def config_env(toolchain, variant, env):
             # Add '-Wshorten-64-to-32'
             env.Append(CCFLAGS=[])
             # C++ only
-            env.Append(CXXFLAGS=['-Wno-mismatched-tags'])
+            env.Append(CXXFLAGS=[
+                '-Wno-mismatched-tags',
+                '-Wno-deprecated-register'
+                ])
 
         elif toolchain == 'gcc':
             if 'GNU_CC' in env and 'GNU_CXX' in env and 'GNU_LINK' in env:
