@@ -77,10 +77,10 @@ CreateOffer::checkAcceptAsset(IssueRef issue) const
         // ordering. Determine which entry we need to access.
         bool const canonical_gt (mTxnAccountID > issue.account);
 
-        bool const need_auth (trustLine->getFieldU32 (sfFlags) &
+        bool const is_authorized (trustLine->getFieldU32 (sfFlags) &
             (canonical_gt ? lsfLowAuth : lsfHighAuth));
 
-        if (need_auth)
+        if (!is_authorized)
         {
             if (m_journal.debug) m_journal.debug <<
                 "delay: can't receive IOUs from issuer without auth.";
