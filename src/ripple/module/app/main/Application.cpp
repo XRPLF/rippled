@@ -295,8 +295,8 @@ public:
         , m_inboundLedgers (InboundLedgers::New (get_seconds_clock (), *m_jobQueue,
                             m_collectorManager->collector ()))
 
-        // VFALCO NOTE Does NetworkOPs depend on LedgerMaster?
-        , m_networkOPs (NetworkOPs::New (get_seconds_clock (), *m_ledgerMaster,
+        , m_networkOPs (NetworkOPs::make_new (getConfig ().RUN_STANDALONE,
+            get_seconds_clock (), getConfig ().NETWORK_QUORUM, *m_ledgerMaster,
             *m_jobQueue, m_logs.journal("NetworkOPs")))
 
         // VFALCO NOTE LocalCredentials starts the deprecated UNL service

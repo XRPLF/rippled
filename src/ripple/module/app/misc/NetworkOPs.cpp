@@ -42,8 +42,8 @@ public:
 public:
     // VFALCO TODO Make LedgerMaster a SharedPtr or a reference.
     //
-    NetworkOPsImp (clock_type& clock, LedgerMaster& ledgerMaster,
-        Stoppable& parent, beast::Journal journal)
+    NetworkOPsImp (bool standalone, clock_type& clock, std::size_t network_quorum,
+        LedgerMaster& ledgerMaster, Stoppable& parent, beast::Journal journal)
         : NetworkOPs (parent)
         , m_clock (clock)
         , m_journal (journal)
@@ -68,6 +68,8 @@ public:
         , mFetchSeq (0)
         , mLastLoadBase (256)
         , mLastLoadFactor (256)
+        , m_standalone (standalone)
+        , m_network_quorum (network_quorum)
     {
     }
 
@@ -77,22 +79,22 @@ public:
 
     // network information
     // Our best estimate of wall time in seconds from 1/1/2000
-    std::uint32_t getNetworkTimeNC ();
+    std::uint32_t getNetworkTimeNC () const;
 
     // Our best estimate of current ledger close time
-    std::uint32_t getCloseTimeNC ();
+    std::uint32_t getCloseTimeNC () const;
 
     // Use *only* to timestamp our own validation
     std::uint32_t getValidationTimeNC ();
     void closeTimeOffset (int);
-    boost::posix_time::ptime getNetworkTimePT ();
+    boost::posix_time::ptime getNetworkTimePT () const;
     std::uint32_t getLedgerID (uint256 const& hash);
     std::uint32_t getCurrentLedgerID ();
-    OperatingMode getOperatingMode ()
+    OperatingMode getOperatingMode () const
     {
         return mMode;
     }
-    std::string strOperatingMode ();
+    std::string strOperatingMode () const;
 
     Ledger::pointer     getClosedLedger ()
     {
@@ -551,6 +553,12 @@ private:
 
     std::uint32_t mLastLoadBase;
     std::uint32_t mLastLoadFactor;
+
+    // Whether we are in standalone mode
+    bool m_standalone;
+
+    // The number of nodes that we need to consider ourselves connected
+    std::size_t const m_network_quorum;
 };
 
 //------------------------------------------------------------------------------
@@ -598,15 +606,14 @@ void NetworkOPsImp::processHeartbeatTimer ()
         std::size_t const numPeers = getApp().overlay ().size ();
 
         // do we have sufficient peers? If not, we are disconnected.
-        if (numPeers < getConfig ().NETWORK_QUORUM)
+        if (numPeers < m_network_quorum)
         {
             if (mMode != omDISCONNECTED)
             {
                 setMode (omDISCONNECTED);
                 m_journal.warning
                     << "Node count (" << numPeers << ") "
-                    << "has fallen below quorum ("
-                    << getConfig ().NETWORK_QUORUM << ").";
+                    << "has fallen below quorum (" << m_network_quorum << ").";
             }
 
             setHeartbeatTimer ();
@@ -678,9 +685,9 @@ void NetworkOPsImp::processClusterTimer ()
 //------------------------------------------------------------------------------
 
 
-std::string NetworkOPsImp::strOperatingMode ()
+std::string NetworkOPsImp::strOperatingMode () const
 {
-    static const char* paStatusToken [] =
+    static char const* paStatusToken [] =
     {
         "disconnected",
         "connected",
@@ -701,7 +708,7 @@ std::string NetworkOPsImp::strOperatingMode ()
     return paStatusToken[mMode];
 }
 
-boost::posix_time::ptime NetworkOPsImp::getNetworkTimePT ()
+boost::posix_time::ptime NetworkOPsImp::getNetworkTimePT () const
 {
     int offset = 0;
 
@@ -712,12 +719,12 @@ boost::posix_time::ptime NetworkOPsImp::getNetworkTimePT ()
             boost::posix_time::seconds (offset);
 }
 
-std::uint32_t NetworkOPsImp::getNetworkTimeNC ()
+std::uint32_t NetworkOPsImp::getNetworkTimeNC () const
 {
     return iToSeconds (getNetworkTimePT ());
 }
 
-std::uint32_t NetworkOPsImp::getCloseTimeNC ()
+std::uint32_t NetworkOPsImp::getCloseTimeNC () const
 {
     return iToSeconds (getNetworkTimePT () +
                        boost::posix_time::seconds (mCloseTimeOffset));
@@ -2963,10 +2970,10 @@ bool NetworkOPsImp::unsubLedger (std::uint64_t uSeq)
 bool NetworkOPsImp::subServer (InfoSub::ref isrListener, Json::Value& jvResult,
     bool admin)
 {
-    uint256         uRandom;
+    uint256 uRandom;
 
-    if (getConfig ().RUN_STANDALONE)
-        jvResult[jss::stand_alone] = getConfig ().RUN_STANDALONE;
+    if (m_standalone)
+        jvResult[jss::stand_alone] = m_standalone;
 
     RandomNumbers::getInstance ().fillBytes (uRandom.begin (), uRandom.size ());
 
@@ -3644,10 +3651,12 @@ NetworkOPs::~NetworkOPs ()
 
 //------------------------------------------------------------------------------
 
-NetworkOPs* NetworkOPs::New (clock_type& clock, LedgerMaster& ledgerMaster,
-    Stoppable& parent, beast::Journal journal)
+std::unique_ptr<NetworkOPs>
+NetworkOPs::make_new (bool standalone, clock_type& clock, std::size_t network_quorum,
+    LedgerMaster& ledgerMaster, Stoppable& parent, beast::Journal journal)
 {
-    return new NetworkOPsImp (clock, ledgerMaster, parent, journal);
+    return std::make_unique<NetworkOPsImp> (
+        standalone, clock, network_quorum, ledgerMaster, parent, journal);
 }
 
 } // ripple

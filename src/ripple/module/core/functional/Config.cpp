@@ -509,7 +509,7 @@ void Config::load ()
                 PEER_CONNECT_LOW_WATER = std::max (1, beast::lexicalCastThrow <int> (strTemp));
 
             if (SectionSingleB (secConfig, SECTION_NETWORK_QUORUM, strTemp))
-                NETWORK_QUORUM      = std::max (0, beast::lexicalCastThrow <int> (strTemp));
+                NETWORK_QUORUM      = beast::lexicalCastThrow <std::size_t> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_VALIDATION_QUORUM, strTemp))
                 VALIDATION_QUORUM   = std::max (0, beast::lexicalCastThrow <int> (strTemp));
