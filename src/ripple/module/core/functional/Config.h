@@ -384,8 +384,6 @@ public:
     int                         NETWORK_START_TIME;     // The Unix time we start ledger 0.
     int                         TRANSACTION_FEE_BASE;   // The number of fee units a reference transaction costs
     int                         LEDGER_SECONDS;
-    int                         LEDGER_PROPOSAL_DELAY_SECONDS;
-    int                         LEDGER_AVALANCHE_SECONDS;
     bool                        LEDGER_CREATOR;         // Should be false unless we are starting a new ledger.
 
     /** Operate in stand-alone mode.
@@ -473,11 +471,6 @@ public:
 
     // Client behavior
     int                         ACCOUNT_PROBE_MAX;      // How far to scan for accounts.
-
-    // Signing signatures.
-    std::uint32_t                      SIGN_TRANSACTION;
-    std::uint32_t                      SIGN_VALIDATION;
-    std::uint32_t                      SIGN_PROPOSAL;
 
     bool                        SSL_VERIFY;
     std::string                 SSL_VERIFY_FILE;

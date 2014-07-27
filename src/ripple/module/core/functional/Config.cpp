@@ -173,10 +173,6 @@ void Config::setup (std::string const& strConf, bool bQuiet)
 
     VALIDATORS_URI      = boost::str (boost::format ("/%s") % VALIDATORS_BASE);
 
-    SIGN_TRANSACTION    = HashPrefix::txSign;
-    SIGN_VALIDATION     = HashPrefix::validation;
-    SIGN_PROPOSAL       = HashPrefix::proposal;
-
     if (!strConf.empty ())
     {
         // --conf=<path> : everything is relative that file.
