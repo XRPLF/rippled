@@ -60,7 +60,7 @@ public:
       @param previousLedger Best guess of what the Last Closed Ledger (LCL)
                             was.
       @param closeTime      Closing time point of the LCL.
-      @param feeVote        Our recommendation for the voting fee.
+      @param feeVote        Our desired fee levels and voting logic.
     */
     LedgerConsensusImp (clock_type& clock, LocalTxs& localtx,
         LedgerHash const & prevLCLHash, Ledger::ref previousLedger,
@@ -357,7 +357,7 @@ public:
         CondLog (acquired, lsINFO, LedgerConsensus)
             << "We have acquired TXS " << hash;
 
-        if (!map)  // if the transaction failed
+        if (!map)  // If the map was invalid
         {
             // this is an invalid/corrupt map
             mAcquired[hash] = map;
@@ -429,12 +429,12 @@ public:
                 << hash << " no peers were proposing it";
         }
 
-        // Send our transaction set to directly connected peers
+        // Inform directly-connected peers that we have this transaction set
         sendHaveTxSet (hash, true);
     }
 
     /**
-      Determine if we still need to acquire a transaction set from  network.
+      Determine if we still need to acquire a transaction set from the network.
       If a transaction set is popular, we probably have it. If it's unpopular,
       we probably don't need it (and the peer that initially made us
       retrieve it has probably already changed its position).
@@ -876,7 +876,8 @@ public:
      
       @param peer    The peer we can get it from.
       @param hashSet The transaction set we can get.
-      @param status  Says whether or not the peer has the transaction locally.
+      @param status  Says whether or not the peer has the transaction set
+                     locally.
       @return        true if we have or acquire the transaction set.
     */
     bool peerHasSet (Peer::ptr const& peer, uint256 const& hashSet
@@ -986,7 +987,7 @@ private:
                 << ", close " << closeTime << (closeTimeCorrect ? "" : "X");
 
             // Put failed transactions into a deterministic order
-            CanonicalTXSet failedTransactions (set->getHash ());
+            CanonicalTXSet retriableTransactions (set->getHash ());
 
             // Build the new last closed ledger
             Ledger::pointer newLCL
@@ -1000,7 +1001,7 @@ private:
             WriteLog (lsDEBUG, LedgerConsensus)
                 << "Applying consensus set transactions to the"
                 << " last closed ledger";
-            applyTransactions (set, newLCL, newLCL, failedTransactions, false);
+            applyTransactions (set, newLCL, newLCL, retriableTransactions, false);
             newLCL->updateSkipList ();
             newLCL->setClosed ();
             std::shared_ptr<SHAMap::DirtySet> acctNodes
@@ -1111,7 +1112,7 @@ private:
                         SerializedTransaction::pointer txn
                             = std::make_shared<SerializedTransaction>(sit);
 
-                        failedTransactions.push_back (txn);
+                        retriableTransactions.push_back (txn);
                         anyDisputes = true;
                     }
                     catch (...)
@@ -1124,7 +1125,7 @@ private:
             if (anyDisputes)
             {
                 applyTransactions (std::shared_ptr<SHAMap>(),
-                    newOL, newLCL, failedTransactions, true);
+                    newOL, newLCL, retriableTransactions, true);
             }
 
             {
@@ -1135,7 +1136,7 @@ private:
                     WriteLog (lsDEBUG, LedgerConsensus)
                         << "Applying transactions from current open ledger";
                     applyTransactions (oldOL->peekTransactionMap (),
-                        newOL, newLCL, failedTransactions, true);
+                        newOL, newLCL, retriableTransactions, true);
                 }
             }
 
@@ -1386,7 +1387,7 @@ private:
        can fetch it from us.
      
       @param hash   The ID of the transaction.
-      @param direct true if we have this transaction locally, else a
+      @param direct true if we have this transaction set locally, else a
                     directly connected peer has it.
     */
     void sendHaveTxSet (uint256 const& hash, bool direct)
@@ -1401,16 +1402,16 @@ private:
 
     /** Apply a set of transactions to a ledger
      
-      @param set                The set of transactions to apply
-      @param applyLedger        The ledger to which the transactions should be
-                                applied.
-      @param checkLedger        A reference ledger for determining error
-                                messages (typically new last closed ledger).
-      @param failedTransactions collect failed transactions in this set
-      @param openLgr            true if applyLedger is open, else false.
+      @param set                   The set of transactions to apply
+      @param applyLedger           The ledger to which the transactions should
+                                   be applied.
+      @param checkLedger           A reference ledger for determining error
+                                   messages (typically new last closed ledger).
+      @param retriableTransactions collect failed transactions in this set
+      @param openLgr               true if applyLedger is open, else false.
     */
     void applyTransactions (SHAMap::ref set, Ledger::ref applyLedger,
-        Ledger::ref checkLedger, CanonicalTXSet& failedTransactions,
+        Ledger::ref checkLedger, CanonicalTXSet& retriableTransactions,
         bool openLgr)
     {
         TransactionEngine engine (applyLedger);
@@ -1434,11 +1435,11 @@ private:
                         SerializedTransaction::pointer txn
                             = std::make_shared<SerializedTransaction>(sit);
                         if (applyTransaction (engine, txn,
-                            applyLedger, openLgr, true) == resultRetry)
+                                              openLgr, true) == resultRetry)
                         {
                             // On failure, stash the failed transaction for
                             // later retry.
-                            failedTransactions.push_back (txn);
+                            retriableTransactions.push_back (txn);
                         }
 #ifndef TRUST_NETWORK
                     }
@@ -1453,30 +1454,30 @@ private:
 
         int changes;
         bool certainRetry = true;
-        // Attempt to apply all of the failed transactions
+        // Attempt to apply all of the retriable transactions
         for (int pass = 0; pass < LEDGER_TOTAL_PASSES; ++pass)
         {
             WriteLog (lsDEBUG, LedgerConsensus) << "Pass: " << pass << " Txns: "
-                << failedTransactions.size ()
+                << retriableTransactions.size ()
                 << (certainRetry ? " retriable" : " final");
             changes = 0;
 
-            auto it = failedTransactions.begin ();
+            auto it = retriableTransactions.begin ();
 
-            while (it != failedTransactions.end ())
+            while (it != retriableTransactions.end ())
             {
                 try
                 {
                     switch (applyTransaction (engine, it->second,
-                        applyLedger, openLgr, certainRetry))
+                            openLgr, certainRetry))
                     {
                     case resultSuccess:
-                        it = failedTransactions.erase (it);
+                        it = retriableTransactions.erase (it);
                         ++changes;
                         break;
 
                     case resultFail:
-                        it = failedTransactions.erase (it);
+                        it = retriableTransactions.erase (it);
                         break;
 
                     case resultRetry:
@@ -1487,7 +1488,7 @@ private:
                 {
                     WriteLog (lsWARNING, LedgerConsensus)
                         << "Transaction throws";
-                    it = failedTransactions.erase (it);
+                    it = retriableTransactions.erase (it);
                 }
             }
 
@@ -1505,21 +1506,19 @@ private:
 
         // If there are any transactions left, we must have
         // tried them in at least one final pass
-        assert (failedTransactions.empty() || !certainRetry);
+        assert (retriableTransactions.empty() || !certainRetry);
     }
 
     /** Apply a transaction to a ledger
      
-      @param engine       The transaction engine used for the application.
+      @param engine       The transaction engine containing the ledger.
       @param txn          The transaction to be applied to ledger.
-      @param ledger       The ledger to apply txn to.
       @param openLedger   true if ledger is open
       @param retryAssured true if the transaction should be retried on failure.
       @return             One of resultSuccess, resultFail or resultRetry.
     */
     int applyTransaction (TransactionEngine& engine
-        , SerializedTransaction::ref txn, Ledger::ref ledger
-        , bool openLedger, bool retryAssured)
+        , SerializedTransaction::ref txn, bool openLedger, bool retryAssured)
     {
         // Returns false if the transaction has need not be retried.
         TransactionEngineParams parms = openLedger ? tapOPEN_LEDGER : tapNONE;
@@ -1570,7 +1569,6 @@ private:
 
             WriteLog (lsDEBUG, LedgerConsensus)
                 << "Transaction retry: " << transHuman (result);
-            assert (!ledger->hasTransaction (txn->getTransactionID ()));
             return resultRetry;
 
 #ifndef TRUST_NETWORK
@@ -1641,7 +1639,7 @@ private:
     /** Take an initial position on what we think the consensus should be
         based on the transactions that made it into our open ledger
      
-      @param initialLedger The initial position (ledger) to be formed.
+      @param initialLedger The ledger that contains our initial position.
     */
     void takeInitialPosition (Ledger& initialLedger)
     {
