@@ -112,7 +112,8 @@ Json::Value doSubscribe (RPC::Context& context)
 
                 if (streamName == "server")
                 {
-                    context.netOps_.subServer (ispSub, jvResult);
+                    context.netOps_.subServer (ispSub, jvResult,
+                        context.role_ == Config::ADMIN);
                 }
                 else if (streamName == "ledger")
                 {

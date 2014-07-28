@@ -435,7 +435,7 @@ public:
     bool subLedger (InfoSub::ref ispListener, Json::Value& jvResult);
     bool unsubLedger (std::uint64_t uListener);
 
-    bool subServer (InfoSub::ref ispListener, Json::Value& jvResult);
+    bool subServer (InfoSub::ref ispListener, Json::Value& jvResult, bool admin);
     bool unsubServer (std::uint64_t uListener);
 
     bool subBook (InfoSub::ref ispListener, Book const&) override;
@@ -2946,7 +2946,8 @@ bool NetworkOPsImp::unsubLedger (std::uint64_t uSeq)
 }
 
 // <-- bool: true=added, false=already there
-bool NetworkOPsImp::subServer (InfoSub::ref isrListener, Json::Value& jvResult)
+bool NetworkOPsImp::subServer (InfoSub::ref isrListener, Json::Value& jvResult,
+    bool admin)
 {
     uint256         uRandom;
 
@@ -2959,6 +2960,22 @@ bool NetworkOPsImp::subServer (InfoSub::ref isrListener, Json::Value& jvResult)
     jvResult[jss::server_status]   = strOperatingMode ();
     jvResult[jss::load_base]       = getApp().getFeeTrack ().getLoadBase ();
     jvResult[jss::load_factor]     = getApp().getFeeTrack ().getLoadFactor ();
+    jvResult[jss::pubkey_node]     = getApp ().getLocalCredentials ().
+        getNodePublic ().humanNodePublic ();
+
+    if (! admin)
+    {
+        // For a non admin connection, hash the node ID into a single RFC1751 word
+        Blob const& addr (getApp ().getLocalCredentials ().getNodePublic ().
+            getNodePublic ());
+        jvResult[jss::hostid] = RFC1751::getWordFromBlob (addr.data (),
+            addr.size ());
+    }
+    else
+    {
+        // Only admins get the hostname for security reasons
+        jvResult[jss::hostid] = beast::SystemStats::getComputerName ();
+    }
 
     ScopedLockType sl (mLock);
     return mSubServer.emplace (isrListener->getSeq (), isrListener).second;
