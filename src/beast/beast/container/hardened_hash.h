@@ -21,16 +21,17 @@
 #define BEAST_CONTAINER_HARDENED_HASH_H_INCLUDED
 
 #include <beast/container/hash_append.h>
-
+#include <beast/cxx14/utility.h> // <utility>
+#include <beast/cxx14/type_traits.h> // <type_traits>
 #include <beast/utility/noexcept.h>
+#include <beast/utility/static_initializer.h>
+
 #include <cstdint>
 #include <functional>
 #include <mutex>
 #include <random>
-#include <beast/cxx14/type_traits.h> // <type_traits>
 #include <unordered_map>
 #include <unordered_set>
-#include <beast/cxx14/utility.h> // <utility>
 
 // When set to 1, makes the seed per-process instead
 // of per default-constructed instance of hardened_hash
@@ -44,78 +45,86 @@
 #endif
 
 namespace beast {
-namespace detail {
 
-template <class Result>
-class hardened_hash_base
+using seed_pair = std::pair<std::uint64_t, std::uint64_t>;
+
+template <bool = true>
+seed_pair
+get_seed_pair() noexcept
 {
-public:
-    typedef Result result_type;
+    struct state_t
+    {
+        std::mutex mutex;
+        std::random_device rng;
+        std::mt19937_64 gen {rng()};
+        std::uniform_int_distribution <std::uint64_t> dist;
 
-private:
+        state_t() : gen(rng()) {}
+        // state_t(state_t const&) = delete;
+        // state_t& operator=(state_t const&) = delete;
+    };
+    static static_initializer <state_t> state;
+    std::lock_guard <std::mutex> lock (state->mutex);
+    return {state->dist(state->gen), state->dist(state->gen)};
+}
+
+template <class HashAlgorithm, bool ProcessSeeded>
+class basic_hardened_hash;
+
+/**
+ * Seed functor once per process
+*/
+template <class HashAlgorithm>
+class basic_hardened_hash<HashAlgorithm, true>
+{
     static
+    seed_pair const&
+    init_seed_pair()
+    {
+        static static_initializer <seed_pair, basic_hardened_hash> const
+                                                           p(get_seed_pair<>());
+        return *p;
+    }
+
+public:
+    using result_type = typename HashAlgorithm::result_type;
+
+    template <class T>
     result_type
-    next_seed() noexcept
+    operator()(T const& t) const noexcept
     {
-        static std::mutex mutex;
-        static std::random_device rng;
-        static std::mt19937_64 gen (rng());
-        std::lock_guard <std::mutex> lock (mutex);
-        std::uniform_int_distribution <result_type> dist;
-        result_type value;
-        for(;;)
-        {
-            value = dist (gen);
-            // VFALCO Do we care if 0 is picked?
-            if (value != 0)
-                break;
-        }
-        return value;
+        std::uint64_t seed0;
+        std::uint64_t seed1;
+        std::tie(seed0, seed1) = init_seed_pair();
+        HashAlgorithm h(seed0, seed1);
+        hash_append(h, t);
+        return static_cast<result_type>(h);
     }
-
-#if BEAST_NO_HARDENED_HASH_INSTANCE_SEED
-protected:
-    hardened_hash_base() noexcept = default;
-
-    hardened_hash_base(result_type) noexcept
-    {
-    }
-
-    result_type
-    seed() const noexcept
-    {
-        static result_type const value (next_seed());
-        return value;
-    }
-
-#else
-protected:
-    hardened_hash_base() noexcept
-        : m_seed (next_seed())
-    {
-    }
-
-    hardened_hash_base(result_type seed) noexcept
-        : m_seed (seed)
-    {
-    }
-
-    result_type
-    seed() const noexcept
-    {
-        return m_seed;
-    }
-
-private:
-    // VFALCO Should seed be per process or per hash function?
-    result_type m_seed;
-
-#endif
 };
 
-//------------------------------------------------------------------------------
+/**
+ * Seed functor once per construction
+*/
+template <class HashAlgorithm>
+class basic_hardened_hash<HashAlgorithm, false>
+{
+    seed_pair m_seeds;
+public:
+    using result_type = typename HashAlgorithm::result_type;
 
-} // detail
+    basic_hardened_hash()
+        : m_seeds(get_seed_pair<>())
+    {}
+
+    template <class T>
+    result_type
+    operator()(T const& t) const noexcept
+    {
+        HashAlgorithm h(m_seeds.first, m_seeds.second);
+        hash_append(h, t);
+        return static_cast<result_type>(h);
+    }
+};
 
 //------------------------------------------------------------------------------
 
@@ -140,31 +149,18 @@ private:
     }
 
     @endcode
+
+    Do not use any version of Murmur or CityHash for the Hasher
+    template parameter (the hashing algorithm).  For details
+    see https://131002.net/siphash/#at
 */
-template <class T, class Hasher = detail::spooky_wrapper>
-class hardened_hash
-    : public detail::hardened_hash_base <std::size_t>
-{
-    typedef detail::hardened_hash_base <std::size_t> base;
-public:
-    typedef T argument_type;
-    using detail::hardened_hash_base <std::size_t>::result_type;
-
-public:
-    hardened_hash() = default;
-    explicit hardened_hash(result_type seed)
-        : base (seed)
-    {
-    }
-
-    result_type
-    operator() (argument_type const& key) const noexcept
-    {
-        Hasher h {base::seed()};
-        hash_append (h, key);
-        return static_cast<result_type> (h);
-    }
-};
+#if BEAST_NO_HARDENED_HASH_INSTANCE_SEED
+template <class HashAlgorithm = siphash>
+    using hardened_hash = basic_hardened_hash<HashAlgorithm, true>;
+#else
+template <class HashAlgorithm = siphash>
+    using hardened_hash = basic_hardened_hash<HashAlgorithm, false>;
+#endif
 
 } // beast
 

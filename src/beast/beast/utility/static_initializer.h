@@ -83,14 +83,32 @@ public:
     T&
     get() noexcept;
 
+    T const&
+    get() const noexcept
+    {
+        return const_cast<static_initializer&>(*this).get();
+    }
+
     T&
     operator*() noexcept
     {
         return get();
     }
 
+    T const&
+    operator*() const noexcept
+    {
+        return get();
+    }
+
     T*
     operator->() noexcept
+    {
+        return &get();
+    }
+
+    T const*
+    operator->() const noexcept
     {
         return &get();
     }
@@ -187,14 +205,32 @@ public:
         return *instance_;
     }
 
+    T const&
+    get() const noexcept
+    {
+        return const_cast<static_initializer&>(*this).get();
+    }
+
     T&
     operator*() noexcept
     {
         return get();
     }
 
+    T const&
+    operator*() const noexcept
+    {
+        return get();
+    }
+
     T*
     operator->() noexcept
+    {
+        return &get();
+    }
+
+    T const*
+    operator->() const noexcept
     {
         return &get();
     }

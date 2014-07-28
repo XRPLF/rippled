@@ -849,6 +849,9 @@
     <ClInclude Include="..\..\src\beast\beast\container\hash_append.h">
       <Filter>beast\container</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\container\impl\siphash.cpp">
+      <Filter>beast\container\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\container\impl\spookyv2.cpp">
       <Filter>beast\container\impl</Filter>
     </ClCompile>

@@ -65,7 +65,7 @@ public:
         attackers from exploiting crafted inputs to produce degenerate
         containers.
     */
-    typedef hardened_hash <UnsignedInteger> hasher;
+    typedef hardened_hash <> hasher;
 
     /** Determins if two UnsignedInteger objects are equal. */
     class equal
