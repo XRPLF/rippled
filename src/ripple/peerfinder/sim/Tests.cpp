@@ -38,8 +38,7 @@ class Network
 public:
     typedef std::list <Node> Peers;
 
-    typedef ripple::unordered_map <
-        IP::Endpoint, boost::reference_wrapper <Node>> Table;
+    typedef hash_map <IP::Endpoint, boost::reference_wrapper <Node>> Table;
 
     explicit Network (Params const& params,
         Journal journal = Journal());

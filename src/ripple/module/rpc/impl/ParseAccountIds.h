@@ -23,7 +23,7 @@
 namespace ripple {
 namespace RPC {
 
-ripple::unordered_set <RippleAddress> parseAccountIds (const Json::Value& jvArray);
+hash_set <RippleAddress> parseAccountIds (const Json::Value& jvArray);
 
 } // RPC
 } // ripple

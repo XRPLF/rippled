@@ -43,7 +43,7 @@ class SyncUnorderedMapType : public SyncUnorderedMap
 public:
     typedef c_Key                                        key_type;
     typedef c_Data                                       data_type;
-    typedef ripple::unordered_map<c_Key, c_Data, c_Hash> map_type;
+    typedef hash_map<c_Key, c_Data, c_Hash>              map_type;
 
     class iterator
     {

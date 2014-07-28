@@ -26,7 +26,6 @@
 
 #include <boost/utility/base_from_member.hpp>
 #include <boost/functional/hash.hpp>
-#include <boost/unordered_set.hpp>
 
 // For ByteOrder
 #if BEAST_WIN32

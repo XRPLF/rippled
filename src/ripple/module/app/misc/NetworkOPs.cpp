@@ -427,11 +427,10 @@ public:
     //
     void subAccount (
         InfoSub::ref ispListener,
-        const ripple::unordered_set<RippleAddress>& vnaAccountIDs,
+        const hash_set<RippleAddress>& vnaAccountIDs,
         std::uint32_t uLedgerIndex, bool rt);
     void unsubAccount (
-        std::uint64_t uListener,
-        const ripple::unordered_set<RippleAddress>& vnaAccountIDs,
+        std::uint64_t uListener, const hash_set<RippleAddress>& vnaAccountIDs,
         bool rt);
 
     bool subLedger (InfoSub::ref ispListener, Json::Value& jvResult);
@@ -492,8 +491,8 @@ private:
 private:
     clock_type& m_clock;
 
-    typedef ripple::unordered_map <Account, SubMapType> SubInfoMapType;
-    typedef ripple::unordered_map<std::string, InfoSub::pointer> subRpcMapType;
+    typedef hash_map <Account, SubMapType> SubInfoMapType;
+    typedef hash_map<std::string, InfoSub::pointer> subRpcMapType;
 
     // XXX Split into more locks.
     typedef RippleRecursiveMutex LockType;
@@ -1358,7 +1357,7 @@ bool NetworkOPsImp::checkLastClosedLedger (
     m_journal.trace << "OurClosed:  " << closedLedger;
     m_journal.trace << "PrevClosed: " << prevClosedLedger;
 
-    ripple::unordered_map<uint256, ValidationCount> ledgers;
+    hash_map<uint256, ValidationCount> ledgers;
     {
         auto current = getApp().getValidations ().getCurrentValidations (
             closedLedger, prevClosedLedger);
@@ -2615,7 +2614,7 @@ void NetworkOPsImp::pubValidatedTransaction (Ledger::ref alAccepted, const Accep
 
 void NetworkOPsImp::pubAccountTransaction (Ledger::ref lpCurrent, const AcceptedLedgerTx& alTx, bool bAccepted)
 {
-    std::unordered_set<InfoSub::pointer>  notify;
+    hash_set<InfoSub::pointer>  notify;
     int                             iProposed   = 0;
     int                             iAccepted   = 0;
 
@@ -2702,7 +2701,7 @@ void NetworkOPsImp::pubAccountTransaction (Ledger::ref lpCurrent, const Accepted
 //
 
 void NetworkOPsImp::subAccount (InfoSub::ref isrListener,
-    const ripple::unordered_set<RippleAddress>& vnaAccountIDs,
+    const hash_set<RippleAddress>& vnaAccountIDs,
     std::uint32_t uLedgerIndex, bool rt)
 {
     SubInfoMapType& subMap = rt ? mSubRTAccount : mSubAccount;
@@ -2738,7 +2737,7 @@ void NetworkOPsImp::subAccount (InfoSub::ref isrListener,
 }
 
 void NetworkOPsImp::unsubAccount (std::uint64_t uSeq,
-                                  const ripple::unordered_set<RippleAddress>& vnaAccountIDs,
+                                  const hash_set<RippleAddress>& vnaAccountIDs,
                                   bool rt)
 {
     SubInfoMapType& subMap = rt ? mSubRTAccount : mSubAccount;

@@ -22,8 +22,6 @@
 
 #include <ripple/module/app/book/Amounts.h>
 
-#include <unordered_set>
-
 namespace ripple {
 
 class CreateOfferDirect

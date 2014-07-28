@@ -292,7 +292,7 @@ private:
     Ledger::pointer mLedger;
     std::map<uint256, LedgerEntrySetEntry>  mEntries; // cannot be unordered!
 
-    typedef ripple::unordered_map<uint256, SLE::pointer> NodeToLedgerEntry;
+    typedef hash_map<uint256, SLE::pointer> NodeToLedgerEntry;
 
     TransactionMetaSet mSet;
     TransactionEngineParams mParams;

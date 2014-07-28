@@ -20,6 +20,7 @@
 #ifndef RIPPLE_BASICS_LOG_H_INCLUDED
 #define RIPPLE_BASICS_LOG_H_INCLUDED
 
+#include <ripple/common/UnorderedContainers.h>
 #include <beast/utility/Journal.h>
 #include <beast/utility/noexcept.h>
 #include <boost/filesystem.hpp>
@@ -139,7 +140,7 @@ private:
     };
 
     std::mutex mutable mutex_;
-    std::unordered_map <std::string, Sink> sinks_;
+    hardened_hash_map <std::string, Sink> sinks_;
     beast::Journal::Severity level_;
     File file_;
 

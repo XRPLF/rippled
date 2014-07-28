@@ -42,9 +42,8 @@ private:
 
     /** Holds the state of all recent ledgers for this validator. */
     /** @{ */
-    typedef CycledMap <RippleLedgerHash, Ledger, Count,
-        beast::hardened_hash<RippleLedgerHash>,
-        RippleLedgerHash::key_equal> LedgerMap;
+    typedef CycledMap <RippleLedgerHash, Ledger, Count, beast::hardened_hash<>,
+                       RippleLedgerHash::key_equal> LedgerMap;
     LedgerMap m_ledgers;
     /** @} */
 

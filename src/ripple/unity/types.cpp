@@ -35,9 +35,6 @@
 
 #include <set>
 #include <map>
-#include <unordered_set>
-#include <unordered_map>
-#include <boost/unordered_set.hpp>
 
 #include <ripple/types/impl/Base58.cpp>
 #include <ripple/types/impl/ByteOrder.cpp>

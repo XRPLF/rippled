@@ -22,7 +22,6 @@
 #include <ripple/unity/validators.h>
 
 #include <boost/regex.hpp>
-#include <boost/unordered_set.hpp>
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/key_extractors.hpp>

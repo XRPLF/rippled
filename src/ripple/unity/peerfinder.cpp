@@ -29,7 +29,6 @@
 #include <iomanip>
 #include <random>
 #include <set>
-#include <unordered_set>
 
 #include <boost/array.hpp>
 #include <boost/optional.hpp>

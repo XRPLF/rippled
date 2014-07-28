@@ -42,7 +42,7 @@ public:
     typedef ConnectionType <Config>     Connection;
     typedef std::vector <Connection>    Connections;
     
-    typedef ripple::unordered_set <UniqueID> MessageTable;
+    typedef hash_set <UniqueID> MessageTable;
 
     explicit PeerType (Network& network)
         : m_network (network)

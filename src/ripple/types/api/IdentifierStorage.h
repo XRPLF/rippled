@@ -51,7 +51,7 @@ public:
     /** Value hashing function.
         The seed prevents crafted inputs from causing degenarate parent containers.
     */
-    typedef beast::hardened_hash <IdentifierStorage> hasher;
+    typedef beast::hardened_hash <> hasher;
 
     /** Container equality testing function. */
     class key_equal

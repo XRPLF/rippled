@@ -37,8 +37,7 @@ public:
         }
     };
 
-    typedef ripple::unordered_map <RipplePublicKey, Info,
-                                 beast::hardened_hash<RipplePublicKey>> MapType;
+    typedef hardened_hash_map <RipplePublicKey, Info> MapType;
 
     ChosenList (std::size_t expectedSize = 0)
     {

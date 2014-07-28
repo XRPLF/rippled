@@ -32,7 +32,7 @@ public:
         tableItemsExtra = 20
     };
 
-    typedef ripple::unordered_map <uint256, Blob> Map;
+    typedef hash_map <uint256, Blob> Map;
 
     struct TestFilter : SHAMapSyncFilter
     {

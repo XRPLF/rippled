@@ -27,7 +27,6 @@
 #include <beast/container/hardened_hash.h>
 #include <functional>
 #include <mutex>
-#include <unordered_map>
 #include <vector>
 
 namespace ripple {
@@ -51,7 +50,7 @@ struct TaggedCacheLog;
 template <
     class Key,
     class T,
-    class Hash = beast::hardened_hash <Key>,
+    class Hash = beast::hardened_hash <>,
     class KeyEqual = std::equal_to <Key>,
     //class Allocator = std::allocator <std::pair <Key const, Entry>>,
     class Mutex = std::recursive_mutex
@@ -528,7 +527,7 @@ private:
     };
 
     typedef std::pair <key_type, Entry> cache_pair;
-    typedef ripple::unordered_map <key_type, Entry, Hash, KeyEqual> cache_type;
+    typedef hardened_hash_map <key_type, Entry, Hash, KeyEqual> cache_type;
     typedef typename cache_type::iterator cache_iterator;
 
     beast::Journal m_journal;

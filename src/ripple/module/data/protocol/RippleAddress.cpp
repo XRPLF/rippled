@@ -318,7 +318,7 @@ typedef RippleMutex StaticLockType;
 typedef std::lock_guard <StaticLockType> StaticScopedLockType;
 static StaticLockType s_lock;
 
-static ripple::unordered_map< Blob , std::string > rncMap;
+static hash_map< Blob , std::string > rncMap;
 
 std::string RippleAddress::humanAccountID () const
 {

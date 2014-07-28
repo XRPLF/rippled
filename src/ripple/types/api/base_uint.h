@@ -98,7 +98,7 @@ public:
     /** Value hashing function.
         The seed prevents crafted inputs from causing degenarate parent containers.
     */
-    typedef beast::hardened_hash <base_uint> hasher;
+    typedef beast::hardened_hash <> hasher;
 
     /** Container equality testing function. */
     class key_equal
@@ -532,7 +532,7 @@ struct hash<ripple::base_uint<Bits, Tag>>
     std::size_t
     operator()(argument_type const& u) const
     {
-        return beast::hardened_hash<argument_type>{}(u);
+        return beast::hardened_hash<>{}(u);
     }
 };
 
