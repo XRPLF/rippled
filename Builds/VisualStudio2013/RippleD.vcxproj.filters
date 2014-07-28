@@ -627,60 +627,15 @@
     <ClInclude Include="..\..\src\beast\beast\Arithmetic.h">
       <Filter>beast</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\Atomic.h">
-      <Filter>beast</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\ByteOrder.h">
-      <Filter>beast</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\Config.h">
-      <Filter>beast</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\Crypto.h">
-      <Filter>beast</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\HeapBlock.h">
-      <Filter>beast</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\Insight.h">
-      <Filter>beast</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\Intrusive.h">
-      <Filter>beast</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\Memory.h">
-      <Filter>beast</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\SmartPtr.h">
-      <Filter>beast</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\StaticAssert.h">
-      <Filter>beast</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\Strings.h">
-      <Filter>beast</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\Threads.h">
-      <Filter>beast</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\Uncopyable.h">
-      <Filter>beast</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\Version.h">
-      <Filter>beast</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\asio\Asio.unity.cpp">
-      <Filter>beast\asio</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\asio\IPAddressConversion.h">
-      <Filter>beast\asio</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\asio\abstract_socket.cpp">
       <Filter>beast\asio</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\asio\abstract_socket.h">
       <Filter>beast\asio</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\asio\Asio.unity.cpp">
+      <Filter>beast\asio</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\asio\bind_handler.h">
       <Filter>beast\asio</Filter>
     </ClInclude>
@@ -694,6 +649,9 @@
       <Filter>beast\asio\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\asio\io_latency_probe.h">
+      <Filter>beast\asio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\IPAddressConversion.h">
       <Filter>beast\asio</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\memory_buffer.h">
@@ -723,6 +681,9 @@
     <ClInclude Include="..\..\src\beast\beast\asio\wrap_handler.h">
       <Filter>beast\asio</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\Atomic.h">
+      <Filter>beast</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\boost\Boost.unity.cpp">
       <Filter>beast\boost</Filter>
     </ClCompile>
@@ -732,11 +693,8 @@
     <ClInclude Include="..\..\src\beast\beast\boost\get_pointer.h">
       <Filter>beast\boost</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\chrono\Chrono.unity.cpp">
-      <Filter>beast\chrono</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\chrono\RelativeTime.h">
-      <Filter>beast\chrono</Filter>
+    <ClInclude Include="..\..\src\beast\beast\ByteOrder.h">
+      <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\chrono\abstract_clock.h">
       <Filter>beast\chrono</Filter>
@@ -747,16 +705,19 @@
     <ClInclude Include="..\..\src\beast\beast\chrono\basic_seconds_clock.h">
       <Filter>beast\chrono</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\chrono\Chrono.unity.cpp">
+      <Filter>beast\chrono</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\chrono\chrono_io.h">
       <Filter>beast\chrono</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\chrono\chrono_util.h">
       <Filter>beast\chrono</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\chrono\impl\RelativeTime.cpp">
+    <ClCompile Include="..\..\src\beast\beast\chrono\impl\chrono_io.cpp">
       <Filter>beast\chrono\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\chrono\impl\chrono_io.cpp">
+    <ClCompile Include="..\..\src\beast\beast\chrono\impl\RelativeTime.cpp">
       <Filter>beast\chrono\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\chrono\manual_clock.h">
@@ -765,12 +726,18 @@
     <ClInclude Include="..\..\src\beast\beast\chrono\ratio_io.h">
       <Filter>beast\chrono</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\chrono\RelativeTime.h">
+      <Filter>beast\chrono</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\chrono\tests\abstract_clock.test.cpp">
       <Filter>beast\chrono\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\chrono\tests\basic_seconds_clock.test.cpp">
       <Filter>beast\chrono\tests</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\Config.h">
+      <Filter>beast</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\config\CompilerConfig.h">
       <Filter>beast\config</Filter>
     </ClInclude>
@@ -795,9 +762,6 @@
     <ClInclude Include="..\..\src\beast\beast\config\Suffix.h">
       <Filter>beast\config</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\container\Container.unity.cpp">
-      <Filter>beast\container</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\container\aged_container.h">
       <Filter>beast\container</Filter>
     </ClInclude>
@@ -834,6 +798,9 @@
     <ClInclude Include="..\..\src\beast\beast\container\const_container.h">
       <Filter>beast\container</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\container\Container.unity.cpp">
+      <Filter>beast\container</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\container\detail\aged_associative_container.h">
       <Filter>beast\container\detail</Filter>
     </ClInclude>
@@ -876,31 +843,19 @@
     <ClInclude Include="..\..\src\beast\beast\container\tests\hash_metrics.h">
       <Filter>beast\container\tests</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\Crypto.h">
+      <Filter>beast</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\crypto\BinaryEncoding.h">
       <Filter>beast\crypto</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\crypto\Crypto.unity.cpp">
       <Filter>beast\crypto</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\crypto\MurmurHash.h">
-      <Filter>beast\crypto</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\crypto\Sha256.h">
-      <Filter>beast\crypto</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\crypto\UnsignedInteger.h">
-      <Filter>beast\crypto</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\crypto\UnsignedIntegerCalc.h">
-      <Filter>beast\crypto</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\crypto\impl\MurmurHash.cpp">
       <Filter>beast\crypto\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\crypto\impl\Sha256.cpp">
-      <Filter>beast\crypto\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\crypto\impl\UnsignedInteger.cpp">
       <Filter>beast\crypto\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\crypto\impl\sha2\sha2.c">
@@ -909,12 +864,27 @@
     <ClInclude Include="..\..\src\beast\beast\crypto\impl\sha2\sha2.h">
       <Filter>beast\crypto\impl\sha2</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\crypto\impl\UnsignedInteger.cpp">
+      <Filter>beast\crypto\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\crypto\MurmurHash.h">
+      <Filter>beast\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\crypto\Sha256.h">
+      <Filter>beast\crypto</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\crypto\tests\BinaryEncoding.cpp">
       <Filter>beast\crypto\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\crypto\tests\UnsignedInteger.test.cpp">
       <Filter>beast\crypto\tests</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\crypto\UnsignedInteger.h">
+      <Filter>beast\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\crypto\UnsignedIntegerCalc.h">
+      <Filter>beast\crypto</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\cxx14\algorithm.h">
       <Filter>beast\cxx14</Filter>
     </ClInclude>
@@ -942,14 +912,8 @@
     <ClInclude Include="..\..\src\beast\beast\cxx14\utility.h">
       <Filter>beast\cxx14</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\http\HTTP.unity.cpp">
-      <Filter>beast\http</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\http\ParsedURL.h">
-      <Filter>beast\http</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\http\URL.h">
-      <Filter>beast\http</Filter>
+    <ClInclude Include="..\..\src\beast\beast\HeapBlock.h">
+      <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\basic_url.h">
       <Filter>beast\http</Filter>
@@ -963,11 +927,8 @@
     <ClInclude Include="..\..\src\beast\beast\http\get.h">
       <Filter>beast\http</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\http\impl\ParsedURL.cpp">
-      <Filter>beast\http\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\http\impl\URL.cpp">
-      <Filter>beast\http\impl</Filter>
+    <ClCompile Include="..\..\src\beast\beast\http\HTTP.unity.cpp">
+      <Filter>beast\http</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\http\impl\basic_url.cpp">
       <Filter>beast\http\impl</Filter>
@@ -990,7 +951,13 @@
     <ClCompile Include="..\..\src\beast\beast\http\impl\message_parser.cpp">
       <Filter>beast\http\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\http\impl\ParsedURL.cpp">
+      <Filter>beast\http\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\http\impl\raw_parser.cpp">
+      <Filter>beast\http\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\http\impl\URL.cpp">
       <Filter>beast\http\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\http\message_parser.h">
@@ -999,16 +966,19 @@
     <ClInclude Include="..\..\src\beast\beast\http\method.h">
       <Filter>beast\http</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\http\ParsedURL.h">
+      <Filter>beast\http</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\raw_parser.h">
       <Filter>beast\http</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\http\tests\ParsedURL.cpp">
-      <Filter>beast\http\tests</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\http\tests\basic_url.test.cpp">
       <Filter>beast\http\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\http\tests\client_session.test.cpp">
+      <Filter>beast\http\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\http\tests\ParsedURL.cpp">
       <Filter>beast\http\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\http\tests\urls_large_data.cpp">
@@ -1016,6 +986,12 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\http\tests\urls_large_data.h">
       <Filter>beast\http\tests</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\http\URL.h">
+      <Filter>beast\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\Insight.h">
+      <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\insight\Base.h">
       <Filter>beast\insight</Filter>
@@ -1056,21 +1032,6 @@
     <ClInclude Include="..\..\src\beast\beast\insight\HookImpl.h">
       <Filter>beast\insight</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\insight\Insight.unity.cpp">
-      <Filter>beast\insight</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\insight\Meter.h">
-      <Filter>beast\insight</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\insight\MeterImpl.h">
-      <Filter>beast\insight</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\insight\NullCollector.h">
-      <Filter>beast\insight</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\insight\StatsDCollector.h">
-      <Filter>beast\insight</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\insight\impl\Collector.cpp">
       <Filter>beast\insight\impl</Filter>
     </ClCompile>
@@ -1092,11 +1053,32 @@
     <ClCompile Include="..\..\src\beast\beast\insight\impl\StatsDCollector.cpp">
       <Filter>beast\insight\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\insight\Insight.unity.cpp">
+      <Filter>beast\insight</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\insight\Meter.h">
+      <Filter>beast\insight</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\insight\MeterImpl.h">
+      <Filter>beast\insight</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\insight\NullCollector.h">
+      <Filter>beast\insight</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\insight\StatsDCollector.h">
+      <Filter>beast\insight</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\Intrusive.h">
+      <Filter>beast</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\intrusive\List.h">
       <Filter>beast\intrusive</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\intrusive\LockFreeStack.h">
       <Filter>beast\intrusive</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\Memory.h">
+      <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\module\asio\asio.h">
       <Filter>beast\module\asio</Filter>
@@ -1116,13 +1098,13 @@
     <ClInclude Include="..\..\src\beast\beast\module\asio\basics\PeerRole.h">
       <Filter>beast\module\asio\basics</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\module\asio\basics\SharedArg.h">
+      <Filter>beast\module\asio\basics</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\asio\basics\SSLContext.cpp">
       <Filter>beast\module\asio\basics</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\module\asio\basics\SSLContext.h">
-      <Filter>beast\module\asio\basics</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\basics\SharedArg.h">
       <Filter>beast\module\asio\basics</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\asio\http\HTTPClientType.cpp">
@@ -1509,6 +1491,18 @@
     <ClInclude Include="..\..\src\beast\beast\module\core\text\StringPairArray.h">
       <Filter>beast\module\core\text</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\module\core\threads\CriticalSection.h">
+      <Filter>beast\module\core\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\module\core\threads\DynamicLibrary.h">
+      <Filter>beast\module\core\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\module\core\threads\Process.h">
+      <Filter>beast\module\core\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\module\core\threads\ScopedLock.h">
+      <Filter>beast\module\core\threads</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\thread\DeadlineTimer.cpp">
       <Filter>beast\module\core\thread</Filter>
     </ClCompile>
@@ -1523,18 +1517,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\module\core\thread\Workers.h">
       <Filter>beast\module\core\thread</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\threads\CriticalSection.h">
-      <Filter>beast\module\core\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\threads\DynamicLibrary.h">
-      <Filter>beast\module\core\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\threads\Process.h">
-      <Filter>beast\module\core\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\threads\ScopedLock.h">
-      <Filter>beast\module\core\threads</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\time\AtExitHook.cpp">
       <Filter>beast\module\core\time</Filter>
@@ -1659,9 +1641,24 @@
     <ClInclude Include="..\..\src\beast\beast\module\sqlite\sqlite\sqlite3.h">
       <Filter>beast\module\sqlite\sqlite</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\net\detail\Parse.h">
+      <Filter>beast\net\detail</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\net\DynamicBuffer.h">
       <Filter>beast\net</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\net\impl\DynamicBuffer.cpp">
+      <Filter>beast\net\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\net\impl\IPAddressV4.cpp">
+      <Filter>beast\net\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\net\impl\IPAddressV6.cpp">
+      <Filter>beast\net\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\net\impl\IPEndpoint.cpp">
+      <Filter>beast\net\impl</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\net\IPAddress.h">
       <Filter>beast\net</Filter>
     </ClInclude>
@@ -1677,29 +1674,20 @@
     <ClCompile Include="..\..\src\beast\beast\net\Net.unity.cpp">
       <Filter>beast\net</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\net\detail\Parse.h">
-      <Filter>beast\net\detail</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\net\impl\DynamicBuffer.cpp">
-      <Filter>beast\net\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\net\impl\IPAddressV4.cpp">
-      <Filter>beast\net\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\net\impl\IPAddressV6.cpp">
-      <Filter>beast\net\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\net\impl\IPEndpoint.cpp">
-      <Filter>beast\net\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\net\tests\IPEndpoint.test.cpp">
       <Filter>beast\net\tests</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\SmartPtr.h">
+      <Filter>beast</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\smart_ptr\SharedObject.h">
       <Filter>beast\smart_ptr</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\smart_ptr\SharedPtr.h">
       <Filter>beast\smart_ptr</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\StaticAssert.h">
+      <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\streams\abstract_ostream.h">
       <Filter>beast\streams</Filter>
@@ -1722,6 +1710,12 @@
     <ClCompile Include="..\..\src\beast\beast\streams\tests\basic_abstract_ostream.test.cpp">
       <Filter>beast\streams\tests</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\Strings.h">
+      <Filter>beast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\strings\CharacterFunctions.h">
+      <Filter>beast\strings</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\strings\CharPointer_ASCII.h">
       <Filter>beast\strings</Filter>
     </ClInclude>
@@ -1734,9 +1728,12 @@
     <ClInclude Include="..\..\src\beast\beast\strings\CharPointer_UTF8.h">
       <Filter>beast\strings</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\strings\CharacterFunctions.h">
-      <Filter>beast\strings</Filter>
-    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\strings\impl\CharacterFunctions.cpp">
+      <Filter>beast\strings\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\strings\impl\String.cpp">
+      <Filter>beast\strings\impl</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\strings\NewLine.h">
       <Filter>beast\strings</Filter>
     </ClInclude>
@@ -1752,53 +1749,8 @@
     <ClCompile Include="..\..\src\beast\beast\strings\Strings.unity.cpp">
       <Filter>beast\strings</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\strings\impl\CharacterFunctions.cpp">
-      <Filter>beast\strings\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\strings\impl\String.cpp">
-      <Filter>beast\strings\impl</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\threads\RecursiveMutex.h">
-      <Filter>beast\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\threads\ScopedWrapperContext.h">
-      <Filter>beast\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\threads\ServiceQueue.h">
-      <Filter>beast\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\threads\SharedData.h">
-      <Filter>beast\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\threads\SharedLockGuard.h">
-      <Filter>beast\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\threads\SharedMutexAdapter.h">
-      <Filter>beast\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\threads\SpinLock.h">
-      <Filter>beast\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\threads\Stoppable.h">
-      <Filter>beast\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\threads\Thread.h">
-      <Filter>beast\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\threads\ThreadLocalValue.h">
-      <Filter>beast\threads</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\threads\Threads.unity.cpp">
-      <Filter>beast\threads</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\threads\TryLockGuard.h">
-      <Filter>beast\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\threads\UnlockGuard.h">
-      <Filter>beast\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\threads\WaitableEvent.h">
-      <Filter>beast\threads</Filter>
+    <ClInclude Include="..\..\src\beast\beast\Threads.h">
+      <Filter>beast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\threads\detail\BindHandler.h">
       <Filter>beast\threads\detail</Filter>
@@ -1821,7 +1773,31 @@
     <ClCompile Include="..\..\src\beast\beast\threads\impl\WaitableEvent.cpp">
       <Filter>beast\threads\impl</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\threads\RecursiveMutex.h">
+      <Filter>beast\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\threads\ScopedWrapperContext.h">
+      <Filter>beast\threads</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\threads\semaphore.h">
+      <Filter>beast\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\threads\ServiceQueue.h">
+      <Filter>beast\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\threads\SharedData.h">
+      <Filter>beast\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\threads\SharedLockGuard.h">
+      <Filter>beast\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\threads\SharedMutexAdapter.h">
+      <Filter>beast\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\threads\SpinLock.h">
+      <Filter>beast\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\threads\Stoppable.h">
       <Filter>beast\threads</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\threads\tests\Atomic.test.cpp">
@@ -1830,6 +1806,27 @@
     <ClCompile Include="..\..\src\beast\beast\threads\tests\ServiceQueue.cpp">
       <Filter>beast\threads\tests</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\threads\Thread.h">
+      <Filter>beast\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\threads\ThreadLocalValue.h">
+      <Filter>beast\threads</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\threads\Threads.unity.cpp">
+      <Filter>beast\threads</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\threads\TryLockGuard.h">
+      <Filter>beast\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\threads\UnlockGuard.h">
+      <Filter>beast\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\threads\WaitableEvent.h">
+      <Filter>beast\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\Uncopyable.h">
+      <Filter>beast</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\unit_test.h">
       <Filter>beast</Filter>
     </ClInclude>
@@ -1869,34 +1866,16 @@
     <ClInclude Include="..\..\src\beast\beast\unit_test\suite_list.h">
       <Filter>beast\unit_test</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\utility\Debug.h">
-      <Filter>beast\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\utility\Error.h">
-      <Filter>beast\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\utility\Journal.h">
-      <Filter>beast\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\utility\LeakChecked.h">
-      <Filter>beast\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\utility\PropertyStream.h">
-      <Filter>beast\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\utility\StaticObject.h">
-      <Filter>beast\utility</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\utility\Utility.unity.cpp">
-      <Filter>beast\utility</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\utility\Zero.h">
-      <Filter>beast\utility</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\utility\ci_char_traits.h">
       <Filter>beast\utility</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\utility\Debug.h">
+      <Filter>beast\utility</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\utility\empty_base_optimization.h">
+      <Filter>beast\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\utility\Error.h">
       <Filter>beast\utility</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\utility\impl\Debug.cpp">
@@ -1920,6 +1899,12 @@
     <ClInclude Include="..\..\src\beast\beast\utility\is_call_possible.h">
       <Filter>beast\utility</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\utility\Journal.h">
+      <Filter>beast\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\utility\LeakChecked.h">
+      <Filter>beast\utility</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\utility\maybe_const.h">
       <Filter>beast\utility</Filter>
     </ClInclude>
@@ -1929,22 +1914,25 @@
     <ClInclude Include="..\..\src\beast\beast\utility\noexcept.h">
       <Filter>beast\utility</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\utility\PropertyStream.h">
+      <Filter>beast\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\utility\StaticObject.h">
+      <Filter>beast\utility</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\utility\static_initializer.h">
       <Filter>beast\utility</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\utility\tagged_integer.h">
       <Filter>beast\utility</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\utility\tests\Journal.test.cpp">
-      <Filter>beast\utility\tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\utility\tests\Zero.test.cpp">
-      <Filter>beast\utility\tests</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\utility\tests\bassert.test.cpp">
       <Filter>beast\utility\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\utility\tests\empty_base_optimization.test.cpp">
+      <Filter>beast\utility\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\utility\tests\Journal.test.cpp">
       <Filter>beast\utility\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\utility\tests\static_initializer.test.cpp">
@@ -1953,13 +1941,31 @@
     <ClCompile Include="..\..\src\beast\beast\utility\tests\tagged_integer.test.cpp">
       <Filter>beast\utility\tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\utility\tests\Zero.test.cpp">
+      <Filter>beast\utility\tests</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\utility\type_name.h">
       <Filter>beast\utility</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\utility\Utility.unity.cpp">
+      <Filter>beast\utility</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\utility\Zero.h">
+      <Filter>beast\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\Version.h">
+      <Filter>beast</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\hyperleveldb\db\builder.cc">
       <Filter>hyperleveldb\db</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\hyperleveldb\db\builder.h">
+      <Filter>hyperleveldb\db</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\hyperleveldb\db\dbformat.cc">
+      <Filter>hyperleveldb\db</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\hyperleveldb\db\dbformat.h">
       <Filter>hyperleveldb\db</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\hyperleveldb\db\db_impl.cc">
@@ -1972,12 +1978,6 @@
       <Filter>hyperleveldb\db</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\hyperleveldb\db\db_iter.h">
-      <Filter>hyperleveldb\db</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\hyperleveldb\db\dbformat.cc">
-      <Filter>hyperleveldb\db</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\hyperleveldb\db\dbformat.h">
       <Filter>hyperleveldb\db</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\hyperleveldb\db\filename.cc">
@@ -2223,6 +2223,12 @@
     <ClInclude Include="..\..\src\leveldb\db\builder.h">
       <Filter>leveldb\db</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\leveldb\db\dbformat.cc">
+      <Filter>leveldb\db</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\leveldb\db\dbformat.h">
+      <Filter>leveldb\db</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\leveldb\db\db_impl.cc">
       <Filter>leveldb\db</Filter>
     </ClCompile>
@@ -2233,12 +2239,6 @@
       <Filter>leveldb\db</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\leveldb\db\db_iter.h">
-      <Filter>leveldb\db</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\leveldb\db\dbformat.cc">
-      <Filter>leveldb\db</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\leveldb\db\dbformat.h">
       <Filter>leveldb\db</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\leveldb\db\filename.cc">
@@ -2808,27 +2808,6 @@
     <ClInclude Include="..\..\src\ripple\basics\utility\UptimeTimer.h">
       <Filter>ripple\basics\utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\common\KeyCache.h">
-      <Filter>ripple\common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\common\MultiSocket.h">
-      <Filter>ripple\common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\common\Resolver.h">
-      <Filter>ripple\common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\common\ResolverAsio.h">
-      <Filter>ripple\common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\common\RippleSSLContext.h">
-      <Filter>ripple\common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\common\TaggedCache.h">
-      <Filter>ripple\common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\common\UnorderedContainers.h">
-      <Filter>ripple\common</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\common\byte_view.h">
       <Filter>ripple\common</Filter>
     </ClInclude>
@@ -2853,17 +2832,32 @@
     <ClInclude Include="..\..\src\ripple\common\jsonrpc_fields.h">
       <Filter>ripple\common</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\common\KeyCache.h">
+      <Filter>ripple\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\common\MultiSocket.h">
+      <Filter>ripple\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\common\Resolver.h">
+      <Filter>ripple\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\common\ResolverAsio.h">
+      <Filter>ripple\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\common\RippleSSLContext.h">
+      <Filter>ripple\common</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\common\seconds_clock.h">
+      <Filter>ripple\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\common\TaggedCache.h">
       <Filter>ripple\common</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\common\tests\cross_offer.test.cpp">
       <Filter>ripple\common\tests</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\http\Server.h">
-      <Filter>ripple\http</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\http\Session.h">
-      <Filter>ripple\http</Filter>
+    <ClInclude Include="..\..\src\ripple\common\UnorderedContainers.h">
+      <Filter>ripple\common</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\http\impl\Door.cpp">
       <Filter>ripple\http\impl</Filter>
@@ -2895,6 +2889,12 @@
     <ClInclude Include="..\..\src\ripple\http\impl\Types.h">
       <Filter>ripple\http\impl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\http\Server.h">
+      <Filter>ripple\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\http\Session.h">
+      <Filter>ripple\http</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\json\api\JsonPropertyStream.h">
       <Filter>ripple\json\api</Filter>
     </ClInclude>
@@ -2919,9 +2919,6 @@
     <ClCompile Include="..\..\src\ripple\json\impl\JsonPropertyStream.cpp">
       <Filter>ripple\json\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\json\impl\Tests.cpp">
-      <Filter>ripple\json\impl</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\json\impl\json_batchallocator.h">
       <Filter>ripple\json\impl</Filter>
     </ClInclude>
@@ -2943,6 +2940,9 @@
     <ClCompile Include="..\..\src\ripple\json\impl\json_writer.cpp">
       <Filter>ripple\json\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\json\impl\Tests.cpp">
+      <Filter>ripple\json\impl</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\app\book\Amount.h">
       <Filter>ripple\module\app\book</Filter>
     </ClInclude>
@@ -2950,21 +2950,6 @@
       <Filter>ripple\module\app\book</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\app\book\BookTip.h">
-      <Filter>ripple\module\app\book</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\app\book\Offer.h">
-      <Filter>ripple\module\app\book</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\app\book\OfferStream.h">
-      <Filter>ripple\module\app\book</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\app\book\Quality.h">
-      <Filter>ripple\module\app\book</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\app\book\Taker.h">
-      <Filter>ripple\module\app\book</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\app\book\Types.h">
       <Filter>ripple\module\app\book</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\book\impl\BookTip.cpp">
@@ -2979,12 +2964,27 @@
     <ClCompile Include="..\..\src\ripple\module\app\book\impl\Taker.cpp">
       <Filter>ripple\module\app\book\impl</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\module\app\book\Offer.h">
+      <Filter>ripple\module\app\book</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\module\app\book\OfferStream.h">
+      <Filter>ripple\module\app\book</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\module\app\book\Quality.h">
+      <Filter>ripple\module\app\book</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\module\app\book\Taker.h">
+      <Filter>ripple\module\app\book</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\book\tests\OfferStream.test.cpp">
       <Filter>ripple\module\app\book\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\module\app\book\tests\Quality.test.cpp">
       <Filter>ripple\module\app\book\tests</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\module\app\book\Types.h">
+      <Filter>ripple\module\app\book</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\consensus\DisputedTx.cpp">
       <Filter>ripple\module\app\consensus</Filter>
     </ClCompile>
@@ -2997,12 +2997,6 @@
     <ClInclude Include="..\..\src\ripple\module\app\consensus\LedgerConsensus.h">
       <Filter>ripple\module\app\consensus</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\data\DBInit.cpp">
-      <Filter>ripple\module\app\data</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\data\DBInit.h">
-      <Filter>ripple\module\app\data</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\data\Database.cpp">
       <Filter>ripple\module\app\data</Filter>
     </ClCompile>
@@ -3013,6 +3007,12 @@
       <Filter>ripple\module\app\data</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\app\data\DatabaseCon.h">
+      <Filter>ripple\module\app\data</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\module\app\data\DBInit.cpp">
+      <Filter>ripple\module\app\data</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\module\app\data\DBInit.h">
       <Filter>ripple\module\app\data</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\data\SqliteDatabase.cpp">
@@ -3285,63 +3285,6 @@
     <ClInclude Include="..\..\src\ripple\module\app\node\SqliteFactory.h">
       <Filter>ripple\module\app\node</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\Node.cpp">
-      <Filter>ripple\module\app\paths</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\paths\Node.h">
-      <Filter>ripple\module\app\paths</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\app\paths\NodeDirectory.h">
-      <Filter>ripple\module\app\paths</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\PathRequest.cpp">
-      <Filter>ripple\module\app\paths</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\paths\PathRequest.h">
-      <Filter>ripple\module\app\paths</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\PathRequests.cpp">
-      <Filter>ripple\module\app\paths</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\paths\PathRequests.h">
-      <Filter>ripple\module\app\paths</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\PathState.cpp">
-      <Filter>ripple\module\app\paths</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\paths\PathState.h">
-      <Filter>ripple\module\app\paths</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\Pathfinder.cpp">
-      <Filter>ripple\module\app\paths</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\paths\Pathfinder.h">
-      <Filter>ripple\module\app\paths</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\RippleCalc.cpp">
-      <Filter>ripple\module\app\paths</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\paths\RippleCalc.h">
-      <Filter>ripple\module\app\paths</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\RippleLineCache.cpp">
-      <Filter>ripple\module\app\paths</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\paths\RippleLineCache.h">
-      <Filter>ripple\module\app\paths</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\paths\RippleState.cpp">
-      <Filter>ripple\module\app\paths</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\paths\RippleState.h">
-      <Filter>ripple\module\app\paths</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\app\paths\Tuning.h">
-      <Filter>ripple\module\app\paths</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\app\paths\Types.h">
-      <Filter>ripple\module\app\paths</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\paths\cursor\AdvanceNode.cpp">
       <Filter>ripple\module\app\paths\cursor</Filter>
     </ClCompile>
@@ -3377,6 +3320,63 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\app\paths\cursor\RippleLiquidity.h">
       <Filter>ripple\module\app\paths\cursor</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\Node.cpp">
+      <Filter>ripple\module\app\paths</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\module\app\paths\Node.h">
+      <Filter>ripple\module\app\paths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\module\app\paths\NodeDirectory.h">
+      <Filter>ripple\module\app\paths</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\Pathfinder.cpp">
+      <Filter>ripple\module\app\paths</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\module\app\paths\Pathfinder.h">
+      <Filter>ripple\module\app\paths</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\PathRequest.cpp">
+      <Filter>ripple\module\app\paths</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\module\app\paths\PathRequest.h">
+      <Filter>ripple\module\app\paths</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\PathRequests.cpp">
+      <Filter>ripple\module\app\paths</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\module\app\paths\PathRequests.h">
+      <Filter>ripple\module\app\paths</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\PathState.cpp">
+      <Filter>ripple\module\app\paths</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\module\app\paths\PathState.h">
+      <Filter>ripple\module\app\paths</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\RippleCalc.cpp">
+      <Filter>ripple\module\app\paths</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\module\app\paths\RippleCalc.h">
+      <Filter>ripple\module\app\paths</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\RippleLineCache.cpp">
+      <Filter>ripple\module\app\paths</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\module\app\paths\RippleLineCache.h">
+      <Filter>ripple\module\app\paths</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\module\app\paths\RippleState.cpp">
+      <Filter>ripple\module\app\paths</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\module\app\paths\RippleState.h">
+      <Filter>ripple\module\app\paths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\module\app\paths\Tuning.h">
+      <Filter>ripple\module\app\paths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\module\app\paths\Types.h">
+      <Filter>ripple\module\app\paths</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\app\peers\ClusterNodeStatus.h">
       <Filter>ripple\module\app\peers</Filter>
@@ -3699,30 +3699,6 @@
     <ClInclude Include="..\..\src\ripple\module\data\protocol\RippleSystem.h">
       <Filter>ripple\module\data\protocol</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\data\protocol\STAmount.cpp">
-      <Filter>ripple\module\data\protocol</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\data\protocol\STAmount.h">
-      <Filter>ripple\module\data\protocol</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\data\protocol\STAmountRound.cpp">
-      <Filter>ripple\module\data\protocol</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\data\protocol\STBitString.h">
-      <Filter>ripple\module\data\protocol</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\data\protocol\STInteger.cpp">
-      <Filter>ripple\module\data\protocol</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\data\protocol\STInteger.h">
-      <Filter>ripple\module\data\protocol</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\data\protocol\STParsedJSON.cpp">
-      <Filter>ripple\module\data\protocol</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\data\protocol\STParsedJSON.h">
-      <Filter>ripple\module\data\protocol</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\data\protocol\SerializeDeclarations.h">
       <Filter>ripple\module\data\protocol</Filter>
     </ClInclude>
@@ -3751,6 +3727,30 @@
       <Filter>ripple\module\data\protocol</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\data\protocol\Serializer.h">
+      <Filter>ripple\module\data\protocol</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\module\data\protocol\STAmount.cpp">
+      <Filter>ripple\module\data\protocol</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\module\data\protocol\STAmount.h">
+      <Filter>ripple\module\data\protocol</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\module\data\protocol\STAmountRound.cpp">
+      <Filter>ripple\module\data\protocol</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\module\data\protocol\STBitString.h">
+      <Filter>ripple\module\data\protocol</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\module\data\protocol\STInteger.cpp">
+      <Filter>ripple\module\data\protocol</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\module\data\protocol\STInteger.h">
+      <Filter>ripple\module\data\protocol</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\module\data\protocol\STParsedJSON.cpp">
+      <Filter>ripple\module\data\protocol</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\module\data\protocol\STParsedJSON.h">
       <Filter>ripple\module\data\protocol</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\data\protocol\TER.cpp">
@@ -3783,6 +3783,9 @@
     <ClInclude Include="..\..\src\ripple\module\net\basics\HTTPRequest.h">
       <Filter>ripple\module\net\basics</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\module\net\basics\impl\RPCServerImp.h">
+      <Filter>ripple\module\net\basics\impl</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\net\basics\RPCDoor.cpp">
       <Filter>ripple\module\net\basics</Filter>
     </ClCompile>
@@ -3797,9 +3800,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\net\basics\SNTPClient.h">
       <Filter>ripple\module\net\basics</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\net\basics\impl\RPCServerImp.h">
-      <Filter>ripple\module\net\basics\impl</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\net\rpc\InfoSub.cpp">
       <Filter>ripple\module\net\rpc</Filter>
@@ -3832,21 +3832,6 @@
       <Filter>ripple\module\net\rpc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\rpc\ErrorCodes.h">
-      <Filter>ripple\module\rpc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\rpc\Manager.h">
-      <Filter>ripple\module\rpc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\rpc\RPCHandler.h">
-      <Filter>ripple\module\rpc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\rpc\RPCServerHandler.h">
-      <Filter>ripple\module\rpc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\rpc\Request.h">
-      <Filter>ripple\module\rpc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\rpc\Tuning.h">
       <Filter>ripple\module\rpc</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\rpc\handlers\AccountCurrencies.cpp">
@@ -3963,9 +3948,6 @@
     <ClCompile Include="..\..\src\ripple\module\rpc\handlers\RipplePathFind.cpp">
       <Filter>ripple\module\rpc\handlers</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\rpc\handlers\SMS.cpp">
-      <Filter>ripple\module\rpc\handlers</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\module\rpc\handlers\ServerInfo.cpp">
       <Filter>ripple\module\rpc\handlers</Filter>
     </ClCompile>
@@ -3973,6 +3955,9 @@
       <Filter>ripple\module\rpc\handlers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\module\rpc\handlers\Sign.cpp">
+      <Filter>ripple\module\rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\module\rpc\handlers\SMS.cpp">
       <Filter>ripple\module\rpc\handlers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\module\rpc\handlers\Stop.cpp">
@@ -4104,6 +4089,21 @@
     <ClInclude Include="..\..\src\ripple\module\rpc\impl\TransactionSign.h">
       <Filter>ripple\module\rpc\impl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\module\rpc\Manager.h">
+      <Filter>ripple\module\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\module\rpc\Request.h">
+      <Filter>ripple\module\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\module\rpc\RPCHandler.h">
+      <Filter>ripple\module\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\module\rpc\RPCServerHandler.h">
+      <Filter>ripple\module\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\module\rpc\Tuning.h">
+      <Filter>ripple\module\rpc</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\websocket\autosocket\AutoSocket.cpp">
       <Filter>ripple\module\websocket\autosocket</Filter>
     </ClCompile>
@@ -4114,30 +4114,6 @@
       <Filter>ripple\module\websocket\autosocket</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\nodestore\Backend.h">
-      <Filter>ripple\nodestore</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\nodestore\Database.h">
-      <Filter>ripple\nodestore</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\nodestore\DummyScheduler.h">
-      <Filter>ripple\nodestore</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\nodestore\Factory.h">
-      <Filter>ripple\nodestore</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\nodestore\Manager.h">
-      <Filter>ripple\nodestore</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\nodestore\NodeObject.h">
-      <Filter>ripple\nodestore</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\nodestore\Scheduler.h">
-      <Filter>ripple\nodestore</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\nodestore\Task.h">
-      <Filter>ripple\nodestore</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\nodestore\Types.h">
       <Filter>ripple\nodestore</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\nodestore\backend\HyperDBFactory.cpp">
@@ -4169,6 +4145,15 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\nodestore\backend\RocksDBFactory.h">
       <Filter>ripple\nodestore\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\nodestore\Database.h">
+      <Filter>ripple\nodestore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\nodestore\DummyScheduler.h">
+      <Filter>ripple\nodestore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\nodestore\Factory.h">
+      <Filter>ripple\nodestore</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\nodestore\impl\Backend.cpp">
       <Filter>ripple\nodestore\impl</Filter>
@@ -4218,6 +4203,18 @@
     <ClInclude Include="..\..\src\ripple\nodestore\impl\Tuning.h">
       <Filter>ripple\nodestore\impl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\nodestore\Manager.h">
+      <Filter>ripple\nodestore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\nodestore\NodeObject.h">
+      <Filter>ripple\nodestore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\nodestore\Scheduler.h">
+      <Filter>ripple\nodestore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\nodestore\Task.h">
+      <Filter>ripple\nodestore</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\nodestore\tests\BackendTests.cpp">
       <Filter>ripple\nodestore\tests</Filter>
     </ClCompile>
@@ -4233,21 +4230,27 @@
     <ClCompile Include="..\..\src\ripple\nodestore\tests\TimingTests.cpp">
       <Filter>ripple\nodestore\tests</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\overlay\Message.h">
-      <Filter>ripple\overlay</Filter>
+    <ClInclude Include="..\..\src\ripple\nodestore\Types.h">
+      <Filter>ripple\nodestore</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\overlay\Overlay.h">
-      <Filter>ripple\overlay</Filter>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\abstract_protocol_handler.h">
+      <Filter>ripple\overlay\impl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\overlay\Peer.h">
-      <Filter>ripple\overlay</Filter>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\basic_message.h">
+      <Filter>ripple\overlay\impl</Filter>
     </ClInclude>
-    <None Include="..\..\src\ripple\overlay\README.md">
-      <Filter>ripple\overlay</Filter>
-    </None>
     <ClCompile Include="..\..\src\ripple\overlay\impl\Message.cpp">
       <Filter>ripple\overlay\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\overlay\impl\message_name.cpp">
+      <Filter>ripple\overlay\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\message_name.h">
+      <Filter>ripple\overlay\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\message_stream.h">
+      <Filter>ripple\overlay\impl</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\overlay\impl\OverlayImpl.cpp">
       <Filter>ripple\overlay\impl</Filter>
     </ClCompile>
@@ -4266,33 +4269,30 @@
     <ClInclude Include="..\..\src\ripple\overlay\impl\PeerImp.h">
       <Filter>ripple\overlay\impl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\overlay\impl\Tuning.h">
-      <Filter>ripple\overlay\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\overlay\impl\abstract_protocol_handler.h">
-      <Filter>ripple\overlay\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\overlay\impl\basic_message.h">
-      <Filter>ripple\overlay\impl</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\overlay\impl\message_name.cpp">
-      <Filter>ripple\overlay\impl</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\overlay\impl\message_name.h">
-      <Filter>ripple\overlay\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\overlay\impl\message_stream.h">
-      <Filter>ripple\overlay\impl</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\overlay\impl\peer_protocol_detector.h">
+      <Filter>ripple\overlay\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\Tuning.h">
       <Filter>ripple\overlay\impl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\overlay\make_Overlay.h">
       <Filter>ripple\overlay</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\overlay\Message.h">
+      <Filter>ripple\overlay</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\overlay\Overlay.h">
+      <Filter>ripple\overlay</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\overlay\Peer.h">
+      <Filter>ripple\overlay</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\overlay\predicates.h">
       <Filter>ripple\overlay</Filter>
     </ClInclude>
+    <None Include="..\..\src\ripple\overlay\README.md">
+      <Filter>ripple\overlay</Filter>
+    </None>
     <ClInclude Include="..\..\src\ripple\peerfinder\api\Callback.h">
       <Filter>ripple\peerfinder\api</Filter>
     </ClInclude>
@@ -4342,6 +4342,12 @@
       <Filter>ripple\peerfinder\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Fixed.h">
+      <Filter>ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\handout.h">
+      <Filter>ripple\peerfinder\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\iosformat.h">
       <Filter>ripple\peerfinder\impl</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\peerfinder\impl\Livecache.cpp">
@@ -4396,12 +4402,6 @@
       <Filter>ripple\peerfinder\impl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Tuning.h">
-      <Filter>ripple\peerfinder\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\handout.h">
-      <Filter>ripple\peerfinder\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\iosformat.h">
       <Filter>ripple\peerfinder\impl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\sim\FunctionQueue.h">
@@ -4527,6 +4527,9 @@
     <ClCompile Include="..\..\src\ripple\sitefiles\impl\SiteFile.cpp">
       <Filter>ripple\sitefiles\impl</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\sslutil\api\bignum_error.h">
+      <Filter>ripple\sslutil\api</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\sslutil\api\CAutoBN_CTX.h">
       <Filter>ripple\sslutil\api</Filter>
     </ClInclude>
@@ -4540,9 +4543,6 @@
       <Filter>ripple\sslutil\api</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\sslutil\api\HashUtilities.h">
-      <Filter>ripple\sslutil\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\sslutil\api\bignum_error.h">
       <Filter>ripple\sslutil\api</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\sslutil\impl\CBigNum.cpp">
@@ -4596,6 +4596,9 @@
     <ClInclude Include="..\..\src\ripple\types\api\Base58.h">
       <Filter>ripple\types\api</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\types\api\base_uint.h">
+      <Filter>ripple\types\api</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\api\Blob.h">
       <Filter>ripple\types\api</Filter>
     </ClInclude>
@@ -4647,16 +4650,13 @@
     <ClInclude Include="..\..\src\ripple\types\api\SimpleIdentifier.h">
       <Filter>ripple\types\api</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\types\api\strHex.h">
+      <Filter>ripple\types\api</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\api\UInt160.h">
       <Filter>ripple\types\api</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\api\UintTypes.h">
-      <Filter>ripple\types\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\api\base_uint.h">
-      <Filter>ripple\types\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\api\strHex.h">
       <Filter>ripple\types\api</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\types\impl\Base58.cpp">
@@ -4674,10 +4674,10 @@
     <ClCompile Include="..\..\src\ripple\types\impl\RippleIdentifierTests.cpp">
       <Filter>ripple\types\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\types\impl\UintTypes.cpp">
+    <ClCompile Include="..\..\src\ripple\types\impl\strHex.cpp">
       <Filter>ripple\types\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\types\impl\strHex.cpp">
+    <ClCompile Include="..\..\src\ripple\types\impl\UintTypes.cpp">
       <Filter>ripple\types\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\app.cpp">
@@ -4944,6 +4944,12 @@
     <ClInclude Include="..\..\src\rocksdb\db\compaction_picker.h">
       <Filter>rocksdb\db</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\db\dbformat.cc">
+      <Filter>rocksdb\db</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\db\dbformat.h">
+      <Filter>rocksdb\db</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\rocksdb\db\db_filesnapshot.cc">
       <Filter>rocksdb\db</Filter>
     </ClCompile>
@@ -4971,22 +4977,16 @@
     <ClCompile Include="..\..\src\rocksdb\db\db_stats_logger.cc">
       <Filter>rocksdb\db</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\rocksdb\db\dbformat.cc">
+    <ClCompile Include="..\..\src\rocksdb\db\filename.cc">
       <Filter>rocksdb\db</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\rocksdb\db\dbformat.h">
+    <ClInclude Include="..\..\src\rocksdb\db\filename.h">
       <Filter>rocksdb\db</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\rocksdb\db\file_indexer.cc">
       <Filter>rocksdb\db</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\rocksdb\db\file_indexer.h">
-      <Filter>rocksdb\db</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\rocksdb\db\filename.cc">
-      <Filter>rocksdb\db</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\rocksdb\db\filename.h">
       <Filter>rocksdb\db</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\rocksdb\db\forward_iterator.cc">
@@ -5235,13 +5235,13 @@
     <ClInclude Include="..\..\src\rocksdb\table\format.h">
       <Filter>rocksdb\table</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\rocksdb\table\iter_heap.h">
-      <Filter>rocksdb\table</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\rocksdb\table\iterator.cc">
       <Filter>rocksdb\table</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\rocksdb\table\iterator_wrapper.h">
+      <Filter>rocksdb\table</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\table\iter_heap.h">
       <Filter>rocksdb\table</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\rocksdb\table\merger.cc">
@@ -5301,13 +5301,13 @@
     <ClInclude Include="..\..\src\rocksdb\util\arena.h">
       <Filter>rocksdb\util</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\util\autovector.h">
+      <Filter>rocksdb\util</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\rocksdb\util\auto_roll_logger.cc">
       <Filter>rocksdb\util</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\rocksdb\util\auto_roll_logger.h">
-      <Filter>rocksdb\util</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\rocksdb\util\autovector.h">
       <Filter>rocksdb\util</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\rocksdb\util\blob_store.cc">
@@ -5391,16 +5391,16 @@
     <ClInclude Include="..\..\src\rocksdb\util\iostats_context_imp.h">
       <Filter>rocksdb\util</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\rocksdb\util\log_buffer.cc">
-      <Filter>rocksdb\util</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\rocksdb\util\log_buffer.h">
-      <Filter>rocksdb\util</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\rocksdb\util\logging.cc">
       <Filter>rocksdb\util</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\rocksdb\util\logging.h">
+      <Filter>rocksdb\util</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\util\log_buffer.cc">
+      <Filter>rocksdb\util</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\util\log_buffer.h">
       <Filter>rocksdb\util</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\rocksdb\util\murmurhash.cc">
@@ -5601,10 +5601,10 @@
     <ClInclude Include="..\..\src\websocket\src\utf8_validator\utf8_validator.hpp">
       <Filter>websocket\src\utf8_validator</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\websocket\src\websocket_frame.hpp">
+    <ClInclude Include="..\..\src\websocket\src\websocketpp.hpp">
       <Filter>websocket\src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\websocket\src\websocketpp.hpp">
+    <ClInclude Include="..\..\src\websocket\src\websocket_frame.hpp">
       <Filter>websocket\src</Filter>
     </ClInclude>
   </ItemGroup>
