@@ -73,6 +73,7 @@ OverlayImpl::OverlayImpl (Stoppable& parent,
     , m_io_service (io_service)
     , m_ssl_context (ssl_context)
     , m_resolver (resolver)
+    , m_nextShortId (0)
 {
 }
 

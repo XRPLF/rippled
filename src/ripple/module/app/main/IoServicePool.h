@@ -24,6 +24,8 @@
 #include <boost/asio/io_service.hpp>
 #include <boost/optional.hpp>
 
+#include <atomic>
+
 namespace ripple {
 
 /** An io_service with an associated group of threads. */
@@ -50,7 +52,7 @@ private:
     boost::optional <boost::asio::io_service::work> m_work;
     std::vector <std::unique_ptr <ServiceThread>> m_threads;
     int m_threadsDesired;
-    beast::Atomic <int> m_threadsRunning;
+    std::atomic <int> m_threadsRunning;
 };
 
 } // ripple

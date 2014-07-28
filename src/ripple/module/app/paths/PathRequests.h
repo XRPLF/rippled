@@ -20,6 +20,8 @@
 #ifndef RIPPLE_PATHREQUESTS_H
 #define RIPPLE_PATHREQUESTS_H
 
+#include <atomic>
+
 namespace ripple {
 
 class PathRequests
@@ -66,7 +68,7 @@ private:
     // Use a RippleLineCache
     RippleLineCache::pointer         mLineCache;
 
-    beast::Atomic<int>               mLastIdentifier;
+    std::atomic<int>                 mLastIdentifier;
 
     typedef RippleRecursiveMutex     LockType;
     typedef std::lock_guard <LockType> ScopedLockType;

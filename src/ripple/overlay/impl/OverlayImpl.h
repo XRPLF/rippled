@@ -33,6 +33,7 @@
 #include <boost/asio/ssl/context.hpp>
 
 #include <beast/cxx14/memory.h> // <memory>
+#include <atomic>
 #include <cassert>
 #include <condition_variable>
 #include <mutex>
@@ -92,7 +93,7 @@ private:
     Resolver& m_resolver;
 
     /** Monotically increasing identifiers for peers */
-    beast::Atomic <Peer::ShortId> m_nextShortId;
+    std::atomic <Peer::ShortId> m_nextShortId;
 
     //--------------------------------------------------------------------------
 
