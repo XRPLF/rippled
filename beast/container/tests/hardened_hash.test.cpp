@@ -90,19 +90,19 @@ namespace detail {
 
 template <class T>
 using test_hardened_unordered_set =
-    std::unordered_set <T, hardened_hash <T>>;
+    std::unordered_set <T, hardened_hash <>>;
 
 template <class T>
 using test_hardened_unordered_map =
-    std::unordered_map <T, int, hardened_hash <T>>;
+    std::unordered_map <T, int, hardened_hash <>>;
 
 template <class T>
 using test_hardened_unordered_multiset =
-    std::unordered_multiset <T, hardened_hash <T>>;
+    std::unordered_multiset <T, hardened_hash <>>;
 
 template <class T>
 using test_hardened_unordered_multimap =
-    std::unordered_multimap <T, int, hardened_hash <T>>;
+    std::unordered_multimap <T, int, hardened_hash <>>;
 
 } // beast
 
@@ -196,7 +196,7 @@ public:
     check ()
     {
         T t{};
-        hardened_hash <T>() (t);
+        hardened_hash <>() (t);
         pass();
     }
 
@@ -280,7 +280,7 @@ public:
         log <<
             "sizeof(std::size_t) == " << sizeof(std::size_t);
 
-        hardened_hash <sha256_t> h;
+        hardened_hash <> h;
         for (int i = 0; i < 100; ++i)
         {
             sha256_t v (sha256_t::from_number (i));
