@@ -94,25 +94,28 @@ def is_subdir(child, parent):
     '''Determine if child is a subdirectory of parent'''
     return os.path.commonprefix([parent, child]) == parent
 
+def _key(item):
+    if isinstance(item, (str, unicode)):
+        return ('s', item.upper(), item)
+    elif isinstance(item, (int, long, float)):
+        return ('n', item)
+    elif isinstance(item, (list, tuple)):
+        return ('l', map(_key, item))
+    elif isinstance(item, dict):
+        return ('d', xsorted(item.keys()), xsorted(item.values()))
+    elif isinstance(item, Configuration):
+        return ('c', _key(item.name), _key(item.target), _key(item.variant), _key(item.platform))
+    elif isinstance(item, Item):
+        return ('i', _key(item.path()), _key(item.is_compiled()), _key(item.builder()), _key(item.tag()), _key(item.is_excluded()))
+    elif isinstance(item, SCons.Node.FS.File):
+        return ('f', _key(item.name), _key(item.suffix))
+    else:
+        return ('x', item)
+
 def xsorted(tosort, **kwargs):
     '''Performs sorted in a deterministic manner.'''
     if 'key' in kwargs:
         map(kwargs['key'], tosort)
-    def _key(item):
-        if isinstance(item, (str, unicode)):
-            return ("s", item.upper(), item)
-        elif isinstance(item, (list, tuple)):
-            return ("l", map(_key, item))
-        elif isinstance(item, dict):
-            return ("d", xsorted(item.keys()), xsorted(item.values()))
-        elif isinstance(item, Configuration):
-            return ("c", item.target, item.platform, item.variant)
-        elif isinstance(item, Item):
-            return ("i", item._path, item._builder)
-        elif isinstance(item, SCons.Node.FS.File):
-            return ("f", item.name, item.suffix)
-        else:
-            return ("x", item)
     kwargs['key'] = _key
     return sorted(tosort, **kwargs)
 
@@ -582,7 +585,7 @@ class _ProjectGenerator(object):
 
     def __init__(self, project_node, filters_node, env):
         try:
-            self.configs = xsorted(env['VSPROJECT_CONFIGS'], key=lambda x: x.name)
+            self.configs = xsorted(env['VSPROJECT_CONFIGS'])
         except KeyError:
             raise ValueError ('Missing VSPROJECT_CONFIGS')
         self.root_dir = os.getcwd()
@@ -620,7 +623,7 @@ class _ProjectGenerator(object):
             targets = config.target
             for target in targets:
                 _walk(target, items)
-        self.items = xsorted(items.values(), key=lambda x: x.path())
+        self.items = xsorted(items.values())
 
     def makeListTag(self, items, prefix, tag, attrs, inherit=True):
         '''Builds an XML tag string from a list of items. If items is
@@ -662,7 +665,7 @@ class _ProjectGenerator(object):
         f.write('  <ItemGroup Label="ProjectConfigurations">\r\n')
         for config in self.configs:
             variant = config.variant
-            platform = config.platform            
+            platform = config.platform           
             f.write(V12DSPProjectConfiguration % locals())
         f.write('  </ItemGroup>\r\n')
 
