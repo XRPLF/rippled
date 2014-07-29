@@ -51,6 +51,12 @@ enum LedgerEntryAction
     taaCREATE,  // Newly created.
 };
 
+enum FreezeHandling
+{
+    fhIGNORE_FREEZE,
+    fhZERO_IF_FROZEN
+};
+
 class LedgerEntrySetEntry
     : public CountedObject <LedgerEntrySetEntry>
 {
@@ -238,9 +244,9 @@ public:
 
     STAmount accountHolds (
         Account const& account, Currency const& currency,
-        Account const& issuer, bool zeroIfFrozen);
+        Account const& issuer, FreezeHandling freezeHandling);
     STAmount accountFunds (
-        Account const& account, const STAmount & saDefault, bool zeroIfFrozen);
+        Account const& account, const STAmount & saDefault, FreezeHandling freezeHandling);
     TER accountSend (
         Account const& uSenderID, Account const& uReceiverID,
         const STAmount & saAmount);
@@ -333,7 +339,7 @@ private:
 
     STAmount rippleHolds (
         Account const& account, Currency const& currency,
-        Account const& issuer, bool zeroIfFrozen);
+        Account const& issuer, FreezeHandling zeroIfFrozen);
 };
 
 } // ripple

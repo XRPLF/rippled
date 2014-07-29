@@ -1224,7 +1224,7 @@ STAmount LedgerEntrySet::rippleHolds (
     Account const& account,
     Currency const& currency,
     Account const& issuer,
-    bool zeroIfFrozen)
+    FreezeHandling zeroIfFrozen)
 {
     STAmount saBalance;
     SLE::pointer sleRippleState = entryCache (ltRIPPLE_STATE,
@@ -1234,7 +1234,7 @@ STAmount LedgerEntrySet::rippleHolds (
     {
         saBalance.clear ({currency, issuer});
     }
-    else if (zeroIfFrozen && isFrozen (account, currency, issuer))
+    else if ((zeroIfFrozen == fhZERO_IF_FROZEN) && isFrozen (account, currency, issuer))
     {
         saBalance.clear (IssueRef (currency, issuer));
     }
@@ -1262,7 +1262,7 @@ STAmount LedgerEntrySet::accountHolds (
     Account const& account,
     Currency const& currency,
     Account const& issuer,
-    bool zeroIfFrozen)
+    FreezeHandling zeroIfFrozen)
 {
     STAmount    saAmount;
 
@@ -1351,7 +1351,7 @@ bool LedgerEntrySet::isFrozen(
 // If the issuer is the same as account, funds are unlimited, use result is
 // saDefault.
 STAmount LedgerEntrySet::accountFunds (
-    Account const& account, const STAmount& saDefault, bool zeroIfFrozen)
+    Account const& account, const STAmount& saDefault, FreezeHandling zeroIfFrozen)
 {
     STAmount    saFunds;
 

@@ -3051,7 +3051,7 @@ void NetworkOPsImp::getBookPage (
 
                         saOwnerFunds = lesActive.accountHolds (
                             uOfferOwnerID, book.out.currency,
-                            book.out.account, true);
+                            book.out.account, fhZERO_IF_FROZEN);
 
                         if (saOwnerFunds < zero)
                         {
@@ -3217,7 +3217,7 @@ void NetworkOPsImp::getBookPage (
                     // Did not find balance in table.
 
                     saOwnerFunds = lesActive.accountHolds (
-                        uOfferOwnerID, book.out.currency, book.out.account);
+                        uOfferOwnerID, book.out.currency, book.out.account, fhZERO_IF_FROZEN);
 
                     if (saOwnerFunds.isNegative ())
                     {

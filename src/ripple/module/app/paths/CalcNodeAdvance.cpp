@@ -169,7 +169,7 @@ TER nodeAdvance (
 
                 // Funds left.
                 node.saOfferFunds = rippleCalc.mActiveLedger.accountFunds (
-                    node.offerOwnerAccount_, node.saTakerGets, true);
+                    node.offerOwnerAccount_, node.saTakerGets, fhZERO_IF_FROZEN);
                 node.bFundsDirty     = false;
 
                 WriteLog (lsTRACE, RippleCalc)
@@ -359,8 +359,9 @@ TER nodeAdvance (
 
                 // Only the current node is allowed to use the source.
 
+                // Spendable funds held
                 node.saOfferFunds = rippleCalc.mActiveLedger.accountFunds
-                        (node.offerOwnerAccount_, node.saTakerGets, true); // Funds held.
+                        (node.offerOwnerAccount_, node.saTakerGets, fhZERO_IF_FROZEN);
 
                 if (node.saOfferFunds <= zero)
                 {

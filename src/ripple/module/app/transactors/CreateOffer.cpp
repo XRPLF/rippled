@@ -231,7 +231,8 @@ CreateOffer::doApply ()
 
         terResult = tecFROZEN;
     }
-    else if (view.accountFunds (mTxnAccountID, saTakerGets, true) <= zero)
+    else if (view.accountFunds (
+        mTxnAccountID, saTakerGets, fhZERO_IF_FROZEN) <= zero)
     {
         m_journal.warning <<
             "delay: Offers must be at least partially funded.";
@@ -356,8 +357,8 @@ CreateOffer::doApply ()
             "takeOffers: mTxnAccountID=" <<
             to_string (mTxnAccountID);
         m_journal.debug <<
-            "takeOffers:         FUNDS=" <<
-            view.accountFunds (mTxnAccountID, saTakerGets, true).getFullText ();
+            "takeOffers:         FUNDS=" << view.accountFunds (
+	    mTxnAccountID, saTakerGets, fhZERO_IF_FROZEN).getFullText ();
     }
 
     if (saTakerPays < zero || saTakerGets < zero)
