@@ -24,10 +24,6 @@
 
 namespace ripple {
 
-LedgerBase::LedgerBase ()
-{
-}
-
 Ledger::Ledger (const RippleAddress& masterID, std::uint64_t startAmount)
     : mTotCoins (startAmount)
     , mLedgerSeq (1) // First Ledger
@@ -1137,8 +1133,6 @@ Json::Value Ledger::getJson (int options)
 
     bool const bFull (options & LEDGER_JSON_FULL);
     bool const bExpand (options & LEDGER_JSON_EXPAND);
-
-    ScopedLockType sl (mLock);
 
     // DEPRECATED
     ledger[jss::seqNum]
