@@ -86,6 +86,7 @@ class PathState : public CountedObject <PathState>
 
     void checkNoRipple (Account const& destinationAccountID,
                         Account const& sourceAccountID);
+    void checkFreeze ();
     static bool lessPriority (PathState& lhs, PathState& rhs);
 
     LedgerEntrySet& ledgerEntries() { return lesEntries; }

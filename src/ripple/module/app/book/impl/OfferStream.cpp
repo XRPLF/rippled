@@ -124,7 +124,7 @@ OfferStream::step ()
         // NIKB NOTE The calling code also checks the funds, how expensive is
         //           looking up the funds twice?
         Amount const owner_funds (view().accountFunds (
-            m_offer.account(), m_offer.amount().out));
+            m_offer.account(), m_offer.amount().out, fhZERO_IF_FROZEN));
 
         // Check for unfunded offer
         if (owner_funds <= zero)
@@ -133,7 +133,7 @@ OfferStream::step ()
             // we haven't modified the balance and therefore the
             // offer is "found unfunded" versus "became unfunded"
             if (view_cancel().accountFunds (m_offer.account(),
-                m_offer.amount().out) == owner_funds)
+                m_offer.amount().out, fhZERO_IF_FROZEN) == owner_funds)
             {
                 view_cancel().offerDelete (entry->getIndex());
                 if (m_journal.trace) m_journal.trace <<

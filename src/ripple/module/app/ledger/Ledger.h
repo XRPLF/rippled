@@ -182,6 +182,8 @@ public:
         mAccountStateMap->setLedgerSeq (mLedgerSeq);
     }
 
+    bool enforceFreeze () const;
+
     // ledger signature operations
     void addRaw (Serializer & s) const;
     void setRaw (Serializer & s, bool hasPrefix);
