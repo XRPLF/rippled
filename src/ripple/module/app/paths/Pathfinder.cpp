@@ -822,11 +822,11 @@ void Pathfinder::addLink(
         else
         {
             bool bDestOnly = (addFlags & afOB_LAST) != 0;
-            std::vector<OrderBook::pointer> books;
-            getApp().getOrderBookDB().getBooksByTakerPays(
-                {uEndCurrency, uEndIssuer}, books);
+            auto books = getApp().getOrderBookDB().getBooksByTakerPays(
+                {uEndCurrency, uEndIssuer});
             WriteLog (lsTRACE, Pathfinder)
                 << books.size() << " books found from this currency/issuer";
+
             for (auto const& book : books)
             {
                 if (!currentPath.hasSeen (
