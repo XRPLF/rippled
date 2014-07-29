@@ -46,20 +46,6 @@ enum LedgerStateParms
 
 class SqliteStatement;
 
-class LedgerBase
-{
-protected:
-    LedgerBase ();
-
-    // VFALCO TODO eliminate the need for friends
-    friend class TransactionEngine;
-    friend class Transactor;
-
-    typedef RippleRecursiveMutex LockType;
-    typedef std::lock_guard <LockType> ScopedLockType;
-    LockType mLock;
-};
-
 // VFALCO TODO figure out exactly how this thing works.
 //         It seems like some ledger database is stored as a global, static in the
 //         class. But then what is the meaning of a Ledger object? Is this
@@ -73,7 +59,6 @@ protected:
 */
 class Ledger
     : public std::enable_shared_from_this <Ledger>
-    , public LedgerBase
     , public CountedObject <Ledger>
     , public beast::Uncopyable
 {

@@ -262,9 +262,6 @@ TER Transactor::apply ()
     if (terResult != tesSUCCESS)
         return (terResult);
 
-    // Restructure this to avoid the dependency on LedgerBase::mLock
-    Ledger::ScopedLockType sl (mEngine->getLedger ()->mLock);
-
     mTxnAccount = mEngine->entryCache (ltACCOUNT_ROOT,
         Ledger::getAccountRootIndex (mTxnAccountID));
     calculateFee ();

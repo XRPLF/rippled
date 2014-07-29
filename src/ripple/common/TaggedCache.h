@@ -301,7 +301,9 @@ public:
 
         if (cit == m_cache.end ())
         {
-            m_cache.insert (cache_pair (key, Entry (m_clock.now(), data)));
+            m_cache.emplace (std::piecewise_construct,
+                std::forward_as_tuple(key),
+                std::forward_as_tuple(m_clock.now(), data));
             ++m_cache_count;
             return false;
         }
@@ -526,7 +528,6 @@ private:
         void touch (clock_type::time_point const& now) { last_access = now; }
     };
 
-    typedef std::pair <key_type, Entry> cache_pair;
     typedef hardened_hash_map <key_type, Entry, Hash, KeyEqual> cache_type;
     typedef typename cache_type::iterator cache_iterator;
 
