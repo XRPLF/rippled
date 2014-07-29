@@ -37,8 +37,13 @@ public:
 
     void addOrderBook(Book const&);
 
-    // return list of all orderbooks that want this issuerID and currencyID
+    /** @return a list of all orderbooks that want this issuerID and currencyID.
+     */
     OrderBook::List getBooksByTakerPays (Issue const&);
+
+    /** @return a count of all orderbooks that want this issuerID and currencyID.
+     */
+    int getBookSize(Issue const&);
 
     bool isBookToXRP (Issue const&);
 

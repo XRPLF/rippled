@@ -486,12 +486,10 @@ bool Pathfinder::matchesOrigin (Issue const& issue)
              issue.account == mSrcAccountID);
 }
 
-// VFALCO TODO Use Currency, RippleAccount, et. al. in argument list here
 int Pathfinder::getPathsOut (
     Currency const& currencyID, Account const& accountID,
     bool isDstCurrency, Account const& dstAccount)
 {
-    // VFALCO TODO Use Issue here
     auto currencyAccount = std::make_pair(currencyID, accountID);
     auto it = mPOMap.find (currencyAccount);
 
@@ -513,7 +511,9 @@ int Pathfinder::getPathsOut (
 
     if (!bFrozen)
     {
-        for (auto const& item : mRLCache->getRippleLines (accountID).getItems ())
+        count = getApp().getOrderBookDB().getBookSize({currencyID, accountID});
+        AccountItems& rippleLines = mRLCache->getRippleLines (accountID);
+        for (auto const& item : rippleLines.getItems ())
         {
             RippleState* rspEntry = (RippleState*) item.get ();
 
