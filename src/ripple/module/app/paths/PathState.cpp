@@ -586,7 +586,7 @@ void PathState::checkFreeze()
 
     SLE::pointer sle;
 
-    for (int i = 0; i < (nodes_.size() - 1); ++i)
+    for (std::size_t i = 0; i < (nodes_.size() - 1); ++i)
     {
         // Check each order book for a global freeze
         if (nodes_[i].uFlags & STPathElement::typeIssuer)
