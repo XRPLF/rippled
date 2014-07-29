@@ -173,6 +173,12 @@ OrderBook::List OrderBookDB::getBooksByTakerPays (Issue const& issue)
     return it == mSourceMap.end () ? OrderBook::List() : it->second;
 }
 
+int OrderBookDB::getBookSize(Issue const& issue) {
+    ScopedLockType sl (mLock);
+    auto it = mSourceMap.find (issue);
+    return it == mSourceMap.end () ? 0 : it->second.size();
+}
+
 bool OrderBookDB::isBookToXRP(Issue const& issue)
 {
     ScopedLockType sl (mLock);
