@@ -57,7 +57,7 @@ bool BookDirIterator::nextDirectory (LedgerEntrySet& les)
     mOfferDir = les.entryCache (ltDIR_NODE, mIndex);
     assert (mOfferDir);
 
-    return !!mOfferDir;
+    return bool(mOfferDir);
 }
 
 bool BookDirIterator::firstDirectory (LedgerEntrySet& les)

@@ -289,12 +289,14 @@ bool Transaction::convertToTransactions (std::uint32_t firstLedgerSeq, std::uint
 
         Transaction::pointer firstTrans, secondTrans;
 
-        if (!!first)
+        if (first)
         {
             // transaction in our table
-            firstTrans = sharedTransaction (first->peekData (), checkFirstTransactions);
+            firstTrans = sharedTransaction (
+                first->peekData (), checkFirstTransactions);
 
-            if ((firstTrans->getStatus () == INVALID) || (firstTrans->getID () != id ))
+            if (firstTrans->getStatus () == INVALID ||
+                firstTrans->getID () != id )
             {
                 firstTrans->setStatus (INVALID, firstLedgerSeq);
                 return false;
@@ -302,25 +304,36 @@ bool Transaction::convertToTransactions (std::uint32_t firstLedgerSeq, std::uint
             else firstTrans->setStatus (INCLUDED, firstLedgerSeq);
         }
 
-        if (!!second)
+        if (second)
         {
             // transaction in other table
-            secondTrans = sharedTransaction (second->peekData (), checkSecondTransactions);
+            secondTrans = sharedTransaction (
+                second->peekData (), checkSecondTransactions);
 
-            if ((secondTrans->getStatus () == INVALID) || (secondTrans->getID () != id))
+            if (secondTrans->getStatus () == INVALID ||
+                secondTrans->getID () != id)
             {
                 secondTrans->setStatus (INVALID, secondLedgerSeq);
                 return false;
             }
-            else secondTrans->setStatus (INCLUDED, secondLedgerSeq);
+            else
+            {
+                secondTrans->setStatus (INCLUDED, secondLedgerSeq);
+            }
         }
 
         assert (firstTrans || secondTrans);
 
-        if (firstTrans && secondTrans && (firstTrans->getStatus () != INVALID) && (secondTrans->getStatus () != INVALID))
-            return false; // one or the other SHAMap is structurally invalid or a miracle has happened
+        if (firstTrans && secondTrans &&
+            firstTrans->getStatus () != INVALID &&
+            secondTrans->getStatus () != INVALID)
+        {
+            // One or the other SHAMap is structurally invalid or a miracle has
+            // happened.
+            return false;
+        }
 
-        outMap[id] = std::pair<Transaction::pointer, Transaction::pointer> (firstTrans, secondTrans);
+        outMap[id] = {firstTrans, secondTrans};
     }
 
     return true;
@@ -338,8 +351,8 @@ Json::Value Transaction::getJson (int options, bool binary) const
 
         if (options == 1)
         {
-            Ledger::pointer ledger = getApp().getLedgerMaster ().getLedgerBySeq (mInLedger);
-
+            auto ledger = getApp().getLedgerMaster ().
+                    getLedgerBySeq (mInLedger);
             if (ledger)
                 ret["date"] = ledger->getCloseTimeNC ();
         }

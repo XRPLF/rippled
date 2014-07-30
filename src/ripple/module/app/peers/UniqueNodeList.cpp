@@ -654,7 +654,7 @@ private:
 
         if (!db->executeSQL ("SELECT * FROM Misc WHERE Magic=1;")) return false;
 
-        bool    bAvail  = !!db->startIterRows ();
+        bool bAvail  = db->startIterRows ();
 
         mtpFetchUpdated = ptFromSeconds (bAvail ? db->getInt ("FetchUpdated") : -1);
         mtpScoreUpdated = ptFromSeconds (bAvail ? db->getInt ("ScoreUpdated") : -1);

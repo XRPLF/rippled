@@ -84,7 +84,7 @@ public:
 
     bool isApplied () const
     {
-        return !!mMeta;
+        return bool(mMeta);
     }
     int getIndex () const
     {

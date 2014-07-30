@@ -341,7 +341,7 @@ OverlayImpl::onPrepare ()
     auto bootstrapIps (getConfig ().IPS);
 
     // If no IPs are specified, use the Ripple Labs round robin
-    // pool to get some servers to insert into the boot cache. 
+    // pool to get some servers to insert into the boot cache.
     if (bootstrapIps.empty ())
         bootstrapIps.push_back ("r.ripple.com 51235");
 
@@ -349,7 +349,7 @@ OverlayImpl::onPrepare ()
     {
         m_resolver.resolve (bootstrapIps,
             [this](
-                std::string const& name, 
+                std::string const& name,
                 std::vector <beast::IP::Endpoint> const& addresses)
             {
                 std::vector <std::string> ips;
@@ -369,7 +369,7 @@ OverlayImpl::onPrepare ()
     {
         m_resolver.resolve (getConfig ().IPS_FIXED,
             [this](
-                std::string const& name, 
+                std::string const& name,
                 std::vector <beast::IP::Endpoint> const& addresses)
             {
                 if (!addresses.empty ())
@@ -406,7 +406,7 @@ OverlayImpl::onStart ()
 }
 
 /** Close all peer connections.
-    If `graceful` is true then active 
+    If `graceful` is true then active
     Requirements:
         Caller must hold the mutex.
 */
@@ -437,7 +437,7 @@ OverlayImpl::onStop ()
     // Take off the extra count we added in the constructor
     release();
 
-    close_all (false);       
+    close_all (false);
 }
 
 void
@@ -486,9 +486,9 @@ OverlayImpl::onPeerActivated (Peer::ptr const& peer)
         assert(result.second);
     }
 
-    m_journal.debug << 
+    m_journal.debug <<
         "activated " << peer->getRemoteAddress() <<
-        " (" << peer->getShortId() << 
+        " (" << peer->getShortId() <<
         ":" << RipplePublicKey(peer->getNodePublic()) << ")";
 
     // We just accepted this peer so we have non-zero active peers
@@ -537,7 +537,7 @@ OverlayImpl::getActivePeers ()
 
     BOOST_FOREACH (PeerByPublicKey::value_type const& pair, m_publicKeyMap)
     {
-        assert (!!pair.second);
+        assert (pair.second);
         ret.push_back (pair.second);
     }
 
@@ -562,7 +562,7 @@ make_Overlay (
     beast::Stoppable& parent,
     Resource::Manager& resourceManager,
     SiteFiles::Manager& siteFiles,
-    beast::File const& pathToDbFileOrDirectory, 
+    beast::File const& pathToDbFileOrDirectory,
     Resolver& resolver,
     boost::asio::io_service& io_service,
     boost::asio::ssl::context& ssl_context)

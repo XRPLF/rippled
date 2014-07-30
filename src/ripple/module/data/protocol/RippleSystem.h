@@ -23,7 +23,7 @@
 namespace ripple {
 
 /** Protocol specific constant globals. */
-// VFALCO NOTE use these from now on instead of the macros!!
+// VFALCO NOTE use these from now on instead of the macros!
 class RippleSystem
 {
 public:

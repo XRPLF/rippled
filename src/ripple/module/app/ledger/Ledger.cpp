@@ -765,7 +765,7 @@ bool Ledger::saveValidatedLedger (bool current)
     {
         auto sl (getApp().getLedgerDB ()->lock ());
 
-        // TODO(tom): ARG!!
+        // TODO(tom): ARG!
         getApp().getLedgerDB ()->getDB ()->executeSQL (boost::str (addLedger %
                 to_string (getHash ()) % mLedgerSeq % to_string (mParentHash) %
                 beast::lexicalCastThrow <std::string> (mTotCoins) % mCloseTime %
@@ -1187,7 +1187,7 @@ Json::Value Ledger::getJson (int options)
         Json::Value& txns = (ledger[jss::transactions] = Json::arrayValue);
         SHAMapTreeNode::TNType type;
 
-        for (auto item = mTransactionMap->peekFirstItem (type); !!item;
+        for (auto item = mTransactionMap->peekFirstItem (type); item;
              item = mTransactionMap->peekNextItem (item->getTag (), type))
         {
             if (bFull || bExpand)
