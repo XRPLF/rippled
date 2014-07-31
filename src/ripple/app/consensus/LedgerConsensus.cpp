@@ -1027,35 +1027,19 @@ private:
 
             // Set up to write SHAMap changes to our database,
             //   perform updates, extract changes
-            newLCL->peekTransactionMap ()->armDirty ();  // start tracking changes
-            newLCL->peekAccountStateMap ()->armDirty ();
             WriteLog (lsDEBUG, LedgerConsensus)
                 << "Applying consensus set transactions to the"
                 << " last closed ledger";
             applyTransactions (set, newLCL, newLCL, retriableTransactions, false);
             newLCL->updateSkipList ();
             newLCL->setClosed ();
-            std::shared_ptr<SHAMap::DirtySet> acctNodes
-                = newLCL->peekAccountStateMap ()->disarmDirty (); // stop tracking changes
-            std::shared_ptr<SHAMap::DirtySet> txnNodes
-                = newLCL->peekTransactionMap ()->disarmDirty ();
 
-            // write out dirty nodes (temporarily done here)
-            int fc;
-
-            while ((fc = newLCL->peekAccountStateMap()->flushDirty (
-                *acctNodes, 256, hotACCOUNT_NODE, newLCL->getLedgerSeq ())) > 0)
-            {
-                WriteLog (lsTRACE, LedgerConsensus)
-                    << "Flushed " << fc << " dirty state nodes";
-            }
-
-            while ((fc = newLCL->peekTransactionMap()->flushDirty (
-                *txnNodes, 256, hotTRANSACTION_NODE, newLCL->getLedgerSeq ())) > 0)
-            {
-                WriteLog (lsTRACE, LedgerConsensus)
-                    << "Flushed " << fc << " dirty transaction nodes";
-            }
+            int asf = newLCL->peekAccountStateMap ()->flushDirty (
+                true, hotACCOUNT_NODE, newLCL->getLedgerSeq());
+            int tmf = newLCL->peekTransactionMap ()->flushDirty (
+                true, hotTRANSACTION_NODE, newLCL->getLedgerSeq());
+            WriteLog (lsDEBUG, LedgerConsensus) << "Flushed " << asf << " account and " <<
+                tmf << "transaction nodes";
 
             // Accept ledger
             newLCL->setAccepted (closeTime, mCloseResolution, closeTimeCorrect);
