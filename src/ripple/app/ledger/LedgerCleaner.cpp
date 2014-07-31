@@ -305,8 +305,6 @@ public:
             return false;
         }
 
-        nodeLedger->dropCache();
-
         return true;
     }
 
