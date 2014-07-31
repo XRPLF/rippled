@@ -351,6 +351,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\HeapBlock.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\http\basic_message.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\basic_url.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\client_session.h">
@@ -378,10 +380,13 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\http\impl\joyent_parser.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\http\impl\message_parser.cpp">
+    <ClCompile Include="..\..\src\beast\beast\http\impl\method.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\http\impl\ParsedURL.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\http\impl\parser.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\http\impl\raw_parser.cpp">
@@ -390,14 +395,19 @@
     <ClCompile Include="..\..\src\beast\beast\http\impl\URL.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\http\message_parser.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\method.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\ParsedURL.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\http\parser.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\raw_parser.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\http\rfc2616.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\http\tests\basic_message.test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\http\tests\basic_url.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -405,6 +415,9 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\http\tests\ParsedURL.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\http\tests\rfc2616.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\http\tests\urls_large_data.cpp">
@@ -3066,8 +3079,6 @@
     <ClInclude Include="..\..\src\ripple\nodestore\Types.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\overlay\impl\abstract_protocol_handler.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\overlay\impl\basic_message.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\overlay\impl\Message.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>

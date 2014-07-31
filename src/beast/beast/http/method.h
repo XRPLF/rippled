@@ -21,6 +21,7 @@
 #define BEAST_HTTP_METHOD_H_INCLUDED
 
 #include <memory>
+#include <string>
 
 namespace beast {
 namespace http {
@@ -64,6 +65,20 @@ enum class method_t
     http_patch,
     http_purge
 };
+
+std::string
+to_string (method_t m);
+
+template <class Stream>
+Stream&
+operator<< (Stream& s, method_t m)
+{
+    return s << to_string(m);
+}
+
+/** Returns the string corresponding to the numeric HTTP status code. */
+std::string
+status_text (int status);
 
 }
 }

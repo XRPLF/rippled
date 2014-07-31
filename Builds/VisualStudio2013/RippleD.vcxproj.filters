@@ -915,6 +915,9 @@
     <ClInclude Include="..\..\src\beast\beast\HeapBlock.h">
       <Filter>beast</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\http\basic_message.h">
+      <Filter>beast\http</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\basic_url.h">
       <Filter>beast\http</Filter>
     </ClInclude>
@@ -948,10 +951,13 @@
     <ClInclude Include="..\..\src\beast\beast\http\impl\joyent_parser.h">
       <Filter>beast\http\impl</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\http\impl\message_parser.cpp">
+    <ClCompile Include="..\..\src\beast\beast\http\impl\method.cpp">
       <Filter>beast\http\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\http\impl\ParsedURL.cpp">
+      <Filter>beast\http\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\http\impl\parser.cpp">
       <Filter>beast\http\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\http\impl\raw_parser.cpp">
@@ -960,18 +966,24 @@
     <ClCompile Include="..\..\src\beast\beast\http\impl\URL.cpp">
       <Filter>beast\http\impl</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\http\message_parser.h">
-      <Filter>beast\http</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\method.h">
       <Filter>beast\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\ParsedURL.h">
       <Filter>beast\http</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\http\parser.h">
+      <Filter>beast\http</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\raw_parser.h">
       <Filter>beast\http</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\http\rfc2616.h">
+      <Filter>beast\http</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\http\tests\basic_message.test.cpp">
+      <Filter>beast\http\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\http\tests\basic_url.test.cpp">
       <Filter>beast\http\tests</Filter>
     </ClCompile>
@@ -979,6 +991,9 @@
       <Filter>beast\http\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\http\tests\ParsedURL.cpp">
+      <Filter>beast\http\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\http\tests\rfc2616.test.cpp">
       <Filter>beast\http\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\http\tests\urls_large_data.cpp">
@@ -4234,9 +4249,6 @@
       <Filter>ripple\nodestore</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\overlay\impl\abstract_protocol_handler.h">
-      <Filter>ripple\overlay\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\overlay\impl\basic_message.h">
       <Filter>ripple\overlay\impl</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\overlay\impl\Message.cpp">
