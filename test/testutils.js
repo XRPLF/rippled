@@ -399,12 +399,15 @@ function verify_balance(remote, src, amount_json, callback) {
         return callback(err);
       }
       var valid_balance = amount_act.equals(amount_req, true);
-      if (!valid_balance) {
+
+      if (valid_balance) {
         //console.log('verify_balance: failed: %s / %s',
         //amount_act.to_text_full(),
         //amount_req.to_text_full());
+        callback(null);
+      } else {
+        callback(new Error('Balance invalid: ' + amount_json + ' / ' + amount_act.to_human()));
       }
-      callback(valid_balance ? null : new Error('Balance invalid: ' + amount_json + ' / ' + amount_act.to_json()));
     });
   } else {
     var issuer = amount_req.issuer().to_json();
@@ -421,15 +424,16 @@ function verify_balance(remote, src, amount_json, callback) {
       var account_balance = Amount.from_json(m.account_balance);
       var valid_balance = account_balance.equals(amount_req, true);
 
-      if (!valid_balance) {
+      if (valid_balance) {
         //console.log('verify_balance: failed: %s vs %s / %s: %s',
         //src,
         //account_balance.to_text_full(),
         //amount_req.to_text_full(),
         //account_balance.not_equals_why(amount_req, true));
+        callback(null);
+      } else {
+        callback(new Error('Balance invalid: ' + amount_json + ' / ' + account_balance.to_human()));
       }
-
-      callback(valid_balance ? null : new Error('Balance invalid: ' + amount_json + ' / ' + account_balance.to_json()));
     })
   }
 };
@@ -447,7 +451,7 @@ function verify_balances(remote, balances, callback) {
     verify_balance(remote, test.source, test.amount, callback)
   }
 
-  async.every(tests, iterator, callback);
+  async.eachSeries(tests, iterator, callback);
 };
 
 // --> owner: account
@@ -466,9 +470,13 @@ function verify_offer(remote, owner, seq, taker_pays, taker_gets, callback) {
 
     if (wrong) {
       //console.log('verify_offer: failed: %s', JSON.stringify(m));
+      callback(err || new Error('Amount inequality: ' 
+                                + JSON.stringify(m.node.TakerGets)
+                                + ' / ' 
+                                + JSON.stringify(taker_gets)));
+    } else {
+      callback(null);
     }
-
-    callback(wrong ? (err || new Error()) : null);
   });
 };
 

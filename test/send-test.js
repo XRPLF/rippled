@@ -868,7 +868,7 @@ suite('Gateway', function() {
     });
   });
 
-  test("subscribe test: customer to customer with and without transfer fee: transaction retry logic", function (done) {
+  test.skip("subscribe test: customer to customer with and without transfer fee: transaction retry logic", function (done) {
 
     var self = this;
 
