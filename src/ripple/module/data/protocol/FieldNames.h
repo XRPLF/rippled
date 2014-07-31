@@ -91,9 +91,7 @@ public:
         , rawJsonName (getName ())
         , jsonName (rawJsonName.c_str ())
     {
-        StaticScopedLockType sl (getMutex ());
-
-        codeToField[fieldCode] = this;
+        knownCodeToField[fieldCode] = this;
 
         fieldNum = ++num;
     }
@@ -108,9 +106,7 @@ public:
         , rawJsonName (getName ())
         , jsonName (rawJsonName.c_str ())
     {
-        StaticScopedLockType sl (getMutex ());
-
-        codeToField[fieldCode] = this;
+        knownCodeToField[fieldCode] = this;
 
         fieldNum = ++num;
     }
@@ -173,7 +169,10 @@ public:
         return fieldValue < 256;
     }
 
-    // VFALCO NOTE What is a discardable field?
+    // A discardable field is one that cannot be serialized, and
+    // should be discarded during serialization,like 'hash'.
+    // You cannot serialize an object's hash inside that object,
+    // but you can have it in the JSON representation.
     bool isDiscardable () const
     {
         return fieldValue > 256;
@@ -228,7 +227,12 @@ public:
 
     // VFALCO TODO make these private
 protected:
-    static std::map<int, ptr>   codeToField;
+
+    // Fields that are known at compile time
+    static std::map <int, ptr>   knownCodeToField;
+
+    // Field that are discovered at run time
+    static std::map <int, ptr>   unknownCodeToField;
 
     typedef RippleMutex StaticLockType;
     typedef std::lock_guard <StaticLockType> StaticScopedLockType;
