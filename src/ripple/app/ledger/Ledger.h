@@ -239,16 +239,6 @@ public:
     {
         return mAccountStateMap;
     }
-    void dropCache ()
-    {
-        assert (isImmutable ());
-
-        if (mTransactionMap)
-            mTransactionMap->dropCache ();
-
-        if (mAccountStateMap)
-            mAccountStateMap->dropCache ();
-    }
 
     // returns false on error
     bool addSLE (SLE const& sle);
