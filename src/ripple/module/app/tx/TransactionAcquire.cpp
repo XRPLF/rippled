@@ -36,7 +36,7 @@ TransactionAcquire::TransactionAcquire (uint256 const& hash, clock_type& clock)
     Application& app = getApp();
     mMap = std::make_shared<SHAMap> (smtTRANSACTION, hash,
         app.getFullBelowCache (), app.getTreeNodeCache());
-    mMap->setTXMap ();
+    mMap->setUnbacked ();
 }
 
 TransactionAcquire::~TransactionAcquire ()

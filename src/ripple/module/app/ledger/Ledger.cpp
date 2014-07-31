@@ -52,14 +52,9 @@ Ledger::Ledger (RippleAddress const& masterID, std::uint64_t startAmount)
     WriteLog (lsTRACE, Ledger)
             << "root account: " << startAccount->peekSLE ().getJson (0);
 
-    mAccountStateMap->armDirty ();
-
     writeBack (lepCREATE, startAccount->getSLE ());
 
-    auto dirtyNodes = mAccountStateMap->disarmDirty();
-    mAccountStateMap->flushDirty (
-        *dirtyNodes, 256, hotACCOUNT_NODE, mLedgerSeq);
-    // TODO(tom): why 256?
+    mAccountStateMap->flushDirty (true, hotACCOUNT_NODE, mLedgerSeq);
 
     initializeFees ();
 }
@@ -240,16 +235,14 @@ Ledger::~Ledger ()
     {
         logTimedDestroy <Ledger> (
             mTransactionMap,
-            "mTransactionMap with "
-            + std::to_string(mTransactionMap->size ()) + " items");
+            "mTransactionMap");
     }
 
     if (mAccountStateMap)
     {
         logTimedDestroy <Ledger> (
             mAccountStateMap,
-            "mAccountStateMap with "
-            + std::to_string (mAccountStateMap->size ()) + " items");
+            "mAccountStateMap");
     }
 }
 
