@@ -1078,15 +1078,12 @@ private:
 
     static void checkTransaction (Job&, int flags, SerializedTransaction::pointer stx, std::weak_ptr<Peer> peer)
     {
-    #ifndef TRUST_NETWORK
         try
         {
-    #endif
-
             if (stx->isFieldPresent(sfLastLedgerSequence) &&
                 (stx->getFieldU32 (sfLastLedgerSequence) <
                 getApp().getLedgerMaster().getValidLedgerIndex()))
-	    { // Transaction has expired
+            { // Transaction has expired
                 getApp().getHashRouter().setFlag(stx->getTransactionID(), SF_BAD);
                 charge (peer, Resource::feeUnwantedData);
                 return;
@@ -1107,16 +1104,12 @@ private:
 
             bool const trusted (flags & SF_TRUSTED);
             getApp().getOPs ().processTransaction (tx, trusted, false, false);
-
-    #ifndef TRUST_NETWORK
         }
         catch (...)
         {
             getApp().getHashRouter ().setFlag (stx->getTransactionID (), SF_BAD);
             charge (peer, Resource::feeInvalidRequest);
         }
-
-    #endif
     }
 
     // Called from our JobQueue
@@ -1195,10 +1188,7 @@ private:
     static void checkValidation (Job&, Overlay* pPeers, SerializedValidation::pointer val, bool isTrusted, bool isCluster,
                                  std::shared_ptr<protocol::TMValidation> packet, std::weak_ptr<Peer> peer)
     {
-    #ifndef TRUST_NETWORK
-
         try
-    #endif
         {
             uint256 signingHash = val->getSigningHash();
             if (!isCluster && !val->isValid (signingHash))
@@ -1238,14 +1228,11 @@ private:
                     peer_in_set(peers)));
             }
         }
-
-    #ifndef TRUST_NETWORK
         catch (...)
         {
             WriteLog(lsTRACE, Peer) << "Exception processing validation";
             charge (peer, Resource::feeInvalidRequest);
         }
-    #endif
     }
 };
 
