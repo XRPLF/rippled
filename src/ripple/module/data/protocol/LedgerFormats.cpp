@@ -40,21 +40,6 @@ LedgerFormats::LedgerFormats ()
             << SOElement (sfDomain,              SOE_OPTIONAL)
             ;
 
-    add ("Contract", ltCONTRACT)
-            << SOElement (sfAccount,             SOE_REQUIRED)
-            << SOElement (sfBalance,             SOE_REQUIRED)
-            << SOElement (sfPreviousTxnID,       SOE_REQUIRED)
-            << SOElement (sfPreviousTxnLgrSeq,   SOE_REQUIRED)
-            << SOElement (sfIssuer,              SOE_REQUIRED)
-            << SOElement (sfOwner,               SOE_REQUIRED)
-            << SOElement (sfExpiration,          SOE_REQUIRED)
-            << SOElement (sfBondAmount,          SOE_REQUIRED)
-            << SOElement (sfCreateCode,          SOE_OPTIONAL)
-            << SOElement (sfFundCode,            SOE_OPTIONAL)
-            << SOElement (sfRemoveCode,          SOE_OPTIONAL)
-            << SOElement (sfExpireCode,          SOE_OPTIONAL)
-            ;
-
     add ("DirectoryNode", ltDIR_NODE)
             << SOElement (sfOwner,               SOE_OPTIONAL)  // for owner directories
             << SOElement (sfTakerPaysCurrency,   SOE_OPTIONAL)  // for order book directories

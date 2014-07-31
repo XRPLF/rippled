@@ -231,7 +231,7 @@ void OrderBookDB::processTxn (
             {
                 if (node.getFieldU16 (sfLedgerEntryType) == ltOFFER)
                 {
-                    SField* field = nullptr;
+                    SField const* field = nullptr;
 
                     // We need a field that contains the TakerGets and TakerPays
                     // parameters.

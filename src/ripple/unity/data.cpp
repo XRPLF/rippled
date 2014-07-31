@@ -67,7 +67,7 @@
 #include <ripple/module/data/crypto/RFC1751.cpp>
 
 #include <ripple/module/data/protocol/BuildInfo.cpp>
-#include <ripple/module/data/protocol/FieldNames.cpp>
+#include <ripple/module/data/protocol/SField.cpp>
 #include <ripple/module/data/protocol/HashPrefix.cpp>
 #include <ripple/module/data/protocol/LedgerFormats.cpp>
 #include <ripple/module/data/protocol/RippleAddress.cpp>

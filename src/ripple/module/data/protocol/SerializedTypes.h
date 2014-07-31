@@ -20,7 +20,7 @@
 #ifndef RIPPLE_SERIALIZEDTYPES_H
 #define RIPPLE_SERIALIZEDTYPES_H
 
-#include <ripple/module/data/protocol/FieldNames.h>
+#include <ripple/module/data/protocol/SField.h>
 #include <ripple/module/data/protocol/Serializer.h>
 #include <ripple/module/data/protocol/STBitString.h>
 #include <ripple/module/data/protocol/STInteger.h>

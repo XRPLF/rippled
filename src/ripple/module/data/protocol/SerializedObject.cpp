@@ -1353,10 +1353,10 @@ public:
 
         unexpected (sfGeneric.isUseful (), "sfGeneric must not be useful");
 
-        SField sfTestVL (STI_VL, 255, "TestVL");
-        SField sfTestH256 (STI_HASH256, 255, "TestH256");
-        SField sfTestU32 (STI_UINT32, 255, "TestU32");
-        SField sfTestObject (STI_OBJECT, 255, "TestObject");
+        SField const& sfTestVL = SField::getField (STI_VL, 255);
+        SField const& sfTestH256 = SField::getField (STI_HASH256, 255);
+        SField const& sfTestU32 = SField::getField (STI_UINT32, 255);
+        SField const& sfTestObject = SField::getField (STI_OBJECT, 255);
 
         SOTemplate elements;
         elements.push_back (SOElement (sfFlags, SOE_REQUIRED));

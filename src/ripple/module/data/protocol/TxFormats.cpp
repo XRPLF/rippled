@@ -62,21 +62,6 @@ TxFormats::TxFormats ()
             << SOElement (sfDestinationTag,  SOE_OPTIONAL)
             ;
 
-    add ("Contract", ttCONTRACT)
-            << SOElement (sfExpiration,      SOE_REQUIRED)
-            << SOElement (sfBondAmount,      SOE_REQUIRED)
-            << SOElement (sfStampEscrow,     SOE_REQUIRED)
-            << SOElement (sfRippleEscrow,    SOE_REQUIRED)
-            << SOElement (sfCreateCode,      SOE_OPTIONAL)
-            << SOElement (sfFundCode,        SOE_OPTIONAL)
-            << SOElement (sfRemoveCode,      SOE_OPTIONAL)
-            << SOElement (sfExpireCode,      SOE_OPTIONAL)
-            ;
-
-    add ("RemoveContract", ttCONTRACT_REMOVE)
-            << SOElement (sfTarget,          SOE_REQUIRED)
-            ;
-
     add ("EnableAmendment", ttAMENDMENT)
             << SOElement (sfAmendment,         SOE_REQUIRED)
             ;

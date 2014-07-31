@@ -2560,11 +2560,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\data\protocol\BuildInfo.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\data\protocol\FieldNames.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\data\protocol\FieldNames.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\data\protocol\HashPrefix.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2585,8 +2580,6 @@
     <ClInclude Include="..\..\src\ripple\module\data\protocol\RippleAddress.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\data\protocol\RippleSystem.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\data\protocol\SerializeDeclarations.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\data\protocol\SerializedObject.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -2609,6 +2602,11 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\data\protocol\Serializer.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\module\data\protocol\SField.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\module\data\protocol\SField.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\data\protocol\STAmount.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
