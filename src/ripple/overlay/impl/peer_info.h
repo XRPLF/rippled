@@ -17,32 +17,20 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_OVERLAY_PEER_INFO_H_INCLUDED
+#define RIPPLE_OVERLAY_PEER_INFO_H_INCLUDED
+
+#include <beast/http/basic_message.h>
+
 namespace ripple {
 
-char const*
-protocol_message_name (int type)
+struct parsed_request
 {
-    switch (type)
-    {
-    case protocol::mtHELLO:             return "hello";
-    case protocol::mtPING:              return "ping";
-    case protocol::mtPROOFOFWORK:       return "proof_of_work";
-    case protocol::mtCLUSTER:           return "cluster";
-    case protocol::mtGET_PEERS:         return "get_peers";
-    case protocol::mtPEERS:             return "peers";
-    case protocol::mtENDPOINTS:         return "endpoints";
-    case protocol::mtTRANSACTION:       return "tx";
-    case protocol::mtGET_LEDGER:        return "get_ledger";
-    case protocol::mtLEDGER_DATA:       return "ledger_data";
-    case protocol::mtPROPOSE_LEDGER:    return "propose";
-    case protocol::mtSTATUS_CHANGE:     return "status";
-    case protocol::mtHAVE_SET:          return "have_set";
-    case protocol::mtVALIDATION:        return "validation";
-    case protocol::mtGET_OBJECTS:       return "get_objects";
-    default:
-        break;
-    };
-    return "uknown";
-}
+    int version_major;
+    int version_minor;
+};
+
 
 }
+
+#endif

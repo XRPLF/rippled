@@ -25,3 +25,5 @@
 #include <ripple/overlay/impl/PeerImp.cpp>
 #include <ripple/overlay/impl/PeerDoor.cpp>
 
+#include <ripple/overlay/tests/peer_info.test.cpp>
+

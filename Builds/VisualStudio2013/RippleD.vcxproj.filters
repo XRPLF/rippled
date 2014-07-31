@@ -463,6 +463,9 @@
     <Filter Include="ripple\overlay\impl">
       <UniqueIdentifier>{07E4BC73-2B68-D0D1-D922-FEBBB573F503}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ripple\overlay\tests">
+      <UniqueIdentifier>{630E81FA-2122-38EA-81BD-636140BF270C}</UniqueIdentifier>
+    </Filter>
     <Filter Include="ripple\peerfinder">
       <UniqueIdentifier>{186385AD-A056-FA3A-7E0E-759EB55E9EAB}</UniqueIdentifier>
     </Filter>
@@ -4281,6 +4284,9 @@
     <ClInclude Include="..\..\src\ripple\overlay\impl\PeerImp.h">
       <Filter>ripple\overlay\impl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\peer_info.h">
+      <Filter>ripple\overlay\impl</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\overlay\impl\peer_protocol_detector.h">
       <Filter>ripple\overlay\impl</Filter>
     </ClInclude>
@@ -4305,6 +4311,9 @@
     <None Include="..\..\src\ripple\overlay\README.md">
       <Filter>ripple\overlay</Filter>
     </None>
+    <ClCompile Include="..\..\src\ripple\overlay\tests\peer_info.test.cpp">
+      <Filter>ripple\overlay\tests</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\peerfinder\api\Callback.h">
       <Filter>ripple\peerfinder\api</Filter>
     </ClInclude>

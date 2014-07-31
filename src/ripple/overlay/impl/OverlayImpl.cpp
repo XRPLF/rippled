@@ -291,7 +291,7 @@ OverlayImpl::disconnect (PeerFinder::Slot::ptr const& slot, bool graceful)
 {
     if (m_journal.trace) m_journal.trace <<
         "Disconnect " << slot->remote_endpoint () <<
-        (graceful ? "gracefully" : "");
+            (graceful ? " gracefully" : "");
 
     std::lock_guard <decltype(m_mutex)> lock (m_mutex);
 

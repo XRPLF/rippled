@@ -17,32 +17,52 @@
 */
 //==============================================================================
 
+#include <ripple/overlay/impl/peer_info.h>
+#include <beast/unit_test/suite.h>
+#include <beast/http/rfc2616.h>
+#include <algorithm>
+#include <string>
+#include <utility>
+
 namespace ripple {
 
-char const*
-protocol_message_name (int type)
+class peer_info_test : public beast::unit_test::suite
 {
-    switch (type)
+public:
+    // Parse a comma delimited list of strings
+    // Leading and trailing whitespace is removed from each element
+    static
+    std::vector <std::string>
+    parse_list (std::string const& value)
     {
-    case protocol::mtHELLO:             return "hello";
-    case protocol::mtPING:              return "ping";
-    case protocol::mtPROOFOFWORK:       return "proof_of_work";
-    case protocol::mtCLUSTER:           return "cluster";
-    case protocol::mtGET_PEERS:         return "get_peers";
-    case protocol::mtPEERS:             return "peers";
-    case protocol::mtENDPOINTS:         return "endpoints";
-    case protocol::mtTRANSACTION:       return "tx";
-    case protocol::mtGET_LEDGER:        return "get_ledger";
-    case protocol::mtLEDGER_DATA:       return "ledger_data";
-    case protocol::mtPROPOSE_LEDGER:    return "propose";
-    case protocol::mtSTATUS_CHANGE:     return "status";
-    case protocol::mtHAVE_SET:          return "have_set";
-    case protocol::mtVALIDATION:        return "validation";
-    case protocol::mtGET_OBJECTS:       return "get_objects";
-    default:
-        break;
-    };
-    return "uknown";
-}
+        std::vector <std::string> list;
+        auto first (value.begin());
+        auto last (value.end());
+        for(;;)
+        {
+            auto const found (std::find (first, last, ','));
+            if (found != first)
+            {
+                auto p0 (first);
+                auto p1 (found - 1);
 
-}
+            }
+            if (found == last)
+                break;
+            first = found + 1;
+        }
+
+        return list;
+    }
+
+    void
+    run()
+    {
+        expect (beast::http::rfc2616::trim("x") == "x");
+    }
+};
+
+BEAST_DEFINE_TESTSUITE(peer_info,overlay,ripple);
+
+} // ripple
+

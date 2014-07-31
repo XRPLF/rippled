@@ -3105,6 +3105,8 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\overlay\impl\PeerImp.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\peer_info.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\overlay\impl\peer_protocol_detector.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\overlay\impl\Tuning.h">
@@ -3121,6 +3123,9 @@
     </ClInclude>
     <None Include="..\..\src\ripple\overlay\README.md">
     </None>
+    <ClCompile Include="..\..\src\ripple\overlay\tests\peer_info.test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\peerfinder\api\Callback.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\api\Config.h">

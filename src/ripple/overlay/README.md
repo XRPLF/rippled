@@ -21,6 +21,39 @@ establishes, receives, and maintains connections to peers. Protocol
 messages are exchanged between peers and serialized using
 [_Google Protocol Buffers_][protocol_buffers].
 
+### Structure
+
+Each connection between peers is identified by its connection type, which
+affects the behavior of message routing:
+
+* Leaf
+
+* Peer
+
+## Roles
+
+Depending on the type of connection desired, the peers will modify their
+behavior according to certain roles:
+
+### Leaf or Superpeer
+
+A peer in the leaf role does not route messages. In the superpeer role, a
+peer accepts incoming connections from other leaves and superpeers up to the
+configured slot limit. It also routes messages. For a particular connection,
+the choice of leaf or superpeer is mutually exclusive. However, a peer can
+operate in both the leaf and superpeer role for different connections. One of
+the requirements 
+
+### Client Handler
+
+While not part of the responsibilities of the Overlay module, a peer
+operating in the Client Handler role accepts incoming connections from clients
+and services them through the JSON-RPC interface. A peer can operate in either
+the leaf or superpeer roles while also operating as a client handler.
+
+
+
+
 ## Handshake
 
 To establish a protocol connection, a peer makes an outgoing TLS encrypted
@@ -127,6 +160,13 @@ Protocol-Session-Cookie: 71ED064155FFADFA38782C5E0158CB26
 * `Protocol-Session-Proof`
 
     This field must be present (TODO)
+
+* _User Defined_
+
+    The rippled operator may specify additional, optional fields and values
+    through the configuration. These headers will be transmitted in the
+    corresponding request or response messages.
+
 
 ---
 

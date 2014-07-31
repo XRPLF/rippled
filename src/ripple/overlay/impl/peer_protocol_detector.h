@@ -39,29 +39,34 @@ public:
     */
     template <class ConstBufferSequence>
     boost::tribool
-    operator() (ConstBufferSequence const& buffers)
-    {
-        std::array <std::uint8_t, 6> data;
-        auto const n (boost::asio::buffer_copy (
-            boost::asio::buffer(data), buffers));
-        /*
-        Protocol messages are framed by a 6 byte header which includes
-        a big-endian 4-byte length followed by a big-endian 2-byte type.
-        The type for 'hello' is 1.
-        */
-        if (n>=1 && data[0] != 0)
-            return false;
-        if (n>=2 && data[1] != 0)
-            return false;
-        if (n>=5 && data[4] != 0)
-            return false;
-        if (n>=6 && data[5] != 1)
-            return false;
-        if (n>=6)
-            return true;
-        return boost::indeterminate;
-    }
+    operator() (ConstBufferSequence const& buffers);
 };
+
+template <class ConstBufferSequence>
+boost::tribool
+peer_protocol_detector::operator() (
+    ConstBufferSequence const& buffers)
+{
+    std::array <std::uint8_t, 6> data;
+    auto const n (boost::asio::buffer_copy (
+        boost::asio::buffer(data), buffers));
+    /*
+    Protocol messages are framed by a 6 byte header which includes
+    a big-endian 4-byte length followed by a big-endian 2-byte type.
+    The type for 'hello' is 1.
+    */
+    if (n>=1 && data[0] != 0)
+        return false;
+    if (n>=2 && data[1] != 0)
+        return false;
+    if (n>=5 && data[4] != 0)
+        return false;
+    if (n>=6 && data[5] != 1)
+        return false;
+    if (n>=6)
+        return true;
+    return boost::indeterminate;
+}
 
 } // ripple
 
