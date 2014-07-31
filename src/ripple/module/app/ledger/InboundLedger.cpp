@@ -783,9 +783,6 @@ bool InboundLedger::takeHeader (const std::string& data)
         if (m_journal.warning) m_journal.warning <<
             mLedger->getHash () << "!=" << mHash;
         mLedger.reset ();
-#ifdef TRUST_NETWORK
-        assert (false);
-#endif
         return false;
     }
 

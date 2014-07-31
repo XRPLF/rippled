@@ -1427,10 +1427,8 @@ private:
                     // Then try to apply the transaction to applyLedger
                     WriteLog (lsINFO, LedgerConsensus) <<
                         "Processing candidate transaction: " << item->getTag ();
-#ifndef TRUST_NETWORK
                     try
                     {
-#endif
                         SerializerIterator sit (item->peekSerializer ());
                         SerializedTransaction::pointer txn
                             = std::make_shared<SerializedTransaction>(sit);
@@ -1441,13 +1439,11 @@ private:
                             // later retry.
                             retriableTransactions.push_back (txn);
                         }
-#ifndef TRUST_NETWORK
                     }
                     catch (...)
                     {
                         WriteLog (lsWARNING, LedgerConsensus) << "  Throws";
                     }
-#endif
                 }
             }
         }
@@ -1540,14 +1536,8 @@ private:
             << (retryAssured ? "/retry" : "/final");
         WriteLog (lsTRACE, LedgerConsensus) << txn->getJson (0);
 
-        // VFALCO TODO figure out what this "trust network"
-        //  is all about and why it needs exceptions.
-#ifndef TRUST_NETWORK
-
         try
         {
-#endif
-
             bool didApply;
             TER result = engine.applyTransaction (*txn, parms, didApply);
 
@@ -1570,16 +1560,12 @@ private:
             WriteLog (lsDEBUG, LedgerConsensus)
                 << "Transaction retry: " << transHuman (result);
             return resultRetry;
-
-#ifndef TRUST_NETWORK
         }
         catch (...)
         {
             WriteLog (lsWARNING, LedgerConsensus) << "Throws";
             return resultFail;
         }
-
-#endif
     }
 
     /**
