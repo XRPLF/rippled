@@ -25,7 +25,7 @@
 #include <ripple/module/app/book/Types.h>
 
 #include <ripple/module/app/misc/SerializedLedger.h>
-#include <ripple/module/data/protocol/FieldNames.h>
+#include <ripple/module/data/protocol/SField.h>
 
 #include <beast/utility/noexcept.h>
 

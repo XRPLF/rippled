@@ -20,7 +20,7 @@
 #ifndef RIPPLE_STAMOUNT_H
 #define RIPPLE_STAMOUNT_H
 
-#include <ripple/module/data/protocol/FieldNames.h>
+#include <ripple/module/data/protocol/SField.h>
 #include <ripple/module/data/protocol/Serializer.h>
 #include <ripple/module/data/protocol/SerializedType.h>
 

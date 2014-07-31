@@ -30,7 +30,7 @@ typedef struct bignum_st BIGNUM;
 #include <ripple/module/data/crypto/Base58Data.h>
 #include <ripple/module/data/crypto/RFC1751.h>
 #include <ripple/module/data/protocol/BuildInfo.h>
-#include <ripple/module/data/protocol/FieldNames.h>
+#include <ripple/module/data/protocol/SField.h>
 #include <ripple/module/data/protocol/HashPrefix.h>
 #include <ripple/module/data/protocol/Protocol.h>
 #include <ripple/module/data/protocol/RippleAddress.h>

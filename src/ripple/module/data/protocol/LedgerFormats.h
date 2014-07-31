@@ -61,7 +61,7 @@ enum LedgerEntryType
 
     ltOFFER             = 'o',
 
-    ltCONTRACT          = 'c',
+    ltNotUsed01         = 'c',
 
     ltLEDGER_HASHES     = 'h',
 

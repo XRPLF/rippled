@@ -41,8 +41,7 @@ enum TxType
     ttNICKNAME_SET      = 6, // open
     ttOFFER_CREATE      = 7,
     ttOFFER_CANCEL      = 8,
-    ttCONTRACT          = 9,
-    ttCONTRACT_REMOVE   = 10,  // can we use the same msg as offer cancel
+    no_longer_used      = 9,
 
     ttTRUST_SET         = 20,
 

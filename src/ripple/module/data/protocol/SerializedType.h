@@ -20,7 +20,7 @@
 #ifndef RIPPLE_SERIALIZEDTYPE_H
 #define RIPPLE_SERIALIZEDTYPE_H
 
-#include <ripple/module/data/protocol/FieldNames.h>
+#include <ripple/module/data/protocol/SField.h>
 #include <ripple/module/data/protocol/Serializer.h>
 
 namespace ripple {
