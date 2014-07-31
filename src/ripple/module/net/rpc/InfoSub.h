@@ -66,7 +66,8 @@ public:
         virtual bool subLedger (ref ispListener, Json::Value& jvResult) = 0;
         virtual bool unsubLedger (std::uint64_t uListener) = 0;
 
-        virtual bool subServer (ref ispListener, Json::Value& jvResult) = 0;
+        virtual bool subServer (ref ispListener, Json::Value& jvResult,
+            bool admin) = 0;
         virtual bool unsubServer (std::uint64_t uListener) = 0;
 
         virtual bool subBook (ref ispListener, Book const&) = 0;
