@@ -35,6 +35,7 @@ public:
     Scheduler& m_scheduler;
     BatchWriter m_batch;
     std::string m_name;
+    std::unique_ptr <const leveldb::FilterPolicy> m_filter_policy;
     std::unique_ptr <leveldb::DB> m_db;
 
     LevelDBBackend (int keyBytes, Parameters const& keyValues,
@@ -69,6 +70,7 @@ public:
         {
             options.filter_policy = leveldb::NewBloomFilterPolicy (keyValues["filter_bits"].getIntValue());
         }
+        m_filter_policy.reset (options.filter_policy);
 
         if (! keyValues["open_files"].isEmpty())
         {
