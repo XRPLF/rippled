@@ -113,15 +113,15 @@ public:
         {
             if (!ret.empty())
                 ret.append(" ");
-	     ret.append("bad:");
-	     ret.append(beast::lexicalCastThrow<std::string>(mBad));
+             ret.append("bad:");
+             ret.append(beast::lexicalCastThrow<std::string>(mBad));
         }
         if (mDuplicate > 0)
         {
             if (!ret.empty())
                 ret.append(" ");
-	     ret.append("dupe:");
-	     ret.append(beast::lexicalCastThrow<std::string>(mDuplicate));
+             ret.append("dupe:");
+             ret.append(beast::lexicalCastThrow<std::string>(mDuplicate));
         }
         if (ret.empty ())
             ret = "no nodes processed";

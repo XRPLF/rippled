@@ -358,7 +358,7 @@ CreateOffer::doApply ()
             to_string (mTxnAccountID);
         m_journal.debug <<
             "takeOffers:         FUNDS=" << view.accountFunds (
-	    mTxnAccountID, saTakerGets, fhZERO_IF_FROZEN).getFullText ();
+            mTxnAccountID, saTakerGets, fhZERO_IF_FROZEN).getFullText ();
     }
 
     if (saTakerPays < zero || saTakerGets < zero)

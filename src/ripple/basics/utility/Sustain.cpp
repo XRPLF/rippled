@@ -104,7 +104,9 @@ std::string DoSustain (std::string logFile)
         rename ("core", boost::str (boost::format ("core.%d") % static_cast<int> (pChild)).c_str ());
         if (!logFile.empty()) // FIXME: logFile hasn't been set yet
             rename (logFile.c_str(),
-	        boost::str (boost::format ("%s.%d") % logFile % static_cast<int> (pChild)).c_str ());
+                    boost::str (boost::format ("%s.%d")
+                                % logFile
+                                % static_cast<int> (pChild)).c_str ());
     }
 }
 
