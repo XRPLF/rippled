@@ -203,7 +203,7 @@ public:
                 closedLedger->setClosed ();
                 closedLedger->setImmutable ();
                 mClosedLedger.set (closedLedger);
-	    }
+            }
 
             mCurrentLedger.set (newLedger);
         }

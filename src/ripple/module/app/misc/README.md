@@ -10,18 +10,18 @@ Amendment must receive at least an 80% approval rate from validating nodes for
 a period of two weeks before being accepted. The following example outlines the 
 process of an Amendment from its conception to approval and usage. 
 
-*	A community member makes proposes to change transaction processing in some 
+*  A community member makes proposes to change transaction processing in some 
   way. The proposal is discussed amongst the community and receives its support 
   creating a community or human consensus. 
 
-*	Some members contribute their time and work to develop the Amendment.
+*  Some members contribute their time and work to develop the Amendment.
 
-*	A pull request is created and the new code is folded into a rippled build 
+*  A pull request is created and the new code is folded into a rippled build 
   and made available for use.
 
-*	The consensus process begins with the validating nodes.
+*  The consensus process begins with the validating nodes.
 
-*	If the Amendment holds an 80% majority for a two week period, nodes will begin 
+*  If the Amendment holds an 80% majority for a two week period, nodes will begin 
   including the transaction to enable it in their initial sets.
 
 Nodes may veto Amendments they consider undesirable by never announcing their 

@@ -13,8 +13,8 @@ contains. The fields are as follows:
  An enumeration that determines what the blob holds. There are four 
  different types of objects stored. 
 
- * **ledger**	
-    	
+ * **ledger**
+    
    A ledger header.
 
  * **transaction**

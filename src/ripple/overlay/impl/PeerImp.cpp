@@ -75,40 +75,40 @@ void
 PeerImp::getLedger (protocol::TMGetLedger& packet)
 {
     SHAMap::pointer map;
-	protocol::TMLedgerData reply;
-	bool fatLeaves = true, fatRoot = false;
+    protocol::TMLedgerData reply;
+    bool fatLeaves = true, fatRoot = false;
 
-	if (packet.has_requestcookie ())
-	    reply.set_requestcookie (packet.requestcookie ());
+    if (packet.has_requestcookie ())
+        reply.set_requestcookie (packet.requestcookie ());
 
-	std::string logMe;
+    std::string logMe;
 
-	if (packet.itype () == protocol::liTS_CANDIDATE)
-	{
-	    // Request is for a transaction candidate set
-	    m_journal.trace << "Received request for TX candidate set data "
-	                    << to_string (this);
+    if (packet.itype () == protocol::liTS_CANDIDATE)
+    {
+        // Request is for a transaction candidate set
+        m_journal.trace << "Received request for TX candidate set data "
+                        << to_string (this);
 
-	    if ((!packet.has_ledgerhash () || packet.ledgerhash ().size () != 32))
-	    {
-	        charge (Resource::feeInvalidRequest);
-	        m_journal.warning << "invalid request for TX candidate set data";
-	        return;
-	    }
+        if ((!packet.has_ledgerhash () || packet.ledgerhash ().size () != 32))
+        {
+            charge (Resource::feeInvalidRequest);
+            m_journal.warning << "invalid request for TX candidate set data";
+            return;
+        }
 
-	    uint256 txHash;
-	    memcpy (txHash.begin (), packet.ledgerhash ().data (), 32);
+        uint256 txHash;
+        memcpy (txHash.begin (), packet.ledgerhash ().data (), 32);
 
-	    {
-	        Application::ScopedLockType lock (getApp ().getMasterLock ());
-	        map = getApp().getOPs ().getTXMap (txHash);
-	    }
+        {
+            Application::ScopedLockType lock (getApp ().getMasterLock ());
+            map = getApp().getOPs ().getTXMap (txHash);
+        }
 
-	    if (!map)
-	    {
-	        if (packet.has_querytype () && !packet.has_requestcookie ())
-	        {
-	            m_journal.debug << "Trying to route TX set request";
+        if (!map)
+        {
+            if (packet.has_querytype () && !packet.has_requestcookie ())
+            {
+                m_journal.debug << "Trying to route TX set request";
 
                 struct get_usable_peers
                 {
@@ -134,7 +134,7 @@ PeerImp::getLedger (protocol::TMGetLedger& packet)
                     }
                 };
 
-	            Overlay::PeerSequence usablePeers (m_overlay.foreach (
+                Overlay::PeerSequence usablePeers (m_overlay.foreach (
                     get_usable_peers (txHash, this)));
 
                 if (usablePeers.empty ())
@@ -148,61 +148,61 @@ PeerImp::getLedger (protocol::TMGetLedger& packet)
                 selectedPeer->send (
                     std::make_shared<Message> (packet, protocol::mtGET_LEDGER));
                 return;
-	        }
+            }
 
-	        m_journal.error << "We do not have the map our peer wants "
-	                        << to_string (this);
+            m_journal.error << "We do not have the map our peer wants "
+                            << to_string (this);
 
-	        charge (Resource::feeInvalidRequest);
-	        return;
-	    }
+            charge (Resource::feeInvalidRequest);
+            return;
+        }
 
         reply.set_ledgerseq (0);
-	    reply.set_ledgerhash (txHash.begin (), txHash.size ());
-	    reply.set_type (protocol::liTS_CANDIDATE);
-	    fatLeaves = false; // We'll already have most transactions
-	    fatRoot = true; // Save a pass
-	}
-	else
-	{
-	    if (getApp().getFeeTrack().isLoadedLocal() && !m_clusterNode)
-	    {
-	        m_journal.debug << "Too busy to fetch ledger data";
-	        return;
-	    }
+        reply.set_ledgerhash (txHash.begin (), txHash.size ());
+        reply.set_type (protocol::liTS_CANDIDATE);
+        fatLeaves = false; // We'll already have most transactions
+        fatRoot = true; // Save a pass
+    }
+    else
+    {
+        if (getApp().getFeeTrack().isLoadedLocal() && !m_clusterNode)
+        {
+            m_journal.debug << "Too busy to fetch ledger data";
+            return;
+        }
 
-	    // Figure out what ledger they want
-	    m_journal.trace << "Received request for ledger data "
-	                    << to_string (this);
-	    Ledger::pointer ledger;
+        // Figure out what ledger they want
+        m_journal.trace << "Received request for ledger data "
+                        << to_string (this);
+        Ledger::pointer ledger;
 
-	    if (packet.has_ledgerhash ())
-	    {
-	        uint256 ledgerhash;
+        if (packet.has_ledgerhash ())
+        {
+            uint256 ledgerhash;
 
-	        if (packet.ledgerhash ().size () != 32)
-	        {
-	            charge (Resource::feeInvalidRequest);
-	            m_journal.warning << "Invalid request";
-	            return;
-	        }
+            if (packet.ledgerhash ().size () != 32)
+            {
+                charge (Resource::feeInvalidRequest);
+                m_journal.warning << "Invalid request";
+                return;
+            }
 
-	        memcpy (ledgerhash.begin (), packet.ledgerhash ().data (), 32);
-	        logMe += "LedgerHash:";
-	        logMe += to_string (ledgerhash);
-	        ledger = getApp().getLedgerMaster ().getLedgerByHash (ledgerhash);
+            memcpy (ledgerhash.begin (), packet.ledgerhash ().data (), 32);
+            logMe += "LedgerHash:";
+            logMe += to_string (ledgerhash);
+            ledger = getApp().getLedgerMaster ().getLedgerByHash (ledgerhash);
 
-	        if (!ledger && m_journal.trace)
-	            m_journal.trace << "Don't have ledger " << ledgerhash;
+            if (!ledger && m_journal.trace)
+                m_journal.trace << "Don't have ledger " << ledgerhash;
 
-	        if (!ledger && (packet.has_querytype () && !packet.has_requestcookie ()))
-	        {
-	            std::uint32_t seq = 0;
+            if (!ledger && (packet.has_querytype () && !packet.has_requestcookie ()))
+            {
+                std::uint32_t seq = 0;
 
-	            if (packet.has_ledgerseq ())
-	                seq = packet.ledgerseq ();
+                if (packet.has_ledgerseq ())
+                    seq = packet.ledgerseq ();
 
-	            Overlay::PeerSequence peerList = m_overlay.getActivePeers ();
+                Overlay::PeerSequence peerList = m_overlay.getActivePeers ();
                 Overlay::PeerSequence usablePeers;
                 BOOST_FOREACH (Peer::ptr const& peer, peerList)
                 {
@@ -223,45 +223,45 @@ PeerImp::getLedger (protocol::TMGetLedger& packet)
                 m_journal.debug << "Ledger request routed";
                 return;
             }
-	    }
-	    else if (packet.has_ledgerseq ())
-	    {
-	        if (packet.ledgerseq() < getApp().getLedgerMaster().getEarliestFetch())
-	        {
-	            m_journal.debug << "Peer requests early ledger";
-	            return;
-	        }
-	        ledger = getApp().getLedgerMaster ().getLedgerBySeq (packet.ledgerseq ());
-	        if (!ledger && m_journal.debug)
-	            m_journal.debug << "Don't have ledger " << packet.ledgerseq ();
-	    }
-	    else if (packet.has_ltype () && (packet.ltype () == protocol::ltCURRENT))
-	    {
-	        ledger = getApp().getLedgerMaster ().getCurrentLedger ();
-	    }
-	    else if (packet.has_ltype () && (packet.ltype () == protocol::ltCLOSED) )
-	    {
-	        ledger = getApp().getLedgerMaster ().getClosedLedger ();
+        }
+        else if (packet.has_ledgerseq ())
+        {
+            if (packet.ledgerseq() < getApp().getLedgerMaster().getEarliestFetch())
+            {
+                m_journal.debug << "Peer requests early ledger";
+                return;
+            }
+            ledger = getApp().getLedgerMaster ().getLedgerBySeq (packet.ledgerseq ());
+            if (!ledger && m_journal.debug)
+                m_journal.debug << "Don't have ledger " << packet.ledgerseq ();
+        }
+        else if (packet.has_ltype () && (packet.ltype () == protocol::ltCURRENT))
+        {
+            ledger = getApp().getLedgerMaster ().getCurrentLedger ();
+        }
+        else if (packet.has_ltype () && (packet.ltype () == protocol::ltCLOSED) )
+        {
+            ledger = getApp().getLedgerMaster ().getClosedLedger ();
 
-	        if (ledger && !ledger->isClosed ())
-	            ledger = getApp().getLedgerMaster ().getLedgerBySeq (ledger->getLedgerSeq () - 1);
-	    }
-	    else
-	    {
-	        charge (Resource::feeInvalidRequest);
-	        m_journal.warning << "Can't figure out what ledger they want";
-	        return;
-	    }
+            if (ledger && !ledger->isClosed ())
+                ledger = getApp().getLedgerMaster ().getLedgerBySeq (ledger->getLedgerSeq () - 1);
+        }
+        else
+        {
+            charge (Resource::feeInvalidRequest);
+            m_journal.warning << "Can't figure out what ledger they want";
+            return;
+        }
 
-	    if ((!ledger) || (packet.has_ledgerseq () && (packet.ledgerseq () != ledger->getLedgerSeq ())))
-	    {
-	        charge (Resource::feeInvalidRequest);
+        if ((!ledger) || (packet.has_ledgerseq () && (packet.ledgerseq () != ledger->getLedgerSeq ())))
+        {
+            charge (Resource::feeInvalidRequest);
 
-	        if (m_journal.warning && ledger)
-	            m_journal.warning << "Ledger has wrong sequence";
+            if (m_journal.warning && ledger)
+                m_journal.warning << "Ledger has wrong sequence";
 
-	        return;
-	    }
+            return;
+        }
 
             if (!packet.has_ledgerseq() && (ledger->getLedgerSeq() < getApp().getLedgerMaster().getEarliestFetch()))
             {
@@ -269,132 +269,132 @@ PeerImp::getLedger (protocol::TMGetLedger& packet)
                 return;
             }
 
-	    // Fill out the reply
-	    uint256 lHash = ledger->getHash ();
-	    reply.set_ledgerhash (lHash.begin (), lHash.size ());
-	    reply.set_ledgerseq (ledger->getLedgerSeq ());
-	    reply.set_type (packet.itype ());
+        // Fill out the reply
+        uint256 lHash = ledger->getHash ();
+        reply.set_ledgerhash (lHash.begin (), lHash.size ());
+        reply.set_ledgerseq (ledger->getLedgerSeq ());
+        reply.set_type (packet.itype ());
 
-	    if (packet.itype () == protocol::liBASE)
-	    {
-	        // they want the ledger base data
-	        m_journal.trace << "They want ledger base data";
-	        Serializer nData (128);
-	        ledger->addRaw (nData);
-	        reply.add_nodes ()->set_nodedata (nData.getDataPtr (), nData.getLength ());
+        if (packet.itype () == protocol::liBASE)
+        {
+            // they want the ledger base data
+            m_journal.trace << "They want ledger base data";
+            Serializer nData (128);
+            ledger->addRaw (nData);
+            reply.add_nodes ()->set_nodedata (nData.getDataPtr (), nData.getLength ());
 
-	        SHAMap::pointer map = ledger->peekAccountStateMap ();
+            SHAMap::pointer map = ledger->peekAccountStateMap ();
 
-	        if (map && map->getHash ().isNonZero ())
-	        {
-	            // return account state root node if possible
-	            Serializer rootNode (768);
+            if (map && map->getHash ().isNonZero ())
+            {
+                // return account state root node if possible
+                Serializer rootNode (768);
 
-	            if (map->getRootNode (rootNode, snfWIRE))
-	            {
-	                reply.add_nodes ()->set_nodedata (rootNode.getDataPtr (), rootNode.getLength ());
+                if (map->getRootNode (rootNode, snfWIRE))
+                {
+                    reply.add_nodes ()->set_nodedata (rootNode.getDataPtr (), rootNode.getLength ());
 
-	                if (ledger->getTransHash ().isNonZero ())
-	                {
-	                    map = ledger->peekTransactionMap ();
+                    if (ledger->getTransHash ().isNonZero ())
+                    {
+                        map = ledger->peekTransactionMap ();
 
-	                    if (map && map->getHash ().isNonZero ())
-	                    {
-	                        rootNode.erase ();
+                        if (map && map->getHash ().isNonZero ())
+                        {
+                            rootNode.erase ();
 
-	                        if (map->getRootNode (rootNode, snfWIRE))
-	                            reply.add_nodes ()->set_nodedata (rootNode.getDataPtr (), rootNode.getLength ());
-	                    }
-	                }
-	            }
-	        }
+                            if (map->getRootNode (rootNode, snfWIRE))
+                                reply.add_nodes ()->set_nodedata (rootNode.getDataPtr (), rootNode.getLength ());
+                        }
+                    }
+                }
+            }
 
-	        Message::pointer oPacket = std::make_shared<Message> (reply, protocol::mtLEDGER_DATA);
-	        send (oPacket);
-	        return;
-	    }
+            Message::pointer oPacket = std::make_shared<Message> (reply, protocol::mtLEDGER_DATA);
+            send (oPacket);
+            return;
+        }
 
-	    if (packet.itype () == protocol::liTX_NODE)
-	    {
-	        map = ledger->peekTransactionMap ();
-	        logMe += " TX:";
-	        logMe += to_string (map->getHash ());
-	    }
-	    else if (packet.itype () == protocol::liAS_NODE)
-	    {
-	        map = ledger->peekAccountStateMap ();
-	        logMe += " AS:";
-	        logMe += to_string (map->getHash ());
-	    }
-	}
+        if (packet.itype () == protocol::liTX_NODE)
+        {
+            map = ledger->peekTransactionMap ();
+            logMe += " TX:";
+            logMe += to_string (map->getHash ());
+        }
+        else if (packet.itype () == protocol::liAS_NODE)
+        {
+            map = ledger->peekAccountStateMap ();
+            logMe += " AS:";
+            logMe += to_string (map->getHash ());
+        }
+    }
 
-	if (!map || (packet.nodeids_size () == 0))
-	{
-	    m_journal.warning << "Can't find map or empty request";
-	    charge (Resource::feeInvalidRequest);
-	    return;
-	}
+    if (!map || (packet.nodeids_size () == 0))
+    {
+        m_journal.warning << "Can't find map or empty request";
+        charge (Resource::feeInvalidRequest);
+        return;
+    }
 
-	m_journal.trace << "Request: " << logMe;
+    m_journal.trace << "Request: " << logMe;
 
-	for (int i = 0; i < packet.nodeids ().size (); ++i)
-	{
-	    SHAMapNodeID mn (packet.nodeids (i).data (), packet.nodeids (i).size ());
+    for (int i = 0; i < packet.nodeids ().size (); ++i)
+    {
+        SHAMapNodeID mn (packet.nodeids (i).data (), packet.nodeids (i).size ());
 
-	    if (!mn.isValid ())
-	    {
-	        m_journal.warning << "Request for invalid node: " << logMe;
-	        charge (Resource::feeInvalidRequest);
-	        return;
-	    }
+        if (!mn.isValid ())
+        {
+            m_journal.warning << "Request for invalid node: " << logMe;
+            charge (Resource::feeInvalidRequest);
+            return;
+        }
 
-	    std::vector<SHAMapNodeID> nodeIDs;
-	    std::list< Blob > rawNodes;
+        std::vector<SHAMapNodeID> nodeIDs;
+        std::list< Blob > rawNodes;
 
-	    try
-	    {
-	        if (map->getNodeFat (mn, nodeIDs, rawNodes, fatRoot, fatLeaves))
-	        {
-	            assert (nodeIDs.size () == rawNodes.size ());
-	            m_journal.trace << "getNodeFat got " << rawNodes.size () << " nodes";
-	            std::vector<SHAMapNodeID>::iterator nodeIDIterator;
-	            std::list< Blob >::iterator rawNodeIterator;
+        try
+        {
+            if (map->getNodeFat (mn, nodeIDs, rawNodes, fatRoot, fatLeaves))
+            {
+                assert (nodeIDs.size () == rawNodes.size ());
+                m_journal.trace << "getNodeFat got " << rawNodes.size () << " nodes";
+                std::vector<SHAMapNodeID>::iterator nodeIDIterator;
+                std::list< Blob >::iterator rawNodeIterator;
 
-	            for (nodeIDIterator = nodeIDs.begin (), rawNodeIterator = rawNodes.begin ();
-	                    nodeIDIterator != nodeIDs.end (); ++nodeIDIterator, ++rawNodeIterator)
-	            {
-	                Serializer nID (33);
-	                nodeIDIterator->addIDRaw (nID);
-	                protocol::TMLedgerNode* node = reply.add_nodes ();
-	                node->set_nodeid (nID.getDataPtr (), nID.getLength ());
-	                node->set_nodedata (&rawNodeIterator->front (), rawNodeIterator->size ());
-	            }
-	        }
-	        else
-	            m_journal.warning << "getNodeFat returns false";
-	    }
-	    catch (std::exception&)
-	    {
-	        std::string info;
+                for (nodeIDIterator = nodeIDs.begin (), rawNodeIterator = rawNodes.begin ();
+                        nodeIDIterator != nodeIDs.end (); ++nodeIDIterator, ++rawNodeIterator)
+                {
+                    Serializer nID (33);
+                    nodeIDIterator->addIDRaw (nID);
+                    protocol::TMLedgerNode* node = reply.add_nodes ();
+                    node->set_nodeid (nID.getDataPtr (), nID.getLength ());
+                    node->set_nodedata (&rawNodeIterator->front (), rawNodeIterator->size ());
+                }
+            }
+            else
+                m_journal.warning << "getNodeFat returns false";
+        }
+        catch (std::exception&)
+        {
+            std::string info;
 
-	        if (packet.itype () == protocol::liTS_CANDIDATE)
-	            info = "TS candidate";
-	        else if (packet.itype () == protocol::liBASE)
-	            info = "Ledger base";
-	        else if (packet.itype () == protocol::liTX_NODE)
-	            info = "TX node";
-	        else if (packet.itype () == protocol::liAS_NODE)
-	            info = "AS node";
+            if (packet.itype () == protocol::liTS_CANDIDATE)
+                info = "TS candidate";
+            else if (packet.itype () == protocol::liBASE)
+                info = "Ledger base";
+            else if (packet.itype () == protocol::liTX_NODE)
+                info = "TX node";
+            else if (packet.itype () == protocol::liAS_NODE)
+                info = "AS node";
 
-	        if (!packet.has_ledgerhash ())
-	            info += ", no hash specified";
+            if (!packet.has_ledgerhash ())
+                info += ", no hash specified";
 
-	        m_journal.warning << "getNodeFat( " << mn << ") throws exception: " << info;
-	    }
-	}
+            m_journal.warning << "getNodeFat( " << mn << ") throws exception: " << info;
+        }
+    }
 
-	Message::pointer oPacket = std::make_shared<Message> (reply, protocol::mtLEDGER_DATA);
-	send (oPacket);
+    Message::pointer oPacket = std::make_shared<Message> (reply, protocol::mtLEDGER_DATA);
+    send (oPacket);
 }
 
 // This is dispatched by the job queue

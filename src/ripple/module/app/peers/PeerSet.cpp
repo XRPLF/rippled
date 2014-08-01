@@ -131,7 +131,7 @@ void PeerSet::TimerEntry (std::weak_ptr<PeerSet> wptr, const boost::system::erro
                 getApp().getJobQueue ().addJob (jtLEDGER_DATA, "timerEntryLgr",
                     std::bind (&PeerSet::TimerJobEntry, std::placeholders::_1,
                                ptr));
-	}
+        }
     }
 }
 

@@ -164,15 +164,15 @@ public:
             mSocket->async_shutdown (handler);
         else
         {
-        	error_code ec;
-        	try
-        	{
-	            lowest_layer ().shutdown (plain_socket::shutdown_both);
-			}
-			catch (boost::system::system_error& e)
-			{
-				ec = e.code();
-			}
+            error_code ec;
+            try
+            {
+                lowest_layer ().shutdown (plain_socket::shutdown_both);
+            }
+            catch (boost::system::system_error& e)
+            {
+                ec = e.code();
+            }
             mSocket->get_io_service ().post (
                 beast::asio::bind_handler (handler, ec));
         }

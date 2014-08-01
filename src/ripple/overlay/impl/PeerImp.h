@@ -1010,7 +1010,7 @@ private:
         std::lock_guard<std::mutex> sl(m_recentLock);
 
         if(std::find (m_recentTxSets.begin (), m_recentTxSets.end (), hash) != m_recentTxSets.end ())
-        	return;
+            return;
 
         if (m_recentTxSets.size () == 128)
             m_recentTxSets.pop_front ();
@@ -1177,7 +1177,7 @@ private:
                 pPeers->foreach (send_if_not (
                     std::make_shared<Message> (set, protocol::mtPROPOSE_LEDGER),
                     peer_in_set(peers)));
-	    }
+            }
         }
         else
         {
