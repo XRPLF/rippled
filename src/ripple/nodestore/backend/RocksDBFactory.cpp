@@ -85,6 +85,7 @@ public:
     Scheduler& m_scheduler;
     BatchWriter m_batch;
     std::string m_name;
+    std::unique_ptr <const rocksdb::FilterPolicy> m_filter_policy;
     std::unique_ptr <rocksdb::DB> m_db;
 
     RocksDBBackend (int keyBytes, Parameters const& keyValues,
@@ -120,6 +121,7 @@ public:
         {
             options.filter_policy = rocksdb::NewBloomFilterPolicy (keyValues["filter_bits"].getIntValue());
         }
+        m_filter_policy.reset (options.filter_policy);
 
         if (! keyValues["open_files"].isEmpty())
         {
