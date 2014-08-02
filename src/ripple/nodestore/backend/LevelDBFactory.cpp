@@ -70,7 +70,6 @@ public:
         {
             m_filter_policy.reset (leveldb::NewBloomFilterPolicy (keyValues["filter_bits"].getIntValue()));
         }
-        m_filter_policy.reset (options.filter_policy);
         options.filter_policy = m_filter_policy.get();
 
         if (! keyValues["open_files"].isEmpty())
