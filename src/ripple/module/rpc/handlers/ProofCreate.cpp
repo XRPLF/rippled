@@ -55,12 +55,12 @@ Json::Value doProofCreate (RPC::Context& context)
 
         if (context.params_.isMember ("secret"))
         {
-            uint256     uSecret (context.params_["secret"].asString ());
+            uint256 uSecret (context.params_["secret"].asString ());
             pgGen->setSecret (uSecret);
         }
 
-        jvResult["token"]   = pgGen->getProof ().getToken ();
-        jvResult["secret"]  = to_string (pgGen->getSecret ());
+        jvResult["token"] = pgGen->getProof ().getToken ();
+        jvResult["secret"] = to_string (pgGen->getSecret ());
     }
     else
     {

@@ -29,14 +29,16 @@ class NetworkOPs;
 class RPCServerHandler : public RPCServer::Handler
 {
 public:
-    explicit RPCServerHandler (NetworkOPs& networkOPs, Resource::Manager& resourceManager);
+    explicit RPCServerHandler (
+        NetworkOPs& networkOPs,
+        Resource::Manager& resourceManager);
 
     std::string createResponse (int statusCode, std::string const& description);
-
     bool isAuthorized (std::map <std::string, std::string> const& headers);
 
-    std::string processRequest (std::string const& request,
-                                beast::IP::Endpoint const& remoteIPAddress);
+    std::string processRequest (
+        std::string const& request,
+        beast::IP::Endpoint const& remoteIPAddress);
 
 private:
     NetworkOPs& m_networkOPs;

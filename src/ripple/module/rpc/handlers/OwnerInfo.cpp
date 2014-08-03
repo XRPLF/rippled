@@ -24,12 +24,14 @@ namespace ripple {
 //   'ident' : <indent>,
 //   'account_index' : <index> // optional
 // }
-// XXX This would be better if it took the ledger.
 Json::Value doOwnerInfo (RPC::Context& context)
 {
     auto lock = getApp().masterLock();
-    if (!context.params_.isMember ("account") && !context.params_.isMember ("ident"))
+    if (!context.params_.isMember ("account") &&
+        !context.params_.isMember ("ident"))
+    {
         return RPC::missing_field_error ("account");
+    }
 
     std::string strIdent = context.params_.isMember ("account")
             ? context.params_["account"].asString ()
@@ -38,25 +40,35 @@ Json::Value doOwnerInfo (RPC::Context& context)
     int iIndex = context.params_.isMember ("account_index")
             ? context.params_["account_index"].asUInt () : 0;
     RippleAddress raAccount;
-
     Json::Value ret;
 
     // Get info on account.
 
+    auto const& closedLedger = context.netOps_.getClosedLedger ();
+    auto const& currentLedger = context.netOps_.getCurrentLedger ();
     Json::Value jAccepted = RPC::accountFromString (
-        context.netOps_.getClosedLedger (), raAccount, bIndex, strIdent, iIndex,
-        false, context.netOps_);
+        closedLedger,
+        raAccount,
+        bIndex,
+        strIdent,
+        iIndex,
+        false,
+        context.netOps_);
 
-    ret["accepted"] = jAccepted.empty ()
-            ? context.netOps_.getOwnerInfo (
-                context.netOps_.getClosedLedger (), raAccount) : jAccepted;
+    ret["accepted"] = jAccepted.empty () ? context.netOps_.getOwnerInfo (
+        closedLedger, raAccount) : jAccepted;
 
     Json::Value jCurrent = RPC::accountFromString (
-        context.netOps_.getCurrentLedger (), raAccount, bIndex, strIdent, iIndex,
-        false, context.netOps_);
+        currentLedger,
+        raAccount,
+        bIndex,
+        strIdent,
+        iIndex,
+        false,
+        context.netOps_);
 
     ret["current"] = jCurrent.empty () ? context.netOps_.getOwnerInfo (
-        context.netOps_.getCurrentLedger (), raAccount) : jCurrent;
+        currentLedger, raAccount) : jCurrent;
 
     return ret;
 }

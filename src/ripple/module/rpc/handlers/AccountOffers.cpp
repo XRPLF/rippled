@@ -73,10 +73,11 @@ Json::Value doAccountOffers (RPC::Context& context)
         return rpcError (rpcACT_NOT_FOUND);
 
     Json::Value& jvsOffers = (result[jss::offers] = Json::arrayValue);
-    ledger->visitAccountItems (raAccount.getAccountID (),
-                               std::bind (&offerAdder, std::ref (jvsOffers),
-                                          std::placeholders::_1));
-
+    auto adder = std::bind (
+        &offerAdder,
+        std::ref (jvsOffers),
+        std::placeholders::_1);
+    ledger->visitAccountItems (raAccount.getAccountID (), adder);
     context.loadType_ = Resource::feeMediumBurdenRPC;
 
     return result;

@@ -22,13 +22,11 @@ namespace ripple {
 
 Json::Value doLedgerClosed (RPC::Context& context)
 {
-    Json::Value jvResult;
-
     uint256 uLedger = context.netOps_.getClosedLedgerHash ();
 
-    jvResult["ledger_index"]        = context.netOps_.getLedgerID (uLedger);
-    jvResult["ledger_hash"]         = to_string (uLedger);
-    //jvResult["ledger_time"]       = uLedger.
+    Json::Value jvResult;
+    jvResult["ledger_index"] = context.netOps_.getLedgerID (uLedger);
+    jvResult["ledger_hash"] = to_string (uLedger);
 
     return jvResult;
 }

@@ -40,8 +40,9 @@ public:
 
     void add (std::string const& method, handler_type&& handler)
     {
-        m_map.emplace (std::piecewise_construct, std::forward_as_tuple (method),
-                                   std::forward_as_tuple (std::move (handler)));
+        m_map.emplace (std::piecewise_construct,
+                       std::forward_as_tuple (method),
+                       std::forward_as_tuple (std::move (handler)));
     }
 
     bool dispatch (Request& req)
@@ -63,7 +64,6 @@ Manager::~Manager ()
 std::unique_ptr <Manager> make_Manager (beast::Journal journal)
 {
     std::unique_ptr <Manager> m (std::make_unique <ManagerImp> (journal));
-
     m->add <DoPrint> ("print");
 
     return m;

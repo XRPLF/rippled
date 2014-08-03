@@ -24,7 +24,7 @@ namespace ripple {
 namespace RPC {
 
 Json::Value transactionSign (
-    Json::Value jvRequest,
+    Json::Value& jvRequest,
     bool bSubmit,
     bool bFailHard,
     NetworkOPs& netOps,

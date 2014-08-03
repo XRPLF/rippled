@@ -20,10 +20,13 @@
 #include <ripple/module/app/main/RPCHTTPServer.h>
 #include <ripple/module/rpc/RPCHandler.h>
 #include <ripple/module/rpc/RPCServerHandler.h>
+#include <ripple/module/rpc/Tuning.h>
 
 namespace ripple {
 
-RPCServerHandler::RPCServerHandler (NetworkOPs& networkOPs, Resource::Manager& resourceManager)
+RPCServerHandler::RPCServerHandler (
+    NetworkOPs& networkOPs,
+    Resource::Manager& resourceManager)
     : m_networkOPs (networkOPs)
     , m_resourceManager (resourceManager)
 {
@@ -42,14 +45,15 @@ bool RPCServerHandler::isAuthorized (
     return HTTPAuthorized (headers);
 }
 
-std::string RPCServerHandler::processRequest (std::string const& request,
-                                              beast::IP::Endpoint const& remoteIPAddress)
+std::string RPCServerHandler::processRequest (
+    std::string const& request,
+    beast::IP::Endpoint const& remoteIPAddress)
 {
     Json::Value jsonRequest;
     {
         Json::Reader reader;
 
-        if ((request.size() > 1000000) ||
+        if ((request.size() > RPC::MAX_REQUEST_SIZE) ||
             ! reader.parse (request, jsonRequest) ||
             jsonRequest.isNull () ||
             ! jsonRequest.isObject ())
@@ -58,14 +62,19 @@ std::string RPCServerHandler::processRequest (std::string const& request,
         }
     }
 
-    Config::Role const role (getConfig ().getAdminRole (jsonRequest, remoteIPAddress));
+    auto role = getConfig ().getAdminRole (jsonRequest, remoteIPAddress);
 
     Resource::Consumer usage;
 
     if (role == Config::ADMIN)
-        usage = m_resourceManager.newAdminEndpoint (remoteIPAddress.to_string());
+    {
+        usage = m_resourceManager.newAdminEndpoint (
+            remoteIPAddress.to_string());
+    }
     else
+    {
         usage = m_resourceManager.newInboundEndpoint (remoteIPAddress);
+    }
 
     if (usage.disconnect ())
         return createResponse (503, "Server is overloaded");
@@ -75,19 +84,17 @@ std::string RPCServerHandler::processRequest (std::string const& request,
     // VFALCO NOTE Except that "id" isn't included in the following errors...
     //
     Json::Value const& id = jsonRequest ["id"];
-
     Json::Value const& method = jsonRequest ["method"];
 
     if (method.isNull ())
-    {
         return createResponse (400, "Null method");
-    }
-    else if (! method.isString ())
-    {
-        return createResponse (400, "method is not string");
-    }
 
-    std::string strMethod = method.asString ();
+    if (! method.isString ())
+        return createResponse (400, "method is not string");
+
+    auto strMethod = method.asString ();
+    if (strMethod.empty())
+        return createResponse (400, "method is empty");
 
     if (jsonRequest["params"].isNull())
         jsonRequest["params"] = Json::Value (Json::arrayValue);
@@ -149,7 +156,6 @@ std::string RPCServerHandler::processRequest (std::string const& request,
     usage.charge (fee);
 
     WriteLog (lsDEBUG, RPCServer) << "Reply: " << result;
-
     response = JSONRPCReply (result, Json::Value (), id);
 
     return createResponse (200, response);

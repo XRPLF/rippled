@@ -47,13 +47,17 @@ namespace RPC {
     @param result   A JSON object for injecting error results, if any
     @param admin    `true` if this is called by an administrative endpoint.
 */
-static void autofill_fee (Json::Value& request,
-    Ledger::pointer ledger, Json::Value& result, bool admin)
+static void autofill_fee (
+    Json::Value& request,
+    Ledger::pointer ledger,
+    Json::Value& result,
+    bool admin)
 {
     Json::Value& tx (request["tx_json"]);
     if (tx.isMember ("Fee"))
         return;
 
+    // TODO(tom): Shouldn't this calculation be floating point?
     int mult = DEFAULT_AUTO_FILL_FEE_MULTIPLIER;
     if (request.isMember ("fee_mult_max"))
     {
@@ -88,9 +92,8 @@ static void autofill_fee (Json::Value& request,
     tx ["Fee"] = static_cast<int>(fee);
 }
 
-
 static Json::Value signPayment(
-    Json::Value const& params,
+    Json::Value& params,
     Json::Value& tx_json,
     RippleAddress const& raSrcAddressID,
     Ledger::pointer lSnapshot,
@@ -150,12 +153,20 @@ static Json::Value signPayment(
 
             bool bValid;
             auto cache = std::make_shared<RippleLineCache> (lSnapshot);
-            Pathfinder pf (cache, raSrcAddressID, dstAccountID,
-                           saSendMax.getCurrency (), saSendMax.getIssuer (),
-                           amount, bValid);
+            Pathfinder pf (
+                cache,
+                raSrcAddressID,
+                dstAccountID,
+                saSendMax.getCurrency (),
+                saSendMax.getIssuer (),
+                amount, bValid);
 
             STPath extraPath;
-            if (!bValid || !pf.findPaths (getConfig ().PATH_SEARCH_OLD, 4, spsPaths, extraPath))
+            if (!bValid ||
+                !pf.findPaths (getConfig ().PATH_SEARCH_OLD,
+                               4,
+                               spsPaths,
+                               extraPath))
             {
                 WriteLog (lsDEBUG, RPCHandler)
                         << "transactionSign: build_path: No paths found.";
@@ -179,7 +190,10 @@ static Json::Value signPayment(
 //             submit the tranaction
 //
 Json::Value transactionSign (
-    Json::Value params, bool bSubmit, bool bFailHard, NetworkOPs& netOps,
+    Json::Value& params,
+    bool bSubmit,
+    bool bFailHard,
+    NetworkOPs& netOps,
     int role)
 {
     Json::Value jvResult;
@@ -242,8 +256,9 @@ Json::Value transactionSign (
         {
             // If not offline and did not find account, error.
             WriteLog (lsDEBUG, RPCHandler)
-                    << "transactionSign: Failed to find source account in current ledger: "
-                    << raSrcAddressID.humanAccountID ();
+                << "transactionSign: Failed to find source account "
+                << "in current ledger: "
+                << raSrcAddressID.humanAccountID ();
 
             return rpcError (rpcSRC_ACT_NOT_FOUND);
         }
@@ -255,7 +270,12 @@ Json::Value transactionSign (
 
     if ("Payment" == sType)
     {
-        auto e = signPayment(params, tx_json, raSrcAddressID, lSnapshot, role);
+        auto e = signPayment(
+            params,
+            tx_json,
+            raSrcAddressID,
+            lSnapshot,
+            role);
         if (contains_error(e))
             return e;
     }
@@ -287,12 +307,12 @@ Json::Value transactionSign (
             return rpcError (rpcSRC_ACT_NOT_FOUND);
     }
 
-    RippleAddress   naSecret = RippleAddress::createSeedGeneric (
+    RippleAddress secret = RippleAddress::createSeedGeneric (
         params["secret"].asString ());
-    RippleAddress   naMasterGenerator = RippleAddress::createGeneratorPublic (
-        naSecret);
+    RippleAddress masterGenerator = RippleAddress::createGeneratorPublic (
+        secret);
     RippleAddress masterAccountPublic = RippleAddress::createAccountPublic (
-        naMasterGenerator, 0);
+        masterGenerator, 0);
 
     if (verify)
     {
@@ -323,7 +343,9 @@ Json::Value transactionSign (
         return jvResult;
     }
     std::unique_ptr<STObject> sopTrans = std::move(parsed.object);
-    sopTrans->setFieldVL (sfSigningPubKey, masterAccountPublic.getAccountPublic ());
+    sopTrans->setFieldVL (
+        sfSigningPubKey,
+        masterAccountPublic.getAccountPublic ());
 
     SerializedTransaction::pointer stpTrans;
 
@@ -348,9 +370,10 @@ Json::Value transactionSign (
         jvResult["tx_signing_hash"] = to_string (stpTrans->getSigningHash ());
     }
 
-    // FIXME: For performance, transactions should not be signed in this code path.
+    // FIXME: For performance, transactions should not be signed in this code
+    // path.
     RippleAddress naAccountPrivate = RippleAddress::createAccountPrivate (
-        naMasterGenerator, naSecret, 0);
+        masterGenerator, secret, 0);
 
     stpTrans->sign (naAccountPrivate);
 
@@ -358,7 +381,7 @@ Json::Value transactionSign (
 
     try
     {
-        tpTrans     = std::make_shared<Transaction> (stpTrans, false);
+        tpTrans = std::make_shared<Transaction> (stpTrans, false);
     }
     catch (std::exception&)
     {
@@ -416,9 +439,12 @@ class JSONRPC_test : public beast::unit_test::suite
 public:
     void testAutoFillFees ()
     {
-        RippleAddress rootSeedMaster      = RippleAddress::createSeedGeneric ("masterpassphrase");
-        RippleAddress rootGeneratorMaster = RippleAddress::createGeneratorPublic (rootSeedMaster);
-        RippleAddress rootAddress         = RippleAddress::createAccountPublic (rootGeneratorMaster, 0);
+        RippleAddress rootSeedMaster
+                = RippleAddress::createSeedGeneric ("masterpassphrase");
+        RippleAddress rootGeneratorMaster
+                = RippleAddress::createGeneratorPublic (rootSeedMaster);
+        RippleAddress rootAddress
+                = RippleAddress::createAccountPublic (rootGeneratorMaster, 0);
         std::uint64_t startAmount (100000);
         Ledger::pointer ledger (std::make_shared <Ledger> (
             rootAddress, startAmount));

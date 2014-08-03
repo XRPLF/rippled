@@ -25,65 +25,67 @@ namespace RPC {
 // --> strIdent: public key, account ID, or regular seed.
 // --> bStrict: Only allow account id or public key.
 // <-- bIndex: true if iIndex > 0 and used the index.
-Json::Value accountFromString (Ledger::ref lrLedger, RippleAddress& naAccount,
-                               bool& bIndex, std::string const& strIdent,
-                               const int iIndex, const bool bStrict, NetworkOPs& netOps)
+Json::Value accountFromString (
+    Ledger::ref lrLedger,
+    RippleAddress& naAccount,
+    bool& bIndex,
+    std::string const& strIdent,
+    int const iIndex,
+    bool const bStrict,
+    NetworkOPs& netOps)
 {
     RippleAddress   naSeed;
 
-    if (naAccount.setAccountPublic (strIdent) || naAccount.setAccountID (strIdent))
+    if (naAccount.setAccountPublic (strIdent) ||
+        naAccount.setAccountID (strIdent))
     {
         // Got the account.
-        bIndex  = false;
+        bIndex = false;
+        return Json::Value (Json::objectValue);
     }
-    else if (bStrict)
+
+    if (bStrict)
     {
-        return naAccount.setAccountID (strIdent, Base58::getBitcoinAlphabet ())
-               ? rpcError (rpcACT_BITCOIN)
-               : rpcError (rpcACT_MALFORMED);
+        auto isBitcoin = naAccount.setAccountID (
+            strIdent, Base58::getBitcoinAlphabet ());
+        return rpcError (isBitcoin ? rpcACT_BITCOIN : rpcACT_MALFORMED);
     }
-    // Must be a seed.
-    else if (!naSeed.setSeedGeneric (strIdent))
-    {
+
+    // If we get here, it must be a seed.
+    if (!naSeed.setSeedGeneric (strIdent))
         return rpcError (rpcBAD_SEED);
-    }
-    else
+
+    // We allow the use of the seeds to access #0.
+    // This is poor practice and merely for debuging convenience.
+    RippleAddress naRegular0Public;
+    RippleAddress naRegular0Private;
+
+    auto naGenerator = RippleAddress::createGeneratorPublic (naSeed);
+
+    naRegular0Public.setAccountPublic (naGenerator, 0);
+    naRegular0Private.setAccountPrivate (naGenerator, naSeed, 0);
+
+    SLE::pointer sleGen = netOps.getGenerator (
+        lrLedger, naRegular0Public.getAccountID ());
+
+    if (sleGen)
     {
-        // We allow the use of the seeds to access #0.
-        // This is poor practice and merely for debuging convenience.
-        RippleAddress       naRegular0Public;
-        RippleAddress       naRegular0Private;
+        // Found master public key.
+        Blob vucCipher = sleGen->getFieldVL (sfGenerator);
+        Blob vucMasterGenerator =
+                naRegular0Private.accountPrivateDecrypt (
+                    naRegular0Public, vucCipher);
 
-        RippleAddress       naGenerator     = RippleAddress::createGeneratorPublic (naSeed);
+        if (vucMasterGenerator.empty ())
+            rpcError (rpcNO_GEN_DECRYPT);
 
-        naRegular0Public.setAccountPublic (naGenerator, 0);
-        naRegular0Private.setAccountPrivate (naGenerator, naSeed, 0);
-
-        //      Account uGeneratorID    = naRegular0Public.getAccountID();
-        SLE::pointer        sleGen          = netOps.getGenerator (lrLedger, naRegular0Public.getAccountID ());
-
-        if (!sleGen)
-        {
-            // Didn't find a generator map, assume it is a master generator.
-        }
-        else
-        {
-            // Found master public key.
-            Blob    vucCipher               = sleGen->getFieldVL (sfGenerator);
-            Blob    vucMasterGenerator      = naRegular0Private.accountPrivateDecrypt (naRegular0Public, vucCipher);
-
-            if (vucMasterGenerator.empty ())
-            {
-                rpcError (rpcNO_GEN_DECRYPT);
-            }
-
-            naGenerator.setGenerator (vucMasterGenerator);
-        }
-
-        bIndex  = !iIndex;
-
-        naAccount.setAccountPublic (naGenerator, iIndex);
+        naGenerator.setGenerator (vucMasterGenerator);
     }
+    // Otherwise, if we didn't find a generator map, assume it is a master
+    // generator.
+
+    bIndex = !iIndex;
+    naAccount.setAccountPublic (naGenerator, iIndex);
 
     return Json::Value (Json::objectValue);
 }
