@@ -63,7 +63,7 @@ public:
     Blob getvch () const;
     CBigNum& SetCompact (unsigned int nCompact);
     unsigned int GetCompact () const;
-    void SetHex (const std::string& str);
+    void SetHex (std::string const& str);
     std::string ToString (int nBase = 10) const;
     std::string GetHex () const;
     bool operator! () const;

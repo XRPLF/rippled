@@ -139,7 +139,7 @@ public:
     virtual void newOrderBookDB () = 0;
 
     virtual bool fixIndex (LedgerIndex ledgerIndex, LedgerHash const& ledgerHash) = 0;
-    virtual void doLedgerCleaner(const Json::Value& parameters) = 0;
+    virtual void doLedgerCleaner(Json::Value const& parameters) = 0;
 
     virtual beast::PropertyStream::Source& getPropertySource () = 0;
 

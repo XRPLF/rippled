@@ -164,7 +164,7 @@ void PathRequests::updateAll (Ledger::ref inLedger,
 Json::Value PathRequests::makePathRequest(
     std::shared_ptr <InfoSub> const& subscriber,
     const std::shared_ptr<Ledger>& inLedger,
-    const Json::Value& requestJson)
+    Json::Value const& requestJson)
 {
     PathRequest::pointer req = std::make_shared<PathRequest> (
         subscriber, ++mLastIdentifier, *this, mJournal);

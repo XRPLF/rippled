@@ -64,7 +64,7 @@ public:
     }
 
 private:
-    bool addValidation (SerializedValidation::ref val, const std::string& source)
+    bool addValidation (SerializedValidation::ref val, std::string const& source)
     {
         RippleAddress signer = val->getSignerPublic ();
         bool isCurrent = false;

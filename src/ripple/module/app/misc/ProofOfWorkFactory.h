@@ -39,7 +39,7 @@ public:
 
     virtual ProofOfWork getProof () = 0;
 
-    virtual PowResult checkProof (const std::string& token, uint256 const& solution) = 0;
+    virtual PowResult checkProof (std::string const& token, uint256 const& solution) = 0;
 
     virtual std::uint64_t getDifficulty () = 0;
 

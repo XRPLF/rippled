@@ -136,12 +136,12 @@ public:
             return;
         }
 
-        BOOST_FOREACH (const std::string & it, servers)
+        BOOST_FOREACH (std::string const& it, servers)
         addServer (it);
         queryAll ();
     }
 
-    void addServer (const std::string& server)
+    void addServer (std::string const& server)
     {
         ScopedLockType sl (mLock);
         mServers.push_back (std::make_pair (server, (time_t) - 1));

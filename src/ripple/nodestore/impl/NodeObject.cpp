@@ -38,7 +38,7 @@ NodeObject::Ptr NodeObject::createObject (
     NodeObjectType type,
     LedgerIndex ledgerIndex,
     Blob&& data,
-    uint256 const & hash)
+    uint256 const& hash)
 {
     return std::make_shared <NodeObject> (
         type, ledgerIndex, std::move (data), hash, PrivateAccess ());
@@ -68,7 +68,7 @@ NodeObject::getData () const
     return mData;
 }
 
-bool 
+bool
 NodeObject::isCloneOf (NodeObject::Ptr const& other) const
 {
     if (mType != other->mType)

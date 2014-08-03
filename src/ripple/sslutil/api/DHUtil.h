@@ -22,7 +22,7 @@
 
 namespace ripple {
 
-DH* DH_der_load (const std::string& strDer);
+DH* DH_der_load (std::string const& strDer);
 std::string DH_der_gen (int iKeyLength);
 
 }

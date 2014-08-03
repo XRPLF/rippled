@@ -44,7 +44,7 @@ public:
     Json::Value makePathRequest (
         std::shared_ptr <InfoSub> const& subscriber,
         const std::shared_ptr<Ledger>& ledger,
-        const Json::Value& request);
+        Json::Value const& request);
 
     void reportFast (int milliseconds)
     {

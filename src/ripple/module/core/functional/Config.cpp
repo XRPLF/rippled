@@ -154,7 +154,7 @@ Config::Config ()
     START_UP                = NORMAL;
 }
 
-void Config::setup (const std::string& strConf, bool bQuiet)
+void Config::setup (std::string const& strConf, bool bQuiet)
 {
     boost::system::error_code   ec;
     std::string                 strDbPath, strConfFile;
@@ -242,10 +242,10 @@ void Config::setup (const std::string& strConf, bool bQuiet)
 
     // Create the new unified database
     m_moduleDbPath = getDatabaseDir();
- 
+
     // This code is temporarily disabled, and modules will fall back to using
     // per-module databases (e.g. "peerfinder.sqlite") under the module db path
-    //    
+    //
     //if (m_moduleDbPath.isDirectory ())
     //    m_moduleDbPath = m_moduleDbPath.getChildFile("rippled.sqlite");
 }
@@ -321,7 +321,7 @@ void Config::load ()
             {
                 RPC_STARTUP = Json::arrayValue;
 
-                BOOST_FOREACH (const std::string & strJson, *smtTmp)
+                BOOST_FOREACH (std::string const& strJson, *smtTmp)
                 {
                     Json::Reader    jrReader;
                     Json::Value     jvCommand;
@@ -352,7 +352,7 @@ void Config::load ()
             if (smtTmp)
             {
                 std::vector<beast::IP::Endpoint> parsedAddresses;
-                //parseAddresses<std::vector<beast::IP::Endpoint>, std::vector<std::string>::const_iterator> 
+                //parseAddresses<std::vector<beast::IP::Endpoint>, std::vector<std::string>::const_iterator>
                 //    (parsedAddresses, (*smtTmp).cbegin(), (*smtTmp).cend());
                 parseAddresses (parsedAddresses, (*smtTmp).cbegin(), (*smtTmp).cend());
                 RPC_ADMIN_ALLOW.insert (RPC_ADMIN_ALLOW.end(),
@@ -681,7 +681,7 @@ beast::URL Config::getValidatorsURL () const
 void Config::setRpcIpAndOptionalPort (std::string const& newAddress)
 {
     beast::String const s (newAddress.c_str ());
-    
+
     int const colonPosition = s.lastIndexOfChar (':');
 
     if (colonPosition != -1)
@@ -734,7 +734,7 @@ Config::Role Config::getAdminRole (Json::Value const& params, beast::IP::Endpoin
     }
     else
     {
-        // Required but not supplied, 
+        // Required but not supplied,
         bPasswordWrong = bPasswordRequired;
     }
 
@@ -777,4 +777,3 @@ beast::File const& Config::getModuleDatabasePath ()
 //------------------------------------------------------------------------------
 
 } // ripple
-

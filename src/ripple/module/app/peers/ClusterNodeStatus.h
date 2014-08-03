@@ -32,7 +32,7 @@ public:
     explicit ClusterNodeStatus(std::string const& name) : mNodeName(name), mLoadFee(0), mReportTime(0)
     { ; }
 
-    ClusterNodeStatus(const std::string& name, std::uint32_t fee, std::uint32_t rtime) :
+    ClusterNodeStatus(std::string const& name, std::uint32_t fee, std::uint32_t rtime) :
         mNodeName(name),
         mLoadFee(fee),
         mReportTime(rtime)

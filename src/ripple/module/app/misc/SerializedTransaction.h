@@ -137,8 +137,8 @@ public:
     // SQL Functions with metadata
     static std::string getMetaSQLValueHeader ();
     static std::string getMetaSQLInsertReplaceHeader ();
-    std::string getMetaSQL (std::uint32_t inLedger, const std::string & escapedMetaData) const;
-    std::string getMetaSQL (Serializer rawTxn, std::uint32_t inLedger, char status, const std::string & escapedMetaData) const;
+    std::string getMetaSQL (std::uint32_t inLedger, std::string const& escapedMetaData) const;
+    std::string getMetaSQL (Serializer rawTxn, std::uint32_t inLedger, char status, std::string const& escapedMetaData) const;
 
 private:
     TxType mType;

@@ -217,11 +217,11 @@ public:
 
     // JSON-RPC request must contain "method", "params", and "id" fields.
     //
-    std::string handleRequest (const std::string& request)
+    std::string handleRequest (std::string const& request)
     {
         WriteLog (lsTRACE, RPCServer) << "handleRequest " << request;
-    
-        return m_handler.processRequest (request, 
+
+        return m_handler.processRequest (request,
             beast::IPAddressConversion::from_asio (
                 m_remote_endpoint.address()));
     }

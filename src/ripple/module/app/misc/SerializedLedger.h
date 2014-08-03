@@ -48,10 +48,10 @@ public:
     typedef const std::shared_ptr<SerializedLedgerEntry>& ref;
 
 public:
-    SerializedLedgerEntry (const Serializer & s, uint256 const & index);
-    SerializedLedgerEntry (SerializerIterator & sit, uint256 const & index);
-    SerializedLedgerEntry (LedgerEntryType type, uint256 const & index);
-    SerializedLedgerEntry (const STObject & object, uint256 const & index);
+    SerializedLedgerEntry (const Serializer & s, uint256 const& index);
+    SerializedLedgerEntry (SerializerIterator & sit, uint256 const& index);
+    SerializedLedgerEntry (LedgerEntryType type, uint256 const& index);
+    SerializedLedgerEntry (const STObject & object, uint256 const& index);
 
     SerializedTypeID getSType () const
     {
@@ -65,7 +65,7 @@ public:
     {
         return mIndex;
     }
-    void setIndex (uint256 const & i)
+    void setIndex (uint256 const& i)
     {
         mIndex = i;
     }
@@ -102,7 +102,7 @@ public:
     RippleAddress getSecondOwner ();
     uint256 getThreadedTransaction ();
     std::uint32_t getThreadedLedger ();
-    bool thread (uint256 const & txID, std::uint32_t ledgerSeq, uint256 & prevTxID,
+    bool thread (uint256 const& txID, std::uint32_t ledgerSeq, uint256 & prevTxID,
                  std::uint32_t & prevLedgerID);
     std::vector<uint256> getOwners ();  // nodes notified if this node is deleted
 
@@ -129,4 +129,3 @@ typedef SerializedLedgerEntry SLE;
 } // ripple
 
 #endif
-

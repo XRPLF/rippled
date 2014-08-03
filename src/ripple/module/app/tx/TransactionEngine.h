@@ -75,12 +75,12 @@ public:
     }
 
     // VFALCO TODO Remove these pointless wrappers
-    SLE::pointer entryCreate (LedgerEntryType type, uint256 const & index)
+    SLE::pointer entryCreate (LedgerEntryType type, uint256 const& index)
     {
         return mNodes.entryCreate (type, index);
     }
 
-    SLE::pointer entryCache (LedgerEntryType type, uint256 const & index)
+    SLE::pointer entryCache (LedgerEntryType type, uint256 const& index)
     {
         return mNodes.entryCache (type, index);
     }

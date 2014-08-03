@@ -30,7 +30,7 @@ public:
     typedef const std::shared_ptr<Parameter>& ref;
 
 public:
-    Parameter (Parameter::ref parent, const std::string& name) : mParent (parent), mName (name)
+    Parameter (Parameter::ref parent, std::string const& name) : mParent (parent), mName (name)
     {
         ;
     }
@@ -39,13 +39,13 @@ public:
         ;
     }
 
-    const std::string&  getName () const
+    std::string const&  getName () const
     {
         return mName;
     }
 
     virtual Json::Value     getValue (int) const = 0;
-    virtual bool            setValue (const Json::Value& value, Json::Value& error) = 0;
+    virtual bool            setValue (Json::Value const& value, Json::Value& error) = 0;
 
     Parameter::pointer      getShared ()
     {
@@ -60,17 +60,17 @@ private:
 class ParameterNode : public Parameter
 {
 public:
-    ParameterNode (Parameter::ref parent, const std::string& name) : Parameter (parent, name)
+    ParameterNode (Parameter::ref parent, std::string const& name) : Parameter (parent, name)
     {
         ;
     }
     bool addChildNode (Parameter::ref node);
 
-    bool setValue (const std::string& name, const Json::Value& value, Json::Value& error);
-    bool addNode (const std::string& name, Parameter::ref node);
+    bool setValue (std::string const& name, Json::Value const& value, Json::Value& error);
+    bool addNode (std::string const& name, Parameter::ref node);
 
     virtual Json::Value     getValue (int) const;
-    virtual bool            setValue (const Json::Value& value, Json::Value& error);
+    virtual bool            setValue (Json::Value const& value, Json::Value& error);
 
 private:
     std::map<std::string, Parameter::pointer>   mChildren;
@@ -79,9 +79,9 @@ private:
 class ParameterString : public Parameter
 {
 public:
-    ParameterString (Parameter::ref parent, const std::string& name, const std::string& value);
+    ParameterString (Parameter::ref parent, std::string const& name, std::string const& value);
     virtual Json::Value     getValue (int) const;
-    virtual bool            setValue (const Json::Value& value, Json::Value& error);
+    virtual bool            setValue (Json::Value const& value, Json::Value& error);
 
 private:
     std::string     mValue;
@@ -90,9 +90,9 @@ private:
 class ParameterInt : public Parameter
 {
 public:
-    ParameterInt (Parameter::ref parent, const std::string& name, int value);
+    ParameterInt (Parameter::ref parent, std::string const& name, int value);
     virtual Json::Value     getValue (int) const;
-    virtual bool            setValue (const Json::Value& value, Json::Value& error);
+    virtual bool            setValue (Json::Value const& value, Json::Value& error);
 
 private:
     int             mValue;

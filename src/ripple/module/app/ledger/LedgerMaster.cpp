@@ -1411,7 +1411,7 @@ public:
         return Ledger::pointer ();
     }
 
-    void doLedgerCleaner(const Json::Value& parameters)
+    void doLedgerCleaner(Json::Value const& parameters)
     {
         mLedgerCleaner->doClean (parameters);
     }

@@ -145,7 +145,7 @@ std::string SField::getName () const
             std::to_string(fieldValue);
 }
 
-SField::ref SField::getField (const std::string& fieldName)
+SField::ref SField::getField (std::string const& fieldName)
 {
     // OPTIMIZEME me with a map. CHECKME this is case sensitive
     StaticScopedLockType sl (getMutex ());

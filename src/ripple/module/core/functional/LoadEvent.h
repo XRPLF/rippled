@@ -46,7 +46,7 @@ public:
 public:
     // VFALCO TODO remove the dependency on LoadMonitor. Is that possible?
     LoadEvent (LoadMonitor& monitor,
-               const std::string& name,
+               std::string const& name,
                bool shouldStart);
 
     ~LoadEvent ();
@@ -57,7 +57,7 @@ public:
     double getSecondsTotal() const;
 
     // VFALCO TODO rename this to setName () or setLabel ()
-    void reName (const std::string& name);
+    void reName (std::string const& name);
 
     // Start the measurement. The constructor calls this automatically if
     // shouldStart is true. If the operation is aborted, start() can be

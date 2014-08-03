@@ -141,7 +141,7 @@ public:
     std::string getText () const;
 
     RippleAddress getValueNCA () const;
-    void setValueNCA (const RippleAddress& nca);
+    void setValueNCA (RippleAddress const& nca);
 
     template <typename Tag>
     void setValueH160 (base_uint<160, Tag> const& v)

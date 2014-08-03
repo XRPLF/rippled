@@ -38,7 +38,7 @@ public:
 
     virtual ~Validations () { }
 
-    virtual bool addValidation (SerializedValidation::ref, const std::string& source) = 0;
+    virtual bool addValidation (SerializedValidation::ref, std::string const& source) = 0;
 
     virtual ValidationSet getValidations (uint256 const& ledger) = 0;
 

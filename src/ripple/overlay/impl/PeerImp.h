@@ -663,7 +663,7 @@ public:
         if ((seq != 0) && (seq >= m_minLedger) && (seq <= m_maxLedger))
             return true;
 
-        BOOST_FOREACH (uint256 const & ledger, m_recentLedgers)
+        BOOST_FOREACH (uint256 const& ledger, m_recentLedgers)
         {
             if (ledger == hash)
                 return true;
@@ -683,7 +683,7 @@ public:
     bool hasTxSet (uint256 const& hash) const
     {
         std::lock_guard<std::mutex> sl(m_recentLock);
-        BOOST_FOREACH (uint256 const & set, m_recentTxSets)
+        BOOST_FOREACH (uint256 const& set, m_recentTxSets)
 
         if (set == hash)
             return true;
@@ -696,7 +696,7 @@ public:
         return m_shortId;
     }
 
-    const RippleAddress& getNodePublic () const
+    RippleAddress const& getNodePublic () const
     {
         return m_nodePublicKey;
     }
@@ -994,7 +994,7 @@ private:
     void addLedger (uint256 const& hash)
     {
         std::lock_guard<std::mutex> sl(m_recentLock);
-        BOOST_FOREACH (uint256 const & ledger, m_recentLedgers)
+        BOOST_FOREACH (uint256 const& ledger, m_recentLedgers)
 
         if (ledger == hash)
             return;

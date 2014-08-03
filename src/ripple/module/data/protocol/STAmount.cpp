@@ -31,7 +31,7 @@ std::string STAmount::getHumanCurrency () const
     return to_string (mIssue.currency);
 }
 
-bool STAmount::bSetJson (const Json::Value& jvSource)
+bool STAmount::bSetJson (Json::Value const& jvSource)
 {
     try
     {
@@ -48,7 +48,7 @@ bool STAmount::bSetJson (const Json::Value& jvSource)
     }
 }
 
-STAmount::STAmount (SField::ref n, const Json::Value& v)
+STAmount::STAmount (SField::ref n, Json::Value const& v)
     : SerializedType (n), mValue (0), mOffset (0), mIsNegative (false)
 {
     Json::Value value, currency, issuer;
@@ -155,7 +155,7 @@ STAmount::STAmount (SField::ref n, const Json::Value& v)
         throw std::runtime_error ("invalid amount type");
 }
 
-bool STAmount::setValue (const std::string& sAmount)
+bool STAmount::setValue (std::string const& sAmount)
 {
     // Note: mIsNative and mIssue.currency must be set already!
 
@@ -248,7 +248,7 @@ bool STAmount::setValue (const std::string& sAmount)
 // - Float values are in float units.
 // - To avoid a mistake float value for native are specified with a "^" in place of a "."
 // <-- bValid: true = valid
-bool STAmount::setFullValue (const std::string& sAmount, const std::string& sCurrency, const std::string& sIssuer)
+bool STAmount::setFullValue (std::string const& sAmount, std::string const& sCurrency, std::string const& sIssuer)
 {
     //
     // Figure out the currency.
@@ -398,7 +398,7 @@ STAmount STAmount::createFromInt64 (SField::ref name, std::int64_t value)
            : STAmount (name, static_cast<std::uint64_t> (-value), true);
 }
 
-void STAmount::setValue (const STAmount& a)
+void STAmount::setValue (STAmount const& a)
 {
     mIssue      = a.mIssue;
     mValue      = a.mValue;
@@ -412,7 +412,7 @@ void STAmount::setIssue (Issue const& issue) {
     mIsNative = isXRP (*this);
 }
 
-int STAmount::compare (const STAmount& a) const
+int STAmount::compare (STAmount const& a) const
 {
     // Compares the value of a to the value of this STAmount, amounts must be comparable
     if (mIsNegative != a.mIsNegative)
@@ -608,7 +608,7 @@ std::string STAmount::getText () const
     return ret;
 }
 
-bool STAmount::isComparable (const STAmount& t) const
+bool STAmount::isComparable (STAmount const& t) const
 {
     // are these two STAmount instances in the same currency
     if (mIsNative) return t.mIsNative;
@@ -624,14 +624,14 @@ bool STAmount::isEquivalent (const SerializedType& t) const
     return v && (*v == *this);
 }
 
-void STAmount::throwComparable (const STAmount& t) const
+void STAmount::throwComparable (STAmount const& t) const
 {
     // throw an exception if these two STAmount instances are incomparable
     if (!isComparable (t))
         throw std::runtime_error ("amounts are not comparable");
 }
 
-bool STAmount::operator== (const STAmount& a) const
+bool STAmount::operator== (STAmount const& a) const
 {
     return isComparable (a) &&
             mIsNegative == a.mIsNegative &&
@@ -639,7 +639,7 @@ bool STAmount::operator== (const STAmount& a) const
             mValue == a.mValue;
 }
 
-bool STAmount::operator!= (const STAmount& a) const
+bool STAmount::operator!= (STAmount const& a) const
 {
     return mOffset != a.mOffset ||
             mValue != a.mValue ||
@@ -647,37 +647,37 @@ bool STAmount::operator!= (const STAmount& a) const
             !isComparable (a);
 }
 
-bool STAmount::operator< (const STAmount& a) const
+bool STAmount::operator< (STAmount const& a) const
 {
     throwComparable (a);
     return compare (a) < 0;
 }
 
-bool STAmount::operator> (const STAmount& a) const
+bool STAmount::operator> (STAmount const& a) const
 {
     throwComparable (a);
     return compare (a) > 0;
 }
 
-bool STAmount::operator<= (const STAmount& a) const
+bool STAmount::operator<= (STAmount const& a) const
 {
     throwComparable (a);
     return compare (a) <= 0;
 }
 
-bool STAmount::operator>= (const STAmount& a) const
+bool STAmount::operator>= (STAmount const& a) const
 {
     throwComparable (a);
     return compare (a) >= 0;
 }
 
-STAmount& STAmount::operator+= (const STAmount& a)
+STAmount& STAmount::operator+= (STAmount const& a)
 {
     *this = *this + a;
     return *this;
 }
 
-STAmount& STAmount::operator-= (const STAmount& a)
+STAmount& STAmount::operator-= (STAmount const& a)
 {
     *this = *this - a;
     return *this;
@@ -770,7 +770,7 @@ STAmount::operator double () const
     return static_cast<double> (mValue) * pow (10.0, mOffset);
 }
 
-STAmount operator+ (const STAmount& v1, const STAmount& v2)
+STAmount operator+ (STAmount const& v1, STAmount const& v2)
 {
     v1.throwComparable (v2);
 
@@ -822,7 +822,7 @@ STAmount operator+ (const STAmount& v1, const STAmount& v2)
         return STAmount (v1.getFName (), v1.mIssue, -fv, ov1, true);
 }
 
-STAmount operator- (const STAmount& v1, const STAmount& v2)
+STAmount operator- (STAmount const& v1, STAmount const& v2)
 {
     v1.throwComparable (v2);
 
@@ -873,7 +873,7 @@ STAmount operator- (const STAmount& v1, const STAmount& v2)
 
 // NIKB TODO Make Amount::divide skip math if den == QUALITY_ONE
 STAmount STAmount::divide (
-    const STAmount& num, const STAmount& den, Issue const& issue)
+    STAmount const& num, STAmount const& den, Issue const& issue)
 {
     if (den == zero)
         throw std::runtime_error ("division by zero");
@@ -919,7 +919,7 @@ STAmount STAmount::divide (
 }
 
 STAmount STAmount::multiply (
-    const STAmount& v1, const STAmount& v2, Issue const& issue)
+    STAmount const& v1, STAmount const& v2, Issue const& issue)
 {
     if (v1 == zero || v2 == zero)
         return STAmount (issue);
@@ -989,7 +989,7 @@ STAmount STAmount::multiply (
 //             A lower rate is better for the person taking the order.
 //             The taker gets more for less with a lower rate.
 // Zero is returned if the offer is worthless.
-std::uint64_t STAmount::getRate (const STAmount& offerOut, const STAmount& offerIn)
+std::uint64_t STAmount::getRate (STAmount const& offerOut, STAmount const& offerIn)
 {
     if (offerOut == zero)
         return 0;
@@ -1026,7 +1026,7 @@ STAmount STAmount::setRate (std::uint64_t rate)
 }
 
 STAmount STAmount::getPay (
-    const STAmount& offerOut, const STAmount& offerIn, const STAmount& needed)
+    STAmount const& offerOut, STAmount const& offerIn, STAmount const& needed)
 {
     // Someone wants to get (needed) out of the offer, how much should they pay
     // in?
@@ -1144,7 +1144,7 @@ Json::Value STAmount::getJson (int) const
 class STAmount_test : public beast::unit_test::suite
 {
 public:
-    static STAmount serializeAndDeserialize (const STAmount& s)
+    static STAmount serializeAndDeserialize (STAmount const& s)
     {
         Serializer ser;
         s.add (ser);

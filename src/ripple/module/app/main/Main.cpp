@@ -53,7 +53,7 @@ void startServer ()
     {
         for (int i = 0; i != getConfig ().RPC_STARTUP.size (); ++i)
         {
-            const Json::Value& jvCommand    = getConfig ().RPC_STARTUP[i];
+            Json::Value const& jvCommand    = getConfig ().RPC_STARTUP[i];
 
             if (!getConfig ().QUIET)
                 std::cerr << "Startup RPC: " << jvCommand << std::endl;

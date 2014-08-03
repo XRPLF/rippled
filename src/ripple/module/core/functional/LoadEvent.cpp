@@ -19,7 +19,7 @@
 
 namespace ripple {
 
-LoadEvent::LoadEvent (LoadMonitor& monitor, const std::string& name, bool shouldStart)
+LoadEvent::LoadEvent (LoadMonitor& monitor, std::string const& name, bool shouldStart)
     : m_loadMonitor (monitor)
     , m_isRunning (false)
     , m_name (name)
@@ -57,7 +57,7 @@ double LoadEvent::getSecondsTotal() const
     return m_secondsWaiting + m_secondsRunning;
 }
 
-void LoadEvent::reName (const std::string& name)
+void LoadEvent::reName (std::string const& name)
 {
     m_name = name;
 }

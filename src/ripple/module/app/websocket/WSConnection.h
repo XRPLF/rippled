@@ -49,7 +49,7 @@ protected:
     virtual void disconnect () = 0;
 
 public:
-    void onPong (const std::string&);
+    void onPong (std::string const&);
     void rcvMessage (message_ptr msg, bool& msgRejected, bool& runQueue);
     message_ptr getMessage ();
     bool checkMessage ();
@@ -127,7 +127,7 @@ public:
     }
 
     // Implement overridden functions from base class:
-    void send (const Json::Value& jvObj, bool broadcast)
+    void send (Json::Value const& jvObj, bool broadcast)
     {
         connection_ptr ptr = m_connection.lock ();
 
@@ -135,7 +135,7 @@ public:
             m_serverHandler.send (ptr, jvObj, broadcast);
     }
 
-    void send (const Json::Value& jvObj, const std::string& sObj, bool broadcast)
+    void send (Json::Value const& jvObj, std::string const& sObj, bool broadcast)
     {
         connection_ptr ptr = m_connection.lock ();
 
@@ -191,7 +191,7 @@ public:
 
         if (ptr)
         {
-            m_pingTimer.expires_from_now (boost::posix_time::seconds 
+            m_pingTimer.expires_from_now (boost::posix_time::seconds
                 (getConfig ().WEBSOCKET_PING_FREQ));
 
             m_pingTimer.async_wait (ptr->get_strand ().wrap (

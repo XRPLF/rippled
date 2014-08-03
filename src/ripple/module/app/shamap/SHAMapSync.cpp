@@ -661,7 +661,7 @@ Note: a caller should set includeLeaves to false for transaction trees.
 There's no point in including the leaves of transaction trees.
 */
 void SHAMap::getFetchPack (SHAMap* have, bool includeLeaves, int max,
-                           std::function<void (const uint256&, const Blob&)> func)
+                           std::function<void (uint256 const&, const Blob&)> func)
 {
     ScopedReadLockType ul1 (mLock, boost::defer_lock);
     ScopedReadLockType ul2;

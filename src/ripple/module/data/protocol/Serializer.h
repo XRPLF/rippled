@@ -45,7 +45,7 @@ public:
     {
         ;
     }
-    Serializer (const std::string& data) : mData (data.data (), (data.data ()) + data.size ())
+    Serializer (std::string const& data) : mData (data.data (), (data.data ()) + data.size ())
     {
         ;
     }
@@ -91,7 +91,7 @@ public:
     int addZeros (size_t uBytes);
 
     int addVL (Blob const& vector);
-    int addVL (const std::string& string);
+    int addVL (std::string const& string);
     int addVL (const void* ptr, int len);
 
     // disassemble functions
@@ -168,7 +168,7 @@ public:
     {
         return getPrefixHash (prefix, & (data.front ()), data.size ());
     }
-    static uint256 getPrefixHash (std::uint32_t prefix, const std::string& strData)
+    static uint256 getPrefixHash (std::uint32_t prefix, std::string const& strData)
     {
         return getPrefixHash (prefix, reinterpret_cast<const unsigned char*> (strData.data ()), strData.size ());
     }

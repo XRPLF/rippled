@@ -44,7 +44,7 @@ public:
     SerializedValidation (SerializerIterator & sit, bool checkSignature = true);
 
     // Does not sign the validation
-    SerializedValidation (uint256 const & ledgerHash, std::uint32_t signTime,
+    SerializedValidation (uint256 const& ledgerHash, std::uint32_t signTime,
                           const RippleAddress & raPub, bool isFull);
 
     uint256         getLedgerHash ()     const;
@@ -78,11 +78,11 @@ public:
     {
         return mPreviousHash;
     }
-    bool isPreviousHash (uint256 const & h) const
+    bool isPreviousHash (uint256 const& h) const
     {
         return mPreviousHash == h;
     }
-    void setPreviousHash (uint256 const & h)
+    void setPreviousHash (uint256 const& h)
     {
         mPreviousHash = h;
     }

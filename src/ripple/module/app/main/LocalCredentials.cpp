@@ -120,7 +120,7 @@ bool LocalCredentials::nodeIdentityCreate ()
     return true;
 }
 
-bool LocalCredentials::dataDelete (const std::string& strKey)
+bool LocalCredentials::dataDelete (std::string const& strKey)
 {
     Database* db    = getApp().getRpcDB ()->getDB ();
 
@@ -130,7 +130,7 @@ bool LocalCredentials::dataDelete (const std::string& strKey)
                                 % sqlEscape (strKey)));
 }
 
-bool LocalCredentials::dataFetch (const std::string& strKey, std::string& strValue)
+bool LocalCredentials::dataFetch (std::string const& strKey, std::string& strValue)
 {
     Database* db    = getApp().getRpcDB ()->getDB ();
 
@@ -152,7 +152,7 @@ bool LocalCredentials::dataFetch (const std::string& strKey, std::string& strVal
     return bSuccess;
 }
 
-bool LocalCredentials::dataStore (const std::string& strKey, const std::string& strValue)
+bool LocalCredentials::dataStore (std::string const& strKey, std::string const& strValue)
 {
     Database* db    = getApp().getRpcDB ()->getDB ();
 

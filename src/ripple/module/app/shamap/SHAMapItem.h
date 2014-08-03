@@ -33,13 +33,13 @@ public:
     typedef const std::shared_ptr<SHAMapItem>&    ref;
 
 public:
-    explicit SHAMapItem (uint256 const & tag) : mTag (tag)
+    explicit SHAMapItem (uint256 const& tag) : mTag (tag)
     {
         ;
     }
     explicit SHAMapItem (Blob const & data); // tag by hash
-    SHAMapItem (uint256 const & tag, Blob const & data);
-    SHAMapItem (uint256 const & tag, const Serializer & s);
+    SHAMapItem (uint256 const& tag, Blob const & data);
+    SHAMapItem (uint256 const& tag, const Serializer & s);
 
     uint256 const& getTag () const
     {
@@ -71,11 +71,11 @@ public:
     {
         return mTag != i.mTag;
     }
-    bool operator== (uint256 const & i) const
+    bool operator== (uint256 const& i) const
     {
         return mTag == i;
     }
-    bool operator!= (uint256 const & i) const
+    bool operator!= (uint256 const& i) const
     {
         return mTag != i;
     }
@@ -99,19 +99,19 @@ public:
         return mTag >= i.mTag;
     }
 
-    bool operator< (uint256 const & i) const
+    bool operator< (uint256 const& i) const
     {
         return mTag < i;
     }
-    bool operator> (uint256 const & i) const
+    bool operator> (uint256 const& i) const
     {
         return mTag > i;
     }
-    bool operator<= (uint256 const & i) const
+    bool operator<= (uint256 const& i) const
     {
         return mTag <= i;
     }
-    bool operator>= (uint256 const & i) const
+    bool operator>= (uint256 const& i) const
     {
         return mTag >= i;
     }

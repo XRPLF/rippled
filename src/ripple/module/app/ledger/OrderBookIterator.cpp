@@ -110,7 +110,7 @@ bool BookDirIterator::setJson(Json::Value const& jv)
 {
     if (!jv.isMember("book_index"))
         return false;
-    const Json::Value& bi = jv["book_index"];
+    Json::Value const& bi = jv["book_index"];
     if (!bi.isString ())
         return false;
     mIndex.SetHexExact(bi.asString());

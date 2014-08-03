@@ -25,7 +25,7 @@ namespace RPC {
 
 Json::Value getMasterGenerator (
     Ledger::ref lrLedger,
-    const RippleAddress& naRegularSeed,
+    RippleAddress const& naRegularSeed,
     RippleAddress& naMasterGenerator,
     NetworkOPs& netOps);
 

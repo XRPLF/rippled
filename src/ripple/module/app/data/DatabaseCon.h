@@ -29,7 +29,7 @@ namespace ripple {
 class DatabaseCon : beast::LeakChecked <DatabaseCon>
 {
 public:
-    DatabaseCon (const std::string& name, const char* initString[], int countInit);
+    DatabaseCon (std::string const& name, const char* initString[], int countInit);
     ~DatabaseCon ();
 
     Database* getDB ()

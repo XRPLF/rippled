@@ -61,10 +61,10 @@ Transaction::pointer Transaction::sharedTransaction (Blob const& vucTransaction,
 
 Transaction::Transaction (
     TxType ttKind,
-    const RippleAddress&    naPublicKey,
-    const RippleAddress&    naSourceAccount,
+    RippleAddress const&    naPublicKey,
+    RippleAddress const&    naSourceAccount,
     std::uint32_t           uSeq,
-    const STAmount&         saFee,
+    STAmount const&         saFee,
     std::uint32_t           uSourceTag) :
     mAccountFrom (naSourceAccount), mFromPubKey (naPublicKey), mInLedger (0), mStatus (NEW), mResult (temUNCERTAIN)
 {
@@ -84,7 +84,7 @@ Transaction::Transaction (
     }
 }
 
-bool Transaction::sign (const RippleAddress& naAccountPrivate)
+bool Transaction::sign (RippleAddress const& naAccountPrivate)
 {
     bool    bResult = true;
 
@@ -195,7 +195,7 @@ Transaction::pointer Transaction::transactionFromSQL (Database* db, bool bValida
 }
 
 // DAVID: would you rather duplicate this code or keep the lock longer?
-Transaction::pointer Transaction::transactionFromSQL (const std::string& sql)
+Transaction::pointer Transaction::transactionFromSQL (std::string const& sql)
 {
     Serializer rawTxn;
     std::string status;
@@ -361,7 +361,7 @@ Json::Value Transaction::getJson (int options, bool binary) const
     return ret;
 }
 
-bool Transaction::isHexTxID (const std::string& txid)
+bool Transaction::isHexTxID (std::string const& txid)
 {
     if (txid.size () != 64)
         return false;

@@ -121,7 +121,7 @@ public:
         canonicalize ();
     }
 
-    STAmount (SField::ref, const Json::Value&);
+    STAmount (SField::ref, Json::Value const&);
 
     static STAmount createFromInt64 (SField::ref n, std::int64_t v);
 
@@ -131,7 +131,7 @@ public:
         return std::unique_ptr<SerializedType> (construct (sit, name));
     }
 
-    bool bSetJson (const Json::Value& jvSource);
+    bool bSetJson (Json::Value const& jvSource);
 
     static STAmount saFromRate (std::uint64_t uRate = 0)
     {
@@ -219,7 +219,7 @@ public:
     }
 
     // Zero while copying currency and issuer.
-    void clear (const STAmount& saTmpl)
+    void clear (STAmount const& saTmpl)
     {
         clear(saTmpl.mIssue);
     }
@@ -236,7 +236,7 @@ public:
         return *this;
     }
 
-    int compare (const STAmount&) const;
+    int compare (STAmount const&) const;
 
     Account const& getIssuer () const
     {
@@ -262,11 +262,11 @@ public:
         return mIssue;
     }
 
-    bool setValue (const std::string& sAmount);
+    bool setValue (std::string const& sAmount);
     bool setFullValue (
-        const std::string& sAmount, const std::string& sCurrency = "",
-        const std::string& sIssuer = "");
-    void setValue (const STAmount&);
+        std::string const& sAmount, std::string const& sCurrency = "",
+        std::string const& sIssuer = "");
+    void setValue (STAmount const&);
 
     virtual bool isEquivalent (const SerializedType& t) const;
     virtual bool isDefault () const
@@ -274,14 +274,14 @@ public:
         return (mValue == 0) && mIsNative;
     }
 
-    bool operator== (const STAmount&) const;
-    bool operator!= (const STAmount&) const;
-    bool operator< (const STAmount&) const;
-    bool operator> (const STAmount&) const;
-    bool operator<= (const STAmount&) const;
-    bool operator>= (const STAmount&) const;
-    bool isComparable (const STAmount&) const;
-    void throwComparable (const STAmount&) const;
+    bool operator== (STAmount const&) const;
+    bool operator!= (STAmount const&) const;
+    bool operator< (STAmount const&) const;
+    bool operator> (STAmount const&) const;
+    bool operator<= (STAmount const&) const;
+    bool operator>= (STAmount const&) const;
+    bool isComparable (STAmount const&) const;
+    void throwComparable (STAmount const&) const;
 
     // native currency only
     bool operator< (std::uint64_t) const;
@@ -292,39 +292,39 @@ public:
     STAmount operator- (std::uint64_t) const;
     STAmount operator- (void) const;
 
-    STAmount& operator+= (const STAmount&);
-    STAmount& operator-= (const STAmount&);
+    STAmount& operator+= (STAmount const&);
+    STAmount& operator-= (STAmount const&);
     STAmount& operator+= (std::uint64_t);
     STAmount& operator-= (std::uint64_t);
     STAmount& operator= (std::uint64_t);
 
     operator double () const;
 
-    friend STAmount operator+ (const STAmount& v1, const STAmount& v2);
-    friend STAmount operator- (const STAmount& v1, const STAmount& v2);
+    friend STAmount operator+ (STAmount const& v1, STAmount const& v2);
+    friend STAmount operator- (STAmount const& v1, STAmount const& v2);
 
     static STAmount divide (
-        const STAmount& v1, const STAmount& v2, Issue const& issue);
+        STAmount const& v1, STAmount const& v2, Issue const& issue);
 
     static STAmount divide (
-        const STAmount& v1, const STAmount& v2, const STAmount& saUnit)
+        STAmount const& v1, STAmount const& v2, STAmount const& saUnit)
     {
         return divide (v1, v2, saUnit.issue ());
     }
-    static STAmount divide (const STAmount& v1, const STAmount& v2)
+    static STAmount divide (STAmount const& v1, STAmount const& v2)
     {
         return divide (v1, v2, v1);
     }
 
     static STAmount multiply (
-        const STAmount& v1, const STAmount& v2, Issue const& issue);
+        STAmount const& v1, STAmount const& v2, Issue const& issue);
 
     static STAmount multiply (
-        const STAmount& v1, const STAmount& v2, const STAmount& saUnit)
+        STAmount const& v1, STAmount const& v2, STAmount const& saUnit)
     {
         return multiply (v1, v2, saUnit.issue());
     }
-    static STAmount multiply (const STAmount& v1, const STAmount& v2)
+    static STAmount multiply (STAmount const& v1, STAmount const& v2)
     {
         return multiply (v1, v2, v1);
     }
@@ -336,35 +336,35 @@ public:
     */
     // Add, subtract, multiply, or divide rounding result in specified direction
     static STAmount addRound (
-        const STAmount& v1, const STAmount& v2, bool roundUp);
+        STAmount const& v1, STAmount const& v2, bool roundUp);
     static STAmount subRound (
-        const STAmount& v1, const STAmount& v2, bool roundUp);
+        STAmount const& v1, STAmount const& v2, bool roundUp);
     static STAmount mulRound (
-        const STAmount& v1, const STAmount& v2, Issue const& issue,
+        STAmount const& v1, STAmount const& v2, Issue const& issue,
         bool roundUp);
     static STAmount divRound (
-        const STAmount& v1, const STAmount& v2, Issue const& issue,
+        STAmount const& v1, STAmount const& v2, Issue const& issue,
         bool roundUp);
 
     static STAmount mulRound (
-        const STAmount& v1, const STAmount& v2, const STAmount& saUnit,
+        STAmount const& v1, STAmount const& v2, STAmount const& saUnit,
         bool roundUp)
     {
         return mulRound (v1, v2, saUnit.issue (), roundUp);
     }
     static STAmount mulRound (
-        const STAmount& v1, const STAmount& v2, bool roundUp)
+        STAmount const& v1, STAmount const& v2, bool roundUp)
     {
         return mulRound (v1, v2, v1.issue (), roundUp);
     }
     static STAmount divRound (
-        const STAmount& v1, const STAmount& v2, const STAmount& saUnit,
+        STAmount const& v1, STAmount const& v2, STAmount const& saUnit,
         bool roundUp)
     {
         return divRound (v1, v2, saUnit.issue (), roundUp);
     }
     static STAmount divRound (
-        const STAmount& v1, const STAmount& v2, bool roundUp)
+        STAmount const& v1, STAmount const& v2, bool roundUp)
     {
         return divRound (v1, v2, v1.issue (), roundUp);
     }
@@ -372,7 +372,7 @@ public:
     // Someone is offering X for Y, what is the rate?
     // Rate: smaller is better, the taker wants the most out: in/out
     static std::uint64_t getRate (
-        const STAmount& offerOut, const STAmount& offerIn);
+        STAmount const& offerOut, STAmount const& offerIn);
     static STAmount setRate (std::uint64_t rate);
 
     // Someone is offering X for Y, I need Z, how much do I pay
@@ -380,7 +380,7 @@ public:
     // WARNING: most methods in rippled have parameters ordered "in, out" - this
     // one is ordered "out, in".
     static STAmount getPay (
-        const STAmount& out, const STAmount& in, const STAmount& needed);
+        STAmount const& out, STAmount const& in, STAmount const& needed);
 
     static STAmount deserialize (SerializerIterator&);
 

@@ -39,37 +39,37 @@ public:
         boost::asio::io_service& io_service,
         std::deque <std::string> deqSites,
         const unsigned short port,
-        const std::string& strPath,
+        std::string const& strPath,
         std::size_t responseMax,
         boost::posix_time::time_duration timeout,
-        std::function <bool (const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete);
+        std::function <bool (const boost::system::error_code& ecResult, int iStatus, std::string const& strData)> complete);
 
     static void get (
         bool bSSL,
         boost::asio::io_service& io_service,
         std::string strSite,
         const unsigned short port,
-        const std::string& strPath,
+        std::string const& strPath,
         std::size_t responseMax,
         boost::posix_time::time_duration timeout,
-        std::function <bool (const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete);
+        std::function <bool (const boost::system::error_code& ecResult, int iStatus, std::string const& strData)> complete);
 
     static void request (
         bool bSSL,
         boost::asio::io_service& io_service,
         std::string strSite,
         const unsigned short port,
-        std::function <void (boost::asio::streambuf& sb, const std::string& strHost)> build,
+        std::function <void (boost::asio::streambuf& sb, std::string const& strHost)> build,
         std::size_t responseMax,
         boost::posix_time::time_duration timeout,
-        std::function <bool (const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> complete);
+        std::function <bool (const boost::system::error_code& ecResult, int iStatus, std::string const& strData)> complete);
 
     enum
     {
         smsTimeoutSeconds = 30
     };
 
-    static void sendSMS (boost::asio::io_service& io_service, const std::string& strText);
+    static void sendSMS (boost::asio::io_service& io_service, std::string const& strText);
 };
 
 } // ripple

@@ -820,7 +820,7 @@ Blob STObject::getFieldVL (SField::ref field) const
     return cf->getValue ();
 }
 
-const STAmount& STObject::getFieldAmount (SField::ref field) const
+STAmount const& STObject::getFieldAmount (SField::ref field) const
 {
     static STAmount empty;
     const SerializedType* rf = peekAtPField (field);
@@ -1034,7 +1034,7 @@ void STObject::setFieldVL (SField::ref field, Blob const& v)
     cf->setValue (v);
 }
 
-void STObject::setFieldAmount (SField::ref field, const STAmount& v)
+void STObject::setFieldAmount (SField::ref field, STAmount const& v)
 {
     SerializedType* rf = getPField (field, true);
 
@@ -1271,7 +1271,7 @@ public:
         testParseJSONArrayWithInvalidChildrenObjects();
     }
 
-    bool parseJSONString (const std::string& json, Json::Value& to)
+    bool parseJSONString (std::string const& json, Json::Value& to)
     {
         Json::Reader reader;
         return (reader.parse(json, to) &&

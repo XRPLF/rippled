@@ -486,9 +486,9 @@ bool STParsedJSON::parse (std::string const& json_name,
                             return false;
                         }
 
-                        const Json::Value& account  = pathEl["account"];
-                        const Json::Value& currency = pathEl["currency"];
-                        const Json::Value& issuer   = pathEl["issuer"];
+                        Json::Value const& account  = pathEl["account"];
+                        Json::Value const& currency = pathEl["currency"];
+                        Json::Value const& issuer   = pathEl["issuer"];
                         bool hasCurrency            = false;
                         Account uAccount, uIssuer;
                         Currency uCurrency;

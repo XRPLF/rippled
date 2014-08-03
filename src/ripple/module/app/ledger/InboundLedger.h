@@ -115,7 +115,7 @@ private:
 
     int processData (std::shared_ptr<Peer> peer, protocol::TMLedgerData& data);
 
-    bool takeHeader (const std::string& data);
+    bool takeHeader (std::string const& data);
     bool takeTxNode (const std::list<SHAMapNodeID>& IDs, const std::list<Blob >& data,
                      SHAMapAddNode&);
     bool takeTxRootNode (Blob const& data, SHAMapAddNode&);

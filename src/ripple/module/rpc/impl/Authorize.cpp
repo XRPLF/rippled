@@ -32,10 +32,10 @@ namespace RPC {
 // --> naVerifyGenerator : If provided, the found master public generator must match.
 // XXX Be more lenient, allow use of master generator on claimed accounts.
 Json::Value authorize (Ledger::ref lrLedger,
-                       const RippleAddress& naRegularSeed, const RippleAddress& naSrcAccountID,
+                       RippleAddress const& naRegularSeed, RippleAddress const& naSrcAccountID,
                        RippleAddress& naAccountPublic, RippleAddress& naAccountPrivate,
-                       STAmount& saSrcBalance, const STAmount& saFee, AccountState::pointer& asSrc,
-                       const RippleAddress& naVerifyGenerator, NetworkOPs& netOps)
+                       STAmount& saSrcBalance, STAmount const& saFee, AccountState::pointer& asSrc,
+                       RippleAddress const& naVerifyGenerator, NetworkOPs& netOps)
 {
     // Source/paying account must exist.
     asSrc   = netOps.getAccountState (lrLedger, naSrcAccountID);

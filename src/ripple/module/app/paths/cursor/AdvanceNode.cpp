@@ -194,7 +194,7 @@ TER PathCursor::advanceNode (bool const bReverse) const
                 node().saTakerGets
                         = node().sleOffer->getFieldAmount (sfTakerGets);
 
-                const AccountIssue accountIssue (
+                AccountIssue const accountIssue (
                     node().offerOwnerAccount_, node().issue_);
 
                 WriteLog (lsTRACE, RippleCalc)

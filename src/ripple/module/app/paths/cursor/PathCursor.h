@@ -79,12 +79,12 @@ private:
     // To deliver from an order book, when computing
     TER deliverNodeReverse (
         Account const& uOutAccountID,
-        const STAmount& saOutReq,
+        STAmount const& saOutReq,
         STAmount& saOutAct) const;
 
     TER deliverNodeForward (
         Account const& uInAccountID,
-        const STAmount& saInReq,
+        STAmount const& saInReq,
         STAmount& saInAct,
         STAmount& saInFees) const;
 

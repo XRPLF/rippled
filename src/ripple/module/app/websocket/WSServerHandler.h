@@ -107,7 +107,7 @@ public:
         }
     }
 
-    static void ssendb (connection_ptr cpClient, const std::string& strMessage, bool broadcast)
+    static void ssendb (connection_ptr cpClient, std::string const& strMessage, bool broadcast)
     {
         try
         {
@@ -127,13 +127,13 @@ public:
                                           &WSServerHandler<endpoint_type>::ssend, cpClient, mpMessage));
     }
 
-    void send (connection_ptr cpClient, const std::string& strMessage, bool broadcast)
+    void send (connection_ptr cpClient, std::string const& strMessage, bool broadcast)
     {
         cpClient->get_strand ().post (std::bind (
                                           &WSServerHandler<endpoint_type>::ssendb, cpClient, strMessage, broadcast));
     }
 
-    void send (connection_ptr cpClient, const Json::Value& jvObj, bool broadcast)
+    void send (connection_ptr cpClient, Json::Value const& jvObj, bool broadcast)
     {
         Json::FastWriter    jfwWriter;
 

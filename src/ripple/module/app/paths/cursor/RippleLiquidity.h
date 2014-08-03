@@ -33,8 +33,8 @@ void rippleLiquidity (
     RippleCalc&,
     const std::uint32_t uQualityIn,
     const std::uint32_t uQualityOut,
-    const STAmount& saPrvReq,
-    const STAmount& saCurReq,
+    STAmount const& saPrvReq,
+    STAmount const& saCurReq,
     STAmount& saPrvAct,
     STAmount& saCurAct,
     std::uint64_t& uRateMax);

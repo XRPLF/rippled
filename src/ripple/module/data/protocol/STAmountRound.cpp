@@ -65,7 +65,7 @@ void STAmount::canonicalizeRound (
             << ":" << offset << (roundUp ? " up" : " down");
 }
 
-STAmount STAmount::addRound (const STAmount& v1, const STAmount& v2, bool roundUp)
+STAmount STAmount::addRound (STAmount const& v1, STAmount const& v2, bool roundUp)
 {
     v1.throwComparable (v2);
 
@@ -137,7 +137,7 @@ STAmount STAmount::addRound (const STAmount& v1, const STAmount& v2, bool roundU
     }
 }
 
-STAmount STAmount::subRound (const STAmount& v1, const STAmount& v2, bool roundUp)
+STAmount STAmount::subRound (STAmount const& v1, STAmount const& v2, bool roundUp)
 {
     v1.throwComparable (v2);
 
@@ -211,7 +211,7 @@ STAmount STAmount::subRound (const STAmount& v1, const STAmount& v2, bool roundU
 }
 
 STAmount STAmount::mulRound (
-    const STAmount& v1, const STAmount& v2, Issue const& issue, bool roundUp)
+    STAmount const& v1, STAmount const& v2, Issue const& issue, bool roundUp)
 {
     if (v1 == zero || v2 == zero)
         return {issue};
@@ -278,7 +278,7 @@ STAmount STAmount::mulRound (
 }
 
 STAmount STAmount::divRound (
-    const STAmount& num, const STAmount& den,
+    STAmount const& num, STAmount const& den,
     Issue const& issue, bool roundUp)
 {
     if (den == zero)

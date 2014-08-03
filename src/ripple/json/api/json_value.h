@@ -205,7 +205,7 @@ public:
      * \endcode
      */
     Value ( const StaticString& value );
-    Value ( const std::string& value );
+    Value ( std::string const& value );
     Value (beast::String const& beastString);
 # ifdef JSON_USE_CPPTL
     Value ( const CppTL::ConstString& value );
@@ -307,9 +307,9 @@ public:
     /// Access an object value by name, returns null if there is no member with that name.
     const Value& operator[] ( const char* key ) const;
     /// Access an object value by name, create a null member if it does not exist.
-    Value& operator[] ( const std::string& key );
+    Value& operator[] ( std::string const& key );
     /// Access an object value by name, returns null if there is no member with that name.
-    const Value& operator[] ( const std::string& key ) const;
+    const Value& operator[] ( std::string const& key ) const;
     /** \brief Access an object value by name, create a null member if it does not exist.
 
      * If the object as no entry for that name, then the member name used to store
@@ -332,7 +332,7 @@ public:
     Value get ( const char* key,
                 const Value& defaultValue ) const;
     /// Return the member named key if it exist, defaultValue otherwise.
-    Value get ( const std::string& key,
+    Value get ( std::string const& key,
                 const Value& defaultValue ) const;
 # ifdef JSON_USE_CPPTL
     /// Return the member named key if it exist, defaultValue otherwise.
@@ -347,12 +347,12 @@ public:
     /// \post type() is unchanged
     Value removeMember ( const char* key );
     /// Same as removeMember(const char*)
-    Value removeMember ( const std::string& key );
+    Value removeMember ( std::string const& key );
 
     /// Return true if the object has a member named key.
     bool isMember ( const char* key ) const;
     /// Return true if the object has a member named key.
-    bool isMember ( const std::string& key ) const;
+    bool isMember ( std::string const& key ) const;
 # ifdef JSON_USE_CPPTL
     /// Return true if the object has a member named key.
     bool isMember ( const CppTL::ConstString& key ) const;
@@ -374,7 +374,7 @@ public:
     void setComment ( const char* comment,
                       CommentPlacement placement );
     /// Comments must be //... or /* ... */
-    void setComment ( const std::string& comment,
+    void setComment ( std::string const& comment,
                       CommentPlacement placement );
     bool hasComment ( CommentPlacement placement ) const;
     /// Include delimiters and embedded newlines.
@@ -468,7 +468,7 @@ public:
     PathArgument ();
     PathArgument ( UInt index );
     PathArgument ( const char* key );
-    PathArgument ( const std::string& key );
+    PathArgument ( std::string const& key );
 
 private:
     enum Kind
@@ -496,7 +496,7 @@ private:
 class Path
 {
 public:
-    Path ( const std::string& path,
+    Path ( std::string const& path,
            const PathArgument& a1 = PathArgument (),
            const PathArgument& a2 = PathArgument (),
            const PathArgument& a3 = PathArgument (),
@@ -513,13 +513,13 @@ private:
     typedef std::vector<const PathArgument*> InArgs;
     typedef std::vector<PathArgument> Args;
 
-    void makePath ( const std::string& path,
+    void makePath ( std::string const& path,
                     const InArgs& in );
-    void addPathInArg ( const std::string& path,
+    void addPathInArg ( std::string const& path,
                         const InArgs& in,
                         InArgs::const_iterator& itInArg,
                         PathArgument::Kind kind );
-    void invalidPath ( const std::string& path,
+    void invalidPath ( std::string const& path,
                        int location );
 
     Args args_;
