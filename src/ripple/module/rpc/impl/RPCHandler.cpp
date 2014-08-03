@@ -27,23 +27,10 @@
 
 namespace ripple {
 
-//
-// Carries out the RPC.
-//
-
-RPCHandler::RPCHandler (NetworkOPs& netOps)
-    : mNetOps (&netOps)
-    , mRole (Config::FORBID)
-{
-    assert (mNetOps);
-}
-
 RPCHandler::RPCHandler (NetworkOPs& netOps, InfoSub::pointer infoSub)
-    : mNetOps (&netOps)
-    , mInfoSub (infoSub)
-    , mRole (Config::FORBID)
+    : netOps_ (netOps)
+    , infoSub_ (infoSub)
 {
-    assert (mNetOps);
 }
 
 // Provide the JSON-RPC "result" value.
@@ -52,8 +39,10 @@ RPCHandler::RPCHandler (NetworkOPs& netOps, InfoSub::pointer infoSub)
 // transport for a command and a request object. The command is the method. The
 // request object is supplied as the first element of the params.
 Json::Value RPCHandler::doRpcCommand (
-    std::string const& strMethod, Json::Value const& jvParams,
-    Config::Role iRole, Resource::Charge& loadType)
+    const std::string& strMethod,
+    Json::Value const& jvParams,
+    Config::Role role,
+    Resource::Charge& loadType)
 {
     WriteLog (lsTRACE, RPCHandler)
         << "doRpcCommand:" << strMethod << ":" << jvParams;
@@ -61,16 +50,16 @@ Json::Value RPCHandler::doRpcCommand (
     if (!jvParams.isArray () || jvParams.size () > 1)
         return logRPCError (rpcError (rpcINVALID_PARAMS));
 
-    Json::Value params   = jvParams.size () ? jvParams[0u]
+    Json::Value params = jvParams.size () ? jvParams[0u]
         : Json::Value (Json::objectValue);
 
     if (!params.isObject ())
         return logRPCError (rpcError (rpcINVALID_PARAMS));
 
     // Provide the JSON-RPC method as the field "command" in the request.
-    params[jss::command]    = strMethod;
+    params[jss::command] = strMethod;
 
-    Json::Value jvResult = doCommand (params, iRole, loadType);
+    Json::Value jvResult = doCommand (params, role, loadType);
 
     // Always report "status".  On an error report the request as received.
     if (jvResult.isMember ("error"))
@@ -86,22 +75,12 @@ Json::Value RPCHandler::doRpcCommand (
     return logRPCError (jvResult);
 }
 
-// TODO(tom): this should go with the other handlers.
-Json::Value doInternal (RPC::Context& context)
-{
-    // Used for debug or special-purpose RPC commands
-    if (!context.params_.isMember ("internal_command"))
-        return rpcError (rpcINVALID_PARAMS);
-
-    return RPCInternalHandler::runHandler (
-        context.params_["internal_command"].asString (),
-        context.params_["params"]);
-}
-
 Json::Value RPCHandler::doCommand (
-    Json::Value const& params, Config::Role iRole, Resource::Charge& loadType)
+    const Json::Value& params,
+    Config::Role role,
+    Resource::Charge& loadType)
 {
-    if (iRole != Config::ADMIN)
+    if (role != Config::ADMIN)
     {
         // VFALCO NOTE Should we also add up the jtRPC jobs?
         //
@@ -121,22 +100,22 @@ Json::Value RPCHandler::doCommand (
     WriteLog (lsTRACE, RPCHandler) << "COMMAND:" << strCommand;
     WriteLog (lsTRACE, RPCHandler) << "REQUEST:" << params;
 
-    mRole   = iRole;
+    role_ = role;
 
-    const RPC::Handler* handler = RPC::getHandler(strCommand);
+    auto handler = RPC::getHandler(strCommand);
 
     if (!handler)
         return rpcError (rpcUNKNOWN_COMMAND);
 
-    if (handler->role_ == Config::ADMIN && mRole != Config::ADMIN)
+    if (handler->role_ == Config::ADMIN && role_ != Config::ADMIN)
         return rpcError (rpcNO_PERMISSION);
 
     if ((handler->condition_ & RPC::NEEDS_NETWORK_CONNECTION) &&
-        (mNetOps->getOperatingMode () < NetworkOPs::omSYNCING))
+        (netOps_.getOperatingMode () < NetworkOPs::omSYNCING))
     {
         WriteLog (lsINFO, RPCHandler)
             << "Insufficient network mode for RPC: "
-            << mNetOps->strOperatingMode ();
+            << netOps_.strOperatingMode ();
 
         return rpcError (rpcNO_NETWORK);
     }
@@ -150,16 +129,16 @@ Json::Value RPCHandler::doCommand (
     }
 
     if ((handler->condition_ & RPC::NEEDS_CLOSED_LEDGER) &&
-        !mNetOps->getClosedLedger ())
+        !netOps_.getClosedLedger ())
     {
-            return rpcError (rpcNO_CLOSED);
+        return rpcError (rpcNO_CLOSED);
     }
 
     try
     {
         LoadEvent::autoptr ev = getApp().getJobQueue().getLoadEventAP(
             jtGENERIC, "cmd:" + strCommand);
-        RPC::Context context{params, loadType, *mNetOps, mInfoSub, mRole};
+        RPC::Context context {params, loadType, netOps_, infoSub_, role_};
         Json::Value jvRaw = handler->method_(context);
 
         // Regularize result.
@@ -181,38 +160,6 @@ Json::Value RPCHandler::doCommand (
 
         return rpcError (rpcINTERNAL);
     }
-}
-
-RPCInternalHandler* RPCInternalHandler::sHeadHandler = nullptr;
-
-RPCInternalHandler::RPCInternalHandler (
-    std::string const& name, handler_t Handler)
-        : mName (name),
-          mHandler (Handler)
-{
-    mNextHandler = sHeadHandler;
-    sHeadHandler = this;
-}
-
-Json::Value RPCInternalHandler::runHandler (
-    std::string const& name, Json::Value const& params)
-{
-    for (RPCInternalHandler* h = sHeadHandler; h != nullptr; )
-    {
-        if (name == h->mName)
-        {
-            WriteLog (lsWARNING, RPCHandler)
-                << "Internal command " << name << ": " << params;
-            Json::Value ret = h->mHandler (params);
-            WriteLog (lsWARNING, RPCHandler)
-                << "Internal command returns: " << ret;
-            return ret;
-        }
-
-        h = h->mNextHandler;
-    }
-
-    return rpcError (rpcBAD_SYNTAX);
 }
 
 } // ripple

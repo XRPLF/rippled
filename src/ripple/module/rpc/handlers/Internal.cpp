@@ -17,36 +17,37 @@
 */
 //==============================================================================
 
+#include <ripple/module/rpc/InternalHandler.h>
 
 namespace ripple {
 
-// {
-//   node: <domain>|<node_public>,
-//   comment: <comment>             // optional
-// }
-Json::Value doUnlAdd (RPC::Context& context)
+RPC::InternalHandler* RPC::InternalHandler::headHandler = nullptr;
+
+Json::Value doInternal (RPC::Context& context)
 {
-    auto lock = getApp().masterLock();
+    // Used for debug or special-purpose RPC commands
+    if (!context.params_.isMember ("internal_command"))
+        return rpcError (rpcINVALID_PARAMS);
 
-    std::string strNode = context.params_.isMember ("node")
-            ? context.params_["node"].asString () : "";
-    std::string strComment = context.params_.isMember ("comment")
-            ? context.params_["comment"].asString () : "";
+    auto name = context.params_["internal_command"].asString ();
+    auto params = context.params_["params"];
 
-    RippleAddress raNodePublic;
-
-    if (raNodePublic.setNodePublic (strNode))
+    for (auto* h = RPC::InternalHandler::headHandler; h; )
     {
-        getApp().getUNL ().nodeAddPublic (
-            raNodePublic, UniqueNodeList::vsManual, strComment);
-        return "adding node by public key";
+        if (name == h->name_)
+        {
+            WriteLog (lsWARNING, RPCHandler)
+                << "Internal command " << name << ": " << params;
+            Json::Value ret = h->handler_ (params);
+            WriteLog (lsWARNING, RPCHandler)
+                << "Internal command returns: " << ret;
+            return ret;
+        }
+
+        h = h->nextHandler_;
     }
-    else
-    {
-        getApp().getUNL ().nodeAddDomain (
-            strNode, UniqueNodeList::vsManual, strComment);
-        return "adding node by domain";
-    }
+
+    return rpcError (rpcBAD_SYNTAX);
 }
 
 } // ripple

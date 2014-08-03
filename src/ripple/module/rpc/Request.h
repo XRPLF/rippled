@@ -23,18 +23,19 @@
 #include <ripple/unity/json.h>
 #include <ripple/unity/resource.h>
 
-
 namespace ripple {
 
-class Application; // forward declare
+class Application;
 
 namespace RPC {
 
 struct Request
 {
-    explicit Request (beast::Journal journal_,
-        std::string const& method_, Json::Value& params_,
-            Application& app_)
+    explicit Request (
+        beast::Journal journal_,
+        std::string const& method_,
+        Json::Value& params_,
+        Application& app_)
         : journal (journal_)
         , method (method_)
         , params (params_)

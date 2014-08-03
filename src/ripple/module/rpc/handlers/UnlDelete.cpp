@@ -30,20 +30,17 @@ Json::Value doUnlDelete (RPC::Context& context)
     if (!context.params_.isMember ("node"))
         return rpcError (rpcINVALID_PARAMS);
 
-    std::string strNode     = context.params_["node"].asString ();
-
-    RippleAddress   raNodePublic;
+    auto strNode = context.params_["node"].asString ();
+    RippleAddress raNodePublic;
 
     if (raNodePublic.setNodePublic (strNode))
     {
         getApp().getUNL ().nodeRemovePublic (raNodePublic);
-
         return "removing node by public key";
     }
     else
     {
         getApp().getUNL ().nodeRemoveDomain (strNode);
-
         return "removing node by domain";
     }
 }

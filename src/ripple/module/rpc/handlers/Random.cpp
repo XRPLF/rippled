@@ -26,10 +26,11 @@ namespace ripple {
 // }
 Json::Value doRandom (RPC::Context& context)
 {
-    uint256 rand;
-
+    // TODO(tom): the try/catch is almost certainly redundant, we catch at the
+    // top level too.
     try
     {
+        uint256 rand;
         RandomNumbers::getInstance ().fillBytes (rand.begin (), rand.size ());
 
         Json::Value jvResult;

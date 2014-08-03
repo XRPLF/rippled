@@ -34,7 +34,6 @@ public:
     virtual ~Manager () = 0;
 
     /** Add a handler for the specified JSON-RPC command. */
-    /** @{ */
     template <class Handler>
     void add (std::string const& method)
     {
@@ -47,17 +46,16 @@ public:
     }
 
     virtual void add (std::string const& method, handler_type&& handler) = 0;
-    /** @} */
 
     /** Dispatch the JSON-RPC request.
-        @return `true` If the command was found.
+        @return `true` if the command was found.
     */
     virtual bool dispatch (Request& req) = 0;
 };
 
 std::unique_ptr <Manager> make_Manager (beast::Journal journal);
 
-}
-}
+} // RPC
+} // ripple
 
 #endif

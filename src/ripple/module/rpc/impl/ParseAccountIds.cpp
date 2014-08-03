@@ -24,24 +24,21 @@ namespace RPC {
 
 hash_set<RippleAddress> parseAccountIds (Json::Value const& jvArray)
 {
-    hash_set<RippleAddress> usnaResult;
+    hash_set<RippleAddress> result;
 
-    for (Json::Value::const_iterator it = jvArray.begin (); it != jvArray.end (); it++)
+    for (auto const& jv: jvArray)
     {
-        RippleAddress   naString;
+        RippleAddress address;
 
-        if (! (*it).isString () || !naString.setAccountID ((*it).asString ()))
+        if (!(jv.isString () && address.setAccountID ((jv.asString ()))))
         {
-            usnaResult.clear ();
+            result.clear ();
             break;
         }
-        else
-        {
-            (void) usnaResult.insert (naString);
-        }
+        result.insert (address);
     }
 
-    return usnaResult;
+    return result;
 }
 
 } // RPC
