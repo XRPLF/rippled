@@ -2725,6 +2725,9 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\rpc\handlers\Handlers.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\module\rpc\handlers\Internal.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\module\rpc\handlers\Ledger.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2771,9 +2774,6 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\module\rpc\handlers\Print.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\rpc\handlers\Profile.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\module\rpc\handlers\ProofCreate.cpp">
@@ -2920,6 +2920,8 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\rpc\impl\TransactionSign.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\module\rpc\InternalHandler.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\rpc\Manager.h">
     </ClInclude>

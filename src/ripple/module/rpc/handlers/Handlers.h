@@ -53,7 +53,6 @@ Json::Value doPathFind              (RPC::Context&);
 Json::Value doPeers                 (RPC::Context&);
 Json::Value doPing                  (RPC::Context&);
 Json::Value doPrint                 (RPC::Context&);
-Json::Value doProfile               (RPC::Context&);
 Json::Value doProofCreate           (RPC::Context&);
 Json::Value doProofSolve            (RPC::Context&);
 Json::Value doProofVerify           (RPC::Context&);

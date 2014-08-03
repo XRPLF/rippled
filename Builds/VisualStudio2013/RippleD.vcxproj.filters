@@ -3888,6 +3888,9 @@
     <ClInclude Include="..\..\src\ripple\module\rpc\handlers\Handlers.h">
       <Filter>ripple\module\rpc\handlers</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\module\rpc\handlers\Internal.cpp">
+      <Filter>ripple\module\rpc\handlers</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\module\rpc\handlers\Ledger.cpp">
       <Filter>ripple\module\rpc\handlers</Filter>
     </ClCompile>
@@ -3934,9 +3937,6 @@
       <Filter>ripple\module\rpc\handlers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\module\rpc\handlers\Print.cpp">
-      <Filter>ripple\module\rpc\handlers</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\rpc\handlers\Profile.cpp">
       <Filter>ripple\module\rpc\handlers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\module\rpc\handlers\ProofCreate.cpp">
@@ -4094,6 +4094,9 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\rpc\impl\TransactionSign.h">
       <Filter>ripple\module\rpc\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\module\rpc\InternalHandler.h">
+      <Filter>ripple\module\rpc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\rpc\Manager.h">
       <Filter>ripple\module\rpc</Filter>

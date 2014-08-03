@@ -22,10 +22,13 @@ namespace ripple {
 // {
 //   account: <indent>,
 //   account_index : <index> // optional
-//   strict: <bool>                 // true, only allow public keys and addresses. false, default.
+//   strict: <bool>
+//           if true, only allow public keys and addresses. false, default.
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 // }
+
+// TODO(tom): what is that "default"?
 Json::Value doAccountInfo (RPC::Context& context)
 {
     auto& params = context.params_;
