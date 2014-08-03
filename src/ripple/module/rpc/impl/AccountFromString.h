@@ -27,7 +27,7 @@ Json::Value accountFromString (
     Ledger::ref lrLedger,
     RippleAddress& naAccount,
     bool& bIndex,
-    const std::string& strIdent,
+    std::string const& strIdent,
     const int iIndex,
     const bool bStrict,
     NetworkOPs& netOps);

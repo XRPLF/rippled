@@ -41,7 +41,7 @@ const UInt Value::maxUInt = UInt (-1);
 //   return 0;
 //}
 //
-//inline char *safeStringDup( const std::string &str )
+//inline char *safeStringDup( std::string const&str )
 //{
 //   if ( !str.empty() )
 //   {
@@ -380,7 +380,7 @@ Value::Value ( const char* beginValue,
 }
 
 
-Value::Value ( const std::string& value )
+Value::Value ( std::string const& value )
     : type_ ( stringValue )
     , allocated_ ( true )
     , comments_ ( 0 )
@@ -1259,14 +1259,14 @@ Value::operator[] ( const char* key ) const
 
 
 Value&
-Value::operator[] ( const std::string& key )
+Value::operator[] ( std::string const& key )
 {
     return (*this)[ key.c_str () ];
 }
 
 
 const Value&
-Value::operator[] ( const std::string& key ) const
+Value::operator[] ( std::string const& key ) const
 {
     return (*this)[ key.c_str () ];
 }
@@ -1311,7 +1311,7 @@ Value::get ( const char* key,
 
 
 Value
-Value::get ( const std::string& key,
+Value::get ( std::string const& key,
              const Value& defaultValue ) const
 {
     return get ( key.c_str (), defaultValue );
@@ -1353,7 +1353,7 @@ Value::removeMember ( const char* key )
 }
 
 Value
-Value::removeMember ( const std::string& key )
+Value::removeMember ( std::string const& key )
 {
     return removeMember ( key.c_str () );
 }
@@ -1376,7 +1376,7 @@ Value::isMember ( const char* key ) const
 
 
 bool
-Value::isMember ( const std::string& key ) const
+Value::isMember ( std::string const& key ) const
 {
     return isMember ( key.c_str () );
 }
@@ -1530,7 +1530,7 @@ Value::setComment ( const char* comment,
 
 
 void
-Value::setComment ( const std::string& comment,
+Value::setComment ( std::string const& comment,
                     CommentPlacement placement )
 {
     setComment ( comment.c_str (), placement );
@@ -1758,7 +1758,7 @@ PathArgument::PathArgument ( const char* key )
 }
 
 
-PathArgument::PathArgument ( const std::string& key )
+PathArgument::PathArgument ( std::string const& key )
     : key_ ( key.c_str () )
     , kind_ ( kindKey )
 {
@@ -1767,7 +1767,7 @@ PathArgument::PathArgument ( const std::string& key )
 // class Path
 // //////////////////////////////////////////////////////////////////
 
-Path::Path ( const std::string& path,
+Path::Path ( std::string const& path,
              const PathArgument& a1,
              const PathArgument& a2,
              const PathArgument& a3,
@@ -1785,7 +1785,7 @@ Path::Path ( const std::string& path,
 
 
 void
-Path::makePath ( const std::string& path,
+Path::makePath ( std::string const& path,
                  const InArgs& in )
 {
     const char* current = path.c_str ();
@@ -1836,7 +1836,7 @@ Path::makePath ( const std::string& path,
 
 
 void
-Path::addPathInArg ( const std::string& path,
+Path::addPathInArg ( std::string const& path,
                      const InArgs& in,
                      InArgs::const_iterator& itInArg,
                      PathArgument::Kind kind )
@@ -1857,7 +1857,7 @@ Path::addPathInArg ( const std::string& path,
 
 
 void
-Path::invalidPath ( const std::string& path,
+Path::invalidPath ( std::string const& path,
                     int location )
 {
     // Error: invalid path.

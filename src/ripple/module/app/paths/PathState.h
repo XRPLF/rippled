@@ -33,7 +33,7 @@ class PathState : public CountedObject <PathState>
     typedef std::shared_ptr<PathState> Ptr;
     typedef std::vector<Ptr> List;
 
-    PathState (const STAmount& saSend, const STAmount& saSendMax)
+    PathState (STAmount const& saSend, STAmount const& saSendMax)
         : saInReq (saSendMax)
         , saOutReq (saSend)
     {
@@ -136,11 +136,11 @@ class PathState : public CountedObject <PathState>
     int                         mIndex;    // Index/rank amoung siblings.
     std::uint64_t               uQuality;  // 0 = no quality/liquity left.
 
-    const STAmount&             saInReq;   // --> Max amount to spend by sender.
+    STAmount const&             saInReq;   // --> Max amount to spend by sender.
     STAmount                    saInAct;   // --> Amount spent by sender so far.
     STAmount                    saInPass;  // <-- Amount spent by sender.
 
-    const STAmount&             saOutReq;  // --> Amount to send.
+    STAmount const&             saOutReq;  // --> Amount to send.
     STAmount                    saOutAct;  // --> Amount actually sent so far.
     STAmount                    saOutPass; // <-- Amount actually sent.
 

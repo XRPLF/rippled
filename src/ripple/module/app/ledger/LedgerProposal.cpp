@@ -21,7 +21,7 @@ namespace ripple {
 
 LedgerProposal::LedgerProposal (uint256 const& pLgr, std::uint32_t seq,
                                 uint256 const& tx, std::uint32_t closeTime,
-                                const RippleAddress& naPeerPublic, uint256 const& suppression) :
+                                RippleAddress const& naPeerPublic, uint256 const& suppression) :
     mPreviousLedger (pLgr), mCurrentHash (tx), mSuppression (suppression), mCloseTime (closeTime),
     mProposeSeq (seq), mPublicKey (naPeerPublic)
 {
@@ -34,7 +34,7 @@ LedgerProposal::LedgerProposal (uint256 const& pLgr, std::uint32_t seq,
 }
 
 
-LedgerProposal::LedgerProposal (const RippleAddress& naPub, const RippleAddress& naPriv,
+LedgerProposal::LedgerProposal (RippleAddress const& naPub, RippleAddress const& naPriv,
                                 uint256 const& prevLgr, uint256 const& position,
                                 std::uint32_t closeTime) :
     mPreviousLedger (prevLgr), mCurrentHash (position), mCloseTime (closeTime), mProposeSeq (0),
@@ -85,7 +85,7 @@ uint256 LedgerProposal::computeSuppressionID (
     return s.getSHA512Half ();
 }
 
-bool LedgerProposal::checkSign (const std::string& signature, uint256 const& signingHash)
+bool LedgerProposal::checkSign (std::string const& signature, uint256 const& signingHash)
 {
     return mPublicKey.verifyNodePublic (signingHash, signature, ECDSA::not_strict);
 }

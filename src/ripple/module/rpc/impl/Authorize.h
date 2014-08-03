@@ -25,14 +25,14 @@ namespace RPC {
 
 Json::Value authorize (
     Ledger::ref lrLedger,
-    const RippleAddress& naRegularSeed,
-    const RippleAddress& naSrcAccountID,
+    RippleAddress const& naRegularSeed,
+    RippleAddress const& naSrcAccountID,
     RippleAddress& naAccountPublic,
     RippleAddress& naAccountPrivate,
     STAmount& saSrcBalance,
-    const STAmount& saFee,
+    STAmount const& saFee,
     AccountState::pointer& asSrc,
-    const RippleAddress& naVerifyGenerator,
+    RippleAddress const& naVerifyGenerator,
     NetworkOPs& netOps);
 
 } // RPC

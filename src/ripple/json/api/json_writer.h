@@ -94,15 +94,15 @@ private:
     void writeValue ( const Value& value );
     void writeArrayValue ( const Value& value );
     bool isMultineArray ( const Value& value );
-    void pushValue ( const std::string& value );
+    void pushValue ( std::string const& value );
     void writeIndent ();
-    void writeWithIndent ( const std::string& value );
+    void writeWithIndent ( std::string const& value );
     void indent ();
     void unindent ();
     void writeCommentBeforeValue ( const Value& root );
     void writeCommentAfterValueOnSameLine ( const Value& root );
     bool hasCommentForValue ( const Value& value );
-    static std::string normalizeEOL ( const std::string& text );
+    static std::string normalizeEOL ( std::string const& text );
 
     typedef std::vector<std::string> ChildValues;
 
@@ -152,15 +152,15 @@ private:
     void writeValue ( const Value& value );
     void writeArrayValue ( const Value& value );
     bool isMultineArray ( const Value& value );
-    void pushValue ( const std::string& value );
+    void pushValue ( std::string const& value );
     void writeIndent ();
-    void writeWithIndent ( const std::string& value );
+    void writeWithIndent ( std::string const& value );
     void indent ();
     void unindent ();
     void writeCommentBeforeValue ( const Value& root );
     void writeCommentAfterValueOnSameLine ( const Value& root );
     bool hasCommentForValue ( const Value& value );
-    static std::string normalizeEOL ( const std::string& text );
+    static std::string normalizeEOL ( std::string const& text );
 
     typedef std::vector<std::string> ChildValues;
 

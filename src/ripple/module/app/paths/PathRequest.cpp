@@ -233,7 +233,7 @@ Json::Value PathRequest::doCreate (
     return status;
 }
 
-int PathRequest::parseJson (const Json::Value& jvParams, bool complete)
+int PathRequest::parseJson (Json::Value const& jvParams, bool complete)
 {
     int ret = PFR_PJ_NOCHANGE;
 
@@ -284,7 +284,7 @@ int PathRequest::parseJson (const Json::Value& jvParams, bool complete)
 
     if (jvParams.isMember ("source_currencies"))
     {
-        const Json::Value& jvSrcCur = jvParams["source_currencies"];
+        Json::Value const& jvSrcCur = jvParams["source_currencies"];
 
         if (!jvSrcCur.isArray ())
         {
@@ -296,7 +296,7 @@ int PathRequest::parseJson (const Json::Value& jvParams, bool complete)
 
         for (unsigned i = 0; i < jvSrcCur.size (); ++i)
         {
-            const Json::Value& jvCur = jvSrcCur[i];
+            Json::Value const& jvCur = jvSrcCur[i];
             Currency uCur;
             Account uIss;
 
@@ -328,14 +328,14 @@ int PathRequest::parseJson (const Json::Value& jvParams, bool complete)
 
     return ret;
 }
-Json::Value PathRequest::doClose (const Json::Value&)
+Json::Value PathRequest::doClose (Json::Value const&)
 {
     m_journal.debug << iIdentifier << " closed";
     ScopedLockType sl (mLock);
     return jvStatus;
 }
 
-Json::Value PathRequest::doStatus (const Json::Value&)
+Json::Value PathRequest::doStatus (Json::Value const&)
 {
     ScopedLockType sl (mLock);
     return jvStatus;

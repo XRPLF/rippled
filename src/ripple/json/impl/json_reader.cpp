@@ -127,7 +127,7 @@ Reader::Reader ( const Features& features )
 
 
 bool
-Reader::parse ( const std::string& document,
+Reader::parse ( std::string const& document,
                 Value& root,
                 bool collectComments )
 {
@@ -742,7 +742,7 @@ Reader::decodeDouble( Token &token )
         return addError( "'" + std::string( token.start_, token.end_ ) + "' is not a number.", token );
     currentValue() = value;
     return true;
-} 
+}
 
 
 
@@ -902,7 +902,7 @@ Reader::decodeUnicodeEscapeSequence ( Token& token,
 
 
 bool
-Reader::addError ( const std::string& message,
+Reader::addError ( std::string const& message,
                    Token& token,
                    Location extra )
 {
@@ -936,7 +936,7 @@ Reader::recoverFromError ( TokenType skipUntilToken )
 
 
 bool
-Reader::addErrorAndRecover ( const std::string& message,
+Reader::addErrorAndRecover ( std::string const& message,
                              Token& token,
                              TokenType skipUntilToken )
 {

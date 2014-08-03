@@ -36,7 +36,7 @@ class RPCParser
 {
 private:
     // TODO New routine for parsing ledger parameters, other routines should standardize on this.
-    static bool jvParseLedger (Json::Value& jvRequest, const std::string& strLedger)
+    static bool jvParseLedger (Json::Value& jvRequest, std::string const& strLedger)
     {
         if (strLedger == "current" || strLedger == "closed" || strLedger == "validated")
         {
@@ -56,7 +56,7 @@ private:
     }
 
     // Build a object { "currency" : "XYZ", "issuer" : "rXYX" }
-    static Json::Value jvParseCurrencyIssuer (const std::string& strCurrencyIssuer)
+    static Json::Value jvParseCurrencyIssuer (std::string const& strCurrencyIssuer)
     {
         static boost::regex reCurIss ("\\`([[:alpha:]]{3})(?:/(.+))?\\'");
 
@@ -86,9 +86,9 @@ private:
     }
 
 private:
-    typedef Json::Value (RPCParser::*parseFuncPtr) (const Json::Value& jvParams);
+    typedef Json::Value (RPCParser::*parseFuncPtr) (Json::Value const& jvParams);
 
-    Json::Value parseAsIs (const Json::Value& jvParams)
+    Json::Value parseAsIs (Json::Value const& jvParams)
     {
         Json::Value v (Json::objectValue);
 
@@ -98,7 +98,7 @@ private:
         return v;
     }
 
-    Json::Value parseInternal (const Json::Value& jvParams)
+    Json::Value parseInternal (Json::Value const& jvParams)
     {
         Json::Value v (Json::objectValue);
         v["internal_command"] = jvParams[0u];
@@ -114,7 +114,7 @@ private:
     }
 
     // fetch_info [clear]
-    Json::Value parseFetchInfo (const Json::Value& jvParams)
+    Json::Value parseFetchInfo (Json::Value const& jvParams)
     {
         Json::Value     jvRequest (Json::objectValue);
         unsigned int    iParams = jvParams.size ();
@@ -126,7 +126,7 @@ private:
     }
 
     // account_tx accountID [ledger_min [ledger_max [limit [offset]]]] [binary] [count] [descending]
-    Json::Value parseAccountTransactions (const Json::Value& jvParams)
+    Json::Value parseAccountTransactions (Json::Value const& jvParams)
     {
         Json::Value     jvRequest (Json::objectValue);
         RippleAddress   raAccount;
@@ -194,7 +194,7 @@ private:
     }
 
     // tx_account accountID [ledger_min [ledger_max [limit]]]] [binary] [count] [forward]
-    Json::Value parseTxAccount (const Json::Value& jvParams)
+    Json::Value parseTxAccount (Json::Value const& jvParams)
     {
         Json::Value     jvRequest (Json::objectValue);
         RippleAddress   raAccount;
@@ -263,7 +263,7 @@ private:
     // proof: 0 or 1
     //
     // Mnemonic: taker pays --> offer --> taker gets
-    Json::Value parseBookOffers (const Json::Value& jvParams)
+    Json::Value parseBookOffers (Json::Value const& jvParams)
     {
         Json::Value     jvRequest (Json::objectValue);
 
@@ -316,7 +316,7 @@ private:
     }
 
     // connect <ip> [port]
-    Json::Value parseConnect (const Json::Value& jvParams)
+    Json::Value parseConnect (Json::Value const& jvParams)
     {
         Json::Value     jvRequest (Json::objectValue);
 
@@ -329,13 +329,13 @@ private:
     }
 
     // Return an error for attemping to subscribe/unsubscribe via RPC.
-    Json::Value parseEvented (const Json::Value& jvParams)
+    Json::Value parseEvented (Json::Value const& jvParams)
     {
         return rpcError (rpcNO_EVENTS);
     }
 
     // feature [<feature>] [true|false]
-    Json::Value parseFeature (const Json::Value& jvParams)
+    Json::Value parseFeature (Json::Value const& jvParams)
     {
         Json::Value     jvRequest (Json::objectValue);
 
@@ -349,7 +349,7 @@ private:
     }
 
     // get_counts [<min_count>]
-    Json::Value parseGetCounts (const Json::Value& jvParams)
+    Json::Value parseGetCounts (Json::Value const& jvParams)
     {
         Json::Value     jvRequest (Json::objectValue);
 
@@ -360,7 +360,7 @@ private:
     }
 
     // json <command> <json>
-    Json::Value parseJson (const Json::Value& jvParams)
+    Json::Value parseJson (Json::Value const& jvParams)
     {
         Json::Reader    reader;
         Json::Value     jvRequest;
@@ -382,7 +382,7 @@ private:
     }
 
     // ledger [id|index|current|closed|validated] [full]
-    Json::Value parseLedger (const Json::Value& jvParams)
+    Json::Value parseLedger (Json::Value const& jvParams)
     {
         Json::Value     jvRequest (Json::objectValue);
 
@@ -402,7 +402,7 @@ private:
     }
 
     // ledger_header <id>|<index>
-    Json::Value parseLedgerId (const Json::Value& jvParams)
+    Json::Value parseLedgerId (Json::Value const& jvParams)
     {
         Json::Value     jvRequest (Json::objectValue);
 
@@ -423,7 +423,7 @@ private:
     // log_level:                           Get log levels
     // log_level <severity>:                Set master log level to the specified severity
     // log_level <partition> <severity>:    Set specified partition to specified severity
-    Json::Value parseLogLevel (const Json::Value& jvParams)
+    Json::Value parseLogLevel (Json::Value const& jvParams)
     {
         Json::Value     jvRequest (Json::objectValue);
 
@@ -445,24 +445,24 @@ private:
     // account_info <account>|<nickname>|<account_public_key>
     // account_info <seed>|<pass_phrase>|<key> [<ledger>]
     // account_offers <account>|<nickname>|<account_public_key> [<ledger>]
-    Json::Value parseAccountItems (const Json::Value& jvParams)
+    Json::Value parseAccountItems (Json::Value const& jvParams)
     {
         return parseAccountRaw (jvParams, false);
     }
 
-    Json::Value parseAccountCurrencies (const Json::Value& jvParams)
+    Json::Value parseAccountCurrencies (Json::Value const& jvParams)
     {
         return parseAccountRaw (jvParams, false);
     }
 
     // account_lines <account> <account>|"" [<ledger>]
-    Json::Value parseAccountLines (const Json::Value& jvParams)
+    Json::Value parseAccountLines (Json::Value const& jvParams)
     {
         return parseAccountRaw (jvParams, true);
     }
 
     // TODO: Get index from an alternate syntax: rXYZ:<index>
-    Json::Value parseAccountRaw (const Json::Value& jvParams, bool bPeer)
+    Json::Value parseAccountRaw (Json::Value const& jvParams, bool bPeer)
     {
         std::string     strIdent    = jvParams[0u].asString ();
         unsigned int    iCursor     = jvParams.size ();
@@ -514,7 +514,7 @@ private:
     }
 
     // proof_create [<difficulty>] [<secret>]
-    Json::Value parseProofCreate (const Json::Value& jvParams)
+    Json::Value parseProofCreate (Json::Value const& jvParams)
     {
         Json::Value     jvRequest;
 
@@ -528,7 +528,7 @@ private:
     }
 
     // proof_solve <token>
-    Json::Value parseProofSolve (const Json::Value& jvParams)
+    Json::Value parseProofSolve (Json::Value const& jvParams)
     {
         Json::Value     jvRequest;
 
@@ -538,7 +538,7 @@ private:
     }
 
     // proof_verify <token> <solution> [<difficulty>] [<secret>]
-    Json::Value parseProofVerify (const Json::Value& jvParams)
+    Json::Value parseProofVerify (Json::Value const& jvParams)
     {
         Json::Value     jvRequest;
 
@@ -555,7 +555,7 @@ private:
     }
 
     // ripple_path_find <json> [<ledger>]
-    Json::Value parseRipplePathFind (const Json::Value& jvParams)
+    Json::Value parseRipplePathFind (Json::Value const& jvParams)
     {
         Json::Reader    reader;
         Json::Value     jvRequest;
@@ -581,7 +581,7 @@ private:
     // sign <private_key> <json> offline
     // submit <private_key> <json>
     // submit <tx_blob>
-    Json::Value parseSignSubmit (const Json::Value& jvParams)
+    Json::Value parseSignSubmit (Json::Value const& jvParams)
     {
         Json::Value     txJSON;
         Json::Reader    reader;
@@ -616,7 +616,7 @@ private:
     }
 
     // sms <text>
-    Json::Value parseSMS (const Json::Value& jvParams)
+    Json::Value parseSMS (Json::Value const& jvParams)
     {
         Json::Value     jvRequest;
 
@@ -626,7 +626,7 @@ private:
     }
 
     // tx <transaction_id>
-    Json::Value parseTx (const Json::Value& jvParams)
+    Json::Value parseTx (Json::Value const& jvParams)
     {
         Json::Value jvRequest;
 
@@ -641,7 +641,7 @@ private:
     }
 
     // tx_history <index>
-    Json::Value parseTxHistory (const Json::Value& jvParams)
+    Json::Value parseTxHistory (Json::Value const& jvParams)
     {
         Json::Value jvRequest;
 
@@ -651,7 +651,7 @@ private:
     }
 
     // unl_add <domain>|<node_public> [<comment>]
-    Json::Value parseUnlAdd (const Json::Value& jvParams)
+    Json::Value parseUnlAdd (Json::Value const& jvParams)
     {
         std::string strNode     = jvParams[0u].asString ();
         std::string strComment  = (jvParams.size () == 2) ? jvParams[1u].asString () : "";
@@ -674,7 +674,7 @@ private:
     }
 
     // unl_delete <domain>|<public_key>
-    Json::Value parseUnlDelete (const Json::Value& jvParams)
+    Json::Value parseUnlDelete (Json::Value const& jvParams)
     {
         Json::Value jvRequest;
 
@@ -687,7 +687,7 @@ private:
     //
     // NOTE: It is poor security to specify secret information on the command line.  This information might be saved in the command
     // shell history file (e.g. .bash_history) and it may be leaked via the process status command (i.e. ps).
-    Json::Value parseValidationCreate (const Json::Value& jvParams)
+    Json::Value parseValidationCreate (Json::Value const& jvParams)
     {
         Json::Value jvRequest;
 
@@ -701,7 +701,7 @@ private:
     //
     // NOTE: It is poor security to specify secret information on the command line.  This information might be saved in the command
     // shell history file (e.g. .bash_history) and it may be leaked via the process status command (i.e. ps).
-    Json::Value parseValidationSeed (const Json::Value& jvParams)
+    Json::Value parseValidationSeed (Json::Value const& jvParams)
     {
         Json::Value jvRequest;
 
@@ -712,7 +712,7 @@ private:
     }
 
     // wallet_accounts <seed>
-    Json::Value parseWalletAccounts (const Json::Value& jvParams)
+    Json::Value parseWalletAccounts (Json::Value const& jvParams)
     {
         Json::Value jvRequest;
 
@@ -723,7 +723,7 @@ private:
 
     // wallet_propose [<passphrase>]
     // <passphrase> is only for testing. Master seeds should only be generated randomly.
-    Json::Value parseWalletPropose (const Json::Value& jvParams)
+    Json::Value parseWalletPropose (Json::Value const& jvParams)
     {
         Json::Value jvRequest;
 
@@ -734,7 +734,7 @@ private:
     }
 
     // wallet_seed [<seed>|<passphrase>|<passkey>]
-    Json::Value parseWalletSeed (const Json::Value& jvParams)
+    Json::Value parseWalletSeed (Json::Value const& jvParams)
     {
         Json::Value jvRequest;
 
@@ -747,7 +747,7 @@ private:
 public:
     //--------------------------------------------------------------------------
 
-    static std::string EncodeBase64 (const std::string& s)
+    static std::string EncodeBase64 (std::string const& s)
     {
         // FIXME: This performs terribly
         BIO* b64, *bmem;
@@ -886,15 +886,15 @@ struct RPCCallImp
 {
     // VFALCO NOTE Is this a to-do comment or a doc comment?
     // Place the async result somewhere useful.
-    static void callRPCHandler (Json::Value* jvOutput, const Json::Value& jvInput)
+    static void callRPCHandler (Json::Value* jvOutput, Json::Value const& jvInput)
     {
         (*jvOutput) = jvInput;
     }
 
     static bool onResponse (
-        std::function<void (const Json::Value& jvInput)> callbackFuncP,
+        std::function<void (Json::Value const& jvInput)> callbackFuncP,
             const boost::system::error_code& ecResult, int iStatus,
-                const std::string& strData)
+                std::string const& strData)
     {
         if (callbackFuncP)
         {
@@ -931,9 +931,9 @@ struct RPCCallImp
     }
 
     // Build the request.
-    static void onRequest (const std::string& strMethod, const Json::Value& jvParams,
-        const std::map<std::string, std::string>& mHeaders, const std::string& strPath,
-            boost::asio::streambuf& sb, const std::string& strHost)
+    static void onRequest (std::string const& strMethod, Json::Value const& jvParams,
+        const std::map<std::string, std::string>& mHeaders, std::string const& strPath,
+            boost::asio::streambuf& sb, std::string const& strHost)
     {
         WriteLog (lsDEBUG, RPCParser) << "requestRPC: strPath='" << strPath << "'";
 
@@ -1069,11 +1069,11 @@ int RPCCall::fromCommandLine (const std::vector<std::string>& vCmd)
 
 void RPCCall::fromNetwork (
     boost::asio::io_service& io_service,
-    const std::string& strIp, const int iPort,
-    const std::string& strUsername, const std::string& strPassword,
-    const std::string& strPath, const std::string& strMethod,
-    const Json::Value& jvParams, const bool bSSL,
-    std::function<void (const Json::Value& jvInput)> callbackFuncP)
+    std::string const& strIp, const int iPort,
+    std::string const& strUsername, std::string const& strPassword,
+    std::string const& strPath, std::string const& strMethod,
+    Json::Value const& jvParams, const bool bSSL,
+    std::function<void (Json::Value const& jvInput)> callbackFuncP)
 {
     // Connect to localhost
     if (!getConfig ().QUIET)

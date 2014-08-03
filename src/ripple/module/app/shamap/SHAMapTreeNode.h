@@ -61,7 +61,7 @@ public:
 
     // raw node functions
     SHAMapTreeNode (Blob const & data, std::uint32_t seq,
-                    SHANodeFormat format, uint256 const & hash, bool hashValid);
+                    SHANodeFormat format, uint256 const& hash, bool hashValid);
     void addRaw (Serializer&, SHANodeFormat format);
 
     virtual bool isPopulated () const
@@ -129,7 +129,7 @@ public:
     {
         return !mItem;
     }
-    bool setChildHash (int m, uint256 const & hash);
+    bool setChildHash (int m, uint256 const& hash);
     bool isEmptyBranch (int m) const
     {
         return (mIsBranch & (1 << m)) == 0;

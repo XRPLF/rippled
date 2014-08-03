@@ -37,15 +37,15 @@ public:
         return (ltOFFER);
     }
 
-    const STAmount& getTakerPays ()
+    STAmount const& getTakerPays ()
     {
         return (mTakerPays);
     }
-    const STAmount& getTakerGets ()
+    STAmount const& getTakerGets ()
     {
         return (mTakerGets);
     }
-    const RippleAddress& getAccount ()
+    RippleAddress const& getAccount ()
     {
         return (mAccount);
     }

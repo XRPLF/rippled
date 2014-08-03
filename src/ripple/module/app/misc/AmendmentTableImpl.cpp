@@ -64,7 +64,7 @@ public:
 
     AmendmentState* addKnown (const char* amendmentID, const char* friendlyName,
         bool veto) override;
-    uint256 get (const std::string& name) override;
+    uint256 get (std::string const& name) override;
 
     bool veto (uint256 const& amendment) override;
     bool unVeto (uint256 const& amendment) override;
@@ -135,7 +135,7 @@ AmendmentTableImpl::getCreate (uint256 const& amendmentHash, bool create)
 }
 
 uint256
-AmendmentTableImpl::get (const std::string& name)
+AmendmentTableImpl::get (std::string const& name)
 {
     for (auto const& e : m_amendmentMap)
     {

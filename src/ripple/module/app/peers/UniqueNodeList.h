@@ -52,18 +52,18 @@ public:
     virtual void start () = 0;
 
     // VFALCO TODO rename all these, the "node" prefix is redundant (lol)
-    virtual void nodeAddPublic (const RippleAddress& naNodePublic, ValidatorSource vsWhy, const std::string& strComment) = 0;
-    virtual void nodeAddDomain (std::string strDomain, ValidatorSource vsWhy, const std::string& strComment = "") = 0;
-    virtual void nodeRemovePublic (const RippleAddress& naNodePublic) = 0;
+    virtual void nodeAddPublic (RippleAddress const& naNodePublic, ValidatorSource vsWhy, std::string const& strComment) = 0;
+    virtual void nodeAddDomain (std::string strDomain, ValidatorSource vsWhy, std::string const& strComment = "") = 0;
+    virtual void nodeRemovePublic (RippleAddress const& naNodePublic) = 0;
     virtual void nodeRemoveDomain (std::string strDomain) = 0;
     virtual void nodeReset () = 0;
 
     virtual void nodeScore () = 0;
 
-    virtual bool nodeInUNL (const RippleAddress& naNodePublic) = 0;
-    virtual bool nodeInCluster (const RippleAddress& naNodePublic) = 0;
-    virtual bool nodeInCluster (const RippleAddress& naNodePublic, std::string& name) = 0;
-    virtual bool nodeUpdate (const RippleAddress& naNodePublic, ClusterNodeStatus const& cnsStatus) = 0;
+    virtual bool nodeInUNL (RippleAddress const& naNodePublic) = 0;
+    virtual bool nodeInCluster (RippleAddress const& naNodePublic) = 0;
+    virtual bool nodeInCluster (RippleAddress const& naNodePublic, std::string& name) = 0;
+    virtual bool nodeUpdate (RippleAddress const& naNodePublic, ClusterNodeStatus const& cnsStatus) = 0;
     virtual std::map<RippleAddress, ClusterNodeStatus> getClusterStatus () = 0;
     virtual std::uint32_t getClusterFee () = 0;
     virtual void addClusterStatus (Json::Value&) = 0;

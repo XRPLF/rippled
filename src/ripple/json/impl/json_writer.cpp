@@ -90,7 +90,7 @@ std::string valueToString( double value )
     snprintf(buffer, sizeof(buffer), "%.16g", value);
 #endif
     return buffer;
-} 
+}
 
 std::string valueToString ( bool value )
 {
@@ -259,7 +259,7 @@ FastWriter::writeValue ( const Value& value )
                 it != members.end ();
                 ++it )
         {
-            const std::string& name = *it;
+            std::string const& name = *it;
 
             if ( it != members.begin () )
                 document_ += ",";
@@ -348,7 +348,7 @@ StyledWriter::writeValue ( const Value& value )
 
             while ( true )
             {
-                const std::string& name = *it;
+                std::string const& name = *it;
                 const Value& childValue = value[name];
                 writeCommentBeforeValue ( childValue );
                 writeWithIndent ( valueToQuotedString ( name.c_str () ) );
@@ -474,7 +474,7 @@ StyledWriter::isMultineArray ( const Value& value )
 
 
 void
-StyledWriter::pushValue ( const std::string& value )
+StyledWriter::pushValue ( std::string const& value )
 {
     if ( addChildValues_ )
         childValues_.push_back ( value );
@@ -502,7 +502,7 @@ StyledWriter::writeIndent ()
 
 
 void
-StyledWriter::writeWithIndent ( const std::string& value )
+StyledWriter::writeWithIndent ( std::string const& value )
 {
     writeIndent ();
     document_ += value;
@@ -560,7 +560,7 @@ StyledWriter::hasCommentForValue ( const Value& value )
 
 
 std::string
-StyledWriter::normalizeEOL ( const std::string& text )
+StyledWriter::normalizeEOL ( std::string const& text )
 {
     std::string normalized;
     normalized.reserve ( text.length () );
@@ -659,7 +659,7 @@ StyledStreamWriter::writeValue ( const Value& value )
 
             while ( true )
             {
-                const std::string& name = *it;
+                std::string const& name = *it;
                 const Value& childValue = value[name];
                 writeCommentBeforeValue ( childValue );
                 writeWithIndent ( valueToQuotedString ( name.c_str () ) );
@@ -785,7 +785,7 @@ StyledStreamWriter::isMultineArray ( const Value& value )
 
 
 void
-StyledStreamWriter::pushValue ( const std::string& value )
+StyledStreamWriter::pushValue ( std::string const& value )
 {
     if ( addChildValues_ )
         childValues_.push_back ( value );
@@ -814,7 +814,7 @@ StyledStreamWriter::writeIndent ()
 
 
 void
-StyledStreamWriter::writeWithIndent ( const std::string& value )
+StyledStreamWriter::writeWithIndent ( std::string const& value )
 {
     writeIndent ();
     *document_ << value;
@@ -872,7 +872,7 @@ StyledStreamWriter::hasCommentForValue ( const Value& value )
 
 
 std::string
-StyledStreamWriter::normalizeEOL ( const std::string& text )
+StyledStreamWriter::normalizeEOL ( std::string const& text )
 {
     std::string normalized;
     normalized.reserve ( text.length () );

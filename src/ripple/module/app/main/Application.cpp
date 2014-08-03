@@ -1091,7 +1091,7 @@ private:
     void updateTables ();
     void startNewLedger ();
     bool loadOldLedger (
-        const std::string& ledgerID, bool replay, bool isFilename);
+        std::string const& ledgerID, bool replay, bool isFilename);
 
     void onAnnounceAddress ();
 };
@@ -1129,7 +1129,7 @@ void ApplicationImp::startNewLedger ()
 }
 
 bool ApplicationImp::loadOldLedger (
-    const std::string& ledgerID, bool replay, bool isFileName)
+    std::string const& ledgerID, bool replay, bool isFileName)
 {
     try
     {
@@ -1405,7 +1405,7 @@ bool serverOkay (std::string& reason)
 
 //VFALCO TODO clean this up since it is just a file holding a single member function definition
 
-static std::vector<std::string> getSchema (DatabaseCon* dbc, const std::string& dbName)
+static std::vector<std::string> getSchema (DatabaseCon* dbc, std::string const& dbName)
 {
     std::vector<std::string> schema;
 
@@ -1422,7 +1422,7 @@ static std::vector<std::string> getSchema (DatabaseCon* dbc, const std::string& 
     return schema;
 }
 
-static bool schemaHas (DatabaseCon* dbc, const std::string& dbName, int line, const std::string& content)
+static bool schemaHas (DatabaseCon* dbc, std::string const& dbName, int line, std::string const& content)
 {
     std::vector<std::string> schema = getSchema (dbc, dbName);
 

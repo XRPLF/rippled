@@ -89,9 +89,9 @@ Json::Value doAccountLines (RPC::Context& context)
             if (!raPeer.isValid () ||
                 raPeer.getAccountID () == line->getAccountIDPeer ())
             {
-                const STAmount&     saBalance   = line->getBalance ();
-                const STAmount&     saLimit     = line->getLimit ();
-                const STAmount&     saLimitPeer = line->getLimitPeer ();
+                STAmount const&     saBalance   = line->getBalance ();
+                STAmount const&     saLimit     = line->getLimit ();
+                STAmount const&     saLimitPeer = line->getLimitPeer ();
 
                 Json::Value&    jPeer   = jsonLines.append (Json::objectValue);
 

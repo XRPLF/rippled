@@ -30,7 +30,7 @@ std::string FormatFullVersion ()
 }
 
 
-Json::Value JSONRPCError (int code, const std::string& message)
+Json::Value JSONRPCError (int code, std::string const& message)
 {
     Json::Value error (Json::objectValue);
 
@@ -87,14 +87,14 @@ std::string getHTTPHeaderTimestamp ()
     struct tm* now_gmt = gmtime (&now);
     std::string locale (setlocale (LC_TIME, nullptr));
     setlocale (LC_TIME, "C"); // we want posix (aka "C") weekday/month strings
-    strftime (buffer, sizeof (buffer), 
-        "Date: %a, %d %b %Y %H:%M:%S +0000\r\n", 
+    strftime (buffer, sizeof (buffer),
+        "Date: %a, %d %b %Y %H:%M:%S +0000\r\n",
         now_gmt);
     setlocale (LC_TIME, locale.c_str ());
     return std::string (buffer);
 }
 
-std::string HTTPReply (int nStatus, const std::string& strMsg)
+std::string HTTPReply (int nStatus, std::string const& strMsg)
 {
     if (ShouldLog (lsTRACE, RPC))
     {
@@ -153,17 +153,17 @@ std::string HTTPReply (int nStatus, const std::string& strMsg)
 
     if (getConfig ().RPC_ALLOW_REMOTE)
         ret.append ("Access-Control-Allow-Origin: *\r\n");
-    
+
     ret.append ("Content-Length: ");
     ret.append (std::to_string(strMsg.size () + 2));
     ret.append ("\r\n");
 
     ret.append ("Content-Type: application/json; charset=UTF-8\r\n");
-    
+
     ret.append ("Server: " SYSTEM_NAME "-json-rpc/");
     ret.append (BuildInfo::getFullVersionString ());
     ret.append ("\r\n");
-    
+
     ret.append ("\r\n");
     ret.append (strMsg);
     ret.append ("\r\n");
@@ -293,7 +293,7 @@ bool HTTPAuthorized (const std::map<std::string, std::string>& mapHeaders)
 // 1.2 spec: http://groups.google.com/group/json-rpc/web/json-rpc-over-http
 //
 
-std::string JSONRPCRequest (const std::string& strMethod, const Json::Value& params, const Json::Value& id)
+std::string JSONRPCRequest (std::string const& strMethod, Json::Value const& params, Json::Value const& id)
 {
     Json::Value request;
     request[jss::method] = strMethod;
@@ -303,7 +303,7 @@ std::string JSONRPCRequest (const std::string& strMethod, const Json::Value& par
     return writer.write (request) + "\n";
 }
 
-std::string JSONRPCReply (const Json::Value& result, const Json::Value& error, const Json::Value& id)
+std::string JSONRPCReply (Json::Value const& result, Json::Value const& error, Json::Value const& id)
 {
     Json::Value reply (Json::objectValue);
     reply[jss::result] = result;
@@ -313,7 +313,7 @@ std::string JSONRPCReply (const Json::Value& result, const Json::Value& error, c
     return writer.write (reply) + "\n";
 }
 
-void ErrorReply (std::ostream& stream, const Json::Value& objError, const Json::Value& id)
+void ErrorReply (std::ostream& stream, Json::Value const& objError, Json::Value const& id)
 {
     // Send error reply from json-rpc error object
     int nStatus = 500;
@@ -327,4 +327,3 @@ void ErrorReply (std::ostream& stream, const Json::Value& objError, const Json::
 }
 
 } // ripple
-

@@ -34,7 +34,7 @@ AccountState::AccountState (RippleAddress const& naAccountID)
     }
 }
 
-AccountState::AccountState (SLE::ref ledgerEntry, const RippleAddress& naAccountID) :
+AccountState::AccountState (SLE::ref ledgerEntry, RippleAddress const& naAccountID) :
     mAccountID (naAccountID), mLedgerEntry (ledgerEntry), mValid (false)
 {
     if (!mLedgerEntry)

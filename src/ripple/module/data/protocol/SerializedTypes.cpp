@@ -148,7 +148,7 @@ bool STVector256::isEquivalent (const SerializedType& t) const
 
 bool STVector256::hasValue (uint256 const& v) const
 {
-    BOOST_FOREACH (uint256 const & hash, mValue)
+    BOOST_FOREACH (uint256 const& hash, mValue)
     {
         if (hash == v)
             return true;
@@ -182,7 +182,7 @@ RippleAddress STAccount::getValueNCA () const
     return a;
 }
 
-void STAccount::setValueNCA (const RippleAddress& nca)
+void STAccount::setValueNCA (RippleAddress const& nca)
 {
     setValueH160 (nca.getAccountID ());
 }

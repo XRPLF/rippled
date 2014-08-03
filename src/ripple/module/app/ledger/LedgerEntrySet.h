@@ -141,7 +141,7 @@ public:
         ++mSeq;
     }
 
-    void init (Ledger::ref ledger, uint256 const & transactionID,
+    void init (Ledger::ref ledger, uint256 const& transactionID,
                std::uint32_t ledgerID, TransactionEngineParams params);
 
     void clear ();
@@ -157,8 +157,8 @@ public:
     }
 
     // basic entry functions
-    SLE::pointer getEntry (uint256 const & index, LedgerEntryAction&);
-    LedgerEntryAction hasEntry (uint256 const & index) const;
+    SLE::pointer getEntry (uint256 const& index, LedgerEntryAction&);
+    LedgerEntryAction hasEntry (uint256 const& index) const;
     void entryCache (SLE::ref);     // Add this entry to the cache
     void entryCreate (SLE::ref);    // This entry will be created
     void entryDelete (SLE::ref);    // This entry will be deleted
@@ -166,8 +166,8 @@ public:
     bool hasChanges ();             // True if LES has any changes
 
     // higher-level ledger functions
-    SLE::pointer entryCreate (LedgerEntryType letType, uint256 const & uIndex);
-    SLE::pointer entryCache (LedgerEntryType letType, uint256 const & uIndex);
+    SLE::pointer entryCreate (LedgerEntryType letType, uint256 const& uIndex);
+    SLE::pointer entryCache (LedgerEntryType letType, uint256 const& uIndex);
 
     // Directory functions.
     TER dirAdd (
@@ -192,7 +192,7 @@ public:
     TER dirCount (uint256 const& uDirIndex, std::uint32_t & uCount);
 
     uint256 getNextLedgerIndex (uint256 const& uHash);
-    uint256 getNextLedgerIndex (uint256 const& uHash, uint256 const & uEnd);
+    uint256 getNextLedgerIndex (uint256 const& uHash, uint256 const& uEnd);
 
     void ownerCountAdjust (Account const& uOwnerID, int iAmount,
         SLE::ref sleAccountRoot = SLE::pointer ());
@@ -237,7 +237,7 @@ public:
         Currency const& currency,
         Account const& issuer);
 
-    bool isGlobalFrozen (const Account & issuer);
+    bool isGlobalFrozen (Account const& issuer);
 
     STAmount rippleTransferFee (
         Account const& uSenderID, Account const& uReceiverID,
@@ -265,8 +265,8 @@ public:
         const bool      bAuth,
         const bool      bNoRipple,
         const bool      bFreeze,
-        const STAmount& saSrcBalance,
-        const STAmount& saSrcLimit,
+        STAmount const& saSrcBalance,
+        STAmount const& saSrcLimit,
         const std::uint32_t uSrcQualityIn = 0,
         const std::uint32_t uSrcQualityOut = 0);
     TER trustDelete (
@@ -325,7 +325,7 @@ private:
     {}
 
     SLE::pointer getForMod (
-        uint256 const & node, Ledger::ref ledger,
+        uint256 const& node, Ledger::ref ledger,
         NodeToLedgerEntry& newMods);
 
     bool threadTx (

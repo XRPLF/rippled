@@ -141,9 +141,9 @@ public:
         void* dest, std::size_t size, bool checked, Alphabet const& alphabet);
 
     static bool decode (const char* psz, Blob& vchRet, Alphabet const& alphabet = getRippleAlphabet ());
-    static bool decode (const std::string& str, Blob& vchRet);
+    static bool decode (std::string const& str, Blob& vchRet);
     static bool decodeWithCheck (const char* psz, Blob& vchRet, Alphabet const& alphabet = getRippleAlphabet());
-    static bool decodeWithCheck (const std::string& str, Blob& vchRet, Alphabet const& alphabet = getRippleAlphabet());
+    static bool decodeWithCheck (std::string const& str, Blob& vchRet, Alphabet const& alphabet = getRippleAlphabet());
 };
 
 }

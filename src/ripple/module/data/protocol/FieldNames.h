@@ -131,7 +131,7 @@ public:
     ~SField ();
 
     static SField::ref getField (int fieldCode);
-    static SField::ref getField (const std::string& fieldName);
+    static SField::ref getField (std::string const& fieldName);
     static SField::ref getField (int type, int value)
     {
         return getField (FIELD_CODE (type, value));

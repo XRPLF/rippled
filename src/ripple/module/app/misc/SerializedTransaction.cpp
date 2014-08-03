@@ -180,7 +180,7 @@ Blob SerializedTransaction::getSignature () const
     }
 }
 
-void SerializedTransaction::sign (const RippleAddress& naAccountPrivate)
+void SerializedTransaction::sign (RippleAddress const& naAccountPrivate)
 {
     Blob signature;
     naAccountPrivate.accountPrivateSign (getSigningHash (), signature);
@@ -215,7 +215,7 @@ bool SerializedTransaction::checkSign () const
     return false;
 }
 
-bool SerializedTransaction::checkSign (const RippleAddress& naAccountPublic) const
+bool SerializedTransaction::checkSign (RippleAddress const& naAccountPublic) const
 {
     try
     {
@@ -229,12 +229,12 @@ bool SerializedTransaction::checkSign (const RippleAddress& naAccountPublic) con
     }
 }
 
-void SerializedTransaction::setSigningPubKey (const RippleAddress& naSignPubKey)
+void SerializedTransaction::setSigningPubKey (RippleAddress const& naSignPubKey)
 {
     setFieldVL (sfSigningPubKey, naSignPubKey.getAccountPublic ());
 }
 
-void SerializedTransaction::setSourceAccount (const RippleAddress& naSource)
+void SerializedTransaction::setSourceAccount (RippleAddress const& naSource)
 {
     setFieldAccount (sfAccount, naSource);
 }
@@ -282,7 +282,7 @@ std::string SerializedTransaction::getSQL (std::uint32_t inLedger, char status) 
 }
 
 std::string SerializedTransaction::getMetaSQL (std::uint32_t inLedger,
-                                               const std::string& escapedMetaData) const
+                                               std::string const& escapedMetaData) const
 {
     Serializer s;
     add (s);
@@ -301,7 +301,7 @@ std::string SerializedTransaction::getSQL (Serializer rawTxn, std::uint32_t inLe
 }
 
 std::string SerializedTransaction::getMetaSQL (Serializer rawTxn, std::uint32_t inLedger, char status,
-        const std::string& escapedMetaData) const
+        std::string const& escapedMetaData) const
 {
     static boost::format bfTrans ("('%s', '%s', '%s', '%d', '%d', '%c', %s, %s)");
     std::string rTxn    = sqlEscape (rawTxn.peekData ());

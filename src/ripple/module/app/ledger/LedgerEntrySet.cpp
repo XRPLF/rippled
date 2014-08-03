@@ -386,7 +386,7 @@ SLE::pointer LedgerEntrySet::getForMod (uint256 const& node, Ledger::ref ledger,
 
 }
 
-bool LedgerEntrySet::threadTx (const RippleAddress& threadTo, Ledger::ref ledger,
+bool LedgerEntrySet::threadTx (RippleAddress const& threadTo, Ledger::ref ledger,
                                NodeToLedgerEntry& newMods)
 {
 #ifdef META_DEBUG
@@ -1302,7 +1302,7 @@ STAmount LedgerEntrySet::accountHolds (
     return saAmount;
 }
 
-bool LedgerEntrySet::isGlobalFrozen (const Account& issuer)
+bool LedgerEntrySet::isGlobalFrozen (Account const& issuer)
 {
     if (!enforceFreeze () || isXRP (issuer))
         return false;
@@ -1351,7 +1351,7 @@ bool LedgerEntrySet::isFrozen(
 // If the issuer is the same as account, funds are unlimited, use result is
 // saDefault.
 STAmount LedgerEntrySet::accountFunds (
-    Account const& account, const STAmount& saDefault, FreezeHandling zeroIfFrozen)
+    Account const& account, STAmount const& saDefault, FreezeHandling zeroIfFrozen)
 {
     STAmount    saFunds;
 
@@ -1384,7 +1384,7 @@ STAmount LedgerEntrySet::rippleTransferFee (
     Account const& uSenderID,
     Account const& uReceiverID,
     Account const& issuer,
-    const STAmount& saAmount)
+    STAmount const& saAmount)
 {
     if (uSenderID != issuer && uReceiverID != issuer)
     {
@@ -1419,9 +1419,9 @@ TER LedgerEntrySet::trustCreate (
     const bool      bAuth,              // --> authorize account.
     const bool      bNoRipple,          // --> others cannot ripple through
     const bool      bFreeze,            // --> funds cannot leave
-    const STAmount& saBalance,          // --> balance of account being set.
+    STAmount const& saBalance,          // --> balance of account being set.
                                         // Issuer should be noAccount()
-    const STAmount& saLimit,            // --> limit for account being set.
+    STAmount const& saLimit,            // --> limit for account being set.
                                         // Issuer should be the account being set.
     const std::uint32_t uQualityIn,
     const std::uint32_t uQualityOut)
@@ -1550,7 +1550,7 @@ TER LedgerEntrySet::trustDelete (
 // --> bCheckIssuer : normally require issuer to be involved.
 TER LedgerEntrySet::rippleCredit (
     Account const& uSenderID, Account const& uReceiverID,
-    const STAmount& saAmount, bool bCheckIssuer)
+    STAmount const& saAmount, bool bCheckIssuer)
 {
     auto issuer = saAmount.getIssuer ();
     auto currency = saAmount.getCurrency ();
@@ -1682,7 +1682,7 @@ TER LedgerEntrySet::rippleCredit (
 // <-- saActual: Amount actually cost.  Sender pay's fees.
 TER LedgerEntrySet::rippleSend (
     Account const& uSenderID, Account const& uReceiverID,
-    const STAmount& saAmount, STAmount& saActual)
+    STAmount const& saAmount, STAmount& saActual)
 {
     auto const issuer   = saAmount.getIssuer ();
     TER             terResult;
@@ -1726,7 +1726,7 @@ TER LedgerEntrySet::rippleSend (
 
 TER LedgerEntrySet::accountSend (
     Account const& uSenderID, Account const& uReceiverID,
-    const STAmount& saAmount)
+    STAmount const& saAmount)
 {
     assert (saAmount >= zero);
 

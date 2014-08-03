@@ -77,7 +77,7 @@ std::string Base58::raw_encode (
         unsigned int c = rem.getuint ();
         str += alphabet [c];
     }
-    
+
     for (const unsigned char* p = end-2; p >= begin && *p == 0; p--)
         str += alphabet [0];
 
@@ -204,7 +204,7 @@ bool Base58::decode (const char* psz, Blob& vchRet, Alphabet const& alphabet)
     return true;
 }
 
-bool Base58::decode (const std::string& str, Blob& vchRet)
+bool Base58::decode (std::string const& str, Blob& vchRet)
 {
     return decode (str.c_str (), vchRet);
 }
@@ -232,10 +232,9 @@ bool Base58::decodeWithCheck (const char* psz, Blob& vchRet, Alphabet const& alp
     return true;
 }
 
-bool Base58::decodeWithCheck (const std::string& str, Blob& vchRet, Alphabet const& alphabet)
+bool Base58::decodeWithCheck (std::string const& str, Blob& vchRet, Alphabet const& alphabet)
 {
     return decodeWithCheck (str.c_str (), vchRet, alphabet);
 }
 
 }
-

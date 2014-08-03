@@ -31,11 +31,11 @@ public:
 
     static pointer New (InfoSub::Source& source,
         boost::asio::io_service& io_service, JobQueue& jobQueue,
-            const std::string& strUrl, const std::string& strUsername,
-            const std::string& strPassword);
+            std::string const& strUrl, std::string const& strUsername,
+            std::string const& strPassword);
 
-    virtual void setUsername (const std::string& strUsername) = 0;
-    virtual void setPassword (const std::string& strPassword) = 0;
+    virtual void setUsername (std::string const& strUsername) = 0;
+    virtual void setPassword (std::string const& strPassword) = 0;
 
 protected:
     explicit RPCSub (InfoSub::Source& source);

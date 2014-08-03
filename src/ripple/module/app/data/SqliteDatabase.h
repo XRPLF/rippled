@@ -106,11 +106,11 @@ protected:
     sqlite3_stmt* statement;
 
 public:
-    // VFALCO TODO This is quite a convoluted interface. A mysterious "aux" connection? 
+    // VFALCO TODO This is quite a convoluted interface. A mysterious "aux" connection?
     //             Why not just have two SqliteDatabase objects?
     //
     SqliteStatement (SqliteDatabase* db, const char* statement, bool aux = false);
-    SqliteStatement (SqliteDatabase* db, const std::string& statement, bool aux = false);
+    SqliteStatement (SqliteDatabase* db, std::string const& statement, bool aux = false);
     ~SqliteStatement ();
 
     sqlite3_stmt* peekStatement ();
@@ -120,8 +120,8 @@ public:
     int bindStatic (int position, const void* data, int length);
     int bindStatic (int position, Blob const& value);
 
-    int bind (int position, const std::string& value);
-    int bindStatic (int position, const std::string& value);
+    int bind (int position, std::string const& value);
+    int bindStatic (int position, std::string const& value);
 
     int bind (int position, std::uint32_t value);
     int bind (int position);

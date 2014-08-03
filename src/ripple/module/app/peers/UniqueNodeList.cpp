@@ -188,7 +188,7 @@ public:
     //--------------------------------------------------------------------------
 
     // Add a trusted node.  Called by RPC or other source.
-    void nodeAddPublic (const RippleAddress& naNodePublic, ValidatorSource vsWhy, const std::string& strComment)
+    void nodeAddPublic (RippleAddress const& naNodePublic, ValidatorSource vsWhy, std::string const& strComment)
     {
         seedNode    snCurrent;
 
@@ -225,7 +225,7 @@ public:
     // Queue a domain for a single attempt fetch a ripple.txt.
     // --> strComment: only used on vsManual
     // YYY As a lot of these may happen at once, would be nice to wrap multiple calls in a transaction.
-    void nodeAddDomain (std::string strDomain, ValidatorSource vsWhy, const std::string& strComment)
+    void nodeAddDomain (std::string strDomain, ValidatorSource vsWhy, std::string const& strComment)
     {
         boost::trim (strDomain);
         boost::to_lower (strDomain);
@@ -268,7 +268,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void nodeRemovePublic (const RippleAddress& naNodePublic)
+    void nodeRemovePublic (RippleAddress const& naNodePublic)
     {
         {
             Database* db = getApp().getWalletDB ()->getDB ();
@@ -330,7 +330,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    bool nodeInUNL (const RippleAddress& naNodePublic)
+    bool nodeInUNL (RippleAddress const& naNodePublic)
     {
         ScopedUNLLockType sl (mUNLLock);
 
@@ -339,7 +339,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    bool nodeInCluster (const RippleAddress& naNodePublic)
+    bool nodeInCluster (RippleAddress const& naNodePublic)
     {
         ScopedUNLLockType sl (mUNLLock);
         return m_clusterNodes.end () != m_clusterNodes.find (naNodePublic);
@@ -347,7 +347,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    bool nodeInCluster (const RippleAddress& naNodePublic, std::string& name)
+    bool nodeInCluster (RippleAddress const& naNodePublic, std::string& name)
     {
         ScopedUNLLockType sl (mUNLLock);
         std::map<RippleAddress, ClusterNodeStatus>::iterator it = m_clusterNodes.find (naNodePublic);
@@ -361,7 +361,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    bool nodeUpdate (const RippleAddress& naNodePublic, ClusterNodeStatus const& cnsStatus)
+    bool nodeUpdate (RippleAddress const& naNodePublic, ClusterNodeStatus const& cnsStatus)
     {
         ScopedUNLLockType sl (mUNLLock);
         return m_clusterNodes[naNodePublic].update(cnsStatus);
@@ -686,7 +686,7 @@ private:
     void trustedLoad ()
     {
         boost::regex rNode ("\\`\\s*(\\S+)[\\s]*(.*)\\'");
-        BOOST_FOREACH (const std::string & c, getConfig ().CLUSTER_NODES)
+        BOOST_FOREACH (std::string const& c, getConfig ().CLUSTER_NODES)
         {
             boost::smatch match;
 
@@ -1146,7 +1146,7 @@ private:
     //
     // VFALCO TODO Can't we take a filename or stream instead of a string?
     //
-    bool responseFetch (const std::string& strDomain, const boost::system::error_code& err, int iStatus, const std::string& strSiteFile)
+    bool responseFetch (std::string const& strDomain, const boost::system::error_code& err, int iStatus, std::string const& strSiteFile)
     {
         bool    bReject = !err && iStatus != 200;
 
@@ -1429,7 +1429,7 @@ private:
     //--------------------------------------------------------------------------
 
     // Process Section [validators_url].
-    void getValidatorsUrl (const RippleAddress& naNodePublic, Section secSite)
+    void getValidatorsUrl (RippleAddress const& naNodePublic, Section secSite)
     {
         std::string strValidatorsUrl;
         std::string strScheme;
@@ -1466,7 +1466,7 @@ private:
 
     // Process Section [ips_url].
     // If we have a Section with a single entry, fetch the url and process it.
-    void getIpsUrl (const RippleAddress& naNodePublic, Section secSite)
+    void getIpsUrl (RippleAddress const& naNodePublic, Section secSite)
     {
         std::string strIpsUrl;
         std::string strScheme;
@@ -1502,7 +1502,7 @@ private:
     //--------------------------------------------------------------------------
 
     // Given a Section with IPs, parse and persist it for a validator.
-    bool responseIps (const std::string& strSite, const RippleAddress& naNodePublic, const boost::system::error_code& err, int iStatus, const std::string& strIpsFile)
+    bool responseIps (std::string const& strSite, RippleAddress const& naNodePublic, const boost::system::error_code& err, int iStatus, std::string const& strIpsFile)
     {
         bool    bReject = !err && iStatus != 200;
 
@@ -1522,7 +1522,7 @@ private:
     }
 
     // After fetching a ripple.txt from a web site, given a Section with validators, parse and persist it.
-    bool responseValidators (const std::string& strValidatorsUrl, const RippleAddress& naNodePublic, Section secSite, const std::string& strSite, const boost::system::error_code& err, int iStatus, const std::string& strValidatorsFile)
+    bool responseValidators (std::string const& strValidatorsUrl, RippleAddress const& naNodePublic, Section secSite, std::string const& strSite, const boost::system::error_code& err, int iStatus, std::string const& strValidatorsFile)
     {
         bool    bReject = !err && iStatus != 200;
 
@@ -1547,7 +1547,7 @@ private:
     // Persist the IPs refered to by a Validator.
     // --> strSite: source of the IPs (for debugging)
     // --> naNodePublic: public key of the validating node.
-    void processIps (const std::string& strSite, const RippleAddress& naNodePublic, Section::mapped_type* pmtVecStrIps)
+    void processIps (std::string const& strSite, RippleAddress const& naNodePublic, Section::mapped_type* pmtVecStrIps)
     {
         Database*   db = getApp().getWalletDB ()->getDB ();
 
@@ -1572,7 +1572,7 @@ private:
             vstrValues.resize (std::min ((int) pmtVecStrIps->size (), REFERRAL_IPS_MAX));
 
             int iValues = 0;
-            BOOST_FOREACH (const std::string & strReferral, *pmtVecStrIps)
+            BOOST_FOREACH (std::string const& strReferral, *pmtVecStrIps)
             {
                 if (iValues == REFERRAL_VALIDATORS_MAX)
                     break;
@@ -1619,7 +1619,7 @@ private:
     // --> strValidatorsSrc: source details for display
     // --> naNodePublic: remote source public key - not valid for local
     // --> vsWhy: reason for adding validator to SeedDomains or SeedNodes.
-    int processValidators (const std::string& strSite, const std::string& strValidatorsSrc, const RippleAddress& naNodePublic, ValidatorSource vsWhy, Section::mapped_type* pmtVecStrValidators)
+    int processValidators (std::string const& strSite, std::string const& strValidatorsSrc, RippleAddress const& naNodePublic, ValidatorSource vsWhy, Section::mapped_type* pmtVecStrValidators)
     {
         Database*   db              = getApp().getWalletDB ()->getDB ();
         std::string strNodePublic   = naNodePublic.isValid () ? naNodePublic.humanNodePublic () : strValidatorsSrc;
@@ -1646,7 +1646,7 @@ private:
 
             vstrValues.reserve (std::min ((int) pmtVecStrValidators->size (), REFERRAL_VALIDATORS_MAX));
 
-            BOOST_FOREACH (const std::string & strReferral, *pmtVecStrValidators)
+            BOOST_FOREACH (std::string const& strReferral, *pmtVecStrValidators)
             {
                 if (iValues == REFERRAL_VALIDATORS_MAX)
                     break;
@@ -1719,7 +1719,7 @@ private:
     //--------------------------------------------------------------------------
 
     // Process a ripple.txt.
-    void processFile (const std::string& strDomain, const RippleAddress& naNodePublic, Section secSite)
+    void processFile (std::string const& strDomain, RippleAddress const& naNodePublic, Section secSite)
     {
         //
         // Process Validators
@@ -1748,7 +1748,7 @@ private:
     //--------------------------------------------------------------------------
 
     // Retrieve a SeedDomain from DB.
-    bool getSeedDomains (const std::string& strDomain, seedDomain& dstSeedDomain)
+    bool getSeedDomains (std::string const& strDomain, seedDomain& dstSeedDomain)
     {
         bool        bResult;
         Database*   db = getApp().getWalletDB ()->getDB ();
@@ -1849,7 +1849,7 @@ private:
     //--------------------------------------------------------------------------
 
     // Retrieve a SeedNode from DB.
-    bool getSeedNodes (const RippleAddress& naNodePublic, seedNode& dstSeedNode)
+    bool getSeedNodes (RippleAddress const& naNodePublic, seedNode& dstSeedNode)
     {
         bool        bResult;
         Database*   db = getApp().getWalletDB ()->getDB ();
@@ -1990,7 +1990,7 @@ private:
     //
     // VFALCO TODO Can't we name this processValidatorList?
     //
-    void nodeProcess (const std::string& strSite, const std::string& strValidators, const std::string& strSource)
+    void nodeProcess (std::string const& strSite, std::string const& strValidators, std::string const& strSource)
     {
         Section secValidators   = ParseSection (strValidators, true);
 

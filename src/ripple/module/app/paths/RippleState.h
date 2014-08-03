@@ -90,17 +90,17 @@ public:
         return mFlags & (!mViewLowest ? lsfLowFreeze : lsfHighFreeze);
     }
 
-    const STAmount& getBalance () const
+    STAmount const& getBalance () const
     {
         return mBalance;
     }
 
-    const STAmount& getLimit () const
+    STAmount const& getLimit () const
     {
         return  mViewLowest ? mLowLimit : mHighLimit;
     }
 
-    const STAmount& getLimitPeer () const
+    STAmount const& getLimitPeer () const
     {
         return !mViewLowest ? mLowLimit : mHighLimit;
     }

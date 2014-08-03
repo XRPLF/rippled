@@ -44,7 +44,7 @@ public:
         bitString_.SetHex (v);
     }
 
-    STBitString (SField::ref n, const std::string& v) : SerializedType (n)
+    STBitString (SField::ref n, std::string const& v) : SerializedType (n)
     {
         bitString_.SetHex (v);
     }

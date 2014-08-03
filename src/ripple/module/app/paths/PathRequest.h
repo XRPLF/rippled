@@ -64,10 +64,10 @@ public:
     Json::Value doCreate (
         const std::shared_ptr<Ledger>&,
         const RippleLineCache::pointer&,
-        const Json::Value&,
+        Json::Value const&,
         bool&);
-    Json::Value doClose (const Json::Value&);
-    Json::Value doStatus (const Json::Value&);
+    Json::Value doClose (Json::Value const&);
+    Json::Value doStatus (Json::Value const&);
 
     // update jvStatus
     Json::Value doUpdate (const std::shared_ptr<RippleLineCache>&, bool fast);
@@ -77,7 +77,7 @@ private:
     bool isValid (RippleLineCache::ref crCache);
     void setValid ();
     void resetLevel (int level);
-    int parseJson (const Json::Value&, bool complete);
+    int parseJson (Json::Value const&, bool complete);
 
     beast::Journal m_journal;
 

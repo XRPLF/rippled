@@ -39,11 +39,11 @@ public:
 
     static void fromNetwork (
         boost::asio::io_service& io_service,
-        const std::string& strIp, const int iPort,
-        const std::string& strUsername, const std::string& strPassword,
-        const std::string& strPath, const std::string& strMethod,
-        const Json::Value& jvParams, const bool bSSL,
-        std::function<void (const Json::Value& jvInput)> callbackFuncP = std::function<void (const Json::Value& jvInput)> ());
+        std::string const& strIp, const int iPort,
+        std::string const& strUsername, std::string const& strPassword,
+        std::string const& strPath, std::string const& strMethod,
+        Json::Value const& jvParams, const bool bSSL,
+        std::function<void (Json::Value const& jvInput)> callbackFuncP = std::function<void (Json::Value const& jvInput)> ());
 };
 
 } // ripple

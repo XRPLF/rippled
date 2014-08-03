@@ -199,7 +199,7 @@ public:
 
     int findTransactionsByDestination (
         std::list<Transaction::pointer>&,
-        const RippleAddress& destinationAccount,
+        RippleAddress const& destinationAccount,
         std::uint32_t startLedgerSeq, std::uint32_t endLedgerSeq,
         int maxTransactions);
 
@@ -208,7 +208,7 @@ public:
     //
 
     AccountState::pointer getAccountState (
-        Ledger::ref lrLedger, const RippleAddress& accountID);
+        Ledger::ref lrLedger, RippleAddress const& accountID);
     SLE::pointer getGenerator (
         Ledger::ref lrLedger, Account const& uGeneratorID);
 
@@ -225,7 +225,7 @@ public:
     //
 
     Json::Value getOwnerInfo (
-        Ledger::pointer lpLedger, const RippleAddress& naAccount);
+        Ledger::pointer lpLedger, RippleAddress const& naAccount);
 
     //
     // Book functions
@@ -236,7 +236,7 @@ public:
                       Account const& uTakerID,
                       const bool bProof,
                       const unsigned int iLimit,
-                      const Json::Value& jvMarker,
+                      Json::Value const& jvMarker,
                       Json::Value& jvResult);
 
     // ledger proposal/close functions
@@ -251,7 +251,7 @@ public:
         const std::list< Blob >& nodeData);
 
     bool recvValidation (
-        SerializedValidation::ref val, const std::string& source);
+        SerializedValidation::ref val, std::string const& source);
     void takePosition (int seq, SHAMap::ref position);
     SHAMap::pointer getTXMap (uint256 const& hash);
     bool hasTXSet (
@@ -358,7 +358,7 @@ public:
         return mStoredProposals;
     }
     void storeProposal (
-        LedgerProposal::ref proposal, const RippleAddress& peerPublic);
+        LedgerProposal::ref proposal, RippleAddress const& peerPublic);
     uint256 getConsensusLCL ();
     void reportFeeChange ();
 
@@ -378,7 +378,7 @@ public:
 
     //Helper function to generate SQL query to get transactions
     std::string transactionsSQL (
-        std::string selection, const RippleAddress& account,
+        std::string selection, RippleAddress const& account,
         std::int32_t minLedger, std::int32_t maxLedger,
         bool descending, std::uint32_t offset, int limit,
         bool binary, bool count, bool bAdmin);
@@ -386,12 +386,12 @@ public:
     // client information retrieval functions
     using NetworkOPs::AccountTxs;
     AccountTxs getAccountTxs (
-        const RippleAddress& account,
+        RippleAddress const& account,
         std::int32_t minLedger, std::int32_t maxLedger, bool descending,
         std::uint32_t offset, int limit, bool bAdmin);
 
     AccountTxs getTxsAccount (
-        const RippleAddress& account, std::int32_t minLedger,
+        RippleAddress const& account, std::int32_t minLedger,
         std::int32_t maxLedger, bool forward, Json::Value& token, int limit,
         bool bAdmin);
 
@@ -400,13 +400,13 @@ public:
 
     MetaTxsList
     getAccountTxsB (
-        const RippleAddress& account, std::int32_t minLedger,
+        RippleAddress const& account, std::int32_t minLedger,
         std::int32_t maxLedger,  bool descending, std::uint32_t offset,
         int limit, bool bAdmin);
 
     MetaTxsList
     getTxsAccountB (
-        const RippleAddress& account, std::int32_t minLedger,
+        RippleAddress const& account, std::int32_t minLedger,
         std::int32_t maxLedger,  bool forward, Json::Value& token,
         int limit, bool bAdmin);
 
@@ -447,8 +447,8 @@ public:
     bool subRTTransactions (InfoSub::ref ispListener);
     bool unsubRTTransactions (std::uint64_t uListener);
 
-    InfoSub::pointer findRpcSub (const std::string& strUrl);
-    InfoSub::pointer addRpcSub (const std::string& strUrl, InfoSub::ref);
+    InfoSub::pointer findRpcSub (std::string const& strUrl);
+    InfoSub::pointer addRpcSub (std::string const& strUrl, InfoSub::ref);
 
     //--------------------------------------------------------------------------
     //
@@ -477,7 +477,7 @@ private:
     bool haveConsensusObject ();
 
     Json::Value pubBootstrapAccountInfo (
-        Ledger::ref lpAccepted, const RippleAddress& naAccountID);
+        Ledger::ref lpAccepted, RippleAddress const& naAccountID);
 
     void pubValidatedTransaction (
         Ledger::ref alAccepted, const AcceptedLedgerTx& alTransaction);
@@ -1115,7 +1115,7 @@ Transaction::pointer NetworkOPsImp::findTransactionByID (
 
 int NetworkOPsImp::findTransactionsByDestination (
     std::list<Transaction::pointer>& txns,
-    const RippleAddress& destinationAccount, std::uint32_t startLedgerSeq,
+    RippleAddress const& destinationAccount, std::uint32_t startLedgerSeq,
     std::uint32_t endLedgerSeq, int maxTransactions)
 {
     // WRITEME
@@ -1127,7 +1127,7 @@ int NetworkOPsImp::findTransactionsByDestination (
 //
 
 AccountState::pointer NetworkOPsImp::getAccountState (
-    Ledger::ref lrLedger, const RippleAddress& accountID)
+    Ledger::ref lrLedger, RippleAddress const& accountID)
 {
     return lrLedger->getAccountState (accountID);
 }
@@ -1194,7 +1194,7 @@ STVector256 NetworkOPsImp::getDirNodeInfo (
 //
 
 Json::Value NetworkOPsImp::getOwnerInfo (
-    Ledger::pointer lpLedger, const RippleAddress& naAccount)
+    Ledger::pointer lpLedger, RippleAddress const& naAccount)
 {
     Json::Value jvObjects (Json::objectValue);
     auto uRootIndex = lpLedger->getOwnerDirIndex (naAccount.getAccountID ());
@@ -1209,7 +1209,7 @@ Json::Value NetworkOPsImp::getOwnerInfo (
             STVector256 svIndexes   = sleNode->getFieldV256 (sfIndexes);
             const std::vector<uint256>& vuiIndexes  = svIndexes.peekValue ();
 
-            BOOST_FOREACH (uint256 const & uDirEntry, vuiIndexes)
+            BOOST_FOREACH (uint256 const& uDirEntry, vuiIndexes)
             {
                 auto sleCur = lpLedger->getSLEi (uDirEntry);
 
@@ -1845,7 +1845,7 @@ void NetworkOPsImp::setMode (OperatingMode om)
 
 std::string
 NetworkOPsImp::transactionsSQL (
-    std::string selection, const RippleAddress& account,
+    std::string selection, RippleAddress const& account,
     std::int32_t minLedger, std::int32_t maxLedger, bool descending,
     std::uint32_t offset, int limit,
     bool binary, bool count, bool bAdmin)
@@ -1928,7 +1928,7 @@ NetworkOPsImp::transactionsSQL (
 }
 
 NetworkOPs::AccountTxs NetworkOPsImp::getAccountTxs (
-    const RippleAddress& account,
+    RippleAddress const& account,
     std::int32_t minLedger, std::int32_t maxLedger, bool descending,
     std::uint32_t offset, int limit, bool bAdmin)
 {
@@ -1982,7 +1982,7 @@ NetworkOPs::AccountTxs NetworkOPsImp::getAccountTxs (
 }
 
 std::vector<NetworkOPsImp::txnMetaLedgerType> NetworkOPsImp::getAccountTxsB (
-    const RippleAddress& account,
+    RippleAddress const& account,
     std::int32_t minLedger, std::int32_t maxLedger, bool descending,
     std::uint32_t offset, int limit, bool bAdmin)
 {
@@ -2034,7 +2034,7 @@ std::vector<NetworkOPsImp::txnMetaLedgerType> NetworkOPsImp::getAccountTxsB (
 
 
 NetworkOPsImp::AccountTxs NetworkOPsImp::getTxsAccount (
-    const RippleAddress& account, std::int32_t minLedger,
+    RippleAddress const& account, std::int32_t minLedger,
     std::int32_t maxLedger, bool forward, Json::Value& token,
     int limit, bool bAdmin)
 {
@@ -2154,7 +2154,7 @@ NetworkOPsImp::AccountTxs NetworkOPsImp::getTxsAccount (
 }
 
 NetworkOPsImp::MetaTxsList NetworkOPsImp::getTxsAccountB (
-    const RippleAddress& account, std::int32_t minLedger,
+    RippleAddress const& account, std::int32_t minLedger,
     std::int32_t maxLedger,  bool forward, Json::Value& token,
     int limit, bool bAdmin)
 {
@@ -2294,7 +2294,7 @@ NetworkOPsImp::getLedgerAffectedAccounts (std::uint32_t ledgerSeq)
 }
 
 bool NetworkOPsImp::recvValidation (
-    SerializedValidation::ref val, const std::string& source)
+    SerializedValidation::ref val, std::string const& source)
 {
     m_journal.debug << "recvValidation " << val->getLedgerHash ()
                     << " from " << source;
@@ -2507,7 +2507,7 @@ Json::Value NetworkOPsImp::getLedgerFetchInfo ()
 //
 
 Json::Value NetworkOPsImp::pubBootstrapAccountInfo (
-    Ledger::ref lpAccepted, const RippleAddress& naAccountID)
+    Ledger::ref lpAccepted, RippleAddress const& naAccountID)
 {
     Json::Value         jvObj (Json::objectValue);
 
@@ -2838,7 +2838,7 @@ void NetworkOPsImp::unsubAccount (
 
     // For the connection, unmonitor each account.
     // FIXME: Don't we need to unsub?
-    // BOOST_FOREACH(const RippleAddress& naAccountID, vnaAccountIDs)
+    // BOOST_FOREACH(RippleAddress const& naAccountID, vnaAccountIDs)
     // {
     //  isrListener->deleteSubAccountInfo(naAccountID);
     // }
@@ -2900,7 +2900,7 @@ std::uint32_t NetworkOPsImp::acceptLedger ()
 }
 
 void NetworkOPsImp::storeProposal (
-    LedgerProposal::ref proposal, const RippleAddress& peerPublic)
+    LedgerProposal::ref proposal, RippleAddress const& peerPublic)
 {
     auto& props = mStoredProposals[peerPublic.getNodeID ()];
 
@@ -3018,7 +3018,7 @@ bool NetworkOPsImp::unsubRTTransactions (std::uint64_t uSeq)
     return mSubRTTransactions.erase (uSeq);
 }
 
-InfoSub::pointer NetworkOPsImp::findRpcSub (const std::string& strUrl)
+InfoSub::pointer NetworkOPsImp::findRpcSub (std::string const& strUrl)
 {
     ScopedLockType sl (mLock);
 
@@ -3031,7 +3031,7 @@ InfoSub::pointer NetworkOPsImp::findRpcSub (const std::string& strUrl)
 }
 
 InfoSub::pointer NetworkOPsImp::addRpcSub (
-    const std::string& strUrl, InfoSub::ref rspEntry)
+    std::string const& strUrl, InfoSub::ref rspEntry)
 {
     ScopedLockType sl (mLock);
 
@@ -3052,7 +3052,7 @@ void NetworkOPsImp::getBookPage (
     Account const& uTakerID,
     bool const bProof,
     const unsigned int iLimit,
-    const Json::Value& jvMarker,
+    Json::Value const& jvMarker,
     Json::Value& jvResult)
 { // CAUTION: This is the old get book page logic
     Json::Value& jvOffers =
@@ -3268,7 +3268,7 @@ void NetworkOPsImp::getBookPage (
     Account const& uTakerID,
     bool const bProof,
     const unsigned int iLimit,
-    const Json::Value& jvMarker,
+    Json::Value const& jvMarker,
     Json::Value& jvResult)
 {
     auto& jvOffers = (jvResult[jss::offers] = Json::Value (Json::arrayValue));
@@ -3411,7 +3411,7 @@ void NetworkOPsImp::getBookPage (
 
 static void fpAppender (
     protocol::TMGetObjectByHash* reply, std::uint32_t ledgerSeq,
-    const uint256& hash, const Blob& blob)
+    uint256 const& hash, const Blob& blob)
 {
     protocol::TMIndexedObject& newObj = * (reply->add_objects ());
     newObj.set_ledgerseq (ledgerSeq);

@@ -23,7 +23,7 @@
 namespace websocketpp {
 namespace log {
 
-void websocketLog (websocketpp::log::alevel::value v, const std::string& entry)
+void websocketLog (websocketpp::log::alevel::value v, std::string const& entry)
 {
     using namespace ripple;
 
@@ -37,7 +37,7 @@ void websocketLog (websocketpp::log::alevel::value v, const std::string& entry)
     }
 }
 
-void websocketLog (websocketpp::log::elevel::value v, const std::string& entry)
+void websocketLog (websocketpp::log::elevel::value v, std::string const& entry)
 {
     using namespace ripple;
 

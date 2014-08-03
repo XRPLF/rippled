@@ -243,7 +243,7 @@ public:
     }
 
 
-    LoadEvent::pointer getLoadEvent (JobType t, const std::string& name)
+    LoadEvent::pointer getLoadEvent (JobType t, std::string const& name)
     {
         JobDataMap::iterator iter (m_jobData.find (t));
         assert (iter != m_jobData.end ());
@@ -255,7 +255,7 @@ public:
             std::ref (iter-> second.load ()), name, true);
     }
 
-    LoadEvent::autoptr getLoadEventAP (JobType t, const std::string& name)
+    LoadEvent::autoptr getLoadEventAP (JobType t, std::string const& name)
     {
         JobDataMap::iterator iter (m_jobData.find (t));
         assert (iter != m_jobData.end ());

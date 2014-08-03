@@ -73,7 +73,7 @@ void TransactionMetaSet::setAffectedNode (uint256 const& node, SField::ref type,
     obj.setFieldU16 (sfLedgerEntryType, nodeType);
 }
 
-static void addIfUnique (std::vector<RippleAddress>& vector, const RippleAddress& address)
+static void addIfUnique (std::vector<RippleAddress>& vector, RippleAddress const& address)
 {
     BOOST_FOREACH (const RippleAddress & a, vector)
 

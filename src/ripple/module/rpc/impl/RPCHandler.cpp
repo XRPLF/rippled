@@ -52,7 +52,7 @@ RPCHandler::RPCHandler (NetworkOPs& netOps, InfoSub::pointer infoSub)
 // transport for a command and a request object. The command is the method. The
 // request object is supplied as the first element of the params.
 Json::Value RPCHandler::doRpcCommand (
-    const std::string& strMethod, Json::Value const& jvParams,
+    std::string const& strMethod, Json::Value const& jvParams,
     Config::Role iRole, Resource::Charge& loadType)
 {
     WriteLog (lsTRACE, RPCHandler)
@@ -99,7 +99,7 @@ Json::Value doInternal (RPC::Context& context)
 }
 
 Json::Value RPCHandler::doCommand (
-    const Json::Value& params, Config::Role iRole, Resource::Charge& loadType)
+    Json::Value const& params, Config::Role iRole, Resource::Charge& loadType)
 {
     if (iRole != Config::ADMIN)
     {
@@ -186,7 +186,7 @@ Json::Value RPCHandler::doCommand (
 RPCInternalHandler* RPCInternalHandler::sHeadHandler = nullptr;
 
 RPCInternalHandler::RPCInternalHandler (
-    const std::string& name, handler_t Handler)
+    std::string const& name, handler_t Handler)
         : mName (name),
           mHandler (Handler)
 {
@@ -195,7 +195,7 @@ RPCInternalHandler::RPCInternalHandler (
 }
 
 Json::Value RPCInternalHandler::runHandler (
-    const std::string& name, const Json::Value& params)
+    std::string const& name, Json::Value const& params)
 {
     for (RPCInternalHandler* h = sHeadHandler; h != nullptr; )
     {

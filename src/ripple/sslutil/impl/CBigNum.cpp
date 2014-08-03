@@ -311,7 +311,7 @@ unsigned int CBigNum::GetCompact () const
     return nCompact;
 }
 
-void CBigNum::SetHex (const std::string& str)
+void CBigNum::SetHex (std::string const& str)
 {
     // skip 0x
     const char* psz = str.c_str ();

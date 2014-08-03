@@ -83,8 +83,8 @@ public:
         //             This was added for one particular partner, it
         //             "pushes" subscription data to a particular URL.
         //
-        virtual pointer findRpcSub (const std::string& strUrl) = 0;
-        virtual pointer addRpcSub (const std::string& strUrl, ref rspEntry) = 0;
+        virtual pointer findRpcSub (std::string const& strUrl) = 0;
+        virtual pointer addRpcSub (std::string const& strUrl, ref rspEntry) = 0;
     };
 
 public:
@@ -94,11 +94,11 @@ public:
 
     Consumer& getConsumer();
 
-    virtual void send (const Json::Value & jvObj, bool broadcast) = 0;
+    virtual void send (Json::Value const& jvObj, bool broadcast) = 0;
 
     // VFALCO NOTE Why is this virtual?
     virtual void send (
-        const Json::Value & jvObj, const std::string & sObj, bool broadcast);
+        Json::Value const& jvObj, std::string const& sObj, bool broadcast);
 
     std::uint64_t getSeq ();
 

@@ -24,7 +24,7 @@
 
 namespace ripple {
 
-Ledger::Ledger (const RippleAddress& masterID, std::uint64_t startAmount)
+Ledger::Ledger (RippleAddress const& masterID, std::uint64_t startAmount)
     : mTotCoins (startAmount)
     , mLedgerSeq (1) // First Ledger
     , mCloseTime (0)
@@ -198,7 +198,7 @@ Ledger::Ledger (Blob const& rawLedger,
     initializeFees ();
 }
 
-Ledger::Ledger (const std::string& rawLedger, bool hasPrefix)
+Ledger::Ledger (std::string const& rawLedger, bool hasPrefix)
     : mClosed (false)
     , mValidated (false)
     , mValidHash (false)
@@ -382,7 +382,7 @@ void Ledger::setAccepted ()
     setImmutable ();
 }
 
-bool Ledger::hasAccount (const RippleAddress& accountID)
+bool Ledger::hasAccount (RippleAddress const& accountID)
 {
     return mAccountStateMap->hasItem (Ledger::getAccountRootIndex (accountID));
 }
@@ -393,7 +393,7 @@ bool Ledger::addSLE (SLE const& sle)
     return mAccountStateMap->addItem(item, false, false);
 }
 
-AccountState::pointer Ledger::getAccountState (const RippleAddress& accountID)
+AccountState::pointer Ledger::getAccountState (RippleAddress const& accountID)
 {
     SLE::pointer sle = getSLEi (Ledger::getAccountRootIndex (accountID));
 
@@ -880,7 +880,7 @@ Ledger::pointer Ledger::loadByHash (uint256 const& ledgerHash)
 
 #endif
 
-Ledger::pointer Ledger::getSQL (const std::string& sql)
+Ledger::pointer Ledger::getSQL (std::string const& sql)
 {
     // only used with sqlite3 prepared statements not used
     uint256 ledgerHash, prevHash, accountHash, transHash;
@@ -1515,7 +1515,7 @@ SLE::pointer Ledger::getAccountRoot (Account const& accountID)
     return getASNodeI (getAccountRootIndex (accountID), ltACCOUNT_ROOT);
 }
 
-SLE::pointer Ledger::getAccountRoot (const RippleAddress& naAccountID)
+SLE::pointer Ledger::getAccountRoot (RippleAddress const& naAccountID)
 {
     return getASNodeI (getAccountRootIndex (
         naAccountID.getAccountID ()), ltACCOUNT_ROOT);
@@ -1810,7 +1810,7 @@ uint256 Ledger::getOwnerDirIndex (Account const& account)
 }
 
 uint256 Ledger::getRippleStateIndex (
-    const RippleAddress& naA, const RippleAddress& naB,
+    RippleAddress const& naA, RippleAddress const& naB,
     Currency const& currency)
 {
     auto uAID = naA.getAccountID ();

@@ -68,14 +68,14 @@ public:
     // get Data from the current row
     bool getNull (const char* colName);
     char* getStr (const char* colName, std::string& retStr);
-    std::string getStrBinary (const std::string& strColName);
+    std::string getStrBinary (std::string const& strColName);
     std::int32_t getInt (const char* colName);
     float getFloat (const char* colName);
     bool getBool (const char* colName);
 
     // returns amount stored in buf
     int getBinary (const char* colName, unsigned char* buf, int maxSize);
-    Blob getBinary (const std::string& strColName);
+    Blob getBinary (std::string const& strColName);
 
     std::uint64_t getBigInt (const char* colName);
 

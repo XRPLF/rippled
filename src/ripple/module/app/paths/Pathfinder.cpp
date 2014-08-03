@@ -101,11 +101,11 @@ static bool candCmp (
 
 Pathfinder::Pathfinder (
     RippleLineCache::ref cache,
-    const RippleAddress& uSrcAccountID,
-    const RippleAddress& uDstAccountID,
+    RippleAddress const& uSrcAccountID,
+    RippleAddress const& uDstAccountID,
     Currency const& uSrcCurrencyID,
     Account const& uSrcIssuerID,
-    const STAmount& saDstAmount,
+    STAmount const& saDstAmount,
     bool& bValid)
     :   mSrcAccountID (uSrcAccountID.getAccountID ()),
         mDstAccountID (uDstAccountID.getAccountID ()),
@@ -419,7 +419,7 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
 }
 
 CurrencySet usAccountSourceCurrencies (
-    const RippleAddress& raAccountID, RippleLineCache::ref lrCache,
+    RippleAddress const& raAccountID, RippleLineCache::ref lrCache,
     bool includeXRP)
 {
     CurrencySet usCurrencies;
@@ -452,7 +452,7 @@ CurrencySet usAccountSourceCurrencies (
 }
 
 CurrencySet usAccountDestCurrencies (
-    const RippleAddress& raAccountID,
+    RippleAddress const& raAccountID,
     RippleLineCache::ref lrCache,
     bool includeXRP)
 {
@@ -468,7 +468,7 @@ CurrencySet usAccountDestCurrencies (
     for (auto item: rippleLines.getItems ())
     {
         RippleState*    rspEntry    = (RippleState*) item.get ();
-        const STAmount& saBalance   = rspEntry->getBalance ();
+        STAmount const& saBalance   = rspEntry->getBalance ();
 
         if (saBalance < rspEntry->getLimit ())                  // Can take more
             usCurrencies.insert (saBalance.getCurrency ());

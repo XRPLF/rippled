@@ -101,7 +101,7 @@ int Database::getBinary (const char* colName, unsigned char* buf, int maxSize)
     return (0);
 }
 
-Blob Database::getBinary (const std::string& strColName)
+Blob Database::getBinary (std::string const& strColName)
 {
     int index;
 
@@ -113,7 +113,7 @@ Blob Database::getBinary (const std::string& strColName)
     return Blob ();
 }
 
-std::string Database::getStrBinary (const std::string& strColName)
+std::string Database::getStrBinary (std::string const& strColName)
 {
     // YYY Could eliminate a copy if getStrBinary was a template.
     return strCopy (getBinary (strColName.c_str ()));

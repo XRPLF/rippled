@@ -444,7 +444,7 @@ TER PathCursor::reverseLiquidityForAccount () const
             //
             // This is the final node; we can't look to the right to get values;
             // we have to go up to get the out value for the entire path state.
-            const STAmount& saCurWantedReq  =
+            STAmount const& saCurWantedReq  =
                     pathState_.outReq() - pathState_.outAct();
             STAmount saCurWantedAct = saCurWantedReq.zeroed();
 

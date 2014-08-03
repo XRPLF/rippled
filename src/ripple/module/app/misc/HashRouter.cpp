@@ -45,7 +45,7 @@ private:
             if (peer != 0)
                 mPeers.insert (peer);
         }
-        
+
         bool hasPeer (PeerShortID peer) const
         {
             return mPeers.count (peer) > 0;
@@ -137,7 +137,7 @@ HashRouter::Entry& HashRouter::findCreateEntry (uint256 const& index, bool& crea
 
     if ((it != mSuppressionTimes.end ()) && (it->first <= expireTime))
     {
-        BOOST_FOREACH (uint256 const & lit, it->second)
+        BOOST_FOREACH (uint256 const& lit, it->second)
         mSuppressionMap.erase (lit);
         mSuppressionTimes.erase (it);
     }
@@ -243,4 +243,3 @@ IHashRouter* IHashRouter::New (int holdTime)
 }
 
 } // ripple
-

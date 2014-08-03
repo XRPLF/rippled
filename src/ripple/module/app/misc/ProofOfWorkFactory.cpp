@@ -167,7 +167,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    PowResult checkProof (const std::string& token, uint256 const& solution)
+    PowResult checkProof (std::string const& token, uint256 const& solution)
     {
         // VFALCO COmmented this out because Dave said it wasn't used
         //        and also we dont have the lexicalCast from a vector of strings to a time_t

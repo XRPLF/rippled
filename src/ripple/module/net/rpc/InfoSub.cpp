@@ -65,7 +65,7 @@ Resource::Consumer& InfoSub::getConsumer()
 }
 
 void InfoSub::send (
-    const Json::Value& jvObj, const std::string& sObj, bool broadcast)
+    Json::Value const& jvObj, std::string const& sObj, bool broadcast)
 {
     send (jvObj, broadcast);
 }

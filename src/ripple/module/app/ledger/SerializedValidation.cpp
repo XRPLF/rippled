@@ -35,7 +35,7 @@ SerializedValidation::SerializedValidation (SerializerIterator& sit, bool checkS
 
 SerializedValidation::SerializedValidation (
     uint256 const& ledgerHash, std::uint32_t signTime,
-    const RippleAddress& raPub, bool isFull)
+    RippleAddress const& raPub, bool isFull)
     : STObject (getFormat (), sfValidation)
     , mTrusted (false)
 {
@@ -51,13 +51,13 @@ SerializedValidation::SerializedValidation (
         setFlag (kFullFlag);
 }
 
-void SerializedValidation::sign (const RippleAddress& raPriv)
+void SerializedValidation::sign (RippleAddress const& raPriv)
 {
     uint256 signingHash;
     sign (signingHash, raPriv);
 }
 
-void SerializedValidation::sign (uint256& signingHash, const RippleAddress& raPriv)
+void SerializedValidation::sign (uint256& signingHash, RippleAddress const& raPriv)
 {
     setFlag (vfFullyCanonicalSig);
 

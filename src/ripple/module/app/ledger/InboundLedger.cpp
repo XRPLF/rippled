@@ -765,7 +765,7 @@ void InboundLedger::filterNodes (std::vector<SHAMapNodeID>& nodeIDs,
     Call with a lock
 */
 // data must not have hash prefix
-bool InboundLedger::takeHeader (const std::string& data)
+bool InboundLedger::takeHeader (std::string const& data)
 {
     // Return value: true=normal, false=bad data
     if (m_journal.trace) m_journal.trace <<

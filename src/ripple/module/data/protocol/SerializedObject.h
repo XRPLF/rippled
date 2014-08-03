@@ -204,7 +204,7 @@ public:
     Account getFieldAccount160 (SField::ref field) const;
 
     Blob getFieldVL (SField::ref field) const;
-    const STAmount& getFieldAmount (SField::ref field) const;
+    STAmount const& getFieldAmount (SField::ref field) const;
     STPathSet const& getFieldPathSet (SField::ref field) const;
     const STVector256& getFieldV256 (SField::ref field) const;
     const STArray& getFieldArray (SField::ref field) const;
@@ -221,7 +221,7 @@ public:
     {
         setFieldAccount (field, addr.getAccountID ());
     }
-    void setFieldAmount (SField::ref field, const STAmount&);
+    void setFieldAmount (SField::ref field, STAmount const&);
     void setFieldPathSet (SField::ref field, STPathSet const&);
     void setFieldV256 (SField::ref field, const STVector256 & v);
 

@@ -59,7 +59,7 @@ Json::Value doAccountCurrencies (RPC::Context& context)
     for (auto item: rippleLines.getItems ())
     {
         RippleState* rspEntry = (RippleState*) item.get ();
-        const STAmount& saBalance = rspEntry->getBalance ();
+        STAmount const& saBalance = rspEntry->getBalance ();
 
         if (saBalance < rspEntry->getLimit ())
             receive.insert (saBalance.getCurrency ());
