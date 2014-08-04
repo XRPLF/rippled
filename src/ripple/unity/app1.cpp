@@ -27,13 +27,7 @@
 
 #include <ripple/unity/validators.h>
 
-#include <ripple/module/app/misc/PowResult.h>
-
-#include <ripple/module/app/misc/ProofOfWorkFactory.h>
-
 #include <ripple/module/app/peers/PeerSet.cpp>
-#include <ripple/module/app/misc/ProofOfWorkFactory.cpp>
-#include <ripple/module/app/misc/ProofOfWork.cpp>
 #include <ripple/module/app/misc/SerializedTransaction.cpp>
 
 // requires Application

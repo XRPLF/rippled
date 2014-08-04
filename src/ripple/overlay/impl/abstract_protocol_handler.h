@@ -47,7 +47,6 @@ public:
 
     virtual error_code on_message (std::shared_ptr <protocol::TMHello> const& m) { return error_code(); }
     virtual error_code on_message (std::shared_ptr <protocol::TMPing> const& m) { return error_code(); }
-    virtual error_code on_message (std::shared_ptr <protocol::TMProofWork> const& m) { return error_code(); }
     virtual error_code on_message (std::shared_ptr <protocol::TMCluster> const& m) { return error_code(); }
     virtual error_code on_message (std::shared_ptr <protocol::TMGetPeers> const& m) { return error_code(); }
     virtual error_code on_message (std::shared_ptr <protocol::TMPeers> const& m) { return error_code(); }

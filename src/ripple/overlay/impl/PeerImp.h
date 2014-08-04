@@ -28,8 +28,6 @@
 #include <ripple/overlay/impl/message_stream.h>
 #include <ripple/overlay/impl/OverlayImpl.h>
 #include <ripple/overlay/impl/peer_protocol_detector.h>
-#include <ripple/module/app/misc/ProofOfWork.h>
-#include <ripple/module/app/misc/ProofOfWorkFactory.h>
 #include <ripple/module/data/protocol/Protocol.h>
 #include <ripple/unity/validators.h>
 #include <ripple/unity/peerfinder.h>
@@ -356,7 +354,6 @@ public:
 
     error_code on_message (std::shared_ptr <protocol::TMHello> const& m) override;
     error_code on_message (std::shared_ptr <protocol::TMPing> const& m) override;
-    error_code on_message (std::shared_ptr <protocol::TMProofWork> const& m) override;
     error_code on_message (std::shared_ptr <protocol::TMCluster> const& m) override;
     error_code on_message (std::shared_ptr <protocol::TMGetPeers> const& m) override;
     error_code on_message (std::shared_ptr <protocol::TMPeers> const& m) override;
@@ -967,7 +964,6 @@ private:
         h.set_nodepublic (getApp().getLocalCredentials ().getNodePublic ().humanNodePublic ());
         h.set_nodeproof (&vchSig[0], vchSig.size ());
         h.set_ipv4port (getConfig ().peerListeningPort);
-        h.set_testnet (false);
 
         // We always advertise ourselves as private in the HELLO message. This
         // suppresses the old peer advertising code and allows PeerFinder to
@@ -1045,35 +1041,6 @@ private:
             std::bind (&NetworkOPs::makeFetchPack, &getApp().getOPs (), std::placeholders::_1,
                 std::weak_ptr<Peer> (shared_from_this ()), packet,
                     hash, UptimeTimer::getInstance ().getElapsedSeconds ()));
-    }
-
-    void doProofOfWork (Job&, std::weak_ptr <Peer> peer, ProofOfWork::pointer pow)
-    {
-        if (peer.expired ())
-            return;
-
-        uint256 solution = pow->solve ();
-
-        if (solution.isZero ())
-        {
-             m_journal.warning << "Failed to solve proof of work";
-        }
-        else
-        {
-            Peer::ptr pptr (peer.lock ());
-
-            if (pptr)
-            {
-                protocol::TMProofWork reply;
-                reply.set_token (pow->getToken ());
-                reply.set_response (solution.begin (), solution.size ());
-                pptr->send (std::make_shared<Message> (reply, protocol::mtPROOFOFWORK));
-            }
-            else
-            {
-                // WRITEME: Save solved proof of work for new connection
-            }
-        }
     }
 
     static void checkTransaction (Job&, int flags, SerializedTransaction::pointer stx, std::weak_ptr<Peer> peer)

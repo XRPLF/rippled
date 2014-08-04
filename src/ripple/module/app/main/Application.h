@@ -44,7 +44,6 @@ class LedgerMaster;
 class LoadManager;
 class NetworkOPs;
 class OrderBookDB;
-class ProofOfWorkFactory;
 class SerializedLedgerEntry;
 class TransactionMaster;
 class TxQueue;
@@ -101,7 +100,6 @@ public:
     virtual LoadFeeTrack&           getFeeTrack () = 0;
     virtual LoadManager&            getLoadManager () = 0;
     virtual Overlay&                overlay () = 0;
-    virtual ProofOfWorkFactory&     getProofOfWorkFactory () = 0;
     virtual UniqueNodeList&         getUNL () = 0;
     virtual Validations&            getValidations () = 0;
     virtual NodeStore::Database&    getNodeStore () = 0;
