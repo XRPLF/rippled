@@ -506,7 +506,7 @@ private:
 
     std::atomic<OperatingMode> mMode;
 
-    bool mNeedNetworkLedger;
+    std::atomic <bool> mNeedNetworkLedger;
     bool mProposing;
     bool mValidating;
     bool m_amendmentBlocked;
