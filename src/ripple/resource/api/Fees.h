@@ -29,7 +29,6 @@ extern Charge const feeInvalidRequest;        // A request that we can immediate
 extern Charge const feeRequestNoReply;        // A request that we cannot satisfy
 extern Charge const feeInvalidSignature;      // An object whose signature we had to check and it failed
 extern Charge const feeUnwantedData;          // Data we have no use for
-extern Charge const feeBadProofOfWork;        // Proof of work not valid
 extern Charge const feeBadData;               // Data we have to verify before rejecting
 
 // RPC loads

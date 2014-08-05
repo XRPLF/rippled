@@ -122,7 +122,6 @@ public:
                     {
                     case protocol::mtHELLO:           ec = invoke <protocol::TMHello> (); break;
                     case protocol::mtPING:            ec = invoke <protocol::TMPing> (); break;
-                    case protocol::mtPROOFOFWORK:     ec = invoke <protocol::TMProofWork> (); break;
                     case protocol::mtCLUSTER:         ec = invoke <protocol::TMCluster> (); break;
                     case protocol::mtGET_PEERS:       ec = invoke <protocol::TMGetPeers> (); break;
                     case protocol::mtPEERS:           ec = invoke <protocol::TMPeers> (); break;

@@ -28,30 +28,6 @@ enum MessageType
     // <available>          = 40;
 }
 
-// token, iterations, target, challenge = issue demand for proof of work
-// token, response = give solution to proof of work
-// token, result = report result of pow
-
-message TMProofWork
-{
-    required string token       = 1;
-    optional uint32 iterations  = 2;
-    optional bytes target       = 3;
-    optional bytes challenge    = 4;
-    optional bytes response     = 5;
-
-    enum PowResult
-    {
-        powrOK          = 0;
-        powrREUSED      = 1;
-        powrEXPIRED     = 2;    // You took too long solving
-        powrTOOEASY     = 3;    // Difficulty went way up, sorry
-        powrINVALID     = 4;
-        powrDISCONNECT  = 5;    // We are disconnecting
-    }
-    optional PowResult result   = 6;
-}
-
 // Sent on connect
 message TMHello
 {
@@ -69,8 +45,8 @@ message TMHello
     optional bytes          ledgerClosed    = 9;  // our last closed ledger
     optional bytes          ledgerPrevious  = 10; // the ledger before the last closed ledger
     optional bool           nodePrivate     = 11; // Request to not forward IP.
-    optional TMProofWork    proofOfWork     = 12; // request/provide proof of work
-    optional bool           testNet         = 13; // Running as testnet.
+    // 12: was "proof of work" 
+    // 13: was "testnet"
 }
 
 // The status of a node in our cluster

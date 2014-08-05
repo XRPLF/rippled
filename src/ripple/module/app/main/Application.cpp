@@ -23,7 +23,6 @@
 #include <ripple/basics/utility/Sustain.h>
 #include <ripple/common/seconds_clock.h>
 #include <ripple/module/app/main/Tuning.h>
-#include <ripple/module/app/misc/ProofOfWorkFactory.h>
 #include <ripple/module/rpc/Manager.h>
 #include <ripple/nodestore/Database.h>
 #include <ripple/nodestore/DummyScheduler.h>
@@ -179,7 +178,6 @@ public:
     std::unique_ptr <LoadFeeTrack> mFeeTrack;
     std::unique_ptr <IHashRouter> mHashRouter;
     std::unique_ptr <Validations> mValidations;
-    std::unique_ptr <ProofOfWorkFactory> mProofOfWorkFactory;
     std::unique_ptr <LoadManager> m_loadManager;
     beast::DeadlineTimer m_sweepTimer;
     bool volatile mShutdown;
@@ -327,8 +325,6 @@ public:
         , mHashRouter (IHashRouter::New (IHashRouter::getDefaultHoldTime ()))
 
         , mValidations (Validations::New ())
-
-        , mProofOfWorkFactory (ProofOfWorkFactory::New ())
 
         , m_loadManager (LoadManager::New (*this, m_logs.journal("LoadManager")))
 
@@ -509,11 +505,6 @@ public:
     UniqueNodeList& getUNL ()
     {
         return *m_deprecatedUNL;
-    }
-
-    ProofOfWorkFactory& getProofOfWorkFactory ()
-    {
-        return *mProofOfWorkFactory;
     }
 
     Overlay& overlay ()

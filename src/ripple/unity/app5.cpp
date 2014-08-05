@@ -31,8 +31,6 @@
 
 #include <deque>
 
-#include <ripple/module/app/misc/ProofOfWork.h>
-
 #include <ripple/module/app/ledger/LedgerTiming.cpp>
 #include <ripple/module/app/ledger/AcceptedLedgerTx.cpp>
 #include <ripple/module/app/main/LocalCredentials.cpp>
