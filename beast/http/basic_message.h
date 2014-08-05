@@ -124,6 +124,7 @@ private:
         {
             list_ = std::move(other.list_);
             set_ = std::move(other.set_);
+            return *this;
         }
 
         headers_t&
@@ -132,6 +133,7 @@ private:
             clear();
             for (auto const& e : other.list_)
                 append (e.field, e.value);
+            return *this;
         }
 
         void
