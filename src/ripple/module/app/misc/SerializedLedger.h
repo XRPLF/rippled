@@ -95,7 +95,7 @@ public:
 
     bool isThreadedType (); // is this a ledger entry that can be threaded
     bool isThreaded ();     // is this ledger entry actually threaded
-    bool hasOneOwner ();    // This node has one other node that owns it (like nickname)
+    bool hasOneOwner ();    // This node has one other node that owns it
     bool hasTwoOwners ();   // This node has two nodes that own it (like ripple balance)
     RippleAddress getOwner ();
     RippleAddress getFirstOwner ();

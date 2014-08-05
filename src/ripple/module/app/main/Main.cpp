@@ -81,9 +81,9 @@ void printHelp (const po::options_description& desc)
         << SYSTEM_NAME "d [options] <command> <params>\n"
         << desc << std::endl
         << "Commands: \n"
-           "     account_info <account>|<nickname>|<seed>|<pass_phrase>|<key> [<ledger>] [strict]\n"
+           "     account_info <account>|<seed>|<pass_phrase>|<key> [<ledger>] [strict]\n"
            "     account_lines <account> <account>|\"\" [<ledger>]\n"
-           "     account_offers <account>|<nickname>|<account_public_key> [<ledger>]\n"
+           "     account_offers <account>|<account_public_key> [<ledger>]\n"
            "     account_tx accountID [ledger_min [ledger_max [limit [offset]]]] [binary] [count] [descending]\n"
            "     book_offers <taker_pays> <taker_gets> [<taker [<ledger> [<limit> [<proof> [<marker>]]]]]\n"
            "     connect <ip> [<port>]\n"

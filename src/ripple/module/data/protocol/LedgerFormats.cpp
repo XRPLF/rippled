@@ -72,11 +72,6 @@ LedgerFormats::LedgerFormats ()
             << SOElement (sfGenerator,           SOE_REQUIRED)
             ;
 
-    add ("Nickname", ltNICKNAME)
-            << SOElement (sfAccount,             SOE_REQUIRED)
-            << SOElement (sfMinimumOffer,        SOE_OPTIONAL)
-            ;
-
     add ("Offer", ltOFFER)
             << SOElement (sfAccount,             SOE_REQUIRED)
             << SOElement (sfSequence,            SOE_REQUIRED)

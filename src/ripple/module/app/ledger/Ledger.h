@@ -357,30 +357,6 @@ public:
     static uint256 getGeneratorIndex (Account const& uGeneratorID);
 
     //
-    // Nickname functions
-    //
-
-    static uint256 getNicknameHash (std::string const& strNickname)
-    {
-        Serializer s (strNickname);
-        return s.getSHA256 ();
-    }
-
-    NicknameState::pointer getNicknameState (uint256 const& uNickname);
-    NicknameState::pointer getNicknameState (std::string const& strNickname)
-    {
-        return getNicknameState (getNicknameHash (strNickname));
-    }
-
-    SLE::pointer getNickname (uint256 const& uNickname);
-    SLE::pointer getNickname (std::string const& strNickname)
-    {
-        return getNickname (getNicknameHash (strNickname));
-    }
-
-    static uint256 getNicknameIndex (uint256 const& uNickname);
-
-    //
     // Order book functions
     //
 

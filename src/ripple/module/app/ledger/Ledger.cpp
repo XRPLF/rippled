@@ -412,23 +412,6 @@ AccountState::pointer Ledger::getAccountState (RippleAddress const& accountID)
     return std::make_shared<AccountState> (sle, accountID);
 }
 
-NicknameState::pointer Ledger::getNicknameState (uint256 const& uNickname)
-{
-    auto item = mAccountStateMap->peekItem (
-        Ledger::getNicknameIndex (uNickname));
-
-    if (!item)
-        return NicknameState::pointer ();
-
-    auto sle = std::make_shared<SerializedLedgerEntry> (
-        item->peekSerializer (), item->getTag ());
-
-    if (sle->getType () != ltNICKNAME)
-        return NicknameState::pointer ();
-
-    return std::make_shared<NicknameState> (sle);
-}
-
 bool Ledger::addTransaction (uint256 const& txID, const Serializer& txn)
 {
     // low-level - just add to table
@@ -1531,11 +1514,6 @@ SLE::pointer Ledger::getGenerator (Account const& uGeneratorID)
     return getASNodeI (getGeneratorIndex (uGeneratorID), ltGENERATOR_MAP);
 }
 
-SLE::pointer Ledger::getNickname (uint256 const& uNickname)
-{
-    return getASNodeI (uNickname, ltNICKNAME);
-}
-
 SLE::pointer Ledger::getOffer (uint256 const& uIndex)
 {
     return getASNodeI (uIndex, ltOFFER);
@@ -1771,19 +1749,6 @@ uint256 Ledger::getGeneratorIndex (Account const& uGeneratorID)
 
     s.add16 (spaceGenerator);   //  2
     s.add160 (uGeneratorID);    // 20
-
-    return s.getSHA512Half ();
-}
-
-// What is important:
-// --> uNickname: is a Sha256
-// <-- SHA512/2: for consistency and speed in generating indexes.
-uint256 Ledger::getNicknameIndex (uint256 const& uNickname)
-{
-    Serializer  s (34);
-
-    s.add16 (spaceNickname);    //  2
-    s.add256 (uNickname);       // 32
 
     return s.getSHA512Half ();
 }

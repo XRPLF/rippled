@@ -42,7 +42,6 @@ struct ConfigSection
 #define SECTION_DEBUG_LOGFILE           "debug_logfile"
 #define SECTION_ELB_SUPPORT             "elb_support"
 #define SECTION_FEE_DEFAULT             "fee_default"
-#define SECTION_FEE_NICKNAME_CREATE     "fee_nickname_create"
 #define SECTION_FEE_OFFER               "fee_offer"
 #define SECTION_FEE_OPERATION           "fee_operation"
 #define SECTION_FEE_ACCOUNT_RESERVE     "fee_account_reserve"

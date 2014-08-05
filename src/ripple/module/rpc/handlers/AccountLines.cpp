@@ -21,7 +21,7 @@
 namespace ripple {
 
 // {
-//   account: <account>|<nickname>|<account_public_key>
+//   account: <account>|<account_public_key>
 //   account_index: <number>        // optional, defaults to 0.
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>

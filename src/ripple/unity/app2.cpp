@@ -32,7 +32,6 @@
 #include <ripple/module/app/misc/CanonicalTXSet.cpp>
 #include <ripple/module/app/ledger/LedgerProposal.cpp>
 #include <ripple/module/app/main/LoadManager.cpp>
-#include <ripple/module/app/misc/NicknameState.cpp>
 #include <ripple/module/app/ledger/BookListeners.cpp>
 #include <ripple/module/app/ledger/OrderBookDB.cpp>
 

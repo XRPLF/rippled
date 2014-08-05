@@ -123,7 +123,7 @@ FIELD (AccountTxnID,         HASH256, 9)
 // 256-bit (uncommon)
 FIELD (BookDirectory,        HASH256, 16)
 FIELD (InvoiceID,            HASH256, 17)
-FIELD (Nickname,             HASH256, 18)
+// FIELD 18 was Nickname - nicknames are no longer supported
 FIELD (Amendment,            HASH256, 19)
 
 // 160-bit (common)

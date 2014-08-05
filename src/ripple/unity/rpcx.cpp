@@ -64,7 +64,6 @@
 #include <ripple/module/rpc/handlers/LedgerRequest.cpp>
 #include <ripple/module/rpc/handlers/LogLevel.cpp>
 #include <ripple/module/rpc/handlers/LogRotate.cpp>
-#include <ripple/module/rpc/handlers/NicknameInfo.cpp>
 #include <ripple/module/rpc/handlers/OwnerInfo.cpp>
 #include <ripple/module/rpc/handlers/PathFind.cpp>
 #include <ripple/module/rpc/handlers/Peers.cpp>
