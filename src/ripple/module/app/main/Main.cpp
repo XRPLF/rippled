@@ -23,6 +23,10 @@
 #include <beast/unit_test.h>
 #include <beast/streams/debug_ostream.h>
 
+#if defined(BEAST_LINUX) || defined(BEAST_MAC) || defined(BEAST_BSD)
+#include <sys/resource.h>
+#endif
+
 namespace po = boost::program_options;
 
 namespace ripple {
