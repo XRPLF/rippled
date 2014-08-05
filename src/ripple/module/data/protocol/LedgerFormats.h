@@ -57,8 +57,6 @@ enum LedgerEntryType
 
     /** Deprecated.
     */
-    ltNICKNAME          = 'n',
-
     ltOFFER             = 'o',
 
     ltCONTRACT          = 'c',
@@ -68,6 +66,10 @@ enum LedgerEntryType
     ltAMENDMENTS        = 'f',
 
     ltFEE_SETTINGS      = 's',
+
+    // No longer used or supported. Left here to prevent accidental
+    // reassignment of the ledger type.
+    ltNICKNAME          = 'n',
 };
 
 /**
@@ -80,7 +82,6 @@ enum LedgerNameSpace
     spaceAccount        = 'a',
     spaceDirNode        = 'd',
     spaceGenerator      = 'g',
-    spaceNickname       = 'n',
     spaceRipple         = 'r',
     spaceOffer          = 'o',  // Entry for an offer.
     spaceOwnerDir       = 'O',  // Directory of things owned by an account.
@@ -89,6 +90,10 @@ enum LedgerNameSpace
     spaceSkipList       = 's',
     spaceAmendment      = 'f',
     spaceFee            = 'e',
+
+    // No longer used or supported. Left here to reserve the space and
+    // avoid accidental reuse of the space.
+    spaceNickname       = 'n',
 };
 
 /**

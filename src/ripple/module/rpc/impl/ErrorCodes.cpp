@@ -76,9 +76,6 @@ public:
         add (rpcLGR_IDX_MALFORMED,     "lgrIdxMalformed",   "Ledger index malformed.");
         add (rpcLGR_NOT_FOUND,         "lgrNotFound",       "Ledger not found.");
         add (rpcMASTER_DISABLED,       "masterDisabled",    "Master key is disabled.");
-        add (rpcNICKNAME_MALFORMED,    "nicknameMalformed", "Nickname is malformed.");
-        add (rpcNICKNAME_MISSING,      "nicknameMissing",   "Nickname does not exist.");
-        add (rpcNICKNAME_PERM,         "nicknamePerm",      "Account does not control nickname.");
         add (rpcNOT_IMPL,              "notImpl",           "Not implemented.");
         add (rpcNO_ACCOUNT,            "noAccount",         "No such account.");
         add (rpcNO_CLOSED,             "noClosed",          "Closed ledger is unavailable.");

@@ -1235,7 +1235,6 @@ Json::Value NetworkOPsImp::getOwnerInfo (
                 case ltACCOUNT_ROOT:
                 case ltDIR_NODE:
                 case ltGENERATOR_MAP:
-                case ltNICKNAME:
                 default:
                     assert (false);
                     break;

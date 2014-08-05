@@ -48,7 +48,6 @@ Json::Value doLedgerHeader          (RPC::Context&);
 Json::Value doLedgerRequest         (RPC::Context&);
 Json::Value doLogLevel              (RPC::Context&);
 Json::Value doLogRotate             (RPC::Context&);
-Json::Value doNicknameInfo          (RPC::Context&);
 Json::Value doOwnerInfo             (RPC::Context&);
 Json::Value doPathFind              (RPC::Context&);
 Json::Value doPeers                 (RPC::Context&);

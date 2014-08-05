@@ -440,11 +440,11 @@ private:
         return jvRequest;
     }
 
-    // owner_info <account>|<nickname>|<account_public_key>
+    // owner_info <account>|<account_public_key>
     // owner_info <seed>|<pass_phrase>|<key> [<ledfer>]
-    // account_info <account>|<nickname>|<account_public_key>
+    // account_info <account>|<account_public_key>
     // account_info <seed>|<pass_phrase>|<key> [<ledger>]
-    // account_offers <account>|<nickname>|<account_public_key> [<ledger>]
+    // account_offers <account>|<account_public_key> [<ledger>]
     Json::Value parseAccountItems (Json::Value const& jvParams)
     {
         return parseAccountRaw (jvParams, false);
@@ -813,7 +813,6 @@ public:
             {   "ledger_request",       &RPCParser::parseLedgerId,              1,  1   },
             {   "log_level",            &RPCParser::parseLogLevel,              0,  2   },
             {   "logrotate",            &RPCParser::parseAsIs,                  0,  0   },
-    //      {   "nickname_info",        &RPCParser::parseNicknameInfo,          1,  1   },
             {   "owner_info",           &RPCParser::parseAccountItems,          1,  2   },
             {   "peers",                &RPCParser::parseAsIs,                  0,  0   },
             {   "ping",                 &RPCParser::parseAsIs,                  0,  0   },
