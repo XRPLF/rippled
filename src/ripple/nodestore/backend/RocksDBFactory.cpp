@@ -261,7 +261,10 @@ public:
 
         rocksdb::WriteOptions const options;
 
-        m_db->Write (options, &wb).ok ();
+        auto ret = m_db->Write (options, &wb);
+
+        if (!ret.ok ())
+            throw std::runtime_error ("storeBatch failed: " + ret.ToString());
     }
 
     void
