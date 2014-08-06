@@ -490,16 +490,17 @@ int Pathfinder::getPathsOut (
     Currency const& currencyID, Account const& accountID,
     bool isDstCurrency, Account const& dstAccount)
 {
-    auto currencyAccount = std::make_pair(currencyID, accountID);
-    auto it = mPOMap.find (currencyAccount);
+    Issue issue (currencyID, accountID);
+    auto it = mPathsOutCountMap.find (issue);
 
-    if (it != mPOMap.end ())
+    if (it != mPathsOutCountMap.end ())
         return it->second;
 
-    auto sleAccount = mLedger->getSLEi(Ledger::getAccountRootIndex(accountID));
+    auto sleAccount = mLedger->getSLEi (
+        Ledger::getAccountRootIndex (accountID));
     if (!sleAccount)
     {
-        mPOMap[currencyAccount] = 0;
+        mPathsOutCountMap[issue] = 0;
         return 0;
     }
 
@@ -540,7 +541,7 @@ int Pathfinder::getPathsOut (
                 ++count;
         }
     }
-    mPOMap[currencyAccount] = count;
+    mPathsOutCountMap[issue] = count;
     return count;
 }
 

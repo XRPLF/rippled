@@ -133,11 +133,11 @@ private:
     LoadEvent::pointer  m_loadEvent;
     RippleLineCache::pointer    mRLCache;
 
-    STPathElement                     mSource;
-    STPathSet                         mCompletePaths;
+    STPathElement mSource;
+    STPathSet mCompletePaths;
     std::map<PathType_t, STPathSet> mPaths;
 
-    hash_map<std::pair<Currency, Account>, int>  mPOMap;
+    hash_map<Issue, int> mPathsOutCountMap;
 
     // Add ripple paths
     static std::uint32_t const afADD_ACCOUNTS = 0x001;
