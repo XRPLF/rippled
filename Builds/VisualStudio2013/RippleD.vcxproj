@@ -126,8 +126,6 @@
     </ClCompile>
     <ClInclude Include="..\..\build\proto\ripple.pb.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\BeastConfig.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\Arithmetic.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\asio\abstract_socket.cpp">
@@ -304,14 +302,14 @@
     <ClCompile Include="..\..\src\beast\beast\crypto\impl\MurmurHash.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\crypto\impl\Sha256.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\crypto\impl\sha2\sha2.c">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\crypto\impl\sha2\sha2.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\crypto\impl\Sha256.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\crypto\impl\UnsignedInteger.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -825,14 +823,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\module\core\text\StringPairArray.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\threads\CriticalSection.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\threads\DynamicLibrary.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\threads\Process.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\threads\ScopedLock.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\thread\DeadlineTimer.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -844,6 +834,14 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\module\core\thread\Workers.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\module\core\threads\CriticalSection.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\module\core\threads\DynamicLibrary.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\module\core\threads\Process.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\module\core\threads\ScopedLock.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\time\AtExitHook.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -1186,6 +1184,8 @@
     <ClInclude Include="..\..\src\beast\beast\utility\Zero.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\Version.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\BeastConfig.h">
     </ClInclude>
     <ClCompile Include="..\..\src\hyperleveldb\db\builder.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -2179,16 +2179,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\app\main\Tuning.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\misc\AccountItem.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\misc\AccountItem.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\misc\AccountItems.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\misc\AccountItems.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\misc\AccountState.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2223,11 +2213,6 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\app\misc\NicknameState.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\misc\Offer.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\misc\Offer.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\app\misc\OrderBook.h">
     </ClInclude>
