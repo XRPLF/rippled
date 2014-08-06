@@ -63,11 +63,14 @@ struct RippleCalc
     {
     }
 
-    LedgerEntrySet& mActiveLedger;
+    /** Compute liquidity through these path sets. */
     TER rippleCalculate ();
 
     /** Add a single PathState.  Returns true on success.*/
     bool addPathState(STPath const&, TER&);
+
+    /** The active ledger. */
+    LedgerEntrySet& mActiveLedger;
 
     STAmount const& saDstAmountReq_;
     STAmount const& saMaxAmountReq_;
@@ -79,13 +82,13 @@ struct RippleCalc
     // only be used there.
 
     // Map of currency, issuer to node index.
-    AccountIssueToNodeIndex mumSource;
+    AccountIssueToNodeIndex mumSource_;
 
     // If the transaction fails to meet some constraint, still need to delete
     // unfunded offers.
     //
     // Offers that were found unfunded.
-    hash_set<uint256> unfundedOffers_;
+    path::OfferSet permanentlyUnfundedOffers_;
 
     // The computed input amount.
     STAmount actualAmountIn_;
