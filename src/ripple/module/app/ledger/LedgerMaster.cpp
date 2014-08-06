@@ -642,7 +642,7 @@ public:
         //
         {
             if (isCurrent)
-                getApp ().getValidators ().ledgerClosed (ledger->getHash());
+                getApp ().getValidators ().on_ledger_closed (ledger->getHash());
         }
         //
         //--------------------------------------------------------------------------

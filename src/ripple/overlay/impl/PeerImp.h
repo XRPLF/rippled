@@ -170,7 +170,7 @@ public:
     boost::optional <beast::http::basic_message> http_message_;
     boost::optional <beast::http::basic_message::parser> http_parser_;
     message_stream message_stream_;
-    
+
     boost::asio::streambuf write_buffer_;
     bool write_pending_;
 
@@ -1127,7 +1127,7 @@ private:
                 Validators::ReceivedValidation rv;
                 rv.ledgerHash = sv.getLedgerHash ();
                 rv.publicKey = sv.getSignerPublic();
-                getApp ().getValidators ().receiveValidation (rv);
+                getApp ().getValidators ().on_receive_validation (rv);
             }
             //
             //----------------------------------------------------------------------

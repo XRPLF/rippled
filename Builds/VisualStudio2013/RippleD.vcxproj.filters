@@ -2778,9 +2778,6 @@
     <ClInclude Include="..\..\src\protobuf\vsprojects\config.h">
       <Filter>protobuf\vsprojects</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\algorithm\api\CycledSet.h">
-      <Filter>ripple\algorithm\api</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\algorithm\api\DecayingSample.h">
       <Filter>ripple\algorithm\api</Filter>
     </ClInclude>

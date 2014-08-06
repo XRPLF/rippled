@@ -93,7 +93,7 @@
         * Measurements of constructive/destructive behavior is
           calculated in units of percentage of ledgers for which
           the behavior is measured.
-          
+
     What we want from the unique node list:
       - Some number of trusted roots (known by domain)
         probably organizations whose job is to provide a list of validators
@@ -151,8 +151,8 @@ public:
     bool m_checkSources;
 
     ManagerImp (
-        Stoppable& parent, 
-        beast::File const& pathToDbFileOrDirectory, 
+        Stoppable& parent,
+        beast::File const& pathToDbFileOrDirectory,
         beast::Journal journal)
         : Stoppable ("Validators::Manager", parent)
         , Thread ("Validators")
@@ -232,14 +232,14 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void receiveValidation (ReceivedValidation const& rv)
+    void on_receive_validation (ReceivedValidation const& rv)
     {
         if (! isStopping())
             m_queue.dispatch (m_context.wrap (std::bind (
                 &Logic::receiveValidation, &m_logic, rv)));
     }
 
-    void ledgerClosed (RippleLedgerHash const& ledgerHash)
+    void on_ledger_closed (RippleLedgerHash const& ledgerHash)
     {
         if (! isStopping())
             m_queue.dispatch (m_context.wrap (std::bind (
@@ -283,24 +283,21 @@ public:
     {
         Context::Scope scope (m_context);
 
-        map ["trusted"] = std::uint32_t (
-            m_logic.m_chosenList ?
-                m_logic.m_chosenList->size() : 0);
-
+        map ["trusted"] = m_logic.getChosenSize();
         {
             beast::PropertyStream::Set items ("sources", map);
-            for (Logic::SourceTable::const_iterator iter (m_logic.m_sources.begin());
-                iter != m_logic.m_sources.end(); ++iter)
-                items.add (iter->source->to_string());
+            for (auto const& entry : m_logic.getSources())
+            {
+                items.add (entry.source->to_string());
+            }
         }
 
         {
             beast::PropertyStream::Set items ("validators", map);
-            for (Logic::ValidatorTable::iterator iter (m_logic.m_validators.begin());
-                iter != m_logic.m_validators.end(); ++iter)
+            for (auto const& entry : m_logic.getValidators())
             {
-                RipplePublicKey const& publicKey (iter->first);
-                Validator const& validator (iter->second);
+                RipplePublicKey const& publicKey (entry.first);
+                Validator const& validator (entry.second);
                 beast::PropertyStream::Map item (items);
                 item["public_key"] = publicKey.to_string();
                 validator.count().onWrite (item);
@@ -317,7 +314,7 @@ public:
     void init ()
     {
         beast::Error error (m_store.open (m_databaseFile));
-        
+
         if (! error)
         {
             m_logic.load ();
@@ -383,7 +380,7 @@ Manager::Manager ()
 }
 
 Validators::Manager* Validators::Manager::New (
-    beast::Stoppable& parent, 
+    beast::Stoppable& parent,
     beast::File const& pathToDbFileOrDirectory,
     beast::Journal journal)
 {

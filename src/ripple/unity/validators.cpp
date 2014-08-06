@@ -32,7 +32,6 @@
 #include <beast/module/asio/asio.h>
 #include <beast/module/sqdb/sqdb.h>
 
-#include <ripple/algorithm/api/CycledSet.h>
 #include <ripple/unity/testoverlay.h> // for unit test
 
 #include <ripple/validators/impl/Tuning.h>

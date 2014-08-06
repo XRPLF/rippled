@@ -20,10 +20,6 @@
 #ifndef RIPPLE_VALIDATORS_TUNING_H_INCLUDED
 #define RIPPLE_VALIDATORS_TUNING_H_INCLUDED
 
-#include <ripple/common/UnorderedContainers.h>
-
-#include <boost/version.hpp>
-
 namespace ripple {
 namespace Validators {
 
@@ -43,115 +39,16 @@ enum
 #endif
 
     // This tunes the preallocated arrays
-    ,expectedNumberOfResults = 1000
+    ,expectedNumberOfResults    = 1000
 
-    // NUmber of entries in the seen validations cache
-    ,seenValidationsCacheSize       = 1000
+    // Number of entries in the recent validations cache
+    ,recentValidationsCacheSize = 1000
 
-    // Number of entries in the seen ledgers cache
-    ,seenLedgersCacheSize           = 1000 // about half an hour at 2/sec
+    // Number of entries in the recent ledgers cache
+    ,recentLedgersCacheSize     = 1000 // about half an hour at 2/sec
 
     // Number of closed Ledger entries per Validator
-    ,ledgersPerValidator            = 100  // this shouldn't be too large
-};
-
-//------------------------------------------------------------------------------
-
-/** Cycled associative map of unique keys. */
-template <class Key,
-          class T,
-          class Info, // per-container info
-          class Hash = typename Key::hasher,
-          class KeyEqual = std::equal_to <Key>,
-          class Allocator = std::allocator <std::pair <Key const, T> > >
-class CycledMap
-{
-private:
-    typedef hash_map <Key, T, Hash, KeyEqual, Allocator>    ContainerType;
-    typedef typename ContainerType::iterator                iterator;
-
-public:
-    typedef typename ContainerType::key_type                key_type;
-    typedef typename ContainerType::value_type              value_type;
-    typedef typename ContainerType::size_type               size_type;
-    typedef typename ContainerType::difference_type         difference_type;
-    typedef typename ContainerType::hasher                  hasher;
-    typedef typename ContainerType::key_equal               key_equal;
-    typedef typename ContainerType::allocator_type          allocator_type;
-    typedef typename ContainerType::reference               reference;
-    typedef typename ContainerType::const_reference         const_reference;
-    typedef typename ContainerType::pointer                 pointer;
-    typedef typename ContainerType::const_pointer           const_pointer;
-
-    explicit CycledMap (
-        size_type item_max,
-        Hash hash = Hash(),
-        KeyEqual equal = KeyEqual(),
-        Allocator alloc = Allocator())
-        : m_max (item_max)
-        , m_hash (hash)
-        , m_equal (equal)
-        , m_alloc (alloc)
-        , m_front (m_max, hash, equal, alloc)
-        , m_back (m_max, hash, equal, alloc)
-    {
-    }
-
-    Info& front()
-        { return m_front_info; }
-
-    Info const & front() const
-        { return m_front_info; }
-
-    Info& back ()
-        { return m_back_info; }
-
-    Info const& back () const
-        { return m_back_info; }
-
-    /** Returns `true` if the next real insert would swap. */
-    bool full() const
-    {
-        return m_front.size() >= m_max;
-    }
-
-    /** Insert the value if it doesn't already exist. */
-    std::pair <T&, Info&> insert (value_type const& value)
-    {
-        if (full())
-            cycle ();
-        iterator iter (m_back.find (value.first));
-        if (iter != m_back.end())
-            return std::make_pair (
-            std::ref (iter->second),
-            std::ref (m_back_info));
-        std::pair <iterator, bool> result (
-            m_front.insert (value));
-        return std::make_pair (
-            std::ref (result.first->second),
-            std::ref (m_front_info));
-    }
-
-    void cycle ()
-    {
-        std::swap (m_front, m_back);
-        m_front.clear ();
-#if BOOST_VERSION > 105400
-        m_front.reserve (m_max);
-#endif
-        std::swap (m_front_info, m_back_info);
-        m_front_info.clear();
-    }
-
-private:
-    size_type m_max;
-    hasher m_hash;
-    key_equal m_equal;
-    allocator_type m_alloc;
-    ContainerType m_front;
-    ContainerType m_back;
-    Info m_front_info;
-    Info m_back_info;
+    ,ledgersPerValidator        =  100 // this shouldn't be too large
 };
 
 }

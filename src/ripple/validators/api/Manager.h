@@ -43,7 +43,7 @@ public:
         @param journal Where to send log output.
     */
     static Manager* New (
-        beast::Stoppable& stoppableParent, 
+        beast::Stoppable& stoppableParent,
         beast::File const& pathToDbFileOrDirectory,
         beast::Journal journal);
 
@@ -92,11 +92,11 @@ public:
 
     //virtual bool isPublicKeyTrusted (RipplePublicKey const& publicKey) = 0;
 
-    /** Called when a validation with a proper signature is received. */
-    virtual void receiveValidation (ReceivedValidation const& rv) = 0;
-    
-    /** Called when a ledger is closed. */
-    virtual void ledgerClosed (RippleLedgerHash const& ledgerHash) = 0;
+    /** Callback to call when a properly signed validation is received. */
+    virtual void on_receive_validation (ReceivedValidation const& rv) = 0;
+
+    /** Callback to call when a ledger is closed. */
+    virtual void on_ledger_closed (RippleLedgerHash const& ledgerHash) = 0;
 };
 
 }

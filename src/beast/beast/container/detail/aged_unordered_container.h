@@ -2057,8 +2057,8 @@ operator[] (Key const& key)
             std::piecewise_construct,
                 std::forward_as_tuple (key),
                     std::forward_as_tuple ()));
-        chronological.list.push_back (*p);
         m_cont.insert_commit (*p, d);
+        chronological.list.push_back (*p);
         return p->value.second;
     }
     return result.first->value.second;
@@ -2083,8 +2083,8 @@ operator[] (Key&& key)
             std::piecewise_construct,
                 std::forward_as_tuple (std::move (key)),
                     std::forward_as_tuple ()));
-        chronological.list.push_back (*p);
         m_cont.insert_commit (*p, d);
+        chronological.list.push_back (*p);
         return p->value.second;
     }
     return result.first->value.second;
@@ -2126,8 +2126,8 @@ insert (value_type const& value) ->
     if (result.second)
     {
         element* const p (new_element (value));
-        chronological.list.push_back (*p);
         auto const iter (m_cont.insert_commit (*p, d));
+        chronological.list.push_back (*p);
         return std::make_pair (iterator (iter), true);
     }
     return std::make_pair (iterator (result.first), false);
@@ -2170,8 +2170,8 @@ insert (value_type&& value) ->
     if (result.second)
     {
         element* const p (new_element (std::move (value)));
-        chronological.list.push_back (*p);
         auto const iter (m_cont.insert_commit (*p, d));
+        chronological.list.push_back (*p);
         return std::make_pair (iterator (iter), true);
     }
     return std::make_pair (iterator (result.first), false);
@@ -2195,6 +2195,32 @@ insert (value_type&& value) ->
     return iterator (iter);
 }
 
+#if 1 // Use insert() instead of insert_check() insert_commit()
+// set, map
+template <bool IsMulti, bool IsMap, class Key, class T,
+    class Duration, class Hash, class KeyEqual, class Allocator>
+template <bool maybe_multi, class... Args>
+auto
+aged_unordered_container <IsMulti, IsMap, Key, T, Duration,
+    Hash, KeyEqual, Allocator>::
+emplace (Args&&... args) ->
+    typename std::enable_if <! maybe_multi,
+        std::pair <iterator, bool>>::type
+{
+    maybe_rehash (1);
+    // VFALCO NOTE Its unfortunate that we need to
+    //             construct element here
+    element* const p (new_element (std::forward <Args> (args)...));
+    auto const result (m_cont.insert (*p));
+    if (result.second)
+    {
+        chronological.list.push_back (*p);
+        return std::make_pair (iterator (result.first), true);
+    }
+    delete_element (p);
+    return std::make_pair (iterator (result.first), false);
+}
+#else // As original, use insert_check() / insert_commit () pair.
 // set, map
 template <bool IsMulti, bool IsMap, class Key, class T,
     class Duration, class Hash, class KeyEqual, class Allocator>
@@ -2217,13 +2243,14 @@ emplace (Args&&... args) ->
             std::cref (m_config.key_value_equal()), d));
     if (result.second)
     {
-        chronological.list.push_back (*p);
         auto const iter (m_cont.insert_commit (*p, d));
+        chronological.list.push_back (*p);
         return std::make_pair (iterator (iter), true);
     }
     delete_element (p);
     return std::make_pair (iterator (result.first), false);
 }
+#endif // 0
 
 // multiset, multimap
 template <bool IsMulti, bool IsMap, class Key, class T,
@@ -2266,8 +2293,8 @@ emplace_hint (const_iterator /*hint*/, Args&&... args) ->
             std::cref (m_config.key_value_equal()), d));
     if (result.second)
     {
-        chronological.list.push_back (*p);
         auto const iter (m_cont.insert_commit (*p, d));
+        chronological.list.push_back (*p);
         return std::make_pair (iterator (iter), true);
     }
     delete_element (p);
@@ -2458,8 +2485,8 @@ insert_unchecked (value_type const& value) ->
     if (result.second)
     {
         element* const p (new_element (value));
-        chronological.list.push_back (*p);
         auto const iter (m_cont.insert_commit (*p, d));
+        chronological.list.push_back (*p);
         return std::make_pair (iterator (iter), true);
     }
     return std::make_pair (iterator (result.first), false);

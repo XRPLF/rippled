@@ -20,10 +20,98 @@
 #ifndef RIPPLE_VALIDATORS_LOGIC_H_INCLUDED
 #define RIPPLE_VALIDATORS_LOGIC_H_INCLUDED
 
+#include <beast/chrono/manual_clock.h>
+#include <beast/container/aged_unordered_set.h>
 #include <memory>
 
 namespace ripple {
 namespace Validators {
+
+// Forward declare unit test so it can be a friend to LRUCache.
+class Logic_test;
+
+namespace detail
+{
+// The LRUCache class (ab)uses an aged_unordered_set so it can hold on
+// to a limited number of values.  When the container gets too full the
+// LRUCache expires the oldest values.
+//
+// An aged_unordered_set gives us the functionality we want by keeping the
+// chronological list.  We don't care about the actual time of entry, only
+// the time ordering.  So we hook the aged_unordered_set up to a maunual_clock
+// (which we never bother to increment).
+//
+// The implementation could potentially be changed to be time-based, rather
+// than count-based, by hooking up a beast::basic_second_clock in place of the
+// manual_clock and deleting a range of expired entries on insert.
+//
+template <class Key,
+          class Hash = std::hash <Key>,
+          class KeyEqual = std::equal_to <Key>,
+          class Allocator = std::allocator <Key> >
+class LRUCache
+{
+private:
+    typedef std::chrono::seconds Duration;
+    typedef beast::manual_clock <Duration> Clock;
+    typedef beast::aged_unordered_set <
+        Key, Duration, Hash, KeyEqual, Allocator> ContainerType;
+
+public:
+    LRUCache () = delete;
+
+    LRUCache (LRUCache const& lhs) = delete;
+
+    explicit LRUCache (
+        size_t item_max,
+        Hash hash = Hash(),
+        KeyEqual equal = KeyEqual(),
+        Allocator alloc = Allocator())
+    : m_clock ()
+    , m_cache (m_clock, hash, equal, alloc)
+    , m_item_max (item_max)
+    {
+        m_cache.reserve (m_item_max + 1);
+    }
+
+    LRUCache& operator= (LRUCache const& lhs) = delete;
+
+    // Add the entry.  Remove the oldest entry if we went over our limit.
+    // Returns true on insertion (the entry was not already in the cache).
+    bool insert (Key const& key)
+    {
+        auto const insertRet (m_cache.insert (key));
+        if (insertRet.second == false)
+        {
+            // key is re-referenced.  Mark it as MRU.
+            m_cache.touch (insertRet.first);
+        }
+        else if (m_cache.size () > m_item_max)
+        {
+            // Added key and cache is too big.  Erase oldest element.
+            m_cache.erase (m_cache.chronological.begin ());
+        }
+        return insertRet.second;
+    }
+
+    size_t size ()
+    {
+        return m_cache.size();
+    }
+
+    Key const* oldest ()
+    {
+        return m_cache.empty() ? nullptr : &(*m_cache.chronological.begin());
+    }
+
+private:
+    Clock m_clock;
+    ContainerType m_cache;
+    const size_t m_item_max;
+};
+} // namespace detail
+
+//------------------------------------------------------------------------------
 
 // Encapsulates the logic for creating the chosen validators.
 // This is a separate class to facilitate the unit tests.
@@ -44,6 +132,7 @@ public:
         beast::SharedPtr <Source> fetchSource;
     };
 
+private:
     typedef beast::SharedData <State> SharedState;
 
     SharedState m_state;
@@ -72,27 +161,28 @@ public:
 
     // Filters duplicate validations
     //
-    typedef CycledSet <ReceivedValidation,
-                       ReceivedValidationHash,
-                       ReceivedValidationKeyEqual> SeenValidations;
-    SeenValidations m_seenValidations;
+    typedef detail::LRUCache <ReceivedValidation,
+                              ReceivedValidationHash,
+                              ReceivedValidationKeyEqual> RecentValidations;
+    RecentValidations m_recentValidations;
 
     // Filters duplicate ledger hashes
     //
-    typedef CycledSet <RippleLedgerHash,
-                       RippleLedgerHash::hasher,
-                       RippleLedgerHash::key_equal> SeenLedgerHashes;
-    SeenLedgerHashes m_seenLedgerHashes;
+    typedef detail::LRUCache <RippleLedgerHash,
+                              RippleLedgerHash::hasher,
+                              RippleLedgerHash::key_equal> RecentLedgerHashes;
+    RecentLedgerHashes m_recentLedgerHashes;
 
     //--------------------------------------------------------------------------
+public:
 
     explicit Logic (Store& store, beast::Journal journal = beast::Journal ())
         : m_store (store)
         , m_journal (journal)
         , m_ledgerID (0)
         , m_rebuildChosenList (false)
-        , m_seenValidations (seenValidationsCacheSize)
-        , m_seenLedgerHashes (seenLedgersCacheSize)
+        , m_recentValidations (recentValidationsCacheSize)
+        , m_recentLedgerHashes (recentLedgersCacheSize)
     {
         m_sources.reserve (16);
     }
@@ -233,6 +323,18 @@ public:
         return numRemoved;
     }
 
+    /** Return reference to m_sources for Mangager::PropertyStream. */
+    SourceTable const& getSources ()
+    {
+        return m_sources;
+    }
+
+    /** Return reference to m_validators for Manager::PropertyStream. */
+    ValidatorTable const& getValidators ()
+    {
+        return m_validators;
+    }
+
     //--------------------------------------------------------------------------
     //
     // Chosen
@@ -275,12 +377,10 @@ public:
         }
     }
 
-    /** Returns the current Chosen list.
-        This can be called from any thread at any time.
-    */
-    ChosenList::Ptr getChosen ()
+    /** Returns number of elements in the current Chosen list. */
+    std::uint32_t getChosenSize()
     {
-        return m_chosenList;
+        return m_chosenList ? m_chosenList->size() : 0;
     }
 
     //--------------------------------------------------------------------------
@@ -393,7 +493,7 @@ public:
     {
         std::size_t n (0);
         beast::Time const currentTime (beast::Time::getCurrentTime ());
-        
+
         for (SourceTable::iterator iter = m_sources.begin ();
             (n == 0) && iter != m_sources.end (); ++iter)
         {
@@ -420,7 +520,7 @@ public:
     }
 
     //--------------------------------------------------------------------------
-    // 
+    //
     // Ripple interface
     //
     //--------------------------------------------------------------------------
@@ -434,10 +534,10 @@ public:
         if (iter != m_validators.end ())
         {
             // Filter duplicates (defensive programming)
-            if (! m_seenValidations.insert (rv))
+            if (! m_recentValidations.insert (rv))
                 return;
 
-            iter->second.receiveValidation (rv.ledgerHash);
+            iter->second.on_validation (rv.ledgerHash);
 
             m_journal.trace <<
                 "New trusted validation for " << rv.ledgerHash <<
@@ -456,7 +556,7 @@ public:
     void ledgerClosed (RippleLedgerHash const& ledgerHash)
     {
         // Filter duplicates (defensive programming)
-        if (! m_seenLedgerHashes.insert (ledgerHash))
+        if (! m_recentLedgerHashes.insert (ledgerHash))
             return;
 
         ++m_ledgerID;
@@ -466,10 +566,7 @@ public:
 
         for (ValidatorTable::iterator iter (m_validators.begin());
             iter != m_validators.end(); ++iter)
-        {
-            Validator& v (iter->second);
-            v.ledgerClosed (ledgerHash);
-        }
+            iter->second.on_ledger (ledgerHash);
     }
 
     // Returns `true` if the public key hash is contained in the Chosen List.

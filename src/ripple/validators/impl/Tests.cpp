@@ -184,6 +184,127 @@ public:
         }
     }
 
+    void testLRUCache ()
+    {
+        detail::LRUCache<std::string> testCache {3};
+        expect (testCache.size () == 0, "Wrong initial size");
+
+        struct TestValues
+        {
+            char const* const value;
+            bool const insertResult;
+        };
+        {
+            std::array <TestValues, 3> const v1 {
+                {{"A", true}, {"B", true}, {"C", true}}};
+            for (auto const& v : v1)
+            {
+                expect (testCache.insert (v.value) == v.insertResult,
+                    "Failed first insert tests");
+            }
+            expect (testCache.size() == 3, "Unexpected intermediate size");
+            expect (*testCache.oldest() == "A", "Unexpected oldest member");
+        }
+        {
+            std::array <TestValues, 3> const v2 {
+                {{"A", false}, {"D", true}, {"C", false}}};
+            for (auto const& v : v2)
+            {
+                expect (testCache.insert (v.value) == v.insertResult,
+                    "Failed second insert tests");
+            }
+            expect (testCache.size() == 3, "Unexpected final size");
+            expect (*testCache.oldest() == "A",
+                "Unexpected oldest member");
+        }
+    }
+
+    void testValidator ()
+    {
+        int receivedCount = 0;
+        int expectedCount = 0;
+        int closedCount = 0;
+
+        // Lambda as local function
+        auto updateCounts = [&](bool received, bool validated)
+        {
+            bool const sent = received || validated;
+
+            receivedCount += sent && !validated ? 1 : 0;
+            expectedCount += sent && !received  ? 1 : 0;
+            closedCount   += validated && received ? 1 : 0;
+        };
+
+        auto checkCounts = [&] (Count const& count)
+        {
+//          std::cout << "Received actual: " << count.received << " expected: " << receivedCount << std::endl;
+//          std::cout << "Expected actual: " << count.expected << " expected: " << expectedCount << std::endl;
+//          std::cout << "Closed actual:   " << count.closed   << " expected: " << closedCount   << std::endl;
+            expect (count.received == receivedCount, "Bad received count");
+            expect (count.expected == expectedCount, "Bad expected count");
+            expect (count.closed == closedCount, "Bad closed count");
+        };
+
+        Validator validator;
+        std::uint64_t i = 1;
+
+        // Received before closed
+        for (; i <= ledgersPerValidator; ++i)
+        {
+            RippleLedgerHash const hash {i};
+
+            bool const received = (i % 13 != 0);
+            bool const validated = (i % 7 != 0);
+            updateCounts (received, validated);
+
+            if (received)
+                validator.on_validation (hash);
+
+            if (validated)
+                validator.on_ledger (hash);
+        }
+        checkCounts (validator.count ());
+
+        // Closed before received
+        for (; i <= ledgersPerValidator * 2; ++i)
+        {
+            RippleLedgerHash const hash {i};
+
+            bool const received = (i % 11 != 0);
+            bool const validated = (i % 17 != 0);
+            updateCounts (received, validated);
+
+            if (validated)
+                validator.on_ledger (hash);
+
+            if (received)
+                validator.on_validation (hash);
+        }
+        checkCounts (validator.count ());
+
+        {
+            // Repeated receives
+            RippleLedgerHash const hash {++i};
+            receivedCount += 1;
+            for (auto j = 0; j < 100; ++j)
+            {
+                validator.on_validation (hash);
+            }
+        }
+        checkCounts (validator.count ());
+
+        {
+            // Repeated closes
+            RippleLedgerHash const hash {++i};
+            expectedCount += 1;
+            for (auto j = 0; j < 100; ++j)
+            {
+                validator.on_ledger (hash);
+            }
+        }
+       checkCounts (validator.count ());
+    }
+
     void testLogic ()
     {
         //TestStore store;
@@ -206,7 +327,7 @@ public:
 
         logic.fetch_one ();
 
-        ChosenList::Ptr list (logic.getChosen ());
+//      auto chosenSize (logic.getChosenSize ());
 
         pass ();
     }
@@ -214,6 +335,8 @@ public:
     void
     run ()
     {
+        testLRUCache ();
+        testValidator ();
         testLogic ();
     }
 };

@@ -20,6 +20,11 @@
 #ifndef RIPPLE_VALIDATORS_VALIDATOR_H_INCLUDED
 #define RIPPLE_VALIDATORS_VALIDATOR_H_INCLUDED
 
+#include <ripple/common/seconds_clock.h>
+#include <beast/container/aged_unordered_map.h>
+#include <beast/container/aged_map.h>
+#include <beast/container/aged_container_utility.h>
+
 namespace ripple {
 namespace Validators {
 
@@ -27,83 +32,132 @@ namespace Validators {
 class Validator
 {
 private:
-    /** State of a ledger. */
-    struct Ledger
+    // State of a ledger.
+    struct Entry
     {
-        Ledger() : closed (false), received (false)
-            { }
-
-        bool closed;    // `true` if the ledger was closed
-        bool received;  // `true` if we got a validation
+        bool closed = false;    // `true` if the ledger was closed
+        bool received = false;  // `true` if we got a validation
     };
 
-    /** Number of sources that reference this validator. */
-    int m_refCount;
+    // Holds the Entry of all recent ledgers for this validator.
+#if 1
+    typedef beast::aged_unordered_map <RippleLedgerHash, Entry,
+        std::chrono::seconds,
+            //beast::hardened_hash<>,
+            std::hash<RippleLedgerHash>,
+                RippleLedgerHash::key_equal> Table;
+#else
+    typedef beast::aged_map <RippleLedgerHash, Entry,
+        std::chrono::seconds, std::less<>> Table;
+#endif
 
-    /** Holds the state of all recent ledgers for this validator. */
-    /** @{ */
-    typedef CycledMap <RippleLedgerHash, Ledger, Count, beast::hardened_hash<>,
-                       RippleLedgerHash::key_equal> LedgerMap;
-    LedgerMap m_ledgers;
-    /** @} */
+    int refs_;      // Number of sources that reference this validator.
+    Table table_;
+    Count count_;
 
 public:
-    Validator ()
-        : m_refCount (0)
-        , m_ledgers (ledgersPerValidator)
+    Validator()
+        : refs_ (0)
+        , table_ (get_seconds_clock ())
     {
     }
 
     /** Increment the number of references to this validator. */
-    void addRef ()
-        { ++m_refCount; }
+    void
+    addRef()
+    {
+        ++refs_;
+    }
 
     /** Decrement the number of references to this validator.
         When the reference count reaches zero, the validator will
         be removed and no longer tracked.
     */
-    bool release ()
-        { return (--m_refCount) == 0; }
+    bool
+    release()
+    {
+        return (--refs_) == 0;
+    }
+
+    size_t
+    size () const
+    {
+        return table_.size ();
+    }
 
     /** Returns the composite performance statistics. */
-    Count count () const
-        { return m_ledgers.front() + m_ledgers.back(); }
+    Count const&
+    count () const
+    {
+        return count_;
+    }
 
     /** Called upon receipt of a validation. */
-    void receiveValidation (RippleLedgerHash const& ledgerHash)
+    void
+    on_validation (RippleLedgerHash const& ledgerHash)
     {
-        std::pair <Ledger&, Count&> result (m_ledgers.insert (
-            std::make_pair (ledgerHash, Ledger())));
-        Ledger& ledger (result.first);
-        Count& count (result.second);
-        ledger.received = true;
-        if (ledger.closed)
+        auto const result (table_.insert (
+            std::make_pair (ledgerHash, Entry())));
+        auto& entry (result.first->second);
+        if (entry.received)
+            return;
+        entry.received = true;
+        if (entry.closed)
         {
-            --count.expected;
-            ++count.closed;
+            --count_.expected;
+            ++count_.closed;
+            //table_.erase (result.first);
         }
         else
         {
-            ++count.received;
+            ++count_.received;
         }
+        //expire();
     }
 
     /** Called when a ledger is closed. */
-    void ledgerClosed (RippleLedgerHash const& ledgerHash)
+    void
+    on_ledger (RippleLedgerHash const& ledgerHash)
     {
-        std::pair <Ledger&, Count&> result (m_ledgers.insert (
-            std::make_pair (ledgerHash, Ledger())));
-        Ledger& ledger (result.first);
-        Count& count (result.second);
-        ledger.closed = true;
-        if (ledger.received)
+        auto const result (table_.insert (
+            std::make_pair (ledgerHash, Entry())));
+        auto& entry (result.first->second);
+        if (entry.closed)
+            return;
+        entry.closed = true;
+        if (entry.received)
         {
-            --count.received;
-            ++count.closed;
+            --count_.received;
+            ++count_.closed;
+            //table_.erase (result.first);
         }
         else
         {
-            ++count.expected;
+            ++count_.expected;
+        }
+        //expire();
+    }
+
+    /** Prunes old entries. */
+    void
+    expire()
+    {
+        beast::expire (table_, std::chrono::minutes(5));
+    }
+
+private:
+    void dump ()
+    {
+        std::cout << "Validator: " << this << std::endl;
+        std::cout << "Size: " << table_.size() << std::endl;
+        std::cout << "end at: "  << &(*table_.end()) << std::endl;
+        for (auto const& ledgerKeyAndState : table_)
+        {
+            std::cout << "keyAndState at: " << &ledgerKeyAndState.first << std::endl;
+            std::cout << "  Hash: " << ledgerKeyAndState.first << std::endl;
+            std::cout << "  closed: " << ledgerKeyAndState.second.closed <<
+                         "  received: " << ledgerKeyAndState.second.received <<
+                         std::endl;
         }
     }
 };

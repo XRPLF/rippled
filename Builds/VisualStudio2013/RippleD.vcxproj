@@ -1806,8 +1806,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\protobuf\vsprojects\config.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\algorithm\api\CycledSet.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\algorithm\api\DecayingSample.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\basics\containers\RangeSet.cpp">

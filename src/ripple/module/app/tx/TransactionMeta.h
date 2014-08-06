@@ -107,7 +107,7 @@ public:
 
     bool hasDeliveredAmount () const
     {
-        return bool(mDelivered);
+        return static_cast <bool> (mDelivered);
     }
 
     static bool thread (STObject& node, uint256 const& prevTxID, std::uint32_t prevLgrID);

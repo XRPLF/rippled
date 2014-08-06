@@ -1503,8 +1503,8 @@ operator[] (Key const& key)
         element* const p (new_element (
             std::piecewise_construct, std::forward_as_tuple (key),
                 std::forward_as_tuple ()));
-        chronological.list.push_back (*p);
         m_cont.insert_commit (*p, d);
+        chronological.list.push_back (*p);
         return p->value.second;
     }
     return result.first->value.second;
@@ -1526,8 +1526,8 @@ operator[] (Key&& key)
             std::piecewise_construct,
                 std::forward_as_tuple (std::move (key)),
                     std::forward_as_tuple ()));
-        chronological.list.push_back (*p);
         m_cont.insert_commit (*p, d);
+        chronological.list.push_back (*p);
         return p->value.second;
     }
     return result.first->value.second;
@@ -1564,8 +1564,8 @@ insert (value_type const& value) ->
     if (result.second)
     {
         element* const p (new_element (value));
-        chronological.list.push_back (*p);
         auto const iter (m_cont.insert_commit (*p, d));
+        chronological.list.push_back (*p);
         return std::make_pair (iterator (iter), true);
     }
     return std::make_pair (iterator (result.first), false);
@@ -1605,8 +1605,8 @@ insert (value_type&& value) ->
     if (result.second)
     {
         element* const p (new_element (std::move (value)));
-        chronological.list.push_back (*p);
         auto const iter (m_cont.insert_commit (*p, d));
+        chronological.list.push_back (*p);
         return std::make_pair (iterator (iter), true);
     }
     return std::make_pair (iterator (result.first), false);
@@ -1648,8 +1648,8 @@ insert (const_iterator hint, value_type const& value) ->
     if (result.second)
     {
         element* const p (new_element (value));
-        chronological.list.push_back (*p);
         auto const iter (m_cont.insert_commit (*p, d));
+        chronological.list.push_back (*p);
         return iterator (iter);
     }
     return iterator (result.first);
@@ -1671,8 +1671,8 @@ insert (const_iterator hint, value_type&& value) ->
     if (result.second)
     {
         element* const p (new_element (std::move (value)));
-        chronological.list.push_back (*p);
         auto const iter (m_cont.insert_commit (*p, d));
+        chronological.list.push_back (*p);
         return iterator (iter);
     }
     return iterator (result.first);
@@ -1697,8 +1697,8 @@ emplace (Args&&... args) ->
         std::cref (m_config.key_compare()), d));
     if (result.second)
     {
-        chronological.list.push_back (*p);
         auto const iter (m_cont.insert_commit (*p, d));
+        chronological.list.push_back (*p);
         return std::make_pair (iterator (iter), true);
     }
     delete_element (p);
@@ -1743,8 +1743,8 @@ emplace_hint (const_iterator hint, Args&&... args) ->
         extract (p->value), std::cref (m_config.key_compare()), d));
     if (result.second)
     {
-        chronological.list.push_back (*p);
         auto const iter (m_cont.insert_commit (*p, d));
+        chronological.list.push_back (*p);
         return std::make_pair (iterator (iter), true);
     }
     delete_element (p);

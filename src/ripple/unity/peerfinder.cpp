@@ -21,7 +21,6 @@
 
 #include <ripple/unity/peerfinder.h>
 
-#include <ripple/algorithm/api/CycledSet.h>
 #include <ripple/common/Resolver.h>
 
 #include <deque>
