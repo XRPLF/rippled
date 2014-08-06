@@ -30,6 +30,8 @@ namespace path {
 
 typedef unsigned int NodeIndex;
 
+typedef hash_set <uint256> OfferSet;
+
 }
 
 typedef hash_map <AccountIssue, path::NodeIndex> AccountIssueToNodeIndex;

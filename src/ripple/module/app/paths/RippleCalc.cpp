@@ -23,6 +23,21 @@
 namespace ripple {
 namespace path {
 
+namespace {
+
+TER deleteOffers (
+    LedgerEntrySet& activeLedger, OfferSet& offers)
+{
+    for (auto& o: offers)
+    {
+        if (TER r = activeLedger.offerDelete (o))
+            return r;
+    }
+    return tesSUCCESS;
+}
+
+} // namespace
+
 bool RippleCalc::addPathState(STPath const& path, TER& resultCode)
 {
     auto pathState = std::make_shared<PathState> (
@@ -85,6 +100,8 @@ TER RippleCalc::rippleCalculate ()
         << " saDstAmountReq_:" << saDstAmountReq_;
 
     TER resultCode = temUNCERTAIN;
+    permanentlyUnfundedOffers_.clear ();
+    mumSource_.clear ();
 
     // YYY Might do basic checks on src and dst validity as per doPayment.
 
@@ -131,7 +148,7 @@ TER RippleCalc::rippleCalculate ()
             STAmount::getRate (saDstAmountReq_, saMaxAmountReq_) : 0;
 
     // Offers that became unfunded.
-    std::vector<uint256> unfundedOffers;
+    OfferSet unfundedOffersFromBestPaths;
 
     int iPass = 0;
 
@@ -261,8 +278,8 @@ TER RippleCalc::rippleCalculate ()
 
             // Record best pass' offers that became unfunded for deletion on
             // success.
-            unfundedOffers.insert (
-                unfundedOffers.end (),
+
+            unfundedOffersFromBestPaths.insert (
                 pathState->unfundedOffers().begin (),
                 pathState->unfundedOffers().end ());
 
@@ -304,7 +321,7 @@ TER RippleCalc::rippleCalculate ()
                 // more. Prepare for next pass.
                 //
                 // Merge best pass' umReverse.
-                mumSource.insert (
+                mumSource_.insert (
                     pathState->reverse().begin (), pathState->reverse().end ());
 
             }
@@ -343,32 +360,11 @@ TER RippleCalc::rippleCalculate ()
         }
     }
 
-    if (deleteUnfundedOffers_)
+    if (resultCode == tesSUCCESS)
     {
+        resultCode = deleteOffers(mActiveLedger, unfundedOffersFromBestPaths);
         if (resultCode == tesSUCCESS)
-        {
-            // Delete offers that became unfunded.
-            for (auto const& offerIndex: unfundedOffers)
-            {
-                if (resultCode == tesSUCCESS)
-                {
-                    WriteLog (lsDEBUG, RippleCalc)
-                        << "Became unfunded " << to_string (offerIndex);
-                    resultCode = mActiveLedger.offerDelete (offerIndex);
-                }
-            }
-        }
-
-        // Delete found unfunded offers.
-        for (auto const& offerIndex: unfundedOffers_)
-        {
-            if (resultCode == tesSUCCESS)
-            {
-                WriteLog (lsDEBUG, RippleCalc)
-                    << "Delete unfunded " << to_string (offerIndex);
-                resultCode = mActiveLedger.offerDelete (offerIndex);
-            }
-        }
+            resultCode = deleteOffers(mActiveLedger, permanentlyUnfundedOffers_);
     }
 
     // If isOpenLedger, then ledger is not final, can vote no.

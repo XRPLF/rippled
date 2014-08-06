@@ -216,7 +216,8 @@ TER PathCursor::advanceNode (bool const bReverse) const
                     // Offer is expired.
                     WriteLog (lsTRACE, RippleCalc)
                         << "advanceNode: expired offer";
-                    rippleCalc_.unfundedOffers_.insert(node().offerIndex_);
+                    rippleCalc_.permanentlyUnfundedOffers_.insert(
+                        node().offerIndex_);
                     continue;
                 }
 
@@ -224,7 +225,7 @@ TER PathCursor::advanceNode (bool const bReverse) const
                 {
                     // Offer has bad amounts. Offers should never have a bad
                     // amounts.
-
+                    auto const index = node().offerIndex_;
                     if (bReverse)
                     {
                         // Past internal error, offer had bad amounts.
@@ -236,13 +237,14 @@ TER PathCursor::advanceNode (bool const bReverse) const
                             << " node.saTakerGets=%s" << node().saTakerGets;
 
                         // Mark offer for always deletion.
-                        rippleCalc_.unfundedOffers_.insert (node().offerIndex_);
+                        rippleCalc_.permanentlyUnfundedOffers_.insert (
+                            node().offerIndex_);
                     }
-                    else if (rippleCalc_.unfundedOffers_.find (node().offerIndex_)
-                             != rippleCalc_.unfundedOffers_.end ())
+                    else if (rippleCalc_.permanentlyUnfundedOffers_.find (index)
+                             != rippleCalc_.permanentlyUnfundedOffers_.end ())
                     {
                         // Past internal error, offer was found failed to place
-                        // this in unfundedOffers.
+                        // this in permanentlyUnfundedOffers_.
                         // Just skip it. It will be deleted.
                         WriteLog (lsDEBUG, RippleCalc)
                             << "advanceNode: PAST INTERNAL ERROR "
@@ -320,8 +322,8 @@ TER PathCursor::advanceNode (bool const bReverse) const
 
                 // Determine if used in past.
                 // We only need to know if it might need to be marked unfunded.
-                auto itPast = rippleCalc_.mumSource.find (accountIssue);
-                bool bFoundPast = (itPast != rippleCalc_.mumSource.end ());
+                auto itPast = rippleCalc_.mumSource_.find (accountIssue);
+                bool bFoundPast = (itPast != rippleCalc_.mumSource_.end ());
 
                 // Only the current node is allowed to use the source.
 
@@ -343,7 +345,7 @@ TER PathCursor::advanceNode (bool const bReverse) const
                         // That is, even if this offer fails due to fill or kill
                         // still do deletions.
                         // Mark offer for always deletion.
-                        rippleCalc_.unfundedOffers_.insert (node().offerIndex_);
+                        rippleCalc_.permanentlyUnfundedOffers_.insert (node().offerIndex_);
                     }
                     else
                     {
