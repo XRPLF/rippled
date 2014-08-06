@@ -467,7 +467,12 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
                 spsPaths.addPath(extraPath);
                 rc.pathStateList_.clear ();
                 resultCode = rc.rippleCalculate ();
-                m_journal.debug
+                if (resultCode != tesSUCCESS)
+                    m_journal.warning
+                        << iIdentifier << " Failed with covering path "
+                        << transHuman (resultCode);
+                else
+                    m_journal.debug
                         << iIdentifier << " Extra path element gives "
                         << transHuman (resultCode);
             }

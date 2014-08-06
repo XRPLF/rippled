@@ -505,7 +505,8 @@ int Pathfinder::getPathsOut (
 
     int aFlags = sleAccount->getFieldU32(sfFlags);
     bool const bAuthRequired = (aFlags & lsfRequireAuth) != 0;
-    bool const bFrozen = (aFlags & lsfGlobalFreeze) != 0;
+    bool const bFrozen = ((aFlags & lsfGlobalFreeze) != 0)
+        && mLedger->enforceFreeze ();
 
     int count = 0;
 
