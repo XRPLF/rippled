@@ -90,7 +90,6 @@
 #include <ripple/module/app/peers/PeerSet.h>
 #include <ripple/module/app/ledger/InboundLedger.h>
 #include <ripple/module/app/ledger/InboundLedgers.h>
-#include <ripple/module/app/misc/AccountItems.h>
 #include <ripple/module/app/ledger/AcceptedLedgerTx.h>
 #include <ripple/module/app/ledger/AcceptedLedger.h>
 #include <ripple/module/app/ledger/LedgerEntrySet.h>
