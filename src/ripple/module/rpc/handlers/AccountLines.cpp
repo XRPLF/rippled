@@ -75,14 +75,10 @@ Json::Value doAccountLines (RPC::Context& context)
 
     if (ledger->hasAccount (raAccount))
     {
-        AccountItems rippleLines (raAccount.getAccountID (), ledger,
-                                  AccountItem::pointer (new RippleState ()));
-
         result[jss::account] = raAccount.humanAccountID ();
         Json::Value& jsonLines = (result[jss::lines] = Json::arrayValue);
 
-
-        for (auto& item: rippleLines.getItems ())
+        for (auto const& item : getRippleStateItems (raAccount.getAccountID (), ledger))
         {
             RippleState* line = (RippleState*)item.get ();
 

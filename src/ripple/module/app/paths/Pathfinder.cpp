@@ -431,7 +431,7 @@ CurrencySet usAccountSourceCurrencies (
     // List of ripple lines.
     auto& rippleLines (lrCache->getRippleLines (raAccountID.getAccountID ()));
 
-    for (auto const& item: rippleLines.getItems ())
+    for (auto const& item : rippleLines)
     {
         auto rspEntry = (RippleState*) item.get ();
         auto& saBalance = rspEntry->getBalance ();
@@ -465,7 +465,7 @@ CurrencySet usAccountDestCurrencies (
     // List of ripple lines.
     auto& rippleLines (lrCache->getRippleLines (raAccountID.getAccountID ()));
 
-    for (auto item: rippleLines.getItems ())
+    for (auto const& item : rippleLines)
     {
         RippleState*    rspEntry    = (RippleState*) item.get ();
         STAmount const& saBalance   = rspEntry->getBalance ();
@@ -512,8 +512,8 @@ int Pathfinder::getPathsOut (
     if (!bFrozen)
     {
         count = getApp().getOrderBookDB().getBookSize({currencyID, accountID});
-        AccountItems& rippleLines = mRLCache->getRippleLines (accountID);
-        for (auto const& item : rippleLines.getItems ())
+
+        for (auto const& item : mRLCache->getRippleLines (accountID))
         {
             RippleState* rspEntry = (RippleState*) item.get ();
 
@@ -703,9 +703,9 @@ void Pathfinder::addLink(
                 auto& rippleLines (mRLCache->getRippleLines(uEndAccount));
 
                 AccountCandidates candidates;
-                candidates.reserve(rippleLines.getItems().size());
+                candidates.reserve(rippleLines.size());
 
-                for(auto const& item : rippleLines.getItems())
+                for(auto const& item : rippleLines)
                 {
                     auto* rs = dynamic_cast<RippleState const *> (item.get());
                     if (!rs)

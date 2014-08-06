@@ -19,30 +19,26 @@
 
 namespace ripple {
 
-AccountItem::pointer RippleState::makeItem (
+RippleState::pointer RippleState::makeItem (
     Account const& accountID, SerializedLedgerEntry::ref ledgerEntry)
 {
     if (!ledgerEntry || ledgerEntry->getType () != ltRIPPLE_STATE)
-        return AccountItem::pointer ();
+        return RippleState::pointer ();
 
-    RippleState* rs = new RippleState (ledgerEntry);
-    rs->setViewAccount (accountID);
-
-    return AccountItem::pointer (rs);
+    return RippleState::pointer (new RippleState (ledgerEntry, accountID));
 }
 
-RippleState::RippleState (SerializedLedgerEntry::ref ledgerEntry)
-        : AccountItem (ledgerEntry),
-    mValid (false),
-    mViewLowest (true),
-
-    mLowLimit (ledgerEntry->getFieldAmount (sfLowLimit)),
-    mHighLimit (ledgerEntry->getFieldAmount (sfHighLimit)),
-
-    mLowID (mLowLimit.getIssuer ()),
-    mHighID (mHighLimit.getIssuer ()),
-
-    mBalance (ledgerEntry->getFieldAmount (sfBalance))
+RippleState::RippleState (
+        SerializedLedgerEntry::ref ledgerEntry,
+        Account const& viewAccount)
+    : mLedgerEntry (ledgerEntry)
+    , mValid (false)
+    , mViewLowest (true)
+    , mLowLimit (ledgerEntry->getFieldAmount (sfLowLimit))
+    , mHighLimit (ledgerEntry->getFieldAmount (sfHighLimit))
+    , mLowID (mLowLimit.getIssuer ())
+    , mHighID (mHighLimit.getIssuer ())
+    , mBalance (ledgerEntry->getFieldAmount (sfBalance))
 {
     mFlags          = mLedgerEntry->getFieldU32 (sfFlags);
 
@@ -52,18 +48,15 @@ RippleState::RippleState (SerializedLedgerEntry::ref ledgerEntry)
     mHighQualityIn  = mLedgerEntry->getFieldU32 (sfHighQualityIn);
     mHighQualityOut = mLedgerEntry->getFieldU32 (sfHighQualityOut);
 
-    mValid      = true;
-}
-
-void RippleState::setViewAccount (Account const& accountID)
-{
-    bool    bViewLowestNew  = mLowID == accountID;
+    bool const bViewLowestNew (mLowID == viewAccount);
 
     if (bViewLowestNew != mViewLowest)
     {
         mViewLowest = bViewLowestNew;
         mBalance.negate ();
     }
+
+    mValid = true;
 }
 
 Json::Value RippleState::getJson (int)
@@ -72,6 +65,25 @@ Json::Value RippleState::getJson (int)
     ret["low_id"] = to_string (mLowID);
     ret["high_id"] = to_string (mHighID);
     return ret;
+}
+
+std::vector <RippleState::pointer>
+getRippleStateItems (
+    Account const& accountID,
+    Ledger::ref ledger)
+{
+    std::vector <RippleState::pointer> items;
+
+    ledger->visitAccountItems (accountID,
+        [&items,&accountID](SLE::ref sleCur)
+        {
+             auto ret = RippleState::makeItem (accountID, sleCur);
+
+             if (ret)
+                items.push_back (ret);
+        });
+
+    return items;
 }
 
 } // ripple

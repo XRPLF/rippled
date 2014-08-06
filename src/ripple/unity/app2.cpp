@@ -28,7 +28,6 @@
 #include <ripple/module/app/shamap/SHAMapSync.cpp>
 #include <ripple/module/app/shamap/SHAMapMissingNode.cpp>
 
-#include <ripple/module/app/misc/AccountItem.cpp>
 #include <ripple/module/app/misc/CanonicalTXSet.cpp>
 #include <ripple/module/app/ledger/LedgerProposal.cpp>
 #include <ripple/module/app/main/LoadManager.cpp>
