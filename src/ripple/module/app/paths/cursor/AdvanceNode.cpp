@@ -212,7 +212,7 @@ TER PathCursor::advanceNode (bool const bReverse) const
                     // Offer is expired.
                     WriteLog (lsTRACE, RippleCalc)
                         << "advanceNode: expired offer";
-                    rippleCalc_.unfundedOffers.insert(node().offerIndex_);
+                    rippleCalc_.unfundedOffers_.insert(node().offerIndex_);
                     continue;
                 }
 
@@ -232,10 +232,10 @@ TER PathCursor::advanceNode (bool const bReverse) const
                             << " node.saTakerGets=%s" << node().saTakerGets;
 
                         // Mark offer for always deletion.
-                        rippleCalc_.unfundedOffers.insert (node().offerIndex_);
+                        rippleCalc_.unfundedOffers_.insert (node().offerIndex_);
                     }
-                    else if (rippleCalc_.unfundedOffers.find (node().offerIndex_)
-                             != rippleCalc_.unfundedOffers.end ())
+                    else if (rippleCalc_.unfundedOffers_.find (node().offerIndex_)
+                             != rippleCalc_.unfundedOffers_.end ())
                     {
                         // Past internal error, offer was found failed to place
                         // this in unfundedOffers.
@@ -339,7 +339,7 @@ TER PathCursor::advanceNode (bool const bReverse) const
                         // That is, even if this offer fails due to fill or kill
                         // still do deletions.
                         // Mark offer for always deletion.
-                        rippleCalc_.unfundedOffers.insert (node().offerIndex_);
+                        rippleCalc_.unfundedOffers_.insert (node().offerIndex_);
                     }
                     else
                     {

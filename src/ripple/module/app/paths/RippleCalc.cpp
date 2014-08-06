@@ -360,7 +360,7 @@ TER RippleCalc::rippleCalculate ()
         }
 
         // Delete found unfunded offers.
-        for (auto const& offerIndex: unfundedOffers)
+        for (auto const& offerIndex: unfundedOffers_)
         {
             if (resultCode == tesSUCCESS)
             {

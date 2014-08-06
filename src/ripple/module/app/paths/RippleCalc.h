@@ -85,7 +85,7 @@ struct RippleCalc
     // unfunded offers.
     //
     // Offers that were found unfunded.
-    hash_set<uint256> unfundedOffers;
+    hash_set<uint256> unfundedOffers_;
 
     // The computed input amount.
     STAmount actualAmountIn_;
