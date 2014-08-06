@@ -36,7 +36,8 @@ public:
         return mLedger;
     }
 
-    AccountItems& getRippleLines (Account const& accountID);
+    std::vector<RippleState::pointer> const&
+    getRippleLines (Account const& accountID);
 
 private:
     typedef RippleMutex LockType;
@@ -45,7 +46,7 @@ private:
 
     Ledger::pointer mLedger;
 
-    hash_map <Account, AccountItems::pointer> mRLMap;
+    hash_map <Account, std::vector <RippleState::pointer>> mRLMap;
 };
 
 } // ripple
