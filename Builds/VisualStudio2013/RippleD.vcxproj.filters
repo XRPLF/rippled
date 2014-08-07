@@ -2832,9 +2832,6 @@
     <ClInclude Include="..\..\src\ripple\basics\utility\PlatformMacros.h">
       <Filter>ripple\basics\utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\basics\utility\StringConcat.h">
-      <Filter>ripple\basics\utility</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\basics\utility\StringUtilities.cpp">
       <Filter>ripple\basics\utility</Filter>
     </ClCompile>

@@ -1845,8 +1845,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\utility\PlatformMacros.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\basics\utility\StringConcat.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\basics\utility\StringUtilities.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
