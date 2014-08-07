@@ -141,13 +141,12 @@ private:
 private:
     SerializedLedgerEntry::pointer  mLedgerEntry;
 
-    bool                            mValid;
     bool                            mViewLowest;
 
     std::uint32_t                   mFlags;
 
-    STAmount                        mLowLimit;
-    STAmount                        mHighLimit;
+    STAmount const&                 mLowLimit;
+    STAmount const&                 mHighLimit;
 
     Account const&                  mLowID;
     Account const&                  mHighID;

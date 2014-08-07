@@ -23,17 +23,15 @@ RippleState::pointer RippleState::makeItem (
     Account const& accountID, SerializedLedgerEntry::ref ledgerEntry)
 {
     if (!ledgerEntry || ledgerEntry->getType () != ltRIPPLE_STATE)
-        return RippleState::pointer ();
+        return pointer ();
 
-    return RippleState::pointer (new RippleState (ledgerEntry, accountID));
+    return pointer (new RippleState (ledgerEntry, accountID));
 }
 
 RippleState::RippleState (
         SerializedLedgerEntry::ref ledgerEntry,
         Account const& viewAccount)
     : mLedgerEntry (ledgerEntry)
-    , mValid (false)
-    , mViewLowest (true)
     , mLowLimit (ledgerEntry->getFieldAmount (sfLowLimit))
     , mHighLimit (ledgerEntry->getFieldAmount (sfHighLimit))
     , mLowID (mLowLimit.getIssuer ())
@@ -48,15 +46,10 @@ RippleState::RippleState (
     mHighQualityIn  = mLedgerEntry->getFieldU32 (sfHighQualityIn);
     mHighQualityOut = mLedgerEntry->getFieldU32 (sfHighQualityOut);
 
-    bool const bViewLowestNew (mLowID == viewAccount);
+    mViewLowest = (mLowID == viewAccount);
 
-    if (bViewLowestNew != mViewLowest)
-    {
-        mViewLowest = bViewLowestNew;
+    if (!mViewLowest)
         mBalance.negate ();
-    }
-
-    mValid = true;
 }
 
 Json::Value RippleState::getJson (int)
