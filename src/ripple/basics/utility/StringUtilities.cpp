@@ -24,7 +24,6 @@
 #include <cstdarg>
 
 #include <ripple/basics/utility/ToString.h>
-#include <ripple/basics/utility/StringConcat.h>
 
 namespace ripple {
 
@@ -393,25 +392,6 @@ public:
             "parseUrl: Mixed://domain/path path failed");
     }
 
-    void testStringConcat ()
-    {
-        testcase ("stringConcat");
-        auto result = stringConcat({});
-        expect(result == "", result);
-
-        result = stringConcat({"hello, ", std::string("world.")});
-        expect(result == "hello, world.", result);
-
-        result = stringConcat({"hello, ", 23});
-        expect(result == "hello, 23", result);
-
-        result = stringConcat({"hello, ", true});
-        expect(result == "hello, true", result);
-
-        result = stringConcat({"hello, ", 'x'});
-        expect(result == "hello, x", result);
-    }
-
     void testToString ()
     {
         testcase ("toString");
@@ -423,7 +403,6 @@ public:
     {
         testParseUrl ();
         testUnHex ();
-        testStringConcat ();
         testToString ();
     }
 };
