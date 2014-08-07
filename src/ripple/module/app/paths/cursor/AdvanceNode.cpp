@@ -24,10 +24,14 @@ namespace path {
 
 TER PathCursor::advanceNode (STAmount const& amount, bool reverse) const
 {
-    if (!multiQuality_ && amount != zero)
+    bool multi = multiQuality_ || amount == zero;
+
+    // If the multiQuality_ is unchanged, use the PathCursor we're using now.
+    if (multi == multiQuality_)
         return advanceNode (reverse);
 
-    PathCursor withMultiQuality{rippleCalc_, pathState_, true, nodeIndex_};
+    // Otherwise, use a new PathCursor with the new multiQuality_.
+    PathCursor withMultiQuality {rippleCalc_, pathState_, multi, nodeIndex_};
     return withMultiQuality.advanceNode (reverse);
 }
 
