@@ -300,7 +300,7 @@ suite('Robust transaction submission', function() {
             if (++ledgers === 3) {
               callback();
             } else {
-              nextLedger();
+              setTimeout(nextLedger, process.env.TRAVIS ? 400 : 100 );
             }
           });
           $.remote.ledger_accept();
