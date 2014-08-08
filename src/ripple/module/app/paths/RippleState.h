@@ -27,25 +27,23 @@ namespace ripple {
 // - Isolate ledger entry format.
 //
 
-class RippleState : public AccountItem
+class RippleState
 {
 public:
     typedef std::shared_ptr <RippleState> pointer;
 
 public:
-    RippleState () { }
+    RippleState () = delete;
 
     virtual ~RippleState () { }
 
-    AccountItem::pointer makeItem (
+    static RippleState::pointer makeItem (
         Account const& accountID, SerializedLedgerEntry::ref ledgerEntry);
 
     LedgerEntryType getType ()
     {
         return ltRIPPLE_STATE;
     }
-
-    void setViewAccount (Account const& accountID);
 
     Account const& getAccountID () const
     {
@@ -136,19 +134,22 @@ public:
     Blob getRaw () const;
 
 private:
-    explicit RippleState (SerializedLedgerEntry::ref ledgerEntry);   // For accounts in a ledger
+    RippleState (
+        SerializedLedgerEntry::ref ledgerEntry,
+        Account const& viewAccount);
 
 private:
-    bool                            mValid;
+    SerializedLedgerEntry::pointer  mLedgerEntry;
+
     bool                            mViewLowest;
 
     std::uint32_t                   mFlags;
 
-    STAmount                        mLowLimit;
-    STAmount                        mHighLimit;
+    STAmount const&                 mLowLimit;
+    STAmount const&                 mHighLimit;
 
-    Account                         mLowID;
-    Account                         mHighID;
+    Account const&                  mLowID;
+    Account const&                  mHighID;
 
     std::uint64_t                   mLowQualityIn;
     std::uint64_t                   mLowQualityOut;
@@ -157,6 +158,11 @@ private:
 
     STAmount                        mBalance;
 };
+
+std::vector <RippleState::pointer>
+getRippleStateItems (
+    Account const& accountID,
+    Ledger::ref ledger);
 
 } // ripple
 

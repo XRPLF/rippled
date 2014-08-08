@@ -24,19 +24,18 @@ RippleLineCache::RippleLineCache (Ledger::ref l)
 {
 }
 
-AccountItems& RippleLineCache::getRippleLines (Account const& accountID)
+std::vector<RippleState::pointer> const&
+RippleLineCache::getRippleLines (Account const& accountID)
 {
     ScopedLockType sl (mLock);
 
     auto it = mRLMap.find (accountID);
 
     if (it == mRLMap.end ())
-    {
-        auto accountItems = std::make_shared<AccountItems> (
-            accountID, mLedger, AccountItem::pointer (new RippleState ()));
-        it = mRLMap.insert ({accountID, accountItems}).first;
-    }
-    return *it->second;
+        it = mRLMap.insert (std::make_pair (
+            accountID, ripple::getRippleStateItems (accountID, mLedger))).first;
+
+    return it->second;
 }
 
 } // ripple

@@ -53,10 +53,7 @@ Json::Value doAccountCurrencies (RPC::Context& context)
         return jvAccepted;
 
     std::set<Currency> send, receive;
-    AccountItems rippleLines (
-        naAccount.getAccountID (), ledger,
-        AccountItem::pointer (new RippleState ()));
-    for (auto item: rippleLines.getItems ())
+    for (auto const& item : getRippleStateItems (naAccount.getAccountID (), ledger))
     {
         RippleState* rspEntry = (RippleState*) item.get ();
         STAmount const& saBalance = rspEntry->getBalance ();

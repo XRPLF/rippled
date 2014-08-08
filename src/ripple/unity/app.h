@@ -90,8 +90,6 @@
 #include <ripple/module/app/peers/PeerSet.h>
 #include <ripple/module/app/ledger/InboundLedger.h>
 #include <ripple/module/app/ledger/InboundLedgers.h>
-#include <ripple/module/app/misc/AccountItem.h>
-#include <ripple/module/app/misc/AccountItems.h>
 #include <ripple/module/app/ledger/AcceptedLedgerTx.h>
 #include <ripple/module/app/ledger/AcceptedLedger.h>
 #include <ripple/module/app/ledger/LedgerEntrySet.h>
@@ -114,15 +112,14 @@
 #include <ripple/module/app/consensus/DisputedTx.h>
 #include <ripple/module/app/consensus/LedgerConsensus.h>
 #include <ripple/module/app/ledger/LedgerTiming.h>
-#include <ripple/module/app/misc/Offer.h>
+#include <ripple/module/app/paths/RippleState.h>
 #include <ripple/module/app/paths/RippleLineCache.h>
 #include <ripple/module/app/paths/PathRequest.h>
 #include <ripple/module/app/paths/PathRequests.h>
 #include <ripple/module/app/main/ParameterTable.h>
- #include <ripple/module/app/paths/RippleLineCache.h>
  #include <ripple/module/app/paths/PathState.h>
  #include <ripple/module/app/paths/RippleCalc.h>
 #include  <ripple/module/app/paths/Pathfinder.h>
-#include <ripple/module/app/paths/RippleState.h>
+
 
 #endif
