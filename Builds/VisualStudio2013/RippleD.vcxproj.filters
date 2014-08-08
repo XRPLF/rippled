@@ -553,11 +553,17 @@
     <Filter Include="rocksdb\db">
       <UniqueIdentifier>{CF9BDE04-BD20-28B9-FC91-1BB55ADCACB7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="rocksdb\hdfs">
+      <UniqueIdentifier>{0407E334-3863-9048-3EAF-2AD842D9E4E6}</UniqueIdentifier>
+    </Filter>
     <Filter Include="rocksdb\include">
       <UniqueIdentifier>{C0556487-1F23-30EC-158C-1BA7C8B1F6C3}</UniqueIdentifier>
     </Filter>
     <Filter Include="rocksdb\include\rocksdb">
       <UniqueIdentifier>{AD14E1B2-4586-6CDC-2A6F-8476B12F08B0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="rocksdb\include\rocksdb\utilities">
+      <UniqueIdentifier>{5DA11815-21A8-C90A-3599-C1E61725BE79}</UniqueIdentifier>
     </Filter>
     <Filter Include="rocksdb\port">
       <UniqueIdentifier>{B3F3758B-CF66-DE50-EC23-90ABAA4519F1}</UniqueIdentifier>
@@ -565,8 +571,44 @@
     <Filter Include="rocksdb\table">
       <UniqueIdentifier>{BA71F7B0-9208-711E-B1E5-10A2B1C54A59}</UniqueIdentifier>
     </Filter>
+    <Filter Include="rocksdb\third-party">
+      <UniqueIdentifier>{8DCA6950-4D9E-DD56-ABFE-1E3E933FB323}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="rocksdb\third-party\rapidjson">
+      <UniqueIdentifier>{0C0524C1-7BE5-DA20-0E6A-F85A514AB437}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="rocksdb\third-party\rapidjson\internal">
+      <UniqueIdentifier>{1EFA83A1-02CA-BE26-A213-3D536AF039C1}</UniqueIdentifier>
+    </Filter>
     <Filter Include="rocksdb\util">
       <UniqueIdentifier>{3564B926-C600-5731-CE0C-426C65C360B2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="rocksdb\utilities">
+      <UniqueIdentifier>{2D0A0363-AA57-11F4-AFCF-2198A26BE7C2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="rocksdb\utilities\backupable">
+      <UniqueIdentifier>{6E712E4B-035E-53DF-EF79-D2820B5AC364}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="rocksdb\utilities\document">
+      <UniqueIdentifier>{2942472B-8C45-8A9F-C2B7-9AFE833D9A8D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="rocksdb\utilities\geodb">
+      <UniqueIdentifier>{6D2A0108-1F32-B04A-6B16-872AA2C9039D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="rocksdb\utilities\merge_operators">
+      <UniqueIdentifier>{42C7A482-C4FE-F9D1-6DBC-4BD3443B3D99}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="rocksdb\utilities\merge_operators\string_append">
+      <UniqueIdentifier>{BE9A242A-D80D-63CC-4046-4E273BB53562}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="rocksdb\utilities\redis">
+      <UniqueIdentifier>{1B1AA153-E614-C50F-B5FE-E69F86B90CB5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="rocksdb\utilities\spatialdb">
+      <UniqueIdentifier>{8DC59E9F-E114-2DA1-0334-AA83B67C433C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="rocksdb\utilities\ttl">
+      <UniqueIdentifier>{1E3A9D8A-09E6-E3E6-1572-D20E311F5621}</UniqueIdentifier>
     </Filter>
     <Filter Include="snappy">
       <UniqueIdentifier>{26306562-F81D-B6CD-B192-22BA51E1A96B}</UniqueIdentifier>
@@ -623,6 +665,9 @@
     </ClCompile>
     <ClInclude Include="..\..\build\proto\ripple.pb.h">
       <Filter>build\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\BeastConfig.h">
+      <Filter>.</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\Arithmetic.h">
       <Filter>beast</Filter>
@@ -855,15 +900,15 @@
     <ClCompile Include="..\..\src\beast\beast\crypto\impl\MurmurHash.cpp">
       <Filter>beast\crypto\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\crypto\impl\Sha256.cpp">
+      <Filter>beast\crypto\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\crypto\impl\sha2\sha2.c">
       <Filter>beast\crypto\impl\sha2</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\crypto\impl\sha2\sha2.h">
       <Filter>beast\crypto\impl\sha2</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\crypto\impl\Sha256.cpp">
-      <Filter>beast\crypto\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\crypto\impl\UnsignedInteger.cpp">
       <Filter>beast\crypto\impl</Filter>
     </ClCompile>
@@ -1506,6 +1551,18 @@
     <ClInclude Include="..\..\src\beast\beast\module\core\text\StringPairArray.h">
       <Filter>beast\module\core\text</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\module\core\threads\CriticalSection.h">
+      <Filter>beast\module\core\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\module\core\threads\DynamicLibrary.h">
+      <Filter>beast\module\core\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\module\core\threads\Process.h">
+      <Filter>beast\module\core\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\module\core\threads\ScopedLock.h">
+      <Filter>beast\module\core\threads</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\thread\DeadlineTimer.cpp">
       <Filter>beast\module\core\thread</Filter>
     </ClCompile>
@@ -1520,18 +1577,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\module\core\thread\Workers.h">
       <Filter>beast\module\core\thread</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\threads\CriticalSection.h">
-      <Filter>beast\module\core\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\threads\DynamicLibrary.h">
-      <Filter>beast\module\core\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\threads\Process.h">
-      <Filter>beast\module\core\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\threads\ScopedLock.h">
-      <Filter>beast\module\core\threads</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\time\AtExitHook.cpp">
       <Filter>beast\module\core\time</Filter>
@@ -1970,9 +2015,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\Version.h">
       <Filter>beast</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\BeastConfig.h">
-      <Filter>.</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\hyperleveldb\db\builder.cc">
       <Filter>hyperleveldb\db</Filter>
@@ -3237,12 +3279,6 @@
     <ClInclude Include="..\..\src\ripple\module\app\misc\NetworkOPs.h">
       <Filter>ripple\module\app\misc</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\app\misc\NicknameState.cpp">
-      <Filter>ripple\module\app\misc</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\misc\NicknameState.h">
-      <Filter>ripple\module\app\misc</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\app\misc\OrderBook.h">
       <Filter>ripple\module\app\misc</Filter>
     </ClInclude>
@@ -3910,9 +3946,6 @@
       <Filter>ripple\module\rpc\handlers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\module\rpc\handlers\LogRotate.cpp">
-      <Filter>ripple\module\rpc\handlers</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\module\rpc\handlers\NicknameInfo.cpp">
       <Filter>ripple\module\rpc\handlers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\module\rpc\handlers\OwnerInfo.cpp">
@@ -4929,6 +4962,9 @@
     <ClInclude Include="..\..\src\rocksdb\db\builder.h">
       <Filter>rocksdb\db</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\db\c.cc">
+      <Filter>rocksdb\db</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\rocksdb\db\column_family.cc">
       <Filter>rocksdb\db</Filter>
     </ClCompile>
@@ -4977,9 +5013,6 @@
     <ClInclude Include="..\..\src\rocksdb\db\db_iter.h">
       <Filter>rocksdb\db</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\rocksdb\db\db_stats_logger.cc">
-      <Filter>rocksdb\db</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\rocksdb\db\filename.cc">
       <Filter>rocksdb\db</Filter>
     </ClCompile>
@@ -5094,6 +5127,12 @@
     <ClInclude Include="..\..\src\rocksdb\db\write_batch_internal.h">
       <Filter>rocksdb\db</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\hdfs\env_hdfs.h">
+      <Filter>rocksdb\hdfs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\include\rocksdb\c.h">
+      <Filter>rocksdb\include\rocksdb</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\rocksdb\include\rocksdb\cache.h">
       <Filter>rocksdb\include\rocksdb</Filter>
     </ClInclude>
@@ -5121,6 +5160,9 @@
     <ClInclude Include="..\..\src\rocksdb\include\rocksdb\iterator.h">
       <Filter>rocksdb\include\rocksdb</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\include\rocksdb\ldb_tool.h">
+      <Filter>rocksdb\include\rocksdb</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\rocksdb\include\rocksdb\memtablerep.h">
       <Filter>rocksdb\include\rocksdb</Filter>
     </ClInclude>
@@ -5131,6 +5173,9 @@
       <Filter>rocksdb\include\rocksdb</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\rocksdb\include\rocksdb\perf_context.h">
+      <Filter>rocksdb\include\rocksdb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\include\rocksdb\rate_limiter.h">
       <Filter>rocksdb\include\rocksdb</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\rocksdb\include\rocksdb\slice.h">
@@ -5160,6 +5205,30 @@
     <ClInclude Include="..\..\src\rocksdb\include\rocksdb\universal_compaction.h">
       <Filter>rocksdb\include\rocksdb</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\include\rocksdb\utilities\backupable_db.h">
+      <Filter>rocksdb\include\rocksdb\utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\include\rocksdb\utilities\db_ttl.h">
+      <Filter>rocksdb\include\rocksdb\utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\include\rocksdb\utilities\document_db.h">
+      <Filter>rocksdb\include\rocksdb\utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\include\rocksdb\utilities\geo_db.h">
+      <Filter>rocksdb\include\rocksdb\utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\include\rocksdb\utilities\json_document.h">
+      <Filter>rocksdb\include\rocksdb\utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\include\rocksdb\utilities\spatial_db.h">
+      <Filter>rocksdb\include\rocksdb\utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\include\rocksdb\utilities\stackable_db.h">
+      <Filter>rocksdb\include\rocksdb\utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\include\rocksdb\utilities\utility_db.h">
+      <Filter>rocksdb\include\rocksdb\utilities</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\rocksdb\include\rocksdb\version.h">
       <Filter>rocksdb\include\rocksdb</Filter>
     </ClInclude>
@@ -5180,6 +5249,18 @@
     </ClCompile>
     <ClInclude Include="..\..\src\rocksdb\port\port_posix.h">
       <Filter>rocksdb\port</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\port\stack_trace.cc">
+      <Filter>rocksdb\port</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\port\stack_trace.h">
+      <Filter>rocksdb\port</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\table\adaptive_table_factory.cc">
+      <Filter>rocksdb\table</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\table\adaptive_table_factory.h">
+      <Filter>rocksdb\table</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\rocksdb\table\block.cc">
       <Filter>rocksdb\table</Filter>
@@ -5221,6 +5302,24 @@
       <Filter>rocksdb\table</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\rocksdb\table\block_prefix_index.h">
+      <Filter>rocksdb\table</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\table\bloom_block.cc">
+      <Filter>rocksdb\table</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\table\bloom_block.h">
+      <Filter>rocksdb\table</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\table\cuckoo_table_builder.cc">
+      <Filter>rocksdb\table</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\table\cuckoo_table_builder.h">
+      <Filter>rocksdb\table</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\table\cuckoo_table_reader.cc">
+      <Filter>rocksdb\table</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\table\cuckoo_table_reader.h">
       <Filter>rocksdb\table</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\rocksdb\table\filter_block.cc">
@@ -5271,6 +5370,12 @@
     <ClInclude Include="..\..\src\rocksdb\table\plain_table_factory.h">
       <Filter>rocksdb\table</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\table\plain_table_index.cc">
+      <Filter>rocksdb\table</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\table\plain_table_index.h">
+      <Filter>rocksdb\table</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\rocksdb\table\plain_table_key_coding.cc">
       <Filter>rocksdb\table</Filter>
     </ClCompile>
@@ -5297,6 +5402,78 @@
     </ClCompile>
     <ClInclude Include="..\..\src\rocksdb\table\two_level_iterator.h">
       <Filter>rocksdb\table</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\third-party\rapidjson\internal\pow10.h">
+      <Filter>rocksdb\third-party\rapidjson\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\third-party\rapidjson\internal\stack.h">
+      <Filter>rocksdb\third-party\rapidjson\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\third-party\rapidjson\rapidjson.h">
+      <Filter>rocksdb\third-party\rapidjson</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\third-party\rapidjson\reader.h">
+      <Filter>rocksdb\third-party\rapidjson</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\utilities\backupable\backupable_db.cc">
+      <Filter>rocksdb\utilities\backupable</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb\utilities\document\document_db.cc">
+      <Filter>rocksdb\utilities\document</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb\utilities\document\json_document.cc">
+      <Filter>rocksdb\utilities\document</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb\utilities\geodb\geodb_impl.cc">
+      <Filter>rocksdb\utilities\geodb</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\utilities\geodb\geodb_impl.h">
+      <Filter>rocksdb\utilities\geodb</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\utilities\merge_operators.h">
+      <Filter>rocksdb\utilities</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\utilities\merge_operators\put.cc">
+      <Filter>rocksdb\utilities\merge_operators</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb\utilities\merge_operators\string_append\stringappend.cc">
+      <Filter>rocksdb\utilities\merge_operators\string_append</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\utilities\merge_operators\string_append\stringappend.h">
+      <Filter>rocksdb\utilities\merge_operators\string_append</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\utilities\merge_operators\string_append\stringappend2.cc">
+      <Filter>rocksdb\utilities\merge_operators\string_append</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\utilities\merge_operators\string_append\stringappend2.h">
+      <Filter>rocksdb\utilities\merge_operators\string_append</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\utilities\merge_operators\uint64add.cc">
+      <Filter>rocksdb\utilities\merge_operators</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb\utilities\redis\redis_lists.cc">
+      <Filter>rocksdb\utilities\redis</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\utilities\redis\redis_lists.h">
+      <Filter>rocksdb\utilities\redis</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\utilities\redis\redis_list_exception.h">
+      <Filter>rocksdb\utilities\redis</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\utilities\redis\redis_list_iterator.h">
+      <Filter>rocksdb\utilities\redis</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\utilities\spatialdb\spatial_db.cc">
+      <Filter>rocksdb\utilities\spatialdb</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\utilities\spatialdb\utils.h">
+      <Filter>rocksdb\utilities\spatialdb</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\utilities\ttl\db_ttl_impl.cc">
+      <Filter>rocksdb\utilities\ttl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\utilities\ttl\db_ttl_impl.h">
+      <Filter>rocksdb\utilities\ttl</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\rocksdb\util\arena.cc">
       <Filter>rocksdb\util</Filter>
@@ -5352,6 +5529,9 @@
     <ClCompile Include="..\..\src\rocksdb\util\env.cc">
       <Filter>rocksdb\util</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb\util\env_hdfs.cc">
+      <Filter>rocksdb\util</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\rocksdb\util\env_posix.cc">
       <Filter>rocksdb\util</Filter>
     </ClCompile>
@@ -5394,6 +5574,18 @@
     <ClInclude Include="..\..\src\rocksdb\util\iostats_context_imp.h">
       <Filter>rocksdb\util</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\util\ldb_cmd.cc">
+      <Filter>rocksdb\util</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\util\ldb_cmd.h">
+      <Filter>rocksdb\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\util\ldb_cmd_execute_result.h">
+      <Filter>rocksdb\util</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\util\ldb_tool.cc">
+      <Filter>rocksdb\util</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\rocksdb\util\logging.cc">
       <Filter>rocksdb\util</Filter>
     </ClCompile>
@@ -5418,6 +5610,9 @@
     <ClCompile Include="..\..\src\rocksdb\util\options.cc">
       <Filter>rocksdb\util</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb\util\options_builder.cc">
+      <Filter>rocksdb\util</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\rocksdb\util\perf_context.cc">
       <Filter>rocksdb\util</Filter>
     </ClCompile>
@@ -5430,6 +5625,12 @@
     <ClInclude Include="..\..\src\rocksdb\util\random.h">
       <Filter>rocksdb\util</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\util\rate_limiter.cc">
+      <Filter>rocksdb\util</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\util\rate_limiter.h">
+      <Filter>rocksdb\util</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\rocksdb\util\skiplistrep.cc">
       <Filter>rocksdb\util</Filter>
     </ClCompile>
@@ -5440,9 +5641,6 @@
       <Filter>rocksdb\util</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\rocksdb\util\statistics.h">
-      <Filter>rocksdb\util</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\rocksdb\util\stats_logger.h">
       <Filter>rocksdb\util</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\rocksdb\util\status.cc">

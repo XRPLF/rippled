@@ -79,7 +79,10 @@ class Git(object):
     def __init__(self, env):
         self.exists = env.Detect('git')
         if self.exists:
-            self.commit_id = _execute('git describe --tags')
+            try:
+                self.commit_id = _execute('git describe --tags')
+            except:
+                self.exists = False
         else:
             self.commit_id = None
 
