@@ -66,7 +66,6 @@ HandlerTable HANDLERS({
     {   "ledger_request",       &doLedgerRequest,       Config::ADMIN,   NO_CONDITION     },
     {   "log_level",            &doLogLevel,            Config::ADMIN,   NO_CONDITION     },
     {   "logrotate",            &doLogRotate,           Config::ADMIN,   NO_CONDITION     },
-//      {   "nickname_info",        &doNicknameInfo,        Config::USER,  NEEDS_CURRENT_LEDGER  },
     {   "owner_info",           &doOwnerInfo,           Config::USER,  NEEDS_CURRENT_LEDGER  },
     {   "peers",                &doPeers,               Config::ADMIN,   NO_CONDITION     },
     {   "path_find",            &doPathFind,            Config::USER,  NEEDS_CURRENT_LEDGER  },

@@ -461,7 +461,6 @@ public:
     std::uint64_t                      FEE_DEFAULT;            // Default fee.
     std::uint64_t                      FEE_ACCOUNT_RESERVE;    // Amount of units not allowed to send.
     std::uint64_t                      FEE_OWNER_RESERVE;      // Amount of units not allowed to send per owner entry.
-    std::uint64_t                      FEE_NICKNAME_CREATE;    // Fee to create a nickname.
     std::uint64_t                      FEE_OFFER;              // Rate per day.
     int                         FEE_CONTRACT_OPERATION; // fee for each contract operation
 

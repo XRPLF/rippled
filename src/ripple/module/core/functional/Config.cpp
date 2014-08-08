@@ -30,7 +30,6 @@ namespace ripple {
 #define DEFAULT_FEE_DEFAULT             10
 #define DEFAULT_FEE_ACCOUNT_RESERVE     200*SYSTEM_CURRENCY_PARTS
 #define DEFAULT_FEE_OWNER_RESERVE       50*SYSTEM_CURRENCY_PARTS
-#define DEFAULT_FEE_NICKNAME_CREATE     1000
 #define DEFAULT_FEE_OFFER               DEFAULT_FEE_DEFAULT
 #define DEFAULT_FEE_OPERATION           1
 
@@ -129,7 +128,6 @@ Config::Config ()
 
     FEE_ACCOUNT_RESERVE     = DEFAULT_FEE_ACCOUNT_RESERVE;
     FEE_OWNER_RESERVE       = DEFAULT_FEE_OWNER_RESERVE;
-    FEE_NICKNAME_CREATE     = DEFAULT_FEE_NICKNAME_CREATE;
     FEE_OFFER               = DEFAULT_FEE_OFFER;
     FEE_DEFAULT             = DEFAULT_FEE_DEFAULT;
     FEE_CONTRACT_OPERATION  = DEFAULT_FEE_OPERATION;
@@ -525,9 +523,6 @@ void Config::load ()
 
             if (SectionSingleB (secConfig, SECTION_FEE_OWNER_RESERVE, strTemp))
                 FEE_OWNER_RESERVE   = beast::lexicalCastThrow <std::uint64_t> (strTemp);
-
-            if (SectionSingleB (secConfig, SECTION_FEE_NICKNAME_CREATE, strTemp))
-                FEE_NICKNAME_CREATE = beast::lexicalCastThrow <int> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_FEE_OFFER, strTemp))
                 FEE_OFFER           = beast::lexicalCastThrow <int> (strTemp);

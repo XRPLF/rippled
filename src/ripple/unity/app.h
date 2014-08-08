@@ -75,7 +75,6 @@
 #include <ripple/module/app/tx/TransactionMeta.h>
 #include <ripple/module/app/tx/Transaction.h>
 #include <ripple/module/app/misc/AccountState.h>
-#include <ripple/module/app/misc/NicknameState.h>
 #include <ripple/module/app/ledger/Ledger.h>
 #include <ripple/module/app/ledger/SerializedValidation.h>
 #include <ripple/module/app/main/LoadManager.h>
