@@ -28,7 +28,7 @@
 #else
 # define ROCKSDB_PLATFORM_POSIX
 # if BEAST_MAC || BEAST_IOS
-#  define OS_MACOSX
+#  define OS_MACOSX 1
 # elif BEAST_BSD
 #  define OS_FREEBSD
 # else
