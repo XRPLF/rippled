@@ -853,26 +853,13 @@ public:
     // Initialize the Validators object with Config information.
     void prepareValidators ()
     {
-#if 1
-        {
-            std::vector <std::string> const& strings (getConfig().validators);
-            m_validators->addStrings ("rippled.cfg", strings);
-        }
-#endif
+        m_validators->addStrings ("rippled.cfg", getConfig().validators);
 
-#if 1
         if (! getConfig().getValidatorsURL().empty())
-        {
             m_validators->addURL (getConfig().getValidatorsURL());
-        }
-#endif
 
-#if 1
         if (getConfig().getValidatorsFile() != beast::File::nonexistent ())
-        {
             m_validators->addFile (getConfig().getValidatorsFile());
-        }
-#endif
     }
 
     //--------------------------------------------------------------------------
@@ -887,7 +874,7 @@ public:
 
     void onStart ()
     {
-        m_journal.debug << "Application starting";
+        m_journal.info << "Application starting.  Build is " << GIT_COMMIT_ID;
 
         m_sweepTimer.setExpiration (10);
 
