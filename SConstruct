@@ -200,9 +200,9 @@ def config_base(env):
 
     env.Append(CPPDEFINES=['OPENSSL_NO_SSL2'])
 
-    #git = Beast.Git(env) #  TODO(TOM)
-    if False: #git.exists:
-        env.Append(CPPDEFINES={'GIT_COMMIT_ID' : '"%s"' % git.commit_id})
+    git = Beast.Git(env)
+    if git.exists:
+        env.Append(CPPDEFINES={'GIT_COMMIT_ID' : '\'"%s"\'' % git.commit_id})
 
     try:
         BOOST_ROOT = os.path.normpath(os.environ['BOOST_ROOT'])
