@@ -518,11 +518,13 @@ function verify_owner_counts(remote, counts, callback) {
   async.every(tests, iterator, callback);
 };
 
+var isTravis = Boolean(process.env.TRAVIS);
+
 function ledger_wait(remote, tx) {
   ;(function nextLedger() {
     remote.once('ledger_closed', function() {
       if (!tx.finalized) {
-        setTimeout(nextLedger, 50);
+        setTimeout(nextLedger, isTravis ? 400 : 100);
       }
     });
     remote.ledger_accept();
