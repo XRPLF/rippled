@@ -49,21 +49,20 @@
 #endif
 
 #include <rocksdb/db/builder.cc>
+#include <rocksdb/db/c.cc>
 #include <rocksdb/db/column_family.cc>
 #include <rocksdb/db/compaction.cc>
 #include <rocksdb/db/compaction_picker.cc>
 #include <rocksdb/db/db_filesnapshot.cc>
+#include <rocksdb/db/dbformat.cc>
 #include <rocksdb/db/db_impl.cc>
 #include <rocksdb/db/db_impl_debug.cc>
 #include <rocksdb/db/db_impl_readonly.cc>
 #include <rocksdb/db/db_iter.cc>
-#include <rocksdb/db/db_stats_logger.cc>
-#include <rocksdb/db/dbformat.cc>
 #include <rocksdb/db/file_indexer.cc>
 #include <rocksdb/db/filename.cc>
 #include <rocksdb/db/forward_iterator.cc>
 #include <rocksdb/db/internal_stats.cc>
-#include <rocksdb/db/log_format.h>
 #include <rocksdb/db/log_reader.cc>
 #include <rocksdb/db/log_writer.cc>
 #include <rocksdb/db/memtable.cc>
@@ -78,14 +77,17 @@
 #include <rocksdb/db/version_edit.cc>
 #include <rocksdb/db/version_set.cc>
 #include <rocksdb/db/write_batch.cc>
-
-#include <rocksdb/table/block.cc>
+#include <rocksdb/table/adaptive_table_factory.cc>
 #include <rocksdb/table/block_based_table_builder.cc>
 #include <rocksdb/table/block_based_table_factory.cc>
 #include <rocksdb/table/block_based_table_reader.cc>
 #include <rocksdb/table/block_builder.cc>
+#include <rocksdb/table/block.cc>
 #include <rocksdb/table/block_hash_index.cc>
 #include <rocksdb/table/block_prefix_index.cc>
+#include <rocksdb/table/bloom_block.cc>
+#include <rocksdb/table/cuckoo_table_builder.cc>
+#include <rocksdb/table/cuckoo_table_reader.cc>
 #include <rocksdb/table/filter_block.cc>
 #include <rocksdb/table/flush_block_policy.cc>
 #include <rocksdb/table/format.cc>
@@ -94,11 +96,11 @@
 #include <rocksdb/table/meta_blocks.cc>
 #include <rocksdb/table/plain_table_builder.cc>
 #include <rocksdb/table/plain_table_factory.cc>
+#include <rocksdb/table/plain_table_index.cc>
 #include <rocksdb/table/plain_table_key_coding.cc>
 #include <rocksdb/table/plain_table_reader.cc>
 #include <rocksdb/table/table_properties.cc>
 #include <rocksdb/table/two_level_iterator.cc>
-
 #include <rocksdb/util/arena.cc>
 #include <rocksdb/util/auto_roll_logger.cc>
 #include <rocksdb/util/blob_store.cc>
@@ -109,6 +111,7 @@
 #include <rocksdb/util/crc32c.cc>
 #include <rocksdb/util/dynamic_bloom.cc>
 #include <rocksdb/util/env.cc>
+#include <rocksdb/util/env_hdfs.cc>
 #include <rocksdb/util/env_posix.cc>
 #include <rocksdb/util/filter_policy.cc>
 #include <rocksdb/util/hash.cc>
@@ -117,11 +120,26 @@
 #include <rocksdb/util/hash_skiplist_rep.cc>
 #include <rocksdb/util/histogram.cc>
 #include <rocksdb/util/iostats_context.cc>
+#include <rocksdb/utilities/backupable/backupable_db.cc>
+#include <rocksdb/utilities/document/document_db.cc>
+#include <rocksdb/utilities/document/json_document.cc>
+#include <rocksdb/utilities/geodb/geodb_impl.cc>
+#include <rocksdb/utilities/merge_operators/put.cc>
+#include <rocksdb/utilities/merge_operators/string_append/stringappend2.cc>
+#include <rocksdb/utilities/merge_operators/string_append/stringappend.cc>
+#include <rocksdb/utilities/merge_operators/uint64add.cc>
+#include <rocksdb/utilities/redis/redis_lists.cc>
+#include <rocksdb/utilities/spatialdb/spatial_db.cc>
+#include <rocksdb/utilities/ttl/db_ttl_impl.cc>
+#include <rocksdb/util/ldb_cmd.cc>
+#include <rocksdb/util/ldb_tool.cc>
 #include <rocksdb/util/log_buffer.cc>
 #include <rocksdb/util/logging.cc>
 #include <rocksdb/util/murmurhash.cc>
+#include <rocksdb/util/options_builder.cc>
 #include <rocksdb/util/options.cc>
 #include <rocksdb/util/perf_context.cc>
+#include <rocksdb/util/rate_limiter.cc>
 #include <rocksdb/util/skiplistrep.cc>
 #include <rocksdb/util/slice.cc>
 #include <rocksdb/util/statistics.cc>
@@ -131,7 +149,7 @@
 #include <rocksdb/util/thread_local.cc>
 #include <rocksdb/util/vectorrep.cc>
 #include <rocksdb/util/xxhash.cc>
-
+#include <rocksdb/port/stack_trace.cc>
 #include <rocksdb/port/port_posix.cc>
 
 const char* rocksdb_build_git_sha = "<none>";
