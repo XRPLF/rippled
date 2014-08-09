@@ -230,6 +230,15 @@ def config_base(env):
         env.Prepend(CPPPATH='%s/include' % openssl)
         env.Prepend(LIBPATH=['%s/lib' % openssl])
 
+    # handle command-line arguments
+    profile_jemalloc = ARGUMENTS.get('profile-jemalloc')
+    if profile_jemalloc:
+        env.Append(CPPDEFINES={'PROFILE_JEMALLOC' : profile_jemalloc})
+        env.Append(LIBS=['jemalloc'])
+        env.Append(LIBPATH=[os.path.join(profile_jemalloc, 'lib')])
+        env.Append(CPPPATH=[os.path.join(profile_jemalloc, 'include')])
+        env.Append(LINKFLAGS=['-Wl,-rpath,' + os.path.join(profile_jemalloc, 'lib')])
+
 # Set toolchain and variant specific construction variables
 def config_env(toolchain, variant, env):
     if variant == 'debug':
