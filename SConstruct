@@ -355,6 +355,14 @@ def config_env(toolchain, variant, env):
             # Why is this only for gcc?!
             env.Append(CCFLAGS=['-Wno-unused-local-typedefs'])
 
+            # If we are in debug mode, use GCC-specific functionality to add
+            # extra error checking into the code (e.g. std::vector will throw
+            # for out-of-bounds conditions)
+            if variant == 'debug':
+                env.Append(CPPDEFINES={
+                    '_FORTIFY_SOURCE': 2
+                    })
+
     elif toolchain == 'msvc':
         env.Append (CPPPATH=[
             os.path.join('src', 'protobuf', 'src'),
