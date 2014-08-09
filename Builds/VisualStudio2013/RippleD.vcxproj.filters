@@ -666,9 +666,6 @@
     <ClInclude Include="..\..\build\proto\ripple.pb.h">
       <Filter>build\proto</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\BeastConfig.h">
-      <Filter>.</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\Arithmetic.h">
       <Filter>beast</Filter>
     </ClInclude>
@@ -900,15 +897,15 @@
     <ClCompile Include="..\..\src\beast\beast\crypto\impl\MurmurHash.cpp">
       <Filter>beast\crypto\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\crypto\impl\Sha256.cpp">
-      <Filter>beast\crypto\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\crypto\impl\sha2\sha2.c">
       <Filter>beast\crypto\impl\sha2</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\crypto\impl\sha2\sha2.h">
       <Filter>beast\crypto\impl\sha2</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\crypto\impl\Sha256.cpp">
+      <Filter>beast\crypto\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\crypto\impl\UnsignedInteger.cpp">
       <Filter>beast\crypto\impl</Filter>
     </ClCompile>
@@ -1551,18 +1548,6 @@
     <ClInclude Include="..\..\src\beast\beast\module\core\text\StringPairArray.h">
       <Filter>beast\module\core\text</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\threads\CriticalSection.h">
-      <Filter>beast\module\core\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\threads\DynamicLibrary.h">
-      <Filter>beast\module\core\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\threads\Process.h">
-      <Filter>beast\module\core\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\threads\ScopedLock.h">
-      <Filter>beast\module\core\threads</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\thread\DeadlineTimer.cpp">
       <Filter>beast\module\core\thread</Filter>
     </ClCompile>
@@ -1577,6 +1562,18 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\module\core\thread\Workers.h">
       <Filter>beast\module\core\thread</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\module\core\threads\CriticalSection.h">
+      <Filter>beast\module\core\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\module\core\threads\DynamicLibrary.h">
+      <Filter>beast\module\core\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\module\core\threads\Process.h">
+      <Filter>beast\module\core\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\module\core\threads\ScopedLock.h">
+      <Filter>beast\module\core\threads</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\time\AtExitHook.cpp">
       <Filter>beast\module\core\time</Filter>
@@ -2015,6 +2012,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\Version.h">
       <Filter>beast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\BeastConfig.h">
+      <Filter>.</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\hyperleveldb\db\builder.cc">
       <Filter>hyperleveldb\db</Filter>
