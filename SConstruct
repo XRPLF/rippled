@@ -235,8 +235,7 @@ def config_base(env):
         env.Prepend(LIBPATH=['%s/lib' % openssl])
 
     # handle command-line arguments
-    profile_jemalloc = ARGUMENTS.get('profile-jemalloc', '')
-    print "profile_jemalloc: " + profile_jemalloc
+    profile_jemalloc = ARGUMENTS.get('profile-jemalloc')
     if profile_jemalloc:
         env.Append(CPPDEFINES={'PROFILE_JEMALLOC' : profile_jemalloc})
         env.Append(LIBS=['jemalloc'])
