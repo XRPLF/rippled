@@ -38,6 +38,40 @@ public:
         pass ();
     }
 
+    void testMaxInts ()
+    {
+        char const* s1 (
+            "{\"max_uint\":4294967295"
+            ",\"min_int\":-2147483648"
+            ",\"max_int\":2147483647"
+            ",\"an_int\":2147483646"
+            ",\"a_uint\":2147483648}"
+            );
+        Json::Value j1;
+        Json::Reader r1;
+
+        expect (r1.parse (s1, j1), "parsing integer edge cases");
+        expect (j1["max_uint"].asUInt() == 4294967295, "max_uint");
+        expect (j1["min_int"].asInt() == -2147483648, "min_int");
+        expect (j1["max_int"].asInt() == 2147483647, "max_int");
+        expect (j1["an_int"].asInt() == 2147483646, "an_int");
+        expect (j1["a_uint"].asUInt() == 2147483648, "a_uint");
+
+        char const* s2 ("{\"overflow_uint\":4294967296}");
+        Json::Value j2;
+        Json::Reader r2;
+
+        expect (!r2.parse (s2, j2), "parsing unsigned integer that overflows");
+
+        char const* s3 ("{\"underflow_int\":-2147483649}");
+        Json::Value j3;
+        Json::Reader r3;
+
+        expect (!r3.parse (s3, j3), "parsing signed integer that underflows");
+
+        pass ();
+    }
+
     void
     test_copy ()
     {
@@ -86,6 +120,7 @@ public:
 
     void run ()
     {
+        testMaxInts ();
         testBadJson ();
         test_copy ();
         test_move ();
