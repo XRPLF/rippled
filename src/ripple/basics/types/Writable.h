@@ -17,16 +17,18 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
+#ifndef RIPPLED_RIPPLE_BASICS_TYPES_WRITABLE_H
+#define RIPPLED_RIPPLE_BASICS_TYPES_WRITABLE_H
 
-#include <ripple/basics/containers/RangeSet.cpp>
-#include <ripple/basics/log/Log.cpp>
-#include <ripple/basics/system/CheckLibraryVersions.cpp>
-#include <ripple/basics/types/JsonWriter.cpp>
-#include <ripple/basics/utility/CountedObject.cpp>
-#include <ripple/basics/utility/IniFile.cpp>
-#include <ripple/basics/utility/StringUtilities.cpp>
-#include <ripple/basics/utility/Sustain.cpp>
-#include <ripple/basics/utility/ThreadName.cpp>
-#include <ripple/basics/utility/Time.cpp>
-#include <ripple/basics/utility/UptimeTimer.cpp>
+namespace ripple {
+
+class Writable
+{
+public:
+    virtual ~Writable() {}
+    virtual void write (char const* data, size_t length) = 0;
+};
+
+} // ripple
+
+#endif
