@@ -682,29 +682,60 @@ Reader::decodeNumber ( Token& token )
     if ( isNegative )
         ++current;
 
-    Value::UInt threshold = (isNegative ? Value::UInt (-Value::minInt)
-                             : Value::maxUInt) / 10;
-    Value::UInt value = 0;
+    std::int64_t value = 0;
 
-    while ( current < token.end_ )
+    while (current < token.end_ && (value <= Value::maxUInt))
     {
         Char c = *current++;
 
         if ( c < '0'  ||  c > '9' )
-            return addError ( "'" + std::string ( token.start_, token.end_ ) + "' is not a number.", token );
+        {
+            return addError ( "'" + std::string ( token.start_, token.end_ ) +
+                "' is not a number.", token );
+        }
 
-        if ( value >= threshold )
-            return decodeDouble ( token );
+        value = (value * 10) + (c - '0');
+    }
 
-        value = value * 10 + Value::UInt (c - '0');
+    // More tokens left -> input is larger than largest possible return value
+    if (current != token.end_)
+    {
+        return addError ( "'" + std::string ( token.start_, token.end_ ) + 
+            "' exceeds the allowable range.", token );
     }
 
     if ( isNegative )
-        currentValue () = -Value::Int ( value );
+    {
+        value = -value;
+
+        if (value < Value::minInt)
+        {
+            return addError ( "'" + std::string ( token.start_, token.end_ ) + 
+                "' exceeds the allowable range.", token );
+        }
+
+        currentValue () = static_cast<Value::Int>( value );
+    }
     else if ( value <= Value::UInt (Value::maxInt) )
-        currentValue () = Value::Int ( value );
+    {
+        if (value > Value::maxInt)
+        {
+            return addError ( "'" + std::string ( token.start_, token.end_ ) + 
+                "' exceeds the allowable range.", token );
+        }
+
+        currentValue () = static_cast<Value::Int>( value );
+    }
     else
-        currentValue () = value;
+    {
+        if (value > Value::maxUInt)
+        {
+            return addError ( "'" + std::string ( token.start_, token.end_ ) + 
+                "' exceeds the allowable range.", token );
+        }
+
+        currentValue () = static_cast<Value::UInt>( value );
+    }
 
     return true;
 }
