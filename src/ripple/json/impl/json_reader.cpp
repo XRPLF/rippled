@@ -684,6 +684,9 @@ Reader::decodeNumber ( Token& token )
 
     std::int64_t value = 0;
 
+    static_assert(sizeof(value) > sizeof(Value::maxUInt),
+        "The overflow logic will need to be reworked.");
+
     while (current < token.end_ && (value <= Value::maxUInt))
     {
         Char c = *current++;
