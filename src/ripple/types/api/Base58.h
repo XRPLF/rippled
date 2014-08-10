@@ -32,8 +32,11 @@
 #ifndef RIPPLE_TYPES_BASE58_H
 #define RIPPLE_TYPES_BASE58_H
 
+#include <array>
 #include <iterator>
+#include <string>
 #include <type_traits>
+#include <vector>
 
 #include <ripple/types/api/Blob.h>
 
@@ -50,14 +53,22 @@ public:
         explicit Alphabet (char const* chars)
             : m_chars (chars)
         {
-            std::fill (m_inverse, m_inverse + 128, -1);
-            int i (0);
-            for (char const* c (chars); *c; ++c)
-                m_inverse [*c] = i++;
+            assert (m_inverse.size () >= m_chars.length ());
+
+            m_inverse.fill (-1);
+
+            int i = 0;
+            for (auto c : m_chars)
+            {
+                assert ((c >= 0) && (c < m_inverse.size ()));
+                assert (m_inverse[c] == -1);
+
+                m_inverse[c] = i++;
+            }
         }
 
         char const* chars () const
-            { return m_chars; }
+            { return m_chars.c_str (); }
 
         char to_char (int digit) const
             { return m_chars [digit]; }
@@ -69,8 +80,8 @@ public:
             { return m_inverse [c]; }
 
     private:
-        char const* m_chars;
-        int m_inverse [128];
+        std::string const m_chars;
+        std::array <int, 256> m_inverse;
     };
 
     static Alphabet const& getBitcoinAlphabet ();
