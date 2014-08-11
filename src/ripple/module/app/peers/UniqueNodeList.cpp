@@ -67,10 +67,7 @@ class UniqueNodeListImp
     , public beast::DeadlineTimer::Listener
 {
 private:
-    // VFALCO TODO Rename these structs? Are they objects with static storage?
-    //             This looks like C and not C++...
-    //
-    typedef struct
+    struct seedDomain
     {
         std::string                 strDomain;
         RippleAddress               naPublicKey;
@@ -80,9 +77,9 @@ private:
         boost::posix_time::ptime    tpFetch;
         uint256                     iSha256;
         std::string                 strComment;
-    } seedDomain;
+    };
 
-    typedef struct
+    struct seedNode
     {
         RippleAddress               naPublicKey;
         ValidatorSource             vsSource;
@@ -91,10 +88,10 @@ private:
         boost::posix_time::ptime    tpFetch;
         uint256                     iSha256;
         std::string                 strComment;
-    } seedNode;
+    };
 
     // Used to distribute scores.
-    typedef struct
+    struct scoreNode
     {
         int                 iScore;
         int                 iRoundScore;
@@ -102,7 +99,7 @@ private:
         int                 iSeen;
         std::string         strValidator;   // The public key.
         std::vector<int>    viReferrals;
-    } scoreNode;
+    };
 
     typedef hash_map<std::string, int> strIndex;
     typedef std::pair<std::string, int> IPAndPortNumber;
@@ -177,6 +174,8 @@ public:
     // Get update times and start fetching and scoring as needed.
     void start ()
     {
+        std::cerr << "UniqueNodeListImp::start" << std::endl;
+
         miscLoad ();
 
         WriteLog (lsDEBUG, UniqueNodeList) << "Validator fetch updated: " << mtpFetchUpdated;
@@ -272,8 +271,8 @@ public:
     void nodeRemovePublic (RippleAddress const& naNodePublic)
     {
         {
-            Database* db = getApp().getWalletDB ()->getDB ();
-            auto sl (getApp().getWalletDB ()->lock ());
+            auto db = getApp().getWalletDB ().getDB ();
+            auto sl (getApp().getWalletDB ().lock ());
 
             db->executeSQL (str (boost::format ("DELETE FROM SeedNodes WHERE PublicKey=%s") % sqlEscape (naNodePublic.humanNodePublic ())));
             db->executeSQL (str (boost::format ("DELETE FROM TrustedNodes WHERE PublicKey=%s") % sqlEscape (naNodePublic.humanNodePublic ())));
@@ -294,8 +293,8 @@ public:
         boost::to_lower (strDomain);
 
         {
-            Database* db = getApp().getWalletDB ()->getDB ();
-            auto sl (getApp().getWalletDB ()->lock ());
+            auto db = getApp().getWalletDB ().getDB ();
+            auto sl (getApp().getWalletDB ().lock ());
 
             db->executeSQL (str (boost::format ("DELETE FROM SeedDomains WHERE Domain=%s") % sqlEscape (strDomain)));
         }
@@ -309,9 +308,9 @@ public:
     void nodeReset ()
     {
         {
-            Database* db = getApp().getWalletDB ()->getDB ();
+            auto db = getApp().getWalletDB ().getDB ();
 
-            auto sl (getApp().getWalletDB ()->lock ());
+            auto sl (getApp().getWalletDB ().lock ());
 
             // XXX Check results.
             db->executeSQL ("DELETE FROM SeedDomains");
@@ -445,8 +444,8 @@ public:
 
 #if 0
         {
-            auto sl (getApp().getWalletDB ()->lock ());
-            Database* db = getApp().getWalletDB ()->getDB ();
+            auto sl (getApp().getWalletDB ().lock ());
+            auto db = getApp().getWalletDB ().getDB ();
 
             if (db->executeSQL (str (boost::format ("SELECT COUNT(*) AS Count FROM SeedDomains WHERE Source='%s' OR Source='%c';") % vsManual % vsValidator)) && db->startIterRows ())
                 iDomains    = db->getInt ("Count");
@@ -583,11 +582,11 @@ public:
 
     Json::Value getUnlJson ()
     {
-        Database* db = getApp().getWalletDB ()->getDB ();
+        auto db = getApp().getWalletDB ().getDB ();
 
         Json::Value ret (Json::arrayValue);
 
-        auto sl (getApp().getWalletDB ()->lock ());
+        auto sl (getApp().getWalletDB ().lock ());
         SQL_FOREACH (db, "SELECT * FROM TrustedNodes;")
         {
             Json::Value node (Json::objectValue);
@@ -650,15 +649,33 @@ private:
     // Load information about when we last updated.
     bool miscLoad ()
     {
-        auto sl (getApp().getWalletDB ()->lock ());
-        Database* db = getApp().getWalletDB ()->getDB ();
+        auto sl (getApp().getWalletDB ().lock ());
+        auto db = getApp().getWalletDB ().getDB ();
 
-        if (!db->executeSQL ("SELECT * FROM Misc WHERE Magic=1;")) return false;
+        if (!db->executeSQL ("SELECT * FROM Misc WHERE Magic=1;")) 
+        {
+            std::cerr << "'SELECT * FROM Misc WHERE Magic=1;' fails!" << std::endl;
+            return false;
+        }
 
         bool bAvail  = db->startIterRows ();
 
-        mtpFetchUpdated = ptFromSeconds (bAvail ? db->getInt ("FetchUpdated") : -1);
-        mtpScoreUpdated = ptFromSeconds (bAvail ? db->getInt ("ScoreUpdated") : -1);
+        int x = -1, y = -1;
+
+        std::cerr << "bAvail: " << (bAvail ? "true" : "false") << std::endl;
+
+        if (bAvail)
+        {
+            x = db->getInt ("FetchUpdated");
+            std::cerr << "x: " << x << std::endl;
+            y = db->getInt ("ScoreUpdated");
+            std::cerr << "y: " << y << std::endl;
+        }
+
+        mtpFetchUpdated = ptFromSeconds (x);
+        std::cerr << "mtpFetchUpdated = " << mtpFetchUpdated << std::endl;
+        mtpScoreUpdated = ptFromSeconds (y);
+        std::cerr << "mtpScoreUpdated = " << mtpScoreUpdated << std::endl;
 
         db->endIterRows ();
 
@@ -672,8 +689,8 @@ private:
     // Persist update information.
     bool miscSave ()
     {
-        Database*   db = getApp().getWalletDB ()->getDB ();
-        auto sl (getApp().getWalletDB ()->lock ());
+        auto db = getApp().getWalletDB ().getDB ();
+        auto sl (getApp().getWalletDB ().lock ());
 
         db->executeSQL (str (boost::format ("REPLACE INTO Misc (Magic,FetchUpdated,ScoreUpdated) VALUES (1,%d,%d);")
                              % iToSeconds (mtpFetchUpdated)
@@ -702,8 +719,8 @@ private:
                 WriteLog (lsWARNING, UniqueNodeList) << "Entry in cluster list invalid: '" << c << "'";
         }
 
-        Database*   db = getApp().getWalletDB ()->getDB ();
-        auto sl (getApp().getWalletDB ()->lock ());
+        auto db = getApp().getWalletDB ().getDB ();
+        auto sl (getApp().getWalletDB ().lock ());
         ScopedUNLLockType slUNL (mUNLLock);
 
         mUNL.clear ();
@@ -799,12 +816,12 @@ private:
         strIndex                umDomainIdx;    // Map of domain to index.
         std::vector<scoreNode>  vsnNodes;       // Index to scoring node.
 
-        Database*   db = getApp().getWalletDB ()->getDB ();
+        auto db = getApp().getWalletDB ().getDB ();
 
         // For each entry in SeedDomains with a PublicKey:
         // - Add an entry in umPulicIdx, umDomainIdx, and vsnNodes.
         {
-            auto sl (getApp().getWalletDB ()->lock ());
+            auto sl (getApp().getWalletDB ().lock ());
 
             SQL_FOREACH (db, "SELECT Domain,PublicKey,Source FROM SeedDomains;")
             {
@@ -857,7 +874,7 @@ private:
         // For each entry in SeedNodes:
         // - Add an entry in umPulicIdx, umDomainIdx, and vsnNodes.
         {
-            auto sl (getApp().getWalletDB ()->lock ());
+            auto sl (getApp().getWalletDB ().lock ());
 
             SQL_FOREACH (db, "SELECT PublicKey,Source FROM SeedNodes;")
             {
@@ -921,7 +938,7 @@ private:
             std::string&        strValidator    = sn.strValidator;
             std::vector<int>&   viReferrals     = sn.viReferrals;
 
-            auto sl (getApp().getWalletDB ()->lock ());
+            auto sl (getApp().getWalletDB ().lock ());
 
             SQL_FOREACH (db, boost::str (boost::format ("SELECT Referral FROM ValidatorReferrals WHERE Validator=%s ORDER BY Entry;")
                                          % sqlEscape (strValidator)))
@@ -1002,7 +1019,7 @@ private:
         }
 
         // Persist validator scores.
-        auto sl (getApp().getWalletDB ()->lock ());
+        auto sl (getApp().getWalletDB ().lock ());
 
         db->executeSQL ("BEGIN;");
         db->executeSQL ("UPDATE TrustedNodes SET Score = 0 WHERE Score != 0;");
@@ -1288,8 +1305,8 @@ private:
             boost::posix_time::ptime tpNext (boost::posix_time::min_date_time);
             boost::posix_time::ptime tpNow (boost::posix_time::second_clock::universal_time ());
 
-            auto sl (getApp().getWalletDB ()->lock ());
-            Database* db = getApp().getWalletDB ()->getDB ();
+            auto sl (getApp().getWalletDB ().lock ());
+            auto db = getApp().getWalletDB ().getDB ();
 
             if (db->executeSQL ("SELECT Domain,Next FROM SeedDomains INDEXED BY SeedDomainNext ORDER BY Next LIMIT 1;")
                     && db->startIterRows ())
@@ -1550,7 +1567,7 @@ private:
     // --> naNodePublic: public key of the validating node.
     void processIps (std::string const& strSite, RippleAddress const& naNodePublic, Section::mapped_type* pmtVecStrIps)
     {
-        Database*   db = getApp().getWalletDB ()->getDB ();
+        auto db = getApp().getWalletDB ().getDB ();
 
         std::string strEscNodePublic    = sqlEscape (naNodePublic.humanNodePublic ());
 
@@ -1560,7 +1577,7 @@ private:
 
         // Remove all current Validator's entries in IpReferrals
         {
-            auto sl (getApp().getWalletDB ()->lock ());
+            auto sl (getApp().getWalletDB ().lock ());
             db->executeSQL (str (boost::format ("DELETE FROM IpReferrals WHERE Validator=%s;") % strEscNodePublic));
             // XXX Check result.
         }
@@ -1603,7 +1620,7 @@ private:
             {
                 vstrValues.resize (iValues);
 
-                auto sl (getApp().getWalletDB ()->lock ());
+                auto sl (getApp().getWalletDB ().lock ());
                 db->executeSQL (str (boost::format ("INSERT INTO IpReferrals (Validator,Entry,IP,Port) VALUES %s;")
                                      % strJoin (vstrValues.begin (), vstrValues.end (), ",")));
                 // XXX Check result.
@@ -1622,7 +1639,7 @@ private:
     // --> vsWhy: reason for adding validator to SeedDomains or SeedNodes.
     int processValidators (std::string const& strSite, std::string const& strValidatorsSrc, RippleAddress const& naNodePublic, ValidatorSource vsWhy, Section::mapped_type* pmtVecStrValidators)
     {
-        Database*   db              = getApp().getWalletDB ()->getDB ();
+        auto db              = getApp().getWalletDB ().getDB ();
         std::string strNodePublic   = naNodePublic.isValid () ? naNodePublic.humanNodePublic () : strValidatorsSrc;
         int         iValues         = 0;
 
@@ -1634,7 +1651,7 @@ private:
 
         // Remove all current Validator's entries in ValidatorReferrals
         {
-            auto sl (getApp().getWalletDB ()->lock ());
+            auto sl (getApp().getWalletDB ().lock ());
 
             db->executeSQL (str (boost::format ("DELETE FROM ValidatorReferrals WHERE Validator='%s';") % strNodePublic));
             // XXX Check result.
@@ -1705,7 +1722,7 @@ private:
                 std::string strSql  = str (boost::format ("INSERT INTO ValidatorReferrals (Validator,Entry,Referral) VALUES %s;")
                                            % strJoin (vstrValues.begin (), vstrValues.end (), ","));
 
-                auto sl (getApp().getWalletDB ()->lock ());
+                auto sl (getApp().getWalletDB ().lock ());
 
                 db->executeSQL (strSql);
                 // XXX Check result.
@@ -1752,12 +1769,12 @@ private:
     bool getSeedDomains (std::string const& strDomain, seedDomain& dstSeedDomain)
     {
         bool        bResult;
-        Database*   db = getApp().getWalletDB ()->getDB ();
+        auto db = getApp().getWalletDB ().getDB ();
 
         std::string strSql  = boost::str (boost::format ("SELECT * FROM SeedDomains WHERE Domain=%s;")
                                           % sqlEscape (strDomain));
 
-        auto sl (getApp().getWalletDB ()->lock ());
+        auto sl (getApp().getWalletDB ().lock ());
 
         bResult = db->executeSQL (strSql) && db->startIterRows ();
 
@@ -1812,7 +1829,7 @@ private:
     // Persist a SeedDomain.
     void setSeedDomains (const seedDomain& sdSource, bool bNext)
     {
-        Database*   db = getApp().getWalletDB ()->getDB ();
+        auto db = getApp().getWalletDB ().getDB ();
 
         int     iNext   = iToSeconds (sdSource.tpNext);
         int     iScan   = iToSeconds (sdSource.tpScan);
@@ -1831,7 +1848,7 @@ private:
                                           % sqlEscape (sdSource.strComment)
                                          );
 
-        auto sl (getApp().getWalletDB ()->lock ());
+        auto sl (getApp().getWalletDB ().lock ());
 
         if (!db->executeSQL (strSql))
         {
@@ -1853,12 +1870,12 @@ private:
     bool getSeedNodes (RippleAddress const& naNodePublic, seedNode& dstSeedNode)
     {
         bool        bResult;
-        Database*   db = getApp().getWalletDB ()->getDB ();
+        auto db = getApp().getWalletDB ().getDB ();
 
         std::string strSql  = str (boost::format ("SELECT * FROM SeedNodes WHERE PublicKey='%s';")
                                    % naNodePublic.humanNodePublic ());
 
-        auto sl (getApp().getWalletDB ()->lock ());
+        auto sl (getApp().getWalletDB ().lock ());
 
         bResult = db->executeSQL (strSql) && db->startIterRows ();
 
@@ -1913,7 +1930,7 @@ private:
     // <-- bNext: true, to do fetching if needed.
     void setSeedNodes (const seedNode& snSource, bool bNext)
     {
-        Database*   db = getApp().getWalletDB ()->getDB ();
+        auto db = getApp().getWalletDB ().getDB ();
 
         int     iNext   = iToSeconds (snSource.tpNext);
         int     iScan   = iToSeconds (snSource.tpScan);
@@ -1934,7 +1951,7 @@ private:
                                   );
 
         {
-            auto sl (getApp().getWalletDB ()->lock ());
+            auto sl (getApp().getWalletDB ().lock ());
 
             if (!db->executeSQL (strSql))
             {
@@ -2045,6 +2062,7 @@ private:
 UniqueNodeList::UniqueNodeList (Stoppable& parent)
     : Stoppable ("UniqueNodeList", parent)
 {
+    std::cerr << "UniqueNodeList::UniqueNodeList" << std::endl;
 }
 
 //------------------------------------------------------------------------------
@@ -2052,6 +2070,7 @@ UniqueNodeList::UniqueNodeList (Stoppable& parent)
 std::unique_ptr<UniqueNodeList>
 make_UniqueNodeList (beast::Stoppable& parent)
 {
+    std::cerr << "make_UniqueNodeList" << std::endl;
     return std::make_unique<UniqueNodeListImp> (parent);
 }
 

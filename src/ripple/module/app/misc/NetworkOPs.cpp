@@ -1947,8 +1947,8 @@ NetworkOPs::AccountTxs NetworkOPsImp::getAccountTxs (
         minLedger, maxLedger, descending, offset, limit, false, false, bAdmin);
 
     {
-        Database* db = getApp().getTxnDB ()->getDB ();
-        auto sl (getApp().getTxnDB ()->lock ());
+        auto db = getApp().getTxnDB ().getDB ();
+        auto sl (getApp().getTxnDB ().lock ());
 
         SQL_FOREACH (db, sql)
         {
@@ -2002,8 +2002,8 @@ std::vector<NetworkOPsImp::txnMetaLedgerType> NetworkOPsImp::getAccountTxsB (
         bAdmin);
 
     {
-        Database* db = getApp().getTxnDB ()->getDB ();
-        auto sl (getApp().getTxnDB ()->lock ());
+        auto db = getApp().getTxnDB ().getDB ();
+        auto sl (getApp().getTxnDB ().lock ());
 
         SQL_FOREACH (db, sql)
         {
@@ -2099,8 +2099,8 @@ NetworkOPsImp::AccountTxs NetworkOPsImp::getTxsAccount (
              % (forward ? "ASC" : "DESC")
              % queryLimit);
     {
-        Database* db = getApp().getTxnDB ()->getDB ();
-        auto sl (getApp().getTxnDB ()->lock ());
+        auto db = getApp().getTxnDB ().getDB ();
+        auto sl (getApp().getTxnDB ().lock ());
 
         SQL_FOREACH (db, sql)
         {
@@ -2217,8 +2217,8 @@ NetworkOPsImp::MetaTxsList NetworkOPsImp::getTxsAccountB (
              % (forward ? "ASC" : "DESC")
              % queryLimit);
     {
-        Database* db = getApp().getTxnDB ()->getDB ();
-        auto sl (getApp().getTxnDB ()->lock ());
+        auto db = getApp().getTxnDB ().getDB ();
+        auto sl (getApp().getTxnDB ().lock ());
 
         SQL_FOREACH (db, sql)
         {
@@ -2289,8 +2289,8 @@ NetworkOPsImp::getLedgerAffectedAccounts (std::uint32_t ledgerSeq)
                            % ledgerSeq);
     RippleAddress acct;
     {
-        Database* db = getApp().getTxnDB ()->getDB ();
-        auto sl (getApp().getTxnDB ()->lock ());
+        auto db = getApp().getTxnDB ().getDB ();
+        auto sl (getApp().getTxnDB ().lock ());
         SQL_FOREACH (db, sql)
         {
             if (acct.setAccountID (db->getStrBinary ("Account")))

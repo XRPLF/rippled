@@ -437,8 +437,8 @@ private:
             {
                 ScopedUnlockType sul (mLock);
                 {
-                    Database* db = getApp().getLedgerDB ()->getDB ();
-                    auto dbl (getApp().getLedgerDB ()->lock ());
+                    auto db = getApp().getLedgerDB ().getDB ();
+                    auto dbl (getApp().getLedgerDB ().lock ());
 
                     Serializer s (1024);
                     db->executeSQL ("BEGIN TRANSACTION;");

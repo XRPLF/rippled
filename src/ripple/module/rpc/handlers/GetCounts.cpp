@@ -43,17 +43,18 @@ Json::Value doGetCounts (RPC::Context& context)
     }
 
     Application& app = getApp();
-    int dbKB = app.getLedgerDB ()->getDB ()->getKBUsedAll ();
+
+    int dbKB = app.getLedgerDB ().getDB ()->getKBUsedAll ();
 
     if (dbKB > 0)
         ret["dbKBTotal"] = dbKB;
 
-    dbKB = app.getLedgerDB ()->getDB ()->getKBUsedDB ();
+    dbKB = app.getLedgerDB ().getDB ()->getKBUsedDB ();
 
     if (dbKB > 0)
         ret["dbKBLedger"] = dbKB;
 
-    dbKB = app.getTxnDB ()->getDB ()->getKBUsedDB ();
+    dbKB = app.getTxnDB ().getDB ()->getKBUsedDB ();
 
     if (dbKB > 0)
         ret["dbKBTransaction"] = dbKB;
