@@ -685,7 +685,7 @@ Reader::decodeNumber ( Token& token )
     std::int64_t value = 0;
 
     static_assert(sizeof(value) > sizeof(Value::maxUInt),
-        "The overflow logic will need to be reworked.");
+        "The JSON integer overflow logic will need to be reworked.");
 
     while (current < token.end_ && (value <= Value::maxUInt))
     {
@@ -711,17 +711,7 @@ Reader::decodeNumber ( Token& token )
     {
         value = -value;
 
-        if (value < Value::minInt)
-        {
-            return addError ( "'" + std::string ( token.start_, token.end_ ) + 
-                "' exceeds the allowable range.", token );
-        }
-
-        currentValue () = static_cast<Value::Int>( value );
-    }
-    else if ( value <= Value::UInt (Value::maxInt) )
-    {
-        if (value > Value::maxInt)
+        if (value < Value::minInt || value > Value::maxInt)
         {
             return addError ( "'" + std::string ( token.start_, token.end_ ) + 
                 "' exceeds the allowable range.", token );
@@ -737,7 +727,11 @@ Reader::decodeNumber ( Token& token )
                 "' exceeds the allowable range.", token );
         }
 
-        currentValue () = static_cast<Value::UInt>( value );
+        // If it's representable as a signed integer, construct it as one.
+        if ( value <= Value::maxInt )
+            currentValue () = static_cast<Value::Int>( value );
+        else
+            currentValue () = static_cast<Value::UInt>( value );
     }
 
     return true;

@@ -43,7 +43,9 @@ public:
         char const* s1 (
             "{\"max_uint\":4294967295"
             ",\"min_int\":-2147483648"
-            ",\"max_int\":2147483647}"
+            ",\"max_int\":2147483647"
+            ",\"an_int\":2147483646"
+            ",\"a_uint\":2147483648}"
             );
         Json::Value j1;
         Json::Reader r1;
@@ -52,6 +54,8 @@ public:
         expect (j1["max_uint"].asUInt() == 4294967295, "max_uint");
         expect (j1["min_int"].asInt() == -2147483648, "min_int");
         expect (j1["max_int"].asInt() == 2147483647, "max_int");
+        expect (j1["an_int"].asInt() == 2147483646, "an_int");
+        expect (j1["a_uint"].asUInt() == 2147483648, "a_uint");
 
         char const* s2 ("{\"overflow_uint\":4294967296}");
         Json::Value j2;
