@@ -17,7 +17,13 @@
 */
 //==============================================================================
 
+
+#include <ripple/json/api/json_reader.h>
+#include <ripple/json/api/json_value.h>
+
 #include <ripple/http/impl/Peer.h>
+
+#include <beast/cxx14/memory.h>
 
 namespace ripple {
 namespace HTTP {
@@ -403,6 +409,20 @@ Peer::async_write (SharedBuffer const& buf)
             strand_.wrap (std::bind (&Peer::handle_write,
                 shared_from_this(), beast::asio::placeholders::error,
                     beast::asio::placeholders::bytes_transferred, buf)));
+}
+
+void Peer::computeJson()
+{
+    if (!jsonValue_)
+    {
+        jsonValue_ = std::make_unique<Json::Value>();
+        Json::Reader reader;
+        auto const& request = content ();
+        hasLegalJson_ =
+                request.size () <= 1000000 &&
+                reader.parse (request, *jsonValue_) &&
+                jsonValue_->isObject ();
+    }
 }
 
 }
