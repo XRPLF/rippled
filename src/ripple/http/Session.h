@@ -112,11 +112,11 @@ public:
     /** Write this data asynchronously. */
     virtual void write (void const* buffer, std::size_t bytes) = 0;
 
-    /** Does the content() of the Session contain a legal JSON object? */
+    /** @return `true` if content() contains a legal JSON object. */
     virtual bool hasLegalJson() = 0;
 
-    /** If hasLegalJson() is true, getJson() returns a reference to the
-        Json::Value parsed from content(). */
+    /** @return the content as JSON if possible.
+        Precondition: hasLegalJson must return `true`. */
     virtual Json::Value const& getJson() = 0;
 
     /** Send a copy of data asynchronously. */
@@ -132,8 +132,9 @@ public:
     {
         for (auto& buffer: buffers)
         {
-            write (boost::asio::buffer_cast <void const*> (buffer),
-                   boost::asio::buffer_size (buffer));
+            write (
+                boost::asio::buffer_cast <void const*> (buffer),
+                boost::asio::buffer_size (buffer));
         }
     }
 

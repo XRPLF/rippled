@@ -186,8 +186,7 @@ public:
             return;
         }
 
-        auto size = jobSize (session);
-        if (size < 0)
+        if (jobSize (session) < 0)
         {
             // Small jobs bypass the job queue.
             Job job;
@@ -221,8 +220,7 @@ public:
         {
             session.write (
                 processRequest (
-                    session.getJson(),
-                    session.remoteAddress().at_port(0)));
+                    session.getJson(), session.remoteAddress().at_port(0)));
         }
         else
         {

@@ -90,28 +90,35 @@ public:
     Peer (ServerImpl& impl, Port const& port);
     ~Peer ();
 
-private:
+    Peer(Peer const&) = delete;
+    Peer& operator=(Peer const&) = delete;
+
+  private:
     //--------------------------------------------------------------------------
     //
     // Session
     //
 
-    beast::Journal journal() override
+    beast::Journal
+    journal() override
     {
         return impl_.journal();
     }
 
-    beast::IP::Endpoint remoteAddress() override
+    beast::IP::Endpoint
+    remoteAddress() override
     {
         return from_asio (get_socket().remote_endpoint());
     }
 
-    bool headersComplete() override
+    bool
+    headersComplete() override
     {
         return parser_.headersComplete();
     }
 
-    beast::HTTPHeaders headers() override
+    beast::HTTPHeaders
+    headers() override
     {
         return beast::HTTPHeaders (parser_.fields());
     }
@@ -122,16 +129,21 @@ private:
         return parser_.request();
     }
 
-    std::string content() override;
-    void write (void const* buffer, std::size_t bytes) override;
+    std::string
+    content() override;
 
-    bool hasLegalJson() override
+    void
+    write (void const* buffer, std::size_t bytes) override;
+
+    bool
+    hasLegalJson() override
     {
         computeJson();
         return hasLegalJson_;
     }
 
-    Json::Value const& getJson() override
+    Json::Value const&
+    getJson() override
     {
         computeJson();
         return *jsonValue_;
