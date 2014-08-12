@@ -32,7 +32,7 @@
 // For json/
 //
 // VFALCO TODO Clean up these one-offs
-#include <ripple/json/api/json_config.h> // Needed before these cpptl includes
+#include <ripple/json/json_config.h> // Needed before these cpptl includes
 #ifndef JSON_USE_CPPTL_SMALLMAP
 #include <map>
 #else
@@ -42,12 +42,12 @@
 #include <cpptl/forwards.h>
 #endif
 
-#include <ripple/json/api/json_forwards.h>
-#include <ripple/json/api/json_features.h>
-#include <ripple/json/api/json_value.h>
-#include <ripple/json/api/json_reader.h>
-#include <ripple/json/api/json_writer.h>
+#include <ripple/json/json_forwards.h>
+#include <ripple/json/json_features.h>
+#include <ripple/json/json_value.h>
+#include <ripple/json/json_reader.h>
+#include <ripple/json/json_writer.h>
 
-#include <ripple/json/api/JsonPropertyStream.h>
+#include <ripple/json/JsonPropertyStream.h>
 
 #endif

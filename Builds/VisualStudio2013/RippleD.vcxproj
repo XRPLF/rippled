@@ -126,8 +126,6 @@
     </ClCompile>
     <ClInclude Include="..\..\build\proto\ripple.pb.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\BeastConfig.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\Arithmetic.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\asio\abstract_socket.cpp">
@@ -304,14 +302,14 @@
     <ClCompile Include="..\..\src\beast\beast\crypto\impl\MurmurHash.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\crypto\impl\Sha256.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\crypto\impl\sha2\sha2.c">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\crypto\impl\sha2\sha2.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\crypto\impl\Sha256.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\crypto\impl\UnsignedInteger.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -825,14 +823,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\module\core\text\StringPairArray.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\threads\CriticalSection.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\threads\DynamicLibrary.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\threads\Process.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\threads\ScopedLock.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\thread\DeadlineTimer.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -844,6 +834,14 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\module\core\thread\Workers.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\module\core\threads\CriticalSection.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\module\core\threads\DynamicLibrary.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\module\core\threads\Process.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\module\core\threads\ScopedLock.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\time\AtExitHook.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -1186,6 +1184,8 @@
     <ClInclude Include="..\..\src\beast\beast\utility\Zero.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\Version.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\BeastConfig.h">
     </ClInclude>
     <ClCompile Include="..\..\src\hyperleveldb\db\builder.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -1942,20 +1942,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\http\Session.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\json\api\JsonPropertyStream.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\json\api\json_config.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\json\api\json_features.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\json\api\json_forwards.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\json\api\json_reader.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\json\api\json_value.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\json\api\json_writer.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\json\impl\JsonPropertyStream.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -1979,6 +1965,20 @@
     <ClCompile Include="..\..\src\ripple\json\impl\Tests.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\json\JsonPropertyStream.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\json\json_config.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\json\json_features.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\json\json_forwards.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\json\json_reader.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\json\json_value.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\json\json_writer.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\app\book\Amount.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\app\book\Amounts.h">
@@ -3940,57 +3940,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\rocksdb\third-party\rapidjson\reader.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\rocksdb\utilities\backupable\backupable_db.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\rocksdb\utilities\document\document_db.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\rocksdb\utilities\document\json_document.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\rocksdb\utilities\geodb\geodb_impl.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\rocksdb\utilities\geodb\geodb_impl.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\rocksdb\utilities\merge_operators.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\rocksdb\utilities\merge_operators\put.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\rocksdb\utilities\merge_operators\string_append\stringappend.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\rocksdb\utilities\merge_operators\string_append\stringappend.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\rocksdb\utilities\merge_operators\string_append\stringappend2.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\rocksdb\utilities\merge_operators\string_append\stringappend2.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\rocksdb\utilities\merge_operators\uint64add.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\rocksdb\utilities\redis\redis_lists.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\rocksdb\utilities\redis\redis_lists.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\rocksdb\utilities\redis\redis_list_exception.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\rocksdb\utilities\redis\redis_list_iterator.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\rocksdb\utilities\spatialdb\spatial_db.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\rocksdb\utilities\spatialdb\utils.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\rocksdb\utilities\ttl\db_ttl_impl.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\rocksdb\utilities\ttl\db_ttl_impl.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\rocksdb\util\arena.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -4163,6 +4112,57 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\rocksdb\util\xxhash.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\utilities\backupable\backupable_db.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb\utilities\document\document_db.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb\utilities\document\json_document.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb\utilities\geodb\geodb_impl.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\utilities\geodb\geodb_impl.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\utilities\merge_operators.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\utilities\merge_operators\put.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb\utilities\merge_operators\string_append\stringappend.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\utilities\merge_operators\string_append\stringappend.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\utilities\merge_operators\string_append\stringappend2.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\utilities\merge_operators\string_append\stringappend2.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\utilities\merge_operators\uint64add.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb\utilities\redis\redis_lists.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\utilities\redis\redis_lists.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\utilities\redis\redis_list_exception.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\utilities\redis\redis_list_iterator.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\utilities\spatialdb\spatial_db.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\utilities\spatialdb\utils.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\utilities\ttl\db_ttl_impl.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\utilities\ttl\db_ttl_impl.h">
     </ClInclude>
     <ClInclude Include="..\..\src\snappy\config\snappy-stubs-public.h">
     </ClInclude>
