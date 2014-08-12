@@ -22,6 +22,7 @@ namespace ripple {
 
 Json::Value doUnlReset (RPC::Context& context)
 {
+    auto lock = getApp().masterLock();
     getApp().getUNL ().nodeReset ();
 
     return "removing nodes";

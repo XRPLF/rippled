@@ -24,11 +24,7 @@
 
 namespace ripple {
 
-LedgerBase::LedgerBase ()
-{
-}
-
-Ledger::Ledger (const RippleAddress& masterID, std::uint64_t startAmount)
+Ledger::Ledger (RippleAddress const& masterID, std::uint64_t startAmount)
     : mTotCoins (startAmount)
     , mLedgerSeq (1) // First Ledger
     , mCloseTime (0)
@@ -202,7 +198,7 @@ Ledger::Ledger (Blob const& rawLedger,
     initializeFees ();
 }
 
-Ledger::Ledger (const std::string& rawLedger, bool hasPrefix)
+Ledger::Ledger (std::string const& rawLedger, bool hasPrefix)
     : mClosed (false)
     , mValidated (false)
     , mValidHash (false)
@@ -255,6 +251,30 @@ Ledger::~Ledger ()
             "mAccountStateMap with "
             + std::to_string (mAccountStateMap->size ()) + " items");
     }
+}
+
+bool Ledger::enforceFreeze () const
+{
+
+    // Temporarily, the freze code can run in either
+    // enforcing mode or non-enforcing mode. In
+    // non-enforcing mode, freeze flags can be
+    // manipulated, but freezing is not actually
+    // enforced. Once freeze enforcing has been
+    // enabled, this function can be removed
+
+    // Let freeze enforcement be tested
+    // If you wish to test non-enforcing mode,
+    // you must remove this line
+    if (getConfig().RUN_STANDALONE)
+        return true;
+
+    // Freeze enforcing date is September 15, 2014
+    static std::uint32_t const enforceDate =
+        iToSeconds (boost::posix_time::ptime (
+            boost::gregorian::date (2014, boost::gregorian::Sep, 15)));
+
+    return mParentCloseTime >= enforceDate;
 }
 
 void Ledger::setImmutable ()
@@ -362,7 +382,7 @@ void Ledger::setAccepted ()
     setImmutable ();
 }
 
-bool Ledger::hasAccount (const RippleAddress& accountID)
+bool Ledger::hasAccount (RippleAddress const& accountID)
 {
     return mAccountStateMap->hasItem (Ledger::getAccountRootIndex (accountID));
 }
@@ -373,7 +393,7 @@ bool Ledger::addSLE (SLE const& sle)
     return mAccountStateMap->addItem(item, false, false);
 }
 
-AccountState::pointer Ledger::getAccountState (const RippleAddress& accountID)
+AccountState::pointer Ledger::getAccountState (RippleAddress const& accountID)
 {
     SLE::pointer sle = getSLEi (Ledger::getAccountRootIndex (accountID));
 
@@ -683,14 +703,14 @@ bool Ledger::saveValidatedLedger (bool current)
     }
 
     {
-        DeprecatedScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
+        auto sl (getApp().getLedgerDB ()->lock ());
         getApp().getLedgerDB ()->getDB ()->executeSQL (
             boost::str (deleteLedger % mLedgerSeq));
     }
 
     {
         Database* db = getApp().getTxnDB ()->getDB ();
-        DeprecatedScopedLock dbLock (getApp().getTxnDB ()->getDBLock ());
+        auto dbLock (getApp().getTxnDB ()->lock ());
         db->executeSQL ("BEGIN TRANSACTION;");
 
         db->executeSQL (boost::str (deleteTrans1 % getLedgerSeq ()));
@@ -763,9 +783,9 @@ bool Ledger::saveValidatedLedger (bool current)
     }
 
     {
-        DeprecatedScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
+        auto sl (getApp().getLedgerDB ()->lock ());
 
-        // TODO(tom): ARG!!
+        // TODO(tom): ARG!
         getApp().getLedgerDB ()->getDB ()->executeSQL (boost::str (addLedger %
                 to_string (getHash ()) % mLedgerSeq % to_string (mParentHash) %
                 beast::lexicalCastThrow <std::string> (mTotCoins) % mCloseTime %
@@ -789,7 +809,7 @@ Ledger::pointer Ledger::loadByIndex (std::uint32_t ledgerIndex)
     Ledger::pointer ledger;
     {
         Database* db = getApp().getLedgerDB ()->getDB ();
-        DeprecatedScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
+        auto sl (getApp().getLedgerDB ()->lock ());
 
         SqliteStatement pSt (
             db->getSqliteDB (), "SELECT "
@@ -815,7 +835,7 @@ Ledger::pointer Ledger::loadByHash (uint256 const& ledgerHash)
     Ledger::pointer ledger;
     {
         Database* db = getApp().getLedgerDB ()->getDB ();
-        DeprecatedScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
+        auto sl (getApp().getLedgerDB ()->lock ());
 
         SqliteStatement pSt (
             db->getSqliteDB (), "SELECT "
@@ -860,7 +880,7 @@ Ledger::pointer Ledger::loadByHash (uint256 const& ledgerHash)
 
 #endif
 
-Ledger::pointer Ledger::getSQL (const std::string& sql)
+Ledger::pointer Ledger::getSQL (std::string const& sql)
 {
     // only used with sqlite3 prepared statements not used
     uint256 ledgerHash, prevHash, accountHash, transHash;
@@ -872,7 +892,7 @@ Ledger::pointer Ledger::getSQL (const std::string& sql)
 
     {
         Database* db = getApp().getLedgerDB ()->getDB ();
-        DeprecatedScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
+        auto sl (getApp().getLedgerDB ()->lock ());
 
         if (!db->executeSQL (sql) || !db->startIterRows ())
             return Ledger::pointer ();
@@ -997,7 +1017,7 @@ uint256 Ledger::getHashByIndex (std::uint32_t ledgerIndex)
     std::string hash;
     {
         Database* db = getApp().getLedgerDB ()->getDB ();
-        DeprecatedScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
+        auto sl (getApp().getLedgerDB ()->lock ());
 
         if (!db->executeSQL (sql) || !db->startIterRows ())
             return ret;
@@ -1016,7 +1036,7 @@ bool Ledger::getHashesByIndex (
 #ifndef NO_SQLITE3_PREPARE
 
     DatabaseCon* con = getApp().getLedgerDB ();
-    DeprecatedScopedLock sl (con->getDBLock ());
+    auto sl (con->lock ());
 
     SqliteStatement pSt (con->getDB ()->getSqliteDB (),
                          "SELECT LedgerHash,PrevHash FROM Ledgers "
@@ -1054,7 +1074,7 @@ bool Ledger::getHashesByIndex (
     std::string hash, prevHash;
     {
         Database* db = getApp().getLedgerDB ()->getDB ();
-        DeprecatedScopedLock sl (getApp().getLedgerDB ()->getDBLock ());
+        auto sl (getApp().getLedgerDB ()->lock ());
 
         if (!db->executeSQL (sql) || !db->startIterRows ())
             return false;
@@ -1088,7 +1108,7 @@ Ledger::getHashesByIndex (std::uint32_t minSeq, std::uint32_t maxSeq)
     sql.append (";");
 
     DatabaseCon* con = getApp().getLedgerDB ();
-    DeprecatedScopedLock sl (con->getDBLock ());
+    auto sl (con->lock ());
 
     SqliteStatement pSt (con->getDB ()->getSqliteDB (), sql);
 
@@ -1138,8 +1158,6 @@ Json::Value Ledger::getJson (int options)
     bool const bFull (options & LEDGER_JSON_FULL);
     bool const bExpand (options & LEDGER_JSON_EXPAND);
 
-    ScopedLockType sl (mLock);
-
     // DEPRECATED
     ledger[jss::seqNum]
             = beast::lexicalCastThrow <std::string> (mLedgerSeq);
@@ -1187,7 +1205,7 @@ Json::Value Ledger::getJson (int options)
         Json::Value& txns = (ledger[jss::transactions] = Json::arrayValue);
         SHAMapTreeNode::TNType type;
 
-        for (auto item = mTransactionMap->peekFirstItem (type); !!item;
+        for (auto item = mTransactionMap->peekFirstItem (type); item;
              item = mTransactionMap->peekNextItem (item->getTag (), type))
         {
             if (bFull || bExpand)
@@ -1497,7 +1515,7 @@ SLE::pointer Ledger::getAccountRoot (Account const& accountID)
     return getASNodeI (getAccountRootIndex (accountID), ltACCOUNT_ROOT);
 }
 
-SLE::pointer Ledger::getAccountRoot (const RippleAddress& naAccountID)
+SLE::pointer Ledger::getAccountRoot (RippleAddress const& naAccountID)
 {
     return getASNodeI (getAccountRootIndex (
         naAccountID.getAccountID ()), ltACCOUNT_ROOT);
@@ -1792,7 +1810,7 @@ uint256 Ledger::getOwnerDirIndex (Account const& account)
 }
 
 uint256 Ledger::getRippleStateIndex (
-    const RippleAddress& naA, const RippleAddress& naB,
+    RippleAddress const& naA, RippleAddress const& naB,
     Currency const& currency)
 {
     auto uAID = naA.getAccountID ();

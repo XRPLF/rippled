@@ -61,10 +61,10 @@ Transaction::pointer Transaction::sharedTransaction (Blob const& vucTransaction,
 
 Transaction::Transaction (
     TxType ttKind,
-    const RippleAddress&    naPublicKey,
-    const RippleAddress&    naSourceAccount,
+    RippleAddress const&    naPublicKey,
+    RippleAddress const&    naSourceAccount,
     std::uint32_t           uSeq,
-    const STAmount&         saFee,
+    STAmount const&         saFee,
     std::uint32_t           uSourceTag) :
     mAccountFrom (naSourceAccount), mFromPubKey (naPublicKey), mInLedger (0), mStatus (NEW), mResult (temUNCERTAIN)
 {
@@ -84,7 +84,7 @@ Transaction::Transaction (
     }
 }
 
-bool Transaction::sign (const RippleAddress& naAccountPrivate)
+bool Transaction::sign (RippleAddress const& naAccountPrivate)
 {
     bool    bResult = true;
 
@@ -195,7 +195,7 @@ Transaction::pointer Transaction::transactionFromSQL (Database* db, bool bValida
 }
 
 // DAVID: would you rather duplicate this code or keep the lock longer?
-Transaction::pointer Transaction::transactionFromSQL (const std::string& sql)
+Transaction::pointer Transaction::transactionFromSQL (std::string const& sql)
 {
     Serializer rawTxn;
     std::string status;
@@ -205,7 +205,7 @@ Transaction::pointer Transaction::transactionFromSQL (const std::string& sql)
     rawTxn.resize (txSize);
 
     {
-        DeprecatedScopedLock sl (getApp().getTxnDB ()->getDBLock ());
+        auto sl (getApp().getTxnDB ()->lock ());
         Database* db = getApp().getTxnDB ()->getDB ();
 
         if (!db->executeSQL (sql, true) || !db->startIterRows ())
@@ -289,12 +289,14 @@ bool Transaction::convertToTransactions (std::uint32_t firstLedgerSeq, std::uint
 
         Transaction::pointer firstTrans, secondTrans;
 
-        if (!!first)
+        if (first)
         {
             // transaction in our table
-            firstTrans = sharedTransaction (first->peekData (), checkFirstTransactions);
+            firstTrans = sharedTransaction (
+                first->peekData (), checkFirstTransactions);
 
-            if ((firstTrans->getStatus () == INVALID) || (firstTrans->getID () != id ))
+            if (firstTrans->getStatus () == INVALID ||
+                firstTrans->getID () != id )
             {
                 firstTrans->setStatus (INVALID, firstLedgerSeq);
                 return false;
@@ -302,25 +304,36 @@ bool Transaction::convertToTransactions (std::uint32_t firstLedgerSeq, std::uint
             else firstTrans->setStatus (INCLUDED, firstLedgerSeq);
         }
 
-        if (!!second)
+        if (second)
         {
             // transaction in other table
-            secondTrans = sharedTransaction (second->peekData (), checkSecondTransactions);
+            secondTrans = sharedTransaction (
+                second->peekData (), checkSecondTransactions);
 
-            if ((secondTrans->getStatus () == INVALID) || (secondTrans->getID () != id))
+            if (secondTrans->getStatus () == INVALID ||
+                secondTrans->getID () != id)
             {
                 secondTrans->setStatus (INVALID, secondLedgerSeq);
                 return false;
             }
-            else secondTrans->setStatus (INCLUDED, secondLedgerSeq);
+            else
+            {
+                secondTrans->setStatus (INCLUDED, secondLedgerSeq);
+            }
         }
 
         assert (firstTrans || secondTrans);
 
-        if (firstTrans && secondTrans && (firstTrans->getStatus () != INVALID) && (secondTrans->getStatus () != INVALID))
-            return false; // one or the other SHAMap is structurally invalid or a miracle has happened
+        if (firstTrans && secondTrans &&
+            firstTrans->getStatus () != INVALID &&
+            secondTrans->getStatus () != INVALID)
+        {
+            // One or the other SHAMap is structurally invalid or a miracle has
+            // happened.
+            return false;
+        }
 
-        outMap[id] = std::pair<Transaction::pointer, Transaction::pointer> (firstTrans, secondTrans);
+        outMap[id] = {firstTrans, secondTrans};
     }
 
     return true;
@@ -338,8 +351,8 @@ Json::Value Transaction::getJson (int options, bool binary) const
 
         if (options == 1)
         {
-            Ledger::pointer ledger = getApp().getLedgerMaster ().getLedgerBySeq (mInLedger);
-
+            auto ledger = getApp().getLedgerMaster ().
+                    getLedgerBySeq (mInLedger);
             if (ledger)
                 ret["date"] = ledger->getCloseTimeNC ();
         }
@@ -348,9 +361,9 @@ Json::Value Transaction::getJson (int options, bool binary) const
     return ret;
 }
 
-bool Transaction::isHexTxID (const std::string& txid)
+bool Transaction::isHexTxID (std::string const& txid)
 {
-    if (txid.size () != 64) 
+    if (txid.size () != 64)
         return false;
 
     auto const ret = std::find_if_not (txid.begin (), txid.end (),

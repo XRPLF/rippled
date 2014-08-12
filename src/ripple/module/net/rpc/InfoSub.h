@@ -55,18 +55,19 @@ public:
     public:
         // VFALCO TODO Rename the 'rt' parameters to something meaningful.
         virtual void subAccount (ref ispListener,
-            const ripple::unordered_set<RippleAddress>& vnaAccountIDs,
+            const hash_set<RippleAddress>& vnaAccountIDs,
                 std::uint32_t uLedgerIndex, bool rt) = 0;
 
         virtual void unsubAccount (std::uint64_t uListener,
-            const ripple::unordered_set<RippleAddress>& vnaAccountIDs,
+            const hash_set<RippleAddress>& vnaAccountIDs,
                 bool rt) = 0;
 
         // VFALCO TODO Document the bool return value
         virtual bool subLedger (ref ispListener, Json::Value& jvResult) = 0;
         virtual bool unsubLedger (std::uint64_t uListener) = 0;
 
-        virtual bool subServer (ref ispListener, Json::Value& jvResult) = 0;
+        virtual bool subServer (ref ispListener, Json::Value& jvResult,
+            bool admin) = 0;
         virtual bool unsubServer (std::uint64_t uListener) = 0;
 
         virtual bool subBook (ref ispListener, Book const&) = 0;
@@ -82,8 +83,8 @@ public:
         //             This was added for one particular partner, it
         //             "pushes" subscription data to a particular URL.
         //
-        virtual pointer findRpcSub (const std::string& strUrl) = 0;
-        virtual pointer addRpcSub (const std::string& strUrl, ref rspEntry) = 0;
+        virtual pointer findRpcSub (std::string const& strUrl) = 0;
+        virtual pointer addRpcSub (std::string const& strUrl, ref rspEntry) = 0;
     };
 
 public:
@@ -93,11 +94,11 @@ public:
 
     Consumer& getConsumer();
 
-    virtual void send (const Json::Value & jvObj, bool broadcast) = 0;
+    virtual void send (Json::Value const& jvObj, bool broadcast) = 0;
 
     // VFALCO NOTE Why is this virtual?
     virtual void send (
-        const Json::Value & jvObj, const std::string & sObj, bool broadcast);
+        Json::Value const& jvObj, std::string const& sObj, bool broadcast);
 
     std::uint64_t getSeq ();
 
@@ -117,13 +118,12 @@ protected:
     LockType mLock;
 
 private:
-    Consumer m_consumer;
-    Source& m_source;
-    ripple::unordered_set <RippleAddress>     mSubAccountInfo;
-    ripple::unordered_set <RippleAddress>     mSubAccountTransaction;
-    std::shared_ptr <PathRequest>             mPathRequest;
-
-    std::uint64_t                             mSeq;
+    Consumer                      m_consumer;
+    Source&                       m_source;
+    hash_set <RippleAddress>      mSubAccountInfo;
+    hash_set <RippleAddress>      mSubAccountTransaction;
+    std::shared_ptr <PathRequest> mPathRequest;
+    std::uint64_t                 mSeq;
 };
 
 } // ripple

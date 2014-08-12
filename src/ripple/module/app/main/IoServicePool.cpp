@@ -69,6 +69,7 @@ IoServicePool::IoServicePool (Stoppable& parent, std::string const& name,
     , m_service (numberOfThreads)
     , m_work (std::ref (m_service))
     , m_threadsDesired (numberOfThreads)
+    , m_threadsRunning (0)
 {
     bassert (m_threadsDesired > 0);
 }
@@ -125,7 +126,7 @@ void IoServicePool::onThreadExit()
     bassert (isStopping());
 
     // must have at least count 1
-    bassert (m_threadsRunning.get() > 0);
+    bassert (m_threadsRunning.load() > 0);
 
     if (--m_threadsRunning == 0)
     {

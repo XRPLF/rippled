@@ -26,17 +26,14 @@ namespace ripple {
 // }
 Json::Value doRandom (RPC::Context& context)
 {
-    context.lock_.unlock ();
-    uint256         uRandom;
+    uint256 rand;
 
     try
     {
-        RandomNumbers::getInstance ().fillBytes (uRandom.begin (), uRandom.size ());
+        RandomNumbers::getInstance ().fillBytes (rand.begin (), rand.size ());
 
         Json::Value jvResult;
-
-        jvResult["random"]  = to_string (uRandom);
-
+        jvResult["random"]  = to_string (rand);
         return jvResult;
     }
     catch (...)

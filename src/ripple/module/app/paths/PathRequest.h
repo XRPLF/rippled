@@ -61,18 +61,23 @@ public:
     void        updateComplete ();
     Json::Value getStatus ();
 
-    Json::Value doCreate (const std::shared_ptr<Ledger>&, const RippleLineCache::pointer&,
-        const Json::Value&, bool&);
-    Json::Value doClose (const Json::Value&);
-    Json::Value doStatus (const Json::Value&);
-    Json::Value doUpdate (const std::shared_ptr<RippleLineCache>&, bool fast); // update jvStatus
+    Json::Value doCreate (
+        const std::shared_ptr<Ledger>&,
+        const RippleLineCache::pointer&,
+        Json::Value const&,
+        bool&);
+    Json::Value doClose (Json::Value const&);
+    Json::Value doStatus (Json::Value const&);
+
+    // update jvStatus
+    Json::Value doUpdate (const std::shared_ptr<RippleLineCache>&, bool fast);
     InfoSub::pointer getSubscriber ();
 
 private:
     bool isValid (RippleLineCache::ref crCache);
     void setValid ();
     void resetLevel (int level);
-    int parseJson (const Json::Value&, bool complete);
+    int parseJson (Json::Value const&, bool complete);
 
     beast::Journal m_journal;
 
@@ -80,35 +85,35 @@ private:
     typedef std::lock_guard <LockType> ScopedLockType;
     LockType mLock;
 
-    PathRequests&                   mOwner;
+    PathRequests& mOwner;
 
-    std::weak_ptr<InfoSub>        wpSubscriber;               // Who this request came from
-    Json::Value                     jvId;
-    Json::Value                     jvStatus;                   // Last result
+    std::weak_ptr<InfoSub> wpSubscriber; // Who this request came from
+
+    Json::Value jvId;
+    Json::Value jvStatus;                   // Last result
 
     // Client request parameters
-    RippleAddress                     raSrcAccount;
-    RippleAddress                     raDstAccount;
-    STAmount                          saDstAmount;
-    std::set<CurrencyIssuer>            sciSourceCurrencies;
-    // std::vector<Json::Value>          vjvBridges;
+    RippleAddress raSrcAccount;
+    RippleAddress raDstAccount;
+    STAmount saDstAmount;
+
+    std::set<CurrencyIssuer> sciSourceCurrencies;
     std::map<CurrencyIssuer, STPathSet> mContext;
 
-    bool                            bValid;
+    bool bValid;
 
-    LockType                        mIndexLock;
-    LedgerIndex                     mLastIndex;
-    bool                            mInProgress;
+    LockType mIndexLock;
+    LedgerIndex mLastIndex;
+    bool mInProgress;
 
-    int                             iLastLevel;
-    bool                            bLastSuccess;
+    int iLastLevel;
+    bool bLastSuccess;
 
-    int                             iIdentifier;
+    int iIdentifier;
 
-    boost::posix_time::ptime        ptCreated;
-    boost::posix_time::ptime        ptQuickReply;
-    boost::posix_time::ptime        ptFullReply;
-
+    boost::posix_time::ptime ptCreated;
+    boost::posix_time::ptime ptQuickReply;
+    boost::posix_time::ptime ptFullReply;
 };
 
 } // ripple

@@ -157,7 +157,7 @@ public:
 
         ScopedLockType sl (mLock);
 
-        std::string s = boost::str (boost::format (f) % to_string (challenge) % 
+        std::string s = boost::str (boost::format (f) % to_string (challenge) %
             to_string (mTarget) % mIterations % now);
         std::string c = to_string (mSecret) + s;
         s += "-" + to_string (Serializer::getSHA512Half (c));
@@ -167,7 +167,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    PowResult checkProof (const std::string& token, uint256 const& solution)
+    PowResult checkProof (std::string const& token, uint256 const& solution)
     {
         // VFALCO COmmented this out because Dave said it wasn't used
         //        and also we dont have the lexicalCast from a vector of strings to a time_t
@@ -183,7 +183,7 @@ public:
             return powCORRUPT;
         }
 
-        std::string v = to_string (mSecret) + fields[0] + "-" + 
+        std::string v = to_string (mSecret) + fields[0] + "-" +
                         fields[1] + "-" + fields[2] + "-" + fields[3];
 
         if (fields[4] != to_string (Serializer::getSHA512Half (v)))
@@ -354,9 +354,9 @@ private:
 
 //------------------------------------------------------------------------------
 
-ProofOfWorkFactory* ProofOfWorkFactory::New ()
+std::unique_ptr<ProofOfWorkFactory> ProofOfWorkFactory::New ()
 {
-    return new ProofOfWorkFactoryImp;
+    return std::make_unique<ProofOfWorkFactoryImp>();
 }
 
 //------------------------------------------------------------------------------
@@ -372,7 +372,7 @@ public:
         ProofOfWork pow = gen.getProof ();
 
         beast::String s;
-        
+
         s << "solve difficulty " << beast::String (pow.getDifficulty ());
 
         uint256 solution = pow.solve (16777216);

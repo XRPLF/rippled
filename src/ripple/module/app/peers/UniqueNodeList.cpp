@@ -103,9 +103,9 @@ private:
         std::vector<int>    viReferrals;
     } scoreNode;
 
-    typedef ripple::unordered_map<std::string, int> strIndex;
+    typedef hash_map<std::string, int> strIndex;
     typedef std::pair<std::string, int> IPAndPortNumber;
-    typedef ripple::unordered_map<std::pair< std::string, int>, score>   epScore;
+    typedef hash_map<std::pair< std::string, int>, score>   epScore;
 
 public:
     explicit UniqueNodeListImp (Stoppable& parent)
@@ -188,7 +188,7 @@ public:
     //--------------------------------------------------------------------------
 
     // Add a trusted node.  Called by RPC or other source.
-    void nodeAddPublic (const RippleAddress& naNodePublic, ValidatorSource vsWhy, const std::string& strComment)
+    void nodeAddPublic (RippleAddress const& naNodePublic, ValidatorSource vsWhy, std::string const& strComment)
     {
         seedNode    snCurrent;
 
@@ -225,7 +225,7 @@ public:
     // Queue a domain for a single attempt fetch a ripple.txt.
     // --> strComment: only used on vsManual
     // YYY As a lot of these may happen at once, would be nice to wrap multiple calls in a transaction.
-    void nodeAddDomain (std::string strDomain, ValidatorSource vsWhy, const std::string& strComment)
+    void nodeAddDomain (std::string strDomain, ValidatorSource vsWhy, std::string const& strComment)
     {
         boost::trim (strDomain);
         boost::to_lower (strDomain);
@@ -268,11 +268,11 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void nodeRemovePublic (const RippleAddress& naNodePublic)
+    void nodeRemovePublic (RippleAddress const& naNodePublic)
     {
         {
             Database* db = getApp().getWalletDB ()->getDB ();
-            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+            auto sl (getApp().getWalletDB ()->lock ());
 
             db->executeSQL (str (boost::format ("DELETE FROM SeedNodes WHERE PublicKey=%s") % sqlEscape (naNodePublic.humanNodePublic ())));
             db->executeSQL (str (boost::format ("DELETE FROM TrustedNodes WHERE PublicKey=%s") % sqlEscape (naNodePublic.humanNodePublic ())));
@@ -294,7 +294,7 @@ public:
 
         {
             Database* db = getApp().getWalletDB ()->getDB ();
-            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+            auto sl (getApp().getWalletDB ()->lock ());
 
             db->executeSQL (str (boost::format ("DELETE FROM SeedDomains WHERE Domain=%s") % sqlEscape (strDomain)));
         }
@@ -310,7 +310,7 @@ public:
         {
             Database* db = getApp().getWalletDB ()->getDB ();
 
-            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+            auto sl (getApp().getWalletDB ()->lock ());
 
             // XXX Check results.
             db->executeSQL ("DELETE FROM SeedDomains");
@@ -330,7 +330,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    bool nodeInUNL (const RippleAddress& naNodePublic)
+    bool nodeInUNL (RippleAddress const& naNodePublic)
     {
         ScopedUNLLockType sl (mUNLLock);
 
@@ -339,7 +339,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    bool nodeInCluster (const RippleAddress& naNodePublic)
+    bool nodeInCluster (RippleAddress const& naNodePublic)
     {
         ScopedUNLLockType sl (mUNLLock);
         return m_clusterNodes.end () != m_clusterNodes.find (naNodePublic);
@@ -347,7 +347,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    bool nodeInCluster (const RippleAddress& naNodePublic, std::string& name)
+    bool nodeInCluster (RippleAddress const& naNodePublic, std::string& name)
     {
         ScopedUNLLockType sl (mUNLLock);
         std::map<RippleAddress, ClusterNodeStatus>::iterator it = m_clusterNodes.find (naNodePublic);
@@ -361,7 +361,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    bool nodeUpdate (const RippleAddress& naNodePublic, ClusterNodeStatus const& cnsStatus)
+    bool nodeUpdate (RippleAddress const& naNodePublic, ClusterNodeStatus const& cnsStatus)
     {
         ScopedUNLLockType sl (mUNLLock);
         return m_clusterNodes[naNodePublic].update(cnsStatus);
@@ -444,7 +444,7 @@ public:
 
 #if 0
         {
-            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+            auto sl (getApp().getWalletDB ()->lock ());
             Database* db = getApp().getWalletDB ()->getDB ();
 
             if (db->executeSQL (str (boost::format ("SELECT COUNT(*) AS Count FROM SeedDomains WHERE Source='%s' OR Source='%c';") % vsManual % vsValidator)) && db->startIterRows ())
@@ -586,7 +586,7 @@ public:
 
         Json::Value ret (Json::arrayValue);
 
-        DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+        auto sl (getApp().getWalletDB ()->lock ());
         SQL_FOREACH (db, "SELECT * FROM TrustedNodes;")
         {
             Json::Value node (Json::objectValue);
@@ -649,12 +649,12 @@ private:
     // Load information about when we last updated.
     bool miscLoad ()
     {
-        DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+        auto sl (getApp().getWalletDB ()->lock ());
         Database* db = getApp().getWalletDB ()->getDB ();
 
         if (!db->executeSQL ("SELECT * FROM Misc WHERE Magic=1;")) return false;
 
-        bool    bAvail  = !!db->startIterRows ();
+        bool bAvail  = db->startIterRows ();
 
         mtpFetchUpdated = ptFromSeconds (bAvail ? db->getInt ("FetchUpdated") : -1);
         mtpScoreUpdated = ptFromSeconds (bAvail ? db->getInt ("ScoreUpdated") : -1);
@@ -672,7 +672,7 @@ private:
     bool miscSave ()
     {
         Database*   db = getApp().getWalletDB ()->getDB ();
-        DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+        auto sl (getApp().getWalletDB ()->lock ());
 
         db->executeSQL (str (boost::format ("REPLACE INTO Misc (Magic,FetchUpdated,ScoreUpdated) VALUES (1,%d,%d);")
                              % iToSeconds (mtpFetchUpdated)
@@ -686,7 +686,7 @@ private:
     void trustedLoad ()
     {
         boost::regex rNode ("\\`\\s*(\\S+)[\\s]*(.*)\\'");
-        BOOST_FOREACH (const std::string & c, getConfig ().CLUSTER_NODES)
+        BOOST_FOREACH (std::string const& c, getConfig ().CLUSTER_NODES)
         {
             boost::smatch match;
 
@@ -702,7 +702,7 @@ private:
         }
 
         Database*   db = getApp().getWalletDB ()->getDB ();
-        DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+        auto sl (getApp().getWalletDB ()->lock ());
         ScopedUNLLockType slUNL (mUNLLock);
 
         mUNL.clear ();
@@ -803,7 +803,7 @@ private:
         // For each entry in SeedDomains with a PublicKey:
         // - Add an entry in umPulicIdx, umDomainIdx, and vsnNodes.
         {
-            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+            auto sl (getApp().getWalletDB ()->lock ());
 
             SQL_FOREACH (db, "SELECT Domain,PublicKey,Source FROM SeedDomains;")
             {
@@ -856,7 +856,7 @@ private:
         // For each entry in SeedNodes:
         // - Add an entry in umPulicIdx, umDomainIdx, and vsnNodes.
         {
-            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+            auto sl (getApp().getWalletDB ()->lock ());
 
             SQL_FOREACH (db, "SELECT PublicKey,Source FROM SeedNodes;")
             {
@@ -920,7 +920,7 @@ private:
             std::string&        strValidator    = sn.strValidator;
             std::vector<int>&   viReferrals     = sn.viReferrals;
 
-            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+            auto sl (getApp().getWalletDB ()->lock ());
 
             SQL_FOREACH (db, boost::str (boost::format ("SELECT Referral FROM ValidatorReferrals WHERE Validator=%s ORDER BY Entry;")
                                          % sqlEscape (strValidator)))
@@ -1001,7 +1001,7 @@ private:
         }
 
         // Persist validator scores.
-        DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+        auto sl (getApp().getWalletDB ()->lock ());
 
         db->executeSQL ("BEGIN;");
         db->executeSQL ("UPDATE TrustedNodes SET Score = 0 WHERE Score != 0;");
@@ -1025,7 +1025,7 @@ private:
             }
         }
 
-        ripple::unordered_set<std::string>   usUNL;
+        hash_set<std::string>   usUNL;
 
         if (!vsnNodes.empty ())
         {
@@ -1058,7 +1058,7 @@ private:
             mUNL.swap (usUNL);
         }
 
-        ripple::unordered_map<std::string, int>  umValidators;
+        hash_map<std::string, int>  umValidators;
 
         if (!vsnNodes.empty ())
         {
@@ -1077,7 +1077,7 @@ private:
         // map of pair<IP,Port> :: score
         epScore umScore;
 
-        typedef ripple::unordered_map<std::string, int>::value_type vcType;
+        typedef hash_map<std::string, int>::value_type vcType;
         BOOST_FOREACH (vcType & vc, umValidators)
         {
             std::string strValidator    = vc.first;
@@ -1146,7 +1146,7 @@ private:
     //
     // VFALCO TODO Can't we take a filename or stream instead of a string?
     //
-    bool responseFetch (const std::string& strDomain, const boost::system::error_code& err, int iStatus, const std::string& strSiteFile)
+    bool responseFetch (std::string const& strDomain, const boost::system::error_code& err, int iStatus, std::string const& strSiteFile)
     {
         bool    bReject = !err && iStatus != 200;
 
@@ -1287,7 +1287,7 @@ private:
             boost::posix_time::ptime tpNext (boost::posix_time::min_date_time);
             boost::posix_time::ptime tpNow (boost::posix_time::second_clock::universal_time ());
 
-            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+            auto sl (getApp().getWalletDB ()->lock ());
             Database* db = getApp().getWalletDB ()->getDB ();
 
             if (db->executeSQL ("SELECT Domain,Next FROM SeedDomains INDEXED BY SeedDomainNext ORDER BY Next LIMIT 1;")
@@ -1429,7 +1429,7 @@ private:
     //--------------------------------------------------------------------------
 
     // Process Section [validators_url].
-    void getValidatorsUrl (const RippleAddress& naNodePublic, Section secSite)
+    void getValidatorsUrl (RippleAddress const& naNodePublic, Section secSite)
     {
         std::string strValidatorsUrl;
         std::string strScheme;
@@ -1466,7 +1466,7 @@ private:
 
     // Process Section [ips_url].
     // If we have a Section with a single entry, fetch the url and process it.
-    void getIpsUrl (const RippleAddress& naNodePublic, Section secSite)
+    void getIpsUrl (RippleAddress const& naNodePublic, Section secSite)
     {
         std::string strIpsUrl;
         std::string strScheme;
@@ -1502,7 +1502,7 @@ private:
     //--------------------------------------------------------------------------
 
     // Given a Section with IPs, parse and persist it for a validator.
-    bool responseIps (const std::string& strSite, const RippleAddress& naNodePublic, const boost::system::error_code& err, int iStatus, const std::string& strIpsFile)
+    bool responseIps (std::string const& strSite, RippleAddress const& naNodePublic, const boost::system::error_code& err, int iStatus, std::string const& strIpsFile)
     {
         bool    bReject = !err && iStatus != 200;
 
@@ -1522,7 +1522,7 @@ private:
     }
 
     // After fetching a ripple.txt from a web site, given a Section with validators, parse and persist it.
-    bool responseValidators (const std::string& strValidatorsUrl, const RippleAddress& naNodePublic, Section secSite, const std::string& strSite, const boost::system::error_code& err, int iStatus, const std::string& strValidatorsFile)
+    bool responseValidators (std::string const& strValidatorsUrl, RippleAddress const& naNodePublic, Section secSite, std::string const& strSite, const boost::system::error_code& err, int iStatus, std::string const& strValidatorsFile)
     {
         bool    bReject = !err && iStatus != 200;
 
@@ -1547,7 +1547,7 @@ private:
     // Persist the IPs refered to by a Validator.
     // --> strSite: source of the IPs (for debugging)
     // --> naNodePublic: public key of the validating node.
-    void processIps (const std::string& strSite, const RippleAddress& naNodePublic, Section::mapped_type* pmtVecStrIps)
+    void processIps (std::string const& strSite, RippleAddress const& naNodePublic, Section::mapped_type* pmtVecStrIps)
     {
         Database*   db = getApp().getWalletDB ()->getDB ();
 
@@ -1559,7 +1559,7 @@ private:
 
         // Remove all current Validator's entries in IpReferrals
         {
-            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+            auto sl (getApp().getWalletDB ()->lock ());
             db->executeSQL (str (boost::format ("DELETE FROM IpReferrals WHERE Validator=%s;") % strEscNodePublic));
             // XXX Check result.
         }
@@ -1572,7 +1572,7 @@ private:
             vstrValues.resize (std::min ((int) pmtVecStrIps->size (), REFERRAL_IPS_MAX));
 
             int iValues = 0;
-            BOOST_FOREACH (const std::string & strReferral, *pmtVecStrIps)
+            BOOST_FOREACH (std::string const& strReferral, *pmtVecStrIps)
             {
                 if (iValues == REFERRAL_VALIDATORS_MAX)
                     break;
@@ -1602,7 +1602,7 @@ private:
             {
                 vstrValues.resize (iValues);
 
-                DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+                auto sl (getApp().getWalletDB ()->lock ());
                 db->executeSQL (str (boost::format ("INSERT INTO IpReferrals (Validator,Entry,IP,Port) VALUES %s;")
                                      % strJoin (vstrValues.begin (), vstrValues.end (), ",")));
                 // XXX Check result.
@@ -1619,7 +1619,7 @@ private:
     // --> strValidatorsSrc: source details for display
     // --> naNodePublic: remote source public key - not valid for local
     // --> vsWhy: reason for adding validator to SeedDomains or SeedNodes.
-    int processValidators (const std::string& strSite, const std::string& strValidatorsSrc, const RippleAddress& naNodePublic, ValidatorSource vsWhy, Section::mapped_type* pmtVecStrValidators)
+    int processValidators (std::string const& strSite, std::string const& strValidatorsSrc, RippleAddress const& naNodePublic, ValidatorSource vsWhy, Section::mapped_type* pmtVecStrValidators)
     {
         Database*   db              = getApp().getWalletDB ()->getDB ();
         std::string strNodePublic   = naNodePublic.isValid () ? naNodePublic.humanNodePublic () : strValidatorsSrc;
@@ -1633,7 +1633,7 @@ private:
 
         // Remove all current Validator's entries in ValidatorReferrals
         {
-            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+            auto sl (getApp().getWalletDB ()->lock ());
 
             db->executeSQL (str (boost::format ("DELETE FROM ValidatorReferrals WHERE Validator='%s';") % strNodePublic));
             // XXX Check result.
@@ -1646,7 +1646,7 @@ private:
 
             vstrValues.reserve (std::min ((int) pmtVecStrValidators->size (), REFERRAL_VALIDATORS_MAX));
 
-            BOOST_FOREACH (const std::string & strReferral, *pmtVecStrValidators)
+            BOOST_FOREACH (std::string const& strReferral, *pmtVecStrValidators)
             {
                 if (iValues == REFERRAL_VALIDATORS_MAX)
                     break;
@@ -1704,7 +1704,7 @@ private:
                 std::string strSql  = str (boost::format ("INSERT INTO ValidatorReferrals (Validator,Entry,Referral) VALUES %s;")
                                            % strJoin (vstrValues.begin (), vstrValues.end (), ","));
 
-                DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+                auto sl (getApp().getWalletDB ()->lock ());
 
                 db->executeSQL (strSql);
                 // XXX Check result.
@@ -1719,7 +1719,7 @@ private:
     //--------------------------------------------------------------------------
 
     // Process a ripple.txt.
-    void processFile (const std::string& strDomain, const RippleAddress& naNodePublic, Section secSite)
+    void processFile (std::string const& strDomain, RippleAddress const& naNodePublic, Section secSite)
     {
         //
         // Process Validators
@@ -1748,7 +1748,7 @@ private:
     //--------------------------------------------------------------------------
 
     // Retrieve a SeedDomain from DB.
-    bool getSeedDomains (const std::string& strDomain, seedDomain& dstSeedDomain)
+    bool getSeedDomains (std::string const& strDomain, seedDomain& dstSeedDomain)
     {
         bool        bResult;
         Database*   db = getApp().getWalletDB ()->getDB ();
@@ -1756,7 +1756,7 @@ private:
         std::string strSql  = boost::str (boost::format ("SELECT * FROM SeedDomains WHERE Domain=%s;")
                                           % sqlEscape (strDomain));
 
-        DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+        auto sl (getApp().getWalletDB ()->lock ());
 
         bResult = db->executeSQL (strSql) && db->startIterRows ();
 
@@ -1830,7 +1830,7 @@ private:
                                           % sqlEscape (sdSource.strComment)
                                          );
 
-        DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+        auto sl (getApp().getWalletDB ()->lock ());
 
         if (!db->executeSQL (strSql))
         {
@@ -1849,7 +1849,7 @@ private:
     //--------------------------------------------------------------------------
 
     // Retrieve a SeedNode from DB.
-    bool getSeedNodes (const RippleAddress& naNodePublic, seedNode& dstSeedNode)
+    bool getSeedNodes (RippleAddress const& naNodePublic, seedNode& dstSeedNode)
     {
         bool        bResult;
         Database*   db = getApp().getWalletDB ()->getDB ();
@@ -1857,7 +1857,7 @@ private:
         std::string strSql  = str (boost::format ("SELECT * FROM SeedNodes WHERE PublicKey='%s';")
                                    % naNodePublic.humanNodePublic ());
 
-        DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+        auto sl (getApp().getWalletDB ()->lock ());
 
         bResult = db->executeSQL (strSql) && db->startIterRows ();
 
@@ -1933,7 +1933,7 @@ private:
                                   );
 
         {
-            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+            auto sl (getApp().getWalletDB ()->lock ());
 
             if (!db->executeSQL (strSql))
             {
@@ -1990,7 +1990,7 @@ private:
     //
     // VFALCO TODO Can't we name this processValidatorList?
     //
-    void nodeProcess (const std::string& strSite, const std::string& strValidators, const std::string& strSource)
+    void nodeProcess (std::string const& strSite, std::string const& strValidators, std::string const& strSource)
     {
         Section secValidators   = ParseSection (strValidators, true);
 
@@ -2025,7 +2025,7 @@ private:
 
     // XXX Make this faster, make this the contents vector unsigned char or raw public key.
     // XXX Contents needs to based on score.
-    ripple::unordered_set<std::string>   mUNL;
+    hash_set<std::string>   mUNL;
 
     boost::posix_time::ptime        mtpScoreNext;       // When to start scoring.
     boost::posix_time::ptime        mtpScoreStart;      // Time currently started scoring.

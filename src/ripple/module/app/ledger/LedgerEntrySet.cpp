@@ -386,7 +386,7 @@ SLE::pointer LedgerEntrySet::getForMod (uint256 const& node, Ledger::ref ledger,
 
 }
 
-bool LedgerEntrySet::threadTx (const RippleAddress& threadTo, Ledger::ref ledger,
+bool LedgerEntrySet::threadTx (RippleAddress const& threadTo, Ledger::ref ledger,
                                NodeToLedgerEntry& newMods)
 {
 #ifdef META_DEBUG
@@ -1157,7 +1157,7 @@ std::uint32_t LedgerEntrySet::rippleTransferRate (Account const& issuer)
 
     WriteLog (lsTRACE, LedgerEntrySet) << "rippleTransferRate:" <<
         " issuer=" << to_string (issuer) <<
-        " account_exists=" << std::boolalpha << !!sleAccount <<
+        " account_exists=" << std::boolalpha << bool(sleAccount) <<
         " transfer_rate=" << (uQuality / 1000000000.0);
 
     return uQuality;
@@ -1211,7 +1211,7 @@ LedgerEntrySet::rippleQualityIn (
         " uToAccountID=" << to_string (uToAccountID) <<
         " uFromAccountID=" << to_string (uFromAccountID) <<
         " uCurrencyID=" << to_string (uCurrencyID) <<
-        " bLine=" << std::boolalpha << !!sleRippleState <<
+        " bLine=" << std::boolalpha << bool(sleRippleState) <<
         " uQuality=" << (uQuality / 1000000000.0);
 
     return uQuality;
@@ -1221,7 +1221,10 @@ LedgerEntrySet::rippleQualityIn (
 // negative.
 // <-- IOU's account has of issuer.
 STAmount LedgerEntrySet::rippleHolds (
-    Account const& account, Currency const& currency, Account const& issuer)
+    Account const& account,
+    Currency const& currency,
+    Account const& issuer,
+    FreezeHandling zeroIfFrozen)
 {
     STAmount saBalance;
     SLE::pointer sleRippleState = entryCache (ltRIPPLE_STATE,
@@ -1230,6 +1233,10 @@ STAmount LedgerEntrySet::rippleHolds (
     if (!sleRippleState)
     {
         saBalance.clear ({currency, issuer});
+    }
+    else if ((zeroIfFrozen == fhZERO_IF_FROZEN) && isFrozen (account, currency, issuer))
+    {
+        saBalance.clear (IssueRef (currency, issuer));
     }
     else if (account > issuer)
     {
@@ -1252,7 +1259,10 @@ STAmount LedgerEntrySet::rippleHolds (
 //
 // <-- saAmount: amount of currency held by account. May be negative.
 STAmount LedgerEntrySet::accountHolds (
-    Account const& account, Currency const& currency, Account const& issuer)
+    Account const& account,
+    Currency const& currency,
+    Account const& issuer,
+    FreezeHandling zeroIfFrozen)
 {
     STAmount    saAmount;
 
@@ -1282,7 +1292,7 @@ STAmount LedgerEntrySet::accountHolds (
     }
     else
     {
-        saAmount    = rippleHolds (account, currency, issuer);
+        saAmount    = rippleHolds (account, currency, issuer, zeroIfFrozen);
 
         WriteLog (lsTRACE, LedgerEntrySet) << "accountHolds:" <<
             " account=" << to_string (account) <<
@@ -1290,6 +1300,46 @@ STAmount LedgerEntrySet::accountHolds (
     }
 
     return saAmount;
+}
+
+bool LedgerEntrySet::isGlobalFrozen (Account const& issuer)
+{
+    if (!enforceFreeze () || isXRP (issuer))
+        return false;
+
+    SLE::pointer sle = entryCache (ltACCOUNT_ROOT, Ledger::getAccountRootIndex (issuer));
+    if (sle && sle->isFlag (lsfGlobalFreeze))
+        return true;
+
+    return false;
+}
+
+// Can the specified account spend the specified currency issued by
+// the specified issuer or does the freeze flag prohibit it?
+bool LedgerEntrySet::isFrozen(
+    Account const& account,
+    Currency const& currency,
+    Account const& issuer)
+{
+    if (!enforceFreeze () || isXRP (currency))
+        return false;
+
+    SLE::pointer sle = entryCache (ltACCOUNT_ROOT, Ledger::getAccountRootIndex (issuer));
+    if (sle && sle->isFlag (lsfGlobalFreeze))
+        return true;
+
+    if (issuer != account)
+    {
+        // Check if the issuer froze the line
+        sle = entryCache (ltRIPPLE_STATE,
+            Ledger::getRippleStateIndex (account, issuer, currency));
+        if (sle && sle->isFlag ((issuer > account) ? lsfHighFreeze : lsfLowFreeze))
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 // Returns the funds available for account for a currency/issuer.
@@ -1301,7 +1351,7 @@ STAmount LedgerEntrySet::accountHolds (
 // If the issuer is the same as account, funds are unlimited, use result is
 // saDefault.
 STAmount LedgerEntrySet::accountFunds (
-    Account const& account, const STAmount& saDefault)
+    Account const& account, STAmount const& saDefault, FreezeHandling zeroIfFrozen)
 {
     STAmount    saFunds;
 
@@ -1317,7 +1367,8 @@ STAmount LedgerEntrySet::accountFunds (
     else
     {
         saFunds = accountHolds (
-            account, saDefault.getCurrency (), saDefault.getIssuer ());
+            account, saDefault.getCurrency (), saDefault.getIssuer (),
+            zeroIfFrozen);
 
         WriteLog (lsTRACE, LedgerEntrySet) << "accountFunds:" <<
             " account=" << to_string (account) <<
@@ -1333,7 +1384,7 @@ STAmount LedgerEntrySet::rippleTransferFee (
     Account const& uSenderID,
     Account const& uReceiverID,
     Account const& issuer,
-    const STAmount& saAmount)
+    STAmount const& saAmount)
 {
     if (uSenderID != issuer && uReceiverID != issuer)
     {
@@ -1368,9 +1419,9 @@ TER LedgerEntrySet::trustCreate (
     const bool      bAuth,              // --> authorize account.
     const bool      bNoRipple,          // --> others cannot ripple through
     const bool      bFreeze,            // --> funds cannot leave
-    const STAmount& saBalance,          // --> balance of account being set.
+    STAmount const& saBalance,          // --> balance of account being set.
                                         // Issuer should be noAccount()
-    const STAmount& saLimit,            // --> limit for account being set.
+    STAmount const& saLimit,            // --> limit for account being set.
                                         // Issuer should be the account being set.
     const std::uint32_t uQualityIn,
     const std::uint32_t uQualityOut)
@@ -1499,7 +1550,7 @@ TER LedgerEntrySet::trustDelete (
 // --> bCheckIssuer : normally require issuer to be involved.
 TER LedgerEntrySet::rippleCredit (
     Account const& uSenderID, Account const& uReceiverID,
-    const STAmount& saAmount, bool bCheckIssuer)
+    STAmount const& saAmount, bool bCheckIssuer)
 {
     auto issuer = saAmount.getIssuer ();
     auto currency = saAmount.getCurrency ();
@@ -1518,8 +1569,8 @@ TER LedgerEntrySet::rippleCredit (
 
     TER terResult;
 
-    assert (!!uSenderID && uSenderID != noAccount());
-    assert (!!uReceiverID && uReceiverID != noAccount());
+    assert (!isXRP (uSenderID) && uSenderID != noAccount());
+    assert (!isXRP (uReceiverID) && uReceiverID != noAccount());
 
     if (!sleRippleState)
     {
@@ -1631,22 +1682,19 @@ TER LedgerEntrySet::rippleCredit (
 // <-- saActual: Amount actually cost.  Sender pay's fees.
 TER LedgerEntrySet::rippleSend (
     Account const& uSenderID, Account const& uReceiverID,
-    const STAmount& saAmount, STAmount& saActual)
+    STAmount const& saAmount, STAmount& saActual)
 {
     auto const issuer   = saAmount.getIssuer ();
     TER             terResult;
 
-    assert (!!uSenderID && !!uReceiverID);
+    assert (!isXRP (uSenderID) && !isXRP (uReceiverID));
     assert (uSenderID != uReceiverID);
 
-    if (uSenderID == issuer || uReceiverID == issuer ||
-        issuer == noAccount())
+    if (uSenderID == issuer || uReceiverID == issuer || issuer == noAccount())
     {
         // Direct send: redeeming IOUs and/or sending own IOUs.
         terResult   = rippleCredit (uSenderID, uReceiverID, saAmount, false);
-
         saActual    = saAmount;
-
         terResult   = tesSUCCESS;
     }
     else
@@ -1678,7 +1726,7 @@ TER LedgerEntrySet::rippleSend (
 
 TER LedgerEntrySet::accountSend (
     Account const& uSenderID, Account const& uReceiverID,
-    const STAmount& saAmount)
+    STAmount const& saAmount)
 {
     assert (saAmount >= zero);
 

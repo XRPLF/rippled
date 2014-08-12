@@ -26,7 +26,7 @@ namespace RPC {
 // --> bStrict: Only allow account id or public key.
 // <-- bIndex: true if iIndex > 0 and used the index.
 Json::Value accountFromString (Ledger::ref lrLedger, RippleAddress& naAccount,
-                               bool& bIndex, const std::string& strIdent,
+                               bool& bIndex, std::string const& strIdent,
                                const int iIndex, const bool bStrict, NetworkOPs& netOps)
 {
     RippleAddress   naSeed;

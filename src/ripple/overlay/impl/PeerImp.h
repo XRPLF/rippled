@@ -23,7 +23,6 @@
 #include <ripple/common/MultiSocket.h>
 #include <ripple/nodestore/Database.h>
 #include <ripple/overlay/predicates.h>
-#include <ripple/overlay/impl/basic_message.h>
 #include <ripple/overlay/impl/message_name.h>
 #include <ripple/overlay/impl/message_stream.h>
 #include <ripple/overlay/impl/OverlayImpl.h>
@@ -40,7 +39,7 @@
 
 #include <beast/asio/IPAddressConversion.h>
 #include <beast/asio/placeholders.h>
-#include <beast/http/message_parser.h>
+#include <beast/http/basic_message.h>
 
 #include <cstdint>
 
@@ -79,58 +78,6 @@ private:
 
     /** The length of the smallest valid finished message */
     static const size_t sslMinimumFinishedLength = 12;
-
-    //--------------------------------------------------------------------------
-    /** We have accepted an inbound connection.
-
-        The connection state transitions from `stateConnect` to `stateConnected`
-        as `stateConnect`.
-    */
-    void accept ()
-    {
-        m_journal.info << "Accepted " << m_remoteAddress;
-
-        m_socket->set_verify_mode (boost::asio::ssl::verify_none);
-        m_socket->async_handshake (
-            boost::asio::ssl::stream_base::server,
-            m_strand.wrap (std::bind (
-                &PeerImp::handleStart,
-                std::static_pointer_cast <PeerImp> (shared_from_this ()),
-                beast::asio::placeholders::error)));
-    }
-
-    /** Attempt an outbound connection.
-
-        The connection may fail (for a number of reasons) and we do not know
-        what will happen at this point.
-
-        The connection state does not transition with this function and remains
-        as `stateConnecting`.
-    */
-    void connect ()
-    {
-        m_journal.info << "Connecting to " << m_remoteAddress;
-
-        boost::system::error_code err;
-
-        m_timer.expires_from_now (nodeVerifySeconds, err);
-
-        m_timer.async_wait (m_strand.wrap (std::bind (
-            &PeerImp::handleVerifyTimer,
-            shared_from_this (), beast::asio::placeholders::error)));
-
-        if (err)
-        {
-            m_journal.error << "Failed to set verify timer.";
-            detach ("c2");
-            return;
-        }
-
-        m_socket->next_layer <NativeSocketType>().async_connect (
-            beast::IPAddressConversion::to_asio_endpoint (m_remoteAddress),
-                m_strand.wrap (std::bind (&PeerImp::onConnect,
-                    shared_from_this (), beast::asio::placeholders::error)));
-    }
 
 public:
     /** Current state */
@@ -201,7 +148,7 @@ public:
     std::list<uint256>    m_recentTxSets;
     mutable std::mutex  m_recentLock;
 
-    boost::asio::deadline_timer         m_timer;
+    boost::asio::deadline_timer         timer_;
 
     std::vector<uint8_t>                m_readBuffer;
     std::list<Message::pointer>   mSendQ;
@@ -217,13 +164,20 @@ public:
     // True if close was called
     bool m_was_canceled;
 
+
+
     boost::asio::streambuf read_buffer_;
-    boost::optional <basic_message> http_message_;
-    boost::optional <basic_message::parser> http_parser_;
+    boost::optional <beast::http::basic_message> http_message_;
+    boost::optional <beast::http::basic_message::parser> http_parser_;
     message_stream message_stream_;
+    
+    boost::asio::streambuf write_buffer_;
+    bool write_pending_;
+
     std::unique_ptr <LoadEvent> load_event_;
 
     //--------------------------------------------------------------------------
+
     /** New incoming peer from the specified socket */
     PeerImp (
         NativeSocketType&& socket,
@@ -250,10 +204,11 @@ public:
             , m_clusterNode (false)
             , m_minLedger (0)
             , m_maxLedger (0)
-            , m_timer (m_owned_socket.get_io_service())
+            , timer_ (m_owned_socket.get_io_service())
             , m_slot (slot)
             , m_was_canceled (false)
             , message_stream_(*this)
+            , write_pending_ (false)
     {
     }
 
@@ -288,10 +243,11 @@ public:
             , m_clusterNode (false)
             , m_minLedger (0)
             , m_maxLedger (0)
-            , m_timer (io_service)
+            , timer_ (io_service)
             , m_slot (slot)
             , m_was_canceled (false)
             , message_stream_(*this)
+            , write_pending_ (false)
     {
     }
 
@@ -313,21 +269,65 @@ public:
 
     void getLedger (protocol::TMGetLedger& packet);
 
+private:
     //
-    // i/o
+    // client role
     //
 
     void
-    start_read();
+    do_connect();
 
     void
-    on_read_detect (error_code ec, std::size_t bytes_transferred);
+    on_connect (error_code ec);
+
+    beast::http::basic_message
+    make_request();
 
     void
-    on_read_http (error_code ec, std::size_t bytes_transferred);
+    on_connect_ssl (error_code ec);
+
+    void
+    on_write_http_request (error_code ec, std::size_t bytes_transferred);
+
+    void
+    on_read_http_response (error_code ec, std::size_t bytes_transferred);
+
+    //
+    // server role
+    //
+
+    void
+    do_accept();
+
+    void
+    on_accept_ssl (error_code ec);
+
+    void
+    on_read_http_detect (error_code ec, std::size_t bytes_transferred);
+
+    void
+    on_read_http_request (error_code ec, std::size_t bytes_transferred);
+
+    beast::http::basic_message
+    make_response (beast::http::basic_message const& req);
+
+    void
+    on_write_http_response (error_code ec, std::size_t bytes_transferred);
+
+    //
+    // protocol
+    //
+
+    void
+    do_protocol_start();
 
     void
     on_read_protocol (error_code ec, std::size_t bytes_transferred);
+
+    void
+    on_write_protocol (error_code ec, std::size_t bytes_transferred);
+
+    //--------------------------------------------------------------------------
 
     //--------------------------------------------------------------------------
     //
@@ -354,6 +354,7 @@ public:
     on_message_end (std::uint16_t type,
         std::shared_ptr <::google::protobuf::Message> const& m) override;
 
+    // message handlers
     error_code on_message (std::shared_ptr <protocol::TMHello> const& m) override;
     error_code on_message (std::shared_ptr <protocol::TMPing> const& m) override;
     error_code on_message (std::shared_ptr <protocol::TMProofWork> const& m) override;
@@ -372,6 +373,7 @@ public:
 
     //--------------------------------------------------------------------------
 
+public:
     State state() const
     {
         return m_state;
@@ -422,7 +424,7 @@ public:
 
             mSendQ.clear ();
 
-            (void) m_timer.cancel ();
+            (void) timer_.cancel ();
 
             if (graceful)
             {
@@ -450,55 +452,6 @@ public:
         detach ("stop", graceful);
     }
 
-    /** Outbound connection attempt has completed (not necessarily successfully)
-
-        The connection may fail for a number of reasons. Perhaps we do not have
-        a route to the remote endpoint, or there is no server listening at that
-        address.
-
-        If the connection succeeded, we transition to the `stateConnected` state
-        and move on.
-
-        If the connection failed, we simply disconnect.
-
-        @param ec indicates success or an error code.
-    */
-    void onConnect (boost::system::error_code ec)
-    {
-        if (m_detaching)
-            return;
-
-        NativeSocketType::endpoint_type local_endpoint;
-
-        if (! ec)
-            local_endpoint = m_socket->this_layer <
-                NativeSocketType> ().local_endpoint (ec);
-
-        if (ec)
-        {
-            // VFALCO NOTE This log statement looks like ass
-            m_journal.info <<
-                "Connect to " << m_remoteAddress <<
-                " failed: " << ec.message();
-            // This should end up calling onPeerClosed()
-            detach ("hc");
-            return;
-        }
-
-        bassert (m_state == stateConnecting);
-        m_state = stateConnected;
-
-        m_peerFinder.on_connected (m_slot,
-            beast::IPAddressConversion::from_asio (local_endpoint));
-
-        m_socket->set_verify_mode (boost::asio::ssl::verify_none);
-        m_socket->async_handshake (
-            boost::asio::ssl::stream_base::client,
-            m_strand.wrap (std::bind (&PeerImp::handleStart,
-                std::static_pointer_cast <PeerImp> (shared_from_this ()),
-                    beast::asio::placeholders::error)));
-    }
-
     /** Indicates that the peer must be activated.
         A peer is activated after the handshake is completed and if it is not
         a second connection from a peer that we already have. Once activated
@@ -516,9 +469,9 @@ public:
     void start ()
     {
         if (m_inbound)
-            accept ();
+            do_accept ();
         else
-            connect ();
+            do_connect ();
     }
 
     //--------------------------------------------------------------------------
@@ -610,7 +563,7 @@ public:
             ret["complete_ledgers"] = boost::lexical_cast<std::string>(minSeq) + " - " +
                                       boost::lexical_cast<std::string>(maxSeq);
 
-        if (!!m_closedLedgerHash)
+        if (m_closedLedgerHash != zero)
             ret["ledger"] = to_string (m_closedLedgerHash);
 
         if (mLastStatus.has_newstatus ())
@@ -663,7 +616,7 @@ public:
         if ((seq != 0) && (seq >= m_minLedger) && (seq <= m_maxLedger))
             return true;
 
-        BOOST_FOREACH (uint256 const & ledger, m_recentLedgers)
+        BOOST_FOREACH (uint256 const& ledger, m_recentLedgers)
         {
             if (ledger == hash)
                 return true;
@@ -683,7 +636,7 @@ public:
     bool hasTxSet (uint256 const& hash) const
     {
         std::lock_guard<std::mutex> sl(m_recentLock);
-        BOOST_FOREACH (uint256 const & set, m_recentTxSets)
+        BOOST_FOREACH (uint256 const& set, m_recentTxSets)
 
         if (set == hash)
             return true;
@@ -696,7 +649,7 @@ public:
         return m_shortId;
     }
 
-    const RippleAddress& getNodePublic () const
+    RippleAddress const& getNodePublic () const
     {
         return m_nodePublicKey;
     }
@@ -771,47 +724,6 @@ private:
                 mSendQ.pop_front ();
             }
         }
-    }
-
-    // We have an encrypted connection to the peer.
-    // Have it say who it is so we know to avoid redundant connections.
-    // Establish that it really who we are talking to by having it sign a
-    // connection detail. Also need to establish no man in the middle attack
-    // is in progress.
-    void handleStart (boost::system::error_code const& ec)
-    {
-        if (m_detaching)
-            return;
-
-        if (ec == boost::asio::error::operation_aborted)
-            return;
-
-        if (ec)
-        {
-            m_journal.info << "Handshake: " << ec.message ();
-            detach ("hs");
-            return;
-        }
-
-        if (m_inbound)
-            m_usage = m_resourceManager.newInboundEndpoint (m_remoteAddress);
-        else
-            m_usage = m_resourceManager.newOutboundEndpoint (m_remoteAddress);
-
-        if (m_usage.disconnect ())
-        {
-            detach ("resource");
-            return;
-        }
-
-        if(!sendHello ())
-        {
-            m_journal.error << "Unable to send HELLO to " << m_remoteAddress;
-            detach ("hello");
-            return;
-        }
-
-        start_read();
     }
 
     void handleVerifyTimer (boost::system::error_code const& ec)
@@ -994,7 +906,7 @@ private:
     void addLedger (uint256 const& hash)
     {
         std::lock_guard<std::mutex> sl(m_recentLock);
-        BOOST_FOREACH (uint256 const & ledger, m_recentLedgers)
+        BOOST_FOREACH (uint256 const& ledger, m_recentLedgers)
 
         if (ledger == hash)
             return;
@@ -1010,7 +922,7 @@ private:
         std::lock_guard<std::mutex> sl(m_recentLock);
 
         if(std::find (m_recentTxSets.begin (), m_recentTxSets.end (), hash) != m_recentTxSets.end ())
-        	return;
+            return;
 
         if (m_recentTxSets.size () == 128)
             m_recentTxSets.pop_front ();
@@ -1078,15 +990,12 @@ private:
 
     static void checkTransaction (Job&, int flags, SerializedTransaction::pointer stx, std::weak_ptr<Peer> peer)
     {
-    #ifndef TRUST_NETWORK
         try
         {
-    #endif
-
             if (stx->isFieldPresent(sfLastLedgerSequence) &&
                 (stx->getFieldU32 (sfLastLedgerSequence) <
                 getApp().getLedgerMaster().getValidLedgerIndex()))
-	    { // Transaction has expired
+            { // Transaction has expired
                 getApp().getHashRouter().setFlag(stx->getTransactionID(), SF_BAD);
                 charge (peer, Resource::feeUnwantedData);
                 return;
@@ -1107,16 +1016,12 @@ private:
 
             bool const trusted (flags & SF_TRUSTED);
             getApp().getOPs ().processTransaction (tx, trusted, false, false);
-
-    #ifndef TRUST_NETWORK
         }
         catch (...)
         {
             getApp().getHashRouter ().setFlag (stx->getTransactionID (), SF_BAD);
             charge (peer, Resource::feeInvalidRequest);
         }
-
-    #endif
     }
 
     // Called from our JobQueue
@@ -1184,7 +1089,7 @@ private:
                 pPeers->foreach (send_if_not (
                     std::make_shared<Message> (set, protocol::mtPROPOSE_LEDGER),
                     peer_in_set(peers)));
-	    }
+            }
         }
         else
         {
@@ -1195,10 +1100,7 @@ private:
     static void checkValidation (Job&, Overlay* pPeers, SerializedValidation::pointer val, bool isTrusted, bool isCluster,
                                  std::shared_ptr<protocol::TMValidation> packet, std::weak_ptr<Peer> peer)
     {
-    #ifndef TRUST_NETWORK
-
         try
-    #endif
         {
             uint256 signingHash = val->getSigningHash();
             if (!isCluster && !val->isValid (signingHash))
@@ -1238,14 +1140,11 @@ private:
                     peer_in_set(peers)));
             }
         }
-
-    #ifndef TRUST_NETWORK
         catch (...)
         {
             WriteLog(lsTRACE, Peer) << "Exception processing validation";
             charge (peer, Resource::feeInvalidRequest);
         }
-    #endif
     }
 };
 

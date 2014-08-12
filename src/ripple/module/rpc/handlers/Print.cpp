@@ -22,13 +22,17 @@ namespace ripple {
 
 Json::Value doPrint (RPC::Context& context)
 {
-    context.lock_.unlock ();
-
     JsonPropertyStream stream;
-    if (context.params_.isObject() && context.params_["params"].isArray() && context.params_["params"][0u].isString ())
+    if (context.params_.isObject()
+        && context.params_["params"].isArray()
+        && context.params_["params"][0u].isString ())
+    {
         getApp().write (stream, context.params_["params"][0u].asString());
+    }
     else
+    {
         getApp().write (stream);
+    }
 
     return stream.top();
 }

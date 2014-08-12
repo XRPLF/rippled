@@ -42,7 +42,7 @@ struct Key
     }
 
     // Constructor for Admin keys
-    Key (Kind k, const std::string& n)
+    Key (Kind k, std::string const& n)
         : kind(k)
         , address()
         , name(n)

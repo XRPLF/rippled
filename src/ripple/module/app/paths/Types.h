@@ -22,12 +22,17 @@
 
 namespace ripple {
 
-// account id, currency id, issuer id.
-typedef std::tuple <Account, Currency, Account> AccountCurrencyIssuer;
+// account id, issue.
+typedef std::pair <Account, Issue> AccountIssue;
 
-// Map of account, currency, issuer to node index.
-typedef ripple::unordered_map <AccountCurrencyIssuer, unsigned int>
-AccountCurrencyIssuerToNodeIndex;
+// Map of account, issue to node index.
+namespace path {
+
+typedef unsigned int NodeIndex;
+
+}
+
+typedef hash_map <AccountIssue, path::NodeIndex> AccountIssueToNodeIndex;
 
 } // ripple
 

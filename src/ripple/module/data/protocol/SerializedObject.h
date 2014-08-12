@@ -204,8 +204,8 @@ public:
     Account getFieldAccount160 (SField::ref field) const;
 
     Blob getFieldVL (SField::ref field) const;
-    const STAmount& getFieldAmount (SField::ref field) const;
-    const STPathSet& getFieldPathSet (SField::ref field) const;
+    STAmount const& getFieldAmount (SField::ref field) const;
+    STPathSet const& getFieldPathSet (SField::ref field) const;
     const STVector256& getFieldV256 (SField::ref field) const;
     const STArray& getFieldArray (SField::ref field) const;
 
@@ -221,8 +221,8 @@ public:
     {
         setFieldAccount (field, addr.getAccountID ());
     }
-    void setFieldAmount (SField::ref field, const STAmount&);
-    void setFieldPathSet (SField::ref field, const STPathSet&);
+    void setFieldAmount (SField::ref field, STAmount const&);
+    void setFieldPathSet (SField::ref field, STPathSet const&);
     void setFieldV256 (SField::ref field, const STVector256 & v);
 
     template <class Tag>
@@ -343,15 +343,6 @@ static T range_check_cast (const U& value, const T& minimum, const T& maximum)
         throw std::runtime_error ("Value out of range");
 
     return static_cast<T> (value);
-}
-
-inline STObject::iterator range_begin (STObject& x)
-{
-    return x.begin ();
-}
-inline STObject::iterator range_end (STObject& x)
-{
-    return x.end ();
 }
 
 //------------------------------------------------------------------------------
@@ -534,15 +525,6 @@ private:
     }
     static STArray* construct (SerializerIterator&, SField::ref);
 };
-
-inline STArray::iterator range_begin (STArray& x)
-{
-    return x.begin ();
-}
-inline STArray::iterator range_end (STArray& x)
-{
-    return x.end ();
-}
 
 } // ripple
 

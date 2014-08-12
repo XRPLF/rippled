@@ -202,7 +202,7 @@ Peer::handle_write (error_code ec, std::size_t bytes_transferred,
 
     bassert (writesPending_ > 0);
     if (--writesPending_ == 0 && closed_)
-        socket_->shutdown (socket::shutdown_send);
+        socket_->shutdown (socket::shutdown_send, ec);
 }
 
 // Called when async_read_some completes.
@@ -260,7 +260,7 @@ Peer::handle_read (error_code ec, std::size_t bytes_transferred)
         request_timer_.cancel();
 
         if (! socket_->needs_handshake())
-            socket_->shutdown (socket::shutdown_receive);
+            socket_->shutdown (socket::shutdown_receive, ec);
 
         handle_request ();
         return;
@@ -347,7 +347,7 @@ Peer::cancel ()
     data_timer_.cancel (ec);
     request_timer_.cancel (ec);
     socket_->cancel (ec);
-    socket_->shutdown (socket::shutdown_both);
+    socket_->shutdown (socket::shutdown_both, ec);
 }
 
 // Called by a completion handler when error is not eof or aborted.

@@ -24,9 +24,8 @@ namespace path {
 bool Node::operator== (const Node& other) const
 {
     return other.uFlags == uFlags
-       && other.account_ == account_
-       && other.currency_ == currency_
-       && other.issuer_ == issuer_;
+            && other.account_ == account_
+            && other.issue_ == issue_;
 }
 
 // This is for debugging not end users. Output names can be changed without
@@ -38,14 +37,12 @@ Json::Value Node::getJson () const
 
     jvNode["type"]  = uFlags;
 
-    bool const hasCurrency = (currency_ != zero);
-    bool const hasAccount = (account_ != zero);
-    bool const hasIssuer = (issuer_ != zero);
+    bool const hasCurrency = !isXRP (issue_.currency);
+    bool const hasAccount = !isXRP (account_);
+    bool const hasIssuer = !isXRP (issue_.account);
 
     if (isAccount() || hasAccount)
-    {
         jvFlags.append (!isAccount() == hasAccount ? "account" : "-account");
-    }
 
     if (uFlags & STPathElement::typeCurrency || hasCurrency)
     {
@@ -63,14 +60,14 @@ Json::Value Node::getJson () const
 
     jvNode["flags"] = jvFlags;
 
-    if (!!account_)
+    if (!isXRP (account_))
         jvNode["account"] = to_string (account_);
 
-    if (!!currency_)
-        jvNode["currency"] = to_string (currency_);
+    if (!isXRP (issue_.currency))
+        jvNode["currency"] = to_string (issue_.currency);
 
-    if (!!issuer_)
-        jvNode["issuer"] = to_string (issuer_);
+    if (!isXRP (issue_.account))
+        jvNode["issuer"] = to_string (issue_.account);
 
     if (saRevRedeem)
         jvNode["rev_redeem"] = saRevRedeem.getFullText ();

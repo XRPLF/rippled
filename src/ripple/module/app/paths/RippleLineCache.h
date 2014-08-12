@@ -45,7 +45,7 @@ private:
 
     Ledger::pointer mLedger;
 
-    ripple::unordered_map <Account, AccountItems::pointer> mRLMap;
+    hash_map <Account, AccountItems::pointer> mRLMap;
 };
 
 } // ripple

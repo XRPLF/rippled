@@ -43,11 +43,11 @@ public:
     RPCHandler (NetworkOPs& netOps, InfoSub::pointer infoSub);
 
     Json::Value doCommand (
-        const Json::Value& jvRequest, Config::Role role,
+        Json::Value const& jvRequest, Config::Role role,
         Resource::Charge& loadType);
 
     Json::Value doRpcCommand (
-        const std::string& strCommand, Json::Value const& jvParams,
+        std::string const& strCommand, Json::Value const& jvParams,
         Config::Role iRole, Resource::Charge& loadType);
 
     // Utilities
@@ -62,11 +62,12 @@ private:
 class RPCInternalHandler
 {
 public:
-    typedef Json::Value (*handler_t) (const Json::Value&);
+    typedef Json::Value (*handler_t) (Json::Value const&);
 
 public:
-    RPCInternalHandler (const std::string& name, handler_t handler);
-    static Json::Value runHandler (const std::string& name, const Json::Value& params);
+    RPCInternalHandler (std::string const& name, handler_t handler);
+    static Json::Value runHandler (
+        std::string const& name, Json::Value const& params);
 
 private:
     // VFALCO TODO Replace with a singleton with a well defined interface and

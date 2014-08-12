@@ -37,9 +37,13 @@ public:
 
     void addOrderBook(Book const&);
 
-    // return list of all orderbooks that want this issuerID and currencyID
-    void getBooksByTakerPays (Issue const&, OrderBook::List&);
-    void getBooksByTakerGets (Issue const&, OrderBook::List&);
+    /** @return a list of all orderbooks that want this issuerID and currencyID.
+     */
+    OrderBook::List getBooksByTakerPays (Issue const&);
+
+    /** @return a count of all orderbooks that want this issuerID and currencyID.
+     */
+    int getBookSize(Issue const&);
 
     bool isBookToXRP (Issue const&);
 
@@ -51,7 +55,7 @@ public:
         Ledger::ref ledger, const AcceptedLedgerTx& alTx,
         Json::Value const& jvObj);
 
-    typedef ripple::unordered_map <Issue, OrderBook::List> IssueToOrderBook;
+    typedef hash_map <Issue, OrderBook::List> IssueToOrderBook;
 
 private:
     void rawAddBook(Book const&);
@@ -63,13 +67,13 @@ private:
     IssueToOrderBook mDestMap;
 
     // does an order book to XRP exist
-    ripple::unordered_set <Issue> mXRPBooks;
+    hash_set <Issue> mXRPBooks;
 
     typedef RippleRecursiveMutex LockType;
     typedef std::lock_guard <LockType> ScopedLockType;
     LockType mLock;
 
-    typedef ripple::unordered_map <Book, BookListeners::pointer>
+    typedef hash_map <Book, BookListeners::pointer>
     BookToListenersMap;
 
     BookToListenersMap mListeners;

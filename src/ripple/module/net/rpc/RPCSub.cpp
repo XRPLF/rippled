@@ -26,8 +26,8 @@ class RPCSubImp
 {
 public:
     RPCSubImp (InfoSub::Source& source, boost::asio::io_service& io_service,
-        JobQueue& jobQueue, const std::string& strUrl, const std::string& strUsername,
-            const std::string& strPassword)
+        JobQueue& jobQueue, std::string const& strUrl, std::string const& strUsername,
+            std::string const& strPassword)
         : RPCSub (source)
         , m_io_service (io_service)
         , m_jobQueue (jobQueue)
@@ -68,7 +68,7 @@ public:
     {
     }
 
-    void send (const Json::Value& jvObj, bool broadcast)
+    void send (Json::Value const& jvObj, bool broadcast)
     {
         ScopedLockType sl (mLock);
 
@@ -96,14 +96,14 @@ public:
         }
     }
 
-    void setUsername (const std::string& strUsername)
+    void setUsername (std::string const& strUsername)
     {
         ScopedLockType sl (mLock);
 
         mUsername = strUsername;
     }
 
-    void setPassword (const std::string& strPassword)
+    void setPassword (std::string const& strPassword)
     {
         ScopedLockType sl (mLock);
 
@@ -200,8 +200,8 @@ RPCSub::RPCSub (InfoSub::Source& source)
 
 RPCSub::pointer RPCSub::New (InfoSub::Source& source,
     boost::asio::io_service& io_service, JobQueue& jobQueue,
-        const std::string& strUrl, const std::string& strUsername,
-        const std::string& strPassword)
+        std::string const& strUrl, std::string const& strUsername,
+        std::string const& strPassword)
 {
     return std::make_shared <RPCSubImp> (std::ref (source),
         std::ref (io_service), std::ref (jobQueue),

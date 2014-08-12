@@ -175,15 +175,7 @@ SHAMap::getStack (uint256 const& id, bool include_nonmatching_leaf)
         if (!node->descend (branch, nodeID, nodeHash))
             return stack;
 
-        try
-        {
-            node = getNode (nodeID, nodeHash, false);
-        }
-        catch (SHAMapMissingNode& mn)
-        {
-            mn.setTargetNode (id);
-            throw;
-        }
+        node = getNode (nodeID, nodeHash, false);
     }
 
     if (include_nonmatching_leaf || (node->peekItem ()->getTag () == id))
@@ -251,15 +243,7 @@ SHAMapTreeNode::pointer SHAMap::walkTo (uint256 const& id, bool modify)
         if (!inNode->descend (branch, nodeID, nodeHash))
             return inNode;
 
-        try
-        {
-            inNode = getNode (nodeID, nodeHash, false);
-        }
-        catch (SHAMapMissingNode& mn)
-        {
-            mn.setTargetNode (id);
-            throw;
-        }
+        inNode = getNode (nodeID, nodeHash, false);
     }
 
     if (inNode->getTag () != id)
@@ -1318,11 +1302,10 @@ void SHAMap::dump (bool hash)
     WriteLog (lsINFO, SHAMap) << " MAP Contains";
     ScopedWriteLockType sl (mLock);
 
-    for (ripple::unordered_map<SHAMapNodeID, SHAMapTreeNode::pointer, SHAMapNode_hash>::iterator it = mTNByID.peekMap().begin ();
-            it != mTNByID.peekMap().end (); ++it)
+    for (auto const& p : mTNByID.peekMap())
     {
-        WriteLog (lsINFO, SHAMap) << it->second->getString (it->first);
-        CondLog (hash, lsINFO, SHAMap) << it->second->getNodeHash ();
+        WriteLog (lsINFO, SHAMap) << p.second->getString (p.first);
+        CondLog (hash, lsINFO, SHAMap) << p.second->getNodeHash ();
     }
 
 }
@@ -1395,7 +1378,7 @@ public:
 
         i = sMap.peekNextItem (i->getTag ());
 
-        unexpected (!!i, "bad traverse");
+        unexpected (i, "bad traverse");
 
         sMap.addItem (i4, true, false);
         sMap.delItem (i2.getTag ());
@@ -1415,7 +1398,7 @@ public:
 
         i = sMap.peekNextItem (i->getTag ());
 
-        unexpected (!!i, "bad traverse");
+        unexpected (i, "bad traverse");
 
 
 

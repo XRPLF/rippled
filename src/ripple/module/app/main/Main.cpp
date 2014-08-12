@@ -53,7 +53,7 @@ void startServer ()
     {
         for (int i = 0; i != getConfig ().RPC_STARTUP.size (); ++i)
         {
-            const Json::Value& jvCommand    = getConfig ().RPC_STARTUP[i];
+            Json::Value const& jvCommand    = getConfig ().RPC_STARTUP[i];
 
             if (!getConfig ().QUIET)
                 std::cerr << "Startup RPC: " << jvCommand << std::endl;
@@ -282,9 +282,11 @@ int run (int argc, char** argv)
 
     if (!iResult)
     {
-        getConfig ().setup (
-            vm.count ("conf") ? vm["conf"].as<std::string> () : "", // Config file.
-            !!vm.count ("quiet"));                                  // Quiet flag.
+        auto configFile = vm.count ("conf") ?
+                vm["conf"].as<std::string> () : std::string();
+
+        // config file, quiet flag.
+        getConfig ().setup (configFile, bool (vm.count ("quiet")));
 
         if (vm.count ("standalone"))
         {

@@ -83,14 +83,32 @@ public:
     T&
     get() noexcept;
 
+    T const&
+    get() const noexcept
+    {
+        return const_cast<static_initializer&>(*this).get();
+    }
+
     T&
     operator*() noexcept
     {
         return get();
     }
 
+    T const&
+    operator*() const noexcept
+    {
+        return get();
+    }
+
     T*
     operator->() noexcept
+    {
+        return &get();
+    }
+
+    T const*
+    operator->() const noexcept
     {
         return &get();
     }
@@ -122,14 +140,14 @@ static_initializer <T, Tag>::static_initializer (Args&&... args)
         for(;;)
         {
             long prev;
-            prev = InterlockedCompareExchange(&_.state, 1, 0);
+            prev = _InterlockedCompareExchange(&_.state, 1, 0);
             if (prev == 0)
             {
                 try
                 {
                     ::new(t) T (std::forward<Args>(args)...);                   
                     static destroyer on_exit (t);
-                    InterlockedIncrement(&_.state);
+                    _InterlockedIncrement(&_.state);
                 }
                 catch(...)
                 {
@@ -187,14 +205,32 @@ public:
         return *instance_;
     }
 
+    T const&
+    get() const noexcept
+    {
+        return const_cast<static_initializer&>(*this).get();
+    }
+
     T&
     operator*() noexcept
     {
         return get();
     }
 
+    T const&
+    operator*() const noexcept
+    {
+        return get();
+    }
+
     T*
     operator->() noexcept
+    {
+        return &get();
+    }
+
+    T const*
+    operator->() const noexcept
     {
         return &get();
     }

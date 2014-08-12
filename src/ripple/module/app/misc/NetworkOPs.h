@@ -81,7 +81,7 @@ public:
 
     // VFALCO TODO Fix OrderBookDB to not need this unrelated type.
     //
-    typedef ripple::unordered_map <std::uint64_t, InfoSub::wptr> SubMapType;
+    typedef hash_map <std::uint64_t, InfoSub::wptr> SubMapType;
 
 public:
     // VFALCO TODO Make LedgerMaster a SharedPtr or a reference.
@@ -153,7 +153,7 @@ public:
         bool bAdmin, bool bLocal, bool bFailHard) = 0;
     virtual Transaction::pointer findTransactionByID (uint256 const& transactionID) = 0;
     virtual int findTransactionsByDestination (std::list<Transaction::pointer>&,
-        const RippleAddress& destinationAccount, std::uint32_t startLedgerSeq,
+        RippleAddress const& destinationAccount, std::uint32_t startLedgerSeq,
             std::uint32_t endLedgerSeq, int maxTransactions) = 0;
 
     //--------------------------------------------------------------------------
@@ -162,7 +162,7 @@ public:
     //
 
     virtual AccountState::pointer getAccountState (Ledger::ref lrLedger,
-        const RippleAddress& accountID) = 0;
+        RippleAddress const& accountID) = 0;
     virtual SLE::pointer getGenerator (Ledger::ref lrLedger,
         Account const& uGeneratorID) = 0;
 
@@ -181,7 +181,7 @@ public:
     //
 
     virtual Json::Value getOwnerInfo (Ledger::pointer lpLedger,
-        const RippleAddress& naAccount) = 0;
+        RippleAddress const& naAccount) = 0;
 
     //--------------------------------------------------------------------------
     //
@@ -194,7 +194,7 @@ public:
         Account const& uTakerID,
         bool const bProof,
         const unsigned int iLimit,
-        const Json::Value& jvMarker,
+        Json::Value const& jvMarker,
         Json::Value& jvResult) = 0;
 
     //--------------------------------------------------------------------------
@@ -209,7 +209,7 @@ public:
         const std::list< Blob >& nodeData) = 0;
 
     virtual bool recvValidation (SerializedValidation::ref val,
-        const std::string& source) = 0;
+        std::string const& source) = 0;
 
     virtual void takePosition (int seq, SHAMap::ref position) = 0;
 
@@ -264,12 +264,11 @@ public:
     virtual Json::Value getLedgerFetchInfo () = 0;
     virtual std::uint32_t acceptLedger () = 0;
 
-    typedef ripple::unordered_map <NodeID, std::list<LedgerProposal::pointer>>
-            Proposals;
+    typedef hash_map <NodeID, std::list<LedgerProposal::pointer>> Proposals;
     virtual Proposals& peekStoredProposals () = 0;
 
     virtual void storeProposal (LedgerProposal::ref proposal,
-        const RippleAddress& peerPublic) = 0;
+        RippleAddress const& peerPublic) = 0;
 
     virtual uint256 getConsensusLCL () = 0;
 
@@ -281,26 +280,23 @@ public:
 
     //Helper function to generate SQL query to get transactions
     virtual std::string transactionsSQL (std::string selection,
-        const RippleAddress& account, std::int32_t minLedger, std::int32_t maxLedger,
+        RippleAddress const& account, std::int32_t minLedger, std::int32_t maxLedger,
         bool descending, std::uint32_t offset, int limit, bool binary,
             bool count, bool bAdmin) = 0;
 
     // client information retrieval functions
-    typedef std::vector<
-        std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
-    AccountTxs;
+    typedef std::pair<Transaction::pointer, TransactionMetaSet::pointer>
+    AccountTx;
+
+    typedef std::vector<AccountTx> AccountTxs;
 
     virtual AccountTxs getAccountTxs (
-        const RippleAddress& account,
+        RippleAddress const& account,
         std::int32_t minLedger, std::int32_t maxLedger,  bool descending,
         std::uint32_t offset, int limit, bool bAdmin) = 0;
 
-    typedef std::vector<
-        std::pair<Transaction::pointer, TransactionMetaSet::pointer> >
-    TxsAccount;
-
-    virtual TxsAccount getTxsAccount (
-        const RippleAddress& account,
+    virtual AccountTxs getTxsAccount (
+        RippleAddress const& account,
         std::int32_t minLedger, std::int32_t maxLedger, bool forward,
         Json::Value& token, int limit, bool bAdmin) = 0;
 
@@ -309,11 +305,11 @@ public:
 
     typedef std::vector<txnMetaLedgerType> MetaTxsList;
 
-    virtual MetaTxsList getAccountTxsB (const RippleAddress& account,
+    virtual MetaTxsList getAccountTxsB (RippleAddress const& account,
         std::int32_t minLedger, std::int32_t maxLedger,  bool descending,
             std::uint32_t offset, int limit, bool bAdmin) = 0;
 
-    virtual MetaTxsList getTxsAccountB (const RippleAddress& account,
+    virtual MetaTxsList getTxsAccountB (RippleAddress const& account,
         std::int32_t minLedger, std::int32_t maxLedger,  bool forward,
         Json::Value& token, int limit, bool bAdmin) = 0;
 

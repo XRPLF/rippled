@@ -30,7 +30,7 @@ class AmendmentSet
 public:
     std::uint32_t mCloseTime;
     int mTrustedValidations;                    // number of trusted validations
-    ripple::unordered_map<uint256, int> mVotes; // yes votes by amendment
+    hash_map<uint256, int> mVotes; // yes votes by amendment
 
     AmendmentSet (std::uint32_t ct) : mCloseTime (ct), mTrustedValidations (0)
     {
@@ -47,7 +47,7 @@ public:
 };
 
 /** Current state of an amendment.
-    Tells if a amendment is supported, enabled or vetoed. A vetoed amendment 
+    Tells if a amendment is supported, enabled or vetoed. A vetoed amendment
     means the node will never announce its support.
 */
 class AmendmentState
@@ -94,11 +94,11 @@ public:
     {
         return mEnabled;
     }
-    const std::string& getFiendlyName ()
+    std::string const& getFiendlyName ()
     {
         return mFriendlyName;
     }
-    void setFriendlyName (const std::string& n)
+    void setFriendlyName (std::string const& n)
     {
         mFriendlyName = n;
     }
@@ -127,7 +127,7 @@ public:
 
     virtual AmendmentState* addKnown (const char* amendmentID,
         const char* friendlyName, bool veto) = 0;
-    virtual uint256 get (const std::string& name) = 0;
+    virtual uint256 get (std::string const& name) = 0;
 
     virtual bool veto (uint256 const& amendment) = 0;
     virtual bool unVeto (uint256 const& amendment) = 0;

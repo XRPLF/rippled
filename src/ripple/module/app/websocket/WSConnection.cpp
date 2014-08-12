@@ -43,7 +43,7 @@ WSConnection::~WSConnection ()
 {
 }
 
-void WSConnection::onPong (const std::string&)
+void WSConnection::onPong (std::string const&)
 {
     m_sentPing = false;
 }

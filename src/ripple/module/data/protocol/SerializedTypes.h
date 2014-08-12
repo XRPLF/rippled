@@ -141,7 +141,7 @@ public:
     std::string getText () const;
 
     RippleAddress getValueNCA () const;
-    void setValueNCA (const RippleAddress& nca);
+    void setValueNCA (RippleAddress const& nca);
 
     template <typename Tag>
     void setValueH160 (base_uint<160, Tag> const& v)
@@ -327,12 +327,12 @@ public:
         return mPath.end ();
     }
 
-    bool operator== (const STPath& t) const
+    bool operator== (STPath const& t) const
     {
         return mPath == t.mPath;
     }
 
-    void setCanonical (const STPath& spExpanded);
+    void setCanonical (STPath const& spExpanded);
 
 private:
     friend class STPathSet;
@@ -340,26 +340,6 @@ private:
 
     std::vector<STPathElement> mPath;
 };
-
-inline std::vector<STPathElement>::iterator range_begin (STPath& x)
-{
-    return x.begin ();
-}
-
-inline std::vector<STPathElement>::iterator range_end (STPath& x)
-{
-    return x.end ();
-}
-
-inline std::vector<STPathElement>::const_iterator range_begin (const STPath& x)
-{
-    return x.begin ();
-}
-
-inline std::vector<STPathElement>::const_iterator range_end (const STPath& x)
-{
-    return x.end ();
-}
 
 //------------------------------------------------------------------------------
 
@@ -408,7 +388,7 @@ public:
     {
         value.reserve(n);
     }
-    const STPath& getPath (int off) const
+    STPath const& getPath (int off) const
     {
         return value[off];
     }
@@ -424,11 +404,11 @@ public:
     {
         value.clear ();
     }
-    void addPath (const STPath& e)
+    void addPath (STPath const& e)
     {
         value.push_back (e);
     }
-    void addUniquePath (const STPath& e)
+    void addUniquePath (STPath const& e)
     {
         for (auto const& p: value)
         {
@@ -499,26 +479,6 @@ private:
     }
     static STPathSet* construct (SerializerIterator&, SField::ref);
 };
-
-inline std::vector<STPath>::iterator range_begin (STPathSet& x)
-{
-    return x.begin ();
-}
-
-inline std::vector<STPath>::iterator range_end (STPathSet& x)
-{
-    return x.end ();
-}
-
-inline std::vector<STPath>::const_iterator range_begin (const STPathSet& x)
-{
-    return x.begin ();
-}
-
-inline std::vector<STPath>::const_iterator range_end (const STPathSet& x)
-{
-    return x.end ();
-}
 
 //------------------------------------------------------------------------------
 

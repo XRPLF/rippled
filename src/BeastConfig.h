@@ -220,11 +220,23 @@
 #define RIPPLE_SINGLE_IO_SERVICE_THREAD 0
 #endif
 
-/** Config: RIPPLE_STRUCTURED_OVERLAY
-    Enables Structured Overlay support (unfinished)
+/** Config: RIPPLE_STRUCTURED_OVERLAY_CLIENT
+            RIPPLE_STRUCTURED_OVERLAY_SERVER
+    Enables Structured Overlay support for the client or server roles.
+    This feature is currently in development:
+        https://ripplelabs.atlassian.net/browse/RIPD-157
 */
-#ifndef RIPPLE_STRUCTURED_OVERLAY
-#define RIPPLE_STRUCTURED_OVERLAY 0
+#ifndef RIPPLE_STRUCTURED_OVERLAY_CLIENT
+#define RIPPLE_STRUCTURED_OVERLAY_CLIENT 0
+#endif
+#ifndef RIPPLE_STRUCTURED_OVERLAY_SERVER
+#define RIPPLE_STRUCTURED_OVERLAY_SERVER 1
+#endif
+
+/** Config: RIPPLE_ASYNC_RPC_HANDLER
+*/
+#ifndef RIPPLE_ASYNC_RPC_HANDLER
+#define RIPPLE_ASYNC_RPC_HANDLER 1
 #endif
 
 /** Config: RIPPLE_ASYNC_RPC_HANDLER

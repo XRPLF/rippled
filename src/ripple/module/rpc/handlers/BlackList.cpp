@@ -22,11 +22,11 @@ namespace ripple {
 
 Json::Value doBlackList (RPC::Context& context)
 {
-    context.lock_.unlock();
+    auto& rm = getApp().getResourceManager();
     if (context.params_.isMember("threshold"))
-        return getApp().getResourceManager().getJson(context.params_["threshold"].asInt());
+        return rm.getJson(context.params_["threshold"].asInt());
     else
-        return getApp().getResourceManager().getJson();
+        return rm.getJson();
 }
 
 } // ripple

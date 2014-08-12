@@ -17,37 +17,36 @@
 */
 //==============================================================================
 
-#include <ripple/module/app/paths/Calculators.h>
-#include <ripple/module/app/paths/RippleCalc.h>
-#include <ripple/module/app/paths/Tuning.h>
+#include <ripple/module/app/paths/cursor/RippleLiquidity.h>
 
 namespace ripple {
 namespace path {
 
+TER PathCursor::advanceNode (STAmount const& amount, bool reverse) const
+{
+    bool multi = multiQuality_ || amount == zero;
+
+    // If the multiQuality_ is unchanged, use the PathCursor we're using now.
+    if (multi == multiQuality_)
+        return advanceNode (reverse);
+
+    // Otherwise, use a new PathCursor with the new multiQuality_.
+    PathCursor withMultiQuality {rippleCalc_, pathState_, multi, nodeIndex_};
+    return withMultiQuality.advanceNode (reverse);
+}
+
 // OPTIMIZE: When calculating path increment, note if increment consumes all
 // liquidity. No need to revisit path in the future if all liquidity is used.
 //
-// nodeAdvance advances through offers in an order book.
-// If needed, advance to next funded offer.
-// - Automatically advances to first offer.
-// --> bEntryAdvance: true, to advance to next entry. false, recalculate.
-// <-- uOfferIndex : 0=end of list.
-TER nodeAdvance (
-    RippleCalc& rippleCalc,
-    const unsigned int          nodeIndex,
-    PathState&                  pathState,
-    const bool                  bMultiQuality,
-    const bool                  bReverse)
+TER PathCursor::advanceNode (bool const bReverse) const
 {
-    auto& previousNode = pathState.nodes()[nodeIndex - 1];
-    auto& node = pathState.nodes()[nodeIndex];
-    TER             resultCode       = tesSUCCESS;
+    TER resultCode = tesSUCCESS;
 
     // Taker is the active party against an offer in the ledger - the entity
     // that is taking advantage of an offer in the order book.
     WriteLog (lsTRACE, RippleCalc)
-            << "nodeAdvance: TakerPays:"
-            << node.saTakerPays << " TakerGets:" << node.saTakerGets;
+            << "advanceNode: TakerPays:"
+            << node().saTakerPays << " TakerGets:" << node().saTakerGets;
 
     int loopCount = 0;
 
@@ -65,70 +64,27 @@ TER nodeAdvance (
             return tefEXCEPTION;
         }
 
-        bool bDirectDirDirty = false;
+        bool bDirectDirDirty = node().directory.initialize (
+            {previousNode().issue_, node().issue_},
+            ledger());
 
-        if (!node.currentDirectory_)
+        if (auto advance = node().directory.advance (ledger()))
         {
-            // Need to initialize current node.
-
-            node.currentDirectory_.copyFrom(Ledger::getBookBase ({
-                        {previousNode.currency_, previousNode.issuer_},
-                            {node.currency_, node.issuer_}}));
-            node.nextDirectory_.copyFrom(
-                Ledger::getQualityNext (node.currentDirectory_));
-
-            // TODO(tom): it seems impossible that any actual offers with
-            // quality == 0 could occur - we should disallow them, and clear
-            // sleDirectDir without the database call in the next line.
-            node.sleDirectDir = rippleCalc.mActiveLedger.entryCache (
-                ltDIR_NODE, node.currentDirectory_);
-
-            // Associated vars are dirty, if found it.
-            bDirectDirDirty = !!node.sleDirectDir;
-
-            // Advance, if didn't find it. Normal not to be unable to lookup
-            // firstdirectory. Maybe even skip this lookup.
-            node.bDirectAdvance  = !node.sleDirectDir;
-            node.bDirectRestart  = false;
-
-            WriteLog (lsTRACE, RippleCalc)
-                << "nodeAdvance: Initialize node:"
-                << " node.currentDirectory_=" << node.currentDirectory_
-                <<" node.nextDirectory_=" << node.nextDirectory_
-                << " node.bDirectAdvance=" << node.bDirectAdvance;
-        }
-
-        if (node.bDirectAdvance || node.bDirectRestart)
-        {
-            // Get next quality.
-            if (node.bDirectAdvance)
-            {
-                // This works because the Merkel radix tree is ordered by key so
-                // we can go to the next one in O(1).
-                node.currentDirectory_  = rippleCalc.mActiveLedger.getNextLedgerIndex (
-                    node.currentDirectory_, node.nextDirectory_);
-            }
-
             bDirectDirDirty = true;
-            node.bDirectAdvance  = false;
-            node.bDirectRestart  = false;
-
-            if (node.currentDirectory_ != zero)
+            if (advance == NodeDirectory::NEW_QUALITY)
             {
                 // We didn't run off the end of this order book and found
                 // another quality directory.
                 WriteLog (lsTRACE, RippleCalc)
-                    << "nodeAdvance: Quality advance: node.currentDirectory_="
-                    << node.currentDirectory_;
-
-                node.sleDirectDir = rippleCalc.mActiveLedger.entryCache (ltDIR_NODE, node.currentDirectory_);
+                    << "advanceNode: Quality advance: node.directory.current="
+                    << node().directory.current;
             }
             else if (bReverse)
             {
                 WriteLog (lsTRACE, RippleCalc)
-                    << "nodeAdvance: No more offers.";
+                    << "advanceNode: No more offers.";
 
-                node.offerIndex_ = 0;
+                node().offerIndex_ = 0;
                 break;
             }
             else
@@ -136,11 +92,10 @@ TER nodeAdvance (
                 // No more offers. Should be done rather than fall off end of
                 // book.
                 WriteLog (lsWARNING, RippleCalc)
-                    << "nodeAdvance: Unreachable: "
+                    << "advanceNode: Unreachable: "
                     << "Fell off end of order book.";
                 // FIXME: why?
-                return rippleCalc.mOpenLedger ? telFAILED_PROCESSING :
-                    tecFAILED_PROCESSING;
+                return telFAILED_PROCESSING;
             }
         }
 
@@ -148,52 +103,60 @@ TER nodeAdvance (
         {
             // Our quality changed since last iteration.
             // Use the rate from the directory.
-            node.saOfrRate = STAmount::setRate (Ledger::getQuality (node.currentDirectory_));
+            node().saOfrRate = STAmount::setRate (
+                Ledger::getQuality (node().directory.current));
             // For correct ratio
-            node.uEntry          = 0;
-            node.bEntryAdvance   = true;
+            node().uEntry = 0;
+            node().bEntryAdvance   = true;
 
             WriteLog (lsTRACE, RippleCalc)
-                << "nodeAdvance: directory dirty: node.saOfrRate="
-                << node.saOfrRate;
+                << "advanceNode: directory dirty: node.saOfrRate="
+                << node().saOfrRate;
         }
 
-        if (!node.bEntryAdvance)
+        if (!node().bEntryAdvance)
         {
-            if (node.bFundsDirty)
+            if (node().bFundsDirty)
             {
                 // We were called again probably merely to update structure
                 // variables.
-                node.saTakerPays = node.sleOffer->getFieldAmount (sfTakerPays);
-                node.saTakerGets = node.sleOffer->getFieldAmount (sfTakerGets);
+                node().saTakerPays
+                        = node().sleOffer->getFieldAmount (sfTakerPays);
+                node().saTakerGets
+                        = node().sleOffer->getFieldAmount (sfTakerGets);
 
                 // Funds left.
-                node.saOfferFunds = rippleCalc.mActiveLedger.accountFunds (
-                    node.offerOwnerAccount_, node.saTakerGets);
-                node.bFundsDirty     = false;
+                node().saOfferFunds = ledger().accountFunds (
+                    node().offerOwnerAccount_,
+                    node().saTakerGets,
+                    fhZERO_IF_FROZEN);
+                node().bFundsDirty = false;
 
                 WriteLog (lsTRACE, RippleCalc)
-                    << "nodeAdvance: funds dirty: node.saOfrRate="
-                    << node.saOfrRate;
+                    << "advanceNode: funds dirty: node().saOfrRate="
+                    << node().saOfrRate;
             }
             else
             {
-                WriteLog (lsTRACE, RippleCalc) << "nodeAdvance: as is";
+                WriteLog (lsTRACE, RippleCalc) << "advanceNode: as is";
             }
         }
-        else if (!rippleCalc.mActiveLedger.dirNext (
-            node.currentDirectory_, node.sleDirectDir, node.uEntry, node.offerIndex_))
+        else if (!ledger().dirNext (
+            node().directory.current,
+            node().directory.ledgerEntry,
+            node().uEntry,
+            node().offerIndex_))
             // This is the only place that offerIndex_ changes.
         {
             // Failed to find an entry in directory.
-            // Do another cur directory iff bMultiQuality
-            if (bMultiQuality)
+            // Do another cur directory iff multiQuality_
+            if (multiQuality_)
             {
                 // We are allowed to process multiple qualities if this is the
                 // only path.
                 WriteLog (lsTRACE, RippleCalc)
-                    << "nodeAdvance: next quality";
-                node.bDirectAdvance  = true;  // Process next quality.
+                    << "advanceNode: next quality";
+                node().directory.advanceNeeded  = true;  // Process next quality.
             }
             else if (!bReverse)
             {
@@ -202,60 +165,62 @@ TER nodeAdvance (
                 // TODO(tom): these warnings occur in production!  They
                 // shouldn't.
                 WriteLog (lsWARNING, RippleCalc)
-                    << "nodeAdvance: unreachable: ran out of offers";
-                return rippleCalc.mOpenLedger ? telFAILED_PROCESSING :
-                    tecFAILED_PROCESSING;
+                    << "advanceNode: unreachable: ran out of offers";
+                return telFAILED_PROCESSING;
             }
             else
             {
                 // Ran off end of offers.
-                node.bEntryAdvance   = false;        // Done.
-                node.offerIndex_ = 0;            // Report no more entries.
+                node().bEntryAdvance   = false;        // Done.
+                node().offerIndex_ = 0;            // Report no more entries.
             }
         }
         else
         {
             // Got a new offer.
-            node.sleOffer = rippleCalc.mActiveLedger.entryCache (
-                ltOFFER, node.offerIndex_);
+            node().sleOffer = ledger().entryCache (
+                ltOFFER, node().offerIndex_);
 
-            if (!node.sleOffer)
+            if (!node().sleOffer)
             {
                 // Corrupt directory that points to an entry that doesn't exist.
                 // This has happened in production.
                 WriteLog (lsWARNING, RippleCalc) <<
                     "Missing offer in directory";
-                node.bEntryAdvance = true;
+                node().bEntryAdvance = true;
             }
             else
             {
-                node.offerOwnerAccount_
-                    = node.sleOffer->getFieldAccount160 (sfAccount);
-                node.saTakerPays = node.sleOffer->getFieldAmount (sfTakerPays);
-                node.saTakerGets = node.sleOffer->getFieldAmount (sfTakerGets);
+                node().offerOwnerAccount_
+                        = node().sleOffer->getFieldAccount160 (sfAccount);
+                node().saTakerPays
+                        = node().sleOffer->getFieldAmount (sfTakerPays);
+                node().saTakerGets
+                        = node().sleOffer->getFieldAmount (sfTakerGets);
 
-                const AccountCurrencyIssuer asLine (
-                    node.offerOwnerAccount_, node.currency_, node.issuer_);
+                AccountIssue const accountIssue (
+                    node().offerOwnerAccount_, node().issue_);
 
                 WriteLog (lsTRACE, RippleCalc)
-                    << "nodeAdvance: offerOwnerAccount_="
-                    << to_string (node.offerOwnerAccount_)
-                    << " node.saTakerPays=" << node.saTakerPays
-                    << " node.saTakerGets=" << node.saTakerGets
-                    << " node.offerIndex_=" << node.offerIndex_;
+                    << "advanceNode: offerOwnerAccount_="
+                    << to_string (node().offerOwnerAccount_)
+                    << " node.saTakerPays=" << node().saTakerPays
+                    << " node.saTakerGets=" << node().saTakerGets
+                    << " node.offerIndex_=" << node().offerIndex_;
 
-                if (node.sleOffer->isFieldPresent (sfExpiration) &&
-                    (node.sleOffer->getFieldU32 (sfExpiration) <=
-                     rippleCalc.mActiveLedger.getLedger ()->getParentCloseTimeNC ()))
+                if (node().sleOffer->isFieldPresent (sfExpiration) &&
+                    (node().sleOffer->getFieldU32 (sfExpiration) <=
+                     ledger().getLedger ()->
+                     getParentCloseTimeNC ()))
                 {
                     // Offer is expired.
                     WriteLog (lsTRACE, RippleCalc)
-                        << "nodeAdvance: expired offer";
-                    rippleCalc.mUnfundedOffers.insert(node.offerIndex_);
+                        << "advanceNode: expired offer";
+                    rippleCalc_.unfundedOffers_.insert(node().offerIndex_);
                     continue;
                 }
 
-                if (node.saTakerPays <= zero || node.saTakerGets <= zero)
+                if (node().saTakerPays <= zero || node().saTakerGets <= zero)
                 {
                     // Offer has bad amounts. Offers should never have a bad
                     // amounts.
@@ -265,25 +230,25 @@ TER nodeAdvance (
                         // Past internal error, offer had bad amounts.
                         // This has occurred in production.
                         WriteLog (lsWARNING, RippleCalc)
-                            << "nodeAdvance: PAST INTERNAL ERROR"
+                            << "advanceNode: PAST INTERNAL ERROR"
                             << " REVERSE: OFFER NON-POSITIVE:"
-                            << " node.saTakerPays=" << node.saTakerPays
-                            << " node.saTakerGets=%s" << node.saTakerGets;
+                            << " node.saTakerPays=" << node().saTakerPays
+                            << " node.saTakerGets=%s" << node().saTakerGets;
 
                         // Mark offer for always deletion.
-                        rippleCalc.mUnfundedOffers.insert (node.offerIndex_);
+                        rippleCalc_.unfundedOffers_.insert (node().offerIndex_);
                     }
-                    else if (rippleCalc.mUnfundedOffers.find (node.offerIndex_)
-                             != rippleCalc.mUnfundedOffers.end ())
+                    else if (rippleCalc_.unfundedOffers_.find (node().offerIndex_)
+                             != rippleCalc_.unfundedOffers_.end ())
                     {
                         // Past internal error, offer was found failed to place
-                        // this in mUnfundedOffers.
+                        // this in unfundedOffers.
                         // Just skip it. It will be deleted.
                         WriteLog (lsDEBUG, RippleCalc)
-                            << "nodeAdvance: PAST INTERNAL ERROR "
+                            << "advanceNode: PAST INTERNAL ERROR "
                             << " FORWARD CONFIRM: OFFER NON-POSITIVE:"
-                            << " node.saTakerPays=" << node.saTakerPays
-                            << " node.saTakerGets=" << node.saTakerGets;
+                            << " node.saTakerPays=" << node().saTakerPays
+                            << " node.saTakerGets=" << node().saTakerGets;
 
                     }
                     else
@@ -291,11 +256,11 @@ TER nodeAdvance (
                         // Reverse should have previously put bad offer in list.
                         // An internal error previously left a bad offer.
                         WriteLog (lsWARNING, RippleCalc)
-                            << "nodeAdvance: INTERNAL ERROR"
+                            << "advanceNode: INTERNAL ERROR"
 
                             <<" FORWARD NEWLY FOUND: OFFER NON-POSITIVE:"
-                            << " node.saTakerPays=" << node.saTakerPays
-                            << " node.saTakerGets=" << node.saTakerGets;
+                            << " node.saTakerPays=" << node().saTakerPays
+                            << " node.saTakerGets=" << node().saTakerGets;
 
                         // Don't process at all, things are in an unexpected
                         // state for this transactions.
@@ -313,60 +278,64 @@ TER nodeAdvance (
                 // XXX Going forward could we fund something with a worse
                 // quality which was previously skipped? Might need to check
                 // quality.
-                auto itForward = pathState.forward().find (asLine);
-                const bool bFoundForward = itForward != pathState.forward().end ();
+                auto itForward = pathState_.forward().find (accountIssue);
+                const bool bFoundForward =
+                        itForward != pathState_.forward().end ();
 
                 // Only allow a source to be used once, in the first node
                 // encountered from initial path scan.  This prevents
                 // conflicting uses of the same balance when going reverse vs
                 // forward.
                 if (bFoundForward &&
-                    itForward->second != nodeIndex &&
-                    node.offerOwnerAccount_ != node.issuer_)
+                    itForward->second != nodeIndex_ &&
+                    node().offerOwnerAccount_ != node().issue_.account)
                 {
                     // Temporarily unfunded. Another node uses this source,
                     // ignore in this offer.
                     WriteLog (lsTRACE, RippleCalc)
-                        << "nodeAdvance: temporarily unfunded offer"
+                        << "advanceNode: temporarily unfunded offer"
                         << " (forward)";
                     continue;
                 }
 
                 // This is overly strict. For contributions to past. We should
                 // only count source if actually used.
-                auto itReverse = pathState.reverse().find (asLine);
-                bool bFoundReverse = itReverse != pathState.reverse().end ();
+                auto itReverse = pathState_.reverse().find (accountIssue);
+                bool bFoundReverse = itReverse != pathState_.reverse().end ();
 
                 // For this quality increment, only allow a source to be used
                 // from a single node, in the first node encountered from
                 // applying offers in reverse.
                 if (bFoundReverse &&
-                    itReverse->second != nodeIndex &&
-                    node.offerOwnerAccount_ != node.issuer_)
+                    itReverse->second != nodeIndex_ &&
+                    node().offerOwnerAccount_ != node().issue_.account)
                 {
                     // Temporarily unfunded. Another node uses this source,
                     // ignore in this offer.
                     WriteLog (lsTRACE, RippleCalc)
-                        << "nodeAdvance: temporarily unfunded offer"
+                        << "advanceNode: temporarily unfunded offer"
                         <<" (reverse)";
                     continue;
                 }
 
                 // Determine if used in past.
                 // We only need to know if it might need to be marked unfunded.
-                auto itPast = rippleCalc.mumSource.find (asLine);
-                bool bFoundPast = (itPast != rippleCalc.mumSource.end ());
+                auto itPast = rippleCalc_.mumSource.find (accountIssue);
+                bool bFoundPast = (itPast != rippleCalc_.mumSource.end ());
 
                 // Only the current node is allowed to use the source.
 
-                node.saOfferFunds = rippleCalc.mActiveLedger.accountFunds
-                        (node.offerOwnerAccount_, node.saTakerGets); // Funds held.
+                node().saOfferFunds = ledger().accountFunds (
+                    node().offerOwnerAccount_,
+                    node().saTakerGets,
+                    fhZERO_IF_FROZEN);
+                // Funds held.
 
-                if (node.saOfferFunds <= zero)
+                if (node().saOfferFunds <= zero)
                 {
                     // Offer is unfunded.
                     WriteLog (lsTRACE, RippleCalc)
-                        << "nodeAdvance: unfunded offer";
+                        << "advanceNode: unfunded offer";
 
                     if (bReverse && !bFoundReverse && !bFoundPast)
                     {
@@ -374,7 +343,7 @@ TER nodeAdvance (
                         // That is, even if this offer fails due to fill or kill
                         // still do deletions.
                         // Mark offer for always deletion.
-                        rippleCalc.mUnfundedOffers.insert (node.offerIndex_);
+                        rippleCalc_.unfundedOffers_.insert (node().offerIndex_);
                     }
                     else
                     {
@@ -392,32 +361,31 @@ TER nodeAdvance (
                 {
                     // Consider source mentioned by current path state.
                     WriteLog (lsTRACE, RippleCalc)
-                        << "nodeAdvance: remember="
-                        <<  to_string (node.offerOwnerAccount_)
+                        << "advanceNode: remember="
+                        <<  node().offerOwnerAccount_
                         << "/"
-                        << to_string (node.currency_)
-                        << "/"
-                        << to_string (node.issuer_);
+                        << node().issue_;
 
-                    pathState.reverse().insert (std::make_pair (asLine, nodeIndex));
+                    pathState_.insertReverse (accountIssue, nodeIndex_);
                 }
 
-                node.bFundsDirty     = false;
-                node.bEntryAdvance   = false;
+                node().bFundsDirty = false;
+                node().bEntryAdvance = false;
             }
         }
     }
-    while (resultCode == tesSUCCESS && (node.bEntryAdvance || node.bDirectAdvance));
+    while (resultCode == tesSUCCESS &&
+           (node().bEntryAdvance || node().directory.advanceNeeded));
 
     if (resultCode == tesSUCCESS)
     {
         WriteLog (lsTRACE, RippleCalc)
-            << "nodeAdvance: node.offerIndex_=" << node.offerIndex_;
+            << "advanceNode: node.offerIndex_=" << node().offerIndex_;
     }
     else
     {
         WriteLog (lsDEBUG, RippleCalc)
-            << "nodeAdvance: resultCode=" << transToken (resultCode);
+            << "advanceNode: resultCode=" << transToken (resultCode);
     }
 
     return resultCode;

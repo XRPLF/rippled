@@ -22,6 +22,7 @@ namespace ripple {
 
 Json::Value doStop (RPC::Context& context)
 {
+    auto lock = getApp().masterLock();
     getApp().signalStop ();
 
     return SYSTEM_NAME " server stopping";

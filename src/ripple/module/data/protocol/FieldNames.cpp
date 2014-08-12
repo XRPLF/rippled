@@ -20,7 +20,8 @@
 namespace ripple {
 
 // These must stay at the top of this file
-std::map<int, SField::ptr> SField::codeToField;
+std::map<int, SField::ptr> SField::knownCodeToField;
+std::map<int, SField::ptr> SField::unknownCodeToField;
 int SField::num = 0;
 
 
@@ -74,7 +75,7 @@ SField::SField (SerializedTypeID tid, int fv)
     // call with the map mutex
     fieldName = beast::lexicalCast <std::string> (tid) + "/" +
                 beast::lexicalCast <std::string> (fv);
-    codeToField[fieldCode] = this;
+    unknownCodeToField[fieldCode] = this;
     rawJsonName = getName ();
     jsonName = Json::StaticString (rawJsonName.c_str ());
     assert ((fv != 1) || ((tid != STI_ARRAY) && (tid != STI_OBJECT)));
@@ -82,27 +83,25 @@ SField::SField (SerializedTypeID tid, int fv)
 
 SField::ref SField::getField (int code)
 {
+    std::map<int, SField::ptr>::iterator it = knownCodeToField.find (code);
+
+    if (it != knownCodeToField.end ())
+    {
+        // 99+% of the time, it will be a valid, known field
+        return * (it->second);
+    }
+
     int type = code >> 16;
     int field = code % 0xffff;
 
-    if ((type <= 0) || (field <= 0))
-        return sfInvalid;
-
-    StaticScopedLockType sl (getMutex ());
-
-    std::map<int, SField::ptr>::iterator it = codeToField.find (code);
-
-    if (it != codeToField.end ())
-        return * (it->second);
-
     // Don't dynamically extend types that have no binary encoding.
-    if (field > 255)
+    if ((field > 255) || (code < 0))
         return sfInvalid;
 
     switch (type)
     {
         // Types we are willing to dynamically extend
-        // TODO(tom): Remove this horrorr.
+        // TODO(tom): Remove this horror.
 #define FIELD(name, type, index)
 #define TYPE(name, type, index) case STI_##type:
 #include <ripple/module/data/protocol/SerializeDeclarations.h>
@@ -115,7 +114,16 @@ SField::ref SField::getField (int code)
         return sfInvalid;
     }
 
-    return * (new SField (static_cast<SerializedTypeID> (type), field));
+    {
+        StaticScopedLockType sl (getMutex ());
+
+        it = unknownCodeToField.find (code);
+
+        if (it != unknownCodeToField.end ())
+            return * (it->second);
+
+        return * (new SField (static_cast<SerializedTypeID> (type), field));
+    }
 }
 
 int SField::compare (SField::ref f1, SField::ref f2)
@@ -145,26 +153,46 @@ std::string SField::getName () const
             std::to_string(fieldValue);
 }
 
-SField::ref SField::getField (const std::string& fieldName)
+SField::ref SField::getField (std::string const& fieldName)
 {
     // OPTIMIZEME me with a map. CHECKME this is case sensitive
-    StaticScopedLockType sl (getMutex ());
-    typedef std::map<int, SField::ptr>::value_type int_sfref_pair;
-    BOOST_FOREACH (const int_sfref_pair & fieldPair, codeToField)
+    for (auto const & fieldPair : knownCodeToField)
     {
         if (fieldPair.second->fieldName == fieldName)
             return * (fieldPair.second);
     }
+
+    {
+        StaticScopedLockType sl (getMutex ());
+
+        for (auto const & fieldPair : unknownCodeToField)
+        {
+            if (fieldPair.second->fieldName == fieldName)
+                return * (fieldPair.second);
+        }
+    }
+
+
     return sfInvalid;
 }
 
 SField::~SField ()
 {
-    StaticScopedLockType sl (getMutex ());
-    std::map<int, ptr>::iterator it = codeToField.find (fieldCode);
+    std::map<int, ptr>::iterator it = knownCodeToField.find (fieldCode);
 
-    if ((it != codeToField.end ()) && (it->second == this))
-        codeToField.erase (it);
+    if ((it != knownCodeToField.end ()) && (it->second == this))
+    {
+        knownCodeToField.erase (it);
+    }
+    else
+    {
+        StaticScopedLockType sl (getMutex ());
+
+        it = unknownCodeToField.find (fieldCode);
+
+        if ((it != unknownCodeToField.end ()) && (it->second == this))
+            unknownCodeToField.erase (it);
+    }
 }
 
 } // ripple

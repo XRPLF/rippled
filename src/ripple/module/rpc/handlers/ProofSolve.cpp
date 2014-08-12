@@ -25,22 +25,20 @@ namespace ripple {
 // }
 Json::Value doProofSolve (RPC::Context& context)
 {
-    context.lock_.unlock ();
-
-    Json::Value         jvResult;
+    Json::Value jvResult;
 
     if (!context.params_.isMember ("token"))
         return RPC::missing_field_error ("token");
 
-    std::string         strToken        = context.params_["token"].asString ();
+    std::string strToken = context.params_["token"].asString ();
 
     if (!ProofOfWork::validateToken (strToken))
         return RPC::invalid_field_error ("token");
 
-    ProofOfWork         powProof (strToken);
-    uint256             uSolution       = powProof.solve ();
+    ProofOfWork powProof (strToken);
+    uint256 uSolution = powProof.solve ();
 
-    jvResult["solution"]                = to_string (uSolution);
+    jvResult["solution"] = to_string (uSolution);
 
     return jvResult;
 }

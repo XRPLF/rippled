@@ -21,8 +21,6 @@ namespace ripple {
 
 Json::Value doBookOffers (RPC::Context& context)
 {
-    context.lock_.unlock ();
-
     // VFALCO TODO Here is a terrible place for this kind of business
     //             logic. It needs to be moved elsewhere and documented,
     //             and encapsulated into a function.
@@ -30,7 +28,8 @@ Json::Value doBookOffers (RPC::Context& context)
         return rpcError (rpcTOO_BUSY);
 
     Ledger::pointer lpLedger;
-    Json::Value jvResult (RPC::lookupLedger (context.params_, lpLedger, context.netOps_));
+    Json::Value jvResult (
+        RPC::lookupLedger (context.params_, lpLedger, context.netOps_));
 
     if (!lpLedger)
         return jvResult;
@@ -103,8 +102,9 @@ Json::Value doBookOffers (RPC::Context& context)
     }
 
     if (isXRP (pay_currency) && ! isXRP (pay_issuer))
-        return RPC::make_error (rpcSRC_ISR_MALFORMED,
-            "Unneeded field 'taker_pays.issuer' for XRP currency specification.");
+        return RPC::make_error (
+            rpcSRC_ISR_MALFORMED, "Unneeded field 'taker_pays.issuer' for "
+            "XRP currency specification.");
 
     if (!isXRP (pay_currency) && isXRP (pay_issuer))
         return RPC::make_error (rpcSRC_ISR_MALFORMED,
@@ -134,7 +134,8 @@ Json::Value doBookOffers (RPC::Context& context)
 
     if (isXRP (get_currency) && ! isXRP (get_issuer))
         return RPC::make_error (rpcDST_ISR_MALFORMED,
-            "Unneeded field 'taker_gets.issuer' for XRP currency specification.");
+            "Unneeded field 'taker_gets.issuer' for "
+                               "XRP currency specification.");
 
     if (!isXRP (get_currency) && isXRP (get_issuer))
         return RPC::make_error (rpcDST_ISR_MALFORMED,

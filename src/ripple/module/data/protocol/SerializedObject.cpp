@@ -154,30 +154,35 @@ bool STObject::setType (const SOTemplate& type)
 
     mType = &type;
 
-    for (SOTemplate::value_type const& elem : type.peek ())
+    SerializedType** array = mData.c_array();
+    std::size_t count = mData.size ();
+
+    for (auto const& elem : type.peek ())
     {
+        // Loop through all the fields in the template
         bool match = false;
 
-        for (boost::ptr_vector<SerializedType>::iterator it = mData.begin (); it != mData.end (); ++it)
-            if (it->getFName () == elem->e_field)
+        for (std::size_t i = 0; i < count; ++i)
+            if ((array[i] != nullptr) && (array[i]->getFName () == elem->e_field))
             {
-                // matching entry, move to new vector
+                // matching entry in the object, move to new vector
                 match = true;
 
-                if ((elem->flags == SOE_DEFAULT) && it->isDefault ())
+                if ((elem->flags == SOE_DEFAULT) && array[i]->isDefault ())
                 {
                     WriteLog (lsWARNING, STObject) << "setType( " << getFName ().getName () << ") invalid default "
                                                    << elem->e_field.fieldName;
                     valid = false;
                 }
 
-                newData.push_back (mData.release (it).release ()); // CAUTION: This renders 'it' invalid
+                newData.push_back (array[i]);
+                array[i] = nullptr;
                 break;
             }
 
         if (!match)
         {
-            // no match found
+            // no match found in the object for an entry in the template
             if (elem->flags == SOE_REQUIRED)
             {
                 WriteLog (lsWARNING, STObject) << "setType( " << getFName ().getName () << ") invalid missing "
@@ -185,22 +190,26 @@ bool STObject::setType (const SOTemplate& type)
                 valid = false;
             }
 
+            // Make a default object
             newData.push_back (makeNonPresentObject (elem->e_field).release ());
         }
     }
 
-    BOOST_FOREACH (const SerializedType & t, mData)
+    for (std::size_t i = 0; i < count; ++i)
     {
-        // Anything left over must be discardable
-        if (!t.getFName ().isDiscardable ())
+        // Anything left over in the object must be discardable
+        if ((array[i] != nullptr) && !array[i]->getFName ().isDiscardable ())
         {
             WriteLog (lsWARNING, STObject) << "setType( " << getFName ().getName () << ") invalid leftover "
-                                           << t.getFName ().getName ();
+                                           << array[i]->getFName ().getName ();
             valid = false;
         }
     }
 
+    // Swap the template matching data in for the old data,
+    // freeing any leftover junk
     mData.swap (newData);
+
     return valid;
 }
 
@@ -820,7 +829,7 @@ Blob STObject::getFieldVL (SField::ref field) const
     return cf->getValue ();
 }
 
-const STAmount& STObject::getFieldAmount (SField::ref field) const
+STAmount const& STObject::getFieldAmount (SField::ref field) const
 {
     static STAmount empty;
     const SerializedType* rf = peekAtPField (field);
@@ -860,7 +869,7 @@ const STArray& STObject::getFieldArray (SField::ref field) const
     return *cf;
 }
 
-const STPathSet& STObject::getFieldPathSet (SField::ref field) const
+STPathSet const& STObject::getFieldPathSet (SField::ref field) const
 {
     static STPathSet empty;
     const SerializedType* rf = peekAtPField (field);
@@ -1034,7 +1043,7 @@ void STObject::setFieldVL (SField::ref field, Blob const& v)
     cf->setValue (v);
 }
 
-void STObject::setFieldAmount (SField::ref field, const STAmount& v)
+void STObject::setFieldAmount (SField::ref field, STAmount const& v)
 {
     SerializedType* rf = getPField (field, true);
 
@@ -1049,7 +1058,7 @@ void STObject::setFieldAmount (SField::ref field, const STAmount& v)
     (*cf) = v;
 }
 
-void STObject::setFieldPathSet (SField::ref field, const STPathSet& v)
+void STObject::setFieldPathSet (SField::ref field, STPathSet const& v)
 {
     SerializedType* rf = getPField (field, true);
 
@@ -1271,7 +1280,7 @@ public:
         testParseJSONArrayWithInvalidChildrenObjects();
     }
 
-    bool parseJSONString (const std::string& json, Json::Value& to)
+    bool parseJSONString (std::string const& json, Json::Value& to)
     {
         Json::Reader reader;
         return (reader.parse(json, to) &&

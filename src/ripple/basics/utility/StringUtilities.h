@@ -41,7 +41,7 @@ namespace ripple {
 
 extern std::string strprintf (const char* format, ...);
 
-extern std::string urlEncode (const std::string& strSrc);
+extern std::string urlEncode (std::string const& strSrc);
 
 // NIKB TODO remove this function - it's only used for some logging in the UNL
 //           code which can be trivially rewritten.
@@ -59,7 +59,7 @@ std::string strJoin (Iterator first, Iterator last, std::string strSeperator)
 }
 
 // NIKB TODO Remove the need for all these overloads. Move them out of here.
-inline const std::string strHex (const std::string& strSrc)
+inline const std::string strHex (std::string const& strSrc)
 {
     return strHex (strSrc.begin (), strSrc.size ());
 }
@@ -76,7 +76,7 @@ inline std::string strHex (const std::uint64_t uiHost)
     return strHex ((unsigned char*) &uBig, sizeof (uBig));
 }
 
-inline static std::string sqlEscape (const std::string& strSrc)
+inline static std::string sqlEscape (std::string const& strSrc)
 {
     static boost::format f ("X'%s'");
     return str (boost::format (f) % strHex (strSrc));
@@ -108,23 +108,23 @@ inline static std::string sqlEscape (Blob const& vecSrc)
     return j;
 }
 
-int strUnHex (std::string& strDst, const std::string& strSrc);
+int strUnHex (std::string& strDst, std::string const& strSrc);
 
-uint64_t uintFromHex (const std::string& strSrc);
+uint64_t uintFromHex (std::string const& strSrc);
 
-std::pair<Blob, bool> strUnHex (const std::string& strSrc);
+std::pair<Blob, bool> strUnHex (std::string const& strSrc);
 
-Blob strCopy (const std::string& strSrc);
+Blob strCopy (std::string const& strSrc);
 std::string strCopy (Blob const& vucSrc);
 
-bool parseIpPort (const std::string& strSource, std::string& strIP, int& iPort);
+bool parseIpPort (std::string const& strSource, std::string& strIP, int& iPort);
 
-inline std::string strGetEnv (const std::string& strKey)
+inline std::string strGetEnv (std::string const& strKey)
 {
     return getenv (strKey.c_str ()) ? getenv (strKey.c_str ()) : "";
 }
 
-bool parseUrl (const std::string& strUrl, std::string& strScheme,
+bool parseUrl (std::string const& strUrl, std::string& strScheme,
                std::string& strDomain, int& iPort, std::string& strPath);
 
 #define ADDRESS(p) strHex(uint64( ((char*) p) - ((char*) 0)))

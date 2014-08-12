@@ -64,7 +64,7 @@ public:
     }
 
 private:
-    bool addValidation (SerializedValidation::ref val, const std::string& source)
+    bool addValidation (SerializedValidation::ref val, std::string const& source)
     {
         RippleAddress signer = val->getSignerPublic ();
         bool isCurrent = false;
@@ -437,7 +437,7 @@ private:
                 ScopedUnlockType sul (mLock);
                 {
                     Database* db = getApp().getLedgerDB ()->getDB ();
-                    DeprecatedScopedLock dbl (getApp().getLedgerDB ()->getDBLock ());
+                    auto dbl (getApp().getLedgerDB ()->lock ());
 
                     Serializer s (1024);
                     db->executeSQL ("BEGIN TRANSACTION;");

@@ -99,7 +99,7 @@ public:
     }
 
 
-    static bool rfc2818_verify (const std::string& domain, bool preverified, boost::asio::ssl::verify_context& ctx)
+    static bool rfc2818_verify (std::string const& domain, bool preverified, boost::asio::ssl::verify_context& ctx)
     {
         using namespace ripple;
 
@@ -112,7 +112,7 @@ public:
         return false;
     }
 
-    boost::system::error_code verify (const std::string& strDomain)
+    boost::system::error_code verify (std::string const& strDomain)
     {
         boost::system::error_code ec;
 
@@ -164,15 +164,15 @@ public:
             mSocket->async_shutdown (handler);
         else
         {
-        	error_code ec;
-        	try
-        	{
-	            lowest_layer ().shutdown (plain_socket::shutdown_both);
-			}
-			catch (boost::system::system_error& e)
-			{
-				ec = e.code();
-			}
+            error_code ec;
+            try
+            {
+                lowest_layer ().shutdown (plain_socket::shutdown_both);
+            }
+            catch (boost::system::system_error& e)
+            {
+                ec = e.code();
+            }
             mSocket->get_io_service ().post (
                 beast::asio::bind_handler (handler, ec));
         }
@@ -197,7 +197,7 @@ public:
     }
 
     template <typename Allocator, typename Handler>
-    void async_read_until (boost::asio::basic_streambuf<Allocator>& buffers, const std::string& delim, Handler handler)
+    void async_read_until (boost::asio::basic_streambuf<Allocator>& buffers, std::string const& delim, Handler handler)
     {
         if (isSecure ())
             boost::asio::async_read_until (*mSocket, buffers, delim, handler);

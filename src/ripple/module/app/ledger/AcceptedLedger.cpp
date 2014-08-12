@@ -30,10 +30,11 @@ AcceptedLedger::AcceptedLedger (Ledger::ref ledger) : mLedger (ledger)
 {
     SHAMap& txSet = *ledger->peekTransactionMap ();
 
-    for (SHAMapItem::pointer item = txSet.peekFirstItem (); !!item; item = txSet.peekNextItem (item->getTag ()))
+    for (SHAMapItem::pointer item = txSet.peekFirstItem (); item;
+         item = txSet.peekNextItem (item->getTag ()))
     {
         SerializerIterator sit (item->peekSerializer ());
-        insert (std::make_shared<AcceptedLedgerTx> (ledger->getLedgerSeq (), std::ref (sit)));
+        insert (std::make_shared<AcceptedLedgerTx> (ledger, std::ref (sit)));
     }
 }
 

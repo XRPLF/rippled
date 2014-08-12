@@ -57,32 +57,32 @@ public:
 
                 if (reason == InboundLedger::fcCONSENSUS)
                 {
-		    if (mConsensusLedger.isNonZero() && (mValidationLedger != mConsensusLedger) && (hash != mConsensusLedger))
-		    {
-			ripple::unordered_map<uint256, InboundLedger::pointer>::iterator it = mLedgers.find (mConsensusLedger);
-			if (it != mLedgers.end ())
-			{
-			    oldLedger = it->second;
-			    mLedgers.erase (it);
-		       }
-		    }
-		    mConsensusLedger = hash;
+                    if (mConsensusLedger.isNonZero() && (mValidationLedger != mConsensusLedger) && (hash != mConsensusLedger))
+                    {
+                        hash_map<uint256, InboundLedger::pointer>::iterator it = mLedgers.find (mConsensusLedger);
+                        if (it != mLedgers.end ())
+                        {
+                            oldLedger = it->second;
+                            mLedgers.erase (it);
+                        }
+                    }
+                    mConsensusLedger = hash;
                 }
                 else if (reason == InboundLedger::fcVALIDATION)
                 {
-		    if (mValidationLedger.isNonZero() && (mValidationLedger != mConsensusLedger) && (hash != mValidationLedger))
-		    {
-			ripple::unordered_map<uint256, InboundLedger::pointer>::iterator it = mLedgers.find (mValidationLedger);
-			if (it != mLedgers.end ())
-			{
-			    oldLedger = it->second;
-			    mLedgers.erase (it);
-		       }
-		    }
-		    mValidationLedger = hash;
+                    if (mValidationLedger.isNonZero() && (mValidationLedger != mConsensusLedger) && (hash != mValidationLedger))
+                    {
+                        hash_map<uint256, InboundLedger::pointer>::iterator it = mLedgers.find (mValidationLedger);
+                        if (it != mLedgers.end ())
+                        {
+                            oldLedger = it->second;
+                            mLedgers.erase (it);
+                       }
+                    }
+                    mValidationLedger = hash;
                 }
 
-                ripple::unordered_map<uint256, InboundLedger::pointer>::iterator it = mLedgers.find (hash);
+                hash_map<uint256, InboundLedger::pointer>::iterator it = mLedgers.find (hash);
                 if (it != mLedgers.end ())
                 {
                     ret = it->second;
@@ -111,7 +111,7 @@ public:
         {
             ScopedLockType sl (mLock);
 
-            ripple::unordered_map<uint256, InboundLedger::pointer>::iterator it = mLedgers.find (hash);
+            hash_map<uint256, InboundLedger::pointer>::iterator it = mLedgers.find (hash);
             if (it != mLedgers.end ())
             {
                 ret = it->second;
@@ -376,7 +376,7 @@ public:
 private:
     clock_type& m_clock;
 
-    typedef ripple::unordered_map <uint256, InboundLedger::pointer> MapType;
+    typedef hash_map <uint256, InboundLedger::pointer> MapType;
 
     typedef RippleRecursiveMutex LockType;
     typedef std::unique_lock <LockType> ScopedLockType;

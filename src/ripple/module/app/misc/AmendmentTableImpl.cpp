@@ -29,9 +29,9 @@ namespace ripple {
 {
 protected:
 
-    typedef ripple::unordered_map<uint256, AmendmentState> amendmentMap_t;
+    typedef hash_map<uint256, AmendmentState> amendmentMap_t;
     typedef std::pair<const uint256, AmendmentState> amendmentIt_t;
-    typedef ripple::unordered_set<uint256> amendmentList_t;
+    typedef hash_set<uint256> amendmentList_t;
 
     typedef RippleMutex LockType;
     typedef std::lock_guard <LockType> ScopedLockType;
@@ -64,7 +64,7 @@ public:
 
     AmendmentState* addKnown (const char* amendmentID, const char* friendlyName,
         bool veto) override;
-    uint256 get (const std::string& name) override;
+    uint256 get (std::string const& name) override;
 
     bool veto (uint256 const& amendment) override;
     bool unVeto (uint256 const& amendment) override;
@@ -117,7 +117,7 @@ AmendmentTableImpl::getCreate (uint256 const& amendmentHash, bool create)
             query.append (to_string (amendmentHash));
             query.append ("';");
 
-            DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+            auto sl (getApp().getWalletDB ()->lock ());
             Database* db = getApp().getWalletDB ()->getDB ();
 
             if (db->executeSQL (query) && db->startIterRows ())
@@ -135,7 +135,7 @@ AmendmentTableImpl::getCreate (uint256 const& amendmentHash, bool create)
 }
 
 uint256
-AmendmentTableImpl::get (const std::string& name)
+AmendmentTableImpl::get (std::string const& name)
 {
     for (auto const& e : m_amendmentMap)
     {
@@ -373,7 +373,7 @@ AmendmentTableImpl::reportValidations (const AmendmentSet& set)
 
     if (!changedAmendments.empty())
     {
-        DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+        auto sl (getApp().getWalletDB ()->lock ());
         Database* db = getApp().getWalletDB ()->getDB ();
 
         db->executeSQL ("BEGIN TRANSACTION;");

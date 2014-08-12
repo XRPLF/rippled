@@ -32,9 +32,9 @@ AccountItems& RippleLineCache::getRippleLines (Account const& accountID)
 
     if (it == mRLMap.end ())
     {
-        it = mRLMap.insert (std::make_pair (accountID, std::make_shared<AccountItems>
-                                            (accountID, mLedger,
-                                            AccountItem::pointer (new RippleState ())))).first;
+        auto accountItems = std::make_shared<AccountItems> (
+            accountID, mLedger, AccountItem::pointer (new RippleState ()));
+        it = mRLMap.insert ({accountID, accountItems}).first;
     }
     return *it->second;
 }

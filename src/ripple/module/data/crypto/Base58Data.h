@@ -49,6 +49,12 @@ protected:
 
     CBase58Data ();
     ~CBase58Data ();
+    CBase58Data (CBase58Data const&) = default;
+    CBase58Data& operator= (CBase58Data const&) = default;
+#ifndef _MSC_VER
+    CBase58Data (CBase58Data&&) = default;
+    CBase58Data& operator= (CBase58Data&&) = default;
+#endif
 
     void SetData (int version, Blob const& vchDataIn)
     {

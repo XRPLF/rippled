@@ -86,7 +86,7 @@ public:
         return mTransactionID;
     }
 
-    const RippleAddress& getFromAccount () const
+    RippleAddress const& getFromAccount () const
     {
         return mAccountFrom;
     }
@@ -158,7 +158,7 @@ public:
 
     Json::Value getJson (int options, bool binary = false) const;
 
-    static Transaction::pointer load (uint256 const & id);
+    static Transaction::pointer load (uint256 const& id);
 
     // conversion function
     static bool convertToTransactions (std::uint32_t ourLedgerSeq,
@@ -169,10 +169,10 @@ public:
                                        std::map<uint256, std::pair<Transaction::pointer,
                                                                    Transaction::pointer> >& outMap);
 
-    static bool isHexTxID (const std::string&);
+    static bool isHexTxID (std::string const&);
 
 protected:
-    static Transaction::pointer transactionFromSQL (const std::string & statement);
+    static Transaction::pointer transactionFromSQL (std::string const& statement);
 
 private:
     uint256         mTransactionID;

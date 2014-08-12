@@ -25,10 +25,10 @@ namespace ripple {
 // VFALCO TODO rename and move these typedefs into the Validations interface
 
 // nodes validating and highest node ID validating
-typedef unordered_map<NodeID, SerializedValidation::pointer> ValidationSet;
+typedef hash_map<NodeID, SerializedValidation::pointer> ValidationSet;
 
 typedef std::pair<int, NodeID> ValidationCounter;
-typedef unordered_map<uint256, ValidationCounter> LedgerToValidationCounter;
+typedef hash_map<uint256, ValidationCounter> LedgerToValidationCounter;
 typedef std::vector<SerializedValidation::pointer> ValidationVector;
 
 class Validations : beast::LeakChecked <Validations>
@@ -38,7 +38,7 @@ public:
 
     virtual ~Validations () { }
 
-    virtual bool addValidation (SerializedValidation::ref, const std::string& source) = 0;
+    virtual bool addValidation (SerializedValidation::ref, std::string const& source) = 0;
 
     virtual ValidationSet getValidations (uint256 const& ledger) = 0;
 

@@ -33,13 +33,13 @@ public:
         kMaxDifficulty = 30,
     };
 
-    static ProofOfWorkFactory* New ();
+    static std::unique_ptr<ProofOfWorkFactory> New ();
 
     virtual ~ProofOfWorkFactory () { }
 
     virtual ProofOfWork getProof () = 0;
 
-    virtual PowResult checkProof (const std::string& token, uint256 const& solution) = 0;
+    virtual PowResult checkProof (std::string const& token, uint256 const& solution) = 0;
 
     virtual std::uint64_t getDifficulty () = 0;
 

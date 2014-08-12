@@ -131,31 +131,31 @@ const char* systemCurrencyCode() {
 
 Account const& xrpAccount()
 {
-    static const Account account(0);
+    static Account const account(0);
     return account;
 }
 
 Currency const& xrpCurrency()
 {
-    static const Currency currency(0);
+    static Currency const currency(0);
     return currency;
 }
 
 Account const& noAccount()
 {
-    static const Account account(1);
+    static Account const account(1);
     return account;
 }
 
 Currency const& noCurrency()
 {
-    static const Currency currency(1);
+    static Currency const currency(1);
     return currency;
 }
 
 Currency const& badCurrency()
 {
-    static const Currency currency(0x5852500000000000);
+    static Currency const currency(0x5852500000000000);
     return currency;
 }
 

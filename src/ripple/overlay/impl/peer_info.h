@@ -17,50 +17,20 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CALCSTATE_H
-#define RIPPLE_CALCSTATE_H
+#ifndef RIPPLE_OVERLAY_PEER_INFO_H_INCLUDED
+#define RIPPLE_OVERLAY_PEER_INFO_H_INCLUDED
+
+#include <beast/http/basic_message.h>
 
 namespace ripple {
 
-typedef TER ErrorCode;
-
-class CalcState
+struct parsed_request
 {
-  public:
-    CalcState(
-        unsigned int nodeIndex, PathState& state, LedgerEntrySet& ledger, bool quality)
-            : nodeIndex_(nodeIndex),
-              pathState_(state),
-              ledger_(ledger),
-              quality_(quality)
-    {}
-
-    enum Direction { BACKWARD, FORWARD };
-    TER calc(Direction);
-    TER calcAccount(Direction);
-    TER calcOffer(Direction);
-    TER calcDeliver(Direction);
-    TER calcAdvance(Direction);
-    void nextPath(LedgerEntrySet const& checkpoint) const;
-
-  private:
-    LedgerEntrySet& ledger()
-    {
-        return ledger_;
-    }
-
-    bool quality() const
-    {
-        return quality_;
-    }
-
-  private:
-    unsigned int const nodeIndex_;
-    PathState& pathState_;
-    LedgerEntrySet& ledger_;
-    bool const quality_;
+    int version_major;
+    int version_minor;
 };
 
-} // ripple
+
+}
 
 #endif

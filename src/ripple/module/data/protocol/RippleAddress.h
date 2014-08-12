@@ -79,16 +79,16 @@ public:
 
     std::string humanNodePublic () const;
 
-    bool setNodePublic (const std::string& strPublic);
+    bool setNodePublic (std::string const& strPublic);
     void setNodePublic (Blob const& vPublic);
     bool verifyNodePublic (uint256 const& hash, Blob const& vchSig,
                            ECDSA mustBeFullyCanonical) const;
-    bool verifyNodePublic (uint256 const& hash, const std::string& strSig,
+    bool verifyNodePublic (uint256 const& hash, std::string const& strSig,
                            ECDSA mustBeFullyCanonical) const;
 
-    static RippleAddress createNodePublic (const RippleAddress& naSeed);
+    static RippleAddress createNodePublic (RippleAddress const& naSeed);
     static RippleAddress createNodePublic (Blob const& vPublic);
-    static RippleAddress createNodePublic (const std::string& strPublic);
+    static RippleAddress createNodePublic (std::string const& strPublic);
 
     //
     // Node Private
@@ -98,12 +98,12 @@ public:
 
     std::string humanNodePrivate () const;
 
-    bool setNodePrivate (const std::string& strPrivate);
+    bool setNodePrivate (std::string const& strPrivate);
     void setNodePrivate (Blob const& vPrivate);
     void setNodePrivate (uint256 hash256);
     void signNodePrivate (uint256 const& hash, Blob& vchSig) const;
 
-    static RippleAddress createNodePrivate (const RippleAddress& naSeed);
+    static RippleAddress createNodePrivate (RippleAddress const& naSeed);
 
     //
     // Accounts IDs
@@ -113,12 +113,12 @@ public:
     std::string humanAccountID () const;
 
     bool setAccountID (
-        const std::string& strAccountID,
+        std::string const& strAccountID,
         Base58::Alphabet const& alphabet = Base58::getRippleAlphabet());
     void setAccountID (Account const& hash160In);
 
     #if 0
-    static RippleAddress createAccountID (const std::string& strAccountID)
+    static RippleAddress createAccountID (std::string const& strAccountID)
     {
         RippleAddress na;
         na.setAccountID (strAccountID);
@@ -135,9 +135,9 @@ public:
 
     std::string humanAccountPublic () const;
 
-    bool setAccountPublic (const std::string& strPublic);
+    bool setAccountPublic (std::string const& strPublic);
     void setAccountPublic (Blob const& vPublic);
-    void setAccountPublic (const RippleAddress& generator, int seq);
+    void setAccountPublic (RippleAddress const& generator, int seq);
 
     bool accountPublicVerify (uint256 const& uHash, Blob const& vucSig,
                               ECDSA mustBeFullyCanonical) const;
@@ -156,7 +156,7 @@ public:
 
     // Create a deterministic public key from a public generator.
     static RippleAddress createAccountPublic (
-        const RippleAddress& naGenerator, int iSeq);
+        RippleAddress const& naGenerator, int iSeq);
 
     //
     // Accounts Private
@@ -165,24 +165,24 @@ public:
 
     std::string humanAccountPrivate () const;
 
-    bool setAccountPrivate (const std::string& strPrivate);
+    bool setAccountPrivate (std::string const& strPrivate);
     void setAccountPrivate (Blob const& vPrivate);
     void setAccountPrivate (uint256 hash256);
-    void setAccountPrivate (const RippleAddress& naGenerator,
-                            const RippleAddress& naSeed, int seq);
+    void setAccountPrivate (RippleAddress const& naGenerator,
+                            RippleAddress const& naSeed, int seq);
 
     bool accountPrivateSign (uint256 const& uHash, Blob& vucSig) const;
 
     // Encrypt a message.
     Blob accountPrivateEncrypt (
-        const RippleAddress& naPublicTo, Blob const& vucPlainText) const;
+        RippleAddress const& naPublicTo, Blob const& vucPlainText) const;
 
     // Decrypt a message.
     Blob accountPrivateDecrypt (
-        const RippleAddress& naPublicFrom, Blob const& vucCipherText) const;
+        RippleAddress const& naPublicFrom, Blob const& vucCipherText) const;
 
     static RippleAddress createAccountPrivate (
-        const RippleAddress& generator, const RippleAddress& seed, int iSeq);
+        RippleAddress const& generator, RippleAddress const& seed, int iSeq);
 
     static RippleAddress createAccountPrivate (Blob const& vPrivate)
     {
@@ -206,12 +206,12 @@ public:
 
     std::string humanGenerator () const;
 
-    bool setGenerator (const std::string& strGenerator);
+    bool setGenerator (std::string const& strGenerator);
     void setGenerator (Blob const& vPublic);
-    // void setGenerator(const RippleAddress& seed);
+    // void setGenerator(RippleAddress const& seed);
 
     // Create generator for making public deterministic keys.
-    static RippleAddress createGeneratorPublic (const RippleAddress& naSeed);
+    static RippleAddress createGeneratorPublic (RippleAddress const& naSeed);
 
     //
     // Seeds
@@ -221,14 +221,14 @@ public:
     std::string humanSeed () const;
     std::string humanSeed1751 () const;
 
-    bool setSeed (const std::string& strSeed);
-    int setSeed1751 (const std::string& strHuman1751);
-    bool setSeedGeneric (const std::string& strText);
+    bool setSeed (std::string const& strSeed);
+    int setSeed1751 (std::string const& strHuman1751);
+    bool setSeedGeneric (std::string const& strText);
     void setSeed (uint128 hash128);
     void setSeedRandom ();
 
     static RippleAddress createSeedRandom ();
-    static RippleAddress createSeedGeneric (const std::string& strText);
+    static RippleAddress createSeedGeneric (std::string const& strText);
 };
 
 //------------------------------------------------------------------------------

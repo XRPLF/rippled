@@ -22,9 +22,12 @@
 
 namespace ripple {
 
-// VFALCO TODO Why 40?  is the number 40 part of protocol?
-const int CALC_NODE_DELIVER_MAX_LOOPS = 40;
-const int NODE_ADVANCE_MAX_LOOPS = 100;
+int const CALC_NODE_DELIVER_MAX_LOOPS = 40;
+int const NODE_ADVANCE_MAX_LOOPS = 100;
+int const PATHFINDER_HIGH_PRIORITY = 100000;
+int const PATHFINDER_MAX_PATHS = 50;
+int const PATHFINDER_MAX_COMPLETE_PATHS = 1000;
+int const PATHFINDER_MAX_PATHS_FROM_SOURCE = 10;
 
 } // ripple
 

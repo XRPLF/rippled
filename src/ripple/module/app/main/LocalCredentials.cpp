@@ -48,7 +48,7 @@ void LocalCredentials::start ()
 bool LocalCredentials::nodeIdentityLoad ()
 {
     Database*   db = getApp().getWalletDB ()->getDB ();
-    DeprecatedScopedLock  sl (getApp().getWalletDB ()->getDBLock ());
+    auto  sl (getApp().getWalletDB ()->lock ());
     bool        bSuccess    = false;
 
     if (db->executeSQL ("SELECT * FROM NodeIdentity;") && db->startIterRows ())
@@ -106,7 +106,7 @@ bool LocalCredentials::nodeIdentityCreate ()
     //
     Database* db    = getApp().getWalletDB ()->getDB ();
 
-    DeprecatedScopedLock sl (getApp().getWalletDB ()->getDBLock ());
+    auto sl (getApp().getWalletDB ()->lock ());
     db->executeSQL (str (boost::format ("INSERT INTO NodeIdentity (PublicKey,PrivateKey,Dh512,Dh1024) VALUES ('%s','%s',%s,%s);")
                          % naNodePublic.humanNodePublic ()
                          % naNodePrivate.humanNodePrivate ()
@@ -120,21 +120,21 @@ bool LocalCredentials::nodeIdentityCreate ()
     return true;
 }
 
-bool LocalCredentials::dataDelete (const std::string& strKey)
+bool LocalCredentials::dataDelete (std::string const& strKey)
 {
     Database* db    = getApp().getRpcDB ()->getDB ();
 
-    DeprecatedScopedLock sl (getApp().getRpcDB ()->getDBLock ());
+    auto sl (getApp().getRpcDB ()->lock ());
 
     return db->executeSQL (str (boost::format ("DELETE FROM RPCData WHERE Key=%s;")
                                 % sqlEscape (strKey)));
 }
 
-bool LocalCredentials::dataFetch (const std::string& strKey, std::string& strValue)
+bool LocalCredentials::dataFetch (std::string const& strKey, std::string& strValue)
 {
     Database* db    = getApp().getRpcDB ()->getDB ();
 
-    DeprecatedScopedLock sl (getApp().getRpcDB ()->getDBLock ());
+    auto sl (getApp().getRpcDB ()->lock ());
 
     bool        bSuccess    = false;
 
@@ -152,11 +152,11 @@ bool LocalCredentials::dataFetch (const std::string& strKey, std::string& strVal
     return bSuccess;
 }
 
-bool LocalCredentials::dataStore (const std::string& strKey, const std::string& strValue)
+bool LocalCredentials::dataStore (std::string const& strKey, std::string const& strValue)
 {
     Database* db    = getApp().getRpcDB ()->getDB ();
 
-    DeprecatedScopedLock sl (getApp().getRpcDB ()->getDBLock ());
+    auto sl (getApp().getRpcDB ()->lock ());
 
     bool        bSuccess    = false;
 

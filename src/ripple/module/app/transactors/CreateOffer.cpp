@@ -224,7 +224,15 @@ CreateOffer::doApply ()
 
         terResult = temBAD_ISSUER;
     }
-    else if (view.accountFunds (mTxnAccountID, saTakerGets) <= zero)
+    else if (view.isGlobalFrozen (uPaysIssuerID) || view.isGlobalFrozen (uGetsIssuerID))
+    {
+        m_journal.warning <<
+            "Offer involves frozen asset";
+
+        terResult = tecFROZEN;
+    }
+    else if (view.accountFunds (
+        mTxnAccountID, saTakerGets, fhZERO_IF_FROZEN) <= zero)
     {
         m_journal.warning <<
             "delay: Offers must be at least partially funded.";
@@ -349,8 +357,8 @@ CreateOffer::doApply ()
             "takeOffers: mTxnAccountID=" <<
             to_string (mTxnAccountID);
         m_journal.debug <<
-            "takeOffers:         FUNDS=" <<
-            view.accountFunds (mTxnAccountID, saTakerGets).getFullText ();
+            "takeOffers:         FUNDS=" << view.accountFunds (
+            mTxnAccountID, saTakerGets, fhZERO_IF_FROZEN).getFullText ();
     }
 
     if (saTakerPays < zero || saTakerGets < zero)

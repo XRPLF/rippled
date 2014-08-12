@@ -62,10 +62,10 @@ void OrderBookDB::setup (Ledger::ref ledger)
 }
 
 static void updateHelper (SLE::ref entry,
-    ripple::unordered_set< uint256 >& seen,
+    hash_set< uint256 >& seen,
     OrderBookDB::IssueToOrderBook& destMap,
     OrderBookDB::IssueToOrderBook& sourceMap,
-    ripple::unordered_set< Issue >& XRPBooks,
+    hash_set< Issue >& XRPBooks,
     int& books)
 {
     if (entry->getType () == ltDIR_NODE &&
@@ -93,10 +93,10 @@ static void updateHelper (SLE::ref entry,
 
 void OrderBookDB::update (Ledger::pointer ledger)
 {
-    ripple::unordered_set< uint256 > seen;
+    hash_set< uint256 > seen;
     OrderBookDB::IssueToOrderBook destMap;
     OrderBookDB::IssueToOrderBook sourceMap;
-    ripple::unordered_set< Issue > XRPBooks;
+    hash_set< Issue > XRPBooks;
 
     WriteLog (lsDEBUG, OrderBookDB) << "OrderBookDB::update>";
 
@@ -166,35 +166,23 @@ void OrderBookDB::addOrderBook(Book const& book)
 }
 
 // return list of all orderbooks that want this issuerID and currencyID
-void OrderBookDB::getBooksByTakerPays (
-    Issue const& issue, OrderBook::List& bookRet)
+OrderBook::List OrderBookDB::getBooksByTakerPays (Issue const& issue)
 {
     ScopedLockType sl (mLock);
     auto it = mSourceMap.find (issue);
-    if (it != mSourceMap.end ())
-        bookRet = it->second;
-    else
-        bookRet.clear ();
+    return it == mSourceMap.end () ? OrderBook::List() : it->second;
+}
+
+int OrderBookDB::getBookSize(Issue const& issue) {
+    ScopedLockType sl (mLock);
+    auto it = mSourceMap.find (issue);
+    return it == mSourceMap.end () ? 0 : it->second.size();
 }
 
 bool OrderBookDB::isBookToXRP(Issue const& issue)
 {
     ScopedLockType sl (mLock);
-
     return mXRPBooks.count(issue) > 0;
-}
-
-// return list of all orderbooks that give this issuerID and currencyID
-void OrderBookDB::getBooksByTakerGets (
-    Issue const& issue, OrderBook::List& bookRet)
-{
-    ScopedLockType sl (mLock);
-    auto it = mDestMap.find (issue);
-
-    if (it != mDestMap.end ())
-        bookRet = it->second;
-    else
-        bookRet.clear ();
 }
 
 BookListeners::pointer OrderBookDB::makeBookListeners (Book const& book)

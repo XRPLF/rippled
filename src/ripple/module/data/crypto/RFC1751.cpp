@@ -276,7 +276,7 @@ unsigned long RFC1751::extract (char* s, int start, int length)
 
 // Encode 8 bytes in 'c' as a string of English words.
 // Returns a pointer to a static buffer
-void RFC1751::btoe (std::string& strHuman, const std::string& strData)
+void RFC1751::btoe (std::string& strHuman, std::string const& strData)
 {
     char    caBuffer[9];     /* add in room for the parity 2 bits*/
     int     p, i;
@@ -350,7 +350,7 @@ void RFC1751::standard (std::string& strWord)
 }
 
 // Binary search of dictionary.
-int RFC1751::wsrch (const std::string& strWord, int iMin, int iMax)
+int RFC1751::wsrch (std::string const& strWord, int iMin, int iMax)
 {
     int iResult = -1;
 
@@ -434,7 +434,7 @@ int RFC1751::etob (std::string& strData, std::vector<std::string> vsHuman)
         -1 if badly formed string
         -2 if words are okay but parity is wrong.
 */
-int RFC1751::getKeyFromEnglish (std::string& strKey, const std::string& strHuman)
+int RFC1751::getKeyFromEnglish (std::string& strKey, std::string const& strHuman)
 {
     std::vector<std::string> vWords;
     std::string strFirst, strSecond;
@@ -463,7 +463,7 @@ int RFC1751::getKeyFromEnglish (std::string& strKey, const std::string& strHuman
 
 /** Convert to human from a 128 bit key in big-endian format
 */
-void RFC1751::getEnglishFromKey (std::string& strHuman, const std::string& strKey)
+void RFC1751::getEnglishFromKey (std::string& strHuman, std::string const& strKey)
 {
     std::string strFirst, strSecond;
 

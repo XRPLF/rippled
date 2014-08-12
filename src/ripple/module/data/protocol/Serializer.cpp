@@ -390,7 +390,7 @@ int Serializer::addVL (const void* ptr, int len)
     return ret;
 }
 
-int Serializer::addVL (const std::string& string)
+int Serializer::addVL (std::string const& string)
 {
     int ret = addRaw (string.size ());
 

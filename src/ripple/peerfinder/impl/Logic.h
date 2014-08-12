@@ -32,7 +32,6 @@
 
 #include <functional>
 #include <map>
-#include <unordered_map>
 
 namespace ripple {
 namespace PeerFinder {
@@ -275,20 +274,50 @@ public:
 
         SharedState::Access state (m_state);
 
+        // Check for duplicate connection
+        {
+            auto const iter = state->connected_addresses.find (remote_endpoint);
+            if (iter != state->connected_addresses.end())
+            {
+                if (m_journal.warning) m_journal.warning << beast::leftw (18) <<
+                    "Logic dropping inbound " << remote_endpoint <<
+                    " as duplicate";
+                return SlotImp::ptr();
+            }
+        }
+
         // Check for self-connect by address
+        // This is disabled because otherwise we couldn't connect to
+        // ourselves for testing purposes. Eventually a self-connect will
+        // be dropped if the public key is the same. And if it's different,
+        // we want to allow the self-connect.
+        /*
         {
             auto const iter (state->slots.find (local_endpoint));
             if (iter != state->slots.end ())
             {
                 Slot::ptr const& self (iter->second);
-                assert ((self->local_endpoint () == boost::none) ||
-                    (self->local_endpoint () == remote_endpoint));
+                bool const consistent ((
+                    self->local_endpoint() == boost::none) ||
+                        (*self->local_endpoint() == remote_endpoint));
+                if (! consistent)
+                {
+                    m_journal.fatal << "\n" <<
+                        "Local endpoint mismatch\n" <<
+                        "local_endpoint=" << local_endpoint <<
+                            ", remote_endpoint=" << remote_endpoint << "\n" <<
+                        "self->local_endpoint()=" << *self->local_endpoint() <<
+                            ", self->remote_endpoint()=" << self->remote_endpoint();
+                }
+                // This assert goes off
+                //assert (consistent);
                 if (m_journal.warning) m_journal.warning << beast::leftw (18) <<
                     "Logic dropping " << remote_endpoint <<
                     " as self connect";
                 return SlotImp::ptr ();
             }
         }
+        */
 
         // Create the slot
         SlotImp::ptr const slot (std::make_shared <SlotImp> (local_endpoint,
@@ -308,7 +337,9 @@ public:
         return result.first->second;
     }
 
-    SlotImp::ptr new_outbound_slot (beast::IP::Endpoint const& remote_endpoint)
+    // Can't check for self-connect because we don't know the local endpoint
+    SlotImp::ptr
+    new_outbound_slot (beast::IP::Endpoint const& remote_endpoint)
     {
         if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
             "Logic connect " << remote_endpoint;

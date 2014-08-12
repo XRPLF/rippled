@@ -162,7 +162,7 @@ public:
         {
             return m_fileName;
         }
-        
+
         int lineNumber () const
         {
             return m_lineNumber;
@@ -492,7 +492,7 @@ public:
     Config ();
 
     int getSize (SizedItemName);
-    void setup (const std::string& strConf, bool bQuiet);
+    void setup (std::string const& strConf, bool bQuiet);
     void load ();
 };
 

@@ -79,7 +79,7 @@ err:
 class key_error : public std::runtime_error
 {
 public:
-    explicit key_error (const std::string& str) : std::runtime_error (str) {}
+    explicit key_error (std::string const& str) : std::runtime_error (str) {}
 };
 
 class CKey
@@ -132,12 +132,12 @@ public:
     }
 
 
-    static uint128 PassPhraseToKey (const std::string& passPhrase);
+    static uint128 PassPhraseToKey (std::string const& passPhrase);
     static EC_KEY* GenerateRootDeterministicKey (const uint128& passPhrase);
     static EC_KEY* GenerateRootPubKey (BIGNUM* pubGenerator);
-    static EC_KEY* GeneratePublicDeterministicKey (const RippleAddress& generator, int n);
-    static EC_KEY* GeneratePrivateDeterministicKey (const RippleAddress& family, const BIGNUM* rootPriv, int n);
-    static EC_KEY* GeneratePrivateDeterministicKey (const RippleAddress& family, uint256 const& rootPriv, int n);
+    static EC_KEY* GeneratePublicDeterministicKey (RippleAddress const& generator, int n);
+    static EC_KEY* GeneratePrivateDeterministicKey (RippleAddress const& family, const BIGNUM* rootPriv, int n);
+    static EC_KEY* GeneratePrivateDeterministicKey (RippleAddress const& family, uint256 const& rootPriv, int n);
 
     CKey (const uint128& passPhrase) : fSet (false)
     {
@@ -146,7 +146,7 @@ public:
         assert (pkey);
     }
 
-    CKey (const RippleAddress& generator, int n) : fSet (false)
+    CKey (RippleAddress const& generator, int n) : fSet (false)
     {
         // public deterministic key
         pkey = GeneratePublicDeterministicKey (generator, n);
@@ -154,7 +154,7 @@ public:
         assert (pkey);
     }
 
-    CKey (const RippleAddress& base, const BIGNUM* rootPrivKey, int n) : fSet (false)
+    CKey (RippleAddress const& base, const BIGNUM* rootPrivKey, int n) : fSet (false)
     {
         // private deterministic key
         pkey = GeneratePrivateDeterministicKey (base, rootPrivKey, n);
@@ -169,7 +169,7 @@ public:
     }
 
 #if 0
-    CKey (const RippleAddress& masterKey, int keyNum, bool isPublic) : pkey (nullptr), fSet (false)
+    CKey (RippleAddress const& masterKey, int keyNum, bool isPublic) : pkey (nullptr), fSet (false)
     {
         if (isPublic)
             SetPubSeq (masterKey, keyNum);
@@ -215,8 +215,8 @@ public:
     bool SetPrivateKeyU (uint256 const& key, bool bThrow = false)
     {
         // XXX Broken if pkey is not set.
-        BIGNUM* bn          = BN_bin2bn (key.begin (), key.size (), nullptr);
-        bool    bSuccess    = !!EC_KEY_set_private_key (pkey, bn);
+        BIGNUM* bn = BN_bin2bn (key.begin (), key.size (), nullptr);
+        bool bSuccess = EC_KEY_set_private_key (pkey, bn);
 
         BN_clear_free (bn);
 
@@ -249,7 +249,7 @@ public:
         return SetPubKey (&vchPubKey[0], vchPubKey.size ());
     }
 
-    bool SetPubKey (const std::string& pubKey)
+    bool SetPubKey (std::string const& pubKey)
     {
         return SetPubKey (pubKey.data (), pubKey.size ());
     }
@@ -302,7 +302,7 @@ public:
         return Verify (hash, &vchSig[0], vchSig.size ());
     }
 
-    bool Verify (uint256 const& hash, const std::string& sig) const
+    bool Verify (uint256 const& hash, std::string const& sig) const
     {
         return Verify (hash, sig.data (), sig.size ());
     }

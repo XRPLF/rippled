@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <atomic>
+
 namespace ripple {
 
 // This is the primary interface into the "client" portion of the program.
@@ -43,7 +45,7 @@ InfoSub::InfoSub (Source& source, Consumer consumer)
     : m_consumer (consumer)
     , m_source (source)
 {
-    static beast::Atomic <int> s_seq_id;
+    static std::atomic <int> s_seq_id (0);
     mSeq = ++s_seq_id;
 }
 
@@ -63,7 +65,7 @@ Resource::Consumer& InfoSub::getConsumer()
 }
 
 void InfoSub::send (
-    const Json::Value& jvObj, const std::string& sObj, bool broadcast)
+    Json::Value const& jvObj, std::string const& sObj, bool broadcast)
 {
     send (jvObj, broadcast);
 }

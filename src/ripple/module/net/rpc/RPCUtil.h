@@ -26,17 +26,17 @@ namespace ripple {
 //             convenience packaging of JSON data from the pieces. It looks
 //             Ripple client protocol-specific.
 //
-extern std::string JSONRPCRequest (const std::string& strMethod, const Json::Value& params,
-                                   const Json::Value& id);
+extern std::string JSONRPCRequest (std::string const& strMethod, Json::Value const& params,
+                                   Json::Value const& id);
 
-extern std::string JSONRPCReply (const Json::Value& result, const Json::Value& error, const Json::Value& id);
+extern std::string JSONRPCReply (Json::Value const& result, Json::Value const& error, Json::Value const& id);
 
-extern Json::Value JSONRPCError (int code, const std::string& message);
+extern Json::Value JSONRPCError (int code, std::string const& message);
 
-extern std::string createHTTPPost (const std::string& strHost, const std::string& strPath, const std::string& strMsg,
+extern std::string createHTTPPost (std::string const& strHost, std::string const& strPath, std::string const& strMsg,
                                    const std::map<std::string, std::string>& mapRequestHeaders);
 
-extern std::string HTTPReply (int nStatus, const std::string& strMsg);
+extern std::string HTTPReply (int nStatus, std::string const& strMsg);
 
 // VFALCO TODO Create a HTTPHeaders class with a nice interface instead of the std::map
 //

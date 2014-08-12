@@ -34,19 +34,19 @@ public:
 
     typedef std::shared_ptr <ProofOfWork> pointer;
 
-    ProofOfWork (const std::string& token,
+    ProofOfWork (std::string const& token,
                  int iterations,
                  uint256 const& challenge,
                  uint256 const& target);
 
-    explicit ProofOfWork (const std::string& token);
+    explicit ProofOfWork (std::string const& token);
 
     bool isValid () const;
 
     uint256 solve (int maxIterations = 2 * kMaxIterations) const;
     bool checkSolution (uint256 const& solution) const;
 
-    const std::string& getToken () const
+    std::string const& getToken () const
     {
         return mToken;
     }
@@ -63,7 +63,7 @@ public:
     // approximate number of hashes needed to solve
     static std::uint64_t getDifficulty (uint256 const& target, int iterations);
 
-    static bool validateToken (const std::string& strToken);
+    static bool validateToken (std::string const& strToken);
 
     static bool calcResultInfo (PowResult powCode, std::string& strToken, std::string& strHuman);
 
@@ -80,4 +80,3 @@ private:
 }
 
 #endif
-

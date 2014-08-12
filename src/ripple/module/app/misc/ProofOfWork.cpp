@@ -25,7 +25,7 @@ namespace ripple {
 // VFALCO TODO Move these to a header
 const uint256 ProofOfWork::sMinTarget ("00000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
 
-ProofOfWork::ProofOfWork (const std::string& token,
+ProofOfWork::ProofOfWork (std::string const& token,
                           int iterations,
                           uint256 const& challenge,
                           uint256 const& target)
@@ -36,7 +36,7 @@ ProofOfWork::ProofOfWork (const std::string& token,
 {
 }
 
-ProofOfWork::ProofOfWork (const std::string& token)
+ProofOfWork::ProofOfWork (std::string const& token)
 {
     std::vector<std::string> fields;
     boost::split (fields, token, boost::algorithm::is_any_of ("-"));
@@ -151,7 +151,7 @@ bool ProofOfWork::checkSolution (uint256 const& solution) const
     return getSHA512Half (buf2) <= mTarget;
 }
 
-bool ProofOfWork::validateToken (const std::string& strToken)
+bool ProofOfWork::validateToken (std::string const& strToken)
 {
     static boost::regex reToken ("[[:xdigit:]]{64}-[[:xdigit:]]{64}-[[:digit:]]+-[[:digit:]]+-[[:xdigit:]]{64}");
     boost::smatch       smMatch;

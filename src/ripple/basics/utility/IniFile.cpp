@@ -25,7 +25,7 @@ namespace ripple {
 
 #define SECTION_DEFAULT_NAME    ""
 
-Section ParseSection (const std::string& strInput, const bool bTrim)
+Section ParseSection (std::string const& strInput, const bool bTrim)
 {
     std::string strData (strInput);
     std::vector<std::string> vLines;
@@ -73,7 +73,7 @@ Section ParseSection (const std::string& strInput, const bool bTrim)
     return secResult;
 }
 
-Section::mapped_type* SectionEntries (Section& secSource, const std::string& strSection)
+Section::mapped_type* SectionEntries (Section& secSource, std::string const& strSection)
 {
     Section::iterator       it;
     Section::mapped_type*   smtResult;
@@ -94,14 +94,14 @@ Section::mapped_type* SectionEntries (Section& secSource, const std::string& str
     return smtResult;
 }
 
-int SectionCount (Section& secSource, const std::string& strSection)
+int SectionCount (Section& secSource, std::string const& strSection)
 {
     Section::mapped_type* pmtEntries    = SectionEntries (secSource, strSection);
 
     return pmtEntries ? pmtEntries->size () : 0;
 }
 
-bool SectionSingleB (Section& secSource, const std::string& strSection, std::string& strValue)
+bool SectionSingleB (Section& secSource, std::string const& strSection, std::string& strValue)
 {
     Section::mapped_type*   pmtEntries  = SectionEntries (secSource, strSection);
     bool                    bSingle     = pmtEntries && 1 == pmtEntries->size ();

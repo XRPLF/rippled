@@ -51,7 +51,7 @@ public:
     int m_processCount;
 
     beast::Workers m_workers;
-    CancelCallback m_cancelCallback;
+    Job::CancelCallback m_cancelCallback;
 
     // statistics tracking
     beast::insight::Collector::ptr m_collector;
@@ -117,10 +117,10 @@ public:
 
         JobDataMap::iterator iter (m_jobData.find (type));
         assert (iter != m_jobData.end ());
-        
+
         if (iter == m_jobData.end ())
             return;
-        
+
         JobTypeData& data (iter->second);
 
         // FIXME: Workaround incorrect client shutdown ordering
@@ -128,17 +128,17 @@ public:
         assert (type == jtCLIENT || m_workers.getNumberOfThreads () > 0);
 
         {
-            // If this goes off it means that a child didn't follow 
+            // If this goes off it means that a child didn't follow
             // the Stoppable API rules. A job may only be added if:
             //
-            //  - The JobQueue has NOT stopped 
+            //  - The JobQueue has NOT stopped
             //          AND
             //      * We are currently processing jobs
             //          OR
             //      * We have have pending jobs
             //          OR
             //      * Not all children are stopped
-            //  
+            //
             ScopedLock lock (m_mutex);
             assert (! isStopped() && (
                 m_processCount>0 ||
@@ -172,8 +172,8 @@ public:
 
         JobDataMap::const_iterator c = m_jobData.find (t);
 
-        return (c == m_jobData.end ()) 
-            ? 0 
+        return (c == m_jobData.end ())
+            ? 0
             : c->second.waiting;
     }
 
@@ -184,7 +184,7 @@ public:
         JobDataMap::const_iterator c = m_jobData.find (t);
 
         return (c == m_jobData.end ())
-            ? 0 
+            ? 0
             : (c->second.waiting + c->second.running);
     }
 
@@ -235,7 +235,7 @@ public:
 
             c += 2;
 
-            m_journal.info << "Auto-tuning to " << c << 
+            m_journal.info << "Auto-tuning to " << c <<
                               " validation/transaction/proposal threads";
         }
 
@@ -243,11 +243,11 @@ public:
     }
 
 
-    LoadEvent::pointer getLoadEvent (JobType t, const std::string& name)
+    LoadEvent::pointer getLoadEvent (JobType t, std::string const& name)
     {
         JobDataMap::iterator iter (m_jobData.find (t));
         assert (iter != m_jobData.end ());
-        
+
         if (iter == m_jobData.end ())
             return std::shared_ptr<LoadEvent> ();
 
@@ -255,11 +255,11 @@ public:
             std::ref (iter-> second.load ()), name, true);
     }
 
-    LoadEvent::autoptr getLoadEventAP (JobType t, const std::string& name)
+    LoadEvent::autoptr getLoadEventAP (JobType t, std::string const& name)
     {
         JobDataMap::iterator iter (m_jobData.find (t));
         assert (iter != m_jobData.end ());
-        
+
         if (iter == m_jobData.end ())
             return LoadEvent::autoptr ();
 
@@ -308,7 +308,7 @@ public:
             JobTypeData& data (x.second);
 
             LoadMonitor::Stats stats (data.stats ());
-            
+
             int waiting (data.waiting);
             int running (data.running);
 
@@ -350,7 +350,7 @@ private:
     {
         JobDataMap::iterator c (m_jobData.find (type));
         assert (c != m_jobData.end ());
-        
+
         // NIKB: This is ugly and I hate it. We must remove jtINVALID completely
         //       and use something sane.
         if (c == m_jobData.end ())
@@ -396,7 +396,7 @@ private:
     //
     // Invariants:
     //  The calling thread owns the JobLock
-    //  
+    //
     void queueJob (Job const& job, ScopedLock const& lock)
     {
         JobType const type (job.getType ());
@@ -623,7 +623,7 @@ private:
             ScopedLock lock (m_mutex);
 
             // Remove all jobs whose type is skipOnStop
-            typedef ripple::unordered_map <JobType, std::size_t> JobDataMap;
+            typedef hash_map <JobType, std::size_t> JobDataMap;
             JobDataMap counts;
             bool const report (m_journal.debug.active());
 

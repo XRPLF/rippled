@@ -25,444 +25,282 @@ namespace ripple {
 
 //------------------------------------------------------------------------------
 
-/** A peer has sent us transaction set data */
-// VFALCO TODO Make this non-static
-static void peerTXData (Job&,
-    std::weak_ptr <Peer> wPeer,
-    uint256 const& hash,
-    std::shared_ptr <protocol::TMLedgerData> pPacket,
-    beast::Journal journal)
-{
-    std::shared_ptr <Peer> peer = wPeer.lock ();
-    if (!peer)
-        return;
+// TODO Make these class members or something.
 
-    protocol::TMLedgerData& packet = *pPacket;
-
-    std::list<SHAMapNodeID> nodeIDs;
-    std::list< Blob > nodeData;
-    for (int i = 0; i < packet.nodes ().size (); ++i)
-    {
-        const protocol::TMLedgerNode& node = packet.nodes (i);
-
-        if (!node.has_nodeid () || !node.has_nodedata () || (node.nodeid ().size () != 33))
-        {
-            journal.warning << "LedgerData request with invalid node ID";
-            peer->charge (Resource::feeInvalidRequest);
-            return;
-        }
-
-        nodeIDs.push_back (SHAMapNodeID {node.nodeid ().data (),
-                           static_cast<int>(node.nodeid ().size ())});
-        nodeData.push_back (Blob (node.nodedata ().begin (), node.nodedata ().end ()));
-    }
-
-    SHAMapAddNode san;
-    {
-        Application::ScopedLockType lock (getApp ().getMasterLock ());
-
-        san =  getApp().getOPs().gotTXData (peer, hash, nodeIDs, nodeData);
-    }
-
-    if (san.isInvalid ())
-    {
-        peer->charge (Resource::feeUnwantedData);
-    }
-}
-
-// VFALCO NOTE This function is way too big and cumbersome.
-void
-PeerImp::getLedger (protocol::TMGetLedger& packet)
-{
-    SHAMap::pointer map;
-	protocol::TMLedgerData reply;
-	bool fatLeaves = true, fatRoot = false;
-
-	if (packet.has_requestcookie ())
-	    reply.set_requestcookie (packet.requestcookie ());
-
-	std::string logMe;
-
-	if (packet.itype () == protocol::liTS_CANDIDATE)
-	{
-	    // Request is for a transaction candidate set
-	    m_journal.trace << "Received request for TX candidate set data "
-	                    << to_string (this);
-
-	    if ((!packet.has_ledgerhash () || packet.ledgerhash ().size () != 32))
-	    {
-	        charge (Resource::feeInvalidRequest);
-	        m_journal.warning << "invalid request for TX candidate set data";
-	        return;
-	    }
-
-	    uint256 txHash;
-	    memcpy (txHash.begin (), packet.ledgerhash ().data (), 32);
-
-	    {
-	        Application::ScopedLockType lock (getApp ().getMasterLock ());
-	        map = getApp().getOPs ().getTXMap (txHash);
-	    }
-
-	    if (!map)
-	    {
-	        if (packet.has_querytype () && !packet.has_requestcookie ())
-	        {
-	            m_journal.debug << "Trying to route TX set request";
-
-                struct get_usable_peers
-                {
-                    typedef Overlay::PeerSequence return_type;
-
-                    Overlay::PeerSequence usablePeers;
-                    uint256 const& txHash;
-                    Peer const* skip;
-
-                    get_usable_peers(uint256 const& hash, Peer const* s)
-                        : txHash(hash), skip(s)
-                    { }
-
-                    void operator() (Peer::ptr const& peer)
-                    {
-                        if (peer->hasTxSet (txHash) && (peer.get () != skip))
-                            usablePeers.push_back (peer);
-                    }
-
-                    return_type operator() ()
-                    {
-                        return usablePeers;
-                    }
-                };
-
-	            Overlay::PeerSequence usablePeers (m_overlay.foreach (
-                    get_usable_peers (txHash, this)));
-
-                if (usablePeers.empty ())
-                {
-                    m_journal.info << "Unable to route TX set request";
-                    return;
-                }
-
-                Peer::ptr const& selectedPeer = usablePeers[rand () % usablePeers.size ()];
-                packet.set_requestcookie (getShortId ());
-                selectedPeer->send (
-                    std::make_shared<Message> (packet, protocol::mtGET_LEDGER));
-                return;
-	        }
-
-	        m_journal.error << "We do not have the map our peer wants "
-	                        << to_string (this);
-
-	        charge (Resource::feeInvalidRequest);
-	        return;
-	    }
-
-        reply.set_ledgerseq (0);
-	    reply.set_ledgerhash (txHash.begin (), txHash.size ());
-	    reply.set_type (protocol::liTS_CANDIDATE);
-	    fatLeaves = false; // We'll already have most transactions
-	    fatRoot = true; // Save a pass
-	}
-	else
-	{
-	    if (getApp().getFeeTrack().isLoadedLocal() && !m_clusterNode)
-	    {
-	        m_journal.debug << "Too busy to fetch ledger data";
-	        return;
-	    }
-
-	    // Figure out what ledger they want
-	    m_journal.trace << "Received request for ledger data "
-	                    << to_string (this);
-	    Ledger::pointer ledger;
-
-	    if (packet.has_ledgerhash ())
-	    {
-	        uint256 ledgerhash;
-
-	        if (packet.ledgerhash ().size () != 32)
-	        {
-	            charge (Resource::feeInvalidRequest);
-	            m_journal.warning << "Invalid request";
-	            return;
-	        }
-
-	        memcpy (ledgerhash.begin (), packet.ledgerhash ().data (), 32);
-	        logMe += "LedgerHash:";
-	        logMe += to_string (ledgerhash);
-	        ledger = getApp().getLedgerMaster ().getLedgerByHash (ledgerhash);
-
-	        if (!ledger && m_journal.trace)
-	            m_journal.trace << "Don't have ledger " << ledgerhash;
-
-	        if (!ledger && (packet.has_querytype () && !packet.has_requestcookie ()))
-	        {
-	            std::uint32_t seq = 0;
-
-	            if (packet.has_ledgerseq ())
-	                seq = packet.ledgerseq ();
-
-	            Overlay::PeerSequence peerList = m_overlay.getActivePeers ();
-                Overlay::PeerSequence usablePeers;
-                BOOST_FOREACH (Peer::ptr const& peer, peerList)
-                {
-                    if (peer->hasLedger (ledgerhash, seq) && (peer.get () != this))
-                        usablePeers.push_back (peer);
-                }
-
-                if (usablePeers.empty ())
-                {
-                    m_journal.trace << "Unable to route ledger request";
-                    return;
-                }
-
-                Peer::ptr const& selectedPeer = usablePeers[rand () % usablePeers.size ()];
-                packet.set_requestcookie (getShortId ());
-                selectedPeer->send (
-                    std::make_shared<Message> (packet, protocol::mtGET_LEDGER));
-                m_journal.debug << "Ledger request routed";
-                return;
-            }
-	    }
-	    else if (packet.has_ledgerseq ())
-	    {
-	        if (packet.ledgerseq() < getApp().getLedgerMaster().getEarliestFetch())
-	        {
-	            m_journal.debug << "Peer requests early ledger";
-	            return;
-	        }
-	        ledger = getApp().getLedgerMaster ().getLedgerBySeq (packet.ledgerseq ());
-	        if (!ledger && m_journal.debug)
-	            m_journal.debug << "Don't have ledger " << packet.ledgerseq ();
-	    }
-	    else if (packet.has_ltype () && (packet.ltype () == protocol::ltCURRENT))
-	    {
-	        ledger = getApp().getLedgerMaster ().getCurrentLedger ();
-	    }
-	    else if (packet.has_ltype () && (packet.ltype () == protocol::ltCLOSED) )
-	    {
-	        ledger = getApp().getLedgerMaster ().getClosedLedger ();
-
-	        if (ledger && !ledger->isClosed ())
-	            ledger = getApp().getLedgerMaster ().getLedgerBySeq (ledger->getLedgerSeq () - 1);
-	    }
-	    else
-	    {
-	        charge (Resource::feeInvalidRequest);
-	        m_journal.warning << "Can't figure out what ledger they want";
-	        return;
-	    }
-
-	    if ((!ledger) || (packet.has_ledgerseq () && (packet.ledgerseq () != ledger->getLedgerSeq ())))
-	    {
-	        charge (Resource::feeInvalidRequest);
-
-	        if (m_journal.warning && ledger)
-	            m_journal.warning << "Ledger has wrong sequence";
-
-	        return;
-	    }
-
-            if (!packet.has_ledgerseq() && (ledger->getLedgerSeq() < getApp().getLedgerMaster().getEarliestFetch()))
-            {
-                m_journal.debug << "Peer requests early ledger";
-                return;
-            }
-
-	    // Fill out the reply
-	    uint256 lHash = ledger->getHash ();
-	    reply.set_ledgerhash (lHash.begin (), lHash.size ());
-	    reply.set_ledgerseq (ledger->getLedgerSeq ());
-	    reply.set_type (packet.itype ());
-
-	    if (packet.itype () == protocol::liBASE)
-	    {
-	        // they want the ledger base data
-	        m_journal.trace << "They want ledger base data";
-	        Serializer nData (128);
-	        ledger->addRaw (nData);
-	        reply.add_nodes ()->set_nodedata (nData.getDataPtr (), nData.getLength ());
-
-	        SHAMap::pointer map = ledger->peekAccountStateMap ();
-
-	        if (map && map->getHash ().isNonZero ())
-	        {
-	            // return account state root node if possible
-	            Serializer rootNode (768);
-
-	            if (map->getRootNode (rootNode, snfWIRE))
-	            {
-	                reply.add_nodes ()->set_nodedata (rootNode.getDataPtr (), rootNode.getLength ());
-
-	                if (ledger->getTransHash ().isNonZero ())
-	                {
-	                    map = ledger->peekTransactionMap ();
-
-	                    if (map && map->getHash ().isNonZero ())
-	                    {
-	                        rootNode.erase ();
-
-	                        if (map->getRootNode (rootNode, snfWIRE))
-	                            reply.add_nodes ()->set_nodedata (rootNode.getDataPtr (), rootNode.getLength ());
-	                    }
-	                }
-	            }
-	        }
-
-	        Message::pointer oPacket = std::make_shared<Message> (reply, protocol::mtLEDGER_DATA);
-	        send (oPacket);
-	        return;
-	    }
-
-	    if (packet.itype () == protocol::liTX_NODE)
-	    {
-	        map = ledger->peekTransactionMap ();
-	        logMe += " TX:";
-	        logMe += to_string (map->getHash ());
-	    }
-	    else if (packet.itype () == protocol::liAS_NODE)
-	    {
-	        map = ledger->peekAccountStateMap ();
-	        logMe += " AS:";
-	        logMe += to_string (map->getHash ());
-	    }
-	}
-
-	if (!map || (packet.nodeids_size () == 0))
-	{
-	    m_journal.warning << "Can't find map or empty request";
-	    charge (Resource::feeInvalidRequest);
-	    return;
-	}
-
-	m_journal.trace << "Request: " << logMe;
-
-	for (int i = 0; i < packet.nodeids ().size (); ++i)
-	{
-	    SHAMapNodeID mn (packet.nodeids (i).data (), packet.nodeids (i).size ());
-
-	    if (!mn.isValid ())
-	    {
-	        m_journal.warning << "Request for invalid node: " << logMe;
-	        charge (Resource::feeInvalidRequest);
-	        return;
-	    }
-
-	    std::vector<SHAMapNodeID> nodeIDs;
-	    std::list< Blob > rawNodes;
-
-	    try
-	    {
-	        if (map->getNodeFat (mn, nodeIDs, rawNodes, fatRoot, fatLeaves))
-	        {
-	            assert (nodeIDs.size () == rawNodes.size ());
-	            m_journal.trace << "getNodeFat got " << rawNodes.size () << " nodes";
-	            std::vector<SHAMapNodeID>::iterator nodeIDIterator;
-	            std::list< Blob >::iterator rawNodeIterator;
-
-	            for (nodeIDIterator = nodeIDs.begin (), rawNodeIterator = rawNodes.begin ();
-	                    nodeIDIterator != nodeIDs.end (); ++nodeIDIterator, ++rawNodeIterator)
-	            {
-	                Serializer nID (33);
-	                nodeIDIterator->addIDRaw (nID);
-	                protocol::TMLedgerNode* node = reply.add_nodes ();
-	                node->set_nodeid (nID.getDataPtr (), nID.getLength ());
-	                node->set_nodedata (&rawNodeIterator->front (), rawNodeIterator->size ());
-	            }
-	        }
-	        else
-	            m_journal.warning << "getNodeFat returns false";
-	    }
-	    catch (std::exception&)
-	    {
-	        std::string info;
-
-	        if (packet.itype () == protocol::liTS_CANDIDATE)
-	            info = "TS candidate";
-	        else if (packet.itype () == protocol::liBASE)
-	            info = "Ledger base";
-	        else if (packet.itype () == protocol::liTX_NODE)
-	            info = "TX node";
-	        else if (packet.itype () == protocol::liAS_NODE)
-	            info = "AS node";
-
-	        if (!packet.has_ledgerhash ())
-	            info += ", no hash specified";
-
-	        m_journal.warning << "getNodeFat( " << mn << ") throws exception: " << info;
-	    }
-	}
-
-	Message::pointer oPacket = std::make_shared<Message> (reply, protocol::mtLEDGER_DATA);
-	send (oPacket);
-}
-
-// This is dispatched by the job queue
 static
 void
 sGetLedger (std::weak_ptr<PeerImp> wPeer,
-    std::shared_ptr <protocol::TMGetLedger> packet)
-{
-    std::shared_ptr<PeerImp> peer = wPeer.lock ();
+    std::shared_ptr <protocol::TMGetLedger> packet);
 
-    if (peer)
-        peer->getLedger (*packet);
-}
+static
+void
+peerTXData (Job&, std::weak_ptr <Peer> wPeer, uint256 const& hash,
+    std::shared_ptr <protocol::TMLedgerData> pPacket,
+        beast::Journal journal);
 
 //------------------------------------------------------------------------------
 
-void
-PeerImp::start_read()
+//------------------------------------------------------------------------------
+
+/*  Completion handlers for client role.
+    Logic steps:
+        1. Establish outgoing connection
+        2. Perform SSL handshake
+        3. Send HTTP request
+        4. Receive HTTP response
+        5. Enter protocol loop
+*/    
+
+void PeerImp::do_connect ()
 {
-#if RIPPLE_STRUCTURED_OVERLAY
-    std::stringstream ss;
+    m_journal.info << "Connecting to " << m_remoteAddress;
 
-/*
-    ss <<
-        "HTTP/1.0 GET\n\n"
-        "\n\n"
-        ;
-*/
-    //basic_message m;
-    //m.request (beast::http::method_t::http_get, "/peer/leaf");
-    //m.method(beast::
-    ss <<
-        "GET / HTTP/1.0\r\n"
-        "User-Agent: Ripple 0.26.0-rc1\r\n"
-        //"Connection: Upgrade\r\n"
-        //"Upgrade: Ripple/1.1\r\n"
-        "X-Connect-As: Leaf\r\n"
-        "X-Try-IPs: 192.168.0.1:51234,208.239.114.74:51234\r\n"
-        "Content-Length: 2\r\n"
-        "\r\n"
-        "xy"
-        ;
+    m_usage = m_resourceManager.newOutboundEndpoint (m_remoteAddress);
 
-    std::string const s (ss.str());
-    boost::asio::buffer_copy (read_buffer_.prepare(s.size()),
-        boost::asio::buffer(s));
-    read_buffer_.commit(s.size());
+    if (m_usage.disconnect ())
+    {
+        detach ("do_connect");
+        return;
+    }
 
-    m_socket->async_read_some (read_buffer_.prepare (Tuning::readBufferBytes),
-        m_strand.wrap (std::bind (&PeerImp::on_read_detect,
-            shared_from_this(), beast::asio::placeholders::error,
-                beast::asio::placeholders::bytes_transferred)));
+    boost::system::error_code ec;
+    timer_.expires_from_now (nodeVerifySeconds, ec);
+    timer_.async_wait (m_strand.wrap (std::bind (&PeerImp::handleVerifyTimer,
+        shared_from_this (), beast::asio::placeholders::error)));
+    if (ec)
+    {
+        m_journal.error << "Failed to set verify timer.";
+        detach ("do_connect");
+        return;
+    }
+
+    m_socket->next_layer <NativeSocketType>().async_connect (
+        beast::IPAddressConversion::to_asio_endpoint (m_remoteAddress),
+            m_strand.wrap (std::bind (&PeerImp::on_connect,
+                shared_from_this (), beast::asio::placeholders::error)));
+}
+
+void
+PeerImp::on_connect (error_code ec)
+{
+    if (m_detaching || ec == boost::asio::error::operation_aborted)
+        return;
+
+    NativeSocketType::endpoint_type local_endpoint;
+    if (! ec)
+        local_endpoint = m_socket->this_layer <
+            NativeSocketType> ().local_endpoint (ec);
+
+    if (ec)
+    {
+        m_journal.error <<
+            "Connect to " << m_remoteAddress <<
+            " failed: " << ec.message();
+        detach ("hc");
+        return;
+    }
+
+    assert (m_state == stateConnecting);
+    m_state = stateConnected;
+
+    m_peerFinder.on_connected (m_slot,
+        beast::IPAddressConversion::from_asio (local_endpoint));
+
+    m_socket->set_verify_mode (boost::asio::ssl::verify_none);
+    m_socket->async_handshake (
+        boost::asio::ssl::stream_base::client,
+        m_strand.wrap (std::bind (&PeerImp::on_connect_ssl,
+            std::static_pointer_cast <PeerImp> (shared_from_this ()),
+                beast::asio::placeholders::error)));
+}
+
+beast::http::basic_message
+PeerImp::make_request()
+{
+    assert (! m_inbound);
+    beast::http::basic_message m;
+    m.method (beast::http::method_t::http_get);
+    m.url ("/");
+    m.version (1, 1);
+    m.headers.append ("User-Agent", BuildInfo::getFullVersionString());
+    //m.headers.append ("Local-Address", m_socket->
+    m.headers.append ("Remote-Address", m_remoteAddress.to_string());
+    m.headers.append ("Upgrade",
+        std::string("Ripple/")+BuildInfo::getCurrentProtocol().toStdString());
+    m.headers.append ("Connection", "Upgrade");
+    m.headers.append ("Connect-As", "Leaf, Peer");
+    m.headers.append ("Accept-Encoding", "identity, snappy");
+    //m.headers.append ("X-Try-IPs", "192.168.0.1:51234");
+    //m.headers.append ("X-Try-IPs", "208.239.114.74:51234");
+    //m.headers.append ("A", "BC");
+    //m.headers.append ("Content-Length", "0");
+    return m;
+}
+
+void
+PeerImp::on_connect_ssl (error_code ec)
+{
+    if (m_detaching || ec == boost::asio::error::operation_aborted)
+        return;
+
+    if (ec)
+    {
+        m_journal.info <<
+            "on_connect_ssl: " << ec.message();
+        detach("on_connect_ssl");
+        return;
+    }
+
+#if RIPPLE_STRUCTURED_OVERLAY_CLIENT
+    beast::http::basic_message req (make_request());
+    beast::http::xwrite (write_buffer_, req);   
+    on_write_http_request (error_code(), 0);
+
 #else
-    m_socket->async_read_some (read_buffer_.prepare (Tuning::readBufferBytes),
-        m_strand.wrap (std::bind (&PeerImp::on_read_protocol,
-            shared_from_this(), beast::asio::placeholders::error,
-                beast::asio::placeholders::bytes_transferred)));
+    do_protocol_start();
 
 #endif
 }
 
+// Called repeatedly with the http request data
 void
-PeerImp::on_read_detect (error_code ec, std::size_t bytes_transferred)
+PeerImp::on_write_http_request (error_code ec, std::size_t bytes_transferred)
 {
-    if (m_detaching)
+    if (m_detaching || ec == boost::asio::error::operation_aborted)
         return;
 
-    if (ec == boost::asio::error::operation_aborted)
+    if (ec)
+    {
+        m_journal.info <<
+            "on_write_http_request: " << ec.message();
+        detach("on_write_http_request");
+        return;
+    }
+
+    write_buffer_.consume (bytes_transferred);
+
+    if (write_buffer_.size() == 0)
+    {
+        // done sending request, now read the response
+        http_message_ = boost::in_place ();
+        http_parser_ = boost::in_place (std::ref(*http_message_), false);
+        on_read_http_response (error_code(), 0);
+        return;
+    }
+
+    m_socket->async_write_some (write_buffer_.data(),
+        m_strand.wrap (std::bind (&PeerImp::on_write_http_request,
+            shared_from_this(), beast::asio::placeholders::error,
+                beast::asio::placeholders::bytes_transferred)));
+}
+
+// Called repeatedly with the http response data
+void
+PeerImp::on_read_http_response (error_code ec, std::size_t bytes_transferred)
+{
+    if (m_detaching || ec == boost::asio::error::operation_aborted)
+        return;
+
+    if (! ec)
+    {
+        read_buffer_.commit (bytes_transferred);
+        std::size_t bytes_consumed;
+        std::tie (ec, bytes_consumed) = http_parser_->write (read_buffer_.data());
+
+        if (! ec)
+        {
+            read_buffer_.consume (bytes_consumed);
+            if (http_parser_->complete())
+            {
+                //
+                // TODO Apply response to connection state, then:
+                //      - Go into protocol loop, or
+                //      - Submit a new request (call on_write_http_request), or
+                //      - Close the connection.
+                //
+                if (http_message_->status() != 200)
+                {
+                    m_journal.info <<
+                        "HTTP Response: " << http_message_->reason() <<
+                        "(" << http_message_->status() << ")";
+                    detach("on_read_http_response");
+                    return;
+                }
+                do_protocol_start ();
+                return;
+            }
+        }
+    }
+
+    if (ec)
+    {
+        m_journal.info <<
+            "on_read_response: " << ec.message();
+        detach("on_read_response");
+        return;
+    }
+
+    m_socket->async_read_some (read_buffer_.prepare (Tuning::readBufferBytes),
+        m_strand.wrap (std::bind (&PeerImp::on_read_http_response,
+            shared_from_this(), beast::asio::placeholders::error,
+                beast::asio::placeholders::bytes_transferred)));
+}
+
+//------------------------------------------------------------------------------
+
+/*  Completion handlers for server role.
+    Logic steps:
+        1. Perform SSL handshake
+        2. Detect HTTP request or protocol TMHello
+        3. If HTTP request received, send HTTP response
+        4. Enter protocol loop
+*/
+void PeerImp::do_accept ()
+{
+    m_journal.info << "Accepted " << m_remoteAddress;
+
+    m_usage = m_resourceManager.newInboundEndpoint (m_remoteAddress);
+    if (m_usage.disconnect ())
+    {
+        detach ("do_accept");
+        return;
+    }
+
+    m_socket->set_verify_mode (boost::asio::ssl::verify_none);
+    m_socket->async_handshake (boost::asio::ssl::stream_base::server,
+        m_strand.wrap (std::bind (&PeerImp::on_accept_ssl,
+            std::static_pointer_cast <PeerImp> (shared_from_this ()),
+                beast::asio::placeholders::error)));
+}
+
+void
+PeerImp::on_accept_ssl (error_code ec)
+{
+    if (m_detaching || ec == boost::asio::error::operation_aborted)
+        return;
+
+    if (ec)
+    {
+        m_journal.info <<
+            "on_accept_ssl: " << ec.message();
+        detach("on_accept_ssl");
+        return;
+    }
+
+#if RIPPLE_STRUCTURED_OVERLAY_SERVER
+    on_read_http_detect (error_code(), 0);
+
+#else
+    do_protocol_start();
+
+#endif
+}
+
+// Called repeatedly with the initial bytes received on the connection
+void
+PeerImp::on_read_http_detect (error_code ec, std::size_t bytes_transferred)
+{
+    if (m_detaching || ec == boost::asio::error::operation_aborted)
         return;
 
     if (ec)
@@ -475,34 +313,32 @@ PeerImp::on_read_detect (error_code ec, std::size_t bytes_transferred)
 
     read_buffer_.commit (bytes_transferred);
     peer_protocol_detector detector;
-    auto const is_peer_protocol (detector (read_buffer_.data()));
+    boost::tribool const is_peer_protocol (detector (read_buffer_.data()));
     
     if (is_peer_protocol)
     {
-        on_read_protocol (error_code(), 0);
+        do_protocol_start();
         return;
     }
     else if (! is_peer_protocol)
     {
         http_message_ = boost::in_place ();
         http_parser_ = boost::in_place (std::ref(*http_message_), true);
-        on_read_http (error_code(), 0);
+        on_read_http_request (error_code(), 0);
         return;
     }
 
     m_socket->async_read_some (read_buffer_.prepare (Tuning::readBufferBytes),
-        m_strand.wrap (std::bind (&PeerImp::on_read_detect,
+        m_strand.wrap (std::bind (&PeerImp::on_read_http_detect,
             shared_from_this(), beast::asio::placeholders::error,
                 beast::asio::placeholders::bytes_transferred)));
 }
 
+// Called repeatedly with the http request data
 void
-PeerImp::on_read_http (error_code ec, std::size_t bytes_transferred)
+PeerImp::on_read_http_request (error_code ec, std::size_t bytes_transferred)
 {
-    if (m_detaching)
-        return;
-
-    if (ec == boost::asio::error::operation_aborted)
+    if (m_detaching || ec == boost::asio::error::operation_aborted)
         return;
 
     if (! ec)
@@ -515,9 +351,35 @@ PeerImp::on_read_http (error_code ec, std::size_t bytes_transferred)
             read_buffer_.consume (bytes_consumed);
             if (http_parser_->complete())
             {
+                //
                 // TODO Apply headers to connection state.
-                // TODO Send response if this is an incoming connection.
-                on_read_protocol (error_code(), 0);
+                //
+                if (http_message_->upgrade())
+                {
+                    std::stringstream ss;
+                    ss << 
+                        "HTTP/1.1 200 OK\r\n"
+                        "Server: " << BuildInfo::getFullVersionString() << "\r\n"
+                        "Upgrade: Ripple/1.2\r\n"
+                        "Connection: Upgrade\r\n"
+                        "\r\n";
+                    beast::http::xwrite (write_buffer_, ss.str());
+                    on_write_http_response(error_code(), 0);
+                }
+                else
+                {
+                    std::stringstream ss;
+                    ss << 
+                        "HTTP/1.1 400 Bad Request\r\n"
+                        "Server: " << BuildInfo::getFullVersionString() << "\r\n"
+                        "\r\n"
+                        "<html><head></head><body>"
+                        "400 Bad Request<br>"
+                        "The server requires an Upgrade request."
+                        "</body></html>";
+                    beast::http::xwrite (write_buffer_, ss.str());
+                    on_write_http_response(error_code(), 0);
+                }
                 return;
             }
         }
@@ -526,24 +388,81 @@ PeerImp::on_read_http (error_code ec, std::size_t bytes_transferred)
     if (ec)
     {
         m_journal.info <<
-            "on_read_some: " << ec.message();
-        detach("on_read_some");
+            "on_read_http_request: " << ec.message();
+        detach("on_read_http_request");
         return;
     }
 
     m_socket->async_read_some (read_buffer_.prepare (Tuning::readBufferBytes),
-        m_strand.wrap (std::bind (&PeerImp::on_read_http,
+        m_strand.wrap (std::bind (&PeerImp::on_read_http_request,
             shared_from_this(), beast::asio::placeholders::error,
                 beast::asio::placeholders::bytes_transferred)));
 }
 
+beast::http::basic_message
+PeerImp::make_response (beast::http::basic_message const& req)
+{
+    beast::http::basic_message resp;
+    // Unimplemented
+    return resp;
+}
+
+// Called repeatedly to send the bytes in the response
+void
+PeerImp::on_write_http_response (error_code ec, std::size_t bytes_transferred)
+{
+    if (m_detaching || ec == boost::asio::error::operation_aborted)
+        return;
+
+    if (ec)
+    {
+        m_journal.info <<
+            "on_write_http_response: " << ec.message();
+        detach("on_write_http_response");
+        return;
+    }
+
+    write_buffer_.consume (bytes_transferred);
+
+    if (write_buffer_.size() == 0)
+    {
+        do_protocol_start();
+        return;
+    }
+
+    m_socket->async_write_some (write_buffer_.data(),
+        m_strand.wrap (std::bind (&PeerImp::on_write_http_response,
+            shared_from_this(), beast::asio::placeholders::error,
+                beast::asio::placeholders::bytes_transferred)));
+}
+
+//------------------------------------------------------------------------------
+
+// Protocol logic
+
+// We have an encrypted connection to the peer.
+// Have it say who it is so we know to avoid redundant connections.
+// Establish that it really who we are talking to by having it sign a
+// connection detail. Also need to establish no man in the middle attack
+// is in progress.
+void
+PeerImp::do_protocol_start ()
+{
+    if (!sendHello ())
+    {
+        m_journal.error << "Unable to send HELLO to " << m_remoteAddress;
+        detach ("hello");
+        return;
+    }
+
+    on_read_protocol (error_code(), 0);
+}
+
+// Called repeatedly with protocol message data
 void
 PeerImp::on_read_protocol (error_code ec, std::size_t bytes_transferred)
 {
-    if (m_detaching)
-        return;
-
-    if (ec == boost::asio::error::operation_aborted)
+    if (m_detaching || ec == boost::asio::error::operation_aborted)
         return;
 
     if (! ec)
@@ -556,8 +475,8 @@ PeerImp::on_read_protocol (error_code ec, std::size_t bytes_transferred)
     if (ec)
     {
         m_journal.info <<
-            "on_read_some: " << ec.message();
-        detach("on_read_some");
+            "on_read_protocol: " << ec.message();
+        detach("on_read_protocol");
         return;
     }
 
@@ -565,6 +484,16 @@ PeerImp::on_read_protocol (error_code ec, std::size_t bytes_transferred)
         m_strand.wrap (std::bind (&PeerImp::on_read_protocol,
             shared_from_this(), beast::asio::placeholders::error,
                 beast::asio::placeholders::bytes_transferred)));
+}
+
+// Called repeatedly to send protcol message data
+void
+PeerImp::on_write_protocol (error_code ec, std::size_t bytes_transferred)
+{
+    // (this function isn't called yet)
+
+    if (m_detaching || ec == boost::asio::error::operation_aborted)
+        return;
 }
 
 //------------------------------------------------------------------------------
@@ -628,7 +557,7 @@ PeerImp::on_message (std::shared_ptr <protocol::TMHello> const& m)
 
     bool bDetach (true);
 
-    m_timer.cancel ();
+    timer_.cancel ();
 
     std::uint32_t const ourTime (getApp().getOPs ().getNetworkTimeNC ());
     std::uint32_t const minTime (ourTime - clockToleranceDeltaSeconds);
@@ -1449,5 +1378,389 @@ PeerImp::on_message (std::shared_ptr <protocol::TMGetObjectByHash> const& m)
 }
 
 //------------------------------------------------------------------------------
+
+/** A peer has sent us transaction set data */
+// VFALCO TODO Make this non-static
+static void peerTXData (Job&,
+    std::weak_ptr <Peer> wPeer,
+    uint256 const& hash,
+    std::shared_ptr <protocol::TMLedgerData> pPacket,
+    beast::Journal journal)
+{
+    std::shared_ptr <Peer> peer = wPeer.lock ();
+    if (!peer)
+        return;
+
+    protocol::TMLedgerData& packet = *pPacket;
+
+    std::list<SHAMapNodeID> nodeIDs;
+    std::list< Blob > nodeData;
+    for (int i = 0; i < packet.nodes ().size (); ++i)
+    {
+        const protocol::TMLedgerNode& node = packet.nodes (i);
+
+        if (!node.has_nodeid () || !node.has_nodedata () || (node.nodeid ().size () != 33))
+        {
+            journal.warning << "LedgerData request with invalid node ID";
+            peer->charge (Resource::feeInvalidRequest);
+            return;
+        }
+
+        nodeIDs.push_back (SHAMapNodeID {node.nodeid ().data (),
+                           static_cast<int>(node.nodeid ().size ())});
+        nodeData.push_back (Blob (node.nodedata ().begin (), node.nodedata ().end ()));
+    }
+
+    SHAMapAddNode san;
+    {
+        Application::ScopedLockType lock (getApp ().getMasterLock ());
+
+        san =  getApp().getOPs().gotTXData (peer, hash, nodeIDs, nodeData);
+    }
+
+    if (san.isInvalid ())
+    {
+        peer->charge (Resource::feeUnwantedData);
+    }
+}
+
+// VFALCO NOTE This function is way too big and cumbersome.
+void
+PeerImp::getLedger (protocol::TMGetLedger& packet)
+{
+    SHAMap::pointer map;
+    protocol::TMLedgerData reply;
+    bool fatLeaves = true, fatRoot = false;
+
+    if (packet.has_requestcookie ())
+        reply.set_requestcookie (packet.requestcookie ());
+
+    std::string logMe;
+
+    if (packet.itype () == protocol::liTS_CANDIDATE)
+    {
+        // Request is for a transaction candidate set
+        m_journal.trace << "Received request for TX candidate set data "
+                        << to_string (this);
+
+        if ((!packet.has_ledgerhash () || packet.ledgerhash ().size () != 32))
+        {
+            charge (Resource::feeInvalidRequest);
+            m_journal.warning << "invalid request for TX candidate set data";
+            return;
+        }
+
+        uint256 txHash;
+        memcpy (txHash.begin (), packet.ledgerhash ().data (), 32);
+
+        {
+            Application::ScopedLockType lock (getApp ().getMasterLock ());
+            map = getApp().getOPs ().getTXMap (txHash);
+        }
+
+        if (!map)
+        {
+            if (packet.has_querytype () && !packet.has_requestcookie ())
+            {
+                m_journal.debug << "Trying to route TX set request";
+
+                struct get_usable_peers
+                {
+                    typedef Overlay::PeerSequence return_type;
+
+                    Overlay::PeerSequence usablePeers;
+                    uint256 const& txHash;
+                    Peer const* skip;
+
+                    get_usable_peers(uint256 const& hash, Peer const* s)
+                        : txHash(hash), skip(s)
+                    { }
+
+                    void operator() (Peer::ptr const& peer)
+                    {
+                        if (peer->hasTxSet (txHash) && (peer.get () != skip))
+                            usablePeers.push_back (peer);
+                    }
+
+                    return_type operator() ()
+                    {
+                        return usablePeers;
+                    }
+                };
+
+                Overlay::PeerSequence usablePeers (m_overlay.foreach (
+                    get_usable_peers (txHash, this)));
+
+                if (usablePeers.empty ())
+                {
+                    m_journal.info << "Unable to route TX set request";
+                    return;
+                }
+
+                Peer::ptr const& selectedPeer = usablePeers[rand () % usablePeers.size ()];
+                packet.set_requestcookie (getShortId ());
+                selectedPeer->send (
+                    std::make_shared<Message> (packet, protocol::mtGET_LEDGER));
+                return;
+            }
+
+            m_journal.error << "We do not have the map our peer wants "
+                            << to_string (this);
+
+            charge (Resource::feeInvalidRequest);
+            return;
+        }
+
+        reply.set_ledgerseq (0);
+        reply.set_ledgerhash (txHash.begin (), txHash.size ());
+        reply.set_type (protocol::liTS_CANDIDATE);
+        fatLeaves = false; // We'll already have most transactions
+        fatRoot = true; // Save a pass
+    }
+    else
+    {
+        if (getApp().getFeeTrack().isLoadedLocal() && !m_clusterNode)
+        {
+            m_journal.debug << "Too busy to fetch ledger data";
+            return;
+        }
+
+        // Figure out what ledger they want
+        m_journal.trace << "Received request for ledger data "
+                        << to_string (this);
+        Ledger::pointer ledger;
+
+        if (packet.has_ledgerhash ())
+        {
+            uint256 ledgerhash;
+
+            if (packet.ledgerhash ().size () != 32)
+            {
+                charge (Resource::feeInvalidRequest);
+                m_journal.warning << "Invalid request";
+                return;
+            }
+
+            memcpy (ledgerhash.begin (), packet.ledgerhash ().data (), 32);
+            logMe += "LedgerHash:";
+            logMe += to_string (ledgerhash);
+            ledger = getApp().getLedgerMaster ().getLedgerByHash (ledgerhash);
+
+            if (!ledger && m_journal.trace)
+                m_journal.trace << "Don't have ledger " << ledgerhash;
+
+            if (!ledger && (packet.has_querytype () && !packet.has_requestcookie ()))
+            {
+                std::uint32_t seq = 0;
+
+                if (packet.has_ledgerseq ())
+                    seq = packet.ledgerseq ();
+
+                Overlay::PeerSequence peerList = m_overlay.getActivePeers ();
+                Overlay::PeerSequence usablePeers;
+                BOOST_FOREACH (Peer::ptr const& peer, peerList)
+                {
+                    if (peer->hasLedger (ledgerhash, seq) && (peer.get () != this))
+                        usablePeers.push_back (peer);
+                }
+
+                if (usablePeers.empty ())
+                {
+                    m_journal.trace << "Unable to route ledger request";
+                    return;
+                }
+
+                Peer::ptr const& selectedPeer = usablePeers[rand () % usablePeers.size ()];
+                packet.set_requestcookie (getShortId ());
+                selectedPeer->send (
+                    std::make_shared<Message> (packet, protocol::mtGET_LEDGER));
+                m_journal.debug << "Ledger request routed";
+                return;
+            }
+        }
+        else if (packet.has_ledgerseq ())
+        {
+            if (packet.ledgerseq() < getApp().getLedgerMaster().getEarliestFetch())
+            {
+                m_journal.debug << "Peer requests early ledger";
+                return;
+            }
+            ledger = getApp().getLedgerMaster ().getLedgerBySeq (packet.ledgerseq ());
+            if (!ledger && m_journal.debug)
+                m_journal.debug << "Don't have ledger " << packet.ledgerseq ();
+        }
+        else if (packet.has_ltype () && (packet.ltype () == protocol::ltCURRENT))
+        {
+            ledger = getApp().getLedgerMaster ().getCurrentLedger ();
+        }
+        else if (packet.has_ltype () && (packet.ltype () == protocol::ltCLOSED) )
+        {
+            ledger = getApp().getLedgerMaster ().getClosedLedger ();
+
+            if (ledger && !ledger->isClosed ())
+                ledger = getApp().getLedgerMaster ().getLedgerBySeq (ledger->getLedgerSeq () - 1);
+        }
+        else
+        {
+            charge (Resource::feeInvalidRequest);
+            m_journal.warning << "Can't figure out what ledger they want";
+            return;
+        }
+
+        if ((!ledger) || (packet.has_ledgerseq () && (packet.ledgerseq () != ledger->getLedgerSeq ())))
+        {
+            charge (Resource::feeInvalidRequest);
+
+            if (m_journal.warning && ledger)
+                m_journal.warning << "Ledger has wrong sequence";
+
+            return;
+        }
+
+            if (!packet.has_ledgerseq() && (ledger->getLedgerSeq() < getApp().getLedgerMaster().getEarliestFetch()))
+            {
+                m_journal.debug << "Peer requests early ledger";
+                return;
+            }
+
+        // Fill out the reply
+        uint256 lHash = ledger->getHash ();
+        reply.set_ledgerhash (lHash.begin (), lHash.size ());
+        reply.set_ledgerseq (ledger->getLedgerSeq ());
+        reply.set_type (packet.itype ());
+
+        if (packet.itype () == protocol::liBASE)
+        {
+            // they want the ledger base data
+            m_journal.trace << "They want ledger base data";
+            Serializer nData (128);
+            ledger->addRaw (nData);
+            reply.add_nodes ()->set_nodedata (nData.getDataPtr (), nData.getLength ());
+
+            SHAMap::pointer map = ledger->peekAccountStateMap ();
+
+            if (map && map->getHash ().isNonZero ())
+            {
+                // return account state root node if possible
+                Serializer rootNode (768);
+
+                if (map->getRootNode (rootNode, snfWIRE))
+                {
+                    reply.add_nodes ()->set_nodedata (rootNode.getDataPtr (), rootNode.getLength ());
+
+                    if (ledger->getTransHash ().isNonZero ())
+                    {
+                        map = ledger->peekTransactionMap ();
+
+                        if (map && map->getHash ().isNonZero ())
+                        {
+                            rootNode.erase ();
+
+                            if (map->getRootNode (rootNode, snfWIRE))
+                                reply.add_nodes ()->set_nodedata (rootNode.getDataPtr (), rootNode.getLength ());
+                        }
+                    }
+                }
+            }
+
+            Message::pointer oPacket = std::make_shared<Message> (reply, protocol::mtLEDGER_DATA);
+            send (oPacket);
+            return;
+        }
+
+        if (packet.itype () == protocol::liTX_NODE)
+        {
+            map = ledger->peekTransactionMap ();
+            logMe += " TX:";
+            logMe += to_string (map->getHash ());
+        }
+        else if (packet.itype () == protocol::liAS_NODE)
+        {
+            map = ledger->peekAccountStateMap ();
+            logMe += " AS:";
+            logMe += to_string (map->getHash ());
+        }
+    }
+
+    if (!map || (packet.nodeids_size () == 0))
+    {
+        m_journal.warning << "Can't find map or empty request";
+        charge (Resource::feeInvalidRequest);
+        return;
+    }
+
+    m_journal.trace << "Request: " << logMe;
+
+    for (int i = 0; i < packet.nodeids ().size (); ++i)
+    {
+        SHAMapNodeID mn (packet.nodeids (i).data (), packet.nodeids (i).size ());
+
+        if (!mn.isValid ())
+        {
+            m_journal.warning << "Request for invalid node: " << logMe;
+            charge (Resource::feeInvalidRequest);
+            return;
+        }
+
+        std::vector<SHAMapNodeID> nodeIDs;
+        std::list< Blob > rawNodes;
+
+        try
+        {
+            if (map->getNodeFat (mn, nodeIDs, rawNodes, fatRoot, fatLeaves))
+            {
+                assert (nodeIDs.size () == rawNodes.size ());
+                m_journal.trace << "getNodeFat got " << rawNodes.size () << " nodes";
+                std::vector<SHAMapNodeID>::iterator nodeIDIterator;
+                std::list< Blob >::iterator rawNodeIterator;
+
+                for (nodeIDIterator = nodeIDs.begin (), rawNodeIterator = rawNodes.begin ();
+                        nodeIDIterator != nodeIDs.end (); ++nodeIDIterator, ++rawNodeIterator)
+                {
+                    Serializer nID (33);
+                    nodeIDIterator->addIDRaw (nID);
+                    protocol::TMLedgerNode* node = reply.add_nodes ();
+                    node->set_nodeid (nID.getDataPtr (), nID.getLength ());
+                    node->set_nodedata (&rawNodeIterator->front (), rawNodeIterator->size ());
+                }
+            }
+            else
+                m_journal.warning << "getNodeFat returns false";
+        }
+        catch (std::exception&)
+        {
+            std::string info;
+
+            if (packet.itype () == protocol::liTS_CANDIDATE)
+                info = "TS candidate";
+            else if (packet.itype () == protocol::liBASE)
+                info = "Ledger base";
+            else if (packet.itype () == protocol::liTX_NODE)
+                info = "TX node";
+            else if (packet.itype () == protocol::liAS_NODE)
+                info = "AS node";
+
+            if (!packet.has_ledgerhash ())
+                info += ", no hash specified";
+
+            m_journal.warning << "getNodeFat( " << mn << ") throws exception: " << info;
+        }
+    }
+
+    Message::pointer oPacket = std::make_shared<Message> (reply, protocol::mtLEDGER_DATA);
+    send (oPacket);
+}
+
+// This is dispatched by the job queue
+static
+void
+sGetLedger (std::weak_ptr<PeerImp> wPeer,
+    std::shared_ptr <protocol::TMGetLedger> packet)
+{
+    std::shared_ptr<PeerImp> peer = wPeer.lock ();
+
+    if (peer)
+        peer->getLedger (*packet);
+}
 
 } // ripple

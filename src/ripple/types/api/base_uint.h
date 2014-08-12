@@ -98,7 +98,7 @@ public:
     /** Value hashing function.
         The seed prevents crafted inputs from causing degenarate parent containers.
     */
-    typedef beast::hardened_hash <base_uint> hasher;
+    typedef beast::hardened_hash <> hasher;
 
     /** Container equality testing function. */
     class key_equal
@@ -373,12 +373,12 @@ public:
         return !*pEnd;
     }
 
-    bool SetHex (const std::string& str, bool bStrict = false)
+    bool SetHex (std::string const& str, bool bStrict = false)
     {
         return SetHex (str.c_str (), bStrict);
     }
 
-    void SetHexExact (const std::string& str)
+    void SetHexExact (std::string const& str)
     {
         SetHexExact (str.c_str ());
     }
@@ -527,12 +527,12 @@ namespace boost
 template <std::size_t Bits, class Tag>
 struct hash<ripple::base_uint<Bits, Tag>>
 {
-    using argument_type = ripple::base_uint<Bits, Tag>; 
+    using argument_type = ripple::base_uint<Bits, Tag>;
 
     std::size_t
     operator()(argument_type const& u) const
     {
-        return beast::hardened_hash<argument_type>{}(u);
+        return beast::hardened_hash<>{}(u);
     }
 };
 

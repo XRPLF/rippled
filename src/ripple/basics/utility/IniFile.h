@@ -30,10 +30,10 @@ typedef std::map <const std::string, std::vector<std::string> > Section;
 // VFALCO TODO Wrap this up in a class interface
 //
 
-Section ParseSection (const std::string& strInput, const bool bTrim);
-bool SectionSingleB (Section& secSource, const std::string& strSection, std::string& strValue);
-int SectionCount (Section& secSource, const std::string& strSection);
-Section::mapped_type* SectionEntries (Section& secSource, const std::string& strSection);
+Section ParseSection (std::string const& strInput, const bool bTrim);
+bool SectionSingleB (Section& secSource, std::string const& strSection, std::string& strValue);
+int SectionCount (Section& secSource, std::string const& strSection);
+Section::mapped_type* SectionEntries (Section& secSource, std::string const& strSection);
 
 /** Parse a section of lines as a key/value array.
 

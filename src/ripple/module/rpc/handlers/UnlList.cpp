@@ -22,6 +22,7 @@ namespace ripple {
 
 Json::Value doUnlList (RPC::Context& context)
 {
+    auto lock = getApp().masterLock();
     Json::Value obj (Json::objectValue);
 
     obj["unl"] = getApp().getUNL ().getUnlJson ();

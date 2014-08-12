@@ -69,10 +69,10 @@ std::string strprintf (const char* format, ...)
     return str;
 }
 
-// NIKB NOTE: This function is only used by strUnHex (const std::string& strSrc)
+// NIKB NOTE: This function is only used by strUnHex (std::string const& strSrc)
 // which results in a pointless copy from std::string into std::vector. Should
 // we just scrap this function altogether?
-int strUnHex (std::string& strDst, const std::string& strSrc)
+int strUnHex (std::string& strDst, std::string const& strSrc)
 {
     std::string tmp;
 
@@ -113,7 +113,7 @@ int strUnHex (std::string& strDst, const std::string& strSrc)
     return strDst.size ();
 }
 
-std::pair<Blob, bool> strUnHex (const std::string& strSrc)
+std::pair<Blob, bool> strUnHex (std::string const& strSrc)
 {
     std::string strTmp;
 
@@ -123,7 +123,7 @@ std::pair<Blob, bool> strUnHex (const std::string& strSrc)
     return std::make_pair(strCopy (strTmp), true);
 }
 
-uint64_t uintFromHex (const std::string& strSrc)
+uint64_t uintFromHex (std::string const& strSrc)
 {
     uint64_t uValue (0);
 
@@ -147,7 +147,7 @@ uint64_t uintFromHex (const std::string& strSrc)
 // Misc string
 //
 
-Blob strCopy (const std::string& strSrc)
+Blob strCopy (std::string const& strSrc)
 {
     Blob vucDst;
 
@@ -170,7 +170,7 @@ std::string strCopy (Blob const& vucSrc)
 
 }
 
-extern std::string urlEncode (const std::string& strSrc)
+extern std::string urlEncode (std::string const& strSrc)
 {
     std::string strDst;
     int         iOutput = 0;
@@ -208,7 +208,7 @@ extern std::string urlEncode (const std::string& strSrc)
 //
 // <-- iPort: "" = -1
 // VFALCO TODO Make this not require boost... and especially boost::asio
-bool parseIpPort (const std::string& strSource, std::string& strIP, int& iPort)
+bool parseIpPort (std::string const& strSource, std::string& strIP, int& iPort)
 {
     boost::smatch   smMatch;
     bool            bValid  = false;
@@ -237,7 +237,7 @@ bool parseIpPort (const std::string& strSource, std::string& strIP, int& iPort)
 
 // VFALCO TODO Callers should be using beast::URL and beast::ParsedURL, not this home-brew.
 //
-bool parseUrl (const std::string& strUrl, std::string& strScheme, std::string& strDomain, int& iPort, std::string& strPath)
+bool parseUrl (std::string const& strUrl, std::string& strScheme, std::string& strDomain, int& iPort, std::string& strPath)
 {
     // scheme://username:password@hostname:port/rest
     static boost::regex reUrl ("(?i)\\`\\s*([[:alpha:]][-+.[:alpha:][:digit:]]*)://([^:/]+)(?::(\\d+))?(/.*)?\\s*?\\'");

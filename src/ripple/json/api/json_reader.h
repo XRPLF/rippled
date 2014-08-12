@@ -52,7 +52,7 @@ public:
      *                        is \c false.
      * \return \c true if the document was successfully parsed, \c false if an error occurred.
      */
-    bool parse ( const std::string& document,
+    bool parse ( std::string const& document,
                  Value& root,
                  bool collectComments = true );
 
@@ -145,11 +145,11 @@ private:
                                        Location& current,
                                        Location end,
                                        unsigned int& unicode );
-    bool addError ( const std::string& message,
+    bool addError ( std::string const& message,
                     Token& token,
                     Location extra = 0 );
     bool recoverFromError ( TokenType skipUntilToken );
-    bool addErrorAndRecover ( const std::string& message,
+    bool addErrorAndRecover ( std::string const& message,
                               Token& token,
                               TokenType skipUntilToken );
     void skipUntilSpace ();

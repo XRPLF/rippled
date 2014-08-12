@@ -17,15 +17,45 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_QUALITY_CONSTRAINT_H
-#define RIPPLE_QUALITY_CONSTRAINT_H
+#include <tuple>
 
 namespace ripple {
 namespace path {
 
-enum class QualityConstraint { SAME_OR_BETTER, UNCONSTRAINED };
+TER PathCursor::forwardLiquidity () const
+{
+    if (node().isAccount())
+        return forwardLiquidityForAccount ();
+
+    // Otherwise, node is an offer.
+    if (previousNode().account_ == zero)
+        return tesSUCCESS;
+
+    // Previous is an account node, resolve its deliver.
+    STAmount saInAct;
+    STAmount saInFees;
+
+    auto resultCode = deliverNodeForward (
+        previousNode().account_,
+        previousNode().saFwdDeliver, // Previous is sending this much.
+        saInAct,
+        saInFees);
+
+    assert (resultCode != tesSUCCESS ||
+            previousNode().saFwdDeliver == saInAct + saInFees);
+    return resultCode;
+}
 
 } // path
 } // ripple
 
-#endif
+// Original comments:
+
+// Called to drive the from the first offer node in a chain.
+//
+// - Offer input is in issuer/limbo.
+// - Current offers consumed.
+//   - Current offer owners debited.
+//   - Transfer fees credited to issuer.
+//   - Payout to issuer or limbo.
+// - Deliver is set without transfer fees.

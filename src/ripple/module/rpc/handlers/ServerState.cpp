@@ -22,9 +22,11 @@ namespace ripple {
 
 Json::Value doServerState (RPC::Context& context)
 {
+    auto lock = getApp().masterLock();
     Json::Value ret (Json::objectValue);
 
-    ret["state"]    = context.netOps_.getServerInfo (false, context.role_ == Config::ADMIN);
+    ret["state"] = context.netOps_.getServerInfo (
+        false, context.role_ == Config::ADMIN);
 
     return ret;
 }

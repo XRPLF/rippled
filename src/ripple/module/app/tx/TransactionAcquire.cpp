@@ -82,7 +82,7 @@ void TransactionAcquire::onTimer (bool progress, ScopedLockType& psl)
         WriteLog (lsWARNING, TransactionAcquire) << "Ten timeouts on TX set " << getHash ();
         psl.unlock();
         {
-            Application::ScopedLockType lock (getApp().getMasterLock ());
+            auto lock = getApp().masterLock();
 
             if (getApp().getOPs ().stillNeedTXSet (mHash))
             {

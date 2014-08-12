@@ -21,7 +21,6 @@
 #define RIPPLE_KEYCACHE_H_INCLUDED
 
 #include <mutex>
-#include <unordered_map>
 
 #include <beast/chrono/abstract_clock.h>
 #include <beast/chrono/chrono_io.h>
@@ -40,7 +39,7 @@ namespace ripple {
 // VFALCO TODO Figure out how to pass through the allocator
 template <
     class Key,
-    class Hash = beast::hardened_hash <Key>,
+    class Hash = beast::hardened_hash <>,
     class KeyEqual = std::equal_to <Key>,
     //class Allocator = std::allocator <std::pair <Key const, Entry>>,
     class Mutex = std::mutex
@@ -82,7 +81,7 @@ private:
         clock_type::time_point last_access;
     };
 
-    typedef ripple::unordered_map <key_type, Entry, Hash, KeyEqual> map_type;
+    typedef hardened_hash_map <key_type, Entry, Hash, KeyEqual> map_type;
     typedef typename map_type::iterator iterator;
     typedef std::lock_guard <Mutex> lock_guard;
 

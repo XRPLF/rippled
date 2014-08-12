@@ -32,19 +32,24 @@ namespace ripple {
 // }
 Json::Value doAccountTxOld (RPC::Context& context)
 {
-    context.lock_.unlock ();
-
     RippleAddress   raAccount;
-    std::uint32_t   offset      = context.params_.isMember ("offset") ? context.params_["offset"].asUInt () : 0;
-    int             limit       = context.params_.isMember ("limit") ? context.params_["limit"].asUInt () : -1;
-    bool            bBinary     = context.params_.isMember ("binary") && context.params_["binary"].asBool ();
-    bool            bDescending = context.params_.isMember ("descending") && context.params_["descending"].asBool ();
-    bool            bCount      = context.params_.isMember ("count") && context.params_["count"].asBool ();
+    std::uint32_t offset
+            = context.params_.isMember ("offset")
+            ? context.params_["offset"].asUInt () : 0;
+    int limit = context.params_.isMember ("limit")
+            ? context.params_["limit"].asUInt () : -1;
+    bool bBinary = context.params_.isMember ("binary")
+            && context.params_["binary"].asBool ();
+    bool bDescending = context.params_.isMember ("descending")
+            && context.params_["descending"].asBool ();
+    bool bCount = context.params_.isMember ("count")
+            && context.params_["count"].asBool ();
     std::uint32_t   uLedgerMin;
     std::uint32_t   uLedgerMax;
     std::uint32_t   uValidatedMin;
     std::uint32_t   uValidatedMax;
-    bool            bValidated  = context.netOps_.getValidatedRange (uValidatedMin, uValidatedMax);
+    bool bValidated  = context.netOps_.getValidatedRange (
+        uValidatedMin, uValidatedMax);
 
     if (!context.params_.isMember ("account"))
         return rpcError (rpcINVALID_PARAMS);
@@ -71,10 +76,13 @@ Json::Value doAccountTxOld (RPC::Context& context)
         bDescending = true;
     }
 
-    if (context.params_.isMember ("ledger_index_min") || context.params_.isMember ("ledger_index_max"))
+    if (context.params_.isMember ("ledger_index_min")
+        || context.params_.isMember ("ledger_index_max"))
     {
-        std::int64_t iLedgerMin  = context.params_.isMember ("ledger_index_min") ? context.params_["ledger_index_min"].asInt () : -1;
-        std::int64_t iLedgerMax  = context.params_.isMember ("ledger_index_max") ? context.params_["ledger_index_max"].asInt () : -1;
+        std::int64_t iLedgerMin  = context.params_.isMember ("ledger_index_min")
+                ? context.params_["ledger_index_min"].asInt () : -1;
+        std::int64_t iLedgerMax  = context.params_.isMember ("ledger_index_max")
+                ? context.params_["ledger_index_max"].asInt () : -1;
 
         if (!bValidated && (iLedgerMin == -1 || iLedgerMax == -1))
         {
@@ -116,11 +124,11 @@ Json::Value doAccountTxOld (RPC::Context& context)
 
         if (bBinary)
         {
-            std::vector<NetworkOPs::txnMetaLedgerType> txns =
-                context.netOps_.getAccountTxsB (raAccount, uLedgerMin, uLedgerMax, bDescending, offset, limit, context.role_ == Config::ADMIN);
+            auto txns = context.netOps_.getAccountTxsB (
+                raAccount, uLedgerMin, uLedgerMax, bDescending, offset, limit,
+                context.role_ == Config::ADMIN);
 
-            for (std::vector<NetworkOPs::txnMetaLedgerType>::const_iterator it = txns.begin (), end = txns.end ();
-                    it != end; ++it)
+            for (auto it = txns.begin (), end = txns.end (); it != end; ++it)
             {
                 ++count;
                 Json::Value& jvObj = jvTxns.append (Json::objectValue);
@@ -129,15 +137,20 @@ Json::Value doAccountTxOld (RPC::Context& context)
                 jvObj["tx_blob"]            = std::get<0> (*it);
                 jvObj["meta"]               = std::get<1> (*it);
                 jvObj["ledger_index"]       = uLedgerIndex;
-                jvObj["validated"]          = bValidated && uValidatedMin <= uLedgerIndex && uValidatedMax >= uLedgerIndex;
+                jvObj["validated"]
+                        = bValidated
+                        && uValidatedMin <= uLedgerIndex
+                        && uValidatedMax >= uLedgerIndex;
 
             }
         }
         else
         {
-            std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> > txns = context.netOps_.getAccountTxs (raAccount, uLedgerMin, uLedgerMax, bDescending, offset, limit, context.role_ == Config::ADMIN);
+            auto txns = context.netOps_.getAccountTxs (
+                raAccount, uLedgerMin, uLedgerMax, bDescending, offset, limit,
+                context.role_ == Config::ADMIN);
 
-            for (std::vector< std::pair<Transaction::pointer, TransactionMetaSet::pointer> >::iterator it = txns.begin (), end = txns.end (); it != end; ++it)
+            for (auto it = txns.begin (), end = txns.end (); it != end; ++it)
             {
                 ++count;
                 Json::Value&    jvObj = jvTxns.append (Json::objectValue);
@@ -150,7 +163,10 @@ Json::Value doAccountTxOld (RPC::Context& context)
                     std::uint32_t uLedgerIndex = it->second->getLgrSeq ();
 
                     jvObj["meta"]           = it->second->getJson (0);
-                    jvObj["validated"]      = bValidated && uValidatedMin <= uLedgerIndex && uValidatedMax >= uLedgerIndex;
+                    jvObj["validated"]
+                            = bValidated
+                            && uValidatedMin <= uLedgerIndex
+                            && uValidatedMax >= uLedgerIndex;
                 }
 
             }
@@ -159,11 +175,15 @@ Json::Value doAccountTxOld (RPC::Context& context)
         //Add information about the original query
         ret["ledger_index_min"] = uLedgerMin;
         ret["ledger_index_max"] = uLedgerMax;
-        ret["validated"]        = bValidated && uValidatedMin <= uLedgerMin && uValidatedMax >= uLedgerMax;
+        ret["validated"]
+                = bValidated
+                && uValidatedMin <= uLedgerMin
+                && uValidatedMax >= uLedgerMax;
         ret["offset"]           = offset;
 
-        // We no longer return the full count but only the count of returned transactions
-        // Computing this count was two expensive and this API is deprecated anyway
+        // We no longer return the full count but only the count of returned
+        // transactions. Computing this count was two expensive and this API is
+        // deprecated anyway.
         if (bCount)
             ret["count"]        = count;
 

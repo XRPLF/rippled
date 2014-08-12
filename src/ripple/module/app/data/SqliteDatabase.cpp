@@ -30,7 +30,7 @@ SqliteStatement::SqliteStatement (SqliteDatabase* db, const char* sql, bool aux)
         throw j;
 }
 
-SqliteStatement::SqliteStatement (SqliteDatabase* db, const std::string& sql, bool aux)
+SqliteStatement::SqliteStatement (SqliteDatabase* db, std::string const& sql, bool aux)
 {
     assert (db);
 
@@ -385,12 +385,12 @@ int SqliteStatement::bind (int position, std::uint32_t value)
     return sqlite3_bind_int64 (statement, position, static_cast<sqlite3_int64> (value));
 }
 
-int SqliteStatement::bind (int position, const std::string& value)
+int SqliteStatement::bind (int position, std::string const& value)
 {
     return sqlite3_bind_text (statement, position, value.data (), value.size (), SQLITE_TRANSIENT);
 }
 
-int SqliteStatement::bindStatic (int position, const std::string& value)
+int SqliteStatement::bindStatic (int position, std::string const& value)
 {
     return sqlite3_bind_text (statement, position, value.data (), value.size (), SQLITE_STATIC);
 }

@@ -51,6 +51,12 @@ enum LedgerEntryAction
     taaCREATE,  // Newly created.
 };
 
+enum FreezeHandling
+{
+    fhIGNORE_FREEZE,
+    fhZERO_IF_FROZEN
+};
+
 class LedgerEntrySetEntry
     : public CountedObject <LedgerEntrySetEntry>
 {
@@ -135,7 +141,7 @@ public:
         ++mSeq;
     }
 
-    void init (Ledger::ref ledger, uint256 const & transactionID,
+    void init (Ledger::ref ledger, uint256 const& transactionID,
                std::uint32_t ledgerID, TransactionEngineParams params);
 
     void clear ();
@@ -145,9 +151,14 @@ public:
         return mLedger;
     }
 
+    bool enforceFreeze () const
+    {
+        return mLedger->enforceFreeze ();
+    }
+
     // basic entry functions
-    SLE::pointer getEntry (uint256 const & index, LedgerEntryAction&);
-    LedgerEntryAction hasEntry (uint256 const & index) const;
+    SLE::pointer getEntry (uint256 const& index, LedgerEntryAction&);
+    LedgerEntryAction hasEntry (uint256 const& index) const;
     void entryCache (SLE::ref);     // Add this entry to the cache
     void entryCreate (SLE::ref);    // This entry will be created
     void entryDelete (SLE::ref);    // This entry will be deleted
@@ -155,8 +166,8 @@ public:
     bool hasChanges ();             // True if LES has any changes
 
     // higher-level ledger functions
-    SLE::pointer entryCreate (LedgerEntryType letType, uint256 const & uIndex);
-    SLE::pointer entryCache (LedgerEntryType letType, uint256 const & uIndex);
+    SLE::pointer entryCreate (LedgerEntryType letType, uint256 const& uIndex);
+    SLE::pointer entryCache (LedgerEntryType letType, uint256 const& uIndex);
 
     // Directory functions.
     TER dirAdd (
@@ -181,7 +192,7 @@ public:
     TER dirCount (uint256 const& uDirIndex, std::uint32_t & uCount);
 
     uint256 getNextLedgerIndex (uint256 const& uHash);
-    uint256 getNextLedgerIndex (uint256 const& uHash, uint256 const & uEnd);
+    uint256 getNextLedgerIndex (uint256 const& uHash, uint256 const& uEnd);
 
     void ownerCountAdjust (Account const& uOwnerID, int iAmount,
         SLE::ref sleAccountRoot = SLE::pointer ());
@@ -221,6 +232,13 @@ public:
             sfLowQualityOut, sfHighQualityOut);
     }
 
+    bool isFrozen (
+        Account const& account,
+        Currency const& currency,
+        Account const& issuer);
+
+    bool isGlobalFrozen (Account const& issuer);
+
     STAmount rippleTransferFee (
         Account const& uSenderID, Account const& uReceiverID,
         Account const& issuer, const STAmount & saAmount);
@@ -231,9 +249,9 @@ public:
 
     STAmount accountHolds (
         Account const& account, Currency const& currency,
-        Account const& issuer);
+        Account const& issuer, FreezeHandling freezeHandling);
     STAmount accountFunds (
-        Account const& account, const STAmount & saDefault);
+        Account const& account, const STAmount & saDefault, FreezeHandling freezeHandling);
     TER accountSend (
         Account const& uSenderID, Account const& uReceiverID,
         const STAmount & saAmount);
@@ -247,8 +265,8 @@ public:
         const bool      bAuth,
         const bool      bNoRipple,
         const bool      bFreeze,
-        const STAmount& saSrcBalance,
-        const STAmount& saSrcLimit,
+        STAmount const& saSrcBalance,
+        STAmount const& saSrcLimit,
         const std::uint32_t uSrcQualityIn = 0,
         const std::uint32_t uSrcQualityOut = 0);
     TER trustDelete (
@@ -292,7 +310,7 @@ private:
     Ledger::pointer mLedger;
     std::map<uint256, LedgerEntrySetEntry>  mEntries; // cannot be unordered!
 
-    typedef ripple::unordered_map<uint256, SLE::pointer> NodeToLedgerEntry;
+    typedef hash_map<uint256, SLE::pointer> NodeToLedgerEntry;
 
     TransactionMetaSet mSet;
     TransactionEngineParams mParams;
@@ -307,7 +325,7 @@ private:
     {}
 
     SLE::pointer getForMod (
-        uint256 const & node, Ledger::ref ledger,
+        uint256 const& node, Ledger::ref ledger,
         NodeToLedgerEntry& newMods);
 
     bool threadTx (
@@ -326,7 +344,7 @@ private:
 
     STAmount rippleHolds (
         Account const& account, Currency const& currency,
-        Account const& issuer);
+        Account const& issuer, FreezeHandling zeroIfFrozen);
 };
 
 } // ripple

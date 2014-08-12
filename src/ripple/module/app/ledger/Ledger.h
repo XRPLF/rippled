@@ -46,20 +46,6 @@ enum LedgerStateParms
 
 class SqliteStatement;
 
-class LedgerBase
-{
-protected:
-    LedgerBase ();
-
-    // VFALCO TODO eliminate the need for friends
-    friend class TransactionEngine;
-    friend class Transactor;
-
-    typedef RippleRecursiveMutex LockType;
-    typedef std::lock_guard <LockType> ScopedLockType;
-    LockType mLock;
-};
-
 // VFALCO TODO figure out exactly how this thing works.
 //         It seems like some ledger database is stored as a global, static in the
 //         class. But then what is the meaning of a Ledger object? Is this
@@ -73,7 +59,6 @@ protected:
 */
 class Ledger
     : public std::enable_shared_from_this <Ledger>
-    , public LedgerBase
     , public CountedObject <Ledger>
     , public beast::Uncopyable
 {
@@ -120,8 +105,8 @@ public:
     // used for the starting bootstrap ledger
     Ledger (const RippleAddress & masterID, std::uint64_t startAmount);
 
-    Ledger (uint256 const & parentHash, uint256 const & transHash,
-            uint256 const & accountHash,
+    Ledger (uint256 const& parentHash, uint256 const& transHash,
+            uint256 const& accountHash,
             std::uint64_t totCoins, std::uint32_t closeTime,
             std::uint32_t parentCloseTime, int closeFlags, int closeResolution,
             std::uint32_t ledgerSeq, bool & loaded);
@@ -129,13 +114,13 @@ public:
 
     Ledger (std::uint32_t ledgerSeq, std::uint32_t closeTime);
     Ledger (Blob const & rawLedger, bool hasPrefix);
-    Ledger (const std::string & rawLedger, bool hasPrefix);
+    Ledger (std::string const& rawLedger, bool hasPrefix);
     Ledger (bool dummy, Ledger & previous); // ledger after this one
     Ledger (Ledger & target, bool isMutable); // snapshot
 
     ~Ledger ();
 
-    static Ledger::pointer getSQL (const std::string & sqlStatement);
+    static Ledger::pointer getSQL (std::string const& sqlStatement);
     static Ledger::pointer getSQL1 (SqliteStatement*);
     static void getSQL2 (Ledger::ref);
     static Ledger::pointer getLastFullLedger ();
@@ -181,6 +166,8 @@ public:
         mTransactionMap->setLedgerSeq (mLedgerSeq);
         mAccountStateMap->setLedgerSeq (mLedgerSeq);
     }
+
+    bool enforceFreeze () const;
 
     // ledger signature operations
     void addRaw (Serializer & s) const;
@@ -273,18 +260,18 @@ public:
     // Transaction Functions
     bool addTransaction (uint256 const& id, Serializer const& txn);
     bool addTransaction (
-        const uint256& id, Serializer const& txn, Serializer const& metaData);
-    bool hasTransaction (uint256 const & TransID) const
+        uint256 const& id, Serializer const& txn, Serializer const& metaData);
+    bool hasTransaction (uint256 const& TransID) const
     {
         return mTransactionMap->hasItem (TransID);
     }
-    Transaction::pointer getTransaction (uint256 const & transID) const;
+    Transaction::pointer getTransaction (uint256 const& transID) const;
     bool getTransaction (
-        uint256 const & transID,
+        uint256 const& transID,
         Transaction::pointer & txn, TransactionMetaSet::pointer & txMeta);
     bool getTransactionMeta (
-        uint256 const & transID, TransactionMetaSet::pointer & txMeta);
-    bool getMetaHex (uint256 const & transID, std::string & hex);
+        uint256 const& transID, TransactionMetaSet::pointer & txMeta);
+    bool getMetaHex (uint256 const& transID, std::string & hex);
 
     static SerializedTransaction::pointer getSTransaction (
         SHAMapItem::ref, SHAMapTreeNode::TNType);
@@ -305,7 +292,7 @@ public:
 
     // database functions (low-level)
     static Ledger::pointer loadByIndex (std::uint32_t ledgerIndex);
-    static Ledger::pointer loadByHash (uint256 const & ledgerHash);
+    static Ledger::pointer loadByHash (uint256 const& ledgerHash);
     static uint256 getHashByIndex (std::uint32_t index);
     static bool getHashesByIndex (
         std::uint32_t index, uint256 & ledgerHash, uint256 & parentHash);
@@ -314,8 +301,8 @@ public:
     bool pendSaveValidated (bool isSynchronous, bool isCurrent);
 
     // next/prev function
-    SLE::pointer getSLE (uint256 const & uHash); // SLE is mutable
-    SLE::pointer getSLEi (uint256 const & uHash); // SLE is immutable
+    SLE::pointer getSLE (uint256 const& uHash); // SLE is mutable
+    SLE::pointer getSLEi (uint256 const& uHash); // SLE is immutable
 
     // VFALCO NOTE These seem to let you walk the list of ledgers
     //
@@ -323,16 +310,16 @@ public:
     uint256 getLastLedgerIndex ();
 
     // first node >hash
-    uint256 getNextLedgerIndex (uint256 const & uHash);
+    uint256 getNextLedgerIndex (uint256 const& uHash);
 
     // first node >hash, <end
-    uint256 getNextLedgerIndex (uint256 const & uHash, uint256 const & uEnd);
+    uint256 getNextLedgerIndex (uint256 const& uHash, uint256 const& uEnd);
 
     // last node <hash
-    uint256 getPrevLedgerIndex (uint256 const & uHash);
+    uint256 getPrevLedgerIndex (uint256 const& uHash);
 
     // last node <hash, >begin
-    uint256 getPrevLedgerIndex (uint256 const & uHash, uint256 const & uBegin);
+    uint256 getPrevLedgerIndex (uint256 const& uHash, uint256 const& uBegin);
 
     // Ledger hash table function
     static uint256 getLedgerHashIndex ();
@@ -373,25 +360,25 @@ public:
     // Nickname functions
     //
 
-    static uint256 getNicknameHash (const std::string & strNickname)
+    static uint256 getNicknameHash (std::string const& strNickname)
     {
         Serializer s (strNickname);
         return s.getSHA256 ();
     }
 
-    NicknameState::pointer getNicknameState (uint256 const & uNickname);
-    NicknameState::pointer getNicknameState (const std::string & strNickname)
+    NicknameState::pointer getNicknameState (uint256 const& uNickname);
+    NicknameState::pointer getNicknameState (std::string const& strNickname)
     {
         return getNicknameState (getNicknameHash (strNickname));
     }
 
-    SLE::pointer getNickname (uint256 const & uNickname);
-    SLE::pointer getNickname (const std::string & strNickname)
+    SLE::pointer getNickname (uint256 const& uNickname);
+    SLE::pointer getNickname (std::string const& strNickname)
     {
         return getNickname (getNicknameHash (strNickname));
     }
 
-    static uint256 getNicknameIndex (uint256 const & uNickname);
+    static uint256 getNicknameIndex (uint256 const& uNickname);
 
     //
     // Order book functions
@@ -405,15 +392,15 @@ public:
     // Offer functions
     //
 
-    SLE::pointer getOffer (uint256 const & uIndex);
-    SLE::pointer getOffer (Account const & account, std::uint32_t uSequence)
+    SLE::pointer getOffer (uint256 const& uIndex);
+    SLE::pointer getOffer (Account const& account, std::uint32_t uSequence)
     {
         return getOffer (getOfferIndex (account, uSequence));
     }
 
     // The index of an offer.
     static uint256 getOfferIndex (
-        Account const & account, std::uint32_t uSequence);
+        Account const& account, std::uint32_t uSequence);
 
     //
     // Owner functions
@@ -423,7 +410,7 @@ public:
     //             into a 256 bit object (I think....need to research this)
     //
     // All items controlled by an account are here: offers
-    static uint256 getOwnerDirIndex (Account const &account);
+    static uint256 getOwnerDirIndex (Account const&account);
 
     //
     // Directory functions
@@ -431,20 +418,20 @@ public:
 
     // Given a directory root and and index compute the index of a node.
     static uint256 getDirNodeIndex (
-        uint256 const & uDirRoot, const std::uint64_t uNodeIndex = 0);
+        uint256 const& uDirRoot, const std::uint64_t uNodeIndex = 0);
     static void ownerDirDescriber (SLE::ref, bool, Account const& owner);
 
     // Return a node: root or normal
-    SLE::pointer getDirNode (uint256 const & uNodeIndex);
+    SLE::pointer getDirNode (uint256 const& uNodeIndex);
 
     //
     // Quality
     //
 
     static uint256 getQualityIndex (
-        uint256 const & uBase, const std::uint64_t uNodeDir = 0);
-    static uint256 getQualityNext (uint256 const & uBase);
-    static std::uint64_t getQuality (uint256 const & uBase);
+        uint256 const& uBase, const std::uint64_t uNodeDir = 0);
+    static uint256 getQualityNext (uint256 const& uBase);
+    static std::uint64_t getQuality (uint256 const& uBase);
     static void qualityDirDescriber (
         SLE::ref, bool,
         Currency const& uTakerPaysCurrency, Account const& uTakerPaysIssuer,
@@ -462,7 +449,7 @@ public:
     //             don't access global variables. e.g.
     //             "calculateKeyFromRippleStateAndAddress"
     static uint256 getRippleStateIndex (
-        const RippleAddress&, const RippleAddress&, Currency const&);
+        RippleAddress const&, RippleAddress const&, Currency const&);
     static uint256 getRippleStateIndex (
         Account const& a, Account const& b, Currency const& uCurrency)
     {
@@ -471,7 +458,7 @@ public:
             RippleAddress::createAccountID (b), uCurrency);
     }
 
-    SLE::pointer getRippleState (uint256 const & uNode);
+    SLE::pointer getRippleState (uint256 const& uNode);
 
     SLE::pointer getRippleState (
         RippleAddress const& a, RippleAddress const& b,

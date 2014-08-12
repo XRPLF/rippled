@@ -60,15 +60,15 @@ public:
 
         mAcceptor.set_option (boost::asio::ip::tcp::acceptor::reuse_address (true));
 
-        mAcceptor.async_accept (new_connection->getRawSocket (), 
+        mAcceptor.async_accept (new_connection->getRawSocket (),
             new_connection->getRemoteEndpoint (),
-            std::bind (&RPCDoorImp::handleConnect, this, 
+            std::bind (&RPCDoorImp::handleConnect, this,
                 new_connection, beast::asio::placeholders::error));
     }
 
     //--------------------------------------------------------------------------
 
-    bool isClientAllowed (const std::string& ip)
+    bool isClientAllowed (std::string const& ip)
     {
         if (getConfig ().RPC_ALLOW_REMOTE)
             return true;

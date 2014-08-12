@@ -23,11 +23,15 @@ namespace ripple {
 
 Json::Value doPeers (RPC::Context& context)
 {
+
     Json::Value jvResult (Json::objectValue);
 
-    jvResult["peers"]   = getApp().overlay ().json ();
+    {
+        auto lock = getApp().masterLock();
 
-    getApp().getUNL().addClusterStatus(jvResult);
+        jvResult["peers"]   = getApp().overlay ().json ();
+        getApp().getUNL().addClusterStatus(jvResult);
+    }
 
     return jvResult;
 }

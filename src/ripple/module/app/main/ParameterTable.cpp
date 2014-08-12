@@ -21,7 +21,7 @@
 
 namespace ripple {
 
-bool ParameterNode::setValue (const std::string& name, const Json::Value& value, Json::Value& error)
+bool ParameterNode::setValue (std::string const& name, Json::Value const& value, Json::Value& error)
 {
     if (name.empty ()) // this node
         return setValue (value, error);
@@ -66,7 +66,7 @@ bool ParameterNode::setValue (const std::string& name, const Json::Value& value,
     return n->setValue (name.substr (dot + 1), value, error);
 }
 
-bool ParameterNode::addNode (const std::string& name, Parameter::ref node)
+bool ParameterNode::addNode (std::string const& name, Parameter::ref node)
 {
     if (name.empty ()) // this node
         return false;
@@ -118,7 +118,7 @@ Json::Value ParameterNode::getValue (int i) const
     return v;
 }
 
-bool ParameterNode::setValue (const Json::Value& value, Json::Value& error)
+bool ParameterNode::setValue (Json::Value const& value, Json::Value& error)
 {
     error = Json::objectValue;
     error[jss::error] = "Cannot end on an inner node";
@@ -133,7 +133,7 @@ bool ParameterNode::setValue (const Json::Value& value, Json::Value& error)
     return false;
 }
 
-ParameterString::ParameterString (Parameter::ref parent, const std::string& name, const std::string& value)
+ParameterString::ParameterString (Parameter::ref parent, std::string const& name, std::string const& value)
     : Parameter (parent, name), mValue (value)
 {
     ;
@@ -144,7 +144,7 @@ Json::Value ParameterString::getValue (int) const
     return Json::Value (mValue);
 }
 
-bool ParameterString::setValue (const Json::Value& value, Json::Value& error)
+bool ParameterString::setValue (Json::Value const& value, Json::Value& error)
 {
     if (!value.isConvertibleTo (Json::stringValue))
     {
@@ -158,7 +158,7 @@ bool ParameterString::setValue (const Json::Value& value, Json::Value& error)
     return true;
 }
 
-ParameterInt::ParameterInt (Parameter::ref parent, const std::string& name, int value)
+ParameterInt::ParameterInt (Parameter::ref parent, std::string const& name, int value)
     : Parameter (parent, name), mValue (value)
 {
     ;
@@ -169,7 +169,7 @@ Json::Value ParameterInt::getValue (int) const
     return Json::Value (mValue);
 }
 
-bool ParameterInt::setValue (const Json::Value& value, Json::Value& error)
+bool ParameterInt::setValue (Json::Value const& value, Json::Value& error)
 {
     if (value.isConvertibleTo (Json::intValue))
     {

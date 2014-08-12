@@ -39,7 +39,7 @@ class Peer
 {
 public:
     typedef std::shared_ptr <Peer> ptr;
-    
+
     /** Uniquely identifies a particular connection of a peer. */
     typedef std::uint32_t ShortId;
 
@@ -58,7 +58,7 @@ public:
     //
 
     virtual ShortId getShortId () const = 0;
-    virtual const RippleAddress& getNodePublic () const = 0;
+    virtual RippleAddress const& getNodePublic () const = 0;
     virtual Json::Value json () = 0;
     virtual bool isInCluster () const = 0;
     virtual std::string getClusterNodeName() const = 0;

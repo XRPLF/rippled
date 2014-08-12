@@ -75,7 +75,7 @@ std::string RippleAddress::humanAddressType () const
 // NodePublic
 //
 
-RippleAddress RippleAddress::createNodePublic (const RippleAddress& naSeed)
+RippleAddress RippleAddress::createNodePublic (RippleAddress const& naSeed)
 {
     CKey            ckSeed (naSeed.getSeed ());
     RippleAddress   naNew;
@@ -95,7 +95,7 @@ RippleAddress RippleAddress::createNodePublic (Blob const& vPublic)
     return naNew;
 }
 
-RippleAddress RippleAddress::createNodePublic (const std::string& strPublic)
+RippleAddress RippleAddress::createNodePublic (std::string const& strPublic)
 {
     RippleAddress   naNew;
 
@@ -153,7 +153,7 @@ std::string RippleAddress::humanNodePublic () const
     }
 }
 
-bool RippleAddress::setNodePublic (const std::string& strPublic)
+bool RippleAddress::setNodePublic (std::string const& strPublic)
 {
     mIsValid = SetString (strPublic, VER_NODE_PUBLIC, Base58::getRippleAlphabet ());
 
@@ -187,7 +187,7 @@ bool RippleAddress::verifyNodePublic (uint256 const& hash, Blob const& vchSig, E
     return bVerified;
 }
 
-bool RippleAddress::verifyNodePublic (uint256 const& hash, const std::string& strSig, ECDSA fullyCanonical) const
+bool RippleAddress::verifyNodePublic (uint256 const& hash, std::string const& strSig, ECDSA fullyCanonical) const
 {
     Blob vchSig (strSig.begin (), strSig.end ());
 
@@ -198,7 +198,7 @@ bool RippleAddress::verifyNodePublic (uint256 const& hash, const std::string& st
 // NodePrivate
 //
 
-RippleAddress RippleAddress::createNodePrivate (const RippleAddress& naSeed)
+RippleAddress RippleAddress::createNodePrivate (RippleAddress const& naSeed)
 {
     uint256         uPrivKey;
     RippleAddress   naNew;
@@ -256,7 +256,7 @@ std::string RippleAddress::humanNodePrivate () const
     }
 }
 
-bool RippleAddress::setNodePrivate (const std::string& strPrivate)
+bool RippleAddress::setNodePrivate (std::string const& strPrivate)
 {
     mIsValid = SetString (strPrivate, VER_NODE_PRIVATE, Base58::getRippleAlphabet ());
 
@@ -318,7 +318,7 @@ typedef RippleMutex StaticLockType;
 typedef std::lock_guard <StaticLockType> StaticScopedLockType;
 static StaticLockType s_lock;
 
-static ripple::unordered_map< Blob , std::string > rncMap;
+static hash_map< Blob , std::string > rncMap;
 
 std::string RippleAddress::humanAccountID () const
 {
@@ -361,7 +361,7 @@ std::string RippleAddress::humanAccountID () const
 }
 
 bool RippleAddress::setAccountID (
-    const std::string& strAccountID, Base58::Alphabet const& alphabet)
+    std::string const& strAccountID, Base58::Alphabet const& alphabet)
 {
     if (strAccountID.empty ())
     {
@@ -388,7 +388,7 @@ void RippleAddress::setAccountID (Account const& hash160)
 //
 
 RippleAddress RippleAddress::createAccountPublic (
-    const RippleAddress& generator, int iSeq)
+    RippleAddress const& generator, int iSeq)
 {
     CKey            ckPub (generator, iSeq);
     RippleAddress   naNew;
@@ -435,7 +435,7 @@ std::string RippleAddress::humanAccountPublic () const
     }
 }
 
-bool RippleAddress::setAccountPublic (const std::string& strPublic)
+bool RippleAddress::setAccountPublic (std::string const& strPublic)
 {
     mIsValid = SetString (strPublic, VER_ACCOUNT_PUBLIC, Base58::getRippleAlphabet ());
 
@@ -449,7 +449,7 @@ void RippleAddress::setAccountPublic (Blob const& vPublic)
     SetData (VER_ACCOUNT_PUBLIC, vPublic);
 }
 
-void RippleAddress::setAccountPublic (const RippleAddress& generator, int seq)
+void RippleAddress::setAccountPublic (RippleAddress const& generator, int seq)
 {
     CKey    pubkey  = CKey (generator, seq);
 
@@ -491,7 +491,7 @@ RippleAddress RippleAddress::createAccountID (Account const& account)
 //
 
 RippleAddress RippleAddress::createAccountPrivate (
-    const RippleAddress& generator, const RippleAddress& naSeed, int iSeq)
+    RippleAddress const& generator, RippleAddress const& naSeed, int iSeq)
 {
     RippleAddress   naNew;
 
@@ -530,7 +530,7 @@ std::string RippleAddress::humanAccountPrivate () const
     }
 }
 
-bool RippleAddress::setAccountPrivate (const std::string& strPrivate)
+bool RippleAddress::setAccountPrivate (std::string const& strPrivate)
 {
     mIsValid = SetString (
         strPrivate, VER_ACCOUNT_PRIVATE, Base58::getRippleAlphabet ());
@@ -551,7 +551,7 @@ void RippleAddress::setAccountPrivate (uint256 hash256)
 }
 
 void RippleAddress::setAccountPrivate (
-    const RippleAddress& generator, const RippleAddress& naSeed, int seq)
+    RippleAddress const& generator, RippleAddress const& naSeed, int seq)
 {
     CKey    ckPubkey    = CKey (naSeed.getSeed ());
     CKey    ckPrivkey   = CKey (generator, ckPubkey.GetSecretBN (), seq);
@@ -585,7 +585,7 @@ bool RippleAddress::accountPrivateSign (uint256 const& uHash, Blob& vucSig) cons
 }
 
 Blob RippleAddress::accountPrivateEncrypt (
-    const RippleAddress& naPublicTo, Blob const& vucPlainText) const
+    RippleAddress const& naPublicTo, Blob const& vucPlainText) const
 {
     CKey ckPrivate;
     CKey ckPublic;
@@ -616,7 +616,7 @@ Blob RippleAddress::accountPrivateEncrypt (
 }
 
 Blob RippleAddress::accountPrivateDecrypt (
-    const RippleAddress& naPublicFrom, Blob const& vucCipherText) const
+    RippleAddress const& naPublicFrom, Blob const& vucCipherText) const
 {
     CKey                        ckPrivate;
     CKey                        ckPublic;
@@ -682,7 +682,7 @@ std::string RippleAddress::humanGenerator () const
     }
 }
 
-bool RippleAddress::setGenerator (const std::string& strGenerator)
+bool RippleAddress::setGenerator (std::string const& strGenerator)
 {
     mIsValid = SetString (
         strGenerator, VER_FAMILY_GENERATOR, Base58::getRippleAlphabet ());
@@ -695,7 +695,7 @@ void RippleAddress::setGenerator (Blob const& vPublic)
     SetData (VER_FAMILY_GENERATOR, vPublic);
 }
 
-RippleAddress RippleAddress::createGeneratorPublic (const RippleAddress& naSeed)
+RippleAddress RippleAddress::createGeneratorPublic (RippleAddress const& naSeed)
 {
     CKey            ckSeed (naSeed.getSeed ());
     RippleAddress   naNew;
@@ -765,7 +765,7 @@ std::string RippleAddress::humanSeed () const
     }
 }
 
-int RippleAddress::setSeed1751 (const std::string& strHuman1751)
+int RippleAddress::setSeed1751 (std::string const& strHuman1751)
 {
     std::string strKey;
     int         iResult = RFC1751::getKeyFromEnglish (strKey, strHuman1751);
@@ -781,14 +781,14 @@ int RippleAddress::setSeed1751 (const std::string& strHuman1751)
     return iResult;
 }
 
-bool RippleAddress::setSeed (const std::string& strSeed)
+bool RippleAddress::setSeed (std::string const& strSeed)
 {
     mIsValid = SetString (strSeed, VER_FAMILY_SEED, Base58::getRippleAlphabet ());
 
     return mIsValid;
 }
 
-bool RippleAddress::setSeedGeneric (const std::string& strText)
+bool RippleAddress::setSeedGeneric (std::string const& strText)
 {
     RippleAddress   naTemp;
     bool            bResult = true;
@@ -849,7 +849,7 @@ RippleAddress RippleAddress::createSeedRandom ()
     return naNew;
 }
 
-RippleAddress RippleAddress::createSeedGeneric (const std::string& strText)
+RippleAddress RippleAddress::createSeedGeneric (std::string const& strText)
 {
     RippleAddress   naNew;
 

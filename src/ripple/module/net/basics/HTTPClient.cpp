@@ -20,7 +20,7 @@
 #include <boost/regex.hpp>
 #include <beast/asio/placeholders.h>
 #include <beast/module/core/memory/SharedSingleton.h>
-    
+
 namespace ripple {
 
 //
@@ -101,8 +101,8 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void makeGet (const std::string& strPath, boost::asio::streambuf& sb,
-        const std::string& strHost)
+    void makeGet (std::string const& strPath, boost::asio::streambuf& sb,
+        std::string const& strHost)
     {
         std::ostream    osRequest (&sb);
 
@@ -118,10 +118,10 @@ public:
     void request (
         bool bSSL,
         std::deque<std::string> deqSites,
-        std::function<void (boost::asio::streambuf& sb, const std::string& strHost)> build,
+        std::function<void (boost::asio::streambuf& sb, std::string const& strHost)> build,
         boost::posix_time::time_duration timeout,
         std::function<bool (const boost::system::error_code& ecResult,
-            int iStatus, const std::string& strData)> complete)
+            int iStatus, std::string const& strData)> complete)
     {
         mSSL        = bSSL;
         mDeqSites   = deqSites;
@@ -137,10 +137,10 @@ public:
     void get (
         bool bSSL,
         std::deque<std::string> deqSites,
-        const std::string& strPath,
+        std::string const& strPath,
         boost::posix_time::time_duration timeout,
         std::function<bool (const boost::system::error_code& ecResult, int iStatus,
-            const std::string& strData)> complete)
+            std::string const& strData)> complete)
     {
 
         mComplete   = complete;
@@ -449,7 +449,7 @@ public:
     }
 
     // Call cancel the deadline timer and invoke the completion routine.
-    void invokeComplete (const boost::system::error_code& ecResult, int iStatus = 0, const std::string& strData = "")
+    void invokeComplete (const boost::system::error_code& ecResult, int iStatus = 0, std::string const& strData = "")
     {
         boost::system::error_code ecCancel;
 
@@ -483,7 +483,7 @@ public:
         }
     }
 
-    static bool onSMSResponse (const boost::system::error_code& ecResult, int iStatus, const std::string& strData)
+    static bool onSMSResponse (const boost::system::error_code& ecResult, int iStatus, std::string const& strData)
     {
         WriteLog (lsINFO, HTTPClient) << "SMS: Response:" << iStatus << " :" << strData;
 
@@ -504,8 +504,8 @@ private:
     const unsigned short                                        mPort;
     int                                                         mResponseMax;
     int                                                         mStatus;
-    std::function<void (boost::asio::streambuf& sb, const std::string& strHost)>         mBuild;
-    std::function<bool (const boost::system::error_code& ecResult, int iStatus, const std::string& strData)> mComplete;
+    std::function<void (boost::asio::streambuf& sb, std::string const& strHost)>         mBuild;
+    std::function<bool (const boost::system::error_code& ecResult, int iStatus, std::string const& strData)> mComplete;
 
     boost::asio::deadline_timer                                 mDeadline;
 
@@ -523,11 +523,11 @@ void HTTPClient::get (
     boost::asio::io_service& io_service,
     std::deque<std::string> deqSites,
     const unsigned short port,
-    const std::string& strPath,
+    std::string const& strPath,
     std::size_t responseMax,
     boost::posix_time::time_duration timeout,
     std::function<bool (const boost::system::error_code& ecResult, int iStatus,
-        const std::string& strData)> complete)
+        std::string const& strData)> complete)
 {
     std::shared_ptr <HTTPClientImp> client (
         new HTTPClientImp (io_service, port, responseMax));
@@ -540,11 +540,11 @@ void HTTPClient::get (
     boost::asio::io_service& io_service,
     std::string strSite,
     const unsigned short port,
-    const std::string& strPath,
+    std::string const& strPath,
     std::size_t responseMax,
     boost::posix_time::time_duration timeout,
     std::function<bool (const boost::system::error_code& ecResult, int iStatus,
-        const std::string& strData)> complete)
+        std::string const& strData)> complete)
 {
     std::deque<std::string> deqSites (1, strSite);
 
@@ -559,11 +559,11 @@ void HTTPClient::request (
     boost::asio::io_service& io_service,
     std::string strSite,
     const unsigned short port,
-    std::function<void (boost::asio::streambuf& sb, const std::string& strHost)> setRequest,
+    std::function<void (boost::asio::streambuf& sb, std::string const& strHost)> setRequest,
     std::size_t responseMax,
     boost::posix_time::time_duration timeout,
     std::function<bool (const boost::system::error_code& ecResult, int iStatus,
-        const std::string& strData)> complete)
+        std::string const& strData)> complete)
 {
     std::deque<std::string> deqSites (1, strSite);
 
@@ -573,7 +573,7 @@ void HTTPClient::request (
     client->request (bSSL, deqSites, setRequest, timeout, complete);
 }
 
-void HTTPClient::sendSMS (boost::asio::io_service& io_service, const std::string& strText)
+void HTTPClient::sendSMS (boost::asio::io_service& io_service, std::string const& strText)
 {
     std::string strScheme;
     std::string strDomain;

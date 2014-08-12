@@ -24,7 +24,6 @@
 #include <ripple/common/UnorderedContainers.h>
 
 #include <string>
-#include <unordered_map>
 
 namespace ripple {
 namespace SiteFiles {
@@ -34,7 +33,7 @@ class SiteFile
 public:
     SiteFile (int = 0); // dummy argument for emplace
 
-    typedef ripple::unordered_map <std::string, Section> SectionsType;
+    typedef hash_map <std::string, Section> SectionsType;
 
     /** Retrieve a section by name. */
     /** @{ */

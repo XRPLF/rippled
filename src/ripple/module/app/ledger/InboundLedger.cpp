@@ -69,7 +69,7 @@ InboundLedger::~InboundLedger ()
 {
     // Save any received AS data not processed. It could be useful
     // for populating a different ledger
-    BOOST_FOREACH (PeerDataPairType& entry, mReceivedData)
+    for (auto& entry : mReceivedData)
     {
         if (entry.second->type () == protocol::liAS_NODE)
             getApp().getInboundLedgers().gotStaleData(entry.second);
@@ -164,8 +164,7 @@ bool InboundLedger::tryLocal ()
             if (mLedger->peekTransactionMap ()->fetchRoot (
                 mLedger->getTransHash (), &filter))
             {
-                std::vector<uint256> h (mLedger->getNeededTransactionHashes (
-                    1, &filter));
+                auto h (mLedger->getNeededTransactionHashes (1, &filter));
 
                 if (h.empty ())
                 {
@@ -193,8 +192,7 @@ bool InboundLedger::tryLocal ()
             if (mLedger->peekAccountStateMap ()->fetchRoot (
                 mLedger->getAccountHash (), &filter))
             {
-                std::vector<uint256> h (mLedger->getNeededAccountStateHashes (
-                    1, &filter));
+                auto h (mLedger->getNeededAccountStateHashes (1, &filter));
 
                 if (h.empty ())
                 {
@@ -459,7 +457,7 @@ void InboundLedger::trigger (Peer::ptr const& peer)
         if (!isProgress () && !mFailed && mByHash && (
             getTimeouts () > ledgerBecomeAggressiveThreshold))
         {
-            std::vector<neededHash_t> need = getNeededHashes ();
+            auto need = getNeededHashes ();
 
             if (!need.empty ())
             {
@@ -467,7 +465,7 @@ void InboundLedger::trigger (Peer::ptr const& peer)
                 tmBH.set_query (true);
                 tmBH.set_ledgerhash (mHash.begin (), mHash.size ());
                 bool typeSet = false;
-                BOOST_FOREACH (neededHash_t & p, need)
+                for (auto& p : need)
                 {
                     if (m_journal.warning) m_journal.warning
                         << "Want: " << p.second;
@@ -767,7 +765,7 @@ void InboundLedger::filterNodes (std::vector<SHAMapNodeID>& nodeIDs,
     Call with a lock
 */
 // data must not have hash prefix
-bool InboundLedger::takeHeader (const std::string& data)
+bool InboundLedger::takeHeader (std::string const& data)
 {
     // Return value: true=normal, false=bad data
     if (m_journal.trace) m_journal.trace <<
@@ -785,9 +783,6 @@ bool InboundLedger::takeHeader (const std::string& data)
         if (m_journal.warning) m_journal.warning <<
             mLedger->getHash () << "!=" << mHash;
         mLedger.reset ();
-#ifdef TRUST_NETWORK
-        assert (false);
-#endif
         return false;
     }
 
@@ -1009,9 +1004,7 @@ std::vector<InboundLedger::neededHash_t> InboundLedger::getNeededHashes ()
     {
         AccountStateSF filter (mLedger->getLedgerSeq ());
         // VFALCO NOTE What's the number 4?
-        std::vector<uint256> v = mLedger->getNeededAccountStateHashes (
-            4, &filter);
-        BOOST_FOREACH (uint256 const & h, v)
+        for (auto const& h : mLedger->getNeededAccountStateHashes (4, &filter))
         {
             ret.push_back (std::make_pair (
                 protocol::TMGetObjectByHash::otSTATE_NODE, h));
@@ -1022,9 +1015,7 @@ std::vector<InboundLedger::neededHash_t> InboundLedger::getNeededHashes ()
     {
         TransactionStateSF filter (mLedger->getLedgerSeq ());
         // VFALCO NOTE What's the number 4?
-        std::vector<uint256> v = mLedger->getNeededTransactionHashes (
-            4, &filter);
-        BOOST_FOREACH (uint256 const & h, v)
+        for (auto const& h : mLedger->getNeededTransactionHashes (4, &filter))
         {
             ret.push_back (std::make_pair (
                 protocol::TMGetObjectByHash::otTRANSACTION_NODE, h));
@@ -1198,7 +1189,7 @@ void InboundLedger::runData ()
 
         // Select the peer that gives us the most nodes that are useful,
         // breaking ties in favor of the peer that responded first.
-        BOOST_FOREACH (PeerDataPairType& entry, data)
+        for (auto& entry : data)
         {
             Peer::ptr peer = entry.first.lock();
             if (peer)
@@ -1257,7 +1248,6 @@ Json::Value InboundLedger::getJson (int)
 
         // VFALCO Why 16?
         auto v = mLedger->getNeededAccountStateHashes (16, nullptr);
-
         for (auto const& h : v)
         {
             hv.append (to_string (h));
@@ -1270,7 +1260,6 @@ Json::Value InboundLedger::getJson (int)
         Json::Value hv (Json::arrayValue);
         // VFALCO Why 16?
         auto v = mLedger->getNeededTransactionHashes (16, nullptr);
-
         for (auto const& h : v)
         {
             hv.append (to_string (h));

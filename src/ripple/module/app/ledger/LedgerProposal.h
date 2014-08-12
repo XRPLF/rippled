@@ -34,19 +34,19 @@ public:
     typedef const pointer& ref;
 
     // proposal from peer
-    LedgerProposal (uint256 const & prevLgr, std::uint32_t proposeSeq, uint256 const & propose,
-                    std::uint32_t closeTime, const RippleAddress & naPeerPublic, uint256 const & suppress);
+    LedgerProposal (uint256 const& prevLgr, std::uint32_t proposeSeq, uint256 const& propose,
+                    std::uint32_t closeTime, const RippleAddress & naPeerPublic, uint256 const& suppress);
 
     // our first proposal
     LedgerProposal (const RippleAddress & pubKey, const RippleAddress & privKey,
-                    uint256 const & prevLedger, uint256 const & position, std::uint32_t closeTime);
+                    uint256 const& prevLedger, uint256 const& position, std::uint32_t closeTime);
 
     // an unsigned "dummy" proposal for nodes not validating
-    LedgerProposal (uint256 const & prevLedger, uint256 const & position, std::uint32_t closeTime);
+    LedgerProposal (uint256 const& prevLedger, uint256 const& position, std::uint32_t closeTime);
 
     uint256 getSigningHash () const;
-    bool checkSign (const std::string & signature, uint256 const & signingHash);
-    bool checkSign (const std::string & signature)
+    bool checkSign (std::string const& signature, uint256 const& signingHash);
+    bool checkSign (std::string const& signature)
     {
         return checkSign (signature, getSigningHash ());
     }
@@ -79,7 +79,7 @@ public:
     {
         return mCloseTime;
     }
-    const RippleAddress& peekPublic () const
+    RippleAddress const& peekPublic () const
     {
         return mPublicKey;
     }
@@ -89,11 +89,11 @@ public:
     }
     Blob sign ();
 
-    void setPrevLedger (uint256 const & prevLedger)
+    void setPrevLedger (uint256 const& prevLedger)
     {
         mPreviousLedger = prevLedger;
     }
-    void setSignature (const std::string & signature)
+    void setSignature (std::string const& signature)
     {
         mSignature = signature;
     }
@@ -101,7 +101,7 @@ public:
     {
         return !mSignature.empty ();
     }
-    bool isPrevLedger (uint256 const & pl)
+    bool isPrevLedger (uint256 const& pl)
     {
         return mPreviousLedger == pl;
     }
@@ -119,7 +119,7 @@ public:
         return mTime <= cutoff;
     }
 
-    bool changePosition (uint256 const & newPosition, std::uint32_t newCloseTime);
+    bool changePosition (uint256 const& newPosition, std::uint32_t newCloseTime);
     void bowOut ();
     Json::Value getJson () const;
 

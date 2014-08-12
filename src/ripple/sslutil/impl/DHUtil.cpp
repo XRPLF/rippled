@@ -42,7 +42,7 @@ std::string DH_der_gen (int iKeyLength)
     return strDer;
 }
 
-DH* DH_der_load (const std::string& strDer)
+DH* DH_der_load (std::string const& strDer)
 {
     const unsigned char* pbuf   = reinterpret_cast<const unsigned char*> (&strDer[0]);
 

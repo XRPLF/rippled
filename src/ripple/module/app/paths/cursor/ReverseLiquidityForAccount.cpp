@@ -17,9 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/module/app/paths/Calculators.h>
-#include <ripple/module/app/paths/RippleCalc.h>
-#include <ripple/module/app/paths/Tuning.h>
+#include <ripple/module/app/paths/cursor/RippleLiquidity.h>
 
 namespace ripple {
 namespace path {
@@ -40,71 +38,76 @@ namespace path {
 //
 // <-- tesSUCCESS or tecPATH_DRY
 
-TER computeReverseLiquidityForAccount (
-    RippleCalc& rippleCalc,
-    const unsigned int nodeIndex, PathState& pathState,
-    const bool bMultiQuality)
+TER PathCursor::reverseLiquidityForAccount () const
 {
     TER terResult = tesSUCCESS;
-    auto const lastNodeIndex = pathState.nodes().size () - 1;
-    auto const isFinalNode = (nodeIndex == lastNodeIndex);
+    auto const lastNodeIndex = nodeSize () - 1;
+    auto const isFinalNode = (nodeIndex_ == lastNodeIndex);
 
     // 0 quality means none has yet been determined.
     std::uint64_t uRateMax = 0;
 
-    auto& previousNode = pathState.nodes()[nodeIndex ? nodeIndex - 1 : 0];
-    auto& node = pathState.nodes()[nodeIndex];
-    auto& nextNode = pathState.nodes()[isFinalNode ? lastNodeIndex : nodeIndex + 1];
-
     // Current is allowed to redeem to next.
-    const bool previousNodeIsAccount = !nodeIndex || previousNode.isAccount();
-    const bool nextNodeIsAccount = isFinalNode || nextNode.isAccount();
+    const bool previousNodeIsAccount = !nodeIndex_ ||
+            previousNode().isAccount();
+
+    const bool nextNodeIsAccount = isFinalNode || nextNode().isAccount();
 
     Account const& previousAccountID = previousNodeIsAccount
-        ? previousNode.account_ : node.account_;
-    Account const& nextAccountID = nextNodeIsAccount ? nextNode.account_
-        : node.account_;   // Offers are always issue.
+        ? previousNode().account_ : node().account_;
+    Account const& nextAccountID = nextNodeIsAccount ? nextNode().account_
+        : node().account_;   // Offers are always issue.
 
     // This is the quality from from the previous node to this one.
     const std::uint32_t uQualityIn
-         = (nodeIndex != 0)
-            ? rippleCalc.mActiveLedger.rippleQualityIn (
-                node.account_, previousAccountID, node.currency_)
+         = (nodeIndex_ != 0)
+            ? ledger().rippleQualityIn (
+                node().account_,
+                previousAccountID,
+                node().issue_.currency)
             : QUALITY_ONE;
 
     // And this is the quality from the next one to this one.
     const std::uint32_t uQualityOut
-        = (nodeIndex != lastNodeIndex)
-            ? rippleCalc.mActiveLedger.rippleQualityOut (
-                node.account_, nextAccountID, node.currency_)
+        = (nodeIndex_ != lastNodeIndex)
+            ? ledger().rippleQualityOut (
+                node().account_,
+                nextAccountID,
+                node().issue_.currency)
             : QUALITY_ONE;
 
     // For previousNodeIsAccount:
     // Previous account is already owed.
-    const STAmount saPrvOwed = (previousNodeIsAccount && nodeIndex != 0)
-        ? rippleCalc.mActiveLedger.rippleOwed (
-            node.account_, previousAccountID, node.currency_)
-        : STAmount ({node.currency_, node.account_});
+    const STAmount saPrvOwed = (previousNodeIsAccount && nodeIndex_ != 0)
+        ? ledger().rippleOwed (
+            node().account_,
+            previousAccountID,
+            node().issue_.currency)
+            : STAmount (node().issue_);
 
     // The limit amount that the previous account may owe.
-    const STAmount saPrvLimit = (previousNodeIsAccount && nodeIndex != 0)
-        ? rippleCalc.mActiveLedger.rippleLimit (
-            node.account_, previousAccountID, node.currency_)
-        : STAmount ({node.currency_, node.account_});
+    const STAmount saPrvLimit = (previousNodeIsAccount && nodeIndex_ != 0)
+        ? ledger().rippleLimit (
+            node().account_,
+            previousAccountID,
+            node().issue_.currency)
+        : STAmount (node().issue_);
 
     // Next account is owed.
-    const STAmount saNxtOwed = (nextNodeIsAccount && nodeIndex != lastNodeIndex)
-        ? rippleCalc.mActiveLedger.rippleOwed (
-            node.account_, nextAccountID, node.currency_)
-        : STAmount ({node.currency_, node.account_});
+    const STAmount saNxtOwed = (nextNodeIsAccount && nodeIndex_ != lastNodeIndex)
+        ? ledger().rippleOwed (
+            node().account_,
+            nextAccountID,
+            node().issue_.currency)
+        : STAmount (node().issue_);
 
     WriteLog (lsTRACE, RippleCalc)
-        << "computeReverseLiquidityForAccount>"
-        << " nodeIndex=%d/%d" << nodeIndex << "/" << lastNodeIndex
+        << "reverseLiquidityForAccount>"
+        << " nodeIndex_=%d/%d" << nodeIndex_ << "/" << lastNodeIndex
         << " previousAccountID=" << previousAccountID
-        << " node.account_=" << node.account_
+        << " node.account_=" << node().account_
         << " nextAccountID=" << nextAccountID
-        << " currency_=" << node.currency_
+        << " currency=" << node().issue_.currency
         << " uQualityIn=" << uQualityIn
         << " uQualityOut=" << uQualityOut
         << " saPrvOwed=" << saPrvOwed
@@ -116,67 +119,54 @@ TER computeReverseLiquidityForAccount (
         ? saPrvOwed
         : STAmount (saPrvOwed.issue ());
 
-    // This is the amount we're actually going to be setting for the previous
-    // node.
-    STAmount& saPrvRedeemAct = previousNode.saRevRedeem;
-
     // Previous can issue up to limit minus whatever portion of limit already
     // used (not including redeemable amount) - another "maximum flow".
     const STAmount saPrvIssueReq = (saPrvOwed < zero)
         ? saPrvLimit + saPrvOwed : saPrvLimit;
-    STAmount& saPrvIssueAct = previousNode.saRevIssue;
 
     // Precompute these values in case we have an order book.
-    auto deliverCurrency = previousNode.saRevDeliver.getCurrency ();
+    auto deliverCurrency = previousNode().saRevDeliver.getCurrency ();
     const STAmount saPrvDeliverReq (
-        {deliverCurrency, previousNode.saRevDeliver.getIssuer ()}, -1);
-    // Unlimited delivery.
-
-    STAmount& saPrvDeliverAct = previousNode.saRevDeliver;
-
-    // For nextNodeIsAccount
-    const STAmount& saCurRedeemReq  = node.saRevRedeem;
+        {deliverCurrency, previousNode().saRevDeliver.getIssuer ()}, -1);
+    // -1 means unlimited delivery.
 
     // Set to zero, because we're trying to hit the previous node.
-    auto saCurRedeemAct = saCurRedeemReq.zeroed();
-
-    const STAmount& saCurIssueReq = node.saRevIssue;
+    auto saCurRedeemAct = node().saRevRedeem.zeroed();
 
     // Track the amount we actually redeem.
-    auto saCurIssueAct = saCurIssueReq.zeroed();
+    auto saCurIssueAct = node().saRevIssue.zeroed();
 
     // For !nextNodeIsAccount
-    const STAmount& saCurDeliverReq = node.saRevDeliver;
-    auto saCurDeliverAct  = saCurDeliverReq.zeroed();
+    auto saCurDeliverAct  = node().saRevDeliver.zeroed();
 
     WriteLog (lsTRACE, RippleCalc)
-        << "computeReverseLiquidityForAccount:"
+        << "reverseLiquidityForAccount:"
         << " saPrvRedeemReq:" << saPrvRedeemReq
         << " saPrvIssueReq:" << saPrvIssueReq
-        << " saPrvDeliverAct:" << saPrvDeliverAct
+        << " previousNode.saRevDeliver:" << previousNode().saRevDeliver
         << " saPrvDeliverReq:" << saPrvDeliverReq
-        << " saCurRedeemReq:" << saCurRedeemReq
-        << " saCurIssueReq:" << saCurIssueReq
+        << " node.saRevRedeem:" << node().saRevRedeem
+        << " node.saRevIssue:" << node().saRevIssue
         << " saNxtOwed:" << saNxtOwed;
 
-    WriteLog (lsTRACE, RippleCalc) << pathState.getJson ();
+    WriteLog (lsTRACE, RippleCalc) << pathState_.getJson ();
 
     // Current redeem req can't be more than IOUs on hand.
-    assert (!saCurRedeemReq || (-saNxtOwed) >= saCurRedeemReq);
-    assert (!saCurIssueReq  // If not issuing, fine.
+    assert (!node().saRevRedeem || -saNxtOwed >= node().saRevRedeem);
+    assert (!node().saRevIssue  // If not issuing, fine.
             || saNxtOwed >= zero
             // saNxtOwed >= 0: Sender not holding next IOUs, saNxtOwed < 0:
             // Sender holding next IOUs.
-            || -saNxtOwed == saCurRedeemReq);
+            || -saNxtOwed == node().saRevRedeem);
     // If issue req, then redeem req must consume all owed.
 
-    if (nodeIndex == 0)
+    if (nodeIndex_ == 0)
     {
         // ^ --> ACCOUNT -->  account|offer
         // Nothing to do, there is no previous to adjust.
         //
         // TODO(tom): we could have skipped all that setup and just left
-        // or even just never call this whole routine on nodeIndex = 0!
+        // or even just never call this whole routine on nodeIndex_ = 0!
     }
 
     // The next four cases correspond to the table at the bottom of this Wiki
@@ -188,12 +178,13 @@ TER computeReverseLiquidityForAccount (
             // account --> ACCOUNT --> $
             // Overall deliverable.
             const STAmount saCurWantedReq = std::min (
-                pathState.outReq() - pathState.outAct(),
+                pathState_.outReq() - pathState_.outAct(),
                 saPrvLimit + saPrvOwed);
             auto saCurWantedAct = saCurWantedReq.zeroed ();
 
             WriteLog (lsTRACE, RippleCalc)
-                << "computeReverseLiquidityForAccount: account --> ACCOUNT --> $ :"
+                << "reverseLiquidityForAccount: account --> "
+                << "ACCOUNT --> $ :"
                 << " saCurWantedReq=" << saCurWantedReq;
 
             // Calculate redeem
@@ -202,24 +193,25 @@ TER computeReverseLiquidityForAccount (
                 // Redeem your own IOUs at 1:1
 
                 saCurWantedAct = std::min (saPrvRedeemReq, saCurWantedReq);
-                saPrvRedeemAct = saCurWantedAct;
+                previousNode().saRevRedeem = saCurWantedAct;
 
                 uRateMax = STAmount::uRateOne;
 
                 WriteLog (lsTRACE, RippleCalc)
-                    << "computeReverseLiquidityForAccount: Redeem at 1:1"
+                    << "reverseLiquidityForAccount: Redeem at 1:1"
                     << " saPrvRedeemReq=" << saPrvRedeemReq
-                    << " (available) saPrvRedeemAct=" << saPrvRedeemAct
+                    << " (available) previousNode.saRevRedeem="
+                    << previousNode().saRevRedeem
                     << " uRateMax="
                     << STAmount::saFromRate (uRateMax).getText ();
             }
             else
             {
-                saPrvRedeemAct.clear (saPrvRedeemReq);
+                previousNode().saRevRedeem.clear (saPrvRedeemReq);
             }
 
             // Calculate issuing.
-            saPrvIssueAct.clear (saPrvIssueReq);
+            previousNode().saRevIssue.clear (saPrvIssueReq);
 
             if (saCurWantedReq != saCurWantedAct // Need more.
                 && saPrvIssueReq)  // Will accept IOUs from previous.
@@ -228,15 +220,20 @@ TER computeReverseLiquidityForAccount (
 
                 // If we previously redeemed and this has a poorer rate, this
                 // won't be included the current increment.
-                computeRippleLiquidity (
-                    rippleCalc,
-                    uQualityIn, QUALITY_ONE,
-                    saPrvIssueReq, saCurWantedReq,
-                    saPrvIssueAct, saCurWantedAct, uRateMax);
+                rippleLiquidity (
+                    rippleCalc_,
+                    uQualityIn,
+                    QUALITY_ONE,
+                    saPrvIssueReq,
+                    saCurWantedReq,
+                    previousNode().saRevIssue,
+                    saCurWantedAct,
+                    uRateMax);
 
                 WriteLog (lsTRACE, RippleCalc)
-                    << "computeReverseLiquidityForAccount: Issuing: Rate: quality in : 1.0"
-                    << " saPrvIssueAct:" << saPrvIssueAct
+                    << "reverseLiquidityForAccount: Issuing: Rate: "
+                    << "quality in : 1.0"
+                    << " previousNode.saRevIssue:" << previousNode().saRevIssue
                     << " saCurWantedAct:" << saCurWantedAct;
             }
 
@@ -250,94 +247,110 @@ TER computeReverseLiquidityForAccount (
         {
             // Not final node.
             // account --> ACCOUNT --> account
-            saPrvRedeemAct.clear (saPrvRedeemReq);
-            saPrvIssueAct.clear (saPrvIssueReq);
+            previousNode().saRevRedeem.clear (saPrvRedeemReq);
+            previousNode().saRevIssue.clear (saPrvIssueReq);
 
             // redeem (part 1) -> redeem
-            if (saCurRedeemReq
+            if (node().saRevRedeem
                 // Next wants IOUs redeemed from current account.
                 && saPrvRedeemReq)
                 // Previous has IOUs to redeem to the current account.
             {
                 // TODO(tom): add English.
-                // Rate : 1.0 : quality out - we must accept our own IOUs as 1:1.
-                computeRippleLiquidity (
-                    rippleCalc,
-                    QUALITY_ONE, uQualityOut,
-                    saPrvRedeemReq, saCurRedeemReq,
-                    saPrvRedeemAct, saCurRedeemAct, uRateMax);
+                // Rate : 1.0 : quality out - we must accept our own IOUs
+                // as 1:1.
+                rippleLiquidity (
+                    rippleCalc_,
+                    QUALITY_ONE,
+                    uQualityOut,
+                    saPrvRedeemReq,
+                    node().saRevRedeem,
+                    previousNode().saRevRedeem,
+                    saCurRedeemAct,
+                    uRateMax);
 
                 WriteLog (lsTRACE, RippleCalc)
-                    << "computeReverseLiquidityForAccount: "
+                    << "reverseLiquidityForAccount: "
                     << "Rate : 1.0 : quality out"
-                    << " saPrvRedeemAct:" << saPrvRedeemAct
+                    << " previousNode.saRevRedeem:" << previousNode().saRevRedeem
                     << " saCurRedeemAct:" << saCurRedeemAct;
             }
 
             // issue (part 1) -> redeem
-            if (saCurRedeemReq != saCurRedeemAct
+            if (node().saRevRedeem != saCurRedeemAct
                 // The current node has more IOUs to redeem.
-                && saPrvRedeemAct == saPrvRedeemReq)
+                && previousNode().saRevRedeem == saPrvRedeemReq)
                 // The previous node has no IOUs to redeem remaining, so issues.
             {
                 // Rate: quality in : quality out
-                computeRippleLiquidity (
-                    rippleCalc,
-                    uQualityIn, uQualityOut,
-                    saPrvIssueReq, saCurRedeemReq,
-                    saPrvIssueAct, saCurRedeemAct, uRateMax);
+                rippleLiquidity (
+                    rippleCalc_,
+                    uQualityIn,
+                    uQualityOut,
+                    saPrvIssueReq,
+                    node().saRevRedeem,
+                    previousNode().saRevIssue,
+                    saCurRedeemAct,
+                    uRateMax);
 
                 WriteLog (lsTRACE, RippleCalc)
-                    << "computeReverseLiquidityForAccount: "
+                    << "reverseLiquidityForAccount: "
                     << "Rate: quality in : quality out:"
-                    << " saPrvIssueAct:" << saPrvIssueAct
+                    << " previousNode.saRevIssue:" << previousNode().saRevIssue
                     << " saCurRedeemAct:" << saCurRedeemAct;
             }
 
             // redeem (part 2) -> issue.
-            if (saCurIssueReq   // Next wants IOUs issued.
+            if (node().saRevIssue   // Next wants IOUs issued.
                 // TODO(tom): this condition seems redundant.
-                && saCurRedeemAct == saCurRedeemReq
+                && saCurRedeemAct == node().saRevRedeem
                 // Can only issue if completed redeeming.
-                && saPrvRedeemAct != saPrvRedeemReq)
+                && previousNode().saRevRedeem != saPrvRedeemReq)
                 // Did not complete redeeming previous IOUs.
             {
                 // Rate : 1.0 : transfer_rate
-                computeRippleLiquidity (
-                    rippleCalc,
+                rippleLiquidity (
+                    rippleCalc_,
                     QUALITY_ONE,
-                    rippleCalc.mActiveLedger.rippleTransferRate (node.account_),
-                    saPrvRedeemReq, saCurIssueReq,
-                    saPrvRedeemAct, saCurIssueAct, uRateMax);
+                    ledger().rippleTransferRate (node().account_),
+                    saPrvRedeemReq,
+                    node().saRevIssue,
+                    previousNode().saRevRedeem,
+                    saCurIssueAct,
+                    uRateMax);
 
                 WriteLog (lsDEBUG, RippleCalc)
-                    << "computeReverseLiquidityForAccount: "
+                    << "reverseLiquidityForAccount: "
                     << "Rate : 1.0 : transfer_rate:"
-                    << " saPrvRedeemAct:" << saPrvRedeemAct
+                    << " previousNode.saRevRedeem:" << previousNode().saRevRedeem
                     << " saCurIssueAct:" << saCurIssueAct;
             }
 
             // issue (part 2) -> issue
-            if (saCurIssueReq != saCurIssueAct
+            if (node().saRevIssue != saCurIssueAct
                 // Need wants more IOUs issued.
-                && saCurRedeemAct == saCurRedeemReq
+                && saCurRedeemAct == node().saRevRedeem
                 // Can only issue if completed redeeming.
-                && saPrvRedeemReq == saPrvRedeemAct
+                && saPrvRedeemReq == previousNode().saRevRedeem
                 // Previously redeemed all owed IOUs.
                 && saPrvIssueReq)
                 // Previous can issue.
             {
                 // Rate: quality in : 1.0
-                computeRippleLiquidity (
-                    rippleCalc,
-                    uQualityIn, QUALITY_ONE,
-                    saPrvIssueReq, saCurIssueReq,
-                    saPrvIssueAct, saCurIssueAct, uRateMax);
+                rippleLiquidity (
+                    rippleCalc_,
+                    uQualityIn,
+                    QUALITY_ONE,
+                    saPrvIssueReq,
+                    node().saRevIssue,
+                    previousNode().saRevIssue,
+                    saCurIssueAct,
+                    uRateMax);
 
                 WriteLog (lsTRACE, RippleCalc)
-                    << "computeReverseLiquidityForAccount: "
+                    << "reverseLiquidityForAccount: "
                     << "Rate: quality in : 1.0:"
-                    << " saPrvIssueAct:" << saPrvIssueAct
+                    << " previousNode.saRevIssue:" << previousNode().saRevIssue
                     << " saCurIssueAct:" << saCurIssueAct;
             }
 
@@ -348,10 +361,10 @@ TER computeReverseLiquidityForAccount (
             }
 
             WriteLog (lsTRACE, RippleCalc)
-                << "computeReverseLiquidityForAccount: "
+                << "reverseLiquidityForAccount: "
                 << "^|account --> ACCOUNT --> account :"
-                << " saCurRedeemReq:" << saCurRedeemReq
-                << " saCurIssueReq:" << saCurIssueReq
+                << " node.saRevRedeem:" << node().saRevRedeem
+                << " node.saRevIssue:" << node().saRevIssue
                 << " saPrvOwed:" << saPrvOwed
                 << " saCurRedeemAct:" << saCurRedeemAct
                 << " saCurIssueAct:" << saCurIssueAct;
@@ -363,11 +376,11 @@ TER computeReverseLiquidityForAccount (
         // Note: deliver is always issue as ACCOUNT is the issuer for the offer
         // input.
         WriteLog (lsTRACE, RippleCalc)
-            << "computeReverseLiquidityForAccount: "
+            << "reverseLiquidityForAccount: "
             << "account --> ACCOUNT --> offer";
 
-        saPrvRedeemAct.clear (saPrvRedeemReq);
-        saPrvIssueAct.clear (saPrvIssueReq);
+        previousNode().saRevRedeem.clear (saPrvRedeemReq);
+        previousNode().saRevIssue.clear (saPrvIssueReq);
 
         // We have three cases: the nxt offer can be owned by current account,
         // previous account or some third party account.
@@ -379,26 +392,35 @@ TER computeReverseLiquidityForAccount (
         // TODO(tom): Make sure deliver was cleared, or check actual is zero.
         // redeem -> deliver/issue.
         if (saPrvOwed > zero                    // Previous has IOUs to redeem.
-            && saCurDeliverReq)                 // Need some issued.
+            && node().saRevDeliver)                 // Need some issued.
         {
             // Rate : 1.0 : transfer_rate
-            computeRippleLiquidity (
-                rippleCalc, QUALITY_ONE,
-                rippleCalc.mActiveLedger.rippleTransferRate (node.account_),
-                saPrvRedeemReq, saCurDeliverReq,
-                saPrvRedeemAct, saCurDeliverAct, uRateMax);
+            rippleLiquidity (
+                rippleCalc_,
+                QUALITY_ONE,
+                ledger().rippleTransferRate (node().account_),
+                saPrvRedeemReq,
+                node().saRevDeliver,
+                previousNode().saRevRedeem,
+                saCurDeliverAct,
+                uRateMax);
         }
 
         // issue -> deliver/issue
-        if (saPrvRedeemReq == saPrvRedeemAct    // Previously redeemed all owed.
-            && saCurDeliverReq != saCurDeliverAct)  // Still need some issued.
+        if (saPrvRedeemReq == previousNode().saRevRedeem
+            // Previously redeemed all owed.
+            && node().saRevDeliver != saCurDeliverAct)  // Still need some issued.
         {
             // Rate: quality in : 1.0
-            computeRippleLiquidity (
-                rippleCalc,
-                uQualityIn, QUALITY_ONE,
-                saPrvIssueReq, saCurDeliverReq,
-                saPrvIssueAct, saCurDeliverAct, uRateMax);
+            rippleLiquidity (
+                rippleCalc_,
+                uQualityIn,
+                QUALITY_ONE,
+                saPrvIssueReq,
+                node().saRevDeliver,
+                previousNode().saRevIssue,
+                saCurDeliverAct,
+                uRateMax);
         }
 
         if (!saCurDeliverAct)
@@ -408,8 +430,8 @@ TER computeReverseLiquidityForAccount (
         }
 
         WriteLog (lsTRACE, RippleCalc)
-            << "computeReverseLiquidityForAccount: "
-            << " saCurDeliverReq:" << saCurDeliverReq
+            << "reverseLiquidityForAccount: "
+            << " node.saRevDeliver:" << node().saRevDeliver
             << " saCurDeliverAct:" << saCurDeliverAct
             << " saPrvOwed:" << saPrvOwed;
     }
@@ -422,16 +444,16 @@ TER computeReverseLiquidityForAccount (
             //
             // This is the final node; we can't look to the right to get values;
             // we have to go up to get the out value for the entire path state.
-            const STAmount& saCurWantedReq  =
-                    pathState.outReq() - pathState.outAct();
+            STAmount const& saCurWantedReq  =
+                    pathState_.outReq() - pathState_.outAct();
             STAmount saCurWantedAct = saCurWantedReq.zeroed();
 
             WriteLog (lsTRACE, RippleCalc)
-                << "computeReverseLiquidityForAccount: "
+                << "reverseLiquidityForAccount: "
                 << "offer --> ACCOUNT --> $ :"
                 << " saCurWantedReq:" << saCurWantedReq
-                << " saOutAct:" << pathState.outAct()
-                << " saOutReq:" << pathState.outReq();
+                << " saOutAct:" << pathState_.outAct()
+                << " saOutReq:" << pathState_.outReq();
 
             if (saCurWantedReq <= zero)
             {
@@ -446,7 +468,7 @@ TER computeReverseLiquidityForAccount (
             }
 
             assert (saCurWantedReq > zero); // FIXME: We got one of these
-            // The previous node is an offer;  we are receiving our own currency;
+            // The previous node is an offer; we are receiving our own currency.
 
             // The previous order book's entries might hold our issuances; might
             // not hold our issuances; might be our own offer.
@@ -460,11 +482,15 @@ TER computeReverseLiquidityForAccount (
             // to a document.
 
             // Rate: quality in : 1.0
-            computeRippleLiquidity (
-                rippleCalc,
-                uQualityIn, QUALITY_ONE,
-                saPrvDeliverReq, saCurWantedReq,
-                saPrvDeliverAct, saCurWantedAct, uRateMax);
+            rippleLiquidity (
+                rippleCalc_,
+                uQualityIn,
+                QUALITY_ONE,
+                saPrvDeliverReq,
+                saCurWantedReq,
+                previousNode().saRevDeliver,
+                saCurWantedAct,
+                uRateMax);
 
             if (!saCurWantedAct)
             {
@@ -473,8 +499,8 @@ TER computeReverseLiquidityForAccount (
             }
 
             WriteLog (lsTRACE, RippleCalc)
-                << "computeReverseLiquidityForAccount:"
-                << " saPrvDeliverAct:" << saPrvDeliverAct
+                << "reverseLiquidityForAccount:"
+                << " previousNode().saRevDeliver:" << previousNode().saRevDeliver
                 << " saPrvDeliverReq:" << saPrvDeliverReq
                 << " saCurWantedAct:" << saCurWantedAct
                 << " saCurWantedReq:" << saCurWantedReq;
@@ -484,51 +510,59 @@ TER computeReverseLiquidityForAccount (
             // offer --> ACCOUNT --> account
             // Note: offer is always delivering(redeeming) as account is issuer.
             WriteLog (lsTRACE, RippleCalc)
-                << "computeReverseLiquidityForAccount: "
+                << "reverseLiquidityForAccount: "
                 << "offer --> ACCOUNT --> account :"
-                << " saCurRedeemReq:" << saCurRedeemReq
-                << " saCurIssueReq:" << saCurIssueReq;
+                << " node.saRevRedeem:" << node().saRevRedeem
+                << " node.saRevIssue:" << node().saRevIssue;
 
             // deliver -> redeem
             // TODO(tom): now we have more checking in nodeRipple, these checks
             // might be redundant.
-            if (saCurRedeemReq)  // Next wants us to redeem.
+            if (node().saRevRedeem)  // Next wants us to redeem.
             {
                 // cur holds IOUs from the account to the right, the nxt
                 // account.  If someone is making the current account get rid of
-                // the nxt account's IOUs, then charge the input for quality out.
+                // the nxt account's IOUs, then charge the input for quality
+                // out.
                 //
                 // Rate : 1.0 : quality out
-                computeRippleLiquidity (
-                    rippleCalc,
-                    QUALITY_ONE, uQualityOut,
-                    saPrvDeliverReq, saCurRedeemReq,
-                    saPrvDeliverAct, saCurRedeemAct, uRateMax);
+                rippleLiquidity (
+                    rippleCalc_,
+                    QUALITY_ONE,
+                    uQualityOut,
+                    saPrvDeliverReq,
+                    node().saRevRedeem,
+                    previousNode().saRevDeliver,
+                    saCurRedeemAct,
+                    uRateMax);
             }
 
             // deliver -> issue.
-            if (saCurRedeemReq == saCurRedeemAct
+            if (node().saRevRedeem == saCurRedeemAct
                 // Can only issue if previously redeemed all.
-                && saCurIssueReq)
+                && node().saRevIssue)
                 // Need some issued.
             {
                 // Rate : 1.0 : transfer_rate
-                computeRippleLiquidity (
-                    rippleCalc,
+                rippleLiquidity (
+                    rippleCalc_,
                     QUALITY_ONE,
-                    rippleCalc.mActiveLedger.rippleTransferRate (node.account_),
-                    saPrvDeliverReq, saCurIssueReq, saPrvDeliverAct,
-                    saCurIssueAct, uRateMax);
+                    ledger().rippleTransferRate (node().account_),
+                    saPrvDeliverReq,
+                    node().saRevIssue,
+                    previousNode().saRevDeliver,
+                    saCurIssueAct,
+                    uRateMax);
             }
 
             WriteLog (lsTRACE, RippleCalc)
-                << "computeReverseLiquidityForAccount:"
+                << "reverseLiquidityForAccount:"
                 << " saCurRedeemAct:" << saCurRedeemAct
-                << " saCurRedeemReq:" << saCurRedeemReq
-                << " saPrvDeliverAct:" << saPrvDeliverAct
-                << " saCurIssueReq:" << saCurIssueReq;
+                << " node.saRevRedeem:" << node().saRevRedeem
+                << " previousNode.saRevDeliver:" << previousNode().saRevDeliver
+                << " node.saRevIssue:" << node().saRevIssue;
 
-            if (!saPrvDeliverAct)
+            if (!previousNode().saRevDeliver)
             {
                 // Must want something.
                 terResult   = tecPATH_DRY;
@@ -540,15 +574,18 @@ TER computeReverseLiquidityForAccount (
         // offer --> ACCOUNT --> offer
         // deliver/redeem -> deliver/issue.
         WriteLog (lsTRACE, RippleCalc)
-            << "computeReverseLiquidityForAccount: offer --> ACCOUNT --> offer";
+            << "reverseLiquidityForAccount: offer --> ACCOUNT --> offer";
 
         // Rate : 1.0 : transfer_rate
-        computeRippleLiquidity (
-            rippleCalc,
+        rippleLiquidity (
+            rippleCalc_,
             QUALITY_ONE,
-            rippleCalc.mActiveLedger.rippleTransferRate (node.account_),
-            saPrvDeliverReq, saCurDeliverReq, saPrvDeliverAct,
-            saCurDeliverAct, uRateMax);
+            ledger().rippleTransferRate (node().account_),
+            saPrvDeliverReq,
+            node().saRevDeliver,
+            previousNode().saRevDeliver,
+            saCurDeliverAct,
+            uRateMax);
 
         if (!saCurDeliverAct)
         {

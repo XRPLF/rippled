@@ -44,7 +44,8 @@ RippleLineCache::pointer PathRequests::getLineCache (Ledger::pointer& ledger, bo
     return mLineCache;
 }
 
-void PathRequests::updateAll (Ledger::ref inLedger, CancelCallback shouldCancel)
+void PathRequests::updateAll (Ledger::ref inLedger,
+                              Job::CancelCallback shouldCancel)
 {
     std::vector<PathRequest::wptr> requests;
 
@@ -163,7 +164,7 @@ void PathRequests::updateAll (Ledger::ref inLedger, CancelCallback shouldCancel)
 Json::Value PathRequests::makePathRequest(
     std::shared_ptr <InfoSub> const& subscriber,
     const std::shared_ptr<Ledger>& inLedger,
-    const Json::Value& requestJson)
+    Json::Value const& requestJson)
 {
     PathRequest::pointer req = std::make_shared<PathRequest> (
         subscriber, ++mLastIdentifier, *this, mJournal);

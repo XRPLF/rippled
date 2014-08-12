@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <unordered_map>
 #include <utility>
 
 #include <ripple/module/rpc/ErrorCodes.h>
@@ -42,7 +41,7 @@ namespace detail {
 class ErrorCategory
 {
 public:
-    typedef ripple::unordered_map <error_code_i, ErrorInfo> Map;
+    typedef hash_map <error_code_i, ErrorInfo> Map;
 
     ErrorCategory ()
         : m_unknown (rpcUNKNOWN, "unknown", "An unknown error code.")

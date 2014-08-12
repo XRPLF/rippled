@@ -35,6 +35,7 @@ public:
     Scheduler& m_scheduler;
     BatchWriter m_batch;
     std::string m_name;
+    std::unique_ptr <hyperleveldb::FilterPolicy const> m_filter_policy;
     std::unique_ptr <hyperleveldb::DB> m_db;
 
     HyperDBBackend (size_t keyBytes, Parameters const& keyValues,
@@ -63,12 +64,13 @@ public:
         if (keyValues ["filter_bits"].isEmpty())
         {
             if (getConfig ().NODE_SIZE >= 2)
-                options.filter_policy = hyperleveldb::NewBloomFilterPolicy (10);
+                m_filter_policy.reset  (hyperleveldb::NewBloomFilterPolicy (10));
         }
         else if (keyValues ["filter_bits"].getIntValue() != 0)
         {
-            options.filter_policy = hyperleveldb::NewBloomFilterPolicy (keyValues ["filter_bits"].getIntValue ());
+            m_filter_policy.reset (hyperleveldb::NewBloomFilterPolicy (keyValues ["filter_bits"].getIntValue ()));
         }
+        options.filter_policy = m_filter_policy.get();
 
         if (! keyValues["open_files"].isEmpty ())
         {

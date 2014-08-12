@@ -20,7 +20,8 @@
 
 namespace ripple {
 
-static void textTime (std::string& text, int& seconds, const char* unitName, int unitVal)
+static void textTime (
+    std::string& text, int& seconds, const char* unitName, int unitVal)
 {
     int i = seconds / unitVal;
 
@@ -49,7 +50,9 @@ Json::Value doFeature (RPC::Context& context)
         return jvReply;
     }
 
-    uint256 uFeature = getApp().getAmendmentTable ().get(context.params_["feature"].asString());
+    uint256 uFeature
+            = getApp().getAmendmentTable ().get(
+                context.params_["feature"].asString());
 
     if (uFeature.isZero ())
     {

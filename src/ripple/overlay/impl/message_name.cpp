@@ -17,9 +17,6 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_OVERLAY_MESSAGE_NAME_H_INCLUDED
-#define RIPPLE_OVERLAY_MESSAGE_NAME_H_INCLUDED
-
 namespace ripple {
 
 char const*
@@ -49,5 +46,3 @@ protocol_message_name (int type)
 }
 
 }
-
-#endif

@@ -203,7 +203,7 @@ public:
                 closedLedger->setClosed ();
                 closedLedger->setImmutable ();
                 mClosedLedger.set (closedLedger);
-	    }
+            }
 
             mCurrentLedger.set (newLedger);
         }
@@ -818,7 +818,7 @@ public:
         };
 
         // Count the number of current, trusted validations
-        ripple::unordered_map <uint256, valSeq> count;
+        hash_map <uint256, valSeq> count;
         for (auto const& v : val)
         {
             valSeq& vs = count[v->getLedgerHash()];
@@ -1411,7 +1411,7 @@ public:
         return Ledger::pointer ();
     }
 
-    void doLedgerCleaner(const Json::Value& parameters)
+    void doLedgerCleaner(Json::Value const& parameters)
     {
         mLedgerCleaner->doClean (parameters);
     }

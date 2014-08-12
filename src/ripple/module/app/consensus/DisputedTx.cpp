@@ -19,8 +19,6 @@
 
 namespace ripple {
 
-// #define TRUST_NETWORK
-
 // Track a peer's yes/no vote on a particular disputed transaction
 void DisputedTx::setVote (NodeID const& peer, bool votesYes)
 {

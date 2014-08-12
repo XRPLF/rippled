@@ -25,8 +25,6 @@ namespace ripple {
 // }
 Json::Value doWalletPropose (RPC::Context& context)
 {
-    context.lock_.unlock ();
-
     RippleAddress   naSeed;
     RippleAddress   naAccount;
 
