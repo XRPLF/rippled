@@ -20,6 +20,13 @@
 #ifndef CPPTL_JSON_READER_H_INCLUDED
 # define CPPTL_JSON_READER_H_INCLUDED
 
+#include <ripple/json/api/json_config.h>
+#include <ripple/json/api/json_features.h>
+#include <ripple/json/api/json_forwards.h>
+#include <ripple/json/api/json_value.h>
+
+#include <stack>
+
 namespace Json
 {
 
