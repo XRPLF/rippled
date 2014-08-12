@@ -225,7 +225,7 @@ TER PathCursor::advanceNode (bool const bReverse) const
                 {
                     // Offer has bad amounts. Offers should never have a bad
                     // amounts.
-                    auto index = node().offerIndex_;
+                    auto const index = node().offerIndex_;
                     if (bReverse)
                     {
                         // Past internal error, offer had bad amounts.
@@ -237,7 +237,8 @@ TER PathCursor::advanceNode (bool const bReverse) const
                             << " node.saTakerGets=%s" << node().saTakerGets;
 
                         // Mark offer for always deletion.
-                        rippleCalc_.permanentlyUnfundedOffers_.insert (index);
+                        rippleCalc_.permanentlyUnfundedOffers_.insert (
+                            node().offerIndex_);
                     }
                     else if (rippleCalc_.permanentlyUnfundedOffers_.find (index)
                              != rippleCalc_.permanentlyUnfundedOffers_.end ())
