@@ -33,7 +33,7 @@ public:
     DecayingSample () = delete;
 
     /**
-        @param now Start time of DecayingSample.
+        \param now Start time of DecayingSample.
     */
     explicit DecayingSample (time_point now)
         : m_value (value_type())

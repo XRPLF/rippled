@@ -26,7 +26,7 @@ namespace ripple {
 
     These are part of the binary message format.
 
-    @ingroup protocol
+    \ingroup protocol
 */
 enum TxType
 {

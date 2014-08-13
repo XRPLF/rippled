@@ -201,7 +201,7 @@ public:
             mIsNegative = !mIsNegative;
     }
 
-    /** @return a copy of amount with the same Issuer and Currency but zero
+    /** \return a copy of amount with the same Issuer and Currency but zero
         value. */
     STAmount zeroed() const
     {

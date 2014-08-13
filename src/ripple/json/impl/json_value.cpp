@@ -78,7 +78,7 @@ public:
     virtual char* duplicateStringValue ( const char* value,
                                          unsigned int length = unknown )
     {
-        //@todo invesgate this old optimization
+        //\todo invesgate this old optimization
         //if ( !value  ||  value[0] == 0 )
         //   return 0;
 

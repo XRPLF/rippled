@@ -49,7 +49,7 @@ public:
         Thread safety:
             Safe to call from any thread at any time.
 
-        @param parameters A Json object with configurable parameters.
+        \param parameters A Json object with configurable parameters.
     */
     virtual void doClean (Json::Value const& parameters) = 0;
 };

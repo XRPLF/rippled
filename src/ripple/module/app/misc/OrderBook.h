@@ -32,8 +32,8 @@ public:
 
     /** Construct from a currency specification.
 
-        @param index ???
-        @param book in and out currency/issuer pairs.
+        \param index ???
+        \param book in and out currency/issuer pairs.
     */
     // VFALCO NOTE what is the meaning of the index parameter?
     OrderBook (uint256 const& base, Book const& book)

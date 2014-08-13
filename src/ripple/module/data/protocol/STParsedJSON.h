@@ -32,8 +32,8 @@ public:
         The result of the parsing is stored in object and error.
         Exceptions:
             Does not throw.
-        @param name The name of the JSON field, used in diagnostics.
-        @param json The JSON-RPC to parse.
+        \param name The name of the JSON field, used in diagnostics.
+        \param json The JSON-RPC to parse.
     */
     STParsedJSON (std::string const& name,
         Json::Value const& json);

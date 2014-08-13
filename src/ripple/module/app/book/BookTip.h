@@ -81,7 +81,7 @@ public:
 
     /** Erases the current offer and advance to the next offer.
         Complexity: Constant
-        @return `true` if there is a next offer
+        \return `true` if there is a next offer
     */
     bool
     step ();

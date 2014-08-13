@@ -109,17 +109,17 @@ public:
     /** Returns the entire Content-Body, if the request is complete. */
     virtual std::string content() = 0;
 
-    /** Write this data asynchronously. */
-    virtual void write (void const* buffer, std::size_t bytes) = 0;
-
-    /** @return `true` if content() contains a legal JSON object. */
+    /** \return `true` if content() contains a legal JSON object. */
     virtual bool hasLegalJson() = 0;
 
-    /** @return the content as JSON if possible.
+    /** \return the content as JSON if possible.
         Precondition: hasLegalJson must return `true`. */
     virtual Json::Value const& getJson() = 0;
 
-    /** Send a copy of data asynchronously. */
+    /** @{ */
+    /** Write this data asynchronously. */
+    virtual void write (void const* buffer, std::size_t bytes) = 0;
+
     void write (std::string const& s)
     {
         if (! s.empty())
@@ -137,6 +137,7 @@ public:
                 boost::asio::buffer_size (buffer));
         }
     }
+    /** @} */
 
     /** Output support using ostream. */
     /** @{ */

@@ -42,12 +42,12 @@ struct BatchWriteReport
 };
 
 /** Scheduling for asynchronous backend activity
-    
+
     For improved performance, a backend has the option of performing writes
     in batches. These writes can be scheduled using the provided scheduler
     object.
 
-    @see BatchWriter
+    \see BatchWriter
 */
 class Scheduler
 {

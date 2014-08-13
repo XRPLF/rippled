@@ -39,13 +39,13 @@ namespace ripple {
 
 /** Creates the implementation of Overlay.
 
-    @param parent
-    @param resourceManager
-    @param siteFiles
-    @param pathToDbFileOrDirectory
-    @param resolver
-    @param io_service
-    @param context
+    \param parent
+    \param resourceManager
+    \param siteFiles
+    \param pathToDbFileOrDirectory
+    \param resolver
+    \param io_service
+    \param context
 */
 std::unique_ptr <Overlay>
 make_Overlay (

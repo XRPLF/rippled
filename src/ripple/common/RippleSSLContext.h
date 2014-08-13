@@ -39,7 +39,7 @@ public:
     /** Retrieve raw DH parameters.
         This is in the format expected by the OpenSSL function d2i_DHparams.
         The vector is binary. An empty vector means the key size is unsupported.
-        @note The string may contain nulls in the middle. Use size() to
+        \remark The string may contain nulls in the middle. Use size() to
               determine the actual size.
     */
     static std::string getRawDHParams (int keySize);

@@ -261,13 +261,9 @@ public:
         Json::Value const method = jvRequest ["method"];
 
         if (method.isNull ())
-        {
             return createResponse (400, "Null method");
-        }
-        else if (! method.isString ())
-        {
+        if (! method.isString ())
             return createResponse (400, "method is not string");
-        }
 
         std::string strMethod = method.asString ();
 
@@ -275,23 +271,18 @@ public:
         Json::Value params = jvRequest ["params"];
 
         if (params.isNull ())
-        {
             params = Json::Value (Json::arrayValue);
-        }
         else if (!params.isArray ())
-        {
             return HTTPReply (400, "params unparseable");
-        }
 
         // VFALCO TODO Shouldn't we handle this earlier?
         //
         if (role == Config::FORBID)
-        {
-            // VFALCO TODO Needs implementing
-            // FIXME Needs implementing
-            // XXX This needs rate limiting to prevent brute forcing password.
             return HTTPReply (403, "Forbidden");
-        }
+
+        // VFALCO TODO Needs implementing
+        // FIXME Needs implementing
+        // XXX This needs rate limiting to prevent brute forcing password.
 
         std::string response;
 
@@ -323,13 +314,15 @@ RPCHTTPServer::RPCHTTPServer (Stoppable& parent)
 
 //------------------------------------------------------------------------------
 
-RPCHTTPServer* RPCHTTPServer::New (Stoppable& parent,
-                                   beast::Journal journal,
-                                   JobQueue& jobQueue,
-                                   NetworkOPs& networkOPs,
-                                   Resource::Manager& resourceManager)
+RPCHTTPServer* RPCHTTPServer::New (
+    Stoppable& parent,
+    beast::Journal journal,
+    JobQueue& jobQueue,
+    NetworkOPs& networkOPs,
+    Resource::Manager& resourceManager)
 {
-    return new RPCHTTPServerImp (parent, journal, jobQueue, networkOPs, resourceManager);
+    return new RPCHTTPServerImp (
+        parent, journal, jobQueue, networkOPs, resourceManager);
 }
 
 }

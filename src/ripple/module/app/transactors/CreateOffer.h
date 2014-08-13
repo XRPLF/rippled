@@ -37,10 +37,10 @@ protected:
     /** Fill offer as much as possible by consuming offers already on the books.
         We adjusts account balances and charges fees on top to taker.
 
-        @param taker_amount.in How much the taker offers
-        @param taker_amount.out How much the taker wants
+        \param taker_amount.in How much the taker offers
+        \param taker_amount.out How much the taker wants
 
-        @return result.first crossing operation success/failure indicator.
+        \return result.first crossing operation success/failure indicator.
                 result.second amount of offer left unfilled - only meaningful
                               if result.first is tesSUCCESS.
     */

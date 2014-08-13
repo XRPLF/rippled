@@ -34,7 +34,7 @@ namespace ripple {
 
     The cache has a target size and an expiration time. When cached items become
     older than the maximum age they are eligible for removal during a
-    call to @ref sweep.
+    call to \ref sweep.
 */
 // VFALCO TODO Figure out how to pass through the allocator
 template <
@@ -98,8 +98,8 @@ public:
 
     /** Construct with the specified name.
 
-        @param size The initial target size.
-        @param age  The initial expiration time.
+        \param size The initial target size.
+        \param age  The initial expiration time.
     */
     KeyCache (std::string const& name, clock_type& clock,
         beast::insight::Collector::ptr const& collector, size_type target_size = 0,
@@ -188,7 +188,7 @@ public:
 
     /** Insert the specified key.
         The last access time is refreshed in all cases.
-        @return `true` If the key was newly inserted.
+        \return `true` If the key was newly inserted.
     */
     bool insert (Key const& key)
     {
@@ -206,7 +206,7 @@ public:
     }
 
     /** Refresh the last access time on a key if present.
-        @return `true` If the key was found.
+        \return `true` If the key was found.
     */
     template <class KeyComparable>
     bool touch_if_exists (KeyComparable const& key)
@@ -224,8 +224,8 @@ public:
     }
 
     /** Remove the specified cache entry.
-        @param key The key to remove.
-        @return `false` If the key was not found.
+        \param key The key to remove.
+        \return `false` If the key was not found.
     */
     bool erase (key_type const& key)
     {

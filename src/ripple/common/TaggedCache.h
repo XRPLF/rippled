@@ -43,7 +43,7 @@ struct TaggedCacheLog;
     If it stays in memory even after it is ejected from the cache,
     the map will track it.
 
-    @note Callers must not modify data objects that are stored in the cache
+    \remark Callers must not modify data objects that are stored in the cache
           unless they hold their own lock over all cache operations.
 */
 // VFALCO TODO Figure out how to pass through the allocator
@@ -170,7 +170,7 @@ public:
         // so that we can destroy them outside the lock.
         //
         std::vector <mapped_ptr> stuffToSweep;
-    
+
         {
             clock_type::time_point const now (m_clock.now());
             clock_type::time_point when_expire;
@@ -285,11 +285,11 @@ public:
         This routine eliminates the duplicate and performs a replacement
         on the callers shared pointer if needed.
 
-        @param key The key corresponding to the object
-        @param data A shared pointer to the data corresponding to the object.
-        @param replace `true` if `data` is the up to date version of the object.
+        \param key The key corresponding to the object
+        \param data A shared pointer to the data corresponding to the object.
+        \param replace `true` if `data` is the up to date version of the object.
 
-        @return `true` If the key already existed.
+        \return `true` If the key already existed.
     */
     bool canonicalize (const key_type& key, std::shared_ptr<T>& data, bool replace = false)
     {
@@ -390,7 +390,7 @@ public:
 
     /** Insert the element into the container.
         If the key already exists, nothing happens.
-        @return `true` If the element was inserted
+        \return `true` If the element was inserted
     */
     bool insert (key_type const& key, T const& value)
     {
@@ -418,8 +418,8 @@ public:
 
     /** Refresh the expiration time on a key.
 
-        @param key The key to refresh.
-        @return `true` if the key was found and the object is cached.
+        \param key The key to refresh.
+        \return `true` if the key was found and the object is cached.
     */
     bool refreshIfPresent (const key_type& key)
     {
@@ -448,7 +448,7 @@ public:
                 }
                 else
                 {
-                    // Couldn't get strong pointer, 
+                    // Couldn't get strong pointer,
                     // object fell out of the cache so remove the entry.
                     m_cache.erase (cit);
                 }

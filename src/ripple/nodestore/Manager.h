@@ -36,8 +36,8 @@ public:
     virtual void add_factory (std::unique_ptr <Factory> factory) = 0;
 
     /** Return a pointer to the matching factory if it exists.
-        @param  name The name to match, performed case-insensitive.
-        @return `nullptr` if a match was not found.
+        \param  name The name to match, performed case-insensitive.
+        \return `nullptr` if a match was not found.
     */
     virtual Factory* find (std::string const& name) const = 0;
 
@@ -50,7 +50,7 @@ public:
         The parameters are key value pairs passed to the backend. The
         'type' key must exist, it defines the choice of backend. Most
         backends also require a 'path' field.
-        
+
         Some choices for 'type' are:
             HyperLevelDB, LevelDBFactory, SQLite, MDB
 
@@ -59,15 +59,15 @@ public:
         synchronous scheduler is used which performs all tasks immediately on
         the caller's thread.
 
-        @note If the database cannot be opened or created, an exception is thrown.
+        \remark If the database cannot be opened or created, an exception is thrown.
 
-        @param name A diagnostic label for the database.
-        @param scheduler The scheduler to use for performing asynchronous tasks.
-        @param readThreads The number of async read threads to create
-        @param backendParameters The parameter string for the persistent backend.
-        @param fastBackendParameters [optional] The parameter string for the ephemeral backend.
+        \param name A diagnostic label for the database.
+        \param scheduler The scheduler to use for performing asynchronous tasks.
+        \param readThreads The number of async read threads to create
+        \param backendParameters The parameter string for the persistent backend.
+        \param fastBackendParameters [optional] The parameter string for the ephemeral backend.
 
-        @return The opened database.
+        \return The opened database.
     */
     virtual std::unique_ptr <Database> make_Database (std::string const& name,
         Scheduler& scheduler, beast::Journal journal, int readThreads,
@@ -78,7 +78,7 @@ public:
 //------------------------------------------------------------------------------
 
 /** Create a Manager.
-    @param factories An optional array of additional factories to add.
+    \param factories An optional array of additional factories to add.
 */
 std::unique_ptr <Manager> make_Manager (
     std::vector <std::unique_ptr <Factory>> factories =

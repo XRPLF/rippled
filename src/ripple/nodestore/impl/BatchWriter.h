@@ -35,7 +35,7 @@ namespace NodeStore {
     class it not required. A backend can implement its own write batching,
     or skip write batching if doing so yields a performance benefit.
 
-    @see Scheduler
+    \see Scheduler
 */
 class BatchWriter : private Task
 {

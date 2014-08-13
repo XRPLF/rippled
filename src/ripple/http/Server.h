@@ -84,7 +84,7 @@ struct Handler
 
     /** Called when the session ends.
         Guaranteed to be called once.
-        @param errorCode Non zero for a failed connection.
+        \param errorCode Non zero for a failed connection.
     */
     virtual void onClose (Session& session, int errorCode) = 0;
 

@@ -37,14 +37,14 @@ enum NodeObjectType
     hotTRANSACTION_NODE = 4
 };
 
-/** A simple object that the Ledger uses to store entries. 
-    NodeObjects are comprised of a type, a hash, a ledger index and a blob. 
-    They can be uniquely identified by the hash, which is a SHA 256 of the 
-    blob. The blob is a variable length block of serialized data. The type 
+/** A simple object that the Ledger uses to store entries.
+    NodeObjects are comprised of a type, a hash, a ledger index and a blob.
+    They can be uniquely identified by the hash, which is a SHA 256 of the
+    blob. The blob is a variable length block of serialized data. The type
     identifies what the blob contains.
 
-    @note No checking is performed to make sure the hash matches the data.
-    @see SHAMap
+    \remark No checking is performed to make sure the hash matches the data.
+    \see SHAMap
 */
 class NodeObject : public CountedObject <NodeObject>
 {
@@ -57,7 +57,7 @@ public:
 
             We use a 256-bit hash for the keys.
 
-            @see NodeObject
+            \see NodeObject
         */
         keyBytes = 32,
     };
@@ -87,11 +87,11 @@ public:
         The caller's variable is modified during this call. The
         underlying storage for the Blob is taken over by the NodeObject.
 
-        @param type The type of object.
-        @param ledgerIndex The ledger in which this object appears.
-        @param data A buffer containing the payload. The caller's variable
+        \param type The type of object.
+        \param ledgerIndex The ledger in which this object appears.
+        \param data A buffer containing the payload. The caller's variable
                     is overwritten.
-        @param hash The 256-bit hash of the payload data.
+        \param hash The 256-bit hash of the payload data.
     */
     static Ptr createObject (NodeObjectType type,
                              LedgerIndex ledgerIndex,
@@ -123,7 +123,7 @@ public:
         This compares the hashes of both objects and returns true if
         the first hash is considered to go before the second.
 
-        @see std::sort
+        \see std::sort
     */
     struct LessThan
     {

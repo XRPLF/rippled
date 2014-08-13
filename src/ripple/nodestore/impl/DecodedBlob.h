@@ -33,7 +33,7 @@ namespace NodeStore {
     all forms of corruption are detected so further analysis will be needed
     to eliminate false negatives.
 
-    @note This defines the database format of a NodeObject!
+    \remark This defines the database format of a NodeObject!
 */
 class DecodedBlob
 {

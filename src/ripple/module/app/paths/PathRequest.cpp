@@ -73,8 +73,10 @@ PathRequest::~PathRequest()
         full += "ms";
     }
     if (m_journal.info)
+    {
         m_journal.info << iIdentifier << " complete:" << fast << full <<
         " total:" << get_milli_diff(ptCreated) << "ms";
+    }
 }
 
 bool PathRequest::isValid ()
@@ -222,8 +224,10 @@ Json::Value PathRequest::doCreate (
     {
         if (bValid)
         {
-            m_journal.debug << iIdentifier << " valid: " << raSrcAccount.humanAccountID ();
-            m_journal.debug << iIdentifier << " Deliver: " << saDstAmount.getFullText ();
+            m_journal.debug << iIdentifier
+                            << " valid: " << raSrcAccount.humanAccountID ();
+            m_journal.debug << iIdentifier
+                            << " Deliver: " << saDstAmount.getFullText ();
         }
         else
             m_journal.debug << iIdentifier << " invalid";
@@ -253,7 +257,8 @@ int PathRequest::parseJson (Json::Value const& jvParams, bool complete)
 
     if (jvParams.isMember ("destination_account"))
     {
-        if (!raDstAccount.setAccountID (jvParams["destination_account"].asString ()))
+        if (!raDstAccount.setAccountID (
+                jvParams["destination_account"].asString ()))
         {
             jvStatus = rpcError (rpcDST_ACT_MALFORMED);
             return PFR_PJ_INVALID;
@@ -268,9 +273,10 @@ int PathRequest::parseJson (Json::Value const& jvParams, bool complete)
     if (jvParams.isMember ("destination_amount"))
     {
         if (!saDstAmount.bSetJson (jvParams["destination_amount"]) ||
-                (saDstAmount.getCurrency ().isZero () && saDstAmount.getIssuer ().isNonZero ()) ||
-                (saDstAmount.getCurrency () == badCurrency()) ||
-                saDstAmount <= zero)
+            (saDstAmount.getCurrency ().isZero () &&
+             saDstAmount.getIssuer ().isNonZero ()) ||
+            (saDstAmount.getCurrency () == badCurrency()) ||
+            saDstAmount <= zero)
         {
             jvStatus = rpcError (rpcDST_AMT_MALFORMED);
             return PFR_PJ_INVALID;
@@ -363,15 +369,15 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
     {
         auto usCurrencies =
                 usAccountSourceCurrencies (raSrcAccount, cache, true);
-        bool sameAccount = raSrcAccount == raDstAccount;
+        bool sameAccount = (raSrcAccount == raDstAccount);
         for (auto const& c: usCurrencies)
         {
             if (!sameAccount || (c != saDstAmount.getCurrency ()))
             {
                 if (c.isZero ())
-                    sourceCurrencies.insert (std::make_pair (c, xrpAccount()));
+                    sourceCurrencies.insert (xrpIssue());
                 else
-                    sourceCurrencies.insert (std::make_pair (c, raSrcAccount.getAccountID ()));
+                    sourceCurrencies.insert ({c, raSrcAccount.getAccountID ()});
             }
         }
     }
@@ -422,7 +428,7 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
     for (auto const& currIssuer: sourceCurrencies)
     {
         {
-            STAmount test ({currIssuer.first, currIssuer.second}, 1);
+            STAmount test (currIssuer, 1);
             if (m_journal.debug)
             {
                 m_journal.debug
@@ -432,8 +438,14 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
         }
         bool valid;
         STPathSet& spsPaths = mContext[currIssuer];
-        Pathfinder pf (cache, raSrcAccount, raDstAccount,
-                       currIssuer.first, currIssuer.second, saDstAmount, valid);
+        Pathfinder pf (
+            cache,
+            raSrcAccount,
+            raDstAccount,
+            currIssuer.currency,
+            currIssuer.account,
+            saDstAmount,
+            valid);
         CondLog (!valid, lsDEBUG, PathRequest)
                 << iIdentifier << " PF request not valid";
 
@@ -441,15 +453,16 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
         if (valid && pf.findPaths (iLevel, 4, spsPaths, extraPath))
         {
             LedgerEntrySet lesSandbox (cache->getLedger (), tapNONE);
-            auto& account = currIssuer.second.isNonZero ()
-                    ? Account(currIssuer.second)
-                    : isXRP (currIssuer.first)
+            auto& account = !isXRP (currIssuer.account)
+                    ? currIssuer.account
+                    : isXRP (currIssuer.currency)
                         ? xrpAccount()
                         : raSrcAccount.getAccountID ();
-            STAmount saMaxAmount ({currIssuer.first, account}, 1);
+            STAmount saMaxAmount ({currIssuer.currency, account}, 1);
 
             saMaxAmount.negate ();
-            m_journal.debug << iIdentifier << " Paths found, calling rippleCalc";
+            m_journal.debug << iIdentifier
+                            << " Paths found, calling rippleCalc";
             path::RippleCalc rc (
                 lesSandbox,
                 saMaxAmount,
@@ -480,8 +493,8 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
             if (resultCode == tesSUCCESS)
             {
                 Json::Value jvEntry (Json::objectValue);
-                jvEntry["source_amount"]    = rc.actualAmountIn_.getJson (0);
-                jvEntry["paths_computed"]   = spsPaths.getJson (0);
+                jvEntry["source_amount"] = rc.actualAmountIn_.getJson (0);
+                jvEntry["paths_computed"] = spsPaths.getJson (0);
                 found  = true;
                 jvArray.append (jvEntry);
             }

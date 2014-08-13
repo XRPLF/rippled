@@ -31,9 +31,9 @@ typedef SHAMapItem Item;
 std::shared_ptr <Item> make_random_item (beast::Random& r);
 
 /** Adds a set of random items to the Table.
-    @param n The number of items to add.
-    @param t The table to add the items to.
-    @param r A pseudo random number generator.
+    \param n The number of items to add.
+    \param t The table to add the items to.
+    \param r A pseudo random number generator.
 */
 void add_random_items (std::size_t n, Table& t, beast::Random& r);
 

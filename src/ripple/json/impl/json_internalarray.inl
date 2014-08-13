@@ -95,7 +95,7 @@ public: // overridden from ValueArrayAllocator
 };
 
 #else // #ifdef JSON_USE_SIMPLE_INTERNAL_ALLOCATOR
-/// @todo make this thread-safe (lock when accessign batch allocator)
+/// \todo make this thread-safe (lock when accessign batch allocator)
 class DefaultValueArrayAllocator : public ValueArrayAllocator
 {
 public: // overridden from ValueArrayAllocator

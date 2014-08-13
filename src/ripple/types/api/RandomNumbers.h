@@ -39,7 +39,7 @@ public:
         automatically initialized on first use. If automatic initialization
         fails, an exception is thrown.
 
-        @return `true` if enough entropy could be retrieved.
+        \return `true` if enough entropy could be retrieved.
     */
     bool initialize (beast::Journal::Stream stream = beast::Journal::Stream());
 
@@ -47,11 +47,11 @@ public:
 
         The generated data is suitable for cryptography.
 
-        @invariant The destination buffer must be large enough or
+        \invariant The destination buffer must be large enough or
                    undefined behavior results.
 
-        @param destinationBuffer The place to store the bytes.
-        @param numberOfBytes The number of bytes to generate.
+        \param destinationBuffer The place to store the bytes.
+        \param numberOfBytes The number of bytes to generate.
     */
     void fillBytes (void* destinationBuffer, int numberOfBytes);
 
@@ -62,11 +62,9 @@ public:
         Fills the memory for the object with random numbers.
         This is a type-safe alternative to the function above.
 
-        @param object A pointer to the object to fill.
-
-        @tparam T The type of `object`
-
-        @note Undefined behavior results if `T` is not a POD type.
+        \param object A pointer to the object to fill.
+        \tparam T The type of `object`
+        \remark Undefined behavior results if `T` is not a POD type.
     */
     template <class T>
     void fill (T* object)

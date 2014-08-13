@@ -170,7 +170,7 @@ public:
     boost::optional <beast::http::basic_message> http_message_;
     boost::optional <beast::http::basic_message::parser> http_parser_;
     message_stream message_stream_;
-    
+
     boost::asio::streambuf write_buffer_;
     bool write_pending_;
 
@@ -213,7 +213,7 @@ public:
     }
 
     /** New outgoing peer
-        @note Construction of outbound peers is a two step process: a second
+        \remark Construction of outbound peers is a two step process: a second
               call is needed (to connect or accept) but we cannot make it from
               inside the constructor because you cannot call shared_from_this
               from inside constructors.
@@ -389,8 +389,8 @@ public:
 
         The peer transitions from its current state into `stateGracefulClose`
 
-        @param rsn a code indicating why the peer was disconnected
-        @param onIOStrand true if called on an I/O strand. It if is not, then
+        \param rsn a code indicating why the peer was disconnected
+        \param onIOStrand true if called on an I/O strand. It if is not, then
                a callback will be queued up.
     */
     void detach (const char* rsn, bool graceful = true)
@@ -766,16 +766,16 @@ private:
 
     /** Hashes the latest finished message from an SSL stream
 
-        @param sslSession the session to get the message from.
-        @param hash       the buffer into which the hash of the retrieved
+        \param sslSession the session to get the message from.
+        \param hash       the buffer into which the hash of the retrieved
                           message will be saved. The buffer MUST be at least
                           64 bytes long.
-        @param getMessage a pointer to the function to call to retrieve the
+        \param getMessage a pointer to the function to call to retrieve the
                           finished message. This be either:
                           `SSL_get_finished` or
                           `SSL_get_peer_finished`.
 
-        @return `true` if successful, `false` otherwise.
+        \return `true` if successful, `false` otherwise.
 
     */
     bool hashLatestFinishedMessage (const SSL *sslSession, unsigned char *hash,
@@ -805,9 +805,9 @@ private:
         important component of connection security. If this function fails, a
         secure connection cannot be established and the link MUST be dropped.
 
-        @return `true` if the cookie was generated, `false` otherwise.
+        \return `true` if the cookie was generated, `false` otherwise.
 
-        @note failure is an exceptional situation - it should never happen and
+        \remark failure is an exceptional situation - it should never happen and
               will almost always indicate an active man-in-the-middle attack is
               taking place.
     */
@@ -860,7 +860,7 @@ private:
         is no active man-in-the-middle attack taking place and the link
         MUST be disconnected.
 
-        @return true if successful, false otherwise.
+        \return true if successful, false otherwise.
     */
     bool sendHello ()
     {

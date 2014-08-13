@@ -128,7 +128,7 @@ Peer::close ()
 {
     // Make sure this happens on an io_service thread.
     impl_.get_io_service().dispatch (strand_.wrap (
-        std::bind (&Peer::handle_close, shared_from_this())));
+         std::bind (&Peer::handle_close, shared_from_this())));
 }
 
 //--------------------------------------------------------------------------
@@ -411,7 +411,8 @@ Peer::async_write (SharedBuffer const& buf)
                     beast::asio::placeholders::bytes_transferred, buf)));
 }
 
-void Peer::computeJson()
+void
+Peer::computeJson()
 {
     if (!jsonValue_)
     {

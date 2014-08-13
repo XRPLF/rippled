@@ -36,7 +36,7 @@ namespace NodeStore {
     general be larger than the amount of available memory, purged node objects
     which are later accessed must be retrieved from the node store.
 
-    @see NodeObject
+    \see NodeObject
 */
 class Database
 {
@@ -58,9 +58,9 @@ public:
         database during the fetch, or failed to load correctly during the fetch,
         `nullptr` is returned.
 
-        @note This can be called concurrently.
-        @param hash The key of the object to retrieve.  
-        @return The object, or nullptr if it couldn't be retrieved.
+        \remark This can be called concurrently.
+        \param hash The key of the object to retrieve.
+        \return The object, or nullptr if it couldn't be retrieved.
     */
     virtual NodeObject::pointer fetch (uint256 const& hash) = 0;
 
@@ -70,10 +70,10 @@ public:
         to refer to the object, or `nullptr` if the object is not present.
         If I/O is required, the I/O is scheduled.
 
-        @note This can be called concurrently.
-        @param hash The key of the object to retrieve
-        @param object The object retrieved
-        @return Whether the operation completed
+        \remark This can be called concurrently.
+        \param hash The key of the object to retrieve
+        \param object The object retrieved
+        \return Whether the operation completed
     */
     virtual bool asyncFetch (uint256 const& hash, NodeObject::pointer& object) = 0;
 
@@ -82,7 +82,7 @@ public:
     virtual void waitReads () = 0;
 
     /** Get the maximum number of async reads the node store prefers.
-        @return The number of async reads preferred.
+        \return The number of async reads preferred.
     */
     virtual int getDesiredAsyncReadCount () = 0;
 
@@ -90,13 +90,13 @@ public:
 
         The caller's Blob parameter is overwritten.
 
-        @param type The type of object.
-        @param ledgerIndex The ledger in which the object appears.
-        @param data The payload of the object. The caller's
+        \param type The type of object.
+        \param ledgerIndex The ledger in which the object appears.
+        \param data The payload of the object. The caller's
                     variable is overwritten.
-        @param hash The 256-bit hash of the payload data.
+        \param hash The 256-bit hash of the payload data.
 
-        @return `true` if the object was stored?              
+        \return `true` if the object was stored?
     */
     virtual void store (NodeObjectType type,
                         std::uint32_t ledgerIndex,
@@ -106,9 +106,9 @@ public:
     /** Visit every object in the database
         This is usually called during import.
 
-        @note This routine will not be called concurrently with itself
+        \remark This routine will not be called concurrently with itself
                 or other methods.
-        @see import
+        \see import
     */
     virtual void for_each(std::function <void(NodeObject::Ptr)> f) = 0;
 
@@ -124,9 +124,9 @@ public:
     virtual float getCacheHitRate () = 0;
 
     /** Set the maximum number of entries and maximum cache age for both caches.
-        
-        @param size Number of cache entries (0 = ignore)
-        @param age Maximum cache age in seconds
+
+        \param size Number of cache entries (0 = ignore)
+        \param age Maximum cache age in seconds
     */
     virtual void tune (int size, int age) = 0;
 

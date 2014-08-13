@@ -45,8 +45,8 @@ public:
 
         /** Produce a response for a given request.
 
-            @param  request The RPC request string.
-            @return         The server's response.
+            \param  request The RPC request string.
+            \return         The server's response.
         */
         virtual std::string processRequest (std::string const& request,
                                             beast::IP::Endpoint const& remoteIPAddress) = 0;

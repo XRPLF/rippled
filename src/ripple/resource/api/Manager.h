@@ -56,7 +56,7 @@ public:
     virtual Json::Value getJson (int threshold) = 0;
 
     /** Import packaged consumer information.
-        @param origin An identifier that unique labels the origin.
+        \param origin An identifier that unique labels the origin.
     */
     virtual void importConsumers (std::string const& origin, Gossip const& gossip) = 0;
 };

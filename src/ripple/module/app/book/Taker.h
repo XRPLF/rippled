@@ -123,13 +123,13 @@ public:
     done () const;
 
     /** Perform direct crossing through given offer.
-        @return tesSUCCESS on success, error code otherwise.
+        \return tesSUCCESS on success, error code otherwise.
     */
     TER
     cross (Offer const& offer);
 
     /** Perform bridged crossing through given offers.
-        @return tesSUCCESS on success, error code otherwise.
+        \return tesSUCCESS on success, error code otherwise.
     */
     TER
     cross (Offer const& leg1, Offer const& leg2);

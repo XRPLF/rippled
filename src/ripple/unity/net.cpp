@@ -19,8 +19,8 @@
 
 /** Add this to get the @ref ripple_net module.
 
-    @file ripple_net.cpp
-    @ingroup ripple_net
+    \file ripple_net.cpp
+    \ingroup ripple_net
 */
 
 #undef DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER

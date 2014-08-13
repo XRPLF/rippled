@@ -24,9 +24,9 @@ namespace ripple {
 
 /** Calculates payment paths.
 
-    The @ref RippleCalc determines the quality of the found paths.
+    The \ref RippleCalc determines the quality of the found paths.
 
-    @see RippleCalc
+    \see RippleCalc
 */
 class Pathfinder
 {
@@ -82,7 +82,7 @@ private:
     static void fillPaths(PaymentType type,
                           PathCostList const& costs);
 
-    /** @return true if any building paths are now complete. */
+    /** \return true if any building paths are now complete. */
     bool checkComplete (STPathSet& retPathSet);
 
     static std::string pathTypeToString(PathType_t const&);

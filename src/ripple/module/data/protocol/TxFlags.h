@@ -30,8 +30,8 @@ namespace ripple {
 
     These flags modify the behavior of an operation.
 
-    @note Changing these will create a hard fork
-    @ingroup protocol
+    \remark Changing these will create a hard fork
+    \ingroup protocol
 */
 class TxFlag
 {

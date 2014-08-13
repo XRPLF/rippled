@@ -50,7 +50,7 @@ public:
     /** @} */
 
     /** Dispatch the JSON-RPC request.
-        @return `true` If the command was found.
+        \return `true` If the command was found.
     */
     virtual bool dispatch (Request& req) = 0;
 };

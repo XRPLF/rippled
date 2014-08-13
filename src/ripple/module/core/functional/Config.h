@@ -220,32 +220,32 @@ public:
     // Settings related to RPC
 
     /** Get the client or server RPC IP address.
-        @note The string may not always be in a valid parsable state.
-        @return A string representing the address.
+        \remark The string may not always be in a valid parsable state.
+        \return A string representing the address.
     */
     std::string getRpcIP () const { return m_rpcIP; }
 
     /** Get the client or server RPC port number.
-        @note The port number may be invalid (out of range or zero)
-        @return The RPC port number.
+        \remark The port number may be invalid (out of range or zero)
+        \return The RPC port number.
     */
     int getRpcPort () const { return m_rpcPort; }
 
     /** Set the client or server RPC IP and optional port.
-        @note The string is not syntax checked.
-        @param newAddress A string in the format <ip-address>[':'<port-number>]
+        \remark The string is not syntax checked.
+        \param newAddress A string in the format <ip-address>[':'<port-number>]
     */
     void setRpcIpAndOptionalPort (std::string const& newAddress);
 
     /** Set the client or server RPC IP.
-        @note The string is not syntax-checked.
-        @param newIP A string representing the IP address to use.
+        \remark The string is not syntax-checked.
+        \param newIP A string representing the IP address to use.
     */
     void setRpcIP (std::string const& newIP) { m_rpcIP = newIP; }
 
     /** Set the client or server RPC port number.
-        @note The port number is not range checked.
-        @param newPort The RPC port number to use.
+        \remark The port number is not range checked.
+        \param newPort The RPC port number to use.
     */
     void setRpcPort (int newPort) { m_rpcPort = newPort; }
 
@@ -315,7 +315,7 @@ public:
         This is 1 or more strings of the form <key>=<value>
         The 'type' and 'path' keys are required, see rippled-example.cfg
 
-        @see Database
+        \see Database
     */
     beast::StringPairArray nodeDatabase;
 
@@ -325,19 +325,19 @@ public:
         on a separate faster volume. However, the volume data may not persist
         between launches. Use of the ephemeral database is optional.
 
-        The format is the same as that for @ref nodeDatabase
+        The format is the same as that for \ref nodeDatabase
 
-        @see Database
+        \see Database
     */
     beast::StringPairArray ephemeralNodeDatabase;
 
     /** Parameters for importing an old database in to the current node database.
         If this is not empty, then it specifies the key/value parameters for
         another node database from which to import all data into the current
-        node database specified by @ref nodeDatabase.
+        node database specified by \ref nodeDatabase.
         The format of this string is in the form:
             <key>'='<value>['|'<key>'='value]
-        @see parseDelimitedKeyValueString
+        \see parseDelimitedKeyValueString
     */
     bool doImport;
     beast::StringPairArray importNodeDatabase;

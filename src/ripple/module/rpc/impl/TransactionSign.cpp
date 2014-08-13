@@ -42,10 +42,10 @@ namespace RPC {
                     If this optional field is not specified, then a default
                     multiplier is used.
 
-    @param tx       The JSON corresponding to the transaction to fill in
-    @param ledger   A ledger for retrieving the current fee schedule
-    @param result   A JSON object for injecting error results, if any
-    @param admin    `true` if this is called by an administrative endpoint.
+    \param tx       The JSON corresponding to the transaction to fill in
+    \param ledger   A ledger for retrieving the current fee schedule
+    \param result   A JSON object for injecting error results, if any
+    \param admin    `true` if this is called by an administrative endpoint.
 */
 static void autofill_fee (Json::Value& request,
     Ledger::pointer ledger, Json::Value& result, bool admin)

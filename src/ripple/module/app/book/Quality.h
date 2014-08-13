@@ -129,8 +129,8 @@ public:
 };
 
 /** Calculate the quality of a two-hop path given the two hops.
-    @param lhs  The first leg of the path: input to intermediate.
-    @param rhs  The second leg of the path: intermediate to output.
+    \param lhs  The first leg of the path: input to intermediate.
+    \param rhs  The second leg of the path: intermediate to output.
 */
 Quality
 composed_quality (Quality const& lhs, Quality const& rhs);

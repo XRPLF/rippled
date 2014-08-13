@@ -116,7 +116,7 @@ private:
     /** Construct from a raw pointer.
         The buffer pointed to by `data` must be at least Bits/8 bytes.
 
-        @note the structure is used to disambiguate this from the std::uint64_t
+        \remark the structure is used to disambiguate this from the std::uint64_t
               constructor: something like base_uint(0) is ambiguous.
     */
     // NIKB TODO Remove the need for this constructor.

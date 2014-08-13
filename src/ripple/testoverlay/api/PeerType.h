@@ -41,7 +41,7 @@ public:
     typedef typename State::UniqueID    UniqueID;
     typedef ConnectionType <Config>     Connection;
     typedef std::vector <Connection>    Connections;
-    
+
     typedef hash_set <UniqueID> MessageTable;
 
     explicit PeerType (Network& network)
@@ -110,7 +110,7 @@ public:
     /** @} */
 
     /** Establish an outgoing connection to peer.
-        @return `true` if the peer is not us and not connected already.
+        \return `true` if the peer is not us and not connected already.
     */
     bool connect_to (Peer& peer)
     {
@@ -131,7 +131,7 @@ public:
     }
 
     /** Disconnect from a peer.
-        @return `true` if the peer was found and disconnected.
+        \return `true` if the peer was found and disconnected.
     */
     bool disconnect (Peer& peer)
     {
@@ -206,7 +206,7 @@ public:
     }
 
     /** Send an existing message to all connections that pass the predicate.
-        @return `true` if at least one message was sent.
+        \return `true` if at least one message was sent.
     */
     template <class Predicate>
     bool send_all_if (Message const& m, Predicate p)

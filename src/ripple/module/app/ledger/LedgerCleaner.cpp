@@ -253,11 +253,11 @@ public:
     }
 
     /** Process a single ledger
-        @param ledgerIndex The index of the ledger to process.
-        @param ledgerHash  The known correct hash of the ledger.
-        @param doNodes Ensure all ledger nodes are in the node db.
-        @param doTxns Reprocess (account) transactions to SQL databases.
-        @return `true` if the ledger was cleaned.
+        \param ledgerIndex The index of the ledger to process.
+        \param ledgerHash  The known correct hash of the ledger.
+        \param doNodes Ensure all ledger nodes are in the node db.
+        \param doTxns Reprocess (account) transactions to SQL databases.
+        \return `true` if the ledger was cleaned.
     */
     bool doLedger(
         LedgerIndex const& ledgerIndex,
@@ -308,9 +308,9 @@ public:
     }
 
     /** Returns the hash of the specified ledger.
-        @param ledgerIndex The index of the desired ledger.
-        @param referenceLedger [out] An optional known good subsequent ledger.
-        @return The hash of the ledger. This will be all-bits-zero if not found.
+        \param ledgerIndex The index of the desired ledger.
+        \param referenceLedger [out] An optional known good subsequent ledger.
+        \return The hash of the ledger. This will be all-bits-zero if not found.
     */
     LedgerHash getHash(
         LedgerIndex const& ledgerIndex,
@@ -333,7 +333,7 @@ public:
             // See if the hash for the ledger we need is in the reference ledger
             ledgerHash = getLedgerHash(referenceLedger, ledgerIndex);
             if (ledgerHash.isZero())
-            { 
+            {
                 // No, Try to get another ledger that might have the hash we need
                 // Compute the index and hash of a ledger that will have the hash we need
                 LedgerIndex refIndex = (ledgerIndex + 255) & (~255);

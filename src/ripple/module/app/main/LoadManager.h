@@ -33,7 +33,7 @@ namespace ripple {
     The warning system is used instead of merely dropping, because hostile
     peers can just reconnect anyway.
 
-    @see LoadSource, LoadType
+    \see LoadSource, LoadType
 */
 class LoadManager : public beast::Stoppable
 {
@@ -43,7 +43,7 @@ protected:
 public:
     /** Create a new manager.
 
-        @note The thresholds for warnings and punishments are in
+        \remark The thresholds for warnings and punishments are in
               the ctor-initializer
     */
     static LoadManager* New (Stoppable& parent, beast::Journal journal);
@@ -60,7 +60,7 @@ public:
         is called, it will report deadlocks using a separate thread whenever
         the reset function is not called at least once per 10 seconds.
 
-        @see resetDeadlockDetector
+        \see resetDeadlockDetector
     */
     // VFALCO NOTE it seems that the deadlock detector has an "armed" state to prevent it
     //             from going off during program startup if there's a lengthy initialization

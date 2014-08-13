@@ -33,7 +33,7 @@ namespace ripple {
     When ByValue is `false`, this only stores references, and the caller
     is responsible for managing object lifetime.
 
-    @see Currency, Account, Issue, IssueRef, Book
+    \see Currency, Account, Issue, IssueRef, Book
 */
 template <bool ByValue>
 class IssueType

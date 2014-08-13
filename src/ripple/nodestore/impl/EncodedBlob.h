@@ -26,7 +26,7 @@ namespace ripple {
 namespace NodeStore {
 
 /** Utility for producing flattened node objects.
-    @note This defines the database format of a NodeObject!
+    \remark This defines the database format of a NodeObject!
 */
 // VFALCO TODO Make allocator aware and use short_alloc
 struct EncodedBlob

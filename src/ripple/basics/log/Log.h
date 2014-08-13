@@ -68,14 +68,14 @@ private:
         are provided for interoperating with standard log management
         tools like logrotate(8):
             http://linuxcommand.org/man_pages/logrotate8.html
-        @note None of the listed interfaces are thread-safe.
+        \remark None of the listed interfaces are thread-safe.
     */
     class File
     {
     public:
         /** Construct with no associated system file.
-            A system file may be associated later with @ref open.
-            @see open
+            A system file may be associated later with \ref open.
+            \see open
         */
         File ();
 
@@ -85,7 +85,7 @@ private:
         ~File ();
 
         /** Determine if a system file is associated with the log.
-            @return `true` if a system file is associated and opened for writing.
+            \return `true` if a system file is associated and opened for writing.
         */
         bool isOpen () const noexcept;
 
@@ -94,7 +94,7 @@ private:
             and open it for writing. If the file already exists an attempt is
             made to open it for appending.
             If a system file is already associated with the log, it is closed first.
-            @return `true` if the file was opened.
+            \return `true` if the file was opened.
         */
         // VFALCO NOTE The parameter is unfortunately a boost type because it
         //             can be either wchar or char based depending on platform.
@@ -104,7 +104,7 @@ private:
 
         /** Close and re-open the system file associated with the log
             This assists in interoperating with external log management tools.
-            @return `true` if the file was opened.
+            \return `true` if the file was opened.
         */
         bool closeAndReopen ();
 
@@ -127,7 +127,7 @@ private:
         {
             write (str.c_str ());
         }
-        
+
         void writeln (std::string const& str)
         {
             writeln (str.c_str ());
@@ -149,7 +149,7 @@ public:
 
     Logs (Logs const&) = delete;
     Logs& operator= (Logs const&) = delete;
-    
+
     void
     open (boost::filesystem::path const& pathToLogFile);
 

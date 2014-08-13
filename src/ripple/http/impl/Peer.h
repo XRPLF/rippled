@@ -149,10 +149,14 @@ public:
         return *jsonValue_;
     }
 
-    void computeJson ();
+    void
+    computeJson ();
 
-    void detach ();
-    void close ();
+    void
+    detach ();
+
+    void
+    close ();
 
     //--------------------------------------------------------------------------
     //

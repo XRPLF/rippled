@@ -694,7 +694,7 @@ public:
     /**
      * Determines how many validations are needed to fully-validated a ledger
      *
-     * @return Number of validations needed
+     * \return Number of validations needed
      */
     int getNeededValidations ()
     {

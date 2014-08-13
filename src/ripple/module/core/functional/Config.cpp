@@ -37,9 +37,9 @@ namespace ripple {
       Strings which fail to parse are not included in the output. If a stream is
       provided, human readable diagnostic error messages are written for each
       failed parse.
-      @param out An OutputSequence to store the IP::Endpoint list
-      @param first The begining of the string input sequence
-      @param last The one-past-the-end of the string input sequence
+      \param out An OutputSequence to store the IP::Endpoint list
+      \param first The begining of the string input sequence
+      \param last The one-past-the-end of the string input sequence
 */
 template <class OutputSequence, class InputIterator>
 void parseAddresses (OutputSequence& out, InputIterator first, InputIterator last,

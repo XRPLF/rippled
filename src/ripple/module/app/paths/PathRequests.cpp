@@ -22,19 +22,25 @@ namespace ripple {
 /** Get the current RippleLineCache, updating it if necessary.
     Get the correct ledger to use.
 */
-RippleLineCache::pointer PathRequests::getLineCache (Ledger::pointer& ledger, bool authoritative)
+RippleLineCache::pointer PathRequests::getLineCache (
+    Ledger::pointer& ledger, bool authoritative)
 {
     ScopedLockType sl (mLock);
 
     std::uint32_t lineSeq = mLineCache ? mLineCache->getLedger()->getLedgerSeq() : 0;
     std::uint32_t lgrSeq = ledger->getLedgerSeq();
 
-    if ( (lineSeq == 0) ||                                 // no ledger
-         (authoritative && (lgrSeq > lineSeq)) ||          // newer authoritative ledger
-         (authoritative && ((lgrSeq + 8)  < lineSeq)) ||   // we jumped way back for some reason
-         (lgrSeq > (lineSeq + 8)))                         // we jumped way forward for some reason
+    if ( (lineSeq == 0) ||
+         // no ledger
+         (authoritative && (lgrSeq > lineSeq)) ||
+         // newer authoritative ledger
+         (authoritative && ((lgrSeq + 8)  < lineSeq)) ||
+         // we jumped way back for some reason
+         (lgrSeq > (lineSeq + 8)))
+        // we jumped way forward for some reason
     {
-        ledger = std::make_shared<Ledger>(*ledger, false); // Take a snapshot of the ledger
+         // Take a snapshot of the ledger
+        ledger = std::make_shared<Ledger>(*ledger, false);
         mLineCache = std::make_shared<RippleLineCache> (ledger);
     }
     else
@@ -49,7 +55,8 @@ void PathRequests::updateAll (Ledger::ref inLedger,
 {
     std::vector<PathRequest::wptr> requests;
 
-    LoadEvent::autoptr event (getApp().getJobQueue().getLoadEventAP(jtPATH_FIND, "PathRequest::updateAll"));
+    LoadEvent::autoptr event (getApp().getJobQueue().getLoadEventAP(
+        jtPATH_FIND, "PathRequest::updateAll"));
 
     // Get the ledger and cache we should be using
     Ledger::pointer ledger = inLedger;
@@ -80,8 +87,11 @@ void PathRequests::updateAll (Ledger::ref inLedger,
 
             if (pRequest)
             {
-                if (!pRequest->needsUpdate (newRequests, ledger->getLedgerSeq ()))
+                if (!pRequest->needsUpdate (
+                        newRequests, ledger->getLedgerSeq ()))
+                {
                     remove = false;
+                }
                 else
                 {
                     InfoSub::pointer ipSub = pRequest->getSubscriber ();
@@ -90,7 +100,7 @@ void PathRequests::updateAll (Ledger::ref inLedger,
                         ipSub->getConsumer ().charge (Resource::feePathFindUpdate);
                         if (!ipSub->getConsumer ().warn ())
                         {
-                            Json::Value update = pRequest->doUpdate (cache, false);
+                            auto update = pRequest->doUpdate (cache, false);
                             pRequest->updateComplete ();
                             update["type"] = "path_find";
                             ipSub->send (update, false);
@@ -107,8 +117,9 @@ void PathRequests::updateAll (Ledger::ref inLedger,
 
                 ScopedLockType sl (mLock);
 
-                // Remove any dangling weak pointers or weak pointers that refer to this path request.
-                std::vector<PathRequest::wptr>::iterator it = mRequests.begin();
+                // Remove any dangling weak pointers or weak pointers that refer
+                // to this path request.
+                auto it = mRequests.begin();
                 while (it != mRequests.end())
                 {
                     PathRequest::pointer itRequest = it->lock ();
@@ -122,25 +133,30 @@ void PathRequests::updateAll (Ledger::ref inLedger,
                 }
             }
 
-            mustBreak = !newRequests && getApp().getLedgerMaster().isNewPathRequest();
-            if (mustBreak) // We weren't handling new requests and then there was a new request
+            mustBreak = !newRequests &&
+                    getApp().getLedgerMaster().isNewPathRequest();
+            if (mustBreak)
                 break;
-
+            // We weren't handling new requests, then there was a new request.
         }
 
         if (mustBreak)
-        { // a new request came in while we were working
+        {
+            // A new request came in while we were working.
             newRequests = true;
         }
         else if (newRequests)
-        { // we only did new requests, so we always need a last pass
+        {
+            // We only did new requests, so we always need a last pass.
             newRequests = getApp().getLedgerMaster().isNewPathRequest();
         }
         else
-        { // check if there are any new requests, otherwise we are done
+        {
+            // Check if there are any new requests, otherwise we are done.
             newRequests = getApp().getLedgerMaster().isNewPathRequest();
-            if (!newRequests) // We did a full pass and there are no new requests
+            if (!newRequests)
                 return;
+            // We did a full pass and there are no new requests.
         }
 
         {
@@ -185,7 +201,8 @@ Json::Value PathRequests::makePathRequest(
         {
             ScopedLockType sl (mLock);
 
-            // Insert after any older unserviced requests but before any serviced requests
+            // Insert after any older unserviced requests but before any
+            // serviced requests.
             std::vector<PathRequest::wptr>::iterator it = mRequests.begin ();
             while (it != mRequests.end ())
             {

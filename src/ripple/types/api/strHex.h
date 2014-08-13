@@ -27,15 +27,15 @@
 
 namespace ripple {
 
-/** Converts an integer to the corresponding hex digit 
-    @param iDigit 0-15 inclusive
-    @return a character from '0'-'9' or 'A'-'F' on success; 0 on failure.
+/** Converts an integer to the corresponding hex digit
+    \param iDigit 0-15 inclusive
+    \return a character from '0'-'9' or 'A'-'F' on success; 0 on failure.
 */
 char charHex (int iDigit);
 
 /** Converts a hex digit to the corresponding integer
-    @param cDigit one of '0'-'9', 'A'-'F' or 'a'-'f'
-    @return an integer from 0 to 15 on success; -1 on failure.
+    \param cDigit one of '0'-'9', 'A'-'F' or 'a'-'f'
+    \return an integer from 0 to 15 on success; -1 on failure.
 */
 int charUnHex (char cDigit);
 
