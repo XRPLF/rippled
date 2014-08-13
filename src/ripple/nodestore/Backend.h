@@ -53,32 +53,32 @@ public:
     /** Fetch a single object.
         If the object is not found or an error is encountered, the
         result will indicate the condition.
-        @note This will be called concurrently.
-        @param key A pointer to the key data.
-        @param pObject [out] The created object if successful.
-        @return The result of the operation.
+        \remark This will be called concurrently.
+        \param key A pointer to the key data.
+        \param pObject [out] The created object if successful.
+        \return The result of the operation.
     */
     virtual Status fetch (void const* key, NodeObject::Ptr* pObject) = 0;
 
     /** Store a single object.
         Depending on the implementation this may happen immediately
         or deferred using a scheduled task.
-        @note This will be called concurrently.
-        @param object The object to store.
+        \remark This will be called concurrently.
+        \param object The object to store.
     */
     virtual void store (NodeObject::Ptr const& object) = 0;
 
-    /** Store a group of objects.        
-        @note This function will not be called concurrently with
-              itself or @ref store.
+    /** Store a group of objects.
+        \remark This function will not be called concurrently with
+              itself or \ref store.
     */
     virtual void storeBatch (Batch const& batch) = 0;
 
     /** Visit every object in the database
         This is usually called during import.
-        @note This routine will not be called concurrently with itself
-              or other methods.
-        @see import
+        \remark This routine will not be called concurrently with itself
+                or other methods.
+        \see import
     */
     virtual void for_each (std::function <void (NodeObject::Ptr)> f) = 0;
 

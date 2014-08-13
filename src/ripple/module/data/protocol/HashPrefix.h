@@ -33,9 +33,9 @@ namespace ripple {
     three bytes formed from the ASCII equivalent of some arbitrary string. For
     example "TXN".
 
-    @note Hash prefixes are part of the Ripple protocol.
+    \remark Hash prefixes are part of the Ripple protocol.
 
-    @ingroup protocol
+    \ingroup protocol
 */
 class HashPrefix
 {

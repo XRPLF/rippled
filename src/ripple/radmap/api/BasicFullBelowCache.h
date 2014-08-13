@@ -45,10 +45,10 @@ public:
 
     /** Construct the cache.
 
-        @param name A label for diagnostics and stats reporting.
-        @param collector The collector to use for reporting stats.
-        @param targetSize The cache target size.
-        @param targetExpirationSeconds The expiration time for items.
+        \param name A label for diagnostics and stats reporting.
+        \param collector The collector to use for reporting stats.
+        \param targetSize The cache target size.
+        \param targetExpirationSeconds The expiration time for items.
     */
     BasicFullBelowCache (std::string const& name, clock_type& clock,
         beast::insight::Collector::ptr const& collector =
@@ -87,8 +87,8 @@ public:
     /** Refresh the last access time of an item, if it exists.
         Thread safety:
             Safe to call from any thread.
-        @param key The key to refresh.
-        @return `true` If the key exists.
+        \param key The key to refresh.
+        \return `true` If the key exists.
     */
     bool touch_if_exists (key_type const& key)
     {
@@ -100,7 +100,7 @@ public:
         be refreshed.
         Thread safety:
             Safe to call from any thread.
-        @param key The key to insert.
+        \param key The key to insert.
     */
     void insert (key_type const& key)
     {

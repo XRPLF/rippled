@@ -42,7 +42,7 @@ struct Callback
     virtual void send (Slot::ptr const& slot, Endpoints const& endpoints) = 0;
 
     /** Disconnect the handshaked peer with the specified address.
-        @param graceful `true` to wait for send buffers to drain before closing.
+        \param graceful `true` to wait for send buffers to drain before closing.
     */
     virtual void disconnect (Slot::ptr const& slot, bool graceful) = 0;
 };

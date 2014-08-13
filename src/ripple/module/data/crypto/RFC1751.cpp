@@ -428,7 +428,7 @@ int RFC1751::etob (std::string& strData, std::vector<std::string> vsHuman)
 
 /** Convert words seperated by spaces into a 128 bit key in big-endian format.
 
-    @return
+    \return
          1 if succeeded
          0 if word not in dictionary
         -1 if badly formed string

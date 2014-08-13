@@ -652,10 +652,10 @@ bool SHAMap::hasLeafNode (uint256 const& tag, uint256 const& targetNodeHash)
 }
 
 /**
-@param have A pointer to the map that the recipient already has (if any).
-@param includeLeaves True if leaf nodes should be included.
-@param max The maximum number of nodes to return.
-@param func The functor to call for each node added to the FetchPack.
+\param have A pointer to the map that the recipient already has (if any).
+\param includeLeaves True if leaf nodes should be included.
+\param max The maximum number of nodes to return.
+\param func The functor to call for each node added to the FetchPack.
 
 Note: a caller should set includeLeaves to false for transaction trees.
 There's no point in including the leaves of transaction trees.

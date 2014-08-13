@@ -113,12 +113,12 @@ class AmendmentTable
 public:
     /** Create a new AmendmentTable.
 
-        @param majorityTime the number of seconds an amendment must hold a majority
+        \param majorityTime the number of seconds an amendment must hold a majority
                             before we're willing to vote yes on it.
-        @param majorityFraction ratio, out of 256, of servers that must say
+        \param majorityFraction ratio, out of 256, of servers that must say
                                 they want an amendment before we consider it to
                                 have a majority.
-        @param journal
+        \param journal
     */
 
     virtual ~AmendmentTable() { }

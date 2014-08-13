@@ -26,7 +26,7 @@ namespace ripple {
 
 /** Specifies an order book.
     The order book is a pair of Issues called in and out.
-    @see Issue.
+    \see Issue.
 */
 template <bool ByValue>
 class BookType

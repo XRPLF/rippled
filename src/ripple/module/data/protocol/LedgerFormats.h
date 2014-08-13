@@ -26,9 +26,8 @@ namespace ripple {
 
     These are stored in serialized data.
 
-    @note Changing these values results in a hard fork.
-
-    @ingroup protocol
+    \remark Changing these values results in a hard fork.
+    \ingroup protocol
 */
 // Used as the type of a transaction or the type of a ledger entry.
 enum LedgerEntryType
@@ -73,7 +72,7 @@ enum LedgerEntryType
 };
 
 /**
-    @ingroup protocol
+    \ingroup protocol
 */
 // Used as a prefix for computing ledger indexes (keys).
 // VFALCO TODO Why are there a separate set of prefixes? i.e. class HashPrefix
@@ -97,7 +96,7 @@ enum LedgerNameSpace
 };
 
 /**
-    @ingroup protocol
+    \ingroup protocol
 */
 enum LedgerSpecificFlags
 {

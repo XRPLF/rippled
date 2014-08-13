@@ -25,7 +25,7 @@ namespace NodeStore {
 
 /** Callback for iterating through objects.
 
-    @see visitAll
+    \see visitAll
 */
 // VFALCO DEPRECATED Use std::function instead
 struct VisitCallback

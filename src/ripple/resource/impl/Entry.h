@@ -31,7 +31,7 @@ struct Entry : public beast::List <Entry>::Node
     Entry () = delete;
 
     /**
-       @param now Construction time of Entry.
+       \param now Construction time of Entry.
     */
     explicit Entry(clock_type::time_point const now)
         : refcount (0)

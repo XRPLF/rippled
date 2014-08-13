@@ -38,12 +38,12 @@ protected:
 
 public:
     /** Create a new Manager object.
-        @param parent The parent Stoppable.
-        @param pathToDbFileOrDirectory The directory where our database is stored
-        @param journal Where to send log output.
+        \param parent The parent Stoppable.
+        \param pathToDbFileOrDirectory The directory where our database is stored
+        \param journal Where to send log output.
     */
     static Manager* New (
-        beast::Stoppable& stoppableParent, 
+        beast::Stoppable& stoppableParent,
         beast::File const& pathToDbFileOrDirectory,
         beast::Journal journal);
 
@@ -94,7 +94,7 @@ public:
 
     /** Called when a validation with a proper signature is received. */
     virtual void receiveValidation (ReceivedValidation const& rv) = 0;
-    
+
     /** Called when a ledger is closed. */
     virtual void ledgerClosed (RippleLedgerHash const& ledgerHash) = 0;
 };

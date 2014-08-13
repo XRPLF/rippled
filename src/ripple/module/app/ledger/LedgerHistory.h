@@ -31,12 +31,12 @@ public:
     LedgerHistory ();
 
     /** Track a ledger
-        @return `true` if the ledger was already tracked
+        \return `true` if the ledger was already tracked
     */
     bool addLedger (Ledger::pointer ledger, bool validated);
 
     /** Get the ledgers_by_hash cache hit rate
-        @return the hit rate
+        \return the hit rate
     */
     float getCacheHitRate ()
     {
@@ -44,25 +44,25 @@ public:
     }
 
     /** Get a ledger given its squence number
-        @param ledgerIndex The sequence number of the desired ledger
+        \param ledgerIndex The sequence number of the desired ledger
     */
     Ledger::pointer getLedgerBySeq (LedgerIndex ledgerIndex);
 
     /** Get a ledger's hash given its sequence number
-        @param ledgerIndex The sequence number of the desired ledger
-        @return The hash of the specified ledger
+        \param ledgerIndex The sequence number of the desired ledger
+        \return The hash of the specified ledger
     */
     LedgerHash getLedgerHash (LedgerIndex ledgerIndex);
 
     /** Retrieve a ledger given its hash
-        @param ledgerHash The hash of the requested ledger
-        @return The ledger requested
+        \param ledgerHash The hash of the requested ledger
+        \return The ledger requested
     */
     Ledger::pointer getLedgerByHash (LedgerHash const& ledgerHash);
 
     /** Set the history cache's paramters
-        @param size The target size of the cache
-        @param age The target age of the cache, in seconds
+        \param size The target size of the cache
+        \param age The target age of the cache, in seconds
     */
     void tune (int size, int age);
 
@@ -83,9 +83,9 @@ public:
     void validatedLedger (Ledger::ref);
 
     /** Repair a hash to index mapping
-        @param ledgerIndex The index whose mapping is to be repaired
-        @param ledgerHash The hash it is to be mapped to
-        @return `true` if the mapping was repaired
+        \param ledgerIndex The index whose mapping is to be repaired
+        \param ledgerHash The hash it is to be mapped to
+        \return `true` if the mapping was repaired
     */
     bool fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash);
 

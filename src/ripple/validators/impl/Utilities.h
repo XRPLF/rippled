@@ -90,9 +90,9 @@ public:
 
     /** Call LineFunction for each newline-separated line in the input.
         LineFunction will be called with this signature:
-        @code
+        \code
             void LineFunction (BidirectionalIterator first, BidirectionalIterator last)
-        @endcode
+        \endcode
         Where first and last mark the beginning and ending of the line.
         The last line in the input may or may not contain the trailing newline.
     */
@@ -133,7 +133,7 @@ public:
     struct Helpers;
 
     /** Parse a string into a Source::Item.
-        @return `true` on success.
+        \return `true` on success.
     */
     static bool parseInfoLine (
         Source::Item& item, std::string const& line, beast::Journal journal);

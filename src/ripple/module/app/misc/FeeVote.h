@@ -28,26 +28,26 @@ class FeeVote
 public:
     /** Create a new fee vote manager.
 
-        @param targetBaseFee
-        @param targetReserveBase
-        @param targetReserveIncrement
-        @param journal
+        \param targetBaseFee
+        \param targetReserveBase
+        \param targetReserveIncrement
+        \param journal
     */
 
     virtual ~FeeVote () { }
 
     /** Add local fee preference to validation.
 
-        @param lastClosedLedger
-        @param baseValidation
+        \param lastClosedLedger
+        \param baseValidation
     */
     virtual void doValidation (Ledger::ref lastClosedLedger,
                                STObject& baseValidation) = 0;
 
     /** Cast our local vote on the fee.
 
-        @param lastClosedLedger
-        @param initialPosition
+        \param lastClosedLedger
+        \param initialPosition
     */
     virtual void doVoting (Ledger::ref lastClosedLedger,
                            SHAMap::ref initialPosition) = 0;

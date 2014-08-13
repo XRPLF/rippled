@@ -72,13 +72,13 @@ public:
         std::vector <beast::IP::Endpoint> const& addresses) = 0;
 
     /** Add a set of strings as fallback IP::Endpoint sources.
-        @param name A label used for diagnostics.
+        \param name A label used for diagnostics.
     */
     virtual void addFallbackStrings (std::string const& name,
         std::vector <std::string> const& strings) = 0;
 
     /** Add a URL as a fallback location to obtain IP::Endpoint sources.
-        @param name A label used for diagnostics.
+        \param name A label used for diagnostics.
     */
     /* VFALCO NOTE Unimplemented
     virtual void addFallbackURL (std::string const& name,

@@ -24,10 +24,14 @@
 #include <beast/net/IPEndpoint.h>
 #include <beast/utility/Journal.h>
 #include <beast/module/asio/http/HTTPRequest.h>
+
 #include <ostream>
 
-namespace ripple {
+namespace Json {
+class Value;
+}
 
+namespace ripple {
 namespace HTTP {
 
 class Session;
@@ -105,8 +109,17 @@ public:
     /** Returns the entire Content-Body, if the request is complete. */
     virtual std::string content() = 0;
 
-    /** Send a copy of data asynchronously. */
+    /** \return `true` if content() contains a legal JSON object. */
+    virtual bool hasLegalJson() = 0;
+
+    /** \return the content as JSON if possible.
+        Precondition: hasLegalJson must return `true`. */
+    virtual Json::Value const& getJson() = 0;
+
     /** @{ */
+    /** Write this data asynchronously. */
+    virtual void write (void const* buffer, std::size_t bytes) = 0;
+
     void write (std::string const& s)
     {
         if (! s.empty())
@@ -117,16 +130,13 @@ public:
     template <typename BufferSequence>
     void write (BufferSequence const& buffers)
     {
-        for (typename BufferSequence::const_iterator iter (buffers.begin());
-            iter != buffers.end(); ++iter)
+        for (auto& buffer: buffers)
         {
-            typename BufferSequence::value_type const& buffer (*iter);
-            write (boost::asio::buffer_cast <void const*> (buffer),
+            write (
+                boost::asio::buffer_cast <void const*> (buffer),
                 boost::asio::buffer_size (buffer));
         }
     }
-
-    virtual void write (void const* buffer, std::size_t bytes) = 0;
     /** @} */
 
     /** Output support using ostream. */
@@ -135,7 +145,7 @@ public:
     {
         return ScopedStream (*this, manip);
     }
-        
+
     template <typename T>
     ScopedStream operator<< (T const& t)
     {

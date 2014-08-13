@@ -39,10 +39,7 @@ public:
     List getCounts (int minimumThreshold) const;
 
 public:
-    /** Implementation for @ref CountedObject.
-
-        @internal
-    */
+    /** Implementation for \ref CountedObject. */
     class CounterBase
     {
     public:
@@ -96,7 +93,7 @@ private:
     Derived classes have their instances counted automatically. This is used
     for reporting purposes.
 
-    @ingroup ripple_basics
+    \ingroup ripple_basics
 */
 template <class Object>
 class CountedObject : beast::LeakChecked <CountedObject <Object> >

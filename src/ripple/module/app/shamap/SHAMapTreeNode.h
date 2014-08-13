@@ -182,10 +182,10 @@ public:
         Returns `false` if there is no node down that branch
         Otherwise, returns `true` and fills in the node's ID and hash
 
-        @param branch   The branch to descend [0, 15]
-        @param nodeID   On entry the ID of the parent. On exit the ID of the child
-        @param nodeHash On exit the hash of the child node.
-        @return `true` if nodeID and nodeHash are altered.
+        \param branch   The branch to descend [0, 15]
+        \param nodeID   On entry the ID of the parent. On exit the ID of the child
+        \param nodeHash On exit the hash of the child node.
+        \return `true` if nodeID and nodeHash are altered.
     */
     bool descend (int branch, SHAMapNodeID& nodeID, uint256& nodeHash);
 

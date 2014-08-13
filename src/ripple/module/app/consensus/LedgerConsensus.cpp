@@ -54,13 +54,13 @@ public:
     /**
       The result of applying a transaction to a ledger.
 
-      @param clock          The clock which will be used to measure time.
-      @param localtx        A set of local transactions to apply.
-      @param prevLCLHash    The hash of the Last Closed Ledger (LCL).
-      @param previousLedger Best guess of what the Last Closed Ledger (LCL)
+      \param clock          The clock which will be used to measure time.
+      \param localtx        A set of local transactions to apply.
+      \param prevLCLHash    The hash of the Last Closed Ledger (LCL).
+      \param previousLedger Best guess of what the Last Closed Ledger (LCL)
                             was.
-      @param closeTime      Closing time point of the LCL.
-      @param feeVote        Our desired fee levels and voting logic.
+      \param closeTime      Closing time point of the LCL.
+      \param feeVote        Our desired fee levels and voting logic.
     */
     LedgerConsensusImp (clock_type& clock, LocalTxs& localtx,
         LedgerHash const & prevLCLHash, Ledger::ref previousLedger,
@@ -140,7 +140,7 @@ public:
     /**
       This function is called, but its return value is always ignored.
 
-      @return 1.
+      \return 1.
     */
     int startup ()
     {
@@ -151,8 +151,8 @@ public:
       Get the Json state of the consensus process.
       Called by the consensus_info RPC.
 
-      @param full True if verbose response desired.
-      @return     The Json state.
+      \param full True if verbose response desired.
+      \return     The Json state.
     */
     Json::Value getJson (bool full)
     {
@@ -291,10 +291,10 @@ public:
       requested.  When the transaction acquire engine successfully acquires
       a transaction set, it will call back.
 
-      @param hash      hash of the requested transaction tree.
-      @param doAcquire true if we should get this from the network if we don't
+      \param hash      hash of the requested transaction tree.
+      \param doAcquire true if we should get this from the network if we don't
                        already have it.
-      @return          Pointer to the transaction tree if we got it, else
+      \return          Pointer to the transaction tree if we got it, else
                        nullptr.
     */
     SHAMap::pointer getTransactionTree (uint256 const& hash, bool doAcquire)
@@ -348,9 +348,9 @@ public:
     /**
       We have a complete transaction set, typically acquired from the network
 
-      @param hash     hash of the transaction set.
-      @param map      the transaction set.
-      @param acquired true if we have acquired the transaction set.
+      \param hash     hash of the transaction set.
+      \param map      the transaction set.
+      \param acquired true if we have acquired the transaction set.
     */
     void mapComplete (uint256 const& hash, SHAMap::ref map, bool acquired)
     {
@@ -439,8 +439,8 @@ public:
       we probably don't need it (and the peer that initially made us
       retrieve it has probably already changed its position).
 
-      @param hash hash of the transaction set.
-      @return     true if we need to acquire it, else false.
+      \param hash hash of the transaction set.
+      \return     true if we need to acquire it, else false.
     */
     bool stillNeedTXSet (uint256 const& hash)
     {
@@ -547,7 +547,7 @@ public:
     /**
       Change our view of the last closed ledger
 
-      @param lclHash Hash of the last closed ledger.
+      \param lclHash Hash of the last closed ledger.
     */
     void handleLCL (uint256 const& lclHash)
     {
@@ -801,8 +801,8 @@ public:
       A server has taken a new position, adjust our tracking
       Called when a peer takes a new postion.
 
-      @param newPosition the new position
-      @return            true if we should do delayed relay of this position.
+      \param newPosition the new position
+      \return            true if we should do delayed relay of this position.
     */
     bool peerPosition (LedgerProposal::ref newPosition)
     {
@@ -874,11 +874,11 @@ public:
     /**
       A peer has informed us that it can give us a transaction set
 
-      @param peer    The peer we can get it from.
-      @param hashSet The transaction set we can get.
-      @param status  Says whether or not the peer has the transaction set
+      \param peer    The peer we can get it from.
+      \param hashSet The transaction set we can get.
+      \param status  Says whether or not the peer has the transaction set
                      locally.
-      @return        true if we have or acquire the transaction set.
+      \return        true if we have or acquire the transaction set.
     */
     bool peerHasSet (Peer::ptr const& peer, uint256 const& hashSet
         , protocol::TxSetStatus status)
@@ -904,11 +904,11 @@ public:
     /**
       A peer has sent us some nodes from a transaction set
 
-      @param peer     The peer which has sent the nodes
-      @param setHash  The transaction set
-      @param nodeIDs  The nodes in the transaction set
-      @param nodeData The data
-      @return         The status results of adding the nodes.
+      \param peer     The peer which has sent the nodes
+      \param setHash  The transaction set
+      \param nodeIDs  The nodes in the transaction set
+      \param nodeData The data
+      \return         The status results of adding the nodes.
     */
     SHAMapAddNode peerGaveNodes (Peer::ptr const& peer
         , uint256 const& setHash, const std::list<SHAMapNodeID>& nodeIDs
@@ -946,7 +946,7 @@ public:
 private:
     /** We have a new last closed ledger, process it. Final accept logic
 
-      @param set Our consensus set
+      \param set Our consensus set
     */
     void accept (SHAMap::pointer set)
     {
@@ -1190,7 +1190,7 @@ private:
     /**
       Begin acquiring a transaction set
 
-      @param acquire The transaction set to acquire.
+      \param acquire The transaction set to acquire.
     */
     void startAcquiring (TransactionAcquire::pointer acquire)
     {
@@ -1245,8 +1245,8 @@ private:
       Compare two proposed transaction sets and create disputed
         transctions structures for any mismatches
 
-      @param m1 One transaction set
-      @param m2 The other transaction set
+      \param m1 One transaction set
+      \param m2 The other transaction set
     */
     void createDisputes (SHAMap::ref m1, SHAMap::ref m2)
     {
@@ -1288,8 +1288,8 @@ private:
       Add a disputed transaction (one that at least one node wants
       in the consensus set and at least one node does not) to our tracking
 
-      @param txID The ID of the disputed transaction
-      @param tx   The data of the disputed transaction
+      \param txID The ID of the disputed transaction
+      \param tx   The data of the disputed transaction
     */
     void addDisputedTransaction (uint256 const& txID, Blob const& tx)
     {
@@ -1344,8 +1344,8 @@ private:
       Adjust the votes on all disputed transactions based
         on the set of peers taking this position
 
-      @param map   A disputed position
-      @param peers peers which are taking the position map
+      \param map   A disputed position
+      \param peers peers which are taking the position map
     */
     void adjustCount (SHAMap::ref map, const std::vector<NodeID>& peers)
     {
@@ -1386,8 +1386,8 @@ private:
     /** Let peers know that we a particular transactions set so they
        can fetch it from us.
 
-      @param hash   The ID of the transaction.
-      @param direct true if we have this transaction set locally, else a
+      \param hash   The ID of the transaction.
+      \param direct true if we have this transaction set locally, else a
                     directly connected peer has it.
     */
     void sendHaveTxSet (uint256 const& hash, bool direct)
@@ -1402,13 +1402,13 @@ private:
 
     /** Apply a set of transactions to a ledger
 
-      @param set                   The set of transactions to apply
-      @param applyLedger           The ledger to which the transactions should
+      \param set                   The set of transactions to apply
+      \param applyLedger           The ledger to which the transactions should
                                    be applied.
-      @param checkLedger           A reference ledger for determining error
+      \param checkLedger           A reference ledger for determining error
                                    messages (typically new last closed ledger).
-      @param retriableTransactions collect failed transactions in this set
-      @param openLgr               true if applyLedger is open, else false.
+      \param retriableTransactions collect failed transactions in this set
+      \param openLgr               true if applyLedger is open, else false.
     */
     void applyTransactions (SHAMap::ref set, Ledger::ref applyLedger,
         Ledger::ref checkLedger, CanonicalTXSet& retriableTransactions,
@@ -1507,11 +1507,11 @@ private:
 
     /** Apply a transaction to a ledger
 
-      @param engine       The transaction engine containing the ledger.
-      @param txn          The transaction to be applied to ledger.
-      @param openLedger   true if ledger is open
-      @param retryAssured true if the transaction should be retried on failure.
-      @return             One of resultSuccess, resultFail or resultRetry.
+      \param engine       The transaction engine containing the ledger.
+      \param txn          The transaction to be applied to ledger.
+      \param openLedger   true if ledger is open
+      \param retryAssured true if the transaction should be retried on failure.
+      \return             One of resultSuccess, resultFail or resultRetry.
     */
     int applyTransaction (TransactionEngine& engine
         , SerializedTransaction::ref txn, bool openLedger, bool retryAssured)
@@ -1571,8 +1571,8 @@ private:
     /**
       Round the close time to the close time resolution.
 
-      @param closeTime The time to be rouned.
-      @return          The rounded close time.
+      \param closeTime The time to be rouned.
+      \return          The rounded close time.
     */
     std::uint32_t roundCloseTime (std::uint32_t closeTime)
     {
@@ -1581,9 +1581,9 @@ private:
 
     /** Send a node status change message to our directly connected peers
 
-      @param event   The event which caused the status change.  This is
+      \param event   The event which caused the status change.  This is
                      typically neACCEPTED_LEDGER or neCLOSING_LEDGER.
-      @param ledger  The ledger associated with the event.
+      \param ledger  The ledger associated with the event.
     */
     void statusChange (protocol::NodeEvent event, Ledger& ledger)
     {
@@ -1625,7 +1625,7 @@ private:
     /** Take an initial position on what we think the consensus should be
         based on the transactions that made it into our open ledger
 
-      @param initialLedger The ledger that contains our initial position.
+      \param initialLedger The ledger that contains our initial position.
     */
     void takeInitialPosition (Ledger& initialLedger)
     {
@@ -1697,9 +1697,9 @@ private:
       For a given number of participants and required percent
       for consensus, how many participants must agree?
 
-      @param size    number of validators
-      @param percent desired percent for consensus
-      @return number of participates which must agree
+      \param size    number of validators
+      \param percent desired percent for consensus
+      \return number of participates which must agree
     */
     static int computePercent (int size, int percent)
     {

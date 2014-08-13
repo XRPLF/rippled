@@ -27,9 +27,9 @@ namespace ripple {
 /** Manages a list of known formats.
 
     Each format has a name, an associated KeyType (typically an enumeration),
-    and a predefined @ref SOElement.
+    and a predefined \ref SOElement.
 
-    @tparam KeyType The type of key identifying the format.
+    \tparam KeyType The type of key identifying the format.
 */
 template <class KeyType>
 class KnownFormats
@@ -101,8 +101,8 @@ public:
 
         If the format name is unknown, an exception is thrown.
 
-        @param  name The name of the type.
-        @return      The type.
+        \param  name The name of the type.
+        \return      The type.
     */
     KeyType findTypeByName (std::string const name) const
     {
@@ -156,10 +156,10 @@ protected:
 
         The new format has the set of common fields already added.
 
-        @param name The name of this format.
-        @param type The type of this format.
+        \param name The name of this format.
+        \param type The type of this format.
 
-        @return The created format.
+        \return The created format.
     */
     Item& add (char const* name, KeyType type)
     {

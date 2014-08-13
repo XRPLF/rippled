@@ -34,12 +34,12 @@ namespace ripple {
           * This is used by InfoSub to report to clients
         - Cached stuff
 
-    @code
-    @endcode
+    \code
+    \endcode
 
-    @see {uri}
+    \see {uri}
 
-    @ingroup ripple_ledger
+    \ingroup ripple_ledger
 */
 class AcceptedLedgerTx
 {

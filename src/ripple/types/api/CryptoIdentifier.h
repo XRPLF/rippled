@@ -32,13 +32,13 @@ namespace ripple {
 
 /** Shared IdentifierType traits for Ripple crypto identifiers.
 
-    @tparam Size The number of bytes in the identifier, exclusive of version,
+    \tparam Size The number of bytes in the identifier, exclusive of version,
                  checksum, or padding.
-    
-    @tparam Token A byte prepended to the binary data that distinguishes
+
+    \tparam Token A byte prepended to the binary data that distinguishes
                   the type of identifier.
 
-    @tparam Checked A `bool` indicating whether or not the string
+    \tparam Checked A `bool` indicating whether or not the string
                     representation includes an appended a four byte checksum on
                     the data including the Token.
 */
@@ -130,7 +130,7 @@ public:
     }
 };
 
-template <std::size_t Size, std::uint8_t Token, bool Checked> 
+template <std::size_t Size, std::uint8_t Token, bool Checked>
     typename CryptoIdentifier <Size, Token, Checked>::size_type
     const CryptoIdentifier <Size, Token, Checked>::size;
 }

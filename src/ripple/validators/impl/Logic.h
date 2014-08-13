@@ -387,13 +387,13 @@ public:
     }
 
     /** Process up to one source that needs fetching.
-        @return The number of sources that were fetched.
+        \return The number of sources that were fetched.
     */
     std::size_t fetch_one ()
     {
         std::size_t n (0);
         beast::Time const currentTime (beast::Time::getCurrentTime ());
-        
+
         for (SourceTable::iterator iter = m_sources.begin ();
             (n == 0) && iter != m_sources.end (); ++iter)
         {
@@ -420,7 +420,7 @@ public:
     }
 
     //--------------------------------------------------------------------------
-    // 
+    //
     // Ripple interface
     //
     //--------------------------------------------------------------------------

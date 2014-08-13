@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/common/RippleSSLContext.h>
+#include <ripple/common/jsonrpc_fields.h>
 #include <ripple/http/Session.h>
 #include <ripple/module/app/main/RPCHTTPServer.h>
 #include <ripple/module/rpc/RPCHandler.h>
@@ -75,7 +76,7 @@ public:
         if (! getConfig ().getRpcIP().empty () &&
               getConfig ().getRpcPort() != 0)
         {
-            beast::IP::Endpoint ep (beast::IP::Endpoint::from_string (getConfig().getRpcIP()));
+            auto ep = beast::IP::Endpoint::from_string (getConfig().getRpcIP());
 
             // VFALCO TODO IP address should not have an "unspecified" state
             //if (! is_unspecified (ep))
@@ -133,6 +134,47 @@ public:
     {
     }
 
+    // Returns negative for "small" jobs, 0 for "average" jobs and positive for
+    // "big" jobs.
+    int jobSize (HTTP::Session& session) const
+    {
+        if (!session.hasLegalJson())
+            return 0;
+        auto& json = session.getJson ();
+        auto command = json[jss::command].asString ();
+
+        // Use magic knowledge from ripple/module/rpc/impl/Handler.cpp
+        // to identify a path finding request.
+
+        if (command != "path_find")
+            return 0;
+
+        // TODO(tom): formalize this "cheap response" idea in the new RPC
+        // handlers so I don't need magic knowledge.
+
+        auto subcommand = json["subcommand"].asString ();
+
+        if (subcommand == "close" || subcommand == "status")
+            return -1;  // These are very cheap subcommands.
+
+        // TODO(tom): make sure that close and status really are cheap.
+
+        if (subcommand != "create")
+            return 0;  // This shouldn't happen but we can handle this later.
+
+        // It's a path request!
+
+        // TODO(tom): figure out if this path request is light enough
+        // to do right here.
+
+        // TODO(tom): extract the code from somewhere around
+        // ripple/module/app/paths/PathRequests.cpp:83-146 to allow us to
+        // respond to a pathfinding request without going through the path
+        // finding request queue.
+
+        return 0;
+    }
+
     void onRequest (HTTP::Session& session)
     {
         // Check user/password authorization
@@ -144,18 +186,21 @@ public:
             return;
         }
 
-#if 0
-        // Synchronous version that doesn't use job queue
-        Job job;
-        processSession (job, session);
+        if (jobSize (session) < 0)
+        {
+            // Small jobs bypass the job queue.
+            Job job;
+            processSession (job, session);
+        }
+        else
+        {
+            // Jobs that are average or larger use the job queue.
+            session.detach();
 
-#else
-        session.detach();
-
-        m_jobQueue.addJob (jtCLIENT, "RPC-Client", std::bind (
-            &RPCHTTPServerImp::processSession, this, std::placeholders::_1,
+            m_jobQueue.addJob (jtCLIENT, "RPC-Client", std::bind (
+                &RPCHTTPServerImp::processSession, this, std::placeholders::_1,
                 std::ref (session)));
-#endif
+        }
     }
 
     void onClose (HTTP::Session& session, int errorCode)
@@ -171,15 +216,16 @@ public:
 
     void processSession (Job& job, HTTP::Session& session)
     {
-#if 0
-        // Goes through the old code
-        session.write (m_deprecatedHandler.processRequest (
-            session.content(), session.remoteAddress().at_port(0)));
-#else
-        session.write (processRequest (session.content(),
-            session.remoteAddress().at_port(0)));
-#endif
-
+        if (session.hasLegalJson())
+        {
+            session.write (
+                processRequest (
+                    session.getJson(), session.remoteAddress().at_port(0)));
+        }
+        else
+        {
+            session.write (createResponse (400, "Unable to parse request"));
+        }
         session.close();
     }
 
@@ -190,25 +236,12 @@ public:
         return HTTPReply (statusCode, description);
     }
 
-    // Stolen directly from RPCServerHandler
-    std::string
-    processRequest (std::string const& request,
+    std::string processRequest (
+        Json::Value const& jvRequest,
         beast::IP::Endpoint const& remoteIPAddress)
     {
-        Json::Value jvRequest;
-        {
-            Json::Reader reader;
-
-            if ((request.size () > 1000000) ||
-                ! reader.parse (request, jvRequest) ||
-                jvRequest.isNull () ||
-                ! jvRequest.isObject ())
-            {
-                return createResponse (400, "Unable to parse request");
-            }
-        }
-
-        Config::Role const role (getConfig ().getAdminRole (jvRequest, remoteIPAddress));
+        Config::Role const role (
+            getConfig ().getAdminRole (jvRequest, remoteIPAddress));
 
         Resource::Consumer usage;
 
@@ -225,17 +258,12 @@ public:
         // VFALCO NOTE Except that "id" isn't included in the following errors...
         //
         Json::Value const id = jvRequest ["id"];
-
         Json::Value const method = jvRequest ["method"];
 
         if (method.isNull ())
-        {
             return createResponse (400, "Null method");
-        }
-        else if (! method.isString ())
-        {
+        if (! method.isString ())
             return createResponse (400, "method is not string");
-        }
 
         std::string strMethod = method.asString ();
 
@@ -243,23 +271,18 @@ public:
         Json::Value params = jvRequest ["params"];
 
         if (params.isNull ())
-        {
             params = Json::Value (Json::arrayValue);
-        }
         else if (!params.isArray ())
-        {
             return HTTPReply (400, "params unparseable");
-        }
 
         // VFALCO TODO Shouldn't we handle this earlier?
         //
         if (role == Config::FORBID)
-        {
-            // VFALCO TODO Needs implementing
-            // FIXME Needs implementing
-            // XXX This needs rate limiting to prevent brute forcing password.
             return HTTPReply (403, "Forbidden");
-        }
+
+        // VFALCO TODO Needs implementing
+        // FIXME Needs implementing
+        // XXX This needs rate limiting to prevent brute forcing password.
 
         std::string response;
 
@@ -291,13 +314,15 @@ RPCHTTPServer::RPCHTTPServer (Stoppable& parent)
 
 //------------------------------------------------------------------------------
 
-RPCHTTPServer* RPCHTTPServer::New (Stoppable& parent,
-                                   beast::Journal journal,
-                                   JobQueue& jobQueue,
-                                   NetworkOPs& networkOPs,
-                                   Resource::Manager& resourceManager)
+RPCHTTPServer* RPCHTTPServer::New (
+    Stoppable& parent,
+    beast::Journal journal,
+    JobQueue& jobQueue,
+    NetworkOPs& networkOPs,
+    Resource::Manager& resourceManager)
 {
-    return new RPCHTTPServerImp (parent, journal, jobQueue, networkOPs, resourceManager);
+    return new RPCHTTPServerImp (
+        parent, journal, jobQueue, networkOPs, resourceManager);
 }
 
 }

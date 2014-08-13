@@ -26,7 +26,7 @@ namespace ripple {
 namespace NodeStore {
 
 /** Factory to produce a RAM based backend for the NodeStore.
-    @see Database
+    \see Database
 */
 std::unique_ptr <Factory> make_MemoryFactory ();
 

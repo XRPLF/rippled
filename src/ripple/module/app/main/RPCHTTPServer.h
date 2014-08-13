@@ -28,8 +28,11 @@ protected:
     RPCHTTPServer (Stoppable& parent);
 
 public:
-    static RPCHTTPServer* New (Stoppable& parent,
-        beast::Journal journal, JobQueue& jobQueue, NetworkOPs& networkOPs,
+    static RPCHTTPServer* New (
+        Stoppable& parent,
+        beast::Journal journal,
+        JobQueue& jobQueue,
+        NetworkOPs& networkOPs,
         Resource::Manager& resourceManager);
 
     virtual ~RPCHTTPServer () { }

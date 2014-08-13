@@ -100,7 +100,7 @@ public:
             - Offers with missing ledger entries
             - Offers found unfunded
             - expired offers
-        @return `true` if there is a valid offer.
+        \return `true` if there is a valid offer.
     */
     bool
     step ();
@@ -111,7 +111,7 @@ public:
             - Offers found unfunded
             - Offers from the same account
             - Expired offers
-        @return `true` if there is a valid offer.
+        \return `true` if there is a valid offer.
     */
     bool
     step_account (Account const& account);
@@ -121,4 +121,3 @@ public:
 }
 
 #endif
-

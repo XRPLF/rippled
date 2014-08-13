@@ -30,10 +30,10 @@ namespace ripple {
     This information is part of the Ripple protocol. Specifically,
     it is required for peers to be able to communicate with each other.
 
-    @note Changing these will create a hard fork.
+    \remark Changing these will create a hard fork.
 
-    @ingroup protocol
-    @defgroup protocol
+    \ingroup protocol
+    \defgroup protocol
 */
 struct Protocol
 {

@@ -97,7 +97,7 @@ public: // overridden from ValueMapAllocator
     }
 };
 #else
-/// @todo make this thread-safe (lock when accessign batch allocator)
+/// \todo make this thread-safe (lock when accessign batch allocator)
 class DefaultValueMapAllocator : public ValueMapAllocator
 {
 public: // overridden from ValueMapAllocator

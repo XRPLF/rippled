@@ -40,12 +40,12 @@ public:
         binary expansion of an irrational number; in this case, that number
         is the reciprocal of the golden ratio:
 
-        @code
+        \code
 
         phi = (1 + sqrt(5)) / 2
         2^32 / phi = 0x9e3779b9
 
-        @endcode
+        \endcode
 
         References:
 
@@ -56,7 +56,7 @@ public:
 
     /** Retrieve the singleton.
 
-        @return The global instance of the singleton.
+        \return The global instance of the singleton.
     */
     static HashMaps const& getInstance ()
     {
@@ -67,7 +67,7 @@ public:
 
     /** Instantiate a nonce for a type.
 
-        @note This may be used during program initialization
+        \remark This may be used during program initialization
               to avoid concurrency issues. Only C++11 provides thread
               safety guarantees for function-local static objects.
     */
@@ -120,7 +120,7 @@ private:
 
     /** Retrieve the nonce holder for a type.
 
-        @note This routine will be called concurrently.
+        \remark This routine will be called concurrently.
     */
     template <class T>
     NonceHolder <T> const& getNonceHolder () const

@@ -28,7 +28,7 @@ namespace ripple {
 namespace NodeStore {
 
 /** Factory to produce HyperLevelDB backends for the NodeStore.
-    @see Database
+    \see Database
 */
 std::unique_ptr <Factory> make_HyperDBFactory ();
 

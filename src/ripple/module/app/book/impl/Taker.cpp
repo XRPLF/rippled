@@ -69,10 +69,10 @@ Taker::remaining_offer () const
 }
 
 /** Calculate the amount particular user could get through an offer.
-    @param amount the maximum flow that is available to the taker.
-    @param offer the offer to flow through.
-    @param taker the person taking the offer.
-    @return the maximum amount that can flow through this offer.
+    \param amount the maximum flow that is available to the taker.
+    \param offer the offer to flow through.
+    \param taker the person taking the offer.
+    \return the maximum amount that can flow through this offer.
 */
 Amounts
 Taker::flow (Amounts amount, Offer const& offer, Account const& taker)
@@ -147,9 +147,9 @@ Taker::consume (Offer const& offer, Amounts const& consumed) const
 }
 
 // Fill a direct offer.
-//   @param offer the offer we are going to use.
-//   @param amount the amount to flow through the offer.
-//   @returns: tesSUCCESS if successful, or an error code otherwise.
+//   \param offer the offer we are going to use.
+//   \param amount the amount to flow through the offer.
+//   \returns: tesSUCCESS if successful, or an error code otherwise.
 TER
 Taker::fill (Offer const& offer, Amounts const& amount)
 {
@@ -165,11 +165,11 @@ Taker::fill (Offer const& offer, Amounts const& amount)
 }
 
 // Fill a bridged offer.
-//   @param leg1 the first leg we are going to use.
-//   @param amount1 the amount to flow through the first leg of the offer.
-//   @param leg2 the second leg we are going to use.
-//   @param amount2 the amount to flow through the second leg of the offer.
-//   @return tesSUCCESS if successful, or an error code otherwise.
+//   \param leg1 the first leg we are going to use.
+//   \param amount1 the amount to flow through the first leg of the offer.
+//   \param leg2 the second leg we are going to use.
+//   \param amount2 the amount to flow through the second leg of the offer.
+//   \return tesSUCCESS if successful, or an error code otherwise.
 TER
 Taker::fill (
     Offer const& leg1, Amounts const& amount1,

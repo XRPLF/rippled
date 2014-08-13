@@ -27,7 +27,7 @@ namespace detail {
 
 /** Tries to insert one object in the target.
     When an item is handed out it is moved to the end of the container.
-    @return The number of objects handed out
+    \return The number of objects handed out
 */
 // VFALCO TODO specialization that handles std::list for SequenceContainer
 //             using splice for optimization over erase/push_back

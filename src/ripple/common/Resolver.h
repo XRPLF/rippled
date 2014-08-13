@@ -48,8 +48,8 @@ public:
     virtual void start () = 0;
 
     /** resolve all hostnames on the list
-        @param names the names to be resolved
-        @param handler the handler to call
+        \param names the names to be resolved
+        \param handler the handler to call
     */
     /** @{ */
     template <class Handler>

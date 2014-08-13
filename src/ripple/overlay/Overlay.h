@@ -72,7 +72,7 @@ public:
     size () = 0;
 
     /** Return diagnostics on the status of all peers.
-        @deprecated This is superceded by PropertyStream
+        \deprecated This is superceded by PropertyStream
     */
     virtual
     Json::Value
@@ -99,10 +99,10 @@ public:
          - Be callable as:
             Function::return_type operator()() const;
 
-        @param f the functor to call with every peer
-        @returns `f()`
+        \param f the functor to call with every peer
+        \returns `f()`
 
-        @note The functor is passed by value!
+        \remark The functor is passed by value!
     */
     template<typename Function>
     std::enable_if_t <
@@ -124,7 +124,7 @@ public:
          - Must have the following typedef:
             typedef void return_type;
 
-        @param f the functor to call with every peer
+        \param f the functor to call with every peer
     */
     template <class Function>
     std::enable_if_t <

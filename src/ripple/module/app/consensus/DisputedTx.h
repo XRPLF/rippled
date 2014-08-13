@@ -24,11 +24,11 @@ namespace ripple {
 
 /** A transaction discovered to be in dispute during conensus.
 
-    During consensus, a @ref DisputedTx is created when a transaction
+    During consensus, a \ref DisputedTx is created when a transaction
     is discovered to be disputed. The object persists only as long as
     the dispute.
 
-    Undisputed transactions have no corresponding @ref DisputedTx object.
+    Undisputed transactions have no corresponding \ref DisputedTx object.
 */
 class DisputedTx
 {

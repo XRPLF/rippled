@@ -63,9 +63,9 @@ public:
     typedef std::vector <value_type> list_type;
 
     /** Create an empty template.
-        After creating the template, call @ref push_back with the
+        After creating the template, call \ref push_back with the
         desired fields.
-        @see push_back
+        \see push_back
     */
     SOTemplate ();
 

@@ -81,6 +81,8 @@ private:
     boost::optional <boost::asio::io_service::work> work_;
     int errorCode_;
     std::atomic <int> detached_;
+    std::unique_ptr <Json::Value> jsonValue_;
+    bool hasLegalJson_;
 
     //--------------------------------------------------------------------------
 
@@ -88,47 +90,67 @@ public:
     Peer (ServerImpl& impl, Port const& port);
     ~Peer ();
 
-private:
+    Peer(Peer const&) = delete;
+    Peer& operator=(Peer const&) = delete;
+
+  private:
     //--------------------------------------------------------------------------
     //
     // Session
     //
 
     beast::Journal
-    journal()
+    journal() override
     {
         return impl_.journal();
     }
 
     beast::IP::Endpoint
-    remoteAddress()
+    remoteAddress() override
     {
         return from_asio (get_socket().remote_endpoint());
     }
 
     bool
-    headersComplete()
+    headersComplete() override
     {
         return parser_.headersComplete();
     }
 
     beast::HTTPHeaders
-    headers()
+    headers() override
     {
         return beast::HTTPHeaders (parser_.fields());
     }
 
     beast::SharedPtr <beast::HTTPRequest> const&
-    request()
+    request() override
     {
         return parser_.request();
     }
 
     std::string
-    content();
+    content() override;
 
     void
-    write (void const* buffer, std::size_t bytes);
+    write (void const* buffer, std::size_t bytes) override;
+
+    bool
+    hasLegalJson() override
+    {
+        computeJson();
+        return hasLegalJson_;
+    }
+
+    Json::Value const&
+    getJson() override
+    {
+        computeJson();
+        return *jsonValue_;
+    }
+
+    void
+    computeJson ();
 
     void
     detach ();
@@ -171,29 +193,23 @@ public:
     //
     // Peer
     //
-    socket&
-    get_socket()
+    socket& get_socket()
     {
         return socket_->this_layer<socket>();
     }
 
-    Session&
-    session ()
+    Session& session ()
     {
         return *this;
     }
 
-    void
-    accept ();
+    void accept ();
 
-    void
-    cancel ();
+    void cancel ();
 
-    void
-    failed (error_code const& ec);
+    void failed (error_code const& ec);
 
-    void
-    async_read_some ();
+    void async_read_some ();
 
     void async_write (SharedBuffer const& buf);
 };

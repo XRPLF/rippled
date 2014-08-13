@@ -68,7 +68,7 @@ public:
 
     /** Set the flags on a hash.
 
-        @return `true` if the flags were changed.
+        \return `true` if the flags were changed.
     */
     // VFALCO TODO Rename to setFlags since it works with multiple flags.
     virtual bool setFlag (uint256 const& index, int mask) = 0;

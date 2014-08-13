@@ -47,7 +47,7 @@ class PeerImp;
 class OverlayImpl
     : public Overlay
     , public PeerFinder::Callback
-{    
+{
 private:
     typedef boost::asio::ip::tcp::socket socket_type;
 
@@ -129,8 +129,8 @@ public:
 public:
     /** Process an incoming connection using the Peer protocol.
         The caller transfers ownership of the socket via rvalue move.
-        @param proxyHandshake `true` If a PROXY handshake is required.
-        @param socket A socket in the accepted state.
+        \param proxyHandshake `true` If a PROXY handshake is required.
+        \param socket A socket in the accepted state.
     */
     void
     accept (bool proxyHandshake,
@@ -143,10 +143,10 @@ public:
 
     void
     check_stopped ();
-    
+
     void
     release ();
-    
+
     void
     remove (PeerFinder::Slot::ptr const& slot);
 
@@ -178,7 +178,7 @@ public:
     onStart () override;
 
     /** Close all peer connections.
-        If `graceful` is true then active 
+        If `graceful` is true then active
         Requirements:
             Caller must hold the mutex.
     */

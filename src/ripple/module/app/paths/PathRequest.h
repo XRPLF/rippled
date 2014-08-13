@@ -45,10 +45,6 @@ public:
     typedef const pointer&                  ref;
     typedef const wptr&                     wref;
 
-    // TODO(tom): Use Issue instead!
-    typedef std::pair<Currency, Account> CurrencyIssuer;
-
-public:
     // VFALCO TODO Break the cyclic dependency on InfoSub
     PathRequest (std::shared_ptr <InfoSub> const& subscriber,
         int id, PathRequests&, beast::Journal journal);
@@ -97,8 +93,8 @@ private:
     RippleAddress raDstAccount;
     STAmount saDstAmount;
 
-    std::set<CurrencyIssuer> sciSourceCurrencies;
-    std::map<CurrencyIssuer, STPathSet> mContext;
+    std::set<Issue> sciSourceCurrencies;
+    std::map<Issue, STPathSet> mContext;
 
     bool bValid;
 

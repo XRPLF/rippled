@@ -34,7 +34,7 @@ public:
         The peer protcol requires the 'hello' message as the first item on
         the stream. We check the 6-byte message header to determine if the
         hello is present.
-        @return `false` if the buffers cannot possibly contain the message, or
+        \return `false` if the buffers cannot possibly contain the message, or
             `boost::indeterminate` if more data is needed.
     */
     template <class ConstBufferSequence>

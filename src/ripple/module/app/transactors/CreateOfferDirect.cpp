@@ -26,12 +26,12 @@ namespace ripple {
 /** Fill offer as much as possible by consuming offers already on the books.
     We adjusts account balances and charges fees on top to taker.
 
-    @param taker_amount.in How much the taker offers
-    @param taker_amount.out How much the taker wants
-    @param taker_flow.in    What the taker actually paid, not including fees.
-    @param taker_flow.out   What the taker actually got, not including fees.
+    \param taker_amount.in How much the taker offers
+    \param taker_amount.out How much the taker wants
+    \param taker_flow.in    What the taker actually paid, not including fees.
+    \param taker_flow.out   What the taker actually got, not including fees.
 
-    @return tesSUCCESS, terNO_ACCOUNT, telFAILED_PROCESSING, or
+    \return tesSUCCESS, terNO_ACCOUNT, telFAILED_PROCESSING, or
             tecFAILED_PROCESSING
 */
 std::pair<TER, core::Amounts>
