@@ -577,11 +577,26 @@ private:
     template <class... Args>
     element* new_element (Args&&... args)
     {
-        element* const p (
-            ElementAllocatorTraits::allocate (m_config.alloc(), 1));
+        struct Deleter
+        {
+            std::reference_wrapper <ElementAllocator> a_;
+            Deleter (ElementAllocator& a)
+                : a_(a)
+            {
+            }
+
+            void
+            operator()(element* p)
+            {
+                ElementAllocatorTraits::deallocate (a_.get(), p, 1);
+            }
+        };
+
+        std::unique_ptr <element, Deleter> p (ElementAllocatorTraits::allocate (
+            m_config.alloc(), 1), Deleter(m_config.alloc()));
         ElementAllocatorTraits::construct (m_config.alloc(),
-            p, clock().now(), std::forward <Args> (args)...);
-        return p;
+            p.get(), clock().now(), std::forward <Args> (args)...);
+        return p.release();
     }
 
     void delete_element (element const* p)
