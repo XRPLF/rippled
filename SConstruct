@@ -229,6 +229,17 @@ def config_base(env):
         openssl = os.path.join(OSX_OPENSSL_ROOT, most_recent)
         env.Prepend(CPPPATH='%s/include' % openssl)
         env.Prepend(LIBPATH=['%s/lib' % openssl])
+    else:
+        try:
+            OPENSSL_ROOT = os.path.normpath(os.environ['OPENSSL_ROOT'])
+            env.Append(CPPPATH=[
+                os.path.join(OPENSSL_ROOT, 'include'),
+                ])
+            env.Append(LIBPATH=[
+                os.path.join(OPENSSL_ROOT, 'lib'),
+                ])
+        except KeyError:
+            pass
 
     # handle command-line arguments
     profile_jemalloc = ARGUMENTS.get('profile-jemalloc')
