@@ -77,7 +77,9 @@ public:
             { return to_char (digit); }
 
         int from_char (char c) const
-            { return m_inverse [c]; }
+        {
+            return m_inverse [c];
+        }
 
     private:
         std::string const m_chars;
