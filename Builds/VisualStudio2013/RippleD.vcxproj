@@ -3573,6 +3573,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\validators\Source.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\validators\tests\Validators.test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\validators\Types.h">
     </ClInclude>
     <ClCompile Include="..\..\src\rocksdb\db\builder.cc">
@@ -3936,6 +3939,57 @@
     </ClInclude>
     <ClInclude Include="..\..\src\rocksdb\third-party\rapidjson\reader.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\utilities\backupable\backupable_db.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb\utilities\document\document_db.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb\utilities\document\json_document.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb\utilities\geodb\geodb_impl.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\utilities\geodb\geodb_impl.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\utilities\merge_operators.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\utilities\merge_operators\put.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb\utilities\merge_operators\string_append\stringappend.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\utilities\merge_operators\string_append\stringappend.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\utilities\merge_operators\string_append\stringappend2.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\utilities\merge_operators\string_append\stringappend2.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\utilities\merge_operators\uint64add.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb\utilities\redis\redis_lists.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\utilities\redis\redis_lists.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\utilities\redis\redis_list_exception.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb\utilities\redis\redis_list_iterator.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\utilities\spatialdb\spatial_db.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\utilities\spatialdb\utils.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb\utilities\ttl\db_ttl_impl.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb\utilities\ttl\db_ttl_impl.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\rocksdb\util\arena.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -4108,57 +4162,6 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\rocksdb\util\xxhash.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\rocksdb\utilities\backupable\backupable_db.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\rocksdb\utilities\document\document_db.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\rocksdb\utilities\document\json_document.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\rocksdb\utilities\geodb\geodb_impl.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\rocksdb\utilities\geodb\geodb_impl.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\rocksdb\utilities\merge_operators.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\rocksdb\utilities\merge_operators\put.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\rocksdb\utilities\merge_operators\string_append\stringappend.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\rocksdb\utilities\merge_operators\string_append\stringappend.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\rocksdb\utilities\merge_operators\string_append\stringappend2.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\rocksdb\utilities\merge_operators\string_append\stringappend2.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\rocksdb\utilities\merge_operators\uint64add.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\rocksdb\utilities\redis\redis_lists.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\rocksdb\utilities\redis\redis_lists.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\rocksdb\utilities\redis\redis_list_exception.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\rocksdb\utilities\redis\redis_list_iterator.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\rocksdb\utilities\spatialdb\spatial_db.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\rocksdb\utilities\spatialdb\utils.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\rocksdb\utilities\ttl\db_ttl_impl.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\rocksdb\utilities\ttl\db_ttl_impl.h">
     </ClInclude>
     <ClInclude Include="..\..\src\snappy\config\snappy-stubs-public.h">
     </ClInclude>

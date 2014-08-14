@@ -43,10 +43,8 @@ private:
     // Holds the Entry of all recent ledgers for this validator.
 #if 1
     typedef beast::aged_unordered_map <RippleLedgerHash, Entry,
-        std::chrono::seconds,
-            //beast::hardened_hash<>,
-            std::hash<RippleLedgerHash>,
-                RippleLedgerHash::key_equal> Table;
+        std::chrono::seconds, beast::hardened_hash<>,
+            RippleLedgerHash::key_equal> Table;
 #else
     typedef beast::aged_map <RippleLedgerHash, Entry,
         std::chrono::seconds, std::less<>> Table;
@@ -97,6 +95,7 @@ public:
     void
     on_validation (RippleLedgerHash const& ledgerHash)
     {
+        //expire();
         auto const result (table_.insert (
             std::make_pair (ledgerHash, Entry())));
         auto& entry (result.first->second);
@@ -107,19 +106,19 @@ public:
         {
             --count_.expected;
             ++count_.closed;
-            //table_.erase (result.first);
+            table_.erase (result.first);
         }
         else
         {
             ++count_.received;
         }
-        //expire();
     }
 
     /** Called when a ledger is closed. */
     void
     on_ledger (RippleLedgerHash const& ledgerHash)
     {
+        //expire();
         auto const result (table_.insert (
             std::make_pair (ledgerHash, Entry())));
         auto& entry (result.first->second);
@@ -130,13 +129,12 @@ public:
         {
             --count_.received;
             ++count_.closed;
-            //table_.erase (result.first);
+            table_.erase (result.first);
         }
         else
         {
             ++count_.expected;
         }
-        //expire();
     }
 
     /** Prunes old entries. */
@@ -144,22 +142,6 @@ public:
     expire()
     {
         beast::expire (table_, std::chrono::minutes(5));
-    }
-
-private:
-    void dump ()
-    {
-        std::cout << "Validator: " << this << std::endl;
-        std::cout << "Size: " << table_.size() << std::endl;
-        std::cout << "end at: "  << &(*table_.end()) << std::endl;
-        for (auto const& ledgerKeyAndState : table_)
-        {
-            std::cout << "keyAndState at: " << &ledgerKeyAndState.first << std::endl;
-            std::cout << "  Hash: " << ledgerKeyAndState.first << std::endl;
-            std::cout << "  closed: " << ledgerKeyAndState.second.closed <<
-                         "  received: " << ledgerKeyAndState.second.received <<
-                         std::endl;
-        }
     }
 };
 

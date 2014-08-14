@@ -59,4 +59,4 @@
 #include <ripple/validators/impl/Tests.cpp>
 #include <ripple/validators/impl/Utilities.cpp>
 
-//#include <ripple/validators/tests/validator.test.cpp>
+#include <ripple/validators/tests/Validators.test.cpp>
