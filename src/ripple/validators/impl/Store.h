@@ -20,6 +20,8 @@
 #ifndef RIPPLE_VALIDATORS_STORE_H_INCLUDED
 #define RIPPLE_VALIDATORS_STORE_H_INCLUDED
 
+#include <ripple/validators/impl/SourceDesc.h>
+
 namespace ripple {
 namespace Validators {
 

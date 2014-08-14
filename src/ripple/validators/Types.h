@@ -20,6 +20,8 @@
 #ifndef RIPPLE_VALIDATORS_TYPES_H_INCLUDED
 #define RIPPLE_VALIDATORS_TYPES_H_INCLUDED
 
+#include <ripple/types/api/RippleLedgerHash.h>
+
 namespace ripple {
 namespace Validators {
 

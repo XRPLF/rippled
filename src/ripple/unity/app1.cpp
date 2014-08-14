@@ -25,8 +25,6 @@
 
 #include <ripple/unity/app.h>
 
-#include <ripple/unity/validators.h>
-
 #include <ripple/module/app/misc/PowResult.h>
 
 #include <ripple/module/app/misc/ProofOfWorkFactory.h>

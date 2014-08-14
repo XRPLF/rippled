@@ -20,6 +20,8 @@
 #ifndef RIPPLE_TYPES_SIMPLEIDENTIFIER_H_INCLUDED
 #define RIPPLE_TYPES_SIMPLEIDENTIFIER_H_INCLUDED
 
+#include <ripple/types/api/base_uint.h>
+
 namespace ripple {
 
 /** Provides common traits for non-signing identifiers like ledger hashes.

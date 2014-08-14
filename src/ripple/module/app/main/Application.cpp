@@ -29,6 +29,7 @@
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/Manager.h>
 #include <ripple/overlay/make_Overlay.h>
+#include <ripple/validators/Manager.h>
 #include <fstream>
 
 namespace ripple {

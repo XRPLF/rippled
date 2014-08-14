@@ -20,8 +20,12 @@
 #ifndef RIPPLE_VALIDATORS_MANAGER_H_INCLUDED
 #define RIPPLE_VALIDATORS_MANAGER_H_INCLUDED
 
+#include <ripple/validators/Source.h>
+#include <ripple/validators/Types.h>
 #include <beast/threads/Stoppable.h>
+#include <beast/http/URL.h>
 #include <beast/module/core/files/File.h>
+#include <beast/utility/PropertyStream.h>
 
 namespace ripple {
 namespace Validators {

@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <boost/regex.hpp>
+
 namespace ripple {
 namespace Validators {
 

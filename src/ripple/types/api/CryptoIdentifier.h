@@ -91,7 +91,7 @@ public:
         template <class UnsignedIntegralType>
         static value_type createFromInteger (UnsignedIntegralType i)
         {
-            static_bassert (size >= sizeof (UnsignedIntegralType));
+            static_assert (size >= sizeof (UnsignedIntegralType), "");
             std::array <std::uint8_t, size> data;
             data.fill (0);
             i = beast::toNetworkByteOrder <UnsignedIntegralType> (i);

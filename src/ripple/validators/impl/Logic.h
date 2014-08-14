@@ -20,8 +20,14 @@
 #ifndef RIPPLE_VALIDATORS_LOGIC_H_INCLUDED
 #define RIPPLE_VALIDATORS_LOGIC_H_INCLUDED
 
+#include <ripple/validators/impl/Store.h>
+#include <ripple/validators/impl/ChosenList.h>
+#include <ripple/validators/impl/Validation.h>
+#include <ripple/validators/impl/Validator.h>
+#include <ripple/validators/impl/Tuning.h>
 #include <beast/chrono/manual_clock.h>
 #include <beast/container/aged_unordered_set.h>
+#include <beast/smart_ptr/SharedPtr.h>
 #include <memory>
 
 namespace ripple {

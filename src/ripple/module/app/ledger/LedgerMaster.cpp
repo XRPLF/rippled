@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/basics/containers/RangeSet.h>
+#include <ripple/validators/Manager.h>
 #include <cassert>
 
 namespace ripple {

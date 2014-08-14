@@ -17,6 +17,17 @@
 */
 //==============================================================================
 
+#include <ripple/validators/Manager.h>
+#include <ripple/validators/impl/Logic.h>
+#include <ripple/validators/impl/SourceFile.h>
+#include <ripple/validators/impl/SourceStrings.h>
+#include <ripple/validators/impl/SourceURL.h>
+#include <ripple/validators/impl/StoreSqdb.h>
+#include <beast/module/core/thread/DeadlineTimer.h>
+#include <beast/threads/ScopedWrapperContext.h>
+#include <beast/threads/ServiceQueue.h>
+#include <beast/threads/Thread.h>
+
 /** ChosenValidators (formerly known as UNL)
 
     Motivation:

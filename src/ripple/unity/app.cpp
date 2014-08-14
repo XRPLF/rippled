@@ -25,7 +25,6 @@
 #include <ripple/unity/websocket.h>
 #include <ripple/unity/resource.h>
 #include <ripple/unity/sitefiles.h>
-#include <ripple/unity/validators.h>
 
 #include <ripple/http/Server.h>
 

@@ -21,6 +21,7 @@
 #define RIPPLE_VALIDATORS_CHOSENLIST_H_INCLUDED
 
 #include <ripple/common/UnorderedContainers.h>
+#include <ripple/types/api/RipplePublicKeyHash.h>
 
 namespace ripple {
 namespace Validators {

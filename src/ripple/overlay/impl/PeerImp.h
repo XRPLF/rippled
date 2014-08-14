@@ -30,8 +30,8 @@
 #include <ripple/module/app/misc/ProofOfWork.h>
 #include <ripple/module/app/misc/ProofOfWorkFactory.h>
 #include <ripple/module/data/protocol/Protocol.h>
-#include <ripple/unity/validators.h>
 #include <ripple/unity/peerfinder.h>
+#include <ripple/validators/Manager.h>
 
 // VFALCO This is unfortunate. Comment this out and
 //        just include what is needed.

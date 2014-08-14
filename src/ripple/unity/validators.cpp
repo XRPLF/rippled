@@ -19,6 +19,7 @@
 
 #include <BeastConfig.h>
 
+#if 0
 #include <ripple/unity/validators.h>
 
 #include <boost/regex.hpp>
@@ -47,6 +48,7 @@
 #include <ripple/validators/impl/Validation.h>
 #include <ripple/validators/impl/Validator.h>
 #include <ripple/validators/impl/Logic.h>
+#endif
 
 #include <ripple/validators/impl/Manager.cpp>
 #include <ripple/validators/impl/Source.cpp>
@@ -56,3 +58,5 @@
 #include <ripple/validators/impl/StoreSqdb.cpp>
 #include <ripple/validators/impl/Tests.cpp>
 #include <ripple/validators/impl/Utilities.cpp>
+
+//#include <ripple/validators/tests/validator.test.cpp>

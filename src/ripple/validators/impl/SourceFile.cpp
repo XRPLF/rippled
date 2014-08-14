@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+#include <ripple/validators/impl/Utilities.h>
+#include <beast/module/core/files/RandomAccessFile.h>
+
 namespace ripple {
 namespace Validators {
 

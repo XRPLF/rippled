@@ -20,8 +20,10 @@
 #ifndef RIPPLE_VALIDATORS_SOURCE_H_INCLUDED
 #define RIPPLE_VALIDATORS_SOURCE_H_INCLUDED
 
+#include <ripple/types/api/RipplePublicKey.h>
 #include <beast/smart_ptr/SharedObject.h>
 #include <beast/module/core/time/Time.h>
+#include <beast/utility/Journal.h>
 
 namespace ripple {
 namespace Validators {

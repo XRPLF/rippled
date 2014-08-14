@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <beast/module/asio/asio.h>
 #include <memory>
 
 namespace ripple {

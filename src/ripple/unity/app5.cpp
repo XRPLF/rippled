@@ -26,7 +26,6 @@
 #include <ripple/common/seconds_clock.h>
 #include <ripple/unity/peerfinder.h>
 #include <ripple/unity/resource.h>
-#include <ripple/unity/validators.h>
 #include <ripple/common/RippleSSLContext.h>
 
 #include <deque>

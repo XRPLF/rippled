@@ -20,6 +20,8 @@
 #ifndef RIPPLE_TYPES_RIPPLELEDGERHASH_H_INCLUDED
 #define RIPPLE_TYPES_RIPPLELEDGERHASH_H_INCLUDED
 
+#include <ripple/types/api/SimpleIdentifier.h>
+
 namespace ripple {
 
 /*

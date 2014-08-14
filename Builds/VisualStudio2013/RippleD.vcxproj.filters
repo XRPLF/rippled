@@ -538,9 +538,6 @@
     <Filter Include="ripple\validators">
       <UniqueIdentifier>{B23DCD4C-1622-2C31-4562-87F2F95D3884}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ripple\validators\api">
-      <UniqueIdentifier>{C6115F8D-9E7F-833E-F8A9-D8FA61356CE7}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ripple\validators\impl">
       <UniqueIdentifier>{3D1F0CBE-9B69-D29E-EAAE-E5A1204068BC}</UniqueIdentifier>
     </Filter>
@@ -662,6 +659,9 @@
     </ClCompile>
     <ClInclude Include="..\..\build\proto\ripple.pb.h">
       <Filter>build\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\BeastConfig.h">
+      <Filter>.</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\Arithmetic.h">
       <Filter>beast</Filter>
@@ -894,15 +894,15 @@
     <ClCompile Include="..\..\src\beast\beast\crypto\impl\MurmurHash.cpp">
       <Filter>beast\crypto\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\crypto\impl\Sha256.cpp">
+      <Filter>beast\crypto\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\crypto\impl\sha2\sha2.c">
       <Filter>beast\crypto\impl\sha2</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\crypto\impl\sha2\sha2.h">
       <Filter>beast\crypto\impl\sha2</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\crypto\impl\Sha256.cpp">
-      <Filter>beast\crypto\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\crypto\impl\UnsignedInteger.cpp">
       <Filter>beast\crypto\impl</Filter>
     </ClCompile>
@@ -1545,6 +1545,18 @@
     <ClInclude Include="..\..\src\beast\beast\module\core\text\StringPairArray.h">
       <Filter>beast\module\core\text</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\module\core\threads\CriticalSection.h">
+      <Filter>beast\module\core\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\module\core\threads\DynamicLibrary.h">
+      <Filter>beast\module\core\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\module\core\threads\Process.h">
+      <Filter>beast\module\core\threads</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\module\core\threads\ScopedLock.h">
+      <Filter>beast\module\core\threads</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\thread\DeadlineTimer.cpp">
       <Filter>beast\module\core\thread</Filter>
     </ClCompile>
@@ -1559,18 +1571,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\module\core\thread\Workers.h">
       <Filter>beast\module\core\thread</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\threads\CriticalSection.h">
-      <Filter>beast\module\core\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\threads\DynamicLibrary.h">
-      <Filter>beast\module\core\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\threads\Process.h">
-      <Filter>beast\module\core\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\threads\ScopedLock.h">
-      <Filter>beast\module\core\threads</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\time\AtExitHook.cpp">
       <Filter>beast\module\core\time</Filter>
@@ -2009,9 +2009,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\Version.h">
       <Filter>beast</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\BeastConfig.h">
-      <Filter>.</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\hyperleveldb\db\builder.cc">
       <Filter>hyperleveldb\db</Filter>
@@ -4863,23 +4860,11 @@
     <ClCompile Include="..\..\src\ripple\unity\validators.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\unity\validators.h">
-      <Filter>ripple\unity</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\websocket.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\unity\websocket.h">
       <Filter>ripple\unity</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\validators\api\Manager.h">
-      <Filter>ripple\validators\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\validators\api\Source.h">
-      <Filter>ripple\validators\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\validators\api\Types.h">
-      <Filter>ripple\validators\api</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\validators\impl\ChosenList.h">
       <Filter>ripple\validators\impl</Filter>
@@ -4943,6 +4928,15 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\validators\impl\Validator.h">
       <Filter>ripple\validators\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\validators\Manager.h">
+      <Filter>ripple\validators</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\validators\Source.h">
+      <Filter>ripple\validators</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\validators\Types.h">
+      <Filter>ripple\validators</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\rocksdb\db\builder.cc">
       <Filter>rocksdb\db</Filter>

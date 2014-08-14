@@ -20,6 +20,10 @@
 #ifndef RIPPLE_VALIDATORS_STORESQDB_H_INCLUDED
 #define RIPPLE_VALIDATORS_STORESQDB_H_INCLUDED
 
+#include <ripple/validators/impl/Store.h>
+#include <beast/module/sqdb/sqdb.h>
+#include <beast/utility/Error.h>
+
 namespace ripple {
 namespace Validators {
 
