@@ -2814,6 +2814,15 @@
     <ClInclude Include="..\..\src\ripple\basics\types\BasicTypes.h">
       <Filter>ripple\basics\types</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\basics\types\JsonWriter.cpp">
+      <Filter>ripple\basics\types</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\basics\types\JsonWriter.h">
+      <Filter>ripple\basics\types</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\basics\types\Writable.h">
+      <Filter>ripple\basics\types</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\basics\utility\CountedObject.cpp">
       <Filter>ripple\basics\utility</Filter>
     </ClCompile>
