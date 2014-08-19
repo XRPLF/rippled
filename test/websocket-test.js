@@ -33,7 +33,11 @@ suite('WebSocket connection', function() {
   });
 
   test('WebSocket connect and disconnect', function(done) {
-    this.timeout(2000);
+    // This timeout probably doesn't need to be this long, because
+    // the test itself completes in less than half a second. 
+    // However, some of the overhead, especially on Windows can
+    // push the measured time out this far.
+    this.timeout(3000);
 
     var alpha = Remote.from_config("alpha");
 
