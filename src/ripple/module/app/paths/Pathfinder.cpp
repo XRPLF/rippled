@@ -270,13 +270,15 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
     try
     {
         LedgerEntrySet lesSandbox (mLedger, tapNONE);
+        // Need a lvalue here. An rvalue will be destructed as soon as the RippleCalc ctor ends.
+        STPathSet spsPaths;
         path::RippleCalc rc(
             lesSandbox,
             mSrcAmount,
             mDstAmount,
             mDstAccountID,
             mSrcAccountID,
-            STPathSet ());
+            spsPaths);
         rc.partialPaymentAllowed_ = true;
 
         TER result = rc.rippleCalculate ();
