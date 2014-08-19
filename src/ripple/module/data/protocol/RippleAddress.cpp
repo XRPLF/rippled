@@ -75,6 +75,17 @@ std::string RippleAddress::humanAddressType () const
 // NodePublic
 //
 
+uint160 Hash160 (Blob const& vch)
+{
+    uint256 hash1;
+    SHA256 (vch.data (), vch.size (), hash1.data ());
+
+    uint160 hash2;
+    RIPEMD160 (hash1.data (), hash1.size (), hash2.data ());
+
+    return hash2;
+}
+
 RippleAddress RippleAddress::createNodePublic (RippleAddress const& naSeed)
 {
     CKey            ckSeed (naSeed.getSeed ());
