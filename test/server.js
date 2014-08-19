@@ -87,11 +87,15 @@ Server.prototype.set_ledger_file = function(fn) {
 Server.prototype._serverSpawnSync = function() {
   var self  = this;
 
+  var path = this.config.rippled_path;
   var args  = [
     "-a",
     "-v",
     "--conf=rippled.cfg"
   ];
+  if (this.config.rippled_args) {
+    args = this.config.rippled_args.concat(args);
+  };
 
   if (this.ledger_file != null) {
     args.push('--ledgerfile=' + this.ledger_file)
@@ -104,7 +108,7 @@ Server.prototype._serverSpawnSync = function() {
   };
 
   // Spawn in standalone mode for now.
-  this.child = child.spawn(this.config.rippled_path, args, options);
+  this.child = child.spawn(path, args, options);
 
   if (!this.quiet)
     console.log("server: start %s: %s --conf=%s",
