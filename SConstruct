@@ -336,9 +336,8 @@ def config_env(toolchain, variant, env):
         if toolchain != 'msvc':
             git = Beast.Git(env)
             if git.exists:
-                env.Append(CPPDEFINES={
-                    'GIT_COMMIT_ID' : '\'"%s"\'' % git.commit_id
-                    })
+                id = '%s+%s.%s' % (git.tags, git.user, git.branch)
+                env.Append(CPPDEFINES={'GIT_COMMIT_ID' : '\'"%s"\'' % id })
 
         if toolchain == 'clang':
             if Beast.system.osx:
