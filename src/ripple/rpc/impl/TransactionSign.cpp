@@ -17,17 +17,18 @@
 */
 //==============================================================================
 
-#include <ripple/app/paths/FindPaths.h>
-#include <ripple/basics/StringUtilities.h>
-#include <ripple/protocol/TxFlags.h>
 #include <ripple/rpc/impl/TransactionSign.h>
+#include <ripple/protocol/TxFlags.h>
+#include <ripple/basics/StringUtilities.h>
 #include <beast/unit_test.h>
 
 namespace ripple {
 
 //------------------------------------------------------------------------------
 
+
 namespace RPC {
+namespace RPCDetail {
 
 /** Fill in the fee on behalf of the client.
     This is called when the client does not explicitly specify the fee.
@@ -126,6 +127,7 @@ static Json::Value signPayment(
         && params.isMember ("build_path"))
     {
         // Need a ripple path.
+        STPathSet   spsPaths;
         Currency uSrcCurrencyID;
         Account uSrcIssuerID;
 
@@ -189,29 +191,27 @@ static Json::Value signPayment(
 //             as needed, and then there should be a separate function to
 //             submit the tranaction
 //
-Json::Value
-transactionSign (
+static Json::Value transactionProcessImpl (
     Json::Value params,
-    bool bSubmit,
-    bool bFailHard,
+    NetworkOPs::SubmitTxn submit,
+    NetworkOPs::FailHard failType,
     NetworkOPs& netOps,
-    Role role)
+    Role role,
+    RippleAddress const& raMultisignAddressID)
 {
-    Json::Value jvResult;
-
-    WriteLog (lsDEBUG, RPCHandler) << "transactionSign: " << params;
-
     if (! params.isMember ("secret"))
         return RPC::missing_field_error ("secret");
 
+    {
+        RippleAddress naSeed;
+
+        if (! naSeed.setSeedGeneric (params["secret"].asString ()))
+            return RPC::make_error (rpcBAD_SEED,
+                RPC::invalid_field_message ("secret"));
+    }
+
     if (! params.isMember ("tx_json"))
         return RPC::missing_field_error ("tx_json");
-
-    RippleAddress naSeed;
-
-    if (! naSeed.setSeedGeneric (params["secret"].asString ()))
-        return RPC::make_error (rpcBAD_SEED,
-            RPC::invalid_field_message ("secret"));
 
     Json::Value& tx_json (params ["tx_json"]);
 
@@ -220,8 +220,6 @@ transactionSign (
 
     if (! tx_json.isMember ("TransactionType"))
         return RPC::missing_field_error ("tx_json.TransactionType");
-
-    std::string const sType = tx_json ["TransactionType"].asString ();
 
     if (! tx_json.isMember ("Account"))
         return RPC::make_error (rpcSRC_ACT_MISSING,
@@ -265,11 +263,21 @@ transactionSign (
         }
     }
 
-    autofill_fee (params, lSnapshot, jvResult, role == Role::ADMIN);
-    if (RPC::contains_error (jvResult))
-        return jvResult;
+    Json::Value jvResult;
 
-    if ("Payment" == sType)
+    if (!raMultisignAddressID.isValid ())
+    {
+        // Only auto-fill the "Fee" for non-multisign stuff.  Multisign
+        // must come in with the fee already in place or the signature
+        // will be invalid later.
+        autofill_fee (params, lSnapshot, jvResult, role == Role::ADMIN);
+        if (RPC::contains_error (jvResult))
+            return jvResult;
+    }
+
+    auto const& transactionType = tx_json["TransactionType"].asString ();
+
+    if ("Payment" == transactionType)
     {
         auto e = signPayment(
             params,
@@ -312,7 +320,16 @@ transactionSign (
         WriteLog (lsWARNING, RPCHandler) <<
                 "verify: " << masterAccountPublic.humanAccountID () <<
                 " : " << raSrcAddressID.humanAccountID ();
-        if (raSrcAddressID.getAccountID () == account)
+
+        // There are two possible signature addresses: the multisign address or
+        // the source address.  If it's not multisign, then use source address.
+        RippleAddress raSignAddressId;
+        if (raMultisignAddressID.isValid ())
+            raSignAddressId = raMultisignAddressID;
+        else
+            raSignAddressId = raSrcAddressID;
+
+        if (raSignAddressId.getAccountID () == account)
         {
             if (sle.isFlag(lsfDisableMaster))
                 return rpcError (rpcMASTER_DISABLED);
@@ -365,7 +382,11 @@ transactionSign (
     RippleAddress naAccountPrivate = RippleAddress::createAccountPrivate (
         masterGenerator, secret, 0);
 
-    stpTrans->sign (naAccountPrivate);
+    // If multisign, set MultiSignature field, else set TxnSignature field.
+    if (raMultisignAddressID.isValid ())
+        stpTrans->multiSign (naAccountPrivate);
+    else
+        stpTrans->sign (naAccountPrivate);
 
     Transaction::pointer tpTrans;
 
@@ -383,7 +404,7 @@ transactionSign (
     {
         // FIXME: For performance, should use asynch interface
         tpTrans = netOps.submitTransactionSync (tpTrans,
-            role == Role::ADMIN, true, bFailHard, bSubmit);
+            role == Role::ADMIN, true, failType, submit);
 
         if (!tpTrans)
         {
@@ -423,6 +444,86 @@ transactionSign (
             "Exception occurred during JSON handling.");
     }
 }
+} // namespace RPCDetail
+
+//------------------------------------------------------------------------------
+
+Json::Value transactionSign (
+    Json::Value jvRequest,
+    NetworkOPs::FailHard failType,
+    NetworkOPs& netOps,
+    Role role)
+{
+    WriteLog (lsDEBUG, RPCHandler) << "transactionSign: " << jvRequest;
+
+    RippleAddress raNotMultisign;           // Default constructs to invalid
+
+    // Get the signature
+    return RPCDetail::transactionProcessImpl (
+        jvRequest,
+        NetworkOPs::SubmitTxn::no,
+        failType,
+        netOps,
+        role,
+        raNotMultisign);
+}
+
+Json::Value transactionSubmit (
+    Json::Value jvRequest,
+    NetworkOPs::FailHard failType,
+    NetworkOPs& netOps,
+    Role role)
+{
+    WriteLog (lsDEBUG, RPCHandler) << "transactionSubmit: " << jvRequest;
+
+    RippleAddress raNotMultisign;           // Default constructs to invalid
+
+    // Submit the transaction
+    return RPCDetail::transactionProcessImpl (
+        jvRequest,
+        NetworkOPs::SubmitTxn::yes,
+        failType,
+        netOps,
+        role,
+        raNotMultisign);
+}
+
+Json::Value transactionGetMultiSignature (
+    Json::Value jvRequest,
+    NetworkOPs::FailHard failType,
+    NetworkOPs& netOps,
+    Role role)
+{
+    WriteLog (lsDEBUG, RPCHandler) <<
+        "transactionGetMultiSignature: " << jvRequest;
+
+    // Verify presence of the signer's account field
+    const char accountField[] = "account";
+
+    if (! jvRequest.isMember (accountField))
+        return RPC::missing_field_error (accountField);
+
+    // Turn the signer's account into a RippleAddress for multisign
+    RippleAddress raMultisignAddressID;
+
+    if (! raMultisignAddressID.setAccountID (
+        jvRequest[accountField].asString ()))
+    {
+        return RPC::make_error (rpcSRC_ACT_MALFORMED,
+            RPC::invalid_field_message (accountField));
+    }
+
+    // Get Multisignature
+    return RPCDetail::transactionProcessImpl (
+        jvRequest,
+        NetworkOPs::SubmitTxn::no,
+        failType,
+        netOps,
+        role,
+        raMultisignAddressID);
+}
+
+//------------------------------------------------------------------------------
 
 class JSONRPC_test : public beast::unit_test::suite
 {
@@ -445,7 +546,7 @@ public:
             Json::Reader ().parse (
                 "{ \"fee_mult_max\" : 1, \"tx_json\" : { } } "
                 , req);
-            autofill_fee (req, ledger, result, true);
+            RPCDetail::autofill_fee (req, ledger, result, true);
 
             expect (! contains_error (result));
         }
@@ -456,7 +557,7 @@ public:
             Json::Reader ().parse (
                 "{ \"fee_mult_max\" : 0, \"tx_json\" : { } } "
                 , req);
-            autofill_fee (req, ledger, result, true);
+            RPCDetail::autofill_fee (req, ledger, result, true);
 
             expect (contains_error (result));
         }

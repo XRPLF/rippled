@@ -402,6 +402,22 @@ private:
         return jvRequest;
     }
 
+    // get_multisignature
+    Json::Value parseGetMultiSignature (Json::Value const& jvParams)
+    {
+        Json::Value     params {Json::objectValue};
+        Json::Reader    reader;
+
+        if ((1 == jvParams.size ())
+            && reader.parse (jvParams[0u].asString (), params))
+        {
+            // Extract the only stuff we're interested in from the array.
+            return params;
+        }
+
+        return rpcError (rpcINVALID_PARAMS);
+    }
+
     // json <command> <json>
     Json::Value parseJson (Json::Value const& jvParams)
     {
@@ -846,6 +862,7 @@ public:
             {   "feature",              &RPCParser::parseFeature,               0,  2   },
             {   "fetch_info",           &RPCParser::parseFetchInfo,             0,  1   },
             {   "get_counts",           &RPCParser::parseGetCounts,             0,  1   },
+            {   "get_multisignature",   &RPCParser::parseGetMultiSignature,     1,  1   },
             {   "json",                 &RPCParser::parseJson,                  2,  2   },
             {   "ledger",               &RPCParser::parseLedger,                0,  2   },
             {   "ledger_accept",        &RPCParser::parseAsIs,                  0,  0   },

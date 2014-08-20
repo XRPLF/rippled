@@ -129,6 +129,7 @@ public:
     {
         sig_state_ = false;
     }
+    void multiSign (const RippleAddress & naAccountPrivate);
 
     // SQL Functions with metadata
     static

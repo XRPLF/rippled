@@ -83,6 +83,22 @@ public:
         omFULL          = 4     // we have the ledger and can even validate
     };
 
+    enum class FailHard : unsigned char
+    {
+        no,
+        yes
+    };
+    static inline FailHard doFailHard (bool noMeansDont)
+    {
+        return noMeansDont ? FailHard::yes : FailHard::no;
+    }
+
+    enum class SubmitTxn : unsigned char
+    {
+        no,
+        yes
+    };
+
     // VFALCO TODO Fix OrderBookDB to not need this unrelated type.
     //
     typedef hash_map <std::uint64_t, InfoSub::wptr> SubMapType;
@@ -144,11 +160,11 @@ public:
     virtual void submitTransaction (Job&, SerializedTransaction::pointer,
         stCallback callback = stCallback ()) = 0;
     virtual Transaction::pointer submitTransactionSync (Transaction::ref tpTrans,
-        bool bAdmin, bool bLocal, bool bFailHard, bool bSubmit) = 0;
+        bool bAdmin, bool bLocal, FailHard failType, SubmitTxn submit) = 0;
     virtual Transaction::pointer processTransactionCb (Transaction::pointer,
-        bool bAdmin, bool bLocal, bool bFailHard, stCallback) = 0;
+        bool bAdmin, bool bLocal, FailHard failType, stCallback) = 0;
     virtual Transaction::pointer processTransaction (Transaction::pointer transaction,
-        bool bAdmin, bool bLocal, bool bFailHard) = 0;
+        bool bAdmin, bool bLocal, FailHard failType) = 0;
     virtual Transaction::pointer findTransactionByID (uint256 const& transactionID) = 0;
     virtual int findTransactionsByDestination (std::list<Transaction::pointer>&,
         RippleAddress const& destinationAccount, std::uint32_t startLedgerSeq,

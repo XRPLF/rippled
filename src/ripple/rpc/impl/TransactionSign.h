@@ -27,8 +27,19 @@ namespace RPC {
 
 Json::Value transactionSign (
     Json::Value jvRequest,
-    bool bSubmit,
-    bool bFailHard,
+    NetworkOPs::FailHard failType,
+    NetworkOPs& netOps,
+    Role role);
+
+Json::Value transactionSubmit (
+    Json::Value jvRequest,
+    NetworkOPs::FailHard failType,
+    NetworkOPs& netOps,
+    Role role);
+
+Json::Value transactionGetMultiSignature (
+    Json::Value jvRequest,
+    NetworkOPs::FailHard failType,
     NetworkOPs& netOps,
     Role role);
 

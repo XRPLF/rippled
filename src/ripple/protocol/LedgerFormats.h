@@ -58,6 +58,8 @@ enum LedgerEntryType
 
     ltTICKET            = 'T',
 
+    ltSIGNER_LIST       = 'S',
+
     /* Deprecated. */
     ltOFFER             = 'o',
 
@@ -92,6 +94,7 @@ enum LedgerNameSpace
     spaceAmendment      = 'f',
     spaceFee            = 'e',
     spaceTicket         = 'T',
+    spaceSignerList     = 'S',
 
     // No longer used or supported. Left here to reserve the space and
     // avoid accidental reuse of the space.

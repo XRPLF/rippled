@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2014 Ripple Labs Inc.
+    Copyright (c) 2014 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,24 +17,11 @@
 */
 //==============================================================================
 
-#include <ripple/rpc/impl/TransactionSign.h>
+#ifndef RIPPLE_TX_SET_SIGNER_LIST_H_INCLUDED
+#define RIPPLE_TX_SET_SIGNER_LIST_H_INCLUDED
 
 namespace ripple {
 
-// {
-//   tx_json: <object>,
-//   secret: <secret>
-// }
-Json::Value doSign (RPC::Context& context)
-{
-    context.loadType = Resource::feeHighBurdenRPC;
-    NetworkOPs::FailHard const failType =
-        NetworkOPs::doFailHard (
-            context.params.isMember ("fail_hard")
-            && context.params["fail_hard"].asBool ());
-
-    return RPC::transactionSign (
-        context.params, failType, context.netOps, context.role);
 }
 
-} // ripple
+#endif // RIPPLE_TX_SET_SIGNER_LIST_H_INCLUDED

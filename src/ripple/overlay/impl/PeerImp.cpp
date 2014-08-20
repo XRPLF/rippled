@@ -415,7 +415,7 @@ PeerImp::on_connect_ssl (error_code ec)
     if (overlay_.setup().http_handshake)
     {
         beast::http::message req (make_request());
-        beast::http::write (write_buffer_, req);
+    beast::http::write (write_buffer_, req);
         on_write_http_request (error_code(), 0);
     }
     else
@@ -2505,7 +2505,8 @@ PeerImp::checkTransaction (Job&, int flags,
             getApp().getHashRouter ().setFlag (stx->getTransactionID (), SF_SIGGOOD);
 
         bool const trusted (flags & SF_TRUSTED);
-        getApp().getOPs ().processTransaction (tx, trusted, false, false);
+        getApp().getOPs ().processTransaction (
+            tx, trusted, false, NetworkOPs::FailHard::no);
     }
     catch (...)
     {

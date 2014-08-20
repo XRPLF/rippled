@@ -1641,14 +1641,14 @@ uint256 Ledger::getAccountRootIndex (Account const& account)
     Serializer  s (22);
 
     s.add16 (spaceAccount); //  2
-    s.add160 (account);  // 20
+    s.add160 (account);     // 20
 
     return s.getSHA512Half ();
 }
 
 uint256 Ledger::getLedgerFeeIndex ()
 {
-    // get the index of the node that holds the fee schedul
+    // get the index of the node that holds the fee schedule
     Serializer s (2);
     s.add16 (spaceFee);
     return s.getSHA512Half ();
@@ -1852,7 +1852,17 @@ uint256 Ledger::getOwnerDirIndex (Account const& account)
     Serializer  s (22);
 
     s.add16 (spaceOwnerDir);    //  2
-    s.add160 (account);      // 20
+    s.add160 (account);         // 20
+
+    return s.getSHA512Half ();
+}
+
+uint256 Ledger::getSignerListIndex (Account const& account)
+{
+    Serializer  s (22);
+
+    s.add16 (spaceSignerList);  //  2
+    s.add160 (account);         // 20
 
     return s.getSHA512Half ();
 }

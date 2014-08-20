@@ -32,6 +32,7 @@ TER transact_AddWallet (SerializedTransaction const& txn, TransactionEngineParam
 TER transact_Change (SerializedTransaction const& txn, TransactionEngineParams params, TransactionEngine* engine);
 TER transact_CreateTicket (SerializedTransaction const& txn, TransactionEngineParams params, TransactionEngine* engine);
 TER transact_CancelTicket (SerializedTransaction const& txn, TransactionEngineParams params, TransactionEngine* engine);
+TER transact_SetSignerList (SerializedTransaction const& txn, TransactionEngineParams params, TransactionEngine* engine);
 
 TER
 Transactor::transact (
@@ -71,6 +72,9 @@ Transactor::transact (
 
     case ttTICKET_CANCEL:
         return transact_CancelTicket (txn, params, engine);
+
+    case ttSIGNER_LIST_SET:
+        return transact_SetSignerList (txn, params, engine);
 
     default:
         return temUNKNOWN;

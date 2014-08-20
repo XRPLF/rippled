@@ -92,7 +92,7 @@ LedgerFormats::LedgerFormats ()
             ;
 
     add ("EnabledAmendments", ltAMENDMENTS)
-            << SOElement (sfAmendments, SOE_REQUIRED)
+            << SOElement (sfAmendments,          SOE_REQUIRED)
             ;
 
     add ("FeeSettings", ltFEE_SETTINGS)
@@ -108,6 +108,12 @@ LedgerFormats::LedgerFormats ()
             << SOElement (sfOwnerNode,           SOE_REQUIRED)
             << SOElement (sfTarget,              SOE_OPTIONAL)
             << SOElement (sfExpiration,          SOE_OPTIONAL)
+            ;
+
+    add ("SignerList", ltSIGNER_LIST)
+            << SOElement (sfOwnerNode,           SOE_REQUIRED)
+            << SOElement (sfSignerQuorum,        SOE_REQUIRED)
+            << SOElement (sfSignerEntries,       SOE_REQUIRED)
             ;
 }
 

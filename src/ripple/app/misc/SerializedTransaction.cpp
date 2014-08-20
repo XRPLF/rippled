@@ -213,6 +213,13 @@ bool SerializedTransaction::checkSign (RippleAddress const& public_key) const
     }
 }
 
+void SerializedTransaction::multiSign (RippleAddress const& naAccountPrivate)
+{
+    Blob signature;
+    naAccountPrivate.accountPrivateSign (getSigningHash (), signature);
+    setFieldVL (sfMultiSignature, signature);
+}
+
 void SerializedTransaction::setSigningPubKey (RippleAddress const& naSignPubKey)
 {
     setFieldVL (sfSigningPubKey, naSignPubKey.getAccountPublic ());

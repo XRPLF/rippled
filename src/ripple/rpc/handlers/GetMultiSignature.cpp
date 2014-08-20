@@ -23,9 +23,10 @@ namespace ripple {
 
 // {
 //   tx_json: <object>,
-//   secret: <secret>
+//   account: <signing account>
+//   secret: <secret of signing account>
 // }
-Json::Value doSign (RPC::Context& context)
+Json::Value doGetMultiSignature (RPC::Context& context)
 {
     context.loadType = Resource::feeHighBurdenRPC;
     NetworkOPs::FailHard const failType =
@@ -33,7 +34,7 @@ Json::Value doSign (RPC::Context& context)
             context.params.isMember ("fail_hard")
             && context.params["fail_hard"].asBool ());
 
-    return RPC::transactionSign (
+    return RPC::transactionGetMultiSignature (
         context.params, failType, context.netOps, context.role);
 }
 
