@@ -1779,7 +1779,7 @@ aged_unordered_container <IsMulti, IsMap, Key, T, Duration,
     Hash, KeyEqual, Allocator>::
 aged_unordered_container (aged_unordered_container&& other)
     : m_config (std::move (other.m_config))
-    , m_buck (m_config.alloc())
+    , m_buck (std::move (other.m_buck))
     , m_cont (std::move (other.m_cont))
 {
     chronological.list = std::move (other.chronological.list);
