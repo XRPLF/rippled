@@ -1107,9 +1107,10 @@ bool SHAMap::fetchRoot (uint256 const& hash, SHAMapSyncFilter* filter)
 
         root = std::make_shared<SHAMapTreeNode> (nodeData,
                 mSeq - 1, snfPREFIX, hash, true);
-        mTNByID.replace(SHAMapNodeID (), root);
         filter->gotNode (true, SHAMapNodeID (), hash, nodeData, root->getType ());
     }
+
+    mTNByID.replace(SHAMapNodeID (), root);
 
     assert (root->getNodeHash () == hash);
     return true;
