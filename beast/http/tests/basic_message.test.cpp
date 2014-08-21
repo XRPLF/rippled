@@ -32,7 +32,7 @@ public:
         basic_message m;
         basic_message::parser p (m, true);
         auto result (p.write (boost::asio::buffer(text)));
-        auto result2 (p.eof());
+        p.eof();
         return std::make_pair (std::move(m), result.first);
     }
 
