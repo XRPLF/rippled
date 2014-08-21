@@ -27,15 +27,22 @@ RippleLineCache::RippleLineCache (Ledger::ref l)
 std::vector<RippleState::pointer> const&
 RippleLineCache::getRippleLines (Account const& accountID)
 {
+
+    {
+        ScopedLockType sl (mLock);
+
+        auto it = mRLMap.find (accountID);
+        if (it != mRLMap.end ())
+            return it->second;
+    }
+
+    // It's not in the cache, so build it
+    auto lines = ripple::getRippleStateItems (accountID, mLedger);
+
     ScopedLockType sl (mLock);
 
-    auto it = mRLMap.find (accountID);
-
-    if (it == mRLMap.end ())
-        it = mRLMap.insert (std::make_pair (
-            accountID, ripple::getRippleStateItems (accountID, mLedger))).first;
-
-    return it->second;
+    // We must return a reference to the cached version
+    return mRLMap.emplace (accountID, std::move (lines)).first->second;
 }
 
 } // ripple
