@@ -192,29 +192,62 @@ public:
                                 // Combination of all types.
     };
 
+private:
+    static
+    std::size_t
+    get_hash (STPathElement const& element)
+    {
+        std::size_t hash = 2654435761;
+
+        // NIKB NOTE: This doesn't have to be a secure hash as speed is more
+        //            important. We don't even need to fully hash the whole
+        //            base_uint here, as a few bytes would do for our use.
+
+        for (auto const x : element.getAccountID ())
+            hash += (hash * 65537) ^ x;
+
+        for (auto const x : element.getCurrency ())
+            hash += (hash * 65537) ^ x;
+
+        for (auto const x : element.getIssuerID ())
+            hash += (hash * 65537) ^ x;
+
+        return hash;
+    }
+
 public:
     STPathElement (
         Account const& account, Currency const& currency,
         Account const& issuer, bool forceCurrency = false)
-        : mAccountID (account), mCurrencyID (currency), mIssuerID (issuer)
+        : mType (typeNone), mAccountID (account), mCurrencyID (currency)
+        , mIssuerID (issuer), is_offer_ (mAccountID.isZero ())
     {
-        mType   =
-            (account.isZero () ? 0 : STPathElement::typeAccount)
-            | ((currency.isZero () && !forceCurrency) ? 0 :
-               STPathElement::typeCurrency)
-            | (issuer.isZero () ? 0 : STPathElement::typeIssuer);
+        if (!is_offer_)
+            mType |= typeAccount;
+
+        if (!currency.isZero () || forceCurrency)
+            mType |= typeCurrency;
+
+        if (!issuer.isZero ())
+            mType |= typeIssuer;
+
+        hash_value_ = get_hash (*this);
     }
 
     STPathElement (
         unsigned int uType, Account const& account, Currency const& currency,
         Account const& issuer)
-        : mType (uType), mAccountID (account), mCurrencyID (currency),
-          mIssuerID (issuer)
-    {}
+        : mType (uType), mAccountID (account), mCurrencyID (currency)
+        , mIssuerID (issuer), is_offer_ (mAccountID.isZero ())
+    {
+        hash_value_ = get_hash (*this);
+    }
 
     STPathElement ()
-        : mType (0)
-    {}
+        : mType (typeNone), is_offer_ (true)
+    {
+        hash_value_ = get_hash (*this);
+    }
 
     int getNodeType () const
     {
@@ -222,7 +255,7 @@ public:
     }
     bool isOffer () const
     {
-        return mAccountID.isZero ();
+        return is_offer_;
     }
     bool isAccount () const
     {
@@ -246,10 +279,15 @@ public:
 
     bool operator== (const STPathElement& t) const
     {
-        return (mType & typeAccount) == (t.mType & typeAccount)
-                && mAccountID == t.mAccountID
-                && mCurrencyID == t.mCurrencyID
-                && mIssuerID == t.mIssuerID;
+        if ((mType & typeAccount) != (t.mType & typeAccount))
+            return false;
+
+        if (hash_value_ != t.hash_value_)
+            return false;
+
+        return mAccountID == t.mAccountID &&
+            mCurrencyID == t.mCurrencyID &&
+            mIssuerID == t.mIssuerID;
     }
 
 private:
@@ -257,6 +295,9 @@ private:
     Account mAccountID;
     Currency mCurrencyID;
     Account mIssuerID;
+
+    bool is_offer_;
+    std::size_t hash_value_;
 };
 
 //------------------------------------------------------------------------------
