@@ -72,7 +72,8 @@ Json::Value doGetCounts (RPC::Context& context)
     ret["AL_hit_rate"] = AcceptedLedger::getCacheHitRate ();
 
     ret["fullbelow_size"] = static_cast<int>(app.getFullBelowCache().size());
-    ret["treenode_size"] = app.getTreeNodeCache().getCacheSize();
+    ret["treenode_cache_size"] = app.getTreeNodeCache().getCacheSize();
+    ret["treenode_track_size"] = app.getTreeNodeCache().getTrackSize();
 
     std::string uptime;
     int s = UptimeTimer::getInstance ().getElapsedSeconds ();

@@ -603,7 +603,7 @@ int Config::getSize (SizedItemName item)
         { siNodeCacheSize,      {   16384,  32768,  131072, 262144,     0       } },
         { siNodeCacheAge,       {   60,     90,     120,    900,        0       } },
 
-        { siTreeCacheSize,      {   8192,   65536,  131072, 131072,     0       } },
+        { siTreeCacheSize,      {   128000, 256000, 512000, 768000,     0       } },
         { siTreeCacheAge,       {   30,     60,     90,     120,        900     } },
 
         { siSLECacheSize,       {   4096,   8192,   16384,  65536,      0       } },
