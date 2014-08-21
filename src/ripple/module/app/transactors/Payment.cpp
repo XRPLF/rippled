@@ -30,8 +30,8 @@ TER Payment::doApply ()
     bool const defaultPathsAllowed = !(uTxFlags & tfNoRippleDirect);
     bool const bPaths = mTxn.isFieldPresent (sfPaths);
     bool const bMax = mTxn.isFieldPresent (sfSendMax);
-    Account const& uDstAccountID = mTxn.getFieldAccount160 (sfDestination);
-    STAmount const saDstAmount = mTxn.getFieldAmount (sfAmount);
+    Account const uDstAccountID (mTxn.getFieldAccount160 (sfDestination));
+    STAmount const saDstAmount (mTxn.getFieldAmount (sfAmount));
     STAmount maxSourceAmount;
     if (bMax)
         maxSourceAmount = mTxn.getFieldAmount (sfSendMax);
@@ -234,47 +234,56 @@ TER Payment::doApply ()
 
         // Copy paths into an editable class.
         STPathSet spsPaths = mTxn.getFieldPathSet (sfPaths);
-        path::RippleCalc rc(
-            mEngine->view (),
-            maxSourceAmount,
-            saDstAmount,
-            uDstAccountID,
-            mTxnAccountID,
-            spsPaths);
-
-        rc.partialPaymentAllowed_ = partialPaymentAllowed;
-        rc.limitQuality_ = limitQuality;
-        rc.defaultPathsAllowed_ = defaultPathsAllowed;
-        rc.deleteUnfundedOffers_ = true;
-        rc.isLedgerOpen_ = (mParams & tapOPEN_LEDGER);
 
         try
         {
+            path::RippleCalc::Input rcInput;
+            rcInput.partialPaymentAllowed = partialPaymentAllowed;
+            rcInput.defaultPathsAllowed = defaultPathsAllowed;
+            rcInput.limitQuality = limitQuality;
+            rcInput.deleteUnfundedOffers = true;
+            rcInput.isLedgerOpen = static_cast<bool>(mParams & tapOPEN_LEDGER);
+
             bool pathTooBig = spsPaths.size () > MaxPathSize;
 
             for (auto const& path : spsPaths)
                 if (path.size () > MaxPathLength)
                     pathTooBig = true;
 
-            terResult = rc.isLedgerOpen_ && pathTooBig
-                        ? telBAD_PATH_COUNT // Too many paths for proposed ledger.
-                        : rc.rippleCalculate ();
+            if (rcInput.isLedgerOpen && pathTooBig)
+            {
+                terResult = telBAD_PATH_COUNT; // Too many paths for proposed ledger.
+            }
+            else
+            {
+                auto rc = path::RippleCalc::rippleCalculate (
+                    mEngine->view (),
+                    maxSourceAmount,
+                    saDstAmount,
+                    uDstAccountID,
+                    mTxnAccountID,
+                    spsPaths,
+                    &rcInput);
+
+                // TODO: is this right?  If the amount is the correct amount, was
+                // the delivered amount previously set?
+                if (rc.result () == tesSUCCESS && rc.actualAmountOut != saDstAmount)
+                    mEngine->view ().setDeliveredAmount (rc.actualAmountOut);
+
+                terResult = rc.result ();
+            }
 
             // TODO(tom): what's going on here?
-            if (isTerRetry(terResult))
+            if (isTerRetry (terResult))
                 terResult = tecPATH_DRY;
 
-            // TODO: is this right?  If the amount is the correct amount, was
-            // the delivered amount previously set?
-            if (terResult == tesSUCCESS && rc.actualAmountOut_ != saDstAmount)
-                mEngine->view().setDeliveredAmount (rc.actualAmountOut_);
         }
         catch (std::exception const& e)
         {
             m_journal.trace <<
                 "Caught throw: " << e.what ();
 
-            terResult   = tefEXCEPTION;
+            terResult = tefEXCEPTION;
         }
     }
     else
@@ -304,7 +313,7 @@ TER Payment::doApply ()
                 " / " << (saDstAmount + uReserve).getText () <<
                 " (" << uReserve << ")";
 
-            terResult   = tecUNFUNDED_PAYMENT;
+            terResult = tecUNFUNDED_PAYMENT;
         }
         else
         {

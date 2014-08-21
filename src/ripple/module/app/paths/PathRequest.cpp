@@ -450,37 +450,40 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
 
             saMaxAmount.negate ();
             m_journal.debug << iIdentifier << " Paths found, calling rippleCalc";
-            path::RippleCalc rc (
+            auto rc = path::RippleCalc::rippleCalculate (
                 lesSandbox,
                 saMaxAmount,
                 saDstAmount,
                 raDstAccount.getAccountID (),
                 raSrcAccount.getAccountID (),
                 spsPaths);
-            TER resultCode = rc.rippleCalculate ();
 
             if (!extraPath.empty() &&
-                (resultCode == terNO_LINE || resultCode == tecPATH_PARTIAL))
+                (rc.result () == terNO_LINE || rc.result () == tecPATH_PARTIAL))
             {
                 m_journal.debug
                         << iIdentifier << " Trying with an extra path element";
                 spsPaths.addPath(extraPath);
-                rc.pathStateList_.clear ();
-                resultCode = rc.rippleCalculate ();
-                if (resultCode != tesSUCCESS)
+                rc = path::RippleCalc::rippleCalculate (lesSandbox,
+                    saMaxAmount,
+                    saDstAmount,
+                    raDstAccount.getAccountID (),
+                    raSrcAccount.getAccountID (),
+                    spsPaths);
+                if (rc.result () != tesSUCCESS)
                     m_journal.warning
                         << iIdentifier << " Failed with covering path "
-                        << transHuman (resultCode);
+                        << transHuman (rc.result ());
                 else
                     m_journal.debug
                         << iIdentifier << " Extra path element gives "
-                        << transHuman (resultCode);
+                        << transHuman (rc.result ());
             }
 
-            if (resultCode == tesSUCCESS)
+            if (rc.result () == tesSUCCESS)
             {
                 Json::Value jvEntry (Json::objectValue);
-                jvEntry["source_amount"]    = rc.actualAmountIn_.getJson (0);
+                jvEntry["source_amount"]    = rc.actualAmountIn.getJson (0);
                 jvEntry["paths_computed"]   = spsPaths.getJson (0);
                 found  = true;
                 jvArray.append (jvEntry);
@@ -488,7 +491,7 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
             else
             {
                 m_journal.debug << iIdentifier << " rippleCalc returns "
-                                << transHuman (resultCode);
+                    << transHuman (rc.result ());
             }
         }
         else

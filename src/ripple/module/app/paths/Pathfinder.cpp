@@ -270,29 +270,28 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
     try
     {
         LedgerEntrySet lesSandbox (mLedger, tapNONE);
-        // Need a lvalue here. An rvalue will be destructed as soon as the RippleCalc ctor ends.
-        STPathSet spsPaths;
-        path::RippleCalc rc(
+
+        path::RippleCalc::Input rcInput;
+        rcInput.partialPaymentAllowed = true;
+        auto rc = path::RippleCalc::rippleCalculate (
             lesSandbox,
             mSrcAmount,
             mDstAmount,
             mDstAccountID,
             mSrcAccountID,
-            spsPaths);
-        rc.partialPaymentAllowed_ = true;
+            STPathSet(),
+            &rcInput);
 
-        TER result = rc.rippleCalculate ();
-
-        if (tesSUCCESS == result)
+        if (rc.result () == tesSUCCESS)
         {
             WriteLog (lsDEBUG, Pathfinder)
-                    << "Default path contributes: " << rc.actualAmountIn_;
-            remaining -= rc.actualAmountOut_;
+                    << "Default path contributes: " << rc.actualAmountIn;
+            remaining -= rc.actualAmountOut;
         }
         else
         {
             WriteLog (lsDEBUG, Pathfinder)
-                    << "Default path fails: " << transToken (result);
+                << "Default path fails: " << transToken (rc.result ());
         }
     }
     catch (...)
@@ -317,51 +316,60 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
         TER resultCode;
 
         LedgerEntrySet lesSandbox (mLedger, tapNONE);
-        path::RippleCalc rc(
-            lesSandbox,
-            mSrcAmount,         // --> amount to send max.
-            mDstAmount,         // --> amount to deliver.
-            mDstAccountID,
-            mSrcAccountID,
-            spsPaths);
-
-        rc.partialPaymentAllowed_ = true;
-        rc.defaultPathsAllowed_ = false;
 
         try
         {
-            resultCode = rc.rippleCalculate ();
+            path::RippleCalc::Input rcInput;
+            rcInput.partialPaymentAllowed = true;
+            rcInput.defaultPathsAllowed = false;
+
+            auto rc = path::RippleCalc::rippleCalculate (
+                lesSandbox,
+                mSrcAmount,         // --> amount to send max.
+                mDstAmount,         // --> amount to deliver.
+                mDstAccountID,
+                mSrcAccountID,
+                spsPaths,
+                &rcInput);
+
+            if (rc.result () != tesSUCCESS)
+            {
+                // Duplicate of exception handler log message below.
+                WriteLog (lsDEBUG, Pathfinder) <<
+                    "findPaths: dropping: " << transToken (rc.result ()) <<
+                    ": " << spCurrent.getJson (0);
+            }
+            else if (rc.actualAmountOut < saMinDstAmount)
+            {
+                WriteLog (lsDEBUG, Pathfinder) <<
+                    "findPaths: dropping: outputs " << rc.actualAmountOut <<
+                    ": " << spCurrent.getJson (0);
+            }
+            else
+            {
+                std::uint64_t  uQuality (
+                    STAmount::getRate (rc.actualAmountOut, rc.actualAmountIn));
+
+                WriteLog (lsDEBUG, Pathfinder) <<
+                    "findPaths: quality: " << uQuality <<
+                    ": " << spCurrent.getJson (0);
+
+                vMap.push_back (path_LQ_t (
+                    uQuality, spCurrent.mPath.size (), rc.actualAmountOut, i));
+            }
+
+            resultCode = rc.result ();
         }
         catch (const std::exception& e)
         {
             WriteLog (lsINFO, Pathfinder)
                     << "findPaths: Caught throw: " << e.what ();
-            resultCode   = tefEXCEPTION;
-        }
+            resultCode = tefEXCEPTION;
 
-        if (resultCode != tesSUCCESS)
-        {
+            // Duplicate of the != tesSUCCESS case log message above.
             WriteLog (lsDEBUG, Pathfinder) <<
                 "findPaths: dropping: " << transToken (resultCode) <<
                 ": " << spCurrent.getJson (0);
-        }
-        else if (rc.actualAmountOut_ < saMinDstAmount)
-        {
-            WriteLog (lsDEBUG, Pathfinder) <<
-                "findPaths: dropping: outputs " << rc.actualAmountOut_ <<
-                ": " << spCurrent.getJson (0);
-        }
-        else
-        {
-            std::uint64_t  uQuality (
-                STAmount::getRate (rc.actualAmountOut_, rc.actualAmountIn_));
-
-            WriteLog (lsDEBUG, Pathfinder) <<
-                "findPaths: quality: " << uQuality <<
-                ": " << spCurrent.getJson (0);
-
-            vMap.push_back (path_LQ_t (
-                uQuality, spCurrent.mPath.size (), rc.actualAmountOut_, i));
         }
     }
 
