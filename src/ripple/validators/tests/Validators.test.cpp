@@ -71,7 +71,7 @@ public:
             std::array <std::uint8_t, RippleLedgerHash::size> buf;
             fillrand (buf.data(), buf.size(), gen);
             RippleLedgerHash h (buf.data(), buf.data() + buf.size());
-            auto const result (table.insert (std::make_pair (h, Entry())));
+            table.insert (std::make_pair (h, Entry()));
         }
         pass();
     }

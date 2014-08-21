@@ -201,7 +201,7 @@ private:
             {
                 element* const p (new element (field, value));
                 list_.push_back (*p);
-                auto const iter (set_.insert_commit (*p, d));
+                set_.insert_commit (*p, d);
                 return;
             }
             // If field already exists, append comma

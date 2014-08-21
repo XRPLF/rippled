@@ -32,13 +32,13 @@
 #ifndef RIPPLE_TYPES_BASE58_H
 #define RIPPLE_TYPES_BASE58_H
 
+#include <ripple/types/api/Blob.h>
 #include <array>
+#include <cassert>
 #include <iterator>
 #include <string>
 #include <type_traits>
 #include <vector>
-
-#include <ripple/types/api/Blob.h>
 
 namespace ripple {
 

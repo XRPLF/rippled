@@ -20,13 +20,12 @@
 #ifndef RIPPLE_TYPES_CRYPTOIDENTIFIER_H_INCLUDED
 #define RIPPLE_TYPES_CRYPTOIDENTIFIER_H_INCLUDED
 
+#include <ripple/types/api/Base58.h>
+#include <ripple/types/api/IdentifierStorage.h>
 #include <beast/ByteOrder.h>
 #include <beast/crypto/Sha256.h>
 #include <array>
-
-#include <ripple/types/api/Base58.h>
-
-#include <ripple/types/api/IdentifierStorage.h>
+#include <cstring>
 
 namespace ripple {
 
@@ -69,7 +68,7 @@ public:
             value_type& value)
     {
         value.storage()[0] = Token;
-        bassert (std::distance (begin, end) == size);
+        assert (std::distance (begin, end) == size);
         std::copy (begin, end, value.begin());
         if (Checked)
         {

@@ -22,8 +22,8 @@
 
 #include <beast/crypto/MurmurHash.h>
 #include <beast/container/hardened_hash.h>
-
 #include <array>
+#include <cassert>
 
 namespace ripple {
 
@@ -84,13 +84,13 @@ public:
 
     reference operator[](size_type i)
     {
-        bassert (i < size);
+        assert (i < size);
         return m_storage[pre_size+i];
     }
 
     const_reference operator[](size_type i) const
     {
-        bassert (i < size);
+        assert (i < size);
         return m_storage[pre_size+i];
     }
 
