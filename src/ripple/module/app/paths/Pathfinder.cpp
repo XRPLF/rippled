@@ -500,19 +500,18 @@ int Pathfinder::getPathsOut (
     Currency const& currencyID, Account const& accountID,
     bool isDstCurrency, Account const& dstAccount)
 {
-    Issue issue (currencyID, accountID);
-    auto it = mPathsOutCountMap.find (issue);
+    Issue const issue (currencyID, accountID);
 
-    if (it != mPathsOutCountMap.end ())
-        return it->second;
+    auto it = mPathsOutCountMap.emplace (issue, 0);
 
-    auto sleAccount = mLedger->getSLEi (
-        Ledger::getAccountRootIndex (accountID));
+    // If it was already present, return the stored number of paths
+    if (!it.second)
+        return it.first->second;
+
+    auto sleAccount = mLedger->getSLEi (Ledger::getAccountRootIndex (accountID));
+    
     if (!sleAccount)
-    {
-        mPathsOutCountMap[issue] = 0;
         return 0;
-    }
 
     int aFlags = sleAccount->getFieldU32(sfFlags);
     bool const bAuthRequired = (aFlags & lsfRequireAuth) != 0;
@@ -523,7 +522,7 @@ int Pathfinder::getPathsOut (
 
     if (!bFrozen)
     {
-        count = getApp().getOrderBookDB().getBookSize({currencyID, accountID});
+        count = getApp().getOrderBookDB().getBookSize(issue);
 
         for (auto const& item : mRLCache->getRippleLines (accountID))
         {
@@ -552,7 +551,7 @@ int Pathfinder::getPathsOut (
                 ++count;
         }
     }
-    mPathsOutCountMap[issue] = count;
+    it.first->second = count;
     return count;
 }
 

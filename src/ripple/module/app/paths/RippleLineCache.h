@@ -26,6 +26,7 @@ namespace ripple {
 class RippleLineCache
 {
 public:
+    typedef std::vector <RippleState::pointer> RippleStateVector;
     typedef std::shared_ptr <RippleLineCache> pointer;
     typedef pointer const& ref;
 
@@ -46,7 +47,55 @@ private:
 
     Ledger::pointer mLedger;
 
-    hash_map <Account, std::vector <RippleState::pointer>> mRLMap;
+    struct AccountKey
+    {
+        Account account_;
+        std::size_t hash_value_;
+
+        AccountKey (Account const& account)
+            : account_ (account)
+            , hash_value_ (beast::hardened_hash<>{}(account))
+        {
+
+        }
+
+        AccountKey (AccountKey const& other)
+            : account_ (other.account_)
+            , hash_value_ (other.hash_value_)
+        {
+
+        }
+
+        AccountKey& operator=(AccountKey const& other)
+        {
+            account_ = other.account_;
+            hash_value_ = other.hash_value_;
+            return *this;
+        }
+
+        bool operator== (AccountKey const& lhs) const
+        {
+            return hash_value_ == lhs.hash_value_ &&
+                account_ == lhs.account_;
+        }
+
+        std::size_t
+        get_hash () const
+        {
+            return hash_value_;
+        }
+
+        struct Hash
+        {
+            std::size_t
+            operator () (AccountKey const& key) const noexcept
+            {
+                return key.get_hash ();
+            }
+        };
+    };
+
+    hash_map <AccountKey, RippleStateVector, AccountKey::Hash> mRLMap;
 };
 
 } // ripple
