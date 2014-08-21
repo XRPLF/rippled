@@ -225,15 +225,14 @@ Json::Value doRipplePathFind (RPC::Context& context)
 
                 LedgerEntrySet lesSandbox (lpLedger, tapNONE);
 
-                path::RippleCalc rc (
+                auto rc = path::RippleCalc::rippleCalculate (
                     lesSandbox,
                     saMaxAmount,            // --> Amount to send is unlimited
-                                            //     to get an estimate.
+                    //     to get an estimate.
                     saDstAmount,            // --> Amount to deliver.
                     raDst.getAccountID (),  // --> Account to deliver to.
                     raSrc.getAccountID (),  // --> Account sending from.
-                    spsComputed);
-                TER terResult = rc.rippleCalculate ();         // --> Path set.
+                    spsComputed);         // --> Path set.
 
                 WriteLog (lsWARNING, RPCHandler)
                     << "ripple_path_find:"
@@ -243,21 +242,27 @@ Json::Value doRipplePathFind (RPC::Context& context)
                     << " saDstAmountAct=" << rc.actualAmountOut_;
 
                 if (extraPath.size() > 0 &&
-                    (terResult == terNO_LINE || terResult == tecPATH_PARTIAL))
+                    (rc.calculateResult_ == terNO_LINE || rc.calculateResult_ == tecPATH_PARTIAL))
                 {
                     WriteLog (lsDEBUG, PathRequest)
                         << "Trying with an extra path element";
 
                     spsComputed.addPath(extraPath);
-                    rc.pathStateList_.clear ();
                     lesSandbox.clear ();
-                    terResult = rc.rippleCalculate ();
+                    rc = path::RippleCalc::rippleCalculate (
+                        lesSandbox,
+                        saMaxAmount,            // --> Amount to send is unlimited
+                        //     to get an estimate.
+                        saDstAmount,            // --> Amount to deliver.
+                        raDst.getAccountID (),  // --> Account to deliver to.
+                        raSrc.getAccountID (),  // --> Account sending from.
+                        spsComputed);         // --> Path set.
                     WriteLog (lsDEBUG, PathRequest)
                         << "Extra path element gives "
-                        << transHuman (terResult);
+                        << transHuman (rc.calculateResult_);
                 }
 
-                if (terResult == tesSUCCESS)
+                if (rc.calculateResult_ == tesSUCCESS)
                 {
                     Json::Value jvEntry (Json::objectValue);
 
@@ -278,7 +283,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
                     std::string strToken;
                     std::string strHuman;
 
-                    transResultInfo (terResult, strToken, strHuman);
+                    transResultInfo (rc.calculateResult_, strToken, strHuman);
 
                     WriteLog (lsDEBUG, RPCHandler)
                         << "ripple_path_find: "

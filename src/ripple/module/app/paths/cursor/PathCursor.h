@@ -36,7 +36,7 @@ namespace path {
 class PathCursor
 {
 public:
-    PathCursor(
+    PathCursor (
         RippleCalc& rippleCalc,
         PathState& pathState,
         bool multiQuality,

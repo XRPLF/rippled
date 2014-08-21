@@ -38,6 +38,57 @@ TER deleteOffers (
 
 } // namespace
 
+RippleCalc::Output RippleCalc::rippleCalculate (
+    LedgerEntrySet& activeLedger,
+
+    // Compute paths vs this ledger entry set.  Up to caller to actually
+    // apply to ledger.
+
+    // Issuer:
+    //      XRP: xrpAccount()
+    //  non-XRP: uSrcAccountID (for any issuer) or another account with
+    //           trust node.
+    STAmount const& saMaxAmountReq,             // --> -1 = no limit.
+
+    // Issuer:
+    //      XRP: xrpAccount()
+    //  non-XRP: uDstAccountID (for any issuer) or another account with
+    //           trust node.
+    STAmount const& saDstAmountReq,
+
+    Account const& uDstAccountID,
+    Account const& uSrcAccountID,
+
+    // A set of paths that are included in the transaction that we'll
+    // explore for liquidity.
+    STPathSet const& spsPaths,
+    Input const* const pInputs)
+{
+    RippleCalc rc (
+        activeLedger,
+        saMaxAmountReq,
+        saDstAmountReq,
+        uDstAccountID,
+        uSrcAccountID,
+        spsPaths);
+    if (pInputs != nullptr)
+    {
+        rc.partialPaymentAllowed_ = pInputs->partialPaymentAllowed_;
+        rc.limitQuality_ = pInputs->limitQuality_;
+        rc.defaultPathsAllowed_ = pInputs->defaultPathsAllowed_;
+        rc.deleteUnfundedOffers_ = pInputs->deleteUnfundedOffers_;
+        rc.isLedgerOpen_ = pInputs->isLedgerOpen_;
+    }
+
+    Output output;
+    output.calculateResult_ = rc.rippleCalculate ();
+    output.actualAmountIn_ = rc.actualAmountIn_;
+    output.actualAmountOut_ = rc.actualAmountOut_;
+    output.pathStateList_ = rc.pathStateList_;
+
+    return output;
+}
+
 bool RippleCalc::addPathState(STPath const& path, TER& resultCode)
 {
     auto pathState = std::make_shared<PathState> (

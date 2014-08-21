@@ -270,20 +270,18 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
     try
     {
         LedgerEntrySet lesSandbox (mLedger, tapNONE);
-        // Need a lvalue here. An rvalue will be destructed as soon as the RippleCalc ctor ends.
-        STPathSet spsPaths;
-        path::RippleCalc rc(
+
+        path::RippleCalc::Input rcInput (true);
+        auto rc = path::RippleCalc::rippleCalculate (
             lesSandbox,
             mSrcAmount,
             mDstAmount,
             mDstAccountID,
             mSrcAccountID,
-            spsPaths);
-        rc.partialPaymentAllowed_ = true;
+            STPathSet(),
+            &rcInput);
 
-        TER result = rc.rippleCalculate ();
-
-        if (tesSUCCESS == result)
+        if (tesSUCCESS == rc.calculateResult_)
         {
             WriteLog (lsDEBUG, Pathfinder)
                     << "Default path contributes: " << rc.actualAmountIn_;
@@ -292,7 +290,7 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
         else
         {
             WriteLog (lsDEBUG, Pathfinder)
-                    << "Default path fails: " << transToken (result);
+                << "Default path fails: " << transToken (rc.calculateResult_);
         }
     }
     catch (...)
@@ -314,35 +312,34 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
 
         spsPaths.addPath (spCurrent); // Just checking the current path.
 
-        TER resultCode;
+        path::RippleCalc::Output rc;
 
         LedgerEntrySet lesSandbox (mLedger, tapNONE);
-        path::RippleCalc rc(
-            lesSandbox,
-            mSrcAmount,         // --> amount to send max.
-            mDstAmount,         // --> amount to deliver.
-            mDstAccountID,
-            mSrcAccountID,
-            spsPaths);
-
-        rc.partialPaymentAllowed_ = true;
-        rc.defaultPathsAllowed_ = false;
 
         try
         {
-            resultCode = rc.rippleCalculate ();
+            path::RippleCalc::Input rcInput (true, false);
+
+            rc = path::RippleCalc::rippleCalculate (
+                lesSandbox,
+                mSrcAmount,         // --> amount to send max.
+                mDstAmount,         // --> amount to deliver.
+                mDstAccountID,
+                mSrcAccountID,
+                spsPaths,
+                &rcInput);
         }
         catch (const std::exception& e)
         {
             WriteLog (lsINFO, Pathfinder)
                     << "findPaths: Caught throw: " << e.what ();
-            resultCode   = tefEXCEPTION;
+            rc.calculateResult_ = tefEXCEPTION;
         }
 
-        if (resultCode != tesSUCCESS)
+        if (rc.calculateResult_ != tesSUCCESS)
         {
             WriteLog (lsDEBUG, Pathfinder) <<
-                "findPaths: dropping: " << transToken (resultCode) <<
+                "findPaths: dropping: " << transToken (rc.calculateResult_) <<
                 ": " << spCurrent.getJson (0);
         }
         else if (rc.actualAmountOut_ < saMinDstAmount)

@@ -30,8 +30,8 @@ TER Payment::doApply ()
     bool const defaultPathsAllowed = !(uTxFlags & tfNoRippleDirect);
     bool const bPaths = mTxn.isFieldPresent (sfPaths);
     bool const bMax = mTxn.isFieldPresent (sfSendMax);
-    Account const& uDstAccountID = mTxn.getFieldAccount160 (sfDestination);
-    STAmount const saDstAmount = mTxn.getFieldAmount (sfAmount);
+    Account const uDstAccountID (mTxn.getFieldAccount160 (sfDestination));
+    STAmount const saDstAmount (mTxn.getFieldAmount (sfAmount));
     STAmount maxSourceAmount;
     if (bMax)
         maxSourceAmount = mTxn.getFieldAmount (sfSendMax);
@@ -222,7 +222,7 @@ TER Payment::doApply ()
         mEngine->entryModify (sleDst);
     }
 
-    TER terResult;
+    path::RippleCalc::Output rc;
 
     bool const bRipple = bPaths || bMax || !saDstAmount.isNative ();
     // XXX Should bMax be sufficient to imply ripple?
@@ -234,19 +234,13 @@ TER Payment::doApply ()
 
         // Copy paths into an editable class.
         STPathSet spsPaths = mTxn.getFieldPathSet (sfPaths);
-        path::RippleCalc rc(
-            mEngine->view (),
-            maxSourceAmount,
-            saDstAmount,
-            uDstAccountID,
-            mTxnAccountID,
-            spsPaths);
 
-        rc.partialPaymentAllowed_ = partialPaymentAllowed;
-        rc.limitQuality_ = limitQuality;
-        rc.defaultPathsAllowed_ = defaultPathsAllowed;
-        rc.deleteUnfundedOffers_ = true;
-        rc.isLedgerOpen_ = (mParams & tapOPEN_LEDGER);
+        path::RippleCalc::Input rcInput (
+            partialPaymentAllowed,
+            defaultPathsAllowed,
+            limitQuality,
+            true,
+            static_cast<bool>(mParams & tapOPEN_LEDGER));
 
         try
         {
@@ -256,17 +250,29 @@ TER Payment::doApply ()
                 if (path.size () > MaxPathLength)
                     pathTooBig = true;
 
-            terResult = rc.isLedgerOpen_ && pathTooBig
-                        ? telBAD_PATH_COUNT // Too many paths for proposed ledger.
-                        : rc.rippleCalculate ();
+            if (rcInput.isLedgerOpen_ && pathTooBig)
+            {
+                rc.calculateResult_ = telBAD_PATH_COUNT; // Too many paths for proposed ledger.
+            }
+            else
+            {
+                rc = path::RippleCalc::rippleCalculate (
+                    mEngine->view (),
+                    maxSourceAmount,
+                    saDstAmount,
+                    uDstAccountID,
+                    mTxnAccountID,
+                    spsPaths,
+                    &rcInput);
+            }
 
             // TODO(tom): what's going on here?
-            if (isTerRetry(terResult))
-                terResult = tecPATH_DRY;
+            if (isTerRetry(rc.calculateResult_))
+                rc.calculateResult_ = tecPATH_DRY;
 
             // TODO: is this right?  If the amount is the correct amount, was
             // the delivered amount previously set?
-            if (terResult == tesSUCCESS && rc.actualAmountOut_ != saDstAmount)
+            if (rc.calculateResult_ == tesSUCCESS && rc.actualAmountOut_ != saDstAmount)
                 mEngine->view().setDeliveredAmount (rc.actualAmountOut_);
         }
         catch (std::exception const& e)
@@ -274,7 +280,7 @@ TER Payment::doApply ()
             m_journal.trace <<
                 "Caught throw: " << e.what ();
 
-            terResult   = tefEXCEPTION;
+            rc.calculateResult_ = tefEXCEPTION;
         }
     }
     else
@@ -304,7 +310,7 @@ TER Payment::doApply ()
                 " / " << (saDstAmount + uReserve).getText () <<
                 " (" << uReserve << ")";
 
-            terResult   = tecUNFUNDED_PAYMENT;
+            rc.calculateResult_ = tecUNFUNDED_PAYMENT;
         }
         else
         {
@@ -317,14 +323,14 @@ TER Payment::doApply ()
             if ((sleDst->getFlags () & lsfPasswordSpent))
                 sleDst->clearFlag (lsfPasswordSpent);
 
-            terResult = tesSUCCESS;
+            rc.calculateResult_ = tesSUCCESS;
         }
     }
 
     std::string strToken;
     std::string strHuman;
 
-    if (transResultInfo (terResult, strToken, strHuman))
+    if (transResultInfo (rc.calculateResult_, strToken, strHuman))
     {
         m_journal.trace <<
             strToken << ": " << strHuman;
@@ -334,7 +340,7 @@ TER Payment::doApply ()
         assert (false);
     }
 
-    return terResult;
+    return rc.calculateResult_;
 }
 
 }  // ripple

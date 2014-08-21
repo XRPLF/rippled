@@ -28,8 +28,90 @@ namespace path {
     Quality is the amount of input required to produce a given output along a
     specified path - another name for this is exchange rate.
 */
-struct RippleCalc
+class RippleCalc
 {
+public:
+    struct Input
+    {
+        Input (
+            bool partialPaymentAllowed = false,
+            bool defaultPathsAllowed = true,
+            bool limitQuality = false,
+            bool deleteUnfundedOffers = false,
+            bool isLedgerOpen = true
+            )
+            : partialPaymentAllowed_ (partialPaymentAllowed),
+            defaultPathsAllowed_ (defaultPathsAllowed),
+            limitQuality_ (limitQuality),
+            deleteUnfundedOffers_ (deleteUnfundedOffers),
+            isLedgerOpen_ (isLedgerOpen)
+        {
+        }
+
+        bool partialPaymentAllowed_ = false;
+        bool defaultPathsAllowed_ = true;
+        bool limitQuality_ = false;
+        bool deleteUnfundedOffers_ = false;
+        bool isLedgerOpen_ = true;
+    };
+    struct Output
+    {
+        TER calculateResult_;
+
+        // The computed input amount.
+        STAmount actualAmountIn_;
+
+        // The computed output amount.
+        STAmount actualAmountOut_;
+
+        // Expanded path with all the actual nodes in it.
+        // A path starts with the source account, ends with the destination account
+        // and goes through other acounts or order books.
+        PathState::List pathStateList_;
+    };
+
+    static Output rippleCalculate (
+        LedgerEntrySet& activeLedger,
+
+        // Compute paths vs this ledger entry set.  Up to caller to actually
+        // apply to ledger.
+
+        // Issuer:
+        //      XRP: xrpAccount()
+        //  non-XRP: uSrcAccountID (for any issuer) or another account with
+        //           trust node.
+        STAmount const& saMaxAmountReq,             // --> -1 = no limit.
+
+        // Issuer:
+        //      XRP: xrpAccount()
+        //  non-XRP: uDstAccountID (for any issuer) or another account with
+        //           trust node.
+        STAmount const& saDstAmountReq,
+
+        Account const& uDstAccountID,
+        Account const& uSrcAccountID,
+
+        // A set of paths that are included in the transaction that we'll
+        // explore for liquidity.
+        STPathSet const& spsPaths,
+        Input const* const pInputs = nullptr);
+
+    /** The active ledger. */
+    LedgerEntrySet& mActiveLedger;
+
+    // If the transaction fails to meet some constraint, still need to delete
+    // unfunded offers.
+    //
+    // Offers that were found unfunded.
+    path::OfferSet permanentlyUnfundedOffers_;
+
+    // First time working in reverse a funding source was mentioned.  Source may
+    // only be used there.
+
+    // Map of currency, issuer to node index.
+    AccountIssueToNodeIndex mumSource_;
+
+private:
     RippleCalc (
         LedgerEntrySet& activeLedger,
 
@@ -69,26 +151,11 @@ struct RippleCalc
     /** Add a single PathState.  Returns true on success.*/
     bool addPathState(STPath const&, TER&);
 
-    /** The active ledger. */
-    LedgerEntrySet& mActiveLedger;
-
     STAmount const& saDstAmountReq_;
     STAmount const& saMaxAmountReq_;
     Account const& uDstAccountID_;
     Account const& uSrcAccountID_;
     STPathSet const& spsPaths_;
-
-    // First time working in reverse a funding source was mentioned.  Source may
-    // only be used there.
-
-    // Map of currency, issuer to node index.
-    AccountIssueToNodeIndex mumSource_;
-
-    // If the transaction fails to meet some constraint, still need to delete
-    // unfunded offers.
-    //
-    // Offers that were found unfunded.
-    path::OfferSet permanentlyUnfundedOffers_;
 
     // The computed input amount.
     STAmount actualAmountIn_;
