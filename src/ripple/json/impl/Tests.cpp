@@ -25,7 +25,7 @@ namespace ripple {
 class JsonCpp_test : public beast::unit_test::suite
 {
 public:
-    void testBadJson ()
+    void test_bad_json ()
     {
         char const* s (
             "{\"method\":\"ledger\",\"params\":[{\"ledger_index\":1e300}]}"
@@ -38,36 +38,54 @@ public:
         pass ();
     }
 
-    void testMaxInts ()
+    void test_edge_cases ()
     {
-        char const* s1 (
-            "{\"max_uint\":4294967295"
-            ",\"min_int\":-2147483648"
-            ",\"max_int\":2147483647"
-            ",\"an_int\":2147483646"
-            ",\"a_uint\":2147483648}"
-            );
+        std::string json;
+
+        std::uint32_t max_uint = std::numeric_limits<std::uint32_t>::max ();
+        std::int32_t max_int = std::numeric_limits<std::int32_t>::max ();
+        std::int32_t min_int = std::numeric_limits<std::int32_t>::min ();
+        
+        std::uint32_t a_uint = max_uint - 1978;
+        std::int32_t a_large_int = max_int - 1978;
+        std::int32_t a_small_int = min_int + 1978;
+
+        json  = "{\"max_uint\":"    + std::to_string (max_uint);
+        json += ",\"max_int\":"     + std::to_string (max_int);
+        json += ",\"min_int\":"     + std::to_string (min_int);
+        json += ",\"a_uint\":"      + std::to_string (a_uint);
+        json += ",\"a_large_int\":" + std::to_string (a_large_int);
+        json += ",\"a_small_int\":" + std::to_string (a_small_int);
+        json += "}";
+
         Json::Value j1;
         Json::Reader r1;
 
-        expect (r1.parse (s1, j1), "parsing integer edge cases");
-        expect (j1["max_uint"].asUInt() == 4294967295, "max_uint");
-        expect (j1["min_int"].asInt() == -2147483648, "min_int");
-        expect (j1["max_int"].asInt() == 2147483647, "max_int");
-        expect (j1["an_int"].asInt() == 2147483646, "an_int");
-        expect (j1["a_uint"].asUInt() == 2147483648, "a_uint");
+        expect (r1.parse (json, j1), "parsing integer edge cases");
+        expect (j1["max_uint"].asUInt() == max_uint, "max_uint");
+        expect (j1["max_int"].asInt() == max_int, "min_int");
+        expect (j1["min_int"].asInt() == min_int, "max_int");
+        expect (j1["a_uint"].asUInt() == a_uint, "a_uint");
+        expect (j1["a_large_int"].asInt() == a_large_int, "a_large_int");
+        expect (j1["a_small_int"].asInt() == a_small_int, "a_large_int");
 
-        char const* s2 ("{\"overflow_uint\":4294967296}");
+        json  = "{\"overflow\":";
+        json += std::to_string(std::uint64_t(max_uint) + 1);
+        json += "}";
+
         Json::Value j2;
         Json::Reader r2;
 
-        expect (!r2.parse (s2, j2), "parsing unsigned integer that overflows");
+        expect (!r2.parse (json, j2), "parsing unsigned integer that overflows");
 
-        char const* s3 ("{\"underflow_int\":-2147483649}");
+        json  = "{\"underflow\":";
+        json += std::to_string(std::int64_t(min_int) - 1);
+        json += "}";
+
         Json::Value j3;
         Json::Reader r3;
 
-        expect (!r3.parse (s3, j3), "parsing signed integer that underflows");
+        expect (!r3.parse (json, j3), "parsing signed integer that underflows");
 
         pass ();
     }
@@ -120,8 +138,8 @@ public:
 
     void run ()
     {
-        testMaxInts ();
-        testBadJson ();
+        test_bad_json ();
+        test_edge_cases ();
         test_copy ();
         test_move ();
     }
