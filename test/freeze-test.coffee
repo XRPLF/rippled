@@ -348,7 +348,7 @@ execute_if_enabled = (fn) ->
   path = "#{__dirname}/../src/ripple/module/data/protocol/TxFlags.h"
   skip_it = /asfGlobalFreeze/.exec(fs.readFileSync(path)) == null
   func = if skip_it then global.suite.skip else global.suite
-  enforced = false
+  enforced = true
   fn(func, skip_it, enforced)
 
 conditional_test_factory = ->
@@ -620,14 +620,16 @@ execute_if_enabled (suite, skipped, enforced) ->
               next()
 
         suite 'it\'s offers are filtered', ->
-          test_if enforced, ':TODO:verify: books_offers(*, $frozen_account/*) shows offers '+
+          check_filtering = false
+
+          test_if check_filtering, ':TODO:verify: books_offers(*, $frozen_account/*) shows offers '+
                'owned by $frozen_account ', (done) ->
 
             h.book_offers 'XRP', 'USD/G1', (book) ->
               assert.equal book.offers.length, 1
               done()
 
-          test_if enforced, ':TODO:verify: books_offers($frozen_account/*, *) shows no offers', (done) ->
+          test_if check_filtering, ':TODO:verify: books_offers($frozen_account/*, *) shows no offers', (done) ->
 
             h.book_offers 'USD/G1', 'XRP', (book) ->
               assert.equal book.offers.length, 0
