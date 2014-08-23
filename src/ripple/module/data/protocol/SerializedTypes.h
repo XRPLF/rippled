@@ -195,25 +195,7 @@ public:
 private:
     static
     std::size_t
-    get_hash (STPathElement const& element)
-    {
-        std::size_t hash = 2654435761;
-
-        // NIKB NOTE: This doesn't have to be a secure hash as speed is more
-        //            important. We don't even need to fully hash the whole
-        //            base_uint here, as a few bytes would do for our use.
-
-        for (auto const x : element.getAccountID ())
-            hash += (hash * 65537) ^ x;
-
-        for (auto const x : element.getCurrency ())
-            hash += (hash * 65537) ^ x;
-
-        for (auto const x : element.getIssuerID ())
-            hash += (hash * 65537) ^ x;
-
-        return hash;
-    }
+    get_hash (STPathElement const& element);
 
 public:
     STPathElement (
@@ -279,13 +261,9 @@ public:
 
     bool operator== (const STPathElement& t) const
     {
-        if ((mType & typeAccount) != (t.mType & typeAccount))
-            return false;
-
-        if (hash_value_ != t.hash_value_)
-            return false;
-
-        return mAccountID == t.mAccountID &&
+        return (mType & typeAccount) == (t.mType & typeAccount) &&
+            hash_value_ == t.hash_value_ &&
+            mAccountID == t.mAccountID &&
             mCurrencyID == t.mCurrencyID &&
             mIssuerID == t.mIssuerID;
     }
