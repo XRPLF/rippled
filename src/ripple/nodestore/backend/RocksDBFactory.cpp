@@ -165,6 +165,22 @@ public:
             }
         }
 
+        if (! keyValues["block_size"].isEmpty ())
+        {
+            options.block_size = keyValues["block_size"].getIntValue ();
+        }
+
+        if (! keyValues["universal_compaction"].isEmpty ())
+        {
+            if (keyValues["universal_compaction"].getIntValue () != 0)
+            {
+                options.compaction_style = rocksdb:: kCompactionStyleUniversal;
+                options.min_write_buffer_number_to_merge = 2;
+                options.max_write_buffer_number = 6;
+                options.write_buffer_size = 6 * options.target_file_size_base;
+            }
+        }
+
         rocksdb::DB* db = nullptr;
         rocksdb::Status status = rocksdb::DB::Open (options, m_name, &db);
         if (!status.ok () || !db)
