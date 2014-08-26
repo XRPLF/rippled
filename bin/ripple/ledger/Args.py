@@ -7,6 +7,7 @@ import os
 from ripple.ledger import LedgerNumber
 from ripple.util import File
 from ripple.util.Function import Function
+from ripple.ledger import Log
 from ripple.util import Range
 
 NAME = 'LedgerTool'
@@ -40,7 +41,6 @@ _parser.add_argument(
 
 _parser.add_argument(
     '--condition', '-c',
-    default='all_ledgers',
     help='The name of a condition function used to match ledgers.',
     )
 
@@ -51,7 +51,6 @@ _parser.add_argument(
 
 _parser.add_argument(
     '--display', '-d',
-    default='ledger_number',
     help='Specify a function to display ledgers.',
     )
 
@@ -136,8 +135,17 @@ for c in _command:
 ARGS.command = ARGS.command or ['print' if ARGS.ledgers else 'info']
 
 ARGS.cache = File.normalize(ARGS.cache)
-ARGS.condition = Function(ARGS.condition, 'ripple.ledger.conditions')
-ARGS.display = Function(ARGS.display, 'ripple.ledger.displays')
+
+if not ARGS.ledgers:
+    if ARGS.condition:
+        Log.warn('--condition needs a range of ledgers')
+    if ARGS.display:
+        Log.warn('--display needs a range of ledgers')
+
+ARGS.condition = Function(
+    ARGS.condition or 'all_ledgers', 'ripple.ledger.conditions')
+ARGS.display = Function(
+    ARGS.display or 'ledger_number', 'ripple.ledger.displays')
 
 if ARGS.window < 0:
     raise ValueError('Window cannot be negative: --window=%d' %

@@ -60,7 +60,7 @@ class Function(object):
         try:
             self.function = getattr(mod, m)
         except:
-            raise ValueError('No function "%s" in module "%s"' % (p, m))
+            raise ValueError('No function "%s" in module "%s"' % (m, p))
 
     def __str__(self):
         return self.desc

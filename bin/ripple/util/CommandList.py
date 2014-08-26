@@ -8,7 +8,7 @@ import sys
 from collections import namedtuple
 
 from ripple.ledger.Args import ARGS
-from ripple.util import Log
+from ripple.ledger import Log
 
 Command = namedtuple('Command', 'function help safe')
 

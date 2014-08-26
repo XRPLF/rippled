@@ -5,6 +5,7 @@ from functools import wraps
 import jsonpath_rw
 
 from ripple.ledger.Args import ARGS
+from ripple.ledger import Log
 from ripple.ledger.PrettyPrint import pretty_print
 from ripple.util.Decimal import Decimal
 from ripple.util import Dict
@@ -37,13 +38,14 @@ def json(f):
             yield pretty_print(f(finds, *args, **kwds))
     return wrapper
 
+@display
+def ledger(ledger, full=False):
+    if full or not ARGS.full:
+        return ledger
+    return Dict.prune(ledger, 1, False)
 
 @display
-def ledger(led):
-    return led
-
-@display
-def prune(ledger, level=2):
+def prune(ledger, level=1):
     return Dict.prune(ledger, level, False)
 
 TRANSACT_FIELDS = (
