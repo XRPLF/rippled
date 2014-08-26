@@ -110,12 +110,14 @@ public:
     virtual SSL* ssl_handle () = 0;
 
     // Caller owns the socket
+    // VFALCO TODO return std::unique_ptr
     static MultiSocket* New (
         boost::asio::ip::tcp::socket& socket,
             boost::asio::ssl::context& ssl_context,
                 int flags = 0);
 
     // Caller owns the io_service
+    // VFALCO TODO return std::unique_ptr
     static MultiSocket* New (
         boost::asio::io_service& io_service,
             boost::asio::ssl::context& ssl_context,

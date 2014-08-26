@@ -23,6 +23,8 @@
 #include <beast/net/IPEndpoint.h>
 #include <beast/module/asio/basics/SSLContext.h>
 #include <beast/utility/Journal.h>
+#include <beast/utility/PropertyStream.h>
+#include <boost/system/error_code.hpp>
 #include <cstdint>
 #include <memory>
 #include <ostream>
@@ -35,7 +37,7 @@ namespace HTTP {
 /** Configuration information for a server listening port. */
 struct Port
 {
-    enum Security
+    enum class Security
     {
         no_ssl,
         allow_ssl,
@@ -74,19 +76,15 @@ struct Handler
     /** Called when the connection is accepted and we know remoteAddress. */
     virtual void onAccept (Session& session) = 0;
 
-    /** Called repeatedly as new HTTP headers are received.
-        Guaranteed to be called at least once.
-    */
-    virtual void onHeaders (Session& session) = 0;
-
-    /** Called when we have the full Content-Body. */
+    /** Called when we have a complete HTTP request. */
     virtual void onRequest (Session& session) = 0;
 
     /** Called when the session ends.
         Guaranteed to be called once.
         @param errorCode Non zero for a failed connection.
     */
-    virtual void onClose (Session& session, int errorCode) = 0;
+    virtual void onClose (Session& session,
+        boost::system::error_code const& ec) = 0;
 
     /** Called when the server has finished its stop. */
     virtual void onStopped (Server& server) = 0;
@@ -108,6 +106,7 @@ public:
     */
     virtual
     ~Server ();
+
     /** Returns the Journal associated with the server. */
     beast::Journal
     journal () const;
@@ -144,6 +143,9 @@ public:
     */
     void
     stop ();
+
+    void
+    onWrite (beast::PropertyStream::Map& map);
 
 private:
     std::unique_ptr <ServerImpl> m_impl;

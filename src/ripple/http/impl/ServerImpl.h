@@ -20,6 +20,7 @@
 #ifndef RIPPLE_HTTP_SERVERIMPL_H_INCLUDED
 #define RIPPLE_HTTP_SERVERIMPL_H_INCLUDED
 
+#include <ripple/common/seconds_clock.h>
 #include <ripple/http/Server.h>
 #include <beast/intrusive/List.h>
 #include <beast/threads/SharedData.h>
@@ -27,6 +28,11 @@
 #include <beast/module/asio/basics/SharedArg.h>
 #include <boost/asio.hpp>
 #include <boost/optional.hpp>
+#include <chrono>
+#include <condition_variable>
+#include <deque>
+#include <functional>
+#include <mutex>
 #include <thread>
 
 namespace ripple {
@@ -35,9 +41,26 @@ namespace HTTP {
 class Door;
 class Peer;
 
-class ServerImpl : public beast::Thread
+struct Stat
+{
+    std::string when;
+    std::chrono::seconds elapsed;
+    int requests;
+    std::size_t bytes_in;
+    std::size_t bytes_out;
+    boost::system::error_code ec;
+};
+
+class ServerImpl
 {
 private:
+    typedef std::chrono::system_clock clock_type;
+
+    enum
+    {
+        historySize = 100
+    };
+
     struct State
     {
         // Attributes for our listening ports
@@ -50,18 +73,21 @@ private:
         beast::List <Door> doors;
     };
 
-    typedef beast::SharedData <State> SharedState;
-    typedef std::vector <beast::SharedPtr <Door> > Doors;
+    typedef std::vector <beast::SharedPtr <Door>> Doors;
 
     Server& m_server;
     Handler& m_handler;
+    std::thread thread_;
+    std::mutex mutable mutex_;
+    std::condition_variable cond_;
     beast::Journal journal_;
-    boost::asio::io_service m_io_service;
+    boost::asio::io_service io_service_;
     boost::asio::io_service::strand m_strand;
     boost::optional <boost::asio::io_service::work> m_work;
     beast::WaitableEvent m_stopped;
-    SharedState m_state;
+    State state_;
     Doors m_doors;
+    std::deque <Stat> stats_;
 
 public:
     ServerImpl (Server& server, Handler& handler, beast::Journal journal);
@@ -104,15 +130,24 @@ public:
     remove (Door& door);
 
     void
-    handle_update ();
+    report (Stat&& stat);
 
     void
-    update ();
+    onWrite (beast::PropertyStream::Map& map);
+
+private:
+    static
+    int 
+    compare (Port const& lhs, Port const& rhs);
 
     void
-    run ();
+    update();
+    
+    void
+    on_update();
 
-    static int compare (Port const& lhs, Port const& rhs);
+    void
+    run();
 };
 
 

@@ -20,6 +20,7 @@
 #ifndef RIPPLE_HTTP_SESSION_H_INCLUDED
 #define RIPPLE_HTTP_SESSION_H_INCLUDED
 
+#include <beast/http/message.h>
 #include <beast/smart_ptr/SharedPtr.h>
 #include <beast/net/IPEndpoint.h>
 #include <beast/utility/Journal.h>
@@ -88,26 +89,24 @@ public:
     void* tag;
 
     /** Returns the Journal to use for logging. */
-    virtual beast::Journal journal() = 0;
+    virtual
+    beast::Journal
+    journal() = 0;
 
     /** Returns the remote address of the connection. */
-    virtual beast::IP::Endpoint remoteAddress() = 0;
-
-    /** Returns `true` if the full HTTP headers have been received. */
-    virtual bool headersComplete() = 0;
+    virtual
+    beast::IP::Endpoint
+    remoteAddress() = 0;
 
     /** Returns the currently known set of headers. */
-    virtual beast::HTTPHeaders headers() = 0;
-
-    /** Returns the complete HTTP request when it is known. */
-    virtual beast::SharedPtr <beast::HTTPRequest> const& request() = 0;
-
-    /** Returns the entire Content-Body, if the request is complete. */
-    virtual std::string content() = 0;
+    virtual
+    beast::http::message&
+    message() = 0;
 
     /** Send a copy of data asynchronously. */
     /** @{ */
-    void write (std::string const& s)
+    void
+    write (std::string const& s)
     {
         if (! s.empty())
             write (&s[0],
@@ -115,7 +114,8 @@ public:
     }
 
     template <typename BufferSequence>
-    void write (BufferSequence const& buffers)
+    void
+    write (BufferSequence const& buffers)
     {
         for (typename BufferSequence::const_iterator iter (buffers.begin());
             iter != buffers.end(); ++iter)
@@ -126,35 +126,54 @@ public:
         }
     }
 
-    virtual void write (void const* buffer, std::size_t bytes) = 0;
+    virtual
+    void
+    write (void const* buffer, std::size_t bytes) = 0;
     /** @} */
 
     /** Output support using ostream. */
     /** @{ */
-    ScopedStream operator<< (std::ostream& manip (std::ostream&))
+    ScopedStream
+    operator<< (std::ostream& manip (std::ostream&))
     {
         return ScopedStream (*this, manip);
     }
         
     template <typename T>
-    ScopedStream operator<< (T const& t)
+    ScopedStream
+    operator<< (T const& t)
     {
         return ScopedStream (*this, t);
     }
     /** @} */
+
+    /** Indicate that the response is complete.
+        The handler should call this when it has completed writing
+        the response. If Keep-Alive is indicated on the connection,
+        this will trigger a read for the next request; else, the
+        connection will be closed when all remaining data has been sent.
+    */
+    virtual
+    void
+    complete() = 0;
 
     /** Detach the session.
         This holds the session open so that the response can be sent
         asynchronously. Calls to io_service::run made by the server
         will not return until all detached sessions are closed.
     */
-    virtual void detach() = 0;
+    virtual
+    void
+    detach() = 0;
 
     /** Close the session.
         This will be performed asynchronously. The session will be
         closed gracefully after all pending writes have completed.
+        @param graceful `true` to wait until all data has finished sending.
     */
-    virtual void close() = 0;
+    virtual
+    void
+    close (bool graceful) = 0;
 };
 
 }  // namespace HTTP

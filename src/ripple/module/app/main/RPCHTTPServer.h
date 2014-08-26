@@ -20,23 +20,33 @@
 #ifndef RIPPLE_APP_RPCHTTPSERVER_H_INCLUDED
 #define RIPPLE_APP_RPCHTTPSERVER_H_INCLUDED
 
+#include <beast/utility/Journal.h>
+#include <beast/utility/PropertyStream.h>
+#include <beast/cxx14/memory.h> // <memory>
+
 namespace ripple {
 
-class RPCHTTPServer : public beast::Stoppable
+class RPCHTTPServer
+    : public beast::Stoppable
+    , public beast::PropertyStream::Source
 {
 protected:
     RPCHTTPServer (Stoppable& parent);
 
 public:
-    static RPCHTTPServer* New (Stoppable& parent,
-        beast::Journal journal, JobQueue& jobQueue, NetworkOPs& networkOPs,
-        Resource::Manager& resourceManager);
-
-    virtual ~RPCHTTPServer () { }
+    virtual
+    ~RPCHTTPServer() = default;
 
     /** Opens listening ports based on the Config settings. */
-    virtual void setup (beast::Journal journal) = 0;
+    virtual
+    void
+    setup (beast::Journal journal) = 0;
 };
+
+std::unique_ptr <RPCHTTPServer>
+make_RPCHTTPServer (beast::Stoppable& parent, beast::Journal journal,
+    JobQueue& jobQueue, NetworkOPs& networkOPs,
+        Resource::Manager& resourceManager);
 
 }
 

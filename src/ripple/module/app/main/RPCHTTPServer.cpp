@@ -40,10 +40,8 @@ public:
     std::unique_ptr <RippleSSLContext> m_context;
 
     RPCHTTPServerImp (Stoppable& parent,
-                      beast::Journal journal,
-                      JobQueue& jobQueue,
-                      NetworkOPs& networkOPs,
-                      Resource::Manager& resourceManager)
+        beast::Journal journal, JobQueue& jobQueue, NetworkOPs& networkOPs,
+            Resource::Manager& resourceManager)
         : RPCHTTPServer (parent)
         , m_resourceManager (resourceManager)
         , m_journal (journal)
@@ -65,12 +63,13 @@ public:
         }
     }
 
-    ~RPCHTTPServerImp ()
+    ~RPCHTTPServerImp()
     {
         m_server.stop();
     }
 
-    void setup (beast::Journal journal)
+    void
+    setup (beast::Journal journal) override
     {
         if (! getConfig ().getRpcIP().empty () &&
               getConfig ().getRpcPort() != 0)
@@ -81,7 +80,7 @@ public:
             //if (! is_unspecified (ep))
             {
                 HTTP::Port port;
-                port.security = HTTP::Port::allow_ssl;
+                port.security = HTTP::Port::Security::allow_ssl;
                 port.addr = ep.at_port(0);
                 if (getConfig ().getRpcPort() != 0)
                     port.port = getConfig ().getRpcPort();
@@ -105,12 +104,14 @@ public:
     // Stoppable
     //
 
-    void onStop ()
+    void
+    onStop() override
     {
         m_server.stopAsync();
     }
 
-    void onChildrenStopped ()
+    void
+    onChildrenStopped() override
     {
     }
 
@@ -119,28 +120,26 @@ public:
     // HTTP::Handler
     //
 
-    void onAccept (HTTP::Session& session)
+    void
+    onAccept (HTTP::Session& session) override
     {
         // Reject non-loopback connections if RPC_ALLOW_REMOTE is not set
         if (! getConfig().RPC_ALLOW_REMOTE &&
             ! beast::IP::is_loopback (session.remoteAddress()))
         {
-            session.close();
+            session.close (false);
         }
     }
 
-    void onHeaders (HTTP::Session& session)
-    {
-    }
-
-    void onRequest (HTTP::Session& session)
+    void
+    onRequest (HTTP::Session& session) override
     {
         // Check user/password authorization
-        auto const headers (session.request()->headers().build_map());
+        auto const headers (build_map (session.message().headers));
         if (! HTTPAuthorized (headers))
         {
             session.write (HTTPReply (403, "Forbidden"));
-            session.close();
+            session.close (true);
             return;
         }
 
@@ -158,17 +157,21 @@ public:
 #endif
     }
 
-    void onClose (HTTP::Session& session, int errorCode)
+    void
+    onClose (HTTP::Session& session,
+        boost::system::error_code const&) override
     {
     }
 
-    void onStopped (HTTP::Server&)
+    void
+    onStopped (HTTP::Server&) override
     {
         stopped();
     }
 
     //--------------------------------------------------------------------------
 
+    // Dispatched on the job queue
     void processSession (Job& job, HTTP::Session& session)
     {
 #if 0
@@ -176,11 +179,19 @@ public:
         session.write (m_deprecatedHandler.processRequest (
             session.content(), session.remoteAddress().at_port(0)));
 #else
-        session.write (processRequest (session.content(),
+        auto const s (to_string(session.message().body));
+        session.write (processRequest (to_string(session.message().body),
             session.remoteAddress().at_port(0)));
 #endif
 
-        session.close();
+        if (session.message().keep_alive())
+        {
+            session.complete();
+        }
+        else
+        {
+            session.close (true);
+        }
     }
 
     std::string createResponse (
@@ -280,24 +291,35 @@ public:
 
         return createResponse (200, response);
     }
+
+    //
+    // PropertyStream
+    //
+
+    void
+    onWrite (beast::PropertyStream::Map& map) override
+    {
+        m_server.onWrite (map);
+    }
 };
 
 //------------------------------------------------------------------------------
 
 RPCHTTPServer::RPCHTTPServer (Stoppable& parent)
     : Stoppable ("RPCHTTPServer", parent)
+    , Source ("rpc")
 {
 }
 
 //------------------------------------------------------------------------------
 
-RPCHTTPServer* RPCHTTPServer::New (Stoppable& parent,
-                                   beast::Journal journal,
-                                   JobQueue& jobQueue,
-                                   NetworkOPs& networkOPs,
-                                   Resource::Manager& resourceManager)
+std::unique_ptr <RPCHTTPServer>
+make_RPCHTTPServer (beast::Stoppable& parent, beast::Journal journal,
+    JobQueue& jobQueue, NetworkOPs& networkOPs,
+        Resource::Manager& resourceManager)
 {
-    return new RPCHTTPServerImp (parent, journal, jobQueue, networkOPs, resourceManager);
+    return std::make_unique <RPCHTTPServerImp> (
+        parent, journal, jobQueue, networkOPs, resourceManager);
 }
 
 }

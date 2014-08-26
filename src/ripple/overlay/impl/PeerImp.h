@@ -39,7 +39,8 @@
 
 #include <beast/asio/IPAddressConversion.h>
 #include <beast/asio/placeholders.h>
-#include <beast/http/basic_message.h>
+#include <beast/http/message.h>
+#include <beast/http/parser.h>
 
 #include <cstdint>
 
@@ -167,8 +168,8 @@ public:
 
 
     boost::asio::streambuf read_buffer_;
-    boost::optional <beast::http::basic_message> http_message_;
-    boost::optional <beast::http::basic_message::parser> http_parser_;
+    boost::optional <beast::http::message> http_message_;
+    boost::optional <beast::http::parser> http_parser_;
     message_stream message_stream_;
 
     boost::asio::streambuf write_buffer_;
@@ -280,7 +281,7 @@ private:
     void
     on_connect (error_code ec);
 
-    beast::http::basic_message
+    beast::http::message
     make_request();
 
     void
@@ -308,8 +309,8 @@ private:
     void
     on_read_http_request (error_code ec, std::size_t bytes_transferred);
 
-    beast::http::basic_message
-    make_response (beast::http::basic_message const& req);
+    beast::http::message
+    make_response (beast::http::message const& req);
 
     void
     on_write_http_response (error_code ec, std::size_t bytes_transferred);

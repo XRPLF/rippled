@@ -21,7 +21,7 @@ namespace ripple {
 namespace HTTP {
 
 Port::Port ()
-    : security (no_ssl)
+    : security (Security::no_ssl)
     , port (0)
     , context (nullptr)
 {

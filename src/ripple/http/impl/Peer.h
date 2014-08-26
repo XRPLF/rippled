@@ -26,9 +26,14 @@
 #include <ripple/http/impl/ServerImpl.h>
 #include <ripple/common/MultiSocket.h>
 #include <beast/asio/placeholders.h>
+#include <beast/http/message.h>
+#include <beast/http/parser.h>
 #include <beast/module/core/core.h>
 #include <beast/module/asio/basics/SharedArg.h>
 #include <beast/module/asio/http/HTTPRequestParser.h>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/streambuf.hpp>
+#include <chrono>
 #include <functional>
 #include <memory>
 
@@ -48,129 +53,54 @@ class Peer
     , public beast::LeakChecked <Peer>
 {
 private:
+    typedef std::chrono::system_clock clock_type;
+
     enum
     {
         // Size of our receive buffer
-        bufferSize = 8192,
+        bufferSize = 2048,
 
         // Largest HTTP request allowed
         maxRequestBytes = 32 * 1024,
 
-        // Max seconds without receiving a byte
-        dataTimeoutSeconds = 10,
-
-        // Max seconds without completing the request
-        requestTimeoutSeconds = 30
+        // Max seconds without completing a message
+        timeoutSeconds = 30
+        //timeoutSeconds = 3
 
     };
 
-    ServerImpl& impl_;
+    beast::Journal journal_;
+    ServerImpl& server_;
+    std::string id_;
     boost::asio::io_service::strand strand_;
-    boost::asio::deadline_timer data_timer_;
-    boost::asio::deadline_timer request_timer_;
+    boost::asio::deadline_timer timer_;
     std::unique_ptr <MultiSocket> socket_;
 
-    // VFALCO TODO Use c++11
-    beast::MemoryBlock buffer_;
-
-    beast::HTTPRequestParser parser_;
-    int writesPending_;
+    boost::asio::streambuf read_buf_;
+    beast::http::message message_;
+    beast::http::parser parser_;
+    int pending_writes_;
     bool closed_;
+    bool finished_;
     bool callClose_;
     std::shared_ptr <Peer> detach_ref_;
     boost::optional <boost::asio::io_service::work> work_;
-    int errorCode_;
+
+    boost::system::error_code ec_;
     std::atomic <int> detached_;
 
+    clock_type::time_point when_;
+    std::string when_str_;
+    int request_count_;
+    std::size_t bytes_in_;
+    std::size_t bytes_out_;
+
     //--------------------------------------------------------------------------
 
 public:
-    Peer (ServerImpl& impl, Port const& port);
+    Peer (ServerImpl& impl, Port const& port, beast::Journal journal);
     ~Peer ();
 
-private:
-    //--------------------------------------------------------------------------
-    //
-    // Session
-    //
-
-    beast::Journal
-    journal()
-    {
-        return impl_.journal();
-    }
-
-    beast::IP::Endpoint
-    remoteAddress()
-    {
-        return from_asio (get_socket().remote_endpoint());
-    }
-
-    bool
-    headersComplete()
-    {
-        return parser_.headersComplete();
-    }
-
-    beast::HTTPHeaders
-    headers()
-    {
-        return beast::HTTPHeaders (parser_.fields());
-    }
-
-    beast::SharedPtr <beast::HTTPRequest> const&
-    request()
-    {
-        return parser_.request();
-    }
-
-    std::string
-    content();
-
-    void
-    write (void const* buffer, std::size_t bytes);
-
-    void
-    detach ();
-
-    void
-    close ();
-
-    //--------------------------------------------------------------------------
-    //
-    // Completion Handlers
-    //
-
-    void
-    handle_handshake (error_code ec);
-
-    void
-    handle_data_timer (error_code ec);
-
-    void
-    handle_request_timer (error_code ec);
-
-    void
-    handle_write (error_code ec, std::size_t bytes_transferred,
-        SharedBuffer const& buf);
-
-    void
-    handle_read (error_code ec, std::size_t bytes_transferred);
-
-    void
-    handle_headers ();
-
-    void
-    handle_request ();
-
-    void
-    handle_close ();
-
-public:
-    //--------------------------------------------------------------------------
-    //
-    // Peer
-    //
     socket&
     get_socket()
     {
@@ -184,18 +114,76 @@ public:
     }
 
     void
-    accept ();
+    accept();
 
+private:
     void
-    cancel ();
+    cancel();
 
     void
     failed (error_code const& ec);
 
     void
-    async_read_some ();
+    start_timer();
 
-    void async_write (SharedBuffer const& buf);
+    void
+    async_write (SharedBuffer const& buf);
+
+    //--------------------------------------------------------------------------
+    //
+    // Completion Handlers
+    //
+
+    void
+    on_timer (error_code ec);
+
+    void
+    on_ssl_handshake (error_code ec);
+
+    void
+    on_read_request (error_code ec, std::size_t bytes_transferred);
+
+    void
+    on_write_response (error_code ec, std::size_t bytes_transferred,
+        SharedBuffer const& buf);
+
+    void
+    on_close ();
+
+    //--------------------------------------------------------------------------
+    //
+    // Session
+    //
+
+    beast::Journal
+    journal() override
+    {
+        return server_.journal();
+    }
+
+    beast::IP::Endpoint
+    remoteAddress() override
+    {
+        return from_asio (get_socket().remote_endpoint());
+    }
+
+    beast::http::message&
+    message() override
+    {
+        return message_;
+    }
+
+    void
+    write (void const* buffer, std::size_t bytes) override;
+
+    void
+    complete() override;
+
+    void
+    detach() override;
+
+    void
+    close (bool graceful) override;
 };
 
 }
