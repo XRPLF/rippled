@@ -16,7 +16,6 @@ class Server(object):
             reader = ServerReader.ServerReader()
 
         self.reader = reader
-
         self.complete = reader.complete
 
         names = {
@@ -35,14 +34,14 @@ class Server(object):
             filepath = os.path.join(ARGS.cache, name)
             creator = lambda n: reader.get_ledger(n, is_full)
             return FileCache(filepath, creator)
-        self.caches = [make_cache(False), make_cache(True)]
+        self._caches = [make_cache(False), make_cache(True)]
 
     def info(self):
         return self.reader.info
 
+    def cache(self, is_full):
+        return self._caches[is_full]
+
     def get_ledger(self, number, is_full=False):
         use_file_cache = int(number) in self.complete
-        return self.caches[is_full].get_data(number, use_file_cache)
-
-    def cache_list(self, is_full=False):
-        return self.caches[is_full].cache_list()
+        return self.cache(is_full).get_data(number, use_file_cache)

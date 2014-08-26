@@ -35,7 +35,19 @@ class FileCache(object):
             self.cached_data[name] = result
         return result
 
+    def _files(self):
+        return os.listdir(self.cache_directory)
+
     def cache_list(self):
-        for f in os.listdir(self.cache_directory):
+        for f in self._files():
             if f.endswith(self.suffix):
                 yield f[:-len(self.suffix)]
+
+    def file_count(self):
+        return len(self._files())
+
+    def clear(self):
+        """Clears both local files and memory."""
+        self.cached_data = {}
+        for f in self._files():
+            os.remove(os.path.join(self.cache_directory, f))

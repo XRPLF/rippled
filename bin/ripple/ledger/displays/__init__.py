@@ -62,10 +62,12 @@ def json(f):
 
 @display
 def ledger(ledger, full=False):
-    if full or not ARGS.full:
-        return ledger
-    pruned = Dict.prune(ledger, 1, False)
-    return _dict_filter(pruned, LEDGER_FIELDS)
+    if ARGS.full:
+        if full:
+            return ledger
+        ledger = Dict.prune(ledger, 1, False)
+
+    return _dict_filter(ledger, LEDGER_FIELDS)
 
 @display
 def prune(ledger, level=1):
