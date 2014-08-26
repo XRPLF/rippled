@@ -19,20 +19,23 @@ class FileCache(object):
             os.makedirs(self.cache_directory)
 
     def get_file_data(self, name):
-        filename = os.path.join(self.cache_directory, str(name)) + self.suffix
         if os.path.exists(filename):
             return json.load(self.open(filename))
 
         result = self.creator(name)
-        json.dump(result, self.open(filename, 'w'))
         return result
 
-    def get_data(self, name, use_file_cache=True):
+    def get_data(self, name, save_in_cache=True):
+        name = str(name)
         result = self.cached_data.get(name, _NONE)
         if result is _NONE:
-            maker = self.get_file_data if use_file_cache else self.creator
-            result = maker(name)
-            self.cached_data[name] = result
+            filename = os.path.join(self.cache_directory, name) + self.suffix
+            if os.path.exists(filename):
+                result = json.load(self.open(filename)) or _NONE
+            if result is _NONE:
+                result = self.creator(name)
+                if save_in_cache:
+                    json.dump(result, self.open(filename, 'w'))
         return result
 
     def _files(self):
