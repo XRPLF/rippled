@@ -17,14 +17,64 @@
 */
 //==============================================================================
 
-#include <beast/http/parser.h>
+#include <beast/http/basic_parser.h>
 #include <beast/http/impl/joyent_parser.h>
 #include <beast/http/rfc2616.h>
+#include <beast/utility/noexcept.h>
+#include <boost/system/error_code.hpp>
 
 namespace beast {
 namespace http {
 
-parser::parser (bool request)
+boost::system::error_category const&
+message_category() noexcept
+{
+    class message_category_t : public boost::system::error_category
+    {
+    public:
+        const char*
+        name() const noexcept override
+        {
+            return "http::message";
+        }
+
+        std::string
+        message (int ev) const override
+        {
+            return joyent::http_errno_description (
+                static_cast<joyent::http_errno>(ev));
+        }
+
+        boost::system::error_condition
+        default_error_condition (int ev) const noexcept override
+        {
+            return boost::system::error_condition (ev, *this);
+        }
+
+        bool
+        equivalent (int ev, boost::system::error_condition const& condition
+            ) const noexcept override
+        {
+            return condition.value() == ev &&
+                &condition.category() == this;
+        }
+
+        bool
+        equivalent (boost::system::error_code const& error,
+            int ev) const noexcept override
+        {
+            return error.value() == ev &&
+                &error.category() == this;
+        }
+    };
+
+    static message_category_t cat;
+    return cat;
+}
+
+//------------------------------------------------------------------------------
+
+basic_parser::basic_parser (bool request) noexcept
 {
     static_assert (sizeof(joyent::http_parser) == sizeof(state_t),
         "state_t size must match http_parser size");
@@ -36,45 +86,66 @@ parser::parser (bool request)
     s->data = this;
 
     auto h (reinterpret_cast <joyent::http_parser_settings*> (&hooks_));
-    h->on_message_begin     = &parser::cb_message_start;
-    h->on_url               = &parser::cb_url;
-    h->on_status            = &parser::cb_status;
-    h->on_header_field      = &parser::cb_header_field;
-    h->on_header_value      = &parser::cb_header_value;
-    h->on_headers_complete  = &parser::cb_headers_complete;
-    h->on_body              = &parser::cb_body;
-    h->on_message_complete  = &parser::cb_message_complete;
-
+    h->on_message_begin     = &basic_parser::cb_message_start;
+    h->on_url               = &basic_parser::cb_url;
+    h->on_status            = &basic_parser::cb_status;
+    h->on_header_field      = &basic_parser::cb_header_field;
+    h->on_header_value      = &basic_parser::cb_header_value;
+    h->on_headers_complete  = &basic_parser::cb_headers_complete;
+    h->on_body              = &basic_parser::cb_body;
+    h->on_message_complete  = &basic_parser::cb_message_complete;
+    
     joyent::http_parser_init (s, request
         ? joyent::http_parser_type::HTTP_REQUEST
         : joyent::http_parser_type::HTTP_RESPONSE);
 }
 
-std::pair <parser::error_code, std::size_t>
-parser::write (void const* data, std::size_t bytes)
+basic_parser&
+basic_parser::operator= (basic_parser&& other)
 {
-    std::pair <error_code, std::size_t> result (error_code(), 0);
+    *reinterpret_cast<joyent::http_parser*>(&state_) =
+        *reinterpret_cast<joyent::http_parser*>(&other.state_);
+    reinterpret_cast<joyent::http_parser*>(&state_)->data = this;
+    complete_ = other.complete_;
+    url_ = std::move (other.url_);
+    status_ = std::move (other.status_);
+    field_ = std::move (other.field_);
+    value_ = std::move (other.value_);
+    return *this;
+}
+
+basic_parser::error_code
+basic_parser::error() const noexcept
+{
+    auto s (reinterpret_cast <joyent::http_parser const*> (&state_));
+    return error_code{static_cast<int>(s->http_errno), message_category()};
+}
+
+std::pair <bool, std::size_t>
+basic_parser::write (void const* data, std::size_t bytes)
+{
+    std::pair <bool, std::size_t> result (false, 0);
     auto s (reinterpret_cast <joyent::http_parser*> (&state_));
     auto h (reinterpret_cast <joyent::http_parser_settings const*> (&hooks_));
     result.second = joyent::http_parser_execute (s, h,
         static_cast <const char*> (data), bytes);
-    result.first = ec_;
+    result.first = s->http_errno == 0;
     return result;
 }
 
-parser::error_code
-parser::eof()
+bool
+basic_parser::write_eof()
 {
     auto s (reinterpret_cast <joyent::http_parser*> (&state_));
     auto h (reinterpret_cast <joyent::http_parser_settings const*> (&hooks_));
     joyent::http_parser_execute (s, h, nullptr, 0);
-    return ec_;
+    return s->http_errno == 0;
 }
 
 //------------------------------------------------------------------------------
 
 void
-parser::check_header()
+basic_parser::check_header()
 {
     if (! value_.empty())
     {
@@ -86,7 +157,7 @@ parser::check_header()
 }
 
 int
-parser::do_message_start ()
+basic_parser::do_message_start ()
 {
     complete_ = false;
     url_.clear();
@@ -98,21 +169,21 @@ parser::do_message_start ()
 }
 
 int
-parser::do_url (char const* in, std::size_t bytes)
+basic_parser::do_url (char const* in, std::size_t bytes)
 {
     url_.append (static_cast <char const*> (in), bytes);
     return 0;
 }
 
 int
-parser::do_status (char const* in, std::size_t bytes)
+basic_parser::do_status (char const* in, std::size_t bytes)
 {
     status_.append (static_cast <char const*> (in), bytes);
     return 0;
 }
 
 int
-parser::do_header_field (char const* in, std::size_t bytes)
+basic_parser::do_header_field (char const* in, std::size_t bytes)
 {
     check_header();
     field_.append (static_cast <char const*> (in), bytes);
@@ -120,7 +191,7 @@ parser::do_header_field (char const* in, std::size_t bytes)
 }
 
 int
-parser::do_header_value (char const* in, std::size_t bytes)
+basic_parser::do_header_value (char const* in, std::size_t bytes)
 {
     value_.append (static_cast <char const*> (in), bytes);
     return 0;
@@ -132,7 +203,7 @@ parser::do_header_value (char const* in, std::size_t bytes)
     that the message has no body (e.g. a HEAD request).
 */
 int
-parser::do_headers_complete()
+basic_parser::do_headers_complete()
 {
     check_header();
     auto const p (reinterpret_cast <joyent::http_parser const*> (&state_));
@@ -149,7 +220,7 @@ parser::do_headers_complete()
     has already had the transfer-encoding removed.
 */
 int
-parser::do_body (char const* in, std::size_t bytes)
+basic_parser::do_body (char const* in, std::size_t bytes)
 {
     on_body (in, bytes);
     return 0;
@@ -157,7 +228,7 @@ parser::do_body (char const* in, std::size_t bytes)
 
 /* Called when the both the headers and content body (if any) are complete. */
 int
-parser::do_message_complete ()
+basic_parser::do_message_complete ()
 {
     complete_ = true;
     on_complete();
@@ -167,64 +238,64 @@ parser::do_message_complete ()
 //------------------------------------------------------------------------------
 
 int
-parser::cb_message_start (joyent::http_parser* p)
+basic_parser::cb_message_start (joyent::http_parser* p)
 {
-    return reinterpret_cast <parser*> (
+    return reinterpret_cast <basic_parser*> (
         p->data)->do_message_start();
 }
 
 int
-parser::cb_url (joyent::http_parser* p,
+basic_parser::cb_url (joyent::http_parser* p,
     char const* in, std::size_t bytes)
 {
-    return reinterpret_cast <parser*> (
+    return reinterpret_cast <basic_parser*> (
         p->data)->do_url (in, bytes);
 }
 
 int
-parser::cb_status (joyent::http_parser* p,
+basic_parser::cb_status (joyent::http_parser* p,
     char const* in, std::size_t bytes)
 {
-    return reinterpret_cast <parser*> (
+    return reinterpret_cast <basic_parser*> (
         p->data)->do_status (in, bytes);
 }
 
 int
-parser::cb_header_field (joyent::http_parser* p,
+basic_parser::cb_header_field (joyent::http_parser* p,
     char const* in, std::size_t bytes)
 {
-    return reinterpret_cast <parser*> (
+    return reinterpret_cast <basic_parser*> (
         p->data)->do_header_field (in, bytes);
 }
 
 int
-parser::cb_header_value (joyent::http_parser* p,
+basic_parser::cb_header_value (joyent::http_parser* p,
     char const* in, std::size_t bytes)
 {
-    return reinterpret_cast <parser*> (
+    return reinterpret_cast <basic_parser*> (
         p->data)->do_header_value (in, bytes);
 }
 
 int
-parser::cb_headers_complete (joyent::http_parser* p)
+basic_parser::cb_headers_complete (joyent::http_parser* p)
 {
-    return reinterpret_cast <parser*> (
+    return reinterpret_cast <basic_parser*> (
         p->data)->do_headers_complete();
 }
 
 int
-parser::cb_body (joyent::http_parser* p,
+basic_parser::cb_body (joyent::http_parser* p,
     char const* in, std::size_t bytes)
 {
-    return reinterpret_cast <parser*> (
+    return reinterpret_cast <basic_parser*> (
         p->data)->do_body (
             in, bytes);
 }
 
 int
-parser::cb_message_complete (joyent::http_parser* p)
+basic_parser::cb_message_complete (joyent::http_parser* p)
 {
-    return reinterpret_cast <parser*> (
+    return reinterpret_cast <basic_parser*> (
         p->data)->do_message_complete();
 }
 

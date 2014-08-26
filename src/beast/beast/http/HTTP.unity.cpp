@@ -21,18 +21,17 @@
 #include <BeastConfig.h>
 #endif
 
+#include <beast/http/impl/basic_parser.cpp>
 #include <beast/http/impl/basic_url.cpp>
-#include <beast/http/impl/get.cpp>
 #include <beast/http/impl/joyent_parser.cpp>
 #include <beast/http/impl/method.cpp>
 #include <beast/http/impl/ParsedURL.cpp>
-#include <beast/http/impl/parser.cpp>
 #include <beast/http/impl/raw_parser.cpp>
 #include <beast/http/impl/URL.cpp>
 
-#include <beast/http/tests/basic_message.test.cpp>
 #include <beast/http/tests/basic_url.test.cpp>
 #include <beast/http/tests/client_session.test.cpp>
+#include <beast/http/tests/parser.test.cpp>
 #include <beast/http/tests/ParsedURL.cpp>
 #include <beast/http/tests/rfc2616.test.cpp>
 #include <beast/http/tests/urls_large_data.cpp>

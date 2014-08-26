@@ -17,26 +17,33 @@
 */
 //==============================================================================
 
-#include <beast/http/get.h>
+#ifndef BEAST_ASIO_BASIC_STREAMBUF_H_INCLUDED
+#define BEAST_ASIO_BASIC_STREAMBUF_H_INCLUDED
 
-#include <beast/http/basic_url.h>
+#include <boost/asio/buffer.hpp>
+#include <memory>
+#include <vector>
 
 namespace beast {
-namespace http {
+namespace asio {
 
-std::pair <std::string, boost::system::error_code>
-get (std::string const& url_string)
+template <class Alloc = std::allocator <char>>
+class basic_streambuf : private Alloc
 {
-    std::pair <std::string, boost::system::error_code> result;
+private:
+    typedef std::allocator_traits <Alloc> alloc_traits;
+    std::vector <boost::asio::mutable_buffer> bufs_;
 
-    url u;
-    u.parse (url_string, result.second);
-    if (result.second)
-        return result;
-
-    return result;
+public:
+    ~basic_streambuf()
+    {
+        for (auto const& buf : bufs_)
+            alloc_traits::deallocate (
+                boost::asio::buffer_cast<char const*>(buf));
+    }
 }
 
+} // asio
+} // beast
 
-}
-}
+#endif
