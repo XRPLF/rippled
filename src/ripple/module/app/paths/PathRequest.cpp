@@ -459,7 +459,7 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
                 spsPaths);
 
             if (!extraPath.empty() &&
-                (rc.calculateResult_ == terNO_LINE || rc.calculateResult_ == tecPATH_PARTIAL))
+                (rc.result () == terNO_LINE || rc.result () == tecPATH_PARTIAL))
             {
                 m_journal.debug
                         << iIdentifier << " Trying with an extra path element";
@@ -470,20 +470,20 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
                     raDstAccount.getAccountID (),
                     raSrcAccount.getAccountID (),
                     spsPaths);
-                if (rc.calculateResult_ != tesSUCCESS)
+                if (rc.result () != tesSUCCESS)
                     m_journal.warning
                         << iIdentifier << " Failed with covering path "
-                        << transHuman (rc.calculateResult_);
+                        << transHuman (rc.result ());
                 else
                     m_journal.debug
                         << iIdentifier << " Extra path element gives "
-                        << transHuman (rc.calculateResult_);
+                        << transHuman (rc.result ());
             }
 
-            if (rc.calculateResult_ == tesSUCCESS)
+            if (rc.result () == tesSUCCESS)
             {
                 Json::Value jvEntry (Json::objectValue);
-                jvEntry["source_amount"]    = rc.actualAmountIn_.getJson (0);
+                jvEntry["source_amount"]    = rc.actualAmountIn.getJson (0);
                 jvEntry["paths_computed"]   = spsPaths.getJson (0);
                 found  = true;
                 jvArray.append (jvEntry);
@@ -491,7 +491,7 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
             else
             {
                 m_journal.debug << iIdentifier << " rippleCalc returns "
-                    << transHuman (rc.calculateResult_);
+                    << transHuman (rc.result ());
             }
         }
         else

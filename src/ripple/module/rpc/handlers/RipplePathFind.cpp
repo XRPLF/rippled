@@ -228,21 +228,21 @@ Json::Value doRipplePathFind (RPC::Context& context)
                 auto rc = path::RippleCalc::rippleCalculate (
                     lesSandbox,
                     saMaxAmount,            // --> Amount to send is unlimited
-                    //     to get an estimate.
+                                            //     to get an estimate.
                     saDstAmount,            // --> Amount to deliver.
                     raDst.getAccountID (),  // --> Account to deliver to.
                     raSrc.getAccountID (),  // --> Account sending from.
-                    spsComputed);         // --> Path set.
+                    spsComputed);           // --> Path set.
 
                 WriteLog (lsWARNING, RPCHandler)
                     << "ripple_path_find:"
                     << " saMaxAmount=" << saMaxAmount
                     << " saDstAmount=" << saDstAmount
-                    << " saMaxAmountAct=" << rc.actualAmountIn_
-                    << " saDstAmountAct=" << rc.actualAmountOut_;
+                    << " saMaxAmountAct=" << rc.actualAmountIn
+                    << " saDstAmountAct=" << rc.actualAmountOut;
 
                 if (extraPath.size() > 0 &&
-                    (rc.calculateResult_ == terNO_LINE || rc.calculateResult_ == tecPATH_PARTIAL))
+                    (rc.result() == terNO_LINE || rc.result() == tecPATH_PARTIAL))
                 {
                     WriteLog (lsDEBUG, PathRequest)
                         << "Trying with an extra path element";
@@ -259,10 +259,10 @@ Json::Value doRipplePathFind (RPC::Context& context)
                         spsComputed);         // --> Path set.
                     WriteLog (lsDEBUG, PathRequest)
                         << "Extra path element gives "
-                        << transHuman (rc.calculateResult_);
+                        << transHuman (rc.result ());
                 }
 
-                if (rc.calculateResult_ == tesSUCCESS)
+                if (rc.result () == tesSUCCESS)
                 {
                     Json::Value jvEntry (Json::objectValue);
 
@@ -272,7 +272,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
                     // anyway to produce the canonical.  (At least unless we
                     // make a direct canonical.)
 
-                    jvEntry["source_amount"] = rc.actualAmountIn_.getJson (0);
+                    jvEntry["source_amount"] = rc.actualAmountIn.getJson (0);
                     jvEntry["paths_canonical"]  = Json::arrayValue;
                     jvEntry["paths_computed"]   = spsComputed.getJson (0);
 
@@ -283,7 +283,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
                     std::string strToken;
                     std::string strHuman;
 
-                    transResultInfo (rc.calculateResult_, strToken, strHuman);
+                    transResultInfo (rc.result (), strToken, strHuman);
 
                     WriteLog (lsDEBUG, RPCHandler)
                         << "ripple_path_find: "

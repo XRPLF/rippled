@@ -41,7 +41,7 @@ TER deleteOffers (
 RippleCalc::Output RippleCalc::rippleCalculate (
     LedgerEntrySet& activeLedger,
 
-    // Compute paths vs this ledger entry set.  Up to caller to actually
+    // Compute paths using this ledger entry set.  Up to caller to actually
     // apply to ledger.
 
     // Issuer:
@@ -73,18 +73,15 @@ RippleCalc::Output RippleCalc::rippleCalculate (
         spsPaths);
     if (pInputs != nullptr)
     {
-        rc.partialPaymentAllowed_ = pInputs->partialPaymentAllowed_;
-        rc.limitQuality_ = pInputs->limitQuality_;
-        rc.defaultPathsAllowed_ = pInputs->defaultPathsAllowed_;
-        rc.deleteUnfundedOffers_ = pInputs->deleteUnfundedOffers_;
-        rc.isLedgerOpen_ = pInputs->isLedgerOpen_;
+        rc.inputFlags = *pInputs;
     }
 
+    auto result = rc.rippleCalculate ();
     Output output;
-    output.calculateResult_ = rc.rippleCalculate ();
-    output.actualAmountIn_ = rc.actualAmountIn_;
-    output.actualAmountOut_ = rc.actualAmountOut_;
-    output.pathStateList_ = rc.pathStateList_;
+    output.setResult (result);
+    output.actualAmountIn = rc.actualAmountIn_;
+    output.actualAmountOut = rc.actualAmountOut_;
+    output.pathStateList = rc.pathStateList_;
 
     return output;
 }
@@ -157,7 +154,7 @@ TER RippleCalc::rippleCalculate ()
     // YYY Might do basic checks on src and dst validity as per doPayment.
 
     // Incrementally search paths.
-    if (defaultPathsAllowed_)
+    if (inputFlags.defaultPathsAllowed)
     {
         if (!addPathState (STPath(), resultCode))
             return resultCode;
@@ -195,7 +192,7 @@ TER RippleCalc::rippleCalculate ()
 
     // When processing, we don't want to complicate directory walking with
     // deletion.
-    const std::uint64_t uQualityLimit = limitQuality_ ?
+    const std::uint64_t uQualityLimit = inputFlags.limitQuality ?
             STAmount::getRate (saDstAmountReq_, saMaxAmountReq_) : 0;
 
     // Offers that became unfunded.
@@ -266,7 +263,7 @@ TER RippleCalc::rippleCalculate ()
 
                     assert (pathState->inPass() && pathState->outPass());
 
-                    if ((!limitQuality_ ||
+                    if ((!inputFlags.limitQuality ||
                          pathState->quality() <= uQualityLimit)
                         // Quality is not limited or increment has allowed
                         // quality.
@@ -376,7 +373,7 @@ TER RippleCalc::rippleCalculate ()
                     pathState->reverse().begin (), pathState->reverse().end ());
 
             }
-            else if (!partialPaymentAllowed_)
+            else if (!inputFlags.partialPaymentAllowed)
             {
                 // Have sent maximum allowed. Partial payment not allowed.
 
@@ -390,7 +387,7 @@ TER RippleCalc::rippleCalculate ()
             }
         }
         // Not done and ran out of paths.
-        else if (!partialPaymentAllowed_)
+        else if (!inputFlags.partialPaymentAllowed)
         {
             // Partial payment not allowed.
             resultCode = tecPATH_PARTIAL;
@@ -419,7 +416,7 @@ TER RippleCalc::rippleCalculate ()
     }
 
     // If isOpenLedger, then ledger is not final, can vote no.
-    if (resultCode == telFAILED_PROCESSING && !isLedgerOpen_)
+    if (resultCode == telFAILED_PROCESSING && !inputFlags.isLedgerOpen)
         return tecFAILED_PROCESSING;
     return resultCode;
 }

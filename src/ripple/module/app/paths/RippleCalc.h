@@ -33,47 +33,44 @@ class RippleCalc
 public:
     struct Input
     {
-        Input (
-            bool partialPaymentAllowed = false,
-            bool defaultPathsAllowed = true,
-            bool limitQuality = false,
-            bool deleteUnfundedOffers = false,
-            bool isLedgerOpen = true
-            )
-            : partialPaymentAllowed_ (partialPaymentAllowed),
-            defaultPathsAllowed_ (defaultPathsAllowed),
-            limitQuality_ (limitQuality),
-            deleteUnfundedOffers_ (deleteUnfundedOffers),
-            isLedgerOpen_ (isLedgerOpen)
-        {
-        }
-
-        bool partialPaymentAllowed_ = false;
-        bool defaultPathsAllowed_ = true;
-        bool limitQuality_ = false;
-        bool deleteUnfundedOffers_ = false;
-        bool isLedgerOpen_ = true;
+        bool partialPaymentAllowed = false;
+        bool defaultPathsAllowed = true;
+        bool limitQuality = false;
+        bool deleteUnfundedOffers = false;
+        bool isLedgerOpen = true;
     };
     struct Output
     {
-        TER calculateResult_;
-
         // The computed input amount.
-        STAmount actualAmountIn_;
+        STAmount actualAmountIn;
 
         // The computed output amount.
-        STAmount actualAmountOut_;
+        STAmount actualAmountOut;
 
         // Expanded path with all the actual nodes in it.
         // A path starts with the source account, ends with the destination account
         // and goes through other acounts or order books.
-        PathState::List pathStateList_;
+        PathState::List pathStateList;
+
+    private:
+        TER calculationResult_;
+
+    public:
+        TER result () const
+        {
+            return calculationResult_;
+        }
+        void setResult (TER const value)
+        {
+            calculationResult_ = value;
+        }
+
     };
 
     static Output rippleCalculate (
         LedgerEntrySet& activeLedger,
 
-        // Compute paths vs this ledger entry set.  Up to caller to actually
+        // Compute paths using this ledger entry set.  Up to caller to actually
         // apply to ledger.
 
         // Issuer:
@@ -114,27 +111,11 @@ public:
 private:
     RippleCalc (
         LedgerEntrySet& activeLedger,
-
-        // Compute paths vs this ledger entry set.  Up to caller to actually
-        // apply to ledger.
-
-        // Issuer:
-        //      XRP: xrpAccount()
-        //  non-XRP: uSrcAccountID (for any issuer) or another account with
-        //           trust node.
         STAmount const& saMaxAmountReq,             // --> -1 = no limit.
-
-        // Issuer:
-        //      XRP: xrpAccount()
-        //  non-XRP: uDstAccountID (for any issuer) or another account with
-        //           trust node.
         STAmount const& saDstAmountReq,
 
         Account const& uDstAccountID,
         Account const& uSrcAccountID,
-
-        // A set of paths that are included in the transaction that we'll
-        // explore for liquidity.
         STPathSet const& spsPaths)
             : mActiveLedger (activeLedger),
               saDstAmountReq_(saDstAmountReq),
@@ -168,11 +149,7 @@ private:
     // and goes through other acounts or order books.
     PathState::List pathStateList_;
 
-    bool partialPaymentAllowed_ = false;
-    bool limitQuality_ = false;
-    bool defaultPathsAllowed_ = true;
-    bool deleteUnfundedOffers_ = false;
-    bool isLedgerOpen_ = true;
+    Input inputFlags;
 };
 
 } // path

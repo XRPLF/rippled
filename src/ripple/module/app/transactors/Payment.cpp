@@ -222,7 +222,7 @@ TER Payment::doApply ()
         mEngine->entryModify (sleDst);
     }
 
-    path::RippleCalc::Output rc;
+    TER terResult;
 
     bool const bRipple = bPaths || bMax || !saDstAmount.isNative ();
     // XXX Should bMax be sufficient to imply ripple?
@@ -235,28 +235,28 @@ TER Payment::doApply ()
         // Copy paths into an editable class.
         STPathSet spsPaths = mTxn.getFieldPathSet (sfPaths);
 
-        path::RippleCalc::Input rcInput (
-            partialPaymentAllowed,
-            defaultPathsAllowed,
-            limitQuality,
-            true,
-            static_cast<bool>(mParams & tapOPEN_LEDGER));
-
         try
         {
+            path::RippleCalc::Input rcInput;
+            rcInput.partialPaymentAllowed = partialPaymentAllowed;
+            rcInput.defaultPathsAllowed = defaultPathsAllowed;
+            rcInput.limitQuality = limitQuality;
+            rcInput.deleteUnfundedOffers = true;
+            rcInput.isLedgerOpen = static_cast<bool>(mParams & tapOPEN_LEDGER);
+
             bool pathTooBig = spsPaths.size () > MaxPathSize;
 
             for (auto const& path : spsPaths)
                 if (path.size () > MaxPathLength)
                     pathTooBig = true;
 
-            if (rcInput.isLedgerOpen_ && pathTooBig)
+            if (rcInput.isLedgerOpen && pathTooBig)
             {
-                rc.calculateResult_ = telBAD_PATH_COUNT; // Too many paths for proposed ledger.
+                terResult = telBAD_PATH_COUNT; // Too many paths for proposed ledger.
             }
             else
             {
-                rc = path::RippleCalc::rippleCalculate (
+                auto rc = path::RippleCalc::rippleCalculate (
                     mEngine->view (),
                     maxSourceAmount,
                     saDstAmount,
@@ -264,23 +264,26 @@ TER Payment::doApply ()
                     mTxnAccountID,
                     spsPaths,
                     &rcInput);
+
+                // TODO: is this right?  If the amount is the correct amount, was
+                // the delivered amount previously set?
+                if (rc.result () == tesSUCCESS && rc.actualAmountOut != saDstAmount)
+                    mEngine->view ().setDeliveredAmount (rc.actualAmountOut);
+
+                terResult = rc.result ();
             }
 
             // TODO(tom): what's going on here?
-            if (isTerRetry(rc.calculateResult_))
-                rc.calculateResult_ = tecPATH_DRY;
+            if (isTerRetry (terResult))
+                terResult = tecPATH_DRY;
 
-            // TODO: is this right?  If the amount is the correct amount, was
-            // the delivered amount previously set?
-            if (rc.calculateResult_ == tesSUCCESS && rc.actualAmountOut_ != saDstAmount)
-                mEngine->view().setDeliveredAmount (rc.actualAmountOut_);
         }
         catch (std::exception const& e)
         {
             m_journal.trace <<
                 "Caught throw: " << e.what ();
 
-            rc.calculateResult_ = tefEXCEPTION;
+            terResult = tefEXCEPTION;
         }
     }
     else
@@ -310,7 +313,7 @@ TER Payment::doApply ()
                 " / " << (saDstAmount + uReserve).getText () <<
                 " (" << uReserve << ")";
 
-            rc.calculateResult_ = tecUNFUNDED_PAYMENT;
+            terResult = tecUNFUNDED_PAYMENT;
         }
         else
         {
@@ -323,14 +326,14 @@ TER Payment::doApply ()
             if ((sleDst->getFlags () & lsfPasswordSpent))
                 sleDst->clearFlag (lsfPasswordSpent);
 
-            rc.calculateResult_ = tesSUCCESS;
+            terResult = tesSUCCESS;
         }
     }
 
     std::string strToken;
     std::string strHuman;
 
-    if (transResultInfo (rc.calculateResult_, strToken, strHuman))
+    if (transResultInfo (terResult, strToken, strHuman))
     {
         m_journal.trace <<
             strToken << ": " << strHuman;
@@ -340,7 +343,7 @@ TER Payment::doApply ()
         assert (false);
     }
 
-    return rc.calculateResult_;
+    return terResult;
 }
 
 }  // ripple
