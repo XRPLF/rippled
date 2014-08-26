@@ -11,6 +11,28 @@ from ripple.util import Log
 from ripple.util import Range
 from ripple.util.Decimal import Decimal
 
+TRANSACT_FIELDS = (
+    'accepted',
+    'close_time_human',
+    'closed',
+    'ledger_index',
+    'total_coins',
+    'transactions',
+)
+
+LEDGER_FIELDS = (
+    'accepted',
+    'accountState',
+    'close_time_human',
+    'closed',
+    'ledger_index',
+    'total_coins',
+    'transactions',
+)
+
+def _dict_filter(d, keys):
+    return dict((k, v) for (k, v) in d.items() if k in keys)
+
 def ledger_number(server, numbers):
     yield Range.to_string(numbers)
 
@@ -42,24 +64,16 @@ def json(f):
 def ledger(ledger, full=False):
     if full or not ARGS.full:
         return ledger
-    return Dict.prune(ledger, 1, False)
+    pruned = Dict.prune(ledger, 1, False)
+    return _dict_filter(pruned, LEDGER_FIELDS)
 
 @display
 def prune(ledger, level=1):
     return Dict.prune(ledger, level, False)
 
-TRANSACT_FIELDS = (
-    'accepted',
-    'close_time_human',
-    'closed',
-    'ledger_index',
-    'total_coins',
-    'transactions',
-)
-
 @display
 def transact(ledger):
-    return dict((f, ledger[f]) for f in TRANSACT_FIELDS)
+    return _dict_filter(ledger, TRANSACT_FIELDS)
 
 @json
 def extract(finds):

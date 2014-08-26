@@ -14,6 +14,7 @@ _ERROR_CODE_REASON = {
 }
 
 _ERROR_TEXT = {
+    'lgrNotFound': 'The ledger you requested was not found.',
     'noCurrent': 'The server has no current ledger.',
     'noNetwork': 'The server did not respond to your request.',
 }
