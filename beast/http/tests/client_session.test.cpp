@@ -28,7 +28,6 @@
 
 #include <beast/http/tests/urls_large_data.h>
 #include <beast/http/client_session.h>
-#include <beast/http/get.h>
 #include <beast/asio/bind_handler.h>
 #include <beast/asio/memory_buffer.h>
 #include <beast/utility/ci_char_traits.h>
@@ -365,14 +364,8 @@ std::advance (last, 3000);
         test_concurrent_get (std::begin (sequence), last);
     }
 
-    void test_get()
-    {
-        get ("http://www.google.com");
-    }
-
     void run()
     {
-        //test_get();
         test_concurrent_get (urls_large_data());
     }
 };

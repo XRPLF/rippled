@@ -20,228 +20,164 @@
 #ifndef BEAST_HTTP_PARSER_H_INCLUDED
 #define BEAST_HTTP_PARSER_H_INCLUDED
 
-#include <beast/http/method.h>
-#include <boost/asio/buffer.hpp>
-#include <boost/system/error_code.hpp>
-#include <array>
-#include <cstdint>
-#include <memory>
+#include <beast/http/message.h>
 #include <string>
+#include <utility>
 
 namespace beast {
-
-namespace joyent {
-struct http_parser;
-};
-
 namespace http {
 
-class parser
+/** Parser for HTTP messages.
+    The result is stored in a message object.
+*/
+class parser : public beast::http::basic_parser
 {
+private:
+    std::reference_wrapper <message> message_;
+
 public:
-    typedef boost::system::error_code error_code;
+    /** Construct a parser for HTTP request or response.
+        The result is stored in the passed message.
+    */
+    parser (message& m, bool request)
+        : beast::http::basic_parser (request)
+        , message_(m)
+    {
+        message_.get().request(request);
+    }
+
+    template <class = void>
+    parser&
+    operator= (parser&& other);
 
 private:
-    // These structures must exactly match the
-    // declarations in joyent http_parser.h include
-    //
-    struct state_t
-    {
-      unsigned int type  : 2;
-      unsigned int flags : 6;
-      unsigned int state : 8;
-      unsigned int header_state : 8;
-      unsigned int index : 8;
-      std::uint32_t nread;
-      std::uint64_t content_length;
-      unsigned short http_major;
-      unsigned short http_minor;
-      unsigned int status_code : 16;
-      unsigned int method : 8;
-      unsigned int http_errno : 7;
-      unsigned int upgrade : 1;
-      void *data;
-    };
+    template <class = void>
+    void
+    do_start ();
 
-    typedef int (*data_cb_t) (
-        state_t*, const char *at, size_t length);
-    typedef int (*cb_t) (state_t*);
-
-    struct hooks_t
-    {
-      cb_t      on_message_begin;
-      data_cb_t on_url;
-      data_cb_t on_status;
-      data_cb_t on_header_field;
-      data_cb_t on_header_value;
-      cb_t      on_headers_complete;
-      data_cb_t on_body;
-      cb_t      on_message_complete;
-    };
-
-    error_code ec_;
-    char state_ [sizeof(state_t)];
-    char hooks_ [sizeof(hooks_t)];
-
-    bool complete_ = false;
-    std::string url_;
-    std::string status_;
-    std::string field_;
-    std::string value_;
-
-protected:
-    /** Construct the parser.
-        If `request` is `true` this sets up the parser to
-        process an HTTP request.
-    */
-    explicit
-    parser (bool request);
-
-public:
-    /** Returns `true` if parsing is complete.
-        This is only defined when no errors have been returned.
-    */
+    template <class = void>
     bool
-    complete() const
+    do_request (method_t method, std::string const& url,
+        int major, int minor, bool keep_alive, bool upgrade);
+
+    template <class = void>
+    bool
+    do_response (int status, std::string const& text,
+        int major, int minor, bool keep_alive, bool upgrade);
+
+    template <class = void>
+    void
+    do_field (std::string const& field, std::string const& value);
+
+    template <class = void>
+    void
+    do_body (void const* data, std::size_t bytes);
+
+    template <class = void>
+    void
+    do_complete();
+
+    void
+    on_start () override
     {
-        return complete_;
+        do_start();
     }
 
-    /** Write data to the parser.
-        The return value includes the error code if any,
-        and the number of bytes consumed in the input sequence.
-        @param data A buffer containing the data to write
-        @param bytes The size of the buffer pointed to by data.
-    */
-    std::pair <error_code, std::size_t>
-    write (void const* data, std::size_t bytes);
-
-    /** Write a set of buffer data to the parser.
-        The return value includes the error code if any,
-        and the number of bytes consumed in the input sequence.
-        @param buffers The buffers to write. These must meet the
-                       requirements of ConstBufferSequence.
-    */
-    template <class ConstBufferSequence>
-    std::pair <error_code, std::size_t>
-    write (ConstBufferSequence const& buffers)
-    {
-        std::pair <error_code, std::size_t> result (error_code(), 0);
-        for (auto const& buffer : buffers)
-        {
-            std::size_t bytes_consumed;
-            std::tie (result.first, bytes_consumed) =
-                write (boost::asio::buffer_cast <void const*> (buffer),
-                    boost::asio::buffer_size (buffer));
-            if (result.first)
-                break;
-            result.second += bytes_consumed;
-        }
-        return result;
-    }
-
-    /** Called to indicate the end of file.
-        HTTP needs to know where the end of the stream is. For example,
-        sometimes servers send responses without Content-Length and
-        expect the client to consume input (for the body) until EOF.
-        Callbacks and errors will still be processed as usual.
-        @note Typically this should be called when the
-              socket indicates a closure.
-    */
-    error_code
-    eof();
-
-protected:
-    /** Called once when a new message begins. */
-    virtual
-    void
-    on_start() = 0;
-
-    /** Called for each header field. */
-    virtual
-    void
-    on_field (std::string const& field, std::string const& value) = 0;
-
-    /** Called for requests when all the headers have been received.
-        This will precede any content body.
-        When keep_alive is false:
-            * Server roles respond with a "Connection: close" header.
-            * Client roles close the connection.
-        When upgrade is true, no content-body is expected, and the
-        return value is ignored.
-
-        @param method The HTTP method specified in the request line
-        @param major The HTTP major version number
-        @param minor The HTTP minor version number
-        @param url The URL specified in the request line
-        @param keep_alive `false` if this is the last message.
-        @param upgrade `true` if the Upgrade header is specified
-        @return `true` If upgrade is false and a content body is expected.
-    */
-    virtual
     bool
     on_request (method_t method, std::string const& url,
-        int major, int minor, bool keep_alive, bool upgrade) = 0;
+        int major, int minor, bool keep_alive, bool upgrade) override
+    {
+        return do_request (method, url, major, minor, keep_alive, upgrade);
+    }
 
-    /** Called for responses when all the headers have been received.
-        This will precede any content body.
-        When keep_alive is `false`:
-            * Client roles close the connection.
-            * Server roles respond with a "Connection: close" header.
-        When upgrade is true, no content-body is expected, and the
-        return value is ignored.
-
-        @param status The numerical HTTP status code in the response line
-        @param text The status text in the response line
-        @param major The HTTP major version number
-        @param minor The HTTP minor version number
-        @param keep_alive `false` if this is the last message.
-        @param upgrade `true` if the Upgrade header is specified
-        @return `true` If upgrade is false and a content body is expected.
-    */
-    virtual
     bool
     on_response (int status, std::string const& text,
-        int major, int minor, bool keep_alive, bool upgrade) = 0;
+        int major, int minor, bool keep_alive, bool upgrade) override
+    {
+        return do_response (status, text, major, minor, keep_alive, upgrade);
+    }
 
-    /** Called zero or more times for the content body.
-        Any transfer encoding is already decoded in the
-        memory pointed to by data.
-
-        @param data A memory block containing the next decoded
-                    chunk of the content body.
-        @param bytes The number of bytes pointed to by data.
-    */
-    virtual
     void
-    on_body (void const* data, std::size_t bytes) = 0;
+    on_field (std::string const& field, std::string const& value) override
+    {
+        do_field (field, value);
+    }
 
-    /** Called once when the message is complete. */
-    virtual
     void
-    on_complete() = 0;
+    on_body (void const* data, std::size_t bytes) override
+    {
+        do_body (data, bytes);
+    }
 
-private:
-    void check_header();
-
-    int do_message_start ();
-    int do_url (char const* in, std::size_t bytes);
-    int do_status (char const* in, std::size_t bytes);
-    int do_header_field (char const* in, std::size_t bytes);
-    int do_header_value (char const* in, std::size_t bytes);
-    int do_headers_complete ();
-    int do_body (char const* in, std::size_t bytes);
-    int do_message_complete ();
-
-    static int cb_message_start (joyent::http_parser*);
-    static int cb_url (joyent::http_parser*, char const*, std::size_t);
-    static int cb_status (joyent::http_parser*, char const*, std::size_t);
-    static int cb_header_field (joyent::http_parser*, char const*, std::size_t);
-    static int cb_header_value (joyent::http_parser*, char const*, std::size_t);
-    static int cb_headers_complete (joyent::http_parser*);
-    static int cb_body (joyent::http_parser*, char const*, std::size_t);
-    static int cb_message_complete (joyent::http_parser*);
+    void
+    on_complete() override
+    {
+        do_complete();
+    }
 };
+
+//------------------------------------------------------------------------------
+
+template <class>
+parser&
+parser::operator= (parser&& other)
+{
+    basic_parser::operator= (std::move(other));
+    message_ = std::move (other.message_);
+    return *this;
+}
+
+template <class>
+void
+parser::do_start ()
+{
+}
+
+template <class>
+bool
+parser::do_request (method_t method, std::string const& url,
+    int major, int minor, bool keep_alive, bool upgrade)
+{
+    message_.get().method (method);
+    message_.get().url (url);
+    message_.get().version (major, minor);
+    message_.get().keep_alive (keep_alive);
+    message_.get().upgrade (upgrade);
+    return true;
+}
+
+template <class>
+bool
+parser::do_response (int status, std::string const& text,
+    int major, int minor, bool keep_alive, bool upgrade)
+{
+    message_.get().status (status);
+    message_.get().reason (text);
+    message_.get().version (major, minor);
+    message_.get().keep_alive (keep_alive);
+    message_.get().upgrade (upgrade);
+    return true;
+}
+
+template <class>
+void
+parser::do_field (std::string const& field, std::string const& value)
+{
+    message_.get().headers.append (field, value);
+}
+
+template <class>
+void
+parser::do_body (void const* data, std::size_t bytes)
+{
+    message_.get().body.write (data, bytes);
+}
+
+template <class>
+void
+parser::do_complete()
+{
+}
 
 } // http
 } // beast

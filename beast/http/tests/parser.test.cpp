@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    This file is part of Beast: https://github.com/vinniefalco/Beast
+    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,27 +17,28 @@
 */
 //==============================================================================
 
-#include <beast/http/basic_message.h>
+#include <beast/http/message.h>
+#include <beast/http/parser.h>
 #include <beast/unit_test/suite.h>
 
 namespace beast {
 namespace http {
 
-class basic_message_test : public beast::unit_test::suite
+class message_test : public beast::unit_test::suite
 {
 public:
-    std::pair <basic_message, bool>
+    std::pair <message, bool>
     request (std::string const& text)
     {
-        basic_message m;
-        basic_message::parser p (m, true);
+        message m;
+        parser p (m, true);
         auto result (p.write (boost::asio::buffer(text)));
-        p.eof();
+        p.write_eof();
         return std::make_pair (std::move(m), result.first);
     }
 
     void
-    run()
+    dump()
     {
         auto const result = request (
             "GET / HTTP/1.1\r\n"
@@ -51,14 +52,43 @@ public:
             "\r\n"
             "x"
             );
-
+        log << result.first.headers;
         log << "|" << result.first.headers["Field"] << "|";
+    }
 
-        pass();
+    void
+    run()
+    {
+        {
+            std::string const text =
+                "GET / HTTP/1.1\r\n"
+                "\r\n"
+                ;
+            message m;
+            parser p (m, true);
+            auto result (p.write (boost::asio::buffer(text)));
+            expect (result.first);
+            auto result2 (p.write_eof());
+            expect (result2);
+            expect (p.complete());
+        }
+
+        {
+            // malformed
+            std::string const text =
+                "GET\r\n"
+                "\r\n"
+                ;
+            message m;
+            parser p (m, true);
+            auto result (p.write (boost::asio::buffer(text)));
+            if (expect (! result.first))
+                expect (p.error().message() == "invalid HTTP method");
+        }
     }
 };
 
-BEAST_DEFINE_TESTSUITE(basic_message,http,beast);
+BEAST_DEFINE_TESTSUITE(message,http,beast);
 
 } // http
 } // beast
