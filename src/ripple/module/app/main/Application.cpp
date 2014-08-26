@@ -302,7 +302,7 @@ public:
         // VFALCO NOTE LocalCredentials starts the deprecated UNL service
         , m_deprecatedUNL (UniqueNodeList::New (*m_jobQueue))
 
-        , m_rpcHTTPServer (RPCHTTPServer::New (*m_networkOPs,
+        , m_rpcHTTPServer (make_RPCHTTPServer (*m_networkOPs,
             m_logs.journal("HTTPServer"), *m_jobQueue, *m_networkOPs, *m_resourceManager))
 
         , m_rpcServerHandler (*m_networkOPs, *m_resourceManager) // passive object, not a Service
@@ -363,6 +363,7 @@ public:
         m_nodeStoreScheduler.setJobQueue (*m_jobQueue);
 
         add (m_ledgerMaster->getPropertySource ());
+        add (*m_rpcHTTPServer);
 
         // VFALCO TODO remove these once the call is thread safe.
         HashMaps::getInstance ().initializeNonce <size_t> ();

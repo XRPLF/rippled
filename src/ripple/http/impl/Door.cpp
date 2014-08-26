@@ -25,31 +25,31 @@ namespace ripple {
 namespace HTTP {
 
 Door::Door (ServerImpl& impl, Port const& port)
-    : impl_ (impl)
-    , acceptor_ (impl_.get_io_service(), to_asio (port))
+    : server_ (impl)
+    , acceptor_ (server_.get_io_service(), to_asio (port))
     , port_ (port)
 {
-    impl_.add (*this);
+    server_.add (*this);
 
     error_code ec;
 
     acceptor_.set_option (acceptor::reuse_address (true), ec);
     if (ec)
     {
-        impl_.journal().error <<
+        server_.journal().error <<
             "Error setting acceptor socket option: " << ec.message();
     }
 
     if (! ec)
     {
-        impl_.journal().info << "Bound to endpoint " <<
+        server_.journal().info << "Bound to endpoint " <<
             to_string (acceptor_.local_endpoint());
 
         async_accept();
     }
     else
     {
-        impl_.journal().error << "Error binding to endpoint " <<
+        server_.journal().error << "Error binding to endpoint " <<
             to_string (acceptor_.local_endpoint()) <<
             ", '" << ec.message() << "'";
     }
@@ -57,7 +57,7 @@ Door::Door (ServerImpl& impl, Port const& port)
 
 Door::~Door ()
 {
-    impl_.remove (*this);
+    server_.remove (*this);
 }
 
 Port const&
@@ -80,7 +80,7 @@ Door::failed (error_code ec)
 void
 Door::async_accept ()
 {
-    auto const peer (std::make_shared <Peer> (impl_, port_));
+    auto const peer (std::make_shared <Peer> (server_, port_, server_.journal()));
     acceptor_.async_accept (peer->get_socket(), std::bind (
         &Door::handle_accept, Ptr(this),
             beast::asio::placeholders::error, peer));
@@ -95,7 +95,7 @@ Door::handle_accept (error_code ec,
 
     if (ec)
     {
-        impl_.journal().error << "Accept failed: " << ec.message();
+        server_.journal().error << "Accept failed: " << ec.message();
         return;
     }
 

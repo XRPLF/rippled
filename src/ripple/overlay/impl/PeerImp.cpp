@@ -40,8 +40,6 @@ peerTXData (Job&, std::weak_ptr <Peer> wPeer, uint256 const& hash,
 
 //------------------------------------------------------------------------------
 
-//------------------------------------------------------------------------------
-
 /*  Completion handlers for client role.
     Logic steps:
         1. Establish outgoing connection
@@ -114,11 +112,11 @@ PeerImp::on_connect (error_code ec)
                 beast::asio::placeholders::error)));
 }
 
-beast::http::basic_message
+beast::http::message
 PeerImp::make_request()
 {
     assert (! m_inbound);
-    beast::http::basic_message m;
+    beast::http::message m;
     m.method (beast::http::method_t::http_get);
     m.url ("/");
     m.version (1, 1);
@@ -152,8 +150,8 @@ PeerImp::on_connect_ssl (error_code ec)
     }
 
 #if RIPPLE_STRUCTURED_OVERLAY_CLIENT
-    beast::http::basic_message req (make_request());
-    beast::http::xwrite (write_buffer_, req);   
+    beast::http::message req (make_request());
+    beast::http::write (write_buffer_, req);   
     on_write_http_request (error_code(), 0);
 
 #else
@@ -204,8 +202,11 @@ PeerImp::on_read_http_response (error_code ec, std::size_t bytes_transferred)
     if (! ec)
     {
         read_buffer_.commit (bytes_transferred);
+        bool success;
         std::size_t bytes_consumed;
-        std::tie (ec, bytes_consumed) = http_parser_->write (read_buffer_.data());
+        std::tie (success, bytes_consumed) = http_parser_->write (read_buffer_.data());
+        if (! success)
+            ec = http_parser_->error();
 
         if (! ec)
         {
@@ -230,6 +231,12 @@ PeerImp::on_read_http_response (error_code ec, std::size_t bytes_transferred)
                 return;
             }
         }
+    }
+
+    if (ec == boost::asio::error::eof)
+    {
+        // remote closed their end
+        // VFALCO TODO Clean up the shutdown of the socket
     }
 
     if (ec)
@@ -344,8 +351,12 @@ PeerImp::on_read_http_request (error_code ec, std::size_t bytes_transferred)
     if (! ec)
     {
         read_buffer_.commit (bytes_transferred);
+        bool success;
         std::size_t bytes_consumed;
-        std::tie (ec, bytes_consumed) = http_parser_->write (read_buffer_.data());
+        std::tie (success, bytes_consumed) = http_parser_->write (read_buffer_.data());
+        if (! success)
+            ec = http_parser_->error();
+
         if (! ec)
         {
             read_buffer_.consume (bytes_consumed);
@@ -363,7 +374,7 @@ PeerImp::on_read_http_request (error_code ec, std::size_t bytes_transferred)
                         "Upgrade: Ripple/1.2\r\n"
                         "Connection: Upgrade\r\n"
                         "\r\n";
-                    beast::http::xwrite (write_buffer_, ss.str());
+                    beast::http::write (write_buffer_, ss.str());
                     on_write_http_response(error_code(), 0);
                 }
                 else
@@ -377,7 +388,7 @@ PeerImp::on_read_http_request (error_code ec, std::size_t bytes_transferred)
                         "400 Bad Request<br>"
                         "The server requires an Upgrade request."
                         "</body></html>";
-                    beast::http::xwrite (write_buffer_, ss.str());
+                    beast::http::write (write_buffer_, ss.str());
                     on_write_http_response(error_code(), 0);
                 }
                 return;
@@ -399,10 +410,10 @@ PeerImp::on_read_http_request (error_code ec, std::size_t bytes_transferred)
                 beast::asio::placeholders::bytes_transferred)));
 }
 
-beast::http::basic_message
-PeerImp::make_response (beast::http::basic_message const& req)
+beast::http::message
+PeerImp::make_response (beast::http::message const& req)
 {
-    beast::http::basic_message resp;
+    beast::http::message resp;
     // Unimplemented
     return resp;
 }

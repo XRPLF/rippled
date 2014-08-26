@@ -18,53 +18,66 @@
 //==============================================================================
 
 #include <ripple/http/impl/ServerImpl.h>
+#include <beast/chrono/chrono_io.h>
+#include <boost/chrono/chrono_io.hpp>
+#include <ctime>
+#include <iomanip>
+#include <iostream>
+#include <string>
+#include <stdio.h>
+#include <time.h>
 
 namespace ripple {
 namespace HTTP {
 
-ServerImpl::ServerImpl (Server& server, Handler& handler, beast::Journal journal)
-    : Thread ("HTTP::Server")
-    , m_server (server)
+ServerImpl::ServerImpl (Server& server,
+    Handler& handler, beast::Journal journal)
+    : m_server (server)
     , m_handler (handler)
     , journal_ (journal)
-    , m_strand (m_io_service)
-    , m_work (boost::in_place (std::ref (m_io_service)))
+    , m_strand (io_service_)
+    , m_work (boost::in_place (std::ref (io_service_)))
     , m_stopped (true)
 {
-    startThread ();
+    thread_ = std::thread (std::bind (
+        &ServerImpl::run, this));
 }
 
 ServerImpl::~ServerImpl ()
 {
-    stopThread ();
+    thread_.join();
 }
 
-Ports const& ServerImpl::getPorts () const
+Ports const&
+ServerImpl::getPorts () const
 {
-    SharedState::ConstUnlockedAccess state (m_state);
-    return state->ports;
+    std::lock_guard <std::mutex> lock (mutex_);
+    return state_.ports;
 }
 
-void ServerImpl::setPorts (Ports const& ports)
+void
+ServerImpl::setPorts (Ports const& ports)
 {
-    SharedState::Access state (m_state);
-    state->ports = ports;
+    std::lock_guard <std::mutex> lock (mutex_);
+    state_.ports = ports;
     update();
 }
 
-bool ServerImpl::stopping () const
+bool
+ServerImpl::stopping () const
 {
     return ! m_work;
 }
 
-void ServerImpl::stop (bool wait)
+void
+ServerImpl::stop (bool wait)
 {
     if (! stopping())
     {
         m_work = boost::none;
         update();
     }
-        
+
     if (wait)
         m_stopped.wait();
 }
@@ -74,55 +87,99 @@ void ServerImpl::stop (bool wait)
 // Server
 //
 
-Handler& ServerImpl::handler()
+Handler&
+ServerImpl::handler()
 {
     return m_handler;
 }
 
-boost::asio::io_service& ServerImpl::get_io_service()
+boost::asio::io_service&
+ServerImpl::get_io_service()
 {
-    return m_io_service;
+    return io_service_;
 }
 
 // Inserts the peer into our list of peers. We only remove it
 // from the list inside the destructor of the Peer object. This
 // way, the Peer can never outlive the server.
 //
-void ServerImpl::add (Peer& peer)
+void
+ServerImpl::add (Peer& peer)
 {
-    SharedState::Access state (m_state);
-    state->peers.push_back (peer);
+    std::lock_guard <std::mutex> lock (mutex_);
+    state_.peers.push_back (peer);
 }
 
-void ServerImpl::add (Door& door)
+void
+ServerImpl::add (Door& door)
 {
-    SharedState::Access state (m_state);
-    state->doors.push_back (door);
+    std::lock_guard <std::mutex> lock (mutex_);
+    state_.doors.push_back (door);
 }
 
 // Removes the peer from our list of peers. This is only called from
 // the destructor of Peer. Essentially, the item in the list functions
 // as a weak_ptr.
 //
-void ServerImpl::remove (Peer& peer)
+void
+ServerImpl::remove (Peer& peer)
 {
-    SharedState::Access state (m_state);
-    state->peers.erase (state->peers.iterator_to (peer));
+    std::lock_guard <std::mutex> lock (mutex_);
+    state_.peers.erase (state_.peers.iterator_to (peer));
 }
 
-void ServerImpl::remove (Door& door)
+void
+ServerImpl::remove (Door& door)
 {
-    SharedState::Access state (m_state);
-    state->doors.push_back (door);
+    std::lock_guard <std::mutex> lock (mutex_);
+    state_.doors.push_back (door);
 }
 
 //--------------------------------------------------------------------------
-//
-// Thread
-//
+
+void
+ServerImpl::report (Stat&& stat)
+{
+    std::lock_guard <std::mutex> lock (mutex_);
+    if (stats_.size() >= historySize)
+        stats_.pop_back();
+    stats_.emplace_front (std::move(stat));
+}
+
+void
+ServerImpl::onWrite (beast::PropertyStream::Map& map)
+{
+    std::lock_guard <std::mutex> lock (mutex_);
+
+    // VFALCO TODO Write the list of doors
+
+    {
+        beast::PropertyStream::Set set ("sessions", map);
+        for (auto const& stat : stats_)
+        {
+            beast::PropertyStream::Map item (set);
+
+            item ["when"] = stat.when;
+
+            {
+                std::stringstream ss;
+                ss << stat.elapsed;
+                item ["elapsed"] = ss.str();
+            }
+
+            item ["requests"] = stat.requests;
+            item ["bytes_in"] = stat.bytes_in;
+            item ["bytes_out"] = stat.bytes_out;
+            if (stat.ec)
+                item ["error"] = stat.ec.message();
+        }
+    }
+}
+
 //--------------------------------------------------------------------------
 
-int ServerImpl::compare (Port const& lhs, Port const& rhs)
+int
+ServerImpl::compare (Port const& lhs, Port const& rhs)
 {
     if (lhs < rhs)
         return -1;
@@ -131,18 +188,31 @@ int ServerImpl::compare (Port const& lhs, Port const& rhs)
     return 0;
 }
 
-// Updates our Door list based on settings.
-//
-void ServerImpl::handle_update ()
+void
+ServerImpl::update()
 {
+    io_service_.post (m_strand.wrap (std::bind (
+        &ServerImpl::on_update, this)));
+}
+
+// Updates our Door list based on settings.
+void
+ServerImpl::on_update ()
+{
+    /*
+    if (! m_strand.running_in_this_thread())
+        io_service_.dispatch (m_strand.wrap (std::bind (
+            &ServerImpl::update, this)));
+    */
+
     if (! stopping())
     {
         // Make a local copy to shorten the lock
         //
         Ports ports;
         {
-            SharedState::ConstAccess state (m_state);
-            ports = state->ports;
+            std::lock_guard <std::mutex> lock (mutex_);
+            ports = state_.ports;
         }
 
         std::sort (ports.begin(), ports.end());
@@ -206,19 +276,16 @@ void ServerImpl::handle_update ()
     }
 }
 
-// Causes handle_update to run on the io_service
-//
-void ServerImpl::update ()
+// Thread entry point to perform io_service work
+void
+ServerImpl::run()
 {
-    m_io_service.post (m_strand.wrap (std::bind (
-        &ServerImpl::handle_update, this)));
-}
+    static std::atomic <int> id;
 
-// The main i/o processing loop.
-//
-void ServerImpl::run ()
-{
-    m_io_service.run ();
+    beast::Thread::setCurrentThreadName (
+        std::string("HTTP::Server #") + std::to_string (++id));
+
+    io_service_.run();
 
     m_stopped.signal();
     m_handler.onStopped (m_server);

@@ -20,7 +20,7 @@
 #ifndef RIPPLE_OVERLAY_PEER_INFO_H_INCLUDED
 #define RIPPLE_OVERLAY_PEER_INFO_H_INCLUDED
 
-#include <beast/http/basic_message.h>
+#include <beast/http/message.h>
 
 namespace ripple {
 

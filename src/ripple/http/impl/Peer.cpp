@@ -18,81 +18,376 @@
 //==============================================================================
 
 #include <ripple/http/impl/Peer.h>
+#include <cassert>
 
 namespace ripple {
 namespace HTTP {
 
-Peer::Peer (ServerImpl& impl, Port const& port)
-    : impl_ (impl)
-    , strand_ (impl_.get_io_service())
-    , data_timer_ (impl_.get_io_service())
-    , request_timer_ (impl_.get_io_service())
-    , buffer_ (bufferSize)
-    , writesPending_ (0)
+Peer::Peer (ServerImpl& server, Port const& port, beast::Journal journal)
+    : journal_ (journal)
+    , server_ (server)
+    , strand_ (server_.get_io_service())
+    , timer_ (server_.get_io_service())
+    , parser_ (message_, true)
+    , pending_writes_ (0)
     , closed_ (false)
     , callClose_ (false)
-    , errorCode_ (0)
     , detached_ (0)
+    , request_count_ (0)
+    , bytes_in_ (0)
+    , bytes_out_ (0)
 {
+    static std::atomic <int> sid;
+    id_ = std::string("#") + std::to_string(sid++);
+
     tag = nullptr;
 
     int flags = MultiSocket::Flag::server_role;
+
     switch (port.security)
     {
-    default:
-        bassertfalse;
-
-    case Port::no_ssl:
+    case Port::Security::no_ssl:
         break;
 
-    case Port::allow_ssl:
+    case Port::Security::allow_ssl:
         flags |= MultiSocket::Flag::ssl;
         break;
 
-    case Port::require_ssl:
+    case Port::Security::require_ssl:
         flags |= MultiSocket::Flag::ssl_required;
         break;
     }
 
     socket_.reset (MultiSocket::New (
-        impl_.get_io_service(), port.context->get(), flags));
+        server_.get_io_service(), port.context->get(), flags));
 
-    impl_.add (*this);
+    server_.add (*this);
+
+    if (journal_.trace) journal_.trace <<
+        id_ << " created";
 }
+
 
 Peer::~Peer ()
 {
     if (callClose_)
-        impl_.handler().onClose (session(), errorCode_);
+    {
+        Stat stat;
+        stat.when = std::move (when_str_);
+        stat.elapsed = std::chrono::duration_cast <
+            std::chrono::seconds> (clock_type::now() - when_);
+        stat.requests = request_count_;
+        stat.bytes_in = bytes_in_;
+        stat.bytes_out = bytes_out_;
+        stat.ec = std::move (ec_);
 
-    impl_.remove (*this);
+        server_.report (std::move (stat));
+        if (journal_.trace) journal_.trace <<
+            id_ << " onClose (" << ec_ << ")";
+
+        server_.handler().onClose (session(), ec_);
+    }
+
+    server_.remove (*this);
+
+    if (journal_.trace) journal_.trace <<
+        id_ << " destroyed";
 }
 
-//--------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
-// Returns the Content-Body as a single buffer.
-// VFALCO NOTE This is inefficient...
-std::string
-Peer::content()
+// Called when the acceptor accepts our socket.
+void
+Peer::accept ()
 {
-    std::string s;
-    beast::DynamicBuffer const& body (
-        parser_.request()->body ());
-    s.resize (body.size ());
-    boost::asio::buffer_copy (
-        boost::asio::buffer (&s[0],
-            s.size()), body.data <boost::asio::const_buffer>());
-    return s;
+    if (! strand_.running_in_this_thread())
+        return server_.get_io_service().dispatch (strand_.wrap (
+            std::bind (&Peer::accept, shared_from_this())));
+
+    if (journal_.trace) journal_.trace <<
+        id_ << " accept";
+
+    callClose_ = true;
+
+    when_ = clock_type::now();
+    when_str_ = beast::Time::getCurrentTime().formatted (
+        "%Y-%b-%d %H:%M:%S").toStdString();
+
+    if (journal_.trace) journal_.trace <<
+        id_ << " onAccept";
+
+    server_.handler().onAccept (session());
+
+    // Handler might have closed
+    if (closed_)
+    {
+        // VFALCO TODO Is this the correct way to close the socket?
+        //             See what state the socket is in and verify.
+        cancel();
+        return;
+    }
+
+    if (socket_->needs_handshake ())
+    {
+        start_timer();
+
+        socket_->async_handshake (beast::asio::abstract_socket::server,
+            strand_.wrap (std::bind (&Peer::on_ssl_handshake, shared_from_this(),
+                beast::asio::placeholders::error)));
+    }
+    else
+    {
+        on_read_request (error_code{}, 0);
+    }
 }
+
+// Cancel all pending i/o and timers and send tcp shutdown.
+void
+Peer::cancel ()
+{
+    if (journal_.trace) journal_.trace <<
+        id_ << " cancel";
+
+    error_code ec;
+    timer_.cancel (ec);
+    socket_->cancel (ec);
+    socket_->shutdown (socket::shutdown_both, ec);
+}
+
+// Called by a completion handler when error is not eof or aborted.
+void
+Peer::failed (error_code const& ec)
+{
+    if (journal_.trace) journal_.trace <<
+        id_ << " failed, " << ec.message();
+
+    ec_ = ec;
+    assert (ec_);
+    cancel ();
+}
+
+// Start the timer.
+// If the timer expires, the session is considered
+// timed out and will be forcefully closed.
+void
+Peer::start_timer()
+{
+    if (journal_.trace) journal_.trace <<
+        id_ << " start_timer";
+
+    timer_.expires_from_now (
+        boost::posix_time::seconds (
+            timeoutSeconds));
+
+    timer_.async_wait (strand_.wrap (std::bind (
+        &Peer::on_timer, shared_from_this(),
+            beast::asio::placeholders::error)));
+}
+
+// Send a shared buffer
+void
+Peer::async_write (SharedBuffer const& buf)
+{
+    assert (buf.get().size() > 0);
+
+    ++pending_writes_;
+
+    if (journal_.trace) journal_.trace <<
+        id_ << " async_write, pending_writes = " << pending_writes_;
+
+    start_timer();
+
+    // Send the copy. We pass the SharedBuffer in the last parameter
+    // so that a reference is maintained as the handler gets copied.
+    // When the final completion function returns, the reference
+    // count will drop to zero and the buffer will be freed.
+    //
+    boost::asio::async_write (*socket_,
+        boost::asio::const_buffers_1 (&(*buf)[0], buf->size()),
+            strand_.wrap (std::bind (&Peer::on_write_response,
+                shared_from_this(), beast::asio::placeholders::error,
+                    beast::asio::placeholders::bytes_transferred, buf)));
+}
+
+//------------------------------------------------------------------------------
+
+// Called when session times out
+void
+Peer::on_timer (error_code ec)
+{
+    if (ec == boost::asio::error::operation_aborted)
+        return;
+
+    if (! ec)
+        ec = boost::system::errc::make_error_code (
+            boost::system::errc::timed_out);
+
+    failed (ec);
+}
+
+// Called when the handshake completes
+void
+Peer::on_ssl_handshake (error_code ec)
+{
+    if (journal_.trace) journal_.trace <<
+        id_ << " on_ssl_handshake, " << ec.message();
+
+    if (ec == boost::asio::error::operation_aborted)
+        return;
+
+    if (ec != 0)
+    {
+        failed (ec);
+        return;
+    }
+
+    on_read_request (error_code{}, 0);
+}
+
+// Called repeatedly with the http request data
+void
+Peer::on_read_request (error_code ec, std::size_t bytes_transferred)
+{
+    if (journal_.trace)
+    {
+        if (! ec_)
+            journal_.trace <<
+                id_ << " on_read_request, " <<
+                    bytes_transferred << " bytes";
+        else
+            journal_.trace <<
+                id_ << " on_read_request failed, " <<
+                    ec.message();
+    }
+
+    if (ec == boost::asio::error::operation_aborted)
+        return;
+
+    bool const eof = ec == boost::asio::error::eof;
+    if (eof)
+        ec = error_code{};
+
+    if (! ec)
+    {
+        bytes_in_ += bytes_transferred;
+
+        read_buf_.commit (bytes_transferred);
+
+        std::pair <bool, std::size_t> result;
+
+        if (! eof)
+        {
+            result = parser_.write (read_buf_.data());
+            if (result.first)
+                read_buf_.consume (result.second);
+            else
+                ec = parser_.error();
+        }
+        else
+        {
+            result.first = parser_.write_eof();
+            if (! result.first)
+                ec = parser_.error();
+        }
+
+        if (! ec)
+        {
+            if (parser_.complete())
+            {
+                // ???
+                //if (! socket_->needs_handshake())
+                //    socket_->shutdown (socket::shutdown_receive, ec);
+
+                if (journal_.trace) journal_.trace <<
+                    id_ << " onRequest";
+
+                ++request_count_;
+
+                server_.handler().onRequest (session());
+                return;
+            }
+        }
+    }
+
+    if (ec)
+    {
+        failed (ec);
+        return;
+    }
+
+    start_timer();
+
+    socket_->async_read_some (read_buf_.prepare (bufferSize), strand_.wrap (
+        std::bind (&Peer::on_read_request, shared_from_this(),
+            beast::asio::placeholders::error,
+                beast::asio::placeholders::bytes_transferred)));
+}
+
+// Called when async_write completes.
+void
+Peer::on_write_response (error_code ec, std::size_t bytes_transferred,
+    SharedBuffer const& buf)
+{
+    timer_.cancel (ec);
+
+    if (journal_.trace)
+    {
+        if (! ec_)
+            journal_.trace <<
+                id_ << " on_write_response, " <<
+                    bytes_transferred << " bytes";
+        else
+            journal_.trace <<
+                id_ << " on_write_response failed, " <<
+                    ec.message();
+    }
+
+    if (ec == boost::asio::error::operation_aborted)
+        return;
+
+    if (ec != 0)
+    {
+        failed (ec);
+        return;
+    }
+
+    bytes_out_ += bytes_transferred;
+
+    assert (pending_writes_ > 0);
+    if (--pending_writes_ > 0)
+        return;
+
+    if (closed_)
+    {
+        socket_->shutdown (socket::shutdown_send, ec);
+        return;
+
+    }
+}
+
+//------------------------------------------------------------------------------
 
 // Send a copy of the data.
 void
 Peer::write (void const* buffer, std::size_t bytes)
 {
-    // Make sure this happens on an io_service thread.
-    impl_.get_io_service().dispatch (strand_.wrap (
+    server_.get_io_service().dispatch (strand_.wrap (
         std::bind (&Peer::async_write, shared_from_this(),
             SharedBuffer (static_cast <char const*> (buffer), bytes))));
+}
+
+// Called to indicate the response has been written (but not sent)
+void
+Peer::complete()
+{
+    if (! strand_.running_in_this_thread())
+        return server_.get_io_service().dispatch (strand_.wrap (
+            std::bind (&Peer::complete, shared_from_this())));
+
+    message_ = beast::http::message{};
+    parser_ = beast::http::parser{message_, true};
+
+    on_read_request (error_code{}, 0);
 }
 
 // Make the Session asynchronous
@@ -101,8 +396,8 @@ Peer::detach ()
 {
     if (detached_.exchange (1) == 0)
     {
-        bassert (! work_);
-        bassert (detach_ref_ == nullptr);
+        assert (! work_);
+        assert (detach_ref_ == nullptr);
 
         // Maintain an additional reference while detached
         detach_ref_ = shared_from_this();
@@ -112,297 +407,31 @@ Peer::detach ()
         // after the Session is closed and handlers complete.
         //
         work_ = boost::in_place (std::ref (
-            impl_.get_io_service()));
+            server_.get_io_service()));
     }
 }
 
-// Called by the Handler to close the session.
+// Called from the Handler to close the session.
 void
-Peer::close ()
-{
-    // Make sure this happens on an io_service thread.
-    impl_.get_io_service().dispatch (strand_.wrap (
-        std::bind (&Peer::handle_close, shared_from_this())));
-}
-
-//--------------------------------------------------------------------------
-
-// Called when the handshake completes
-//
-void
-Peer::handle_handshake (error_code ec)
-{
-    if (ec == boost::asio::error::operation_aborted)
-        return;
-
-    if (ec != 0)
-    {
-        failed (ec);
-        return;
-    }
-
-    async_read_some();
-}
-
-// Called when the data timer expires
-//
-void
-Peer::handle_data_timer (error_code ec)
-{
-    if (ec == boost::asio::error::operation_aborted)
-        return;
-
-    if (closed_)
-        return;
-
-    if (ec != 0)
-    {
-        failed (ec);
-        return;
-    }
-
-    failed (boost::system::errc::make_error_code (
-        boost::system::errc::timed_out));
-}
-
-// Called when the request timer expires
-//
-void
-Peer::handle_request_timer (error_code ec)
-{
-    if (ec == boost::asio::error::operation_aborted)
-        return;
-
-    if (closed_)
-        return;
-
-    if (ec != 0)
-    {
-        failed (ec);
-        return;
-    }
-
-    failed (boost::system::errc::make_error_code (
-        boost::system::errc::timed_out));
-}
-
-// Called when async_write completes.
-void
-Peer::handle_write (error_code ec, std::size_t bytes_transferred,
-    SharedBuffer const& buf)
-{
-    if (ec == boost::asio::error::operation_aborted)
-        return;
-
-    if (ec != 0)
-    {
-        failed (ec);
-        return;
-    }
-
-    bassert (writesPending_ > 0);
-    if (--writesPending_ == 0 && closed_)
-        socket_->shutdown (socket::shutdown_send, ec);
-}
-
-// Called when async_read_some completes.
-void
-Peer::handle_read (error_code ec, std::size_t bytes_transferred)
-{
-    if (ec == boost::asio::error::operation_aborted)
-        return;
-
-    if (ec != 0 && ec != boost::asio::error::eof)
-    {
-        failed (ec);
-        return;
-    }
-
-    std::size_t const bytes_parsed (parser_.process (
-        buffer_.getData(), bytes_transferred));
-
-    if (parser_.error() ||
-        bytes_parsed != bytes_transferred)
-    {
-        failed (boost::system::errc::make_error_code (
-            boost::system::errc::bad_message));
-        return;
-    }
-
-    if (ec == boost::asio::error::eof)
-    {
-        parser_.process_eof();
-        ec = error_code();
-    }
-
-    if (parser_.error())
-    {
-        failed (boost::system::errc::make_error_code (
-            boost::system::errc::bad_message));
-        return;
-    }
-
-    if (! parser_.finished())
-    {
-        // Feed some headers to the callback
-        if (parser_.fields().size() > 0)
-        {
-            handle_headers();
-            if (closed_)
-                return;
-        }
-    }
-
-    if (parser_.finished ())
-    {
-        data_timer_.cancel();
-        // VFALCO NOTE: Should we cancel this one?
-        request_timer_.cancel();
-
-        if (! socket_->needs_handshake())
-            socket_->shutdown (socket::shutdown_receive, ec);
-
-        handle_request ();
-        return;
-    }
-
-    async_read_some();
-}
-
-// Called when we have some new headers.
-void
-Peer::handle_headers ()
-{
-    impl_.handler().onHeaders (session());
-}
-
-// Called when we have a complete http request.
-void
-Peer::handle_request ()
-{
-    // This is to guarantee onHeaders is called at least once.
-    handle_headers();
-
-    if (closed_)
-        return;
-
-    // Process the HTTPRequest
-    impl_.handler().onRequest (session());
-}
-
-// Called to close the session.
-void
-Peer::handle_close ()
+Peer::close (bool graceful)
 {
     closed_ = true;
 
+    if (! strand_.running_in_this_thread())
+        return server_.get_io_service().dispatch (strand_.wrap (
+            std::bind (&Peer::close, shared_from_this(), graceful)));
+
+    if (! graceful || pending_writes_ == 0)
+    {
+        // We should cancel pending i/o
+
+        if (pending_writes_ == 0)
+        {
+        }
+    }
+
     // Release our additional reference
     detach_ref_.reset();
-}
-
-//--------------------------------------------------------------------------
-//
-// Peer
-//
-
-// Called when the acceptor accepts our socket.
-void
-Peer::accept ()
-{
-    callClose_ = true;
-
-    impl_.handler().onAccept (session());
-
-    if (closed_)
-    {
-        cancel();
-        return;
-    }
-
-    request_timer_.expires_from_now (
-        boost::posix_time::seconds (
-            requestTimeoutSeconds));
-
-    request_timer_.async_wait (strand_.wrap (std::bind (
-        &Peer::handle_request_timer, shared_from_this(),
-            beast::asio::placeholders::error)));
-
-    if (socket_->needs_handshake ())
-    {
-        socket_->async_handshake (beast::asio::abstract_socket::server,
-            strand_.wrap (std::bind (&Peer::handle_handshake, shared_from_this(),
-                beast::asio::placeholders::error)));
-    }
-    else
-    {
-        async_read_some();
-    }
-}
-
-// Cancel all pending i/o and timers and send tcp shutdown.
-void
-Peer::cancel ()
-{
-    error_code ec;
-    data_timer_.cancel (ec);
-    request_timer_.cancel (ec);
-    socket_->cancel (ec);
-    socket_->shutdown (socket::shutdown_both, ec);
-}
-
-// Called by a completion handler when error is not eof or aborted.
-void
-Peer::failed (error_code const& ec)
-{
-    errorCode_ = ec.value();
-    bassert (errorCode_ != 0);
-    cancel ();
-}
-
-// Call the async_read_some initiating function.
-void
-Peer::async_read_some ()
-{
-    // re-arm the data timer
-    // (this cancels the previous wait, if any)
-    //
-    data_timer_.expires_from_now (
-        boost::posix_time::seconds (
-            dataTimeoutSeconds));
-
-    data_timer_.async_wait (strand_.wrap (std::bind (
-        &Peer::handle_data_timer, shared_from_this(),
-            beast::asio::placeholders::error)));
-
-    // issue the read
-    //
-    boost::asio::mutable_buffers_1 buf (
-        buffer_.getData (), buffer_.getSize ());
-
-    socket_->async_read_some (buf, strand_.wrap (
-        std::bind (&Peer::handle_read, shared_from_this(),
-            beast::asio::placeholders::error,
-                beast::asio::placeholders::bytes_transferred)));
-}
-
-// Send a shared buffer
-void
-Peer::async_write (SharedBuffer const& buf)
-{
-    bassert (buf.get().size() > 0);
-
-    ++writesPending_;
-
-    // Send the copy. We pass the SharedBuffer in the last parameter
-    // so that a reference is maintained as the handler gets copied.
-    // When the final completion function returns, the reference
-    // count will drop to zero and the buffer will be freed.
-    //
-    boost::asio::async_write (*socket_,
-        boost::asio::const_buffers_1 (&(*buf)[0], buf->size()),
-            strand_.wrap (std::bind (&Peer::handle_write,
-                shared_from_this(), beast::asio::placeholders::error,
-                    beast::asio::placeholders::bytes_transferred, buf)));
 }
 
 }

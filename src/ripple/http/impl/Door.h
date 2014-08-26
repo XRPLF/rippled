@@ -37,7 +37,7 @@ private:
     // VFALCO TODO Use shared_ptr
     typedef beast::SharedPtr <Door> Ptr;
 
-    ServerImpl& impl_;
+    ServerImpl& server_;
     acceptor acceptor_;
     Port port_;
 

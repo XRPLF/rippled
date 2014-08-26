@@ -64,5 +64,11 @@ Server::stop ()
     m_impl->stop(true);
 }
 
+void
+Server::onWrite (beast::PropertyStream::Map& map)
+{
+    m_impl->onWrite (map);
+}
+
 }
 }
