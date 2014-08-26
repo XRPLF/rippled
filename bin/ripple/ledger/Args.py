@@ -6,9 +6,9 @@ import os
 
 from ripple.ledger import LedgerNumber
 from ripple.util import File
-from ripple.util.Function import Function
-from ripple.ledger import Log
+from ripple.util import Log
 from ripple.util import Range
+from ripple.util.Function import Function
 
 NAME = 'LedgerTool'
 VERSION = '0.1'
@@ -124,6 +124,8 @@ _parser.add_argument(
 
 # Read the arguments from the command line.
 ARGS = _parser.parse_args()
+
+Log.VERBOSE = ARGS.verbose
 
 # Now remove any items that look like ledger numbers from the command line.
 _command = ARGS.command

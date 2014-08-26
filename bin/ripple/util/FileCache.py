@@ -1,33 +1,41 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import json
 import gzip
+import json
 import os
 
 _NONE = object()
 
-def file_cache(filename_prefix, creator, open=gzip.open, suffix='.gz'):
+class FileCache(object):
     """A two-level cache, which stores expensive results in memory and on disk.
     """
-    cached_data = {}
-    if not os.path.exists(filename_prefix):
-        os.makedirs(filename_prefix)
+    def __init__(self, cache_directory, creator, open=gzip.open, suffix='.gz'):
+        self.cache_directory = cache_directory
+        self.creator = creator
+        self.open = open
+        self.suffix = suffix
+        self.cached_data = {}
+        if not os.path.exists(self.cache_directory):
+            os.makedirs(self.cache_directory)
 
-    def get_file_data(name):
-        filename = os.path.join(filename_prefix, str(name)) + suffix
+    def get_file_data(self, name):
+        filename = os.path.join(self.cache_directory, str(name)) + self.suffix
         if os.path.exists(filename):
-            return json.load(open(filename))
+            return json.load(self.open(filename))
 
-        result = creator(name)
-        json.dump(result, open(filename, 'w'))
+        result = self.creator(name)
+        json.dump(result, self.open(filename, 'w'))
         return result
 
-    def get_data(name, use_file_cache=True):
-        result = cached_data.get(name, _NONE)
+    def get_data(self, name, use_file_cache=True):
+        result = self.cached_data.get(name, _NONE)
         if result is _NONE:
-            maker = get_file_data if use_file_cache else creator
+            maker = self.get_file_data if use_file_cache else self.creator
             result = maker(name)
-            cached_data[name] = result
+            self.cached_data[name] = result
         return result
 
-    return get_data
+    def cache_list(self):
+        for f in os.listdir(self.cache_directory):
+            if f.endswith(self.suffix):
+                yield f[:-len(self.suffix)]

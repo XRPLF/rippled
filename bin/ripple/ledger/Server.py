@@ -5,7 +5,7 @@ import os
 
 from ripple.ledger import RippledReader, ServerReader
 from ripple.ledger.Args import ARGS
-from ripple.util.FileCache import file_cache
+from ripple.util.FileCache import FileCache
 from ripple.util import Range
 
 class Server(object):
@@ -23,8 +23,9 @@ class Server(object):
             'closed': reader.name_to_ledger_index('closed'),
             'current': reader.name_to_ledger_index('current'),
             'validated': reader.name_to_ledger_index('validated'),
-            'first': self.complete[0],
-            'last': self.complete[-1],
+            'first': self.complete[0] if self.complete else None,
+            'last': self.complete[-1] if self.complete else None
+,
         }
         self.__dict__.update(names)
         self.ledgers = sorted(Range.join_ranges(*ARGS.ledgers, **names))
@@ -33,11 +34,15 @@ class Server(object):
             name = 'full' if is_full else 'summary'
             filepath = os.path.join(ARGS.cache, name)
             creator = lambda n: reader.get_ledger(n, is_full)
-            return file_cache(filepath, creator)
+            return FileCache(filepath, creator)
         self.caches = [make_cache(False), make_cache(True)]
 
     def info(self):
         return self.reader.info
 
     def get_ledger(self, number, is_full=False):
-        return self.caches[is_full](number, int(number) in self.complete)
+        use_file_cache = int(number) in self.complete
+        return self.caches[is_full].get_data(number, use_file_cache)
+
+    def cache_list(self, is_full=False):
+        return self.caches[is_full].cache_list()
