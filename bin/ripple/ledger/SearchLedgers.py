@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import sys
 
 from ripple.ledger.Args import ARGS
-from ripple.ledger import Log
+from ripple.util import Log
 from ripple.util import Range
 from ripple.util import Search
 

@@ -6,9 +6,32 @@ import jsonpath_rw
 
 from ripple.ledger.Args import ARGS
 from ripple.ledger.PrettyPrint import pretty_print
-from ripple.util.Decimal import Decimal
 from ripple.util import Dict
+from ripple.util import Log
 from ripple.util import Range
+from ripple.util.Decimal import Decimal
+
+TRANSACT_FIELDS = (
+    'accepted',
+    'close_time_human',
+    'closed',
+    'ledger_index',
+    'total_coins',
+    'transactions',
+)
+
+LEDGER_FIELDS = (
+    'accepted',
+    'accountState',
+    'close_time_human',
+    'closed',
+    'ledger_index',
+    'total_coins',
+    'transactions',
+)
+
+def _dict_filter(d, keys):
+    return dict((k, v) for (k, v) in d.items() if k in keys)
 
 def ledger_number(server, numbers):
     yield Range.to_string(numbers)
@@ -19,7 +42,8 @@ def display(f):
     def wrapper(server, numbers, *args, **kwds):
         for number in numbers:
             ledger = server.get_ledger(number, ARGS.full)
-            yield pretty_print(f(ledger, *args, **kwds))
+            if ledger:
+                yield pretty_print(f(ledger, *args, **kwds))
     return wrapper
 
 def json(f):
@@ -33,31 +57,27 @@ def json(f):
 
         for number in numbers:
             ledger = server.get_ledger(number, ARGS.full)
-            finds = path_expr.find(ledger)
-            yield pretty_print(f(finds, *args, **kwds))
+            if ledger:
+                finds = path_expr.find(ledger)
+                yield pretty_print(f(finds, *args, **kwds))
     return wrapper
 
+@display
+def ledger(ledger, full=False):
+    if ARGS.full:
+        if full:
+            return ledger
+        ledger = Dict.prune(ledger, 1, False)
+
+    return _dict_filter(ledger, LEDGER_FIELDS)
 
 @display
-def ledger(led):
-    return led
-
-@display
-def prune(ledger, level=2):
+def prune(ledger, level=1):
     return Dict.prune(ledger, level, False)
-
-TRANSACT_FIELDS = (
-    'accepted',
-    'close_time_human',
-    'closed',
-    'ledger_index',
-    'total_coins',
-    'transactions',
-)
 
 @display
 def transact(ledger):
-    return dict((f, ledger[f]) for f in TRANSACT_FIELDS)
+    return _dict_filter(ledger, TRANSACT_FIELDS)
 
 @json
 def extract(finds):

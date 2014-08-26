@@ -6,10 +6,17 @@ import subprocess
 
 from ripple.ledger.Args import ARGS
 from ripple.util import File
+from ripple.util import Log
 from ripple.util import Range
 
 _ERROR_CODE_REASON = {
     62: 'No rippled server is running.',
+}
+
+_ERROR_TEXT = {
+    'lgrNotFound': 'The ledger you requested was not found.',
+    'noCurrent': 'The server has no current ledger.',
+    'noNetwork': 'The server did not respond to your request.',
 }
 
 _DEFAULT_ERROR_ = "Couldn't connect to server."
@@ -36,7 +43,15 @@ class RippledReader(object):
         cmd = ['ledger', str(name)]
         if is_full:
             cmd.append('full')
-        return self._command(*cmd)['ledger']
+        response = self._command(*cmd)
+        result = response.get('ledger')
+        if result:
+            return result
+        error = response['error']
+        etext = _ERROR_TEXT.get(error)
+        if etext:
+            error = '%s (%s)' % (etext, error)
+        Log.fatal(_ERROR_TEXT.get(error, error))
 
     def _command(self, *cmds):
         cmd = self.cmd + list(cmds)

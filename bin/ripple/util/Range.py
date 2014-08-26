@@ -13,7 +13,7 @@ def from_string(desc, **aliases):
         return []
     result = set()
     for d in desc.split(','):
-        nums = [aliases.get(x, None) or int(x) for x in d.split('-')]
+        nums = [int(aliases.get(x) or x) for x in d.split('-')]
         if len(nums) == 1:
             result.add(nums[0])
         elif len(nums) == 2:
