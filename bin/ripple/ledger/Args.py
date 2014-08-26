@@ -28,6 +28,12 @@ _parser.add_argument(
 
 # Flag arguments.
 _parser.add_argument(
+    '--binary',
+    action='store_true',
+    help='If true, searches are binary - by default linear search is used.',
+    )
+
+_parser.add_argument(
     '--cache',
     default='~/.local/share/ripple/ledger',
     help='The cache directory.',
@@ -68,9 +74,9 @@ _parser.add_argument(
     )
 
 _parser.add_argument(
-    '--binary',
+    '--offline', '-o',
     action='store_true',
-    help='If true, searches are binary - by default linear search is used.',
+    help='If true, work entirely from cache, do not try to contact the server.',
     )
 
 _parser.add_argument(

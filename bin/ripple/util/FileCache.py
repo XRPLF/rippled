@@ -25,18 +25,18 @@ class FileCache(object):
         result = self.creator(name)
         return result
 
-    def get_data(self, name, save_in_cache=True):
+    def get_data(self, name, save_in_cache, can_create, default=None):
         name = str(name)
         result = self.cached_data.get(name, _NONE)
         if result is _NONE:
             filename = os.path.join(self.cache_directory, name) + self.suffix
             if os.path.exists(filename):
                 result = json.load(self.open(filename)) or _NONE
-            if result is _NONE:
+            if result is _NONE and can_create:
                 result = self.creator(name)
                 if save_in_cache:
                     json.dump(result, self.open(filename, 'w'))
-        return result
+        return default if result is _NONE else result
 
     def _files(self):
         return os.listdir(self.cache_directory)

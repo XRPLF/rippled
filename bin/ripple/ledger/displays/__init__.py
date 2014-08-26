@@ -42,7 +42,8 @@ def display(f):
     def wrapper(server, numbers, *args, **kwds):
         for number in numbers:
             ledger = server.get_ledger(number, ARGS.full)
-            yield pretty_print(f(ledger, *args, **kwds))
+            if ledger:
+                yield pretty_print(f(ledger, *args, **kwds))
     return wrapper
 
 def json(f):
@@ -56,8 +57,9 @@ def json(f):
 
         for number in numbers:
             ledger = server.get_ledger(number, ARGS.full)
-            finds = path_expr.find(ledger)
-            yield pretty_print(f(finds, *args, **kwds))
+            if ledger:
+                finds = path_expr.find(ledger)
+                yield pretty_print(f(finds, *args, **kwds))
     return wrapper
 
 @display

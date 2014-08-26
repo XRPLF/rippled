@@ -43,5 +43,10 @@ class Server(object):
         return self._caches[is_full]
 
     def get_ledger(self, number, is_full=False):
-        save_in_cache = int(number) in self.complete
-        return self.cache(is_full).get_data(number, save_in_cache)
+        num = int(number)
+        save_in_cache = num in self.complete
+        can_create = (not ARGS.offline and
+                      self.complete and
+                      self.complete[0] <= num - 1)
+        cache = self.cache(is_full)
+        return cache.get_data(number, save_in_cache, can_create)
