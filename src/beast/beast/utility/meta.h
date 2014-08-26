@@ -77,8 +77,9 @@ struct enable_if_lvalue
     the object will be freed as soon as the function returns. This could 
     potentially lead to a variety of "use after free" errors.
  
-    If the function is rewritten as a template using this type, a compiler
-    error will be generated if an rvalue is provided.
+    If the function is rewritten as a template using this type and the 
+    parameters references as rvalue references (eg. TX&&), a compiler
+    error will be generated if an rvalue is provided in the caller.
  
     @code
         // Example:
@@ -89,9 +90,9 @@ struct enable_if_lvalue
         {
         };
 
-        struct UNSAFE
+        struct Unsafe
         {
-            UNSAFE (X const& x, Y const& y)
+            Unsafe (X const& x, Y const& y)
                 : x_ (x)
                 , y_ (y)
             {
@@ -101,12 +102,12 @@ struct enable_if_lvalue
             Y const& y_;
         };
 
-        struct SAFE
+        struct Safe
         {
             template <class TX, class TY,
             class = beast::enable_if_lvalue_t<TX, X>,
             class = beast::enable_if_lvalue_t < TY, Y >>
-                SAFE (TX&& x, TY&& y)
+                Safe (TX&& x, TY&& y)
                 : x_ (x)
                 , y_ (y)
             {
@@ -123,10 +124,10 @@ struct enable_if_lvalue
             {
                 X x {};
                 Y const y {};
-                UNSAFE u1 (x, y);    // ok
-                UNSAFE u2 (X (), y);  // compiles, but u2.x_ becomes invalid at the end of the line.
-                SAFE s1 (x, y);      // ok
-                //  SAFE s2 (X (), y);  // compile-time error
+                Unsafe u1 (x, y);    // ok
+                Unsafe u2 (X (), y);  // compiles, but u2.x_ becomes invalid at the end of the line.
+                Safe s1 (x, y);      // ok
+                //  Safe s2 (X (), y);  // compile-time error
             }
         };
     @endcode
