@@ -6,8 +6,9 @@ import os
 
 from ripple.ledger import LedgerNumber
 from ripple.util import File
-from ripple.util.Function import Function
+from ripple.util import Log
 from ripple.util import Range
+from ripple.util.Function import Function
 
 NAME = 'LedgerTool'
 VERSION = '0.1'
@@ -27,6 +28,12 @@ _parser.add_argument(
 
 # Flag arguments.
 _parser.add_argument(
+    '--binary',
+    action='store_true',
+    help='If true, searches are binary - by default linear search is used.',
+    )
+
+_parser.add_argument(
     '--cache',
     default='~/.local/share/ripple/ledger',
     help='The cache directory.',
@@ -40,7 +47,6 @@ _parser.add_argument(
 
 _parser.add_argument(
     '--condition', '-c',
-    default='all_ledgers',
     help='The name of a condition function used to match ledgers.',
     )
 
@@ -51,7 +57,6 @@ _parser.add_argument(
 
 _parser.add_argument(
     '--display', '-d',
-    default='ledger_number',
     help='Specify a function to display ledgers.',
     )
 
@@ -69,9 +74,9 @@ _parser.add_argument(
     )
 
 _parser.add_argument(
-    '--binary',
+    '--offline', '-o',
     action='store_true',
-    help='If true, searches are binary - by default linear search is used.',
+    help='If true, work entirely from cache, do not try to contact the server.',
     )
 
 _parser.add_argument(
@@ -126,6 +131,8 @@ _parser.add_argument(
 # Read the arguments from the command line.
 ARGS = _parser.parse_args()
 
+Log.VERBOSE = ARGS.verbose
+
 # Now remove any items that look like ledger numbers from the command line.
 _command = ARGS.command
 _parts = (ARGS.command, ARGS.ledgers) = ([], [])
@@ -136,8 +143,17 @@ for c in _command:
 ARGS.command = ARGS.command or ['print' if ARGS.ledgers else 'info']
 
 ARGS.cache = File.normalize(ARGS.cache)
-ARGS.condition = Function(ARGS.condition, 'ripple.ledger.conditions')
-ARGS.display = Function(ARGS.display, 'ripple.ledger.displays')
+
+if not ARGS.ledgers:
+    if ARGS.condition:
+        Log.warn('--condition needs a range of ledgers')
+    if ARGS.display:
+        Log.warn('--display needs a range of ledgers')
+
+ARGS.condition = Function(
+    ARGS.condition or 'all_ledgers', 'ripple.ledger.conditions')
+ARGS.display = Function(
+    ARGS.display or 'ledger_number', 'ripple.ledger.displays')
 
 if ARGS.window < 0:
     raise ValueError('Window cannot be negative: --window=%d' %

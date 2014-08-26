@@ -1,36 +1,21 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-def count_all_subitems(x):
-    """Count the subitems of a Python object, including the object itself."""
-    if isinstance(x, list):
-        return 1 + sum(count_all_subitems(i) for i in x)
-    if isinstance(x, dict):
-        return 1 + sum(count_all_subitems(i) for i in x.values())
-    return 1
+import sys
 
-def prune(item, level, count_recursively=True):
-    def subitems(x):
-        if count_recursively:
-            i = count_all_subitems(x) - 1
-        else:
-            i = len(x)
-        return '1 subitem' if (i == 1) else '%d subitems' % i
+VERBOSE = False
 
-    assert level >= 0
-    if not item:
-        return item
+def out(*args, **kwds):
+    kwds.get('print', print)(*args, file=sys.stdout, **kwds)
 
-    if isinstance(item, list):
-        if level:
-            return [prune(i, level - 1, count_recursively) for i in item]
-        else:
-            return '[list with %s]' % subitems(item)
+def info(*args, **kwds):
+    if VERBOSE:
+        out(*args, **kwds)
 
-    if isinstance(item, dict):
-        if level:
-            return dict((k, prune(v, level - 1, count_recursively))
-                        for k, v in item.iteritems())
-        else:
-           return '{dict with %s}' % subitems(item)
+def warn(*args, **kwds):
+    out('WARNING:', *args, **kwds)
 
-    return item
+def error(*args, **kwds):
+    out('ERROR:', *args, **kwds)
+
+def fatal(*args, **kwds):
+    raise Exception('FATAL: ' + ' '.join(str(a) for a in args))

@@ -18,8 +18,20 @@ class test_Function(TestCase):
     def test_empty_function(self):
         self.assertEquals(Function()(), None)
 
+    def test_empty_args(self):
+        f = Function('ripple.util.test_Function.FN()')
+        self.assertEquals(f(), ((), {}))
+
     def test_function(self):
         f = Function('ripple.util.test_Function.FN(True, {1: 2}, None)')
         self.assertEquals(f(), ((True, {1: 2}, None), {}))
         self.assertEquals(f('hello', foo='bar'),
                           (('hello', True, {1: 2}, None), {'foo':'bar'}))
+        self.assertEquals(
+            f, Function('ripple.util.test_Function.FN(true, {1: 2}, null)'))
+
+    def test_quoting(self):
+        f = Function('ripple.util.test_Function.FN(testing)')
+        self.assertEquals(f(), (('testing',), {}))
+        f = Function('ripple.util.test_Function.FN(testing, true, false, null)')
+        self.assertEquals(f(), (('testing', True, False, None), {}))
