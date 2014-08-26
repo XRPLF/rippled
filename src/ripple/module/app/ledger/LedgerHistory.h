@@ -20,6 +20,8 @@
 #ifndef RIPPLE_LEDGERHISTORY_H
 #define RIPPLE_LEDGERHISTORY_H
 
+#include <beast/insight/Event.h>
+
 namespace ripple {
 
 // VFALCO TODO Rename to OldLedgers ?
@@ -28,7 +30,8 @@ namespace ripple {
 class LedgerHistory : beast::LeakChecked <LedgerHistory>
 {
 public:
-    LedgerHistory ();
+    explicit
+    LedgerHistory (beast::insight::Collector::ptr const& collector);
 
     /** Track a ledger
         @return `true` if the ledger was already tracked
@@ -90,6 +93,9 @@ public:
     bool fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash);
 
 private:
+    beast::insight::Collector::ptr collector_;
+    beast::insight::Counter mismatch_counter_;
+
     typedef TaggedCache <LedgerHash, Ledger> LedgersByHash;
 
     LedgersByHash m_ledgers_by_hash;

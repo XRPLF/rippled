@@ -20,6 +20,11 @@
 #ifndef RIPPLE_LEDGERMASTER_H_INCLUDED
 #define RIPPLE_LEDGERMASTER_H_INCLUDED
 
+// VFALCO TODO Make a header that forward declares Collector and
+//             its smart pointer container a-la boost.
+//
+#include <beast/insight/Collector.h>
+
 namespace ripple {
 
 // Tracks the current ledger and any ledgers in the process of closing
@@ -42,8 +47,6 @@ public:
     typedef RippleRecursiveMutex LockType;
     typedef std::unique_lock <LockType> ScopedLockType;
     typedef beast::GenericScopedUnlock <LockType> ScopedUnlockType;
-
-    static LedgerMaster* New (Stoppable& parent, beast::Journal journal);
 
     virtual ~LedgerMaster () = 0;
 
@@ -146,6 +149,11 @@ public:
     static bool shouldAcquire (std::uint32_t currentLedgerID,
                                std::uint32_t ledgerHistory, std::uint32_t targetLedger);
 };
+
+std::unique_ptr <LedgerMaster>
+make_LedgerMaster (beast::Stoppable& parent,
+    beast::insight::Collector::ptr const& collector,
+        beast::Journal journal);
 
 } // ripple
 

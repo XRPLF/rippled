@@ -18,8 +18,10 @@
 //==============================================================================
 
 #include <ripple/basics/containers/RangeSet.h>
+#include <ripple/module/app/ledger/LedgerMaster.h>
 #include <ripple/validators/Manager.h>
 #include <cassert>
+#include <beast/cxx14/memory.h> // <memory>
 
 namespace ripple {
 
@@ -77,9 +79,12 @@ public:
 
     //--------------------------------------------------------------------------
 
-    explicit LedgerMasterImp (Stoppable& parent, beast::Journal journal)
+    LedgerMasterImp (Stoppable& parent,
+        beast::insight::Collector::ptr const& collector,
+            beast::Journal journal)
         : LedgerMaster (parent)
         , m_journal (journal)
+        , mLedgerHistory (collector)
         , mHeldTransactions (uint256 ())
         , mLedgerCleaner (LedgerCleaner::New(*this, deprecatedLogs().journal("LedgerCleaner")))
         , mMinValidations (0)
@@ -1473,10 +1478,13 @@ bool LedgerMaster::shouldAcquire (
     return ret;
 }
 
-
-LedgerMaster* LedgerMaster::New (Stoppable& parent, beast::Journal journal)
+std::unique_ptr <LedgerMaster>
+make_LedgerMaster (beast::Stoppable& parent,
+    beast::insight::Collector::ptr const& collector,
+        beast::Journal journal)
 {
-    return new LedgerMasterImp (parent, journal);
+    return std::make_unique <LedgerMasterImp> (
+        parent, collector, journal);
 }
 
 } // ripple

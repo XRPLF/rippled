@@ -286,8 +286,8 @@ public:
         , m_pathRequests (new PathRequests (
             m_logs.journal("PathRequest"), m_collectorManager->collector ()))
 
-        , m_ledgerMaster (LedgerMaster::New (
-            *m_jobQueue, m_logs.journal("LedgerMaster")))
+        , m_ledgerMaster (make_LedgerMaster (*m_jobQueue,
+            m_collectorManager->collector (), m_logs.journal("LedgerMaster")))
 
         // VFALCO NOTE must come before NetworkOPs to prevent a crash due
         //             to dependencies in the destructor.

@@ -31,8 +31,11 @@ namespace ripple {
 
 // FIXME: Need to clean up ledgers by index at some point
 
-LedgerHistory::LedgerHistory ()
-    : m_ledgers_by_hash ("LedgerCache", CACHED_LEDGER_NUM, CACHED_LEDGER_AGE,
+LedgerHistory::LedgerHistory (
+    beast::insight::Collector::ptr const& collector)
+    : collector_ (collector)
+    , mismatch_counter_ (collector->make_counter ("ledger.history", "mismatch"))
+    , m_ledgers_by_hash ("LedgerCache", CACHED_LEDGER_NUM, CACHED_LEDGER_AGE,
         get_seconds_clock (), deprecatedLogs().journal("TaggedCache"))
     , m_consensus_validated ("ConsensusValidated", 64, 300,
         get_seconds_clock (), deprecatedLogs().journal("TaggedCache"))
@@ -158,14 +161,23 @@ void LedgerHistory::validatedLedger (Ledger::ref ledger)
 
     if (entry->second != hash)
     {
+        bool mismatch (false);
+
         if (entry->second.isNonZero() && (entry->second != hash))
         {
             WriteLog (lsERROR, LedgerMaster) << "MISMATCH: seq=" << index << " validated:" << entry->second << " then:" << hash;
+            mismatch = true;
         }
+
         if (entry->first.isNonZero() && (entry->first != hash))
         {
             WriteLog (lsERROR, LedgerMaster) << "MISMATCH: seq=" << index << " built:" << entry->first << " validated:" << hash;
+            mismatch = true;
         }
+
+        if (mismatch)
+            ++mismatch_counter_;
+
         entry->second = hash;
     }
 }
