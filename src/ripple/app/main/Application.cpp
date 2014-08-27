@@ -376,9 +376,6 @@ public:
 
         add (m_ledgerMaster->getPropertySource ());
         add (*m_rpcHTTPServer);
-
-        // VFALCO TODO remove these once the call is thread safe.
-        HashMaps::getInstance ().initializeNonce <size_t> ();
     }
 
     //--------------------------------------------------------------------------

@@ -73,7 +73,7 @@ public:
     size_t getMHash () const
     {
         if (mHash == 0)
-            setMHash ();
+            mHash = calculate_hash (mNodeID, mDepth);
         return mHash;
     }
 
@@ -129,7 +129,9 @@ private:
     uint256 const&
     Masks (int depth);
 
-    void setMHash () const;
+    static
+    std::size_t
+    calculate_hash (uint256 const& node, int depth);
 };
 
 //------------------------------------------------------------------------------

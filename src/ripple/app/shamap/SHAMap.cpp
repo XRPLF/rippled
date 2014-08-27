@@ -96,21 +96,6 @@ SHAMap::~SHAMap ()
         logTimedDestroy <SHAMap> (root, "root node");
 }
 
-void SHAMapNodeID::setMHash () const
-{
-    using namespace std;
-
-    std::size_t h = HashMaps::getInstance ().getNonce <std::size_t> ()
-                    + (mDepth * HashMaps::goldenRatio);
-
-    const unsigned int* ptr = reinterpret_cast <const unsigned int*> (mNodeID.begin ());
-
-    for (int i = (mDepth + 7) / 8; i != 0; --i)
-        h = (h * HashMaps::goldenRatio) ^ *ptr++;
-
-    mHash = h;
-}
-
 SHAMap::pointer SHAMap::snapShot (bool isMutable)
 {
     SHAMap::pointer ret = std::make_shared<SHAMap> (mType,

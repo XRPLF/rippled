@@ -46,7 +46,6 @@
 #include <ripple/types/strHex.h>
 #include <ripple/types/UInt160.h>
 #include <ripple/types/RandomNumbers.h>
-#include <ripple/types/HashMaps.h>
 
 #include <ripple/types/IdentifierType.h>
 #include <ripple/types/IdentifierStorage.h>

@@ -3293,8 +3293,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\CryptoIdentifier.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\HashMaps.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\IdentifierStorage.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\IdentifierType.h">

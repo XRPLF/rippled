@@ -55,6 +55,34 @@ SHAMapNodeID::Masks (int depth)
     return masks->entry[depth];
 }
 
+std::size_t
+SHAMapNodeID::calculate_hash (uint256 const& node, int depth)
+{
+    struct HashParams
+    {
+        HashParams ()
+            : golden_ratio (0x9e3779b9)
+        {
+            RandomNumbers::getInstance ().fill (&cookie_value);
+        }
+
+        // The cookie value protects us against algorithmic complexity attacks.
+        std::size_t cookie_value;
+        std::size_t golden_ratio;
+    };
+
+    static beast::static_initializer <HashParams> params;
+
+    std::size_t h = params->cookie_value + (depth * params->golden_ratio);
+
+    auto ptr = reinterpret_cast <const unsigned int*> (node.cbegin ());
+
+    for (int i = (depth + 7) / 8; i != 0; --i)
+        h = (h * params->golden_ratio) ^ *ptr++;
+
+    return h;
+}
+
 // canonicalize the hash to a node ID for this depth
 SHAMapNodeID::SHAMapNodeID (int depth, uint256 const& hash)
     : mNodeID (hash), mDepth (depth), mHash (0)
@@ -76,14 +104,11 @@ SHAMapNodeID::SHAMapNodeID (void const* ptr, int len) : mHash (0)
 
 std::string SHAMapNodeID::getString () const
 {
-    static boost::format NodeID ("NodeID(%s,%s)");
-
     if ((mDepth == 0) && (mNodeID.isZero ()))
         return "NodeID(root)";
 
-    return str (boost::format (NodeID)
-                % beast::lexicalCastThrow <std::string> (mDepth)
-                % to_string (mNodeID));
+    return "NodeID(" + std::to_string (mDepth) +
+        "," + to_string (mNodeID) + ")";
 }
 
 uint256 SHAMapNodeID::getNodeID (int depth, uint256 const& hash)
