@@ -572,7 +572,7 @@ for toolchain in all_toolchains:
         objects.append(addSource('src/ripple/unity/nodestore.cpp', env, variant_dirs, [
             'src/leveldb/include',
             #'src/hyperleveldb/include', # hyper
-            'src/rocksdb/include',
+            'src/rocksdb2/include',
             ]))
 
         objects.append(addSource('src/ripple/unity/leveldb.cpp', env, variant_dirs, [
@@ -589,8 +589,8 @@ for toolchain in all_toolchains:
             ]))
 
         objects.append(addSource('src/ripple/unity/rocksdb.cpp', env, variant_dirs, [
-            'src/rocksdb',
-            'src/rocksdb/include',
+            'src/rocksdb2',
+            'src/rocksdb2/include',
             'src/snappy/snappy',
             'src/snappy/config',
             ]))
