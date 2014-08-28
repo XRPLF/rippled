@@ -105,6 +105,17 @@ public:
         return tesSUCCESS;
     }
 
+    bool
+    hasAmendment (STVector256 const& amendments, uint256 const& amendment) const
+    {
+        for (auto const& id : amendments)
+        {
+            if (id == amendment)
+                return true;
+        }
+        return false;
+    }
+
 private:
     TER applyAmendment ()
     {
@@ -121,10 +132,10 @@ private:
 
         STVector256 amendments (amendmentObject->getFieldV256 (sfAmendments));
 
-        if (amendments.hasValue (amendment))
+        if (hasAmendment (amendments, amendment))
             return tefALREADY;
 
-        amendments.addValue (amendment);
+        amendments.push_back (amendment);
         amendmentObject->setFieldV256 (sfAmendments, amendments);
         mEngine->entryModify (amendmentObject);
 

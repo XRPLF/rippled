@@ -159,7 +159,7 @@ TER RippleCalc::rippleCalculate ()
         if (!addPathState (STPath(), resultCode))
             return resultCode;
     }
-    else if (spsPaths_.isEmpty ())
+    else if (spsPaths_.empty ())
     {
         WriteLog (lsDEBUG, RippleCalc)
             << "rippleCalc: Invalid transaction:"
@@ -210,7 +210,7 @@ TER RippleCalc::rippleCalculate ()
         bool multiQuality = false;
 
         // Find the best path.
-        for (auto pathState: pathStateList_)
+        for (auto pathState : pathStateList_)
         {
             if (pathState->quality())
                 // Only do active paths.

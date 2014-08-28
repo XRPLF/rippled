@@ -247,7 +247,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
                     WriteLog (lsDEBUG, PathRequest)
                         << "Trying with an extra path element";
 
-                    spsComputed.addPath(extraPath);
+                    spsComputed.push_back (extraPath);
                     lesSandbox.clear ();
                     rc = path::RippleCalc::rippleCalculate (
                         lesSandbox,

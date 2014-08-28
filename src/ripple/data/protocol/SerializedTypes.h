@@ -174,12 +174,6 @@ private:
 
 class STPathElement
 {
-private:
-    // VFALCO Remove these friend declarations
-    friend class STPathSet;
-    friend class STPath;
-    friend class Pathfinder;
-
 public:
     enum Type
     {
@@ -283,65 +277,46 @@ private:
 class STPath
 {
 public:
-    STPath ()
-    {
-        ;
-    }
-    STPath (const std::vector<STPathElement>& p) : mPath (p)
-    {
-        ;
-    }
+    STPath () = default;
 
-    int size () const
+    STPath (std::vector<STPathElement> const& p)
+        : mPath (p)
+    { }
+
+    std::vector<STPathElement>::size_type
+    size () const
     {
         return mPath.size ();
-    }
-    void reserve (size_t n)
-    {
-        mPath.reserve(n);
-    }
-    bool isEmpty () const
-    {
-        return mPath.empty ();
     }
     bool empty() const
     {
         return mPath.empty ();
     }
 
-    const STPathElement& getElement (int offset) const
-    {
-        return mPath[offset];
-    }
-    const STPathElement& getElement (int offset)
-    {
-        return mPath[offset];
-    }
-    void addElement (const STPathElement& e)
+    void
+    push_back (STPathElement const& e)
     {
         mPath.push_back (e);
     }
-    void clear ()
+
+    template <typename ...Args>
+    void
+    emplace_back (Args&&... args)
     {
-        mPath.clear ();
+        mPath.emplace_back (std::forward<Args> (args)...);
     }
+
     bool hasSeen (Account const& account, Currency const& currency,
                   Account const& issuer) const;
     Json::Value getJson (int) const;
 
-    std::vector<STPathElement>::iterator begin ()
+    std::vector<STPathElement>::const_iterator
+    begin () const
     {
         return mPath.begin ();
     }
-    std::vector<STPathElement>::iterator end ()
-    {
-        return mPath.end ();
-    }
-    std::vector<STPathElement>::const_iterator begin () const
-    {
-        return mPath.begin ();
-    }
-    std::vector<STPathElement>::const_iterator end () const
+    std::vector<STPathElement>::const_iterator
+    end () const
     {
         return mPath.end ();
     }
@@ -351,12 +326,19 @@ public:
         return mPath == t.mPath;
     }
 
-    void setCanonical (STPath const& spExpanded);
+    std::vector<STPathElement>::const_reference
+    back () const
+    {
+        return mPath.back ();
+    }
+
+    std::vector<STPathElement>::const_reference
+    front () const
+    {
+        return mPath.front ();
+    }
 
 private:
-    friend class STPathSet;
-    friend class Pathfinder;
-
     std::vector<STPathElement> mPath;
 };
 
@@ -366,32 +348,19 @@ private:
 class STPathSet : public SerializedType
 {
 public:
-    STPathSet ()
-    {
-        ;
-    }
+    STPathSet () = default;
 
-    explicit STPathSet (SField::ref n) : SerializedType (n)
-    {
-        ;
-    }
+    explicit STPathSet (SField::ref n)
+        : SerializedType (n)
+    { }
 
-    explicit STPathSet (const std::vector<STPath>& v) : value (v)
-    {
-        ;
-    }
-
-    STPathSet (SField::ref n, const std::vector<STPath>& v) : SerializedType (n), value (v)
-    {
-        ;
-    }
-
-    static std::unique_ptr<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
+    static
+    std::unique_ptr<SerializedType>
+    deserialize (SerializerIterator& sit, SField::ref name)
     {
         return std::unique_ptr<SerializedType> (construct (sit, name));
     }
 
-    //  std::string getText() const;
     void add (Serializer& s) const;
     virtual Json::Value getJson (int) const;
 
@@ -399,41 +368,17 @@ public:
     {
         return STI_PATHSET;
     }
-    int size () const
+    std::vector<STPath>::size_type
+    size () const
     {
         return value.size ();
     }
-    void reserve (size_t n)
-    {
-        value.reserve(n);
-    }
-    STPath const& getPath (int off) const
-    {
-        return value[off];
-    }
-    STPath& peekPath (int off)
-    {
-        return value[off];
-    }
-    bool isEmpty () const
+    bool empty () const
     {
         return value.empty ();
     }
-    void clear ()
+    void push_back (STPath const& e)
     {
-        value.clear ();
-    }
-    void addPath (STPath const& e)
-    {
-        value.push_back (e);
-    }
-    void addUniquePath (STPath const& e)
-    {
-        for (auto const& p: value)
-        {
-            if (p == e)
-                return;
-        }
         value.push_back (e);
     }
 
@@ -444,11 +389,11 @@ public:
         std::vector<STPath>::reverse_iterator it = value.rbegin ();
 
         STPath& newPath = *it;
-        newPath.mPath.push_back (tail);
+        newPath.push_back (tail);
 
         while (++it != value.rend ())
         {
-            if (it->mPath == newPath.mPath)
+            if (*it == newPath)
             {
                 value.pop_back ();
                 return false;
@@ -463,27 +408,17 @@ public:
         return value.empty ();
     }
 
-    STPath& operator[](size_t n)
-    {
-        return value[n];
-    }
-    STPath const& operator[](size_t n) const
+    std::vector<STPath>::const_reference
+    operator[] (std::vector<STPath>::size_type n) const
     {
         return value[n];
     }
 
-    std::vector<STPath>::iterator begin ()
-    {
-        return value.begin ();
-    }
-    std::vector<STPath>::iterator end ()
-    {
-        return value.end ();
-    }
     std::vector<STPath>::const_iterator begin () const
     {
         return value.begin ();
     }
+
     std::vector<STPath>::const_iterator end () const
     {
         return value.end ();
@@ -492,11 +427,18 @@ public:
 private:
     std::vector<STPath> value;
 
+    STPathSet (SField::ref n, const std::vector<STPath>& v)
+        : SerializedType (n), value (v)
+    { }
+
     STPathSet* duplicate () const
     {
         return new STPathSet (*this);
     }
-    static STPathSet* construct (SerializerIterator&, SField::ref);
+
+    static
+    STPathSet*
+    construct (SerializerIterator&, SField::ref);
 };
 
 //------------------------------------------------------------------------------
@@ -504,22 +446,13 @@ private:
 class STVector256 : public SerializedType
 {
 public:
-    STVector256 ()
-    {
-        ;
-    }
-    STVector256 (SField::ref n) : SerializedType (n)
-    {
-        ;
-    }
-    STVector256 (SField::ref n, const std::vector<uint256>& v) : SerializedType (n), mValue (v)
-    {
-        ;
-    }
-    STVector256 (const std::vector<uint256>& vector) : mValue (vector)
-    {
-        ;
-    }
+    STVector256 () = default;
+    STVector256 (SField::ref n)
+        : SerializedType (n)
+    { }
+    STVector256 (std::vector<uint256> const& vector)
+        : mValue (vector)
+    { }
 
     SerializedTypeID getSType () const
     {
@@ -527,16 +460,20 @@ public:
     }
     void add (Serializer& s) const;
 
-    static std::unique_ptr<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
+    static
+    std::unique_ptr<SerializedType>
+    deserialize (SerializerIterator& sit, SField::ref name)
     {
         return std::unique_ptr<SerializedType> (construct (sit, name));
     }
 
-    const std::vector<uint256>& peekValue () const
+    const std::vector<uint256>&
+    peekValue () const
     {
         return mValue;
     }
-    std::vector<uint256>& peekValue ()
+    std::vector<uint256>&
+    peekValue ()
     {
         return mValue;
     }
@@ -546,43 +483,31 @@ public:
         return mValue.empty ();
     }
 
-    std::vector<uint256> getValue () const
-    {
-        return mValue;
-    }
-    int size () const
+    std::vector<uint256>::size_type
+    size () const
     {
         return mValue.size ();
     }
-    bool isEmpty () const
+    bool empty () const
     {
         return mValue.empty ();
     }
 
-    uint256 const& at (int i) const
+    std::vector<uint256>::const_reference
+    operator[] (std::vector<uint256>::size_type n) const
     {
-        assert ((i >= 0) && (i < size ()));
-        return mValue.at (i);
-    }
-    uint256& at (int i)
-    {
-        assert ((i >= 0) && (i < size ()));
-        return mValue.at (i);
+        return mValue[n];
     }
 
     void setValue (const STVector256& v)
     {
-        mValue = v.mValue;
+         mValue = v.mValue;
     }
-    void setValue (const std::vector<uint256>& v)
-    {
-        mValue = v;
-    }
-    void addValue (uint256 const& v)
+    void push_back (uint256 const& v)
     {
         mValue.push_back (v);
     }
-    bool hasValue (uint256 const& v) const;
+
     void sort ()
     {
         std::sort (mValue.begin (), mValue.end ());
@@ -590,11 +515,13 @@ public:
 
     Json::Value getJson (int) const;
 
-    std::vector<uint256>::const_iterator begin() const
+    std::vector<uint256>::const_iterator
+    begin() const
     {
         return mValue.begin ();
     }
-    std::vector<uint256>::const_iterator end() const
+    std::vector<uint256>::const_iterator
+    end() const
     {
         return mValue.end ();
     }

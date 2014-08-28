@@ -464,7 +464,7 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
             {
                 m_journal.debug
                         << iIdentifier << " Trying with an extra path element";
-                spsPaths.addPath(extraPath);
+                spsPaths.push_back (extraPath);
                 rc = path::RippleCalc::rippleCalculate (lesSandbox,
                     saMaxAmount,
                     saDstAmount,

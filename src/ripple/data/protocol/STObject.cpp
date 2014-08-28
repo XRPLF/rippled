@@ -897,16 +897,6 @@ bool STObject::operator== (const STObject& obj) const
     return true;
 }
 
-Json::Value STVector256::getJson (int options) const
-{
-    Json::Value ret (Json::arrayValue);
-
-    for (auto const& vEntry : mValue)
-        ret.append (to_string (vEntry));
-
-    return ret;
-}
-
 //------------------------------------------------------------------------------
 
 class SerializedObject_test : public beast::unit_test::suite
