@@ -20,8 +20,7 @@
 #ifndef RIPPLE_PEERFINDER_LIVECACHE_H_INCLUDED
 #define RIPPLE_PEERFINDER_LIVECACHE_H_INCLUDED
 
-#include <ripple/peerfinder/Endpoint.h>
-#include <ripple/peerfinder/Types.h>
+#include <ripple/peerfinder/Manager.h>
 #include <beast/chrono/chrono_io.h>
 #include <beast/container/aged_map.h>
 #include <beast/utility/maybe_const.h>

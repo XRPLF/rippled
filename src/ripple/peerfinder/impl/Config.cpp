@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/peerfinder/Config.h>
+#include <ripple/peerfinder/Manager.h>
 
 namespace ripple {
 namespace PeerFinder {

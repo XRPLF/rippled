@@ -28,12 +28,9 @@
 #include <ripple/peerfinder/impl/Bootcache.cpp>
 #include <ripple/peerfinder/impl/Checker.cpp>
 #include <ripple/peerfinder/impl/Config.cpp>
-#include <ripple/peerfinder/impl/ConnectHandouts.cpp>
 #include <ripple/peerfinder/impl/Endpoint.cpp>
 #include <ripple/peerfinder/impl/Livecache.cpp>
 #include <ripple/peerfinder/impl/Manager.cpp>
-#include <ripple/peerfinder/impl/RedirectHandouts.cpp>
-#include <ripple/peerfinder/impl/SlotHandouts.cpp>
 #include <ripple/peerfinder/impl/SlotImp.cpp>
 #include <ripple/peerfinder/impl/SourceStrings.cpp>
 

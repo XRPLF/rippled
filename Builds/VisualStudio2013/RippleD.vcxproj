@@ -2832,12 +2832,6 @@
     <ClCompile Include="..\..\src\ripple\overlay\tests\peer_info.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\peerfinder\Callback.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\Config.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\Endpoint.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\peerfinder\impl\Bootcache.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2853,11 +2847,6 @@
     <ClCompile Include="..\..\src\ripple\peerfinder\impl\Config.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\peerfinder\impl\ConnectHandouts.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\ConnectHandouts.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Counts.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\peerfinder\impl\Endpoint.cpp">
@@ -2865,7 +2854,7 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Fixed.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\handout.h">
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\Handouts.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\iosformat.h">
     </ClInclude>
@@ -2879,17 +2868,7 @@
     <ClCompile Include="..\..\src\ripple\peerfinder\impl\Manager.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\peerfinder\impl\RedirectHandouts.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\RedirectHandouts.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Reporting.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\peerfinder\impl\SlotHandouts.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\SlotHandouts.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\peerfinder\impl\SlotImp.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -2931,8 +2910,6 @@
     <ClInclude Include="..\..\src\ripple\peerfinder\sim\WrappedSink.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\Slot.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\Types.h">
     </ClInclude>
     <CustomBuild Include="..\..\src\ripple\proto\ripple.proto">
       <FileType>Document</FileType>
