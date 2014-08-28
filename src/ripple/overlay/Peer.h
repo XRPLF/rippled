@@ -60,8 +60,11 @@ public:
     virtual ShortId getShortId () const = 0;
     virtual RippleAddress const& getNodePublic () const = 0;
     virtual Json::Value json () = 0;
+    // VFALCO TODO Replace both with
+    //             boost::optional<std::string> const& cluster_id();
+    //
     virtual bool isInCluster () const = 0;
-    virtual std::string getClusterNodeName() const = 0;
+    virtual std::string const& getClusterNodeName() const = 0;
 
     //
     // Ledger
