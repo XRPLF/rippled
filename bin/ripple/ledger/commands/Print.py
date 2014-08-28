@@ -12,5 +12,4 @@ HELP = """print
 Print the ledgers to stdout.  The default command."""
 
 def run_print(server):
-    for x in ARGS.display(server, SearchLedgers.search(server)):
-        print(x)
+    ARGS.display(print, server, SearchLedgers.search(server))
