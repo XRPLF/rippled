@@ -589,12 +589,12 @@ void NetworkOPsImp::onDeadlineTimer (beast::DeadlineTimer& timer)
 {
     if (timer == m_heartbeatTimer)
     {
-        getApp().getJobQueue ().addJob (jtNETOP_TIMER, "NetOPs.heartbeat",
+        m_job_queue.addJob (jtNETOP_TIMER, "NetOPs.heartbeat",
             std::bind (&NetworkOPsImp::processHeartbeatTimer, this));
     }
     else if (timer == m_clusterTimer)
     {
-        getApp().getJobQueue ().addJob (jtNETOP_CLUSTER, "NetOPs.cluster",
+        m_job_queue.addJob (jtNETOP_CLUSTER, "NetOPs.cluster",
             std::bind (&NetworkOPsImp::processClusterTimer, this));
     }
 }
@@ -854,7 +854,7 @@ void NetworkOPsImp::submitTransaction (
         }
     }
 
-    getApp().getJobQueue().addJob (jtTRANSACTION, "submitTxn",
+    m_job_queue.addJob (jtTRANSACTION, "submitTxn",
         std::bind (&NetworkOPsImp::processTransactionCbVoid, this,
                    std::make_shared<Transaction> (trans, false),
                    false, false, false, callback));
@@ -909,7 +909,7 @@ void NetworkOPsImp::runTransactionQueue ()
             return;
 
         {
-            auto ev = getApp().getJobQueue ().getLoadEventAP (
+            auto ev = m_job_queue.getLoadEventAP (
                 jtTXN_PROC, "runTxnQ");
 
             {
@@ -998,7 +998,7 @@ Transaction::pointer NetworkOPsImp::processTransactionCb (
     Transaction::pointer trans,
     bool bAdmin, bool bLocal, bool bFailHard, stCallback callback)
 {
-    auto ev = getApp().getJobQueue ().getLoadEventAP (jtTXN_PROC, "ProcessTXN");
+    auto ev = m_job_queue.getLoadEventAP (jtTXN_PROC, "ProcessTXN");
     int newFlags = getApp().getHashRouter ().getFlags (trans->getID ());
 
     if ((newFlags & SF_BAD) != 0)
@@ -2409,7 +2409,7 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
     //      info[jss::consensus] = mConsensus->getJson();
 
     if (admin)
-        info[jss::load] = getApp().getJobQueue ().getJson ();
+        info[jss::load] = m_job_queue.getJson ();
 
     if (!human)
     {
@@ -2627,7 +2627,7 @@ void NetworkOPsImp::reportFeeChange ()
             (getApp().getFeeTrack ().getLoadFactor () == mLastLoadFactor))
         return;
 
-    getApp().getJobQueue ().addJob (
+    m_job_queue.addJob (
         jtCLIENT, "reportFeeChange->pubServer",
         std::bind (&NetworkOPsImp::pubServer, this));
 }
@@ -3622,7 +3622,7 @@ void NetworkOPsImp::gotFetchPack (bool progress, std::uint32_t seq)
     // InboundLedgers::gotFetchPack being called more than once
     // which is expensive. A flag should track whether we've already dispatched
 
-    getApp().getJobQueue ().addJob (
+    m_job_queue.addJob (
         jtLEDGER_DATA, "gotFetchPack",
         std::bind (&InboundLedgers::gotFetchPack,
                    &getApp().getInboundLedgers (), std::placeholders::_1));
