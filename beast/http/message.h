@@ -62,15 +62,18 @@ public:
     template <class = void>
     message();
 
-    template <class = void>
+#if defined(_MSC_VER) && _MSC_VER <= 1800
     message (message&& other);
-
-    template <class = void>
     message& operator= (message&& other);
 
-    // Memberspace
-    beast::http::headers headers;
+#else
+    message (message&& other) = default;
+    message& operator= (message&& other) = default;
 
+#endif
+
+    // Memberspaces
+    beast::http::headers headers;
     beast::http::body body;
 
     bool
@@ -198,7 +201,8 @@ message::message()
 {
 }
 
-template <class>
+#if defined(_MSC_VER) && _MSC_VER <= 1800
+inline
 message::message (message&& other)
     : request_ (other.request_)
     , method_ (std::move(other.method_))
@@ -213,7 +217,7 @@ message::message (message&& other)
 {
 }
 
-template <class>
+inline
 message&
 message::operator= (message&& other)
 {
@@ -229,6 +233,7 @@ message::operator= (message&& other)
     body = std::move(other.body);
     return *this;    
 }
+#endif
 
 //------------------------------------------------------------------------------
 

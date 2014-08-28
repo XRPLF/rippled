@@ -89,19 +89,18 @@ public:
 
     headers() = default;
 
-    template <class = void>
+#if defined(_MSC_VER) && _MSC_VER <= 1800
     headers (headers&& other);
+    headers& operator= (headers&& other);
 
-    template <class = void>
+#else
+    headers (headers&& other) = default;
+    headers& operator= (headers&& other) = default;
+
+#endif
+
     headers (headers const& other);
-
-    template <class = void>
-    headers&
-    operator= (headers&& other);
-
-    template <class = void>
-    headers&
-    operator= (headers const& other);
+    headers& operator= (headers const& other);
 
     /** Returns an iterator to headers in order of appearance. */
     /** @{ */
@@ -184,7 +183,8 @@ less::operator() (
 
 //------------------------------------------------------------------------------
 
-template <class>
+#if defined(_MSC_VER) && _MSC_VER <= 1800
+inline
 headers::headers (headers&& other)
     : list_ (std::move(other.list_))
     , set_ (std::move(other.set_))
@@ -192,14 +192,7 @@ headers::headers (headers&& other)
 
 }
 
-template <class>
-headers::headers (headers const& other)
-{
-    for (auto const& e : other.list_)
-        append (e.field, e.value);
-}
-
-template <class>
+inline
 headers&
 headers::operator= (headers&& other)
 {
@@ -207,8 +200,16 @@ headers::operator= (headers&& other)
     set_ = std::move(other.set_);
     return *this;
 }
+#endif
 
-template <class>
+inline
+headers::headers (headers const& other)
+{
+    for (auto const& e : other.list_)
+        append (e.field, e.value);
+}
+
+inline
 headers&
 headers::operator= (headers const& other)
 {
