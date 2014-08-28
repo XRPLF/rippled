@@ -52,10 +52,10 @@ class Function(object):
                 default_path += '.'
             self.function = default_path + self.function
         p, m = self.function.rsplit('.', 1)
-        try:
-            mod = importlib.import_module(p)
-        except:
-            raise ValueError('Can\'t find Python module "%s"' % p)
+        mod = importlib.import_module(p)
+        # Errors in modules are swallowed here.
+        # except:
+        #    raise ValueError('Can\'t find Python module "%s"' % p)
 
         try:
             self.function = getattr(mod, m)
