@@ -539,7 +539,7 @@ OverlayImpl::getActivePeers ()
 
     ret.reserve (m_publicKeyMap.size ());
 
-    BOOST_FOREACH (PeerByPublicKey::value_type const& pair, m_publicKeyMap)
+    for (auto const& pair : m_publicKeyMap)
     {
         assert (pair.second);
         ret.push_back (pair.second);

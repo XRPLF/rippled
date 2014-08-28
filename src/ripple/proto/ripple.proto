@@ -32,6 +32,11 @@ enum MessageType
 // token, response = give solution to proof of work
 // token, result = report result of pow
 
+//------------------------------------------------------------------------------
+
+/*  Requests or responds to a proof of work.
+    Unimplemented and unused currently.
+*/
 message TMProofWork
 {
     required string token       = 1;
@@ -51,6 +56,8 @@ message TMProofWork
     }
     optional PowResult result   = 6;
 }
+
+//------------------------------------------------------------------------------
 
 // Sent on connect
 message TMHello
