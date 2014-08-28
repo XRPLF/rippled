@@ -7,6 +7,7 @@ import os
 from ripple.ledger import LedgerNumber
 from ripple.util import File
 from ripple.util import Log
+from ripple.util import PrettyPrint
 from ripple.util import Range
 from ripple.util.Function import Function
 
@@ -158,6 +159,8 @@ ARGS.display = Function(
 if ARGS.window < 0:
     raise ValueError('Window cannot be negative: --window=%d' %
                      ARGS.window)
+
+PrettyPrint.INDENT = (ARGS.indent * ' ')
 
 _loaders = bool(ARGS.server) + bool(ARGS.rippled)
 
