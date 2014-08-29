@@ -28,14 +28,14 @@ hash_set<RippleAddress> parseAccountIds (Json::Value const& jvArray)
 
     for (auto& jv: jvArray)
     {
-        RippleAddress   naString;
+        RippleAddress address;
 
-        if (!(jv.isString () && naString.setAccountID ((jv.asString ()))))
+        if (!(jv.isString () && address.setAccountID ((jv.asString ()))))
         {
             result.clear ();
             break;
         }
-        result.insert (naString);
+        result.insert (address);
     }
 
     return result;

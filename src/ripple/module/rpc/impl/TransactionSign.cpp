@@ -57,7 +57,6 @@ static void autofill_fee (
     if (tx.isMember ("Fee"))
         return;
 
-    // TODO(tom): Shouldn't this calculation be floating point?
     int mult = DEFAULT_AUTO_FILL_FEE_MULTIPLIER;
     if (request.isMember ("fee_mult_max"))
     {

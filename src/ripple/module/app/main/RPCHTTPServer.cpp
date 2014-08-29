@@ -206,7 +206,7 @@ public:
             }
         }
 
-        auto role = getConfig ().getAdminRole (jvRequest, remoteIPAddress);
+        auto const role = getConfig ().getAdminRole (jvRequest, remoteIPAddress);
 
         Resource::Consumer usage;
 

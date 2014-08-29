@@ -62,7 +62,7 @@ std::string RPCServerHandler::processRequest (
         }
     }
 
-    auto role = getConfig ().getAdminRole (jsonRequest, remoteIPAddress);
+    auto const role = getConfig ().getAdminRole (jsonRequest, remoteIPAddress);
 
     Resource::Consumer usage;
 
