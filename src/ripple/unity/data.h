@@ -39,10 +39,11 @@ typedef struct bignum_st BIGNUM;
 #include <ripple/module/data/protocol/TER.h>
 #include <ripple/module/data/protocol/SerializedTypes.h> // needs Serializer, TER
 #include <ripple/module/data/protocol/SerializedObjectTemplate.h>
- #include <ripple/module/data/protocol/KnownFormats.h>
- #include <ripple/module/data/protocol/LedgerFormats.h> // needs SOTemplate from SerializedObjectTemplate
- #include <ripple/module/data/protocol/TxFormats.h>
-#include <ripple/module/data/protocol/SerializedObject.h>
+#include <ripple/module/data/protocol/KnownFormats.h>
+#include <ripple/module/data/protocol/LedgerFormats.h> // needs SOTemplate from SerializedObjectTemplate
+#include <ripple/module/data/protocol/TxFormats.h>
+#include <ripple/module/data/protocol/STObject.h>
+#include <ripple/module/data/protocol/STArray.h>
 #include <ripple/module/data/protocol/TxFlags.h>
 
 #include <ripple/module/data/utility/UptimeTimerAdapter.h>

@@ -23,6 +23,17 @@
 
 namespace ripple {
 
+template <typename T, typename U>
+static T range_check_cast (U value, T minimum, T maximum)
+{
+    if ((value < minimum) || (value > maximum))
+        throw std::runtime_error ("Value out of range");
+
+    return static_cast<T> (value);
+}
+
+//------------------------------------------------------------------------------
+
 STParsedJSON::STParsedJSON (std::string const& name, Json::Value const& json)
 {
     parse (name, json, sfGeneric, 0, object);
