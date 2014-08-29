@@ -17,68 +17,73 @@
 */
 //==============================================================================
 
+#include <beast/cxx14/memory.h> // <memory>
+
 namespace ripple {
 
-std::unique_ptr<SerializedType> STObject::makeDefaultObject (SerializedTypeID id, SField::ref name)
+std::unique_ptr<SerializedType>
+STObject::makeDefaultObject (SerializedTypeID id, SField::ref name)
 {
     assert ((id == STI_NOTPRESENT) || (id == name.fieldType));
 
     switch (id)
     {
     case STI_NOTPRESENT:
-        return std::unique_ptr<SerializedType> (new SerializedType (name));
+        return std::make_unique <SerializedType> (name);
 
     case STI_UINT8:
-        return std::unique_ptr<SerializedType> (new STUInt8 (name));
+        return std::make_unique <STUInt8> (name);
 
     case STI_UINT16:
-        return std::unique_ptr<SerializedType> (new STUInt16 (name));
+        return std::make_unique <STUInt16> (name);
 
     case STI_UINT32:
-        return std::unique_ptr<SerializedType> (new STUInt32 (name));
+        return std::make_unique <STUInt32> (name);
 
     case STI_UINT64:
-        return std::unique_ptr<SerializedType> (new STUInt64 (name));
+        return std::make_unique <STUInt64> (name);
 
     case STI_AMOUNT:
-        return std::unique_ptr<SerializedType> (new STAmount (name));
+        return std::make_unique <STAmount> (name);
 
     case STI_HASH128:
-        return std::unique_ptr<SerializedType> (new STHash128 (name));
+        return std::make_unique <STHash128> (name);
 
     case STI_HASH160:
-        return std::unique_ptr<SerializedType> (new STHash160 (name));
+        return std::make_unique <STHash160> (name);
 
     case STI_HASH256:
-        return std::unique_ptr<SerializedType> (new STHash256 (name));
+        return std::make_unique <STHash256> (name);
 
     case STI_VECTOR256:
-        return std::unique_ptr<SerializedType> (new STVector256 (name));
+        return std::make_unique <STVector256> (name);
 
     case STI_VL:
-        return std::unique_ptr<SerializedType> (new STVariableLength (name));
+        return std::make_unique <STVariableLength> (name);
 
     case STI_ACCOUNT:
-        return std::unique_ptr<SerializedType> (new STAccount (name));
+        return std::make_unique <STAccount> (name);
 
     case STI_PATHSET:
-        return std::unique_ptr<SerializedType> (new STPathSet (name));
+        return std::make_unique <STPathSet> (name);
 
     case STI_OBJECT:
-        return std::unique_ptr<SerializedType> (new STObject (name));
+        return std::make_unique <STObject> (name);
 
     case STI_ARRAY:
-        return std::unique_ptr<SerializedType> (new STArray (name));
+        return std::make_unique <STArray> (name);
 
     default:
-        WriteLog (lsFATAL, STObject) << "Object type: " << beast::lexicalCast <std::string> (id);
+        WriteLog (lsFATAL, STObject) <<
+            "Object type: " << beast::lexicalCast <std::string> (id);
         assert (false);
         throw std::runtime_error ("Unknown object type");
     }
 }
 
 // VFALCO TODO Remove the 'depth' parameter
-std::unique_ptr<SerializedType> STObject::makeDeserializedObject (SerializedTypeID id, SField::ref name,
+std::unique_ptr<SerializedType>
+STObject::makeDeserializedObject (SerializedTypeID id, SField::ref name,
         SerializerIterator& sit, int depth)
 {
     switch (id)
@@ -163,15 +168,17 @@ bool STObject::setType (const SOTemplate& type)
         bool match = false;
 
         for (std::size_t i = 0; i < count; ++i)
-            if ((array[i] != nullptr) && (array[i]->getFName () == elem->e_field))
+            if ((array[i] != nullptr) &&
+                (array[i]->getFName () == elem->e_field))
             {
                 // matching entry in the object, move to new vector
                 match = true;
 
                 if ((elem->flags == SOE_DEFAULT) && array[i]->isDefault ())
                 {
-                    WriteLog (lsWARNING, STObject) << "setType( " << getFName ().getName () << ") invalid default "
-                                                   << elem->e_field.fieldName;
+                    WriteLog (lsWARNING, STObject) <<
+                        "setType( " << getFName ().getName () <<
+                        ") invalid default " << elem->e_field.fieldName;
                     valid = false;
                 }
 
@@ -185,8 +192,9 @@ bool STObject::setType (const SOTemplate& type)
             // no match found in the object for an entry in the template
             if (elem->flags == SOE_REQUIRED)
             {
-                WriteLog (lsWARNING, STObject) << "setType( " << getFName ().getName () << ") invalid missing "
-                                               << elem->e_field.fieldName;
+                WriteLog (lsWARNING, STObject) <<
+                    "setType( " << getFName ().getName () <<
+                    ") invalid missing " << elem->e_field.fieldName;
                 valid = false;
             }
 
@@ -200,8 +208,9 @@ bool STObject::setType (const SOTemplate& type)
         // Anything left over in the object must be discardable
         if ((array[i] != nullptr) && !array[i]->getFName ().isDiscardable ())
         {
-            WriteLog (lsWARNING, STObject) << "setType( " << getFName ().getName () << ") invalid leftover "
-                                           << array[i]->getFName ().getName ();
+            WriteLog (lsWARNING, STObject) <<
+                "setType( " << getFName ().getName () <<
+                ") invalid leftover " << array[i]->getFName ().getName ();
             valid = false;
         }
     }
@@ -239,29 +248,6 @@ bool STObject::isFieldAllowed (SField::ref field)
     return mType->getIndex (field) != -1;
 }
 
-// OLD
-/*
-bool STObject::set(SerializerIterator& sit, int depth)
-{ // return true = terminated with end-of-object
-    mData.clear();
-    while (!sit.empty())
-    {
-        int type, field;
-        sit.getFieldID(type, field);
-        if ((type == STI_OBJECT) && (field == 1)) // end of object indicator
-            return true;
-        SField::ref fn = SField::getField(type, field);
-        if (fn.isInvalid())
-        {
-            WriteLog (lsWARNING, STObject) << "Unknown field: field_type=" << type << ", field_name=" << field;
-            throw std::runtime_error("Unknown field");
-        }
-        giveObject(makeDeserializedObject(fn.fieldType, fn, sit, depth + 1));
-    }
-    return false;
-}
-*/
-
 // return true = terminated with end-of-object
 bool STObject::set (SerializerIterator& sit, int depth)
 {
@@ -286,7 +272,8 @@ bool STObject::set (SerializerIterator& sit, int depth)
 
         if ((type == STI_ARRAY) && (field == 1))
         {
-            WriteLog (lsWARNING, STObject) << "Encountered object with end of array marker";
+            WriteLog (lsWARNING, STObject) <<
+                "Encountered object with end of array marker";
             throw std::runtime_error ("Illegal terminator in object");
         }
 
@@ -298,13 +285,16 @@ bool STObject::set (SerializerIterator& sit, int depth)
 
             if (fn.isInvalid ())
             {
-                WriteLog (lsWARNING, STObject) << "Unknown field: field_type=" << type << ", field_name=" << field;
+                WriteLog (lsWARNING, STObject) <<
+                    "Unknown field: field_type=" << type <<
+                    ", field_name=" << field;
                 throw std::runtime_error ("Unknown field");
             }
 
             // Unflatten the field
             //
-            giveObject (makeDeserializedObject (fn.fieldType, fn, sit, depth + 1));
+            giveObject (
+                makeDeserializedObject (fn.fieldType, fn, sit, depth + 1));
         }
     }
 
@@ -312,12 +302,12 @@ bool STObject::set (SerializerIterator& sit, int depth)
 }
 
 
-std::unique_ptr<SerializedType> STObject::deserialize (SerializerIterator& sit, SField::ref name)
+std::unique_ptr<SerializedType>
+STObject::deserialize (SerializerIterator& sit, SField::ref name)
 {
-    STObject* o;
-    std::unique_ptr<SerializedType> object (o = new STObject (name));
-    o->set (sit, 1);
-    return object;
+    std::unique_ptr <STObject> object (std::make_unique <STObject> (name));
+    object->set (sit, 1);
+    return std::move (object);
 }
 
 bool STObject::hasMatchingEntry (const SerializedType& t)
@@ -342,14 +332,17 @@ std::string STObject::getFullText () const
     }
     else ret = "{";
 
-    BOOST_FOREACH (const SerializedType & it, mData)
-
-    if (it.getSType () != STI_NOTPRESENT)
+    for (SerializedType const& elem : mData)
     {
-        if (!first) ret += ", ";
-        else first = false;
+        if (elem.getSType () != STI_NOTPRESENT)
+        {
+            if (!first)
+                ret += ", ";
+            else
+                first = false;
 
-        ret += it.getFullText ();
+            ret += elem.getFullText ();
+        }
     }
 
     ret += "}";
@@ -360,19 +353,21 @@ void STObject::add (Serializer& s, bool withSigningFields) const
 {
     std::map<int, const SerializedType*> fields;
 
-    BOOST_FOREACH (const SerializedType & it, mData)
+    for (SerializedType const& elem : mData)
     {
         // pick out the fields and sort them
-        if ((it.getSType () != STI_NOTPRESENT) && it.getFName ().shouldInclude (withSigningFields))
-            fields.insert (std::make_pair (it.getFName ().fieldCode, &it));
+        if ((elem.getSType () != STI_NOTPRESENT) &&
+            elem.getFName ().shouldInclude (withSigningFields))
+        {
+            fields.insert (std::make_pair (elem.getFName ().fieldCode, &elem));
+        }
     }
 
-
     typedef std::map<int, const SerializedType*>::value_type field_iterator;
-    BOOST_FOREACH (field_iterator & it, fields)
+    for (auto const& mapEntry : fields)
     {
         // insert them in sorted order
-        const SerializedType* field = it.second;
+        const SerializedType* field = mapEntry.second;
 
         // When we serialize an object inside another object,
         // the type associated by rule with this field name
@@ -394,7 +389,7 @@ std::string STObject::getText () const
 {
     std::string ret = "{";
     bool first = false;
-    BOOST_FOREACH (const SerializedType & it, mData)
+    for (SerializedType const& elem : mData)
     {
         if (!first)
         {
@@ -402,7 +397,7 @@ std::string STObject::getText () const
             first = false;
         }
 
-        ret += it.getText ();
+        ret += elem.getText ();
     }
     ret += "}";
     return ret;
@@ -414,12 +409,14 @@ bool STObject::isEquivalent (const SerializedType& t) const
 
     if (!v)
     {
-        WriteLog (lsDEBUG, STObject) << "notEquiv " << getFullText() << " not object";
+        WriteLog (lsDEBUG, STObject) <<
+            "notEquiv " << getFullText() << " not object";
         return false;
     }
 
-    boost::ptr_vector<SerializedType>::const_iterator it1 = mData.begin (), end1 = mData.end ();
-    boost::ptr_vector<SerializedType>::const_iterator it2 = v->mData.begin (), end2 = v->mData.end ();
+    typedef boost::ptr_vector<SerializedType>::const_iterator const_iter;
+    const_iter it1 = mData.begin (), end1 = mData.end ();
+    const_iter it2 = v->mData.begin (), end2 = v->mData.end ();
 
     while ((it1 != end1) && (it2 != end2))
     {
@@ -427,13 +424,13 @@ bool STObject::isEquivalent (const SerializedType& t) const
         {
             if (it1->getSType () != it2->getSType ())
             {
-                WriteLog (lsDEBUG, STObject) << "notEquiv type " << it1->getFullText() << " != "
-                    <<  it2->getFullText();
+                WriteLog (lsDEBUG, STObject) << "notEquiv type " <<
+                    it1->getFullText() << " != " <<  it2->getFullText();
             }
             else
             {
-                WriteLog (lsDEBUG, STObject) << "notEquiv " << it1->getFullText() << " != "
-                    <<  it2->getFullText();
+                WriteLog (lsDEBUG, STObject) << "notEquiv " <<
+                     it1->getFullText() << " != " <<  it2->getFullText();
             }
             return false;
         }
@@ -467,7 +464,7 @@ int STObject::getFieldIndex (SField::ref field) const
         return mType->getIndex (field);
 
     int i = 0;
-    BOOST_FOREACH (const SerializedType & elem, mData)
+    for (SerializedType const& elem : mData)
     {
         if (elem.getFName () == field)
             return i;
@@ -655,122 +652,37 @@ std::string STObject::getFieldString (SField::ref field) const
 
 unsigned char STObject::getFieldU8 (SField::ref field) const
 {
-    const SerializedType* rf = peekAtPField (field);
-
-    if (!rf) throw std::runtime_error ("Field not found");
-
-    SerializedTypeID id = rf->getSType ();
-
-    if (id == STI_NOTPRESENT) return 0; // optional field not present
-
-    const STUInt8* cf = dynamic_cast<const STUInt8*> (rf);
-
-    if (!cf) throw std::runtime_error ("Wrong field type");
-
-    return cf->getValue ();
+    return getFieldByValue <STUInt8> (field);
 }
 
 std::uint16_t STObject::getFieldU16 (SField::ref field) const
 {
-    const SerializedType* rf = peekAtPField (field);
-
-    if (!rf) throw std::runtime_error ("Field not found");
-
-    SerializedTypeID id = rf->getSType ();
-
-    if (id == STI_NOTPRESENT) return 0; // optional field not present
-
-    const STUInt16* cf = dynamic_cast<const STUInt16*> (rf);
-
-    if (!cf) throw std::runtime_error ("Wrong field type");
-
-    return cf->getValue ();
+    return getFieldByValue <STUInt16> (field);
 }
 
 std::uint32_t STObject::getFieldU32 (SField::ref field) const
 {
-    const SerializedType* rf = peekAtPField (field);
-
-    if (!rf) throw std::runtime_error ("Field not found");
-
-    SerializedTypeID id = rf->getSType ();
-
-    if (id == STI_NOTPRESENT) return 0; // optional field not present
-
-    const STUInt32* cf = dynamic_cast<const STUInt32*> (rf);
-
-    if (!cf) throw std::runtime_error ("Wrong field type");
-
-    return cf->getValue ();
+    return getFieldByValue <STUInt32> (field);
 }
 
 std::uint64_t STObject::getFieldU64 (SField::ref field) const
 {
-    const SerializedType* rf = peekAtPField (field);
-
-    if (!rf) throw std::runtime_error ("Field not found");
-
-    SerializedTypeID id = rf->getSType ();
-
-    if (id == STI_NOTPRESENT) return 0; // optional field not present
-
-    const STUInt64* cf = dynamic_cast<const STUInt64*> (rf);
-
-    if (!cf) throw std::runtime_error ("Wrong field type");
-
-    return cf->getValue ();
+    return getFieldByValue <STUInt64> (field);
 }
 
 uint128 STObject::getFieldH128 (SField::ref field) const
 {
-    const SerializedType* rf = peekAtPField (field);
-
-    if (!rf) throw std::runtime_error ("Field not found");
-
-    SerializedTypeID id = rf->getSType ();
-
-    if (id == STI_NOTPRESENT) return uint128 (); // optional field not present
-
-    const STHash128* cf = dynamic_cast<const STHash128*> (rf);
-
-    if (!cf) throw std::runtime_error ("Wrong field type");
-
-    return cf->getValue ();
+    return getFieldByValue <STHash128> (field);
 }
 
 uint160 STObject::getFieldH160 (SField::ref field) const
 {
-    const SerializedType* rf = peekAtPField (field);
-
-    if (!rf) throw std::runtime_error ("Field not found");
-
-    SerializedTypeID id = rf->getSType ();
-
-    if (id == STI_NOTPRESENT) return uint160 (); // optional field not present
-
-    const STHash160* cf = dynamic_cast<const STHash160*> (rf);
-
-    if (!cf) throw std::runtime_error ("Wrong field type");
-
-    return cf->getValue ();
+    return getFieldByValue <STHash160> (field);
 }
 
 uint256 STObject::getFieldH256 (SField::ref field) const
 {
-    const SerializedType* rf = peekAtPField (field);
-
-    if (!rf)
-        throw std::runtime_error ("Field not found");
-
-    SerializedTypeID id = rf->getSType ();
-
-    if (id == STI_NOTPRESENT) return uint256 (); // optional field not present
-
-    const STHash256* cf = dynamic_cast<const STHash256*> (rf);
-
-    if (!cf) throw std::runtime_error ("Wrong field type");
-
-    return cf->getValue ();
+    return getFieldByValue <STHash256> (field);
 }
 
 RippleAddress STObject::getFieldAccount (SField::ref field) const
@@ -782,7 +694,7 @@ RippleAddress STObject::getFieldAccount (SField::ref field) const
 
     SerializedTypeID id = rf->getSType ();
 
-    if (id == STI_NOTPRESENT) return RippleAddress (); // optional field not present
+    if (id == STI_NOTPRESENT) return RippleAddress ();
 
     const STAccount* cf = dynamic_cast<const STAccount*> (rf);
 
@@ -814,200 +726,66 @@ Account STObject::getFieldAccount160 (SField::ref field) const
 
 Blob STObject::getFieldVL (SField::ref field) const
 {
-    const SerializedType* rf = peekAtPField (field);
-
-    if (!rf) throw std::runtime_error ("Field not found");
-
-    SerializedTypeID id = rf->getSType ();
-
-    if (id == STI_NOTPRESENT) return Blob (); // optional field not present
-
-    const STVariableLength* cf = dynamic_cast<const STVariableLength*> (rf);
-
-    if (!cf) throw std::runtime_error ("Wrong field type");
-
-    return cf->getValue ();
+    return getFieldByValue <STVariableLength> (field);
 }
 
 STAmount const& STObject::getFieldAmount (SField::ref field) const
 {
-    static STAmount empty;
-    const SerializedType* rf = peekAtPField (field);
-
-    if (!rf)
-        throw std::runtime_error ("Field not found");
-
-    SerializedTypeID id = rf->getSType ();
-
-    if (id == STI_NOTPRESENT)
-        return empty; // optional field not present
-
-    const STAmount* cf = dynamic_cast<const STAmount*> (rf);
-
-    if (!cf)
-        throw std::runtime_error ("Wrong field type");
-
-    return *cf;
+    static STAmount const empty;
+    return getFieldByConstRef <STAmount> (field, empty);
 }
 
 const STArray& STObject::getFieldArray (SField::ref field) const
 {
-    static STArray empty;
-    const SerializedType* rf = peekAtPField (field);
-
-    if (!rf) throw std::runtime_error ("Field not found");
-
-    SerializedTypeID id = rf->getSType ();
-
-    if (id == STI_NOTPRESENT) return empty;
-
-    const STArray* cf = dynamic_cast<const STArray*> (rf);
-
-    if (!cf)
-        throw std::runtime_error ("Wrong field type");
-
-    return *cf;
+    static STArray const empty;
+    return getFieldByConstRef <STArray> (field, empty);
 }
 
 STPathSet const& STObject::getFieldPathSet (SField::ref field) const
 {
-    static STPathSet empty;
-    const SerializedType* rf = peekAtPField (field);
-
-    if (!rf) throw std::runtime_error ("Field not found");
-
-    SerializedTypeID id = rf->getSType ();
-
-    if (id == STI_NOTPRESENT) return empty; // optional field not present
-
-    const STPathSet* cf = dynamic_cast<const STPathSet*> (rf);
-
-    if (!cf) throw std::runtime_error ("Wrong field type");
-
-    return *cf;
+    static STPathSet const empty;
+    return getFieldByConstRef <STPathSet> (field, empty);
 }
 
 const STVector256& STObject::getFieldV256 (SField::ref field) const
 {
-    static STVector256 empty;
-    const SerializedType* rf = peekAtPField (field);
-
-    if (!rf) throw std::runtime_error ("Field not found");
-
-    SerializedTypeID id = rf->getSType ();
-
-    if (id == STI_NOTPRESENT) return empty; // optional field not present
-
-    const STVector256* cf = dynamic_cast<const STVector256*> (rf);
-
-    if (!cf) throw std::runtime_error ("Wrong field type");
-
-    return *cf;
+    static STVector256 const empty;
+    return getFieldByConstRef <STVector256> (field, empty);
 }
 
 void STObject::setFieldU8 (SField::ref field, unsigned char v)
 {
-    SerializedType* rf = getPField (field, true);
-
-    if (!rf) throw std::runtime_error ("Field not found");
-
-    if (rf->getSType () == STI_NOTPRESENT) rf = makeFieldPresent (field);
-
-    STUInt8* cf = dynamic_cast<STUInt8*> (rf);
-
-    if (!cf) throw std::runtime_error ("Wrong field type");
-
-    cf->setValue (v);
+    setFieldUsingSetValue <STUInt8> (field, v);
 }
 
 void STObject::setFieldU16 (SField::ref field, std::uint16_t v)
 {
-    SerializedType* rf = getPField (field, true);
-
-    if (!rf) throw std::runtime_error ("Field not found");
-
-    if (rf->getSType () == STI_NOTPRESENT) rf = makeFieldPresent (field);
-
-    STUInt16* cf = dynamic_cast<STUInt16*> (rf);
-
-    if (!cf) throw std::runtime_error ("Wrong field type");
-
-    cf->setValue (v);
+    setFieldUsingSetValue <STUInt16> (field, v);
 }
 
 void STObject::setFieldU32 (SField::ref field, std::uint32_t v)
 {
-    SerializedType* rf = getPField (field, true);
-
-    if (!rf) throw std::runtime_error ("Field not found");
-
-    if (rf->getSType () == STI_NOTPRESENT) rf = makeFieldPresent (field);
-
-    STUInt32* cf = dynamic_cast<STUInt32*> (rf);
-
-    if (!cf) throw std::runtime_error ("Wrong field type");
-
-    cf->setValue (v);
+    setFieldUsingSetValue <STUInt32> (field, v);
 }
 
 void STObject::setFieldU64 (SField::ref field, std::uint64_t v)
 {
-    SerializedType* rf = getPField (field, true);
-
-    if (!rf) throw std::runtime_error ("Field not found");
-
-    if (rf->getSType () == STI_NOTPRESENT) rf = makeFieldPresent (field);
-
-    STUInt64* cf = dynamic_cast<STUInt64*> (rf);
-
-    if (!cf) throw std::runtime_error ("Wrong field type");
-
-    cf->setValue (v);
+    setFieldUsingSetValue <STUInt64> (field, v);
 }
 
-void STObject::setFieldH128 (SField::ref field, const uint128& v)
+void STObject::setFieldH128 (SField::ref field, uint128 const& v)
 {
-    SerializedType* rf = getPField (field, true);
-
-    if (!rf) throw std::runtime_error ("Field not found");
-
-    if (rf->getSType () == STI_NOTPRESENT) rf = makeFieldPresent (field);
-
-    STHash128* cf = dynamic_cast<STHash128*> (rf);
-
-    if (!cf) throw std::runtime_error ("Wrong field type");
-
-    cf->setValue (v);
+    setFieldUsingSetValue <STHash128> (field, v);
 }
 
 void STObject::setFieldH256 (SField::ref field, uint256 const& v)
 {
-    SerializedType* rf = getPField (field, true);
-
-    if (!rf) throw std::runtime_error ("Field not found");
-
-    if (rf->getSType () == STI_NOTPRESENT) rf = makeFieldPresent (field);
-
-    STHash256* cf = dynamic_cast<STHash256*> (rf);
-
-    if (!cf) throw std::runtime_error ("Wrong field type");
-
-    cf->setValue (v);
+    setFieldUsingSetValue <STHash256> (field, v);
 }
 
-void STObject::setFieldV256 (SField::ref field, const STVector256& v)
+void STObject::setFieldV256 (SField::ref field, STVector256 const& v)
 {
-    SerializedType* rf = getPField (field, true);
-
-    if (!rf) throw std::runtime_error ("Field not found");
-
-    if (rf->getSType () == STI_NOTPRESENT) rf = makeFieldPresent (field);
-
-    STVector256* cf = dynamic_cast<STVector256*> (rf);
-
-    if (!cf) throw std::runtime_error ("Wrong field type");
-
-    cf->setValue (v);
+    setFieldUsingSetValue <STVector256> (field, v);
 }
 
 void STObject::setFieldAccount (SField::ref field, Account const& v)
@@ -1030,47 +808,22 @@ void STObject::setFieldAccount (SField::ref field, Account const& v)
 
 void STObject::setFieldVL (SField::ref field, Blob const& v)
 {
-    SerializedType* rf = getPField (field, true);
-
-    if (!rf) throw std::runtime_error ("Field not found");
-
-    if (rf->getSType () == STI_NOTPRESENT) rf = makeFieldPresent (field);
-
-    STVariableLength* cf = dynamic_cast<STVariableLength*> (rf);
-
-    if (!cf) throw std::runtime_error ("Wrong field type");
-
-    cf->setValue (v);
+    setFieldUsingSetValue <STVariableLength> (field, v);
 }
 
 void STObject::setFieldAmount (SField::ref field, STAmount const& v)
 {
-    SerializedType* rf = getPField (field, true);
-
-    if (!rf) throw std::runtime_error ("Field not found");
-
-    if (rf->getSType () == STI_NOTPRESENT) rf = makeFieldPresent (field);
-
-    STAmount* cf = dynamic_cast<STAmount*> (rf);
-
-    if (!cf) throw std::runtime_error ("Wrong field type");
-
-    (*cf) = v;
+    setFieldUsingAssignment (field, v);
 }
 
 void STObject::setFieldPathSet (SField::ref field, STPathSet const& v)
 {
-    SerializedType* rf = getPField (field, true);
+    setFieldUsingAssignment (field, v);
+}
 
-    if (!rf) throw std::runtime_error ("Field not found");
-
-    if (rf->getSType () == STI_NOTPRESENT) rf = makeFieldPresent (field);
-
-    STPathSet* cf = dynamic_cast<STPathSet*> (rf);
-
-    if (!cf) throw std::runtime_error ("Wrong field type");
-
-    (*cf) = v;
+void STObject::setFieldArray (SField::ref field, STArray const& v)
+{
+    setFieldUsingAssignment (field, v);
 }
 
 Json::Value STObject::getJson (int options) const
@@ -1094,42 +847,49 @@ Json::Value STObject::getJson (int options) const
 
 bool STObject::operator== (const STObject& obj) const
 {
-    // This is not particularly efficient, and only compares data elements with binary representations
+    // This is not particularly efficient, and only compares data elements
+    // with binary representations
     int matches = 0;
-    BOOST_FOREACH (const SerializedType & t, mData)
-
-    if ((t.getSType () != STI_NOTPRESENT) && t.getFName ().isBinary ())
+    for (SerializedType const& t1 : mData)
     {
-        // each present field must have a matching field
-        bool match = false;
-        BOOST_FOREACH (const SerializedType & t2, obj.mData)
-
-        if (t.getFName () == t2.getFName ())
+        if ((t1.getSType () != STI_NOTPRESENT) && t1.getFName ().isBinary ())
         {
-            if (t2 != t)
+            // each present field must have a matching field
+            bool match = false;
+            for (SerializedType const& t2 : obj.mData)
+            {
+                if (t1.getFName () == t2.getFName ())
+                {
+                    if (t2 != t1)
+                        return false;
+
+                    match = true;
+                    ++matches;
+                    break;
+                }
+            }
+
+            if (!match)
+            {
+                WriteLog (lsTRACE, STObject) <<
+                    "STObject::operator==: no match for " <<
+                    t1.getFName ().getName ();
                 return false;
-
-            match = true;
-            ++matches;
-            break;
-        }
-
-        if (!match)
-        {
-            WriteLog (lsTRACE, STObject) << "STObject::operator==: no match for " << t.getFName ().getName ();
-            return false;
+            }
         }
     }
 
     int fields = 0;
-    BOOST_FOREACH (const SerializedType & t2, obj.mData)
-
-    if ((t2.getSType () != STI_NOTPRESENT) && t2.getFName ().isBinary ())
-        ++fields;
+    for (SerializedType const& t2 : obj.mData)
+    {
+        if ((t2.getSType () != STI_NOTPRESENT) && t2.getFName ().isBinary ())
+            ++fields;
+    }
 
     if (fields != matches)
     {
-        WriteLog (lsTRACE, STObject) << "STObject::operator==: " << fields << " fields, " << matches << " matches";
+        WriteLog (lsTRACE, STObject) << "STObject::operator==: " <<
+            fields << " fields, " << matches << " matches";
         return false;
     }
 
@@ -1144,128 +904,6 @@ Json::Value STVector256::getJson (int options) const
         ret.append (to_string (vEntry));
 
     return ret;
-}
-
-std::string STArray::getFullText () const
-{
-    std::string r = "[";
-
-    bool first = true;
-    BOOST_FOREACH (const STObject & o, value)
-    {
-        if (!first)
-            r += ",";
-
-        r += o.getFullText ();
-        first = false;
-    }
-
-    r += "]";
-    return r;
-}
-
-std::string STArray::getText () const
-{
-    std::string r = "[";
-
-    bool first = true;
-    BOOST_FOREACH (const STObject & o, value)
-    {
-        if (!first)
-            r += ",";
-
-        r += o.getText ();
-        first = false;
-    }
-
-    r += "]";
-    return r;
-}
-
-Json::Value STArray::getJson (int p) const
-{
-    Json::Value v = Json::arrayValue;
-    int index = 1;
-    for (auto const& object: value)
-    {
-        if (object.getSType () != STI_NOTPRESENT)
-        {
-            Json::Value inner = Json::objectValue;
-            auto const& fname = object.getFName ();
-            auto k = fname.hasName () ? fname.fieldName : std::to_string(index);
-            inner[k] = object.getJson (p);
-            v.append (inner);
-            index++;
-        }
-    }
-    return v;
-}
-
-void STArray::add (Serializer& s) const
-{
-    BOOST_FOREACH (const STObject & object, value)
-    {
-        object.addFieldID (s);
-        object.add (s);
-        s.addFieldID (STI_OBJECT, 1);
-    }
-}
-
-bool STArray::isEquivalent (const SerializedType& t) const
-{
-    const STArray* v = dynamic_cast<const STArray*> (&t);
-
-    if (!v)
-    {
-        WriteLog (lsDEBUG, STObject) << "notEquiv " << getFullText() << " not array";
-        return false;
-    }
-
-    return value == v->value;
-}
-
-STArray* STArray::construct (SerializerIterator& sit, SField::ref field)
-{
-    vector value;
-
-    while (!sit.empty ())
-    {
-        int type, field;
-        sit.getFieldID (type, field);
-
-        if ((type == STI_ARRAY) && (field == 1))
-            break;
-
-        if ((type == STI_OBJECT) && (field == 1))
-        {
-            WriteLog (lsWARNING, STObject) << "Encountered array with end of object marker";
-            throw std::runtime_error ("Illegal terminator in array");
-        }
-
-        SField::ref fn = SField::getField (type, field);
-
-        if (fn.isInvalid ())
-        {
-            WriteLog (lsTRACE, STObject) << "Unknown field: " << type << "/" << field;
-            throw std::runtime_error ("Unknown field");
-        }
-
-        if (fn.fieldType != STI_OBJECT)
-        {
-            WriteLog (lsTRACE, STObject) << "Array contains non-object";
-            throw std::runtime_error ("Non-object in array");
-        }
-
-        value.push_back (new STObject (fn));
-        value.rbegin ()->set (sit, 1);
-    }
-
-    return new STArray (field, value);
-}
-
-void STArray::sort (bool (*compare) (const STObject&, const STObject&))
-{
-    value.sort (compare);
 }
 
 //------------------------------------------------------------------------------
@@ -1329,7 +967,8 @@ public:
     void testParseJSONArray ()
     {
         testcase ("parse json array");
-        std::string const json ("{\"Template\":[{\"ModifiedNode\":{\"Sequence\":1}}]}\n");
+        std::string const json (
+            "{\"Template\":[{\"ModifiedNode\":{\"Sequence\":1}}]}\n");
 
         Json::Value jsonObject;
         bool parsedOK (parseJSONString(json, jsonObject));
@@ -1367,16 +1006,18 @@ public:
         STObject object1 (elements, sfTestObject);
         STObject object2 (object1);
 
-        unexpected (object1.getSerializer () != object2.getSerializer (), "STObject error 1");
+        unexpected (object1.getSerializer () != object2.getSerializer (),
+            "STObject error 1");
 
-        unexpected (object1.isFieldPresent (sfTestH256) || !object1.isFieldPresent (sfTestVL),
-            "STObject error");
+        unexpected (object1.isFieldPresent (sfTestH256) ||
+            !object1.isFieldPresent (sfTestVL), "STObject error");
 
         object1.makeFieldPresent (sfTestH256);
 
         unexpected (!object1.isFieldPresent (sfTestH256), "STObject Error 2");
 
-        unexpected (object1.getFieldH256 (sfTestH256) != uint256 (), "STObject error 3");
+        unexpected (object1.getFieldH256 (sfTestH256) != uint256 (),
+            "STObject error 3");
 
         if (object1.getSerializer () == object2.getSerializer ())
         {
@@ -1395,7 +1036,8 @@ public:
 
         unexpected (object1.getFlags () != 0, "STObject error 6");
 
-        unexpected (object1.getSerializer () != object2.getSerializer (), "STObject error 7");
+        unexpected (object1.getSerializer () != object2.getSerializer (),
+            "STObject error 7");
 
         STObject copy (object1);
 
@@ -1403,11 +1045,13 @@ public:
 
         unexpected (copy.isFieldPresent (sfTestH256), "STObject error 9");
 
-        unexpected (object1.getSerializer () != copy.getSerializer (), "STObject error 10");
+        unexpected (object1.getSerializer () != copy.getSerializer (),
+            "STObject error 10");
 
         copy.setFieldU32 (sfTestU32, 1);
 
-        unexpected (object1.getSerializer () == copy.getSerializer (), "STObject error 11");
+        unexpected (object1.getSerializer () == copy.getSerializer (),
+            "STObject error 11");
 
         for (int i = 0; i < 1000; i++)
         {
