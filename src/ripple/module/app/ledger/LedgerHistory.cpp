@@ -136,14 +136,22 @@ void LedgerHistory::builtLedger (Ledger::ref ledger)
 
     if (entry->first != hash)
     {
+        bool mismatch (false);
+
         if (entry->first.isNonZero() && (entry->first != hash))
         {
             WriteLog (lsERROR, LedgerMaster) << "MISMATCH: seq=" << index << " built:" << entry->first << " then:" << hash;
+            mismatch = true;
         }
         if (entry->second.isNonZero() && (entry->second != hash))
         {
             WriteLog (lsERROR, LedgerMaster) << "MISMATCH: seq=" << index << " validated:" << entry->second << " accepted:" << hash;
+            mismatch = true;
         }
+
+        if (mismatch)
+            ++mismatch_counter_;
+
         entry->first = hash;
     }
 }
