@@ -17,15 +17,35 @@
 */
 //==============================================================================
 
-#if BEAST_INCLUDE_BEASTCONFIG
-#include <BeastConfig.h>
-#endif
+#include <beast/crypto/base64.h>
+#include <beast/unit_test/suite.h>
 
-#include <beast/crypto/impl/MurmurHash.cpp>
-#include <beast/crypto/impl/Sha256.cpp>
-#include <beast/crypto/impl/UnsignedInteger.cpp>
+namespace beast {
 
-#include <beast/crypto/tests/BinaryEncoding.cpp>
-#include <beast/crypto/tests/base64.test.cpp>
+class base64_test : public unit_test::suite
+{
+public:
+    void
+    check (std::string const& in, std::string const& out)
+    {
+        auto const encoded = base64_encode (in);
+        expect (encoded == out);
+        expect (base64_decode (encoded) == in);
+    }
 
-#include <beast/crypto/tests/UnsignedInteger.test.cpp>
+    void
+    run()
+    {
+        check ("",       "");
+        check ("f",      "Zg==");
+        check ("fo",     "Zm8=");
+        check ("foo",    "Zm9v");
+        check ("foob",   "Zm9vYg==");
+        check ("fooba",  "Zm9vYmE=");
+        check ("foobar", "Zm9vYmFy");
+    }
+};
+
+BEAST_DEFINE_TESTSUITE(base64,crypto,beast);
+
+}
