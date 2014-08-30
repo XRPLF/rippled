@@ -25,6 +25,7 @@
 #include <beast/chrono/chrono_io.h>
 #include <beast/Insight.h>
 #include <beast/container/hardened_hash.h>
+#include <beast/container/hashed_key.h>
 #include <functional>
 #include <mutex>
 #include <vector>
@@ -63,6 +64,7 @@ public:
     typedef std::unique_lock <mutex_type> ScopedLockType;
     typedef std::lock_guard <mutex_type> lock_guard;
     typedef Key key_type;
+    typedef beast::hashed_key <Key, Hash, KeyEqual> hashed_key_type;
     typedef T mapped_type;
     // VFALCO TODO Use std::shared_ptr, std::weak_ptr
     typedef std::weak_ptr <mapped_type> weak_mapped_ptr;
@@ -253,10 +255,12 @@ public:
 
     bool del (const key_type& key, bool valid)
     {
+        hashed_key_type ikey (key);
+
         // Remove from cache, if !valid, remove from map too. Returns true if removed from cache
         lock_guard lock (m_mutex);
 
-        cache_iterator cit = m_cache.find (key);
+        cache_iterator cit = m_cache.find (ikey);
 
         if (cit == m_cache.end ())
             return false;
@@ -293,16 +297,18 @@ public:
     */
     bool canonicalize (const key_type& key, std::shared_ptr<T>& data, bool replace = false)
     {
+        hashed_key_type ikey (key);
+
         // Return canonical value, store if needed, refresh in cache
         // Return values: true=we had the data already
         lock_guard lock (m_mutex);
 
-        cache_iterator cit = m_cache.find (key);
+        cache_iterator cit = m_cache.find (ikey);
 
         if (cit == m_cache.end ())
         {
             m_cache.emplace (std::piecewise_construct,
-                std::forward_as_tuple(key),
+                std::forward_as_tuple(ikey),
                 std::forward_as_tuple(m_clock.now(), data));
             ++m_cache_count;
             return false;
@@ -354,10 +360,12 @@ public:
 
     std::shared_ptr<T> fetch (const key_type& key)
     {
+        hashed_key_type ikey (key);
+
         // fetch us a shared pointer to the stored data object
         lock_guard lock (m_mutex);
 
-        cache_iterator cit = m_cache.find (key);
+        cache_iterator cit = m_cache.find (ikey);
 
         if (cit == m_cache.end ())
         {
@@ -425,10 +433,12 @@ public:
     {
         bool found = false;
 
+        hashed_key_type ikey (key);
+
         // If present, make current in cache
         lock_guard lock (m_mutex);
 
-        cache_iterator cit = m_cache.find (key);
+        cache_iterator cit = m_cache.find (ikey);
 
         if (cit != m_cache.end ())
         {
@@ -528,7 +538,8 @@ private:
         void touch (clock_type::time_point const& now) { last_access = now; }
     };
 
-    typedef hardened_hash_map <key_type, Entry, Hash, KeyEqual> cache_type;
+    typedef hardened_hash_map <
+        hashed_key_type, Entry, typename hashed_key_type::hash> cache_type;
     typedef typename cache_type::iterator cache_iterator;
 
     beast::Journal m_journal;
