@@ -23,6 +23,7 @@
 #include <beast/utility/ci_char_traits.h>
 #include <boost/intrusive/list.hpp>
 #include <boost/intrusive/set.hpp>
+#include <boost/iterator/transform_iterator.hpp>
 #include <algorithm>
 #include <cctype>
 #include <map>
@@ -33,45 +34,57 @@
 namespace beast {
 namespace http {
 
-namespace detail {
-
-struct element
-    : boost::intrusive::set_base_hook <
-        boost::intrusive::link_mode <
-            boost::intrusive::normal_link>>
-    , boost::intrusive::list_base_hook <
-        boost::intrusive::link_mode <
-            boost::intrusive::normal_link>>
-{
-    template <class = void>
-    element (std::string const& f, std::string const& v);
-
-    std::string field;
-    std::string value;
-};
-
-struct less : private beast::ci_less
-{
-    template <class String>
-    bool
-    operator() (String const& lhs, element const& rhs) const;
-
-    template <class String>
-    bool
-    operator() (element const& lhs, String const& rhs) const;
-};
-
-} // detail
-
 /** Holds a collection of HTTP headers. */
-class headers : private detail::less
+class headers
 {
+public:
+    struct value_type
+    {
+        std::string field;
+        std::string value;
+    };
+
 private:
-    typedef boost::intrusive::make_list <detail::element,
+    struct element
+        : boost::intrusive::set_base_hook <
+            boost::intrusive::link_mode <
+                boost::intrusive::normal_link>>
+        , boost::intrusive::list_base_hook <
+            boost::intrusive::link_mode <
+                boost::intrusive::normal_link>>
+    {
+        template <class = void>
+        element (std::string const& f, std::string const& v);
+
+        value_type data;
+    };
+
+    struct less : private beast::ci_less
+    {
+        template <class String>
+        bool
+        operator() (String const& lhs, element const& rhs) const;
+
+        template <class String>
+        bool
+        operator() (element const& lhs, String const& rhs) const;
+    };
+
+    struct transform
+        : public std::unary_function <element, value_type>
+    {
+        value_type const&
+        operator() (element const& e) const
+        {
+            return e.data;
+        }
+    };
+
+    typedef boost::intrusive::make_list <element,
         boost::intrusive::constant_time_size <false>
             >::type list_t;
 
-    typedef boost::intrusive::make_set <detail::element,
+    typedef boost::intrusive::make_set <element,
         boost::intrusive::constant_time_size <true>
             >::type set_t;
 
@@ -79,7 +92,8 @@ private:
     set_t set_;
 
 public:
-    typedef list_t::const_iterator iterator;
+    typedef boost::transform_iterator <transform,
+        list_t::const_iterator> iterator;
     typedef iterator const_iterator;
 
     ~headers()
@@ -153,43 +167,40 @@ build_map (headers const& h);
 
 //------------------------------------------------------------------------------
 
-namespace detail {
-
 template <class>
-element::element (
+headers::element::element (
     std::string const& f, std::string const& v)
-    : field (f)
-    , value (v)
 {
+    data.field = f;
+    data.value = v;
 }
 
 template <class String>
 bool
-less::operator() (
+headers::less::operator() (
     String const& lhs, element const& rhs) const
 {
-    return beast::ci_less::operator() (lhs, rhs.field);
+    return beast::ci_less::operator() (lhs, rhs.data.field);
 }
 
 template <class String>
 bool
-less::operator() (
+headers::less::operator() (
     element const& lhs, String const& rhs) const
 {
-    return beast::ci_less::operator() (lhs.field, rhs);
+    return beast::ci_less::operator() (lhs.data.field, rhs);
 }
-
-} // detail
 
 //------------------------------------------------------------------------------
 
 #if defined(_MSC_VER) && _MSC_VER <= 1800
 inline
 headers::headers (headers&& other)
-    : list_ (std::move(other.list_))
-    , set_ (std::move(other.set_))
+    : list_ (std::move (other.list_))
+    , set_ (std::move (other.set_))
 {
-
+    other.list_.clear();
+    other.set_.clear();
 }
 
 inline
@@ -198,6 +209,8 @@ headers::operator= (headers&& other)
 {
     list_ = std::move(other.list_);
     set_ = std::move(other.set_);
+    other.list_.clear();
+    other.set_.clear();
     return *this;
 }
 #endif
@@ -206,7 +219,7 @@ inline
 headers::headers (headers const& other)
 {
     for (auto const& e : other.list_)
-        append (e.field, e.value);
+        append (e.data.field, e.data.value);
 }
 
 inline
@@ -215,7 +228,7 @@ headers::operator= (headers const& other)
 {
     clear();
     for (auto const& e : other.list_)
-        append (e.field, e.value);
+        append (e.data.field, e.data.value);
     return *this;
 }
 
@@ -223,39 +236,38 @@ inline
 headers::iterator
 headers::begin() const
 {
-    return list_.cbegin();
+    return {list_.cbegin(), transform{}};
 }
 
 inline
 headers::iterator
 headers::end() const
 {
-    return list_.cend();
+    return {list_.cend(), transform{}};
 }
 
 inline
 headers::iterator
 headers::cbegin() const
 {
-    return list_.cbegin();
+    return {list_.cbegin(), transform{}};
 }
 
 inline
 headers::iterator
 headers::cend() const
 {
-    return list_.cend();
+    return {list_.cend(), transform{}};
 }
 
 template <class>
 headers::iterator
 headers::find (std::string const& field) const
 {
-    auto const iter (set_.find (field,
-        std::cref(static_cast<less const&>(*this))));
+    auto const iter (set_.find (field, less{}));
     if (iter == set_.end())
-        return list_.end();
-    return list_.iterator_to (*iter);
+        return {list_.end(), transform{}};
+    return {list_.iterator_to (*iter), transform{}};
 }
 
 template <class>
@@ -283,19 +295,17 @@ headers::append (std::string const& field,
     std::string const& value)
 {
     set_t::insert_commit_data d;
-    auto const result (set_.insert_check (field,
-        std::cref(static_cast<less const&>(*this)), d));
+    auto const result (set_.insert_check (field, less{}, d));
     if (result.second)
     {
-        detail::element* const p =
-            new detail::element (field, value);
+        element* const p = new element (field, value);
         list_.push_back (*p);
         set_.insert_commit (*p, d);
         return;
     }
     // If field already exists, append comma
     // separated value as per RFC2616 section 4.2
-    auto& cur (result.first->value);
+    auto& cur (result.first->data.value);
     cur.reserve (cur.size() + 1 + value.size());
     cur.append (1, ',');
     cur.append (value);
