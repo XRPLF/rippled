@@ -298,6 +298,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\Crypto.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\crypto\base64.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\crypto\BinaryEncoding.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\crypto\Crypto.unity.cpp">
@@ -321,6 +323,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\crypto\Sha256.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\crypto\tests\base64.test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\crypto\tests\BinaryEncoding.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
