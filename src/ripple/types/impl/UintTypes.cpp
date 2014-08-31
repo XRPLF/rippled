@@ -33,9 +33,9 @@ std::string to_string(Currency const& currency)
 {
     static Currency const sIsoBits ("FFFFFFFFFFFFFFFFFFFFFFFF000000FFFFFFFFFF");
 
-    // Characters we are willing to include the ASCII representation
-    // of a three-letter currency code
-    static std::string legalASCIICurrencyCharacters =
+    // Characters we are willing to allow in the ASCII representation of a
+    // three-letter currency code.
+    static std::string const allowed_characters =
         "abcdefghijklmnopqrstuvwxyz"
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         "0123456789"
@@ -59,16 +59,13 @@ std::string to_string(Currency const& currency)
         // Specifying the system currency code using ISO-style representation
         // is not allowed.
         if ((iso != systemCurrencyCode()) &&
-            (iso.find_first_not_of (legalASCIICurrencyCharacters) == std::string::npos))
+            (iso.find_first_not_of (allowed_characters) == std::string::npos))
         {
             return iso;
         }
     }
 
-    uint160 simple;
-    simple.copyFrom(currency);
-
-    return to_string(simple);
+    return strHex (currency.begin (), currency.size ());
 }
 
 bool to_currency(Currency& currency, std::string const& code)

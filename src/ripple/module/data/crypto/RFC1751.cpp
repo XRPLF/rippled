@@ -251,7 +251,7 @@ char const* RFC1751::s_dictionary [2048] =
 
 /* Extract 'length' bits from the char array 's'
    starting with bit 'start' */
-unsigned long RFC1751::extract (char* s, int start, int length)
+unsigned long RFC1751::extract (char const* s, int start, int length)
 {
     unsigned char cl;
     unsigned char cc;
@@ -473,7 +473,7 @@ void RFC1751::getEnglishFromKey (std::string& strHuman, std::string const& strKe
     strHuman    = strFirst + " " + strSecond;
 }
 
-beast::String RFC1751::getWordFromBlob (void const* data, size_t bytes)
+std::string RFC1751::getWordFromBlob (void const* data, size_t bytes)
 {
     std::uint32_t hash;
 

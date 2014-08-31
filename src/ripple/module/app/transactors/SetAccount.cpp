@@ -217,7 +217,7 @@ TER SetAccount::doApply ()
         if (!uHash)
         {
             m_journal.trace << "unset wallet locator";
-            mTxnAccount->makeFieldAbsent (sfEmailHash);
+            mTxnAccount->makeFieldAbsent (sfWalletLocator);
         }
         else
         {

@@ -30,7 +30,7 @@ hash_set<RippleAddress> parseAccountIds (Json::Value const& jvArray)
     {
         RippleAddress address;
 
-        if (!(jv.isString () && address.setAccountID ((jv.asString ()))))
+        if (!jv.isString() || !address.setAccountID (jv.asString()))
         {
             result.clear ();
             break;
