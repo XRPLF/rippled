@@ -59,11 +59,6 @@ Json::Value lookupLedger (
             jsonHash = params[jss::ledger];
             jsonIndex = Json::Value ("");
         }
-        else if (params[jss::ledger].isNumeric ())
-        {
-            jsonIndex = params[jss::ledger];
-            jsonHash = Json::Value ("0");
-        }
         else
         {
             jsonIndex = params[jss::ledger];

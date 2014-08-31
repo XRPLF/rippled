@@ -438,19 +438,23 @@ int STAmount::compare (STAmount const& a) const
     return 0;
 }
 
-STAmount* STAmount::construct (SerializerIterator& sit, SField::ref name)
+std::unique_ptr<STAmount>
+STAmount::construct (SerializerIterator& sit, SField::ref name)
 {
     std::uint64_t value = sit.get64 ();
 
+    // native
     if ((value & cNotNative) == 0)
     {
-        // native
+        // positive
         if ((value & cPosNative) != 0)
-            return new STAmount (name, value & ~cPosNative, false); // positive
-        else if (value == 0)
+            return std::make_unique<STAmount> (name, value & ~cPosNative, false);
+
+        // negative
+        if (value == 0)
             throw std::runtime_error ("negative zero is not canonical");
 
-        return new STAmount (name, value, true); // negative
+        return std::make_unique<STAmount> (name, value, true);
     }
 
     Issue issue;
@@ -482,13 +486,13 @@ STAmount* STAmount::construct (SerializerIterator& sit, SField::ref name)
             throw std::runtime_error ("invalid currency value");
         }
 
-        return new STAmount (name, issue, value, offset, isNegative);
+        return std::make_unique<STAmount> (name, issue, value, offset, isNegative);
     }
 
     if (offset != 512)
         throw std::runtime_error ("invalid currency value");
 
-    return new STAmount (name, issue);
+    return std::make_unique<STAmount> (name, issue);
 }
 
 std::int64_t STAmount::getSNValue () const
@@ -1046,12 +1050,12 @@ STAmount STAmount::getPay (
 
 STAmount STAmount::deserialize (SerializerIterator& it)
 {
-    auto s = dynamic_cast<STAmount*> (construct (it, sfGeneric));
+    auto s = construct (it, sfGeneric);
+
     if (!s)
         throw std::runtime_error("Deserialization error");
 
-    STAmount ret (*s);
-    return ret;
+    return STAmount (*s);
 }
 
 std::string STAmount::getFullText () const

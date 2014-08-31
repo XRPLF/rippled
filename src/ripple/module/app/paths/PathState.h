@@ -34,7 +34,9 @@ class PathState : public CountedObject <PathState>
     typedef std::vector<Ptr> List;
 
     PathState (STAmount const& saSend, STAmount const& saSendMax)
-        : saInReq (saSendMax)
+        : mIndex (0)
+        , uQuality (0)
+        , saInReq (saSendMax)
         , saOutReq (saSend)
     {
     }
@@ -99,7 +101,7 @@ class PathState : public CountedObject <PathState>
                        Account const& sourceAccountID);
     void checkFreeze ();
 
-    static bool lessPriority (PathState& lhs, PathState& rhs);
+    static bool lessPriority (PathState const& lhs, PathState const& rhs);
 
     LedgerEntrySet& ledgerEntries() { return lesEntries; }
 

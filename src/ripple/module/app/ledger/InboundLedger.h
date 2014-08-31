@@ -66,7 +66,7 @@ public:
     {
         return mAborted || isComplete () || isFailed ();
     }
-    Ledger::ref getLedger ()
+    Ledger::ref getLedger () const
     {
         return mLedger;
     }
@@ -74,7 +74,7 @@ public:
     {
         mAborted = true;
     }
-    std::uint32_t getSeq ()
+    std::uint32_t getSeq () const
     {
         return mSeq;
     }

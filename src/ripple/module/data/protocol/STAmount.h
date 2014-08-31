@@ -24,6 +24,8 @@
 #include <ripple/module/data/protocol/Serializer.h>
 #include <ripple/module/data/protocol/SerializedType.h>
 
+#include <beast/cxx14/memory.h> // <memory>
+
 namespace ripple {
 
 // Internal form:
@@ -128,7 +130,7 @@ public:
     static std::unique_ptr<SerializedType> deserialize (
         SerializerIterator& sit, SField::ref name)
     {
-        return std::unique_ptr<SerializedType> (construct (sit, name));
+        return construct (sit, name);
     }
 
     bool bSetJson (Json::Value const& jvSource);
@@ -406,7 +408,10 @@ private:
     {
         return new STAmount (*this);
     }
-    static STAmount* construct (SerializerIterator&, SField::ref name);
+    
+    static
+    std::unique_ptr<STAmount>
+    construct (SerializerIterator&, SField::ref name);
 
     STAmount (SField::ref name, Issue const& issue,
               std::uint64_t val, int off, bool isNat, bool negative)

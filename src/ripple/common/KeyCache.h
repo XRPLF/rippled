@@ -85,17 +85,19 @@ private:
     typedef typename map_type::iterator iterator;
     typedef std::lock_guard <Mutex> lock_guard;
 
+public:
+    typedef typename map_type::size_type size_type;
+
+private:
     Mutex mutable m_mutex;
     map_type m_map;
     Stats mutable m_stats;
     clock_type& m_clock;
     std::string const m_name;
-    unsigned int m_target_size;
+    size_type m_target_size;
     clock_type::duration m_target_age;
 
 public:
-    typedef typename map_type::size_type size_type;
-
     /** Construct with the specified name.
 
         @param size The initial target size.
@@ -112,7 +114,6 @@ public:
         , m_target_size (target_size)
         , m_target_age (std::chrono::seconds (expiration_seconds))
     {
-        assert (m_target_size >= 0);
     }
 
     // VFALCO TODO Use a forwarding constructor call here
@@ -126,7 +127,6 @@ public:
         , m_target_size (target_size)
         , m_target_age (std::chrono::seconds (expiration_seconds))
     {
-        assert (m_target_size >= 0);
     }
 
     //--------------------------------------------------------------------------
