@@ -189,7 +189,7 @@ EC_KEY* CKey::GenerateRootPubKey (BIGNUM* pubGenerator)
 }
 
 // --> public generator
-static BIGNUM* makeHash (RippleAddress const& pubGen, int seq, BIGNUM* order)
+static BIGNUM* makeHash (RippleAddress const& pubGen, int seq, BIGNUM const* order)
 {
     int subSeq = 0;
     BIGNUM* ret = nullptr;

@@ -64,7 +64,7 @@ void PathState::reset(STAmount const& in, STAmount const& out)
 }
 
 // Return true, iff lhs has less priority than rhs.
-bool PathState::lessPriority (PathState& lhs, PathState& rhs)
+bool PathState::lessPriority (PathState const& lhs, PathState const& rhs)
 {
     // First rank is quality.
     if (lhs.uQuality != rhs.uQuality)
