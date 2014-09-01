@@ -213,7 +213,7 @@ TER PathCursor::deliverNodeForward (
 
                 // Output fees vary as the next nodes offer owners may vary.
                 // Therefore, immediately push through output for current offer.
-                increment().deliverNodeForward (
+                resultCode = increment().deliverNodeForward (
                     node().offerOwnerAccount_,  // --> Current holder.
                     saOutPassMax,             // --> Amount available.
                     saOutPassAct,             // <-- Amount delivered.
