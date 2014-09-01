@@ -69,27 +69,27 @@ public:
         }
     }
 
-    uint256 const& getID ()
+    uint256 const& getID () const
     {
         return m_id;
     }
 
-    std::uint32_t getSeq ()
+    std::uint32_t getSeq () const
     {
         return m_seq;
     }
 
-    bool isExpired (LedgerIndex i)
+    bool isExpired (LedgerIndex i) const
     {
         return i > m_expire;
     }
 
-    SerializedTransaction::ref getTX ()
+    SerializedTransaction::ref getTX () const
     {
         return m_txn;
     }
 
-    RippleAddress const& getAccount ()
+    RippleAddress const& getAccount () const
     {
         return m_account;
     }
