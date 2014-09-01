@@ -158,14 +158,10 @@ bool LocalCredentials::dataStore (std::string const& strKey, std::string const& 
 
     auto sl (getApp().getRpcDB ()->lock ());
 
-    bool        bSuccess    = false;
-
     return (db->executeSQL (str (boost::format ("REPLACE INTO RPCData (Key, Value) VALUES (%s,%s);")
                                  % sqlEscape (strKey)
                                  % sqlEscape (strValue)
                                 )));
-
-    return bSuccess;
 }
 
 } // ripple
