@@ -46,9 +46,9 @@ Json::Value doTx (RPC::Context& context)
 #ifdef READY_FOR_NEW_TX_FORMAT
         // TODO(tom): what new format is this?
         Json::Value ret;
-        ret[jss::transaction] = txn->getJson (0, binary);
+        ret[jss::transaction] = txn->getJson (1, binary);
 #else
-        Json::Value ret = txn->getJson (0, binary);
+        Json::Value ret = txn->getJson (1, binary);
 #endif
 
         if (txn->getLedger () != 0)
