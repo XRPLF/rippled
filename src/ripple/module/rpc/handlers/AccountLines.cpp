@@ -85,22 +85,22 @@ Json::Value doAccountLines (RPC::Context& context)
             if (!raPeer.isValid () ||
                 raPeer.getAccountID () == line->getAccountIDPeer ())
             {
-                STAmount const&     saBalance   = line->getBalance ();
-                STAmount const&     saLimit     = line->getLimit ();
-                STAmount const&     saLimitPeer = line->getLimitPeer ();
+                STAmount const& saBalance = line->getBalance ();
+                STAmount const& saLimit = line->getLimit ();
+                STAmount const& saLimitPeer = line->getLimitPeer ();
 
-                Json::Value&    jPeer   = jsonLines.append (Json::objectValue);
+                Json::Value& jPeer = jsonLines.append (Json::objectValue);
 
-                jPeer[jss::account]       = to_string (line->getAccountIDPeer ());
+                jPeer[jss::account] = to_string (line->getAccountIDPeer ());
                 // Amount reported is positive if current account holds other
                 // account's IOUs.
                 //
                 // Amount reported is negative if other account holds current
                 // account's IOUs.
-                jPeer[jss::balance]       = saBalance.getText ();
-                jPeer[jss::currency]      = saBalance.getHumanCurrency ();
-                jPeer[jss::limit]         = saLimit.getText ();
-                jPeer[jss::limit_peer]     = saLimitPeer.getText ();
+                jPeer[jss::balance] = saBalance.getText ();
+                jPeer[jss::currency] = saBalance.getHumanCurrency ();
+                jPeer[jss::limit] = saLimit.getText ();
+                jPeer[jss::limit_peer] = saLimitPeer.getText ();
                 jPeer[jss::quality_in]
                         = static_cast<Json::UInt> (line->getQualityIn ());
                 jPeer[jss::quality_out]

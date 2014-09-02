@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2014 Ripple Labs Inc.
+    Copyright (c) 2012, 2013 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,36 +17,34 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_APP_RPC_INTERNAL_HANDLER
+#define RIPPLE_APP_RPC_INTERNAL_HANDLER
 
 namespace ripple {
+namespace RPC {
 
-// {
-//   node: <domain>|<node_public>,
-//   comment: <comment>             // optional
-// }
-Json::Value doUnlAdd (RPC::Context& context)
+/** To dynamically add custom or experimental RPC handlers, construct a new
+ * instance of InternalHandler with your own handler function. */
+struct InternalHandler
 {
-    auto lock = getApp().masterLock();
+    typedef Json::Value (*handler_t) (const Json::Value&);
 
-    std::string strNode = context.params_.isMember ("node")
-            ? context.params_["node"].asString () : "";
-    std::string strComment = context.params_.isMember ("comment")
-            ? context.params_["comment"].asString () : "";
-
-    RippleAddress raNodePublic;
-
-    if (raNodePublic.setNodePublic (strNode))
+    InternalHandler (const std::string& name, handler_t handler)
+            : name_ (name),
+              handler_ (handler)
     {
-        getApp().getUNL ().nodeAddPublic (
-            raNodePublic, UniqueNodeList::vsManual, strComment);
-        return "adding node by public key";
+        nextHandler_ = InternalHandler::headHandler;
+        InternalHandler::headHandler = this;
     }
-    else
-    {
-        getApp().getUNL ().nodeAddDomain (
-            strNode, UniqueNodeList::vsManual, strComment);
-        return "adding node by domain";
-    }
-}
 
+    InternalHandler* nextHandler_;
+    std::string name_;
+    handler_t handler_;
+
+    static InternalHandler* headHandler;
+};
+
+} // RPC
 } // ripple
+
+#endif

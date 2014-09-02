@@ -32,52 +32,31 @@
 namespace ripple {
 
 // used by the RPCServer or WSDoor to carry out these RPC commands
-class NetworkOPs;
 class InfoSub;
+class NetworkOPs;
 
 class RPCHandler
 {
 public:
-    explicit RPCHandler (NetworkOPs& netOps);
-
-    RPCHandler (NetworkOPs& netOps, InfoSub::pointer infoSub);
+    explicit RPCHandler (
+        NetworkOPs& netOps, InfoSub::pointer infoSub = nullptr);
 
     Json::Value doCommand (
-        Json::Value const& jvRequest, Config::Role role,
+        Json::Value const& request,
+        Config::Role role,
         Resource::Charge& loadType);
 
     Json::Value doRpcCommand (
-        std::string const& strCommand, Json::Value const& jvParams,
-        Config::Role iRole, Resource::Charge& loadType);
-
-    // Utilities
-
-private:
-    NetworkOPs*         mNetOps;
-    InfoSub::pointer    mInfoSub;
-
-    Config::Role mRole;
-};
-
-class RPCInternalHandler
-{
-public:
-    typedef Json::Value (*handler_t) (Json::Value const&);
-
-public:
-    RPCInternalHandler (std::string const& name, handler_t handler);
-    static Json::Value runHandler (
-        std::string const& name, Json::Value const& params);
+        std::string const& command,
+        Json::Value const& params,
+        Config::Role role,
+        Resource::Charge& loadType);
 
 private:
-    // VFALCO TODO Replace with a singleton with a well defined interface and
-    //             a lock free stack (if necessary).
-    //
-    static RPCInternalHandler*  sHeadHandler;
+    NetworkOPs& netOps_;
+    InfoSub::pointer infoSub_;
 
-    RPCInternalHandler*         mNextHandler;
-    std::string                 mName;
-    handler_t                   mHandler;
+    Config::Role role_ = Config::FORBID;
 };
 
 } // ripple

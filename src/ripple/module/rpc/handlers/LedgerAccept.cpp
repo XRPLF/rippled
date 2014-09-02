@@ -27,7 +27,7 @@ Json::Value doLedgerAccept (RPC::Context& context)
 
     if (!getConfig ().RUN_STANDALONE)
     {
-        jvResult["error"]   = "notStandAlone";
+        jvResult["error"] = "notStandAlone";
     }
     else
     {

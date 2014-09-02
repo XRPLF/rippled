@@ -30,8 +30,10 @@ namespace ripple {
 Json::Value doTransactionEntry (RPC::Context& context)
 {
     Ledger::pointer     lpLedger;
-    Json::Value jvResult
-            = RPC::lookupLedger (context.params_, lpLedger, context.netOps_);
+    Json::Value jvResult = RPC::lookupLedger (
+        context.params_,
+        lpLedger,
+        context.netOps_);
 
     if (!lpLedger)
         return jvResult;
