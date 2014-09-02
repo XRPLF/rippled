@@ -461,7 +461,6 @@ public:
             {
                 // Ledger is final, insufficent reserve to create offer, processed
                 // something.
-
                 // Consider the offer unfunded. Treat as tesSUCCESS.
             }
         }
@@ -490,7 +489,7 @@ public:
             if (tesSUCCESS == terResult)
             {
                 // Update owner count.
-                view.ownerCountAdjust (mTxnAccountID, 1, sleCreator);
+                view.incrementOwnerCount (sleCreator);
 
                 uint256 const uBookBase (Ledger::getBookBase (
                     {{uPaysCurrency, uPaysIssuerID},

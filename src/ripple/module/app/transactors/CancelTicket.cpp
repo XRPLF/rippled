@@ -72,7 +72,7 @@ public:
         TER const result = mEngine->view ().dirDelete (false, hint,
             Ledger::getOwnerDirIndex (ticket_owner), ticketId, false, (hint == 0));
 
-        mEngine->view ().ownerCountAdjust (ticket_owner, -1);
+        mEngine->view ().decrementOwnerCount (mTxnAccount);
         mEngine->view ().entryDelete (sleTicket);
 
         return result;

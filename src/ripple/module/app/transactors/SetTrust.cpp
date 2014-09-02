@@ -309,8 +309,7 @@ public:
             if (bLowReserveSet && !bLowReserved)
             {
                 // Set reserve for low account.
-
-                mEngine->view ().ownerCountAdjust (uLowAccountID, 1, sleLowAccount);
+                mEngine->view ().incrementOwnerCount (sleLowAccount);
                 uFlagsOut |= lsfLowReserve;
 
                 if (!bHigh)
@@ -320,16 +319,14 @@ public:
             if (bLowReserveClear && bLowReserved)
             {
                 // Clear reserve for low account.
-
-                mEngine->view ().ownerCountAdjust (uLowAccountID, -1, sleLowAccount);
+                mEngine->view ().decrementOwnerCount (sleLowAccount);
                 uFlagsOut &= ~lsfLowReserve;
             }
 
             if (bHighReserveSet && !bHighReserved)
             {
                 // Set reserve for high account.
-
-                mEngine->view ().ownerCountAdjust (uHighAccountID, 1, sleHighAccount);
+                mEngine->view ().incrementOwnerCount (sleHighAccount);
                 uFlagsOut |= lsfHighReserve;
 
                 if (bHigh)
@@ -339,8 +336,7 @@ public:
             if (bHighReserveClear && bHighReserved)
             {
                 // Clear reserve for high account.
-
-                mEngine->view ().ownerCountAdjust (uHighAccountID, -1, sleHighAccount);
+                mEngine->view ().decrementOwnerCount (sleHighAccount);
                 uFlagsOut &= ~lsfHighReserve;
             }
 

@@ -258,15 +258,6 @@ void LedgerEntrySet::entryDelete (SLE::ref sle)
     }
 }
 
-bool LedgerEntrySet::hasChanges ()
-{
-    for (auto const& it : mEntries)
-        if (it.second.mAction != taaCACHED)
-            return true;
-
-    return false;
-}
-
 Json::Value LedgerEntrySet::getJson (int) const
 {
     Json::Value ret (Json::objectValue);
@@ -383,20 +374,22 @@ SLE::pointer LedgerEntrySet::getForMod (uint256 const& node, Ledger::ref ledger,
         newMods.insert (std::make_pair (node, ret));
 
     return ret;
-
 }
 
 bool LedgerEntrySet::threadTx (RippleAddress const& threadTo, Ledger::ref ledger,
                                NodeToLedgerEntry& newMods)
 {
+    SLE::pointer sle = getForMod (
+        Ledger::getAccountRootIndex (threadTo.getAccountID ()), ledger, newMods);
+
 #ifdef META_DEBUG
     WriteLog (lsTRACE, LedgerEntrySet) << "Thread to " << threadTo.getAccountID ();
 #endif
-    SLE::pointer sle = getForMod (Ledger::getAccountRootIndex (threadTo.getAccountID ()), ledger, newMods);
 
     if (!sle)
     {
-        WriteLog (lsFATAL, LedgerEntrySet) << "Threading to non-existent account: " << threadTo.humanAccountID ();
+        WriteLog (lsFATAL, LedgerEntrySet) <<
+            "Threading to non-existent account: " << threadTo.humanAccountID ();
         assert (false);
         return false;
     }
@@ -1028,29 +1021,52 @@ uint256 LedgerEntrySet::getNextLedgerIndex (
     return next;
 }
 
-// If there is a count, adjust the owner count by iAmount. Otherwise, compute
-// the owner count and store it.
-void LedgerEntrySet::ownerCountAdjust (
-    Account const& owner, int iAmount, SLE::ref sleAccountRoot)
+void LedgerEntrySet::incrementOwnerCount (SLE::ref sleAccount)
 {
-    auto sleHold = sleAccountRoot ? SLE::pointer ()
-            : entryCache (ltACCOUNT_ROOT, Ledger::getAccountRootIndex (owner));
+    assert (sleAccount);
 
-    SLE::ref        sleRoot = sleAccountRoot
-                              ? sleAccountRoot
-                              : sleHold;
+    std::uint32_t const current_count = sleAccount->getFieldU32 (sfOwnerCount);
 
-    const std::uint32_t uOwnerCount = sleRoot->getFieldU32 (sfOwnerCount);
-
-    const std::uint32_t uNew        = iAmount + int (uOwnerCount) > 0
-                                      ? uOwnerCount + iAmount
-                                      : 0;
-
-    if (uOwnerCount != uNew)
+    if (current_count == std::numeric_limits<std::uint32_t>::max ())
     {
-        sleRoot->setFieldU32 (sfOwnerCount, uOwnerCount + iAmount);
-        entryModify (sleRoot);
+        WriteLog (lsFATAL, LedgerEntrySet) <<
+            "Account " << sleAccount->getFieldAccount160 (sfAccount) <<
+            " owner count exceeds max!";
+        return;
     }
+
+    sleAccount->setFieldU32 (sfOwnerCount, current_count + 1);
+    entryModify (sleAccount);
+}
+
+void LedgerEntrySet::incrementOwnerCount (Account const& owner)
+{
+    incrementOwnerCount(entryCache (ltACCOUNT_ROOT, 
+        Ledger::getAccountRootIndex (owner)));
+}
+
+void LedgerEntrySet::decrementOwnerCount (SLE::ref sleAccount)
+{
+    assert (sleAccount);
+
+    std::uint32_t const current_count = sleAccount->getFieldU32 (sfOwnerCount);
+
+    if (current_count == 0)
+    {
+        WriteLog (lsFATAL, LedgerEntrySet) <<
+            "Account " << sleAccount->getFieldAccount160 (sfAccount) <<
+            " owner count is already 0!";
+        return;
+    }
+
+    sleAccount->setFieldU32 (sfOwnerCount, current_count - 1);
+    entryModify (sleAccount);
+}
+
+void LedgerEntrySet::decrementOwnerCount (Account const& owner)
+{
+    decrementOwnerCount(entryCache (ltACCOUNT_ROOT, 
+        Ledger::getAccountRootIndex (owner)));
 }
 
 TER LedgerEntrySet::offerDelete (SLE::pointer sleOffer)
@@ -1074,147 +1090,11 @@ TER LedgerEntrySet::offerDelete (SLE::pointer sleOffer)
         false, uBookNode, uDirectory, offerIndex, true, false);
 
     if (tesSUCCESS == terResult)
-        ownerCountAdjust (owner, -1);
+        decrementOwnerCount (owner);
 
     entryDelete (sleOffer);
 
     return (terResult == tesSUCCESS) ? terResult2 : terResult;
-}
-
-// Returns amount owed by uToAccountID to uFromAccountID.
-// <-- $owed/currency/uToAccountID:
-// positive: uFromAccountID holds IOUs.,
-// negative: uFromAccountID owes IOUs.
-STAmount LedgerEntrySet::rippleOwed (
-    Account const& uToAccountID, Account const& uFromAccountID,
-    Currency const& currency)
-{
-    STAmount saBalance;
-    SLE::pointer sleRippleState  = entryCache (
-        ltRIPPLE_STATE,
-        Ledger::getRippleStateIndex (
-            uToAccountID, uFromAccountID, currency));
-
-    if (sleRippleState)
-    {
-        saBalance   = sleRippleState->getFieldAmount (sfBalance);
-
-        if (uToAccountID < uFromAccountID)
-            saBalance.negate ();
-
-        saBalance.setIssuer (uToAccountID);
-    }
-    else
-    {
-        saBalance.clear ({currency, uToAccountID});
-
-        WriteLog (lsDEBUG, LedgerEntrySet) << "rippleOwed:" <<
-            " No credit line between " <<
-            to_string (uFromAccountID) <<
-            " and " << to_string (uToAccountID) <<
-            " for " << to_string (currency);
-    }
-
-    return saBalance;
-}
-
-// Maximum amount of IOUs uToAccountID will hold from uFromAccountID.
-// <-- $amount/currency/uToAccountID.
-STAmount LedgerEntrySet::rippleLimit (
-    Account const& uToAccountID, Account const& uFromAccountID,
-    Currency const& currency)
-{
-    STAmount saLimit;
-    auto sleRippleState  = entryCache (
-        ltRIPPLE_STATE,
-        Ledger::getRippleStateIndex (
-            uToAccountID, uFromAccountID, currency));
-
-    if (sleRippleState)
-    {
-        saLimit = sleRippleState->getFieldAmount (
-            uToAccountID < uFromAccountID ? sfLowLimit : sfHighLimit);
-        saLimit.setIssuer (uToAccountID);
-    }
-    else
-    {
-        saLimit.clear ({currency, uToAccountID});
-    }
-
-    return saLimit;
-
-}
-
-std::uint32_t LedgerEntrySet::rippleTransferRate (Account const& issuer)
-{
-    SLE::pointer sleAccount (entryCache (
-        ltACCOUNT_ROOT, Ledger::getAccountRootIndex (issuer)));
-
-    std::uint32_t uQuality =
-        sleAccount && sleAccount->isFieldPresent (sfTransferRate)
-            ? sleAccount->getFieldU32 (sfTransferRate)
-            : QUALITY_ONE;
-
-    WriteLog (lsTRACE, LedgerEntrySet) << "rippleTransferRate:" <<
-        " issuer=" << to_string (issuer) <<
-        " account_exists=" << std::boolalpha << bool(sleAccount) <<
-        " transfer_rate=" << (uQuality / 1000000000.0);
-
-    return uQuality;
-}
-
-std::uint32_t
-LedgerEntrySet::rippleTransferRate (Account const& uSenderID,
-                                    Account const& uReceiverID,
-                                    Account const& issuer)
-{
-    // If calculating the transfer rate from or to the issuer of the currency
-    // no fees are assessed.
-    return uSenderID == issuer || uReceiverID == issuer
-           ? QUALITY_ONE
-           : rippleTransferRate (issuer);
-}
-
-// XXX Might not need this, might store in nodes on calc reverse.
-std::uint32_t
-LedgerEntrySet::rippleQualityIn (
-    Account const& uToAccountID, Account const& uFromAccountID,
-    Currency const& uCurrencyID, SField::ref sfLow, SField::ref sfHigh)
-{
-    std::uint32_t uQuality (QUALITY_ONE);
-
-    if (uToAccountID == uFromAccountID)
-        return uQuality;
-
-    SLE::pointer sleRippleState (entryCache (ltRIPPLE_STATE,
-        Ledger::getRippleStateIndex (uToAccountID, uFromAccountID, uCurrencyID)));
-
-    if (sleRippleState)
-    {
-        SField::ref sfField = uToAccountID < uFromAccountID ? sfLow : sfHigh;
-
-        uQuality    = sleRippleState->isFieldPresent (sfField)
-                      ? sleRippleState->getFieldU32 (sfField)
-                      : QUALITY_ONE;
-
-        if (!uQuality)
-            uQuality    = 1;    // Avoid divide by zero.
-    }
-    else
-    {
-        // XXX Ideally, catch no before this. So we can assert to be stricter.
-        uQuality    = QUALITY_ONE;
-    }
-
-    WriteLog (lsTRACE, LedgerEntrySet) << "rippleQuality: " <<
-        (sfLow == sfLowQualityIn ? "in" : "out") <<
-        " uToAccountID=" << to_string (uToAccountID) <<
-        " uFromAccountID=" << to_string (uFromAccountID) <<
-        " uCurrencyID=" << to_string (uCurrencyID) <<
-        " bLine=" << std::boolalpha << bool(sleRippleState) <<
-        " uQuality=" << (uQuality / 1000000000.0);
-
-    return uQuality;
 }
 
 // Return how much of issuer's currency IOUs that account holds.  May be
@@ -1292,7 +1172,7 @@ STAmount LedgerEntrySet::accountHolds (
     }
     else
     {
-        saAmount    = rippleHolds (account, currency, issuer, zeroIfFrozen);
+        saAmount = rippleHolds (account, currency, issuer, zeroIfFrozen);
 
         WriteLog (lsTRACE, LedgerEntrySet) << "accountHolds:" <<
             " account=" << to_string (account) <<
@@ -1388,7 +1268,7 @@ STAmount LedgerEntrySet::rippleTransferFee (
 {
     if (uSenderID != issuer && uReceiverID != issuer)
     {
-        std::uint32_t uTransitRate = rippleTransferRate (issuer);
+        std::uint32_t uTransitRate = rippleTransferRate (*this, issuer);
 
         if (QUALITY_ONE != uTransitRate)
         {
@@ -1477,28 +1357,26 @@ TER LedgerEntrySet::trustCreate (
             sleRippleState->setFieldU32 (
                 bSetHigh ? sfHighQualityOut : sfLowQualityOut, uQualityOut);
 
-        std::uint32_t  uFlags  = bSetHigh ? lsfHighReserve : lsfLowReserve;
+        std::uint32_t uFlags = bSetHigh ? lsfHighReserve : lsfLowReserve;
 
         if (bAuth)
         {
-            uFlags      |= (bSetHigh ? lsfHighAuth : lsfLowAuth);
+            uFlags |= (bSetHigh ? lsfHighAuth : lsfLowAuth);
         }
         if (bNoRipple)
         {
-            uFlags      |= (bSetHigh ? lsfHighNoRipple : lsfLowNoRipple);
+            uFlags |= (bSetHigh ? lsfHighNoRipple : lsfLowNoRipple);
         }
         if (bFreeze)
         {
-            uFlags      |= (!bSetHigh ? lsfLowFreeze : lsfHighFreeze);
+            uFlags |= (!bSetHigh ? lsfLowFreeze : lsfHighFreeze);
         }
 
         sleRippleState->setFieldU32 (sfFlags, uFlags);
-        ownerCountAdjust (
-            bSetDst ? uDstAccountID : uSrcAccountID, 1, sleAccount);
+        incrementOwnerCount (sleAccount);
 
         // ONLY: Create ripple balance.
-        sleRippleState->setFieldAmount (
-            sfBalance, bSetHigh ? -saBalance : saBalance);
+        sleRippleState->setFieldAmount (sfBalance, bSetHigh ? -saBalance : saBalance);
     }
 
     return terResult;
@@ -1637,10 +1515,7 @@ TER LedgerEntrySet::rippleCredit (
             // Sender quality out is 0.
         {
             // Clear the reserve of the sender, possibly delete the line!
-            auto sleSender = entryCache (
-                ltACCOUNT_ROOT, Ledger::getAccountRootIndex (uSenderID));
-
-            ownerCountAdjust (uSenderID, -1, sleSender);
+            decrementOwnerCount (uSenderID);
 
             // Clear reserve flag.
             sleRippleState->setFieldU32 (
@@ -1822,6 +1697,31 @@ TER LedgerEntrySet::accountSend (
     }
 
     return terResult;
+}
+
+std::uint32_t
+rippleTransferRate (LedgerEntrySet& ledger, Account const& issuer)
+{
+    SLE::pointer sleAccount (ledger.entryCache (
+        ltACCOUNT_ROOT, Ledger::getAccountRootIndex (issuer)));
+
+    std::uint32_t quality = QUALITY_ONE;
+
+    if (sleAccount && sleAccount->isFieldPresent (sfTransferRate))
+        quality = sleAccount->getFieldU32 (sfTransferRate);
+
+    return quality;
+}
+
+std::uint32_t
+rippleTransferRate (LedgerEntrySet& ledger, Account const& uSenderID,
+    Account const& uReceiverID, Account const& issuer)
+{
+    // If calculating the transfer rate from or to the issuer of the currency
+    // no fees are assessed.
+    return (uSenderID == issuer || uReceiverID == issuer)
+           ? QUALITY_ONE
+           : rippleTransferRate (ledger, issuer);
 }
 
 } // ripple

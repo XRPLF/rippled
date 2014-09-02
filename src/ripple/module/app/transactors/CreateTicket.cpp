@@ -111,7 +111,7 @@ public:
         sleTicket->setFieldU64(sfOwnerNode, hint);
 
         // If we succeeded, the new entry counts agains the creator's reserve.
-        mEngine->view ().ownerCountAdjust (mTxnAccountID, 1, mTxnAccount);
+        mEngine->view ().incrementOwnerCount (mTxnAccount);
 
         return result;
     }
