@@ -314,13 +314,13 @@ TER PathState::pushNode (
 
                     if (resultCode == tesSUCCESS)
                     {
-                        STAmount saOwed = lesEntries.rippleOwed (
+                        STAmount saOwed = credit_balance (lesEntries,
                             node.account_, backNode.account_,
                             node.issue_.currency);
                         STAmount saLimit;
 
                         if (saOwed <= zero) {
-                            saLimit = lesEntries.rippleLimit (
+                            saLimit = credit_limit (lesEntries,
                                 node.account_,
                                 backNode.account_,
                                 node.issue_.currency);

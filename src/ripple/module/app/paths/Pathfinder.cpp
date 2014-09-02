@@ -1071,4 +1071,51 @@ void Pathfinder::initPathTable()
         });
 }
 
+STAmount
+credit_limit (
+    LedgerEntrySet& ledger, Account const& account,
+    Account const& issuer, Currency const& currency)
+{
+    STAmount saLimit ({currency, account});
+
+    auto sleRippleState = ledger.entryCache (ltRIPPLE_STATE,
+        Ledger::getRippleStateIndex (account, issuer, currency));
+
+    if (sleRippleState)
+    {
+        saLimit = sleRippleState->getFieldAmount (
+            account < issuer ? sfLowLimit : sfHighLimit);
+        saLimit.setIssuer (account);
+    }
+
+    assert (saLimit.getIssuer () == account);
+    assert (saLimit.getCurrency () == currency);
+    return saLimit;
+}
+
+STAmount
+credit_balance (
+    LedgerEntrySet& ledger, Account const& account,
+    Account const& issuer, Currency const& currency)
+{
+    STAmount saBalance ({currency, account});
+
+    auto sleRippleState = ledger.entryCache (ltRIPPLE_STATE,
+        Ledger::getRippleStateIndex (account, issuer, currency));
+
+    if (sleRippleState)
+    {
+        saBalance = sleRippleState->getFieldAmount (sfBalance);
+
+        if (account < issuer)
+            saBalance.negate ();
+
+        saBalance.setIssuer (account);
+    }
+
+    assert (saBalance.getIssuer () == account);
+    assert (saBalance.getCurrency () == currency);
+    return saBalance;
+}
+
 } // ripple
