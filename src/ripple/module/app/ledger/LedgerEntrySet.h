@@ -163,7 +163,6 @@ public:
     void entryCreate (SLE::ref);    // This entry will be created
     void entryDelete (SLE::ref);    // This entry will be deleted
     void entryModify (SLE::ref);    // This entry will be modified
-    bool hasChanges ();             // True if LES has any changes
 
     // higher-level ledger functions
     SLE::pointer entryCreate (LedgerEntryType letType, uint256 const& uIndex);
@@ -194,8 +193,15 @@ public:
     uint256 getNextLedgerIndex (uint256 const& uHash);
     uint256 getNextLedgerIndex (uint256 const& uHash, uint256 const& uEnd);
 
-    void ownerCountAdjust (Account const& uOwnerID, int iAmount,
-        SLE::ref sleAccountRoot = SLE::pointer ());
+    /** @{ */
+    void incrementOwnerCount (SLE::ref sleAccount);
+    void incrementOwnerCount (Account const& owner);
+    /** @} */
+
+    /** @{ */
+    void decrementOwnerCount (SLE::ref sleAccount);
+    void decrementOwnerCount (Account const& owner);
+    /** @} */
 
     // Offer functions.
     TER offerDelete (SLE::pointer);
@@ -209,28 +215,6 @@ public:
     std::uint32_t rippleTransferRate (
         Account const& uSenderID, Account const& uReceiverID,
         Account const& issuer);
-
-    STAmount rippleOwed (
-        Account const& uToAccountID, Account const& uFromAccountID,
-        Currency const& currency);
-    STAmount rippleLimit (
-        Account const& uToAccountID, Account const& uFromAccountID,
-        Currency const& currency);
-
-    std::uint32_t rippleQualityIn (
-        Account const& uToAccountID, Account const& uFromAccountID,
-        Currency const& currency,
-        SField::ref sfLow = sfLowQualityIn,
-        SField::ref sfHigh = sfHighQualityIn);
-
-    std::uint32_t rippleQualityOut (
-        Account const& uToAccountID, Account const& uFromAccountID,
-        Currency const& currency)
-    {
-        return rippleQualityIn (
-            uToAccountID, uFromAccountID, currency,
-            sfLowQualityOut, sfHighQualityOut);
-    }
 
     bool isFrozen (
         Account const& account,
@@ -346,6 +330,14 @@ private:
         Account const& account, Currency const& currency,
         Account const& issuer, FreezeHandling zeroIfFrozen);
 };
+
+// NIKB FIXME: move these to the right place
+STAmount
+rippleLimit (LedgerEntrySet& ledger, Account const& uToAccountID,
+    Account const& uFromAccountID, Currency const& currency);
+
+STAmount rippleOwed (LedgerEntrySet& ledger, Account const& uToAccountID,
+    Account const& uFromAccountID, Currency const& currency);
 
 } // ripple
 

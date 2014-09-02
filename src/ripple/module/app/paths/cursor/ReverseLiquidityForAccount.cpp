@@ -61,7 +61,7 @@ TER PathCursor::reverseLiquidityForAccount () const
     // This is the quality from from the previous node to this one.
     const std::uint32_t uQualityIn
          = (nodeIndex_ != 0)
-            ? ledger().rippleQualityIn (
+            ? quality_in (ledger(),
                 node().account_,
                 previousAccountID,
                 node().issue_.currency)
@@ -70,7 +70,7 @@ TER PathCursor::reverseLiquidityForAccount () const
     // And this is the quality from the next one to this one.
     const std::uint32_t uQualityOut
         = (nodeIndex_ != lastNodeIndex)
-            ? ledger().rippleQualityOut (
+            ? quality_out (ledger(),
                 node().account_,
                 nextAccountID,
                 node().issue_.currency)
@@ -79,15 +79,15 @@ TER PathCursor::reverseLiquidityForAccount () const
     // For previousNodeIsAccount:
     // Previous account is already owed.
     const STAmount saPrvOwed = (previousNodeIsAccount && nodeIndex_ != 0)
-        ? ledger().rippleOwed (
+        ? rippleOwed (ledger(),
             node().account_,
             previousAccountID,
             node().issue_.currency)
-            : STAmount (node().issue_);
+        : STAmount (node().issue_);
 
     // The limit amount that the previous account may owe.
     const STAmount saPrvLimit = (previousNodeIsAccount && nodeIndex_ != 0)
-        ? ledger().rippleLimit (
+        ? rippleLimit (ledger(),
             node().account_,
             previousAccountID,
             node().issue_.currency)
@@ -95,7 +95,7 @@ TER PathCursor::reverseLiquidityForAccount () const
 
     // Next account is owed.
     const STAmount saNxtOwed = (nextNodeIsAccount && nodeIndex_ != lastNodeIndex)
-        ? ledger().rippleOwed (
+        ? rippleOwed (ledger(),
             node().account_,
             nextAccountID,
             node().issue_.currency)

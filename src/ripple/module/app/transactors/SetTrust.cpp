@@ -298,7 +298,7 @@ TER SetTrust::doApply ()
         {
             // Set reserve for low account.
 
-            mEngine->view ().ownerCountAdjust (uLowAccountID, 1, sleLowAccount);
+            mEngine->view ().incrementOwnerCount (sleLowAccount);
             uFlagsOut |= lsfLowReserve;
 
             if (!bHigh)
@@ -309,7 +309,7 @@ TER SetTrust::doApply ()
         {
             // Clear reserve for low account.
 
-            mEngine->view ().ownerCountAdjust (uLowAccountID, -1, sleLowAccount);
+            mEngine->view ().decrementOwnerCount (sleLowAccount);
             uFlagsOut &= ~lsfLowReserve;
         }
 
@@ -317,7 +317,7 @@ TER SetTrust::doApply ()
         {
             // Set reserve for high account.
 
-            mEngine->view ().ownerCountAdjust (uHighAccountID, 1, sleHighAccount);
+            mEngine->view ().incrementOwnerCount (sleHighAccount);
             uFlagsOut |= lsfHighReserve;
 
             if (bHigh)
@@ -328,7 +328,7 @@ TER SetTrust::doApply ()
         {
             // Clear reserve for high account.
 
-            mEngine->view ().ownerCountAdjust (uHighAccountID, -1, sleHighAccount);
+            mEngine->view ().decrementOwnerCount (sleHighAccount);
             uFlagsOut &= ~lsfHighReserve;
         }
 

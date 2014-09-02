@@ -39,6 +39,20 @@ void rippleLiquidity (
     STAmount& saCurAct,
     std::uint64_t& uRateMax);
 
+std::uint32_t
+quality_in (
+    LedgerEntrySet& ledger,
+    Account const& uToAccountID,
+    Account const& uFromAccountID,
+    Currency const& currency);
+
+std::uint32_t
+quality_out (
+    LedgerEntrySet& ledger,
+    Account const& uToAccountID,
+    Account const& uFromAccountID,
+    Currency const& currency);
+
 } // path
 } // ripple
 

@@ -57,7 +57,7 @@ TER CancelTicket::doApply ()
 
     if (result == tesSUCCESS)
     {
-        mEngine->view ().ownerCountAdjust (ticket_owner, -1);
+        mEngine->view ().decrementOwnerCount (ticket_owner);
         mEngine->view ().entryDelete (sleTicket);
     }
 
