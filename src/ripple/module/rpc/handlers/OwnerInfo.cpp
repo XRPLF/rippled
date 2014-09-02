@@ -45,7 +45,6 @@ Json::Value doOwnerInfo (RPC::Context& context)
     // Get info on account.
 
     auto const& closedLedger = context.netOps_.getClosedLedger ();
-    auto const& currentLedger = context.netOps_.getCurrentLedger ();
     Json::Value jAccepted = RPC::accountFromString (
         closedLedger,
         raAccount,
@@ -58,6 +57,7 @@ Json::Value doOwnerInfo (RPC::Context& context)
     ret["accepted"] = jAccepted.empty () ? context.netOps_.getOwnerInfo (
         closedLedger, raAccount) : jAccepted;
 
+    auto const& currentLedger = context.netOps_.getCurrentLedger ();
     Json::Value jCurrent = RPC::accountFromString (
         currentLedger,
         raAccount,

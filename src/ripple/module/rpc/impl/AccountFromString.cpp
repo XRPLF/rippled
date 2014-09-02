@@ -46,17 +46,17 @@ Json::Value accountFromString (
 
     if (bStrict)
     {
-        auto isBitcoin = naAccount.setAccountID (
+        auto success = naAccount.setAccountID (
             strIdent, Base58::getBitcoinAlphabet ());
-        return rpcError (isBitcoin ? rpcACT_BITCOIN : rpcACT_MALFORMED);
+        return rpcError (success ? rpcACT_BITCOIN : rpcACT_MALFORMED);
     }
 
-    // If we get here, it must be a seed.
+    // Otherwise, it must be a seed.
     if (!naSeed.setSeedGeneric (strIdent))
         return rpcError (rpcBAD_SEED);
 
     // We allow the use of the seeds to access #0.
-    // This is poor practice and merely for debuging convenience.
+    // This is poor practice and merely for debugging convenience.
     RippleAddress naRegular0Public;
     RippleAddress naRegular0Private;
 
@@ -72,9 +72,8 @@ Json::Value accountFromString (
     {
         // Found master public key.
         Blob vucCipher = sleGen->getFieldVL (sfGenerator);
-        Blob vucMasterGenerator =
-                naRegular0Private.accountPrivateDecrypt (
-                    naRegular0Public, vucCipher);
+        Blob vucMasterGenerator = naRegular0Private.accountPrivateDecrypt (
+            naRegular0Public, vucCipher);
 
         if (vucMasterGenerator.empty ())
             rpcError (rpcNO_GEN_DECRYPT);
@@ -84,7 +83,7 @@ Json::Value accountFromString (
     // Otherwise, if we didn't find a generator map, assume it is a master
     // generator.
 
-    bIndex = !iIndex;
+    bIndex  = !iIndex;
     naAccount.setAccountPublic (naGenerator, iIndex);
 
     return Json::Value (Json::objectValue);

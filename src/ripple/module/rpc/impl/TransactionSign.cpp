@@ -92,7 +92,7 @@ static void autofill_fee (
 }
 
 static Json::Value signPayment(
-    Json::Value& params,
+    Json::Value const& params,
     Json::Value& tx_json,
     RippleAddress const& raSrcAddressID,
     Ledger::pointer lSnapshot,
@@ -189,7 +189,7 @@ static Json::Value signPayment(
 //             submit the tranaction
 //
 Json::Value transactionSign (
-    Json::Value& params,
+    Json::Value params,
     bool bSubmit,
     bool bFailHard,
     NetworkOPs& netOps,

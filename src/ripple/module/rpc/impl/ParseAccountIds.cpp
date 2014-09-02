@@ -26,7 +26,7 @@ hash_set<RippleAddress> parseAccountIds (Json::Value const& jvArray)
 {
     hash_set<RippleAddress> result;
 
-    for (auto& jv: jvArray)
+    for (auto const& jv: jvArray)
     {
         RippleAddress address;
 

@@ -29,9 +29,7 @@ class NetworkOPs;
 class RPCServerHandler : public RPCServer::Handler
 {
 public:
-    explicit RPCServerHandler (
-        NetworkOPs& networkOPs,
-        Resource::Manager& resourceManager);
+    RPCServerHandler (NetworkOPs&, Resource::Manager&);
 
     std::string createResponse (int statusCode, std::string const& description);
     bool isAuthorized (std::map <std::string, std::string> const& headers);
