@@ -26,6 +26,7 @@
 #include <beast/chrono/chrono_io.h>
 #include <beast/Insight.h>
 #include <beast/container/hardened_hash.h>
+#include <beast/container/hashed_key.h>
 #include <ripple/common/UnorderedContainers.h>
 
 namespace ripple {
@@ -48,6 +49,7 @@ class KeyCache
 {
 public:
     typedef Key key_type;
+    typedef beast::hashed_key <Key, Hash, KeyEqual> hashed_key_type;
     typedef beast::abstract_clock <std::chrono::seconds> clock_type;
 
 private:
@@ -81,7 +83,8 @@ private:
         clock_type::time_point last_access;
     };
 
-    typedef hardened_hash_map <key_type, Entry, Hash, KeyEqual> map_type;
+    typedef hardened_hash_map <
+        hashed_key_type, Entry, typename hashed_key_type::hash> map_type;
     typedef typename map_type::iterator iterator;
     typedef std::lock_guard <Mutex> lock_guard;
 
@@ -175,8 +178,9 @@ public:
     template <class KeyComparable>
     bool exists (KeyComparable const& key) const
     {
+        hashed_key_type ikey (key);
         lock_guard lock (m_mutex);
-        typename map_type::const_iterator const iter (m_map.find (key));
+        typename map_type::const_iterator const iter (m_map.find (ikey));
         if (iter != m_map.end ())
         {
             ++m_stats.hits;
@@ -192,10 +196,11 @@ public:
     */
     bool insert (Key const& key)
     {
+        hashed_key_type ikey (key);
         lock_guard lock (m_mutex);
         clock_type::time_point const now (m_clock.now ());
         std::pair <iterator, bool> result (m_map.emplace (
-            std::piecewise_construct, std::forward_as_tuple (key),
+            std::piecewise_construct, std::forward_as_tuple (ikey),
                 std::forward_as_tuple (now)));
         if (! result.second)
         {
@@ -211,8 +216,9 @@ public:
     template <class KeyComparable>
     bool touch_if_exists (KeyComparable const& key)
     {
+        hashed_key_type ikey (key);
         lock_guard lock (m_mutex);
-        iterator const iter (m_map.find (key));
+        iterator const iter (m_map.find (ikey));
         if (iter == m_map.end ())
         {
             ++m_stats.misses;
@@ -229,8 +235,9 @@ public:
     */
     bool erase (key_type const& key)
     {
+        hashed_key_type ikey (ikey);
         lock_guard lock (m_mutex);
-        if (m_map.erase (key) > 0)
+        if (m_map.erase (ikey) > 0)
         {
             ++m_stats.hits;
             return true;
