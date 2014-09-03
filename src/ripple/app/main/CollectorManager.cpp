@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/app/main/CollectorManager.h>
+#include <ripple/metrics/Metrics.h>
 
 namespace ripple {
 
@@ -42,6 +43,10 @@ public:
             std::string const& prefix (params ["prefix"].toStdString ());
 
             m_collector = beast::insight::StatsDCollector::New (address, prefix, journal);
+        }
+        else if (server == "metrics")
+        {
+            m_collector = metrics::make_MetricsCollector (params ["port"].getIntValue(), journal);
         }
         else
         {
