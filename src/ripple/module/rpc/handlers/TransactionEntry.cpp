@@ -70,7 +70,9 @@ Json::Value doTransactionEntry (RPC::Context& context)
             }
             else
             {
-                jvResult["tx_json"]     = tpTrans->getJson (0);
+                jvResult["tx_json"] = tpTrans->getJson (
+                    std::bitset<Options::numOfOptions> ());
+                
                 if (tmTrans)
                     jvResult["metadata"]    = tmTrans->getJson (0);
                 // 'accounts'

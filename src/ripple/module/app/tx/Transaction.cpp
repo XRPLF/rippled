@@ -339,17 +339,17 @@ bool Transaction::convertToTransactions (std::uint32_t firstLedgerSeq, std::uint
     return true;
 }
 
-// options 1 to include the date of the transaction
-Json::Value Transaction::getJson (int options, bool binary) const
+Json::Value
+Transaction::getJson (std::bitset<Options::numOfOptions> const& options) const
 {
-    Json::Value ret (mTransaction->getJson (0, binary));
+    Json::Value ret (mTransaction->getJson (0, options[Options::binary]));
 
     if (mInLedger)
     {
         ret["inLedger"] = mInLedger;        // Deprecated.
         ret["ledger_index"] = mInLedger;
 
-        if (options == 1)
+        if (options[Options::date])
         {
             auto ledger = getApp().getLedgerMaster ().
                     getLedgerBySeq (mInLedger);

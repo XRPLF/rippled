@@ -43,11 +43,17 @@ Json::Value doTx (RPC::Context& context)
         if (!txn)
             return rpcError (rpcTXN_NOT_FOUND);
 
-#ifdef READY_FOR_NEW_TX_FORMAT
         Json::Value ret;
-        ret[jss::transaction] = txn->getJson (1, binary);
+        std::bitset<Options::numOfOptions> options;
+        options.set (Options::date);
+
+        if (binary)
+            options.set (Options::binary);
+
+#ifdef READY_FOR_NEW_TX_FORMAT
+        ret[jss::transaction] = txn->getJson (options);
 #else
-        Json::Value ret = txn->getJson (1, binary);
+        ret = txn->getJson (options);
 #endif
 
         if (txn->getLedger () != 0)
