@@ -22,35 +22,7 @@
 
 namespace ripple {
 
-class SetAccount
-    : public Transactor
-{
-public:
-    SetAccount (
-        SerializedTransaction const& txn,
-        TransactionEngineParams params,
-        TransactionEngine* engine)
-        : Transactor (
-            txn,
-            params,
-            engine,
-            deprecatedLogs().journal("SetAccount"))
-    {
 
-    }
-
-    TER doApply () override;
-};
-
-inline
-std::unique_ptr <Transactor>
-make_SetAccount (
-    SerializedTransaction const& txn,
-    TransactionEngineParams params,
-    TransactionEngine* engine)
-{
-    return std::make_unique <SetAccount> (txn, params, engine);
-}
 
 }
 

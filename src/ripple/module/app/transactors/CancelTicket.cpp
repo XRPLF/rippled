@@ -19,49 +19,75 @@
 
 namespace ripple {
 
-TER CancelTicket::doApply ()
+class CancelTicket
+    : public Transactor
 {
-    assert (mTxnAccount);
-
-    uint256 const ticketId = mTxn.getFieldH256 (sfTicketID);
-
-    SLE::pointer sleTicket = mEngine->view ().entryCache (ltTICKET, ticketId);
-
-    if (!sleTicket)
-        return tecNO_ENTRY;
-
-    Account const ticket_owner (sleTicket->getFieldAccount160 (sfAccount));
-    
-    bool authorized (mTxnAccountID == ticket_owner);
-
-    // The target can also always remove a ticket
-    if (!authorized && sleTicket->isFieldPresent (sfTarget))
-        authorized = (mTxnAccountID == sleTicket->getFieldAccount160 (sfTarget));
-
-    // And finally, anyone can remove an expired ticket
-    if (!authorized && sleTicket->isFieldPresent (sfExpiration))
+public:
+    CancelTicket (
+        SerializedTransaction const& txn,
+        TransactionEngineParams params,
+        TransactionEngine* engine)
+        : Transactor (
+            txn,
+            params,
+            engine,
+            deprecatedLogs().journal("CancelTicket"))
     {
-        std::uint32_t const expiration = sleTicket->getFieldU32 (sfExpiration);
 
-        if (mEngine->getLedger ()->getParentCloseTimeNC () >= expiration)
-            authorized = true;
     }
 
-    if (!authorized)
-        return tecNO_PERMISSION;
-
-    std::uint64_t const hint (sleTicket->getFieldU64 (sfOwnerNode));
-
-    TER const result = mEngine->view ().dirDelete (false, hint,
-        Ledger::getOwnerDirIndex (ticket_owner), ticketId, false, (hint == 0));
-
-    if (result == tesSUCCESS)
+    TER doApply () override
     {
-        mEngine->view ().decrementOwnerCount (ticket_owner);
+        assert (mTxnAccount);
+
+        uint256 const ticketId = mTxn.getFieldH256 (sfTicketID);
+
+        SLE::pointer sleTicket = mEngine->view ().entryCache (ltTICKET, ticketId);
+
+        if (!sleTicket)
+            return tecNO_ENTRY;
+
+        Account const ticket_owner (sleTicket->getFieldAccount160 (sfAccount));
+        
+        bool authorized (mTxnAccountID == ticket_owner);
+
+        // The target can also always remove a ticket
+        if (!authorized && sleTicket->isFieldPresent (sfTarget))
+            authorized = (mTxnAccountID == sleTicket->getFieldAccount160 (sfTarget));
+
+        // And finally, anyone can remove an expired ticket
+        if (!authorized && sleTicket->isFieldPresent (sfExpiration))
+        {
+            std::uint32_t const expiration = sleTicket->getFieldU32 (sfExpiration);
+
+            if (mEngine->getLedger ()->getParentCloseTimeNC () >= expiration)
+                authorized = true;
+        }
+
+        if (!authorized)
+            return tecNO_PERMISSION;
+
+        std::uint64_t const hint (sleTicket->getFieldU64 (sfOwnerNode));
+
+        TER const result = mEngine->view ().dirDelete (false, hint,
+            Ledger::getOwnerDirIndex (ticket_owner), ticketId, false, (hint == 0));
+
+        if (result == tesSUCCESS)
+            mEngine->view ().decrementOwnerCount (ticket_owner);
+
         mEngine->view ().entryDelete (sleTicket);
-    }
 
-    return result;
+        return result;
+    }
+};
+
+TER
+transact_CancelTicket (
+    SerializedTransaction const& txn,
+    TransactionEngineParams params,
+    TransactionEngine* engine)
+{
+    return CancelTicket (txn, params, engine).apply ();
 }
 
 }
