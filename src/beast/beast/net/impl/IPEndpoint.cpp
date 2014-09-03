@@ -79,14 +79,14 @@ Endpoint Endpoint::from_string_altform (std::string const& s)
 
         if (is.rdbuf()->in_avail()>0)
         {
-            if (! IP::detail::expect (is, ' '))
+            if (! IP::detail::expect_whitespace (is))
                 return Endpoint();
 
             while (is.rdbuf()->in_avail()>0)
             {
                 char c;
                 is.get(c);
-                if (c != ' ')
+                if (!isspace (c))
                 {
                     is.unget();
                     break;
