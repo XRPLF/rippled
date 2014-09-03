@@ -2386,63 +2386,39 @@
     <ClCompile Include="..\..\src\ripple\module\app\transactors\AddWallet.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\transactors\AddWallet.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\CancelOffer.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\transactors\CancelOffer.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\CancelTicket.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\transactors\CancelTicket.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\Change.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\transactors\Change.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\CreateOffer.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\transactors\CreateOffer.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\CreateOfferBridged.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\transactors\CreateOfferBridged.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\CreateOfferDirect.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\transactors\CreateOfferDirect.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\CreateTicket.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\transactors\CreateTicket.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\Payment.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\transactors\Payment.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\SetAccount.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\transactors\SetAccount.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\SetRegularKey.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\transactors\SetRegularKey.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\SetTrust.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\transactors\SetTrust.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\Transactor.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>

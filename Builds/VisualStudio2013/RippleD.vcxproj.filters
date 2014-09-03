@@ -3489,75 +3489,39 @@
     <ClCompile Include="..\..\src\ripple\module\app\transactors\AddWallet.cpp">
       <Filter>ripple\module\app\transactors</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\transactors\AddWallet.h">
-      <Filter>ripple\module\app\transactors</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\CancelOffer.cpp">
       <Filter>ripple\module\app\transactors</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\transactors\CancelOffer.h">
-      <Filter>ripple\module\app\transactors</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\CancelTicket.cpp">
       <Filter>ripple\module\app\transactors</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\transactors\CancelTicket.h">
-      <Filter>ripple\module\app\transactors</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\Change.cpp">
       <Filter>ripple\module\app\transactors</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\transactors\Change.h">
-      <Filter>ripple\module\app\transactors</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\CreateOffer.cpp">
       <Filter>ripple\module\app\transactors</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\transactors\CreateOffer.h">
-      <Filter>ripple\module\app\transactors</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\CreateOfferBridged.cpp">
       <Filter>ripple\module\app\transactors</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\transactors\CreateOfferBridged.h">
-      <Filter>ripple\module\app\transactors</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\CreateOfferDirect.cpp">
       <Filter>ripple\module\app\transactors</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\transactors\CreateOfferDirect.h">
-      <Filter>ripple\module\app\transactors</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\CreateTicket.cpp">
       <Filter>ripple\module\app\transactors</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\transactors\CreateTicket.h">
-      <Filter>ripple\module\app\transactors</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\Payment.cpp">
       <Filter>ripple\module\app\transactors</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\transactors\Payment.h">
-      <Filter>ripple\module\app\transactors</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\SetAccount.cpp">
       <Filter>ripple\module\app\transactors</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\transactors\SetAccount.h">
-      <Filter>ripple\module\app\transactors</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\SetRegularKey.cpp">
       <Filter>ripple\module\app\transactors</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\transactors\SetRegularKey.h">
-      <Filter>ripple\module\app\transactors</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\SetTrust.cpp">
       <Filter>ripple\module\app\transactors</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\transactors\SetTrust.h">
-      <Filter>ripple\module\app\transactors</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\Transactor.cpp">
       <Filter>ripple\module\app\transactors</Filter>
     </ClCompile>
