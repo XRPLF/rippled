@@ -22,7 +22,6 @@ namespace ripple {
 SHAMapTreeNode::SHAMapTreeNode (std::uint32_t seq)
     : mHash (std::uint64_t(0))
     , mSeq (seq)
-    , mAccessSeq (seq)
     , mType (tnERROR)
     , mIsBranch (0)
     , mFullBelow (false)
