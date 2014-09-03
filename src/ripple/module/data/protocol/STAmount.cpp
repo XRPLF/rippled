@@ -1046,11 +1046,15 @@ STAmount STAmount::getPay (
 
 STAmount STAmount::deserialize (SerializerIterator& it)
 {
-    auto s = dynamic_cast<STAmount*> (construct (it, sfGeneric));
+    auto s = construct (it, sfGeneric);
+
     if (!s)
         throw std::runtime_error("Deserialization error");
 
     STAmount ret (*s);
+
+    delete s;
+
     return ret;
 }
 

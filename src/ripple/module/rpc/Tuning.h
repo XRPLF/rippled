@@ -28,8 +28,7 @@ const int MAX_PATHFINDS_IN_PROGRESS = 2;
 const int MAX_PATHFIND_JOB_COUNT = 50;
 const int MAX_JOB_QUEUE_CLIENTS = 500;
 const int MAX_VALIDATED_LEDGER_AGE = 120;
-
-// TODO(tom): Shouldn't DEFAULT_AUTO_FILL_FEE_MULTIPLIER be floating point?
+const int MAX_REQUEST_SIZE = 1000000;
 
 } // RPC
 } // ripple

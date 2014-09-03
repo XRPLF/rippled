@@ -52,13 +52,13 @@ TER PathCursor::forwardLiquidityForAccount () const
             nextNode().isAccount() ? nextNode().account_ : node().account_;
 
     std::uint32_t uQualityIn = nodeIndex_
-        ? ledger().rippleQualityIn (
+        ? quality_in (ledger(),
             node().account_,
             previousAccountID,
             node().issue_.currency)
         : QUALITY_ONE;
     std::uint32_t  uQualityOut = (nodeIndex_ == lastNodeIndex)
-        ? ledger().rippleQualityOut (
+        ? quality_out (ledger(),
             node().account_,
             nextAccountID,
             node().issue_.currency)

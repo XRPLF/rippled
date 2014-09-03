@@ -41,7 +41,6 @@ Json::Value doUnsubscribe (RPC::Context& context)
             return rpcError (rpcNO_PERMISSION);
 
         std::string strUrl  = context.params_["url"].asString ();
-
         ispSub  = context.netOps_.findRpcSub (strUrl);
 
         if (!ispSub)
@@ -70,7 +69,7 @@ Json::Value doUnsubscribe (RPC::Context& context)
                     context.netOps_.unsubTransactions (ispSub->getSeq ());
 
                 else if (streamName == "transactions_proposed"
-                         || streamName == "rt_transactions")         // DEPRECATED
+                         || streamName == "rt_transactions") // DEPRECATED
                     context.netOps_.unsubRTTransactions (ispSub->getSeq ());
 
                 else
@@ -116,44 +115,40 @@ Json::Value doUnsubscribe (RPC::Context& context)
     }
     else
     {
-        for (auto& jvSubRequest: context.params_["books"])
+        for (auto& jv: context.params_["books"])
         {
-            if (!jvSubRequest.isObject ()
-                    || !jvSubRequest.isMember ("taker_pays")
-                    || !jvSubRequest.isMember ("taker_gets")
-                    || !jvSubRequest["taker_pays"].isObject ()
-                    || !jvSubRequest["taker_gets"].isObject ())
+            if (!jv.isObject ()
+                    || !jv.isMember ("taker_pays")
+                    || !jv.isMember ("taker_gets")
+                    || !jv["taker_pays"].isObject ()
+                    || !jv["taker_gets"].isObject ())
                 return rpcError (rpcINVALID_PARAMS);
 
-            Currency pay_currency;
-            Account pay_issuer;
-            Currency get_currency;
-            Account get_issuer;
-            bool bBoth = (jvSubRequest.isMember ("both") &&
-                          jvSubRequest["both"].asBool ())
-                    || (jvSubRequest.isMember ("both_sides") &&
-                        jvSubRequest["both_sides"].asBool ());  // DEPRECATED
+            bool bBoth = (jv.isMember ("both") && jv["both"].asBool ()) ||
+                    (jv.isMember ("both_sides") && jv["both_sides"].asBool ());
+            // both_sides is deprecated.
 
-            Json::Value     taker_pays     = jvSubRequest["taker_pays"];
-            Json::Value     taker_gets     = jvSubRequest["taker_gets"];
+            Json::Value taker_pays = jv["taker_pays"];
+            Json::Value taker_gets = jv["taker_gets"];
+
+            Book book;
 
             // Parse mandatory currency.
             if (!taker_pays.isMember ("currency")
                 || !to_currency (
-                    pay_currency, taker_pays["currency"].asString ()))
+                    book.in.currency, taker_pays["currency"].asString ()))
             {
                 WriteLog (lsINFO, RPCHandler) << "Bad taker_pays currency.";
-
                 return rpcError (rpcSRC_CUR_MALFORMED);
             }
             // Parse optional issuer.
             else if (((taker_pays.isMember ("issuer"))
                       && (!taker_pays["issuer"].isString ()
                           || !to_issuer (
-                              pay_issuer, taker_pays["issuer"].asString ())))
+                              book.in.account, taker_pays["issuer"].asString ())))
                      // Don't allow illegal issuers.
-                     || (!pay_currency != !pay_issuer)
-                     || noAccount() == pay_issuer)
+                     || !isConsistent (book.in)
+                     || noAccount() == book.in.account)
             {
                 WriteLog (lsINFO, RPCHandler) << "Bad taker_pays issuer.";
 
@@ -162,7 +157,7 @@ Json::Value doUnsubscribe (RPC::Context& context)
 
             // Parse mandatory currency.
             if (!taker_gets.isMember ("currency")
-                    || !to_currency (get_currency,
+                    || !to_currency (book.out.currency,
                                      taker_gets["currency"].asString ()))
             {
                 WriteLog (lsINFO, RPCHandler) << "Bad taker_pays currency.";
@@ -172,26 +167,24 @@ Json::Value doUnsubscribe (RPC::Context& context)
             // Parse optional issuer.
             else if (((taker_gets.isMember ("issuer"))
                       && (!taker_gets["issuer"].isString ()
-                          || !to_issuer (get_issuer,
+                          || !to_issuer (book.out.account,
                                          taker_gets["issuer"].asString ())))
                      // Don't allow illegal issuers.
-                     || (!get_currency != !get_issuer)
-                     || noAccount() == get_issuer)
+                     || !isConsistent (book.out)
+                     || noAccount() == book.out.account)
             {
                 WriteLog (lsINFO, RPCHandler) << "Bad taker_gets issuer.";
 
                 return rpcError (rpcDST_ISR_MALFORMED);
             }
 
-            if (pay_currency == get_currency
-                    && pay_issuer == get_issuer)
+            if (book.in == book.out)
             {
-                WriteLog (lsINFO, RPCHandler) << "taker_gets same as taker_pays.";
-
+                WriteLog (lsINFO, RPCHandler)
+                    << "taker_gets same as taker_pays.";
                 return rpcError (rpcBAD_MARKET);
             }
 
-            Book book{{pay_currency, pay_issuer}, {get_currency, get_issuer}};
             context.netOps_.unsubBook (ispSub->getSeq (), book);
 
             if (bBoth)

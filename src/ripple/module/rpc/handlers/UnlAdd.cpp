@@ -33,20 +33,18 @@ Json::Value doUnlAdd (RPC::Context& context)
     std::string strComment = context.params_.isMember ("comment")
             ? context.params_["comment"].asString () : "";
 
-    RippleAddress   raNodePublic;
+    RippleAddress raNodePublic;
 
     if (raNodePublic.setNodePublic (strNode))
     {
         getApp().getUNL ().nodeAddPublic (
             raNodePublic, UniqueNodeList::vsManual, strComment);
-
         return "adding node by public key";
     }
     else
     {
         getApp().getUNL ().nodeAddDomain (
             strNode, UniqueNodeList::vsManual, strComment);
-
         return "adding node by domain";
     }
 }

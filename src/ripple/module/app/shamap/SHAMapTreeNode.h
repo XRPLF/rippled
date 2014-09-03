@@ -76,12 +76,7 @@ public:
     }
     void setSeq (std::uint32_t s)
     {
-        mAccessSeq = mSeq = s;
-    }
-    void touch (std::uint32_t s)
-    {
-        if (mSeq != 0)
-            mAccessSeq = s;
+        mSeq = s;
     }
     uint256 const& getNodeHash () const
     {
@@ -197,7 +192,7 @@ private:
     uint256             mHash;
     uint256             mHashes[16];
     SHAMapItem::pointer mItem;
-    std::uint32_t       mSeq, mAccessSeq;
+    std::uint32_t       mSeq;
     TNType              mType;
     int                 mIsBranch;
     bool                mFullBelow;

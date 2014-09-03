@@ -132,7 +132,7 @@ void
 ServerImpl::remove (Door& door)
 {
     std::lock_guard <std::mutex> lock (mutex_);
-    state_.doors.push_back (door);
+    state_.doors.erase (state_.doors.iterator_to (door));
 }
 
 //--------------------------------------------------------------------------

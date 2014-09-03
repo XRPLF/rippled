@@ -19,54 +19,80 @@
 
 namespace ripple {
 
-
-TER CancelOffer::doApply ()
+class CancelOffer
+    : public Transactor
 {
-    std::uint32_t const uOfferSequence = mTxn.getFieldU32 (sfOfferSequence);
-    std::uint32_t const uAccountSequenceNext = mTxnAccount->getFieldU32 (sfSequence);
-
-    m_journal.debug <<
-        "uAccountSequenceNext=" << uAccountSequenceNext <<
-        " uOfferSequence=" << uOfferSequence;
-
-    std::uint32_t const uTxFlags (mTxn.getFlags ());
-
-    if (uTxFlags & tfUniversalMask)
+public:
+    CancelOffer (
+        SerializedTransaction const& txn,
+        TransactionEngineParams params,
+        TransactionEngine* engine)
+        : Transactor (
+            txn,
+            params,
+            engine,
+            deprecatedLogs().journal("CancelOffer"))
     {
-        m_journal.trace <<
-            "Malformed transaction: Invalid flags set.";
-        return temINVALID_FLAG;
+
     }
 
-    if (!uOfferSequence || uAccountSequenceNext - 1 <= uOfferSequence)
+    TER doApply () override
     {
-        m_journal.trace <<
+        std::uint32_t const uOfferSequence = mTxn.getFieldU32 (sfOfferSequence);
+        std::uint32_t const uAccountSequenceNext = mTxnAccount->getFieldU32 (sfSequence);
+
+        m_journal.debug <<
             "uAccountSequenceNext=" << uAccountSequenceNext <<
             " uOfferSequence=" << uOfferSequence;
-        return temBAD_SEQUENCE;
+
+        std::uint32_t const uTxFlags (mTxn.getFlags ());
+
+        if (uTxFlags & tfUniversalMask)
+        {
+            m_journal.trace <<
+                "Malformed transaction: Invalid flags set.";
+            return temINVALID_FLAG;
+        }
+
+        if (!uOfferSequence || uAccountSequenceNext - 1 <= uOfferSequence)
+        {
+            m_journal.trace <<
+                "uAccountSequenceNext=" << uAccountSequenceNext <<
+                " uOfferSequence=" << uOfferSequence;
+            return temBAD_SEQUENCE;
+        }
+
+        uint256 const offerIndex (
+            Ledger::getOfferIndex (mTxnAccountID, uOfferSequence));
+
+        SLE::pointer sleOffer (
+            mEngine->entryCache (ltOFFER, offerIndex));
+
+        if (sleOffer)
+        {
+            m_journal.debug <<
+                "OfferCancel: uOfferSequence=" << uOfferSequence;
+
+            return mEngine->view ().offerDelete (sleOffer);
+        }
+
+        m_journal.warning <<
+            "OfferCancel: offer not found: " <<
+            to_string (mTxnAccountID) <<
+            " : " << uOfferSequence <<
+            " : " << to_string (offerIndex);
+
+        return tesSUCCESS;
     }
+};
 
-    uint256 const offerIndex (
-        Ledger::getOfferIndex (mTxnAccountID, uOfferSequence));
-
-    SLE::pointer sleOffer (
-        mEngine->entryCache (ltOFFER, offerIndex));
-
-    if (sleOffer)
-    {
-        m_journal.debug <<
-            "OfferCancel: uOfferSequence=" << uOfferSequence;
-
-        return mEngine->view ().offerDelete (sleOffer);
-    }
-
-    m_journal.warning <<
-        "OfferCancel: offer not found: " <<
-        to_string (mTxnAccountID) <<
-        " : " << uOfferSequence <<
-        " : " << to_string (offerIndex);
-
-    return tesSUCCESS;
+TER
+transact_CancelOffer (
+    SerializedTransaction const& txn,
+    TransactionEngineParams params,
+    TransactionEngine* engine)
+{
+    return CancelOffer (txn, params, engine).apply ();
 }
 
 }

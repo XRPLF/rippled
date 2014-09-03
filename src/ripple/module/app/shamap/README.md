@@ -161,9 +161,6 @@ The `SHAMap::getCache()` method exhibits the same behavior.
 
 ## SHAMap Improvements ##
 
-Here's a simple one: the SHAMapTreeNode::mAccessSeq member is currently not
-used and could be removed.
-
 Here's a more important change.  The tree structure is currently embedded
 in the SHAMapTreeNodes themselves.  It doesn't have to be that way, and
 that should be fixed.

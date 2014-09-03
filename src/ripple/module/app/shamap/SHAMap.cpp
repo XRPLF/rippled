@@ -222,10 +222,7 @@ SHAMap::dirtyUp (std::stack<std::pair<SHAMapTreeNode::pointer, SHAMapNodeID>>& s
 
 SHAMapTreeNode::pointer SHAMap::checkCacheNode (const SHAMapNodeID& iNode)
 {
-    SHAMapTreeNode::pointer ret = mTNByID.retrieve(iNode);
-    if (ret && (ret->getSeq()!= 0))
-        ret->touch (mSeq);
-    return ret;
+    return mTNByID.retrieve(iNode);
 }
 
 SHAMapTreeNode::pointer SHAMap::walkTo (uint256 const& id, bool modify)
@@ -1218,7 +1215,6 @@ SHAMapTreeNode* SHAMap::getNodePointer (const SHAMapNodeID& nodeID)
     if (nodeptr)
     {
         SHAMapTreeNode* ret = nodeptr.get ();
-        ret->touch(mSeq);
         return ret;
     }
 

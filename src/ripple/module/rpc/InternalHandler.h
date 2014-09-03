@@ -17,47 +17,34 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_PAYMENT_H_INCLUDED
-#define RIPPLE_TX_PAYMENT_H_INCLUDED
+#ifndef RIPPLE_APP_RPC_INTERNAL_HANDLER
+#define RIPPLE_APP_RPC_INTERNAL_HANDLER
 
 namespace ripple {
+namespace RPC {
 
-class Payment 
-    : public Transactor
+/** To dynamically add custom or experimental RPC handlers, construct a new
+ * instance of InternalHandler with your own handler function. */
+struct InternalHandler
 {
-    /* The largest number of paths we allow */
-    static std::size_t const MaxPathSize = 6;
+    typedef Json::Value (*handler_t) (const Json::Value&);
 
-    /* The longest path we allow */
-    static std::size_t const MaxPathLength = 8;
-
-public:
-    Payment (
-        SerializedTransaction const& txn,
-        TransactionEngineParams params,
-        TransactionEngine* engine)
-        : Transactor (
-            txn,
-            params,
-            engine,
-            deprecatedLogs().journal("Payment"))
+    InternalHandler (const std::string& name, handler_t handler)
+            : name_ (name),
+              handler_ (handler)
     {
-
+        nextHandler_ = InternalHandler::headHandler;
+        InternalHandler::headHandler = this;
     }
 
-    TER doApply ();
+    InternalHandler* nextHandler_;
+    std::string name_;
+    handler_t handler_;
+
+    static InternalHandler* headHandler;
 };
 
-inline
-std::unique_ptr <Transactor>
-make_Payment (
-    SerializedTransaction const& txn,
-    TransactionEngineParams params,
-    TransactionEngine* engine)
-{
-    return std::make_unique <Payment> (txn, params, engine);
-}
-
-}
+} // RPC
+} // ripple
 
 #endif

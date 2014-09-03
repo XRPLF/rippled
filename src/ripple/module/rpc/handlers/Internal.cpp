@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2012-2014 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,44 +17,37 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_REGULARSETKEY_H_INCLUDED
-#define RIPPLE_TX_REGULARSETKEY_H_INCLUDED
+#include <ripple/module/rpc/InternalHandler.h>
 
 namespace ripple {
 
-class SetRegularKey
-    : public Transactor
+RPC::InternalHandler* RPC::InternalHandler::headHandler = nullptr;
+
+Json::Value doInternal (RPC::Context& context)
 {
-    std::uint64_t calculateBaseFee ();
+    // Used for debug or special-purpose RPC commands
+    if (!context.params_.isMember ("internal_command"))
+        return rpcError (rpcINVALID_PARAMS);
 
-public:
-    SetRegularKey (
-        SerializedTransaction const& txn,
-        TransactionEngineParams params,
-        TransactionEngine* engine)
-        : Transactor (
-            txn,
-            params,
-            engine,
-            deprecatedLogs().journal("SetRegularKey"))
+    auto name = context.params_["internal_command"].asString ();
+    auto params = context.params_["params"];
+
+    for (auto* h = RPC::InternalHandler::headHandler; h; )
     {
+        if (name == h->name_)
+        {
+            WriteLog (lsWARNING, RPCHandler)
+                << "Internal command " << name << ": " << params;
+            Json::Value ret = h->handler_ (params);
+            WriteLog (lsWARNING, RPCHandler)
+                << "Internal command returns: " << ret;
+            return ret;
+        }
 
+        h = h->nextHandler_;
     }
 
-    TER checkFee ();
-    TER doApply ();
-};
-
-inline
-std::unique_ptr <Transactor>
-make_SetRegularKey (
-    SerializedTransaction const& txn,
-    TransactionEngineParams params,
-    TransactionEngine* engine)
-{
-    return std::make_unique <SetRegularKey> (txn, params, engine);
+    return rpcError (rpcBAD_SYNTAX);
 }
 
-}
-
-#endif
+} // ripple

@@ -39,7 +39,7 @@ Json::Value doProofVerify (RPC::Context& context)
     if (!context.params_.isMember ("solution"))
         return RPC::missing_field_error ("solution");
 
-    std::string strToken    = context.params_["token"].asString ();
+    std::string strToken = context.params_["token"].asString ();
     uint256 uSolution (context.params_["solution"].asString ());
 
     PowResult prResult;
@@ -60,7 +60,7 @@ Json::Value doProofVerify (RPC::Context& context)
             if (iDifficulty < 0 ||
                 iDifficulty > ProofOfWorkFactory::kMaxDifficulty)
             {
-                return RPC::missing_field_error ("difficulty");
+                return RPC::invalid_field_error ("difficulty");
             }
 
             pgGen->setDifficulty (iDifficulty);
@@ -68,12 +68,12 @@ Json::Value doProofVerify (RPC::Context& context)
 
         if (context.params_.isMember ("secret"))
         {
-            uint256     uSecret (context.params_["secret"].asString ());
+            uint256 uSecret (context.params_["secret"].asString ());
             pgGen->setSecret (uSecret);
         }
 
-        prResult                = pgGen->checkProof (strToken, uSolution);
-        jvResult["secret"]      = to_string (pgGen->getSecret ());
+        prResult = pgGen->checkProof (strToken, uSolution);
+        jvResult["secret"] = to_string (pgGen->getSecret ());
     }
     else
     {
@@ -87,9 +87,9 @@ Json::Value doProofVerify (RPC::Context& context)
 
     ProofOfWork::calcResultInfo (prResult, sToken, sHuman);
 
-    jvResult["proof_result"]            = sToken;
-    jvResult["proof_result_code"]       = prResult;
-    jvResult["proof_result_message"]    = sHuman;
+    jvResult["proof_result"] = sToken;
+    jvResult["proof_result_code"] = prResult;
+    jvResult["proof_result_message"] = sHuman;
 
     return jvResult;
 }

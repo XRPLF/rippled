@@ -64,7 +64,7 @@ void PathState::reset(STAmount const& in, STAmount const& out)
 }
 
 // Return true, iff lhs has less priority than rhs.
-bool PathState::lessPriority (PathState& lhs, PathState& rhs)
+bool PathState::lessPriority (PathState const& lhs, PathState const& rhs)
 {
     // First rank is quality.
     if (lhs.uQuality != rhs.uQuality)
@@ -314,13 +314,13 @@ TER PathState::pushNode (
 
                     if (resultCode == tesSUCCESS)
                     {
-                        STAmount saOwed = lesEntries.rippleOwed (
+                        STAmount saOwed = rippleOwed (lesEntries,
                             node.account_, backNode.account_,
                             node.issue_.currency);
                         STAmount saLimit;
 
                         if (saOwed <= zero) {
-                            saLimit = lesEntries.rippleLimit (
+                            saLimit = rippleLimit (lesEntries,
                                 node.account_,
                                 backNode.account_,
                                 node.issue_.currency);
