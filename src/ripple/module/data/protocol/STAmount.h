@@ -24,6 +24,8 @@
 #include <ripple/module/data/protocol/Serializer.h>
 #include <ripple/module/data/protocol/SerializedType.h>
 
+#include <beast/cxx14/memory.h> // <memory>
+
 namespace ripple {
 
 // Internal form:
