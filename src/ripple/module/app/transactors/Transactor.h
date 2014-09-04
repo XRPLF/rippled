@@ -25,12 +25,15 @@ namespace ripple {
 class Transactor
 {
 public:
-    static std::unique_ptr<Transactor> makeTransactor (
+    static
+    TER
+    transact (
         SerializedTransaction const& txn,
         TransactionEngineParams params,
         TransactionEngine* engine);
 
-    TER apply ();
+    TER
+    apply ();
 
 protected:
     SerializedTransaction const&    mTxn;

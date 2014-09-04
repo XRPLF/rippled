@@ -56,6 +56,13 @@ public:
         bool const immediate_or_cancel;
     };
 
+    enum class Flavor
+    {
+        XRP_TO_IOU,
+        IOU_TO_XRP,
+        IOU_TO_IOU
+    };
+
 private:
     std::reference_wrapper <LedgerView> m_view;
     Account m_account;

@@ -70,8 +70,10 @@ void TransactionEngine::txnWrite ()
     }
 }
 
-TER TransactionEngine::applyTransaction (const SerializedTransaction& txn, TransactionEngineParams params,
-        bool& didApply)
+TER TransactionEngine::applyTransaction (
+    SerializedTransaction const& txn,
+    TransactionEngineParams params,
+    bool& didApply)
 {
     WriteLog (lsTRACE, TransactionEngine) << "applyTransaction>";
     didApply = false;
@@ -79,7 +81,6 @@ TER TransactionEngine::applyTransaction (const SerializedTransaction& txn, Trans
     mNodes.init (mLedger, txn.getTransactionID (), mLedger->getLedgerSeq (), params);
 
 #ifdef BEAST_DEBUG
-
     if (1)
     {
         Serializer ser;
@@ -89,39 +90,46 @@ TER TransactionEngine::applyTransaction (const SerializedTransaction& txn, Trans
 
         if (!s2.isEquivalent (txn))
         {
-            WriteLog (lsFATAL, TransactionEngine) << "Transaction serdes mismatch";
+            WriteLog (lsFATAL, TransactionEngine) <<
+                "Transaction serdes mismatch";
             Json::StyledStreamWriter ssw;
             WriteLog (lsINFO, TransactionEngine) << txn.getJson (0);
             WriteLog (lsFATAL, TransactionEngine) << s2.getJson (0);
             assert (false);
         }
     }
-
 #endif
 
     uint256 txID = txn.getTransactionID ();
 
     if (!txID)
     {
-        WriteLog (lsWARNING, TransactionEngine) << "applyTransaction: invalid transaction id";
+        WriteLog (lsWARNING, TransactionEngine) <<
+            "applyTransaction: invalid transaction id";
         return temINVALID;
     }
 
-    std::unique_ptr<Transactor> transactor = Transactor::makeTransactor (txn, params, this);
+    TER terResult = Transactor::transact (txn, params, this);
 
-    if (transactor.get () == nullptr)
+    if (terResult == temUNKNOWN)
     {
-        WriteLog (lsWARNING, TransactionEngine) << "applyTransaction: Invalid transaction: unknown transaction type";
+        WriteLog (lsWARNING, TransactionEngine) <<
+            "applyTransaction: Invalid transaction: unknown transaction type";
         return temUNKNOWN;
     }
 
-    TER terResult = transactor->apply ();
-    std::string strToken;
-    std::string strHuman;
+    if (ShouldLog (lsINFO, TransactionEngine))
+    {
+        std::string strToken;
+        std::string strHuman;
 
-    transResultInfo (terResult, strToken, strHuman);
+        transResultInfo (terResult, strToken, strHuman);
 
-    WriteLog (lsINFO, TransactionEngine) << "applyTransaction: terResult=" << strToken << " : " << terResult << " : " << strHuman;
+        WriteLog (lsINFO, TransactionEngine) <<
+            "applyTransaction: terResult=" << strToken <<
+            " : " << terResult <<
+            " : " << strHuman;
+    }
 
     if (isTesSuccess (terResult))
         didApply = true;
@@ -131,7 +139,8 @@ TER TransactionEngine::applyTransaction (const SerializedTransaction& txn, Trans
         WriteLog (lsDEBUG, TransactionEngine) << "Reprocessing to only claim fee";
         mNodes.clear ();
 
-        SLE::pointer txnAcct = entryCache (ltACCOUNT_ROOT, Ledger::getAccountRootIndex (txn.getSourceAccount ()));
+        SLE::pointer txnAcct = entryCache (ltACCOUNT_ROOT,
+            Ledger::getAccountRootIndex (txn.getSourceAccount ()));
 
         if (!txnAcct)
             terResult = terNO_ACCOUNT;
@@ -177,16 +186,21 @@ TER TransactionEngine::applyTransaction (const SerializedTransaction& txn, Trans
     {
         if (!checkInvariants (terResult, txn, params))
         {
-            WriteLog (lsFATAL, TransactionEngine) << "Transaction violates invariants";
-            WriteLog (lsFATAL, TransactionEngine) << txn.getJson (0);
-            WriteLog (lsFATAL, TransactionEngine) << transToken (terResult) << ": " << transHuman (terResult);
-            WriteLog (lsFATAL, TransactionEngine) << mNodes.getJson (0);
+            WriteLog (lsFATAL, TransactionEngine) <<
+                "Transaction violates invariants";
+            WriteLog (lsFATAL, TransactionEngine) <<
+                txn.getJson (0);
+            WriteLog (lsFATAL, TransactionEngine) <<
+                transToken (terResult) << ": " << transHuman (terResult);
+            WriteLog (lsFATAL, TransactionEngine) <<
+                mNodes.getJson (0);
             didApply = false;
             terResult = tefINTERNAL;
         }
         else
         {
-            // Transaction succeeded fully or (retries are not allowed and the transaction could claim a fee)
+            // Transaction succeeded fully or (retries are not allowed and the
+            // transaction could claim a fee)
             Serializer m;
             mNodes.calcRawMeta (m, terResult, mTxnSeq++);
 
@@ -199,7 +213,8 @@ TER TransactionEngine::applyTransaction (const SerializedTransaction& txn, Trans
             {
                 if (!mLedger->addTransaction (txID, s))
                 {
-                    WriteLog (lsFATAL, TransactionEngine) << "Tried to add transaction to open ledger that already had it";
+                    WriteLog (lsFATAL, TransactionEngine) <<
+                        "Tried to add transaction to open ledger that already had it";
                     assert (false);
                     throw std::runtime_error ("Duplicate transaction applied");
                 }
@@ -208,7 +223,8 @@ TER TransactionEngine::applyTransaction (const SerializedTransaction& txn, Trans
             {
                 if (!mLedger->addTransaction (txID, s, m))
                 {
-                    WriteLog (lsFATAL, TransactionEngine) << "Tried to add transaction to ledger that already had it";
+                    WriteLog (lsFATAL, TransactionEngine) <<
+                        "Tried to add transaction to ledger that already had it";
                     assert (false);
                     throw std::runtime_error ("Duplicate transaction applied to closed ledger");
                 }
