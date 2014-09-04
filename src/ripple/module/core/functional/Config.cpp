@@ -647,6 +647,15 @@ boost::filesystem::path Config::getDebugLogFile () const
         {
             boost::system::error_code ec;
             boost::filesystem::create_directories (log_dir, ec);
+
+            // If we fail, we warn but continue so that the calling code can
+            // decide how to handle this situation.
+            if (ec)
+            {
+                std::cerr << 
+                    "Unable to create log file path " << log_dir <<
+                    ": " << ec.message() << '\n';
+            }
         }
     }
 
