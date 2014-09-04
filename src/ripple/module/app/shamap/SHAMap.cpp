@@ -117,12 +117,12 @@ SHAMap::pointer SHAMap::snapShot (bool isMutable)
     return ret;
 }
 
-std::stack<std::pair<SHAMapTreeNode::pointer, SHAMapNodeID>>
+SHAMap::SharedPtrNodeStack
 SHAMap::getStack (uint256 const& id, bool include_nonmatching_leaf)
 {
     // Walk the tree as far as possible to the specified identifier
     // produce a stack of nodes along the way, with the terminal node at the top
-    std::stack <std::pair <SHAMapTreeNode::pointer, SHAMapNodeID> > stack;
+    SharedPtrNodeStack stack;
 
     SHAMapTreeNode::pointer node = root;
     SHAMapNodeID nodeID;
@@ -147,7 +147,7 @@ SHAMap::getStack (uint256 const& id, bool include_nonmatching_leaf)
 }
 
 void
-SHAMap::dirtyUp (std::stack<std::pair<SHAMapTreeNode::pointer, SHAMapNodeID>>& stack,
+SHAMap::dirtyUp (SharedPtrNodeStack& stack,
                  uint256 const& target, SHAMapTreeNode::pointer child)
 {
     // walk the tree up from through the inner nodes to the root
@@ -522,7 +522,7 @@ SHAMap::onlyBelow (SHAMapTreeNode* node)
             if (!node->isEmptyBranch (i))
             {
                 if (nextNode)
-                    return false;
+                    return SHAMapItem::pointer ();
 
                 nextNode = descendThrow (node, i);
             }
@@ -587,8 +587,8 @@ SHAMapItem::pointer SHAMap::peekNextItem (uint256 const& id, SHAMapTreeNode::TNT
 {
     // Get a pointer to the next item in the tree after a given item - item need not be in tree
 
-    std::stack<std::pair<SHAMapTreeNode::pointer, SHAMapNodeID>> stack =
-                                                            getStack (id, true);
+    auto stack = getStack (id, true);
+
     while (!stack.empty ())
     {
         SHAMapTreeNode* node = stack.top().first.get();
@@ -628,8 +628,8 @@ SHAMapItem::pointer SHAMap::peekNextItem (uint256 const& id, SHAMapTreeNode::TNT
 // Get a pointer to the previous item in the tree after a given item - item need not be in tree
 SHAMapItem::pointer SHAMap::peekPrevItem (uint256 const& id)
 {
-    std::stack<std::pair<SHAMapTreeNode::pointer, SHAMapNodeID>> stack =
-                                                            getStack (id, true);
+    auto stack = getStack (id, true);
+
     while (!stack.empty ())
     {
         SHAMapTreeNode* node = stack.top ().first.get();
@@ -704,8 +704,7 @@ bool SHAMap::delItem (uint256 const& id)
     // delete the item with this ID
     assert (mState != smsImmutable);
 
-    std::stack <std::pair <SHAMapTreeNode::pointer, SHAMapNodeID>> stack =
-        getStack (id, true);
+    auto stack = getStack (id, true);
 
     if (stack.empty ())
         throw (std::runtime_error ("missing node"));
@@ -758,7 +757,7 @@ bool SHAMap::delItem (uint256 const& id)
 
                 if (item)
                 {
-                    for (int i = 0; i > 16; ++i)
+                    for (int i = 0; i < 16; ++i)
                     {
                         if (!node->isEmptyBranch (i))
                         {
@@ -798,8 +797,8 @@ bool SHAMap::addGiveItem (SHAMapItem::ref item, bool isTransaction, bool hasMeta
 
     assert (mState != smsImmutable);
 
-    std::stack<std::pair<SHAMapTreeNode::pointer, SHAMapNodeID>> stack =
-                                                           getStack (tag, true);
+    auto stack = getStack (tag, true);
+
     if (stack.empty ())
         throw (std::runtime_error ("missing node"));
 
@@ -879,8 +878,8 @@ bool SHAMap::updateGiveItem (SHAMapItem::ref item, bool isTransaction, bool hasM
 
     assert (mState != smsImmutable);
 
-    std::stack<std::pair<SHAMapTreeNode::pointer, SHAMapNodeID>> stack =
-                                                           getStack (tag, true);
+    auto stack = getStack (tag, true);
+
     if (stack.empty ())
         throw (std::runtime_error ("missing node"));
 

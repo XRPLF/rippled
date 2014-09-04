@@ -23,7 +23,6 @@ std::mutex SHAMapTreeNode::childLock;
 
 SHAMapTreeNode::SHAMapTreeNode (std::uint32_t seq)
     : mSeq (seq)
-    , mAccessSeq (seq)
     , mType (tnERROR)
     , mIsBranch (0)
     , mFullBelow (false)

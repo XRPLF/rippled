@@ -115,6 +115,8 @@ public:
     typedef std::map<uint256, DeltaItem> Delta;
     typedef hash_map<SHAMapNodeID, SHAMapTreeNode::pointer, SHAMapNode_hash> NodeMap;
 
+    typedef std::stack<std::pair<SHAMapTreeNode::pointer, SHAMapNodeID>> SharedPtrNodeStack;
+
 public:
     // build new map
     SHAMap (
@@ -254,11 +256,11 @@ private:
     SHAMapTreeNode::pointer fetchNode (uint256 const& hash);
 
     /** Update hashes up to the root */
-    void dirtyUp (std::stack<std::pair<SHAMapTreeNode::pointer, SHAMapNodeID>>& stack,
+    void dirtyUp (SharedPtrNodeStack& stack,
                   uint256 const& target, SHAMapTreeNode::pointer terminal);
 
     /** Get the path from the root to the specified node */
-    std::stack<std::pair<SHAMapTreeNode::pointer, SHAMapNodeID>>
+    SharedPtrNodeStack
         getStack (uint256 const& id, bool include_nonmatching_leaf);
 
     /** Walk to the specified index, returning the node */
