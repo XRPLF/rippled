@@ -19,134 +19,168 @@
 
 namespace ripple {
 
-TER Change::doApply ()
+class Change
+    : public Transactor
 {
-    if (mTxn.getTxnType () == ttAMENDMENT)
-        return applyAmendment ();
-
-    if (mTxn.getTxnType () == ttFEE)
-        return applyFee ();
-
-    return temUNKNOWN;
-}
-
-TER Change::checkSig ()
-{
-    if (mTxn.getFieldAccount160 (sfAccount).isNonZero ())
+public:
+    Change (
+        SerializedTransaction const& txn,
+        TransactionEngineParams params,
+        TransactionEngine* engine)
+        : Transactor (
+            txn,
+            params,
+            engine,
+            deprecatedLogs().journal("Change"))
     {
-        m_journal.warning << "Bad source account";
-        return temBAD_SRC_ACCOUNT;
     }
 
-    if (!mTxn.getSigningPubKey ().empty () || !mTxn.getSignature ().empty ())
+    TER doApply () override
     {
-        m_journal.warning << "Bad signature";
-        return temBAD_SIGNATURE;
+        if (mTxn.getTxnType () == ttAMENDMENT)
+            return applyAmendment ();
+
+        if (mTxn.getTxnType () == ttFEE)
+            return applyFee ();
+
+        return temUNKNOWN;
     }
 
-    return tesSUCCESS;
-}
-
-TER Change::checkSeq ()
-{
-    if ((mTxn.getSequence () != 0) || mTxn.isFieldPresent (sfPreviousTxnID))
+    TER checkSig () override
     {
-        m_journal.warning << "Bad sequence";
-        return temBAD_SEQUENCE;
+        if (mTxn.getFieldAccount160 (sfAccount).isNonZero ())
+        {
+            m_journal.warning << "Bad source account";
+            return temBAD_SRC_ACCOUNT;
+        }
+
+        if (!mTxn.getSigningPubKey ().empty () || !mTxn.getSignature ().empty ())
+        {
+            m_journal.warning << "Bad signature";
+            return temBAD_SIGNATURE;
+        }
+
+        return tesSUCCESS;
     }
 
-    return tesSUCCESS;
-}
-
-TER Change::payFee ()
-{
-    if (mTxn.getTransactionFee () != STAmount ())
+    TER checkSeq () override
     {
-        m_journal.warning << "Non-zero fee";
-        return temBAD_FEE;
+        if ((mTxn.getSequence () != 0) || mTxn.isFieldPresent (sfPreviousTxnID))
+        {
+            m_journal.warning << "Bad sequence";
+            return temBAD_SEQUENCE;
+        }
+
+        return tesSUCCESS;
     }
 
-    return tesSUCCESS;
-}
-
-TER Change::preCheck ()
-{
-    mTxnAccountID   = mTxn.getSourceAccount ().getAccountID ();
-
-    if (mTxnAccountID.isNonZero ())
+    TER payFee () override
     {
-        m_journal.warning << "Bad source id";
+        if (mTxn.getTransactionFee () != STAmount ())
+        {
+            m_journal.warning << "Non-zero fee";
+            return temBAD_FEE;
+        }
 
-        return temBAD_SRC_ACCOUNT;
+        return tesSUCCESS;
     }
 
-    if (mParams & tapOPEN_LEDGER)
+    TER preCheck () override
     {
-        m_journal.warning << "Change transaction against open ledger";
-        return temINVALID;
+        mTxnAccountID   = mTxn.getSourceAccount ().getAccountID ();
+
+        if (mTxnAccountID.isNonZero ())
+        {
+            m_journal.warning << "Bad source id";
+
+            return temBAD_SRC_ACCOUNT;
+        }
+
+        if (mParams & tapOPEN_LEDGER)
+        {
+            m_journal.warning << "Change transaction against open ledger";
+            return temINVALID;
+        }
+
+        return tesSUCCESS;
     }
 
-    return tesSUCCESS;
-}
-
-TER Change::applyAmendment ()
-{
-    uint256 amendment (mTxn.getFieldH256 (sfAmendment));
-
-    SLE::pointer amendmentObject (mEngine->entryCache (
-        ltAMENDMENTS, Ledger::getLedgerAmendmentIndex ()));
-
-    if (!amendmentObject)
+private:
+    TER applyAmendment ()
     {
-        amendmentObject = mEngine->entryCreate(
-            ltAMENDMENTS, Ledger::getLedgerAmendmentIndex());
+        uint256 amendment (mTxn.getFieldH256 (sfAmendment));
+
+        SLE::pointer amendmentObject (mEngine->entryCache (
+            ltAMENDMENTS, Ledger::getLedgerAmendmentIndex ()));
+
+        if (!amendmentObject)
+        {
+            amendmentObject = mEngine->entryCreate(
+                ltAMENDMENTS, Ledger::getLedgerAmendmentIndex());
+        }
+
+        STVector256 amendments (amendmentObject->getFieldV256 (sfAmendments));
+
+        if (amendments.hasValue (amendment))
+            return tefALREADY;
+
+        amendments.addValue (amendment);
+        amendmentObject->setFieldV256 (sfAmendments, amendments);
+        mEngine->entryModify (amendmentObject);
+
+        getApp().getAmendmentTable ().enable (amendment);
+
+        if (!getApp().getAmendmentTable ().isSupported (amendment))
+            getApp().getOPs ().setAmendmentBlocked ();
+
+        return tesSUCCESS;
     }
 
-    STVector256 amendments (amendmentObject->getFieldV256 (sfAmendments));
+    TER applyFee ()
+    {
 
-    if (amendments.hasValue (amendment))
-        return tefALREADY;
-
-    amendments.addValue (amendment);
-    amendmentObject->setFieldV256 (sfAmendments, amendments);
-    mEngine->entryModify (amendmentObject);
-
-    getApp().getAmendmentTable ().enable (amendment);
-
-    if (!getApp().getAmendmentTable ().isSupported (amendment))
-        getApp().getOPs ().setAmendmentBlocked ();
-
-    return tesSUCCESS;
-}
-
-TER Change::applyFee ()
-{
-
-    SLE::pointer feeObject = mEngine->entryCache (
-        ltFEE_SETTINGS, Ledger::getLedgerFeeIndex ());
-
-    if (!feeObject)
-        feeObject = mEngine->entryCreate (
+        SLE::pointer feeObject = mEngine->entryCache (
             ltFEE_SETTINGS, Ledger::getLedgerFeeIndex ());
 
-    m_journal.trace << 
-        "Previous fee object: " << feeObject->getJson (0);
+        if (!feeObject)
+            feeObject = mEngine->entryCreate (
+                ltFEE_SETTINGS, Ledger::getLedgerFeeIndex ());
 
-    feeObject->setFieldU64 (
-        sfBaseFee, mTxn.getFieldU64 (sfBaseFee));
-    feeObject->setFieldU32 (
-        sfReferenceFeeUnits, mTxn.getFieldU32 (sfReferenceFeeUnits));
-    feeObject->setFieldU32 (
-        sfReserveBase, mTxn.getFieldU32 (sfReserveBase));
-    feeObject->setFieldU32 (
-        sfReserveIncrement, mTxn.getFieldU32 (sfReserveIncrement));
+        m_journal.trace << 
+            "Previous fee object: " << feeObject->getJson (0);
 
-    mEngine->entryModify (feeObject);
+        feeObject->setFieldU64 (
+            sfBaseFee, mTxn.getFieldU64 (sfBaseFee));
+        feeObject->setFieldU32 (
+            sfReferenceFeeUnits, mTxn.getFieldU32 (sfReferenceFeeUnits));
+        feeObject->setFieldU32 (
+            sfReserveBase, mTxn.getFieldU32 (sfReserveBase));
+        feeObject->setFieldU32 (
+            sfReserveIncrement, mTxn.getFieldU32 (sfReserveIncrement));
 
-    m_journal.trace << 
-        "New fee object: " << feeObject->getJson (0);
-    m_journal.warning << "Fees have been changed";
-    return tesSUCCESS;
+        mEngine->entryModify (feeObject);
+
+        m_journal.trace << 
+            "New fee object: " << feeObject->getJson (0);
+        m_journal.warning << "Fees have been changed";
+        return tesSUCCESS;
+    }
+
+    // VFALCO TODO Can this be removed?
+    bool mustHaveValidAccount () override
+    {
+        return false;
+    }
+};
+
+
+TER
+transact_Change (
+    SerializedTransaction const& txn,
+    TransactionEngineParams params,
+    TransactionEngine* engine)
+{
+    return Change (txn, params, engine).apply ();
 }
 
 }
