@@ -165,6 +165,29 @@ CurrencySet usAccountSourceCurrencies
          RippleLineCache::ref lrLedger,
          bool includeXRP);
 
+/** Calculate the maximum amount of IOUs that an account can hold
+    @param ledger the ledger to check against.
+    @param account the account of interest.
+    @param issuer the issuer of the IOU.
+    @param currency the IOU to check.
+    @return The maximum amount that can be held.
+*/
+STAmount
+credit_limit (
+    LedgerEntrySet& ledger, Account const& account,
+    Account const& issuer, Currency const& currency);
+
+/** Returns the amount of IOUs issued by issuer that are held by an account
+    @param ledger the ledger to check against.
+    @param account the account of interest.
+    @param issuer the issuer of the IOU.
+    @param currency the IOU to check.
+*/
+STAmount
+credit_balance (
+    LedgerEntrySet& ledger, Account const& account,
+    Account const& issuer, Currency const& currency);
+
 } // ripple
 
 #endif

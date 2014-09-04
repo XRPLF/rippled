@@ -197,5 +197,62 @@ void rippleLiquidity (
         << " saCurAct=" << saCurAct;
 }
 
+static
+std::uint32_t
+rippleQuality (
+    LedgerEntrySet& ledger,
+    Account const& destination,
+    Account const& source,
+    Currency const& currency,
+    SField::ref sfLow,
+    SField::ref sfHigh)
+{
+    std::uint32_t uQuality (QUALITY_ONE);
+
+    if (destination != source)
+    {
+        SLE::pointer sleRippleState (ledger.entryCache (ltRIPPLE_STATE,
+            Ledger::getRippleStateIndex (destination, source, currency)));
+
+        // we should be able to assert(sleRippleState) here
+
+        if (sleRippleState)
+        {
+            SField::ref sfField = destination < source ? sfLow : sfHigh;
+
+            uQuality = sleRippleState->isFieldPresent (sfField)
+                ? sleRippleState->getFieldU32 (sfField)
+                : QUALITY_ONE;
+
+            if (!uQuality)
+                uQuality = 1; // Avoid divide by zero.
+        }
+    }
+
+    return uQuality;
+}
+
+std::uint32_t
+quality_in (
+    LedgerEntrySet& ledger,
+    Account const& uToAccountID,
+    Account const& uFromAccountID,
+    Currency const& currency)
+{
+    return rippleQuality (ledger, uToAccountID, uFromAccountID, currency,
+        sfLowQualityIn, sfHighQualityIn);
+}
+
+std::uint32_t
+quality_out (
+    LedgerEntrySet& ledger,
+    Account const& uToAccountID,
+    Account const& uFromAccountID,
+    Currency const& currency)
+{
+    return rippleQuality (ledger, uToAccountID, uFromAccountID, currency,
+        sfLowQualityOut, sfHighQualityOut);
+}
+
 } // path
 } // ripple

@@ -52,13 +52,13 @@ TER PathCursor::forwardLiquidityForAccount () const
             nextNode().isAccount() ? nextNode().account_ : node().account_;
 
     std::uint32_t uQualityIn = nodeIndex_
-        ? ledger().rippleQualityIn (
+        ? quality_in (ledger(),
             node().account_,
             previousAccountID,
             node().issue_.currency)
         : QUALITY_ONE;
     std::uint32_t  uQualityOut = (nodeIndex_ == lastNodeIndex)
-        ? ledger().rippleQualityOut (
+        ? quality_out (ledger(),
             node().account_,
             nextAccountID,
             node().issue_.currency)
@@ -230,7 +230,7 @@ TER PathCursor::forwardLiquidityForAccount () const
                 rippleLiquidity (
                     rippleCalc_,
                     QUALITY_ONE,
-                    ledger().rippleTransferRate (node().account_),
+                    rippleTransferRate (ledger(), node().account_),
                     previousNode().saFwdRedeem,
                     node().saRevIssue,
                     saPrvRedeemAct,
@@ -299,7 +299,7 @@ TER PathCursor::forwardLiquidityForAccount () const
                 rippleLiquidity (
                     rippleCalc_,
                     QUALITY_ONE,
-                    ledger().rippleTransferRate (node().account_),
+                    rippleTransferRate (ledger(), node().account_),
                     previousNode().saFwdRedeem,
                     node().saRevDeliver,
                     saPrvRedeemAct,
@@ -445,7 +445,7 @@ TER PathCursor::forwardLiquidityForAccount () const
                 rippleLiquidity (
                     rippleCalc_,
                     QUALITY_ONE,
-                    ledger().rippleTransferRate (node().account_),
+                    rippleTransferRate (ledger(), node().account_),
                     previousNode().saFwdDeliver,
                     node().saRevIssue,
                     saPrvDeliverAct,
@@ -479,7 +479,7 @@ TER PathCursor::forwardLiquidityForAccount () const
             rippleLiquidity (
                 rippleCalc_,
                 QUALITY_ONE,
-                ledger().rippleTransferRate (node().account_),
+                rippleTransferRate (ledger(), node().account_),
                 previousNode().saFwdDeliver,
                 node().saRevDeliver,
                 saPrvDeliverAct,

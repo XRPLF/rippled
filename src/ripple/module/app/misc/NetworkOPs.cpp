@@ -3103,7 +3103,7 @@ void NetworkOPsImp::getBookPage (
     if (iLeft == 0 || iLeft > 300)
         iLeft = 300;
 
-    auto uTransferRate = lesActive.rippleTransferRate (book.out.account);
+    auto uTransferRate = rippleTransferRate (lesActive, book.out.account);
 
     while (! bDone && iLeft-- > 0)
     {
@@ -3299,7 +3299,7 @@ void NetworkOPsImp::getBookPage (
     if (iLeft == 0 || iLeft > 300)
         iLeft = 300;
 
-    auto uTransferRate = lesActive.rippleTransferRate (book.out.account);
+    auto uTransferRate = rippleTransferRate (lesActive, book.out.account);
 
     const bool bGlobalFreeze = lesActive.isGlobalFrozen (book.out.account) ||
                                lesActive.isGlobalFrozen (book.in.account);

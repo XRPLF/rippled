@@ -447,7 +447,7 @@ CreateOffer::doApply ()
         if (tesSUCCESS == terResult)
         {
             // Update owner count.
-            view.ownerCountAdjust (mTxnAccountID, 1, sleCreator);
+            view.incrementOwnerCount (sleCreator);
 
             uint256 const uBookBase (Ledger::getBookBase (
                 {{uPaysCurrency, uPaysIssuerID},
