@@ -495,8 +495,6 @@ public:
     int getSize (SizedItemName);
     void setup (std::string const& strConf, bool bQuiet);
     void load ();
-
-    boost::filesystem::path getDebugLog ();
 };
 
 extern Config& getConfig ();

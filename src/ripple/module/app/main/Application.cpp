@@ -625,10 +625,7 @@ public:
             // regular output (unless verbose)
 
             if (!m_logs.open(debug_log))
-            {
-                WriteLog (lsFATAL, Application) <<
-                    "Can't open log file " << debug_log;
-            }
+                std::cerr << "Can't open log file " << debug_log << '\n';
 
             if (m_logs.severity() > beast::Journal::kDebug)
                 m_logs.severity (beast::Journal::kDebug);

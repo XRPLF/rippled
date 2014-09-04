@@ -637,7 +637,10 @@ boost::filesystem::path Config::getDebugLogFile () const
         // path is relative to the config file directory.
         log_file = boost::filesystem::absolute (
             log_file, getConfig ().CONFIG_DIR);
+    }
 
+    if (!log_file.empty ())
+    {
         auto log_dir = log_file.parent_path ();
 
         if (!boost::filesystem::is_directory (log_dir))
