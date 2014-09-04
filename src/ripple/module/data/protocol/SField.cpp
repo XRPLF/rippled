@@ -173,6 +173,7 @@ SField const sfBookDirectory = make::one(&sfBookDirectory, STI_HASH256, 16, "Boo
 SField const sfInvoiceID     = make::one(&sfInvoiceID,     STI_HASH256, 17, "InvoiceID");
 SField const sfNickname      = make::one(&sfNickname,      STI_HASH256, 18, "Nickname");
 SField const sfAmendment     = make::one(&sfAmendment,     STI_HASH256, 19, "Amendment");
+SField const sfTicketID      = make::one(&sfTicketID,      STI_HASH256, 20, "TicketID");
 
 // 160-bit (common)
 SField const sfTakerPaysCurrency = make::one(&sfTakerPaysCurrency, STI_HASH160, 1, "TakerPaysCurrency");

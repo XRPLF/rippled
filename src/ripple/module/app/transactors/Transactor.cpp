@@ -29,6 +29,8 @@ TER transact_CreateOffer (SerializedTransaction const& txn, TransactionEnginePar
 TER transact_CancelOffer (SerializedTransaction const& txn, TransactionEngineParams params, TransactionEngine* engine);
 TER transact_AddWallet (SerializedTransaction const& txn, TransactionEngineParams params, TransactionEngine* engine);
 TER transact_Change (SerializedTransaction const& txn, TransactionEngineParams params, TransactionEngine* engine);
+TER transact_CreateTicket (SerializedTransaction const& txn, TransactionEngineParams params, TransactionEngine* engine);
+TER transact_CancelTicket (SerializedTransaction const& txn, TransactionEngineParams params, TransactionEngine* engine);
 
 TER
 Transactor::transact (
@@ -62,6 +64,12 @@ Transactor::transact (
     case ttAMENDMENT:
     case ttFEE:
         return transact_Change (txn, params, engine);
+
+    case ttTICKET_CREATE:
+        return transact_CreateTicket (txn, params, engine);
+
+    case ttTICKET_CANCEL:
+        return transact_CancelTicket (txn, params, engine);
 
     default:
         return temUNKNOWN;

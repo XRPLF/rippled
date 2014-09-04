@@ -333,6 +333,7 @@ extern SField const sfBookDirectory;
 extern SField const sfInvoiceID;
 extern SField const sfNickname;
 extern SField const sfAmendment;
+extern SField const sfTicketID;
 
 // 160-bit (common)
 extern SField const sfTakerPaysCurrency;

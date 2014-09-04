@@ -52,14 +52,12 @@ enum LedgerEntryType
 
     /** Describes a trust line.
     */
-    // VFALCO TODO Rename to TrustLine or something similar.
     ltRIPPLE_STATE      = 'r',
 
-    /** Deprecated.
-    */
-    ltOFFER             = 'o',
+    ltTICKET            = 'T',
 
-    ltNotUsed01         = 'c',
+    /* Deprecated. */
+    ltOFFER             = 'o',
 
     ltLEDGER_HASHES     = 'h',
 
@@ -70,13 +68,14 @@ enum LedgerEntryType
     // No longer used or supported. Left here to prevent accidental
     // reassignment of the ledger type.
     ltNICKNAME          = 'n',
+
+    ltNotUsed01         = 'c',
 };
 
 /**
     @ingroup protocol
 */
 // Used as a prefix for computing ledger indexes (keys).
-// VFALCO TODO Why are there a separate set of prefixes? i.e. class HashPrefix
 enum LedgerNameSpace
 {
     spaceAccount        = 'a',
@@ -90,6 +89,7 @@ enum LedgerNameSpace
     spaceSkipList       = 's',
     spaceAmendment      = 'f',
     spaceFee            = 'e',
+    spaceTicket         = 'T',
 
     // No longer used or supported. Left here to reserve the space and
     // avoid accidental reuse of the space.

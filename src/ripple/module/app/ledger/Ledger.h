@@ -415,6 +415,13 @@ public:
         const std::uint64_t & uRate);
 
     //
+    // Tickets
+    //
+
+    static uint256 getTicketIndex (
+        Account const& account, std::uint32_t uSequence);
+
+    //
     // Ripple functions : credit lines
     //
     //
