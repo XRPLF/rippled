@@ -617,10 +617,15 @@ public:
 
         assert (mTxnDB == nullptr);
 
-        if (!getConfig ().DEBUG_LOGFILE.empty ())
+        auto debug_log = getConfig ().getDebugLogFile ();
+
+        if (!debug_log.empty ())
         {
-            // Let debug messages go to the file but only WARNING or higher to regular output (unless verbose)
-            m_logs.open(getConfig ().DEBUG_LOGFILE);
+            // Let debug messages go to the file but only WARNING or higher to
+            // regular output (unless verbose)
+
+            if (!m_logs.open(debug_log))
+                std::cerr << "Can't open log file " << debug_log << '\n';
 
             if (m_logs.severity() > beast::Journal::kDebug)
                 m_logs.severity (beast::Journal::kDebug);

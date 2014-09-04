@@ -252,7 +252,7 @@ int run (int argc, char** argv)
         && !vm.count ("standalone")
         && !vm.count ("unittest"))
     {
-        std::string logMe = DoSustain (getConfig ().DEBUG_LOGFILE.string());
+        std::string logMe = DoSustain (getConfig ().getDebugLogFile ().string());
 
         if (!logMe.empty ())
             std::cerr << logMe;

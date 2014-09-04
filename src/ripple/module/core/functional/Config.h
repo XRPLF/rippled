@@ -194,10 +194,14 @@ public:
     /** Returns the directory in which the current database files are located. */
     beast::File getDatabaseDir () const;
 
+    /** Returns the full path and filename of the debug log file. */
+    boost::filesystem::path getDebugLogFile () const;
+
     // LEGACY FIELDS, REMOVE ASAP
     boost::filesystem::path CONFIG_FILE; // used by UniqueNodeList
 private:
     boost::filesystem::path CONFIG_DIR;
+    boost::filesystem::path DEBUG_LOGFILE;
 public:
     // VFALCO TODO Make this private and fix callers to go through getDatabaseDir()
     boost::filesystem::path DATA_DIR;
@@ -348,8 +352,6 @@ public:
 public:
     // Configuration parameters
     bool                        QUIET;
-
-    boost::filesystem::path     DEBUG_LOGFILE;
 
     bool                        ELB_SUPPORT;            // Support Amazon ELB
 

@@ -627,6 +627,41 @@ int Config::getSize (SizedItemName item)
     return -1;
 }
 
+boost::filesystem::path Config::getDebugLogFile () const
+{
+    auto log_file = DEBUG_LOGFILE;
+
+    if (!log_file.empty () && !log_file.is_absolute ())
+    {
+        // Unless an absolute path for the log file is specified, the
+        // path is relative to the config file directory.
+        log_file = boost::filesystem::absolute (
+            log_file, getConfig ().CONFIG_DIR);
+    }
+
+    if (!log_file.empty ())
+    {
+        auto log_dir = log_file.parent_path ();
+
+        if (!boost::filesystem::is_directory (log_dir))
+        {
+            boost::system::error_code ec;
+            boost::filesystem::create_directories (log_dir, ec);
+
+            // If we fail, we warn but continue so that the calling code can
+            // decide how to handle this situation.
+            if (ec)
+            {
+                std::cerr << 
+                    "Unable to create log file path " << log_dir <<
+                    ": " << ec.message() << '\n';
+            }
+        }
+    }
+
+    return log_file;
+}
+
 //------------------------------------------------------------------------------
 //
 // VFALCO NOTE Clean members area

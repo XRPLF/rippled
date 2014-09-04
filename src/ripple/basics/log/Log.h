@@ -150,7 +150,7 @@ public:
     Logs (Logs const&) = delete;
     Logs& operator= (Logs const&) = delete;
     
-    void
+    bool
     open (boost::filesystem::path const& pathToLogFile);
 
     Sink&
