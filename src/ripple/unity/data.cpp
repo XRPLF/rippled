@@ -75,7 +75,8 @@
 #include <ripple/module/data/protocol/SerializedTypes.cpp>
 #include <ripple/module/data/protocol/Serializer.cpp>
 #include <ripple/module/data/protocol/SerializedObjectTemplate.cpp>
-#include <ripple/module/data/protocol/SerializedObject.cpp>
+#include <ripple/module/data/protocol/STObject.cpp>
+#include <ripple/module/data/protocol/STArray.cpp>
 #include <ripple/module/data/protocol/TER.cpp>
 #include <ripple/module/data/protocol/TxFormats.cpp>
 

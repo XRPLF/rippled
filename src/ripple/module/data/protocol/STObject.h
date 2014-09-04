@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SERIALIZEDOBJECT_H
-#define RIPPLE_SERIALIZEDOBJECT_H
+#ifndef RIPPLE_STOBJECT_H
+#define RIPPLE_STOBJECT_H
 
-#include <boost/ptr_container/ptr_vector.hpp> // VFALCO NOTE this looks like junk
+#include <boost/ptr_container/ptr_vector.hpp>
 
 namespace ripple {
 
@@ -38,35 +38,41 @@ public:
         ;
     }
 
-    explicit STObject (SField::ref name) : SerializedType (name), mType (nullptr)
+    explicit STObject (SField::ref name)
+        : SerializedType (name), mType (nullptr)
     {
         ;
     }
 
-    STObject (const SOTemplate & type, SField::ref name) : SerializedType (name)
+    STObject (const SOTemplate & type, SField::ref name)
+        : SerializedType (name)
     {
         set (type);
     }
 
-    STObject (const SOTemplate & type, SerializerIterator & sit, SField::ref name) : SerializedType (name)
+    STObject (
+        const SOTemplate & type, SerializerIterator & sit, SField::ref name)
+        : SerializedType (name)
     {
         set (sit);
         setType (type);
     }
 
-    STObject (SField::ref name, boost::ptr_vector<SerializedType>& data) : SerializedType (name), mType (nullptr)
+    STObject (SField::ref name, boost::ptr_vector<SerializedType>& data)
+        : SerializedType (name), mType (nullptr)
     {
         mData.swap (data);
     }
 
     std::unique_ptr <STObject> oClone () const
     {
-        return std::unique_ptr<STObject> (new STObject (*this));
+        return std::make_unique <STObject> (*this);
     }
 
     virtual ~STObject () { }
 
-    static std::unique_ptr<SerializedType> deserialize (SerializerIterator & sit, SField::ref name);
+    static std::unique_ptr<SerializedType>
+    deserialize (SerializerIterator & sit, SField::ref name);
 
     bool setType (const SOTemplate & type);
     bool isValidForType ();
@@ -79,24 +85,25 @@ public:
     void set (const SOTemplate&);
     bool set (SerializerIterator & u, int depth = 0);
 
-    virtual SerializedTypeID getSType () const
+    virtual SerializedTypeID getSType () const override
     {
         return STI_OBJECT;
     }
-    virtual bool isEquivalent (const SerializedType & t) const;
-    virtual bool isDefault () const
+    virtual bool isEquivalent (const SerializedType & t) const override;
+    virtual bool isDefault () const override
     {
         return mData.empty ();
     }
 
-    virtual void add (Serializer & s) const
+    virtual void add (Serializer & s) const override
     {
         add (s, true);    // just inner elements
     }
 
     void add (Serializer & s, bool withSignature) const;
 
-    // VFALCO NOTE does this return an expensive copy of an object with a dynamic buffer?
+    // VFALCO NOTE does this return an expensive copy of an object with a
+    //             dynamic buffer?
     // VFALCO TODO Remove this function and fix the few callers.
     Serializer getSerializer () const
     {
@@ -105,11 +112,11 @@ public:
         return s;
     }
 
-    std::string getFullText () const;
-    std::string getText () const;
+    virtual std::string getFullText () const override;
+    virtual std::string getText () const override;
 
     // TODO(tom): options should be an enum.
-    virtual Json::Value getJson (int options) const;
+    virtual Json::Value getJson (int options) const override;
 
     int addObject (const SerializedType & t)
     {
@@ -189,8 +196,8 @@ public:
     const SerializedType* peekAtPField (SField::ref field) const;
     SerializedType* getPField (SField::ref field, bool createOkay = false);
 
-    // these throw if the field type doesn't match, or return default values if the
-    // field is optional but not present
+    // these throw if the field type doesn't match, or return default values
+    // if the field is optional but not present
     std::string getFieldString (SField::ref field) const;
     unsigned char getFieldU8 (SField::ref field) const;
     std::uint16_t getFieldU16 (SField::ref field) const;
@@ -213,17 +220,18 @@ public:
     void setFieldU16 (SField::ref field, std::uint16_t);
     void setFieldU32 (SField::ref field, std::uint32_t);
     void setFieldU64 (SField::ref field, std::uint64_t);
-    void setFieldH128 (SField::ref field, const uint128&);
+    void setFieldH128 (SField::ref field, uint128 const&);
     void setFieldH256 (SField::ref field, uint256 const& );
     void setFieldVL (SField::ref field, Blob const&);
     void setFieldAccount (SField::ref field, Account const&);
-    void setFieldAccount (SField::ref field, const RippleAddress & addr)
+    void setFieldAccount (SField::ref field, RippleAddress const& addr)
     {
         setFieldAccount (field, addr.getAccountID ());
     }
     void setFieldAmount (SField::ref field, STAmount const&);
     void setFieldPathSet (SField::ref field, STPathSet const&);
-    void setFieldV256 (SField::ref field, const STVector256 & v);
+    void setFieldV256 (SField::ref field, STVector256 const& v);
+    void setFieldArray (SField::ref field, STArray const& v);
 
     template <class Tag>
     void setFieldH160 (SField::ref field, base_uint<160, Tag> const& v)
@@ -251,7 +259,8 @@ public:
     bool delField (SField::ref field);
     void delField (int index);
 
-    static std::unique_ptr <SerializedType> makeDefaultObject (SerializedTypeID id, SField::ref name);
+    static std::unique_ptr <SerializedType>
+    makeDefaultObject (SerializedTypeID id, SField::ref name);
 
     // VFALCO TODO remove the 'depth' parameter
     static std::unique_ptr<SerializedType> makeDeserializedObject (
@@ -260,7 +269,8 @@ public:
         SerializerIterator&,
         int depth);
 
-    static std::unique_ptr<SerializedType> makeNonPresentObject (SField::ref name)
+    static std::unique_ptr<SerializedType>
+    makeNonPresentObject (SField::ref name)
     {
         return makeDefaultObject (STI_NOTPRESENT, name);
     }
@@ -303,227 +313,108 @@ public:
     }
 
 private:
-    /** Returns a value or throws if out of range.
-
-        This will throw if the source value cannot be represented
-        within the destination type.
-    */
-    // VFALCO NOTE This won't work right
-    /*
-    template <class T, class U>
-    static T getWithRangeCheck (U v)
-    {
-        if (v < std::numeric_limits <T>::min ()) ||
-            v > std::numeric_limits <T>::max ())
-        {
-            throw std::runtime_error ("Value out of range");
-        }
-
-        return static_cast <T> (v);
-    }
-    */
-
-    STObject* duplicate () const
+    virtual STObject* duplicate () const override
     {
         return new STObject (*this);
+    }
+
+    // Implementation for getting (most) fields that return by value.
+    //
+    // The remove_cv and remove_reference are necessitated by the STBitString
+    // types.  Their getValue returns by const ref.  We return those types
+    // by value.
+    template <typename T, typename V =
+        typename std::remove_cv < typename std::remove_reference <
+            decltype (std::declval <T> ().getValue ())>::type >::type >
+    V getFieldByValue (SField::ref field) const
+    {
+        const SerializedType* rf = peekAtPField (field);
+
+        if (!rf)
+            throw std::runtime_error ("Field not found");
+
+        SerializedTypeID id = rf->getSType ();
+
+        if (id == STI_NOTPRESENT)
+            return V (); // optional field not present
+
+        const T* cf = dynamic_cast<const T*> (rf);
+
+        if (!cf)
+            throw std::runtime_error ("Wrong field type");
+
+        return cf->getValue ();
+    }
+
+    // Implementations for getting (most) fields that return by const reference.
+    //
+    // If an absent optional field is deserialized we don't have anything
+    // obvious to return.  So we insist on having the call provide an
+    // 'empty' value we return in that circumstance.
+    template <typename T, typename V>
+    V const& getFieldByConstRef (SField::ref field, V const& empty) const
+    {
+        const SerializedType* rf = peekAtPField (field);
+
+        if (!rf)
+            throw std::runtime_error ("Field not found");
+
+        SerializedTypeID id = rf->getSType ();
+
+        if (id == STI_NOTPRESENT)
+            return empty; // optional field not present
+
+        const T* cf = dynamic_cast<const T*> (rf);
+
+        if (!cf)
+            throw std::runtime_error ("Wrong field type");
+
+        return *cf;
+    }
+
+    // Implementation for setting most fields with a setValue() method.
+    template <typename T, typename V>
+    void setFieldUsingSetValue (SField::ref field, V value)
+    {
+        SerializedType* rf = getPField (field, true);
+
+        if (!rf)
+            throw std::runtime_error ("Field not found");
+
+        if (rf->getSType () == STI_NOTPRESENT)
+            rf = makeFieldPresent (field);
+
+        T* cf = dynamic_cast<T*> (rf);
+
+        if (!cf)
+            throw std::runtime_error ("Wrong field type");
+
+        cf->setValue (value);
+    }
+
+    // Implementation for setting fields using assignment
+    template <typename T>
+    void setFieldUsingAssignment (SField::ref field, T const& value)
+    {
+        SerializedType* rf = getPField (field, true);
+
+        if (!rf)
+            throw std::runtime_error ("Field not found");
+
+        if (rf->getSType () == STI_NOTPRESENT)
+            rf = makeFieldPresent (field);
+
+        T* cf = dynamic_cast<T*> (rf);
+
+        if (!cf)
+            throw std::runtime_error ("Wrong field type");
+
+        (*cf) = value;
     }
 
 private:
     boost::ptr_vector<SerializedType>   mData;
     const SOTemplate*                   mType;
-};
-
-//------------------------------------------------------------------------------
-
-// VFALCO TODO these parameters should not be const references.
-template <typename T, typename U>
-static T range_check_cast (const U& value, const T& minimum, const T& maximum)
-{
-    if ((value < minimum) || (value > maximum))
-        throw std::runtime_error ("Value out of range");
-
-    return static_cast<T> (value);
-}
-
-//------------------------------------------------------------------------------
-
-class STArray
-    : public SerializedType
-    , public CountedObject <STArray>
-{
-public:
-    static char const* getCountedObjectName () { return "STArray"; }
-
-    typedef boost::ptr_vector<STObject>                         vector;
-    typedef boost::ptr_vector<STObject>::iterator               iterator;
-    typedef boost::ptr_vector<STObject>::const_iterator         const_iterator;
-    typedef boost::ptr_vector<STObject>::reverse_iterator       reverse_iterator;
-    typedef boost::ptr_vector<STObject>::const_reverse_iterator const_reverse_iterator;
-    typedef boost::ptr_vector<STObject>::size_type              size_type;
-
-public:
-    STArray ()
-    {
-        ;
-    }
-    explicit STArray (int n)
-    {
-        value.reserve (n);
-    }
-    explicit STArray (SField::ref f) : SerializedType (f)
-    {
-        ;
-    }
-    STArray (SField::ref f, int n) : SerializedType (f)
-    {
-        value.reserve (n);
-    }
-    STArray (SField::ref f, const vector & v) : SerializedType (f), value (v)
-    {
-        ;
-    }
-    explicit STArray (vector & v) : value (v)
-    {
-        ;
-    }
-
-    static std::unique_ptr<SerializedType> deserialize (SerializerIterator & sit, SField::ref name)
-    {
-        return std::unique_ptr<SerializedType> (construct (sit, name));
-    }
-
-    const vector& getValue () const
-    {
-        return value;
-    }
-    vector& getValue ()
-    {
-        return value;
-    }
-
-    // VFALCO NOTE as long as we're married to boost why not use boost::iterator_facade?
-    //
-    // vector-like functions
-    void push_back (const STObject & object)
-    {
-        value.push_back (object.oClone ().release ());
-    }
-    STObject& operator[] (int j)
-    {
-        return value[j];
-    }
-    const STObject& operator[] (int j) const
-    {
-        return value[j];
-    }
-    iterator begin ()
-    {
-        return value.begin ();
-    }
-    const_iterator begin () const
-    {
-        return value.begin ();
-    }
-    iterator end ()
-    {
-        return value.end ();
-    }
-    const_iterator end () const
-    {
-        return value.end ();
-    }
-    size_type size () const
-    {
-        return value.size ();
-    }
-    reverse_iterator rbegin ()
-    {
-        return value.rbegin ();
-    }
-    const_reverse_iterator rbegin () const
-    {
-        return value.rbegin ();
-    }
-    reverse_iterator rend ()
-    {
-        return value.rend ();
-    }
-    const_reverse_iterator rend () const
-    {
-        return value.rend ();
-    }
-    iterator erase (iterator pos)
-    {
-        return value.erase (pos);
-    }
-    STObject& front ()
-    {
-        return value.front ();
-    }
-    const STObject& front () const
-    {
-        return value.front ();
-    }
-    STObject& back ()
-    {
-        return value.back ();
-    }
-    const STObject& back () const
-    {
-        return value.back ();
-    }
-    void pop_back ()
-    {
-        value.pop_back ();
-    }
-    bool empty () const
-    {
-        return value.empty ();
-    }
-    void clear ()
-    {
-        value.clear ();
-    }
-    void swap (STArray & a)
-    {
-        value.swap (a.value);
-    }
-
-    virtual std::string getFullText () const;
-    virtual std::string getText () const;
-
-    virtual Json::Value getJson (int index) const;
-    virtual void add (Serializer & s) const;
-
-    void sort (bool (*compare) (const STObject & o1, const STObject & o2));
-
-    bool operator== (const STArray & s)
-    {
-        return value == s.value;
-    }
-    bool operator!= (const STArray & s)
-    {
-        return value != s.value;
-    }
-
-    virtual SerializedTypeID getSType () const
-    {
-        return STI_ARRAY;
-    }
-    virtual bool isEquivalent (const SerializedType & t) const;
-    virtual bool isDefault () const
-    {
-        return value.empty ();
-    }
-
-private:
-    vector value;
-
-    STArray* duplicate () const
-    {
-        return new STArray (*this);
-    }
-    static STArray* construct (SerializerIterator&, SField::ref);
 };
 
 } // ripple
