@@ -126,8 +126,6 @@
     </ClCompile>
     <ClInclude Include="..\..\build\proto\ripple.pb.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\BeastConfig.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\Arithmetic.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\asio\abstract_socket.cpp">
@@ -304,14 +302,14 @@
     <ClCompile Include="..\..\src\beast\beast\crypto\impl\MurmurHash.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\crypto\impl\Sha256.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\crypto\impl\sha2\sha2.c">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\crypto\impl\sha2\sha2.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\crypto\impl\Sha256.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\crypto\impl\UnsignedInteger.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -826,14 +824,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\module\core\text\StringPairArray.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\threads\CriticalSection.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\threads\DynamicLibrary.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\threads\Process.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\threads\ScopedLock.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\thread\DeadlineTimer.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -845,6 +835,14 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\module\core\thread\Workers.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\module\core\threads\CriticalSection.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\module\core\threads\DynamicLibrary.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\module\core\threads\Process.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\module\core\threads\ScopedLock.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\time\AtExitHook.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -1187,6 +1185,8 @@
     <ClInclude Include="..\..\src\beast\beast\utility\Zero.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\Version.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\BeastConfig.h">
     </ClInclude>
     <ClCompile Include="..\..\src\hyperleveldb\db\builder.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -2386,53 +2386,33 @@
     <ClCompile Include="..\..\src\ripple\module\app\transactors\AddWallet.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\transactors\AddWallet.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\CancelOffer.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\transactors\CancelOffer.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\Change.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\transactors\Change.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\CreateOffer.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\transactors\CreateOffer.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\CreateOfferBridged.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\transactors\CreateOfferBridged.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\CreateOfferDirect.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\transactors\CreateOfferDirect.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\Payment.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\transactors\Payment.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\SetAccount.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\transactors\SetAccount.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\SetRegularKey.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\transactors\SetRegularKey.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\SetTrust.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\app\transactors\SetTrust.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\Transactor.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -3943,57 +3923,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\rocksdb2\third-party\rapidjson\reader.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\rocksdb2\utilities\backupable\backupable_db.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\rocksdb2\utilities\document\document_db.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\rocksdb2\utilities\document\json_document.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\rocksdb2\utilities\geodb\geodb_impl.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\rocksdb2\utilities\geodb\geodb_impl.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\rocksdb2\utilities\merge_operators.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\rocksdb2\utilities\merge_operators\put.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\rocksdb2\utilities\merge_operators\string_append\stringappend.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\rocksdb2\utilities\merge_operators\string_append\stringappend.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\rocksdb2\utilities\merge_operators\string_append\stringappend2.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\rocksdb2\utilities\merge_operators\string_append\stringappend2.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\rocksdb2\utilities\merge_operators\uint64add.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\rocksdb2\utilities\redis\redis_lists.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\rocksdb2\utilities\redis\redis_lists.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\rocksdb2\utilities\redis\redis_list_exception.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\rocksdb2\utilities\redis\redis_list_iterator.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\rocksdb2\utilities\spatialdb\spatial_db.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\rocksdb2\utilities\spatialdb\utils.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\rocksdb2\utilities\ttl\db_ttl_impl.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\rocksdb2\utilities\ttl\db_ttl_impl.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\rocksdb2\util\arena.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -4166,6 +4095,57 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\rocksdb2\util\xxhash.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb2\utilities\backupable\backupable_db.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb2\utilities\document\document_db.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb2\utilities\document\json_document.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb2\utilities\geodb\geodb_impl.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb2\utilities\geodb\geodb_impl.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb2\utilities\merge_operators.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb2\utilities\merge_operators\put.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb2\utilities\merge_operators\string_append\stringappend.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb2\utilities\merge_operators\string_append\stringappend.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb2\utilities\merge_operators\string_append\stringappend2.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb2\utilities\merge_operators\string_append\stringappend2.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb2\utilities\merge_operators\uint64add.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb2\utilities\redis\redis_lists.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb2\utilities\redis\redis_lists.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb2\utilities\redis\redis_list_exception.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb2\utilities\redis\redis_list_iterator.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb2\utilities\spatialdb\spatial_db.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb2\utilities\spatialdb\utils.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb2\utilities\ttl\db_ttl_impl.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb2\utilities\ttl\db_ttl_impl.h">
     </ClInclude>
     <ClInclude Include="..\..\src\snappy\config\snappy-stubs-public.h">
     </ClInclude>

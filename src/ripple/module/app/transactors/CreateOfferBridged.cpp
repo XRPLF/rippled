@@ -25,7 +25,7 @@
 namespace ripple {
 
 std::pair<TER, core::Amounts>
-CreateOfferBridged::crossOffers (
+CreateOffer::crossOffersBridged (
     core::LedgerView& view,
     core::Amounts const& taker_amount)
 {

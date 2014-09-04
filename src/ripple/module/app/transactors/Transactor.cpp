@@ -18,18 +18,20 @@
 //==============================================================================
 
 #include <ripple/module/app/transactors/Transactor.h>
-#include <ripple/module/app/transactors/AddWallet.h>
-#include <ripple/module/app/transactors/CancelOffer.h>
-#include <ripple/module/app/transactors/Change.h>
-#include <ripple/module/app/transactors/CreateOffer.h>
-#include <ripple/module/app/transactors/Payment.h>
-#include <ripple/module/app/transactors/SetAccount.h>
-#include <ripple/module/app/transactors/SetRegularKey.h>
-#include <ripple/module/app/transactors/SetTrust.h>
 
 namespace ripple {
 
-std::unique_ptr<Transactor> Transactor::makeTransactor (
+TER transact_Payment (SerializedTransaction const& txn, TransactionEngineParams params, TransactionEngine* engine);
+TER transact_SetAccount (SerializedTransaction const& txn, TransactionEngineParams params, TransactionEngine* engine);
+TER transact_SetRegularKey (SerializedTransaction const& txn, TransactionEngineParams params, TransactionEngine* engine);
+TER transact_SetTrust (SerializedTransaction const& txn, TransactionEngineParams params, TransactionEngine* engine);
+TER transact_CreateOffer (SerializedTransaction const& txn, TransactionEngineParams params, TransactionEngine* engine);
+TER transact_CancelOffer (SerializedTransaction const& txn, TransactionEngineParams params, TransactionEngine* engine);
+TER transact_AddWallet (SerializedTransaction const& txn, TransactionEngineParams params, TransactionEngine* engine);
+TER transact_Change (SerializedTransaction const& txn, TransactionEngineParams params, TransactionEngine* engine);
+
+TER
+Transactor::transact (
     SerializedTransaction const& txn,
     TransactionEngineParams params,
     TransactionEngine* engine)
@@ -37,35 +39,34 @@ std::unique_ptr<Transactor> Transactor::makeTransactor (
     switch (txn.getTxnType ())
     {
     case ttPAYMENT:
-        return make_Payment (txn, params, engine);
+        return transact_Payment (txn, params, engine);
 
     case ttACCOUNT_SET:
-        return make_SetAccount (txn, params, engine);
+        return transact_SetAccount (txn, params, engine);
 
     case ttREGULAR_KEY_SET:
-        return make_SetRegularKey (txn, params, engine);
+        return transact_SetRegularKey (txn, params, engine);
 
     case ttTRUST_SET:
-        return make_SetTrust (txn, params, engine);
+        return transact_SetTrust (txn, params, engine);
 
     case ttOFFER_CREATE:
-        return make_CreateOffer (txn, params, engine);
+        return transact_CreateOffer (txn, params, engine);
 
     case ttOFFER_CANCEL:
-        return make_CancelOffer (txn, params, engine);
+        return transact_CancelOffer (txn, params, engine);
 
     case ttWALLET_ADD:
-        return make_AddWallet (txn, params, engine);
+        return transact_AddWallet (txn, params, engine);
 
     case ttAMENDMENT:
     case ttFEE:
-        return make_Change (txn, params, engine);
+        return transact_Change (txn, params, engine);
 
     default:
-        return std::unique_ptr<Transactor> ();
+        return temUNKNOWN;
     }
 }
-
 
 Transactor::Transactor (
     SerializedTransaction const& txn,

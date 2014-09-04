@@ -19,50 +19,76 @@
 
 namespace ripple {
 
-std::uint64_t SetRegularKey::calculateBaseFee ()
+class SetRegularKey
+    : public Transactor
 {
-    if ( mTxnAccount
-            && (! (mTxnAccount->getFlags () & lsfPasswordSpent))
-            && (mSigningPubKey.getAccountID () == mTxnAccountID))
+    std::uint64_t calculateBaseFee () override
     {
-        // flag is armed and they signed with the right account
-        return 0;
+        if ( mTxnAccount
+                && (! (mTxnAccount->getFlags () & lsfPasswordSpent))
+                && (mSigningPubKey.getAccountID () == mTxnAccountID))
+        {
+            // flag is armed and they signed with the right account
+            return 0;
+        }
+
+        return Transactor::calculateBaseFee ();
     }
 
-    return Transactor::calculateBaseFee ();
-}
+public:
+    SetRegularKey (
+        SerializedTransaction const& txn,
+        TransactionEngineParams params,
+        TransactionEngine* engine)
+        : Transactor (
+            txn,
+            params,
+            engine,
+            deprecatedLogs().journal("SetRegularKey"))
+    {
 
+    }
 
-TER SetRegularKey::doApply ()
+    TER doApply () override
+    {
+        std::uint32_t const uTxFlags = mTxn.getFlags ();
+
+        if (uTxFlags & tfUniversalMask)
+        {
+            m_journal.trace <<
+                "Malformed transaction: Invalid flags set.";
+
+            return temINVALID_FLAG;
+        }
+
+        if (mFeeDue == zero)
+        {
+            mTxnAccount->setFlag (lsfPasswordSpent);
+        }
+
+        if (mTxn.isFieldPresent (sfRegularKey))
+        {
+            Account uAuthKeyID = mTxn.getFieldAccount160 (sfRegularKey);
+            mTxnAccount->setFieldAccount (sfRegularKey, uAuthKeyID);
+        }
+        else
+        {
+            if (mTxnAccount->isFlag (lsfDisableMaster))
+                return tecMASTER_DISABLED;
+            mTxnAccount->makeFieldAbsent (sfRegularKey);
+        }
+
+        return tesSUCCESS;
+    }
+};
+
+TER
+transact_SetRegularKey (
+    SerializedTransaction const& txn,
+    TransactionEngineParams params,
+    TransactionEngine* engine)
 {
-    std::uint32_t const uTxFlags = mTxn.getFlags ();
-
-    if (uTxFlags & tfUniversalMask)
-    {
-        m_journal.trace <<
-            "Malformed transaction: Invalid flags set.";
-
-        return temINVALID_FLAG;
-    }
-
-    if (mFeeDue == zero)
-    {
-        mTxnAccount->setFlag (lsfPasswordSpent);
-    }
-
-    if (mTxn.isFieldPresent (sfRegularKey))
-    {
-        Account uAuthKeyID = mTxn.getFieldAccount160 (sfRegularKey);
-        mTxnAccount->setFieldAccount (sfRegularKey, uAuthKeyID);
-    }
-    else
-    {
-        if (mTxnAccount->isFlag (lsfDisableMaster))
-            return tecMASTER_DISABLED;
-        mTxnAccount->makeFieldAbsent (sfRegularKey);
-    }
-
-    return tesSUCCESS;
+    return SetRegularKey(txn, params, engine).apply ();
 }
 
 }
