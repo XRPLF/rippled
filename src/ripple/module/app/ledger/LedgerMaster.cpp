@@ -68,7 +68,6 @@ public:
     int                         mFillInProgress;
 
     int                         mPathFindThread;    // Pathfinder jobs dispatched
-    bool                        mPathFindNewLedger;
     bool                        mPathFindNewRequest;
 
     std::atomic <std::uint32_t> mPubLedgerClose;
