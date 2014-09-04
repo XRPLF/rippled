@@ -188,6 +188,7 @@ enum TER    // aka TransactionEngineResult
     tecNO_TARGET                = 138,
     tecNO_PERMISSION            = 139,
     tecNO_ENTRY                 = 140,
+    tecINSUFFICIENT_RESERVE     = 141,
 };
 
 inline bool isTelLocal(TER x)

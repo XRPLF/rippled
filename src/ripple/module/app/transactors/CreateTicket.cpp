@@ -30,7 +30,7 @@ TER CreateTicket::doApply ()
         mTxnAccount->getFieldU32 (sfOwnerCount) + 1));
 
     if (mPriorBalance.getNValue () < accountReserve)
-        return (mParams & tapOPEN_LEDGER) ? tecINSUF_RESERVE_OFFER : tesSUCCESS;
+        return tecINSUFFICIENT_RESERVE;
 
     std::uint32_t expiration (0);
 
@@ -68,14 +68,7 @@ TER CreateTicket::doApply ()
         
         // Destination account does not exist.
         if (!sleTarget)
-        {
-            m_journal.trace <<
-                "Delay transaction: Destination account does not exist.";
-
-            // Another transaction could create the account and then this
-            // transaction would succeed.
             return tecNO_TARGET;
-        }
 
         // The issuing account is the default account to which the ticket
         // applies so don't bother saving it if that's what's specified.

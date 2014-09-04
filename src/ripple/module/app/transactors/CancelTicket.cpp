@@ -55,11 +55,8 @@ TER CancelTicket::doApply ()
     TER const result = mEngine->view ().dirDelete (false, hint,
         Ledger::getOwnerDirIndex (ticket_owner), ticketId, false, (hint == 0));
 
-    if (result == tesSUCCESS)
-    {
-        mEngine->view ().ownerCountAdjust (ticket_owner, -1);
-        mEngine->view ().entryDelete (sleTicket);
-    }
+    mEngine->view ().ownerCountAdjust (ticket_owner, -1);
+    mEngine->view ().entryDelete (sleTicket);
 
     return result;
 }
