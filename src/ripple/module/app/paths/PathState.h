@@ -34,7 +34,9 @@ class PathState : public CountedObject <PathState>
     typedef std::vector<Ptr> List;
 
     PathState (STAmount const& saSend, STAmount const& saSendMax)
-        : saInReq (saSendMax)
+        : mIndex (0)
+        , uQuality (0)
+        , saInReq (saSendMax)
         , saOutReq (saSend)
     {
     }
