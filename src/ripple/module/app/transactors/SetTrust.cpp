@@ -125,7 +125,19 @@ TER SetTrust::doApply ()
     }
 
     std::uint32_t const uOwnerCount (mTxnAccount->getFieldU32 (sfOwnerCount));
-    // The reserve required to create the line.
+    
+    // The reserve required to create the line. Note that we allow up to two
+    // trust lines without requiring a reserve because being able to exchange
+    // currencies is a powerful Ripple feature.
+    //
+    // This is also a security feature: if you're a gateway and you want to be
+    // able to let someone use your services, you would otherwise have to give
+    // them enough XRP to cover the incremental reserve for their trust line.
+    // If they had no intention of using your services, they could then use the
+    // XRP for their own purposes. So this makes it possible for gateways to
+    // fund accounts in a way where there's no incentive to trick them into
+    // creating an account you have no intention of using.
+
     std::uint64_t const uReserveCreate =
         (uOwnerCount < 2)
             ? 0

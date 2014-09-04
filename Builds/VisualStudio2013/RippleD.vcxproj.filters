@@ -3498,6 +3498,12 @@
     <ClInclude Include="..\..\src\ripple\module\app\transactors\CancelOffer.h">
       <Filter>ripple\module\app\transactors</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\module\app\transactors\CancelTicket.cpp">
+      <Filter>ripple\module\app\transactors</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\module\app\transactors\CancelTicket.h">
+      <Filter>ripple\module\app\transactors</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\Change.cpp">
       <Filter>ripple\module\app\transactors</Filter>
     </ClCompile>
@@ -3520,6 +3526,12 @@
       <Filter>ripple\module\app\transactors</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\app\transactors\CreateOfferDirect.h">
+      <Filter>ripple\module\app\transactors</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\module\app\transactors\CreateTicket.cpp">
+      <Filter>ripple\module\app\transactors</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\module\app\transactors\CreateTicket.h">
       <Filter>ripple\module\app\transactors</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\app\transactors\Payment.cpp">

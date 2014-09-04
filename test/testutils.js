@@ -122,7 +122,10 @@ function build_setup(opts, host) {
 
       function connect_websocket(callback) {
         self.remote = data.remote = Remote.from_config(host, !!opts.verbose_ws);
-        self.remote.once('ledger_closed', function() {
+
+        // TODO:
+        self.remote.once('connected', function() {
+        // self.remote.once('ledger_closed', function() {
           callback();
         });
         self.remote.connect();
