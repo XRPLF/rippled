@@ -110,10 +110,10 @@ Logs::Logs()
 {
 }
     
-void
+bool
 Logs::open (boost::filesystem::path const& pathToLogFile)
 {
-    file_.open(pathToLogFile);
+    return file_.open(pathToLogFile);
 }
 
 Logs::Sink&
