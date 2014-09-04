@@ -92,7 +92,8 @@ Json::Value doSubmit (RPC::Context& context)
 
     try
     {
-        jvResult[jss::tx_json] = tpTrans->getJson (0);
+        jvResult[jss::tx_json] = tpTrans->getJson (
+            std::bitset<Options::numOfOptions> ());
         jvResult[jss::tx_blob] = strHex (
             tpTrans->getSTransaction ()->getSerializer ().peekData ());
 

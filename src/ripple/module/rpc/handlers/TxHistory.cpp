@@ -51,8 +51,11 @@ Json::Value doTxHistory (RPC::Context& context)
 
         SQL_FOREACH (db, sql)
         {
-            if (auto trans = Transaction::transactionFromSQL (db, false))
-                txs.append (trans->getJson (0));
+            if (auto trans = Transaction::transactionFromSQL(db, false))
+            {
+                txs.append (trans->getJson (
+                    std::bitset<Options::numOfOptions> ()));
+            }
         }
     }
 

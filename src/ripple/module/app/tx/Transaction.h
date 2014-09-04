@@ -20,6 +20,8 @@
 #ifndef RIPPLE_TRANSACTION_H
 #define RIPPLE_TRANSACTION_H
 
+#include <bitset>
+
 namespace ripple {
 
 //
@@ -40,6 +42,17 @@ enum TransStatus
     OBSOLETE    = 7, // a compatible transaction has taken precedence
     INCOMPLETE  = 8  // needs more signatures
 };
+
+namespace Options {
+
+enum Options
+{
+    date,
+    binary,
+    numOfOptions
+};
+
+} // Options
 
 // This class is for constructing and examining transactions.  Transactions are static so manipulation functions are unnecessary.
 class Transaction
@@ -155,8 +168,8 @@ public:
     bool operator!= (const Transaction&) const;
     bool operator<= (const Transaction&) const;
     bool operator>= (const Transaction&) const;
-
-    Json::Value getJson (int options, bool binary = false) const;
+ 
+    Json::Value getJson (std::bitset<Options::numOfOptions> const& options) const;
 
     static Transaction::pointer load (uint256 const& id);
 

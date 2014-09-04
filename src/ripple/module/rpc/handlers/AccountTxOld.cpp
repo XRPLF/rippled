@@ -156,7 +156,11 @@ Json::Value doAccountTxOld (RPC::Context& context)
                 Json::Value&    jvObj = jvTxns.append (Json::objectValue);
 
                 if (it->first)
-                    jvObj["tx"]             = it->first->getJson (1);
+                {
+                    std::bitset<Options::numOfOptions> options;
+                    options.set (Options::date);
+                    jvObj["tx"] = it->first->getJson (options);
+                }
 
                 if (it->second)
                 {

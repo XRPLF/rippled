@@ -1330,7 +1330,7 @@ bool ApplicationImp::loadOldLedger (
                  it = txns->peekNextItem(it->getTag()))
             {
                 Transaction::pointer txn = replayLedger->getTransaction(it->getTag());
-                m_journal.info << txn->getJson(0);
+                m_journal.info << txn->getJson (std::bitset<Options::numOfOptions> ());
                 Serializer s;
                 txn->getSTransaction()->add(s);
                 if (!cur->addTransaction(it->getTag(), s))

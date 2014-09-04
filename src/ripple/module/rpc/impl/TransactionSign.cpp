@@ -386,7 +386,8 @@ Json::Value transactionSign (
 
     try
     {
-        jvResult["tx_json"] = tpTrans->getJson (0);
+        jvResult["tx_json"] = tpTrans->getJson (
+            std::bitset<Options::numOfOptions> ());
         jvResult["tx_blob"] = strHex (
             tpTrans->getSTransaction ()->getSerializer ().peekData ());
 
