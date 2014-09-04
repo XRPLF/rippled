@@ -215,7 +215,7 @@ public:
         return
             std::addressof(mEntrySet) == std::addressof(other.mEntrySet) &&
             mDirectoryIterator == other.mDirectoryIterator &&
-            mOfferIterator == mOfferIterator;
+            mOfferIterator == other.mOfferIterator;
     }
 
     bool

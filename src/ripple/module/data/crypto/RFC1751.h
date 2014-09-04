@@ -39,7 +39,7 @@ public:
     static beast::String getWordFromBlob (void const* data, size_t bytes);
 
 private:
-    static unsigned long extract (char* s, int start, int length);
+    static unsigned long extract (char const* s, int start, int length);
     static void btoe (std::string& strHuman, std::string const& strData);
     static void insert (char* s, int x, int start, int length);
     static void standard (std::string& strWord);

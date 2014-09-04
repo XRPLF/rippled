@@ -26,8 +26,7 @@ void STAmount::canonicalizeRound (
         return;
 
     WriteLog (lsTRACE, STAmount)
-            << "canonicalize< " << value
-            << ":" << offset << (roundUp ? " up" : " down");
+        << "canonicalizeRound< " << value << ":" << offset;
 
     if (isNative)
     {
@@ -61,8 +60,7 @@ void STAmount::canonicalizeRound (
     }
 
     WriteLog (lsTRACE, STAmount)
-            << "canonicalize> " << value
-            << ":" << offset << (roundUp ? " up" : " down");
+        << "canonicalizeRound> " << value << ":" << offset;
 }
 
 STAmount STAmount::addRound (STAmount const& v1, STAmount const& v2, bool roundUp)

@@ -30,6 +30,7 @@ Bootcache::Bootcache (
     , m_clock (clock)
     , m_journal (journal)
     , m_whenUpdate (m_clock.now ())
+    , m_needsUpdate (false)
 {
 }
 

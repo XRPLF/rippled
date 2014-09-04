@@ -106,7 +106,6 @@ public:
     std::uint32_t getQualityIn () const
     {
         return ((std::uint32_t) (mViewLowest ? mLowQualityIn : mHighQualityIn));
-        return ((std::uint32_t) (mViewLowest ? mLowQualityIn : mHighQualityIn));
     }
 
     std::uint32_t getQualityOut () const
