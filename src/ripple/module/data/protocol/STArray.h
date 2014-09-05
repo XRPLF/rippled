@@ -20,7 +20,7 @@
 #ifndef RIPPLE_STARRAY_H
 #define RIPPLE_STARRAY_H
 
-#include "STObject.h"
+#include <ripple/module/data/protocol/STObject.h>
 #include <boost/ptr_container/ptr_vector.hpp>
 
 namespace ripple {

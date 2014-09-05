@@ -58,8 +58,7 @@ STArray::deserialize (SerializerIterator& sit, SField::ref field)
         value.push_back (new STObject (fn));
         value.rbegin ()->set (sit, 1);
     }
-
-    return std::unique_ptr <SerializedType> (ret.release ());
+    return std::move (ret);
 }
 
 std::string STArray::getFullText () const

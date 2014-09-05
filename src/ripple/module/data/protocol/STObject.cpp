@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <beast/cxx14/memory.h> // <memory>
+
 namespace ripple {
 
 std::unique_ptr<SerializedType>
@@ -305,8 +307,7 @@ STObject::deserialize (SerializerIterator& sit, SField::ref name)
 {
     std::unique_ptr <STObject> object (std::make_unique <STObject> (name));
     object->set (sit, 1);
-    std::unique_ptr <SerializedType> ret (object.release ());
-    return ret;
+    return std::move (object);
 }
 
 bool STObject::hasMatchingEntry (const SerializedType& t)
