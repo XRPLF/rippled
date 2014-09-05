@@ -17,8 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/basics/utility/IniFile.h>
 #include <ripple/basics/utility/Time.h>
+#include <ripple/module/core/Config.h>
+#include <ripple/module/core/LoadFeeTrack.h>
 #include <beast/module/core/thread/DeadlineTimer.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/regex.hpp>
@@ -1155,7 +1156,7 @@ private:
 
         if (!bReject)
         {
-            Section             secSite = ParseSection (strSiteFile, true);
+            IniFileSections             secSite = parseIniFile (strSiteFile, true);
             bool                bGood   = !err;
 
             if (bGood)
@@ -1175,7 +1176,7 @@ private:
             //
             std::string strSite;
 
-            if (bGood && !SectionSingleB (secSite, SECTION_DOMAIN, strSite))
+            if (bGood && !getSingleSection (secSite, SECTION_DOMAIN, strSite))
             {
                 bGood   = false;
 
@@ -1199,9 +1200,9 @@ private:
             //
             std::string     strNodePublicKey;
 
-            if (bGood && !SectionSingleB (secSite, SECTION_PUBLIC_KEY, strNodePublicKey))
+            if (bGood && !getSingleSection (secSite, SECTION_PUBLIC_KEY, strNodePublicKey))
             {
-                // Bad [validation_public_key] Section.
+                // Bad [validation_public_key] IniFileSections.
                 bGood   = false;
 
                 WriteLog (lsTRACE, UniqueNodeList)
@@ -1431,8 +1432,9 @@ private:
 
     //--------------------------------------------------------------------------
 
-    // Process Section [validators_url].
-    void getValidatorsUrl (RippleAddress const& naNodePublic, Section secSite)
+    // Process IniFileSections [validators_url].
+    void getValidatorsUrl (RippleAddress const& naNodePublic,
+        IniFileSections secSite)
     {
         std::string strValidatorsUrl;
         std::string strScheme;
@@ -1440,7 +1442,7 @@ private:
         int         iPort;
         std::string strPath;
 
-        if (SectionSingleB (secSite, SECTION_VALIDATORS_URL, strValidatorsUrl)
+        if (getSingleSection (secSite, SECTION_VALIDATORS_URL, strValidatorsUrl)
                 && !strValidatorsUrl.empty ()
                 && parseUrl (strValidatorsUrl, strScheme, strDomain, iPort, strPath)
                 && -1 == iPort
@@ -1467,9 +1469,9 @@ private:
 
     //--------------------------------------------------------------------------
 
-    // Process Section [ips_url].
-    // If we have a Section with a single entry, fetch the url and process it.
-    void getIpsUrl (RippleAddress const& naNodePublic, Section secSite)
+    // Process IniFileSections [ips_url].
+    // If we have a IniFileSections with a single entry, fetch the url and process it.
+    void getIpsUrl (RippleAddress const& naNodePublic, IniFileSections secSite)
     {
         std::string strIpsUrl;
         std::string strScheme;
@@ -1477,7 +1479,7 @@ private:
         int         iPort;
         std::string strPath;
 
-        if (SectionSingleB (secSite, SECTION_IPS_URL, strIpsUrl)
+        if (getSingleSection (secSite, SECTION_IPS_URL, strIpsUrl)
                 && !strIpsUrl.empty ()
                 && parseUrl (strIpsUrl, strScheme, strDomain, iPort, strPath)
                 && -1 == iPort
@@ -1504,7 +1506,7 @@ private:
 
     //--------------------------------------------------------------------------
 
-    // Given a Section with IPs, parse and persist it for a validator.
+    // Given a IniFileSections with IPs, parse and persist it for a validator.
     bool responseIps (std::string const& strSite, RippleAddress const& naNodePublic, const boost::system::error_code& err, int iStatus, std::string const& strIpsFile)
     {
         bool    bReject = !err && iStatus != 200;
@@ -1513,9 +1515,9 @@ private:
         {
             if (!err)
             {
-                Section         secFile     = ParseSection (strIpsFile, true);
+                IniFileSections         secFile     = parseIniFile (strIpsFile, true);
 
-                processIps (strSite, naNodePublic, SectionEntries (secFile, SECTION_IPS));
+                processIps (strSite, naNodePublic, getIniFileSection (secFile, SECTION_IPS));
             }
 
             fetchFinish ();
@@ -1524,8 +1526,8 @@ private:
         return bReject;
     }
 
-    // After fetching a ripple.txt from a web site, given a Section with validators, parse and persist it.
-    bool responseValidators (std::string const& strValidatorsUrl, RippleAddress const& naNodePublic, Section secSite, std::string const& strSite, const boost::system::error_code& err, int iStatus, std::string const& strValidatorsFile)
+    // After fetching a ripple.txt from a web site, given a IniFileSections with validators, parse and persist it.
+    bool responseValidators (std::string const& strValidatorsUrl, RippleAddress const& naNodePublic, IniFileSections secSite, std::string const& strSite, const boost::system::error_code& err, int iStatus, std::string const& strValidatorsFile)
     {
         bool    bReject = !err && iStatus != 200;
 
@@ -1533,9 +1535,9 @@ private:
         {
             if (!err)
             {
-                Section     secFile     = ParseSection (strValidatorsFile, true);
+                IniFileSections     secFile     = parseIniFile (strValidatorsFile, true);
 
-                processValidators (strSite, strValidatorsUrl, naNodePublic, vsValidator, SectionEntries (secFile, SECTION_VALIDATORS));
+                processValidators (strSite, strValidatorsUrl, naNodePublic, vsValidator, getIniFileSection (secFile, SECTION_VALIDATORS));
             }
 
             getIpsUrl (naNodePublic, secSite);
@@ -1550,7 +1552,7 @@ private:
     // Persist the IPs refered to by a Validator.
     // --> strSite: source of the IPs (for debugging)
     // --> naNodePublic: public key of the validating node.
-    void processIps (std::string const& strSite, RippleAddress const& naNodePublic, Section::mapped_type* pmtVecStrIps)
+    void processIps (std::string const& strSite, RippleAddress const& naNodePublic, IniFileSections::mapped_type* pmtVecStrIps)
     {
         auto db = getApp().getWalletDB ().getDB ();
 
@@ -1622,7 +1624,7 @@ private:
     // --> strValidatorsSrc: source details for display
     // --> naNodePublic: remote source public key - not valid for local
     // --> vsWhy: reason for adding validator to SeedDomains or SeedNodes.
-    int processValidators (std::string const& strSite, std::string const& strValidatorsSrc, RippleAddress const& naNodePublic, ValidatorSource vsWhy, Section::mapped_type* pmtVecStrValidators)
+    int processValidators (std::string const& strSite, std::string const& strValidatorsSrc, RippleAddress const& naNodePublic, ValidatorSource vsWhy, IniFileSections::mapped_type* pmtVecStrValidators)
     {
         auto db              = getApp().getWalletDB ().getDB ();
         std::string strNodePublic   = naNodePublic.isValid () ? naNodePublic.humanNodePublic () : strValidatorsSrc;
@@ -1722,24 +1724,24 @@ private:
     //--------------------------------------------------------------------------
 
     // Process a ripple.txt.
-    void processFile (std::string const& strDomain, RippleAddress const& naNodePublic, Section secSite)
+    void processFile (std::string const& strDomain, RippleAddress const& naNodePublic, IniFileSections secSite)
     {
         //
         // Process Validators
         //
-        processValidators (strDomain, NODE_FILE_NAME, naNodePublic, vsReferral, SectionEntries (secSite, SECTION_VALIDATORS));
+        processValidators (strDomain, NODE_FILE_NAME, naNodePublic, vsReferral, getIniFileSection (secSite, SECTION_VALIDATORS));
 
         //
         // Process ips
         //
-        processIps (strDomain, naNodePublic, SectionEntries (secSite, SECTION_IPS));
+        processIps (strDomain, naNodePublic, getIniFileSection (secSite, SECTION_IPS));
 
         //
         // Process currencies
         //
-        Section::mapped_type*   pvCurrencies;
+        IniFileSections::mapped_type*   pvCurrencies;
 
-        if ((pvCurrencies = SectionEntries (secSite, SECTION_CURRENCIES)) && pvCurrencies->size ())
+        if ((pvCurrencies = getIniFileSection (secSite, SECTION_CURRENCIES)) && pvCurrencies->size ())
         {
             // XXX Process currencies.
             WriteLog (lsWARNING, UniqueNodeList) << "Ignoring currencies: not implemented.";
@@ -1995,9 +1997,9 @@ private:
     //
     void nodeProcess (std::string const& strSite, std::string const& strValidators, std::string const& strSource)
     {
-        Section secValidators   = ParseSection (strValidators, true);
+        IniFileSections secValidators   = parseIniFile (strValidators, true);
 
-        Section::mapped_type*   pmtEntries  = SectionEntries (secValidators, SECTION_VALIDATORS);
+        IniFileSections::mapped_type*   pmtEntries  = getIniFileSection (secValidators, SECTION_VALIDATORS);
 
         if (pmtEntries)
         {

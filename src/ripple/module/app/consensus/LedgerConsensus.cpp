@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/module/core/LoadFeeTrack.h>
 #include <ripple/overlay/predicates.h>
 #include <ripple/types/api/UintTypes.h>
 

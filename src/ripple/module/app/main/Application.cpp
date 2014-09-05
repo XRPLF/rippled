@@ -24,6 +24,7 @@
 #include <ripple/common/seconds_clock.h>
 #include <ripple/module/app/main/Tuning.h>
 #include <ripple/module/app/misc/ProofOfWorkFactory.h>
+#include <ripple/module/core/LoadFeeTrack.h>
 #include <ripple/module/rpc/Manager.h>
 #include <ripple/nodestore/Database.h>
 #include <ripple/nodestore/DummyScheduler.h>
@@ -733,9 +734,8 @@ public:
         //             if (!getConfig ().RUN_STANDALONE)
         m_peers = make_Overlay (m_mainIoPool, *m_resourceManager,
             *m_siteFiles, getConfig ().getModuleDatabasePath (),
-            *m_resolver, m_mainIoPool, m_peerSSLContext->get ());
-        // add to Stoppable
-        add (*m_peers);
+                *m_resolver, m_mainIoPool, m_peerSSLContext->get ());
+        add (*m_peers); // add to Stoppable
 
         // SSL context used for WebSocket connections.
         if (getConfig ().WEBSOCKET_SECURE)

@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/module/app/book/Quality.h>
+
 namespace ripple {
 
 // #define META_DEBUG

@@ -20,6 +20,8 @@
 #ifndef RIPPLE_NET_BASICS_SNTPCLIENT_H_INCLUDED
 #define RIPPLE_NET_BASICS_SNTPCLIENT_H_INCLUDED
 
+#include <beast/threads/Stoppable.h>
+
 namespace ripple {
 
 class SNTPClient : public beast::Stoppable

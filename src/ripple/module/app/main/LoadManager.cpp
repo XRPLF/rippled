@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/module/core/LoadFeeTrack.h>
+// REMOVE ASAP
 #include <boost/thread.hpp>
 
 namespace ripple {

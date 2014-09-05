@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/module/core/Config.h>
+
 namespace ripple {
 
 LedgerProposal::LedgerProposal (uint256 const& pLgr, std::uint32_t seq,

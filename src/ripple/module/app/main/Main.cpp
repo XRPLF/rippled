@@ -20,6 +20,7 @@
 #include <ripple/basics/system/CheckLibraryVersions.h>
 #include <ripple/basics/utility/Sustain.h>
 #include <ripple/basics/utility/ThreadName.h>
+#include <ripple/module/core/ConfigSections.h>
 #include <beast/unit_test.h>
 #include <beast/streams/debug_ostream.h>
 

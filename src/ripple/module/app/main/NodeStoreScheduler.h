@@ -21,7 +21,7 @@
 #define RIPPLE_APP_NODESTORESCHEDULER_H_INCLUDED
 
 #include <ripple/nodestore/Scheduler.h>
-#include <ripple/module/core/functional/JobQueue.h>
+#include <ripple/module/core/JobQueue.h>
 #include <beast/threads/Stoppable.h>
 #include <atomic>
 

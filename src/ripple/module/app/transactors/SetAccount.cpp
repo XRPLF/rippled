@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/module/core/Config.h>
+
 namespace ripple {
 
 class SetAccount

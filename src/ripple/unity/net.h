@@ -28,7 +28,6 @@
 #include <ripple/unity/resource.h>
 
 #include <ripple/unity/basics.h>
-#include <ripple/unity/core.h>
 #include <ripple/unity/data.h>
 #include <ripple/module/websocket/autosocket/AutoSocket.h>
 

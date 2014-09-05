@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/module/core/LoadFeeTrack.h>
 #include <beast/cxx14/memory.h> // <memory>
 
 namespace ripple {

@@ -403,9 +403,6 @@
     <Filter Include="ripple\module\core">
       <UniqueIdentifier>{4DAFFAEC-2D9A-42C0-210F-483796C162E9}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ripple\module\core\functional">
-      <UniqueIdentifier>{61C8064B-23D8-A490-1614-9D2BA78ADB68}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ripple\module\data">
       <UniqueIdentifier>{FB5092D7-3AA5-4E7F-F783-C8A929D8B588}</UniqueIdentifier>
     </Filter>
@@ -2826,12 +2823,6 @@
     <ClInclude Include="..\..\src\ripple\basics\utility\CountedObject.h">
       <Filter>ripple\basics\utility</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\basics\utility\IniFile.cpp">
-      <Filter>ripple\basics\utility</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\basics\utility\IniFile.h">
-      <Filter>ripple\basics\utility</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\utility\PlatformMacros.h">
       <Filter>ripple\basics\utility</Filter>
     </ClInclude>
@@ -3600,56 +3591,56 @@
     <ClInclude Include="..\..\src\ripple\module\app\websocket\WSServerHandler.h">
       <Filter>ripple\module\app\websocket</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\functional\Config.cpp">
-      <Filter>ripple\module\core\functional</Filter>
+    <ClCompile Include="..\..\src\ripple\module\core\Config.cpp">
+      <Filter>ripple\module\core</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\core\functional\Config.h">
-      <Filter>ripple\module\core\functional</Filter>
+    <ClInclude Include="..\..\src\ripple\module\core\Config.h">
+      <Filter>ripple\module\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\core\functional\ConfigSections.h">
-      <Filter>ripple\module\core\functional</Filter>
+    <ClInclude Include="..\..\src\ripple\module\core\ConfigSections.h">
+      <Filter>ripple\module\core</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\functional\Job.cpp">
-      <Filter>ripple\module\core\functional</Filter>
+    <ClCompile Include="..\..\src\ripple\module\core\Job.cpp">
+      <Filter>ripple\module\core</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\core\functional\Job.h">
-      <Filter>ripple\module\core\functional</Filter>
+    <ClInclude Include="..\..\src\ripple\module\core\Job.h">
+      <Filter>ripple\module\core</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\functional\JobQueue.cpp">
-      <Filter>ripple\module\core\functional</Filter>
+    <ClCompile Include="..\..\src\ripple\module\core\JobQueue.cpp">
+      <Filter>ripple\module\core</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\core\functional\JobQueue.h">
-      <Filter>ripple\module\core\functional</Filter>
+    <ClInclude Include="..\..\src\ripple\module\core\JobQueue.h">
+      <Filter>ripple\module\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\core\functional\JobTypeData.h">
-      <Filter>ripple\module\core\functional</Filter>
+    <ClInclude Include="..\..\src\ripple\module\core\JobTypeData.h">
+      <Filter>ripple\module\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\core\functional\JobTypeInfo.h">
-      <Filter>ripple\module\core\functional</Filter>
+    <ClInclude Include="..\..\src\ripple\module\core\JobTypeInfo.h">
+      <Filter>ripple\module\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\core\functional\JobTypes.h">
-      <Filter>ripple\module\core\functional</Filter>
+    <ClInclude Include="..\..\src\ripple\module\core\JobTypes.h">
+      <Filter>ripple\module\core</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\functional\LoadEvent.cpp">
-      <Filter>ripple\module\core\functional</Filter>
+    <ClCompile Include="..\..\src\ripple\module\core\LoadEvent.cpp">
+      <Filter>ripple\module\core</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\core\functional\LoadEvent.h">
-      <Filter>ripple\module\core\functional</Filter>
+    <ClInclude Include="..\..\src\ripple\module\core\LoadEvent.h">
+      <Filter>ripple\module\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\core\functional\LoadFeeTrack.h">
-      <Filter>ripple\module\core\functional</Filter>
+    <ClInclude Include="..\..\src\ripple\module\core\LoadFeeTrack.h">
+      <Filter>ripple\module\core</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\functional\LoadFeeTrackImp.cpp">
-      <Filter>ripple\module\core\functional</Filter>
+    <ClCompile Include="..\..\src\ripple\module\core\LoadFeeTrackImp.cpp">
+      <Filter>ripple\module\core</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\core\functional\LoadFeeTrackImp.h">
-      <Filter>ripple\module\core\functional</Filter>
+    <ClInclude Include="..\..\src\ripple\module\core\LoadFeeTrackImp.h">
+      <Filter>ripple\module\core</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\functional\LoadMonitor.cpp">
-      <Filter>ripple\module\core\functional</Filter>
+    <ClCompile Include="..\..\src\ripple\module\core\LoadMonitor.cpp">
+      <Filter>ripple\module\core</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\core\functional\LoadMonitor.h">
-      <Filter>ripple\module\core\functional</Filter>
+    <ClInclude Include="..\..\src\ripple\module\core\LoadMonitor.h">
+      <Filter>ripple\module\core</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\data\crypto\Base58Data.cpp">
       <Filter>ripple\module\data\crypto</Filter>
@@ -4746,9 +4737,6 @@
     <ClCompile Include="..\..\src\ripple\unity\core.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\unity\core.h">
-      <Filter>ripple\unity</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\data.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>

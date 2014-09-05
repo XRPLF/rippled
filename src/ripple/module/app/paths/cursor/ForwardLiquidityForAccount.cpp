@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/module/app/book/Quality.h>
 #include <ripple/module/app/paths/cursor/RippleLiquidity.h>
 
 namespace ripple {

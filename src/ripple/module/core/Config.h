@@ -22,13 +22,60 @@
 
 #include <ripple/unity/json.h>
 #include <ripple/module/data/protocol/RippleAddress.h>
-#include <beast/module/core/files/File.h>
 #include <beast/http/URL.h>
+#include <beast/module/core/files/File.h>
+#include <beast/module/core/text/StringPairArray.h>
 #include <boost/filesystem.hpp>
 #include <cstdint>
+#include <map>
 #include <string>
+#include <vector>
 
 namespace ripple {
+
+typedef std::map<std::string, std::vector<std::string>> IniFileSections;
+
+IniFileSections
+parseIniFile (std::string const& strInput, const bool bTrim);
+
+bool
+getSingleSection (IniFileSections& secSource,
+    std::string const& strSection, std::string& strValue);
+
+int
+countSectionEntries (IniFileSections& secSource, std::string const& strSection);
+
+IniFileSections::mapped_type*
+getIniFileSection (IniFileSections& secSource, std::string const& strSection);
+
+/** Parse a section of lines as a key/value array.
+    Each line is in the form <key>=<value>.
+    Spaces are considered part of the key and value.
+*/
+// DEPRECATED
+beast::StringPairArray
+parseKeyValueSection (IniFileSections& secSource,
+    beast::String const& strSection);
+
+//------------------------------------------------------------------------------
+
+/** Holds unparsed configuration information.
+    The raw data sections are processed with intermediate parsers specific
+    to each module instead of being all parsed in a central location.
+*/
+class BasicConfig
+{
+public:
+    /** The entire, unprocessed content of the config file.
+        Normally clients should not need to look at this.
+    */
+    std::string file_contents;
+
+    /** Preprocessed contents of each section. */
+    //std::map <std::string, 
+};
+
+//------------------------------------------------------------------------------
 
 // VFALCO TODO Replace these with beast "unsigned long long" generators
 // VFALCO NOTE Apparently these are used elsewhere. Make them constants in the config
@@ -89,22 +136,15 @@ struct SizedItem
     int             sizes[5];
 };
 
-// VFALCO TODO rename all fields to not look like macros, and be more verbose
-// VFALCO TODO document every member
-class Config
+// VFALCO NOTE This entire derived class is deprecated
+//             For new config information use the style implied
+//             in the base class. For existing config information
+//             try to refactor code to use the new style.
+//
+class Config : public BasicConfig
 {
 public:
-    //--------------------------------------------------------------------------
-    //
-    // VFALCO NOTE To tame this "Config" beast I am breaking it up into
-    //             individual sections related to a specific area of the
-    //             program. For example, listening port configuration. Or
-    //             node database configuration. Each class has its own
-    //             default constructor, and load function for reading in
-    //             settings from the parsed config file data.
-    //
-    //             Clean member area. Please follow this style for modifying
-    //             or adding code in the file.
+
 
     struct Helpers
     {
@@ -266,6 +306,7 @@ public:
 
     /** Determine the level of administrative permission to grant.
     */
+    // VFALCO TODO Get this out of here
     enum Role
     {
         GUEST,

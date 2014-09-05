@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/module/core/Config.h>
 #include <beast/unit_test/suite.h>
 
 namespace ripple {

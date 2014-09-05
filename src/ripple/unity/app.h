@@ -44,7 +44,6 @@
 //------------------------------------------------------------------------------
 
 #include <ripple/unity/basics.h>
-#include <ripple/unity/core.h>
 #include <ripple/unity/data.h>
 #include <ripple/unity/net.h>
 

@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/module/core/Config.h>
+
 namespace ripple {
 
 SerializedValidation::SerializedValidation (SerializerIterator& sit, bool checkSignature)

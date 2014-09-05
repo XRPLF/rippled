@@ -19,7 +19,7 @@
 
 #if RIPPLE_HYPERLEVELDB_AVAILABLE
 
-#include <ripple/module/core/functional/Config.h>
+#include <ripple/module/core/Config.h>
 
 namespace ripple {
 namespace NodeStore {

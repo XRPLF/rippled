@@ -17,9 +17,10 @@
 */
 //==============================================================================
 
-#include <boost/regex.hpp>
+#include <ripple/module/core/Config.h>
 #include <beast/asio/placeholders.h>
 #include <beast/module/core/memory/SharedSingleton.h>
+#include <boost/regex.hpp>
 
 namespace ripple {
 

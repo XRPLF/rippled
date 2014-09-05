@@ -20,6 +20,8 @@
 #ifndef RIPPLE_NET_RPC_INFOSUB_H_INCLUDED
 #define RIPPLE_NET_RPC_INFOSUB_H_INCLUDED
 
+#include <beast/threads/Stoppable.h>
+
 namespace ripple {
 
 // Operations that clients may wish to perform against the network

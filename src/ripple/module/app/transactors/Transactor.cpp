@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/module/core/Config.h>
 #include <ripple/module/app/transactors/Transactor.h>
 
 namespace ripple {

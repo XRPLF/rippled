@@ -1839,11 +1839,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\basics\utility\CountedObject.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\basics\utility\IniFile.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\basics\utility\IniFile.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\utility\PlatformMacros.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\basics\utility\StringUtilities.cpp">
@@ -2484,45 +2479,45 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\app\websocket\WSServerHandler.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\functional\Config.cpp">
+    <ClCompile Include="..\..\src\ripple\module\core\Config.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\core\functional\Config.h">
+    <ClInclude Include="..\..\src\ripple\module\core\Config.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\core\functional\ConfigSections.h">
+    <ClInclude Include="..\..\src\ripple\module\core\ConfigSections.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\functional\Job.cpp">
+    <ClCompile Include="..\..\src\ripple\module\core\Job.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\core\functional\Job.h">
+    <ClInclude Include="..\..\src\ripple\module\core\Job.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\functional\JobQueue.cpp">
+    <ClCompile Include="..\..\src\ripple\module\core\JobQueue.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\core\functional\JobQueue.h">
+    <ClInclude Include="..\..\src\ripple\module\core\JobQueue.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\core\functional\JobTypeData.h">
+    <ClInclude Include="..\..\src\ripple\module\core\JobTypeData.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\core\functional\JobTypeInfo.h">
+    <ClInclude Include="..\..\src\ripple\module\core\JobTypeInfo.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\core\functional\JobTypes.h">
+    <ClInclude Include="..\..\src\ripple\module\core\JobTypes.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\functional\LoadEvent.cpp">
+    <ClCompile Include="..\..\src\ripple\module\core\LoadEvent.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\core\functional\LoadEvent.h">
+    <ClInclude Include="..\..\src\ripple\module\core\LoadEvent.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\core\functional\LoadFeeTrack.h">
+    <ClInclude Include="..\..\src\ripple\module\core\LoadFeeTrack.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\functional\LoadFeeTrackImp.cpp">
+    <ClCompile Include="..\..\src\ripple\module\core\LoadFeeTrackImp.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\core\functional\LoadFeeTrackImp.h">
+    <ClInclude Include="..\..\src\ripple\module\core\LoadFeeTrackImp.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\core\functional\LoadMonitor.cpp">
+    <ClCompile Include="..\..\src\ripple\module\core\LoadMonitor.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\core\functional\LoadMonitor.h">
+    <ClInclude Include="..\..\src\ripple\module\core\LoadMonitor.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\data\crypto\Base58Data.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -3427,8 +3422,6 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\core.cpp">
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\unity\core.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\data.cpp">
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\unity\data.h">

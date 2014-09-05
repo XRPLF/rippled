@@ -29,6 +29,8 @@
 #include <ripple/overlay/impl/peer_protocol_detector.h>
 #include <ripple/module/app/misc/ProofOfWork.h>
 #include <ripple/module/app/misc/ProofOfWorkFactory.h>
+#include <ripple/module/core/Config.h>
+#include <ripple/module/core/LoadFeeTrack.h>
 #include <ripple/module/data/protocol/Protocol.h>
 #include <ripple/unity/peerfinder.h>
 #include <ripple/validators/Manager.h>

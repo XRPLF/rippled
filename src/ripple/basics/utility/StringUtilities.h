@@ -23,21 +23,11 @@
 #include <ripple/types/api/Blob.h>
 #include <ripple/types/api/ByteOrder.h>
 #include <ripple/types/api/strHex.h>
+#include <boost/format.hpp>
 #include <beast/module/core/text/StringPairArray.h>
 #include <string>
 
 namespace ripple {
-
-// String utility functions.
-
-// Ripple specific constant used for parsing qualities and other things
-//
-// VFALCO NOTE This does not belong here!
-// NIKB TODO Why is this here instead of somewhere more sensible? What
-// "other things" is this being used for?
-#define QUALITY_ONE         1000000000  // 10e9
-
-//------------------------------------------------------------------------------
 
 extern std::string strprintf (const char* format, ...);
 

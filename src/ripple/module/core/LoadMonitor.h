@@ -20,7 +20,7 @@
 #ifndef RIPPLE_LOADMONITOR_H_INCLUDED
 #define RIPPLE_LOADMONITOR_H_INCLUDED
 
-#include <ripple/module/core/functional/LoadEvent.h>
+#include <ripple/module/core/LoadEvent.h>
 
 namespace ripple {
 

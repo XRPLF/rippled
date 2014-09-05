@@ -20,9 +20,9 @@
 #ifndef RIPPLE_TESTOVERLAY_H_INCLUDED
 #define RIPPLE_TESTOVERLAY_H_INCLUDED
 
-#include <beast/module/core/core.h>
-
 #include <memory>
+#include <beast/strings/String.h>
+#include <beast/module/core/maths/Random.h>
 
 /** Provides a template based peer to peer network simulator.
 

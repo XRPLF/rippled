@@ -20,6 +20,8 @@
 #ifndef RIPPLE_APP_RPC_HANDLER
 #define RIPPLE_APP_RPC_HANDLER
 
+#include <ripple/module/core/Config.h>
+
 #include <ripple/module/rpc/impl/AccountFromString.h>
 #include <ripple/module/rpc/impl/Accounts.h>
 #include <ripple/module/rpc/impl/Authorize.h>

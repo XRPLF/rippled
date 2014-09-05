@@ -18,6 +18,8 @@
 //==============================================================================
 
 #include <ripple/module/app/main/RPCHTTPServer.h>
+#include <ripple/module/core/Config.h>
+#include <ripple/module/core/LoadFeeTrack.h>
 #include <ripple/module/rpc/RPCHandler.h>
 #include <ripple/module/rpc/RPCServerHandler.h>
 #include <ripple/module/rpc/Tuning.h>

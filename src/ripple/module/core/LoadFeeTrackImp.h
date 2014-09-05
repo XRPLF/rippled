@@ -21,6 +21,7 @@
 #define RIPPLE_LOADFEETRACKIMP_H_INCLUDED
 
 #include <ripple/common/jsonrpc_fields.h>
+#include <ripple/module/core/LoadFeeTrack.h>
 
 namespace ripple {
 

@@ -18,6 +18,9 @@
 //==============================================================================
 
 #include <ripple/basics/utility/Time.h>
+#include <ripple/module/app/book/Quality.h>
+#include <ripple/module/core/Config.h>
+#include <ripple/module/core/LoadFeeTrack.h>
 #include <ripple/overlay/predicates.h>
 #include <ripple/common/jsonrpc_fields.h>
 #include <beast/module/core/thread/DeadlineTimer.h>

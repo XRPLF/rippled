@@ -20,6 +20,9 @@
 #ifndef RIPPLE_NET_RPC_RPCSUB_H_INCLUDED
 #define RIPPLE_NET_RPC_RPCSUB_H_INCLUDED
 
+#include <ripple/module/core/JobQueue.h>
+#include <beast/threads/Stoppable.h>
+
 namespace ripple {
 
 /** Subscription object for JSON RPC. */

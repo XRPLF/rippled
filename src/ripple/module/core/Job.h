@@ -21,7 +21,7 @@
 #define RIPPLE_JOB_H
 
 #include <ripple/basics/types/BasicTypes.h>
-#include <ripple/module/core/functional/LoadMonitor.h>
+#include <ripple/module/core/LoadMonitor.h>
 #include <ripple/unity/json.h>
 
 namespace ripple {

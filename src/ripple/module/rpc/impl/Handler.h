@@ -20,6 +20,7 @@
 #ifndef RIPPLE_RPC_HANDLER
 #define RIPPLE_RPC_HANDLER
 
+#include <ripple/module/core/Config.h>
 #include <ripple/module/rpc/RPCHandler.h>
 
 namespace ripple {

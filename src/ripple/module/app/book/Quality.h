@@ -29,6 +29,9 @@
 namespace ripple {
 namespace core {
 
+// Ripple specific constant used for parsing qualities and other things
+#define QUALITY_ONE         1000000000  // 10e9
+
 /** Represents the logical ratio of output currency to input currency.
     Internally this is stored using a custom floating point representation,
     as the inverse of the ratio, so that quality will be descending in

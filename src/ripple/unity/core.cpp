@@ -19,8 +19,6 @@
 
 #include <BeastConfig.h>
 
-#include <ripple/unity/core.h>
-
 #include <fstream>
 #include <map>
 #include <set>
@@ -31,11 +29,11 @@
 #include <beast/http/ParsedURL.h>
 #include <ripple/unity/net.h> // for HTTPClient
 
-#include <ripple/module/core/functional/Config.cpp>
-#include <ripple/module/core/functional/LoadFeeTrackImp.h> // private
-#include <ripple/module/core/functional/LoadFeeTrackImp.cpp>
-#include <ripple/module/core/functional/LoadEvent.cpp>
-#include <ripple/module/core/functional/LoadMonitor.cpp>
+#include <ripple/module/core/Config.cpp>
+#include <ripple/module/core/LoadFeeTrackImp.h> // private
+#include <ripple/module/core/LoadFeeTrackImp.cpp>
+#include <ripple/module/core/LoadEvent.cpp>
+#include <ripple/module/core/LoadMonitor.cpp>
 
-#include <ripple/module/core/functional/Job.cpp>
-#include <ripple/module/core/functional/JobQueue.cpp>
+#include <ripple/module/core/Job.cpp>
+#include <ripple/module/core/JobQueue.cpp>
