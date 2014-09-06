@@ -1232,9 +1232,6 @@ Json::Value InboundLedger::getJson (int)
     {
         ret["have_state"] = mHaveState;
         ret["have_transactions"] = mHaveTransactions;
-        if (!mHaveState)
-            ret["state_nodes"] = static_cast<Json::Value::UInt>
-                (mLedger->peekAccountStateMap()->size());
     }
 
     if (mAborted)

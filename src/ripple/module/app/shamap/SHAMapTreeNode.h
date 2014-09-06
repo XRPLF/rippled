@@ -76,12 +76,7 @@ public:
     }
     void setSeq (std::uint32_t s)
     {
-        mAccessSeq = mSeq = s;
-    }
-    void touch (std::uint32_t s)
-    {
-        if (mSeq != 0)
-            mAccessSeq = s;
+        mSeq = s;
     }
     uint256 const& getNodeHash () const
     {
@@ -129,7 +124,13 @@ public:
     {
         return !mItem;
     }
-    bool setChildHash (int m, uint256 const& hash);
+
+    // We are modifying the child hash
+    bool setChild (int m, uint256 const& hash, std::shared_ptr<SHAMapTreeNode> const& child);
+
+    // We are sharing/unsharing the child
+    void shareChild (int m, std::shared_ptr<SHAMapTreeNode> const& child);
+
     bool isEmptyBranch (int m) const
     {
         return (mIsBranch & (1 << m)) == 0;
@@ -177,32 +178,27 @@ public:
     virtual void dump (SHAMapNodeID const&);
     virtual std::string getString (SHAMapNodeID const&) const;
 
-    /** Descend along the specified branch
-        On invocation, nodeID must be the ID of this node
-        Returns `false` if there is no node down that branch
-        Otherwise, returns `true` and fills in the node's ID and hash
-
-        @param branch   The branch to descend [0, 15]
-        @param nodeID   On entry the ID of the parent. On exit the ID of the child
-        @param nodeHash On exit the hash of the child node.
-        @return `true` if nodeID and nodeHash are altered.
-    */
-    bool descend (int branch, SHAMapNodeID& nodeID, uint256& nodeHash);
+    SHAMapTreeNode* getChildPointer (int branch);
+    SHAMapTreeNode::pointer getChild (int branch);
+    void canonicalizeChild (int branch, SHAMapTreeNode::pointer& node);
 
 private:
 
     // VFALCO TODO remove the use of friend
     friend class SHAMap;
 
-    uint256             mHash;
-    uint256             mHashes[16];
-    SHAMapItem::pointer mItem;
-    std::uint32_t       mSeq, mAccessSeq;
-    TNType              mType;
-    int                 mIsBranch;
-    bool                mFullBelow;
+    uint256                 mHash;
+    uint256                 mHashes[16];
+    SHAMapTreeNode::pointer mChildren[16];
+    SHAMapItem::pointer     mItem;
+    std::uint32_t           mSeq;
+    TNType                  mType;
+    int                     mIsBranch;
+    bool                    mFullBelow;
 
     bool updateHash ();
+
+    static std::mutex       childLock;
 };
 
 using TreeNodeCache = TaggedCache <uint256, SHAMapTreeNode>;
