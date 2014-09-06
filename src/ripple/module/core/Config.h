@@ -25,10 +25,13 @@
 #include <beast/http/URL.h>
 #include <beast/module/core/files/File.h>
 #include <beast/module/core/text/StringPairArray.h>
+#include <beast/utility/ci_char_traits.h>
 #include <boost/filesystem.hpp>
+#include <boost/lexical_cast.hpp>
 #include <cstdint>
 #include <map>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 namespace ripple {
@@ -59,21 +62,94 @@ parseKeyValueSection (IniFileSections& secSource,
 
 //------------------------------------------------------------------------------
 
+/** Holds a collection of configuration values.
+    A configuration file contains zero or more sections.
+*/
+class Section
+{
+private:
+    std::vector <std::string> lines_;
+    std::map <std::string, std::string, beast::ci_less> map_;
+
+public:
+    /** Create an empty section. */
+    Section() = default;
+
+    /** Append a set of lines to this section.
+        Parsable key/value pairs are also added to the map.
+    */
+    void
+    append (std::vector <std::string> const& lines);
+
+    /** Returns `true` if a key with the given name exists. */
+    bool
+    exists (std::string const& name) const;
+
+    /** Retrieve a key/value pair.
+        @return A pair with bool `true` if the string was found.
+    */
+    std::pair <std::string, bool>
+    find (std::string const& name) const;
+};
+
+//------------------------------------------------------------------------------
+
 /** Holds unparsed configuration information.
     The raw data sections are processed with intermediate parsers specific
     to each module instead of being all parsed in a central location.
 */
 class BasicConfig
 {
-public:
-    /** The entire, unprocessed content of the config file.
-        Normally clients should not need to look at this.
-    */
-    std::string file_contents;
+private:
+    std::map <std::string, Section, beast::ci_less> map_;
 
-    /** Preprocessed contents of each section. */
-    //std::map <std::string, 
+public:
+    /** Returns `true` if a section with the given name exists. */
+    bool
+    exists (std::string const& name) const;
+
+    /** Returns the section with the given name.
+        If the section does not exist, an empty section is returned.
+    */
+    /** @{ */
+    Section const&
+    section (std::string const& name) const;
+
+    Section const&
+    operator[] (std::string const& name) const
+    {
+        return section(name);
+    }
+    /** @} */
+
+protected:
+    void
+    build (IniFileSections const& ifs);
 };
+
+//------------------------------------------------------------------------------
+
+/** Retrieve a key/value pair from a section.
+    @return The value string converted to T if it exists
+            and can be parsed, or else defaultValue.
+*/
+template <class T>
+T
+get (Section const& section,
+    std::string const& name, T const& defaultValue = T{})
+{
+    auto const result = section.find (name);
+    if (! result.second)
+        return defaultValue;
+    try
+    {
+        return boost::lexical_cast <T> (result.first);
+    }
+    catch(...)
+    {
+    }
+    return defaultValue;
+}
 
 //------------------------------------------------------------------------------
 

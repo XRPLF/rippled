@@ -20,6 +20,7 @@
 #include <ripple/module/core/Config.h>
 #include <ripple/module/core/ConfigSections.h>
 #include <beast/module/core/text/LexicalCast.h>
+#include <boost/regex.hpp>
 
 namespace ripple {
 
@@ -206,6 +207,101 @@ parseAddresses (OutputSequence& out, InputIterator first, InputIterator last,
 }
 
 //------------------------------------------------------------------------------
+//
+// Section
+//
+//------------------------------------------------------------------------------
+
+void
+Section::append (std::vector <std::string> const& lines)
+{
+    // <key> '=' <value>
+    static boost::regex const re1 (
+        "^"                         // start of line
+        "(?:\\s*)"                  // whitespace (optonal)
+        "([a-zA-Z][_a-zA-Z0-9]*)"   // <key>
+        "(?:\\s*)"                  // whitespace (optional)
+        "(?:=)"                     // '='
+        "(?:\\s*)"                  // whitespace (optional)
+        "(.*\\S+)"                  // <value>
+        "(?:\\s*)"                  // whitespace (optional)
+        , boost::regex_constants::optimize
+    );
+
+    lines_.reserve (lines_.size() + lines.size());
+    for (auto const& line : lines)
+    {
+        boost::smatch match;
+        lines_.push_back (line);
+        if (boost::regex_match (line, match, re1))
+        {
+            auto const result = map_.emplace (
+                std::make_pair (match[1], match[2]));
+#if 0
+            if (! result.second)
+            {
+                // If we decide on how to merge values we can do it here.
+            }
+            beast::debug_ostream log;
+            //log << "\"" << match[1] << "\" = \"" << match[2] << "\"";
+#endif
+        }
+    }
+}
+
+bool
+Section::exists (std::string const& name) const
+{
+    return map_.find (name) != map_.end();
+}
+
+std::pair <std::string, bool>
+Section::find (std::string const& name) const
+{
+    auto const iter = map_.find (name);
+    if (iter == map_.end())
+        return {{}, false};
+    return {iter->second, true};
+}
+
+//------------------------------------------------------------------------------
+//
+// BasicConfig
+//
+//------------------------------------------------------------------------------
+
+bool
+BasicConfig::exists (std::string const& name) const
+{
+    return map_.find (name) != map_.end();
+}
+
+Section const&
+BasicConfig::section (std::string const& name) const
+{
+    static Section none;
+    auto const iter = map_.find (name);
+    if (iter == map_.end())
+        return none;
+    return iter->second;
+}
+
+void
+BasicConfig::build (IniFileSections const& ifs)
+{
+    for (auto const& entry : ifs)
+    {
+        auto const result = map_.insert (std::make_pair (
+            entry.first, Section{}));
+        result.first->second.append (entry.second);
+    }
+}
+
+//------------------------------------------------------------------------------
+//
+// Config (DEPRECATED)
+//
+//------------------------------------------------------------------------------
 
 Config::Config ()
     : m_rpcPort (5001)
@@ -322,7 +418,7 @@ void Config::setup (std::string const& strConf, bool bQuiet)
         CONFIG_FILE             = CONFIG_DIR / strConfFile;
         DATA_DIR                = CONFIG_DIR / strDbPath;
 
-        if (exists (CONFIG_FILE)
+        if (boost::filesystem::exists (CONFIG_FILE)
                 // Can we figure out XDG dirs?
                 || (!getenv ("HOME") && (!getenv ("XDG_CONFIG_HOME") || !getenv ("XDG_DATA_HOME"))))
         {
@@ -392,6 +488,7 @@ void Config::load ()
     }
     else
     {
+        std::string file_contents;
         file_contents.assign ((std::istreambuf_iterator<char> (ifsConfig)),
                               std::istreambuf_iterator<char> ());
 
@@ -403,6 +500,8 @@ void Config::load ()
         {
             IniFileSections secConfig = parseIniFile (file_contents, true);
             std::string strTemp;
+
+            build (secConfig);
 
             // XXX Leak
             IniFileSections::mapped_type* smtTmp;
@@ -926,14 +1025,9 @@ Config::Role Config::getAdminRole (Json::Value const& params, beast::IP::Endpoin
     return role;
 }
 
-//------------------------------------------------------------------------------
 beast::File const& Config::getModuleDatabasePath ()
 {
     return m_moduleDbPath;
 }
-
-//
-//
-//------------------------------------------------------------------------------
 
 } // ripple
