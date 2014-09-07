@@ -73,11 +73,6 @@ public:
 
     //--------------------------------------------------------------------------
 
-    enum
-    {
-        maxLoopCount = 10000
-    };
-
     void testDrop (beast::Journal j)
     {
         testcase ("Warn/drop");
@@ -92,8 +87,9 @@ public:
             Consumer c (logic.newInboundEndpoint (addr));
 
             // Create load until we get a warning
-            std::size_t n (maxLoopCount);
-            while (--n > 0)
+            int n = 10000;
+
+            while (--n >= 0)
             {
                 if (n == 0)
                 {
@@ -110,7 +106,7 @@ public:
             }
 
             // Create load until we get dropped
-            while (--n > 0)
+            while (--n >= 0)
             {
                 if (n == 0)
                 {
