@@ -153,6 +153,8 @@ ServerImpl::onWrite (beast::PropertyStream::Map& map)
 
     // VFALCO TODO Write the list of doors
 
+    map ["peers"] = Peer::count();
+
     {
         beast::PropertyStream::Set set ("sessions", map);
         for (auto const& stat : stats_)

@@ -23,6 +23,14 @@
 namespace ripple {
 namespace HTTP {
 
+std::atomic <std::size_t> Peer::s_count_;
+
+std::size_t
+Peer::count()
+{
+    return s_count_.load();
+}
+
 Peer::Peer (ServerImpl& server, Port const& port, beast::Journal journal)
     : journal_ (journal)
     , server_ (server)
@@ -37,6 +45,8 @@ Peer::Peer (ServerImpl& server, Port const& port, beast::Journal journal)
     , bytes_in_ (0)
     , bytes_out_ (0)
 {
+    ++s_count_;
+
     static std::atomic <int> sid;
     id_ = std::string("#") + std::to_string(sid++);
 
@@ -92,6 +102,8 @@ Peer::~Peer ()
 
     if (journal_.trace) journal_.trace <<
         id_ << " destroyed";
+
+    --s_count_;
 }
 
 //------------------------------------------------------------------------------

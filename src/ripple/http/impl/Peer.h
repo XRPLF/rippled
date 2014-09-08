@@ -33,6 +33,7 @@
 #include <beast/module/asio/http/HTTPRequestParser.h>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/streambuf.hpp>
+#include <atomic>
 #include <chrono>
 #include <functional>
 #include <memory>
@@ -97,7 +98,13 @@ private:
 
     //--------------------------------------------------------------------------
 
+    static std::atomic <std::size_t> s_count_;
+
 public:
+    static
+    std::size_t
+    count();
+
     Peer (ServerImpl& impl, Port const& port, beast::Journal journal);
     ~Peer ();
 
