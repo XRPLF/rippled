@@ -24,10 +24,20 @@
 
 namespace ripple {
 
+uint256 SHA256Hash (unsigned char const* pbegin, unsigned char const* pend)
+{
+    uint256 hash1;
+    SHA256 (pbegin, pend - pbegin, hash1.begin ());
+
+    uint256 hash2;
+    SHA256 (hash1.begin (), hash1.size (), hash2.begin());
+
+    return hash2;
+}
+
 void Base58::fourbyte_hash256 (void* out, void const* in, std::size_t bytes)
 {
-    unsigned char const* const p (
-        static_cast <unsigned char const*>(in));
+    auto p = static_cast <unsigned char const*>(in);
     uint256 hash (SHA256Hash (p, p + bytes));
     memcpy (out, hash.begin(), 4);
 }
@@ -214,13 +224,15 @@ bool Base58::decodeWithCheck (const char* psz, Blob& vchRet, Alphabet const& alp
     if (!decode (psz, vchRet, alphabet))
         return false;
 
-    if (vchRet.size () < 4)
+    auto size = vchRet.size ();
+
+    if (size < 4)
     {
         vchRet.clear ();
         return false;
     }
 
-    uint256 hash = SHA256Hash (vchRet.begin (), vchRet.end () - 4);
+    uint256 hash = SHA256Hash (vchRet.data (), vchRet.data () + size - 4);
 
     if (memcmp (&hash, &vchRet.end ()[-4], 4) != 0)
     {
@@ -228,7 +240,7 @@ bool Base58::decodeWithCheck (const char* psz, Blob& vchRet, Alphabet const& alp
         return false;
     }
 
-    vchRet.resize (vchRet.size () - 4);
+    vchRet.resize (size - 4);
     return true;
 }
 

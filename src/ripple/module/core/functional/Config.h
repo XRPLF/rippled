@@ -384,8 +384,6 @@ public:
     int                         NETWORK_START_TIME;     // The Unix time we start ledger 0.
     int                         TRANSACTION_FEE_BASE;   // The number of fee units a reference transaction costs
     int                         LEDGER_SECONDS;
-    int                         LEDGER_PROPOSAL_DELAY_SECONDS;
-    int                         LEDGER_AVALANCHE_SECONDS;
     bool                        LEDGER_CREATOR;         // Should be false unless we are starting a new ledger.
 
     /** Operate in stand-alone mode.
@@ -400,7 +398,7 @@ public:
     bool                        RUN_STANDALONE;
 
     // Note: The following parameters do not relate to the UNL or trust at all
-    unsigned int                NETWORK_QUORUM;         // Minimum number of nodes to consider the network present
+    std::size_t                 NETWORK_QUORUM;         // Minimum number of nodes to consider the network present
     int                         VALIDATION_QUORUM;      // Minimum validations to consider ledger authoritative
 
     // Peer networking parameters
@@ -473,11 +471,6 @@ public:
 
     // Client behavior
     int                         ACCOUNT_PROBE_MAX;      // How far to scan for accounts.
-
-    // Signing signatures.
-    std::uint32_t                      SIGN_TRANSACTION;
-    std::uint32_t                      SIGN_VALIDATION;
-    std::uint32_t                      SIGN_PROPOSAL;
 
     bool                        SSL_VERIFY;
     std::string                 SSL_VERIFY_FILE;

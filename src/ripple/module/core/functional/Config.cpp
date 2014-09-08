@@ -173,10 +173,6 @@ void Config::setup (std::string const& strConf, bool bQuiet)
 
     VALIDATORS_URI      = boost::str (boost::format ("/%s") % VALIDATORS_BASE);
 
-    SIGN_TRANSACTION    = HashPrefix::txSign;
-    SIGN_VALIDATION     = HashPrefix::validation;
-    SIGN_PROPOSAL       = HashPrefix::proposal;
-
     if (!strConf.empty ())
     {
         // --conf=<path> : everything is relative that file.
@@ -513,7 +509,7 @@ void Config::load ()
                 PEER_CONNECT_LOW_WATER = std::max (1, beast::lexicalCastThrow <int> (strTemp));
 
             if (SectionSingleB (secConfig, SECTION_NETWORK_QUORUM, strTemp))
-                NETWORK_QUORUM      = std::max (0, beast::lexicalCastThrow <int> (strTemp));
+                NETWORK_QUORUM      = beast::lexicalCastThrow <std::size_t> (strTemp);
 
             if (SectionSingleB (secConfig, SECTION_VALIDATION_QUORUM, strTemp))
                 VALIDATION_QUORUM   = std::max (0, beast::lexicalCastThrow <int> (strTemp));

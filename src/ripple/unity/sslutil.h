@@ -31,7 +31,6 @@
 #include <ripple/sslutil/api/CAutoBN_CTX.h>
 #include <ripple/sslutil/api/CBigNum.h>
 #include <ripple/sslutil/api/DHUtil.h>
-#include <ripple/sslutil/api/HashUtilities.h>
 #include <ripple/sslutil/api/ECDSACanonical.h>
 
 #endif

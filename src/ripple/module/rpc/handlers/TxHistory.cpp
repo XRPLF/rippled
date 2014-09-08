@@ -46,8 +46,8 @@ Json::Value doTxHistory (RPC::Context& context)
                     % startIndex);
 
     {
-        Database* db = getApp().getTxnDB ()->getDB ();
-        auto sl (getApp().getTxnDB ()->lock ());
+        auto db = getApp().getTxnDB ().getDB ();
+        auto sl (getApp().getTxnDB ().lock ());
 
         SQL_FOREACH (db, sql)
         {

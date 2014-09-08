@@ -20,6 +20,7 @@
 #ifndef RIPPLE_NETWORKOPS_H
 #define RIPPLE_NETWORKOPS_H
 
+#include <beast/cxx14/memory.h> // <memory>
 #include <tuple>
 
 namespace ripple {
@@ -84,11 +85,6 @@ public:
     typedef hash_map <std::uint64_t, InfoSub::wptr> SubMapType;
 
 public:
-    // VFALCO TODO Make LedgerMaster a SharedPtr or a reference.
-    //
-    static NetworkOPs* New (clock_type& clock, LedgerMaster& ledgerMaster,
-        Stoppable& parent, beast::Journal journal);
-
     virtual ~NetworkOPs () = 0;
 
     //--------------------------------------------------------------------------
@@ -97,18 +93,18 @@ public:
     //
 
     // Our best estimate of wall time in seconds from 1/1/2000
-    virtual std::uint32_t getNetworkTimeNC () = 0;
+    virtual std::uint32_t getNetworkTimeNC () const = 0;
     // Our best estimate of current ledger close time
-    virtual std::uint32_t getCloseTimeNC () = 0;
+    virtual std::uint32_t getCloseTimeNC () const = 0;
     // Use *only* to timestamp our own validation
     virtual std::uint32_t getValidationTimeNC () = 0;
     virtual void closeTimeOffset (int) = 0;
-    virtual boost::posix_time::ptime getNetworkTimePT () = 0;
+    virtual boost::posix_time::ptime getNetworkTimePT () const = 0;
     virtual std::uint32_t getLedgerID (uint256 const& hash) = 0;
     virtual std::uint32_t getCurrentLedgerID () = 0;
 
-    virtual OperatingMode getOperatingMode () = 0;
-    virtual std::string strOperatingMode () = 0;
+    virtual OperatingMode getOperatingMode () const = 0;
+    virtual std::string strOperatingMode () const = 0;
     virtual Ledger::pointer getClosedLedger () = 0;
     virtual Ledger::pointer getValidatedLedger () = 0;
     virtual Ledger::pointer getPublishedLedger () = 0;
@@ -324,6 +320,11 @@ public:
     virtual void pubProposedTransaction (Ledger::ref lpCurrent,
         SerializedTransaction::ref stTxn, TER terResult) = 0;
 };
+
+std::unique_ptr<NetworkOPs>
+make_NetworkOPs (NetworkOPs::clock_type& clock, bool standalone,
+    std::size_t network_quorum, JobQueue& job_queue, LedgerMaster& ledgerMaster,
+    beast::Stoppable& parent, beast::Journal journal);
 
 } // ripple
 
