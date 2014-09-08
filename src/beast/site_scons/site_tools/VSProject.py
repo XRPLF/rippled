@@ -106,7 +106,7 @@ def _key(item):
     elif isinstance(item, Configuration):
         return ('c', _key(item.name), _key(item.target), _key(item.variant), _key(item.platform))
     elif isinstance(item, Item):
-        return ('i', _key(item.path()), _key(item.is_compiled()), _key(item.builder()), _key(item.tag()), _key(item.is_excluded()))
+        return ('i', _key(winpath(item.path())), _key(item.is_compiled()), _key(item.builder()), _key(item.tag()), _key(item.is_excluded()))
     elif isinstance(item, SCons.Node.FS.File):
         return ('f', _key(item.name), _key(item.suffix))
     else:
