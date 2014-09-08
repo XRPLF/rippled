@@ -39,47 +39,84 @@ namespace detail {
 #pragma warning(disable: 4804)
 #endif
 
-template <class IntType>
+template <class Int, class FwdIt, class Accumulator>
 bool
-parseSigned (IntType& result, char const* begin, char const* end)
+parse_integral (Int& num, FwdIt first, FwdIt last, Accumulator accumulator)
 {
-    static_assert(std::is_signed<IntType>::value, "");
-    char* ptr;
-    auto errno_save = errno;
-    errno = 0;
-    long long r = std::strtoll(begin, &ptr, 10);
-    std::swap(errno, errno_save);
-    errno_save = ptr != end;
-    if (errno_save == 0)
+    num = 0;
+
+    if (first == last)
+        return false;
+    while (first != last)
     {
-        if (std::numeric_limits<IntType>::min() <= r &&
-            r <= std::numeric_limits<IntType>::max())
-            result = static_cast<IntType>(r);
-        else
-            errno_save = 1;
+        auto const c = *first++;
+        if (c < '0' || c > '9')
+            return false;
+        if (!accumulator(Int(c - '0')))
+            return false;
     }
-    return errno_save == 0;
+    return true;
 }
 
-template <class UIntType>
+template <class Int, class FwdIt>
 bool
-parseUnsigned (UIntType& result, char const* begin, char const* end)
+parse_negative_integral (Int& num, FwdIt first, FwdIt last)
 {
-    static_assert(std::is_unsigned<UIntType>::value, "");
-    char* ptr;
-    auto errno_save = errno;
-    errno = 0;
-    unsigned long long r = std::strtoull(begin, &ptr, 10);
-    std::swap(errno, errno_save);
-    errno_save = ptr != end;
-    if (errno_save == 0)
-    {
-        if (r <= std::numeric_limits<UIntType>::max())
-            result = static_cast<UIntType>(r);
-        else
-            errno_save = 1;
-    }
-    return errno_save == 0;
+    Int const limit = std::numeric_limits <Int>::min();
+
+    return parse_integral<Int> (num, first, last,
+        [&num,&limit](Int n)
+        {
+            if ((limit - (10 * num)) > -n)
+                return false;
+            num = 10 * num - n;
+            return true;
+        });
+}
+
+template <class Int, class FwdIt>
+bool
+parse_positive_integral (Int& num, FwdIt first, FwdIt last)
+{
+    Int const limit = std::numeric_limits <Int>::max();
+
+    return parse_integral<Int> (num, first, last,
+        [&num,&limit](Int n)
+        {
+            if (n > (limit - (10 * num)))
+                return false;
+            num = 10 * num + n;
+            return true;
+        });
+}
+
+template <class IntType, class FwdIt>
+bool
+parseSigned (IntType& result, FwdIt first, FwdIt last)
+{
+    static_assert(std::is_signed<IntType>::value,
+        "You may only call parseSigned with a signed integral type.");
+
+    if (first != last && *first == '-')
+        return parse_negative_integral (result, first + 1, last);
+
+    if (first != last && *first == '+')
+        return parse_positive_integral (result, first + 1, last);
+
+    return parse_positive_integral (result, first, last);
+}
+
+template <class UIntType, class FwdIt>
+bool
+parseUnsigned (UIntType& result, FwdIt first, FwdIt last)
+{
+    static_assert(std::is_unsigned<UIntType>::value,
+        "You may only call parseUnsigned with an unsigned integral type.");
+
+    if (first != last && *first == '+')
+        return parse_positive_integral (result, first + 1, last);
+
+    return parse_positive_integral (result, first, last);
 }
 
 //------------------------------------------------------------------------------
@@ -109,22 +146,22 @@ struct LexicalCast <std::string, In>
 template <class Out>
 struct LexicalCast <Out, std::string>
 {
-    bool operator() (short& out,                std::string const& in) const { return parseSigned (out, in.data(), in.data()+in.size()); }
-    bool operator() (int& out,                  std::string const& in) const { return parseSigned (out, in.data(), in.data()+in.size()); }
-    bool operator() (long& out,                 std::string const& in) const { return parseSigned (out, in.data(), in.data()+in.size()); }
-    bool operator() (long long& out,            std::string const& in) const { return parseSigned (out, in.data(), in.data()+in.size()); }
-    bool operator() (unsigned short& out,       std::string const& in) const { return parseUnsigned (out, in.data(), in.data()+in.size()); }
-    bool operator() (unsigned int& out,         std::string const& in) const { return parseUnsigned (out, in.data(), in.data()+in.size()); }
-    bool operator() (unsigned long& out,        std::string const& in) const { return parseUnsigned (out, in.data(), in.data()+in.size()); }
-    bool operator() (unsigned long long& out,   std::string const& in) const { return parseUnsigned (out, in.data(), in.data()+in.size()); }
-    bool operator() (float& out,                std::string const& in) const { bassertfalse; return false; /* UNIMPLEMENTED! */ }
-    bool operator() (double& out,               std::string const& in) const { bassertfalse; return false; /* UNIMPLEMENTED! */ }
-    bool operator() (long double& out,          std::string const& in) const { bassertfalse; return false; /* UNIMPLEMENTED! */ }
-#if 0
-    bool operator() (bool& out,                 std::string const& in) const;
-#else
-    bool operator() (bool& out,                 std::string const& in) const { return parseUnsigned (out, in.data(), in.data()+in.size()); }
-#endif
+    static_assert (std::is_integral <Out>::value,
+        "beast::LexicalCast can only be used with integral types");
+
+    template <class Integral = Out>
+    typename std::enable_if <std::is_unsigned <Integral>::value, bool>::type
+    operator () (Integral& out, std::string const& in) const
+    {
+        return parseUnsigned (out, std::begin(in), std::end(in));
+    }
+
+    template <class Integral = Out>
+    typename std::enable_if <std::is_signed <Integral>::value, bool>::type
+    operator () (Integral& out, std::string const& in) const
+    {
+        return parseSigned (out, std::begin(in), std::end(in));
+    }
 };
 
 #if 0
