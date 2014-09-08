@@ -28,6 +28,7 @@
 #include <beast/module/asio/basics/SharedArg.h>
 #include <boost/asio.hpp>
 #include <boost/optional.hpp>
+#include <array>
 #include <chrono>
 #include <condition_variable>
 #include <deque>
@@ -43,6 +44,7 @@ class Peer;
 
 struct Stat
 {
+    std::size_t id;
     std::string when;
     std::chrono::seconds elapsed;
     int requests;
@@ -88,6 +90,8 @@ private:
     State state_;
     Doors m_doors;
     std::deque <Stat> stats_;
+    std::array <std::size_t, 64> hist_;
+    int high_ = 0;
 
 public:
     ServerImpl (Server& server, Handler& handler, beast::Journal journal);
@@ -136,6 +140,10 @@ public:
     onWrite (beast::PropertyStream::Map& map);
 
 private:
+    static
+    int
+    ceil_log2 (unsigned long long x);
+
     static
     int 
     compare (Port const& lhs, Port const& rhs);

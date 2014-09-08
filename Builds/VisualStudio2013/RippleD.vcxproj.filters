@@ -711,6 +711,9 @@
     <ClInclude Include="..\..\src\beast\beast\asio\socket_wrapper.h">
       <Filter>beast\asio</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\ssl.h">
+      <Filter>beast\asio</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\asio\tests\bind_handler.test.cpp">
       <Filter>beast\asio\tests</Filter>
     </ClCompile>

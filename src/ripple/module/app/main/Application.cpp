@@ -303,7 +303,7 @@ public:
         , m_deprecatedUNL (UniqueNodeList::New (*m_jobQueue))
 
         , m_rpcHTTPServer (make_RPCHTTPServer (*m_networkOPs,
-            m_logs.journal("HTTPServer"), *m_jobQueue, *m_networkOPs, *m_resourceManager))
+            *m_jobQueue, *m_networkOPs, *m_resourceManager))
 
         , m_rpcServerHandler (*m_networkOPs, *m_resourceManager) // passive object, not a Service
 

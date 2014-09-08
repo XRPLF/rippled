@@ -38,6 +38,7 @@ ServerImpl::ServerImpl (Server& server,
     , m_strand (io_service_)
     , m_work (boost::in_place (std::ref (io_service_)))
     , m_stopped (true)
+    , hist_{}
 {
     thread_ = std::thread (std::bind (
         &ServerImpl::run, this));
@@ -132,15 +133,44 @@ void
 ServerImpl::remove (Door& door)
 {
     std::lock_guard <std::mutex> lock (mutex_);
-    state_.doors.push_back (door);
+    state_.doors.erase (state_.doors.iterator_to (door));
 }
 
 //--------------------------------------------------------------------------
 
+int
+ServerImpl::ceil_log2 (unsigned long long x)
+{
+    static const unsigned long long t[6] = {
+        0xFFFFFFFF00000000ull,
+        0x00000000FFFF0000ull,
+        0x000000000000FF00ull,
+        0x00000000000000F0ull,
+        0x000000000000000Cull,
+        0x0000000000000002ull
+    };
+
+    int y = (((x & (x - 1)) == 0) ? 0 : 1);
+    int j = 32;
+    int i;
+
+    for(i = 0; i < 6; i++) {
+        int k = (((x & t[i]) == 0) ? 0 : j);
+        y += k;
+        x >>= k;
+        j >>= 1;
+    }
+
+    return y;
+}
+
 void
 ServerImpl::report (Stat&& stat)
 {
+    int const bucket = ceil_log2 (stat.requests);
     std::lock_guard <std::mutex> lock (mutex_);
+    ++hist_[bucket];
+    high_ = std::max (high_, bucket);
     if (stats_.size() >= historySize)
         stats_.pop_back();
     stats_.emplace_front (std::move(stat));
@@ -153,12 +183,26 @@ ServerImpl::onWrite (beast::PropertyStream::Map& map)
 
     // VFALCO TODO Write the list of doors
 
+    map ["active"] = Peer::count();
+
     {
-        beast::PropertyStream::Set set ("sessions", map);
+        std::string s;
+        for (int i = 0; i <= high_; ++i)
+        {
+            if (i)
+                s += ", ";
+            s += std::to_string (hist_[i]);
+        }
+        map ["hist"] = s;
+    }
+
+    {
+        beast::PropertyStream::Set set ("history", map);
         for (auto const& stat : stats_)
         {
             beast::PropertyStream::Map item (set);
 
+            item ["id"] = stat.id;
             item ["when"] = stat.when;
 
             {

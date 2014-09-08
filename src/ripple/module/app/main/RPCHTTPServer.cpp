@@ -39,16 +39,15 @@ public:
     HTTP::Server m_server;
     std::unique_ptr <RippleSSLContext> m_context;
 
-    RPCHTTPServerImp (Stoppable& parent,
-        beast::Journal journal, JobQueue& jobQueue, NetworkOPs& networkOPs,
-            Resource::Manager& resourceManager)
+    RPCHTTPServerImp (Stoppable& parent, JobQueue& jobQueue,
+            NetworkOPs& networkOPs, Resource::Manager& resourceManager)
         : RPCHTTPServer (parent)
         , m_resourceManager (resourceManager)
-        , m_journal (journal)
+        , m_journal (deprecatedLogs().journal("HTTP-RPC"))
         , m_jobQueue (jobQueue)
         , m_networkOPs (networkOPs)
         , m_deprecatedHandler (networkOPs, resourceManager)
-        , m_server (*this, journal)
+        , m_server (*this, deprecatedLogs().journal("HTTP"))
     {
         if (getConfig ().RPC_SECURE == 0)
         {
@@ -307,19 +306,18 @@ public:
 
 RPCHTTPServer::RPCHTTPServer (Stoppable& parent)
     : Stoppable ("RPCHTTPServer", parent)
-    , Source ("rpc")
+    , Source ("http")
 {
 }
 
 //------------------------------------------------------------------------------
 
 std::unique_ptr <RPCHTTPServer>
-make_RPCHTTPServer (beast::Stoppable& parent, beast::Journal journal,
-    JobQueue& jobQueue, NetworkOPs& networkOPs,
-        Resource::Manager& resourceManager)
+make_RPCHTTPServer (beast::Stoppable& parent, JobQueue& jobQueue,
+    NetworkOPs& networkOPs, Resource::Manager& resourceManager)
 {
     return std::make_unique <RPCHTTPServerImp> (
-        parent, journal, jobQueue, networkOPs, resourceManager);
+        parent, jobQueue, networkOPs, resourceManager);
 }
 
 }

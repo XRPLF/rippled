@@ -39,6 +39,7 @@ private:
 
     ServerImpl& server_;
     acceptor acceptor_;
+    endpoint_t endpoint_;
     Port port_;
 
 public:
