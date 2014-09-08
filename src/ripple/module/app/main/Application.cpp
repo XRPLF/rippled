@@ -292,15 +292,15 @@ public:
         // VFALCO NOTE must come before NetworkOPs to prevent a crash due
         //             to dependencies in the destructor.
         //
-        , m_inboundLedgers (InboundLedgers::New (get_seconds_clock (), *m_jobQueue,
+        , m_inboundLedgers (make_InboundLedgers (get_seconds_clock (), *m_jobQueue,
                             m_collectorManager->collector ()))
 
-        // VFALCO NOTE Does NetworkOPs depend on LedgerMaster?
-        , m_networkOPs (NetworkOPs::New (get_seconds_clock (), *m_ledgerMaster,
+        , m_networkOPs (make_NetworkOPs (getConfig ().RUN_STANDALONE,
+            get_seconds_clock (), getConfig ().NETWORK_QUORUM, *m_ledgerMaster,
             *m_jobQueue, m_logs.journal("NetworkOPs")))
 
         // VFALCO NOTE LocalCredentials starts the deprecated UNL service
-        , m_deprecatedUNL (UniqueNodeList::New (*m_jobQueue))
+        , m_deprecatedUNL (make_UniqueNodeList (*m_jobQueue))
 
         , m_rpcHTTPServer (make_RPCHTTPServer (*m_networkOPs,
             m_logs.journal("HTTPServer"), *m_jobQueue, *m_networkOPs, *m_resourceManager))
@@ -327,9 +327,9 @@ public:
 
         , mHashRouter (IHashRouter::New (IHashRouter::getDefaultHoldTime ()))
 
-        , mValidations (Validations::New ())
+        , mValidations (make_Validations ())
 
-        , mProofOfWorkFactory (ProofOfWorkFactory::New ())
+        , mProofOfWorkFactory (make_ProofOfWorkFactory ())
 
         , m_loadManager (LoadManager::New (*this, m_logs.journal("LoadManager")))
 
@@ -533,21 +533,25 @@ public:
         return m_sntpClient->getOffset (offset);
     }
 
-    DatabaseCon* getRpcDB ()
+    DatabaseCon& getRpcDB ()
     {
-        return mRpcDB.get();
+        assert (mRpcDB.get() != nullptr);
+        return *mRpcDB;
     }
-    DatabaseCon* getTxnDB ()
+    DatabaseCon& getTxnDB ()
     {
-        return mTxnDB.get();
+        assert (mTxnDB.get() != nullptr);
+        return *mTxnDB;
     }
-    DatabaseCon* getLedgerDB ()
+    DatabaseCon& getLedgerDB ()
     {
-        return mLedgerDB.get();
+        assert (mLedgerDB.get() != nullptr);
+        return *mLedgerDB;
     }
-    DatabaseCon* getWalletDB ()
+    DatabaseCon& getWalletDB ()
     {
-        return mWalletDB.get();
+        assert (mWalletDB.get() != nullptr);
+        return *mWalletDB;
     }
 
     bool isShutdown ()
@@ -556,33 +560,23 @@ public:
     }
 
     //--------------------------------------------------------------------------
-
-    static DatabaseCon* openDatabaseCon (const char* fileName,
-                                         const char* dbInit[],
-                                         int dbCount)
+    bool initSqliteDbs ()
     {
-        return new DatabaseCon (fileName, dbInit, dbCount);
-    }
+        assert (mRpcDB.get () == nullptr);
+        assert (mTxnDB.get () == nullptr);
+        assert (mLedgerDB.get () == nullptr);
+        assert (mWalletDB.get () == nullptr);
 
-    void initSqliteDb (int index)
-    {
-        switch (index)
-        {
-        case 0: mRpcDB.reset (openDatabaseCon ("rpc.db", RpcDBInit, RpcDBCount)); break;
-        case 1: mTxnDB.reset (openDatabaseCon ("transaction.db", TxnDBInit, TxnDBCount)); break;
-        case 2: mLedgerDB.reset (openDatabaseCon ("ledger.db", LedgerDBInit, LedgerDBCount)); break;
-        case 3: mWalletDB.reset (openDatabaseCon ("wallet.db", WalletDBInit, WalletDBCount)); break;
-        };
-    }
+        mRpcDB = std::make_unique <DatabaseCon> ("rpc.db", RpcDBInit, RpcDBCount);
+        mTxnDB = std::make_unique <DatabaseCon> ("transaction.db", TxnDBInit, TxnDBCount);
+        mLedgerDB = std::make_unique <DatabaseCon> ("ledger.db", LedgerDBInit, LedgerDBCount);
+        mWalletDB = std::make_unique <DatabaseCon> ("wallet.db", WalletDBInit, WalletDBCount);
 
-    void initSqliteDbs ()
-    {
-        // VFALCO NOTE DBs are no longer initialized in parallel, since we
-        //             dont want unowned threads and because ParallelFor
-        //             is broken.
-        //
-        for (int i = 0; i < 4; ++i)
-            initSqliteDb (i);
+        return
+            mRpcDB.get() != nullptr &&
+            mTxnDB.get () != nullptr &&
+            mLedgerDB.get () != nullptr &&
+            mWalletDB.get () != nullptr;
     }
 
 #ifdef SIGINT
@@ -634,11 +628,15 @@ public:
         if (!getConfig ().RUN_STANDALONE)
             m_sntpClient->init (getConfig ().SNTP_SERVERS);
 
-        initSqliteDbs ();
+        if (!initSqliteDbs ())
+        {
+            m_journal.fatal << "Can not create database connections!";
+            exit (3);
+        }
 
-        getApp().getLedgerDB ()->getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
+        getApp().getLedgerDB ().getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
                 (getConfig ().getSize (siLgrDBCache) * 1024)));
-        getApp().getTxnDB ()->getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
+        getApp().getTxnDB ().getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
                 (getConfig ().getSize (siTxnDBCache) * 1024)));
 
         mTxnDB->getDB ()->setupCheckpointing (m_jobQueue.get());
@@ -1403,7 +1401,7 @@ bool serverOkay (std::string& reason)
 
 //VFALCO TODO clean this up since it is just a file holding a single member function definition
 
-static std::vector<std::string> getSchema (DatabaseCon* dbc, std::string const& dbName)
+static std::vector<std::string> getSchema (DatabaseCon& dbc, std::string const& dbName)
 {
     std::vector<std::string> schema;
 
@@ -1411,16 +1409,16 @@ static std::vector<std::string> getSchema (DatabaseCon* dbc, std::string const& 
     sql += dbName;
     sql += "';";
 
-    SQL_FOREACH (dbc->getDB (), sql)
+    SQL_FOREACH (dbc.getDB (), sql)
     {
-        dbc->getDB ()->getStr ("sql", sql);
+        dbc.getDB ()->getStr ("sql", sql);
         schema.push_back (sql);
     }
 
     return schema;
 }
 
-static bool schemaHas (DatabaseCon* dbc, std::string const& dbName, int line, std::string const& content)
+static bool schemaHas (DatabaseCon& dbc, std::string const& dbName, int line, std::string const& content)
 {
     std::vector<std::string> schema = getSchema (dbc, dbName);
 
@@ -1440,7 +1438,7 @@ static void addTxnSeqField ()
 
     WriteLog (lsWARNING, Application) << "Transaction sequence field is missing";
 
-    Database* db = getApp().getTxnDB ()->getDB ();
+    auto db = getApp().getTxnDB ().getDB ();
 
     std::vector< std::pair<uint256, int> > txIDs;
     txIDs.reserve (300000);

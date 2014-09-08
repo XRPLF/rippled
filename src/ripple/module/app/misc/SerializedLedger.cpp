@@ -46,14 +46,14 @@ SerializedLedgerEntry::SerializedLedgerEntry (
 
 void SerializedLedgerEntry::setSLEType ()
 {
-    auto type = static_cast <LedgerEntryType> (getFieldU16 (sfLedgerEntryType));
-    auto const item = LedgerFormats::getInstance()->findByType (type);
+    mFormat = LedgerFormats::getInstance()->findByType (
+        static_cast <LedgerEntryType> (getFieldU16 (sfLedgerEntryType)));
 
-    if (item == nullptr)
+    if (mFormat == nullptr)
         throw std::runtime_error ("invalid ledger entry type");
 
-    mType = item->getType ();
-    if (!setType (item->elements))
+    mType = mFormat->getType ();
+    if (!setType (mFormat->elements))
     {
         WriteLog (lsWARNING, SerializedLedger)
             << "Ledger entry not valid for type " << mFormat->getName ();
@@ -65,19 +65,14 @@ void SerializedLedgerEntry::setSLEType ()
 SerializedLedgerEntry::SerializedLedgerEntry (LedgerEntryType type, uint256 const& index) :
     STObject (sfLedgerEntry), mIndex (index), mType (type), mMutable (true)
 {
-    LedgerFormats::Item const* const item =
-        LedgerFormats::getInstance()->findByType (type);
+    mFormat = LedgerFormats::getInstance()->findByType (type);
 
-    if (item != nullptr)
-    {
-        set (item->elements);
-
-        setFieldU16 (sfLedgerEntryType, static_cast <std::uint16_t> (item->getType ()));
-    }
-    else
-    {
+    if (mFormat == nullptr)
         throw std::runtime_error ("invalid ledger entry type");
-    }
+
+    set (mFormat->elements);
+    setFieldU16 (sfLedgerEntryType,
+        static_cast <std::uint16_t> (mFormat->getType ()));
 }
 
 SerializedLedgerEntry::pointer SerializedLedgerEntry::getMutable () const

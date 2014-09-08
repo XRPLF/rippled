@@ -47,8 +47,8 @@ void LocalCredentials::start ()
 // Retrieve network identity.
 bool LocalCredentials::nodeIdentityLoad ()
 {
-    Database*   db = getApp().getWalletDB ()->getDB ();
-    auto  sl (getApp().getWalletDB ()->lock ());
+    auto db = getApp().getWalletDB ().getDB ();
+    auto sl (getApp().getWalletDB ().lock ());
     bool        bSuccess    = false;
 
     if (db->executeSQL ("SELECT * FROM NodeIdentity;") && db->startIterRows ())
@@ -88,25 +88,16 @@ bool LocalCredentials::nodeIdentityCreate ()
     RippleAddress   naNodePrivate   = RippleAddress::createNodePrivate (naSeed);
 
     // Make new key.
-#ifdef CREATE_NEW_DH_PARAMS
-    std::string strDh512 = DH_der_gen (512);
-
-#else
     std::string strDh512 (RippleSSLContext::getRawDHParams (512));
-#endif
 
-#if 1
-    std::string     strDh1024       = strDh512;             // For testing and most cases 512 is fine.
-#else
-    std::string     strDh1024       = DH_der_gen (1024);
-#endif
+    std::string strDh1024 = strDh512;
 
     //
     // Store the node information
     //
-    Database* db    = getApp().getWalletDB ()->getDB ();
+    auto db = getApp().getWalletDB ().getDB ();
 
-    auto sl (getApp().getWalletDB ()->lock ());
+    auto sl (getApp().getWalletDB ().lock ());
     db->executeSQL (str (boost::format ("INSERT INTO NodeIdentity (PublicKey,PrivateKey,Dh512,Dh1024) VALUES ('%s','%s',%s,%s);")
                          % naNodePublic.humanNodePublic ()
                          % naNodePrivate.humanNodePrivate ()
@@ -122,9 +113,9 @@ bool LocalCredentials::nodeIdentityCreate ()
 
 bool LocalCredentials::dataDelete (std::string const& strKey)
 {
-    Database* db    = getApp().getRpcDB ()->getDB ();
+    auto db = getApp().getRpcDB ().getDB ();
 
-    auto sl (getApp().getRpcDB ()->lock ());
+    auto sl (getApp().getRpcDB ().lock ());
 
     return db->executeSQL (str (boost::format ("DELETE FROM RPCData WHERE Key=%s;")
                                 % sqlEscape (strKey)));
@@ -132,9 +123,9 @@ bool LocalCredentials::dataDelete (std::string const& strKey)
 
 bool LocalCredentials::dataFetch (std::string const& strKey, std::string& strValue)
 {
-    Database* db    = getApp().getRpcDB ()->getDB ();
+    auto db = getApp().getRpcDB ().getDB ();
 
-    auto sl (getApp().getRpcDB ()->lock ());
+    auto sl (getApp().getRpcDB ().lock ());
 
     bool        bSuccess    = false;
 
@@ -154,9 +145,9 @@ bool LocalCredentials::dataFetch (std::string const& strKey, std::string& strVal
 
 bool LocalCredentials::dataStore (std::string const& strKey, std::string const& strValue)
 {
-    Database* db    = getApp().getRpcDB ()->getDB ();
+    auto db = getApp().getRpcDB ().getDB ();
 
-    auto sl (getApp().getRpcDB ()->lock ());
+    auto sl (getApp().getRpcDB ().lock ());
 
     return (db->executeSQL (str (boost::format ("REPLACE INTO RPCData (Key, Value) VALUES (%s,%s);")
                                  % sqlEscape (strKey)

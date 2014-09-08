@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <beast/unit_test/suite.h>
-
 #include <boost/algorithm/string.hpp>
+#include <beast/cxx14/memory.h> // <memory>
 
 namespace ripple {
 
@@ -354,7 +354,7 @@ private:
 
 //------------------------------------------------------------------------------
 
-std::unique_ptr<ProofOfWorkFactory> ProofOfWorkFactory::New ()
+std::unique_ptr<ProofOfWorkFactory> make_ProofOfWorkFactory ()
 {
     return std::make_unique<ProofOfWorkFactoryImp>();
 }

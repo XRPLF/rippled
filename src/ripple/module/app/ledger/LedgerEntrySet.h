@@ -99,17 +99,6 @@ public:
     {
     }
 
-    // set functions
-    void setImmutable ()
-    {
-        mImmutable = true;
-    }
-
-    bool isImmutable () const
-    {
-        return mImmutable;
-    }
-
     // Make a duplicate of this set.
     LedgerEntrySet duplicate () const;
 
@@ -259,17 +248,25 @@ public:
     typedef std::map<uint256, LedgerEntrySetEntry>::iterator iterator;
     typedef std::map<uint256, LedgerEntrySetEntry>::const_iterator const_iterator;
 
-    bool isEmpty () const
+    bool empty () const
     {
         return mEntries.empty ();
     }
+    const_iterator cbegin () const
+    {
+        return mEntries.cbegin ();
+    }
+    const_iterator cend () const
+    {
+        return mEntries.cend ();
+    }
     const_iterator begin () const
     {
-        return mEntries.begin ();
+        return mEntries.cbegin ();
     }
     const_iterator end () const
     {
-        return mEntries.end ();
+        return mEntries.cend ();
     }
     iterator begin ()
     {

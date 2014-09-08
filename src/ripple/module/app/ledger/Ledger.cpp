@@ -686,14 +686,14 @@ bool Ledger::saveValidatedLedger (bool current)
     }
 
     {
-        auto sl (getApp().getLedgerDB ()->lock ());
-        getApp().getLedgerDB ()->getDB ()->executeSQL (
+        auto sl (getApp().getLedgerDB ().lock ());
+        getApp().getLedgerDB ().getDB ()->executeSQL (
             boost::str (deleteLedger % mLedgerSeq));
     }
 
     {
-        Database* db = getApp().getTxnDB ()->getDB ();
-        auto dbLock (getApp().getTxnDB ()->lock ());
+        auto db = getApp().getTxnDB ().getDB ();
+        auto dbLock (getApp().getTxnDB ().lock ());
         db->executeSQL ("BEGIN TRANSACTION;");
 
         db->executeSQL (boost::str (deleteTrans1 % getLedgerSeq ()));
@@ -766,10 +766,10 @@ bool Ledger::saveValidatedLedger (bool current)
     }
 
     {
-        auto sl (getApp().getLedgerDB ()->lock ());
+        auto sl (getApp().getLedgerDB ().lock ());
 
         // TODO(tom): ARG!
-        getApp().getLedgerDB ()->getDB ()->executeSQL (boost::str (addLedger %
+        getApp().getLedgerDB ().getDB ()->executeSQL (boost::str (addLedger %
                 to_string (getHash ()) % mLedgerSeq % to_string (mParentHash) %
                 beast::lexicalCastThrow <std::string> (mTotCoins) % mCloseTime %
                 mParentCloseTime % mCloseResolution % mCloseFlags %
@@ -791,8 +791,8 @@ Ledger::pointer Ledger::loadByIndex (std::uint32_t ledgerIndex)
 {
     Ledger::pointer ledger;
     {
-        Database* db = getApp().getLedgerDB ()->getDB ();
-        auto sl (getApp().getLedgerDB ()->lock ());
+        auto db = getApp().getLedgerDB ().getDB ();
+        auto sl (getApp().getLedgerDB ().lock ());
 
         SqliteStatement pSt (
             db->getSqliteDB (), "SELECT "
@@ -817,8 +817,8 @@ Ledger::pointer Ledger::loadByHash (uint256 const& ledgerHash)
 {
     Ledger::pointer ledger;
     {
-        Database* db = getApp().getLedgerDB ()->getDB ();
-        auto sl (getApp().getLedgerDB ()->lock ());
+        auto db = getApp().getLedgerDB ().getDB ();
+        auto sl (getApp().getLedgerDB ().lock ());
 
         SqliteStatement pSt (
             db->getSqliteDB (), "SELECT "
@@ -874,8 +874,8 @@ Ledger::pointer Ledger::getSQL (std::string const& sql)
     std::string hash;
 
     {
-        Database* db = getApp().getLedgerDB ()->getDB ();
-        auto sl (getApp().getLedgerDB ()->lock ());
+        auto db = getApp().getLedgerDB ().getDB ();
+        auto sl (getApp().getLedgerDB ().lock ());
 
         if (!db->executeSQL (sql) || !db->startIterRows ())
             return Ledger::pointer ();
@@ -999,8 +999,8 @@ uint256 Ledger::getHashByIndex (std::uint32_t ledgerIndex)
 
     std::string hash;
     {
-        Database* db = getApp().getLedgerDB ()->getDB ();
-        auto sl (getApp().getLedgerDB ()->lock ());
+        auto db = getApp().getLedgerDB ().getDB ();
+        auto sl (getApp().getLedgerDB ().lock ());
 
         if (!db->executeSQL (sql) || !db->startIterRows ())
             return ret;
@@ -1018,10 +1018,10 @@ bool Ledger::getHashesByIndex (
 {
 #ifndef NO_SQLITE3_PREPARE
 
-    DatabaseCon* con = getApp().getLedgerDB ();
-    auto sl (con->lock ());
+    auto& con = getApp().getLedgerDB ();
+    auto sl (con.lock ());
 
-    SqliteStatement pSt (con->getDB ()->getSqliteDB (),
+    SqliteStatement pSt (con.getDB ()->getSqliteDB (),
                          "SELECT LedgerHash,PrevHash FROM Ledgers "
                          "INDEXED BY SeqLedger Where LedgerSeq = ?;");
 
@@ -1056,8 +1056,8 @@ bool Ledger::getHashesByIndex (
 
     std::string hash, prevHash;
     {
-        Database* db = getApp().getLedgerDB ()->getDB ();
-        auto sl (getApp().getLedgerDB ()->lock ());
+        auto db = getApp().getLedgerDB ().getDB ();
+        auto sl (getApp().getLedgerDB ().lock ());
 
         if (!db->executeSQL (sql) || !db->startIterRows ())
             return false;
@@ -1090,10 +1090,10 @@ Ledger::getHashesByIndex (std::uint32_t minSeq, std::uint32_t maxSeq)
     sql.append (beast::lexicalCastThrow <std::string> (maxSeq));
     sql.append (";");
 
-    DatabaseCon* con = getApp().getLedgerDB ();
-    auto sl (con->lock ());
+    auto& con = getApp().getLedgerDB ();
+    auto sl (con.lock ());
 
-    SqliteStatement pSt (con->getDB ()->getSqliteDB (), sql);
+    SqliteStatement pSt (con.getDB ()->getSqliteDB (), sql);
 
     while (pSt.isRow (pSt.step ()))
     {

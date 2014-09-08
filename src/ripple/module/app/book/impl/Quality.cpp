@@ -115,7 +115,7 @@ composed_quality (Quality const& lhs, Quality const& rhs)
     std::uint64_t const stored_exponent (rate.getExponent () + 100);
     std::uint64_t const stored_mantissa (rate.getMantissa ());
 
-    assert ((stored_exponent >= 0) && (stored_exponent <= 255));
+    assert ((stored_exponent > 0) && (stored_exponent <= 255));
 
     return Quality ((stored_exponent << (64 - 8)) | stored_mantissa);
 }

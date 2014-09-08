@@ -20,6 +20,8 @@
 #ifndef RIPPLE_VALIDATIONS_H_INCLUDED
 #define RIPPLE_VALIDATIONS_H_INCLUDED
 
+#include <beast/cxx14/memory.h> // <memory>
+
 namespace ripple {
 
 // VFALCO TODO rename and move these typedefs into the Validations interface
@@ -34,7 +36,6 @@ typedef std::vector<SerializedValidation::pointer> ValidationVector;
 class Validations : beast::LeakChecked <Validations>
 {
 public:
-    static Validations* New ();
 
     virtual ~Validations () { }
 
@@ -69,6 +70,8 @@ public:
 
     virtual void sweep () = 0;
 };
+
+std::unique_ptr <Validations> make_Validations ();
 
 } // ripple
 

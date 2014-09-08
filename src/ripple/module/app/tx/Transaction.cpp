@@ -205,8 +205,8 @@ Transaction::pointer Transaction::transactionFromSQL (std::string const& sql)
     rawTxn.resize (txSize);
 
     {
-        auto sl (getApp().getTxnDB ()->lock ());
-        Database* db = getApp().getTxnDB ()->getDB ();
+        auto sl (getApp().getTxnDB ().lock ());
+        auto db = getApp().getTxnDB ().getDB ();
 
         if (!db->executeSQL (sql, true) || !db->startIterRows ())
             return Transaction::pointer ();

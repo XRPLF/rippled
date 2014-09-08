@@ -22,6 +22,7 @@
 
 #include <ripple/module/app/misc/PowResult.h>
 #include <ripple/module/app/misc/ProofOfWork.h>
+#include <beast/cxx14/memory.h> // <memory>
 
 namespace ripple {
 
@@ -32,8 +33,6 @@ public:
     {
         kMaxDifficulty = 30,
     };
-
-    static std::unique_ptr<ProofOfWorkFactory> New ();
 
     virtual ~ProofOfWorkFactory () { }
 
@@ -55,6 +54,8 @@ public:
 
     virtual void setSecret (uint256 const& secret) = 0;
 };
+
+std::unique_ptr<ProofOfWorkFactory> make_ProofOfWorkFactory ();
 
 }
 

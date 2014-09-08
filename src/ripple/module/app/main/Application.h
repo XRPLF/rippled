@@ -115,9 +115,9 @@ public:
     virtual Resource::Manager&      getResourceManager () = 0;
     virtual PathRequests&           getPathRequests () = 0;
 
-    virtual DatabaseCon* getRpcDB () = 0;
-    virtual DatabaseCon* getTxnDB () = 0;
-    virtual DatabaseCon* getLedgerDB () = 0;
+    virtual DatabaseCon& getRpcDB () = 0;
+    virtual DatabaseCon& getTxnDB () = 0;
+    virtual DatabaseCon& getLedgerDB () = 0;
 
     virtual std::chrono::milliseconds getIOLatency () = 0;
 
@@ -128,7 +128,7 @@ public:
     // VFALCO TODO Rename, document this
     //        NOTE This will be replaced by class Validators
     //
-    virtual DatabaseCon* getWalletDB () = 0;
+    virtual DatabaseCon& getWalletDB () = 0;
 
     virtual bool getSystemTimeOffset (int& offset) = 0;
     virtual bool isShutdown () = 0;

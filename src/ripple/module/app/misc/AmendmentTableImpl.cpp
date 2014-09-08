@@ -117,8 +117,8 @@ AmendmentTableImpl::getCreate (uint256 const& amendmentHash, bool create)
             query.append (to_string (amendmentHash));
             query.append ("';");
 
-            auto sl (getApp().getWalletDB ()->lock ());
-            Database* db = getApp().getWalletDB ()->getDB ();
+            auto sl (getApp().getWalletDB ().lock ());
+            auto db = getApp().getWalletDB ().getDB ();
 
             if (db->executeSQL (query) && db->startIterRows ())
             {
@@ -373,8 +373,8 @@ AmendmentTableImpl::reportValidations (const AmendmentSet& set)
 
     if (!changedAmendments.empty())
     {
-        auto sl (getApp().getWalletDB ()->lock ());
-        Database* db = getApp().getWalletDB ()->getDB ();
+        auto sl (getApp().getWalletDB ().lock ());
+        auto db = getApp().getWalletDB ().getDB ();
 
         db->executeSQL ("BEGIN TRANSACTION;");
         for (auto const& hash : changedAmendments)

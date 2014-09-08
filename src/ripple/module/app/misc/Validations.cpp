@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <thread>
+#include <beast/cxx14/memory.h> // <memory>
 
 namespace ripple {
 
@@ -436,8 +437,8 @@ private:
             {
                 ScopedUnlockType sul (mLock);
                 {
-                    Database* db = getApp().getLedgerDB ()->getDB ();
-                    auto dbl (getApp().getLedgerDB ()->lock ());
+                    auto db = getApp().getLedgerDB ().getDB ();
+                    auto dbl (getApp().getLedgerDB ().lock ());
 
                     Serializer s (1024);
                     db->executeSQL ("BEGIN TRANSACTION;");
@@ -465,9 +466,9 @@ private:
     }
 };
 
-Validations* Validations::New ()
+std::unique_ptr <Validations> make_Validations ()
 {
-    return new ValidationsImp;
+    return std::make_unique <ValidationsImp> ();
 }
 
 } // ripple

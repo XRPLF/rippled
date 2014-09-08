@@ -35,7 +35,7 @@ Json::Value doProofCreate (RPC::Context& context)
         context.params_.isMember ("secret"))
     {
         // VFALCO TODO why aren't we using the app's factory?
-        auto pgGen = ProofOfWorkFactory::New ();
+        auto pgGen = make_ProofOfWorkFactory ();
 
         if (context.params_.isMember ("difficulty"))
         {
