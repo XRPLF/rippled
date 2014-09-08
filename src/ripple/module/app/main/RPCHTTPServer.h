@@ -1,4 +1,4 @@
-//------------------------------------------------------------------------------
+    //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
     Copyright (c) 2012, 2013 Ripple Labs Inc.
@@ -37,17 +37,19 @@ public:
     virtual
     ~RPCHTTPServer() = default;
 
-    /** Opens listening ports based on the Config settings. */
+    /** Opens listening ports based on the Config settings
+        This is implemented outside the constructor to support
+        two-stage initialization in the Application object.
+    */
     virtual
     void
     setup (beast::Journal journal) = 0;
 };
 
 std::unique_ptr <RPCHTTPServer>
-make_RPCHTTPServer (beast::Stoppable& parent, beast::Journal journal,
-    JobQueue& jobQueue, NetworkOPs& networkOPs,
-        Resource::Manager& resourceManager);
+make_RPCHTTPServer (beast::Stoppable& parent, JobQueue& jobQueue,
+    NetworkOPs& networkOPs, Resource::Manager& resourceManager);
 
-}
+} // ripple
 
 #endif

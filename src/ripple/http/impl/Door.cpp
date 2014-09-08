@@ -81,7 +81,7 @@ void
 Door::async_accept ()
 {
     auto const peer (std::make_shared <Peer> (server_, port_, server_.journal()));
-    acceptor_.async_accept (peer->get_socket(), std::bind (
+    acceptor_.async_accept (peer->get_socket(), endpoint_, std::bind (
         &Door::handle_accept, Ptr(this),
             beast::asio::placeholders::error, peer));
 }
@@ -95,13 +95,14 @@ Door::handle_accept (error_code ec,
 
     if (ec)
     {
-        server_.journal().error << "Accept failed: " << ec.message();
+        server_.journal().error <<
+            "accept: " << ec.message();
         return;
     }
 
+    auto const endpoint = endpoint_;
     async_accept();
-
-    peer->accept();
+    peer->accept (endpoint);
 }
 
 }

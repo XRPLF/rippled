@@ -147,6 +147,15 @@ public:
     }
     /** @} */
 
+    /** Detach the session.
+        This holds the session open so that the response can be sent
+        asynchronously. Calls to io_service::run made by the server
+        will not return until all detached sessions are closed.
+    */
+    virtual
+    void
+    detach() = 0;
+
     /** Indicate that the response is complete.
         The handler should call this when it has completed writing
         the response. If Keep-Alive is indicated on the connection,
@@ -156,15 +165,6 @@ public:
     virtual
     void
     complete() = 0;
-
-    /** Detach the session.
-        This holds the session open so that the response can be sent
-        asynchronously. Calls to io_service::run made by the server
-        will not return until all detached sessions are closed.
-    */
-    virtual
-    void
-    detach() = 0;
 
     /** Close the session.
         This will be performed asynchronously. The session will be
