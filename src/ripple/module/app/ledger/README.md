@@ -395,6 +395,61 @@ currencies described by this BookDirectory.
 TakerPaysCurrency, and TakerPaysIssuer in the top 192 bits.  The lower 64-bits
 are occupied by the exchange rate.
 
+---
+
+# The Ledger Cleaner #
+
+## Overview ##
+
+The ledger cleaner checks and, if necessary, repairs the SQLite ledger and
+transaction databases.  It can also check for pieces of a ledger that should
+be in the node back end but are missing.  If it detects this case, it
+triggers a fetch of the ledger.  The ledger cleaner only operates by manual
+request. It is never started automatically.
+
+## Operations ##
+
+The ledger cleaner can operate on a single ledger or a range of ledgers. It
+always validates the ledger chain itself, ensuring that the SQLite database
+contains a consistent chain of ledgers from the last validated ledger as far
+back as the database goes.
+
+If requested, it can additionally repair the SQLite entries for transactions
+in each checked ledger.  This was primarily intended to repair incorrect
+entries created by a bug (since fixed) that could cause transasctions from a
+ledger other than the fully-validated ledger to appear in the SQLite
+databases in addition to the transactions from the correct ledger.
+
+If requested, it can additionally check the ledger for missing entries
+in the account state and transaction trees.
+
+To prevent the ledger cleaner from saturating the available I/O bandwidth
+and excessively polluting caches with ancient information, the ledger
+cleaner paces itself and does not attempt to get its work done quickly.
+
+## Commands ##
+
+The ledger cleaner can be controlled and monitored with the **ledger_cleaner**
+RPC command. With no parameters, this command reports on the status of the
+ledger cleaner. This includes the range of ledgers it has been asked to process,
+the checks it is doing, and the number of errors it has found.
+
+The ledger cleaner can be started, stopped, or have its behavior changed by
+the following RPC parameters:
+
+**stop**: Stops the ledger cleaner gracefully
+
+**ledger**: Asks the ledger cleaner to clean a specific ledger, by sequence number
+
+**min_ledger**, **max_ledger**: Sets or changes the range of ledgers cleaned
+
+**full**: Requests all operations to be done on the specified ledger(s)
+
+**fix_txns**: A boolean indicating whether to replace the SQLite transaction
+entries unconditionally
+
+**check_nodes**: A boolean indicating whether to check the specified
+ledger(s) for missing nodes in the back end node store
 
 ---
 
