@@ -21,11 +21,12 @@
 #define RIPPLE_BASICS_LOG_H_INCLUDED
 
 #include <ripple/common/UnorderedContainers.h>
+#include <beast/utility/ci_char_traits.h>
 #include <beast/utility/Journal.h>
 #include <beast/utility/noexcept.h>
 #include <boost/filesystem.hpp>
+#include <map>
 #include <mutex>
-#include <unordered_map>
 #include <utility>
 
 namespace ripple {
@@ -140,7 +141,7 @@ private:
     };
 
     std::mutex mutable mutex_;
-    hardened_hash_map <std::string, Sink> sinks_;
+    std::map <std::string, Sink, beast::ci_less> sinks_;
     beast::Journal::Severity level_;
     File file_;
 
