@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/rpc/impl/Tuning.h>
 
 namespace ripple {
 
@@ -25,6 +26,8 @@ namespace ripple {
 //   account_index: <number>        // optional, defaults to 0.
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
+//   limit: integer                 // optional
+//   marker: opaque                 // optional, resume previous query
 // }
 Json::Value doAccountLines (RPC::Context& context)
 {
@@ -73,52 +76,92 @@ Json::Value doAccountLines (RPC::Context& context)
             return result;
     }
 
+    unsigned int limit;
+    if (params.isMember (jss::limit))
+    {
+        limit = std::max (RPC::Tuning::minLinesPerRequest,
+            std::min (params[jss::limit].asUInt (),
+            RPC::Tuning::maxLinesPerRequest));
+    }
+    else
+    {
+        limit = RPC::Tuning::defaultLinesPerRequest;
+    }
+
+    RippleAddress resumeAddress;    
+    if (params.isMember (jss::marker))
+    {
+        if (!resumeAddress.setAccountID (params[jss::marker].asString ()))
+            return rpcError (rpcACT_MALFORMED);
+    }
+
     if (ledger->hasAccount (raAccount))
     {
         result[jss::account] = raAccount.humanAccountID ();
         Json::Value& jsonLines = (result[jss::lines] = Json::arrayValue);
 
+        bool resume (! resumeAddress.isValid ());
+        unsigned int i (0);
+
         for (auto const& item : getRippleStateItems (raAccount.getAccountID (), ledger))
         {
-            RippleState* line = (RippleState*)item.get ();
+            RippleState const& line (*item.get ());
+            Account const& lineAccount (line.getAccountIDPeer ());
+            
+            if (! resume && resumeAddress.getAccountID () == lineAccount)
+                resume = true;
 
-            if (!raPeer.isValid () ||
-                raPeer.getAccountID () == line->getAccountIDPeer ())
+            if (resume &&
+                (!raPeer.isValid () || raPeer.getAccountID () == lineAccount))
             {
-                STAmount const& saBalance = line->getBalance ();
-                STAmount const& saLimit = line->getLimit ();
-                STAmount const& saLimitPeer = line->getLimitPeer ();
+                if (i < limit)
+                {
+                    STAmount const& saBalance = line.getBalance ();
+                    STAmount const& saLimit = line.getLimit ();
+                    STAmount const& saLimitPeer = line.getLimitPeer ();
 
-                Json::Value& jPeer = jsonLines.append (Json::objectValue);
+                    Json::Value& jPeer = jsonLines.append (Json::objectValue);
 
-                jPeer[jss::account] = to_string (line->getAccountIDPeer ());
-                // Amount reported is positive if current account holds other
-                // account's IOUs.
-                //
-                // Amount reported is negative if other account holds current
-                // account's IOUs.
-                jPeer[jss::balance] = saBalance.getText ();
-                jPeer[jss::currency] = saBalance.getHumanCurrency ();
-                jPeer[jss::limit] = saLimit.getText ();
-                jPeer[jss::limit_peer] = saLimitPeer.getText ();
-                jPeer[jss::quality_in]
-                        = static_cast<Json::UInt> (line->getQualityIn ());
-                jPeer[jss::quality_out]
-                        = static_cast<Json::UInt> (line->getQualityOut ());
-                if (line->getAuth())
-                    jPeer[jss::authorized] = true;
-                if (line->getAuthPeer())
-                    jPeer[jss::peer_authorized] = true;
-                if (line->getNoRipple())
-                    jPeer[jss::no_ripple]  = true;
-                if (line->getNoRipplePeer())
-                    jPeer[jss::no_ripple_peer] = true;
-                if (line->getFreeze())
-                    jPeer[jss::freeze]  = true;
-                if (line->getFreezePeer())
-                    jPeer[jss::freeze_peer] = true;
+                    jPeer[jss::account] = to_string (lineAccount);
+                    // Amount reported is positive if current account holds other
+                    // account's IOUs.
+                    //
+                    // Amount reported is negative if other account holds current
+                    // account's IOUs.
+                    jPeer[jss::balance] = saBalance.getText ();
+                    jPeer[jss::currency] = saBalance.getHumanCurrency ();
+                    jPeer[jss::limit] = saLimit.getText ();
+                    jPeer[jss::limit_peer] = saLimitPeer.getText ();
+                    jPeer[jss::quality_in]
+                        = static_cast<Json::UInt> (line.getQualityIn ());
+                    jPeer[jss::quality_out]
+                        = static_cast<Json::UInt> (line.getQualityOut ());
+                    if (line.getAuth ())
+                        jPeer[jss::authorized] = true;
+                    if (line.getAuthPeer ())
+                        jPeer[jss::peer_authorized] = true;
+                    if (line.getNoRipple ())
+                        jPeer[jss::no_ripple] = true;
+                    if (line.getNoRipplePeer ())
+                        jPeer[jss::no_ripple_peer] = true;
+                    if (line.getFreeze ())
+                        jPeer[jss::freeze] = true;
+                    if (line.getFreezePeer ())
+                        jPeer[jss::freeze_peer] = true;
+                    
+                    ++i;
+                }
+                else
+                {
+                    result[jss::limit] = limit;
+                    result[jss::marker] = to_string (lineAccount);
+                    break;
+                }
             }
         }
+
+        if (! resume)
+            return rpcError (rpcACT_MALFORMED);
 
         context.loadType_ = Resource::feeMediumBurdenRPC;
     }

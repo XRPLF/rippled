@@ -4437,6 +4437,9 @@
     <ClInclude Include="..\..\src\ripple\rpc\impl\TransactionSign.h">
       <Filter>ripple\rpc\impl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rpc\impl\Tuning.h">
+      <Filter>ripple\rpc\impl</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\InternalHandler.h">
       <Filter>ripple\rpc</Filter>
     </ClInclude>
@@ -4450,9 +4453,6 @@
       <Filter>ripple\rpc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\RPCServerHandler.h">
-      <Filter>ripple\rpc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rpc\Tuning.h">
       <Filter>ripple\rpc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\sitefiles\api\Listener.h">

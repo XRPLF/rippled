@@ -21,7 +21,7 @@
 #include <ripple/app/main/RPCHTTPServer.h>
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/rpc/RPCServerHandler.h>
-#include <ripple/rpc/Tuning.h>
+#include <ripple/rpc/impl/Tuning.h>
 #include <ripple/rpc/impl/Context.h>
 #include <ripple/rpc/impl/Handler.h>
 
@@ -85,7 +85,7 @@ Json::Value RPCHandler::doCommand (
         // VFALCO NOTE Should we also add up the jtRPC jobs?
         //
         int jc = getApp().getJobQueue ().getJobCountGE (jtCLIENT);
-        if (jc > RPC::MAX_JOB_QUEUE_CLIENTS)
+        if (jc > RPC::Tuning::maxJobQueueClients)
         {
             WriteLog (lsDEBUG, RPCHandler) << "Too busy for command: " << jc;
             return rpcError (rpcTOO_BUSY);
@@ -123,7 +123,7 @@ Json::Value RPCHandler::doCommand (
     if (!getConfig ().RUN_STANDALONE
         && (handler->condition_ & RPC::NEEDS_CURRENT_LEDGER)
         && (getApp().getLedgerMaster().getValidatedLedgerAge() >
-            RPC::MAX_VALIDATED_LEDGER_AGE))
+            RPC::Tuning::maxValidatedLedgerAge))
     {
         return rpcError (rpcNO_CURRENT);
     }
