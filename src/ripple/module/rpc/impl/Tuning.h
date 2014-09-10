@@ -17,19 +17,41 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_TUNING_H
-#define RIPPLE_RPC_TUNING_H
+#ifndef RIPPLE_RPC_TUNING_H_INCLUDED
+#define RIPPLE_RPC_TUNING_H_INCLUDED
 
 namespace ripple {
 namespace RPC {
 
-const int DEFAULT_AUTO_FILL_FEE_MULTIPLIER = 10;
-const int MAX_PATHFINDS_IN_PROGRESS = 2;
-const int MAX_PATHFIND_JOB_COUNT = 50;
-const int MAX_JOB_QUEUE_CLIENTS = 500;
-const int MAX_VALIDATED_LEDGER_AGE = 120;
-const int MAX_REQUEST_SIZE = 1000000;
+/** Tuned constants. */
+/** @{ */
+namespace Tuning {
 
+/** Default account lines return per request to the
+account_lines command when no limit param is specified
+*/
+unsigned int const defaultLinesPerRequest (20);
+
+/** Minimum account lines return per request to the
+account_lines command. Specified in the limit param.
+*/
+unsigned int const minLinesPerRequest (1);
+
+/** Maximum account lines return per request to the
+account_lines command. Specified in the limit param.
+*/
+unsigned int const maxLinesPerRequest (40);
+
+int const defaultAutoFillFeeMultiplier (10);
+int const maxPathfindsInProgress (2);
+int const maxPathfindJobCount (50);
+int const maxJobQueueClients (500);
+int const maxValidatedLedgerAge (120);
+int const maxRequestSize (1000000);
+
+} // Tuning
+/** @} */
+    
 } // RPC
 } // ripple
 

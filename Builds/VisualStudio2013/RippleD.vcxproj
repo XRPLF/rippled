@@ -2926,6 +2926,8 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\rpc\impl\TransactionSign.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\module\rpc\impl\Tuning.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\rpc\InternalHandler.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\rpc\Manager.h">
@@ -2935,8 +2937,6 @@
     <ClInclude Include="..\..\src\ripple\module\rpc\RPCHandler.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\rpc\RPCServerHandler.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\rpc\Tuning.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\websocket\autosocket\AutoSocket.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -3292,8 +3292,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\sslutil\api\ECDSACanonical.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\sslutil\api\HashUtilities.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\sslutil\impl\CBigNum.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -3301,9 +3299,6 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\sslutil\impl\ECDSACanonical.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\sslutil\impl\HashUtilities.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\testoverlay\api\ConfigType.h">
