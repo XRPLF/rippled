@@ -22,7 +22,7 @@
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/rpc/RPCServerHandler.h>
-#include <ripple/rpc/Tuning.h>
+#include <ripple/rpc/impl/Tuning.h>
 
 namespace ripple {
 
@@ -55,7 +55,7 @@ std::string RPCServerHandler::processRequest (
     {
         Json::Reader reader;
 
-        if ((request.size() > RPC::MAX_REQUEST_SIZE) ||
+        if ((request.size() > ripple::RPC::Tuning::maxRequestSize) ||
             ! reader.parse (request, jsonRequest) ||
             jsonRequest.isNull () ||
             ! jsonRequest.isObject ())
