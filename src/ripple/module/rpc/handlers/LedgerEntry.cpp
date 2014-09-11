@@ -195,7 +195,8 @@ Json::Value doLedgerEntry (RPC::Context& context)
         }
         else
         {
-            uNodeIndex  = Ledger::getRippleStateIndex (naA, naB, uCurrency);
+            uNodeIndex  = Ledger::getRippleStateIndex (
+                naA.getAccountID (), naB.getAccountID (), uCurrency);
         }
     }
     else

@@ -1775,18 +1775,16 @@ uint256 Ledger::getOwnerDirIndex (Account const& account)
 }
 
 uint256 Ledger::getRippleStateIndex (
-    RippleAddress const& naA, RippleAddress const& naB,
-    Currency const& currency)
+    Account const& a, Account const& b, Currency const& currency)
 {
-    auto uAID = naA.getAccountID ();
-    auto uBID = naB.getAccountID ();
-    bool        bAltB   = uAID < uBID;
     Serializer  s (62);
 
+    bool const bAltB = a < b;
+
     s.add16 (spaceRipple);          //  2
-    s.add160 (bAltB ? uAID : uBID); // 20
-    s.add160 (bAltB ? uBID : uAID); // 20
-    s.add160 (currency);           // 20
+    s.add160 (bAltB ? a : b);       // 20
+    s.add160 (bAltB ? b : a);       // 20
+    s.add160 (currency);            // 20
 
     return s.getSHA512Half ();
 }
@@ -1797,8 +1795,8 @@ uint256 Ledger::getTicketIndex (
     Serializer  s (26);
 
     s.add16 (spaceTicket);       //  2
-    s.add160 (account);         // 20
-    s.add32 (uSequence);        //  4
+    s.add160 (account);          // 20
+    s.add32 (uSequence);         //  4
 
     return s.getSHA512Half ();
 }

@@ -432,30 +432,19 @@ public:
     //             don't access global variables. e.g.
     //             "calculateKeyFromRippleStateAndAddress"
     static uint256 getRippleStateIndex (
-        RippleAddress const&, RippleAddress const&, Currency const&);
+        Account const& a, Account const& b, Currency const& currency);
     static uint256 getRippleStateIndex (
-        Account const& a, Account const& b, Currency const& uCurrency)
+        Account const& a, Issue const& issue)
     {
-        return getRippleStateIndex (
-            RippleAddress::createAccountID (a),
-            RippleAddress::createAccountID (b), uCurrency);
+        return getRippleStateIndex (a, issue.account, issue.currency);
     }
 
     SLE::pointer getRippleState (uint256 const& uNode);
 
     SLE::pointer getRippleState (
-        RippleAddress const& a, RippleAddress const& b,
-        Currency const& currency)
-    {
-        return getRippleState (getRippleStateIndex (a, b, currency));
-    }
-
-    SLE::pointer getRippleState (
         Account const& a, Account const& b, Currency const& currency)
     {
-        return getRippleState (getRippleStateIndex (
-            RippleAddress::createAccountID (a),
-            RippleAddress::createAccountID (b), currency));
+        return getRippleState (getRippleStateIndex (a, b, currency));
     }
 
     std::uint32_t getReferenceFeeUnits ()
