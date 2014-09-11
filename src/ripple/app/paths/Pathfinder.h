@@ -111,6 +111,9 @@ private:
     STPathSet filterPaths(int iMaxPaths,
                           STPath& extraPath);
 
+    TER checkPath (STPath const& path, STAmount const& minDestAmount,
+        STAmount& amount, uint64_t& quality) const;
+
     bool isNoRippleOut (STPath const& currentPath);
     bool isNoRipple (
         Account const& setByID,
