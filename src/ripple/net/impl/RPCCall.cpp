@@ -801,7 +801,7 @@ public:
             {   "account_currencies",   &RPCParser::parseAccountCurrencies,     1,  2   },
             {   "account_info",         &RPCParser::parseAccountItems,          1,  2   },
             {   "account_lines",        &RPCParser::parseAccountLines,          1,  5   },
-            {   "account_offers",       &RPCParser::parseAccountItems,          1,  2   },
+            {   "account_offers",       &RPCParser::parseAccountItems,          1,  4   },
             {   "account_tx",           &RPCParser::parseAccountTransactions,   1,  8   },
             {   "book_offers",          &RPCParser::parseBookOffers,            2,  7   },
             {   "connect",              &RPCParser::parseConnect,               1,  2   },

@@ -57,6 +57,21 @@ Specified in the limit param.
 */
 unsigned int const maxOffersPerRequest (400);
 
+/** Default offers return per request to the account_offers command
+when no limit param is specified
+*/
+unsigned int const defaultOffersPerRequest (20);
+
+/** Minimum offers return per request to the account_offers command.
+Specified in the limit param.
+*/
+unsigned int const minOffersPerRequest (1);
+
+/** Maximum offers return per request to the account_lines command.
+Specified in the limit param.
+*/
+unsigned int const maxOffersPerRequest (40);
+
 int const defaultAutoFillFeeMultiplier (10);
 int const maxPathfindsInProgress (2);
 int const maxPathfindJobCount (50);
