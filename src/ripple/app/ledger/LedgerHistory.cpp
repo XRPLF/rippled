@@ -123,6 +123,86 @@ Ledger::pointer LedgerHistory::getLedgerByHash (uint256 const& hash)
     return ret;
 }
 
+static void addLeaf (std::vector <uint256> &vec, SHAMapItem::ref item)
+{
+    vec.push_back (item->getTag ());
+}
+
+void LedgerHistory::handleMismatch (LedgerHash const& built, LedgerHash  const& valid)
+{
+    assert (built != valid);
+    ++mismatch_counter_;
+
+    Ledger::pointer builtLedger = getLedgerByHash (built);
+    Ledger::pointer validLedger = getLedgerByHash (valid);
+
+    if (builtLedger && validLedger)
+    {
+        assert (builtLedger->getLedgerSeq() != validLedger->getLedgerSeq());
+
+        // Determine the mismatch reason
+        // Distinguish Byzantine failure from transaction processing difference
+
+        if (builtLedger->getParentHash() != validLedger->getParentHash())
+        {
+            // Disagreement over prior ledger indicates sync issue
+            WriteLog (lsERROR, LedgerMaster) << "MISMATCH on prior ledger";
+        }
+        else if (builtLedger->getCloseTimeNC() != validLedger->getCloseTimeNC())
+        {
+            // Disagreement over close time indicates Byzantine failure
+            WriteLog (lsERROR, LedgerMaster) << "MISMATCH on close time";
+        }
+        else
+        {
+            std::vector <uint256> builtTx, validTx;
+            builtLedger->peekTransactionMap()->visitLeaves(
+                std::bind (&addLeaf, std::ref (builtTx), std::placeholders::_1));
+            validLedger->peekTransactionMap()->visitLeaves(
+                std::bind (&addLeaf, std::ref (validTx), std::placeholders::_1));
+            std::sort (builtTx.begin(), builtTx.end());
+            std::sort (validTx.begin(), validTx.end());
+
+            if (builtTx == validTx)
+            {
+                // Disagreement with same prior ledger, close time, and transactions
+                // indicates a transaction processing difference
+                WriteLog (lsERROR, LedgerMaster) <<
+                    "MISMATCH with same " << builtTx.size() << " tx";
+            }
+            else
+            {
+                std::vector <uint256> notBuilt, notValid;
+                std::set_difference (
+                    validTx.begin(), validTx.end(),
+                    builtTx.begin(), builtTx.end(),
+                    std::inserter (notBuilt, notBuilt.begin()));
+                std::set_difference (
+                    builtTx.begin(), builtTx.end(),
+                    validTx.begin(), validTx.end(),
+                    std::inserter (notValid, notValid.begin()));
+
+                // This can be either a disagreement over the consensus
+                // set or difference in which transactions were rejected
+                // as invalid
+
+                WriteLog (lsERROR, LedgerMaster) << "MISMATCH tx differ "
+                    << builtTx.size() << " built, " << validTx.size() << " valid";
+                for (auto const& t : notBuilt)
+                {
+                    WriteLog (lsERROR, LedgerMaster) << "MISMATCH built without " << t;
+                }
+                for (auto const& t : notValid)
+                {
+                    WriteLog (lsERROR, LedgerMaster) << "MISMATCH valid without " << t;
+                }
+            }
+        }
+    }
+    else
+        WriteLog (lsERROR, LedgerMaster) << "MISMATCH cannot be analyzed";
+}
+
 void LedgerHistory::builtLedger (Ledger::ref ledger)
 {
     LedgerIndex index = ledger->getLedgerSeq();
@@ -150,7 +230,7 @@ void LedgerHistory::builtLedger (Ledger::ref ledger)
         }
 
         if (mismatch)
-            ++mismatch_counter_;
+            handleMismatch (hash, entry->first);
 
         entry->first = hash;
     }
@@ -184,7 +264,7 @@ void LedgerHistory::validatedLedger (Ledger::ref ledger)
         }
 
         if (mismatch)
-            ++mismatch_counter_;
+            handleMismatch (entry->second, hash);
 
         entry->second = hash;
     }

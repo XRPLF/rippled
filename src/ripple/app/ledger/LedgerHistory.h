@@ -93,6 +93,14 @@ public:
     bool fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash);
 
 private:
+
+    /** Log details in the case where we build one ledger but
+        validate a different one.
+        @param built The hash of the ledger we built
+        @param valid The hash of the ledger we deemed fully valid
+    */
+    void handleMismatch (LedgerHash const& built, LedgerHash const& valid);
+
     beast::insight::Collector::ptr collector_;
     beast::insight::Counter mismatch_counter_;
 
