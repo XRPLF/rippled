@@ -4560,9 +4560,6 @@
     <ClInclude Include="..\..\src\ripple\sslutil\api\ECDSACanonical.h">
       <Filter>ripple\sslutil\api</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\sslutil\api\HashUtilities.h">
-      <Filter>ripple\sslutil\api</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\sslutil\impl\CBigNum.cpp">
       <Filter>ripple\sslutil\impl</Filter>
     </ClCompile>
@@ -4570,9 +4567,6 @@
       <Filter>ripple\sslutil\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\sslutil\impl\ECDSACanonical.cpp">
-      <Filter>ripple\sslutil\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\sslutil\impl\HashUtilities.cpp">
       <Filter>ripple\sslutil\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\testoverlay\api\ConfigType.h">
