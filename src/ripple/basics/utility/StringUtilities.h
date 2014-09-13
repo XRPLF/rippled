@@ -29,8 +29,6 @@
 
 namespace ripple {
 
-extern std::string strprintf (const char* format, ...);
-
 extern std::string urlEncode (std::string const& strSrc);
 
 // NIKB TODO remove this function - it's only used for some logging in the UNL
@@ -109,15 +107,8 @@ std::string strCopy (Blob const& vucSrc);
 
 bool parseIpPort (std::string const& strSource, std::string& strIP, int& iPort);
 
-inline std::string strGetEnv (std::string const& strKey)
-{
-    return getenv (strKey.c_str ()) ? getenv (strKey.c_str ()) : "";
-}
-
 bool parseUrl (std::string const& strUrl, std::string& strScheme,
                std::string& strDomain, int& iPort, std::string& strPath);
-
-#define ADDRESS(p) strHex(uint64( ((char*) p) - ((char*) 0)))
 
 /** Create a Parameters from a String.
 

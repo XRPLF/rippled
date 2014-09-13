@@ -903,7 +903,7 @@ struct RPCCallImp
             if (iStatus == 401)
                 throw std::runtime_error ("incorrect rpcuser or rpcpassword (authorization failed)");
             else if ((iStatus >= 400) && (iStatus != 400) && (iStatus != 404) && (iStatus != 500)) // ?
-                throw std::runtime_error (strprintf ("server returned HTTP error %d", iStatus));
+                throw std::runtime_error (std::string ("server returned HTTP error %d") + std::to_string (iStatus));
             else if (strData.empty ())
                 throw std::runtime_error ("no response from server");
 
