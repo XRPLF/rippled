@@ -159,6 +159,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\socket_wrapper.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\ssl.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\asio\tests\bind_handler.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
