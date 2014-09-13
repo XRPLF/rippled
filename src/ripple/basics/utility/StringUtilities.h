@@ -38,9 +38,6 @@ namespace ripple {
 #define QUALITY_ONE         1000000000  // 10e9
 
 //------------------------------------------------------------------------------
-
-extern std::string strprintf (const char* format, ...);
-
 extern std::string urlEncode (std::string const& strSrc);
 
 // NIKB TODO remove this function - it's only used for some logging in the UNL
