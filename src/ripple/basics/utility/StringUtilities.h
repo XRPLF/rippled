@@ -116,11 +116,6 @@ std::string strCopy (Blob const& vucSrc);
 
 bool parseIpPort (std::string const& strSource, std::string& strIP, int& iPort);
 
-inline std::string strGetEnv (std::string const& strKey)
-{
-    return getenv (strKey.c_str ()) ? getenv (strKey.c_str ()) : "";
-}
-
 bool parseUrl (std::string const& strUrl, std::string& strScheme,
                std::string& strDomain, int& iPort, std::string& strPath);
 

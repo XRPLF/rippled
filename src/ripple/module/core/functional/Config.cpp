@@ -152,6 +152,20 @@ Config::Config ()
     START_UP                = NORMAL;
 }
 
+static
+std::string
+getEnvVar (char const* name)
+{
+    std::string value;
+
+    auto const v = getenv (name);
+
+    if (v != nullptr)
+        value = v;
+
+    return value;
+}
+
 void Config::setup (std::string const& strConf, bool bQuiet)
 {
     boost::system::error_code   ec;
@@ -187,35 +201,35 @@ void Config::setup (std::string const& strConf, bool bQuiet)
         CONFIG_FILE             = CONFIG_DIR / strConfFile;
         DATA_DIR                = CONFIG_DIR / strDbPath;
 
+        // Construct XDG config and data home.
+        // http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
+        std::string strHome          = getEnvVar ("HOME");
+        std::string strXdgConfigHome = getEnvVar ("XDG_CONFIG_HOME");
+        std::string strXdgDataHome   = getEnvVar ("XDG_DATA_HOME");
+
         if (exists (CONFIG_FILE)
                 // Can we figure out XDG dirs?
-                || (!getenv ("HOME") && (!getenv ("XDG_CONFIG_HOME") || !getenv ("XDG_DATA_HOME"))))
+                || (strHome.empty () && (strXdgConfigHome.empty () || strXdgDataHome.empty ())))
         {
             // Current working directory is fine, put dbs in a subdir.
         }
         else
         {
-            // Construct XDG config and data home.
-            // http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
-            std::string strHome             = strGetEnv ("HOME");
-            std::string strXdgConfigHome    = strGetEnv ("XDG_CONFIG_HOME");
-            std::string strXdgDataHome      = strGetEnv ("XDG_DATA_HOME");
-
             if (strXdgConfigHome.empty ())
             {
                 // $XDG_CONFIG_HOME was not set, use default based on $HOME.
-                strXdgConfigHome    = boost::str (boost::format ("%s/.config") % strHome);
+                strXdgConfigHome    = strHome + "/.config";
             }
 
             if (strXdgDataHome.empty ())
             {
                 // $XDG_DATA_HOME was not set, use default based on $HOME.
-                strXdgDataHome  = boost::str (boost::format ("%s/.local/share") % strHome);
+                strXdgDataHome  = strHome + "/.local/share";
             }
 
-            CONFIG_DIR          = boost::str (boost::format ("%s/" SYSTEM_NAME) % strXdgConfigHome);
-            CONFIG_FILE         = CONFIG_DIR / strConfFile;
-            DATA_DIR            = boost::str (boost::format ("%s/" SYSTEM_NAME) % strXdgDataHome);
+            CONFIG_DIR  = strXdgConfigHome + "/" SYSTEM_NAME;
+            CONFIG_FILE = CONFIG_DIR / strConfFile;
+            DATA_DIR    = strXdgDataHome + "/" SYSTEM_NAME;
 
             boost::filesystem::create_directories (CONFIG_DIR, ec);
 
