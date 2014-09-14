@@ -124,8 +124,6 @@ inline std::string strGetEnv (std::string const& strKey)
 bool parseUrl (std::string const& strUrl, std::string& strScheme,
                std::string& strDomain, int& iPort, std::string& strPath);
 
-#define ADDRESS(p) strHex(uint64( ((char*) p) - ((char*) 0)))
-
 /** Create a Parameters from a String.
 
     Parameter strings have the format:
