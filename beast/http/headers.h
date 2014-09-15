@@ -103,15 +103,8 @@ public:
 
     headers() = default;
 
-#if defined(_MSC_VER) && _MSC_VER <= 1800
     headers (headers&& other);
     headers& operator= (headers&& other);
-
-#else
-    headers (headers&& other) = default;
-    headers& operator= (headers&& other) = default;
-
-#endif
 
     headers (headers const& other);
     headers& operator= (headers const& other);
@@ -193,7 +186,6 @@ headers::less::operator() (
 
 //------------------------------------------------------------------------------
 
-#if defined(_MSC_VER) && _MSC_VER <= 1800
 inline
 headers::headers (headers&& other)
     : list_ (std::move (other.list_))
@@ -213,7 +205,6 @@ headers::operator= (headers&& other)
     other.set_.clear();
     return *this;
 }
-#endif
 
 inline
 headers::headers (headers const& other)
