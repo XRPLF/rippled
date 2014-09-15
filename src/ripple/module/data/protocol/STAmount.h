@@ -41,6 +41,18 @@ namespace ripple {
 class STAmount : public SerializedType
 {
 public:
+    typedef std::uint64_t mantissa_type;
+    typedef int exponent_type;
+    typedef std::pair <mantissa_type, exponent_type> rep;
+
+private:
+    Issue mIssue;
+    mantissa_type mValue;
+    exponent_type mOffset;
+    bool mIsNative;      // A shorthand for isXRP(mIssue).
+    bool mIsNegative;
+
+public:
     static const int cMinOffset = -96;
     static const int cMaxOffset = 80;
 
@@ -55,164 +67,168 @@ public:
 
     static std::uint64_t   uRateOne;
 
-    STAmount (std::uint64_t v = 0, bool negative = false)
-            : mValue (v), mOffset (0), mIsNative (true), mIsNegative (negative)
-    {
-        if (v == 0) mIsNegative = false;
-    }
+    //--------------------------------------------------------------------------
 
-    STAmount (SField::ref n, std::uint64_t v = 0, bool negative = false)
-        : SerializedType (n), mValue (v), mOffset (0), mIsNative (true),
-          mIsNegative (negative)
-    {
-    }
+    struct unchecked { };
 
-    STAmount (SField::ref n, std::int64_t v)
-        : SerializedType (n), mOffset (0), mIsNative (true)
-    {
-        set (v);
-    }
+    // Calls canonicalize
+    STAmount (SField::ref name, Issue const& issue,
+        mantissa_type mantissa, exponent_type exponent,
+            bool native, bool negative);
+
+    // Does not call canonicalize
+    STAmount (SField::ref name, Issue const& issue,
+        mantissa_type mantissa, exponent_type exponent,
+            bool native, bool negative, unchecked);
+
+    STAmount (SField::ref name, std::int64_t mantissa);
+
+    STAmount (SField::ref name,
+        std::uint64_t mantissa = 0, bool negative = false);
+
+    STAmount (SField::ref name, Issue const& issue,
+        std::uint64_t mantissa = 0, int exponent = 0, bool negative = false);
+
+    STAmount (std::uint64_t mantissa = 0, bool negative = false);
 
     STAmount (Issue const& issue,
-              std::uint64_t uV = 0, int iOff = 0, bool negative = false)
-            : mIssue(issue), mValue (uV), mOffset (iOff), mIsNegative (negative)
-    {
-        canonicalize ();
-    }
+        std::uint64_t mantissa = 0, int exponent = 0, bool negative = false);
 
+    // VFALCO Is this needed when we have the previous signature?
     STAmount (Issue const& issue,
-              std::uint32_t uV, int iOff = 0, bool negative = false)
-        : mIssue(issue), mValue (uV), mOffset (iOff), mIsNegative (negative)
-    {
-        canonicalize ();
-    }
+        std::uint32_t mantissa, int exponent = 0, bool negative = false);
 
-    STAmount (SField::ref n, Issue const& issue,
-              std::uint64_t v = 0, int off = 0, bool negative = false) :
-        SerializedType (n), mIssue(issue), mValue (v), mOffset (off),
-        mIsNegative (negative)
-    {
-        canonicalize ();
-    }
+    STAmount (Issue const& issue, std::int64_t mantissa, int exponent = 0);
 
-    STAmount (Issue const& issue, std::int64_t v, int iOff = 0)
-        : mIssue(issue), mOffset (iOff)
-    {
-        set (v);
-        canonicalize ();
-    }
+    STAmount (Issue const& issue, int mantissa, int exponent = 0);
 
-    STAmount (SField::ref n, Issue const& issue, std::int64_t v, int off = 0)
-        : SerializedType (n), mIssue(issue), mOffset (off)
-    {
-        set (v);
-        canonicalize ();
-    }
+    //--------------------------------------------------------------------------
 
-    STAmount (Issue const& issue, int v, int iOff = 0)
-        : mIssue(issue), mOffset (iOff)
-    {
-        set (v);
-        canonicalize ();
-    }
+private:
+    static
+    std::unique_ptr<STAmount>
+    construct (SerializerIterator&, SField::ref name);
 
-    STAmount (SField::ref n, Issue const& issue, int v, int off = 0)
-        : SerializedType (n), mIssue(issue), mOffset (off)
-    {
-        set (v);
-        canonicalize ();
-    }
+public:
+    static
+    STAmount
+    createFromInt64 (SField::ref n, std::int64_t v);
 
-    STAmount (SField::ref, Json::Value const&);
-
-    static STAmount createFromInt64 (SField::ref n, std::int64_t v);
-
-    static std::unique_ptr<SerializedType> deserialize (
+    static
+    std::unique_ptr <SerializedType>
+    deserialize (
         SerializerIterator& sit, SField::ref name)
     {
         return construct (sit, name);
     }
 
-    bool bSetJson (Json::Value const& jvSource);
-
-    static STAmount saFromRate (std::uint64_t uRate = 0)
+    static
+    STAmount
+    saFromRate (std::uint64_t uRate = 0)
     {
         return STAmount (noIssue(), uRate, -9, false);
     }
 
-    SerializedTypeID getSType () const
-    {
-        return STI_AMOUNT;
-    }
-    std::string getText () const;
-    std::string getFullText () const;
-    void add (Serializer& s) const;
+    static
+    STAmount
+    deserialize (SerializerIterator&);
 
-    int getExponent () const
-    {
-        return mOffset;
-    }
-    std::uint64_t getMantissa () const
-    {
-        return mValue;
-    }
+    //--------------------------------------------------------------------------
+    //
+    // Observers
+    //
+    //--------------------------------------------------------------------------
 
-    int signum () const
+    int exponent() const noexcept { return mOffset; }
+    bool native() const noexcept { return mIsNative; }
+    bool negative() const noexcept { return mIsNegative; }
+    std::uint64_t mantissa() const noexcept { return mValue; }
+    Issue const& issue() const { return mIssue; }
+
+    // These three are deprecated
+    Currency const& getCurrency() const { return mIssue.currency; }
+    Account const& getIssuer() const { return mIssue.account; }
+    bool isNative() const { return mIsNative; }
+
+    int
+    signum() const noexcept
     {
         return mValue ? (mIsNegative ? -1 : 1) : 0;
     }
-
-    // When the currency is XRP, the value in raw units. S=signed
-    std::uint64_t getNValue () const
-    {
-        if (!mIsNative)
-            throw std::runtime_error ("not native");
-
-        return mValue;
-    }
-    void setNValue (std::uint64_t v)
-    {
-        if (!mIsNative)
-            throw std::runtime_error ("not native");
-
-        mValue = v;
-    }
-    std::int64_t getSNValue () const;
-    void setSNValue (std::int64_t);
-
-    std::string getHumanCurrency () const;
-
-    bool isNative () const
-    {
-        return mIsNative;
-    }
-    bool isLegalNet () const
-    {
-        return !mIsNative || (mValue <= cMaxNativeN);
-    }
-
-    explicit
-    operator bool () const noexcept
-    {
-        return *this != zero;
-    }
-
-    void negate ()
-    {
-        if (*this != zero)
-            mIsNegative = !mIsNegative;
-    }
-
-    /** @return a copy of amount with the same Issuer and Currency but zero
-        value. */
-    STAmount zeroed() const
+    
+    /** Returns a zero value with the same issuer and currency. */
+    STAmount
+    zeroed() const
     {
         // TODO(tom): what does this next comment mean here?
         // See https://ripplelabs.atlassian.net/browse/WC-1847?jql=
         return STAmount (mIssue);
     }
 
-    void clear ()
+    // When the currency is XRP, the value in raw unsigned units.
+    std::uint64_t
+    getNValue() const;
+
+    // When the currency is XRP, the value in raw signed units.
+    std::int64_t
+    getSNValue() const;
+
+    // VFALCO TODO This can be a free function or just call the
+    //             member on the issue.
+    std::string
+    getHumanCurrency() const;
+
+    void
+    setJson (Json::Value&) const;
+
+    //--------------------------------------------------------------------------
+    //
+    // Operators
+    //
+    //--------------------------------------------------------------------------
+    
+    explicit operator bool() const noexcept
+    {
+        return *this != zero;
+    }
+
+    bool isComparable (STAmount const&) const;
+    void throwComparable (STAmount const&) const;
+
+    STAmount& operator+= (STAmount const&);
+    STAmount& operator-= (STAmount const&);
+    STAmount& operator+= (std::uint64_t);
+    STAmount& operator-= (std::uint64_t);
+
+    STAmount& operator= (std::uint64_t);
+    STAmount& operator= (beast::Zero)
+    {
+        clear();
+        return *this;
+    }
+
+    friend STAmount operator+ (STAmount const& v1, STAmount const& v2);
+    friend STAmount operator- (STAmount const& v1, STAmount const& v2);
+
+    //--------------------------------------------------------------------------
+    //
+    // Modification
+    //
+    //--------------------------------------------------------------------------
+
+    // VFALCO TODO Remove this, it is only called from the unit test
+    void roundSelf();
+
+    void setNValue (std::uint64_t v);
+    void setSNValue (std::int64_t);
+
+    void negate()
+    {
+        if (*this != zero)
+            mIsNegative = !mIsNegative;
+    }
+
+    void clear()
     {
         // VFALCO: Why -100?
         mOffset = mIsNative ? 0 : -100;
@@ -223,26 +239,13 @@ public:
     // Zero while copying currency and issuer.
     void clear (STAmount const& saTmpl)
     {
-        clear(saTmpl.mIssue);
+        clear (saTmpl.mIssue);
     }
 
     void clear (Issue const& issue)
     {
         setIssue(issue);
-        clear ();
-    }
-
-    STAmount& operator=(beast::Zero)
-    {
-        clear ();
-        return *this;
-    }
-
-    int compare (STAmount const&) const;
-
-    Account const& getIssuer () const
-    {
-        return mIssue.account;
+        clear();
     }
 
     void setIssuer (Account const& uIssuer)
@@ -254,200 +257,207 @@ public:
     /** Set the Issue for this amount and update mIsNative. */
     void setIssue (Issue const& issue);
 
-    Currency const& getCurrency () const
-    {
-        return mIssue.currency;
-    }
-
-    Issue const& issue () const
-    {
-        return mIssue;
-    }
-
+    // VFALCO TODO Rename to setValueOnly (it only sets mantissa and exponent)
+    //             Make this private
     bool setValue (std::string const& sAmount);
-    bool setFullValue (
-        std::string const& sAmount, std::string const& sCurrency = "",
-        std::string const& sIssuer = "");
-    void setValue (STAmount const&);
 
-    virtual bool isEquivalent (const SerializedType& t) const;
-    virtual bool isDefault () const
+    bool setFullValue (std::string const& sAmount,
+        std::string const& sCurrency = "", std::string const& sIssuer = "");
+
+    //--------------------------------------------------------------------------
+    //
+    // SerializedType
+    //
+    //--------------------------------------------------------------------------
+
+    SerializedTypeID
+    getSType() const override
+    {
+        return STI_AMOUNT;
+    }
+
+    std::string
+    getFullText() const override;
+
+    std::string
+    getText() const override;
+
+    Json::Value
+    getJson (int) const override;
+
+    void
+    add (Serializer& s) const override;
+    
+    bool
+    isEquivalent (const SerializedType& t) const override;
+
+    bool
+    isDefault() const override
     {
         return (mValue == 0) && mIsNative;
     }
 
-    bool operator== (STAmount const&) const;
-    bool operator!= (STAmount const&) const;
-    bool operator< (STAmount const&) const;
-    bool operator> (STAmount const&) const;
-    bool operator<= (STAmount const&) const;
-    bool operator>= (STAmount const&) const;
-    bool isComparable (STAmount const&) const;
-    void throwComparable (STAmount const&) const;
-
-    // native currency only
-    bool operator< (std::uint64_t) const;
-    bool operator> (std::uint64_t) const;
-    bool operator<= (std::uint64_t) const;
-    bool operator>= (std::uint64_t) const;
-    STAmount operator+ (std::uint64_t) const;
-    STAmount operator- (std::uint64_t) const;
-    STAmount operator- (void) const;
-
-    STAmount& operator+= (STAmount const&);
-    STAmount& operator-= (STAmount const&);
-    STAmount& operator+= (std::uint64_t);
-    STAmount& operator-= (std::uint64_t);
-    STAmount& operator= (std::uint64_t);
-
-    operator double () const;
-
-    friend STAmount operator+ (STAmount const& v1, STAmount const& v2);
-    friend STAmount operator- (STAmount const& v1, STAmount const& v2);
-
-    static STAmount divide (
-        STAmount const& v1, STAmount const& v2, Issue const& issue);
-
-    static STAmount divide (
-        STAmount const& v1, STAmount const& v2, STAmount const& saUnit)
-    {
-        return divide (v1, v2, saUnit.issue ());
-    }
-    static STAmount divide (STAmount const& v1, STAmount const& v2)
-    {
-        return divide (v1, v2, v1);
-    }
-
-    static STAmount multiply (
-        STAmount const& v1, STAmount const& v2, Issue const& issue);
-
-    static STAmount multiply (
-        STAmount const& v1, STAmount const& v2, STAmount const& saUnit)
-    {
-        return multiply (v1, v2, saUnit.issue());
-    }
-    static STAmount multiply (STAmount const& v1, STAmount const& v2)
-    {
-        return multiply (v1, v2, v1);
-    }
-
-    /* addRound, subRound can end up rounding if the amount subtracted is too small
-       to make a change. Consder (X-d) where d is very small relative to X.
-       If you ask to round down, then (X-d) should not be X unless d is zero.
-       If you ask to round up, (X+d) should never be X unless d is zero. (Assuming X and d are positive).
-    */
-    // Add, subtract, multiply, or divide rounding result in specified direction
-    static STAmount addRound (
-        STAmount const& v1, STAmount const& v2, bool roundUp);
-    static STAmount subRound (
-        STAmount const& v1, STAmount const& v2, bool roundUp);
-    static STAmount mulRound (
-        STAmount const& v1, STAmount const& v2, Issue const& issue,
-        bool roundUp);
-    static STAmount divRound (
-        STAmount const& v1, STAmount const& v2, Issue const& issue,
-        bool roundUp);
-
-    static STAmount mulRound (
-        STAmount const& v1, STAmount const& v2, STAmount const& saUnit,
-        bool roundUp)
-    {
-        return mulRound (v1, v2, saUnit.issue (), roundUp);
-    }
-    static STAmount mulRound (
-        STAmount const& v1, STAmount const& v2, bool roundUp)
-    {
-        return mulRound (v1, v2, v1.issue (), roundUp);
-    }
-    static STAmount divRound (
-        STAmount const& v1, STAmount const& v2, STAmount const& saUnit,
-        bool roundUp)
-    {
-        return divRound (v1, v2, saUnit.issue (), roundUp);
-    }
-    static STAmount divRound (
-        STAmount const& v1, STAmount const& v2, bool roundUp)
-    {
-        return divRound (v1, v2, v1.issue (), roundUp);
-    }
-
-    // Someone is offering X for Y, what is the rate?
-    // Rate: smaller is better, the taker wants the most out: in/out
-    static std::uint64_t getRate (
-        STAmount const& offerOut, STAmount const& offerIn);
-    static STAmount setRate (std::uint64_t rate);
-
-    // Someone is offering X for Y, I need Z, how much do I pay
-
-    // WARNING: most methods in rippled have parameters ordered "in, out" - this
-    // one is ordered "out, in".
-    static STAmount getPay (
-        STAmount const& out, STAmount const& in, STAmount const& needed);
-
-    static STAmount deserialize (SerializerIterator&);
-
-    Json::Value getJson (int) const;
-    void setJson (Json::Value&) const;
-
-    STAmount getRound () const;
-    void roundSelf ();
-
-    static void canonicalizeRound (
-        bool isNative, std::uint64_t& value, int& offset, bool roundUp);
-
 private:
-    Issue mIssue;
+    STAmount*
+    duplicate() const override;
 
-    std::uint64_t  mValue;
-    int            mOffset;
-    bool           mIsNative;      // A shorthand for isXRP(mIssue).
-    bool           mIsNegative;
-
-    void canonicalize ();
-    STAmount* duplicate () const
-    {
-        return new STAmount (*this);
-    }
-    
-    static
-    std::unique_ptr<STAmount>
-    construct (SerializerIterator&, SField::ref name);
-
-    STAmount (SField::ref name, Issue const& issue,
-              std::uint64_t val, int off, bool isNat, bool negative)
-        : SerializedType (name), mIssue(issue),  mValue (val),
-          mOffset (off), mIsNative (isNat), mIsNegative (negative)
-    {
-    }
-
-    void set (std::int64_t v)
-    {
-        if (v < 0)
-        {
-            mIsNegative = true;
-            mValue = static_cast<std::uint64_t> (-v);
-        }
-        else
-        {
-            mIsNegative = false;
-            mValue = static_cast<std::uint64_t> (v);
-        }
-    }
-
-    void set (int v)
-    {
-        if (v < 0)
-        {
-            mIsNegative = true;
-            mValue = static_cast<std::uint64_t> (-v);
-        }
-        else
-        {
-            mIsNegative = false;
-            mValue = static_cast<std::uint64_t> (v);
-        }
-    }
+    void canonicalize();
+    void set (std::int64_t v);
 };
+
+//------------------------------------------------------------------------------
+//
+// Creation
+//
+//------------------------------------------------------------------------------
+
+// VFALCO TODO The parameter type should be Quality not uint64_t
+STAmount
+amountFromQuality (std::uint64_t rate);
+
+STAmount
+amountFromJson (SField::ref name, Json::Value const& v);
+
+bool
+amountFromJsonNoThrow (STAmount& result, Json::Value const& jvSource);
+
+//------------------------------------------------------------------------------
+//
+// Observers
+//
+//------------------------------------------------------------------------------
+
+inline
+bool
+isLegalNet (STAmount const& value)
+{
+    return ! value.native() || (value.mantissa() <= STAmount::cMaxNativeN);
+}
+
+//------------------------------------------------------------------------------
+//
+// Operators
+//
+//------------------------------------------------------------------------------
+
+bool operator== (STAmount const& lhs, STAmount const& rhs);
+bool operator!= (STAmount const& lhs, STAmount const& rhs);
+bool operator<  (STAmount const& lhs, STAmount const& rhs);
+bool operator>  (STAmount const& lhs, STAmount const& rhs);
+bool operator<= (STAmount const& lhs, STAmount const& rhs);
+bool operator>= (STAmount const& lhs, STAmount const& rhs);
+
+// native currency only
+bool operator<  (STAmount const& lhs, std::uint64_t rhs);
+bool operator>  (STAmount const& lhs, std::uint64_t rhs);
+bool operator<= (STAmount const& lhs, std::uint64_t rhs);
+bool operator>= (STAmount const& lhs, std::uint64_t rhs);
+
+STAmount operator+ (STAmount const& lhs, std::uint64_t rhs);
+STAmount operator- (STAmount const& lhs, std::uint64_t rhs);
+STAmount operator- (STAmount const& value);
+
+//------------------------------------------------------------------------------
+//
+// Arithmetic
+//
+//------------------------------------------------------------------------------
+
+STAmount
+divide (STAmount const& v1, STAmount const& v2, Issue const& issue);
+
+inline
+STAmount
+divide (STAmount const& v1, STAmount const& v2, STAmount const& saUnit)
+{
+    return divide (v1, v2, saUnit.issue());
+}
+
+inline
+STAmount
+divide (STAmount const& v1, STAmount const& v2)
+{
+    return divide (v1, v2, v1);
+}
+
+STAmount
+multiply (STAmount const& v1, STAmount const& v2, Issue const& issue);
+
+inline
+STAmount
+multiply (STAmount const& v1, STAmount const& v2, STAmount const& saUnit)
+{
+    return multiply (v1, v2, saUnit.issue());
+}
+
+inline
+STAmount
+multiply (STAmount const& v1, STAmount const& v2)
+{
+    return multiply (v1, v2, v1);
+}
+
+void
+canonicalizeRound (bool native, std::uint64_t& mantissa,
+    int& exponent, bool roundUp);
+
+/* addRound, subRound can end up rounding if the amount subtracted is too small
+    to make a change. Consder (X-d) where d is very small relative to X.
+    If you ask to round down, then (X-d) should not be X unless d is zero.
+    If you ask to round up, (X+d) should never be X unless d is zero. (Assuming X and d are positive).
+*/
+// Add, subtract, multiply, or divide rounding result in specified direction
+STAmount
+addRound (STAmount const& v1, STAmount const& v2, bool roundUp);
+
+STAmount
+subRound (STAmount const& v1, STAmount const& v2, bool roundUp);
+
+STAmount
+mulRound (STAmount const& v1, STAmount const& v2,
+    Issue const& issue, bool roundUp);
+
+inline
+STAmount
+mulRound (STAmount const& v1, STAmount const& v2,
+    STAmount const& saUnit, bool roundUp)
+{
+    return mulRound (v1, v2, saUnit.issue(), roundUp);
+}
+
+inline
+STAmount
+mulRound (STAmount const& v1, STAmount const& v2, bool roundUp)
+{
+    return mulRound (v1, v2, v1.issue(), roundUp);
+}
+
+STAmount
+divRound (STAmount const& v1, STAmount const& v2,
+    Issue const& issue, bool roundUp);
+
+inline
+STAmount
+divRound (STAmount const& v1, STAmount const& v2,
+    STAmount const& saUnit, bool roundUp)
+{
+    return divRound (v1, v2, saUnit.issue(), roundUp);
+}
+
+inline
+STAmount
+divRound (STAmount const& v1, STAmount const& v2, bool roundUp)
+{
+    return divRound (v1, v2, v1.issue(), roundUp);
+}
+
+// Someone is offering X for Y, what is the rate?
+// Rate: smaller is better, the taker wants the most out: in/out
+// VFALCO TODO Return a Quality object
+std::uint64_t
+getRate (STAmount const& offerOut, STAmount const& offerIn);
+
+//------------------------------------------------------------------------------
 
 inline bool isXRP(STAmount const& amount)
 {

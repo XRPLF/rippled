@@ -63,7 +63,7 @@ public:
         else
           maxSourceAmount = STAmount (
               {saDstAmount.getCurrency (), mTxnAccountID},
-              saDstAmount.getMantissa (), saDstAmount.getExponent (),
+              saDstAmount.mantissa(), saDstAmount.exponent (),
               saDstAmount < zero);
         auto const& uSrcCurrency = maxSourceAmount.getCurrency ();
         auto const& uDstCurrency = saDstAmount.getCurrency ();
@@ -75,7 +75,7 @@ public:
             "maxSourceAmount=" << maxSourceAmount.getFullText () <<
             " saDstAmount=" << saDstAmount.getFullText ();
 
-        if (!saDstAmount.isLegalNet () || !maxSourceAmount.isLegalNet ())
+        if (!isLegalNet (saDstAmount) || !isLegalNet (maxSourceAmount))
             return temBAD_AMOUNT;
 
         if (uTxFlags & tfPaymentMask)

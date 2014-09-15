@@ -57,14 +57,14 @@ Taker::remaining_offer () const
         assert (m_remain.in > zero);
 
         // We scale the output based on the remaining input:
-        return Amounts (m_remain.in, Amount::divRound (
+        return Amounts (m_remain.in, divRound (
             m_remain.in, m_quality.rate (), m_remain.out, true));
     }
 
     assert (m_remain.out > zero);
 
     // We scale the input based on the remaining output:
-    return Amounts (Amount::mulRound (
+    return Amounts (mulRound (
         m_remain.out, m_quality.rate (), m_remain.in, true), m_remain.out);
 }
 
@@ -94,7 +94,7 @@ Taker::flow (Amounts amount, Offer const& offer, Account const& taker)
     {
         Amount const taker_charge (Amount::saFromRate (taker_charge_rate));
         amount = offer.quality ().ceil_in (amount,
-            Amount::divide (taker_funds, taker_charge));
+            divide (taker_funds, taker_charge));
     }
 
     // Best flow the owner can get.
@@ -118,7 +118,7 @@ Taker::flow (Amounts amount, Offer const& offer, Account const& taker)
     {
         Amount const owner_charge (Amount::saFromRate (owner_charge_rate));
         owner_amount = offer.quality ().ceil_out (owner_amount,
-            Amount::divide (owner_funds, owner_charge));
+            divide (owner_funds, owner_charge));
     }
 
     // Calculate the amount that will flow through the offer

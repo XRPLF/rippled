@@ -416,7 +416,7 @@ bool STParsedJSON::parse (std::string const& json_name,
         case STI_AMOUNT:
             try
             {
-                data.push_back (new STAmount (field, value));
+                data.push_back (new STAmount (amountFromJson (field, value)));
             }
             catch (...)
             {

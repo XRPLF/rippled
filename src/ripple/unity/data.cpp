@@ -79,13 +79,8 @@
 #include <ripple/module/data/protocol/STArray.cpp>
 #include <ripple/module/data/protocol/TER.cpp>
 #include <ripple/module/data/protocol/TxFormats.cpp>
-
-// These are for STAmount
-static const std::uint64_t tenTo14 = 100000000000000ull;
-static const std::uint64_t tenTo14m1 = tenTo14 - 1;
-static const std::uint64_t tenTo17 = tenTo14 * 1000;
 #include <ripple/module/data/protocol/STAmount.cpp>
-#include <ripple/module/data/protocol/STAmountRound.cpp>
+#include <ripple/module/data/protocol/STAmount.test.cpp>
 
 #if BEAST_MSVC
 #pragma warning (pop)

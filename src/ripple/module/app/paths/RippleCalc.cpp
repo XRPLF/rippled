@@ -193,7 +193,7 @@ TER RippleCalc::rippleCalculate ()
     // When processing, we don't want to complicate directory walking with
     // deletion.
     const std::uint64_t uQualityLimit = inputFlags.limitQuality ?
-            STAmount::getRate (saDstAmountReq_, saMaxAmountReq_) : 0;
+            getRate (saDstAmountReq_, saMaxAmountReq_) : 0;
 
     // Offers that became unfunded.
     OfferSet unfundedOffersFromBestPaths;

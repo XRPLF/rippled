@@ -31,7 +31,7 @@ Quality::Quality (std::uint64_t value)
 }
 
 Quality::Quality (Amounts const& amount)
-    : m_value (Amount::getRate (amount.out, amount.in))
+    : m_value (getRate (amount.out, amount.in))
 {
 }
 
@@ -72,7 +72,7 @@ Quality::ceil_in (Amounts const& amount, Amount const& limit) const
 {
     if (amount.in > limit)
     {
-        Amounts result (limit, Amount::divRound (
+        Amounts result (limit, divRound (
             limit, rate(), amount.out, true));
         // Clamp out
         if (result.out > amount.out)
@@ -89,7 +89,7 @@ Quality::ceil_out (Amounts const& amount, Amount const& limit) const
 {
     if (amount.out > limit)
     {
-        Amounts result (Amount::mulRound (
+        Amounts result (mulRound (
             limit, rate(), amount.in, true), limit);
         // Clamp in
         if (result.in > amount.in)
@@ -110,10 +110,10 @@ composed_quality (Quality const& lhs, Quality const& rhs)
     Amount const rhs_rate (rhs.rate ());
     assert (rhs_rate != zero);
 
-    Amount const rate (Amount::mulRound (lhs_rate, rhs_rate, true));
+    Amount const rate (mulRound (lhs_rate, rhs_rate, true));
 
-    std::uint64_t const stored_exponent (rate.getExponent () + 100);
-    std::uint64_t const stored_mantissa (rate.getMantissa ());
+    std::uint64_t const stored_exponent (rate.exponent () + 100);
+    std::uint64_t const stored_mantissa (rate.mantissa());
 
     assert ((stored_exponent > 0) && (stored_exponent <= 255));
 

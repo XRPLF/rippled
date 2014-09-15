@@ -60,7 +60,7 @@ public:
     */
     STAmount getCurrentRate () const
     {
-        return STAmount::setRate (getCurrentQuality());
+        return amountFromQuality (getCurrentQuality());
     }
 
     /** Get the current quality

@@ -268,7 +268,7 @@ int PathRequest::parseJson (Json::Value const& jvParams, bool complete)
 
     if (jvParams.isMember ("destination_amount"))
     {
-        if (!saDstAmount.bSetJson (jvParams["destination_amount"]) ||
+        if (! amountFromJsonNoThrow (saDstAmount, jvParams["destination_amount"]) ||
                 (saDstAmount.getCurrency ().isZero () && saDstAmount.getIssuer ().isNonZero ()) ||
                 (saDstAmount.getCurrency () == badCurrency()) ||
                 saDstAmount <= zero)
