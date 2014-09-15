@@ -101,7 +101,6 @@
 
 #include <ripple/module/rpc/impl/AccountFromString.cpp>
 #include <ripple/module/rpc/impl/Accounts.cpp>
-#include <ripple/module/rpc/impl/Authorize.cpp>
 #include <ripple/module/rpc/impl/GetMasterGenerator.cpp>
 #include <ripple/module/rpc/impl/Handler.cpp>
 #include <ripple/module/rpc/impl/LegacyPathFind.cpp>

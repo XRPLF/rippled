@@ -2877,11 +2877,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\rpc\impl\Accounts.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\rpc\impl\Authorize.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\module\rpc\impl\Authorize.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\rpc\impl\Context.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\rpc\impl\DoPrint.h">
