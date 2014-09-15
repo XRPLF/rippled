@@ -24,7 +24,6 @@
 
 #include <ripple/rpc/impl/AccountFromString.h>
 #include <ripple/rpc/impl/Accounts.h>
-#include <ripple/rpc/impl/Authorize.h>
 #include <ripple/rpc/impl/Context.h>
 #include <ripple/rpc/impl/GetMasterGenerator.h>
 #include <ripple/rpc/impl/LookupLedger.h>

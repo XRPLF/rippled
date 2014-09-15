@@ -17,8 +17,6 @@
 */
 //==============================================================================
 
-#include <tuple>
-
 #include <BeastConfig.h>
 
 // Unfortunate but necessary since RPC handlers can literally do anything
@@ -101,7 +99,6 @@
 
 #include <ripple/rpc/impl/AccountFromString.cpp>
 #include <ripple/rpc/impl/Accounts.cpp>
-#include <ripple/rpc/impl/Authorize.cpp>
 #include <ripple/rpc/impl/GetMasterGenerator.cpp>
 #include <ripple/rpc/impl/Handler.cpp>
 #include <ripple/rpc/impl/LegacyPathFind.cpp>
