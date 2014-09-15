@@ -73,16 +73,6 @@ STAmount::STAmount (SField::ref name,
 }
 
 STAmount::STAmount (SField::ref name, Issue const& issue,
-        std::int64_t mantissa, int exponent)
-    : SerializedType (name)
-    , mIssue (issue)
-    , mOffset (exponent)
-{
-    set (mantissa);
-    canonicalize ();
-}
-
-STAmount::STAmount (SField::ref name, Issue const& issue,
         std::uint64_t mantissa, int exponent, bool negative)
     : SerializedType (name)
     , mIssue (issue)
@@ -124,21 +114,14 @@ STAmount::STAmount (Issue const& issue,
 
 STAmount::STAmount (Issue const& issue,
         std::uint32_t mantissa, int exponent, bool negative)
-    : mIssue (issue)
-    , mValue (mantissa)
-    , mOffset (exponent)
-    , mIsNegative (negative)
+    : STAmount (issue, static_cast<std::uint64_t>(mantissa), exponent, negative)
 {
-    canonicalize ();
 }
 
 STAmount::STAmount (Issue const& issue,
         int mantissa, int exponent)
-    : mIssue (issue)
-    , mOffset (exponent)
+    : STAmount (issue, static_cast<std::int64_t>(mantissa), exponent)
 {
-    set (mantissa);
-    canonicalize ();
 }
 
 std::unique_ptr<STAmount>
@@ -898,20 +881,6 @@ void STAmount::canonicalize ()
 }
 
 void STAmount::set (std::int64_t v)
-{
-    if (v < 0)
-    {
-        mIsNegative = true;
-        mValue = static_cast<std::uint64_t> (-v);
-    }
-    else
-    {
-        mIsNegative = false;
-        mValue = static_cast<std::uint64_t> (v);
-    }
-}
-
-void STAmount::set (int v)
 {
     if (v < 0)
     {

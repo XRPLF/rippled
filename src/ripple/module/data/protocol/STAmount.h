@@ -87,9 +87,6 @@ public:
         std::uint64_t mantissa = 0, bool negative = false);
 
     STAmount (SField::ref name, Issue const& issue,
-        std::int64_t mantissa, int exponent = 0);
-
-    STAmount (SField::ref name, Issue const& issue,
         std::uint64_t mantissa = 0, int exponent = 0, bool negative = false);
 
     STAmount (std::uint64_t mantissa = 0, bool negative = false);
@@ -306,7 +303,6 @@ private:
 
     void canonicalize();
     void set (std::int64_t v);
-    void set (int v);
 };
 
 //------------------------------------------------------------------------------
