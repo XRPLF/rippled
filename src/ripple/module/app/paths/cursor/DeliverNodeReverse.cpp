@@ -151,7 +151,7 @@ TER PathCursor::deliverNodeReverse (
         // as a cost to taker.
         //
         // Round down: prefer liquidity rather than microscopic fees.
-        STAmount saOutPlusFees   = STAmount::mulRound (
+        STAmount saOutPlusFees   = mulRound (
             saOutPassAct, saOutFeeRate, false);
         // Offer out with fees.
 
@@ -172,7 +172,7 @@ TER PathCursor::deliverNodeReverse (
 
             // Round up: prefer liquidity rather than microscopic fees. But,
             // limit by requested.
-            auto fee = STAmount::divRound (saOutPlusFees, saOutFeeRate, true);
+            auto fee = divRound (saOutPlusFees, saOutFeeRate, true);
             saOutPassAct = std::min (saOutPassReq, fee);
 
             WriteLog (lsTRACE, RippleCalc)
@@ -183,7 +183,7 @@ TER PathCursor::deliverNodeReverse (
         }
 
         // Compute portion of input needed to cover actual output.
-        auto outputFee = STAmount::mulRound (
+        auto outputFee = mulRound (
             saOutPassAct, node().saOfrRate, node().saTakerPays, true);
         STAmount saInPassReq = std::min (node().saTakerPays, outputFee);
         STAmount saInPassAct;
@@ -248,10 +248,10 @@ TER PathCursor::deliverNodeReverse (
         if (saInPassAct < saInPassReq)
         {
             // Adjust output to conform to limited input.
-            auto outputRequirements = STAmount::divRound (
+            auto outputRequirements = divRound (
                 saInPassAct, node().saOfrRate, node().saTakerGets, true);
             saOutPassAct = std::min (saOutPassReq, outputRequirements);
-            auto outputFees = STAmount::mulRound (
+            auto outputFees = mulRound (
                 saOutPassAct, saOutFeeRate, true);
             saOutPlusFees   = std::min (node().saOfferFunds, outputFees);
 
