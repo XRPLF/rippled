@@ -80,7 +80,7 @@ public:
     Amount
     rate () const
     {
-        return Amount::setRate (m_value);
+        return amountFromQuality (m_value);
     }
 
     /** Returns the scaled amount with in capped.

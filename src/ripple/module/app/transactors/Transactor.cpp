@@ -106,7 +106,7 @@ TER Transactor::payFee ()
 {
     STAmount saPaid = mTxn.getTransactionFee ();
 
-    if (!saPaid.isLegalNet ())
+    if (!isLegalNet (saPaid))
         return temBAD_AMOUNT;
 
     // Only check fee is sufficient when the ledger is open.

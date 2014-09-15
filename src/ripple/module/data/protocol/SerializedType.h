@@ -83,14 +83,78 @@ public:
         assert (fName);
     }
 
-    virtual ~SerializedType () { }
+    virtual ~SerializedType () = default;
 
-    static std::unique_ptr<SerializedType> deserialize (SField::ref name)
+    //
+    // overridables
+    //
+
+    virtual
+    SerializedTypeID
+    getSType () const
+    {
+        return STI_NOTPRESENT;
+    }
+
+    virtual
+    std::string
+    getFullText() const;
+
+    // just the value
+    virtual
+    std::string
+    getText() const
+    {
+        return std::string();
+    }
+    
+    virtual
+    Json::Value getJson (int /*options*/) const
+    {
+        return getText();
+    }
+
+    virtual
+    void
+    add (Serializer& s) const
+    {
+        // VFALCO Why not just make this pure virtual?
+        assert (false);
+    }
+
+    virtual
+    bool
+    isEquivalent (SerializedType const& t) const;
+
+    virtual
+    bool
+    isDefault () const
+    {
+        return true;
+    }
+
+private:
+    // VFALCO TODO Return std::unique_ptr <SerializedType>
+    virtual
+    SerializedType*
+    duplicate () const
+    {
+        return new SerializedType (*fName);
+    }
+
+public:
+    //
+    // members
+    //
+
+    static
+    std::unique_ptr <SerializedType>
+    deserialize (SField::ref name)
     {
         return std::unique_ptr<SerializedType> (new SerializedType (name));
     }
 
-    /** A SerializeType is a field.
+    /** A SerializedType is a field.
         This sets the name.
     */
     void setFName (SField::ref n)
@@ -102,31 +166,11 @@ public:
     {
         return *fName;
     }
-    virtual SerializedTypeID getSType () const
-    {
-        return STI_NOTPRESENT;
-    }
     std::unique_ptr<SerializedType> clone () const
     {
         return std::unique_ptr<SerializedType> (duplicate ());
     }
 
-    virtual std::string getFullText () const;
-    virtual std::string getText () const // just the value
-    {
-        return std::string ();
-    }
-    virtual Json::Value getJson (int /*options*/) const
-    {
-        return getText ();
-    }
-
-    virtual void add (Serializer& s) const
-    {
-        assert (false);
-    }
-
-    virtual bool isEquivalent (const SerializedType& t) const;
 
     void addFieldID (Serializer& s) const
     {
@@ -143,11 +187,6 @@ public:
     bool operator!= (const SerializedType& t) const
     {
         return (getSType () != t.getSType ()) || !isEquivalent (t);
-    }
-
-    virtual bool isDefault () const
-    {
-        return true;
     }
 
     template <class D>
@@ -171,12 +210,6 @@ public:
 protected:
     // VFALCO TODO make accessors for this
     SField::ptr fName;
-
-private:
-    virtual SerializedType* duplicate () const
-    {
-        return new SerializedType (*fName);
-    }
 };
 
 //------------------------------------------------------------------------------

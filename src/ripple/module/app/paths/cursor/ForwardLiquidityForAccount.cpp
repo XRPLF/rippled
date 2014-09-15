@@ -152,7 +152,7 @@ TER PathCursor::forwardLiquidityForAccount () const
             auto& saCurReceive = pathState_.outPass();
             STAmount saIssueCrd = uQualityIn >= QUALITY_ONE
                     ? previousNode().saFwdIssue  // No fee.
-                    : STAmount::mulRound (
+                    : mulRound (
                           previousNode().saFwdIssue,
                           STAmount (noIssue(), uQualityIn, -9),
                           true); // Amount to credit.

@@ -153,7 +153,7 @@ public:
         STAmount saTakerPays = mTxn.getFieldAmount (sfTakerPays);
         STAmount saTakerGets = mTxn.getFieldAmount (sfTakerGets);
 
-        if (!saTakerPays.isLegalNet () || !saTakerGets.isLegalNet ())
+        if (!isLegalNet (saTakerPays) || !isLegalNet (saTakerGets))
             return temBAD_AMOUNT;
 
         auto const& uPaysIssuerID = saTakerPays.getIssuer ();
@@ -192,7 +192,7 @@ public:
 
         // This is the original rate of this offer, and is the rate at which it will
         // be placed, even if crossing offers change the amounts.
-        std::uint64_t const uRate = STAmount::getRate (saTakerGets, saTakerPays);
+        std::uint64_t const uRate = getRate (saTakerGets, saTakerPays);
 
         TER terResult (tesSUCCESS);
 

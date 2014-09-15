@@ -3738,7 +3738,7 @@
     <ClInclude Include="..\..\src\ripple\module\data\protocol\STAmount.h">
       <Filter>ripple\module\data\protocol</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\data\protocol\STAmountRound.cpp">
+    <ClCompile Include="..\..\src\ripple\module\data\protocol\STAmount.test.cpp">
       <Filter>ripple\module\data\protocol</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\module\data\protocol\STArray.cpp">

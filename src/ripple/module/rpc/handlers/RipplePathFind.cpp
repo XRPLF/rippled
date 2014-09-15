@@ -72,7 +72,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
     else if (
         // Parse saDstAmount.
         !context.params_.isMember ("destination_amount")
-        || !saDstAmount.bSetJson (context.params_["destination_amount"])
+        || ! amountFromJsonNoThrow(saDstAmount, context.params_["destination_amount"])
         || saDstAmount <= zero
         || (!isXRP(saDstAmount.getCurrency ())
             && (!saDstAmount.getIssuer () ||

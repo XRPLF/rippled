@@ -2598,7 +2598,7 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\data\protocol\STAmount.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\module\data\protocol\STAmountRound.cpp">
+    <ClCompile Include="..\..\src\ripple\module\data\protocol\STAmount.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\module\data\protocol\STArray.cpp">

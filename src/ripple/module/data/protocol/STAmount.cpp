@@ -17,148 +17,383 @@
 */
 //==============================================================================
 
-#include <beast/cxx14/iterator.h>
-
 #include <ripple/types/api/UintTypes.h>
+#include <ripple/module/data/protocol/STAmount.h>
+#include <beast/cxx14/iterator.h>
 
 namespace ripple {
 
+static const std::uint64_t tenTo14 = 100000000000000ull;
+static const std::uint64_t tenTo14m1 = tenTo14 - 1;
+static const std::uint64_t tenTo17 = tenTo14 * 1000;
+
+//------------------------------------------------------------------------------
+
+STAmount::STAmount (SField::ref name, Issue const& issue,
+        mantissa_type mantissa, exponent_type exponent,
+            bool native, bool negative)
+    : SerializedType (name)
+    , mIssue (issue)
+    , mValue (mantissa)
+    , mOffset (exponent)
+    , mIsNative (native)
+    , mIsNegative (negative)
+{
+    canonicalize();
+}
+
+STAmount::STAmount (SField::ref name, Issue const& issue,
+        mantissa_type mantissa, exponent_type exponent,
+            bool native, bool negative, unchecked)
+    : SerializedType (name)
+    , mIssue (issue)
+    , mValue (mantissa)
+    , mOffset (exponent)
+    , mIsNative (native)
+    , mIsNegative (negative)
+{
+}
+
+STAmount::STAmount (SField::ref name, std::int64_t mantissa)
+    : SerializedType (name)
+    , mOffset (0)
+    , mIsNative (true)
+{
+    set (mantissa);
+}
+
+STAmount::STAmount (SField::ref name,
+        std::uint64_t mantissa, bool negative)
+    : SerializedType (name)
+    , mValue (mantissa)
+    , mOffset (0)
+    , mIsNative (true)
+    , mIsNegative (negative)
+{
+}
+
+STAmount::STAmount (SField::ref name, Issue const& issue,
+        std::int64_t mantissa, int exponent)
+    : SerializedType (name)
+    , mIssue (issue)
+    , mOffset (exponent)
+{
+    set (mantissa);
+    canonicalize ();
+}
+
+STAmount::STAmount (SField::ref name, Issue const& issue,
+        std::uint64_t mantissa, int exponent, bool negative)
+    : SerializedType (name)
+    , mIssue (issue)
+    , mValue (mantissa)
+    , mOffset (exponent)
+    , mIsNegative (negative)
+{
+    canonicalize ();
+}
+
+//------------------------------------------------------------------------------
+
+STAmount::STAmount (std::uint64_t mantissa, bool negative)
+    : mValue (mantissa)
+    , mOffset (0)
+    , mIsNative (true)
+    , mIsNegative (mantissa != 0 && negative)
+{
+}
+
+STAmount::STAmount (Issue const& issue,
+    std::uint64_t mantissa, int exponent, bool negative)
+    : mIssue (issue)
+    , mValue (mantissa)
+    , mOffset (exponent)
+    , mIsNegative (negative)
+{
+    canonicalize ();
+}
+
+STAmount::STAmount (Issue const& issue,
+        std::int64_t mantissa, int exponent)
+    : mIssue (issue)
+    , mOffset (exponent)
+{
+    set (mantissa);
+    canonicalize ();
+}
+
+STAmount::STAmount (Issue const& issue,
+        std::uint32_t mantissa, int exponent, bool negative)
+    : mIssue (issue)
+    , mValue (mantissa)
+    , mOffset (exponent)
+    , mIsNegative (negative)
+{
+    canonicalize ();
+}
+
+STAmount::STAmount (Issue const& issue,
+        int mantissa, int exponent)
+    : mIssue (issue)
+    , mOffset (exponent)
+{
+    set (mantissa);
+    canonicalize ();
+}
+
+std::unique_ptr<STAmount>
+STAmount::construct (SerializerIterator& sit, SField::ref name)
+{
+    std::uint64_t value = sit.get64 ();
+
+    // native
+    if ((value & cNotNative) == 0)
+    {
+        // positive
+        if ((value & cPosNative) != 0)
+            return std::make_unique<STAmount> (name, value & ~cPosNative, false);
+
+        // negative
+        if (value == 0)
+            throw std::runtime_error ("negative zero is not canonical");
+
+        return std::make_unique<STAmount> (name, value, true);
+    }
+
+    Issue issue;
+    issue.currency.copyFrom (sit.get160 ());
+
+    if (isXRP (issue.currency))
+        throw std::runtime_error ("invalid native currency");
+
+    issue.account.copyFrom (sit.get160 ());
+
+    if (isXRP (issue.account))
+        throw std::runtime_error ("invalid native account");
+
+    // 10 bits for the offset, sign and "not native" flag
+    int offset = static_cast<int> (value >> (64 - 10));
+
+    value &= ~ (1023ull << (64 - 10));
+
+    if (value)
+    {
+        bool isNegative = (offset & 256) == 0;
+        offset = (offset & 255) - 97; // center the range
+
+        if (value < cMinValue ||
+            value > cMaxValue ||
+            offset < cMinOffset ||
+            offset > cMaxOffset)
+        {
+            throw std::runtime_error ("invalid currency value");
+        }
+
+        return std::make_unique<STAmount> (name, issue, value, offset, isNegative);
+    }
+
+    if (offset != 512)
+        throw std::runtime_error ("invalid currency value");
+
+    return std::make_unique<STAmount> (name, issue);
+}
+
+STAmount
+STAmount::createFromInt64 (SField::ref name, std::int64_t value)
+{
+    return value >= 0
+           ? STAmount (name, static_cast<std::uint64_t> (value), false)
+           : STAmount (name, static_cast<std::uint64_t> (-value), true);
+}
+
+STAmount STAmount::deserialize (SerializerIterator& it)
+{
+    auto s = construct (it, sfGeneric);
+
+    if (!s)
+        throw std::runtime_error("Deserialization error");
+
+    return STAmount (*s);
+}
+
+//------------------------------------------------------------------------------
+//
+// Operators
+//
+//------------------------------------------------------------------------------
+
+bool STAmount::isComparable (STAmount const& t) const
+{
+    // are these two STAmount instances in the same currency
+    if (mIsNative) return t.mIsNative;
+
+    if (t.mIsNative) return false;
+
+    return mIssue.currency == t.mIssue.currency;
+}
+
+void STAmount::throwComparable (STAmount const& t) const
+{
+    // throw an exception if these two STAmount instances are incomparable
+    if (!isComparable (t))
+        throw std::runtime_error ("amounts are not comparable");
+}
+
+STAmount& STAmount::operator+= (STAmount const& a)
+{
+    *this = *this + a;
+    return *this;
+}
+
+STAmount& STAmount::operator-= (STAmount const& a)
+{
+    *this = *this - a;
+    return *this;
+}
+
+STAmount& STAmount::operator+= (std::uint64_t v)
+{
+    assert (mIsNative);
+    if (!mIsNative)
+        throw std::runtime_error ("not native");
+    // VFALCO TODO The cast looks dangerous, is it needed?
+    setSNValue (getSNValue () + static_cast<std::int64_t> (v));
+    return *this;
+}
+
+STAmount& STAmount::operator-= (std::uint64_t v)
+{
+    assert (mIsNative);
+
+    if (!mIsNative)
+        throw std::runtime_error ("not native");
+
+    // VFALCO TODO The cast looks dangerous, is it needed?
+    setSNValue (getSNValue () - static_cast<std::int64_t> (v));
+    return *this;
+}
+
+STAmount& STAmount::operator= (std::uint64_t v)
+{
+    // Does not copy name, does not change currency type.
+    mOffset = 0;
+    mValue = v;
+    mIsNegative = false;
+    if (!mIsNative)
+        canonicalize ();
+    return *this;
+}
+
+
+
+STAmount operator+ (STAmount const& v1, STAmount const& v2)
+{
+    v1.throwComparable (v2);
+
+    if (v2 == zero)
+        return v1;
+
+    if (v1 == zero)
+    {
+        // Result must be in terms of v1 currency and issuer.
+        return STAmount (v1.getFName (), v1.mIssue,
+                         v2.mValue, v2.mOffset, v2.mIsNegative);
+    }
+
+    if (v1.mIsNative)
+        return STAmount (v1.getFName (), v1.getSNValue () + v2.getSNValue ());
+
+    int ov1 = v1.mOffset, ov2 = v2.mOffset;
+    std::int64_t vv1 = static_cast<std::int64_t> (v1.mValue);
+    std::int64_t vv2 = static_cast<std::int64_t> (v2.mValue);
+
+    if (v1.mIsNegative)
+        vv1 = -vv1;
+
+    if (v2.mIsNegative)
+        vv2 = -vv2;
+
+    while (ov1 < ov2)
+    {
+        vv1 /= 10;
+        ++ov1;
+    }
+
+    while (ov2 < ov1)
+    {
+        vv2 /= 10;
+        ++ov2;
+    }
+
+    // This addition cannot overflow an std::int64_t. It can overflow an
+    // STAmount and the constructor will throw.
+
+    std::int64_t fv = vv1 + vv2;
+
+    if ((fv >= -10) && (fv <= 10))
+        return STAmount (v1.getFName (), v1.mIssue);
+    if (fv >= 0)
+        return STAmount (v1.getFName (), v1.mIssue, fv, ov1, false);
+    return STAmount (v1.getFName (), v1.mIssue, -fv, ov1, true);
+}
+
+STAmount operator- (STAmount const& v1, STAmount const& v2)
+{
+    v1.throwComparable (v2);
+
+    if (v2 == zero)
+        return v1;
+
+    if (v2.mIsNative)
+    {
+        // XXX This could be better, check for overflow and that maximum range
+        // is covered.
+        return STAmount::createFromInt64 (
+                v1.getFName (), v1.getSNValue () - v2.getSNValue ());
+    }
+
+    int ov1 = v1.mOffset, ov2 = v2.mOffset;
+    auto vv1 = static_cast<std::int64_t> (v1.mValue);
+    auto vv2 = static_cast<std::int64_t> (v2.mValue);
+
+    if (v1.mIsNegative)
+        vv1 = -vv1;
+
+    if (v2.mIsNegative)
+        vv2 = -vv2;
+
+    while (ov1 < ov2)
+    {
+        vv1 /= 10;
+        ++ov1;
+    }
+
+    while (ov2 < ov1)
+    {
+        vv2 /= 10;
+        ++ov2;
+    }
+
+    // this subtraction cannot overflow an std::int64_t, it can overflow an STAmount and the constructor will throw
+
+    std::int64_t fv = vv1 - vv2;
+
+    if ((fv >= -10) && (fv <= 10))
+        return STAmount (v1.getFName (), v1.mIssue);
+    if (fv >= 0)
+        return STAmount (v1.getFName (), v1.mIssue, fv, ov1, false);
+    return STAmount (v1.getFName (), v1.mIssue, -fv, ov1, true);
+}
+
+//------------------------------------------------------------------------------
+
 std::uint64_t STAmount::uRateOne =
-        STAmount::getRate (STAmount (1), STAmount (1));
+        getRate (STAmount (1), STAmount (1));
 
-std::string STAmount::getHumanCurrency () const
+// Note: mIsNative and mIssue.currency must be set already!
+bool
+STAmount::setValue (std::string const& sAmount)
 {
-    return to_string (mIssue.currency);
-}
-
-bool STAmount::bSetJson (Json::Value const& jvSource)
-{
-    try
-    {
-        STAmount    saParsed (sfGeneric, jvSource);
-
-        *this   = saParsed;
-
-        return true;
-    }
-    catch (const std::exception& e)
-    {
-        WriteLog (lsINFO, STAmount) << "bSetJson(): caught: " << e.what ();
-        return false;
-    }
-}
-
-STAmount::STAmount (SField::ref n, Json::Value const& v)
-    : SerializedType (n), mValue (0), mOffset (0), mIsNegative (false)
-{
-    Json::Value value, currency, issuer;
-
-    if (v.isObject ())
-    {
-        WriteLog (lsTRACE, STAmount) <<
-            "value='" << v["value"].asString () <<
-            "', currency='" << v["currency"].asString () <<
-            "', issuer='" << v["issuer"].asString () <<
-            "')";
-
-        value       = v[jss::value];
-        currency    = v[jss::currency];
-        issuer      = v[jss::issuer];
-    }
-    else if (v.isArray ())
-    {
-        value = v.get (Json::UInt (0), 0);
-        currency = v.get (Json::UInt (1), Json::nullValue);
-        issuer = v.get (Json::UInt (2), Json::nullValue);
-    }
-    else if (v.isString ())
-    {
-        std::string val = v.asString ();
-        std::vector<std::string> elements;
-        boost::split (elements, val, boost::is_any_of ("\t\n\r ,/"));
-
-        if (elements.size () > 3)
-            throw std::runtime_error ("invalid amount string");
-
-        value = elements[0];
-
-        if (elements.size () > 1)
-            currency = elements[1];
-
-        if (elements.size () > 2)
-            issuer = elements[2];
-    }
-    else
-        value = v;
-
-    mIsNative = !currency.isString () || currency.asString ().empty () || (currency.asString () == systemCurrencyCode());
-
-    if (mIsNative)
-    {
-        if (v.isObject ())
-            throw std::runtime_error ("XRP may not be specified as an object");
-    }
-    else
-    {
-        // non-XRP
-        if (!to_currency (mIssue.currency, currency.asString ()))
-            throw std::runtime_error ("invalid currency");
-
-        if (!issuer.isString ()
-                || !to_issuer (mIssue.account, issuer.asString ()))
-            throw std::runtime_error ("invalid issuer");
-
-        if (isXRP (*this))
-            throw std::runtime_error ("invalid issuer");
-    }
-
-    if (value.isInt ())
-    {
-        if (value.asInt () >= 0)
-            mValue = value.asInt ();
-        else
-        {
-            mValue = -value.asInt ();
-            mIsNegative = true;
-        }
-
-        canonicalize ();
-    }
-    else if (value.isUInt ())
-    {
-        mValue = v.asUInt ();
-
-        canonicalize ();
-    }
-    else if (value.isString ())
-    {
-        if (mIsNative)
-        {
-            std::int64_t val = beast::lexicalCastThrow <std::int64_t> (value.asString ());
-
-            if (val >= 0)
-                mValue = val;
-            else
-            {
-                mValue = -val;
-                mIsNegative = true;
-            }
-
-            canonicalize ();
-        }
-        else
-        {
-            setValue (value.asString ());
-        }
-    }
-    else
-        throw std::runtime_error ("invalid amount type");
-}
-
-bool STAmount::setValue (std::string const& sAmount)
-{
-    // Note: mIsNative and mIssue.currency must be set already!
-
     static boost::regex reNumber (
         "\\`([+-]?)(\\d*)(\\.(\\d*))?([eE]([+-]?)(\\d+))?\\'");
     boost::smatch smMatch;
@@ -288,214 +523,21 @@ bool STAmount::setFullValue (std::string const& sAmount, std::string const& sCur
     return setValue (sAmount);
 }
 
-// amount = value * [10 ^ offset]
-// Representation range is 10^80 - 10^(-80).
-// On the wire, high 8 bits are (offset+142), low 56 bits are value.
-//
-// Value is zero if amount is zero, otherwise value is 10^15 to (10^16 - 1)
-// inclusive.
-
-void STAmount::canonicalize ()
-{
-    if (isXRP (*this))
-    {
-        // native currency amounts should always have an offset of zero
-        mIsNative = true;
-
-        if (mValue == 0)
-        {
-            mOffset = 0;
-            mIsNegative = false;
-            return;
-        }
-
-        while (mOffset < 0)
-        {
-            mValue /= 10;
-            ++mOffset;
-        }
-
-        while (mOffset > 0)
-        {
-            mValue *= 10;
-            --mOffset;
-        }
-
-        if (mValue > cMaxNative)
-            throw std::runtime_error ("Native currency amount out of range");
-
-        return;
-    }
-
-    mIsNative = false;
-
-    if (mValue == 0)
-    {
-        mOffset = -100;
-        mIsNegative = false;
-        return;
-    }
-
-    while ((mValue < cMinValue) && (mOffset > cMinOffset))
-    {
-        mValue *= 10;
-        --mOffset;
-    }
-
-    while (mValue > cMaxValue)
-    {
-        if (mOffset >= cMaxOffset)
-            throw std::runtime_error ("value overflow");
-
-        mValue /= 10;
-        ++mOffset;
-    }
-
-    if ((mOffset < cMinOffset) || (mValue < cMinValue))
-    {
-        mValue = 0;
-        mOffset = 0;
-        mIsNegative = false;
-    }
-
-    if (mOffset > cMaxOffset)
-        throw std::runtime_error ("value overflow");
-
-    assert ((mValue == 0) || ((mValue >= cMinValue) && (mValue <= cMaxValue)));
-    assert ((mValue == 0) || ((mOffset >= cMinOffset) && (mOffset <= cMaxOffset)));
-    assert ((mValue != 0) || (mOffset != -100));
-}
-
-void STAmount::add (Serializer& s) const
-{
-    if (mIsNative)
-    {
-        assert (mOffset == 0);
-
-        if (!mIsNegative)
-            s.add64 (mValue | cPosNative);
-        else
-            s.add64 (mValue);
-    }
-    else
-    {
-        if (*this == zero)
-            s.add64 (cNotNative);
-        else if (mIsNegative) // 512 = not native
-            s.add64 (mValue | (static_cast<std::uint64_t> (mOffset + 512 + 97) << (64 - 10)));
-        else // 256 = positive
-            s.add64 (mValue | (static_cast<std::uint64_t> (mOffset + 512 + 256 + 97) << (64 - 10)));
-
-        s.add160 (mIssue.currency);
-        s.add160 (mIssue.account);
-    }
-}
-
-STAmount STAmount::createFromInt64 (SField::ref name, std::int64_t value)
-{
-    return value >= 0
-           ? STAmount (name, static_cast<std::uint64_t> (value), false)
-           : STAmount (name, static_cast<std::uint64_t> (-value), true);
-}
-
-void STAmount::setValue (STAmount const& a)
-{
-    mIssue      = a.mIssue;
-    mValue      = a.mValue;
-    mOffset     = a.mOffset;
-    mIsNative   = a.mIsNative;
-    mIsNegative = a.mIsNegative;
-}
-
 void STAmount::setIssue (Issue const& issue) {
     mIssue = std::move(issue);
     mIsNative = isXRP (*this);
 }
 
-int STAmount::compare (STAmount const& a) const
+std::uint64_t
+STAmount::getNValue () const
 {
-    // Compares the value of a to the value of this STAmount, amounts must be comparable
-    if (mIsNegative != a.mIsNegative)
-        return mIsNegative ? -1 : 1;
-
-    if (!mValue)
-    {
-        if (a.mIsNegative) return 1;
-
-        return a.mValue ? -1 : 0;
-    }
-
-    if (!a.mValue) return 1;
-
-    if (mOffset > a.mOffset) return mIsNegative ? -1 : 1;
-
-    if (mOffset < a.mOffset) return mIsNegative ? 1 : -1;
-
-    if (mValue > a.mValue) return mIsNegative ? -1 : 1;
-
-    if (mValue < a.mValue) return mIsNegative ? 1 : -1;
-
-    return 0;
+    if (!mIsNative)
+        throw std::runtime_error ("not native");
+    return mValue;
 }
 
-std::unique_ptr<STAmount>
-STAmount::construct (SerializerIterator& sit, SField::ref name)
-{
-    std::uint64_t value = sit.get64 ();
-
-    // native
-    if ((value & cNotNative) == 0)
-    {
-        // positive
-        if ((value & cPosNative) != 0)
-            return std::make_unique<STAmount> (name, value & ~cPosNative, false);
-
-        // negative
-        if (value == 0)
-            throw std::runtime_error ("negative zero is not canonical");
-
-        return std::make_unique<STAmount> (name, value, true);
-    }
-
-    Issue issue;
-    issue.currency.copyFrom (sit.get160 ());
-
-    if (isXRP (issue.currency))
-        throw std::runtime_error ("invalid native currency");
-
-    issue.account.copyFrom (sit.get160 ());
-
-    if (isXRP (issue.account))
-        throw std::runtime_error ("invalid native account");
-
-    // 10 bits for the offset, sign and "not native" flag
-    int offset = static_cast<int> (value >> (64 - 10));
-
-    value &= ~ (1023ull << (64 - 10));
-
-    if (value)
-    {
-        bool isNegative = (offset & 256) == 0;
-        offset = (offset & 255) - 97; // center the range
-
-        if (value < cMinValue ||
-            value > cMaxValue ||
-            offset < cMinOffset ||
-            offset > cMaxOffset)
-        {
-            throw std::runtime_error ("invalid currency value");
-        }
-
-        return std::make_unique<STAmount> (name, issue, value, offset, isNegative);
-    }
-
-    if (offset != 512)
-        throw std::runtime_error ("invalid currency value");
-
-    return std::make_unique<STAmount> (name, issue);
-}
-
-std::int64_t STAmount::getSNValue () const
+std::int64_t
+STAmount::getSNValue () const
 {
     // signed native value
     if (!mIsNative)
@@ -507,7 +549,21 @@ std::int64_t STAmount::getSNValue () const
     return static_cast<std::int64_t> (mValue);
 }
 
-void STAmount::setSNValue (std::int64_t v)
+std::string STAmount::getHumanCurrency () const
+{
+    return to_string (mIssue.currency);
+}
+
+void
+STAmount::setNValue (std::uint64_t v)
+{
+    if (!mIsNative)
+        throw std::runtime_error ("not native");
+    mValue = v;
+}
+
+void
+STAmount::setSNValue (std::int64_t v)
 {
     if (!mIsNative) throw std::runtime_error ("not native");
 
@@ -523,7 +579,110 @@ void STAmount::setSNValue (std::int64_t v)
     }
 }
 
-std::string STAmount::getText () const
+// Convert an offer into an index amount so they sort by rate.
+// A taker will take the best, lowest, rate first.
+// (e.g. a taker will prefer pay 1 get 3 over pay 1 get 2.
+// --> offerOut: takerGets: How much the offerer is selling to the taker.
+// -->  offerIn: takerPays: How much the offerer is receiving from the taker.
+// <--    uRate: normalize(offerIn/offerOut)
+//             A lower rate is better for the person taking the order.
+//             The taker gets more for less with a lower rate.
+// Zero is returned if the offer is worthless.
+std::uint64_t
+getRate (STAmount const& offerOut, STAmount const& offerIn)
+{
+    if (offerOut == zero)
+        return 0;
+    try
+    {
+        STAmount r = divide (offerIn, offerOut, noIssue());
+        if (r == zero) // offer is too good
+            return 0;
+        assert ((r.exponent() >= -100) && (r.exponent() <= 155));
+        std::uint64_t ret = r.exponent() + 100;
+        return (ret << (64 - 8)) | r.mantissa();
+    }
+    catch (...)
+    {
+    }
+
+    // overflow -- very bad offer
+    return 0;
+}
+
+void STAmount::setJson (Json::Value& elem) const
+{
+    elem = Json::objectValue;
+
+    if (!mIsNative)
+    {
+        // It is an error for currency or issuer not to be specified for valid
+        // json.
+        elem[jss::value]      = getText ();
+        elem[jss::currency]   = getHumanCurrency ();
+        elem[jss::issuer]     = to_string (mIssue.account);
+    }
+    else
+    {
+        elem = getText ();
+    }
+}
+
+// VFALCO What does this perplexing function do?
+void STAmount::roundSelf ()
+{
+    if (mIsNative)
+        return;
+
+    std::uint64_t valueDigits = mValue % 1000000000ull;
+
+    if (valueDigits == 1)
+    {
+        mValue -= 1;
+
+        if (mValue < cMinValue)
+            canonicalize ();
+    }
+    else if (valueDigits == 999999999ull)
+    {
+        mValue += 1;
+
+        if (mValue > cMaxValue)
+            canonicalize ();
+    }
+}
+
+//------------------------------------------------------------------------------
+//
+// SerializedType
+//
+//------------------------------------------------------------------------------
+
+std::string
+STAmount::getFullText () const
+{
+    std::string ret;
+
+    ret.reserve(64);
+    ret = getText () + "/" + getHumanCurrency ();
+
+    if (!mIsNative)
+    {
+        ret += "/";
+
+        if (isXRP (*this))
+            ret += "0";
+        else if (mIssue.account == noAccount())
+            ret += "1";
+        else
+            ret += to_string (mIssue.account);
+    }
+
+    return ret;
+}
+
+std::string
+STAmount::getText () const
 {
     // keep full internal accuracy, but make more human friendly if posible
     if (*this == zero)
@@ -612,272 +771,449 @@ std::string STAmount::getText () const
     return ret;
 }
 
-bool STAmount::isComparable (STAmount const& t) const
+Json::Value
+STAmount::getJson (int) const
 {
-    // are these two STAmount instances in the same currency
-    if (mIsNative) return t.mIsNative;
-
-    if (t.mIsNative) return false;
-
-    return mIssue.currency == t.mIssue.currency;
+    Json::Value elem;
+    setJson (elem);
+    return elem;
 }
 
-bool STAmount::isEquivalent (const SerializedType& t) const
+void
+STAmount::add (Serializer& s) const
+{
+    if (mIsNative)
+    {
+        assert (mOffset == 0);
+
+        if (!mIsNegative)
+            s.add64 (mValue | cPosNative);
+        else
+            s.add64 (mValue);
+    }
+    else
+    {
+        if (*this == zero)
+            s.add64 (cNotNative);
+        else if (mIsNegative) // 512 = not native
+            s.add64 (mValue | (static_cast<std::uint64_t> (mOffset + 512 + 97) << (64 - 10)));
+        else // 256 = positive
+            s.add64 (mValue | (static_cast<std::uint64_t> (mOffset + 512 + 256 + 97) << (64 - 10)));
+
+        s.add160 (mIssue.currency);
+        s.add160 (mIssue.account);
+    }
+}
+
+bool
+STAmount::isEquivalent (const SerializedType& t) const
 {
     const STAmount* v = dynamic_cast<const STAmount*> (&t);
     return v && (*v == *this);
 }
 
-void STAmount::throwComparable (STAmount const& t) const
+STAmount*
+STAmount::duplicate () const
 {
-    // throw an exception if these two STAmount instances are incomparable
-    if (!isComparable (t))
-        throw std::runtime_error ("amounts are not comparable");
+    return new STAmount (*this);
 }
 
-bool STAmount::operator== (STAmount const& a) const
+//------------------------------------------------------------------------------
+
+// amount = value * [10 ^ offset]
+// Representation range is 10^80 - 10^(-80).
+// On the wire, high 8 bits are (offset+142), low 56 bits are value.
+//
+// Value is zero if amount is zero, otherwise value is 10^15 to (10^16 - 1)
+// inclusive.
+void STAmount::canonicalize ()
 {
-    return isComparable (a) &&
-            mIsNegative == a.mIsNegative &&
-            mOffset == a.mOffset &&
-            mValue == a.mValue;
-}
-
-bool STAmount::operator!= (STAmount const& a) const
-{
-    return mOffset != a.mOffset ||
-            mValue != a.mValue ||
-            mIsNegative != a.mIsNegative ||
-            !isComparable (a);
-}
-
-bool STAmount::operator< (STAmount const& a) const
-{
-    throwComparable (a);
-    return compare (a) < 0;
-}
-
-bool STAmount::operator> (STAmount const& a) const
-{
-    throwComparable (a);
-    return compare (a) > 0;
-}
-
-bool STAmount::operator<= (STAmount const& a) const
-{
-    throwComparable (a);
-    return compare (a) <= 0;
-}
-
-bool STAmount::operator>= (STAmount const& a) const
-{
-    throwComparable (a);
-    return compare (a) >= 0;
-}
-
-STAmount& STAmount::operator+= (STAmount const& a)
-{
-    *this = *this + a;
-    return *this;
-}
-
-STAmount& STAmount::operator-= (STAmount const& a)
-{
-    *this = *this - a;
-    return *this;
-}
-
-STAmount STAmount::operator- (void) const
-{
-    if (mValue == 0) return *this;
-
-    return STAmount (
-        getFName (), mIssue, mValue, mOffset, mIsNative, !mIsNegative);
-}
-
-STAmount& STAmount::operator= (std::uint64_t v)
-{
-    // Does not copy name, does not change currency type.
-    mOffset = 0;
-    mValue = v;
-    mIsNegative = false;
-
-    if (!mIsNative)
-        canonicalize ();
-
-    return *this;
-}
-
-STAmount& STAmount::operator+= (std::uint64_t v)
-{
-    assert (mIsNative);
-
-    if (!mIsNative)
-        throw std::runtime_error ("not native");
-
-    setSNValue (getSNValue () + static_cast<std::int64_t> (v));
-    return *this;
-}
-
-STAmount& STAmount::operator-= (std::uint64_t v)
-{
-    assert (mIsNative);
-
-    if (!mIsNative)
-        throw std::runtime_error ("not native");
-
-    setSNValue (getSNValue () - static_cast<std::int64_t> (v));
-    return *this;
-}
-
-bool STAmount::operator< (std::uint64_t v) const
-{
-    return getSNValue () < static_cast<std::int64_t> (v);
-}
-
-bool STAmount::operator> (std::uint64_t v) const
-{
-    return getSNValue () > static_cast<std::int64_t> (v);
-}
-
-bool STAmount::operator<= (std::uint64_t v) const
-{
-    return getSNValue () <= static_cast<std::int64_t> (v);
-}
-
-bool STAmount::operator>= (std::uint64_t v) const
-{
-    return getSNValue () >= static_cast<std::int64_t> (v);
-}
-
-STAmount STAmount::operator+ (std::uint64_t v) const
-{
-    return STAmount (
-            getFName (), getSNValue () + static_cast<std::int64_t> (v));
-}
-
-STAmount STAmount::operator- (std::uint64_t v) const
-{
-    return STAmount (
-            getFName (), getSNValue () - static_cast<std::int64_t> (v));
-}
-
-STAmount::operator double () const
-{
-    // Does not keep the precise value. Not recommended
-    if (!mValue)
-        return 0.0;
-
-    if (mIsNegative)
-        return -1.0 * static_cast<double> (mValue) * pow (10.0, mOffset);
-
-    return static_cast<double> (mValue) * pow (10.0, mOffset);
-}
-
-STAmount operator+ (STAmount const& v1, STAmount const& v2)
-{
-    v1.throwComparable (v2);
-
-    if (v2 == zero)
-        return v1;
-
-    if (v1 == zero)
+    if (isXRP (*this))
     {
-        // Result must be in terms of v1 currency and issuer.
-        return STAmount (v1.getFName (), v1.mIssue,
-                         v2.mValue, v2.mOffset, v2.mIsNegative);
+        // native currency amounts should always have an offset of zero
+        mIsNative = true;
+
+        if (mValue == 0)
+        {
+            mOffset = 0;
+            mIsNegative = false;
+            return;
+        }
+
+        while (mOffset < 0)
+        {
+            mValue /= 10;
+            ++mOffset;
+        }
+
+        while (mOffset > 0)
+        {
+            mValue *= 10;
+            --mOffset;
+        }
+
+        if (mValue > cMaxNative)
+            throw std::runtime_error ("Native currency amount out of range");
+
+        return;
     }
 
-    if (v1.mIsNative)
-        return STAmount (v1.getFName (), v1.getSNValue () + v2.getSNValue ());
+    mIsNative = false;
 
-    int ov1 = v1.mOffset, ov2 = v2.mOffset;
-    std::int64_t vv1 = static_cast<std::int64_t> (v1.mValue);
-    std::int64_t vv2 = static_cast<std::int64_t> (v2.mValue);
-
-    if (v1.mIsNegative)
-        vv1 = -vv1;
-
-    if (v2.mIsNegative)
-        vv2 = -vv2;
-
-    while (ov1 < ov2)
+    if (mValue == 0)
     {
-        vv1 /= 10;
-        ++ov1;
+        mOffset = -100;
+        mIsNegative = false;
+        return;
     }
 
-    while (ov2 < ov1)
+    while ((mValue < cMinValue) && (mOffset > cMinOffset))
     {
-        vv2 /= 10;
-        ++ov2;
+        mValue *= 10;
+        --mOffset;
     }
 
-    // This addition cannot overflow an std::int64_t. It can overflow an
-    // STAmount and the constructor will throw.
+    while (mValue > cMaxValue)
+    {
+        if (mOffset >= cMaxOffset)
+            throw std::runtime_error ("value overflow");
 
-    std::int64_t fv = vv1 + vv2;
+        mValue /= 10;
+        ++mOffset;
+    }
 
-    if ((fv >= -10) && (fv <= 10))
-        return STAmount (v1.getFName (), v1.mIssue);
-    if (fv >= 0)
-        return STAmount (v1.getFName (), v1.mIssue, fv, ov1, false);
+    if ((mOffset < cMinOffset) || (mValue < cMinValue))
+    {
+        mValue = 0;
+        mOffset = 0;
+        mIsNegative = false;
+    }
+
+    if (mOffset > cMaxOffset)
+        throw std::runtime_error ("value overflow");
+
+    assert ((mValue == 0) || ((mValue >= cMinValue) && (mValue <= cMaxValue)));
+    assert ((mValue == 0) || ((mOffset >= cMinOffset) && (mOffset <= cMaxOffset)));
+    assert ((mValue != 0) || (mOffset != -100));
+}
+
+void STAmount::set (std::int64_t v)
+{
+    if (v < 0)
+    {
+        mIsNegative = true;
+        mValue = static_cast<std::uint64_t> (-v);
+    }
     else
-        return STAmount (v1.getFName (), v1.mIssue, -fv, ov1, true);
+    {
+        mIsNegative = false;
+        mValue = static_cast<std::uint64_t> (v);
+    }
 }
 
-STAmount operator- (STAmount const& v1, STAmount const& v2)
+void STAmount::set (int v)
 {
-    v1.throwComparable (v2);
-
-    if (v2 == zero)
-        return v1;
-
-    if (v2.mIsNative)
+    if (v < 0)
     {
-        // XXX This could be better, check for overflow and that maximum range
-        // is covered.
-        return STAmount::createFromInt64 (
-                v1.getFName (), v1.getSNValue () - v2.getSNValue ());
+        mIsNegative = true;
+        mValue = static_cast<std::uint64_t> (-v);
     }
-
-    int ov1 = v1.mOffset, ov2 = v2.mOffset;
-    auto vv1 = static_cast<std::int64_t> (v1.mValue);
-    auto vv2 = static_cast<std::int64_t> (v2.mValue);
-
-    if (v1.mIsNegative)
-        vv1 = -vv1;
-
-    if (v2.mIsNegative)
-        vv2 = -vv2;
-
-    while (ov1 < ov2)
-    {
-        vv1 /= 10;
-        ++ov1;
-    }
-
-    while (ov2 < ov1)
-    {
-        vv2 /= 10;
-        ++ov2;
-    }
-
-    // this subtraction cannot overflow an std::int64_t, it can overflow an STAmount and the constructor will throw
-
-    std::int64_t fv = vv1 - vv2;
-
-    if ((fv >= -10) && (fv <= 10))
-        return STAmount (v1.getFName (), v1.mIssue);
-    if (fv >= 0)
-        return STAmount (v1.getFName (), v1.mIssue, fv, ov1, false);
     else
-        return STAmount (v1.getFName (), v1.mIssue, -fv, ov1, true);
+    {
+        mIsNegative = false;
+        mValue = static_cast<std::uint64_t> (v);
+    }
 }
+
+//------------------------------------------------------------------------------
+
+STAmount
+amountFromQuality (std::uint64_t rate)
+{
+    if (rate == 0)
+        return STAmount (noIssue());
+
+    std::uint64_t mantissa = rate & ~ (255ull << (64 - 8));
+    int exponent = static_cast<int> (rate >> (64 - 8)) - 100;
+
+    return STAmount (noIssue(), mantissa, exponent);
+}
+
+STAmount
+amountFromJson (SField::ref name, Json::Value const& v)
+{
+    STAmount::mantissa_type mantissa = 0;
+    STAmount::exponent_type exponent = 0;
+    bool negative = false;
+    Issue issue;
+
+    Json::Value value;
+    Json::Value currency;
+    Json::Value issuer;
+
+    if (v.isObject ())
+    {
+        WriteLog (lsTRACE, STAmount) <<
+            "value='" << v["value"].asString () <<
+            "', currency='" << v["currency"].asString () <<
+            "', issuer='" << v["issuer"].asString () <<
+            "')";
+
+        value       = v[jss::value];
+        currency    = v[jss::currency];
+        issuer      = v[jss::issuer];
+    }
+    else if (v.isArray ())
+    {
+        value = v.get (Json::UInt (0), 0);
+        currency = v.get (Json::UInt (1), Json::nullValue);
+        issuer = v.get (Json::UInt (2), Json::nullValue);
+    }
+    else if (v.isString ())
+    {
+        std::string val = v.asString ();
+        std::vector<std::string> elements;
+        boost::split (elements, val, boost::is_any_of ("\t\n\r ,/"));
+
+        if (elements.size () > 3)
+            throw std::runtime_error ("invalid amount string");
+
+        value = elements[0];
+
+        if (elements.size () > 1)
+            currency = elements[1];
+
+        if (elements.size () > 2)
+            issuer = elements[2];
+    }
+    else
+    {
+        value = v;
+    }
+
+    bool const native = ! currency.isString () ||
+        currency.asString ().empty () ||
+        (currency.asString () == systemCurrencyCode());
+
+    if (native)
+    {
+        if (v.isObject ())
+            throw std::runtime_error ("XRP may not be specified as an object");
+    }
+    else
+    {
+        // non-XRP
+        if (! to_currency (issue.currency, currency.asString ()))
+            throw std::runtime_error ("invalid currency");
+
+        if (! issuer.isString ()
+                || !to_issuer (issue.account, issuer.asString ()))
+            throw std::runtime_error ("invalid issuer");
+
+        if (isXRP (issue.currency))
+            throw std::runtime_error ("invalid issuer");
+    }
+
+    if (value.isInt ())
+    {
+        if (value.asInt () >= 0)
+        {
+            mantissa = value.asInt ();
+        }
+        else
+        {
+            mantissa = -value.asInt ();
+            negative = true;
+        }
+    }
+    else if (value.isUInt ())
+    {
+        mantissa = v.asUInt ();
+    }
+    else if (value.isString ())
+    {
+        if (native)
+        {
+            std::int64_t val = beast::lexicalCastThrow <std::int64_t> (
+                value.asString ());
+
+            if (val >= 0)
+            {
+                mantissa = val;
+            }
+            else
+            {
+                mantissa = -val;
+                negative = true;
+            }
+        }
+        else
+        {
+            STAmount amount (name, issue, mantissa, exponent,
+                native, negative, STAmount::unchecked{});
+            amount.setValue (value.asString ());
+            return amount;
+        }
+    }
+    else
+    {
+        throw std::runtime_error ("invalid amount type");
+    }
+
+    return STAmount (name, issue, mantissa, exponent, native, negative);
+}
+
+bool
+amountFromJsonNoThrow (STAmount& result, Json::Value const& jvSource)
+{
+    try
+    {
+        result = amountFromJson (sfGeneric, jvSource);
+        return true;
+    }
+    catch (const std::exception& e)
+    {
+        WriteLog (lsINFO, STAmount) <<
+            "amountFromJsonNoThrow: caught: " << e.what ();
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------------
+//
+// Operators
+//
+//------------------------------------------------------------------------------
+
+static
+int
+compare (STAmount const& lhs, STAmount const& rhs)
+{
+    // Compares the value of a to the value of this STAmount, amounts must be comparable
+    if (lhs.negative() != rhs.negative())
+        return lhs.negative() ? -1 : 1;
+    if (lhs.mantissa() == 0)
+    {
+        if (rhs.negative())
+            return 1;
+        return (rhs.mantissa() != 0) ? -1 : 0;
+    }
+    if (rhs.mantissa() == 0) return 1;
+    if (lhs.exponent() > rhs.exponent()) return lhs.negative() ? -1 : 1;
+    if (lhs.exponent() < rhs.exponent()) return lhs.negative() ? 1 : -1;
+    if (lhs.mantissa() > rhs.mantissa()) return lhs.negative() ? -1 : 1;
+    if (lhs.mantissa() < rhs.mantissa()) return lhs.negative() ? 1 : -1;
+    return 0;
+}
+
+bool
+operator== (STAmount const& lhs, STAmount const& rhs)
+{
+    return lhs.isComparable (rhs) && lhs.negative() == rhs.negative() &&
+        lhs.exponent() == rhs.exponent() && lhs.mantissa() == rhs.mantissa();
+}
+
+bool
+operator!= (STAmount const& lhs, STAmount const& rhs)
+{
+    return lhs.exponent() != rhs.exponent() ||
+        lhs.mantissa() != rhs.mantissa() ||
+        lhs.negative() != rhs.negative() || ! lhs.isComparable (rhs);
+}
+
+bool
+operator< (STAmount const& lhs, STAmount const& rhs)
+{
+    lhs.throwComparable (rhs);
+    return compare (lhs, rhs) < 0;
+}
+
+bool
+operator> (STAmount const& lhs, STAmount const& rhs)
+{
+    lhs.throwComparable (rhs);
+    return compare (lhs, rhs) > 0;
+}
+
+bool
+operator<= (STAmount const& lhs, STAmount const& rhs)
+{
+    lhs.throwComparable (rhs);
+    return compare (lhs, rhs) <= 0;
+}
+
+bool
+operator>= (STAmount const& lhs, STAmount const& rhs)
+{
+    lhs.throwComparable (rhs);
+    return compare (lhs, rhs) >= 0;
+}
+
+// native currency only
+
+bool
+operator< (STAmount const& lhs, std::uint64_t rhs)
+{
+    // VFALCO Why the cast?
+    return lhs.getSNValue() < static_cast <std::int64_t> (rhs);
+}
+
+bool
+operator> (STAmount const& lhs, std::uint64_t rhs)
+{
+    // VFALCO Why the cast?
+    return lhs.getSNValue() > static_cast <std::int64_t> (rhs);
+}
+
+bool
+operator<= (STAmount const& lhs, std::uint64_t rhs)
+{
+    // VFALCO TODO The cast looks dangerous, is it needed?
+    return lhs.getSNValue () <= static_cast <std::int64_t> (rhs);
+}
+
+bool
+operator>= (STAmount const& lhs, std::uint64_t rhs)
+{
+    // VFALCO TODO The cast looks dangerous, is it needed?
+    return lhs.getSNValue() >= static_cast<std::int64_t> (rhs);
+}
+
+STAmount
+operator+ (STAmount const& lhs, std::uint64_t rhs)
+{
+    // VFALCO TODO The cast looks dangerous, is it needed?
+    return STAmount (lhs.getFName (),
+        lhs.getSNValue () + static_cast <std::int64_t> (rhs));
+}
+
+STAmount
+operator- (STAmount const& lhs, std::uint64_t rhs)
+{
+    // VFALCO TODO The cast looks dangerous, is it needed?
+    return STAmount (lhs.getFName (),
+        lhs.getSNValue () - static_cast <std::int64_t> (rhs));
+}
+
+STAmount
+operator- (STAmount const& value)
+{
+    if (value.mantissa() == 0)
+        return value;
+    return STAmount (value.getFName (),
+        value.issue(), value.mantissa(), value.exponent(),
+            value.native(), ! value.negative(), STAmount::unchecked{});
+}
+
+//------------------------------------------------------------------------------
+//
+// Arithmetic
+//
+//------------------------------------------------------------------------------
 
 // NIKB TODO Make Amount::divide skip math if den == QUALITY_ONE
-STAmount STAmount::divide (
-    STAmount const& num, STAmount const& den, Issue const& issue)
+STAmount
+divide (STAmount const& num, STAmount const& den, Issue const& issue)
 {
     if (den == zero)
         throw std::runtime_error ("division by zero");
@@ -885,23 +1221,29 @@ STAmount STAmount::divide (
     if (num == zero)
         return {issue};
 
-    std::uint64_t numVal = num.mValue, denVal = den.mValue;
-    int numOffset = num.mOffset, denOffset = den.mOffset;
+    std::uint64_t numVal = num.mantissa();
+    std::uint64_t denVal = den.mantissa();
+    int numOffset = num.exponent();
+    int denOffset = den.exponent();
 
-    if (num.mIsNative)
+    if (num.native())
+    {
         while (numVal < STAmount::cMinValue)
         {
             // Need to bring into range
             numVal *= 10;
             --numOffset;
         }
+    }
 
-    if (den.mIsNative)
+    if (den.native())
+    {
         while (denVal < STAmount::cMinValue)
         {
             denVal *= 10;
             --denOffset;
         }
+    }
 
     // Compute (numerator * 10^17) / denominator
     CBigNum v;
@@ -919,20 +1261,20 @@ STAmount STAmount::divide (
     // TODO(tom): where do 5 and 17 come from?
     return STAmount (issue, v.getuint64 () + 5,
                      numOffset - denOffset - 17,
-                     num.mIsNegative != den.mIsNegative);
+                     num.negative() != den.negative());
 }
 
-STAmount STAmount::multiply (
-    STAmount const& v1, STAmount const& v2, Issue const& issue)
+STAmount
+multiply (STAmount const& v1, STAmount const& v2, Issue const& issue)
 {
     if (v1 == zero || v2 == zero)
         return STAmount (issue);
 
-    if (v1.mIsNative && v2.mIsNative && isXRP (issue) )
+    if (v1.native() && v2.native() && isXRP (issue))
     {
-        std::uint64_t minV = v1.getSNValue () < v2.getSNValue ()
+        std::uint64_t const minV = v1.getSNValue () < v2.getSNValue ()
                 ? v1.getSNValue () : v2.getSNValue ();
-        std::uint64_t maxV = v1.getSNValue () < v2.getSNValue ()
+        std::uint64_t const maxV = v1.getSNValue () < v2.getSNValue ()
                 ? v2.getSNValue () : v1.getSNValue ();
 
         if (minV > 3000000000ull) // sqrt(cMaxNative)
@@ -944,10 +1286,12 @@ STAmount STAmount::multiply (
         return STAmount (v1.getFName (), minV * maxV);
     }
 
-    std::uint64_t value1 = v1.mValue, value2 = v2.mValue;
-    int offset1 = v1.mOffset, offset2 = v2.mOffset;
+    std::uint64_t value1 = v1.mantissa();
+    std::uint64_t value2 = v2.mantissa();
+    int offset1 = v1.exponent();
+    int offset2 = v2.exponent();
 
-    if (v1.mIsNative)
+    if (v1.native())
     {
         while (value1 < STAmount::cMinValue)
         {
@@ -956,7 +1300,7 @@ STAmount STAmount::multiply (
         }
     }
 
-    if (v2.mIsNative)
+    if (v2.native())
     {
         while (value2 < STAmount::cMinValue)
         {
@@ -981,810 +1325,318 @@ STAmount STAmount::multiply (
 
     // TODO(tom): where do 7 and 14 come from?
     return STAmount (issue, v.getuint64 () + 7,
-                     offset1 + offset2 + 14, v1.mIsNegative != v2.mIsNegative);
+        offset1 + offset2 + 14, v1.negative() != v2.negative());
 }
 
-// Convert an offer into an index amount so they sort by rate.
-// A taker will take the best, lowest, rate first.
-// (e.g. a taker will prefer pay 1 get 3 over pay 1 get 2.
-// --> offerOut: takerGets: How much the offerer is selling to the taker.
-// -->  offerIn: takerPays: How much the offerer is receiving from the taker.
-// <--    uRate: normalize(offerIn/offerOut)
-//             A lower rate is better for the person taking the order.
-//             The taker gets more for less with a lower rate.
-// Zero is returned if the offer is worthless.
-std::uint64_t STAmount::getRate (STAmount const& offerOut, STAmount const& offerIn)
+void
+canonicalizeRound (bool isNative, std::uint64_t& value,
+    int& offset, bool roundUp)
 {
-    if (offerOut == zero)
-        return 0;
-
-    try
-    {
-        STAmount r = divide (offerIn, offerOut, noIssue());
-
-        if (r == zero) // offer is too good
-            return 0;
-
-        assert ((r.getExponent () >= -100) && (r.getExponent () <= 155));
-
-        std::uint64_t ret = r.getExponent () + 100;
-
-        return (ret << (64 - 8)) | r.getMantissa ();
-    }
-    catch (...)
-    {
-        // overflow -- very bad offer
-        return 0;
-    }
-}
-
-STAmount STAmount::setRate (std::uint64_t rate)
-{
-    if (rate == 0)
-        return STAmount (noIssue());
-
-    std::uint64_t mantissa = rate & ~ (255ull << (64 - 8));
-    int exponent = static_cast<int> (rate >> (64 - 8)) - 100;
-
-    return STAmount (noIssue(), mantissa, exponent);
-}
-
-STAmount STAmount::getPay (
-    STAmount const& offerOut, STAmount const& offerIn, STAmount const& needed)
-{
-    // Someone wants to get (needed) out of the offer, how much should they pay
-    // in?
-    if (offerOut == zero)
-        return STAmount (offerIn.issue ());
-
-    if (needed >= offerOut)
-        // They need more than offered, pay full amount.
-        return needed;
-
-
-    STAmount ret = divide (multiply (needed, offerIn, noIssue()),
-                           offerOut, offerIn.issue());
-
-    return (ret > offerIn) ? offerIn : ret;
-}
-
-STAmount STAmount::deserialize (SerializerIterator& it)
-{
-    auto s = construct (it, sfGeneric);
-
-    if (!s)
-        throw std::runtime_error("Deserialization error");
-
-    return STAmount (*s);
-}
-
-std::string STAmount::getFullText () const
-{
-    std::string ret;
-
-    ret.reserve(64);
-    ret = getText () + "/" + getHumanCurrency ();
-
-    if (!mIsNative)
-    {
-        ret += "/";
-
-        if (isXRP (*this))
-            ret += "0";
-        else if (mIssue.account == noAccount())
-            ret += "1";
-        else
-            ret += to_string (mIssue.account);
-    }
-
-    return ret;
-}
-
-STAmount STAmount::getRound () const
-{
-    if (mIsNative)
-        return *this;
-
-    std::uint64_t valueDigits = mValue % 1000000000ull;
-
-    if (valueDigits == 1)
-        return STAmount (mIssue, mValue - 1, mOffset, mIsNegative);
-    else if (valueDigits == 999999999ull)
-        return STAmount (mIssue, mValue + 1, mOffset, mIsNegative);
-
-    return *this;
-}
-
-void STAmount::roundSelf ()
-{
-    if (mIsNative)
+    if (!roundUp) // canonicalize already rounds down
         return;
 
-    std::uint64_t valueDigits = mValue % 1000000000ull;
+    WriteLog (lsTRACE, STAmount)
+        << "canonicalizeRound< " << value << ":" << offset;
 
-    if (valueDigits == 1)
+    if (isNative)
     {
-        mValue -= 1;
+        if (offset < 0)
+        {
+            int loops = 0;
 
-        if (mValue < cMinValue)
-            canonicalize ();
+            while (offset < -1)
+            {
+                value /= 10;
+                ++offset;
+                ++loops;
+            }
+
+            value += (loops >= 2) ? 9 : 10; // add before last divide
+            value /= 10;
+            ++offset;
+        }
     }
-    else if (valueDigits == 999999999ull)
+    else if (value > STAmount::cMaxValue)
     {
-        mValue += 1;
+        while (value > (10 * STAmount::cMaxValue))
+        {
+            value /= 10;
+            ++offset;
+        }
 
-        if (mValue > cMaxValue)
-            canonicalize ();
+        value += 9;     // add before last divide
+        value /= 10;
+        ++offset;
     }
+
+    WriteLog (lsTRACE, STAmount)
+        << "canonicalizeRound> " << value << ":" << offset;
 }
 
-void STAmount::setJson (Json::Value& elem) const
+STAmount
+addRound (STAmount const& v1, STAmount const& v2, bool roundUp)
 {
-    elem = Json::objectValue;
+    v1.throwComparable (v2);
 
-    if (!mIsNative)
+    if (v2.mantissa() == 0)
+        return v1;
+
+    if (v1.mantissa() == 0)
+        return STAmount (v1.getFName (), v1.issue(), v2.mantissa(),
+                         v2.exponent(), v2.negative());
+
+    if (v1.native())
+        return STAmount (v1.getFName (), v1.getSNValue () + v2.getSNValue ());
+
+    int ov1 = v1.exponent(), ov2 = v2.exponent();
+    auto vv1 = static_cast<std::int64_t> (v1.mantissa());
+    auto vv2 = static_cast<std::int64_t> (v2.mantissa());
+
+    if (v1.negative())
+        vv1 = -vv1;
+
+    if (v2.negative())
+        vv2 = -vv2;
+
+    if (ov1 < ov2)
     {
-        // It is an error for currency or issuer not to be specified for valid
-        // json.
-        elem[jss::value]      = getText ();
-        elem[jss::currency]   = getHumanCurrency ();
-        elem[jss::issuer]     = to_string (mIssue.account);
+        while (ov1 < (ov2 - 1))
+        {
+            vv1 /= 10;
+            ++ov1;
+        }
+
+        if (roundUp)
+            vv1 += 9;
+
+        vv1 /= 10;
+        ++ov1;
+    }
+
+    if (ov2 < ov1)
+    {
+        while (ov2 < (ov1 - 1))
+        {
+            vv2 /= 10;
+            ++ov2;
+        }
+
+        if (roundUp)
+            vv2 += 9;
+
+        vv2 /= 10;
+        ++ov2;
+    }
+
+    std::int64_t fv = vv1 + vv2;
+
+    if ((fv >= -10) && (fv <= 10))
+        return STAmount (v1.getFName (), v1.issue());
+    else if (fv >= 0)
+    {
+        std::uint64_t v = static_cast<std::uint64_t> (fv);
+        canonicalizeRound (false, v, ov1, roundUp);
+        return STAmount (v1.getFName (), v1.issue(), v, ov1, false);
     }
     else
     {
-        elem = getText ();
+        std::uint64_t v = static_cast<std::uint64_t> (-fv);
+        canonicalizeRound (false, v, ov1, !roundUp);
+        return STAmount (v1.getFName (), v1.issue(), v, ov1, true);
     }
 }
 
-Json::Value STAmount::getJson (int) const
+STAmount
+subRound (STAmount const& v1, STAmount const& v2, bool roundUp)
 {
-    Json::Value elem;
-    setJson (elem);
-    return elem;
+    v1.throwComparable (v2);
+
+    if (v2.mantissa() == 0)
+        return v1;
+
+    if (v1.mantissa() == 0)
+        return STAmount (v1.getFName (), v1.issue(), v2.mantissa(),
+                         v2.exponent(), !v2.negative());
+
+    if (v1.native())
+        return STAmount (v1.getFName (), v1.getSNValue () - v2.getSNValue ());
+
+    int ov1 = v1.exponent(), ov2 = v2.exponent();
+    auto vv1 = static_cast<std::int64_t> (v1.mantissa());
+    auto vv2 = static_cast<std::int64_t> (v2.mantissa());
+
+    if (v1.negative())
+        vv1 = -vv1;
+
+    if (!v2.negative())
+        vv2 = -vv2;
+
+    if (ov1 < ov2)
+    {
+        while (ov1 < (ov2 - 1))
+        {
+            vv1 /= 10;
+            ++ov1;
+        }
+
+        if (roundUp)
+            vv1 += 9;
+
+        vv1 /= 10;
+        ++ov1;
+    }
+
+    if (ov2 < ov1)
+    {
+        while (ov2 < (ov1 - 1))
+        {
+            vv2 /= 10;
+            ++ov2;
+        }
+
+        if (roundUp)
+            vv2 += 9;
+
+        vv2 /= 10;
+        ++ov2;
+    }
+
+    std::int64_t fv = vv1 + vv2;
+
+    if ((fv >= -10) && (fv <= 10))
+        return STAmount (v1.getFName (), v1.issue());
+
+    if (fv >= 0)
+    {
+        std::uint64_t v = static_cast<std::uint64_t> (fv);
+        canonicalizeRound (false, v, ov1, roundUp);
+        return STAmount (v1.getFName (), v1.issue(), v, ov1, false);
+    }
+    else
+    {
+        std::uint64_t v = static_cast<std::uint64_t> (-fv);
+        canonicalizeRound (false, v, ov1, !roundUp);
+        return STAmount (v1.getFName (), v1.issue(), v, ov1, true);
+    }
 }
 
-//------------------------------------------------------------------------------
-
-class STAmount_test : public beast::unit_test::suite
+STAmount
+mulRound (STAmount const& v1, STAmount const& v2,
+    Issue const& issue, bool roundUp)
 {
-public:
-    static STAmount serializeAndDeserialize (STAmount const& s)
-    {
-        Serializer ser;
-        s.add (ser);
+    if (v1 == zero || v2 == zero)
+        return {issue};
 
-        SerializerIterator sit (ser);
-        return STAmount::deserialize (sit);
+    if (v1.native() && v2.native() && isXRP (issue))
+    {
+        std::uint64_t minV = (v1.getSNValue () < v2.getSNValue ()) ?
+                v1.getSNValue () : v2.getSNValue ();
+        std::uint64_t maxV = (v1.getSNValue () < v2.getSNValue ()) ?
+                v2.getSNValue () : v1.getSNValue ();
+
+        if (minV > 3000000000ull) // sqrt(cMaxNative)
+            throw std::runtime_error ("Native value overflow");
+
+        if (((maxV >> 32) * minV) > 2095475792ull) // cMaxNative / 2^32
+            throw std::runtime_error ("Native value overflow");
+
+        return STAmount (v1.getFName (), minV * maxV);
     }
 
-    //--------------------------------------------------------------------------
+    std::uint64_t value1 = v1.mantissa(), value2 = v2.mantissa();
+    int offset1 = v1.exponent(), offset2 = v2.exponent();
 
-    bool roundTest (int n, int d, int m)
+    if (v1.native())
     {
-        // check STAmount rounding
-        STAmount num (noIssue(), n);
-        STAmount den (noIssue(), d);
-        STAmount mul (noIssue(), m);
-        STAmount quot = STAmount::divide (n, d, noIssue());
-        STAmount res = STAmount::multiply (quot, mul, noIssue());
-
-        expect (! res.isNative (), "Product should not be native");
-
-        res.roundSelf ();
-
-        STAmount cmp (noIssue(), (n * m) / d);
-
-        expect (! cmp.isNative (), "Comparison amount should not be native");
-
-        if (res != cmp)
+        while (value1 < STAmount::cMinValue)
         {
-            cmp.throwComparable (res);
-
-            WriteLog (lsWARNING, STAmount) << "(" << num.getText () << "/" << den.getText () << ") X " << mul.getText () << " = "
-                                       << res.getText () << " not " << cmp.getText ();
-
-            fail ("Rounding");
-
-            return false;
-        }
-        else
-        {
-            pass ();
-        }
-
-        return true;
-    }
-
-    void mulTest (int a, int b)
-    {
-        STAmount aa (noIssue(), a);
-        STAmount bb (noIssue(), b);
-        STAmount prod1 (STAmount::multiply (aa, bb, noIssue()));
-
-        expect (! prod1.isNative ());
-
-        STAmount prod2 (noIssue(), static_cast<std::uint64_t> (a) * static_cast<std::uint64_t> (b));
-
-        if (prod1 != prod2)
-        {
-            WriteLog (lsWARNING, STAmount) << "nn(" << aa.getFullText () << " * " << bb.getFullText () << ") = " << prod1.getFullText ()
-                                           << " not " << prod2.getFullText ();
-
-            fail ("Multiplication result is not exact");
-        }
-        else
-        {
-            pass ();
-        }
-
-        aa = a;
-        prod1 = STAmount::multiply (aa, bb, noIssue());
-
-        if (prod1 != prod2)
-        {
-            WriteLog (lsWARNING, STAmount) << "n(" << aa.getFullText () << " * " << bb.getFullText () << ") = " << prod1.getFullText ()
-                                           << " not " << prod2.getFullText ();
-            fail ("Multiplication result is not exact");
-        }
-        else
-        {
-            pass ();
+            value1 *= 10;
+            --offset1;
         }
     }
 
-    //--------------------------------------------------------------------------
-
-    void testSetValue ()
+    if (v2.native())
     {
-        testcase ("set value");
-
-        STAmount    saTmp;
-
-    #if 0
-        // Check native floats
-        saTmp.setFullValue ("1^0");
-        BOOST_CHECK_MESSAGE (SYSTEM_CURRENCY_PARTS == saTmp.getNValue (), "float integer failed");
-        saTmp.setFullValue ("0^1");
-        BOOST_CHECK_MESSAGE (SYSTEM_CURRENCY_PARTS / 10 == saTmp.getNValue (), "float fraction failed");
-        saTmp.setFullValue ("0^12");
-        BOOST_CHECK_MESSAGE (12 * SYSTEM_CURRENCY_PARTS / 100 == saTmp.getNValue (), "float fraction failed");
-        saTmp.setFullValue ("1^2");
-        BOOST_CHECK_MESSAGE (SYSTEM_CURRENCY_PARTS + (2 * SYSTEM_CURRENCY_PARTS / 10) == saTmp.getNValue (), "float combined failed");
-    #endif
-
-        // Check native integer
-        saTmp.setFullValue ("1");
-        expect (1 == saTmp.getNValue (), "should be equal");
-    }
-
-    //--------------------------------------------------------------------------
-
-    void testNativeCurrency ()
-    {
-        testcase ("native currency");
-
-        STAmount zeroSt, one (1), hundred (100);
-
-        unexpected (serializeAndDeserialize (zeroSt) != zeroSt, "STAmount fail");
-
-        unexpected (serializeAndDeserialize (one) != one, "STAmount fail");
-
-        unexpected (serializeAndDeserialize (hundred) != hundred, "STAmount fail");
-
-        unexpected (!zeroSt.isNative (), "STAmount fail");
-
-        unexpected (!hundred.isNative (), "STAmount fail");
-
-        unexpected (zeroSt != zero, "STAmount fail");
-
-        unexpected (one == zero, "STAmount fail");
-
-        unexpected (hundred == zero, "STAmount fail");
-
-        unexpected ((zeroSt < zeroSt), "STAmount fail");
-
-        unexpected (! (zeroSt < one), "STAmount fail");
-
-        unexpected (! (zeroSt < hundred), "STAmount fail");
-
-        unexpected ((one < zeroSt), "STAmount fail");
-
-        unexpected ((one < one), "STAmount fail");
-
-        unexpected (! (one < hundred), "STAmount fail");
-
-        unexpected ((hundred < zeroSt), "STAmount fail");
-
-        unexpected ((hundred < one), "STAmount fail");
-
-        unexpected ((hundred < hundred), "STAmount fail");
-
-        unexpected ((zeroSt > zeroSt), "STAmount fail");
-
-        unexpected ((zeroSt > one), "STAmount fail");
-
-        unexpected ((zeroSt > hundred), "STAmount fail");
-
-        unexpected (! (one > zeroSt), "STAmount fail");
-
-        unexpected ((one > one), "STAmount fail");
-
-        unexpected ((one > hundred), "STAmount fail");
-
-        unexpected (! (hundred > zeroSt), "STAmount fail");
-
-        unexpected (! (hundred > one), "STAmount fail");
-
-        unexpected ((hundred > hundred), "STAmount fail");
-
-        unexpected (! (zeroSt <= zeroSt), "STAmount fail");
-
-        unexpected (! (zeroSt <= one), "STAmount fail");
-
-        unexpected (! (zeroSt <= hundred), "STAmount fail");
-
-        unexpected ((one <= zeroSt), "STAmount fail");
-
-        unexpected (! (one <= one), "STAmount fail");
-
-        unexpected (! (one <= hundred), "STAmount fail");
-
-        unexpected ((hundred <= zeroSt), "STAmount fail");
-
-        unexpected ((hundred <= one), "STAmount fail");
-
-        unexpected (! (hundred <= hundred), "STAmount fail");
-
-        unexpected (! (zeroSt >= zeroSt), "STAmount fail");
-
-        unexpected ((zeroSt >= one), "STAmount fail");
-
-        unexpected ((zeroSt >= hundred), "STAmount fail");
-
-        unexpected (! (one >= zeroSt), "STAmount fail");
-
-        unexpected (! (one >= one), "STAmount fail");
-
-        unexpected ((one >= hundred), "STAmount fail");
-
-        unexpected (! (hundred >= zeroSt), "STAmount fail");
-
-        unexpected (! (hundred >= one), "STAmount fail");
-
-        unexpected (! (hundred >= hundred), "STAmount fail");
-
-        unexpected (! (zeroSt == zeroSt), "STAmount fail");
-
-        unexpected ((zeroSt == one), "STAmount fail");
-
-        unexpected ((zeroSt == hundred), "STAmount fail");
-
-        unexpected ((one == zeroSt), "STAmount fail");
-
-        unexpected (! (one == one), "STAmount fail");
-
-        unexpected ((one == hundred), "STAmount fail");
-
-        unexpected ((hundred == zeroSt), "STAmount fail");
-
-        unexpected ((hundred == one), "STAmount fail");
-
-        unexpected (! (hundred == hundred), "STAmount fail");
-
-        unexpected ((zeroSt != zeroSt), "STAmount fail");
-
-        unexpected (! (zeroSt != one), "STAmount fail");
-
-        unexpected (! (zeroSt != hundred), "STAmount fail");
-
-        unexpected (! (one != zeroSt), "STAmount fail");
-
-        unexpected ((one != one), "STAmount fail");
-
-        unexpected (! (one != hundred), "STAmount fail");
-
-        unexpected (! (hundred != zeroSt), "STAmount fail");
-
-        unexpected (! (hundred != one), "STAmount fail");
-
-        unexpected ((hundred != hundred), "STAmount fail");
-
-        unexpected (STAmount ().getText () != "0", "STAmount fail");
-
-        unexpected (STAmount (31).getText () != "31", "STAmount fail");
-
-        unexpected (STAmount (310).getText () != "310", "STAmount fail");
-
-        unexpected (to_string (Currency ()) != "XRP", "cHC(XRP)");
-
-        Currency c;
-        unexpected (!to_currency (c, "USD"), "create USD currency");
-        unexpected (to_string (c) != "USD", "check USD currency");
-
-        const std::string cur = "015841551A748AD2C1F76FF6ECB0CCCD00000000";
-        unexpected (!to_currency (c, cur), "create custom currency");
-        unexpected (to_string (c) != cur, "check custom currency");
-        unexpected (c != Currency (cur), "check custom currency");
-    }
-
-    //--------------------------------------------------------------------------
-
-    void testCustomCurrency ()
-    {
-        testcase ("custom currency");
-
-        STAmount zeroSt (noIssue()), one (noIssue(), 1), hundred (noIssue(), 100);
-
-        unexpected (serializeAndDeserialize (zeroSt) != zeroSt, "STAmount fail");
-
-        unexpected (serializeAndDeserialize (one) != one, "STAmount fail");
-
-        unexpected (serializeAndDeserialize (hundred) != hundred, "STAmount fail");
-
-        unexpected (zeroSt.isNative (), "STAmount fail");
-
-        unexpected (hundred.isNative (), "STAmount fail");
-
-        unexpected (zeroSt != zero, "STAmount fail");
-
-        unexpected (one == zero, "STAmount fail");
-
-        unexpected (hundred == zero, "STAmount fail");
-
-        unexpected ((zeroSt < zeroSt), "STAmount fail");
-
-        unexpected (! (zeroSt < one), "STAmount fail");
-
-        unexpected (! (zeroSt < hundred), "STAmount fail");
-
-        unexpected ((one < zeroSt), "STAmount fail");
-
-        unexpected ((one < one), "STAmount fail");
-
-        unexpected (! (one < hundred), "STAmount fail");
-
-        unexpected ((hundred < zeroSt), "STAmount fail");
-
-        unexpected ((hundred < one), "STAmount fail");
-
-        unexpected ((hundred < hundred), "STAmount fail");
-
-        unexpected ((zeroSt > zeroSt), "STAmount fail");
-
-        unexpected ((zeroSt > one), "STAmount fail");
-
-        unexpected ((zeroSt > hundred), "STAmount fail");
-
-        unexpected (! (one > zeroSt), "STAmount fail");
-
-        unexpected ((one > one), "STAmount fail");
-
-        unexpected ((one > hundred), "STAmount fail");
-
-        unexpected (! (hundred > zeroSt), "STAmount fail");
-
-        unexpected (! (hundred > one), "STAmount fail");
-
-        unexpected ((hundred > hundred), "STAmount fail");
-
-        unexpected (! (zeroSt <= zeroSt), "STAmount fail");
-
-        unexpected (! (zeroSt <= one), "STAmount fail");
-
-        unexpected (! (zeroSt <= hundred), "STAmount fail");
-
-        unexpected ((one <= zeroSt), "STAmount fail");
-
-        unexpected (! (one <= one), "STAmount fail");
-
-        unexpected (! (one <= hundred), "STAmount fail");
-
-        unexpected ((hundred <= zeroSt), "STAmount fail");
-
-        unexpected ((hundred <= one), "STAmount fail");
-
-        unexpected (! (hundred <= hundred), "STAmount fail");
-
-        unexpected (! (zeroSt >= zeroSt), "STAmount fail");
-
-        unexpected ((zeroSt >= one), "STAmount fail");
-
-        unexpected ((zeroSt >= hundred), "STAmount fail");
-
-        unexpected (! (one >= zeroSt), "STAmount fail");
-
-        unexpected (! (one >= one), "STAmount fail");
-
-        unexpected ((one >= hundred), "STAmount fail");
-
-        unexpected (! (hundred >= zeroSt), "STAmount fail");
-
-        unexpected (! (hundred >= one), "STAmount fail");
-
-        unexpected (! (hundred >= hundred), "STAmount fail");
-
-        unexpected (! (zeroSt == zeroSt), "STAmount fail");
-
-        unexpected ((zeroSt == one), "STAmount fail");
-
-        unexpected ((zeroSt == hundred), "STAmount fail");
-
-        unexpected ((one == zeroSt), "STAmount fail");
-
-        unexpected (! (one == one), "STAmount fail");
-
-        unexpected ((one == hundred), "STAmount fail");
-
-        unexpected ((hundred == zeroSt), "STAmount fail");
-
-        unexpected ((hundred == one), "STAmount fail");
-
-        unexpected (! (hundred == hundred), "STAmount fail");
-
-        unexpected ((zeroSt != zeroSt), "STAmount fail");
-
-        unexpected (! (zeroSt != one), "STAmount fail");
-
-        unexpected (! (zeroSt != hundred), "STAmount fail");
-
-        unexpected (! (one != zeroSt), "STAmount fail");
-
-        unexpected ((one != one), "STAmount fail");
-
-        unexpected (! (one != hundred), "STAmount fail");
-
-        unexpected (! (hundred != zeroSt), "STAmount fail");
-
-        unexpected (! (hundred != one), "STAmount fail");
-
-        unexpected ((hundred != hundred), "STAmount fail");
-
-        unexpected (STAmount (noIssue()).getText () != "0", "STAmount fail");
-
-        unexpected (STAmount (noIssue(), 31).getText () != "31", "STAmount fail");
-
-        unexpected (STAmount (noIssue(), 31, 1).getText () != "310", "STAmount fail");
-
-        unexpected (STAmount (noIssue(), 31, -1).getText () != "3.1", "STAmount fail");
-
-        unexpected (STAmount (noIssue(), 31, -2).getText () != "0.31", "STAmount fail");
-
-        unexpected (STAmount::multiply (STAmount (noIssue(), 20), STAmount (3), noIssue()).getText () != "60",
-            "STAmount multiply fail 1");
-
-        unexpected (STAmount::multiply (STAmount (noIssue(), 20), STAmount (3), xrpIssue ()).getText () != "60",
-            "STAmount multiply fail 2");
-
-        unexpected (STAmount::multiply (STAmount (20), STAmount (3), noIssue()).getText () != "60",
-            "STAmount multiply fail 3");
-
-        unexpected (STAmount::multiply (STAmount (20), STAmount (3), xrpIssue ()).getText () != "60",
-            "STAmount multiply fail 4");
-
-        if (STAmount::divide (STAmount (noIssue(), 60), STAmount (3), noIssue()).getText () != "20")
+        while (value2 < STAmount::cMinValue)
         {
-            WriteLog (lsFATAL, STAmount) << "60/3 = " <<
-                                         STAmount::divide (STAmount (noIssue(), 60),
-                                                 STAmount (3), noIssue()).getText ();
-            fail ("STAmount divide fail");
+            value2 *= 10;
+            --offset2;
         }
-        else
+    }
+
+    bool resultNegative = v1.negative() != v2.negative();
+    // Compute (numerator * denominator) / 10^14 with rounding
+    // 10^16 <= result <= 10^18
+    CBigNum v;
+
+    if ((BN_add_word64 (&v, value1) != 1) || (BN_mul_word64 (&v, value2) != 1))
+        throw std::runtime_error ("internal bn error");
+
+    if (resultNegative != roundUp) // rounding down is automatic when we divide
+        BN_add_word64 (&v, tenTo14m1);
+
+    if  (BN_div_word64 (&v, tenTo14) == ((std::uint64_t) - 1))
+        throw std::runtime_error ("internal bn error");
+
+    // 10^16 <= product <= 10^18
+    assert (BN_num_bytes (&v) <= 64);
+
+    std::uint64_t amount = v.getuint64 ();
+    int offset = offset1 + offset2 + 14;
+    canonicalizeRound (
+        isXRP (issue), amount, offset, resultNegative != roundUp);
+    return STAmount (issue, amount, offset, resultNegative);
+}
+
+STAmount
+divRound (STAmount const& num, STAmount const& den,
+    Issue const& issue, bool roundUp)
+{
+    if (den == zero)
+        throw std::runtime_error ("division by zero");
+
+    if (num == zero)
+        return {issue};
+
+    std::uint64_t numVal = num.mantissa(), denVal = den.mantissa();
+    int numOffset = num.exponent(), denOffset = den.exponent();
+
+    if (num.native())
+        while (numVal < STAmount::cMinValue)
         {
-            pass ();
+            // Need to bring into range
+            numVal *= 10;
+            --numOffset;
         }
 
-        unexpected (STAmount::divide (STAmount (noIssue(), 60), STAmount (3), xrpIssue ()).getText () != "20",
-            "STAmount divide fail");
-
-        unexpected (STAmount::divide (STAmount (noIssue(), 60), STAmount (noIssue(), 3), noIssue()).getText () != "20",
-            "STAmount divide fail");
-
-        unexpected (STAmount::divide (STAmount (noIssue(), 60), STAmount (noIssue(), 3), xrpIssue ()).getText () != "20",
-            "STAmount divide fail");
-
-        STAmount a1 (noIssue(), 60), a2 (noIssue(), 10, -1);
-
-        unexpected (STAmount::divide (a2, a1, noIssue()) != STAmount::setRate (STAmount::getRate (a1, a2)),
-            "STAmount setRate(getRate) fail");
-
-        unexpected (STAmount::divide (a1, a2, noIssue()) != STAmount::setRate (STAmount::getRate (a2, a1)),
-            "STAmount setRate(getRate) fail");
-    }
-
-    //--------------------------------------------------------------------------
-
-    void testArithmetic ()
-    {
-        testcase ("arithmetic");
-
-        CBigNum b;
-
-        for (int i = 0; i < 16; ++i)
+    if (den.native())
+        while (denVal < STAmount::cMinValue)
         {
-            std::uint64_t r = rand ();
-            r <<= 32;
-            r |= rand ();
-            b.setuint64 (r);
-
-            if (b.getuint64 () != r)
-            {
-                WriteLog (lsFATAL, STAmount) << r << " != " << b.getuint64 () << " " << b.ToString (16);
-                fail ("setull64/getull64 failure");
-            }
-            else
-            {
-                pass ();
-            }
+            denVal *= 10;
+            --denOffset;
         }
 
-        // Test currency multiplication and division operations such as
-        // convertToDisplayAmount, convertToInternalAmount, getRate, getClaimed, and getNeeded
+    bool resultNegative = num.negative() != den.negative();
+    // Compute (numerator * 10^17) / denominator
+    CBigNum v;
 
-        unexpected (STAmount::getRate (STAmount (1), STAmount (10)) != (((100ull - 14) << (64 - 8)) | 1000000000000000ull),
-            "STAmount getRate fail 1");
+    if ((BN_add_word64 (&v, numVal) != 1) || (BN_mul_word64 (&v, tenTo17) != 1))
+        throw std::runtime_error ("internal bn error");
 
-        unexpected (STAmount::getRate (STAmount (10), STAmount (1)) != (((100ull - 16) << (64 - 8)) | 1000000000000000ull),
-            "STAmount getRate fail 2");
+    if (resultNegative != roundUp) // Rounding down is automatic when we divide
+        BN_add_word64 (&v, denVal - 1);
 
-        unexpected (STAmount::getRate (STAmount (noIssue(), 1), STAmount (noIssue(), 10)) != (((100ull - 14) << (64 - 8)) | 1000000000000000ull),
-            "STAmount getRate fail 3");
+    if (BN_div_word64 (&v, denVal) == ((std::uint64_t) - 1))
+        throw std::runtime_error ("internal bn error");
 
-        unexpected (STAmount::getRate (STAmount (noIssue(), 10), STAmount (noIssue(), 1)) != (((100ull - 16) << (64 - 8)) | 1000000000000000ull),
-            "STAmount getRate fail 4");
+    // 10^16 <= quotient <= 10^18
+    assert (BN_num_bytes (&v) <= 64);
 
-        unexpected (STAmount::getRate (STAmount (noIssue(), 1), STAmount (10)) != (((100ull - 14) << (64 - 8)) | 1000000000000000ull),
-            "STAmount getRate fail 5");
-
-        unexpected (STAmount::getRate (STAmount (noIssue(), 10), STAmount (1)) != (((100ull - 16) << (64 - 8)) | 1000000000000000ull),
-            "STAmount getRate fail 6");
-
-        unexpected (STAmount::getRate (STAmount (1), STAmount (noIssue(), 10)) != (((100ull - 14) << (64 - 8)) | 1000000000000000ull),
-            "STAmount getRate fail 7");
-
-        unexpected (STAmount::getRate (STAmount (10), STAmount (noIssue(), 1)) != (((100ull - 16) << (64 - 8)) | 1000000000000000ull),
-            "STAmount getRate fail 8");
-
-        roundTest (1, 3, 3);
-        roundTest (2, 3, 9);
-        roundTest (1, 7, 21);
-        roundTest (1, 2, 4);
-        roundTest (3, 9, 18);
-        roundTest (7, 11, 44);
-
-        for (int i = 0; i <= 100000; ++i)
-            mulTest (rand () % 10000000, rand () % 10000000);
-    }
-
-    //--------------------------------------------------------------------------
-
-    template <class Cond>
-    bool
-    expect (Cond cond, beast::String const& s)
-    {
-        return suite::expect (cond, s.toStdString());
-    }
-
-    template <class Cond>
-    bool
-    expect (Cond cond)
-    {
-        return suite::expect (cond);
-    }
-
-    void testUnderflow ()
-    {
-        testcase ("underflow");
-
-        STAmount bigNative (STAmount::cMaxNative / 2);
-        STAmount bigValue (noIssue(),
-                           (STAmount::cMinValue + STAmount::cMaxValue) / 2, STAmount::cMaxOffset - 1);
-        STAmount smallValue (noIssue(),
-                             (STAmount::cMinValue + STAmount::cMaxValue) / 2, STAmount::cMinOffset + 1);
-        STAmount zeroSt (noIssue(), 0);
-
-        STAmount smallXsmall = STAmount::multiply (smallValue, smallValue, noIssue());
-
-        expect (smallXsmall == zero, "smallXsmall != 0");
-
-        STAmount bigDsmall = STAmount::divide (smallValue, bigValue, noIssue());
-
-        expect (bigDsmall == zero, beast::String ("small/big != 0: ") + bigDsmall.getText ());
-
-#if 0
-        // TODO(tom): this test makes no sense - we should have no way to have
-        // the currency not be XRP while the account is XRP.
-        bigDsmall = STAmount::divide (smallValue, bigNative, noCurrency(), xrpAccount ());
-#endif
-
-        expect (bigDsmall == zero, beast::String ("small/bigNative != 0: ") + bigDsmall.getText ());
-
-        bigDsmall = STAmount::divide (smallValue, bigValue, xrpIssue ());
-
-        expect (bigDsmall == zero, beast::String ("(small/big)->N != 0: ") + bigDsmall.getText ());
-
-        bigDsmall = STAmount::divide (smallValue, bigNative, xrpIssue ());
-
-        expect (bigDsmall == zero, beast::String ("(small/bigNative)->N != 0: ") + bigDsmall.getText ());
-
-        // very bad offer
-        std::uint64_t r = STAmount::getRate (smallValue, bigValue);
-
-        expect (r == 0, "getRate(smallOut/bigIn) != 0");
-
-        // very good offer
-        r = STAmount::getRate (bigValue, smallValue);
-
-        expect (r == 0, "getRate(smallIn/bigOUt) != 0");
-    }
-
-    //--------------------------------------------------------------------------
-
-    void testRounding ()
-    {
-        // VFALCO TODO There are no actual tests here, just printed output?
-        //             Change this to actually do something.
-
-#if 0
-        beginTestCase ("rounding ");
-
-        std::uint64_t value = 25000000000000000ull;
-        int offset = -14;
-        STAmount::canonicalizeRound (false, value, offset, true);
-
-        STAmount one (noIssue(), 1);
-        STAmount two (noIssue(), 2);
-        STAmount three (noIssue(), 3);
-
-        STAmount oneThird1 = STAmount::divRound (one, three, noIssue(), false);
-        STAmount oneThird2 = STAmount::divide (one, three, noIssue());
-        STAmount oneThird3 = STAmount::divRound (one, three, noIssue(), true);
-        WriteLog (lsINFO, STAmount) << oneThird1;
-        WriteLog (lsINFO, STAmount) << oneThird2;
-        WriteLog (lsINFO, STAmount) << oneThird3;
-
-        STAmount twoThird1 = STAmount::divRound (two, three, noIssue(), false);
-        STAmount twoThird2 = STAmount::divide (two, three, noIssue());
-        STAmount twoThird3 = STAmount::divRound (two, three, noIssue(), true);
-        WriteLog (lsINFO, STAmount) << twoThird1;
-        WriteLog (lsINFO, STAmount) << twoThird2;
-        WriteLog (lsINFO, STAmount) << twoThird3;
-
-        STAmount oneA = STAmount::mulRound (oneThird1, three, noIssue(), false);
-        STAmount oneB = STAmount::multiply (oneThird2, three, noIssue());
-        STAmount oneC = STAmount::mulRound (oneThird3, three, noIssue(), true);
-        WriteLog (lsINFO, STAmount) << oneA;
-        WriteLog (lsINFO, STAmount) << oneB;
-        WriteLog (lsINFO, STAmount) << oneC;
-
-        STAmount fourThirdsA = STAmount::addRound (twoThird2, twoThird2, false);
-        STAmount fourThirdsB = twoThird2 + twoThird2;
-        STAmount fourThirdsC = STAmount::addRound (twoThird2, twoThird2, true);
-        WriteLog (lsINFO, STAmount) << fourThirdsA;
-        WriteLog (lsINFO, STAmount) << fourThirdsB;
-        WriteLog (lsINFO, STAmount) << fourThirdsC;
-
-        STAmount dripTest1 = STAmount::mulRound (twoThird2, two, xrpIssue (), false);
-        STAmount dripTest2 = STAmount::multiply (twoThird2, two, xrpIssue ());
-        STAmount dripTest3 = STAmount::mulRound (twoThird2, two, xrpIssue (), true);
-        WriteLog (lsINFO, STAmount) << dripTest1;
-        WriteLog (lsINFO, STAmount) << dripTest2;
-        WriteLog (lsINFO, STAmount) << dripTest3;
-#endif
-    }
-
-    //--------------------------------------------------------------------------
-
-    void run ()
-    {
-        testSetValue ();
-        testNativeCurrency ();
-        testCustomCurrency ();
-        testArithmetic ();
-        testUnderflow ();
-        testRounding ();
-    }
-};
-
-BEAST_DEFINE_TESTSUITE(STAmount,ripple_data,ripple);
+    std::uint64_t amount = v.getuint64 ();
+    int offset = numOffset - denOffset - 17;
+    canonicalizeRound (
+        isXRP (issue), amount, offset, resultNegative != roundUp);
+    return STAmount (issue, amount, offset, resultNegative);
+}
 
 } // ripple

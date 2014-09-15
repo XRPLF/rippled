@@ -70,7 +70,7 @@ public:
         std::uint32_t uQualityIn (bQualityIn ? mTxn.getFieldU32 (sfQualityIn) : 0);
         std::uint32_t uQualityOut (bQualityOut ? mTxn.getFieldU32 (sfQualityOut) : 0);
 
-        if (!saLimitAmount.isLegalNet ())
+        if (!isLegalNet (saLimitAmount))
             return temBAD_AMOUNT;
 
         if (bQualityOut && QUALITY_ONE == uQualityOut)

@@ -126,7 +126,7 @@ void rippleLiquidity (
         // If the quality is worse than the previous
         WriteLog (lsTRACE, RippleCalc) << "rippleLiquidity: Fee";
 
-        std::uint64_t uRate = STAmount::getRate (
+        std::uint64_t uRate = getRate (
             STAmount (uQualityOut), STAmount (uQualityIn));
 
         // If the next rate is at least as good as the current rate, process.
@@ -136,11 +136,11 @@ void rippleLiquidity (
             auto uCurIssuerID = saCur.getIssuer ();
 
             // current actual = current request * (quality out / quality in).
-            auto numerator = STAmount::mulRound (
+            auto numerator = mulRound (
                 saCur, uQualityOut, {currency, uCurIssuerID}, true);
             // True means "round up" to get best flow.
 
-            STAmount saCurIn = STAmount::divRound (
+            STAmount saCurIn = divRound (
                 numerator, uQualityIn, {currency, uCurIssuerID}, true);
 
             WriteLog (lsTRACE, RippleCalc)
@@ -169,11 +169,11 @@ void rippleLiquidity (
                 // going the other way
 
                 Issue issue{currency, uCurIssuerID};
-                auto numerator = STAmount::mulRound (
+                auto numerator = mulRound (
                     saPrv, uQualityIn, issue, true);
                 // A part of current. All of previous. (Cur is the driver
                 // variable.)
-                STAmount saCurOut = STAmount::divRound (
+                STAmount saCurOut = divRound (
                     numerator, uQualityOut, issue, true);
 
                 WriteLog (lsTRACE, RippleCalc)
