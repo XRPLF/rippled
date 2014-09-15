@@ -103,7 +103,7 @@ TER PathCursor::advanceNode (bool const bReverse) const
         {
             // Our quality changed since last iteration.
             // Use the rate from the directory.
-            node().saOfrRate = STAmount::setRate (
+            node().saOfrRate = amountFromQuality (
                 Ledger::getQuality (node().directory.current));
             // For correct ratio
             node().uEntry = 0;

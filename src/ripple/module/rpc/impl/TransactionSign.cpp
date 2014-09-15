@@ -105,7 +105,7 @@ static Json::Value signPayment(
 
     STAmount amount;
 
-    if (!amount.bSetJson (tx_json ["Amount"]))
+    if (! amountFromJsonNoThrow (amount, tx_json ["Amount"]))
         return RPC::invalid_field_error ("tx_json.Amount");
 
     if (!tx_json.isMember ("Destination"))
@@ -131,7 +131,7 @@ static Json::Value signPayment(
 
         if (tx_json.isMember ("SendMax"))
         {
-            if (!saSendMax.bSetJson (tx_json ["SendMax"]))
+            if (! amountFromJsonNoThrow (saSendMax, tx_json ["SendMax"]))
                 return RPC::invalid_field_error ("tx_json.SendMax");
         }
         else

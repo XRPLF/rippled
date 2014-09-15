@@ -54,7 +54,7 @@ void PathCursor::nextIncrement (LedgerEntrySet const& lesCheckpoint) const
             throw std::runtime_error ("Made no progress.");
 
         // Calculate relative quality.
-        pathState_.setQuality(STAmount::getRate (
+        pathState_.setQuality(getRate (
             pathState_.outPass(), pathState_.inPass()));
 
         WriteLog (lsTRACE, RippleCalc)

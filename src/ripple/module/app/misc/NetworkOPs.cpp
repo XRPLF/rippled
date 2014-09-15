@@ -3137,7 +3137,7 @@ void NetworkOPsImp::getBookPage (
             else
             {
                 uTipIndex = sleOfferDir->getIndex ();
-                saDirRate = STAmount::setRate (Ledger::getQuality (uTipIndex));
+                saDirRate = amountFromQuality (Ledger::getQuality (uTipIndex));
 
                 lesActive.dirFirst (
                     uTipIndex, sleOfferDir, uBookEntry, offerIndex);
@@ -3217,7 +3217,7 @@ void NetworkOPsImp::getBookPage (
                 {
                     // Need to charge a transfer fee to offer owner.
                     uOfferRate          = uTransferRate;
-                    saOwnerFundsLimit   = STAmount::divide (
+                    saOwnerFundsLimit   = divide (
                         saOwnerFunds, STAmount (noIssue(), uOfferRate, -9));
                     // TODO(tom): why -9?
                 }
@@ -3240,7 +3240,7 @@ void NetworkOPsImp::getBookPage (
 
                     saTakerGetsFunded.setJson (jvOffer[jss::taker_gets_funded]);
                     std::min (
-                        saTakerPays, STAmount::multiply (
+                        saTakerPays, multiply (
                             saTakerGetsFunded, saDirRate, saTakerPays)).setJson
                             (jvOffer[jss::taker_pays_funded]);
                 }
@@ -3249,7 +3249,7 @@ void NetworkOPsImp::getBookPage (
                     ? saTakerGetsFunded
                     : std::min (
                         saOwnerFunds,
-                        STAmount::multiply (
+                        multiply (
                             saTakerGetsFunded,
                             STAmount (noIssue(),
                                       uOfferRate, -9)));
@@ -3385,7 +3385,7 @@ void NetworkOPsImp::getBookPage (
                 uOfferRate = uTransferRate;
                 // TODO(tom): where does -9 come from?!
                 STAmount amount (noIssue(), uOfferRate, -9);
-                saOwnerFundsLimit = STAmount::divide (saOwnerFunds, amount);
+                saOwnerFundsLimit = divide (saOwnerFunds, amount);
             }
             else
             {
@@ -3407,7 +3407,7 @@ void NetworkOPsImp::getBookPage (
 
                 // TOOD(tom): The result of this expression is not used - what's
                 // going on here?
-                std::min (saTakerPays, STAmount::multiply (
+                std::min (saTakerPays, multiply (
                     saTakerGetsFunded, saDirRate, saTakerPays)).setJson (
                         jvOffer[jss::taker_pays_funded]);
             }
@@ -3415,7 +3415,7 @@ void NetworkOPsImp::getBookPage (
             STAmount saOwnerPays = (uOfferRate == QUALITY_ONE)
                     ? saTakerGetsFunded
                     : std::min (saOwnerFunds,
-                                STAmount::multiply (
+                                multiply (
                                     saTakerGetsFunded, STAmount (
                                         noIssue(), uOfferRate,
                                         -9)));

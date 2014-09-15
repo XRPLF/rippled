@@ -1276,7 +1276,7 @@ STAmount LedgerEntrySet::rippleTransferFee (
             STAmount saTransitRate (
                 noIssue(), static_cast<std::uint64_t> (uTransitRate), -9);
 
-            STAmount saTransferTotal = STAmount::multiply (
+            STAmount saTransferTotal = multiply (
                 saAmount, saTransitRate, saAmount.issue ());
             STAmount saTransferFee = saTransferTotal - saAmount;
 

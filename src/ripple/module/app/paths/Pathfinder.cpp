@@ -302,7 +302,7 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
     std::vector<path_LQ_t> vMap;
 
     // Ignore paths that move only very small amounts
-    auto saMinDstAmount = STAmount::divide(
+    auto saMinDstAmount = divide(
         mDstAmount, STAmount(iMaxPaths + 2), mDstAmount);
 
     // Build map of quality to entry.
@@ -348,7 +348,7 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
             else
             {
                 std::uint64_t  uQuality (
-                    STAmount::getRate (rc.actualAmountOut, rc.actualAmountIn));
+                    getRate (rc.actualAmountOut, rc.actualAmountIn));
 
                 WriteLog (lsDEBUG, Pathfinder) <<
                     "findPaths: quality: " << uQuality <<
