@@ -324,30 +324,20 @@ Config::Config ()
     // Defaults
     //
 
-    NETWORK_START_TIME      = 1319844908;
-
     RPC_SECURE              = 0;
-    WEBSOCKET_PORT          = SYSTEM_WEBSOCKET_PORT;
-    WEBSOCKET_PUBLIC_PORT   = SYSTEM_WEBSOCKET_PUBLIC_PORT;
+    WEBSOCKET_PORT          = 6562;
+    WEBSOCKET_PUBLIC_PORT   = 6563;
     WEBSOCKET_PUBLIC_SECURE = 1;
     WEBSOCKET_PROXY_PORT    = 0;
     WEBSOCKET_PROXY_SECURE  = 1;
     WEBSOCKET_SECURE        = 0;
     WEBSOCKET_PING_FREQ     = (5 * 60);
-    NUMBER_CONNECTIONS      = 30;
-
-    // a new ledger every minute
-    LEDGER_SECONDS          = 60;
-    LEDGER_CREATOR          = false;
 
     RPC_ALLOW_REMOTE        = false;
     RPC_ADMIN_ALLOW.push_back (beast::IP::Endpoint::from_string("127.0.0.1"));
 
-    PEER_SSL_CIPHER_LIST    = DEFAULT_PEER_SSL_CIPHER_LIST;
-    PEER_SCAN_INTERVAL_MIN  = DEFAULT_PEER_SCAN_INTERVAL_MIN;
-
-    PEER_START_MAX          = DEFAULT_PEER_START_MAX;
-    PEER_CONNECT_LOW_WATER  = DEFAULT_PEER_CONNECT_LOW_WATER;
+    // By default, allow anonymous DH.
+    PEER_SSL_CIPHER_LIST    = "ALL:!LOW:!EXP:!MD5:@STRENGTH";
 
     PEER_PRIVATE            = false;
     PEERS_MAX               = 0;    // indicates "use default"
@@ -366,10 +356,11 @@ Config::Config ()
     LEDGER_HISTORY          = 256;
     FETCH_DEPTH             = 1000000000;
 
-    PATH_SEARCH_OLD         = DEFAULT_PATH_SEARCH_OLD;
-    PATH_SEARCH             = DEFAULT_PATH_SEARCH;
-    PATH_SEARCH_FAST        = DEFAULT_PATH_SEARCH_FAST;
-    PATH_SEARCH_MAX         = DEFAULT_PATH_SEARCH_MAX;
+    // An explanation of these magical values would be nice.
+    PATH_SEARCH_OLD         = 7;
+    PATH_SEARCH             = 7;
+    PATH_SEARCH_FAST        = 2;
+    PATH_SEARCH_MAX         = 10;
 
     ACCOUNT_PROBE_MAX       = 10;
 
@@ -644,9 +635,6 @@ void Config::load ()
             if (getSingleSection (secConfig, SECTION_RPC_PORT, strTemp))
                 m_rpcPort = beast::lexicalCastThrow <int> (strTemp);
 
-            if (getSingleSection (secConfig, "ledger_creator" , strTemp))
-                LEDGER_CREATOR = beast::lexicalCastThrow <bool> (strTemp);
-
             if (getSingleSection (secConfig, SECTION_RPC_ALLOW_REMOTE, strTemp))
                 RPC_ALLOW_REMOTE    = beast::lexicalCastThrow <bool> (strTemp);
 
@@ -744,16 +732,6 @@ void Config::load ()
             }
 
             (void) getSingleSection (secConfig, SECTION_PEER_SSL_CIPHER_LIST, PEER_SSL_CIPHER_LIST);
-
-            if (getSingleSection (secConfig, SECTION_PEER_SCAN_INTERVAL_MIN, strTemp))
-                // Minimum for min is 60 seconds.
-                PEER_SCAN_INTERVAL_MIN = std::max (60, beast::lexicalCastThrow <int> (strTemp));
-
-            if (getSingleSection (secConfig, SECTION_PEER_START_MAX, strTemp))
-                PEER_START_MAX      = std::max (1, beast::lexicalCastThrow <int> (strTemp));
-
-            if (getSingleSection (secConfig, SECTION_PEER_CONNECT_LOW_WATER, strTemp))
-                PEER_CONNECT_LOW_WATER = std::max (1, beast::lexicalCastThrow <int> (strTemp));
 
             if (getSingleSection (secConfig, SECTION_NETWORK_QUORUM, strTemp))
                 NETWORK_QUORUM      = beast::lexicalCastThrow <std::size_t> (strTemp);
