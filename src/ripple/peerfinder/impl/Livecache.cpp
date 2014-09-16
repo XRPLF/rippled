@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/peerfinder/impl/Livecache.h>
 #include <beast/unit_test/suite.h>
 #include <beast/chrono/manual_clock.h>
 

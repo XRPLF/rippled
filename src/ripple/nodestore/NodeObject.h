@@ -20,8 +20,8 @@
 #ifndef RIPPLE_NODESTORE_NODEOBJECT_H_INCLUDED
 #define RIPPLE_NODESTORE_NODEOBJECT_H_INCLUDED
 
-#include <ripple/basics/utility/CountedObject.h>
-#include <ripple/module/data/protocol/Protocol.h>
+#include <ripple/basics/CountedObject.h>
+#include <ripple/data/protocol/Protocol.h>
 
 // VFALCO NOTE Intentionally not in the NodeStore namespace
 

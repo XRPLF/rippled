@@ -21,7 +21,7 @@
 #define RIPPLE_NODESTORE_DATABASEIMP_H_INCLUDED
 
 #include <beast/threads/Thread.h>
-#include <ripple/basics/log/Log.h>
+#include <ripple/basics/Log.h>
 #include <ripple/nodestore/Database.h>
 #include <chrono>
 #include <condition_variable>

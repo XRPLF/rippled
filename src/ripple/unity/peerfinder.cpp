@@ -19,48 +19,11 @@
 
 #include <BeastConfig.h>
 
-#include <ripple/unity/peerfinder.h>
-
-#include <ripple/common/Resolver.h>
-
-#include <deque>
-#include <fstream>
-#include <iomanip>
-#include <random>
-#include <set>
-
-#include <boost/array.hpp>
-#include <boost/optional.hpp>
-#include <boost/regex.hpp>
-
-#include <beast/module/sqdb/sqdb.h>
-#include <beast/module/asio/asio.h>
-
-#include <beast/boost/ErrorCode.h>
-#include <beast/chrono/chrono_io.h>
-
-#include <ripple/peerfinder/impl/iosformat.h> // VFALCO NOTE move to beast
-
 #ifndef NDEBUG
 # define consistency_check(cond) bassert(cond)
 #else
 # define consistency_check(cond)
 #endif
-
-#include <ripple/peerfinder/impl/PrivateTypes.h>
-#include <ripple/peerfinder/impl/Tuning.h>
-#include <ripple/peerfinder/impl/Checker.h>
-#include <ripple/peerfinder/impl/CheckerAdapter.h>
-#include <ripple/peerfinder/impl/Livecache.h>
-#include <ripple/peerfinder/impl/SlotImp.h>
-#include <ripple/peerfinder/impl/Counts.h>
-#include <ripple/peerfinder/impl/Source.h>
-#include <ripple/peerfinder/impl/SourceStrings.h>
-#include <ripple/peerfinder/impl/Store.h>
-#include <ripple/peerfinder/impl/Bootcache.h>
-#include <ripple/peerfinder/impl/StoreSqdb.h>
-#include <ripple/peerfinder/impl/Reporting.h>
-#include <ripple/peerfinder/impl/Logic.h>
 
 #include <ripple/peerfinder/impl/Bootcache.cpp>
 #include <ripple/peerfinder/impl/Checker.cpp>

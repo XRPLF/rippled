@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/basics/StringUtilities.h>
 #include <ripple/overlay/impl/PeerImp.h>
 #include <ripple/overlay/impl/Tuning.h>
 #include <beast/streams/debug_ostream.h>

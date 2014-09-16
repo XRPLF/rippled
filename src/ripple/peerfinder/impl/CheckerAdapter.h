@@ -20,6 +20,9 @@
 #ifndef RIPPLE_PEERFINDER_CHECKERADAPTER_H_INCLUDED
 #define RIPPLE_PEERFINDER_CHECKERADAPTER_H_INCLUDED
 
+#include <beast/threads/ServiceQueue.h>
+#include <beast/threads/ScopedWrapperContext.h>
+#include <beast/utility/Debug.h>
 #include <memory>
 
 namespace ripple {

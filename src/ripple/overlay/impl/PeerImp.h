@@ -27,12 +27,11 @@
 #include <ripple/overlay/impl/message_stream.h>
 #include <ripple/overlay/impl/OverlayImpl.h>
 #include <ripple/overlay/impl/peer_protocol_detector.h>
-#include <ripple/module/app/misc/ProofOfWork.h>
-#include <ripple/module/app/misc/ProofOfWorkFactory.h>
-#include <ripple/module/core/Config.h>
-#include <ripple/module/core/LoadFeeTrack.h>
-#include <ripple/module/data/protocol/Protocol.h>
-#include <ripple/unity/peerfinder.h>
+#include <ripple/app/misc/ProofOfWork.h>
+#include <ripple/app/misc/ProofOfWorkFactory.h>
+#include <ripple/core/Config.h>
+#include <ripple/core/LoadFeeTrack.h>
+#include <ripple/data/protocol/Protocol.h>
 #include <ripple/validators/Manager.h>
 
 // VFALCO This is unfortunate. Comment this out and
@@ -43,6 +42,8 @@
 #include <beast/asio/placeholders.h>
 #include <beast/http/message.h>
 #include <beast/http/parser.h>
+
+#include <boost/foreach.hpp>
 
 #include <cstdint>
 

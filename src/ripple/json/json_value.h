@@ -22,6 +22,9 @@
 
 #include <ripple/json/json_config.h>
 #include <ripple/json/json_forwards.h>
+#include <beast/strings/String.h>
+#include <map>
+#include <vector>
 
 /** \brief JSON (JavaScript Object Notation).
  */
@@ -209,6 +212,7 @@ public:
      */
     Value ( const StaticString& value );
     Value ( std::string const& value );
+    // VFALCO DEPRECATED Avoid this conversion
     Value (beast::String const& beastString);
 # ifdef JSON_USE_CPPTL
     Value ( const CppTL::ConstString& value );

@@ -27,6 +27,7 @@
 #include <beast/asio/shared_handler.h>
 
 #include <boost/asio/detail/handler_cont_helpers.hpp>
+#include <boost/asio/streambuf.hpp>
 
 namespace beast {
 namespace asio {
