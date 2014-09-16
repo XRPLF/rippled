@@ -2459,6 +2459,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\Section.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\core\SystemParameters.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\data\crypto\Base58Data.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2503,8 +2505,6 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\data\protocol\RippleAddress.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\data\protocol\RippleSystem.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\data\protocol\SerializedObjectTemplate.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>

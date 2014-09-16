@@ -20,7 +20,7 @@
 #include <ripple/core/Config.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/basics/Log.h>
-#include <ripple/data/protocol/RippleSystem.h>
+#include <ripple/core/SystemParameters.h>
 #include <ripple/net/HTTPClient.h>
 #include <beast/http/ParsedURL.h>
 #include <beast/module/core/text/LexicalCast.h>

@@ -34,7 +34,6 @@ typedef struct bignum_st BIGNUM;
 #include <ripple/data/protocol/HashPrefix.h>
 #include <ripple/data/protocol/Protocol.h>
 #include <ripple/data/protocol/RippleAddress.h>
-#include <ripple/data/protocol/RippleSystem.h>
 #include <ripple/data/protocol/Serializer.h> // needs CKey
 #include <ripple/data/protocol/TER.h>
 #include <ripple/data/protocol/SerializedTypes.h> // needs Serializer, TER

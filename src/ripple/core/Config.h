@@ -21,6 +21,7 @@
 #define RIPPLE_CORE_CONFIG_H_INCLUDED
 
 #include <ripple/core/Section.h>
+#include <ripple/core/SystemParameters.h>
 #include <ripple/data/protocol/RippleAddress.h>
 #include <ripple/unity/json.h>
 #include <beast/http/URL.h>
@@ -98,15 +99,6 @@ protected:
 };
 
 //------------------------------------------------------------------------------
-
-// VFALCO TODO Replace these with beast "unsigned long long" generators
-// VFALCO NOTE Apparently these are used elsewhere. Make them constants in the config
-//             or in the Application
-//
-#define SYSTEM_CURRENCY_GIFT        1000ull
-#define SYSTEM_CURRENCY_USERS       100000000ull
-#define SYSTEM_CURRENCY_PARTS       1000000ull      // 10^SYSTEM_CURRENCY_PRECISION
-#define SYSTEM_CURRENCY_START       (SYSTEM_CURRENCY_GIFT*SYSTEM_CURRENCY_USERS*SYSTEM_CURRENCY_PARTS)
 
 const int SYSTEM_PEER_PORT = 6561;
 

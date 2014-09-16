@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RIPPLESYSTEM_H
-#define RIPPLE_RIPPLESYSTEM_H
+#ifndef RIPPLE_CORE_SYSTEMPARAMETERS_H_INCLUDED
+#define RIPPLE_CORE_SYSTEMPARAMETERS_H_INCLUDED
 
 namespace ripple {
 
@@ -55,6 +55,15 @@ public:
 //
 #define SYSTEM_NAME                 "ripple"
 #define SYSTEM_CURRENCY_PRECISION   6
+
+// VFALCO TODO Replace with C++11 long long constants
+// VFALCO NOTE Apparently these are used elsewhere. Make them constants in the config
+//             or in the Application
+//
+#define SYSTEM_CURRENCY_GIFT        1000ull
+#define SYSTEM_CURRENCY_USERS       100000000ull
+#define SYSTEM_CURRENCY_PARTS       1000000ull      // 10^SYSTEM_CURRENCY_PRECISION
+#define SYSTEM_CURRENCY_START       (SYSTEM_CURRENCY_GIFT*SYSTEM_CURRENCY_USERS*SYSTEM_CURRENCY_PARTS)
 
 } // ripple
 

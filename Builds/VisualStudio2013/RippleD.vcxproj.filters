@@ -3525,6 +3525,9 @@
     <ClInclude Include="..\..\src\ripple\core\Section.h">
       <Filter>ripple\core</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\core\SystemParameters.h">
+      <Filter>ripple\core</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\data\crypto\Base58Data.cpp">
       <Filter>ripple\data\crypto</Filter>
     </ClCompile>
@@ -3577,9 +3580,6 @@
       <Filter>ripple\data\protocol</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\data\protocol\RippleAddress.h">
-      <Filter>ripple\data\protocol</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\data\protocol\RippleSystem.h">
       <Filter>ripple\data\protocol</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\data\protocol\SerializedObjectTemplate.cpp">

@@ -17,8 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/types/UintTypes.h>
+#include <ripple/core/SystemParameters.h>
 #include <ripple/data/protocol/STAmount.h>
+#include <ripple/types/UintTypes.h>
 #include <beast/cxx14/iterator.h>
 
 namespace ripple {

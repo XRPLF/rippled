@@ -19,7 +19,7 @@
 
 #include <ripple/common/jsonrpc_fields.h>
 #include <ripple/data/protocol/BuildInfo.h>
-#include <ripple/data/protocol/RippleSystem.h>
+#include <ripple/core/SystemParameters.h>
 
 namespace ripple {
 
