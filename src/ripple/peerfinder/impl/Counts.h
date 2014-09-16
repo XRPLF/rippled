@@ -20,7 +20,8 @@
 #ifndef RIPPLE_PEERFINDER_COUNTS_H_INCLUDED
 #define RIPPLE_PEERFINDER_COUNTS_H_INCLUDED
 
-#include <ripple/peerfinder/api/Slot.h>
+#include <ripple/peerfinder/Config.h>
+#include <ripple/peerfinder/Slot.h>
 
 namespace ripple {
 namespace PeerFinder {

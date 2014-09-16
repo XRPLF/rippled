@@ -22,6 +22,7 @@
 
 #include <ripple/sitefiles/api/Listener.h>
 
+#include <beast/threads/Stoppable.h>
 #include <beast/utility/PropertyStream.h>
 
 namespace ripple {

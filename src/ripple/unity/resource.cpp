@@ -23,7 +23,7 @@
 
 #include <boost/utility/base_from_member.hpp>
 
-#include <ripple/algorithm/api/DecayingSample.h>
+#include <ripple/common/DecayingSample.h>
 #include <ripple/common/seconds_clock.h>
 
 #include <beast/Insight.h>

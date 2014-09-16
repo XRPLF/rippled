@@ -23,11 +23,11 @@
 
 #include <ripple/common/seconds_clock.h>
 
-#include <ripple/module/app/ledger/LedgerEntrySet.cpp>
-#include <ripple/module/app/ledger/AcceptedLedger.cpp>
-#include <ripple/module/app/ledger/DirectoryEntryIterator.cpp>
-#include <ripple/module/app/ledger/OrderBookIterator.cpp>
-#include <ripple/module/app/consensus/DisputedTx.cpp>
-#include <ripple/module/app/misc/HashRouter.cpp>
-#include <ripple/module/app/paths/Pathfinder.cpp>
-#include <ripple/module/app/misc/AmendmentTableImpl.cpp>
+#include <ripple/app/ledger/LedgerEntrySet.cpp>
+#include <ripple/app/ledger/AcceptedLedger.cpp>
+#include <ripple/app/ledger/DirectoryEntryIterator.cpp>
+#include <ripple/app/ledger/OrderBookIterator.cpp>
+#include <ripple/app/consensus/DisputedTx.cpp>
+#include <ripple/app/misc/HashRouter.cpp>
+#include <ripple/app/paths/Pathfinder.cpp>
+#include <ripple/app/misc/AmendmentTableImpl.cpp>

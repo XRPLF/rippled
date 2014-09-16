@@ -20,9 +20,14 @@
 #ifndef RIPPLE_PEERFINDER_BOOTCACHE_H_INCLUDED
 #define RIPPLE_PEERFINDER_BOOTCACHE_H_INCLUDED
 
+#include <ripple/peerfinder/Types.h>
+#include <ripple/peerfinder/impl/Store.h>
+#include <beast/utility/Journal.h>
+#include <beast/utility/PropertyStream.h>
 #include <boost/bimap.hpp>
 #include <boost/bimap/multiset_of.hpp>
 #include <boost/bimap/unordered_set_of.hpp>
+#include <boost/iterator/transform_iterator.hpp>
 
 namespace ripple {
 namespace PeerFinder {

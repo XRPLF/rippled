@@ -1,3 +1,0 @@
-# Algorithm
-
-Various utility classes

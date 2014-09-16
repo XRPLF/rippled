@@ -20,7 +20,7 @@
 #ifndef RIPPLE_PEERFINDER_SLOTIMP_H_INCLUDED
 #define RIPPLE_PEERFINDER_SLOTIMP_H_INCLUDED
 
-#include <ripple/peerfinder/api/Slot.h>
+#include <ripple/peerfinder/Slot.h>
 
 #include <beast/container/aged_unordered_map.h>
 #include <beast/container/aged_container_utility.h>

@@ -24,6 +24,9 @@
 #include <beast/boost/get_pointer.h>
 #include <beast/asio/wrap_handler.h>
 #include <beast/asio/placeholders.h>
+#include <beast/config/ContractChecks.h>
+#include <beast/module/asio/protocol/HandshakeDetector.h>
+#include <beast/module/asio/protocol/HandshakeDetectLogicSSL3.h>
 #include <beast/cxx14/type_traits.h>
 #include <boost/asio/ssl/stream.hpp>
 #include <cassert>

@@ -25,12 +25,12 @@
 
 #include <ripple/common/seconds_clock.h>
 
-#include <ripple/module/app/ledger/InboundLedgers.cpp>
-#include <ripple/module/app/ledger/LedgerHistory.cpp>
-#include <ripple/module/app/misc/SerializedLedger.cpp>
-#include <ripple/module/app/tx/TransactionAcquire.cpp>
+#include <ripple/app/ledger/InboundLedgers.cpp>
+#include <ripple/app/ledger/LedgerHistory.cpp>
+#include <ripple/app/misc/SerializedLedger.cpp>
+#include <ripple/app/tx/TransactionAcquire.cpp>
 
-#include <ripple/module/app/tx/TxQueueEntry.h>
-#include <ripple/module/app/tx/TxQueue.h>
-#include <ripple/module/app/tx/LocalTxs.cpp>
-#include <ripple/module/app/misc/NetworkOPs.cpp>
+#include <ripple/app/tx/TxQueueEntry.h>
+#include <ripple/app/tx/TxQueue.h>
+#include <ripple/app/tx/LocalTxs.cpp>
+#include <ripple/app/misc/NetworkOPs.cpp>

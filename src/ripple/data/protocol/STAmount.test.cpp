@@ -1,0 +1,528 @@
+//------------------------------------------------------------------------------
+/*
+    This file is part of rippled: https://github.com/ripple/rippled
+    Copyright (c) 2012, 2013 Ripple Labs Inc.
+
+    Permission to use, copy, modify, and/or distribute this software for any
+    purpose  with  or without fee is hereby granted, provided that the above
+    copyright notice and this permission notice appear in all copies.
+
+    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
+    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
+    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
+//==============================================================================
+
+#include <ripple/data/protocol/STAmount.h>
+#include <beast/unit_test/suite.h>
+
+namespace ripple {
+
+class STAmount_test : public beast::unit_test::suite
+{
+public:
+    static STAmount serializeAndDeserialize (STAmount const& s)
+    {
+        Serializer ser;
+        s.add (ser);
+
+        SerializerIterator sit (ser);
+        return STAmount::deserialize (sit);
+    }
+
+    //--------------------------------------------------------------------------
+
+    bool roundTest (int n, int d, int m)
+    {
+        // check STAmount rounding
+        STAmount num (noIssue(), n);
+        STAmount den (noIssue(), d);
+        STAmount mul (noIssue(), m);
+        STAmount quot = divide (n, d, noIssue());
+        STAmount res = multiply (quot, mul, noIssue());
+
+        expect (! res.isNative (), "Product should not be native");
+
+        res.roundSelf ();
+
+        STAmount cmp (noIssue(), (n * m) / d);
+
+        expect (! cmp.isNative (), "Comparison amount should not be native");
+
+        if (res != cmp)
+        {
+            cmp.throwComparable (res);
+
+            WriteLog (lsWARNING, STAmount) << "(" << num.getText () << "/" << den.getText () << ") X " << mul.getText () << " = "
+                                       << res.getText () << " not " << cmp.getText ();
+
+            fail ("Rounding");
+
+            return false;
+        }
+        else
+        {
+            pass ();
+        }
+
+        return true;
+    }
+
+    void mulTest (int a, int b)
+    {
+        STAmount aa (noIssue(), a);
+        STAmount bb (noIssue(), b);
+        STAmount prod1 (multiply (aa, bb, noIssue()));
+
+        expect (! prod1.isNative ());
+
+        STAmount prod2 (noIssue(), static_cast<std::uint64_t> (a) * static_cast<std::uint64_t> (b));
+
+        if (prod1 != prod2)
+        {
+            WriteLog (lsWARNING, STAmount) << "nn(" << aa.getFullText () << " * " << bb.getFullText () << ") = " << prod1.getFullText ()
+                                           << " not " << prod2.getFullText ();
+
+            fail ("Multiplication result is not exact");
+        }
+        else
+        {
+            pass ();
+        }
+
+        aa = a;
+        prod1 = multiply (aa, bb, noIssue());
+
+        if (prod1 != prod2)
+        {
+            WriteLog (lsWARNING, STAmount) << "n(" << aa.getFullText () << " * " << bb.getFullText () << ") = " << prod1.getFullText ()
+                                           << " not " << prod2.getFullText ();
+            fail ("Multiplication result is not exact");
+        }
+        else
+        {
+            pass ();
+        }
+    }
+
+    //--------------------------------------------------------------------------
+
+    void testSetValue ()
+    {
+        testcase ("set value");
+
+        STAmount    saTmp;
+
+    #if 0
+        // Check native floats
+        saTmp.setFullValue ("1^0");
+        BOOST_CHECK_MESSAGE (SYSTEM_CURRENCY_PARTS == saTmp.getNValue (), "float integer failed");
+        saTmp.setFullValue ("0^1");
+        BOOST_CHECK_MESSAGE (SYSTEM_CURRENCY_PARTS / 10 == saTmp.getNValue (), "float fraction failed");
+        saTmp.setFullValue ("0^12");
+        BOOST_CHECK_MESSAGE (12 * SYSTEM_CURRENCY_PARTS / 100 == saTmp.getNValue (), "float fraction failed");
+        saTmp.setFullValue ("1^2");
+        BOOST_CHECK_MESSAGE (SYSTEM_CURRENCY_PARTS + (2 * SYSTEM_CURRENCY_PARTS / 10) == saTmp.getNValue (), "float combined failed");
+    #endif
+
+        // Check native integer
+        saTmp.setFullValue ("1");
+        expect (1 == saTmp.getNValue (), "should be equal");
+    }
+
+    //--------------------------------------------------------------------------
+
+    void testNativeCurrency ()
+    {
+        testcase ("native currency");
+        STAmount zeroSt, one (1), hundred (100);
+        // VFALCO NOTE Why repeat "STAmount fail" so many times??
+        unexpected (serializeAndDeserialize (zeroSt) != zeroSt, "STAmount fail");
+        unexpected (serializeAndDeserialize (one) != one, "STAmount fail");
+        unexpected (serializeAndDeserialize (hundred) != hundred, "STAmount fail");
+        unexpected (!zeroSt.isNative (), "STAmount fail");
+        unexpected (!hundred.isNative (), "STAmount fail");
+        unexpected (zeroSt != zero, "STAmount fail");
+        unexpected (one == zero, "STAmount fail");
+        unexpected (hundred == zero, "STAmount fail");
+        unexpected ((zeroSt < zeroSt), "STAmount fail");
+        unexpected (! (zeroSt < one), "STAmount fail");
+        unexpected (! (zeroSt < hundred), "STAmount fail");
+        unexpected ((one < zeroSt), "STAmount fail");
+        unexpected ((one < one), "STAmount fail");
+        unexpected (! (one < hundred), "STAmount fail");
+        unexpected ((hundred < zeroSt), "STAmount fail");
+        unexpected ((hundred < one), "STAmount fail");
+        unexpected ((hundred < hundred), "STAmount fail");
+        unexpected ((zeroSt > zeroSt), "STAmount fail");
+        unexpected ((zeroSt > one), "STAmount fail");
+        unexpected ((zeroSt > hundred), "STAmount fail");
+        unexpected (! (one > zeroSt), "STAmount fail");
+        unexpected ((one > one), "STAmount fail");
+        unexpected ((one > hundred), "STAmount fail");
+        unexpected (! (hundred > zeroSt), "STAmount fail");
+        unexpected (! (hundred > one), "STAmount fail");
+        unexpected ((hundred > hundred), "STAmount fail");
+        unexpected (! (zeroSt <= zeroSt), "STAmount fail");
+        unexpected (! (zeroSt <= one), "STAmount fail");
+        unexpected (! (zeroSt <= hundred), "STAmount fail");
+        unexpected ((one <= zeroSt), "STAmount fail");
+        unexpected (! (one <= one), "STAmount fail");
+        unexpected (! (one <= hundred), "STAmount fail");
+        unexpected ((hundred <= zeroSt), "STAmount fail");
+        unexpected ((hundred <= one), "STAmount fail");
+        unexpected (! (hundred <= hundred), "STAmount fail");
+        unexpected (! (zeroSt >= zeroSt), "STAmount fail");
+        unexpected ((zeroSt >= one), "STAmount fail");
+        unexpected ((zeroSt >= hundred), "STAmount fail");
+        unexpected (! (one >= zeroSt), "STAmount fail");
+        unexpected (! (one >= one), "STAmount fail");
+        unexpected ((one >= hundred), "STAmount fail");
+        unexpected (! (hundred >= zeroSt), "STAmount fail");
+        unexpected (! (hundred >= one), "STAmount fail");
+        unexpected (! (hundred >= hundred), "STAmount fail");
+        unexpected (! (zeroSt == zeroSt), "STAmount fail");
+        unexpected ((zeroSt == one), "STAmount fail");
+        unexpected ((zeroSt == hundred), "STAmount fail");
+        unexpected ((one == zeroSt), "STAmount fail");
+        unexpected (! (one == one), "STAmount fail");
+        unexpected ((one == hundred), "STAmount fail");
+        unexpected ((hundred == zeroSt), "STAmount fail");
+        unexpected ((hundred == one), "STAmount fail");
+        unexpected (! (hundred == hundred), "STAmount fail");
+        unexpected ((zeroSt != zeroSt), "STAmount fail");
+        unexpected (! (zeroSt != one), "STAmount fail");
+        unexpected (! (zeroSt != hundred), "STAmount fail");
+        unexpected (! (one != zeroSt), "STAmount fail");
+        unexpected ((one != one), "STAmount fail");
+        unexpected (! (one != hundred), "STAmount fail");
+        unexpected (! (hundred != zeroSt), "STAmount fail");
+        unexpected (! (hundred != one), "STAmount fail");
+        unexpected ((hundred != hundred), "STAmount fail");
+        unexpected (STAmount ().getText () != "0", "STAmount fail");
+        unexpected (STAmount (31).getText () != "31", "STAmount fail");
+        unexpected (STAmount (310).getText () != "310", "STAmount fail");
+        unexpected (to_string (Currency ()) != "XRP", "cHC(XRP)");
+        Currency c;
+        unexpected (!to_currency (c, "USD"), "create USD currency");
+        unexpected (to_string (c) != "USD", "check USD currency");
+
+        const std::string cur = "015841551A748AD2C1F76FF6ECB0CCCD00000000";
+        unexpected (!to_currency (c, cur), "create custom currency");
+        unexpected (to_string (c) != cur, "check custom currency");
+        unexpected (c != Currency (cur), "check custom currency");
+    }
+
+    //--------------------------------------------------------------------------
+
+    void testCustomCurrency ()
+    {
+        testcase ("custom currency");
+        STAmount zeroSt (noIssue()), one (noIssue(), 1), hundred (noIssue(), 100);
+        unexpected (serializeAndDeserialize (zeroSt) != zeroSt, "STAmount fail");
+        unexpected (serializeAndDeserialize (one) != one, "STAmount fail");
+        unexpected (serializeAndDeserialize (hundred) != hundred, "STAmount fail");
+        unexpected (zeroSt.isNative (), "STAmount fail");
+        unexpected (hundred.isNative (), "STAmount fail");
+        unexpected (zeroSt != zero, "STAmount fail");
+        unexpected (one == zero, "STAmount fail");
+        unexpected (hundred == zero, "STAmount fail");
+        unexpected ((zeroSt < zeroSt), "STAmount fail");
+        unexpected (! (zeroSt < one), "STAmount fail");
+        unexpected (! (zeroSt < hundred), "STAmount fail");
+        unexpected ((one < zeroSt), "STAmount fail");
+        unexpected ((one < one), "STAmount fail");
+        unexpected (! (one < hundred), "STAmount fail");
+        unexpected ((hundred < zeroSt), "STAmount fail");
+        unexpected ((hundred < one), "STAmount fail");
+        unexpected ((hundred < hundred), "STAmount fail");
+        unexpected ((zeroSt > zeroSt), "STAmount fail");
+        unexpected ((zeroSt > one), "STAmount fail");
+        unexpected ((zeroSt > hundred), "STAmount fail");
+        unexpected (! (one > zeroSt), "STAmount fail");
+        unexpected ((one > one), "STAmount fail");
+        unexpected ((one > hundred), "STAmount fail");
+        unexpected (! (hundred > zeroSt), "STAmount fail");
+        unexpected (! (hundred > one), "STAmount fail");
+        unexpected ((hundred > hundred), "STAmount fail");
+        unexpected (! (zeroSt <= zeroSt), "STAmount fail");
+        unexpected (! (zeroSt <= one), "STAmount fail");
+        unexpected (! (zeroSt <= hundred), "STAmount fail");
+        unexpected ((one <= zeroSt), "STAmount fail");
+        unexpected (! (one <= one), "STAmount fail");
+        unexpected (! (one <= hundred), "STAmount fail");
+        unexpected ((hundred <= zeroSt), "STAmount fail");
+        unexpected ((hundred <= one), "STAmount fail");
+        unexpected (! (hundred <= hundred), "STAmount fail");
+        unexpected (! (zeroSt >= zeroSt), "STAmount fail");
+        unexpected ((zeroSt >= one), "STAmount fail");
+        unexpected ((zeroSt >= hundred), "STAmount fail");
+        unexpected (! (one >= zeroSt), "STAmount fail");
+        unexpected (! (one >= one), "STAmount fail");
+        unexpected ((one >= hundred), "STAmount fail");
+        unexpected (! (hundred >= zeroSt), "STAmount fail");
+        unexpected (! (hundred >= one), "STAmount fail");
+        unexpected (! (hundred >= hundred), "STAmount fail");
+        unexpected (! (zeroSt == zeroSt), "STAmount fail");
+        unexpected ((zeroSt == one), "STAmount fail");
+        unexpected ((zeroSt == hundred), "STAmount fail");
+        unexpected ((one == zeroSt), "STAmount fail");
+        unexpected (! (one == one), "STAmount fail");
+        unexpected ((one == hundred), "STAmount fail");
+        unexpected ((hundred == zeroSt), "STAmount fail");
+        unexpected ((hundred == one), "STAmount fail");
+        unexpected (! (hundred == hundred), "STAmount fail");
+        unexpected ((zeroSt != zeroSt), "STAmount fail");
+        unexpected (! (zeroSt != one), "STAmount fail");
+        unexpected (! (zeroSt != hundred), "STAmount fail");
+        unexpected (! (one != zeroSt), "STAmount fail");
+        unexpected ((one != one), "STAmount fail");
+        unexpected (! (one != hundred), "STAmount fail");
+        unexpected (! (hundred != zeroSt), "STAmount fail");
+        unexpected (! (hundred != one), "STAmount fail");
+        unexpected ((hundred != hundred), "STAmount fail");
+        unexpected (STAmount (noIssue()).getText () != "0", "STAmount fail");
+        unexpected (STAmount (noIssue(), 31).getText () != "31", "STAmount fail");
+        unexpected (STAmount (noIssue(), 31, 1).getText () != "310", "STAmount fail");
+        unexpected (STAmount (noIssue(), 31, -1).getText () != "3.1", "STAmount fail");
+        unexpected (STAmount (noIssue(), 31, -2).getText () != "0.31", "STAmount fail");
+        unexpected (multiply (STAmount (noIssue(), 20), STAmount (3), noIssue()).getText () != "60",
+            "STAmount multiply fail 1");
+        unexpected (multiply (STAmount (noIssue(), 20), STAmount (3), xrpIssue ()).getText () != "60",
+            "STAmount multiply fail 2");
+        unexpected (multiply (STAmount (20), STAmount (3), noIssue()).getText () != "60",
+            "STAmount multiply fail 3");
+        unexpected (multiply (STAmount (20), STAmount (3), xrpIssue ()).getText () != "60",
+            "STAmount multiply fail 4");
+
+        if (divide (STAmount (noIssue(), 60), STAmount (3), noIssue()).getText () != "20")
+        {
+            WriteLog (lsFATAL, STAmount) << "60/3 = " <<
+                divide (STAmount (noIssue(), 60),
+                    STAmount (3), noIssue()).getText ();
+            fail ("STAmount divide fail");
+        }
+        else
+        {
+            pass ();
+        }
+
+        unexpected (divide (STAmount (noIssue(), 60), STAmount (3), xrpIssue ()).getText () != "20",
+            "STAmount divide fail");
+
+        unexpected (divide (STAmount (noIssue(), 60), STAmount (noIssue(), 3), noIssue()).getText () != "20",
+            "STAmount divide fail");
+
+        unexpected (divide (STAmount (noIssue(), 60), STAmount (noIssue(), 3), xrpIssue ()).getText () != "20",
+            "STAmount divide fail");
+
+        STAmount a1 (noIssue(), 60), a2 (noIssue(), 10, -1);
+
+        unexpected (divide (a2, a1, noIssue()) != amountFromQuality (getRate (a1, a2)),
+            "STAmount setRate(getRate) fail");
+
+        unexpected (divide (a1, a2, noIssue()) != amountFromQuality (getRate (a2, a1)),
+            "STAmount setRate(getRate) fail");
+    }
+
+    //--------------------------------------------------------------------------
+
+    void testArithmetic ()
+    {
+        testcase ("arithmetic");
+
+        CBigNum b;
+
+        for (int i = 0; i < 16; ++i)
+        {
+            std::uint64_t r = rand ();
+            r <<= 32;
+            r |= rand ();
+            b.setuint64 (r);
+
+            if (b.getuint64 () != r)
+            {
+                WriteLog (lsFATAL, STAmount) << r << " != " << b.getuint64 () << " " << b.ToString (16);
+                fail ("setull64/getull64 failure");
+            }
+            else
+            {
+                pass ();
+            }
+        }
+
+        // Test currency multiplication and division operations such as
+        // convertToDisplayAmount, convertToInternalAmount, getRate, getClaimed, and getNeeded
+
+        unexpected (getRate (STAmount (1), STAmount (10)) != (((100ull - 14) << (64 - 8)) | 1000000000000000ull),
+            "STAmount getRate fail 1");
+
+        unexpected (getRate (STAmount (10), STAmount (1)) != (((100ull - 16) << (64 - 8)) | 1000000000000000ull),
+            "STAmount getRate fail 2");
+
+        unexpected (getRate (STAmount (noIssue(), 1), STAmount (noIssue(), 10)) != (((100ull - 14) << (64 - 8)) | 1000000000000000ull),
+            "STAmount getRate fail 3");
+
+        unexpected (getRate (STAmount (noIssue(), 10), STAmount (noIssue(), 1)) != (((100ull - 16) << (64 - 8)) | 1000000000000000ull),
+            "STAmount getRate fail 4");
+
+        unexpected (getRate (STAmount (noIssue(), 1), STAmount (10)) != (((100ull - 14) << (64 - 8)) | 1000000000000000ull),
+            "STAmount getRate fail 5");
+
+        unexpected (getRate (STAmount (noIssue(), 10), STAmount (1)) != (((100ull - 16) << (64 - 8)) | 1000000000000000ull),
+            "STAmount getRate fail 6");
+
+        unexpected (getRate (STAmount (1), STAmount (noIssue(), 10)) != (((100ull - 14) << (64 - 8)) | 1000000000000000ull),
+            "STAmount getRate fail 7");
+
+        unexpected (getRate (STAmount (10), STAmount (noIssue(), 1)) != (((100ull - 16) << (64 - 8)) | 1000000000000000ull),
+            "STAmount getRate fail 8");
+
+        roundTest (1, 3, 3);
+        roundTest (2, 3, 9);
+        roundTest (1, 7, 21);
+        roundTest (1, 2, 4);
+        roundTest (3, 9, 18);
+        roundTest (7, 11, 44);
+
+        for (int i = 0; i <= 100000; ++i)
+            mulTest (rand () % 10000000, rand () % 10000000);
+    }
+
+    //--------------------------------------------------------------------------
+
+    template <class Cond>
+    bool
+    expect (Cond cond, beast::String const& s)
+    {
+        return suite::expect (cond, s.toStdString());
+    }
+
+    template <class Cond>
+    bool
+    expect (Cond cond)
+    {
+        return suite::expect (cond);
+    }
+
+    void testUnderflow ()
+    {
+        testcase ("underflow");
+
+        STAmount bigNative (STAmount::cMaxNative / 2);
+        STAmount bigValue (noIssue(),
+                           (STAmount::cMinValue + STAmount::cMaxValue) / 2, STAmount::cMaxOffset - 1);
+        STAmount smallValue (noIssue(),
+                             (STAmount::cMinValue + STAmount::cMaxValue) / 2, STAmount::cMinOffset + 1);
+        STAmount zeroSt (noIssue(), 0);
+
+        STAmount smallXsmall = multiply (smallValue, smallValue, noIssue());
+
+        expect (smallXsmall == zero, "smallXsmall != 0");
+
+        STAmount bigDsmall = divide (smallValue, bigValue, noIssue());
+
+        expect (bigDsmall == zero, beast::String ("small/big != 0: ") + bigDsmall.getText ());
+
+#if 0
+        // TODO(tom): this test makes no sense - we should have no way to have
+        // the currency not be XRP while the account is XRP.
+        bigDsmall = divide (smallValue, bigNative, noCurrency(), xrpAccount ());
+#endif
+
+        expect (bigDsmall == zero, beast::String ("small/bigNative != 0: ") + bigDsmall.getText ());
+
+        bigDsmall = divide (smallValue, bigValue, xrpIssue ());
+
+        expect (bigDsmall == zero, beast::String ("(small/big)->N != 0: ") + bigDsmall.getText ());
+
+        bigDsmall = divide (smallValue, bigNative, xrpIssue ());
+
+        expect (bigDsmall == zero, beast::String ("(small/bigNative)->N != 0: ") + bigDsmall.getText ());
+
+        // very bad offer
+        std::uint64_t r = getRate (smallValue, bigValue);
+
+        expect (r == 0, "getRate(smallOut/bigIn) != 0");
+
+        // very good offer
+        r = getRate (bigValue, smallValue);
+
+        expect (r == 0, "getRate(smallIn/bigOUt) != 0");
+    }
+
+    //--------------------------------------------------------------------------
+
+    void testRounding ()
+    {
+        // VFALCO TODO There are no actual tests here, just printed output?
+        //             Change this to actually do something.
+
+#if 0
+        beginTestCase ("rounding ");
+
+        std::uint64_t value = 25000000000000000ull;
+        int offset = -14;
+        canonicalizeRound (false, value, offset, true);
+
+        STAmount one (noIssue(), 1);
+        STAmount two (noIssue(), 2);
+        STAmount three (noIssue(), 3);
+
+        STAmount oneThird1 = divRound (one, three, noIssue(), false);
+        STAmount oneThird2 = divide (one, three, noIssue());
+        STAmount oneThird3 = divRound (one, three, noIssue(), true);
+        WriteLog (lsINFO, STAmount) << oneThird1;
+        WriteLog (lsINFO, STAmount) << oneThird2;
+        WriteLog (lsINFO, STAmount) << oneThird3;
+
+        STAmount twoThird1 = divRound (two, three, noIssue(), false);
+        STAmount twoThird2 = divide (two, three, noIssue());
+        STAmount twoThird3 = divRound (two, three, noIssue(), true);
+        WriteLog (lsINFO, STAmount) << twoThird1;
+        WriteLog (lsINFO, STAmount) << twoThird2;
+        WriteLog (lsINFO, STAmount) << twoThird3;
+
+        STAmount oneA = mulRound (oneThird1, three, noIssue(), false);
+        STAmount oneB = multiply (oneThird2, three, noIssue());
+        STAmount oneC = mulRound (oneThird3, three, noIssue(), true);
+        WriteLog (lsINFO, STAmount) << oneA;
+        WriteLog (lsINFO, STAmount) << oneB;
+        WriteLog (lsINFO, STAmount) << oneC;
+
+        STAmount fourThirdsA = addRound (twoThird2, twoThird2, false);
+        STAmount fourThirdsB = twoThird2 + twoThird2;
+        STAmount fourThirdsC = addRound (twoThird2, twoThird2, true);
+        WriteLog (lsINFO, STAmount) << fourThirdsA;
+        WriteLog (lsINFO, STAmount) << fourThirdsB;
+        WriteLog (lsINFO, STAmount) << fourThirdsC;
+
+        STAmount dripTest1 = mulRound (twoThird2, two, xrpIssue (), false);
+        STAmount dripTest2 = multiply (twoThird2, two, xrpIssue ());
+        STAmount dripTest3 = mulRound (twoThird2, two, xrpIssue (), true);
+        WriteLog (lsINFO, STAmount) << dripTest1;
+        WriteLog (lsINFO, STAmount) << dripTest2;
+        WriteLog (lsINFO, STAmount) << dripTest3;
+#endif
+    }
+
+    //--------------------------------------------------------------------------
+
+    void run ()
+    {
+        testSetValue ();
+        testNativeCurrency ();
+        testCustomCurrency ();
+        testArithmetic ();
+        testUnderflow ();
+        testRounding ();
+    }
+};
+
+BEAST_DEFINE_TESTSUITE(STAmount,ripple_data,ripple);
+
+} // ripple

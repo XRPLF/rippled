@@ -23,7 +23,7 @@
 #include <ripple/overlay/Peer.h>
 
 // VFALCO TODO Remove this include dependency it shouldn't be needed
-#include <ripple/peerfinder/api/Slot.h>
+#include <ripple/peerfinder/Slot.h>
 
 #include <beast/threads/Stoppable.h>
 #include <beast/utility/PropertyStream.h>

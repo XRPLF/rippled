@@ -28,20 +28,20 @@
 
 #include <ripple/http/Server.h>
 
-#include <ripple/module/app/main/CollectorManager.cpp>
-#include <ripple/module/app/main/NodeStoreScheduler.cpp>
-#include <ripple/module/app/main/IoServicePool.cpp>
-#include <ripple/module/app/main/FatalErrorReporter.cpp>
-#include <ripple/module/app/main/RPCHTTPServer.cpp>
-#include <ripple/module/app/tx/TxQueueEntry.h>
-#include <ripple/module/app/tx/TxQueueEntry.cpp>
-#include <ripple/module/app/tx/TxQueue.cpp>
-#include <ripple/module/app/websocket/WSServerHandler.cpp>
-#include <ripple/module/app/websocket/WSConnection.cpp>
-#include <ripple/module/app/websocket/WSDoor.cpp>
-#include <ripple/module/app/node/SqliteFactory.cpp>
-#include <ripple/module/app/main/Application.cpp>
-#include <ripple/module/app/main/Main.cpp>
+#include <ripple/app/main/CollectorManager.cpp>
+#include <ripple/app/main/NodeStoreScheduler.cpp>
+#include <ripple/app/main/IoServicePool.cpp>
+#include <ripple/app/main/FatalErrorReporter.cpp>
+#include <ripple/app/main/RPCHTTPServer.cpp>
+#include <ripple/app/tx/TxQueueEntry.h>
+#include <ripple/app/tx/TxQueueEntry.cpp>
+#include <ripple/app/tx/TxQueue.cpp>
+#include <ripple/app/websocket/WSServerHandler.cpp>
+#include <ripple/app/websocket/WSConnection.cpp>
+#include <ripple/app/websocket/WSDoor.cpp>
+#include <ripple/app/node/SqliteFactory.cpp>
+#include <ripple/app/main/Application.cpp>
+#include <ripple/app/main/Main.cpp>
 
 //------------------------------------------------------------------------------
 
