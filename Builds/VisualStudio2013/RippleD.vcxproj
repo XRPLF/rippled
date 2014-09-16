@@ -2438,6 +2438,9 @@
     <ClCompile Include="..\..\src\ripple\core\impl\LoadMonitor.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\core\impl\Section.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\core\Job.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\JobQueue.h">
@@ -2453,6 +2456,8 @@
     <ClInclude Include="..\..\src\ripple\core\LoadFeeTrack.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\LoadMonitor.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\core\Section.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\data\crypto\Base58Data.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>

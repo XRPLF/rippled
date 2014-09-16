@@ -20,8 +20,9 @@
 #ifndef RIPPLE_CORE_CONFIG_H_INCLUDED
 #define RIPPLE_CORE_CONFIG_H_INCLUDED
 
-#include <ripple/unity/json.h>
+#include <ripple/core/Section.h>
 #include <ripple/data/protocol/RippleAddress.h>
+#include <ripple/unity/json.h>
 #include <beast/http/URL.h>
 #include <beast/net/IPEndpoint.h>
 #include <beast/module/core/files/File.h>
@@ -63,38 +64,6 @@ parseKeyValueSection (IniFileSections& secSource,
 
 //------------------------------------------------------------------------------
 
-/** Holds a collection of configuration values.
-    A configuration file contains zero or more sections.
-*/
-class Section
-{
-private:
-    std::vector <std::string> lines_;
-    std::map <std::string, std::string, beast::ci_less> map_;
-
-public:
-    /** Create an empty section. */
-    Section() = default;
-
-    /** Append a set of lines to this section.
-        Parsable key/value pairs are also added to the map.
-    */
-    void
-    append (std::vector <std::string> const& lines);
-
-    /** Returns `true` if a key with the given name exists. */
-    bool
-    exists (std::string const& name) const;
-
-    /** Retrieve a key/value pair.
-        @return A pair with bool `true` if the string was found.
-    */
-    std::pair <std::string, bool>
-    find (std::string const& name) const;
-};
-
-//------------------------------------------------------------------------------
-
 /** Holds unparsed configuration information.
     The raw data sections are processed with intermediate parsers specific
     to each module instead of being all parsed in a central location.
@@ -127,30 +96,6 @@ protected:
     void
     build (IniFileSections const& ifs);
 };
-
-//------------------------------------------------------------------------------
-
-/** Retrieve a key/value pair from a section.
-    @return The value string converted to T if it exists
-            and can be parsed, or else defaultValue.
-*/
-template <class T>
-T
-get (Section const& section,
-    std::string const& name, T const& defaultValue = T{})
-{
-    auto const result = section.find (name);
-    if (! result.second)
-        return defaultValue;
-    try
-    {
-        return boost::lexical_cast <T> (result.first);
-    }
-    catch(...)
-    {
-    }
-    return defaultValue;
-}
 
 //------------------------------------------------------------------------------
 

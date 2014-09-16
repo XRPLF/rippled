@@ -217,64 +217,6 @@ parseAddresses (OutputSequence& out, InputIterator first, InputIterator last,
 
 //------------------------------------------------------------------------------
 //
-// Section
-//
-//------------------------------------------------------------------------------
-
-void
-Section::append (std::vector <std::string> const& lines)
-{
-    // <key> '=' <value>
-    static boost::regex const re1 (
-        "^"                         // start of line
-        "(?:\\s*)"                  // whitespace (optonal)
-        "([a-zA-Z][_a-zA-Z0-9]*)"   // <key>
-        "(?:\\s*)"                  // whitespace (optional)
-        "(?:=)"                     // '='
-        "(?:\\s*)"                  // whitespace (optional)
-        "(.*\\S+)"                  // <value>
-        "(?:\\s*)"                  // whitespace (optional)
-        , boost::regex_constants::optimize
-    );
-
-    lines_.reserve (lines_.size() + lines.size());
-    for (auto const& line : lines)
-    {
-        boost::smatch match;
-        lines_.push_back (line);
-        if (boost::regex_match (line, match, re1))
-        {
-            auto const result = map_.emplace (
-                std::make_pair (match[1], match[2]));
-#if 0
-            if (! result.second)
-            {
-                // If we decide on how to merge values we can do it here.
-            }
-            beast::debug_ostream log;
-            //log << "\"" << match[1] << "\" = \"" << match[2] << "\"";
-#endif
-        }
-    }
-}
-
-bool
-Section::exists (std::string const& name) const
-{
-    return map_.find (name) != map_.end();
-}
-
-std::pair <std::string, bool>
-Section::find (std::string const& name) const
-{
-    auto const iter = map_.find (name);
-    if (iter == map_.end())
-        return {{}, false};
-    return {iter->second, true};
-}
-
-//------------------------------------------------------------------------------
-//
 // BasicConfig
 //
 //------------------------------------------------------------------------------
