@@ -36,7 +36,7 @@ namespace asio {
     Write operations are all simply passed through.
 */
 template <class Stream>
-class PrefilledReadStream : public Uncopyable
+class PrefilledReadStream
 {
 protected:
     typedef boost::system::error_code error_code;
@@ -47,6 +47,9 @@ protected:
     }
 
 public:
+    PrefilledReadStream (PrefilledReadStream const&) = delete;
+    PrefilledReadStream& operator= (PrefilledReadStream const&) = delete;
+
     typedef std::remove_reference_t <Stream> next_layer_type;
     typedef typename next_layer_type::lowest_layer_type lowest_layer_type;
 

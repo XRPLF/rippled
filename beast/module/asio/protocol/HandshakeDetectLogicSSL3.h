@@ -20,6 +20,8 @@
 #ifndef BEAST_ASIO_HANDSHAKE_HANDSHAKEDETECTLOGICSSL3_H_INCLUDED
 #define BEAST_ASIO_HANDSHAKE_HANDSHAKEDETECTLOGICSSL3_H_INCLUDED
 
+#include <beast/ByteOrder.h>
+    
 namespace beast {
 namespace asio {
 
