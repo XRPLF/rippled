@@ -162,30 +162,7 @@ get (Section const& section,
 #define SYSTEM_CURRENCY_PARTS       1000000ull      // 10^SYSTEM_CURRENCY_PRECISION
 #define SYSTEM_CURRENCY_START       (SYSTEM_CURRENCY_GIFT*SYSTEM_CURRENCY_USERS*SYSTEM_CURRENCY_PARTS)
 
-const int DOMAIN_BYTES_MAX              = 256;
-const int PUBLIC_BYTES_MAX              = 33;       // Maximum bytes for an account public key.
-
-const int SYSTEM_PEER_PORT              = 6561;
-const int SYSTEM_WEBSOCKET_PORT         = 6562;
-const int SYSTEM_WEBSOCKET_PUBLIC_PORT  = 6563; // XXX Going away.
-
-// Allow anonymous DH.
-#define DEFAULT_PEER_SSL_CIPHER_LIST    "ALL:!LOW:!EXP:!MD5:@STRENGTH"
-
-// Normal, recommend 1 hour: 60*60
-// Testing, recommend 1 minute: 60
-#define DEFAULT_PEER_SCAN_INTERVAL_MIN  (60*60) // Seconds
-
-// Maximum number of peers to try to connect to as client at once.
-#define DEFAULT_PEER_START_MAX          5
-
-// Might connect with fewer for testing.
-#define DEFAULT_PEER_CONNECT_LOW_WATER  10
-
-#define DEFAULT_PATH_SEARCH_OLD         7
-#define DEFAULT_PATH_SEARCH             7
-#define DEFAULT_PATH_SEARCH_FAST        2
-#define DEFAULT_PATH_SEARCH_MAX         10
+const int SYSTEM_PEER_PORT = 6561;
 
 enum SizedItemName
 {
@@ -220,8 +197,6 @@ struct SizedItem
 class Config : public BasicConfig
 {
 public:
-
-
     struct Helpers
     {
         // This replaces CONFIG_FILE_NAME
@@ -239,65 +214,6 @@ public:
         {
             return "validators.txt";
         }
-    };
-
-    /** The result of performing a load on the parsed config file data.
-        This type is convertible to `bool`.
-        A value of `true` indicates an error occurred,
-        while `false` indicates no error.
-    */
-    class Error
-    {
-    public:
-        Error () noexcept
-            : m_what (beast::String::empty)
-            , m_fileName ("")
-            , m_lineNumber (0)
-        {
-        }
-
-        Error (beast::String what, char const* fileName, int lineNumber)  noexcept
-            : m_what (what)
-            , m_fileName (fileName)
-            , m_lineNumber (lineNumber)
-        {
-        }
-
-        explicit
-        operator bool() const noexcept
-        {
-            return m_what != beast::String::empty;
-        }
-
-        beast::String what () const noexcept
-        {
-            return m_what;
-        }
-
-        char const* fileName () const
-        {
-            return m_fileName;
-        }
-
-        int lineNumber () const
-        {
-            return m_lineNumber;
-        }
-
-    private:
-        beast::String m_what;
-        char const* m_fileName;
-        int m_lineNumber;
-    };
-
-    /** Listening socket settings. */
-    struct DoorSettings
-    {
-        /** Create a default set of door (listening socket) settings. */
-        DoorSettings ();
-
-        /** Load settings from the configuration file. */
-        //Error load (ParsedConfigFile const& file);
     };
 
     //--------------------------------------------------------------------------
@@ -498,10 +414,7 @@ public:
     std::string                 DATABASE_PATH;
 
     // Network parameters
-    int                         NETWORK_START_TIME;     // The Unix time we start ledger 0.
     int                         TRANSACTION_FEE_BASE;   // The number of fee units a reference transaction costs
-    int                         LEDGER_SECONDS;
-    bool                        LEDGER_CREATOR;         // Should be false unless we are starting a new ledger.
 
     /** Operate in stand-alone mode.
 
@@ -520,11 +433,7 @@ public:
 
     // Peer networking parameters
     std::string                 PEER_IP;
-    int                         NUMBER_CONNECTIONS;
     std::string                 PEER_SSL_CIPHER_LIST;
-    int                         PEER_SCAN_INTERVAL_MIN;
-    int                         PEER_START_MAX;
-    unsigned int                PEER_CONNECT_LOW_WATER;
     bool                        PEER_PRIVATE;           // True to ask peers not to relay current IP.
     unsigned int                PEERS_MAX;
 
@@ -568,18 +477,22 @@ public:
     int                         PATH_SEARCH_MAX;
 
     // Validation
-    RippleAddress               VALIDATION_SEED, VALIDATION_PUB, VALIDATION_PRIV;
+    RippleAddress               VALIDATION_SEED;
+    RippleAddress               VALIDATION_PUB;
+    RippleAddress               VALIDATION_PRIV;
 
     // Node/Cluster
     std::vector<std::string>    CLUSTER_NODES;
-    RippleAddress               NODE_SEED, NODE_PUB, NODE_PRIV;
+    RippleAddress               NODE_SEED;
+    RippleAddress               NODE_PUB;
+    RippleAddress               NODE_PRIV;
 
     // Fee schedule (All below values are in fee units)
     std::uint64_t                      FEE_DEFAULT;            // Default fee.
     std::uint64_t                      FEE_ACCOUNT_RESERVE;    // Amount of units not allowed to send.
     std::uint64_t                      FEE_OWNER_RESERVE;      // Amount of units not allowed to send per owner entry.
     std::uint64_t                      FEE_OFFER;              // Rate per day.
-    int                         FEE_CONTRACT_OPERATION; // fee for each contract operation
+    int                                FEE_CONTRACT_OPERATION; // fee for each contract operation
 
     // Node storage configuration
     std::uint32_t                      LEDGER_HISTORY;

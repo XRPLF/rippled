@@ -24,6 +24,9 @@ namespace ripple {
 class SetAccount
     : public Transactor
 {
+    static int const DOMAIN_BYTES_MAX = 256;
+    static int const PUBLIC_BYTES_MAX = 33;
+
 public:
     SetAccount (
         SerializedTransaction const& txn,
