@@ -20,6 +20,7 @@
 #ifndef RIPPLE_RESOURCE_CONSUMER_H_INCLUDED
 #define RIPPLE_RESOURCE_CONSUMER_H_INCLUDED
 
+#include <ripple/resource/api/Charge.h>
 #include <ripple/resource/api/Disposition.h>
 
 namespace ripple {

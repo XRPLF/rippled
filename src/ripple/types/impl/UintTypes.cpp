@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/types/api/UintTypes.h>
+#include <ripple/types/UintTypes.h>
 
-#include <ripple/module/data/protocol/RippleAddress.h>
-#include <ripple/module/data/protocol/SerializedTypes.h>
+#include <ripple/data/protocol/RippleAddress.h>
+#include <ripple/data/protocol/SerializedTypes.h>
 
 namespace ripple {
 

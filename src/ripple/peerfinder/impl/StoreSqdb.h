@@ -20,6 +20,8 @@
 #ifndef RIPPLE_PEERFINDER_STORESQDB_H_INCLUDED
 #define RIPPLE_PEERFINDER_STORESQDB_H_INCLUDED
 
+#include <beast/module/sqdb/sqdb.h>
+
 namespace ripple {
 namespace PeerFinder {
 

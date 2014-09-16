@@ -43,5 +43,3 @@
 #include <ripple/types/impl/UintTypes.cpp>
 #include <ripple/types/impl/RippleIdentifierTests.cpp>
 #include <ripple/types/impl/Issue.cpp>
-
-#include <ripple/common/tests/cross_offer.test.cpp>

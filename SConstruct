@@ -559,7 +559,6 @@ for toolchain in all_toolchains:
         objects.append(addSource('src/ripple/unity/peerfinder.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/protobuf.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/ripple.proto.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/radmap.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/resource.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/rpcx.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/sitefiles.cpp', env, variant_dirs))

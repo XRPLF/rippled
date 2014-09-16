@@ -20,6 +20,8 @@
 #ifndef RIPPLE_PEERFINDER_SOURCE_H_INCLUDED
 #define RIPPLE_PEERFINDER_SOURCE_H_INCLUDED
 
+#include <boost/system/error_code.hpp>
+
 namespace ripple {
 namespace PeerFinder {
 
@@ -38,7 +40,7 @@ public:
     struct Results
     {
         // error_code on a failure
-        beast::ErrorCode error;
+        boost::system::error_code error;
 
         // list of fetched endpoints
         IPAddresses addresses;

@@ -28,35 +28,13 @@
 
 #include <BeastConfig.h>
 
-#include <boost/version.hpp>
-#include <boost/asio/io_service.hpp>
-#include <boost/asio/ssl.hpp>
-#include <boost/asio.hpp>
-#include <boost/make_shared.hpp>
-#include <boost/array.hpp>
-#include <boost/foreach.hpp>
-#include <boost/mpl/at.hpp>
-#include <boost/mpl/vector.hpp>
-
-#include <ripple/unity/net.h>
-
-#include <ripple/unity/websocket.h> // for HTTPClient, RPCDoor
-
-// VFALCO NOTE This is the "new new new" where individual headers are included
-//             directly (instead of the module header). The corresponding .cpp
-//             still uses the unity style inclusion.
-//
-#include <ripple/module/rpc/ErrorCodes.h>
-#include <ripple/common/jsonrpc_fields.h>
-
-#include <ripple/module/net/basics/HTTPRequest.cpp>
-#include <ripple/module/net/basics/HTTPClient.cpp>
-#include <ripple/module/net/basics/impl/RPCServerImp.h>
-#include <ripple/module/net/basics/SNTPClient.cpp>
-#include <ripple/module/net/rpc/RPCCall.cpp>
-#include <ripple/module/net/rpc/RPCErr.cpp>
-#include <ripple/module/net/rpc/RPCSub.cpp>
-#include <ripple/module/net/rpc/RPCUtil.cpp>
-#include <ripple/module/net/rpc/InfoSub.cpp>
-
-#include <ripple/module/net/basics/RPCDoor.cpp>
+#include <ripple/net/impl/HTTPRequest.cpp>
+#include <ripple/net/impl/HTTPClient.cpp>
+#include <ripple/net/impl/InfoSub.cpp>
+#include <ripple/net/impl/RPCCall.cpp>
+#include <ripple/net/impl/RPCDoor.cpp> // Is this still needed?
+#include <ripple/net/impl/RPCErr.cpp>
+#include <ripple/net/impl/RPCServerImp.h>
+#include <ripple/net/impl/RPCSub.cpp>
+#include <ripple/net/impl/RPCUtil.cpp>
+#include <ripple/net/impl/SNTPClient.cpp>

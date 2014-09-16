@@ -19,7 +19,7 @@
 
 #if RIPPLE_ROCKSDB_AVAILABLE
 
-#include <ripple/module/core/Config.h>
+#include <ripple/core/Config.h>
 #include <beast/threads/Thread.h>
 #include <atomic>
 

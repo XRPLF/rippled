@@ -21,6 +21,13 @@
 #include <ripple/overlay/README.md>
 #endif
 
+#include <ripple/peerfinder/Manager.h>
+#include <ripple/peerfinder/impl/CheckerAdapter.h>
+#include <ripple/peerfinder/impl/Logic.h>
+#include <ripple/peerfinder/impl/SourceStrings.h>
+#include <ripple/peerfinder/impl/StoreSqdb.h>
+#include <beast/module/core/thread/DeadlineTimer.h>
+
 namespace ripple {
 namespace PeerFinder {
 

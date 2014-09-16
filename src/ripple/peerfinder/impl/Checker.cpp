@@ -17,8 +17,17 @@
 */
 //==============================================================================
 
-#include <beast/asio/wrap_handler.h>
+#include <ripple/peerfinder/impl/Checker.h>
+#include <beast/asio/IPAddressConversion.h>
 #include <beast/asio/placeholders.h>
+#include <beast/asio/wrap_handler.h>
+#include <beast/utility/LeakChecked.h>
+#include <beast/smart_ptr/SharedObject.h>
+#include <beast/smart_ptr/SharedPtr.h>
+#include <beast/threads/Thread.h>
+#include <boost/asio/io_service.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/optional.hpp>
 
 namespace ripple {
 namespace PeerFinder {
@@ -50,7 +59,7 @@ private:
         , private beast::LeakChecked <Request>
     {
     public:
-        typedef beast::SharedPtr <Request>         Ptr;
+        typedef beast::SharedPtr <Request>  Ptr;
         typedef boost::asio::ip::tcp        Protocol;
         typedef boost::system::error_code   error_code;
         typedef Protocol::socket            socket_type;

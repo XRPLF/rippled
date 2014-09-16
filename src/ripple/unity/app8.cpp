@@ -26,27 +26,27 @@
 #pragma warning (disable: 4309) // truncation of constant value
 #endif
 
-#include <ripple/module/rpc/ErrorCodes.h>
+#include <ripple/rpc/ErrorCodes.h>
 
-#include <ripple/module/app/paths/Node.cpp>
-#include <ripple/module/app/paths/PathRequest.cpp>
-#include <ripple/module/app/paths/PathRequests.cpp>
-#include <ripple/module/app/paths/PathState.cpp>
-#include <ripple/module/app/paths/RippleCalc.cpp>
-#include <ripple/module/app/paths/cursor/AdvanceNode.cpp>
-#include <ripple/module/app/paths/cursor/DeliverNodeForward.cpp>
-#include <ripple/module/app/paths/cursor/DeliverNodeReverse.cpp>
-#include <ripple/module/app/paths/cursor/ForwardLiquidity.cpp>
-#include <ripple/module/app/paths/cursor/ForwardLiquidityForAccount.cpp>
-#include <ripple/module/app/paths/cursor/Liquidity.cpp>
-#include <ripple/module/app/paths/cursor/NextIncrement.cpp>
-#include <ripple/module/app/paths/cursor/ReverseLiquidity.cpp>
-#include <ripple/module/app/paths/cursor/ReverseLiquidityForAccount.cpp>
-#include <ripple/module/app/paths/cursor/RippleLiquidity.cpp>
+#include <ripple/app/paths/Node.cpp>
+#include <ripple/app/paths/PathRequest.cpp>
+#include <ripple/app/paths/PathRequests.cpp>
+#include <ripple/app/paths/PathState.cpp>
+#include <ripple/app/paths/RippleCalc.cpp>
+#include <ripple/app/paths/cursor/AdvanceNode.cpp>
+#include <ripple/app/paths/cursor/DeliverNodeForward.cpp>
+#include <ripple/app/paths/cursor/DeliverNodeReverse.cpp>
+#include <ripple/app/paths/cursor/ForwardLiquidity.cpp>
+#include <ripple/app/paths/cursor/ForwardLiquidityForAccount.cpp>
+#include <ripple/app/paths/cursor/Liquidity.cpp>
+#include <ripple/app/paths/cursor/NextIncrement.cpp>
+#include <ripple/app/paths/cursor/ReverseLiquidity.cpp>
+#include <ripple/app/paths/cursor/ReverseLiquidityForAccount.cpp>
+#include <ripple/app/paths/cursor/RippleLiquidity.cpp>
 
-#include <ripple/module/app/main/ParameterTable.cpp>
-#include <ripple/module/app/paths/RippleLineCache.cpp>
-#include <ripple/module/app/ledger/SerializedValidation.cpp>
+#include <ripple/app/main/ParameterTable.cpp>
+#include <ripple/app/paths/RippleLineCache.cpp>
+#include <ripple/app/ledger/SerializedValidation.cpp>
 
 #ifdef _MSC_VER
 #pragma warning (pop)

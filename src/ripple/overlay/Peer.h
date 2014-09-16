@@ -23,8 +23,8 @@
 #include <ripple/overlay/Message.h>
 
 #include <ripple/unity/json.h>
-#include <ripple/types/api/base_uint.h>
-#include <ripple/module/data/protocol/RippleAddress.h>
+#include <ripple/types/base_uint.h>
+#include <ripple/data/protocol/RippleAddress.h>
 
 #include <beast/net/IPEndpoint.h>
 

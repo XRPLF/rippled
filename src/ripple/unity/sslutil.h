@@ -27,10 +27,10 @@
 #include <openssl/ripemd.h>
 #include <openssl/sha.h>
 
-#include <ripple/sslutil/api/bignum_error.h>
-#include <ripple/sslutil/api/CAutoBN_CTX.h>
-#include <ripple/sslutil/api/CBigNum.h>
-#include <ripple/sslutil/api/DHUtil.h>
-#include <ripple/sslutil/api/ECDSACanonical.h>
+#include <ripple/sslutil/bignum_error.h>
+#include <ripple/sslutil/CAutoBN_CTX.h>
+#include <ripple/sslutil/CBigNum.h>
+#include <ripple/sslutil/DHUtil.h>
+#include <ripple/sslutil/ECDSACanonical.h>
 
 #endif

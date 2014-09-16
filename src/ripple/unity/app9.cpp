@@ -21,22 +21,22 @@
 
 #include <ripple/unity/app.h>
 
-#include <ripple/module/app/book/impl/BookTip.cpp>
-#include <ripple/module/app/book/impl/OfferStream.cpp>
-#include <ripple/module/app/book/impl/Quality.cpp>
-#include <ripple/module/app/book/impl/Taker.cpp>
+#include <ripple/app/book/impl/BookTip.cpp>
+#include <ripple/app/book/impl/OfferStream.cpp>
+#include <ripple/app/book/impl/Quality.cpp>
+#include <ripple/app/book/impl/Taker.cpp>
 
-#include <ripple/module/app/transactors/Transactor.cpp>
+#include <ripple/app/transactors/Transactor.cpp>
 
-#include <ripple/module/app/transactors/Change.cpp>
-#include <ripple/module/app/transactors/CancelOffer.cpp>
-#include <ripple/module/app/transactors/Payment.cpp>
-#include <ripple/module/app/transactors/SetRegularKey.cpp>
-#include <ripple/module/app/transactors/SetAccount.cpp>
-#include <ripple/module/app/transactors/AddWallet.cpp>
-#include <ripple/module/app/transactors/SetTrust.cpp>
-#include <ripple/module/app/transactors/CreateOffer.cpp>
-#include <ripple/module/app/transactors/CreateOfferDirect.cpp>
-#include <ripple/module/app/transactors/CreateOfferBridged.cpp>
-#include <ripple/module/app/transactors/CreateTicket.cpp>
-#include <ripple/module/app/transactors/CancelTicket.cpp>
+#include <ripple/app/transactors/Change.cpp>
+#include <ripple/app/transactors/CancelOffer.cpp>
+#include <ripple/app/transactors/Payment.cpp>
+#include <ripple/app/transactors/SetRegularKey.cpp>
+#include <ripple/app/transactors/SetAccount.cpp>
+#include <ripple/app/transactors/AddWallet.cpp>
+#include <ripple/app/transactors/SetTrust.cpp>
+#include <ripple/app/transactors/CreateOffer.cpp>
+#include <ripple/app/transactors/CreateOfferDirect.cpp>
+#include <ripple/app/transactors/CreateOfferBridged.cpp>
+#include <ripple/app/transactors/CreateTicket.cpp>
+#include <ripple/app/transactors/CancelTicket.cpp>
