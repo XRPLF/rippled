@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/app/book/Quality.h>
+#include <ripple/app/misc/FeeVote.h>
 #include <ripple/basics/Time.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/common/jsonrpc_fields.h>
@@ -56,8 +57,8 @@ public:
         , m_clock (clock)
         , m_journal (journal)
         , m_localTX (LocalTxs::New ())
-        , m_feeVote (make_FeeVote(10, 20 * SYSTEM_CURRENCY_PARTS,
-            5 * SYSTEM_CURRENCY_PARTS, deprecatedLogs().journal("FeeVote")))
+        , m_feeVote (make_FeeVote (setup_FeeVote (getConfig().section ("voting")),
+            deprecatedLogs().journal("FeeVote")))
         , mMode (omDISCONNECTED)
         , mNeedNetworkLedger (false)
         , mProposing (false)

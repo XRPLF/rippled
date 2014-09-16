@@ -17,8 +17,11 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_IFEEVOTE_H
-#define RIPPLE_IFEEVOTE_H
+#ifndef RIPPLE_APP_FEEVOTE_H_INCLUDED
+#define RIPPLE_APP_FEEVOTE_H_INCLUDED
+
+#include <ripple/core/Section.h>
+#include <ripple/core/SystemParameters.h>
 
 namespace ripple {
 
@@ -26,36 +29,56 @@ namespace ripple {
 class FeeVote
 {
 public:
-    /** Create a new fee vote manager.
-
-        @param targetBaseFee
-        @param targetReserveBase
-        @param targetReserveIncrement
-        @param journal
+    /** Fee schedule to vote for.
+        During voting ledgers, the FeeVote logic will try to move towards
+        these values when injecting fee-setting transactions.
+        A default-constructed Setup contains recommended values.
     */
+    struct Setup
+    {
+        /** The cost of a reference transaction in drops. */
+        std::uint64_t reference_fee = 10;
 
-    virtual ~FeeVote () { }
+        /** The account reserve requirement in drops. */
+        std::uint64_t account_reserve = 20 * SYSTEM_CURRENCY_PARTS;
+
+        /** The per-owned item reserve requirement in drops. */
+        std::uint64_t owner_reserve = 5 * SYSTEM_CURRENCY_PARTS;
+    };
+
+    virtual ~FeeVote () = default;
 
     /** Add local fee preference to validation.
 
         @param lastClosedLedger
         @param baseValidation
     */
-    virtual void doValidation (Ledger::ref lastClosedLedger,
-                               STObject& baseValidation) = 0;
+    virtual
+    void
+    doValidation (Ledger::ref lastClosedLedger,
+        STObject& baseValidation) = 0;
 
     /** Cast our local vote on the fee.
 
         @param lastClosedLedger
         @param initialPosition
     */
-    virtual void doVoting (Ledger::ref lastClosedLedger,
-                           SHAMap::ref initialPosition) = 0;
+    virtual
+    void
+    doVoting (Ledger::ref lastClosedLedger,
+        SHAMap::ref initialPosition) = 0;
 };
 
-std::unique_ptr<FeeVote>
-make_FeeVote (std::uint64_t targetBaseFee, std::uint32_t targetReserveBase,
-    std::uint32_t targetReserveIncrement, beast::Journal journal);
+/** Build FeeVote::Setup from a config section. */
+FeeVote::Setup
+setup_FeeVote (Section const& section);
+
+/** Create an instance of the FeeVote logic.
+    @param setup The fee schedule to vote for.
+    @param journal Where to log.
+*/
+std::unique_ptr <FeeVote>
+make_FeeVote (FeeVote::Setup const& setup, beast::Journal journal);
 
 } // ripple
 

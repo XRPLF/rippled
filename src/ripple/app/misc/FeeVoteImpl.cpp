@@ -19,215 +19,235 @@
 
 namespace ripple {
 
-class FeaturesImpl;
+namespace detail {
+
+template <typename Integer>
+class VotableInteger
+{
+private:
+    typedef std::map <Integer, int> map_type;
+    Integer mCurrent;   // The current setting
+    Integer mTarget;    // The setting we want
+    map_type mVoteMap;
+
+public:
+    VotableInteger (Integer current, Integer target)
+        : mCurrent (current)
+        , mTarget (target)
+    {
+        // Add our vote
+        ++mVoteMap[mTarget];
+    }
+
+    void
+    addVote(Integer vote)
+    {
+        ++mVoteMap[vote];
+    }
+
+    void
+    noVote()
+    {
+        addVote (mCurrent);
+    }
+
+    Integer
+    getVotes() const;
+};
+
+template <class Integer>
+Integer
+VotableInteger <Integer>::getVotes() const
+{
+    Integer ourVote = mCurrent;
+    int weight = 0;
+    for (auto const& e : mVoteMap)
+    {
+        // Take most voted value between current and target, inclusive
+        if ((e.first <= std::max (mTarget, mCurrent)) &&
+                (e.first >= std::min (mTarget, mCurrent)) &&
+                (e.second > weight))
+        {
+            ourVote = e.first;
+            weight = e.second;
+        }
+    }
+
+    return ourVote;
+}
+
+}
+
+//------------------------------------------------------------------------------
 
 class FeeVoteImpl : public FeeVote
 {
 private:
-
-    template <typename Integer>
-    class VotableInteger
-    {
-    public:
-        VotableInteger (Integer current, Integer target)
-            : mCurrent (current)
-            , mTarget (target)
-        {
-            // Add our vote
-            ++mVoteMap[mTarget];
-        }
-
-        bool
-        mayVote () const
-        {
-            // If we love the current setting, we will not vote
-            return mCurrent != mTarget;
-        }
-
-        void
-        addVote (Integer vote)
-        {
-            ++mVoteMap[vote];
-        }
-
-        void
-        noVote ()
-        {
-            addVote (mCurrent);
-        }
-
-        Integer
-        getVotes ()
-        {
-            Integer ourVote = mCurrent;
-            int weight = 0;
-
-            typedef typename std::map<Integer, int>::value_type mapVType;
-            for (auto const& e : mVoteMap)
-            {
-                // Take most voted value between current and target, inclusive
-                if ((e.first <= std::max (mTarget, mCurrent)) &&
-                        (e.first >= std::min (mTarget, mCurrent)) &&
-                        (e.second > weight))
-                {
-                    ourVote = e.first;
-                    weight = e.second;
-                }
-            }
-
-            return ourVote;
-        }
-
-    private:
-        Integer mCurrent;   // The current setting
-        Integer mTarget;    // The setting we want
-        std::map<Integer, int> mVoteMap;
-    };
+    Setup target_;
+    beast::Journal journal_;
 
 public:
-    FeeVoteImpl (std::uint64_t targetBaseFee, std::uint32_t targetReserveBase,
-             std::uint32_t targetReserveIncrement, beast::Journal journal)
-        : mTargetBaseFee (targetBaseFee)
-        , mTargetReserveBase (targetReserveBase)
-        , mTargetReserveIncrement (targetReserveIncrement)
-        , m_journal (journal)
-    {
-    }
-
-    //--------------------------------------------------------------------------
+    FeeVoteImpl (Setup const& setup, beast::Journal journal);
 
     void
-    doValidation (Ledger::ref lastClosedLedger, STObject& baseValidation) override
-    {
-        if (lastClosedLedger->getBaseFee () != mTargetBaseFee)
-        {
-            if (m_journal.info) m_journal.info <<
-                "Voting for base fee of " << mTargetBaseFee;
-
-            baseValidation.setFieldU64 (sfBaseFee, mTargetBaseFee);
-        }
-
-        if (lastClosedLedger->getReserve (0) != mTargetReserveBase)
-        {
-            if (m_journal.info) m_journal.info <<
-                "Voting for base resrve of " << mTargetReserveBase;
-
-            baseValidation.setFieldU32(sfReserveBase, mTargetReserveBase);
-        }
-
-        if (lastClosedLedger->getReserveInc () != mTargetReserveIncrement)
-        {
-            if (m_journal.info) m_journal.info <<
-                "Voting for reserve increment of " << mTargetReserveIncrement;
-
-            baseValidation.setFieldU32 (sfReserveIncrement, mTargetReserveIncrement);
-        }
-    }
-
-    //--------------------------------------------------------------------------
+    doValidation (Ledger::ref lastClosedLedger,
+        STObject& baseValidation) override;
 
     void
-    doVoting (Ledger::ref lastClosedLedger, SHAMap::ref initialPosition) override
-    {
-        // LCL must be flag ledger
-        assert ((lastClosedLedger->getLedgerSeq () % 256) == 0);
-
-        VotableInteger<std::uint64_t> baseFeeVote (lastClosedLedger->getBaseFee (), mTargetBaseFee);
-        VotableInteger<std::uint32_t> baseReserveVote (lastClosedLedger->getReserve (0), mTargetReserveBase);
-        VotableInteger<std::uint32_t> incReserveVote (lastClosedLedger->getReserveInc (), mTargetReserveIncrement);
-
-        // get validations for ledger before flag
-        ValidationSet set = getApp().getValidations ().getValidations (lastClosedLedger->getParentHash ());
-        for (auto const& e : set)
-        {
-            SerializedValidation const& val = *e.second;
-
-            if (val.isTrusted ())
-            {
-                if (val.isFieldPresent (sfBaseFee))
-                {
-                    baseFeeVote.addVote (val.getFieldU64 (sfBaseFee));
-                }
-                else
-                {
-                    baseFeeVote.noVote ();
-                }
-
-                if (val.isFieldPresent (sfReserveBase))
-                {
-                    baseReserveVote.addVote (val.getFieldU32 (sfReserveBase));
-                }
-                else
-                {
-                    baseReserveVote.noVote ();
-                }
-
-                if (val.isFieldPresent (sfReserveIncrement))
-                {
-                    incReserveVote.addVote (val.getFieldU32 (sfReserveIncrement));
-                }
-                else
-                {
-                    incReserveVote.noVote ();
-                }
-            }
-        }
-
-        // choose our positions
-        std::uint64_t baseFee = baseFeeVote.getVotes ();
-        std::uint32_t baseReserve = baseReserveVote.getVotes ();
-        std::uint32_t incReserve = incReserveVote.getVotes ();
-
-        // add transactions to our position
-        if ((baseFee != lastClosedLedger->getBaseFee ()) ||
-                (baseReserve != lastClosedLedger->getReserve (0)) ||
-                (incReserve != lastClosedLedger->getReserveInc ()))
-        {
-            if (m_journal.warning) m_journal.warning <<
-                "We are voting for a fee change: " << baseFee <<
-                "/" << baseReserve <<
-                "/" << incReserve;
-
-            SerializedTransaction trans (ttFEE);
-            trans.setFieldAccount (sfAccount, Account ());
-            trans.setFieldU64 (sfBaseFee, baseFee);
-            trans.setFieldU32 (sfReferenceFeeUnits, 10);
-            trans.setFieldU32 (sfReserveBase, baseReserve);
-            trans.setFieldU32 (sfReserveIncrement, incReserve);
-
-            uint256 txID = trans.getTransactionID ();
-
-            if (m_journal.warning)
-                m_journal.warning << "Vote: " << txID;
-
-            Serializer s;
-            trans.add (s, true);
-
-            SHAMapItem::pointer tItem = std::make_shared<SHAMapItem> (txID, s.peekData ());
-
-            if (!initialPosition->addGiveItem (tItem, true, false))
-            {
-                if (m_journal.warning) m_journal.warning <<
-                    "Ledger already had fee change";
-            }
-        }
-    }
-
-private:
-    std::uint64_t mTargetBaseFee;
-    std::uint32_t mTargetReserveBase;
-    std::uint32_t mTargetReserveIncrement;
-    beast::Journal m_journal;
+    doVoting (Ledger::ref lastClosedLedger,
+        SHAMap::ref initialPosition) override;
 };
+
+//--------------------------------------------------------------------------
+
+FeeVoteImpl::FeeVoteImpl (Setup const& setup, beast::Journal journal)
+    : target_ (setup)
+    , journal_ (journal)
+{
+}
+
+void
+FeeVoteImpl::doValidation (Ledger::ref lastClosedLedger,
+    STObject& baseValidation)
+{
+    if (lastClosedLedger->getBaseFee () != target_.reference_fee)
+    {
+        if (journal_.info) journal_.info <<
+            "Voting for base fee of " << target_.reference_fee;
+
+        baseValidation.setFieldU64 (sfBaseFee, target_.reference_fee);
+    }
+
+    if (lastClosedLedger->getReserve (0) != target_.account_reserve)
+    {
+        if (journal_.info) journal_.info <<
+            "Voting for base resrve of " << target_.account_reserve;
+
+        baseValidation.setFieldU32(sfReserveBase, target_.account_reserve);
+    }
+
+    if (lastClosedLedger->getReserveInc () != target_.owner_reserve)
+    {
+        if (journal_.info) journal_.info <<
+            "Voting for reserve increment of " << target_.owner_reserve;
+
+        baseValidation.setFieldU32 (sfReserveIncrement,
+            target_.owner_reserve);
+    }
+}
+
+void
+FeeVoteImpl::doVoting (Ledger::ref lastClosedLedger,
+    SHAMap::ref initialPosition)
+{
+    // LCL must be flag ledger
+    assert ((lastClosedLedger->getLedgerSeq () % 256) == 0);
+
+    detail::VotableInteger<std::uint64_t> baseFeeVote (
+        lastClosedLedger->getBaseFee (), target_.reference_fee);
+
+    detail::VotableInteger<std::uint32_t> baseReserveVote (
+        lastClosedLedger->getReserve (0), target_.account_reserve);
+
+    detail::VotableInteger<std::uint32_t> incReserveVote (
+        lastClosedLedger->getReserveInc (), target_.owner_reserve);
+
+    // get validations for ledger before flag
+    ValidationSet const set =
+        getApp().getValidations ().getValidations (
+            lastClosedLedger->getParentHash ());
+    for (auto const& e : set)
+    {
+        SerializedValidation const& val = *e.second;
+
+        if (val.isTrusted ())
+        {
+            if (val.isFieldPresent (sfBaseFee))
+            {
+                baseFeeVote.addVote (val.getFieldU64 (sfBaseFee));
+            }
+            else
+            {
+                baseFeeVote.noVote ();
+            }
+
+            if (val.isFieldPresent (sfReserveBase))
+            {
+                baseReserveVote.addVote (val.getFieldU32 (sfReserveBase));
+            }
+            else
+            {
+                baseReserveVote.noVote ();
+            }
+
+            if (val.isFieldPresent (sfReserveIncrement))
+            {
+                incReserveVote.addVote (val.getFieldU32 (sfReserveIncrement));
+            }
+            else
+            {
+                incReserveVote.noVote ();
+            }
+        }
+    }
+
+    // choose our positions
+    std::uint64_t const baseFee = baseFeeVote.getVotes ();
+    std::uint32_t const baseReserve = baseReserveVote.getVotes ();
+    std::uint32_t const incReserve = incReserveVote.getVotes ();
+
+    // add transactions to our position
+    if ((baseFee != lastClosedLedger->getBaseFee ()) ||
+            (baseReserve != lastClosedLedger->getReserve (0)) ||
+            (incReserve != lastClosedLedger->getReserveInc ()))
+    {
+        if (journal_.warning) journal_.warning <<
+            "We are voting for a fee change: " << baseFee <<
+            "/" << baseReserve <<
+            "/" << incReserve;
+
+        SerializedTransaction trans (ttFEE);
+        trans.setFieldAccount (sfAccount, Account ());
+        trans.setFieldU64 (sfBaseFee, baseFee);
+        trans.setFieldU32 (sfReferenceFeeUnits, 10);
+        trans.setFieldU32 (sfReserveBase, baseReserve);
+        trans.setFieldU32 (sfReserveIncrement, incReserve);
+
+        uint256 txID = trans.getTransactionID ();
+
+        if (journal_.warning)
+            journal_.warning << "Vote: " << txID;
+
+        Serializer s;
+        trans.add (s, true);
+
+        SHAMapItem::pointer tItem = std::make_shared<SHAMapItem> (
+            txID, s.peekData ());
+
+        if (!initialPosition->addGiveItem (tItem, true, false))
+        {
+            if (journal_.warning) journal_.warning <<
+                "Ledger already had fee change";
+        }
+    }
+}
 
 //------------------------------------------------------------------------------
 
-std::unique_ptr<FeeVote>
-make_FeeVote (std::uint64_t targetBaseFee, std::uint32_t targetReserveBase,
-    std::uint32_t targetReserveIncrement, beast::Journal journal)
+FeeVote::Setup
+setup_FeeVote (Section const& section)
 {
-    return std::make_unique<FeeVoteImpl> (targetBaseFee, targetReserveBase,
-        targetReserveIncrement, journal);
+    FeeVote::Setup setup;
+    set (setup.reference_fee, "reference_fee", section);
+    set (setup.account_reserve, "account_reserve", section);
+    set (setup.owner_reserve, "owner_reserve", section);
+    return setup;
+}
+
+std::unique_ptr<FeeVote>
+make_FeeVote (FeeVote::Setup const& setup, beast::Journal journal)
+{
+    return std::make_unique<FeeVoteImpl> (setup, journal);
 }
 
 } // ripple
