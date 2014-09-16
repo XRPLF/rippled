@@ -29,6 +29,7 @@
 #include <boost/format.hpp>
 #include <boost/regex.hpp>
 #include <fstream>
+#include <iostream>
     
 namespace ripple {
 

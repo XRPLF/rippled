@@ -21,7 +21,8 @@
 #define RIPPLE_PEERFINDER_CHECKER_H_INCLUDED
 
 #include <beast/asio/shared_handler.h>
-
+#include <boost/system/error_code.hpp>
+    
 namespace ripple {
 namespace PeerFinder {
 

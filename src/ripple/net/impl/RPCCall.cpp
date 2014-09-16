@@ -23,6 +23,7 @@
 #include <ripple/net/RPCErr.h>
 #include <ripple/net/RPCUtil.h>
 #include <boost/regex.hpp>
+#include <iostream>
 
 namespace ripple {
 
