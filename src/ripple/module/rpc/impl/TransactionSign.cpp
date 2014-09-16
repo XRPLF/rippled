@@ -57,7 +57,7 @@ static void autofill_fee (
     if (tx.isMember ("Fee"))
         return;
 
-    int mult = DEFAULT_AUTO_FILL_FEE_MULTIPLIER;
+    int mult = Tuning::defaultAutoFillFeeMultiplier;
     if (request.isMember ("fee_mult_max"))
     {
         if (request["fee_mult_max"].isNumeric ())

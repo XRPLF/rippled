@@ -4101,6 +4101,9 @@
     <ClInclude Include="..\..\src\ripple\module\rpc\impl\TransactionSign.h">
       <Filter>ripple\module\rpc\impl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\module\rpc\impl\Tuning.h">
+      <Filter>ripple\module\rpc\impl</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\rpc\InternalHandler.h">
       <Filter>ripple\module\rpc</Filter>
     </ClInclude>
@@ -4114,9 +4117,6 @@
       <Filter>ripple\module\rpc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\rpc\RPCServerHandler.h">
-      <Filter>ripple\module\rpc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\rpc\Tuning.h">
       <Filter>ripple\module\rpc</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\websocket\autosocket\AutoSocket.cpp">

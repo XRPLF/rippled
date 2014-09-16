@@ -2928,6 +2928,8 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\module\rpc\impl\TransactionSign.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\module\rpc\impl\Tuning.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\rpc\InternalHandler.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\rpc\Manager.h">
@@ -2937,8 +2939,6 @@
     <ClInclude Include="..\..\src\ripple\module\rpc\RPCHandler.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\module\rpc\RPCServerHandler.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\module\rpc\Tuning.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\module\websocket\autosocket\AutoSocket.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
