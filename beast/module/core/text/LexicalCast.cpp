@@ -74,11 +74,179 @@ public:
         try
         {
             lexicalCastThrow<int>("\xef\xbc\x91\xef\xbc\x90"); // utf-8 encoded
-            fail("Should throw");
         }
         catch(BadLexicalCast const&)
         {
             pass();
+        }
+    }
+
+    template <class T>
+    void tryBadConvert (std::string const& s)
+    {
+        T out;
+        expect (!lexicalCastChecked (out, s), s);
+    }
+
+    void testConversionOverflows()
+    {
+        testcase ("conversion overflows");
+
+        tryBadConvert <std::uint64_t> ("99999999999999999999");
+        tryBadConvert <std::uint32_t> ("4294967300");
+        tryBadConvert <std::uint16_t> ("75821");
+    }
+
+    void testConversionUnderflows ()
+    {
+        testcase ("conversion underflows");
+
+        tryBadConvert <std::uint32_t> ("-1");
+
+        tryBadConvert <std::int64_t> ("-99999999999999999999");
+        tryBadConvert <std::int32_t> ("-4294967300");
+        tryBadConvert <std::int16_t> ("-75821");
+    }
+
+    template <class T>
+    bool tryEdgeCase (std::string const& s)
+    {
+        T ret;
+
+        bool const result = lexicalCastChecked (ret, s);
+
+        if (!result)
+            return false;
+
+        return s == std::to_string (ret);
+    }
+
+    void testEdgeCases ()
+    {
+        testcase ("conversion edge cases");
+
+        expect(tryEdgeCase <std::uint64_t> ("18446744073709551614"));
+        expect(tryEdgeCase <std::uint64_t> ("18446744073709551615"));
+        expect(!tryEdgeCase <std::uint64_t> ("18446744073709551616"));
+
+        expect(tryEdgeCase <std::int64_t> ("9223372036854775806"));
+        expect(tryEdgeCase <std::int64_t> ("9223372036854775807"));
+        expect(!tryEdgeCase <std::int64_t> ("9223372036854775808"));
+
+        expect(tryEdgeCase <std::int64_t> ("-9223372036854775807"));
+        expect(tryEdgeCase <std::int64_t> ("-9223372036854775808"));
+        expect(!tryEdgeCase <std::int64_t> ("-9223372036854775809"));
+
+        expect(tryEdgeCase <std::uint32_t> ("4294967294"));
+        expect(tryEdgeCase <std::uint32_t> ("4294967295"));
+        expect(!tryEdgeCase <std::uint32_t> ("4294967296"));
+
+        expect(tryEdgeCase <std::int32_t> ("2147483646"));
+        expect(tryEdgeCase <std::int32_t> ("2147483647"));
+        expect(!tryEdgeCase <std::int32_t> ("2147483648"));
+
+        expect(tryEdgeCase <std::int32_t> ("-2147483647"));
+        expect(tryEdgeCase <std::int32_t> ("-2147483648"));
+        expect(!tryEdgeCase <std::int32_t> ("-2147483649"));
+
+        expect(tryEdgeCase <std::uint16_t> ("65534"));
+        expect(tryEdgeCase <std::uint16_t> ("65535"));
+        expect(!tryEdgeCase <std::uint16_t> ("65536"));
+
+        expect(tryEdgeCase <std::int16_t> ("32766"));
+        expect(tryEdgeCase <std::int16_t> ("32767"));
+        expect(!tryEdgeCase <std::int16_t> ("32768"));
+
+        expect(tryEdgeCase <std::int16_t> ("-32767"));
+        expect(tryEdgeCase <std::int16_t> ("-32768"));
+        expect(!tryEdgeCase <std::int16_t> ("-32769"));
+    }
+
+    template <class T>
+    void testThrowConvert(std::string const& s, bool success)
+    {
+        bool result = !success;
+        T out;
+
+        try
+        {
+            out = lexicalCastThrow <T> (s);
+            result = true;
+        }
+        catch(BadLexicalCast const&)
+        {
+            result = false;
+        }
+
+        expect (result == success, s);
+    }
+
+    void testThrowingConversions ()
+    {
+        testcase ("throwing conversion");
+
+        testThrowConvert <std::uint64_t> ("99999999999999999999", false);
+        testThrowConvert <std::uint64_t> ("9223372036854775806", true);
+
+        testThrowConvert <std::uint32_t> ("4294967290", true);
+        testThrowConvert <std::uint32_t> ("42949672900", false);
+        testThrowConvert <std::uint32_t> ("429496729000", false);
+        testThrowConvert <std::uint32_t> ("4294967290000", false);
+
+        testThrowConvert <std::int32_t> ("5294967295", false);
+        testThrowConvert <std::int32_t> ("-2147483644", true);
+
+        testThrowConvert <std::int16_t> ("66666", false);
+        testThrowConvert <std::int16_t> ("-5711", true);
+    }
+
+    void testZero ()
+    {
+        testcase ("zero conversion");
+
+        {
+            std::int32_t out;
+
+            expect (lexicalCastChecked (out, "-0"), "0");
+            expect (lexicalCastChecked (out, "0"), "0");
+            expect (lexicalCastChecked (out, "+0"), "0");
+        }
+
+        {
+            std::uint32_t out;
+
+            expect (!lexicalCastChecked (out, "-0"), "0");
+            expect (lexicalCastChecked (out, "0"), "0");
+            expect (lexicalCastChecked (out, "+0"), "0");
+        }
+    }
+
+    void testEntireRange ()
+    {
+        testcase ("entire range");
+
+        std::int32_t i = std::numeric_limits<std::int16_t>::min();
+        std::string const empty("");
+
+        while (i <= std::numeric_limits<std::int16_t>::max())
+        {
+            std::int16_t j = static_cast<std::int16_t>(i);
+
+            auto actual = std::to_string (j);
+
+            auto result = lexicalCast (j, empty);
+
+            expect (result == actual, actual + " (string to integer)");
+
+            if (result == actual)
+            {
+                auto number = lexicalCast <std::int16_t> (result);
+
+                if (number != j)
+                    expect (false, actual + " (integer to string)");
+            }
+
+            i++;
         }
     }
 
@@ -98,6 +266,12 @@ public:
         testIntegers <std::uint64_t> (r);
 
         testPathologies();
+        testConversionOverflows ();
+        testConversionUnderflows ();
+        testThrowingConversions ();
+        testZero ();
+        testEdgeCases ();
+        testEntireRange ();
     }
 };
 
