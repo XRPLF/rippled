@@ -82,11 +82,27 @@ public:
         }
     }
 
+    void testLarge()
+    {
+        testcase ("large");
+        try
+        {
+            beast::lexicalCast <std::uint64_t> ("9999999999999999999");
+            fail();
+        }
+        catch(...)
+        {
+            pass();
+        }
+    }
+
     void run()
     {
         std::int64_t const seedValue = 50;
 
         Random r (seedValue);
+
+        testLarge();
 
         testIntegers <int> (r);
         testIntegers <unsigned int> (r);
