@@ -29,6 +29,8 @@
 #include <string>
 #include <utility>
 
+#include <iostream>
+
 namespace beast {
 
 namespace detail {
@@ -47,14 +49,16 @@ parse_integral (Int& num, FwdIt first, FwdIt last, Accumulator accumulator)
 
     if (first == last)
         return false;
+
     while (first != last)
     {
         auto const c = *first++;
         if (c < '0' || c > '9')
             return false;
-        if (!accumulator(Int(c - '0')))
+        if (!accumulator(num, Int(c - '0')))
             return false;
     }
+
     return true;
 }
 
@@ -62,14 +66,19 @@ template <class Int, class FwdIt>
 bool
 parse_negative_integral (Int& num, FwdIt first, FwdIt last)
 {
-    Int const limit = std::numeric_limits <Int>::min();
+    Int limit_value = std::numeric_limits <Int>::min() / 10;
+    Int limit_digit = std::numeric_limits <Int>::min() % 10;
 
-    return parse_integral<Int> (num, first, last,
-        [&num,&limit](Int n)
+    if (limit_digit < 0)
+        limit_digit = -limit_digit;
+
+    return parse_integral<Int> (num, first, last, 
+        [limit_value, limit_digit](Int& value, Int digit)
         {
-            if ((limit - (10 * num)) > -n)
+            assert ((digit >= 0) && (digit <= 9));
+            if (value < limit_value || (value == limit_value && digit > limit_digit))
                 return false;
-            num = 10 * num - n;
+            value = (value * 10) - digit;
             return true;
         });
 }
@@ -78,14 +87,16 @@ template <class Int, class FwdIt>
 bool
 parse_positive_integral (Int& num, FwdIt first, FwdIt last)
 {
-    Int const limit = std::numeric_limits <Int>::max();
+    Int limit_value = std::numeric_limits <Int>::max() / 10;
+    Int limit_digit = std::numeric_limits <Int>::max() % 10;
 
     return parse_integral<Int> (num, first, last,
-        [&num,&limit](Int n)
+        [limit_value, limit_digit](Int& value, Int digit)
         {
-            if (n > (limit - (10 * num)))
+            assert ((digit >= 0) && (digit <= 9));
+            if (value > limit_value || (value == limit_value && digit > limit_digit))
                 return false;
-            num = 10 * num + n;
+            value = (value * 10) + digit;
             return true;
         });
 }
@@ -129,17 +140,22 @@ struct LexicalCast;
 template <class In>
 struct LexicalCast <std::string, In>
 {
-    bool operator() (std::string& out, short in)                { out = std::to_string(in); return true; }
-    bool operator() (std::string& out, int in)                  { out = std::to_string(in); return true; }
-    bool operator() (std::string& out, long in)                 { out = std::to_string(in); return true; }
-    bool operator() (std::string& out, long long in)            { out = std::to_string(in); return true; }
-    bool operator() (std::string& out, unsigned short in)       { out = std::to_string(in); return true; }
-    bool operator() (std::string& out, unsigned int in)         { out = std::to_string(in); return true; }
-    bool operator() (std::string& out, unsigned long in)        { out = std::to_string(in); return true; }
-    bool operator() (std::string& out, unsigned long long in)   { out = std::to_string(in); return true; }
-    bool operator() (std::string& out, float in)                { out = std::to_string(in); return true; }
-    bool operator() (std::string& out, double in)               { out = std::to_string(in); return true; }
-    bool operator() (std::string& out, long double in)          { out = std::to_string(in); return true; }
+    template <class Arithmetic = In>
+    std::enable_if_t <std::is_arithmetic <Arithmetic>::value, bool>
+    operator () (std::string& out, Arithmetic in)
+    {
+        out = std::to_string (in);
+        return true;
+    }
+
+    template <class Enumeration = In>
+    std::enable_if_t <std::is_enum <Enumeration>::value, bool>
+    operator () (std::string& out, Enumeration in)
+    {
+        out = std::to_string (
+            static_cast <std::underlying_type_t <Enumeration>> (in));
+        return true;
+    }
 };
 
 // Parse std::string to number
@@ -150,42 +166,19 @@ struct LexicalCast <Out, std::string>
         "beast::LexicalCast can only be used with integral types");
 
     template <class Integral = Out>
-    typename std::enable_if <std::is_unsigned <Integral>::value, bool>::type
+    std::enable_if_t <std::is_unsigned <Integral>::value, bool>
     operator () (Integral& out, std::string const& in) const
     {
         return parseUnsigned (out, std::begin(in), std::end(in));
     }
 
     template <class Integral = Out>
-    typename std::enable_if <std::is_signed <Integral>::value, bool>::type
+    std::enable_if_t <std::is_signed <Integral>::value, bool>
     operator () (Integral& out, std::string const& in) const
     {
         return parseSigned (out, std::begin(in), std::end(in));
     }
 };
-
-#if 0
-template <class Out>
-bool
-LexicalCast <Out, std::string>::operator() (bool& out, std::string const& in) const
-{
-    // boost::lexical_cast is very strict, it
-    // throws on anything but "1" or "0"
-    //
-    if (in == "1")
-    {
-        out = true;
-        return true;
-    }
-    else if (in == "0")
-    {
-        out = false;
-        return true;
-    }
-
-    return false;
-}
-#endif
 
 //------------------------------------------------------------------------------
 
@@ -206,15 +199,7 @@ struct LexicalCast <Out, char*>
 {
     bool operator() (Out& out, char* in) const
     {
-        Out result;
-
-        if (LexicalCast <Out, char const*> () (result, in))
-        {
-            out = result;
-            return true;
-        }
-
-        return false;
+        return LexicalCast <Out, std::string>()(out, in);
     }
 };
 
