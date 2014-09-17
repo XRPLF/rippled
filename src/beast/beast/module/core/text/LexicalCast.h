@@ -129,17 +129,22 @@ struct LexicalCast;
 template <class In>
 struct LexicalCast <std::string, In>
 {
-    bool operator() (std::string& out, short in)                { out = std::to_string(in); return true; }
-    bool operator() (std::string& out, int in)                  { out = std::to_string(in); return true; }
-    bool operator() (std::string& out, long in)                 { out = std::to_string(in); return true; }
-    bool operator() (std::string& out, long long in)            { out = std::to_string(in); return true; }
-    bool operator() (std::string& out, unsigned short in)       { out = std::to_string(in); return true; }
-    bool operator() (std::string& out, unsigned int in)         { out = std::to_string(in); return true; }
-    bool operator() (std::string& out, unsigned long in)        { out = std::to_string(in); return true; }
-    bool operator() (std::string& out, unsigned long long in)   { out = std::to_string(in); return true; }
-    bool operator() (std::string& out, float in)                { out = std::to_string(in); return true; }
-    bool operator() (std::string& out, double in)               { out = std::to_string(in); return true; }
-    bool operator() (std::string& out, long double in)          { out = std::to_string(in); return true; }
+    template <class Arithmetic = In>
+    std::enable_if_t <std::is_arithmetic <Arithmetic>::value, bool>
+    operator () (std::string& out, Arithmetic in)
+    {
+        out = std::to_string (in);
+        return true;
+    }
+
+    template <class Enumeration = In>
+    std::enable_if_t <std::is_enum <Enumeration>::value, bool>
+    operator () (std::string& out, Enumeration in)
+    {
+        out = std::to_string (
+            static_cast <std::underlying_type_t <Enumeration>> (in));
+        return true;
+    }
 };
 
 // Parse std::string to number
@@ -150,42 +155,19 @@ struct LexicalCast <Out, std::string>
         "beast::LexicalCast can only be used with integral types");
 
     template <class Integral = Out>
-    typename std::enable_if <std::is_unsigned <Integral>::value, bool>::type
+    std::enable_if_t <std::is_unsigned <Integral>::value, bool>
     operator () (Integral& out, std::string const& in) const
     {
         return parseUnsigned (out, std::begin(in), std::end(in));
     }
 
     template <class Integral = Out>
-    typename std::enable_if <std::is_signed <Integral>::value, bool>::type
+    std::enable_if_t <std::is_signed <Integral>::value, bool>
     operator () (Integral& out, std::string const& in) const
     {
         return parseSigned (out, std::begin(in), std::end(in));
     }
 };
-
-#if 0
-template <class Out>
-bool
-LexicalCast <Out, std::string>::operator() (bool& out, std::string const& in) const
-{
-    // boost::lexical_cast is very strict, it
-    // throws on anything but "1" or "0"
-    //
-    if (in == "1")
-    {
-        out = true;
-        return true;
-    }
-    else if (in == "0")
-    {
-        out = false;
-        return true;
-    }
-
-    return false;
-}
-#endif
 
 //------------------------------------------------------------------------------
 
@@ -206,15 +188,7 @@ struct LexicalCast <Out, char*>
 {
     bool operator() (Out& out, char* in) const
     {
-        Out result;
-
-        if (LexicalCast <Out, char const*> () (result, in))
-        {
-            out = result;
-            return true;
-        }
-
-        return false;
+        return LexicalCast <Out, std::string>()(out, in);
     }
 };
 
