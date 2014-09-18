@@ -1078,10 +1078,8 @@ private:
 
     static void checkTransaction (Job&, int flags, SerializedTransaction::pointer stx, std::weak_ptr<Peer> peer)
     {
-    #ifndef TRUST_NETWORK
         try
         {
-    #endif
 
             if (stx->isFieldPresent(sfLastLedgerSequence) &&
                 (stx->getFieldU32 (sfLastLedgerSequence) <
@@ -1108,15 +1106,12 @@ private:
             bool const trusted (flags & SF_TRUSTED);
             getApp().getOPs ().processTransaction (tx, trusted, false, false);
 
-    #ifndef TRUST_NETWORK
         }
         catch (...)
         {
             getApp().getHashRouter ().setFlag (stx->getTransactionID (), SF_BAD);
             charge (peer, Resource::feeInvalidRequest);
         }
-
-    #endif
     }
 
     // Called from our JobQueue
