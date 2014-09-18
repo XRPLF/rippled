@@ -93,7 +93,7 @@ public:
         testcase ("conversion overflows");
 
         tryBadConvert <std::uint64_t> ("99999999999999999999");
-        tryBadConvert <std::uint32_t> ("5294967295");
+        tryBadConvert <std::uint32_t> ("4294967300");
         tryBadConvert <std::uint16_t> ("75821");
     }
 
@@ -104,7 +104,7 @@ public:
         tryBadConvert <std::uint32_t> ("-1");
 
         tryBadConvert <std::int64_t> ("-99999999999999999999");
-        tryBadConvert <std::int32_t> ("-5294967295");
+        tryBadConvert <std::int32_t> ("-4294967300");
         tryBadConvert <std::int16_t> ("-75821");
     }
 
@@ -187,6 +187,11 @@ public:
 
         testThrowConvert <std::uint64_t> ("99999999999999999999", false);
         testThrowConvert <std::uint64_t> ("9223372036854775806", true);
+
+        testThrowConvert <std::uint32_t> ("4294967290", true);
+        testThrowConvert <std::uint32_t> ("42949672900", false);
+        testThrowConvert <std::uint32_t> ("429496729000", false);
+        testThrowConvert <std::uint32_t> ("4294967290000", false);
 
         testThrowConvert <std::int32_t> ("5294967295", false);
         testThrowConvert <std::int32_t> ("-2147483644", true);
