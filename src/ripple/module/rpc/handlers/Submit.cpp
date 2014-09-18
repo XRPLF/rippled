@@ -64,12 +64,20 @@ Json::Value doSubmit (RPC::Context& context)
 
     try
     {
-        tpTrans     = std::make_shared<Transaction> (stpTrans, false);
+        tpTrans     = std::make_shared<Transaction> (stpTrans, true);
     }
     catch (std::exception& e)
     {
         jvResult[jss::error]           = "internalTransaction";
         jvResult["error_exception"] = e.what ();
+
+        return jvResult;
+    }
+
+    if (tpTrans->getStatus() != NEW)
+    {
+        jvResult[jss::error]            = "invalidTransactions";
+        jvResult["error_exception"] = "fails local checks";
 
         return jvResult;
     }
