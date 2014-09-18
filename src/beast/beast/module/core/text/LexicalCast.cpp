@@ -128,30 +128,38 @@ public:
         expect(tryEdgeCase <std::uint64_t> ("18446744073709551614"));
         expect(tryEdgeCase <std::uint64_t> ("18446744073709551615"));
         expect(!tryEdgeCase <std::uint64_t> ("18446744073709551616"));
-        expect(tryEdgeCase <std::uint64_t> ("9223372036854775806"));
-        expect(tryEdgeCase <std::uint64_t> ("9223372036854775807"));
-        expect(!tryEdgeCase <std::uint64_t> ("9223372036854775808"));
-        expect(tryEdgeCase <std::uint64_t> ("-9223372036854775807"));
-        expect(tryEdgeCase <std::uint64_t> ("-9223372036854775808"));
-        expect(!tryEdgeCase <std::uint64_t> ("-9223372036854775809"));
-        expect(tryEdgeCase <std::uint64_t> ("4294967294"));
-        expect(tryEdgeCase <std::uint64_t> ("4294967295"));
-        expect(!tryEdgeCase <std::uint64_t> ("4294967296"));
-        expect(tryEdgeCase <std::uint64_t> ("2147483646"));
-        expect(tryEdgeCase <std::uint64_t> ("2147483647"));
-        expect(!tryEdgeCase <std::uint64_t> ("2147483648"));
-        expect(tryEdgeCase <std::uint64_t> ("-2147483647"));
-        expect(tryEdgeCase <std::uint64_t> ("-2147483648"));
-        expect(!tryEdgeCase <std::uint64_t> ("-2147483649"));
-        expect(tryEdgeCase <std::uint64_t> ("65534"));
-        expect(tryEdgeCase <std::uint64_t> ("65535"));
-        expect(!tryEdgeCase <std::uint64_t> ("65536"));
-        expect(tryEdgeCase <std::uint64_t> ("32766"));
-        expect(tryEdgeCase <std::uint64_t> ("32767"));
-        expect(!tryEdgeCase <std::uint64_t> ("32768"));
-        expect(tryEdgeCase <std::uint64_t> ("-32767"));
-        expect(tryEdgeCase <std::uint64_t> ("-32768"));
-        expect(!tryEdgeCase <std::uint64_t> ("-32769"));
+
+        expect(tryEdgeCase <std::int64_t> ("9223372036854775806"));
+        expect(tryEdgeCase <std::int64_t> ("9223372036854775807"));
+        expect(!tryEdgeCase <std::int64_t> ("9223372036854775808"));
+
+        expect(tryEdgeCase <std::int64_t> ("-9223372036854775807"));
+        expect(tryEdgeCase <std::int64_t> ("-9223372036854775808"));
+        expect(!tryEdgeCase <std::int64_t> ("-9223372036854775809"));
+
+        expect(tryEdgeCase <std::uint32_t> ("4294967294"));
+        expect(tryEdgeCase <std::uint32_t> ("4294967295"));
+        expect(!tryEdgeCase <std::uint32_t> ("4294967296"));
+
+        expect(tryEdgeCase <std::int32_t> ("2147483646"));
+        expect(tryEdgeCase <std::int32_t> ("2147483647"));
+        expect(!tryEdgeCase <std::int32_t> ("2147483648"));
+
+        expect(tryEdgeCase <std::int32_t> ("-2147483647"));
+        expect(tryEdgeCase <std::int32_t> ("-2147483648"));
+        expect(!tryEdgeCase <std::int32_t> ("-2147483649"));
+
+        expect(tryEdgeCase <std::uint16_t> ("65534"));
+        expect(tryEdgeCase <std::uint16_t> ("65535"));
+        expect(!tryEdgeCase <std::uint16_t> ("65536"));
+
+        expect(tryEdgeCase <std::int16_t> ("32766"));
+        expect(tryEdgeCase <std::int16_t> ("32767"));
+        expect(!tryEdgeCase <std::int16_t> ("32768"));
+
+        expect(tryEdgeCase <std::int16_t> ("-32767"));
+        expect(tryEdgeCase <std::int16_t> ("-32768"));
+        expect(!tryEdgeCase <std::int16_t> ("-32769"));
     }
 
     template <class T>
@@ -257,6 +265,7 @@ public:
         testConversionUnderflows ();
         testThrowingConversions ();
         testZero ();
+        testEdgeCases ();
         testEntireRange ();
     }
 };
