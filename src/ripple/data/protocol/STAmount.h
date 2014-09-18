@@ -65,7 +65,7 @@ public:
     static const std::uint64_t cNotNative  = 0x8000000000000000ull;
     static const std::uint64_t cPosNative  = 0x4000000000000000ull;
 
-    static std::uint64_t   uRateOne;
+    static std::uint64_t const uRateOne;
 
     //--------------------------------------------------------------------------
 
@@ -260,9 +260,6 @@ public:
     // VFALCO TODO Rename to setValueOnly (it only sets mantissa and exponent)
     //             Make this private
     bool setValue (std::string const& sAmount);
-
-    bool setFullValue (std::string const& sAmount,
-        std::string const& sCurrency = "", std::string const& sIssuer = "");
 
     //--------------------------------------------------------------------------
     //

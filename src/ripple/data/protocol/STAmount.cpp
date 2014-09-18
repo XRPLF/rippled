@@ -371,21 +371,27 @@ STAmount operator- (STAmount const& v1, STAmount const& v2)
 
 //------------------------------------------------------------------------------
 
-std::uint64_t STAmount::uRateOne =
-        getRate (STAmount (1), STAmount (1));
+std::uint64_t const STAmount::uRateOne = getRate (STAmount (1), STAmount (1));
 
 // Note: mIsNative and mIssue.currency must be set already!
 bool
-STAmount::setValue (std::string const& sAmount)
+STAmount::setValue (std::string const& amount)
 {
-    static boost::regex reNumber (
-        "\\`([+-]?)(\\d*)(\\.(\\d*))?([eE]([+-]?)(\\d+))?\\'");
-    boost::smatch smMatch;
+    static boost::regex const reNumber (
+        "^"                       // the beginning of the string
+        "([-+]?)"                 // (optional) + or - character
+        "(0|[1-9][0-9]*)"         // a number (no leading zeroes, unless 0)
+        "(\\.([0-9]+))?"          // (optional) period followed by any number
+        "([eE]([+-]?)([0-9]+))?"  // (optional) E, optional + or -, any number
+        "$",
+        boost::regex_constants::optimize);
 
-    if (!boost::regex_match (sAmount, smMatch, reNumber))
+    boost::smatch match;
+
+    if (!boost::regex_match (amount, match, reNumber))
     {
-        WriteLog (lsWARNING, STAmount)
-                << "Number not valid: \"" << sAmount << "\"";
+        WriteLog (lsWARNING, STAmount) <<
+            "Number not valid: \"" << amount << "\"";
         return false;
     }
 
@@ -401,113 +407,56 @@ STAmount::setValue (std::string const& sAmount)
 
     try
     {
-        if ((smMatch[2].length () + smMatch[4].length ()) > 32)
+        // CHECKME: Why 32? Shouldn't this be 16?
+        if ((match[2].length () + match[4].length ()) > 32)
         {
-            WriteLog (lsWARNING, STAmount) << "Overlong number: " << sAmount;
+            WriteLog (lsWARNING, STAmount) << "Overlong number: " << amount;
             return false;
         }
 
-        mIsNegative = (smMatch[1].matched && (smMatch[1] == "-"));
+        mIsNegative = (match[1].matched && (match[1] == "-"));
 
-        if (!smMatch[4].matched) // integer only
+        // Can't specify XRP using fractional representation
+        if (mIsNative && match[3].matched)
+            return false;
+
+        if (!match[4].matched) // integer only
         {
-            mValue = beast::lexicalCast <std::uint64_t> (std::string (smMatch[2]));
+            mValue = beast::lexicalCastThrow <std::uint64_t> (std::string (match[2]));
             mOffset = 0;
         }
         else
         {
             // integer and fraction
-            mValue = beast::lexicalCast <std::uint64_t> (smMatch[2] + smMatch[4]);
-            mOffset = - (smMatch[4].length ());
+            mValue = beast::lexicalCastThrow <std::uint64_t> (match[2] + match[4]);
+            mOffset = -(match[4].length ());
         }
 
-        if (smMatch[5].matched)
+        if (match[5].matched)
         {
             // we have an exponent
-            if (smMatch[6].matched && (smMatch[6] == "-"))
-                mOffset -= beast::lexicalCast <int> (std::string (smMatch[7]));
+            if (match[6].matched && (match[6] == "-"))
+                mOffset -= beast::lexicalCastThrow <int> (std::string (match[7]));
             else
-                mOffset += beast::lexicalCast <int> (std::string (smMatch[7]));
+                mOffset += beast::lexicalCastThrow <int> (std::string (match[7]));
         }
+
+        canonicalize ();
+
+        WriteLog (lsTRACE, STAmount) <<
+            "Canonicalized \"" << amount << "\" to " << mValue << " : " << mOffset;
     }
     catch (...)
     {
-        WriteLog (lsWARNING, STAmount) << "Number not parsed: \"" << sAmount << "\"";
         return false;
     }
-
-    WriteLog (lsTRACE, STAmount) << "Float \"" << sAmount << "\" parsed to " << mValue << " : " << mOffset;
-
-    if (mIsNative)
-    {
-        if (smMatch[3].matched)
-            mOffset -= SYSTEM_CURRENCY_PRECISION;
-
-        while (mOffset > 0)
-        {
-            mValue  *= 10;
-            --mOffset;
-        }
-
-        while (mOffset < 0)
-        {
-            mValue  /= 10;
-            ++mOffset;
-        }
-    }
-    else
-        canonicalize ();
 
     return true;
 }
 
-// Not meant to be the ultimate parser.  For use by RPC which is supposed to be sane and trusted.
-// Native has special handling:
-// - Integer values are in base units.
-// - Float values are in float units.
-// - To avoid a mistake float value for native are specified with a "^" in place of a "."
-// <-- bValid: true = valid
-bool STAmount::setFullValue (std::string const& sAmount, std::string const& sCurrency, std::string const& sIssuer)
+void
+STAmount::setIssue (Issue const& issue)
 {
-    //
-    // Figure out the currency.
-    //
-    if (!to_currency (mIssue.currency, sCurrency))
-    {
-        WriteLog (lsINFO, STAmount) << "Currency malformed: " << sCurrency;
-
-        return false;
-    }
-
-    mIsNative   = !mIssue.currency;
-
-    //
-    // Figure out the issuer.
-    //
-    RippleAddress   naIssuerID;
-
-    // Issuer must be "" or a valid account string.
-    if (!naIssuerID.setAccountID (sIssuer))
-    {
-        WriteLog (lsINFO, STAmount) << "Issuer malformed: " << sIssuer;
-
-        return false;
-    }
-
-    mIssue.account = naIssuerID.getAccountID ();
-
-    // Stamps not must have an issuer.
-    if (mIsNative && !isXRP (*this))
-    {
-        WriteLog (lsINFO, STAmount) << "Issuer specified for XRP: " << sIssuer;
-
-        return false;
-    }
-
-    return setValue (sAmount);
-}
-
-void STAmount::setIssue (Issue const& issue) {
     mIssue = std::move(issue);
     mIsNative = isXRP (*this);
 }
@@ -836,7 +785,7 @@ void STAmount::canonicalize ()
             --mOffset;
         }
 
-        if (mValue > cMaxNative)
+        if (mValue > cMaxNativeN)
             throw std::runtime_error ("Native currency amount out of range");
 
         return;
@@ -870,7 +819,6 @@ void STAmount::canonicalize ()
     {
         mValue = 0;
         mOffset = 0;
-        mIsNegative = false;
     }
 
     if (mOffset > cMaxOffset)

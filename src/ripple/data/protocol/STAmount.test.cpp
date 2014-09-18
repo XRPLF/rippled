@@ -111,27 +111,81 @@ public:
 
     //--------------------------------------------------------------------------
 
+    void testSetValue (
+        std::string const& value, Issue const& issue, bool success = true)
+    {
+        STAmount amount (issue);
+        
+        bool const result = amount.setValue (value);
+
+        expect (result == success, std::string ("parse ") + value);
+
+        if (success)
+            expect (amount.getText () == value, std::string ("format ") + value);
+    }
+
     void testSetValue ()
     {
-        testcase ("set value");
+        {
+            testcase ("set value (native)");
 
-        STAmount    saTmp;
+            Issue const xrp (xrpIssue ());
 
-    #if 0
-        // Check native floats
-        saTmp.setFullValue ("1^0");
-        BOOST_CHECK_MESSAGE (SYSTEM_CURRENCY_PARTS == saTmp.getNValue (), "float integer failed");
-        saTmp.setFullValue ("0^1");
-        BOOST_CHECK_MESSAGE (SYSTEM_CURRENCY_PARTS / 10 == saTmp.getNValue (), "float fraction failed");
-        saTmp.setFullValue ("0^12");
-        BOOST_CHECK_MESSAGE (12 * SYSTEM_CURRENCY_PARTS / 100 == saTmp.getNValue (), "float fraction failed");
-        saTmp.setFullValue ("1^2");
-        BOOST_CHECK_MESSAGE (SYSTEM_CURRENCY_PARTS + (2 * SYSTEM_CURRENCY_PARTS / 10) == saTmp.getNValue (), "float combined failed");
-    #endif
+            // fractional XRP (i.e. drops)
+            testSetValue ("1", xrp);
+            testSetValue ("22", xrp);
+            testSetValue ("333", xrp);
+            testSetValue ("4444", xrp);
+            testSetValue ("55555", xrp);
+            testSetValue ("666666", xrp);
 
-        // Check native integer
-        saTmp.setFullValue ("1");
-        expect (1 == saTmp.getNValue (), "should be equal");
+            // 1 XRP up to 100 billion, in powers of 10 (in drops)
+            testSetValue ("1000000", xrp);
+            testSetValue ("10000000", xrp);
+            testSetValue ("100000000", xrp);
+            testSetValue ("1000000000", xrp);
+            testSetValue ("10000000000", xrp);
+            testSetValue ("100000000000", xrp);
+            testSetValue ("1000000000000", xrp);
+            testSetValue ("10000000000000", xrp);
+            testSetValue ("100000000000000", xrp);
+            testSetValue ("1000000000000000", xrp);
+            testSetValue ("10000000000000000", xrp);
+            testSetValue ("100000000000000000", xrp);
+
+            // Invalid native values:
+            testSetValue ("1.1", xrp, false);
+            testSetValue ("100000000000000001", xrp, false);
+            testSetValue ("1000000000000000000", xrp, false);
+        }
+
+        {
+            testcase ("set value (iou)");
+
+            Issue const usd (Currency (0x5553440000000000), Account (0x4985601));
+
+            testSetValue ("1", usd);
+            testSetValue ("10", usd);
+            testSetValue ("100", usd);
+            testSetValue ("1000", usd);
+            testSetValue ("10000", usd);
+            testSetValue ("100000", usd);
+            testSetValue ("1000000", usd);
+            testSetValue ("10000000", usd);
+            testSetValue ("100000000", usd);
+            testSetValue ("1000000000", usd);
+            testSetValue ("10000000000", usd);
+            
+            testSetValue ("1234567.1", usd);
+            testSetValue ("1234567.12", usd);
+            testSetValue ("1234567.123", usd);
+            testSetValue ("1234567.1234", usd);
+            testSetValue ("1234567.12345", usd);
+            testSetValue ("1234567.123456", usd);
+            testSetValue ("1234567.1234567", usd);
+            testSetValue ("1234567.12345678", usd);
+            testSetValue ("1234567.123456789", usd);
+        }
     }
 
     //--------------------------------------------------------------------------
