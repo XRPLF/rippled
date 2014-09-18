@@ -29,6 +29,8 @@
 #include <string>
 #include <utility>
 
+#include <iostream>
+
 namespace beast {
 
 namespace detail {
@@ -47,14 +49,16 @@ parse_integral (Int& num, FwdIt first, FwdIt last, Accumulator accumulator)
 
     if (first == last)
         return false;
+
     while (first != last)
     {
         auto const c = *first++;
         if (c < '0' || c > '9')
             return false;
-        if (!accumulator(Int(c - '0')))
+        if (!accumulator(num, Int(c - '0')))
             return false;
     }
+
     return true;
 }
 
@@ -62,14 +66,19 @@ template <class Int, class FwdIt>
 bool
 parse_negative_integral (Int& num, FwdIt first, FwdIt last)
 {
-    Int const limit = std::numeric_limits <Int>::min();
+    Int limit_value = std::numeric_limits <Int>::min() / 10;
+    Int limit_digit = std::numeric_limits <Int>::min() % 10;
 
-    return parse_integral<Int> (num, first, last,
-        [&num,&limit](Int n)
+    if (limit_digit < 0)
+        limit_digit = -limit_digit;
+
+    return parse_integral<Int> (num, first, last, 
+        [limit_value, limit_digit](Int& value, Int digit)
         {
-            if ((limit - (10 * num)) > -n)
+            assert ((digit >= 0) && (digit <= 9));
+            if (value < limit_value || (value == limit_value && digit > limit_digit))
                 return false;
-            num = 10 * num - n;
+            value = (value * 10) - digit;
             return true;
         });
 }
@@ -78,14 +87,16 @@ template <class Int, class FwdIt>
 bool
 parse_positive_integral (Int& num, FwdIt first, FwdIt last)
 {
-    Int const limit = std::numeric_limits <Int>::max();
+    Int limit_value = std::numeric_limits <Int>::max() / 10;
+    Int limit_digit = std::numeric_limits <Int>::max() % 10;
 
     return parse_integral<Int> (num, first, last,
-        [&num,&limit](Int n)
+        [limit_value, limit_digit](Int& value, Int digit)
         {
-            if (n > (limit - (10 * num)))
+            assert ((digit >= 0) && (digit <= 9));
+            if (value > limit_value || (value == limit_value && digit > limit_digit))
                 return false;
-            num = 10 * num + n;
+            value = (value * 10) + digit;
             return true;
         });
 }
