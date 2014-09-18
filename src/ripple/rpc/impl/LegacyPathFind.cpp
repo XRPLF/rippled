@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/rpc/Tuning.h>
+#include <ripple/rpc/impl/Tuning.h>
 #include <ripple/rpc/impl/LegacyPathFind.h>
 
 namespace ripple {
@@ -34,13 +34,13 @@ LegacyPathFind::LegacyPathFind (bool isAdmin) : m_isOk (false)
 
     auto& app = getApp();
     auto const& jobCount = app.getJobQueue ().getJobCountGE (jtCLIENT);
-    if (jobCount > MAX_PATHFIND_JOB_COUNT || app.getFeeTrack().isLoadedLocal ())
+    if (jobCount > Tuning::maxPathfindJobCount || app.getFeeTrack().isLoadedLocal ())
         return;
 
     while (true)
     {
         int prevVal = inProgress.load();
-        if (prevVal >= MAX_PATHFINDS_IN_PROGRESS)
+        if (prevVal >= Tuning::maxPathfindsInProgress)
             return;
 
         if (inProgress.compare_exchange_strong (
