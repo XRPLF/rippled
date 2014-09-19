@@ -192,6 +192,7 @@ int run (int argc, char** argv)
     ("unittest-format", po::value <std::string> ()->implicit_value ("text"), "Format unit test output. Choices are 'text', 'junit'")
     ("parameters", po::value< vector<string> > (), "Specify comma separated parameters.")
     ("quiet,q", "Reduce diagnotics.")
+    ("quorum", po::value <int> (), "Set the validation quorum.")
     ("verbose,v", "Verbose logging.")
     ("load", "Load the current ledger from the local DB.")
     ("replay","Replay a ledger close.")
@@ -351,6 +352,14 @@ int run (int argc, char** argv)
         {
             // VFALCO TODO This should be a short.
             getConfig ().setRpcPort (vm ["rpc_port"].as <int> ());
+        }
+
+        if (vm.count ("quorum"))
+        {
+            getConfig ().VALIDATION_QUORUM = vm["quorum"].as <int> ();
+
+            if (getConfig ().VALIDATION_QUORUM < 0)
+                iResult = 1;
         }
     }
 
