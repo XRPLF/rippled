@@ -21,6 +21,7 @@
 #include <beast/module/core/text/LexicalCast.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
+#include <istream>
 #include <string>
 
 namespace ripple {
