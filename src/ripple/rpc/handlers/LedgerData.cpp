@@ -32,8 +32,8 @@ namespace ripple {
 //     marker:       resume point, if any
 Json::Value doLedgerData (RPC::Context& context)
 {
-    int const BINARY_PAGE_LENGTH = 256;
-    int const JSON_PAGE_LENGTH = 2048;
+    int const BINARY_PAGE_LENGTH = 2048;
+    int const JSON_PAGE_LENGTH = 256;
 
     Ledger::pointer lpLedger;
 
