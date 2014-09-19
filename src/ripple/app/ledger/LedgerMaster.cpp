@@ -1295,6 +1295,7 @@ public:
 
     void setMinValidations (int v)
     {
+        WriteLog (lsINFO, LedgerMaster) << "Validation quorum: " << v;
         mMinValidations = v;
     }
 
