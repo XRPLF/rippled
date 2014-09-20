@@ -31,7 +31,6 @@ class WSConnection
     : public std::enable_shared_from_this <WSConnection>
     , public InfoSub
     , public CountedObject <WSConnection>
-    , public beast::Uncopyable
 {
 public:
     static char const* getCountedObjectName () { return "WSConnection"; }
@@ -42,6 +41,9 @@ protected:
     WSConnection (Resource::Manager& resourceManager,
         Resource::Consumer usage, InfoSub::Source& source, bool isPublic,
             beast::IP::Endpoint const& remoteAddress, boost::asio::io_service& io_service);
+
+    WSConnection(WSConnection const&) = delete;
+    WSConnection& operator= (WSConnection const&) = delete;
 
     virtual ~WSConnection ();
 
@@ -69,10 +71,6 @@ protected:
     bool m_receiveQueueRunning;
     bool m_isDead;
     boost::asio::io_service& m_io_service;
-
-private:
-    WSConnection (WSConnection const&);
-    WSConnection& operator= (WSConnection const&);
 };
 
 //------------------------------------------------------------------------------

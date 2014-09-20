@@ -29,15 +29,10 @@
 
 namespace ripple {
 
-class CAutoBN_CTX : public beast::Uncopyable
+class CAutoBN_CTX
 {
 protected:
     BN_CTX* pctx;
-    CAutoBN_CTX& operator= (BN_CTX* pnew)
-    {
-        pctx = pnew;
-        return *this;
-    }
 
 public:
     CAutoBN_CTX ()
@@ -53,6 +48,9 @@ public:
         if (pctx != nullptr)
             BN_CTX_free (pctx);
     }
+
+    CAutoBN_CTX (CAutoBN_CTX const&) = delete;
+    CAutoBN_CTX& operator= (CAutoBN_CTX const&) = delete;
 
     operator BN_CTX* ()
     {

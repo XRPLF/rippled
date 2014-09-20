@@ -60,7 +60,6 @@ class SqliteStatement;
 class Ledger
     : public std::enable_shared_from_this <Ledger>
     , public CountedObject <Ledger>
-    , public beast::Uncopyable
 {
 public:
     static char const* getCountedObjectName () { return "Ledger"; }
@@ -117,6 +116,9 @@ public:
     Ledger (std::string const& rawLedger, bool hasPrefix);
     Ledger (bool dummy, Ledger & previous); // ledger after this one
     Ledger (Ledger & target, bool isMutable); // snapshot
+
+    Ledger (Ledger const&) = delete;
+    Ledger& operator= (Ledger const&) = delete;
 
     ~Ledger ();
 
