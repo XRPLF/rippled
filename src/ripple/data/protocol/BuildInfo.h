@@ -23,7 +23,7 @@
 namespace ripple {
 
 /** Versioning information for this build. */
-struct BuildInfo
+namespace BuildInfo
 {
     /** Server version.
 
@@ -31,14 +31,14 @@ struct BuildInfo
 
         http://semver.org/
     */
-    static beast::String const& getVersionString ();
+    std::string const& getVersionString ();
 
     /** Full server version string.
 
         This includes the name of the server. It is used in the peer
         protocol hello message and also the headers of some HTTP replies.
     */
-    static char const* getFullVersionString ();
+    std::string const& getFullVersionString ();
 
     //--------------------------------------------------------------------------
 
@@ -47,40 +47,26 @@ struct BuildInfo
         The version consists of two unsigned 16 bit integers representing
         major and minor version numbers. All values are permissible.
     */
-    struct Protocol
-    {
-        unsigned short vmajor;
-        unsigned short vminor;
+    using Protocol = std::pair <std::uint16_t const, std::uint16_t const>;
 
-        //----
-
-        /** The serialized format of the protocol version. */
-        typedef std::uint32_t PackedFormat;
-
-        Protocol ();
-        Protocol (unsigned short vmajor, unsigned short vminor);
-        explicit Protocol (PackedFormat packedVersion);
-
-        PackedFormat toPacked () const noexcept;
-
-        std::string toStdString () const noexcept;
-
-        bool operator== (Protocol const& other) const noexcept { return toPacked () == other.toPacked (); }
-        bool operator!= (Protocol const& other) const noexcept { return toPacked () != other.toPacked (); }
-        bool operator>= (Protocol const& other) const noexcept { return toPacked () >= other.toPacked (); }
-        bool operator<= (Protocol const& other) const noexcept { return toPacked () <= other.toPacked (); }
-        bool operator>  (Protocol const& other) const noexcept { return toPacked () >  other.toPacked (); }
-        bool operator<  (Protocol const& other) const noexcept { return toPacked () <  other.toPacked (); }
-    };
+    /** Construct a protocol version from a packed 32-bit protocol identifier */
+    Protocol
+    make_protocol (std::uint32_t version);
 
     /** The protocol version we speak and prefer. */
-    static Protocol const& getCurrentProtocol ();
+    Protocol const& getCurrentProtocol ();
 
     /** The oldest protocol version we will accept. */
-    static Protocol const& getMinimumProtocol ();
+    Protocol const& getMinimumProtocol ();
 
-    static char const* getRawVersionString ();
+    char const* getRawVersionString ();
 };
+
+std::string
+to_string (BuildInfo::Protocol const& p);
+
+std::uint32_t
+to_packed (BuildInfo::Protocol const& p);
 
 } // ripple
 
