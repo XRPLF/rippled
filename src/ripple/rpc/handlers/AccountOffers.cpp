@@ -44,24 +44,23 @@ Json::Value doAccountOffers (RPC::Context& context)
 
     std::string strIdent (params[jss::account].asString ());
     bool bIndex (params.isMember (jss::account_index));
-    int iIndex (bIndex ? params[jss::account_index].asUInt () : 0);
+    int const iIndex (bIndex ? params[jss::account_index].asUInt () : 0);
 
-    RippleAddress raAccount;
+    RippleAddress rippleAddress;
 
-    result = RPC::accountFromString (
-        ledger, raAccount, bIndex, strIdent, iIndex, false, context.netOps_);
+    result = RPC::accountFromString (ledger, rippleAddress, bIndex, strIdent,
+        iIndex, false, context.netOps_);
 
     if (! result.empty ())
         return result;
 
     // Get info on account.
-
-    result[jss::account] = raAccount.humanAccountID ();
+    result[jss::account] = rippleAddress.humanAccountID ();
 
     if (bIndex)
-        result[jss::account_index]   = iIndex;
+        result[jss::account_index] = iIndex;
 
-    if (! ledger->hasAccount (raAccount))
+    if (! ledger->hasAccount (rippleAddress))
         return rpcError (rpcACT_NOT_FOUND);
 
     unsigned int limit;
@@ -75,100 +74,82 @@ Json::Value doAccountOffers (RPC::Context& context)
     {
         limit = RPC::Tuning::defaultOffersPerRequest;
     }
+    
+    Account const& raAccount (rippleAddress.getAccountID ());
+    Json::Value& jsonOffers (result[jss::offers] = Json::arrayValue); 
+    std::vector <SLE::pointer> offers;
+    unsigned int reserve (limit);
+    uint256 startAfter;
+    std::uint64_t startHint;
 
-    uint256 const rootIndex (Ledger::getOwnerDirIndex (raAccount.getAccountID ()));
-    std::uint32_t resumeSeq = 0;
-    uint256 currentIndex;
-    bool resume (true);
-
-    if (params.isMember (jss::marker))
+    if (params.isMember(jss::marker))
     {
+        // We have a start point. Use limit - 1 from the result and use the
+        // very last one for the resume.        
         Json::Value const& marker (params[jss::marker]);
 
-        if (! marker.isObject () || marker.size () != 2 ||
-            ! marker.isMember (jss::seq) || ! marker[jss::seq].isIntegral () ||
-            ! marker.isMember (jss::account_index) ||
-            ! marker[jss::account_index].isString ())
-        {
+        if (! marker.isString ())
             return rpcError (rpcACT_MALFORMED);
+
+        startAfter.SetHex (marker.asString ());
+        SLE::pointer sleOffer (ledger->getSLEi (startAfter));
+
+        if (sleOffer == nullptr ||
+            sleOffer->getType () != ltOFFER ||
+            raAccount != sleOffer->getFieldAccount160 (sfAccount))
+        {
+            return rpcError (rpcINVALID_PARAMS);
         }
 
-        resumeSeq = marker[jss::seq].asUInt ();
-        currentIndex = Ledger::getDirNodeIndex (rootIndex,
-            uintFromHex (marker[jss::account_index].asString ()));
+        startHint = sleOffer->getFieldU64(sfOwnerNode);
 
-        resume = false;
+        // Caller provided the first offer (startAfter), add it as first result
+        Json::Value& obj (jsonOffers.append (Json::objectValue));
+        sleOffer->getFieldAmount (sfTakerPays).setJson (obj[jss::taker_pays]);
+        sleOffer->getFieldAmount (sfTakerGets).setJson (obj[jss::taker_gets]);
+        obj[jss::seq] = sleOffer->getFieldU32 (sfSequence);
+        obj[jss::flags] = sleOffer->getFieldU32 (sfFlags);            
+
+        offers.reserve (reserve);
     }
     else
     {
-        currentIndex = rootIndex;
+        startHint = 0;
+        // We have no start point, limit should be one higher than requested.            
+        offers.reserve (++reserve);
     }
 
-    Json::Value& jvsOffers(result[jss::offers] = Json::arrayValue);
-    unsigned int i (0);
-    bool process (true);
-
-    while (process)
-    {
-        SLE::pointer ownerDir (ledger->getSLEi (currentIndex));
-
-        if (!ownerDir || ownerDir->getType () != ltDIR_NODE)
-            break;
-
-        for (auto const& node : ownerDir->getFieldV256 (sfIndexes).peekValue ())
+    if (! ledger->visitAccountItems (raAccount, startAfter, startHint, reserve,
+        [&offers](SLE::ref offer)
         {
-            SLE::ref offer (ledger->getSLEi (node));
-
             if (offer->getType () == ltOFFER)
             {
-                std::uint32_t const seq (offer->getFieldU32 (sfSequence));
-
-                if (!resume && resumeSeq == seq)
-                    resume = true;
-
-                if (resume)
-                {
-                    if (i < limit)
-                    {
-                        Json::Value& obj (jvsOffers.append (Json::objectValue));
-                        offer->getFieldAmount (sfTakerPays).setJson (
-                            obj[jss::taker_pays]);
-                        offer->getFieldAmount (sfTakerGets).setJson (
-                            obj[jss::taker_gets]);
-                        obj[jss::seq] = seq;
-                        obj[jss::flags] = offer->getFieldU32 (sfFlags);
-
-                        ++i;
-                    }
-                    else
-                    {
-                        result[jss::limit] = limit;
-
-                        Json::Value& marker (result[jss::marker] = Json::objectValue);
-                        marker[jss::seq] = seq;
-                        marker[jss::account_index] = strHex(
-                            ownerDir->getFieldU64 (sfIndexPrevious));
-
-                        process = false;
-                        break;
-                    }
-                }
+                offers.emplace_back (offer);
+                return true;
             }
-        }
 
-        if (process)
-        {
-            std::uint64_t const uNodeNext(ownerDir->getFieldU64(sfIndexNext));
-
-            if (!uNodeNext)
-                break;
-
-            currentIndex = Ledger::getDirNodeIndex(rootIndex, uNodeNext);
-        }
+            return false;
+        }))
+    {
+        return rpcError (rpcINVALID_PARAMS);
     }
 
-    if (!resume)
-        return rpcError (rpcACT_MALFORMED);
+    if (offers.size () == reserve)
+    {
+        result[jss::limit] = limit;
+
+        result[jss::marker] = to_string (offers.back ()->getIndex ());        
+        offers.pop_back ();
+    }
+
+    for (auto const& offer : offers)
+    {
+        Json::Value& obj (jsonOffers.append (Json::objectValue));
+        offer->getFieldAmount (sfTakerPays).setJson (obj[jss::taker_pays]);
+        offer->getFieldAmount (sfTakerGets).setJson (obj[jss::taker_gets]);
+        obj[jss::seq] = offer->getFieldU32 (sfSequence);
+        obj[jss::flags] = offer->getFieldU32 (sfFlags);            
+    }
 
     context.loadType_ = Resource::feeMediumBurdenRPC;
     return result;
