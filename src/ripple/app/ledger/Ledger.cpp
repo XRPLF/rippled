@@ -1382,6 +1382,67 @@ void Ledger::visitAccountItems (
 
 }
 
+bool Ledger::visitAccountItems (
+    Account const& accountID,
+    uint256 const& startAfter,
+    std::uint64_t const hint,
+    unsigned int limit,
+    std::function <bool (SLE::ref)> func) const
+{
+    // Visit each item in this account's owner directory
+    uint256 const rootIndex (Ledger::getOwnerDirIndex (accountID));
+    uint256 currentIndex (rootIndex);
+
+    // If startAfter is not zero try jumping to that page using the hint
+    if (startAfter.isNonZero ())
+    {
+        uint256 const hintIndex (getDirNodeIndex (rootIndex, hint));
+        SLE::pointer hintDir (getSLEi (hintIndex));
+        if (hintDir != nullptr)
+        {
+            for (auto const& node : hintDir->getFieldV256 (sfIndexes))
+            {
+                if (node == startAfter)
+                {
+                    // We found the hint, we can start here
+                    currentIndex = hintIndex;
+                    break;
+                }
+            }
+        }
+    }
+
+    bool found (false);
+
+    while (1)
+    {
+        SLE::pointer ownerDir (getSLEi (currentIndex));
+
+        if (!ownerDir || ownerDir->getType () != ltDIR_NODE)
+            return found;
+
+        for (auto const& node : ownerDir->getFieldV256 (sfIndexes))
+        {
+            if (!found)
+            {
+                if (startAfter.isZero () || node == startAfter)
+                    found = true;
+            }
+            else if (func (getSLEi (node)) && limit-- <= 1)
+            {
+                return found;
+            }
+        }
+
+        std::uint64_t const uNodeNext (ownerDir->getFieldU64 (sfIndexNext));
+
+        if (uNodeNext == 0)
+            return found;
+
+        currentIndex = Ledger::getDirNodeIndex (rootIndex, uNodeNext);
+    }
+}
+
 static void visitHelper (
     std::function<void (SLE::ref)>& function, SHAMapItem::ref item)
 {
@@ -1785,12 +1846,20 @@ uint256 Ledger::getRippleStateIndex (
 {
     Serializer  s (62);
 
-    bool const bAltB = a < b;
+    s.add16 (spaceRipple);  //  2
 
-    s.add16 (spaceRipple);          //  2
-    s.add160 (bAltB ? a : b);       // 20
-    s.add160 (bAltB ? b : a);       // 20
-    s.add160 (currency);            // 20
+    if (a < b)
+    {
+        s.add160 (a);       // 20
+        s.add160 (b);       // 20
+    }
+    else
+    {
+        s.add160 (b);       // 20
+        s.add160 (a);       // 20
+    }
+
+    s.add160 (currency);    // 20
 
     return s.getSHA512Half ();
 }

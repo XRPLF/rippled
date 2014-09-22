@@ -288,8 +288,15 @@ public:
     SLE::pointer getAccountRoot (Account const& accountID) const;
     SLE::pointer getAccountRoot (const RippleAddress & naAccountID) const;
     void updateSkipList ();
+        
     void visitAccountItems (
-        Account const& acctID, std::function<void (SLE::ref)>) const;
+        Account const& accountID, std::function<void (SLE::ref)>) const;
+    bool visitAccountItems (
+        Account const& accountID,
+        uint256 const& startAfter, // Entry to start after
+        std::uint64_t const hint,  // Hint which page to start at
+        unsigned int limit,
+        std::function <bool (SLE::ref)>) const;
     void visitStateItems (std::function<void (SLE::ref)>) const;
 
     // database functions (low-level)
