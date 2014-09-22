@@ -182,7 +182,7 @@ inline std::string invalid_field_message (std::string const& name)
 
 inline Json::Value invalid_field_error (std::string const& name)
 {
-    return make_param_error (object_field_message (name));
+    return make_param_error (invalid_field_message (name));
 }
 
 inline std::string expected_field_message (
