@@ -76,11 +76,22 @@ public:
     std::atomic <std::uint32_t> mValidLedgerSeq;
     std::atomic <std::uint32_t> mBuildingLedgerSeq;
 
+    // The server is in standalone mode
+    bool const standalone_;
+
+    // How many ledgers before the current ledger do we allow peers to request?
+    std::uint32_t const fetch_depth_;
+
+    // How much history do we want to keep
+    std::uint32_t const ledger_history_;
+
+    int const ledger_fetch_size_;
+
     //--------------------------------------------------------------------------
 
-    LedgerMasterImp (Stoppable& parent,
-        beast::insight::Collector::ptr const& collector,
-            beast::Journal journal)
+    LedgerMasterImp (bool standalone, std::uint32_t fetch_depth,
+        std::uint32_t ledger_history, int ledger_fetch_size, Stoppable& parent,
+        beast::insight::Collector::ptr const& collector, beast::Journal journal)
         : LedgerMaster (parent)
         , m_journal (journal)
         , mLedgerHistory (collector)
@@ -99,6 +110,10 @@ public:
         , mValidLedgerClose (0)
         , mValidLedgerSeq (0)
         , mBuildingLedgerSeq (0)
+        , standalone_ (standalone)
+        , fetch_depth_ (fetch_depth)
+        , ledger_history_ (ledger_history)
+        , ledger_fetch_size_ (ledger_fetch_size)
     {
     }
 
@@ -214,7 +229,7 @@ public:
             mCurrentLedger.set (newLedger);
         }
 
-        if (getConfig().RUN_STANDALONE)
+        if (standalone_)
         {
             setFullLedger(newLedger, true, false);
             tryAdvance();
@@ -235,7 +250,7 @@ public:
             mCurrentLedger.set (newOL);
         }
 
-        if (getConfig().RUN_STANDALONE)
+        if (standalone_)
         {
             setFullLedger(newLCL, true, false);
             tryAdvance();
@@ -458,8 +473,9 @@ public:
         // The earliest ledger we will let people fetch is ledger zero,
         // unless that creates a larger range than allowed
         std::uint32_t e = getClosedLedger()->getLedgerSeq();
-        if (e > getConfig().FETCH_DEPTH)
-            e -= getConfig().FETCH_DEPTH;
+
+        if (e > fetch_depth_)
+            e -= fetch_depth_;
         else
             e = 0;
         return e;
@@ -704,7 +720,7 @@ public:
      */
     int getNeededValidations ()
     {
-        if (getConfig ().RUN_STANDALONE)
+        if (standalone_)
             return 0;
 
         int minVal = mMinValidations;
@@ -777,7 +793,7 @@ public:
         setBuildingLedger (0);
 
         // No need to process validations in standalone mode
-        if (getConfig().RUN_STANDALONE)
+        if (standalone_)
             return;
 
         if (ledger->getLedgerSeq() <= mValidLedgerSeq)
@@ -894,7 +910,7 @@ public:
             std::list<Ledger::pointer> pubLedgers = findNewLedgersToPublish ();
             if (pubLedgers.empty())
             {
-                if (!getConfig().RUN_STANDALONE && !getApp().getFeeTrack().isLoadedLocal() &&
+                if (!standalone_ && !getApp().getFeeTrack().isLoadedLocal() &&
                     (getApp().getJobQueue().getJobCount(jtPUBOLDLEDGER) < 10) &&
                     (mValidLedgerSeq == mPubLedgerSeq))
                 { // We are in sync, so can acquire
@@ -905,7 +921,7 @@ public:
                     }
                     WriteLog (lsTRACE, LedgerMaster) << "tryAdvance discovered missing " << missing;
                     if ((missing != RangeSet::absent) && (missing > 0) &&
-                        shouldAcquire(mValidLedgerSeq, getConfig().LEDGER_HISTORY, missing) &&
+                        shouldAcquire(mValidLedgerSeq, ledger_history_, missing) &&
                         ((mFillInProgress == 0) || (missing > mFillInProgress)))
                     {
                         WriteLog (lsTRACE, LedgerMaster) << "advanceThread should acquire";
@@ -956,7 +972,7 @@ public:
                                 {
                                     try
                                     {
-                                        for (int i = 0; i < getConfig().getSize(siLedgerFetch); ++i)
+                                        for (int i = 0; i < ledger_fetch_size_; ++i)
                                         {
                                             std::uint32_t seq = missing - i;
                                             uint256 hash = nextLedger->getLedgerHash(seq);
@@ -1195,7 +1211,7 @@ public:
                 }
             }
 
-            if (!getConfig().RUN_STANDALONE)
+            if (!standalone_)
             { // don't pathfind with a ledger that's more than 60 seconds old
                 std::int64_t age = getApp().getOPs().getCloseTimeNC();
                 age -= static_cast<std::int64_t> (lastLedger->getCloseTimeNC());
@@ -1479,12 +1495,12 @@ bool LedgerMaster::shouldAcquire (
 }
 
 std::unique_ptr <LedgerMaster>
-make_LedgerMaster (beast::Stoppable& parent,
-    beast::insight::Collector::ptr const& collector,
-        beast::Journal journal)
+make_LedgerMaster (bool standalone, std::uint32_t fetch_depth,
+    std::uint32_t ledger_history, int ledger_fetch_size, beast::Stoppable& parent,
+    beast::insight::Collector::ptr const& collector, beast::Journal journal)
 {
-    return std::make_unique <LedgerMasterImp> (
-        parent, collector, journal);
+    return std::make_unique <LedgerMasterImp> (standalone, fetch_depth,
+        ledger_history, ledger_fetch_size, parent, collector, journal);
 }
 
 } // ripple

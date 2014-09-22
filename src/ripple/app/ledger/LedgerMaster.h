@@ -151,9 +151,9 @@ public:
 };
 
 std::unique_ptr <LedgerMaster>
-make_LedgerMaster (beast::Stoppable& parent,
-    beast::insight::Collector::ptr const& collector,
-        beast::Journal journal);
+make_LedgerMaster (bool standalone, std::uint32_t fetch_depth,
+    std::uint32_t ledger_history, int ledger_fetch_size, beast::Stoppable& parent,
+    beast::insight::Collector::ptr const& collector, beast::Journal journal);
 
 } // ripple
 
