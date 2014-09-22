@@ -548,9 +548,15 @@ void SHAMapTreeNode::canonicalizeChild (int branch, SHAMapTreeNode::pointer& nod
 
     std::unique_lock <std::mutex> lock (childLock);
     if (mChildren[branch])
+    {
+        // There is already a node hooked up, return it
         node = mChildren[branch];
+    }
     else
+    {
+        // Hook this node up
         mChildren[branch] = node;
+    }
 }
 
 

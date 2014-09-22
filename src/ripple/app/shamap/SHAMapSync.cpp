@@ -282,7 +282,7 @@ bool SHAMap::getNodeFat (SHAMapNodeID wanted, std::vector<SHAMapNodeID>& nodeIDs
 
     SHAMapNodeID nodeID;
 
-    while (node->isInner () && (nodeID.getDepth() < wanted.getDepth()))
+    while (node && node->isInner () && (nodeID.getDepth() < wanted.getDepth()))
         node = descendThrow (node, nodeID, nodeID.selectBranch (wanted.getNodeID()));
 
     if (!node || (nodeID != wanted))

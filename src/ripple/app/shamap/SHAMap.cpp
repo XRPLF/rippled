@@ -279,7 +279,7 @@ SHAMapTreeNode::pointer SHAMap::fetchNodeNT(
         }
     }
 
-    if (!node && filter)
+    if (filter)
         node = checkFilter (hash, id, filter);
 
     return node;
@@ -302,11 +302,10 @@ SHAMapTreeNode::pointer SHAMap::fetchNode (uint256 const& hash)
 SHAMapTreeNode* SHAMap::descendThrow (SHAMapTreeNode* parent, int branch)
 {
     SHAMapTreeNode* ret = descend (parent, branch);
-    if (!ret)
-    {
-        assert (!parent->isEmptyBranch (branch));
+
+    if (! ret && ! parent->isEmptyBranch (branch))
         throw SHAMapMissingNode (mType, parent->getChildHash (branch));
-    }
+
     return ret;
 }
 
@@ -315,11 +314,8 @@ SHAMapTreeNode::pointer SHAMap::descendThrow (
 {
     SHAMapTreeNode::pointer ret = descend (parent, nodeID, branch);
 
-    if (!ret)
-    {
-        assert (!parent->isEmptyBranch (branch));
+    if (! ret && ! parent->isEmptyBranch (branch))
         throw SHAMapMissingNode (mType, parent->getChildHash (branch));
-    }
 
     return ret;
 }

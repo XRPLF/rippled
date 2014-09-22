@@ -237,18 +237,10 @@ Ledger::Ledger (std::uint32_t ledgerSeq, std::uint32_t closeTime)
 Ledger::~Ledger ()
 {
     if (mTransactionMap)
-    {
-        logTimedDestroy <Ledger> (
-            mTransactionMap,
-            "mTransactionMap");
-    }
+        logTimedDestroy <Ledger> (mTransactionMap, "mTransactionMap");
 
     if (mAccountStateMap)
-    {
-        logTimedDestroy <Ledger> (
-            mAccountStateMap,
-            "mAccountStateMap");
-    }
+        logTimedDestroy <Ledger> (mAccountStateMap, "mAccountStateMap");
 }
 
 bool Ledger::enforceFreeze () const
