@@ -366,7 +366,7 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
         mDstAmount, STAmount(iMaxPaths + 2), mDstAmount);
 
     // Build map of quality to entry.
-    for (int i = mCompletePaths.size(); --i;)
+    for (int i = 0; i < mCompletePaths.size(); ++i)
     {
         auto const& currentPath = mCompletePaths[i];
 
