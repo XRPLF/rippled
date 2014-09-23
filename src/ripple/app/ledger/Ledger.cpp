@@ -387,7 +387,7 @@ void Ledger::setAccepted ()
     setImmutable ();
 }
 
-bool Ledger::hasAccount (RippleAddress const& accountID)
+bool Ledger::hasAccount (RippleAddress const& accountID) const
 {
     return mAccountStateMap->hasItem (Ledger::getAccountRootIndex (accountID));
 }
@@ -398,7 +398,7 @@ bool Ledger::addSLE (SLE const& sle)
     return mAccountStateMap->addItem(item, false, false);
 }
 
-AccountState::pointer Ledger::getAccountState (RippleAddress const& accountID)
+AccountState::pointer Ledger::getAccountState (RippleAddress const& accountID) const
 {
     SLE::pointer sle = getSLEi (Ledger::getAccountRootIndex (accountID));
 
@@ -511,7 +511,7 @@ SerializedTransaction::pointer Ledger::getSTransaction (
 
 SerializedTransaction::pointer Ledger::getSMTransaction (
     SHAMapItem::ref item, SHAMapTreeNode::TNType type,
-    TransactionMetaSet::pointer& txMeta)
+    TransactionMetaSet::pointer& txMeta) const
 {
     SerializerIterator sit (item->peekSerializer ());
 
@@ -536,7 +536,7 @@ SerializedTransaction::pointer Ledger::getSMTransaction (
 
 bool Ledger::getTransaction (
     uint256 const& txID, Transaction::pointer& txn,
-    TransactionMetaSet::pointer& meta)
+    TransactionMetaSet::pointer& meta) const
 {
     SHAMapTreeNode::TNType type;
     SHAMapItem::pointer item = mTransactionMap->peekItem (txID, type);
@@ -578,7 +578,7 @@ bool Ledger::getTransaction (
 }
 
 bool Ledger::getTransactionMeta (
-    uint256 const& txID, TransactionMetaSet::pointer& meta)
+    uint256 const& txID, TransactionMetaSet::pointer& meta) const
 {
     SHAMapTreeNode::TNType type;
     SHAMapItem::pointer item = mTransactionMap->peekItem (txID, type);
@@ -596,7 +596,7 @@ bool Ledger::getTransactionMeta (
     return true;
 }
 
-bool Ledger::getMetaHex (uint256 const& transID, std::string& hex)
+bool Ledger::getMetaHex (uint256 const& transID, std::string& hex) const
 {
     SHAMapTreeNode::TNType type;
     SHAMapItem::pointer item = mTransactionMap->peekItem (transID, type);
@@ -1139,7 +1139,7 @@ static void stateItemFullAppender(Json::Value& value, SLE::ref sle)
     value.append (sle->getJson (0));
 }
 
-Json::Value Ledger::getJson (int options)
+Json::Value Ledger::getJson (int options) const
 {
     Json::Value ledger (Json::objectValue);
 
@@ -1254,17 +1254,17 @@ void Ledger::setAcquiring (void)
     mAccountStateMap->setSynching ();
 }
 
-bool Ledger::isAcquiring (void)
+bool Ledger::isAcquiring (void) const
 {
     return isAcquiringTx () || isAcquiringAS ();
 }
 
-bool Ledger::isAcquiringTx (void)
+bool Ledger::isAcquiringTx (void) const
 {
     return mTransactionMap->isSynching ();
 }
 
-bool Ledger::isAcquiringAS (void)
+bool Ledger::isAcquiringAS (void) const
 {
     return mAccountStateMap->isSynching ();
 }
@@ -1321,7 +1321,7 @@ LedgerStateParms Ledger::writeBack (LedgerStateParms parms, SLE::ref entry)
     return lepOKAY;
 }
 
-SLE::pointer Ledger::getSLE (uint256 const& uHash)
+SLE::pointer Ledger::getSLE (uint256 const& uHash) const
 {
     SHAMapItem::pointer node = mAccountStateMap->peekItem (uHash);
 
@@ -1331,7 +1331,7 @@ SLE::pointer Ledger::getSLE (uint256 const& uHash)
     return std::make_shared<SLE> (node->peekSerializer (), node->getTag ());
 }
 
-SLE::pointer Ledger::getSLEi (uint256 const& uId)
+SLE::pointer Ledger::getSLEi (uint256 const& uId) const
 {
     uint256 hash;
 
@@ -1353,7 +1353,7 @@ SLE::pointer Ledger::getSLEi (uint256 const& uId)
 }
 
 void Ledger::visitAccountItems (
-    Account const& accountID, std::function<void (SLE::ref)> func)
+    Account const& accountID, std::function<void (SLE::ref)> func) const
 {
     // Visit each item in this account's owner directory
     uint256 rootIndex       = Ledger::getOwnerDirIndex (accountID);
@@ -1387,7 +1387,7 @@ static void visitHelper (
     function (std::make_shared<SLE> (item->peekSerializer (), item->getTag ()));
 }
 
-void Ledger::visitStateItems (std::function<void (SLE::ref)> function)
+void Ledger::visitStateItems (std::function<void (SLE::ref)> function) const
 {
     try
     {
@@ -1409,25 +1409,25 @@ void Ledger::visitStateItems (std::function<void (SLE::ref)> function)
     }
 }
 
-uint256 Ledger::getFirstLedgerIndex ()
+uint256 Ledger::getFirstLedgerIndex () const
 {
     SHAMapItem::pointer node = mAccountStateMap->peekFirstItem ();
     return node ? node->getTag () : uint256 ();
 }
 
-uint256 Ledger::getLastLedgerIndex ()
+uint256 Ledger::getLastLedgerIndex () const
 {
     SHAMapItem::pointer node = mAccountStateMap->peekLastItem ();
     return node ? node->getTag () : uint256 ();
 }
 
-uint256 Ledger::getNextLedgerIndex (uint256 const& uHash)
+uint256 Ledger::getNextLedgerIndex (uint256 const& uHash) const
 {
     SHAMapItem::pointer node = mAccountStateMap->peekNextItem (uHash);
     return node ? node->getTag () : uint256 ();
 }
 
-uint256 Ledger::getNextLedgerIndex (uint256 const& uHash, uint256 const& uEnd)
+uint256 Ledger::getNextLedgerIndex (uint256 const& uHash, uint256 const& uEnd) const
 {
     SHAMapItem::pointer node = mAccountStateMap->peekNextItem (uHash);
 
@@ -1437,13 +1437,13 @@ uint256 Ledger::getNextLedgerIndex (uint256 const& uHash, uint256 const& uEnd)
     return node->getTag ();
 }
 
-uint256 Ledger::getPrevLedgerIndex (uint256 const& uHash)
+uint256 Ledger::getPrevLedgerIndex (uint256 const& uHash) const
 {
     SHAMapItem::pointer node = mAccountStateMap->peekPrevItem (uHash);
     return node ? node->getTag () : uint256 ();
 }
 
-uint256 Ledger::getPrevLedgerIndex (uint256 const& uHash, uint256 const& uBegin)
+uint256 Ledger::getPrevLedgerIndex (uint256 const& uHash, uint256 const& uBegin) const
 {
     SHAMapItem::pointer node = mAccountStateMap->peekNextItem (uHash);
 
@@ -1453,7 +1453,7 @@ uint256 Ledger::getPrevLedgerIndex (uint256 const& uHash, uint256 const& uBegin)
     return node->getTag ();
 }
 
-SLE::pointer Ledger::getASNodeI (uint256 const& nodeID, LedgerEntryType let)
+SLE::pointer Ledger::getASNodeI (uint256 const& nodeID, LedgerEntryType let) const
 {
     SLE::pointer node = getSLEi (nodeID);
 
@@ -1464,7 +1464,7 @@ SLE::pointer Ledger::getASNodeI (uint256 const& nodeID, LedgerEntryType let)
 }
 
 SLE::pointer Ledger::getASNode (
-    LedgerStateParms& parms, uint256 const& nodeID, LedgerEntryType let)
+    LedgerStateParms& parms, uint256 const& nodeID, LedgerEntryType let) const
 {
     SHAMapItem::pointer account = mAccountStateMap->peekItem (nodeID);
 
@@ -1498,33 +1498,33 @@ SLE::pointer Ledger::getASNode (
     return sle;
 }
 
-SLE::pointer Ledger::getAccountRoot (Account const& accountID)
+SLE::pointer Ledger::getAccountRoot (Account const& accountID) const
 {
     return getASNodeI (getAccountRootIndex (accountID), ltACCOUNT_ROOT);
 }
 
-SLE::pointer Ledger::getAccountRoot (RippleAddress const& naAccountID)
+SLE::pointer Ledger::getAccountRoot (RippleAddress const& naAccountID) const
 {
     return getASNodeI (getAccountRootIndex (
         naAccountID.getAccountID ()), ltACCOUNT_ROOT);
 }
 
-SLE::pointer Ledger::getDirNode (uint256 const& uNodeIndex)
+SLE::pointer Ledger::getDirNode (uint256 const& uNodeIndex) const
 {
     return getASNodeI (uNodeIndex, ltDIR_NODE);
 }
 
-SLE::pointer Ledger::getGenerator (Account const& uGeneratorID)
+SLE::pointer Ledger::getGenerator (Account const& uGeneratorID) const
 {
     return getASNodeI (getGeneratorIndex (uGeneratorID), ltGENERATOR_MAP);
 }
 
-SLE::pointer Ledger::getOffer (uint256 const& uIndex)
+SLE::pointer Ledger::getOffer (uint256 const& uIndex) const
 {
     return getASNodeI (uIndex, ltOFFER);
 }
 
-SLE::pointer Ledger::getRippleState (uint256 const& uNode)
+SLE::pointer Ledger::getRippleState (uint256 const& uNode) const
 {
     return getASNodeI (uNode, ltRIPPLE_STATE);
 }
@@ -1678,7 +1678,7 @@ uint256 Ledger::getLedgerHash (std::uint32_t ledgerIndex)
     return uint256 ();
 }
 
-Ledger::LedgerHashes Ledger::getLedgerHashes ()
+Ledger::LedgerHashes Ledger::getLedgerHashes () const
 {
     LedgerHashes ret;
     SLE::pointer hashIndex = getSLEi (getLedgerHashIndex ());
@@ -1697,7 +1697,7 @@ Ledger::LedgerHashes Ledger::getLedgerHashes ()
     return ret;
 }
 
-std::vector<uint256> Ledger::getLedgerAmendments ()
+std::vector<uint256> Ledger::getLedgerAmendments () const
 {
     std::vector<uint256> usAmendments;
     SLE::pointer sleAmendments = getSLEi (getLedgerAmendmentIndex ());
@@ -1806,7 +1806,7 @@ uint256 Ledger::getTicketIndex (
     return s.getSHA512Half ();
 }
 
-bool Ledger::walkLedger ()
+bool Ledger::walkLedger () const
 {
     std::vector <SHAMapMissingNode> missingNodes1;
     std::vector <SHAMapMissingNode> missingNodes2;
@@ -1834,7 +1834,7 @@ bool Ledger::walkLedger ()
     return missingNodes1.empty () && missingNodes2.empty ();
 }
 
-bool Ledger::assertSane ()
+bool Ledger::assertSane () const
 {
     if (mHash.isNonZero () &&
             mAccountHash.isNonZero () &&
@@ -2066,7 +2066,7 @@ std::uint64_t Ledger::scaleFeeLoad (std::uint64_t fee, bool bAdmin)
 }
 
 std::vector<uint256> Ledger::getNeededTransactionHashes (
-    int max, SHAMapSyncFilter* filter)
+    int max, SHAMapSyncFilter* filter) const
 {
     std::vector<uint256> ret;
 
@@ -2082,7 +2082,7 @@ std::vector<uint256> Ledger::getNeededTransactionHashes (
 }
 
 std::vector<uint256> Ledger::getNeededAccountStateHashes (
-    int max, SHAMapSyncFilter* filter)
+    int max, SHAMapSyncFilter* filter) const
 {
     std::vector<uint256> ret;
 
@@ -2101,14 +2101,34 @@ std::vector<uint256> Ledger::getNeededAccountStateHashes (
 
 class Ledger_test : public beast::unit_test::suite
 {
-public:
-    void run ()
+    void test_genesis_ledger ()
+    {
+        RippleAddress rootSeedMaster
+                = RippleAddress::createSeedGeneric ("masterpassphrase");
+        RippleAddress rootGeneratorMaster
+                = RippleAddress::createGeneratorPublic (rootSeedMaster);
+        RippleAddress rootAddress
+                = RippleAddress::createAccountPublic (rootGeneratorMaster, 0);
+        std::uint64_t startAmount (100000);
+        Ledger::pointer ledger (std::make_shared <Ledger> (
+            rootAddress, startAmount));
+        ledger->updateHash();
+        expect(ledger->assertSane());
+    }
+
+    void test_getQuality ()
     {
         uint256 uBig (
             "D2DC44E5DC189318DB36EF87D2104CDF0A0FE3A4B698BEEE55038D7EA4C68000");
 
         // VFALCO NOTE This fails in the original version as well.
         expect (6125895493223874560 == Ledger::getQuality (uBig));
+    }
+public:
+    void run ()
+    {
+        test_genesis_ledger ();
+        test_getQuality ();
     }
 };
 
