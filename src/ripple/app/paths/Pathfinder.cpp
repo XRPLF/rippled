@@ -259,6 +259,66 @@ bool Pathfinder::findPaths (
     return true;
 }
 
+// Check the specified path
+// Returning the initial quality and liquidity
+TER Pathfinder::checkPath (
+    STPath const& path,            // The path to check
+    STAmount const& minDstAmount,  // The minimum output this path must
+                                   // deliver to be worth keeping
+    STAmount& amountOut,           // The returned liquidity
+    uint64_t& qualityOut)          // The returned initial quality
+{
+    STPathSet pathSet;
+    pathSet.addPath (path);
+
+    // We only want to look at this path
+    path::RippleCalc::Input rcInput;
+    rcInput.defaultPathsAllowed = false;
+
+    LedgerEntrySet scratchPad (mLedger, tapNONE);
+
+    try
+    {
+        // Try to move minimum amount to sanity-check
+        // path and compute initial quality
+        auto rc = path::RippleCalc::rippleCalculate (
+            scratchPad, mSrcAmount, minDstAmount,
+            mDstAccountID, mSrcAccountID,
+            pathSet, &rcInput);
+
+        if (rc.result() != tesSUCCESS)
+        {
+            // Path has trivial/no liquidity
+            return rc.result();
+        }
+
+        qualityOut = getRate
+            (rc.actualAmountOut, rc.actualAmountIn);
+        amountOut = rc.actualAmountOut;
+
+        // Try to complete as much of the payment
+        // as possible to assess path liquidity
+        rcInput.partialPaymentAllowed = true;
+        rc = path::RippleCalc::rippleCalculate (
+            scratchPad, mSrcAmount, mDstAmount - amountOut,
+            mDstAccountID, mSrcAccountID, pathSet, &rcInput);
+        if (rc.result() == tesSUCCESS)
+        {
+            // Report total liquidity to caller
+            amountOut += rc.actualAmountOut;
+        }
+
+        return tesSUCCESS;
+    }
+    catch (std::exception const& e)
+    {
+        WriteLog (lsINFO, Pathfinder) <<
+            "checkpath: exception (" << e.what() << ") " <<
+            path.getJson (0);
+        return tefEXCEPTION;
+    }
+}
+
 STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
 {
     if (mCompletePaths.size() <= iMaxPaths)
@@ -306,70 +366,29 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
         mDstAmount, STAmount(iMaxPaths + 2), mDstAmount);
 
     // Build map of quality to entry.
-    for (int i = mCompletePaths.size (); i--;)
+    for (int i = 0; i < mCompletePaths.size(); ++i)
     {
-        STPathSet   spsPaths;
-        STPath&     spCurrent   = mCompletePaths[i];
+        auto const& currentPath = mCompletePaths[i];
 
-        spsPaths.addPath (spCurrent); // Just checking the current path.
+        STAmount actualOut;
+        uint64_t uQuality;
+        auto const resultCode = checkPath
+            (currentPath, saMinDstAmount, actualOut, uQuality);
 
-        TER resultCode;
-
-        LedgerEntrySet lesSandbox (mLedger, tapNONE);
-
-        try
+        if (resultCode != tesSUCCESS)
         {
-            path::RippleCalc::Input rcInput;
-            rcInput.partialPaymentAllowed = true;
-            rcInput.defaultPathsAllowed = false;
-
-            auto rc = path::RippleCalc::rippleCalculate (
-                lesSandbox,
-                mSrcAmount,         // --> amount to send max.
-                mDstAmount,         // --> amount to deliver.
-                mDstAccountID,
-                mSrcAccountID,
-                spsPaths,
-                &rcInput);
-
-            if (rc.result () != tesSUCCESS)
-            {
-                // Duplicate of exception handler log message below.
-                WriteLog (lsDEBUG, Pathfinder) <<
-                    "findPaths: dropping: " << transToken (rc.result ()) <<
-                    ": " << spCurrent.getJson (0);
-            }
-            else if (rc.actualAmountOut < saMinDstAmount)
-            {
-                WriteLog (lsDEBUG, Pathfinder) <<
-                    "findPaths: dropping: outputs " << rc.actualAmountOut <<
-                    ": " << spCurrent.getJson (0);
-            }
-            else
-            {
-                std::uint64_t  uQuality (
-                    getRate (rc.actualAmountOut, rc.actualAmountIn));
-
-                WriteLog (lsDEBUG, Pathfinder) <<
-                    "findPaths: quality: " << uQuality <<
-                    ": " << spCurrent.getJson (0);
-
-                vMap.push_back (path_LQ_t (
-                    uQuality, spCurrent.mPath.size (), rc.actualAmountOut, i));
-            }
-
-            resultCode = rc.result ();
-        }
-        catch (const std::exception& e)
-        {
-            WriteLog (lsINFO, Pathfinder)
-                    << "findPaths: Caught throw: " << e.what ();
-            resultCode = tefEXCEPTION;
-
-            // Duplicate of the != tesSUCCESS case log message above.
             WriteLog (lsDEBUG, Pathfinder) <<
                 "findPaths: dropping: " << transToken (resultCode) <<
-                ": " << spCurrent.getJson (0);
+                ": " << currentPath.getJson (0);
+        }
+        else
+        {
+            WriteLog (lsDEBUG, Pathfinder) <<
+                "findPaths: quality: " << uQuality <<
+                ": " << currentPath.getJson (0);
+
+            vMap.push_back (path_LQ_t (
+                uQuality, currentPath.mPath.size (), actualOut, i));
         }
     }
 
