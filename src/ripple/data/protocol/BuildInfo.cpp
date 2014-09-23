@@ -37,6 +37,9 @@ char const* BuildInfo::getRawVersionString ()
     //
     //  http://semver.org/
     //
+#ifdef DEBUG
+        "+DEBUG"
+#endif
     //--------------------------------------------------------------------------
     ;
 
