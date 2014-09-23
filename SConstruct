@@ -259,6 +259,7 @@ def config_env(toolchain, variant, env):
             '-Wno-sign-compare',
             '-Wno-char-subscripts',
             '-Wno-format',
+            '-g' # enable debug symbols for gcc and clang
             ])
 
         if toolchain == 'clang':
@@ -323,11 +324,7 @@ def config_env(toolchain, variant, env):
             '-rdynamic'
             ])
 
-        if variant == 'debug':
-            env.Append(CCFLAGS=[
-                '-g'
-                ])
-        elif variant == 'release':
+        if variant == 'release':
             env.Append(CCFLAGS=[
                 '-O3',
                 '-fno-strict-aliasing'
@@ -505,7 +502,7 @@ else:
         default_toolchain = 'clang'
     else:
         raise ValueError("Don't understand toolchains in " + str(toolchains))
-default_variant = 'debug'
+default_variant = 'release'
 default_target = None
 
 for source in [
