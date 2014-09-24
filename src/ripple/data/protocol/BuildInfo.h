@@ -31,14 +31,14 @@ struct BuildInfo
 
         http://semver.org/
     */
-    static beast::String const& getVersionString ();
+    static std::string const& getVersionString ();
 
     /** Full server version string.
 
         This includes the name of the server. It is used in the peer
         protocol hello message and also the headers of some HTTP replies.
     */
-    static char const* getFullVersionString ();
+    static std::string const& getFullVersionString ();
 
     //--------------------------------------------------------------------------
 
@@ -49,20 +49,16 @@ struct BuildInfo
     */
     struct Protocol
     {
-        unsigned short vmajor;
-        unsigned short vminor;
+        std::uint16_t const vmajor;
+        std::uint16_t const vminor;
 
         //----
 
-        /** The serialized format of the protocol version. */
-        typedef std::uint32_t PackedFormat;
-
         Protocol ();
-        Protocol (unsigned short vmajor, unsigned short vminor);
-        explicit Protocol (PackedFormat packedVersion);
+        Protocol (std::uint16_t major, std::uint16_t minor);
+        explicit Protocol (std::uint32_t packedVersion);
 
-        PackedFormat toPacked () const noexcept;
-
+        std::uint32_t toPacked () const noexcept;
         std::string toStdString () const noexcept;
 
         bool operator== (Protocol const& other) const noexcept { return toPacked () == other.toPacked (); }

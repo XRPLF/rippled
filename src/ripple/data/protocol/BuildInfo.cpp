@@ -86,7 +86,7 @@ BuildInfo::Protocol const& BuildInfo::getMinimumProtocol ()
 //
 //------------------------------------------------------------------------------
 
-beast::String const& BuildInfo::getVersionString ()
+std::string const& BuildInfo::getVersionString ()
 {
     struct SanityChecker
     {
@@ -102,67 +102,59 @@ beast::String const& BuildInfo::getVersionString ()
             versionString = rawText;
         }
 
-        beast::String versionString;
+        std::string versionString;
     };
 
-    static SanityChecker value;
+    static SanityChecker const value;
 
     return value.versionString;
 }
 
-char const* BuildInfo::getFullVersionString ()
+std::string const& BuildInfo::getFullVersionString ()
 {
     struct PrettyPrinter
     {
         PrettyPrinter ()
         {
-            beast::String s;
-            
-            s << "rippled-" << getVersionString ();
-
-            fullVersionString = s.toStdString ();
+            fullVersionString = std::string ("rippled-") + getVersionString ();
         }
 
         std::string fullVersionString;
     };
 
-    static PrettyPrinter value;
+    static PrettyPrinter const value;
 
-    return value.fullVersionString.c_str ();
+    return value.fullVersionString;
 }
 
 //------------------------------------------------------------------------------
 
+BuildInfo::Protocol::Protocol (std::uint16_t major, std::uint16_t minor)
+    : vmajor (major)
+    , vminor (minor)
+{
+}
+    
 BuildInfo::Protocol::Protocol ()
-    : vmajor (0)
-    , vminor (0)
+    : Protocol (0, 0)
 {
 }
 
-BuildInfo::Protocol::Protocol (unsigned short major_, unsigned short minor_)
-    : vmajor (major_)
-    , vminor (minor_)
+BuildInfo::Protocol::Protocol (std::uint32_t packedVersion)
+    : Protocol (
+        static_cast<std::uint16_t> ((packedVersion >> 16) & 0xffff),
+        static_cast<std::uint16_t> (packedVersion & 0xffff))
 {
 }
 
-BuildInfo::Protocol::Protocol (PackedFormat packedVersion)
+std::uint32_t BuildInfo::Protocol::toPacked () const noexcept
 {
-    vmajor = (packedVersion >> 16) & 0xffff;
-    vminor = (packedVersion & 0xffff);
-}
-
-BuildInfo::Protocol::PackedFormat BuildInfo::Protocol::toPacked () const noexcept
-{
-    return ((vmajor << 16) & 0xffff0000) | (vminor & 0xffff);
+    return (static_cast<std::uint32_t> (vmajor) << 16) + vminor;
 }
 
 std::string BuildInfo::Protocol::toStdString () const noexcept
 {
-    beast::String s;
-
-    s << beast::String (vmajor) << "." << beast::String (vminor);
-
-    return s.toStdString ();
+    return std::to_string (vmajor) + "." + std::to_string (vminor);
 }
 
 //------------------------------------------------------------------------------
@@ -195,6 +187,7 @@ public:
         expect (P (0, 0).toPacked () == 0);
         expect (P (0, 1).toPacked () == 1);
         expect (P (0, 65535).toPacked () == 65535);
+        expect (P (2, 1).toPacked () == 131073);
 
         checkProtcol (0, 0);
         checkProtcol (0, 1);
@@ -222,15 +215,30 @@ public:
         expect (BuildInfo::getCurrentProtocol () >= BuildInfo::getMinimumProtocol ());
     }
 
+    void testStringVersion ()
+    {
+        testcase ("string version");
+
+        for (std::uint16_t major = 0; major < 8; major++)
+        {
+            for (std::uint16_t minor = 0; minor < 8; minor++)
+            {
+                BuildInfo::Protocol p (major, minor);
+
+                expect (BuildInfo::Protocol (major, minor).toStdString () ==
+                    std::to_string (major) + "." + std::to_string (minor));
+            }
+        }
+    }
+
     void run ()
     {
         testVersion ();
         testProtocol ();
         testValues ();
+        testStringVersion ();
 
-        log <<
-            "  Ripple version: " <<
-            BuildInfo::getVersionString().toStdString();
+        log << "  Ripple version: " << BuildInfo::getVersionString();
     }
 };
 
