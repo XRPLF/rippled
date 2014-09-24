@@ -277,7 +277,7 @@ private:
 class STPath
 {
 public:
-    STPath () = default;
+    explicit STPath () = default;
 
     STPath (std::vector<STPathElement> const& p)
         : mPath (p)
@@ -288,6 +288,7 @@ public:
     {
         return mPath.size ();
     }
+
     bool empty() const
     {
         return mPath.empty ();
@@ -315,6 +316,7 @@ public:
     {
         return mPath.begin ();
     }
+
     std::vector<STPathElement>::const_iterator
     end () const
     {
@@ -348,9 +350,9 @@ private:
 class STPathSet : public SerializedType
 {
 public:
-    STPathSet () = default;
+    explicit STPathSet () = default;
 
-    explicit STPathSet (SField::ref n)
+    STPathSet (SField::ref n)
         : SerializedType (n)
     { }
 
@@ -373,10 +375,12 @@ public:
     {
         return value.size ();
     }
+
     bool empty () const
     {
         return value.empty ();
     }
+
     void push_back (STPath const& e)
     {
         value.push_back (e);
@@ -446,11 +450,11 @@ private:
 class STVector256 : public SerializedType
 {
 public:
-    STVector256 () = default;
-    STVector256 (SField::ref n)
+    explicit STVector256 () = default;
+    explicit STVector256 (SField::ref n)
         : SerializedType (n)
     { }
-    STVector256 (std::vector<uint256> const& vector)
+    explicit STVector256 (std::vector<uint256> const& vector)
         : mValue (vector)
     { }
 
@@ -472,11 +476,13 @@ public:
     {
         return mValue;
     }
+
     std::vector<uint256>&
     peekValue ()
     {
         return mValue;
     }
+
     virtual bool isEquivalent (const SerializedType& t) const;
     virtual bool isDefault () const
     {
@@ -501,8 +507,9 @@ public:
 
     void setValue (const STVector256& v)
     {
-         mValue = v.mValue;
+        mValue = v.mValue;
     }
+
     void push_back (uint256 const& v)
     {
         mValue.push_back (v);

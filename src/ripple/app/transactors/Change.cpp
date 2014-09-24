@@ -87,7 +87,7 @@ public:
 
     TER preCheck () override
     {
-        mTxnAccountID   = mTxn.getSourceAccount ().getAccountID ();
+        mTxnAccountID = mTxn.getSourceAccount ().getAccountID ();
 
         if (mTxnAccountID.isNonZero ())
         {
@@ -103,17 +103,6 @@ public:
         }
 
         return tesSUCCESS;
-    }
-
-    bool
-    hasAmendment (STVector256 const& amendments, uint256 const& amendment) const
-    {
-        for (auto const& id : amendments)
-        {
-            if (id == amendment)
-                return true;
-        }
-        return false;
     }
 
 private:
@@ -132,8 +121,11 @@ private:
 
         STVector256 amendments (amendmentObject->getFieldV256 (sfAmendments));
 
-        if (hasAmendment (amendments, amendment))
+        if (std::find (amendments.begin(), amendments.end(),
+            amendment) != amendments.end ())
+        {
             return tefALREADY;
+        }
 
         amendments.push_back (amendment);
         amendmentObject->setFieldV256 (sfAmendments, amendments);
@@ -149,7 +141,6 @@ private:
 
     TER applyFee ()
     {
-
         SLE::pointer feeObject = mEngine->entryCache (
             ltFEE_SETTINGS, Ledger::getLedgerFeeIndex ());
 
