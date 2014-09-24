@@ -51,7 +51,9 @@ struct get_peer_json
 
 //------------------------------------------------------------------------------
 
-OverlayImpl::OverlayImpl (Stoppable& parent,
+OverlayImpl::OverlayImpl (
+    Setup const& setup,
+    Stoppable& parent,
     Resource::Manager& resourceManager,
     SiteFiles::Manager& siteFiles,
     beast::File const& pathToDbFileOrDirectory,
@@ -59,6 +61,7 @@ OverlayImpl::OverlayImpl (Stoppable& parent,
     boost::asio::io_service& io_service,
     boost::asio::ssl::context& ssl_context)
     : Overlay (parent)
+    , setup_(setup)
     , m_child_count (1)
     , m_journal (deprecatedLogs().journal("Overlay"))
     , m_resourceManager (resourceManager)
@@ -436,10 +439,10 @@ OverlayImpl::getActivePeers ()
 
     ret.reserve (m_publicKeyMap.size ());
 
-    for (auto const& pair : m_publicKeyMap)
+    for (auto const& e : m_publicKeyMap)
     {
-        assert (pair.second);
-        ret.push_back (pair.second);
+        assert (e.second);
+        ret.push_back (e.second);
     }
 
     return ret;
@@ -508,8 +511,27 @@ OverlayImpl::do_timer (yield_context yield)
 
 //------------------------------------------------------------------------------
 
+Overlay::Setup
+setup_Overlay (BasicConfig const& config)
+{
+    Overlay::Setup setup;
+    auto const& section = config.section("overlay");
+    set (setup.http_handshake, "http_handshake", section);
+    set (setup.autoconnect, "autoconnect", section);
+    std::string promote;
+    set (promote, "become_superpeer", section);
+    if (promote == "never")
+        setup.promote = Overlay::Promote::never;
+    else if (promote == "always")
+        setup.promote = Overlay::Promote::always;
+    else
+        setup.promote = Overlay::Promote::automatic;
+    return setup;
+}
+
 std::unique_ptr <Overlay>
 make_Overlay (
+    Overlay::Setup const& setup,
     beast::Stoppable& parent,
     Resource::Manager& resourceManager,
     SiteFiles::Manager& siteFiles,
@@ -518,8 +540,8 @@ make_Overlay (
     boost::asio::io_service& io_service,
     boost::asio::ssl::context& ssl_context)
 {
-    return std::make_unique <OverlayImpl> (parent, resourceManager, siteFiles,
-        pathToDbFileOrDirectory, resolver, io_service, ssl_context);
+    return std::make_unique <OverlayImpl> (setup, parent, resourceManager,
+        siteFiles, pathToDbFileOrDirectory, resolver, io_service, ssl_context);
 }
 
 }

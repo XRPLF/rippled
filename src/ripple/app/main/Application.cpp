@@ -733,9 +733,10 @@ public:
         //             move the instantiation inside a conditional:
         //
         //             if (!getConfig ().RUN_STANDALONE)
-        m_peers = make_Overlay (m_mainIoPool, *m_resourceManager,
-            *m_siteFiles, getConfig ().getModuleDatabasePath (),
-                *m_resolver, m_mainIoPool, m_peerSSLContext->get ());
+        m_peers = make_Overlay (setup_Overlay(getConfig()), m_mainIoPool,
+            *m_resourceManager, *m_siteFiles,
+                getConfig ().getModuleDatabasePath(), *m_resolver,
+                    m_mainIoPool, m_peerSSLContext->get());
         add (*m_peers); // add to Stoppable
 
         // SSL context used for WebSocket connections.

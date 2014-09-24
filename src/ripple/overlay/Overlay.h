@@ -21,13 +21,8 @@
 #define RIPPLE_OVERLAY_OVERLAY_H_INCLUDED
 
 #include <ripple/overlay/Peer.h>
-
-// VFALCO TODO Remove this include dependency it shouldn't be needed
-#include <ripple/peerfinder/Slot.h>
-
 #include <beast/threads/Stoppable.h>
 #include <beast/utility/PropertyStream.h>
-
 #include <beast/cxx14/type_traits.h> // <type_traits>
 
 namespace ripple {
@@ -46,14 +41,26 @@ protected:
         : Stoppable ("Overlay", parent)
         , beast::PropertyStream::Source ("peers")
     {
-
     }
 
 public:
+    enum class Promote
+    {
+        automatic,
+        never,
+        always
+    };
+
+    struct Setup
+    {
+        bool autoconnect = true;
+        bool http_handshake = false;
+        Promote promote = Promote::automatic;
+    };
+
     typedef std::vector <Peer::ptr> PeerSequence;
 
-    virtual
-    ~Overlay () = default;
+    virtual ~Overlay() = default;
 
     /** Establish a peer connection to the specified endpoint.
         The call returns immediately, the connection attempt is

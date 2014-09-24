@@ -59,6 +59,8 @@ private:
 
     typedef hash_map <Peer::ShortId, Peer::ptr> PeerByShortId;
 
+    Setup setup_;
+
     // VFALCO TODO Change to regular mutex and eliminate re-entrancy
     std::recursive_mutex m_mutex;
 
@@ -101,15 +103,19 @@ private:
     //--------------------------------------------------------------------------
 
 public:
-    OverlayImpl (Stoppable& parent,
-        Resource::Manager& resourceManager,
-        SiteFiles::Manager& siteFiles,
-        beast::File const& pathToDbFileOrDirectory,
-        Resolver& resolver,
-        boost::asio::io_service& io_service,
-        boost::asio::ssl::context& ssl_context);
+    OverlayImpl (Setup const& setup, Stoppable& parent,
+        Resource::Manager& resourceManager, SiteFiles::Manager& siteFiles,
+            beast::File const& pathToDbFileOrDirectory, Resolver& resolver,
+                boost::asio::io_service& io_service,
+                    boost::asio::ssl::context& ssl_context);
 
     ~OverlayImpl ();
+
+    Setup const&
+    setup() const
+    {
+        return setup_;
+    }
 
     PeerSequence
     getActivePeers () override;

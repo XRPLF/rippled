@@ -50,7 +50,7 @@ void Config::onWrite (beast::PropertyStream::Map &map)
     map ["max_peers"]       = maxPeers;
     map ["out_peers"]       = outPeers;
     map ["want_incoming"]   = wantIncoming;
-    map ["auto_connect"]    = autoConnect;
+    map ["autoconnect"]     = autoConnect;
     map ["port"]            = listeningPort;
     map ["features"]        = features;
 }
