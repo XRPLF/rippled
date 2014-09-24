@@ -62,7 +62,6 @@ struct ConfigSection
 #define SECTION_PEER_PORT               "peer_port"
 #define SECTION_PEER_PRIVATE            "peer_private"
 #define SECTION_PEERS_MAX               "peers_max"
-#define SECTION_PEER_SSL_CIPHER_LIST    "peer_ssl_cipher_list"
 #define SECTION_RPC_ALLOW_REMOTE        "rpc_allow_remote"
 #define SECTION_RPC_ADMIN_ALLOW         "rpc_admin_allow"
 #define SECTION_RPC_ADMIN_USER          "rpc_admin_user"

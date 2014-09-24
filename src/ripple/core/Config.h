@@ -319,7 +319,6 @@ public:
 
     // Peer networking parameters
     std::string                 PEER_IP;
-    std::string                 PEER_SSL_CIPHER_LIST;
     bool                        PEER_PRIVATE;           // True to ask peers not to relay current IP.
     unsigned int                PEERS_MAX;
 

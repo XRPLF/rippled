@@ -254,9 +254,6 @@ Config::Config ()
     RPC_ALLOW_REMOTE        = false;
     RPC_ADMIN_ALLOW.push_back (beast::IP::Endpoint::from_string("127.0.0.1"));
 
-    // By default, allow anonymous DH.
-    PEER_SSL_CIPHER_LIST    = "ALL:!LOW:!EXP:!MD5:@STRENGTH";
-
     PEER_PRIVATE            = false;
     PEERS_MAX               = 0;    // indicates "use default"
 
@@ -637,8 +634,6 @@ void Config::load ()
                     NODE_PRIV = RippleAddress::createNodePrivate (NODE_SEED);
                 }
             }
-
-            (void) getSingleSection (secConfig, SECTION_PEER_SSL_CIPHER_LIST, PEER_SSL_CIPHER_LIST);
 
             if (getSingleSection (secConfig, SECTION_NETWORK_QUORUM, strTemp))
                 NETWORK_QUORUM      = beast::lexicalCastThrow <std::size_t> (strTemp);

@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/common/RippleSSLContext.h>
 #include <ripple/overlay/impl/OverlayImpl.h>
 #include <ripple/overlay/impl/PeerDoor.h>
 #include <ripple/overlay/impl/PeerImp.h>
@@ -51,14 +52,16 @@ struct get_peer_json
 
 //------------------------------------------------------------------------------
 
-OverlayImpl::OverlayImpl (Stoppable& parent,
+OverlayImpl::OverlayImpl (
+    Setup const& setup,
+    Stoppable& parent,
     Resource::Manager& resourceManager,
     SiteFiles::Manager& siteFiles,
     beast::File const& pathToDbFileOrDirectory,
     Resolver& resolver,
-    boost::asio::io_service& io_service,
-    boost::asio::ssl::context& ssl_context)
+    boost::asio::io_service& io_service)
     : Overlay (parent)
+    , setup_(setup)
     , m_child_count (1)
     , m_journal (deprecatedLogs().journal("Overlay"))
     , m_resourceManager (resourceManager)
@@ -66,7 +69,6 @@ OverlayImpl::OverlayImpl (Stoppable& parent,
         pathToDbFileOrDirectory, get_seconds_clock (),
             deprecatedLogs().journal("PeerFinder"))))
     , m_io_service (io_service)
-    , m_ssl_context (ssl_context)
     , timer_(io_service)
     , m_resolver (resolver)
     , m_nextShortId (0)
@@ -109,7 +111,7 @@ OverlayImpl::accept (socket_type&& socket)
 
     PeerImp::ptr const peer (std::make_shared <PeerImp> (
         std::move (socket), remote_endpoint, *this, m_resourceManager,
-            *m_peerFinder, slot, m_ssl_context));
+            *m_peerFinder, slot, setup_.context));
 
     {
         std::lock_guard <decltype(m_mutex)> lock (m_mutex);
@@ -146,7 +148,7 @@ OverlayImpl::connect (beast::IP::Endpoint const& remote_endpoint)
 
     PeerImp::ptr const peer (std::make_shared <PeerImp> (
         remote_endpoint, m_io_service, *this, m_resourceManager,
-            *m_peerFinder, slot, m_ssl_context));
+            *m_peerFinder, slot, setup_.context));
 
     {
         std::lock_guard <decltype(m_mutex)> lock (m_mutex);
@@ -436,10 +438,10 @@ OverlayImpl::getActivePeers ()
 
     ret.reserve (m_publicKeyMap.size ());
 
-    for (auto const& pair : m_publicKeyMap)
+    for (auto const& e : m_publicKeyMap)
     {
-        assert (pair.second);
-        ret.push_back (pair.second);
+        assert (e.second);
+        ret.push_back (e.second);
     }
 
     return ret;
@@ -508,18 +510,37 @@ OverlayImpl::do_timer (yield_context yield)
 
 //------------------------------------------------------------------------------
 
+Overlay::Setup
+setup_Overlay (BasicConfig const& config)
+{
+    Overlay::Setup setup;
+    auto const& section = config.section("overlay");
+    set (setup.http_handshake, "http_handshake", section);
+    set (setup.auto_connect, "auto_connect", section);
+    std::string promote;
+    set (promote, "become_superpeer", section);
+    if (promote == "never")
+        setup.promote = Overlay::Promote::never;
+    else if (promote == "always")
+        setup.promote = Overlay::Promote::always;
+    else
+        setup.promote = Overlay::Promote::automatic;
+    setup.context = make_ssl_context();
+    return setup;
+}
+
 std::unique_ptr <Overlay>
 make_Overlay (
+    Overlay::Setup const& setup,
     beast::Stoppable& parent,
     Resource::Manager& resourceManager,
     SiteFiles::Manager& siteFiles,
     beast::File const& pathToDbFileOrDirectory,
     Resolver& resolver,
-    boost::asio::io_service& io_service,
-    boost::asio::ssl::context& ssl_context)
+    boost::asio::io_service& io_service)
 {
-    return std::make_unique <OverlayImpl> (parent, resourceManager, siteFiles,
-        pathToDbFileOrDirectory, resolver, io_service, ssl_context);
+    return std::make_unique <OverlayImpl> (setup, parent, resourceManager,
+        siteFiles, pathToDbFileOrDirectory, resolver, io_service);
 }
 
 }

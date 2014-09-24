@@ -39,13 +39,21 @@ using IniFileSections = std::map<std::string, std::vector<std::string>>;
 class Section
 {
 private:
+    std::string name_;
     std::vector <std::string> lines_;
     std::vector <std::string> values_;
     std::map <std::string, std::string, beast::ci_less> map_;
 
 public:
     /** Create an empty section. */
-    Section() = default;
+    Section (std::string const& name);
+
+    /** Returns the name of this section. */
+    std::string const&
+    name() const
+    {
+        return name_;
+    }
 
     /** Returns the number of key/value pairs. */
     std::size_t
