@@ -374,6 +374,9 @@ SHAMapAddNode SHAMap::addRootNode (Blob const& rootNode, SHANodeFormat format,
     node->dump (SHAMapNodeID ());
 #endif
 
+    if (mBacked)
+        canonicalize (node->getNodeHash (), node);
+
     root = node;
 
     if (root->isLeaf())
@@ -408,6 +411,9 @@ SHAMapAddNode SHAMap::addRootNode (uint256 const& hash, Blob const& rootNode, SH
 
     if (!node || node->getNodeHash () != hash)
         return SHAMapAddNode::invalid ();
+
+    if (mBacked)
+        canonicalize (hash, node);
 
     root = node;
 
