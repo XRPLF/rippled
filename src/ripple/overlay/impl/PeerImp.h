@@ -42,6 +42,7 @@
 #include <beast/asio/placeholders.h>
 #include <beast/http/message.h>
 #include <beast/http/parser.h>
+#include <boost/optional.hpp>
 
 #include <boost/foreach.hpp>
 
@@ -50,22 +51,6 @@
 namespace ripple {
 
 typedef boost::asio::ip::tcp::socket NativeSocketType;
-
-class PeerImp;
-
-std::string to_string (Peer const& peer);
-std::ostream& operator<< (std::ostream& os, Peer const& peer);
-
-std::string to_string (Peer const* peer);
-std::ostream& operator<< (std::ostream& os, Peer const* peer);
-
-std::string to_string (PeerImp const& peer);
-std::ostream& operator<< (std::ostream& os, PeerImp const& peer);
-
-std::string to_string (PeerImp const* peer);
-std::ostream& operator<< (std::ostream& os, PeerImp const* peer);
-
-//------------------------------------------------------------------------------
 
 class PeerImp
     : public Peer
@@ -96,6 +81,8 @@ public:
     typedef std::shared_ptr <PeerImp> ptr;
 
 private:
+    typedef boost::system::error_code error_code;
+
     // Time alloted for a peer to send a HELLO message (DEPRECATED)
     static const boost::posix_time::seconds nodeVerifySeconds;
 
@@ -119,11 +106,11 @@ private:
     // the case where we learn the true IP via a PROXY handshake.
     beast::IP::Endpoint m_remoteAddress;
 
-    // These is up here to prevent warnings about order of initializations
+    // Here to prevent warnings about order of initializations
     //
     Resource::Manager& m_resourceManager;
     PeerFinder::Manager& m_peerFinder;
-    OverlayImpl& m_overlay;
+    OverlayImpl& overlay_;
     bool m_inbound;
 
     std::unique_ptr <MultiSocket> m_socket;
@@ -172,12 +159,23 @@ private:
     // True if close was called
     bool m_was_canceled = false;
 
+    //----
+    // How to close
+    enum class Close
+    {
+        none,       // don't close
+        flush,      // flush then close
+        shutdown,   // force shutdown
+    };
+
+    Close close_ = Close::none;
+    bool http_handshake_ = false;
     boost::asio::streambuf read_buffer_;
+    boost::asio::streambuf write_buffer_;
     boost::optional <beast::http::message> http_message_;
     boost::optional <beast::http::parser> http_parser_;
     message_stream message_stream_;
-
-    boost::asio::streambuf write_buffer_;
+    //--
     
     std::unique_ptr <LoadEvent> load_event_;
 
@@ -220,7 +218,8 @@ public:
     activate ();
 
     /** Close the connection. */
-    void close (bool graceful);
+    void
+    close (bool graceful);
 
     void
     getLedger (protocol::TMGetLedger& packet);
@@ -283,6 +282,9 @@ public:
     hasRange (std::uint32_t uMin, std::uint32_t uMax) override;
 
 private:
+    void
+    on_shutdown (error_code ec);
+
     //
     // client role
     //
@@ -294,16 +296,16 @@ private:
     on_connect (error_code ec);
 
     beast::http::message
-    make_request();
+    make_request (protocol::TMHello const& hello);
 
     void
     on_connect_ssl (error_code ec);
 
     void
-    on_write_http_request (error_code ec, std::size_t bytes_transferred);
+    on_write_request (error_code ec, std::size_t bytes_transferred);
 
     void
-    on_read_http_response (error_code ec, std::size_t bytes_transferred);
+    on_read_response (error_code ec, std::size_t bytes_transferred);
 
     //
     // server role
@@ -316,16 +318,18 @@ private:
     on_accept_ssl (error_code ec);
 
     void
-    on_read_http_detect (error_code ec, std::size_t bytes_transferred);
+    on_read_detect (error_code ec, std::size_t bytes_transferred);
+
+    std::pair <beast::http::message, bool>
+    make_response (beast::http::message const& req,
+        protocol::TMHello const& hello);
 
     void
-    on_read_http_request (error_code ec, std::size_t bytes_transferred);
-
-    beast::http::message
-    make_response (beast::http::message const& req);
+    on_read_request (error_code ec, std::size_t bytes_transferred);
 
     void
-    on_write_http_response (error_code ec, std::size_t bytes_transferred);
+    on_write_response (error_code ec,
+        std::size_t bytes_transferred, bool protocol_start);
 
     //
     // protocol
@@ -375,6 +379,7 @@ private:
         std::shared_ptr <::google::protobuf::Message> const& m) override;
 
     // message handlers
+    error_code on_message (protocol::TMHello const& m);
     error_code on_message (std::shared_ptr <protocol::TMHello> const& m) override;
     error_code on_message (std::shared_ptr <protocol::TMPing> const& m) override;
     error_code on_message (std::shared_ptr <protocol::TMProofWork> const& m) override;
@@ -427,6 +432,16 @@ private:
     void
     sendForce (const Message::pointer& packet);
 
+    // Parse the hello information from the headers
+    std::pair <protocol::TMHello, bool>
+    parse_hello (beast::http::message const& message);
+
+    // Adds the connection security and identification
+    // headers that replace TMHello.
+    //
+    void
+    append_hello (beast::http::message& m, protocol::TMHello const& hello);
+
     /** Hashes the latest finished message from an SSL stream
         @param sslSession the session to get the message from.
         @param hash       the buffer into which the hash of the retrieved
@@ -455,6 +470,9 @@ private:
     */
     bool
     calculateSessionCookie ();
+
+    std::pair <protocol::TMHello, bool>
+    build_hello();
 
     /** Perform a secure handshake with the peer at the other end.
         If this function returns false then we cannot guarantee that there
@@ -513,45 +531,7 @@ private:
 
 //------------------------------------------------------------------------------
 
-const boost::posix_time::seconds PeerImp::nodeVerifySeconds (15);
-
-//------------------------------------------------------------------------------
-
-// to_string should not be used we should just use lexical_cast maybe
-
-inline
-std::string
-to_string (PeerImp const& peer)
-{
-    if (peer.isInCluster())
-        return peer.getClusterNodeName();
-
-    return peer.getRemoteAddress().to_string();
-}
-
-inline
-std::string
-to_string (PeerImp const* peer)
-{
-    return to_string (*peer);
-}
-
-inline
-std::ostream&
-operator<< (std::ostream& os, PeerImp const& peer)
-{
-    os << to_string (peer);
-
-    return os;
-}
-
-inline
-std::ostream&
-operator<< (std::ostream& os, PeerImp const* peer)
-{
-    os << to_string (peer);
-    return os;
-}
+boost::posix_time::seconds const PeerImp::nodeVerifySeconds (15);
 
 //------------------------------------------------------------------------------
 

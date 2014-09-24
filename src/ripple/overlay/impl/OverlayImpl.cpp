@@ -75,6 +75,17 @@ OverlayImpl::OverlayImpl (Stoppable& parent,
     , m_resolver (resolver)
     , m_nextShortId (0)
 {
+    auto const& section = getConfig()["overlay"];
+    set (setup_.use_handshake, "use_handshake", section);
+    set (setup_.auto_connect, "auto_connect", section);
+    std::string promote;
+    set (promote, "become_superpeer", section);
+    if (promote == "never")
+        setup_.promote = Promote::never;
+    else if (promote == "always")
+        setup_.promote = Promote::always;
+    else
+        setup_.promote = Promote::automatic;
 }
 
 OverlayImpl::~OverlayImpl ()
@@ -85,6 +96,12 @@ OverlayImpl::~OverlayImpl ()
     std::unique_lock <decltype(m_mutex)> lock (m_mutex);
     m_cond.wait (lock, [this] {
         return this->m_child_count == 0; });
+}
+
+OverlayImpl::Setup const&
+OverlayImpl::setup() const
+{
+    return setup_;
 }
 
 void
