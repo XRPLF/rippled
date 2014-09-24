@@ -259,7 +259,7 @@ def config_env(toolchain, variant, env):
             '-Wno-sign-compare',
             '-Wno-char-subscripts',
             '-Wno-format',
-            '-g' # enable debug symbols for gcc and clang
+            '-g'                        # generate debug symbols
             ])
 
         if toolchain == 'clang':
@@ -367,6 +367,11 @@ def config_env(toolchain, variant, env):
                 env.Append(CPPDEFINES={
                     '_FORTIFY_SOURCE': 2
                     })
+                # Build debuggable but still optimized executable
+                # via -Og switch introduced in GCC 4.8
+                env.Append(CCFLAGS=[
+                    '-Og'           # Debuggable optimizations, new in GCC 4.8
+                ])
 
     elif toolchain == 'msvc':
         env.Append (CPPPATH=[
