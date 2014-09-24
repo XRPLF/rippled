@@ -49,14 +49,30 @@ class OverlayImpl
     , public PeerFinder::Callback
 {    
 private:
+    enum class Promote
+    {
+        automatic,
+        never,
+        always
+    };
+
+    struct Setup
+    {
+        bool use_handshake = false;
+        bool auto_connect = true;
+        Promote promote = Promote::automatic;
+    };
+
     typedef boost::asio::ip::tcp::socket socket_type;
 
     typedef hash_map <PeerFinder::Slot::ptr,
-                      std::weak_ptr <PeerImp>> PeersBySlot;
+        std::weak_ptr <PeerImp>> PeersBySlot;
 
     typedef hash_map <RippleAddress, Peer::ptr> PeerByPublicKey;
 
     typedef hash_map <Peer::ShortId, Peer::ptr> PeerByShortId;
+
+    Setup setup_;
 
     std::recursive_mutex m_mutex;
 
@@ -110,6 +126,9 @@ public:
 
     OverlayImpl (OverlayImpl const&) = delete;
     OverlayImpl& operator= (OverlayImpl const&) = delete;
+
+    Setup const&
+    setup() const;
 
     void
     connect (beast::IP::Endpoint const& remote_endpoint) override;
