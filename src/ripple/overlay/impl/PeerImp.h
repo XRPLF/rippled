@@ -33,19 +33,12 @@
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/data/protocol/Protocol.h>
 #include <ripple/validators/Manager.h>
-
-// VFALCO This is unfortunate. Comment this out and
-//        just include what is needed.
-#include <ripple/unity/app.h>
-
+#include <ripple/unity/app.h> // VFALCO TODO Remove and replace with individual headers
 #include <beast/asio/IPAddressConversion.h>
 #include <beast/asio/placeholders.h>
 #include <beast/http/message.h>
 #include <beast/http/parser.h>
 #include <boost/optional.hpp>
-
-#include <boost/foreach.hpp>
-
 #include <cstdint>
 
 namespace ripple {

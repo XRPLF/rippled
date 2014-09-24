@@ -615,6 +615,7 @@ PeerImp::on_read_detect (error_code ec, std::size_t bytes_transferred)
                         beast::asio::placeholders::bytes_transferred)));
     }
 
+    // Need more bytes to figure out the handshake
     boost::asio::async_read (*m_socket, read_buffer_.prepare (
         Tuning::readBufferBytes), boost::asio::transfer_at_least(1),
             m_strand.wrap (std::bind (&PeerImp::on_read_detect,
@@ -1977,7 +1978,7 @@ PeerImp::getLedger (protocol::TMGetLedger& packet)
 
                 Overlay::PeerSequence peerList = overlay_.getActivePeers ();
                 Overlay::PeerSequence usablePeers;
-                BOOST_FOREACH (Peer::ptr const& peer, peerList)
+                for (auto const& peer : peerList)
                 {
                     if (peer->hasLedger (ledgerhash, seq) && (peer.get () != this))
                         usablePeers.push_back (peer);
