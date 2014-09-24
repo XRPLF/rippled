@@ -923,11 +923,10 @@ PeerImp::handleWrite (error_code const& ec, size_t bytes)
     {
         Message::pointer packet = mSendQ.front ();
 
-        if (packet)
-        {
-            sendForce (packet);
-            mSendQ.pop_front ();
-        }
+        assert(packet);
+
+        sendForce (packet);
+        mSendQ.pop_front ();
     }
 }
 
