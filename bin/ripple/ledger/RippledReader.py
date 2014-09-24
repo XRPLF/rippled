@@ -28,7 +28,7 @@ class RippledReader(object):
             raise Exception('No rippled found at %s.' % fname)
         self.cmd = [fname]
         if ARGS.config:
-            self.cmd.extend(['--conf', _normalize(ARGS.config)])
+            self.cmd.extend(['--conf', File.normalize(ARGS.config)])
         self.info = self._command('server_info')['info']
         c = self.info.get('complete_ledgers')
         if c == 'empty':

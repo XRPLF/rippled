@@ -104,6 +104,12 @@ _parser.add_argument(
     )
 
 _parser.add_argument(
+    '--validations',
+    default=3,
+    help='The number of validations needed before considering a ledger valid.',
+    )
+
+_parser.add_argument(
     '--version',
     action='version',
     version='%(prog)s ' + VERSION,
