@@ -26,7 +26,7 @@
 namespace beast {
 namespace asio {
 
-class HTTPClientType : public HTTPClientBase, public Uncopyable
+class HTTPClientType : public HTTPClientBase
 {
 public:
     class Session;
@@ -60,6 +60,9 @@ public:
         , m_stopped (true, true) // manual reset, initially signaled
     {
     }
+
+    HTTPClientType(HTTPClientType const&) = delete;
+    HTTPClientType& operator= (HTTPClientType const&) = delete;
 
     ~HTTPClientType ()
     {

@@ -38,7 +38,6 @@ class MemoryBlock;
     @see OutputStream, FileInputStream
 */
 class InputStream
-    : public Uncopyable
     , LeakChecked <InputStream>
 {
 public:
@@ -352,7 +351,9 @@ public:
 
 protected:
     //==============================================================================
-    InputStream() noexcept {}
+    InputStream() = default;
+    InputStream (InputStream const&) = delete;
+    InputStream& operator= (InputStream const&) = delete;
 };
 
 } // beast

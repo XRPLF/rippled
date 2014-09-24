@@ -138,12 +138,6 @@ PropertyStream::Proxy PropertyStream::Map::operator[] (std::string const& key)
 //
 //------------------------------------------------------------------------------
 
-PropertyStream::Set::Set (Set& set)
-    : m_stream (set.m_stream)
-{
-    m_stream.array_begin ();
-}
-
 PropertyStream::Set::Set (std::string const& key, Map& map)
     : m_stream (map.stream())
 {

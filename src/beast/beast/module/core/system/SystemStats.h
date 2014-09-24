@@ -31,7 +31,7 @@ namespace beast
 /**
     Contains methods for finding out about the current hardware and OS configuration.
 */
-class SystemStats : public Uncopyable
+class SystemStats
 {
 public:
     //==============================================================================
@@ -177,7 +177,9 @@ public:
 private:
     //==============================================================================
 
-    SystemStats();
+    SystemStats() = delete;
+    SystemStats (SystemStats const&) = delete;
+    SystemStats const& operator= (SystemStats const&) = delete;
 };
 
 } // beast

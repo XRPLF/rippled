@@ -34,7 +34,7 @@ namespace beast
     the process is terminated, a listener object gets notified so that the
     client application can perform logging or emit further diagnostics.
 */
-class FatalError : public Uncopyable
+class FatalError
 {
 public:
     struct Reporter
@@ -144,6 +144,9 @@ public:
         @param lineNumber Pass __LINE__ here.
     */
     FatalError (char const* message, char const* filePath, int lineNumber);
+
+    FatalError(FatalError const&) = delete;
+    FatalError& operator= (FatalError const&) = delete;
 
 private:
     static Reporter* s_reporter;

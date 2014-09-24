@@ -29,7 +29,6 @@
 #include <stdexcept>
 
 #include <beast/Memory.h>
-#include <beast/Uncopyable.h>
 
 // If the MSVC debug heap headers were included, disable
 // the macros during the juce include since they conflict.
@@ -122,7 +121,7 @@ namespace HeapBlockHelper
     @see Array, MemoryBlock
 */
 template <class ElementType, bool throwOnFailure = false>
-class HeapBlock : public Uncopyable
+class HeapBlock
 {
 public:
     //==============================================================================
@@ -134,12 +133,6 @@ public:
     HeapBlock() noexcept
         : data (nullptr)
     {
-    }
-
-    HeapBlock (HeapBlock& other)
-    {
-        data = other.data;
-        other.data = nullptr;
     }
 
     /** Creates a HeapBlock containing a number of elements.
@@ -168,6 +161,10 @@ public:
     {
         throwOnAllocationFailure();
     }
+
+
+    HeapBlock(HeapBlock const&) = delete;
+    HeapBlock& operator= (HeapBlock const&) = delete;
 
     /** Destructor.
         This will free the data, if any has been allocated.
