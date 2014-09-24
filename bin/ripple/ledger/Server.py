@@ -3,17 +3,21 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import json
 import os
 
-from ripple.ledger import RippledReader, ServerReader
+from ripple.ledger import DatabaseReader, RippledReader
 from ripple.ledger.Args import ARGS
 from ripple.util.FileCache import FileCache
+from ripple.util import ConfigFile
+from ripple.util import File
 from ripple.util import Range
 
 class Server(object):
     def __init__(self):
-        if ARGS.rippled:
-            reader = RippledReader.RippledReader()
+        cfg_file = File.normalize(ARGS.config or 'rippled.cfg')
+        self.config = ConfigFile.read(open(cfg_file))
+        if ARGS.database != ARGS.NONE:
+            reader = DatabaseReader.DatabaseReader(self.config)
         else:
-            reader = ServerReader.ServerReader()
+            reader = RippledReader.RippledReader(self.config)
 
         self.reader = reader
         self.complete = reader.complete
@@ -23,8 +27,7 @@ class Server(object):
             'current': reader.name_to_ledger_index('current'),
             'validated': reader.name_to_ledger_index('validated'),
             'first': self.complete[0] if self.complete else None,
-            'last': self.complete[-1] if self.complete else None
-,
+            'last': self.complete[-1] if self.complete else None,
         }
         self.__dict__.update(names)
         self.ledgers = sorted(Range.join_ranges(*ARGS.ledgers, **names))

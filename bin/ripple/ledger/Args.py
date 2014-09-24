@@ -13,6 +13,7 @@ from ripple.util.Function import Function
 
 NAME = 'LedgerTool'
 VERSION = '0.1'
+NONE = '(none)'
 
 _parser = argparse.ArgumentParser(
     prog=NAME,
@@ -57,7 +58,14 @@ _parser.add_argument(
     )
 
 _parser.add_argument(
-    '--display', '-d',
+    '--database', '-d',
+    nargs='*',
+    default=NONE,
+    help='Specify a database.',
+    )
+
+_parser.add_argument(
+    '--display',
     help='Specify a function to display ledgers.',
     )
 
@@ -104,6 +112,12 @@ _parser.add_argument(
     )
 
 _parser.add_argument(
+    '--validations',
+    default=3,
+    help='The number of validations needed before considering a ledger valid.',
+    )
+
+_parser.add_argument(
     '--version',
     action='version',
     version='%(prog)s ' + VERSION,
@@ -131,6 +145,7 @@ _parser.add_argument(
 
 # Read the arguments from the command line.
 ARGS = _parser.parse_args()
+ARGS.NONE = NONE
 
 Log.VERBOSE = ARGS.verbose
 
@@ -162,10 +177,11 @@ if ARGS.window < 0:
 
 PrettyPrint.INDENT = (ARGS.indent * ' ')
 
-_loaders = bool(ARGS.server) + bool(ARGS.rippled)
+_loaders = (ARGS.database != NONE) + bool(ARGS.rippled) + bool(ARGS.server)
 
 if not _loaders:
     ARGS.rippled = 'rippled'
 
 elif _loaders > 1:
-    raise ValueError('At most one of --rippled and --server must be specified')
+    raise ValueError('At most one of --database,  --rippled and --server '
+                     'may be specified')

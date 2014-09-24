@@ -20,7 +20,10 @@ REMAPPINGS = {
 }
 
 def eval_arguments(args):
-    tokens = tokenize.generate_tokens(StringIO(args or '()').readline)
+    args = args.strip()
+    if not args or (args == '()'):
+        return ()
+    tokens = list(tokenize.generate_tokens(StringIO(args).readline))
     def remap():
         for type, name, _, _, _ in tokens:
             if type == tokenize.NAME and name not in REMAPPINGS:
@@ -30,7 +33,11 @@ def eval_arguments(args):
     untok = tokenize.untokenize(remap())
     if untok[1:-1].strip():
         untok = untok[:-1] + ',)'  # Force a tuple.
-    return eval(untok, REMAPPINGS)
+    try:
+        return eval(untok, REMAPPINGS)
+    except Exception as e:
+        raise ValueError('Couldn\'t evaluate expression "%s" (became "%s"), '
+                         'error "%s"' % (args, untok, str(e)))
 
 class Function(object):
     def __init__(self, desc='', default_path=''):

@@ -22,13 +22,13 @@ _ERROR_TEXT = {
 _DEFAULT_ERROR_ = "Couldn't connect to server."
 
 class RippledReader(object):
-    def __init__(self):
+    def __init__(self, config):
         fname = File.normalize(ARGS.rippled)
         if not os.path.exists(fname):
             raise Exception('No rippled found at %s.' % fname)
         self.cmd = [fname]
         if ARGS.config:
-            self.cmd.extend(['--conf', _normalize(ARGS.config)])
+            self.cmd.extend(['--conf', File.normalize(ARGS.config)])
         self.info = self._command('server_info')['info']
         c = self.info.get('complete_ledgers')
         if c == 'empty':
