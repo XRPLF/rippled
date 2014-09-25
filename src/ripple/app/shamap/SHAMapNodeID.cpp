@@ -109,6 +109,7 @@ std::string SHAMapNodeID::getRawString () const
 SHAMapNodeID SHAMapNodeID::getChildNodeID (int m) const
 {
     assert ((m >= 0) && (m < 16));
+    assert (mDepth <= 64);
 
     uint256 child (mNodeID);
     child.begin ()[mDepth / 2] |= (mDepth & 1) ? m : (m << 4);
