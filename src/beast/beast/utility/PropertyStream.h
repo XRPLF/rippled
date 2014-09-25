@@ -20,7 +20,6 @@
 #ifndef BEAST_UTILITY_PROPERTYSTREAM_H_INCLUDED
 #define BEAST_UTILITY_PROPERTYSTREAM_H_INCLUDED
 
-#include <beast/Uncopyable.h>
 #include <beast/intrusive/List.h>
 #include <beast/threads/SharedData.h>
 
@@ -183,7 +182,7 @@ public:
 //
 //------------------------------------------------------------------------------
 
-class PropertyStream::Map : public Uncopyable
+class PropertyStream::Map
 {
 private:
     PropertyStream& m_stream;
@@ -194,6 +193,9 @@ public:
     Map (std::string const& key, Map& parent);
     Map (std::string const& key, PropertyStream& stream);
     ~Map ();
+
+    Map(Map const&) = delete;
+    Map& operator= (Map const&) = delete;
 
     PropertyStream& stream();
     PropertyStream const& stream() const;
@@ -241,16 +243,18 @@ PropertyStream::Proxy& PropertyStream::Proxy::operator= (Value value)
 //
 //------------------------------------------------------------------------------
 
-class PropertyStream::Set : public Uncopyable
+class PropertyStream::Set
 {
 private:
     PropertyStream& m_stream;
 
 public:
-    explicit Set (Set& set);
     Set (std::string const& key, Map& map);
     Set (std::string const& key, PropertyStream& stream);
     ~Set ();
+
+    Set (Set const&) = delete;
+    Set& operator= (Set const&) = delete;
 
     PropertyStream& stream();
     PropertyStream const& stream() const;
@@ -267,7 +271,7 @@ public:
 //------------------------------------------------------------------------------
 
 /** Subclasses can be called to write to a stream and have children. */
-class PropertyStream::Source : public Uncopyable
+class PropertyStream::Source
 {
 private:
     struct State
@@ -299,6 +303,9 @@ private:
 public:
     explicit Source (std::string const& name);
     ~Source ();
+
+    Source (Source const&) = delete;
+    Source& operator= (Source const&) = delete;
 
     /** Returns the name of this source. */
     std::string const& name() const;

@@ -45,7 +45,7 @@ namespace beast {
     @see CriticalSection, WaitableEvent, Process, ThreadWithProgressWindow,
          MessageManagerLock
 */
-class Thread : LeakChecked <Thread>, public Uncopyable
+class Thread : LeakChecked <Thread>
 {
 public:
     //==============================================================================
@@ -57,6 +57,9 @@ public:
     */
     explicit Thread (const String& threadName);
 
+    Thread (Thread const&) = delete;
+    Thread& operator= (Thread const&) = delete;
+    
     /** Destructor.
 
         If the thread has not been stopped first, this will generate a fatal error.

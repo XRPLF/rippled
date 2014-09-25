@@ -735,7 +735,6 @@ bool File::createLink (const String& description, const File& linkFileToCreate) 
 //==============================================================================
 class DirectoryIterator::NativeIterator::Pimpl
     : LeakChecked <DirectoryIterator::NativeIterator::Pimpl>
-    , public Uncopyable
 {
 public:
     Pimpl (const File& directory, const String& wildCard)
@@ -743,6 +742,9 @@ public:
           handle (INVALID_HANDLE_VALUE)
     {
     }
+
+    Pimpl (Pimpl const&) = delete;
+    Pimpl& operator= (Pimpl const&) = delete;
 
     ~Pimpl()
     {

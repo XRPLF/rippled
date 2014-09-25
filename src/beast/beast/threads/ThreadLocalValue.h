@@ -57,13 +57,13 @@ namespace beast {
     is deleted.
 */
 template <typename Type>
-class ThreadLocalValue : public Uncopyable
+class ThreadLocalValue
 {
 public:
     /** */
-    ThreadLocalValue() noexcept
-    {
-    }
+    ThreadLocalValue() = default;
+    ThreadLocalValue (ThreadLocalValue const&) = delete;
+    ThreadLocalValue& operator= (ThreadLocalValue const&) = delete;
 
     /** Destructor.
         When this object is deleted, all the value objects for all threads will be deleted.
@@ -176,11 +176,13 @@ public:
 private:
     //==============================================================================
    #if BEAST_NO_COMPILER_THREAD_LOCAL
-    struct ObjectHolder : public Uncopyable
+    struct ObjectHolder
     {
         ObjectHolder (const Thread::ThreadID& tid)
             : threadId (tid), object()
         {}
+        ObjectHolder (ObjectHolder const&) = delete;
+        ObjectHolder& operator= (ObjectHolder const&) = delete;
 
         Thread::ThreadID threadId;
         ObjectHolder* next;

@@ -29,7 +29,7 @@ namespace detail
 {
 
 template <typename Mutex>
-class TrackedScopedLock : public Uncopyable
+class TrackedScopedLock
 {
 public:
     inline explicit TrackedScopedLock (Mutex const& mutex,
@@ -39,6 +39,9 @@ public:
     {
         lock (fileName, lineNumber);
     }
+
+    TrackedScopedLock (TrackedScopedLock const&) = delete;
+    TrackedScopedLock& operator= (TrackedScopedLock const&) = delete;
 
     inline ~TrackedScopedLock () noexcept
     {
@@ -66,7 +69,7 @@ private:
 //--------------------------------------------------------------------------
 
 template <typename Mutex>
-class TrackedScopedTryLock : public Uncopyable
+class TrackedScopedTryLock
 {
 public:
     inline explicit TrackedScopedTryLock (Mutex const& mutex,
@@ -76,6 +79,9 @@ public:
     {
         try_lock (fileName, lineNumber);
     }
+
+    TrackedScopedTryLock (TrackedScopedTryLock const&) = delete;
+    TrackedScopedTryLock& operator= (TrackedScopedTryLock const&) = delete;
 
     inline ~TrackedScopedTryLock () noexcept
     {
@@ -110,7 +116,7 @@ private:
 //--------------------------------------------------------------------------
 
 template <typename Mutex>
-class TrackedScopedUnlock : public Uncopyable
+class TrackedScopedUnlock
 {
 public:
     inline explicit TrackedScopedUnlock (Mutex const& mutex,
@@ -121,6 +127,9 @@ public:
     {
         m_mutex.unlock ();
     }
+
+    TrackedScopedUnlock (TrackedScopedUnlock const&) = delete;
+    TrackedScopedUnlock& operator= (TrackedScopedUnlock const&) = delete;
 
     inline ~TrackedScopedUnlock () noexcept
     {
@@ -136,7 +145,7 @@ private:
 //--------------------------------------------------------------------------
 
 template <typename Mutex>
-class UntrackedScopedLock : public Uncopyable
+class UntrackedScopedLock
 {
 public:
     inline explicit UntrackedScopedLock (Mutex const& mutex,
@@ -146,6 +155,9 @@ public:
     {
         lock ();
     }
+
+    UntrackedScopedLock (UntrackedScopedLock const&) = delete;
+    UntrackedScopedLock& operator= (UntrackedScopedLock const&) = delete;
 
     inline ~UntrackedScopedLock () noexcept
     {
@@ -178,7 +190,7 @@ private:
 //--------------------------------------------------------------------------
 
 template <typename Mutex>
-class UntrackedScopedTryLock : public Uncopyable
+class UntrackedScopedTryLock
 {
 public:
     inline explicit UntrackedScopedTryLock (Mutex const& mutex,
@@ -188,6 +200,9 @@ public:
     {
         try_lock ();
     }
+
+    UntrackedScopedTryLock (UntrackedScopedTryLock const&) = delete;
+    UntrackedScopedTryLock& operator= (UntrackedScopedTryLock const&) = delete;
 
     inline ~UntrackedScopedTryLock () noexcept
     {
@@ -227,7 +242,7 @@ private:
 //--------------------------------------------------------------------------
 
 template <typename Mutex>
-class UntrackedScopedUnlock : public Uncopyable
+class UntrackedScopedUnlock
 {
 public:
     UntrackedScopedUnlock (Mutex const& mutex,
@@ -238,6 +253,9 @@ public:
         MutexTraits <Mutex>::unlock (m_mutex);
         m_owns_lock = false;
     }
+
+    UntrackedScopedUnlock (UntrackedScopedUnlock const&) = delete;
+    UntrackedScopedUnlock& operator= (UntrackedScopedUnlock const&) = delete;
 
     ~UntrackedScopedUnlock () noexcept
     {

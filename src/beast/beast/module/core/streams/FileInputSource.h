@@ -36,7 +36,6 @@ namespace beast
 class FileInputSource
     : public InputSource
     , LeakChecked <FileInputSource>
-    , public Uncopyable
 {
 public:
     //==============================================================================
@@ -46,6 +45,9 @@ public:
         false, only the file name will be used for the hash.
     */
     FileInputSource (const File& file, bool useFileTimeInHashGeneration = false);
+
+    FileInputSource (FileInputSource const&) = delete;
+    FileInputSource& operator= (FileInputSource const&) = delete;
 
     /** Destructor. */
     ~FileInputSource();

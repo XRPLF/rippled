@@ -39,7 +39,7 @@ namespace beast
 
     @see FileInputStream, FileOutputStream
 */
-class  RandomAccessFile : public Uncopyable, LeakChecked <RandomAccessFile>
+class  RandomAccessFile : LeakChecked <RandomAccessFile>
 {
 public:
     /** The type of an FileOffset.
@@ -70,6 +70,9 @@ public:
         @see open, isOpen
     */
     RandomAccessFile () noexcept;
+
+    RandomAccessFile(RandomAccessFile const&) = delete;
+    RandomAccessFile& operator= (RandomAccessFile const&) = delete;
 
     /** Destroy the file object.
 

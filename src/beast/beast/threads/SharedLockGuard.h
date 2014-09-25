@@ -20,14 +20,12 @@
 #ifndef BEAST_THREADS_SHAREDLOCKGUARD_H_INCLUDED
 #define BEAST_THREADS_SHAREDLOCKGUARD_H_INCLUDED
 
-#include <beast/Uncopyable.h>
-
 namespace beast
 {
 
 /** A scoped container that acquires a shared lock. */   
 template <typename Mutex>
-class SharedLockGuard : public Uncopyable
+class SharedLockGuard
 {
 public:
     typedef Mutex MutexType;
@@ -37,6 +35,9 @@ public:
     {
         m_mutex.lock_shared();
     }
+
+    SharedLockGuard (SharedLockGuard const&) = delete;
+    SharedLockGuard& operator= (SharedLockGuard const&) = delete;
 
     ~SharedLockGuard ()
     {

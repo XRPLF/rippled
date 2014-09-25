@@ -20,12 +20,10 @@
 #ifndef BEAST_THREADS_TRYLOCKGUARD_H_INCLUDED
 #define BEAST_THREADS_TRYLOCKGUARD_H_INCLUDED
 
-#include <beast/Uncopyable.h>
-
 namespace beast {
 
 template <typename Mutex>
-class TryLockGuard : public Uncopyable
+class TryLockGuard
 {
 public:
     typedef Mutex MutexType;
@@ -41,6 +39,9 @@ public:
         if (m_owns_lock)
             m_mutex.unlock();
     }
+
+    TryLockGuard (TryLockGuard const&) = delete;
+    TryLockGuard& operator= (TryLockGuard const&) = delete;
 
     bool owns_lock() const
         { return m_owns_lock; }
