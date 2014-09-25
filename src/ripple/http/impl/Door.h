@@ -22,46 +22,79 @@
 
 #include <ripple/http/impl/ServerImpl.h>
 #include <ripple/http/impl/Types.h>
-#include <beast/asio/placeholders.h>
+#include <boost/asio/basic_waitable_timer.hpp>
+#include <boost/asio/io_service.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/spawn.hpp>
+#include <chrono>
+#include <memory>
 
 namespace ripple {
 namespace HTTP {
 
 /** A listening socket. */
 class Door
-    : public beast::SharedObject
-    , public beast::List <Door>::Node
-    , public beast::LeakChecked <Door>
+    : public beast::List <Door>::Node
+    , public std::enable_shared_from_this <Door>
 {
 private:
-    // VFALCO TODO Use shared_ptr
-    typedef beast::SharedPtr <Door> Ptr;
+    using clock_type = std::chrono::steady_clock;
+    using timer_type = boost::asio::basic_waitable_timer<clock_type>;
+    using error_code = boost::system::error_code;
+    using yield_context = boost::asio::yield_context;
+    using protocol_type = boost::asio::ip::tcp;
+    using acceptor_type = protocol_type::acceptor;
+    using endpoint_type = protocol_type::endpoint;
+    using socket_type = protocol_type::socket;
 
-    ServerImpl& server_;
-    acceptor acceptor_;
-    endpoint_t endpoint_;
+    boost::asio::io_service& io_service_;
+    boost::asio::basic_waitable_timer <clock_type> timer_;
+    acceptor_type acceptor_;
     Port port_;
+    ServerImpl& server_;
 
 public:
-    Door (ServerImpl& impl, Port const& port);
+    Door (boost::asio::io_service& io_service,
+        ServerImpl& impl, Port const& port);
 
     ~Door ();
 
     Port const&
-    port () const;
+    port() const
+    {
+        return port_;
+    }
 
-    void
-    cancel ();
+    void listen();
+    void cancel();
 
-    void
-    failed (error_code ec);
+private:
+    class connection
+        : public std::enable_shared_from_this <connection>
+    {
+    private:
+        Door& door_;
+        socket_type socket_;
+        endpoint_type endpoint_;
+        boost::asio::io_service::strand strand_;
+        timer_type timer_;
 
-    void
-    async_accept ();
+    public:
+        connection (Door& door, socket_type&& socket,
+            endpoint_type endpoint);
 
-    void
-    handle_accept (error_code ec,
-        std::shared_ptr <Peer> const& peer);
+        void
+        run();
+
+    private:
+        void
+        do_timer (yield_context yield);
+
+        void
+        do_detect (yield_context yield);
+    };
+
+    void do_accept (yield_context yield);
 };
 
 }

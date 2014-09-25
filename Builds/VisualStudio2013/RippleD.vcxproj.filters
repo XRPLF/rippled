@@ -3666,9 +3666,6 @@
     <ClInclude Include="..\..\src\ripple\http\impl\Door.h">
       <Filter>ripple\http\impl</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\http\impl\Peer.cpp">
-      <Filter>ripple\http\impl</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\http\impl\Peer.h">
       <Filter>ripple\http\impl</Filter>
     </ClInclude>

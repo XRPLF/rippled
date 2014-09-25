@@ -38,8 +38,8 @@
 namespace ripple {
 namespace HTTP {
 
+class BasicPeer;
 class Door;
-class Peer;
 
 struct Stat
 {
@@ -68,13 +68,13 @@ private:
         Ports ports;
 
         // All allocated Peer objects
-        beast::List <Peer> peers;
+        beast::List <BasicPeer> peers;
 
         // All allocated Door objects
         beast::List <Door> doors;
     };
 
-    typedef std::vector <beast::SharedPtr <Door>> Doors;
+    typedef std::vector <std::shared_ptr<Door>> Doors;
 
     Server& m_server;
     Handler& m_handler;
@@ -121,13 +121,13 @@ public:
     get_io_service();
 
     void
-    add (Peer& peer);
+    add (BasicPeer& peer);
 
     void
     add (Door& door);
 
     void
-    remove (Peer& peer);
+    remove (BasicPeer& peer);
 
     void
     remove (Door& door);

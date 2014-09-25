@@ -105,7 +105,7 @@ ServerImpl::get_io_service()
 // way, the Peer can never outlive the server.
 //
 void
-ServerImpl::add (Peer& peer)
+ServerImpl::add (BasicPeer& peer)
 {
     std::lock_guard <std::mutex> lock (mutex_);
     state_.peers.push_back (peer);
@@ -123,7 +123,7 @@ ServerImpl::add (Door& door)
 // as a weak_ptr.
 //
 void
-ServerImpl::remove (Peer& peer)
+ServerImpl::remove (BasicPeer& peer)
 {
     std::lock_guard <std::mutex> lock (mutex_);
     state_.peers.erase (state_.peers.iterator_to (peer));
@@ -183,7 +183,7 @@ ServerImpl::onWrite (beast::PropertyStream::Map& map)
 
     // VFALCO TODO Write the list of doors
 
-    map ["active"] = Peer::count();
+    map ["active"] = state_.peers.size();
 
     {
         std::string s;
@@ -282,7 +282,9 @@ ServerImpl::on_update ()
             {
                 if (comp < 0)
                 {
-                    doors.push_back (new Door (*this, *port));
+                    doors.push_back (std::make_shared <Door> (
+                        io_service_, *this, *port));
+                    doors.back()->listen();
                 }
                 else
                 {
@@ -293,7 +295,9 @@ ServerImpl::on_update ()
             }
             else
             {
-                doors.push_back (new Door (*this, *port));
+                doors.push_back (std::make_shared <Door> (
+                    io_service_, *this, *port));
+                doors.back()->listen();
             }
         }
 

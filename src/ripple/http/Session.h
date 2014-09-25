@@ -86,7 +86,7 @@ public:
         The initial value is always zero.
         Changes to the value are persisted between calls.
     */
-    void* tag;
+    void* tag = nullptr;
 
     /** Returns the Journal to use for logging. */
     virtual

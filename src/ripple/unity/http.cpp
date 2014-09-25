@@ -20,7 +20,6 @@
 #include <BeastConfig.h>
 
 #include <ripple/http/impl/Door.cpp>
-#include <ripple/http/impl/Peer.cpp>
 #include <ripple/http/impl/Port.cpp>
 #include <ripple/http/impl/ScopedStream.cpp>
 #include <ripple/http/impl/ServerImpl.cpp>

@@ -2575,9 +2575,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\http\impl\Door.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\http\impl\Peer.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\http\impl\Peer.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\http\impl\Port.cpp">

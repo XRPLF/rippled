@@ -290,6 +290,8 @@ def config_env(toolchain, variant, env):
                     ])
 
         boost_libs = [
+            'boost_coroutine',
+            'boost_context',
             'boost_date_time',
             'boost_filesystem',
             'boost_program_options',
