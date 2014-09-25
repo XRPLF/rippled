@@ -178,6 +178,27 @@ struct LexicalCast <Out, std::string>
     {
         return parseSigned (out, std::begin(in), std::end(in));
     }
+
+    bool
+    operator () (bool& out, std::string in) const
+    {
+        // Convert the input to lowercase
+        std::transform(in.begin (), in.end (), in.begin (), ::tolower);
+
+        if (in == "1" || in == "true")
+        {
+            out = true;
+            return true;
+        }
+
+        if (in == "0" || in == "false")
+        {
+            out = false;
+            return true;
+        }
+
+        return false;
+    }
 };
 
 //------------------------------------------------------------------------------
