@@ -364,7 +364,7 @@ SHAMapAddNode SHAMap::addRootNode (Blob const& rootNode, SHANodeFormat format,
 
     assert (mSeq >= 1);
     SHAMapTreeNode::pointer node =
-        std::make_shared<SHAMapTreeNode> (rootNode, mSeq,
+        std::make_shared<SHAMapTreeNode> (rootNode, 0,
                                           format, uZero, false);
 
     if (!node)
@@ -406,7 +406,7 @@ SHAMapAddNode SHAMap::addRootNode (uint256 const& hash, Blob const& rootNode, SH
 
     assert (mSeq >= 1);
     SHAMapTreeNode::pointer node =
-        std::make_shared<SHAMapTreeNode> (rootNode, mSeq,
+        std::make_shared<SHAMapTreeNode> (rootNode, 0,
                                           format, uZero, false);
 
     if (!node || node->getNodeHash () != hash)
