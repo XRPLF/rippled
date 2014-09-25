@@ -33,7 +33,7 @@ namespace beast
     Contains some static helper functions for manipulating the MS Windows registry
     (Only available on Windows, of course!)
 */
-class WindowsRegistry : public Uncopyable
+class WindowsRegistry
 {
 public:
     //==============================================================================
@@ -113,8 +113,9 @@ public:
                                          int iconResourceNumber,
                                          bool registerForCurrentUserOnly);
 
-private:
-    WindowsRegistry();
+    WindowsRegistry() = delete;
+    WindowsRegistry(WindowsRegistry const&) = delete;
+    WindowsRegistry const& operator= (WindowsRegistry const&) = delete;
 };
 
 #endif

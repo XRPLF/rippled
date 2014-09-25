@@ -20,12 +20,10 @@
 #ifndef BEAST_THREADS_UNLOCKGUARD_H_INCLUDED
 #define BEAST_THREADS_UNLOCKGUARD_H_INCLUDED
 
-#include <beast/Uncopyable.h>
-
 namespace beast {
 
 template <typename Mutex>
-class UnlockGuard : public Uncopyable
+class UnlockGuard
 {
 public:
     typedef Mutex MutexType;
@@ -40,6 +38,9 @@ public:
     {
         m_mutex.lock();
     }
+
+    UnlockGuard (UnlockGuard const&) = delete;
+    UnlockGuard& operator= (UnlockGuard const&) = delete;
 
 private:
     Mutex const& m_mutex;

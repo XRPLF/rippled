@@ -34,7 +34,7 @@ namespace beast
     Since the DLL is freed when this object is deleted, it's handy for managing
     library lifetimes using RAII.
 */
-class DynamicLibrary : LeakChecked <DynamicLibrary>, public Uncopyable
+class DynamicLibrary : LeakChecked <DynamicLibrary>
 {
 public:
     /** Creates an unopened DynamicLibrary object.
@@ -45,6 +45,9 @@ public:
     /**
     */
     DynamicLibrary (const String& name) : handle (nullptr) { open (name); }
+
+    DynamicLibrary (DynamicLibrary const&) = delete;
+    DynamicLibrary& operator= (DynamicLibrary const&) = delete;
 
     /** Destructor.
         If a library is currently open, it will be closed when this object is destroyed.

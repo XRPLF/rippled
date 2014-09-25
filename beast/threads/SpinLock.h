@@ -44,7 +44,7 @@ namespace beast {
 
     @see CriticalSection
 */
-class SpinLock : public Uncopyable
+class SpinLock
 {
 public:
     /** Provides the type of scoped lock to use for locking a SpinLock. */
@@ -53,8 +53,10 @@ public:
     /** Provides the type of scoped unlocker to use with a SpinLock. */
     typedef UnlockGuard <SpinLock>     ScopedUnlockType;
 
-    inline SpinLock() noexcept {}
-    inline ~SpinLock() noexcept {}
+    SpinLock() = default;
+    SpinLock (SpinLock const&) = delete;
+    SpinLock& operator= (SpinLock const&) = delete;
+    ~SpinLock() = default;
 
     /** Acquires the lock.
         This will block until the lock has been successfully acquired by this thread.

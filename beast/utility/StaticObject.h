@@ -90,7 +90,7 @@ private:
     // This structure gets zero-filled at static initialization time.
     // No constructors are called.
     //
-    class StaticData : public Uncopyable
+    class StaticData
     {
     public:
         Atomic <int> state;
@@ -102,9 +102,10 @@ private:
             return *(reinterpret_cast <StaticData*> (&storage [0]));
         }
 
-    private:
-        StaticData();
-        ~StaticData();
+        StaticData() = delete;
+        StaticData(StaticData const&) = delete;
+        StaticData& operator= (StaticData const&) = delete;
+        ~StaticData() = delete;
     };
 };
 

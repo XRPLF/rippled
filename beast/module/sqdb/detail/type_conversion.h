@@ -76,7 +76,6 @@ template <typename T>
 class conversion_into_type
     : private base_value_holder<T>
     , public into_type <typename type_conversion<T>::base_type>
-    , public Uncopyable
 {
 public:
     typedef typename type_conversion<T>::base_type BASE_TYPE;
@@ -88,6 +87,9 @@ public:
     conversion_into_type(T& value, indicator& ind)
         : into_type<BASE_TYPE>(detail::base_value_holder<T>::m_value, ind)
         , m_value(value), m_ind(ind) {}
+
+    conversion_into_type (conversion_into_type const&) = delete;
+    conversion_into_type& operator= (conversion_into_type const&) = delete;
 
 private:
     void convert_from_base()
@@ -107,7 +109,6 @@ template<typename T>
 class conversion_use_type
     : private base_value_holder<T>
     , public use_type<typename type_conversion<T>::base_type>
-    , public Uncopyable
 {
 public:
     typedef typename type_conversion<T>::base_type BASE_TYPE;
@@ -127,6 +128,9 @@ public:
     conversion_use_type(T const& value, indicator& ind)
         : use_type<BASE_TYPE>(detail::base_value_holder<T>::m_value, ind)
         , m_value(const_cast<T&>(value)), m_ind(ind), m_bReadOnly(true) {}
+
+    conversion_use_type (conversion_use_type const&) = delete;
+    conversion_use_type& operator= (conversion_use_type const&) = delete;
 
     void convert_from_base()
     {

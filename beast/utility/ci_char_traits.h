@@ -21,6 +21,7 @@
 #define BEAST_UTILITY_CI_CHAR_TRAITS_H_INCLUDED
 
 #include <beast/cxx14/algorithm.h> // <algorithm>
+#include <cctype>
 #include <locale>
 #include <string>
 

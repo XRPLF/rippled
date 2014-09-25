@@ -25,7 +25,6 @@
 #define BEAST_THREADS_WAITABLEEVENT_H_INCLUDED
 
 #include <beast/Config.h>
-#include <beast/Uncopyable.h>
 
 #if ! BEAST_WINDOWS
 #include <pthread.h>
@@ -39,7 +38,6 @@ namespace beast {
     method.
 */
 class WaitableEvent
-    : public Uncopyable
     //, LeakChecked <WaitableEvent> // VFALCO TODO Move LeakChecked to beast/
 {
 public:
@@ -61,6 +59,9 @@ public:
         can cause nasty errors, so be careful!
     */
     ~WaitableEvent();
+
+    WaitableEvent (WaitableEvent const&) = delete;
+    WaitableEvent& operator= (WaitableEvent const&) = delete;
 
     //==============================================================================
     /** Suspends the calling thread until the event has been signalled.

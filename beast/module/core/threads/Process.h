@@ -34,7 +34,7 @@ namespace beast {
 
     @see Thread, BEASTApplication
 */
-class Process : public Uncopyable
+class Process
 {
 public:
     //==============================================================================
@@ -130,7 +130,9 @@ public:
    #endif
 
 private:
-    Process();
+    Process() = delete;
+    Process (Process const&) = delete;
+    Process const& operator= (Process const&) = delete;
 };
 
 } // beast

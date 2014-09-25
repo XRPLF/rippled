@@ -65,7 +65,7 @@ namespace beast
 
     @see File, FileOutputStream
 */
-class TemporaryFile : LeakChecked <TemporaryFile>, public Uncopyable
+class TemporaryFile : LeakChecked <TemporaryFile>
 {
 public:
     //==============================================================================
@@ -116,6 +116,9 @@ public:
     */
     TemporaryFile (const File& targetFile,
                    const File& temporaryFile);
+
+    TemporaryFile(TemporaryFile const&) = delete;
+    TemporaryFile& operator= (TemporaryFile const&) = delete;
 
     /** Destructor.
 

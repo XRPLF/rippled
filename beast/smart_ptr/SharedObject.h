@@ -27,7 +27,6 @@
 #include <atomic>
 
 #include <beast/Config.h>
-#include <beast/Uncopyable.h>
 
 namespace beast {
 
@@ -63,7 +62,7 @@ namespace beast {
 
     @see SharedPtr, SharedObjectArray, SingleThreadedSharedObject
 */
-class SharedObject : public Uncopyable
+class SharedObject
 {
 public:
     //==============================================================================
@@ -98,6 +97,9 @@ protected:
         : refCount (0)
     {
     }
+
+    SharedObject (SharedObject const&) = delete;
+    SharedObject& operator= (SharedObject const&) = delete;
 
     /** Destructor. */
     virtual ~SharedObject()

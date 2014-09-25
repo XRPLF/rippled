@@ -28,7 +28,6 @@ namespace beast {
 */
 class DeadlineTimer
     : public List <DeadlineTimer>::Node
-    , public Uncopyable
 {
 public:
     /** Listener for a deadline timer.
@@ -50,6 +49,9 @@ public:
     */
     explicit DeadlineTimer (Listener* listener);
 
+    DeadlineTimer (DeadlineTimer const&) = delete;
+    DeadlineTimer& operator= (DeadlineTimer const&) = delete;
+    
     ~DeadlineTimer ();
 
     /** Cancel all notifications.

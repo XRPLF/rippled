@@ -53,7 +53,7 @@ namespace beast
     @see GenericScopedUnlock, CriticalSection, SpinLock, ScopedLock, ScopedUnlock
 */
 template <class LockType>
-class GenericScopedLock : public Uncopyable
+class GenericScopedLock
 {
 public:
     //==============================================================================
@@ -71,6 +71,9 @@ public:
     {
         lock.enter();
     }
+
+    GenericScopedLock (GenericScopedLock const&) = delete;
+    GenericScopedLock& operator= (GenericScopedLock const&) = delete;
 
     /** Destructor.
         The lock will be released when the destructor is called.
@@ -126,7 +129,7 @@ private:
     @see GenericScopedLock, CriticalSection, ScopedLock, ScopedUnlock
 */
 template <class LockType>
-class GenericScopedUnlock : public Uncopyable
+class GenericScopedUnlock
 {
 public:
     //==============================================================================
@@ -145,6 +148,9 @@ public:
     { 
         lock.unlock();
     }
+
+    GenericScopedUnlock (GenericScopedUnlock const&) = delete;
+    GenericScopedUnlock& operator= (GenericScopedUnlock const&) = delete;
 
     /** Destructor.
 
@@ -200,7 +206,7 @@ private:
     @see CriticalSection::tryEnter, GenericScopedLock, GenericScopedUnlock
 */
 template <class LockType>
-class GenericScopedTryLock : public Uncopyable
+class GenericScopedTryLock
 {
 public:
     //==============================================================================
@@ -216,6 +222,9 @@ public:
     */
     inline explicit GenericScopedTryLock (const LockType& lock) noexcept
         : lock_ (lock), lockWasSuccessful (lock.tryEnter()) {}
+
+    GenericScopedTryLock (GenericScopedTryLock const&) = delete;
+    GenericScopedTryLock& operator= (GenericScopedTryLock const&) = delete;
 
     /** Destructor.
 

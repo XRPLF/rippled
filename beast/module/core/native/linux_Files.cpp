@@ -244,7 +244,7 @@ bool File::moveToTrash() const
 }
 
 //==============================================================================
-class DirectoryIterator::NativeIterator::Pimpl : public Uncopyable
+class DirectoryIterator::NativeIterator::Pimpl
 {
 public:
     Pimpl (const File& directory, const String& wildCard_)
@@ -253,6 +253,9 @@ public:
           dir (opendir (directory.getFullPathName().toUTF8()))
     {
     }
+
+    Pimpl (Pimpl const&) = delete;
+    Pimpl& operator= (Pimpl const&) = delete;
 
     ~Pimpl()
     {

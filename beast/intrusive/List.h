@@ -21,7 +21,6 @@
 #define BEAST_INTRUSIVE_LIST_H_INCLUDED
 
 #include <beast/Config.h>
-#include <beast/Uncopyable.h>
 
 #include <iterator>
 #include <type_traits>
@@ -265,7 +264,7 @@ private:
     @ingroup beast_core intrusive
 */
 template <typename T, typename Tag = void>
-class List : public Uncopyable
+class List
 {
 public:
     typedef typename detail::ListNode <T, Tag> Node;
@@ -288,6 +287,9 @@ public:
         m_tail.m_next = nullptr; // identifies the tail
         clear ();
     }
+
+    List(List const&) = delete;
+    List& operator= (List const&) = delete;
 
     /** Determine if the list is empty.
         @return `true` if the list is empty.
