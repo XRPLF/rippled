@@ -1170,6 +1170,7 @@ Json::Value Ledger::getJson (int options) const
         ledger[jss::accepted]          = mAccepted;
         ledger[jss::total_coins]
                 = beast::lexicalCastThrow <std::string> (mTotCoins);
+        ledger[jss::validated] = mValidated;
 
         if (mCloseTime != 0)
         {
