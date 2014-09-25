@@ -927,9 +927,9 @@ bool SHAMap::fetchRoot (uint256 const& hash, SHAMapSyncFilter* filter)
     if (newRoot)
     {
         root = newRoot;
+        assert (root->getNodeHash () == hash);
     }
 
-    assert (root->getNodeHash () == hash);
     return true;
 }
 
@@ -1163,6 +1163,7 @@ void SHAMap::canonicalize (uint256 const& hash, SHAMapTreeNode::pointer& node)
 {
     assert (mBacked);
     assert (node->getSeq() == 0);
+    assert (node->getNodeHash() == hash);
 
     mTreeNodeCache.canonicalize (hash, node);
 
