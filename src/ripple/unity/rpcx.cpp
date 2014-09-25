@@ -83,6 +83,7 @@
 #include <ripple/rpc/handlers/Sign.cpp>
 #include <ripple/rpc/handlers/Stop.cpp>
 #include <ripple/rpc/handlers/Submit.cpp>
+#include <ripple/rpc/handlers/SubmitMultiSigned.cpp>
 #include <ripple/rpc/handlers/Subscribe.cpp>
 #include <ripple/rpc/handlers/TransactionEntry.cpp>
 #include <ripple/rpc/handlers/Tx.cpp>

@@ -87,17 +87,6 @@ const std::uint32_t tfSetFreeze            = 0x00100000;
 const std::uint32_t tfClearFreeze          = 0x00200000;
 const std::uint32_t tfTrustSetMask         = ~ (tfUniversal | tfSetfAuth | tfSetNoRipple | tfClearNoRipple
                                              | tfSetFreeze | tfClearFreeze);
-
-// SignerListSet flags:
-const std::uint32_t tfCreateSignerList     = 0x00010000;
-const std::uint32_t tfDestroySignerList    = 0x00020000;
-const std::uint32_t tfAddSigners           = 0x00040000;
-const std::uint32_t tfRemoveSigners        = 0x00080000;
-const std::uint32_t tfChangeSignerWeights  = 0x00100000;
-const std::uint32_t tfChangeQuorumWeight   = 0x00200000;
-const std::uint32_t tfSignerListSetMask    = ~ (tfUniversal | tfCreateSignerList | tfDestroySignerList
-                                             | tfAddSigners | tfRemoveSigners | tfChangeSignerWeights
-                                             | tfChangeQuorumWeight);
 } // ripple
 
 #endif

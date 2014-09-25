@@ -23,7 +23,6 @@
 #include <boost/format.hpp>
 #include <istream>
 #include <string>
-#include <istream>
 
 namespace ripple {
 

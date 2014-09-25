@@ -17,39 +17,24 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_TRANSACTIONSIGN_H_INCLUDED
-#define RIPPLE_RPC_TRANSACTIONSIGN_H_INCLUDED
-
-#include <ripple/server/ServerHandler.h>
+#include <ripple/basics/StringUtilities.h>
 
 namespace ripple {
-namespace RPC {
 
-Json::Value transactionSign (
-    Json::Value jvRequest,
-    NetworkOPs::FailHard failType,
-    NetworkOPs& netOps,
-    Role role);
+// {
+//   SigningAccounts <array>,
+//   tx_json: <object>,
+// }
+Json::Value doSubmitMultiSigned (RPC::Context& context)
+{
+    context.loadType = Resource::feeHighBurdenRPC;
 
-Json::Value transactionSubmit (
-    Json::Value jvRequest,
-    NetworkOPs::FailHard failType,
-    NetworkOPs& netOps,
-    Role role);
+    NetworkOPs::FailHard const failType = NetworkOPs::doFailHard (
+            context.params.isMember ("fail_hard")
+            && context.params["fail_hard"].asBool ());
 
-Json::Value transactionGetMultiSignature (
-    Json::Value jvRequest,
-    NetworkOPs::FailHard failType,
-    NetworkOPs& netOps,
-    Role role);
+    return RPC::transactionSubmitMultiSigned (
+        context.params, failType, context.netOps, context.role);
+}
 
-Json::Value transactionSubmitMultiSigned (
-    Json::Value jvRequest,
-    NetworkOPs::FailHard failType,
-    NetworkOPs& netOps,
-    Role role);
-
-} // RPC
 } // ripple
-
-#endif

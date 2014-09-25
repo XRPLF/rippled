@@ -405,6 +405,7 @@ extern SField const sfNewFields;
 extern SField const sfTemplateEntry;
 extern SField const sfMemo;
 extern SField const sfSignerEntry;
+extern SField const sfSigningAccount;
 
 // array of objects
 // ARRAY/1 is reserved for end of array

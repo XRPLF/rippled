@@ -23,35 +23,48 @@
 
 namespace ripple {
 
-class SetSignerList final
-    : public Transactor
-{
-public:
-    SetSignerList (
-        SerializedTransaction const& txn,
-        TransactionEngineParams params,
-        TransactionEngine* engine)
-        : Transactor (
-            txn,
-            params,
-            engine,
-            deprecatedLogs().journal("SetSignerList"))
-    {
-
-    }
-
-    /**
-    Applies the transaction if it is well formed and the ledger state permits.
-    <p>
-    This transactor allows two operations:
-    <ul>
-    <li> Create (or replace) a signer list for the target account.
-    <li> Remove any signer list from the target account.
-    </ul>
-    The data for a transaction creating or replacing a signer list has this
-    general form:
-    <pre>
-    <code>
+/**
+The ttSIGNER_LIST_SET transaction hits bottom right here.
+<p>
+Let's start with a little background.  Your typical account has a single owner.
+Transactions on that account require a single signature from that account
+owner.  In the larger world accounts can be more complicated with, say,
+multiple owners or multiple signers.  That's where SignerLists come into play.
+<p>
+Any account can have one SignerList attached to it.  A SignerList contains the
+following elements:
+<p><ul>
+<li> A list of 2 to 32 signers.  Each signer in the array consists of:
+<ul>
+<li> The signer's 160-bit account ID and
+<li> The signer's 16-bit weight (used to calculate whether a quorum is met).
+</ul>
+<li> And, for the entire list, a single 32-bit quorum value.
+</ul><p>
+Giving the signers different weights allows an account to organize signers so
+some are more important than others.  A signer with a larger weight has more
+significance in a vote.
+<p>
+A multi-signed transaction is validated like this:
+<p><ul>
+<li> Each signer of the transaction  has their signature validated.
+<li> The weights of all valid signers are summed.
+<li> If the sum of the weights equals or exceeds the quorum value then the
+entire transaction is considered signed.  If the sum is below the quorum,
+then the signature fails with a tefBAD_QUORUM.
+</ul><p>
+By making the signer weights 16 bits and the quorum value 32 bits we can avoid
+concerns about overflows and still have plenty of resolution.
+<p>
+This transactor allows two operations:
+<ul>
+<li> Create (or replace) a signer list for the target account.
+<li> Remove any signer list from the target account.
+</ul>
+The data for a transaction creating or replacing a signer list has this
+general form:
+<pre>
+<code>
 {
     "TransactionType": "SignerListSet",
     "Account": "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
@@ -71,19 +84,39 @@ public:
         }
     ]
 }
-    <\code>
-    </pre>
-    <p>
-    The data for a transaction that removes any signer list has this form:
-    <pre>
-    <code>
+<\code>
+</pre>
+<p>
+The data for a transaction that removes any signer list has this form:
+<pre>
+<code>
 {
     "TransactionType": "SignerListSet",
     "Account": "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
     "SignerQuorum": 0
 }
-    <\code>
-    <\pre>
+<\code>
+<\pre>
+*/
+class SetSignerList final
+    : public Transactor
+{
+public:
+    SetSignerList (
+        SerializedTransaction const& txn,
+        TransactionEngineParams params,
+        TransactionEngine* engine)
+        : Transactor (
+            txn,
+            params,
+            engine,
+            deprecatedLogs().journal("SetSignerList"))
+    {
+
+    }
+
+    /**
+    Applies the transaction if it is well formed and the ledger state permits.
     */
     TER doApply () override;
 
@@ -110,7 +143,7 @@ private:
         }
     };
 
-    typedef std::vector <SignerEntry> SignerEntries;
+    using SignerEntries = std::vector <SignerEntry>;
 
     struct SignerEntriesDecode
     {
@@ -118,23 +151,22 @@ private:
         TER ter = temMALFORMED;
     };
 
-    // The deserializeSignerEntries() static function deserializes a
-    // SignerEntries array that comes from either the network or the ledger.
-    // The deserialization code will probably move elsewhere in the long term
-    // so it can be used from several places.
+    // deserializeSignerEntries() deserializes a SignerEntries array from
+    // either the network or the ledger.
+    // SSCHURR TODO: reuse this code elsewhere when the time arises.
     static SignerEntriesDecode deserializeSignerEntries (
         STObject const& obj, beast::Journal& journal, char const* annotation);
 
     TER validateQuorumAndSignerEntries (
         std::uint32_t quorum, SignerEntries& signers) const;
 
-    void signersToLedger (
+    void writeSignersToLedger (
         SLE::pointer ledgerEntry,
         std::uint32_t quorum,
         SignerEntries const& signers);
 
-    static std::size_t const minSigners = 2;
-    static std::size_t const maxSigners = 32;
+    static std::size_t const minSignerEntries = 2;
+    static std::size_t const maxSignerEntries = 32;
 };
 
 //------------------------------------------------------------------------------
@@ -153,13 +185,10 @@ TER SetSignerList::doApply ()
 
     bool const hasSignerEntries (mTxn.isFieldPresent (sfSignerEntries));
     if (quorum && hasSignerEntries)
-    {
         return replaceSignerList (quorum, index);
-    }
-    else if ((quorum == 0) && !hasSignerEntries)
-    {
+
+    if ((quorum == 0) && !hasSignerEntries)
         return destroySignerList (index);
-    }
 
     if (m_journal.trace) m_journal.trace <<
         "Malformed transaction: Invalid signer set list format.";
@@ -183,32 +212,28 @@ SetSignerList::replaceSignerList (std::uint32_t quorum, uint256 const& index)
         return signers.ter;
 
     // Validate our settings.
-    {
-        TER const ter = validateQuorumAndSignerEntries (quorum, signers.vec);
-        if (ter != tesSUCCESS)
-            return ter;
-    }
+    if (TER const ter = validateQuorumAndSignerEntries (quorum, signers.vec))
+        return ter;
 
-    // This may be either a create of a replace.  Preemptively destroy any
+    // This may be either a create or a replace.  Preemptively destroy any
     // old signer list.
-    {
-        TER const ter = destroySignerList (index);
-        if (ter != tesSUCCESS)
-            return ter;
-    }
+    if (TER const ter = destroySignerList (index))
+        return ter;
 
     // Everything's ducky.  Add the ltSIGNER_LIST to the ledger.
-    SLE::pointer sleSignerList (mEngine->entryCreate (ltSIGNER_LIST, index));
-    signersToLedger (sleSignerList, quorum, signers.vec);
+    SLE::pointer signerList (mEngine->entryCreate (ltSIGNER_LIST, index));
+    writeSignersToLedger (signerList, quorum, signers.vec);
+
+    // Lambda for call to dirAdd.
+    auto describer = [&] (SLE::ref sle, bool dummy)
+        {
+            Ledger::ownerDirDescriber (sle, dummy, mTxnAccountID);
+        };
 
     // Add the signer list to the account's directory.
     std::uint64_t hint;
-
-    TER result = mEngine->view ().dirAdd (hint,
-        Ledger::getOwnerDirIndex (mTxnAccountID), index,
-        std::bind (&Ledger::ownerDirDescriber,
-           std::placeholders::_1, std::placeholders::_2,
-           mTxnAccountID));
+    TER result = mEngine->view ().dirAdd (
+        hint, Ledger::getOwnerDirIndex (mTxnAccountID), index, describer);
 
     if (m_journal.trace) m_journal.trace <<
         "Creating signer list for account " <<
@@ -217,7 +242,7 @@ SetSignerList::replaceSignerList (std::uint32_t quorum, uint256 const& index)
     if (result != tesSUCCESS)
         return result;
 
-    sleSignerList->setFieldU64 (sfOwnerNode, hint);
+    signerList->setFieldU64 (sfOwnerNode, hint);
 
     // If we succeeded, the new entry counts against the creator's reserve.
     mEngine->view ().incrementOwnerCount (mTxnAccount);
@@ -228,15 +253,15 @@ SetSignerList::replaceSignerList (std::uint32_t quorum, uint256 const& index)
 TER SetSignerList::destroySignerList (uint256 const& index)
 {
     // See if there's an ltSIGNER_LIST for this account.
-    SLE::pointer sleSignerList =
+    SLE::pointer signerList =
         mEngine->view ().entryCache (ltSIGNER_LIST, index);
 
     // If the signer list doesn't exist we've already succeeded in deleting it.
-    if (!sleSignerList)
+    if (!signerList)
         return tesSUCCESS;
 
     // Remove the node from the account directory.
-    std::uint64_t const hint (sleSignerList->getFieldU64 (sfOwnerNode));
+    std::uint64_t const hint (signerList->getFieldU64 (sfOwnerNode));
 
     TER const result  = mEngine->view ().dirDelete (false, hint,
         Ledger::getOwnerDirIndex (mTxnAccountID), index, false, (hint == 0));
@@ -244,7 +269,7 @@ TER SetSignerList::destroySignerList (uint256 const& index)
     if (result == tesSUCCESS)
         mEngine->view ().decrementOwnerCount (mTxnAccount);
 
-    mEngine->view ().entryDelete (sleSignerList);
+    mEngine->view ().entryDelete (signerList);
 
     return result;
 }
@@ -255,7 +280,7 @@ SetSignerList::deserializeSignerEntries (
 {
     SignerEntriesDecode s;
     auto& accountVec (s.vec);
-    accountVec.reserve (maxSigners);
+    accountVec.reserve (maxSignerEntries);
 
     if (!obj.isFieldPresent (sfSignerEntries))
     {
@@ -299,8 +324,7 @@ SetSignerList::deserializeSignerEntries (
                     s.ter = temMALFORMED;
                     return s;
                 }
-                bool const success = accountPtr->getValueH160 (account);
-                if (!success)
+                if (!accountPtr->getValueH160 (account))
                 {
                     if (journal.trace) journal.trace <<
                         "Malformed " << annotation <<
@@ -354,10 +378,11 @@ SetSignerList::deserializeSignerEntries (
 TER SetSignerList::validateQuorumAndSignerEntries (
     std::uint32_t quorum, SignerEntries& signers) const
 {
-    // Reject if there are too many or too few signers.
+    // Reject if there are too many or too few entries in the list.
     {
         std::size_t const signerCount = signers.size ();
-        if ((signerCount < minSigners) || (signerCount > maxSigners))
+        if ((signerCount < minSignerEntries)
+            || (signerCount > maxSignerEntries))
         {
             if (m_journal.trace) m_journal.trace <<
                 "Too many or too few signers in signer list.";
@@ -401,7 +426,7 @@ TER SetSignerList::validateQuorumAndSignerEntries (
     return tesSUCCESS;
 }
 
-void SetSignerList::signersToLedger (
+void SetSignerList::writeSignersToLedger (
     SLE::pointer ledgerEntry,
     std::uint32_t quorum,
     SignerEntries const& signers)

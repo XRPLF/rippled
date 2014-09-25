@@ -36,7 +36,6 @@ namespace ripple {
 enum LedgerEntryType
 {
     ltINVALID           = -1,
-
     ltACCOUNT_ROOT      = 'a',
 
     /** Directory node.
@@ -49,30 +48,23 @@ enum LedgerEntryType
         (There's a little more information than this, see the template)
     */
     ltDIR_NODE          = 'd',
-
     ltGENERATOR_MAP     = 'g',
 
     /** Describes a trust line.
     */
     ltRIPPLE_STATE      = 'r',
-
     ltTICKET            = 'T',
-
     ltSIGNER_LIST       = 'S',
 
     /* Deprecated. */
     ltOFFER             = 'o',
-
     ltLEDGER_HASHES     = 'h',
-
     ltAMENDMENTS        = 'f',
-
     ltFEE_SETTINGS      = 's',
 
     // No longer used or supported. Left here to prevent accidental
     // reassignment of the ledger type.
     ltNICKNAME          = 'n',
-
     ltNotUsed01         = 'c',
 };
 

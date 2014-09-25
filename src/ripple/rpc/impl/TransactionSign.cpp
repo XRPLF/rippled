@@ -234,7 +234,10 @@ static Json::Value transactionProcessImpl (
     bool const verify = !(params.isMember ("offline")
                           && params["offline"].asBool ());
 
-    if (!tx_json.isMember ("Sequence") && !verify)
+    // This test covers the case where we're offline so the sequence number
+    // cannot be determined locally.  If we're offline then the caller must
+    // provide the sequence number.
+    if (!verify && !tx_json.isMember ("Sequence"))
         return RPC::missing_field_error ("tx_json.Sequence");
 
     // Check for current ledger
@@ -444,6 +447,7 @@ static Json::Value transactionProcessImpl (
             "Exception occurred during JSON handling.");
     }
 }
+
 } // namespace RPCDetail
 
 //------------------------------------------------------------------------------
@@ -523,7 +527,196 @@ Json::Value transactionGetMultiSignature (
         raMultisignAddressID);
 }
 
-//------------------------------------------------------------------------------
+Json::Value transactionSubmitMultiSigned (
+    Json::Value jvRequest,
+    NetworkOPs::FailHard failType,
+    NetworkOPs& netOps,
+    Role role)
+{
+    WriteLog (lsDEBUG, RPCHandler)
+        << "transactionSubmitMultiSigned: " << jvRequest;
+
+    // !!!! SSCHURR DEBUG: Temporary hack to debug submit_multisigned !!!!
+
+    // This is not a long term solution.  But for the time being let's just
+    // see what it takes to validate the collection of multi-signatures that
+    // we're passed in a multi-signed transaction
+
+    // We're validating against the serialized transaction.  So start out by
+    // serializing tx_json
+   if (! jvRequest.isMember ("tx_json"))
+        return RPC::missing_field_error ("tx_json");
+
+    Json::Value& tx_json (jvRequest ["tx_json"]);
+
+    if (! tx_json.isObject ())
+        return RPC::object_field_error ("tx_json");
+
+    Json::Value jvResult;
+    STParsedJSONObject parsedTx_json ("tx_json", tx_json);
+    if (!parsedTx_json.object.get())
+    {
+        jvResult ["error"] = parsedTx_json.error ["error"];
+        jvResult ["error_code"] = parsedTx_json.error ["error_code"];
+        jvResult ["error_message"] = parsedTx_json.error ["error_message"];
+        return jvResult;
+    }
+
+    std::unique_ptr <STObject const> sopTx_json =
+        std::move (parsedTx_json.object);
+
+    SerializedTransaction::pointer stpTx_json;
+    try
+    {
+        // SSCHURR NOTE: Sequence and SigningPubKey problems in multi-signed.
+        //
+        // In order to get past this point in my test case I must add two
+        // bogus fields to the JSON of the submitted transaction:
+        //  o "Sequence":0, and
+        //  o ""SigningPubKey":""
+        // That lets me get through to the next roadblock.  But we'll need
+        // to figure out the right stuff to do here eventually.
+        stpTx_json = std::make_shared<SerializedTransaction> (*sopTx_json);
+    }
+    catch (std::exception&)
+    {
+        return RPC::make_error (rpcINTERNAL,
+            "Exception occurred serializing transaction. Are fields missing?");
+    }
+
+    {
+        std::string reason;
+        if (!passesLocalChecks (*stpTx_json, reason))
+            return RPC::make_error (rpcINVALID_PARAMS, reason);
+    }
+
+    Transaction::pointer tpTx_json;
+    try
+    {
+        tpTx_json = std::make_shared<Transaction> (stpTx_json, Validate::NO);
+    }
+    catch (std::exception&)
+    {
+        return RPC::make_error (rpcINTERNAL,
+            "Exception occurred assembling transaction");
+    }
+
+    // We now have the transaction text serialized and in the right format.
+    //
+    // Check multi-signatures.  For the moment I'm just going to return an
+    // error if the signature is invalid.  Later (inside the transaction)
+    // we'll need to sum the weights of the signatures and see whether we
+    // equal or exceed the quorum.
+
+    // Verify that the field is present and an array.
+    const char* signingAccocuntsArrayName {
+        sfSigningAccounts.getJsonName ().c_str ()};
+
+    if (! jvRequest.isMember (signingAccocuntsArrayName))
+        return RPC::missing_field_error (signingAccocuntsArrayName);
+
+    Json::Value& signingAccounts (jvRequest [signingAccocuntsArrayName]);
+    if (! signingAccounts.isArray ())
+    {
+        std::ostringstream err;
+        err << "Expected "
+            << signingAccocuntsArrayName << " to be an array";
+        return RPC::make_param_error (std::move (err.str ()));
+    }
+
+    // Convert the SigningAccounts into SerializedTypes.
+    STParsedJSONArray parsedSigningAccounts (
+        signingAccocuntsArrayName, signingAccounts);
+
+    if (!parsedSigningAccounts.array.get())
+    {
+        jvResult ["error"] = parsedSigningAccounts.error ["error"];
+        jvResult ["error_code"] =
+            parsedSigningAccounts.error ["error_code"];
+        jvResult ["error_message"] =
+            parsedSigningAccounts.error ["error_message"];
+        return jvResult;
+    }
+
+    for (STObject const& signingAccount : *(parsedSigningAccounts.array.get()))
+    {
+        // We want to make sure the right fields, and only the right fields,
+        // are present.  So there should be exactly 2 fields and there should
+        // be one each of the fields we need.
+        if (signingAccount.getCount () != 2)
+        {
+            std::ostringstream err;
+            err << "Expecting two fields in "
+                << signingAccocuntsArrayName << "."
+                << sfSigningAccount.getName ();
+            return RPC::make_param_error(err.str ());
+        }
+
+        if (!signingAccount.isFieldPresent (sfAccount))
+        {
+            // Return an error that we're expecting a
+            // SigningAccounts.SigningAccount.Account
+            std::ostringstream fieldName;
+            fieldName << signingAccocuntsArrayName << "."
+                << sfSigningAccount.getName () << "."
+                << sfAccount.getName ();
+            return RPC::missing_field_error (fieldName.str ());
+        }
+
+        if (!signingAccount.isFieldPresent (sfMultiSignature))
+        {
+            // Return an error that we're expecting a
+            // SigningAccounts.SigningAccount.Account
+            std::ostringstream fieldName;
+            fieldName << signingAccocuntsArrayName << "."
+                << sfSigningAccount.getName () << "."
+                << sfAccount.getName ();
+            return RPC::missing_field_error (fieldName.str ());
+        }
+
+        // All required fields are present.
+        RippleAddress const signer =
+            signingAccount.getFieldAccount (sfAccount);
+        Blob const signature =
+            signingAccount.getFieldVL (sfMultiSignature);
+        uint256 const tx_json_hash = stpTx_json->getSigningHash ();
+
+        bool validSig = false;
+        try
+        {
+            validSig = signer.accountPublicVerify (
+                tx_json_hash, signature, ECDSA::strict);
+        }
+        catch (...)
+        {
+            // We assume any problem lies with the signature.  That's better
+            // returning "internal error".
+        }
+        if (!validSig)
+        {
+            std::ostringstream err;
+            err << "Invalid MultiSignature for account: "
+                << signer.ToString () << ".";
+            return RPC::make_error (rpcBAD_SIGNATURE, err.str ());
+        }
+    }
+
+
+    // !!!! END DEBUG !!!!
+
+    // Submit the transaction
+    RippleAddress raNotMultisign;           // Default constructs to invalid
+
+    return RPCDetail::transactionProcessImpl (
+        jvRequest,
+        NetworkOPs::SubmitTxn::yes,
+        failType,
+        netOps,
+        role,
+        raNotMultisign);
+}
+
+ //------------------------------------------------------------------------------
 
 class JSONRPC_test : public beast::unit_test::suite
 {

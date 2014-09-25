@@ -91,94 +91,94 @@ public:
     {
     }
 
-    virtual ~NetworkOPsImp () override
+    ~NetworkOPsImp () override
     {
     }
 
     // network information
     // Our best estimate of wall time in seconds from 1/1/2000
-    virtual std::uint32_t getNetworkTimeNC () const override;
+    std::uint32_t getNetworkTimeNC () const override;
 
     // Our best estimate of current ledger close time
-    virtual std::uint32_t getCloseTimeNC () const override;
+    std::uint32_t getCloseTimeNC () const override;
 
     // Use *only* to timestamp our own validation
-    virtual std::uint32_t getValidationTimeNC () override;
-    virtual void closeTimeOffset (int) override;
-    virtual boost::posix_time::ptime getNetworkTimePT () const override;
-    virtual std::uint32_t getLedgerID (uint256 const& hash) override;
-    virtual std::uint32_t getCurrentLedgerID () override;
-    virtual OperatingMode getOperatingMode () const override
+    std::uint32_t getValidationTimeNC () override;
+    void closeTimeOffset (int) override;
+    boost::posix_time::ptime getNetworkTimePT () const override;
+    std::uint32_t getLedgerID (uint256 const& hash) override;
+    std::uint32_t getCurrentLedgerID () override;
+    OperatingMode getOperatingMode () const override
     {
         return mMode;
     }
-    virtual std::string strOperatingMode () const override;
+    std::string strOperatingMode () const override;
 
-    virtual Ledger::pointer getClosedLedger () override
+    Ledger::pointer getClosedLedger () override
     {
         return m_ledgerMaster.getClosedLedger ();
     }
-    virtual Ledger::pointer getValidatedLedger () override
+    Ledger::pointer getValidatedLedger () override
     {
         return m_ledgerMaster.getValidatedLedger ();
     }
-    virtual Ledger::pointer getPublishedLedger () override
+    Ledger::pointer getPublishedLedger () override
     {
         return m_ledgerMaster.getPublishedLedger ();
     }
-    virtual Ledger::pointer getCurrentLedger () override
+    Ledger::pointer getCurrentLedger () override
     {
         return m_ledgerMaster.getCurrentLedger ();
     }
-    virtual Ledger::pointer getLedgerByHash (uint256 const& hash) override
+    Ledger::pointer getLedgerByHash (uint256 const& hash) override
     {
         return m_ledgerMaster.getLedgerByHash (hash);
     }
-    virtual Ledger::pointer getLedgerBySeq (const std::uint32_t seq) override;
-    virtual void missingNodeInLedger (const std::uint32_t seq) override;
+    Ledger::pointer getLedgerBySeq (const std::uint32_t seq) override;
+    void missingNodeInLedger (const std::uint32_t seq) override;
 
-    virtual uint256 getClosedLedgerHash () override
+    uint256 getClosedLedgerHash () override
     {
         return m_ledgerMaster.getClosedLedger ()->getHash ();
     }
 
     // Do we have this inclusive range of ledgers in our database
-    virtual bool haveLedgerRange (
+    bool haveLedgerRange (
         std::uint32_t from, std::uint32_t to) override;
-    virtual bool haveLedger (std::uint32_t seq) override;
-    virtual std::uint32_t getValidatedSeq () override;
-    virtual bool isValidated (std::uint32_t seq) override;
-    virtual bool isValidated (std::uint32_t seq, uint256 const& hash) override;
-    virtual bool isValidated (Ledger::ref l) override
+    bool haveLedger (std::uint32_t seq) override;
+    std::uint32_t getValidatedSeq () override;
+    bool isValidated (std::uint32_t seq) override;
+    bool isValidated (std::uint32_t seq, uint256 const& hash) override;
+    bool isValidated (Ledger::ref l) override
     {
         return isValidated (l->getLedgerSeq (), l->getHash ());
     }
-    virtual bool getValidatedRange (
+    bool getValidatedRange (
         std::uint32_t& minVal, std::uint32_t& maxVal) override
     {
         return m_ledgerMaster.getValidatedRange (minVal, maxVal);
     }
-    virtual bool getFullValidatedRange (
+    bool getFullValidatedRange (
         std::uint32_t& minVal, std::uint32_t& maxVal) override
     {
         return m_ledgerMaster.getFullValidatedRange (minVal, maxVal);
     }
 
-    virtual SerializedValidation::ref getLastValidation () override
+    SerializedValidation::ref getLastValidation () override
     {
         return mLastValidation;
     }
-    virtual void setLastValidation (SerializedValidation::ref v) override
+    void setLastValidation (SerializedValidation::ref v) override
     {
         mLastValidation = v;
     }
 
-    virtual SLE::pointer getSLE (
+    SLE::pointer getSLE (
         Ledger::pointer lpLedger, uint256 const& uHash) override
     {
         return lpLedger->getSLE (uHash);
     }
-    virtual SLE::pointer getSLEi (
+    SLE::pointer getSLEi (
         Ledger::pointer lpLedger, uint256 const& uHash) override
     {
         return lpLedger->getSLEi (uHash);
@@ -190,18 +190,18 @@ public:
 
     // must complete immediately
     typedef std::function<void (Transaction::pointer, TER)> stCallback;
-    virtual void submitTransaction (
+    void submitTransaction (
         Job&, SerializedTransaction::pointer,
         stCallback callback = stCallback ()) override;
 
-    virtual Transaction::pointer submitTransactionSync (
+    Transaction::pointer submitTransactionSync (
         Transaction::ref tpTrans,
         bool bAdmin, bool bLocal, FailHard failType, SubmitTxn submit) override;
 
-    virtual Transaction::pointer processTransactionCb (
+    Transaction::pointer processTransactionCb (
         Transaction::pointer,
         bool bAdmin, bool bLocal, FailHard failType, stCallback) override;
-    virtual Transaction::pointer processTransaction (
+    Transaction::pointer processTransaction (
         Transaction::pointer transaction,
         bool bAdmin, bool bLocal, FailHard failType) override
     {
@@ -221,10 +221,10 @@ private:
     }
 
 public:
-    virtual Transaction::pointer findTransactionByID (
+    Transaction::pointer findTransactionByID (
         uint256 const& transactionID) override;
 
-    virtual int findTransactionsByDestination (
+    int findTransactionsByDestination (
         std::list<Transaction::pointer>&,
         RippleAddress const& destinationAccount,
         std::uint32_t startLedgerSeq, std::uint32_t endLedgerSeq,
@@ -234,16 +234,16 @@ public:
     // Account functions
     //
 
-    virtual AccountState::pointer getAccountState (
+    AccountState::pointer getAccountState (
         Ledger::ref lrLedger, RippleAddress const& accountID) override;
-    virtual SLE::pointer getGenerator (
+    SLE::pointer getGenerator (
         Ledger::ref lrLedger, Account const& uGeneratorID) override;
 
     //
     // Directory functions
     //
 
-    virtual STVector256 getDirNodeInfo (
+    STVector256 getDirNodeInfo (
         Ledger::ref lrLedger, uint256 const& uRootIndex,
         std::uint64_t& uNodePrevious, std::uint64_t& uNodeNext)override;
 
@@ -251,55 +251,55 @@ public:
     // Owner functions
     //
 
-    virtual Json::Value getOwnerInfo (
+    Json::Value getOwnerInfo (
         Ledger::pointer lpLedger, RippleAddress const& naAccount) override;
 
     //
     // Book functions
     //
 
-    virtual void getBookPage (bool bAdmin,
-                              Ledger::pointer lpLedger,
-                              Book const&,
-                              Account const& uTakerID,
-                              bool const bProof,
-                              unsigned int const iLimit,
-                              Json::Value const& jvMarker,
-                              Json::Value& jvResult) override;
+    void getBookPage (bool bAdmin,
+                      Ledger::pointer lpLedger,
+                      Book const&,
+                      Account const& uTakerID,
+                      bool const bProof,
+                      unsigned int const iLimit,
+                      Json::Value const& jvMarker,
+                      Json::Value& jvResult) override;
 
     // ledger proposal/close functions
-    virtual void processTrustedProposal (
+    void processTrustedProposal (
         LedgerProposal::pointer proposal,
         std::shared_ptr<protocol::TMProposeSet> set,
         RippleAddress nodePublic, uint256 checkLedger, bool sigGood) override;
 
-    virtual SHAMapAddNode gotTXData (
+    SHAMapAddNode gotTXData (
         const std::shared_ptr<Peer>& peer, uint256 const& hash,
         const std::list<SHAMapNodeID>& nodeIDs,
         const std::list< Blob >& nodeData) override;
 
-    virtual bool recvValidation (
+    bool recvValidation (
         SerializedValidation::ref val, std::string const& source) override;
-    virtual void takePosition (int seq, SHAMap::ref position) override;
-    virtual SHAMap::pointer getTXMap (uint256 const& hash) override;
-    virtual bool hasTXSet (
+    void takePosition (int seq, SHAMap::ref position) override;
+    SHAMap::pointer getTXMap (uint256 const& hash) override;
+    bool hasTXSet (
         const std::shared_ptr<Peer>& peer, uint256 const& set,
         protocol::TxSetStatus status) override;
 
-    virtual void mapComplete (uint256 const& hash, SHAMap::ref map) override;
-    virtual bool stillNeedTXSet (uint256 const& hash) override;
-    virtual void makeFetchPack (
+    void mapComplete (uint256 const& hash, SHAMap::ref map) override;
+    bool stillNeedTXSet (uint256 const& hash) override;
+    void makeFetchPack (
         Job&, std::weak_ptr<Peer> peer,
         std::shared_ptr<protocol::TMGetObjectByHash> request,
         uint256 haveLedger, std::uint32_t uUptime) override;
 
-    virtual bool shouldFetchPack (std::uint32_t seq) override;
-    virtual void gotFetchPack (bool progress, std::uint32_t seq) override;
-    virtual void addFetchPack (
+    bool shouldFetchPack (std::uint32_t seq) override;
+    void gotFetchPack (bool progress, std::uint32_t seq) override;
+    void addFetchPack (
         uint256 const& hash, std::shared_ptr< Blob >& data) override;
-    virtual bool getFetchPack (uint256 const& hash, Blob& data) override;
-    virtual int getFetchSize () override;
-    virtual void sweepFetchPack () override;
+    bool getFetchPack (uint256 const& hash, Blob& data) override;
+    int getFetchSize () override;
+    void sweepFetchPack () override;
 
     // network state machine
 
@@ -317,8 +317,8 @@ private:
     void tryStartConsensus ();
 
 public:
-    virtual void endConsensus (bool correctLCL) override;
-    virtual void setStandAlone () override
+    void endConsensus (bool correctLCL) override;
+    void setStandAlone () override
     {
         setMode (omFULL);
     }
@@ -326,91 +326,91 @@ public:
     /** Called to initially start our timers.
         Not called for stand-alone mode.
     */
-    virtual void setStateTimer () override;
+    void setStateTimer () override;
 
-    virtual void newLCL (
+    void newLCL (
         int proposers, int convergeTime, uint256 const& ledgerHash) override;
-    virtual void needNetworkLedger () override
+    void needNetworkLedger () override
     {
         mNeedNetworkLedger = true;
     }
-    virtual void clearNeedNetworkLedger () override
+    void clearNeedNetworkLedger () override
     {
         mNeedNetworkLedger = false;
     }
-    virtual bool isNeedNetworkLedger () override
+    bool isNeedNetworkLedger () override
     {
         return mNeedNetworkLedger;
     }
-    virtual bool isFull () override
+    bool isFull () override
     {
         return !mNeedNetworkLedger && (mMode == omFULL);
     }
-    virtual void setProposing (bool p, bool v) override
+    void setProposing (bool p, bool v) override
     {
         mProposing = p;
         mValidating = v;
     }
-    virtual bool isProposing () override
+    bool isProposing () override
     {
         return mProposing;
     }
-    virtual bool isValidating () override
+    bool isValidating () override
     {
         return mValidating;
     }
-    virtual bool isAmendmentBlocked () override
+    bool isAmendmentBlocked () override
     {
         return m_amendmentBlocked;
     }
-    virtual void setAmendmentBlocked () override;
-    virtual void consensusViewChange () override;
-    virtual int getPreviousProposers () override
+    void setAmendmentBlocked () override;
+    void consensusViewChange () override;
+    int getPreviousProposers () override
     {
         return mLastCloseProposers;
     }
-    virtual int getPreviousConvergeTime () override
+    int getPreviousConvergeTime () override
     {
         return mLastCloseConvergeTime;
     }
-    virtual std::uint32_t getLastCloseTime () override
+    std::uint32_t getLastCloseTime () override
     {
         return mLastCloseTime;
     }
-    virtual void setLastCloseTime (std::uint32_t t) override
+    void setLastCloseTime (std::uint32_t t) override
     {
         mLastCloseTime = t;
     }
-    virtual Json::Value getConsensusInfo () override;
-    virtual Json::Value getServerInfo (bool human, bool admin) override;
-    virtual void clearLedgerFetch () override;
-    virtual Json::Value getLedgerFetchInfo () override;
-    virtual std::uint32_t acceptLedger () override;
-    virtual Proposals & peekStoredProposals () override
+    Json::Value getConsensusInfo () override;
+    Json::Value getServerInfo (bool human, bool admin) override;
+    void clearLedgerFetch () override;
+    Json::Value getLedgerFetchInfo () override;
+    std::uint32_t acceptLedger () override;
+    Proposals & peekStoredProposals () override
     {
         return mStoredProposals;
     }
-    virtual void storeProposal (
+    void storeProposal (
         LedgerProposal::ref proposal, RippleAddress const& peerPublic) override;
-    virtual uint256 getConsensusLCL () override;
-    virtual void reportFeeChange () override;
+    uint256 getConsensusLCL () override;
+    void reportFeeChange () override;
 
-    virtual void updateLocalTx (Ledger::ref newValidLedger) override
+    void updateLocalTx (Ledger::ref newValidLedger) override
     {
         m_localTX->sweep (newValidLedger);
     }
-    virtual void addLocalTx (
+    void addLocalTx (
         Ledger::ref openLedger, SerializedTransaction::ref txn) override
     {
         m_localTX->push_back (openLedger->getLedgerSeq(), txn);
     }
-    virtual std::size_t getLocalTxCount () override
+    std::size_t getLocalTxCount () override
     {
         return m_localTX->size ();
     }
 
     //Helper function to generate SQL query to get transactions
-    virtual std::string transactionsSQL (
+    std::string transactionsSQL (
         std::string selection, RippleAddress const& account,
         std::int32_t minLedger, std::int32_t maxLedger,
         bool descending, std::uint32_t offset, int limit,
@@ -418,12 +418,12 @@ public:
 
     // client information retrieval functions
     using NetworkOPs::AccountTxs;
-    virtual AccountTxs getAccountTxs (
+    AccountTxs getAccountTxs (
         RippleAddress const& account,
         std::int32_t minLedger, std::int32_t maxLedger, bool descending,
         std::uint32_t offset, int limit, bool bAdmin) override;
 
-    virtual AccountTxs getTxsAccount (
+    AccountTxs getTxsAccount (
         RippleAddress const& account, std::int32_t minLedger,
         std::int32_t maxLedger, bool forward, Json::Value& token, int limit,
         bool bAdmin) override;
@@ -431,26 +431,26 @@ public:
     using NetworkOPs::txnMetaLedgerType;
     using NetworkOPs::MetaTxsList;
 
-    virtual MetaTxsList
+    MetaTxsList
     getAccountTxsB (
         RippleAddress const& account, std::int32_t minLedger,
         std::int32_t maxLedger,  bool descending, std::uint32_t offset,
         int limit, bool bAdmin) override;
 
-    virtual MetaTxsList
+    MetaTxsList
     getTxsAccountB (
         RippleAddress const& account, std::int32_t minLedger,
         std::int32_t maxLedger,  bool forward, Json::Value& token,
         int limit, bool bAdmin) override;
 
-    virtual std::vector<RippleAddress> getLedgerAffectedAccounts (
+    std::vector<RippleAddress> getLedgerAffectedAccounts (
         std::uint32_t ledgerSeq)override;
 
     //
     // Monitoring: publisher side
     //
-    virtual void pubLedger (Ledger::ref lpAccepted) override;
-    virtual void pubProposedTransaction (
+    void pubLedger (Ledger::ref lpAccepted) override;
+    void pubProposedTransaction (
         Ledger::ref lpCurrent,
         SerializedTransaction::ref stTxn, TER terResult) override;
 
@@ -458,40 +458,40 @@ public:
     //
     // InfoSub::Source
     //
-    virtual void subAccount (
+    void subAccount (
         InfoSub::ref ispListener,
         const hash_set<RippleAddress>& vnaAccountIDs,
         std::uint32_t uLedgerIndex, bool rt) override;
-    virtual void unsubAccount (
+    void unsubAccount (
         std::uint64_t uListener, const hash_set<RippleAddress>& vnaAccountIDs,
         bool rt) override;
 
-    virtual bool subLedger (
+    bool subLedger (
         InfoSub::ref ispListener, Json::Value& jvResult) override;
-    virtual bool unsubLedger (std::uint64_t uListener) override;
+    bool unsubLedger (std::uint64_t uListener) override;
 
-    virtual bool subServer (
+    bool subServer (
         InfoSub::ref ispListener, Json::Value& jvResult, bool admin) override;
-    virtual bool unsubServer (std::uint64_t uListener) override;
+    bool unsubServer (std::uint64_t uListener) override;
 
-    virtual bool subBook (InfoSub::ref ispListener, Book const&) override;
-    virtual bool unsubBook (std::uint64_t uListener, Book const&) override;
+    bool subBook (InfoSub::ref ispListener, Book const&) override;
+    bool unsubBook (std::uint64_t uListener, Book const&) override;
 
-    virtual bool subTransactions (InfoSub::ref ispListener) override;
-    virtual bool unsubTransactions (std::uint64_t uListener) override;
+    bool subTransactions (InfoSub::ref ispListener) override;
+    bool unsubTransactions (std::uint64_t uListener) override;
 
-    virtual bool subRTTransactions (InfoSub::ref ispListener) override;
-    virtual bool unsubRTTransactions (std::uint64_t uListener) override;
+    bool subRTTransactions (InfoSub::ref ispListener) override;
+    bool unsubRTTransactions (std::uint64_t uListener) override;
 
-    virtual InfoSub::pointer findRpcSub (std::string const& strUrl) override;
-    virtual InfoSub::pointer addRpcSub (
+    InfoSub::pointer findRpcSub (std::string const& strUrl) override;
+    InfoSub::pointer addRpcSub (
         std::string const& strUrl, InfoSub::ref) override;
 
     //--------------------------------------------------------------------------
     //
     // Stoppable
 
-    virtual void onStop () override
+    void onStop () override
     {
         mAcquiringLedger.reset();
         m_heartbeatTimer.cancel();
@@ -503,7 +503,7 @@ public:
 private:
     void setHeartbeatTimer ();
     void setClusterTimer ();
-    virtual void onDeadlineTimer (beast::DeadlineTimer& timer) override;
+    void onDeadlineTimer (beast::DeadlineTimer& timer) override;
     void processHeartbeatTimer ();
     void processClusterTimer ();
 

@@ -80,6 +80,7 @@ HandlerTable HANDLERS({
     {   "ripple_path_find",     &doRipplePathFind,      Role::USER,  NEEDS_CURRENT_LEDGER  },
     {   "sign",                 &doSign,                Role::USER,  NO_CONDITION     },
     {   "submit",               &doSubmit,              Role::USER,  NEEDS_CURRENT_LEDGER  },
+    {   "submit_multisigned",   &doSubmitMultiSigned,   Role::USER,    NEEDS_CURRENT_LEDGER  },
     {   "server_info",          &doServerInfo,          Role::USER,  NO_CONDITION     },
     {   "server_state",         &doServerState,         Role::USER,  NO_CONDITION     },
     {   "sms",                  &doSMS,                 Role::ADMIN,   NO_CONDITION     },
