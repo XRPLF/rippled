@@ -22,9 +22,14 @@
 
 namespace ripple {
 
+class BuildInfo_test;
+
 /** Versioning information for this build. */
 struct BuildInfo
 {
+    BuildInfo(BuildInfo const&) = delete;
+    BuildInfo& operator=(BuildInfo const&) = delete;
+
     /** Server version.
 
         Follows the Semantic Versioning Specification:
@@ -49,20 +54,24 @@ struct BuildInfo
     */
     struct Protocol
     {
+    private:
         unsigned short vmajor;
         unsigned short vminor;
 
         //----
 
+        Protocol(Protocol const&) = delete;
+        Protocol& operator=(Protocol const&) = delete;
+
         /** The serialized format of the protocol version. */
         typedef std::uint32_t PackedFormat;
 
-        Protocol ();
         Protocol (unsigned short vmajor, unsigned short vminor);
+
+    public:
         explicit Protocol (PackedFormat packedVersion);
 
         PackedFormat toPacked () const noexcept;
-
         std::string toStdString () const noexcept;
 
         bool operator== (Protocol const& other) const noexcept { return toPacked () == other.toPacked (); }
@@ -71,6 +80,9 @@ struct BuildInfo
         bool operator<= (Protocol const& other) const noexcept { return toPacked () <= other.toPacked (); }
         bool operator>  (Protocol const& other) const noexcept { return toPacked () >  other.toPacked (); }
         bool operator<  (Protocol const& other) const noexcept { return toPacked () <  other.toPacked (); }
+
+        friend struct BuildInfo;
+        friend class BuildInfo_test;
     };
 
     /** The protocol version we speak and prefer. */
@@ -79,7 +91,10 @@ struct BuildInfo
     /** The oldest protocol version we will accept. */
     static Protocol const& getMinimumProtocol ();
 
+private:
     static char const* getRawVersionString ();
+
+    friend class BuildInfo_test;
 };
 
 } // ripple

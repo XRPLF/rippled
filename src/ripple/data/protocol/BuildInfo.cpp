@@ -133,12 +133,6 @@ char const* BuildInfo::getFullVersionString ()
 
 //------------------------------------------------------------------------------
 
-BuildInfo::Protocol::Protocol ()
-    : vmajor (0)
-    , vminor (0)
-{
-}
-
 BuildInfo::Protocol::Protocol (unsigned short major_, unsigned short minor_)
     : vmajor (major_)
     , vminor (minor_)
