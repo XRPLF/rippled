@@ -118,8 +118,8 @@ public:
         else
         {
             map["status"] = "running";
-            map["ledger_min"] = state->minRange;
-            map["ledger_max"] = state->maxRange;
+            map["min_ledger"] = state->minRange;
+            map["max_ledger"] = state->maxRange;
             map["check_nodes"] = state->checkNodes ? "true" : "false";
             map["fix_txns"] = state->fixTxns ? "true" : "false";
             if (state->failures > 0)
