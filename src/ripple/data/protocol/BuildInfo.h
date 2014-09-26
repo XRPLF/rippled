@@ -25,6 +25,7 @@ namespace ripple {
 /** Versioning information for this build. */
 struct BuildInfo
 {
+public:
     /** Server version.
 
         Follows the Semantic Versioning Specification:
@@ -47,27 +48,17 @@ struct BuildInfo
         The version consists of two unsigned 16 bit integers representing
         major and minor version numbers. All values are permissible.
     */
-    struct Protocol
+    using Protocol = std::pair <std::uint16_t const, std::uint16_t const>;
+
+    /** Construct a protocol version from a packed 32-bit protocol identifier */
+    static
+    BuildInfo::Protocol
+    make_protocol (std::uint32_t version)
     {
-        std::uint16_t const vmajor;
-        std::uint16_t const vminor;
-
-        //----
-
-        Protocol ();
-        Protocol (std::uint16_t major, std::uint16_t minor);
-        explicit Protocol (std::uint32_t packedVersion);
-
-        std::uint32_t toPacked () const noexcept;
-        std::string toStdString () const noexcept;
-
-        bool operator== (Protocol const& other) const noexcept { return toPacked () == other.toPacked (); }
-        bool operator!= (Protocol const& other) const noexcept { return toPacked () != other.toPacked (); }
-        bool operator>= (Protocol const& other) const noexcept { return toPacked () >= other.toPacked (); }
-        bool operator<= (Protocol const& other) const noexcept { return toPacked () <= other.toPacked (); }
-        bool operator>  (Protocol const& other) const noexcept { return toPacked () >  other.toPacked (); }
-        bool operator<  (Protocol const& other) const noexcept { return toPacked () <  other.toPacked (); }
-    };
+        return BuildInfo::Protocol (
+            static_cast<std::uint16_t> ((version >> 16) & 0xffff),
+            static_cast<std::uint16_t> (version & 0xffff));
+    }
 
     /** The protocol version we speak and prefer. */
     static Protocol const& getCurrentProtocol ();
@@ -77,6 +68,12 @@ struct BuildInfo
 
     static char const* getRawVersionString ();
 };
+
+std::string
+to_string (BuildInfo::Protocol const& p);
+
+std::uint32_t
+to_packed (BuildInfo::Protocol const& p);
 
 } // ripple
 

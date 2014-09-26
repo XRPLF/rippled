@@ -125,7 +125,7 @@ PeerImp::make_request()
     //m.headers.append ("Local-Address", m_socket->
     m.headers.append ("Remote-Address", m_remoteAddress.to_string());
     m.headers.append ("Upgrade",
-        std::string("Ripple/")+BuildInfo::getCurrentProtocol().toStdString());
+        std::string("Ripple/") + to_string (BuildInfo::getCurrentProtocol()));
     m.headers.append ("Connection", "Upgrade");
     m.headers.append ("Connect-As", "Leaf, Peer");
     m.headers.append ("Accept-Encoding", "identity, snappy");
@@ -585,7 +585,7 @@ PeerImp::on_message (std::shared_ptr <protocol::TMHello> const& m)
     }
 #endif
 
-    BuildInfo::Protocol protocol (m->protoversion());
+    auto protocol = BuildInfo::make_protocol(m->protoversion());
 
     if (m->has_nettime () &&
         ((m->nettime () < minTime) || (m->nettime () > maxTime)))
@@ -603,18 +603,12 @@ PeerImp::on_message (std::shared_ptr <protocol::TMHello> const& m)
                 " is off by -" << ourTime - m->nettime ();
         }
     }
-    else if (m->protoversionmin () > BuildInfo::getCurrentProtocol().toPacked ())
+    else if (m->protoversionmin () > to_packed (BuildInfo::getCurrentProtocol()))
     {
-        std::string reqVersion (
-            protocol.toStdString ());
-
-        std::string curVersion (
-            BuildInfo::getCurrentProtocol().toStdString ());
-
         m_journal.info <<
             "Hello: Disconnect: Protocol mismatch [" <<
-            "Peer expects " << reqVersion <<
-            " and we run " << curVersion << "]";
+            "Peer expects " << to_string (protocol) <<
+            " and we run " << to_string (BuildInfo::getCurrentProtocol()) << "]";
     }
     else if (! m_nodePublicKey.setNodePublic (m->nodepublic ()))
     {
@@ -638,7 +632,7 @@ PeerImp::on_message (std::shared_ptr <protocol::TMHello> const& m)
             m_journal.active(beast::Journal::Severity::kInfo))
         {
             m_journal.info <<
-                "Peer protocol: " << protocol.toStdString ();
+                "Peer protocol: " << to_string (protocol);
         }
 
         mHello = *m;

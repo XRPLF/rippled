@@ -598,9 +598,9 @@ public:
             ret["version"] = mHello.fullversion ();
 
         if (mHello.has_protoversion () &&
-                (mHello.protoversion () != BuildInfo::getCurrentProtocol().toPacked ()))
+                (mHello.protoversion () != to_packed (BuildInfo::getCurrentProtocol())))
         {
-            ret["protocol"] = BuildInfo::Protocol (mHello.protoversion ()).toStdString ();
+            ret["protocol"] = to_string (BuildInfo::make_protocol (mHello.protoversion ()));
         }
 
         std::uint32_t minSeq, maxSeq;
@@ -960,8 +960,8 @@ private:
 
         protocol::TMHello h;
 
-        h.set_protoversion (BuildInfo::getCurrentProtocol().toPacked ());
-        h.set_protoversionmin (BuildInfo::getMinimumProtocol().toPacked ());
+        h.set_protoversion (to_packed (BuildInfo::getCurrentProtocol()));
+        h.set_protoversionmin (to_packed (BuildInfo::getMinimumProtocol()));
         h.set_fullversion (BuildInfo::getFullVersionString ());
         h.set_nettime (getApp().getOPs ().getNetworkTimeNC ());
         h.set_nodepublic (getApp().getLocalCredentials ().getNodePublic ().humanNodePublic ());
