@@ -58,12 +58,12 @@ class TxFormats : public KnownFormats <TxType>
 private:
     void addCommonFields (Item& item);
 
-public:
     /** Create the object.
         This will load the object will all the known transaction formats.
     */
     TxFormats ();
 
+public:
     static TxFormats* getInstance ();
 };
 

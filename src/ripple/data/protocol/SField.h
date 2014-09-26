@@ -84,7 +84,7 @@ field_code(int id, int index)
     1.  Those that are created at compile time.
     2.  Those that are created at run time.
 
-    Both are always const.  Category 1 can only be created in FieldNames.cpp.
+    Both are always const.  Category 1 can only be created in SField.cpp.
     This is enforced at compile time.  Category 2 can only be created by
     calling getField with an as yet unused fieldType and fieldValue (or the
     equivalent fieldCode).
@@ -139,7 +139,7 @@ public:
 #endif
 
 private:
-    // These constructors can only be called from FieldNames.cpp
+    // These constructors can only be called from SField.cpp
     SField (SerializedTypeID tid, int fv, const char* fn,
             int meta = sMD_Default, bool signing = true);
     explicit SField (int fc);
