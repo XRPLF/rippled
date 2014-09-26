@@ -23,23 +23,22 @@
 namespace ripple {
 
 /** Versioning information for this build. */
-struct BuildInfo
+namespace BuildInfo
 {
-public:
     /** Server version.
 
         Follows the Semantic Versioning Specification:
 
         http://semver.org/
     */
-    static std::string const& getVersionString ();
+    std::string const& getVersionString ();
 
     /** Full server version string.
 
         This includes the name of the server. It is used in the peer
         protocol hello message and also the headers of some HTTP replies.
     */
-    static std::string const& getFullVersionString ();
+    std::string const& getFullVersionString ();
 
     //--------------------------------------------------------------------------
 
@@ -51,22 +50,16 @@ public:
     using Protocol = std::pair <std::uint16_t const, std::uint16_t const>;
 
     /** Construct a protocol version from a packed 32-bit protocol identifier */
-    static
-    BuildInfo::Protocol
-    make_protocol (std::uint32_t version)
-    {
-        return BuildInfo::Protocol (
-            static_cast<std::uint16_t> ((version >> 16) & 0xffff),
-            static_cast<std::uint16_t> (version & 0xffff));
-    }
+    Protocol
+    make_protocol (std::uint32_t version);
 
     /** The protocol version we speak and prefer. */
-    static Protocol const& getCurrentProtocol ();
+    Protocol const& getCurrentProtocol ();
 
     /** The oldest protocol version we will accept. */
-    static Protocol const& getMinimumProtocol ();
+    Protocol const& getMinimumProtocol ();
 
-    static char const* getRawVersionString ();
+    char const* getRawVersionString ();
 };
 
 std::string

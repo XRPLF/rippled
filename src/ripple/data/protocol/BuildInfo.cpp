@@ -23,19 +23,9 @@
 
 namespace ripple {
 
-std::string
-to_string (BuildInfo::Protocol const& p)
-{
-    return std::to_string (p.first) + "." + std::to_string (p.second);
-}
+namespace BuildInfo {
 
-std::uint32_t
-to_packed (BuildInfo::Protocol const& p)
-{
-    return (static_cast<std::uint32_t> (p.first) << 16) + p.second;
-}
-
-char const* BuildInfo::getRawVersionString ()
+char const* getRawVersionString ()
 {
     static char const* const rawText =
 
@@ -58,7 +48,7 @@ char const* BuildInfo::getRawVersionString ()
     return rawText;
 }
 
-BuildInfo::Protocol const& BuildInfo::getCurrentProtocol ()
+Protocol const& getCurrentProtocol ()
 {
     static Protocol currentProtocol (
     //--------------------------------------------------------------------------
@@ -74,7 +64,7 @@ BuildInfo::Protocol const& BuildInfo::getCurrentProtocol ()
     return currentProtocol;
 }
 
-BuildInfo::Protocol const& BuildInfo::getMinimumProtocol ()
+Protocol const& getMinimumProtocol ()
 {
     static Protocol minimumProtocol (
 
@@ -97,7 +87,7 @@ BuildInfo::Protocol const& BuildInfo::getMinimumProtocol ()
 //
 //------------------------------------------------------------------------------
 
-std::string const& BuildInfo::getVersionString ()
+std::string const& getVersionString ()
 {
     struct SanityChecker
     {
@@ -121,7 +111,7 @@ std::string const& BuildInfo::getVersionString ()
     return value.versionString;
 }
 
-std::string const& BuildInfo::getFullVersionString ()
+std::string const& getFullVersionString ()
 {
     struct PrettyPrinter
     {
@@ -136,6 +126,28 @@ std::string const& BuildInfo::getFullVersionString ()
     static PrettyPrinter const value;
 
     return value.fullVersionString;
+}
+
+Protocol
+make_protocol (std::uint32_t version)
+{
+    return Protocol (
+        static_cast<std::uint16_t> ((version >> 16) & 0xffff),
+        static_cast<std::uint16_t> (version & 0xffff));
+}
+
+}
+
+std::string
+to_string (BuildInfo::Protocol const& p)
+{
+    return std::to_string (p.first) + "." + std::to_string (p.second);
+}
+
+std::uint32_t
+to_packed (BuildInfo::Protocol const& p)
+{
+    return (static_cast<std::uint32_t> (p.first) << 16) + p.second;
 }
 
 //------------------------------------------------------------------------------
