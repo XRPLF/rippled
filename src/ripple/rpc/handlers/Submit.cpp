@@ -65,7 +65,7 @@ Json::Value doSubmit (RPC::Context& context)
 
     try
     {
-        tpTrans     = std::make_shared<Transaction> (stpTrans, true);
+        tpTrans     = std::make_shared<Transaction> (stpTrans, Validate::YES);
     }
     catch (std::exception& e)
     {

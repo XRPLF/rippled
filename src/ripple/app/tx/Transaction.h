@@ -23,7 +23,8 @@
 namespace ripple {
 
 //
-// Transactions should be constructed in JSON with. Use STObject::parseJson to obtain a binary version.
+// Transactions should be constructed in JSON with. Use STObject::parseJson to
+// obtain a binary version.
 //
 
 class Database;
@@ -41,7 +42,10 @@ enum TransStatus
     INCOMPLETE  = 8  // needs more signatures
 };
 
-// This class is for constructing and examining transactions.  Transactions are static so manipulation functions are unnecessary.
+enum class Validate {NO, YES};
+
+// This class is for constructing and examining transactions.
+// Transactions are static so manipulation functions are unnecessary.
 class Transaction
     : public std::enable_shared_from_this<Transaction>
     , public CountedObject <Transaction>
@@ -53,18 +57,19 @@ public:
     typedef const pointer& ref;
 
 public:
-    Transaction (SerializedTransaction::ref st, bool bValidate);
+    Transaction (SerializedTransaction::ref, Validate);
 
-    static Transaction::pointer sharedTransaction (Blob const & vucTransaction, bool bValidate);
-    static Transaction::pointer transactionFromSQL (Database * db, bool bValidate);
+    static Transaction::pointer sharedTransaction (Blob const&, Validate);
+    static Transaction::pointer transactionFromSQL (Database*, Validate);
 
     Transaction (
         TxType ttKind,
-        const RippleAddress &    naPublicKey,       // To prove transaction is consistent and authorized.
-        const RippleAddress &    naSourceAccount,   // To identify the paying account.
-        std::uint32_t            uSeq,               // To order transactions.
-        const STAmount &         saFee,             // Transaction fee.
-        std::uint32_t            uSourceTag);        // User call back value.
+        RippleAddress const& naPublicKey,     // To prove transaction is
+                                              // consistent and authorized.
+        RippleAddress const& naSourceAccount, // To identify the paying account.
+        std::uint32_t        uSeq,            // To order transactions.
+        STAmount const&      saFee,           // Transaction fee.
+        std::uint32_t        uSourceTag);     // User call back value.
 
 
     bool sign (const RippleAddress & naAccountPrivate);
@@ -161,18 +166,18 @@ public:
     static Transaction::pointer load (uint256 const& id);
 
     // conversion function
-    static bool convertToTransactions (std::uint32_t ourLedgerSeq,
-                                       std::uint32_t otherLedgerSeq,
-                                       bool checkFirstTransactions,
-                                       bool checkSecondTransactions,
-                                       const SHAMap::Delta & inMap,
-                                       std::map<uint256, std::pair<Transaction::pointer,
-                                                                   Transaction::pointer> >& outMap);
+    static bool convertToTransactions (
+        std::uint32_t ourLedgerSeq,
+        std::uint32_t otherLedgerSeq,
+        Validate checkFirstTransactions,
+        Validate checkSecondTransactions,
+        const SHAMap::Delta & inMap,
+        std::map<uint256, std::pair<pointer, pointer> >& outMap);
 
     static bool isHexTxID (std::string const&);
 
 protected:
-    static Transaction::pointer transactionFromSQL (std::string const& statement);
+    static Transaction::pointer transactionFromSQL (std::string const&);
 
 private:
     uint256         mTransactionID;

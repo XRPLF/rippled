@@ -42,9 +42,9 @@ public:
     typedef const std::shared_ptr<SerializedTransaction>& ref;
 
 public:
-    SerializedTransaction (SerializerIterator & sit);
-    SerializedTransaction (TxType type);
-    SerializedTransaction (const STObject & object);
+    explicit SerializedTransaction (SerializerIterator & sit);
+    explicit SerializedTransaction (TxType type);
+    explicit SerializedTransaction (const STObject & object);
 
     // STObject functions
     SerializedTypeID getSType () const
@@ -85,6 +85,7 @@ public:
     }
     void setSigningPubKey (const RippleAddress & naSignPubKey);
     void setSourceAccount (const RippleAddress & naSource);
+
     std::string getTransactionType () const
     {
         return mFormat->getName ();
@@ -130,15 +131,26 @@ public:
     static std::string getSQLValueHeader ();
     static std::string getSQLInsertHeader ();
     static std::string getSQLInsertIgnoreHeader ();
-    std::string getSQL (std::string & sql, std::uint32_t inLedger, char status) const;
-    std::string getSQL (std::uint32_t inLedger, char status) const;
-    std::string getSQL (Serializer rawTxn, std::uint32_t inLedger, char status) const;
+
+    std::string getSQL (
+        std::string & sql, std::uint32_t inLedger, char status) const;
+    std::string getSQL (
+        std::uint32_t inLedger, char status) const;
+    std::string getSQL (
+        Serializer rawTxn, std::uint32_t inLedger, char status) const;
 
     // SQL Functions with metadata
     static std::string getMetaSQLValueHeader ();
     static std::string getMetaSQLInsertReplaceHeader ();
-    std::string getMetaSQL (std::uint32_t inLedger, std::string const& escapedMetaData) const;
-    std::string getMetaSQL (Serializer rawTxn, std::uint32_t inLedger, char status, std::string const& escapedMetaData) const;
+
+    std::string getMetaSQL (
+        std::uint32_t inLedger, std::string const& escapedMetaData) const;
+
+    std::string getMetaSQL (
+        Serializer rawTxn,
+        std::uint32_t inLedger,
+        char status,
+        std::string const& escapedMetaData) const;
 
 private:
     TxType mType;

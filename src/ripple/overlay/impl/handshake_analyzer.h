@@ -1076,7 +1076,12 @@ private:
         }
     }
 
-    static void checkTransaction (Job&, int flags, SerializedTransaction::pointer stx, std::weak_ptr<Peer> peer)
+    // TODO(tom): duplicates code in PeerImp::checkTransaction.
+    static void checkTransaction (
+        Job&,
+        int flags,
+        SerializedTransaction::pointer stx,
+        std::weak_ptr<Peer> peer)
     {
         try
         {
@@ -1090,18 +1095,21 @@ private:
                 return;
             }
 
-            bool const needCheck = !(flags & SF_SIGGOOD);
-            Transaction::pointer tx =
-                std::make_shared<Transaction> (stx, needCheck);
+            auto validate = (flags & SF_SIGGOOD) ? Validate::NO : Validate::YES;
+            auto tx = std::make_shared<Transaction> (stx, validate);
 
             if (tx->getStatus () == INVALID)
             {
-                getApp().getHashRouter ().setFlag (stx->getTransactionID (), SF_BAD);
+                getApp().getHashRouter ().setFlag (
+                    stx->getTransactionID (), SF_BAD);
                 charge (peer, Resource::feeInvalidSignature);
                 return;
             }
             else
-                getApp().getHashRouter ().setFlag (stx->getTransactionID (), SF_SIGGOOD);
+            {
+                getApp().getHashRouter ().setFlag (
+                    stx->getTransactionID (), SF_SIGGOOD);
+            }
 
             bool const trusted (flags & SF_TRUSTED);
             getApp().getOPs ().processTransaction (tx, trusted, false, false);
@@ -1115,9 +1123,15 @@ private:
     }
 
     // Called from our JobQueue
-    static void checkPropose (Job& job, Overlay* pPeers, std::shared_ptr<protocol::TMProposeSet> packet,
-                              LedgerProposal::pointer proposal, uint256 consensusLCL, RippleAddress nodePublic,
-                              std::weak_ptr<Peer> peer, bool fromCluster)
+    static void checkPropose (
+        Job& job,
+        Overlay* pPeers,
+        std::shared_ptr<protocol::TMProposeSet> packet,
+        LedgerProposal::pointer proposal,
+        uint256 consensusLCL,
+        RippleAddress nodePublic,
+        std::weak_ptr<Peer> peer,
+        bool fromCluster)
     {
         bool sigGood = false;
         bool isTrusted = (job.getType () == jtPROPOSAL_t);

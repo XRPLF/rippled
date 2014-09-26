@@ -19,8 +19,11 @@
 
 namespace ripple {
 
-Transaction::Transaction (SerializedTransaction::ref sit, bool bValidate)
-    : mInLedger (0), mStatus (INVALID), mResult (temUNCERTAIN), mTransaction (sit)
+Transaction::Transaction (SerializedTransaction::ref sit, Validate validate)
+    : mInLedger (0),
+      mStatus (INVALID),
+      mResult (temUNCERTAIN),
+      mTransaction (sit)
 {
     try
     {
@@ -33,20 +36,24 @@ Transaction::Transaction (SerializedTransaction::ref sit, bool bValidate)
         return;
     }
 
-    if (!bValidate || (passesLocalChecks (*mTransaction) && checkSign ()))
+    if (validate == Validate::NO ||
+        (passesLocalChecks (*mTransaction) && checkSign ()))
+    {
         mStatus = NEW;
+    }
 }
 
-Transaction::pointer Transaction::sharedTransaction (Blob const& vucTransaction, bool bValidate)
+Transaction::pointer Transaction::sharedTransaction (
+    Blob const& vucTransaction, Validate validate)
 {
     try
     {
-        Serializer          s (vucTransaction);
-        SerializerIterator  sit (s);
+        Serializer s (vucTransaction);
+        SerializerIterator sit (s);
 
-        SerializedTransaction::pointer  st  = std::make_shared<SerializedTransaction> (std::ref (sit));
-
-        return std::make_shared<Transaction> (st, bValidate);
+        return std::make_shared<Transaction> (
+            std::make_shared<SerializedTransaction> (sit),
+            validate);
     }
     catch (...)
     {
@@ -65,12 +72,16 @@ Transaction::Transaction (
     RippleAddress const&    naSourceAccount,
     std::uint32_t           uSeq,
     STAmount const&         saFee,
-    std::uint32_t           uSourceTag) :
-    mAccountFrom (naSourceAccount), mFromPubKey (naPublicKey), mInLedger (0), mStatus (NEW), mResult (temUNCERTAIN)
+    std::uint32_t           uSourceTag)
+        : mAccountFrom (naSourceAccount),
+          mFromPubKey (naPublicKey),
+          mInLedger (0),
+          mStatus (NEW),
+          mResult (temUNCERTAIN)
 {
     assert (mFromPubKey.isValid ());
 
-    mTransaction    = std::make_shared<SerializedTransaction> (ttKind);
+    mTransaction = std::make_shared<SerializedTransaction> (ttKind);
 
     mTransaction->setSigningPubKey (mFromPubKey);
     mTransaction->setSourceAccount (mAccountFrom);
@@ -86,30 +97,22 @@ Transaction::Transaction (
 
 bool Transaction::sign (RippleAddress const& naAccountPrivate)
 {
-    bool    bResult = true;
+    bool bResult = naAccountPrivate.isValid ();
 
-    if (!naAccountPrivate.isValid ())
+    if (!bResult)
     {
         WriteLog (lsWARNING, Ledger) << "No private key for signing";
-        bResult = false;
     }
 
     getSTransaction ()->sign (naAccountPrivate);
 
     if (bResult)
-    {
         updateID ();
-    }
     else
-    {
         mStatus = INCOMPLETE;
-    }
 
     return bResult;
 }
-
-
-
 
 
 //
@@ -118,13 +121,12 @@ bool Transaction::sign (RippleAddress const& naAccountPrivate)
 
 bool Transaction::checkSign () const
 {
-    if (!mFromPubKey.isValid ())
-    {
-        WriteLog (lsWARNING, Ledger) << "Transaction has bad source public key";
-        return false;
-    }
+    if (mFromPubKey.isValid ())
+        return mTransaction->checkSign (mFromPubKey);
 
-    return mTransaction->checkSign (mFromPubKey);
+    WriteLog (lsWARNING, Ledger) << "Transaction has bad source public key";
+    return false;
+
 }
 
 void Transaction::setStatus (TransStatus ts, std::uint32_t lseq)
@@ -133,7 +135,8 @@ void Transaction::setStatus (TransStatus ts, std::uint32_t lseq)
     mInLedger   = lseq;
 }
 
-Transaction::pointer Transaction::transactionFromSQL (Database* db, bool bValidate)
+Transaction::pointer Transaction::transactionFromSQL (
+    Database* db, Validate validate)
 {
     Serializer rawTxn;
     std::string status;
@@ -155,8 +158,8 @@ Transaction::pointer Transaction::transactionFromSQL (Database* db, bool bValida
     rawTxn.resize (txSize);
 
     SerializerIterator it (rawTxn);
-    SerializedTransaction::pointer txn = std::make_shared<SerializedTransaction> (std::ref (it));
-    Transaction::pointer tr = std::make_shared<Transaction> (txn, bValidate);
+    auto txn = std::make_shared<SerializedTransaction> (it);
+    auto tr = std::make_shared<Transaction> (txn, validate);
 
     TransStatus st (INVALID);
 
@@ -213,7 +216,8 @@ Transaction::pointer Transaction::transactionFromSQL (std::string const& sql)
 
         db->getStr ("Status", status);
         inLedger = db->getInt ("LedgerSeq");
-        txSize = db->getBinary ("RawTxn", &*rawTxn.begin (), rawTxn.getLength ());
+        txSize = db->getBinary (
+            "RawTxn", &*rawTxn.begin (), rawTxn.getLength ());
 
         if (txSize > rawTxn.getLength ())
         {
@@ -226,8 +230,8 @@ Transaction::pointer Transaction::transactionFromSQL (std::string const& sql)
     rawTxn.resize (txSize);
 
     SerializerIterator it (rawTxn);
-    SerializedTransaction::pointer txn = std::make_shared<SerializedTransaction> (std::ref (it));
-    Transaction::pointer tr = std::make_shared<Transaction> (txn, true);
+    auto txn = std::make_shared<SerializedTransaction> (it);
+    auto tr = std::make_shared<Transaction> (txn, Validate::YES);
 
     TransStatus st (INVALID);
 
@@ -268,17 +272,25 @@ Transaction::pointer Transaction::transactionFromSQL (std::string const& sql)
 
 Transaction::pointer Transaction::load (uint256 const& id)
 {
-    std::string sql = "SELECT LedgerSeq,Status,RawTxn FROM Transactions WHERE TransID='";
+    std::string sql = "SELECT LedgerSeq,Status,RawTxn "
+            "FROM Transactions WHERE TransID='";
     sql.append (to_string (id));
     sql.append ("';");
     return transactionFromSQL (sql);
 }
 
-bool Transaction::convertToTransactions (std::uint32_t firstLedgerSeq, std::uint32_t secondLedgerSeq,
-        bool checkFirstTransactions, bool checkSecondTransactions, const SHAMap::Delta& inMap,
-        std::map<uint256, std::pair<Transaction::pointer, Transaction::pointer> >& outMap)
+bool Transaction::convertToTransactions (
+    std::uint32_t firstLedgerSeq,
+    std::uint32_t secondLedgerSeq,
+    Validate checkFirstTransactions,
+    Validate checkSecondTransactions,
+    const SHAMap::Delta& inMap,
+    std::map<uint256,
+    std::pair<Transaction::pointer, Transaction::pointer> >& outMap)
 {
-    // convert a straight SHAMap payload difference to a transaction difference table
+    // Convert a straight SHAMap payload difference to a transaction difference
+    // table.
+    //
     // return value: true=ledgers are valid, false=a ledger is invalid
 
     for (auto it = inMap.begin (); it != inMap.end (); ++it)
