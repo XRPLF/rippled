@@ -92,7 +92,8 @@ public:
             e.join();
     }
 
-    beast::String getName () const
+    std::string
+    getName () const
     {
         return m_backend->getName ();
     }

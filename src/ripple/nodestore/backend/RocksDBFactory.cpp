@@ -356,7 +356,7 @@ public:
     {
     }
 
-    beast::String
+    std::string
     getName () const
     {
         return "RocksDB";

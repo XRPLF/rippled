@@ -198,25 +198,15 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    void addStrings (beast::String name, std::vector <std::string> const& strings)
+    void addStrings (std::string const& name, std::vector <std::string> const& strings)
     {
-        beast::StringArray stringArray;
-        stringArray.ensureStorageAllocated (strings.size());
-        for (std::size_t i = 0; i < strings.size(); ++i)
-            stringArray.add (strings [i]);
-        addStrings (name, stringArray);
-    }
-
-    void addStrings (beast::String name, beast::StringArray const& stringArray)
-    {
-        if (stringArray.size() > 0)
-        {
-            addStaticSource (SourceStrings::New (name, stringArray));
-        }
-        else
+        if (strings.empty ())
         {
             m_journal.debug << "Static source '" << name << "' is empty.";
+            return;
         }
+
+        addStaticSource (SourceStrings::New (name, strings));
     }
 
     void addFile (beast::File const& file)

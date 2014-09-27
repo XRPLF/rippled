@@ -118,20 +118,16 @@ public:
         Results result;
         for (int i = 0; result.received < 249 && i < 100; ++i)
         {
-            using beast::String;
-            String s =
-                String ("step #") + String::fromNumber (
-                network.steps()) + " ";
+            std::string s = std::string("step #") +
+                std::to_string (network.steps()) + " ";
+
             result += network.step ();
-            s << result.toString ();
-            log << s.toStdString();
+            log << s << result.to_string ();
         }
 
         int const seen (network.state().seen());
 
-        beast::String s = "Seen = " + beast::String::fromNumber (seen);
-        log <<
-            s.toStdString();
+        log << "Seen = " << std::to_string (seen);
         pass ();
     }
 

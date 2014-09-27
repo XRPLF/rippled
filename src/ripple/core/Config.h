@@ -60,8 +60,7 @@ getIniFileSection (IniFileSections& secSource, std::string const& strSection);
 */
 // DEPRECATED
 beast::StringPairArray
-parseKeyValueSection (IniFileSections& secSource,
-    beast::String const& strSection);
+parseKeyValueSection (IniFileSections& secSource, std::string const& strSection);
 
 //------------------------------------------------------------------------------
 
@@ -225,13 +224,9 @@ public:
 
     /** Convert the RPC/port combination to a readable string.
     */
-    beast::String const getRpcAddress ()
+    std::string const getRpcAddress ()
     {
-        beast::String s;
-
-        s << m_rpcIP.c_str () << ":" << m_rpcPort;
-
-        return s;
+        return m_rpcIP + std::string (":") + std::to_string (m_rpcPort);
     }
 
     /** Determine the level of administrative permission to grant.

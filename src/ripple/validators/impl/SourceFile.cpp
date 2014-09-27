@@ -45,14 +45,14 @@ public:
         return ss.str();
     }
 
-    beast::String uniqueID () const
+    std::string uniqueID () const
     {
-        return "File," + m_file.getFullPathName ();
+        return std::string("File,") + m_file.getFullPathName ().toStdString();
     }
 
-    beast::String createParam ()
+    std::string createParam ()
     {
-        return m_file.getFullPathName ();
+        return m_file.getFullPathName ().toStdString();
     }
     
     void fetch (Results& results, beast::Journal journal)

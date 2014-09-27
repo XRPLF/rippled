@@ -209,14 +209,16 @@ public:
 
     //--------------------------------------------------------------------------
 
-    static std::vector <std::unique_ptr <NodeStore::Factory>> make_Factories ()
+    static
+    std::vector <std::unique_ptr <NodeStore::Factory>>
+    make_Factories (int hashnode_cache_size)
     {
         std::vector <std::unique_ptr <NodeStore::Factory>> list;
 
         // VFALCO NOTE SqliteFactory is here because it has
         //             dependencies like SqliteDatabase and DatabaseCon
         //
-        list.emplace_back (make_SqliteFactory ());
+        list.emplace_back (make_SqliteFactory (hashnode_cache_size));
 
         return list;
     }
@@ -241,7 +243,8 @@ public:
         , m_journal (m_logs.journal("Application"))
 
         , m_nodeStoreManager (NodeStore::make_Manager (
-            std::move (make_Factories ())))
+            std::move (make_Factories (
+                getConfig ().getSize(siHashNodeDBCache) * 1024))))
 
         , m_tempNodeCache ("NodeCache", 16384, 90, get_seconds_clock (),
             m_logs.journal("TaggedCache"))

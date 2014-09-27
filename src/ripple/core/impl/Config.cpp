@@ -140,34 +140,28 @@ bool getSingleSection (IniFileSections& secSource,
 }
 
 beast::StringPairArray
-parseKeyValueSection (IniFileSections& secSource,
-    beast::String const& strSection)
+parseKeyValueSection (IniFileSections& secSource, std::string const& strSection)
 {
     beast::StringPairArray result;
 
-    // yuck.
-    std::string const stdStrSection (strSection.toStdString ());
-
     typedef IniFileSections::mapped_type Entries;
 
-    Entries* const entries = getIniFileSection (secSource, stdStrSection);
+    Entries* const entries = getIniFileSection (secSource, strSection);
 
     if (entries != nullptr)
     {
         for (Entries::const_iterator iter = entries->begin ();
             iter != entries->end (); ++iter)
         {
-            beast::String const line (iter->c_str ());
+            std::string const line (iter->c_str ());
 
-            int const equalPos = line.indexOfChar ('=');
+            int const equalPos = line.find ('=');
 
-            if (equalPos != -1)
+            if (equalPos != std::string::npos)
             {
-                beast::String const key = line.substring (0, equalPos);
-                beast::String const value = line.substring (equalPos + 1,
-                    line.length ());
-
-                result.set (key, value);
+                result.set (
+                    line.substr (0, equalPos),
+                    line.substr (equalPos + 1));
             }
         }
     }

@@ -51,15 +51,12 @@ struct Results
         return *this;
     }
 
-    beast::String toString () const
+    std::string to_string () const
     {
-        using beast::String;
-        String s;
-        s =   "steps(" + String::fromNumber (steps) + ")"
-            + ", sent(" + String::fromNumber (sent) + ")"
-            + ", received(" + String::fromNumber (received) + ")"
-            + ", dropped(" + String::fromNumber (dropped) + ")";
-        return s;
+        return std::string ("steps=") + std::to_string (steps) +
+               std::string (", sent=") + std::to_string (sent) +
+               std::string (", received=") + std::to_string (received) +
+               std::string (", dropped=") + std::to_string (dropped);
     }
 
     Results& operator+= (Results const& other)

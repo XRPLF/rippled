@@ -233,7 +233,7 @@ public:
 class HyperDBFactory : public NodeStore::Factory
 {
 public:
-    beast::String
+    std::string
     getName () const
     {
         return "HyperLevelDB";

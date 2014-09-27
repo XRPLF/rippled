@@ -25,8 +25,7 @@ class SourceStringsImp
     , public beast::LeakChecked <SourceStringsImp>
 {
 public:
-    SourceStringsImp (
-        beast::String name, beast::StringArray const& strings)
+    SourceStringsImp (std::string const& name, std::vector <std::string> const& strings)
         : m_name (name)
         , m_strings (strings)
     {
@@ -38,18 +37,18 @@ public:
 
     std::string to_string () const
     {
-        return m_name.toStdString();
+        return m_name;
     }
 
-    beast::String uniqueID () const
+    std::string uniqueID () const
     {
         // VFALCO TODO This can't be right...?
-        return beast::String::empty;
+        return std::string{};
     }
 
-    beast::String createParam ()
+    std::string createParam ()
     {
-        return beast::String::empty;
+        return std::string{};
     }
 
     void fetch (Results& results, beast::Journal journal)
@@ -57,10 +56,7 @@ public:
         results.list.reserve (m_strings.size ());
 
         for (int i = 0; i < m_strings.size (); ++i)
-        {
-            std::string const s (m_strings [i].toStdString ());
-            Utilities::parseResultLine (results, s);
-        }
+            Utilities::parseResultLine (results, m_strings [i]);
 
         results.success = results.list.size () > 0;
         results.expirationTime = beast::Time::getCurrentTime () +
@@ -68,14 +64,14 @@ public:
     }
 
 private:
-    beast::String m_name;
-    beast::StringArray m_strings;
+    std::string m_name;
+    std::vector <std::string> m_strings;
 };
 
 //------------------------------------------------------------------------------
 
 SourceStrings* SourceStrings::New (
-    beast::String name, beast::StringArray const& strings)
+    std::string const& name, std::vector <std::string> const& strings)
 {
     return new SourceStringsImp (name, strings);
 }

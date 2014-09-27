@@ -27,7 +27,7 @@ namespace ripple {
 /** Factory to produce SQLite backends for the NodeStore.
     @see Database
 */
-std::unique_ptr <NodeStore::Factory> make_SqliteFactory ();
+std::unique_ptr <NodeStore::Factory> make_SqliteFactory (int hashnode_cache_size);
 
 }
 

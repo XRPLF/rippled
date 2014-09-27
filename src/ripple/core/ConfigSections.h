@@ -30,9 +30,9 @@ namespace ripple {
 //
 struct ConfigSection
 {
-    static beast::String nodeDatabase ()                 { return "node_db"; }
-    static beast::String tempNodeDatabase ()             { return "temp_db"; }
-    static beast::String importNodeDatabase ()           { return "import_db"; }
+    static std::string nodeDatabase ()       { return "node_db"; }
+    static std::string tempNodeDatabase ()   { return "temp_db"; }
+    static std::string importNodeDatabase () { return "import_db"; }
 };
 
 // VFALCO TODO Rename and replace these macros with variables.

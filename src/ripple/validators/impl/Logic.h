@@ -216,7 +216,7 @@ public:
 
     // Returns `true` if a Source with the same unique ID already exists
     //
-    bool findSourceByID (beast::String id)
+    bool findSourceByID (std::string id)
     {
         for (SourceTable::const_iterator iter (m_sources.begin());
             iter != m_sources.end(); ++iter)
@@ -364,7 +364,7 @@ public:
 
         m_journal.debug <<
             "Rebuilt chosen list with " <<
-            beast::String::fromNumber (m_chosenList->size()) << " entries";
+            std::to_string (m_chosenList->size()) << " entries";
     }
 
     /** Mark the Chosen List for a rebuild. */

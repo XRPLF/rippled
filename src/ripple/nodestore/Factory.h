@@ -32,7 +32,7 @@ public:
     virtual ~Factory () = 0;
 
     /** Retrieve the name of this factory. */
-    virtual beast::String getName () const = 0;
+    virtual std::string getName () const = 0;
 
     /** Create an instance of this factory's backend.
         @param keyBytes The fixed number of bytes per key.

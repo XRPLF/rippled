@@ -84,20 +84,19 @@ SHAMap::~SHAMap ()
     mState = smsInvalid;
 
     logTimedDestroy <SHAMap> (mTNByID,
-        beast::String ("mTNByID with ") +
-            beast::String::fromNumber (mTNByID.size ()) + " items");
+        std::string ("mTNByID with ") +
+        std::to_string (mTNByID.size ()) + " items");
 
     if (mDirtyNodes)
     {
         logTimedDestroy <SHAMap> (mDirtyNodes,
-            beast::String ("mDirtyNodes with ") +
-                beast::String::fromNumber (mDirtyNodes->size ()) + " items");
+            std::string ("mDirtyNodes with ") +
+            std::to_string (mDirtyNodes->size ()) + " items");
     }
 
     if (root)
     {
-        logTimedDestroy <SHAMap> (root,
-            beast::String ("root node"));
+        logTimedDestroy <SHAMap> (root, "root node");
     }
 }
 

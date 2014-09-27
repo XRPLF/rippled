@@ -167,13 +167,14 @@ int run (int argc, char** argv)
     int iResult = 0;
     po::variables_map vm;
 
-    beast::String importDescription;
+    std::string importText;
     {
-        importDescription <<
-            "Import an existing node database (specified in the " <<
-            "[" << ConfigSection::importNodeDatabase () << "] configuration file section) "
-            "into the current node database (specified in the " <<
-            "[" << ConfigSection::nodeDatabase () << "] configuration file section). ";
+        importText += "Import an existing node database (specified in the [";
+        importText += ConfigSection::importNodeDatabase ();
+        importText += "] configuration file section) into the current ";
+        importText += "node database (specified in the [";
+        importText += ConfigSection::nodeDatabase ();
+        importText += "] configuration file section).";
     }
 
     // VFALCO TODO Replace boost program options with something from Beast.
@@ -201,7 +202,7 @@ int run (int argc, char** argv)
     ("start", "Start from a fresh Ledger.")
     ("net", "Get the initial ledger from the network.")
     ("fg", "Run in the foreground.")
-    ("import", importDescription.toStdString ().c_str ())
+    ("import", importText.c_str ())
     ("version", "Display the build version.")
     ;
 
@@ -240,8 +241,8 @@ int run (int argc, char** argv)
 
     if (vm.count ("version"))
     {
-        beast::String const& s (BuildInfo::getVersionString ());
-        std::cout << "rippled version " << s.toStdString() << std::endl;
+        std::cout << "rippled version " <<
+            BuildInfo::getVersionString () << std::endl;
         return 0;
     }
 
