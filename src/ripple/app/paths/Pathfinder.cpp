@@ -231,7 +231,7 @@ bool Pathfinder::findPaths (
     for (auto const& path : pathsOut)
     { // make sure no paths were lost
         bool found = false;
-        if (!path.isEmpty ())
+        if (!path.empty ())
         {
             for (auto const& ePath : mCompletePaths)
             {
@@ -242,7 +242,7 @@ bool Pathfinder::findPaths (
                 }
             }
             if (!found)
-                mCompletePaths.addPath(path);
+                mCompletePaths.push_back (path);
         }
     }
 
@@ -269,7 +269,7 @@ TER Pathfinder::checkPath (
     uint64_t& qualityOut) const    // The returned initial quality
 {
     STPathSet pathSet;
-    pathSet.addPath (path);
+    pathSet.push_back (path);
 
     // We only want to look at this path
     path::RippleCalc::Input rcInput;
@@ -388,7 +388,7 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
                 ": " << currentPath.getJson (0);
 
             vMap.push_back (path_LQ_t (
-                uQuality, currentPath.mPath.size (), actualOut, i));
+                uQuality, currentPath.size (), actualOut, i));
         }
     }
 
@@ -398,7 +398,6 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
     {
         // Lower is better and should be first.
         std::sort (vMap.begin (), vMap.end (), bQualityCmp);
-
 
         for (int i = 0, iPathsLeft = iMaxPaths;
              (iPathsLeft > 0 || extraPath.empty()) && i < vMap.size (); ++i)
@@ -411,7 +410,7 @@ STPathSet Pathfinder::filterPaths(int iMaxPaths, STPath& extraPath)
                 // last path must fill
                 --iPathsLeft;
                 remaining -= std::get<2> (lqt);
-                spsDst.addPath (mCompletePaths[std::get<3> (lqt)]);
+                spsDst.push_back (mCompletePaths[std::get<3> (lqt)]);
             }
             else if (iPathsLeft == 0 && std::get<2>(lqt) >= mDstAmount &&
                      extraPath.empty())
@@ -588,7 +587,7 @@ void Pathfinder::addLink(
 
 STPathSet& Pathfinder::getPaths(PathType_t const& type, bool addComplete)
 {
-    std::map< PathType_t, STPathSet >::iterator it = mPaths.find(type);
+    auto it = mPaths.find(type);
 
     // We already have these paths
     if (it != mPaths.end())
@@ -614,37 +613,33 @@ STPathSet& Pathfinder::getPaths(PathType_t const& type, bool addComplete)
 
     switch (toAdd)
     {
-
-        case nt_SOURCE:
-
-        { // source is an empty path
-            assert(pathsOut.isEmpty());
-            pathsOut.addPath(STPath());
-        }
+    case nt_SOURCE:
+        // source is an empty path
+        assert(pathsOut.empty());
+        pathsOut.push_back (STPath());
         break;
 
-        case nt_ACCOUNTS:
-            addLink(pathsIn, pathsOut, afADD_ACCOUNTS);
-            break;
+    case nt_ACCOUNTS:
+        addLink(pathsIn, pathsOut, afADD_ACCOUNTS);
+        break;
 
-        case nt_BOOKS:
-            addLink(pathsIn, pathsOut, afADD_BOOKS);
-            break;
+    case nt_BOOKS:
+        addLink(pathsIn, pathsOut, afADD_BOOKS);
+        break;
 
-        case nt_XRP_BOOK:
-            addLink(pathsIn, pathsOut, afADD_BOOKS | afOB_XRP);
-            break;
+    case nt_XRP_BOOK:
+        addLink(pathsIn, pathsOut, afADD_BOOKS | afOB_XRP);
+        break;
 
-        case nt_DEST_BOOK:
-            addLink(pathsIn, pathsOut, afADD_BOOKS | afOB_LAST);
-            break;
+    case nt_DEST_BOOK:
+        addLink(pathsIn, pathsOut, afADD_BOOKS | afOB_LAST);
+        break;
 
-        case nt_DESTINATION:
-            // FIXME: What if a different issuer was specified on the
-            // destination amount?
-            addLink(pathsIn, pathsOut, afADD_ACCOUNTS | afAC_LAST);
-            break;
-
+    case nt_DESTINATION:
+        // FIXME: What if a different issuer was specified on the
+        // destination amount?
+        addLink(pathsIn, pathsOut, afADD_ACCOUNTS | afAC_LAST);
+        break;
     }
 
     CondLog (mCompletePaths.size() != cp, lsDEBUG, Pathfinder)
@@ -680,12 +675,12 @@ bool Pathfinder::isNoRippleOut (STPath const& currentPath)
         return false;
 
     // What account are we leaving?
-    auto const& fromAccount =
-        (currentPath.size() == 1) ? mSrcAccountID : (currentPath.end() - 2)->
-            mAccountID;
+    auto const& fromAccount = (currentPath.size() == 1)
+        ? mSrcAccountID
+        : (currentPath.end() - 2)->getAccountID ();
 
     return isNoRipple (
-        endElement.mAccountID, fromAccount, endElement.mCurrencyID);
+        endElement.getAccountID (), fromAccount, endElement.getCurrency ());
 }
 
 void Pathfinder::addLink(
@@ -693,26 +688,37 @@ void Pathfinder::addLink(
     STPathSet& incompletePaths,     // The set of partial paths we add to
     int addFlags)
 {
-    auto const& pathEnd = currentPath.isEmpty() ?
-            mSource : currentPath.mPath.back ();
-    auto const& uEndCurrency    = pathEnd.mCurrencyID;
-    auto const& uEndIssuer      = pathEnd.mIssuerID;
-    auto const& uEndAccount     = pathEnd.mAccountID;
+    auto const& pathEnd = currentPath.empty()
+        ? mSource
+        : currentPath.back ();
+    auto const& uEndCurrency    = pathEnd.getCurrency ();
+    auto const& uEndIssuer      = pathEnd.getIssuerID ();
+    auto const& uEndAccount     = pathEnd.getAccountID ();
     bool const bOnXRP = uEndCurrency.isZero();
 
     WriteLog (lsTRACE, Pathfinder) << "addLink< flags="
                                    << addFlags << " onXRP=" << bOnXRP;
     WriteLog (lsTRACE, Pathfinder) << currentPath.getJson(0);
 
+    auto add_unique_path = [](STPathSet& path_set, STPath const& path)
+    {
+        for (auto const& p : path_set)
+        {
+            if (p == path)
+                return;
+        }
+        path_set.push_back (path);
+    };
+
     if (addFlags & afADD_ACCOUNTS)
     { // add accounts
         if (bOnXRP)
         {
-            if (mDstAmount.isNative() && !currentPath.isEmpty())
+            if (mDstAmount.isNative() && !currentPath.empty())
             { // non-default path to XRP destination
                 WriteLog (lsTRACE, Pathfinder)
                     << "complete path found ax: " << currentPath.getJson(0);
-                mCompletePaths.addUniquePath(currentPath);
+                add_unique_path (mCompletePaths, currentPath);
             }
         }
         else
@@ -773,12 +779,12 @@ void Pathfinder::addLink(
                             if (uEndCurrency == mDstAmount.getCurrency())
                             {
                                 // this is a complete path
-                                if (!currentPath.isEmpty())
+                                if (!currentPath.empty())
                                 {
                                     WriteLog (lsTRACE, Pathfinder)
                                             << "complete path found ae: "
                                             << currentPath.getJson(0);
-                                    mCompletePaths.addUniquePath(currentPath);
+                                    add_unique_path (mCompletePaths, currentPath);
                                 }
                             }
                             else if (!bDestOnly)
@@ -873,11 +879,8 @@ void Pathfinder::addLink(
                     { // to XRP
 
                         // add the order book itself
-                        newPath.addElement(STPathElement(
-                            STPathElement::typeCurrency,
-                            xrpAccount(),
-                            xrpCurrency(),
-                            xrpAccount()));
+                        newPath.emplace_back (STPathElement::typeCurrency,
+                            xrpAccount(), xrpCurrency(), xrpAccount());
 
                         if (mDstAmount.getCurrency().isZero())
                         {
@@ -886,10 +889,10 @@ void Pathfinder::addLink(
                             WriteLog (lsTRACE, Pathfinder)
                                 << "complete path found bx: "
                                 << currentPath.getJson(0);
-                            mCompletePaths.addUniquePath(newPath);
+                            add_unique_path (mCompletePaths, newPath);
                         }
                         else
-                            incompletePaths.addPath(newPath);
+                            incompletePaths.push_back (newPath);
                     }
                     else if (!currentPath.hasSeen(
                         book->getIssuerOut(),
@@ -897,12 +900,10 @@ void Pathfinder::addLink(
                         book->getIssuerOut()))
                     { // Don't want the book if we've already seen the issuer
                         // add the order book itself
-                        newPath.addElement(
-                            STPathElement(STPathElement::typeCurrency |
-                                          STPathElement::typeIssuer,
-                                          xrpAccount(),
-                                          book->getCurrencyOut(), book->
-                                          getIssuerOut()));
+                        newPath.emplace_back(
+                            STPathElement::typeCurrency | STPathElement::typeIssuer,
+                            xrpAccount(), book->getCurrencyOut(),
+                            book->getIssuerOut());
 
                         if (book->getIssuerOut() == mDstAccountID &&
                             book->getCurrencyOut() == mDstAmount.getCurrency())
@@ -910,7 +911,7 @@ void Pathfinder::addLink(
                             WriteLog (lsTRACE, Pathfinder)
                                 << "complete path found ba: "
                                 << currentPath.getJson(0);
-                            mCompletePaths.addUniquePath(newPath);
+                            add_unique_path (mCompletePaths, newPath);
                         }
                         else
                         { // add issuer's account, path still incomplete

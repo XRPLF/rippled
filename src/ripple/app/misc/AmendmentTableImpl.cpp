@@ -431,9 +431,7 @@ AmendmentTableImpl::doValidation (Ledger::ref lastClosedLedger,
 
     STVector256 vAmendments (sfAmendments);
     for (auto const& uAmendment : lAmendments)
-    {
-        vAmendments.addValue (uAmendment);
-    }
+        vAmendments.push_back (uAmendment);
     vAmendments.sort ();
     baseValidation.setFieldV256 (sfAmendments, vAmendments);
 }

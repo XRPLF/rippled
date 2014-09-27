@@ -1230,10 +1230,7 @@ Json::Value NetworkOPsImp::getOwnerInfo (
 
         do
         {
-            STVector256 svIndexes   = sleNode->getFieldV256 (sfIndexes);
-            const std::vector<uint256>& vuiIndexes  = svIndexes.peekValue ();
-
-            BOOST_FOREACH (uint256 const& uDirEntry, vuiIndexes)
+            for (auto const& uDirEntry : sleNode->getFieldV256 (sfIndexes))
             {
                 auto sleCur = lpLedger->getSLEi (uDirEntry);
 
@@ -1265,7 +1262,7 @@ Json::Value NetworkOPsImp::getOwnerInfo (
                 }
             }
 
-            uNodeDir        = sleNode->getFieldU64 (sfIndexNext);
+            uNodeDir = sleNode->getFieldU64 (sfIndexNext);
 
             if (uNodeDir)
             {

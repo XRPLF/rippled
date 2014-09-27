@@ -149,15 +149,14 @@ bool STVector256::isEquivalent (const SerializedType& t) const
     return v && (mValue == v->mValue);
 }
 
-bool STVector256::hasValue (uint256 const& v) const
+Json::Value STVector256::getJson (int) const
 {
-    BOOST_FOREACH (uint256 const& hash, mValue)
-    {
-        if (hash == v)
-            return true;
-    }
+    Json::Value ret (Json::arrayValue);
 
-    return false;
+    for (auto const& vEntry : mValue)
+        ret.append (to_string (vEntry));
+
+    return ret;
 }
 
 //
@@ -329,59 +328,20 @@ Json::Value STPathSet::getJson (int options) const
     return ret;
 }
 
-#if 0
-std::string STPath::getText () const
-{
-    std::string ret ("[");
-    bool first = true;
-
-    BOOST_FOREACH (const STPathElement & it, mPath)
-    {
-        if (!first) ret += ", ";
-
-        switch (it.getNodeType ())
-        {
-        case STPathElement::typeAccount:
-        {
-            ret += to_string (it.getNode ());
-            break;
-        }
-
-        case STPathElement::typeOffer:
-        {
-            ret += "Offer(";
-            ret += it.getNode ().GetHex ();
-            ret += ")";
-            break;
-        }
-
-        default:
-            throw std::runtime_error ("Unknown path element");
-        }
-
-        first = false;
-    }
-
-    return ret + "]";
-}
-#endif
-
 void STPathSet::add (Serializer& s) const
 {
     assert (fName->isBinary ());
     assert (fName->fieldType == STI_PATHSET);
-    bool bFirst = true;
+    bool first = true;
 
-    BOOST_FOREACH (const STPath & spPath, value)
+    for (auto const& spPath : value)
     {
-        if (!bFirst)
-        {
+        if (!first)
             s.add8 (STPathElement::typeBoundary);
-        }
 
-        BOOST_FOREACH (const STPathElement & speElement, spPath)
+        for (auto const& speElement : spPath)
         {
-            int     iType   = speElement.getNodeType ();
+            int iType = speElement.getNodeType ();
 
             s.add8 (iType);
 
@@ -395,8 +355,9 @@ void STPathSet::add (Serializer& s) const
                 s.add160 (speElement.getIssuerID ());
         }
 
-        bFirst = false;
+        first = false;
     }
+
     s.add8 (STPathElement::typeNone);
 }
 

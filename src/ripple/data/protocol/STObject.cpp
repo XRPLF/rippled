@@ -744,13 +744,13 @@ const STArray& STObject::getFieldArray (SField::ref field) const
 
 STPathSet const& STObject::getFieldPathSet (SField::ref field) const
 {
-    static STPathSet const empty;
+    static STPathSet const empty{};
     return getFieldByConstRef <STPathSet> (field, empty);
 }
 
 const STVector256& STObject::getFieldV256 (SField::ref field) const
 {
-    static STVector256 const empty;
+    static STVector256 const empty{};
     return getFieldByConstRef <STVector256> (field, empty);
 }
 
@@ -895,16 +895,6 @@ bool STObject::operator== (const STObject& obj) const
     }
 
     return true;
-}
-
-Json::Value STVector256::getJson (int options) const
-{
-    Json::Value ret (Json::arrayValue);
-
-    for (auto const& vEntry : mValue)
-        ret.append (to_string (vEntry));
-
-    return ret;
 }
 
 //------------------------------------------------------------------------------
