@@ -1125,9 +1125,6 @@
     <ClInclude Include="..\..\src\beast\beast\module\asio\basics\PeerRole.h">
       <Filter>beast\module\asio\basics</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\basics\SharedArg.h">
-      <Filter>beast\module\asio\basics</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\asio\basics\SSLContext.cpp">
       <Filter>beast\module\asio\basics</Filter>
     </ClCompile>

@@ -517,8 +517,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\module\asio\basics\PeerRole.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\basics\SharedArg.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\asio\basics\SSLContext.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>

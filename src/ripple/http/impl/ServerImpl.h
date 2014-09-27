@@ -25,7 +25,6 @@
 #include <beast/intrusive/List.h>
 #include <beast/threads/SharedData.h>
 #include <beast/threads/Thread.h>
-#include <beast/module/asio/basics/SharedArg.h>
 #include <boost/asio.hpp>
 #include <boost/optional.hpp>
 #include <array>

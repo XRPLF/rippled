@@ -37,7 +37,6 @@
 #include <beast/module/asio/basics/FixedInputBuffer.h>
 #include <beast/module/asio/basics/PeerRole.h>
 #include <beast/module/asio/basics/SSLContext.h>
-#include <beast/module/asio/basics/SharedArg.h>
 
 #include <beast/module/asio/http/HTTPVersion.h>
 #include <beast/module/asio/http/HTTPField.h>

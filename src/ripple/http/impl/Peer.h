@@ -29,7 +29,6 @@
 #include <beast/http/message.h>
 #include <beast/http/parser.h>
 #include <beast/module/core/core.h>
-#include <beast/module/asio/basics/SharedArg.h>
 #include <beast/module/asio/http/HTTPRequestParser.h>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/streambuf.hpp>
@@ -45,11 +44,6 @@ namespace ripple {
 namespace HTTP {
 
 //------------------------------------------------------------------------------
-
-// Holds the copy of buffers being sent
-// VFALCO TODO Replace with std::shared_ptr<std::string>
-//
-typedef beast::asio::SharedArg <std::string> SharedBuffer;
 
 /** Represents an active connection. */
 class Peer
