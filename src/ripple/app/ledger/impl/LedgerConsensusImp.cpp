@@ -1862,8 +1862,15 @@ void LedgerConsensusImp::addLoad(STValidation::ref val)
     std::uint32_t fee = std::max(
         app_.getFeeTrack().getLocalFee(),
         app_.getFeeTrack().getClusterFee());
-    std::uint32_t ref = app_.getFeeTrack().getLoadBase();
-    if (fee > ref)
+
+    std::uint32_t loadBase = app_.getFeeTrack().getLoadBase();
+
+    // Hard code the minimum fee for now:
+    std::uint32_t const minFee = 10000;
+    std::uint32_t const refFee = 10;
+    fee = std::max(fee, (minFee * loadBase + refFee - 1) / refFee);
+
+    if (fee > loadBase)
         val->setFieldU32(sfLoadFee, fee);
 }
 
