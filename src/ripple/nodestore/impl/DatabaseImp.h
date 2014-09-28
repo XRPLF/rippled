@@ -74,6 +74,11 @@ public:
             cacheTargetSize, cacheTargetSeconds)
         , m_readShut (false)
         , m_readGen (0)
+        , m_storeCount (0)
+        , m_fetchTotalCount (0)
+        , m_fetchHitCount (0)
+        , m_storeSize (0)
+        , m_fetchSize (0)
     {
         for (int i = 0; i < readThreads; ++i)
             m_readThreads.push_back (std::thread (&DatabaseImp::threadEntry, this));
@@ -222,7 +227,12 @@ public:
                 // If we have a fast back end, store it there for later.
                 //
                 if (m_fastBackend != nullptr)
+                {
                     m_fastBackend->store (obj);
+                    ++m_storeCount;
+                    if (obj.get())
+                        m_storeSize += obj->getData().size();
+                }
 
                 // Since this was a 'hard' fetch, we will log it.
                 //
@@ -240,10 +250,14 @@ public:
         NodeObject::Ptr object;
 
         Status const status = backend.fetch (hash.begin (), &object);
+        ++m_fetchTotalCount;
 
         switch (status)
         {
         case ok:
+            ++m_fetchHitCount;
+            if (object.get())
+                m_fetchSize += object->getData().size();
         case notFound:
             break;
 
@@ -279,11 +293,19 @@ public:
         m_cache.canonicalize (hash, object, true);
 
         m_backend->store (object);
+        ++m_storeCount;
+        if (object.get())
+            m_storeSize += object->getData().size();
 
         m_negCache.erase (hash);
 
         if (m_fastBackend)
+        {
             m_fastBackend->store (object);
+            ++m_storeCount;
+            if (object.get())
+                m_storeSize += object->getData().size();
+        }
     }
 
     //------------------------------------------------------------------------------
@@ -378,11 +400,46 @@ public:
             }
 
             b.push_back (object);
+            ++m_storeCount;
+            if (object.get())
+                m_storeSize += object->getData().size();
         });
 
         if (! b.empty ())
             m_backend->storeBatch (b);
     }
+
+    std::uint32_t getStoreCount () const override
+    {
+        return m_storeCount;
+    }
+
+    std::uint32_t getFetchTotalCount () const override
+    {
+        return m_fetchTotalCount;
+    }
+
+    std::uint32_t getFetchHitCount () const override
+    {
+        return m_fetchHitCount;
+    }
+
+    std::uint32_t getStoreSize () const override
+    {
+        return m_storeSize;
+    }
+
+    std::uint32_t getFetchSize () const override
+    {
+        return m_fetchSize;
+    }
+
+private:
+    std::atomic <std::uint32_t> m_storeCount;
+    std::atomic <std::uint32_t> m_fetchTotalCount;
+    std::atomic <std::uint32_t> m_fetchHitCount;
+    std::atomic <std::uint32_t> m_storeSize;
+    std::atomic <std::uint32_t> m_fetchSize;
 };
 
 }
