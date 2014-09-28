@@ -1009,7 +1009,7 @@ int RPCCall::fromCommandLine (const std::vector<std::string>& vCmd)
                 jvRequest.isMember ("method")           // Allow parser to rewrite method.
                     ? jvRequest["method"].asString () : vCmd[0],
                 jvParams,                               // Parsed, execute.
-                false,
+                getConfig ().RPC_SECURE != 0,           // Use SSL
                 std::bind (RPCCallImp::callRPCHandler, &jvOutput,
                            std::placeholders::_1));
 
@@ -1083,15 +1083,16 @@ void RPCCall::fromNetwork (
     // Connect to localhost
     if (!getConfig ().QUIET)
     {
-        std::cerr << "Connecting to: " << strIp << ":" << iPort << std::endl;
+        std::cerr << (bSSL ? "Securely connecting to " : "Connecting to ") <<
+            strIp << ":" << iPort << std::endl;
     }
 
     // HTTP basic authentication
-    std::string strUserPass64 = RPCParser::EncodeBase64 (strUsername + ":" + strPassword);
+    auto const auth = RPCParser::EncodeBase64 (strUsername + ":" + strPassword);
 
     std::map<std::string, std::string> mapRequestHeaders;
 
-    mapRequestHeaders["Authorization"] = std::string ("Basic ") + strUserPass64;
+    mapRequestHeaders["Authorization"] = std::string ("Basic ") + auth;
 
     // Send request
 
