@@ -20,6 +20,7 @@
 #ifndef RIPPLE_APP_RPCHTTPSERVER_H_INCLUDED
 #define RIPPLE_APP_RPCHTTPSERVER_H_INCLUDED
 
+#include <ripple/core/Config.h>
 #include <beast/utility/Journal.h>
 #include <beast/utility/PropertyStream.h>
 #include <beast/cxx14/memory.h> // <memory>
@@ -48,7 +49,8 @@ public:
 
 std::unique_ptr <RPCHTTPServer>
 make_RPCHTTPServer (beast::Stoppable& parent, JobQueue& jobQueue,
-    NetworkOPs& networkOPs, Resource::Manager& resourceManager);
+    NetworkOPs& networkOPs, Resource::Manager& resourceManager,
+        RPC::Setup const& setup);
 
 } // ripple
 

@@ -24,6 +24,7 @@
 #include <ripple/net/HTTPClient.h>
 #include <beast/http/ParsedURL.h>
 #include <beast/module/core/text/LexicalCast.h>
+#include <beast/streams/debug_ostream.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
@@ -31,6 +32,10 @@
 #include <fstream>
 #include <iostream>
     
+#ifndef DUMP_CONFIG
+#define DUMP_CONFIG 0
+#endif
+
 namespace ripple {
 
 //
@@ -238,14 +243,45 @@ BasicConfig::section (std::string const& name) const
 }
 
 void
+BasicConfig::remap (std::string const& legacy_section,
+    std::string const& key, std::string const& new_section)
+{
+    auto const iter = map_.find (legacy_section);
+    if (iter == map_.end())
+        return;
+    if (iter->second.keys() != 0)
+        return;
+    if (iter->second.lines().size() != 1)
+        return;
+    auto& s = map_[new_section];
+    s.append (iter->second.lines().front());
+    s.set (key, iter->second.lines().front());
+}
+
+void
+BasicConfig::overwrite (std::string const& section, std::string const& key,
+    std::string const& value)
+{
+    auto const result = map_.emplace (section, Section{});
+    result.first->second.set (key, value);
+}
+
+void
 BasicConfig::build (IniFileSections const& ifs)
 {
     for (auto const& entry : ifs)
     {
-        auto const result = map_.insert (std::make_pair (
-            entry.first, Section{}));
+        auto const result = map_.emplace (entry.first, Section{});
         result.first->second.append (entry.second);
     }
+}
+
+std::ostream&
+operator<< (std::ostream& ss, BasicConfig const& c)
+{
+    for (auto const& s : c.map_)
+        ss << "[" << s.first << "]\n" << s.second;
+    return ss;
 }
 
 //------------------------------------------------------------------------------
@@ -458,6 +494,7 @@ void Config::load ()
             std::string strTemp;
 
             build (secConfig);
+            build_legacy();
 
             // XXX Leak
             IniFileSections::mapped_type* smtTmp;
@@ -971,6 +1008,57 @@ Config::Role Config::getAdminRole (Json::Value const& params, beast::IP::Endpoin
 beast::File const& Config::getModuleDatabasePath ()
 {
     return m_moduleDbPath;
+}
+
+//------------------------------------------------------------------------------
+
+void
+Config::build_legacy ()
+{
+    //--------------------------------------------------------------------------
+    //
+    // [rpc]
+    //
+    //--------------------------------------------------------------------------
+
+    remap("rpc_allow_remote",   "allow_remote",     "rpc");
+    //remap("rpc_admin_allow",    "admin_allow",      "rpc"); // Not a key-value pair
+    remap("rpc_admin_user",     "admin_user",       "rpc");
+    remap("rpc_admin_password", "admin_password",   "rpc");
+    remap("rpc_ip",             "ip",               "rpc");
+    remap("rpc_port",           "port",             "rpc");
+    remap("rpc_user",           "user",             "rpc");
+    remap("rpc_password",       "password",         "rpc");
+    //remap("rpc_startup",        "startup",          "rpc"); // Not a key-value pair
+    remap("rpc_secure",         "secure",           "rpc");
+    remap("rpc_ssl_cert",       "ssl_cert",         "rpc");
+    remap("rpc_ssl_chain",      "ssl_chain",        "rpc");
+    remap("rpc_ssl_key",        "ssl_key",          "rpc");
+
+#if DUMP_CONFIG
+    beast::debug_ostream log;
+    log << (BasicConfig const&)*this;
+#endif
+}
+
+//------------------------------------------------------------------------------
+
+RPC::Setup
+setup_RPC (Section const& s)
+{
+    RPC::Setup c;
+    set (c.allow_remote,    "allow_remote", s);
+    set (c.admin_user,      "admin_user", s);
+    set (c.admin_password,  "admin_password", s);
+    set (c.ip,              "ip", s);
+    set (c.port,            "port", s);
+    set (c.user,            "user", s);
+    set (c.password,        "password", s);
+    set (c.secure,          "secure", s);
+    set (c.ssl_cert,        "ssl_cert", s);
+    set (c.ssl_chain,       "ssl_chain", s);
+    set (c.ssl_key,         "ssl_key", s);
+    return c;
 }
 
 } // ripple
