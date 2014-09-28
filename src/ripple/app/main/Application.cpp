@@ -309,7 +309,8 @@ public:
         , m_deprecatedUNL (make_UniqueNodeList (*m_jobQueue))
 
         , m_rpcHTTPServer (make_RPCHTTPServer (*m_networkOPs,
-            *m_jobQueue, *m_networkOPs, *m_resourceManager))
+            *m_jobQueue, *m_networkOPs, *m_resourceManager,
+                setup_RPC(getConfig()["rpc"])))
 
         // passive object, not a Service
         , m_rpcServerHandler (*m_networkOPs, *m_resourceManager)
