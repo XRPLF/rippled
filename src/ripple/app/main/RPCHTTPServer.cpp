@@ -76,9 +76,9 @@ public:
             {
                 HTTP::Port port;
 
-                if (getConfig ().RPC_SECURE == 0)
+                if (setup_.secure == 0)
                     port.security = HTTP::Port::Security::no_ssl;
-                else if (getConfig ().RPC_SECURE == 1)
+                else if (setup_.secure == 1)
                     port.security = HTTP::Port::Security::allow_ssl;
                 else
                     port.security = HTTP::Port::Security::require_ssl;

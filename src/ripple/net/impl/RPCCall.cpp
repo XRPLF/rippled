@@ -987,29 +987,31 @@ int RPCCall::fromCommandLine (const std::vector<std::string>& vCmd)
         }
         else
         {
+            auto setup = setup_RPC (getConfig()["rpc"]);
+
             Json::Value jvParams (Json::arrayValue);
 
             jvParams.append (jvRequest);
 
-            if (!getConfig ().RPC_ADMIN_USER.empty ())
-                jvRequest["admin_user"]     = getConfig ().RPC_ADMIN_USER;
+            if (!setup.admin_user.empty ())
+                jvRequest["admin_user"] = setup.admin_user;
 
-            if (!getConfig ().RPC_ADMIN_PASSWORD.empty ())
-                jvRequest["admin_password"] = getConfig ().RPC_ADMIN_PASSWORD;
+            if (!setup.admin_password.empty ())
+                jvRequest["admin_password"] = setup.admin_password;
 
-            boost::asio::io_service         isService;
+            boost::asio::io_service isService;
 
             fromNetwork (
                 isService,
-                getConfig ().getRpcIP (),
-                getConfig ().getRpcPort (),
-                getConfig ().RPC_USER,
-                getConfig ().RPC_PASSWORD,
+                setup.ip,
+                setup.port,
+                setup.admin_user,
+                setup.admin_password,
                 "",
                 jvRequest.isMember ("method")           // Allow parser to rewrite method.
                     ? jvRequest["method"].asString () : vCmd[0],
                 jvParams,                               // Parsed, execute.
-                getConfig ().RPC_SECURE != 0,           // Use SSL
+                setup.secure != 0,                      // Use SSL
                 std::bind (RPCCallImp::callRPCHandler, &jvOutput,
                            std::placeholders::_1));
 
