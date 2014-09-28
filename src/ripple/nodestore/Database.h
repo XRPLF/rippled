@@ -132,6 +132,15 @@ public:
 
     /** Remove expired entries from the positive and negative caches. */
     virtual void sweep () = 0;
+
+    /** Gather statistics pertaining to read and write activities.
+        Return the reads and writes, and total read and written bytes.
+     */
+    virtual std::uint32_t getStoreCount () const = 0;
+    virtual std::uint32_t getFetchTotalCount () const = 0;
+    virtual std::uint32_t getFetchHitCount () const = 0;
+    virtual std::uint32_t getStoreSize () const = 0;
+    virtual std::uint32_t getFetchSize () const = 0;
 };
 
 }
