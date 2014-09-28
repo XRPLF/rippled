@@ -497,7 +497,7 @@ struct Setup
     int port = 5001;
     std::string user;
     std::string password;
-    bool secure = false;
+    int secure = 0;
     std::string ssl_cert;
     std::string ssl_chain;
     std::string ssl_key;
