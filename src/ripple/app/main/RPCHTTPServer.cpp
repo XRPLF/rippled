@@ -38,9 +38,11 @@ public:
     RPCServerHandler m_deprecatedHandler;
     HTTP::Server m_server;
     std::unique_ptr <RippleSSLContext> m_context;
+    RPC::Setup setup_;
 
     RPCHTTPServerImp (Stoppable& parent, JobQueue& jobQueue,
-            NetworkOPs& networkOPs, Resource::Manager& resourceManager)
+            NetworkOPs& networkOPs, Resource::Manager& resourceManager,
+                RPC::Setup const& setup)
         : RPCHTTPServer (parent)
         , m_resourceManager (resourceManager)
         , m_journal (deprecatedLogs().journal("HTTP-RPC"))
@@ -48,18 +50,13 @@ public:
         , m_networkOPs (networkOPs)
         , m_deprecatedHandler (networkOPs, resourceManager)
         , m_server (*this, deprecatedLogs().journal("HTTP"))
+        , setup_ (setup)
     {
-        if (getConfig ().RPC_SECURE == 0)
-        {
-            m_context.reset (RippleSSLContext::createBare ());
-        }
-        else
-        {
+        if (setup_.secure)
             m_context.reset (RippleSSLContext::createAuthenticated (
-                getConfig ().RPC_SSL_KEY,
-                getConfig ().RPC_SSL_CERT,
-                getConfig ().RPC_SSL_CHAIN));
-        }
+                setup_.ssl_key, setup_.ssl_cert, setup_.ssl_chain));
+        else
+            m_context.reset (RippleSSLContext::createBare());
     }
 
     ~RPCHTTPServerImp()
@@ -70,10 +67,9 @@ public:
     void
     setup (beast::Journal journal) override
     {
-        if (! getConfig ().getRpcIP().empty () &&
-              getConfig ().getRpcPort() != 0)
+        if (! setup_.ip.empty() && setup_.port != 0)
         {
-            auto ep = beast::IP::Endpoint::from_string (getConfig().getRpcIP());
+            auto ep = beast::IP::Endpoint::from_string (setup_.ip);
 
             // VFALCO TODO IP address should not have an "unspecified" state
             //if (! is_unspecified (ep))
@@ -81,8 +77,8 @@ public:
                 HTTP::Port port;
                 port.security = HTTP::Port::Security::allow_ssl;
                 port.addr = ep.at_port(0);
-                if (getConfig ().getRpcPort() != 0)
-                    port.port = getConfig ().getRpcPort();
+                if (setup_.port != 0)
+                    port.port = setup_.port;
                 else
                     port.port = ep.port();
                 port.context = m_context.get ();
@@ -123,7 +119,7 @@ public:
     onAccept (HTTP::Session& session) override
     {
         // Reject non-loopback connections if RPC_ALLOW_REMOTE is not set
-        if (! getConfig().RPC_ALLOW_REMOTE &&
+        if (! setup_.allow_remote &&
             ! beast::IP::is_loopback (session.remoteAddress()))
         {
             session.close (false);
@@ -295,10 +291,11 @@ RPCHTTPServer::RPCHTTPServer (Stoppable& parent)
 
 std::unique_ptr <RPCHTTPServer>
 make_RPCHTTPServer (beast::Stoppable& parent, JobQueue& jobQueue,
-    NetworkOPs& networkOPs, Resource::Manager& resourceManager)
+    NetworkOPs& networkOPs, Resource::Manager& resourceManager,
+        RPC::Setup const& setup)
 {
     return std::make_unique <RPCHTTPServerImp> (
-        parent, jobQueue, networkOPs, resourceManager);
+        parent, jobQueue, networkOPs, resourceManager, setup);
 }
 
 }
