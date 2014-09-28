@@ -185,13 +185,13 @@ struct LexicalCast <Out, std::string>
         // Convert the input to lowercase
         std::transform(in.begin (), in.end (), in.begin (), ::tolower);
 
-        if (in == "1" || in == "true" || in == "yes" || in == "on")
+        if (in == "1" || in == "true")
         {
             out = true;
             return true;
         }
 
-        if (in == "0" || in == "false" || in == "no" || in == "off")
+        if (in == "0" || in == "false")
         {
             out = false;
             return true;
