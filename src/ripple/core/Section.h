@@ -23,6 +23,7 @@
 #include <beast/utility/ci_char_traits.h>
 #include <boost/lexical_cast.hpp>
 #include <map>
+#include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -42,6 +43,32 @@ public:
     /** Create an empty section. */
     Section() = default;
 
+    /** Returns the number of key/value pairs. */
+    std::size_t
+    keys() const
+    {
+        return map_.size();
+    }
+
+    /** Returns all the lines in the section. */
+    std::vector <std::string> const&
+    lines() const
+    {
+        return lines_;
+    }
+
+    /** Set a key/value pair.
+        The previous value is discarded.
+    */
+    void
+    set (std::string const& key, std::string const& value);
+
+    /** Append a line to this section.
+        If the line can be parsed as a key/value pair it is added to the map.
+    */
+    void
+    append (std::string const& line);
+
     /** Append a set of lines to this section.
         Parsable key/value pairs are also added to the map.
     */
@@ -57,6 +84,10 @@ public:
     */
     std::pair <std::string, bool>
     find (std::string const& name) const;
+
+    friend
+    std::ostream&
+    operator<< (std::ostream&, Section const& section);
 };
 
 /** Set a value from a configuration Section

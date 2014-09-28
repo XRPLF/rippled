@@ -93,9 +93,30 @@ public:
     }
     /** @} */
 
+    /** Overwrite a key/value pair with a command line argument
+        If the section does not exist it is created.
+        The previous value, if any, is overwritten.
+    */
+    void
+    overwrite (std::string const& section, std::string const& key,
+        std::string const& value);
+
+    friend
+    std::ostream&
+    operator<< (std::ostream& ss, BasicConfig const& c);
+
 protected:
     void
     build (IniFileSections const& ifs);
+
+    /** Insert a legacy single section as a key/value pair.
+        Does nothing if the section does not exist, or does not contain
+        a single line that is not a key/value pair.
+        @deprecated
+    */
+    void
+    remap (std::string const& legacy_section,
+        std::string const& key, std::string const& new_section);
 };
 
 //------------------------------------------------------------------------------
@@ -456,9 +477,36 @@ public:
     int getSize (SizedItemName);
     void setup (std::string const& strConf, bool bQuiet);
     void load ();
+
+private:
+    void build_legacy();
 };
 
 extern Config& getConfig ();
+
+//------------------------------------------------------------------------------
+
+namespace RPC {
+
+struct Setup
+{
+    bool allow_remote = false;
+    std::string admin_user;
+    std::string admin_password;
+    std::string ip;
+    int port = 5001;
+    std::string user;
+    std::string password;
+    int secure = 0;
+    std::string ssl_cert;
+    std::string ssl_chain;
+    std::string ssl_key;
+};
+
+}
+
+RPC::Setup
+setup_RPC (Section const& s);
 
 } // ripple
 

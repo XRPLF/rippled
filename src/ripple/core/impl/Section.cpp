@@ -19,11 +19,20 @@
 
 #include <ripple/core/Section.h>
 #include <boost/regex.hpp>
+#include <algorithm>
 
 namespace ripple {
 
 void
-Section::append (std::vector <std::string> const& lines)
+Section::set (std::string const& key, std::string const& value)
+{
+    auto const result = map_.emplace (key, value);
+    if (! result.second)
+        result.first->second = value;
+}
+
+void
+Section::append (std::string const& line)
 {
     // <key> '=' <value>
     static boost::regex const re1 (
@@ -38,25 +47,18 @@ Section::append (std::vector <std::string> const& lines)
         , boost::regex_constants::optimize
     );
 
+    boost::smatch match;
+    lines_.push_back (line);
+    if (boost::regex_match (line, match, re1))
+        set (match[1], match[2]);
+}
+
+void
+Section::append (std::vector <std::string> const& lines)
+{
     lines_.reserve (lines_.size() + lines.size());
-    for (auto const& line : lines)
-    {
-        boost::smatch match;
-        lines_.push_back (line);
-        if (boost::regex_match (line, match, re1))
-        {
-            /*auto const result =*/ map_.emplace (
-                std::make_pair (match[1], match[2]));
-#if 0
-            if (! result.second)
-            {
-                // If we decide on how to merge values we can do it here.
-            }
-            beast::debug_ostream log;
-            //log << "\"" << match[1] << "\" = \"" << match[2] << "\"";
-#endif
-        }
-    }
+    std::for_each (lines.begin(), lines.end(),
+        [&](std::string const& line) { this->append (line); });
 }
 
 bool
@@ -72,6 +74,16 @@ Section::find (std::string const& name) const
     if (iter == map_.end())
         return {{}, false};
     return {iter->second, true};
+}
+
+//------------------------------------------------------------------------------
+
+std::ostream&
+operator<< (std::ostream& os, Section const& section)
+{
+    for (auto const& kv : section.map_)
+        os << kv.first << "=" << kv.second << "\n";
+    return os;
 }
 
 } // ripple
