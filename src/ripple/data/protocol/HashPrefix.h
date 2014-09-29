@@ -42,7 +42,6 @@ class HashPrefix
 private:
     std::uint32_t m_prefix;
 
-public:
     HashPrefix (char a, char b, char c)
         : m_prefix (0)
     {
@@ -51,6 +50,10 @@ public:
         m_prefix = (m_prefix << 8) + c;
         m_prefix = m_prefix << 8;
     }
+
+public:
+    HashPrefix(HashPrefix const&) = delete;
+    HashPrefix& operator=(HashPrefix const&) = delete;
 
     /** Returns the hash prefix associated with this object */
     operator std::uint32_t () const

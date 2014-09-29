@@ -29,7 +29,7 @@ SerializedTransaction::SerializedTransaction (TxType type)
     , mSigGood (false)
     , mSigBad (false)
 {
-    mFormat = TxFormats::getInstance()->findByType (type);
+    mFormat = TxFormats::getInstance().findByType (type);
 
     if (mFormat == nullptr)
     {
@@ -48,7 +48,7 @@ SerializedTransaction::SerializedTransaction (STObject const& object)
 {
     mType = static_cast <TxType> (getFieldU16 (sfTransactionType));
 
-    mFormat = TxFormats::getInstance()->findByType (mType);
+    mFormat = TxFormats::getInstance().findByType (mType);
 
     if (!mFormat)
     {
@@ -76,7 +76,7 @@ SerializedTransaction::SerializedTransaction (SerializerIterator& sit) : STObjec
     set (sit);
     mType = static_cast<TxType> (getFieldU16 (sfTransactionType));
 
-    mFormat = TxFormats::getInstance()->findByType (mType);
+    mFormat = TxFormats::getInstance().findByType (mType);
 
     if (!mFormat)
     {

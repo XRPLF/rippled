@@ -46,7 +46,7 @@ SerializedLedgerEntry::SerializedLedgerEntry (
 
 void SerializedLedgerEntry::setSLEType ()
 {
-    mFormat = LedgerFormats::getInstance()->findByType (
+    mFormat = LedgerFormats::getInstance().findByType (
         static_cast <LedgerEntryType> (getFieldU16 (sfLedgerEntryType)));
 
     if (mFormat == nullptr)
@@ -65,7 +65,7 @@ void SerializedLedgerEntry::setSLEType ()
 SerializedLedgerEntry::SerializedLedgerEntry (LedgerEntryType type, uint256 const& index) :
     STObject (sfLedgerEntry), mIndex (index), mType (type), mMutable (true)
 {
-    mFormat = LedgerFormats::getInstance()->findByType (type);
+    mFormat = LedgerFormats::getInstance().findByType (type);
 
     if (mFormat == nullptr)
         throw std::runtime_error ("invalid ledger entry type");

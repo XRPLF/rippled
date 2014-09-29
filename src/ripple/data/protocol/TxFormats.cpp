@@ -102,11 +102,11 @@ void TxFormats::addCommonFields (Item& item)
         ;
 }
 
-TxFormats* TxFormats::getInstance ()
+TxFormats const&
+TxFormats::getInstance ()
 {
     static TxFormats instance;
-    //return SharedSingleton <TxFormats>::getInstance ();
-    return &instance;
+    return instance;
 }
 
 } // ripple

@@ -204,7 +204,7 @@ bool STParsedJSON::parse (std::string const& json_name,
                     {
                         if (field == sfTransactionType)
                         {
-                            TxType const txType (TxFormats::getInstance()->
+                            TxType const txType (TxFormats::getInstance().
                                 findTypeByName (strValue));
 
                             data.push_back (new STUInt16 (field,
@@ -215,7 +215,7 @@ bool STParsedJSON::parse (std::string const& json_name,
                         }
                         else if (field == sfLedgerEntryType)
                         {
-                            LedgerEntryType const type (LedgerFormats::getInstance()->
+                            LedgerEntryType const type (LedgerFormats::getInstance().
                                 findTypeByName (strValue));
 
                             data.push_back (new STUInt16 (field,
