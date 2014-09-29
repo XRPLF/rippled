@@ -27,7 +27,7 @@ class Value;
 
 /** \brief Abstract class for writers.
  */
-class JSON_API Writer
+class Writer
 {
 public:
     virtual ~Writer ();
@@ -41,13 +41,11 @@ public:
  * but may be usefull to support feature such as RPC where bandwith is limited.
  * \sa Reader, Value
  */
-class JSON_API FastWriter : public Writer
+class FastWriter : public Writer
 {
 public:
     FastWriter ();
     virtual ~FastWriter () {}
-
-    void enableYAMLCompatibility ();
 
 public: // overridden from Writer
     virtual std::string write ( const Value& root );
@@ -56,7 +54,6 @@ private:
     void writeValue ( const Value& value );
 
     std::string document_;
-    bool yamlCompatiblityEnabled_;
 };
 
 /** \brief Writes a Value in <a HREF="http://www.json.org">JSON</a> format in a human friendly way.
@@ -77,7 +74,7 @@ private:
  *
  * \sa Reader, Value, Value::setComment()
  */
-class JSON_API StyledWriter: public Writer
+class StyledWriter: public Writer
 {
 public:
     StyledWriter ();
@@ -134,7 +131,7 @@ private:
  * \param indentation Each level will be indented by this amount extra.
  * \sa Reader, Value, Value::setComment()
  */
-class JSON_API StyledStreamWriter
+class StyledStreamWriter
 {
 public:
     StyledStreamWriter ( std::string indentation = "\t" );
@@ -172,11 +169,11 @@ private:
     bool addChildValues_;
 };
 
-std::string JSON_API valueToString ( Int value );
-std::string JSON_API valueToString ( UInt value );
-std::string JSON_API valueToString ( double value );
-std::string JSON_API valueToString ( bool value );
-std::string JSON_API valueToQuotedString ( const char* value );
+std::string valueToString ( Int value );
+std::string valueToString ( UInt value );
+std::string valueToString ( double value );
+std::string valueToString ( bool value );
+std::string valueToQuotedString ( const char* value );
 
 /// \brief Output using the StyledStreamWriter.
 /// \see Json::operator>>()

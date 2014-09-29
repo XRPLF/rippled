@@ -417,20 +417,6 @@ Value::Value ( const StaticString& value )
     value_.string_ = const_cast<char*> ( value.c_str () );
 }
 
-
-# ifdef JSON_USE_CPPTL
-Value::Value ( const CppTL::ConstString& value )
-    : type_ ( stringValue )
-    , allocated_ ( true )
-    , comments_ ( 0 )
-# ifdef JSON_VALUE_USE_INTERNAL_MAP
-    , itemIsUsed_ ( 0 )
-#endif
-{
-    value_.string_ = valueAllocator ()->duplicateStringValue ( value, value.length () );
-}
-# endif
-
 Value::Value ( bool value )
     : type_ ( booleanValue )
     , comments_ ( 0 )
@@ -812,14 +798,6 @@ Value::asString () const
 
     return ""; // unreachable
 }
-
-# ifdef JSON_USE_CPPTL
-CppTL::ConstString
-Value::asConstString () const
-{
-    return CppTL::ConstString ( asString ().c_str () );
-}
-# endif
 
 Value::Int
 Value::asInt () const
@@ -1277,23 +1255,6 @@ Value::operator[] ( const StaticString& key )
     return resolveReference ( key, true );
 }
 
-
-# ifdef JSON_USE_CPPTL
-Value&
-Value::operator[] ( const CppTL::ConstString& key )
-{
-    return (*this)[ key.c_str () ];
-}
-
-
-const Value&
-Value::operator[] ( const CppTL::ConstString& key ) const
-{
-    return (*this)[ key.c_str () ];
-}
-# endif
-
-
 Value&
 Value::append ( const Value& value )
 {
@@ -1358,15 +1319,6 @@ Value::removeMember ( std::string const& key )
     return removeMember ( key.c_str () );
 }
 
-# ifdef JSON_USE_CPPTL
-Value
-Value::get ( const CppTL::ConstString& key,
-             const Value& defaultValue ) const
-{
-    return get ( key.c_str (), defaultValue );
-}
-# endif
-
 bool
 Value::isMember ( const char* key ) const
 {
@@ -1381,14 +1333,6 @@ Value::isMember ( std::string const& key ) const
     return isMember ( key.c_str () );
 }
 
-
-# ifdef JSON_USE_CPPTL
-bool
-Value::isMember ( const CppTL::ConstString& key ) const
-{
-    return isMember ( key.c_str () );
-}
-#endif
 
 Value::Members
 Value::getMemberNames () const
@@ -1419,32 +1363,6 @@ Value::getMemberNames () const
 #endif
     return members;
 }
-//
-//# ifdef JSON_USE_CPPTL
-//EnumMemberNames
-//Value::enumMemberNames() const
-//{
-//   if ( type_ == objectValue )
-//   {
-//      return CppTL::Enum::any(  CppTL::Enum::transform(
-//         CppTL::Enum::keys( *(value_.map_), CppTL::Type<const CZString &>() ),
-//         MemberNamesTransform() ) );
-//   }
-//   return EnumMemberNames();
-//}
-//
-//
-//EnumValues
-//Value::enumValues() const
-//{
-//   if ( type_ == objectValue  ||  type_ == arrayValue )
-//      return CppTL::Enum::anyValues( *(value_.map_),
-//                                     CppTL::Type<const Value &>() );
-//   return EnumValues();
-//}
-//
-//# endif
-
 
 bool
 Value::isNull () const

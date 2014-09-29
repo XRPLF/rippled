@@ -182,17 +182,8 @@ Writer::~Writer ()
 // //////////////////////////////////////////////////////////////////
 
 FastWriter::FastWriter ()
-    : yamlCompatiblityEnabled_ ( false )
 {
 }
-
-
-void
-FastWriter::enableYAMLCompatibility ()
-{
-    yamlCompatiblityEnabled_ = true;
-}
-
 
 std::string
 FastWriter::write ( const Value& root )
@@ -265,8 +256,7 @@ FastWriter::writeValue ( const Value& value )
                 document_ += ",";
 
             document_ += valueToQuotedString ( name.c_str () );
-            document_ += yamlCompatiblityEnabled_ ? ": "
-                         : ":";
+            document_ += ":";
             writeValue ( value[name] );
         }
 
@@ -458,11 +448,10 @@ StyledWriter::isMultineArray ( const Value& value )
         addChildValues_ = true;
         int lineLength = 4 + (size - 1) * 2; // '[ ' + ', '*n + ' ]'
 
-        for ( int index = 0; index < size  &&  !isMultiLine; ++index )
+        for ( int index = 0; index < size; ++index )
         {
             writeValue ( value[index] );
             lineLength += int ( childValues_[index].length () );
-            isMultiLine = isMultiLine  &&  hasCommentForValue ( value[index] );
         }
 
         addChildValues_ = false;
@@ -769,11 +758,10 @@ StyledStreamWriter::isMultineArray ( const Value& value )
         addChildValues_ = true;
         int lineLength = 4 + (size - 1) * 2; // '[ ' + ', '*n + ' ]'
 
-        for ( int index = 0; index < size  &&  !isMultiLine; ++index )
+        for ( int index = 0; index < size; ++index )
         {
             writeValue ( value[index] );
             lineLength += int ( childValues_[index].length () );
-            isMultiLine = isMultiLine  &&  hasCommentForValue ( value[index] );
         }
 
         addChildValues_ = false;

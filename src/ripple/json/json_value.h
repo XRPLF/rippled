@@ -20,7 +20,6 @@
 #ifndef CPPTL_JSON_H_INCLUDED
 #define CPPTL_JSON_H_INCLUDED
 
-#include <ripple/json/json_config.h>
 #include <ripple/json/json_forwards.h>
 #include <beast/strings/String.h>
 #include <map>
@@ -53,11 +52,6 @@ enum CommentPlacement
     numberOfCommentPlacement
 };
 
-//# ifdef JSON_USE_CPPTL
-//   typedef CppTL::AnyEnumerator<const char *> EnumMemberNames;
-//   typedef CppTL::AnyEnumerator<const Value &> EnumValues;
-//# endif
-
 /** \brief Lightweight wrapper to tag static string.
  *
  * Value constructor and objectValue member assignement takes advantage of the
@@ -72,7 +66,7 @@ enum CommentPlacement
  * object[code] = 1234;
  * \endcode
  */
-class JSON_API StaticString
+class StaticString
 {
 public:
     explicit StaticString ( const char* czstring )
@@ -121,7 +115,7 @@ private:
  * It is possible to iterate over the list of a #objectValue values using
  * the getMemberNames() method.
  */
-class JSON_API Value
+class Value
 {
     friend class ValueIteratorBase;
 # ifdef JSON_VALUE_USE_INTERNAL_MAP
@@ -142,7 +136,6 @@ public:
     static const UInt maxUInt;
 
 private:
-#ifndef JSONCPP_DOC_EXCLUDE_IMPLEMENTATION
 # ifndef JSON_VALUE_USE_INTERNAL_MAP
     class CZString
     {
@@ -170,13 +163,8 @@ private:
     };
 
 public:
-#  ifndef JSON_USE_CPPTL_SMALLMAP
     typedef std::map<CZString, Value> ObjectValues;
-#  else
-    typedef CppTL::SmallMap<CZString, Value> ObjectValues;
-#  endif // ifndef JSON_USE_CPPTL_SMALLMAP
 # endif // ifndef JSON_VALUE_USE_INTERNAL_MAP
-#endif // ifndef JSONCPP_DOC_EXCLUDE_IMPLEMENTATION
 
 public:
     /** \brief Create a default Value of the given type.
@@ -214,9 +202,6 @@ public:
     Value ( std::string const& value );
     // VFALCO DEPRECATED Avoid this conversion
     Value (beast::String const& beastString);
-# ifdef JSON_USE_CPPTL
-    Value ( const CppTL::ConstString& value );
-# endif
     Value ( bool value );
     Value ( const Value& other );
     ~Value ();
@@ -245,9 +230,6 @@ public:
 
     const char* asCString () const;
     std::string asString () const;
-# ifdef JSON_USE_CPPTL
-    CppTL::ConstString asConstString () const;
-# endif
     Int asInt () const;
     UInt asUInt () const;
     double asDouble () const;
@@ -329,23 +311,14 @@ public:
      * \endcode
      */
     Value& operator[] ( const StaticString& key );
-# ifdef JSON_USE_CPPTL
-    /// Access an object value by name, create a null member if it does not exist.
-    Value& operator[] ( const CppTL::ConstString& key );
-    /// Access an object value by name, returns null if there is no member with that name.
-    const Value& operator[] ( const CppTL::ConstString& key ) const;
-# endif
+
     /// Return the member named key if it exist, defaultValue otherwise.
     Value get ( const char* key,
                 const Value& defaultValue ) const;
     /// Return the member named key if it exist, defaultValue otherwise.
     Value get ( std::string const& key,
                 const Value& defaultValue ) const;
-# ifdef JSON_USE_CPPTL
-    /// Return the member named key if it exist, defaultValue otherwise.
-    Value get ( const CppTL::ConstString& key,
-                const Value& defaultValue ) const;
-# endif
+
     /// \brief Remove and return the named member.
     ///
     /// Do nothing if it did not exist.
@@ -360,10 +333,6 @@ public:
     bool isMember ( const char* key ) const;
     /// Return true if the object has a member named key.
     bool isMember ( std::string const& key ) const;
-# ifdef JSON_USE_CPPTL
-    /// Return true if the object has a member named key.
-    bool isMember ( const CppTL::ConstString& key ) const;
-# endif
 
     /// \brief Return a list of the member names.
     ///
@@ -371,11 +340,6 @@ public:
     /// \pre type() is objectValue or nullValue
     /// \post if type() was nullValue, it remains nullValue
     Members getMemberNames () const;
-
-    //# ifdef JSON_USE_CPPTL
-    //      EnumMemberNames enumMemberNames() const;
-    //      EnumValues enumValues() const;
-    //# endif
 
     /// Comments must be //... or /* ... */
     void setComment ( const char* comment,
@@ -598,7 +562,7 @@ public:
    };
  * \endcode
  */
-class JSON_API ValueMapAllocator
+class ValueMapAllocator
 {
 public:
     virtual ~ValueMapAllocator ();
@@ -614,7 +578,7 @@ public:
 /** \brief ValueInternalMap hash-map bucket chain link (for internal use only).
  * \internal previous_ & next_ allows for bidirectional traversal.
  */
-class JSON_API ValueInternalLink
+class ValueInternalLink
 {
 public:
     enum { itemPerLink = 6 };  // sizeof(ValueInternalLink) = 128 on 32 bits architecture.
@@ -647,7 +611,7 @@ public:
  * Only the last link of a bucket may contains 'available' item. The last link always
  * contains at least one element unless is it the bucket one very first link.
  */
-class JSON_API ValueInternalMap
+class ValueInternalMap
 {
     friend class ValueIteratorBase;
     friend class Value;
@@ -655,7 +619,6 @@ public:
     typedef unsigned int HashKey;
     typedef unsigned int BucketIndex;
 
-# ifndef JSONCPP_DOC_EXCLUDE_IMPLEMENTATION
     struct IteratorState
     {
         IteratorState ()
@@ -670,7 +633,6 @@ public:
         BucketIndex itemIndex_;
         BucketIndex bucketIndex_;
     };
-# endif // ifndef JSONCPP_DOC_EXCLUDE_IMPLEMENTATION
 
     ValueInternalMap ();
     ValueInternalMap ( const ValueInternalMap& other );
@@ -745,7 +707,7 @@ private:
 * Insertion is amortized constant time (only the array containing the index of pointers
 * need to be reallocated when items are appended).
 */
-class JSON_API ValueInternalArray
+class ValueInternalArray
 {
     friend class Value;
     friend class ValueIteratorBase;
@@ -754,7 +716,6 @@ public:
     typedef Value::ArrayIndex ArrayIndex;
     typedef unsigned int PageIndex;
 
-# ifndef JSONCPP_DOC_EXCLUDE_IMPLEMENTATION
     struct IteratorState // Must be a POD
     {
         IteratorState ()
@@ -767,7 +728,6 @@ public:
         Value** currentPageIndex_;
         unsigned int currentItemIndex_;
     };
-# endif // ifndef JSONCPP_DOC_EXCLUDE_IMPLEMENTATION
 
     ValueInternalArray ();
     ValueInternalArray ( const ValueInternalArray& other );
@@ -805,66 +765,7 @@ private:
     PageIndex pageCount_;
 };
 
-/** \brief Experimental: do not use. Allocator to customize Value internal array.
- * Below is an example of a simple implementation (actual implementation use
- * memory pool).
-   \code
-class DefaultValueArrayAllocator : public ValueArrayAllocator
-{
-public: // overridden from ValueArrayAllocator
-virtual ~DefaultValueArrayAllocator()
-{
-}
-
-virtual ValueInternalArray *newArray()
-{
-   return new ValueInternalArray();
-}
-
-virtual ValueInternalArray *newArrayCopy( const ValueInternalArray &other )
-{
-   return new ValueInternalArray( other );
-}
-
-virtual void destruct( ValueInternalArray *array )
-{
-   delete array;
-}
-
-virtual void reallocateArrayPageIndex( Value **&indexes,
-                                       ValueInternalArray::PageIndex &indexCount,
-                                       ValueInternalArray::PageIndex minNewIndexCount )
-{
-   ValueInternalArray::PageIndex newIndexCount = (indexCount*3)/2 + 1;
-   if ( minNewIndexCount > newIndexCount )
-      newIndexCount = minNewIndexCount;
-   void *newIndexes = realloc( indexes, sizeof(Value*) * newIndexCount );
-   if ( !newIndexes )
-      throw std::bad_alloc();
-   indexCount = newIndexCount;
-   indexes = static_cast<Value **>( newIndexes );
-}
-virtual void releaseArrayPageIndex( Value **indexes,
-                                    ValueInternalArray::PageIndex indexCount )
-{
-   if ( indexes )
-      free( indexes );
-}
-
-virtual Value *allocateArrayPage()
-{
-   return static_cast<Value *>( malloc( sizeof(Value) * ValueInternalArray::itemsPerPage ) );
-}
-
-virtual void releaseArrayPage( Value *value )
-{
-   if ( value )
-      free( value );
-}
-};
-   \endcode
- */
-class JSON_API ValueArrayAllocator
+class ValueArrayAllocator
 {
 public:
     virtual ~ValueArrayAllocator ();

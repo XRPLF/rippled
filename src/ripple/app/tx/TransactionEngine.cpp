@@ -92,7 +92,6 @@ TER TransactionEngine::applyTransaction (
         {
             WriteLog (lsFATAL, TransactionEngine) <<
                 "Transaction serdes mismatch";
-            Json::StyledStreamWriter ssw;
             WriteLog (lsINFO, TransactionEngine) << txn.getJson (0);
             WriteLog (lsFATAL, TransactionEngine) << s2.getJson (0);
             assert (false);

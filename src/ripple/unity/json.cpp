@@ -27,9 +27,6 @@
 
 // For json/
 //
-#ifdef JSON_USE_CPPTL
-#include <cpptl/conststring.h>
-#endif
 #ifndef JSON_USE_SIMPLE_INTERNAL_ALLOCATOR
 #include <ripple/json/impl/json_batchallocator.h>
 #endif
