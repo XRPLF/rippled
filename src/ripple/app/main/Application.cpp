@@ -1074,7 +1074,7 @@ bool ApplicationImp::loadOldLedger (
             {
                  Json::Reader reader;
                  Json::Value jLedger;
-                 if (!reader.parse (ledgerFile, jLedger, false))
+                 if (!reader.parse (ledgerFile, jLedger))
                      m_journal.fatal << "Unable to parse ledger JSON";
                  else
                  {

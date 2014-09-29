@@ -2012,12 +2012,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\json\impl\json_assert.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\json\impl\json_batchallocator.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\json\impl\json_internalarray.inl">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\json\impl\json_internalmap.inl">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\json\impl\json_reader.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2033,10 +2027,6 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\json\JsonPropertyStream.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\json\json_config.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\json\json_features.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\json\json_forwards.h">
     </ClInclude>

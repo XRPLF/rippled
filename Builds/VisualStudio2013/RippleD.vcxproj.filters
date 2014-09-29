@@ -2952,15 +2952,6 @@
     <ClInclude Include="..\..\src\ripple\json\impl\json_assert.h">
       <Filter>ripple\json\impl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\json\impl\json_batchallocator.h">
-      <Filter>ripple\json\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\json\impl\json_internalarray.inl">
-      <Filter>ripple\json\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\json\impl\json_internalmap.inl">
-      <Filter>ripple\json\impl</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\json\impl\json_reader.cpp">
       <Filter>ripple\json\impl</Filter>
     </ClCompile>
@@ -2977,12 +2968,6 @@
       <Filter>ripple\json\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\json\JsonPropertyStream.h">
-      <Filter>ripple\json</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\json\json_config.h">
-      <Filter>ripple\json</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\json\json_features.h">
       <Filter>ripple\json</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\json\json_forwards.h">

@@ -189,17 +189,8 @@ Writer::~Writer ()
 // //////////////////////////////////////////////////////////////////
 
 FastWriter::FastWriter ()
-    : yamlCompatiblityEnabled_ ( false )
 {
 }
-
-
-void
-FastWriter::enableYAMLCompatibility ()
-{
-    yamlCompatiblityEnabled_ = true;
-}
-
 
 std::string
 FastWriter::write ( const Value& root )
@@ -272,8 +263,7 @@ FastWriter::writeValue ( const Value& value )
                 document_ += ",";
 
             document_ += valueToQuotedString ( name.c_str () );
-            document_ += yamlCompatiblityEnabled_ ? ": "
-                         : ":";
+            document_ += ":";
             writeValue ( value[name] );
         }
 
@@ -300,9 +290,7 @@ StyledWriter::write ( const Value& root )
     document_ = "";
     addChildValues_ = false;
     indentString_ = "";
-    writeCommentBeforeValue ( root );
     writeValue ( root );
-    writeCommentAfterValueOnSameLine ( root );
     document_ += "\n";
     return document_;
 }
@@ -357,19 +345,14 @@ StyledWriter::writeValue ( const Value& value )
             {
                 std::string const& name = *it;
                 const Value& childValue = value[name];
-                writeCommentBeforeValue ( childValue );
                 writeWithIndent ( valueToQuotedString ( name.c_str () ) );
                 document_ += " : ";
                 writeValue ( childValue );
 
                 if ( ++it == members.end () )
-                {
-                    writeCommentAfterValueOnSameLine ( childValue );
                     break;
-                }
 
                 document_ += ",";
-                writeCommentAfterValueOnSameLine ( childValue );
             }
 
             unindent ();
@@ -402,7 +385,6 @@ StyledWriter::writeArrayValue ( const Value& value )
             while ( true )
             {
                 const Value& childValue = value[index];
-                writeCommentBeforeValue ( childValue );
 
                 if ( hasChildValue )
                     writeWithIndent ( childValues_[index] );
@@ -413,13 +395,9 @@ StyledWriter::writeArrayValue ( const Value& value )
                 }
 
                 if ( ++index == size )
-                {
-                    writeCommentAfterValueOnSameLine ( childValue );
                     break;
-                }
 
                 document_ += ",";
-                writeCommentAfterValueOnSameLine ( childValue );
             }
 
             unindent ();
@@ -465,11 +443,10 @@ StyledWriter::isMultineArray ( const Value& value )
         addChildValues_ = true;
         int lineLength = 4 + (size - 1) * 2; // '[ ' + ', '*n + ' ]'
 
-        for ( int index = 0; index < size  &&  !isMultiLine; ++index )
+        for ( int index = 0; index < size; ++index )
         {
             writeValue ( value[index] );
             lineLength += int ( childValues_[index].length () );
-            isMultiLine = isMultiLine  &&  hasCommentForValue ( value[index] );
         }
 
         addChildValues_ = false;
@@ -530,70 +507,6 @@ StyledWriter::unindent ()
     indentString_.resize ( indentString_.size () - indentSize_ );
 }
 
-
-void
-StyledWriter::writeCommentBeforeValue ( const Value& root )
-{
-    if ( !root.hasComment ( commentBefore ) )
-        return;
-
-    document_ += normalizeEOL ( root.getComment ( commentBefore ) );
-    document_ += "\n";
-}
-
-
-void
-StyledWriter::writeCommentAfterValueOnSameLine ( const Value& root )
-{
-    if ( root.hasComment ( commentAfterOnSameLine ) )
-        document_ += " " + normalizeEOL ( root.getComment ( commentAfterOnSameLine ) );
-
-    if ( root.hasComment ( commentAfter ) )
-    {
-        document_ += "\n";
-        document_ += normalizeEOL ( root.getComment ( commentAfter ) );
-        document_ += "\n";
-    }
-}
-
-
-bool
-StyledWriter::hasCommentForValue ( const Value& value )
-{
-    return value.hasComment ( commentBefore )
-           ||  value.hasComment ( commentAfterOnSameLine )
-           ||  value.hasComment ( commentAfter );
-}
-
-
-std::string
-StyledWriter::normalizeEOL ( std::string const& text )
-{
-    std::string normalized;
-    normalized.reserve ( text.length () );
-    const char* begin = text.c_str ();
-    const char* end = begin + text.length ();
-    const char* current = begin;
-
-    while ( current != end )
-    {
-        char c = *current++;
-
-        if ( c == '\r' ) // mac or dos EOL
-        {
-            if ( *current == '\n' ) // convert dos EOL
-                ++current;
-
-            normalized += '\n';
-        }
-        else // handle unix EOL & other char
-            normalized += c;
-    }
-
-    return normalized;
-}
-
-
 // Class StyledStreamWriter
 // //////////////////////////////////////////////////////////////////
 
@@ -611,9 +524,7 @@ StyledStreamWriter::write ( std::ostream& out, const Value& root )
     document_ = &out;
     addChildValues_ = false;
     indentString_ = "";
-    writeCommentBeforeValue ( root );
     writeValue ( root );
-    writeCommentAfterValueOnSameLine ( root );
     *document_ << "\n";
     document_ = nullptr; // Forget the stream, for safety.
 }
@@ -668,19 +579,14 @@ StyledStreamWriter::writeValue ( const Value& value )
             {
                 std::string const& name = *it;
                 const Value& childValue = value[name];
-                writeCommentBeforeValue ( childValue );
                 writeWithIndent ( valueToQuotedString ( name.c_str () ) );
                 *document_ << " : ";
                 writeValue ( childValue );
 
                 if ( ++it == members.end () )
-                {
-                    writeCommentAfterValueOnSameLine ( childValue );
                     break;
-                }
 
                 *document_ << ",";
-                writeCommentAfterValueOnSameLine ( childValue );
             }
 
             unindent ();
@@ -713,7 +619,6 @@ StyledStreamWriter::writeArrayValue ( const Value& value )
             while ( true )
             {
                 const Value& childValue = value[index];
-                writeCommentBeforeValue ( childValue );
 
                 if ( hasChildValue )
                     writeWithIndent ( childValues_[index] );
@@ -724,13 +629,9 @@ StyledStreamWriter::writeArrayValue ( const Value& value )
                 }
 
                 if ( ++index == size )
-                {
-                    writeCommentAfterValueOnSameLine ( childValue );
                     break;
-                }
 
                 *document_ << ",";
-                writeCommentAfterValueOnSameLine ( childValue );
             }
 
             unindent ();
@@ -776,11 +677,10 @@ StyledStreamWriter::isMultineArray ( const Value& value )
         addChildValues_ = true;
         int lineLength = 4 + (size - 1) * 2; // '[ ' + ', '*n + ' ]'
 
-        for ( int index = 0; index < size  &&  !isMultiLine; ++index )
+        for ( int index = 0; index < size; ++index )
         {
             writeValue ( value[index] );
             lineLength += int ( childValues_[index].length () );
-            isMultiLine = isMultiLine  &&  hasCommentForValue ( value[index] );
         }
 
         addChildValues_ = false;
@@ -840,69 +740,6 @@ StyledStreamWriter::unindent ()
 {
     assert ( indentString_.size () >= indentation_.size () );
     indentString_.resize ( indentString_.size () - indentation_.size () );
-}
-
-
-void
-StyledStreamWriter::writeCommentBeforeValue ( const Value& root )
-{
-    if ( !root.hasComment ( commentBefore ) )
-        return;
-
-    *document_ << normalizeEOL ( root.getComment ( commentBefore ) );
-    *document_ << "\n";
-}
-
-
-void
-StyledStreamWriter::writeCommentAfterValueOnSameLine ( const Value& root )
-{
-    if ( root.hasComment ( commentAfterOnSameLine ) )
-        *document_ << " " + normalizeEOL ( root.getComment ( commentAfterOnSameLine ) );
-
-    if ( root.hasComment ( commentAfter ) )
-    {
-        *document_ << "\n";
-        *document_ << normalizeEOL ( root.getComment ( commentAfter ) );
-        *document_ << "\n";
-    }
-}
-
-
-bool
-StyledStreamWriter::hasCommentForValue ( const Value& value )
-{
-    return value.hasComment ( commentBefore )
-           ||  value.hasComment ( commentAfterOnSameLine )
-           ||  value.hasComment ( commentAfter );
-}
-
-
-std::string
-StyledStreamWriter::normalizeEOL ( std::string const& text )
-{
-    std::string normalized;
-    normalized.reserve ( text.length () );
-    const char* begin = text.c_str ();
-    const char* end = begin + text.length ();
-    const char* current = begin;
-
-    while ( current != end )
-    {
-        char c = *current++;
-
-        if ( c == '\r' ) // mac or dos EOL
-        {
-            if ( *current == '\n' ) // convert dos EOL
-                ++current;
-
-            normalized += '\n';
-        }
-        else // handle unix EOL & other char
-            normalized += c;
-    }
-
-    return normalized;
 }
 
 
