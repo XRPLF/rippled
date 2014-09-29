@@ -71,7 +71,8 @@ const std::uint32_t tfPassive              = 0x00010000;
 const std::uint32_t tfImmediateOrCancel    = 0x00020000;
 const std::uint32_t tfFillOrKill           = 0x00040000;
 const std::uint32_t tfSell                 = 0x00080000;
-const std::uint32_t tfOfferCreateMask      = ~ (tfUniversal | tfPassive | tfImmediateOrCancel | tfFillOrKill | tfSell);
+const std::uint32_t tfMustCancel           = 0x00100000;
+const std::uint32_t tfOfferCreateMask      = ~ (tfUniversal | tfPassive | tfImmediateOrCancel | tfFillOrKill | tfSell | tfMustCancel);
 
 // Payment flags:
 const std::uint32_t tfNoRippleDirect       = 0x00010000;

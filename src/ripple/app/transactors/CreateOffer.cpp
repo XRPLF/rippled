@@ -149,10 +149,11 @@ public:
 
         std::uint32_t const uTxFlags = mTxn.getFlags ();
 
-        bool const bPassive (uTxFlags & tfPassive);
-        bool const bImmediateOrCancel (uTxFlags & tfImmediateOrCancel);
-        bool const bFillOrKill (uTxFlags & tfFillOrKill);
-        bool const bSell  (uTxFlags & tfSell);
+        bool const bPassive = (uTxFlags & tfPassive);
+        bool const bImmediateOrCancel = (uTxFlags & tfImmediateOrCancel);
+        bool const bFillOrKill = (uTxFlags & tfFillOrKill);
+        bool const bSell = (uTxFlags & tfSell);
+        bool const bMustCancel = (uTxFlags & tfMustCancel);
 
         STAmount saTakerPays = mTxn.getFieldAmount (sfTakerPays);
         STAmount saTakerGets = mTxn.getFieldAmount (sfTakerGets);
@@ -192,6 +193,7 @@ public:
 
             if (bFillOrKill)
                 m_journal.debug << "Transaction: FoK set.";
+
         }
 
         // This is the original rate of this offer, and is the rate at which it will
@@ -296,6 +298,13 @@ public:
 
             terResult = temBAD_SEQUENCE;
         }
+        else if (bMustCancel && !bHaveCancel)
+        {
+            if (m_journal.debug) m_journal.debug <<
+                "Malformed transaction: MustCancel set without an cancel sequence.";
+
+            terResult = temINVALID_FLAG;
+        }
 
         if (terResult != tesSUCCESS)
         {
@@ -308,16 +317,24 @@ public:
         // Process a cancellation request that's passed along with an offer.
         if ((terResult == tesSUCCESS) && bHaveCancel)
         {
-            uint256 const uCancelIndex (
+            SLE::pointer sleCancel = mEngine->entryCache (ltOFFER,
                 Ledger::getOfferIndex (mTxnAccountID, uCancelSequence));
-            SLE::pointer sleCancel = mEngine->entryCache (ltOFFER, uCancelIndex);
 
-            // It's not an error to not find the offer to cancel: it might have
-            // been consumed or removed as we are processing.
+            if (!sleCancel && bMustCancel)
+            {
+                m_journal.debug <<
+                    "Offer " << uCancelSequence <<
+                    " can't be located for cancellation.";
+                return tesSUCCESS;
+            }
+
+            // Unless the transaction has "must cancel" semantics, it's not an
+            // error to not find the offer that's being cancelled: it might have
+            // already been consumed or cancelled via another transaction.
             if (sleCancel)
             {
-                m_journal.warning <<
-                    "Cancelling order with sequence " << uCancelSequence;
+                m_journal.debug <<
+                    "Offer " << uCancelSequence << " is being cancelled.";
 
                 terResult = view.offerDelete (sleCancel);
             }
@@ -401,10 +418,9 @@ public:
             m_journal.debug <<
                 "takeOffers: saTakerGets=" << saTakerGets.getFullText ();
             m_journal.debug <<
-                "takeOffers: mTxnAccountID=" <<
-                to_string (mTxnAccountID);
+                "takeOffers:     Account=" << to_string (mTxnAccountID);
             m_journal.debug <<
-                "takeOffers:         FUNDS=" << view.accountFunds (
+                "takeOffers:       Funds=" << view.accountFunds (
                 mTxnAccountID, saTakerGets, fhZERO_IF_FROZEN).getFullText ();
         }
 
