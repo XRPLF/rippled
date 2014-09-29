@@ -20,65 +20,16 @@
 #include <BeastConfig.h>
 #include <ripple/json/json_reader.h>
 #include <string>
+#include <cctype>
 
 namespace Json
 {
-
-// Implementation of class Features
-// ////////////////////////////////
-
-Features::Features ()
-    : allowComments_ ( true )
-    , strictRoot_ ( false )
-{
-}
-
-
-Features
-Features::all ()
-{
-    return Features ();
-}
-
-
-Features
-Features::strictMode ()
-{
-    Features features;
-    features.allowComments_ = false;
-    features.strictRoot_ = true;
-    return features;
-}
-
 // Implementation of class Reader
 // ////////////////////////////////
 
-
-static inline bool
-in ( Reader::Char c, Reader::Char c1, Reader::Char c2, Reader::Char c3, Reader::Char c4 )
-{
-    return c == c1  ||  c == c2  ||  c == c3  ||  c == c4;
-}
-
-static inline bool
-in ( Reader::Char c, Reader::Char c1, Reader::Char c2, Reader::Char c3, Reader::Char c4, Reader::Char c5 )
-{
-    return c == c1  ||  c == c2  ||  c == c3  ||  c == c4  ||  c == c5;
-}
-
-
-static bool
-containsNewLine ( Reader::Location begin,
-                  Reader::Location end )
-{
-    for ( ; begin < end; ++begin )
-        if ( *begin == '\n'  ||  *begin == '\r' )
-            return true;
-
-    return false;
-}
-
-static std::string codePointToUTF8 (unsigned int cp)
+static
+std::string
+codePointToUTF8 (unsigned int cp)
 {
     std::string result;
 
@@ -119,33 +70,24 @@ static std::string codePointToUTF8 (unsigned int cp)
 // //////////////////////////////////////////////////////////////////
 
 Reader::Reader ()
-    : features_ ( Features::all () )
-{
-}
-
-
-Reader::Reader ( const Features& features )
-    : features_ ( features )
 {
 }
 
 
 bool
 Reader::parse ( std::string const& document,
-                Value& root,
-                bool collectComments )
+                Value& root)
 {
     document_ = document;
     const char* begin = document_.c_str ();
     const char* end = begin + document_.length ();
-    return parse ( begin, end, root, collectComments );
+    return parse ( begin, end, root );
 }
 
 
 bool
 Reader::parse ( std::istream& sin,
-                Value& root,
-                bool collectComments )
+                Value& root)
 {
     //std::istream_iterator<char> begin(sin);
     //std::istream_iterator<char> end;
@@ -156,26 +98,18 @@ Reader::parse ( std::istream& sin,
     // create an extra copy.
     std::string doc;
     std::getline (sin, doc, (char)EOF);
-    return parse ( doc, root, collectComments );
+    return parse ( doc, root );
 }
 
 bool
 Reader::parse ( const char* beginDoc, const char* endDoc,
-                Value& root,
-                bool collectComments )
+                Value& root)
 {
-    if ( !features_.allowComments_ )
-    {
-        collectComments = false;
-    }
-
     begin_ = beginDoc;
     end_ = endDoc;
-    collectComments_ = collectComments;
     current_ = begin_;
     lastValueEnd_ = 0;
     lastValue_ = 0;
-    commentsBefore_ = "";
     errors_.clear ();
 
     while ( !nodes_.empty () )
@@ -187,26 +121,19 @@ Reader::parse ( const char* beginDoc, const char* endDoc,
     Token token;
     skipCommentTokens ( token );
 
-    if ( collectComments_  &&  !commentsBefore_.empty () )
-        root.setComment ( commentsBefore_, commentAfter );
-
-    if ( features_.strictRoot_ )
+    if ( !root.isArray ()  &&  !root.isObject () )
     {
-        if ( !root.isArray ()  &&  !root.isObject () )
-        {
-            // Set error location to start of doc, ideally should be first token found in doc
-            token.type_ = tokenError;
-            token.start_ = beginDoc;
-            token.end_ = endDoc;
-            addError ( "A valid JSON document must be either an array or an object value.",
-                       token );
-            return false;
-        }
+        // Set error location to start of doc, ideally should be first token found in doc
+        token.type_ = tokenError;
+        token.start_ = beginDoc;
+        token.end_ = endDoc;
+        addError ( "A valid JSON document must be either an array or an object value.",
+                   token );
+        return false;
     }
 
     return successful;
 }
-
 
 bool
 Reader::readValue ()
@@ -214,13 +141,6 @@ Reader::readValue ()
     Token token;
     skipCommentTokens ( token );
     bool successful = true;
-
-    if ( collectComments_  &&  !commentsBefore_.empty () )
-    {
-        currentValue ().setComment ( commentsBefore_, commentBefore );
-        commentsBefore_ = "";
-    }
-
 
     switch ( token.type_ )
     {
@@ -232,8 +152,12 @@ Reader::readValue ()
         successful = readArray ( token );
         break;
 
-    case tokenNumber:
+    case tokenInteger:
         successful = decodeNumber ( token );
+        break;
+
+    case tokenDouble:
+        successful = decodeDouble ( token );
         break;
 
     case tokenString:
@@ -256,12 +180,6 @@ Reader::readValue ()
         return addError ( "Syntax error: value, object or array expected.", token );
     }
 
-    if ( collectComments_ )
-    {
-        lastValueEnd_ = current_;
-        lastValue_ = &currentValue ();
-    }
-
     return successful;
 }
 
@@ -269,18 +187,11 @@ Reader::readValue ()
 void
 Reader::skipCommentTokens ( Token& token )
 {
-    if ( features_.allowComments_ )
-    {
-        do
-        {
-            readToken ( token );
-        }
-        while ( token.type_ == tokenComment );
-    }
-    else
+    do
     {
         readToken ( token );
     }
+    while ( token.type_ == tokenComment );
 }
 
 
@@ -343,8 +254,7 @@ Reader::readToken ( Token& token )
     case '8':
     case '9':
     case '-':
-        token.type_ = tokenNumber;
-        readNumber ();
+        token.type_ = readNumber ();
         break;
 
     case 't':
@@ -423,56 +333,16 @@ Reader::match ( Location pattern,
 bool
 Reader::readComment ()
 {
-    Location commentBegin = current_ - 1;
     Char c = getNextChar ();
-    bool successful = false;
 
     if ( c == '*' )
-        successful = readCStyleComment ();
-    else if ( c == '/' )
-        successful = readCppStyleComment ();
+        return readCStyleComment ();
 
-    if ( !successful )
-        return false;
+    if ( c == '/' )
+        return readCppStyleComment ();
 
-    if ( collectComments_ )
-    {
-        CommentPlacement placement = commentBefore;
-
-        if ( lastValueEnd_  &&  !containsNewLine ( lastValueEnd_, commentBegin ) )
-        {
-            if ( c != '*'  ||  !containsNewLine ( commentBegin, current_ ) )
-                placement = commentAfterOnSameLine;
-        }
-
-        addComment ( commentBegin, current_, placement );
-    }
-
-    return true;
+    return false;
 }
-
-
-void
-Reader::addComment ( Location begin,
-                     Location end,
-                     CommentPlacement placement )
-{
-    assert ( collectComments_ );
-
-    if ( placement == commentAfterOnSameLine )
-    {
-        assert ( lastValue_ != 0 );
-        lastValue_->setComment ( std::string ( begin, end ), placement );
-    }
-    else
-    {
-        if ( !commentsBefore_.empty () )
-            commentsBefore_ += "\n";
-
-        commentsBefore_ += std::string ( begin, end );
-    }
-}
-
 
 bool
 Reader::readCStyleComment ()
@@ -503,18 +373,36 @@ Reader::readCppStyleComment ()
     return true;
 }
 
-
-void
+Reader::TokenType
 Reader::readNumber ()
 {
-    while ( current_ != end_ )
-    {
-        if ( ! (*current_ >= '0'  &&  *current_ <= '9')  &&
-                !in ( *current_, '.', 'e', 'E', '+', '-' ) )
-            break;
+    static char const extended_tokens[] = { '.', 'e', 'E', '+', '-' };
 
-        ++current_;
+    TokenType type = tokenInteger;
+
+    if ( current_ != end_ )
+    {
+        if (*current_ == '-')
+            ++current_;
+
+        while ( current_ != end_ )
+        {
+            if (!std::isdigit (*current_))
+            {
+                auto ret = std::find (std::begin (extended_tokens),
+                    std::end (extended_tokens), *current_);
+
+                if (ret == std::end (extended_tokens))
+                    break;
+
+                type = tokenDouble;
+            }
+
+            ++current_;
+        }
     }
+
+    return type;
 }
 
 bool
@@ -664,28 +552,29 @@ Reader::readArray ( Token& tokenStart )
     return true;
 }
 
+static inline bool
+in ( Reader::Char c, Reader::Char c1, Reader::Char c2, Reader::Char c3, Reader::Char c4 )
+{
+    return c == c1  ||  c == c2  ||  c == c3  ||  c == c4;
+}
 
 bool
 Reader::decodeNumber ( Token& token )
 {
-    bool isDouble = false;
-
-    for ( Location inspect = token.start_; inspect != token.end_; ++inspect )
-    {
-        isDouble = isDouble
-                   ||  in ( *inspect, '.', 'e', 'E', '+' )
-                   ||  ( *inspect == '-'  &&  inspect != token.start_ );
-    }
-
-    if ( isDouble )
-        return decodeDouble ( token );
-
     Location current = token.start_;
     bool isNegative = *current == '-';
 
     if ( isNegative )
         ++current;
 
+    if (current == token.end_)
+    {
+        return addError ( "'" + std::string ( token.start_, token.end_ ) +
+            "' is not a valid number.", token );
+    }
+
+    // The existing Json integers are 32-bit so using a 64-bit value here avoids
+    // overflows in the conversion code below.
     std::int64_t value = 0;
 
     static_assert(sizeof(value) > sizeof(Value::maxUInt),
@@ -1063,7 +952,7 @@ Reader::getFormatedErrorMessages () const
 std::istream& operator>> ( std::istream& sin, Value& root )
 {
     Json::Reader reader;
-    bool ok = reader.parse (sin, root, true);
+    bool ok = reader.parse (sin, root);
 
     //JSON_ASSERT( ok );
     if (!ok) throw std::runtime_error (reader.getFormatedErrorMessages ());
