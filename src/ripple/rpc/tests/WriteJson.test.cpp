@@ -52,11 +52,6 @@ struct WriteJson_test : TestOutputSuite
 
     void run () override
     {
-        runTest ("null");
-        runTest ("true");
-        runTest ("0");
-        runTest ("23.5");
-        runTest ("string", "\"a string\"");
         runTest ("empty dict", "{}");
         runTest ("empty array", "[]");
         runTest ("array", "[23,4.25,true,null,\"string\"]");
