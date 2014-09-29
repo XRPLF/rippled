@@ -39,7 +39,7 @@ public:
         RipplePublicKey publicKey;
 
         /** Optional human readable comment describing the validator. */
-        beast::String label;
+        std::string label;
     };
 
     /** Destroy the Source.
@@ -55,10 +55,10 @@ public:
     /** An identifier that uniquely describes the source.
         This is used for identification in the database.
     */
-    virtual beast::String uniqueID () const = 0;
+    virtual std::string uniqueID () const = 0;
 
     /** A string that is used to recreate the source from the database entry. */
-    virtual beast::String createParam () = 0;
+    virtual std::string createParam () = 0;
 
     /** Cancel any pending fetch.
         The default implementation does nothing.
@@ -74,8 +74,7 @@ public:
         Results ();
 
         bool success;
-        // VFALCO TODO Replace with std::string
-        beast::String message;
+        std::string message;
         // VFALCO TODO Replace with chrono
         beast::Time expirationTime;
         std::vector <Item> list;

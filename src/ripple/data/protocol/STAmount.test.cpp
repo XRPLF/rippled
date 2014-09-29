@@ -118,10 +118,10 @@ public:
         
         bool const result = amount.setValue (value);
 
-        expect (result == success, std::string ("parse ") + value);
+        expect (result == success, "parse " + value);
 
         if (success)
-            expect (amount.getText () == value, std::string ("format ") + value);
+            expect (amount.getText () == value, "format " + value);
     }
 
     void testSetValue ()
@@ -449,29 +449,17 @@ public:
 
     //--------------------------------------------------------------------------
 
-    template <class Cond>
-    bool
-    expect (Cond cond, beast::String const& s)
-    {
-        return suite::expect (cond, s.toStdString());
-    }
-
-    template <class Cond>
-    bool
-    expect (Cond cond)
-    {
-        return suite::expect (cond);
-    }
-
     void testUnderflow ()
     {
         testcase ("underflow");
 
         STAmount bigNative (STAmount::cMaxNative / 2);
         STAmount bigValue (noIssue(),
-                           (STAmount::cMinValue + STAmount::cMaxValue) / 2, STAmount::cMaxOffset - 1);
+            (STAmount::cMinValue + STAmount::cMaxValue) / 2,
+            STAmount::cMaxOffset - 1);
         STAmount smallValue (noIssue(),
-                             (STAmount::cMinValue + STAmount::cMaxValue) / 2, STAmount::cMinOffset + 1);
+            (STAmount::cMinValue + STAmount::cMaxValue) / 2,
+            STAmount::cMinOffset + 1);
         STAmount zeroSt (noIssue(), 0);
 
         STAmount smallXsmall = multiply (smallValue, smallValue, noIssue());
@@ -480,7 +468,7 @@ public:
 
         STAmount bigDsmall = divide (smallValue, bigValue, noIssue());
 
-        expect (bigDsmall == zero, beast::String ("small/big != 0: ") + bigDsmall.getText ());
+        expect (bigDsmall == zero, "small/big != 0: " + bigDsmall.getText ());
 
 #if 0
         // TODO(tom): this test makes no sense - we should have no way to have
@@ -488,15 +476,18 @@ public:
         bigDsmall = divide (smallValue, bigNative, noCurrency(), xrpAccount ());
 #endif
 
-        expect (bigDsmall == zero, beast::String ("small/bigNative != 0: ") + bigDsmall.getText ());
+        expect (bigDsmall == zero,
+            "small/bigNative != 0: " + bigDsmall.getText ());
 
         bigDsmall = divide (smallValue, bigValue, xrpIssue ());
 
-        expect (bigDsmall == zero, beast::String ("(small/big)->N != 0: ") + bigDsmall.getText ());
+        expect (bigDsmall == zero,
+            "(small/big)->N != 0: " + bigDsmall.getText ());
 
         bigDsmall = divide (smallValue, bigNative, xrpIssue ());
 
-        expect (bigDsmall == zero, beast::String ("(small/bigNative)->N != 0: ") + bigDsmall.getText ());
+        expect (bigDsmall == zero,
+            "(small/bigNative)->N != 0: " + bigDsmall.getText ());
 
         // very bad offer
         std::uint64_t r = getRate (smallValue, bigValue);

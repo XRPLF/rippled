@@ -51,16 +51,13 @@ static int s_nodeStoreDBCount = RIPPLE_ARRAYSIZE (s_nodeStoreDBInit);
 class SqliteBackend : public NodeStore::Backend
 {
 public:
-    explicit SqliteBackend (std::string const& path)
+    explicit SqliteBackend (std::string const& path, int hashnode_cache_size)
         : m_name (path)
         , m_db (new DatabaseCon(path, s_nodeStoreDBInit, s_nodeStoreDBCount))
     {
-        beast::String s;
-
-        // VFALCO TODO Remove this dependency on theConfig
-        //
-        s << "PRAGMA cache_size=-" << beast::String (getConfig ().getSize(siHashNodeDBCache) * 1024);
-        m_db->getDB()->executeSQL (s.toStdString ().c_str ());
+        std::string s ("PRAGMA cache_size=-");
+        s += std::to_string (hashnode_cache_size);
+        m_db->getDB()->executeSQL (s);
     }
 
     ~SqliteBackend()
@@ -227,8 +224,16 @@ private:
 
 class SqliteFactory : public NodeStore::Factory
 {
+    int hashnode_cache_size_;
+
 public:
-    beast::String getName () const
+    SqliteFactory (int hashnode_cache_size)
+        : hashnode_cache_size_ (hashnode_cache_size)
+    {
+    }
+
+    std::string
+    getName () const
     {
         return "Sqlite";
     }
@@ -237,15 +242,16 @@ public:
         size_t, NodeStore::Parameters const& keyValues,
             NodeStore::Scheduler&, beast::Journal)
     {
-        return std::make_unique <SqliteBackend> (keyValues ["path"].toStdString ());
+        return std::make_unique <SqliteBackend> (
+            keyValues ["path"].toStdString (), hashnode_cache_size_);
     }
 };
 
 //------------------------------------------------------------------------------
 
-std::unique_ptr <NodeStore::Factory> make_SqliteFactory ()
+std::unique_ptr <NodeStore::Factory> make_SqliteFactory (int hashnode_cache_size)
 {
-    return std::make_unique <SqliteFactory> ();
+    return std::make_unique <SqliteFactory> (hashnode_cache_size);
 }
 
 }

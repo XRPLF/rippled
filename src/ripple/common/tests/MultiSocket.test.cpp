@@ -40,28 +40,30 @@ public:
         {
         }
 
-        static beast::String getArgName (arg_type arg)
+        static std::string getArgName (arg_type arg)
         {
-            beast::String s;
+            std::string s;
 
             if (arg & MultiSocket::Flag::client_role)
-                s << "client,";
+                s += "client,";
 
             if (arg & MultiSocket::Flag::server_role)
-                s << "server,";
+                s += "server,";
 
             if (arg & MultiSocket::Flag::ssl)
-                s << "ssl,";
+                s += "ssl,";
 
             if (arg & MultiSocket::Flag::ssl_required)
-                s << "ssl_required,";
+                s += "ssl_required,";
 
             if (arg & MultiSocket::Flag::proxy)
-                s << "proxy,";
+                s += "proxy,";
 
-            if (s != beast::String::empty)
+            if (!s.empty ())
             {
-                s = "(" + s.substring (0, s.length () - 1) + ")";
+                s = std::string ("(") +
+                    s.substr (0, s.length () - 1) +
+                    std::string (")");
             }
 
             return s;
@@ -88,7 +90,7 @@ public:
             return holder.context->get ();
         }
 
-        beast::String name () const
+        std::string name () const
         {
             return getArgName (m_flags);
         }

@@ -243,18 +243,16 @@ Ledger::~Ledger ()
 {
     if (mTransactionMap)
     {
-        logTimedDestroy <Ledger> (
-            mTransactionMap,
-            "mTransactionMap with "
-            + std::to_string(mTransactionMap->size ()) + " items");
+        logTimedDestroy <Ledger> (mTransactionMap,
+            "mTransactionMap with " +
+            std::to_string(mTransactionMap->size ()) + " items");
     }
 
     if (mAccountStateMap)
     {
-        logTimedDestroy <Ledger> (
-            mAccountStateMap,
-            "mAccountStateMap with "
-            + std::to_string (mAccountStateMap->size ()) + " items");
+        logTimedDestroy <Ledger> (mAccountStateMap,
+            "mAccountStateMap with " +
+            std::to_string (mAccountStateMap->size ()) + " items");
     }
 }
 

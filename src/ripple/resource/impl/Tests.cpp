@@ -173,7 +173,7 @@ public:
             createGossip (g[i]);
 
         for (int i = 0; i < 5; ++i)
-            logic.importConsumers (beast::String::fromNumber (i).toStdString(), g[i]);
+            logic.importConsumers (std::to_string (i), g[i]);
 
         pass();
     }

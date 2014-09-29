@@ -53,15 +53,13 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void testBackend (beast::String type, std::int64_t const seedValue)
+    void testBackend (std::string const& type, std::int64_t const seedValue)
     {
         std::unique_ptr <Manager> manager (make_Manager ());
 
         DummyScheduler scheduler;
 
-        beast::String s;
-        s << "Testing backend '" << type << "' performance";
-        testcase (s.toStdString());
+        testcase ("Testing backend '" + type + "' performance");
 
         beast::StringPairArray params;
         beast::File const path (beast::File::createTempFile ("node_db"));
@@ -85,25 +83,19 @@ public:
         // Individual write batch test
         t.start ();
         storeBatch (*backend, batch1);
-        s = "";
-        s << "  Single write: " << beast::String (t.getElapsed (), 2) << " seconds";
-        log << s.toStdString();
+        log << "  Single write: " << std::to_string (t.getElapsed ()) << " seconds";
 
         // Bulk write batch test
         t.start ();
         backend->storeBatch (batch2);
-        s = "";
-        s << "  Batch write:  " << beast::String (t.getElapsed (), 2) << " seconds";
-        log << s.toStdString();
+        log << "  Batch write:  " << std::to_string (t.getElapsed ()) << " seconds";
 
         // Read test
         Batch copy;
         t.start ();
         fetchCopyOfBatch (*backend, &copy, batch1);
         fetchCopyOfBatch (*backend, &copy, batch2);
-        s = "";
-        s << "  Batch read:   " << beast::String (t.getElapsed (), 2) << " seconds";
-        log << s.toStdString();
+        log << "  Batch read:   " << std::to_string (t.getElapsed ()) << " seconds";
     }
 
     //--------------------------------------------------------------------------

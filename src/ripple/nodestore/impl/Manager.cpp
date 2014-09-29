@@ -19,6 +19,8 @@
 
 #include <ripple/nodestore/Manager.h>
 
+#include <beast/utility/ci_char_traits.h>
+
 namespace ripple {
 namespace NodeStore {
 
@@ -67,10 +69,14 @@ public:
     Factory*
     find (std::string const& name) const
     {
+        beast::ci_equal_to casecmp;
+
         for (List::const_iterator iter (m_list.begin ());
             iter != m_list.end (); ++iter)
-            if ((*iter)->getName().compareIgnoreCase (name) == 0)
+        {
+            if (casecmp ((*iter)->getName(), name))
                 return iter->get();
+        }
         return nullptr;
     }
 

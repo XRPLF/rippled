@@ -99,15 +99,17 @@ double timedDestroy (Object& object)
 */
 template <typename PartitionKey, typename Object>
 void logTimedDestroy (
-    Object& object, beast::String objectDescription, double thresholdSeconds = 1)
+    Object& object,
+    std::string const& objectDescription,
+    double thresholdSeconds = 1)
 {
     double const seconds = timedDestroy (object);
 
     if (seconds > thresholdSeconds)
     {
         deprecatedLogs().journal("LoggedTimings").warning <<
-            objectDescription << " took "<<
-            beast::String (detail::cleanElapsed (seconds)) <<
+            objectDescription << " took " <<
+            detail::cleanElapsed (seconds) <<
             " seconds to destroy";
     }
 }
@@ -116,11 +118,13 @@ void logTimedDestroy (
 
 /** Log a timed function call if the time exceeds a threshold. */
 template <typename Function>
-void logTimedCall (beast::Journal::Stream stream,
-                   beast::String description,
-                   char const* fileName,
-                   int lineNumber,
-    Function f, double thresholdSeconds = 1)
+void logTimedCall (
+    beast::Journal::Stream stream,
+    std::string const& description,
+    char const* fileName,
+    int lineNumber,
+    Function f,
+    double thresholdSeconds = 1)
 {
     double const seconds = beast::measureFunctionCallTime (f);
 
@@ -128,9 +132,9 @@ void logTimedCall (beast::Journal::Stream stream,
     {
         stream <<
             description << " took "<<
-                beast::String (detail::cleanElapsed (seconds)) <<
-                " seconds to execute at " <<
-                    beast::Debug::getSourceLocation (fileName, lineNumber);
+            detail::cleanElapsed (seconds) <<
+            " seconds to execute at " <<
+            beast::Debug::getSourceLocation (fileName, lineNumber);
     }
 }
 

@@ -35,7 +35,7 @@ public:
 
     struct TestSource : Source
     {
-        TestSource (beast::String const& name, std::uint32_t start, std::uint32_t end)
+        TestSource (std::string const& name, std::uint32_t start, std::uint32_t end)
             : m_name (name)
             , m_start (start)
             , m_end (end)
@@ -44,38 +44,37 @@ public:
 
         std::string to_string () const
         {
-            return uniqueID().toStdString();
+            return uniqueID();
         }
 
-        beast::String uniqueID () const
+        std::string uniqueID () const
         {
-            using beast::String;
-            return String ("Test,") + m_name + "," +
-                String::fromNumber (m_start) + "," +
-                String::fromNumber (m_end);
+            return "Test," + m_name + "," +
+                std::to_string (m_start) + "," +
+                std::to_string (m_end);
         }
 
-        beast::String createParam ()
+        std::string createParam ()
         {
-            return beast::String::empty;
+            return std::string{};
         }
 
         void fetch (Results& results, beast::Journal)
         {
             results.success = true;
-            results.message = beast::String::empty;
+            results.message = std::string{};
             results.list.reserve (numberOfTestValidators);
 
             for (std::uint32_t i = m_start ; i < m_end; ++i)
             {
-                Item item;;
+                Item item;
                 item.publicKey = RipplePublicKey::createFromInteger (i);
-                item.label = beast::String::fromNumber (i);
+                item.label = std::to_string (i);
                 results.list.push_back (item);
             }
         }
 
-        beast::String m_name;
+        std::string m_name;
         std::size_t m_start;
         std::size_t m_end;
     };
@@ -113,7 +112,7 @@ public:
         beast::Random r;
         for (int i = 1; i <= numberofTestSources; ++i)
         {
-            beast::String const name (beast::String::fromNumber (i));
+            std::string const name (std::to_string (i));
             std::uint32_t const start = r.nextInt (numberOfTestValidators);
             std::uint32_t const end   = start + r.nextInt (numberOfTestValidators);
             logic.add (new TestSource (name, start, end));

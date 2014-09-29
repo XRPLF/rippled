@@ -27,14 +27,14 @@ namespace NodeStore {
 class Backend_test : public TestBase
 {
 public:
-    void testBackend (beast::String type, std::int64_t const seedValue,
+    void testBackend (std::string const& type, std::int64_t const seedValue,
                       int numObjectsToTest = 2000)
     {
         std::unique_ptr <Manager> manager (make_Manager ());
 
         DummyScheduler scheduler;
 
-        testcase ((beast::String ("Backend type=") + type).toStdString());
+        testcase ("Backend type=" + type);
 
         beast::StringPairArray params;
         beast::File const path (beast::File::createTempFile ("node_db"));

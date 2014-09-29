@@ -473,7 +473,7 @@ void RFC1751::getEnglishFromKey (std::string& strHuman, std::string const& strKe
     strHuman    = strFirst + " " + strSecond;
 }
 
-beast::String RFC1751::getWordFromBlob (void const* data, size_t bytes)
+std::string RFC1751::getWordFromBlob (void const* data, size_t bytes)
 {
     std::uint32_t hash;
 

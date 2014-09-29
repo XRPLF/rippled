@@ -23,7 +23,8 @@ namespace NodeStore {
 class NodeStoreDatabase_test : public TestBase
 {
 public:
-    void testImport (beast::String destBackendType, beast::String srcBackendType, std::int64_t seedValue)
+    void testImport (std::string const& destBackendType, 
+        std::string const& srcBackendType, std::int64_t seedValue)
     {
         std::unique_ptr <Manager> manager (make_Manager ());
 
@@ -63,7 +64,8 @@ public:
             std::unique_ptr <Database> dest (manager->make_Database (
                 "test", scheduler, j, 2, destParams));
 
-            testcase ((beast::String ("import into '") + destBackendType + "' from '" + srcBackendType + "'").toStdString());
+            testcase ("import into '" + destBackendType +
+                "' from '" + srcBackendType + "'");
 
             // Do the import
             dest->import (*src);
@@ -80,7 +82,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void testNodeStore (beast::String type,
+    void testNodeStore (std::string const& type,
                         bool const useEphemeralDatabase,
                         bool const testPersistence,
                         std::int64_t const seedValue,
@@ -90,12 +92,11 @@ public:
 
         DummyScheduler scheduler;
 
-        beast::String s;
-        s << beast::String ("NodeStore backend '") + type + "'";
+        std::string s = "NodeStore backend '" + type + "'";
         if (useEphemeralDatabase)
-            s << " (with ephemeral database)";
+            s += " (with ephemeral database)";
 
-        testcase (s.toStdString());
+        testcase (s);
 
         beast::File const node_db (beast::File::createTempFile ("node_db"));
         beast::StringPairArray nodeParams;
