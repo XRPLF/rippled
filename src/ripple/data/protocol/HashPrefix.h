@@ -52,7 +52,7 @@ private:
     }
 
 public:
-    HashPrefix(HashPrefix const&) = default;
+    HashPrefix(HashPrefix const&) = delete;
     HashPrefix& operator=(HashPrefix const&) = delete;
 
     /** Returns the hash prefix associated with this object */
