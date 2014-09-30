@@ -943,7 +943,15 @@ PeerImp::on_message (std::shared_ptr <protocol::TMTransaction> const& m)
         m_journal.debug << "Got transaction from peer " << *this << ": " << txID;
 
         if (m_clusterNode)
-            flags |= SF_TRUSTED | SF_SIGGOOD;
+        {
+            flags |= SF_TRUSTED;
+            if (! getConfig().VALIDATION_PRIV.isSet())
+            {
+                // For now, be paranoid and have each validator
+                // check each transaction, regardless of source
+                flags |= SF_SIGGOOD;
+	    }
+	}
 
         if (getApp().getJobQueue().getJobCount(jtTRANSACTION) > 100)
             m_journal.info << "Transaction queue is full";

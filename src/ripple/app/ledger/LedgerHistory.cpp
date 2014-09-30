@@ -138,7 +138,7 @@ void LedgerHistory::handleMismatch (LedgerHash const& built, LedgerHash  const& 
 
     if (builtLedger && validLedger)
     {
-        assert (builtLedger->getLedgerSeq() != validLedger->getLedgerSeq());
+        assert (builtLedger->getLedgerSeq() == validLedger->getLedgerSeq());
 
         // Determine the mismatch reason
         // Distinguish Byzantine failure from transaction processing difference
