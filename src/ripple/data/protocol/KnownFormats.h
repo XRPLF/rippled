@@ -182,6 +182,9 @@ protected:
     virtual void addCommonFields (Item& item) = 0;
 
 private:
+    KnownFormats(KnownFormats const&) = delete;
+    KnownFormats& operator=(KnownFormats const&) = delete;
+
     std::vector <std::unique_ptr <Item>> m_formats;
     NameMap m_names;
     TypeMap m_types;

@@ -64,7 +64,7 @@ public:
     */
     TxFormats ();
 
-    static TxFormats* getInstance ();
+    static TxFormats const& getInstance ();
 };
 
 } // ripple

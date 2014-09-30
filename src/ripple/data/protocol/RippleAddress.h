@@ -38,9 +38,8 @@ namespace ripple {
 // Used to hold addresses and parse and produce human formats.
 //
 // XXX This needs to be reworked to store data in uint160 and uint256.
-// Conversion to CBase58Data should only happen as needed.
 
-class RippleAddress : public CBase58Data
+class RippleAddress : private CBase58Data
 {
 private:
     typedef enum
@@ -229,9 +228,65 @@ public:
 
     static RippleAddress createSeedRandom ();
     static RippleAddress createSeedGeneric (std::string const& strText);
+
+    std::string ToString () const
+        {return static_cast<CBase58Data const&>(*this).ToString();}
+
+    template <class Hasher>
+    friend
+    void
+    hash_append(Hasher& hasher, RippleAddress const& value)
+    {
+        using beast::hash_append;
+        hash_append(hasher, static_cast<CBase58Data const&>(value));
+    }
+
+    friend
+    bool
+    operator==(RippleAddress const& lhs, RippleAddress const& rhs)
+    {
+        return static_cast<CBase58Data const&>(lhs) ==
+               static_cast<CBase58Data const&>(rhs);
+    }
+
+    friend
+    bool
+    operator <(RippleAddress const& lhs, RippleAddress const& rhs)
+    {
+        return static_cast<CBase58Data const&>(lhs) <
+               static_cast<CBase58Data const&>(rhs);
+    }
 };
 
 //------------------------------------------------------------------------------
+
+inline
+bool
+operator!=(RippleAddress const& lhs, RippleAddress const& rhs)
+{
+    return !(lhs == rhs);
+}
+
+inline
+bool
+operator >(RippleAddress const& lhs, RippleAddress const& rhs)
+{
+    return rhs < lhs;
+}
+
+inline
+bool
+operator<=(RippleAddress const& lhs, RippleAddress const& rhs)
+{
+    return !(rhs < lhs);
+}
+
+inline
+bool
+operator>=(RippleAddress const& lhs, RippleAddress const& rhs)
+{
+    return !(lhs < rhs);
+}
 
 /** RipplePublicKey */
 template <>

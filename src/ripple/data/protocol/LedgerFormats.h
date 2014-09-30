@@ -131,10 +131,11 @@ enum LedgerSpecificFlags
 */
 class LedgerFormats : public KnownFormats <LedgerEntryType>
 {
-public:
+private:
     LedgerFormats ();
 
-    static LedgerFormats* getInstance ();
+public:
+    static LedgerFormats const& getInstance ();
 
 private:
     void addCommonFields (Item& item);

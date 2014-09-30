@@ -85,7 +85,7 @@ std::string STUInt16::getText () const
 {
     if (getFName () == sfLedgerEntryType)
     {
-        auto item = LedgerFormats::getInstance ()->findByType (
+        auto item = LedgerFormats::getInstance ().findByType (
             static_cast <LedgerEntryType> (value_));
 
         if (item != nullptr)
@@ -95,7 +95,7 @@ std::string STUInt16::getText () const
     if (getFName () == sfTransactionType)
     {
         TxFormats::Item const* const item =
-            TxFormats::getInstance()->findByType (static_cast <TxType> (value_));
+            TxFormats::getInstance().findByType (static_cast <TxType> (value_));
 
         if (item != nullptr)
             return item->getName ();
@@ -110,7 +110,7 @@ Json::Value STUInt16::getJson (int) const
     if (getFName () == sfLedgerEntryType)
     {
         LedgerFormats::Item const* const item =
-            LedgerFormats::getInstance ()->findByType (static_cast <LedgerEntryType> (value_));
+            LedgerFormats::getInstance ().findByType (static_cast <LedgerEntryType> (value_));
 
         if (item != nullptr)
             return item->getName ();
@@ -119,7 +119,7 @@ Json::Value STUInt16::getJson (int) const
     if (getFName () == sfTransactionType)
     {
         TxFormats::Item const* const item =
-            TxFormats::getInstance()->findByType (static_cast <TxType> (value_));
+            TxFormats::getInstance().findByType (static_cast <TxType> (value_));
 
         if (item != nullptr)
             return item->getName ();

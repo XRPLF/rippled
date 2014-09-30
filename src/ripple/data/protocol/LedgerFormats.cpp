@@ -119,9 +119,11 @@ void LedgerFormats::addCommonFields (Item& item)
         ;
 }
 
-LedgerFormats* LedgerFormats::getInstance ()
+LedgerFormats const&
+LedgerFormats::getInstance ()
 {
-    return beast::SharedSingleton <LedgerFormats>::getInstance ();
+    static LedgerFormats instance;
+    return instance;
 }
 
 } // ripple
