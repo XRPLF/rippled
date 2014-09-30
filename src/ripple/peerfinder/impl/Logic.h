@@ -49,7 +49,7 @@ class Logic
 public:
     // Maps remote endpoints to slots. Since a slot has a
     // remote endpoint upon construction, this holds all counts.
-    // 
+    //
     typedef std::map <beast::IP::Endpoint,
         std::shared_ptr <SlotImp>> Slots;
 
@@ -105,7 +105,7 @@ public:
         // The addresses (but not port) we are connected to. This includes
         // outgoing connection attempts. Note that this set can contain
         // duplicates (since the port is not set)
-        ConnectedAddresses connected_addresses; 
+        ConnectedAddresses connected_addresses;
 
         // Set of public keys belonging to active peers
         Keys keys;
@@ -400,8 +400,8 @@ public:
             auto const iter (state->slots.find (local_endpoint));
             if (iter != state->slots.end ())
             {
-                Slot::ptr const& self (iter->second);
-                assert (self->local_endpoint () == slot->remote_endpoint ());
+                assert (iter->second->local_endpoint ()
+                        == slot->remote_endpoint ());
                 if (m_journal.warning) m_journal.warning << beast::leftw (18) <<
                     "Logic dropping " << slot->remote_endpoint () <<
                     " as self connect";
@@ -572,7 +572,7 @@ public:
             ((list.size() > 1) ? " entries" : " entry");
 
         SharedState::Access state (m_state);
-   
+
         // The object must exist in our table
         assert (state->slots.find (slot->remote_endpoint ()) !=
             state->slots.end ());
@@ -603,7 +603,7 @@ public:
                         "Logic testing " << ep.address << " already in progress";
                     continue;
                 }
-                
+
                 if (! slot->checked)
                 {
                     // Mark that a check for this slot is now in progress.
@@ -611,7 +611,7 @@ public:
 
                     // Test the slot's listening port before
                     // adding it to the livecache for the first time.
-                    //                     
+                    //
                     m_checker.async_test (ep.address, std::bind (
                         &Logic::checkComplete, this, slot->remote_endpoint (),
                             ep.address, std::placeholders::_1));
@@ -623,7 +623,7 @@ public:
 
                     continue;
                 }
- 
+
                 // If they failed the test then skip the address
                 if (! slot->canAccept)
                     continue;
@@ -982,7 +982,7 @@ public:
     int addBootcacheAddresses (IPAddresses const& list)
     {
         int count (0);
-        SharedState::Access state (m_state);        
+        SharedState::Access state (m_state);
         for (auto addr : list)
         {
             if (addBootcacheAddress (addr, state))
@@ -1104,7 +1104,7 @@ public:
                     targets.emplace_back (slot);
                 });
         }
-        
+
         /* VFALCO NOTE
             This is a temporary measure. Once we know our own IP
             address, the correct solution is to put it into the Livecache
@@ -1141,7 +1141,7 @@ public:
             SlotImp::ptr const& slot (t.slot());
             auto const& list (t.list());
             if (m_journal.trace) m_journal.trace << beast::leftw (18) <<
-                "Logic sending " << slot->remote_endpoint() << 
+                "Logic sending " << slot->remote_endpoint() <<
                 " with " << list.size() <<
                 ((list.size() == 1) ? " endpoint" : " endpoints");
             m_callback.send (slot, list);
@@ -1169,7 +1169,7 @@ public:
                 item ["fixed"]      = "yes";
             if (slot.cluster())
                 item ["cluster"]    = "yes";
-            
+
             item ["state"] = stateString (slot.state());
         }
     }
