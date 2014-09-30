@@ -21,7 +21,7 @@ REMAPPINGS = {
 
 def eval_arguments(args):
     args = args.strip()
-    if not args or (arg == '()'):
+    if not args or (args == '()'):
         return ()
     tokens = list(tokenize.generate_tokens(StringIO(args).readline))
     def remap():

@@ -11,18 +11,33 @@ from ripple.util import File
 from ripple.util import Log
 from ripple.util import Range
 
+LEDGER_QUERY = """
+SELECT
+     L.*, count(1) validations
+FROM
+    (select LedgerHash, LedgerSeq from Ledgers ORDER BY LedgerSeq DESC) L
+    JOIN Validations V
+    ON (V.LedgerHash = L.LedgerHash)
+    GROUP BY L.LedgerHash
+    HAVING validations >= {validation_quorum}
+    ORDER BY 2;
+"""
+
 COMPLETE_QUERY = """
 SELECT
      L.LedgerSeq, count(*) validations
 FROM
     (select LedgerHash, LedgerSeq from Ledgers ORDER BY LedgerSeq) L
-    JOIN Validations V ON (V.LedgerHash = L.LedgerHash)
+    JOIN Validations V
+    ON (V.LedgerHash = L.LedgerHash)
     GROUP BY L.LedgerHash
-    HAVING validations >= {validation_quorum}
-    ORDER BY 1;
+    HAVING validations >= :validation_quorum
+    ORDER BY 2;
 """
 
 _DATABASE_NAME = 'ledger.db'
+
+USE_PLACEHOLDERS = False
 
 class DatabaseReader(object):
     def __init__(self, config):
@@ -30,8 +45,13 @@ class DatabaseReader(object):
         database = ARGS.database or config['database_path']
         if not database.endswith(_DATABASE_NAME):
             database = os.path.join(database, _DATABASE_NAME)
-        cursor = Database.fetchall(database, COMPLETE_QUERY, **config)
-        self.complete = [c[0] for c in cursor]
+        if USE_PLACEHOLDERS:
+            cursor = Database.fetchall(
+                database, COMPLETE_QUERY, config)
+        else:
+            cursor = Database.fetchall(
+                database, LEDGER_QUERY.format(**config), {})
+        self.complete = [c[1] for c in cursor]
 
     def name_to_ledger_index(self, ledger_name, is_full=False):
         if not self.complete:

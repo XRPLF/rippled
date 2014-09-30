@@ -22,7 +22,7 @@ _ERROR_TEXT = {
 _DEFAULT_ERROR_ = "Couldn't connect to server."
 
 class RippledReader(object):
-    def __init__(self):
+    def __init__(self, config):
         fname = File.normalize(ARGS.rippled)
         if not os.path.exists(fname):
             raise Exception('No rippled found at %s.' % fname)
