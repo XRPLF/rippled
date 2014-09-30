@@ -15,7 +15,7 @@
     ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-    Portions based on SOCI - The C++ Database Access Library: 
+    Portions based on SOCI - The C++ Database Access Library:
 
     SOCI: http://soci.sourceforge.net/
 
@@ -67,10 +67,7 @@ class session::Sqlite3
 public:
     Sqlite3()
     {
-        int threadSafe = sqlite3_threadsafe();
-
-        assert (threadSafe != 0);
-
+        assert (sqlite3_threadsafe() != 0);
         sqlite3_initialize();
     }
 

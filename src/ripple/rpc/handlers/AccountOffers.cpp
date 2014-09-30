@@ -63,7 +63,7 @@ Json::Value doAccountOffers (RPC::Context& context)
 
     if (! ledger->hasAccount (raAccount))
         return rpcError (rpcACT_NOT_FOUND);
-    
+
     unsigned int limit;
     if (params.isMember (jss::limit))
     {
@@ -75,14 +75,14 @@ Json::Value doAccountOffers (RPC::Context& context)
     {
         limit = RPC::Tuning::defaultOffersPerRequest;
     }
-    
+
     uint256 const rootIndex (Ledger::getOwnerDirIndex (raAccount.getAccountID ()));
-    std::uint32_t resumeSeq;
+    std::uint32_t resumeSeq = 0;
     uint256 currentIndex;
     bool resume (true);
 
     if (params.isMember (jss::marker))
-    {    
+    {
         Json::Value const& marker (params[jss::marker]);
 
         if (! marker.isObject () || marker.size () != 2 ||
@@ -125,7 +125,7 @@ Json::Value doAccountOffers (RPC::Context& context)
 
                 if (!resume && resumeSeq == seq)
                     resume = true;
-                
+
                 if (resume)
                 {
                     if (i < limit)
@@ -149,7 +149,7 @@ Json::Value doAccountOffers (RPC::Context& context)
                         marker[jss::account_index] = strHex(
                             ownerDir->getFieldU64 (sfIndexPrevious));
 
-                        process = false; 
+                        process = false;
                         break;
                     }
                 }

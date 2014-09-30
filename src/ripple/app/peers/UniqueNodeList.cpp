@@ -654,7 +654,7 @@ private:
         auto sl (getApp().getWalletDB ().lock ());
         auto db = getApp().getWalletDB ().getDB ();
 
-        if (!db->executeSQL ("SELECT * FROM Misc WHERE Magic=1;")) 
+        if (!db->executeSQL ("SELECT * FROM Misc WHERE Magic=1;"))
             return false;
 
         bool const bAvail  = db->startIterRows ();
@@ -1232,9 +1232,9 @@ private:
 
                 seedDomain  sdCurrent;
 
-                bool        bFound      = getSeedDomains (strDomain, sdCurrent);
-
+                bool bFound = getSeedDomains (strDomain, sdCurrent);
                 assert (bFound);
+                (void) bFound;
 
                 uint256     iSha256     = Serializer::getSHA512Half (strSiteFile);
                 bool        bChangedB   = sdCurrent.iSha256 != iSha256;
@@ -1347,9 +1347,9 @@ private:
                 mtpFetchNext    = boost::posix_time::ptime (boost::posix_time::not_a_date_time);
 
                 seedDomain  sdCurrent;
-                bool        bFound  = getSeedDomains (strDomain, sdCurrent);
-
+                bool bFound  = getSeedDomains (strDomain, sdCurrent);
                 assert (bFound);
+                (void) bFound;
 
                 // Update time of next fetch and this scan attempt.
                 sdCurrent.tpScan        = tpNow;
