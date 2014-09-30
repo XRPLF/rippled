@@ -72,7 +72,8 @@ private:
 class NullFactory : public Factory
 {
 public:
-    beast::String getName () const
+    std::string
+    getName () const
     {
         return "none";
     }

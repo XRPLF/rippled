@@ -105,7 +105,7 @@ public:
 class MemoryFactory : public Factory
 {
 public:
-    beast::String
+    std::string
     getName () const
     {
         return "Memory";

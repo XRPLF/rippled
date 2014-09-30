@@ -371,10 +371,6 @@ public:
         ProofOfWorkFactoryImp gen;
         ProofOfWork pow = gen.getProof ();
 
-        beast::String s;
-
-        s << "solve difficulty " << beast::String (pow.getDifficulty ());
-
         uint256 solution = pow.solve (16777216);
 
         expect (! solution.isZero (), "Should be solved");

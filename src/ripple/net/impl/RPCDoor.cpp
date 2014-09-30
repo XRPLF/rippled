@@ -37,7 +37,9 @@ public:
                     getConfig ().RPC_SSL_CERT,
                     getConfig ().RPC_SSL_CHAIN))
     {
-        WriteLog (lsINFO, RPCDoor) << "RPC port: " << getConfig ().getRpcAddress().toRawUTF8() << " allow remote: " << getConfig ().RPC_ALLOW_REMOTE;
+        WriteLog (lsINFO, RPCDoor) <<
+            "RPC port: " << getConfig ().getRpcAddress() <<
+            " allow remote: " << getConfig ().RPC_ALLOW_REMOTE;
 
         startListening ();
     }
@@ -47,7 +49,7 @@ public:
     ~RPCDoorImp ()
     {
         WriteLog (lsINFO, RPCDoor) <<
-            "RPC port: " << getConfig ().getRpcAddress().toRawUTF8() <<
+            "RPC port: " << getConfig ().getRpcAddress() <<
             " allow remote: " << getConfig ().RPC_ALLOW_REMOTE;
     }
 

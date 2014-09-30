@@ -46,14 +46,14 @@ public:
         return ss.str();
     }
 
-    beast::String uniqueID () const
+    std::string uniqueID () const
     {
-        return "URL," + m_url.toString();
+        return std::string("URL,") + m_url.to_string();
     }
 
-    beast::String createParam ()
+    std::string createParam ()
     {
-        return m_url.toString();
+        return m_url.to_string();
     }
 
     void cancel ()

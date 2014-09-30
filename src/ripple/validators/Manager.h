@@ -68,10 +68,8 @@ public:
             Can be called from any thread.
     */
     /** @{ */
-    virtual void addStrings (beast::String name,
+    virtual void addStrings (std::string const& name,
                              std::vector <std::string> const& strings) = 0;
-    virtual void addStrings (beast::String name,
-                             beast::StringArray const& stringArray) = 0;
     virtual void addFile (beast::File const& file) = 0;
     virtual void addStaticSource (Validators::Source* source) = 0;
     /** @} */

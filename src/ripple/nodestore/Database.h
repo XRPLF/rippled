@@ -51,7 +51,7 @@ public:
         This is used for diagnostics and may not reflect the actual path
         or paths used by the underlying backend.
     */
-    virtual beast::String getName () const = 0;
+    virtual std::string getName () const = 0;
 
     /** Fetch an object.
         If the object is known to be not in the database, isn't found in the
