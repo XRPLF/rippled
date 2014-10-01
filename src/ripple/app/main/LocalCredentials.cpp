@@ -22,10 +22,7 @@
 
 namespace ripple {
 
-LocalCredentials::LocalCredentials ()
-    : mLedger (0)
-{
-}
+LocalCredentials::LocalCredentials () = default;
 
 void LocalCredentials::start ()
 {

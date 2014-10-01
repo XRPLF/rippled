@@ -60,8 +60,6 @@ private:
 
     RippleAddress mNodePublicKey;
     RippleAddress mNodePrivateKey;
-
-    LedgerIndex mLedger; // ledger we last synched to
 };
 
 } // ripple
