@@ -342,6 +342,7 @@ SSLPeer::do_handshake (boost::asio::yield_context yield)
         socket_type::server, read_buf_.data(), yield[ec]);
     if (ec)
         return fail (ec, "handshake");
+    read_buf_.consume (bytes_transferred);
     boost::asio::spawn (strand_, std::bind (&SSLPeer::do_read,
         shared_from_this(), std::placeholders::_1));
 }
