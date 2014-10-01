@@ -3211,6 +3211,11 @@
     <ClCompile Include="..\..\src\ripple\rpc\impl\Manager.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\NewHandler.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\rpc\impl\NewHandlerBase.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\impl\ParseAccountIds.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -3233,11 +3238,15 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\Manager.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rpc\NewHandler.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\Request.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\RPCHandler.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\RPCServerHandler.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rpc\Status.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\sitefiles\api\Listener.h">
     </ClInclude>
