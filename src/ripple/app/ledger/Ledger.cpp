@@ -2018,7 +2018,7 @@ void Ledger::updateFees ()
     if (mBaseFee)
         return;
     std::uint64_t baseFee = getConfig ().FEE_DEFAULT;
-    std::uint32_t referenceFeeUnits = 10;
+    std::uint32_t referenceFeeUnits = getConfig ().TRANSACTION_FEE_BASE;
     std::uint32_t reserveBase = getConfig ().FEE_ACCOUNT_RESERVE;
     std::int64_t reserveIncrement = getConfig ().FEE_OWNER_RESERVE;
 
@@ -2054,6 +2054,7 @@ void Ledger::updateFees ()
 
 std::uint64_t Ledger::scaleFeeBase (std::uint64_t fee)
 {
+    // Converts a fee in fee units to a fee in drops
     updateFees ();
     return getApp().getFeeTrack ().scaleFeeBase (
         fee, mBaseFee, mReferenceFeeUnits);

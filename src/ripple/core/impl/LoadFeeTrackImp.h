@@ -46,9 +46,9 @@ public:
         bool big = (fee > midrange);
 
         if (big)                // big fee, divide first to avoid overflow
-            fee /= baseFee;
+            fee /= referenceFeeUnits;
         else                    // normal fee, multiply first for accuracy
-            fee *= referenceFeeUnits;
+            fee *= baseFee;
 
         std::uint32_t feeFactor = std::max (mLocalTxnLoadFee, mRemoteTxnLoadFee);
 
@@ -63,9 +63,9 @@ public:
         }
 
         if (big)                // Fee was big to start, must now multiply
-            fee *= referenceFeeUnits;
+            fee *= baseFee;
         else                    // Fee was small to start, mst now divide
-            fee /= baseFee;
+            fee /= referenceFeeUnits;
 
         return fee;
     }
@@ -73,7 +73,7 @@ public:
     // Scale from fee units to millionths of a ripple
     std::uint64_t scaleFeeBase (std::uint64_t fee, std::uint64_t baseFee, std::uint32_t referenceFeeUnits)
     {
-        return mulDiv (fee, referenceFeeUnits, baseFee);
+        return mulDiv (fee, baseFee, referenceFeeUnits);
     }
 
     std::uint32_t getRemoteFee ()

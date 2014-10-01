@@ -73,11 +73,12 @@ static void autofill_fee (
         }
     }
 
-    std::uint64_t const feeDefault = getConfig().FEE_DEFAULT;
+    // Default fee in fee units
+    std::uint64_t const feeDefault = getConfig().TRANSACTION_FEE_BASE;
 
     // Administrative endpoints are exempt from local fees
     std::uint64_t const fee = ledger->scaleFeeLoad (feeDefault, admin);
-    std::uint64_t const limit = mult * feeDefault;
+    std::uint64_t const limit = mult * ledger->scaleFeeBase (feeDefault);
 
     if (fee > limit)
     {
@@ -278,17 +279,6 @@ Json::Value transactionSign (
             role);
         if (contains_error(e))
             return e;
-    }
-
-    if (!tx_json.isMember ("Fee")) {
-        auto const& transactionType = tx_json["TransactionType"].asString ();
-        if ("AccountSet" == transactionType
-            || "OfferCreate" == transactionType
-            || "OfferCancel" == transactionType
-            || "TrustSet" == transactionType)
-        {
-            tx_json["Fee"] = (int) getConfig ().FEE_DEFAULT;
-        }
     }
 
     if (!tx_json.isMember ("Sequence"))

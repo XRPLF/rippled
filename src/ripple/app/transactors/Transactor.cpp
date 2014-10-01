@@ -99,7 +99,8 @@ void Transactor::calculateFee ()
 
 std::uint64_t Transactor::calculateBaseFee ()
 {
-    return getConfig ().FEE_DEFAULT;
+    // Returns the fee in fee units
+    return getConfig ().TRANSACTION_FEE_BASE;
 }
 
 TER Transactor::payFee ()

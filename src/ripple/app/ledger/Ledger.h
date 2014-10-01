@@ -451,22 +451,24 @@ public:
 
     std::uint32_t getReferenceFeeUnits ()
     {
+        // Returns the cost of the reference transaction in fee units
         updateFees ();
         return mReferenceFeeUnits;
     }
 
     std::uint64_t getBaseFee ()
     {
+        // Returns the cost of the reference transaction in drops
         updateFees ();
         return mBaseFee;
     }
 
     std::uint64_t getReserve (int increments)
     {
+        // Returns the required reserve in drops
         updateFees ();
-        return scaleFeeBase (
-            static_cast<std::uint64_t> (increments) * mReserveIncrement
-            + mReserveBase);
+        return static_cast<std::uint64_t> (increments) * mReserveIncrement
+            + mReserveBase;
     }
 
     std::uint64_t getReserveInc ()
