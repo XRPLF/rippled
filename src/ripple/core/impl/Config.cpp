@@ -49,6 +49,9 @@ namespace ripple {
 #define DEFAULT_FEE_OFFER               DEFAULT_FEE_DEFAULT
 #define DEFAULT_FEE_OPERATION           1
 
+// Fee in fee units
+#define DEFAULT_TRANSACTION_FEE_BASE    10
+
 #define SECTION_DEFAULT_NAME    ""
 
 IniFileSections
@@ -323,7 +326,7 @@ Config::Config ()
     PEER_PRIVATE            = false;
     PEERS_MAX               = 0;    // indicates "use default"
 
-    TRANSACTION_FEE_BASE    = DEFAULT_FEE_DEFAULT;
+    TRANSACTION_FEE_BASE    = DEFAULT_TRANSACTION_FEE_BASE;
 
     NETWORK_QUORUM          = 0;    // Don't need to see other nodes
     VALIDATION_QUORUM       = 1;    // Only need one node to vouch
