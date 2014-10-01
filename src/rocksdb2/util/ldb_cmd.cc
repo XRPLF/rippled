@@ -14,6 +14,7 @@
 #include "rocksdb/write_batch.h"
 #include "rocksdb/cache.h"
 #include "util/coding.h"
+#include "util/scoped_arena_iterator.h"
 #include "utilities/ttl/db_ttl_impl.h"
 
 #include <ctime>
@@ -219,10 +220,11 @@ Options LDBCommand::PrepareOptionsForOpenDB() {
 
   map<string, string>::const_iterator itr;
 
+  BlockBasedTableOptions table_options;
   int bits;
   if (ParseIntOption(option_map_, ARG_BLOOM_BITS, bits, exec_state_)) {
     if (bits > 0) {
-      opt.filter_policy = NewBloomFilterPolicy(bits);
+      table_options.filter_policy.reset(NewBloomFilterPolicy(bits));
     } else {
       exec_state_ = LDBCommandExecuteResult::FAILED(ARG_BLOOM_BITS +
                       " must be > 0.");
@@ -232,7 +234,8 @@ Options LDBCommand::PrepareOptionsForOpenDB() {
   int block_size;
   if (ParseIntOption(option_map_, ARG_BLOCK_SIZE, block_size, exec_state_)) {
     if (block_size > 0) {
-      opt.block_size = block_size;
+      table_options.block_size = block_size;
+      opt.table_factory.reset(NewBlockBasedTableFactory(table_options));
     } else {
       exec_state_ = LDBCommandExecuteResult::FAILED(ARG_BLOCK_SIZE +
                       " must be > 0.");
@@ -322,7 +325,7 @@ bool LDBCommand::ParseKeyValue(const string& line, string* key, string* value,
 bool LDBCommand::ValidateCmdLineOptions() {
 
   for (map<string, string>::const_iterator itr = option_map_.begin();
-        itr != option_map_.end(); itr++) {
+        itr != option_map_.end(); ++itr) {
     if (find(valid_cmd_line_options_.begin(),
           valid_cmd_line_options_.end(), itr->first) ==
           valid_cmd_line_options_.end()) {
@@ -332,7 +335,7 @@ bool LDBCommand::ValidateCmdLineOptions() {
   }
 
   for (vector<string>::const_iterator itr = flags_.begin();
-        itr != flags_.end(); itr++) {
+        itr != flags_.end(); ++itr) {
     if (find(valid_cmd_line_options_.begin(),
           valid_cmd_line_options_.end(), *itr) ==
           valid_cmd_line_options_.end()) {
@@ -538,6 +541,7 @@ void ManifestDumpCommand::DoCommand() {
         } else {
           exec_state_ = LDBCommandExecuteResult::FAILED(
             "Multiple MANIFEST files found; use --path to select one");
+          closedir(d);
           return;
         }
       }
@@ -560,8 +564,9 @@ void ManifestDumpCommand::DoCommand() {
   // if VersionSet::DumpManifest() depends on any option done by
   // SanitizeOptions(), we need to initialize it manually.
   options.db_paths.emplace_back("dummy", 0);
-  VersionSet* versions = new VersionSet(dbname, &options, sopt, tc.get());
-  Status s = versions->DumpManifest(options, file, verbose_, is_key_hex_);
+  WriteController wc;
+  VersionSet versions(dbname, &options, sopt, tc.get(), &wc);
+  Status s = versions.DumpManifest(options, file, verbose_, is_key_hex_);
   if (!s.ok()) {
     printf("Error in processing file %s %s\n", manifestfile.c_str(),
            s.ToString().c_str());
@@ -737,7 +742,8 @@ void InternalDumpCommand::DoCommand() {
   uint64_t c=0;
   uint64_t s1=0,s2=0;
   // Setup internal key iterator
-  auto iter = unique_ptr<Iterator>(idb->TEST_NewInternalIterator());
+  Arena arena;
+  ScopedArenaIterator iter(idb->TEST_NewInternalIterator(&arena));
   Status st = iter->status();
   if (!st.ok()) {
     exec_state_ = LDBCommandExecuteResult::FAILED("Iterator error:"
@@ -1084,7 +1090,8 @@ Status ReduceDBLevelsCommand::GetOldNumOfLevels(Options& opt,
       NewLRUCache(opt.max_open_files - 10, opt.table_cache_numshardbits,
                   opt.table_cache_remove_scan_count_limit));
   const InternalKeyComparator cmp(opt.comparator);
-  VersionSet versions(db_path_, &opt, soptions, tc.get());
+  WriteController wc;
+  VersionSet versions(db_path_, &opt, soptions, tc.get(), &wc);
   std::vector<ColumnFamilyDescriptor> dummy;
   ColumnFamilyDescriptor dummy_descriptor(kDefaultColumnFamilyName,
                                           ColumnFamilyOptions(opt));
@@ -1531,7 +1538,7 @@ void BatchPutCommand::DoCommand() {
   WriteBatch batch;
 
   for (vector<pair<string, string>>::const_iterator itr
-        = key_values_.begin(); itr != key_values_.end(); itr++) {
+        = key_values_.begin(); itr != key_values_.end(); ++itr) {
       batch.Put(itr->first, itr->second);
   }
   Status st = db_->Write(WriteOptions(), &batch);
