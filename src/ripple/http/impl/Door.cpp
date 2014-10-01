@@ -19,6 +19,7 @@
 
 #include <ripple/http/impl/Door.h>
 #include <ripple/http/impl/Peer.h>
+#include <boost/asio/buffer.hpp>
 #include <beast/asio/placeholders.h>
 #include <boost/logic/tribool.hpp>
 #include <functional>
@@ -53,7 +54,7 @@ detect_ssl (Socket& socket, StreamBuf& buf, Yield yield)
     for(;;)
     {
         std::size_t const max = 4; // the most bytes we could need
-        std::array <unsigned char, max> data;
+        unsigned char data[max];
         auto const bytes = boost::asio::buffer_copy (
             boost::asio::buffer(data), buf.data());
 
