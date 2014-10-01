@@ -40,11 +40,14 @@ class File;
 
     @see InputStream, MemoryOutputStream, FileOutputStream
 */
-class  OutputStream : public Uncopyable
+class  OutputStream
 {
 protected:
     //==============================================================================
     OutputStream();
+
+    OutputStream (OutputStream const&) = delete;
+    OutputStream& operator= (OutputStream const&) = delete;
 
 public:
     /** Destructor.

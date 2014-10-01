@@ -23,10 +23,12 @@
 namespace ripple {
 
 /** Holds the cryptographic credentials identifying this instance of the server. */
-class LocalCredentials : public beast::Uncopyable
+class LocalCredentials
 {
 public:
     LocalCredentials ();
+    LocalCredentials (LocalCredentials const&) = delete;
+    LocalCredentials& operator= (LocalCredentials const&) = delete;
 
     // Begin processing.
     // - Maintain peer connectivity through validation and peer management.
@@ -50,17 +52,14 @@ public:
     bool dataStore (std::string const& strKey, std::string const& strValue);
 
 private:
-    LocalCredentials (LocalCredentials const&); // disallowed
-    LocalCredentials& operator= (const LocalCredentials&); // disallowed
-
-    bool    nodeIdentityLoad ();
-    bool    nodeIdentityCreate ();
+    bool nodeIdentityLoad ();
+    bool nodeIdentityCreate ();
 
 private:
     std::recursive_mutex mLock;
 
-    RippleAddress   mNodePublicKey;
-    RippleAddress   mNodePrivateKey;
+    RippleAddress mNodePublicKey;
+    RippleAddress mNodePrivateKey;
 
     LedgerIndex mLedger; // ledger we last synched to
 };

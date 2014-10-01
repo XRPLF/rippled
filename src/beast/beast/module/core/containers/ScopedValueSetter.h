@@ -54,7 +54,7 @@ namespace beast
 
 */
 template <typename ValueType>
-class ScopedValueSetter : public Uncopyable
+class ScopedValueSetter
 {
 public:
     /** Creates a ScopedValueSetter that will immediately change the specified value to the
@@ -80,6 +80,9 @@ public:
         valueToSet = newValue;
     }
 
+    ScopedValueSetter(ScopedValueSetter const&) = delete;
+    ScopedValueSetter& operator= (ScopedValueSetter const&) = delete;
+    
     ~ScopedValueSetter()
     {
         value = originalValue;

@@ -27,7 +27,6 @@
 #include <cstring>
     
 #include <beast/Config.h>
-#include <beast/Uncopyable.h>
 
 namespace beast {
 
@@ -78,12 +77,16 @@ Type* createCopyIfNotNull (const Type* pointer)
  /** A handy C++ wrapper that creates and deletes an NSAutoreleasePool object using RAII.
      You should use the BEAST_AUTORELEASEPOOL macro to create a local auto-release pool on the stack.
  */
- class ScopedAutoReleasePool : public Uncopyable
+ class ScopedAutoReleasePool
  {
  public:
      ScopedAutoReleasePool();
      ~ScopedAutoReleasePool();
 
+
+    ScopedAutoReleasePool(ScopedAutoReleasePool const&) = delete;
+    ScopedAutoReleasePool& operator= (ScopedAutoReleasePool const&) = delete;
+    
  private:
      void* pool;
  };

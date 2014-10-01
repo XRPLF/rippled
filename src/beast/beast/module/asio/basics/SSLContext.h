@@ -20,7 +20,6 @@
 #ifndef BEAST_ASIO_BASICS_SSLCONTEXT_H_INCLUDED
 #define BEAST_ASIO_BASICS_SSLCONTEXT_H_INCLUDED
 
-#include <beast/Uncopyable.h>
 #include <boost/asio/ssl/context.hpp>
 
 namespace beast {
@@ -29,7 +28,7 @@ namespace asio {
 /** Simple base class for passing a context around.
     This lets derived classes hide their implementation from the headers.
 */
-class SSLContext : public Uncopyable
+class SSLContext
 {
 public:
     virtual ~SSLContext ();
@@ -60,6 +59,9 @@ public:
 
 protected:
     explicit SSLContext (ContextType& context);
+
+    SSLContext(SSLContext const&) = delete;
+    SSLContext& operator= (SSLContext const&) = delete;
 
     ContextType& m_context;
 };

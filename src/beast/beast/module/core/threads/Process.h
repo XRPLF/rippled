@@ -34,9 +34,8 @@ namespace beast {
 
     @see Thread, BEASTApplication
 */
-class Process : public Uncopyable
+namespace Process
 {
-public:
     //==============================================================================
     enum ProcessPriority
     {
@@ -51,7 +50,7 @@ public:
         @param priority     the process priority, where
                             0=low, 1=normal, 2=high, 3=realtime
     */
-    static void setPriority (const ProcessPriority priority);
+    void setPriority (const ProcessPriority priority);
 
     /** Kills the current process immediately.
 
@@ -61,18 +60,18 @@ public:
 
         @see BEASTApplication::quit
     */
-    static void terminate();
+    void terminate();
 
     //==============================================================================
     /** Returns true if this application process is the one that the user is
         currently using.
     */
-    static bool isForegroundProcess();
+    bool isForegroundProcess();
 
     /** Attempts to make the current process the active one.
         (This is not possible on some platforms).
     */
-    static void makeForegroundProcess();
+    void makeForegroundProcess();
 
     //==============================================================================
     /** Raises the current process's privilege level.
@@ -80,21 +79,21 @@ public:
         Does nothing if this isn't supported by the current OS, or if process
         privilege level is fixed.
     */
-    static void raisePrivilege();
+    void raisePrivilege();
 
     /** Lowers the current process's privilege level.
 
         Does nothing if this isn't supported by the current OS, or if process
         privilege level is fixed.
     */
-    static void lowerPrivilege();
+    void lowerPrivilege();
 
     /** Returns true if this process is being hosted by a debugger. */
-    static bool isRunningUnderDebugger();
+    bool isRunningUnderDebugger();
 
     //==============================================================================
     /** Tries to launch the OS's default reader application for a given file or URL. */
-    static bool openDocument (const String& documentURL, const String& parameters);
+    bool openDocument (const String& documentURL, const String& parameters);
 
    #if BEAST_WINDOWS || DOXYGEN
     //==============================================================================
@@ -111,7 +110,7 @@ public:
         to provide the correct module handle in your DllMain() function, because
         the system relies on the correct instance handle when opening windows.
     */
-    static void* getCurrentModuleInstanceHandle() noexcept;
+    void* getCurrentModuleInstanceHandle() noexcept;
 
     /** WINDOWS ONLY - Sets a new module handle to be used by the library.
 
@@ -120,17 +119,14 @@ public:
 
         @see getCurrentModuleInstanceHandle()
     */
-    static void setCurrentModuleInstanceHandle (void* newHandle) noexcept;
+    void setCurrentModuleInstanceHandle (void* newHandle) noexcept;
    #endif
 
    #if BEAST_MAC || DOXYGEN
     //==============================================================================
     /** OSX ONLY - Shows or hides the OSX dock icon for this app. */
-    static void setDockIconVisible (bool isVisible);
+    void setDockIconVisible (bool isVisible);
    #endif
-
-private:
-    Process();
 };
 
 } // beast

@@ -1091,8 +1091,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\threads\WaitableEvent.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\Uncopyable.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\unit_test.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\unit_test\amount.h">

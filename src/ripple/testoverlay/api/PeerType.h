@@ -29,7 +29,6 @@ namespace TestOverlay
 template <class Config>
 class PeerType
     : public Config
-    , public beast::Uncopyable
 {
 public:
     typedef typename Config::Peer       Peer;
@@ -50,6 +49,9 @@ public:
         , m_logic (*this)
     {
     }
+
+    PeerType (PeerType const&) = delete;
+    PeerType& operator= (PeerType const&) = delete;
 
     /** Return the pending Results data associated with this peer. */
     /** @{ */

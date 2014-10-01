@@ -21,7 +21,6 @@
 #define BEAST_INTRUSIVE_LOCKFREESTACK_H_INCLUDED
 
 #include <beast/Atomic.h>
-#include <beast/Uncopyable.h>
 
 #include <iterator>
 #include <type_traits>
@@ -142,15 +141,16 @@ bool operator!= (LockFreeStackIterator <Container, LhsIsConst> const& lhs,
                 omitted, the default tag is used.
 */
 template <class Element, class Tag = void>
-class LockFreeStack : public Uncopyable
+class LockFreeStack
 {
 public:
-    class Node : public Uncopyable
+    class Node
     {
     public:
-        Node ()
-        {
-        }
+        Node () = default;
+
+        Node(Node const&) = delete;
+        Node& operator= (Node const&) = delete;
 
         explicit Node (Node* next) : m_next (next)
         {
@@ -183,6 +183,9 @@ public:
         , m_head (&m_end)
     {
     }
+
+    LockFreeStack(LockFreeStack const&) = delete;
+    LockFreeStack& operator= (LockFreeStack const&) = delete;
 
     /** Returns true if the stack is empty. */
     bool empty() const

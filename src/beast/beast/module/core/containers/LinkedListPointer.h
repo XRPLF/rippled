@@ -55,7 +55,7 @@ namespace beast
     @endcode
 */
 template <class ObjectType>
-class LinkedListPointer : public Uncopyable
+class LinkedListPointer
 {
 public:
     //==============================================================================
@@ -64,6 +64,9 @@ public:
         : item (nullptr)
     {
     }
+
+    LinkedListPointer(LinkedListPointer const&) = delete;
+    LinkedListPointer& operator= (LinkedListPointer const&) = delete;
 
     /** Creates a pointer to a list whose head is the item provided. */
     explicit LinkedListPointer (ObjectType* const headItem) noexcept
@@ -332,7 +335,7 @@ public:
         list, and then repeatedly call Appender::append() to add items to the end
         of the list in O(1) time.
     */
-    class Appender : public Uncopyable
+    class Appender
     {
     public:
         /** Creates an appender which will add items to the given list.
@@ -344,6 +347,9 @@ public:
             bassert (endOfListPointer.item == nullptr);
         }
 
+        Appender(LinkedListPointer const&) = delete;
+        Appender& operator= (Appender const&) = delete;
+        
         /** Appends an item to the list. */
         void append (ObjectType* const newItem) noexcept
         {

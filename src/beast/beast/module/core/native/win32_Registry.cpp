@@ -24,7 +24,7 @@
 namespace beast
 {
 
-struct RegistryKeyWrapper : public Uncopyable
+struct RegistryKeyWrapper
 {
     RegistryKeyWrapper (String name, const bool createForWriting, const DWORD wow64Flags)
         : key (0), wideCharValueName (nullptr)
@@ -54,6 +54,9 @@ struct RegistryKeyWrapper : public Uncopyable
                 RegOpenKeyEx (rootKey, wideCharName, 0, KEY_READ | wow64Flags, &key);
         }
     }
+
+    RegistryKeyWrapper (RegistryKeyWrapper const&) = delete;
+    RegistryKeyWrapper& operator= (RegistryKeyWrapper const&) = delete;
 
     ~RegistryKeyWrapper()
     {

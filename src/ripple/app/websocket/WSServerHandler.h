@@ -35,7 +35,7 @@ class WSConnectionType;
 struct WSServerHandlerLog;
 
 // This tag helps with mutex tracking
-struct WSServerHandlerBase : public beast::Uncopyable
+struct WSServerHandlerBase
 {
 };
 
@@ -89,6 +89,9 @@ public:
         , mProxy (bProxy)
     {
     }
+
+    WSServerHandler(WSServerHandler const&) = delete;
+    WSServerHandler& operator= (WSServerHandler const&) = delete;
 
     bool getPublic ()
     {
