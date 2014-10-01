@@ -50,6 +50,7 @@ public:
         add (rpcACT_EXISTS,            "actExists",         "Account already exists.");
         add (rpcACT_MALFORMED,         "actMalformed",      "Account malformed.");
         add (rpcACT_NOT_FOUND,         "actNotFound",       "Account not found.");
+        add (rpcATX_DEPRECATED,        "deprecated",        "Use the new API or specify a ledger range.");
         add (rpcBAD_BLOB,              "badBlob",           "Blob must be a non-empty hex string.");
         add (rpcBAD_FEATURE,           "badFeature",        "Feature unknown or invalid.");
         add (rpcBAD_ISSUER,            "badIssuer",         "Issuer account malformed.");
@@ -75,8 +76,11 @@ public:
         add (rpcLGR_IDXS_INVALID,      "lgrIdxsInvalid",    "Ledger indexes invalid.");
         add (rpcLGR_IDX_MALFORMED,     "lgrIdxMalformed",   "Ledger index malformed.");
         add (rpcLGR_NOT_FOUND,         "lgrNotFound",       "Ledger not found.");
+        add (rpcLOAD_FAILED,           "loadFailed",        "Load failed");
         add (rpcMASTER_DISABLED,       "masterDisabled",    "Master key is disabled.");
         add (rpcNOT_IMPL,              "notImpl",           "Not implemented.");
+        add (rpcNOT_STANDALONE,        "notStandAlone",     "Operation valid in debug mode only.");
+        add (rpcNOT_SUPPORTED,         "notSupported",      "Operation not supported.");
         add (rpcNO_ACCOUNT,            "noAccount",         "No such account.");
         add (rpcNO_CLOSED,             "noClosed",          "Closed ledger is unavailable.");
         add (rpcNO_CURRENT,            "noCurrent",         "Current ledger is unavailable.");
@@ -86,27 +90,25 @@ public:
         add (rpcNO_PATH,               "noPath",            "Unable to find a ripple path.");
         add (rpcNO_PERMISSION,         "noPermission",      "You don't have permission for this command.");
         add (rpcNO_PF_REQUEST,         "noPathRequest",     "No pathfinding request in progress.");
-        add (rpcNOT_STANDALONE,        "notStandAlone",     "Operation valid in debug mode only.");
-        add (rpcNOT_SUPPORTED,         "notSupported",      "Operation not supported.");
         add (rpcPASSWD_CHANGED,        "passwdChanged",     "Wrong key, password changed.");
         add (rpcPAYS_ACT_MALFORMED,    "paysActMalformed",  "Pays account malformed.");
         add (rpcPAYS_AMT_MALFORMED,    "paysAmtMalformed",  "Pays amount malformed.");
         add (rpcPORT_MALFORMED,        "portMalformed",     "Port is malformed.");
         add (rpcPUBLIC_MALFORMED,      "publicMalformed",   "Public key is malformed.");
         add (rpcQUALITY_MALFORMED,     "qualityMalformed",  "Quality malformed.");
+        add (rpcSLOW_DOWN,             "slowDown",          "You are placing too much load on the server.");
         add (rpcSRC_ACT_MALFORMED,     "srcActMalformed",   "Source account is malformed.");
         add (rpcSRC_ACT_MISSING,       "srcActMissing",     "Source account not provided.");
         add (rpcSRC_ACT_NOT_FOUND,     "srcActNotFound",    "Source account not found.");
         add (rpcSRC_AMT_MALFORMED,     "srcAmtMalformed",   "Source amount/currency/issuer is malformed.");
         add (rpcSRC_CUR_MALFORMED,     "srcCurMalformed",   "Source currency is malformed.");
         add (rpcSRC_ISR_MALFORMED,     "srcIsrMalformed",   "Source issuer is malformed.");
+        add (rpcSRC_MISSING,           "srcMissing",        "Source is missing.");
         add (rpcSRC_UNCLAIMED,         "srcUnclaimed",      "Source account is not claimed.");
+        add (rpcTOO_BUSY,              "tooBusy",           "The server is too busy to help you now.");
         add (rpcTXN_NOT_FOUND,         "txnNotFound",       "Transaction not found.");
         add (rpcUNKNOWN_COMMAND,       "unknownCmd",        "Unknown method.");
         add (rpcWRONG_SEED,            "wrongSeed",         "The regular key does not point as the master key.");
-        add (rpcTOO_BUSY,              "tooBusy",           "The server is too busy to help you now.");
-        add (rpcSLOW_DOWN,             "slowDown",          "You are placing too much load on the server.");
-        add (rpcATX_DEPRECATED,        "deprecated",        "Use the new API or specify a ledger range.");
     }
 
     ErrorInfo const& get (error_code_i code) const
