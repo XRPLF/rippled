@@ -85,7 +85,6 @@ public:
     Scheduler& m_scheduler;
     BatchWriter m_batch;
     std::string m_name;
-    std::unique_ptr <rocksdb::FilterPolicy const> m_filter_policy;
     std::unique_ptr <rocksdb::DB> m_db;
 
     RocksDBBackend (int keyBytes, Parameters const& keyValues,
@@ -100,28 +99,28 @@ public:
             throw std::runtime_error ("Missing path in RocksDBFactory backend");
 
         rocksdb::Options options;
+        rocksdb::BlockBasedTableOptions table_options;
         options.create_if_missing = true;
         options.env = env;
 
         if (keyValues["cache_mb"].isEmpty())
         {
-            options.block_cache = rocksdb::NewLRUCache (getConfig ().getSize (siHashNodeDBCache) * 1024 * 1024);
+            table_options.block_cache = rocksdb::NewLRUCache (getConfig ().getSize (siHashNodeDBCache) * 1024 * 1024);
         }
         else
         {
-            options.block_cache = rocksdb::NewLRUCache (keyValues["cache_mb"].getIntValue() * 1024L * 1024L);
+            table_options.block_cache = rocksdb::NewLRUCache (keyValues["cache_mb"].getIntValue() * 1024L * 1024L);
         }
 
         if (keyValues["filter_bits"].isEmpty())
         {
             if (getConfig ().NODE_SIZE >= 2)
-                m_filter_policy.reset (rocksdb::NewBloomFilterPolicy (10));
+                table_options.filter_policy.reset (rocksdb::NewBloomFilterPolicy (10));
         }
         else if (keyValues["filter_bits"].getIntValue() != 0)
         {
-            m_filter_policy.reset (rocksdb::NewBloomFilterPolicy (keyValues["filter_bits"].getIntValue()));
+            table_options.filter_policy.reset (rocksdb::NewBloomFilterPolicy (keyValues["filter_bits"].getIntValue()));
         }
-        options.filter_policy = m_filter_policy.get();
 
         if (! keyValues["open_files"].isEmpty())
         {
@@ -167,7 +166,7 @@ public:
 
         if (! keyValues["block_size"].isEmpty ())
         {
-            options.block_size = keyValues["block_size"].getIntValue ();
+            table_options.block_size = keyValues["block_size"].getIntValue ();
         }
 
         if (! keyValues["universal_compaction"].isEmpty ())
@@ -180,6 +179,8 @@ public:
                 options.write_buffer_size = 6 * options.target_file_size_base;
             }
         }
+
+        options.table_factory.reset(NewBlockBasedTableFactory(table_options));
 
         rocksdb::DB* db = nullptr;
         rocksdb::Status status = rocksdb::DB::Open (options, m_name, &db);
@@ -344,12 +345,12 @@ public:
 
     RocksDBFactory ()
     {
-        rocksdb::Options options;
-        options.create_if_missing = true;
-        options.block_cache = rocksdb::NewLRUCache (
+        rocksdb::BlockBasedTableOptions table_options;
+
+        table_options.block_cache = rocksdb::NewLRUCache (
             getConfig ().getSize (siHashNodeDBCache) * 1024 * 1024);
 
-        m_lruCache = options.block_cache;
+        m_lruCache = table_options.block_cache;
     }
 
     ~RocksDBFactory ()
