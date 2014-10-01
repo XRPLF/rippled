@@ -72,6 +72,7 @@ public:
         add (rpcINTERNAL,              "internal",          "Internal error.");
         add (rpcINVALID_PARAMS,        "invalidParams",     "Invalid parameters.");
         add (rpcJSON_RPC,              "json_rpc",          "JSON-RPC transport error.");
+        add (rpcLOAD_FAILED,           "loadFailed",        "Load failed");
         add (rpcLGR_IDXS_INVALID,      "lgrIdxsInvalid",    "Ledger indexes invalid.");
         add (rpcLGR_IDX_MALFORMED,     "lgrIdxMalformed",   "Ledger index malformed.");
         add (rpcLGR_NOT_FOUND,         "lgrNotFound",       "Ledger not found.");
@@ -100,6 +101,7 @@ public:
         add (rpcSRC_AMT_MALFORMED,     "srcAmtMalformed",   "Source amount/currency/issuer is malformed.");
         add (rpcSRC_CUR_MALFORMED,     "srcCurMalformed",   "Source currency is malformed.");
         add (rpcSRC_ISR_MALFORMED,     "srcIsrMalformed",   "Source issuer is malformed.");
+        add (rpcSRC_MISSING,           "srcMissing",        "Source is missing.");
         add (rpcSRC_UNCLAIMED,         "srcUnclaimed",      "Source account is not claimed.");
         add (rpcTXN_NOT_FOUND,         "txnNotFound",       "Transaction not found.");
         add (rpcUNKNOWN_COMMAND,       "unknownCmd",        "Unknown method.");
