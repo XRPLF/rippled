@@ -32,6 +32,8 @@
 
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/rpc/impl/ErrorCodes.cpp>
+#include <ripple/rpc/impl/JsonObject.cpp>
+#include <ripple/rpc/impl/JsonWriter.cpp>
 #include <ripple/rpc/impl/Manager.cpp>
 #include <ripple/rpc/impl/RPCServerHandler.cpp>
 #include <ripple/rpc/impl/RPCHandler.cpp>
@@ -107,3 +109,6 @@
 #include <ripple/rpc/impl/LookupLedger.cpp>
 #include <ripple/rpc/impl/ParseAccountIds.cpp>
 #include <ripple/rpc/impl/TransactionSign.cpp>
+
+#include <ripple/rpc/impl/JsonObject_test.cpp>
+#include <ripple/rpc/impl/JsonWriter_test.cpp>
