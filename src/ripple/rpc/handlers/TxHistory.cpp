@@ -51,7 +51,7 @@ Json::Value doTxHistory (RPC::Context& context)
 
         SQL_FOREACH (db, sql)
         {
-            if (auto trans = Transaction::transactionFromSQL (db, false))
+            if (auto trans = Transaction::transactionFromSQL (db, Validate::NO))
                 txs.append (trans->getJson (0));
         }
     }

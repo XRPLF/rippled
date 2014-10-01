@@ -862,7 +862,7 @@ void NetworkOPsImp::submitTransaction (
 
     m_job_queue.addJob (jtTRANSACTION, "submitTxn",
         std::bind (&NetworkOPsImp::processTransactionCbVoid, this,
-                   std::make_shared<Transaction> (trans, false),
+                   std::make_shared<Transaction> (trans, Validate::NO),
                    false, false, false, callback));
 }
 
@@ -875,7 +875,8 @@ Transaction::pointer NetworkOPsImp::submitTransactionSync (
     Serializer s;
     tpTrans->getSTransaction ()->add (s);
 
-    auto tpTransNew = Transaction::sharedTransaction (s.getData (), true);
+    auto tpTransNew = Transaction::sharedTransaction (
+        s.getData (), Validate::YES);
 
     if (!tpTransNew)
     {
@@ -1963,7 +1964,7 @@ NetworkOPs::AccountTxs NetworkOPsImp::getAccountTxs (
 
         SQL_FOREACH (db, sql)
         {
-            auto txn = Transaction::transactionFromSQL (db, false);
+            auto txn = Transaction::transactionFromSQL (db, Validate::NO);
 
             Serializer rawMeta;
             int metaSize = 2048;
@@ -2130,7 +2131,7 @@ NetworkOPsImp::AccountTxs NetworkOPsImp::getTxsAccount (
 
             if (foundResume)
             {
-                auto txn = Transaction::transactionFromSQL (db, false);
+                auto txn = Transaction::transactionFromSQL (db, Validate::NO);
 
                 Serializer rawMeta;
                 int metaSize = 2048;
@@ -2683,7 +2684,7 @@ Json::Value NetworkOPsImp::transJson(
         if (account != amount.issue ().account)
         {
             LedgerEntrySet les (lpCurrent, tapNONE, true);
-            auto const ownerFunds (les.accountFunds (account, amount, fhIGNORE_FREEZE));  
+            auto const ownerFunds (les.accountFunds (account, amount, fhIGNORE_FREEZE));
 
             jvObj[jss::transaction][jss::owner_funds] = ownerFunds.getText ();
         }

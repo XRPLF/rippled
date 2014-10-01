@@ -381,7 +381,7 @@ Json::Value transactionSign (
 
     try
     {
-        tpTrans = std::make_shared<Transaction> (stpTrans, false);
+        tpTrans = std::make_shared<Transaction> (stpTrans, Validate::NO);
     }
     catch (std::exception&)
     {

@@ -82,7 +82,7 @@ public:
 
             SLE::pointer sleTarget = mEngine->entryCache (ltACCOUNT_ROOT,
                 Ledger::getAccountRootIndex (target_account));
-            
+
             // Destination account does not exist.
             if (!sleTarget)
                 return tecNO_TARGET;
@@ -95,11 +95,15 @@ public:
 
         std::uint64_t hint;
 
-        TER result = mEngine->view ().dirAdd (hint,
-            Ledger::getOwnerDirIndex (mTxnAccountID), sleTicket->getIndex (),
-            std::bind (&Ledger::ownerDirDescriber,
-               std::placeholders::_1, std::placeholders::_2,
-               mTxnAccountID));
+        auto describer = [&](SLE::pointer p, bool b)
+        {
+            Ledger::ownerDirDescriber(p, b, mTxnAccountID);
+        };
+        TER result = mEngine->view ().dirAdd (
+            hint,
+            Ledger::getOwnerDirIndex (mTxnAccountID),
+            sleTicket->getIndex (),
+            describer);
 
         m_journal.trace <<
             "Creating ticket " << to_string (sleTicket->getIndex ()) <<

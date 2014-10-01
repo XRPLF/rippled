@@ -467,7 +467,7 @@ Transaction::pointer Ledger::getTransaction (uint256 const& transID) const
         return txn;
 
     if (type == SHAMapTreeNode::tnTRANSACTION_NM)
-        txn = Transaction::sharedTransaction (item->peekData (), true);
+        txn = Transaction::sharedTransaction (item->peekData (), Validate::YES);
     else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
     {
         Blob txnData;
@@ -476,7 +476,7 @@ Transaction::pointer Ledger::getTransaction (uint256 const& transID) const
         if (!item->peekSerializer ().getVL (txnData, 0, txnLength))
             return Transaction::pointer ();
 
-        txn = Transaction::sharedTransaction (txnData, false);
+        txn = Transaction::sharedTransaction (txnData, Validate::NO);
     }
     else
     {
@@ -551,7 +551,10 @@ bool Ledger::getTransaction (
         meta.reset ();
 
         if (!txn)
-            txn = Transaction::sharedTransaction (item->peekData (), true);
+        {
+            txn = Transaction::sharedTransaction (
+                item->peekData (), Validate::YES);
+        }
     }
     else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
     {
@@ -560,7 +563,7 @@ bool Ledger::getTransaction (
         txn = getApp().getMasterTransaction ().fetch (txID, false);
 
         if (!txn)
-            txn = Transaction::sharedTransaction (it.getVL (), true);
+            txn = Transaction::sharedTransaction (it.getVL (), Validate::YES);
         else
             it.getVL (); // skip transaction
 
