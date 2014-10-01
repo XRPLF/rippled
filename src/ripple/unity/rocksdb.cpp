@@ -61,6 +61,7 @@
 #include <rocksdb2/db/db_iter.cc>
 #include <rocksdb2/db/file_indexer.cc>
 #include <rocksdb2/db/filename.cc>
+#include <rocksdb2/db/flush_scheduler.cc>
 #include <rocksdb2/db/forward_iterator.cc>
 #include <rocksdb2/db/internal_stats.cc>
 #include <rocksdb2/db/log_reader.cc>
@@ -72,12 +73,14 @@
 #include <rocksdb2/db/repair.cc>
 #include <rocksdb2/db/table_cache.cc>
 #include <rocksdb2/db/table_properties_collector.cc>
-#include <rocksdb2/db/tailing_iter.cc>
 #include <rocksdb2/db/transaction_log_impl.cc>
 #include <rocksdb2/db/version_edit.cc>
 #include <rocksdb2/db/version_set.cc>
 #include <rocksdb2/db/write_batch.cc>
+#include <rocksdb2/db/write_controller.cc>
+#include <rocksdb2/db/write_thread.cc>
 #include <rocksdb2/table/adaptive_table_factory.cc>
+#include <rocksdb2/table/block_based_filter_block.cc>
 #include <rocksdb2/table/block_based_table_builder.cc>
 #include <rocksdb2/table/block_based_table_factory.cc>
 #include <rocksdb2/table/block_based_table_reader.cc>
@@ -87,10 +90,12 @@
 #include <rocksdb2/table/block_prefix_index.cc>
 #include <rocksdb2/table/bloom_block.cc>
 #include <rocksdb2/table/cuckoo_table_builder.cc>
+#include <rocksdb2/table/cuckoo_table_factory.cc>
 #include <rocksdb2/table/cuckoo_table_reader.cc>
-#include <rocksdb2/table/filter_block.cc>
 #include <rocksdb2/table/flush_block_policy.cc>
 #include <rocksdb2/table/format.cc>
+#include <rocksdb2/table/full_filter_block.cc>
+#include <rocksdb2/table/get_context.cc>
 #include <rocksdb2/table/iterator.cc>
 #include <rocksdb2/table/merger.cc>
 #include <rocksdb2/table/meta_blocks.cc>
@@ -109,6 +114,7 @@
 #include <rocksdb2/util/coding.cc>
 #include <rocksdb2/util/comparator.cc>
 #include <rocksdb2/util/crc32c.cc>
+#include <rocksdb2/util/db_info_dummper.cc>
 #include <rocksdb2/util/dynamic_bloom.cc>
 #include <rocksdb2/util/env.cc>
 #include <rocksdb2/util/env_hdfs.cc>
@@ -120,7 +126,9 @@
 #include <rocksdb2/util/hash_skiplist_rep.cc>
 #include <rocksdb2/util/histogram.cc>
 #include <rocksdb2/util/iostats_context.cc>
+#include <rocksdb2/util/options_helper.cc>
 #include <rocksdb2/utilities/backupable/backupable_db.cc>
+#include <rocksdb2/utilities/compacted_db/compacted_db_impl.cc>
 #include <rocksdb2/utilities/document/document_db.cc>
 #include <rocksdb2/utilities/document/json_document.cc>
 #include <rocksdb2/utilities/geodb/geodb_impl.cc>
@@ -136,6 +144,7 @@
 #include <rocksdb2/util/log_buffer.cc>
 #include <rocksdb2/util/logging.cc>
 #include <rocksdb2/util/murmurhash.cc>
+#include <rocksdb2/util/mutable_cf_options.cc>
 #include <rocksdb2/util/options_builder.cc>
 #include <rocksdb2/util/options.cc>
 #include <rocksdb2/util/perf_context.cc>

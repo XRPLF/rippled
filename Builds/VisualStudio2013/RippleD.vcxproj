@@ -3578,6 +3578,11 @@
     </ClCompile>
     <ClInclude Include="..\..\src\rocksdb2\db\file_indexer.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb2\db\flush_scheduler.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb2\db\flush_scheduler.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\rocksdb2\db\forward_iterator.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -3637,11 +3642,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\rocksdb2\db\table_properties_collector.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\rocksdb2\db\tailing_iter.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\rocksdb2\db\tailing_iter.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\rocksdb2\db\transaction_log_impl.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -3662,6 +3662,16 @@
     </ClCompile>
     <ClInclude Include="..\..\src\rocksdb2\db\write_batch_internal.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb2\db\write_controller.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb2\db\write_controller.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb2\db\write_thread.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb2\db\write_thread.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\rocksdb2\hdfs\env_hdfs.h">
     </ClInclude>
     <ClInclude Include="..\..\src\rocksdb2\include\rocksdb\c.h">
@@ -3679,6 +3689,8 @@
     <ClInclude Include="..\..\src\rocksdb2\include\rocksdb\filter_policy.h">
     </ClInclude>
     <ClInclude Include="..\..\src\rocksdb2\include\rocksdb\flush_block_policy.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb2\include\rocksdb\immutable_options.h">
     </ClInclude>
     <ClInclude Include="..\..\src\rocksdb2\include\rocksdb\iostats_context.h">
     </ClInclude>
@@ -3760,6 +3772,11 @@
     </ClCompile>
     <ClInclude Include="..\..\src\rocksdb2\table\block.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb2\table\block_based_filter_block.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb2\table\block_based_filter_block.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\rocksdb2\table\block_based_table_builder.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -3800,14 +3817,16 @@
     </ClCompile>
     <ClInclude Include="..\..\src\rocksdb2\table\cuckoo_table_builder.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb2\table\cuckoo_table_factory.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb2\table\cuckoo_table_factory.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\rocksdb2\table\cuckoo_table_reader.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\rocksdb2\table\cuckoo_table_reader.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\rocksdb2\table\filter_block.cc">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\rocksdb2\table\filter_block.h">
     </ClInclude>
     <ClCompile Include="..\..\src\rocksdb2\table\flush_block_policy.cc">
@@ -3817,6 +3836,16 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\rocksdb2\table\format.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb2\table\full_filter_block.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb2\table\full_filter_block.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb2\table\get_context.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb2\table\get_context.h">
     </ClInclude>
     <ClCompile Include="..\..\src\rocksdb2\table\iterator.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -3883,6 +3912,11 @@
     <ClCompile Include="..\..\src\rocksdb2\utilities\backupable\backupable_db.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb2\utilities\compacted_db\compacted_db_impl.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb2\utilities\compacted_db\compacted_db_impl.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\rocksdb2\utilities\document\document_db.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -3969,6 +4003,9 @@
     </ClCompile>
     <ClInclude Include="..\..\src\rocksdb2\util\crc32c.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb2\util\db_info_dummper.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\rocksdb2\util\dynamic_bloom.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -4041,6 +4078,11 @@
     </ClCompile>
     <ClInclude Include="..\..\src\rocksdb2\util\murmurhash.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\rocksdb2\util\mutable_cf_options.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb2\util\mutable_cf_options.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\rocksdb2\util\mutexlock.h">
     </ClInclude>
     <ClCompile Include="..\..\src\rocksdb2\util\options.cc">
@@ -4049,6 +4091,11 @@
     <ClCompile Include="..\..\src\rocksdb2\util\options_builder.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\rocksdb2\util\options_helper.cc">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\rocksdb2\util\options_helper.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\rocksdb2\util\perf_context.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -4062,6 +4109,8 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\rocksdb2\util\rate_limiter.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\rocksdb2\util\scoped_arena_iterator.h">
     </ClInclude>
     <ClCompile Include="..\..\src\rocksdb2\util\skiplistrep.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
