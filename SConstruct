@@ -567,7 +567,6 @@ for toolchain in all_toolchains:
         objects.append(addSource('src/ripple/unity/rpcx.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/sitefiles.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/sslutil.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/testoverlay.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/types.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/validators.cpp', env, variant_dirs))
         objects.append(addSource('src/ripple/unity/websocket.cpp', env, variant_dirs))

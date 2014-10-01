@@ -469,15 +469,6 @@
     <Filter Include="ripple\sslutil\impl">
       <UniqueIdentifier>{55CFEEC5-7FF5-F959-9862-9FAE232054B7}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ripple\testoverlay">
-      <UniqueIdentifier>{48C2C255-35B5-AA2C-B105-0F34A4D0347D}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ripple\testoverlay\api">
-      <UniqueIdentifier>{3C72B4D4-96EE-300D-795F-8FB6126FAEFD}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ripple\testoverlay\impl">
-      <UniqueIdentifier>{B0FE6BBC-BDC6-E3A4-E670-C026AB04DABE}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ripple\types">
       <UniqueIdentifier>{29DBD04F-9324-A965-5C79-AA06EC10BA58}</UniqueIdentifier>
     </Filter>
@@ -4497,39 +4488,6 @@
     <ClCompile Include="..\..\src\ripple\sslutil\impl\ECDSACanonical.cpp">
       <Filter>ripple\sslutil\impl</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\testoverlay\api\ConfigType.h">
-      <Filter>ripple\testoverlay\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\testoverlay\api\ConnectionType.h">
-      <Filter>ripple\testoverlay\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\testoverlay\api\InitPolicy.h">
-      <Filter>ripple\testoverlay\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\testoverlay\api\MessageType.h">
-      <Filter>ripple\testoverlay\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\testoverlay\api\NetworkType.h">
-      <Filter>ripple\testoverlay\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\testoverlay\api\PeerLogicBase.h">
-      <Filter>ripple\testoverlay\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\testoverlay\api\PeerType.h">
-      <Filter>ripple\testoverlay\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\testoverlay\api\Results.h">
-      <Filter>ripple\testoverlay\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\testoverlay\api\SimplePayload.h">
-      <Filter>ripple\testoverlay\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\testoverlay\api\StateBase.h">
-      <Filter>ripple\testoverlay\api</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\testoverlay\impl\TestOverlay.cpp">
-      <Filter>ripple\testoverlay\impl</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\types\AgedHistory.h">
       <Filter>ripple\types</Filter>
     </ClInclude>
@@ -4747,12 +4705,6 @@
       <Filter>ripple\unity</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\unity\sslutil.h">
-      <Filter>ripple\unity</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\unity\testoverlay.cpp">
-      <Filter>ripple\unity</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\unity\testoverlay.h">
       <Filter>ripple\unity</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\types.cpp">

@@ -19,37 +19,6 @@
 
 #include <BeastConfig.h>
 
-#if 0
-#include <ripple/unity/validators.h>
-
-#include <boost/regex.hpp>
-#include <boost/multi_index_container.hpp>
-#include <boost/multi_index/hashed_index.hpp>
-#include <boost/multi_index/key_extractors.hpp>
-
-#include <set>
-
-#include <beast/threads/ScopedWrapperContext.h>
-#include <beast/module/asio/asio.h>
-#include <beast/module/sqdb/sqdb.h>
-
-#include <ripple/unity/testoverlay.h> // for unit test
-
-#include <ripple/validators/impl/Tuning.h>
-#include <ripple/validators/impl/ChosenList.h>
-#include <ripple/validators/impl/Count.h>
-#include <ripple/validators/impl/SourceFile.h>
-#include <ripple/validators/impl/SourceStrings.h>
-#include <ripple/validators/impl/SourceURL.h>
-#include <ripple/validators/impl/SourceDesc.h>
-#include <ripple/validators/impl/Store.h>
-#include <ripple/validators/impl/StoreSqdb.h>
-#include <ripple/validators/impl/Utilities.h>
-#include <ripple/validators/impl/Validation.h>
-#include <ripple/validators/impl/Validator.h>
-#include <ripple/validators/impl/Logic.h>
-#endif
-
 #include <ripple/validators/impl/Manager.cpp>
 #include <ripple/validators/impl/Source.cpp>
 #include <ripple/validators/impl/SourceFile.cpp>

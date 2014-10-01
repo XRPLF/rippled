@@ -3279,29 +3279,6 @@
     <ClCompile Include="..\..\src\ripple\sslutil\impl\ECDSACanonical.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\testoverlay\api\ConfigType.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\testoverlay\api\ConnectionType.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\testoverlay\api\InitPolicy.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\testoverlay\api\MessageType.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\testoverlay\api\NetworkType.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\testoverlay\api\PeerLogicBase.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\testoverlay\api\PeerType.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\testoverlay\api\Results.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\testoverlay\api\SimplePayload.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\testoverlay\api\StateBase.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\testoverlay\impl\TestOverlay.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\types\AgedHistory.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\Base58.h">
@@ -3464,10 +3441,6 @@
     <ClCompile Include="..\..\src\ripple\unity\sslutil.cpp">
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\unity\sslutil.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\unity\testoverlay.cpp">
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\unity\testoverlay.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\types.cpp">
     </ClCompile>
