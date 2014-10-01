@@ -20,6 +20,7 @@
 #include <ripple/basics/containers/RangeSet.h>
 #include <ripple/module/app/ledger/LedgerMaster.h>
 #include <ripple/validators/Manager.h>
+#include <algorithm>
 #include <cassert>
 #include <beast/cxx14/memory.h> // <memory>
 
@@ -756,15 +757,25 @@ public:
             getApp().getOrderBookDB().setup(ledger);
         }
 
-        std::uint64_t fee, fee2, ref;
-        ref = getApp().getFeeTrack().getLoadBase();
-        int count = getApp().getValidations().getFeeAverage(ledger->getHash(), ref, fee);
-        int count2 = getApp().getValidations().getFeeAverage(ledger->getParentHash(), ref, fee2);
-
-        if ((count + count2) == 0)
-            getApp().getFeeTrack().setRemoteFee(ref);
+        std::uint64_t const base = getApp().getFeeTrack().getLoadBase();
+        auto fees = getApp().getValidations().fees (ledger->getHash(), base);
+        {
+            auto fees2 = getApp().getValidations().fees (ledger->getParentHash(), base);
+            fees.reserve (fees.size() + fees2.size());
+            std::copy (fees2.begin(), fees2.end(), std::back_inserter(fees));
+        }
+        std::uint64_t fee;
+        if (! fees.empty())
+        {
+            std::sort (fees.begin(), fees.end());
+            fee = fees[fees.size() / 2]; // median
+        }
         else
-            getApp().getFeeTrack().setRemoteFee(((fee * count) + (fee2 * count2)) / (count + count2));
+        {
+            fee = base;
+        }
+
+        getApp().getFeeTrack().setRemoteFee(fee);
 
         tryAdvance ();
     }

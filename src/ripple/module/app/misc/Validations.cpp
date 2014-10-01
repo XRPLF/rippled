@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <mutex>
 #include <thread>
 
 namespace ripple {
@@ -24,10 +25,10 @@ namespace ripple {
 class ValidationsImp : public Validations
 {
 private:
-    typedef RippleMutex LockType;
+    using LockType = std::mutex;
     typedef std::lock_guard <LockType> ScopedLockType;
     typedef beast::GenericScopedUnlock <LockType> ScopedUnlockType;
-    LockType mLock;
+    std::mutex mutable mLock;
 
     TaggedCache<uint256, ValidationSet> mValidations;
     ValidationSet mCurrentValidations;
@@ -231,34 +232,27 @@ private:
         return trusted;
     }
 
-    int getFeeAverage (uint256 const& ledger, std::uint64_t ref, std::uint64_t& fee)
+    std::vector <std::uint64_t>
+    fees (uint256 const& ledger, std::uint64_t base) override
     {
-        int trusted = 0;
-        fee = 0;
-
-        ScopedLockType sl (mLock);
-        auto set = findSet (ledger);
-
+        std::vector <std::uint64_t> result;
+        std::lock_guard <std::mutex> lock (mLock);
+        auto const set = findSet (ledger);
         if (set)
         {
-            for (auto& it: *set)
+            for (auto const& v : *set)
             {
-                if (it.second->isTrusted ())
+                if (v.second->isTrusted())
                 {
-                    ++trusted;
-                    if (it.second->isFieldPresent(sfLoadFee))
-                        fee += it.second->getFieldU32(sfLoadFee);
+                    if (v.second->isFieldPresent(sfLoadFee))
+                        result.push_back(v.second->getFieldU32(sfLoadFee));
                     else
-                        fee += ref;
-                 }
+                        result.push_back(base);
+                }
             }
         }
 
-        if (trusted == 0)
-            fee = ref;
-        else
-            fee /= trusted;
-        return trusted;
+        return result;
     }
 
     int getNodesAfter (uint256 const& ledger)

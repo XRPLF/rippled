@@ -50,8 +50,10 @@ public:
 
     virtual int getTrustedValidationCount (uint256 const& ledger) = 0;
 
-    virtual int getFeeAverage(
-        uint256 const& ledger, std::uint64_t ref, std::uint64_t& fee) = 0;
+    /** Returns fees reported by trusted validators in the given ledger. */
+    virtual
+    std::vector <std::uint64_t>
+    fees (uint256 const& ledger, std::uint64_t base) = 0;
 
     virtual int getNodesAfter (uint256 const& ledger) = 0;
     virtual int getLoadRatio (bool overLoaded) = 0;
