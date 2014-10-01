@@ -41,6 +41,7 @@ void add_random_items (std::size_t n, Table& t, beast::Random& r)
             make_random_item (r));
         auto const result (t.addItem (*item, false, false));
         assert (result);
+        (void) result;
     }
 }
 

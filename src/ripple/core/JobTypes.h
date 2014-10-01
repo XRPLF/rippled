@@ -36,7 +36,7 @@ public:
 
     JobTypes ()
         : m_unknown (jtINVALID, "invalid", 0, true, true, 0, 0)
-    {        
+    {
         int maxLimit = std::numeric_limits <int>::max ();
 
         // Make a fetch pack for a peer
@@ -209,18 +209,19 @@ public:
     }
 
 private:
-    void add(JobType jt, std::string name, int limit, 
+    void add(JobType jt, std::string name, int limit,
         bool skip, bool special, std::uint64_t avgLatency, std::uint64_t peakLatency)
     {
         assert (m_map.find (jt) == m_map.end ());
 
         std::pair<Map::iterator,bool> result (m_map.emplace (
             std::piecewise_construct,
-            std::forward_as_tuple (jt), 
+            std::forward_as_tuple (jt),
             std::forward_as_tuple (jt, name, limit, skip, special,
                 avgLatency, peakLatency)));
 
         assert (result.second == true);
+        (void) result.second;
     }
 
     JobTypeInfo m_unknown;

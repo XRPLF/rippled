@@ -269,9 +269,9 @@ ServerImpl::on_update ()
         for (Ports::const_iterator port (ports.begin());
             port != ports.end(); ++port)
         {
-            int comp;
+            int comp = 0;
 
-            while (door != m_doors.end() && 
+            while (door != m_doors.end() &&
                     ((comp = compare (*port, (*door)->port())) > 0))
             {
                 (*door)->cancel();

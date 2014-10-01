@@ -127,6 +127,7 @@ OverlayImpl::accept (bool proxyHandshake, socket_type&& socket)
             std::pair <PeersBySlot::iterator, bool> const result (
                 m_peers.emplace (slot, peer));
             assert (result.second);
+            (void) result.second;
         }
         ++m_child_count;
 
@@ -166,6 +167,7 @@ OverlayImpl::connect (beast::IP::Endpoint const& remote_endpoint)
             std::pair <PeersBySlot::iterator, bool> const result (
                 m_peers.emplace (slot, peer));
             assert (result.second);
+            (void) result.second;
         }
         ++m_child_count;
 
@@ -476,6 +478,7 @@ OverlayImpl::onPeerActivated (Peer::ptr const& peer)
                 std::make_tuple (peer->getShortId()),
                     std::make_tuple (peer)));
         assert(result.second);
+        (void) result.second;
     }
 
     {
@@ -484,6 +487,7 @@ OverlayImpl::onPeerActivated (Peer::ptr const& peer)
                 std::make_tuple (peer->getNodePublic()),
                     std::make_tuple (peer)));
         assert(result.second);
+        (void) result.second;
     }
 
     m_journal.debug <<
