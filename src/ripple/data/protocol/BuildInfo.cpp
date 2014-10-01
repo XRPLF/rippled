@@ -23,7 +23,9 @@
 
 namespace ripple {
 
-char const* BuildInfo::getRawVersionString ()
+namespace BuildInfo {
+
+char const* getRawVersionString ()
 {
     static char const* const rawText =
 
@@ -46,10 +48,9 @@ char const* BuildInfo::getRawVersionString ()
     return rawText;
 }
 
-BuildInfo::Protocol const& BuildInfo::getCurrentProtocol ()
+Protocol const& getCurrentProtocol ()
 {
     static Protocol currentProtocol (
-    
     //--------------------------------------------------------------------------
     //
     // The protocol version we speak and prefer (edit this if necessary)
@@ -63,7 +64,7 @@ BuildInfo::Protocol const& BuildInfo::getCurrentProtocol ()
     return currentProtocol;
 }
 
-BuildInfo::Protocol const& BuildInfo::getMinimumProtocol ()
+Protocol const& getMinimumProtocol ()
 {
     static Protocol minimumProtocol (
 
@@ -86,7 +87,7 @@ BuildInfo::Protocol const& BuildInfo::getMinimumProtocol ()
 //
 //------------------------------------------------------------------------------
 
-beast::String const& BuildInfo::getVersionString ()
+std::string const& getVersionString ()
 {
     struct SanityChecker
     {
@@ -102,67 +103,51 @@ beast::String const& BuildInfo::getVersionString ()
             versionString = rawText;
         }
 
-        beast::String versionString;
+        std::string versionString;
     };
 
-    static SanityChecker value;
+    static SanityChecker const value;
 
     return value.versionString;
 }
 
-char const* BuildInfo::getFullVersionString ()
+std::string const& getFullVersionString ()
 {
     struct PrettyPrinter
     {
         PrettyPrinter ()
         {
-            beast::String s;
-            
-            s << "rippled-" << getVersionString ();
-
-            fullVersionString = s.toStdString ();
+            fullVersionString = std::string ("rippled-") + getVersionString ();
         }
 
         std::string fullVersionString;
     };
 
-    static PrettyPrinter value;
+    static PrettyPrinter const value;
 
-    return value.fullVersionString.c_str ();
+    return value.fullVersionString;
 }
 
-//------------------------------------------------------------------------------
-
-BuildInfo::Protocol::Protocol ()
-    : vmajor (0)
-    , vminor (0)
+Protocol
+make_protocol (std::uint32_t version)
 {
+    return Protocol (
+        static_cast<std::uint16_t> ((version >> 16) & 0xffff),
+        static_cast<std::uint16_t> (version & 0xffff));
 }
 
-BuildInfo::Protocol::Protocol (unsigned short major_, unsigned short minor_)
-    : vmajor (major_)
-    , vminor (minor_)
-{
 }
 
-BuildInfo::Protocol::Protocol (PackedFormat packedVersion)
+std::string
+to_string (BuildInfo::Protocol const& p)
 {
-    vmajor = (packedVersion >> 16) & 0xffff;
-    vminor = (packedVersion & 0xffff);
+    return std::to_string (p.first) + "." + std::to_string (p.second);
 }
 
-BuildInfo::Protocol::PackedFormat BuildInfo::Protocol::toPacked () const noexcept
+std::uint32_t
+to_packed (BuildInfo::Protocol const& p)
 {
-    return ((vmajor << 16) & 0xffff0000) | (vminor & 0xffff);
-}
-
-std::string BuildInfo::Protocol::toStdString () const noexcept
-{
-    beast::String s;
-
-    s << beast::String (vmajor) << "." << beast::String (vminor);
-
-    return s.toStdString ();
+    return (static_cast<std::uint32_t> (p.first) << 16) + p.second;
 }
 
 //------------------------------------------------------------------------------
@@ -179,58 +164,79 @@ public:
         expect (v.parse (BuildInfo::getRawVersionString ()));
     }
 
-    void checkProtcol (unsigned short vmajor, unsigned short vminor)
+
+    BuildInfo::Protocol
+    from_version (std::uint16_t major, std::uint16_t minor)
     {
-        typedef BuildInfo::Protocol P;
-
-        expect (P (P (vmajor, vminor).toPacked ()) == P (vmajor, vminor));
-    }
-
-    void testProtocol ()
-    {
-        typedef BuildInfo::Protocol P;
-
-        testcase ("protocol");
-
-        expect (P (0, 0).toPacked () == 0);
-        expect (P (0, 1).toPacked () == 1);
-        expect (P (0, 65535).toPacked () == 65535);
-
-        checkProtcol (0, 0);
-        checkProtcol (0, 1);
-        checkProtcol (0, 255);
-        checkProtcol (0, 65535);
-        checkProtcol (1, 0);
-        checkProtcol (1, 65535);
-        checkProtcol (65535, 65535);
+        return BuildInfo::Protocol (major, minor);
     }
 
     void testValues ()
     {
         testcase ("comparison");
 
-        typedef BuildInfo::Protocol P;
+        expect (from_version (1,2) == from_version (1,2));
+        expect (from_version (3,4) >= from_version (3,4));
+        expect (from_version (5,6) <= from_version (5,6));
+        expect (from_version (7,8) >  from_version (6,7));
+        expect (from_version (7,8) <  from_version (8,9));
+        expect (from_version (65535,0) <  from_version (65535,65535));
+        expect (from_version (65535,65535) >= from_version (65535,65535));
+    }
 
-        expect (P(1,2) == P(1,2));
-        expect (P(3,4) >= P(3,4));
-        expect (P(5,6) <= P(5,6));
-        expect (P(7,8) >  P(6,7));
-        expect (P(7,8) <  P(8,9));
-        expect (P(65535,0) <  P(65535,65535));
-        expect (P(65535,65535) >= P(65535,65535));
+    void testStringVersion ()
+    {
+        testcase ("string version");
 
-        expect (BuildInfo::getCurrentProtocol () >= BuildInfo::getMinimumProtocol ());
+        for (std::uint16_t major = 0; major < 8; major++)
+        {
+            for (std::uint16_t minor = 0; minor < 8; minor++)
+            {
+                expect (to_string (from_version (major, minor)) ==
+                    std::to_string (major) + "." + std::to_string (minor));
+            }
+        }
+    }
+
+    void testVersionPacking ()
+    {
+        testcase ("version packing");
+
+        expect (to_packed (from_version (0, 0)) == 0);
+        expect (to_packed (from_version (0, 1)) == 1);
+        expect (to_packed (from_version (0, 255)) == 255);
+        expect (to_packed (from_version (0, 65535)) == 65535);
+
+        expect (to_packed (from_version (1, 0)) == 65536);
+        expect (to_packed (from_version (1, 1)) == 65537);
+        expect (to_packed (from_version (1, 255)) == 65791);
+        expect (to_packed (from_version (1, 65535)) == 131071);
+
+        expect (to_packed (from_version (255, 0)) == 16711680);
+        expect (to_packed (from_version (255, 1)) == 16711681);
+        expect (to_packed (from_version (255, 255)) == 16711935);
+        expect (to_packed (from_version (255, 65535)) == 16777215);
+
+        expect (to_packed (from_version (65535, 0)) == 4294901760);
+        expect (to_packed (from_version (65535, 1)) == 4294901761);
+        expect (to_packed (from_version (65535, 255)) == 4294902015);
+        expect (to_packed (from_version (65535, 65535)) == 4294967295);
     }
 
     void run ()
     {
         testVersion ();
-        testProtocol ();
         testValues ();
+        testStringVersion ();
+        testVersionPacking ();
 
-        log <<
-            "  Ripple version: " <<
-            BuildInfo::getVersionString().toStdString();
+        auto const current_protocol = BuildInfo::getCurrentProtocol ();
+        auto const minimum_protocol = BuildInfo::getMinimumProtocol ();
+
+        expect (current_protocol >= minimum_protocol);
+
+        log << "   Ripple Version: " << BuildInfo::getVersionString();
+        log << " Protocol Version: " << to_string (current_protocol);
     }
 };
 
