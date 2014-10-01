@@ -96,6 +96,7 @@ public:
                     std::forward_as_tuple (jt.type ()),
                     std::forward_as_tuple (jt, m_collector)));
                 assert (result.second == true);
+                (void) result.second;
             }
         }
     }

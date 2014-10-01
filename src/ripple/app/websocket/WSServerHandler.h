@@ -202,6 +202,7 @@ public:
                     std::make_shared < WSConnectionType <endpoint_type> > (std::ref(m_resourceManager),
                     std::ref (m_source), std::ref(*this), std::cref(cpClient))));
             assert (result.second);
+            (void) result.second;
             WriteLog (lsDEBUG, WSServerHandlerLog) <<
                 "Ws:: on_open(" << cpClient->get_socket ().remote_endpoint ().to_string () << ")";
         }

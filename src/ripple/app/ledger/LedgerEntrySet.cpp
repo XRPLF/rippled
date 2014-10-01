@@ -1045,7 +1045,7 @@ void LedgerEntrySet::incrementOwnerCount (SLE::ref sleAccount)
 
 void LedgerEntrySet::incrementOwnerCount (Account const& owner)
 {
-    incrementOwnerCount(entryCache (ltACCOUNT_ROOT, 
+    incrementOwnerCount(entryCache (ltACCOUNT_ROOT,
         Ledger::getAccountRootIndex (owner)));
 }
 
@@ -1069,7 +1069,7 @@ void LedgerEntrySet::decrementOwnerCount (SLE::ref sleAccount)
 
 void LedgerEntrySet::decrementOwnerCount (Account const& owner)
 {
-    decrementOwnerCount(entryCache (ltACCOUNT_ROOT, 
+    decrementOwnerCount(entryCache (ltACCOUNT_ROOT,
         Ledger::getAccountRootIndex (owner)));
 }
 
@@ -1440,6 +1440,7 @@ TER LedgerEntrySet::rippleCredit (
     // Make sure issuer is involved.
     assert (
         !bCheckIssuer || uSenderID == issuer || uReceiverID == issuer);
+    (void) issuer;
 
     // Disallow sending to self.
     assert (uSenderID != uReceiverID);

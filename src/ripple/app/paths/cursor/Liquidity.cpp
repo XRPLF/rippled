@@ -26,7 +26,7 @@ namespace path {
 
 TER PathCursor::liquidity (LedgerEntrySet const& lesCheckpoint) const
 {
-    TER resultCode;
+    TER resultCode = tesSUCCESS;
     PathCursor pc = *this;
 
     ledger() = lesCheckpoint.duplicate ();
