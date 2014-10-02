@@ -40,7 +40,7 @@ uint128 CKey::PassPhraseToKey (std::string const& passPhrase)
 
 // --> seed
 // <-- private root generator + public root generator
-EC_KEY* CKey::GenerateRootDeterministicKey (const uint128& seed)
+EC_KEY* CKey::GenerateRootDeterministicKey (uint128 const& seed)
 {
     BN_CTX* ctx = BN_CTX_new ();
 
@@ -92,6 +92,7 @@ EC_KEY* CKey::GenerateRootDeterministicKey (const uint128& seed)
             EC_KEY_free (pkey);
             BN_free (order);
             BN_CTX_free (ctx);
+            return nullptr;
         }
 
         root.zero ();
