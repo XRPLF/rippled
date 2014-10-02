@@ -54,6 +54,7 @@ class SstFileReader {
   Status ReadTableProperties(uint64_t table_magic_number,
                              RandomAccessFile* file, uint64_t file_size);
   Status SetTableOptionsByMagicNumber(uint64_t table_magic_number);
+  Status SetOldTableOptions();
 
   std::string file_name_;
   uint64_t read_num_;
@@ -67,6 +68,7 @@ class SstFileReader {
   // options_ and internal_comparator_ will also be used in
   // ReadSequential internally (specifically, seek-related operations)
   Options options_;
+  const ImmutableCFOptions ioptions_;
   InternalKeyComparator internal_comparator_;
   unique_ptr<TableProperties> table_properties_;
 };
@@ -75,7 +77,8 @@ SstFileReader::SstFileReader(const std::string& file_path,
                              bool verify_checksum,
                              bool output_hex)
     :file_name_(file_path), read_num_(0), verify_checksum_(verify_checksum),
-    output_hex_(output_hex), internal_comparator_(BytewiseComparator()) {
+    output_hex_(output_hex), ioptions_(options_),
+    internal_comparator_(BytewiseComparator()) {
   fprintf(stdout, "Process %s\n", file_path.c_str());
 
   init_result_ = NewTableReader(file_name_);
@@ -112,15 +115,17 @@ Status SstFileReader::NewTableReader(const std::string& file_path) {
       options_.env->NewRandomAccessFile(file_path, &file_, soptions_);
     }
     options_.comparator = &internal_comparator_;
-    s = ReadTableProperties(magic_number, file_.get(), file_size);
-    if (s.ok()) {
-      s = SetTableOptionsByMagicNumber(magic_number);
+    // For old sst format, ReadTableProperties might fail but file can be read
+    if (ReadTableProperties(magic_number, file_.get(), file_size).ok()) {
+      SetTableOptionsByMagicNumber(magic_number);
+    } else {
+      SetOldTableOptions();
     }
   }
 
   if (s.ok()) {
     s = options_.table_factory->NewTableReader(
-        options_, soptions_, internal_comparator_, std::move(file_), file_size,
+        ioptions_, soptions_, internal_comparator_, std::move(file_), file_size,
         &table_reader_);
   }
   return s;
@@ -129,11 +134,15 @@ Status SstFileReader::NewTableReader(const std::string& file_path) {
 Status SstFileReader::ReadTableProperties(uint64_t table_magic_number,
                                           RandomAccessFile* file,
                                           uint64_t file_size) {
-  TableProperties* table_properties;
+  TableProperties* table_properties = nullptr;
   Status s = rocksdb::ReadTableProperties(file, file_size, table_magic_number,
                                           options_.env, options_.info_log.get(),
                                           &table_properties);
-  table_properties_.reset(table_properties);
+  if (s.ok()) {
+    table_properties_.reset(table_properties);
+  } else {
+    fprintf(stdout, "Not able to read table properties\n");
+  }
   return s;
 }
 
@@ -176,6 +185,14 @@ Status SstFileReader::SetTableOptionsByMagicNumber(
              (long)table_magic_number);
     return Status::InvalidArgument(error_msg_buffer);
   }
+
+  return Status::OK();
+}
+
+Status SstFileReader::SetOldTableOptions() {
+  assert(table_properties_ == nullptr);
+  options_.table_factory = std::make_shared<BlockBasedTableFactory>();
+  fprintf(stdout, "Sst file format: block-based(old version)\n");
 
   return Status::OK();
 }
