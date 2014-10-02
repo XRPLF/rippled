@@ -30,7 +30,11 @@
 #include "util/autovector.h"
 #include "util/stop_watch.h"
 #include "util/thread_local.h"
+#include "util/scoped_arena_iterator.h"
 #include "db/internal_stats.h"
+#include "db/write_controller.h"
+#include "db/flush_scheduler.h"
+#include "db/write_thread.h"
 
 namespace rocksdb {
 
@@ -108,6 +112,10 @@ class DBImpl : public DB {
                               bool reduce_level = false, int target_level = -1,
                               uint32_t target_path_id = 0);
 
+  using DB::SetOptions;
+  bool SetOptions(ColumnFamilyHandle* column_family,
+      const std::unordered_map<std::string, std::string>& options_map);
+
   using DB::NumberLevels;
   virtual int NumberLevels(ColumnFamilyHandle* column_family);
   using DB::MaxMemCompactionLevel;
@@ -127,6 +135,7 @@ class DBImpl : public DB {
 #ifndef ROCKSDB_LITE
   virtual Status DisableFileDeletions();
   virtual Status EnableFileDeletions(bool force);
+  virtual int IsFileDeletionsEnabled() const;
   // All the returned filenames start with "/"
   virtual Status GetLiveFiles(std::vector<std::string>&,
                               uint64_t* manifest_file_size,
@@ -172,8 +181,8 @@ class DBImpl : public DB {
   // Return an internal iterator over the current state of the database.
   // The keys of this iterator are internal keys (see format.h).
   // The returned iterator should be deleted when no longer needed.
-  Iterator* TEST_NewInternalIterator(ColumnFamilyHandle* column_family =
-                                         nullptr);
+  Iterator* TEST_NewInternalIterator(
+      Arena* arena, ColumnFamilyHandle* column_family = nullptr);
 
   // Return the maximum overlapping data (in bytes) at next level for any
   // file at a level >= 1.
@@ -201,6 +210,17 @@ class DBImpl : public DB {
                               SequenceNumber* sequence);
 
   Status TEST_ReadFirstLine(const std::string& fname, SequenceNumber* sequence);
+
+  void TEST_LockMutex();
+
+  void TEST_UnlockMutex();
+
+  // REQUIRES: mutex locked
+  void* TEST_BeginWrite();
+
+  // REQUIRES: mutex locked
+  // pass the pointer that you got from TEST_BeginWrite()
+  void TEST_EndWrite(void* w);
 #endif  // NDEBUG
 
   // Structure to store information for candidate files to delete.
@@ -274,7 +294,7 @@ class DBImpl : public DB {
   // Returns the list of live files in 'live' and the list
   // of all files in the filesystem in 'candidate_files'.
   // If force == false and the last call was less than
-  // options_.delete_obsolete_files_period_micros microseconds ago,
+  // db_options_.delete_obsolete_files_period_micros microseconds ago,
   // it will not fill up the deletion_state
   void FindObsoleteFiles(DeletionState& deletion_state,
                          bool force,
@@ -292,23 +312,23 @@ class DBImpl : public DB {
   Env* const env_;
   const std::string dbname_;
   unique_ptr<VersionSet> versions_;
-  const DBOptions options_;
+  const DBOptions db_options_;
   Statistics* stats_;
 
   Iterator* NewInternalIterator(const ReadOptions&, ColumnFamilyData* cfd,
-                                SuperVersion* super_version,
-                                Arena* arena = nullptr);
+                                SuperVersion* super_version, Arena* arena);
 
  private:
   friend class DB;
   friend class InternalStats;
 #ifndef ROCKSDB_LITE
-  friend class TailingIterator;
   friend class ForwardIterator;
 #endif
   friend struct SuperVersion;
+  friend class CompactedDBImpl;
   struct CompactionState;
-  struct Writer;
+
+  struct WriteContext;
 
   Status NewDB();
 
@@ -327,12 +347,13 @@ class DBImpl : public DB {
 
   // Flush the in-memory write buffer to storage.  Switches to a new
   // log-file/memtable and writes a new descriptor iff successful.
-  Status FlushMemTableToOutputFile(ColumnFamilyData* cfd, bool* madeProgress,
-                                   DeletionState& deletion_state,
-                                   LogBuffer* log_buffer);
+  Status FlushMemTableToOutputFile(
+      ColumnFamilyData* cfd, const MutableCFOptions& mutable_cf_options,
+      bool* madeProgress, DeletionState& deletion_state, LogBuffer* log_buffer);
 
-  Status RecoverLogFile(uint64_t log_number, SequenceNumber* max_sequence,
-                        bool read_only);
+  // REQUIRES: log_numbers are sorted in ascending order
+  Status RecoverLogFiles(const std::vector<uint64_t>& log_numbers,
+                         SequenceNumber* max_sequence, bool read_only);
 
   // The following two methods are used to flush a memtable to
   // storage. The first one is used atdatabase RecoveryTime (when the
@@ -341,21 +362,17 @@ class DBImpl : public DB {
   // concurrent flush memtables to storage.
   Status WriteLevel0TableForRecovery(ColumnFamilyData* cfd, MemTable* mem,
                                      VersionEdit* edit);
-  Status WriteLevel0Table(ColumnFamilyData* cfd, autovector<MemTable*>& mems,
-                          VersionEdit* edit, uint64_t* filenumber,
-                          LogBuffer* log_buffer);
+  Status WriteLevel0Table(ColumnFamilyData* cfd,
+      const MutableCFOptions& mutable_cf_options,
+      const autovector<MemTable*>& mems,
+      VersionEdit* edit, uint64_t* filenumber, LogBuffer* log_buffer);
 
-  uint64_t SlowdownAmount(int n, double bottom, double top);
+  void DelayWrite(uint64_t expiration_time);
 
-  // TODO(icanadi) free superversion_to_free and old_log outside of mutex
-  Status MakeRoomForWrite(ColumnFamilyData* cfd,
-                          bool force /* flush even if there is room? */,
-                          autovector<SuperVersion*>* superversions_to_free,
-                          autovector<log::Writer*>* logs_to_free,
-                          uint64_t expiration_time);
+  Status ScheduleFlushes(WriteContext* context);
 
-  void BuildBatchGroup(Writer** last_writer,
-                       autovector<WriteBatch*>* write_batch_group);
+  Status SetNewMemtableAndNewLogFile(ColumnFamilyData* cfd,
+                                     WriteContext* context);
 
   // Force current memtable contents to be flushed.
   Status FlushMemTable(ColumnFamilyData* cfd, const FlushOptions& options);
@@ -377,6 +394,7 @@ class DBImpl : public DB {
                          LogBuffer* log_buffer);
   void CleanupCompaction(CompactionState* compact, Status status);
   Status DoCompactionWork(CompactionState* compact,
+                          const MutableCFOptions& mutable_cf_options,
                           DeletionState& deletion_state,
                           LogBuffer* log_buffer);
 
@@ -384,12 +402,13 @@ class DBImpl : public DB {
   // preempt compaction, since it's higher prioirty
   // Returns: micros spent executing
   uint64_t CallFlushDuringCompaction(ColumnFamilyData* cfd,
-                                     DeletionState& deletion_state,
-                                     LogBuffer* log_buffer);
+      const MutableCFOptions& mutable_cf_options, DeletionState& deletion_state,
+      LogBuffer* log_buffer);
 
   // Call compaction filter if is_compaction_v2 is not true. Then iterate
   // through input and compact the kv-pairs
   Status ProcessKeyValueCompaction(
+    const MutableCFOptions& mutable_cf_options,
     bool is_snapshot_supported,
     SequenceNumber visible_at_tip,
     SequenceNumber earliest_snapshot,
@@ -406,10 +425,11 @@ class DBImpl : public DB {
   void CallCompactionFilterV2(CompactionState* compact,
     CompactionFilterV2* compaction_filter_v2);
 
-  Status OpenCompactionOutputFile(CompactionState* compact);
+  Status OpenCompactionOutputFile(CompactionState* compact,
+      const MutableCFOptions& mutable_cf_options);
   Status FinishCompactionOutputFile(CompactionState* compact, Iterator* input);
   Status InstallCompactionResults(CompactionState* compact,
-                                  LogBuffer* log_buffer);
+      const MutableCFOptions& mutable_cf_options, LogBuffer* log_buffer);
   void AllocateCompactionOutputFileNumbers(CompactionState* compact);
   void ReleaseCompactionUnusedFileNumbers(CompactionState* compact);
 
@@ -451,7 +471,8 @@ class DBImpl : public DB {
 
   // Return the minimum empty level that could hold the total data in the
   // input level. Return the input level, if such level could not be found.
-  int FindMinimumEmptyLevelFitting(ColumnFamilyData* cfd, int level);
+  int FindMinimumEmptyLevelFitting(ColumnFamilyData* cfd,
+      const MutableCFOptions& mutable_cf_options, int level);
 
   // Move the files in the input level to the target level.
   // If target_level < 0, automatically calculate the minimum level that could
@@ -501,9 +522,12 @@ class DBImpl : public DB {
 
   std::unique_ptr<Directory> db_directory_;
 
-  // Queue of writers.
-  std::deque<Writer*> writers_;
+  WriteThread write_thread_;
+
   WriteBatch tmp_batch_;
+
+  WriteController write_controller_;
+  FlushScheduler flush_scheduler_;
 
   SnapshotList snapshots_;
 
@@ -573,14 +597,10 @@ class DBImpl : public DB {
   bool flush_on_destroy_; // Used when disableWAL is true.
 
   static const int KEEP_LOG_FILE_NUM = 1000;
-  static const uint64_t kNoTimeOut = std::numeric_limits<uint64_t>::max();
   std::string db_absolute_path_;
 
-  // count of the number of contiguous delaying writes
-  int delayed_writes_;
-
   // The options to access storage files
-  const EnvOptions storage_options_;
+  const EnvOptions env_options_;
 
   // A value of true temporarily disables scheduling of background work
   bool bg_work_gate_closed_;
@@ -595,9 +615,6 @@ class DBImpl : public DB {
   DBImpl(const DBImpl&);
   void operator=(const DBImpl&);
 
-  // dump the delayed_writes_ to the log file and reset counter.
-  void DelayLoggingAndReset();
-
   // Return the earliest snapshot where seqno is visible.
   // Store the snapshot right before that, if any, in prev_snapshot
   inline SequenceNumber findEarliestVisibleSnapshot(
@@ -609,7 +626,8 @@ class DBImpl : public DB {
   // the cfd->InstallSuperVersion() function. Background threads carry
   // deletion_state which can have new_superversion already allocated.
   void InstallSuperVersion(ColumnFamilyData* cfd,
-                           DeletionState& deletion_state);
+                           DeletionState& deletion_state,
+                           const MutableCFOptions& mutable_cf_options);
 
   // Find Super version and reference it. Based on options, it might return
   // the thread local cached one.
@@ -643,7 +661,6 @@ class DBImpl : public DB {
 // it is not equal to src.info_log.
 extern Options SanitizeOptions(const std::string& db,
                                const InternalKeyComparator* icmp,
-                               const InternalFilterPolicy* ipolicy,
                                const Options& src);
 extern DBOptions SanitizeOptions(const std::string& db, const DBOptions& src);
 
@@ -653,5 +670,9 @@ static void ClipToRange(T* ptr, V minvalue, V maxvalue) {
   if (static_cast<V>(*ptr) > maxvalue) *ptr = maxvalue;
   if (static_cast<V>(*ptr) < minvalue) *ptr = minvalue;
 }
+
+// Dump db file summary, implemented in util/
+extern void DumpDBFileSummary(const DBOptions& options,
+                              const std::string& dbname);
 
 }  // namespace rocksdb

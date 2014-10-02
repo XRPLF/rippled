@@ -81,6 +81,8 @@ struct FileMetaData {
   uint64_t num_deletions;          // the number of deletion entries.
   uint64_t raw_key_size;           // total uncompressed key size.
   uint64_t raw_value_size;         // total uncompressed value size.
+  bool init_stats_from_file;   // true if the data-entry stats of this file
+                               // has initialized from file.
 
   FileMetaData()
       : refs(0),
@@ -90,7 +92,8 @@ struct FileMetaData {
         num_entries(0),
         num_deletions(0),
         raw_key_size(0),
-        raw_value_size(0) {}
+        raw_value_size(0),
+        init_stats_from_file(false) {}
 };
 
 // A compressed copy of file meta data that just contain
@@ -160,13 +163,13 @@ class VersionEdit {
   // Add the specified file at the specified number.
   // REQUIRES: This version has not been saved (see VersionSet::SaveTo)
   // REQUIRES: "smallest" and "largest" are smallest and largest keys in file
-  void AddFile(int level, uint64_t file, uint64_t file_size,
-               uint64_t file_path_id, const InternalKey& smallest,
+  void AddFile(int level, uint64_t file, uint64_t file_path_id,
+               uint64_t file_size, const InternalKey& smallest,
                const InternalKey& largest, const SequenceNumber& smallest_seqno,
                const SequenceNumber& largest_seqno) {
     assert(smallest_seqno <= largest_seqno);
     FileMetaData f;
-    f.fd = FileDescriptor(file, file_size, file_path_id);
+    f.fd = FileDescriptor(file, file_path_id, file_size);
     f.smallest = smallest;
     f.largest = largest;
     f.smallest_seqno = smallest_seqno;

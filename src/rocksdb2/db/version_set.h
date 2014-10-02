@@ -34,6 +34,7 @@
 #include "db/column_family.h"
 #include "db/log_reader.h"
 #include "db/file_indexer.h"
+#include "db/write_controller.h"
 
 namespace rocksdb {
 
@@ -86,8 +87,6 @@ class Version {
   // Append to *iters a sequence of iterators that will
   // yield the contents of this Version when merged together.
   // REQUIRES: This version has been saved (see VersionSet::SaveTo)
-  void AddIterators(const ReadOptions&, const EnvOptions& soptions,
-                    std::vector<Iterator*>* iters);
 
   void AddIterators(const ReadOptions&, const EnvOptions& soptions,
                     MergeIteratorBuilder* merger_iter_builder);
@@ -104,14 +103,18 @@ class Version {
   // We use compaction scores to figure out which compaction to do next
   // REQUIRES: If Version is not yet saved to current_, it can be called without
   // a lock. Once a version is saved to current_, call only with mutex held
-  void ComputeCompactionScore(std::vector<uint64_t>& size_being_compacted);
+  void ComputeCompactionScore(
+      const MutableCFOptions& mutable_cf_options,
+      std::vector<uint64_t>& size_being_compacted);
 
   // Generate file_levels_ from files_
   void GenerateFileLevels();
 
   // Update scores, pre-calculated variables. It needs to be called before
   // applying the version to the version set.
-  void PrepareApply(std::vector<uint64_t>& size_being_compacted);
+  void PrepareApply(
+      const MutableCFOptions& mutable_cf_options,
+      std::vector<uint64_t>& size_being_compacted);
 
   // Reference count management (so Versions do not disappear out from
   // under live iterators)
@@ -170,7 +173,8 @@ class Version {
 
   // Return the level at which we should place a new memtable compaction
   // result that covers the range [smallest_user_key,largest_user_key].
-  int PickLevelForMemTableOutput(const Slice& smallest_user_key,
+  int PickLevelForMemTableOutput(const MutableCFOptions& mutable_cf_options,
+                                 const Slice& smallest_user_key,
                                  const Slice& largest_user_key);
 
   int NumberLevels() const { return num_levels_; }
@@ -179,15 +183,15 @@ class Version {
   int NumLevelFiles(int level) const { return files_[level].size(); }
 
   // Return the combined file size of all files at the specified level.
-  int64_t NumLevelBytes(int level) const;
+  uint64_t NumLevelBytes(int level) const;
 
   // Return a human-readable short (single-line) summary of the number
   // of files per level.  Uses *scratch as backing store.
   struct LevelSummaryStorage {
-    char buffer[100];
+    char buffer[1000];
   };
   struct FileSummaryStorage {
-    char buffer[1000];
+    char buffer[3000];
   };
   const char* LevelSummary(LevelSummaryStorage* scratch) const;
   // Return a human-readable short (single-line) summary of files
@@ -246,6 +250,7 @@ class Version {
   friend class Compaction;
   friend class VersionSet;
   friend class DBImpl;
+  friend class CompactedDBImpl;
   friend class ColumnFamilyData;
   friend class CompactionPicker;
   friend class LevelCompactionPicker;
@@ -257,7 +262,7 @@ class Version {
   class LevelFileNumIterator;
   class LevelFileIteratorState;
 
-  bool PrefixMayMatch(const ReadOptions& options, Iterator* level_iter,
+  bool PrefixMayMatch(const ReadOptions& read_options, Iterator* level_iter,
                       const Slice& internal_prefix) const;
 
   // Update num_non_empty_levels_.
@@ -323,8 +328,8 @@ class Version {
   // These are used to pick the best compaction level
   std::vector<double> compaction_score_;
   std::vector<int> compaction_level_;
-  double max_compaction_score_; // max score in l1 to ln-1
-  int max_compaction_score_level_; // level on which max score occurs
+  double max_compaction_score_ = 0.0;   // max score in l1 to ln-1
+  int max_compaction_score_level_ = 0;  // level on which max score occurs
 
   // A version number that uniquely represents this version. This is
   // used for debugging and logging purposes only.
@@ -358,8 +363,9 @@ class Version {
 
 class VersionSet {
  public:
-  VersionSet(const std::string& dbname, const DBOptions* options,
-             const EnvOptions& storage_options, Cache* table_cache);
+  VersionSet(const std::string& dbname, const DBOptions* db_options,
+             const EnvOptions& env_options, Cache* table_cache,
+             WriteController* write_controller);
   ~VersionSet();
 
   // Apply *edit to the current version to form a new descriptor that
@@ -368,7 +374,9 @@ class VersionSet {
   // column_family_options has to be set if edit is column family add
   // REQUIRES: *mu is held on entry.
   // REQUIRES: no other thread concurrently calls LogAndApply()
-  Status LogAndApply(ColumnFamilyData* column_family_data, VersionEdit* edit,
+  Status LogAndApply(ColumnFamilyData* column_family_data,
+                     const MutableCFOptions& mutable_cf_options,
+                     VersionEdit* edit,
                      port::Mutex* mu, Directory* db_directory = nullptr,
                      bool new_descriptor_log = false,
                      const ColumnFamilyOptions* column_family_options =
@@ -397,7 +405,7 @@ class VersionSet {
   // among [4-6] contains files.
   static Status ReduceNumberOfLevels(const std::string& dbname,
                                      const Options* options,
-                                     const EnvOptions& storage_options,
+                                     const EnvOptions& env_options,
                                      int new_levels);
 
   // printf contents (for debugging)
@@ -506,14 +514,14 @@ class VersionSet {
   bool ManifestContains(uint64_t manifest_file_number,
                         const std::string& record) const;
 
-  ColumnFamilyData* CreateColumnFamily(const ColumnFamilyOptions& options,
+  ColumnFamilyData* CreateColumnFamily(const ColumnFamilyOptions& cf_options,
                                        VersionEdit* edit);
 
   std::unique_ptr<ColumnFamilySet> column_family_set_;
 
   Env* const env_;
   const std::string dbname_;
-  const DBOptions* const options_;
+  const DBOptions* const db_options_;
   uint64_t next_file_number_;
   uint64_t manifest_file_number_;
   uint64_t pending_manifest_file_number_;
@@ -534,12 +542,12 @@ class VersionSet {
 
   std::vector<FileMetaData*> obsolete_files_;
 
-  // storage options for all reads and writes except compactions
-  const EnvOptions& storage_options_;
+  // env options for all reads and writes except compactions
+  const EnvOptions& env_options_;
 
-  // storage options used for compactions. This is a copy of
-  // storage_options_ but with readaheads set to readahead_compactions_.
-  const EnvOptions storage_options_compactions_;
+  // env options used for compactions. This is a copy of
+  // env_options_ but with readaheads set to readahead_compactions_.
+  const EnvOptions env_options_compactions_;
 
   // No copying allowed
   VersionSet(const VersionSet&);
