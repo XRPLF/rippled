@@ -92,6 +92,7 @@ EC_KEY* CKey::GenerateRootDeterministicKey (const uint128& seed)
             EC_KEY_free (pkey);
             BN_free (order);
             BN_CTX_free (ctx);
+            return nullptr;
         }
 
         root.zero ();
