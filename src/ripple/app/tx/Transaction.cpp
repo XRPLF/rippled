@@ -63,59 +63,6 @@ Transaction::pointer Transaction::sharedTransaction (
 }
 
 //
-// Generic transaction construction
-//
-
-Transaction::Transaction (
-    TxType ttKind,
-    RippleAddress const&    naPublicKey,
-    RippleAddress const&    naSourceAccount,
-    std::uint32_t           uSeq,
-    STAmount const&         saFee,
-    std::uint32_t           uSourceTag)
-        : mAccountFrom (naSourceAccount),
-          mFromPubKey (naPublicKey),
-          mInLedger (0),
-          mStatus (NEW),
-          mResult (temUNCERTAIN)
-{
-    assert (mFromPubKey.isValid ());
-
-    mTransaction = std::make_shared<SerializedTransaction> (ttKind);
-
-    mTransaction->setSigningPubKey (mFromPubKey);
-    mTransaction->setSourceAccount (mAccountFrom);
-    mTransaction->setSequence (uSeq);
-    mTransaction->setTransactionFee (saFee);
-
-    if (uSourceTag)
-    {
-        mTransaction->makeFieldPresent (sfSourceTag);
-        mTransaction->setFieldU32 (sfSourceTag, uSourceTag);
-    }
-}
-
-bool Transaction::sign (RippleAddress const& naAccountPrivate)
-{
-    bool bResult = naAccountPrivate.isValid ();
-
-    if (!bResult)
-    {
-        WriteLog (lsWARNING, Ledger) << "No private key for signing";
-    }
-
-    getSTransaction ()->sign (naAccountPrivate);
-
-    if (bResult)
-        updateID ();
-    else
-        mStatus = INCOMPLETE;
-
-    return bResult;
-}
-
-
-//
 // Misc.
 //
 
@@ -277,78 +224,6 @@ Transaction::pointer Transaction::load (uint256 const& id)
     sql.append (to_string (id));
     sql.append ("';");
     return transactionFromSQL (sql);
-}
-
-bool Transaction::convertToTransactions (
-    std::uint32_t firstLedgerSeq,
-    std::uint32_t secondLedgerSeq,
-    Validate checkFirstTransactions,
-    Validate checkSecondTransactions,
-    const SHAMap::Delta& inMap,
-    std::map<uint256,
-    std::pair<Transaction::pointer, Transaction::pointer> >& outMap)
-{
-    // Convert a straight SHAMap payload difference to a transaction difference
-    // table.
-    //
-    // return value: true=ledgers are valid, false=a ledger is invalid
-
-    for (auto it = inMap.begin (); it != inMap.end (); ++it)
-    {
-        uint256 const& id = it->first;
-        SHAMapItem::ref first = it->second.first;
-        SHAMapItem::ref second = it->second.second;
-
-        Transaction::pointer firstTrans, secondTrans;
-
-        if (first)
-        {
-            // transaction in our table
-            firstTrans = sharedTransaction (
-                first->peekData (), checkFirstTransactions);
-
-            if (firstTrans->getStatus () == INVALID ||
-                firstTrans->getID () != id )
-            {
-                firstTrans->setStatus (INVALID, firstLedgerSeq);
-                return false;
-            }
-            else firstTrans->setStatus (INCLUDED, firstLedgerSeq);
-        }
-
-        if (second)
-        {
-            // transaction in other table
-            secondTrans = sharedTransaction (
-                second->peekData (), checkSecondTransactions);
-
-            if (secondTrans->getStatus () == INVALID ||
-                secondTrans->getID () != id)
-            {
-                secondTrans->setStatus (INVALID, secondLedgerSeq);
-                return false;
-            }
-            else
-            {
-                secondTrans->setStatus (INCLUDED, secondLedgerSeq);
-            }
-        }
-
-        assert (firstTrans || secondTrans);
-
-        if (firstTrans && secondTrans &&
-            firstTrans->getStatus () != INVALID &&
-            secondTrans->getStatus () != INVALID)
-        {
-            // One or the other SHAMap is structurally invalid or a miracle has
-            // happened.
-            return false;
-        }
-
-        outMap[id] = {firstTrans, secondTrans};
-    }
-
-    return true;
 }
 
 // options 1 to include the date of the transaction

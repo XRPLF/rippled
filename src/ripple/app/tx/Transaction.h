@@ -62,24 +62,7 @@ public:
     static Transaction::pointer sharedTransaction (Blob const&, Validate);
     static Transaction::pointer transactionFromSQL (Database*, Validate);
 
-    Transaction (
-        TxType ttKind,
-        RippleAddress const& naPublicKey,     // To prove transaction is
-                                              // consistent and authorized.
-        RippleAddress const& naSourceAccount, // To identify the paying account.
-        std::uint32_t        uSeq,            // To order transactions.
-        STAmount const&      saFee,           // Transaction fee.
-        std::uint32_t        uSourceTag);     // User call back value.
-
-
-    bool sign (const RippleAddress & naAccountPrivate);
-
     bool checkSign () const;
-
-    void updateID ()
-    {
-        mTransactionID = mTransaction->getTransactionID ();
-    }
 
     SerializedTransaction::ref getSTransaction ()
     {
@@ -89,37 +72,6 @@ public:
     uint256 const& getID () const
     {
         return mTransactionID;
-    }
-
-    RippleAddress const& getFromAccount () const
-    {
-        return mAccountFrom;
-    }
-
-    STAmount getAmount () const
-    {
-        return mTransaction->getFieldU64 (sfAmount);
-    }
-
-    STAmount getFee () const
-    {
-        return mTransaction->getTransactionFee ();
-    }
-
-    std::uint32_t getFromAccountSeq () const
-    {
-        return mTransaction->getSequence ();
-    }
-
-    std::uint32_t getSourceTag () const
-    {
-        return mTransaction->getFieldU32 (sfSourceTag);
-    }
-
-    // VFALCO TODO Should this return a const reference?
-    Blob getSignature () const
-    {
-        return mTransaction->getSignature ();
     }
 
     LedgerIndex getLedger () const
@@ -154,25 +106,9 @@ public:
         mInLedger = ledger;
     }
 
-    bool operator< (const Transaction&) const;
-    bool operator> (const Transaction&) const;
-    bool operator== (const Transaction&) const;
-    bool operator!= (const Transaction&) const;
-    bool operator<= (const Transaction&) const;
-    bool operator>= (const Transaction&) const;
-
     Json::Value getJson (int options, bool binary = false) const;
 
     static Transaction::pointer load (uint256 const& id);
-
-    // conversion function
-    static bool convertToTransactions (
-        std::uint32_t ourLedgerSeq,
-        std::uint32_t otherLedgerSeq,
-        Validate checkFirstTransactions,
-        Validate checkSecondTransactions,
-        const SHAMap::Delta & inMap,
-        std::map<uint256, std::pair<pointer, pointer> >& outMap);
 
     static bool isHexTxID (std::string const&);
 

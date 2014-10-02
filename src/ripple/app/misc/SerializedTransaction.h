@@ -156,7 +156,7 @@ private:
     TxType mType;
     TxFormats::Item const* mFormat;
 
-    SerializedTransaction* duplicate () const
+    SerializedTransaction* duplicate () const override
     {
         return new SerializedTransaction (*this);
     }
