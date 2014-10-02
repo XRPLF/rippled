@@ -224,7 +224,7 @@ public:
     {
         hash_value_ = get_hash (*this);
     }
-
+    
     int getNodeType () const
     {
         return mType;
