@@ -176,7 +176,7 @@ static Json::Value signPayment(
                     << "transactionSign: build_path: "
                     << spsPaths.getJson (0);
 
-            if (!spsPaths.isEmpty ())
+            if (!spsPaths.empty ())
                 tx_json["Paths"] = spsPaths.getJson (0);
         }
     }

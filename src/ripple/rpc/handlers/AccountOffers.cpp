@@ -115,7 +115,7 @@ Json::Value doAccountOffers (RPC::Context& context)
         if (!ownerDir || ownerDir->getType () != ltDIR_NODE)
             break;
 
-        for (auto const& node : ownerDir->getFieldV256 (sfIndexes).peekValue ())
+        for (auto const& node : ownerDir->getFieldV256 (sfIndexes))
         {
             SLE::ref offer (ledger->getSLEi (node));
 

@@ -444,7 +444,7 @@ bool STParsedJSON::parse (std::string const& json_name,
                 {
                     uint256 s;
                     s.SetHex (value[i].asString ());
-                    tail->addValue (s);
+                    tail->push_back (s);
                 }
             }
             catch (...)
@@ -581,10 +581,10 @@ bool STParsedJSON::parse (std::string const& json_name,
                             }
                         }
 
-                        p.addElement (STPathElement (uAccount, uCurrency, uIssuer, hasCurrency));
+                        p.emplace_back (uAccount, uCurrency, uIssuer, hasCurrency);
                     }
 
-                    tail->addPath (p);
+                    tail->push_back (p);
                 }
             }
             catch (...)

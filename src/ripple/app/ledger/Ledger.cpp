@@ -1636,7 +1636,7 @@ uint256 Ledger::getLedgerHash (std::uint32_t ledgerIndex)
             STVector256 vec = hashIndex->getFieldV256 (sfHashes);
 
             if (vec.size () >= diff)
-                return vec.at (vec.size () - diff);
+                return vec[vec.size () - diff];
 
             WriteLog (lsWARNING, Ledger)
                     << "Ledger " << mLedgerSeq
@@ -1671,7 +1671,7 @@ uint256 Ledger::getLedgerHash (std::uint32_t ledgerIndex)
         STVector256 vec = hashIndex->getFieldV256 (sfHashes);
 
         if (vec.size () > sDiff)
-            return vec.at (vec.size () - sDiff - 1);
+            return vec[vec.size () - sDiff - 1];
     }
 
     WriteLog (lsWARNING, Ledger) << "Can't get seq " << ledgerIndex
@@ -1692,7 +1692,7 @@ Ledger::LedgerHashes Ledger::getLedgerHashes () const
         auto seq = hashIndex->getFieldU32 (sfLastLedgerSequence) - size;
 
         for (int i = 0; i < size; ++i)
-            ret.push_back (std::make_pair (++seq, vec.at (i)));
+            ret.push_back (std::make_pair (++seq, vec[i]));
     }
 
     return ret;

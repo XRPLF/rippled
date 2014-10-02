@@ -732,25 +732,25 @@ Blob STObject::getFieldVL (SField::ref field) const
 
 STAmount const& STObject::getFieldAmount (SField::ref field) const
 {
-    static STAmount const empty;
+    static STAmount const empty{};
     return getFieldByConstRef <STAmount> (field, empty);
 }
 
 const STArray& STObject::getFieldArray (SField::ref field) const
 {
-    static STArray const empty;
+    static STArray const empty{};
     return getFieldByConstRef <STArray> (field, empty);
 }
 
 STPathSet const& STObject::getFieldPathSet (SField::ref field) const
 {
-    static STPathSet const empty;
+    static STPathSet const empty{};
     return getFieldByConstRef <STPathSet> (field, empty);
 }
 
 const STVector256& STObject::getFieldV256 (SField::ref field) const
 {
-    static STVector256 const empty;
+    static STVector256 const empty{};
     return getFieldByConstRef <STVector256> (field, empty);
 }
 
@@ -895,16 +895,6 @@ bool STObject::operator== (const STObject& obj) const
     }
 
     return true;
-}
-
-Json::Value STVector256::getJson (int options) const
-{
-    Json::Value ret (Json::arrayValue);
-
-    for (auto const& vEntry : mValue)
-        ret.append (to_string (vEntry));
-
-    return ret;
 }
 
 //------------------------------------------------------------------------------

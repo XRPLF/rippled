@@ -470,7 +470,7 @@ TER PathState::expandPath (
 
         // Figure out next node properties for implied node.
         const auto uNxtCurrencyID  = spSourcePath.size ()
-                ? Currency(spSourcePath.getElement (0).getCurrency ())
+                ? Currency(spSourcePath.front ().getCurrency ())
                 // Use next node.
                 : currencyOutID;
                 // Use send.
@@ -478,7 +478,7 @@ TER PathState::expandPath (
         // TODO(tom): complexify this next logic further in case someone
         // understands it.
         const auto nextAccountID   = spSourcePath.size ()
-                ? Account(spSourcePath.getElement (0).getAccountID ())
+                ? Account(spSourcePath. front ().getAccountID ())
                 : !isXRP(currencyOutID)
                 ? (issuerOutID == uReceiverID)
                 ? Account(uReceiverID)
