@@ -1410,36 +1410,58 @@ bool Ledger::visitAccountItems (
                 }
             }
         }
-    }
-
-    bool found (false);
-
-    while (1)
-    {
-        SLE::pointer ownerDir (getSLEi (currentIndex));
-
-        if (!ownerDir || ownerDir->getType () != ltDIR_NODE)
-            return found;
-
-        for (auto const& node : ownerDir->getFieldV256 (sfIndexes))
+        
+        bool found (false);
+        for (;;)
         {
-            if (!found)
-            {
-                if (startAfter.isZero () || node == startAfter)
-                    found = true;
-            }
-            else if (func (getSLEi (node)) && limit-- <= 1)
-            {
+            SLE::pointer ownerDir (getSLEi (currentIndex));
+
+            if (! ownerDir || ownerDir->getType () != ltDIR_NODE)
                 return found;
+
+            for (auto const& node : ownerDir->getFieldV256 (sfIndexes))
+            {
+                if (!found)
+                {
+                    if (node == startAfter)
+                        found = true;
+                }
+                else if (func (getSLEi (node)) && limit-- <= 1)
+                {
+                    return found;
+                }
             }
+
+            std::uint64_t const uNodeNext (ownerDir->getFieldU64 (sfIndexNext));
+
+            if (uNodeNext == 0)
+                return found;
+
+            currentIndex = Ledger::getDirNodeIndex (rootIndex, uNodeNext);
         }
+    }
+    else
+    {
+        for (;;)
+        {
+            SLE::pointer ownerDir (getSLEi (currentIndex));
 
-        std::uint64_t const uNodeNext (ownerDir->getFieldU64 (sfIndexNext));
+            if (! ownerDir || ownerDir->getType () != ltDIR_NODE)
+                return true;
 
-        if (uNodeNext == 0)
-            return found;
+            for (auto const& node : ownerDir->getFieldV256 (sfIndexes))
+            {
+                if (func (getSLEi (node)) && limit-- <= 1)
+                    return true;
+            }
 
-        currentIndex = Ledger::getDirNodeIndex (rootIndex, uNodeNext);
+            std::uint64_t const uNodeNext (ownerDir->getFieldU64 (sfIndexNext));
+
+            if (uNodeNext == 0)
+                return true;
+
+            currentIndex = Ledger::getDirNodeIndex (rootIndex, uNodeNext);
+        }
     }
 }
 
