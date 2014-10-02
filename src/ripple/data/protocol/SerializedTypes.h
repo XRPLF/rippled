@@ -277,7 +277,7 @@ private:
 class STPath
 {
 public:
-    explicit STPath () = default;
+    STPath () = default;
 
     STPath (std::vector<STPathElement> const& p)
         : mPath (p)
@@ -350,7 +350,7 @@ private:
 class STPathSet : public SerializedType
 {
 public:
-    explicit STPathSet () = default;
+    STPathSet () = default;
 
     STPathSet (SField::ref n)
         : SerializedType (n)
@@ -450,7 +450,7 @@ private:
 class STVector256 : public SerializedType
 {
 public:
-    explicit STVector256 () = default;
+    STVector256 () = default;
     explicit STVector256 (SField::ref n)
         : SerializedType (n)
     { }
