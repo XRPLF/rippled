@@ -35,16 +35,11 @@ public class RocksDBSample {
       assert(db == null);
     }
 
-    Filter filter = new BloomFilter(10);
     options.setCreateIfMissing(true)
         .createStatistics()
         .setWriteBufferSize(8 * SizeUnit.KB)
         .setMaxWriteBufferNumber(3)
-        .setDisableSeekCompaction(true)
-        .setBlockSize(64 * SizeUnit.KB)
         .setMaxBackgroundCompactions(10)
-        .setFilter(filter)
-        .setCacheNumShardBits(6)
         .setCompressionType(CompressionType.SNAPPY_COMPRESSION)
         .setCompactionStyle(CompactionStyle.UNIVERSAL);
     Statistics stats = options.statisticsPtr();
@@ -52,10 +47,7 @@ public class RocksDBSample {
     assert(options.createIfMissing() == true);
     assert(options.writeBufferSize() == 8 * SizeUnit.KB);
     assert(options.maxWriteBufferNumber() == 3);
-    assert(options.disableSeekCompaction() == true);
-    assert(options.blockSize() == 64 * SizeUnit.KB);
     assert(options.maxBackgroundCompactions() == 10);
-    assert(options.cacheNumShardBits() == 6);
     assert(options.compressionType() == CompressionType.SNAPPY_COMPRESSION);
     assert(options.compactionStyle() == CompactionStyle.UNIVERSAL);
 
@@ -80,13 +72,44 @@ public class RocksDBSample {
     assert(options.memTableFactoryName().equals("SkipListFactory"));
 
     options.setTableFormatConfig(new PlainTableConfig());
+    // Plain-Table requires mmap read
+    options.setAllowMmapReads(true);
     assert(options.tableFactoryName().equals("PlainTable"));
+    
+    options.setRateLimiterConfig(new GenericRateLimiterConfig(10000000,
+            10000, 10));
+    options.setRateLimiterConfig(new GenericRateLimiterConfig(10000000));
+
+    BlockBasedTableConfig table_options = new BlockBasedTableConfig();
+    table_options.setBlockCacheSize(64 * SizeUnit.KB)
+                 .setFilterBitsPerKey(10)
+                 .setCacheNumShardBits(6)
+                 .setBlockSizeDeviation(5)
+                 .setBlockRestartInterval(10)
+                 .setCacheIndexAndFilterBlocks(true)
+                 .setHashIndexAllowCollision(false)
+                 .setBlockCacheCompressedSize(64 * SizeUnit.KB)
+                 .setBlockCacheCompressedNumShardBits(10);
+                 
+    assert(table_options.blockCacheSize() == 64 * SizeUnit.KB);
+    assert(table_options.cacheNumShardBits() == 6);
+    assert(table_options.blockSizeDeviation() == 5);
+    assert(table_options.blockRestartInterval() == 10);
+    assert(table_options.cacheIndexAndFilterBlocks() == true);
+    assert(table_options.hashIndexAllowCollision() == false);
+    assert(table_options.blockCacheCompressedSize() == 64 * SizeUnit.KB);
+    assert(table_options.blockCacheCompressedNumShardBits() == 10);
+    
+    options.setTableFormatConfig(table_options);
+    assert(options.tableFactoryName().equals("BlockBasedTable"));
 
     try {
       db = RocksDB.open(options, db_path_not_found);
       db.put("hello".getBytes(), "world".getBytes());
       byte[] value = db.get("hello".getBytes());
       assert("world".equals(new String(value)));
+      String str = db.getProperty("rocksdb.stats");
+      assert(str != null && str != "");
     } catch (RocksDBException e) {
       System.out.format("[ERROR] caught the unexpceted exception -- %s\n", e);
       assert(db == null);
@@ -119,6 +142,29 @@ public class RocksDBSample {
         }
         System.out.println("");
       }
+
+      // write batch test
+      WriteOptions writeOpt = new WriteOptions();
+      for (int i = 10; i <= 19; ++i) {
+        WriteBatch batch = new WriteBatch();
+        for (int j = 10; j <= 19; ++j) {
+          batch.put(String.format("%dx%d", i, j).getBytes(),
+                    String.format("%d", i * j).getBytes());
+        }
+        db.write(writeOpt, batch);
+        batch.dispose();
+      }
+      for (int i = 10; i <= 19; ++i) {
+        for (int j = 10; j <= 19; ++j) {
+          assert(new String(
+              db.get(String.format("%dx%d", i, j).getBytes())).equals(
+                  String.format("%d", i * j)));
+          System.out.format("%s ", new String(db.get(
+              String.format("%dx%d", i, j).getBytes())));
+        }
+        System.out.println("");
+      }
+      writeOpt.dispose();
 
       value = db.get("1x1".getBytes());
       assert(value != null);
@@ -254,6 +300,5 @@ public class RocksDBSample {
     // be sure to dispose c++ pointers
     options.dispose();
     readOptions.dispose();
-    filter.dispose();
   }
 }

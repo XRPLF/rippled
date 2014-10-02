@@ -52,12 +52,6 @@ public class OptionsTest {
       assert(opt.useFsync() == boolValue);
     }
 
-    { // DbStatsLogInterval test
-      int intValue = rand.nextInt();
-      opt.setDbStatsLogInterval(intValue);
-      assert(opt.dbStatsLogInterval() == intValue);
-    }
-
     { // DbLogDir test
       String str = "path/to/DbLogDir";
       opt.setDbLogDir(str);
@@ -190,12 +184,6 @@ public class OptionsTest {
       assert(opt.bytesPerSync() == longValue);
     }
 
-    { // AllowThreadLocal test
-      boolean boolValue = rand.nextBoolean();
-      opt.setAllowThreadLocal(boolValue);
-      assert(opt.allowThreadLocal() == boolValue);
-    }
-
     { // WriteBufferSize test
       long longValue = rand.nextLong();
       opt.setWriteBufferSize(longValue);
@@ -212,24 +200,6 @@ public class OptionsTest {
       int intValue = rand.nextInt();
       opt.setMinWriteBufferNumberToMerge(intValue);
       assert(opt.minWriteBufferNumberToMerge() == intValue);
-    }
-
-    { // BlockSize test
-      long longValue = rand.nextLong();
-      opt.setBlockSize(longValue);
-      assert(opt.blockSize() == longValue);
-    }
-
-    { // BlockRestartInterval test
-      int intValue = rand.nextInt();
-      opt.setBlockRestartInterval(intValue);
-      assert(opt.blockRestartInterval() == intValue);
-    }
-
-    { // WholeKeyFiltering test
-      boolean boolValue = rand.nextBoolean();
-      opt.setWholeKeyFiltering(boolValue);
-      assert(opt.wholeKeyFiltering() == boolValue);
     }
 
     { // NumLevels test
@@ -304,12 +274,6 @@ public class OptionsTest {
       assert(opt.maxGrandparentOverlapFactor() == intValue);
     }
 
-    { // DisableSeekCompaction test
-      boolean boolValue = rand.nextBoolean();
-      opt.setDisableSeekCompaction(boolValue);
-      assert(opt.disableSeekCompaction() == boolValue);
-    }
-
     { // SoftRateLimit test
       double doubleValue = rand.nextDouble();
       opt.setSoftRateLimit(doubleValue);
@@ -328,12 +292,6 @@ public class OptionsTest {
       assert(opt.rateLimitDelayMaxMilliseconds() == intValue);
     }
 
-    { // NoBlockCache test
-      boolean boolValue = rand.nextBoolean();
-      opt.setNoBlockCache(boolValue);
-      assert(opt.noBlockCache() == boolValue);
-    }
-
     { // ArenaBlockSize test
       long longValue = rand.nextLong();
       opt.setArenaBlockSize(longValue);
@@ -350,12 +308,6 @@ public class OptionsTest {
       boolean boolValue = rand.nextBoolean();
       opt.setPurgeRedundantKvsWhileFlush(boolValue);
       assert(opt.purgeRedundantKvsWhileFlush() == boolValue);
-    }
-
-    { // BlockSizeDeviation test
-      int intValue = rand.nextInt();
-      opt.setBlockSizeDeviation(intValue);
-      assert(opt.blockSizeDeviation() == intValue);
     }
 
     { // VerifyChecksumsInCompaction test

@@ -26,21 +26,8 @@
  * Signature: (JLjava/lang/String;)V
  */
 void Java_org_rocksdb_RocksDB_open(
-    JNIEnv* env, jobject jdb, jlong jopt_handle,
-    jlong jcache_size, jint jnum_shardbits, jstring jdb_path) {
+    JNIEnv* env, jobject jdb, jlong jopt_handle, jstring jdb_path) {
   auto opt = reinterpret_cast<rocksdb::Options*>(jopt_handle);
-  if (jcache_size > 0) {
-    opt->no_block_cache = false;
-    if (jnum_shardbits >= 1) {
-      opt->block_cache = rocksdb::NewLRUCache(jcache_size, jnum_shardbits);
-    } else {
-      opt->block_cache = rocksdb::NewLRUCache(jcache_size);
-    }
-  } else {
-    opt->no_block_cache = true;
-    opt->block_cache = nullptr;
-  }
-
   rocksdb::DB* db = nullptr;
   const char* db_path = env->GetStringUTFChars(jdb_path, 0);
   rocksdb::Status s = rocksdb::DB::Open(*opt, db_path, &db);
@@ -437,4 +424,28 @@ jlong Java_org_rocksdb_RocksDB_iterator0(
   auto db = reinterpret_cast<rocksdb::DB*>(db_handle);
   rocksdb::Iterator* iterator = db->NewIterator(rocksdb::ReadOptions());
   return reinterpret_cast<jlong>(iterator);
+}
+
+/*
+ * Class:     org_rocksdb_RocksDB
+ * Method:    getProperty0
+ * Signature: (JLjava/lang/String;I)Ljava/lang/String;
+ */
+jstring Java_org_rocksdb_RocksDB_getProperty0(
+    JNIEnv* env, jobject jdb, jlong db_handle, jstring jproperty,
+    jint jproperty_len) {
+  auto db = reinterpret_cast<rocksdb::DB*>(db_handle);
+  
+  const char* property = env->GetStringUTFChars(jproperty, 0);
+  rocksdb::Slice property_slice(property, jproperty_len);
+  
+  std::string property_value;
+  bool retCode = db->GetProperty(property_slice, &property_value);
+  env->ReleaseStringUTFChars(jproperty, property);
+  
+  if (!retCode) {
+    rocksdb::RocksDBExceptionJni::ThrowNew(env, rocksdb::Status::NotFound());
+  }
+  
+  return env->NewStringUTF(property_value.data());
 }
