@@ -20,6 +20,8 @@
 #ifndef RIPPLE_SERIALIZEDTRANSACTION_H
 #define RIPPLE_SERIALIZEDTRANSACTION_H
 
+#include <boost/optional.hpp>
+
 namespace ripple {
 
 // VFALCO TODO replace these macros with language constants
@@ -102,7 +104,7 @@ public:
 
     std::vector<RippleAddress> getMentionedAccounts () const;
 
-    uint256 getTransactionID () const;
+    uint256 const& getTransactionID () const;
 
     virtual Json::Value getJson (int options) const;
     virtual Json::Value getJson (int options, bool binary) const;
@@ -163,6 +165,8 @@ private:
 
     mutable bool mSigGood;
     mutable bool mSigBad;
+
+    mutable boost::optional <uint256> txid_;
 };
 
 bool passesLocalChecks (STObject const& st, std::string&);

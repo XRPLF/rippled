@@ -824,7 +824,7 @@ void NetworkOPsImp::submitTransaction (
     SerializerIterator sit (s);
     auto trans = std::make_shared<SerializedTransaction> (std::ref (sit));
 
-    uint256 suppress = trans->getTransactionID ();
+    uint256 const& suppress = trans->getTransactionID ();
     int flags;
 
     if (getApp().getHashRouter ().addSuppressionPeer (suppress, 0, flags) &&

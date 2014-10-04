@@ -66,7 +66,7 @@ public:
         return mAffected;
     }
 
-    TxID getTransactionID () const
+    TxID const& getTransactionID () const
     {
         return mTxn->getTransactionID ();
     }

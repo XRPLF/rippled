@@ -71,7 +71,7 @@ public:
 
     uint256 const& getID () const
     {
-        return mTransactionID;
+        return mTransaction->getTransactionID();
     }
 
     LedgerIndex getLedger () const
@@ -116,7 +116,6 @@ protected:
     static Transaction::pointer transactionFromSQL (std::string const&);
 
 private:
-    uint256         mTransactionID;
     RippleAddress   mAccountFrom;
     RippleAddress   mFromPubKey;    // Sign transaction with this. mSignPubKey
     RippleAddress   mSourcePrivate; // Sign transaction with this.

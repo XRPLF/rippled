@@ -28,7 +28,6 @@ Transaction::Transaction (SerializedTransaction::ref sit, Validate validate)
     try
     {
         mFromPubKey.setAccountPublic (mTransaction->getSigningPubKey ());
-        mTransactionID  = mTransaction->getTransactionID ();
         mAccountFrom    = mTransaction->getSourceAccount ();
     }
     catch (...)
@@ -253,11 +252,11 @@ bool Transaction::isHexTxID (std::string const& txid)
     if (txid.size () != 64)
         return false;
 
-    auto const ret = std::find_if_not (txid.begin (), txid.end (),
-        std::bind (
-            std::isxdigit <std::string::value_type>,
-            std::placeholders::_1,
-            std::locale ()));
+    auto const ret = std::find_if (txid.begin (), txid.end (),
+        [](std::string::value_type c)
+        {
+            return !std::isxdigit (c);
+        });
 
     return (ret == txid.end ());
 }

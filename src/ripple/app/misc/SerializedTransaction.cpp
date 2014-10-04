@@ -164,10 +164,12 @@ uint256 SerializedTransaction::getSigningHash () const
     return STObject::getSigningHash (HashPrefix::txSign);
 }
 
-uint256 SerializedTransaction::getTransactionID () const
+uint256 const& SerializedTransaction::getTransactionID () const
 {
-    // perhaps we should cache this
-    return getHash (HashPrefix::transactionID);
+    if (!txid_)
+        txid_ = getHash (HashPrefix::transactionID);
+
+    return txid_.get ();
 }
 
 Blob SerializedTransaction::getSignature () const
@@ -294,7 +296,7 @@ std::string SerializedTransaction::getMetaSQL (std::uint32_t inLedger,
 std::string SerializedTransaction::getSQL (Serializer rawTxn, std::uint32_t inLedger, char status) const
 {
     static boost::format bfTrans ("('%s', '%s', '%s', '%d', '%d', '%c', %s)");
-    std::string rTxn    = sqlEscape (rawTxn.peekData ());
+    std::string rTxn = sqlEscape (rawTxn.peekData ());
 
     return str (boost::format (bfTrans)
                 % to_string (getTransactionID ()) % getTransactionType ()
@@ -306,7 +308,7 @@ std::string SerializedTransaction::getMetaSQL (Serializer rawTxn, std::uint32_t 
         std::string const& escapedMetaData) const
 {
     static boost::format bfTrans ("('%s', '%s', '%s', '%d', '%d', '%c', %s, %s)");
-    std::string rTxn    = sqlEscape (rawTxn.peekData ());
+    std::string rTxn = sqlEscape (rawTxn.peekData ());
 
     return str (boost::format (bfTrans)
                 % to_string (getTransactionID ()) % getTransactionType ()

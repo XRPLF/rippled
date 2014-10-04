@@ -917,7 +917,7 @@ PeerImp::on_message (std::shared_ptr <protocol::TMTransaction> const& m)
     {
         SerializerIterator sit (s);
         SerializedTransaction::pointer stx = std::make_shared<SerializedTransaction> (std::ref (sit));
-        uint256 txID = stx->getTransactionID();
+        uint256 const& txID = stx->getTransactionID ();
 
         int flags;
 
@@ -944,8 +944,8 @@ PeerImp::on_message (std::shared_ptr <protocol::TMTransaction> const& m)
                 // For now, be paranoid and have each validator
                 // check each transaction, regardless of source
                 flags |= SF_SIGGOOD;
-	    }
-	}
+            }
+        }
 
         if (getApp().getJobQueue().getJobCount(jtTRANSACTION) > 100)
             m_journal.info << "Transaction queue is full";

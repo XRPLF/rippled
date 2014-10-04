@@ -73,13 +73,12 @@ bool CanonicalTXSet::Key::operator>= (Key const& rhs)const
 
 void CanonicalTXSet::push_back (SerializedTransaction::ref txn)
 {
-    uint256 effectiveAccount = mSetHash;
-
-    effectiveAccount ^= to256 (txn->getSourceAccount ().getAccountID ());
+    auto acct = to256 (txn->getSourceAccount ().getAccountID ());
+    acct ^= mSetHash;
 
     mMap.insert (std::make_pair (
-                     Key (effectiveAccount, txn->getSequence (), txn->getTransactionID ()),
-                     txn));
+        Key (acct, txn->getSequence (), txn->getTransactionID ()),
+        txn));
 }
 
 CanonicalTXSet::iterator CanonicalTXSet::erase (iterator const& it)
