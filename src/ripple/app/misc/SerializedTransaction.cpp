@@ -276,42 +276,47 @@ SerializedTransaction::getMetaSQL (Serializer rawTxn,
 
 //------------------------------------------------------------------------------
 
-bool isMemoOkay (STObject const& st)
+static
+bool
+isMemoOkay (STObject const& st, std::string& reason)
 {
     if (!st.isFieldPresent (sfMemos))
         return true;
 
     const STArray& memos = st.getFieldArray (sfMemos);
+
     // The number 2048 is a preallocation hint, not a hard limit
     // to avoid allocate/copy/free's
     Serializer s (2048);
     memos.add (s);
+
     // FIXME move the memo limit into a config tunable
     if (s.getDataLength () > 1024)
+    {
+        reason = "The memo exceeds the maximum allowed size.";
         return false;
+    }
 
     for (auto const& memo : memos)
     {
         auto memoObj = dynamic_cast <STObject const*> (&memo);
 
-        // Memos array must consist solely of Memo objects
         if (!memoObj || (memoObj->getFName() != sfMemo))
         {
+            reason = "A memo array may contain only Memo objects.";
             return false;
         }
 
-        // Memo objects may only contain
-        // MemoType, MemoData, and MemoFormat fields
         for (auto const& memoElement : *memoObj)
         {
             if ((memoElement.getFName() != sfMemoType) &&
                 (memoElement.getFName() != sfMemoData) &&
                 (memoElement.getFName() != sfMemoFormat))
             {
+                reason = "A memo may contain only MemoType, MemoData or MemoFormat fields.";
                 return false;
             }
         }
-
     }
 
     return true;
@@ -334,11 +339,9 @@ isAccountFieldOkay (STObject const& st)
 
 bool passesLocalChecks (STObject const& st, std::string& reason)
 {
-    if (!isMemoOkay (st))
-    {
-        reason = "The memo exceeds the maximum allowed size.";
+    if (!isMemoOkay (st, reason))
         return false;
-    }
+
     if (!isAccountFieldOkay (st))
     {
         reason = "An account field is invalid.";
