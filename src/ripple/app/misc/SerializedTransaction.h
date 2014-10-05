@@ -20,10 +20,12 @@
 #ifndef RIPPLE_SERIALIZEDTRANSACTION_H
 #define RIPPLE_SERIALIZEDTRANSACTION_H
 
+#include <boost/optional.hpp>
+#include <boost/logic/tribool.hpp>
+
 namespace ripple {
 
 // VFALCO TODO replace these macros with language constants
-
 #define TXN_SQL_NEW         'N'
 #define TXN_SQL_CONFLICT    'C'
 #define TXN_SQL_HELD        'H'
@@ -42,9 +44,16 @@ public:
     typedef const std::shared_ptr<SerializedTransaction>& ref;
 
 public:
-    explicit SerializedTransaction (SerializerIterator & sit);
+    SerializedTransaction () = delete;
+    SerializedTransaction& operator= (SerializedTransaction const& other) = delete;
+
+    SerializedTransaction (SerializedTransaction const& other) = default;
+
+    explicit SerializedTransaction (SerializerIterator& sit);
     explicit SerializedTransaction (TxType type);
-    explicit SerializedTransaction (const STObject & object);
+    
+    // Only called from ripple::RPC::transactionSign - can we eliminate this?
+    explicit SerializedTransaction (STObject const& object);
 
     // STObject functions
     SerializedTypeID getSType () const
@@ -52,19 +61,15 @@ public:
         return STI_TRANSACTION;
     }
     std::string getFullText () const;
-    std::string getText () const;
 
     // outer transaction functions / signature functions
     Blob getSignature () const;
-    void setSignature (Blob const & s)
-    {
-        setFieldVL (sfTxnSignature, s);
-    }
+
     uint256 getSigningHash () const;
 
     TxType getTxnType () const
     {
-        return mType;
+        return tx_type_;
     }
     STAmount getTransactionFee () const
     {
@@ -86,11 +91,6 @@ public:
     void setSigningPubKey (const RippleAddress & naSignPubKey);
     void setSourceAccount (const RippleAddress & naSource);
 
-    std::string getTransactionType () const
-    {
-        return mFormat->getName ();
-    }
-
     std::uint32_t getSequence () const
     {
         return getFieldU32 (sfSequence);
@@ -107,41 +107,32 @@ public:
     virtual Json::Value getJson (int options) const;
     virtual Json::Value getJson (int options, bool binary) const;
 
-    void sign (const RippleAddress & naAccountPrivate);
-    bool checkSign (const RippleAddress & naAccountPublic) const;
+    void sign (RippleAddress const& private_key);
+
     bool checkSign () const;
+    bool checkSign (RippleAddress const& public_key) const;
+
     bool isKnownGood () const
     {
-        return mSigGood;
+        return (sig_state_ == true);
     }
     bool isKnownBad () const
     {
-        return mSigBad;
+        return (sig_state_ == false);
     }
     void setGood () const
     {
-        mSigGood = true;
+        sig_state_ = true;
     }
     void setBad () const
     {
-        mSigBad = true;
+        sig_state_ = false;
     }
 
-    // SQL Functions
-    static std::string getSQLValueHeader ();
-    static std::string getSQLInsertHeader ();
-    static std::string getSQLInsertIgnoreHeader ();
-
-    std::string getSQL (
-        std::string & sql, std::uint32_t inLedger, char status) const;
-    std::string getSQL (
-        std::uint32_t inLedger, char status) const;
-    std::string getSQL (
-        Serializer rawTxn, std::uint32_t inLedger, char status) const;
-
     // SQL Functions with metadata
-    static std::string getMetaSQLValueHeader ();
-    static std::string getMetaSQLInsertReplaceHeader ();
+    static
+    std::string const&
+    getMetaSQLInsertReplaceHeader ();
 
     std::string getMetaSQL (
         std::uint32_t inLedger, std::string const& escapedMetaData) const;
@@ -153,16 +144,14 @@ public:
         std::string const& escapedMetaData) const;
 
 private:
-    TxType mType;
-    TxFormats::Item const* mFormat;
-
     SerializedTransaction* duplicate () const override
     {
         return new SerializedTransaction (*this);
     }
 
-    mutable bool mSigGood;
-    mutable bool mSigBad;
+    TxType tx_type_;
+
+    mutable boost::tribool sig_state_;
 };
 
 bool passesLocalChecks (STObject const& st, std::string&);

@@ -100,7 +100,7 @@ TER TransactionEngine::applyTransaction (
     }
 #endif
 
-    uint256 txID = txn.getTransactionID ();
+    uint256 const& txID = txn.getTransactionID ();
 
     if (!txID)
     {

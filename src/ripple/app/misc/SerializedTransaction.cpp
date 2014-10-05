@@ -25,73 +25,80 @@ namespace ripple {
 
 SerializedTransaction::SerializedTransaction (TxType type)
     : STObject (sfTransaction)
-    , mType (type)
-    , mSigGood (false)
-    , mSigBad (false)
+    , tx_type_ (type)
+    , sig_state_ (boost::indeterminate)
 {
-    mFormat = TxFormats::getInstance().findByType (type);
+    auto format = TxFormats::getInstance().findByType (type);
 
-    if (mFormat == nullptr)
+    if (format == nullptr)
     {
-        WriteLog (lsWARNING, SerializedTransaction) << "Transaction type: " << type;
+        WriteLog (lsWARNING, SerializedTransaction) <<
+            "Transaction type: " << type;
         throw std::runtime_error ("invalid transaction type");
     }
 
-    set (mFormat->elements);
-    setFieldU16 (sfTransactionType, mFormat->getType ());
+    set (format->elements);
+    setFieldU16 (sfTransactionType, format->getType ());
 }
 
 SerializedTransaction::SerializedTransaction (STObject const& object)
     : STObject (object)
-    , mSigGood (false)
-    , mSigBad (false)
+    , sig_state_ (boost::indeterminate)
 {
-    mType = static_cast <TxType> (getFieldU16 (sfTransactionType));
+    tx_type_ = static_cast <TxType> (getFieldU16 (sfTransactionType));
 
-    mFormat = TxFormats::getInstance().findByType (mType);
+    auto format = TxFormats::getInstance().findByType (tx_type_);
 
-    if (!mFormat)
+    if (!format)
     {
-        WriteLog (lsWARNING, SerializedTransaction) << "Transaction type: " << mType;
+        WriteLog (lsWARNING, SerializedTransaction) <<
+            "Transaction type: " << tx_type_;
         throw std::runtime_error ("invalid transaction type");
     }
 
-    if (!setType (mFormat->elements))
+    if (!setType (format->elements))
     {
+        WriteLog (lsWARNING, SerializedTransaction) <<
+            "Transaction not legal for format";
         throw std::runtime_error ("transaction not valid");
     }
 }
 
-SerializedTransaction::SerializedTransaction (SerializerIterator& sit) : STObject (sfTransaction),
-    mSigGood (false), mSigBad (false)
+SerializedTransaction::SerializedTransaction (SerializerIterator& sit)
+    : STObject (sfTransaction)
+    , sig_state_ (boost::indeterminate)
 {
     int length = sit.getBytesLeft ();
 
     if ((length < Protocol::txMinSizeBytes) || (length > Protocol::txMaxSizeBytes))
     {
-        WriteLog (lsERROR, SerializedTransaction) << "Transaction has invalid length: " << length;
+        WriteLog (lsERROR, SerializedTransaction) <<
+            "Transaction has invalid length: " << length;
         throw std::runtime_error ("Transaction length invalid");
     }
 
     set (sit);
-    mType = static_cast<TxType> (getFieldU16 (sfTransactionType));
+    tx_type_ = static_cast<TxType> (getFieldU16 (sfTransactionType));
 
-    mFormat = TxFormats::getInstance().findByType (mType);
+    auto format = TxFormats::getInstance().findByType (tx_type_);
 
-    if (!mFormat)
+    if (!format)
     {
-        WriteLog (lsWARNING, SerializedTransaction) << "Transaction type: " << mType;
+        WriteLog (lsWARNING, SerializedTransaction) <<
+            "Invalid transaction type: " << tx_type_;
         throw std::runtime_error ("invalid transaction type");
     }
 
-    if (!setType (mFormat->elements))
+    if (!setType (format->elements))
     {
-        WriteLog (lsWARNING, SerializedTransaction) << "Transaction not legal for format";
+        WriteLog (lsWARNING, SerializedTransaction) <<
+            "Transaction not legal for format";
         throw std::runtime_error ("transaction not valid");
     }
 }
 
-std::string SerializedTransaction::getFullText () const
+std::string
+SerializedTransaction::getFullText () const
 {
     std::string ret = "\"";
     ret += to_string (getTransactionID ());
@@ -101,72 +108,47 @@ std::string SerializedTransaction::getFullText () const
     return ret;
 }
 
-std::string SerializedTransaction::getText () const
-{
-    return STObject::getText ();
-}
-
-std::vector<RippleAddress> SerializedTransaction::getMentionedAccounts () const
+std::vector<RippleAddress>
+SerializedTransaction::getMentionedAccounts () const
 {
     std::vector<RippleAddress> accounts;
 
-    BOOST_FOREACH (const SerializedType & it, peekData ())
+    for (auto const& it : peekData ())
     {
-        const STAccount* sa = dynamic_cast<const STAccount*> (&it);
-
-        if (sa != nullptr)
+        if (auto sa = dynamic_cast<STAccount const*> (&it))
         {
-            bool found = false;
-            RippleAddress na = sa->getValueNCA ();
-            BOOST_FOREACH (const RippleAddress & it, accounts)
-            {
-                if (it == na)
-                {
-                    found = true;
-                    break;
-                }
-            }
+            auto const na = sa->getValueNCA ();
 
-            if (!found)
+            if (std::find (accounts.cbegin (), accounts.cend (), na) == accounts.cend ())
                 accounts.push_back (na);
         }
-
-        const STAmount* sam = dynamic_cast<const STAmount*> (&it);
-
-        if (sam)
+        else if (auto sa = dynamic_cast<STAmount const*> (&it))
         {
-            auto issuer = sam->getIssuer ();
+            auto const& issuer = sa->getIssuer ();
 
-            if (issuer.isNonZero ())
-            {
-                RippleAddress na;
-                na.setAccountID (issuer);
-                bool found = false;
-                BOOST_FOREACH (const RippleAddress & it, accounts)
-                {
-                    if (it == na)
-                    {
-                        found = true;
-                        break;
-                    }
-                }
+            if (isXRP (issuer))
+                continue;
 
-                if (!found)
-                    accounts.push_back (na);
-            }
+            RippleAddress na;
+            na.setAccountID (issuer);
+
+            if (std::find (accounts.cbegin (), accounts.cend (), na) == accounts.cend ())
+                accounts.push_back (na);
         }
     }
+
     return accounts;
 }
 
-uint256 SerializedTransaction::getSigningHash () const
+uint256
+SerializedTransaction::getSigningHash () const
 {
     return STObject::getSigningHash (HashPrefix::txSign);
 }
 
-uint256 SerializedTransaction::getTransactionID () const
+uint256
+SerializedTransaction::getTransactionID () const
 {
-    // perhaps we should cache this
     return getHash (HashPrefix::transactionID);
 }
 
@@ -182,48 +164,45 @@ Blob SerializedTransaction::getSignature () const
     }
 }
 
-void SerializedTransaction::sign (RippleAddress const& naAccountPrivate)
+void SerializedTransaction::sign (RippleAddress const& private_key)
 {
     Blob signature;
-    naAccountPrivate.accountPrivateSign (getSigningHash (), signature);
+    private_key.accountPrivateSign (getSigningHash (), signature);
     setFieldVL (sfTxnSignature, signature);
 }
 
 bool SerializedTransaction::checkSign () const
 {
-    if (mSigGood)
-        return true;
-
-    if (mSigBad)
-        return false;
-
-    try
+    if (boost::indeterminate (sig_state_))
     {
-        RippleAddress n;
-        n.setAccountPublic (getFieldVL (sfSigningPubKey));
-
-        if (checkSign (n))
+        try
         {
-            mSigGood = true;
-            return true;
+            RippleAddress n;
+            n.setAccountPublic (getFieldVL (sfSigningPubKey));
+
+            sig_state_ = checkSign (n);
+        }
+        catch (...)
+        {
+            sig_state_ = false;
         }
     }
-    catch (...)
-    {
-        ;
-    }
 
-    mSigBad = true;
-    return false;
+    assert (!boost::indeterminate (sig_state_));
+
+    return static_cast<bool> (sig_state_);
 }
 
-bool SerializedTransaction::checkSign (RippleAddress const& naAccountPublic) const
+bool SerializedTransaction::checkSign (RippleAddress const& public_key) const
 {
     try
     {
-        const ECDSA fullyCanonical = (getFlags() & tfFullyCanonicalSig) ?
-                                              ECDSA::strict : ECDSA::not_strict;
-        return naAccountPublic.accountPublicVerify (getSigningHash (), getFieldVL (sfTxnSignature), fullyCanonical);
+        ECDSA const fullyCanonical = (getFlags() & tfFullyCanonicalSig)
+            ? ECDSA::strict
+            : ECDSA::not_strict;
+
+        return public_key.accountPublicVerify (getSigningHash (),
+            getFieldVL (sfTxnSignature), fullyCanonical);
     }
     catch (...)
     {
@@ -261,26 +240,14 @@ Json::Value SerializedTransaction::getJson (int options, bool binary) const
     return getJson(options);
 }
 
-std::string SerializedTransaction::getSQLValueHeader ()
+std::string const&
+SerializedTransaction::getMetaSQLInsertReplaceHeader ()
 {
-    return "(TransID, TransType, FromAcct, FromSeq, LedgerSeq, Status, RawTxn)";
-}
+    static std::string const sql = "INSERT OR REPLACE INTO Transactions "
+        "(TransID, TransType, FromAcct, FromSeq, LedgerSeq, Status, RawTxn, TxnMeta)"
+        " VALUES ";
 
-std::string SerializedTransaction::getMetaSQLValueHeader ()
-{
-    return "(TransID, TransType, FromAcct, FromSeq, LedgerSeq, Status, RawTxn, TxnMeta)";
-}
-
-std::string SerializedTransaction::getMetaSQLInsertReplaceHeader ()
-{
-    return "INSERT OR REPLACE INTO Transactions " + getMetaSQLValueHeader () + " VALUES ";
-}
-
-std::string SerializedTransaction::getSQL (std::uint32_t inLedger, char status) const
-{
-    Serializer s;
-    add (s);
-    return getSQL (s, inLedger, status);
+    return sql;
 }
 
 std::string SerializedTransaction::getMetaSQL (std::uint32_t inLedger,
@@ -291,25 +258,18 @@ std::string SerializedTransaction::getMetaSQL (std::uint32_t inLedger,
     return getMetaSQL (s, inLedger, TXN_SQL_VALIDATED, escapedMetaData);
 }
 
-std::string SerializedTransaction::getSQL (Serializer rawTxn, std::uint32_t inLedger, char status) const
-{
-    static boost::format bfTrans ("('%s', '%s', '%s', '%d', '%d', '%c', %s)");
-    std::string rTxn    = sqlEscape (rawTxn.peekData ());
-
-    return str (boost::format (bfTrans)
-                % to_string (getTransactionID ()) % getTransactionType ()
-                % getSourceAccount ().humanAccountID ()
-                % getSequence () % inLedger % status % rTxn);
-}
-
-std::string SerializedTransaction::getMetaSQL (Serializer rawTxn, std::uint32_t inLedger, char status,
-        std::string const& escapedMetaData) const
+std::string
+SerializedTransaction::getMetaSQL (Serializer rawTxn,
+    std::uint32_t inLedger, char status, std::string const& escapedMetaData) const
 {
     static boost::format bfTrans ("('%s', '%s', '%s', '%d', '%d', '%c', %s, %s)");
-    std::string rTxn    = sqlEscape (rawTxn.peekData ());
+    std::string rTxn = sqlEscape (rawTxn.peekData ());
+
+    auto format = TxFormats::getInstance().findByType (tx_type_);
+    assert (format != nullptr);
 
     return str (boost::format (bfTrans)
-                % to_string (getTransactionID ()) % getTransactionType ()
+                % to_string (getTransactionID ()) % format->getName ()
                 % getSourceAccount ().humanAccountID ()
                 % getSequence () % inLedger % status % rTxn % escapedMetaData);
 }
@@ -358,12 +318,14 @@ bool isMemoOkay (STObject const& st)
 }
 
 // Ensure all account fields are 160-bits
-bool isAccountFieldOkay (STObject const& st)
+static
+bool
+isAccountFieldOkay (STObject const& st)
 {
     for (int i = 0; i < st.getCount(); ++i)
     {
-        const STAccount* t = dynamic_cast<STAccount const*>(st.peekAtPIndex (i));
-        if (t&& !t->isValueH160 ())
+        auto t = dynamic_cast<STAccount const*>(st.peekAtPIndex (i));
+        if (t && !t->isValueH160 ())
             return false;
     }
 
