@@ -198,9 +198,7 @@ TER Transactor::checkSeq ()
         }
         else
         {
-            uint256 txID = mTxn.getTransactionID ();
-
-            if (mEngine->getLedger ()->hasTransaction (txID))
+            if (mEngine->getLedger ()->hasTransaction (mTxn.getTransactionID ()))
                 return tefALREADY;
         }
 

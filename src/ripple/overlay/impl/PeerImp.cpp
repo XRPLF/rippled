@@ -1255,7 +1255,7 @@ PeerImp::on_message (std::shared_ptr <protocol::TMTransaction> const& m)
         SerializerIterator sit (s);
         SerializedTransaction::pointer stx = std::make_shared <
             SerializedTransaction> (std::ref (sit));
-        uint256 txID = stx->getTransactionID();
+        uint256 txID = stx->getTransactionID ();
 
         int flags;
 

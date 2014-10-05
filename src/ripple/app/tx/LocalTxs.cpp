@@ -63,10 +63,7 @@ public:
         , m_seq (txn->getSequence())
     {
         if (txn->isFieldPresent (sfLastLedgerSequence))
-        {
-           LedgerIndex m_txnexpire = txn->getFieldU32 (sfLastLedgerSequence) + 1;
-           m_expire = std::min (m_expire, m_txnexpire);
-        }
+            m_expire = std::min (m_expire, txn->getFieldU32 (sfLastLedgerSequence) + 1);
     }
 
     uint256 const& getID () const
