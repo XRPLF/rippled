@@ -30,4 +30,3 @@
 #include <ripple/metrics/impl/MetricsResource.cpp>
 #include <ripple/metrics/impl/History.cpp>
 #include <ripple/metrics/impl/tests/history_test.cpp>
-#include "dashboard-resources.pb.cc"
