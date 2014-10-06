@@ -35,6 +35,11 @@ before_install:
   # What versions are we ACTUALLY running?
   - g++ -v
   - clang -v
+  # Avoid `spurious errors` caused by ~/.npm permission issues
+  # Does it already exist? Who owns? What permissions?
+  - ls -lah ~/.npm || mkdir ~/.npm
+  # Make sure we own it
+  - sudo chown -R $USER ~/.npm
 
 script:
   # Set so any failing command will abort the build
