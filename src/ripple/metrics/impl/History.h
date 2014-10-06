@@ -20,6 +20,8 @@
 #ifndef METRICS_HISTORY_H_INCLUDED
 #define METRICS_HISTORY_H_INCLUDED
 
+#include <ripple/common/seconds_clock.h>
+
 #include <chrono>
 #include <deque>
 #include <vector>
@@ -40,7 +42,7 @@ std::array <resolution, 4> constexpr resolutions {{
   { std::chrono::seconds(1) },
   { std::chrono::minutes(1) },
   { std::chrono::hours(1) },
-  { std::chrono::duration<int, std::ratio<86400> >(1) }
+  { ripple::days(1) }
 }};
 
 struct bucket
