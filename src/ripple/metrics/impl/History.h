@@ -17,13 +17,13 @@
 */
 //==============================================================================
 
+#ifndef METRICS_HISTORY_H_INCLUDED
+#define METRICS_HISTORY_H_INCLUDED
+
 #include <chrono>
 #include <deque>
 #include <vector>
 #include <array>
-
-#ifndef METRICS_HISTORY_H_INCLUDED
-#define METRICS_HISTORY_H_INCLUDED
 
 namespace ripple {
 namespace metrics {
