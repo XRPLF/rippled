@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2012-2014 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,16 +17,19 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
+#ifndef RIPPLE_METRICS_METRICS_H_INCLUDED
+#define RIPPLE_METRICS_METRICS_H_INCLUDED
 
-#include <ripple/http/impl/Door.cpp>
-#include <ripple/http/impl/Port.cpp>
-#include <ripple/http/impl/ScopedStream.cpp>
-#include <ripple/http/impl/ServerImpl.cpp>
-#include <ripple/http/impl/Server.cpp>
-#include <ripple/http/tests/Server.test.cpp>
+#include <beast/insight/Collector.h>
+#include <beast/utility/Journal.h>
 
-#include <ripple/metrics/impl/MetricsImpl.cpp>
-#include <ripple/metrics/impl/MetricsResource.cpp>
-#include <ripple/metrics/impl/History.cpp>
-#include <ripple/metrics/impl/tests/history_test.cpp>
+namespace ripple {
+namespace metrics {
+
+std::shared_ptr <beast::insight::Collector>
+  make_MetricsCollector (int portNum, beast::Journal journal);
+
+} // namespace metrics
+} // namespace ripple
+
+#endif //RIPPLE_METRICS_METRICS_H_INCLUDED
