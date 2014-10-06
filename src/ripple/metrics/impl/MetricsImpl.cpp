@@ -48,7 +48,7 @@ static
 const clock_type::time_point
 readTimeParam (
     StringMap const& params,
-    std::string const name, clock_type::time_point const def)
+    std::string const& name, clock_type::time_point const def)
 {
     if (params.count (name)) {
         boost::posix_time::ptime time;
