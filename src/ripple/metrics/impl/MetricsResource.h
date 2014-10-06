@@ -20,16 +20,14 @@
 #ifndef METRICS_METRICSRESOURCE_H_INCLUDED
 #define METRICS_METRICSRESOURCE_H_INCLUDED
 
-#include "MetricsImpl.h"
+#include <ripple/metrics/impl/MetricsImpl.h>
 
 #include <ripple/json/json_value.h>
 
 #include <memory>
 
 namespace ripple {
-
 namespace metrics {
-
 namespace impl {
 
 class MetricsResource {
@@ -64,9 +62,7 @@ private:
 };
 
 } //namespace impl
-
 } //namespace metrics
-
 } // namespace ripple
 
 #endif //METRICS_METRICSRESOURCE_H_INCLUDED

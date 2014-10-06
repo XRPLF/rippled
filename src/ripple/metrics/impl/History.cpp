@@ -17,16 +17,14 @@
 */
 //==============================================================================
 
-#include "History.h"
+#include <ripple/metrics/impl/History.h>
 #include <map>
 #include <type_traits>
 #include <iostream>
 #include <chrono>
 
 namespace ripple {
-
 namespace metrics {
-
 namespace impl {
 
 
@@ -126,7 +124,5 @@ aggregateSamples(histories& h, const clock_type::time_point& now)
 }
 
 } // namespace impl
-
 } // namespace metrics
-
 } // namespace ripple

@@ -20,9 +20,9 @@
 #ifndef METRICS_METRICSIMPL_H_INCLUDED
 #define METRICS_METRICSIMPL_H_INCLUDED
 
-#include "../Metrics.h"
+#include <ripple/metrics/Metrics.h>
 
-#include "History.h"
+#include <ripple/metrics/impl/History.h>
 
 #include <ripple/http/Server.h>
 #include <ripple/common/RippleSSLContext.h>
@@ -35,9 +35,7 @@
 #include <mutex>
 
 namespace ripple {
-
 namespace metrics {
-
 namespace impl {
 
 class MetricsImpl;
@@ -391,9 +389,7 @@ MetricsImpl::getMetricStore<MetricsEventImpl>() const {
 }
 
 } // namespace imp
-
 } // namespace metrics
-
 } // namespace ripple
 
 #endif // METRICS_METRICSIMPL_H_INCLUDED

@@ -17,14 +17,12 @@
 */
 //==============================================================================
 
-#include "MetricsResource.h"
+#include <ripple/metrics/impl/MetricsResource.h>
 
 #include <memory>
 
 namespace ripple {
-
 namespace metrics {
-
 namespace impl {
 
 MetricsResource::MetricsResource(ExposableMetricsElement* element)
@@ -88,8 +86,6 @@ MetricsResourceList::getNamedResource (const std::string& name) const
 }
 
 } // namespace impl
-
 } // namespace metrics
-
 } // namespace ripple
 

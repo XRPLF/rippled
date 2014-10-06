@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include "MetricsImpl.h"
-#include "MetricsResource.h"
+#include <ripple/metrics/impl/MetricsImpl.h>
+#include <ripple/metrics/impl/MetricsResource.h>
 
 #include <ripple/http/Session.h>
 #include <ripple/json/json_value.h>
@@ -35,11 +35,8 @@
 #include <type_traits>
 
 namespace ripple {
-
 namespace metrics {
-
 namespace impl {
-
 namespace contents {
 #include "dashboard-contents.cpp"
 }
@@ -458,7 +455,6 @@ ExposableMetricsElement::getHistory(const clock_type::time_point& start,
     return ret;
 }
 
-
 } // namespace impl
 
 std::shared_ptr<beast::insight::Collector>
@@ -468,6 +464,5 @@ make_MetricsCollector (int portNum, beast::Journal journal)
 }
 
 } // namespace metrics
-
 } // namespace ripple
 

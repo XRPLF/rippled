@@ -26,9 +26,7 @@
 #define METRICS_HISTORY_H_INCLUDED
 
 namespace ripple {
-
 namespace metrics {
-
 namespace impl {
 
 using clock_type = std::chrono::steady_clock;
@@ -87,9 +85,7 @@ void addValue(histories& hist, const std::uint64_t v);
 void aggregateSamples(histories& h, const clock_type::time_point& now);
 
 } // namespace impl
-
 } // namespace metrics
-
 } // namespace ripple
 
 #endif // METRICS_HISTORY_H_INCLUDED
