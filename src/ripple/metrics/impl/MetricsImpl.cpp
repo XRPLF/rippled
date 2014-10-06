@@ -98,8 +98,7 @@ resourceList (MetricsImpl* self, std::string const& sensorClass)
 
 MetricsCounterImpl::MetricsCounterImpl (std::string const& name,
                                         MetricsImpl::Ptr const& impl)
-    : beast::insight::CounterImpl ()
-    , ExposableMetricsElement (name, impl)
+    : ExposableMetricsElement (name, impl)
     , m_last (0)
 {
     m_impl->add (this);
