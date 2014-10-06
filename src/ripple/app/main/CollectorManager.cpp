@@ -42,11 +42,18 @@ public:
                 params ["address"].toStdString ()));
             std::string const& prefix (params ["prefix"].toStdString ());
 
-            m_collector = beast::insight::StatsDCollector::New (address, prefix, journal);
+            m_collector = beast::insight::StatsDCollector::New (
+                address,
+                prefix,
+                journal
+            );
         }
         else if (server == "metrics")
         {
-            m_collector = metrics::make_MetricsCollector (params ["port"].getIntValue(), journal);
+            m_collector = metrics::make_MetricsCollector (
+                params ["port"].getIntValue(),
+                journal
+            );
         }
         else
         {
