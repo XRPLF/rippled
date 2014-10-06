@@ -75,8 +75,10 @@ aggregateBucket(History& from, resolution const& from_res, History& to,
 {
     clock_type::time_point windowStartTime (to.start);
     clock_type::time_point windowEndTime (windowStartTime - to_res.duration);
-    std::size_t bucketCount = to_res.duration.count() / from_res.duration.count();
-    std::size_t availableBuckets = (from.start - (windowStartTime - from_res.duration*2)) / from_res.duration;
+    std::size_t bucketCount =
+      to_res.duration.count() / from_res.duration.count();
+    std::size_t availableBuckets =
+      (from.start - windowStartTime - from_res.duration*2) / from_res.duration;
 
 
     if (availableBuckets >= bucketCount) {
@@ -99,7 +101,10 @@ aggregateSamples(Histories& h, clock_type::time_point const now)
     std::uint64_t sum = 0;
 
     for (int i = 0; i < resolutions.size()-1; i++) {
-        aggregateBucket (h.data[i], resolutions[i], h.data[i+1], resolutions[i+1]);
+        aggregateBucket (h.data[i],
+                         resolutions[i],
+                         h.data[i+1],
+                         resolutions[i+1]);
         if (h.data[i].buckets.size() > 300)
           h.data[i].buckets.resize(300);
     }
