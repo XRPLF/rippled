@@ -45,11 +45,6 @@ std::array <resolution, 4> constexpr resolutions {{
 
 struct bucket
 {
-    bucket()
-        : count{0}, min{0}, max{0}, avg{0}
-    {
-    }
-
     std::uint64_t count; // of samples in the bucket
     std::uint64_t min;
     std::uint64_t max;

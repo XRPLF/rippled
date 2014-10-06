@@ -48,7 +48,7 @@ template <class FwdIt>
 bucket
 aggregate (FwdIt const& first, FwdIt const& last)
 {
-    bucket newBucket;
+    bucket newBucket = {};
     std::uint64_t sum = 0;
 
     if (first == last)
@@ -95,7 +95,7 @@ aggregateBucket(history& from, resolution const& from_res, history& to,
 void
 aggregateSamples(histories& h, clock_type::time_point const now)
 {
-    bucket newSecond;
+    bucket newSecond = {};
     std::uint64_t sum = 0;
 
     for (int i = 0; i < resolutions.size()-1; i++) {
