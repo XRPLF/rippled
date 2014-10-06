@@ -45,31 +45,37 @@ std::array <resolution, 4> constexpr resolutions {{
   { ripple::days(1) }
 }};
 
-struct bucket
+/**
+ * Bucket: a bucket that holds aggregations of previous data
+ *
+ * Each History object contains a list of buckets. Each bucket represents an
+ * aggregation of data points from buckets with finer resolution.
+ */
+struct Bucket
 {
-    std::uint64_t count; // of samples in the bucket
+    std::uint64_t count; // of samples in the Bucket
     std::uint64_t min;
     std::uint64_t max;
     std::uint64_t avg;
 };
 
-struct history
+struct History
 {
-    clock_type::time_point start; // of the first bucket
+    clock_type::time_point start; // of the first Bucket
     resolution res;
 
     // Aggregate data covering the period:
     // [start, start+buckets.size()*duration)
     // where duration is 1 second, 1 minute, 1 hour, or 1 day.
-    std::deque <bucket> buckets;
+    std::deque <Bucket> buckets;
 };
 
-struct histories
+struct Histories
 {
-    std::array <history, resolutions.size()> data;
+    std::array <History, resolutions.size()> data;
     std::vector <std::uint64_t> samples;
 
-    histories() {
+    Histories() {
       clock_type::time_point now = clock_type::now();
       for(auto i = data.begin();i != data.end(); i++) {
         i->start = now;
@@ -77,9 +83,9 @@ struct histories
     }
 };
 
-void addValue(histories& hist, std::uint64_t const v);
+void addValue(Histories& hist, std::uint64_t const v);
 
-void aggregateSamples(histories& h, clock_type::time_point const now);
+void aggregateSamples(Histories& h, clock_type::time_point const now);
 
 } // namespace impl
 } // namespace metrics

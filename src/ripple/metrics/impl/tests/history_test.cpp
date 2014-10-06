@@ -25,11 +25,8 @@
 #include <iostream>
 
 namespace ripple {
-
 namespace metrics {
-
 namespace impl {
-
 namespace test {
 
 class history_test
@@ -39,7 +36,7 @@ public:
     void
     test_addValue ()
     {
-        histories h;
+        Histories h;
         for (int i = 0; i < 1024; i++) {
             addValue (h, i);
         }
@@ -55,7 +52,7 @@ public:
     test_aggregateRapidSamples ()
     {
         const int sampleCount = 1024;
-        histories h;
+        Histories h;
         clock_type::time_point now = clock_type::now();
         h.data[0].start = now;
 
@@ -79,7 +76,7 @@ public:
     test_aggregateTwoSeconds ()
     {
         const int sampleCount = 1024;
-        histories h;
+        Histories h;
         clock_type::time_point now = clock_type::now();
 
         for (int i = 0; i < sampleCount; i++) {
@@ -106,7 +103,7 @@ public:
     test_aggregateOneMinute ()
     {
         const int sampleCount = 1024;
-        histories h;
+        Histories h;
         clock_type::time_point now = h.data[0].start;
 
         for (int t = 0; t < 60; t++) {
@@ -138,9 +135,6 @@ public:
 BEAST_DEFINE_TESTSUITE (history, metrics, ripple);
 
 } // namespace test
-
 } // namespace impl
-
 } // namespace metrics
-
 } // namespace ripple

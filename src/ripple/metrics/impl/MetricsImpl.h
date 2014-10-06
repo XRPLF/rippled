@@ -190,13 +190,13 @@ public:
 
     const std::string name() const;
 
-    const std::vector<bucket> getHistory(
+    const std::vector<Bucket> getHistory(
         clock_type::time_point const start, resolution const& res 
     ) const;
 
 protected:
     std::string m_name;
-    histories m_histories;
+    Histories m_histories;
     mutable std::mutex m_historyMutex;
 };
 

@@ -29,26 +29,26 @@ namespace impl {
 
 
 // Maps metric names to their available history
-std::map <std::string, histories> histories_;
+std::map <std::string, Histories> histories_;
 
-void addValue(histories& hist, std::uint64_t const v)
+void addValue(Histories& hist, std::uint64_t const v)
 {
     hist.samples.push_back(v);
     aggregateSamples (hist, clock_type::now());
 }
 
-std::vector<bucket>
+std::vector<Bucket>
 getBuckets(clock_type::time_point const start,
            clock_type::time_point const last,
-           history const& history,
+           History const& history,
            clock_type::duration const& duration);
 
 // Produces one bucket from a sequence of many
 template <class FwdIt>
-bucket
+Bucket
 aggregate (FwdIt const& first, FwdIt const& last)
 {
-    bucket newBucket = {};
+    Bucket newBucket = {};
     std::uint64_t sum = 0;
 
     if (first == last)
@@ -70,7 +70,7 @@ aggregate (FwdIt const& first, FwdIt const& last)
 }
 
 static void
-aggregateBucket(history& from, resolution const& from_res, history& to,
+aggregateBucket(History& from, resolution const& from_res, History& to,
     resolution const& to_res)
 {
     clock_type::time_point windowStartTime (to.start);
@@ -93,9 +93,9 @@ aggregateBucket(history& from, resolution const& from_res, history& to,
 }
 
 void
-aggregateSamples(histories& h, clock_type::time_point const now)
+aggregateSamples(Histories& h, clock_type::time_point const now)
 {
-    bucket newSecond = {};
+    Bucket newSecond = {};
     std::uint64_t sum = 0;
 
     for (int i = 0; i < resolutions.size()-1; i++) {

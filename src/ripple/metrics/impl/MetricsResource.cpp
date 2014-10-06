@@ -38,7 +38,7 @@ const Json::Value
 MetricsResource::history (clock_type::time_point const since, resolution const& res) const
 {
     Json::Value ret (Json::arrayValue);
-    std::vector<bucket> hist (m_element->getHistory (since, res));
+    std::vector<Bucket> hist (m_element->getHistory (since, res));
 
     for (auto i = hist.cbegin(); i != hist.cend(); i++) {
         Json::Value dataPoint (Json::objectValue);

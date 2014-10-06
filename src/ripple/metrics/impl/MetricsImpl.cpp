@@ -427,14 +427,14 @@ ExposableMetricsElement::name() const
   return m_name;
 }
 
-const std::vector<bucket>
+const std::vector<Bucket>
 ExposableMetricsElement::getHistory(clock_type::time_point const start,
     resolution const& res) const
 {
     clock_type::time_point now (clock_type::now());
     std::size_t offset;
-    history const* hist = nullptr;
-    std::vector<bucket> ret;
+    History const* hist = nullptr;
+    std::vector<Bucket> ret;
     std::lock_guard<std::mutex> lock(m_historyMutex);
 
     for (int i = 0; i < resolutions.size(); i++) {
@@ -449,7 +449,7 @@ ExposableMetricsElement::getHistory(clock_type::time_point const start,
 
     std::advance (bucketStart, std::min(hist->buckets.size(), offset));
 
-    ret = std::vector<bucket> (bucketStart, hist->buckets.end());
+    ret = std::vector<Bucket> (bucketStart, hist->buckets.end());
 
     ret.resize (std::max(ret.size(), offset));
 
