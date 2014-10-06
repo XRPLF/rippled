@@ -35,7 +35,7 @@ MetricsResource::name() const
 };
 
 const Json::Value
-MetricsResource::history (const clock_type::time_point& since, const resolution& res) const
+MetricsResource::history (clock_type::time_point const since, resolution const& res) const
 {
     Json::Value ret (Json::arrayValue);
     std::vector<bucket> hist (m_element->getHistory (since, res));
@@ -53,7 +53,7 @@ MetricsResource::history (const clock_type::time_point& since, const resolution&
 }
 
 const Json::Value
-MetricsResourceList::history (const clock_type::time_point& since, const resolution& res) const
+MetricsResourceList::history (clock_type::time_point const since, resolution const& res) const
 {
     Json::Value ret (Json::objectValue);
     for (auto i = m_list.cbegin(); i != m_list.cend(); i++) {

@@ -80,9 +80,9 @@ struct histories
     }
 };
 
-void addValue(histories& hist, const std::uint64_t v);
+void addValue(histories& hist, std::uint64_t const v);
 
-void aggregateSamples(histories& h, const clock_type::time_point& now);
+void aggregateSamples(histories& h, clock_type::time_point const now);
 
 } // namespace impl
 } // namespace metrics

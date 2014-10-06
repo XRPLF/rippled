@@ -58,33 +58,7 @@ class MetricsImpl
     , public std::enable_shared_from_this <MetricsImpl>
 {
 public:
-    using Clock = std::chrono::steady_clock;
     using Ptr = std::shared_ptr<MetricsImpl>;
-
-    class HistoryRange
-        : public std::pair<const Clock::time_point, const Clock::time_point> {
-        public:
-            HistoryRange ()
-                : std::pair<const Clock::time_point, const Clock::time_point> (
-                      Clock::time_point (),
-                      Clock::now ()
-                  ) {};
-            HistoryRange (const Clock::time_point& start)
-                : std::pair<const Clock::time_point, const Clock::time_point> (
-                      start,
-                      Clock::now ()
-                  ) {};
-            HistoryRange (const Clock::time_point& start,
-                          const Clock::time_point& end)
-                : std::pair<const Clock::time_point, const Clock::time_point> (
-                      start,
-                      end
-                 ) {};
-            const Clock::time_point&
-                start () const {return first;}
-            const Clock::time_point&
-                end () const {return second;}
-    };
 
     /**
      * getMetricStore: Gets the forward_list that contains metrics of type @T
@@ -124,7 +98,7 @@ private:
      */
     std::string createResponse (int code, std::string const& body);
 
-    const std::pair<std::vector<unsigned char>, size_t> getFileContents(const std::string &uri);
+    const std::pair<std::vector<unsigned char>, size_t> getFileContents(std::string const& uri);
 
 public:
     /**
@@ -217,7 +191,7 @@ public:
     const std::string name() const;
 
     const std::vector<bucket> getHistory(
-        const clock_type::time_point& start, const resolution& res 
+        clock_type::time_point const start, resolution const& res 
     ) const;
 
 protected:
@@ -252,7 +226,7 @@ class MetricsCounterImpl
     , public ExposableMetricsElement
 {
 public:
-    MetricsCounterImpl(const std::string& type, MetricsImpl::Ptr const& impl);
+    MetricsCounterImpl(std::string const& type, MetricsImpl::Ptr const& impl);
     ~MetricsCounterImpl();
     void increment (value_type);
 
@@ -266,7 +240,7 @@ class MetricsEventImpl
     , public ExposableMetricsElement
 {
 public:
-    MetricsEventImpl(const std::string& type, MetricsImpl::Ptr const& impl);
+    MetricsEventImpl(std::string const& type, MetricsImpl::Ptr const& impl);
     ~MetricsEventImpl();
     void notify (value_type const&);
 
@@ -279,7 +253,7 @@ class MetricsGaugeImpl
     , public ExposableMetricsElement
 {
 public:
-    MetricsGaugeImpl (const std::string& type, MetricsImpl::Ptr const& impl);
+    MetricsGaugeImpl (std::string const& type, MetricsImpl::Ptr const& impl);
     ~MetricsGaugeImpl ();
     void
         set (value_type);
@@ -297,7 +271,7 @@ class MetricsMeterImpl
     , public ExposableMetricsElement
 {
 public:
-    MetricsMeterImpl (const std::string& type, MetricsImpl::Ptr const& impl);
+    MetricsMeterImpl (std::string const& type, MetricsImpl::Ptr const& impl);
     ~MetricsMeterImpl ();
     void
         increment (value_type);

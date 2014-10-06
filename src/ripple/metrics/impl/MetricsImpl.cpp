@@ -43,10 +43,10 @@ namespace contents {
 
 //FIXME: This should throw an exception so we can return a proper HTTP error
 static
-const MetricsImpl::Clock::time_point
+const clock_type::time_point
 readTimeParam (
-    const std::map<std::string, std::string>& params,
-    const std::string name, const MetricsImpl::Clock::time_point& def)
+    std::map<std::string, std::string> const& params,
+    std::string const name, clock_type::time_point const def)
 {
     if (params.count (name)) {
         boost::posix_time::ptime time;
@@ -61,7 +61,7 @@ readTimeParam (
         }
         auto now = boost::posix_time::second_clock::universal_time ();
         auto diff = now - time;
-        return MetricsImpl::Clock::now () -
+        return clock_type::now () -
             std::chrono::seconds (diff.total_seconds ());
     }
     return def;
@@ -69,7 +69,7 @@ readTimeParam (
 
 template <typename T>
 typename std::enable_if<std::is_base_of<ExposableMetricsElement, T>::value, std::forward_list<ExposableMetricsElement*> >::type
-metrics_store_cast (const std::forward_list<T*>& lst)
+metrics_store_cast (std::forward_list<T*> const& lst)
 {
     //FIXME: Replace with a reinterpret_cast?
     return std::forward_list<ExposableMetricsElement*> (lst.begin(), lst.end());
@@ -79,7 +79,7 @@ metrics_store_cast (const std::forward_list<T*>& lst)
 //of MetricsResourceListBase from MetricsResource.h
 static
 std::unique_ptr<MetricsResourceList>
-resourceList (MetricsImpl* self, const std::string& sensorClass)
+resourceList (MetricsImpl* self, std::string const& sensorClass)
 {
     if (sensorClass == "meter")
         return std::make_unique<MetricsResourceList>(
@@ -96,7 +96,7 @@ resourceList (MetricsImpl* self, const std::string& sensorClass)
     return nullptr; // FIXME: raise exception
 }
 
-MetricsCounterImpl::MetricsCounterImpl (const std::string& name,
+MetricsCounterImpl::MetricsCounterImpl (std::string const& name,
                                         MetricsImpl::Ptr const& impl)
     : beast::insight::CounterImpl ()
     , ExposableMetricsElement (name, impl)
@@ -149,7 +149,7 @@ MetricsEventImpl::operator= (MetricsEventImpl const&)
     assert (false);
 }
 
-MetricsGaugeImpl::MetricsGaugeImpl (const std::string& name,
+MetricsGaugeImpl::MetricsGaugeImpl (std::string const& name,
                                     MetricsImpl::Ptr const& impl)
     : beast::insight::GaugeImpl ()
     , ExposableMetricsElement (name, impl)
@@ -185,7 +185,7 @@ MetricsGaugeImpl::increment (difference_type v)
     addValue (m_histories, m_last);
 }
 
-MetricsMeterImpl::MetricsMeterImpl (const std::string& name,
+MetricsMeterImpl::MetricsMeterImpl (std::string const& name,
                                     MetricsImpl::Ptr const& impl)
     : beast::insight::MeterImpl ()
     , ExposableMetricsElement (name, impl)
@@ -342,8 +342,8 @@ MetricsImpl::onRequest (ripple::HTTP::Session& session)
                 std::string sensorName = tokens[2];
                 auto list = resourceList (this, sensorClass);
                 auto resource = list->getNamedResource (sensorName);
-                Clock::time_point start (
-                    readTimeParam (params, "start", Clock::time_point ())
+                clock_type::time_point start (
+                    readTimeParam (params, "start", clock_type::time_point ())
                 );
 
                 //FIXME: shouldn't be hardcoded
@@ -404,7 +404,7 @@ MetricsImpl::onStopped (ripple::HTTP::Server& server)
 }
 
 const std::pair<std::vector<unsigned char>, size_t>
-MetricsImpl::getFileContents(const std::string &uri)
+MetricsImpl::getFileContents(std::string const& uri)
 {
     auto idx = contents::contents.find(uri);
     if (idx == contents::contents.cend())
@@ -414,7 +414,7 @@ MetricsImpl::getFileContents(const std::string &uri)
     return idx->second;
 }
 
-ExposableMetricsElement::ExposableMetricsElement (const std::string& name,
+ExposableMetricsElement::ExposableMetricsElement (std::string const& name,
     MetricsImpl::Ptr const& impl)
   : MetricsElementBase (impl)
   , m_name (name)
@@ -427,12 +427,12 @@ ExposableMetricsElement::name() const
 }
 
 const std::vector<bucket>
-ExposableMetricsElement::getHistory(const clock_type::time_point& start,
-    const resolution& res) const
+ExposableMetricsElement::getHistory(clock_type::time_point const start,
+    resolution const& res) const
 {
     clock_type::time_point now (clock_type::now());
     std::size_t offset;
-    const history *hist = nullptr;
+    history const* hist = nullptr;
     std::vector<bucket> ret;
     std::lock_guard<std::mutex> lock(m_historyMutex);
 

@@ -37,7 +37,7 @@ public:
   const std::string name () const;
 
   const Json::Value
-    history (const clock_type::time_point& since, const resolution& res) const;
+    history (clock_type::time_point const since, resolution const& res) const;
 
 private:
   ExposableMetricsElement* m_element;
@@ -49,7 +49,7 @@ public:
     : m_list (metrics) {}
 
   const Json::Value
-    history (const clock_type::time_point& since, const resolution& res) const;
+    history (clock_type::time_point const since, const resolution& res) const;
 
   const Json::Value
     list () const;
