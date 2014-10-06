@@ -41,11 +41,13 @@ namespace contents {
 #include "dashboard-contents.cpp"
 }
 
+using StringMap = std::map<std::string, std::string>;
+
 //FIXME: This should throw an exception so we can return a proper HTTP error
 static
 const clock_type::time_point
 readTimeParam (
-    std::map<std::string, std::string> const& params,
+    StringMap const& params,
     std::string const name, clock_type::time_point const def)
 {
     if (params.count (name)) {
@@ -316,7 +318,7 @@ MetricsImpl::onRequest (ripple::HTTP::Session& session)
     // FIXME: Why yes, I am parsing a HTTP GET request by hand.
     std::vector<std::string> tokens;
     std::vector<std::string> query;
-    std::map<std::string, std::string> params;
+    StringMap params;
     boost::split (query, uri, boost::is_any_of ("?"));
     boost::split (tokens, query[0], boost::is_any_of ("/"));
 
