@@ -369,6 +369,9 @@ def config_env(toolchain, variant, env):
                 env.Append(CPPDEFINES={
                     '_FORTIFY_SOURCE': 2
                     })
+                env.Append(CCFLAGS=[
+                    '-O0'
+                    ])
 
     elif toolchain == 'msvc':
         env.Append (CPPPATH=[
