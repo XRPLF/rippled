@@ -224,6 +224,13 @@ public:
     void
     send (Message::pointer const& m) override;
 
+    /** Send a set of PeerFinder endpoints as a protocol message. */
+    template <class FwdIt, class = typename std::enable_if_t<std::is_same<
+        typename std::iterator_traits<FwdIt>::value_type,
+            PeerFinder::Endpoint>::value>>
+    void
+    send_endpoints (FwdIt first, FwdIt last);
+
     beast::IP::Endpoint
     getRemoteAddress() const override;
 
@@ -504,6 +511,31 @@ private:
 
 //------------------------------------------------------------------------------
 
+template <class FwdIt, class>
+void
+PeerImp::send_endpoints (FwdIt first, FwdIt last)
+{
+    protocol::TMEndpoints tm;
+    for (;first != last; ++first)
+    {
+        auto const& ep = *first;
+        protocol::TMEndpoint& tme (*tm.add_endpoints());
+        if (ep.address.is_v4())
+            tme.mutable_ipv4()->set_ipv4(
+                beast::toNetworkByteOrder (ep.address.to_v4().value));
+        else
+            tme.mutable_ipv4()->set_ipv4(0);
+        tme.mutable_ipv4()->set_ipv4port (ep.address.port());
+        tme.set_hops (ep.hops);
+    }
+    tm.set_version (1);
+
+    send (std::make_shared <Message> (tm, protocol::mtENDPOINTS));
+}
+
+//------------------------------------------------------------------------------
+
+// DEPRECATED
 const boost::posix_time::seconds PeerImp::nodeVerifySeconds (15);
 
 //------------------------------------------------------------------------------

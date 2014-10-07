@@ -21,6 +21,7 @@
 #include <ripple/overlay/impl/PeerImp.h>
 #include <ripple/overlay/impl/Tuning.h>
 #include <beast/streams/debug_ostream.h>
+#include <functional>
 
 namespace ripple {
 
@@ -1005,6 +1006,8 @@ PeerImp::on_message (std::shared_ptr <protocol::TMHello> const& m)
         if (result == PeerFinder::Result::full)
         {
             // TODO Provide correct HTTP response
+            auto const redirects = m_peerFinder.redirect (m_slot);
+            send_endpoints (redirects.begin(), redirects.end());
         }
         else
         {

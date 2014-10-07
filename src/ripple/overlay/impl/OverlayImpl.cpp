@@ -240,37 +240,15 @@ void
 OverlayImpl::send (PeerFinder::Slot::ptr const& slot,
     std::vector <PeerFinder::Endpoint> const& endpoints)
 {
-    typedef std::vector <PeerFinder::Endpoint> List;
-    protocol::TMEndpoints tm;
-    for (List::const_iterator iter (endpoints.begin());
-        iter != endpoints.end(); ++iter)
-    {
-        PeerFinder::Endpoint const& ep (*iter);
-        protocol::TMEndpoint& tme (*tm.add_endpoints());
-        if (ep.address.is_v4())
-            tme.mutable_ipv4()->set_ipv4(
-                beast::toNetworkByteOrder (ep.address.to_v4().value));
-        else
-            tme.mutable_ipv4()->set_ipv4(0);
-        tme.mutable_ipv4()->set_ipv4port (ep.address.port());
-
-        tme.set_hops (ep.hops);
-    }
-
-    tm.set_version (1);
-
-    Message::pointer msg (
-        std::make_shared <Message> (
-            tm, protocol::mtENDPOINTS));
-
+    PeerImp::ptr peer;
     {
         std::lock_guard <decltype(m_mutex)> lock (m_mutex);
         PeersBySlot::iterator const iter (m_peers.find (slot));
-        assert (iter != m_peers.end ());
-        PeerImp::ptr const peer (iter->second.lock());
+        assert (iter != m_peers.end());
+        peer = iter->second.lock();
         assert (peer != nullptr);
-        peer->send (msg);
     }
+    peer->send_endpoints (endpoints.begin(), endpoints.end());
 }
 
 void
