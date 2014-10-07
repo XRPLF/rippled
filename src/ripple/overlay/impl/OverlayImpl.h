@@ -57,6 +57,7 @@ private:
 
     typedef hash_map <Peer::ShortId, Peer::ptr> PeerByShortId;
 
+    // VFALCO TODO Change to regular mutex and eliminate re-entrancy
     std::recursive_mutex m_mutex;
 
     // Blocks us until dependent objects have been destroyed
@@ -149,9 +150,6 @@ public:
     void
     remove (PeerFinder::Slot::ptr const& slot);
 
-    void
-    activate (PeerFinder::Slot::ptr const& slot);
-
     //
     // PeerFinder::Callback
     //
@@ -205,7 +203,7 @@ public:
         are known.
     */
     void
-    onPeerActivated (Peer::ptr const& peer);
+    activate (Peer::ptr const& peer);
 
     /** A peer is being disconnected
         This is called during the disconnection of a known, activated peer. It

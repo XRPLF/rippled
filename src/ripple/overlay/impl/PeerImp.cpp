@@ -86,16 +86,6 @@ PeerImp::start ()
 }
 
 void
-PeerImp::activate ()
-{
-    assert (state_ == stateHandshaked);
-    state_ = stateActive;
-    assert(shortId_ == 0);
-    shortId_ = overlay_.next_id();
-    overlay_.onPeerActivated(shared_from_this ());
-}
-
-void
 PeerImp::close (bool graceful)
 {
     was_canceled_ = true;
@@ -974,6 +964,7 @@ PeerImp::on_message (std::shared_ptr <protocol::TMHello> const& m)
             "Connected to cluster node " << name_;
 
         assert (state_ == stateConnected);
+        // VFALCO TODO Remove this needless state
         state_ = stateHandshaked;
 
         auto const result = peerFinder_.activate (slot_,
@@ -981,7 +972,10 @@ PeerImp::on_message (std::shared_ptr <protocol::TMHello> const& m)
 
         if (result == PeerFinder::Result::success)
         {
-            overlay_.activate (slot_);
+            state_ = stateActive;
+            assert(shortId_ == 0);
+            shortId_ = overlay_.next_id();
+            overlay_.activate(shared_from_this ());
 
             // XXX Set timer: connection is in grace period to be useful.
             // XXX Set timer: connection idle (idle may vary depending on connection type.)

@@ -211,14 +211,6 @@ public:
     void
     start ();
 
-    /** Indicates that the peer must be activated.
-        A peer is activated after the handshake is completed and if it is not
-        a second connection from a peer that we already have. Once activated
-        the peer transitions to `stateActive` and begins operating.
-    */
-    void
-    activate ();
-
     /** Close the connection. */
     void close (bool graceful);
 

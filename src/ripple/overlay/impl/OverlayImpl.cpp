@@ -222,21 +222,6 @@ OverlayImpl::remove (PeerFinder::Slot::ptr const& slot)
     release();
 }
 
-void
-OverlayImpl::activate (PeerFinder::Slot::ptr const& slot)
-{
-    m_journal.trace <<
-        "Activate " << slot->remote_endpoint();
-
-    std::lock_guard <decltype(m_mutex)> lock (m_mutex);
-
-    PeersBySlot::iterator const iter (m_peers.find (slot));
-    assert (iter != m_peers.end ());
-    PeerImp::ptr const peer (iter->second.lock());
-    assert (peer != nullptr);
-    peer->activate ();
-}
-
 //--------------------------------------------------------------------------
 //
 // PeerFinder::Callback
@@ -467,7 +452,7 @@ OverlayImpl::onWrite (beast::PropertyStream::Map& stream)
     are known.
 */
 void
-OverlayImpl::onPeerActivated (Peer::ptr const& peer)
+OverlayImpl::activate (Peer::ptr const& peer)
 {
     std::lock_guard <decltype(m_mutex)> lock (m_mutex);
 
