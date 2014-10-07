@@ -932,10 +932,11 @@ public:
 
     //--------------------------------------------------------------------------
 
-    // Called periodically to sweep the livecache and remove aged out items.
-    void expire ()
+    void once_per_second()
     {
         SharedState::Access state (m_state);
+
+        clock_type::time_point const now (m_clock.now());
 
         // Expire the Livecache
         state->livecache.expire ();
@@ -947,16 +948,7 @@ public:
         // Expire the recent attempts table
         beast::expire (m_squelches,
             Tuning::recentAttemptDuration);
-    }
 
-    // Called every so often to perform periodic tasks.
-    void periodicActivity ()
-    {
-        SharedState::Access state (m_state);
-
-        clock_type::time_point const now (m_clock.now());
-
-        expire ();
         state->bootcache.periodicActivity ();
 
         if (m_whenBroadcast <= now)

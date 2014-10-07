@@ -213,22 +213,6 @@ public:
     virtual void on_connected (Slot::ptr const& slot,
         beast::IP::Endpoint const& local_endpoint) = 0;
 
-    /** Request an active slot type. */
-    virtual
-    Result
-    activate (Slot::ptr const& slot,
-        RipplePublicKey const& key, bool cluster) = 0;
-
-    /** Returns a set of endpoints suitable for redirection. */
-    virtual
-    std::vector <Endpoint>
-    redirect (Slot::ptr const& slot) = 0;
-
-    /** Return a set of addresses we should connect to. */
-    virtual
-    std::vector <beast::IP::Endpoint>
-    autoconnect() = 0;
-
     /** Called when mtENDPOINTS is received. */
     virtual void on_endpoints (Slot::ptr const& slot,
         Endpoints const& endpoints) = 0;
@@ -247,6 +231,30 @@ public:
     */
     virtual void on_cancel (Slot::ptr const& slot) = 0;
 
+    //--------------------------------------------------------------------------
+
+    /** Request an active slot type. */
+    virtual
+    Result
+    activate (Slot::ptr const& slot,
+        RipplePublicKey const& key, bool cluster) = 0;
+
+    /** Returns a set of endpoints suitable for redirection. */
+    virtual
+    std::vector <Endpoint>
+    redirect (Slot::ptr const& slot) = 0;
+
+    /** Return a set of addresses we should connect to. */
+    virtual
+    std::vector <beast::IP::Endpoint>
+    autoconnect() = 0;
+
+    /** Perform periodic activity.
+        This should be called once per second.
+    */
+    virtual
+    void
+    once_per_second() = 0;
 };
 
 }

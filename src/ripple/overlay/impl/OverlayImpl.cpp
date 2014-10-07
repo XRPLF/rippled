@@ -544,6 +544,7 @@ OverlayImpl::do_timer (yield_context yield)
 {
     for(;;)
     {
+        m_peerFinder->once_per_second();
         autoconnect();
         timer_.expires_from_now (std::chrono::seconds(1));
         error_code ec;

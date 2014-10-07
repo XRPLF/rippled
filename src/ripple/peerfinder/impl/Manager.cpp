@@ -22,7 +22,7 @@
 #include <ripple/peerfinder/impl/Logic.h>
 #include <ripple/peerfinder/impl/SourceStrings.h>
 #include <ripple/peerfinder/impl/StoreSqdb.h>
-#include <beast/module/core/thread/DeadlineTimer.h>
+
 
 #if DOXYGEN
 #include <ripple/peerfinder/README.md>
@@ -35,7 +35,6 @@ class ManagerImp
     : public Manager
     , public beast::Thread
     , public SiteFiles::Listener
-    , public beast::DeadlineTimer::Listener
     , public beast::LeakChecked <ManagerImp>
 {
 public:
@@ -48,7 +47,6 @@ public:
     SerializedContext m_context;
     CheckerAdapter m_checker;
     Logic m_logic;
-    beast::DeadlineTimer m_secondsTimer;
     
     //--------------------------------------------------------------------------
 
@@ -68,7 +66,6 @@ public:
         , m_store (journal)
         , m_checker (m_context, m_queue)
         , m_logic (clock, callback, m_store, m_checker, journal)
-        , m_secondsTimer (this)
     {
         if (m_databaseFile.isDirectory ())
             m_databaseFile = m_databaseFile.getChildFile("peerfinder.sqlite");
@@ -137,27 +134,6 @@ public:
         m_logic.on_connected (impl, local_endpoint);
     }
 
-    Result
-    activate (Slot::ptr const& slot,
-        RipplePublicKey const& key, bool cluster) override
-    {
-        SlotImp::ptr impl (std::dynamic_pointer_cast <SlotImp> (slot));
-        return m_logic.activate (impl, key, cluster);
-    }
-
-    std::vector <Endpoint>
-    redirect (Slot::ptr const& slot) override
-    {
-        SlotImp::ptr impl (std::dynamic_pointer_cast <SlotImp> (slot));
-        return m_logic.redirect (impl);
-    }
-
-    std::vector <beast::IP::Endpoint>
-    autoconnect() override
-    {
-        return m_logic.autoconnect();
-    }
-
     void on_endpoints (Slot::ptr const& slot,
         Endpoints const& endpoints)
     {
@@ -180,6 +156,35 @@ public:
     {
         SlotImp::ptr impl (std::dynamic_pointer_cast <SlotImp> (slot));
         m_logic.on_cancel (impl);
+    }
+
+    //--------------------------------------------------------------------------
+
+    Result
+    activate (Slot::ptr const& slot,
+        RipplePublicKey const& key, bool cluster) override
+    {
+        SlotImp::ptr impl (std::dynamic_pointer_cast <SlotImp> (slot));
+        return m_logic.activate (impl, key, cluster);
+    }
+
+    std::vector <Endpoint>
+    redirect (Slot::ptr const& slot) override
+    {
+        SlotImp::ptr impl (std::dynamic_pointer_cast <SlotImp> (slot));
+        return m_logic.redirect (impl);
+    }
+
+    std::vector <beast::IP::Endpoint>
+    autoconnect() override
+    {
+        return m_logic.autoconnect();
+    }
+
+    void
+    once_per_second()
+    {
+        m_logic.once_per_second();
     }
 
     //--------------------------------------------------------------------------
@@ -255,7 +260,6 @@ public:
         m_journal.debug << "Stopping";
         m_checker.cancel ();
         m_logic.stop ();
-        m_secondsTimer.cancel();
         m_queue.dispatch (
             m_context.wrap (
                 std::bind (&Thread::signalThreadShouldExit, this)));
@@ -276,18 +280,6 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void onDeadlineTimer (beast::DeadlineTimer& timer)
-    {
-        if (timer == m_secondsTimer)
-        {
-            m_queue.dispatch (
-                m_context.wrap (
-                    std::bind (&Logic::periodicActivity, &m_logic)));
-
-            m_secondsTimer.setExpiration (Tuning::secondsPerConnect);
-        }
-    }
-
     void init ()
     {
         m_journal.debug << "Initializing";
@@ -304,8 +296,6 @@ public:
         {
             m_logic.load ();
         }
-
-        m_secondsTimer.setExpiration (std::chrono::seconds (1));
     }
 
     void run ()
