@@ -20,7 +20,6 @@
 #include <ripple/overlay/impl/OverlayImpl.h>
 #include <ripple/overlay/impl/PeerDoor.h>
 #include <ripple/overlay/impl/PeerImp.h>
-
 #include <beast/ByteOrder.h>
 
 #if DOXYGEN
@@ -72,6 +71,7 @@ OverlayImpl::OverlayImpl (Stoppable& parent,
         deprecatedLogs().journal("PeerFinder"))))
     , m_io_service (io_service)
     , m_ssl_context (ssl_context)
+    , timer_(io_service)
     , m_resolver (resolver)
     , m_nextShortId (0)
 {
@@ -368,6 +368,10 @@ OverlayImpl::onPrepare ()
 void
 OverlayImpl::onStart ()
 {
+    // mutex not needed since we aren't running
+    ++m_child_count;
+    boost::asio::spawn (m_io_service, std::bind (
+        &OverlayImpl::do_timer, this, std::placeholders::_1));
 }
 
 /** Close all peer connections.
@@ -393,6 +397,9 @@ OverlayImpl::close_all (bool graceful)
 void
 OverlayImpl::onStop ()
 {
+    error_code ec;
+    timer_.cancel(ec);
+
     if (m_doorDirect)
         m_doorDirect->stop();
     if (m_doorProxy)
@@ -520,6 +527,31 @@ OverlayImpl::findPeerByShortID (Peer::ShortId const& id)
     if (iter != m_shortIdMap.end ())
         return iter->second;
     return Peer::ptr();
+}
+
+//------------------------------------------------------------------------------
+
+void
+OverlayImpl::autoconnect()
+{
+}
+
+void
+OverlayImpl::do_timer (yield_context yield)
+{
+    for(;;)
+    {
+        autoconnect();
+        timer_.expires_from_now (std::chrono::seconds(1));
+        error_code ec;
+        timer_.async_wait (yield[ec]);
+        if (ec == boost::asio::error::operation_aborted)
+            break;
+    }
+
+    // Take off a reference
+    std::lock_guard <decltype(m_mutex)> lock (m_mutex);
+    release();
 }
 
 //------------------------------------------------------------------------------

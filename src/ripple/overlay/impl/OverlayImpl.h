@@ -27,13 +27,14 @@
 #include <ripple/common/UnorderedContainers.h>
 #include <ripple/peerfinder/Manager.h>
 #include <ripple/resource/api/Manager.h>
-
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/context.hpp>
-
+#include <boost/asio/basic_waitable_timer.hpp>
+#include <boost/asio/spawn.hpp>
 #include <beast/cxx14/memory.h> // <memory>
 #include <atomic>
 #include <cassert>
+#include <chrono>
 #include <condition_variable>
 #include <mutex>
 #include <unordered_map>
@@ -48,7 +49,10 @@ class OverlayImpl
     , public PeerFinder::Callback
 {    
 private:
-    typedef boost::asio::ip::tcp::socket socket_type;
+    using clock_type = std::chrono::steady_clock;
+    using socket_type = boost::asio::ip::tcp::socket;
+    using error_code = boost::system::error_code;
+    using yield_context = boost::asio::yield_context;
 
     typedef hash_map <PeerFinder::Slot::ptr,
                       std::weak_ptr <PeerImp>> PeersBySlot;
@@ -73,6 +77,7 @@ private:
 
     boost::asio::io_service& m_io_service;
     boost::asio::ssl::context& m_ssl_context;
+    boost::asio::basic_waitable_timer <clock_type> timer_;
 
     /** Associates slots to peers. */
     PeersBySlot m_peers;
@@ -214,6 +219,11 @@ public:
     onPeerDisconnect (Peer::ptr const& peer);
 
 private:
+    void
+    autoconnect();
+
+    void
+    do_timer (yield_context yield);
 };
 
 } // ripple
