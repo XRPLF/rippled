@@ -534,6 +534,9 @@ OverlayImpl::findPeerByShortID (Peer::ShortId const& id)
 void
 OverlayImpl::autoconnect()
 {
+    auto const result = m_peerFinder->autoconnect();
+    for (auto addr : result)
+        connect (addr);
 }
 
 void

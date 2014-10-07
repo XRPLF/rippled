@@ -441,13 +441,6 @@ public:
             if (! slot->inbound())
                 state->bootcache.on_success (
                     slot->remote_endpoint());
-
-            // Maybe give them some addresses to try
-            // VFALCO TODO separate function for this
-            /*
-            if (slot->inbound ())
-                redirect (slot, state);
-            */
             return Result::full;
         }
 
@@ -486,6 +479,10 @@ public:
         return Result::success;
     }
 
+    /** Return a list of addresses suitable for redirection.
+        This is a legacy function, redirects should be returned in
+        the HTTP handshake and not via TMEndpoints.
+    */
     std::vector <Endpoint>
     redirect (SlotImp::ptr const& slot)
     {
@@ -496,6 +493,116 @@ public:
             state->livecache.hops.begin(),
                 state->livecache.hops.end());
         return std::move(h.list());
+    }
+
+    /** Create new outbound connection attempts as needed.
+        This implements PeerFinder's "Outbound Connection Strategy"
+    */
+    std::vector <beast::IP::Endpoint>
+    autoconnect()
+    {
+        std::vector <beast::IP::Endpoint> const none;
+
+        SharedState::Access state (m_state);
+
+        // Count how many more outbound attempts to make
+        //
+        auto needed (state->counts.attempts_needed ());
+        if (needed == 0)
+            return none;
+
+        ConnectHandouts h (needed, m_squelches);
+
+        // Make sure we don't connect to already-connected entries.
+        squelch_slots (state);
+
+        // 1. Use Fixed if:
+        //    Fixed active count is below fixed count AND
+        //      ( There are eligible fixed addresses to try OR
+        //        Any outbound attempts are in progress)
+        //
+        if (state->counts.fixed_active() < state->fixed.size ())
+        {
+            get_fixed (needed, h.list(), state);
+
+            if (! h.list().empty ())
+            {
+                if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
+                    "Logic connect " << h.list().size() << " fixed";
+                return h.list();
+            }
+
+            if (state->counts.attempts() > 0)
+            {
+                if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
+                    "Logic waiting on " <<
+                        state->counts.attempts() << " attempts";
+                return none;
+            }
+        }
+
+        // Only proceed if auto connect is enabled and we
+        // have less than the desired number of outbound slots
+        //
+        if (! state->config.autoConnect ||
+            state->counts.out_active () >= state->counts.out_max ())
+            return none;
+
+        // 2. Use Livecache if:
+        //    There are any entries in the cache OR
+        //    Any outbound attempts are in progress
+        //
+        {
+            state->livecache.hops.shuffle();
+            handout (&h, (&h)+1,
+                state->livecache.hops.rbegin(),
+                    state->livecache.hops.rend());
+            if (! h.list().empty ())
+            {
+                if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
+                    "Logic connect " << h.list().size () << " live " <<
+                    ((h.list().size () > 1) ? "endpoints" : "endpoint");
+                return h.list();
+            }
+            else if (state->counts.attempts() > 0)
+            {
+                if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
+                    "Logic waiting on " <<
+                        state->counts.attempts() << " attempts";
+                return none;
+            }
+        }
+
+        /*  3. Bootcache refill
+            If the Bootcache is empty, try to get addresses from the current
+            set of Sources and add them into the Bootstrap cache.
+
+            Pseudocode:
+                If (    domainNames.count() > 0 AND (
+                           unusedBootstrapIPs.count() == 0
+                        OR activeNameResolutions.count() > 0) )
+                    ForOneOrMore (DomainName that hasn't been resolved recently)
+                        Contact DomainName and add entries to the unusedBootstrapIPs
+                    return;
+        */
+
+        // 4. Use Bootcache if:
+        //    There are any entries we haven't tried lately
+        //
+        for (auto iter (state->bootcache.begin());
+            ! h.full() && iter != state->bootcache.end(); ++iter)
+            h.try_insert (*iter);
+
+        if (! h.list().empty ())
+        {
+            if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
+                "Logic connect " << h.list().size () << " boot " <<
+                ((h.list().size () > 1) ? "addresses" : "address");
+            return h.list();
+        }
+
+        // If we get here we are stuck
+        return none;
     }
 
     //--------------------------------------------------------------------------
@@ -811,115 +918,6 @@ public:
         }
     }
 
-    /** Create new outbound connection attempts as needed.
-        This implements PeerFinder's "Outbound Connection Strategy"
-    */
-    void autoconnect ()
-    {
-        SharedState::Access state (m_state);
-
-        // Count how many more outbound attempts to make
-        //
-        auto needed (state->counts.attempts_needed ());
-        if (needed == 0)
-            return;
-
-        ConnectHandouts h (needed, m_squelches);
-
-        // Make sure we don't connect to already-connected entries.
-        squelch_slots (state);
-
-        // 1. Use Fixed if:
-        //    Fixed active count is below fixed count AND
-        //      ( There are eligible fixed addresses to try OR
-        //        Any outbound attempts are in progress)
-        //
-        if (state->counts.fixed_active() < state->fixed.size ())
-        {
-            get_fixed (needed, h.list(), state);
-
-            if (! h.list().empty ())
-            {
-                if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
-                    "Logic connect " << h.list().size() << " fixed";
-                m_callback.connect (h.list());
-                return;
-            }
-
-            if (state->counts.attempts() > 0)
-            {
-                if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
-                    "Logic waiting on " <<
-                        state->counts.attempts() << " attempts";
-                return;
-            }
-        }
-
-        // Only proceed if auto connect is enabled and we
-        // have less than the desired number of outbound slots
-        //
-        if (! state->config.autoConnect ||
-            state->counts.out_active () >= state->counts.out_max ())
-            return;
-
-        // 2. Use Livecache if:
-        //    There are any entries in the cache OR
-        //    Any outbound attempts are in progress
-        //
-        {
-            state->livecache.hops.shuffle();
-            handout (&h, (&h)+1,
-                state->livecache.hops.rbegin(),
-                    state->livecache.hops.rend());
-            if (! h.list().empty ())
-            {
-                if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
-                    "Logic connect " << h.list().size () << " live " <<
-                    ((h.list().size () > 1) ? "endpoints" : "endpoint");
-                m_callback.connect (h.list());
-                return;
-            }
-            else if (state->counts.attempts() > 0)
-            {
-                if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
-                    "Logic waiting on " <<
-                        state->counts.attempts() << " attempts";
-                return;
-            }
-        }
-
-        /*  3. Bootcache refill
-            If the Bootcache is empty, try to get addresses from the current
-            set of Sources and add them into the Bootstrap cache.
-
-            Pseudocode:
-                If (    domainNames.count() > 0 AND (
-                           unusedBootstrapIPs.count() == 0
-                        OR activeNameResolutions.count() > 0) )
-                    ForOneOrMore (DomainName that hasn't been resolved recently)
-                        Contact DomainName and add entries to the unusedBootstrapIPs
-                    return;
-        */
-
-        // 4. Use Bootcache if:
-        //    There are any entries we haven't tried lately
-        //
-        for (auto iter (state->bootcache.begin());
-            ! h.full() && iter != state->bootcache.end(); ++iter)
-            h.try_insert (*iter);
-
-        if (! h.list().empty ())
-        {
-            if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
-                "Logic connect " << h.list().size () << " boot " <<
-                ((h.list().size () > 1) ? "addresses" : "address");
-            m_callback.connect (h.list());
-            return;
-        }
-
-        // If we get here we are stuck
-    }
-
     //--------------------------------------------------------------------------
 
     void addStaticSource (beast::SharedPtr <Source> const& source)
@@ -958,7 +956,6 @@ public:
 
         clock_type::time_point const now (m_clock.now());
 
-        autoconnect ();
         expire ();
         state->bootcache.periodicActivity ();
 

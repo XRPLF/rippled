@@ -224,6 +224,11 @@ public:
     std::vector <Endpoint>
     redirect (Slot::ptr const& slot) = 0;
 
+    /** Return a set of addresses we should connect to. */
+    virtual
+    std::vector <beast::IP::Endpoint>
+    autoconnect() = 0;
+
     /** Called when mtENDPOINTS is received. */
     virtual void on_endpoints (Slot::ptr const& slot,
         Endpoints const& endpoints) = 0;

@@ -146,10 +146,16 @@ public:
     }
 
     std::vector <Endpoint>
-    redirect (Slot::ptr const& slot)
+    redirect (Slot::ptr const& slot) override
     {
         SlotImp::ptr impl (std::dynamic_pointer_cast <SlotImp> (slot));
         return m_logic.redirect (impl);
+    }
+
+    std::vector <beast::IP::Endpoint>
+    autoconnect() override
+    {
+        return m_logic.autoconnect();
     }
 
     void on_endpoints (Slot::ptr const& slot,
