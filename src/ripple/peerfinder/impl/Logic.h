@@ -414,7 +414,8 @@ public:
         state->counts.add (*slot);
     }
 
-    void on_handshake (SlotImp::ptr const& slot,
+    Result
+    activate (SlotImp::ptr const& slot,
         RipplePublicKey const& key, bool cluster)
     {
         if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
@@ -432,61 +433,57 @@ public:
 
         // Check for duplicate connection by key
         if (state->keys.find (key) != state->keys.end())
-        {
-            m_callback.disconnect (slot, true);
-            return;
-        }
+            return Result::duplicate;
 
         // See if we have an open space for this slot
-        if (state->counts.can_activate (*slot))
-        {
-            // Set key and cluster right before adding to the map
-            // otherwise we could assert later when erasing the key.
-            state->counts.remove (*slot);
-            slot->public_key (key);
-            slot->cluster (cluster);
-            state->counts.add (*slot);
-
-            // Add the public key to the active set
-            std::pair <Keys::iterator, bool> const result (
-                state->keys.insert (key));
-            // Public key must not already exist
-            assert (result.second);
-            (void) result.second;
-
-            // Change state and update counts
-            state->counts.remove (*slot);
-            slot->activate (m_clock.now ());
-            state->counts.add (*slot);
-
-            if (! slot->inbound())
-                state->bootcache.on_success (
-                    slot->remote_endpoint());
-
-            // Mark fixed slot success
-            if (slot->fixed() && ! slot->inbound())
-            {
-                auto iter (state->fixed.find (slot->remote_endpoint()));
-                assert (iter != state->fixed.end ());
-                iter->second.success (m_clock.now ());
-                if (m_journal.trace) m_journal.trace << beast::leftw (18) <<
-                    "Logic fixed " << slot->remote_endpoint () << " success";
-            }
-
-            m_callback.activate (slot);
-        }
-        else
+        if (! state->counts.can_activate (*slot))
         {
             if (! slot->inbound())
                 state->bootcache.on_success (
                     slot->remote_endpoint());
 
             // Maybe give them some addresses to try
+            // VFALCO TODO separate function for this
+            /*
             if (slot->inbound ())
                 redirect (slot, state);
-
-            m_callback.disconnect (slot, true);
+            */
+            return Result::full;
         }
+
+        // Set key and cluster right before adding to the map
+        // otherwise we could assert later when erasing the key.
+        state->counts.remove (*slot);
+        slot->public_key (key);
+        slot->cluster (cluster);
+        state->counts.add (*slot);
+
+        // Add the public key to the active set
+        std::pair <Keys::iterator, bool> const result (
+            state->keys.insert (key));
+        // Public key must not already exist
+        assert (result.second);
+
+        // Change state and update counts
+        state->counts.remove (*slot);
+        slot->activate (m_clock.now ());
+        state->counts.add (*slot);
+
+        if (! slot->inbound())
+            state->bootcache.on_success (
+                slot->remote_endpoint());
+
+        // Mark fixed slot success
+        if (slot->fixed() && ! slot->inbound())
+        {
+            auto iter (state->fixed.find (slot->remote_endpoint()));
+            assert (iter != state->fixed.end ());
+            iter->second.success (m_clock.now ());
+            if (m_journal.trace) m_journal.trace << beast::leftw (18) <<
+                "Logic fixed " << slot->remote_endpoint () << " success";
+        }
+
+        return Result::success;
     }
 
     //--------------------------------------------------------------------------

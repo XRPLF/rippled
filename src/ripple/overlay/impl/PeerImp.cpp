@@ -895,8 +895,6 @@ PeerImp::on_message (std::shared_ptr <protocol::TMHello> const& m)
 {
     error_code ec;
 
-    bool bDetach (true);
-
     timer_.cancel ();
 
     std::uint32_t const ourTime (getApp().getOPs ().getNetworkTimeNC ());
@@ -914,6 +912,8 @@ PeerImp::on_message (std::shared_ptr <protocol::TMHello> const& m)
 #endif
 
     auto protocol = BuildInfo::make_protocol(m->protoversion());
+
+    // VFALCO TODO Report these failures in the HTTP response
 
     if (m->has_nettime () &&
         ((m->nettime () < minTime) || (m->nettime () > maxTime)))
@@ -976,44 +976,53 @@ PeerImp::on_message (std::shared_ptr <protocol::TMHello> const& m)
         assert (state_ == stateConnected);
         state_ = stateHandshaked;
 
-        peerFinder_.on_handshake (slot_, RipplePublicKey (publicKey_),
-            clusterNode_);
+        auto const result = peerFinder_.activate (slot_,
+            RipplePublicKey (publicKey_), clusterNode_);
 
-        // XXX Set timer: connection is in grace period to be useful.
-        // XXX Set timer: connection idle (idle may vary depending on connection type.)
-        if ((hello_.has_ledgerclosed ()) && (
-            hello_.ledgerclosed ().size () == (256 / 8)))
+        if (result == PeerFinder::Result::success)
         {
-            memcpy (closedLedgerHash_.begin (),
-                hello_.ledgerclosed ().data (), 256 / 8);
+            overlay_.activate (slot_);
 
-            if ((hello_.has_ledgerprevious ()) &&
-                (hello_.ledgerprevious ().size () == (256 / 8)))
+            // XXX Set timer: connection is in grace period to be useful.
+            // XXX Set timer: connection idle (idle may vary depending on connection type.)
+            if ((hello_.has_ledgerclosed ()) && (
+                hello_.ledgerclosed ().size () == (256 / 8)))
             {
-                memcpy (previousLedgerHash_.begin (),
-                    hello_.ledgerprevious ().data (), 256 / 8);
-                addLedger (previousLedgerHash_);
+                memcpy (closedLedgerHash_.begin (),
+                    hello_.ledgerclosed ().data (), 256 / 8);
+
+                if ((hello_.has_ledgerprevious ()) &&
+                    (hello_.ledgerprevious ().size () == (256 / 8)))
+                {
+                    memcpy (previousLedgerHash_.begin (),
+                        hello_.ledgerprevious ().data (), 256 / 8);
+                    addLedger (previousLedgerHash_);
+                }
+                else
+                {
+                    previousLedgerHash_.zero();
+                }
             }
-            else
-            {
-                previousLedgerHash_.zero ();
-            }
+
+            sendGetPeers();
+            return ec;
         }
 
-        bDetach = false;
+        if (result == PeerFinder::Result::full)
+        {
+            // TODO Provide correct HTTP response
+        }
+        else
+        {
+            // TODO Duplicate connection
+        }
     }
 
-    if (bDetach)
-    {
-        //publicKey_.clear ();
-        //detach ("recvh");
-
-        ec = invalid_argument_error();
-    }
-    else
-    {
-        sendGetPeers ();
-    }
+    // VFALCO Commented this out because we return an error code
+    //        to the caller, who calls detach for us.
+    //publicKey_.clear ();
+    //detach ("recvh");
+    ec = invalid_argument_error();
 
     return ec;
 }

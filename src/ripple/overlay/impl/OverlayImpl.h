@@ -149,15 +149,15 @@ public:
     void
     remove (PeerFinder::Slot::ptr const& slot);
 
+    void
+    activate (PeerFinder::Slot::ptr const& slot);
+
     //
     // PeerFinder::Callback
     //
 
     void
     connect (std::vector <beast::IP::Endpoint> const& list);
-
-    void
-    activate (PeerFinder::Slot::ptr const& slot);
 
     void
     send (PeerFinder::Slot::ptr const& slot,

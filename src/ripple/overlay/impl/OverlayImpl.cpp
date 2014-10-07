@@ -222,20 +222,6 @@ OverlayImpl::remove (PeerFinder::Slot::ptr const& slot)
     release();
 }
 
-//--------------------------------------------------------------------------
-//
-// PeerFinder::Callback
-//
-//--------------------------------------------------------------------------
-
-void
-OverlayImpl::connect (std::vector <beast::IP::Endpoint> const& list)
-{
-    for (std::vector <beast::IP::Endpoint>::const_iterator iter (list.begin());
-        iter != list.end(); ++iter)
-        connect (*iter);
-}
-
 void
 OverlayImpl::activate (PeerFinder::Slot::ptr const& slot)
 {
@@ -249,6 +235,20 @@ OverlayImpl::activate (PeerFinder::Slot::ptr const& slot)
     PeerImp::ptr const peer (iter->second.lock());
     assert (peer != nullptr);
     peer->activate ();
+}
+
+//--------------------------------------------------------------------------
+//
+// PeerFinder::Callback
+//
+//--------------------------------------------------------------------------
+
+void
+OverlayImpl::connect (std::vector <beast::IP::Endpoint> const& list)
+{
+    for (std::vector <beast::IP::Endpoint>::const_iterator iter (list.begin());
+        iter != list.end(); ++iter)
+        connect (*iter);
 }
 
 void

@@ -114,9 +114,6 @@ struct Callback
     /** Initiate outgoing Peer connections to the specified set of endpoints. */
     virtual void connect (IPAddresses const& addresses) = 0;
 
-    /** Activate the handshaked peer with the specified address. */
-    virtual void activate (Slot::ptr const& slot) = 0;
-
     /** Sends a set of Endpoint records to the specified peer. */
     virtual void send (Slot::ptr const& slot, Endpoints const& endpoints) = 0;
 
@@ -216,8 +213,10 @@ public:
     virtual void on_connected (Slot::ptr const& slot,
         beast::IP::Endpoint const& local_endpoint) = 0;
 
-    /** Called when a handshake is completed. */
-    virtual void on_handshake (Slot::ptr const& slot,
+    /** Request an active slot type. */
+    virtual
+    Result
+    activate (Slot::ptr const& slot,
         RipplePublicKey const& key, bool cluster) = 0;
 
     /** Called when mtENDPOINTS is received. */

@@ -137,11 +137,12 @@ public:
         m_logic.on_connected (impl, local_endpoint);
     }
 
-    void on_handshake (Slot::ptr const& slot,
-        RipplePublicKey const& key, bool cluster)
+    Result
+    activate (Slot::ptr const& slot,
+        RipplePublicKey const& key, bool cluster) override
     {
         SlotImp::ptr impl (std::dynamic_pointer_cast <SlotImp> (slot));
-        m_logic.on_handshake (impl, key, cluster);
+        return m_logic.activate (impl, key, cluster);
     }
 
     void on_endpoints (Slot::ptr const& slot,
