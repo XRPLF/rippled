@@ -187,6 +187,12 @@ public:
         m_logic.once_per_second();
     }
 
+    std::vector<std::pair<Slot::ptr, std::vector<Endpoint>>>
+    sendpeers() override
+    {
+        return m_logic.sendpeers();
+    }
+
     //--------------------------------------------------------------------------
     //
     // SiteFiles

@@ -160,10 +160,6 @@ public:
     //
 
     void
-    send (PeerFinder::Slot::ptr const& slot,
-        std::vector <PeerFinder::Endpoint> const& endpoints);
-
-    void
     disconnect (PeerFinder::Slot::ptr const& slot, bool graceful);
 
     //
@@ -216,6 +212,9 @@ public:
     onPeerDisconnect (Peer::ptr const& peer);
 
 private:
+    void
+    sendpeers();
+
     void
     autoconnect();
 

@@ -605,6 +605,115 @@ public:
         return none;
     }
 
+    std::vector<std::pair<Slot::ptr, std::vector<Endpoint>>>
+    sendpeers()
+    {
+        std::vector<std::pair<Slot::ptr, std::vector<Endpoint>>> result;
+
+        SharedState::Access state (m_state);
+
+        clock_type::time_point const now = m_clock.now();
+        if (m_whenBroadcast <= now)
+        {
+            std::vector <SlotHandouts> targets;
+
+            {
+                // build list of active slots
+                std::vector <SlotImp::ptr> slots;
+                slots.reserve (state->slots.size());
+                std::for_each (state->slots.cbegin(), state->slots.cend(),
+                    [&slots](Slots::value_type const& value)
+                    {
+                        if (value.second->state() == Slot::active)
+                            slots.emplace_back (value.second);
+                    });
+                std::random_shuffle (slots.begin(), slots.end());
+
+                // build target vector
+                targets.reserve (slots.size());
+                std::for_each (slots.cbegin(), slots.cend(),
+                    [&targets](SlotImp::ptr const& slot)
+                    {
+                        targets.emplace_back (slot);
+                    });
+            }
+
+            /* VFALCO NOTE
+                This is a temporary measure. Once we know our own IP
+                address, the correct solution is to put it into the Livecache
+                at hops 0, and go through the regular handout path. This way
+                we avoid handing our address out too frequenty, which this code
+                suffers from.
+            */
+            // Add an entry for ourselves if:
+            // 1. We want incoming
+            // 2. We have slots
+            // 3. We haven't failed the firewalled test
+            //
+            if (state->config.wantIncoming &&
+                state->counts.inboundSlots() > 0)
+            {
+                Endpoint ep;
+                ep.hops = 0;
+                ep.address = beast::IP::Endpoint (
+                    beast::IP::AddressV4 ()).at_port (
+                        state->config.listeningPort);
+                for (auto& t : targets)
+                    t.insert (ep);
+            }
+
+            // build sequence of endpoints by hops
+            state->livecache.hops.shuffle();
+            handout (targets.begin(), targets.end(),
+                state->livecache.hops.begin(),
+                    state->livecache.hops.end());
+
+            // broadcast
+            for (auto const& t : targets)
+            {
+                SlotImp::ptr const& slot = t.slot();
+                auto const& list = t.list();
+                if (m_journal.trace) m_journal.trace << beast::leftw (18) <<
+                    "Logic sending " << slot->remote_endpoint() <<
+                    " with " << list.size() <<
+                    ((list.size() == 1) ? " endpoint" : " endpoints");
+                result.push_back (std::make_pair (slot, list));
+            }
+
+            m_whenBroadcast = now + Tuning::secondsPerMessage;
+        }
+
+        return result;
+    }
+
+    void once_per_second()
+    {
+        SharedState::Access state (m_state);
+
+        clock_type::time_point const now (m_clock.now());
+
+        // Expire the Livecache
+        state->livecache.expire ();
+
+        // Expire the recent cache in each slot
+        for (auto const& entry : state->slots)
+            entry.second->expire();
+
+        // Expire the recent attempts table
+        beast::expire (m_squelches,
+            Tuning::recentAttemptDuration);
+
+        state->bootcache.periodicActivity ();
+
+        /*
+        if (m_whenBroadcast <= now)
+        {
+            broadcast();
+            m_whenBroadcast = now + Tuning::secondsPerMessage;
+        }
+        */
+    }
+
     //--------------------------------------------------------------------------
 
     // Validate and clean up the list that we received from the slot.
@@ -931,34 +1040,6 @@ public:
     }
 
     //--------------------------------------------------------------------------
-
-    void once_per_second()
-    {
-        SharedState::Access state (m_state);
-
-        clock_type::time_point const now (m_clock.now());
-
-        // Expire the Livecache
-        state->livecache.expire ();
-
-        // Expire the recent cache in each slot
-        for (auto const& entry : state->slots)
-            entry.second->expire();
-
-        // Expire the recent attempts table
-        beast::expire (m_squelches,
-            Tuning::recentAttemptDuration);
-
-        state->bootcache.periodicActivity ();
-
-        if (m_whenBroadcast <= now)
-        {
-            broadcast ();
-            m_whenBroadcast = now + Tuning::secondsPerMessage;
-        }
-    }
-
-    //--------------------------------------------------------------------------
     //
     // Bootcache livecache sources
     //
@@ -1046,103 +1127,6 @@ public:
         if (address.port() == 0)
             return false;
         return true;
-    }
-
-    //--------------------------------------------------------------------------
-
-    // Gives a slot a set of addresses to try next since we're full
-    void redirect (SlotImp::ptr const& slot, SharedState::Access& state)
-    {
-        RedirectHandouts h (slot);
-        state->livecache.hops.shuffle();
-        handout (&h, (&h)+1,
-            state->livecache.hops.begin(),
-                state->livecache.hops.end());
-
-        if (! h.list().empty ())
-        {
-            if (m_journal.trace) m_journal.trace << beast::leftw (18) <<
-                "Logic redirect " << slot->remote_endpoint() <<
-                " with " << h.list().size() <<
-                ((h.list().size() == 1) ? " address" : " addresses");
-            m_callback.send (slot, h.list());
-        }
-        else
-        {
-            if (m_journal.warning) m_journal.warning << beast::leftw (18) <<
-                "Logic deferred " << slot->remote_endpoint();
-        }
-    }
-
-    // Send mtENDPOINTS for each slot as needed
-    void broadcast ()
-    {
-        SharedState::Access state (m_state);
-
-        std::vector <SlotHandouts> targets;
-
-        {
-            // build list of active slots
-            std::vector <SlotImp::ptr> slots;
-            slots.reserve (state->slots.size());
-            std::for_each (state->slots.cbegin(), state->slots.cend(),
-                [&slots](Slots::value_type const& value)
-                {
-                    if (value.second->state() == Slot::active)
-                        slots.emplace_back (value.second);
-                });
-            std::random_shuffle (slots.begin(), slots.end());
-
-            // build target vector
-            targets.reserve (slots.size());
-            std::for_each (slots.cbegin(), slots.cend(),
-                [&targets](SlotImp::ptr const& slot)
-                {
-                    targets.emplace_back (slot);
-                });
-        }
-
-        /* VFALCO NOTE
-            This is a temporary measure. Once we know our own IP
-            address, the correct solution is to put it into the Livecache
-            at hops 0, and go through the regular handout path. This way
-            we avoid handing our address out too frequenty, which this code
-            suffers from.
-        */
-        // Add an entry for ourselves if:
-        // 1. We want incoming
-        // 2. We have slots
-        // 3. We haven't failed the firewalled test
-        //
-        if (state->config.wantIncoming &&
-            state->counts.inboundSlots() > 0)
-        {
-            Endpoint ep;
-            ep.hops = 0;
-            ep.address = beast::IP::Endpoint (
-                beast::IP::AddressV4 ()).at_port (
-                    state->config.listeningPort);
-            for (auto& t : targets)
-                t.insert (ep);
-        }
-
-        // build sequence of endpoints by hops
-        state->livecache.hops.shuffle();
-        handout (targets.begin(), targets.end(),
-            state->livecache.hops.begin(),
-                state->livecache.hops.end());
-
-        // broadcast
-        for (auto const& t : targets)
-        {
-            SlotImp::ptr const& slot (t.slot());
-            auto const& list (t.list());
-            if (m_journal.trace) m_journal.trace << beast::leftw (18) <<
-                "Logic sending " << slot->remote_endpoint() <<
-                " with " << list.size() <<
-                ((list.size() == 1) ? " endpoint" : " endpoints");
-            m_callback.send (slot, list);
-        }
     }
 
     //--------------------------------------------------------------------------
@@ -1243,19 +1227,3 @@ public:
 }
 
 #endif
-
-/*
-
-- recent tables entries should last equal to the cache time to live
-- never send a slot a message thats in its recent table at a lower hop count
-- when sending a message to a slot, add it to its recent table at one lower hop count
-
-Giveaway logic
-
-When do we give away?
-
-- To one inbound connection when we redirect due to full
-
-- To all slots at every broadcast
-
-*/

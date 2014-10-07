@@ -229,21 +229,6 @@ OverlayImpl::remove (PeerFinder::Slot::ptr const& slot)
 //--------------------------------------------------------------------------
 
 void
-OverlayImpl::send (PeerFinder::Slot::ptr const& slot,
-    std::vector <PeerFinder::Endpoint> const& endpoints)
-{
-    PeerImp::ptr peer;
-    {
-        std::lock_guard <decltype(m_mutex)> lock (m_mutex);
-        PeersBySlot::iterator const iter (m_peers.find (slot));
-        assert (iter != m_peers.end());
-        peer = iter->second.lock();
-        assert (peer != nullptr);
-    }
-    peer->send_endpoints (endpoints.begin(), endpoints.end());
-}
-
-void
 OverlayImpl::disconnect (PeerFinder::Slot::ptr const& slot, bool graceful)
 {
     if (m_journal.trace) m_journal.trace <<
@@ -532,12 +517,33 @@ OverlayImpl::autoconnect()
 }
 
 void
+OverlayImpl::sendpeers()
+{
+    auto const result = m_peerFinder->sendpeers();
+    for (auto const& e : result)
+    {
+        // VFALCO TODO Make sure this doesn't race with closing the peer
+        PeerImp::ptr peer;
+        {
+            std::lock_guard <decltype(m_mutex)> lock (m_mutex);
+            PeersBySlot::iterator const iter = m_peers.find (e.first);
+            if (iter != m_peers.end())
+                peer = iter->second.lock();
+        }
+        if (peer)
+            peer->send_endpoints (e.second.begin(), e.second.end());
+    }
+}
+
+void
 OverlayImpl::do_timer (yield_context yield)
 {
     for(;;)
     {
         m_peerFinder->once_per_second();
+        sendpeers();
         autoconnect();
+
         timer_.expires_from_now (std::chrono::seconds(1));
         error_code ec;
         timer_.async_wait (yield[ec]);

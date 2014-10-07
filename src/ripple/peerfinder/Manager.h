@@ -111,9 +111,6 @@ typedef std::vector <Endpoint> Endpoints;
 // DEPRECATED Callbacks only cause re-entrancy pain
 struct Callback
 {
-    /** Sends a set of Endpoint records to the specified peer. */
-    virtual void send (Slot::ptr const& slot, Endpoints const& endpoints) = 0;
-
     /** Disconnect the handshaked peer with the specified address.
         @param graceful `true` to wait for send buffers to drain before closing.
     */
@@ -245,6 +242,10 @@ public:
     virtual
     std::vector <beast::IP::Endpoint>
     autoconnect() = 0;
+
+    virtual
+    std::vector<std::pair<Slot::ptr, std::vector<Endpoint>>>
+    sendpeers() = 0;
 
     /** Perform periodic activity.
         This should be called once per second.
