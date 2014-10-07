@@ -234,7 +234,7 @@ TER PathCursor::advanceNode (bool const bReverse) const
                             << "advanceNode: PAST INTERNAL ERROR"
                             << " REVERSE: OFFER NON-POSITIVE:"
                             << " node.saTakerPays=" << node().saTakerPays
-                            << " node.saTakerGets=%s" << node().saTakerGets;
+                            << " node.saTakerGets=" << node().saTakerGets;
 
                         // Mark offer for always deletion.
                         rippleCalc_.permanentlyUnfundedOffers_.insert (

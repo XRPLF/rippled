@@ -476,7 +476,7 @@ AmendmentTableImpl::doVoting (Ledger::ref lastClosedLedger,
         SerializedTransaction trans (ttAMENDMENT);
         trans.setFieldAccount (sfAccount, Account ());
         trans.setFieldH256 (sfAmendment, uAmendment);
-        uint256 txID = trans.getTransactionID ();
+        uint256 const& txID = trans.getTransactionID ();
 
         if (m_journal.warning) m_journal.warning <<
             "Vote ID: " << txID;

@@ -26,8 +26,7 @@ namespace ripple {
 SerializedTransaction::SerializedTransaction (TxType type)
     : STObject (sfTransaction)
     , mType (type)
-    , mSigGood (false)
-    , mSigBad (false)
+    , sig_state_ (boost::indeterminate)
 {
     mFormat = TxFormats::getInstance().findByType (type);
 
@@ -43,8 +42,7 @@ SerializedTransaction::SerializedTransaction (TxType type)
 
 SerializedTransaction::SerializedTransaction (STObject const& object)
     : STObject (object)
-    , mSigGood (false)
-    , mSigBad (false)
+    , sig_state_ (boost::indeterminate)
 {
     mType = static_cast <TxType> (getFieldU16 (sfTransactionType));
 
@@ -62,8 +60,9 @@ SerializedTransaction::SerializedTransaction (STObject const& object)
     }
 }
 
-SerializedTransaction::SerializedTransaction (SerializerIterator& sit) : STObject (sfTransaction),
-    mSigGood (false), mSigBad (false)
+SerializedTransaction::SerializedTransaction (SerializerIterator& sit)
+    : STObject (sfTransaction)
+    , sig_state_ (boost::indeterminate)
 {
     int length = sit.getBytesLeft ();
 
@@ -164,10 +163,14 @@ uint256 SerializedTransaction::getSigningHash () const
     return STObject::getSigningHash (HashPrefix::txSign);
 }
 
-uint256 SerializedTransaction::getTransactionID () const
+uint256 const& SerializedTransaction::getTransactionID () const
 {
-    // perhaps we should cache this
-    return getHash (HashPrefix::transactionID);
+    assert (sig_state_ != boost::indeterminate);
+
+    if (!txid_)
+        txid_ = getHash (HashPrefix::transactionID);
+
+    return txid_.get ();
 }
 
 Blob SerializedTransaction::getSignature () const
@@ -184,6 +187,14 @@ Blob SerializedTransaction::getSignature () const
 
 void SerializedTransaction::sign (RippleAddress const& naAccountPrivate)
 {
+    if (sig_state_ != boost::indeterminate)
+    {
+        sig_state_ = boost::indeterminate;
+
+        WriteLog (lsERROR, SerializedTransaction) <<
+            "signing a transaction which had a TXID already!";
+    }
+
     Blob signature;
     naAccountPrivate.accountPrivateSign (getSigningHash (), signature);
     setFieldVL (sfTxnSignature, signature);
@@ -191,39 +202,35 @@ void SerializedTransaction::sign (RippleAddress const& naAccountPrivate)
 
 bool SerializedTransaction::checkSign () const
 {
-    if (mSigGood)
-        return true;
-
-    if (mSigBad)
-        return false;
-
-    try
+    if (sig_state_ == boost::indeterminate)
     {
-        RippleAddress n;
-        n.setAccountPublic (getFieldVL (sfSigningPubKey));
-
-        if (checkSign (n))
+        try
         {
-            mSigGood = true;
-            return true;
+            RippleAddress n;
+            n.setAccountPublic (getFieldVL (sfSigningPubKey));
+
+            if (checkSign (n))
+                sig_state_ = true;
+        }
+        catch (...)
+        {
+            ;
         }
     }
-    catch (...)
-    {
-        ;
-    }
 
-    mSigBad = true;
-    return false;
+    return static_cast<bool> (sig_state_);
 }
 
 bool SerializedTransaction::checkSign (RippleAddress const& naAccountPublic) const
 {
     try
     {
-        const ECDSA fullyCanonical = (getFlags() & tfFullyCanonicalSig) ?
-                                              ECDSA::strict : ECDSA::not_strict;
-        return naAccountPublic.accountPublicVerify (getSigningHash (), getFieldVL (sfTxnSignature), fullyCanonical);
+        const ECDSA fullyCanonical = (getFlags() & tfFullyCanonicalSig)
+            ? ECDSA::strict
+            : ECDSA::not_strict;
+
+        return naAccountPublic.accountPublicVerify (getSigningHash (),
+            getFieldVL (sfTxnSignature), fullyCanonical);
     }
     catch (...)
     {
@@ -294,7 +301,7 @@ std::string SerializedTransaction::getMetaSQL (std::uint32_t inLedger,
 std::string SerializedTransaction::getSQL (Serializer rawTxn, std::uint32_t inLedger, char status) const
 {
     static boost::format bfTrans ("('%s', '%s', '%s', '%d', '%d', '%c', %s)");
-    std::string rTxn    = sqlEscape (rawTxn.peekData ());
+    std::string rTxn = sqlEscape (rawTxn.peekData ());
 
     return str (boost::format (bfTrans)
                 % to_string (getTransactionID ()) % getTransactionType ()
@@ -306,7 +313,7 @@ std::string SerializedTransaction::getMetaSQL (Serializer rawTxn, std::uint32_t 
         std::string const& escapedMetaData) const
 {
     static boost::format bfTrans ("('%s', '%s', '%s', '%d', '%d', '%c', %s, %s)");
-    std::string rTxn    = sqlEscape (rawTxn.peekData ());
+    std::string rTxn = sqlEscape (rawTxn.peekData ());
 
     return str (boost::format (bfTrans)
                 % to_string (getTransactionID ()) % getTransactionType ()
@@ -358,12 +365,14 @@ bool isMemoOkay (STObject const& st)
 }
 
 // Ensure all account fields are 160-bits
-bool isAccountFieldOkay (STObject const& st)
+static
+bool
+isAccountFieldOkay (STObject const& st)
 {
     for (int i = 0; i < st.getCount(); ++i)
     {
-        const STAccount* t = dynamic_cast<STAccount const*>(st.peekAtPIndex (i));
-        if (t&& !t->isValueH160 ())
+        auto t = dynamic_cast<STAccount const*>(st.peekAtPIndex (i));
+        if (t && !t->isValueH160 ())
             return false;
     }
 

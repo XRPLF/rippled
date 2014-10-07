@@ -58,20 +58,16 @@ public:
     LocalTx (LedgerIndex index, SerializedTransaction::ref txn)
         : m_txn (txn)
         , m_expire (index + holdLedgers)
-        , m_id (txn->getTransactionID ())
         , m_account (txn->getSourceAccount ())
         , m_seq (txn->getSequence())
     {
         if (txn->isFieldPresent (sfLastLedgerSequence))
-        {
-           LedgerIndex m_txnexpire = txn->getFieldU32 (sfLastLedgerSequence) + 1;
-           m_expire = std::min (m_expire, m_txnexpire);
-        }
+           m_expire = std::min (m_expire, txn->getFieldU32 (sfLastLedgerSequence) + 1);
     }
 
     uint256 const& getID () const
     {
-        return m_id;
+        return m_txn->getTransactionID ();
     }
 
     std::uint32_t getSeq () const
@@ -98,7 +94,6 @@ private:
 
     SerializedTransaction::pointer m_txn;
     LedgerIndex                    m_expire;
-    uint256                        m_id;
     RippleAddress                  m_account;
     std::uint32_t                  m_seq;
 };

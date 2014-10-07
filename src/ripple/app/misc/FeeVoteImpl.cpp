@@ -213,7 +213,7 @@ FeeVoteImpl::doVoting (Ledger::ref lastClosedLedger,
         trans.setFieldU32 (sfReserveBase, baseReserve);
         trans.setFieldU32 (sfReserveIncrement, incReserve);
 
-        uint256 txID = trans.getTransactionID ();
+        uint256 const& txID = trans.getTransactionID ();
 
         if (journal_.warning)
             journal_.warning << "Vote: " << txID;

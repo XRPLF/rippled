@@ -64,7 +64,7 @@ public:
 
     private:
         uint256 mAccount;
-        uint256 mTXid;
+        uint256 const& mTXid;
         std::uint32_t mSeq;
     };
 
