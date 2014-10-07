@@ -165,6 +165,8 @@ uint256 SerializedTransaction::getSigningHash () const
 
 uint256 const& SerializedTransaction::getTransactionID () const
 {
+    assert (sig_state_ != boost::indeterminate);
+
     if (!txid_)
         txid_ = getHash (HashPrefix::transactionID);
 
@@ -185,6 +187,14 @@ Blob SerializedTransaction::getSignature () const
 
 void SerializedTransaction::sign (RippleAddress const& naAccountPrivate)
 {
+    if (sig_state_ != boost::indeterminate)
+    {
+        sig_state_ = boost::indeterminate;
+
+        WriteLog (lsERROR, SerializedTransaction) <<
+            "signing a transaction which had a TXID already!";
+    }
+
     Blob signature;
     naAccountPrivate.accountPrivateSign (getSigningHash (), signature);
     setFieldVL (sfTxnSignature, signature);
@@ -355,12 +365,14 @@ bool isMemoOkay (STObject const& st)
 }
 
 // Ensure all account fields are 160-bits
-bool isAccountFieldOkay (STObject const& st)
+static
+bool
+isAccountFieldOkay (STObject const& st)
 {
     for (int i = 0; i < st.getCount(); ++i)
     {
-        const STAccount* t = dynamic_cast<STAccount const*>(st.peekAtPIndex (i));
-        if (t&& !t->isValueH160 ())
+        auto t = dynamic_cast<STAccount const*>(st.peekAtPIndex (i));
+        if (t && !t->isValueH160 ())
             return false;
     }
 

@@ -46,6 +46,7 @@ public:
 public:
     SerializedTransaction () = delete;
     SerializedTransaction& operator= (SerializedTransaction const& other) = delete;
+
     SerializedTransaction (SerializedTransaction const& other) = default;
 
     explicit SerializedTransaction (SerializerIterator & sit);
