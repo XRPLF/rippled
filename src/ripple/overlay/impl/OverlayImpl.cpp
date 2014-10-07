@@ -229,14 +229,6 @@ OverlayImpl::remove (PeerFinder::Slot::ptr const& slot)
 //--------------------------------------------------------------------------
 
 void
-OverlayImpl::connect (std::vector <beast::IP::Endpoint> const& list)
-{
-    for (std::vector <beast::IP::Endpoint>::const_iterator iter (list.begin());
-        iter != list.end(); ++iter)
-        connect (*iter);
-}
-
-void
 OverlayImpl::send (PeerFinder::Slot::ptr const& slot,
     std::vector <PeerFinder::Endpoint> const& endpoints)
 {

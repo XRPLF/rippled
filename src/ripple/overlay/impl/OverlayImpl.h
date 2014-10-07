@@ -160,9 +160,6 @@ public:
     //
 
     void
-    connect (std::vector <beast::IP::Endpoint> const& list);
-
-    void
     send (PeerFinder::Slot::ptr const& slot,
         std::vector <PeerFinder::Endpoint> const& endpoints);
 

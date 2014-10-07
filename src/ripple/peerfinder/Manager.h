@@ -111,9 +111,6 @@ typedef std::vector <Endpoint> Endpoints;
 // DEPRECATED Callbacks only cause re-entrancy pain
 struct Callback
 {
-    /** Initiate outgoing Peer connections to the specified set of endpoints. */
-    virtual void connect (IPAddresses const& addresses) = 0;
-
     /** Sends a set of Endpoint records to the specified peer. */
     virtual void send (Slot::ptr const& slot, Endpoints const& endpoints) = 0;
 
