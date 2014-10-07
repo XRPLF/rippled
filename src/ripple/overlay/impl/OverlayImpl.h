@@ -25,7 +25,6 @@
 #include <ripple/common/Resolver.h>
 #include <ripple/common/seconds_clock.h>
 #include <ripple/common/UnorderedContainers.h>
-#include <ripple/peerfinder/Callback.h>
 #include <ripple/peerfinder/Manager.h>
 #include <ripple/resource/api/Manager.h>
 

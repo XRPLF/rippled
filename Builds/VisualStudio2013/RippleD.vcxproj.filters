@@ -3978,15 +3978,6 @@
     <ClCompile Include="..\..\src\ripple\overlay\tests\peer_info.test.cpp">
       <Filter>ripple\overlay\tests</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\peerfinder\Callback.h">
-      <Filter>ripple\peerfinder</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\Config.h">
-      <Filter>ripple\peerfinder</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\Endpoint.h">
-      <Filter>ripple\peerfinder</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\peerfinder\impl\Bootcache.cpp">
       <Filter>ripple\peerfinder\impl</Filter>
     </ClCompile>
@@ -4108,9 +4099,6 @@
       <Filter>ripple\peerfinder\sim</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\Slot.h">
-      <Filter>ripple\peerfinder</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\Types.h">
       <Filter>ripple\peerfinder</Filter>
     </ClInclude>
     <CustomBuild Include="..\..\src\ripple\proto\ripple.proto">

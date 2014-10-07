@@ -2832,12 +2832,6 @@
     <ClCompile Include="..\..\src\ripple\overlay\tests\peer_info.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\peerfinder\Callback.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\Config.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\Endpoint.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\peerfinder\impl\Bootcache.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2931,8 +2925,6 @@
     <ClInclude Include="..\..\src\ripple\peerfinder\sim\WrappedSink.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\Slot.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\Types.h">
     </ClInclude>
     <CustomBuild Include="..\..\src\ripple\proto\ripple.proto">
       <FileType>Document</FileType>
