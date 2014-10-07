@@ -219,6 +219,11 @@ public:
     activate (Slot::ptr const& slot,
         RipplePublicKey const& key, bool cluster) = 0;
 
+    /** Returns a set of endpoints suitable for redirection. */
+    virtual
+    std::vector <Endpoint>
+    redirect (Slot::ptr const& slot) = 0;
+
     /** Called when mtENDPOINTS is received. */
     virtual void on_endpoints (Slot::ptr const& slot,
         Endpoints const& endpoints) = 0;

@@ -486,6 +486,18 @@ public:
         return Result::success;
     }
 
+    std::vector <Endpoint>
+    redirect (SlotImp::ptr const& slot)
+    {
+        SharedState::Access state (m_state);
+        RedirectHandouts h (slot);
+        state->livecache.hops.shuffle();
+        handout (&h, (&h)+1,
+            state->livecache.hops.begin(),
+                state->livecache.hops.end());
+        return std::move(h.list());
+    }
+
     //--------------------------------------------------------------------------
 
     // Validate and clean up the list that we received from the slot.

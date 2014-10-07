@@ -116,6 +116,11 @@ public:
         return slot_;
     }
 
+    std::vector <Endpoint>& list()
+    {
+        return list_;
+    }
+
     std::vector <Endpoint> const& list() const
     {
         return list_;

@@ -145,6 +145,13 @@ public:
         return m_logic.activate (impl, key, cluster);
     }
 
+    std::vector <Endpoint>
+    redirect (Slot::ptr const& slot)
+    {
+        SlotImp::ptr impl (std::dynamic_pointer_cast <SlotImp> (slot));
+        return m_logic.redirect (impl);
+    }
+
     void on_endpoints (Slot::ptr const& slot,
         Endpoints const& endpoints)
     {
