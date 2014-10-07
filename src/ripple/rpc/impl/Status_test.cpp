@@ -187,7 +187,7 @@ private:
         }
         catch (Status const& s)
         {
-            expect (s == temBAD_PATH, "temBAD_PATH wasn't thrown");
+            expect (s.toTER () == temBAD_PATH, "temBAD_PATH wasn't thrown");
             auto msgs = s.messages ();
             expect (msgs.size () == 1, "Wrong number of messages");
             expect (msgs[0] == "path=sdcdfd", msgs[0]);

@@ -82,13 +82,17 @@ public:
         return ! bool (*this);
     }
 
-    operator TER() const
+    /** Returns the Status as a TER.
+        This may only be called if type() == Type::TER. */
+    TER toTER () const
     {
         assert (type_ == Type::TER);
         return TER (code_);
     }
 
-    operator error_code_i() const
+    /** Returns the Status as an error_code_i.
+        This may only be called if type() == Type::error_code_i. */
+    error_code_i toErrorCode() const
     {
         assert (type_ == Type::error_code_i);
         return error_code_i (code_);
@@ -97,6 +101,11 @@ public:
     Strings const& messages() const
     {
         return messages_;
+    }
+
+    Type type() const
+    {
+        return type_;
     }
 
 private:

@@ -26,16 +26,16 @@ namespace New {
 std::string Status::codeString () const
 {
     if (!*this)
-        return {};
+        return "";
 
     if (type_ == Type::none)
-        return {std::to_string (code_)};
+        return std::to_string (code_);
 
     if (type_ == Status::Type::TER)
     {
         std::string s1, s2;
 
-        auto success = transResultInfo (TER (code_), s1, s2);
+        auto success = transResultInfo (toTER (), s1, s2);
         assert (success);
         (void) success;
 
@@ -44,7 +44,7 @@ std::string Status::codeString () const
 
     if (type_ == Status::Type::error_code_i)
     {
-        auto info = get_error_info (error_code_i (code_));
+        auto info = get_error_info (toErrorCode ());
         return info.token +  ": " + info.message;
     }
 
