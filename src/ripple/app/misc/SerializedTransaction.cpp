@@ -26,8 +26,7 @@ namespace ripple {
 SerializedTransaction::SerializedTransaction (TxType type)
     : STObject (sfTransaction)
     , mType (type)
-    , mSigGood (false)
-    , mSigBad (false)
+    , sig_state_ (boost::indeterminate)
 {
     mFormat = TxFormats::getInstance().findByType (type);
 
@@ -43,8 +42,7 @@ SerializedTransaction::SerializedTransaction (TxType type)
 
 SerializedTransaction::SerializedTransaction (STObject const& object)
     : STObject (object)
-    , mSigGood (false)
-    , mSigBad (false)
+    , sig_state_ (boost::indeterminate)
 {
     mType = static_cast <TxType> (getFieldU16 (sfTransactionType));
 
@@ -62,8 +60,9 @@ SerializedTransaction::SerializedTransaction (STObject const& object)
     }
 }
 
-SerializedTransaction::SerializedTransaction (SerializerIterator& sit) : STObject (sfTransaction),
-    mSigGood (false), mSigBad (false)
+SerializedTransaction::SerializedTransaction (SerializerIterator& sit)
+    : STObject (sfTransaction)
+    , sig_state_ (boost::indeterminate)
 {
     int length = sit.getBytesLeft ();
 
@@ -193,39 +192,35 @@ void SerializedTransaction::sign (RippleAddress const& naAccountPrivate)
 
 bool SerializedTransaction::checkSign () const
 {
-    if (mSigGood)
-        return true;
-
-    if (mSigBad)
-        return false;
-
-    try
+    if (sig_state_ == boost::indeterminate)
     {
-        RippleAddress n;
-        n.setAccountPublic (getFieldVL (sfSigningPubKey));
-
-        if (checkSign (n))
+        try
         {
-            mSigGood = true;
-            return true;
+            RippleAddress n;
+            n.setAccountPublic (getFieldVL (sfSigningPubKey));
+
+            if (checkSign (n))
+                sig_state_ = true;
+        }
+        catch (...)
+        {
+            ;
         }
     }
-    catch (...)
-    {
-        ;
-    }
 
-    mSigBad = true;
-    return false;
+    return static_cast<bool> (sig_state_);
 }
 
 bool SerializedTransaction::checkSign (RippleAddress const& naAccountPublic) const
 {
     try
     {
-        const ECDSA fullyCanonical = (getFlags() & tfFullyCanonicalSig) ?
-                                              ECDSA::strict : ECDSA::not_strict;
-        return naAccountPublic.accountPublicVerify (getSigningHash (), getFieldVL (sfTxnSignature), fullyCanonical);
+        const ECDSA fullyCanonical = (getFlags() & tfFullyCanonicalSig)
+            ? ECDSA::strict
+            : ECDSA::not_strict;
+
+        return naAccountPublic.accountPublicVerify (getSigningHash (),
+            getFieldVL (sfTxnSignature), fullyCanonical);
     }
     catch (...)
     {

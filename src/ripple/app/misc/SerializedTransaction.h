@@ -21,11 +21,11 @@
 #define RIPPLE_SERIALIZEDTRANSACTION_H
 
 #include <boost/optional.hpp>
+#include <boost/logic/tribool.hpp>
 
 namespace ripple {
 
 // VFALCO TODO replace these macros with language constants
-
 #define TXN_SQL_NEW         'N'
 #define TXN_SQL_CONFLICT    'C'
 #define TXN_SQL_HELD        'H'
@@ -44,6 +44,10 @@ public:
     typedef const std::shared_ptr<SerializedTransaction>& ref;
 
 public:
+    SerializedTransaction () = delete;
+    SerializedTransaction& operator= (SerializedTransaction const& other) = delete;
+    SerializedTransaction (SerializedTransaction const& other) = default;
+
     explicit SerializedTransaction (SerializerIterator & sit);
     explicit SerializedTransaction (TxType type);
     explicit SerializedTransaction (const STObject & object);
@@ -58,10 +62,7 @@ public:
 
     // outer transaction functions / signature functions
     Blob getSignature () const;
-    void setSignature (Blob const & s)
-    {
-        setFieldVL (sfTxnSignature, s);
-    }
+
     uint256 getSigningHash () const;
 
     TxType getTxnType () const
@@ -114,19 +115,19 @@ public:
     bool checkSign () const;
     bool isKnownGood () const
     {
-        return mSigGood;
+        return (sig_state_ == true);
     }
     bool isKnownBad () const
     {
-        return mSigBad;
+        return (sig_state_ == false);
     }
     void setGood () const
     {
-        mSigGood = true;
+        sig_state_ = true;
     }
     void setBad () const
     {
-        mSigBad = true;
+        sig_state_ = false;
     }
 
     // SQL Functions
@@ -163,9 +164,7 @@ private:
         return new SerializedTransaction (*this);
     }
 
-    mutable bool mSigGood;
-    mutable bool mSigBad;
-
+    mutable boost::tribool sig_state_;
     mutable boost::optional <uint256> txid_;
 };
 
