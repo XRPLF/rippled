@@ -135,7 +135,7 @@ public:
         , m_whenBroadcast (m_clock.now())
         , m_squelches (m_clock)
     {
-        setConfig (Config ());
+        config ({});
     }
 
     // Load persistent state information from the Store
@@ -167,14 +167,16 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    void setConfig (Config const& config)
+    void
+    config (Config const& c)
     {
         SharedState::Access state (m_state);
-        state->config = config;
+        state->config = c;
         state->counts.onConfig (state->config);
     }
 
-    void addFixedPeer (std::string const& name,
+    void
+    addFixedPeer (std::string const& name,
         std::vector <beast::IP::Endpoint> const& addresses)
     {
         SharedState::Access state (m_state);
@@ -1014,12 +1016,14 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void addStaticSource (beast::SharedPtr <Source> const& source)
+    void
+    addStaticSource (beast::SharedPtr <Source> const& source)
     {
         fetch (source);
     }
 
-    void addSource (beast::SharedPtr <Source> const& source)
+    void
+    addSource (beast::SharedPtr <Source> const& source)
     {
         m_sources.push_back (source);
     }

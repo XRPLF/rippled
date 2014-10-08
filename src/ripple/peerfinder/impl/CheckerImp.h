@@ -138,7 +138,7 @@ private:
     }
 
 public:
-    CheckerImp ()
+    CheckerImp()
         : Thread ("PeerFinder::Checker")
         , m_work (boost::in_place (std::ref (m_io_service)))
     {

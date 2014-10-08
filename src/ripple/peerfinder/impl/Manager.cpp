@@ -73,12 +73,20 @@ public:
         thread_ = std::thread ([&]() { this->io_service_.run(); });
     }
 
-    ~ManagerImp ()
+    ~ManagerImp()
     {
-        work_ = boost::none;
-        thread_.join();
+        stop();
+    }
 
-        stopThread ();
+    void
+    stop()
+    {
+        if (thread_.joinable())
+        {
+            work_ = boost::none;
+            thread_.join();
+            stopThread ();
+        }
     }
 
     //--------------------------------------------------------------------------
@@ -89,28 +97,20 @@ public:
 
     void setConfig (Config const& config)
     {
-        m_queue.dispatch (
-            m_context.wrap (
-                std::bind (&Logic::setConfig, &m_logic,
-                    config)));
+        m_logic.config (config);
     }
 
     void addFixedPeer (std::string const& name,
         std::vector <beast::IP::Endpoint> const& addresses)
     {
-        m_queue.dispatch (
-            m_context.wrap (
-                std::bind (&Logic::addFixedPeer, &m_logic,
-                    name, addresses)));
+        m_logic.addFixedPeer (name, addresses);
     }
 
-    void addFallbackStrings (std::string const& name,
+    void
+    addFallbackStrings (std::string const& name,
         std::vector <std::string> const& strings)
     {
-        m_queue.dispatch (
-            m_context.wrap (
-                std::bind (&Logic::addStaticSource, &m_logic,
-                    SourceStrings::New (name, strings))));
+        m_logic.addStaticSource (SourceStrings::New (name, strings));
     }
 
     void addFallbackURL (std::string const& name, std::string const& url)
@@ -120,31 +120,35 @@ public:
 
     //--------------------------------------------------------------------------
 
-    Slot::ptr new_inbound_slot (
+    Slot::ptr
+    new_inbound_slot (
         beast::IP::Endpoint const& local_endpoint,
             beast::IP::Endpoint const& remote_endpoint)
     {
         return m_logic.new_inbound_slot (local_endpoint, remote_endpoint);
     }
 
-    Slot::ptr new_outbound_slot (beast::IP::Endpoint const& remote_endpoint)
+    Slot::ptr
+    new_outbound_slot (beast::IP::Endpoint const& remote_endpoint)
     {
         return m_logic.new_outbound_slot (remote_endpoint);
     }
 
-    void on_endpoints (Slot::ptr const& slot,
-        Endpoints const& endpoints)
+    void
+    on_endpoints (Slot::ptr const& slot, Endpoints const& endpoints)
     {
         SlotImp::ptr impl (std::dynamic_pointer_cast <SlotImp> (slot));
         m_logic.on_endpoints (impl, endpoints);
     }
 
-    void on_legacy_endpoints (IPAddresses const& addresses)
+    void
+    on_legacy_endpoints (IPAddresses const& addresses)
     {
         m_logic.on_legacy_endpoints (addresses);
     }
 
-    void on_closed (Slot::ptr const& slot)
+    void
+    on_closed (Slot::ptr const& slot)
     {
         SlotImp::ptr impl (std::dynamic_pointer_cast <SlotImp> (slot));
         m_logic.on_closed (impl);
@@ -193,100 +197,8 @@ public:
         return m_logic.sendpeers();
     }
 
-    //--------------------------------------------------------------------------
-    //
-    // SiteFiles
-    //
-    //--------------------------------------------------------------------------
-
-    void parseBootstrapIPs (std::string const& name, SiteFiles::Section const& section)
-    {
-        std::size_t n (0);
-        for (SiteFiles::Section::DataType::const_iterator iter (
-            section.data().begin()); iter != section.data().end(); ++iter)
-        {
-            std::string const& s (*iter);
-            beast::IP::Endpoint addr (beast::IP::Endpoint::from_string (s));
-            if (is_unspecified (addr))
-                addr = beast::IP::Endpoint::from_string_altform(s);
-            if (! is_unspecified (addr))
-            {
-                // add IP::Endpoint to bootstrap cache
-                ++n;
-            }
-        }
-
-        m_journal.info <<
-            "Added " << n <<
-            " bootstrap IPs from " << name;
-    }
-
-    void parseFixedIPs (SiteFiles::Section const& section)
-    {
-        for (SiteFiles::Section::DataType::const_iterator iter (
-            section.data().begin()); iter != section.data().end(); ++iter)
-        {
-            std::string const& s (*iter);
-            beast::IP::Endpoint addr (beast::IP::Endpoint::from_string (s));
-            if (is_unspecified (addr))
-                addr = beast::IP::Endpoint::from_string_altform(s);
-            if (! is_unspecified (addr))
-            {
-                // add IP::Endpoint to fixed peers
-            }
-        }
-    }
-
-    void onSiteFileFetch (
-        std::string const& name, SiteFiles::SiteFile const& siteFile)
-    {
-        parseBootstrapIPs (name, siteFile["ips"]);
-
-        //if (name == "local")
-        //  parseFixedIPs (name, siteFile["ips_fixed"]);
-    }
-
-    //--------------------------------------------------------------------------
-    //
-    // Stoppable
-    //
-    //--------------------------------------------------------------------------
-
-    void onPrepare ()
-    {
-    }
-
-    void onStart ()
-    {
-        startThread();
-    }
-
-    void onStop ()
-    {
-        m_journal.debug << "Stopping";
-        m_checker.cancel ();
-        m_logic.stop ();
-        m_queue.dispatch (
-            m_context.wrap (
-                std::bind (&Thread::signalThreadShouldExit, this)));
-    }
-
-    //--------------------------------------------------------------------------
-    //
-    // PropertyStream
-    //
-    //--------------------------------------------------------------------------
-
-    void onWrite (beast::PropertyStream::Map& map)
-    {
-        SerializedContext::Scope scope (m_context);
-
-        m_logic.onWrite (map);
-    }
-
-    //--------------------------------------------------------------------------
-
-    void init ()
+    void
+    init()
     {
         m_journal.debug << "Initializing";
 
@@ -304,11 +216,51 @@ public:
         }
     }
 
+    //--------------------------------------------------------------------------
+    //
+    // Stoppable
+    //
+    //--------------------------------------------------------------------------
+
+    void onPrepare ()
+    {
+    }
+
+    void
+    onStart()
+    {
+        init();
+        startThread();
+    }
+
+    void onStop ()
+    {
+        m_journal.debug << "Stopping";
+        m_checker.cancel ();
+        m_logic.stop ();
+        signalThreadShouldExit();
+        m_queue.dispatch (m_context.wrap (
+            std::bind (&Thread::signalThreadShouldExit, this)));
+    }
+
+    //--------------------------------------------------------------------------
+    //
+    // PropertyStream
+    //
+    //--------------------------------------------------------------------------
+
+    void onWrite (beast::PropertyStream::Map& map)
+    {
+        SerializedContext::Scope scope (m_context);
+
+        m_logic.onWrite (map);
+    }
+
+    //--------------------------------------------------------------------------
+
     void run ()
     {
         m_journal.debug << "Started";
-
-        init ();
 
         while (! this->threadShouldExit())
         {
