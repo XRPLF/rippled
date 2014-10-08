@@ -2911,6 +2911,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\Manager.h">
     </ClInclude>
+    <None Include="..\..\src\ripple\peerfinder\README.md">
+    </None>
     <ClInclude Include="..\..\src\ripple\peerfinder\sim\FunctionQueue.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\sim\GraphAlgorithms.h">
