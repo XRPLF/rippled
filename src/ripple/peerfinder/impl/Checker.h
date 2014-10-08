@@ -39,19 +39,7 @@ namespace PeerFinder {
 class Checker
 {
 public:
-    struct Result
-    {
-        /** The original address. */
-        beast::IP::Endpoint address;
-
-        /** The error code from the operation. */
-        boost::system::error_code error;
-
-        /** `true` if the endpoint is reachable, else `false`.
-            Only defined if no error occurred.
-        */
-        bool canAccept = false;
-    };
+    using error_code = boost::system::error_code;
 
 private:
     class Request
@@ -61,21 +49,20 @@ private:
     {
     public:
         typedef boost::asio::ip::tcp        Protocol;
-        typedef boost::system::error_code   error_code;
         typedef Protocol::socket            socket_type;
         typedef Protocol::endpoint          endpoint_type;
 
         Checker& m_owner;
         boost::asio::io_service& io_service_;
         beast::IP::Endpoint m_address;
-        beast::asio::shared_handler <void (Result)> m_handler;
+        beast::asio::shared_handler <void (error_code)> m_handler;
         socket_type socket_;
         boost::system::error_code m_error;
         bool m_canAccept;
 
         Request (Checker& owner, boost::asio::io_service& io_service,
             beast::IP::Endpoint const& address, beast::asio::shared_handler <
-                void (Result)> const& handler)
+                void (error_code)> const& handler)
             : m_owner (owner)
             , io_service_ (io_service)
             , m_address (address)
@@ -87,11 +74,6 @@ private:
 
         ~Request ()
         {
-            Result result;
-            result.address = m_address;
-            result.error = m_error;
-            io_service_.wrap (m_handler) (result);
-
             m_owner.remove (*this);
         }
 
@@ -111,11 +93,7 @@ private:
 
         void on_connect (boost::system::error_code ec)
         {
-            m_error = ec;
-            if (ec)
-                return;
-
-            m_canAccept = true;
+            io_service_.wrap(m_handler)(ec);
         }
     };
 
@@ -151,7 +129,6 @@ public:
         operation_aborted) and the associated thread and io_service have
         no more work remaining.
     */
-
     ~Checker()
     {
         wait();
@@ -189,7 +166,7 @@ public:
     */
     void
     async_test (beast::IP::Endpoint const& endpoint,
-        beast::asio::shared_handler <void (Result)> handler)
+        beast::asio::shared_handler <void (error_code)> handler)
     {
         std::lock_guard<std::mutex> lock (mutex_);
         assert (! stop_);

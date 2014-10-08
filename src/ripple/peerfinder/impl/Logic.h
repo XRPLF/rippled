@@ -209,9 +209,9 @@ public:
     // Called when the Checker completes a connectivity test
     void checkComplete (beast::IP::Endpoint const& remoteAddress,
         beast::IP::Endpoint const& checkedAddress,
-            typename Checker::Result const& result)
+            boost::system::error_code ec)
     {
-        if (result.error == boost::asio::error::operation_aborted)
+        if (ec == boost::asio::error::operation_aborted)
             return;
 
         typename SharedState::Access state (m_state);
@@ -227,38 +227,23 @@ public:
             return;
         }
 
-        // Mark that a check for this slot is finished.
+        slot.checked = true;
         slot.connectivityCheckInProgress = false;
 
-        if (! result.error)
-        {
-            slot.checked = true;
-            slot.canAccept = result.canAccept;
-
-            if (slot.canAccept)
-            {
-                if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
-                    "Logic testing " << checkedAddress << " succeeded";
-            }
-            else
-            {
-                if (m_journal.info) m_journal.info << beast::leftw (18) <<
-                    "Logic testing " << checkedAddress << " failed";
-            }
-        }
-        else
+        if (ec)
         {
             // VFALCO TODO Should we retry depending on the error?
-            slot.checked = true;
             slot.canAccept = false;
-
             if (m_journal.error) m_journal.error << beast::leftw (18) <<
                 "Logic testing " << iter->first << " with error, " <<
-                result.error.message();
+                ec.message();
+            state->bootcache.on_failure (checkedAddress);
+            return;
         }
 
-        if (! slot.canAccept)
-            state->bootcache.on_failure (checkedAddress);
+        slot.canAccept = true;
+        if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
+            "Logic testing " << checkedAddress << " succeeded";
     }
 
     //--------------------------------------------------------------------------
@@ -813,7 +798,7 @@ public:
                     continue;
                 }
 
-                //if (! slot->checked)
+                if (! slot->checked)
                 {
                     // Mark that a check for this slot is now in progress.
                     slot->connectivityCheckInProgress = true;
@@ -822,7 +807,7 @@ public:
                     // adding it to the livecache for the first time.
                     //
                     m_checker.async_test (ep.address, std::bind (
-                        &Logic::checkComplete, this, slot->remote_endpoint (),
+                        &Logic::checkComplete, this, slot->remote_endpoint(),
                             ep.address, std::placeholders::_1));
 
                     // Note that we simply discard the first Endpoint
