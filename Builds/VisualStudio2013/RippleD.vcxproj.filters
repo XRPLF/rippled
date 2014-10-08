@@ -4080,6 +4080,9 @@
     <ClInclude Include="..\..\src\ripple\peerfinder\Manager.h">
       <Filter>ripple\peerfinder</Filter>
     </ClInclude>
+    <None Include="..\..\src\ripple\peerfinder\README.md">
+      <Filter>ripple\peerfinder</Filter>
+    </None>
     <ClInclude Include="..\..\src\ripple\peerfinder\sim\FunctionQueue.h">
       <Filter>ripple\peerfinder\sim</Filter>
     </ClInclude>

@@ -214,21 +214,22 @@ public:
     //--------------------------------------------------------------------------
 
     // Called when the Checker completes a connectivity test
-    void checkComplete (beast::IP::Endpoint const& address,
-        beast::IP::Endpoint const & checkedAddress, Checker::Result const& result)
+    void checkComplete (beast::IP::Endpoint const& remoteAddress,
+        beast::IP::Endpoint const& checkedAddress,
+            Checker::Result const& result)
     {
         if (result.error == boost::asio::error::operation_aborted)
             return;
 
         SharedState::Access state (m_state);
-        Slots::iterator const iter (state->slots.find (address));
+        Slots::iterator const iter (state->slots.find (remoteAddress));
         SlotImp& slot (*iter->second);
 
         if (iter == state->slots.end())
         {
             // The slot disconnected before we finished the check
             if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
-                "Logic tested " << address <<
+                "Logic tested " << checkedAddress <<
                 " but the connection was closed";
             return;
         }
@@ -244,12 +245,12 @@ public:
             if (slot.canAccept)
             {
                 if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
-                    "Logic testing " << address << " succeeded";
+                    "Logic testing " << checkedAddress << " succeeded";
             }
             else
             {
                 if (m_journal.info) m_journal.info << beast::leftw (18) <<
-                    "Logic testing " << address << " failed";
+                    "Logic testing " << checkedAddress << " failed";
             }
         }
         else
@@ -264,7 +265,7 @@ public:
         }
 
         if (! slot.canAccept)
-            state->bootcache.on_failure (address);
+            state->bootcache.on_failure (checkedAddress);
     }
 
     //--------------------------------------------------------------------------
