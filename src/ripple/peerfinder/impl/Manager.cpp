@@ -23,6 +23,7 @@
 #include <ripple/peerfinder/impl/SourceStrings.h>
 #include <ripple/peerfinder/impl/StoreSqdb.h>
 #include <boost/asio/io_service.hpp>
+#include <boost/optional.hpp>
 #include <thread>
 
 #if DOXYGEN

@@ -24,13 +24,12 @@
 #include <beast/asio/IPAddressConversion.h>
 #include <beast/asio/placeholders.h>
 #include <beast/asio/wrap_handler.h>
-#include <beast/utility/LeakChecked.h>
-#include <beast/smart_ptr/SharedObject.h>
-#include <beast/smart_ptr/SharedPtr.h>
-#include <beast/threads/Thread.h>
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/ip/tcp.hpp>
-#include <boost/optional.hpp>
+#include <boost/intrusive/list.hpp>
+#include <condition_variable>
+#include <memory>
+#include <mutex>
 
 namespace ripple {
 namespace PeerFinder {
@@ -38,27 +37,12 @@ namespace PeerFinder {
 class CheckerImp : public Checker
 {
 private:
-    class Request;
-
-    struct State
-    {
-        beast::List <Request> list;
-    };
-
-    typedef beast::SharedData <State> SharedState;
-
-    SharedState m_state;
-    boost::asio::io_service io_service_;
-
-    //--------------------------------------------------------------------------
-
     class Request
-        : public beast::SharedObject
-        , public beast::List <Request>::Node
-        , private beast::LeakChecked <Request>
+        : public std::enable_shared_from_this <Request>
+        , public boost::intrusive::list_base_hook <
+            boost::intrusive::link_mode <boost::intrusive::normal_link>>
     {
     public:
-        typedef beast::SharedPtr <Request>  Ptr;
         typedef boost::asio::ip::tcp        Protocol;
         typedef boost::system::error_code   error_code;
         typedef Protocol::socket            socket_type;
@@ -68,7 +52,7 @@ private:
         boost::asio::io_service& io_service_;
         beast::IP::Endpoint m_address;
         beast::asio::shared_handler <void (Result)> m_handler;
-        socket_type m_socket;
+        socket_type socket_;
         boost::system::error_code m_error;
         bool m_canAccept;
 
@@ -79,15 +63,9 @@ private:
             , io_service_ (io_service)
             , m_address (address)
             , m_handler (handler)
-            , m_socket (io_service_)
+            , socket_ (io_service_)
             , m_canAccept (false)
         {
-            m_owner.add (*this);
-
-            m_socket.async_connect (beast::IPAddressConversion::to_asio_endpoint (
-                m_address), beast::asio::wrap_handler (std::bind (
-                    &Request::handle_connect, Ptr(this),
-                        beast::asio::placeholders::error), m_handler));
         }
 
         ~Request ()
@@ -100,12 +78,21 @@ private:
             m_owner.remove (*this);
         }
 
-        void cancel ()
+        void
+        go()
         {
-            m_socket.cancel();
+            socket_.async_connect (beast::IPAddressConversion::to_asio_endpoint (
+                m_address), beast::asio::wrap_handler (std::bind (
+                    &Request::on_connect, shared_from_this(),
+                        beast::asio::placeholders::error), m_handler));
         }
 
-        void handle_connect (boost::system::error_code ec)
+        void stop()
+        {
+            socket_.cancel();
+        }
+
+        void on_connect (boost::system::error_code ec)
         {
             m_error = ec;
             if (ec)
@@ -117,45 +104,64 @@ private:
 
     //--------------------------------------------------------------------------
 
-    void add (Request& request)
-    {
-        SharedState::Access state (m_state);
-        state->list.push_back (request);
-    }
-
     void remove (Request& request)
     {
-        SharedState::Access state (m_state);
-        state->list.erase (state->list.iterator_to (request));
+        std::lock_guard <std::mutex> lock (mutex_);
+        list_.erase (list_.iterator_to (request));
+        if (list_.size() == 0)
+            cond_.notify_all();
     }
 
-    void run ()
-    {
-        io_service_.run ();
-    }
+    using list_type = boost::intrusive::make_list <Request,
+        boost::intrusive::constant_time_size <true>>::type;
+
+    std::mutex mutex_;
+    std::condition_variable cond_;
+    bool stop_ = false;
+    boost::asio::io_service& io_service_;
+    list_type list_;
 
 public:
     CheckerImp (boost::asio::io_service& io_service)
+        : io_service_(io_service)
     {
     }
 
-    ~CheckerImp ()
+    ~CheckerImp()
     {
-        // cancel pending i/o
-        stop();
+        wait();
     }
 
-    void stop()
+    void
+    stop()
     {
-        SharedState::Access state (m_state);
-        for (auto& c : state->list)
-            c.cancel();
+        std::lock_guard<std::mutex> lock (mutex_);
+        if (! stop_)
+        {
+            stop_ = true;
+            for (auto& c : list_)
+                c.stop();
+        }
     }
 
-    void async_test (beast::IP::Endpoint const& endpoint,
+    void
+    wait()
+    {
+        std::unique_lock<std::mutex> lock (mutex_);
+        while (! list_.empty())
+            cond_.wait (lock);
+    }
+
+    void
+    async_test (beast::IP::Endpoint const& endpoint,
         beast::asio::shared_handler <void (Result)> handler)
     {
-        new Request (*this, io_service_, endpoint, handler);
+        std::lock_guard<std::mutex> lock (mutex_);
+        assert (! stop_);
+        auto const request = std::make_shared <Request> (
+            *this, io_service_, endpoint, handler);
+        list_.push_back (*request);
+        request->go();
     }
 };
 

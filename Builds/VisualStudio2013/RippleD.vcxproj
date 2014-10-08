@@ -2837,12 +2837,7 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Bootcache.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\peerfinder\impl\Checker.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Checker.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\CheckerAdapter.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\CheckerImp.h">
     </ClInclude>
