@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PEERFINDER_SOURCE_H_INCLUDED
 #define RIPPLE_PEERFINDER_SOURCE_H_INCLUDED
 
+#include <beast/smart_ptr/SharedObject.h>
 #include <boost/system/error_code.hpp>
 
 namespace ripple {

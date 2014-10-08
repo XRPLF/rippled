@@ -21,6 +21,7 @@
 #define RIPPLE_PEERFINDER_STORESQDB_H_INCLUDED
 
 #include <beast/module/sqdb/sqdb.h>
+#include <beast/utility/Debug.h>
 
 namespace ripple {
 namespace PeerFinder {

@@ -21,6 +21,7 @@
 #include <ripple/overlay/impl/PeerImp.h>
 #include <ripple/overlay/impl/Tuning.h>
 #include <beast/streams/debug_ostream.h>
+#include <functional>
 
 namespace ripple {
 
@@ -86,20 +87,15 @@ PeerImp::start ()
 }
 
 void
-PeerImp::activate ()
+PeerImp::close()
 {
-    assert (state_ == stateHandshaked);
-    state_ = stateActive;
-    assert(shortId_ == 0);
-    shortId_ = overlay_.next_id();
-    overlay_.onPeerActivated(shared_from_this ());
-}
+    if (! strand_.running_in_this_thread())
+        return strand_.post (std::bind (
+            &PeerImp::close, shared_from_this()));
 
-void
-PeerImp::close (bool graceful)
-{
-    was_canceled_ = true;
-    detach ("stop", graceful);
+    error_code ec;
+    timer_.cancel (ec);
+    socket_->close(ec);
 }
 
 //------------------------------------------------------------------------------
@@ -309,10 +305,7 @@ void PeerImp::do_connect ()
     usage_ = resourceManager_.newOutboundEndpoint (remote_address_);
 
     if (usage_.disconnect ())
-    {
-        detach ("do_connect");
-        return;
-    }
+        return detach ("do_connect");
 
     boost::system::error_code ec;
     timer_.expires_from_now (nodeVerifySeconds, ec);
@@ -321,8 +314,7 @@ void PeerImp::do_connect ()
     if (ec)
     {
         journal_.error << "Failed to set verify timer.";
-        detach ("do_connect");
-        return;
+        return detach ("do_connect");
     }
 
     socket_->next_layer <NativeSocketType>().async_connect (
@@ -347,15 +339,15 @@ PeerImp::on_connect (error_code ec)
         journal_.error <<
             "Connect to " << remote_address_ <<
             " failed: " << ec.message();
-        detach ("hc");
-        return;
+        return detach ("hc");
     }
 
     assert (state_ == stateConnecting);
     state_ = stateConnected;
 
-    peerFinder_.on_connected (slot_,
-        beast::IPAddressConversion::from_asio (local_endpoint));
+    if (! peerFinder_.connected (slot_,
+        beast::IPAddressConversion::from_asio (local_endpoint)))
+        return detach("dup");
 
     socket_->set_verify_mode (boost::asio::ssl::verify_none);
     socket_->async_handshake (
@@ -895,8 +887,6 @@ PeerImp::on_message (std::shared_ptr <protocol::TMHello> const& m)
 {
     error_code ec;
 
-    bool bDetach (true);
-
     timer_.cancel ();
 
     std::uint32_t const ourTime (getApp().getOPs ().getNetworkTimeNC ());
@@ -914,6 +904,8 @@ PeerImp::on_message (std::shared_ptr <protocol::TMHello> const& m)
 #endif
 
     auto protocol = BuildInfo::make_protocol(m->protoversion());
+
+    // VFALCO TODO Report these failures in the HTTP response
 
     if (m->has_nettime () &&
         ((m->nettime () < minTime) || (m->nettime () > maxTime)))
@@ -974,46 +966,61 @@ PeerImp::on_message (std::shared_ptr <protocol::TMHello> const& m)
             "Connected to cluster node " << name_;
 
         assert (state_ == stateConnected);
+        // VFALCO TODO Remove this needless state
         state_ = stateHandshaked;
 
-        peerFinder_.on_handshake (slot_, RipplePublicKey (publicKey_),
-            clusterNode_);
+        auto const result = peerFinder_.activate (slot_,
+            RipplePublicKey (publicKey_), clusterNode_);
 
-        // XXX Set timer: connection is in grace period to be useful.
-        // XXX Set timer: connection idle (idle may vary depending on connection type.)
-        if ((hello_.has_ledgerclosed ()) && (
-            hello_.ledgerclosed ().size () == (256 / 8)))
+        if (result == PeerFinder::Result::success)
         {
-            memcpy (closedLedgerHash_.begin (),
-                hello_.ledgerclosed ().data (), 256 / 8);
+            state_ = stateActive;
+            assert(shortId_ == 0);
+            shortId_ = overlay_.next_id();
+            overlay_.activate(shared_from_this ());
 
-            if ((hello_.has_ledgerprevious ()) &&
-                (hello_.ledgerprevious ().size () == (256 / 8)))
+            // XXX Set timer: connection is in grace period to be useful.
+            // XXX Set timer: connection idle (idle may vary depending on connection type.)
+            if ((hello_.has_ledgerclosed ()) && (
+                hello_.ledgerclosed ().size () == (256 / 8)))
             {
-                memcpy (previousLedgerHash_.begin (),
-                    hello_.ledgerprevious ().data (), 256 / 8);
-                addLedger (previousLedgerHash_);
+                memcpy (closedLedgerHash_.begin (),
+                    hello_.ledgerclosed ().data (), 256 / 8);
+
+                if ((hello_.has_ledgerprevious ()) &&
+                    (hello_.ledgerprevious ().size () == (256 / 8)))
+                {
+                    memcpy (previousLedgerHash_.begin (),
+                        hello_.ledgerprevious ().data (), 256 / 8);
+                    addLedger (previousLedgerHash_);
+                }
+                else
+                {
+                    previousLedgerHash_.zero();
+                }
             }
-            else
-            {
-                previousLedgerHash_.zero ();
-            }
+
+            sendGetPeers();
+            return ec;
         }
 
-        bDetach = false;
+        if (result == PeerFinder::Result::full)
+        {
+            // TODO Provide correct HTTP response
+            auto const redirects = peerFinder_.redirect (slot_);
+            send_endpoints (redirects.begin(), redirects.end());
+        }
+        else
+        {
+            // TODO Duplicate connection
+        }
     }
 
-    if (bDetach)
-    {
-        //publicKey_.clear ();
-        //detach ("recvh");
-
-        ec = invalid_argument_error();
-    }
-    else
-    {
-        sendGetPeers ();
-    }
+    // VFALCO Commented this out because we return an error code
+    //        to the caller, who calls detach for us.
+    //publicKey_.clear ();
+    //detach ("recvh");
+    ec = invalid_argument_error();
 
     return ec;
 }
@@ -2114,10 +2121,7 @@ PeerImp::detach (const char* rsn, bool graceful)
         //           to have PeerFinder work reliably.
         detaching_  = true; // Race is ok.
 
-        if (was_canceled_)
-            peerFinder_.on_cancel (slot_);
-        else
-            peerFinder_.on_closed (slot_);
+        peerFinder_.on_closed (slot_);
 
         if (state_ == stateActive)
             overlay_.onPeerDisconnect (shared_from_this ());

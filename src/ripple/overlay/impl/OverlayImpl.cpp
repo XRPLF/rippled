@@ -20,7 +20,6 @@
 #include <ripple/overlay/impl/OverlayImpl.h>
 #include <ripple/overlay/impl/PeerDoor.h>
 #include <ripple/overlay/impl/PeerImp.h>
-
 #include <beast/ByteOrder.h>
 
 #if DOXYGEN
@@ -63,15 +62,12 @@ OverlayImpl::OverlayImpl (Stoppable& parent,
     , m_child_count (1)
     , m_journal (deprecatedLogs().journal("Overlay"))
     , m_resourceManager (resourceManager)
-    , m_peerFinder (add (PeerFinder::Manager::New (
-        *this,
-        siteFiles,
-        pathToDbFileOrDirectory,
-        *this,
-        get_seconds_clock (),
-        deprecatedLogs().journal("PeerFinder"))))
+    , m_peerFinder (add (PeerFinder::Manager::New (*this,
+        pathToDbFileOrDirectory, get_seconds_clock (),
+            deprecatedLogs().journal("PeerFinder"))))
     , m_io_service (io_service)
     , m_ssl_context (ssl_context)
+    , timer_(io_service)
     , m_resolver (resolver)
     , m_nextShortId (0)
 {
@@ -224,89 +220,6 @@ OverlayImpl::remove (PeerFinder::Slot::ptr const& slot)
 
 //--------------------------------------------------------------------------
 //
-// PeerFinder::Callback
-//
-//--------------------------------------------------------------------------
-
-void
-OverlayImpl::connect (std::vector <beast::IP::Endpoint> const& list)
-{
-    for (std::vector <beast::IP::Endpoint>::const_iterator iter (list.begin());
-        iter != list.end(); ++iter)
-        connect (*iter);
-}
-
-void
-OverlayImpl::activate (PeerFinder::Slot::ptr const& slot)
-{
-    m_journal.trace <<
-        "Activate " << slot->remote_endpoint();
-
-    std::lock_guard <decltype(m_mutex)> lock (m_mutex);
-
-    PeersBySlot::iterator const iter (m_peers.find (slot));
-    assert (iter != m_peers.end ());
-    PeerImp::ptr const peer (iter->second.lock());
-    assert (peer != nullptr);
-    peer->activate ();
-}
-
-void
-OverlayImpl::send (PeerFinder::Slot::ptr const& slot,
-    std::vector <PeerFinder::Endpoint> const& endpoints)
-{
-    typedef std::vector <PeerFinder::Endpoint> List;
-    protocol::TMEndpoints tm;
-    for (List::const_iterator iter (endpoints.begin());
-        iter != endpoints.end(); ++iter)
-    {
-        PeerFinder::Endpoint const& ep (*iter);
-        protocol::TMEndpoint& tme (*tm.add_endpoints());
-        if (ep.address.is_v4())
-            tme.mutable_ipv4()->set_ipv4(
-                beast::toNetworkByteOrder (ep.address.to_v4().value));
-        else
-            tme.mutable_ipv4()->set_ipv4(0);
-        tme.mutable_ipv4()->set_ipv4port (ep.address.port());
-
-        tme.set_hops (ep.hops);
-    }
-
-    tm.set_version (1);
-
-    Message::pointer msg (
-        std::make_shared <Message> (
-            tm, protocol::mtENDPOINTS));
-
-    {
-        std::lock_guard <decltype(m_mutex)> lock (m_mutex);
-        PeersBySlot::iterator const iter (m_peers.find (slot));
-        assert (iter != m_peers.end ());
-        PeerImp::ptr const peer (iter->second.lock());
-        assert (peer != nullptr);
-        peer->send (msg);
-    }
-}
-
-void
-OverlayImpl::disconnect (PeerFinder::Slot::ptr const& slot, bool graceful)
-{
-    if (m_journal.trace) m_journal.trace <<
-        "Disconnect " << slot->remote_endpoint () <<
-            (graceful ? " gracefully" : "");
-
-    std::lock_guard <decltype(m_mutex)> lock (m_mutex);
-
-    PeersBySlot::iterator const iter (m_peers.find (slot));
-    assert (iter != m_peers.end ());
-    PeerImp::ptr const peer (iter->second.lock());
-    assert (peer != nullptr);
-    peer->close (graceful);
-    //peer->detach ("disc", false);
-}
-
-//--------------------------------------------------------------------------
-//
 // Stoppable
 //
 //--------------------------------------------------------------------------
@@ -405,6 +318,10 @@ OverlayImpl::onPrepare ()
 void
 OverlayImpl::onStart ()
 {
+    // mutex not needed since we aren't running
+    ++m_child_count;
+    boost::asio::spawn (m_io_service, std::bind (
+        &OverlayImpl::do_timer, this, std::placeholders::_1));
 }
 
 /** Close all peer connections.
@@ -423,13 +340,16 @@ OverlayImpl::close_all (bool graceful)
         //        ~PeerImp is pre-empted before it calls m_peers.remove()
         //
         if (peer != nullptr)
-            peer->close (graceful);
+            peer->close();
     }
 }
 
 void
 OverlayImpl::onStop ()
 {
+    error_code ec;
+    timer_.cancel(ec);
+
     if (m_doorDirect)
         m_doorDirect->stop();
     if (m_doorProxy)
@@ -467,7 +387,7 @@ OverlayImpl::onWrite (beast::PropertyStream::Map& stream)
     are known.
 */
 void
-OverlayImpl::onPeerActivated (Peer::ptr const& peer)
+OverlayImpl::activate (Peer::ptr const& peer)
 {
     std::lock_guard <decltype(m_mutex)> lock (m_mutex);
 
@@ -557,6 +477,56 @@ OverlayImpl::findPeerByShortID (Peer::ShortId const& id)
     if (iter != m_shortIdMap.end ())
         return iter->second;
     return Peer::ptr();
+}
+
+//------------------------------------------------------------------------------
+
+void
+OverlayImpl::autoconnect()
+{
+    auto const result = m_peerFinder->autoconnect();
+    for (auto addr : result)
+        connect (addr);
+}
+
+void
+OverlayImpl::sendpeers()
+{
+    auto const result = m_peerFinder->sendpeers();
+    for (auto const& e : result)
+    {
+        // VFALCO TODO Make sure this doesn't race with closing the peer
+        PeerImp::ptr peer;
+        {
+            std::lock_guard <decltype(m_mutex)> lock (m_mutex);
+            PeersBySlot::iterator const iter = m_peers.find (e.first);
+            if (iter != m_peers.end())
+                peer = iter->second.lock();
+        }
+        if (peer)
+            peer->send_endpoints (e.second.begin(), e.second.end());
+    }
+}
+
+void
+OverlayImpl::do_timer (yield_context yield)
+{
+    for(;;)
+    {
+        m_peerFinder->once_per_second();
+        sendpeers();
+        autoconnect();
+
+        timer_.expires_from_now (std::chrono::seconds(1));
+        error_code ec;
+        timer_.async_wait (yield[ec]);
+        if (ec == boost::asio::error::operation_aborted)
+            break;
+    }
+
+    // Take off a reference
+    std::lock_guard <decltype(m_mutex)> lock (m_mutex);
+    release();
 }
 
 //------------------------------------------------------------------------------

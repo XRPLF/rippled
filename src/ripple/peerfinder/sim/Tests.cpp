@@ -499,7 +499,7 @@ public:
     {
     }
 
-    void async_test (IP::Endpoint const& address,
+    void async_connect (IP::Endpoint const& address,
         asio::shared_handler <void (Result)> handler)
     {
         Node* const node (m_network.find (address));

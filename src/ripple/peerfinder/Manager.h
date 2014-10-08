@@ -103,31 +103,6 @@ typedef std::vector <Endpoint> Endpoints;
 
 //------------------------------------------------------------------------------
 
-/** The Callback receives PeerFinder notifications.
-    The notifications are sent on a thread owned by the PeerFinder,
-    so it is best not to do too much work in here. Just post functor
-    to another worker thread or job queue and return.
-*/
-// DEPRECATED Callbacks only cause re-entrancy pain
-struct Callback
-{
-    /** Initiate outgoing Peer connections to the specified set of endpoints. */
-    virtual void connect (IPAddresses const& addresses) = 0;
-
-    /** Activate the handshaked peer with the specified address. */
-    virtual void activate (Slot::ptr const& slot) = 0;
-
-    /** Sends a set of Endpoint records to the specified peer. */
-    virtual void send (Slot::ptr const& slot, Endpoints const& endpoints) = 0;
-
-    /** Disconnect the handshaked peer with the specified address.
-        @param graceful `true` to wait for send buffers to drain before closing.
-    */
-    virtual void disconnect (Slot::ptr const& slot, bool graceful) = 0;
-};
-
-//------------------------------------------------------------------------------
-
 /** Possible results from activating a slot. */
 enum class Result
 {
@@ -146,20 +121,16 @@ protected:
 
 public:
     /** Create a new Manager. */
-    static Manager* New (
-        Stoppable& parent,
-        SiteFiles::Manager& siteFiles,
+    static Manager* New (Stoppable& parent,
         beast::File const& pathToDbFileOrDirectory,
-        Callback& callback,
-        clock_type& clock,
-        beast::Journal journal);
+            clock_type& clock, beast::Journal journal);
 
     /** Destroy the object.
         Any pending source fetch operations are aborted.
         There may be some listener calls made before the
         destructor returns.
     */
-    virtual ~Manager () { }
+    virtual ~Manager() = default;
 
     /** Set the configuration for the manager.
         The new settings will be applied asynchronously.
@@ -207,19 +178,6 @@ public:
     virtual Slot::ptr new_outbound_slot (
         beast::IP::Endpoint const& remote_endpoint) = 0;
 
-    /** Called when an outbound connection attempt succeeds.
-        The local endpoint must be valid. If the caller receives an error
-        when retrieving the local endpoint from the socket, it should
-        proceed as if the connection attempt failed by calling on_closed
-        instead of on_connected.
-    */
-    virtual void on_connected (Slot::ptr const& slot,
-        beast::IP::Endpoint const& local_endpoint) = 0;
-
-    /** Called when a handshake is completed. */
-    virtual void on_handshake (Slot::ptr const& slot,
-        RipplePublicKey const& key, bool cluster) = 0;
-
     /** Called when mtENDPOINTS is received. */
     virtual void on_endpoints (Slot::ptr const& slot,
         Endpoints const& endpoints) = 0;
@@ -233,11 +191,46 @@ public:
     */
     virtual void on_closed (Slot::ptr const& slot) = 0;
 
-    /** Called when the slot is closed via canceling operations.
-        This is instead of on_closed.
-    */
-    virtual void on_cancel (Slot::ptr const& slot) = 0;
+    //--------------------------------------------------------------------------
 
+    /** Called when an outbound connection attempt succeeds.
+        The local endpoint must be valid. If the caller receives an error
+        when retrieving the local endpoint from the socket, it should
+        proceed as if the connection attempt failed by calling on_closed
+        instead of on_connected.
+        @return `true` if the connection should be kept
+    */
+    virtual
+    bool
+    connected (Slot::ptr const& slot,
+        beast::IP::Endpoint const& local_endpoint) = 0;
+
+    /** Request an active slot type. */
+    virtual
+    Result
+    activate (Slot::ptr const& slot,
+        RipplePublicKey const& key, bool cluster) = 0;
+
+    /** Returns a set of endpoints suitable for redirection. */
+    virtual
+    std::vector <Endpoint>
+    redirect (Slot::ptr const& slot) = 0;
+
+    /** Return a set of addresses we should connect to. */
+    virtual
+    std::vector <beast::IP::Endpoint>
+    autoconnect() = 0;
+
+    virtual
+    std::vector<std::pair<Slot::ptr, std::vector<Endpoint>>>
+    sendpeers() = 0;
+
+    /** Perform periodic activity.
+        This should be called once per second.
+    */
+    virtual
+    void
+    once_per_second() = 0;
 };
 
 }

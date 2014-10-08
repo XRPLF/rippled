@@ -3984,13 +3984,7 @@
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Bootcache.h">
       <Filter>ripple\peerfinder\impl</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\peerfinder\impl\Checker.cpp">
-      <Filter>ripple\peerfinder\impl</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Checker.h">
-      <Filter>ripple\peerfinder\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\peerfinder\impl\CheckerAdapter.h">
       <Filter>ripple\peerfinder\impl</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\peerfinder\impl\Config.cpp">

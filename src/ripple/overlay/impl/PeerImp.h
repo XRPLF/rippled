@@ -169,9 +169,6 @@ private:
     // The slot assigned to us by PeerFinder
     PeerFinder::Slot::ptr slot_;
 
-    // True if close was called
-    bool was_canceled_ = false;
-
     boost::asio::streambuf read_buffer_;
     boost::optional <beast::http::message> http_message_;
     boost::optional <beast::http::parser> http_parser_;
@@ -211,16 +208,9 @@ public:
     void
     start ();
 
-    /** Indicates that the peer must be activated.
-        A peer is activated after the handshake is completed and if it is not
-        a second connection from a peer that we already have. Once activated
-        the peer transitions to `stateActive` and begins operating.
-    */
+    // Cancel all I/O and close the socket
     void
-    activate ();
-
-    /** Close the connection. */
-    void close (bool graceful);
+    close();
 
     void
     getLedger (protocol::TMGetLedger& packet);
@@ -231,6 +221,13 @@ public:
 
     void
     send (Message::pointer const& m) override;
+
+    /** Send a set of PeerFinder endpoints as a protocol message. */
+    template <class FwdIt, class = typename std::enable_if_t<std::is_same<
+        typename std::iterator_traits<FwdIt>::value_type,
+            PeerFinder::Endpoint>::value>>
+    void
+    send_endpoints (FwdIt first, FwdIt last);
 
     beast::IP::Endpoint
     getRemoteAddress() const override;
@@ -246,7 +243,7 @@ public:
     getShortId () const override;
     
     RippleAddress const&
-    getNodePublic () const;
+    getNodePublic () const override;
 
     Json::Value
     json() override;
@@ -512,6 +509,31 @@ private:
 
 //------------------------------------------------------------------------------
 
+template <class FwdIt, class>
+void
+PeerImp::send_endpoints (FwdIt first, FwdIt last)
+{
+    protocol::TMEndpoints tm;
+    for (;first != last; ++first)
+    {
+        auto const& ep = *first;
+        protocol::TMEndpoint& tme (*tm.add_endpoints());
+        if (ep.address.is_v4())
+            tme.mutable_ipv4()->set_ipv4(
+                beast::toNetworkByteOrder (ep.address.to_v4().value));
+        else
+            tme.mutable_ipv4()->set_ipv4(0);
+        tme.mutable_ipv4()->set_ipv4port (ep.address.port());
+        tme.set_hops (ep.hops);
+    }
+    tm.set_version (1);
+
+    send (std::make_shared <Message> (tm, protocol::mtENDPOINTS));
+}
+
+//------------------------------------------------------------------------------
+
+// DEPRECATED
 const boost::posix_time::seconds PeerImp::nodeVerifySeconds (15);
 
 //------------------------------------------------------------------------------
