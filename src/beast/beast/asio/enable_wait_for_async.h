@@ -21,14 +21,12 @@
 #define BEAST_ASIO_ENABLE_WAIT_FOR_ASYNC_H_INCLUDED
 
 #include <beast/asio/wrap_handler.h>
-
 #include <beast/utility/is_call_possible.h>
-
 #include <boost/asio/detail/handler_alloc_helpers.hpp>
 #include <boost/asio/detail/handler_cont_helpers.hpp>
 #include <boost/asio/detail/handler_invoke_helpers.hpp>
-
 #include <atomic>
+#include <cassert>
 #include <condition_variable>
 #include <mutex>
 #include <beast/cxx14/type_traits.h> // <type_traits>
@@ -50,46 +48,19 @@ private:
     bool m_continuation;
 
 public:
-    ref_counted_wrapped_handler (Owner& owner,
-        Handler&& handler, bool continuation)
-        : m_handler (std::move (handler))
-        , m_owner (owner)
-        , m_continuation (continuation ? true :
-            boost_asio_handler_cont_helpers::is_continuation (m_handler))
-    {
-        m_owner.get().increment();
-    }
+    ~ref_counted_wrapped_handler();
 
     ref_counted_wrapped_handler (Owner& owner,
-        Handler const& handler, bool continuation)
-        : m_handler (handler)
-        , m_owner (owner)
-        , m_continuation (continuation ? true :
-            boost_asio_handler_cont_helpers::is_continuation (m_handler))
-    {
-        m_owner.get().increment();
-    }
+        Handler&& handler, bool continuation);
 
-    ~ref_counted_wrapped_handler ()
-    {
-        m_owner.get().decrement();
-    }
+    ref_counted_wrapped_handler (Owner& owner,
+        Handler const& handler, bool continuation);
 
-    ref_counted_wrapped_handler (ref_counted_wrapped_handler const& other)
-        : m_handler (other.m_handler)
-        , m_owner (other.m_owner)
-        , m_continuation (other.m_continuation)
-    {
-        m_owner.get().increment();
-    }
+    ref_counted_wrapped_handler (
+        ref_counted_wrapped_handler const& other);
 
-    ref_counted_wrapped_handler (ref_counted_wrapped_handler&& other)
-        : m_handler (std::move (other.m_handler))
-        , m_owner (other.m_owner)
-        , m_continuation (other.m_continuation)
-    {
-        m_owner.get().increment();
-    }
+    ref_counted_wrapped_handler (
+        ref_counted_wrapped_handler&& other);
 
     ref_counted_wrapped_handler& operator= (
         ref_counted_wrapped_handler const&) = delete;
@@ -153,6 +124,54 @@ public:
         return h->m_continuation;
     }
 };
+
+template <class Owner, class Handler>
+ref_counted_wrapped_handler<Owner, Handler>::~ref_counted_wrapped_handler()
+{
+    m_owner.get().decrement();
+}
+
+template <class Owner, class Handler>
+ref_counted_wrapped_handler<Owner, Handler>::ref_counted_wrapped_handler (
+        Owner& owner, Handler&& handler, bool continuation)
+    : m_handler (std::move (handler))
+    , m_owner (owner)
+    , m_continuation (continuation ? true :
+        boost_asio_handler_cont_helpers::is_continuation (m_handler))
+{
+    m_owner.get().increment();
+}
+
+template <class Owner, class Handler>
+ref_counted_wrapped_handler<Owner, Handler>::ref_counted_wrapped_handler (
+        Owner& owner, Handler const& handler, bool continuation)
+    : m_handler (handler)
+    , m_owner (owner)
+    , m_continuation (continuation ? true :
+        boost_asio_handler_cont_helpers::is_continuation (m_handler))
+{
+    m_owner.get().increment();
+}
+
+template <class Owner, class Handler>
+ref_counted_wrapped_handler<Owner, Handler>::ref_counted_wrapped_handler (
+        ref_counted_wrapped_handler const& other)
+    : m_handler (other.m_handler)
+    , m_owner (other.m_owner)
+    , m_continuation (other.m_continuation)
+{
+    m_owner.get().increment();
+}
+
+template <class Owner, class Handler>
+ref_counted_wrapped_handler<Owner, Handler>::ref_counted_wrapped_handler (
+        ref_counted_wrapped_handler&& other)
+    : m_handler (std::move (other.m_handler))
+    , m_owner (other.m_owner)
+    , m_continuation (other.m_continuation)
+{
+    m_owner.get().increment();
+}
 
 }
 
@@ -258,6 +277,91 @@ protected:
     }
     /** @} */
 };
+
+//------------------------------------------------------------------------------
+
+/** A waitable event object that blocks when handlers are pending. */
+class pending_handlers
+{
+private:
+    std::size_t count_ = 0;
+    std::mutex mutex_;
+    std::condition_variable cond_;
+
+    template <class Owner, class Handler>
+    friend class detail::ref_counted_wrapped_handler;
+
+    template <class = void>
+    void
+    increment();
+
+    template <class = void>
+    void
+    decrement();
+
+public:
+    ~pending_handlers()
+    {
+        assert (count_ == 0);
+    }
+
+    template <class = void>
+    void
+    wait();
+
+    /** Returns a handler that causes wait to block until completed.
+        The returned handler provides the same execution
+        guarantees as the passed handler.
+    */
+    /** @{ */
+    template <class Handler>
+    detail::ref_counted_wrapped_handler <pending_handlers,
+        std::remove_reference_t<Handler>>
+    wrap (Handler&& handler,
+        bool continuation = false)
+    {
+        return detail::ref_counted_wrapped_handler <pending_handlers,
+            std::remove_reference_t<Handler>> (*this,
+                std::forward<Handler>(handler), continuation);
+    }
+
+    template <class Handler>
+    detail::ref_counted_wrapped_handler <pending_handlers,
+        std::remove_reference_t<Handler>>
+    wrap (continuation_t, Handler&& handler)
+    {
+        return detail::ref_counted_wrapped_handler <pending_handlers,
+            std::remove_reference_t<Handler>> (*this,
+                std::forward<Handler>(handler), true);
+    }
+    /** @} */
+};
+
+template <class>
+void
+pending_handlers::increment()
+{
+    std::lock_guard <std::mutex> lock (mutex_);
+    ++count_;
+}
+
+template <class>
+void
+pending_handlers::decrement()
+{
+    std::lock_guard <std::mutex> lock (mutex_);
+    if (--count_ == 0)
+        cond_.notify_all();
+}
+
+template <class>
+void
+pending_handlers::wait()
+{
+    std::unique_lock <std::mutex> lock (mutex_);
+    while (count_ != 0)
+        cond_.wait (lock);
+}
 
 }
 }
