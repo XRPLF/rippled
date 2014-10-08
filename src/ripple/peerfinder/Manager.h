@@ -121,19 +121,16 @@ protected:
 
 public:
     /** Create a new Manager. */
-    static Manager* New (
-        Stoppable& parent,
-        SiteFiles::Manager& siteFiles,
+    static Manager* New (Stoppable& parent,
         beast::File const& pathToDbFileOrDirectory,
-        clock_type& clock,
-        beast::Journal journal);
+            clock_type& clock, beast::Journal journal);
 
     /** Destroy the object.
         Any pending source fetch operations are aborted.
         There may be some listener calls made before the
         destructor returns.
     */
-    virtual ~Manager () { }
+    virtual ~Manager() = default;
 
     /** Set the configuration for the manager.
         The new settings will be applied asynchronously.

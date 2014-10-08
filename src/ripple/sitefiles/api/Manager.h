@@ -43,7 +43,7 @@ public:
     /** Destroy the object.
         Any pending fetch operations are aborted.
     */
-    virtual ~Manager () { }
+    virtual ~Manager() = default;
 
     /** Adds a listener. */
     virtual void addListener (Listener& listener) = 0;

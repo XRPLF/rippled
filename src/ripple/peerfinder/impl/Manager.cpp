@@ -23,7 +23,6 @@
 #include <ripple/peerfinder/impl/SourceStrings.h>
 #include <ripple/peerfinder/impl/StoreSqdb.h>
 
-
 #if DOXYGEN
 #include <ripple/peerfinder/README.md>
 #endif
@@ -34,12 +33,10 @@ namespace PeerFinder {
 class ManagerImp
     : public Manager
     , public beast::Thread
-    , public SiteFiles::Listener
     , public beast::LeakChecked <ManagerImp>
 {
 public:
     beast::ServiceQueue m_queue;
-    SiteFiles::Manager& m_siteFiles;
     beast::File m_databaseFile;
     clock_type& m_clock;
     beast::Journal m_journal;
@@ -52,13 +49,11 @@ public:
 
     ManagerImp (
         Stoppable& stoppable,
-        SiteFiles::Manager& siteFiles,
         beast::File const& pathToDbFileOrDirectory,
         clock_type& clock,
         beast::Journal journal)
         : Manager (stoppable)
         , Thread ("PeerFinder")
-        , m_siteFiles (siteFiles)
         , m_databaseFile (pathToDbFileOrDirectory)
         , m_clock (clock)
         , m_journal (journal)
@@ -304,14 +299,10 @@ public:
 
         init ();
 
-        m_siteFiles.addListener (*this);
-
         while (! this->threadShouldExit())
         {
             m_queue.run_one();
         }
-
-        m_siteFiles.removeListener (*this);
 
         stopped();
     }
@@ -325,15 +316,10 @@ Manager::Manager (Stoppable& parent)
 {
 }
 
-Manager* Manager::New (
-    Stoppable& parent,
-    SiteFiles::Manager& siteFiles,
-    beast::File const& databaseFile,
-    clock_type& clock,
-    beast::Journal journal)
+Manager* Manager::New (Stoppable& parent, beast::File const& databaseFile,
+    clock_type& clock, beast::Journal journal)
 {
-    return new ManagerImp (parent, siteFiles,
-        databaseFile,  clock, journal);
+    return new ManagerImp (parent, databaseFile, clock, journal);
 }
 
 }
