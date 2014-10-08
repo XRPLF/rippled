@@ -21,7 +21,7 @@
 #define RIPPLE_PEERFINDER_LOGIC_H_INCLUDED
 
 #include <ripple/peerfinder/Manager.h>
-#include <ripple/peerfinder/impl/Checker.h>
+#include <ripple/peerfinder/impl/CheckerImp.h>
 #include <ripple/peerfinder/impl/Counts.h>
 #include <ripple/peerfinder/impl/Fixed.h>
 #include <ripple/peerfinder/impl/iosformat.h>
@@ -41,6 +41,7 @@ namespace PeerFinder {
     We keep this in a separate class so it can be instantiated
     for unit tests.
 */
+template <class Checker>
 class Logic
 {
 public:
@@ -142,7 +143,7 @@ public:
     //
     void load ()
     {
-        SharedState::Access state (m_state);
+        typename SharedState::Access state (m_state);
 
         state->bootcache.load ();
     }
@@ -155,7 +156,7 @@ public:
     */
     void stop ()
     {
-        SharedState::Access state (m_state);
+        typename SharedState::Access state (m_state);
         state->stopping = true;
         if (state->fetchSource != nullptr)
             state->fetchSource->cancel ();
@@ -170,7 +171,7 @@ public:
     void
     config (Config const& c)
     {
-        SharedState::Access state (m_state);
+        typename SharedState::Access state (m_state);
         state->config = c;
         state->counts.onConfig (state->config);
     }
@@ -179,7 +180,7 @@ public:
     addFixedPeer (std::string const& name,
         std::vector <beast::IP::Endpoint> const& addresses)
     {
-        SharedState::Access state (m_state);
+        typename SharedState::Access state (m_state);
 
         if (addresses.empty ())
         {
@@ -209,12 +210,12 @@ public:
     // Called when the Checker completes a connectivity test
     void checkComplete (beast::IP::Endpoint const& remoteAddress,
         beast::IP::Endpoint const& checkedAddress,
-            Checker::Result const& result)
+            typename Checker::Result const& result)
     {
         if (result.error == boost::asio::error::operation_aborted)
             return;
 
-        SharedState::Access state (m_state);
+        typename SharedState::Access state (m_state);
         Slots::iterator const iter (state->slots.find (remoteAddress));
         SlotImp& slot (*iter->second);
 
@@ -270,7 +271,7 @@ public:
             "Logic accept" << remote_endpoint <<
             " on local " << local_endpoint;
 
-        SharedState::Access state (m_state);
+        typename SharedState::Access state (m_state);
 
         // Check for duplicate connection
         {
@@ -342,7 +343,7 @@ public:
         if (m_journal.debug) m_journal.debug << beast::leftw (18) <<
             "Logic connect " << remote_endpoint;
 
-        SharedState::Access state (m_state);
+        typename SharedState::Access state (m_state);
 
         // Check for duplicate connection
         if (state->slots.find (remote_endpoint) !=
@@ -382,7 +383,7 @@ public:
             "Logic connected" << slot->remote_endpoint () <<
             " on local " << local_endpoint;
 
-        SharedState::Access state (m_state);
+        typename SharedState::Access state (m_state);
 
         // The object must exist in our table
         assert (state->slots.find (slot->remote_endpoint ()) !=
@@ -419,7 +420,7 @@ public:
             "Logic handshake " << slot->remote_endpoint () <<
             " with " << (cluster ? "clustered " : "") << "key " << key;
 
-        SharedState::Access state (m_state);
+        typename SharedState::Access state (m_state);
 
         // The object must exist in our table
         assert (state->slots.find (slot->remote_endpoint ()) !=
@@ -483,7 +484,7 @@ public:
     std::vector <Endpoint>
     redirect (SlotImp::ptr const& slot)
     {
-        SharedState::Access state (m_state);
+        typename SharedState::Access state (m_state);
         RedirectHandouts h (slot);
         state->livecache.hops.shuffle();
         handout (&h, (&h)+1,
@@ -500,7 +501,7 @@ public:
     {
         std::vector <beast::IP::Endpoint> const none;
 
-        SharedState::Access state (m_state);
+        typename SharedState::Access state (m_state);
 
         // Count how many more outbound attempts to make
         //
@@ -607,7 +608,7 @@ public:
     {
         std::vector<std::pair<Slot::ptr, std::vector<Endpoint>>> result;
 
-        SharedState::Access state (m_state);
+        typename SharedState::Access state (m_state);
 
         clock_type::time_point const now = m_clock.now();
         if (m_whenBroadcast <= now)
@@ -685,9 +686,7 @@ public:
 
     void once_per_second()
     {
-        SharedState::Access state (m_state);
-
-        clock_type::time_point const now (m_clock.now());
+        typename SharedState::Access state (m_state);
 
         // Expire the Livecache
         state->livecache.expire ();
@@ -707,7 +706,7 @@ public:
 
     // Validate and clean up the list that we received from the slot.
     void preprocess (SlotImp::ptr const& slot, Endpoints& list,
-        SharedState::Access& state)
+        typename SharedState::Access& state)
     {
         bool neighbor (false);
         for (auto iter (list.begin()); iter != list.end();)
@@ -784,7 +783,7 @@ public:
             " contained " << list.size () <<
             ((list.size() > 1) ? " entries" : " entry");
 
-        SharedState::Access state (m_state);
+        typename SharedState::Access state (m_state);
 
         // The object must exist in our table
         assert (state->slots.find (slot->remote_endpoint ()) !=
@@ -856,13 +855,13 @@ public:
     void on_legacy_endpoints (IPAddresses const& list)
     {
         // Ignoring them also seems a valid choice.
-        SharedState::Access state (m_state);
+        typename SharedState::Access state (m_state);
         for (IPAddresses::const_iterator iter (list.begin());
             iter != list.end(); ++iter)
             state->bootcache.insert (*iter);
     }
 
-    void remove (SlotImp::ptr const& slot, SharedState::Access& state)
+    void remove (SlotImp::ptr const& slot, typename SharedState::Access& state)
     {
         Slots::iterator const iter (state->slots.find (
             slot->remote_endpoint ()));
@@ -893,7 +892,7 @@ public:
 
     void on_closed (SlotImp::ptr const& slot)
     {
-        SharedState::Access state (m_state);
+        typename SharedState::Access state (m_state);
 
         remove (slot, state);
 
@@ -943,7 +942,7 @@ public:
     //--------------------------------------------------------------------------
 
     // Returns `true` if the address matches a fixed slot address
-    bool fixed (beast::IP::Endpoint const& endpoint, SharedState::Access& state) const
+    bool fixed (beast::IP::Endpoint const& endpoint, typename SharedState::Access& state) const
     {
         for (auto const& entry : state->fixed)
             if (entry.first == endpoint)
@@ -953,7 +952,7 @@ public:
 
     // Returns `true` if the address matches a fixed slot address
     // Note that this does not use the port information in the IP::Endpoint
-    bool fixed (beast::IP::Address const& address, SharedState::Access& state) const
+    bool fixed (beast::IP::Address const& address, typename SharedState::Access& state) const
     {
         for (auto const& entry : state->fixed)
             if (entry.first.address () == address)
@@ -970,7 +969,7 @@ public:
     /** Adds eligible Fixed addresses for outbound attempts. */
     template <class Container>
     void get_fixed (std::size_t needed, Container& c,
-        SharedState::Access& state)
+        typename SharedState::Access& state)
     {
         auto const now (m_clock.now());
         for (auto iter = state->fixed.begin ();
@@ -993,7 +992,7 @@ public:
     //--------------------------------------------------------------------------
 
     // Adds slot addresses to the squelched set
-    void squelch_slots (SharedState::Access& state)
+    void squelch_slots (typename SharedState::Access& state)
     {
         for (auto const& s : state->slots)
         {
@@ -1028,7 +1027,7 @@ public:
     // Returns `true` if the address is new.
     //
     bool addBootcacheAddress (beast::IP::Endpoint const& address,
-        SharedState::Access& state)
+        typename SharedState::Access& state)
     {
         return state->bootcache.insert (address);
     }
@@ -1039,7 +1038,7 @@ public:
     int addBootcacheAddresses (IPAddresses const& list)
     {
         int count (0);
-        SharedState::Access state (m_state);
+        typename SharedState::Access state (m_state);
         for (auto addr : list)
         {
             if (addBootcacheAddress (addr, state))
@@ -1055,7 +1054,7 @@ public:
 
         {
             {
-                SharedState::Access state (m_state);
+                typename SharedState::Access state (m_state);
                 if (state->stopping)
                     return;
                 state->fetchSource = source;
@@ -1067,7 +1066,7 @@ public:
             source->fetch (results, m_journal);
 
             {
-                SharedState::Access state (m_state);
+                typename SharedState::Access state (m_state);
                 if (state->stopping)
                     return;
                 state->fetchSource = nullptr;
@@ -1136,7 +1135,7 @@ public:
 
     void onWrite (beast::PropertyStream::Map& map)
     {
-        SharedState::Access state (m_state);
+        typename SharedState::Access state (m_state);
 
         // VFALCO NOTE These ugly casts are needed because
         //             of how std::size_t is declared on some linuxes
@@ -1178,12 +1177,12 @@ public:
 
     State const& state () const
     {
-        return *SharedState::ConstAccess (m_state);
+        return *typename SharedState::ConstAccess (m_state);
     }
 
     Counts const& counts () const
     {
-        return SharedState::ConstAccess (m_state)->counts;
+        return typename SharedState::ConstAccess (m_state)->counts;
     }
 
     static std::string stateString (Slot::State state)

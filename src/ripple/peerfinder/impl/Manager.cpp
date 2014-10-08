@@ -43,7 +43,7 @@ public:
     beast::Journal m_journal;
     StoreSqdb m_store;
     CheckerImp checker_;
-    Logic m_logic;
+    Logic <CheckerImp> m_logic;
 
     std::thread thread_;
     boost::asio::io_service io_service_;
