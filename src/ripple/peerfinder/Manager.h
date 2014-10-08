@@ -198,15 +198,6 @@ public:
     virtual Slot::ptr new_outbound_slot (
         beast::IP::Endpoint const& remote_endpoint) = 0;
 
-    /** Called when an outbound connection attempt succeeds.
-        The local endpoint must be valid. If the caller receives an error
-        when retrieving the local endpoint from the socket, it should
-        proceed as if the connection attempt failed by calling on_closed
-        instead of on_connected.
-    */
-    virtual void on_connected (Slot::ptr const& slot,
-        beast::IP::Endpoint const& local_endpoint) = 0;
-
     /** Called when mtENDPOINTS is received. */
     virtual void on_endpoints (Slot::ptr const& slot,
         Endpoints const& endpoints) = 0;
@@ -226,6 +217,18 @@ public:
     virtual void on_cancel (Slot::ptr const& slot) = 0;
 
     //--------------------------------------------------------------------------
+
+    /** Called when an outbound connection attempt succeeds.
+        The local endpoint must be valid. If the caller receives an error
+        when retrieving the local endpoint from the socket, it should
+        proceed as if the connection attempt failed by calling on_closed
+        instead of on_connected.
+        @return `true` if the connection should be kept
+    */
+    virtual
+    bool
+    connected (Slot::ptr const& slot,
+        beast::IP::Endpoint const& local_endpoint) = 0;
 
     /** Request an active slot type. */
     virtual

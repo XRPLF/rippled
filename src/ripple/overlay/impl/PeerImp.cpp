@@ -300,10 +300,7 @@ void PeerImp::do_connect ()
     usage_ = resourceManager_.newOutboundEndpoint (remote_address_);
 
     if (usage_.disconnect ())
-    {
-        detach ("do_connect");
-        return;
-    }
+        return detach ("do_connect");
 
     boost::system::error_code ec;
     timer_.expires_from_now (nodeVerifySeconds, ec);
@@ -312,8 +309,7 @@ void PeerImp::do_connect ()
     if (ec)
     {
         journal_.error << "Failed to set verify timer.";
-        detach ("do_connect");
-        return;
+        return detach ("do_connect");
     }
 
     socket_->next_layer <NativeSocketType>().async_connect (
@@ -338,15 +334,15 @@ PeerImp::on_connect (error_code ec)
         journal_.error <<
             "Connect to " << remote_address_ <<
             " failed: " << ec.message();
-        detach ("hc");
-        return;
+        return detach ("hc");
     }
 
     assert (state_ == stateConnecting);
     state_ = stateConnected;
 
-    peerFinder_.on_connected (slot_,
-        beast::IPAddressConversion::from_asio (local_endpoint));
+    if (! peerFinder_.connected (slot_,
+        beast::IPAddressConversion::from_asio (local_endpoint)))
+        return detach("dup");
 
     socket_->set_verify_mode (boost::asio::ssl::verify_none);
     socket_->async_handshake (
@@ -1006,7 +1002,7 @@ PeerImp::on_message (std::shared_ptr <protocol::TMHello> const& m)
         if (result == PeerFinder::Result::full)
         {
             // TODO Provide correct HTTP response
-            auto const redirects = m_peerFinder.redirect (m_slot);
+            auto const redirects = peerFinder_.redirect (slot_);
             send_endpoints (redirects.begin(), redirects.end());
         }
         else

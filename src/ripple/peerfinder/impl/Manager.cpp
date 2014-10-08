@@ -127,13 +127,6 @@ public:
         return m_logic.new_outbound_slot (remote_endpoint);
     }
 
-    void on_connected (Slot::ptr const& slot,
-        beast::IP::Endpoint const& local_endpoint)
-    {
-        SlotImp::ptr impl (std::dynamic_pointer_cast <SlotImp> (slot));
-        m_logic.on_connected (impl, local_endpoint);
-    }
-
     void on_endpoints (Slot::ptr const& slot,
         Endpoints const& endpoints)
     {
@@ -159,6 +152,14 @@ public:
     }
 
     //--------------------------------------------------------------------------
+
+    bool
+    connected (Slot::ptr const& slot,
+        beast::IP::Endpoint const& local_endpoint) override
+    {
+        SlotImp::ptr impl (std::dynamic_pointer_cast <SlotImp> (slot));
+        return m_logic.connected (impl, local_endpoint);
+    }
 
     Result
     activate (Slot::ptr const& slot,

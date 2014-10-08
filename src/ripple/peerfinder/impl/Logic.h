@@ -378,7 +378,8 @@ public:
         return result.first->second;
     }
 
-    void on_connected (SlotImp::ptr const& slot,
+    bool
+    connected (SlotImp::ptr const& slot,
         beast::IP::Endpoint const& local_endpoint)
     {
         if (m_journal.trace) m_journal.trace << beast::leftw (18) <<
@@ -403,8 +404,7 @@ public:
                 if (m_journal.warning) m_journal.warning << beast::leftw (18) <<
                     "Logic dropping " << slot->remote_endpoint () <<
                     " as self connect";
-                m_callback.disconnect (slot, false);
-                return;
+                return false;
             }
         }
 
@@ -412,6 +412,7 @@ public:
         state->counts.remove (*slot);
         slot->state (Slot::connected);
         state->counts.add (*slot);
+        return true;
     }
 
     Result
