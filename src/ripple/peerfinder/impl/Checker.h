@@ -20,39 +20,25 @@
 #ifndef RIPPLE_PEERFINDER_CHECKER_H_INCLUDED
 #define RIPPLE_PEERFINDER_CHECKER_H_INCLUDED
 
-#include <beast/asio/shared_handler.h>
+#include <beast/asio/IPAddressConversion.h>
+#include <beast/asio/placeholders.h>
+#include <beast/asio/wrap_handler.h>
+#include <boost/asio/io_service.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/intrusive/list.hpp>
 #include <boost/system/error_code.hpp>
+#include <condition_variable>
+#include <memory>
+#include <mutex>
+
+#include <beast/asio/shared_handler.h>
     
 namespace ripple {
 namespace PeerFinder {
 
-/** Tests remote listening sockets to make sure they are connectible. */
 class Checker
 {
 public:
-    /** Create the service.
-        This will automatically start the associated thread and io_service.
-    */
-    static Checker* New ();
-
-    /** Destroy the service.
-        Any pending I/O operations will be canceled. This call blocks until
-        all pending operations complete (either with success or with
-        operation_aborted) and the associated thread and io_service have
-        no more work remaining.
-    */
-    virtual ~Checker() = default;
-
-    /** Stop the service.
-        Pending I/O operations will be canceled.
-        This issues cancel orders for all pending I/O operations and then
-        returns immediately. Handlers will receive operation_aborted errors,
-        or if they were already queued they will complete normally.
-    */
-    virtual
-    void
-    stop() = 0;
-
     struct Result
     {
         /** The original address. */
@@ -67,11 +53,151 @@ public:
         bool canAccept = false;
     };
 
+private:
+    class Request
+        : public std::enable_shared_from_this <Request>
+        , public boost::intrusive::list_base_hook <
+            boost::intrusive::link_mode <boost::intrusive::normal_link>>
+    {
+    public:
+        typedef boost::asio::ip::tcp        Protocol;
+        typedef boost::system::error_code   error_code;
+        typedef Protocol::socket            socket_type;
+        typedef Protocol::endpoint          endpoint_type;
+
+        Checker& m_owner;
+        boost::asio::io_service& io_service_;
+        beast::IP::Endpoint m_address;
+        beast::asio::shared_handler <void (Result)> m_handler;
+        socket_type socket_;
+        boost::system::error_code m_error;
+        bool m_canAccept;
+
+        Request (Checker& owner, boost::asio::io_service& io_service,
+            beast::IP::Endpoint const& address, beast::asio::shared_handler <
+                void (Result)> const& handler)
+            : m_owner (owner)
+            , io_service_ (io_service)
+            , m_address (address)
+            , m_handler (handler)
+            , socket_ (io_service_)
+            , m_canAccept (false)
+        {
+        }
+
+        ~Request ()
+        {
+            Result result;
+            result.address = m_address;
+            result.error = m_error;
+            io_service_.wrap (m_handler) (result);
+
+            m_owner.remove (*this);
+        }
+
+        void
+        go()
+        {
+            socket_.async_connect (beast::IPAddressConversion::to_asio_endpoint (
+                m_address), beast::asio::wrap_handler (std::bind (
+                    &Request::on_connect, shared_from_this(),
+                        beast::asio::placeholders::error), m_handler));
+        }
+
+        void stop()
+        {
+            socket_.cancel();
+        }
+
+        void on_connect (boost::system::error_code ec)
+        {
+            m_error = ec;
+            if (ec)
+                return;
+
+            m_canAccept = true;
+        }
+    };
+
+    //--------------------------------------------------------------------------
+
+    void remove (Request& request)
+    {
+        std::lock_guard <std::mutex> lock (mutex_);
+        list_.erase (list_.iterator_to (request));
+        if (list_.size() == 0)
+            cond_.notify_all();
+    }
+
+    using list_type = boost::intrusive::make_list <Request,
+        boost::intrusive::constant_time_size <true>>::type;
+
+    std::mutex mutex_;
+    std::condition_variable cond_;
+    bool stop_ = false;
+    boost::asio::io_service& io_service_;
+    list_type list_;
+
+public:
+    explicit
+    Checker (boost::asio::io_service& io_service)
+        : io_service_(io_service)
+    {
+    }
+
+    /** Destroy the service.
+        Any pending I/O operations will be canceled. This call blocks until
+        all pending operations complete (either with success or with
+        operation_aborted) and the associated thread and io_service have
+        no more work remaining.
+    */
+
+    ~Checker()
+    {
+        wait();
+    }
+
+    /** Stop the service.
+        Pending I/O operations will be canceled.
+        This issues cancel orders for all pending I/O operations and then
+        returns immediately. Handlers will receive operation_aborted errors,
+        or if they were already queued they will complete normally.
+    */
+    void
+    stop()
+    {
+        std::lock_guard<std::mutex> lock (mutex_);
+        if (! stop_)
+        {
+            stop_ = true;
+            for (auto& c : list_)
+                c.stop();
+        }
+    }
+
+    /** Block until all pending I/O completes. */
+    void
+    wait()
+    {
+        std::unique_lock<std::mutex> lock (mutex_);
+        while (! list_.empty())
+            cond_.wait (lock);
+    }
+
     /** Performs an async connection test on the specified endpoint.
         The port must be non-zero.
     */
-    virtual void async_test (beast::IP::Endpoint const& endpoint,
-        beast::asio::shared_handler <void (Result)> handler) = 0;
+    void
+    async_test (beast::IP::Endpoint const& endpoint,
+        beast::asio::shared_handler <void (Result)> handler)
+    {
+        std::lock_guard<std::mutex> lock (mutex_);
+        assert (! stop_);
+        auto const request = std::make_shared <Request> (
+            *this, io_service_, endpoint, handler);
+        list_.push_back (*request);
+        request->go();
+    }
 };
 
 }

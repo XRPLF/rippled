@@ -21,7 +21,6 @@
 #define RIPPLE_PEERFINDER_LOGIC_H_INCLUDED
 
 #include <ripple/peerfinder/Manager.h>
-#include <ripple/peerfinder/impl/CheckerImp.h>
 #include <ripple/peerfinder/impl/Counts.h>
 #include <ripple/peerfinder/impl/Fixed.h>
 #include <ripple/peerfinder/impl/iosformat.h>

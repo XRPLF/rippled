@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/peerfinder/Manager.h>
-#include <ripple/peerfinder/impl/CheckerImp.h>
+#include <ripple/peerfinder/impl/Checker.h>
 #include <ripple/peerfinder/impl/Logic.h>
 #include <ripple/peerfinder/impl/SourceStrings.h>
 #include <ripple/peerfinder/impl/StoreSqdb.h>
@@ -42,9 +42,10 @@ public:
     clock_type& m_clock;
     beast::Journal m_journal;
     StoreSqdb m_store;
-    CheckerImp checker_;
-    Logic <CheckerImp> m_logic;
+    Checker checker_;
+    Logic <Checker> m_logic;
 
+    // Temporary
     std::thread thread_;
     boost::asio::io_service io_service_;
     boost::optional <boost::asio::io_service::work> work_;
