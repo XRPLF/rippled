@@ -224,29 +224,6 @@ OverlayImpl::remove (PeerFinder::Slot::ptr const& slot)
 
 //--------------------------------------------------------------------------
 //
-// PeerFinder::Callback
-//
-//--------------------------------------------------------------------------
-
-void
-OverlayImpl::disconnect (PeerFinder::Slot::ptr const& slot, bool graceful)
-{
-    if (m_journal.trace) m_journal.trace <<
-        "Disconnect " << slot->remote_endpoint () <<
-            (graceful ? " gracefully" : "");
-
-    std::lock_guard <decltype(m_mutex)> lock (m_mutex);
-
-    PeersBySlot::iterator const iter (m_peers.find (slot));
-    assert (iter != m_peers.end ());
-    PeerImp::ptr const peer (iter->second.lock());
-    assert (peer != nullptr);
-    peer->close (graceful);
-    //peer->detach ("disc", false);
-}
-
-//--------------------------------------------------------------------------
-//
 // Stoppable
 //
 //--------------------------------------------------------------------------
@@ -367,7 +344,7 @@ OverlayImpl::close_all (bool graceful)
         //        ~PeerImp is pre-empted before it calls m_peers.remove()
         //
         if (peer != nullptr)
-            peer->close (graceful);
+            peer->close();
     }
 }
 

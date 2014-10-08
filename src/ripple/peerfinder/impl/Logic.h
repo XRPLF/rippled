@@ -954,16 +954,6 @@ public:
         }
     }
 
-    void on_cancel (SlotImp::ptr const& slot)
-    {
-        SharedState::Access state (m_state);
-
-        remove (slot, state);
-
-        if (m_journal.trace) m_journal.trace << beast::leftw (18) <<
-            "Logic cancel " << slot->remote_endpoint();
-    }
-
     //--------------------------------------------------------------------------
 
     // Returns `true` if the address matches a fixed slot address

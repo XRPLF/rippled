@@ -156,13 +156,6 @@ public:
     remove (PeerFinder::Slot::ptr const& slot);
 
     //
-    // PeerFinder::Callback
-    //
-
-    void
-    disconnect (PeerFinder::Slot::ptr const& slot, bool graceful);
-
-    //
     // Stoppable
     //
 

@@ -87,10 +87,15 @@ PeerImp::start ()
 }
 
 void
-PeerImp::close (bool graceful)
+PeerImp::close()
 {
-    was_canceled_ = true;
-    detach ("stop", graceful);
+    if (! strand_.running_in_this_thread())
+        return strand_.post (std::bind (
+            &PeerImp::close, shared_from_this()));
+
+    error_code ec;
+    timer_.cancel (ec);
+    socket_->close(ec);
 }
 
 //------------------------------------------------------------------------------
@@ -2116,10 +2121,7 @@ PeerImp::detach (const char* rsn, bool graceful)
         //           to have PeerFinder work reliably.
         detaching_  = true; // Race is ok.
 
-        if (was_canceled_)
-            peerFinder_.on_cancel (slot_);
-        else
-            peerFinder_.on_closed (slot_);
+        peerFinder_.on_closed (slot_);
 
         if (state_ == stateActive)
             overlay_.onPeerDisconnect (shared_from_this ());

@@ -111,10 +111,6 @@ typedef std::vector <Endpoint> Endpoints;
 // DEPRECATED Callbacks only cause re-entrancy pain
 struct Callback
 {
-    /** Disconnect the handshaked peer with the specified address.
-        @param graceful `true` to wait for send buffers to drain before closing.
-    */
-    virtual void disconnect (Slot::ptr const& slot, bool graceful) = 0;
 };
 
 //------------------------------------------------------------------------------
@@ -210,11 +206,6 @@ public:
         was canceled.
     */
     virtual void on_closed (Slot::ptr const& slot) = 0;
-
-    /** Called when the slot is closed via canceling operations.
-        This is instead of on_closed.
-    */
-    virtual void on_cancel (Slot::ptr const& slot) = 0;
 
     //--------------------------------------------------------------------------
 

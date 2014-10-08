@@ -169,9 +169,6 @@ private:
     // The slot assigned to us by PeerFinder
     PeerFinder::Slot::ptr slot_;
 
-    // True if close was called
-    bool was_canceled_ = false;
-
     boost::asio::streambuf read_buffer_;
     boost::optional <beast::http::message> http_message_;
     boost::optional <beast::http::parser> http_parser_;
@@ -211,8 +208,9 @@ public:
     void
     start ();
 
-    /** Close the connection. */
-    void close (bool graceful);
+    // Cancel all I/O and close the socket
+    void
+    close();
 
     void
     getLedger (protocol::TMGetLedger& packet);
