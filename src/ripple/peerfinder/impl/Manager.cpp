@@ -18,10 +18,11 @@
 //==============================================================================
 
 #include <ripple/peerfinder/Manager.h>
-#include <ripple/peerfinder/impl/CheckerAdapter.h>
+#include <ripple/peerfinder/impl/CheckerImp.h>
 #include <ripple/peerfinder/impl/Logic.h>
 #include <ripple/peerfinder/impl/SourceStrings.h>
 #include <ripple/peerfinder/impl/StoreSqdb.h>
+#include <boost/asio/io_service.hpp>
 #include <thread>
 
 #if DOXYGEN
@@ -33,17 +34,14 @@ namespace PeerFinder {
 
 class ManagerImp
     : public Manager
-    , public beast::Thread
     , public beast::LeakChecked <ManagerImp>
 {
 public:
-    beast::ServiceQueue m_queue;
     beast::File m_databaseFile;
     clock_type& m_clock;
     beast::Journal m_journal;
     StoreSqdb m_store;
-    SerializedContext m_context;
-    CheckerAdapter m_checker;
+    CheckerImp checker_;
     Logic m_logic;
 
     std::thread thread_;
@@ -58,13 +56,12 @@ public:
         clock_type& clock,
         beast::Journal journal)
         : Manager (stoppable)
-        , Thread ("PeerFinder")
         , m_databaseFile (pathToDbFileOrDirectory)
         , m_clock (clock)
         , m_journal (journal)
         , m_store (journal)
-        , m_checker (m_context, m_queue)
-        , m_logic (clock, m_store, m_checker, journal)
+        , checker_ (io_service_)
+        , m_logic (clock, m_store, checker_, journal)
     {
         if (m_databaseFile.isDirectory ())
             m_databaseFile = m_databaseFile.getChildFile("peerfinder.sqlite");
@@ -85,7 +82,6 @@ public:
         {
             work_ = boost::none;
             thread_.join();
-            stopThread ();
         }
     }
 
@@ -197,25 +193,6 @@ public:
         return m_logic.sendpeers();
     }
 
-    void
-    init()
-    {
-        m_journal.debug << "Initializing";
-
-        beast::Error error (m_store.open (m_databaseFile));
-
-        if (error)
-        {
-            m_journal.fatal <<
-                "Failed to open '" << m_databaseFile.getFullPathName() << "'";
-        }
-
-        if (! error)
-        {
-            m_logic.load ();
-        }
-    }
-
     //--------------------------------------------------------------------------
     //
     // Stoppable
@@ -229,18 +206,25 @@ public:
     void
     onStart()
     {
-        init();
-        startThread();
+        m_journal.debug << "Initializing";
+        beast::Error error (m_store.open (m_databaseFile));
+        if (error)
+            m_journal.fatal <<
+                "Failed to open '" << m_databaseFile.getFullPathName() << "'";
+        if (! error)
+            m_logic.load ();
     }
 
     void onStop ()
     {
         m_journal.debug << "Stopping";
-        m_checker.cancel ();
-        m_logic.stop ();
+        checker_.stop();
+        m_logic.stop();
+        /*
         signalThreadShouldExit();
         m_queue.dispatch (m_context.wrap (
             std::bind (&Thread::signalThreadShouldExit, this)));
+        */
     }
 
     //--------------------------------------------------------------------------
@@ -251,23 +235,7 @@ public:
 
     void onWrite (beast::PropertyStream::Map& map)
     {
-        SerializedContext::Scope scope (m_context);
-
         m_logic.onWrite (map);
-    }
-
-    //--------------------------------------------------------------------------
-
-    void run ()
-    {
-        m_journal.debug << "Started";
-
-        while (! this->threadShouldExit())
-        {
-            m_queue.run_one();
-        }
-
-        stopped();
     }
 };
 

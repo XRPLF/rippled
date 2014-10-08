@@ -26,7 +26,6 @@
 #endif
 
 #include <ripple/peerfinder/impl/Bootcache.cpp>
-#include <ripple/peerfinder/impl/Checker.cpp>
 #include <ripple/peerfinder/impl/Config.cpp>
 #include <ripple/peerfinder/impl/Endpoint.cpp>
 #include <ripple/peerfinder/impl/Livecache.cpp>

@@ -43,12 +43,15 @@ public:
     */
     virtual ~Checker() = default;
 
-    /** Cancel pending I/O.
+    /** Stop the service.
+        Pending I/O operations will be canceled.
         This issues cancel orders for all pending I/O operations and then
         returns immediately. Handlers will receive operation_aborted errors,
         or if they were already queued they will complete normally.
     */
-    virtual void cancel () = 0;
+    virtual
+    void
+    stop() = 0;
 
     struct Result
     {

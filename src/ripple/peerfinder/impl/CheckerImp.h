@@ -35,9 +35,7 @@
 namespace ripple {
 namespace PeerFinder {
 
-class CheckerImp
-    : public Checker
-    , private beast::Thread
+class CheckerImp : public Checker
 {
 private:
     class Request;
@@ -50,8 +48,7 @@ private:
     typedef beast::SharedData <State> SharedState;
 
     SharedState m_state;
-    boost::asio::io_service m_io_service;
-    boost::optional <boost::asio::io_service::work> m_work;
+    boost::asio::io_service io_service_;
 
     //--------------------------------------------------------------------------
 
@@ -68,7 +65,7 @@ private:
         typedef Protocol::endpoint          endpoint_type;
 
         CheckerImp& m_owner;
-        boost::asio::io_service& m_io_service;
+        boost::asio::io_service& io_service_;
         beast::IP::Endpoint m_address;
         beast::asio::shared_handler <void (Result)> m_handler;
         socket_type m_socket;
@@ -79,10 +76,10 @@ private:
             beast::IP::Endpoint const& address, beast::asio::shared_handler <
                 void (Result)> const& handler)
             : m_owner (owner)
-            , m_io_service (io_service)
+            , io_service_ (io_service)
             , m_address (address)
             , m_handler (handler)
-            , m_socket (m_io_service)
+            , m_socket (io_service_)
             , m_canAccept (false)
         {
             m_owner.add (*this);
@@ -98,7 +95,7 @@ private:
             Result result;
             result.address = m_address;
             result.error = m_error;
-            m_io_service.wrap (m_handler) (result);
+            io_service_.wrap (m_handler) (result);
 
             m_owner.remove (*this);
         }
@@ -134,41 +131,31 @@ private:
 
     void run ()
     {
-        m_io_service.run ();
+        io_service_.run ();
     }
 
 public:
-    CheckerImp()
-        : Thread ("PeerFinder::Checker")
-        , m_work (boost::in_place (std::ref (m_io_service)))
+    CheckerImp (boost::asio::io_service& io_service)
     {
-        startThread ();
     }
 
     ~CheckerImp ()
     {
         // cancel pending i/o
-        cancel();
-
-        // destroy the io_service::work object
-        m_work = boost::none;
-
-        // signal and wait for the thread to exit gracefully
-        stopThread ();
+        stop();
     }
 
-    void cancel ()
+    void stop()
     {
         SharedState::Access state (m_state);
-        for (beast::List <Request>::iterator iter (state->list.begin());
-            iter != state->list.end(); ++iter)
-            iter->cancel();
+        for (auto& c : state->list)
+            c.cancel();
     }
 
     void async_test (beast::IP::Endpoint const& endpoint,
         beast::asio::shared_handler <void (Result)> handler)
     {
-        new Request (*this, m_io_service, endpoint, handler);
+        new Request (*this, io_service_, endpoint, handler);
     }
 };
 

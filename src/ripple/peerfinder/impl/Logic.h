@@ -21,6 +21,7 @@
 #define RIPPLE_PEERFINDER_LOGIC_H_INCLUDED
 
 #include <ripple/peerfinder/Manager.h>
+#include <ripple/peerfinder/impl/Checker.h>
 #include <ripple/peerfinder/impl/Counts.h>
 #include <ripple/peerfinder/impl/Fixed.h>
 #include <ripple/peerfinder/impl/iosformat.h>
@@ -28,9 +29,8 @@
 #include <ripple/peerfinder/impl/Reporting.h>
 #include <ripple/peerfinder/impl/SlotImp.h>
 #include <ripple/peerfinder/impl/Source.h>
-
 #include <beast/container/aged_container_utility.h>
-
+#include <beast/smart_ptr/SharedPtr.h>
 #include <functional>
 #include <map>
 
@@ -701,14 +701,6 @@ public:
             Tuning::recentAttemptDuration);
 
         state->bootcache.periodicActivity ();
-
-        /*
-        if (m_whenBroadcast <= now)
-        {
-            broadcast();
-            m_whenBroadcast = now + Tuning::secondsPerMessage;
-        }
-        */
     }
 
     //--------------------------------------------------------------------------
@@ -805,10 +797,8 @@ public:
 
         clock_type::time_point const now (m_clock.now());
 
-        for (auto iter (list.cbegin()); iter != list.cend(); ++iter)
+        for (auto const& ep : list)
         {
-            Endpoint const& ep (*iter);
-
             assert (ep.hops != 0);
 
             slot->recent.insert (ep.address, ep.hops);
@@ -825,7 +815,7 @@ public:
                     continue;
                 }
 
-                if (! slot->checked)
+                //if (! slot->checked)
                 {
                     // Mark that a check for this slot is now in progress.
                     slot->connectivityCheckInProgress = true;
