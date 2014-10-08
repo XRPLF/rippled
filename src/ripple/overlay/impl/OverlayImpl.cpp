@@ -62,13 +62,9 @@ OverlayImpl::OverlayImpl (Stoppable& parent,
     , m_child_count (1)
     , m_journal (deprecatedLogs().journal("Overlay"))
     , m_resourceManager (resourceManager)
-    , m_peerFinder (add (PeerFinder::Manager::New (
-        *this,
-        siteFiles,
-        pathToDbFileOrDirectory,
-        *this,
-        get_seconds_clock (),
-        deprecatedLogs().journal("PeerFinder"))))
+    , m_peerFinder (add (PeerFinder::Manager::New (*this, siteFiles,
+        pathToDbFileOrDirectory, get_seconds_clock (),
+            deprecatedLogs().journal("PeerFinder"))))
     , m_io_service (io_service)
     , m_ssl_context (ssl_context)
     , timer_(io_service)

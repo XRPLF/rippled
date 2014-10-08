@@ -44,9 +44,7 @@ namespace ripple {
 class PeerDoor;
 class PeerImp;
 
-class OverlayImpl
-    : public Overlay
-    , public PeerFinder::Callback
+class OverlayImpl : public Overlay
 {    
 private:
     using clock_type = std::chrono::steady_clock;

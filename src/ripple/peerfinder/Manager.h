@@ -103,18 +103,6 @@ typedef std::vector <Endpoint> Endpoints;
 
 //------------------------------------------------------------------------------
 
-/** The Callback receives PeerFinder notifications.
-    The notifications are sent on a thread owned by the PeerFinder,
-    so it is best not to do too much work in here. Just post functor
-    to another worker thread or job queue and return.
-*/
-// DEPRECATED Callbacks only cause re-entrancy pain
-struct Callback
-{
-};
-
-//------------------------------------------------------------------------------
-
 /** Possible results from activating a slot. */
 enum class Result
 {
@@ -137,7 +125,6 @@ public:
         Stoppable& parent,
         SiteFiles::Manager& siteFiles,
         beast::File const& pathToDbFileOrDirectory,
-        Callback& callback,
         clock_type& clock,
         beast::Journal journal);
 

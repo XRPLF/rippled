@@ -54,7 +54,6 @@ public:
         Stoppable& stoppable,
         SiteFiles::Manager& siteFiles,
         beast::File const& pathToDbFileOrDirectory,
-        Callback& callback,
         clock_type& clock,
         beast::Journal journal)
         : Manager (stoppable)
@@ -65,7 +64,7 @@ public:
         , m_journal (journal)
         , m_store (journal)
         , m_checker (m_context, m_queue)
-        , m_logic (clock, callback, m_store, m_checker, journal)
+        , m_logic (clock, m_store, m_checker, journal)
     {
         if (m_databaseFile.isDirectory ())
             m_databaseFile = m_databaseFile.getChildFile("peerfinder.sqlite");
@@ -330,12 +329,11 @@ Manager* Manager::New (
     Stoppable& parent,
     SiteFiles::Manager& siteFiles,
     beast::File const& databaseFile,
-    Callback& callback,
     clock_type& clock,
     beast::Journal journal)
 {
-    return new ManagerImp (parent, siteFiles, databaseFile, 
-        callback, clock, journal);
+    return new ManagerImp (parent, siteFiles,
+        databaseFile,  clock, journal);
 }
 
 }

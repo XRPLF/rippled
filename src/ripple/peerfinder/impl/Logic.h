@@ -113,7 +113,6 @@ public:
     beast::Journal m_journal;
     SharedState m_state;
     clock_type& m_clock;
-    Callback& m_callback;
     Store& m_store;
     Checker& m_checker;
 
@@ -126,16 +125,11 @@ public:
 
     //--------------------------------------------------------------------------
 
-    Logic (
-        clock_type& clock,
-        Callback& callback,
-        Store& store,
-        Checker& checker,
-        beast::Journal journal)
+    Logic (clock_type& clock, Store& store,
+            Checker& checker, beast::Journal journal)
         : m_journal (journal, Reporting::logic)
         , m_state (&store, std::ref (clock), journal)
         , m_clock (clock)
-        , m_callback (callback)
         , m_store (store)
         , m_checker (checker)
         , m_whenBroadcast (m_clock.now())
