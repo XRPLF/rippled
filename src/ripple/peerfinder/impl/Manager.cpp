@@ -22,6 +22,7 @@
 #include <ripple/peerfinder/impl/Logic.h>
 #include <ripple/peerfinder/impl/SourceStrings.h>
 #include <ripple/peerfinder/impl/StoreSqdb.h>
+#include <thread>
 
 #if DOXYGEN
 #include <ripple/peerfinder/README.md>
@@ -44,7 +45,11 @@ public:
     SerializedContext m_context;
     CheckerAdapter m_checker;
     Logic m_logic;
-    
+
+    std::thread thread_;
+    boost::asio::io_service io_service_;
+    boost::optional <boost::asio::io_service::work> work_;
+
     //--------------------------------------------------------------------------
 
     ManagerImp (
@@ -63,10 +68,16 @@ public:
     {
         if (m_databaseFile.isDirectory ())
             m_databaseFile = m_databaseFile.getChildFile("peerfinder.sqlite");
+
+        work_ = boost::in_place (std::ref(io_service_));
+        thread_ = std::thread ([&]() { this->io_service_.run(); });
     }
 
     ~ManagerImp ()
     {
+        work_ = boost::none;
+        thread_.join();
+
         stopThread ();
     }
 

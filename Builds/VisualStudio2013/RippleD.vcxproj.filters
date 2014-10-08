@@ -3993,6 +3993,9 @@
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\CheckerAdapter.h">
       <Filter>ripple\peerfinder\impl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\impl\CheckerImp.h">
+      <Filter>ripple\peerfinder\impl</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\peerfinder\impl\Config.cpp">
       <Filter>ripple\peerfinder\impl</Filter>
     </ClCompile>
