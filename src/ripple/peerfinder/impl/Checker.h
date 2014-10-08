@@ -41,7 +41,7 @@ public:
         operation_aborted) and the associated thread and io_service have
         no more work remaining.
     */
-    virtual ~Checker () { }
+    virtual ~Checker() = default;
 
     /** Cancel pending I/O.
         This issues cancel orders for all pending I/O operations and then
@@ -52,10 +52,6 @@ public:
 
     struct Result
     {
-        Result ()
-            : canAccept (false)
-            { }
-
         /** The original address. */
         beast::IP::Endpoint address;
 
@@ -65,7 +61,7 @@ public:
         /** `true` if the endpoint is reachable, else `false`.
             Only defined if no error occurred.
         */
-        bool canAccept;
+        bool canAccept = false;
     };
 
     /** Performs an async connection test on the specified endpoint.
