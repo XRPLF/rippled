@@ -42,8 +42,8 @@ public:
     clock_type& m_clock;
     beast::Journal m_journal;
     StoreSqdb m_store;
-    Checker checker_;
-    Logic <Checker> m_logic;
+    Checker<boost::asio::ip::tcp> checker_;
+    Logic <decltype(checker_)> m_logic;
 
     // Temporary
     std::thread thread_;

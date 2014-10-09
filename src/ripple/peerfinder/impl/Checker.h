@@ -22,7 +22,7 @@
 
 #include <beast/asio/IPAddressConversion.h>
 #include <beast/asio/placeholders.h>
-#include <beast/asio/wrap_handler.h>
+#include <boost/asio/detail/handler_invoke_helpers.hpp>
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/intrusive/list.hpp>
@@ -30,98 +30,68 @@
 #include <condition_variable>
 #include <memory>
 #include <mutex>
-
-#include <beast/asio/shared_handler.h>
+#include <utility>
     
 namespace ripple {
 namespace PeerFinder {
 
+template <class Protocol = boost::asio::ip::tcp>
 class Checker
 {
-public:
+private:
     using error_code = boost::system::error_code;
 
-private:
-    class Request
-        : public std::enable_shared_from_this <Request>
-        , public boost::intrusive::list_base_hook <
-            boost::intrusive::link_mode <boost::intrusive::normal_link>>
+    struct basic_async_op : boost::intrusive::list_base_hook <
+        boost::intrusive::link_mode <boost::intrusive::normal_link>>
     {
-    public:
-        typedef boost::asio::ip::tcp        Protocol;
-        typedef Protocol::socket            socket_type;
-        typedef Protocol::endpoint          endpoint_type;
+        virtual
+        ~basic_async_op() = default;
 
-        Checker& m_owner;
-        boost::asio::io_service& io_service_;
-        beast::IP::Endpoint m_address;
-        beast::asio::shared_handler <void (error_code)> m_handler;
+        virtual
+        void
+        stop() = 0;
+
+        virtual
+        void
+        operator() (error_code const& ec) = 0;
+    };
+
+    template <class Handler>
+    struct async_op : basic_async_op
+    {
+        using socket_type = typename Protocol::socket;
+        using endpoint_type = typename Protocol::endpoint;
+
+        Checker& checker_;
         socket_type socket_;
-        boost::system::error_code m_error;
-        bool m_canAccept;
+        Handler handler_;
 
-        Request (Checker& owner, boost::asio::io_service& io_service,
-            beast::IP::Endpoint const& address, beast::asio::shared_handler <
-                void (error_code)> const& handler)
-            : m_owner (owner)
-            , io_service_ (io_service)
-            , m_address (address)
-            , m_handler (handler)
-            , socket_ (io_service_)
-            , m_canAccept (false)
-        {
-        }
+        async_op (Checker& owner, boost::asio::io_service& io_service,
+            Handler&& handler);
 
-        ~Request ()
-        {
-            m_owner.remove (*this);
-        }
+        ~async_op();
 
         void
-        go()
-        {
-            socket_.async_connect (beast::IPAddressConversion::to_asio_endpoint (
-                m_address), beast::asio::wrap_handler (std::bind (
-                    &Request::on_connect, shared_from_this(),
-                        beast::asio::placeholders::error), m_handler));
-        }
+        stop() override;
 
-        void stop()
-        {
-            socket_.cancel();
-        }
-
-        void on_connect (boost::system::error_code ec)
-        {
-            io_service_.wrap(m_handler)(ec);
-        }
+        void
+        operator() (error_code const& ec) override;
     };
 
     //--------------------------------------------------------------------------
 
-    void remove (Request& request)
-    {
-        std::lock_guard <std::mutex> lock (mutex_);
-        list_.erase (list_.iterator_to (request));
-        if (list_.size() == 0)
-            cond_.notify_all();
-    }
-
-    using list_type = boost::intrusive::make_list <Request,
+    using list_type = typename boost::intrusive::make_list <basic_async_op,
         boost::intrusive::constant_time_size <true>>::type;
 
     std::mutex mutex_;
     std::condition_variable cond_;
-    bool stop_ = false;
     boost::asio::io_service& io_service_;
     list_type list_;
+    bool stop_ = false;
 
 public:
     explicit
-    Checker (boost::asio::io_service& io_service)
-        : io_service_(io_service)
-    {
-    }
+    Checker (boost::asio::io_service& io_service);
 
     /** Destroy the service.
         Any pending I/O operations will be canceled. This call blocks until
@@ -129,10 +99,7 @@ public:
         operation_aborted) and the associated thread and io_service have
         no more work remaining.
     */
-    ~Checker()
-    {
-        wait();
-    }
+    ~Checker();
 
     /** Stop the service.
         Pending I/O operations will be canceled.
@@ -141,41 +108,124 @@ public:
         or if they were already queued they will complete normally.
     */
     void
-    stop()
-    {
-        std::lock_guard<std::mutex> lock (mutex_);
-        if (! stop_)
-        {
-            stop_ = true;
-            for (auto& c : list_)
-                c.stop();
-        }
-    }
+    stop();
 
     /** Block until all pending I/O completes. */
     void
-    wait()
-    {
-        std::unique_lock<std::mutex> lock (mutex_);
-        while (! list_.empty())
-            cond_.wait (lock);
-    }
+    wait();
 
     /** Performs an async connection test on the specified endpoint.
-        The port must be non-zero.
+        The port must be non-zero. Note that the execution guarantees
+        offered by asio handlers are NOT enforced.
     */
+    template <class Handler>
     void
-    async_test (beast::IP::Endpoint const& endpoint,
-        beast::asio::shared_handler <void (error_code)> handler)
+    async_connect (beast::IP::Endpoint const& endpoint, Handler&& handler);
+
+private:
+    void
+    remove (basic_async_op& op);
+};
+
+//------------------------------------------------------------------------------
+
+template <class Protocol>
+template <class Handler>
+Checker<Protocol>::async_op<Handler>::async_op (Checker& owner,
+        boost::asio::io_service& io_service, Handler&& handler)
+    : checker_ (owner)
+    , socket_ (io_service)
+    , handler_ (std::forward<Handler>(handler))
+{
+}
+
+template <class Protocol>
+template <class Handler>
+Checker<Protocol>::async_op<Handler>::~async_op()
+{
+    checker_.remove (*this);
+}
+
+template <class Protocol>
+template <class Handler>
+void
+Checker<Protocol>::async_op<Handler>::stop()
+{
+    error_code ec;
+    socket_.cancel(ec);
+}
+
+template <class Protocol>
+template <class Handler>
+void
+Checker<Protocol>::async_op<Handler>::operator() (
+    error_code const& ec)
+{
+    handler_(ec);
+}
+
+//------------------------------------------------------------------------------
+
+template <class Protocol>
+Checker<Protocol>::Checker (boost::asio::io_service& io_service)
+    : io_service_(io_service)
+{
+}
+
+template <class Protocol>
+Checker<Protocol>::~Checker()
+{
+    wait();
+}
+
+template <class Protocol>
+void
+Checker<Protocol>::stop()
+{
+    std::lock_guard<std::mutex> lock (mutex_);
+    if (! stop_)
+    {
+        stop_ = true;
+        for (auto& c : list_)
+            c.stop();
+    }
+}
+
+template <class Protocol>
+void
+Checker<Protocol>::wait()
+{
+    std::unique_lock<std::mutex> lock (mutex_);
+    while (! list_.empty())
+        cond_.wait (lock);
+}
+
+template <class Protocol>
+template <class Handler>
+void
+Checker<Protocol>::async_connect (
+    beast::IP::Endpoint const& endpoint, Handler&& handler)
+{
+    auto const op = std::make_shared<async_op<Handler>> (
+        *this, io_service_, std::forward<Handler>(handler));
     {
         std::lock_guard<std::mutex> lock (mutex_);
-        assert (! stop_);
-        auto const request = std::make_shared <Request> (
-            *this, io_service_, endpoint, handler);
-        list_.push_back (*request);
-        request->go();
+        list_.push_back (*op);
     }
-};
+    op->socket_.async_connect (beast::IPAddressConversion::to_asio_endpoint (
+        endpoint), std::bind (&basic_async_op::operator(), op,
+            beast::asio::placeholders::error));
+}
+
+template <class Protocol>
+void
+Checker<Protocol>::remove (basic_async_op& op)
+{
+    std::lock_guard <std::mutex> lock (mutex_);
+    list_.erase (list_.iterator_to (op));
+    if (list_.size() == 0)
+        cond_.notify_all();
+}
 
 }
 }
