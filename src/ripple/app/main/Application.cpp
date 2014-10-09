@@ -24,6 +24,7 @@
 #include <ripple/common/RippleSSLContext.h>
 #include <ripple/app/main/Tuning.h>
 #include <ripple/app/misc/ProofOfWorkFactory.h>
+#include <ripple/app/paths/FindPaths.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/rpc/Manager.h>
 #include <ripple/nodestore/Database.h>
@@ -652,7 +653,7 @@ public:
             updateTables ();
 
         m_amendmentTable->addInitial();
-        Pathfinder::initPathTable ();
+        initializePathfinding ();
 
         m_ledgerMaster->setMinValidations (getConfig ().VALIDATION_QUORUM);
 
