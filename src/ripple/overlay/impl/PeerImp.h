@@ -107,70 +107,70 @@ private:
 
     NativeSocketType m_owned_socket;
 
-    beast::Journal m_journal;
+    beast::Journal journal_;
 
     // A unique identifier (up to a restart of rippled) for this particular
     // peer instance. A peer that disconnects will, upon reconnection, get a
     // new ID.
-    ShortId m_shortId = 0;
+    ShortId shortId_ = 0;
 
     // Updated at each stage of the connection process to reflect
     // the current conditions as closely as possible. This includes
     // the case where we learn the true IP via a PROXY handshake.
-    beast::IP::Endpoint m_remoteAddress;
+    beast::IP::Endpoint remote_address_;
 
     // These is up here to prevent warnings about order of initializations
     //
-    Resource::Manager& m_resourceManager;
-    PeerFinder::Manager& m_peerFinder;
-    OverlayImpl& m_overlay;
+    Resource::Manager& resourceManager_;
+    PeerFinder::Manager& peerFinder_;
+    OverlayImpl& overlay_;
     bool m_inbound;
 
-    std::unique_ptr <MultiSocket> m_socket;
-    boost::asio::io_service::strand m_strand;
+    std::unique_ptr <MultiSocket> socket_;
+    boost::asio::io_service::strand strand_;
 
-    State           m_state;          // Current state
-    bool m_detaching = false;
+    State           state_;          // Current state
+    bool detaching_ = false;
     
     // True if peer is a node in our cluster
-    bool m_clusterNode = false;
+    bool clusterNode_ = false;
 
     // Node public key of peer.
-    RippleAddress m_nodePublicKey;
+    RippleAddress publicKey_;
 
-    std::string m_nodeName;
+    std::string name_;
 
     // Both sides of the peer calculate this value and verify that it matches
     // to detect/prevent man-in-the-middle attacks.
     //
-    uint256 m_secureCookie;
+    uint256 secureCookie_;
 
     // The indices of the smallest and largest ledgers this peer has available
     //
-    LedgerIndex m_minLedger;
-    LedgerIndex m_maxLedger;
+    LedgerIndex minLedger_;
+    LedgerIndex maxLedger_;
 
-    uint256 m_closedLedgerHash;
-    uint256 m_previousLedgerHash;
+    uint256 closedLedgerHash_;
+    uint256 previousLedgerHash_;
 
-    std::list<uint256>    m_recentLedgers;
-    std::list<uint256>    m_recentTxSets;
-    mutable std::mutex  m_recentLock;
+    std::list<uint256>    recentLedgers_;
+    std::list<uint256>    recentTxSets_;
+    mutable std::mutex  recentLock_;
 
     boost::asio::deadline_timer timer_;
 
-    std::list <Message::pointer> mSendQ;
-    Message::pointer mSendingPacket;
-    protocol::TMStatusChange mLastStatus;
-    protocol::TMHello mHello;
+    std::list <Message::pointer> send_queue_;
+    Message::pointer send_packet_;
+    protocol::TMStatusChange last_status_;
+    protocol::TMHello hello_;
 
-    Resource::Consumer m_usage;
+    Resource::Consumer usage_;
 
     // The slot assigned to us by PeerFinder
-    PeerFinder::Slot::ptr m_slot;
+    PeerFinder::Slot::ptr slot_;
 
     // True if close was called
-    bool m_was_canceled = false;
+    bool was_canceled_ = false;
 
     boost::asio::streambuf read_buffer_;
     boost::optional <beast::http::message> http_message_;
@@ -396,12 +396,12 @@ private:
 private:
     State state() const
     {
-        return m_state;
+        return state_;
     }
 
     void state (State new_state)
     {
-        m_state = new_state;
+        state_ = new_state;
     }
 
     //--------------------------------------------------------------------------
