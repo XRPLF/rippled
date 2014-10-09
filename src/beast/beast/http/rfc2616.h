@@ -21,9 +21,6 @@
 #define BEAST_HTTP_RFC2616_H_INCLUDED
 
 #include <algorithm>
-#include <cctype>
-#include <iterator>
-#include <limits>
 #include <string>
 #include <utility>
 
@@ -231,38 +228,6 @@ for_each_element (FwdIter first, FwdIter last, Function func)
         if (! e.empty())
             func (e);
     }
-}
-
-template <class UInt, class FwdIt>
-std::pair <bool, UInt>
-parse_uint (FwdIt first, FwdIt last)
-{
-    static_assert(std::is_unsigned<UInt>::value,
-        "UInt must be unsigned");
-    std::pair <bool, UInt> result (false, 0);
-    if (first == last)
-        return result;
-    UInt const limit = std::numeric_limits <UInt>::max();
-    while (first != last)
-    {
-        typename std::iterator_traits <
-            FwdIt>::value_type const c = *first++;
-        if (c < '0' || c > '9')
-            return result;
-        unsigned const n = c - '0';
-        if (n > (limit - (10u * result.second)))
-            return result;
-        result.second = 10u * result.second + n;
-    }
-    result.first = true;
-    return result;
-}
-
-template <class UInt>
-std::pair <bool, UInt>
-parse_uint (std::string const& s)
-{
-    return parse_uint <UInt> (s.begin(), s.end());
 }
 
 } // rfc2616
