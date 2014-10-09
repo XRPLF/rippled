@@ -17,18 +17,21 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CORE_SECTION_H_INCLUDED
-#define RIPPLE_CORE_SECTION_H_INCLUDED
+#ifndef RIPPLE_BASICS_BASICCONFIG_H_INCLUDED
+#define RIPPLE_BASICS_BASICCONFIG_H_INCLUDED
 
 #include <beast/utility/ci_char_traits.h>
 #include <boost/lexical_cast.hpp>
 #include <map>
 #include <ostream>
 #include <string>
-#include <utility>
 #include <vector>
 
 namespace ripple {
+
+using IniFileSections = std::map<std::string, std::vector<std::string>>;
+
+//------------------------------------------------------------------------------
 
 /** Holds a collection of configuration values.
     A configuration file contains zero or more sections.
@@ -160,7 +163,62 @@ get (Section const& section,
     return defaultValue;
 }
 
+//------------------------------------------------------------------------------
+
+/** Holds unparsed configuration information.
+    The raw data sections are processed with intermediate parsers specific
+    to each module instead of being all parsed in a central location.
+*/
+class BasicConfig
+{
+private:
+    std::map <std::string, Section, beast::ci_less> map_;
+
+public:
+    /** Returns `true` if a section with the given name exists. */
+    bool
+    exists (std::string const& name) const;
+
+    /** Returns the section with the given name.
+        If the section does not exist, an empty section is returned.
+    */
+    /** @{ */
+    Section const&
+    section (std::string const& name) const;
+
+    Section const&
+    operator[] (std::string const& name) const
+    {
+        return section(name);
+    }
+    /** @} */
+
+    /** Overwrite a key/value pair with a command line argument
+        If the section does not exist it is created.
+        The previous value, if any, is overwritten.
+    */
+    void
+    overwrite (std::string const& section, std::string const& key,
+        std::string const& value);
+
+    friend
+    std::ostream&
+    operator<< (std::ostream& ss, BasicConfig const& c);
+
+protected:
+    void
+    build (IniFileSections const& ifs);
+
+    /** Insert a legacy single section as a key/value pair.
+        Does nothing if the section does not exist, or does not contain
+        a single line that is not a key/value pair.
+        @deprecated
+    */
+    void
+    remap (std::string const& legacy_section,
+        std::string const& key, std::string const& new_section);
+};
+
 } // ripple
 
 #endif
-

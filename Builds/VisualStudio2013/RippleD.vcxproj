@@ -2315,12 +2315,17 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\ArraySize.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\basics\BasicConfig.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\BasicTypes.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\CheckLibraryVersions.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\CountedObject.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\basics\impl\BasicConfig.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\basics\impl\CheckLibraryVersions.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2331,6 +2336,9 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\basics\impl\RangeSet.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\basics\impl\Section.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\basics\impl\StringUtilities.cpp">
@@ -2353,6 +2361,8 @@
     <ClInclude Include="..\..\src\ripple\basics\LoggedTimings.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\RangeSet.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\basics\Section.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\StringUtilities.h">
     </ClInclude>
@@ -2432,9 +2442,6 @@
     <ClInclude Include="..\..\src\ripple\core\impl\LoadFeeTrackImp.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\core\impl\LoadMonitor.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\core\impl\Section.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\core\Job.h">

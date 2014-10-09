@@ -20,12 +20,6 @@
 #ifndef RIPPLE_SITEFILES_H_INCLUDED
 #define RIPPLE_SITEFILES_H_INCLUDED
 
-#include <vector>
-
-#include <beast/http/URL.h>
-#include <beast/Threads.h>
-
-#include <ripple/sitefiles/api/Section.h>
 #include <ripple/sitefiles/api/SiteFile.h>
 #include <ripple/sitefiles/api/Listener.h>
 #include <ripple/sitefiles/api/Manager.h>

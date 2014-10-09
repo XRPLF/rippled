@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/basics/StringUtilities.h>
+#include <beast/module/core/text/LexicalCast.h>
 #include <beast/unit_test/suite.h>
 #include <boost/asio/ip/address.hpp>
 #include <boost/regex.hpp>

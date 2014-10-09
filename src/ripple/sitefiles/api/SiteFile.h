@@ -20,9 +20,8 @@
 #ifndef RIPPLE_SITEFILES_SITEFILE_H_INCLUDED
 #define RIPPLE_SITEFILES_SITEFILE_H_INCLUDED
 
-#include <ripple/sitefiles/api/Section.h>
 #include <ripple/common/UnorderedContainers.h>
-
+#include <ripple/sitefiles/api/Section.h>
 #include <string>
 
 namespace ripple {

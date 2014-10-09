@@ -19,11 +19,12 @@
 
 #include <BeastConfig.h>
 
-#include <ripple/basics/impl/RangeSet.cpp>
-#include <ripple/basics/impl/Log.cpp>
+#include <ripple/basics/impl/BasicConfig.cpp>
 #include <ripple/basics/impl/CheckLibraryVersions.cpp>
 #include <ripple/basics/impl/CountedObject.cpp>
+#include <ripple/basics/impl/Log.cpp>
 #include <ripple/basics/impl/StringUtilities.cpp>
+#include <ripple/basics/impl/RangeSet.cpp>
 #include <ripple/basics/impl/Sustain.cpp>
 #include <ripple/basics/impl/ThreadName.cpp>
 #include <ripple/basics/impl/Time.cpp>
