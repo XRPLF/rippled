@@ -3336,6 +3336,9 @@
     <ClInclude Include="..\..\src\ripple\basics\ArraySize.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\basics\BasicConfig.h">
+      <Filter>ripple\basics</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\BasicTypes.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
@@ -3345,6 +3348,9 @@
     <ClInclude Include="..\..\src\ripple\basics\CountedObject.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\basics\impl\BasicConfig.cpp">
+      <Filter>ripple\basics\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\basics\impl\CheckLibraryVersions.cpp">
       <Filter>ripple\basics\impl</Filter>
     </ClCompile>
@@ -3355,6 +3361,9 @@
       <Filter>ripple\basics\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\basics\impl\RangeSet.cpp">
+      <Filter>ripple\basics\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\basics\impl\Section.cpp">
       <Filter>ripple\basics\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\basics\impl\StringUtilities.cpp">
@@ -3379,6 +3388,9 @@
       <Filter>ripple\basics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\RangeSet.h">
+      <Filter>ripple\basics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\basics\Section.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\StringUtilities.h">
@@ -3481,9 +3493,6 @@
       <Filter>ripple\core\impl</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\core\impl\LoadMonitor.cpp">
-      <Filter>ripple\core\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\core\impl\Section.cpp">
       <Filter>ripple\core\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\core\Job.h">
