@@ -17,20 +17,42 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
+#include <ripple/app/paths/FindPaths.h>
+#include <ripple/app/paths/Pathfinder.h>
 
-#include <ripple/unity/app.h>
+namespace ripple {
 
-#include <ripple/common/seconds_clock.h>
+bool findPathsForOneIssuer (
+    RippleLineCache::ref cache,
+    Account const& srcAccount,
+    Account const& dstAccount,
+    Issue const& srcIssue,
+    STAmount const& dstAmount,
+    int searchLevel,
+    unsigned int const maxPaths,
+    STPathSet& pathsOut,
+    STPath& fullLiquidityPath)
+{
+    Pathfinder pf (
+        cache,
+        srcAccount,
+        dstAccount,
+        srcIssue.currency,
+        srcIssue.account,
+        dstAmount);
 
-#include <ripple/app/ledger/LedgerEntrySet.cpp>
-#include <ripple/app/ledger/AcceptedLedger.cpp>
-#include <ripple/app/ledger/DirectoryEntryIterator.cpp>
-#include <ripple/app/ledger/OrderBookIterator.cpp>
-#include <ripple/app/consensus/DisputedTx.cpp>
-#include <ripple/app/misc/HashRouter.cpp>
-#include <ripple/app/paths/AccountCurrencies.cpp>
-#include <ripple/app/paths/Credit.cpp>
-#include <ripple/app/paths/FindPaths.cpp>
-#include <ripple/app/paths/Pathfinder.cpp>
-#include <ripple/app/misc/AmendmentTableImpl.cpp>
+    if (!pf.findPaths (searchLevel))
+        return false;
+
+    // Yes, ensurePathsAreComplete is called BEFORE we compute the paths...
+    pf.ensurePathsAreComplete (pathsOut);
+    pathsOut = pf.getBestPaths(maxPaths, fullLiquidityPath);
+    return true;
+}
+
+void initializePathfinding ()
+{
+    Pathfinder::initPathTable ();
+}
+
+} // ripple
