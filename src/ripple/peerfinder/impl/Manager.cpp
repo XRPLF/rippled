@@ -184,7 +184,7 @@ public:
     }
 
     void
-    once_per_second()
+    once_per_second() override
     {
         m_logic.once_per_second();
     }
