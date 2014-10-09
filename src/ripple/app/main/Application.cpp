@@ -1214,7 +1214,7 @@ bool ApplicationImp::loadOldLedger (
                              uIndex.SetHex (entry["index"].asString());
                              entry.removeMember ("index");
 
-                             STParsedJSON stp ("sle", ledger.get()[index]);
+                             STParsedJSONObject stp ("sle", ledger.get()[index]);
                              // m_journal.info << "json: " << stp.object->getJson(0);
 
                              if (stp.object && (uIndex.isNonZero()))

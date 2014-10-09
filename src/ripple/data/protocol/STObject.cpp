@@ -942,7 +942,7 @@ public:
             Json::Value faultyJson;
             bool parsedOK (parseJSONString(faulty, faultyJson));
             unexpected(!parsedOK, "failed to parse");
-            STParsedJSON parsed ("test", faultyJson);
+            STParsedJSONObject parsed ("test", faultyJson);
             expect (parsed.object.get() == nullptr,
                 "It should have thrown. "
                   "Immediate children of STArray encoded as json must "
@@ -965,7 +965,7 @@ public:
         bool parsedOK (parseJSONString(json, jsonObject));
         if (parsedOK)
         {
-            STParsedJSON parsed ("test", jsonObject);
+            STParsedJSONObject parsed ("test", jsonObject);
             Json::FastWriter writer;
             std::string const& serialized (
                 writer.write (parsed.object->getJson(0)));

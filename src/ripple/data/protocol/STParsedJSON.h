@@ -22,10 +22,10 @@
 
 namespace ripple {
 
-/** Holds the serialized result of parsing input JSON.
+/** Holds the serialized result of parsing an input JSON object.
     This does validation and checking on the provided JSON.
 */
-class STParsedJSON
+class STParsedJSONObject
 {
 public:
     /** Parses and creates an STParsedJSON object.
@@ -35,49 +35,48 @@ public:
         @param name The name of the JSON field, used in diagnostics.
         @param json The JSON-RPC to parse.
     */
-    STParsedJSON (std::string const& name,
-        Json::Value const& json);
+    STParsedJSONObject (std::string const& name, Json::Value const& json);
+
+    STParsedJSONObject () = delete;
+    STParsedJSONObject (STParsedJSONObject const&) = delete;
+    STParsedJSONObject& operator= (STParsedJSONObject const&) = delete;
+    ~STParsedJSONObject () = default;
 
     /** The STObject if the parse was successful. */
     std::unique_ptr <STObject> object;
 
     /** On failure, an appropriate set of error values. */
     Json::Value error;
-
-private:
-    static std::string make_name (std::string const& object,
-        std::string const& field);
-
-    static Json::Value not_an_object (std::string const& object,
-        std::string const& field = std::string());
-
-    static Json::Value unknown_field (std::string const& object,
-        std::string const& field = std::string());
-
-    static Json::Value out_of_range (std::string const& object,
-        std::string const& field = std::string());
-
-    static Json::Value bad_type (std::string const& object,
-        std::string const& field = std::string());
-
-    static Json::Value invalid_data (std::string const& object,
-        std::string const& field = std::string());
-
-    static Json::Value array_expected (std::string const& object,
-        std::string const& field = std::string());
-
-    static Json::Value string_expected (std::string const& object,
-        std::string const& field = std::string());
-
-    static Json::Value too_deep (std::string const& object,
-        std::string const& field = std::string());
-
-    static Json::Value singleton_expected (
-        std::string const& object);
-
-    bool parse (std::string const& json_name, Json::Value const& json,
-        SField::ref inName, int depth, std::unique_ptr <STObject>& sub_object);
 };
+
+/** Holds the serialized result of parsing an input JSON array.
+    This does validation and checking on the provided JSON.
+*/
+class STParsedJSONArray
+{
+public:
+    /** Parses and creates an STParsedJSON array.
+        The result of the parsing is stored in array and error.
+        Exceptions:
+            Does not throw.
+        @param name The name of the JSON field, used in diagnostics.
+        @param json The JSON-RPC to parse.
+    */
+    STParsedJSONArray (std::string const& name, Json::Value const& json);
+
+    STParsedJSONArray () = delete;
+    STParsedJSONArray (STParsedJSONArray const&) = delete;
+    STParsedJSONArray& operator= (STParsedJSONArray const&) = delete;
+    ~STParsedJSONArray () = default;
+
+    /** The STArray if the parse was successful. */
+    std::unique_ptr <STArray> array;
+
+    /** On failure, an appropriate set of error values. */
+    Json::Value error;
+};
+
+
 
 } // ripple
 
