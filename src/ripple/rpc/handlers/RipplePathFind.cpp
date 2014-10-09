@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/app/paths/AccountCurrencies.h>
+#include <ripple/app/paths/FindPaths.h>
 #include <ripple/rpc/impl/LegacyPathFind.h>
 #include <ripple/server/Role.h>
 
@@ -120,11 +122,10 @@ Json::Value doRipplePathFind (RPC::Context& context)
         }
         else
         {
-            auto usCurrencies = usAccountSourceCurrencies (raSrc, cache, true);
-
+            auto currencies = accountSourceCurrencies (raSrc, cache, true);
             jvSrcCurrencies = Json::Value (Json::arrayValue);
 
-            for (auto const& uCurrency: usCurrencies)
+            for (auto const& uCurrency: currencies)
             {
                 Json::Value jvCurrency (Json::objectValue);
                 jvCurrency["currency"] = to_string(uCurrency);
@@ -135,7 +136,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
         // Fill in currencies destination will accept
         Json::Value jvDestCur (Json::arrayValue);
 
-        auto usDestCurrID = usAccountDestCurrencies (raDst, cache, true);
+        auto usDestCurrID = accountDestCurrencies (raDst, cache, true);
         for (auto const& uCurrency: usDestCurrID)
                 jvDestCur.append (to_string (uCurrency));
 
@@ -178,11 +179,6 @@ Json::Value doRipplePathFind (RPC::Context& context)
                 return rpcError (rpcSRC_ISR_MALFORMED);
             }
 
-            STPathSet spsComputed;
-            bool bValid;
-            Pathfinder pf (cache, raSrc, raDst, uSrcCurrencyID,
-                           uSrcIssuerID, saDstAmount, bValid);
-
             int level = getConfig().PATH_SEARCH_OLD;
             if ((getConfig().PATH_SEARCH_MAX > level)
                 && !getApp().getFeeTrack().isLoadedLocal())
@@ -197,6 +193,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
                     level = rLev;
             }
 
+            STPathSet spsComputed;
             if (context.params.isMember("paths"))
             {
                 STParsedJSONObject paths ("paths", context.params["paths"]);
@@ -206,8 +203,18 @@ Json::Value doRipplePathFind (RPC::Context& context)
                     spsComputed = paths.object.get()->downcast<STPathSet> ();
             }
 
-            STPath extraPath;
-            if (!bValid || !pf.findPaths (level, 4, spsComputed, extraPath))
+            STPath fullLiquidityPath;
+            auto valid = findPathsForOneIssuer(
+                cache,
+                raSrc.getAccountID(),
+                raDst.getAccountID(),
+                {uSrcCurrencyID, uSrcIssuerID},
+                saDstAmount,
+                level,
+                4,  // iMaxPaths
+                spsComputed,
+                fullLiquidityPath);
+            if (!valid)
             {
                 WriteLog (lsWARNING, RPCHandler)
                     << "ripple_path_find: No paths found.";
@@ -242,13 +249,13 @@ Json::Value doRipplePathFind (RPC::Context& context)
                     << " saMaxAmountAct=" << rc.actualAmountIn
                     << " saDstAmountAct=" << rc.actualAmountOut;
 
-                if (extraPath.size() > 0 &&
+                if (fullLiquidityPath.size() > 0 &&
                     (rc.result() == terNO_LINE || rc.result() == tecPATH_PARTIAL))
                 {
                     WriteLog (lsDEBUG, PathRequest)
                         << "Trying with an extra path element";
 
-                    spsComputed.push_back (extraPath);
+                    spsComputed.push_back (fullLiquidityPath);
                     lesSandbox.clear ();
                     rc = path::RippleCalc::rippleCalculate (
                         lesSandbox,

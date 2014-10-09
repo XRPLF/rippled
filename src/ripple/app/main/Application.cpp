@@ -25,6 +25,7 @@
 #include <ripple/basics/Sustain.h>
 #include <ripple/common/seconds_clock.h>
 #include <ripple/common/make_SSLContext.h>
+#include <ripple/app/paths/FindPaths.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/nodestore/Database.h>
 #include <ripple/nodestore/DummyScheduler.h>
@@ -644,7 +645,7 @@ public:
             updateTables ();
 
         m_amendmentTable->addInitial();
-        Pathfinder::initPathTable ();
+        initializePathfinding ();
 
         m_ledgerMaster->setMinValidations (getConfig ().VALIDATION_QUORUM);
 
