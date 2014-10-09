@@ -243,7 +243,7 @@ public:
     getShortId () const override;
     
     RippleAddress const&
-    getNodePublic () const;
+    getNodePublic () const override;
 
     Json::Value
     json() override;
