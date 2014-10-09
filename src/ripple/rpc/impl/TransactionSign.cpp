@@ -324,7 +324,7 @@ Json::Value transactionSign (
         }
     }
 
-    STParsedJSON parsed ("tx_json", tx_json);
+    STParsedJSONObject parsed ("tx_json", tx_json);
     if (!parsed.object.get())
     {
         jvResult ["error"] = parsed.error ["error"];
