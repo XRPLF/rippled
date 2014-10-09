@@ -27,6 +27,7 @@
 #include <beast/module/core/containers/ArrayAllocationBase.h>
 #include <beast/module/core/containers/ElementComparator.h>
 #include <beast/module/core/threads/CriticalSection.h>
+#include <beast/Arithmetic.h>
 
 namespace beast {
 
