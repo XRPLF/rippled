@@ -51,6 +51,14 @@
 #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 #endif
 
+#if BEAST_CLANG
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wreorder"
+#pragma clang diagnostic ignored "-Wunused-private-field"
+#pragma clang diagnostic ignored "-Wunused-variable"
+#pragma clang diagnostic ignored "-Wunused-function"
+#endif
+
 // Compile HyperLevelDB without debugging unless specifically requested
 #if !defined (NDEBUG) && !defined (RIPPLE_DEBUG_HYPERLEVELDB)
 #define NDEBUG
@@ -112,6 +120,10 @@
 
 #if BEAST_GCC
 #pragma GCC diagnostic pop
+#endif
+
+#if BEAST_CLANG
+#pragma clang diagnostic pop
 #endif
 
 #endif

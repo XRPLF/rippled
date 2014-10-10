@@ -44,6 +44,11 @@
 
 #endif
 
+#if BEAST_CLANG
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-function"
+#endif
+
 #include <leveldb/db/builder.cc>
 #include <leveldb/db/db_impl.cc>
 #include <leveldb/db/db_iter.cc>
@@ -95,4 +100,8 @@
 #elif defined (LEVELDB_PLATFORM_ANDROID)
 # error Missing Android port!
 
+#endif
+
+#if BEAST_CLANG
+#pragma clang diagnostic pop
 #endif
