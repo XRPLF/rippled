@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <BeastConfig.h>
+#include <beast/Config.h>
 
 #ifdef _MSC_VER
 #include <cstddef>
@@ -26,6 +27,15 @@ typedef std::ptrdiff_t ssize_t;
 }
 #endif
 
+#if BEAST_CLANG
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-function"
+#endif
+
 #include <snappy/snappy/snappy.cc>
 #include <snappy/snappy/snappy-sinksource.cc>
 #include <snappy/snappy/snappy-stubs-internal.cc>
+
+#if BEAST_CLANG
+#pragma clang diagnostic pop
+#endif
