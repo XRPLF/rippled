@@ -994,7 +994,6 @@ private:
         }
     }
 
-    // TODO(tom): duplicates code in handshake_analyzer::checkTransaction.
     static void checkTransaction (
         Job&,
         int flags,

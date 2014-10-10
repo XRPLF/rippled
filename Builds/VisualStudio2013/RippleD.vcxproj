@@ -2338,9 +2338,6 @@
     <ClCompile Include="..\..\src\ripple\basics\impl\RangeSet.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\basics\impl\Section.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\basics\impl\StringUtilities.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2361,8 +2358,6 @@
     <ClInclude Include="..\..\src\ripple\basics\LoggedTimings.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\RangeSet.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\basics\Section.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\StringUtilities.h">
     </ClInclude>
@@ -2459,8 +2454,6 @@
     <ClInclude Include="..\..\src\ripple\core\LoadFeeTrack.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\LoadMonitor.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\core\Section.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\SystemParameters.h">
     </ClInclude>

@@ -3363,9 +3363,6 @@
     <ClCompile Include="..\..\src\ripple\basics\impl\RangeSet.cpp">
       <Filter>ripple\basics\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\basics\impl\Section.cpp">
-      <Filter>ripple\basics\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\basics\impl\StringUtilities.cpp">
       <Filter>ripple\basics\impl</Filter>
     </ClCompile>
@@ -3388,9 +3385,6 @@
       <Filter>ripple\basics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\RangeSet.h">
-      <Filter>ripple\basics</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\basics\Section.h">
       <Filter>ripple\basics</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\StringUtilities.h">
@@ -3517,9 +3511,6 @@
       <Filter>ripple\core</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\LoadMonitor.h">
-      <Filter>ripple\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\core\Section.h">
       <Filter>ripple\core</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\core\SystemParameters.h">
