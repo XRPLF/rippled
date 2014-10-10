@@ -32,7 +32,7 @@ Section::set (std::string const& key, std::string const& value)
 }
 
 void
-Section::append (std::string const& line)
+Section::append (std::vector <std::string> const& lines)
 {
     // <key> '=' <value>
     static boost::regex const re1 (
@@ -47,18 +47,16 @@ Section::append (std::string const& line)
         , boost::regex_constants::optimize
     );
 
-    boost::smatch match;
-    lines_.push_back (line);
-    if (boost::regex_match (line, match, re1))
-        set (match[1], match[2]);
-}
-
-void
-Section::append (std::vector <std::string> const& lines)
-{
     lines_.reserve (lines_.size() + lines.size());
-    std::for_each (lines.begin(), lines.end(),
-        [&](std::string const& line) { this->append (line); });
+    for (auto const& line : lines)
+    {
+        boost::smatch match;
+        lines_.push_back (line);
+        if (boost::regex_match (line, match, re1))
+            set (match[1], match[2]);
+        else
+            values_.push_back (line);
+    }
 }
 
 bool

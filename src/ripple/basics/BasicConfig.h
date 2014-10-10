@@ -40,6 +40,7 @@ class Section
 {
 private:
     std::vector <std::string> lines_;
+    std::vector <std::string> values_;
     std::map <std::string, std::string, beast::ci_less> map_;
 
 public:
@@ -53,11 +54,22 @@ public:
         return map_.size();
     }
 
-    /** Returns all the lines in the section. */
+    /** Returns all the lines in the section.
+        This includes everything.
+    */
     std::vector <std::string> const&
     lines() const
     {
         return lines_;
+    }
+
+    /** Returns all the values in the section.
+        Values are non-empty lines which are not key/value pairs.
+    */
+    std::vector <std::string> const&
+    values() const
+    {
+        return values_;
     }
 
     /** Set a key/value pair.
@@ -66,17 +78,20 @@ public:
     void
     set (std::string const& key, std::string const& value);
 
-    /** Append a line to this section.
-        If the line can be parsed as a key/value pair it is added to the map.
-    */
-    void
-    append (std::string const& line);
-
     /** Append a set of lines to this section.
-        Parsable key/value pairs are also added to the map.
+        Lines containing key/value pairs are added to the map,
+        else they are added to the values list. Everything is
+        added to the lines list.
     */
     void
     append (std::vector <std::string> const& lines);
+
+    /** Append a line to this section. */
+    void
+    append (std::string const& line)
+    {
+        append (std::vector<std::string>{ line });
+    }
 
     /** Returns `true` if a key with the given name exists. */
     bool
@@ -92,6 +107,64 @@ public:
     std::ostream&
     operator<< (std::ostream&, Section const& section);
 };
+
+//------------------------------------------------------------------------------
+
+/** Holds unparsed configuration information.
+    The raw data sections are processed with intermediate parsers specific
+    to each module instead of being all parsed in a central location.
+*/
+class BasicConfig
+{
+private:
+    std::map <std::string, Section, beast::ci_less> map_;
+
+public:
+    /** Returns `true` if a section with the given name exists. */
+    bool
+    exists (std::string const& name) const;
+
+    /** Returns the section with the given name.
+        If the section does not exist, an empty section is returned.
+    */
+    /** @{ */
+    Section const&
+    section (std::string const& name) const;
+
+    Section const&
+    operator[] (std::string const& name) const
+    {
+        return section(name);
+    }
+    /** @} */
+
+    /** Overwrite a key/value pair with a command line argument
+        If the section does not exist it is created.
+        The previous value, if any, is overwritten.
+    */
+    void
+    overwrite (std::string const& section, std::string const& key,
+        std::string const& value);
+
+    friend
+    std::ostream&
+    operator<< (std::ostream& ss, BasicConfig const& c);
+
+protected:
+    void
+    build (IniFileSections const& ifs);
+
+    /** Insert a legacy single section as a key/value pair.
+        Does nothing if the section does not exist, or does not contain
+        a single line that is not a key/value pair.
+        @deprecated
+    */
+    void
+    remap (std::string const& legacy_section,
+        std::string const& key, std::string const& new_section);
+};
+
+//------------------------------------------------------------------------------
 
 /** Set a value from a configuration Section
     If the named value is not found, the variable is unchanged.
@@ -162,62 +235,6 @@ get (Section const& section,
     }
     return defaultValue;
 }
-
-//------------------------------------------------------------------------------
-
-/** Holds unparsed configuration information.
-    The raw data sections are processed with intermediate parsers specific
-    to each module instead of being all parsed in a central location.
-*/
-class BasicConfig
-{
-private:
-    std::map <std::string, Section, beast::ci_less> map_;
-
-public:
-    /** Returns `true` if a section with the given name exists. */
-    bool
-    exists (std::string const& name) const;
-
-    /** Returns the section with the given name.
-        If the section does not exist, an empty section is returned.
-    */
-    /** @{ */
-    Section const&
-    section (std::string const& name) const;
-
-    Section const&
-    operator[] (std::string const& name) const
-    {
-        return section(name);
-    }
-    /** @} */
-
-    /** Overwrite a key/value pair with a command line argument
-        If the section does not exist it is created.
-        The previous value, if any, is overwritten.
-    */
-    void
-    overwrite (std::string const& section, std::string const& key,
-        std::string const& value);
-
-    friend
-    std::ostream&
-    operator<< (std::ostream& ss, BasicConfig const& c);
-
-protected:
-    void
-    build (IniFileSections const& ifs);
-
-    /** Insert a legacy single section as a key/value pair.
-        Does nothing if the section does not exist, or does not contain
-        a single line that is not a key/value pair.
-        @deprecated
-    */
-    void
-    remap (std::string const& legacy_section,
-        std::string const& key, std::string const& new_section);
-};
 
 } // ripple
 
