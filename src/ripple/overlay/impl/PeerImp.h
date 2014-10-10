@@ -1006,7 +1006,7 @@ private:
                 (stx->getFieldU32 (sfLastLedgerSequence) <
                 getApp().getLedgerMaster().getValidLedgerIndex()))
             { // Transaction has expired
-                getApp().getHashRouter().setFlag(stx->getTransactionID(), SF_BAD);
+                getApp().getHashRouter().setFlag(stx->getTransactionID (), SF_BAD);
                 charge (peer, Resource::feeUnwantedData);
                 return;
             }
