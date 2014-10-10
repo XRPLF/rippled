@@ -125,9 +125,9 @@ static Json::Value singleton_expected (std::string const& object,
 }
 
 
-// This function is used by parseArray and parseObject to parse any json
-// type that doesn't recurse.  Everything represented here is a leaf-type.
-std::unique_ptr <SerializedType> parseNoRecurse (
+// This function is used by parseObject to parse any JSON type that doesn't
+// recurse.  Everything represented here is a leaf-type.
+static std::unique_ptr <SerializedType> parseLeaf (
     std::string const& json_name,
     std::string const& fieldName,
     SField::ptr name,
@@ -195,7 +195,7 @@ std::unique_ptr <SerializedType> parseNoRecurse (
         {
             if (value.isString ())
             {
-                std::string strValue = value.asString ();
+                std::string const strValue = value.asString ();
 
                 if (! strValue.empty () &&
                     ((strValue[0] < '0') || (strValue[0] > '9')))
@@ -603,7 +603,7 @@ std::unique_ptr <SerializedType> parseNoRecurse (
                 return ret;
             }
 
-            std::string strValue = value.asString ();
+            std::string const strValue = value.asString ();
 
             try
             {
@@ -752,8 +752,7 @@ static bool parseObject (
         default:
             {
                 std::unique_ptr <SerializedType> serTyp =
-                    parseNoRecurse (
-                        json_name, fieldName, name, value, error);
+                    parseLeaf (json_name, fieldName, name, value, error);
 
                 if (!serTyp)
                     return false;
