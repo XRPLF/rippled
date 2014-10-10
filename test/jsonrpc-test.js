@@ -58,6 +58,24 @@ function build_teardown() {
   };
 };
 
+function getAllIssuersFromOffer(array) {
+  var values = [];
+  var len = array.length;
+
+  for (var i = 0; i < len; i++) {
+    var item = array[i];
+    if (item.hasOwnProperty('TakerGets')
+      && item['TakerGets'].hasOwnProperty('issuer')) {
+        values.push(item['TakerGets']['issuer']);
+    }
+    if (item.hasOwnProperty('TakerPays')
+      && item['TakerPays'].hasOwnProperty('issuer')) {
+        values.push(item['TakerPays']['issuer']);
+    }
+  }
+  return values;
+};
+
 suite('JSON-RPC', function() {
   var $ = { };
 
@@ -162,6 +180,109 @@ suite('JSON-RPC', function() {
 
         $.remote.ledger_accept();
       }
+    ]
+
+    async.waterfall(steps, function(error) {
+      assert(!error, self.what);
+      done();
+    });
+  });
+});
+
+suite('JSON-RPC-BOOKS', function() {
+  var $ = { };
+  var opt = {ledger_file: 'ledger-7145315.json'};
+
+  setup(function(done) {
+    build_setup(opt).call($, done);
+  });
+
+  teardown(function(done) {
+    build_teardown().call($, done);
+  });
+
+  test('Subscribe to multiple books.', function(done) {
+    var self = this;
+
+    var rippled_config = config.servers.alpha;
+    var client         = jsonrpc.client("http://" + rippled_config.rpc_ip + ":" + rippled_config.rpc_port);
+    var http_config    = config.http_servers["zed"];
+
+    var issuer1 = "rMAz5ZnK73nyNUL4foAvaxdreczCkG3vA6";
+    var issuer2 = "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B";
+    var json = [{
+      'url' :  "http://" + http_config.ip + ":" + http_config.port,
+      "books": [{
+        "taker_pays": { "currency": "XRP" },
+        "taker_gets": {
+          "currency": "JPY",
+          "issuer": issuer1
+        },
+        "snapshot": true,
+        "both": true
+      },
+      {
+        "taker_gets": { "currency":"XRP"},
+        "taker_pays": {
+            "currency":"USD",
+            "issuer": issuer2
+        },
+        "snapshot":true,
+        "both":true
+      }]}];
+    var json_offers = [{
+      'url' :  "http://" + http_config.ip + ":" + http_config.port,
+      "books": [{
+        "taker_pays": { "currency": "XRP" },
+        "taker_gets": {
+          "currency": "JPY",
+          "issuer": issuer1
+        },
+        "snapshot": true,
+        "both": false
+      },
+      {
+        "taker_gets": { "currency":"XRP"},
+        "taker_pays": {
+            "currency":"USD",
+            "issuer": issuer2
+        },
+        "snapshot":true,
+        "both": false
+      }]}];
+
+    var steps = [
+      function (callback) {
+        self.what = "Subscribe to two books.";
+
+        client.call('subscribe', json, function (result) {
+          // console.log(JSON.stringify(result, undefined, 2));
+          assert(typeof result === 'object');
+          // check all the issuers are in asks result
+          var issuers = getAllIssuersFromOffer(result.asks);
+          assert(issuers.indexOf(issuer1) > -1);
+          assert(issuers.indexOf(issuer2) > -1);
+          // check all the issuers are in bids result
+          issuers = getAllIssuersFromOffer(result.bids);
+          assert(issuers.indexOf(issuer1) > -1);
+          assert(issuers.indexOf(issuer2) > -1);
+          callback();
+        });
+      },
+
+      function (callback) {
+        self.what = "Subscribe to offers.";
+
+        client.call('subscribe', json_offers, function (result) {
+          // console.log(JSON.stringify(result, undefined, 2));
+          assert(typeof result === 'object');
+          // check all the issuers are in offers result
+          var issuers = getAllIssuersFromOffer(result.offers);
+          assert(issuers.indexOf(issuer1) > -1);
+          assert(issuers.indexOf(issuer2) > -1);
+          callback();
+        });
+      },
     ]
 
     async.waterfall(steps, function(error) {

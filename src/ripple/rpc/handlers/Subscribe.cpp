@@ -313,20 +313,41 @@ Json::Value doSubscribe (RPC::Context& context)
                             jvMarker, jvBids);
 
                         if (jvBids.isMember (jss::offers))
-                            jvResult[jss::bids] = jvBids[jss::offers];
+                        {
+                            for (auto& item: jvBids[jss::offers])
+                            {
+                                jvResult[jss::bids].append (item);
+                            }
+                        }
 
                         context.netOps_.getBookPage (
                             lpLedger, book, raTakerID.getAccountID (),
                             false, 0, jvMarker, jvAsks);
 
                         if (jvAsks.isMember (jss::offers))
-                            jvResult[jss::asks] = jvAsks[jss::offers];
+                        {
+                            for (auto& item: jvAsks[jss::offers])
+                            {
+                                jvResult[jss::asks].append (item);
+                            }
+                        }
+
                     }
                     else
                     {
+                        Json::Value jvOffers (Json::objectValue);
+
                         context.netOps_.getBookPage (
                             lpLedger, book, raTakerID.getAccountID (), false, 0,
-                            jvMarker, jvResult);
+                            jvMarker, jvOffers);
+
+                        if (jvOffers.isMember (jss::offers))
+                        {
+                            for (auto& item: jvOffers[jss::offers])
+                            {
+                                jvResult[jss::offers].append (item);
+                            }
+                        }
                     }
                 }
             }
