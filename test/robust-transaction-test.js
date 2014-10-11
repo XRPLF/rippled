@@ -8,7 +8,8 @@ var Server      = require('./server').Server;
 var testutils   = require('./testutils');
 var config      = testutils.init_config();
 
-suite('Robust transaction submission', function() {
+var make_suite = process.env.TRAVIS != null ? suite.skip : suite;
+make_suite('Robust transaction submission', function() {
   var $ = { };
 
   setup(function(done) {
