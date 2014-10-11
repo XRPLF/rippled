@@ -201,20 +201,20 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    void onPrepare ()
-    {
-    }
-
     void
-    onStart()
+    onPrepare ()
     {
-        m_journal.debug << "Initializing";
         beast::Error error (m_store.open (m_databaseFile));
         if (error)
             m_journal.fatal <<
                 "Failed to open '" << m_databaseFile.getFullPathName() << "'";
         if (! error)
             m_logic.load ();
+    }
+
+    void
+    onStart()
+    {
     }
 
     void onStop ()
