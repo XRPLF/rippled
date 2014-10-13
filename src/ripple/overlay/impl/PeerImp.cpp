@@ -447,13 +447,9 @@ PeerImp::on_read_http_response (error_code ec, std::size_t bytes_transferred)
     if (! ec)
     {
         read_buffer_.commit (bytes_transferred);
-        bool success;
         std::size_t bytes_consumed;
-        std::tie (success, bytes_consumed) = http_parser_->write (
+        std::tie (ec, bytes_consumed) = http_parser_->write (
             read_buffer_.data());
-        if (! success)
-            ec = http_parser_->error();
-
         if (! ec)
         {
             read_buffer_.consume (bytes_consumed);
@@ -597,12 +593,9 @@ PeerImp::on_read_http_request (error_code ec, std::size_t bytes_transferred)
     if (! ec)
     {
         read_buffer_.commit (bytes_transferred);
-        bool success;
         std::size_t bytes_consumed;
-        std::tie (success, bytes_consumed) = http_parser_->write (
+        std::tie (ec, bytes_consumed) = http_parser_->write (
             read_buffer_.data());
-        if (! success)
-            ec = http_parser_->error();
 
         if (! ec)
         {
