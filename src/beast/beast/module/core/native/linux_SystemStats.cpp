@@ -117,18 +117,6 @@ String SystemStats::getComputerName()
     return String::empty;
 }
 
-static String getLocaleValue (nl_item key)
-{
-    const char* oldLocale = ::setlocale (LC_ALL, "");
-    String result (String::fromUTF8 (nl_langinfo (key)));
-    ::setlocale (LC_ALL, oldLocale);
-    return result;
-}
-
-String SystemStats::getUserLanguage()    { return getLocaleValue (_NL_IDENTIFICATION_LANGUAGE); }
-String SystemStats::getUserRegion()      { return getLocaleValue (_NL_IDENTIFICATION_TERRITORY); }
-String SystemStats::getDisplayLanguage() { return getUserLanguage(); }
-
 //==============================================================================
 void CPUInformation::initialise() noexcept
 {
@@ -138,8 +126,6 @@ void CPUInformation::initialise() noexcept
     hasSSE2 = flags.contains ("sse2");
     hasSSE3 = flags.contains ("sse3");
     has3DNow = flags.contains ("3dnow");
-
-    numCpus = LinuxStatsHelpers::getCpuInfo ("processor").getIntValue() + 1;
 }
 
 //==============================================================================

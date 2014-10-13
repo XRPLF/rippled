@@ -30,6 +30,7 @@
 #include <chrono>
 #include <mutex>
 #include <set>
+#include <thread>
 
 namespace ripple {
 
@@ -225,7 +226,7 @@ public:
         }
         else if (c == 0)
         {
-            c = beast::SystemStats::getNumCpus ();
+            c = std::thread::hardware_concurrency();
 
             // VFALCO NOTE According to boost, hardware_concurrency cannot return
             //             negative numbers/

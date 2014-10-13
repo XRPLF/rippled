@@ -24,6 +24,8 @@
 #include <beast/threads/Thread.h>
 #include <beast/threads/semaphore.h>
 
+#include <thread>
+
 namespace beast {
 
 /** A group of threads that process tasks.
@@ -54,7 +56,7 @@ public:
     */
     explicit Workers (Callback& callback,
                       String const& threadNames = "Worker",
-                      int numberOfThreads = SystemStats::getNumCpus ());
+                      int numberOfThreads = std::thread::hardware_concurrency());
 
     ~Workers ();
 
