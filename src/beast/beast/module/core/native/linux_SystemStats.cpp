@@ -24,108 +24,19 @@
 namespace beast
 {
 
-void Logger::outputDebugString (const String& text)
+void outputDebugString (std::string const& text)
 {
     std::cerr << text << std::endl;
 }
 
 //==============================================================================
-SystemStats::OperatingSystemType SystemStats::getOperatingSystemType()
-{
-    return Linux;
-}
-
-String SystemStats::getOperatingSystemName()
-{
-    return "Linux";
-}
-
-bool SystemStats::isOperatingSystem64Bit()
-{
-   #if BEAST_64BIT
-    return true;
-   #else
-    //xxx not sure how to find this out?..
-    return false;
-   #endif
-}
-
-//==============================================================================
-namespace LinuxStatsHelpers
-{
-    String getCpuInfo (const char* const key)
-    {
-        StringArray lines;
-        File ("/proc/cpuinfo").readLines (lines);
-
-        for (int i = lines.size(); --i >= 0;) // (NB - it's important that this runs in reverse order)
-            if (lines[i].startsWithIgnoreCase (key))
-                return lines[i].fromFirstOccurrenceOf (":", false, false).trim();
-
-        return String::empty;
-    }
-}
-
-String SystemStats::getCpuVendor()
-{
-    return LinuxStatsHelpers::getCpuInfo ("vendor_id");
-}
-
-int SystemStats::getCpuSpeedInMegaherz()
-{
-    return roundToInt (LinuxStatsHelpers::getCpuInfo ("cpu MHz").getFloatValue());
-}
-
-int SystemStats::getMemorySizeInMegabytes()
-{
-    struct sysinfo sysi;
-
-    if (sysinfo (&sysi) == 0)
-        return sysi.totalram * sysi.mem_unit / (1024 * 1024);
-
-    return 0;
-}
-
-int SystemStats::getPageSize()
-{
-    return sysconf (_SC_PAGESIZE);
-}
-
-//==============================================================================
-String SystemStats::getLogonName()
-{
-    const char* user = getenv ("USER");
-
-    if (user == nullptr)
-        if (passwd* const pw = getpwuid (getuid()))
-            user = pw->pw_name;
-
-    return CharPointer_UTF8 (user);
-}
-
-String SystemStats::getFullUserName()
-{
-    return getLogonName();
-}
-
-String SystemStats::getComputerName()
+std::string SystemStats::getComputerName()
 {
     char name [256] = { 0 };
     if (gethostname (name, sizeof (name) - 1) == 0)
         return name;
 
-    return String::empty;
-}
-
-//==============================================================================
-void CPUInformation::initialise() noexcept
-{
-    const String flags (LinuxStatsHelpers::getCpuInfo ("flags"));
-    hasMMX = flags.contains ("mmx");
-    hasSSE = flags.contains ("sse");
-    hasSSE2 = flags.contains ("sse2");
-    hasSSE3 = flags.contains ("sse3");
-    has3DNow = flags.contains ("3dnow");
+    return std::string{};
 }
 
 //==============================================================================
@@ -153,15 +64,6 @@ std::int64_t Time::getHighResolutionTicksPerSecond() noexcept
 double Time::getMillisecondCounterHiRes() noexcept
 {
     return getHighResolutionTicks() * 0.001;
-}
-
-bool Time::setSystemTimeToThisTime() const
-{
-    timeval t;
-    t.tv_sec = millisSinceEpoch / 1000;
-    t.tv_usec = (millisSinceEpoch - t.tv_sec * 1000) * 1000;
-
-    return settimeofday (&t, 0) == 0;
 }
 
 } // beast

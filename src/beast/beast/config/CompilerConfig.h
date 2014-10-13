@@ -109,9 +109,12 @@ extern void beast_reportFatalError (char const* message, char const* fileName, i
 
 /** Writes a string to the standard error stream.
     This is only compiled in a debug build.
-    @see Logger::outputDebugString
 */
-#define BDBG(dbgtext)          { beast::String tempDbgBuf; tempDbgBuf << dbgtext; beast::Logger::outputDebugString (tempDbgBuf); }
+#define BDBG(dbgtext) { \
+    beast::String tempDbgBuf; \
+    tempDbgBuf << dbgtext; \
+    beast::outputDebugString (tempDbgBuf.toStdString ()); \
+}
 
 #if 0
 /** This will always cause an assertion failure.

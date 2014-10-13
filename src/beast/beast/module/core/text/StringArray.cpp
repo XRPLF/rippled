@@ -21,6 +21,8 @@
 */
 //==============================================================================
 
+#include <algorithm>
+
 namespace beast
 {
 
@@ -321,7 +323,7 @@ void StringArray::move (const int currentIndex, int newIndex) noexcept
 String StringArray::joinIntoString (const String& separator, int start, int numberToJoin) const
 {
     const int last = (numberToJoin < 0) ? size()
-                                        : bmin (size(), start + numberToJoin);
+                                        : std::min (size(), start + numberToJoin);
 
     if (start < 0)
         start = 0;

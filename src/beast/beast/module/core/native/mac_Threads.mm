@@ -23,44 +23,6 @@
 
 namespace beast
 {
-
-/*
-    Note that a lot of methods that you'd expect to find in this file actually
-    live in beast_posix_SharedCode.h!
-*/
-
-//==============================================================================
-bool Process::isForegroundProcess()
-{
-   #if BEAST_MAC
-    return [NSApp isActive];
-   #else
-    return true; // xxx change this if more than one app is ever possible on iOS!
-   #endif
-}
-
-void Process::makeForegroundProcess()
-{
-   #if BEAST_MAC
-    [NSApp activateIgnoringOtherApps: YES];
-   #endif
-}
-
-void Process::raisePrivilege()
-{
-    bassertfalse;
-}
-
-void Process::lowerPrivilege()
-{
-    bassertfalse;
-}
-
-void Process::setPriority (ProcessPriority)
-{
-    // xxx
-}
-
 //==============================================================================
 bool beast_isRunningUnderDebugger()
 {

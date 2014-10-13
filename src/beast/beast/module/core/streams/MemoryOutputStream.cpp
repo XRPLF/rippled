@@ -21,6 +21,8 @@
 */
 //==============================================================================
 
+#include <algorithm>
+
 namespace beast
 {
 
@@ -85,7 +87,7 @@ char* MemoryOutputStream::prepareToWrite (size_t numBytes)
     if (blockToUse != nullptr)
     {
         if (storageNeeded >= blockToUse->getSize())
-            blockToUse->ensureSize ((storageNeeded + bmin (storageNeeded / 2, (size_t) (1024 * 1024)) + 32) & ~31u);
+            blockToUse->ensureSize ((storageNeeded + std::min (storageNeeded / 2, (size_t) (1024 * 1024)) + 32) & ~31u);
 
         data = static_cast <char*> (blockToUse->getData());
     }
@@ -99,7 +101,7 @@ char* MemoryOutputStream::prepareToWrite (size_t numBytes)
 
     char* const writePointer = data + position;
     position += numBytes;
-    size = bmax (size, position);
+    size = std::max (size, position);
     return writePointer;
 }
 

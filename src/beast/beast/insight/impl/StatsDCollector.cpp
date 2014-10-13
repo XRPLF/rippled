@@ -347,7 +347,7 @@ public:
             ss << s;
         }
         //m_journal.trace << std::endl << ss.str ();
-        Logger::outputDebugString (ss.str ());
+        outputDebugString (ss.str ());
 #endif
     }
 

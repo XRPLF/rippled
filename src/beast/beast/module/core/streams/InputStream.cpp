@@ -68,7 +68,8 @@ short InputStream::readShortBigEndian()
 
 int InputStream::readInt()
 {
-    static_bassert (sizeof (int) == 4);
+    static_assert (sizeof (int) == 4,
+        "The size of an integer must be exactly 4 bytes");
 
     char temp[4];
 
@@ -153,7 +154,9 @@ std::int64_t InputStream::readInt64BigEndian()
 float InputStream::readFloat()
 {
     // the union below relies on these types being the same size...
-    static_bassert (sizeof (std::int32_t) == sizeof (float));
+    static_assert (sizeof (std::int32_t) == sizeof (float),
+        "The size of a float must be equal to the size of an std::int32_t");
+
     union { std::int32_t asInt; float asFloat; } n;
     n.asInt = (std::int32_t) readInt();
     return n.asFloat;
@@ -248,11 +251,11 @@ void InputStream::skipNextBytes (std::int64_t numBytesToSkip)
 {
     if (numBytesToSkip > 0)
     {
-        const int skipBufferSize = (int) bmin (numBytesToSkip, (std::int64_t) 16384);
+        const int skipBufferSize = (int) std::min (numBytesToSkip, (std::int64_t) 16384);
         HeapBlock<char> temp ((size_t) skipBufferSize);
 
         while (numBytesToSkip > 0 && ! isExhausted())
-            numBytesToSkip -= read (temp, (int) bmin (numBytesToSkip, (std::int64_t) skipBufferSize));
+            numBytesToSkip -= read (temp, (int) std::min (numBytesToSkip, (std::int64_t) skipBufferSize));
     }
 }
 

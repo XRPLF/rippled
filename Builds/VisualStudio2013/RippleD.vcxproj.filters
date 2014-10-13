@@ -789,9 +789,6 @@
     <ClInclude Include="..\..\src\beast\beast\crypto\base64.h">
       <Filter>beast\crypto</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\crypto\BinaryEncoding.h">
-      <Filter>beast\crypto</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\crypto\Crypto.unity.cpp">
       <Filter>beast\crypto</Filter>
     </ClCompile>
@@ -807,9 +804,6 @@
     <ClInclude Include="..\..\src\beast\beast\crypto\impl\sha2\sha2.h">
       <Filter>beast\crypto\impl\sha2</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\crypto\impl\UnsignedInteger.cpp">
-      <Filter>beast\crypto\impl</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\crypto\MurmurHash.h">
       <Filter>beast\crypto</Filter>
     </ClInclude>
@@ -819,18 +813,6 @@
     <ClCompile Include="..\..\src\beast\beast\crypto\tests\base64.test.cpp">
       <Filter>beast\crypto\tests</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\crypto\tests\BinaryEncoding.cpp">
-      <Filter>beast\crypto\tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\crypto\tests\UnsignedInteger.test.cpp">
-      <Filter>beast\crypto\tests</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\crypto\UnsignedInteger.h">
-      <Filter>beast\crypto</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\crypto\UnsignedIntegerCalc.h">
-      <Filter>beast\crypto</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\cxx14\algorithm.h">
       <Filter>beast\cxx14</Filter>
     </ClInclude>
@@ -1092,12 +1074,6 @@
     <ClInclude Include="..\..\src\beast\beast\module\core\containers\ElementComparator.h">
       <Filter>beast\module\core\containers</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\containers\LinkedListPointer.h">
-      <Filter>beast\module\core\containers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\containers\ScopedValueSetter.h">
-      <Filter>beast\module\core\containers</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\module\core\core.h">
       <Filter>beast\module\core</Filter>
     </ClInclude>
@@ -1149,40 +1125,13 @@
     <ClInclude Include="..\..\src\beast\beast\module\core\files\FileOutputStream.h">
       <Filter>beast\module\core\files</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\files\FileSearchPath.cpp">
-      <Filter>beast\module\core\files</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\core\files\FileSearchPath.h">
-      <Filter>beast\module\core\files</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\files\RandomAccessFile.cpp">
-      <Filter>beast\module\core\files</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\core\files\RandomAccessFile.h">
-      <Filter>beast\module\core\files</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\files\TemporaryFile.cpp">
-      <Filter>beast\module\core\files</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\core\files\TemporaryFile.h">
-      <Filter>beast\module\core\files</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\logging\Logger.cpp">
-      <Filter>beast\module\core\logging</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\module\core\logging\Logger.h">
       <Filter>beast\module\core\logging</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\maths\Math.h">
-      <Filter>beast\module\core\maths</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\maths\Random.cpp">
       <Filter>beast\module\core\maths</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\module\core\maths\Random.h">
-      <Filter>beast\module\core\maths</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\maths\Range.h">
       <Filter>beast\module\core\maths</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\memory\MemoryBlock.cpp">
@@ -1198,9 +1147,6 @@
       <Filter>beast\module\core\misc</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\module\core\misc\Result.h">
-      <Filter>beast\module\core\misc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\misc\WindowsRegistry.h">
       <Filter>beast\module\core\misc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\module\core\native\BasicNativeHeaders.h">
@@ -1242,13 +1188,7 @@
     <ClInclude Include="..\..\src\beast\beast\module\core\native\posix_SharedCode.h">
       <Filter>beast\module\core\native</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\native\win32_ComSmartPtr.h">
-      <Filter>beast\module\core\native</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\native\win32_Files.cpp">
-      <Filter>beast\module\core\native</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\module\core\native\win32_Registry.cpp">
       <Filter>beast\module\core\native</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\module\core\native\win32_SystemStats.cpp">
@@ -1312,9 +1252,6 @@
       <Filter>beast\module\core\text</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\module\core\threads\CriticalSection.h">
-      <Filter>beast\module\core\threads</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\threads\DynamicLibrary.h">
       <Filter>beast\module\core\threads</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\module\core\threads\Process.h">
@@ -1506,9 +1443,6 @@
     <ClInclude Include="..\..\src\beast\beast\smart_ptr\SharedPtr.h">
       <Filter>beast\smart_ptr</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\StaticAssert.h">
-      <Filter>beast</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\streams\abstract_ostream.h">
       <Filter>beast\streams</Filter>
     </ClInclude>
@@ -1620,9 +1554,6 @@
     <ClInclude Include="..\..\src\beast\beast\threads\Stoppable.h">
       <Filter>beast\threads</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\threads\tests\Atomic.test.cpp">
-      <Filter>beast\threads\tests</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\threads\tests\ServiceQueue.cpp">
       <Filter>beast\threads\tests</Filter>
     </ClCompile>
@@ -1708,9 +1639,6 @@
       <Filter>beast\utility\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\utility\impl\PropertyStream.cpp">
-      <Filter>beast\utility\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\utility\impl\StaticObject.cpp">
       <Filter>beast\utility\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\utility\Journal.h">

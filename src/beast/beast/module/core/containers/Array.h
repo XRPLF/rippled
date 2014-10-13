@@ -1050,8 +1050,8 @@ private:
 
     void minimiseStorageAfterRemoval()
     {
-        if (data.numAllocated > bmax (minimumAllocatedSize, numUsed * 2))
-            data.shrinkToNoMoreThan (bmax (numUsed, bmax (minimumAllocatedSize, 64 / (int) sizeof (ElementType))));
+        if (data.numAllocated > std::max (minimumAllocatedSize, numUsed * 2))
+            data.shrinkToNoMoreThan (std::max (numUsed, std::max (minimumAllocatedSize, 64 / (int) sizeof (ElementType))));
     }
 };
 

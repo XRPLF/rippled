@@ -202,9 +202,6 @@ public:
     // this can be called from any thread that needs to pause..
     static void sleep (int milliseconds);
 
-    /** Yields the calling thread's current time-slot. */
-    static void yield();
-
     //==============================================================================
     /** Makes the thread wait for a notification.
 
