@@ -21,6 +21,8 @@
 */
 //==============================================================================
 
+#include <algorithm>
+
 namespace beast
 {
 
@@ -191,7 +193,7 @@ void MemoryBlock::insert (const void* const srcData, const size_t numBytes, size
     if (numBytes > 0)
     {
         bassert (srcData != nullptr); // this must not be null!
-        insertPosition = bmin (size, insertPosition);
+        insertPosition = std::min (size, insertPosition);
         const size_t trailingDataSize = size - insertPosition;
         setSize (size + numBytes, false);
 
@@ -277,7 +279,7 @@ int MemoryBlock::getBitRange (const size_t bitRangeStart, size_t numBits) const 
 
     while (numBits > 0 && (size_t) byte < size)
     {
-        const size_t bitsThisTime = bmin (numBits, 8 - offsetInByte);
+        const size_t bitsThisTime = std::min (numBits, 8 - offsetInByte);
         const int mask = (0xff >> (8 - bitsThisTime)) << offsetInByte;
 
         res |= (((data[byte] & mask) >> offsetInByte) << bitsSoFar);
@@ -299,7 +301,7 @@ void MemoryBlock::setBitRange (const size_t bitRangeStart, size_t numBits, int b
 
     while (numBits > 0 && (size_t) byte < size)
     {
-        const size_t bitsThisTime = bmin (numBits, 8 - offsetInByte);
+        const size_t bitsThisTime = std::min (numBits, 8 - offsetInByte);
 
         const std::uint32_t tempMask = (mask << offsetInByte) | ~((((std::uint32_t) 0xffffffff) >> offsetInByte) << offsetInByte);
         const std::uint32_t tempBits = (std::uint32_t) bitsToSet << offsetInByte;

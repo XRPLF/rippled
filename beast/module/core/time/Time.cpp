@@ -21,6 +21,9 @@
 */
 //==============================================================================
 
+#include <algorithm>
+#include <thread>
+
 namespace beast
 {
 
@@ -257,14 +260,14 @@ void Time::waitForMillisecondCounter (const std::uint32_t targetTime) noexcept
 
         if (toWait > 2)
         {
-            Thread::sleep (bmin (20, toWait >> 1));
+            Thread::sleep (std::min (20, toWait >> 1));
         }
         else
         {
             // xxx should consider using mutex_pause on the mac as it apparently
             // makes it seem less like a spinlock and avoids lowering the thread pri.
             for (int i = 10; --i >= 0;)
-                Thread::yield();
+                std::this_thread::yield();
         }
     }
 }

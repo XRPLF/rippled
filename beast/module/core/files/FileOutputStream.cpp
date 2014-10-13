@@ -21,6 +21,8 @@
 */
 //==============================================================================
 
+#include <algorithm>
+
 namespace beast
 {
 
@@ -34,7 +36,7 @@ FileOutputStream::FileOutputStream (const File& f, const size_t bufferSizeToUse)
       currentPosition (0),
       bufferSize (bufferSizeToUse),
       bytesInBuffer (0),
-      buffer (bmax (bufferSizeToUse, (size_t) 16))
+      buffer (std::max (bufferSizeToUse, (size_t) 16))
 {
     openHandle();
 }

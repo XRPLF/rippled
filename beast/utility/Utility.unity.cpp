@@ -26,7 +26,6 @@
 #include <beast/utility/impl/Debug.cpp>
 #include <beast/utility/impl/Journal.cpp>
 #include <beast/utility/impl/LeakChecked.cpp>
-#include <beast/utility/impl/StaticObject.cpp>
 #include <beast/utility/impl/PropertyStream.cpp>
 
 #include <beast/utility/tests/bassert.test.cpp>

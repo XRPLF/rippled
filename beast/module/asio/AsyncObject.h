@@ -20,7 +20,7 @@
 #ifndef BEAST_ASIO_ASYNCOBJECT_H_INCLUDED
 #define BEAST_ASIO_ASYNCOBJECT_H_INCLUDED
 
-#include <beast/Atomic.h>
+#include <atomic>
 #include <cassert>
 
 namespace beast {
@@ -33,11 +33,16 @@ namespace asio {
 template <class Derived>
 class AsyncObject
 {
+protected:
+    AsyncObject ()
+        : m_pending (0)
+    { }
+
 public:
     ~AsyncObject ()
     {
         // Destroying the object with I/O pending? Not a clean exit!
-        assert (m_pending.get() == 0);
+        assert (m_pending.load () == 0);
     }
 
     /** RAII container that maintains the count of pending I/O.
@@ -65,8 +70,9 @@ public:
                 m_owner->asyncHandlersComplete ();
         }
 
+        CompletionCounter& operator= (CompletionCounter const&) = delete;
+
     private:
-        CompletionCounter& operator= (CompletionCounter const&);
         Derived* m_owner;
     };
 
@@ -83,7 +89,7 @@ public:
 
 private:
     // The number of handlers pending.
-    beast::Atomic <int> m_pending;
+    std::atomic <int> m_pending;
 };
 
 }

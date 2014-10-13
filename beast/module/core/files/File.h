@@ -134,13 +134,6 @@ public:
     */
     std::int64_t getSize() const;
 
-    /** Utility function to convert a file size in bytes to a neat string description.
-
-        So for example 100 would return "100 bytes", 2000 would return "2 KB",
-        2000000 would produce "2 MB", etc.
-    */
-    static String descriptionOfSizeInBytes (std::int64_t bytes);
-
     //==============================================================================
     /** Returns the complete, absolute path of this file.
 
@@ -354,16 +347,6 @@ public:
     bool setReadOnly (bool shouldBeReadOnly,
                       bool applyRecursively = false) const;
 
-    /** Returns true if this file is a hidden or system file.
-        The criteria for deciding whether a file is hidden are platform-dependent.
-    */
-    bool isHidden() const;
-
-    /** If this file is a link, this returns the file that it points to.
-        If this file isn't actually link, it'll just return itself.
-    */
-    File getLinkedTarget() const;
-
     //==============================================================================
     /** Returns the last modification time of this file.
 
@@ -410,14 +393,6 @@ public:
     */
     bool setCreationTime (Time newTime) const;
 
-    /** If possible, this will try to create a version string for the given file.
-
-        The OS may be able to look at the file and give a version for it - e.g. with
-        executables, bundles, dlls, etc. If no version is available, this will
-        return an empty string.
-    */
-    String getVersion() const;
-
     //==============================================================================
     /** Creates an empty file if it doesn't already exist.
 
@@ -463,14 +438,6 @@ public:
         @see deleteFile
     */
     bool deleteRecursively() const;
-
-    /** Moves this file or folder to the trash.
-
-        @returns true if the operation succeeded. It could fail if the trash is full, or
-                 if the file is write-protected, so you should check the return value
-                 and act appropriately.
-    */
-    bool moveToTrash() const;
 
     /** Moves or renames a file.
 
@@ -572,7 +539,7 @@ public:
 
         @returns    a stream that will read from this file (initially positioned at the
                     start of the file), or nullptr if the file can't be opened for some reason
-        @see createOutputStream, loadFileAsData
+        @see createOutputStream
     */
     FileInputStream* createInputStream() const;
 
@@ -589,33 +556,6 @@ public:
     FileOutputStream* createOutputStream (size_t bufferSize = 0x8000) const;
 
     //==============================================================================
-    /** Loads a file's contents into memory as a block of binary data.
-
-        Of course, trying to load a very large file into memory will blow up, so
-        it's better to check first.
-
-        @param result   the data block to which the file's contents should be appended - note
-                        that if the memory block might already contain some data, you
-                        might want to clear it first
-        @returns        true if the file could all be read into memory
-    */
-    bool loadFileAsData (MemoryBlock& result) const;
-
-    /** Reads a file into memory as a string.
-
-        Attempts to load the entire file as a zero-terminated string.
-
-        This makes use of InputStream::readEntireStreamAsString, which can
-        read either UTF-16 or UTF-8 file formats.
-    */
-    String loadFileAsString() const;
-
-    /** Reads the contents of this file as text and splits it into lines, which are
-        appended to the given StringArray.
-    */
-    void readLines (StringArray& destLines) const;
-
-    //==============================================================================
     /** Appends a block of binary data to the end of the file.
 
         This will try to write the given buffer to the end of the file.
@@ -624,23 +564,6 @@ public:
     */
     bool appendData (const void* dataToAppend,
                      size_t numberOfBytes) const;
-
-    /** Replaces this file's contents with a given block of data.
-
-        This will delete the file and replace it with the given data.
-
-        A nice feature of this method is that it's safe - instead of deleting
-        the file first and then re-writing it, it creates a new temporary file,
-        writes the data to that, and then moves the new file to replace the existing
-        file. This means that if the power gets pulled out or something crashes,
-        you're a lot less likely to end up with a corrupted or unfinished file..
-
-        Returns true if the operation succeeds, or false if it fails.
-
-        @see appendText
-    */
-    bool replaceWithData (const void* dataToWrite,
-                          size_t numberOfBytes) const;
 
     /** Appends a string to the end of the file.
 
@@ -658,50 +581,7 @@ public:
                      bool asUnicode = false,
                      bool writeUnicodeHeaderBytes = false) const;
 
-    /** Replaces this file's contents with a given text string.
-
-        This will delete the file and replace it with the given text.
-
-        A nice feature of this method is that it's safe - instead of deleting
-        the file first and then re-writing it, it creates a new temporary file,
-        writes the text to that, and then moves the new file to replace the existing
-        file. This means that if the power gets pulled out or something crashes,
-        you're a lot less likely to end up with an empty file..
-
-        For an explanation of the parameters here, see the appendText() method.
-
-        Returns true if the operation succeeds, or false if it fails.
-
-        @see appendText
-    */
-    bool replaceWithText (const String& textToWrite,
-                          bool asUnicode = false,
-                          bool writeUnicodeHeaderBytes = false) const;
-
-    /** Attempts to scan the contents of this file and compare it to another file, returning
-        true if this is possible and they match byte-for-byte.
-    */
-    bool hasIdenticalContentTo (const File& other) const;
-
     //==============================================================================
-    /** Creates a set of files to represent each file root.
-
-        e.g. on Windows this will create files for "c:\", "d:\" etc according
-        to which ones are available. On the Mac/Linux, this will probably
-        just add a single entry for "/".
-    */
-    static void findFileSystemRoots (Array<File>& results);
-
-    /** Finds the name of the drive on which this file lives.
-        @returns the volume label of the drive, or an empty string if this isn't possible
-    */
-    String getVolumeLabel() const;
-
-    /** Returns the serial number of the volume on which this file lives.
-        @returns the serial number, or zero if there's a problem doing this
-    */
-    int getVolumeSerialNumber() const;
-
     /** Returns the number of bytes free on the drive that this file lives on.
 
         @returns the number of bytes free, or 0 if there's a problem finding this out
@@ -715,41 +595,6 @@ public:
         @see getBytesFreeOnVolume
     */
     std::int64_t getVolumeTotalSize() const;
-
-    /** Returns true if this file is on a CD or DVD drive. */
-    bool isOnCDRomDrive() const;
-
-    /** Returns true if this file is on a hard disk.
-
-        This will fail if it's a network drive, but will still be true for
-        removable hard-disks.
-    */
-    bool isOnHardDisk() const;
-
-    /** Returns true if this file is on a removable disk drive.
-
-        This might be a usb-drive, a CD-rom, or maybe a network drive.
-    */
-    bool isOnRemovableDrive() const;
-
-    //==============================================================================
-    /** Launches the file as a process.
-
-        - if the file is executable, this will run it.
-
-        - if it's a document of some kind, it will launch the document with its
-        default viewer application.
-
-        - if it's a folder, it will be opened in Explorer, Finder, or equivalent.
-
-        @see revealToUser
-    */
-    bool startAsProcess (const String& parameters = String::empty) const;
-
-    /** Opens Finder, Explorer, or whatever the OS uses, to show the user this file's location.
-        @see startAsProcess
-    */
-    void revealToUser() const;
 
     //==============================================================================
     /** A set of types of location that can be passed to the getSpecialLocation() method.
@@ -805,39 +650,6 @@ public:
             Always delete them when you're finished, to keep the user's computer tidy!
         */
         tempDirectory,
-
-        /** Returns this application's executable file.
-
-            If running as a plug-in or DLL, this will (where possible) be the DLL rather than the
-            host app.
-
-            On the mac this will return the unix binary, not the package folder - see
-            currentApplicationFile for that.
-
-            See also invokedExecutableFile, which is similar, but if the exe was launched from a
-            file link, invokedExecutableFile will return the name of the link.
-        */
-        currentExecutableFile,
-
-        /** Returns this application's location.
-
-            If running as a plug-in or DLL, this will (where possible) be the DLL rather than the
-            host app.
-
-            On the mac this will return the package folder (if it's in one), not the unix binary
-            that's inside it - compare with currentExecutableFile.
-        */
-        currentApplicationFile,
-
-        /** Returns the file that was invoked to launch this executable.
-            This may differ from currentExecutableFile if the app was started from e.g. a link - this
-            will return the name of the link that was used, whereas currentExecutableFile will return
-            the actual location of the target executable.
-        */
-        invokedExecutableFile,
-
-        /** In a plugin, this will return the path of the host executable. */
-        hostApplicationPath,
 
         /** The directory in which applications normally get installed.
             So on windows, this would be something like "c:\program files", on the
@@ -925,25 +737,6 @@ public:
 
     /** Adds a separator character to the end of a path if it doesn't already have one. */
     static String addTrailingSeparator (const String& path);
-
-   #if BEAST_MAC || BEAST_IOS || DOXYGEN
-    //==============================================================================
-    /** OSX ONLY - Finds the OSType of a file from the its resources. */
-    OSType getMacOSType() const;
-
-    /** OSX ONLY - Returns true if this file is actually a bundle. */
-    bool isBundle() const;
-   #endif
-
-   #if BEAST_MAC || DOXYGEN
-    /** OSX ONLY - Adds this file to the OSX dock */
-    void addToDock() const;
-   #endif
-
-   #if BEAST_WINDOWS
-    /** Windows ONLY - Creates a win32 .LNK shortcut file that links to this file. */
-    bool createLink (const String& description, const File& linkFileToCreate) const;
-   #endif
 
 private:
     //==============================================================================

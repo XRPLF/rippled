@@ -268,23 +268,6 @@ void Thread::notify() const
     defaultEvent.signal();
 }
 
-//==============================================================================
-
-// This is here so we dont have circular includes
-//
-void SpinLock::enter() const noexcept
-{
-    if (! tryEnter())
-    {
-        for (int i = 20; --i >= 0;)
-            if (tryEnter())
-                return;
-
-        while (! tryEnter())
-            Thread::yield();
-    }
-}
-
 }
 
 //------------------------------------------------------------------------------
@@ -429,11 +412,6 @@ void Thread::sleep (const int millisecs)
     }
 }
 
-void Thread::yield()
-{
-    Sleep (0);
-}
-
 }
 
 //------------------------------------------------------------------------------
@@ -564,11 +542,6 @@ bool Thread::setThreadPriority (void* handle, int priority)
 Thread::ThreadID Thread::getCurrentThreadId()
 {
     return (ThreadID) pthread_self();
-}
-
-void Thread::yield()
-{
-    sched_yield();
 }
 
 //==============================================================================

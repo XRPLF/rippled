@@ -56,14 +56,17 @@ __int64 beast_InterlockedCompareExchange64 (volatile __int64* value, __int64 new
 
 //==============================================================================
 
+
 CriticalSection::CriticalSection() noexcept
 {
     // (just to check the MS haven't changed this structure and broken things...)
-   #if BEAST_VC7_OR_EARLIER
-    static_bassert (sizeof (CRITICAL_SECTION) <= 24);
-   #else
-    static_bassert (sizeof (CRITICAL_SECTION) <= sizeof (section));
-   #endif
+#if BEAST_VC7_OR_EARLIER
+    static_assert (sizeof (CRITICAL_SECTION) <= 24,
+        "The size of the CRITICAL_SECTION structure is less not what we expected.");
+#else
+    static_assert (sizeof (CRITICAL_SECTION) <= sizeof (CriticalSection::section),
+        "The size of the CRITICAL_SECTION structure is less not what we expected.");
+#endif
 
     InitializeCriticalSection ((CRITICAL_SECTION*) section);
 }
@@ -74,38 +77,6 @@ bool CriticalSection::tryEnter() const noexcept { return TryEnterCriticalSection
 void CriticalSection::exit() const noexcept { LeaveCriticalSection ((CRITICAL_SECTION*) section); }
 
 //==============================================================================
-static int lastProcessPriority = -1;
-
-// called by WindowDriver because Windows does weird things to process priority
-// when you swap apps, and this forces an update when the app is brought to the front.
-void beast_repeatLastProcessPriority()
-{
-    if (lastProcessPriority >= 0) // (avoid changing this if it's not been explicitly set by the app..)
-    {
-        DWORD p;
-
-        switch (lastProcessPriority)
-        {
-            case Process::LowPriority:          p = IDLE_PRIORITY_CLASS; break;
-            case Process::NormalPriority:       p = NORMAL_PRIORITY_CLASS; break;
-            case Process::HighPriority:         p = HIGH_PRIORITY_CLASS; break;
-            case Process::RealtimePriority:     p = REALTIME_PRIORITY_CLASS; break;
-            default:                            bassertfalse; return; // bad priority value
-        }
-
-        SetPriorityClass (GetCurrentProcess(), p);
-    }
-}
-
-void Process::setPriority (ProcessPriority prior)
-{
-    if (lastProcessPriority != (int) prior)
-    {
-        lastProcessPriority = (int) prior;
-        beast_repeatLastProcessPriority();
-    }
-}
-
 bool beast_isRunningUnderDebugger()
 {
     return IsDebuggerPresent() != FALSE;
@@ -117,32 +88,6 @@ bool Process::isRunningUnderDebugger()
 }
 
 //------------------------------------------------------------------------------
-
-static void* currentModuleHandle = nullptr;
-
-void* Process::getCurrentModuleInstanceHandle() noexcept
-{
-    if (currentModuleHandle == nullptr)
-        currentModuleHandle = GetModuleHandleA (nullptr);
-
-    return currentModuleHandle;
-}
-
-void Process::setCurrentModuleInstanceHandle (void* const newHandle) noexcept
-{
-    currentModuleHandle = newHandle;
-}
-
-void Process::raisePrivilege()
-{
-    bassertfalse; // xxx not implemented
-}
-
-void Process::lowerPrivilege()
-{
-    bassertfalse; // xxx not implemented
-}
-
 void Process::terminate()
 {
    #if BEAST_MSVC && BEAST_CHECK_MEMORY_LEAKS
@@ -151,37 +96,6 @@ void Process::terminate()
 
     // bullet in the head in case there's a problem shutting down..
     ExitProcess (0);
-}
-
-bool beast_isRunningInWine()
-{
-    HMODULE ntdll = GetModuleHandleA ("ntdll");
-    return ntdll != 0 && GetProcAddress (ntdll, "wine_get_version") != nullptr;
-}
-
-//==============================================================================
-bool DynamicLibrary::open (const String& name)
-{
-    close();
-
-    handle = LoadLibrary (name.toWideCharPointer());
-
-    return handle != nullptr;
-}
-
-void DynamicLibrary::close()
-{
-    if (handle != nullptr)
-    {
-        FreeLibrary ((HMODULE) handle);
-        handle = nullptr;
-    }
-}
-
-void* DynamicLibrary::getFunction (const String& functionName) noexcept
-{
-    return handle != nullptr ? (void*) GetProcAddress ((HMODULE) handle, functionName.toUTF8()) // (void* cast is required for mingw)
-                             : nullptr;
 }
 
 //==============================================================================

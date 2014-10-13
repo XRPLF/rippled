@@ -49,8 +49,6 @@ public:
         be set to the end of the file. To overwrite an existing file,
         use File::deleteFile() before opening the stream, or use setPosition(0)
         after it's opened (although this won't truncate the file).
-
-        @see TemporaryFile
     */
     FileOutputStream (const File& fileToWriteTo,
                       size_t bufferSizeToUse = 16384);

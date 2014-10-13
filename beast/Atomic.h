@@ -25,7 +25,6 @@
 #define BEAST_ATOMIC_H_INCLUDED
 
 #include <beast/Config.h>
-#include <beast/StaticAssert.h>
 
 #include <beast/utility/noexcept.h>
 
@@ -43,6 +42,10 @@ namespace beast {
 template <typename Type>
 class Atomic
 {
+  // This class can only be used for types which are 32 or 64 bits in size.
+    static_assert (sizeof (Type) == 4 || sizeof (Type) == 8,
+        "Atomic arguments must be 32- or 64-bit long primitive types.");
+
 public:
     /** Creates a new value, initialised to zero. */
     inline Atomic() noexcept
@@ -65,8 +68,6 @@ public:
     /** Destructor. */
     inline ~Atomic() noexcept
     {
-        // This class can only be used for types which are 32 or 64 bits in size.
-        static_bassert (sizeof (Type) == 4 || sizeof (Type) == 8);
     }
 
     /** Atomically reads and returns the current value. */
