@@ -21,6 +21,7 @@
 #include <ripple/http/impl/Peer.h>
 #include <boost/asio/buffer.hpp>
 #include <beast/asio/placeholders.h>
+#include <beast/asio/ssl_bundle.h>
 #include <boost/logic/tribool.hpp>
 #include <functional>
 
