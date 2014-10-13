@@ -20,6 +20,7 @@
 #include <ripple/overlay/impl/OverlayImpl.h>
 #include <ripple/overlay/impl/PeerDoor.h>
 #include <beast/asio/placeholders.h>
+#include <boost/asio/ip/tcp.hpp>
 
 namespace ripple {
 
@@ -28,31 +29,28 @@ class PeerDoorImp
     , public beast::LeakChecked <PeerDoorImp>
 {
 private:
+    using socket_type = boost::asio::ip::tcp::socket;
+
     OverlayImpl& m_overlay;
     beast::Journal m_journal;
-    Kind m_kind;
     boost::asio::ip::tcp::acceptor m_acceptor;
     boost::asio::deadline_timer m_acceptDelay;
-    NativeSocketType m_socket;
+    socket_type m_socket;
 
 public:
-    PeerDoorImp (Kind kind, OverlayImpl& overlay,
+    PeerDoorImp (OverlayImpl& overlay,
         boost::asio::ip::tcp::endpoint const &ep,
             boost::asio::io_service& io_service)
         : m_overlay (overlay)
         , m_journal (deprecatedLogs().journal("PeerDoor"))
-        , m_kind (kind)
         , m_acceptor (io_service, ep)
         , m_acceptDelay (io_service)
         , m_socket (io_service)
     {
         m_journal.info <<
-            "Listening on " <<
-            beast::IPAddressConversion::from_asio (
-                m_acceptor.local_endpoint()) <<
-            ((m_kind == sslAndPROXYRequired) ? " (proxy)" : "");
-
-        async_accept ();
+            "Listening on " << beast::IPAddressConversion::from_asio (
+                m_acceptor.local_endpoint());
+        async_accept();
     }
 
     void
@@ -103,9 +101,7 @@ public:
 
         if (! ec)
         {
-            bool const proxyHandshake (m_kind == sslAndPROXYRequired);
-
-            m_overlay.accept (proxyHandshake, std::move(m_socket));
+            m_overlay.accept (std::move(m_socket));
         }
         else
         {
@@ -133,10 +129,8 @@ public:
 //------------------------------------------------------------------------------
 
 std::unique_ptr<PeerDoor>
-make_PeerDoor (
-    PeerDoor::Kind kind, OverlayImpl& overlay,
-        std::string const& ip, int port,
-            boost::asio::io_service& io_service)
+make_PeerDoor (OverlayImpl& overlay, std::string const& ip, int port,
+    boost::asio::io_service& io_service)
 {
     // You have to listen on something!
     bassert(port != 0);
@@ -145,7 +139,7 @@ make_PeerDoor (
         boost::asio::ip::address ().from_string (
             ip.empty () ? "0.0.0.0" : ip), port);
 
-    return std::make_unique<PeerDoorImp>(kind, overlay, ep, io_service);
+    return std::make_unique<PeerDoorImp>(overlay, ep, io_service);
 }
 
 }

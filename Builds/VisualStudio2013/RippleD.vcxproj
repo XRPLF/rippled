@@ -2377,11 +2377,6 @@
     <ClCompile Include="..\..\src\ripple\common\impl\KeyCache.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\common\impl\MultiSocket.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\common\impl\MultiSocketImpl.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\common\impl\ResolverAsio.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2394,8 +2389,6 @@
     <ClInclude Include="..\..\src\ripple\common\jsonrpc_fields.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\common\KeyCache.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\common\MultiSocket.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\common\Resolver.h">
     </ClInclude>

@@ -24,7 +24,6 @@
 #include <ripple/http/Session.h>
 #include <ripple/http/impl/Types.h>
 #include <ripple/http/impl/ServerImpl.h>
-#include <ripple/common/MultiSocket.h>
 #include <beast/asio/placeholders.h>
 #include <beast/asio/ssl.h> // for is_short_read?
 #include <beast/http/message.h>

@@ -21,7 +21,6 @@
 #define RIPPLE_PEERDOOR_H_INCLUDED
 
 #include <ripple/overlay/impl/OverlayImpl.h>
-
 #include <beast/cxx14/memory.h> // <memory>
 
 namespace ripple {
@@ -30,23 +29,17 @@ namespace ripple {
 class PeerDoor
 {
 public:
-    virtual ~PeerDoor () = default;
-
-    enum Kind
-    {
-        sslRequired,
-        sslAndPROXYRequired
-    };
+    virtual
+    ~PeerDoor() = default;
 
     virtual
     void stop() = 0;
 };
 
+// VFALCO DEPRECATED This will be replaced by a universal door
 std::unique_ptr <PeerDoor>
-make_PeerDoor (
-    PeerDoor::Kind kind, OverlayImpl& overlay,
-        std::string const& ip, int port,
-            boost::asio::io_service& io_service);
+make_PeerDoor (OverlayImpl& overlay, std::string const& ip, int port,
+        boost::asio::io_service& io_service);
 
 }
 
