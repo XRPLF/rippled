@@ -47,7 +47,7 @@ String SystemStats::getBeastVersion()
 struct CPUInformation
 {
     CPUInformation() noexcept
-        : numCpus (0), hasMMX (false), hasSSE (false),
+        : hasMMX (false), hasSSE (false),
           hasSSE2 (false), hasSSE3 (false), has3DNow (false)
     {
         initialise();
@@ -55,7 +55,6 @@ struct CPUInformation
 
     void initialise() noexcept;
 
-    int numCpus;
     bool hasMMX, hasSSE, hasSSE2, hasSSE3, has3DNow;
 };
 
@@ -65,7 +64,6 @@ static const CPUInformation& getCPUInformation() noexcept
     return info;
 }
 
-int SystemStats::getNumCpus() noexcept { return getCPUInformation().numCpus; }
 bool SystemStats::hasMMX() noexcept { return getCPUInformation().hasMMX; }
 bool SystemStats::hasSSE() noexcept { return getCPUInformation().hasSSE; }
 bool SystemStats::hasSSE2() noexcept { return getCPUInformation().hasSSE2; }

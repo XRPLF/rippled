@@ -109,10 +109,6 @@ void CPUInformation::initialise() noexcept
     hasSSE2 = IsProcessorFeaturePresent (PF_XMMI64_INSTRUCTIONS_AVAILABLE) != 0;
     hasSSE3 = IsProcessorFeaturePresent (13 /*PF_SSE3_INSTRUCTIONS_AVAILABLE*/) != 0;
     has3DNow = IsProcessorFeaturePresent (7 /*PF_AMD3D_INSTRUCTIONS_AVAILABLE*/) != 0;
-
-    SYSTEM_INFO systemInfo;
-    GetNativeSystemInfo (&systemInfo);
-    numCpus = (int) systemInfo.dwNumberOfProcessors;
 }
 
 //==============================================================================
@@ -395,29 +391,6 @@ String SystemStats::getComputerName()
     DWORD len = (DWORD) numElementsInArray (text) - 1;
     GetComputerName (text, &len);
     return String (text, len);
-}
-
-static String getLocaleValue (LCID locale, LCTYPE key, const char* defaultValue)
-{
-    TCHAR buffer [256] = { 0 };
-    if (GetLocaleInfo (locale, key, buffer, 255) > 0)
-        return buffer;
-
-    return defaultValue;
-}
-
-String SystemStats::getUserLanguage()     { return getLocaleValue (LOCALE_USER_DEFAULT, LOCALE_SISO639LANGNAME,  "en"); }
-String SystemStats::getUserRegion()       { return getLocaleValue (LOCALE_USER_DEFAULT, LOCALE_SISO3166CTRYNAME, "US"); }
-
-String SystemStats::getDisplayLanguage()
-{
-    DynamicLibrary dll ("kernel32.dll");
-    BEAST_LOAD_WINAPI_FUNCTION (dll, GetUserDefaultUILanguage, getUserDefaultUILanguage, LANGID, (void))
-
-    if (getUserDefaultUILanguage != nullptr)
-        return getLocaleValue (MAKELCID (getUserDefaultUILanguage(), SORT_DEFAULT), LOCALE_SISO639LANGNAME, "en");
-
-    return "en";
 }
 
 } // beast
