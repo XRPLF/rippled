@@ -44,14 +44,12 @@ struct Port
         require_ssl
     };
 
-    Security security;
-    std::uint16_t port;
+    Security security = Security::no_ssl;
+    std::uint16_t port = 0;
     beast::IP::Endpoint addr;
-    beast::asio::SSLContext* context;
+    beast::asio::SSLContext* context = nullptr;
 
-    Port ();
-    Port (Port const& other);
-    Port& operator= (Port const& other);
+    Port() = default;
     Port (std::uint16_t port_, beast::IP::Endpoint const& addr_,
             Security security_, beast::asio::SSLContext* context_);
 };
