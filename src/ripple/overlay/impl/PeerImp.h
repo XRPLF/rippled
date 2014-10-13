@@ -20,7 +20,6 @@
 #ifndef RIPPLE_OVERLAY_PEERIMP_H_INCLUDED
 #define RIPPLE_OVERLAY_PEERIMP_H_INCLUDED
 
-#include <ripple/common/MultiSocket.h>
 #include <ripple/nodestore/Database.h>
 #include <ripple/overlay/predicates.h>
 #include <ripple/overlay/impl/message_name.h>
@@ -49,7 +48,7 @@
 
 namespace ripple {
 
-typedef boost::asio::ip::tcp::socket NativeSocketType;
+typedef boost::asio::ip::tcp::socket socket_type;
 
 class PeerImp;
 
@@ -96,6 +95,12 @@ public:
     typedef std::shared_ptr <PeerImp> ptr;
 
 private:
+    using clock_type = std::chrono::steady_clock;
+    using error_code= boost::system::error_code ;
+    using yield_context = boost::asio::yield_context;
+    using socket_type = boost::asio::ip::tcp::socket;
+    using stream_type = boost::asio::ssl::stream <socket_type&>;
+
     // Time alloted for a peer to send a HELLO message (DEPRECATED)
     static const boost::posix_time::seconds nodeVerifySeconds;
 
@@ -105,9 +110,11 @@ private:
     // The length of the smallest valid finished message
     static const size_t sslMinimumFinishedLength = 12;
 
-    NativeSocketType m_owned_socket;
-
     beast::Journal journal_;
+    socket_type socket_;
+    stream_type stream_;
+    boost::asio::io_service::strand strand_;
+    boost::asio::deadline_timer timer_;
 
     // A unique identifier (up to a restart of rippled) for this particular
     // peer instance. A peer that disconnects will, upon reconnection, get a
@@ -126,10 +133,7 @@ private:
     OverlayImpl& overlay_;
     bool m_inbound;
 
-    std::unique_ptr <MultiSocket> socket_;
-    boost::asio::io_service::strand strand_;
-
-    State           state_;          // Current state
+    State state_;          // Current state
     bool detaching_ = false;
 
     // True if peer is a node in our cluster
@@ -147,17 +151,15 @@ private:
 
     // The indices of the smallest and largest ledgers this peer has available
     //
-    LedgerIndex minLedger_;
-    LedgerIndex maxLedger_;
+    LedgerIndex minLedger_ = 0;
+    LedgerIndex maxLedger_ = 0;
 
     uint256 closedLedgerHash_;
     uint256 previousLedgerHash_;
 
-    std::list<uint256>    recentLedgers_;
-    std::list<uint256>    recentTxSets_;
-    mutable std::mutex  recentLock_;
-
-    boost::asio::deadline_timer timer_;
+    std::list<uint256> recentLedgers_;
+    std::list<uint256> recentTxSets_;
+    mutable std::mutex recentLock_;
 
     std::list <Message::pointer> send_queue_;
     Message::pointer send_packet_;
@@ -182,10 +184,10 @@ private:
 
 public:
     /** Create an incoming peer from the specified socket */
-    PeerImp (NativeSocketType&& socket, beast::IP::Endpoint remoteAddress,
+    PeerImp (socket_type&& socket, beast::IP::Endpoint remoteAddress,
         OverlayImpl& overlay, Resource::Manager& resourceManager,
             PeerFinder::Manager& peerFinder, PeerFinder::Slot::ptr const& slot,
-                boost::asio::ssl::context& ssl_context, MultiSocket::Flag flags);
+                boost::asio::ssl::context& ssl_context);
 
     /** Create an outgoing peer
         @note Construction of outbound peers is a two step process: a second
@@ -196,7 +198,7 @@ public:
     PeerImp (beast::IP::Endpoint remoteAddress, boost::asio::io_service& io_service,
         OverlayImpl& overlay, Resource::Manager& resourceManager,
             PeerFinder::Manager& peerFinder, PeerFinder::Slot::ptr const& slot,
-                boost::asio::ssl::context& ssl_context, MultiSocket::Flag flags);
+                boost::asio::ssl::context& ssl_context);
 
     virtual
     ~PeerImp ();

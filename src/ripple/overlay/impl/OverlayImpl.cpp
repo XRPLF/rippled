@@ -84,7 +84,7 @@ OverlayImpl::~OverlayImpl ()
 }
 
 void
-OverlayImpl::accept (bool proxyHandshake, socket_type&& socket)
+OverlayImpl::accept (socket_type&& socket)
 {
     // An error getting an endpoint means the connection closed.
     // Just do nothing and the socket will be closed by the caller.
@@ -107,15 +107,9 @@ OverlayImpl::accept (bool proxyHandshake, socket_type&& socket)
     if (slot == nullptr)
         return;
 
-    MultiSocket::Flag flags (
-        MultiSocket::Flag::server_role | MultiSocket::Flag::ssl_required);
-
-    if (proxyHandshake)
-        flags = flags.with (MultiSocket::Flag::proxy);
-
     PeerImp::ptr const peer (std::make_shared <PeerImp> (
         std::move (socket), remote_endpoint, *this, m_resourceManager,
-            *m_peerFinder, slot, m_ssl_context, flags));
+            *m_peerFinder, slot, m_ssl_context));
 
     {
         std::lock_guard <decltype(m_mutex)> lock (m_mutex);
@@ -150,12 +144,9 @@ OverlayImpl::connect (beast::IP::Endpoint const& remote_endpoint)
     if (slot == nullptr)
         return;
 
-    MultiSocket::Flag const flags (
-        MultiSocket::Flag::client_role | MultiSocket::Flag::ssl);
-
     PeerImp::ptr const peer (std::make_shared <PeerImp> (
         remote_endpoint, m_io_service, *this, m_resourceManager,
-            *m_peerFinder, slot, m_ssl_context, flags));
+            *m_peerFinder, slot, m_ssl_context));
 
     {
         std::lock_guard <decltype(m_mutex)> lock (m_mutex);
@@ -296,22 +287,8 @@ OverlayImpl::onPrepare ()
     // peer connections:
     if (! getConfig ().RUN_STANDALONE)
     {
-        m_doorDirect = make_PeerDoor (
-            PeerDoor::sslRequired,
-            *this,
-            getConfig ().PEER_IP,
-            getConfig ().peerListeningPort,
-            m_io_service);
-
-        if (getConfig ().peerPROXYListeningPort != 0)
-        {
-            m_doorProxy = make_PeerDoor (
-                PeerDoor::sslAndPROXYRequired,
-                *this,
-                getConfig ().PEER_IP,
-                getConfig ().peerPROXYListeningPort,
-                m_io_service);
-        }
+        m_doorDirect = make_PeerDoor (*this, getConfig ().PEER_IP,
+            getConfig ().peerListeningPort, m_io_service);
     }
 }
 

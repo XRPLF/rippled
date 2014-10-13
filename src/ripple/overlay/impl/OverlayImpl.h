@@ -132,12 +132,10 @@ public:
 public:
     /** Process an incoming connection using the Peer protocol.
         The caller transfers ownership of the socket via rvalue move.
-        @param proxyHandshake `true` If a PROXY handshake is required.
         @param socket A socket in the accepted state.
     */
     void
-    accept (bool proxyHandshake,
-        socket_type&& socket);
+    accept (socket_type&& socket);
 
     Peer::ShortId
     next_id();
