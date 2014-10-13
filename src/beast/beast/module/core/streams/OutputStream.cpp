@@ -21,6 +21,8 @@
 */
 //==============================================================================
 
+#include <algorithm>
+
 namespace beast
 {
 
@@ -98,7 +100,8 @@ bool OutputStream::writeShortBigEndian (short value)
 
 bool OutputStream::writeInt32 (std::int32_t value)
 {
-    static_bassert (sizeof (std::int32_t) == 4);
+    static_assert (sizeof (std::int32_t) == 4,
+        "The size of an integer must be exactly 4 bytes.");
 
     const unsigned int v = ByteOrder::swapIfBigEndian ((std::uint32_t) value);
     return write (&v, 4);
@@ -106,7 +109,8 @@ bool OutputStream::writeInt32 (std::int32_t value)
 
 bool OutputStream::writeInt (int value)
 {
-    static_bassert (sizeof (int) == 4);
+    static_assert (sizeof (int) == 4,
+        "The size of an integer must be exactly 4 bytes.");
 
     const unsigned int v = ByteOrder::swapIfBigEndian ((unsigned int) value);
     return write (&v, 4);
@@ -114,14 +118,16 @@ bool OutputStream::writeInt (int value)
 
 bool OutputStream::writeInt32BigEndian (int value)
 {
-    static_bassert (sizeof (std::int32_t) == 4);
+    static_assert (sizeof (std::int32_t) == 4,
+        "The size of an integer must be exactly 4 bytes.");
     const std::uint32_t v = ByteOrder::swapIfLittleEndian ((std::uint32_t) value);
     return write (&v, 4);
 }
 
 bool OutputStream::writeIntBigEndian (int value)
 {
-    static_bassert (sizeof (int) == 4);
+    static_assert (sizeof (int) == 4,
+        "The size of an integer must be exactly 4 bytes.");
     const unsigned int v = ByteOrder::swapIfLittleEndian ((unsigned int) value);
     return write (&v, 4);
 }
@@ -274,7 +280,7 @@ int OutputStream::writeFromInputStream (InputStream& source, std::int64_t numByt
     while (numBytesToWrite > 0)
     {
         char buffer [8192];
-        const int num = source.read (buffer, (int) bmin (numBytesToWrite, (std::int64_t) sizeof (buffer)));
+        const int num = source.read (buffer, (int) std::min (numBytesToWrite, (std::int64_t) sizeof (buffer)));
 
         if (num <= 0)
             break;

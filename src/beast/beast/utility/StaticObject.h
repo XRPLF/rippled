@@ -20,6 +20,10 @@
 #ifndef BEAST_UTILITY_STATICOBJECT_H_INCLUDED
 #define BEAST_UTILITY_STATICOBJECT_H_INCLUDED
 
+#include <atomic>
+#include <chrono>
+#include <thread>
+
 namespace beast {
 
 // Spec: N2914=09-0104
@@ -30,12 +34,6 @@ namespace beast {
 //         duration (3.7.2) shall be zero-initialized (8.5) before any
 //         other initialization takes place.
 //
-
-namespace detail {
-
-extern void staticObjectWait (std::size_t n);
-
-}
 
 /** Wrapper to produce an object with static storage duration.
     
@@ -59,9 +57,9 @@ public:
     {
         StaticData& staticData (StaticData::get());
 
-        if (staticData.state.get() != initialized)
+        if (staticData.state.load () != initialized)
         {
-            if (staticData.state.compareAndSetBool (initializing, uninitialized))
+            if (staticData.state.exchange (initializing) == uninitialized)
             {
                 // Initialize the object.
                 new (&staticData.object) Object;
@@ -69,23 +67,35 @@ public:
             }
             else
             {
-                for (std::size_t n = 0; staticData.state.get() != initialized; ++n)
+                std::size_t n = 0;
+
+                while (staticData.state.load () != initialized)
                 {
-                    detail::staticObjectWait (n);
+                    ++n;
+
+                    std::this_thread::yield ();
+
+                    if (n > 10)
+                    {
+                        std::chrono::milliseconds duration (1);
+
+                        if (n > 100)
+                            duration *= 10;
+
+                        std::this_thread::sleep_for (duration);
+                    }
                 }
             }
         }
 
+        assert (staticData.state.load () == initialized);
         return staticData.object;
     }
 
 private:
-    enum
-    {
-        uninitialized = 0,          // must be zero to function properly
-        initializing,
-        initialized
-    };
+    static int const uninitialized = 0;
+    static int const initializing = 1;
+    static int const initialized = 2;
 
     // This structure gets zero-filled at static initialization time.
     // No constructors are called.
@@ -93,7 +103,7 @@ private:
     class StaticData
     {
     public:
-        Atomic <int> state;
+        std::atomic <int> state;
         Object object;
 
         static StaticData& get ()

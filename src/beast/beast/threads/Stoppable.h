@@ -20,11 +20,12 @@
 #ifndef BEAST_THREADS_STOPPABLE_H_INCLUDED
 #define BEAST_THREADS_STOPPABLE_H_INCLUDED
 
-#include <beast/Atomic.h>
 #include <beast/intrusive/LockFreeStack.h>
 #include <beast/utility/Journal.h>
 
 #include <beast/threads/WaitableEvent.h>
+
+#include <atomic>
 
 namespace beast {
 
@@ -265,7 +266,7 @@ protected:
     char const* m_name;
     RootStoppable& m_root;
     Child m_child;
-    Atomic <int> m_started;
+    std::atomic <int> m_started;
     bool volatile m_stopped;
     bool volatile m_childrenStopped;
     Children m_children;
@@ -279,7 +280,7 @@ class RootStoppable : public Stoppable
 public:
     explicit RootStoppable (char const* name);
 
-    ~RootStoppable ();
+    ~RootStoppable () = default;
 
     bool isStopping() const;
 
@@ -318,9 +319,9 @@ public:
     void stopAsync ();
 
 private:
-    Atomic <int> m_prepared;
-    Atomic <int> m_calledStop;
-    Atomic <int> m_calledStopAsync;
+    std::atomic <int> m_prepared;
+    std::atomic <int> m_calledStop;
+    std::atomic <int> m_calledStopAsync;
 };
 /** @} */
 

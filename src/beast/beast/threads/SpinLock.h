@@ -24,10 +24,11 @@
 #ifndef BEAST_THREADS_SPINLOCK_H_INCLUDED
 #define BEAST_THREADS_SPINLOCK_H_INCLUDED
 
-#include <beast/Atomic.h>
 #include <beast/threads/UnlockGuard.h>
 
+#include <atomic>
 #include <mutex>
+#include <thread>
 
 namespace beast {
 
@@ -53,10 +54,21 @@ public:
     /** Provides the type of scoped unlocker to use with a SpinLock. */
     typedef UnlockGuard <SpinLock>     ScopedUnlockType;
 
-    SpinLock() = default;
+    SpinLock()
+        : m_lock (0)
+    {
+    }
+
+    ~SpinLock() = default;
+
     SpinLock (SpinLock const&) = delete;
     SpinLock& operator= (SpinLock const&) = delete;
-    ~SpinLock() = default;
+
+    /** Attempts to acquire the lock, returning true if this was successful. */
+    inline bool tryEnter() const noexcept
+    {
+        return (m_lock.exchange (1) == 0);
+    }
 
     /** Acquires the lock.
         This will block until the lock has been successfully acquired by this thread.
@@ -67,19 +79,27 @@ public:
         It's strongly recommended that you never call this method directly - instead use the
         ScopedLockType class to manage the locking using an RAII pattern instead.
     */
-    void enter() const noexcept;
-
-    /** Attempts to acquire the lock, returning true if this was successful. */
-    inline bool tryEnter() const noexcept
+    void enter() const noexcept
     {
-        return m_lock.compareAndSetBool (1, 0);
+        if (! tryEnter())
+        {
+            for (int i = 20; --i >= 0;)
+            {
+                if (tryEnter())
+                    return;
+            }
+
+            while (! tryEnter())
+                std::this_thread::yield ();
+        }
     }
 
     /** Releases the lock. */
     inline void exit() const noexcept
     {
-        bassert (m_lock.value == 1); // Agh! Releasing a lock that isn't currently held!
-        m_lock = 0;
+        // Agh! Releasing a lock that isn't currently held!
+        bassert (m_lock.load () == 1);
+        m_lock.store (0);
     }
 
     void lock () const
@@ -90,8 +110,7 @@ public:
         { return tryEnter(); }
 
 private:
-    //==============================================================================
-    mutable Atomic<int> m_lock;
+    mutable std::atomic<int> m_lock;
 };
 
 }

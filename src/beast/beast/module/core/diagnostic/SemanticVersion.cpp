@@ -272,7 +272,7 @@ int compare (SemanticVersion const& lhs, SemanticVersion const& rhs)
             return -1;
 
         // Compare pre-release identifiers
-        for (int i = 0; i < bmax (lhs.preReleaseIdentifiers.size (), rhs.preReleaseIdentifiers.size ()); ++i)
+        for (int i = 0; i < std::max (lhs.preReleaseIdentifiers.size (), rhs.preReleaseIdentifiers.size ()); ++i)
         {
             // A larger list of identifiers has a higher precedence
             if (i >= rhs.preReleaseIdentifiers.size ())

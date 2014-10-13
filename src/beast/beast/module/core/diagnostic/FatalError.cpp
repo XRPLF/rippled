@@ -26,45 +26,50 @@ namespace beast {
 // FatalError::Reporter
 //
 void FatalError::Reporter::onFatalError (
-    char const* message, char const* stackBacktrace, char const* filePath, int lineNumber)
+    char const* message,
+    char const* backtrace,
+    char const* filePath,
+    int lineNumber)
 {
-    String formattedMessage = formatMessage (
-        message, stackBacktrace, filePath, lineNumber);
-
-    reportMessage (formattedMessage);
+    reportMessage (formatMessage (message, backtrace, filePath, lineNumber));
 }
 
-void FatalError::Reporter::reportMessage (String& formattedMessage)
+void FatalError::Reporter::reportMessage (std::string const& message)
 {
-    std::cerr << formattedMessage.toRawUTF8 ();
+    std::cerr << message << std::endl;
 }
 
-String FatalError::Reporter::formatMessage (
-    char const* message, char const* stackBacktrace, char const* filePath, int lineNumber)
+std::string FatalError::Reporter::formatMessage (
+    char const* message,
+    char const* backtrace,
+    char const* filePath,
+    int lineNumber)
 {
-    String formattedMessage;
-    formattedMessage.preallocateBytes (16 * 1024);
+    std::string output;
+    output.reserve (16 * 1024);
 
-    formattedMessage << message;
+    output.append (message);
 
     if (filePath != nullptr && filePath [0] != 0)
     {
-        formattedMessage << ", in " << formatFilePath (filePath)
-                         << " line " << String (lineNumber);
+        output.append (", in ");
+        output.append (formatFilePath (filePath));
+        output.append (" line ");
+        output.append (std::to_string (lineNumber));
     }
 
-    formattedMessage << newLine;
+    output.append ("\n");
 
-    if (stackBacktrace != nullptr && stackBacktrace [0] != 0)
+    if (backtrace != nullptr && backtrace[0] != 0)
     {
-        formattedMessage << "Stack:" << newLine;
-        formattedMessage << stackBacktrace;
+        output.append ("Stack:\n");
+        output.append (backtrace);
     }
 
-    return formattedMessage;
+    return output;
 }
 
-String FatalError::Reporter::formatFilePath (char const* filePath)
+std::string FatalError::Reporter::formatFilePath (char const* filePath)
 {
     return filePath;
 }
@@ -94,19 +99,13 @@ FatalError::FatalError (char const* message, char const* fileName, int lineNumbe
 
     std::lock_guard <LockType> lock (s_mutex);
 
-    String const backtraceString = SystemStats::getStackBacktrace ();
+    auto const backtrace = SystemStats::getStackBacktrace ();
 
-    char const* const szStackBacktrace = backtraceString.toRawUTF8 ();
-
-    String const fileNameString = fileName;
-
-    char const* const szFileName = fileNameString.toRawUTF8 ();
-
-    Reporter* const reporter (s_reporter);
+    Reporter* const reporter = s_reporter;
 
     if (reporter != nullptr)
     {
-        reporter->onFatalError (message, szStackBacktrace, szFileName, lineNumber);
+        reporter->onFatalError (message, backtrace.c_str (), fileName, lineNumber);
     }
 
     Process::terminate ();

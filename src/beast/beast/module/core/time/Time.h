@@ -271,14 +271,6 @@ public:
     Time& operator-= (RelativeTime delta);
 
     //==============================================================================
-    /** Tries to set the computer's clock.
-
-        @returns    true if this succeeds, although depending on the system, the
-                    application might not have sufficient privileges to do this.
-    */
-    bool setSystemTimeToThisTime() const;
-
-    //==============================================================================
     /** Returns the name of a day of the week.
 
         @param dayNumber            the day, 0 to 6 (0 = sunday, 1 = monday, etc)

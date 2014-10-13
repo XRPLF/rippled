@@ -274,8 +274,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\crypto\base64.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\crypto\BinaryEncoding.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\crypto\Crypto.unity.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -290,9 +288,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\crypto\impl\sha2\sha2.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\crypto\impl\UnsignedInteger.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\crypto\MurmurHash.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\crypto\Sha256.h">
@@ -300,16 +295,6 @@
     <ClCompile Include="..\..\src\beast\beast\crypto\tests\base64.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\crypto\tests\BinaryEncoding.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\crypto\tests\UnsignedInteger.test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\crypto\UnsignedInteger.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\crypto\UnsignedIntegerCalc.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\cxx14\algorithm.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\cxx14\config.h">
@@ -515,10 +500,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\module\core\containers\ElementComparator.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\containers\LinkedListPointer.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\containers\ScopedValueSetter.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\module\core\core.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\core.unity.cpp">
@@ -561,34 +542,12 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\module\core\files\FileOutputStream.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\files\FileSearchPath.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\core\files\FileSearchPath.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\files\RandomAccessFile.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\core\files\RandomAccessFile.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\files\TemporaryFile.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\core\files\TemporaryFile.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\core\logging\Logger.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\module\core\logging\Logger.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\maths\Math.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\maths\Random.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\module\core\maths\Random.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\maths\Range.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\memory\MemoryBlock.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -601,8 +560,6 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\module\core\misc\Result.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\misc\WindowsRegistry.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\module\core\native\BasicNativeHeaders.h">
     </ClInclude>
@@ -636,12 +593,7 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\module\core\native\posix_SharedCode.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\native\win32_ComSmartPtr.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\core\native\win32_Files.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\module\core\native\win32_Registry.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\module\core\native\win32_SystemStats.cpp">
@@ -695,8 +647,6 @@
     <ClInclude Include="..\..\src\beast\beast\module\core\text\StringPairArray.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\module\core\threads\CriticalSection.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\core\threads\DynamicLibrary.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\module\core\threads\Process.h">
     </ClInclude>
@@ -849,8 +799,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\smart_ptr\SharedPtr.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\StaticAssert.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\streams\abstract_ostream.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\streams\basic_abstract_ostream.h">
@@ -935,9 +883,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\threads\Stoppable.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\threads\tests\Atomic.test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\threads\tests\ServiceQueue.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -1002,9 +947,6 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\utility\impl\PropertyStream.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\utility\impl\StaticObject.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\utility\Journal.h">

@@ -68,7 +68,7 @@ public:
             @param lineNumber The line number in the source file.
         */
         virtual void onFatalError (char const* message,
-                                   char const* stackBacktrace,
+                                   char const* backtrace,
                                    char const* filePath,
                                    int lineNumber);
 
@@ -80,7 +80,7 @@ public:
 
             @param formattedMessage The message to report.
         */
-        virtual void reportMessage (String& formattedMessage);
+        virtual void reportMessage (std::string const& formattedMessage);
 
     protected:
        /** Called to format the message.
@@ -96,10 +96,11 @@ public:
             @param filePath The file path from the report.
             @param lineNumber The line number from the report
         */
-        virtual String formatMessage (char const* message,
-                                      char const* stackBacktrace,
-                                      char const* filePath,
-                                      int lineNumber);
+        virtual std::string formatMessage (
+            char const* message,
+            char const* backtrace,
+            char const* filePath,
+            int lineNumber);
 
         /** Call to reformat the file path.
 
@@ -111,7 +112,7 @@ public:
 
             You can override this to do a custom format on the file path.
         */
-        virtual String formatFilePath (char const* filePath);
+        virtual std::string formatFilePath (char const* filePath);
     };
 
     /** Returns the current fatal error reporter. */

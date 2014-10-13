@@ -20,10 +20,11 @@
 #ifndef BEAST_WORKERS_H_INCLUDED
 #define BEAST_WORKERS_H_INCLUDED
 
-#include <beast/module/core/system/SystemStats.h>
 #include <beast/threads/Thread.h>
 #include <beast/threads/semaphore.h>
 
+#include <atomic>
+#include <string>
 #include <thread>
 
 namespace beast {
@@ -55,7 +56,7 @@ public:
         @param threadNames The name given to each created worker thread.
     */
     explicit Workers (Callback& callback,
-                      String const& threadNames = "Worker",
+                      std::string const& threadNames = "Worker",
                       int numberOfThreads =
                          static_cast<int>(std::thread::hardware_concurrency()));
 
@@ -141,9 +142,9 @@ private:
     WaitableEvent m_allPaused;                   // signaled when all threads paused
     semaphore m_semaphore;                       // each pending task is 1 resource
     int m_numberOfThreads;                       // how many we want active now
-    Atomic <int> m_activeCount;                  // to know when all are paused
-    Atomic <int> m_pauseCount;                   // how many threads need to pause now
-    Atomic <int> m_runningTaskCount;             // how many calls to processTask() active
+    std::atomic <int> m_activeCount;             // to know when all are paused
+    std::atomic <int> m_pauseCount;              // how many threads need to pause now
+    std::atomic <int> m_runningTaskCount;        // how many calls to processTask() active
     LockFreeStack <Worker> m_everyone;           // holds all created workers
     LockFreeStack <Worker, PausedTag> m_paused;  // holds just paused workers
 };

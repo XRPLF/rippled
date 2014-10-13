@@ -27,5 +27,4 @@
 #include <beast/threads/impl/Thread.cpp>
 #include <beast/threads/impl/WaitableEvent.cpp>
 
-#include <beast/threads/tests/Atomic.test.cpp>
 #include <beast/threads/tests/ServiceQueue.cpp>

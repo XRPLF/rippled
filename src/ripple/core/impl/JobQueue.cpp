@@ -25,7 +25,6 @@
 #include <beast/cxx14/memory.h>
 #include <beast/chrono/chrono_util.h>
 #include <beast/module/core/thread/Workers.h>
-#include <beast/module/core/system/SystemStats.h>
 
 #include <chrono>
 #include <mutex>
