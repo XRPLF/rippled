@@ -20,6 +20,8 @@
 #ifndef RIPPLE_HTTP_SERVER_H_INCLUDED
 #define RIPPLE_HTTP_SERVER_H_INCLUDED
 
+#include <beast/asio/ssl_bundle.h>
+#include <beast/http/message.h>
 #include <beast/net/IPEndpoint.h>
 #include <beast/module/asio/basics/SSLContext.h>
 #include <beast/utility/Journal.h>
@@ -86,6 +88,55 @@ struct Handler
 
     /** Called when the server has finished its stop. */
     virtual void onStopped (Server& server) = 0;
+
+    //
+    // ---
+    //
+
+    /** Called when a connection is accepted.
+        @return `true` If we should keep the connection.
+    */
+    virtual
+    bool
+    accept (boost::asio::ip::tcp::endpoint endpoint)
+    {
+        return true;
+    }
+
+    enum class Result
+    {
+        none,
+        move,
+        response
+    };
+
+    /** Called to process a complete HTTP request.
+        Outcomes:
+            - Does not want the request
+            - Provides a message response
+            - Takes over the socket
+    */
+    /** @{ */
+    virtual
+    Result
+    process (std::unique_ptr <beast::asio::ssl_bundle>& bundle,
+        boost::asio::ip::tcp::endpoint endpoint,
+            beast::http::message& request,
+                beast::http::message& response)
+    {
+        return Result::none;
+    }
+
+    virtual
+    Result
+    process (boost::asio::ip::tcp::socket& socket,
+        boost::asio::ip::tcp::endpoint endpoint,
+            beast::http::message& request,
+                beast::http::message& response)
+    {
+        return Result::none;
+    }
+    /** @} */
 };
 
 //------------------------------------------------------------------------------
