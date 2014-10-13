@@ -81,9 +81,9 @@ public:
                 ;
             message m;
             parser p (m, true);
-            auto result (p.write (boost::asio::buffer(text)));
+            auto result = p.write (boost::asio::buffer(text));
             if (expect (! result.first))
-                expect (p.error().message() == "invalid HTTP method");
+                expect (result.first.message() == "invalid HTTP method");
         }
     }
 };

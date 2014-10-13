@@ -514,16 +514,14 @@ Peer<Impl>::do_read (boost::asio::yield_context yield)
                 // should request that the handler compose a proper HTTP error
                 // response. This requires refactoring HTTPReply() into
                 // something sensible.
-                auto const result = parser.write (read_buf_.data());
-                if (result.first)
-                    read_buf_.consume (result.second);
-                else
-                    ec = parser.error();
+                std::size_t used;
+                std::tie (ec, used) = parser.write (read_buf_.data());
+                if (! ec)
+                    read_buf_.consume (used);
             }
             else
             {
-                if (! parser.write_eof())
-                    ec = parser.error();
+                ec = parser.write_eof();
             }
         }
 
