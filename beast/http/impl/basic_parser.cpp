@@ -114,32 +114,29 @@ basic_parser::operator= (basic_parser&& other)
     return *this;
 }
 
-basic_parser::error_code
-basic_parser::error() const noexcept
+auto
+basic_parser::write (void const* data, std::size_t bytes) ->
+    std::pair <error_code, std::size_t>
 {
-    auto s (reinterpret_cast <joyent::http_parser const*> (&state_));
-    return error_code{static_cast<int>(s->http_errno), message_category()};
-}
-
-std::pair <bool, std::size_t>
-basic_parser::write (void const* data, std::size_t bytes)
-{
-    std::pair <bool, std::size_t> result (false, 0);
+    std::pair <error_code, std::size_t> result ({}, 0);
     auto s (reinterpret_cast <joyent::http_parser*> (&state_));
     auto h (reinterpret_cast <joyent::http_parser_settings const*> (&hooks_));
     result.second = joyent::http_parser_execute (s, h,
         static_cast <const char*> (data), bytes);
-    result.first = s->http_errno == 0;
+    result.first = error_code{static_cast<int>(s->http_errno),
+        message_category()};
     return result;
 }
 
-bool
-basic_parser::write_eof()
+auto
+basic_parser::write_eof() ->
+    error_code
 {
     auto s (reinterpret_cast <joyent::http_parser*> (&state_));
     auto h (reinterpret_cast <joyent::http_parser_settings const*> (&hooks_));
     joyent::http_parser_execute (s, h, nullptr, 0);
-    return s->http_errno == 0;
+    return error_code{static_cast<int>(s->http_errno),
+        message_category()};
 }
 
 //------------------------------------------------------------------------------

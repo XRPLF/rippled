@@ -111,16 +111,12 @@ public:
         return complete_;
     }
 
-    /** Returns the error if write or write_eof returned false. */
-    error_code
-    error() const noexcept;
-
     /** Write data to the parser.
         @param data A buffer containing the data to write
         @param bytes The size of the buffer pointed to by data.
         @return A pair with bool success, and the number of bytes consumed.
     */
-    std::pair <bool, std::size_t>
+    std::pair <error_code, std::size_t>
     write (void const* data, std::size_t bytes);
 
     /** Write a set of buffer data to the parser.
@@ -131,24 +127,8 @@ public:
         @return A pair with bool success, and the number of bytes consumed.
     */
     template <class ConstBufferSequence>
-    std::pair <bool, std::size_t>
-    write (ConstBufferSequence const& buffers)
-    {
-        std::pair <bool, std::size_t> result (true, 0);
-        for (auto const& buffer : buffers)
-        {
-            std::size_t bytes_consumed;
-            std::tie (result.first, bytes_consumed) =
-                write (boost::asio::buffer_cast <void const*> (buffer),
-                    boost::asio::buffer_size (buffer));
-            if (! result.first)
-                break;
-            result.second += bytes_consumed;
-            if (complete())
-                break;
-        }
-        return result;
-    }
+    std::pair <error_code, std::size_t>
+    write (ConstBufferSequence const& buffers);
 
     /** Called to indicate the end of file.
         HTTP needs to know where the end of the stream is. For example,
@@ -158,7 +138,7 @@ public:
         @note This is typically called when a socket read returns eof.
         @return `true` if the message is complete.
     */
-    bool
+    error_code
     write_eof();
 
 protected:
@@ -252,6 +232,27 @@ private:
     static int cb_body (joyent::http_parser*, char const*, std::size_t);
     static int cb_message_complete (joyent::http_parser*);
 };
+
+template <class ConstBufferSequence>
+auto
+basic_parser::write (ConstBufferSequence const& buffers) ->
+    std::pair <error_code, std::size_t>
+{
+    std::pair <error_code, std::size_t> result ({}, 0);
+    for (auto const& buffer : buffers)
+    {
+        std::size_t bytes_consumed;
+        std::tie (result.first, bytes_consumed) =
+            write (boost::asio::buffer_cast <void const*> (buffer),
+                boost::asio::buffer_size (buffer));
+        if (result.first)
+            break;
+        result.second += bytes_consumed;
+        if (complete())
+            break;
+    }
+    return result;
+}
 
 } // http
 } // beast
