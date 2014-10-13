@@ -105,26 +105,8 @@ namespace SystemStats
     /** Returns the host-name of the computer. */
     String getComputerName();
 
-    /** Returns the language of the user's locale.
-        The return value is a 2 or 3 letter language code (ISO 639-1 or ISO 639-2)
-    */
-    String getUserLanguage();
-
-    /** Returns the region of the user's locale.
-        The return value is a 2 letter country code (ISO 3166-1 alpha-2).
-    */
-    String getUserRegion();
-
-    /** Returns the user's display language.
-        The return value is a 2 or 3 letter language code (ISO 639-1 or ISO 639-2)
-    */
-    String getDisplayLanguage();
-
     //==============================================================================
     // CPU and memory information..
-
-    /** Returns the number of CPU cores. */
-    int getNumCpus() noexcept;
 
     /** Returns the approximate CPU speed.
         @returns    the speed in megahertz, e.g. 1500, 2500, 32000 (depending on

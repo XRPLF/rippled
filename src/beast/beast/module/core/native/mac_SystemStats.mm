@@ -79,12 +79,6 @@ void CPUInformation::initialise() noexcept
     has3DNow = (b & (1u << 31)) != 0;
     hasSSE3 = (c & (1u << 0)) != 0;
    #endif
-
-   #if BEAST_IOS || (MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5)
-    numCpus = (int) [[NSProcessInfo processInfo] activeProcessorCount];
-   #else
-    numCpus = (int) MPProcessors();
-   #endif
 }
 
 #if BEAST_MAC
@@ -208,25 +202,6 @@ String SystemStats::getComputerName()
         return String (name).upToLastOccurrenceOf (".local", false, true);
 
     return String::empty;
-}
-
-static String getLocaleValue (CFStringRef key)
-{
-    CFLocaleRef cfLocale = CFLocaleCopyCurrent();
-    const String result (String::fromCFString ((CFStringRef) CFLocaleGetValue (cfLocale, key)));
-    CFRelease (cfLocale);
-    return result;
-}
-
-String SystemStats::getUserLanguage()   { return getLocaleValue (kCFLocaleLanguageCode); }
-String SystemStats::getUserRegion()     { return getLocaleValue (kCFLocaleCountryCode); }
-
-String SystemStats::getDisplayLanguage()
-{
-    CFArrayRef cfPrefLangs = CFLocaleCopyPreferredLanguages();
-    const String result (String::fromCFString ((CFStringRef) CFArrayGetValueAtIndex (cfPrefLangs, 0)));
-    CFRelease (cfPrefLangs);
-    return result;
 }
 
 //==============================================================================

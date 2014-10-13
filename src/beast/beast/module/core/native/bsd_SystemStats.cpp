@@ -279,28 +279,6 @@ String SystemStats::getComputerName()
     return String::empty;
 }
 
-String getLocaleValue (nl_item key)
-{
-    const char* oldLocale = ::setlocale (LC_ALL, "");
-    return String (const_cast <const char*> (nl_langinfo (key)));
-    ::setlocale (LC_ALL, oldLocale);
-}
-
-String SystemStats::getUserLanguage()
-{
-    return "Uknown user language";
-}
-
-String SystemStats::getUserRegion()
-{
-    return "Unknown user region";
-}
-
-String SystemStats::getDisplayLanguage()
-{
-    return getUserLanguage();
-}
-
 //==============================================================================
 void CPUInformation::initialise() noexcept
 {
@@ -312,9 +290,6 @@ void CPUInformation::initialise() noexcept
     hasSSE3 = features2.contains ("SSE3");
     const String amdfeatures2 (BSDStatsHelpers::getDmesgInfo ("  AMD Features2="));
     has3DNow = amdfeatures2.contains ("3DNow!");
-
-    GETSYSCTL("hw.ncpu", numCpus);
-    if (numCpus == -1) numCpus = 1;
 }
 
 //==============================================================================
