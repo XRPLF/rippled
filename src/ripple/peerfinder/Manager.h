@@ -67,7 +67,7 @@ struct Config
 
     /** The set of features we advertise. */
     std::string features;
-    
+
     //--------------------------------------------------------------------------
 
     /** Create a configuration with default values. */

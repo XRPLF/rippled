@@ -33,7 +33,7 @@ namespace ripple {
 
     @tparam Size The number of bytes in the identifier, exclusive of version,
                  checksum, or padding.
-    
+
     @tparam Token A byte prepended to the binary data that distinguishes
                   the type of identifier.
 
@@ -129,7 +129,7 @@ public:
     }
 };
 
-template <std::size_t Size, std::uint8_t Token, bool Checked> 
+template <std::size_t Size, std::uint8_t Token, bool Checked>
     typename CryptoIdentifier <Size, Token, Checked>::size_type
     const CryptoIdentifier <Size, Token, Checked>::size;
 }

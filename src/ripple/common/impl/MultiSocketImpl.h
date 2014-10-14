@@ -138,7 +138,7 @@ protected:
             return beast::IP::Endpoint();
         }
 
-        try 
+        try
         {
             return beast::IPAddressConversion::from_asio (
                 m_next_layer.remote_endpoint());
@@ -300,7 +300,7 @@ protected:
     */
     bool needs_handshake () override
     {
-        return m_state == stateHandshake || 
+        return m_state == stateHandshake ||
                m_state == stateHandshakeFinal ||
                m_needsShutdown;
     }

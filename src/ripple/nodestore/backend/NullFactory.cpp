@@ -37,17 +37,17 @@ public:
         return std::string ();
     }
 
-    Status 
+    Status
     fetch (void const*, NodeObject::Ptr*)
     {
         return notFound;
     }
-    
+
     void
     store (NodeObject::ref object)
     {
     }
-    
+
     void
     storeBatch (Batch const& batch)
     {

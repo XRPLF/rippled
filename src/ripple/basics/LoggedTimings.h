@@ -24,7 +24,7 @@
 #include <beast/module/core/diagnostic/MeasureFunctionCallTime.h>
 #include <beast/utility/Debug.h>
 #include <ripple/basics/SyncUnorderedMap.h>
-    
+
 namespace ripple {
 
 namespace detail {

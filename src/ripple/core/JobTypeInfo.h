@@ -47,8 +47,8 @@ public:
     // Not default constructible
     JobTypeInfo () = delete;
 
-    JobTypeInfo (JobType type, std::string name, int limit, 
-            bool skip, bool special, std::uint64_t avgLatency, std::uint64_t peakLatency) 
+    JobTypeInfo (JobType type, std::string name, int limit,
+            bool skip, bool special, std::uint64_t avgLatency, std::uint64_t peakLatency)
         : m_type (type)
         , m_name (name)
         , m_limit (limit)

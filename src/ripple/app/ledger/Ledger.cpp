@@ -1401,7 +1401,7 @@ bool Ledger::visitAccountItems (
                 }
             }
         }
-        
+
         bool found (false);
         for (;;)
         {

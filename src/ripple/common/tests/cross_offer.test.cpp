@@ -48,12 +48,12 @@ namespace core {
 
         `X::amount_type`
             The return type of `in` and `out`
-        
+
         `X a;`
             Constructs an uninitialized offer
-        
+
         `a.in();`
-            
+
         `a.out();
 */
 
@@ -424,11 +424,11 @@ public:
         if (! iter_eq (m_leg1, m_leg1_end,
                        other.m_leg1, other.m_leg1_end))
             return false;
-        
+
         if (! iter_eq (m_leg2, m_leg2_end,
                        other.m_leg2, other.m_leg2_end))
             return false;
-    
+
         return true;
     }
 
@@ -498,7 +498,7 @@ public:
 
     typedef detail::MultiBookIterator <
         typename Book::iterator> iterator;
-    
+
     typedef detail::MultiBookIterator <
         typename Book::const_iterator> const_iterator;
 
@@ -643,7 +643,7 @@ public:
             return m_in;
         }
 
-        Amount const& 
+        Amount const&
         out() const noexcept
         {
             return m_out;
@@ -805,7 +805,7 @@ public:
     run()
     {
         test_iterators();
-        
+
         test_full_cross_direct ();
         test_full_cross_auto_direct ();
         test_full_cross_auto_bridge ();

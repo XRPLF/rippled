@@ -28,7 +28,7 @@ char charHex (int iDigit)
         if(iDigit < 16)
             return 'A' - 10 + iDigit;
     }
-    
+
     return 0;
 }
 
@@ -56,7 +56,7 @@ int charUnHex (char cDigit)
     };
 
     static HexTab xtab;
-    
+
     return xtab[cDigit];
 }
 

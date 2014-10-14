@@ -31,7 +31,7 @@
 #include <memory>
 #include <mutex>
 #include <utility>
-    
+
 namespace ripple {
 namespace PeerFinder {
 

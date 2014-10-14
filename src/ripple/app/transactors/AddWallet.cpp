@@ -26,7 +26,7 @@ public:
     AddWallet (
         SerializedTransaction const& txn,
         TransactionEngineParams params,
-        TransactionEngine* engine) 
+        TransactionEngine* engine)
         : Transactor (
             txn,
             params,

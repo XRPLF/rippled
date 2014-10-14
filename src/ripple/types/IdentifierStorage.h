@@ -62,7 +62,7 @@ public:
         {
             return lhs == rhs;
         }
-    };        
+    };
 
     // iterator access
     iterator        begin()       { return &m_storage[pre_size]; }

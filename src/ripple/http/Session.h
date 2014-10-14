@@ -138,7 +138,7 @@ public:
     {
         return ScopedStream (*this, manip);
     }
-        
+
     template <typename T>
     ScopedStream
     operator<< (T const& t)

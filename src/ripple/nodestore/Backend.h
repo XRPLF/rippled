@@ -68,7 +68,7 @@ public:
     */
     virtual void store (NodeObject::Ptr const& object) = 0;
 
-    /** Store a group of objects.        
+    /** Store a group of objects.
         @note This function will not be called concurrently with
               itself or @ref store.
     */

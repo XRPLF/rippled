@@ -196,7 +196,7 @@ public:
         // Attempt to find the first and last non-whitespace
         auto const find_whitespace = std::bind (
             &std::isspace <std::string::value_type>,
-            std::placeholders::_1, 
+            std::placeholders::_1,
             std::locale ());
 
         auto host_first = std::find_if_not (

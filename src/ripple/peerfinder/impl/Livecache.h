@@ -167,7 +167,7 @@ protected:
 //------------------------------------------------------------------------------
 
 /** The Livecache holds the short-lived relayed Endpoint messages.
-    
+
     Since peers only advertise themselves when they have open slots,
     we want these messags to expire rather quickly after the peer becomes
     full.

@@ -170,7 +170,7 @@ public:
         // so that we can destroy them outside the lock.
         //
         std::vector <mapped_ptr> stuffToSweep;
-    
+
         {
             clock_type::time_point const now (m_clock.now());
             clock_type::time_point when_expire;
@@ -448,7 +448,7 @@ public:
                 }
                 else
                 {
-                    // Couldn't get strong pointer, 
+                    // Couldn't get strong pointer,
                     // object fell out of the cache so remove the entry.
                     m_cache.erase (cit);
                 }

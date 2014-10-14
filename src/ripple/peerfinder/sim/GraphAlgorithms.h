@@ -38,7 +38,7 @@ void breadth_first_traverse (Vertex& start, Function f)
     typedef VertexTraits <Vertex>  Traits;
     typedef typename Traits::Edges Edges;
     typedef typename Traits::Edge  Edge;
-    
+
     typedef std::pair <Vertex*, int> Probe;
     typedef std::deque <Probe> Work;
     typedef std::set <Vertex*> Visited;

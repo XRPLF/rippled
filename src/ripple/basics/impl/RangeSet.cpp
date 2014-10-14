@@ -130,7 +130,7 @@ void RangeSet::setValue (std::uint32_t v)
     if (!hasValue (v))
     {
         mRanges[v] = v;
-        
+
         simplify ();
     }
 }

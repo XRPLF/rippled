@@ -50,7 +50,7 @@ public:
         The parameters are key value pairs passed to the backend. The
         'type' key must exist, it defines the choice of backend. Most
         backends also require a 'path' field.
-        
+
         Some choices for 'type' are:
             HyperLevelDB, LevelDBFactory, SQLite, MDB
 

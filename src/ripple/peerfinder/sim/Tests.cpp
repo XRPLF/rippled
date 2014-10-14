@@ -112,7 +112,7 @@ public:
     Node const& remote_node () const { return *m_remote_node; }
     Node&       local_node  ()       { return *m_local_node; }
     Node const& local_node  () const { return *m_local_node; }
-        
+
     void post (Message const& m)
     {
         m_pending.push_back (m);
@@ -164,7 +164,7 @@ public:
             : canAccept (true)
         {
         }
-        
+
         bool canAccept;
         IP::Endpoint listening_endpoint;
         IP::Endpoint well_known_endpoint;
@@ -829,7 +829,7 @@ void report_crawls (Stream const& stream, CrawlSequence const& c)
 {
     if (! stream)
         return;
-    stream 
+    stream
         << "Crawl Report"
         << std::endl
         << std::setw (6) << "Step"
@@ -957,7 +957,7 @@ void report_node_timeline (Node const& node, Stream const& stream)
                 field (sequence_to_string (t.begin (), t.end(), " ", 2), histw) <<
                 fpad (2)
                 ;
-    }        
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -1038,7 +1038,7 @@ public:
                     "Time " << n.now ().time_since_epoch () << std::endl <<
                     divider ()
                     ;
-                
+
                 n.step();
                 n.journal().info << std::endl;
             }

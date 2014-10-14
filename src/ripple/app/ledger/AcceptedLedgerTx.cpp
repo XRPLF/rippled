@@ -84,7 +84,7 @@ void AcceptedLedgerTx::buildJson ()
         {
             affected.append (ra.humanAccountID ());
         }
-    }    
+    }
 
     if (mTxn->getTxnType () == ttOFFER_CREATE)
     {
@@ -95,7 +95,7 @@ void AcceptedLedgerTx::buildJson ()
         if (account != amount.issue ().account)
         {
             LedgerEntrySet les (mLedger, tapNONE, true);
-            auto const ownerFunds (les.accountFunds (account, amount, fhIGNORE_FREEZE));  
+            auto const ownerFunds (les.accountFunds (account, amount, fhIGNORE_FREEZE));
 
             mJson[jss::transaction][jss::owner_funds] = ownerFunds.getText ();
         }

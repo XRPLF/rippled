@@ -48,7 +48,7 @@ public:
             return tecNO_ENTRY;
 
         Account const ticket_owner (sleTicket->getFieldAccount160 (sfAccount));
-        
+
         bool authorized (mTxnAccountID == ticket_owner);
 
         // The target can also always remove a ticket

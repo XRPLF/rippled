@@ -298,7 +298,7 @@ public:
     accept();
 
 private:
-    void 
+    void
     do_handshake (boost::asio::yield_context yield);
 
     void

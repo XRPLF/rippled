@@ -171,7 +171,7 @@ public:
     };
 
     //--------------------------------------------------------------------------
-    
+
     template <typename Protocol, typename ClientArg, typename ServerArg>
     void runProxy (ClientArg const& clientArg, ServerArg const& serverArg)
     {

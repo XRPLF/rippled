@@ -260,7 +260,7 @@ public:
         return "LevelDB";
     }
 
-    std::unique_ptr <Backend>    
+    std::unique_ptr <Backend>
     createInstance(
         size_t keyBytes,
         Parameters const& keyValues,

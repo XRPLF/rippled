@@ -39,7 +39,7 @@ public:
     ~ManagerImp ()
     {
     }
-    
+
     void
     add_factory (std::unique_ptr <Factory> factory)
     {

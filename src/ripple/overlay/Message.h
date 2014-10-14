@@ -21,7 +21,7 @@
 #define RIPPLE_OVERLAY_MESSAGE_H_INCLUDED
 
 #include "ripple.pb.h"
-    
+
 #include <memory>
 
 namespace ripple {

@@ -74,9 +74,9 @@ Json::Value doAccountOffers (RPC::Context& context)
     {
         limit = RPC::Tuning::defaultOffersPerRequest;
     }
-    
+
     Account const& raAccount (rippleAddress.getAccountID ());
-    Json::Value& jsonOffers (result[jss::offers] = Json::arrayValue); 
+    Json::Value& jsonOffers (result[jss::offers] = Json::arrayValue);
     std::vector <SLE::pointer> offers;
     unsigned int reserve (limit);
     uint256 startAfter;
@@ -85,7 +85,7 @@ Json::Value doAccountOffers (RPC::Context& context)
     if (params.isMember(jss::marker))
     {
         // We have a start point. Use limit - 1 from the result and use the
-        // very last one for the resume.        
+        // very last one for the resume.
         Json::Value const& marker (params[jss::marker]);
 
         if (! marker.isString ())
@@ -108,14 +108,14 @@ Json::Value doAccountOffers (RPC::Context& context)
         sleOffer->getFieldAmount (sfTakerPays).setJson (obj[jss::taker_pays]);
         sleOffer->getFieldAmount (sfTakerGets).setJson (obj[jss::taker_gets]);
         obj[jss::seq] = sleOffer->getFieldU32 (sfSequence);
-        obj[jss::flags] = sleOffer->getFieldU32 (sfFlags);            
+        obj[jss::flags] = sleOffer->getFieldU32 (sfFlags);
 
         offers.reserve (reserve);
     }
     else
     {
         startHint = 0;
-        // We have no start point, limit should be one higher than requested.            
+        // We have no start point, limit should be one higher than requested.
         offers.reserve (++reserve);
     }
 
@@ -138,7 +138,7 @@ Json::Value doAccountOffers (RPC::Context& context)
     {
         result[jss::limit] = limit;
 
-        result[jss::marker] = to_string (offers.back ()->getIndex ());        
+        result[jss::marker] = to_string (offers.back ()->getIndex ());
         offers.pop_back ();
     }
 
@@ -148,7 +148,7 @@ Json::Value doAccountOffers (RPC::Context& context)
         offer->getFieldAmount (sfTakerPays).setJson (obj[jss::taker_pays]);
         offer->getFieldAmount (sfTakerGets).setJson (obj[jss::taker_gets]);
         obj[jss::seq] = offer->getFieldU32 (sfSequence);
-        obj[jss::flags] = offer->getFieldU32 (sfFlags);            
+        obj[jss::flags] = offer->getFieldU32 (sfFlags);
     }
 
     context.loadType_ = Resource::feeMediumBurdenRPC;

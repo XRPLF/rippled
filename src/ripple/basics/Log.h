@@ -128,7 +128,7 @@ private:
         {
             write (str.c_str ());
         }
-        
+
         void writeln (std::string const& str)
         {
             writeln (str.c_str ());
@@ -150,7 +150,7 @@ public:
 
     Logs (Logs const&) = delete;
     Logs& operator= (Logs const&) = delete;
-    
+
     bool
     open (boost::filesystem::path const& pathToLogFile);
 

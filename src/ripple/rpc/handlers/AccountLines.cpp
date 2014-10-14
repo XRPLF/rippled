@@ -136,7 +136,7 @@ Json::Value doAccountLines (RPC::Context& context)
         limit = RPC::Tuning::defaultLinesPerRequest;
     }
 
-    Json::Value& jsonLines (result[jss::lines] = Json::arrayValue);   
+    Json::Value& jsonLines (result[jss::lines] = Json::arrayValue);
     Account const& raAccount(rippleAddress.getAccountID ());
     VisitData visitData = { {}, raAccount, rippleAddressPeer, raPeerAccount };
     unsigned int reserve (limit);
@@ -146,7 +146,7 @@ Json::Value doAccountLines (RPC::Context& context)
     if (params.isMember (jss::marker))
     {
         // We have a start point. Use limit - 1 from the result and use the
-        // very last one for the resume.        
+        // very last one for the resume.
         Json::Value const& marker (params[jss::marker]);
 
         if (! marker.isString ())
@@ -157,7 +157,7 @@ Json::Value doAccountLines (RPC::Context& context)
 
         if (sleLine == nullptr || sleLine->getType () != ltRIPPLE_STATE)
             return rpcError (rpcINVALID_PARAMS);
-        
+
         if (sleLine->getFieldAmount (sfLowLimit).getIssuer () == raAccount)
             startHint = sleLine->getFieldU64 (sfLowNode);
         else if (sleLine->getFieldAmount (sfHighLimit).getIssuer () == raAccount)
@@ -197,7 +197,7 @@ Json::Value doAccountLines (RPC::Context& context)
     {
         return rpcError (rpcINVALID_PARAMS);
     }
-    
+
     if (visitData.items.size () == reserve)
     {
         result[jss::limit] = limit;

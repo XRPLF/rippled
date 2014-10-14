@@ -47,7 +47,7 @@ public:
         typedef int Key;
         typedef std::string Value;
         typedef TaggedCache <Key, Value> Cache;
-        
+
         Cache c ("test", 1, 1, clock, j);
 
         // Insert an item, retrieve it, and age it so it gets purged.

@@ -27,7 +27,7 @@
 
 namespace ripple {
 
-/** Converts an integer to the corresponding hex digit 
+/** Converts an integer to the corresponding hex digit
     @param iDigit 0-15 inclusive
     @return a character from '0'-'9' or 'A'-'F' on success; 0 on failure.
 */

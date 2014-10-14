@@ -203,7 +203,7 @@ public:
         if (! cert_file.empty ())
         {
             boost::system::error_code ec;
-            
+
             m_context.use_certificate_file (
                 cert_file, boost::asio::ssl::context::pem, ec);
 

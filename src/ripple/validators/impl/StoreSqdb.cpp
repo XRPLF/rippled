@@ -284,7 +284,7 @@ bool StoreSqdb::select (SourceDesc& desc)
     {
         m_journal.debug <<
             "Found record for " << *desc.source;
-        
+
         found = true;
         desc.lastFetchTime = stringToTime (lastFetchTime);
         desc.expirationTime = stringToTime (expirationTime);
@@ -311,7 +311,7 @@ bool StoreSqdb::select (SourceDesc& desc)
 void StoreSqdb::selectList (SourceDesc& desc)
 {
     beast::Error error;
-       
+
     std::string const sourceID (desc.source->uniqueID());
 
     // Get the count

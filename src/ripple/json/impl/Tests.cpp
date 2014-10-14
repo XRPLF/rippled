@@ -45,7 +45,7 @@ public:
         std::uint32_t max_uint = std::numeric_limits<std::uint32_t>::max ();
         std::int32_t max_int = std::numeric_limits<std::int32_t>::max ();
         std::int32_t min_int = std::numeric_limits<std::int32_t>::min ();
-        
+
         std::uint32_t a_uint = max_uint - 1978;
         std::int32_t a_large_int = max_int - 1978;
         std::int32_t a_small_int = min_int + 1978;

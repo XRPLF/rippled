@@ -588,7 +588,7 @@ transact_CreateOffer (
 {
     // Autobridging is performed only when the offer does not involve XRP
     bool autobridging =
-        ! txn.getFieldAmount (sfTakerPays).isNative() && 
+        ! txn.getFieldAmount (sfTakerPays).isNative() &&
         ! txn.getFieldAmount (sfTakerGets).isNative ();
 
     return CreateOffer (autobridging, txn, params, engine).apply ();
