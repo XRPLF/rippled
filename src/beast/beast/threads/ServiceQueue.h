@@ -352,7 +352,7 @@ protected:
 
     void wait();
     virtual void enqueue (Item* item);
-	bool empty();
+    bool empty();
 
     virtual std::size_t dequeue() = 0;
     virtual Waiter* new_waiter() = 0;

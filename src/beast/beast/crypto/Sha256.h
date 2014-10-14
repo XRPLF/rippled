@@ -42,9 +42,9 @@ typedef std::array <std::uint8_t, digestLength> digest_type;
 namespace detail {
 struct Context
 {
-	std::uint32_t state[8];
-	std::uint64_t bitcount;
-	std::uint8_t  buffer[Sha256::blockLength];
+    std::uint32_t state[8];
+    std::uint64_t bitcount;
+    std::uint8_t  buffer[Sha256::blockLength];
 };
 }
 
