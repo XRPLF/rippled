@@ -92,8 +92,13 @@ public:
 
     // A simple RAII container for a DH
     //
-    struct ScopedDHPointer
+    class ScopedDHPointer
     {
+    private:
+        ScopedDHPointer            (ScopedDHPointer const&) = delete;
+        ScopedDHPointer& operator= (ScopedDHPointer const&) = delete;
+
+    public:
         // Construct from an existing DH
         //
         explicit ScopedDHPointer (DH* dh)
