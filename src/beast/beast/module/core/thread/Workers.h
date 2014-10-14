@@ -56,7 +56,8 @@ public:
     */
     explicit Workers (Callback& callback,
                       String const& threadNames = "Worker",
-                      int numberOfThreads = std::thread::hardware_concurrency());
+                      int numberOfThreads =
+                         static_cast<int>(std::thread::hardware_concurrency()));
 
     ~Workers ();
 

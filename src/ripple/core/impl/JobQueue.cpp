@@ -226,18 +226,8 @@ public:
         }
         else if (c == 0)
         {
-            c = std::thread::hardware_concurrency();
-
-            // VFALCO NOTE According to boost, hardware_concurrency cannot return
-            //             negative numbers/
-            //
-            if (c < 0)
-                c = 2; // VFALCO NOTE Why 2?
-
-            if (c > 4) // I/O will bottleneck
-                c = 4;
-
-            c += 2;
+            c = static_cast<int>(std::thread::hardware_concurrency());
+            c = 2 + std::min (c, 4); // I/O will bottleneck
 
             m_journal.info << "Auto-tuning to " << c <<
                               " validation/transaction/proposal threads";
