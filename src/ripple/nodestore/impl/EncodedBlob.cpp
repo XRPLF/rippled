@@ -31,7 +31,8 @@ EncodedBlob::prepare (NodeObject::Ptr const& object)
     m_data.ensureSize (m_size);
 
     // These sizes must be the same!
-    static_bassert (sizeof (std::uint32_t) == sizeof (object->getLedgerIndex ()));
+    static_assert (sizeof (std::uint32_t) == sizeof (object->getLedgerIndex ()),
+        "Ledger Indices must be exactly 32-bits long.");
 
     {
         std::uint32_t* buf = static_cast <std::uint32_t*> (m_data.getData ());

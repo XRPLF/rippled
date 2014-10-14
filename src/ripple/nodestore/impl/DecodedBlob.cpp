@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <algorithm>
+
 namespace ripple {
 namespace NodeStore {
 
@@ -38,7 +40,7 @@ DecodedBlob::DecodedBlob (void const* key, void const* value, int valueBytes)
     m_ledgerIndex = LedgerIndex (-1);
     m_objectType = hotUNKNOWN;
     m_objectData = nullptr;
-    m_dataBytes = beast::bmax (0, valueBytes - 9);
+    m_dataBytes = std::max (0, valueBytes - 9);
 
     if (valueBytes > 4)
     {
