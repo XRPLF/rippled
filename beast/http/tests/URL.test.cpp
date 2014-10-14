@@ -17,35 +17,48 @@
 */
 //==============================================================================
 
-#include <beast/http/ParsedURL.h>
+#include <beast/http/URL.h>
 
 #include <beast/unit_test/suite.h>
 
-#include <beast/http/impl/joyent_parser.h>
-
 namespace beast {
 
-class ParsedURL_test : public unit_test::suite
+class URL_test : public unit_test::suite
 {
 public:
-    void checkURL (String const& url)
+    void check_url_parsing (std::string const& url, bool expected)
     {
-        ParsedURL result (url);
-        expect (result.error () == 0);
-        expect (result.url ().toString () == url);
+        auto result = parse_URL (url);
+
+        expect (result.first == expected,
+            (expected ? "Failed to parse " : "Succeeded in parsing ") + url);
+        expect (to_string (result.second) == url);
     }
 
-    void testURL ()
+    void test_url_parsing ()
     {
-        checkURL ("http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference.html");
+        char const* const urls[] = 
+        {
+            "http://en.wikipedia.org/wiki/URI#Examples_of_URI_references",
+            "ftp://ftp.funet.fi/pub/standards/RFC/rfc959.txt"
+            "ftp://test:test@example.com:21/path/specifier/is/here"
+            "http://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference.html",
+            "foo://username:password@example.com:8042/over/there/index.dtb?type=animal&name=narwhal#nose",
+        };
+
+        testcase ("URL parsing");
+
+        for (auto url : urls)
+            check_url_parsing (url, true);
     }
 
-    void run ()
+    void
+    run ()
     {
-        testURL ();
+        test_url_parsing ();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(ParsedURL,http,beast);
+BEAST_DEFINE_TESTSUITE(URL,http,beast);
 
 }

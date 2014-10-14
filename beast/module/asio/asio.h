@@ -27,7 +27,6 @@
 #include <beast/module/asio/system/BoostIncludes.h>
 
 #include <beast/http/URL.h>
-#include <beast/http/ParsedURL.h>
 
 #include <beast/asio/IPAddressConversion.h>
 
