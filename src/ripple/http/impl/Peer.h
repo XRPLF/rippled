@@ -574,8 +574,9 @@ Peer<Impl>::do_write (boost::asio::yield_context yield)
             break;
 
         start_timer();
-        boost::asio::async_write (impl().socket_, boost::asio::buffer (
-            data, bytes), boost::asio::transfer_at_least(1), yield[ec]);
+        bytes = boost::asio::async_write (impl().socket_,
+            boost::asio::buffer (data, bytes),
+                boost::asio::transfer_at_least(1), yield[ec]);
         cancel_timer();
 
         if (ec)
