@@ -352,6 +352,19 @@ void RippleSSLContextImp::initAnonymous (
         cipherList.c_str ());
     if (result != 1)
         throw std::invalid_argument("SSL_CTX_set_cipher_list failed");
+
+    using namespace openssl;
+
+    evp_pkey_ptr pkey = evp_pkey_new();
+    evp_pkey_assign_rsa (pkey.get(), rsa_generate_key (2048));
+
+    x509_ptr cert = x509_new();
+    x509_set_pubkey (cert.get(), pkey.get());
+    x509_sign       (cert.get(), pkey.get());
+
+    SSL_CTX* const ctx = context.native_handle();
+    ssl_ctx_use_certificate (ctx, cert);
+    ssl_ctx_use_privatekey  (ctx, pkey);
 }
 
 void RippleSSLContextImp::initAnonymous (std::string const& cipherList)
