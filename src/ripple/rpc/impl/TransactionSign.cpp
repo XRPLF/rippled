@@ -352,15 +352,18 @@ static Json::Value transactionProcessImpl (
         jvResult ["error_message"] = parsed.error ["error_message"];
         return jvResult;
     }
-    std::unique_ptr<STObject> sopTrans = std::move(parsed.object);
-    sopTrans->setFieldVL (
-        sfSigningPubKey,
-        masterAccountPublic.getAccountPublic ());
 
     SerializedTransaction::pointer stpTrans;
-
     try
     {
+        // If we're generating a multi-signature the SigningPubKey must be zero.
+        Blob emptyBlob;
+        Blob const& signingPubKey = raMultisignAddressID.isValid () ?
+            emptyBlob : masterAccountPublic.getAccountPublic ();
+
+        std::unique_ptr<STObject> sopTrans = std::move (parsed.object);
+        sopTrans->setFieldVL (sfSigningPubKey, signingPubKey);
+
         stpTrans = std::make_shared<SerializedTransaction> (*sopTrans);
     }
     catch (std::exception&)
@@ -641,12 +644,12 @@ Json::Value transactionSubmitMultiSigned (
     for (STObject const& signingAccount : *(parsedSigningAccounts.array.get()))
     {
         // We want to make sure the right fields, and only the right fields,
-        // are present.  So there should be exactly 2 fields and there should
+        // are present.  So there should be exactly 3 fields and there should
         // be one each of the fields we need.
-        if (signingAccount.getCount () != 2)
+        if (signingAccount.getCount () != 3)
         {
             std::ostringstream err;
-            err << "Expecting two fields in "
+            err << "Expecting three fields in "
                 << signingAccocuntsArrayName << "."
                 << sfSigningAccount.getName ();
             return RPC::make_param_error(err.str ());
@@ -660,6 +663,17 @@ Json::Value transactionSubmitMultiSigned (
             fieldName << signingAccocuntsArrayName << "."
                 << sfSigningAccount.getName () << "."
                 << sfAccount.getName ();
+            return RPC::missing_field_error (fieldName.str ());
+        }
+
+        if (!signingAccount.isFieldPresent (sfPublicKey))
+        {
+            // Return an error that we're expecting a
+            // SigningAccounts.SigningAccount.Account.PublicKey
+                std::ostringstream fieldName;
+            fieldName << signingAccocuntsArrayName << "."
+                << sfSigningAccount.getName () << "."
+                << sfPublicKey.getName ();
             return RPC::missing_field_error (fieldName.str ());
         }
 
@@ -677,6 +691,17 @@ Json::Value transactionSubmitMultiSigned (
         // All required fields are present.
         RippleAddress const signer =
             signingAccount.getFieldAccount (sfAccount);
+        Blob const pubKeyBlob =
+            signingAccount.getFieldVL (sfPublicKey);
+        std::string const pubKeyString = strCopy (pubKeyBlob);
+        RippleAddress pubKey;
+        if (!pubKey.setAccountPublic (pubKeyString))
+        {
+            std::ostringstream errMsg;
+            errMsg << "Public key " << pubKeyString
+                   << " is not a valid public key identifier.";
+            return RPC::make_error (rpcACT_MALFORMED, errMsg.str ());
+        }
         Blob const signature =
             signingAccount.getFieldVL (sfMultiSignature);
         uint256 const tx_json_hash = stpTx_json->getSigningHash ();
@@ -684,13 +709,21 @@ Json::Value transactionSubmitMultiSigned (
         bool validSig = false;
         try
         {
-            validSig = signer.accountPublicVerify (
-                tx_json_hash, signature, ECDSA::strict);
+//          // !!!! DEBUG !!!!
+//          STVariableLength tempSigForPrint (signature);
+//          std::cerr << "submit_multisigned" << std::endl;
+//          std::cerr << "  signer:    " << signer.humanAccountID () << std::endl;
+//          std::cerr << "  public key:" << pubKey.humanAccountPublic () << std::endl;
+//          std::cerr << "  hash:      " << to_string (tx_json_hash) << std::endl;
+//          std::cerr << "  signature: " << tempSigForPrint.getText () << std::endl;
+//          // !!!! END DEBUG !!!!
+            validSig = pubKey.accountPublicVerify (
+                tx_json_hash, signature, ECDSA::not_strict);
         }
         catch (...)
         {
             // We assume any problem lies with the signature.  That's better
-            // returning "internal error".
+            // than returning "internal error".
         }
         if (!validSig)
         {
@@ -716,19 +749,34 @@ Json::Value transactionSubmitMultiSigned (
         raNotMultisign);
 }
 
- //------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 class JSONRPC_test : public beast::unit_test::suite
 {
 public:
     void testAutoFillFees ()
     {
+        std::string const secret = "masterpassphrase";
         RippleAddress rootSeedMaster
-                = RippleAddress::createSeedGeneric ("masterpassphrase");
+                = RippleAddress::createSeedGeneric (secret);
+//      std::cerr << "secret: " << secret << std::endl;
+
         RippleAddress rootGeneratorMaster
                 = RippleAddress::createGeneratorPublic (rootSeedMaster);
+
+//      RippleAddress publicKey
+//              = RippleAddress::createAccountPublic (rootGeneratorMaster, 0);
+//      std::cerr << "public key: " << publicKey.ToString () << std::endl;
+
+//      RippleAddress privateKey
+//              = RippleAddress::createAccountPrivate (
+//                  rootGeneratorMaster, rootSeedMaster, 0);
+//      std::cerr << "private key: " << privateKey.ToString () << std::endl;
+
         RippleAddress rootAddress
                 = RippleAddress::createAccountPublic (rootGeneratorMaster, 0);
+//      std::cerr << "account: " << rootAddress.humanAccountID () << std::endl;
+
         std::uint64_t startAmount (100000);
         Ledger::pointer ledger (std::make_shared <Ledger> (
             rootAddress, startAmount));

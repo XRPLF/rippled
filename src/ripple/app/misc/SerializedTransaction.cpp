@@ -218,6 +218,14 @@ void SerializedTransaction::multiSign (RippleAddress const& naAccountPrivate)
     Blob signature;
     naAccountPrivate.accountPrivateSign (getSigningHash (), signature);
     setFieldVL (sfMultiSignature, signature);
+
+    // !!!! DEBUG !!!!
+//  STVariableLength tempSigForPrint (getFieldVL (sfMultiSignature));
+//  std::cerr << "multisign" << std::endl;
+//  std::cerr << "  signer:    " << naAccountPrivate.humanAccountPrivate () << std::endl;
+//  std::cerr << "  hash:      " << to_string (getSigningHash ()) << std::endl;
+//  std::cerr << "  signature: " << tempSigForPrint.getText () << std::endl;
+    // !!!! END DEBUG !!!!
 }
 
 void SerializedTransaction::setSigningPubKey (RippleAddress const& naSignPubKey)

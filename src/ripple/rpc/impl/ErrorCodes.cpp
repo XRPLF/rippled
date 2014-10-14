@@ -57,6 +57,7 @@ public:
         add (rpcBAD_MARKET,            "badMarket",         "No such market.");
         add (rpcBAD_SECRET,            "badSecret",         "Secret does not match account.");
         add (rpcBAD_SEED,              "badSeed",           "Disallowed seed.");
+        add (rpcBAD_SIGNATURE,         "badSignature",      "Signature does not match.");
         add (rpcBAD_SYNTAX,            "badSyntax",         "Syntax error.");
         add (rpcCOMMAND_MISSING,       "commandMissing",    "Missing command entry.");
         add (rpcDST_ACT_MALFORMED,     "dstActMalformed",   "Destination account is malformed.");
