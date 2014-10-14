@@ -35,13 +35,12 @@ namespace ripple {
     constructors that can report a fatal error. Also, the Log would need
     to be guaranteed to be set up for this handler to work.
 */
-class FatalErrorReporter : public beast::FatalError::Reporter
+class FatalErrorReporter
+    : public beast::FatalError::Reporter
 {
 public:
     FatalErrorReporter ();
     ~FatalErrorReporter ();
-
-    void reportMessage (beast::String& formattedMessage);
 
 private:
     beast::FatalError::Reporter* m_savedReporter;

@@ -33,11 +33,6 @@ FatalErrorReporter::~FatalErrorReporter ()
     beast::FatalError::setReporter (m_savedReporter);
 }
 
-void FatalErrorReporter::reportMessage (beast::String& formattedMessage)
-{
-    std::cerr << formattedMessage.toRawUTF8 () << std::endl;
-}
-
 //------------------------------------------------------------------------------
 
 class FatalErrorReporter_test : public beast::unit_test::suite
@@ -50,7 +45,8 @@ public:
         // We don't really expect the program to run after this
         // but the unit test is here so you can manually test it.
 
-        beast::FatalError ("The unit test intentionally failed", __FILE__, __LINE__);
+        beast::FatalError ("The unit test intentionally failed", 
+            __FILE__, __LINE__);
     }
 };
 

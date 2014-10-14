@@ -18,7 +18,9 @@
 //==============================================================================
 
 #include <ripple/validators/impl/Utilities.h>
-#include <beast/module/core/files/RandomAccessFile.h>
+
+#include <fstream>
+#include <string>
 
 namespace ripple {
 namespace Validators {
@@ -54,28 +56,21 @@ public:
 
     void fetch (Results& results, beast::Journal journal)
     {
-        std::int64_t const fileSize (m_file.getSize ());
+        // 8MB is a somewhat arbitrary maximum file size, but it should be
+        // enough to cover all cases in the foreseeable future.
 
-        if (fileSize != 0)
+        std::int64_t const maxFileSize = 8 * 1024 * 1024;
+        std::int64_t const fileSize = m_file.getSize ();
+        
+        if (fileSize != 0 && (fileSize < maxFileSize))
         {
-            if (fileSize < std::numeric_limits<std::int32_t>::max())
-            {
-                beast::MemoryBlock buffer (fileSize);
-                beast::RandomAccessFile f;
-                beast::RandomAccessFile::ByteCount amountRead;
+            std::ifstream datafile (m_file.getFullPathName().toStdString ());
+            std::string line;
 
-                f.open (m_file, beast::RandomAccessFile::readOnly);
-                f.read (buffer.begin(), fileSize, &amountRead);
-
-                if (amountRead == fileSize)
-                {
-                    Utilities::ParseResultLine lineFunction (results, journal);
-                    Utilities::processLines (buffer.begin(), buffer.end(), lineFunction);
-                }
-            }
-            else
+            if (datafile.is_open ())
             {
-                // too big!
+                while (std::getline(datafile, line))
+                    Utilities::parseResultLine (results, line, journal);
             }
         }
         else
