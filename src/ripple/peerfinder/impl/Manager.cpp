@@ -222,6 +222,7 @@ public:
         m_journal.debug << "Stopping";
         checker_.stop();
         m_logic.stop();
+        stopped();
         /*
         signalThreadShouldExit();
         m_queue.dispatch (m_context.wrap (
