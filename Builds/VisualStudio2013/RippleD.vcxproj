@@ -392,9 +392,6 @@
     <ClCompile Include="..\..\src\beast\beast\http\impl\method.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\http\impl\ParsedURL.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\http\impl\raw_parser.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -404,8 +401,6 @@
     <ClInclude Include="..\..\src\beast\beast\http\message.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\method.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\http\ParsedURL.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\parser.h">
     </ClInclude>
@@ -419,13 +414,13 @@
     <ClCompile Include="..\..\src\beast\beast\http\tests\client_session.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\http\tests\ParsedURL.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\http\tests\parser.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\http\tests\rfc2616.test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\http\tests\URL.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\http\tests\urls_large_data.cpp">
@@ -3185,11 +3180,6 @@
     <ClCompile Include="..\..\src\ripple\rpc\impl\Manager.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\impl\NewHandler.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rpc\impl\NewHandlerBase.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\impl\ParseAccountIds.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -3199,6 +3189,12 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\impl\RPCServerHandler.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\Status.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\Status_test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\impl\TransactionSign.cpp">
@@ -3211,8 +3207,6 @@
     <ClInclude Include="..\..\src\ripple\rpc\InternalHandler.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\Manager.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rpc\NewHandler.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\Request.h">
     </ClInclude>

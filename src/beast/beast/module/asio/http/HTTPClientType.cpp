@@ -148,14 +148,14 @@ public:
         if (url.port () != 0)
         {
             return Query (
-                url.host().toStdString(),
-                url.port_string().toStdString(),
+                url.host(),
+                url.port_string(),
                 Query::numeric_service);
         }
 
         return Query (
-            url.host().toStdString(),
-            url.scheme().toStdString());
+            url.host(),
+            url.scheme());
     }
 
     //--------------------------------------------------------------------------
@@ -648,7 +648,7 @@ public:
             HTTPClientBase::New (Journal(), timeoutSeconds));
 
         HTTPClientBase::result_type const& result (
-            client->get (ParsedURL (s).url ()));
+            client->get (parse_URL (s.toStdString ()).second));
 
         print (result.first, result.second);
     }
@@ -659,7 +659,7 @@ public:
         std::unique_ptr <HTTPClientBase> client (
             HTTPClientBase::New (Journal(), timeoutSeconds));
 
-        client->async_get (t.get_io_service (), ParsedURL (s).url (),
+        client->async_get (t.get_io_service (), parse_URL (s.toStdString ()).second,
             std::bind (&HTTPClient_test::handle_get, this,
                 std::placeholders::_1));
 

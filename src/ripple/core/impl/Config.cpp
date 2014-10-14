@@ -22,7 +22,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/core/SystemParameters.h>
 #include <ripple/net/HTTPClient.h>
-#include <beast/http/ParsedURL.h>
+#include <beast/http/URL.h>
 #include <beast/module/core/text/LexicalCast.h>
 #include <beast/streams/debug_ostream.h>
 #include <boost/algorithm/string.hpp>
@@ -843,9 +843,7 @@ beast::File Config::getValidatorsFile () const
 
 beast::URL Config::getValidatorsURL () const
 {
-    //String s = "https://" + VALIDATORS_SITE + VALIDATORS_URI;
-    beast::String s = VALIDATORS_SITE;
-    return beast::ParsedURL (s).url ();
+    return beast::parse_URL (VALIDATORS_SITE).second;
 }
 
 //------------------------------------------------------------------------------

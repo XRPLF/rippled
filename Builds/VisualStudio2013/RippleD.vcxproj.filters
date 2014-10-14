@@ -960,9 +960,6 @@
     <ClCompile Include="..\..\src\beast\beast\http\impl\method.cpp">
       <Filter>beast\http\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\http\impl\ParsedURL.cpp">
-      <Filter>beast\http\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\http\impl\raw_parser.cpp">
       <Filter>beast\http\impl</Filter>
     </ClCompile>
@@ -973,9 +970,6 @@
       <Filter>beast\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\method.h">
-      <Filter>beast\http</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\http\ParsedURL.h">
       <Filter>beast\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\parser.h">
@@ -993,13 +987,13 @@
     <ClCompile Include="..\..\src\beast\beast\http\tests\client_session.test.cpp">
       <Filter>beast\http\tests</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\http\tests\ParsedURL.cpp">
-      <Filter>beast\http\tests</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\http\tests\parser.test.cpp">
       <Filter>beast\http\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\http\tests\rfc2616.test.cpp">
+      <Filter>beast\http\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\http\tests\URL.test.cpp">
       <Filter>beast\http\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\http\tests\urls_large_data.cpp">
@@ -4371,12 +4365,6 @@
     <ClCompile Include="..\..\src\ripple\rpc\impl\Manager.cpp">
       <Filter>ripple\rpc\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\impl\NewHandler.cpp">
-      <Filter>ripple\rpc\impl</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\rpc\impl\NewHandlerBase.h">
-      <Filter>ripple\rpc\impl</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\impl\ParseAccountIds.cpp">
       <Filter>ripple\rpc\impl</Filter>
     </ClCompile>
@@ -4387,6 +4375,12 @@
       <Filter>ripple\rpc\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\impl\RPCServerHandler.cpp">
+      <Filter>ripple\rpc\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\Status.cpp">
+      <Filter>ripple\rpc\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\Status_test.cpp">
       <Filter>ripple\rpc\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\impl\TransactionSign.cpp">
@@ -4402,9 +4396,6 @@
       <Filter>ripple\rpc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\Manager.h">
-      <Filter>ripple\rpc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rpc\NewHandler.h">
       <Filter>ripple\rpc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\Request.h">
