@@ -20,7 +20,6 @@
 #ifndef RIPPLE_SERIALIZEDTRANSACTION_H
 #define RIPPLE_SERIALIZEDTRANSACTION_H
 
-#include <boost/optional.hpp>
 #include <boost/logic/tribool.hpp>
 
 namespace ripple {
