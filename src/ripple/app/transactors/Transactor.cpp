@@ -250,7 +250,7 @@ TER Transactor::preCheck ()
     // Consistency: really signed.
     if (!mTxn.isKnownGood ())
     {
-        if (mTxn.isKnownBad () || 
+        if (mTxn.isKnownBad () ||
             (!(mParams & tapNO_CHECK_SIGN) && !mTxn.checkSign (mSigningPubKey)))
         {
             mTxn.setBad ();

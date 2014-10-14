@@ -62,7 +62,7 @@ public:
         default:
         case Journal::kFatal:   s += "Fatal: "; break;
         };
-            
+
         s+= text;
         m_sink.write (level, s);
     }

@@ -1372,7 +1372,7 @@ private:
         }
     }
 
-    /** 
+    /**
       Revoke our outstanding proposal, if any, and
       cease proposing at least until this round ends
     */
@@ -1384,7 +1384,7 @@ private:
             {
                 mOurPosition->bowOut();
                 propose();
-	    }
+            }
             mProposing = false;
         }
     }

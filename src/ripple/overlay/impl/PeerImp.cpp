@@ -296,7 +296,7 @@ PeerImp::hasRange (std::uint32_t uMin, std::uint32_t uMax)
         3. Send HTTP request
         4. Receive HTTP response
         5. Enter protocol loop
-*/    
+*/
 
 void PeerImp::do_connect ()
 {
@@ -396,7 +396,7 @@ PeerImp::on_connect_ssl (error_code ec)
 
 #if RIPPLE_STRUCTURED_OVERLAY_CLIENT
     beast::http::message req (make_request());
-    beast::http::write (write_buffer_, req);   
+    beast::http::write (write_buffer_, req);
     on_write_http_request (error_code(), 0);
 
 #else
@@ -567,7 +567,7 @@ PeerImp::on_read_http_detect (error_code ec, std::size_t bytes_transferred)
     read_buffer_.commit (bytes_transferred);
     peer_protocol_detector detector;
     boost::tribool const is_peer_protocol (detector (read_buffer_.data()));
-    
+
     if (is_peer_protocol)
     {
         do_protocol_start();
@@ -615,7 +615,7 @@ PeerImp::on_read_http_request (error_code ec, std::size_t bytes_transferred)
                 if (http_message_->upgrade())
                 {
                     std::stringstream ss;
-                    ss << 
+                    ss <<
                         "HTTP/1.1 200 OK\r\n"
                         "Server: " << BuildInfo::getFullVersionString() << "\r\n"
                         "Upgrade: Ripple/1.2\r\n"
@@ -627,7 +627,7 @@ PeerImp::on_read_http_request (error_code ec, std::size_t bytes_transferred)
                 else
                 {
                     std::stringstream ss;
-                    ss << 
+                    ss <<
                         "HTTP/1.1 400 Bad Request\r\n"
                         "Server: " << BuildInfo::getFullVersionString() << "\r\n"
                         "\r\n"
@@ -1284,8 +1284,8 @@ PeerImp::on_message (std::shared_ptr <protocol::TMTransaction> const& m)
                 // For now, be paranoid and have each validator
                 // check each transaction, regardless of source
                 flags |= SF_SIGGOOD;
-	    }
-	}
+            }
+        }
 
         if (getApp().getJobQueue().getJobCount(jtTRANSACTION) > 100)
             journal_.info << "Transaction queue is full";

@@ -334,7 +334,7 @@ public:
             // See if the hash for the ledger we need is in the reference ledger
             ledgerHash = getLedgerHash(referenceLedger, ledgerIndex);
             if (ledgerHash.isZero())
-            { 
+            {
                 // No, Try to get another ledger that might have the hash we need
                 // Compute the index and hash of a ledger that will have the hash we need
                 LedgerIndex refIndex = (ledgerIndex + 255) & (~255);

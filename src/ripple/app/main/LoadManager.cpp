@@ -41,7 +41,7 @@ public:
             , m_resourceFlags (0)
         {
         }
-        
+
         Cost (LoadType loadType, int cost, int resourceFlags)
             : m_loadType (loadType)
             , m_cost (cost)

@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/basics/ThreadName.h>
-    
+
 // For Sustain Linux variants
 // VFALCO TODO Rewrite Sustain to use beast::Process
 #ifdef __linux__

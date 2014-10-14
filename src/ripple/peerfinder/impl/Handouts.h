@@ -345,7 +345,7 @@ ConnectHandouts::try_insert (beast::IP::Endpoint const& endpoint)
         endpoint.address()));
     if (! result.second)
         return false;
-    
+
     m_list.push_back (endpoint);
 
     return true;

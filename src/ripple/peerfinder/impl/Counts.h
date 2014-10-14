@@ -316,7 +316,7 @@ private:
 
     /** Active outbound slots. */
     std::size_t m_out_active;
-    
+
     /** Fixed connections. */
     std::size_t m_fixed;
 

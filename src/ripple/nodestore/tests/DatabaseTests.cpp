@@ -23,7 +23,7 @@ namespace NodeStore {
 class NodeStoreDatabase_test : public TestBase
 {
 public:
-    void testImport (std::string const& destBackendType, 
+    void testImport (std::string const& destBackendType,
         std::string const& srcBackendType, std::int64_t seedValue)
     {
         std::unique_ptr <Manager> manager (make_Manager ());

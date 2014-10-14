@@ -94,7 +94,7 @@ private:
             WriteLog (lsWARNING, WSDoor) << "websocketpp exception: " << e.what ();
 
             // temporary workaround for websocketpp throwing exceptions on access/close races
-            for (;;) 
+            for (;;)
             {
                 // https://github.com/zaphoyd/websocketpp/issues/98
                 try
@@ -140,7 +140,7 @@ private:
 private:
     typedef RippleRecursiveMutex LockType;
     typedef std::lock_guard <LockType> ScopedLockType;
-    
+
     Resource::Manager& m_resourceManager;
     InfoSub::Source& m_source;
     boost::asio::ssl::context& m_ssl_context;

@@ -155,7 +155,7 @@ public:
     {
         return mValue ? (mIsNegative ? -1 : 1) : 0;
     }
-    
+
     /** Returns a zero value with the same issuer and currency. */
     STAmount
     zeroed() const
@@ -186,7 +186,7 @@ public:
     // Operators
     //
     //--------------------------------------------------------------------------
-    
+
     explicit operator bool() const noexcept
     {
         return *this != zero;
@@ -284,7 +284,7 @@ public:
 
     void
     add (Serializer& s) const override;
-    
+
     bool
     isEquivalent (const SerializedType& t) const override;
 

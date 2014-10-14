@@ -527,7 +527,7 @@ int Pathfinder::getPathsOut (
         return it.first->second;
 
     auto sleAccount = mLedger->getSLEi (Ledger::getAccountRootIndex (accountID));
-    
+
     if (!sleAccount)
         return 0;
 

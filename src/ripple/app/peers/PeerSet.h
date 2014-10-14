@@ -61,22 +61,22 @@ public:
         mProgress = true;
         mAggressive = false;
     }
-    
+
     void clearProgress ()
     {
         mProgress = false;
     }
-    
+
     bool isProgress ()
     {
         return mProgress;
     }
-    
+
     void touch ()
     {
         mLastAction = m_clock.now();
     }
-    
+
     clock_type::time_point getLastAction () const
     {
         return mLastAction;

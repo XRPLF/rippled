@@ -115,7 +115,7 @@ public:
         std::string const& value, Issue const& issue, bool success = true)
     {
         STAmount amount (issue);
-        
+
         bool const result = amount.setValue (value);
 
         expect (result == success, "parse " + value);
@@ -175,7 +175,7 @@ public:
             testSetValue ("100000000", usd);
             testSetValue ("1000000000", usd);
             testSetValue ("10000000000", usd);
-            
+
             testSetValue ("1234567.1", usd);
             testSetValue ("1234567.12", usd);
             testSetValue ("1234567.123", usd);

@@ -278,7 +278,7 @@ public:
     SLE::pointer getAccountRoot (Account const& accountID) const;
     SLE::pointer getAccountRoot (const RippleAddress & naAccountID) const;
     void updateSkipList ();
-        
+
     void visitAccountItems (
         Account const& accountID, std::function<void (SLE::ref)>) const;
     bool visitAccountItems (

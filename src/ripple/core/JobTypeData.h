@@ -50,7 +50,7 @@ public:
     beast::insight::Event dequeue;
     beast::insight::Event execute;
 
-    explicit JobTypeData (JobTypeInfo const& info_, 
+    explicit JobTypeData (JobTypeInfo const& info_,
             beast::insight::Collector::ptr const& collector) noexcept
         : m_collector (collector)
         , info (info_)

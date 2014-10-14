@@ -66,7 +66,7 @@ int const maxRequestSize (1000000);
 
 } // Tuning
 /** @} */
-    
+
 } // RPC
 } // ripple
 

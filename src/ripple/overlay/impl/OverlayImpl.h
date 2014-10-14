@@ -45,7 +45,7 @@ class PeerDoor;
 class PeerImp;
 
 class OverlayImpl : public Overlay
-{    
+{
 private:
     using clock_type = std::chrono::steady_clock;
     using socket_type = boost::asio::ip::tcp::socket;
@@ -146,10 +146,10 @@ public:
 
     void
     check_stopped ();
-    
+
     void
     release ();
-    
+
     void
     remove (PeerFinder::Slot::ptr const& slot);
 
@@ -164,7 +164,7 @@ public:
     onStart () override;
 
     /** Close all peer connections.
-        If `graceful` is true then active 
+        If `graceful` is true then active
         Requirements:
             Caller must hold the mutex.
     */

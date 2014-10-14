@@ -36,7 +36,7 @@ public:
     ~SourceFileImp ()
     {
     }
-    
+
     std::string to_string () const
     {
         std::stringstream ss;
@@ -54,7 +54,7 @@ public:
     {
         return m_file.getFullPathName ().toStdString();
     }
-    
+
     void fetch (Results& results, beast::Journal journal)
     {
         std::int64_t const fileSize (m_file.getSize ());

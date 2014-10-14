@@ -31,7 +31,7 @@
 #include <boost/regex.hpp>
 #include <fstream>
 #include <iostream>
-    
+
 #ifndef DUMP_CONFIG
 #define DUMP_CONFIG 0
 #endif
@@ -794,7 +794,7 @@ boost::filesystem::path Config::getDebugLogFile () const
             // decide how to handle this situation.
             if (ec)
             {
-                std::cerr << 
+                std::cerr <<
                     "Unable to create log file path " << log_dir <<
                     ": " << ec.message() << '\n';
             }

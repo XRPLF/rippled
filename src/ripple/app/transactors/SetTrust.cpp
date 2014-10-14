@@ -50,7 +50,7 @@ public:
         bool const bHigh = mTxnAccountID > uDstAccountID;
 
         std::uint32_t const uOwnerCount (mTxnAccount->getFieldU32 (sfOwnerCount));
-        
+
         // The reserve required to create the line. Note that we allow up to
         // two trust lines without requiring a reserve because being able to
         // exchange currencies is a powerful Ripple feature.

@@ -148,7 +148,7 @@ private:
             feeObject = mEngine->entryCreate (
                 ltFEE_SETTINGS, Ledger::getLedgerFeeIndex ());
 
-        m_journal.trace << 
+        m_journal.trace <<
             "Previous fee object: " << feeObject->getJson (0);
 
         feeObject->setFieldU64 (
@@ -162,7 +162,7 @@ private:
 
         mEngine->entryModify (feeObject);
 
-        m_journal.trace << 
+        m_journal.trace <<
             "New fee object: " << feeObject->getJson (0);
         m_journal.warning << "Fees have been changed";
         return tesSUCCESS;

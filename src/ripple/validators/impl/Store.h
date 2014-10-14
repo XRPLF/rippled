@@ -36,7 +36,7 @@ public:
         information filled in from the Store.
     */
     virtual void insert (SourceDesc& desc) = 0;
-    
+
     /** Update the SourceDesc fixed fields.  */
     virtual void update (SourceDesc& desc, bool updateFetchResults = false) = 0;
 

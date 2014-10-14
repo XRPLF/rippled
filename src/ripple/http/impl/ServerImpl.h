@@ -144,12 +144,12 @@ private:
     ceil_log2 (unsigned long long x);
 
     static
-    int 
+    int
     compare (Port const& lhs, Port const& rhs);
 
     void
     update();
-    
+
     void
     on_update();
 

@@ -131,7 +131,7 @@ private:
 
     State           state_;          // Current state
     bool detaching_ = false;
-    
+
     // True if peer is a node in our cluster
     bool clusterNode_ = false;
 
@@ -175,7 +175,7 @@ private:
     message_stream message_stream_;
 
     boost::asio::streambuf write_buffer_;
-    
+
     std::unique_ptr <LoadEvent> load_event_;
 
     //--------------------------------------------------------------------------
@@ -241,7 +241,7 @@ public:
 
     Peer::ShortId
     getShortId () const override;
-    
+
     RippleAddress const&
     getNodePublic () const override;
 

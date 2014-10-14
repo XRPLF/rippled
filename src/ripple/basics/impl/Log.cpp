@@ -110,7 +110,7 @@ Logs::Logs()
     : level_ (beast::Journal::kWarning) // default severity
 {
 }
-    
+
 bool
 Logs::open (boost::filesystem::path const& pathToLogFile)
 {

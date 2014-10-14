@@ -70,7 +70,7 @@ public:
         {
             return m_flags == other.m_flags;
         }
-        
+
         inline bool set (int mask) const noexcept
         {
             return (m_flags & mask) == mask;

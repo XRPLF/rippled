@@ -45,7 +45,7 @@ public:
         void (*f)(void*);
         void* a;
     };
-    
+
     static
     void
     thread_entry (void* ptr)
@@ -194,7 +194,7 @@ public:
     {
     }
 
-    std::string 
+    std::string
     getName()
     {
         return m_name;
@@ -363,7 +363,7 @@ public:
         return "RocksDB";
     }
 
-    std::unique_ptr <Backend> 
+    std::unique_ptr <Backend>
     createInstance (
         size_t keyBytes,
         Parameters const& keyValues,

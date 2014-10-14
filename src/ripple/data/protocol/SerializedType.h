@@ -107,7 +107,7 @@ public:
     {
         return std::string();
     }
-    
+
     virtual
     Json::Value getJson (int /*options*/) const
     {

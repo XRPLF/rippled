@@ -703,7 +703,7 @@ Reader::decodeNumber ( Token& token )
     // More tokens left -> input is larger than largest possible return value
     if (current != token.end_)
     {
-        return addError ( "'" + std::string ( token.start_, token.end_ ) + 
+        return addError ( "'" + std::string ( token.start_, token.end_ ) +
             "' exceeds the allowable range.", token );
     }
 
@@ -713,7 +713,7 @@ Reader::decodeNumber ( Token& token )
 
         if (value < Value::minInt || value > Value::maxInt)
         {
-            return addError ( "'" + std::string ( token.start_, token.end_ ) + 
+            return addError ( "'" + std::string ( token.start_, token.end_ ) +
                 "' exceeds the allowable range.", token );
         }
 
@@ -723,7 +723,7 @@ Reader::decodeNumber ( Token& token )
     {
         if (value > Value::maxUInt)
         {
-            return addError ( "'" + std::string ( token.start_, token.end_ ) + 
+            return addError ( "'" + std::string ( token.start_, token.end_ ) +
                 "' exceeds the allowable range.", token );
         }
 

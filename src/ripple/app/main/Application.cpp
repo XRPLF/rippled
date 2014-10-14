@@ -293,7 +293,7 @@ public:
             m_logs.journal("PathRequest"), m_collectorManager->collector ()))
 
         , m_ledgerMaster (make_LedgerMaster (getConfig ().RUN_STANDALONE,
-            getConfig ().FETCH_DEPTH, getConfig ().LEDGER_HISTORY, 
+            getConfig ().FETCH_DEPTH, getConfig ().LEDGER_HISTORY,
             getConfig ().getSize (siLedgerFetch), *m_jobQueue,
             m_collectorManager->collector (), m_logs.journal("LedgerMaster")))
 

@@ -135,7 +135,7 @@ public:
         , signingField (std::move(sf.signingField))
         , rawJsonName (std::move(sf.rawJsonName))
         , jsonName (rawJsonName.c_str ())
-    {}        
+    {}
 #endif
 
 private:
