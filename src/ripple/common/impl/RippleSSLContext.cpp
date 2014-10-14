@@ -28,6 +28,138 @@
 
 namespace ripple {
 
+namespace openssl {
+
+template <class>
+struct custom_delete;
+
+template <>
+struct custom_delete <RSA>
+{
+    void operator() (RSA* rsa) const
+    {
+        RSA_free (rsa);
+    }
+};
+
+template <>
+struct custom_delete <EVP_PKEY>
+{
+    void operator() (EVP_PKEY* evp_pkey) const
+    {
+        EVP_PKEY_free (evp_pkey);
+    }
+};
+
+template <>
+struct custom_delete <X509>
+{
+    void operator() (X509* x509) const
+    {
+        X509_free (x509);
+    }
+};
+
+template <class T>
+using custom_delete_unique_ptr = std::unique_ptr <T, custom_delete <T>>;
+
+// RSA
+
+typedef custom_delete_unique_ptr <RSA> rsa_ptr;
+
+static rsa_ptr rsa_generate_key (int n_bits)
+{
+    RSA* rsa = RSA_generate_key (n_bits, RSA_F4, nullptr, nullptr);
+
+    if (rsa == nullptr)
+    {
+        throw std::runtime_error ("RSA_generate_key failed");
+    }
+
+    return rsa_ptr (rsa);
+}
+
+// EVP_PKEY
+
+typedef custom_delete_unique_ptr <EVP_PKEY> evp_pkey_ptr;
+
+static evp_pkey_ptr evp_pkey_new()
+{
+    EVP_PKEY* evp_pkey = EVP_PKEY_new();
+
+    if (evp_pkey == nullptr)
+    {
+        throw std::runtime_error ("EVP_PKEY_new failed");
+    }
+
+    return evp_pkey_ptr (evp_pkey);
+}
+
+static void evp_pkey_assign_rsa (EVP_PKEY* evp_pkey, rsa_ptr&& rsa)
+{
+    if (! EVP_PKEY_assign_RSA (evp_pkey, rsa.get()))
+    {
+        throw std::runtime_error ("EVP_PKEY_assign_RSA failed");
+    }
+
+    rsa.release();
+}
+
+// X509
+
+typedef custom_delete_unique_ptr <X509> x509_ptr;
+
+static x509_ptr x509_new()
+{
+    X509* x509 = X509_new();
+
+    if (x509 == nullptr)
+    {
+        throw std::runtime_error ("X509_new failed");
+    }
+
+    X509_set_version (x509, NID_X509);
+
+    int const margin =                    60 * 60;  //      3600, one hour
+    int const length = 10 * 365.25 * 24 * 60 * 60;  // 315576000, ten years
+    
+    X509_gmtime_adj (X509_get_notBefore (x509), -margin);
+    X509_gmtime_adj (X509_get_notAfter  (x509),  length);
+
+    return x509_ptr (x509);
+}
+
+static void x509_set_pubkey (X509* x509, EVP_PKEY* evp_pkey)
+{
+    X509_set_pubkey (x509, evp_pkey);
+}
+
+static void x509_sign (X509* x509, EVP_PKEY* evp_pkey)
+{
+    if (! X509_sign (x509, evp_pkey, EVP_sha1()))
+    {
+        throw std::runtime_error ("X509_sign failed");
+    }
+}
+
+static void ssl_ctx_use_certificate (SSL_CTX* const ctx, x509_ptr& cert)
+{
+    if (SSL_CTX_use_certificate (ctx, cert.release()) <= 0)
+    {
+        throw std::runtime_error ("SSL_CTX_use_certificate failed");
+    }
+}
+
+static void ssl_ctx_use_privatekey (SSL_CTX* const ctx, evp_pkey_ptr& key)
+{
+    if (SSL_CTX_use_PrivateKey (ctx, key.release()) <= 0)
+    {
+        throw std::runtime_error ("SSL_CTX_use_PrivateKey failed");
+    }
+}
+
+}  // namespace openssl
+
 class RippleSSLContextImp : public RippleSSLContext
 {
 private:
