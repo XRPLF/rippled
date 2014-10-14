@@ -256,7 +256,7 @@ std::string RelativeTime::to_string () const
 }
 
 }
-	
+
 #if BEAST_WINDOWS
 
 #include <windows.h>
@@ -266,12 +266,12 @@ namespace detail {
 
 static double monotonicCurrentTimeInSeconds()
 {
-	return GetTickCount64() / 1000.0;
+    return GetTickCount64() / 1000.0;
 }
  
 }
 }
-	
+
 #elif BEAST_MAC || BEAST_IOS
 
 #include <mach/mach_time.h>
@@ -279,39 +279,39 @@ static double monotonicCurrentTimeInSeconds()
 
 namespace beast {
 namespace detail {
-	
+    
 static double monotonicCurrentTimeInSeconds()
 {
-	struct StaticInitializer
-	{
-		StaticInitializer ()
-		{
-			double numerator;
-			double denominator;
+    struct StaticInitializer
+    {
+        StaticInitializer ()
+        {
+            double numerator;
+            double denominator;
 
-			mach_timebase_info_data_t timebase;
-			(void) mach_timebase_info (&timebase);
-			
-			if (timebase.numer % 1000000 == 0)
-			{
-				numerator   = timebase.numer / 1000000.0;
-				denominator = timebase.denom * 1000.0;
-			}
-			else
-			{
-				numerator   = timebase.numer;
+            mach_timebase_info_data_t timebase;
+            (void) mach_timebase_info (&timebase);
+            
+            if (timebase.numer % 1000000 == 0)
+            {
+                numerator   = timebase.numer / 1000000.0;
+                denominator = timebase.denom * 1000.0;
+            }
+            else
+            {
+                numerator   = timebase.numer;
                 // VFALCO NOTE I don't understand this code
-				//denominator = timebase.denom * (std::uint64_t) 1000000 * 1000.0;
+                //denominator = timebase.denom * (std::uint64_t) 1000000 * 1000.0;
                 denominator = timebase.denom * 1000000000.0;
-			}
-			
-			ratio = numerator / denominator;
-		}
+            }
+            
+            ratio = numerator / denominator;
+        }
 
-		double ratio;
-	};
-	
-	static StaticInitializer const data;
+        double ratio;
+    };
+    
+    static StaticInitializer const data;
 
     return mach_absolute_time() * data.ratio;
 }
@@ -319,7 +319,7 @@ static double monotonicCurrentTimeInSeconds()
 }
 
 #else
-	
+    
 #include <time.h>
 
 namespace beast {
@@ -327,14 +327,14 @@ namespace detail {
 
 static double monotonicCurrentTimeInSeconds()
 {
-	timespec t;
-	clock_gettime (CLOCK_MONOTONIC, &t);
-	return t.tv_sec + t.tv_nsec / 1000000000.0;
+    timespec t;
+    clock_gettime (CLOCK_MONOTONIC, &t);
+    return t.tv_sec + t.tv_nsec / 1000000000.0;
 }
 
 }
 }
-	
+    
 #endif
 
 namespace beast {
@@ -343,37 +343,37 @@ namespace detail {
 // Records and returns the time from process startup
 static double getStartupTime()
 {
-	struct StaticInitializer
-	{
-		StaticInitializer ()
-		{
+    struct StaticInitializer
+    {
+        StaticInitializer ()
+        {
             when = detail::monotonicCurrentTimeInSeconds();
         }
-		
+        
         double when;
-	};
+    };
 
-	static StaticInitializer const data;
+    static StaticInitializer const data;
 
-	return data.when;
+    return data.when;
 }
 
 // Used to call getStartupTime as early as possible
 struct StartupTimeStaticInitializer
 {
-	StartupTimeStaticInitializer ()
-	{
+    StartupTimeStaticInitializer ()
+    {
         getStartupTime();
     }
 };
 
 static StartupTimeStaticInitializer startupTimeStaticInitializer;
-	
+    
 }
 
 RelativeTime RelativeTime::fromStartup ()
 {
-	return RelativeTime (
+    return RelativeTime (
         detail::monotonicCurrentTimeInSeconds() - detail::getStartupTime());
 }
 

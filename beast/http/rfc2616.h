@@ -55,7 +55,7 @@ is_white (CharT c)
     case '\r': case '\t': case '\v':
         return true;
     };
-	return false;
+    return false;
 }
 
 /** Returns `true` if `c` is a control character. */
@@ -85,24 +85,24 @@ template <class FwdIter>
 FwdIter
 trim_left (FwdIter first, FwdIter last)
 {
-	return std::find_if_not (first, last,
-		&is_white <typename FwdIter::value_type>);
+    return std::find_if_not (first, last,
+        &is_white <typename FwdIter::value_type>);
 }
 
 template <class FwdIter>
 FwdIter
 trim_right (FwdIter first, FwdIter last)
 {
-	if (first == last)
-		return last;
-	do
-	{
-		--last;
-		if (! is_white (*last))
-			return ++last;
-	}
-	while (last != first);
-	return first;
+    if (first == last)
+        return last;
+    do
+    {
+        --last;
+        if (! is_white (*last))
+            return ++last;
+    }
+    while (last != first);
+    return first;
 }
 
 template <class CharT, class Traits, class Allocator>
@@ -118,9 +118,9 @@ template <class FwdIter>
 std::pair <FwdIter, FwdIter>
 trim (FwdIter first, FwdIter last)
 {
-	first = trim_left (first, last);
-	last = trim_right (first, last);
-	return std::make_pair (first, last);
+    first = trim_left (first, last);
+    last = trim_right (first, last);
+    return std::make_pair (first, last);
 }
 
 template <class String>
@@ -131,7 +131,7 @@ trim (String const& s)
     using std::end;
     auto first (begin(s));
     auto last (end(s));
-	std::tie (first, last) = trim (first, last);
+    std::tie (first, last) = trim (first, last);
     return { first, last };
 }
 
@@ -143,7 +143,7 @@ trim_right (String const& s)
     using std::end;
     auto first (begin(s));
     auto last (end(s));
-	last = trim_right (first, last);
+    last = trim_right (first, last);
     return { first, last };
 }
 

@@ -154,14 +154,14 @@ void subtract_integer(integer left, integer right, integer result) {
         double_component_t lhs = left.c[i];
         double_component_t rhs = (i < right.num_components) ? right.c[i] : 0;
         if (borrow) {
-	    if (lhs <= rhs) {
-	        /* leave borrow set to 1 */
-	        lhs += (MAX_COMPONENT + 1) - 1;
-	    } else {
-	        borrow = 0;
-	        lhs--;
-	    }
-	}
+            if (lhs <= rhs) {
+                /* leave borrow set to 1 */
+                lhs += (MAX_COMPONENT + 1) - 1;
+            } else {
+                borrow = 0;
+                lhs--;
+            }
+        }
         if (lhs < rhs) {
             borrow = 1;
             lhs += MAX_COMPONENT + 1;

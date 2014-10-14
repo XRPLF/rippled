@@ -28,7 +28,7 @@ namespace http {
 std::vector <char const*> const&
 urls_large_data()
 {
-	static std::vector <char const*> const urls ({
+    static std::vector <char const*> const urls ({
         "google.com",
         "facebook.com",
         "youtube.com",
@@ -10030,7 +10030,7 @@ urls_large_data()
         "18schoolgirlz.com"
     });
 
-	return urls;
+    return urls;
 }
 
 }

@@ -247,8 +247,8 @@ private:
 
 static HiResCounterHandler& hiResCounterHandler()
 {
-	static HiResCounterHandler hiResCounterHandler;
-	return hiResCounterHandler;
+    static HiResCounterHandler hiResCounterHandler;
+    return hiResCounterHandler;
 }
 
 std::uint32_t beast_millisecondsSinceStartup() noexcept         { return hiResCounterHandler().millisecondsSinceStartup(); }
