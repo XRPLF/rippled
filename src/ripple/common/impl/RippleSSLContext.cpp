@@ -90,56 +90,6 @@ public:
 
     //--------------------------------------------------------------------------
 
-    // A simple RAII container for a DH
-    //
-    class ScopedDHPointer
-    {
-    private:
-        ScopedDHPointer            (ScopedDHPointer const&) = delete;
-        ScopedDHPointer& operator= (ScopedDHPointer const&) = delete;
-
-    public:
-        // Construct from an existing DH
-        //
-        explicit ScopedDHPointer (DH* dh)
-            : m_dh (dh)
-        {
-        }
-
-        // Construct from raw DH params
-        //
-        explicit ScopedDHPointer (std::string const& params)
-        {
-            auto const* p (
-                reinterpret_cast <std::uint8_t const*>(&params [0]));
-            m_dh = d2i_DHparams (nullptr, &p, params.size ());
-            if (m_dh == nullptr)
-                beast::FatalError ("d2i_DHparams returned nullptr.",
-                    __FILE__, __LINE__);
-        }
-
-        ~ScopedDHPointer ()
-        {
-            if (m_dh != nullptr)
-                DH_free (m_dh);
-        }
-
-        operator DH* () const
-        {
-            return get ();
-        }
-
-        DH* get () const
-        {
-            return m_dh;
-        }
-
-    private:
-        DH* m_dh;
-    };
-
-    //--------------------------------------------------------------------------
-
     static DH* getDH (int keyLength);
 };
 
@@ -358,6 +308,54 @@ void RippleSSLContextImp::initAuthenticated (
             __FILE__, __LINE__);
     }
 }
+
+// A simple RAII container for a DH
+//
+class ScopedDHPointer
+{
+private:
+    ScopedDHPointer            (ScopedDHPointer const&) = delete;
+    ScopedDHPointer& operator= (ScopedDHPointer const&) = delete;
+
+public:
+    // Construct from an existing DH
+    //
+    explicit ScopedDHPointer (DH* dh)
+        : m_dh (dh)
+    {
+    }
+
+    // Construct from raw DH params
+    //
+    explicit ScopedDHPointer (std::string const& params)
+    {
+        auto const* p (
+            reinterpret_cast <std::uint8_t const*>(&params [0]));
+        m_dh = d2i_DHparams (nullptr, &p, params.size ());
+        if (m_dh == nullptr)
+            beast::FatalError ("d2i_DHparams returned nullptr.",
+                __FILE__, __LINE__);
+    }
+
+    ~ScopedDHPointer ()
+    {
+        if (m_dh != nullptr)
+            DH_free (m_dh);
+    }
+
+    operator DH* () const
+    {
+        return get ();
+    }
+
+    DH* get () const
+    {
+        return m_dh;
+    }
+
+private:
+    DH* m_dh;
+};
 
 DH* RippleSSLContextImp::getDH (int keyLength)
 {
