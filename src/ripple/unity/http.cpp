@@ -21,7 +21,6 @@
 
 #include <ripple/http/impl/Door.cpp>
 #include <ripple/http/impl/Port.cpp>
-#include <ripple/http/impl/ScopedStream.cpp>
 #include <ripple/http/impl/ServerImpl.cpp>
 #include <ripple/http/impl/Server.cpp>
 #include <ripple/http/tests/Server.test.cpp>

@@ -2575,9 +2575,6 @@
     <ClCompile Include="..\..\src\ripple\http\impl\Port.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\http\impl\ScopedStream.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\http\impl\Server.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>

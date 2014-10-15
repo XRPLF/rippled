@@ -65,7 +65,7 @@ public:
         void
         onRequest (Session& session) override
         {
-            session << "Hello, world!\n";
+            session.write (std::string ("Hello, world!\n"));
             if (session.message().keep_alive())
                 session.complete();
             else
@@ -142,6 +142,10 @@ public:
             }
         }
         catch (std::length_error const& e)
+        {
+            fail(e.what());
+        }
+        catch (std::exception const& e)
         {
             fail(e.what());
         }
