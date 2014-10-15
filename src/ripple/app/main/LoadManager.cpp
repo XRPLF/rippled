@@ -18,8 +18,6 @@
 //==============================================================================
 
 #include <ripple/core/LoadFeeTrack.h>
-// REMOVE ASAP
-#include <boost/thread.hpp>
 
 namespace ripple {
 
@@ -157,10 +155,10 @@ public:
     //
     void run ()
     {
-        // VFALCO TODO replace this with a beast Time object?
-        //
+        using clock_type = std::chrono::steady_clock;
+
         // Initialize the clock to the current time.
-        boost::posix_time::ptime t = boost::posix_time::microsec_clock::universal_time ();
+        auto t = clock_type::now();
 
         while (! threadShouldExit ())
         {
@@ -222,17 +220,17 @@ public:
                 getApp().getOPs ().reportFeeChange ();
             }
 
-            t += boost::posix_time::seconds (1);
-            boost::posix_time::time_duration when = t - boost::posix_time::microsec_clock::universal_time ();
+            t += std::chrono::seconds (1);
+            auto const duration = t - clock_type::now();
 
-            if ((when.is_negative ()) || (when.total_seconds () > 1))
+            if ((duration < std::chrono::seconds (0)) || (duration > std::chrono::seconds (1)))
             {
                 m_journal.warning << "time jump";
-                t = boost::posix_time::microsec_clock::universal_time ();
+                t = clock_type::now();
             }
             else
             {
-                boost::this_thread::sleep (when);
+                std::this_thread::sleep_for (duration);
             }
         }
 
