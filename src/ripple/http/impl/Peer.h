@@ -28,7 +28,7 @@
 #include <beast/asio/ssl.h> // for is_short_read?
 #include <beast/http/message.h>
 #include <beast/http/parser.h>
-#include <beast/module/core/core.h>
+#include <beast/module/core/time/Time.h>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/stream.hpp>
 #include <boost/asio/streambuf.hpp>
