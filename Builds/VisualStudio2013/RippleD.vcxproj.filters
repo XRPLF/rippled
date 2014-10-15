@@ -3672,6 +3672,9 @@
     <ClCompile Include="..\..\src\ripple\http\tests\Server.test.cpp">
       <Filter>ripple\http\tests</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\http\Writer.h">
+      <Filter>ripple\http</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\json\impl\JsonPropertyStream.cpp">
       <Filter>ripple\json\impl</Filter>
     </ClCompile>

@@ -66,10 +66,10 @@ protected:
     using clock_type = std::chrono::system_clock;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using waitable_timer = boost::asio::basic_waitable_timer <clock_type>;
-
+    using yield_context = boost::asio::yield_context;
     enum
     {
-        // Size of our receive buffer
+        // Size of our read/write buffer
         bufferSize = 4 * 1024,
 
         // Max seconds without completing a message
@@ -153,10 +153,14 @@ protected:
     on_timer (error_code ec);
 
     void
-    do_read (boost::asio::yield_context yield);
+    do_read (yield_context yield);
 
     void
-    do_write (boost::asio::yield_context yield);
+    do_write (yield_context yield);
+
+    void
+    do_writer (std::shared_ptr <Writer> const& writer,
+        bool keep_alive, yield_context yield);
 
     virtual
     void
@@ -188,6 +192,10 @@ protected:
 
     void
     write (void const* buffer, std::size_t bytes) override;
+
+    void
+    write (std::shared_ptr <Writer> const& writer,
+        bool keep_alive) override;
 
     void
     detach() override;
@@ -297,8 +305,8 @@ public:
     accept();
 
 private:
-    void
-    do_handshake (boost::asio::yield_context yield);
+    void 
+    do_handshake (yield_context yield);
 
     void
     do_request();
@@ -334,7 +342,7 @@ SSLPeer::accept ()
 }
 
 void
-SSLPeer::do_handshake (boost::asio::yield_context yield)
+SSLPeer::do_handshake (yield_context yield)
 {
     error_code ec;
     std::size_t const bytes_transferred = socket_.async_handshake (
@@ -476,7 +484,7 @@ Peer<Impl>::on_timer (error_code ec)
 
 template <class Impl>
 void
-Peer<Impl>::do_read (boost::asio::yield_context yield)
+Peer<Impl>::do_read (yield_context yield)
 {
     complete_ = false;
 
@@ -542,7 +550,7 @@ Peer<Impl>::do_read (boost::asio::yield_context yield)
 // The write queue must not be empty upon entry.
 template <class Impl>
 void
-Peer<Impl>::do_write (boost::asio::yield_context yield)
+Peer<Impl>::do_write (yield_context yield)
 {
     error_code ec;
     std::size_t bytes = 0;
@@ -591,6 +599,45 @@ Peer<Impl>::do_write (boost::asio::yield_context yield)
         impl().shared_from_this(), std::placeholders::_1));
 }
 
+template <class Impl>
+void
+Peer<Impl>::do_writer (std::shared_ptr <Writer> const& writer,
+    bool keep_alive, yield_context yield)
+{
+    std::function <void(void)> resume;
+    {
+        auto const p = impl().shared_from_this();
+        resume = std::function <void(void)>(
+            [this, p, writer, keep_alive]()
+            {
+                boost::asio::spawn (strand_, std::bind (
+                    &Peer<Impl>::do_writer, p, writer, keep_alive,
+                        std::placeholders::_1));
+            });
+    }
+
+    for(;;)
+    {
+        if (! writer->prepare (bufferSize, resume))
+            return;
+        error_code ec;
+        auto const bytes_transferred = boost::asio::async_write (
+            impl().socket_, writer->data(), boost::asio::transfer_at_least(1),
+                yield[ec]);
+        if (ec)
+            return fail (ec, "writer");
+        writer->consume(bytes_transferred);
+        if (writer->complete())
+            break;
+    }
+
+    if (! keep_alive)
+        return do_close();
+
+    boost::asio::spawn (strand_, std::bind (&Peer<Impl>::do_read,
+        impl().shared_from_this(), std::placeholders::_1));
+}
+
 //------------------------------------------------------------------------------
 
 // Send a copy of the data.
@@ -613,6 +660,17 @@ Peer<Impl>::write (void const* buffer, std::size_t bytes)
             impl().shared_from_this(), std::placeholders::_1));
 }
 
+template <class Impl>
+void
+Peer<Impl>::write (std::shared_ptr <Writer> const& writer,
+    bool keep_alive)
+{
+    boost::asio::spawn (strand_, std::bind (
+        &Peer<Impl>::do_writer, impl().shared_from_this(),
+            writer, keep_alive, std::placeholders::_1));
+}
+
+// DEPRECATED
 // Make the Session asynchronous
 template <class Impl>
 void
@@ -623,6 +681,7 @@ Peer<Impl>::detach ()
         detach_ref_ = impl().shared_from_this();
 }
 
+// DEPRECATED
 // Called to indicate the response has been written (but not sent)
 template <class Impl>
 void
@@ -646,6 +705,7 @@ Peer<Impl>::complete()
         impl().shared_from_this(), std::placeholders::_1));
 }
 
+// DEPRECATED
 // Called from the Handler to close the session.
 template <class Impl>
 void
