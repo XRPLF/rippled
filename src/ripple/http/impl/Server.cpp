@@ -20,54 +20,54 @@
 #include <ripple/http/Server.h>
 #include <ripple/http/impl/ServerImpl.h>
 #include <beast/cxx14/memory.h> // <memory>
+#include <stdexcept>
 
 namespace ripple {
 namespace HTTP {
 
-Server::Server (Handler& handler, beast::Journal journal)
-    : m_impl (std::make_unique <ServerImpl> (*this, handler, journal))
+std::unique_ptr<Server>
+make_Server (Handler& handler, beast::Journal journal)
 {
+    return std::make_unique<ServerImpl>(handler, journal);
 }
 
-Server::~Server ()
-{
-    stop();
-}
-
-beast::Journal
-Server::journal () const
-{
-    return m_impl->journal();
-}
-
-Ports const&
-Server::getPorts () const
-{
-    return m_impl->getPorts();
-}
+//------------------------------------------------------------------------------
 
 void
-Server::setPorts (Ports const& ports)
+Port::parse (Port& port,
+    Section const& section, std::ostream& log)
 {
-    m_impl->setPorts (ports);
 }
 
-void
-Server::stopAsync ()
+std::vector<Port>
+Server::parse (BasicConfig const& config, std::ostream& log)
 {
-    m_impl->stop(false);
-}
+    std::vector <Port> result;
 
-void
-Server::stop ()
-{
-    m_impl->stop(true);
-}
+    if (! config.exists("doors"))
+    {
+        log <<
+            "Missing section: [doors]\n";
+        return result;
+    }
 
-void
-Server::onWrite (beast::PropertyStream::Map& map)
-{
-    m_impl->onWrite (map);
+    Port common;
+    Port::parse (common, config["doors"], log);
+
+    auto const& names = config.section("doors").values();
+    for (auto const& name : names)
+    {
+        if (! config.exists(name))
+        {
+            log <<
+                "Missing section: [" << name << "]\n";
+            //throw std::
+        }
+        result.push_back(common);
+        Port::parse (result.back(), config[name], log);
+    }
+
+    return result;
 }
 
 }

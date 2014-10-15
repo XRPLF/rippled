@@ -18,14 +18,12 @@
 //==============================================================================
 
 #include <ripple/http/impl/Door.h>
-#include <ripple/http/impl/Peer.h>
+#include <ripple/http/impl/PlainPeer.h>
+#include <ripple/http/impl/SSLPeer.h>
 #include <boost/asio/buffer.hpp>
 #include <beast/asio/placeholders.h>
 #include <beast/asio/ssl_bundle.h>
-#include <boost/logic/tribool.hpp>
 #include <functional>
-
-#include <beast/streams/debug_ostream.h>
 
 namespace ripple {
 namespace HTTP {
@@ -83,122 +81,197 @@ detect_ssl (Socket& socket, StreamBuf& buf, Yield yield)
 
 //------------------------------------------------------------------------------
 
-Door::connection::connection (Door& door, socket_type&& socket,
+Door::detector::detector (Door& door, socket_type&& socket,
         endpoint_type endpoint)
     : door_ (door)
     , socket_ (std::move(socket))
-    , endpoint_ (endpoint)
-    , strand_ (door.io_service_)
-    , timer_ (door.io_service_)
+    , timer_ (socket_.get_io_service())
+    , remote_endpoint_ (endpoint)
 {
+    door_.add(*this);
 }
 
-// Work-around because we can't call shared_from_this in ctor
-void
-Door::connection::run()
+Door::detector::~detector()
 {
-    boost::asio::spawn (strand_, std::bind (&connection::do_detect,
-        shared_from_this(), std::placeholders::_1));
-
-    boost::asio::spawn (strand_, std::bind (&connection::do_timer,
-        shared_from_this(), std::placeholders::_1));
+    door_.remove(*this);
 }
 
 void
-Door::connection::do_timer (yield_context yield)
+Door::detector::run()
+{
+    boost::asio::spawn (door_.strand_, std::bind (&detector::do_detect,
+        shared_from_this(), std::placeholders::_1));
+
+    boost::asio::spawn (door_.strand_, std::bind (&detector::do_timer,
+        shared_from_this(), std::placeholders::_1));
+}
+
+void
+Door::detector::close()
+{
+    error_code ec;
+    socket_.close(ec);
+    timer_.cancel(ec);
+}
+
+void
+Door::detector::do_timer (yield_context yield)
 {
     error_code ec; // ignored
     while (socket_.is_open())
     {
         timer_.async_wait (yield[ec]);
         if (timer_.expires_from_now() <= std::chrono::seconds(0))
-            socket_.close();
+            socket_.close(ec);
     }
 }
 
 void
-Door::connection::do_detect (boost::asio::yield_context yield)
+Door::detector::do_detect (boost::asio::yield_context yield)
 {
     bool ssl;
     error_code ec;
-    boost::asio::streambuf buf;
-    timer_.expires_from_now (std::chrono::seconds(15));
-    std::tie(ec, ssl) = detect_ssl (socket_, buf, yield);
+    beast::asio::streambuf buf(16);
+    timer_.expires_from_now(std::chrono::seconds(15));
+    std::tie(ec, ssl) = detect_ssl(socket_, buf, yield);
+    error_code unused;
+    timer_.cancel(unused);
     if (! ec)
-    {
-        if (ssl)
-        {
-            auto const peer = std::make_shared <SSLPeer> (door_.server_,
-                door_.port_, door_.server_.journal(), endpoint_,
-                    buf.data(), std::move(socket_));
-            peer->accept();
-            return;
-        }
-
-        auto const peer = std::make_shared <PlainPeer> (door_.server_,
-            door_.port_, door_.server_.journal(), endpoint_,
-                buf.data(), std::move(socket_));
-        peer->accept();
-        return;
-    }
-
-    socket_.close();
-    timer_.cancel();
+        return door_.create(ssl, std::move(buf),
+            std::move(socket_), remote_endpoint_);
+    if (ec != boost::asio::error::operation_aborted)
+        if (door_.server_.journal().trace) door_.server_.journal().trace <<
+            "Error detecting ssl: " << ec.message() <<
+                " from " << remote_endpoint_;
 }
 
 //------------------------------------------------------------------------------
 
 Door::Door (boost::asio::io_service& io_service,
-        ServerImpl& impl, Port const& port)
-    : io_service_ (io_service)
-    , timer_ (io_service)
-    , acceptor_ (io_service, to_asio (port))
-    , port_ (port)
-    , server_ (impl)
+        ServerImpl& server, Port const& port)
+    : port_(port)
+    , server_(server)
+    , acceptor_(io_service, to_asio(port), true)
+    , strand_(io_service)
 {
     server_.add (*this);
 
     error_code ec;
 
-    acceptor_.set_option (acceptor::reuse_address (true), ec);
     if (ec)
     {
-        server_.journal().error <<
+        if (server_.journal().error) server_.journal().error <<
             "Error setting acceptor socket option: " << ec.message();
     }
 
     if (! ec)
     {
-        server_.journal().info << "Bound to endpoint " <<
-            to_string (acceptor_.local_endpoint());
+        if (server_.journal().info) server_.journal().info <<
+            "Bound to endpoint " << to_string (acceptor_.local_endpoint());
     }
     else
     {
-        server_.journal().error << "Error binding to endpoint " <<
-            to_string (acceptor_.local_endpoint()) <<
-            ", '" << ec.message() << "'";
+        if (server_.journal().error) server_.journal().error <<
+            "Error binding to endpoint " <<
+                to_string (acceptor_.local_endpoint()) <<
+                    ", '" << ec.message() << "'";
     }
 }
 
-Door::~Door ()
+Door::~Door()
 {
+    {
+        // Block until all detector, Peer objects destroyed
+        std::unique_lock<std::mutex> lock(mutex_);
+        while (! list_.empty())
+            cond_.wait(lock);
+    }
     server_.remove (*this);
 }
 
 void
-Door::listen()
+Door::run()
 {
-    boost::asio::spawn (io_service_, std::bind (&Door::do_accept,
+    boost::asio::spawn (strand_, std::bind (&Door::do_accept,
         shared_from_this(), std::placeholders::_1));
 }
 
 void
-Door::cancel ()
+Door::close()
 {
-    acceptor_.cancel();
+    if (! strand_.running_in_this_thread())
+        return strand_.post(std::bind(
+            &Door::close, shared_from_this()));
+    error_code ec;
+    acceptor_.close(ec);
+    // Close all detector, Peer objects
+    for(auto& _ : list_)
+        _.close();
 }
 
 //------------------------------------------------------------------------------
+
+void
+Door::add (Child& c)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    list_.push_back(c);
+}
+
+void
+Door::remove (Child& c)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    list_.erase(list_.iterator_to(c));
+    if (list_.empty())
+        cond_.notify_all();
+}
+
+void
+Door::create (bool ssl, beast::asio::streambuf&& buf,
+    socket_type&& socket, endpoint_type remote_address)
+{
+    if (server_.closed())
+        return;
+    error_code ec;
+    switch (port_.security)
+    {
+    case Port::Security::no_ssl:
+        if (ssl)
+            ec = boost::system::errc::make_error_code (
+                boost::system::errc::invalid_argument);
+
+    case Port::Security::require_ssl:
+        if (! ssl)
+            ec = boost::system::errc::make_error_code (
+                boost::system::errc::invalid_argument);
+
+    case Port::Security::allow_ssl:
+        if (! ec)
+        {
+            if (ssl)
+            {
+                auto const peer = std::make_shared <SSLPeer> (*this,
+                    server_.journal(), remote_address, buf.data(),
+                        std::move(socket));
+                peer->accept();
+                return;
+            }
+
+            auto const peer = std::make_shared <PlainPeer> (*this,
+                server_.journal(), remote_address, buf.data(),
+                    std::move(socket));
+            peer->accept();
+            return;
+        }
+        break;
+    }
+
+    if (ec)
+        if (server_.journal().trace) server_.journal().trace <<
+            "Error detecting ssl: " << ec.message() <<
+                " from " << remote_address;
+}
 
 void
 Door::do_accept (boost::asio::yield_context yield)
@@ -207,33 +280,35 @@ Door::do_accept (boost::asio::yield_context yield)
     {
         error_code ec;
         endpoint_type endpoint;
-        socket_type socket (io_service_);
+        socket_type socket (acceptor_.get_io_service());
         acceptor_.async_accept (socket, endpoint, yield[ec]);
+        if (server_.closed())
+            break;
         if (ec)
         {
             if (ec != boost::asio::error::operation_aborted)
-                server_.journal().error <<
+                if (server_.journal().error) server_.journal().error <<
                     "accept: " << ec.message();
             break;
         }
 
         if (port_.security == Port::Security::no_ssl)
         {
-            auto const peer = std::make_shared <PlainPeer> (server_,
-                port_, server_.journal(), endpoint,
-                    boost::asio::null_buffers(), std::move(socket));
+            auto const peer = std::make_shared <PlainPeer> (*this,
+                server_.journal(), endpoint, boost::asio::null_buffers(),
+                    std::move(socket));
             peer->accept();
         }
         else if (port_.security == Port::Security::require_ssl)
         {
-            auto const peer = std::make_shared <SSLPeer> (server_,
-                port_, server_.journal(), endpoint,
-                    boost::asio::null_buffers(), std::move(socket));
+            auto const peer = std::make_shared <SSLPeer> (*this,
+                server_.journal(), endpoint, boost::asio::null_buffers(),
+                    std::move(socket));
             peer->accept();
         }
         else
         {
-            auto const c = std::make_shared <connection> (
+            auto const c = std::make_shared <detector> (
                 *this, std::move(socket), endpoint);
             c->run();
         }
