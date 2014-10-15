@@ -257,7 +257,7 @@ Config::Config ()
     RPC_ADMIN_ALLOW.push_back (beast::IP::Endpoint::from_string("127.0.0.1"));
 
     // By default, allow anonymous DH.
-    PEER_SSL_CIPHER_LIST    = "ALL:!LOW:!EXP:!MD5:@STRENGTH";
+    PEER_SSL_CIPHER_LIST    = "HIGH:!DSS:!SSLv3:!MD5:!3DES:@STRENGTH";
 
     PEER_PRIVATE            = false;
     PEERS_MAX               = 0;    // indicates "use default"
