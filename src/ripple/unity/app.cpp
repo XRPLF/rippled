@@ -43,6 +43,8 @@
 #include <ripple/app/main/Application.cpp>
 #include <ripple/app/main/Main.cpp>
 
+#include <beast/module/core/time/Time.h>
+
 //------------------------------------------------------------------------------
 
 namespace ripple {
@@ -61,6 +63,8 @@ struct ProtobufLibrary
 //
 int main (int argc, char** argv)
 {
+    (void)beast::Time::currentTimeMillis();
+
 #if defined(__GNUC__) && !defined(__clang__)
     auto constexpr gccver = (__GNUC__ * 100 * 100) +
                             (__GNUC_MINOR__ * 100) +
