@@ -238,6 +238,7 @@ public:
             m_context.set_default_verify_paths ();
             m_context.set_options (
                 boost::asio::ssl::context::no_sslv2 |
+                boost::asio::ssl::context::no_sslv3 |
                 boost::asio::ssl::context::single_dh_use |
                 boost::asio::ssl::context::default_workarounds);
             //m_context.set_verify_mode (boost::asio::ssl::verify_peer);
