@@ -94,6 +94,7 @@ protected:
 
     beast::Journal journal_;
     ServerImpl& server_;
+    boost::asio::io_service::work work_;
     boost::asio::io_service::strand strand_;
     waitable_timer timer_;
     endpoint_type endpoint_;
@@ -108,7 +109,6 @@ protected:
     bool graceful_ = false;
     bool complete_ = false;
     std::shared_ptr <Peer> detach_ref_;
-    boost::optional <boost::asio::io_service::work> work_;
     boost::system::error_code ec_;
 
     clock_type::time_point when_;
@@ -377,6 +377,7 @@ Peer<Impl>::Peer (ServerImpl& server, Port const& port,
             ConstBufferSequence const& buffers)
     : journal_ (journal)
     , server_ (server)
+    , work_ (server_.get_io_service())
     , strand_ (server_.get_io_service())
     , timer_ (server_.get_io_service())
     , endpoint_ (endpoint)
@@ -617,20 +618,9 @@ template <class Impl>
 void
 Peer<Impl>::detach ()
 {
+    // Maintain an additional reference while detached
     if (! detach_ref_)
-    {
-        assert (! work_);
-
-        // Maintain an additional reference while detached
         detach_ref_ = impl().shared_from_this();
-
-        // Prevent the io_service from running out of work.
-        // The work object will be destroyed with the Peer
-        // after the Session is closed and handlers complete.
-        //
-        work_ = boost::in_place (std::ref (
-            server_.get_io_service()));
-    }
 }
 
 // Called to indicate the response has been written (but not sent)
@@ -644,7 +634,6 @@ Peer<Impl>::complete()
 
     // Reattach
     detach_ref_.reset();
-    work_ = boost::none;
 
     message_ = beast::http::message{};
     complete_ = true;
@@ -669,7 +658,6 @@ Peer<Impl>::close (bool graceful)
 
     // Reattach
     detach_ref_.reset();
-    work_ = boost::none;
 
     complete_ = true;
 
