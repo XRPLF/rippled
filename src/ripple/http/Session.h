@@ -33,44 +33,6 @@ namespace HTTP {
 
 class Session;
 
-/** Scoped ostream-based RAII container for building the HTTP response. */
-// VFALCO TODO Use abstract_ostream
-class ScopedStream
-{
-public:
-    explicit ScopedStream (Session& session);
-    ScopedStream (ScopedStream const& other);
-
-    template <typename T>
-    ScopedStream (Session& session, T const& t)
-        : m_session (session)
-    {
-        m_ostream << t;
-    }
-
-    ScopedStream (Session& session, std::ostream& manip (std::ostream&));
-
-    ~ScopedStream ();
-
-    std::ostringstream& ostream () const;
-
-    std::ostream& operator<< (std::ostream& manip (std::ostream&)) const;
-
-    template <typename T>
-    std::ostream& operator<< (T const& t) const
-    {
-        return m_ostream << t;
-    }
-
-private:
-    ScopedStream& operator= (ScopedStream const&); // disallowed
-
-    Session& m_session;
-    std::ostringstream mutable m_ostream;
-};
-
-//------------------------------------------------------------------------------
-
 /** Persistent state information for a connection session.
     These values are preserved between calls for efficiency.
     Some fields are input parameters, some are output parameters,
@@ -129,22 +91,6 @@ public:
     virtual
     void
     write (void const* buffer, std::size_t bytes) = 0;
-    /** @} */
-
-    /** Output support using ostream. */
-    /** @{ */
-    ScopedStream
-    operator<< (std::ostream& manip (std::ostream&))
-    {
-        return ScopedStream (*this, manip);
-    }
-
-    template <typename T>
-    ScopedStream
-    operator<< (T const& t)
-    {
-        return ScopedStream (*this, t);
-    }
     /** @} */
 
     /** Detach the session.

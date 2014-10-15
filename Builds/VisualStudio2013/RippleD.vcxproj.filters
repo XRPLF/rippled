@@ -3660,9 +3660,6 @@
     <ClCompile Include="..\..\src\ripple\http\impl\Port.cpp">
       <Filter>ripple\http\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\http\impl\ScopedStream.cpp">
-      <Filter>ripple\http\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\http\impl\Server.cpp">
       <Filter>ripple\http\impl</Filter>
     </ClCompile>
