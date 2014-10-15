@@ -26,6 +26,7 @@
 #include <beast/threads/SharedData.h>
 #include <beast/threads/Thread.h>
 #include <boost/asio.hpp>
+#include <boost/intrusive/list.hpp>
 #include <boost/optional.hpp>
 #include <array>
 #include <chrono>
@@ -52,9 +53,20 @@ struct Stat
     boost::system::error_code ec;
 };
 
-class ServerImpl
+class ServerImpl : public Server
 {
+public:
+    class Child : public boost::intrusive::list_base_hook <
+        boost::intrusive::link_mode <boost::intrusive::normal_link>>
+    {
+    public:
+        virtual void close() = 0;
+    };
+
 private:
+    using list_type = boost::intrusive::make_list <Child,
+        boost::intrusive::constant_time_size <false>>::type;
+
     typedef std::chrono::system_clock clock_type;
 
     enum
@@ -62,96 +74,70 @@ private:
         historySize = 100
     };
 
-    struct State
-    {
-        // Attributes for our listening ports
-        Ports ports;
-
-        // All allocated Peer objects
-        beast::List <BasicPeer> peers;
-
-        // All allocated Door objects
-        beast::List <Door> doors;
-    };
-
     typedef std::vector <std::shared_ptr<Door>> Doors;
 
-    Server& m_server;
-    Handler& m_handler;
+    Handler& handler_;
     std::thread thread_;
     std::mutex mutable mutex_;
     std::condition_variable cond_;
+    list_type list_;
     beast::Journal journal_;
     boost::asio::io_service io_service_;
-    boost::asio::io_service::strand m_strand;
-    boost::optional <boost::asio::io_service::work> m_work;
-    beast::WaitableEvent m_stopped;
-    State state_;
-    Doors m_doors;
+    boost::asio::io_service::strand strand_;
+    boost::optional <boost::asio::io_service::work> work_;
     std::deque <Stat> stats_;
     std::array <std::size_t, 64> hist_;
     int high_ = 0;
 
 public:
-    ServerImpl (Server& server, Handler& handler, beast::Journal journal);
+    ServerImpl (Handler& handler, beast::Journal journal);
+
     ~ServerImpl ();
 
     beast::Journal
-    journal() const
+    journal() override
     {
         return journal_;
     }
 
-    Ports const&
-    getPorts () const;
+    void
+    ports (std::vector<Port> const& ports) override;
 
     void
-    setPorts (Ports const& ports);
-
-    bool
-    stopping () const;
+    onWrite (beast::PropertyStream::Map& map) override;
 
     void
-    stop (bool wait);
+    close() override;
 
+public:
     Handler&
-    handler();
+    handler()
+    {
+        return handler_;
+    }
 
     boost::asio::io_service&
-    get_io_service();
+    get_io_service()
+    {
+        return io_service_;
+    }
 
     void
-    add (BasicPeer& peer);
+    add (Child& child);
 
     void
-    add (Door& door);
+    remove (Child& child);
 
-    void
-    remove (BasicPeer& peer);
-
-    void
-    remove (Door& door);
+    bool
+    closed();
 
     void
     report (Stat&& stat);
-
-    void
-    onWrite (beast::PropertyStream::Map& map);
 
 private:
     static
     int
     ceil_log2 (unsigned long long x);
-
-    static
-    int
-    compare (Port const& lhs, Port const& rhs);
-
-    void
-    update();
-
-    void
-    on_update();
 
     void
     run();

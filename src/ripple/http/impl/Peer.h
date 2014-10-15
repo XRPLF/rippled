@@ -45,21 +45,10 @@
 namespace ripple {
 namespace HTTP {
 
-//------------------------------------------------------------------------------
-
-class BasicPeer
-    : public beast::List <BasicPeer>::Node
-{
-public:
-    virtual ~BasicPeer() = default;
-};
-
-//------------------------------------------------------------------------------
-
 /** Represents an active connection. */
 template <class Impl>
 class Peer
-    : public BasicPeer
+    : public ServerImpl::Child
     , public Session
 {
 protected:
@@ -92,11 +81,12 @@ protected:
         std::size_t used;
     };
 
-    beast::Journal journal_;
-    ServerImpl& server_;
+    Door& door_;
+    boost::asio::io_service::work work_;
     boost::asio::io_service::strand strand_;
     waitable_timer timer_;
     endpoint_type endpoint_;
+    beast::Journal journal_;
 
     std::string id_;
     std::size_t nid_;
@@ -109,7 +99,6 @@ protected:
     bool graceful_ = false;
     bool complete_ = false;
     std::shared_ptr <Peer> detach_ref_;
-    boost::optional <boost::asio::io_service::work> work_;
     boost::system::error_code ec_;
 
     clock_type::time_point when_;
@@ -122,8 +111,9 @@ protected:
 
 public:
     template <class ConstBufferSequence>
-    Peer (ServerImpl& impl, Port const& port, beast::Journal journal,
-        endpoint_type endpoint, ConstBufferSequence const& buffers);
+    Peer (Door& door, boost::asio::io_service& io_service,
+        beast::Journal journal, endpoint_type endpoint,
+            ConstBufferSequence const& buffers);
 
     virtual
     ~Peer();
@@ -133,6 +123,8 @@ public:
     {
         return *this;
     }
+
+    void close() override;
 
 protected:
     Impl&
@@ -172,7 +164,7 @@ protected:
     beast::Journal
     journal() override
     {
-        return server_.journal();
+        return door_.server().journal();
     }
 
     beast::IP::Endpoint
@@ -219,7 +211,7 @@ private:
 
 public:
     template <class ConstBufferSequence>
-    PlainPeer (ServerImpl& impl, Port const& port, beast::Journal journal,
+    PlainPeer (Door& door, beast::Journal journal,
         endpoint_type endpoint, ConstBufferSequence const& buffers,
             socket_type&& socket);
 
@@ -235,11 +227,11 @@ private:
 };
 
 template <class ConstBufferSequence>
-PlainPeer::PlainPeer (ServerImpl& server, Port const& port,
+PlainPeer::PlainPeer (Door& door,
         beast::Journal journal, endpoint_type endpoint,
             ConstBufferSequence const& buffers,
                 boost::asio::ip::tcp::socket&& socket)
-    : Peer (server, port, journal, endpoint, buffers)
+    : Peer (door, socket.get_io_service(), journal, endpoint, buffers)
     , socket_(std::move(socket))
 {
 }
@@ -247,7 +239,7 @@ PlainPeer::PlainPeer (ServerImpl& server, Port const& port,
 void
 PlainPeer::accept ()
 {
-    server_.handler().onAccept (session());
+    door_.server().handler().onAccept (session());
     if (! socket_.is_open())
         return;
 
@@ -266,7 +258,7 @@ PlainPeer::do_request()
     if (! ec)
     {
         ++request_count_;
-        server_.handler().onRequest (session());
+        door_.server().handler().onRequest (session());
         return;
     }
 
@@ -296,7 +288,7 @@ private:
 
 public:
     template <class ConstBufferSequence>
-    SSLPeer (ServerImpl& impl, Port const& port, beast::Journal journal,
+    SSLPeer (Door& door, beast::Journal journal,
         endpoint_type endpoint, ConstBufferSequence const& buffers,
             next_layer_type&& socket);
 
@@ -318,13 +310,12 @@ private:
 };
 
 template <class ConstBufferSequence>
-SSLPeer::SSLPeer (ServerImpl& server, Port const& port,
-    beast::Journal journal, endpoint_type endpoint,
-        ConstBufferSequence const& buffers,
-            boost::asio::ip::tcp::socket&& socket)
-    : Peer (server, port, journal, endpoint, buffers)
+SSLPeer::SSLPeer (Door& door, beast::Journal journal,
+    endpoint_type endpoint, ConstBufferSequence const& buffers,
+        boost::asio::ip::tcp::socket&& socket)
+    : Peer (door, socket.get_io_service(), journal, endpoint, buffers)
     , next_layer_ (std::move(socket))
-    , socket_ (next_layer_, port.context->get())
+    , socket_ (next_layer_, door_.port().context->get())
 {
 }
 
@@ -332,7 +323,7 @@ SSLPeer::SSLPeer (ServerImpl& server, Port const& port,
 void
 SSLPeer::accept ()
 {
-    server_.handler().onAccept (session());
+    door_.server().handler().onAccept (session());
     if (! next_layer_.is_open())
         return;
 
@@ -357,7 +348,7 @@ void
 SSLPeer::do_request()
 {
     ++request_count_;
-    server_.handler().onRequest (session());
+    door_.server().handler().onRequest (session());
 }
 
 void
@@ -379,27 +370,24 @@ SSLPeer::on_shutdown (error_code ec)
 
 template <class Impl>
 template <class ConstBufferSequence>
-Peer<Impl>::Peer (ServerImpl& server, Port const& port,
-        beast::Journal journal, endpoint_type endpoint,
-            ConstBufferSequence const& buffers)
-    : journal_ (journal)
-    , server_ (server)
-    , strand_ (server_.get_io_service())
-    , timer_ (server_.get_io_service())
+Peer<Impl>::Peer (Door& door, boost::asio::io_service& io_service,
+    beast::Journal journal, endpoint_type endpoint,
+        ConstBufferSequence const& buffers)
+    : door_(door)
+    , work_ (io_service)
+    , strand_ (io_service)
+    , timer_ (io_service)
     , endpoint_ (endpoint)
+    , journal_ (journal)
 {
-    read_buf_.commit (boost::asio::buffer_copy (read_buf_.prepare (
+    door_.add(*this);
+    read_buf_.commit(boost::asio::buffer_copy(read_buf_.prepare (
         boost::asio::buffer_size (buffers)), buffers));
-
     static std::atomic <int> sid;
     nid_ = ++sid;
     id_ = std::string("#") + std::to_string(nid_) + " ";
-
-    server_.add (*this);
-
     if (journal_.trace) journal_.trace << id_ <<
         "accept:    " << endpoint.address();
-
     when_ = clock_type::now();
     when_str_ = beast::Time::getCurrentTime().formatted (
         "%Y-%b-%d %H:%M:%S").toStdString();
@@ -417,15 +405,25 @@ Peer<Impl>::~Peer()
     stat.bytes_in = bytes_in_;
     stat.bytes_out = bytes_out_;
     stat.ec = std::move (ec_);
-    server_.report (std::move (stat));
-
-    server_.handler().onClose (session(), ec_);
-
-    server_.remove (*this);
-
+    door_.server().report (std::move (stat));
+    door_.server().handler().onClose (session(), ec_);
     if (journal_.trace) journal_.trace << id_ <<
         "destroyed: " << request_count_ <<
             ((request_count_ == 1) ? " request" : " requests");
+    door_.remove (*this);
+}
+
+template <class Impl>
+void
+Peer<Impl>::close()
+{
+    if (! strand_.running_in_this_thread())
+        return strand_.post(std::bind(
+            (void(Peer::*)(void))&Peer::close,
+                impl().shared_from_this()));
+    error_code ec;
+    timer_.cancel(ec);
+    impl().socket_.lowest_layer().close(ec);
 }
 
 //------------------------------------------------------------------------------
@@ -625,20 +623,9 @@ template <class Impl>
 void
 Peer<Impl>::detach ()
 {
+    // Maintain an additional reference while detached
     if (! detach_ref_)
-    {
-        assert (! work_);
-
-        // Maintain an additional reference while detached
         detach_ref_ = impl().shared_from_this();
-
-        // Prevent the io_service from running out of work.
-        // The work object will be destroyed with the Peer
-        // after the Session is closed and handlers complete.
-        //
-        work_ = boost::in_place (std::ref (
-            server_.get_io_service()));
-    }
 }
 
 // Called to indicate the response has been written (but not sent)
@@ -647,12 +634,11 @@ void
 Peer<Impl>::complete()
 {
     if (! strand_.running_in_this_thread())
-        return server_.get_io_service().dispatch (strand_.wrap (
-            std::bind (&Peer<Impl>::complete, impl().shared_from_this())));
+        return strand_.post(std::bind (&Peer<Impl>::complete,
+            impl().shared_from_this()));
 
     // Reattach
     detach_ref_.reset();
-    work_ = boost::none;
 
     message_ = beast::http::message{};
     complete_ = true;
@@ -671,13 +657,12 @@ void
 Peer<Impl>::close (bool graceful)
 {
     if (! strand_.running_in_this_thread())
-        return server_.get_io_service().dispatch (strand_.wrap (
-            std::bind (&Peer<Impl>::close, impl().shared_from_this(),
-                graceful)));
+        return strand_.post(std::bind(
+            (void(Peer::*)(bool))&Peer<Impl>::close,
+                impl().shared_from_this(), graceful));
 
     // Reattach
     detach_ref_.reset();
-    work_ = boost::none;
 
     complete_ = true;
 

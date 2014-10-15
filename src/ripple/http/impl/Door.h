@@ -22,19 +22,23 @@
 
 #include <ripple/http/impl/ServerImpl.h>
 #include <ripple/http/impl/Types.h>
+#include <beast/asio/streambuf.h>
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/spawn.hpp>
+#include <boost/intrusive/list.hpp>
 #include <chrono>
+#include <condition_variable>
 #include <memory>
+#include <mutex>
 
 namespace ripple {
 namespace HTTP {
 
 /** A listening socket. */
 class Door
-    : public beast::List <Door>::Node
+    : public ServerImpl::Child
     , public std::enable_shared_from_this <Door>
 {
 private:
@@ -47,17 +51,58 @@ private:
     using endpoint_type = protocol_type::endpoint;
     using socket_type = protocol_type::socket;
 
-    boost::asio::io_service& io_service_;
-    boost::asio::basic_waitable_timer <clock_type> timer_;
-    acceptor_type acceptor_;
+    // Detects SSL on a socket
+    class detector
+        : public std::enable_shared_from_this <detector>
+        , public ServerImpl::Child
+    {
+    private:
+        Door& door_;
+        socket_type socket_;
+        timer_type timer_;
+        endpoint_type remote_endpoint_;
+
+    public:
+        detector (Door& door, socket_type&& socket,
+            endpoint_type endpoint);
+
+        ~detector();
+
+        void run();
+        void close();
+
+    private:
+        void do_timer (yield_context yield);
+        void do_detect (yield_context yield);
+    };
+
+    using list_type = boost::intrusive::make_list <Child,
+        boost::intrusive::constant_time_size <false>>::type;
+
     Port port_;
     ServerImpl& server_;
+    acceptor_type acceptor_;
+    boost::asio::io_service::strand strand_;
+    std::mutex mutex_;
+    std::condition_variable cond_;
+    list_type list_;
 
 public:
     Door (boost::asio::io_service& io_service,
-        ServerImpl& impl, Port const& port);
+        ServerImpl& server, Port const& port);
 
-    ~Door ();
+    /** Destroy the door.
+        Blocks until there are no pending I/O completion
+        handlers, and all connections have been destroyed.
+        close() must be called before the destructor.
+    */
+    ~Door();
+
+    ServerImpl&
+    server()
+    {
+        return server_;
+    }
 
     Port const&
     port() const
@@ -65,34 +110,24 @@ public:
         return port_;
     }
 
-    void listen();
-    void cancel();
+    // Work-around because we can't call shared_from_this in ctor
+    void run();
+
+    void add (Child& c);
+
+    void remove (Child& c);
+
+    /** Close the Door listening socket and connections.
+        The listening socket is closed, and all open connections
+        belonging to the Door are closed.
+        Thread Safety:
+            May be called concurrently
+    */
+    void close();
 
 private:
-    class connection
-        : public std::enable_shared_from_this <connection>
-    {
-    private:
-        Door& door_;
-        socket_type socket_;
-        endpoint_type endpoint_;
-        boost::asio::io_service::strand strand_;
-        timer_type timer_;
-
-    public:
-        connection (Door& door, socket_type&& socket,
-            endpoint_type endpoint);
-
-        void
-        run();
-
-    private:
-        void
-        do_timer (yield_context yield);
-
-        void
-        do_detect (yield_context yield);
-    };
+    void create (bool ssl, beast::asio::streambuf&& buf,
+        socket_type&& socket, endpoint_type remote_address);
 
     void do_accept (yield_context yield);
 };
