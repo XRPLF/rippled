@@ -39,10 +39,7 @@ public:
 
     std::string to_string () const
     {
-        std::stringstream ss;
-        ss <<
-            "File: '" << m_file.getFullPathName().toStdString() + "'";
-        return ss.str();
+        return "File: '" + m_file.getFullPathName().toStdString() + "'";
     }
 
     std::string uniqueID () const

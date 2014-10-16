@@ -40,20 +40,20 @@ public:
 
     std::string to_string () const
     {
-        std::stringstream ss;
-        ss <<
-            "URL: '" << m_url.to_string() << "'";
-        return ss.str();
+        using std::to_string;
+        return "URL: '" + to_string (m_url) + "'";
     }
 
     std::string uniqueID () const
     {
-        return "URL," + m_url.to_string();
+        using std::to_string;
+        return "URL," + to_string (m_url);
     }
 
     std::string createParam ()
     {
-        return m_url.to_string();
+        using std::to_string;
+        return to_string (m_url);
     }
 
     void cancel ()

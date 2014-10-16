@@ -194,8 +194,7 @@ bool parseIpPort (std::string const& strSource, std::string& strIP, int& iPort)
     return bValid;
 }
 
-// VFALCO TODO Callers should be using beast::URL and beast::ParsedURL, not this home-brew.
-//
+// TODO Callers should be using beast::URL and beast::parse_URL instead.
 bool parseUrl (std::string const& strUrl, std::string& strScheme, std::string& strDomain, int& iPort, std::string& strPath)
 {
     // scheme://username:password@hostname:port/rest

@@ -104,7 +104,7 @@ public:
         for (SiteFiles::const_iterator iter (state->files.begin());
             iter != state->files.end(); ++iter)
         {
-            listener.onSiteFileFetch (iter->first.to_string(), iter->second);
+            listener.onSiteFileFetch (to_string (iter->first), iter->second);
         }
 
         state->listeners.insert (&listener);
@@ -118,34 +118,30 @@ public:
 
     void addURL (std::string const& urlstr)
     {
-        beast::ParsedURL const p (urlstr);
+        auto url = beast::parse_URL (urlstr);
 
-        if (p.error())
+        if (!url.first)
         {
             m_journal.error <<
                 "Error parsing '" << urlstr << "'";
             return;
         }
 
-        beast::URL const& url (p.url());
-
-        auto const result (m_client->get (url));
-
-        //---
+        auto const result (m_client->get (url.second));
 
         boost::system::error_code const error (result.first);
 
         if (error)
         {
-            m_journal.error
-                << "HTTP GET '" << url <<
+            m_journal.error <<
+                "HTTP GET '" << url.second <<
                 "' failed: " << error.message();
             return;
         }
 
         beast::HTTPResponse const& response (*result.second);
 
-        processResponse (url, response);
+        processResponse (url.second, response);
     }
 
     //--------------------------------------------------------------------------
@@ -175,7 +171,7 @@ public:
             iter != state->listeners.end(); ++iter)
         {
             Listener* const listener (*iter);
-            listener->onSiteFileFetch (url.to_string(), siteFile);
+            listener->onSiteFileFetch (to_string (url), siteFile);
         }
     }
 
