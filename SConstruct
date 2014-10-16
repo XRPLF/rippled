@@ -297,6 +297,7 @@ def config_env(toolchain, variant, env):
             'boost_program_options',
             'boost_regex',
             'boost_system',
+            'boost_thread'
         ]
         # We prefer static libraries for boost
         if env.get('BOOST_ROOT'):
