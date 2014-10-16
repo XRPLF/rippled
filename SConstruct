@@ -300,6 +300,8 @@ def config_env(toolchain, variant, env):
         ]
         # We prefer static libraries for boost
         if env.get('BOOST_ROOT'):
+            # Need to add boost_thread. Not needed when dynamic linking is used.
+            boost_libs += ['boost_thread']
             static_libs = ['%s/stage/lib/lib%s.a' % (env['BOOST_ROOT'], l) for
                            l in boost_libs]
             if all(os.path.exists(f) for f in static_libs):
