@@ -209,9 +209,15 @@ public:
     PeerImp (PeerImp const&) = delete;
     PeerImp& operator= (PeerImp const&) = delete;
 
+    PeerFinder::Slot::ptr const&
+    slot()
+    {
+        return slot_;
+    }
+
     // Begin asynchronous initiation function calls
     void
-    start ();
+    start();
 
     // Cancel all I/O and close the socket
     void

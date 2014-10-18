@@ -79,6 +79,16 @@ PeerImp::~PeerImp ()
 void
 PeerImp::start()
 {
+    boost::system::error_code ec;
+    timer_.expires_from_now (nodeVerifySeconds, ec);
+    timer_.async_wait (strand_.wrap (std::bind (&PeerImp::handleVerifyTimer,
+        shared_from_this (), beast::asio::placeholders::error)));
+    if (ec)
+    {
+        journal_.error << "Failed to set verify timer.";
+        return detach ("start");
+    }
+
     if (m_inbound)
         do_accept();
     else
@@ -302,19 +312,8 @@ void PeerImp::do_connect ()
     journal_.info << "Connecting to " << remote_address_;
 
     usage_ = resourceManager_.newOutboundEndpoint (remote_address_);
-
     if (usage_.disconnect ())
         return detach ("do_connect");
-
-    boost::system::error_code ec;
-    timer_.expires_from_now (nodeVerifySeconds, ec);
-    timer_.async_wait (strand_.wrap (std::bind (&PeerImp::handleVerifyTimer,
-        shared_from_this (), beast::asio::placeholders::error)));
-    if (ec)
-    {
-        journal_.error << "Failed to set verify timer.";
-        return detach ("do_connect");
-    }
 
     stream_.next_layer().async_connect (
         beast::IPAddressConversion::to_asio_endpoint (remote_address_),

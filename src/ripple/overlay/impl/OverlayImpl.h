@@ -136,6 +136,11 @@ public:
     setup() const;
 
     void
+    accept_legacy (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
+        boost::asio::const_buffer buffer,
+            boost::asio::ip::tcp::endpoint remote_address) override;
+
+    void
     connect (beast::IP::Endpoint const& remote_endpoint) override;
 
     std::size_t
@@ -222,6 +227,9 @@ public:
     onPeerDisconnect (Peer::ptr const& peer);
 
 private:
+    void
+    addpeer (std::shared_ptr<PeerImp> const& peer);
+
     void
     sendpeers();
 

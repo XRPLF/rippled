@@ -21,6 +21,7 @@
 #define RIPPLE_APP_RPCHTTPSERVER_H_INCLUDED
 
 #include <ripple/core/Config.h>
+#include <ripple/overlay/Overlay.h>
 #include <beast/utility/Journal.h>
 #include <beast/utility/PropertyStream.h>
 #include <beast/cxx14/memory.h> // <memory>

@@ -195,7 +195,7 @@ public:
 
     std::unique_ptr <beast::asio::SSLContext> m_peerSSLContext;
     std::unique_ptr <beast::asio::SSLContext> m_wsSSLContext;
-    std::unique_ptr <Overlay> m_peers;
+    std::unique_ptr <Overlay> m_overlay;
     std::unique_ptr <RPCDoor>  m_rpcDoor;
     std::unique_ptr <WSDoor> m_wsPublicDoor;
     std::unique_ptr <WSDoor> m_wsPrivateDoor;
@@ -529,7 +529,7 @@ public:
 
     Overlay& overlay ()
     {
-        return *m_peers;
+        return *m_overlay;
     }
 
     // VFALCO TODO Move these to the .cpp
@@ -736,10 +736,10 @@ public:
         //             move the instantiation inside a conditional:
         //
         //             if (!getConfig ().RUN_STANDALONE)
-        m_peers = make_Overlay (m_mainIoPool, *m_resourceManager,
+        m_overlay = make_Overlay (m_mainIoPool, *m_resourceManager,
             *m_siteFiles, getConfig ().getModuleDatabasePath (),
                 *m_resolver, m_mainIoPool, m_peerSSLContext->get ());
-        add (*m_peers); // add to Stoppable
+        add (*m_overlay); // add to Stoppable
 
         // SSL context used for WebSocket connections.
         if (getConfig ().WEBSOCKET_SECURE)

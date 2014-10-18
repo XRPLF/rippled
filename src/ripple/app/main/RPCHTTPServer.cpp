@@ -41,8 +41,8 @@ public:
     RPC::Setup setup_;
 
     RPCHTTPServerImp (Stoppable& parent, JobQueue& jobQueue,
-            NetworkOPs& networkOPs, Resource::Manager& resourceManager,
-                RPC::Setup const& setup)
+        NetworkOPs& networkOPs, Resource::Manager& resourceManager,
+            RPC::Setup const& setup)
         : RPCHTTPServer (parent)
         , m_resourceManager (resourceManager)
         , m_journal (deprecatedLogs().journal("HTTP-RPC"))
@@ -126,7 +126,9 @@ public:
         boost::asio::ip::tcp::endpoint remote_address,
             std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle) override
     {
-        //...
+        // VFALCO TODO Inject Overlay
+        getApp().overlay().accept_legacy(std::move(ssl_bundle),
+            buffer, remote_address);
     }
 
     void
