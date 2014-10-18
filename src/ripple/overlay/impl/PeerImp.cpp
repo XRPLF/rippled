@@ -22,6 +22,7 @@
 #include <ripple/overlay/impl/Tuning.h>
 #include <beast/streams/debug_ostream.h>
 #include <functional>
+#include <beast/cxx14/memory.h> // <memory>
 
 namespace ripple {
 
@@ -30,8 +31,10 @@ PeerImp::PeerImp (socket_type&& socket, beast::IP::Endpoint remoteAddress,
         PeerFinder::Manager& peerFinder, PeerFinder::Slot::ptr const& slot,
             boost::asio::ssl::context& ssl_context)
     : journal_ (deprecatedLogs().journal("Peer"))
-    , socket_ (std::move (socket))
-    , stream_ (socket_, ssl_context)
+    , ssl_bundle_(std::make_unique<beast::asio::ssl_bundle>(
+        ssl_context, std::move(socket)))
+    , socket_ (ssl_bundle_->socket)
+    , stream_ (ssl_bundle_->stream)
     , strand_ (socket_.get_io_service())
     , timer_ (socket_.get_io_service())
     , remote_address_ (remoteAddress)
@@ -51,8 +54,10 @@ PeerImp::PeerImp (beast::IP::Endpoint remoteAddress,
             PeerFinder::Slot::ptr const& slot,
                 boost::asio::ssl::context& ssl_context)
     : journal_ (deprecatedLogs().journal("Peer"))
-    , socket_ (io_service)
-    , stream_ (socket_, ssl_context)
+    , ssl_bundle_(std::make_unique<beast::asio::ssl_bundle>(
+        ssl_context, io_service))
+    , socket_ (ssl_bundle_->socket)
+    , stream_ (ssl_bundle_->stream)
     , strand_ (socket_.get_io_service())
     , timer_ (socket_.get_io_service())
     , remote_address_ (remoteAddress)

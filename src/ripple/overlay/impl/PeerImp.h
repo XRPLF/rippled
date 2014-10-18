@@ -32,23 +32,17 @@
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/data/protocol/Protocol.h>
 #include <ripple/validators/Manager.h>
-
-// VFALCO This is unfortunate. Comment this out and
-//        just include what is needed.
-#include <ripple/unity/app.h>
-
+#include <ripple/unity/app.h> // VFALCO REMOVE
 #include <beast/asio/IPAddressConversion.h>
 #include <beast/asio/placeholders.h>
+#include <beast/asio/ssl_bundle.h>
 #include <beast/http/message.h>
 #include <beast/http/parser.h>
-
-#include <boost/foreach.hpp>
-
 #include <cstdint>
 
 namespace ripple {
 
-typedef boost::asio::ip::tcp::socket socket_type;
+//typedef boost::asio::ip::tcp::socket socket_type;
 
 class PeerImp;
 
@@ -111,8 +105,9 @@ private:
     static const size_t sslMinimumFinishedLength = 12;
 
     beast::Journal journal_;
-    socket_type socket_;
-    stream_type stream_;
+    std::unique_ptr<beast::asio::ssl_bundle> ssl_bundle_;
+    socket_type& socket_;
+    stream_type& stream_;
     boost::asio::io_service::strand strand_;
     boost::asio::deadline_timer timer_;
 
