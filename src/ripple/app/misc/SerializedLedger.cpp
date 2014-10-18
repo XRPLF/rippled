@@ -189,7 +189,7 @@ std::vector<uint256> SerializedLedgerEntry::getOwners ()
             auto entry = dynamic_cast<const STAccount*> (peekAtPIndex (i));
 
             if ((entry != nullptr) && entry->getValueH160 (account))
-                owners.push_back (Ledger::getAccountRootIndex (account));
+                owners.push_back (getAccountRootIndex (account));
         }
 
         if ((fc == sfLowLimit) || (fc == sfHighLimit))
@@ -201,7 +201,7 @@ std::vector<uint256> SerializedLedgerEntry::getOwners ()
                 auto issuer = entry->getIssuer ();
 
                 if (issuer.isNonZero ())
-                    owners.push_back (Ledger::getAccountRootIndex (issuer));
+                    owners.push_back (getAccountRootIndex (issuer));
             }
         }
     }

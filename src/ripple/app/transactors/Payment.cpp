@@ -178,7 +178,7 @@ public:
 
         //
         // Open a ledger for editing.
-        auto const index = Ledger::getAccountRootIndex (uDstAccountID);
+        auto const index = getAccountRootIndex (uDstAccountID);
         SLE::pointer sleDst (mEngine->entryCache (ltACCOUNT_ROOT, index));
 
         if (!sleDst)
@@ -220,7 +220,7 @@ public:
             }
 
             // Create the account.
-            auto const newIndex = Ledger::getAccountRootIndex (uDstAccountID);
+            auto const newIndex = getAccountRootIndex (uDstAccountID);
             sleDst = mEngine->entryCreate (ltACCOUNT_ROOT, newIndex);
             sleDst->setFieldAccount (sfAccount, uDstAccountID);
             sleDst->setFieldU32 (sfSequence, 1);

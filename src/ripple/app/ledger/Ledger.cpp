@@ -381,7 +381,7 @@ void Ledger::setAccepted ()
 
 bool Ledger::hasAccount (RippleAddress const& accountID) const
 {
-    return mAccountStateMap->hasItem (Ledger::getAccountRootIndex (accountID));
+    return mAccountStateMap->hasItem (getAccountRootIndex (accountID));
 }
 
 bool Ledger::addSLE (SLE const& sle)
@@ -392,13 +392,13 @@ bool Ledger::addSLE (SLE const& sle)
 
 AccountState::pointer Ledger::getAccountState (RippleAddress const& accountID) const
 {
-    SLE::pointer sle = getSLEi (Ledger::getAccountRootIndex (accountID));
+    SLE::pointer sle = getSLEi (getAccountRootIndex (accountID));
 
     if (!sle)
     {
         WriteLog (lsDEBUG, Ledger) << "Ledger:getAccountState:" <<
             " not found: " << accountID.humanAccountID () <<
-            ": " << to_string (Ledger::getAccountRootIndex (accountID));
+            ": " << to_string (getAccountRootIndex (accountID));
 
         return AccountState::pointer ();
     }
@@ -1351,7 +1351,7 @@ void Ledger::visitAccountItems (
     Account const& accountID, std::function<void (SLE::ref)> func) const
 {
     // Visit each item in this account's owner directory
-    uint256 rootIndex       = Ledger::getOwnerDirIndex (accountID);
+    uint256 rootIndex       = getOwnerDirIndex (accountID);
     uint256 currentIndex    = rootIndex;
 
     while (1)
@@ -1371,7 +1371,7 @@ void Ledger::visitAccountItems (
         if (!uNodeNext)
             return;
 
-        currentIndex = Ledger::getDirNodeIndex (rootIndex, uNodeNext);
+        currentIndex = getDirNodeIndex (rootIndex, uNodeNext);
     }
 
 }
@@ -1384,7 +1384,7 @@ bool Ledger::visitAccountItems (
     std::function <bool (SLE::ref)> func) const
 {
     // Visit each item in this account's owner directory
-    uint256 const rootIndex (Ledger::getOwnerDirIndex (accountID));
+    uint256 const rootIndex (getOwnerDirIndex (accountID));
     uint256 currentIndex (rootIndex);
 
     // If startAfter is not zero try jumping to that page using the hint
@@ -1431,7 +1431,7 @@ bool Ledger::visitAccountItems (
             if (uNodeNext == 0)
                 return found;
 
-            currentIndex = Ledger::getDirNodeIndex (rootIndex, uNodeNext);
+            currentIndex = getDirNodeIndex (rootIndex, uNodeNext);
         }
     }
     else
@@ -1454,7 +1454,7 @@ bool Ledger::visitAccountItems (
             if (uNodeNext == 0)
                 return true;
 
-            currentIndex = Ledger::getDirNodeIndex (rootIndex, uNodeNext);
+            currentIndex = getDirNodeIndex (rootIndex, uNodeNext);
         }
     }
 }
@@ -1597,88 +1597,29 @@ SLE::pointer Ledger::getGenerator (Account const& uGeneratorID) const
     return getASNodeI (getGeneratorIndex (uGeneratorID), ltGENERATOR_MAP);
 }
 
-SLE::pointer Ledger::getOffer (uint256 const& uIndex) const
+SLE::pointer
+Ledger::getOffer (uint256 const& uIndex) const
 {
     return getASNodeI (uIndex, ltOFFER);
 }
 
-SLE::pointer Ledger::getRippleState (uint256 const& uNode) const
+SLE::pointer
+Ledger::getOffer (Account const& account, std::uint32_t uSequence) const
+{
+    return getOffer (getOfferIndex (account, uSequence));
+}
+
+SLE::pointer
+Ledger::getRippleState (uint256 const& uNode) const
 {
     return getASNodeI (uNode, ltRIPPLE_STATE);
 }
 
-// For an entry put in the 64 bit index or quality.
-uint256 Ledger::getQualityIndex (
-    uint256 const& uBase, const std::uint64_t uNodeDir)
+SLE::pointer
+Ledger::getRippleState (
+    Account const& a, Account const& b, Currency const& currency) const
 {
-    // Indexes are stored in big endian format: they print as hex as stored.
-    // Most significant bytes are first.  Least significant bytes represent
-    // adjacent entries.  We place uNodeDir in the 8 right most bytes to be
-    // adjacent.  Want uNodeDir in big endian format so ++ goes to the next
-    // entry for indexes.
-    uint256 uNode (uBase);
-
-    // TODO(tom): there must be a better way.
-    ((std::uint64_t*) uNode.end ())[-1] = htobe64 (uNodeDir);
-
-    return uNode;
-}
-
-// Return the last 64 bits.
-std::uint64_t Ledger::getQuality (uint256 const& uBase)
-{
-    return be64toh (((std::uint64_t*) uBase.end ())[-1]);
-}
-
-uint256 Ledger::getQualityNext (uint256 const& uBase)
-{
-    static uint256 uNext ("10000000000000000");
-    return uBase + uNext;
-}
-
-uint256 Ledger::getAccountRootIndex (Account const& account)
-{
-    Serializer  s (22);
-
-    s.add16 (spaceAccount); //  2
-    s.add160 (account);  // 20
-
-    return s.getSHA512Half ();
-}
-
-uint256 Ledger::getLedgerFeeIndex ()
-{
-    // get the index of the node that holds the fee schedul
-    Serializer s (2);
-    s.add16 (spaceFee);
-    return s.getSHA512Half ();
-}
-
-uint256 Ledger::getLedgerAmendmentIndex ()
-{
-    // get the index of the node that holds the enabled amendments
-    Serializer s (2);
-    s.add16 (spaceAmendment);
-    return s.getSHA512Half ();
-}
-
-uint256 Ledger::getLedgerHashIndex ()
-{
-    // get the index of the node that holds the last 256 ledgers
-    Serializer s (2);
-    s.add16 (spaceSkipList);
-    return s.getSHA512Half ();
-}
-
-uint256 Ledger::getLedgerHashIndex (std::uint32_t desiredLedgerIndex)
-{
-    // Get the index of the node that holds the set of 256 ledgers that includes
-    // this ledger's hash (or the first ledger after it if it's not a multiple
-    // of 256).
-    Serializer s (6);
-    s.add16 (spaceSkipList);
-    s.add32 (desiredLedgerIndex >> 16);
-    return s.getSHA512Half ();
+    return getRippleState (getRippleStateIndex (a, b, currency));
 }
 
 uint256 Ledger::getLedgerHash (std::uint32_t ledgerIndex)
@@ -1784,112 +1725,6 @@ std::vector<uint256> Ledger::getLedgerAmendments () const
         usAmendments = sleAmendments->getFieldV256 (sfAmendments).peekValue ();
 
     return usAmendments;
-}
-
-uint256 Ledger::getBookBase (Book const& book)
-{
-    Serializer  s (82);
-
-    s.add16 (spaceBookDir);        //  2
-    s.add160 (book.in.currency);   // 20
-    s.add160 (book.out.currency);  // 20
-    s.add160 (book.in.account);    // 20
-    s.add160 (book.out.account);   // 20
-
-    // Return with quality 0.
-    uint256 uBaseIndex  = getQualityIndex (s.getSHA512Half ());
-
-    WriteLog (lsTRACE, Ledger)
-            << "getBookBase (" << book << ") = " << to_string (uBaseIndex);
-
-    assert (isConsistent (book));
-
-    return uBaseIndex;
-}
-
-uint256 Ledger::getDirNodeIndex (
-    uint256 const& uDirRoot, const std::uint64_t uNodeIndex)
-{
-    if (uNodeIndex)
-    {
-        Serializer  s (42);
-
-        s.add16 (spaceDirNode);     //  2
-        s.add256 (uDirRoot);        // 32
-        s.add64 (uNodeIndex);       //  8
-
-        return s.getSHA512Half ();
-    }
-    else
-    {
-        return uDirRoot;
-    }
-}
-
-uint256 Ledger::getGeneratorIndex (Account const& uGeneratorID)
-{
-    Serializer  s (22);
-
-    s.add16 (spaceGenerator);   //  2
-    s.add160 (uGeneratorID);    // 20
-
-    return s.getSHA512Half ();
-}
-
-uint256 Ledger::getOfferIndex (Account const& account, std::uint32_t uSequence)
-{
-    Serializer  s (26);
-
-    s.add16 (spaceOffer);       //  2
-    s.add160 (account);         // 20
-    s.add32 (uSequence);        //  4
-
-    return s.getSHA512Half ();
-}
-
-uint256 Ledger::getOwnerDirIndex (Account const& account)
-{
-    Serializer  s (22);
-
-    s.add16 (spaceOwnerDir);    //  2
-    s.add160 (account);      // 20
-
-    return s.getSHA512Half ();
-}
-
-uint256 Ledger::getRippleStateIndex (
-    Account const& a, Account const& b, Currency const& currency)
-{
-    Serializer  s (62);
-
-    s.add16 (spaceRipple);  //  2
-
-    if (a < b)
-    {
-        s.add160 (a);       // 20
-        s.add160 (b);       // 20
-    }
-    else
-    {
-        s.add160 (b);       // 20
-        s.add160 (a);       // 20
-    }
-
-    s.add160 (currency);    // 20
-
-    return s.getSHA512Half ();
-}
-
-uint256 Ledger::getTicketIndex (
-    Account const& account, std::uint32_t uSequence)
-{
-    Serializer  s (26);
-
-    s.add16 (spaceTicket);       //  2
-    s.add160 (account);          // 20
-    s.add32 (uSequence);         //  4
-
-    return s.getSHA512Half ();
 }
 
 bool Ledger::walkLedger () const
@@ -2108,7 +1943,7 @@ void Ledger::updateFees ()
     std::int64_t reserveIncrement = getConfig ().FEE_OWNER_RESERVE;
 
     LedgerStateParms p = lepNONE;
-    auto sle = getASNode (p, Ledger::getLedgerFeeIndex (), ltFEE_SETTINGS);
+    auto sle = getASNode (p, getLedgerFeeIndex (), ltFEE_SETTINGS);
 
     if (sle)
     {
@@ -2209,7 +2044,7 @@ class Ledger_test : public beast::unit_test::suite
             "D2DC44E5DC189318DB36EF87D2104CDF0A0FE3A4B698BEEE55038D7EA4C68000");
 
         // VFALCO NOTE This fails in the original version as well.
-        expect (6125895493223874560 == Ledger::getQuality (uBig));
+        expect (6125895493223874560 == getQuality (uBig));
     }
 public:
     void run ()

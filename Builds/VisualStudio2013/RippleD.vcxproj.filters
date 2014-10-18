@@ -3699,6 +3699,9 @@
     <ClCompile Include="..\..\src\ripple\protocol\impl\HashPrefix.cpp">
       <Filter>ripple\protocol\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\impl\Indexes.cpp">
+      <Filter>ripple\protocol\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\impl\LedgerFormats.cpp">
       <Filter>ripple\protocol\impl</Filter>
     </ClCompile>
@@ -3741,6 +3744,9 @@
     <ClCompile Include="..\..\src\ripple\protocol\impl\TxFormats.cpp">
       <Filter>ripple\protocol\impl</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\protocol\Indexes.h">
+      <Filter>ripple\protocol</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\JsonFields.h">
       <Filter>ripple\protocol</Filter>
     </ClInclude>

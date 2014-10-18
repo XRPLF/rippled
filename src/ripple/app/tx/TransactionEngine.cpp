@@ -139,7 +139,7 @@ TER TransactionEngine::applyTransaction (
         mNodes.clear ();
 
         SLE::pointer txnAcct = entryCache (ltACCOUNT_ROOT,
-            Ledger::getAccountRootIndex (txn.getSourceAccount ()));
+            getAccountRootIndex (txn.getSourceAccount ()));
 
         if (!txnAcct)
             terResult = terNO_ACCOUNT;
