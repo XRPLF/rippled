@@ -97,7 +97,7 @@ protected:
     boost::asio::io_service::work work_;
     boost::asio::io_service::strand strand_;
     waitable_timer timer_;
-    endpoint_type endpoint_;
+    endpoint_type remote_address_;
 
     std::string id_;
     std::size_t nid_;
@@ -122,7 +122,7 @@ protected:
 public:
     template <class ConstBufferSequence>
     Peer (ServerImpl& impl, Port const& port, beast::Journal journal,
-        endpoint_type endpoint, ConstBufferSequence const& buffers);
+        endpoint_type remote_address, ConstBufferSequence const& buffers);
 
     virtual
     ~Peer();
@@ -181,7 +181,7 @@ protected:
     beast::IP::Endpoint
     remoteAddress() override
     {
-        return from_asio (endpoint_);
+        return from_asio (remote_address_);
     }
 
     beast::http::message&
@@ -212,14 +212,14 @@ protected:
 template <class Impl>
 template <class ConstBufferSequence>
 Peer<Impl>::Peer (ServerImpl& server, Port const& port,
-        beast::Journal journal, endpoint_type endpoint,
+        beast::Journal journal, endpoint_type remote_address,
             ConstBufferSequence const& buffers)
     : journal_ (journal)
     , server_ (server)
     , work_ (server_.get_io_service())
     , strand_ (server_.get_io_service())
     , timer_ (server_.get_io_service())
-    , endpoint_ (endpoint)
+    , remote_address_ (remote_address)
 {
     read_buf_.commit (boost::asio::buffer_copy (read_buf_.prepare (
         boost::asio::buffer_size (buffers)), buffers));
@@ -231,7 +231,7 @@ Peer<Impl>::Peer (ServerImpl& server, Port const& port,
     server_.add (*this);
 
     if (journal_.trace) journal_.trace << id_ <<
-        "accept:    " << endpoint.address();
+        "accept:    " << remote_address_.address();
 
     when_ = clock_type::now();
     when_str_ = beast::Time::getCurrentTime().formatted (

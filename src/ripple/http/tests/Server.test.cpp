@@ -58,6 +58,13 @@ public:
     struct TestHandler : Handler
     {
         void
+        on_legacy_peer_handshake (boost::asio::const_buffer buffer,
+            boost::asio::ip::tcp::endpoint remote_address,
+                std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle) override
+        {
+        }
+
+        void
         onAccept (Session& session) override
         {
         }

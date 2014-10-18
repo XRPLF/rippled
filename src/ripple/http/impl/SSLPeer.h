@@ -41,7 +41,7 @@ private:
 public:
     template <class ConstBufferSequence>
     SSLPeer (ServerImpl& impl, Port const& port, beast::Journal journal,
-        endpoint_type endpoint, ConstBufferSequence const& buffers,
+        endpoint_type remote_address, ConstBufferSequence const& buffers,
             socket_type&& socket);
 
     void
@@ -63,12 +63,53 @@ private:
 
 //------------------------------------------------------------------------------
 
+// Detects the legacy peer protocol handshake. */
+template <class Socket, class StreamBuf, class Yield>
+static
+std::pair <boost::system::error_code, bool>
+detect_peer_protocol (Socket& socket, StreamBuf& buf, Yield yield)
+{
+    std::pair<boost::system::error_code, bool> result;
+    result.second = false;
+    for(;;)
+    {
+        std::size_t const max = 6; // max bytes needed
+        unsigned char data[max];
+        auto const n = boost::asio::buffer_copy(
+            boost::asio::buffer(data), buf.data());
+
+        /* Protocol messages are framed by a 6 byte header which includes
+           a big-endian 4-byte length followed by a big-endian 2-byte type.
+           The type for 'hello' is 1.
+        */
+        if (n>=1 && data[0] != 0)
+            break;;
+        if (n>=2 && data[1] != 0)
+            break;
+        if (n>=5 && data[4] != 0)
+            break;
+        if (n>=6)
+        {
+            if (data[5] == 1)
+                result.second = true;
+            break;
+        }
+        std::size_t const bytes_transferred = boost::asio::async_read(
+            socket, buf.prepare(max - n), boost::asio::transfer_at_least(1),
+                yield[result.first]);
+        if (result.first)
+            break;
+        buf.commit(bytes_transferred);
+    }
+    return result;
+}
+
 template <class ConstBufferSequence>
 SSLPeer::SSLPeer (ServerImpl& server, Port const& port,
-    beast::Journal journal, endpoint_type endpoint,
+    beast::Journal journal, endpoint_type remote_address,
         ConstBufferSequence const& buffers,
             socket_type&& socket)
-    : Peer (server, port, journal, endpoint, buffers)
+    : Peer (server, port, journal, remote_address, buffers)
     , ssl_bundle_(std::make_unique<beast::asio::ssl_bundle>(
         port.context->get(), std::move(socket)))
     , stream_(ssl_bundle_->stream)
@@ -87,15 +128,36 @@ SSLPeer::accept ()
         shared_from_this(), std::placeholders::_1));
 }
 
+struct ArrayDelete
+{
+    template <class T>
+    void operator() (T const* t)
+    {
+        delete[] t;
+    }
+
+};
+
 void
 SSLPeer::do_handshake (yield_context yield)
 {
     error_code ec;
-    std::size_t const bytes_transferred = stream_.async_handshake (
-        stream_type::server, read_buf_.data(), yield[ec]);
+    read_buf_.consume(stream_.async_handshake(
+        stream_type::server, read_buf_.data(), yield[ec]));
     if (ec)
         return fail (ec, "handshake");
-    read_buf_.consume (bytes_transferred);
+    auto const result = detect_peer_protocol(stream_, read_buf_, yield);
+    if (result.first)
+        return fail (result.first, "detect_legacy_handshake");
+    if (result.second)
+    {
+        std::vector<std::uint8_t> storage (read_buf_.size());
+        boost::asio::mutable_buffers_1 buffer (
+            boost::asio::mutable_buffer(storage.data(), storage.size()));
+        boost::asio::buffer_copy(buffer, read_buf_.data());
+        return server_.handler().on_legacy_peer_handshake(buffer,
+            remote_address_, std::move(ssl_bundle_));
+    }
     boost::asio::spawn (strand_, std::bind (&SSLPeer::do_read,
         shared_from_this(), std::placeholders::_1));
 }

@@ -122,6 +122,14 @@ public:
     //
 
     void
+    on_legacy_peer_handshake (boost::asio::const_buffer buffer,
+        boost::asio::ip::tcp::endpoint remote_address,
+            std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle) override
+    {
+        //...
+    }
+
+    void
     onAccept (HTTP::Session& session) override
     {
         // Reject non-loopback connections if RPC_ALLOW_REMOTE is not set

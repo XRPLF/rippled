@@ -55,10 +55,10 @@ private:
 
 template <class ConstBufferSequence>
 PlainPeer::PlainPeer (ServerImpl& server, Port const& port,
-        beast::Journal journal, endpoint_type endpoint,
+        beast::Journal journal, endpoint_type remote_address,
             ConstBufferSequence const& buffers,
                 boost::asio::ip::tcp::socket&& socket)
-    : Peer (server, port, journal, endpoint, buffers)
+    : Peer (server, port, journal, remote_address, buffers)
     , stream_(std::move(socket))
 {
 }

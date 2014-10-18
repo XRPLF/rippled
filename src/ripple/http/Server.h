@@ -110,6 +110,18 @@ struct Handler
         response
     };
 
+    /** Called when a legacy peer protocol handshake is detected.
+        If the called function does not take ownership, then the
+        connection is closed.
+        @param buffer The unconsumed bytes in the protocol handshake
+        @param ssl_bundle The active connection.
+    */
+    virtual
+    void
+    on_legacy_peer_handshake (boost::asio::const_buffer buffer,
+        boost::asio::ip::tcp::endpoint remote_address,
+            std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle) = 0;
+
     /** Called to process a complete HTTP request.
         Outcomes:
             - Does not want the request

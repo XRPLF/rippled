@@ -75,13 +75,13 @@ private:
     private:
         Door& door_;
         socket_type socket_;
-        endpoint_type endpoint_;
+        endpoint_type remote_address_;
         boost::asio::io_service::strand strand_;
         timer_type timer_;
 
     public:
         connection (Door& door, socket_type&& socket,
-            endpoint_type endpoint);
+            endpoint_type remote_address);
 
         void
         run();
