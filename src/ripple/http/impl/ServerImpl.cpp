@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/http/impl/ServerImpl.h>
+#include <ripple/http/impl/Peer.h>
 #include <beast/chrono/chrono_io.h>
 #include <boost/chrono/chrono_io.hpp>
 #include <ctime>

@@ -2565,6 +2565,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\http\impl\Peer.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\http\impl\PlainPeer.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\http\impl\Port.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2575,6 +2577,8 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\http\impl\ServerImpl.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\http\impl\SSLPeer.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\http\impl\Types.h">
     </ClInclude>

@@ -3648,6 +3648,9 @@
     <ClInclude Include="..\..\src\ripple\http\impl\Peer.h">
       <Filter>ripple\http\impl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\http\impl\PlainPeer.h">
+      <Filter>ripple\http\impl</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\http\impl\Port.cpp">
       <Filter>ripple\http\impl</Filter>
     </ClCompile>
@@ -3658,6 +3661,9 @@
       <Filter>ripple\http\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\http\impl\ServerImpl.h">
+      <Filter>ripple\http\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\http\impl\SSLPeer.h">
       <Filter>ripple\http\impl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\http\impl\Types.h">

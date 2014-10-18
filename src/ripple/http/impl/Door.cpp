@@ -18,11 +18,11 @@
 //==============================================================================
 
 #include <ripple/http/impl/Door.h>
-#include <ripple/http/impl/Peer.h>
+#include <ripple/http/impl/PlainPeer.h>
+#include <ripple/http/impl/SSLPeer.h>
 #include <boost/asio/buffer.hpp>
 #include <beast/asio/placeholders.h>
 #include <beast/asio/ssl_bundle.h>
-#include <boost/logic/tribool.hpp>
 #include <functional>
 
 #include <beast/streams/debug_ostream.h>
