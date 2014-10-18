@@ -21,6 +21,8 @@
 #define RIPPLE_HTTP_SSLPEER_H_INCLUDED
 
 #include <ripple/http/impl/Peer.h>
+#include <beast/asio/ssl_bundle.h>
+#include <beast/cxx14/memory.h> // <memory>
 
 namespace ripple {
 namespace HTTP {
@@ -31,16 +33,16 @@ class SSLPeer
 {
 private:
     friend class Peer <SSLPeer>;
-    using next_layer_type = boost::asio::ip::tcp::socket;
-    using socket_type = boost::asio::ssl::stream <next_layer_type&>;
-    next_layer_type next_layer_;
-    socket_type socket_;
+    using socket_type = boost::asio::ip::tcp::socket;
+    using stream_type = boost::asio::ssl::stream <socket_type&>;
+    std::unique_ptr<beast::asio::ssl_bundle> ssl_bundle_;
+    stream_type& stream_;
 
 public:
     template <class ConstBufferSequence>
     SSLPeer (ServerImpl& impl, Port const& port, beast::Journal journal,
         endpoint_type endpoint, ConstBufferSequence const& buffers,
-            next_layer_type&& socket);
+            socket_type&& socket);
 
     void
     accept();
@@ -65,10 +67,11 @@ template <class ConstBufferSequence>
 SSLPeer::SSLPeer (ServerImpl& server, Port const& port,
     beast::Journal journal, endpoint_type endpoint,
         ConstBufferSequence const& buffers,
-            boost::asio::ip::tcp::socket&& socket)
+            socket_type&& socket)
     : Peer (server, port, journal, endpoint, buffers)
-    , next_layer_ (std::move(socket))
-    , socket_ (next_layer_, port.context->get())
+    , ssl_bundle_(std::make_unique<beast::asio::ssl_bundle>(
+        port.context->get(), std::move(socket)))
+    , stream_(ssl_bundle_->stream)
 {
 }
 
@@ -77,7 +80,7 @@ void
 SSLPeer::accept ()
 {
     server_.handler().onAccept (session());
-    if (! next_layer_.is_open())
+    if (! stream_.next_layer().is_open())
         return;
 
     boost::asio::spawn (strand_, std::bind (&SSLPeer::do_handshake,
@@ -88,8 +91,8 @@ void
 SSLPeer::do_handshake (yield_context yield)
 {
     error_code ec;
-    std::size_t const bytes_transferred = socket_.async_handshake (
-        socket_type::server, read_buf_.data(), yield[ec]);
+    std::size_t const bytes_transferred = stream_.async_handshake (
+        stream_type::server, read_buf_.data(), yield[ec]);
     if (ec)
         return fail (ec, "handshake");
     read_buf_.consume (bytes_transferred);
@@ -107,8 +110,7 @@ SSLPeer::do_request()
 void
 SSLPeer::do_close()
 {
-    error_code ec;
-    socket_.async_shutdown (strand_.wrap (std::bind (
+    stream_.async_shutdown (strand_.wrap (std::bind (
         &SSLPeer::on_shutdown, shared_from_this(),
             std::placeholders::_1)));
 }
@@ -116,7 +118,7 @@ SSLPeer::do_close()
 void
 SSLPeer::on_shutdown (error_code ec)
 {
-    socket_.next_layer().close(ec);
+    stream_.next_layer().close(ec);
 }
 
 }

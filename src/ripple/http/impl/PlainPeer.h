@@ -32,7 +32,7 @@ class PlainPeer
 private:
     friend class Peer <PlainPeer>;
     using socket_type = boost::asio::ip::tcp::socket;
-    socket_type socket_;
+    socket_type stream_;
 
 public:
     template <class ConstBufferSequence>
@@ -59,7 +59,7 @@ PlainPeer::PlainPeer (ServerImpl& server, Port const& port,
             ConstBufferSequence const& buffers,
                 boost::asio::ip::tcp::socket&& socket)
     : Peer (server, port, journal, endpoint, buffers)
-    , socket_(std::move(socket))
+    , stream_(std::move(socket))
 {
 }
 
@@ -67,7 +67,7 @@ void
 PlainPeer::accept ()
 {
     server_.handler().onAccept (session());
-    if (! socket_.is_open())
+    if (! stream_.is_open())
         return;
 
     boost::asio::spawn (strand_, std::bind (&PlainPeer::do_read,
@@ -80,7 +80,7 @@ PlainPeer::do_request()
     // Perform half-close when Connection: close and not SSL
     error_code ec;
     if (! message_.keep_alive())
-        socket_.shutdown (socket_type::shutdown_receive, ec);
+        stream_.shutdown (socket_type::shutdown_receive, ec);
 
     if (! ec)
     {
@@ -97,7 +97,7 @@ void
 PlainPeer::do_close()
 {
     error_code ec;
-    socket_.shutdown (socket_type::shutdown_send, ec);
+    stream_.shutdown (socket_type::shutdown_send, ec);
 }
 
 }

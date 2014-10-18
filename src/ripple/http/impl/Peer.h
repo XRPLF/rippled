@@ -207,6 +207,8 @@ protected:
     close (bool graceful) override;
 };
 
+//------------------------------------------------------------------------------
+
 template <class Impl>
 template <class ConstBufferSequence>
 Peer<Impl>::Peer (ServerImpl& server, Port const& port,
@@ -270,7 +272,7 @@ Peer<Impl>::fail (error_code ec, char const* what)
         ec_ = ec;
         if (journal_.trace) journal_.trace << id_ <<
             std::string(what) << ": " << ec.message();
-        impl().socket_.lowest_layer().close (ec);
+        impl().stream_.lowest_layer().close (ec);
     }
 }
 
@@ -326,7 +328,7 @@ Peer<Impl>::do_read (yield_context yield)
         {
             start_timer();
             auto const bytes_transferred = boost::asio::async_read (
-                impl().socket_, read_buf_.prepare (bufferSize),
+                impl().stream_, read_buf_.prepare (bufferSize),
                     boost::asio::transfer_at_least(1), yield[ec]);
             cancel_timer();
 
@@ -409,7 +411,7 @@ Peer<Impl>::do_write (yield_context yield)
             break;
 
         start_timer();
-        bytes = boost::asio::async_write (impl().socket_,
+        bytes = boost::asio::async_write (impl().stream_,
             boost::asio::buffer (data, bytes),
                 boost::asio::transfer_at_least(1), yield[ec]);
         cancel_timer();
@@ -451,7 +453,7 @@ Peer<Impl>::do_writer (std::shared_ptr <Writer> const& writer,
             return;
         error_code ec;
         auto const bytes_transferred = boost::asio::async_write (
-            impl().socket_, writer->data(), boost::asio::transfer_at_least(1),
+            impl().stream_, writer->data(), boost::asio::transfer_at_least(1),
                 yield[ec]);
         if (ec)
             return fail (ec, "writer");
@@ -560,7 +562,7 @@ Peer<Impl>::close (bool graceful)
 
     error_code ec;
     timer_.cancel (ec);
-    impl().socket_.lowest_layer().close (ec);
+    impl().stream_.lowest_layer().close (ec);
 }
 
 }
