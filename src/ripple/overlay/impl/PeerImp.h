@@ -178,6 +178,14 @@ private:
     //--------------------------------------------------------------------------
 
 public:
+    /** Create an incoming peer from an established ssl connection. */
+    template <class ConstBufferSequence>
+    PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
+        ConstBufferSequence const& buffer, beast::IP::Endpoint remoteAddress,
+            OverlayImpl& overlay, Resource::Manager& resourceManager,
+                PeerFinder::Manager& peerFinder, PeerFinder::Slot::ptr const& slot,
+                    boost::asio::ssl::context& ssl_context);
+
     /** Create an incoming peer from the specified socket */
     PeerImp (socket_type&& socket, beast::IP::Endpoint remoteAddress,
         OverlayImpl& overlay, Resource::Manager& resourceManager,
@@ -505,6 +513,31 @@ private:
 };
 
 //------------------------------------------------------------------------------
+
+template <class ConstBufferSequence>
+PeerImp::PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
+    ConstBufferSequence const& buffer, beast::IP::Endpoint remoteAddress,
+        OverlayImpl& overlay, Resource::Manager& resourceManager,
+            PeerFinder::Manager& peerFinder, PeerFinder::Slot::ptr const& slot,
+                boost::asio::ssl::context& ssl_context)
+    : journal_ (deprecatedLogs().journal("Peer"))
+    , ssl_bundle_(std::move(ssl_bundle))
+    , socket_ (ssl_bundle_->socket)
+    , stream_ (ssl_bundle_->stream)
+    , strand_ (socket_.get_io_service())
+    , timer_ (socket_.get_io_service())
+    , remote_address_ (remoteAddress)
+    , resourceManager_ (resourceManager)
+    , peerFinder_ (peerFinder)
+    , overlay_ (overlay)
+    , m_inbound (true)
+    , state_ (stateConnected)
+    , slot_ (slot)
+    , message_stream_(*this)
+{
+    read_buffer_.commit(boost::asio::buffer_copy(read_buffer_.prepare(
+        boost::asio::buffer_size(buffer)), buffer));
+}
 
 template <class FwdIt, class>
 void

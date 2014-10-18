@@ -142,6 +142,7 @@ void
 SSLPeer::do_handshake (yield_context yield)
 {
     error_code ec;
+    stream_.set_verify_mode (boost::asio::ssl::verify_none);
     read_buf_.consume(stream_.async_handshake(
         stream_type::server, read_buf_.data(), yield[ec]));
     if (ec)

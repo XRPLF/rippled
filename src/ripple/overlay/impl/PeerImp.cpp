@@ -77,12 +77,12 @@ PeerImp::~PeerImp ()
 }
 
 void
-PeerImp::start ()
+PeerImp::start()
 {
     if (m_inbound)
-        do_accept ();
+        do_accept();
     else
-        do_connect ();
+        do_connect();
 }
 
 void
@@ -502,7 +502,7 @@ PeerImp::on_read_http_response (error_code ec, std::size_t bytes_transferred)
         3. If HTTP request received, send HTTP response
         4. Enter protocol loop
 */
-void PeerImp::do_accept ()
+void PeerImp::do_accept()
 {
     journal_.info << "Accepted " << remote_address_;
 
@@ -512,6 +512,11 @@ void PeerImp::do_accept ()
         detach ("do_accept");
         return;
     }
+
+    // VFALCO Hack to receive a legacy protocol connection
+    //        from the HTTP server
+    if (read_buffer_.size() > 0)
+        return do_protocol_start();
 
     stream_.set_verify_mode (boost::asio::ssl::verify_none);
     stream_.async_handshake (boost::asio::ssl::stream_base::server,
@@ -695,7 +700,7 @@ PeerImp::on_write_http_response (error_code ec, std::size_t bytes_transferred)
 // connection detail. Also need to establish no man in the middle attack
 // is in progress.
 void
-PeerImp::do_protocol_start ()
+PeerImp::do_protocol_start()
 {
     if (!sendHello ())
     {
