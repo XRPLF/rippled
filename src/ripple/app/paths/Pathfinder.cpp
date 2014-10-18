@@ -248,14 +248,14 @@ bool Pathfinder::findPaths (int searchLevel)
     bool bSrcXrp = isXRP (mSrcCurrency);
     bool bDstXrp = isXRP (mDstAmount.getCurrency());
 
-    if (!mLedger->getSLEi (Ledger::getAccountRootIndex (mSrcAccount)))
+    if (!mLedger->getSLEi (getAccountRootIndex (mSrcAccount)))
     {
         // We can't even start without a source account.
         WriteLog (lsDEBUG, Pathfinder) << "invalid source account";
         return false;
     }
 
-    if (!mLedger->getSLEi (Ledger::getAccountRootIndex (mDstAccount)))
+    if (!mLedger->getSLEi (getAccountRootIndex (mDstAccount)))
     {
         // Can't find the destination account - we must be funding a new
         // account.
@@ -637,8 +637,7 @@ int Pathfinder::getPathsOut (
     if (!it.second)
         return it.first->second;
 
-    auto sleAccount
-            = mLedger->getSLEi (Ledger::getAccountRootIndex (account));
+    auto sleAccount = mLedger->getSLEi (getAccountRootIndex (account));
 
     if (!sleAccount)
         return 0;
@@ -775,8 +774,8 @@ bool Pathfinder::isNoRipple (
     Account const& toAccount,
     Currency const& currency)
 {
-    SLE::pointer sleRipple = mLedger->getSLEi (
-        Ledger::getRippleStateIndex (toAccount, fromAccount, currency));
+    auto sleRipple = mLedger->getSLEi (
+        getRippleStateIndex (toAccount, fromAccount, currency));
 
     auto const flag ((toAccount > fromAccount)
                      ? lsfHighNoRipple : lsfLowNoRipple);
@@ -849,8 +848,8 @@ void Pathfinder::addLink (
         else
         {
             // search for accounts to add
-            auto sleEnd = mLedger->getSLEi(
-                Ledger::getAccountRootIndex (uEndAccount));
+            auto sleEnd = mLedger->getSLEi(getAccountRootIndex (uEndAccount));
+
             if (sleEnd)
             {
                 bool const bRequireAuth (

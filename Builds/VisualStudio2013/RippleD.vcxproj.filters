@@ -2607,6 +2607,9 @@
     <ClInclude Include="..\..\src\ripple\app\ledger\LedgerHolder.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\ledger\LedgerIndexCalc.cpp">
+      <Filter>ripple\app\ledger</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\ledger\LedgerMaster.cpp">
       <Filter>ripple\app\ledger</Filter>
     </ClCompile>

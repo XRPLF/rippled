@@ -62,11 +62,9 @@ public:
             return temBAD_SEQUENCE;
         }
 
-        uint256 const offerIndex (
-            Ledger::getOfferIndex (mTxnAccountID, uOfferSequence));
+        uint256 const offerIndex (getOfferIndex (mTxnAccountID, uOfferSequence));
 
-        SLE::pointer sleOffer (
-            mEngine->entryCache (ltOFFER, offerIndex));
+        SLE::pointer sleOffer (mEngine->entryCache (ltOFFER, offerIndex));
 
         if (sleOffer)
         {

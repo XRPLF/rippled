@@ -290,7 +290,7 @@ transactionSign (
     if (verify)
     {
         SLE::pointer sleAccountRoot = netOps.getSLEi (lSnapshot,
-            Ledger::getAccountRootIndex (raSrcAddressID.getAccountID ()));
+            getAccountRootIndex (raSrcAddressID.getAccountID ()));
 
         if (!sleAccountRoot)
             // XXX Ignore transactions for accounts not created.
