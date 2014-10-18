@@ -21,6 +21,7 @@
 #define BEAST_HTTP_URL_H_INCLUDED
 
 #include <ios>
+#include <utility>
 
 namespace beast {
 
@@ -51,7 +52,22 @@ public:
     URL& operator= (URL const& other) = default;
 
     /** Move construct a URL. */
+#ifdef _MSC_VER
+    URL (URL&& other)
+        : m_scheme(std::move(other.m_scheme))
+        , m_host(std::move(other.m_host))
+        , m_port(other.m_port)
+        , m_port_string(std::move(other.m_port_string))
+        , m_path(std::move(other.m_path))
+        , m_query(std::move(other.m_query))
+        , m_fragment(std::move(other.m_fragment))
+        , m_userinfo(std::move(other.m_userinfo))
+    {
+    }
+
+#else
     URL (URL&& other) = default;
+#endif
 
     /** Returns `true` if this is an empty URL. */
     bool
