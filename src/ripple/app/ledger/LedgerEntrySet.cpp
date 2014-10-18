@@ -384,7 +384,7 @@ bool LedgerEntrySet::threadTx (RippleAddress const& threadTo, Ledger::ref ledger
                                NodeToLedgerEntry& newMods)
 {
     SLE::pointer sle = getForMod (
-        Ledger::getAccountRootIndex (threadTo.getAccountID ()), ledger, newMods);
+        getAccountRootIndex (threadTo.getAccountID ()), ledger, newMods);
 
 #ifdef META_DEBUG
     WriteLog (lsTRACE, LedgerEntrySet) << "Thread to " << threadTo.getAccountID ();
@@ -591,7 +591,7 @@ TER LedgerEntrySet::dirCount (uint256 const& uRootIndex, std::uint32_t& uCount)
 
     do
     {
-        SLE::pointer    sleNode = entryCache (ltDIR_NODE, Ledger::getDirNodeIndex (uRootIndex, uNodeDir));
+        SLE::pointer    sleNode = entryCache (ltDIR_NODE, getDirNodeIndex (uRootIndex, uNodeDir));
 
         if (sleNode)
         {
@@ -617,7 +617,7 @@ bool LedgerEntrySet::dirIsEmpty (uint256 const& uRootIndex)
 {
     std::uint64_t  uNodeDir = 0;
 
-    SLE::pointer sleNode = entryCache (ltDIR_NODE, Ledger::getDirNodeIndex (uRootIndex, uNodeDir));
+    SLE::pointer sleNode = entryCache (ltDIR_NODE, getDirNodeIndex (uRootIndex, uNodeDir));
 
     if (!sleNode)
         return true;
@@ -665,7 +665,7 @@ TER LedgerEntrySet::dirAdd (
         if (uNodeDir)
         {
             // Try adding to last node.
-            sleNode     = entryCache (ltDIR_NODE, Ledger::getDirNodeIndex (uRootIndex, uNodeDir));
+            sleNode     = entryCache (ltDIR_NODE, getDirNodeIndex (uRootIndex, uNodeDir));
 
             assert (sleNode);
         }
@@ -698,7 +698,7 @@ TER LedgerEntrySet::dirAdd (
             entryModify (sleRoot);
 
             // Create the new node.
-            sleNode     = entryCreate (ltDIR_NODE, Ledger::getDirNodeIndex (uRootIndex, uNodeDir));
+            sleNode     = entryCreate (ltDIR_NODE, getDirNodeIndex (uRootIndex, uNodeDir));
             sleNode->setFieldH256 (sfRootIndex, uRootIndex);
 
             if (uNodeDir != 1)
@@ -734,7 +734,7 @@ TER LedgerEntrySet::dirDelete (
     const bool                      bSoft)          // --> True, uNodeDir is not hard and fast (pass uNodeDir=0).
 {
     std::uint64_t       uNodeCur    = uNodeDir;
-    SLE::pointer        sleNode     = entryCache (ltDIR_NODE, Ledger::getDirNodeIndex (uRootIndex, uNodeCur));
+    SLE::pointer        sleNode     = entryCache (ltDIR_NODE, getDirNodeIndex (uRootIndex, uNodeCur));
 
     if (!sleNode)
     {
@@ -836,7 +836,7 @@ TER LedgerEntrySet::dirDelete (
             else
             {
                 // Have only a root node and a last node.
-                SLE::pointer        sleLast = entryCache (ltDIR_NODE, Ledger::getDirNodeIndex (uRootIndex, uNodeNext));
+                SLE::pointer        sleLast = entryCache (ltDIR_NODE, getDirNodeIndex (uRootIndex, uNodeNext));
 
                 assert (sleLast);
 
@@ -858,11 +858,11 @@ TER LedgerEntrySet::dirDelete (
         {
             // Not root and not last node. Can delete node.
 
-            SLE::pointer        slePrevious = entryCache (ltDIR_NODE, Ledger::getDirNodeIndex (uRootIndex, uNodePrevious));
+            SLE::pointer        slePrevious = entryCache (ltDIR_NODE, getDirNodeIndex (uRootIndex, uNodePrevious));
 
             assert (slePrevious);
 
-            SLE::pointer        sleNext     = entryCache (ltDIR_NODE, Ledger::getDirNodeIndex (uRootIndex, uNodeNext));
+            SLE::pointer        sleNext     = entryCache (ltDIR_NODE, getDirNodeIndex (uRootIndex, uNodeNext));
 
             assert (slePrevious);
             assert (sleNext);
@@ -962,7 +962,7 @@ bool LedgerEntrySet::dirNext (
         }
         else
         {
-            SLE::pointer sleNext = entryCache (ltDIR_NODE, Ledger::getDirNodeIndex (uRootIndex, uNodeNext));
+            SLE::pointer sleNext = entryCache (ltDIR_NODE, getDirNodeIndex (uRootIndex, uNodeNext));
             uDirEntry   = 0;
 
             if (!sleNext)
@@ -1046,7 +1046,7 @@ void LedgerEntrySet::incrementOwnerCount (SLE::ref sleAccount)
 void LedgerEntrySet::incrementOwnerCount (Account const& owner)
 {
     incrementOwnerCount(entryCache (ltACCOUNT_ROOT,
-        Ledger::getAccountRootIndex (owner)));
+        getAccountRootIndex (owner)));
 }
 
 void LedgerEntrySet::decrementOwnerCount (SLE::ref sleAccount)
@@ -1070,7 +1070,7 @@ void LedgerEntrySet::decrementOwnerCount (SLE::ref sleAccount)
 void LedgerEntrySet::decrementOwnerCount (Account const& owner)
 {
     decrementOwnerCount(entryCache (ltACCOUNT_ROOT,
-        Ledger::getAccountRootIndex (owner)));
+        getAccountRootIndex (owner)));
 }
 
 TER LedgerEntrySet::offerDelete (SLE::pointer sleOffer)
@@ -1089,7 +1089,7 @@ TER LedgerEntrySet::offerDelete (SLE::pointer sleOffer)
 
     TER terResult  = dirDelete (
         false, uOwnerNode,
-        Ledger::getOwnerDirIndex (owner), offerIndex, false, !bOwnerNode);
+        getOwnerDirIndex (owner), offerIndex, false, !bOwnerNode);
     TER terResult2 = dirDelete (
         false, uBookNode, uDirectory, offerIndex, true, false);
 
@@ -1112,7 +1112,7 @@ STAmount LedgerEntrySet::rippleHolds (
 {
     STAmount saBalance;
     SLE::pointer sleRippleState = entryCache (ltRIPPLE_STATE,
-        Ledger::getRippleStateIndex (account, issuer, currency));
+        getRippleStateIndex (account, issuer, currency));
 
     if (!sleRippleState)
     {
@@ -1153,7 +1153,7 @@ STAmount LedgerEntrySet::accountHolds (
     if (!currency)
     {
         SLE::pointer sleAccount = entryCache (ltACCOUNT_ROOT,
-            Ledger::getAccountRootIndex (account));
+            getAccountRootIndex (account));
         std::uint64_t uReserve = mLedger->getReserve (
             sleAccount->getFieldU32 (sfOwnerCount));
 
@@ -1191,7 +1191,7 @@ bool LedgerEntrySet::isGlobalFrozen (Account const& issuer)
     if (!enforceFreeze () || isXRP (issuer))
         return false;
 
-    SLE::pointer sle = entryCache (ltACCOUNT_ROOT, Ledger::getAccountRootIndex (issuer));
+    SLE::pointer sle = entryCache (ltACCOUNT_ROOT, getAccountRootIndex (issuer));
     if (sle && sle->isFlag (lsfGlobalFreeze))
         return true;
 
@@ -1208,7 +1208,7 @@ bool LedgerEntrySet::isFrozen(
     if (!enforceFreeze () || isXRP (currency))
         return false;
 
-    SLE::pointer sle = entryCache (ltACCOUNT_ROOT, Ledger::getAccountRootIndex (issuer));
+    SLE::pointer sle = entryCache (ltACCOUNT_ROOT, getAccountRootIndex (issuer));
     if (sle && sle->isFlag (lsfGlobalFreeze))
         return true;
 
@@ -1216,7 +1216,7 @@ bool LedgerEntrySet::isFrozen(
     {
         // Check if the issuer froze the line
         sle = entryCache (ltRIPPLE_STATE,
-            Ledger::getRippleStateIndex (account, issuer, currency));
+            getRippleStateIndex (account, issuer, currency));
         if (sle && sle->isFlag ((issuer > account) ? lsfHighFreeze : lsfLowFreeze))
         {
             return true;
@@ -1320,7 +1320,7 @@ TER LedgerEntrySet::trustCreate (
 
     TER terResult = dirAdd (
         uLowNode,
-        Ledger::getOwnerDirIndex (uLowAccountID),
+        getOwnerDirIndex (uLowAccountID),
         sleRippleState->getIndex (),
         std::bind (&Ledger::ownerDirDescriber,
                    std::placeholders::_1, std::placeholders::_2,
@@ -1330,7 +1330,7 @@ TER LedgerEntrySet::trustCreate (
     {
         terResult = dirAdd (
             uHighNode,
-            Ledger::getOwnerDirIndex (uHighAccountID),
+            getOwnerDirIndex (uHighAccountID),
             sleRippleState->getIndex (),
             std::bind (&Ledger::ownerDirDescriber,
                        std::placeholders::_1, std::placeholders::_2,
@@ -1402,7 +1402,7 @@ TER LedgerEntrySet::trustDelete (
     terResult   = dirDelete (
         false,
         uLowNode,
-        Ledger::getOwnerDirIndex (uLowAccountID),
+        getOwnerDirIndex (uLowAccountID),
         sleRippleState->getIndex (),
         false,
         !bLowNode);
@@ -1414,7 +1414,7 @@ TER LedgerEntrySet::trustDelete (
         terResult   = dirDelete (
             false,
             uHighNode,
-            Ledger::getOwnerDirIndex (uHighAccountID),
+            getOwnerDirIndex (uHighAccountID),
             sleRippleState->getIndex (),
             false,
             !bHighNode);
@@ -1446,7 +1446,7 @@ TER LedgerEntrySet::rippleCredit (
     assert (uSenderID != uReceiverID);
 
     bool bSenderHigh = uSenderID > uReceiverID;
-    uint256 uIndex = Ledger::getRippleStateIndex (
+    uint256 uIndex = getRippleStateIndex (
         uSenderID, uReceiverID, saAmount.getCurrency ());
     auto sleRippleState  = entryCache (ltRIPPLE_STATE, uIndex);
 
@@ -1472,7 +1472,7 @@ TER LedgerEntrySet::rippleCredit (
             uSenderID,
             uReceiverID,
             uIndex,
-            entryCache (ltACCOUNT_ROOT, Ledger::getAccountRootIndex (uReceiverID)),
+            entryCache (ltACCOUNT_ROOT, getAccountRootIndex (uReceiverID)),
             false,
             false,
             false,
@@ -1636,10 +1636,10 @@ TER LedgerEntrySet::accountSend (
     TER terResult (tesSUCCESS);
 
     SLE::pointer sender = uSenderID != beast::zero
-        ? entryCache (ltACCOUNT_ROOT, Ledger::getAccountRootIndex (uSenderID))
+        ? entryCache (ltACCOUNT_ROOT, getAccountRootIndex (uSenderID))
         : SLE::pointer ();
     SLE::pointer receiver = uReceiverID != beast::zero
-        ? entryCache (ltACCOUNT_ROOT, Ledger::getAccountRootIndex (uReceiverID))
+        ? entryCache (ltACCOUNT_ROOT, getAccountRootIndex (uReceiverID))
         : SLE::pointer ();
 
     if (ShouldLog (lsTRACE, LedgerEntrySet))
@@ -1708,7 +1708,7 @@ std::uint32_t
 rippleTransferRate (LedgerEntrySet& ledger, Account const& issuer)
 {
     SLE::pointer sleAccount (ledger.entryCache (
-        ltACCOUNT_ROOT, Ledger::getAccountRootIndex (issuer)));
+        ltACCOUNT_ROOT, getAccountRootIndex (issuer)));
 
     std::uint32_t quality = QUALITY_ONE;
 

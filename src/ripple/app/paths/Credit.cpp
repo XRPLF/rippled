@@ -30,13 +30,12 @@ STAmount creditLimit (
     STAmount result ({currency, account});
 
     auto sleRippleState = ledger.entryCache (ltRIPPLE_STATE,
-        Ledger::getRippleStateIndex (account, issuer, currency));
+        getRippleStateIndex (account, issuer, currency));
 
     if (sleRippleState)
     {
         result = sleRippleState->getFieldAmount (
             account < issuer ? sfLowLimit : sfHighLimit);
-
         result.setIssuer (account);
     }
 
@@ -54,14 +53,13 @@ STAmount creditBalance (
     STAmount result ({currency, account});
 
     auto sleRippleState = ledger.entryCache (ltRIPPLE_STATE,
-        Ledger::getRippleStateIndex (account, issuer, currency));
+        getRippleStateIndex (account, issuer, currency));
 
     if (sleRippleState)
     {
         result = sleRippleState->getFieldAmount (sfBalance);
         if (account < issuer)
             result.negate ();
-
         result.setIssuer (account);
     }
 

@@ -31,7 +31,7 @@ AccountState::AccountState (RippleAddress const& naAccountID)
         mValid = true;
 
         mLedgerEntry = std::make_shared <SerializedLedgerEntry> (
-                           ltACCOUNT_ROOT, Ledger::getAccountRootIndex (naAccountID));
+                           ltACCOUNT_ROOT, getAccountRootIndex (naAccountID));
 
         mLedgerEntry->setFieldAccount (sfAccount, naAccountID.getAccountID ());
     }

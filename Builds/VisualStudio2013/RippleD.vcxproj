@@ -2637,6 +2637,9 @@
     <ClCompile Include="..\..\src\ripple\protocol\impl\HashPrefix.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\impl\Indexes.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\impl\LedgerFormats.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2679,6 +2682,8 @@
     <ClCompile Include="..\..\src\ripple\protocol\impl\TxFormats.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\protocol\Indexes.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\JsonFields.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\KnownFormats.h">

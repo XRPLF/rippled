@@ -272,7 +272,7 @@ TER Transactor::apply ()
         return (terResult);
 
     mTxnAccount = mEngine->entryCache (ltACCOUNT_ROOT,
-        Ledger::getAccountRootIndex (mTxnAccountID));
+        getAccountRootIndex (mTxnAccountID));
     calculateFee ();
 
     // Find source account

@@ -212,7 +212,7 @@ rippleQuality (
     if (destination != source)
     {
         SLE::pointer sleRippleState (ledger.entryCache (ltRIPPLE_STATE,
-            Ledger::getRippleStateIndex (destination, source, currency)));
+            getRippleStateIndex (destination, source, currency)));
 
         // we should be able to assert(sleRippleState) here
 

@@ -26,6 +26,7 @@
 #include <ripple/protocol/impl/BuildInfo.cpp>
 #include <ripple/protocol/impl/SField.cpp>
 #include <ripple/protocol/impl/HashPrefix.cpp>
+#include <ripple/protocol/impl/Indexes.cpp>
 #include <ripple/protocol/impl/LedgerFormats.cpp>
 #include <ripple/protocol/impl/RippleAddress.cpp>
 #include <ripple/protocol/impl/STInteger.cpp>

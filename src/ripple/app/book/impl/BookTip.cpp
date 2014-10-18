@@ -25,8 +25,8 @@ namespace core {
 BookTip::BookTip (LedgerView& view, BookRef book)
     : m_view (view)
     , m_valid (false)
-    , m_book (Ledger::getBookBase (book))
-    , m_end (Ledger::getQualityNext (m_book))
+    , m_book (getBookBase (book))
+    , m_end (getQualityNext (m_book))
 {
 }
 

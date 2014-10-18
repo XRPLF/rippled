@@ -263,7 +263,7 @@ TER PathState::pushNode (
             {
                 auto sleRippleState = lesEntries.entryCache (
                     ltRIPPLE_STATE,
-                    Ledger::getRippleStateIndex (
+                    getRippleStateIndex (
                         backNode.account_,
                         node.account_,
                         backNode.issue_.currency));
@@ -290,7 +290,7 @@ TER PathState::pushNode (
 
                     auto sleBck  = lesEntries.entryCache (
                         ltACCOUNT_ROOT,
-                        Ledger::getAccountRootIndex (backNode.account_));
+                        getAccountRootIndex (backNode.account_));
                     // Is the source account the highest numbered account ID?
                     bool bHigh = backNode.account_ > node.account_;
 
@@ -623,7 +623,7 @@ void PathState::checkFreeze()
         if (nodes_[i].uFlags & STPathElement::typeIssuer)
         {
             sle = lesEntries.entryCache (ltACCOUNT_ROOT,
-                Ledger::getAccountRootIndex (nodes_[i].issue_.account));
+                getAccountRootIndex (nodes_[i].issue_.account));
 
             if (sle && sle->isFlag (lsfGlobalFreeze))
             {
@@ -642,7 +642,7 @@ void PathState::checkFreeze()
             if (inAccount != outAccount)
             {
                 sle = lesEntries.entryCache (ltACCOUNT_ROOT,
-                    Ledger::getAccountRootIndex (outAccount));
+                    getAccountRootIndex (outAccount));
 
                 if (sle && sle->isFlag (lsfGlobalFreeze))
                 {
@@ -651,7 +651,7 @@ void PathState::checkFreeze()
                 }
 
                 sle = lesEntries.entryCache (ltRIPPLE_STATE,
-                    Ledger::getRippleStateIndex (inAccount,
+                    getRippleStateIndex (inAccount,
                         outAccount, currencyID));
 
                 if (sle && sle->isFlag (
@@ -679,9 +679,9 @@ TER PathState::checkNoRipple (
 {
     // fetch the ripple lines into and out of this node
     SLE::pointer sleIn = lesEntries.entryCache (ltRIPPLE_STATE,
-        Ledger::getRippleStateIndex (firstAccount, secondAccount, currency));
+        getRippleStateIndex (firstAccount, secondAccount, currency));
     SLE::pointer sleOut = lesEntries.entryCache (ltRIPPLE_STATE,
-        Ledger::getRippleStateIndex (secondAccount, thirdAccount, currency));
+        getRippleStateIndex (secondAccount, thirdAccount, currency));
 
     if (!sleIn || !sleOut)
     {

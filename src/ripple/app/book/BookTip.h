@@ -70,7 +70,7 @@ public:
     Quality const
     quality() const noexcept
     {
-        return Quality (Ledger::getQuality (m_dir));
+        return Quality (getQuality (m_dir));
     }
 
     SLE::pointer const&
