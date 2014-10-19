@@ -21,6 +21,7 @@
 #define RIPPLE_WEBSOCKET_AUTOSOCKET_H_INCLUDED
 
 #include <ripple/basics/Log.h>
+#include <beast/asio/IPAddressConversion.h>
 #include <beast/asio/bind_handler.h>
 #include <beast/asio/placeholders.h>
 #include <boost/asio.hpp>
@@ -83,6 +84,20 @@ public:
     void setPlainOnly ()
     {
         mBuffer.clear ();
+    }
+
+    beast::IP::Endpoint
+    local_endpoint()
+    {
+        return beast::IP::from_asio(
+            lowest_layer().local_endpoint());
+    }
+
+    beast::IP::Endpoint
+    remote_endpoint()
+    {
+        return beast::IP::from_asio(
+            lowest_layer().remote_endpoint());
     }
 
     lowest_layer_type& lowest_layer ()

@@ -22,7 +22,6 @@
 
 #include <ripple/resource/api/Consumer.h>
 #include <ripple/resource/api/Gossip.h>
-
 #include <beast/insight/Collector.h>
 #include <beast/net/IPEndpoint.h>
 #include <beast/utility/Journal.h>

@@ -28,6 +28,9 @@
 #ifndef WEBSOCKETPP_SOCKET_AUTOTLS_HPP
 #define WEBSOCKETPP_SOCKET_AUTOTLS_HPP
 
+#include <beast/asio/placeholders.h>
+#include <functional>
+
 // Note that AutoSocket.h must be included before this file
 
 namespace websocketpp {
@@ -89,6 +92,12 @@ public:
         bool is_secure() {
             return m_socket_ptr->isSecure();
         }
+
+        typename AutoSocket::lowest_layer_type&
+        get_native_socket() {
+            return m_socket_ptr->lowest_layer();
+        }
+
     protected:
         connection(autotls<endpoint_type>& e)
          : m_endpoint(e)
@@ -115,11 +124,11 @@ public:
             
             m_socket_ptr->async_handshake(
                 m_endpoint.get_handshake_type(),
-                boost::bind(
+                std::bind(
                     &connection<connection_type>::handle_init,
                     this,
                     callback,
-                    boost::asio::placeholders::error
+                    beast::asio::placeholders::error
                 )
             );
         }
@@ -135,10 +144,10 @@ public:
             boost::system::error_code ignored_ec;
             
             m_socket_ptr->async_shutdown( // Don't block on connection shutdown DJS
-                boost::bind(
+                std::bind(
 		            &autotls<endpoint_type>::handle_shutdown,
                     m_socket_ptr,
-                    boost::asio::placeholders::error
+                    beast::asio::placeholders::error
 				)
 			);
             
