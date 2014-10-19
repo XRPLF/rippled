@@ -36,7 +36,7 @@ public:
     JobQueue& m_jobQueue;
     NetworkOPs& m_networkOPs;
     RPCServerHandler m_deprecatedHandler;
-    HTTP::Server m_server;
+    std::unique_ptr<HTTP::Server> m_server;
     std::unique_ptr <RippleSSLContext> m_context;
     RPC::Setup setup_;
 
@@ -49,7 +49,8 @@ public:
         , m_jobQueue (jobQueue)
         , m_networkOPs (networkOPs)
         , m_deprecatedHandler (networkOPs, resourceManager)
-        , m_server (*this, deprecatedLogs().journal("HTTP"))
+        , m_server (HTTP::make_Server(
+            *this, deprecatedLogs().journal("HTTP")))
         , setup_ (setup)
     {
         if (setup_.secure)
@@ -61,7 +62,7 @@ public:
 
     ~RPCHTTPServerImp()
     {
-        m_server.stop();
+        m_server->stop();
     }
 
     void
@@ -91,7 +92,7 @@ public:
 
                 HTTP::Ports ports;
                 ports.push_back (port);
-                m_server.setPorts (ports);
+                m_server->setPorts (ports);
             }
         }
         else
@@ -108,7 +109,7 @@ public:
     void
     onStop() override
     {
-        m_server.stopAsync();
+        m_server->stopAsync();
     }
 
     void
@@ -291,7 +292,7 @@ public:
     void
     onWrite (beast::PropertyStream::Map& map) override
     {
-        m_server.onWrite (map);
+        m_server->onWrite (map);
     }
 };
 

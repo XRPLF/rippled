@@ -241,19 +241,19 @@ public:
         sink.severity (beast::Journal::Severity::kAll);
         beast::Journal journal {sink};
         TestHandler handler;
-        Server s (handler, journal);
+        auto const s = make_Server (handler, journal);
         Ports ports;
         std::unique_ptr <RippleSSLContext> c (
             RippleSSLContext::createBare ());
         ports.emplace_back (testPort, beast::IP::Endpoint (
             beast::IP::AddressV4 (127, 0, 0, 1), 0),
                  Port::Security::no_ssl, c.get());
-        s.setPorts (ports);
+        s->setPorts (ports);
 
         test_request();
         //test_keepalive();
 
-        s.stop();
+        s->stop();
 
         pass();
     }

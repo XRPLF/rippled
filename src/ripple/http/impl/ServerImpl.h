@@ -52,7 +52,7 @@ struct Stat
     boost::system::error_code ec;
 };
 
-class ServerImpl
+class ServerImpl : public Server
 {
 private:
     typedef std::chrono::system_clock clock_type;
@@ -76,7 +76,6 @@ private:
 
     typedef std::vector <std::shared_ptr<Door>> Doors;
 
-    Server& m_server;
     Handler& m_handler;
     std::thread thread_;
     std::mutex mutable mutex_;
@@ -93,21 +92,37 @@ private:
     int high_ = 0;
 
 public:
-    ServerImpl (Server& server, Handler& handler, beast::Journal journal);
+    ServerImpl (Handler& handler, beast::Journal journal);
     ~ServerImpl ();
 
     beast::Journal
-    journal() const
+    journal() const override
     {
         return journal_;
     }
 
     Ports const&
-    getPorts () const;
+    getPorts () const override;
 
     void
-    setPorts (Ports const& ports);
+    setPorts (Ports const& ports) override;
 
+    void
+    stopAsync() override
+    {
+        stop(false);
+    }
+
+    void
+    stop() override
+    {
+        stop (true);
+    }
+
+    void
+    onWrite (beast::PropertyStream::Map& map) override;
+
+public:
     bool
     stopping () const;
 
@@ -135,10 +150,6 @@ public:
     void
     report (Stat&& stat);
 
-    void
-    onWrite (beast::PropertyStream::Map& map);
-
-private:
     static
     int
     ceil_log2 (unsigned long long x);

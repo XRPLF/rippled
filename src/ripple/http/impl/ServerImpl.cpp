@@ -31,10 +31,8 @@
 namespace ripple {
 namespace HTTP {
 
-ServerImpl::ServerImpl (Server& server,
-    Handler& handler, beast::Journal journal)
-    : m_server (server)
-    , m_handler (handler)
+ServerImpl::ServerImpl (Handler& handler, beast::Journal journal)
+    : m_handler (handler)
     , journal_ (journal)
     , m_strand (io_service_)
     , m_work (boost::in_place (std::ref (io_service_)))
@@ -45,13 +43,15 @@ ServerImpl::ServerImpl (Server& server,
         &ServerImpl::run, this));
 }
 
-ServerImpl::~ServerImpl ()
+ServerImpl::~ServerImpl()
 {
     thread_.join();
 }
 
+//------------------------------------------------------------------------------
+
 Ports const&
-ServerImpl::getPorts () const
+ServerImpl::getPorts() const
 {
     std::lock_guard <std::mutex> lock (mutex_);
     return state_.ports;
@@ -64,6 +64,53 @@ ServerImpl::setPorts (Ports const& ports)
     state_.ports = ports;
     update();
 }
+
+void
+ServerImpl::onWrite (beast::PropertyStream::Map& map)
+{
+    std::lock_guard <std::mutex> lock (mutex_);
+
+    // VFALCO TODO Write the list of doors
+
+    map ["active"] = state_.peers.size();
+
+    {
+        std::string s;
+        for (int i = 0; i <= high_; ++i)
+        {
+            if (i)
+                s += ", ";
+            s += std::to_string (hist_[i]);
+        }
+        map ["hist"] = s;
+    }
+
+    {
+        beast::PropertyStream::Set set ("history", map);
+        for (auto const& stat : stats_)
+        {
+            beast::PropertyStream::Map item (set);
+
+            item ["id"] = stat.id;
+            item ["when"] = stat.when;
+
+            {
+                std::stringstream ss;
+                ss << stat.elapsed;
+                item ["elapsed"] = ss.str();
+            }
+
+            item ["requests"] = stat.requests;
+            item ["bytes_in"] = stat.bytes_in;
+            item ["bytes_out"] = stat.bytes_out;
+            if (stat.ec)
+                item ["error"] = stat.ec.message();
+        }
+    }
+}
+
+
+//--------------------------------------------------------------------------
 
 bool
 ServerImpl::stopping () const
@@ -83,11 +130,6 @@ ServerImpl::stop (bool wait)
     if (wait)
         m_stopped.wait();
 }
-
-//--------------------------------------------------------------------------
-//
-// Server
-//
 
 Handler&
 ServerImpl::handler()
@@ -175,50 +217,6 @@ ServerImpl::report (Stat&& stat)
     if (stats_.size() >= historySize)
         stats_.pop_back();
     stats_.emplace_front (std::move(stat));
-}
-
-void
-ServerImpl::onWrite (beast::PropertyStream::Map& map)
-{
-    std::lock_guard <std::mutex> lock (mutex_);
-
-    // VFALCO TODO Write the list of doors
-
-    map ["active"] = state_.peers.size();
-
-    {
-        std::string s;
-        for (int i = 0; i <= high_; ++i)
-        {
-            if (i)
-                s += ", ";
-            s += std::to_string (hist_[i]);
-        }
-        map ["hist"] = s;
-    }
-
-    {
-        beast::PropertyStream::Set set ("history", map);
-        for (auto const& stat : stats_)
-        {
-            beast::PropertyStream::Map item (set);
-
-            item ["id"] = stat.id;
-            item ["when"] = stat.when;
-
-            {
-                std::stringstream ss;
-                ss << stat.elapsed;
-                item ["elapsed"] = ss.str();
-            }
-
-            item ["requests"] = stat.requests;
-            item ["bytes_in"] = stat.bytes_in;
-            item ["bytes_out"] = stat.bytes_out;
-            if (stat.ec)
-                item ["error"] = stat.ec.message();
-        }
-    }
 }
 
 //--------------------------------------------------------------------------
@@ -337,7 +335,7 @@ ServerImpl::run()
     io_service_.run();
 
     m_stopped.signal();
-    m_handler.onStopped (m_server);
+    m_handler.onStopped (*this);
 }
 
 }

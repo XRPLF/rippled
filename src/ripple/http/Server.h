@@ -20,6 +20,7 @@
 #ifndef RIPPLE_HTTP_SERVER_H_INCLUDED
 #define RIPPLE_HTTP_SERVER_H_INCLUDED
 
+#include <ripple/basics/BasicConfig.h>
 #include <beast/asio/ssl_bundle.h>
 #include <beast/http/message.h>
 #include <beast/net/IPEndpoint.h>
@@ -54,6 +55,10 @@ struct Port
     Port() = default;
     Port (std::uint16_t port_, beast::IP::Endpoint const& addr_,
             Security security_, beast::asio::SSLContext* context_);
+
+    static
+    void
+    parse (Port& result, Section const& section, std::ostream& log);
 };
 
 bool operator== (Port const& lhs, Port const& rhs);
@@ -153,32 +158,29 @@ struct Handler
 
 //------------------------------------------------------------------------------
 
-class ServerImpl;
-
 /** Multi-threaded, asynchronous HTTP server. */
 class Server
 {
 public:
-    /** Create the server using the specified handler. */
-    Server (Handler& handler, beast::Journal journal);
-
     /** Destroy the server.
         This blocks until the server stops.
     */
     virtual
-    ~Server ();
+    ~Server() = default;
 
     /** Returns the Journal associated with the server. */
+    virtual
     beast::Journal
-    journal () const;
+    journal() const = 0;
 
     /** Returns the listening ports settings.
         Thread safety:
             Safe to call from any thread.
             Cannot be called concurrently with setPorts.
     */
+    virtual
     Ports const&
-    getPorts () const;
+    getPorts() const = 0;
 
     /** Set the listening ports settings.
         These take effect immediately. Any current ports that are not in the
@@ -186,15 +188,17 @@ public:
         Thread safety:
             Cannot be called concurrently.
     */
+    virtual
     void
-    setPorts (Ports const& ports);
+    setPorts(Ports const& ports) = 0;
 
     /** Notify the server to stop, without blocking.
         Thread safety:
             Safe to call concurrently from any thread.
     */
+    virtual
     void
-    stopAsync ();
+    stopAsync() = 0;
 
     /** Notify the server to stop, and block until the stop is complete.
         The handler's onStopped method will be called when the stop completes.
@@ -202,15 +206,25 @@ public:
             Cannot be called concurrently.
             Cannot be called from the thread of execution of any Handler functions.
     */
+    virtual
     void
-    stop ();
+    stop() = 0;
 
+    virtual
     void
-    onWrite (beast::PropertyStream::Map& map);
+    onWrite (beast::PropertyStream::Map& map) = 0;
 
-private:
-    std::unique_ptr <ServerImpl> m_impl;
+    /** Parse configuration settings into a list of ports. */
+    static
+    std::vector<Port>
+    parse (BasicConfig const& config, std::ostream& log);
 };
+
+/** Create the HTTP server using the specified handler. */
+std::unique_ptr<Server>
+make_Server (Handler& handler, beast::Journal journal);
+
+//------------------------------------------------------------------------------
 
 } // HTTP
 } // ripple
