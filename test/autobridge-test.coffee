@@ -100,7 +100,8 @@ make_offer_create_test = (get_context, test_name, test_decl) ->
 
     submit_for_final tx, (m) ->
       'assert transaction was successful'
-      assert.equal m.metadata.TransactionResult, 'tesSUCCESS'
+      assert m.metadata?.TransactionResult == 'tesSUCCESS',
+             "txn failed: " + ledger_state.pretty_json m
 
       context.ledger.verifier(test_decl.post_ledger).do_verify (errors) ->
         this_done = ->
