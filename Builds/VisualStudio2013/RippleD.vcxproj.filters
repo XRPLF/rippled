@@ -5667,7 +5667,7 @@
     <ClInclude Include="..\..\src\websocket\src\shared_const_buffer.hpp">
       <Filter>websocket\src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\websocket\src\sockets\multitls.hpp">
+    <ClInclude Include="..\..\src\websocket\src\sockets\autotls.hpp">
       <Filter>websocket\src\sockets</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\sockets\socket_base.hpp">

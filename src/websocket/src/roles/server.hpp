@@ -607,7 +607,7 @@ void server<endpoint>::connection<connection_type>::handle_read_request(
 
                 m_version = -1;
                 shared_const_buffer buffer(reply);
-                async_write(
+                boost::asio::async_write(
                     m_connection.get_socket(),
                     shared_const_buffer(reply),
                     boost::bind(
@@ -866,7 +866,7 @@ void server<endpoint>::connection<connection_type>::write_response() {
     
     m_endpoint.m_alog->at(log::alevel::DEBUG_HANDSHAKE) << raw << log::endl;
 
-    async_write(
+    boost::asio::async_write(
         m_connection.get_socket(),
         //boost::asio::buffer(raw),
         buffer,

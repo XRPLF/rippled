@@ -45,6 +45,10 @@ namespace websocketpp {
         typedef websocketpp::endpoint<websocketpp::role::server,
                                       websocketpp::socket::multitls> server_multitls;
     #endif
+    #ifdef WEBSOCKETPP_SOCKET_AUTOTLS_HPP
+        typedef websocketpp::endpoint<websocketpp::role::server,
+                                      websocketpp::socket::autotls> server_multitls;
+    #endif
 #endif
 
 

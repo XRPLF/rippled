@@ -33,7 +33,7 @@
 
 #include <websocket/src/common.hpp>
 #include <websocket/src/sockets/socket_base.hpp>
-#include <websocket/src/sockets/multitls.hpp>
+#include <websocket/src/sockets/autotls.hpp>
 #include <websocket/src/websocketpp.hpp>
 #include <websocket/src/logger/logger.hpp>
 
