@@ -68,6 +68,9 @@ public:
     void
     setup (beast::Journal journal) override
     {
+        HTTP::Server::parse(getConfig(), std::cerr);
+
+        // DEPRECATED: LEGACY CONFIG 
         if (! setup_.ip.empty() && setup_.port != 0)
         {
             auto ep = beast::IP::Endpoint::from_string (setup_.ip);

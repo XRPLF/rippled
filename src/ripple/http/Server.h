@@ -25,12 +25,15 @@
 #include <beast/http/message.h>
 #include <beast/net/IPEndpoint.h>
 #include <beast/module/asio/basics/SSLContext.h>
+#include <beast/utility/ci_char_traits.h>
 #include <beast/utility/Journal.h>
 #include <beast/utility/PropertyStream.h>
+#include <boost/asio/ip/address.hpp>
 #include <boost/system/error_code.hpp>
 #include <cstdint>
 #include <memory>
 #include <ostream>
+#include <set>
 
 namespace ripple {
 namespace HTTP {
@@ -40,17 +43,25 @@ namespace HTTP {
 /** Configuration information for a server listening port. */
 struct Port
 {
+    boost::asio::ip::address ip;
+    std::uint16_t port = 51235;
+    std::set<std::string, beast::ci_less> protocols;
+    std::string ssl_key;
+    std::string ssl_cert;
+    std::string ssl_chain;
+    bool allow_admin = false;
+
+    beast::asio::SSLContext* context = nullptr;
+
+    // deprecated
     enum class Security
     {
         no_ssl,
         allow_ssl,
         require_ssl
     };
-
     Security security = Security::no_ssl;
-    std::uint16_t port = 0;
     beast::IP::Endpoint addr;
-    beast::asio::SSLContext* context = nullptr;
 
     Port() = default;
     Port (std::uint16_t port_, beast::IP::Endpoint const& addr_,
