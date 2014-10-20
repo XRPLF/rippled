@@ -127,7 +127,7 @@ message TMTransaction
     required bytes rawTransaction           = 1;
     required TransactionStatus status       = 2;
     optional uint64 receiveTimestamp        = 3;
-    optional bool checkedSignature          = 4;    // no vouches for signature being correct
+    optional bool deferred                  = 4;    // not applied to open ledger
 }
 
 

@@ -1278,7 +1278,13 @@ PeerImp::on_message (std::shared_ptr <protocol::TMTransaction> const& m)
 
         if (clusterNode_)
         {
-            flags |= SF_TRUSTED;
+            if (! m->has_deferred () || ! m->deferred ())
+            {
+                // Skip local checks if a server we trust
+                // put the transaction in its open ledger
+                flags |= SF_TRUSTED;
+            }
+
             if (! getConfig().VALIDATION_PRIV.isSet())
             {
                 // For now, be paranoid and have each validator
