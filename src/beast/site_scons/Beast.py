@@ -59,9 +59,10 @@ class __System(object):
             self.__display = '%s %s (%s)' % (self.distro, self.version, self.name)
 
         elif self.osx:
-            ten, major, minor = platform.mac_ver()[0].split('.')
-            self.__display = '%s %s.%s.%s' % (self.name, ten, major, minor)
-
+            parts = platform.mac_ver()[0].split('.')
+            while len(parts) < 3:
+                parts.append('0')
+            self.__display = '%s %s' % (self.name, '.'.join(parts))
         elif self.windows:
             release, version, csd, ptype = platform.win32_ver()
             self.__display = '%s %s %s (%s)' % (self.name, release, version, ptype)

@@ -41,6 +41,9 @@ namespace zsutil {
 #define TYP_SMLE 1 
 #define TYP_BIGE 2 
 
+#undef htonll
+#undef ntohll
+
 uint64_t htonll(uint64_t src);
 uint64_t ntohll(uint64_t src);
 
