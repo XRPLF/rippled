@@ -21,8 +21,10 @@
 #include <ripple/app/book/Taker.h>
 #include <ripple/app/book/Types.h>
 #include <ripple/app/book/Amounts.h>
+#include <ripple/app/book/Quality.h>
 
 #include <beast/cxx14/memory.h>
+#include <stdexcept>
 
 namespace ripple {
 
@@ -31,15 +33,13 @@ class CreateOffer
 {
 private:
     // What kind of offer we are placing
-#if RIPPLE_ENABLE_AUTOBRIDGING
-    bool autobridging_;
-#endif
+    core::CrossType cross_type_;
 
     /** Determine if we are authorized to hold the asset we want to get */
     TER
     checkAcceptAsset(IssueRef issue) const
     {
-        /* Only valid for custom currencies */
+        // Only valid for custom currencies
         assert (!isXRP (issue.currency));
 
         SLE::pointer const issuerAccount = mEngine->entryCache (
@@ -91,41 +91,120 @@ private:
         return tesSUCCESS;
     }
 
-    /** Fill offer as much as possible by consuming offers already on the books.
-        We adjusts account balances and charges fees on top to taker.
+    static
+    bool
+    dry_offer (core::LedgerView& view, core::Offer const& offer)
+    {
+        if (offer.fully_consumed ())
+            return true;
 
-        @param taker_amount.in How much the taker offers
-        @param taker_amount.out How much the taker wants
+        auto const funds (view.accountFunds (offer.owner(),
+            offer.amount().out, fhZERO_IF_FROZEN));
 
-        @return result.first crossing operation success/failure indicator.
-                result.second amount of offer left unfilled - only meaningful
-                              if result.first is tesSUCCESS.
-    */
-    /** @{ */
-    std::pair<TER, core::Amounts> crossOffersBridged (
+        return (funds <= zero);
+    }
+
+    static
+    std::pair<bool, core::Quality>
+    select_path (
+        bool have_direct, core::OfferStream const& offers_direct,
+        bool have_bridge, core::OfferStream const& leg1, core::OfferStream const& leg2);
+
+    std::pair<TER, core::Amounts> bridged_cross (
+        core::Taker& taker,
         core::LedgerView& view,
-        core::Amounts const& taker_amount);
+        core::LedgerView& view_cancel,
+        core::Clock::time_point const when);
 
-    std::pair<TER, core::Amounts> crossOffersDirect (
+    std::pair<TER, core::Amounts> direct_cross (
+        core::Taker& taker,
         core::LedgerView& view,
-        core::Amounts const& taker_amount);
+        core::LedgerView& view_cancel,
+        core::Clock::time_point const when);
 
-    std::pair<TER, core::Amounts> crossOffers (
+    // Step through the stream for as long as possible, skipping any offers
+    // that are from the taker or which cross the taker's threshold.
+    // Return false if the is no offer in the book, true otherwise.
+    static
+    bool
+    step_account (core::OfferStream& stream, core::Taker const& taker)
+    {
+        while (stream.step ())
+        {
+            auto const& offer = stream.tip ();
+
+            // This offer at the tip crosses the taker's threshold. We're done.
+            if (taker.reject (offer.quality ()))
+                return true;
+
+            // This offer at the tip is not from the taker. We're done.
+            if (offer.owner () != taker.account ())
+                return true;
+        }
+
+        // We ran out of offers. Can't advance.
+        return false;
+    }
+
+    // Fill offer as much as possible by consuming offers already on the books,
+    // and adjusting account balances accordingly. 
+    //
+    // Charges fees on top to taker.
+    std::pair<TER, core::Amounts>
+    cross (
         core::LedgerView& view,
+        core::LedgerView& cancel_view,
         core::Amounts const& taker_amount)
     {
+        core::Clock::time_point const when (
+            mEngine->getLedger ()->getParentCloseTimeNC ());
+
+        core::Taker taker (cross_type_, view, mTxnAccountID, taker_amount, mTxn.getFlags());
+
+        try
+        {
+            if (m_journal.debug)
+            {
+                auto const funds = view.accountFunds (
+                    taker.account(), taker_amount.in, fhIGNORE_FREEZE);
+
+                m_journal.debug << "Crossing:";
+                m_journal.debug << "      Taker: " << to_string (mTxnAccountID);
+                m_journal.debug << "    Balance: " << format_amount (funds);
+            }
+
 #if RIPPLE_ENABLE_AUTOBRIDGING
-        if (autobridging_)
-            return crossOffersBridged (view, taker_amount);
+            if (cross_type_ == core::CrossType::IouToIou)
+                return bridged_cross (taker, view, cancel_view, when);
 #endif
 
-        return crossOffersDirect (view, taker_amount);
+            return direct_cross (taker, view, cancel_view, when);
+        }
+        catch (std::exception const& e)
+        {
+            m_journal.error << "Exception during offer crossing: " << e.what ();
+            return std::make_pair (tecINTERNAL, taker.remaining_offer ());
+        }
+        catch (...)
+        {
+            m_journal.error << "Exception during offer crossing.";
+            return std::make_pair (tecINTERNAL, taker.remaining_offer ());
+        }
     }
-    /** @} */
+
+    static
+    std::string
+    format_amount (STAmount const& amount)
+    {
+        std::string txt = amount.getText ();
+        txt += "/";
+        txt += amount.getHumanCurrency ();
+        return txt;
+    }
 
 public:
     CreateOffer (
-            bool autobridging,
+            core::CrossType cross_type,
             SerializedTransaction const& txn,
             TransactionEngineParams params,
             TransactionEngine* engine)
@@ -134,25 +213,28 @@ public:
             params,
             engine,
             deprecatedLogs().journal("CreateOffer"))
-#if RIPPLE_ENABLE_AUTOBRIDGING
-        , autobridging_ (autobridging)
-#endif
+        , cross_type_ (cross_type)
     {
 
+    }
+
+    /** Returns the reserve the account would have if an offer was added. */
+    std::uint32_t
+    getAccountReserve (SLE::pointer account)
+    {
+        return mEngine->getLedger ()->getReserve (
+            account->getFieldU32 (sfOwnerCount) + 1);
     }
 
     TER
     doApply () override
     {
-        if (m_journal.debug) m_journal.debug <<
-            "OfferCreate> " << mTxn.getJson (0);
-
         std::uint32_t const uTxFlags = mTxn.getFlags ();
 
         bool const bPassive (uTxFlags & tfPassive);
         bool const bImmediateOrCancel (uTxFlags & tfImmediateOrCancel);
         bool const bFillOrKill (uTxFlags & tfFillOrKill);
-        bool const bSell  (uTxFlags & tfSell);
+        bool const bSell (uTxFlags & tfSell);
 
         STAmount saTakerPays = mTxn.getFieldAmount (sfTakerPays);
         STAmount saTakerGets = mTxn.getFieldAmount (sfTakerGets);
@@ -173,32 +255,18 @@ public:
         std::uint32_t const uCancelSequence = mTxn.getFieldU32 (sfOfferSequence);
 
         // FIXME understand why we use SequenceNext instead of current transaction
-        //       sequence to determine the transaction. Why is the offer seuqnce
+        //       sequence to determine the transaction. Why is the offer sequence
         //       number insufficient?
 
         std::uint32_t const uAccountSequenceNext = mTxnAccount->getFieldU32 (sfSequence);
         std::uint32_t const uSequence = mTxn.getSequence ();
 
-        const uint256 uLedgerIndex = Ledger::getOfferIndex (mTxnAccountID, uSequence);
-
-        if (m_journal.debug)
-        {
-            m_journal.debug <<
-                "Creating offer node: " << to_string (uLedgerIndex) <<
-                " uSequence=" << uSequence;
-
-            if (bImmediateOrCancel)
-                m_journal.debug << "Transaction: IoC set.";
-
-            if (bFillOrKill)
-                m_journal.debug << "Transaction: FoK set.";
-        }
-
-        // This is the original rate of this offer, and is the rate at which it will
-        // be placed, even if crossing offers change the amounts.
+        // This is the original rate of the offer, and is the rate at which
+        // it will be placed, even if crossing offers change the amounts that
+        // end up on the books.
         std::uint64_t const uRate = getRate (saTakerGets, saTakerPays);
 
-        TER terResult (tesSUCCESS);
+        TER result = tesSUCCESS;
 
         // This is the ledger view that we work against. Transactions are applied
         // as we go on processing transactions.
@@ -218,42 +286,42 @@ public:
             if (m_journal.debug) m_journal.debug <<
                 "Malformed transaction: Invalid flags set.";
 
-            terResult = temINVALID_FLAG;
+            result = temINVALID_FLAG;
         }
         else if (bImmediateOrCancel && bFillOrKill)
         {
             if (m_journal.debug) m_journal.debug <<
                 "Malformed transaction: both IoC and FoK set.";
 
-            terResult = temINVALID_FLAG;
+            result = temINVALID_FLAG;
         }
         else if (bHaveExpiration && !uExpiration)
         {
             m_journal.warning <<
                 "Malformed offer: bad expiration";
 
-            terResult = temBAD_EXPIRATION;
+            result = temBAD_EXPIRATION;
         }
         else if (saTakerPays.isNative () && saTakerGets.isNative ())
         {
             m_journal.warning <<
                 "Malformed offer: XRP for XRP";
 
-            terResult = temBAD_OFFER;
+            result = temBAD_OFFER;
         }
         else if (saTakerPays <= zero || saTakerGets <= zero)
         {
             m_journal.warning <<
                 "Malformed offer: bad amount";
 
-            terResult = temBAD_OFFER;
+            result = temBAD_OFFER;
         }
         else if (uPaysCurrency == uGetsCurrency && uPaysIssuerID == uGetsIssuerID)
         {
             m_journal.warning <<
                 "Malformed offer: redundant offer";
 
-            terResult = temREDUNDANT;
+            result = temREDUNDANT;
         }
         // We don't allow a non-native currency to use the currency code XRP.
         else if (badCurrency() == uPaysCurrency || badCurrency() == uGetsCurrency)
@@ -261,7 +329,7 @@ public:
             m_journal.warning <<
                 "Malformed offer: Bad currency.";
 
-            terResult = temBAD_CURRENCY;
+            result = temBAD_CURRENCY;
         }
         else if (saTakerPays.isNative () != !uPaysIssuerID ||
                  saTakerGets.isNative () != !uGetsIssuerID)
@@ -269,14 +337,14 @@ public:
             m_journal.warning <<
                 "Malformed offer: bad issuer";
 
-            terResult = temBAD_ISSUER;
+            result = temBAD_ISSUER;
         }
         else if (view.isGlobalFrozen (uPaysIssuerID) || view.isGlobalFrozen (uGetsIssuerID))
         {
             m_journal.warning <<
                 "Offer involves frozen asset";
 
-            terResult = tecFROZEN;
+            result = tecFROZEN;
         }
         else if (view.accountFunds (
             mTxnAccountID, saTakerGets, fhZERO_IF_FROZEN) <= zero)
@@ -284,7 +352,7 @@ public:
             m_journal.warning <<
                 "delay: Offers must be at least partially funded.";
 
-            terResult = tecUNFUNDED_OFFER;
+            result = tecUNFUNDED_OFFER;
         }
         // This can probably be simplified to make sure that you cancel sequences
         // before the transaction sequence number.
@@ -294,32 +362,28 @@ public:
                 "uAccountSequenceNext=" << uAccountSequenceNext <<
                 " uOfferSequence=" << uCancelSequence;
 
-            terResult = temBAD_SEQUENCE;
+            result = temBAD_SEQUENCE;
         }
 
-        if (terResult != tesSUCCESS)
+        if (result != tesSUCCESS)
         {
-            if (m_journal.debug) m_journal.debug <<
-                "final terResult=" << transToken (terResult);
-
-            return terResult;
+            m_journal.debug << "final result: " << transToken (result);
+            return result;
         }
 
         // Process a cancellation request that's passed along with an offer.
-        if ((terResult == tesSUCCESS) && bHaveCancel)
+        if ((result == tesSUCCESS) && bHaveCancel)
         {
-            uint256 const uCancelIndex (
+            SLE::pointer sleCancel = mEngine->entryCache (ltOFFER,
                 Ledger::getOfferIndex (mTxnAccountID, uCancelSequence));
-            SLE::pointer sleCancel = mEngine->entryCache (ltOFFER, uCancelIndex);
 
             // It's not an error to not find the offer to cancel: it might have
-            // been consumed or removed as we are processing.
+            // been consumed or removed. If it is found, however, it's an error
+            // to fail to delete it.
             if (sleCancel)
             {
-                m_journal.warning <<
-                    "Cancelling order with sequence " << uCancelSequence;
-
-                terResult = view.offerDelete (sleCancel);
+                m_journal.debug << "Create cancels order " << uCancelSequence;
+                result = view.offerDelete (sleCancel);
             }
         }
 
@@ -333,250 +397,191 @@ public:
         }
 
         // Make sure that we are authorized to hold what the taker will pay us.
-        if (terResult == tesSUCCESS && !saTakerPays.isNative ())
-            terResult = checkAcceptAsset (Issue (uPaysCurrency, uPaysIssuerID));
+        if (result == tesSUCCESS && !saTakerPays.isNative ())
+            result = checkAcceptAsset (Issue (uPaysCurrency, uPaysIssuerID));
 
-        bool crossed = false;
         bool const bOpenLedger (mParams & tapOPEN_LEDGER);
+        bool crossed = false;
 
-        if (terResult == tesSUCCESS)
+        if (result == tesSUCCESS)
         {
-            // We reverse gets and pays because during offer crossing we are taking.
+            // We reverse pays and gets because during crossing we are taking.
             core::Amounts const taker_amount (saTakerGets, saTakerPays);
 
-            // The amount of the offer that we will need to place, after we finish
-            // offer crossing processing. It may be equal to the original amount,
+            // The amount of the offer that is unfilled after crossing has been
+            // performed. It may be equal to the original amount (didn't cross),
             // empty (fully crossed), or something in-between.
             core::Amounts place_offer;
 
-            std::tie(terResult, place_offer) = crossOffers (view, taker_amount);
+            m_journal.debug << "Attempting cross: " << 
+                to_string (taker_amount.in.issue ()) << " -> " <<
+                to_string (taker_amount.out.issue ());
 
-            if (terResult == tecFAILED_PROCESSING && bOpenLedger)
-                terResult = telFAILED_PROCESSING;
-
-            if (terResult == tesSUCCESS)
+            if (m_journal.trace)
             {
-                // We now need to reduce the offer by the cross flow. We reverse
-                // in and out here, since during crossing we were takers.
-                assert (saTakerPays.getCurrency () == place_offer.out.getCurrency ());
-                assert (saTakerPays.getIssuer () == place_offer.out.getIssuer ());
-                assert (saTakerGets.getCurrency () == place_offer.in.getCurrency ());
-                assert (saTakerGets.getIssuer () == place_offer.in.getIssuer ());
-
-                if (taker_amount != place_offer)
-                    crossed = true;
-
-                if (m_journal.debug)
-                {
-                    m_journal.debug << "Offer Crossing: " << transToken (terResult);
-
-                    if (terResult == tesSUCCESS)
-                    {
-                        m_journal.debug <<
-                            "    takerPays: " << saTakerPays.getFullText () <<
-                            " -> " << place_offer.out.getFullText ();
-                        m_journal.debug <<
-                            "    takerGets: " << saTakerGets.getFullText () <<
-                            " -> " << place_offer.in.getFullText ();
-                    }
-                }
-
-                saTakerPays = place_offer.out;
-                saTakerGets = place_offer.in;
+                m_journal.debug << "   mode: " <<
+                    (bPassive ? "passive " : "") <<
+                    (bSell ? "sell" : "buy");
+                m_journal.trace <<"     in: " << format_amount (taker_amount.in);
+                m_journal.trace << "    out: " << format_amount (taker_amount.out);
             }
+
+            std::tie(result, place_offer) = cross (view, view_checkpoint, taker_amount);
+            assert (result != tefINTERNAL);
+
+            if (m_journal.trace)
+            {
+                m_journal.trace << "Cross result: " << transToken (result);
+                m_journal.trace << "     in: " << format_amount (place_offer.in);
+                m_journal.trace << "    out: " << format_amount (place_offer.out);
+            }
+
+            if (result == tecFAILED_PROCESSING && bOpenLedger)
+                result = telFAILED_PROCESSING;
+
+            if (result != tesSUCCESS)
+            {
+                m_journal.debug << "final result: " << transToken (result);
+                return result;
+            }
+
+            assert (saTakerGets.issue () == place_offer.in.issue ());
+            assert (saTakerPays.issue () == place_offer.out.issue ());
+
+            if (taker_amount != place_offer)
+                crossed = true;
+
+            // The offer that we need to place after offer crossing should
+            // never be negative. If it is, something went very very wrong.
+            if (place_offer.in < zero || place_offer.out < zero)
+            {
+                m_journal.fatal << "Cross left offer negative!";
+                return tefINTERNAL;
+            }
+
+            if (place_offer.in == zero || place_offer.out == zero)
+            {
+                m_journal.debug << "Offer fully crossed!";
+                return result;
+            }
+
+            // We now need to adjust the offer to reflect the amount left after
+            // crossing. We reverse in and out here, since during crossing we
+            // were the taker.
+            saTakerPays = place_offer.out;
+            saTakerGets = place_offer.in;
         }
 
-        if (terResult != tesSUCCESS)
+        assert (saTakerPays > zero && saTakerGets > zero);
+
+        if (result != tesSUCCESS)
         {
-            m_journal.debug <<
-                "final terResult=" << transToken (terResult);
-
-            return terResult;
+            m_journal.debug << "final result: " << transToken (result);
+            return result;
         }
 
-        if (m_journal.debug)
+        if (m_journal.trace)
         {
-            m_journal.debug <<
-                "takeOffers: saTakerPays=" <<saTakerPays.getFullText ();
-            m_journal.debug <<
-                "takeOffers: saTakerGets=" << saTakerGets.getFullText ();
-            m_journal.debug <<
-                "takeOffers: mTxnAccountID=" <<
-                to_string (mTxnAccountID);
-            m_journal.debug <<
-                "takeOffers:         FUNDS=" << view.accountFunds (
-                mTxnAccountID, saTakerGets, fhZERO_IF_FROZEN).getFullText ();
+            m_journal.trace << "Place" << (crossed ? " remaining " : " ") << "offer:";
+            m_journal.trace << "    Pays: " << saTakerPays.getFullText ();
+            m_journal.trace << "    Gets: " << saTakerGets.getFullText ();
         }
 
-        if (saTakerPays < zero || saTakerGets < zero)
+        // For 'fill or kill' offers, failure to fully cross means that the
+        // entire operation should be aborted, with only fees paid.
+        if (bFillOrKill)
         {
-            // Earlier, we verified that the amounts, as specified in the offer,
-            // were not negative. That they are now suggests that something went
-            // very wrong with offer crossing.
-            m_journal.fatal << (crossed ? "Partially consumed" : "Full") <<
-                " offer has negative component:" <<
-                " pays=" << saTakerPays.getFullText () <<
-                " gets=" << saTakerGets.getFullText ();
-
-            assert (saTakerPays >= zero);
-            assert (saTakerGets >= zero);
-            return tefINTERNAL;
+            m_journal.trace << "Fill or Kill: offer killed";
+            view.swapWith (view_checkpoint);
+            return result;
         }
 
-        if (bFillOrKill && (saTakerPays != zero || saTakerGets != zero))
+        // For 'immediate or cancel' offers, the amount remaining doesn't get
+        // placed - it gets cancelled and the operation succeeds.
+        if (bImmediateOrCancel)
         {
-            // Fill or kill and have leftovers.
-            view.swapWith (view_checkpoint); // Restore with just fees paid.
-            return tesSUCCESS;
+            m_journal.trace << "Immediate or cancel: offer cancelled";
+            return result;
         }
 
-        // What the reserve would be if this offer was placed.
-        auto const accountReserve (mEngine->getLedger ()->getReserve (
-            sleCreator->getFieldU32 (sfOwnerCount) + 1));
-
-        if (saTakerPays == zero ||                // Wants nothing more.
-            saTakerGets == zero ||                // Offering nothing more.
-            bImmediateOrCancel)                   // Do not persist.
-        {
-            // Complete as is.
-        }
-        else if (mPriorBalance.getNValue () < accountReserve)
+        if (mPriorBalance.getNValue () < getAccountReserve (sleCreator))
         {
             // If we are here, the signing account had an insufficient reserve
-            // *prior* to our processing. We use the prior balance to simplify
-            // client writing and make the user experience better.
+            // *prior* to our processing. If something actually crossed, then
+            // allow this; otherwise, we just claim a fee.
+            if (!crossed)
+                result = tecINSUF_RESERVE_OFFER;
 
-            if (bOpenLedger) // Ledger is not final, can vote no.
-            {
-                // Hope for more reserve to come in or more offers to consume. If we
-                // specified a local error this transaction will not be retried, so
-                // specify a tec to distribute the transaction and allow it to be
-                // retried. In particular, it may have been successful to a
-                // degree (partially filled) and if it hasn't, it might succeed.
-                terResult = tecINSUF_RESERVE_OFFER;
-            }
-            else if (!crossed)
-            {
-                // Ledger is final, insufficent reserve to create offer, processed
-                // nothing.
-                terResult = tecINSUF_RESERVE_OFFER;
-            }
-            else
-            {
-                // Ledger is final, insufficent reserve to create offer, processed
-                // something.
-                // Consider the offer unfunded. Treat as tesSUCCESS.
-            }
+            if (result != tesSUCCESS)
+                m_journal.debug << "final result: " << transToken (result);
+
+            return result;
         }
-        else
+
+        // We need to place the remainder of the offer into its order book.
+        auto const offer_index = Ledger::getOfferIndex (mTxnAccountID, uSequence);
+
+        std::uint64_t uOwnerNode;
+        std::uint64_t uBookNode;
+        uint256 uDirectory;
+
+        // Add offer to owner's directory.
+        result = view.dirAdd (uOwnerNode,
+            Ledger::getOwnerDirIndex (mTxnAccountID), offer_index,
+            std::bind (
+                &Ledger::ownerDirDescriber, std::placeholders::_1,
+                std::placeholders::_2, mTxnAccountID));
+
+        if (result == tesSUCCESS)
         {
-            assert (saTakerPays > zero);
-            assert (saTakerGets > zero);
+            // Update owner count.
+            view.incrementOwnerCount (sleCreator);
 
-            // We need to place the remainder of the offer into its order book.
-            if (m_journal.debug) m_journal.debug <<
-                "offer not fully consumed:" <<
-                " saTakerPays=" << saTakerPays.getFullText () <<
-                " saTakerGets=" << saTakerGets.getFullText ();
+            if (m_journal.trace) m_journal.trace <<
+                "adding to book: " << to_string (saTakerPays.issue ()) <<
+                " : " << to_string (saTakerGets.issue ());
 
-            std::uint64_t uOwnerNode;
-            std::uint64_t uBookNode;
-            uint256 uDirectory;
+            uint256 const book_base (Ledger::getBookBase (
+                { saTakerPays.issue (), saTakerGets.issue () }));
 
-            // Add offer to owner's directory.
-            terResult = view.dirAdd (uOwnerNode,
-                Ledger::getOwnerDirIndex (mTxnAccountID), uLedgerIndex,
+            // We use the original rate to place the offer.
+            uDirectory = Ledger::getQualityIndex (book_base, uRate);
+
+            // Add offer to order book.
+            result = view.dirAdd (uBookNode, uDirectory, offer_index,
                 std::bind (
-                    &Ledger::ownerDirDescriber, std::placeholders::_1,
-                    std::placeholders::_2, mTxnAccountID));
-
-            if (tesSUCCESS == terResult)
-            {
-                // Update owner count.
-                view.incrementOwnerCount (sleCreator);
-
-                uint256 const uBookBase (Ledger::getBookBase (
-                    {{uPaysCurrency, uPaysIssuerID},
-                        {uGetsCurrency, uGetsIssuerID}}));
-
-                if (m_journal.debug) m_journal.debug <<
-                    "adding to book: " << to_string (uBookBase) <<
-                    " : " << saTakerPays.getHumanCurrency () <<
-                    "/" << to_string (saTakerPays.getIssuer ()) <<
-                    " -> " << saTakerGets.getHumanCurrency () <<
-                    "/" << to_string (saTakerGets.getIssuer ());
-
-                // We use the original rate to place the offer.
-                uDirectory = Ledger::getQualityIndex (uBookBase, uRate);
-
-                // Add offer to order book.
-                terResult = view.dirAdd (uBookNode, uDirectory, uLedgerIndex,
-                    std::bind (
-                        &Ledger::qualityDirDescriber, std::placeholders::_1,
-                        std::placeholders::_2, saTakerPays.getCurrency (),
-                        uPaysIssuerID, saTakerGets.getCurrency (),
-                        uGetsIssuerID, uRate));
-            }
-
-            if (tesSUCCESS == terResult)
-            {
-                if (m_journal.debug)
-                {
-                    m_journal.debug <<
-                        "sfAccount=" <<
-                        to_string (mTxnAccountID);
-                    m_journal.debug <<
-                        "uPaysIssuerID=" <<
-                        to_string (uPaysIssuerID);
-                    m_journal.debug <<
-                        "uGetsIssuerID=" <<
-                        to_string (uGetsIssuerID);
-                    m_journal.debug <<
-                        "saTakerPays.isNative()=" <<
-                        saTakerPays.isNative ();
-                    m_journal.debug <<
-                        "saTakerGets.isNative()=" <<
-                        saTakerGets.isNative ();
-                    m_journal.debug <<
-                        "uPaysCurrency=" <<
-                        saTakerPays.getHumanCurrency ();
-                    m_journal.debug <<
-                        "uGetsCurrency=" <<
-                        saTakerGets.getHumanCurrency ();
-                }
-
-                SLE::pointer sleOffer (mEngine->entryCreate (ltOFFER, uLedgerIndex));
-
-                sleOffer->setFieldAccount (sfAccount, mTxnAccountID);
-                sleOffer->setFieldU32 (sfSequence, uSequence);
-                sleOffer->setFieldH256 (sfBookDirectory, uDirectory);
-                sleOffer->setFieldAmount (sfTakerPays, saTakerPays);
-                sleOffer->setFieldAmount (sfTakerGets, saTakerGets);
-                sleOffer->setFieldU64 (sfOwnerNode, uOwnerNode);
-                sleOffer->setFieldU64 (sfBookNode, uBookNode);
-
-                if (uExpiration)
-                    sleOffer->setFieldU32 (sfExpiration, uExpiration);
-
-                if (bPassive)
-                    sleOffer->setFlag (lsfPassive);
-
-                if (bSell)
-                    sleOffer->setFlag (lsfSell);
-
-                if (m_journal.debug) m_journal.debug <<
-                    "final terResult=" << transToken (terResult) <<
-                    " sleOffer=" << sleOffer->getJson (0);
-            }
+                    &Ledger::qualityDirDescriber, std::placeholders::_1,
+                    std::placeholders::_2, saTakerPays.getCurrency (),
+                    uPaysIssuerID, saTakerGets.getCurrency (),
+                    uGetsIssuerID, uRate));
         }
 
-        if (terResult != tesSUCCESS)
+        if (result == tesSUCCESS)
         {
-            m_journal.debug <<
-                "final terResult=" << transToken (terResult);
+            SLE::pointer sleOffer (mEngine->entryCreate (ltOFFER, offer_index));
+
+            sleOffer->setFieldAccount (sfAccount, mTxnAccountID);
+            sleOffer->setFieldU32 (sfSequence, uSequence);
+            sleOffer->setFieldH256 (sfBookDirectory, uDirectory);
+            sleOffer->setFieldAmount (sfTakerPays, saTakerPays);
+            sleOffer->setFieldAmount (sfTakerGets, saTakerGets);
+            sleOffer->setFieldU64 (sfOwnerNode, uOwnerNode);
+            sleOffer->setFieldU64 (sfBookNode, uBookNode);
+
+            if (uExpiration)
+                sleOffer->setFieldU32 (sfExpiration, uExpiration);
+
+            if (bPassive)
+                sleOffer->setFlag (lsfPassive);
+
+            if (bSell)
+                sleOffer->setFlag (lsfSell);
         }
 
-        return terResult;
+        if (result != tesSUCCESS)
+            m_journal.debug << "final result: " << transToken (result);
+
+        return result;
     }
 };
 
@@ -586,12 +591,17 @@ transact_CreateOffer (
     TransactionEngineParams params,
     TransactionEngine* engine)
 {
-    // Autobridging is performed only when the offer does not involve XRP
-    bool autobridging =
-        ! txn.getFieldAmount (sfTakerPays).isNative() &&
-        ! txn.getFieldAmount (sfTakerGets).isNative ();
+    core::CrossType cross_type = core::CrossType::IouToIou;
 
-    return CreateOffer (autobridging, txn, params, engine).apply ();
+    bool const pays_xrp = txn.getFieldAmount (sfTakerPays).isNative ();
+    bool const gets_xrp = txn.getFieldAmount (sfTakerGets).isNative ();
+
+    if (pays_xrp && !gets_xrp)
+        cross_type = core::CrossType::IouToXrp;
+    else if (gets_xrp && !pays_xrp)
+        cross_type = core::CrossType::XrpToIou;
+
+    return CreateOffer (cross_type, txn, params, engine).apply ();
 }
 
 }

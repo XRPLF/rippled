@@ -17,151 +17,156 @@
 */
 //==============================================================================
 
-#include <ripple/app/book/OfferStream.h>
-#include <ripple/app/book/Taker.h>
-#include <ripple/app/book/Quality.h>
-#include <beast/streams/debug_ostream.h>
-
 namespace ripple {
 
-std::pair<TER, core::Amounts>
-CreateOffer::crossOffersBridged (
-    core::LedgerView& view,
-    core::Amounts const& taker_amount)
+std::pair<bool, core::Quality>
+CreateOffer::select_path (
+    bool have_direct, core::OfferStream const& direct,
+    bool have_bridge, core::OfferStream const& leg1, core::OfferStream const& leg2)
 {
-    assert (!taker_amount.in.isNative () && !taker_amount.out.isNative ());
+    // If we don't have any viable path, why are we here?!
+    assert (have_direct || have_bridge);
 
-    if (taker_amount.in.isNative () || taker_amount.out.isNative ())
-        return std::make_pair (tefINTERNAL, core::Amounts ());
+    // If there's no bridged path, the direct is the best by default.
+    if (!have_bridge)
+        return std::make_pair (true, direct.tip ().quality ());
 
-    core::Clock::time_point const when (
-        mEngine->getLedger ()->getParentCloseTimeNC ());
+    core::Quality const bridged_quality (core::composed_quality (
+        leg1.tip ().quality (), leg2.tip ().quality ()));
 
-    core::Taker::Options const options (mTxn.getFlags());
+    if (have_direct)
+    {
+        // We compare the quality of the composed quality of the bridged offers
+        // and compare it against the direct offer to pick the best.
+        core::Quality const direct_quality (direct.tip ().quality ());
 
-    core::LedgerView view_cancel (view.duplicate());
+        if (bridged_quality < direct_quality)
+            return std::make_pair (true, direct_quality);
+    }
 
-    auto& asset_in = taker_amount.in.issue();
-    auto& asset_out = taker_amount.out.issue();
+    // Either there was no direct offer, or it didn't have a better quality than
+    // the bridge.
+    return std::make_pair (false, bridged_quality);
+}
+
+std::pair<TER, core::Amounts>
+CreateOffer::bridged_cross (
+    core::Taker& taker,
+    core::LedgerView& view,
+    core::LedgerView& view_cancel,
+    core::Clock::time_point const when)
+{
+    auto const& taker_amount = taker.original_offer ();
+
+    assert (!isXRP (taker_amount.in)&& !isXRP (taker_amount.in));
+
+    if (isXRP (taker_amount.in) || isXRP (taker_amount.out))
+        throw std::logic_error ("Bridging with XRP and an endpoint.");
 
     core::OfferStream offers_direct (view, view_cancel,
-        Book (asset_in, asset_out), when, m_journal);
+        Book (taker.issue_in (), taker.issue_out ()), when, m_journal);
 
     core::OfferStream offers_leg1 (view, view_cancel,
-        Book (asset_in, xrpIssue ()), when, m_journal);
+        Book (taker.issue_in (), xrpIssue ()), when, m_journal);
 
     core::OfferStream offers_leg2 (view, view_cancel,
-        Book (xrpIssue (), asset_out), when, m_journal);
+        Book (xrpIssue (), taker.issue_out ()), when, m_journal);
 
-    core::Taker taker (view, mTxnAccountID, taker_amount, options);
+    TER cross_result = tesSUCCESS;
 
-    if (m_journal.debug) m_journal.debug <<
-        "process_order: " <<
-        (options.sell? "sell" : "buy") << " " <<
-        (options.passive? "passive" : "") << std::endl <<
-        "     taker: " << taker.account() << std::endl <<
-        "  balances: " <<
-        view.accountFunds (taker.account(), taker_amount.in, fhIGNORE_FREEZE)
-        << ", " <<
-        view.accountFunds (taker.account(), taker_amount.out, fhIGNORE_FREEZE);
+    // Note the subtle distinction here: self-offers encountered in the bridge
+    // are taken, but self-offers encountered in the direct book are not.
+    bool have_bridge = offers_leg1.step () && offers_leg2.step ();
+    bool have_direct = step_account (offers_direct, taker);
+    int count = 0;
 
-    TER cross_result (tesSUCCESS);
-
-    /* Note the subtle distinction here: self-offers encountered in the bridge
-     * are taken, but self-offers encountered in the direct book are not.
-     */
-    bool have_bridged (offers_leg1.step () && offers_leg2.step ());
-    bool have_direct (offers_direct.step_account (taker.account ()));
-    bool place_order (true);
-
-    while (have_direct || have_bridged)
+    // Modifying the order or logic of the operations in the loop will cause
+    // a protocol breaking change.
+    while (have_direct || have_bridge)
     {
+        bool leg1_consumed = false;
+        bool leg2_consumed = false;
+        bool direct_consumed = false;
+
         core::Quality quality;
         bool use_direct;
-        bool leg1_consumed(false);
-        bool leg2_consumed(false);
-        bool direct_consumed(false);
 
-        // Logic:
-        // We calculate the qualities of any direct and bridged offers at the
-        // tip of the order book, and choose the best one of the two.
+        std::tie (use_direct, quality) = select_path (
+            have_direct, offers_direct,
+            have_bridge, offers_leg1, offers_leg2);
 
-        if (have_direct)
-        {
-            core::Quality const direct_quality (offers_direct.tip ().quality ());
-
-            if (have_bridged)
-            {
-                core::Quality const bridged_quality (core::composed_quality (
-                    offers_leg1.tip ().quality (),
-                    offers_leg2.tip ().quality ()));
-
-                if (bridged_quality < direct_quality)
-                {
-                    use_direct = true;
-                    quality = direct_quality;
-                }
-                else
-                {
-                    use_direct = false;
-                    quality = bridged_quality;
-                }
-            }
-            else
-            {
-                use_direct = true;
-                quality = offers_direct.tip ().quality ();
-            }
-        }
-        else
-        {
-            use_direct = false;
-            quality = core::composed_quality (
-                    offers_leg1.tip ().quality (),
-                    offers_leg2.tip ().quality ());
-        }
-
-        // We are always looking at the best quality available, so if we reject
-        // that, we know that we are done.
+        // We are always looking at the best quality; we are done with crossing
+        // as soon as we cross the quality boundary.
         if (taker.reject(quality))
             break;
 
+        count++;
+
         if (use_direct)
         {
-            if (m_journal.debug) m_journal.debug << "Direct:" << std::endl <<
-                "  Offer: " << offers_direct.tip () << std::endl <<
-                "         " << offers_direct.tip ().amount().in <<
-                " : " << offers_direct.tip ().amount ().out;
+            if (m_journal.debug)
+            {
+                m_journal.debug << count << " Direct:";
+                m_journal.debug << "  offer: " << offers_direct.tip ();
+                m_journal.debug << "     in: " << offers_direct.tip ().amount().in;
+                m_journal.debug << "    out: " << offers_direct.tip ().amount ().out;
+                m_journal.debug << "  owner: " << offers_direct.tip ().owner ();
+                m_journal.debug << "  funds: " << view.accountFunds (
+                    offers_direct.tip ().owner (),
+                    offers_direct.tip ().amount ().out,
+                    fhIGNORE_FREEZE);
+            }
 
             cross_result = taker.cross(offers_direct.tip ());
 
-            if (offers_direct.tip ().fully_consumed ())
+            m_journal.debug << "Direct Result: " << transToken (cross_result);
+
+            if (dry_offer (view, offers_direct.tip ()))
             {
                 direct_consumed = true;
-                have_direct = offers_direct.step_account (taker.account());
+                have_direct = step_account (offers_direct, taker);
             }
         }
         else
         {
-            if (m_journal.debug) m_journal.debug << "Bridge:" << std::endl <<
-                " Offer1: " << offers_leg1.tip () << std::endl <<
-                "         " << offers_leg1.tip ().amount().in <<
-                " : " << offers_leg1.tip ().amount ().out << std::endl <<
-                " Offer2: " << offers_leg2.tip () << std::endl <<
-                "         " << offers_leg2.tip ().amount ().in <<
-                " : " << offers_leg2.tip ().amount ().out;
+            if (m_journal.debug)
+            {
+                auto const owner1_funds_before = view.accountFunds (
+                    offers_leg1.tip ().owner (),
+                    offers_leg1.tip ().amount ().out,
+                    fhIGNORE_FREEZE);
+
+                auto const owner2_funds_before = view.accountFunds (
+                    offers_leg2.tip ().owner (),
+                    offers_leg2.tip ().amount ().out,
+                    fhIGNORE_FREEZE);
+
+                m_journal.debug << count << " Bridge:";
+                m_journal.debug << " offer1: " << offers_leg1.tip ();
+                m_journal.debug << "     in: " << offers_leg1.tip ().amount().in;
+                m_journal.debug << "    out: " << offers_leg1.tip ().amount ().out;
+                m_journal.debug << "  owner: " << offers_leg1.tip ().owner ();
+                m_journal.debug << "  funds: " << owner1_funds_before;
+                m_journal.debug << " offer2: " << offers_leg2.tip ();
+                m_journal.debug << "     in: " << offers_leg2.tip ().amount ().in;
+                m_journal.debug << "    out: " << offers_leg2.tip ().amount ().out;
+                m_journal.debug << "  owner: " << offers_leg2.tip ().owner ();
+                m_journal.debug << "  funds: " << owner2_funds_before;
+            }
 
             cross_result = taker.cross(offers_leg1.tip (), offers_leg2.tip ());
 
-            if (offers_leg1.tip ().fully_consumed ())
+            m_journal.debug << "Bridge Result: " << transToken (cross_result);
+
+            if (dry_offer (view, offers_leg1.tip ()))
             {
                 leg1_consumed = true;
-                have_bridged = offers_leg1.step ();
+                have_bridge = (have_bridge && offers_leg1.step ());
             }
-            if (have_bridged && offers_leg2.tip ().fully_consumed ())
+            if (dry_offer (view, offers_leg2.tip ()))
             {
                 leg2_consumed = true;
-                have_bridged = offers_leg2.step ();
+                have_bridge = (have_bridge && offers_leg2.step ());
             }
         }
 
@@ -174,7 +179,6 @@ CreateOffer::crossOffersBridged (
         if (taker.done())
         {
             m_journal.debug << "The taker reports he's done during crossing!";
-            place_order = false;
             break;
         }
 
@@ -183,10 +187,7 @@ CreateOffer::crossOffersBridged (
         assert (direct_consumed || leg1_consumed || leg2_consumed);
 
         if (!direct_consumed && !leg1_consumed && !leg2_consumed)
-        {
-            cross_result = tefINTERNAL;
-            break;
-        }
+            throw std::logic_error ("bridged crossing: nothing was fully consumed.");
     }
 
     return std::make_pair(cross_result, taker.remaining_offer ());
