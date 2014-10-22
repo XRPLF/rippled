@@ -313,7 +313,7 @@ public:
 
         , m_rpcHTTPServer (make_RPCHTTPServer (*m_networkOPs,
             *m_jobQueue, *m_networkOPs, *m_resourceManager,
-                setup_RPC(getConfig()["rpc"])))
+                setup_RPC(getConfig())))
 
         // passive object, not a Service
         , m_rpcServerHandler (*m_networkOPs, *m_resourceManager)

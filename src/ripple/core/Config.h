@@ -433,7 +433,7 @@ struct Setup
 }
 
 RPC::Setup
-setup_RPC (Section const& s);
+setup_RPC (Config const& cfg);
 
 } // ripple
 

@@ -961,8 +961,9 @@ Config::build_legacy ()
 //------------------------------------------------------------------------------
 
 RPC::Setup
-setup_RPC (Section const& s)
+setup_RPC (Config const& cfg)
 {
+    auto const& s = cfg["rpc"];
     RPC::Setup c;
     set (c.allow_remote,    "allow_remote", s);
     set (c.admin_user,      "admin_user", s);
