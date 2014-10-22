@@ -62,31 +62,21 @@ private:
         historySize = 100
     };
 
-    struct State
-    {
-        // Attributes for our listening ports
-        Ports ports;
-
-        // All allocated Peer objects
-        beast::List <BasicPeer> peers;
-
-        // All allocated Door objects
-        beast::List <Door> doors;
-    };
-
     typedef std::vector <std::shared_ptr<Door>> Doors;
 
-    Handler& m_handler;
+    Handler& handler_;
     std::thread thread_;
     std::mutex mutable mutex_;
     std::condition_variable cond_;
     beast::Journal journal_;
     boost::asio::io_service io_service_;
-    boost::asio::io_service::strand m_strand;
-    boost::optional <boost::asio::io_service::work> m_work;
-    beast::WaitableEvent m_stopped;
-    State state_;
-    Doors m_doors;
+    boost::asio::io_service::strand strand_;
+    boost::optional <boost::asio::io_service::work> work_;
+    beast::WaitableEvent stopped_;
+    Ports ports_;
+    Doors doors_;
+    beast::List <Door> door_list_;
+    beast::List <BasicPeer> peers_;
     std::deque <Stat> stats_;
     std::array <std::size_t, 64> hist_;
     int high_ = 0;
