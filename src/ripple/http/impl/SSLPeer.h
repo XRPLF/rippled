@@ -137,7 +137,9 @@ SSLPeer::do_handshake (yield_context yield)
         stream_type::server, read_buf_.data(), yield[ec]));
     if (ec)
         return fail (ec, "handshake");
-    if (port_.protocols.count("peer") > 0)
+    bool const peer = port_.protocols.count("peer") > 0;
+    bool const https = port_.protocols.count("https") > 0;
+    if (peer)
     {
         auto const result = detect_peer_protocol(stream_, read_buf_, yield);
         if (result.first)
@@ -152,8 +154,14 @@ SSLPeer::do_handshake (yield_context yield)
                 remote_address_, std::move(ssl_bundle_));
         }
     }
-    boost::asio::spawn (strand_, std::bind (&SSLPeer::do_read,
-        shared_from_this(), std::placeholders::_1));
+    if (https)
+    {
+        boost::asio::spawn (strand_, std::bind (&SSLPeer::do_read,
+            shared_from_this(), std::placeholders::_1));
+        return;
+    }
+    cancel_timer();
+    // socket will be destroyed
 }
 
 void
