@@ -52,6 +52,8 @@ private:
     acceptor_type acceptor_;
     Port port_;
     ServerImpl& server_;
+    bool ssl_;
+    bool plain_;
 
 public:
     Door (boost::asio::io_service& io_service,

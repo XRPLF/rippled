@@ -126,38 +126,20 @@ Door::connection::do_detect (boost::asio::yield_context yield)
     std::tie(ec, ssl) = detect_ssl (socket_, buf, yield);
     if (! ec)
     {
-        switch (door_.port_.security)
+        if (ssl)
         {
-        case Port::Security::no_ssl:
-            if (ssl)
-                ec = boost::system::errc::make_error_code (
-                    boost::system::errc::invalid_argument);
-
-        case Port::Security::require_ssl:
-            if (! ssl)
-                ec = boost::system::errc::make_error_code (
-                    boost::system::errc::invalid_argument);
-
-        case Port::Security::allow_ssl:
-            if (! ec)
-            {
-                if (ssl)
-                {
-                    auto const peer = std::make_shared <SSLPeer> (
-                        door_.server_, door_.port_, door_.server_.journal(),
-                            remote_address_, buf.data(), std::move(socket_));
-                    peer->accept();
-                    return;
-                }
-
-                auto const peer = std::make_shared <PlainPeer> (door_.server_,
-                    door_.port_, door_.server_.journal(), remote_address_,
-                        buf.data(), std::move(socket_));
-                peer->accept();
-                return;
-            }
-            break;
+            auto const peer = std::make_shared <SSLPeer> (
+                door_.server_, door_.port_, door_.server_.journal(),
+                    remote_address_, buf.data(), std::move(socket_));
+            peer->accept();
+            return;
         }
+
+        auto const peer = std::make_shared <PlainPeer> (door_.server_,
+            door_.port_, door_.server_.journal(), remote_address_,
+                buf.data(), std::move(socket_));
+        peer->accept();
+        return;
     }
 
     socket_.close();
@@ -173,6 +155,13 @@ Door::Door (boost::asio::io_service& io_service,
     , acceptor_ (io_service, to_asio (port))
     , port_ (port)
     , server_ (impl)
+    , ssl_ (
+        port_.protocols.count("https") > 0 ||
+        //port_.protocols.count("wss") > 0 ||
+        port_.protocols.count("peer") > 0)
+    , plain_ (
+        //port_.protocols.count("ws") > 0 ||
+        port_.protocols.count("http") > 0)
 {
     server_.add (*this);
 
@@ -200,7 +189,7 @@ Door::Door (boost::asio::io_service& io_service,
 
 Door::~Door ()
 {
-    server_.remove (*this);
+    server_.remove(*this);
 }
 
 void
@@ -235,25 +224,25 @@ Door::do_accept (boost::asio::yield_context yield)
             break;
         }
 
-        if (port_.security == Port::Security::no_ssl)
+        if (ssl_ && plain_)
         {
-            auto const peer = std::make_shared <PlainPeer> (server_,
-                port_, server_.journal(), remote_address,
-                    boost::asio::null_buffers(), std::move(socket));
-            peer->accept();
+            auto const c = std::make_shared <connection> (
+                *this, std::move(socket), remote_address);
+            c->run();
         }
-        else if (port_.security == Port::Security::require_ssl)
+        else if (ssl_)
         {
             auto const peer = std::make_shared <SSLPeer> (server_,
                 port_, server_.journal(), remote_address,
                     boost::asio::null_buffers(), std::move(socket));
             peer->accept();
         }
-        else
+        else if (plain_)
         {
-            auto const c = std::make_shared <connection> (
-                *this, std::move(socket), remote_address);
-            c->run();
+            auto const peer = std::make_shared <PlainPeer> (server_,
+                port_, server_.journal(), remote_address,
+                    boost::asio::null_buffers(), std::move(socket));
+            peer->accept();
         }
     }
 }
