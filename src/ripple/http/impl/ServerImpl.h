@@ -91,9 +91,6 @@ public:
         return journal_;
     }
 
-    std::vector<Port> const&
-    ports() const override;
-
     void
     ports (std::vector<Port> const& ports) override;
 

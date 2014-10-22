@@ -184,15 +184,6 @@ public:
     beast::Journal
     journal() const = 0;
 
-    /** Returns the listening ports settings.
-        Thread safety:
-            Safe to call from any thread.
-            Cannot be called concurrently with setPorts.
-    */
-    virtual
-    std::vector<Port> const&
-    ports() const = 0;
-
     /** Set the listening ports settings.
         These take effect immediately. Any current ports that are not in the
         new set will be closed. Established connections will not be disturbed.

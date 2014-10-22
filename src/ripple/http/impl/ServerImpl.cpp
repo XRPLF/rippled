@@ -50,13 +50,6 @@ ServerImpl::~ServerImpl()
 
 //------------------------------------------------------------------------------
 
-std::vector<Port> const&
-ServerImpl::ports() const
-{
-    std::lock_guard <std::mutex> lock (mutex_);
-    return ports_;
-}
-
 void
 ServerImpl::ports (std::vector<Port> const& ports)
 {
