@@ -128,16 +128,6 @@ SSLPeer::accept ()
         shared_from_this(), std::placeholders::_1));
 }
 
-struct ArrayDelete
-{
-    template <class T>
-    void operator() (T const* t)
-    {
-        delete[] t;
-    }
-
-};
-
 void
 SSLPeer::do_handshake (yield_context yield)
 {
