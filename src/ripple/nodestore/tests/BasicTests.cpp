@@ -31,15 +31,15 @@ public:
         testcase ("batch");
 
         Batch batch1;
-        createPredictableBatch (batch1, 0, numObjectsToTest, seedValue);
+        createPredictableBatch (batch1, numObjectsToTest, seedValue);
 
         Batch batch2;
-        createPredictableBatch (batch2, 0, numObjectsToTest, seedValue);
+        createPredictableBatch (batch2, numObjectsToTest, seedValue);
 
         expect (areBatchesEqual (batch1, batch2), "Should be equal");
 
         Batch batch3;
-        createPredictableBatch (batch3, 1, numObjectsToTest, seedValue);
+        createPredictableBatch (batch3, numObjectsToTest, seedValue+1);
 
         expect (! areBatchesEqual (batch1, batch3), "Should not be equal");
     }
@@ -50,7 +50,7 @@ public:
         testcase ("encoding");
 
         Batch batch;
-        createPredictableBatch (batch, 0, numObjectsToTest, seedValue);
+        createPredictableBatch (batch, numObjectsToTest, seedValue);
 
         EncodedBlob encoded;
         for (int i = 0; i < batch.size (); ++i)

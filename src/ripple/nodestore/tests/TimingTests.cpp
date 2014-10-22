@@ -25,7 +25,7 @@ class NodeStoreTiming_test : public TestBase
 public:
     enum
     {
-        numObjectsToTest     = 10000
+        numObjectsToTest     = 1000000
     };
 
     class Stopwatch
@@ -68,9 +68,11 @@ public:
 
         // Create batches
         NodeStore::Batch batch1;
-        createPredictableBatch (batch1, 0, numObjectsToTest, seedValue);
+        createPredictableBatch (batch1, numObjectsToTest, seedValue);
         NodeStore::Batch batch2;
-        createPredictableBatch (batch2, 0, numObjectsToTest, seedValue);
+        createPredictableBatch (batch2, numObjectsToTest, seedValue);
+        NodeStore::Batch missingBatch;
+        createPredictableBatch (missingBatch, numObjectsToTest, seedValue+1);
 
         beast::Journal j;
 
@@ -83,19 +85,24 @@ public:
         // Individual write batch test
         t.start ();
         storeBatch (*backend, batch1);
-        log << "  Single write: " << std::to_string (t.getElapsed ()) << " seconds";
+        log << "  Single write:       " << std::to_string (t.getElapsed ()) << " seconds";
 
         // Bulk write batch test
         t.start ();
         backend->storeBatch (batch2);
-        log << "  Batch write:  " << std::to_string (t.getElapsed ()) << " seconds";
+        log << "  Batch write:        " << std::to_string (t.getElapsed ()) << " seconds";
 
         // Read test
         Batch copy;
         t.start ();
         fetchCopyOfBatch (*backend, &copy, batch1);
         fetchCopyOfBatch (*backend, &copy, batch2);
-        log << "  Batch read:   " << std::to_string (t.getElapsed ()) << " seconds";
+        log << "  Batch read:         " << std::to_string (t.getElapsed ()) << " seconds";
+
+        // Read missing keys test
+        t.start ();
+        fetchMissing (*backend, missingBatch);
+        log << "  Batch read missing: " << std::to_string (t.getElapsed ()) << " seconds";
     }
 
     //--------------------------------------------------------------------------
@@ -120,7 +127,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(NodeStoreTiming,ripple_core,ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL(NodeStoreTiming,ripple_core,ripple);
 
 }
 }

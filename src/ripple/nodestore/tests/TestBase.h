@@ -44,14 +44,12 @@ public:
     {
     public:
         explicit PredictableObjectFactory (std::int64_t seedValue)
-            : m_seedValue (seedValue)
+            : r (seedValue)
         {
         }
 
-        NodeObject::Ptr createObject (int index)
+        NodeObject::Ptr createObject ()
         {
-            beast::Random r (m_seedValue + index);
-
             NodeObjectType type;
             switch (r.nextInt (4))
             {
@@ -79,20 +77,19 @@ public:
         }
 
     private:
-        std::int64_t const m_seedValue;
+        beast::Random r;
     };
 
 public:
-    // Create a predictable batch of objects
-    static void createPredictableBatch (Batch& batch, int startingIndex,
-                                        int numObjects, std::int64_t seedValue)
-    {
+ // Create a predictable batch of objects
+ static void createPredictableBatch(Batch& batch, int numObjects,
+                                    std::int64_t seedValue) {
         batch.reserve (numObjects);
 
         PredictableObjectFactory factory (seedValue);
 
         for (int i = 0; i < numObjects; ++i)
-            batch.push_back (factory.createObject (startingIndex + i));
+            batch.push_back (factory.createObject ());
     }
 
     // Compare two batches for equality
@@ -149,6 +146,19 @@ public:
 
                 pCopy->push_back (object);
             }
+        }
+    }
+
+    void fetchMissing(Backend& backend, Batch const& batch)
+    {
+        for (int i = 0; i < batch.size (); ++i)
+        {
+            NodeObject::Ptr object;
+
+            Status const status = backend.fetch (
+                batch [i]->getHash ().cbegin (), &object);
+
+            expect (status == notFound, "Should be notFound");
         }
     }
 
