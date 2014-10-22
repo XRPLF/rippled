@@ -91,7 +91,7 @@ public:
                     port.port = setup_.port;
                 else
                     port.port = ep.port();
-                port.context = m_context.get ();
+                port.legacy_context = m_context.get ();
 
                 HTTP::Ports ports;
                 ports.push_back (port);

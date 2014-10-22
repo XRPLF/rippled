@@ -29,6 +29,7 @@
 #include <beast/utility/Journal.h>
 #include <beast/utility/PropertyStream.h>
 #include <boost/asio/ip/address.hpp>
+#include <boost/asio/ssl/context.hpp>
 #include <boost/system/error_code.hpp>
 #include <cstdint>
 #include <memory>
@@ -43,15 +44,17 @@ namespace HTTP {
 /** Configuration information for a server listening port. */
 struct Port
 {
+    std::string name;
     boost::asio::ip::address ip;
-    std::uint16_t port = 51235;
+    std::uint16_t port = 0;
     std::set<std::string, beast::ci_less> protocols;
     std::string ssl_key;
     std::string ssl_cert;
     std::string ssl_chain;
     bool allow_admin = false;
 
-    beast::asio::SSLContext* context = nullptr;
+    std::shared_ptr<boost::asio::ssl::context> context;
+    beast::asio::SSLContext* legacy_context = nullptr;
 
     // deprecated
     enum class Security

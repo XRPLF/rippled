@@ -111,7 +111,7 @@ SSLPeer::SSLPeer (ServerImpl& server, Port const& port,
             socket_type&& socket)
     : Peer (server, port, journal, remote_address, buffers)
     , ssl_bundle_(std::make_unique<beast::asio::ssl_bundle>(
-        port.context->get(), std::move(socket)))
+        port.legacy_context->get(), std::move(socket)))
     , stream_(ssl_bundle_->stream)
 {
 }
