@@ -93,9 +93,9 @@ public:
                     port.port = ep.port();
                 port.legacy_context = m_context.get ();
 
-                HTTP::Ports ports;
-                ports.push_back (port);
-                m_server->setPorts (ports);
+                std::vector<HTTP::Port> list;
+                list.push_back (port);
+                m_server->ports(list);
             }
         }
         else

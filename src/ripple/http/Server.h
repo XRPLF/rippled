@@ -78,9 +78,6 @@ struct Port
 bool operator== (Port const& lhs, Port const& rhs);
 bool operator<  (Port const& lhs, Port const& rhs);
 
-/** A set of listening ports settings. */
-typedef std::vector <Port> Ports;
-
 //------------------------------------------------------------------------------
 
 class Server;
@@ -193,8 +190,8 @@ public:
             Cannot be called concurrently with setPorts.
     */
     virtual
-    Ports const&
-    getPorts() const = 0;
+    std::vector<Port> const&
+    ports() const = 0;
 
     /** Set the listening ports settings.
         These take effect immediately. Any current ports that are not in the
@@ -204,7 +201,7 @@ public:
     */
     virtual
     void
-    setPorts(Ports const& ports) = 0;
+    ports (std::vector<Port> const& v) = 0;
 
     /** Notify the server to stop, without blocking.
         Thread safety:

@@ -73,7 +73,7 @@ private:
     boost::asio::io_service::strand strand_;
     boost::optional <boost::asio::io_service::work> work_;
     beast::WaitableEvent stopped_;
-    Ports ports_;
+    std::vector<Port> ports_;
     Doors doors_;
     beast::List <Door> door_list_;
     beast::List <BasicPeer> peers_;
@@ -91,11 +91,11 @@ public:
         return journal_;
     }
 
-    Ports const&
-    getPorts () const override;
+    std::vector<Port> const&
+    ports() const override;
 
     void
-    setPorts (Ports const& ports) override;
+    ports (std::vector<Port> const& ports) override;
 
     void
     stopAsync() override

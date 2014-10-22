@@ -50,15 +50,15 @@ ServerImpl::~ServerImpl()
 
 //------------------------------------------------------------------------------
 
-Ports const&
-ServerImpl::getPorts() const
+std::vector<Port> const&
+ServerImpl::ports() const
 {
     std::lock_guard <std::mutex> lock (mutex_);
     return ports_;
 }
 
 void
-ServerImpl::setPorts (Ports const& ports)
+ServerImpl::ports (std::vector<Port> const& ports)
 {
     std::lock_guard <std::mutex> lock (mutex_);
     ports_ = ports;
@@ -108,7 +108,6 @@ ServerImpl::onWrite (beast::PropertyStream::Map& map)
         }
     }
 }
-
 
 //--------------------------------------------------------------------------
 
@@ -252,26 +251,25 @@ ServerImpl::on_update()
     {
         // Make a local copy to shorten the lock
         //
-        Ports ports;
+        std::vector<Port> list;
         {
             std::lock_guard <std::mutex> lock (mutex_);
-            ports = ports_;
+            list = ports_;
         }
 
-        std::sort (ports.begin(), ports.end());
+        std::sort (list.begin(), list.end());
 
         // Walk the Door list and the Port list simultaneously and
         // build a replacement Door vector which we will then swap in.
         //
         Doors doors;
         Doors::iterator door (doors_.begin());
-        for (Ports::const_iterator port (ports.begin());
-            port != ports.end(); ++port)
+        for (auto const& port : list)
         {
             int comp = 0;
 
             while (door != doors_.end() &&
-                    ((comp = compare (*port, (*door)->port())) > 0))
+                    ((comp = compare (port, (*door)->port())) > 0))
             {
                 (*door)->cancel();
                 ++door;
@@ -282,7 +280,7 @@ ServerImpl::on_update()
                 if (comp < 0)
                 {
                     doors.push_back (std::make_shared <Door> (
-                        io_service_, *this, *port));
+                        io_service_, *this, port));
                     doors.back()->listen();
                 }
                 else
@@ -295,7 +293,7 @@ ServerImpl::on_update()
             else
             {
                 doors.push_back (std::make_shared <Door> (
-                    io_service_, *this, *port));
+                    io_service_, *this, port));
                 doors.back()->listen();
             }
         }

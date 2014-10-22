@@ -242,13 +242,13 @@ public:
         beast::Journal journal {sink};
         TestHandler handler;
         auto const s = make_Server (handler, journal);
-        Ports ports;
+        std::vector<Port> list;
         std::unique_ptr <RippleSSLContext> c (
             RippleSSLContext::createBare ());
-        ports.emplace_back (testPort, beast::IP::Endpoint (
+        list.emplace_back (testPort, beast::IP::Endpoint (
             beast::IP::AddressV4 (127, 0, 0, 1), 0),
                  Port::Security::no_ssl, c.get());
-        s->setPorts (ports);
+        s->ports (list);
 
         test_request();
         //test_keepalive();
