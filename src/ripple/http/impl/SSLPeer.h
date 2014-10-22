@@ -137,17 +137,20 @@ SSLPeer::do_handshake (yield_context yield)
         stream_type::server, read_buf_.data(), yield[ec]));
     if (ec)
         return fail (ec, "handshake");
-    auto const result = detect_peer_protocol(stream_, read_buf_, yield);
-    if (result.first)
-        return fail (result.first, "detect_legacy_handshake");
-    if (result.second)
+    if (port_.protocols.count("peer") > 0)
     {
-        std::vector<std::uint8_t> storage (read_buf_.size());
-        boost::asio::mutable_buffers_1 buffer (
-            boost::asio::mutable_buffer(storage.data(), storage.size()));
-        boost::asio::buffer_copy(buffer, read_buf_.data());
-        return server_.handler().on_legacy_peer_handshake(buffer,
-            remote_address_, std::move(ssl_bundle_));
+        auto const result = detect_peer_protocol(stream_, read_buf_, yield);
+        if (result.first)
+            return fail (result.first, "detect_legacy_handshake");
+        if (result.second)
+        {
+            std::vector<std::uint8_t> storage (read_buf_.size());
+            boost::asio::mutable_buffers_1 buffer (
+                boost::asio::mutable_buffer(storage.data(), storage.size()));
+            boost::asio::buffer_copy(buffer, read_buf_.data());
+            return server_.handler().on_legacy_peer_handshake(buffer,
+                remote_address_, std::move(ssl_bundle_));
+        }
     }
     boost::asio::spawn (strand_, std::bind (&SSLPeer::do_read,
         shared_from_this(), std::placeholders::_1));

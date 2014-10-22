@@ -98,6 +98,7 @@ protected:
     boost::asio::io_service::strand strand_;
     waitable_timer timer_;
     endpoint_type remote_address_;
+    Port port_;
 
     std::string id_;
     std::size_t nid_;
@@ -220,6 +221,7 @@ Peer<Impl>::Peer (ServerImpl& server, Port const& port,
     , strand_ (server_.get_io_service())
     , timer_ (server_.get_io_service())
     , remote_address_ (remote_address)
+    , port_ (port)
 {
     read_buf_.commit (boost::asio::buffer_copy (read_buf_.prepare (
         boost::asio::buffer_size (buffers)), buffers));
