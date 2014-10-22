@@ -49,6 +49,7 @@ HandlerTable HANDLERS({
     {   "account_tx",           &doAccountTxSwitch,     Role::USER,  NEEDS_NETWORK_CONNECTION  },
     {   "blacklist",            &doBlackList,           Role::ADMIN,   NO_CONDITION     },
     {   "book_offers",          &doBookOffers,          Role::USER,  NEEDS_CURRENT_LEDGER  },
+    {   "can_delete",           &doCanDelete,           Role::ADMIN,   NO_CONDITION     },
     {   "connect",              &doConnect,             Role::ADMIN,   NO_CONDITION     },
     {   "consensus_info",       &doConsensusInfo,       Role::ADMIN,   NO_CONDITION     },
     {   "get_counts",           &doGetCounts,           Role::ADMIN,   NO_CONDITION     },
@@ -98,7 +99,6 @@ HandlerTable HANDLERS({
     {   "wallet_accounts",      &doWalletAccounts,      Role::USER,  NEEDS_CURRENT_LEDGER  },
     {   "wallet_propose",       &doWalletPropose,       Role::ADMIN,   NO_CONDITION     },
     {   "wallet_seed",          &doWalletSeed,          Role::ADMIN,   NO_CONDITION     },
-
     // Evented methods
     {   "subscribe",            &doSubscribe,           Role::USER,  NO_CONDITION     },
     {   "unsubscribe",          &doUnsubscribe,         Role::USER,  NO_CONDITION     },

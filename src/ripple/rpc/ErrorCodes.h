@@ -47,6 +47,8 @@ enum error_code_i
     rpcTOO_BUSY,
     rpcSLOW_DOWN,
     rpcHIGH_FEE,
+    rpcNOT_ENABLED,
+    rpcNOT_READY,
 
     // Networking
     rpcNO_CLOSED,

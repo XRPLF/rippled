@@ -21,6 +21,8 @@
 #define RIPPLE_NODESTORE_DATABASE_H_INCLUDED
 
 #include <ripple/nodestore/NodeObject.h>
+#include <ripple/nodestore/Backend.h>
+#include <ripple/basics/TaggedCache.h>
 
 namespace ripple {
 namespace NodeStore {
@@ -118,7 +120,7 @@ public:
     /** Retrieve the estimated number of pending write operations.
         This is used for diagnostics.
     */
-    virtual int getWriteLoad () = 0;
+    virtual std::int32_t getWriteLoad() const = 0;
 
     /** Get the positive cache hits to total attempts ratio. */
     virtual float getCacheHitRate () = 0;

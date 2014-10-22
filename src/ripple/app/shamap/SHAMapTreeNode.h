@@ -169,9 +169,9 @@ public:
     }
 
     // sync functions
-    bool isFullBelow (void) const
+    bool isFullBelow (std::uint32_t generation) const
     {
-        return mFullBelow;
+        return mFullBelow == generation;
     }
     void setFullBelow (void)
     {

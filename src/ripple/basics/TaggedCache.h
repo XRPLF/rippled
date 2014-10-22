@@ -473,6 +473,21 @@ public:
         return m_mutex;
     }
 
+    std::vector <key_type> getKeys ()
+    {
+        std::vector <key_type> v;
+        v.reserve (m_cache.size());
+
+    {
+        lock_guard lock (m_mutex);
+
+        for (cache_iterator it = m_cache.begin(); it != m_cache.end(); ++it)
+            v.push_back (it->first);
+    }
+
+        return v;
+    }
+
 private:
     void collect_metrics ()
     {

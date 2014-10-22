@@ -27,13 +27,15 @@ namespace ripple {
 
 static const uint256 uZero;
 
-static void visitLeavesHelper (
+static bool visitLeavesHelper (
     std::function <void (SHAMapItem::ref)> const& function,
     SHAMapTreeNode& node)
 {
     // Adapt visitNodes to visitLeaves
     if (!node.isInner ())
         function (node.peekItem ());
+
+    return false;
 }
 
 void SHAMap::visitLeaves (std::function<void (SHAMapItem::ref item)> const& leafFunction)
@@ -42,7 +44,7 @@ void SHAMap::visitLeaves (std::function<void (SHAMapItem::ref item)> const& leaf
             std::cref (leafFunction), std::placeholders::_1));
 }
 
-void SHAMap::visitNodes(std::function<void (SHAMapTreeNode&)> const& function)
+void SHAMap::visitNodes(std::function<bool (SHAMapTreeNode&)> const& function)
 {
     // Visit every node in a SHAMap
     assert (root->isValid ());
@@ -69,7 +71,8 @@ void SHAMap::visitNodes(std::function<void (SHAMapTreeNode&)> const& function)
             if (!node->isEmptyBranch (pos))
             {
                 SHAMapTreeNode::pointer child = descendNoStore (node, pos);
-                function (*child);
+                if (function (*child))
+                    return;
 
                 if (child->isLeaf ())
                     ++pos;
@@ -114,7 +117,8 @@ void SHAMap::getMissingNodes (std::vector<SHAMapNodeID>& nodeIDs, std::vector<ui
     assert (root->isValid ());
     assert (root->getNodeHash().isNonZero ());
 
-    if (root->isFullBelow ())
+    std::uint32_t generation = m_fullBelowCache.getGeneration();
+    if (root->isFullBelow (generation))
     {
         clearSynching ();
         return;
@@ -190,7 +194,7 @@ void SHAMap::getMissingNodes (std::vector<SHAMapNodeID>& nodeIDs, std::vector<ui
 
                             fullBelow = false; // This node is not known full below
                         }
-                        else if (d->isInner () && !d->isFullBelow ())
+                        else if (d->isInner () && !d->isFullBelow (generation))
                         {
                             stack.push (std::make_tuple (node, nodeID,
                                           firstChild, currentChild, fullBelow));
@@ -452,10 +456,11 @@ SHAMap::addKnownNode (const SHAMapNodeID& node, Blob const& rawNode,
         return SHAMapAddNode::duplicate ();
     }
 
+    std::uint32_t generation = m_fullBelowCache.getGeneration();
     SHAMapNodeID iNodeID;
     SHAMapTreeNode* iNode = root.get ();
 
-    while (iNode->isInner () && !iNode->isFullBelow () &&
+    while (iNode->isInner () && !iNode->isFullBelow (generation) &&
            (iNodeID.getDepth () < node.getDepth ()))
     {
         int branch = iNodeID.selectBranch (node.getNodeID ());

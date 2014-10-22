@@ -31,6 +31,7 @@ Json::Value doAccountTxSwitch       (RPC::Context&);
 Json::Value doAccountTxOld          (RPC::Context&);
 Json::Value doBookOffers            (RPC::Context&);
 Json::Value doBlackList             (RPC::Context&);
+Json::Value doCanDelete             (RPC::Context&);
 Json::Value doConnect               (RPC::Context&);
 Json::Value doConsensusInfo         (RPC::Context&);
 Json::Value doFeature               (RPC::Context&);

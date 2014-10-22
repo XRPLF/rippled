@@ -54,6 +54,7 @@ public:
         std::size_t expiration_seconds = defaultCacheExpirationSeconds)
         : m_cache (name, clock, collector, target_size,
             expiration_seconds)
+        , m_gen (1)
     {
     }
 
@@ -104,8 +105,21 @@ public:
         m_cache.insert (key);
     }
 
+    /** generation determines whether cached entry is valid */
+    std::uint32_t getGeneration (void) const
+    {
+        return m_gen;
+    }
+
+    void clear ()
+    {
+        m_cache.clear ();
+        ++m_gen;
+    }
+
 private:
     KeyCache <Key> m_cache;
+    std::atomic <std::uint32_t> m_gen;
 };
 
 }

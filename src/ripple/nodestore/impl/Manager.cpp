@@ -140,6 +140,21 @@ public:
         return std::make_unique <DatabaseImp> (name, scheduler, readThreads,
             std::move (backend), std::move (fastBackend), journal);
     }
+
+    std::unique_ptr <DatabaseRotating>
+    make_DatabaseRotating (
+            std::string const& name,
+            Scheduler& scheduler,
+            std::int32_t readThreads,
+            std::shared_ptr <Backend> writableBackend,
+            std::shared_ptr <Backend> archiveBackend,
+            std::unique_ptr <Backend> fastBackend,
+            beast::Journal journal)
+    {
+        return std::make_unique <DatabaseRotatingImp> (name, scheduler,
+                readThreads, writableBackend, archiveBackend,
+                std::move (fastBackend), journal);
+    }
 };
 
 //------------------------------------------------------------------------------

@@ -148,6 +148,10 @@ public:
 
     static bool shouldAcquire (std::uint32_t currentLedgerID,
                                std::uint32_t ledgerHistory, std::uint32_t targetLedger);
+
+    virtual void clearPriorLedgers (std::uint32_t seq) = 0;
+
+    virtual void clearLedgerCachePrior (std::uint32_t seq) = 0;
 };
 
 std::unique_ptr <LedgerMaster>

@@ -2760,6 +2760,15 @@
     <ClInclude Include="..\..\src\ripple\app\misc\SerializedTransaction.h">
       <Filter>ripple\app\misc</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\misc\SHAMapStore.h">
+      <Filter>ripple\app\misc</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\misc\SHAMapStoreImp.cpp">
+      <Filter>ripple\app\misc</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\misc\SHAMapStoreImp.h">
+      <Filter>ripple\app\misc</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\misc\Validations.cpp">
       <Filter>ripple\app\misc</Filter>
     </ClCompile>
@@ -3445,6 +3454,9 @@
       <Filter>ripple\nodestore\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\nodestore\impl\DatabaseImp.h">
+      <Filter>ripple\nodestore\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\nodestore\impl\DatabaseRotatingImp.h">
       <Filter>ripple\nodestore\impl</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\nodestore\impl\DecodedBlob.cpp">

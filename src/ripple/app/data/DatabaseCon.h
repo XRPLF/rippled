@@ -42,9 +42,12 @@ public:
 
     typedef std::recursive_mutex mutex;
 
-    std::unique_lock<mutex> lock()
+    std::unique_lock<mutex> lock (bool unlocked = false)
     {
-        return std::unique_lock<mutex>(mLock);
+        if (unlocked)
+            return std::unique_lock<mutex>(mLock, std::defer_lock);
+        else
+            return std::unique_lock<mutex>(mLock);
     }
 
 private:

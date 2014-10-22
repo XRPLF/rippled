@@ -26,6 +26,7 @@
 #include <ripple/basics/Sustain.h>
 #include <ripple/basics/seconds_clock.h>
 #include <ripple/basics/make_SSLContext.h>
+#include <ripple/app/misc/SHAMapStore.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/net/SNTPClient.h>
 #include <ripple/nodestore/Database.h>
@@ -155,9 +156,12 @@ public:
     beast::Journal m_journal;
     Application::LockType m_masterMutex;
 
-    // These are not Stoppable-derived
     std::unique_ptr <NodeStore::Manager> m_nodeStoreManager;
+    NodeStoreScheduler m_nodeStoreScheduler;
+    std::unique_ptr <SHAMapStore> m_shaMapStore;
+    std::unique_ptr <NodeStore::Database> m_nodeStore;
 
+    // These are not Stoppable-derived
     NodeCache m_tempNodeCache;
     TreeNodeCache m_treeNodeCache;
     SLECache m_sleCache;
@@ -169,7 +173,6 @@ public:
     std::unique_ptr <FullBelowCache> m_fullBelowCache;
 
     // These are Stoppable-related
-    NodeStoreScheduler m_nodeStoreScheduler;
     std::unique_ptr <JobQueue> m_jobQueue;
     std::unique_ptr <SiteFiles::Manager> m_siteFiles;
     std::unique_ptr <RPC::Manager> m_rpcManager;
@@ -181,7 +184,6 @@ public:
     std::unique_ptr <NetworkOPs> m_networkOPs;
     std::unique_ptr <UniqueNodeList> m_deprecatedUNL;
     std::unique_ptr <ServerHandler> serverHandler_;
-    std::unique_ptr <NodeStore::Database> m_nodeStore;
     std::unique_ptr <SNTPClient> m_sntpClient;
     std::unique_ptr <Validators::Manager> m_validators;
     std::unique_ptr <AmendmentTable> m_amendmentTable;
@@ -245,6 +247,15 @@ public:
             std::move (make_Factories (
                 getConfig ().getSize(siHashNodeDBCache) * 1024))))
 
+        , m_nodeStoreScheduler (*this)
+
+        , m_shaMapStore (make_SHAMapStore (setup_SHAMapStore (
+                getConfig()), *this, *m_nodeStoreManager.get(),
+                m_nodeStoreScheduler, m_logs.journal ("SHAMapStore"),
+                m_logs.journal ("NodeObject")))
+
+        , m_nodeStore (m_shaMapStore->makeDatabase ("NodeStore.main", 4))
+
         , m_tempNodeCache ("NodeCache", 16384, 90, get_seconds_clock (),
             m_logs.journal("TaggedCache"))
 
@@ -263,8 +274,6 @@ public:
         , m_fullBelowCache (std::make_unique <FullBelowCache> (
             "full_below", get_seconds_clock (), m_collectorManager->collector (),
                 fullBelowTargetSize, fullBelowExpirationSeconds))
-
-        , m_nodeStoreScheduler (*this)
 
         // The JobQueue has to come pretty early since
         // almost everything is a Stoppable child of the JobQueue.
@@ -308,11 +317,6 @@ public:
         , serverHandler_ (make_ServerHandler (*m_networkOPs,
             get_io_service(), *m_jobQueue, *m_networkOPs,
                 *m_resourceManager))
-
-        , m_nodeStore (m_nodeStoreManager->make_Database ("NodeStore.main",
-            m_nodeStoreScheduler, m_logs.journal("NodeObject"),
-            4, // four read threads for now
-            getConfig ().nodeDatabase, getConfig ().ephemeralNodeDatabase))
 
         , m_sntpClient (SNTPClient::New (*this))
 
@@ -509,6 +513,11 @@ public:
     ProofOfWorkFactory& getProofOfWorkFactory ()
     {
         return *mProofOfWorkFactory;
+    }
+
+    SHAMapStore& getSHAMapStore () override
+    {
+        return *m_shaMapStore;
     }
 
     Overlay& overlay ()
@@ -953,7 +962,7 @@ public:
             &TransactionMaster::sweep, &m_txMaster));
 
         logTimedCall (m_journal.warning, "NodeStore::sweep", __FILE__, __LINE__, std::bind (
-            &NodeStore::Database::sweep, m_nodeStore.get ()));
+            &NodeStore::Database::sweep, m_nodeStore.get()));
 
         logTimedCall (m_journal.warning, "LedgerMaster::sweep", __FILE__, __LINE__, std::bind (
             &LedgerMaster::sweep, m_ledgerMaster.get()));
