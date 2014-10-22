@@ -37,7 +37,7 @@ public:
 
         // Create a batch
         Batch batch;
-        createPredictableBatch (batch, 0, numObjectsToTest, seedValue);
+        createPredictableBatch (batch, numObjectsToTest, seedValue);
 
         beast::Journal j;
 
@@ -113,7 +113,7 @@ public:
 
         // Create a batch
         Batch batch;
-        createPredictableBatch (batch, 0, numObjectsToTest, seedValue);
+        createPredictableBatch (batch, numObjectsToTest, seedValue);
 
         beast::Journal j;
 
