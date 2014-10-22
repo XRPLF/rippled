@@ -395,7 +395,7 @@ public:
             pass ();
         }
 
-        STParsedJSON parsed ("test", j.getJson (0));
+        STParsedJSONObject parsed ("test", j.getJson (0));
         std::unique_ptr <STObject> new_obj (std::move (parsed.object));
 
         if (new_obj.get () == nullptr)

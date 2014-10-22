@@ -198,7 +198,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
 
             if (context.params_.isMember("paths"))
             {
-                STParsedJSON paths ("paths", context.params_["paths"]);
+                STParsedJSONObject paths ("paths", context.params_["paths"]);
                 if (paths.object.get() == nullptr)
                     return paths.error;
                 else
