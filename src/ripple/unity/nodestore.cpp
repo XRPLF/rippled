@@ -51,7 +51,9 @@
 #include <ripple/nodestore/impl/Backend.cpp>
 #include <ripple/nodestore/impl/BatchWriter.cpp>
 #include <ripple/nodestore/impl/DatabaseImp.h>
+#include <ripple/nodestore/impl/DatabaseRotatingImp.h>
 #include <ripple/nodestore/impl/Database.cpp>
+#include <ripple/nodestore/impl/DatabaseRotatingImp.cpp>
 #include <ripple/nodestore/impl/DummyScheduler.cpp>
 #include <ripple/nodestore/impl/DecodedBlob.cpp>
 #include <ripple/nodestore/impl/EncodedBlob.cpp>

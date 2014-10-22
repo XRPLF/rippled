@@ -58,6 +58,7 @@ class TransactionMaster;
 class Validations;
 
 class DatabaseCon;
+class SHAMapStore;
 
 using NodeCache     = TaggedCache <uint256, Blob>;
 using SLECache      = TaggedCache <uint256, STLedgerEntry>;
@@ -119,6 +120,7 @@ public:
     virtual LocalCredentials&       getLocalCredentials () = 0;
     virtual Resource::Manager&      getResourceManager () = 0;
     virtual PathRequests&           getPathRequests () = 0;
+    virtual SHAMapStore&            getSHAMapStore () = 0;
 
     virtual DatabaseCon& getRpcDB () = 0;
     virtual DatabaseCon& getTxnDB () = 0;

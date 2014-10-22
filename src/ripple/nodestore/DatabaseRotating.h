@@ -17,24 +17,40 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
+#ifndef RIPPLE_NODESTORE_DATABASEROTATING_H_INCLUDED
+#define RIPPLE_NODESTORE_DATABASEROTATING_H_INCLUDED
 
-#include <ripple/unity/app.h>
+#include <ripple/nodestore/Database.h>
 
-#include <ripple/app/data/Database.cpp>
-#include <ripple/app/data/DatabaseCon.cpp>
-#include <ripple/app/data/SqliteDatabase.cpp>
-#include <ripple/app/data/DBInit.cpp>
-#include <ripple/app/ledger/BookListeners.cpp>
-#include <ripple/app/ledger/LedgerProposal.cpp>
-#include <ripple/app/ledger/OrderBookDB.cpp>
-#include <ripple/app/main/LoadManager.cpp>
-#include <ripple/app/misc/CanonicalTXSet.cpp>
-#include <ripple/app/misc/SHAMapStoreImp.cpp>
-#include <ripple/app/shamap/SHAMap.cpp>
-#include <ripple/app/shamap/SHAMapItem.cpp>
-#include <ripple/app/shamap/SHAMapSync.cpp>
-#include <ripple/app/shamap/SHAMapMissingNode.cpp>
-#include <ripple/app/shamap/RadixMapTest.h>
-#include <ripple/app/shamap/RadixMapTest.cpp>
-#include <ripple/app/shamap/FetchPackTests.cpp>
+namespace ripple {
+namespace NodeStore {
+
+/* This class has two key-value store Backend objects for persisting SHAMap
+ * records. This facilitates online deletion of data. New backends are
+ * rotated in. Old ones are rotated out and deleted.
+ */
+
+class DatabaseRotating
+{
+public:
+    virtual ~DatabaseRotating() = default;
+
+    virtual TaggedCache <uint256, NodeObject>& getPositiveCache() = 0;
+
+    virtual std::mutex& peekMutex() const = 0;
+
+    virtual std::shared_ptr <Backend> const& getWritableBackend() const = 0;
+
+    virtual std::shared_ptr <Backend> const& getArchiveBackend () const = 0;
+
+    virtual std::shared_ptr <Backend> rotateBackends (
+            std::shared_ptr <Backend> const& newBackend) = 0;
+
+    /** Ensure that node is in writableBackend */
+    virtual NodeObject::Ptr fetchNode (uint256 const& hash) = 0;
+};
+
+}
+}
+
+#endif

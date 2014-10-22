@@ -93,6 +93,8 @@ public:
     */
     bool fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash);
 
+    void clearLedgerCachePrior (LedgerIndex seq);
+
 private:
 
     /** Log details in the case where we build one ledger but

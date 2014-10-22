@@ -21,6 +21,7 @@
 #define RIPPLE_NODESTORE_MANAGER_H_INCLUDED
 
 #include <ripple/nodestore/Factory.h>
+#include <ripple/nodestore/DatabaseRotating.h>
 
 namespace ripple {
 namespace NodeStore {
@@ -75,6 +76,15 @@ public:
         Scheduler& scheduler, beast::Journal journal, int readThreads,
             Parameters const& backendParameters,
                 Parameters fastBackendParameters = Parameters ()) = 0;
+
+    virtual std::unique_ptr <DatabaseRotating> make_DatabaseRotating (
+            std::string const& name,
+            Scheduler& scheduler,
+            std::int32_t readThreads,
+            std::shared_ptr <Backend> writableBackend,
+            std::shared_ptr <Backend> archiveBackend,
+            std::unique_ptr <Backend> fastBackend,
+            beast::Journal journal) = 0;
 };
 
 //------------------------------------------------------------------------------

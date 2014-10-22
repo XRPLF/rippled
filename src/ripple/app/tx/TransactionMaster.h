@@ -37,6 +37,7 @@ public:
     bool inLedger (uint256 const& hash, std::uint32_t ledger);
     bool canonicalize (Transaction::pointer* pTransaction);
     void sweep (void);
+    TaggedCache <uint256, Transaction>& getCache();
 
 private:
     TaggedCache <uint256, Transaction> mCache;

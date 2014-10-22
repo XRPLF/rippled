@@ -84,6 +84,9 @@ public:
 
     /** Estimate the number of write operations pending. */
     virtual int getWriteLoad () = 0;
+
+    /** Remove contents on disk upon destruction. */
+    virtual void setDeletePath() = 0;
 };
 
 }

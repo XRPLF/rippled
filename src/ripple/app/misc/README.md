@@ -89,3 +89,51 @@ Nodes may veto Amendments they consider undesirable by never announcing their
 support for those Amendments. Just a few nodes vetoing an Amendment will normally 
 keep it from being accepted. Nodes could also vote yes on an Amendments even 
 before it obtains a super-majority. This might make sense for a critical bug fix.
+
+---
+
+# SHAMapStore: Online Delete
+
+Optional online deletion happens through the SHAMapStore. Records are deleted
+from disk based on ledger sequence number. These records reside in the
+key-value database  as well as in the SQLite ledger and transaction databases.
+Without online deletion storage usage grows without bounds. It can only
+be pruned by stopping, manually deleting data, and restarting the server.
+Online deletion requires less operator intervention to manage the server.
+
+The main mechanism to delete data from the key-value database is to keep two
+databases open at all times. One database has all writes directed to it. The
+other database has recent archival data from just prior to that from the current
+writable database.
+Upon rotation, the archival database is deleted. The writable database becomes
+archival, and a brand new database becomes writable. To ensure that no
+necessary data for transaction processing is lost, a variety of steps occur,
+including copying the contents of an entire ledger's account state map,
+clearing caches, and copying the contents of (freshening) other caches.
+
+Deleting from SQLite involves more straight-forward SQL DELETE queries from
+the respective tables, with a rudimentary back-off algorithm to do portions
+of the deletions at a time. This back-off is in place so that the database
+lock is not held excessively. The SQLite database is not configured to
+delete on-disk storage, so it will grow over time. However, with online delete
+enabled, it grows at a very small rate compared with the key-value store.
+
+The online delete routine aborts its current activities if it fails periodic
+server health checks. This minimizes impact of I/O and locking of critical
+objects. If interrupted, the routine will start again at the next validated
+ledger close. Likewise, the routine will continue in a similar fashion if the
+server restarts.
+
+Configuration:
+
+* In the [node_db] configuration section, an optional online_delete parameter is
+set. If not set or if set to 0, online delete is disabled. Otherwise, the
+setting defines number of ledgers between deletion cycles.
+* Another optional parameter in [node_db] is that for advisory_delete. It is
+disabled by default. If set to non-zero, requires an RPC call to activate the
+deletion routine.
+* online_delete must not be greater than the [ledger_history] parameter.
+* [fetch_depth] will be silently set to equal the online_delete setting if
+online_delete is greater than fetch_depth.
+* In the [node_db] section, there is a performance tuning option, delete_batch,
+which sets the maximum size in ledgers for each SQL DELETE query.

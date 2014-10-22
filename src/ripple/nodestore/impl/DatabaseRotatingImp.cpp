@@ -17,24 +17,38 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
+#include <ripple/nodestore/impl/DatabaseRotatingImp.h>
 
-#include <ripple/unity/app.h>
+namespace ripple {
+namespace NodeStore {
 
-#include <ripple/app/data/Database.cpp>
-#include <ripple/app/data/DatabaseCon.cpp>
-#include <ripple/app/data/SqliteDatabase.cpp>
-#include <ripple/app/data/DBInit.cpp>
-#include <ripple/app/ledger/BookListeners.cpp>
-#include <ripple/app/ledger/LedgerProposal.cpp>
-#include <ripple/app/ledger/OrderBookDB.cpp>
-#include <ripple/app/main/LoadManager.cpp>
-#include <ripple/app/misc/CanonicalTXSet.cpp>
-#include <ripple/app/misc/SHAMapStoreImp.cpp>
-#include <ripple/app/shamap/SHAMap.cpp>
-#include <ripple/app/shamap/SHAMapItem.cpp>
-#include <ripple/app/shamap/SHAMapSync.cpp>
-#include <ripple/app/shamap/SHAMapMissingNode.cpp>
-#include <ripple/app/shamap/RadixMapTest.h>
-#include <ripple/app/shamap/RadixMapTest.cpp>
-#include <ripple/app/shamap/FetchPackTests.cpp>
+// Make sure to call it already locked!
+std::shared_ptr <Backend> DatabaseRotatingImp::rotateBackends (
+        std::shared_ptr <Backend> const& newBackend)
+{
+    std::shared_ptr <Backend> oldBackend = archiveBackend_;
+    archiveBackend_ = writableBackend_;
+    writableBackend_ = newBackend;
+
+    return oldBackend;
+}
+
+NodeObject::Ptr DatabaseRotatingImp::fetchFrom (uint256 const& hash)
+{
+    Backends b = getBackends();
+    NodeObject::Ptr object = fetchInternal (*b.writableBackend, hash);
+    if (!object)
+    {
+        object = fetchInternal (*b.archiveBackend, hash);
+        if (object)
+        {
+            getWritableBackend()->store (object);
+            m_negCache.erase (hash);
+        }
+    }
+
+    return object;
+}
+}
+
+}

@@ -24,6 +24,7 @@
 #include <ripple/app/ledger/OrderBookDB.h>
 #include <ripple/app/paths/PathRequests.h>
 #include <ripple/validators/Manager.h>
+#include <ripple/app/misc/SHAMapStore.h>
 #include <algorithm>
 #include <cassert>
 #include <beast/cxx14/memory.h> // <memory>
@@ -116,7 +117,7 @@ public:
         , mValidLedgerSeq (0)
         , mBuildingLedgerSeq (0)
         , standalone_ (standalone)
-        , fetch_depth_ (fetch_depth)
+        , fetch_depth_ (getApp().getSHAMapStore().clampFetchDepth (fetch_depth))
         , ledger_history_ (ledger_history)
         , ledger_fetch_size_ (ledger_fetch_size)
     {
@@ -198,6 +199,7 @@ public:
         mValidLedgerClose = l->getCloseTimeNC();
         mValidLedgerSeq = l->getLedgerSeq();
         getApp().getOPs().updateLocalTx (l);
+        getApp().getSHAMapStore().onLedgerClosed (getValidatedLedger());
     }
 
     void setPubLedger(Ledger::ref l)
@@ -1482,6 +1484,21 @@ public:
     beast::PropertyStream::Source& getPropertySource ()
     {
         return *mLedgerCleaner;
+    }
+
+    void clearPriorLedgers (LedgerIndex seq) override
+    {
+        ScopedLockType sl (mCompleteLock);
+        for (LedgerIndex i = mCompleteLedgers.getFirst(); i < seq; ++i)
+        {
+            if (haveLedger (i))
+                clearLedger (i);
+        }
+    }
+
+    void clearLedgerCachePrior (LedgerIndex seq) override
+    {
+        mLedgerHistory.clearLedgerCachePrior (seq);
     }
 };
 

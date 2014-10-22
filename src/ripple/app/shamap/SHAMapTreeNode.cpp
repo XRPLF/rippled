@@ -27,7 +27,7 @@ SHAMapTreeNode::SHAMapTreeNode (std::uint32_t seq)
     : mSeq (seq)
     , mType (tnERROR)
     , mIsBranch (0)
-    , mFullBelow (false)
+    , mFullBelowGen (0)
 {
 }
 
@@ -36,7 +36,7 @@ SHAMapTreeNode::SHAMapTreeNode (const SHAMapTreeNode& node, std::uint32_t seq)
     , mSeq (seq)
     , mType (node.mType)
     , mIsBranch (node.mIsBranch)
-    , mFullBelow (false)
+    , mFullBelowGen (0)
 {
     if (node.mItem)
         mItem = node.mItem;
@@ -57,7 +57,7 @@ SHAMapTreeNode::SHAMapTreeNode (SHAMapItem::ref item,
     , mSeq (seq)
     , mType (type)
     , mIsBranch (0)
-    , mFullBelow (false)
+    , mFullBelowGen (0)
 {
     assert (item->peekData ().size () >= 12);
     updateHash ();
@@ -69,7 +69,7 @@ SHAMapTreeNode::SHAMapTreeNode (Blob const& rawNode,
     : mSeq (seq)
     , mType (tnERROR)
     , mIsBranch (0)
-    , mFullBelow (false)
+    , mFullBelowGen (0)
 {
     if (format == snfWIRE)
     {

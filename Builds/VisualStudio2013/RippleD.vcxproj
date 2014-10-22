@@ -1852,6 +1852,13 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\misc\ProofOfWorkFactory.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\misc\SHAMapStore.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\misc\SHAMapStoreImp.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\misc\SHAMapStoreImp.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\misc\Validations.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2413,6 +2420,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\nodestore\Database.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\nodestore\DatabaseRotating.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\nodestore\DummyScheduler.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\nodestore\Factory.h">
@@ -2429,6 +2438,11 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\nodestore\impl\DatabaseImp.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\nodestore\impl\DatabaseRotatingImp.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\nodestore\impl\DatabaseRotatingImp.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\nodestore\impl\DecodedBlob.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -2827,6 +2841,9 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\BookOffers.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\handlers\CanDelete.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\Connect.cpp">

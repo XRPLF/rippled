@@ -20,6 +20,8 @@
 #ifndef RIPPLE_DATABASECON_H
 #define RIPPLE_DATABASECON_H
 
+#include <ripple/core/Config.h>
+
 #include <mutex>
 #include <string>
 
@@ -32,7 +34,18 @@ class Database;
 class DatabaseCon
 {
 public:
-    DatabaseCon (std::string const& name, const char* initString[], int countInit);
+    struct Setup
+    {
+        bool onlineDelete = false;
+        Config::StartUpType startUp = Config::NORMAL;
+        bool standAlone = false;
+        boost::filesystem::path dataDir;
+    };
+
+    DatabaseCon (Setup const& setup,
+            std::string const& name,
+            const char* initString[],
+            int countInit);
     ~DatabaseCon ();
 
     Database* getDB ()
@@ -42,15 +55,25 @@ public:
 
     typedef std::recursive_mutex mutex;
 
-    std::unique_lock<mutex> lock()
+    std::unique_lock<mutex> lock ()
     {
         return std::unique_lock<mutex>(mLock);
+    }
+
+    mutex& peekMutex()
+    {
+        return mLock;
     }
 
 private:
     Database* mDatabase;
     mutex  mLock;
 };
+
+//------------------------------------------------------------------------------
+
+DatabaseCon::Setup
+setup_DatabaseCon (Config const& c);
 
 } // ripple
 

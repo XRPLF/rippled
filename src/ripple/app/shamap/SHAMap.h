@@ -179,7 +179,7 @@ public:
     SHAMapItem::pointer peekNextItem (uint256 const& , SHAMapTreeNode::TNType & type);
     SHAMapItem::pointer peekPrevItem (uint256 const& );
 
-    void visitNodes (std::function<void (SHAMapTreeNode&)> const&);
+    void visitNodes (std::function<bool (SHAMapTreeNode&)> const&);
     void visitLeaves(std::function<void (SHAMapItem::ref)> const&);
 
     // comparison/sync functions

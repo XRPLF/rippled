@@ -2742,6 +2742,15 @@
     <ClInclude Include="..\..\src\ripple\app\misc\ProofOfWorkFactory.h">
       <Filter>ripple\app\misc</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\misc\SHAMapStore.h">
+      <Filter>ripple\app\misc</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\misc\SHAMapStoreImp.cpp">
+      <Filter>ripple\app\misc</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\misc\SHAMapStoreImp.h">
+      <Filter>ripple\app\misc</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\misc\Validations.cpp">
       <Filter>ripple\app\misc</Filter>
     </ClCompile>
@@ -3420,6 +3429,9 @@
     <ClInclude Include="..\..\src\ripple\nodestore\Database.h">
       <Filter>ripple\nodestore</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\nodestore\DatabaseRotating.h">
+      <Filter>ripple\nodestore</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\nodestore\DummyScheduler.h">
       <Filter>ripple\nodestore</Filter>
     </ClInclude>
@@ -3439,6 +3451,12 @@
       <Filter>ripple\nodestore\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\nodestore\impl\DatabaseImp.h">
+      <Filter>ripple\nodestore\impl</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\nodestore\impl\DatabaseRotatingImp.cpp">
+      <Filter>ripple\nodestore\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\nodestore\impl\DatabaseRotatingImp.h">
       <Filter>ripple\nodestore\impl</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\nodestore\impl\DecodedBlob.cpp">
@@ -3922,6 +3940,9 @@
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\BookOffers.cpp">
+      <Filter>ripple\rpc\handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\handlers\CanDelete.cpp">
       <Filter>ripple\rpc\handlers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\handlers\Connect.cpp">

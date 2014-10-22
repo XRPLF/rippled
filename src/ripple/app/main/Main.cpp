@@ -92,6 +92,7 @@ void printHelp (const po::options_description& desc)
            "     account_offers <account>|<account_public_key> [<ledger>]\n"
            "     account_tx accountID [ledger_min [ledger_max [limit [offset]]]] [binary] [count] [descending]\n"
            "     book_offers <taker_pays> <taker_gets> [<taker [<ledger> [<limit> [<proof> [<marker>]]]]]\n"
+           "     can_delete [<ledgerid>|<ledgerhash>|now|always|never]\n"
            "     connect <ip> [<port>]\n"
            "     consensus_info\n"
            "     get_counts\n"
