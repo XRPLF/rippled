@@ -63,6 +63,8 @@ struct ProtobufLibrary
 //
 int main (int argc, char** argv)
 {
+    // Workaround for Boost.Context / Boost.Coroutine
+    // https://svn.boost.org/trac/boost/ticket/10657
     (void)beast::Time::currentTimeMillis();
 
 #if defined(__GNUC__) && !defined(__clang__)
