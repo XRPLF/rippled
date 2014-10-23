@@ -3166,6 +3166,22 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\impl\Handler.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\JsonObject.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\rpc\impl\JsonObject.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\JsonObject_test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\JsonWriter.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\rpc\impl\JsonWriter.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\JsonWriter_test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\impl\LegacyPathFind.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -3196,6 +3212,8 @@
     <ClCompile Include="..\..\src\ripple\rpc\impl\Status_test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\rpc\impl\TestOutputSuite.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\impl\TransactionSign.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -3206,6 +3224,8 @@
     <ClInclude Include="..\..\src\ripple\rpc\InternalHandler.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\Manager.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rpc\Output.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\Request.h">
     </ClInclude>
