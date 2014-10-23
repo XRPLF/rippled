@@ -22,10 +22,10 @@ namespace HTTP {
 
 Port::Port (std::uint16_t port_, beast::IP::Endpoint const& addr_,
         Security security_, beast::asio::SSLContext* context_)
-    : security (security_)
-    , port (port_)
-    , addr (addr_)
+    : port (port_)
     , legacy_context (context_)
+    , security (security_)
+    , addr (addr_)
 {
 }
 
