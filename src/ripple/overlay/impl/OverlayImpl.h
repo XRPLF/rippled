@@ -66,8 +66,6 @@ private:
         Promote promote = Promote::automatic;
     };
 
-    typedef boost::asio::ip::tcp::socket socket_type;
-
     typedef hash_map <PeerFinder::Slot::ptr,
         std::weak_ptr <PeerImp>> PeersBySlot;
 
