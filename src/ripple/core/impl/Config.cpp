@@ -233,8 +233,6 @@ Config::Config ()
 
     peerListeningPort = SYSTEM_PEER_PORT;
 
-    peerPROXYListeningPort = 0;
-
     //
     //
     //
@@ -535,18 +533,6 @@ void Config::load ()
 
             if (getSingleSection (secConfig, SECTION_PEER_PORT, strTemp))
                 peerListeningPort = beast::lexicalCastThrow <int> (strTemp);
-
-            if (getSingleSection (secConfig, SECTION_PEER_PROXY_PORT, strTemp))
-            {
-                peerPROXYListeningPort = beast::lexicalCastThrow <int> (strTemp);
-
-                if (peerPROXYListeningPort != 0 && peerPROXYListeningPort == peerListeningPort)
-                    throw std::runtime_error ("Peer and proxy listening ports can't be the same.");
-            }
-            else
-            {
-                peerPROXYListeningPort = 0;
-            }
 
             //
             // VFALCO END CLEAN
@@ -975,8 +961,9 @@ Config::build_legacy ()
 //------------------------------------------------------------------------------
 
 RPC::Setup
-setup_RPC (Section const& s)
+setup_RPC (Config const& cfg)
 {
+    auto const& s = cfg["rpc"];
     RPC::Setup c;
     set (c.allow_remote,    "allow_remote", s);
     set (c.admin_user,      "admin_user", s);

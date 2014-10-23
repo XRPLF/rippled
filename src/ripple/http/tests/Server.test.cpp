@@ -58,6 +58,13 @@ public:
     struct TestHandler : Handler
     {
         void
+        on_legacy_peer_handshake (boost::asio::const_buffer buffer,
+            boost::asio::ip::tcp::endpoint remote_address,
+                std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle) override
+        {
+        }
+
+        void
         onAccept (Session& session) override
         {
         }
@@ -65,7 +72,7 @@ public:
         void
         onRequest (Session& session) override
         {
-            session << "Hello, world!\n";
+            session.write (std::string ("Hello, world!\n"));
             if (session.message().keep_alive())
                 session.complete();
             else
@@ -142,6 +149,10 @@ public:
             }
         }
         catch (std::length_error const& e)
+        {
+            fail(e.what());
+        }
+        catch (std::exception const& e)
         {
             fail(e.what());
         }
@@ -230,19 +241,19 @@ public:
         sink.severity (beast::Journal::Severity::kAll);
         beast::Journal journal {sink};
         TestHandler handler;
-        Server s (handler, journal);
-        Ports ports;
+        auto const s = make_Server (handler, journal);
+        std::vector<Port> list;
         std::unique_ptr <RippleSSLContext> c (
             RippleSSLContext::createBare ());
-        ports.emplace_back (testPort, beast::IP::Endpoint (
+        list.emplace_back (testPort, beast::IP::Endpoint (
             beast::IP::AddressV4 (127, 0, 0, 1), 0),
                  Port::Security::no_ssl, c.get());
-        s.setPorts (ports);
+        s->ports (list);
 
         test_request();
         //test_keepalive();
 
-        s.stop();
+        s->stop();
 
         pass();
     }

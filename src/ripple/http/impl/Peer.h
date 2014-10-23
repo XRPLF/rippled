@@ -24,12 +24,11 @@
 #include <ripple/http/Session.h>
 #include <ripple/http/impl/Types.h>
 #include <ripple/http/impl/ServerImpl.h>
-#include <ripple/common/MultiSocket.h>
 #include <beast/asio/placeholders.h>
 #include <beast/asio/ssl.h> // for is_short_read?
 #include <beast/http/message.h>
 #include <beast/http/parser.h>
-#include <beast/module/core/core.h>
+#include <beast/module/core/time/Time.h>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/stream.hpp>
 #include <boost/asio/streambuf.hpp>
@@ -67,10 +66,10 @@ protected:
     using clock_type = std::chrono::system_clock;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using waitable_timer = boost::asio::basic_waitable_timer <clock_type>;
-
+    using yield_context = boost::asio::yield_context;
     enum
     {
-        // Size of our receive buffer
+        // Size of our read/write buffer
         bufferSize = 4 * 1024,
 
         // Max seconds without completing a message
@@ -95,9 +94,11 @@ protected:
 
     beast::Journal journal_;
     ServerImpl& server_;
+    boost::asio::io_service::work work_;
     boost::asio::io_service::strand strand_;
     waitable_timer timer_;
-    endpoint_type endpoint_;
+    endpoint_type remote_address_;
+    Port port_;
 
     std::string id_;
     std::size_t nid_;
@@ -109,7 +110,6 @@ protected:
     bool graceful_ = false;
     bool complete_ = false;
     std::shared_ptr <Peer> detach_ref_;
-    boost::optional <boost::asio::io_service::work> work_;
     boost::system::error_code ec_;
 
     clock_type::time_point when_;
@@ -123,7 +123,7 @@ protected:
 public:
     template <class ConstBufferSequence>
     Peer (ServerImpl& impl, Port const& port, beast::Journal journal,
-        endpoint_type endpoint, ConstBufferSequence const& buffers);
+        endpoint_type remote_address, ConstBufferSequence const& buffers);
 
     virtual
     ~Peer();
@@ -154,10 +154,14 @@ protected:
     on_timer (error_code ec);
 
     void
-    do_read (boost::asio::yield_context yield);
+    do_read (yield_context yield);
 
     void
-    do_write (boost::asio::yield_context yield);
+    do_write (yield_context yield);
+
+    void
+    do_writer (std::shared_ptr <Writer> const& writer,
+        bool keep_alive, yield_context yield);
 
     virtual
     void
@@ -178,7 +182,7 @@ protected:
     beast::IP::Endpoint
     remoteAddress() override
     {
-        return from_asio (endpoint_);
+        return from_asio (remote_address_);
     }
 
     beast::http::message&
@@ -189,6 +193,10 @@ protected:
 
     void
     write (void const* buffer, std::size_t bytes) override;
+
+    void
+    write (std::shared_ptr <Writer> const& writer,
+        bool keep_alive) override;
 
     void
     detach() override;
@@ -202,185 +210,18 @@ protected:
 
 //------------------------------------------------------------------------------
 
-class PlainPeer
-    : public Peer <PlainPeer>
-    , public std::enable_shared_from_this <PlainPeer>
-{
-private:
-    friend class Peer <PlainPeer>;
-    using socket_type = boost::asio::ip::tcp::socket;
-    socket_type socket_;
-
-public:
-    template <class ConstBufferSequence>
-    PlainPeer (ServerImpl& impl, Port const& port, beast::Journal journal,
-        endpoint_type endpoint, ConstBufferSequence const& buffers,
-            socket_type&& socket);
-
-    void
-    accept();
-
-private:
-    void
-    do_request();
-
-    void
-    do_close();
-};
-
-template <class ConstBufferSequence>
-PlainPeer::PlainPeer (ServerImpl& server, Port const& port,
-        beast::Journal journal, endpoint_type endpoint,
-            ConstBufferSequence const& buffers,
-                boost::asio::ip::tcp::socket&& socket)
-    : Peer (server, port, journal, endpoint, buffers)
-    , socket_(std::move(socket))
-{
-}
-
-void
-PlainPeer::accept ()
-{
-    server_.handler().onAccept (session());
-    if (! socket_.is_open())
-        return;
-
-    boost::asio::spawn (strand_, std::bind (&PlainPeer::do_read,
-        shared_from_this(), std::placeholders::_1));
-}
-
-void
-PlainPeer::do_request()
-{
-    // Perform half-close when Connection: close and not SSL
-    error_code ec;
-    if (! message_.keep_alive())
-        socket_.shutdown (socket_type::shutdown_receive, ec);
-
-    if (! ec)
-    {
-        ++request_count_;
-        server_.handler().onRequest (session());
-        return;
-    }
-
-    if (ec)
-        fail (ec, "request");
-}
-
-void
-PlainPeer::do_close()
-{
-    error_code ec;
-    socket_.shutdown (socket_type::shutdown_send, ec);
-}
-
-//------------------------------------------------------------------------------
-
-class SSLPeer
-    : public Peer <SSLPeer>
-    , public std::enable_shared_from_this <SSLPeer>
-{
-private:
-    friend class Peer <SSLPeer>;
-    using next_layer_type = boost::asio::ip::tcp::socket;
-    using socket_type = boost::asio::ssl::stream <next_layer_type&>;
-    next_layer_type next_layer_;
-    socket_type socket_;
-
-public:
-    template <class ConstBufferSequence>
-    SSLPeer (ServerImpl& impl, Port const& port, beast::Journal journal,
-        endpoint_type endpoint, ConstBufferSequence const& buffers,
-            next_layer_type&& socket);
-
-    void
-    accept();
-
-private:
-    void
-    do_handshake (boost::asio::yield_context yield);
-
-    void
-    do_request();
-
-    void
-    do_close();
-
-    void
-    on_shutdown (error_code ec);
-};
-
-template <class ConstBufferSequence>
-SSLPeer::SSLPeer (ServerImpl& server, Port const& port,
-    beast::Journal journal, endpoint_type endpoint,
-        ConstBufferSequence const& buffers,
-            boost::asio::ip::tcp::socket&& socket)
-    : Peer (server, port, journal, endpoint, buffers)
-    , next_layer_ (std::move(socket))
-    , socket_ (next_layer_, port.context->get())
-{
-}
-
-// Called when the acceptor accepts our socket.
-void
-SSLPeer::accept ()
-{
-    server_.handler().onAccept (session());
-    if (! next_layer_.is_open())
-        return;
-
-    boost::asio::spawn (strand_, std::bind (&SSLPeer::do_handshake,
-        shared_from_this(), std::placeholders::_1));
-}
-
-void
-SSLPeer::do_handshake (boost::asio::yield_context yield)
-{
-    error_code ec;
-    std::size_t const bytes_transferred = socket_.async_handshake (
-        socket_type::server, read_buf_.data(), yield[ec]);
-    if (ec)
-        return fail (ec, "handshake");
-    read_buf_.consume (bytes_transferred);
-    boost::asio::spawn (strand_, std::bind (&SSLPeer::do_read,
-        shared_from_this(), std::placeholders::_1));
-}
-
-void
-SSLPeer::do_request()
-{
-    ++request_count_;
-    server_.handler().onRequest (session());
-}
-
-void
-SSLPeer::do_close()
-{
-    error_code ec;
-    socket_.async_shutdown (strand_.wrap (std::bind (
-        &SSLPeer::on_shutdown, shared_from_this(),
-            std::placeholders::_1)));
-}
-
-void
-SSLPeer::on_shutdown (error_code ec)
-{
-    socket_.next_layer().close(ec);
-}
-
-//------------------------------------------------------------------------------
-
 template <class Impl>
 template <class ConstBufferSequence>
 Peer<Impl>::Peer (ServerImpl& server, Port const& port,
-        beast::Journal journal, endpoint_type endpoint,
+        beast::Journal journal, endpoint_type remote_address,
             ConstBufferSequence const& buffers)
     : journal_ (journal)
     , server_ (server)
+    , work_ (server_.get_io_service())
     , strand_ (server_.get_io_service())
     , timer_ (server_.get_io_service())
-    , endpoint_ (endpoint)
+    , remote_address_ (remote_address)
+    , port_ (port)
 {
     read_buf_.commit (boost::asio::buffer_copy (read_buf_.prepare (
         boost::asio::buffer_size (buffers)), buffers));
@@ -392,7 +233,7 @@ Peer<Impl>::Peer (ServerImpl& server, Port const& port,
     server_.add (*this);
 
     if (journal_.trace) journal_.trace << id_ <<
-        "accept:    " << endpoint.address();
+        "accept:    " << remote_address_.address();
 
     when_ = clock_type::now();
     when_str_ = beast::Time::getCurrentTime().formatted (
@@ -433,7 +274,7 @@ Peer<Impl>::fail (error_code ec, char const* what)
         ec_ = ec;
         if (journal_.trace) journal_.trace << id_ <<
             std::string(what) << ": " << ec.message();
-        impl().socket_.lowest_layer().close (ec);
+        impl().stream_.lowest_layer().close (ec);
     }
 }
 
@@ -476,7 +317,7 @@ Peer<Impl>::on_timer (error_code ec)
 
 template <class Impl>
 void
-Peer<Impl>::do_read (boost::asio::yield_context yield)
+Peer<Impl>::do_read (yield_context yield)
 {
     complete_ = false;
 
@@ -489,7 +330,7 @@ Peer<Impl>::do_read (boost::asio::yield_context yield)
         {
             start_timer();
             auto const bytes_transferred = boost::asio::async_read (
-                impl().socket_, read_buf_.prepare (bufferSize),
+                impl().stream_, read_buf_.prepare (bufferSize),
                     boost::asio::transfer_at_least(1), yield[ec]);
             cancel_timer();
 
@@ -514,16 +355,14 @@ Peer<Impl>::do_read (boost::asio::yield_context yield)
                 // should request that the handler compose a proper HTTP error
                 // response. This requires refactoring HTTPReply() into
                 // something sensible.
-                auto const result = parser.write (read_buf_.data());
-                if (result.first)
-                    read_buf_.consume (result.second);
-                else
-                    ec = parser.error();
+                std::size_t used;
+                std::tie (ec, used) = parser.write (read_buf_.data());
+                if (! ec)
+                    read_buf_.consume (used);
             }
             else
             {
-                if (! parser.write_eof())
-                    ec = parser.error();
+                ec = parser.write_eof();
             }
         }
 
@@ -544,7 +383,7 @@ Peer<Impl>::do_read (boost::asio::yield_context yield)
 // The write queue must not be empty upon entry.
 template <class Impl>
 void
-Peer<Impl>::do_write (boost::asio::yield_context yield)
+Peer<Impl>::do_write (yield_context yield)
 {
     error_code ec;
     std::size_t bytes = 0;
@@ -574,7 +413,7 @@ Peer<Impl>::do_write (boost::asio::yield_context yield)
             break;
 
         start_timer();
-        bytes = boost::asio::async_write (impl().socket_,
+        bytes = boost::asio::async_write (impl().stream_,
             boost::asio::buffer (data, bytes),
                 boost::asio::transfer_at_least(1), yield[ec]);
         cancel_timer();
@@ -587,6 +426,45 @@ Peer<Impl>::do_write (boost::asio::yield_context yield)
         return;
 
     if (graceful_)
+        return do_close();
+
+    boost::asio::spawn (strand_, std::bind (&Peer<Impl>::do_read,
+        impl().shared_from_this(), std::placeholders::_1));
+}
+
+template <class Impl>
+void
+Peer<Impl>::do_writer (std::shared_ptr <Writer> const& writer,
+    bool keep_alive, yield_context yield)
+{
+    std::function <void(void)> resume;
+    {
+        auto const p = impl().shared_from_this();
+        resume = std::function <void(void)>(
+            [this, p, writer, keep_alive]()
+            {
+                boost::asio::spawn (strand_, std::bind (
+                    &Peer<Impl>::do_writer, p, writer, keep_alive,
+                        std::placeholders::_1));
+            });
+    }
+
+    for(;;)
+    {
+        if (! writer->prepare (bufferSize, resume))
+            return;
+        error_code ec;
+        auto const bytes_transferred = boost::asio::async_write (
+            impl().stream_, writer->data(), boost::asio::transfer_at_least(1),
+                yield[ec]);
+        if (ec)
+            return fail (ec, "writer");
+        writer->consume(bytes_transferred);
+        if (writer->complete())
+            break;
+    }
+
+    if (! keep_alive)
         return do_close();
 
     boost::asio::spawn (strand_, std::bind (&Peer<Impl>::do_read,
@@ -615,27 +493,28 @@ Peer<Impl>::write (void const* buffer, std::size_t bytes)
             impl().shared_from_this(), std::placeholders::_1));
 }
 
+template <class Impl>
+void
+Peer<Impl>::write (std::shared_ptr <Writer> const& writer,
+    bool keep_alive)
+{
+    boost::asio::spawn (strand_, std::bind (
+        &Peer<Impl>::do_writer, impl().shared_from_this(),
+            writer, keep_alive, std::placeholders::_1));
+}
+
+// DEPRECATED
 // Make the Session asynchronous
 template <class Impl>
 void
 Peer<Impl>::detach ()
 {
+    // Maintain an additional reference while detached
     if (! detach_ref_)
-    {
-        assert (! work_);
-
-        // Maintain an additional reference while detached
         detach_ref_ = impl().shared_from_this();
-
-        // Prevent the io_service from running out of work.
-        // The work object will be destroyed with the Peer
-        // after the Session is closed and handlers complete.
-        //
-        work_ = boost::in_place (std::ref (
-            server_.get_io_service()));
-    }
 }
 
+// DEPRECATED
 // Called to indicate the response has been written (but not sent)
 template <class Impl>
 void
@@ -647,7 +526,6 @@ Peer<Impl>::complete()
 
     // Reattach
     detach_ref_.reset();
-    work_ = boost::none;
 
     message_ = beast::http::message{};
     complete_ = true;
@@ -660,6 +538,7 @@ Peer<Impl>::complete()
         impl().shared_from_this(), std::placeholders::_1));
 }
 
+// DEPRECATED
 // Called from the Handler to close the session.
 template <class Impl>
 void
@@ -672,7 +551,6 @@ Peer<Impl>::close (bool graceful)
 
     // Reattach
     detach_ref_.reset();
-    work_ = boost::none;
 
     complete_ = true;
 
@@ -686,7 +564,7 @@ Peer<Impl>::close (bool graceful)
 
     error_code ec;
     timer_.cancel (ec);
-    impl().socket_.lowest_layer().close (ec);
+    impl().stream_.lowest_layer().close (ec);
 }
 
 }

@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/http/impl/ServerImpl.h>
+#include <ripple/http/impl/Peer.h>
 #include <beast/chrono/chrono_io.h>
 #include <boost/chrono/chrono_io.hpp>
 #include <ctime>
@@ -30,44 +31,83 @@
 namespace ripple {
 namespace HTTP {
 
-ServerImpl::ServerImpl (Server& server,
-    Handler& handler, beast::Journal journal)
-    : m_server (server)
-    , m_handler (handler)
+ServerImpl::ServerImpl (Handler& handler, beast::Journal journal)
+    : handler_ (handler)
     , journal_ (journal)
-    , m_strand (io_service_)
-    , m_work (boost::in_place (std::ref (io_service_)))
-    , m_stopped (true)
+    , strand_ (io_service_)
+    , work_ (boost::in_place (std::ref (io_service_)))
+    , stopped_ (true)
     , hist_{}
 {
     thread_ = std::thread (std::bind (
         &ServerImpl::run, this));
 }
 
-ServerImpl::~ServerImpl ()
+ServerImpl::~ServerImpl()
 {
     thread_.join();
 }
 
-Ports const&
-ServerImpl::getPorts () const
+//------------------------------------------------------------------------------
+
+void
+ServerImpl::ports (std::vector<Port> const& ports)
 {
     std::lock_guard <std::mutex> lock (mutex_);
-    return state_.ports;
+    ports_ = ports;
+    update();
 }
 
 void
-ServerImpl::setPorts (Ports const& ports)
+ServerImpl::onWrite (beast::PropertyStream::Map& map)
 {
     std::lock_guard <std::mutex> lock (mutex_);
-    state_.ports = ports;
-    update();
+
+    // VFALCO TODO Write the list of doors
+
+    map ["active"] = peers_.size();
+
+    {
+        std::string s;
+        for (int i = 0; i <= high_; ++i)
+        {
+            if (i)
+                s += ", ";
+            s += std::to_string (hist_[i]);
+        }
+        map ["hist"] = s;
+    }
+
+    {
+        beast::PropertyStream::Set set ("history", map);
+        for (auto const& stat : stats_)
+        {
+            beast::PropertyStream::Map item (set);
+
+            item ["id"] = stat.id;
+            item ["when"] = stat.when;
+
+            {
+                std::stringstream ss;
+                ss << stat.elapsed;
+                item ["elapsed"] = ss.str();
+            }
+
+            item ["requests"] = stat.requests;
+            item ["bytes_in"] = stat.bytes_in;
+            item ["bytes_out"] = stat.bytes_out;
+            if (stat.ec)
+                item ["error"] = stat.ec.message();
+        }
+    }
 }
+
+//--------------------------------------------------------------------------
 
 bool
 ServerImpl::stopping () const
 {
-    return ! m_work;
+    return ! work_;
 }
 
 void
@@ -75,23 +115,18 @@ ServerImpl::stop (bool wait)
 {
     if (! stopping())
     {
-        m_work = boost::none;
+        work_ = boost::none;
         update();
     }
 
     if (wait)
-        m_stopped.wait();
+        stopped_.wait();
 }
-
-//--------------------------------------------------------------------------
-//
-// Server
-//
 
 Handler&
 ServerImpl::handler()
 {
-    return m_handler;
+    return handler_;
 }
 
 boost::asio::io_service&
@@ -108,14 +143,14 @@ void
 ServerImpl::add (BasicPeer& peer)
 {
     std::lock_guard <std::mutex> lock (mutex_);
-    state_.peers.push_back (peer);
+    peers_.push_back (peer);
 }
 
 void
 ServerImpl::add (Door& door)
 {
     std::lock_guard <std::mutex> lock (mutex_);
-    state_.doors.push_back (door);
+    door_list_.push_back (door);
 }
 
 // Removes the peer from our list of peers. This is only called from
@@ -126,14 +161,14 @@ void
 ServerImpl::remove (BasicPeer& peer)
 {
     std::lock_guard <std::mutex> lock (mutex_);
-    state_.peers.erase (state_.peers.iterator_to (peer));
+    peers_.erase (peers_.iterator_to (peer));
 }
 
 void
 ServerImpl::remove (Door& door)
 {
     std::lock_guard <std::mutex> lock (mutex_);
-    state_.doors.erase (state_.doors.iterator_to (door));
+    door_list_.erase (door_list_.iterator_to (door));
 }
 
 //--------------------------------------------------------------------------
@@ -176,50 +211,6 @@ ServerImpl::report (Stat&& stat)
     stats_.emplace_front (std::move(stat));
 }
 
-void
-ServerImpl::onWrite (beast::PropertyStream::Map& map)
-{
-    std::lock_guard <std::mutex> lock (mutex_);
-
-    // VFALCO TODO Write the list of doors
-
-    map ["active"] = state_.peers.size();
-
-    {
-        std::string s;
-        for (int i = 0; i <= high_; ++i)
-        {
-            if (i)
-                s += ", ";
-            s += std::to_string (hist_[i]);
-        }
-        map ["hist"] = s;
-    }
-
-    {
-        beast::PropertyStream::Set set ("history", map);
-        for (auto const& stat : stats_)
-        {
-            beast::PropertyStream::Map item (set);
-
-            item ["id"] = stat.id;
-            item ["when"] = stat.when;
-
-            {
-                std::stringstream ss;
-                ss << stat.elapsed;
-                item ["elapsed"] = ss.str();
-            }
-
-            item ["requests"] = stat.requests;
-            item ["bytes_in"] = stat.bytes_in;
-            item ["bytes_out"] = stat.bytes_out;
-            if (stat.ec)
-                item ["error"] = stat.ec.message();
-        }
-    }
-}
-
 //--------------------------------------------------------------------------
 
 int
@@ -235,17 +226,17 @@ ServerImpl::compare (Port const& lhs, Port const& rhs)
 void
 ServerImpl::update()
 {
-    io_service_.post (m_strand.wrap (std::bind (
+    io_service_.post (strand_.wrap (std::bind (
         &ServerImpl::on_update, this)));
 }
 
 // Updates our Door list based on settings.
 void
-ServerImpl::on_update ()
+ServerImpl::on_update()
 {
     /*
-    if (! m_strand.running_in_this_thread())
-        io_service_.dispatch (m_strand.wrap (std::bind (
+    if (! strand_.running_in_this_thread())
+        io_service_.dispatch (strand_.wrap (std::bind (
             &ServerImpl::update, this)));
     */
 
@@ -253,37 +244,36 @@ ServerImpl::on_update ()
     {
         // Make a local copy to shorten the lock
         //
-        Ports ports;
+        std::vector<Port> list;
         {
             std::lock_guard <std::mutex> lock (mutex_);
-            ports = state_.ports;
+            list = ports_;
         }
 
-        std::sort (ports.begin(), ports.end());
+        std::sort (list.begin(), list.end());
 
         // Walk the Door list and the Port list simultaneously and
         // build a replacement Door vector which we will then swap in.
         //
         Doors doors;
-        Doors::iterator door (m_doors.begin());
-        for (Ports::const_iterator port (ports.begin());
-            port != ports.end(); ++port)
+        Doors::iterator door (doors_.begin());
+        for (auto const& port : list)
         {
             int comp = 0;
 
-            while (door != m_doors.end() &&
-                    ((comp = compare (*port, (*door)->port())) > 0))
+            while (door != doors_.end() &&
+                    ((comp = compare (port, (*door)->port())) > 0))
             {
                 (*door)->cancel();
                 ++door;
             }
 
-            if (door != m_doors.end())
+            if (door != doors_.end())
             {
                 if (comp < 0)
                 {
                     doors.push_back (std::make_shared <Door> (
-                        io_service_, *this, *port));
+                        io_service_, *this, port));
                     doors.back()->listen();
                 }
                 else
@@ -296,31 +286,28 @@ ServerImpl::on_update ()
             else
             {
                 doors.push_back (std::make_shared <Door> (
-                    io_service_, *this, *port));
+                    io_service_, *this, port));
                 doors.back()->listen();
             }
         }
 
         // Any remaining Door objects are not in the new set, so cancel them.
         //
-        for (;door != m_doors.end();)
+        for (;door != doors_.end();)
             (*door)->cancel();
 
-        m_doors.swap (doors);
+        doors_.swap (doors);
     }
     else
     {
         // Cancel pending I/O on all doors.
         //
-        for (Doors::iterator iter (m_doors.begin());
-            iter != m_doors.end(); ++iter)
-        {
-            (*iter)->cancel();
-        }
+        for (auto& door : doors_)
+            door->cancel();
 
         // Remove our references to the old doors.
         //
-        m_doors.resize (0);
+        doors_.resize (0);
     }
 }
 
@@ -335,8 +322,8 @@ ServerImpl::run()
 
     io_service_.run();
 
-    m_stopped.signal();
-    m_handler.onStopped (m_server);
+    stopped_.signal();
+    handler_.onStopped (*this);
 }
 
 }

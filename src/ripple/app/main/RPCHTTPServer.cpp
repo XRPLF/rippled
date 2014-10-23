@@ -36,20 +36,21 @@ public:
     JobQueue& m_jobQueue;
     NetworkOPs& m_networkOPs;
     RPCServerHandler m_deprecatedHandler;
-    HTTP::Server m_server;
+    std::unique_ptr<HTTP::Server> m_server;
     std::unique_ptr <RippleSSLContext> m_context;
     RPC::Setup setup_;
 
     RPCHTTPServerImp (Stoppable& parent, JobQueue& jobQueue,
-            NetworkOPs& networkOPs, Resource::Manager& resourceManager,
-                RPC::Setup const& setup)
+        NetworkOPs& networkOPs, Resource::Manager& resourceManager,
+            RPC::Setup const& setup)
         : RPCHTTPServer (parent)
         , m_resourceManager (resourceManager)
         , m_journal (deprecatedLogs().journal("HTTP-RPC"))
         , m_jobQueue (jobQueue)
         , m_networkOPs (networkOPs)
         , m_deprecatedHandler (networkOPs, resourceManager)
-        , m_server (*this, deprecatedLogs().journal("HTTP"))
+        , m_server (HTTP::make_Server(
+            *this, deprecatedLogs().journal("HTTP")))
         , setup_ (setup)
     {
         if (setup_.secure)
@@ -61,12 +62,15 @@ public:
 
     ~RPCHTTPServerImp()
     {
-        m_server.stop();
+        m_server->stop();
     }
 
     void
     setup (beast::Journal journal) override
     {
+        HTTP::Server::parse(getConfig(), std::cerr);
+
+        // DEPRECATED: LEGACY CONFIG 
         if (! setup_.ip.empty() && setup_.port != 0)
         {
             auto ep = beast::IP::Endpoint::from_string (setup_.ip);
@@ -87,11 +91,11 @@ public:
                     port.port = setup_.port;
                 else
                     port.port = ep.port();
-                port.context = m_context.get ();
+                port.legacy_context = m_context.get ();
 
-                HTTP::Ports ports;
-                ports.push_back (port);
-                m_server.setPorts (ports);
+                std::vector<HTTP::Port> list;
+                list.push_back (port);
+                m_server->ports(list);
             }
         }
         else
@@ -108,7 +112,7 @@ public:
     void
     onStop() override
     {
-        m_server.stopAsync();
+        m_server->stopAsync();
     }
 
     void
@@ -120,6 +124,16 @@ public:
     //
     // HTTP::Handler
     //
+
+    void
+    on_legacy_peer_handshake (boost::asio::const_buffer buffer,
+        boost::asio::ip::tcp::endpoint remote_address,
+            std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle) override
+    {
+        // VFALCO TODO Inject Overlay
+        getApp().overlay().accept_legacy(std::move(ssl_bundle),
+            buffer, remote_address);
+    }
 
     void
     onAccept (HTTP::Session& session) override
@@ -281,7 +295,7 @@ public:
     void
     onWrite (beast::PropertyStream::Map& map) override
     {
-        m_server.onWrite (map);
+        m_server->onWrite (map);
     }
 };
 

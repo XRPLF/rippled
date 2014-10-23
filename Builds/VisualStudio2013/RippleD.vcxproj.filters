@@ -663,6 +663,9 @@
     <ClInclude Include="..\..\src\beast\beast\asio\ssl.h">
       <Filter>beast\asio</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\ssl_bundle.h">
+      <Filter>beast\asio</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\asio\tests\bind_handler.test.cpp">
       <Filter>beast\asio\tests</Filter>
     </ClCompile>
@@ -3411,12 +3414,6 @@
     <ClCompile Include="..\..\src\ripple\common\impl\KeyCache.cpp">
       <Filter>ripple\common\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\common\impl\MultiSocket.cpp">
-      <Filter>ripple\common\impl</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\common\impl\MultiSocketImpl.h">
-      <Filter>ripple\common\impl</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\common\impl\ResolverAsio.cpp">
       <Filter>ripple\common\impl</Filter>
     </ClCompile>
@@ -3430,9 +3427,6 @@
       <Filter>ripple\common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\common\KeyCache.h">
-      <Filter>ripple\common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\common\MultiSocket.h">
       <Filter>ripple\common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\common\Resolver.h">
@@ -3654,10 +3648,10 @@
     <ClInclude Include="..\..\src\ripple\http\impl\Peer.h">
       <Filter>ripple\http\impl</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\http\impl\Port.cpp">
+    <ClInclude Include="..\..\src\ripple\http\impl\PlainPeer.h">
       <Filter>ripple\http\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\http\impl\ScopedStream.cpp">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\http\impl\Port.cpp">
       <Filter>ripple\http\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\http\impl\Server.cpp">
@@ -3667,6 +3661,9 @@
       <Filter>ripple\http\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\http\impl\ServerImpl.h">
+      <Filter>ripple\http\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\http\impl\SSLPeer.h">
       <Filter>ripple\http\impl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\http\impl\Types.h">
@@ -3681,6 +3678,9 @@
     <ClCompile Include="..\..\src\ripple\http\tests\Server.test.cpp">
       <Filter>ripple\http\tests</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\http\Writer.h">
+      <Filter>ripple\http</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\json\impl\JsonPropertyStream.cpp">
       <Filter>ripple\json\impl</Filter>
     </ClCompile>
@@ -5667,7 +5667,7 @@
     <ClInclude Include="..\..\src\websocket\src\shared_const_buffer.hpp">
       <Filter>websocket\src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\websocket\src\sockets\multitls.hpp">
+    <ClInclude Include="..\..\src\websocket\src\sockets\autotls.hpp">
       <Filter>websocket\src\sockets</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\sockets\socket_base.hpp">

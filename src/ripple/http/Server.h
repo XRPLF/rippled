@@ -20,14 +20,21 @@
 #ifndef RIPPLE_HTTP_SERVER_H_INCLUDED
 #define RIPPLE_HTTP_SERVER_H_INCLUDED
 
+#include <ripple/basics/BasicConfig.h>
+#include <beast/asio/ssl_bundle.h>
+#include <beast/http/message.h>
 #include <beast/net/IPEndpoint.h>
 #include <beast/module/asio/basics/SSLContext.h>
+#include <beast/utility/ci_char_traits.h>
 #include <beast/utility/Journal.h>
 #include <beast/utility/PropertyStream.h>
+#include <boost/asio/ip/address.hpp>
+#include <boost/asio/ssl/context.hpp>
 #include <boost/system/error_code.hpp>
 #include <cstdint>
 #include <memory>
 #include <ostream>
+#include <set>
 
 namespace ripple {
 namespace HTTP {
@@ -37,30 +44,39 @@ namespace HTTP {
 /** Configuration information for a server listening port. */
 struct Port
 {
+    std::string name;
+    boost::asio::ip::address ip;
+    std::uint16_t port = 0;
+    std::set<std::string, beast::ci_less> protocols;
+    std::string ssl_key;
+    std::string ssl_cert;
+    std::string ssl_chain;
+    bool allow_admin = false;
+
+    std::shared_ptr<boost::asio::ssl::context> context;
+    beast::asio::SSLContext* legacy_context = nullptr;
+
+    // deprecated
     enum class Security
     {
         no_ssl,
         allow_ssl,
         require_ssl
     };
-
-    Security security;
-    std::uint16_t port;
+    Security security = Security::no_ssl;
     beast::IP::Endpoint addr;
-    beast::asio::SSLContext* context;
 
-    Port ();
-    Port (Port const& other);
-    Port& operator= (Port const& other);
+    Port() = default;
     Port (std::uint16_t port_, beast::IP::Endpoint const& addr_,
             Security security_, beast::asio::SSLContext* context_);
+
+    static
+    void
+    parse (Port& result, Section const& section, std::ostream& log);
 };
 
 bool operator== (Port const& lhs, Port const& rhs);
 bool operator<  (Port const& lhs, Port const& rhs);
-
-/** A set of listening ports settings. */
-typedef std::vector <Port> Ports;
 
 //------------------------------------------------------------------------------
 
@@ -88,36 +104,85 @@ struct Handler
 
     /** Called when the server has finished its stop. */
     virtual void onStopped (Server& server) = 0;
+
+    //
+    // ---
+    //
+
+    /** Called when a connection is accepted.
+        @return `true` If we should keep the connection.
+    */
+    virtual
+    bool
+    accept (boost::asio::ip::tcp::endpoint endpoint)
+    {
+        return true;
+    }
+
+    enum class Result
+    {
+        none,
+        move,
+        response
+    };
+
+    /** Called when a legacy peer protocol handshake is detected.
+        If the called function does not take ownership, then the
+        connection is closed.
+        @param buffer The unconsumed bytes in the protocol handshake
+        @param ssl_bundle The active connection.
+    */
+    virtual
+    void
+    on_legacy_peer_handshake (boost::asio::const_buffer buffer,
+        boost::asio::ip::tcp::endpoint remote_address,
+            std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle) = 0;
+
+    /** Called to process a complete HTTP request.
+        Outcomes:
+            - Does not want the request
+            - Provides a message response
+            - Takes over the socket
+    */
+    /** @{ */
+    virtual
+    Result
+    process (std::unique_ptr <beast::asio::ssl_bundle>& bundle,
+        boost::asio::ip::tcp::endpoint endpoint,
+            beast::http::message& request,
+                beast::http::message& response)
+    {
+        return Result::none;
+    }
+
+    virtual
+    Result
+    process (boost::asio::ip::tcp::socket& socket,
+        boost::asio::ip::tcp::endpoint endpoint,
+            beast::http::message& request,
+                beast::http::message& response)
+    {
+        return Result::none;
+    }
+    /** @} */
 };
 
 //------------------------------------------------------------------------------
-
-class ServerImpl;
 
 /** Multi-threaded, asynchronous HTTP server. */
 class Server
 {
 public:
-    /** Create the server using the specified handler. */
-    Server (Handler& handler, beast::Journal journal);
-
     /** Destroy the server.
         This blocks until the server stops.
     */
     virtual
-    ~Server ();
+    ~Server() = default;
 
     /** Returns the Journal associated with the server. */
+    virtual
     beast::Journal
-    journal () const;
-
-    /** Returns the listening ports settings.
-        Thread safety:
-            Safe to call from any thread.
-            Cannot be called concurrently with setPorts.
-    */
-    Ports const&
-    getPorts () const;
+    journal() const = 0;
 
     /** Set the listening ports settings.
         These take effect immediately. Any current ports that are not in the
@@ -125,15 +190,17 @@ public:
         Thread safety:
             Cannot be called concurrently.
     */
+    virtual
     void
-    setPorts (Ports const& ports);
+    ports (std::vector<Port> const& v) = 0;
 
     /** Notify the server to stop, without blocking.
         Thread safety:
             Safe to call concurrently from any thread.
     */
+    virtual
     void
-    stopAsync ();
+    stopAsync() = 0;
 
     /** Notify the server to stop, and block until the stop is complete.
         The handler's onStopped method will be called when the stop completes.
@@ -141,15 +208,25 @@ public:
             Cannot be called concurrently.
             Cannot be called from the thread of execution of any Handler functions.
     */
+    virtual
     void
-    stop ();
+    stop() = 0;
 
+    virtual
     void
-    onWrite (beast::PropertyStream::Map& map);
+    onWrite (beast::PropertyStream::Map& map) = 0;
 
-private:
-    std::unique_ptr <ServerImpl> m_impl;
+    /** Parse configuration settings into a list of ports. */
+    static
+    std::vector<Port>
+    parse (BasicConfig const& config, std::ostream& log);
 };
+
+/** Create the HTTP server using the specified handler. */
+std::unique_ptr<Server>
+make_Server (Handler& handler, beast::Journal journal);
+
+//------------------------------------------------------------------------------
 
 } // HTTP
 } // ripple

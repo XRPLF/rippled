@@ -60,7 +60,6 @@ struct ConfigSection
 #define SECTION_PATH_SEARCH_MAX         "path_search_max"
 #define SECTION_PEER_IP                 "peer_ip"
 #define SECTION_PEER_PORT               "peer_port"
-#define SECTION_PEER_PROXY_PORT         "peer_port_proxy"
 #define SECTION_PEER_PRIVATE            "peer_private"
 #define SECTION_PEERS_MAX               "peers_max"
 #define SECTION_PEER_SSL_CIPHER_LIST    "peer_ssl_cipher_list"

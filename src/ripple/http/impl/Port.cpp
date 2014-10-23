@@ -20,36 +20,12 @@
 namespace ripple {
 namespace HTTP {
 
-Port::Port ()
-    : security (Security::no_ssl)
-    , port (0)
-    , context (nullptr)
-{
-}
-
-Port::Port (Port const& other)
-    : security (other.security)
-    , port (other.port)
-    , addr (other.addr)
-    , context (other.context)
-{
-}
-
-Port& Port::operator= (Port const& other)
-{
-    port = other.port;
-    addr = other.addr;
-    security = other.security;
-    context = other.context;
-    return *this;
-}
-
 Port::Port (std::uint16_t port_, beast::IP::Endpoint const& addr_,
         Security security_, beast::asio::SSLContext* context_)
-    : security (security_)
-    , port (port_)
+    : port (port_)
+    , legacy_context (context_)
+    , security (security_)
     , addr (addr_)
-    , context (context_)
 {
 }
 

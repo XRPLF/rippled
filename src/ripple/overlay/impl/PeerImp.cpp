@@ -22,27 +22,27 @@
 #include <ripple/overlay/impl/Tuning.h>
 #include <beast/streams/debug_ostream.h>
 #include <functional>
+#include <beast/cxx14/memory.h> // <memory>
 
 namespace ripple {
 
-PeerImp::PeerImp (NativeSocketType&& socket, beast::IP::Endpoint remoteAddress,
+PeerImp::PeerImp (socket_type&& socket, beast::IP::Endpoint remoteAddress,
     OverlayImpl& overlay, Resource::Manager& resourceManager,
         PeerFinder::Manager& peerFinder, PeerFinder::Slot::ptr const& slot,
-            boost::asio::ssl::context& ssl_context, MultiSocket::Flag flags)
-    : m_owned_socket (std::move (socket))
-    , journal_ (deprecatedLogs().journal("Peer"))
+            boost::asio::ssl::context& ssl_context)
+    : journal_ (deprecatedLogs().journal("Peer"))
+    , ssl_bundle_(std::make_unique<beast::asio::ssl_bundle>(
+        ssl_context, std::move(socket)))
+    , socket_ (ssl_bundle_->socket)
+    , stream_ (ssl_bundle_->stream)
+    , strand_ (socket_.get_io_service())
+    , timer_ (socket_.get_io_service())
     , remote_address_ (remoteAddress)
     , resourceManager_ (resourceManager)
     , peerFinder_ (peerFinder)
     , overlay_ (overlay)
     , m_inbound (true)
-    , socket_ (MultiSocket::New (
-        m_owned_socket, ssl_context, flags.asBits ()))
-    , strand_ (m_owned_socket.get_io_service())
     , state_ (stateConnected)
-    , minLedger_ (0)
-    , maxLedger_ (0)
-    , timer_ (m_owned_socket.get_io_service())
     , slot_ (slot)
     , message_stream_(*this)
 {
@@ -52,21 +52,20 @@ PeerImp::PeerImp (beast::IP::Endpoint remoteAddress,
     boost::asio::io_service& io_service, OverlayImpl& overlay,
         Resource::Manager& resourceManager, PeerFinder::Manager& peerFinder,
             PeerFinder::Slot::ptr const& slot,
-                boost::asio::ssl::context& ssl_context, MultiSocket::Flag flags)
-    : m_owned_socket (io_service)
-    , journal_ (deprecatedLogs().journal("Peer"))
+                boost::asio::ssl::context& ssl_context)
+    : journal_ (deprecatedLogs().journal("Peer"))
+    , ssl_bundle_(std::make_unique<beast::asio::ssl_bundle>(
+        ssl_context, io_service))
+    , socket_ (ssl_bundle_->socket)
+    , stream_ (ssl_bundle_->stream)
+    , strand_ (socket_.get_io_service())
+    , timer_ (socket_.get_io_service())
     , remote_address_ (remoteAddress)
     , resourceManager_ (resourceManager)
     , peerFinder_ (peerFinder)
     , overlay_ (overlay)
     , m_inbound (false)
-    , socket_ (MultiSocket::New (
-        io_service, ssl_context, flags.asBits ()))
-    , strand_ (io_service)
     , state_ (stateConnecting)
-    , minLedger_ (0)
-    , maxLedger_ (0)
-    , timer_ (io_service)
     , slot_ (slot)
     , message_stream_(*this)
 {
@@ -78,12 +77,22 @@ PeerImp::~PeerImp ()
 }
 
 void
-PeerImp::start ()
+PeerImp::start()
 {
+    boost::system::error_code ec;
+    timer_.expires_from_now (nodeVerifySeconds, ec);
+    timer_.async_wait (strand_.wrap (std::bind (&PeerImp::handleVerifyTimer,
+        shared_from_this (), beast::asio::placeholders::error)));
+    if (ec)
+    {
+        journal_.error << "Failed to set verify timer.";
+        return detach ("start");
+    }
+
     if (m_inbound)
-        do_accept ();
+        do_accept();
     else
-        do_connect ();
+        do_connect();
 }
 
 void
@@ -94,8 +103,8 @@ PeerImp::close()
             &PeerImp::close, shared_from_this()));
 
     error_code ec;
-    timer_.cancel (ec);
-    socket_->close(ec);
+    timer_.cancel(ec);
+    stream_.next_layer().close(ec);
 }
 
 //------------------------------------------------------------------------------
@@ -303,21 +312,10 @@ void PeerImp::do_connect ()
     journal_.info << "Connecting to " << remote_address_;
 
     usage_ = resourceManager_.newOutboundEndpoint (remote_address_);
-
     if (usage_.disconnect ())
         return detach ("do_connect");
 
-    boost::system::error_code ec;
-    timer_.expires_from_now (nodeVerifySeconds, ec);
-    timer_.async_wait (strand_.wrap (std::bind (&PeerImp::handleVerifyTimer,
-        shared_from_this (), beast::asio::placeholders::error)));
-    if (ec)
-    {
-        journal_.error << "Failed to set verify timer.";
-        return detach ("do_connect");
-    }
-
-    socket_->next_layer <NativeSocketType>().async_connect (
+    stream_.next_layer().async_connect (
         beast::IPAddressConversion::to_asio_endpoint (remote_address_),
             strand_.wrap (std::bind (&PeerImp::on_connect,
                 shared_from_this (), beast::asio::placeholders::error)));
@@ -329,10 +327,9 @@ PeerImp::on_connect (error_code ec)
     if (detaching_ || ec == boost::asio::error::operation_aborted)
         return;
 
-    NativeSocketType::endpoint_type local_endpoint;
+    socket_type::endpoint_type local_endpoint;
     if (! ec)
-        local_endpoint = socket_->this_layer <
-            NativeSocketType> ().local_endpoint (ec);
+        local_endpoint = stream_.next_layer().local_endpoint (ec);
 
     if (ec)
     {
@@ -349,8 +346,8 @@ PeerImp::on_connect (error_code ec)
         beast::IPAddressConversion::from_asio (local_endpoint)))
         return detach("dup");
 
-    socket_->set_verify_mode (boost::asio::ssl::verify_none);
-    socket_->async_handshake (
+    stream_.set_verify_mode (boost::asio::ssl::verify_none);
+    stream_.async_handshake (
         boost::asio::ssl::stream_base::client,
         strand_.wrap (std::bind (&PeerImp::on_connect_ssl,
             std::static_pointer_cast <PeerImp> (shared_from_this ()),
@@ -366,7 +363,7 @@ PeerImp::make_request()
     m.url ("/");
     m.version (1, 1);
     m.headers.append ("User-Agent", BuildInfo::getFullVersionString());
-    //m.headers.append ("Local-Address", socket_->
+    //m.headers.append ("Local-Address", stream_.
     m.headers.append ("Remote-Address", remote_address_.to_string());
     m.headers.append ("Upgrade",
         std::string("Ripple/") + to_string (BuildInfo::getCurrentProtocol()));
@@ -431,7 +428,7 @@ PeerImp::on_write_http_request (error_code ec, std::size_t bytes_transferred)
         return;
     }
 
-    socket_->async_write_some (write_buffer_.data(),
+    stream_.async_write_some (write_buffer_.data(),
         strand_.wrap (std::bind (&PeerImp::on_write_http_request,
             shared_from_this(), beast::asio::placeholders::error,
                 beast::asio::placeholders::bytes_transferred)));
@@ -447,13 +444,9 @@ PeerImp::on_read_http_response (error_code ec, std::size_t bytes_transferred)
     if (! ec)
     {
         read_buffer_.commit (bytes_transferred);
-        bool success;
         std::size_t bytes_consumed;
-        std::tie (success, bytes_consumed) = http_parser_->write (
+        std::tie (ec, bytes_consumed) = http_parser_->write (
             read_buffer_.data());
-        if (! success)
-            ec = http_parser_->error();
-
         if (! ec)
         {
             read_buffer_.consume (bytes_consumed);
@@ -493,7 +486,7 @@ PeerImp::on_read_http_response (error_code ec, std::size_t bytes_transferred)
         return;
     }
 
-    socket_->async_read_some (read_buffer_.prepare (Tuning::readBufferBytes),
+    stream_.async_read_some (read_buffer_.prepare (Tuning::readBufferBytes),
         strand_.wrap (std::bind (&PeerImp::on_read_http_response,
             shared_from_this(), beast::asio::placeholders::error,
                 beast::asio::placeholders::bytes_transferred)));
@@ -508,7 +501,7 @@ PeerImp::on_read_http_response (error_code ec, std::size_t bytes_transferred)
         3. If HTTP request received, send HTTP response
         4. Enter protocol loop
 */
-void PeerImp::do_accept ()
+void PeerImp::do_accept()
 {
     journal_.info << "Accepted " << remote_address_;
 
@@ -519,8 +512,13 @@ void PeerImp::do_accept ()
         return;
     }
 
-    socket_->set_verify_mode (boost::asio::ssl::verify_none);
-    socket_->async_handshake (boost::asio::ssl::stream_base::server,
+    // VFALCO Hack to receive a legacy protocol connection
+    //        from the HTTP server
+    if (read_buffer_.size() > 0)
+        return do_protocol_start();
+
+    stream_.set_verify_mode (boost::asio::ssl::verify_none);
+    stream_.async_handshake (boost::asio::ssl::stream_base::server,
         strand_.wrap (std::bind (&PeerImp::on_accept_ssl,
             std::static_pointer_cast <PeerImp> (shared_from_this ()),
                 beast::asio::placeholders::error)));
@@ -581,7 +579,7 @@ PeerImp::on_read_http_detect (error_code ec, std::size_t bytes_transferred)
         return;
     }
 
-    socket_->async_read_some (read_buffer_.prepare (Tuning::readBufferBytes),
+    stream_.async_read_some (read_buffer_.prepare (Tuning::readBufferBytes),
         strand_.wrap (std::bind (&PeerImp::on_read_http_detect,
             shared_from_this(), beast::asio::placeholders::error,
                 beast::asio::placeholders::bytes_transferred)));
@@ -597,12 +595,9 @@ PeerImp::on_read_http_request (error_code ec, std::size_t bytes_transferred)
     if (! ec)
     {
         read_buffer_.commit (bytes_transferred);
-        bool success;
         std::size_t bytes_consumed;
-        std::tie (success, bytes_consumed) = http_parser_->write (
+        std::tie (ec, bytes_consumed) = http_parser_->write (
             read_buffer_.data());
-        if (! success)
-            ec = http_parser_->error();
 
         if (! ec)
         {
@@ -651,7 +646,7 @@ PeerImp::on_read_http_request (error_code ec, std::size_t bytes_transferred)
         return;
     }
 
-    socket_->async_read_some (read_buffer_.prepare (Tuning::readBufferBytes),
+    stream_.async_read_some (read_buffer_.prepare (Tuning::readBufferBytes),
         strand_.wrap (std::bind (&PeerImp::on_read_http_request,
             shared_from_this(), beast::asio::placeholders::error,
                 beast::asio::placeholders::bytes_transferred)));
@@ -688,7 +683,7 @@ PeerImp::on_write_http_response (error_code ec, std::size_t bytes_transferred)
         return;
     }
 
-    socket_->async_write_some (write_buffer_.data(),
+    stream_.async_write_some (write_buffer_.data(),
         strand_.wrap (std::bind (&PeerImp::on_write_http_response,
             shared_from_this(), beast::asio::placeholders::error,
                 beast::asio::placeholders::bytes_transferred)));
@@ -704,7 +699,7 @@ PeerImp::on_write_http_response (error_code ec, std::size_t bytes_transferred)
 // connection detail. Also need to establish no man in the middle attack
 // is in progress.
 void
-PeerImp::do_protocol_start ()
+PeerImp::do_protocol_start()
 {
     if (!sendHello ())
     {
@@ -738,7 +733,7 @@ PeerImp::on_read_protocol (error_code ec, std::size_t bytes_transferred)
         return;
     }
 
-    socket_->async_read_some (read_buffer_.prepare (Tuning::readBufferBytes),
+    stream_.async_read_some (read_buffer_.prepare (Tuning::readBufferBytes),
         strand_.wrap (std::bind (&PeerImp::on_read_protocol,
             shared_from_this(), beast::asio::placeholders::error,
                 beast::asio::placeholders::bytes_transferred)));
@@ -2138,15 +2133,14 @@ PeerImp::detach (const char* rsn, bool graceful)
 
         if (graceful)
         {
-            socket_->async_shutdown (
-                strand_.wrap ( std::bind(
-                    &PeerImp::handleShutdown,
-                    std::static_pointer_cast <PeerImp> (shared_from_this ()),
+            stream_.async_shutdown (strand_.wrap (std::bind(
+                &PeerImp::handleShutdown, shared_from_this(),
                     beast::asio::placeholders::error)));
         }
         else
         {
-            socket_->cancel ();
+            error_code ec;
+            stream_.next_layer().cancel(ec);
         }
 
         // VFALCO TODO Stop doing this.
@@ -2188,7 +2182,7 @@ PeerImp::sendForce (const Message::pointer& packet)
     {
         send_packet_ = packet;
 
-        boost::asio::async_write (*socket_,
+        boost::asio::async_write (stream_,
             boost::asio::buffer (packet->getBuffer ()),
             strand_.wrap (std::bind (
                 &PeerImp::handleWrite,
@@ -2220,7 +2214,7 @@ PeerImp::hashLatestFinishedMessage (const SSL *sslSession, unsigned char *hash,
 bool
 PeerImp::calculateSessionCookie ()
 {
-    SSL* ssl = socket_->ssl_handle ();
+    SSL* ssl = stream_.native_handle();
 
     if (!ssl)
     {

@@ -20,56 +20,19 @@
 #ifndef RIPPLE_HTTP_SESSION_H_INCLUDED
 #define RIPPLE_HTTP_SESSION_H_INCLUDED
 
+#include <ripple/http/Writer.h>
 #include <beast/http/message.h>
-#include <beast/smart_ptr/SharedPtr.h>
 #include <beast/net/IPEndpoint.h>
 #include <beast/utility/Journal.h>
-#include <beast/module/asio/http/HTTPRequest.h>
+#include <functional>
 #include <ostream>
+#include <vector>
 
 namespace ripple {
 
 namespace HTTP {
 
 class Session;
-
-/** Scoped ostream-based RAII container for building the HTTP response. */
-// VFALCO TODO Use abstract_ostream
-class ScopedStream
-{
-public:
-    explicit ScopedStream (Session& session);
-    ScopedStream (ScopedStream const& other);
-
-    template <typename T>
-    ScopedStream (Session& session, T const& t)
-        : m_session (session)
-    {
-        m_ostream << t;
-    }
-
-    ScopedStream (Session& session, std::ostream& manip (std::ostream&));
-
-    ~ScopedStream ();
-
-    std::ostringstream& ostream () const;
-
-    std::ostream& operator<< (std::ostream& manip (std::ostream&)) const;
-
-    template <typename T>
-    std::ostream& operator<< (T const& t) const
-    {
-        return m_ostream << t;
-    }
-
-private:
-    ScopedStream& operator= (ScopedStream const&); // disallowed
-
-    Session& m_session;
-    std::ostringstream mutable m_ostream;
-};
-
-//------------------------------------------------------------------------------
 
 /** Persistent state information for a connection session.
     These values are preserved between calls for efficiency.
@@ -129,22 +92,12 @@ public:
     virtual
     void
     write (void const* buffer, std::size_t bytes) = 0;
-    /** @} */
 
-    /** Output support using ostream. */
-    /** @{ */
-    ScopedStream
-    operator<< (std::ostream& manip (std::ostream&))
-    {
-        return ScopedStream (*this, manip);
-    }
+    virtual
+    void
+    write (std::shared_ptr <Writer> const& writer,
+        bool keep_alive) = 0;
 
-    template <typename T>
-    ScopedStream
-    operator<< (T const& t)
-    {
-        return ScopedStream (*this, t);
-    }
     /** @} */
 
     /** Detach the session.

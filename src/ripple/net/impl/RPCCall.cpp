@@ -987,7 +987,7 @@ int RPCCall::fromCommandLine (const std::vector<std::string>& vCmd)
         }
         else
         {
-            auto setup = setup_RPC (getConfig()["rpc"]);
+            auto setup = setup_RPC (getConfig());
 
             Json::Value jvParams (Json::arrayValue);
 

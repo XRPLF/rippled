@@ -17,41 +17,46 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_HTTP_WRITER_H_INCLUDED
+#define RIPPLE_HTTP_WRITER_H_INCLUDED
+
+#include <boost/asio/buffer.hpp>
+#include <functional>
+#include <vector>
+
 namespace ripple {
 namespace HTTP {
 
-ScopedStream::ScopedStream (Session& session)
-    : m_session (session)
+class Writer
 {
-}
+public:
+    /** Returns `true` if there is no more data to pull. */
+    virtual
+    bool
+    complete() = 0;
 
-ScopedStream::ScopedStream (ScopedStream const& other)
-    : m_session (other.m_session)
-{
-}
+    /** Removes bytes from the input sequence. */
+    virtual
+    void
+    consume (std::size_t bytes) = 0;
 
-ScopedStream::ScopedStream (Session& session,
-                            std::ostream& manip (std::ostream&))
-    : m_session (session)
-{
-    m_ostream << manip;
-}
+    /** Add data to the input sequence.
+        @param bytes A hint to the number of bytes desired.
+        @param resume A functor to later resume execution.
+        @return `true` if the writer is ready to provide more data.
+    */
+    virtual
+    bool
+    prepare (std::size_t bytes,
+        std::function<void(void)> resume) = 0;
 
-ScopedStream::~ScopedStream ()
-{
-    if (! m_ostream.str().empty())
-        m_session.write (m_ostream.str());
-}
-
-std::ostream& ScopedStream::operator<< (std::ostream& manip (std::ostream&)) const
-{
-    return m_ostream << manip;
-}
-
-std::ostringstream& ScopedStream::ostream () const
-{
-    return m_ostream;
-}
+    /** Returns a ConstBufferSequence representing the input sequence. */
+    virtual
+    std::vector<boost::asio::const_buffer>
+    data() = 0;
+};
 
 }
 }
+
+#endif

@@ -207,16 +207,6 @@ public:
     /** Listening port number for peer connections. */
     int peerListeningPort;
 
-    /** PROXY listening port number
-        If this is not zero, it indicates an additional port number on
-        which we should accept incoming Peer connections that will also
-        require a PROXY handshake.
-
-        The PROXY Protocol:
-        http://haproxy.1wt.eu/download/1.5/doc/proxy-protocol.txt
-    */
-    int peerPROXYListeningPort;
-
     /** List of Validators entries from rippled.cfg */
     std::vector <std::string> validators;
 
@@ -443,7 +433,7 @@ struct Setup
 }
 
 RPC::Setup
-setup_RPC (Section const& s);
+setup_RPC (Config const& cfg);
 
 } // ripple
 

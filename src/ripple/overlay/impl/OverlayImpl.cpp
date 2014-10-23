@@ -71,6 +71,17 @@ OverlayImpl::OverlayImpl (Stoppable& parent,
     , m_resolver (resolver)
     , m_nextShortId (0)
 {
+    auto const& section = getConfig()["overlay"];
+    set (setup_.use_handshake, "use_handshake", section);
+    set (setup_.auto_connect, "auto_connect", section);
+    std::string promote;
+    set (promote, "become_superpeer", section);
+    if (promote == "never")
+        setup_.promote = Promote::never;
+    else if (promote == "always")
+        setup_.promote = Promote::always;
+    else
+        setup_.promote = Promote::automatic;
 }
 
 OverlayImpl::~OverlayImpl ()
@@ -83,8 +94,14 @@ OverlayImpl::~OverlayImpl ()
         return this->m_child_count == 0; });
 }
 
+OverlayImpl::Setup const&
+OverlayImpl::setup() const
+{
+    return setup_;
+}
+
 void
-OverlayImpl::accept (bool proxyHandshake, socket_type&& socket)
+OverlayImpl::accept (socket_type&& socket)
 {
     // An error getting an endpoint means the connection closed.
     // Just do nothing and the socket will be closed by the caller.
@@ -107,30 +124,29 @@ OverlayImpl::accept (bool proxyHandshake, socket_type&& socket)
     if (slot == nullptr)
         return;
 
-    MultiSocket::Flag flags (
-        MultiSocket::Flag::server_role | MultiSocket::Flag::ssl_required);
+    addpeer (std::make_shared <PeerImp> (std::move (socket), remote_endpoint,
+        *this, m_resourceManager, *m_peerFinder, slot, m_ssl_context));
+}
 
-    if (proxyHandshake)
-        flags = flags.with (MultiSocket::Flag::proxy);
+void
+OverlayImpl::accept_legacy (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
+    boost::asio::const_buffer buffer,
+        boost::asio::ip::tcp::endpoint remote_address)
+{
+    boost::system::error_code ec;
+    auto const local_endpoint (ssl_bundle->socket.local_endpoint(ec));
+    if (ec)
+        return;
 
-    PeerImp::ptr const peer (std::make_shared <PeerImp> (
-        std::move (socket), remote_endpoint, *this, m_resourceManager,
-            *m_peerFinder, slot, m_ssl_context, flags));
+    auto const slot = m_peerFinder->new_inbound_slot (
+        beast::IPAddressConversion::from_asio(local_endpoint),
+            beast::IPAddressConversion::from_asio(remote_address));
 
-    {
-        std::lock_guard <decltype(m_mutex)> lock (m_mutex);
-        {
-            std::pair <PeersBySlot::iterator, bool> const result (
-                m_peers.emplace (slot, peer));
-            assert (result.second);
-            (void) result.second;
-        }
-        ++m_child_count;
-
-        // This has to happen while holding the lock,
-        // otherwise the socket might not be canceled during a stop.
-        peer->start ();
-    }
+    addpeer (std::make_shared<PeerImp>(std::move(ssl_bundle),
+        boost::asio::const_buffers_1(buffer),
+            beast::IPAddressConversion::from_asio(remote_address),
+                *this, m_resourceManager, *m_peerFinder, slot,
+                    m_ssl_context));
 }
 
 void
@@ -150,27 +166,8 @@ OverlayImpl::connect (beast::IP::Endpoint const& remote_endpoint)
     if (slot == nullptr)
         return;
 
-    MultiSocket::Flag const flags (
-        MultiSocket::Flag::client_role | MultiSocket::Flag::ssl);
-
-    PeerImp::ptr const peer (std::make_shared <PeerImp> (
-        remote_endpoint, m_io_service, *this, m_resourceManager,
-            *m_peerFinder, slot, m_ssl_context, flags));
-
-    {
-        std::lock_guard <decltype(m_mutex)> lock (m_mutex);
-        {
-            std::pair <PeersBySlot::iterator, bool> const result (
-                m_peers.emplace (slot, peer));
-            assert (result.second);
-            (void) result.second;
-        }
-        ++m_child_count;
-
-        // This has to happen while holding the lock,
-        // otherwise the socket might not be canceled during a stop.
-        peer->start ();
-    }
+    addpeer (std::make_shared <PeerImp> (remote_endpoint, m_io_service, *this,
+        m_resourceManager, *m_peerFinder, slot, m_ssl_context));
 }
 
 Peer::ShortId
@@ -296,22 +293,8 @@ OverlayImpl::onPrepare ()
     // peer connections:
     if (! getConfig ().RUN_STANDALONE)
     {
-        m_doorDirect = make_PeerDoor (
-            PeerDoor::sslRequired,
-            *this,
-            getConfig ().PEER_IP,
-            getConfig ().peerListeningPort,
-            m_io_service);
-
-        if (getConfig ().peerPROXYListeningPort != 0)
-        {
-            m_doorProxy = make_PeerDoor (
-                PeerDoor::sslAndPROXYRequired,
-                *this,
-                getConfig ().PEER_IP,
-                getConfig ().peerPROXYListeningPort,
-                m_io_service);
-        }
+        m_doorDirect = make_PeerDoor (*this, getConfig ().PEER_IP,
+            getConfig ().peerListeningPort, m_io_service);
     }
 }
 
@@ -459,10 +442,10 @@ OverlayImpl::getActivePeers ()
 
     ret.reserve (m_publicKeyMap.size ());
 
-    for (auto const& pair : m_publicKeyMap)
+    for (auto const& e : m_publicKeyMap)
     {
-        assert (pair.second);
-        ret.push_back (pair.second);
+        assert (e.second);
+        ret.push_back (e.second);
     }
 
     return ret;
@@ -480,6 +463,23 @@ OverlayImpl::findPeerByShortID (Peer::ShortId const& id)
 }
 
 //------------------------------------------------------------------------------
+
+void
+OverlayImpl::addpeer (std::shared_ptr<PeerImp> const& peer)
+{
+    std::lock_guard <decltype(m_mutex)> lock (m_mutex);
+    {
+        std::pair <PeersBySlot::iterator, bool> const result (
+            m_peers.emplace (peer->slot(), peer));
+        assert (result.second);
+        (void) result.second;
+    }
+    ++m_child_count;
+
+    // This has to happen while holding the lock,
+    // otherwise the socket might not be canceled during a stop.
+    peer->start();
+}
 
 void
 OverlayImpl::autoconnect()

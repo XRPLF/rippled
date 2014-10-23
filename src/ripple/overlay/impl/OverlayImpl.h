@@ -52,12 +52,28 @@ private:
     using error_code = boost::system::error_code;
     using yield_context = boost::asio::yield_context;
 
+    enum class Promote
+    {
+        automatic,
+        never,
+        always
+    };
+
+    struct Setup
+    {
+        bool use_handshake = false;
+        bool auto_connect = true;
+        Promote promote = Promote::automatic;
+    };
+
     typedef hash_map <PeerFinder::Slot::ptr,
-                      std::weak_ptr <PeerImp>> PeersBySlot;
+        std::weak_ptr <PeerImp>> PeersBySlot;
 
     typedef hash_map <RippleAddress, Peer::ptr> PeerByPublicKey;
 
     typedef hash_map <Peer::ShortId, Peer::ptr> PeerByShortId;
+
+    Setup setup_;
 
     // VFALCO TODO Change to regular mutex and eliminate re-entrancy
     std::recursive_mutex m_mutex;
@@ -114,6 +130,14 @@ public:
     OverlayImpl (OverlayImpl const&) = delete;
     OverlayImpl& operator= (OverlayImpl const&) = delete;
 
+    Setup const&
+    setup() const;
+
+    void
+    accept_legacy (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
+        boost::asio::const_buffer buffer,
+            boost::asio::ip::tcp::endpoint remote_address) override;
+
     void
     connect (beast::IP::Endpoint const& remote_endpoint) override;
 
@@ -132,12 +156,10 @@ public:
 public:
     /** Process an incoming connection using the Peer protocol.
         The caller transfers ownership of the socket via rvalue move.
-        @param proxyHandshake `true` If a PROXY handshake is required.
         @param socket A socket in the accepted state.
     */
     void
-    accept (bool proxyHandshake,
-        socket_type&& socket);
+    accept (socket_type&& socket);
 
     Peer::ShortId
     next_id();
@@ -203,6 +225,9 @@ public:
     onPeerDisconnect (Peer::ptr const& peer);
 
 private:
+    void
+    addpeer (std::shared_ptr<PeerImp> const& peer);
+
     void
     sendpeers();
 

@@ -204,7 +204,7 @@ public:
             assert (result.second);
             (void) result.second;
             WriteLog (lsDEBUG, WSServerHandlerLog) <<
-                "Ws:: on_open(" << cpClient->get_socket ().remote_endpoint ().to_string () << ")";
+                "Ws:: on_open(" << cpClient->get_socket ().remote_endpoint() << ")";
         }
         catch (...)
         {
@@ -226,7 +226,7 @@ public:
         try
         {
             WriteLog (lsDEBUG, WSServerHandlerLog) <<
-           "Ws:: on_pong(" << cpClient->get_socket ().remote_endpoint ().to_string () << ")";
+           "Ws:: on_pong(" << cpClient->get_socket ().remote_endpoint() << ")";
         }
         catch (...)
         {
@@ -258,7 +258,7 @@ public:
                 {
                     WriteLog (lsDEBUG, WSServerHandlerLog) <<
                         "Ws:: " << reason << "(" <<
-                           cpClient->get_socket ().remote_endpoint ().to_string () << ") not found";
+                           cpClient->get_socket ().remote_endpoint() << ") not found";
                 }
                 catch (...)
                 {
@@ -274,7 +274,7 @@ public:
         {
             WriteLog (lsDEBUG, WSServerHandlerLog) <<
                 "Ws:: " << reason << "(" <<
-                   cpClient->get_socket ().remote_endpoint ().to_string () << ") found";
+                   cpClient->get_socket ().remote_endpoint () << ") found";
         }
         catch (...)
         {
@@ -306,7 +306,7 @@ public:
             try
             {
                 WriteLog (lsDEBUG, WSServerHandlerLog) <<
-                    "Ws:: Rejected(" << to_string (cpClient->get_socket ().remote_endpoint ()) <<
+                    "Ws:: Rejected(" << cpClient->get_socket().remote_endpoint() <<
                     ") '" << mpMessage->get_payload () << "'";
             }
             catch (...)
@@ -366,7 +366,7 @@ public:
         try
         {
             WriteLog (lsDEBUG, WSServerHandlerLog) <<
-                "Ws:: Receiving(" << to_string (cpClient->get_socket ().remote_endpoint ()) <<
+                "Ws:: Receiving(" << cpClient->get_socket ().remote_endpoint () <<
                 ") '" << mpMessage->get_payload () << "'";
         }
         catch (...)

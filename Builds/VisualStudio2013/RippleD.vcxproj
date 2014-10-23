@@ -161,6 +161,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\ssl.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\ssl_bundle.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\asio\tests\bind_handler.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2375,11 +2377,6 @@
     <ClCompile Include="..\..\src\ripple\common\impl\KeyCache.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\common\impl\MultiSocket.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\common\impl\MultiSocketImpl.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\common\impl\ResolverAsio.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2392,8 +2389,6 @@
     <ClInclude Include="..\..\src\ripple\common\jsonrpc_fields.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\common\KeyCache.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\common\MultiSocket.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\common\Resolver.h">
     </ClInclude>
@@ -2570,10 +2565,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\http\impl\Peer.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\http\impl\PlainPeer.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\http\impl\Port.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\http\impl\ScopedStream.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\http\impl\Server.cpp">
@@ -2584,6 +2578,8 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\http\impl\ServerImpl.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\http\impl\SSLPeer.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\http\impl\Types.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\http\Server.h">
@@ -2593,6 +2589,8 @@
     <ClCompile Include="..\..\src\ripple\http\tests\Server.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\http\Writer.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\json\impl\JsonPropertyStream.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -4210,7 +4208,7 @@
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\shared_const_buffer.hpp">
     </ClInclude>
-    <ClInclude Include="..\..\src\websocket\src\sockets\multitls.hpp">
+    <ClInclude Include="..\..\src\websocket\src\sockets\autotls.hpp">
     </ClInclude>
     <ClInclude Include="..\..\src\websocket\src\sockets\socket_base.hpp">
     </ClInclude>
