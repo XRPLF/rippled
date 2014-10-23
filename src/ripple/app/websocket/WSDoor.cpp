@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <ripple/app/websocket/WSDoor.h>
-
 #include <beast/cxx14/memory.h> // <memory>
 
 namespace ripple {
