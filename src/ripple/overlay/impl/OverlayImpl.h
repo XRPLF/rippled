@@ -111,6 +111,42 @@ public:
 
     ~OverlayImpl ();
 
+    PeerSequence
+    getActivePeers () override;
+
+    Peer::ptr
+    findPeerByShortID (Peer::ShortId const& id) override;
+
+    /** Process an incoming connection using the Peer protocol.
+        The caller transfers ownership of the socket via rvalue move.
+        @param socket A socket in the accepted state.
+    */
+    void
+    accept (socket_type&& socket);
+
+    Peer::ShortId
+    next_id();
+
+    void
+    remove (PeerFinder::Slot::ptr const& slot);
+
+    /** Called when a peer has connected successfully
+        This is called after the peer handshake has been completed and during
+        peer activation. At this point, the peer address and the public key
+        are known.
+    */
+    void
+    activate (Peer::ptr const& peer);
+
+    /** A peer is being disconnected
+        This is called during the disconnection of a known, activated peer. It
+        will not be called for outbound peer connections that don't succeed or
+        for connections of peers that are dropped prior to being activated.
+    */
+    void
+    onPeerDisconnect (Peer::ptr const& peer);
+
+private:
     OverlayImpl (OverlayImpl const&) = delete;
     OverlayImpl& operator= (OverlayImpl const&) = delete;
 
@@ -123,33 +159,10 @@ public:
     Json::Value
     json() override;
 
-    PeerSequence
-    getActivePeers () override;
-
-    Peer::ptr
-    findPeerByShortID (Peer::ShortId const& id) override;
-
-public:
-    /** Process an incoming connection using the Peer protocol.
-        The caller transfers ownership of the socket via rvalue move.
-        @param socket A socket in the accepted state.
-    */
-    void
-    accept (socket_type&& socket);
-
-    Peer::ShortId
-    next_id();
-
     //--------------------------------------------------------------------------
 
     void
     check_stopped ();
-
-    void
-    release ();
-
-    void
-    remove (PeerFinder::Slot::ptr const& slot);
 
     //
     // Stoppable
@@ -184,23 +197,9 @@ public:
 
     //--------------------------------------------------------------------------
 
-    /** Called when a peer has connected successfully
-        This is called after the peer handshake has been completed and during
-        peer activation. At this point, the peer address and the public key
-        are known.
-    */
     void
-    activate (Peer::ptr const& peer);
+    release();
 
-    /** A peer is being disconnected
-        This is called during the disconnection of a known, activated peer. It
-        will not be called for outbound peer connections that don't succeed or
-        for connections of peers that are dropped prior to being activated.
-    */
-    void
-    onPeerDisconnect (Peer::ptr const& peer);
-
-private:
     void
     sendpeers();
 
