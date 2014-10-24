@@ -438,6 +438,7 @@ public:
             state->keys.insert (key));
         // Public key must not already exist
         assert (result.second);
+        (void) result.second;
 
         // Change state and update counts
         state->counts.remove (*slot);
