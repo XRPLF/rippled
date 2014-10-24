@@ -21,6 +21,7 @@
 #define RIPPLE_NODESTORE_FACTORY_H_INCLUDED
 
 #include <ripple/nodestore/Backend.h>
+#include <ripple/nodestore/Scheduler.h>
 
 namespace ripple {
 namespace NodeStore {

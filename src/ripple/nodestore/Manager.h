@@ -20,6 +20,8 @@
 #ifndef RIPPLE_NODESTORE_MANAGER_H_INCLUDED
 #define RIPPLE_NODESTORE_MANAGER_H_INCLUDED
 
+#include <ripple/nodestore/Factory.h>
+
 namespace ripple {
 namespace NodeStore {
 
