@@ -83,13 +83,7 @@ PeerImp::start ()
 void
 PeerImp::close()
 {
-    if (! strand_.running_in_this_thread())
-        return strand_.post (std::bind (
-            &PeerImp::close, shared_from_this()));
-
-    error_code ec;
-    timer_.cancel(ec);
-    stream_.next_layer().close(ec);
+    detach("close", false);
 }
 
 //------------------------------------------------------------------------------
