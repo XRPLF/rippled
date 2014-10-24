@@ -295,6 +295,8 @@ OverlayImpl::onPrepare ()
 void
 OverlayImpl::onStart ()
 {
+    // mutex not needed since we aren't running
+    ++m_child_count;
     boost::asio::spawn (m_io_service, std::bind (
         &OverlayImpl::do_timer, this, std::placeholders::_1));
 }
@@ -486,9 +488,6 @@ OverlayImpl::sendpeers()
 void
 OverlayImpl::do_timer (yield_context yield)
 {
-    // mutex not needed since we aren't running
-    ++m_child_count;
-
     for(;;)
     {
         m_peerFinder->once_per_second();
