@@ -462,14 +462,6 @@ def config_env(toolchain, variant, env):
 
 #-------------------------------------------------------------------------------
 
-def addSource(path, env, variant_dirs, CPPPATH=[]):
-    if CPPPATH:
-        env = env.Clone()
-        env.Prepend(CPPPATH=CPPPATH)
-    return env.Object(Beast.variantFile(path, variant_dirs))
-
-#-------------------------------------------------------------------------------
-
 # Configure the base construction environment
 root_dir = Dir('#').srcnode().get_abspath() # Path to this SConstruct file
 build_dir = os.path.join('build')
@@ -520,6 +512,25 @@ for source in [
         PROTOCOUTDIR=os.path.join(build_dir, 'proto'),
         PROTOCPYTHONOUTDIR=None)
 
+#-------------------------------------------------------------------------------
+
+class ObjectAccumulator(object):
+    def __init__(self, env, variant_dirs):
+        self.env = env
+        self.variant_dirs = variant_dirs
+        self.objects = []
+
+    def add_sources(self, *filenames, **kwds):
+        for filename in filenames:
+            env = self.env
+            if kwds:
+                env = env.Clone()
+                env.Prepend(**kwds)
+            path = 'src/ripple/unity/%s' % filename
+            o = env.Object(Beast.variantFile(path, self.variant_dirs))
+            self.objects.append(o)
+
+
 # Declare the targets
 aliases = collections.defaultdict(list)
 msvc_configs = []
@@ -538,80 +549,107 @@ for toolchain in all_toolchains:
             }
         for dest, source in variant_dirs.iteritems():
             env.VariantDir(dest, source, duplicate=0)
-        objects = []
-        objects.append(addSource('src/ripple/unity/app.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/app1.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/app2.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/app3.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/app4.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/app5.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/app6.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/app7.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/app8.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/app9.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/basics.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/beast.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/beastc.c', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/common.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/core.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/data.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/http.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/json.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/net.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/overlay.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/peerfinder.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/protobuf.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/ripple.proto.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/resource.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/rpcx.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/sitefiles.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/sslutil.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/types.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/validators.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/websocket.cpp', env, variant_dirs))
 
-        objects.append(addSource('src/ripple/unity/nodestore.cpp', env, variant_dirs, [
-            'src/leveldb/include',
-            #'src/hyperleveldb/include', # hyper
-            'src/rocksdb2/include',
-            ]))
+        accum = ObjectAccumulator(env, variant_dirs)
+        accum.add_sources(
+            'app.cpp',
+            'app1.cpp',
+            'app2.cpp',
+            'app3.cpp',
+            'app4.cpp',
+            'app5.cpp',
+            'app6.cpp',
+            'app7.cpp',
+            'app8.cpp',
+            'app9.cpp',
+            'basics.cpp',
+            'beast.cpp',
+            'common.cpp',
+            'core.cpp',
+            'data.cpp',
+            'http.cpp',
+            'json.cpp',
+            'net.cpp',
+            'overlay.cpp',
+            'peerfinder.cpp',
+            'protobuf.cpp',
+            'ripple.proto.cpp',
+            'resource.cpp',
+            'rpcx.cpp',
+            'sitefiles.cpp',
+            'sslutil.cpp',
+            'types.cpp',
+            'validators.cpp',
+            'websocket.cpp',
+        )
 
-        objects.append(addSource('src/ripple/unity/leveldb.cpp', env, variant_dirs, [
-            'src/leveldb/',
-            'src/leveldb/include',
-            'src/snappy/snappy',
-            'src/snappy/config',
-            ]))
+        accum.add_sources('beastc.c', CCFLAGS=['-Wno-array-bounds'])
+        accum.add_sources(
+            'nodestore.cpp',
+            CPPPATH=[
+                'src/leveldb/include',
+                #'src/hyperleveldb/include', # hyper
+                'src/rocksdb2/include',
+            ]
+        )
 
-        objects.append(addSource('src/ripple/unity/hyperleveldb.cpp', env, variant_dirs, [
-            'src/hyperleveldb',
-            'src/snappy/snappy',
-            'src/snappy/config',
-            ]))
+        if 'gcc' in toolchain:
+            args = {'CCFLAGS': ['-Wno-maybe-uninitialized']}
+        else:
+            args = {}
 
-        objects.append(addSource('src/ripple/unity/rocksdb.cpp', env, variant_dirs, [
-            'src/rocksdb2',
-            'src/rocksdb2/include',
-            'src/snappy/snappy',
-            'src/snappy/config',
-            ]))
+        accum.add_sources(
+            'leveldb.cpp',
+            CPPPATH=[
+                'src/leveldb/',
+                'src/leveldb/include',
+                'src/snappy/snappy',
+                'src/snappy/config',
+            ],
+            **args
+        )
 
-        objects.append(addSource('src/ripple/unity/snappy.cpp', env, variant_dirs, [
-            'src/snappy/snappy',
-            'src/snappy/config',
-            ]))
+        accum.add_sources(
+            'hyperleveldb.cpp',
+            CPPPATH=[
+                'src/hyperleveldb',
+                'src/snappy/snappy',
+                'src/snappy/config',
+            ],
+            **args
+        )
+
+        accum.add_sources(
+            'rocksdb.cpp',
+            CPPPATH=[
+                'src/rocksdb2',
+                'src/rocksdb2/include',
+                'src/snappy/snappy',
+                'src/snappy/config',
+            ],
+            **args
+        )
+
+        accum.add_sources(
+            'snappy.cpp',
+            CCFLAGS=['-Wno-unused-function'],
+            CPPPATH=[
+                'src/snappy/snappy',
+                'src/snappy/config',
+            ]
+        )
 
         if toolchain == "clang" and Beast.system.osx:
-            objects.append(addSource('src/ripple/unity/beastobjc.mm', env, variant_dirs))
+            accum.add_sources('beastobjc.mm')
 
         target = env.Program(
-            target = os.path.join(variant_dir, 'rippled'),
-            source = objects
+            target=os.path.join(variant_dir, 'rippled'),
+            source=accum.objects
             )
 
         if toolchain == default_toolchain and variant == default_variant:
             default_target = target
-            install_target = env.Install (build_dir, source = default_target)
+            install_target = env.Install (build_dir, source=default_target)
             env.Alias ('install', install_target)
             env.Default (install_target)
             aliases['all'].extend(install_target)

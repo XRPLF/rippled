@@ -682,8 +682,6 @@ static bool parseObject (
     boost::ptr_vector<SerializedType> data;
     Json::Value::Members members (json.getMemberNames ());
 
-    int itrCount = 0;
-
     for (Json::Value::Members::iterator it (members.begin ());
         it != members.end (); ++it)
     {
