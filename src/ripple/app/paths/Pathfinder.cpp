@@ -1006,6 +1006,7 @@ std::string Pathfinder::pathTypeToString(PathType_t const& type)
 void Pathfinder::fillPaths(PaymentType type, PathCostList const& costs)
 {
     auto& list = mPathTable[type];
+    assert (list.empty());
     for (auto& cost: costs)
         list.push_back ({cost.first, makePath(cost.second)});
 }
@@ -1026,17 +1027,6 @@ void Pathfinder::initPathTable()
     fillPaths(
         pt_XRP_to_nonXRP, {
             {1, "sfd"},   // source -> book -> gateway
-            {3, "sfad"},  // source -> book -> account -> destination
-            {5, "sfaad"}, // source -> book -> account -> account -> destination
-            {6, "sbfd"},  // source -> book -> book -> destination
-            {8, "sbafd"}, // source -> book -> account -> book -> destination
-            {9, "sbfad"}, // source -> book -> book -> account -> destination
-            {10, "sbafad"}
-        });
-
-    fillPaths(
-        pt_XRP_to_nonXRP, {
-            {1, "sfd"},
             {3, "sfad"},  // source -> book -> account -> destination
             {5, "sfaad"}, // source -> book -> account -> account -> destination
             {6, "sbfd"},  // source -> book -> book -> destination
@@ -1070,7 +1060,6 @@ void Pathfinder::initPathTable()
                             // destination
             {6, "saxfad"},
             {6, "sabfd"},   // source -> gateway -> book -> book -> destination
-            {6, "sabfd"},
             {7, "saaad"},
         });
 
@@ -1083,6 +1072,7 @@ void Pathfinder::initPathTable()
             {4, "sxfd"},
             {5, "saxfd"},
             {5, "sxfad"},
+            {5, "sbfd"},
             {6, "saxfad"},
             {6, "sabfd"},
             {7, "saafd"},
