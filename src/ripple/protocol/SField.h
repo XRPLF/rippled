@@ -419,13 +419,12 @@ extern SField const sfSigningAccount;
 // ARRAY/1 is reserved for end of array
 extern SField const sfSigningAccounts;
 extern SField const sfTxnSignatures;
-extern SField const sfSignatures;
+extern SField const sfSignerEntries;
 extern SField const sfTemplate;
 extern SField const sfNecessary;
 extern SField const sfSufficient;
 extern SField const sfAffectedNodes;
 extern SField const sfMemos;
-extern SField const sfSignerEntries;
 
 } // ripple
 

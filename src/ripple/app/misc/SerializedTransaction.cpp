@@ -213,19 +213,35 @@ bool SerializedTransaction::checkSign (RippleAddress const& public_key) const
     }
 }
 
-void SerializedTransaction::multiSign (RippleAddress const& naAccountPrivate)
+void SerializedTransaction::insertSigningAccount (
+        RippleAddress const& accountID,
+        RippleAddress const& accountPublic,
+        RippleAddress const& accountPrivate)
 {
     Blob signature;
-    naAccountPrivate.accountPrivateSign (getSigningHash (), signature);
-    setFieldVL (sfMultiSignature, signature);
+    accountPrivate.accountPrivateSign (getSigningHash (), signature);
 
-    // !!!! DEBUG !!!!
-//  STVariableLength tempSigForPrint (getFieldVL (sfMultiSignature));
-//  std::cerr << "multisign" << std::endl;
-//  std::cerr << "  signer:    " << naAccountPrivate.humanAccountPrivate () << std::endl;
-//  std::cerr << "  hash:      " << to_string (getSigningHash ()) << std::endl;
-//  std::cerr << "  signature: " << tempSigForPrint.getText () << std::endl;
-    // !!!! END DEBUG !!!!
+    boost::ptr_vector <SerializedType> data;
+    data.reserve (3);
+    {
+        auto acctID = std::make_unique <STAccount> (sfAccount);
+        acctID->setValueNCA (accountID);
+        data.push_back (acctID.release ());
+    }
+    {
+        auto acctPublic =
+            std::make_unique <STVariableLength> (
+                sfPublicKey, accountPublic.getAccountPublic ());
+
+        data.push_back (acctPublic.release ());
+    }
+    {
+        auto multiSig =
+            std::make_unique <STVariableLength> (sfMultiSignature, signature);
+        data.push_back (multiSig.release ());
+    }
+    STObject signingAccount (sfSigningAccount, data);
+    setFieldObject (sfSigningAccount, signingAccount);
 }
 
 void SerializedTransaction::setSigningPubKey (RippleAddress const& naSignPubKey)

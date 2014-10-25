@@ -358,42 +358,6 @@ std::string STObject::getFullText () const
     return ret;
 }
 
-void STObject::add (Serializer& s, bool withSigningFields) const
-{
-    std::map<int, const SerializedType*> fields;
-
-    for (SerializedType const& elem : mData)
-    {
-        // pick out the fields and sort them
-        if ((elem.getSType () != STI_NOTPRESENT) &&
-            elem.getFName ().shouldInclude (withSigningFields))
-        {
-            fields.insert (std::make_pair (elem.getFName ().fieldCode, &elem));
-        }
-    }
-
-    typedef std::map<int, const SerializedType*>::value_type field_iterator;
-    for (auto const& mapEntry : fields)
-    {
-        // insert them in sorted order
-        const SerializedType* field = mapEntry.second;
-
-        // When we serialize an object inside another object,
-        // the type associated by rule with this field name
-        // must be OBJECT, or the object cannot be deserialized
-        assert ((field->getSType() != STI_OBJECT) ||
-            (field->getFName().fieldType == STI_OBJECT));
-
-        field->addFieldID (s);
-        field->add (s);
-
-        if (dynamic_cast<const STArray*> (field) != nullptr)
-            s.addFieldID (STI_ARRAY, 1);
-        else if (dynamic_cast<const STObject*> (field) != nullptr)
-            s.addFieldID (STI_OBJECT, 1);
-    }
-}
-
 std::string STObject::getText () const
 {
     std::string ret = "{";
@@ -423,39 +387,17 @@ bool STObject::isEquivalent (const SerializedType& t) const
         return false;
     }
 
-    typedef boost::ptr_vector<SerializedType>::const_iterator const_iter;
-    const_iter it1 = mData.begin (), end1 = mData.end ();
-    const_iter it2 = v->mData.begin (), end2 = v->mData.end ();
+    if (mType != nullptr && (v->mType == mType))
+        return equivalentSTObjectSameTemplate (*this, *v);
 
-    while ((it1 != end1) && (it2 != end2))
-    {
-        if ((it1->getSType () != it2->getSType ()) || !it1->isEquivalent (*it2))
-        {
-            if (it1->getSType () != it2->getSType ())
-            {
-                WriteLog (lsDEBUG, STObject) << "notEquiv type " <<
-                    it1->getFullText() << " != " <<  it2->getFullText();
-            }
-            else
-            {
-                WriteLog (lsDEBUG, STObject) << "notEquiv " <<
-                     it1->getFullText() << " != " <<  it2->getFullText();
-            }
-            return false;
-        }
-
-        ++it1;
-        ++it2;
-    }
-
-    return (it1 == end1) && (it2 == end2);
+    return equivalentSTObject (*this, *v);
 }
 
 uint256 STObject::getHash (std::uint32_t prefix) const
 {
     Serializer s;
     s.add32 (prefix);
-    add (s, true);
+    add (s, IncludeSigningFields::yes);
     return s.getSHA512Half ();
 }
 
@@ -463,7 +405,7 @@ uint256 STObject::getSigningHash (std::uint32_t prefix) const
 {
     Serializer s;
     s.add32 (prefix);
-    add (s, false);
+    add (s, IncludeSigningFields::no);
     return s.getSHA512Half ();
 }
 
@@ -744,12 +686,6 @@ STAmount const& STObject::getFieldAmount (SField::ref field) const
     return getFieldByConstRef <STAmount> (field, empty);
 }
 
-const STArray& STObject::getFieldArray (SField::ref field) const
-{
-    static STArray const empty;
-    return getFieldByConstRef <STArray> (field, empty);
-}
-
 STPathSet const& STObject::getFieldPathSet (SField::ref field) const
 {
     static STPathSet const empty{};
@@ -760,6 +696,18 @@ const STVector256& STObject::getFieldV256 (SField::ref field) const
 {
     static STVector256 const empty{};
     return getFieldByConstRef <STVector256> (field, empty);
+}
+
+const STArray& STObject::getFieldArray (SField::ref field) const
+{
+    static STArray const empty;
+    return getFieldByConstRef <STArray> (field, empty);
+}
+
+const STObject& STObject::getFieldObject (SField::ref field) const
+{
+    static STObject const empty;
+    return getFieldByConstRef <STObject> (field, empty);
 }
 
 void STObject::setFieldU8 (SField::ref field, unsigned char v)
@@ -835,6 +783,11 @@ void STObject::setFieldArray (SField::ref field, STArray const& v)
     setFieldUsingAssignment (field, v);
 }
 
+void STObject::setFieldObject (SField::ref field, STObject const& v)
+{
+    setFieldUsingAssignment (field, v);
+}
+
 Json::Value STObject::getJson (int options) const
 {
     Json::Value ret (Json::objectValue);
@@ -903,6 +856,128 @@ bool STObject::operator== (const STObject& obj) const
     }
 
     return true;
+}
+
+void STObject::add (Serializer & s, IncludeSigningFields sortType) const
+{
+    SortedFieldPtrVec const sortedFields = getSortedFields (*this, sortType);
+
+    for (auto const field : sortedFields)
+    {
+        // When we serialize an object inside another object,
+        // the type associated by rule with this field name
+        // must be OBJECT, or the object cannot be de-serialized
+        assert ((field->getSType() != STI_OBJECT) ||
+            (field->getFName().fieldType == STI_OBJECT));
+
+        field->addFieldID (s);
+        field->add (s);
+
+        if (dynamic_cast<const STArray*> (field) != nullptr)
+            s.addFieldID (STI_ARRAY, 1);
+        else if (dynamic_cast<const STObject*> (field) != nullptr)
+            s.addFieldID (STI_OBJECT, 1);
+    }
+}
+
+STObject::SortedFieldPtrVec
+STObject::getSortedFields (
+    STObject const& objToSort, IncludeSigningFields sortType)
+{
+    SortedFieldPtrVec sf;
+    sf.reserve (objToSort.getCount ());
+
+    // Choose the fields that we need to sort.
+    for (SerializedType const& elem : objToSort.mData)
+    {
+        // Pick out the fields and sort them
+        if ((elem.getSType () != STI_NOTPRESENT) &&
+            elem.getFName ().shouldInclude (
+                sortType == IncludeSigningFields::yes))
+        {
+            sf.push_back (&elem);
+        }
+    }
+
+    // Sort the fields by fieldCode.
+    using Itr = SortedFieldPtrVec::const_iterator;
+    std::sort (sf.begin (), sf.end (),
+        [] (SerializedType const* a, SerializedType const* b) -> bool {
+            return a->getFName ().fieldCode < b->getFName ().fieldCode;});
+
+    // There should never be duplicate fields in an STObject. Verify that
+    // in debug mode.
+    assert (std::adjacent_find (sf.cbegin (), sf.cend ()) == sf.cend ());
+
+    return sf;
+}
+
+bool STObject::equivalentSTObjectSameTemplate (
+    STObject const& obj1, STObject const& obj2)
+{
+    assert (obj1.mType != nullptr);
+    assert (obj1.mType == obj2.mType);
+
+    using const_iter = boost::ptr_vector<SerializedType>::const_iterator;
+    const_iter it1 = obj1.begin (), end1 = obj1.end ();
+    const_iter it2 = obj2.begin (), end2 = obj2.end ();
+
+    while ((it1 != end1) && (it2 != end2))
+    {
+        if ((it1->getSType () != it2->getSType ()) || !it1->isEquivalent (*it2))
+        {
+            if (it1->getSType () != it2->getSType ())
+            {
+                WriteLog (lsDEBUG, STObject) << "notEquiv type " <<
+                    it1->getFullText() << " != " <<  it2->getFullText();
+            }
+            else
+            {
+                WriteLog (lsDEBUG, STObject) << "notEquiv " <<
+                     it1->getFullText() << " != " <<  it2->getFullText();
+            }
+            return false;
+        }
+        ++it1;
+        ++it2;
+    }
+
+    return (it1 == end1) && (it2 == end2);
+}
+
+bool STObject::equivalentSTObject (STObject const& obj1, STObject const& obj2)
+{
+    SortedFieldPtrVec sf1 = getSortedFields (obj1, IncludeSigningFields::yes);
+    SortedFieldPtrVec sf2 = getSortedFields (obj2, IncludeSigningFields::yes);
+
+    using const_iter = SortedFieldPtrVec::const_iterator;
+    const_iter it1 = sf1.begin (), end1 = sf1.end ();
+    const_iter it2 = sf2.begin (), end2 = sf2.end ();
+
+    while ((it1 != end1) && (it2 != end2))
+    {
+        SerializedType const* const e1 = *it1;
+        SerializedType const* const e2 = *it2;
+
+        if ((e1->getSType () != e2->getSType ()) || !e1->isEquivalent (*e2))
+        {
+            if (e1->getSType () != e2->getSType ())
+            {
+                WriteLog (lsDEBUG, STObject) << "notEquiv type " <<
+                    e1->getFullText() << " != " <<  e2->getFullText();
+            }
+            else
+            {
+                WriteLog (lsDEBUG, STObject) << "notEquiv " <<
+                     e1->getFullText() << " != " <<  e2->getFullText();
+            }
+            return false;
+        }
+        ++it1;
+        ++it2;
+    }
+
+    return (it1 == end1) && (it2 == end2);
 }
 
 //------------------------------------------------------------------------------

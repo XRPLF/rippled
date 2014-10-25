@@ -85,9 +85,9 @@ TxFormats::TxFormats ()
         ;
 
     add ("SignerListSet", ttSIGNER_LIST_SET)
-            << SOElement (sfSignerQuorum,     SOE_OPTIONAL)
-            << SOElement (sfSignerEntries,    SOE_OPTIONAL)
-            ;
+        << SOElement (sfSignerQuorum,         SOE_OPTIONAL)
+        << SOElement (sfSignerEntries,        SOE_OPTIONAL)
+        ;
 }
 
 void TxFormats::addCommonFields (Item& item)
@@ -106,7 +106,8 @@ void TxFormats::addCommonFields (Item& item)
         << SOElement(sfMemos,               SOE_OPTIONAL)
         << SOElement(sfSigningPubKey,       SOE_REQUIRED)
         << SOElement(sfTxnSignature,        SOE_OPTIONAL)
-        << SOElement(sfMultiSignature,      SOE_OPTIONAL)
+        << SOElement(sfSigningAccount,      SOE_OPTIONAL) // for get_signingaccount
+        << SOElement(sfSigningAccounts,     SOE_OPTIONAL) // for submit_multisigned
         ;
 }
 

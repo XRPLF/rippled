@@ -221,7 +221,7 @@ SField const sfCreateCode     = make::one(&sfCreateCode,     STI_VL, 11, "Create
 SField const sfMemoType       = make::one(&sfMemoType,       STI_VL, 12, "MemoType");
 SField const sfMemoData       = make::one(&sfMemoData,       STI_VL, 13, "MemoData");
 SField const sfMemoFormat     = make::one(&sfMemoFormat,     STI_VL, 14, "MemoFormat");
-SField const sfMultiSignature = make::one(&sfMultiSignature, STI_VL, 15, "MultiSignature", SField::sMD_Default, SField::notSigning);
+SField const sfMultiSignature = make::one(&sfMultiSignature, STI_VL, 15, "MultiSignature");
 
 // account
 SField const sfAccount     = make::one(&sfAccount,     STI_ACCOUNT, 1, "Account");
@@ -255,15 +255,14 @@ SField const sfSigningAccount      = make::one(&sfSigningAccount,      STI_OBJEC
 
 // array of objects
 // ARRAY/1 is reserved for end of array
-SField const sfSigningAccounts  = make::one(&sfSigningAccounts,  STI_ARRAY,  2, "SigningAccounts");
+SField const sfSigningAccounts  = make::one(&sfSigningAccounts,  STI_ARRAY,  2, "SigningAccounts", SField::sMD_Default, SField::notSigning);
 SField const sfTxnSignatures    = make::one(&sfTxnSignatures,    STI_ARRAY,  3, "TxnSignatures", SField::sMD_Default, SField::notSigning);
-SField const sfSignatures       = make::one(&sfSignatures,       STI_ARRAY,  4, "Signatures");
+SField const sfSignerEntries    = make::one(&sfSignerEntries,    STI_ARRAY,  4, "SignerEntries");
 SField const sfTemplate         = make::one(&sfTemplate,         STI_ARRAY,  5, "Template");
 SField const sfNecessary        = make::one(&sfNecessary,        STI_ARRAY,  6, "Necessary");
 SField const sfSufficient       = make::one(&sfSufficient,       STI_ARRAY,  7, "Sufficient");
 SField const sfAffectedNodes    = make::one(&sfAffectedNodes,    STI_ARRAY,  8, "AffectedNodes");
 SField const sfMemos            = make::one(&sfMemos,            STI_ARRAY,  9, "Memos");
-SField const sfSignerEntries    = make::one(&sfSignerEntries,    STI_ARRAY, 10, "SignerEntries");
 
 SField::SField (SerializedTypeID tid, int fv, const char* fn,
                 int meta, IsSigning signing)

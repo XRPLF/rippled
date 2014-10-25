@@ -402,8 +402,8 @@ private:
         return jvRequest;
     }
 
-    // get_multisignature
-    Json::Value parseGetMultiSignature (Json::Value const& jvParams)
+    // get_signingaccount
+    Json::Value parseGetSigningAccount (Json::Value const& jvParams)
     {
         Json::Value     params {Json::objectValue};
         Json::Reader    reader;
@@ -692,10 +692,10 @@ private:
 
             return jvRequest;
         }
-        
+
         return rpcError (rpcINVALID_PARAMS);
     }
-    
+
     // sms <text>
     Json::Value parseSMS (Json::Value const& jvParams)
     {
@@ -884,7 +884,7 @@ public:
             {   "feature",              &RPCParser::parseFeature,               0,  2   },
             {   "fetch_info",           &RPCParser::parseFetchInfo,             0,  1   },
             {   "get_counts",           &RPCParser::parseGetCounts,             0,  1   },
-            {   "get_multisignature",   &RPCParser::parseGetMultiSignature,     1,  1   },
+            {   "get_signingaccount",   &RPCParser::parseGetSigningAccount,     1,  1   },
             {   "json",                 &RPCParser::parseJson,                  2,  2   },
             {   "ledger",               &RPCParser::parseLedger,                0,  2   },
             {   "ledger_accept",        &RPCParser::parseAsIs,                  0,  0   },

@@ -35,6 +35,13 @@ class STObject
     : public SerializedType
     , public CountedObject <STObject>
 {
+private:
+    enum class IncludeSigningFields : unsigned char
+    {
+        no,
+        yes,
+    };
+
 public:
     static char const* getCountedObjectName () { return "STObject"; }
 
@@ -102,10 +109,8 @@ public:
 
     virtual void add (Serializer & s) const override
     {
-        add (s, true);    // just inner elements
+        add (s, IncludeSigningFields::yes);    // just inner elements
     }
-
-    void add (Serializer & s, bool withSignature) const;
 
     // VFALCO NOTE does this return an expensive copy of an object with a
     //             dynamic buffer?
@@ -113,7 +118,7 @@ public:
     Serializer getSerializer () const
     {
         Serializer s;
-        add (s);
+        add (s, IncludeSigningFields::yes);
         return s;
     }
 
@@ -126,16 +131,6 @@ public:
     int addObject (const SerializedType & t)
     {
         mData.push_back (t.clone ().release ());
-        return mData.size () - 1;
-    }
-    int giveObject (std::unique_ptr<SerializedType> t)
-    {
-        mData.push_back (t.release ());
-        return mData.size () - 1;
-    }
-    int giveObject (SerializedType * t)
-    {
-        mData.push_back (t);
         return mData.size () - 1;
     }
     const boost::ptr_vector<SerializedType>& peekData () const
@@ -220,6 +215,7 @@ public:
     STPathSet const& getFieldPathSet (SField::ref field) const;
     const STVector256& getFieldV256 (SField::ref field) const;
     const STArray& getFieldArray (SField::ref field) const;
+    const STObject& getFieldObject (SField::ref field) const;
 
     void setFieldU8 (SField::ref field, unsigned char);
     void setFieldU16 (SField::ref field, std::uint16_t);
@@ -237,6 +233,7 @@ public:
     void setFieldPathSet (SField::ref field, STPathSet const&);
     void setFieldV256 (SField::ref field, STVector256 const& v);
     void setFieldArray (SField::ref field, STArray const& v);
+    void setFieldObject (SField::ref field, STObject const& v);
 
     template <class Tag>
     void setFieldH160 (SField::ref field, base_uint<160, Tag> const& v)
@@ -318,10 +315,41 @@ public:
     }
 
 private:
+    int giveObject (std::unique_ptr<SerializedType> t)
+    {
+        mData.push_back (t.release ());
+        return mData.size () - 1;
+    }
+    int giveObject (SerializedType * t)
+    {
+        mData.push_back (t);
+        return mData.size () - 1;
+    }
+
+    void add (Serializer & s, IncludeSigningFields sortType) const;
+
     virtual STObject* duplicate () const override
     {
         return new STObject (*this);
     }
+
+
+    // Types and functions for sorting the entries in an STObject in the
+    // order that they will be serialized.  Note: they are not sorted into
+    // pointer value order, they are sorted by
+    using SortedFieldPtrVec = std::vector<SerializedType const*>;
+    static SortedFieldPtrVec getSortedFields (
+        STObject const& objToSort, IncludeSigningFields sortType);
+
+    // Two different ways to compare STObjects.
+    //
+    // This one works only if the SOTemplates are the same.  Presumably it
+    // runs faster since there's no sorting.
+    static bool equivalentSTObjectSameTemplate (
+        STObject const& obj1, STObject const& obj2);
+
+    // This way of comparing STObjects always works, but is slower.
+    static bool equivalentSTObject (STObject const& obj1, STObject const& obj2);
 
     // Implementation for getting (most) fields that return by value.
     //
