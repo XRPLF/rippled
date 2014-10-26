@@ -17,16 +17,35 @@
 */
 //==============================================================================
 
-#if BEAST_INCLUDE_BEASTCONFIG
-#include <BeastConfig.h>
-#endif
+#ifndef BEAST_ASIO_HTTPREQUEST_H_INCLUDED
+#define BEAST_ASIO_HTTPREQUEST_H_INCLUDED
 
-#include <beast/module/asio/HTTPField.cpp>
-#include <beast/module/asio/HTTPHeaders.cpp>
-#include <beast/module/asio/HTTPMessage.cpp>
-#include <beast/module/asio/HTTPRequest.cpp>
-#include <beast/module/asio/HTTPResponse.cpp>
-#include <beast/module/asio/HTTPVersion.cpp>
-#include <beast/module/asio/HTTPParser.cpp>
-#include <beast/module/asio/HTTPRequestParser.cpp>
-#include <beast/module/asio/HTTPResponseParser.cpp>
+#include <beast/module/asio/HTTPMessage.h>
+
+namespace beast {
+
+class HTTPRequest : public HTTPMessage
+{
+public:
+    /** Construct a complete response from values.
+        Ownership of the fields and body parameters are
+        transferred from the caller.
+    */
+    HTTPRequest (
+        HTTPVersion const& version_,
+        StringPairArray& fields,
+        DynamicBuffer& body,
+        unsigned short method_);
+
+    unsigned short method () const;
+
+    /** Convert the request into a string, excluding the body. */
+    String toString () const;
+
+private:
+    unsigned short m_method;
+};
+
+}
+
+#endif

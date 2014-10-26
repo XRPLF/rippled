@@ -17,16 +17,41 @@
 */
 //==============================================================================
 
-#if BEAST_INCLUDE_BEASTCONFIG
-#include <BeastConfig.h>
-#endif
+#include <beast/module/asio/HTTPField.h>
 
-#include <beast/module/asio/HTTPField.cpp>
-#include <beast/module/asio/HTTPHeaders.cpp>
-#include <beast/module/asio/HTTPMessage.cpp>
-#include <beast/module/asio/HTTPRequest.cpp>
-#include <beast/module/asio/HTTPResponse.cpp>
-#include <beast/module/asio/HTTPVersion.cpp>
-#include <beast/module/asio/HTTPParser.cpp>
-#include <beast/module/asio/HTTPRequestParser.cpp>
-#include <beast/module/asio/HTTPResponseParser.cpp>
+namespace beast {
+
+HTTPField::HTTPField ()
+{
+}
+
+HTTPField::HTTPField (String name_, String value_)
+    : m_name (name_)
+    , m_value (value_)
+{
+}
+
+HTTPField::HTTPField (HTTPField const& other)
+    : m_name (other.m_name)
+    , m_value (other.m_value)
+{
+}
+
+HTTPField& HTTPField::operator= (HTTPField const& other)
+{
+    m_name = other.m_name;
+    m_value = other.m_value;
+    return *this;
+}
+
+String HTTPField::name () const
+{
+    return m_name;
+}
+
+String HTTPField::value () const
+{
+    return m_value;
+}
+
+}

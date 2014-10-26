@@ -17,16 +17,31 @@
 */
 //==============================================================================
 
-#if BEAST_INCLUDE_BEASTCONFIG
-#include <BeastConfig.h>
-#endif
+#include <beast/module/asio/HTTPRequest.h>
 
-#include <beast/module/asio/HTTPField.cpp>
-#include <beast/module/asio/HTTPHeaders.cpp>
-#include <beast/module/asio/HTTPMessage.cpp>
-#include <beast/module/asio/HTTPRequest.cpp>
-#include <beast/module/asio/HTTPResponse.cpp>
-#include <beast/module/asio/HTTPVersion.cpp>
-#include <beast/module/asio/HTTPParser.cpp>
-#include <beast/module/asio/HTTPRequestParser.cpp>
-#include <beast/module/asio/HTTPResponseParser.cpp>
+namespace beast {
+
+HTTPRequest::HTTPRequest (
+    HTTPVersion const& version_,
+    StringPairArray& fields,
+    DynamicBuffer& body,
+    unsigned short method_)
+    : HTTPMessage (version_, fields, body)
+    , m_method (method_)
+{
+}
+
+unsigned short HTTPRequest::method () const
+{
+    return m_method;
+}
+
+String HTTPRequest::toString () const
+{
+    String s;
+    s << "Method: " << String::fromNumber (method ()) << newLine;
+    s << this->HTTPMessage::toString ();
+    return s;
+}
+
+}

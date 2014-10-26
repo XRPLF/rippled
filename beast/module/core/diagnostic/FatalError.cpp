@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <beast/module/core/diagnostic/FatalError.h>
 #include <beast/unit_test/suite.h>
 
 namespace beast {
