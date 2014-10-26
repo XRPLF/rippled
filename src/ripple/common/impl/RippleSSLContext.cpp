@@ -24,6 +24,7 @@
 #include <beast/utility/static_initializer.h>
 #include <cstdint>
 #include <sstream>
+#include <stdexcept>
 
 namespace ripple {
 
@@ -65,7 +66,7 @@ public:
     static void info_handler (SSL const* ssl, int event, int);
 
     // Pretty prints an error message
-    std::string error_message (std::string const& what,
+    static std::string error_message (std::string const& what,
         boost::system::error_code const& ec);
 
     //--------------------------------------------------------------------------
@@ -75,13 +76,19 @@ public:
     //--------------------------------------------------------------------------
 
     // Does common initialization for all but the bare context type.
+    static void initCommon (boost::asio::ssl::context& context);
     void initCommon ();
 
     //--------------------------------------------------------------------------
 
+    static void initAnonymous (boost::asio::ssl::context& context,
+        std::string const& cipherList);
     void initAnonymous (std::string const& cipherList);
 
     //--------------------------------------------------------------------------
+
+    static void initAuthenticated (boost::asio::ssl::context& context,
+        std::string key_file, std::string cert_file, std::string chain_file);
 
     void initAuthenticated (
         std::string key_file, std::string cert_file, std::string chain_file);
@@ -182,41 +189,50 @@ std::string RippleSSLContextImp::getRawDHParams (int keySize)
     return params;
 }
 
-void RippleSSLContextImp::initCommon ()
+void RippleSSLContextImp::initCommon (boost::asio::ssl::context& context)
 {
-    m_context.set_options (
+    context.set_options (
         boost::asio::ssl::context::default_workarounds |
         boost::asio::ssl::context::no_sslv2 |
         boost::asio::ssl::context::no_sslv3 |
         boost::asio::ssl::context::single_dh_use);
 
     SSL_CTX_set_tmp_dh_callback (
-        m_context.native_handle (),
+        context.native_handle (),
         tmp_dh_handler);
 
     SSL_CTX_set_info_callback (
-        m_context.native_handle (),
+        context.native_handle (),
         info_handler);
+}
+
+void RippleSSLContextImp::initCommon ()
+{
+    initCommon(m_context);
+}
+
+void RippleSSLContextImp::initAnonymous (
+    boost::asio::ssl::context& context, std::string const& cipherList)
+{
+    initCommon(context);
+    int const result = SSL_CTX_set_cipher_list (
+        context.native_handle (),
+        cipherList.c_str ());
+    if (result != 1)
+        throw std::invalid_argument("SSL_CTX_set_cipher_list failed");
 }
 
 void RippleSSLContextImp::initAnonymous (std::string const& cipherList)
 {
-    initCommon ();
-
-    int const result = SSL_CTX_set_cipher_list (
-        m_context.native_handle (),
-        cipherList.c_str ());
-
-    if (result != 1)
-        beast::FatalError ("invalid cipher list", __FILE__, __LINE__);
+    initAnonymous(m_context, cipherList);
 }
 
-void RippleSSLContextImp::initAuthenticated (
+void RippleSSLContextImp::initAuthenticated (boost::asio::ssl::context& context,
     std::string key_file, std::string cert_file, std::string chain_file)
 {
-    initCommon ();
+    initCommon (context);
 
-    SSL_CTX* const ssl = m_context.native_handle ();
+    SSL_CTX* const ssl = context.native_handle ();
 
     bool cert_set = false;
 
@@ -224,7 +240,7 @@ void RippleSSLContextImp::initAuthenticated (
     {
         boost::system::error_code ec;
 
-        m_context.use_certificate_file (
+        context.use_certificate_file (
             cert_file, boost::asio::ssl::context::pem, ec);
 
         if (ec)
@@ -289,7 +305,7 @@ void RippleSSLContextImp::initAuthenticated (
     {
         boost::system::error_code ec;
 
-        m_context.use_private_key_file (key_file,
+        context.use_private_key_file (key_file,
             boost::asio::ssl::context::pem, ec);
 
         if (ec)
@@ -305,6 +321,12 @@ void RippleSSLContextImp::initAuthenticated (
         beast::FatalError ("Invalid key in SSL private key file.",
             __FILE__, __LINE__);
     }
+}
+
+void RippleSSLContextImp::initAuthenticated (
+    std::string key_file, std::string cert_file, std::string chain_file)
+{
+    initAuthenticated (m_context, key_file, cert_file, chain_file);
 }
 
 // A simple RAII container for a DH
@@ -423,5 +445,34 @@ SSLContext::~SSLContext ()
 }
 
 //------------------------------------------------------------------------------
+
+/** Create a self-signed SSL context that allows anonymous Diffie Hellman. */
+std::shared_ptr<boost::asio::ssl::context>
+make_ssl_context()
+{
+    std::shared_ptr<boost::asio::ssl::context> context =
+        std::make_shared<boost::asio::ssl::context> (
+            boost::asio::ssl::context::sslv23);
+    // By default, allow anonymous DH.
+    RippleSSLContextImp::initAnonymous (
+        *context, "ALL:!LOW:!EXP:!MD5:@STRENGTH");
+    // VFALCO NOTE, It seems the WebSocket context never has
+    // set_verify_mode called, for either setting of WEBSOCKET_SECURE
+    context->set_verify_mode (boost::asio::ssl::verify_none);
+    return context;
+}
+
+/** Create an authenticated SSL context using the specified files. */
+std::shared_ptr<boost::asio::ssl::context>
+make_authenticated_ssl_context (std::string const& key_file,
+    std::string const& cert_file, std::string const& chain_file)
+{
+    std::shared_ptr<boost::asio::ssl::context> context =
+        std::make_shared<boost::asio::ssl::context> (
+            boost::asio::ssl::context::sslv23);
+    RippleSSLContextImp::initAuthenticated(*context,
+        key_file, cert_file, chain_file);
+    return context;
+}
 
 }
