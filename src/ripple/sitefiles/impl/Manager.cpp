@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+#include <ripple/sitefiles/Sitefiles.h>
+#include <ripple/sitefiles/impl/Logic.h>
+#include <beast/module/core/core.h>
 #include <functional>
 
 namespace ripple {

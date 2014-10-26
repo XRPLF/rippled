@@ -457,9 +457,6 @@
     <Filter Include="ripple\sitefiles">
       <UniqueIdentifier>{CB0AC82D-AEA3-F41C-847F-D6ECA4971891}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ripple\sitefiles\api">
-      <UniqueIdentifier>{6CF7CC29-14E2-50C4-6480-38DA08CCA125}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ripple\sitefiles\impl">
       <UniqueIdentifier>{1D95DF26-0788-BD2C-2864-8B038A51FD58}</UniqueIdentifier>
     </Filter>
@@ -4425,18 +4422,6 @@
     <ClInclude Include="..\..\src\ripple\rpc\Status.h">
       <Filter>ripple\rpc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\sitefiles\api\Listener.h">
-      <Filter>ripple\sitefiles\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\sitefiles\api\Manager.h">
-      <Filter>ripple\sitefiles\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\sitefiles\api\Section.h">
-      <Filter>ripple\sitefiles\api</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\sitefiles\api\SiteFile.h">
-      <Filter>ripple\sitefiles\api</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\sitefiles\impl\Logic.h">
       <Filter>ripple\sitefiles\impl</Filter>
     </ClInclude>
@@ -4446,12 +4431,12 @@
     <ClCompile Include="..\..\src\ripple\sitefiles\impl\Section.cpp">
       <Filter>ripple\sitefiles\impl</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\sitefiles\impl\Site.h">
-      <Filter>ripple\sitefiles\impl</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\sitefiles\impl\SiteFile.cpp">
       <Filter>ripple\sitefiles\impl</Filter>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\sitefiles\Sitefiles.h">
+      <Filter>ripple\sitefiles</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\sslutil\bignum_error.h">
       <Filter>ripple\sslutil</Filter>
     </ClInclude>
@@ -4680,9 +4665,6 @@
     <ClCompile Include="..\..\src\ripple\unity\sitefiles.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\unity\sitefiles.h">
-      <Filter>ripple\unity</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\snappy.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>

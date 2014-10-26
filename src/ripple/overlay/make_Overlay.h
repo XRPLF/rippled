@@ -23,7 +23,7 @@
 #include <ripple/overlay/Overlay.h>
 
 #include <ripple/resource/api/Manager.h>
-#include <ripple/sitefiles/api/Manager.h>
+#include <ripple/sitefiles/Sitefiles.h>
 #include <ripple/common/Resolver.h>
 
 #include <beast/threads/Stoppable.h>

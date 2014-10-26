@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <beast/module/core/maths/Random.h>
 #include <beast/unit_test/suite.h>
 
 namespace ripple {

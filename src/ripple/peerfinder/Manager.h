@@ -21,7 +21,7 @@
 #define RIPPLE_PEERFINDER_MANAGER_H_INCLUDED
 
 #include <ripple/peerfinder/Slot.h>
-#include <ripple/sitefiles/api/Manager.h>
+#include <ripple/sitefiles/Sitefiles.h>
 #include <beast/chrono/abstract_clock.h>
 #include <beast/module/core/files/File.h>
 

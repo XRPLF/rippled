@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <beast/module/core/text/LexicalCast.h>
+#include <beast/utility/Debug.h>
 #include <boost/regex.hpp>
 
 namespace ripple {

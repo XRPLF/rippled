@@ -20,9 +20,12 @@
 #ifndef RIPPLE_SITEFILES_LOGIC_H_INCLUDED
 #define RIPPLE_SITEFILES_LOGIC_H_INCLUDED
 
-#include <ripple/common/UnorderedContainers.h>
-
+#include <beast/http/URL.h>
+#include <beast/module/asio/http/HTTPResponse.h> // DEPRECATED
+#include <boost/regex.hpp>
+#include <map>
 #include <memory>
+#include <set>
 
 namespace ripple {
 namespace SiteFiles {
@@ -62,7 +65,7 @@ class Logic
 {
 public:
     typedef std::set <Listener*> Listeners;
-    typedef hash_map <beast::URL, SiteFile> SiteFiles;
+    typedef std::map <beast::URL, SiteFile> SiteFiles;
 
     struct State
     {
@@ -78,11 +81,9 @@ public:
 
     SharedState m_state;
     beast::Journal m_journal;
-    std::unique_ptr <beast::asio::HTTPClientBase> m_client;
 
     explicit Logic (beast::Journal journal)
         : m_journal (journal)
-        , m_client (beast::asio::HTTPClientBase::New (journal))
     {
     }
 
@@ -118,6 +119,15 @@ public:
 
     void addURL (std::string const& urlstr)
     {
+        // VFALCO This is commented out because the HTTPClient
+        //        implementation is now obsolete. A new HTTP client
+        //        that uses the latest best practices (asio coroutines,
+        //        beast::http::message and beast::http::parser) should
+        //        be used.
+        //
+        //        NOTE SiteFiles is currently an unused module.
+        //
+#if 0
         auto url = beast::parse_URL (urlstr);
 
         if (!url.first)
@@ -142,6 +152,7 @@ public:
         beast::HTTPResponse const& response (*result.second);
 
         processResponse (url.second, response);
+#endif
     }
 
     //--------------------------------------------------------------------------

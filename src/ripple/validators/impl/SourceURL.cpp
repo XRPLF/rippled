@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <beast/module/asio/asio.h>
 #include <memory>
 
 namespace ripple {
@@ -27,10 +26,22 @@ class SourceURLImp
     : public SourceURL
     , public beast::LeakChecked <SourceURLImp>
 {
+private:
+    beast::URL m_url;
+
+    // VFALCO This is turned off because the HTTPClient
+    //        implementation is now obsolete. A new HTTP client
+    //        that uses the latest best practices (asio coroutines,
+    //        beast::http::message and beast::http::parser) should
+    //        be used.
+#if 0
+    std::unique_ptr <beast::asio::HTTPClientBase> m_client;
+#endif
+
 public:
     explicit SourceURLImp (beast::URL const& url)
         : m_url (url)
-        , m_client (beast::asio::HTTPClientBase::New ())
+        //, m_client (beast::asio::HTTPClientBase::New ())
     {
     }
 
@@ -58,11 +69,12 @@ public:
 
     void cancel ()
     {
-        m_client->cancel ();
+        //m_client->cancel ();
     }
 
     void fetch (Results& results, beast::Journal journal)
     {
+#if 0
         auto httpResult (m_client->get (m_url));
 
         if (httpResult.first == 0)
@@ -77,11 +89,8 @@ public:
                 "HTTP GET to " << m_url <<
                 " failed: '" << httpResult.first.message () << "'";
         }
+#endif
     }
-
-private:
-    beast::URL m_url;
-    std::unique_ptr <beast::asio::HTTPClientBase> m_client;
 };
 
 //------------------------------------------------------------------------------

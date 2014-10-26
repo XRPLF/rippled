@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/sitefiles/api/Section.h>
+#include <ripple/sitefiles/Sitefiles.h>
 
 namespace ripple {
 namespace SiteFiles {

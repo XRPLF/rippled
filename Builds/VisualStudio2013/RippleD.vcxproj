@@ -3228,14 +3228,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\Status.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\sitefiles\api\Listener.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\sitefiles\api\Manager.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\sitefiles\api\Section.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\sitefiles\api\SiteFile.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\sitefiles\impl\Logic.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\sitefiles\impl\Manager.cpp">
@@ -3244,11 +3236,11 @@
     <ClCompile Include="..\..\src\ripple\sitefiles\impl\Section.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\sitefiles\impl\Site.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\sitefiles\impl\SiteFile.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\sitefiles\Sitefiles.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\sslutil\bignum_error.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\sslutil\CAutoBN_CTX.h">
@@ -3419,8 +3411,6 @@
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\sitefiles.cpp">
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\unity\sitefiles.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\snappy.cpp">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
