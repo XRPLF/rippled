@@ -18,12 +18,10 @@
 //==============================================================================
 
 #include <ripple/common/RippleSSLContext.h>
-
 #include <ripple/common/seconds_clock.h>
 #include <beast/container/aged_unordered_set.h>
-
+#include <beast/module/core/diagnostic/FatalError.h>
 #include <beast/utility/static_initializer.h>
-
 #include <cstdint>
 #include <sstream>
 
@@ -412,5 +410,18 @@ std::string RippleSSLContext::getRawDHParams (int keySize)
 {
     return RippleSSLContextImp::getRawDHParams (keySize);
 }
+
+//------------------------------------------------------------------------------
+
+SSLContext::SSLContext (ContextType& context)
+    : m_context (context)
+{
+}
+
+SSLContext::~SSLContext ()
+{
+}
+
+//------------------------------------------------------------------------------
 
 }

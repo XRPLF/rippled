@@ -20,6 +20,8 @@
 #ifndef BEAST_CORE_FATALERROR_H_INCLUDED
 #define BEAST_CORE_FATALERROR_H_INCLUDED
 
+#include <beast/strings/String.h>
+
 namespace beast
 {
 
@@ -39,7 +41,7 @@ class FatalError
 public:
     struct Reporter
     {
-        virtual ~Reporter () { }
+        virtual ~Reporter() = default;
 
         /** Called when a fatal error is raised.
 

@@ -20,8 +20,8 @@
 #ifndef RIPPLE_HTTP_SERVER_H_INCLUDED
 #define RIPPLE_HTTP_SERVER_H_INCLUDED
 
+#include <ripple/common/RippleSSLContext.h>
 #include <beast/net/IPEndpoint.h>
-#include <beast/module/asio/basics/SSLContext.h>
 #include <beast/utility/Journal.h>
 #include <beast/utility/PropertyStream.h>
 #include <boost/system/error_code.hpp>
@@ -47,13 +47,13 @@ struct Port
     Security security;
     std::uint16_t port;
     beast::IP::Endpoint addr;
-    beast::asio::SSLContext* context;
+    SSLContext* context;
 
     Port ();
     Port (Port const& other);
     Port& operator= (Port const& other);
     Port (std::uint16_t port_, beast::IP::Endpoint const& addr_,
-            Security security_, beast::asio::SSLContext* context_);
+            Security security_, SSLContext* context_);
 };
 
 bool operator== (Port const& lhs, Port const& rhs);

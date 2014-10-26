@@ -17,16 +17,22 @@
 */
 //==============================================================================
 
-#if BEAST_INCLUDE_BEASTCONFIG
-#include <BeastConfig.h>
-#endif
+#include <beast/module/asio/HTTPRequestParser.h>
 
-#include <beast/module/asio/HTTPField.cpp>
-#include <beast/module/asio/HTTPHeaders.cpp>
-#include <beast/module/asio/HTTPMessage.cpp>
-#include <beast/module/asio/HTTPRequest.cpp>
-#include <beast/module/asio/HTTPResponse.cpp>
-#include <beast/module/asio/HTTPVersion.cpp>
-#include <beast/module/asio/HTTPParser.cpp>
-#include <beast/module/asio/HTTPRequestParser.cpp>
-#include <beast/module/asio/HTTPResponseParser.cpp>
+namespace beast {
+
+HTTPRequestParser::HTTPRequestParser ()
+    : HTTPParser (typeRequest)
+{
+}
+
+HTTPRequestParser::~HTTPRequestParser ()
+{
+}
+
+SharedPtr <HTTPRequest> const& HTTPRequestParser::request ()
+{
+    return m_request;
+}
+
+}

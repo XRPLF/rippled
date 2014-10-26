@@ -20,20 +20,65 @@
 #ifndef RIPPLE_COMMON_SSLCONTEXT_H_INCLUDED
 #define RIPPLE_COMMON_SSLCONTEXT_H_INCLUDED
 
-#include <beast/module/asio/basics/SSLContext.h>
-
+#include <boost/asio/ssl/context.hpp>
+#include <beast/utility/noexcept.h>
 #include <string>
 
 namespace ripple {
+
+/** Simple base class for passing a context around.
+    This lets derived classes hide their implementation from the headers.
+*/
+class SSLContext
+{
+public:
+    virtual ~SSLContext ();
+
+    // Saves typing
+    typedef boost::asio::ssl::context ContextType;
+
+    inline ContextType& get () noexcept
+    {
+        return m_context;
+    }
+
+    inline ContextType const& get () const noexcept
+    {
+        return m_context;
+    }
+
+    // implicit conversion
+    inline operator ContextType& () noexcept
+    {
+        return get ();
+    }
+
+    inline operator ContextType const& () const noexcept
+    {
+        return get ();
+    }
+
+protected:
+    explicit SSLContext (ContextType& context);
+
+    SSLContext(SSLContext const&) = delete;
+    SSLContext& operator= (SSLContext const&) = delete;
+
+    ContextType& m_context;
+};
+
+//------------------------------------------------------------------------------
 
 /** The SSL contexts used by Ripple.
 
     This is what Ripple uses for its secure connections. The ECDSA curve
     parameters are predefined and verified to be secure. The context is set to
-    sslv23, Transport Layer Security / General. This is primarily used for peer to peer servers that don't care
-    about certificates or identity verification.
+    sslv23, Transport Layer Security / General. This is primarily used for
+    peer to peer servers that don't care about certificates or
+    identity verification.
 */
-class RippleSSLContext : public beast::asio::SSLContext
+// VFALCO NOTE The comment above is out of date
+class RippleSSLContext : public SSLContext
 {
 public:
     /** Retrieve raw DH parameters.

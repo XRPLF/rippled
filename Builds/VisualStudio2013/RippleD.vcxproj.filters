@@ -64,9 +64,6 @@
     <Filter Include="beast\http">
       <UniqueIdentifier>{7138D215-DA65-98D5-EF7D-C9896685201E}</UniqueIdentifier>
     </Filter>
-    <Filter Include="beast\http\detail">
-      <UniqueIdentifier>{3E84AA4C-CB48-99F0-EB35-5603FF633A51}</UniqueIdentifier>
-    </Filter>
     <Filter Include="beast\http\impl">
       <UniqueIdentifier>{932F732F-F09E-5C50-C8A1-D62342CCAA1F}</UniqueIdentifier>
     </Filter>
@@ -90,24 +87,6 @@
     </Filter>
     <Filter Include="beast\module\asio">
       <UniqueIdentifier>{98F41E1A-9413-1CD5-5EA7-DE837BC9FF66}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="beast\module\asio\async">
-      <UniqueIdentifier>{6C88FB42-ECB6-831B-CC7F-D59177337235}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="beast\module\asio\basics">
-      <UniqueIdentifier>{FCA1A8DC-54B3-FE11-FF2C-35D8E498B74E}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="beast\module\asio\http">
-      <UniqueIdentifier>{AE9C05DA-9DF4-1D28-FDD4-58703FCC2FC9}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="beast\module\asio\protocol">
-      <UniqueIdentifier>{C4CBDF7F-B92F-7BAF-285C-188AE9555AC1}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="beast\module\asio\system">
-      <UniqueIdentifier>{E5B5D1BC-6B68-AE77-2A0F-46A50C948338}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="beast\module\asio\tests">
-      <UniqueIdentifier>{DDA959BD-205A-AA5F-A80E-7CE11C748552}</UniqueIdentifier>
     </Filter>
     <Filter Include="beast\module\core">
       <UniqueIdentifier>{7451A33F-2734-1B7A-974D-34C35487A770}</UniqueIdentifier>
@@ -618,22 +597,10 @@
     <ClInclude Include="..\..\src\beast\beast\Arithmetic.h">
       <Filter>beast</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\asio\abstract_socket.cpp">
-      <Filter>beast\asio</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\asio\abstract_socket.h">
-      <Filter>beast\asio</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\asio\Asio.unity.cpp">
       <Filter>beast\asio</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\asio\bind_handler.h">
-      <Filter>beast\asio</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\asio\buffer_sequence.h">
-      <Filter>beast\asio</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\asio\enable_wait_for_async.h">
       <Filter>beast\asio</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\asio\impl\IPAddressConversion.cpp">
@@ -645,16 +612,7 @@
     <ClInclude Include="..\..\src\beast\beast\asio\IPAddressConversion.h">
       <Filter>beast\asio</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\asio\memory_buffer.h">
-      <Filter>beast\asio</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\placeholders.h">
-      <Filter>beast\asio</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\asio\shared_handler.h">
-      <Filter>beast\asio</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\asio\socket_wrapper.h">
       <Filter>beast\asio</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\ssl.h">
@@ -666,18 +624,6 @@
     <ClCompile Include="..\..\src\beast\beast\asio\tests\bind_handler.test.cpp">
       <Filter>beast\asio\tests</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\asio\tests\enable_wait_for_async.test.cpp">
-      <Filter>beast\asio\tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\asio\tests\shared_handler.test.cpp">
-      <Filter>beast\asio\tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\asio\tests\wrap_handler.test.cpp">
-      <Filter>beast\asio\tests</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\asio\wrap_handler.h">
-      <Filter>beast\asio</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\Atomic.h">
       <Filter>beast</Filter>
     </ClInclude>
@@ -685,9 +631,6 @@
       <Filter>beast\boost</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\boost\ErrorCode.h">
-      <Filter>beast\boost</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\boost\get_pointer.h">
       <Filter>beast\boost</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\ByteOrder.h">
@@ -921,17 +864,8 @@
     <ClInclude Include="..\..\src\beast\beast\http\basic_parser.h">
       <Filter>beast\http</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\http\basic_url.h">
-      <Filter>beast\http</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\body.h">
       <Filter>beast\http</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\http\client_session.h">
-      <Filter>beast\http</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\http\detail\header_traits.h">
-      <Filter>beast\http\detail</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\headers.h">
       <Filter>beast\http</Filter>
@@ -940,9 +874,6 @@
       <Filter>beast\http</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\http\impl\basic_parser.cpp">
-      <Filter>beast\http\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\http\impl\basic_url.cpp">
       <Filter>beast\http\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\http\impl\http-parser\http_parser.c">
@@ -981,12 +912,6 @@
     <ClInclude Include="..\..\src\beast\beast\http\rfc2616.h">
       <Filter>beast\http</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\http\tests\basic_url.test.cpp">
-      <Filter>beast\http\tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\http\tests\client_session.test.cpp">
-      <Filter>beast\http\tests</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\http\tests\parser.test.cpp">
       <Filter>beast\http\tests</Filter>
     </ClCompile>
@@ -1095,186 +1020,69 @@
     <ClInclude Include="..\..\src\beast\beast\Memory.h">
       <Filter>beast</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\asio.h">
-      <Filter>beast\module\asio</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\asio\asio.unity.cpp">
       <Filter>beast\module\asio</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\async\AsyncObject.h">
-      <Filter>beast\module\asio\async</Filter>
+    <ClInclude Include="..\..\src\beast\beast\module\asio\AsyncObject.h">
+      <Filter>beast\module\asio</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\basics\FixedInputBuffer.h">
-      <Filter>beast\module\asio\basics</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\asio\basics\PeerRole.cpp">
-      <Filter>beast\module\asio\basics</Filter>
+    <ClCompile Include="..\..\src\beast\beast\module\asio\HTTPField.cpp">
+      <Filter>beast\module\asio</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\basics\PeerRole.h">
-      <Filter>beast\module\asio\basics</Filter>
+    <ClInclude Include="..\..\src\beast\beast\module\asio\HTTPField.h">
+      <Filter>beast\module\asio</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\asio\basics\SSLContext.cpp">
-      <Filter>beast\module\asio\basics</Filter>
+    <ClCompile Include="..\..\src\beast\beast\module\asio\HTTPHeaders.cpp">
+      <Filter>beast\module\asio</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\basics\SSLContext.h">
-      <Filter>beast\module\asio\basics</Filter>
+    <ClInclude Include="..\..\src\beast\beast\module\asio\HTTPHeaders.h">
+      <Filter>beast\module\asio</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\asio\http\HTTPClientType.cpp">
-      <Filter>beast\module\asio\http</Filter>
+    <ClCompile Include="..\..\src\beast\beast\module\asio\HTTPMessage.cpp">
+      <Filter>beast\module\asio</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\http\HTTPClientType.h">
-      <Filter>beast\module\asio\http</Filter>
+    <ClInclude Include="..\..\src\beast\beast\module\asio\HTTPMessage.h">
+      <Filter>beast\module\asio</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\asio\http\HTTPField.cpp">
-      <Filter>beast\module\asio\http</Filter>
+    <ClCompile Include="..\..\src\beast\beast\module\asio\HTTPParser.cpp">
+      <Filter>beast\module\asio</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\http\HTTPField.h">
-      <Filter>beast\module\asio\http</Filter>
+    <ClInclude Include="..\..\src\beast\beast\module\asio\HTTPParser.h">
+      <Filter>beast\module\asio</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\asio\http\HTTPHeaders.cpp">
-      <Filter>beast\module\asio\http</Filter>
+    <ClInclude Include="..\..\src\beast\beast\module\asio\HTTPParserImpl.h">
+      <Filter>beast\module\asio</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\module\asio\HTTPRequest.cpp">
+      <Filter>beast\module\asio</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\http\HTTPHeaders.h">
-      <Filter>beast\module\asio\http</Filter>
+    <ClInclude Include="..\..\src\beast\beast\module\asio\HTTPRequest.h">
+      <Filter>beast\module\asio</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\asio\http\HTTPMessage.cpp">
-      <Filter>beast\module\asio\http</Filter>
+    <ClCompile Include="..\..\src\beast\beast\module\asio\HTTPRequestParser.cpp">
+      <Filter>beast\module\asio</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\http\HTTPMessage.h">
-      <Filter>beast\module\asio\http</Filter>
+    <ClInclude Include="..\..\src\beast\beast\module\asio\HTTPRequestParser.h">
+      <Filter>beast\module\asio</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\asio\http\HTTPParser.cpp">
-      <Filter>beast\module\asio\http</Filter>
+    <ClCompile Include="..\..\src\beast\beast\module\asio\HTTPResponse.cpp">
+      <Filter>beast\module\asio</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\http\HTTPParser.h">
-      <Filter>beast\module\asio\http</Filter>
+    <ClInclude Include="..\..\src\beast\beast\module\asio\HTTPResponse.h">
+      <Filter>beast\module\asio</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\http\HTTPParserImpl.h">
-      <Filter>beast\module\asio\http</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\asio\http\HTTPRequest.cpp">
-      <Filter>beast\module\asio\http</Filter>
+    <ClCompile Include="..\..\src\beast\beast\module\asio\HTTPResponseParser.cpp">
+      <Filter>beast\module\asio</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\http\HTTPRequest.h">
-      <Filter>beast\module\asio\http</Filter>
+    <ClInclude Include="..\..\src\beast\beast\module\asio\HTTPResponseParser.h">
+      <Filter>beast\module\asio</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\asio\http\HTTPRequestParser.cpp">
-      <Filter>beast\module\asio\http</Filter>
+    <ClCompile Include="..\..\src\beast\beast\module\asio\HTTPVersion.cpp">
+      <Filter>beast\module\asio</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\http\HTTPRequestParser.h">
-      <Filter>beast\module\asio\http</Filter>
+    <ClInclude Include="..\..\src\beast\beast\module\asio\HTTPVersion.h">
+      <Filter>beast\module\asio</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\asio\http\HTTPResponse.cpp">
-      <Filter>beast\module\asio\http</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\http\HTTPResponse.h">
-      <Filter>beast\module\asio\http</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\asio\http\HTTPResponseParser.cpp">
-      <Filter>beast\module\asio\http</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\http\HTTPResponseParser.h">
-      <Filter>beast\module\asio\http</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\asio\http\HTTPVersion.cpp">
-      <Filter>beast\module\asio\http</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\http\HTTPVersion.h">
-      <Filter>beast\module\asio\http</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\protocol\HandshakeDetectLogic.h">
-      <Filter>beast\module\asio\protocol</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\asio\protocol\HandshakeDetectLogicPROXY.cpp">
-      <Filter>beast\module\asio\protocol</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\protocol\HandshakeDetectLogicPROXY.h">
-      <Filter>beast\module\asio\protocol</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\protocol\HandshakeDetectLogicSSL2.h">
-      <Filter>beast\module\asio\protocol</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\protocol\HandshakeDetectLogicSSL3.h">
-      <Filter>beast\module\asio\protocol</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\protocol\HandshakeDetector.h">
-      <Filter>beast\module\asio\protocol</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\protocol\InputParser.h">
-      <Filter>beast\module\asio\protocol</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\protocol\PrefilledReadStream.h">
-      <Filter>beast\module\asio\protocol</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\system\BoostIncludes.h">
-      <Filter>beast\module\asio\system</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\system\OpenSSLIncludes.h">
-      <Filter>beast\module\asio\system</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\asio\tests\PeerTest.cpp">
-      <Filter>beast\module\asio\tests</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\tests\PeerTest.h">
-      <Filter>beast\module\asio\tests</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\tests\TestPeer.h">
-      <Filter>beast\module\asio\tests</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\asio\tests\TestPeerBasics.cpp">
-      <Filter>beast\module\asio\tests</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\tests\TestPeerBasics.h">
-      <Filter>beast\module\asio\tests</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\tests\TestPeerDetails.h">
-      <Filter>beast\module\asio\tests</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\tests\TestPeerDetailsTcp.h">
-      <Filter>beast\module\asio\tests</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\asio\tests\TestPeerLogic.cpp">
-      <Filter>beast\module\asio\tests</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\tests\TestPeerLogic.h">
-      <Filter>beast\module\asio\tests</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\asio\tests\TestPeerLogicAsyncClient.cpp">
-      <Filter>beast\module\asio\tests</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\tests\TestPeerLogicAsyncClient.h">
-      <Filter>beast\module\asio\tests</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\asio\tests\TestPeerLogicAsyncServer.cpp">
-      <Filter>beast\module\asio\tests</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\tests\TestPeerLogicAsyncServer.h">
-      <Filter>beast\module\asio\tests</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\asio\tests\TestPeerLogicProxyClient.cpp">
-      <Filter>beast\module\asio\tests</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\tests\TestPeerLogicProxyClient.h">
-      <Filter>beast\module\asio\tests</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\asio\tests\TestPeerLogicSyncClient.cpp">
-      <Filter>beast\module\asio\tests</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\tests\TestPeerLogicSyncClient.h">
-      <Filter>beast\module\asio\tests</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\asio\tests\TestPeerLogicSyncServer.cpp">
-      <Filter>beast\module\asio\tests</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\tests\TestPeerLogicSyncServer.h">
-      <Filter>beast\module\asio\tests</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\tests\TestPeerType.h">
-      <Filter>beast\module\asio\tests</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\beast\beast\module\asio\tests\TestPeerUnitTests.cpp">
-      <Filter>beast\module\asio\tests</Filter>
-    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\module\core\containers\Array.h">
       <Filter>beast\module\core\containers</Filter>
     </ClInclude>
@@ -1905,9 +1713,6 @@
     <ClCompile Include="..\..\src\beast\beast\utility\impl\StaticObject.cpp">
       <Filter>beast\utility\impl</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\utility\is_call_possible.h">
-      <Filter>beast\utility</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\utility\Journal.h">
       <Filter>beast\utility</Filter>
     </ClInclude>

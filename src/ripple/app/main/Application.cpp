@@ -21,6 +21,7 @@
 #include <ripple/basics/LoggedTimings.h>
 #include <ripple/basics/Sustain.h>
 #include <ripple/common/seconds_clock.h>
+#include <ripple/common/RippleSSLContext.h>
 #include <ripple/app/main/Tuning.h>
 #include <ripple/app/misc/ProofOfWorkFactory.h>
 #include <ripple/core/LoadFeeTrack.h>
@@ -193,8 +194,8 @@ public:
     std::unique_ptr <DatabaseCon> mLedgerDB;
     std::unique_ptr <DatabaseCon> mWalletDB;
 
-    std::unique_ptr <beast::asio::SSLContext> m_peerSSLContext;
-    std::unique_ptr <beast::asio::SSLContext> m_wsSSLContext;
+    std::unique_ptr <SSLContext> m_peerSSLContext;
+    std::unique_ptr <SSLContext> m_wsSSLContext;
     std::unique_ptr <Overlay> m_peers;
     std::unique_ptr <RPCDoor>  m_rpcDoor;
     std::unique_ptr <WSDoor> m_wsPublicDoor;

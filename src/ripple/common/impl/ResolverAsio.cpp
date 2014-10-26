@@ -20,7 +20,8 @@
 #include <ripple/common/ResolverAsio.h>
 #include <beast/asio/IPAddressConversion.h>
 #include <beast/asio/placeholders.h>
-#include <beast/module/asio/asio.h>
+#include <beast/module/asio/AsyncObject.h>
+#include <beast/threads/WaitableEvent.h>
 #include <boost/asio.hpp>
 #include <atomic>
 #include <cassert>

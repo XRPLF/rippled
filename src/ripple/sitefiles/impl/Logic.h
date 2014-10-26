@@ -21,7 +21,7 @@
 #define RIPPLE_SITEFILES_LOGIC_H_INCLUDED
 
 #include <beast/http/URL.h>
-#include <beast/module/asio/http/HTTPResponse.h> // DEPRECATED
+#include <beast/module/asio/HTTPResponse.h> // DEPRECATED
 #include <boost/regex.hpp>
 #include <map>
 #include <memory>
