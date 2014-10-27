@@ -21,7 +21,6 @@
 #include <ripple/http/Session.h>
 #include <ripple/app/main/RPCHTTPServer.h>
 #include <ripple/rpc/RPCHandler.h>
-#include <ripple/rpc/RPCServerHandler.h>
 
 namespace ripple {
 
@@ -35,7 +34,6 @@ public:
     beast::Journal m_journal;
     JobQueue& m_jobQueue;
     NetworkOPs& m_networkOPs;
-    RPCServerHandler m_deprecatedHandler;
     HTTP::Server m_server;
     std::unique_ptr <RippleSSLContext> m_context;
     RPC::Setup setup_;
@@ -48,7 +46,6 @@ public:
         , m_journal (deprecatedLogs().journal("HTTP-RPC"))
         , m_jobQueue (jobQueue)
         , m_networkOPs (networkOPs)
-        , m_deprecatedHandler (networkOPs, resourceManager)
         , m_server (*this, deprecatedLogs().journal("HTTP"))
         , setup_ (setup)
     {

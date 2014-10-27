@@ -35,7 +35,6 @@
 #include <ripple/rpc/impl/JsonObject.cpp>
 #include <ripple/rpc/impl/JsonWriter.cpp>
 #include <ripple/rpc/impl/Manager.cpp>
-#include <ripple/rpc/impl/RPCServerHandler.cpp>
 #include <ripple/rpc/impl/RPCHandler.cpp>
 #include <ripple/rpc/impl/Status.cpp>
 #include <ripple/rpc/impl/Status_test.cpp>
