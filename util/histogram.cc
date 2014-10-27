@@ -53,7 +53,7 @@ HistogramBucketMapper::HistogramBucketMapper()
   }
 }
 
-size_t HistogramBucketMapper::IndexForValue(const uint64_t value) const {
+const size_t HistogramBucketMapper::IndexForValue(const uint64_t value) const {
   if (value >= maxBucketValue_) {
     return bucketValues_.size() - 1;
   } else if ( value >= minBucketValue_ ) {

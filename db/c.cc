@@ -118,7 +118,7 @@ struct rocksdb_compactionfilter_t : public CompactionFilter {
       const Slice& existing_value,
       std::string* new_value,
       bool* value_changed) const {
-    char* c_new_value = nullptr;
+    char* c_new_value = NULL;
     size_t new_value_length = 0;
     unsigned char c_value_changed = 0;
     unsigned char result = (*filter_)(
@@ -1355,8 +1355,8 @@ void rocksdb_options_set_purge_redundant_kvs_while_flush(
   opt->rep.purge_redundant_kvs_while_flush = v;
 }
 
-void rocksdb_options_set_allow_os_buffer(rocksdb_options_t* opt,
-                                         unsigned char v) {
+void rocksdb_options_set_allow_os_buffer(
+    rocksdb_options_t* opt, unsigned char v) {
   opt->rep.allow_os_buffer = v;
 }
 
@@ -1579,6 +1579,11 @@ void rocksdb_options_set_min_partial_merge_operands(
 void rocksdb_options_set_bloom_locality(
     rocksdb_options_t* opt, uint32_t v) {
   opt->rep.bloom_locality = v;
+}
+
+void rocksdb_options_set_allow_thread_local(
+    rocksdb_options_t* opt, unsigned char v) {
+  opt->rep.allow_thread_local = v;
 }
 
 void rocksdb_options_set_inplace_update_support(
@@ -1837,13 +1842,6 @@ void rocksdb_readoptions_set_snapshot(
     rocksdb_readoptions_t* opt,
     const rocksdb_snapshot_t* snap) {
   opt->rep.snapshot = (snap ? snap->rep : nullptr);
-}
-
-void rocksdb_readoptions_set_iterate_upper_bound(
-    rocksdb_readoptions_t* opt,
-    const char* key, size_t keylen) {
-  Slice prefix = Slice(key, keylen);
-  opt->rep.iterate_upper_bound = &prefix;
 }
 
 void rocksdb_readoptions_set_read_tier(

@@ -71,7 +71,7 @@ class SnapshotList {
   }
 
   // get the sequence number of the most recent snapshot
-  SequenceNumber GetNewest() {
+  const SequenceNumber GetNewest() {
     if (empty()) {
       return 0;
     }

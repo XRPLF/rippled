@@ -19,11 +19,8 @@
 #include "rocksdb/env.h"
 #include "db/memtable_list.h"
 #include "db/write_batch_internal.h"
-#include "db/write_controller.h"
 #include "db/table_cache.h"
 #include "util/thread_local.h"
-#include "db/flush_scheduler.h"
-#include "util/mutable_cf_options.h"
 
 namespace rocksdb {
 
@@ -49,7 +46,6 @@ class ColumnFamilyHandleImpl : public ColumnFamilyHandle {
   // destroy without mutex
   virtual ~ColumnFamilyHandleImpl();
   virtual ColumnFamilyData* cfd() const { return cfd_; }
-  virtual const Comparator* user_comparator() const;
 
   virtual uint32_t GetID() const;
 
@@ -82,7 +78,6 @@ struct SuperVersion {
   MemTable* mem;
   MemTableListVersion* imm;
   Version* current;
-  MutableCFOptions mutable_cf_options;
   std::atomic<uint32_t> refs;
   // We need to_delete because during Cleanup(), imm->Unref() returns
   // all memtables that we need to free through this vector. We then
@@ -137,7 +132,7 @@ class ColumnFamilyData {
   void Ref() { ++refs_; }
   // will just decrease reference count to 0, but will not delete it. returns
   // true if the ref count was decreased to zero. in that case, it can be
-  // deleted by the caller immediately, or later, by calling
+  // deleted by the caller immediatelly, or later, by calling
   // FreeDeadColumnFamilies()
   bool Unref() {
     assert(refs_ > 0);
@@ -161,7 +156,6 @@ class ColumnFamilyData {
     // can't drop default CF
     assert(id_ != 0);
     dropped_ = true;
-    write_controller_token_.reset();
   }
   bool IsDropped() const { return dropped_; }
 
@@ -174,21 +168,6 @@ class ColumnFamilyData {
   // thread-safe
   const Options* options() const { return &options_; }
   const EnvOptions* soptions() const;
-  const ImmutableCFOptions* ioptions() const { return &ioptions_; }
-  // REQUIRES: DB mutex held
-  // This returns the MutableCFOptions used by current SuperVersion
-  // You shoul use this API to reference MutableCFOptions most of the time.
-  const MutableCFOptions* mutable_cf_options() const {
-    return &(super_version_->mutable_cf_options);
-  }
-  // REQUIRES: DB mutex held
-  // This returns the latest MutableCFOptions, which may be not in effect yet.
-  const MutableCFOptions* GetLatestMutableCFOptions() const {
-    return &mutable_cf_options_;
-  }
-  // REQUIRES: DB mutex held
-  bool SetOptions(
-      const std::unordered_map<std::string, std::string>& options_map);
 
   InternalStats* internal_stats() { return internal_stats_.get(); }
 
@@ -198,19 +177,16 @@ class ColumnFamilyData {
   Version* dummy_versions() { return dummy_versions_; }
   void SetMemtable(MemTable* new_mem) { mem_ = new_mem; }
   void SetCurrent(Version* current);
-  void CreateNewMemtable(const MemTableOptions& moptions);
+  void CreateNewMemtable();
 
   TableCache* table_cache() const { return table_cache_.get(); }
 
   // See documentation in compaction_picker.h
-  // REQUIRES: DB mutex held
-  Compaction* PickCompaction(const MutableCFOptions& mutable_options,
-                             LogBuffer* log_buffer);
-  Compaction* CompactRange(
-      const MutableCFOptions& mutable_cf_options,
-      int input_level, int output_level, uint32_t output_path_id,
-      const InternalKey* begin, const InternalKey* end,
-      InternalKey** compaction_end);
+  Compaction* PickCompaction(LogBuffer* log_buffer);
+  Compaction* CompactRange(int input_level, int output_level,
+                           uint32_t output_path_id, const InternalKey* begin,
+                           const InternalKey* end,
+                           InternalKey** compaction_end);
 
   CompactionPicker* compaction_picker() { return compaction_picker_.get(); }
   // thread-safe
@@ -243,19 +219,39 @@ class ColumnFamilyData {
   // As argument takes a pointer to allocated SuperVersion to enable
   // the clients to allocate SuperVersion outside of mutex.
   SuperVersion* InstallSuperVersion(SuperVersion* new_superversion,
-                                    port::Mutex* db_mutex,
-                                    const MutableCFOptions& mutable_cf_options);
-  SuperVersion* InstallSuperVersion(SuperVersion* new_superversion,
                                     port::Mutex* db_mutex);
 
   void ResetThreadLocalSuperVersions();
+
+  // A Flag indicating whether write needs to slowdown because of there are
+  // too many number of level0 files.
+  bool NeedSlowdownForNumLevel0Files() const {
+    return need_slowdown_for_num_level0_files_;
+  }
+
+  bool NeedWaitForNumLevel0Files() const {
+    return need_wait_for_num_level0_files_;
+  }
+
+  bool NeedWaitForNumMemtables() const {
+    return need_wait_for_num_memtables_;
+  }
+
+  bool ExceedsSoftRateLimit() const {
+    return exceeds_soft_rate_limit_;
+  }
+
+  bool ExceedsHardRateLimit() const {
+    return exceeds_hard_rate_limit_;
+  }
 
  private:
   friend class ColumnFamilySet;
   ColumnFamilyData(uint32_t id, const std::string& name,
                    Version* dummy_versions, Cache* table_cache,
                    const ColumnFamilyOptions& options,
-                   const DBOptions* db_options, const EnvOptions& env_options,
+                   const DBOptions* db_options,
+                   const EnvOptions& storage_options,
                    ColumnFamilySet* column_family_set);
 
   // Recalculate some small conditions, which are changed only during
@@ -263,8 +259,8 @@ class ColumnFamilyData {
   // recalculation of compaction score. These values are used in
   // DBImpl::MakeRoomForWrite function to decide, if it need to make
   // a write stall
-  void RecalculateWriteStallConditions(
-      const MutableCFOptions& mutable_cf_options);
+  void RecalculateWriteStallConditions();
+  void RecalculateWriteStallRateLimitsConditions();
 
   uint32_t id_;
   const std::string name_;
@@ -276,9 +272,7 @@ class ColumnFamilyData {
 
   const InternalKeyComparator internal_comparator_;
 
-  const Options options_;
-  const ImmutableCFOptions ioptions_;
-  MutableCFOptions mutable_cf_options_;
+  Options const options_;
 
   std::unique_ptr<TableCache> table_cache_;
 
@@ -307,13 +301,31 @@ class ColumnFamilyData {
   // recovered from
   uint64_t log_number_;
 
+  // A flag indicating whether we should delay writes because
+  // we have too many level 0 files
+  bool need_slowdown_for_num_level0_files_;
+
+  // These 4 variables are updated only after compaction,
+  // adding new memtable, flushing memtables to files
+  // and/or add recalculation of compaction score.
+  // That's why theirs values are cached in ColumnFamilyData.
+  // Recalculation is made by RecalculateWriteStallConditions and
+  // RecalculateWriteStallRateLimitsConditions function. They are used
+  // in DBImpl::MakeRoomForWrite function to decide, if it need
+  // to sleep during write operation
+  bool need_wait_for_num_memtables_;
+
+  bool need_wait_for_num_level0_files_;
+
+  bool exceeds_hard_rate_limit_;
+
+  bool exceeds_soft_rate_limit_;
+
   // An object that keeps all the compaction stats
   // and picks the next compaction
   std::unique_ptr<CompactionPicker> compaction_picker_;
 
   ColumnFamilySet* column_family_set_;
-
-  std::unique_ptr<WriteControllerToken> write_controller_token_;
 };
 
 // ColumnFamilySet has interesting thread-safety requirements
@@ -355,8 +367,7 @@ class ColumnFamilySet {
   };
 
   ColumnFamilySet(const std::string& dbname, const DBOptions* db_options,
-                  const EnvOptions& env_options, Cache* table_cache,
-                  WriteController* write_controller);
+                  const EnvOptions& storage_options, Cache* table_cache);
   ~ColumnFamilySet();
 
   ColumnFamilyData* GetDefault() const;
@@ -409,9 +420,8 @@ class ColumnFamilySet {
 
   const std::string db_name_;
   const DBOptions* const db_options_;
-  const EnvOptions env_options_;
+  const EnvOptions storage_options_;
   Cache* table_cache_;
-  WriteController* write_controller_;
   std::atomic_flag spin_lock_;
 };
 
@@ -419,11 +429,8 @@ class ColumnFamilySet {
 // memtables of different column families (specified by ID in the write batch)
 class ColumnFamilyMemTablesImpl : public ColumnFamilyMemTables {
  public:
-  explicit ColumnFamilyMemTablesImpl(ColumnFamilySet* column_family_set,
-                                     FlushScheduler* flush_scheduler)
-      : column_family_set_(column_family_set),
-        current_(nullptr),
-        flush_scheduler_(flush_scheduler) {}
+  explicit ColumnFamilyMemTablesImpl(ColumnFamilySet* column_family_set)
+      : column_family_set_(column_family_set), current_(nullptr) {}
 
   // sets current_ to ColumnFamilyData with column_family_id
   // returns false if column family doesn't exist
@@ -442,18 +449,12 @@ class ColumnFamilyMemTablesImpl : public ColumnFamilyMemTables {
   // Returns column family handle for the selected column family
   virtual ColumnFamilyHandle* GetColumnFamilyHandle() override;
 
-  virtual void CheckMemtableFull() override;
-
  private:
   ColumnFamilySet* column_family_set_;
   ColumnFamilyData* current_;
-  FlushScheduler* flush_scheduler_;
   ColumnFamilyHandleInternal handle_;
 };
 
 extern uint32_t GetColumnFamilyID(ColumnFamilyHandle* column_family);
-
-extern const Comparator* GetColumnFamilyUserComparator(
-    ColumnFamilyHandle* column_family);
 
 }  // namespace rocksdb

@@ -92,7 +92,8 @@ TEST(BlockTest, SimpleTest) {
   BlockContents contents;
   contents.data = rawblock;
   contents.cachable = false;
-  Block reader(std::move(contents));
+  contents.heap_allocated = false;
+  Block reader(contents);
 
   // read contents of block sequentially
   int count = 0;
@@ -142,6 +143,7 @@ BlockContents GetBlockContents(std::unique_ptr<BlockBuilder> *builder,
   BlockContents contents;
   contents.data = rawblock;
   contents.cachable = false;
+  contents.heap_allocated = false;
 
   return contents;
 }
@@ -151,10 +153,8 @@ void CheckBlockContents(BlockContents contents, const int max_key,
                         const std::vector<std::string> &values) {
   const size_t prefix_size = 6;
   // create block reader
-  BlockContents contents_ref(contents.data, contents.cachable,
-                             contents.compression_type);
-  Block reader1(std::move(contents));
-  Block reader2(std::move(contents_ref));
+  Block reader1(contents);
+  Block reader2(contents);
 
   std::unique_ptr<const SliceTransform> prefix_extractor(
       NewFixedPrefixTransform(prefix_size));
@@ -212,7 +212,7 @@ TEST(BlockTest, SimpleIndexHash) {
   std::unique_ptr<BlockBuilder> builder;
   auto contents = GetBlockContents(&builder, keys, values);
 
-  CheckBlockContents(std::move(contents), kMaxKey, keys, values);
+  CheckBlockContents(contents, kMaxKey, keys, values);
 }
 
 TEST(BlockTest, IndexHashWithSharedPrefix) {
@@ -231,7 +231,7 @@ TEST(BlockTest, IndexHashWithSharedPrefix) {
   std::unique_ptr<BlockBuilder> builder;
   auto contents = GetBlockContents(&builder, keys, values, kPrefixGroup);
 
-  CheckBlockContents(std::move(contents), kMaxKey, keys, values);
+  CheckBlockContents(contents, kMaxKey, keys, values);
 }
 
 }  // namespace rocksdb

@@ -110,18 +110,17 @@ TESTS = \
 	blob_store_test \
 	filelock_test \
 	filename_test \
-	block_based_filter_block_test \
-	full_filter_block_test \
+	filter_block_test \
 	histogram_test \
 	log_test \
 	manual_compaction_test \
 	memenv_test \
 	merge_test \
-	merger_test \
 	redis_test \
 	reduce_levels_test \
 	plain_table_db_test \
 	prefix_test \
+	simple_table_db_test \
 	skiplist_test \
 	stringappend_test \
 	ttl_test \
@@ -132,8 +131,7 @@ TESTS = \
 	version_edit_test \
 	version_set_test \
 	file_indexer_test \
-	write_batch_test \
-	write_controller_test\
+	write_batch_test\
 	deletefile_test \
 	table_test \
 	thread_local_test \
@@ -154,7 +152,7 @@ TOOLS = \
   options_test \
 	blob_store_bench
 
-PROGRAMS = db_bench signal_test table_reader_bench log_and_apply_bench cache_bench $(TOOLS)
+PROGRAMS = db_bench signal_test table_reader_bench log_and_apply_bench $(TOOLS)
 
 # The library name is configurable since we are maintaining libraries of both
 # debug/release mode.
@@ -163,9 +161,6 @@ ifeq ($(LIBNAME),)
 endif
 LIBRARY = ${LIBNAME}.a
 MEMENVLIBRARY = libmemenv.a
-
-ROCKSDB_MAJOR = 3
-ROCKSDB_MINOR = 4
 
 default: all
 
@@ -181,8 +176,8 @@ SHARED3 = $(SHARED1)
 SHARED = $(SHARED1)
 else
 # Update db.h if you change these.
-SHARED_MAJOR = $(ROCKSDB_MAJOR)
-SHARED_MINOR = $(ROCKSDB_MINOR)
+SHARED_MAJOR = 3
+SHARED_MINOR = 5
 SHARED1 = ${LIBNAME}.$(PLATFORM_SHARED_EXT)
 SHARED2 = $(SHARED1).$(SHARED_MAJOR)
 SHARED3 = $(SHARED1).$(SHARED_MAJOR).$(SHARED_MINOR)
@@ -198,9 +193,9 @@ $(SHARED3):
 
 endif  # PLATFORM_SHARED_EXT
 
-.PHONY: blackbox_crash_test check clean coverage crash_test ldb_tests package \
+.PHONY: blackbox_crash_test check clean coverage crash_test ldb_tests \
 	release tags valgrind_check whitebox_crash_test format static_lib shared_lib all \
-	dbg rocksdbjavastatic rocksdbjava install uninstall
+	dbg
 
 all: $(LIBRARY) $(PROGRAMS) $(TESTS)
 
@@ -270,7 +265,7 @@ unity: unity.cc unity.o
 clean:
 	-rm -f $(PROGRAMS) $(TESTS) $(LIBRARY) $(SHARED) $(MEMENVLIBRARY) build_config.mk unity.cc
 	-rm -rf ios-x86/* ios-arm/*
-	-find . -name "*.[oda]" -exec rm {} \;
+	-find . -name "*.[od]" -exec rm {} \;
 	-find . -type f -regex ".*\.\(\(gcda\)\|\(gcno\)\)" -exec rm {} \;
 tags:
 	ctags * -R
@@ -278,9 +273,6 @@ tags:
 
 format:
 	build_tools/format-diff.sh
-
-package:
-	bash build_tools/make_package.sh $(SHARED_MAJOR).$(SHARED_MINOR)
 
 # ---------------------------------------------------------------------------
 # 	Unit tests and tools
@@ -291,9 +283,6 @@ $(LIBRARY): $(LIBOBJECTS)
 
 db_bench: db/db_bench.o $(LIBOBJECTS) $(TESTUTIL)
 	$(CXX) db/db_bench.o $(LIBOBJECTS) $(TESTUTIL) $(EXEC_LDFLAGS) -o $@  $(LDFLAGS) $(COVERAGEFLAGS)
-
-cache_bench: util/cache_bench.o $(LIBOBJECTS) $(TESTUTIL)
-	$(CXX) util/cache_bench.o $(LIBOBJECTS) $(TESTUTIL) $(EXEC_LDFLAGS) -o $@  $(LDFLAGS) $(COVERAGEFLAGS)
 
 block_hash_index_test: table/block_hash_index_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	 $(CXX) table/block_hash_index_test.o $(LIBOBJECTS) $(TESTHARNESS) $(EXEC_LDFLAGS) -o $@ $(LDFLAGS) $(COVERAGEFLAGS)
@@ -376,6 +365,9 @@ log_write_bench: util/log_write_bench.o $(LIBOBJECTS) $(TESTHARNESS)
 plain_table_db_test: db/plain_table_db_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(CXX) db/plain_table_db_test.o $(LIBOBJECTS) $(TESTHARNESS) $(EXEC_LDFLAGS) -o $@ $(LDFLAGS) $(COVERAGEFLAGS)
 
+simple_table_db_test: db/simple_table_db_test.o $(LIBOBJECTS) $(TESTHARNESS)
+	$(CXX) db/simple_table_db_test.o $(LIBOBJECTS) $(TESTHARNESS) $(EXEC_LDFLAGS) -o $@ $(LDFLAGS) $(COVERAGEFLAGS)
+
 table_reader_bench: table/table_reader_bench.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(CXX) table/table_reader_bench.o $(LIBOBJECTS) $(TESTHARNESS) $(EXEC_LDFLAGS) -o $@ $(LDFLAGS) $(COVERAGEFLAGS) -pg
 
@@ -418,11 +410,8 @@ rate_limiter_test: util/rate_limiter_test.o $(LIBOBJECTS) $(TESTHARNESS)
 filename_test: db/filename_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(CXX) db/filename_test.o $(LIBOBJECTS) $(TESTHARNESS) $(EXEC_LDFLAGS) -o $@ $(LDFLAGS) $(COVERAGEFLAGS)
 
-block_based_filter_block_test: table/block_based_filter_block_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CXX) table/block_based_filter_block_test.o $(LIBOBJECTS) $(TESTHARNESS) $(EXEC_LDFLAGS) -o $@ $(LDFLAGS) $(COVERAGEFLAGS)
-
-full_filter_block_test: table/full_filter_block_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CXX) table/full_filter_block_test.o $(LIBOBJECTS) $(TESTHARNESS) $(EXEC_LDFLAGS) -o $@ $(LDFLAGS) $(COVERAGEFLAGS)
+filter_block_test: table/filter_block_test.o $(LIBOBJECTS) $(TESTHARNESS)
+	$(CXX) table/filter_block_test.o $(LIBOBJECTS) $(TESTHARNESS) $(EXEC_LDFLAGS) -o $@ $(LDFLAGS) $(COVERAGEFLAGS)
 
 log_test: db/log_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(CXX) db/log_test.o $(LIBOBJECTS) $(TESTHARNESS) $(EXEC_LDFLAGS) -o $@ $(LDFLAGS) $(COVERAGEFLAGS)
@@ -451,14 +440,8 @@ reduce_levels_test: tools/reduce_levels_test.o $(LIBOBJECTS) $(TESTHARNESS)
 write_batch_test: db/write_batch_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(CXX) db/write_batch_test.o $(LIBOBJECTS) $(TESTHARNESS) $(EXEC_LDFLAGS) -o $@ $(LDFLAGS) $(COVERAGEFLAGS)
 
-write_controller_test: db/write_controller_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CXX) db/write_controller_test.o $(LIBOBJECTS) $(TESTHARNESS) $(EXEC_LDFLAGS) -o $@ $(LDFLAGS) $(COVERAGEFLAGS)
-
 merge_test: db/merge_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(CXX) db/merge_test.o $(LIBOBJECTS) $(TESTHARNESS) $(EXEC_LDFLAGS) -o $@ $(LDFLAGS) $(COVERAGEFLAGS)
-
-merger_test: table/merger_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CXX) table/merger_test.o $(LIBOBJECTS) $(TESTHARNESS) $(EXEC_LDFLAGS) -o $@ $(LDFLAGS) $(COVERAGEFLAGS)
 
 deletefile_test: db/deletefile_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(CXX) db/deletefile_test.o $(LIBOBJECTS) $(TESTHARNESS) $(EXEC_LDFLAGS) -o $@ $(LDFLAGS)
@@ -519,37 +502,6 @@ ifeq ($(PLATFORM), OS_MACOSX)
 ROCKSDBJNILIB = librocksdbjni.jnilib
 JAVA_INCLUDE = -I/System/Library/Frameworks/JavaVM.framework/Headers/
 endif
-
-libz.a:
-	-rm -rf zlib-1.2.8
-	curl -O http://zlib.net/zlib-1.2.8.tar.gz
-	tar xvzf zlib-1.2.8.tar.gz
-	cd zlib-1.2.8 && CFLAGS='-fPIC' ./configure --static && make
-	cp zlib-1.2.8/libz.a .
-
-libbz2.a:
-	-rm -rf bzip2-1.0.6
-	curl -O  http://www.bzip.org/1.0.6/bzip2-1.0.6.tar.gz
-	tar xvzf bzip2-1.0.6.tar.gz
-	cd bzip2-1.0.6 && make CFLAGS='-fPIC -Wall -Winline -O2 -g -D_FILE_OFFSET_BITS=64'
-	cp bzip2-1.0.6/libbz2.a .
-
-libsnappy.a:
-	-rm -rf snappy-1.1.1
-	curl -O https://snappy.googlecode.com/files/snappy-1.1.1.tar.gz
-	tar xvzf snappy-1.1.1.tar.gz
-	cd snappy-1.1.1 && ./configure --with-pic --enable-static
-	cd snappy-1.1.1 && make
-	cp snappy-1.1.1/.libs/libsnappy.a .
-
-
-rocksdbjavastatic: libz.a libbz2.a libsnappy.a
-	OPT="-fPIC -DNDEBUG -O2" $(MAKE) $(LIBRARY) -j
-	cd java;$(MAKE) java;
-	rm -f ./java/$(ROCKSDBJNILIB)
-	$(CXX) $(CXXFLAGS) -I./java/. $(JAVA_INCLUDE) -shared -fPIC -o ./java/$(ROCKSDBJNILIB) $(JNI_NATIVE_SOURCES) $(LIBOBJECTS) $(COVERAGEFLAGS) libz.a libbz2.a libsnappy.a
-	cd java;jar -cf $(ROCKSDB_JAR) org/rocksdb/*.class org/rocksdb/util/*.class HISTORY*.md $(ROCKSDBJNILIB)
-
 
 rocksdbjava:
 	OPT="-fPIC -DNDEBUG -O2" $(MAKE) $(LIBRARY) -j32
@@ -633,9 +585,7 @@ ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),format)
 ifneq ($(MAKECMDGOALS),jclean)
 ifneq ($(MAKECMDGOALS),jtest)
-ifneq ($(MAKECMDGOALS),package)
 -include $(DEPFILES)
-endif
 endif
 endif
 endif

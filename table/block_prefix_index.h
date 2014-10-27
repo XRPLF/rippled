@@ -23,7 +23,7 @@ class BlockPrefixIndex {
   // the key, based on the prefix.
   // Returns the total number of relevant blocks, 0 means the key does
   // not exist.
-  uint32_t GetBlocks(const Slice& key, uint32_t** blocks);
+  const uint32_t GetBlocks(const Slice& key, uint32_t** blocks);
 
   size_t ApproximateMemoryUsage() const {
     return sizeof(BlockPrefixIndex) +

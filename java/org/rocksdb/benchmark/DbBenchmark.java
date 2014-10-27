@@ -255,7 +255,7 @@ public class DbBenchmark {
             for (long j = 0; j < entriesPerBatch_; j++) {
               getKey(key, i + j, keyRange_);
               DbBenchmark.this.gen_.generate(value);
-              batch.put(key, value);
+              db_.put(writeOpt_, key, value);
               stats_.finishedSingleOp(keySize_ + valueSize_);
             }
             db_.write(writeOpt_, batch);

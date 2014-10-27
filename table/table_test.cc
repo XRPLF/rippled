@@ -37,13 +37,11 @@
 #include "table/format.h"
 #include "table/meta_blocks.h"
 #include "table/plain_table_factory.h"
-#include "table/get_context.h"
 
 #include "util/random.h"
 #include "util/statistics.h"
 #include "util/testharness.h"
 #include "util/testutil.h"
-#include "util/scoped_arena_iterator.h"
 
 namespace rocksdb {
 
@@ -196,7 +194,6 @@ class Constructor {
   // been added so far.  Returns the keys in sorted order in "*keys"
   // and stores the key/value pairs in "*kvmap"
   void Finish(const Options& options,
-              const ImmutableCFOptions& ioptions,
               const BlockBasedTableOptions& table_options,
               const InternalKeyComparator& internal_comparator,
               std::vector<std::string>* keys, KVMap* kvmap) {
@@ -209,14 +206,12 @@ class Constructor {
       keys->push_back(it->first);
     }
     data_.clear();
-    Status s = FinishImpl(options, ioptions, table_options,
-                          internal_comparator, *kvmap);
+    Status s = FinishImpl(options, table_options, internal_comparator, *kvmap);
     ASSERT_TRUE(s.ok()) << s.ToString();
   }
 
   // Construct the data structure from the data in "data"
   virtual Status FinishImpl(const Options& options,
-                            const ImmutableCFOptions& ioptions,
                             const BlockBasedTableOptions& table_options,
                             const InternalKeyComparator& internal_comparator,
                             const KVMap& data) = 0;
@@ -225,11 +220,7 @@ class Constructor {
 
   virtual const KVMap& data() { return data_; }
 
-  virtual bool IsArenaMode() const { return false; }
-
   virtual DB* db() const { return nullptr; }  // Overridden in DBConstructor
-
-  virtual bool AnywayDeleteIterator() const { return false; }
 
  protected:
   const InternalKeyComparator* last_internal_key_;
@@ -248,7 +239,6 @@ class BlockConstructor: public Constructor {
     delete block_;
   }
   virtual Status FinishImpl(const Options& options,
-                            const ImmutableCFOptions& ioptions,
                             const BlockBasedTableOptions& table_options,
                             const InternalKeyComparator& internal_comparator,
                             const KVMap& data) {
@@ -266,7 +256,8 @@ class BlockConstructor: public Constructor {
     BlockContents contents;
     contents.data = data_;
     contents.cachable = false;
-    block_ = new Block(std::move(contents));
+    contents.heap_allocated = false;
+    block_ = new Block(contents);
     return Status::OK();
   }
   virtual Iterator* NewIterator() const {
@@ -284,15 +275,8 @@ class BlockConstructor: public Constructor {
 // A helper class that converts internal format keys into user keys
 class KeyConvertingIterator: public Iterator {
  public:
-  KeyConvertingIterator(Iterator* iter, bool arena_mode = false)
-      : iter_(iter), arena_mode_(arena_mode) {}
-  virtual ~KeyConvertingIterator() {
-    if (arena_mode_) {
-      iter_->~Iterator();
-    } else {
-      delete iter_;
-    }
-  }
+  explicit KeyConvertingIterator(Iterator* iter) : iter_(iter) { }
+  virtual ~KeyConvertingIterator() { delete iter_; }
   virtual bool Valid() const { return iter_->Valid(); }
   virtual void Seek(const Slice& target) {
     ParsedInternalKey ikey(target, kMaxSequenceNumber, kTypeValue);
@@ -323,7 +307,6 @@ class KeyConvertingIterator: public Iterator {
  private:
   mutable Status status_;
   Iterator* iter_;
-  bool arena_mode_;
 
   // No copying allowed
   KeyConvertingIterator(const KeyConvertingIterator&);
@@ -339,16 +322,14 @@ class TableConstructor: public Constructor {
   ~TableConstructor() { Reset(); }
 
   virtual Status FinishImpl(const Options& options,
-                            const ImmutableCFOptions& ioptions,
                             const BlockBasedTableOptions& table_options,
                             const InternalKeyComparator& internal_comparator,
                             const KVMap& data) {
     Reset();
     sink_.reset(new StringSink());
     unique_ptr<TableBuilder> builder;
-    builder.reset(ioptions.table_factory->NewTableBuilder(
-        ioptions, internal_comparator, sink_.get(), options.compression,
-        CompressionOptions()));
+    builder.reset(options.table_factory->NewTableBuilder(
+        options, internal_comparator, sink_.get(), options.compression));
 
     for (KVMap::const_iterator it = data.begin();
          it != data.end();
@@ -371,9 +352,9 @@ class TableConstructor: public Constructor {
     // Open the table
     uniq_id_ = cur_uniq_id_++;
     source_.reset(new StringSource(sink_->contents(), uniq_id_,
-                                   ioptions.allow_mmap_reads));
-    return ioptions.table_factory->NewTableReader(
-        ioptions, soptions, internal_comparator, std::move(source_),
+                                   options.allow_mmap_reads));
+    return options.table_factory->NewTableReader(
+        options, soptions, internal_comparator, std::move(source_),
         sink_->contents().size(), &table_reader_);
   }
 
@@ -391,21 +372,17 @@ class TableConstructor: public Constructor {
     return table_reader_->ApproximateOffsetOf(key);
   }
 
-  virtual Status Reopen(const ImmutableCFOptions& ioptions) {
+  virtual Status Reopen(const Options& options) {
     source_.reset(
         new StringSource(sink_->contents(), uniq_id_,
-                         ioptions.allow_mmap_reads));
-    return ioptions.table_factory->NewTableReader(
-        ioptions, soptions, *last_internal_key_, std::move(source_),
+                         options.allow_mmap_reads));
+    return options.table_factory->NewTableReader(
+        options, soptions, *last_internal_key_, std::move(source_),
         sink_->contents().size(), &table_reader_);
   }
 
   virtual TableReader* GetTableReader() {
     return table_reader_.get();
-  }
-
-  virtual bool AnywayDeleteIterator() const override {
-    return convert_to_internal_key_;
   }
 
  private:
@@ -415,12 +392,12 @@ class TableConstructor: public Constructor {
     sink_.reset();
     source_.reset();
   }
+  bool convert_to_internal_key_;
 
   uint64_t uniq_id_;
   unique_ptr<StringSink> sink_;
   unique_ptr<StringSource> source_;
   unique_ptr<TableReader> table_reader_;
-  bool convert_to_internal_key_;
 
   TableConstructor();
 
@@ -437,25 +414,20 @@ class MemTableConstructor: public Constructor {
         table_factory_(new SkipListFactory) {
     Options options;
     options.memtable_factory = table_factory_;
-    ImmutableCFOptions ioptions(options);
-    memtable_ = new MemTable(internal_comparator_, ioptions,
-        MemTableOptions(MutableCFOptions(options, ioptions), options));
+    memtable_ = new MemTable(internal_comparator_, options);
     memtable_->Ref();
   }
   ~MemTableConstructor() {
     delete memtable_->Unref();
   }
-  virtual Status FinishImpl(const Options&,
-                            const ImmutableCFOptions& ioptions,
+  virtual Status FinishImpl(const Options& options,
                             const BlockBasedTableOptions& table_options,
                             const InternalKeyComparator& internal_comparator,
                             const KVMap& data) {
     delete memtable_->Unref();
-    Options options;
-    options.memtable_factory = table_factory_;
-    ImmutableCFOptions mem_ioptions(options);
-    memtable_ = new MemTable(internal_comparator_, mem_ioptions,
-        MemTableOptions(MutableCFOptions(options, mem_ioptions), options));
+    Options memtable_options;
+    memtable_options.memtable_factory = table_factory_;
+    memtable_ = new MemTable(internal_comparator_, memtable_options);
     memtable_->Ref();
     int seq = 1;
     for (KVMap::const_iterator it = data.begin();
@@ -467,16 +439,10 @@ class MemTableConstructor: public Constructor {
     return Status::OK();
   }
   virtual Iterator* NewIterator() const {
-    return new KeyConvertingIterator(
-        memtable_->NewIterator(ReadOptions(), &arena_), true);
+    return new KeyConvertingIterator(memtable_->NewIterator(ReadOptions()));
   }
 
-  virtual bool AnywayDeleteIterator() const override { return true; }
-
-  virtual bool IsArenaMode() const override { return true; }
-
  private:
-  mutable Arena arena_;
   InternalKeyComparator internal_comparator_;
   MemTable* memtable_;
   std::shared_ptr<SkipListFactory> table_factory_;
@@ -494,7 +460,6 @@ class DBConstructor: public Constructor {
     delete db_;
   }
   virtual Status FinishImpl(const Options& options,
-                            const ImmutableCFOptions& ioptions,
                             const BlockBasedTableOptions& table_options,
                             const InternalKeyComparator& internal_comparator,
                             const KVMap& data) {
@@ -705,7 +670,7 @@ class FixedOrLessPrefixTransform : public SliceTransform {
 
 class Harness {
  public:
-  Harness() : ioptions_(options_), constructor_(nullptr) {}
+  Harness() : constructor_(nullptr) { }
 
   void Init(const TestArgs& args) {
     delete constructor_;
@@ -791,7 +756,6 @@ class Harness {
         constructor_ = new DBConstructor(options_.comparator);
         break;
     }
-    ioptions_ = ImmutableCFOptions(options_);
   }
 
   ~Harness() {
@@ -805,8 +769,8 @@ class Harness {
   void Test(Random* rnd) {
     std::vector<std::string> keys;
     KVMap data;
-    constructor_->Finish(options_, ioptions_, table_options_,
-                         *internal_comparator_, &keys, &data);
+    constructor_->Finish(options_, table_options_, *internal_comparator_,
+                         &keys, &data);
 
     TestForwardScan(keys, data);
     if (support_prev_) {
@@ -827,11 +791,7 @@ class Harness {
       iter->Next();
     }
     ASSERT_TRUE(!iter->Valid());
-    if (constructor_->IsArenaMode() && !constructor_->AnywayDeleteIterator()) {
-      iter->~Iterator();
-    } else {
-      delete iter;
-    }
+    delete iter;
   }
 
   void TestBackwardScan(const std::vector<std::string>& keys,
@@ -846,11 +806,7 @@ class Harness {
       iter->Prev();
     }
     ASSERT_TRUE(!iter->Valid());
-    if (constructor_->IsArenaMode() && !constructor_->AnywayDeleteIterator()) {
-      iter->~Iterator();
-    } else {
-      delete iter;
-    }
+    delete iter;
   }
 
   void TestRandomAccess(Random* rnd,
@@ -920,11 +876,7 @@ class Harness {
         }
       }
     }
-    if (constructor_->IsArenaMode() && !constructor_->AnywayDeleteIterator()) {
-      iter->~Iterator();
-    } else {
-      delete iter;
-    }
+    delete iter;
   }
 
   std::string ToString(const KVMap& data, const KVMap::const_iterator& it) {
@@ -987,7 +939,6 @@ class Harness {
 
  private:
   Options options_ = Options();
-  ImmutableCFOptions ioptions_;
   BlockBasedTableOptions table_options_ = BlockBasedTableOptions();
   Constructor* constructor_;
   bool support_prev_;
@@ -1087,8 +1038,7 @@ TEST(BlockBasedTableTest, BasicBlockBasedTableProperties) {
   table_options.block_restart_interval = 1;
   options.table_factory.reset(NewBlockBasedTableFactory(table_options));
 
-  const ImmutableCFOptions ioptions(options);
-  c.Finish(options, ioptions, table_options,
+  c.Finish(options, table_options,
            GetPlainInternalComparator(options.comparator), &keys, &kvmap);
 
   auto& props = *c.GetTableReader()->GetTableProperties();
@@ -1121,8 +1071,7 @@ TEST(BlockBasedTableTest, FilterPolicyNameProperties) {
   Options options;
   options.table_factory.reset(NewBlockBasedTableFactory(table_options));
 
-  const ImmutableCFOptions ioptions(options);
-  c.Finish(options, ioptions, table_options,
+  c.Finish(options, table_options,
            GetPlainInternalComparator(options.comparator), &keys, &kvmap);
   auto& props = *c.GetTableReader()->GetTableProperties();
   ASSERT_EQ("rocksdb.BuiltinBloomFilter", props.filter_policy_name);
@@ -1173,8 +1122,7 @@ TEST(BlockBasedTableTest, TotalOrderSeekOnHashIndex) {
     c.Add("cccc2", std::string('a', 56));
     std::vector<std::string> keys;
     KVMap kvmap;
-    const ImmutableCFOptions ioptions(options);
-    c.Finish(options, ioptions, table_options,
+    c.Finish(options, table_options,
              GetPlainInternalComparator(options.comparator), &keys, &kvmap);
     auto props = c.GetTableReader()->GetTableProperties();
     ASSERT_EQ(7u, props->num_data_blocks);
@@ -1218,7 +1166,7 @@ static std::string RandomString(Random* rnd, int len) {
   return r;
 }
 
-void AddInternalKey(TableConstructor* c, const std::string& prefix,
+void AddInternalKey(TableConstructor* c, const std::string prefix,
                     int suffix_len = 800) {
   static Random rnd(1023);
   InternalKey k(prefix + RandomString(&rnd, 800), 0, kTypeValue);
@@ -1258,8 +1206,7 @@ TEST(TableTest, HashIndexTest) {
 
   std::unique_ptr<InternalKeyComparator> comparator(
       new InternalKeyComparator(BytewiseComparator()));
-  const ImmutableCFOptions ioptions(options);
-  c.Finish(options, ioptions, table_options, *comparator, &keys, &kvmap);
+  c.Finish(options, table_options, *comparator, &keys, &kvmap);
   auto reader = c.GetTableReader();
 
   auto props = reader->GetTableProperties();
@@ -1367,8 +1314,7 @@ TEST(BlockBasedTableTest, IndexSizeStat) {
     table_options.block_restart_interval = 1;
     options.table_factory.reset(NewBlockBasedTableFactory(table_options));
 
-    const ImmutableCFOptions ioptions(options);
-    c.Finish(options, ioptions, table_options,
+    c.Finish(options, table_options,
              GetPlainInternalComparator(options.comparator), &ks, &kvmap);
     auto index_size = c.GetTableReader()->GetTableProperties()->index_size;
     ASSERT_GT(index_size, last_index_size);
@@ -1394,8 +1340,7 @@ TEST(BlockBasedTableTest, NumBlockStat) {
 
   std::vector<std::string> ks;
   KVMap kvmap;
-  const ImmutableCFOptions ioptions(options);
-  c.Finish(options, ioptions, table_options,
+  c.Finish(options, table_options,
            GetPlainInternalComparator(options.comparator), &ks, &kvmap);
   ASSERT_EQ(kvmap.size(),
             c.GetTableReader()->GetTableProperties()->num_data_blocks);
@@ -1471,8 +1416,7 @@ TEST(BlockBasedTableTest, BlockCacheDisabledTest) {
 
   TableConstructor c(BytewiseComparator(), true);
   c.Add("key", "value");
-  const ImmutableCFOptions ioptions(options);
-  c.Finish(options, ioptions, table_options,
+  c.Finish(options, table_options,
            GetPlainInternalComparator(options.comparator), &keys, &kvmap);
 
   // preloading filter/index blocks is enabled.
@@ -1488,11 +1432,8 @@ TEST(BlockBasedTableTest, BlockCacheDisabledTest) {
   }
 
   {
-    GetContext get_context(options.comparator, nullptr, nullptr, nullptr,
-                           GetContext::kNotFound, Slice(), nullptr,
-                           nullptr, nullptr);
     // a hack that just to trigger BlockBasedTable::GetFilter.
-    reader->Get(ReadOptions(), "non-exist-key", &get_context);
+    reader->Get(ReadOptions(), "non-exist-key", nullptr, nullptr, nullptr);
     BlockCachePropertiesSnapshot props(options.statistics.get());
     props.AssertIndexBlockStat(0, 0);
     props.AssertFilterBlockStat(0, 0);
@@ -1517,8 +1458,7 @@ TEST(BlockBasedTableTest, FilterBlockInBlockCache) {
 
   TableConstructor c(BytewiseComparator());
   c.Add("key", "value");
-  const ImmutableCFOptions ioptions(options);
-  c.Finish(options, ioptions, table_options,
+  c.Finish(options, table_options,
            GetPlainInternalComparator(options.comparator), &keys, &kvmap);
   // preloading filter/index blocks is prohibited.
   auto reader = dynamic_cast<BlockBasedTable*>(c.GetTableReader());
@@ -1572,8 +1512,7 @@ TEST(BlockBasedTableTest, FilterBlockInBlockCache) {
   table_options.block_cache.reset();
   options.table_factory.reset(new BlockBasedTableFactory(table_options));
   options.statistics = CreateDBStatistics();  // reset the stats
-  const ImmutableCFOptions ioptions1(options);
-  c.Reopen(ioptions1);
+  c.Reopen(options);
   table_options.no_block_cache = false;
 
   {
@@ -1590,8 +1529,7 @@ TEST(BlockBasedTableTest, FilterBlockInBlockCache) {
   // too small to fit even one entry.
   table_options.block_cache = NewLRUCache(1);
   options.table_factory.reset(new BlockBasedTableFactory(table_options));
-  const ImmutableCFOptions ioptions2(options);
-  c.Reopen(ioptions2);
+  c.Reopen(options);
   {
     BlockCachePropertiesSnapshot props(options.statistics.get());
     props.AssertEqual(1,  // index block miss
@@ -1645,8 +1583,7 @@ TEST(BlockBasedTableTest, BlockCacheLeak) {
   c.Add("k07", std::string(100000, 'x'));
   std::vector<std::string> keys;
   KVMap kvmap;
-  const ImmutableCFOptions ioptions(opt);
-  c.Finish(opt, ioptions, table_options, *ikc, &keys, &kvmap);
+  c.Finish(opt, table_options, *ikc, &keys, &kvmap);
 
   unique_ptr<Iterator> iter(c.NewIterator());
   iter->SeekToFirst();
@@ -1657,8 +1594,7 @@ TEST(BlockBasedTableTest, BlockCacheLeak) {
   }
   ASSERT_OK(iter->status());
 
-  const ImmutableCFOptions ioptions1(opt);
-  ASSERT_OK(c.Reopen(ioptions1));
+  ASSERT_OK(c.Reopen(opt));
   auto table_reader = dynamic_cast<BlockBasedTable*>(c.GetTableReader());
   for (const std::string& key : keys) {
     ASSERT_TRUE(table_reader->TEST_KeyInCache(ReadOptions(), key));
@@ -1667,8 +1603,7 @@ TEST(BlockBasedTableTest, BlockCacheLeak) {
   // rerun with different block cache
   table_options.block_cache = NewLRUCache(16 * 1024 * 1024);
   opt.table_factory.reset(NewBlockBasedTableFactory(table_options));
-  const ImmutableCFOptions ioptions2(opt);
-  ASSERT_OK(c.Reopen(ioptions2));
+  ASSERT_OK(c.Reopen(opt));
   table_reader = dynamic_cast<BlockBasedTable*>(c.GetTableReader());
   for (const std::string& key : keys) {
     ASSERT_TRUE(!table_reader->TEST_KeyInCache(ReadOptions(), key));
@@ -1684,11 +1619,9 @@ TEST(PlainTableTest, BasicPlainTableProperties) {
   PlainTableFactory factory(plain_table_options);
   StringSink sink;
   Options options;
-  const ImmutableCFOptions ioptions(options);
   InternalKeyComparator ikc(options.comparator);
   std::unique_ptr<TableBuilder> builder(
-      factory.NewTableBuilder(ioptions, ikc, &sink, kNoCompression,
-                              CompressionOptions()));
+      factory.NewTableBuilder(options, ikc, &sink, kNoCompression));
 
   for (char c = 'a'; c <= 'z'; ++c) {
     std::string key(8, c);
@@ -1731,9 +1664,7 @@ TEST(GeneralTableTest, ApproximateOffsetOfPlain) {
   options.compression = kNoCompression;
   BlockBasedTableOptions table_options;
   table_options.block_size = 1024;
-  const ImmutableCFOptions ioptions(options);
-  c.Finish(options, ioptions, table_options, internal_comparator,
-           &keys, &kvmap);
+  c.Finish(options, table_options, internal_comparator, &keys, &kvmap);
 
   ASSERT_TRUE(Between(c.ApproximateOffsetOf("abc"),       0,      0));
   ASSERT_TRUE(Between(c.ApproximateOffsetOf("k01"),       0,      0));
@@ -1763,8 +1694,7 @@ static void DoCompressionTest(CompressionType comp) {
   options.compression = comp;
   BlockBasedTableOptions table_options;
   table_options.block_size = 1024;
-  const ImmutableCFOptions ioptions(options);
-  c.Finish(options, ioptions, table_options, ikc, &keys, &kvmap);
+  c.Finish(options, table_options, ikc, &keys, &kvmap);
 
   ASSERT_TRUE(Between(c.ApproximateOffsetOf("abc"),       0,      0));
   ASSERT_TRUE(Between(c.ApproximateOffsetOf("k01"),       0,      0));
@@ -1866,9 +1796,7 @@ TEST(MemTableTest, Simple) {
   auto table_factory = std::make_shared<SkipListFactory>();
   Options options;
   options.memtable_factory = table_factory;
-  ImmutableCFOptions ioptions(options);
-  MemTable* memtable = new MemTable(cmp, ioptions,
-        MemTableOptions(MutableCFOptions(options, ioptions), options));
+  MemTable* memtable = new MemTable(cmp, options);
   memtable->Ref();
   WriteBatch batch;
   WriteBatchInternal::SetSequence(&batch, 100);
@@ -1879,8 +1807,7 @@ TEST(MemTableTest, Simple) {
   ColumnFamilyMemTablesDefault cf_mems_default(memtable, &options);
   ASSERT_TRUE(WriteBatchInternal::InsertInto(&batch, &cf_mems_default).ok());
 
-  Arena arena;
-  ScopedArenaIterator iter(memtable->NewIterator(ReadOptions(), &arena));
+  Iterator* iter = memtable->NewIterator(ReadOptions());
   iter->SeekToFirst();
   while (iter->Valid()) {
     fprintf(stderr, "key: '%s' -> '%s'\n",
@@ -1889,6 +1816,7 @@ TEST(MemTableTest, Simple) {
     iter->Next();
   }
 
+  delete iter;
   delete memtable->Unref();
 }
 

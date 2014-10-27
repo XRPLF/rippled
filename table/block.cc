@@ -297,10 +297,12 @@ uint32_t Block::NumRestarts() const {
   return DecodeFixed32(data_ + size_ - sizeof(uint32_t));
 }
 
-Block::Block(BlockContents&& contents)
-    : contents_(std::move(contents)),
-      data_(contents_.data.data()),
-      size_(contents_.data.size()) {
+Block::Block(const BlockContents& contents)
+    : data_(contents.data.data()),
+      size_(contents.data.size()),
+      owned_(contents.heap_allocated),
+      cachable_(contents.cachable),
+      compression_type_(contents.compression_type) {
   if (size_ < sizeof(uint32_t)) {
     size_ = 0;  // Error marker
   } else {
@@ -310,6 +312,12 @@ Block::Block(BlockContents&& contents)
       // restart_offset_ wrapped around.
       size_ = 0;
     }
+  }
+}
+
+Block::~Block() {
+  if (owned_) {
+    delete[] data_;
   }
 }
 

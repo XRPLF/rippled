@@ -7,11 +7,7 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "db/internal_stats.h"
-
-#ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
-#endif
-
 #include <inttypes.h>
 #include <vector>
 #include "db/column_family.h"

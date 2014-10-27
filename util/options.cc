@@ -8,12 +8,8 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "rocksdb/options.h"
-#include "rocksdb/immutable_options.h"
 
-#ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
-#endif
-
 #include <inttypes.h>
 #include <limits>
 
@@ -31,38 +27,6 @@
 #include "util/statistics.h"
 
 namespace rocksdb {
-
-ImmutableCFOptions::ImmutableCFOptions(const Options& options)
-  : compaction_style(options.compaction_style),
-    compaction_options_universal(options.compaction_options_universal),
-    compaction_options_fifo(options.compaction_options_fifo),
-    prefix_extractor(options.prefix_extractor.get()),
-    comparator(options.comparator),
-    merge_operator(options.merge_operator.get()),
-    compaction_filter(options.compaction_filter),
-    compaction_filter_factory(options.compaction_filter_factory.get()),
-    compaction_filter_factory_v2(options.compaction_filter_factory_v2.get()),
-    info_log(options.info_log.get()),
-    statistics(options.statistics.get()),
-    env(options.env),
-    allow_mmap_reads(options.allow_mmap_reads),
-    allow_mmap_writes(options.allow_mmap_writes),
-    db_paths(options.db_paths),
-    memtable_factory(options.memtable_factory.get()),
-    table_factory(options.table_factory.get()),
-    table_properties_collector_factories(
-        options.table_properties_collector_factories),
-    advise_random_on_open(options.advise_random_on_open),
-    bloom_locality(options.bloom_locality),
-    purge_redundant_kvs_while_flush(options.purge_redundant_kvs_while_flush),
-    min_partial_merge_operands(options.min_partial_merge_operands),
-    disable_data_sync(options.disableDataSync),
-    use_fsync(options.use_fsync),
-    compression(options.compression),
-    compression_per_level(options.compression_per_level),
-    compression_opts(options.compression_opts),
-    access_hint_on_compaction_start(options.access_hint_on_compaction_start),
-    num_levels(options.num_levels) {}
 
 ColumnFamilyOptions::ColumnFamilyOptions()
     : comparator(BytewiseComparator()),
@@ -215,6 +179,7 @@ DBOptions::DBOptions()
       advise_random_on_open(true),
       access_hint_on_compaction_start(NORMAL),
       use_adaptive_mutex(false),
+      allow_thread_local(true),
       bytes_per_sync(0) {}
 
 DBOptions::DBOptions(const Options& options)
@@ -257,6 +222,7 @@ DBOptions::DBOptions(const Options& options)
       advise_random_on_open(options.advise_random_on_open),
       access_hint_on_compaction_start(options.access_hint_on_compaction_start),
       use_adaptive_mutex(options.use_adaptive_mutex),
+      allow_thread_local(options.allow_thread_local),
       bytes_per_sync(options.bytes_per_sync) {}
 
 static const char* const access_hints[] = {
@@ -274,8 +240,8 @@ void DBOptions::Dump(Logger* log) const {
     Log(log, "       Options.disableDataSync: %d", disableDataSync);
     Log(log, "             Options.use_fsync: %d", use_fsync);
     Log(log, "     Options.max_log_file_size: %zu", max_log_file_size);
-    Log(log, "Options.max_manifest_file_size: %" PRIu64,
-        max_manifest_file_size);
+    Log(log, "Options.max_manifest_file_size: %lu",
+        (unsigned long)max_manifest_file_size);
     Log(log, "     Options.log_file_time_to_roll: %zu", log_file_time_to_roll);
     Log(log, "     Options.keep_log_file_num: %zu", keep_log_file_num);
     Log(log, "       Options.allow_os_buffer: %d", allow_os_buffer);
@@ -291,16 +257,16 @@ void DBOptions::Dump(Logger* log) const {
         table_cache_numshardbits);
     Log(log, "    Options.table_cache_remove_scan_count_limit: %d",
         table_cache_remove_scan_count_limit);
-    Log(log, "    Options.delete_obsolete_files_period_micros: %" PRIu64,
-        delete_obsolete_files_period_micros);
+    Log(log, "    Options.delete_obsolete_files_period_micros: %lu",
+        (unsigned long)delete_obsolete_files_period_micros);
     Log(log, "             Options.max_background_compactions: %d",
         max_background_compactions);
     Log(log, "                 Options.max_background_flushes: %d",
         max_background_flushes);
-    Log(log, "                        Options.WAL_ttl_seconds: %" PRIu64,
-        WAL_ttl_seconds);
-    Log(log, "                      Options.WAL_size_limit_MB: %" PRIu64,
-        WAL_size_limit_MB);
+    Log(log, "                        Options.WAL_ttl_seconds: %lu",
+        (unsigned long)WAL_ttl_seconds);
+    Log(log, "                      Options.WAL_size_limit_MB: %lu",
+        (unsigned long)WAL_size_limit_MB);
     Log(log, "            Options.manifest_preallocation_size: %zu",
         manifest_preallocation_size);
     Log(log, "                         Options.allow_os_buffer: %d",
@@ -323,8 +289,8 @@ void DBOptions::Dump(Logger* log) const {
         use_adaptive_mutex);
     Log(log, "                            Options.rate_limiter: %p",
         rate_limiter.get());
-    Log(log, "                          Options.bytes_per_sync: %" PRIu64,
-        bytes_per_sync);
+    Log(log, "                          Options.bytes_per_sync: %lu",
+        (unsigned long)bytes_per_sync);
 }  // DBOptions::Dump
 
 void ColumnFamilyOptions::Dump(Logger* log) const {
@@ -372,20 +338,20 @@ void ColumnFamilyOptions::Dump(Logger* log) const {
         level0_stop_writes_trigger);
     Log(log,"               Options.max_mem_compaction_level: %d",
         max_mem_compaction_level);
-    Log(log,"                  Options.target_file_size_base: %" PRIu64,
+    Log(log,"                  Options.target_file_size_base: %d",
         target_file_size_base);
     Log(log,"            Options.target_file_size_multiplier: %d",
         target_file_size_multiplier);
-    Log(log,"               Options.max_bytes_for_level_base: %" PRIu64,
-        max_bytes_for_level_base);
+    Log(log,"               Options.max_bytes_for_level_base: %lu",
+        (unsigned long)max_bytes_for_level_base);
     Log(log,"         Options.max_bytes_for_level_multiplier: %d",
         max_bytes_for_level_multiplier);
     for (int i = 0; i < num_levels; i++) {
       Log(log,"Options.max_bytes_for_level_multiplier_addtl[%d]: %d",
           i, max_bytes_for_level_multiplier_additional[i]);
     }
-    Log(log,"      Options.max_sequential_skip_in_iterations: %" PRIu64,
-        max_sequential_skip_in_iterations);
+    Log(log,"      Options.max_sequential_skip_in_iterations: %lu",
+        (unsigned long)max_sequential_skip_in_iterations);
     Log(log,"             Options.expanded_compaction_factor: %d",
         expanded_compaction_factor);
     Log(log,"               Options.source_compaction_factor: %d",
@@ -420,7 +386,7 @@ void ColumnFamilyOptions::Dump(Logger* log) const {
             "max_size_amplification_percent: %u",
         compaction_options_universal.max_size_amplification_percent);
     Log(log,
-        "Options.compaction_options_universal.compression_size_percent: %d",
+        "Options.compaction_options_universal.compression_size_percent: %u",
         compaction_options_universal.compression_size_percent);
     Log(log, "Options.compaction_options_fifo.max_table_files_size: %" PRIu64,
         compaction_options_fifo.max_table_files_size);

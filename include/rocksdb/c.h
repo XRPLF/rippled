@@ -537,6 +537,8 @@ extern void rocksdb_options_set_min_partial_merge_operands(
     rocksdb_options_t*, uint32_t);
 extern void rocksdb_options_set_bloom_locality(
     rocksdb_options_t*, uint32_t);
+extern void rocksdb_options_set_allow_thread_local(
+    rocksdb_options_t*, unsigned char);
 extern void rocksdb_options_set_inplace_update_support(
     rocksdb_options_t*, unsigned char);
 extern void rocksdb_options_set_inplace_update_num_locks(
@@ -696,10 +698,6 @@ extern void rocksdb_readoptions_set_fill_cache(
 extern void rocksdb_readoptions_set_snapshot(
     rocksdb_readoptions_t*,
     const rocksdb_snapshot_t*);
-extern void rocksdb_readoptions_set_iterate_upper_bound(
-    rocksdb_readoptions_t*,
-    const char* key,
-    size_t keylen);
 extern void rocksdb_readoptions_set_read_tier(
     rocksdb_readoptions_t*, int);
 extern void rocksdb_readoptions_set_tailing(

@@ -158,9 +158,7 @@ TEST(DBIteratorTest, DBIteratorPrevNext) {
     internal_iter->Finish();
 
     std::unique_ptr<Iterator> db_iter(
-        NewDBIterator(env_, ImmutableCFOptions(options),
-                      BytewiseComparator(), internal_iter, 10,
-                      options.max_sequential_skip_in_iterations));
+        NewDBIterator(env_, options, BytewiseComparator(), internal_iter, 10));
 
     db_iter->SeekToLast();
     ASSERT_TRUE(db_iter->Valid());
@@ -193,9 +191,7 @@ TEST(DBIteratorTest, DBIteratorPrevNext) {
     internal_iter->Finish();
 
     std::unique_ptr<Iterator> db_iter(
-        NewDBIterator(env_, ImmutableCFOptions(options),
-                      BytewiseComparator(), internal_iter, 10,
-                      options.max_sequential_skip_in_iterations));
+        NewDBIterator(env_, options, BytewiseComparator(), internal_iter, 10));
 
     db_iter->SeekToFirst();
     ASSERT_TRUE(db_iter->Valid());
@@ -236,9 +232,7 @@ TEST(DBIteratorTest, DBIteratorPrevNext) {
     internal_iter->Finish();
 
     std::unique_ptr<Iterator> db_iter(
-        NewDBIterator(env_, ImmutableCFOptions(options),
-                      BytewiseComparator(), internal_iter, 2,
-                      options.max_sequential_skip_in_iterations));
+        NewDBIterator(env_, options, BytewiseComparator(), internal_iter, 2));
     db_iter->SeekToLast();
     ASSERT_TRUE(db_iter->Valid());
     ASSERT_EQ(db_iter->key().ToString(), "b");
@@ -268,9 +262,7 @@ TEST(DBIteratorTest, DBIteratorPrevNext) {
     internal_iter->Finish();
 
     std::unique_ptr<Iterator> db_iter(
-        NewDBIterator(env_, ImmutableCFOptions(options),
-                      BytewiseComparator(), internal_iter, 10,
-                      options.max_sequential_skip_in_iterations));
+        NewDBIterator(env_, options, BytewiseComparator(), internal_iter, 10));
     db_iter->SeekToLast();
     ASSERT_TRUE(db_iter->Valid());
     ASSERT_EQ(db_iter->key().ToString(), "c");
@@ -296,9 +288,7 @@ TEST(DBIteratorTest, DBIteratorEmpty) {
     internal_iter->Finish();
 
     std::unique_ptr<Iterator> db_iter(
-        NewDBIterator(env_, ImmutableCFOptions(options),
-                      BytewiseComparator(), internal_iter, 0,
-                      options.max_sequential_skip_in_iterations));
+        NewDBIterator(env_, options, BytewiseComparator(), internal_iter, 0));
     db_iter->SeekToLast();
     ASSERT_TRUE(!db_iter->Valid());
   }
@@ -308,9 +298,7 @@ TEST(DBIteratorTest, DBIteratorEmpty) {
     internal_iter->Finish();
 
     std::unique_ptr<Iterator> db_iter(
-        NewDBIterator(env_, ImmutableCFOptions(options),
-                      BytewiseComparator(), internal_iter, 0,
-                      options.max_sequential_skip_in_iterations));
+        NewDBIterator(env_, options, BytewiseComparator(), internal_iter, 0));
     db_iter->SeekToFirst();
     ASSERT_TRUE(!db_iter->Valid());
   }
@@ -330,9 +318,7 @@ TEST(DBIteratorTest, DBIteratorUseSkipCountSkips) {
   internal_iter->Finish();
 
   std::unique_ptr<Iterator> db_iter(
-      NewDBIterator(env_, ImmutableCFOptions(options),
-                    BytewiseComparator(), internal_iter, 2,
-                    options.max_sequential_skip_in_iterations));
+      NewDBIterator(env_, options, BytewiseComparator(), internal_iter, 2));
   db_iter->SeekToLast();
   ASSERT_TRUE(db_iter->Valid());
   ASSERT_EQ(db_iter->key().ToString(), "c");
@@ -371,9 +357,7 @@ TEST(DBIteratorTest, DBIteratorUseSkip) {
 
       options.statistics = rocksdb::CreateDBStatistics();
       std::unique_ptr<Iterator> db_iter(NewDBIterator(
-          env_, ImmutableCFOptions(options),
-          BytewiseComparator(), internal_iter, i + 2,
-          options.max_sequential_skip_in_iterations));
+          env_, options, BytewiseComparator(), internal_iter, i + 2));
       db_iter->SeekToLast();
       ASSERT_TRUE(db_iter->Valid());
 
@@ -407,9 +391,7 @@ TEST(DBIteratorTest, DBIteratorUseSkip) {
       internal_iter->Finish();
 
       std::unique_ptr<Iterator> db_iter(NewDBIterator(
-          env_, ImmutableCFOptions(options),
-          BytewiseComparator(), internal_iter, i + 2,
-          options.max_sequential_skip_in_iterations));
+          env_, options, BytewiseComparator(), internal_iter, i + 2));
       db_iter->SeekToLast();
       ASSERT_TRUE(db_iter->Valid());
 
@@ -436,9 +418,7 @@ TEST(DBIteratorTest, DBIteratorUseSkip) {
       internal_iter->Finish();
 
       std::unique_ptr<Iterator> db_iter(NewDBIterator(
-          env_, ImmutableCFOptions(options),
-          BytewiseComparator(), internal_iter, 202,
-          options.max_sequential_skip_in_iterations));
+          env_, options, BytewiseComparator(), internal_iter, 202));
       db_iter->SeekToLast();
       ASSERT_TRUE(db_iter->Valid());
 
@@ -469,9 +449,7 @@ TEST(DBIteratorTest, DBIteratorUseSkip) {
       internal_iter->AddPut("c", "200");
       internal_iter->Finish();
       std::unique_ptr<Iterator> db_iter(
-          NewDBIterator(env_, ImmutableCFOptions(options),
-                        BytewiseComparator(), internal_iter, i,
-                        options.max_sequential_skip_in_iterations));
+          NewDBIterator(env_, options, BytewiseComparator(), internal_iter, i));
       db_iter->SeekToLast();
       ASSERT_TRUE(!db_iter->Valid());
 
@@ -486,9 +464,7 @@ TEST(DBIteratorTest, DBIteratorUseSkip) {
     internal_iter->AddPut("c", "200");
     internal_iter->Finish();
     std::unique_ptr<Iterator> db_iter(
-        NewDBIterator(env_, ImmutableCFOptions(options),
-                      BytewiseComparator(), internal_iter, 200,
-                      options.max_sequential_skip_in_iterations));
+        NewDBIterator(env_, options, BytewiseComparator(), internal_iter, 200));
     db_iter->SeekToLast();
     ASSERT_TRUE(db_iter->Valid());
     ASSERT_EQ(db_iter->key().ToString(), "c");
@@ -521,9 +497,7 @@ TEST(DBIteratorTest, DBIteratorUseSkip) {
       internal_iter->Finish();
 
       std::unique_ptr<Iterator> db_iter(NewDBIterator(
-          env_, ImmutableCFOptions(options),
-          BytewiseComparator(), internal_iter, i + 2,
-          options.max_sequential_skip_in_iterations));
+          env_, options, BytewiseComparator(), internal_iter, i + 2));
       db_iter->SeekToLast();
       ASSERT_TRUE(db_iter->Valid());
 
@@ -556,9 +530,7 @@ TEST(DBIteratorTest, DBIteratorUseSkip) {
       internal_iter->Finish();
 
       std::unique_ptr<Iterator> db_iter(NewDBIterator(
-          env_, ImmutableCFOptions(options),
-          BytewiseComparator(), internal_iter, i + 2,
-          options.max_sequential_skip_in_iterations));
+          env_, options, BytewiseComparator(), internal_iter, i + 2));
       db_iter->SeekToLast();
       ASSERT_TRUE(db_iter->Valid());
 
@@ -598,9 +570,7 @@ TEST(DBIteratorTest, DBIterator) {
     internal_iter->Finish();
 
     std::unique_ptr<Iterator> db_iter(
-        NewDBIterator(env_, ImmutableCFOptions(options),
-                      BytewiseComparator(), internal_iter, 1,
-                      options.max_sequential_skip_in_iterations));
+        NewDBIterator(env_, options, BytewiseComparator(), internal_iter, 1));
     db_iter->SeekToFirst();
     ASSERT_TRUE(db_iter->Valid());
     ASSERT_EQ(db_iter->key().ToString(), "a");
@@ -620,9 +590,7 @@ TEST(DBIteratorTest, DBIterator) {
     internal_iter->Finish();
 
     std::unique_ptr<Iterator> db_iter(
-        NewDBIterator(env_, ImmutableCFOptions(options),
-                      BytewiseComparator(), internal_iter, 0,
-                      options.max_sequential_skip_in_iterations));
+        NewDBIterator(env_, options, BytewiseComparator(), internal_iter, 0));
     db_iter->SeekToFirst();
     ASSERT_TRUE(db_iter->Valid());
     ASSERT_EQ(db_iter->key().ToString(), "a");
@@ -641,9 +609,7 @@ TEST(DBIteratorTest, DBIterator) {
     internal_iter->Finish();
 
     std::unique_ptr<Iterator> db_iter(
-        NewDBIterator(env_, ImmutableCFOptions(options),
-                      BytewiseComparator(), internal_iter, 2,
-                      options.max_sequential_skip_in_iterations));
+        NewDBIterator(env_, options, BytewiseComparator(), internal_iter, 2));
     db_iter->SeekToFirst();
     ASSERT_TRUE(db_iter->Valid());
     ASSERT_EQ(db_iter->key().ToString(), "a");
@@ -662,9 +628,7 @@ TEST(DBIteratorTest, DBIterator) {
     internal_iter->Finish();
 
     std::unique_ptr<Iterator> db_iter(
-        NewDBIterator(env_, ImmutableCFOptions(options),
-                      BytewiseComparator(), internal_iter, 4,
-                      options.max_sequential_skip_in_iterations));
+        NewDBIterator(env_, options, BytewiseComparator(), internal_iter, 4));
     db_iter->SeekToFirst();
     ASSERT_TRUE(db_iter->Valid());
     ASSERT_EQ(db_iter->key().ToString(), "a");
@@ -690,9 +654,7 @@ TEST(DBIteratorTest, DBIterator) {
       internal_iter->Finish();
 
       std::unique_ptr<Iterator> db_iter(
-          NewDBIterator(env_, ImmutableCFOptions(options),
-                        BytewiseComparator(), internal_iter, 0,
-                        options.max_sequential_skip_in_iterations));
+          NewDBIterator(env_, options, BytewiseComparator(), internal_iter, 0));
       db_iter->SeekToLast();
       ASSERT_TRUE(db_iter->Valid());
       ASSERT_EQ(db_iter->key().ToString(), "a");
@@ -713,9 +675,7 @@ TEST(DBIteratorTest, DBIterator) {
       internal_iter->Finish();
 
       std::unique_ptr<Iterator> db_iter(
-          NewDBIterator(env_, ImmutableCFOptions(options),
-                        BytewiseComparator(), internal_iter, 1,
-                        options.max_sequential_skip_in_iterations));
+          NewDBIterator(env_, options, BytewiseComparator(), internal_iter, 1));
       db_iter->SeekToLast();
       ASSERT_TRUE(db_iter->Valid());
       ASSERT_EQ(db_iter->key().ToString(), "a");
@@ -736,9 +696,7 @@ TEST(DBIteratorTest, DBIterator) {
       internal_iter->Finish();
 
       std::unique_ptr<Iterator> db_iter(
-          NewDBIterator(env_, ImmutableCFOptions(options),
-                        BytewiseComparator(), internal_iter, 2,
-                        options.max_sequential_skip_in_iterations));
+          NewDBIterator(env_, options, BytewiseComparator(), internal_iter, 2));
       db_iter->SeekToLast();
       ASSERT_TRUE(db_iter->Valid());
       ASSERT_EQ(db_iter->key().ToString(), "a");
@@ -759,9 +717,7 @@ TEST(DBIteratorTest, DBIterator) {
       internal_iter->Finish();
 
       std::unique_ptr<Iterator> db_iter(
-          NewDBIterator(env_, ImmutableCFOptions(options),
-                        BytewiseComparator(), internal_iter, 3,
-                        options.max_sequential_skip_in_iterations));
+          NewDBIterator(env_, options, BytewiseComparator(), internal_iter, 3));
       db_iter->SeekToLast();
       ASSERT_TRUE(db_iter->Valid());
       ASSERT_EQ(db_iter->key().ToString(), "a");
@@ -782,9 +738,7 @@ TEST(DBIteratorTest, DBIterator) {
       internal_iter->Finish();
 
       std::unique_ptr<Iterator> db_iter(
-          NewDBIterator(env_, ImmutableCFOptions(options),
-                        BytewiseComparator(), internal_iter, 4,
-                        options.max_sequential_skip_in_iterations));
+          NewDBIterator(env_, options, BytewiseComparator(), internal_iter, 4));
       db_iter->SeekToLast();
       ASSERT_TRUE(db_iter->Valid());
       ASSERT_EQ(db_iter->key().ToString(), "a");
@@ -805,9 +759,7 @@ TEST(DBIteratorTest, DBIterator) {
       internal_iter->Finish();
 
       std::unique_ptr<Iterator> db_iter(
-          NewDBIterator(env_, ImmutableCFOptions(options),
-                        BytewiseComparator(), internal_iter, 5,
-                        options.max_sequential_skip_in_iterations));
+          NewDBIterator(env_, options, BytewiseComparator(), internal_iter, 5));
       db_iter->SeekToLast();
       ASSERT_TRUE(db_iter->Valid());
       ASSERT_EQ(db_iter->key().ToString(), "a");
@@ -828,9 +780,7 @@ TEST(DBIteratorTest, DBIterator) {
       internal_iter->Finish();
 
       std::unique_ptr<Iterator> db_iter(
-          NewDBIterator(env_, ImmutableCFOptions(options),
-                        BytewiseComparator(), internal_iter, 6,
-                        options.max_sequential_skip_in_iterations));
+          NewDBIterator(env_, options, BytewiseComparator(), internal_iter, 6));
       db_iter->SeekToLast();
       ASSERT_TRUE(db_iter->Valid());
       ASSERT_EQ(db_iter->key().ToString(), "a");
@@ -853,9 +803,7 @@ TEST(DBIteratorTest, DBIterator) {
       internal_iter->Finish();
 
       std::unique_ptr<Iterator> db_iter(
-          NewDBIterator(env_, ImmutableCFOptions(options),
-                        BytewiseComparator(), internal_iter, 0,
-                        options.max_sequential_skip_in_iterations));
+          NewDBIterator(env_, options, BytewiseComparator(), internal_iter, 0));
       db_iter->SeekToLast();
       ASSERT_TRUE(db_iter->Valid());
       ASSERT_EQ(db_iter->key().ToString(), "a");
@@ -876,9 +824,7 @@ TEST(DBIteratorTest, DBIterator) {
       internal_iter->Finish();
 
       std::unique_ptr<Iterator> db_iter(
-          NewDBIterator(env_, ImmutableCFOptions(options),
-                        BytewiseComparator(), internal_iter, 1,
-                        options.max_sequential_skip_in_iterations));
+          NewDBIterator(env_, options, BytewiseComparator(), internal_iter, 1));
       db_iter->SeekToLast();
       ASSERT_TRUE(db_iter->Valid());
       ASSERT_EQ(db_iter->key().ToString(), "a");
@@ -899,9 +845,7 @@ TEST(DBIteratorTest, DBIterator) {
       internal_iter->Finish();
 
       std::unique_ptr<Iterator> db_iter(
-          NewDBIterator(env_, ImmutableCFOptions(options),
-                        BytewiseComparator(), internal_iter, 2,
-                        options.max_sequential_skip_in_iterations));
+          NewDBIterator(env_, options, BytewiseComparator(), internal_iter, 2));
       db_iter->SeekToLast();
       ASSERT_TRUE(db_iter->Valid());
       ASSERT_EQ(db_iter->key().ToString(), "a");
@@ -922,9 +866,7 @@ TEST(DBIteratorTest, DBIterator) {
       internal_iter->Finish();
 
       std::unique_ptr<Iterator> db_iter(
-          NewDBIterator(env_, ImmutableCFOptions(options),
-                        BytewiseComparator(), internal_iter, 3,
-                        options.max_sequential_skip_in_iterations));
+          NewDBIterator(env_, options, BytewiseComparator(), internal_iter, 3));
       db_iter->SeekToLast();
       ASSERT_TRUE(!db_iter->Valid());
     }
@@ -941,9 +883,7 @@ TEST(DBIteratorTest, DBIterator) {
       internal_iter->Finish();
 
       std::unique_ptr<Iterator> db_iter(
-          NewDBIterator(env_, ImmutableCFOptions(options),
-                        BytewiseComparator(), internal_iter, 4,
-                        options.max_sequential_skip_in_iterations));
+          NewDBIterator(env_, options, BytewiseComparator(), internal_iter, 4));
       db_iter->SeekToLast();
       ASSERT_TRUE(db_iter->Valid());
       ASSERT_EQ(db_iter->key().ToString(), "a");
@@ -964,9 +904,7 @@ TEST(DBIteratorTest, DBIterator) {
       internal_iter->Finish();
 
       std::unique_ptr<Iterator> db_iter(
-          NewDBIterator(env_, ImmutableCFOptions(options),
-                        BytewiseComparator(), internal_iter, 5,
-                        options.max_sequential_skip_in_iterations));
+          NewDBIterator(env_, options, BytewiseComparator(), internal_iter, 5));
       db_iter->SeekToLast();
       ASSERT_TRUE(db_iter->Valid());
       ASSERT_EQ(db_iter->key().ToString(), "a");
@@ -987,9 +925,7 @@ TEST(DBIteratorTest, DBIterator) {
       internal_iter->Finish();
 
       std::unique_ptr<Iterator> db_iter(
-          NewDBIterator(env_, ImmutableCFOptions(options),
-                        BytewiseComparator(), internal_iter, 6,
-                        options.max_sequential_skip_in_iterations));
+          NewDBIterator(env_, options, BytewiseComparator(), internal_iter, 6));
       db_iter->SeekToLast();
       ASSERT_TRUE(db_iter->Valid());
       ASSERT_EQ(db_iter->key().ToString(), "a");
@@ -1024,9 +960,7 @@ TEST(DBIteratorTest, DBIterator) {
       internal_iter->Finish();
 
       std::unique_ptr<Iterator> db_iter(
-          NewDBIterator(env_, ImmutableCFOptions(options),
-                        BytewiseComparator(), internal_iter, 0,
-                        options.max_sequential_skip_in_iterations));
+          NewDBIterator(env_, options, BytewiseComparator(), internal_iter, 0));
       db_iter->SeekToLast();
       ASSERT_TRUE(db_iter->Valid());
       ASSERT_EQ(db_iter->key().ToString(), "a");
@@ -1059,9 +993,7 @@ TEST(DBIteratorTest, DBIterator) {
       internal_iter->Finish();
 
       std::unique_ptr<Iterator> db_iter(
-          NewDBIterator(env_, ImmutableCFOptions(options),
-                        BytewiseComparator(), internal_iter, 2,
-                        options.max_sequential_skip_in_iterations));
+          NewDBIterator(env_, options, BytewiseComparator(), internal_iter, 2));
       db_iter->SeekToLast();
       ASSERT_TRUE(db_iter->Valid());
 
@@ -1100,9 +1032,7 @@ TEST(DBIteratorTest, DBIterator) {
       internal_iter->Finish();
 
       std::unique_ptr<Iterator> db_iter(
-          NewDBIterator(env_, ImmutableCFOptions(options),
-                        BytewiseComparator(), internal_iter, 4,
-                        options.max_sequential_skip_in_iterations));
+          NewDBIterator(env_, options, BytewiseComparator(), internal_iter, 4));
       db_iter->SeekToLast();
       ASSERT_TRUE(db_iter->Valid());
 
@@ -1141,9 +1071,7 @@ TEST(DBIteratorTest, DBIterator) {
       internal_iter->Finish();
 
       std::unique_ptr<Iterator> db_iter(
-          NewDBIterator(env_, ImmutableCFOptions(options),
-                        BytewiseComparator(), internal_iter, 5,
-                        options.max_sequential_skip_in_iterations));
+          NewDBIterator(env_, options, BytewiseComparator(), internal_iter, 5));
       db_iter->SeekToLast();
       ASSERT_TRUE(db_iter->Valid());
 
@@ -1187,9 +1115,7 @@ TEST(DBIteratorTest, DBIterator) {
       internal_iter->Finish();
 
       std::unique_ptr<Iterator> db_iter(
-          NewDBIterator(env_, ImmutableCFOptions(options),
-                        BytewiseComparator(), internal_iter, 6,
-                        options.max_sequential_skip_in_iterations));
+          NewDBIterator(env_, options, BytewiseComparator(), internal_iter, 6));
       db_iter->SeekToLast();
       ASSERT_TRUE(db_iter->Valid());
 
@@ -1234,9 +1160,7 @@ TEST(DBIteratorTest, DBIterator) {
       internal_iter->Finish();
 
       std::unique_ptr<Iterator> db_iter(
-          NewDBIterator(env_, ImmutableCFOptions(options),
-                        BytewiseComparator(), internal_iter, 7,
-                        options.max_sequential_skip_in_iterations));
+          NewDBIterator(env_, options, BytewiseComparator(), internal_iter, 7));
       db_iter->SeekToLast();
       ASSERT_TRUE(db_iter->Valid());
 
@@ -1275,9 +1199,7 @@ TEST(DBIteratorTest, DBIterator) {
       internal_iter->Finish();
 
       std::unique_ptr<Iterator> db_iter(
-          NewDBIterator(env_, ImmutableCFOptions(options),
-                        BytewiseComparator(), internal_iter, 9,
-                        options.max_sequential_skip_in_iterations));
+          NewDBIterator(env_, options, BytewiseComparator(), internal_iter, 9));
       db_iter->SeekToLast();
       ASSERT_TRUE(db_iter->Valid());
 
@@ -1322,9 +1244,7 @@ TEST(DBIteratorTest, DBIterator) {
       internal_iter->Finish();
 
       std::unique_ptr<Iterator> db_iter(NewDBIterator(
-          env_, ImmutableCFOptions(options),
-          BytewiseComparator(), internal_iter, 13,
-          options.max_sequential_skip_in_iterations));
+          env_, options, BytewiseComparator(), internal_iter, 13));
       db_iter->SeekToLast();
       ASSERT_TRUE(db_iter->Valid());
 
@@ -1370,9 +1290,7 @@ TEST(DBIteratorTest, DBIterator) {
       internal_iter->Finish();
 
       std::unique_ptr<Iterator> db_iter(NewDBIterator(
-          env_, ImmutableCFOptions(options),
-          BytewiseComparator(), internal_iter, 14,
-          options.max_sequential_skip_in_iterations));
+          env_, options, BytewiseComparator(), internal_iter, 14));
       db_iter->SeekToLast();
       ASSERT_TRUE(db_iter->Valid());
 
@@ -1398,9 +1316,7 @@ TEST(DBIteratorTest, DBIterator) {
     internal_iter->Finish();
 
     std::unique_ptr<Iterator> db_iter(
-        NewDBIterator(env_, ImmutableCFOptions(options),
-                      BytewiseComparator(), internal_iter, 10,
-                      options.max_sequential_skip_in_iterations));
+        NewDBIterator(env_, options, BytewiseComparator(), internal_iter, 10));
     db_iter->SeekToLast();
     ASSERT_TRUE(db_iter->Valid());
     ASSERT_EQ(db_iter->key().ToString(), "b");

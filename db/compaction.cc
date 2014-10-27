@@ -9,10 +9,7 @@
 
 #include "db/compaction.h"
 
-#ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
-#endif
-
 #include <inttypes.h>
 #include <vector>
 
@@ -56,6 +53,7 @@ Compaction::Compaction(Version* input_version, int start_level, int out_level,
       is_full_compaction_(false),
       is_manual_compaction_(false),
       level_ptrs_(std::vector<size_t>(number_levels_)) {
+
   cfd_->Ref();
   input_version_->Ref();
   edit_ = new VersionEdit();
@@ -112,8 +110,8 @@ void Compaction::AddInputDeletions(VersionEdit* edit) {
 }
 
 bool Compaction::KeyNotExistsBeyondOutputLevel(const Slice& user_key) {
-  assert(cfd_->ioptions()->compaction_style != kCompactionStyleFIFO);
-  if (cfd_->ioptions()->compaction_style == kCompactionStyleUniversal) {
+  assert(cfd_->options()->compaction_style != kCompactionStyleFIFO);
+  if (cfd_->options()->compaction_style == kCompactionStyleUniversal) {
     return bottommost_level_;
   }
   // Maybe use binary search to find right entry instead of linear search?
@@ -176,8 +174,8 @@ void Compaction::MarkFilesBeingCompacted(bool mark_as_compacted) {
 
 // Is this compaction producing files at the bottommost level?
 void Compaction::SetupBottomMostLevel(bool is_manual) {
-  assert(cfd_->ioptions()->compaction_style != kCompactionStyleFIFO);
-  if (cfd_->ioptions()->compaction_style == kCompactionStyleUniversal) {
+  assert(cfd_->options()->compaction_style != kCompactionStyleFIFO);
+  if (cfd_->options()->compaction_style == kCompactionStyleUniversal) {
     // If universal compaction style is used and manual
     // compaction is occuring, then we are guaranteed that
     // all files will be picked in a single compaction
@@ -266,12 +264,12 @@ void Compaction::Summary(char* output, int len) {
   snprintf(output + write, len - write, "]");
 }
 
-uint64_t Compaction::OutputFilePreallocationSize(
-    const MutableCFOptions& mutable_options) {
+uint64_t Compaction::OutputFilePreallocationSize() {
   uint64_t preallocation_size = 0;
 
-  if (cfd_->ioptions()->compaction_style == kCompactionStyleLevel) {
-    preallocation_size = mutable_options.MaxFileSizeForLevel(output_level());
+  if (cfd_->options()->compaction_style == kCompactionStyleLevel) {
+    preallocation_size =
+        cfd_->compaction_picker()->MaxFileSizeForLevel(output_level());
   } else {
     for (int level = 0; level < num_input_levels(); ++level) {
       for (const auto& f : inputs_[level].files) {

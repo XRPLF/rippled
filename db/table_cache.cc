@@ -15,7 +15,6 @@
 #include "rocksdb/statistics.h"
 #include "table/iterator_wrapper.h"
 #include "table/table_reader.h"
-#include "table/get_context.h"
 #include "util/coding.h"
 #include "util/stop_watch.h"
 
@@ -37,10 +36,12 @@ static Slice GetSliceForFileNumber(const uint64_t* file_number) {
                sizeof(*file_number));
 }
 
-TableCache::TableCache(const ImmutableCFOptions& ioptions,
-                       const EnvOptions& env_options, Cache* const cache)
-    : ioptions_(ioptions),
-      env_options_(env_options),
+TableCache::TableCache(const Options* options,
+                       const EnvOptions& storage_options, Cache* const cache)
+    : env_(options->env),
+      db_paths_(options->db_paths),
+      options_(options),
+      storage_options_(storage_options),
       cache_(cache) {}
 
 TableCache::~TableCache() {
@@ -54,7 +55,7 @@ void TableCache::ReleaseHandle(Cache::Handle* handle) {
   cache_->Release(handle);
 }
 
-Status TableCache::FindTable(const EnvOptions& env_options,
+Status TableCache::FindTable(const EnvOptions& toptions,
                              const InternalKeyComparator& internal_comparator,
                              const FileDescriptor& fd, Cache::Handle** handle,
                              const bool no_io) {
@@ -67,24 +68,24 @@ Status TableCache::FindTable(const EnvOptions& env_options,
       return Status::Incomplete("Table not found in table_cache, no_io is set");
     }
     std::string fname =
-        TableFileName(ioptions_.db_paths, fd.GetNumber(), fd.GetPathId());
+        TableFileName(db_paths_, fd.GetNumber(), fd.GetPathId());
     unique_ptr<RandomAccessFile> file;
     unique_ptr<TableReader> table_reader;
-    s = ioptions_.env->NewRandomAccessFile(fname, &file, env_options);
-    RecordTick(ioptions_.statistics, NO_FILE_OPENS);
+    s = env_->NewRandomAccessFile(fname, &file, toptions);
+    RecordTick(options_->statistics.get(), NO_FILE_OPENS);
     if (s.ok()) {
-      if (ioptions_.advise_random_on_open) {
+      if (options_->advise_random_on_open) {
         file->Hint(RandomAccessFile::RANDOM);
       }
-      StopWatch sw(ioptions_.env, ioptions_.statistics, TABLE_OPEN_IO_MICROS);
-      s = ioptions_.table_factory->NewTableReader(
-          ioptions_, env_options, internal_comparator, std::move(file),
+      StopWatch sw(env_, options_->statistics.get(), TABLE_OPEN_IO_MICROS);
+      s = options_->table_factory->NewTableReader(
+          *options_, toptions, internal_comparator, std::move(file),
           fd.GetFileSize(), &table_reader);
     }
 
     if (!s.ok()) {
       assert(table_reader == nullptr);
-      RecordTick(ioptions_.statistics, NO_FILE_ERRORS);
+      RecordTick(options_->statistics.get(), NO_FILE_ERRORS);
       // We do not cache error results so that if the error is transient,
       // or somebody repairs the file, we recover automatically.
     } else {
@@ -96,7 +97,7 @@ Status TableCache::FindTable(const EnvOptions& env_options,
 }
 
 Iterator* TableCache::NewIterator(const ReadOptions& options,
-                                  const EnvOptions& env_options,
+                                  const EnvOptions& toptions,
                                   const InternalKeyComparator& icomparator,
                                   const FileDescriptor& fd,
                                   TableReader** table_reader_ptr,
@@ -108,7 +109,7 @@ Iterator* TableCache::NewIterator(const ReadOptions& options,
   Cache::Handle* handle = nullptr;
   Status s;
   if (table_reader == nullptr) {
-    s = FindTable(env_options, icomparator, fd, &handle,
+    s = FindTable(toptions, icomparator, fd, &handle,
                   options.read_tier == kBlockCacheTier);
     if (!s.ok()) {
       return NewErrorIterator(s, arena);
@@ -133,33 +134,34 @@ Iterator* TableCache::NewIterator(const ReadOptions& options,
 
 Status TableCache::Get(const ReadOptions& options,
                        const InternalKeyComparator& internal_comparator,
-                       const FileDescriptor& fd, const Slice& k,
-                       GetContext* get_context) {
+                       const FileDescriptor& fd, const Slice& k, void* arg,
+                       bool (*saver)(void*, const ParsedInternalKey&,
+                                     const Slice&),
+                       void (*mark_key_may_exist)(void*)) {
   TableReader* t = fd.table_reader;
   Status s;
   Cache::Handle* handle = nullptr;
   if (!t) {
-    s = FindTable(env_options_, internal_comparator, fd, &handle,
+    s = FindTable(storage_options_, internal_comparator, fd, &handle,
                   options.read_tier == kBlockCacheTier);
     if (s.ok()) {
       t = GetTableReaderFromHandle(handle);
     }
   }
   if (s.ok()) {
-    s = t->Get(options, k, get_context);
+    s = t->Get(options, k, arg, saver, mark_key_may_exist);
     if (handle != nullptr) {
       ReleaseHandle(handle);
     }
   } else if (options.read_tier && s.IsIncomplete()) {
     // Couldnt find Table in cache but treat as kFound if no_io set
-    get_context->MarkKeyMayExist();
+    (*mark_key_may_exist)(arg);
     return Status::OK();
   }
   return s;
 }
-
 Status TableCache::GetTableProperties(
-    const EnvOptions& env_options,
+    const EnvOptions& toptions,
     const InternalKeyComparator& internal_comparator, const FileDescriptor& fd,
     std::shared_ptr<const TableProperties>* properties, bool no_io) {
   Status s;
@@ -172,7 +174,7 @@ Status TableCache::GetTableProperties(
   }
 
   Cache::Handle* table_handle = nullptr;
-  s = FindTable(env_options, internal_comparator, fd, &table_handle, no_io);
+  s = FindTable(toptions, internal_comparator, fd, &table_handle, no_io);
   if (!s.ok()) {
     return s;
   }
@@ -184,7 +186,7 @@ Status TableCache::GetTableProperties(
 }
 
 size_t TableCache::GetMemoryUsageByTableReader(
-    const EnvOptions& env_options,
+    const EnvOptions& toptions,
     const InternalKeyComparator& internal_comparator,
     const FileDescriptor& fd) {
   Status s;
@@ -195,7 +197,7 @@ size_t TableCache::GetMemoryUsageByTableReader(
   }
 
   Cache::Handle* table_handle = nullptr;
-  s = FindTable(env_options, internal_comparator, fd, &table_handle, true);
+  s = FindTable(toptions, internal_comparator, fd, &table_handle, true);
   if (!s.ok()) {
     return 0;
   }

@@ -14,7 +14,6 @@
 #include "rocksdb/iterator.h"
 #include "rocksdb/options.h"
 #include "db/dbformat.h"
-#include "util/arena.h"
 
 namespace rocksdb {
 
@@ -101,8 +100,6 @@ class ForwardIterator : public Iterator {
 
   IterKey prev_key_;
   bool is_prev_set_;
-  bool is_prev_inclusive_;
-  Arena arena_;
 };
 
 }  // namespace rocksdb

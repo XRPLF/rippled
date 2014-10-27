@@ -11,7 +11,6 @@
 #include "rocksdb/status.h"
 #include "rocksdb/types.h"
 #include "rocksdb/options.h"
-#include "rocksdb/immutable_options.h"
 
 namespace rocksdb {
 
@@ -27,10 +26,8 @@ class TableBuilder;
 class WritableFile;
 
 extern TableBuilder* NewTableBuilder(
-    const ImmutableCFOptions& options,
-    const InternalKeyComparator& internal_comparator,
-    WritableFile* file, const CompressionType compression_type,
-    const CompressionOptions& compression_opts);
+    const Options& options, const InternalKeyComparator& internal_comparator,
+    WritableFile* file, CompressionType compression_type);
 
 // Build a Table file from the contents of *iter.  The generated file
 // will be named according to number specified in meta. On success, the rest of
@@ -38,15 +35,13 @@ extern TableBuilder* NewTableBuilder(
 // If no data is present in *iter, meta->file_size will be set to
 // zero, and no Table file will be produced.
 extern Status BuildTable(const std::string& dbname, Env* env,
-                         const ImmutableCFOptions& options,
-                         const EnvOptions& env_options,
+                         const Options& options, const EnvOptions& soptions,
                          TableCache* table_cache, Iterator* iter,
                          FileMetaData* meta,
                          const InternalKeyComparator& internal_comparator,
                          const SequenceNumber newest_snapshot,
                          const SequenceNumber earliest_seqno_in_memtable,
                          const CompressionType compression,
-                         const CompressionOptions& compression_opts,
                          const Env::IOPriority io_priority = Env::IO_HIGH);
 
 }  // namespace rocksdb

@@ -31,57 +31,41 @@
 
 namespace rocksdb {
 
-MemTableOptions::MemTableOptions(
-    const MutableCFOptions& mutable_cf_options, const Options& options)
-  : write_buffer_size(mutable_cf_options.write_buffer_size),
-    arena_block_size(mutable_cf_options.arena_block_size),
-    memtable_prefix_bloom_bits(mutable_cf_options.memtable_prefix_bloom_bits),
-    memtable_prefix_bloom_probes(
-        mutable_cf_options.memtable_prefix_bloom_probes),
-    memtable_prefix_bloom_huge_page_tlb_size(
-        mutable_cf_options.memtable_prefix_bloom_huge_page_tlb_size),
-    inplace_update_support(options.inplace_update_support),
-    inplace_update_num_locks(options.inplace_update_num_locks),
-    inplace_callback(options.inplace_callback),
-    max_successive_merges(mutable_cf_options.max_successive_merges),
-    filter_deletes(mutable_cf_options.filter_deletes) {}
-
-MemTable::MemTable(const InternalKeyComparator& cmp,
-                   const ImmutableCFOptions& ioptions,
-                   const MemTableOptions& moptions)
+MemTable::MemTable(const InternalKeyComparator& cmp, const Options& options)
     : comparator_(cmp),
-      ioptions_(ioptions),
-      moptions_(moptions),
       refs_(0),
-      kArenaBlockSize(OptimizeBlockSize(moptions.arena_block_size)),
-      arena_(moptions.arena_block_size),
-      table_(ioptions.memtable_factory->CreateMemTableRep(
-          comparator_, &arena_, ioptions.prefix_extractor, ioptions.info_log)),
+      kArenaBlockSize(OptimizeBlockSize(options.arena_block_size)),
+      kWriteBufferSize(options.write_buffer_size),
+      arena_(options.arena_block_size),
+      table_(options.memtable_factory->CreateMemTableRep(
+          comparator_, &arena_, options.prefix_extractor.get(),
+          options.info_log.get())),
       num_entries_(0),
       flush_in_progress_(false),
       flush_completed_(false),
       file_number_(0),
       first_seqno_(0),
       mem_next_logfile_number_(0),
-      locks_(moptions.inplace_update_support ? moptions.inplace_update_num_locks
-                                             : 0),
-      prefix_extractor_(ioptions.prefix_extractor),
-      should_flush_(ShouldFlushNow()),
-      flush_scheduled_(false) {
+      locks_(options.inplace_update_support ? options.inplace_update_num_locks
+                                            : 0),
+      prefix_extractor_(options.prefix_extractor.get()),
+      should_flush_(ShouldFlushNow()) {
   // if should_flush_ == true without an entry inserted, something must have
   // gone wrong already.
   assert(!should_flush_);
-  if (prefix_extractor_ && moptions.memtable_prefix_bloom_bits > 0) {
+  if (prefix_extractor_ && options.memtable_prefix_bloom_bits > 0) {
     prefix_bloom_.reset(new DynamicBloom(
         &arena_,
-        moptions.memtable_prefix_bloom_bits, ioptions.bloom_locality,
-        moptions.memtable_prefix_bloom_probes, nullptr,
-        moptions.memtable_prefix_bloom_huge_page_tlb_size,
-        ioptions.info_log));
+        options.memtable_prefix_bloom_bits, options.bloom_locality,
+        options.memtable_prefix_bloom_probes, nullptr,
+        options.memtable_prefix_bloom_huge_page_tlb_size,
+        options.info_log.get()));
   }
 }
 
-MemTable::~MemTable() { assert(refs_ == 0); }
+MemTable::~MemTable() {
+  assert(refs_ == 0);
+}
 
 size_t MemTable::ApproximateMemoryUsage() {
   size_t arena_usage = arena_.ApproximateMemoryUsage();
@@ -113,16 +97,14 @@ bool MemTable::ShouldFlushNow() const {
   // if we can still allocate one more block without exceeding the
   // over-allocation ratio, then we should not flush.
   if (allocated_memory + kArenaBlockSize <
-      moptions_.write_buffer_size +
-      kArenaBlockSize * kAllowOverAllocationRatio) {
+      kWriteBufferSize + kArenaBlockSize * kAllowOverAllocationRatio) {
     return false;
   }
 
-  // if user keeps adding entries that exceeds moptions.write_buffer_size,
-  // we need to flush earlier even though we still have much available
-  // memory left.
-  if (allocated_memory > moptions_.write_buffer_size +
-      kArenaBlockSize * kAllowOverAllocationRatio) {
+  // if user keeps adding entries that exceeds kWriteBufferSize, we need to
+  // flush earlier even though we still have much available memory left.
+  if (allocated_memory >
+      kWriteBufferSize + kArenaBlockSize * kAllowOverAllocationRatio) {
     return true;
   }
 
@@ -193,12 +175,12 @@ const char* EncodeKey(std::string* scratch, const Slice& target) {
 class MemTableIterator: public Iterator {
  public:
   MemTableIterator(
-      const MemTable& mem, const ReadOptions& read_options, Arena* arena)
+      const MemTable& mem, const ReadOptions& options, Arena* arena)
       : bloom_(nullptr),
         prefix_extractor_(mem.prefix_extractor_),
         valid_(false),
         arena_mode_(arena != nullptr) {
-    if (prefix_extractor_ != nullptr && !read_options.total_order_seek) {
+    if (prefix_extractor_ != nullptr && !options.total_order_seek) {
       bloom_ = mem.prefix_bloom_.get();
       iter_ = mem.table_->GetDynamicPrefixIterator(arena);
     } else {
@@ -266,10 +248,14 @@ class MemTableIterator: public Iterator {
   void operator=(const MemTableIterator&);
 };
 
-Iterator* MemTable::NewIterator(const ReadOptions& read_options, Arena* arena) {
-  assert(arena != nullptr);
-  auto mem = arena->AllocateAligned(sizeof(MemTableIterator));
-  return new (mem) MemTableIterator(*this, read_options, arena);
+Iterator* MemTable::NewIterator(const ReadOptions& options, Arena* arena) {
+  if (arena == nullptr) {
+    return new MemTableIterator(*this, options, nullptr);
+  } else {
+    auto mem = arena->AllocateAligned(sizeof(MemTableIterator));
+    return new (mem)
+        MemTableIterator(*this, options, arena);
+  }
 }
 
 port::RWMutex* MemTable::GetLock(const Slice& key) {
@@ -413,6 +399,7 @@ static bool SaveValue(void* arg, const char* entry) {
           *(s->found_final_value) = true;
           return false;
         }
+        std::string merge_result;  // temporary area for merge results later
         Slice v = GetLengthPrefixedSlice(key_ptr + key_length);
         *(s->merge_in_progress) = true;
         merge_context->PushOperand(v);
@@ -429,9 +416,9 @@ static bool SaveValue(void* arg, const char* entry) {
 }
 
 bool MemTable::Get(const LookupKey& key, std::string* value, Status* s,
-                   MergeContext* merge_context) {
+                   MergeContext& merge_context, const Options& options) {
   // The sequence number is updated synchronously in version_set.h
-  if (IsEmpty()) {
+  if (first_seqno_ == 0) {
     // Avoiding recording stats for speed.
     return false;
   }
@@ -453,11 +440,11 @@ bool MemTable::Get(const LookupKey& key, std::string* value, Status* s,
     saver.value = value;
     saver.status = s;
     saver.mem = this;
-    saver.merge_context = merge_context;
-    saver.merge_operator = ioptions_.merge_operator;
-    saver.logger = ioptions_.info_log;
-    saver.inplace_update_support = moptions_.inplace_update_support;
-    saver.statistics = ioptions_.statistics;
+    saver.merge_context = &merge_context;
+    saver.merge_operator = options.merge_operator.get();
+    saver.logger = options.info_log.get();
+    saver.inplace_update_support = options.inplace_update_support;
+    saver.statistics = options.statistics.get();
     table_->Get(key, &saver, SaveValue);
   }
 
@@ -529,7 +516,8 @@ void MemTable::Update(SequenceNumber seq,
 
 bool MemTable::UpdateCallback(SequenceNumber seq,
                               const Slice& key,
-                              const Slice& delta) {
+                              const Slice& delta,
+                              const Options& options) {
   LookupKey lkey(key, seq);
   Slice memkey = lkey.memtable_key();
 
@@ -564,8 +552,8 @@ bool MemTable::UpdateCallback(SequenceNumber seq,
 
           std::string str_value;
           WriteLock wl(GetLock(lkey.user_key()));
-          auto status = moptions_.inplace_callback(prev_buffer, &new_prev_size,
-                                                   delta, &str_value);
+          auto status = options.inplace_callback(prev_buffer, &new_prev_size,
+                                                    delta, &str_value);
           if (status == UpdateStatus::UPDATED_INPLACE) {
             // Value already updated by callback.
             assert(new_prev_size <= prev_size);
@@ -578,12 +566,12 @@ bool MemTable::UpdateCallback(SequenceNumber seq,
                 memcpy(p, prev_buffer, new_prev_size);
               }
             }
-            RecordTick(ioptions_.statistics, NUMBER_KEYS_UPDATED);
+            RecordTick(options.statistics.get(), NUMBER_KEYS_UPDATED);
             should_flush_ = ShouldFlushNow();
             return true;
           } else if (status == UpdateStatus::UPDATED) {
             Add(seq, kTypeValue, key, Slice(str_value));
-            RecordTick(ioptions_.statistics, NUMBER_KEYS_WRITTEN);
+            RecordTick(options.statistics.get(), NUMBER_KEYS_WRITTEN);
             should_flush_ = ShouldFlushNow();
             return true;
           } else if (status == UpdateStatus::UPDATE_FAILED) {

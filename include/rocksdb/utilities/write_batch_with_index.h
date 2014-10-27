@@ -11,9 +11,8 @@
 
 #pragma once
 
-#include "rocksdb/comparator.h"
-#include "rocksdb/slice.h"
 #include "rocksdb/status.h"
+#include "rocksdb/slice.h"
 #include "rocksdb/write_batch.h"
 
 namespace rocksdb {
@@ -57,14 +56,12 @@ class WBWIIterator {
 // A user can call NewIterator() to create an iterator.
 class WriteBatchWithIndex {
  public:
-  // backup_index_comparator: the backup comparator used to compare keys
-  // within the same column family, if column family is not given in the
-  // interface, or we can't find a column family from the column family handle
-  // passed in, backup_index_comparator will be used for the column family.
+  // index_comparator indicates the order when iterating data in the write
+  // batch. Technically, it doesn't have to be the same as the one used in
+  // the DB.
   // reserved_bytes: reserved bytes in underlying WriteBatch
-  explicit WriteBatchWithIndex(
-      const Comparator* backup_index_comparator = BytewiseComparator(),
-      size_t reserved_bytes = 0);
+  explicit WriteBatchWithIndex(const Comparator* index_comparator,
+                               size_t reserved_bytes = 0);
   virtual ~WriteBatchWithIndex();
 
   WriteBatch* GetWriteBatch();

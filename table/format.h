@@ -160,29 +160,18 @@ static const size_t kBlockTrailerSize = 5;
 struct BlockContents {
   Slice data;           // Actual contents of data
   bool cachable;        // True iff data can be cached
+  bool heap_allocated;  // True iff caller should delete[] data.data()
   CompressionType compression_type;
-  std::unique_ptr<char[]> allocation;
-
-  BlockContents() : cachable(false), compression_type(kNoCompression) {}
-
-  BlockContents(const Slice& _data, bool _cachable,
-                CompressionType _compression_type)
-      : data(_data), cachable(_cachable), compression_type(_compression_type) {}
-
-  BlockContents(std::unique_ptr<char[]>&& _data, size_t _size, bool _cachable,
-                CompressionType _compression_type)
-      : data(_data.get(), _size),
-        cachable(_cachable),
-        compression_type(_compression_type),
-        allocation(std::move(_data)) {}
 };
 
 // Read the block identified by "handle" from "file".  On failure
 // return non-OK.  On success fill *result and return OK.
-extern Status ReadBlockContents(RandomAccessFile* file, const Footer& footer,
+extern Status ReadBlockContents(RandomAccessFile* file,
+                                const Footer& footer,
                                 const ReadOptions& options,
                                 const BlockHandle& handle,
-                                BlockContents* contents, Env* env,
+                                BlockContents* result,
+                                Env* env,
                                 bool do_uncompress);
 
 // The 'data' points to the raw block contents read in from file.
@@ -190,8 +179,9 @@ extern Status ReadBlockContents(RandomAccessFile* file, const Footer& footer,
 // contents are uncompresed into this buffer. This buffer is
 // returned via 'result' and it is upto the caller to
 // free this buffer.
-extern Status UncompressBlockContents(const char* data, size_t n,
-                                      BlockContents* contents);
+extern Status UncompressBlockContents(const char* data,
+                                      size_t n,
+                                      BlockContents* result);
 
 // Implementation details follow.  Clients should ignore,
 
