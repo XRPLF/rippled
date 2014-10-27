@@ -331,6 +331,11 @@ int PathRequest::parseJson (Json::Value const& jvParams, bool complete)
                 return PFR_PJ_INVALID;
             }
 
+            if (uCur.isNonZero() && uIss.isZero())
+            {
+                uIss = raSrcAccount.getAccountID();
+            }
+
             sciSourceCurrencies.insert ({uCur, uIss});
         }
     }
@@ -435,6 +440,13 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
 
     bool found = false;
 
+    FindPaths fp (
+        cache,
+        raSrcAccount.getAccountID (),
+        raDstAccount.getAccountID (),
+        saDstAmount,
+        iLevel,
+        4);  // iMaxPaths
     for (auto const& currIssuer: sourceCurrencies)
     {
         {
@@ -448,14 +460,8 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
         }
         STPathSet& spsPaths = mContext[currIssuer];
         STPath fullLiquidityPath;
-        auto valid = findPathsForOneIssuer (
-            cache,
-            raSrcAccount.getAccountID(),
-            raDstAccount.getAccountID(),
+        auto valid = fp.findPathsForIssue (
             currIssuer,
-            saDstAmount,
-            iLevel,
-            4,  // iMaxPaths
             spsPaths,
             fullLiquidityPath);
         CondLog (!valid, lsDEBUG, PathRequest)
@@ -464,12 +470,12 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
         if (valid)
         {
             LedgerEntrySet lesSandbox (cache->getLedger (), tapNONE);
-            auto& account = !isXRP (currIssuer.account)
+            auto& sourceAccount = !isXRP (currIssuer.account)
                     ? currIssuer.account
                     : isXRP (currIssuer.currency)
                         ? xrpAccount()
                         : raSrcAccount.getAccountID ();
-            STAmount saMaxAmount ({currIssuer.currency, account}, 1);
+            STAmount saMaxAmount ({currIssuer.currency, sourceAccount}, 1);
 
             saMaxAmount.negate ();
             m_journal.debug << iIdentifier
@@ -488,7 +494,9 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
                 m_journal.debug
                         << iIdentifier << " Trying with an extra path element";
                 spsPaths.push_back (fullLiquidityPath);
-                rc = path::RippleCalc::rippleCalculate (lesSandbox,
+                lesSandbox.clear();
+                rc = path::RippleCalc::rippleCalculate (
+                    lesSandbox,
                     saMaxAmount,
                     saDstAmount,
                     raDstAccount.getAccountID (),
@@ -507,6 +515,8 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
             if (rc.result () == tesSUCCESS)
             {
                 Json::Value jvEntry (Json::objectValue);
+                rc.actualAmountIn.setIssuer (sourceAccount);
+
                 jvEntry["source_amount"] = rc.actualAmountIn.getJson (0);
                 jvEntry["paths_computed"] = spsPaths.getJson (0);
                 found  = true;

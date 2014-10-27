@@ -64,17 +64,10 @@ namespace {
 //    width of path
 //    correct currency at the end.
 
-struct PathRank
-{
-    std::uint64_t quality;
-    std::uint64_t length;
-    STAmount liquidity;
-    int index;
-};
-
 // Compare two PathRanks.  A better PathRank is lower, so the best are sorted to
 // the beginning.
-bool comparePathRank (PathRank const& a, PathRank const& b)
+bool comparePathRank (
+    Pathfinder::PathRank const& a, Pathfinder::PathRank const& b)
 {
     // 1) Higher quality (lower cost) is better
     if (a.quality != b.quality)
@@ -179,9 +172,29 @@ Pathfinder::Pathfinder (
         mDstAmount (saDstAmount),
         mSrcCurrency (uSrcCurrency),
         mSrcIssuer (uSrcIssuer),
-        mSrcAmount ({mSrcCurrency, mSrcIssuer}, 1u, 0, true),
+        mSrcAmount ({uSrcCurrency, uSrcIssuer}, 1u, 0, true),
         mLedger (cache->getLedger ()),
         mRLCache (cache)
+{
+}
+
+Pathfinder::Pathfinder (
+    RippleLineCache::ref cache,
+    Account const& uSrcAccount,
+    Account const& uDstAccount,
+    Currency const& uSrcCurrency,
+    STAmount const& saDstAmount)
+    :   mSrcAccount (uSrcAccount),
+        mDstAccount (uDstAccount),
+        mDstAmount (saDstAmount),
+        mSrcCurrency (uSrcCurrency),
+        mSrcAmount ({uSrcCurrency, uSrcAccount}, 1u, 0, true),
+        mLedger (cache->getLedger ()),
+        mRLCache (cache)
+{
+}
+
+Pathfinder::~Pathfinder()
 {
 }
 
@@ -210,19 +223,21 @@ bool Pathfinder::findPaths (int searchLevel)
     m_loadEvent = getApp ().getJobQueue ().getLoadEvent (
         jtPATH_FIND, "FindPath");
     auto currencyIsXRP = isXRP (mSrcCurrency);
-    auto issuerIsXRP = isXRP (mSrcIssuer);
 
-    bool useIssuerAccount = !currencyIsXRP && !issuerIsXRP;
-    auto& account = useIssuerAccount ? mSrcIssuer : mSrcAccount;
+    bool useIssuerAccount
+            = mSrcIssuer && !currencyIsXRP && !isXRP (*mSrcIssuer);
+    auto& account = useIssuerAccount ? *mSrcIssuer : mSrcAccount;
     auto issuer = currencyIsXRP ? Account() : account;
     mSource = STPathElement (account, mSrcCurrency, issuer);
+    auto issuerString = mSrcIssuer
+            ? to_string (*mSrcIssuer) : std::string ("none");
     WriteLog (lsTRACE, Pathfinder)
             << "findPaths>"
             << " mSrcAccount=" << mSrcAccount
             << " mDstAccount=" << mDstAccount
             << " mDstAmount=" << mDstAmount.getFullText ()
             << " mSrcCurrency=" << mSrcCurrency
-            << " mSrcIssuer=" << mSrcIssuer;
+            << " mSrcIssuer=" << issuerString;
 
     if (!mLedger)
     {
@@ -318,11 +333,10 @@ bool Pathfinder::findPaths (int searchLevel)
     return true;
 }
 
-void Pathfinder::ensurePathsAreComplete (STPathSet& pathsOut)
+void Pathfinder::addPathsFromPreviousPathfinding (STPathSet& pathsOut)
 {
     // Add any result paths that aren't in mCompletePaths.
     // TODO(tom): this is also quadratic in the size of the paths.
-    // TODO(tom): how could a path possibly not be in mCompletePaths?
     for (auto const& path : pathsOut)
     {
         // make sure no paths were lost
@@ -338,9 +352,7 @@ void Pathfinder::ensurePathsAreComplete (STPathSet& pathsOut)
                 }
             }
 
-            // TODO(tom): this asssert never triggers. We should probably
-            // remove this whole loop, which might be expensive.
-            assert (found);
+            // TODO(tom): write a test that exercises this code path.
             if (!found)
                 mCompletePaths.push_back (path);
         }
@@ -410,14 +422,23 @@ TER Pathfinder::getPathLiquidity (
     }
 }
 
-STPathSet Pathfinder::getBestPaths (int maxPaths, STPath& fullLiquidityPath)
+namespace {
+
+// Return the smallest amount of useful liquidity for a given amount, and the
+// total number of paths we have to evaluate.
+STAmount smallestUsefulAmount (STAmount const& amount, int maxPaths)
 {
-    assert (fullLiquidityPath.empty ());
+    return divide (amount, STAmount (maxPaths + 2), amount);
+}
 
+} // namespace
+
+void Pathfinder::computePathRanks (int maxPaths)
+{
     if (mCompletePaths.size () <= maxPaths)
-        return mCompletePaths;
+        return;
 
-    STAmount remaining = mDstAmount;
+    mRemainingAmount = mDstAmount;
 
     // Must subtract liquidity in default path from remaining amount.
     try
@@ -439,7 +460,7 @@ STPathSet Pathfinder::getBestPaths (int maxPaths, STPath& fullLiquidityPath)
         {
             WriteLog (lsDEBUG, Pathfinder)
                     << "Default path contributes: " << rc.actualAmountIn;
-            remaining -= rc.actualAmountOut;
+            mRemainingAmount -= rc.actualAmountOut;
         }
         else
         {
@@ -453,12 +474,9 @@ STPathSet Pathfinder::getBestPaths (int maxPaths, STPath& fullLiquidityPath)
     }
 
     // Ignore paths that move only very small amounts.
-    // TODO(tom): the logic of "very small" is pretty arbitrary here.
-    auto saMinDstAmount = divide (
-        mDstAmount, STAmount (maxPaths + 2), mDstAmount);
+    auto saMinDstAmount = smallestUsefulAmount (mDstAmount, maxPaths);
 
     // Get the PathRank for each path.
-    std::vector<PathRank> pathRanks;
     for (int i = 0; i < mCompletePaths.size (); ++i)
     {
         auto const& currentPath = mCompletePaths[i];
@@ -479,76 +497,130 @@ STPathSet Pathfinder::getBestPaths (int maxPaths, STPath& fullLiquidityPath)
                 "findPaths: quality: " << uQuality <<
                 ": " << currentPath.getJson (0);
 
-            pathRanks.push_back ({uQuality, currentPath.size (), liquidity, i});
+            mPathRanks.push_back ({uQuality, currentPath.size (), liquidity, i});
         }
     }
+    std::sort (mPathRanks.begin (), mPathRanks.end (), comparePathRank);
+}
+
+static bool isDefaultPath (STPath const& path)
+{
+    // TODO(tom): default paths can consist of more than just an account:
+    // https://forum.ripple.com/viewtopic.php?f=2&t=8206&start=10#p57713
+    //
+    // JoelKatz writes:
+    // So the test for whether a path is a default path is incorrect. I'm not
+    // sure it's worth the complexity of fixing though. If we are going to fix
+    // it, I'd suggest doing it this way:
+    //
+    // 1) Compute the default path, probably by using 'expandPath' to expand an
+    // empty path.  2) Chop off the source and destination nodes.
+    //
+    // 3) In the pathfinding loop, if the source issuer is not the sender,
+    // reject all paths that don't begin with the issuer's account node or match
+    // the path we built at step 2.
+    return path.size() == 1;
+}
+
+static STPath removeIssuer (STPath const& path)
+{
+    // This path starts with the issuer, which is already implied
+    // so remove the head node
+    STPath ret;
+
+    for (auto it = path.begin() + 1; it != path.end(); ++it)
+        ret.push_back (*it);
+
+    return ret;
+}
+
+STPathSet Pathfinder::getBestPaths (
+    int maxPaths,
+    STPath& fullLiquidityPath,
+    Account const& srcIssuer)
+{
+    assert (fullLiquidityPath.empty ());
+    const bool issuerIsSender = isXRP (mSrcCurrency) || (srcIssuer == mSrcAccount);
+
+    if (issuerIsSender && (mCompletePaths.size () <= maxPaths))
+        return mCompletePaths;
 
     STPathSet bestPaths;
-    if (pathRanks.size ())
+
+    // The best PathRanks are now at the start.  Pull off enough of them to
+    // fill bestPaths, then look through the rest for the best individual
+    // path that can satisfy the entire liquidity - if one exists.
+    STAmount remaining = mRemainingAmount;
+    for (auto& pathRank: mPathRanks)
     {
-        std::sort (pathRanks.begin (), pathRanks.end (), comparePathRank);
+        auto iPathsLeft = maxPaths - bestPaths.size ();
+        if (!(iPathsLeft > 0 || fullLiquidityPath.empty ()))
+            break;
 
-        // The best PathRanks are now at the start.  Pull off enough of them to
-        // fill bestPaths, then look through the rest for the best individual
-        // path that can satisfy the entire liquidity - if one exists.
-        for (auto& pathRank: pathRanks)
+        auto& path = mCompletePaths[pathRank.index];
+        assert (!path.empty ());
+        if (path.empty ())
+            continue;
+
+        bool startsWithIssuer = false;
+        if (! issuerIsSender)
         {
-            auto iPathsLeft = maxPaths - bestPaths.size ();
-            if (!(iPathsLeft > 0 || fullLiquidityPath.empty ()))
-                break;
-
-            if (iPathsLeft > 1 ||
-                (iPathsLeft > 0 && pathRank.liquidity >= remaining))
+            if (path.front ().getAccountID() != srcIssuer)
+                continue;
+            if (isDefaultPath (path))
             {
-                // last path must fill
-                --iPathsLeft;
-                remaining -= pathRank.liquidity;
-                bestPaths.push_back (mCompletePaths[pathRank.index]);
+                continue;
             }
-            else if (iPathsLeft == 0 &&
-                     pathRank.liquidity >= mDstAmount &&
-                     fullLiquidityPath.empty ())
-            {
-                // We found an extra path that can move the whole amount.
-                fullLiquidityPath = mCompletePaths[pathRank.index];
-                WriteLog (lsDEBUG, Pathfinder) <<
-                    "Found extra full path: " << fullLiquidityPath.getJson (0);
-            }
-            else
-            {
-                WriteLog (lsDEBUG, Pathfinder) <<
-                    "Skipping a non-filling path: " <<
-                    mCompletePaths[pathRank.index].getJson (0);
-            }
+            startsWithIssuer = true;
         }
 
-        if (remaining > zero)
+        if (iPathsLeft > 1 ||
+            (iPathsLeft > 0 && pathRank.liquidity >= remaining))
+            // last path must fill
         {
-            assert (fullLiquidityPath.empty ());
-            WriteLog (lsINFO, Pathfinder) <<
-                "Paths could not send " << remaining << " of " << mDstAmount;
+            --iPathsLeft;
+            remaining -= pathRank.liquidity;
+            bestPaths.push_back (startsWithIssuer ? removeIssuer (path) : path);
+        }
+        else if (iPathsLeft == 0 &&
+                 pathRank.liquidity >= mDstAmount &&
+                 fullLiquidityPath.empty ())
+        {
+            // We found an extra path that can move the whole amount.
+            fullLiquidityPath = (startsWithIssuer ? removeIssuer (path) : path);
+            WriteLog (lsDEBUG, Pathfinder) <<
+                "Found extra full path: " << fullLiquidityPath.getJson (0);
         }
         else
         {
             WriteLog (lsDEBUG, Pathfinder) <<
-                "findPaths: RESULTS: " << bestPaths.getJson (0);
+                "Skipping a non-filling path: " << path.getJson (0);
         }
+    }
+
+    if (remaining > zero)
+    {
+        assert (fullLiquidityPath.empty ());
+        WriteLog (lsINFO, Pathfinder) <<
+            "Paths could not send " << remaining << " of " << mDstAmount;
     }
     else
     {
         WriteLog (lsDEBUG, Pathfinder) <<
-            "findPaths: RESULTS: non-defaults filtered away";
+            "findPaths: RESULTS: " << bestPaths.getJson (0);
     }
-
     return bestPaths;
 }
 
 bool Pathfinder::issueMatchesOrigin (Issue const& issue)
 {
-    return issue.currency == mSrcCurrency &&
-            (isXRP (issue.currency) ||
-             issue.account == mSrcIssuer ||
-             issue.account == mSrcAccount);
+    bool matchingCurrency = (issue.currency == mSrcCurrency);
+    bool matchingAccount =
+            isXRP (issue.currency) ||
+            (mSrcIssuer && issue.account == mSrcIssuer) ||
+            issue.account == mSrcAccount;
+
+    return matchingCurrency && matchingAccount;
 }
 
 int Pathfinder::getPathsOut (
@@ -624,7 +696,7 @@ void Pathfinder::addLinks (
     int addFlags)
 {
     WriteLog (lsDEBUG, Pathfinder)
-        << "addLink< on " << currentPaths.size()
+        << "addLink< on " << currentPaths.size ()
         << " source(s), flags=" << addFlags;
     for (auto const& path: currentPaths)
         addLink (path, incompletePaths, addFlags);
@@ -725,11 +797,9 @@ bool Pathfinder::isNoRippleOut (STPath const& currentPath)
     if (!(endElement.getNodeType () & STPathElement::typeAccount))
         return false;
 
-    // What account are we leaving?
-    // TODO(tom): clarify what's going on here when we only have one item in the
-    // path.
-    // TODO(tom): why aren't we checking that the previous node is also an
-    // account?
+    // If there's only one item in the path, return true if that item specifies
+    // no ripple on the output. A path with no ripple on its output can't be
+    // followed by a link with no ripple on its input.
     auto const& fromAccount = (currentPath.size () == 1)
         ? mSrcAccount
         : (currentPath.end () - 2)->getAccountID ();
@@ -929,7 +999,7 @@ void Pathfinder::addLink (
             auto books = getApp ().getOrderBookDB ().getBooksByTakerPays(
                 {uEndCurrency, uEndIssuer});
             WriteLog (lsTRACE, Pathfinder)
-                << books.size() << " books found from this currency/issuer";
+                << books.size () << " books found from this currency/issuer";
 
             for (auto const& book : books)
             {
