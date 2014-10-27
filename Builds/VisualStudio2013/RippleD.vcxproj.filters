@@ -2769,10 +2769,13 @@
     <ClInclude Include="..\..\src\ripple\app\main\ParameterTable.h">
       <Filter>ripple\app\main</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\main\RPCHTTPServer.cpp">
+    <ClInclude Include="..\..\src\ripple\app\main\ServerHandler.h">
+      <Filter>ripple\app\main</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\main\ServerHandlerImp.cpp">
       <Filter>ripple\app\main</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\main\RPCHTTPServer.h">
+    <ClInclude Include="..\..\src\ripple\app\main\ServerHandlerImp.h">
       <Filter>ripple\app\main</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\main\Tuning.h">

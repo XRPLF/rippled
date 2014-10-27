@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <ripple/common/jsonrpc_fields.h>
-#include <ripple/app/main/RPCHTTPServer.h>
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/rpc/impl/Tuning.h>
 #include <ripple/rpc/impl/Context.h>

@@ -1864,10 +1864,12 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\main\ParameterTable.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\main\RPCHTTPServer.cpp">
+    <ClInclude Include="..\..\src\ripple\app\main\ServerHandler.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\main\ServerHandlerImp.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\main\RPCHTTPServer.h">
+    <ClInclude Include="..\..\src\ripple\app\main\ServerHandlerImp.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\main\Tuning.h">
     </ClInclude>
