@@ -52,6 +52,12 @@ public class OptionsTest {
       assert(opt.useFsync() == boolValue);
     }
 
+    { // DbStatsLogInterval test
+      int intValue = rand.nextInt();
+      opt.setDbStatsLogInterval(intValue);
+      assert(opt.dbStatsLogInterval() == intValue);
+    }
+
     { // DbLogDir test
       String str = "path/to/DbLogDir";
       opt.setDbLogDir(str);
@@ -182,6 +188,12 @@ public class OptionsTest {
       long longValue = rand.nextLong();
       opt.setBytesPerSync(longValue);
       assert(opt.bytesPerSync() == longValue);
+    }
+
+    { // AllowThreadLocal test
+      boolean boolValue = rand.nextBoolean();
+      opt.setAllowThreadLocal(boolValue);
+      assert(opt.allowThreadLocal() == boolValue);
     }
 
     { // WriteBufferSize test

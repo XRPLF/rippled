@@ -36,7 +36,6 @@ class TableCache;
 class TableReader;
 class InternalKeyComparator;
 class PlainTableKeyDecoder;
-class GetContext;
 
 using std::unique_ptr;
 using std::unordered_map;
@@ -53,8 +52,7 @@ extern const uint32_t kPlainTableVariableLength;
 // The implementation of IndexedTableReader requires output file is mmaped
 class PlainTableReader: public TableReader {
  public:
-  static Status Open(const ImmutableCFOptions& ioptions,
-                     const EnvOptions& env_options,
+  static Status Open(const Options& options, const EnvOptions& soptions,
                      const InternalKeyComparator& internal_comparator,
                      unique_ptr<RandomAccessFile>&& file, uint64_t file_size,
                      unique_ptr<TableReader>* table,
@@ -66,8 +64,10 @@ class PlainTableReader: public TableReader {
 
   void Prepare(const Slice& target);
 
-  Status Get(const ReadOptions&, const Slice& key,
-             GetContext* get_context) override;
+  Status Get(const ReadOptions&, const Slice& key, void* arg,
+             bool (*result_handler)(void* arg, const ParsedInternalKey& k,
+                                    const Slice& v),
+             void (*mark_key_may_exist)(void*) = nullptr);
 
   uint64_t ApproximateOffsetOf(const Slice& key);
 
@@ -82,9 +82,8 @@ class PlainTableReader: public TableReader {
     return arena_.MemoryAllocatedBytes();
   }
 
-  PlainTableReader(const ImmutableCFOptions& ioptions,
-                   unique_ptr<RandomAccessFile>&& file,
-                   const EnvOptions& env_options,
+  PlainTableReader(const Options& options, unique_ptr<RandomAccessFile>&& file,
+                   const EnvOptions& storage_options,
                    const InternalKeyComparator& internal_comparator,
                    EncodingType encoding_type, uint64_t file_size,
                    const TableProperties* table_properties);
@@ -133,7 +132,7 @@ class PlainTableReader: public TableReader {
   DynamicBloom bloom_;
   Arena arena_;
 
-  const ImmutableCFOptions& ioptions_;
+  const Options& options_;
   unique_ptr<RandomAccessFile> file_;
   uint32_t file_size_;
   std::shared_ptr<const TableProperties> table_properties_;

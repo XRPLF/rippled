@@ -13,19 +13,8 @@ package org.rocksdb;
  * native resources will be released as part of the process.
  */
 public class Options extends RocksObject {
-  static {
-    RocksDB.loadLibrary();
-  }
   static final long DEFAULT_CACHE_SIZE = 8 << 20;
   static final int DEFAULT_NUM_SHARD_BITS = -1;
-
-  /**
-   * Builtin RocksDB comparators 
-   */
-  public enum BuiltinComparator {
-      BYTEWISE_COMPARATOR, REVERSE_BYTEWISE_COMPARATOR;
-  }
-
   /**
    * Construct options for opening a RocksDB.
    *
@@ -85,21 +74,6 @@ public class Options extends RocksObject {
     assert(isInitialized());
     return createIfMissing(nativeHandle_);
   }
-
-  /**
-   * Set BuiltinComparator to be used with RocksDB. 
-   *
-   * Note: Comparator can be set once upon database creation.
-   *
-   * Default: BytewiseComparator.
-   * @param builtinComparator a BuiltinComparator type.
-   */
-  public void setBuiltinComparator(BuiltinComparator builtinComparator) {
-    assert(isInitialized());
-    setBuiltinComparator(nativeHandle_, builtinComparator.ordinal());
-  }
-
-  private native void setBuiltinComparator(long handle, int builtinComparator);
 
   /**
    * Amount of data to build up in memory (backed by an unsorted log
@@ -330,6 +304,40 @@ public class Options extends RocksObject {
     return this;
   }
   private native void setUseFsync(long handle, boolean useFsync);
+
+  /**
+   * The time interval in seconds between each two consecutive stats logs.
+   * This number controls how often a new scribe log about
+   * db deploy stats is written out.
+   * -1 indicates no logging at all.
+   *
+   * @return the time interval in seconds between each two consecutive
+   *     stats logs.
+   */
+  public int dbStatsLogInterval() {
+    assert(isInitialized());
+    return dbStatsLogInterval(nativeHandle_);
+  }
+  private native int dbStatsLogInterval(long handle);
+
+  /**
+   * The time interval in seconds between each two consecutive stats logs.
+   * This number controls how often a new scribe log about
+   * db deploy stats is written out.
+   * -1 indicates no logging at all.
+   * Default value is 1800 (half an hour).
+   *
+   * @param dbStatsLogInterval the time interval in seconds between each
+   *     two consecutive stats logs.
+   * @return the reference to the current option.
+   */
+  public Options setDbStatsLogInterval(int dbStatsLogInterval) {
+    assert(isInitialized());
+    setDbStatsLogInterval(nativeHandle_, dbStatsLogInterval);
+    return this;
+  }
+  private native void setDbStatsLogInterval(
+      long handle, int dbStatsLogInterval);
 
   /**
    * Returns the directory of info log.
@@ -1094,6 +1102,33 @@ public class Options extends RocksObject {
       long handle, long bytesPerSync);
 
   /**
+   * Allow RocksDB to use thread local storage to optimize performance.
+   * Default: true
+   *
+   * @return true if thread-local storage is allowed
+   */
+  public boolean allowThreadLocal() {
+    assert(isInitialized());
+    return allowThreadLocal(nativeHandle_);
+  }
+  private native boolean allowThreadLocal(long handle);
+
+  /**
+   * Allow RocksDB to use thread local storage to optimize performance.
+   * Default: true
+   *
+   * @param allowThreadLocal true if thread-local storage is allowed.
+   * @return the reference to the current option.
+   */
+  public Options setAllowThreadLocal(boolean allowThreadLocal) {
+    assert(isInitialized());
+    setAllowThreadLocal(nativeHandle_, allowThreadLocal);
+    return this;
+  }
+  private native void setAllowThreadLocal(
+      long handle, boolean allowThreadLocal);
+
+  /**
    * Set the config for mem-table.
    *
    * @param config the mem-table config.
@@ -1101,19 +1136,6 @@ public class Options extends RocksObject {
    */
   public Options setMemTableConfig(MemTableConfig config) {
     setMemTableFactory(nativeHandle_, config.newMemTableFactoryHandle());
-    return this;
-  }
-  
-  /**
-   * Use to control write rate of flush and compaction. Flush has higher
-   * priority than compaction. Rate limiting is disabled if nullptr.
-   * Default: nullptr
-   *
-   * @param config rate limiter config.
-   * @return the instance of the current Options.
-   */
-  public Options setRateLimiterConfig(RateLimiterConfig config) {
-    setRateLimiter(nativeHandle_, config.newRateLimiterHandle());
     return this;
   }
 
@@ -2204,8 +2226,6 @@ public class Options extends RocksObject {
   private native long statisticsPtr(long optHandle);
 
   private native void setMemTableFactory(long handle, long factoryHandle);
-  private native void setRateLimiter(long handle,
-      long rateLimiterHandle);
   private native String memTableFactoryName(long handle);
 
   private native void setTableFactory(long handle, long factoryHandle);

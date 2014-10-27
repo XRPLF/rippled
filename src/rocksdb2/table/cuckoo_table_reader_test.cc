@@ -11,10 +11,7 @@ int main() {
 }
 #else
 
-#ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
-#endif
-
 #include <inttypes.h>
 #include <gflags/gflags.h>
 #include <vector>
@@ -25,7 +22,6 @@ int main() {
 #include "table/cuckoo_table_builder.h"
 #include "table/cuckoo_table_reader.h"
 #include "table/cuckoo_table_factory.h"
-#include "table/get_context.h"
 #include "util/arena.h"
 #include "util/random.h"
 #include "util/testharness.h"
@@ -39,7 +35,6 @@ DEFINE_string(file_dir, "", "Directory where the files will be created"
 DEFINE_bool(enable_perf, false, "Run Benchmark Tests too.");
 DEFINE_bool(write, false,
     "Should write new values to file in performance tests?");
-DEFINE_bool(identity_as_first_hash, true, "use identity as first hash");
 
 namespace rocksdb {
 
@@ -62,6 +57,25 @@ uint64_t GetSliceHash(const Slice& s, uint32_t index,
   return hash_map[s.ToString()][index];
 }
 
+// Methods, variables for checking key and values read.
+struct ValuesToAssert {
+  ValuesToAssert(const std::string& key, const Slice& value)
+    : expected_user_key(key),
+      expected_value(value),
+      call_count(0) {}
+  std::string expected_user_key;
+  Slice expected_value;
+  int call_count;
+};
+
+bool AssertValues(void* assert_obj,
+    const ParsedInternalKey& k, const Slice& v) {
+  ValuesToAssert *ptr = reinterpret_cast<ValuesToAssert*>(assert_obj);
+  ASSERT_EQ(ptr->expected_value.ToString(), v.ToString());
+  ASSERT_EQ(ptr->expected_user_key, k.user_key.ToString());
+  ++ptr->call_count;
+  return false;
+}
 }  // namespace
 
 class CuckooReaderTest {
@@ -92,8 +106,7 @@ class CuckooReaderTest {
     std::unique_ptr<WritableFile> writable_file;
     ASSERT_OK(env->NewWritableFile(fname, &writable_file, env_options));
     CuckooTableBuilder builder(
-        writable_file.get(), 0.9, kNumHashFunc, 100, ucomp, 2,
-        false, false, GetSliceHash);
+        writable_file.get(), 0.9, kNumHashFunc, 100, ucomp, 2, GetSliceHash);
     ASSERT_OK(builder.status());
     for (uint32_t key_idx = 0; key_idx < num_items; ++key_idx) {
       builder.Add(Slice(keys[key_idx]), Slice(values[key_idx]));
@@ -108,22 +121,18 @@ class CuckooReaderTest {
     // Check reader now.
     std::unique_ptr<RandomAccessFile> read_file;
     ASSERT_OK(env->NewRandomAccessFile(fname, &read_file, env_options));
-    const ImmutableCFOptions ioptions(options);
     CuckooTableReader reader(
-        ioptions,
+        options,
         std::move(read_file),
         file_size,
         ucomp,
         GetSliceHash);
     ASSERT_OK(reader.status());
-    // Assume no merge/deletion
     for (uint32_t i = 0; i < num_items; ++i) {
-      std::string value;
-      GetContext get_context(ucomp, nullptr, nullptr, nullptr,
-                             GetContext::kNotFound, Slice(user_keys[i]), &value,
-                             nullptr, nullptr);
-      ASSERT_OK(reader.Get(ReadOptions(), Slice(keys[i]), &get_context));
-      ASSERT_EQ(values[i], value);
+      ValuesToAssert v(user_keys[i], values[i]);
+      ASSERT_OK(reader.Get(
+            ReadOptions(), Slice(keys[i]), &v, AssertValues, nullptr));
+      ASSERT_EQ(1, v.call_count);
     }
   }
   void UpdateKeys(bool with_zero_seqno) {
@@ -138,9 +147,8 @@ class CuckooReaderTest {
   void CheckIterator(const Comparator* ucomp = BytewiseComparator()) {
     std::unique_ptr<RandomAccessFile> read_file;
     ASSERT_OK(env->NewRandomAccessFile(fname, &read_file, env_options));
-    const ImmutableCFOptions ioptions(options);
     CuckooTableReader reader(
-        ioptions,
+        options,
         std::move(read_file),
         file_size,
         ucomp,
@@ -314,16 +322,14 @@ TEST(CuckooReaderTest, WhenKeyNotFound) {
     // Make all hash values collide.
     AddHashLookups(user_keys[i], 0, kNumHashFunc);
   }
-  auto* ucmp = BytewiseComparator();
   CreateCuckooFileAndCheckReader();
   std::unique_ptr<RandomAccessFile> read_file;
   ASSERT_OK(env->NewRandomAccessFile(fname, &read_file, env_options));
-  const ImmutableCFOptions ioptions(options);
   CuckooTableReader reader(
-      ioptions,
+      options,
       std::move(read_file),
       file_size,
-      ucmp,
+      BytewiseComparator(),
       GetSliceHash);
   ASSERT_OK(reader.status());
   // Search for a key with colliding hash values.
@@ -332,11 +338,10 @@ TEST(CuckooReaderTest, WhenKeyNotFound) {
   AddHashLookups(not_found_user_key, 0, kNumHashFunc);
   ParsedInternalKey ikey(not_found_user_key, 1000, kTypeValue);
   AppendInternalKey(&not_found_key, ikey);
-  std::string value;
-  GetContext get_context(ucmp, nullptr, nullptr, nullptr, GetContext::kNotFound,
-                         Slice(not_found_key), &value, nullptr, nullptr);
-  ASSERT_OK(reader.Get(ReadOptions(), Slice(not_found_key), &get_context));
-  ASSERT_TRUE(value.empty());
+  ValuesToAssert v("", "");
+  ASSERT_OK(reader.Get(
+        ReadOptions(), Slice(not_found_key), &v, AssertValues, nullptr));
+  ASSERT_EQ(0, v.call_count);
   ASSERT_OK(reader.status());
   // Search for a key with an independent hash value.
   std::string not_found_user_key2 = "key" + NumToStr(num_items + 1);
@@ -344,11 +349,9 @@ TEST(CuckooReaderTest, WhenKeyNotFound) {
   ParsedInternalKey ikey2(not_found_user_key2, 1000, kTypeValue);
   std::string not_found_key2;
   AppendInternalKey(&not_found_key2, ikey2);
-  GetContext get_context2(ucmp, nullptr, nullptr, nullptr,
-                          GetContext::kNotFound, Slice(not_found_key2), &value,
-                          nullptr, nullptr);
-  ASSERT_OK(reader.Get(ReadOptions(), Slice(not_found_key2), &get_context2));
-  ASSERT_TRUE(value.empty());
+  ASSERT_OK(reader.Get(
+        ReadOptions(), Slice(not_found_key2), &v, AssertValues, nullptr));
+  ASSERT_EQ(0, v.call_count);
   ASSERT_OK(reader.status());
 
   // Test read when key is unused key.
@@ -358,25 +361,34 @@ TEST(CuckooReaderTest, WhenKeyNotFound) {
   // Add hash values that map to empty buckets.
   AddHashLookups(ExtractUserKey(unused_key).ToString(),
       kNumHashFunc, kNumHashFunc);
-  GetContext get_context3(ucmp, nullptr, nullptr, nullptr,
-                          GetContext::kNotFound, Slice(unused_key), &value,
-                          nullptr, nullptr);
-  ASSERT_OK(reader.Get(ReadOptions(), Slice(unused_key), &get_context3));
-  ASSERT_TRUE(value.empty());
+  ASSERT_OK(reader.Get(
+        ReadOptions(), Slice(unused_key), &v, AssertValues, nullptr));
+  ASSERT_EQ(0, v.call_count);
   ASSERT_OK(reader.status());
 }
 
 // Performance tests
 namespace {
+bool DoNothing(void* arg, const ParsedInternalKey& k, const Slice& v) {
+  // Deliberately empty.
+  return false;
+}
+
+bool CheckValue(void* cnt_ptr, const ParsedInternalKey& k, const Slice& v) {
+  ++*reinterpret_cast<int*>(cnt_ptr);
+  std::string expected_value;
+  AppendInternalKey(&expected_value, k);
+  ASSERT_EQ(0, v.compare(Slice(&expected_value[0], v.size())));
+  return false;
+}
+
 void GetKeys(uint64_t num, std::vector<std::string>* keys) {
-  keys->clear();
   IterKey k;
   k.SetInternalKey("", 0, kTypeValue);
   std::string internal_key_suffix = k.GetKey().ToString();
   ASSERT_EQ(static_cast<size_t>(8), internal_key_suffix.size());
   for (uint64_t key_idx = 0; key_idx < num; ++key_idx) {
-    uint64_t value = 2 * key_idx;
-    std::string new_key(reinterpret_cast<char*>(&value), sizeof(value));
+    std::string new_key(reinterpret_cast<char*>(&key_idx), sizeof(key_idx));
     new_key += internal_key_suffix;
     keys->push_back(new_key);
   }
@@ -404,8 +416,7 @@ void WriteFile(const std::vector<std::string>& keys,
   ASSERT_OK(env->NewWritableFile(fname, &writable_file, env_options));
   CuckooTableBuilder builder(
       writable_file.get(), hash_ratio,
-      64, 1000, test::Uint64Comparator(), 5,
-      false, FLAGS_identity_as_first_hash, nullptr);
+      64, 1000, test::Uint64Comparator(), 5, nullptr);
   ASSERT_OK(builder.status());
   for (uint64_t key_idx = 0; key_idx < num; ++key_idx) {
     // Value is just a part of key.
@@ -422,21 +433,18 @@ void WriteFile(const std::vector<std::string>& keys,
   std::unique_ptr<RandomAccessFile> read_file;
   ASSERT_OK(env->NewRandomAccessFile(fname, &read_file, env_options));
 
-  const ImmutableCFOptions ioptions(options);
   CuckooTableReader reader(
-      ioptions, std::move(read_file), file_size,
+      options, std::move(read_file), file_size,
       test::Uint64Comparator(), nullptr);
   ASSERT_OK(reader.status());
   ReadOptions r_options;
-  std::string value;
-  // Assume only the fast path is triggered
-  GetContext get_context(nullptr, nullptr, nullptr, nullptr,
-                         GetContext::kNotFound, Slice(), &value,
-                         nullptr, nullptr);
   for (uint64_t i = 0; i < num; ++i) {
-    value.clear();
-    ASSERT_OK(reader.Get(r_options, Slice(keys[i]), &get_context));
-    ASSERT_TRUE(Slice(keys[i]) == Slice(&keys[i][0], 4));
+    int cnt = 0;
+    ASSERT_OK(reader.Get(r_options, Slice(keys[i]), &cnt, CheckValue, nullptr));
+    if (cnt != 1) {
+      fprintf(stderr, "%" PRIu64 " not found.\n", i);
+      ASSERT_EQ(1, cnt);
+    }
   }
 }
 
@@ -452,9 +460,8 @@ void ReadKeys(uint64_t num, uint32_t batch_size) {
   std::unique_ptr<RandomAccessFile> read_file;
   ASSERT_OK(env->NewRandomAccessFile(fname, &read_file, env_options));
 
-  const ImmutableCFOptions ioptions(options);
   CuckooTableReader reader(
-      ioptions, std::move(read_file), file_size, test::Uint64Comparator(),
+      options, std::move(read_file), file_size, test::Uint64Comparator(),
       nullptr);
   ASSERT_OK(reader.status());
   const UserCollectedProperties user_props =
@@ -467,33 +474,21 @@ void ReadKeys(uint64_t num, uint32_t batch_size) {
       " hash functions: %u.\n", num, num * 100.0 / (table_size), num_hash_fun);
   ReadOptions r_options;
 
-  std::vector<uint64_t> keys;
-  keys.reserve(num);
-  for (uint64_t i = 0; i < num; ++i) {
-    keys.push_back(2 * i);
-  }
-  std::random_shuffle(keys.begin(), keys.end());
-
-  std::string value;
-  // Assume only the fast path is triggered
-  GetContext get_context(nullptr, nullptr, nullptr, nullptr,
-                         GetContext::kNotFound, Slice(), &value,
-                         nullptr, nullptr);
   uint64_t start_time = env->NowMicros();
   if (batch_size > 0) {
     for (uint64_t i = 0; i < num; i += batch_size) {
       for (uint64_t j = i; j < i+batch_size && j < num; ++j) {
-        reader.Prepare(Slice(reinterpret_cast<char*>(&keys[j]), 16));
+        reader.Prepare(Slice(reinterpret_cast<char*>(&j), 16));
       }
       for (uint64_t j = i; j < i+batch_size && j < num; ++j) {
-        reader.Get(r_options, Slice(reinterpret_cast<char*>(&keys[j]), 16),
-                   &get_context);
+        reader.Get(r_options, Slice(reinterpret_cast<char*>(&j), 16),
+            nullptr, DoNothing, nullptr);
       }
     }
   } else {
     for (uint64_t i = 0; i < num; i++) {
-      reader.Get(r_options, Slice(reinterpret_cast<char*>(&keys[i]), 16),
-                 &get_context);
+      reader.Get(r_options, Slice(reinterpret_cast<char*>(&i), 16), nullptr,
+          DoNothing, nullptr);
     }
   }
   float time_per_op = (env->NowMicros() - start_time) * 1.0 / num;
@@ -511,16 +506,16 @@ TEST(CuckooReaderTest, TestReadPerformance) {
   // These numbers are chosen to have a hash utilizaiton % close to
   // 0.9, 0.75, 0.6 and 0.5 respectively.
   // They all create 128 M buckets.
-  std::vector<uint64_t> nums = {120*1024*1024, 100*1024*1024, 80*1024*1024,
-    70*1024*1024};
+  std::vector<uint64_t> nums = {120*1000*1000, 100*1000*1000, 80*1000*1000,
+    70*1000*1000};
 #ifndef NDEBUG
   fprintf(stdout,
       "WARNING: Not compiled with DNDEBUG. Performance tests may be slow.\n");
 #endif
   std::vector<std::string> keys;
+  GetKeys(*std::max_element(nums.begin(), nums.end()), &keys);
   for (uint64_t num : nums) {
     if (FLAGS_write || !Env::Default()->FileExists(GetFileName(num))) {
-      GetKeys(num, &keys);
       WriteFile(keys, num, hash_ratio);
     }
     ReadKeys(num, 0);

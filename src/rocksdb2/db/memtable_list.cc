@@ -62,9 +62,10 @@ int MemTableList::size() const {
 // Return the most recent value found, if any.
 // Operands stores the list of merge operations to apply, so far.
 bool MemTableListVersion::Get(const LookupKey& key, std::string* value,
-                              Status* s, MergeContext* merge_context) {
+                              Status* s, MergeContext& merge_context,
+                              const Options& options) {
   for (auto& memtable : memlist_) {
-    if (memtable->Get(key, value, s, merge_context)) {
+    if (memtable->Get(key, value, s, merge_context, options)) {
       return true;
     }
   }
@@ -72,10 +73,9 @@ bool MemTableListVersion::Get(const LookupKey& key, std::string* value,
 }
 
 void MemTableListVersion::AddIterators(const ReadOptions& options,
-                                       std::vector<Iterator*>* iterator_list,
-                                       Arena* arena) {
+                                       std::vector<Iterator*>* iterator_list) {
   for (auto& m : memlist_) {
-    iterator_list->push_back(m->NewIterator(options, arena));
+    iterator_list->push_back(m->NewIterator(options));
   }
 }
 
@@ -160,8 +160,7 @@ void MemTableList::RollbackMemtableFlush(const autovector<MemTable*>& mems,
 
 // Record a successful flush in the manifest file
 Status MemTableList::InstallMemtableFlushResults(
-    ColumnFamilyData* cfd, const MutableCFOptions& mutable_cf_options,
-    const autovector<MemTable*>& mems, VersionSet* vset,
+    ColumnFamilyData* cfd, const autovector<MemTable*>& mems, VersionSet* vset,
     port::Mutex* mu, Logger* info_log, uint64_t file_number,
     FileNumToPathIdMap* pending_outputs, autovector<MemTable*>* to_delete,
     Directory* db_directory, LogBuffer* log_buffer) {
@@ -198,7 +197,7 @@ Status MemTableList::InstallMemtableFlushResults(
                 cfd->GetName().c_str(), (unsigned long)m->file_number_);
 
     // this can release and reacquire the mutex.
-    s = vset->LogAndApply(cfd, mutable_cf_options, &m->edit_, mu, db_directory);
+    s = vset->LogAndApply(cfd, &m->edit_, mu, db_directory);
 
     // we will be changing the version in the next code path,
     // so we better create a new one, since versions are immutable

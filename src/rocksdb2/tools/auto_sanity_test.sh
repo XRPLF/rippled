@@ -37,11 +37,6 @@ echo "Running db sanity check with commits $commit_new and $commit_old."
 
 echo "============================================================="
 echo "Making build $commit_new"
-git checkout $commit_new
-if [ $? -ne 0 ]; then
-  echo "[ERROR] Can't checkout $commit_new"
-  exit 1
-fi
 makestuff
 mv db_sanity_test new_db_sanity_test
 echo "Creating db based on the new commit --- $commit_new"
@@ -49,11 +44,6 @@ echo "Creating db based on the new commit --- $commit_new"
 
 echo "============================================================="
 echo "Making build $commit_old"
-git checkout $commit_old
-if [ $? -ne 0 ]; then
-  echo "[ERROR] Can't checkout $commit_old"
-  exit 1
-fi
 makestuff
 mv db_sanity_test old_db_sanity_test
 echo "Creating db based on the old commit --- $commit_old"

@@ -16,7 +16,6 @@
 
 #include "db/dbformat.h"
 #include "rocksdb/env.h"
-#include "rocksdb/options.h"
 #include "table/table_reader.h"
 
 namespace rocksdb {
@@ -27,7 +26,7 @@ class TableReader;
 class CuckooTableReader: public TableReader {
  public:
   CuckooTableReader(
-      const ImmutableCFOptions& ioptions,
+      const Options& options,
       std::unique_ptr<RandomAccessFile>&& file,
       uint64_t file_size,
       const Comparator* user_comparator,
@@ -40,8 +39,12 @@ class CuckooTableReader: public TableReader {
 
   Status status() const { return status_; }
 
-  Status Get(const ReadOptions& read_options, const Slice& key,
-             GetContext* get_context) override;
+  Status Get(
+      const ReadOptions& readOptions, const Slice& key, void* handle_context,
+      bool (*result_handler)(void* arg, const ParsedInternalKey& k,
+                             const Slice& v),
+      void (*mark_key_may_exist_handler)(void* handle_context) = nullptr)
+    override;
 
   Iterator* NewIterator(const ReadOptions&, Arena* arena = nullptr) override;
   void Prepare(const Slice& target) override;
@@ -60,19 +63,16 @@ class CuckooTableReader: public TableReader {
   std::unique_ptr<RandomAccessFile> file_;
   Slice file_data_;
   bool is_last_level_;
-  bool identity_as_first_hash_;
-  bool use_module_hash_;
   std::shared_ptr<const TableProperties> table_props_;
   Status status_;
   uint32_t num_hash_func_;
   std::string unused_key_;
   uint32_t key_length_;
-  uint32_t user_key_length_;
   uint32_t value_length_;
   uint32_t bucket_length_;
   uint32_t cuckoo_block_size_;
   uint32_t cuckoo_block_bytes_minus_one_;
-  uint64_t table_size_;
+  uint64_t table_size_minus_one_;
   const Comparator* ucomp_;
   uint64_t (*get_slice_hash_)(const Slice& s, uint32_t index,
       uint64_t max_num_buckets);

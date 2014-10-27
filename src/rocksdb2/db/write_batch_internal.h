@@ -28,7 +28,6 @@ class ColumnFamilyMemTables {
   virtual MemTable* GetMemTable() const = 0;
   virtual const Options* GetOptions() const = 0;
   virtual ColumnFamilyHandle* GetColumnFamilyHandle() = 0;
-  virtual void CheckMemtableFull() = 0;
 };
 
 class ColumnFamilyMemTablesDefault : public ColumnFamilyMemTables {
@@ -54,8 +53,6 @@ class ColumnFamilyMemTablesDefault : public ColumnFamilyMemTables {
   }
 
   ColumnFamilyHandle* GetColumnFamilyHandle() override { return nullptr; }
-
-  void CheckMemtableFull() override {}
 
  private:
   bool ok_;

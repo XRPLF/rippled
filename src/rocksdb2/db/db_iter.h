@@ -24,12 +24,10 @@ class DBIter;
 // into appropriate user keys.
 extern Iterator* NewDBIterator(
     Env* env,
-    const ImmutableCFOptions& options,
+    const Options& options,
     const Comparator *user_key_comparator,
     Iterator* internal_iter,
-    const SequenceNumber& sequence,
-    uint64_t max_sequential_skip_in_iterations,
-    const Slice* iterate_upper_bound = nullptr);
+    const SequenceNumber& sequence);
 
 // A wrapper iterator which wraps DB Iterator and the arena, with which the DB
 // iterator is supposed be allocated. This class is used as an entry point of
@@ -69,9 +67,7 @@ class ArenaWrappedDBIter : public Iterator {
 
 // Generate the arena wrapped iterator class.
 extern ArenaWrappedDBIter* NewArenaWrappedDbIterator(
-    Env* env, const ImmutableCFOptions& options,
-    const Comparator* user_key_comparator,
-    const SequenceNumber& sequence, uint64_t max_sequential_skip_in_iterations,
-    const Slice* iterate_upper_bound = nullptr);
+    Env* env, const Options& options, const Comparator* user_key_comparator,
+    const SequenceNumber& sequence);
 
 }  // namespace rocksdb

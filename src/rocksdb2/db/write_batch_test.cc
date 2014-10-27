@@ -18,7 +18,6 @@
 #include "rocksdb/utilities/write_batch_with_index.h"
 #include "util/logging.h"
 #include "util/testharness.h"
-#include "util/scoped_arena_iterator.h"
 
 namespace rocksdb {
 
@@ -27,16 +26,13 @@ static std::string PrintContents(WriteBatch* b) {
   auto factory = std::make_shared<SkipListFactory>();
   Options options;
   options.memtable_factory = factory;
-  ImmutableCFOptions ioptions(options);
-  MemTable* mem = new MemTable(cmp, ioptions,
-      MemTableOptions(MutableCFOptions(options, ioptions), options));
+  MemTable* mem = new MemTable(cmp, options);
   mem->Ref();
   std::string state;
   ColumnFamilyMemTablesDefault cf_mems_default(mem, &options);
   Status s = WriteBatchInternal::InsertInto(b, &cf_mems_default);
   int count = 0;
-  Arena arena;
-  ScopedArenaIterator iter(mem->NewIterator(ReadOptions(), &arena));
+  Iterator* iter = mem->NewIterator(ReadOptions());
   for (iter->SeekToFirst(); iter->Valid(); iter->Next()) {
     ParsedInternalKey ikey;
     memset((void *)&ikey, 0, sizeof(ikey));
@@ -71,6 +67,7 @@ static std::string PrintContents(WriteBatch* b) {
     state.append("@");
     state.append(NumberToString(ikey.sequence));
   }
+  delete iter;
   if (!s.ok()) {
     state.append(s.ToString());
   } else if (count != WriteBatchInternal::Count(b)) {
@@ -290,9 +287,6 @@ class ColumnFamilyHandleImplDummy : public ColumnFamilyHandleImpl {
   explicit ColumnFamilyHandleImplDummy(int id)
       : ColumnFamilyHandleImpl(nullptr, nullptr, nullptr), id_(id) {}
   uint32_t GetID() const override { return id_; }
-  const Comparator* user_comparator() const override {
-    return BytewiseComparator();
-  }
 
  private:
   uint32_t id_;
@@ -324,7 +318,7 @@ TEST(WriteBatchTest, ColumnFamiliesBatchTest) {
 }
 
 TEST(WriteBatchTest, ColumnFamiliesBatchWithIndexTest) {
-  WriteBatchWithIndex batch;
+  WriteBatchWithIndex batch(BytewiseComparator(), 20);
   ColumnFamilyHandleImplDummy zero(0), two(2), three(3), eight(8);
   batch.Put(&zero, Slice("foo"), Slice("bar"));
   batch.Put(&two, Slice("twofoo"), Slice("bar2"));

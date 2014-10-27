@@ -28,12 +28,10 @@ class BlockBasedTableBuilder : public TableBuilder {
   // Create a builder that will store the contents of the table it is
   // building in *file.  Does not close the file.  It is up to the
   // caller to close the file after calling Finish().
-  BlockBasedTableBuilder(const ImmutableCFOptions& ioptions,
+  BlockBasedTableBuilder(const Options& options,
                          const BlockBasedTableOptions& table_options,
                          const InternalKeyComparator& internal_comparator,
-                         WritableFile* file,
-                         const CompressionType compression_type,
-                         const CompressionOptions& compression_opts);
+                         WritableFile* file, CompressionType compression_type);
 
   // REQUIRES: Either Finish() or Abandon() has been called.
   ~BlockBasedTableBuilder();
