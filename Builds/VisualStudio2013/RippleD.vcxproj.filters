@@ -4185,9 +4185,6 @@
     <ClCompile Include="..\..\src\ripple\rpc\impl\RPCHandler.cpp">
       <Filter>ripple\rpc\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\rpc\impl\RPCServerHandler.cpp">
-      <Filter>ripple\rpc\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\rpc\impl\Status.cpp">
       <Filter>ripple\rpc\impl</Filter>
     </ClCompile>
@@ -4219,9 +4216,6 @@
       <Filter>ripple\rpc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\RPCHandler.h">
-      <Filter>ripple\rpc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\rpc\RPCServerHandler.h">
       <Filter>ripple\rpc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\Status.h">

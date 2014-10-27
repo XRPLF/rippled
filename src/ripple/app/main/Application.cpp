@@ -175,7 +175,6 @@ public:
     std::unique_ptr <NetworkOPs> m_networkOPs;
     std::unique_ptr <UniqueNodeList> m_deprecatedUNL;
     std::unique_ptr <RPCHTTPServer> m_rpcHTTPServer;
-    RPCServerHandler m_rpcServerHandler;
     std::unique_ptr <NodeStore::Database> m_nodeStore;
     std::unique_ptr <SNTPClient> m_sntpClient;
     std::unique_ptr <TxQueue> m_txQueue;
@@ -315,9 +314,6 @@ public:
         , m_rpcHTTPServer (make_RPCHTTPServer (*m_networkOPs,
             *m_jobQueue, *m_networkOPs, *m_resourceManager,
                 setup_RPC(getConfig()["rpc"])))
-
-        // passive object, not a Service
-        , m_rpcServerHandler (*m_networkOPs, *m_resourceManager)
 
         , m_nodeStore (m_nodeStoreManager->make_Database ("NodeStore.main",
             m_nodeStoreScheduler, m_logs.journal("NodeObject"),
@@ -808,41 +804,11 @@ public:
             }
         }
 
-        //
-        //
         //----------------------------------------------------------------------
 
-        //
-        // Allow RPC connections.
-        //
-#if RIPPLE_ASYNC_RPC_HANDLER
         m_rpcHTTPServer->setup (m_journal);
 
-#else
-        if (! getConfig ().getRpcIP().empty () && getConfig ().getRpcPort() != 0)
-        {
-            try
-            {
-                m_rpcDoor.reset (RPCDoor::New (m_mainIoPool, m_rpcServerHandler));
-            }
-            catch (const std::exception& e)
-            {
-                // Must run as directed or exit.
-                m_journal.fatal <<
-                    "Can not open RPC service: " << e.what ();
-
-                exit (3);
-            }
-        }
-        else
-        {
-            m_journal.info << "RPC interface: disabled";
-        }
-#endif
-
-        //
         // Begin connecting to network.
-        //
         if (!getConfig ().RUN_STANDALONE)
         {
             // Should this message be here, conceptually? In theory this sort
