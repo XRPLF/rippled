@@ -22,6 +22,89 @@
 
 namespace ripple {
 
+class FindPaths::Impl {
+public:
+    Impl (
+        RippleLineCache::ref cache,
+        Account const& srcAccount,
+        Account const& dstAccount,
+        STAmount const& dstAmount,
+        int searchLevel,
+        unsigned int maxPaths)
+            : cache_ (cache),
+              srcAccount_ (srcAccount),
+              dstAccount_ (dstAccount),
+              dstAmount_ (dstAmount),
+              searchLevel_ (searchLevel),
+              maxPaths_ (maxPaths)
+    {
+    }
+
+
+    bool findPathsForIssue (
+        Issue const& issue,
+        STPathSet& pathsOut,
+        STPath& fullLiquidityPath)
+    {
+        if (auto& pathfinder = getPathFinder (issue.currency))
+        {
+            pathsOut = pathfinder->getBestPaths (
+                maxPaths_,  fullLiquidityPath, issue.account);
+            return true;
+        }
+        return false;
+    }
+
+private:
+    hash_map<Currency, std::unique_ptr<Pathfinder>> currencyMap_;
+
+    RippleLineCache::ref cache_;
+    Account const srcAccount_;
+    Account const dstAccount_;
+    STAmount const dstAmount_;
+    int const searchLevel_;
+    unsigned int const maxPaths_;
+
+    std::unique_ptr<Pathfinder> const& getPathFinder (Currency const& currency)
+    {
+        auto i = currencyMap_.find (currency);
+        if (i != currencyMap_.end ())
+            return i->second;
+        auto pathfinder = std::make_unique<Pathfinder> (
+            cache_, srcAccount_, dstAccount_, currency, dstAmount_);
+        if (pathfinder->findPaths (searchLevel_))
+            pathfinder->computePathRanks (maxPaths_);
+        else
+            pathfinder.reset ();  // It's a bad request - clear it.
+        return currencyMap_[currency] = std::move (pathfinder);
+
+        // TODO(tom): why doesn't this faster way compile?
+        // return currencyMap_.insert (i, std::move (pathfinder)).second;
+    }
+};
+
+FindPaths::FindPaths (
+    RippleLineCache::ref cache,
+    Account const& srcAccount,
+    Account const& dstAccount,
+    STAmount const& dstAmount,
+    int level,
+    unsigned int maxPaths)
+        : impl_ (std::make_unique<Impl> (
+              cache, srcAccount, dstAccount, dstAmount, level, maxPaths))
+{
+}
+
+FindPaths::~FindPaths() = default;
+
+bool FindPaths::findPathsForIssue (
+    Issue const& issue,
+    STPathSet& pathsOut,
+    STPath& fullLiquidityPath)
+{
+    return impl_->findPathsForIssue (issue, pathsOut, fullLiquidityPath);
+}
+
 bool findPathsForOneIssuer (
     RippleLineCache::ref cache,
     Account const& srcAccount,
@@ -44,9 +127,9 @@ bool findPathsForOneIssuer (
     if (!pf.findPaths (searchLevel))
         return false;
 
-    // Yes, ensurePathsAreComplete is called BEFORE we compute the paths...
-    pf.ensurePathsAreComplete (pathsOut);
-    pathsOut = pf.getBestPaths(maxPaths, fullLiquidityPath);
+    pf.addPathsFromPreviousPathfinding (pathsOut);
+    pf.computePathRanks (maxPaths);
+    pathsOut = pf.getBestPaths(maxPaths, fullLiquidityPath, srcIssue.account);
     return true;
 }
 

@@ -31,6 +31,7 @@ namespace ripple {
 class Pathfinder
 {
 public:
+    /** Construct a pathfinder with an issuer.*/
     Pathfinder (
         RippleLineCache::ref cache,
         Account const& srcAccount,
@@ -39,18 +40,35 @@ public:
         Account const& uSrcIssuer,
         STAmount const& dstAmount);
 
+    /** Construct a pathfinder without an issuer.*/
+    Pathfinder (
+        RippleLineCache::ref cache,
+        Account const& srcAccount,
+        Account const& dstAccount,
+        Currency const& uSrcCurrency,
+        STAmount const& dstAmount);
+
+    ~Pathfinder();
+
     static void initPathTable ();
 
     bool findPaths (int searchLevel);
 
-    void ensurePathsAreComplete (STPathSet&);
+    /** Make sure that all the input paths are included in mCompletePaths. */
+    void addPathsFromPreviousPathfinding (STPathSet&);
+
+    /** Compute the rankings of the paths. */
+    void computePathRanks (int maxPaths);
 
     /* Get the best paths, up to maxPaths in number, from mCompletePaths.
 
        On return, if fullLiquidityPath is not empty, then it contains the best
        additional single path which can consume all the liquidity.
     */
-    STPathSet getBestPaths (int maxPaths, STPath& fullLiquidityPath);
+    STPathSet getBestPaths (
+        int maxPaths,
+        STPath& fullLiquidityPath,
+        Account const& srcIssuer);
 
     enum NodeType
     {
@@ -76,9 +94,17 @@ public:
         pt_nonXRP_to_nonXRP  // Destination currency is NOT the same as source.
     };
 
+    struct PathRank
+    {
+        std::uint64_t quality;
+        std::uint64_t length;
+        STAmount liquidity;
+        int index;
+    };
+
 private:
     /*
-      Call graph of methoids
+      Call graph of Pathfinder methods.
 
       findPaths:
           addPathsForType:
@@ -89,12 +115,14 @@ private:
                       isNoRippleOut:
                           isNoRipple
 
-      ensurePathsAreComplete
+      addPathsFromPreviousPathfinding
 
-      getBestPaths:
+      computePathRanks:
           rippleCalculate
           getPathLiquidity:
               rippleCalculate
+
+      getBestPaths
      */
 
 
@@ -143,8 +171,11 @@ private:
     Account mDstAccount;
     STAmount mDstAmount;
     Currency mSrcCurrency;
-    Account mSrcIssuer;
+    boost::optional<Account> mSrcIssuer;
     STAmount mSrcAmount;
+    /** The amount remaining from mSrcAccount after the default liquidity has
+        been removed. */
+    STAmount mRemainingAmount;
 
     Ledger::pointer mLedger;
     LoadEvent::pointer m_loadEvent;
@@ -152,6 +183,7 @@ private:
 
     STPathElement mSource;
     STPathSet mCompletePaths;
+    std::vector<PathRank> mPathRanks;
     std::map<PathType, STPathSet> mPaths;
 
     hash_map<Issue, int> mPathsOutCountMap;
