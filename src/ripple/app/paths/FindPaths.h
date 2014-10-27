@@ -22,6 +22,43 @@
 
 namespace ripple {
 
+class FindPaths
+{
+public:
+    FindPaths (
+        RippleLineCache::ref cache,
+        Account const& srcAccount,
+        Account const& dstAccount,
+        STAmount const& dstAmount,
+        /** searchLevel is the maximum search level allowed in an output path.
+         */
+        int searchLevel,
+        /** maxPaths is the maximum number of paths that can be returned in
+            pathsOut. */
+        unsigned int const maxPaths);
+    ~FindPaths();
+
+    bool findPathsForIssue (
+        Issue const& issue,
+
+        /** On input, pathsOut contains any paths you want to ensure are
+            included if still good.
+
+            On output, pathsOut will have any additional paths found. Only
+            non-default paths without source or destination will be added. */
+        STPathSet& pathsOut,
+
+        /** On input, fullLiquidityPath must be an empty STPath.
+
+            On output, if fullLiquidityPath is non-empty, it contains one extra
+            path that can move the entire liquidity requested. */
+        STPath& fullLiquidityPath);
+
+private:
+    class Impl;
+    std::unique_ptr<Impl> impl_;
+};
+
 bool findPathsForOneIssuer (
     RippleLineCache::ref cache,
     Account const& srcAccount,

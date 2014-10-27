@@ -125,7 +125,6 @@ static Json::Value signPayment(
         && params.isMember ("build_path"))
     {
         // Need a ripple path.
-        STPathSet   spsPaths;
         Currency uSrcCurrencyID;
         Account uSrcIssuerID;
 
@@ -153,6 +152,7 @@ static Json::Value signPayment(
                 return rpcError (rpcTOO_BUSY);
 
             auto cache = std::make_shared<RippleLineCache> (lSnapshot);
+            STPathSet spsPaths;
             STPath fullLiquidityPath;
             auto valid = findPathsForOneIssuer (
                 cache,

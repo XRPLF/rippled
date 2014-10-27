@@ -136,6 +136,8 @@ Json::Value doRipplePathFind (RPC::Context& context)
         // Fill in currencies destination will accept
         Json::Value jvDestCur (Json::arrayValue);
 
+        // TODO(tom): this could be optimized the same way that
+        // PathRequest::doUpdate() is - if we don't obsolete this code first.
         auto usDestCurrID = accountDestCurrencies (raDst, cache, true);
         for (auto const& uCurrency: usDestCurrID)
                 jvDestCur.append (to_string (uCurrency));
@@ -144,6 +146,29 @@ Json::Value doRipplePathFind (RPC::Context& context)
         jvResult["destination_account"] = raDst.humanAccountID ();
 
         Json::Value jvArray (Json::arrayValue);
+
+        int level = getConfig().PATH_SEARCH_OLD;
+        if ((getConfig().PATH_SEARCH_MAX > level)
+            && !getApp().getFeeTrack().isLoadedLocal())
+        {
+            ++level;
+        }
+
+        if (context.params_.isMember("depth")
+            && context.params_["depth"].isIntegral())
+        {
+            int rLev = context.params_["search_depth"].asInt ();
+            if ((rLev < level) || (context.role_ == Config::ADMIN))
+                level = rLev;
+        }
+
+        FindPaths fp (
+            cache,
+            raSrc.getAccountID(),
+            raDst.getAccountID(),
+            saDstAmount,
+            level,
+            4); // max paths
 
         for (unsigned int i = 0; i != jvSrcCurrencies.size (); ++i)
         {
@@ -204,14 +229,8 @@ Json::Value doRipplePathFind (RPC::Context& context)
             }
 
             STPath fullLiquidityPath;
-            auto valid = findPathsForOneIssuer(
-                cache,
-                raSrc.getAccountID(),
-                raDst.getAccountID(),
+            auto valid = fp.findPathsForIssue (
                 {uSrcCurrencyID, uSrcIssuerID},
-                saDstAmount,
-                level,
-                4,  // iMaxPaths
                 spsComputed,
                 fullLiquidityPath);
             if (!valid)
