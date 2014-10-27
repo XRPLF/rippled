@@ -84,7 +84,7 @@ Array& Array::append (Scalar value)
 
 Object::Root::Root (Writer& w) : Object (nullptr, &w)
 {
-    writer_->startRoot (Writer::object);  // writer_ can't be null.
+    writer_->startRoot (Writer::object);
 }
 
 //------------------------------------------------------------------------------

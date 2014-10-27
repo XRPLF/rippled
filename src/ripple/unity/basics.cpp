@@ -29,3 +29,5 @@
 #include <ripple/basics/impl/ThreadName.cpp>
 #include <ripple/basics/impl/Time.cpp>
 #include <ripple/basics/impl/UptimeTimer.cpp>
+
+#include <ripple/basics/impl/Join_test.cpp>

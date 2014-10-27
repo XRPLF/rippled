@@ -260,23 +260,33 @@ void Writer::finishAll ()
 template <typename Type>
 void Writer::append (Type t)
 {
-    impl_->nextCollectionEntry (array, "append");
+    rawAppend();
     output (t);
+}
+
+void Writer::rawAppend()
+{
+    impl_->nextCollectionEntry (array, "append");
 }
 
 template <typename Type>
 void Writer::set (std::string const& tag, Type t)
 {
+    rawSet (tag);
+    output (t);
+}
+
+void Writer::rawSet (std::string const& tag)
+{
     check (!tag.empty(), "Tag can't be empty");
 
     impl_->nextCollectionEntry (object, "set");
     impl_->writeObjectTag (tag);
-    output (t);
 }
+
 
 void Writer::startRoot (CollectionType type)
 {
-    check (impl_->empty(), "stack_ not empty() in start");
     impl_->start (type);
 }
 

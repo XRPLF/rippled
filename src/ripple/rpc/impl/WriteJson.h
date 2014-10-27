@@ -17,54 +17,26 @@
 */
 //==============================================================================
 
-#ifndef RIPPLED_RIPPLE_RPC_IMPL_TESTOUTPUT_H
-#define RIPPLED_RIPPLE_RPC_IMPL_TESTOUTPUT_H
-
-#include <ripple/rpc/Output.h>
-#include <ripple/rpc/impl/JsonWriter.h>
-#include <beast/unit_test/suite.h>
+#ifndef RIPPLED_RIPPLE_RPC_IMPL_WRITELEGACYJSON_H
+#define RIPPLED_RIPPLE_RPC_IMPL_WRITELEGACYJSON_H
 
 namespace ripple {
 namespace RPC {
 namespace New {
 
-struct TestOutput : Output
-{
-    void output (char const* s, size_t length) override
-    {
-        data.append (s, length);
-    }
+/** Writes a minimal representation of a Json value to an Output in O(n) time.
 
-    std::string data;
-};
+    Data is streamed right to the output, so only a marginal amount of memory is
+    used.  This can be very important for a very large Json::Value.
+ */
+void write (Json::Value const&, Output&);
 
+/** Return the minimal string representation of a Json::Value in O(n) time.
 
-struct TestOutputSuite : beast::unit_test::suite
-{
-    TestOutput output_;
-    std::unique_ptr <Writer> writer_;
-
-    void setup (std::string const& testName)
-    {
-        testcase (testName);
-        output_.data.clear ();
-        writer_ = std::make_unique <Writer> (output_);
-    }
-
-    // Test the result and report values.
-    void expectResult (std::string const& expected)
-    {
-        expectResult (output_.data, expected);
-    }
-
-    // Test the result and report values.
-    void expectResult (std::string const& result, std::string const& expected)
-    {
-        expect (result == expected,
-                "\n" "result:   '" + result + "'" +
-                "\n" "expected: '" + expected + "'");
-    }
-};
+    This requires a memory allocation for the full size of the output.
+    If possible, use write().
+ */
+std::string to_string (Json::Value&);
 
 } // New
 } // RPC

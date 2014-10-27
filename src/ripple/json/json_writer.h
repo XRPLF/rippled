@@ -38,8 +38,12 @@ public:
 /** \brief Outputs a Value in <a HREF="http://www.json.org">JSON</a> format without formatting (not human friendly).
  *
  * The JSON document is written in a single line. It is not intended for 'human' consumption,
- * but may be usefull to support feature such as RPC where bandwith is limited.
+ * but may be useful to support feature such as RPC where bandwidth is limited.
  * \sa Reader, Value
+
+ * NOTE: FastWriter is O(n * n), quadratic in the size of its input, because
+ * it builds up strings through repeated concatenation.  Consider using
+ * the facilities in ripple/rpc/impl/WriteJson.h.
  */
 class JSON_API FastWriter : public Writer
 {
