@@ -39,17 +39,17 @@ inline size_t strSize (std::string const& s)
 /** A string join in O(n) time, where n is the total number of characters
     joined. */
 template <typename Iterator>
-std::string join (Iterator begin, Iterator end)
+std::string join (Iterator first, Iterator last)
 {
     std::string result;
-    if (begin != end)
+    if (first != last)
     {
         size_t size = 0;
-        for (auto i = begin; i != end; ++i)
+        for (auto i = first; i != last; ++i)
             size += detail::strSize (*i);
 
         result.reserve (size);
-        for (auto i = begin; i != end; ++i)
+        for (auto i = first; i != last; ++i)
             result += *i;
     }
     return result;
@@ -58,23 +58,26 @@ std::string join (Iterator begin, Iterator end)
 /** A string join with a separator in O(n), where n is the total number of
  * characters joined. */
 template <typename Iterator, typename Separator>
-std::string join (Iterator begin, Iterator end, Separator sep)
+std::string join (Iterator first, Iterator last, Separator sep)
 {
     std::string result;
-    if (begin != end)
+    if (first != last)
     {
-        auto i = begin;
+        auto i = first;
         auto sepSize = detail::strSize (sep);
         auto size = detail::strSize (*i++);
 
-        while (i != end)
+        while (i != last)
             size += (detail::strSize (*i++) + sepSize);
 
         result.reserve (size);
-        i = begin;
+        i = first;
         result += (*i++);
-        while (i != end)
-            result += (sep + *i++);
+        while (i != last)
+        {
+            result += sep;
+            result += *i++;
+        }
     }
 
     return result;
