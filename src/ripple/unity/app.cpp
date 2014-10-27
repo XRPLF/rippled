@@ -29,7 +29,7 @@
 #include <ripple/app/main/NodeStoreScheduler.cpp>
 #include <ripple/app/main/IoServicePool.cpp>
 #include <ripple/app/main/FatalErrorReporter.cpp>
-#include <ripple/app/main/RPCHTTPServer.cpp>
+#include <ripple/app/main/ServerHandlerImp.cpp>
 #include <ripple/app/tx/TxQueueEntry.h>
 #include <ripple/app/tx/TxQueueEntry.cpp>
 #include <ripple/app/tx/TxQueue.cpp>

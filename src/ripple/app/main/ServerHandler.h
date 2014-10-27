@@ -1,4 +1,4 @@
-    //------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
     Copyright (c) 2012, 2013 Ripple Labs Inc.
@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_RPCHTTPSERVER_H_INCLUDED
-#define RIPPLE_APP_RPCHTTPSERVER_H_INCLUDED
+#ifndef RIPPLE_APP_MAIN_SERVERHANDLER_H_INCLUDED
+#define RIPPLE_APP_MAIN_SERVERHANDLER_H_INCLUDED
 
 #include <ripple/core/Config.h>
 #include <beast/utility/Journal.h>
@@ -27,16 +27,16 @@
 
 namespace ripple {
 
-class RPCHTTPServer
+class ServerHandler
     : public beast::Stoppable
     , public beast::PropertyStream::Source
 {
 protected:
-    RPCHTTPServer (Stoppable& parent);
+    ServerHandler (Stoppable& parent);
 
 public:
     virtual
-    ~RPCHTTPServer() = default;
+    ~ServerHandler() = default;
 
     /** Opens listening ports based on the Config settings
         This is implemented outside the constructor to support
@@ -47,8 +47,8 @@ public:
     setup (beast::Journal journal) = 0;
 };
 
-std::unique_ptr <RPCHTTPServer>
-make_RPCHTTPServer (beast::Stoppable& parent, JobQueue& jobQueue,
+std::unique_ptr <ServerHandler>
+make_ServerHandler (beast::Stoppable& parent, JobQueue& jobQueue,
     NetworkOPs& networkOPs, Resource::Manager& resourceManager,
         RPC::Setup const& setup);
 

@@ -174,7 +174,7 @@ public:
     std::unique_ptr <InboundLedgers> m_inboundLedgers;
     std::unique_ptr <NetworkOPs> m_networkOPs;
     std::unique_ptr <UniqueNodeList> m_deprecatedUNL;
-    std::unique_ptr <RPCHTTPServer> m_rpcHTTPServer;
+    std::unique_ptr <ServerHandler> serverHandler_;
     std::unique_ptr <NodeStore::Database> m_nodeStore;
     std::unique_ptr <SNTPClient> m_sntpClient;
     std::unique_ptr <TxQueue> m_txQueue;
@@ -311,7 +311,7 @@ public:
         // VFALCO NOTE LocalCredentials starts the deprecated UNL service
         , m_deprecatedUNL (make_UniqueNodeList (*m_jobQueue))
 
-        , m_rpcHTTPServer (make_RPCHTTPServer (*m_networkOPs,
+        , serverHandler_ (make_RPCHTTPServer (*m_networkOPs,
             *m_jobQueue, *m_networkOPs, *m_resourceManager,
                 setup_RPC(getConfig()["rpc"])))
 
@@ -372,7 +372,7 @@ public:
         m_nodeStoreScheduler.setJobQueue (*m_jobQueue);
 
         add (m_ledgerMaster->getPropertySource ());
-        add (*m_rpcHTTPServer);
+        add (*serverHandler_);
     }
 
     //--------------------------------------------------------------------------
@@ -806,7 +806,7 @@ public:
 
         //----------------------------------------------------------------------
 
-        m_rpcHTTPServer->setup (m_journal);
+        serverHandler_->setup (m_journal);
 
         // Begin connecting to network.
         if (!getConfig ().RUN_STANDALONE)
