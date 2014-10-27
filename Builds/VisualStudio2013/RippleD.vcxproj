@@ -2214,6 +2214,8 @@
     <ClCompile Include="..\..\src\ripple\basics\impl\UptimeTimer.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\basics\Join.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\Log.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\basics\LoggedTimings.h">
@@ -3078,6 +3080,14 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\impl\Tuning.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\WriteJsonValue.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\rpc\impl\WriteJsonValue.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\WriteJsonValue_test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\InternalHandler.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\Manager.h">

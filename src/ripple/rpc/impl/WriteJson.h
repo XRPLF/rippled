@@ -17,17 +17,18 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
+#ifndef RIPPLED_RIPPLE_RPC_IMPL_WRITELEGACYJSON_H
+#define RIPPLED_RIPPLE_RPC_IMPL_WRITELEGACYJSON_H
 
-#include <ripple/basics/impl/BasicConfig.cpp>
-#include <ripple/basics/impl/CheckLibraryVersions.cpp>
-#include <ripple/basics/impl/CountedObject.cpp>
-#include <ripple/basics/impl/Log.cpp>
-#include <ripple/basics/impl/StringUtilities.cpp>
-#include <ripple/basics/impl/RangeSet.cpp>
-#include <ripple/basics/impl/Sustain.cpp>
-#include <ripple/basics/impl/ThreadName.cpp>
-#include <ripple/basics/impl/Time.cpp>
-#include <ripple/basics/impl/UptimeTimer.cpp>
+namespace ripple {
+namespace RPC {
+namespace New {
 
-#include <ripple/basics/impl/Join_test.cpp>
+void write (Json::Value const&, Output&);
+std::string to_string (Json::Value&);
+
+} // New
+} // RPC
+} // ripple
+
+#endif

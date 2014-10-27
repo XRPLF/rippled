@@ -40,6 +40,9 @@ public:
  * The JSON document is written in a single line. It is not intended for 'human' consumption,
  * but may be usefull to support feature such as RPC where bandwith is limited.
  * \sa Reader, Value
+
+ * NOTE: FastWriter use of cycles is quadratic in the size of its input, because
+ * it builds up strings through repeated concatenation.
  */
 class JSON_API FastWriter : public Writer
 {

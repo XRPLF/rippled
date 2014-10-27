@@ -207,6 +207,7 @@ FastWriter::write ( const Value& root )
 void
 FastWriter::writeValue ( const Value& value )
 {
+    // It is these concatenations that make FastWriter O(n*n).
     switch ( value.type () )
     {
     case nullValue:

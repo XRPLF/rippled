@@ -20,6 +20,7 @@
 #ifndef RIPPLED_RIPPLE_RPC_IMPL_TESTOUTPUT_H
 #define RIPPLED_RIPPLE_RPC_IMPL_TESTOUTPUT_H
 
+#include <ripple/rpc/Output.h>
 #include <ripple/rpc/impl/JsonWriter.h>
 #include <beast/unit_test/suite.h>
 
@@ -27,7 +28,7 @@ namespace ripple {
 namespace RPC {
 namespace New {
 
-struct TestOutput : public Output
+struct TestOutput : Output
 {
     void output (char const* s, size_t length) override
     {
@@ -38,7 +39,7 @@ struct TestOutput : public Output
 };
 
 
-class TestOutputSuite : public beast::unit_test::suite
+struct TestOutputSuite : beast::unit_test::suite
 {
 protected:
     TestOutput output_;
@@ -54,9 +55,16 @@ protected:
     // Test the result and report values.
     void expectResult (std::string const& expected)
     {
-        expect (output_.data == expected,
-                "\nresult:   " + output_.data +
-                "\nexpected: " + expected);
+        expectResult (output_.data, expected);
+    }
+
+    // Test the result and report values.
+    void expectResult (std::string const& result,
+                       std::string const& expected)
+    {
+        expect (result == expected,
+                "\nresult:   '" + result + "'" +
+                "\nexpected: '" + expected + "'");
     }
 };
 

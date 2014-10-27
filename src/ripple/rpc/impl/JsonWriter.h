@@ -133,7 +133,7 @@ public:
 
     ~Writer();
 
-    /** Start a new collection at the root level.  May only be called once. */
+    /** Start a new collection at the root level. */
     void startRoot (CollectionType);
 
     /** Start a new collection inside an array. */
@@ -157,6 +157,10 @@ public:
     template <typename Scalar>
     void append (Scalar);
 
+    /** Add a comma before this next item if it is not the first item in a
+        array - useful if you are writing the actual array yourself. */
+    void rawAppend();
+
     /** Add a key, value assignment to an object.
      *
      *  Scalar must be a scalar - that is, a number, boolean, string, string
@@ -170,6 +174,10 @@ public:
      */
     template <typename Scalar>
     void set (std::string const& key, Scalar value);
+
+    /** Emit just "tag": as part of an object.  Useful if you are writing the
+        actual value data yourself. */
+    void rawSet (std::string const& key);
 
     // You won't need to call anything below here until you are writing single
     // items (numbers, strings, bools, null) to a JSON stream.
