@@ -33,7 +33,7 @@ struct WriteJson_test : TestOutputSuite
         expect (Json::Reader().parse (valueDesc, value));
         write (value, output_);
         auto expected = Json::FastWriter().write (value);
-        expected = expected.substr(0, expected.size() - 1);
+        expected.resize (expected.size() - 1);
         // For some reason, the FastWriter puts a carriage return on the end of
         // every piece of Json it outputs.
 
@@ -48,7 +48,6 @@ struct WriteJson_test : TestOutputSuite
 
     void run () override
     {
-        runTest ("array array", "[[]]");
         runTest ("null");
         runTest ("true");
         runTest ("0");

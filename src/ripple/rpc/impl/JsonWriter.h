@@ -157,8 +157,8 @@ public:
     template <typename Scalar>
     void append (Scalar);
 
-    /** Add a comma before this next item if it is not the first item in a
-        array - useful if you are writing the actual array yourself. */
+    /** Add a comma before this next item if not the first item in an array.
+        Useful if you are writing the actual array yourself. */
     void rawAppend();
 
     /** Add a key, value assignment to an object.

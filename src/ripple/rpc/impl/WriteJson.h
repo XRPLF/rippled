@@ -24,7 +24,18 @@ namespace ripple {
 namespace RPC {
 namespace New {
 
+/** Writes a minimal representation of a Json value to an Output in O(n) time.
+
+    Data is streamed right to the output, so only a marginal amount of memory is
+    used.  This can be very important for a very large Json::Value.
+ */
 void write (Json::Value const&, Output&);
+
+/** Return the minimal string representation of a Json::Value in O(n) time.
+
+    This requires a memory allocation for the full size of the output.
+    If possible, use write().
+ */
 std::string to_string (Json::Value&);
 
 } // New

@@ -41,7 +41,6 @@ struct TestOutput : Output
 
 struct TestOutputSuite : beast::unit_test::suite
 {
-protected:
     TestOutput output_;
     std::unique_ptr <Writer> writer_;
 
@@ -59,12 +58,11 @@ protected:
     }
 
     // Test the result and report values.
-    void expectResult (std::string const& result,
-                       std::string const& expected)
+    void expectResult (std::string const& result, std::string const& expected)
     {
         expect (result == expected,
-                "\nresult:   '" + result + "'" +
-                "\nexpected: '" + expected + "'");
+                "\n" "result:   '" + result + "'" +
+                "\n" "expected: '" + expected + "'");
     }
 };
 
