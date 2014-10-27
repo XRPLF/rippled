@@ -67,6 +67,7 @@ CHECK_LINE = 'built on: '
 BUILD_TIME = 'Mon Apr  7 20:33:19 UTC 2014'
 OPENSSL_ERROR = ('Your openSSL was built on %s; '
                  'rippled needs a version built on or after %s.')
+UNITY_BUILD_DIRECTORY = 'src/ripple/unity/'
 
 def check_openssl():
     if Beast.system.platform in CHECK_PLATFORMS:
@@ -514,19 +515,19 @@ for source in [
 
 #-------------------------------------------------------------------------------
 
-class ObjectAccumulator(object):
+class ObjectBuilder(object):
     def __init__(self, env, variant_dirs):
         self.env = env
         self.variant_dirs = variant_dirs
         self.objects = []
 
-    def add_sources(self, *filenames, **kwds):
+    def add_source_files(self, *filenames, **kwds):
         for filename in filenames:
             env = self.env
             if kwds:
                 env = env.Clone()
                 env.Prepend(**kwds)
-            path = 'src/ripple/unity/%s' % filename
+            path = UNITY_BUILD_DIRECTORY + filename
             o = env.Object(Beast.variantFile(path, self.variant_dirs))
             self.objects.append(o)
 
@@ -550,8 +551,8 @@ for toolchain in all_toolchains:
         for dest, source in variant_dirs.iteritems():
             env.VariantDir(dest, source, duplicate=0)
 
-        accum = ObjectAccumulator(env, variant_dirs)
-        accum.add_sources(
+        object_builder = ObjectBuilder(env, variant_dirs)
+        object_builder.add_source_files(
             'app.cpp',
             'app1.cpp',
             'app2.cpp',
@@ -583,8 +584,11 @@ for toolchain in all_toolchains:
             'websocket.cpp',
         )
 
-        accum.add_sources('beastc.c', CCFLAGS=['-Wno-array-bounds'])
-        accum.add_sources(
+        object_builder.add_source_files(
+            'beastc.c',
+            CCFLAGS=['-Wno-array-bounds'])
+
+        object_builder.add_source_files(
             'nodestore.cpp',
             CPPPATH=[
                 'src/leveldb/include',
@@ -594,11 +598,11 @@ for toolchain in all_toolchains:
         )
 
         if 'gcc' in toolchain:
-            args = {'CCFLAGS': ['-Wno-maybe-uninitialized']}
+            no_uninitialized_warning = {'CCFLAGS': ['-Wno-maybe-uninitialized']}
         else:
-            args = {}
+            no_uninitialized_warning = {}
 
-        accum.add_sources(
+        object_builder.add_source_files(
             'leveldb.cpp',
             CPPPATH=[
                 'src/leveldb/',
@@ -606,20 +610,20 @@ for toolchain in all_toolchains:
                 'src/snappy/snappy',
                 'src/snappy/config',
             ],
-            **args
+            **no_uninitialized_warning
         )
 
-        accum.add_sources(
+        object_builder.add_source_files(
             'hyperleveldb.cpp',
             CPPPATH=[
                 'src/hyperleveldb',
                 'src/snappy/snappy',
                 'src/snappy/config',
             ],
-            **args
+            **no_uninitialized_warning
         )
 
-        accum.add_sources(
+        object_builder.add_source_files(
             'rocksdb.cpp',
             CPPPATH=[
                 'src/rocksdb2',
@@ -627,10 +631,10 @@ for toolchain in all_toolchains:
                 'src/snappy/snappy',
                 'src/snappy/config',
             ],
-            **args
+            **no_uninitialized_warning
         )
 
-        accum.add_sources(
+        object_builder.add_source_files(
             'snappy.cpp',
             CCFLAGS=['-Wno-unused-function'],
             CPPPATH=[
@@ -640,11 +644,11 @@ for toolchain in all_toolchains:
         )
 
         if toolchain == "clang" and Beast.system.osx:
-            accum.add_sources('beastobjc.mm')
+            object_builder.add_source_files('beastobjc.mm')
 
         target = env.Program(
             target=os.path.join(variant_dir, 'rippled'),
-            source=accum.objects
+            source=object_builder.objects
             )
 
         if toolchain == default_toolchain and variant == default_variant:
