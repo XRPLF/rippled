@@ -70,7 +70,7 @@ void write (Json::Value const& value, Writer& writer)
     case Json::arrayValue:
     {
         writer.startRoot (Writer::array);
-        for (auto i: value)
+        for (auto const& i: value)
         {
             writer.rawAppend();
             write (i, writer);
@@ -83,7 +83,7 @@ void write (Json::Value const& value, Writer& writer)
     {
         writer.startRoot (Writer::object);
         auto members = value.getMemberNames ();
-        for (auto tag: members)
+        for (auto const& tag: members)
         {
             writer.rawSet (tag);
             write (value[tag], writer);
