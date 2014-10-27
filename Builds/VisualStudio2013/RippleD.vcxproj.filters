@@ -2709,6 +2709,9 @@
     <ClCompile Include="..\..\src\ripple\app\book\tests\Quality.test.cpp">
       <Filter>ripple\app\book\tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\book\tests\Taker.test.cpp">
+      <Filter>ripple\app\book\tests</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\book\Types.h">
       <Filter>ripple\app\book</Filter>
     </ClInclude>
@@ -3112,15 +3115,6 @@
       <Filter>ripple\app\transactors</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\transactors\CreateOffer.cpp">
-      <Filter>ripple\app\transactors</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\transactors\CreateOffer.h">
-      <Filter>ripple\app\transactors</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\transactors\CreateOfferBridged.cpp">
-      <Filter>ripple\app\transactors</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\transactors\CreateOfferDirect.cpp">
       <Filter>ripple\app\transactors</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\transactors\CreateTicket.cpp">

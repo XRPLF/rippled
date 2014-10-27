@@ -32,7 +32,5 @@
 #include <ripple/app/transactors/AddWallet.cpp>
 #include <ripple/app/transactors/SetTrust.cpp>
 #include <ripple/app/transactors/CreateOffer.cpp>
-#include <ripple/app/transactors/CreateOfferDirect.cpp>
-#include <ripple/app/transactors/CreateOfferBridged.cpp>
 #include <ripple/app/transactors/CreateTicket.cpp>
 #include <ripple/app/transactors/CancelTicket.cpp>

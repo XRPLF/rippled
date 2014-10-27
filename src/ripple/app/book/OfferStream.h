@@ -104,17 +104,6 @@ public:
     */
     bool
     step ();
-
-    /** Advance to the next valid offer that is not from the specified account.
-        This automatically removes:
-            - Offers with missing ledger entries
-            - Offers found unfunded
-            - Offers from the same account
-            - Expired offers
-        @return `true` if there is a valid offer.
-    */
-    bool
-    step_account (Account const& account);
 };
 
 }

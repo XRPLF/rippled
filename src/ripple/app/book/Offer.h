@@ -30,6 +30,7 @@
 #include <beast/utility/noexcept.h>
 
 #include <ostream>
+#include <stdexcept>
 
 namespace ripple {
 namespace core {
@@ -42,6 +43,9 @@ public:
 private:
     SLE::pointer m_entry;
     Quality m_quality;
+    Account m_account;
+
+    mutable Amounts m_amounts;
 
 public:
     Offer() = default;
@@ -49,6 +53,10 @@ public:
     Offer (SLE::pointer const& entry, Quality quality)
         : m_entry (entry)
         , m_quality (quality)
+        , m_account (m_entry->getFieldAccount160 (sfAccount))
+        , m_amounts (
+            m_entry->getFieldAmount (sfTakerPays),
+            m_entry->getFieldAmount (sfTakerGets))
     {
     }
 
@@ -62,46 +70,60 @@ public:
         original quality.
     */
     Quality const
-    quality() const noexcept
+    quality () const noexcept
     {
         return m_quality;
     }
 
     /** Returns the account id of the offer's owner. */
-    Account const
-    account() const
+    Account const&
+    owner () const
     {
-        return m_entry->getFieldAccount160 (sfAccount);
+        return m_account;
     }
 
     /** Returns the in and out amounts.
         Some or all of the out amount may be unfunded.
     */
-    Amounts const
-    amount() const
+    Amounts const&
+    amount () const
     {
-        return Amounts (
-            m_entry->getFieldAmount (sfTakerPays),
-            m_entry->getFieldAmount (sfTakerGets));
+        return m_amounts;
     }
 
     /** Returns `true` if no more funds can flow through this offer. */
     bool
-    fully_consumed() const
+    fully_consumed () const
     {
-        if (m_entry->getFieldAmount (sfTakerPays) <= zero)
+        if (m_amounts.in <= zero)
             return true;
-        if (m_entry->getFieldAmount (sfTakerGets) <= zero)
+        if (m_amounts.out <= zero)
             return true;
         return false;
     }
 
-    /** Returns the ledger entry underlying the offer. */
-    // AVOID USING THIS
-    SLE::pointer
-    entry() const noexcept
+    /** Adjusts the offer to indicate that we consumed some (or all) of it. */
+    void
+    consume (LedgerView& view, Amounts const& consumed) const
     {
-        return m_entry;
+        if (consumed.in > m_amounts.in)
+            throw std::logic_error ("can't consume more than is available.");
+
+        if (consumed.out > m_amounts.out)
+            throw std::logic_error ("can't produce more than is available.");
+
+        m_amounts.in -= consumed.in;
+        m_amounts.out -= consumed.out;
+
+        m_entry->setFieldAmount (sfTakerPays, m_amounts.in);
+        m_entry->setFieldAmount (sfTakerGets, m_amounts.out);
+
+        view.entryModify (m_entry);
+    }
+
+    std::string id () const
+    {
+        return to_string (m_entry->getIndex());
     }
 };
 
@@ -109,7 +131,7 @@ inline
 std::ostream&
 operator<< (std::ostream& os, Offer const& offer)
 {
-    return os << offer.entry()->getIndex();
+    return os << offer.id ();
 }
 
 }

@@ -1779,6 +1779,9 @@
     <ClCompile Include="..\..\src\ripple\app\book\tests\Quality.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\book\tests\Taker.test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\book\Types.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\consensus\DisputedTx.cpp">
@@ -2117,14 +2120,6 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\transactors\CreateOffer.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\transactors\CreateOffer.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\transactors\CreateOfferBridged.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\app\transactors\CreateOfferDirect.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\transactors\CreateTicket.cpp">

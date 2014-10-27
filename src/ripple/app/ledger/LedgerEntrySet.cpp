@@ -1587,7 +1587,7 @@ TER LedgerEntrySet::rippleSend (
 
     if (QUALITY_ONE != transit_rate)
     {
-        saActual = multiply (saActual, STAmount::saFromRate (transit_rate),
+        saActual = multiply (saActual, amountFromRate (transit_rate),
             saActual.issue ());
     }
 

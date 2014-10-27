@@ -56,6 +56,7 @@ public:
     static const int cMinOffset = -96;
     static const int cMaxOffset = 80;
 
+    // Maximum native value supported by the code
     static const std::uint64_t cMinValue   = 1000000000000000ull;
     static const std::uint64_t cMaxValue   = 9999999999999999ull;
     static const std::uint64_t cMaxNative  = 9000000000000000000ull;

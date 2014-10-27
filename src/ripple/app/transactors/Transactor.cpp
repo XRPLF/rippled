@@ -155,57 +155,52 @@ TER Transactor::payFee ()
 
 TER Transactor::checkSig ()
 {
-    // Consistency: Check signature
-    // Verify the transaction's signing public key is the key authorized for signing.
-    if (mSigningPubKey.getAccountID () == mTxnAccountID)
-    {
-        // Authorized to continue.
-        mSigMaster = true;
-        if (mTxnAccount->isFlag(lsfDisableMaster))
-        return tefMASTER_DISABLED;
-    }
-    else if (mHasAuthKey && mSigningPubKey.getAccountID () == mTxnAccount->getFieldAccount160 (sfRegularKey))
-    {
-        // Authorized to continue.
-    }
-    else if (mHasAuthKey)
-    {
-        m_journal.trace << "applyTransaction: Delay: Not authorized to use account.";
-        return tefBAD_AUTH;
-    }
-    else
-    {
-        m_journal.trace << "applyTransaction: Invalid: Not authorized to use account.";
+    // Consistency: Check signature and verify the transaction's signing public
+    // key is the key authorized for signing.
 
+    auto const signing_account = mSigningPubKey.getAccountID ();
+
+    if (signing_account == mTxnAccountID)
+    {
+        if (mTxnAccount->isFlag(lsfDisableMaster))
+            return tefMASTER_DISABLED;
+
+        mSigMaster = true;
+        return tesSUCCESS;
+    }
+
+    if (!mHasAuthKey)
+    {
+        m_journal.trace << "Invalid: Not authorized to use account.";
         return temBAD_AUTH_MASTER;
     }
 
-    return tesSUCCESS;
+    if (signing_account == mTxnAccount->getFieldAccount160 (sfRegularKey))
+        return tesSUCCESS;
+
+    m_journal.trace << "Delay: Not authorized to use account.";
+    return tefBAD_AUTH;
 }
 
 TER Transactor::checkSeq ()
 {
-    std::uint32_t t_seq = mTxn.getSequence ();
-    std::uint32_t a_seq = mTxnAccount->getFieldU32 (sfSequence);
-
-    m_journal.trace << "Aseq=" << a_seq << ", Tseq=" << t_seq;
+    std::uint32_t const t_seq = mTxn.getSequence ();
+    std::uint32_t const a_seq = mTxnAccount->getFieldU32 (sfSequence);
 
     if (t_seq != a_seq)
     {
         if (a_seq < t_seq)
         {
-            m_journal.trace << "apply: transaction has future sequence number";
-
+            m_journal.trace << "Transaction has future sequence number " <<
+                "a_seq=" << a_seq << " t_seq=" << t_seq;
             return terPRE_SEQ;
         }
-        else
-        {
-            if (mEngine->getLedger ()->hasTransaction (mTxn.getTransactionID ()))
-                return tefALREADY;
-        }
 
-        m_journal.warning << "apply: transaction has past sequence number";
+        if (mEngine->getLedger ()->hasTransaction (mTxn.getTransactionID ()))
+            return tefALREADY;
 
+        m_journal.trace << "Transaction has past sequence number " <<
+            "a_seq=" << a_seq << " t_seq=" << t_seq;
         return tefPAST_SEQ;
     }
 

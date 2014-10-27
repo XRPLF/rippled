@@ -193,6 +193,7 @@ enum TER    // aka TransactionEngineResult
     tecINSUFFICIENT_RESERVE     = 141,
     tecNEED_MASTER_KEY          = 142,
     tecDST_TAG_NEEDED           = 143,
+    tecINTERNAL                 = 144,
 };
 
 inline bool isTelLocal(TER x)

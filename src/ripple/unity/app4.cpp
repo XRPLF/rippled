@@ -21,6 +21,7 @@
 
 #include <ripple/app/book/tests/OfferStream.test.cpp>
 #include <ripple/app/book/tests/Quality.test.cpp>
+#include <ripple/app/book/tests/Taker.test.cpp>
 #include <ripple/app/ledger/InboundLedger.cpp>
 #include <ripple/app/paths/RippleState.cpp>
 #include <ripple/app/peers/UniqueNodeList.cpp>
