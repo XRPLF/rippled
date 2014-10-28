@@ -17,34 +17,20 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
+#ifndef JSON_TO_STRING_H_INCLUDED
+#define JSON_TO_STRING_H_INCLUDED
 
-#include <cassert>
-#include <cstdlib>
-#include <iomanip>
-#include <sstream>
-#include <string>
+namespace Json
+{
 
-// For json/
-//
-#ifdef JSON_USE_CPPTL
-#include <cpptl/conststring.h>
-#endif
-#ifndef JSON_USE_SIMPLE_INTERNAL_ALLOCATOR
-#include <ripple/json/impl/json_batchallocator.h>
-#endif
+class Value;
 
-#include <ripple/unity/json.h>
+/** Writes a Json::Value to an std::string. */
+std::string to_string (Value const&);
 
-#define JSON_ASSERT_UNREACHABLE assert( false )
-#define JSON_ASSERT( condition ) assert( condition );  // @todo <= change this into an exception throw
-#define JSON_ASSERT_MESSAGE( condition, message ) if (!( condition )) throw std::runtime_error( message );
+/** Output using the StyledStreamWriter. @see Json::operator>>(). */
+std::ostream& operator<< (std::ostream&, const Value& root);
 
-#include <ripple/json/impl/json_reader.cpp>
-#include <ripple/json/impl/json_value.cpp>
-#include <ripple/json/impl/json_writer.cpp>
-#include <ripple/json/impl/to_string.cpp>
+} // Json
 
-#include <ripple/json/impl/Tests.cpp>
-
-#include <ripple/json/impl/JsonPropertyStream.cpp>
+#endif // JSON_TO_STRING_H_INCLUDED

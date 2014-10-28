@@ -966,9 +966,8 @@ public:
         if (parsedOK)
         {
             STParsedJSONObject parsed ("test", jsonObject);
-            Json::FastWriter writer;
             std::string const& serialized (
-                writer.write (parsed.object->getJson(0)));
+                to_string (parsed.object->getJson(0)));
             expect (serialized == json, serialized + " should equal: " + json);
         }
         else

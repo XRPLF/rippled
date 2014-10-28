@@ -3429,6 +3429,9 @@
     <ClCompile Include="..\..\src\ripple\json\impl\Tests.cpp">
       <Filter>ripple\json\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\json\impl\to_string.cpp">
+      <Filter>ripple\json\impl</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\json\JsonPropertyStream.h">
       <Filter>ripple\json</Filter>
     </ClInclude>
@@ -3448,6 +3451,9 @@
       <Filter>ripple\json</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\json\json_writer.h">
+      <Filter>ripple\json</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\json\to_string.h">
       <Filter>ripple\json</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\net\HTTPClient.h">

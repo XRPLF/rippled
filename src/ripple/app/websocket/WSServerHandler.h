@@ -138,11 +138,9 @@ public:
 
     void send (connection_ptr cpClient, Json::Value const& jvObj, bool broadcast)
     {
-        Json::FastWriter    jfwWriter;
-
         // WriteLog (lsDEBUG, WSServerHandlerLog) << "Ws:: Object '" << jfwWriter.write(jvObj) << "'";
 
-        send (cpClient, jfwWriter.write (jvObj), broadcast);
+        send (cpClient, to_string (jvObj), broadcast);
     }
 
     void pingTimer (connection_ptr cpClient)
