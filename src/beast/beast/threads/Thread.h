@@ -89,15 +89,6 @@ public:
     */
     void startThread();
 
-    /** Starts the thread with a given priority.
-
-        Launches the thread with a given priority, where 0 = lowest, 10 = highest.
-        If the thread is already running, its priority will be changed.
-
-        @see startThread, setPriority
-    */
-    void startThread (int priority);
-
     /** Attempts to stop the thread running.
 
         This method will cause the threadShouldExit() method to return true
@@ -161,24 +152,6 @@ public:
         @returns    true if the thread exits, or false if the timeout expires first.
     */
     bool waitForThreadToExit (int timeOutMilliseconds = -1) const;
-
-    //==============================================================================
-    /** Changes the thread's priority.
-        May return false if for some reason the priority can't be changed.
-
-        @param priority     the new priority, in the range 0 (lowest) to 10 (highest). A priority
-                            of 5 is normal.
-    */
-    bool setPriority (int priority);
-
-    /** Changes the priority of the caller thread.
-
-        Similar to setPriority(), but this static method acts on the caller thread.
-        May return false if for some reason the priority can't be changed.
-
-        @see setPriority
-    */
-    static bool setCurrentThreadPriority (int priority);
 
     //==============================================================================
     // this can be called from any thread that needs to pause..
@@ -256,7 +229,6 @@ private:
     ThreadID threadId;
     RecursiveMutex startStopLock;
     WaitableEvent startSuspensionEvent, defaultEvent;
-    int threadPriority;
     bool volatile shouldExit;
 
    #ifndef DOXYGEN
@@ -267,7 +239,6 @@ private:
     void closeThreadHandle();
     void killThread();
     void threadEntryPoint();
-    static bool setThreadPriority (void*, int);
 };
 
 }

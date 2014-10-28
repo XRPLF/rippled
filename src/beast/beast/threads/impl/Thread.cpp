@@ -34,7 +34,6 @@ Thread::Thread (const String& threadName_)
     : threadName (threadName_),
       threadHandle (nullptr),
       threadId (0),
-      threadPriority (5),
       shouldExit (false)
 {
 }
@@ -116,23 +115,7 @@ void Thread::startThread()
     if (threadHandle == nullptr)
     {
         launchThread();
-        setThreadPriority (threadHandle, threadPriority);
         startSuspensionEvent.signal();
-    }
-}
-
-void Thread::startThread (const int priority)
-{
-    const RecursiveMutex::ScopedLockType sl (startStopLock);
-
-    if (threadHandle == nullptr)
-    {
-        threadPriority = priority;
-        startThread();
-    }
-    else
-    {
-        setPriority (priority);
     }
 }
 
@@ -221,30 +204,6 @@ void Thread::stopThreadAsync ()
         signalThreadShouldExit();
         notify();
     }
-}
-
-//==============================================================================
-bool Thread::setPriority (const int newPriority)
-{
-    // NB: deadlock possible if you try to set the thread prio from the thread itself,
-    // so using setCurrentThreadPriority instead in that case.
-    if (getCurrentThreadId() == getThreadId())
-        return setCurrentThreadPriority (newPriority);
-
-    const RecursiveMutex::ScopedLockType sl (startStopLock);
-
-    if (setThreadPriority (threadHandle, newPriority))
-    {
-        threadPriority = newPriority;
-        return true;
-    }
-
-    return false;
-}
-
-bool Thread::setCurrentThreadPriority (const int newPriority)
-{
-    return setThreadPriority (0, newPriority);
 }
 
 //==============================================================================
@@ -341,23 +300,6 @@ void Thread::setCurrentThreadName (const String& name)
 Thread::ThreadID Thread::getCurrentThreadId()
 {
     return (ThreadID) (std::intptr_t) GetCurrentThreadId();
-}
-
-bool Thread::setThreadPriority (void* handle, int priority)
-{
-    int pri = THREAD_PRIORITY_TIME_CRITICAL;
-
-    if (priority < 1)       pri = THREAD_PRIORITY_IDLE;
-    else if (priority < 2)  pri = THREAD_PRIORITY_LOWEST;
-    else if (priority < 5)  pri = THREAD_PRIORITY_BELOW_NORMAL;
-    else if (priority < 7)  pri = THREAD_PRIORITY_NORMAL;
-    else if (priority < 9)  pri = THREAD_PRIORITY_ABOVE_NORMAL;
-    else if (priority < 10) pri = THREAD_PRIORITY_HIGHEST;
-
-    if (handle == 0)
-        handle = GetCurrentThread();
-
-    return SetThreadPriority (handle, pri) != FALSE;
 }
 
 struct SleepEvent
@@ -501,27 +443,6 @@ void Thread::setCurrentThreadName (const String& name)
      prctl (PR_SET_NAME, name.toRawUTF8(), 0, 0, 0);
     #endif
    #endif
-}
-
-bool Thread::setThreadPriority (void* handle, int priority)
-{
-    struct sched_param param;
-    int policy;
-    priority = blimit (0, 10, priority);
-
-    if (handle == nullptr)
-        handle = (void*) pthread_self();
-
-    if (pthread_getschedparam ((pthread_t) handle, &policy, &param) != 0)
-        return false;
-
-    policy = priority == 0 ? SCHED_OTHER : SCHED_RR;
-
-    const int minPriority = sched_get_priority_min (policy);
-    const int maxPriority = sched_get_priority_max (policy);
-
-    param.sched_priority = ((maxPriority - minPriority) * priority) / 10 + minPriority;
-    return pthread_setschedparam ((pthread_t) handle, policy, &param) == 0;
 }
 
 Thread::ThreadID Thread::getCurrentThreadId()
