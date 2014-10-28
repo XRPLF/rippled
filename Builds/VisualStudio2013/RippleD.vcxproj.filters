@@ -618,7 +618,13 @@
     <ClInclude Include="..\..\src\beast\beast\asio\ssl_bundle.h">
       <Filter>beast\asio</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\streambuf.h">
+      <Filter>beast\asio</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\asio\tests\bind_handler.test.cpp">
+      <Filter>beast\asio\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\asio\tests\streambuf.test.cpp">
       <Filter>beast\asio\tests</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\Atomic.h">
