@@ -99,6 +99,21 @@ public:
     HeapBlock <char> data;
 };
 
+struct TempDirectory
+{
+    explicit TempDirectory (std::string const& root)
+            : directory (File::createTempFile (root))
+    {
+    }
+
+    ~TempDirectory()
+    {
+        directory.deleteRecursively();
+    }
+
+    File directory;
+};
+
 } // UnitTestUtilities
 } // beast
 
