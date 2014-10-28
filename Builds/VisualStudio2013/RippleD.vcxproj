@@ -148,6 +148,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\asio\ssl_bundle.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\asio\streambuf.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\asio\tests\bind_handler.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
