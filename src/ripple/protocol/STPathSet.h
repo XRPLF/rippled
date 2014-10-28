@@ -195,6 +195,16 @@ public:
         return mPath.front ();
     }
 
+    STPathElement& operator[](int i)
+    {
+        return mPath[i];
+    }
+
+    const STPathElement& operator[](int i) const
+    {
+        return mPath[i];
+    }
+
 private:
     std::vector<STPathElement> mPath;
 };
