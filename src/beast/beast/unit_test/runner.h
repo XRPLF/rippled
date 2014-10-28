@@ -21,10 +21,9 @@
 #define BEAST_UNIT_TEST_RUNNER_H_INCLUDED
 
 #include <beast/unit_test/suite_info.h>
-
 #include <beast/streams/abstract_ostream.h>
-
 #include <cassert>
+#include <mutex>
 #include <string>
 
 namespace beast {
@@ -47,22 +46,22 @@ private:
         stream_t() = delete;
         stream_t& operator= (stream_t const&) = delete;
 
-        stream_t (runner& owner)
-            : owner_ (owner)
-        {
-        }
+        template <class = void>
+        stream_t (runner& owner);
 
         void
-        write (string_type const& s)
+        write (string_type const& s) override
         {
             owner_.log (s);
         }
     };
 
     stream_t stream_;
-    bool default_;
-    bool failed_;
-    bool cond_;
+    std::string arg_;
+    bool default_ = false;
+    bool failed_ = false;
+    bool cond_ = false;
+    std::recursive_mutex mutex_;
 
 public:
     virtual ~runner() = default;
@@ -71,6 +70,25 @@ public:
 
     template <class = void>
     runner();
+
+    /** Set the argument string.
+        The argument string is available to suites and
+        allows for customization of the test. Each suite
+        defines its own syntax for the argumnet string.
+        The same argument is passed to all suites.
+    */
+    void
+    arg (std::string const& s)
+    {
+        arg_ = s;
+    }
+
+    /** Returns the argument string. */
+    std::string const&
+    arg() const
+    {
+        return arg_;
+    }
 
     /** Run the specified suite.
         @return `true` if any conditions failed.
@@ -202,11 +220,16 @@ private:
 //------------------------------------------------------------------------------
 
 template <class>
+runner::stream_t::stream_t (runner& owner)
+    : owner_ (owner)
+{
+}
+
+//------------------------------------------------------------------------------
+
+template <class>
 runner::runner()
     : stream_ (*this)
-    , default_ (false)
-    , failed_ (false)
-    , cond_ (false)
 {
 }
 
@@ -272,6 +295,7 @@ template <class>
 void
 runner::testcase (std::string const& name)
 {
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     // Name may not be empty
     assert (default_ || ! name.empty());
     // Forgot to call pass or fail
@@ -287,6 +311,7 @@ template <class>
 void
 runner::pass()
 {
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     if (default_)
         testcase ("");
     on_pass();
@@ -297,6 +322,7 @@ template <class>
 void
 runner::fail (std::string const& reason)
 {
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     if (default_)
         testcase ("");
     on_fail (reason);
@@ -308,6 +334,7 @@ template <class>
 void
 runner::log (std::string const& s)
 {
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     if (default_)
         testcase ("");
     on_log (s);
