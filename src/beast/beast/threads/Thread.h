@@ -181,24 +181,6 @@ public:
     static bool setCurrentThreadPriority (int priority);
 
     //==============================================================================
-    /** Sets the affinity mask for the thread.
-
-        This will only have an effect next time the thread is started - i.e. if the
-        thread is already running when called, it'll have no effect.
-
-        @see setCurrentThreadAffinityMask
-    */
-    void setAffinityMask (std::uint32_t affinityMask);
-
-    /** Changes the affinity mask for the caller thread.
-
-        This will change the affinity mask for the thread that calls this static method.
-
-        @see setAffinityMask
-    */
-    static void setCurrentThreadAffinityMask (std::uint32_t affinityMask);
-
-    //==============================================================================
     // this can be called from any thread that needs to pause..
     static void sleep (int milliseconds);
 
@@ -275,7 +257,6 @@ private:
     RecursiveMutex startStopLock;
     WaitableEvent startSuspensionEvent, defaultEvent;
     int threadPriority;
-    std::uint32_t affinityMask;
     bool volatile shouldExit;
 
    #ifndef DOXYGEN
