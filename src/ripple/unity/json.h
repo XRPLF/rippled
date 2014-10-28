@@ -46,7 +46,7 @@
 #include <ripple/json/json_features.h>
 #include <ripple/json/json_value.h>
 #include <ripple/json/json_reader.h>
-#include <ripple/json/json_writer.h>
+#include <ripple/json/to_string.h>
 
 #include <ripple/json/JsonPropertyStream.h>
 

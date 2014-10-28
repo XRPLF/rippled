@@ -33,8 +33,7 @@ void BookListeners::removeSubscriber (std::uint64_t seq)
 
 void BookListeners::publish (Json::Value const& jvObj)
 {
-    Json::FastWriter jfwWriter;
-    std::string sObj = jfwWriter.write (jvObj);
+    std::string sObj = to_string (jvObj);
 
     ScopedLockType sl (mLock);
     NetworkOPs::SubMapType::const_iterator it = mListeners.begin ();

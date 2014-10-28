@@ -1807,8 +1807,7 @@ void NetworkOPsImp::pubServer ()
         jvObj [jss::load_factor]   =
                 (mLastLoadFactor = getApp().getFeeTrack ().getLoadFactor ());
 
-        Json::FastWriter w;
-        std::string sObj = w.write (jvObj);
+        std::string sObj = to_string (jvObj);
 
 
         for (auto i = mSubServer.begin (); i != mSubServer.end (); )
@@ -2701,8 +2700,7 @@ void NetworkOPsImp::pubValidatedTransaction (
         *alTx.getTxn (), alTx.getResult (), true, alAccepted);
     jvObj[jss::meta] = alTx.getMeta ()->getJson (0);
 
-    Json::FastWriter w;
-    std::string sObj = w.write (jvObj);
+    std::string sObj = to_string (jvObj);
 
     {
         ScopedLockType sl (mLock);
@@ -2814,8 +2812,7 @@ void NetworkOPsImp::pubAccountTransaction (
         if (alTx.isApplied ())
             jvObj[jss::meta] = alTx.getMeta ()->getJson (0);
 
-        Json::FastWriter w;
-        std::string sObj = w.write (jvObj);
+        std::string sObj = to_string (jvObj);
 
         BOOST_FOREACH (InfoSub::ref isrListener, notify)
         {
