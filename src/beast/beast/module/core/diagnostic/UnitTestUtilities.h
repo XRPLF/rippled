@@ -99,6 +99,31 @@ public:
     HeapBlock <char> data;
 };
 
+class TempDirectory
+{
+public:
+    explicit TempDirectory (std::string const& root)
+            : directory (File::createTempFile (root))
+    {
+    }
+
+    ~TempDirectory()
+    {
+        directory.deleteRecursively();
+    }
+
+    String const& getFullPathName() const
+    {
+        return directory.getFullPathName();
+    }
+
+    TempDirectory(const TempDirectory&) = delete;
+    TempDirectory& operator=(const TempDirectory&) = delete;
+
+private:
+    File const directory;
+};
+
 } // UnitTestUtilities
 } // beast
 
