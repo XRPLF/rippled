@@ -30,7 +30,7 @@
 
 namespace beast {
 
-Thread::Thread (const String& threadName_)
+Thread::Thread (std::string const& threadName_)
     : threadName (threadName_),
       threadHandle (nullptr),
       threadId (0),
@@ -270,7 +270,7 @@ void Thread::killThread()
     }
 }
 
-void Thread::setCurrentThreadName (const String& name)
+void Thread::setCurrentThreadName (std::string const& name)
 {
    #if BEAST_DEBUG && BEAST_MSVC
     struct
@@ -429,7 +429,7 @@ void Thread::killThread()
     }
 }
 
-void Thread::setCurrentThreadName (const String& name)
+void Thread::setCurrentThreadName (std::string const& name)
 {
    #if BEAST_IOS || (BEAST_MAC && defined (MAC_OS_X_VERSION_10_5) && MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5)
     BEAST_AUTORELEASEPOOL

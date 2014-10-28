@@ -24,10 +24,11 @@
 #ifndef BEAST_THREADS_THREAD_H_INCLUDED
 #define BEAST_THREADS_THREAD_H_INCLUDED
 
-#include <beast/strings/String.h>
 #include <beast/utility/LeakChecked.h>
 #include <beast/threads/RecursiveMutex.h>
 #include <beast/threads/WaitableEvent.h>
+
+#include <string>
 
 namespace beast {
 
@@ -55,7 +56,7 @@ public:
         When first created, the thread is not running. Use the startThread()
         method to start it.
     */
-    explicit Thread (const String& threadName);
+    explicit Thread (std::string const& threadName);
 
     Thread (Thread const&) = delete;
     Thread& operator= (Thread const&) = delete;
@@ -214,17 +215,17 @@ public:
 
         This is the name that gets set in the constructor.
     */
-    const String& getThreadName() const                             { return threadName; }
+    std::string const& getThreadName() const                             { return threadName; }
 
     /** Changes the name of the caller thread.
         Different OSes may place different length or content limits on this name.
     */
-    static void setCurrentThreadName (const String& newThreadName);
+    static void setCurrentThreadName (std::string const& newThreadName);
 
 
 private:
     //==============================================================================
-    const String threadName;
+    std::string const threadName;
     void* volatile threadHandle;
     ThreadID threadId;
     RecursiveMutex startStopLock;
