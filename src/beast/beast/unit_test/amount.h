@@ -38,20 +38,29 @@ public:
     amount (amount const&) = default;
     amount& operator= (amount const&) = delete;
 
-    amount (std::size_t n_, std::string const& what_)
-        : n (n_)
-        , what (what_)
-    {
-    }
+    template <class = void>
+    amount (std::size_t n_, std::string const& what_);
 
+    template <class = void>
     friend
     std::ostream&
-    operator<< (std::ostream& s, amount const& t)
-    {
-        s << t.n << " " << t.what << ((t.n != 1) ? "s" : "");
-        return s;
-    }
+    operator<< (std::ostream& s, amount const& t);
 };
+
+template <class>
+amount::amount (std::size_t n_, std::string const& what_)
+    : n (n_)
+    , what (what_)
+{
+}
+
+template <class>
+std::ostream&
+operator<< (std::ostream& s, amount const& t)
+{
+    s << t.n << " " << t.what << ((t.n != 1) ? "s" : "");
+    return s;
+}
 
 } // unit_test
 } // beast
