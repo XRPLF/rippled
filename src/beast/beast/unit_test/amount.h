@@ -41,7 +41,6 @@ public:
     template <class = void>
     amount (std::size_t n_, std::string const& what_);
 
-    template <class = void>
     friend
     std::ostream&
     operator<< (std::ostream& s, amount const& t);
@@ -54,7 +53,7 @@ amount::amount (std::size_t n_, std::string const& what_)
 {
 }
 
-template <class>
+inline
 std::ostream&
 operator<< (std::ostream& s, amount const& t)
 {
