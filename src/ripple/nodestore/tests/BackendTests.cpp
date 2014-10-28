@@ -37,7 +37,7 @@ public:
         testcase ("Backend type=" + type);
 
         beast::StringPairArray params;
-        beast::File const path (beast::File::createTempFile ("node_db"));
+        beast::UnitTestUtilities::TempDirectory path ("node_db");
         params.set ("type", type);
         params.set ("path", path.getFullPathName ());
 

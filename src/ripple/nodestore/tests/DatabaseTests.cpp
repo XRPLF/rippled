@@ -30,7 +30,7 @@ public:
 
         DummyScheduler scheduler;
 
-        beast::File const node_db (beast::File::createTempFile ("node_db"));
+        beast::UnitTestUtilities::TempDirectory node_db ("node_db");
         beast::StringPairArray srcParams;
         srcParams.set ("type", srcBackendType);
         srcParams.set ("path", node_db.getFullPathName ());
@@ -56,7 +56,7 @@ public:
                 "test", scheduler, j, 2, srcParams));
 
             // Set up the destination database
-            beast::File const dest_db (beast::File::createTempFile ("dest_db"));
+            beast::UnitTestUtilities::TempDirectory dest_db ("dest_db");
             beast::StringPairArray destParams;
             destParams.set ("type", destBackendType);
             destParams.set ("path", dest_db.getFullPathName ());
@@ -98,12 +98,12 @@ public:
 
         testcase (s);
 
-        beast::File const node_db (beast::File::createTempFile ("node_db"));
+        beast::UnitTestUtilities::TempDirectory node_db ("node_db");
         beast::StringPairArray nodeParams;
         nodeParams.set ("type", type);
         nodeParams.set ("path", node_db.getFullPathName ());
 
-        beast::File const temp_db  (beast::File::createTempFile ("temp_db"));
+        beast::UnitTestUtilities::TempDirectory temp_db ("temp_db");
         beast::StringPairArray tempParams;
         if (useEphemeralDatabase)
         {
