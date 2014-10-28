@@ -381,15 +381,16 @@ PeerImp::on_connect_ssl (error_code ec)
         return;
     }
 
-#if RIPPLE_STRUCTURED_OVERLAY_CLIENT
-    beast::http::message req (make_request());
-    beast::http::write (write_buffer_, req);
-    on_write_http_request (error_code(), 0);
-
-#else
-    do_protocol_start();
-
-#endif
+    if (overlay_.setup().http_handshake)
+    {
+        beast::http::message req (make_request());
+        beast::http::write (write_buffer_, req);
+        on_write_http_request (error_code(), 0);
+    }
+    else
+    {
+        do_protocol_start();
+    }
 }
 
 // Called repeatedly with the http request data
@@ -523,12 +524,10 @@ PeerImp::on_accept_ssl (error_code ec)
         return;
     }
 
-#if RIPPLE_STRUCTURED_OVERLAY_SERVER
+#if 1
     on_read_http_detect (error_code(), 0);
-
 #else
     do_protocol_start();
-
 #endif
 }
 
