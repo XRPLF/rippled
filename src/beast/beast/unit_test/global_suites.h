@@ -52,7 +52,7 @@ insert_suite<Suite>::insert_suite (char const* name,
         name, module, library, manual);
 }
 
-}
+} // detail
 
 /** Holds suites registered during static initialization. */
 inline
