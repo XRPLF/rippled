@@ -166,6 +166,13 @@ public:
     bool
     expect (Condition shouldBeTrue, std::string const& reason = "");
 
+    /** Return the argument associated with the runner. */
+    std::string const&
+    arg() const
+    {
+        return runner_->arg();
+    }
+
     // DEPRECATED
     // @return `true` if the test condition indicates success (a false value)
     template <class Condition>
@@ -398,8 +405,8 @@ suite::fail (std::string const& reason)
 // detail:
 // This inserts the suite with the given manual flag
 #define BEAST_DEFINE_TESTSUITE_INSERT(Class,Module,Library,manual) \
-    static beast::unit_test::detail::global_suite_instance <Class##_test>    \
-        Library ## Module ## Class ## _test_instance (                       \
+    static beast::unit_test::detail::insert_suite <Class##_test>   \
+        Library ## Module ## Class ## _test_instance (             \
             #Class, #Module, #Library, manual);
 
 //------------------------------------------------------------------------------

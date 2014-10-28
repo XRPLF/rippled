@@ -55,11 +55,11 @@ private:
         : public const_container <std::vector <test>>
     {
     private:
-        std::size_t m_failed;
+        std::size_t failed_;
 
     public:
         tests_t ()
-            : m_failed (0)
+            : failed_ (0)
         {
         }
 
@@ -74,7 +74,7 @@ private:
         std::size_t
         failed() const
         {
-            return m_failed;
+            return failed_;
         }
 
         /** Register a successful test condition. */
@@ -88,7 +88,7 @@ private:
         void
         fail (std::string const& reason = "")
         {
-            ++m_failed;
+            ++failed_;
             cont().emplace_back (false, reason);
         }
     };
@@ -105,11 +105,11 @@ private:
         }
     };
 
-    std::string m_name;
+    std::string name_;
 
 public:
     explicit case_results (std::string const& name = "")
-        : m_name (name)
+        : name_ (name)
     {
     }
 
@@ -117,7 +117,7 @@ public:
     std::string const&
     name() const
     {
-        return m_name;
+        return name_;
     }
 
     /** Memberspace for a container of test condition outcomes. */
@@ -134,15 +134,13 @@ class suite_results
     : public const_container <std::vector <case_results>>
 {
 private:
-    std::string m_name;
-    std::size_t m_total;
-    std::size_t m_failed;
+    std::string name_;
+    std::size_t total_ = 0;
+    std::size_t failed_ = 0;
 
 public:
     explicit suite_results (std::string const& name = "")
-        : m_name (name)
-        , m_total (0)
-        , m_failed (0)
+        : name_ (name)
     {
     }
 
@@ -150,21 +148,21 @@ public:
     std::string const&
     name() const
     {
-        return m_name;
+        return name_;
     }
 
     /** Returns the total number of test conditions. */
     std::size_t
     total() const
     {
-        return m_total;
+        return total_;
     }
 
     /** Returns the number of failures. */
     std::size_t
     failed() const
     {
-        return m_failed;
+        return failed_;
     }
 
     /** Insert a set of testcase results. */
@@ -173,16 +171,16 @@ public:
     insert (case_results&& r)
     {
         cont().emplace_back (std::move (r));
-        m_total += r.tests.total();
-        m_failed += r.tests.failed();
+        total_ += r.tests.total();
+        failed_ += r.tests.failed();
     }
 
     void
     insert (case_results const& r)
     {
         cont().push_back (r);
-        m_total += r.tests.total();
-        m_failed += r.tests.failed();
+        total_ += r.tests.total();
+        failed_ += r.tests.failed();
     }
     /** @} */
 };
@@ -196,14 +194,14 @@ class results
 {
 private:
     std::size_t m_cases;
-    std::size_t m_total;
-    std::size_t m_failed;
+    std::size_t total_;
+    std::size_t failed_;
 
 public:
     results()
         : m_cases (0)
-        , m_total (0)
-        , m_failed (0)
+        , total_ (0)
+        , failed_ (0)
     {
     }
 
@@ -218,14 +216,14 @@ public:
     std::size_t
     total() const
     {
-        return m_total;
+        return total_;
     }
 
     /** Returns the number of failures. */
     std::size_t
     failed() const
     {
-        return m_failed;
+        return failed_;
     }
 
     /** Insert a set of suite results. */
@@ -234,8 +232,8 @@ public:
     insert (suite_results&& r)
     {
         m_cases += r.size();
-        m_total += r.total();
-        m_failed += r.failed();
+        total_ += r.total();
+        failed_ += r.failed();
         cont().emplace_back (std::move (r));
     }
 
@@ -243,8 +241,8 @@ public:
     insert (suite_results const& r)
     {
         m_cases += r.size();
-        m_total += r.total();
-        m_failed += r.failed();
+        total_ += r.total();
+        failed_ += r.failed();
         cont().push_back (r);
     }
     /** @} */
