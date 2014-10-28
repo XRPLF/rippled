@@ -35,7 +35,6 @@ Thread::Thread (const String& threadName_)
       threadHandle (nullptr),
       threadId (0),
       threadPriority (5),
-      affinityMask (0),
       shouldExit (false)
 {
 }
@@ -94,10 +93,6 @@ void Thread::threadEntryPoint()
     if (startSuspensionEvent.wait (10000))
     {
         bassert (getCurrentThreadId() == threadId);
-
-        if (affinityMask != 0)
-            setCurrentThreadAffinityMask (affinityMask);
-
         run();
     }
 
@@ -252,11 +247,6 @@ bool Thread::setCurrentThreadPriority (const int newPriority)
     return setThreadPriority (0, newPriority);
 }
 
-void Thread::setAffinityMask (const std::uint32_t newAffinityMask)
-{
-    affinityMask = newAffinityMask;
-}
-
 //==============================================================================
 bool Thread::wait (const int timeOutMilliseconds) const
 {
@@ -368,11 +358,6 @@ bool Thread::setThreadPriority (void* handle, int priority)
         handle = GetCurrentThread();
 
     return SetThreadPriority (handle, pri) != FALSE;
-}
-
-void Thread::setCurrentThreadAffinityMask (const std::uint32_t affinityMask)
-{
-    SetThreadAffinityMask (GetCurrentThread(), affinityMask);
 }
 
 struct SleepEvent
@@ -542,44 +527,6 @@ bool Thread::setThreadPriority (void* handle, int priority)
 Thread::ThreadID Thread::getCurrentThreadId()
 {
     return (ThreadID) pthread_self();
-}
-
-//==============================================================================
-/* Remove this macro if you're having problems compiling the cpu affinity
-   calls (the API for these has changed about quite a bit in various Linux
-   versions, and a lot of distros seem to ship with obsolete versions)
-*/
-#if defined (CPU_ISSET) && ! defined (SUPPORT_AFFINITIES)
- #define SUPPORT_AFFINITIES 1
-#endif
-
-void Thread::setCurrentThreadAffinityMask (const std::uint32_t affinityMask)
-{
-   #if SUPPORT_AFFINITIES
-    cpu_set_t affinity;
-    CPU_ZERO (&affinity);
-
-    for (int i = 0; i < 32; ++i)
-        if ((affinityMask & (1 << i)) != 0)
-            CPU_SET (i, &affinity);
-
-    /*
-       N.B. If this line causes a compile error, then you've probably not got the latest
-       version of glibc installed.
-
-       If you don't want to update your copy of glibc and don't care about cpu affinities,
-       then you can just disable all this stuff by setting the SUPPORT_AFFINITIES macro to 0.
-    */
-    sched_setaffinity (getpid(), sizeof (cpu_set_t), &affinity);
-    sched_yield();
-
-   #else
-    /* affinities aren't supported because either the appropriate header files weren't found,
-       or the SUPPORT_AFFINITIES macro was turned off
-    */
-    bassertfalse;
-    (void) affinityMask;
-   #endif
 }
 
 }
