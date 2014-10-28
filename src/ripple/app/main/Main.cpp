@@ -134,10 +134,9 @@ setupConfigForUnitTests (Config* config)
     config->importNodeDatabase = beast::StringPairArray ();
 }
 
-static 
-int 
-runUnitTests(std::string const& pattern, std::string const& format,
-                        std::string const& argument)
+static
+int
+runUnitTests(std::string const& pattern, std::string const& argument)
 {
     // Config needs to be set up before creating Application
     setupConfigForUnitTests (&getConfig ());
@@ -193,7 +192,6 @@ int run (int argc, char** argv)
     ("standalone,a", "Run with no peers.")
     ("unittest,u", po::value <std::string> ()->implicit_value (""), "Perform unit tests.")
     ("unittest-arg", po::value <std::string> ()->implicit_value (""), "Supplies argument to unit tests.")
-    ("unittest-format", po::value <std::string> ()->implicit_value ("text"), "Format unit test output. Choices are 'text', 'junit'")
     ("parameters", po::value< vector<string> > (), "Specify comma separated parameters.")
     ("quiet,q", "Reduce diagnotics.")
     ("quorum", po::value <int> (), "Set the validation quorum.")
@@ -282,15 +280,12 @@ int run (int argc, char** argv)
     //
     if (vm.count ("unittest"))
     {
-        std::string format;
         std::string argument;
 
-        if (vm.count ("unittest-format"))
-            format = vm["unittest-format"].as<std::string>();
         if (vm.count("unittest-arg"))
             argument = vm["unittest-arg"].as<std::string>();
 
-        return runUnitTests(vm["unittest"].as<std::string>(), format, argument);
+        return runUnitTests(vm["unittest"].as<std::string>(), argument);
     }
 
     if (!iResult)
