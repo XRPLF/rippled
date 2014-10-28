@@ -59,7 +59,7 @@ void PathState::reset(STAmount const& in, STAmount const& out)
     CondLog (outAct() >= outReq(), lsWARNING, RippleCalc)
         << "rippleCalc: ALREADY DONE:"
         << " saOutAct=" << outAct()
-        << " saOutReq=%s" << outReq();
+        << " saOutReq=" << outReq();
 
     assert (outAct() < outReq());
     assert (nodes().size () >= 2);

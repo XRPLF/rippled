@@ -291,7 +291,7 @@ TER PathCursor::deliverNodeReverse (
             WriteLog (lsWARNING, RippleCalc)
                 << "deliverNodeReverse: NEGATIVE:"
                 << " node().saTakerPaysNew=" << saTakerPaysNew
-                << " node().saTakerGetsNew=%s" << saTakerGetsNew;
+                << " node().saTakerGetsNew=" << saTakerGetsNew;
 
             resultCode = telFAILED_PROCESSING;
             break;

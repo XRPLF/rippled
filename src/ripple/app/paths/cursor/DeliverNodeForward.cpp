@@ -188,7 +188,7 @@ TER PathCursor::deliverNodeForward (
                     << " nextNode().account_="
                     << nextNode().account_
                     << " saOutPassAct=" << saOutPassAct
-                    << " saOutFunded=%s" << saOutFunded;
+                    << " saOutFunded=" << saOutFunded;
 
                 // Output: Debit offer owner, send XRP or non-XPR to next
                 // account.

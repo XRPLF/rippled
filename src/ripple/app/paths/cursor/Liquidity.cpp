@@ -42,7 +42,7 @@ TER PathCursor::liquidity (LedgerEntrySet const& lesCheckpoint) const
         WriteLog (lsTRACE, RippleCalc)
             << "reverseLiquidity< "
             << "nodeIndex=" << pc.nodeIndex_
-            << " resultCode=%s" << transToken (resultCode)
+            << " resultCode=" << transToken (resultCode)
             << " transferRate_=" << pc.node().transferRate_
             << "/" << resultCode;
 
