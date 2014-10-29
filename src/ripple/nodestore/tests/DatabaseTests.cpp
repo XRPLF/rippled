@@ -30,10 +30,10 @@ public:
 
         DummyScheduler scheduler;
 
-        beast::UnitTestUtilities::TempDirectory temp ("node_db");
+        beast::UnitTestUtilities::TempDirectory node_db ("node_db");
         beast::StringPairArray srcParams;
         srcParams.set ("type", srcBackendType);
-        srcParams.set ("path", temp.directory.getFullPathName ());
+        srcParams.set ("path", node_db.getFullPathName ());
 
         // Create a batch
         Batch batch;
@@ -56,10 +56,10 @@ public:
                 "test", scheduler, j, 2, srcParams));
 
             // Set up the destination database
-            beast::UnitTestUtilities::TempDirectory temp ("dest_db");
+            beast::UnitTestUtilities::TempDirectory dest_db ("dest_db");
             beast::StringPairArray destParams;
             destParams.set ("type", destBackendType);
-            destParams.set ("path", temp.directory.getFullPathName ());
+            destParams.set ("path", dest_db.getFullPathName ());
 
             std::unique_ptr <Database> dest (manager->make_Database (
                 "test", scheduler, j, 2, destParams));
@@ -101,14 +101,14 @@ public:
         beast::UnitTestUtilities::TempDirectory node_db ("node_db");
         beast::StringPairArray nodeParams;
         nodeParams.set ("type", type);
-        nodeParams.set ("path", node_db.directory.getFullPathName ());
+        nodeParams.set ("path", node_db.getFullPathName ());
 
         beast::UnitTestUtilities::TempDirectory temp_db ("temp_db");
         beast::StringPairArray tempParams;
         if (useEphemeralDatabase)
         {
             tempParams.set ("type", type);
-            tempParams.set ("path", temp_db.directory.getFullPathName ());
+            tempParams.set ("path", temp_db.getFullPathName ());
         }
 
         // Create a batch

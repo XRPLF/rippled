@@ -62,10 +62,10 @@ public:
         testcase ("Testing backend '" + type + "' performance");
 
         beast::StringPairArray params;
-        beast::UnitTestUtilities::TempDirectory temp ("node_db");
+        beast::UnitTestUtilities::TempDirectory path ("node_db");
 
         params.set ("type", type);
-        params.set ("path", temp.directory.getFullPathName ());
+        params.set ("path", path.getFullPathName ());
 
         // Create batches
         NodeStore::Batch batch1;

@@ -99,8 +99,9 @@ public:
     HeapBlock <char> data;
 };
 
-struct TempDirectory
+class TempDirectory
 {
+public:
     explicit TempDirectory (std::string const& root)
             : directory (File::createTempFile (root))
     {
@@ -111,7 +112,16 @@ struct TempDirectory
         directory.deleteRecursively();
     }
 
-    File directory;
+    String const& getFullPathName() const
+    {
+        return directory.getFullPathName();
+    }
+
+    TempDirectory(const TempDirectory&) = delete;
+    TempDirectory& operator=(const TempDirectory&) = delete;
+
+private:
+    File const directory;
 };
 
 } // UnitTestUtilities

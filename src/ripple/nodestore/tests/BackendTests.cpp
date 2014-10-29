@@ -37,9 +37,9 @@ public:
         testcase ("Backend type=" + type);
 
         beast::StringPairArray params;
-        beast::UnitTestUtilities::TempDirectory temp ("node_db");
+        beast::UnitTestUtilities::TempDirectory path ("node_db");
         params.set ("type", type);
-        params.set ("path", temp.directory.getFullPathName ());
+        params.set ("path", path.getFullPathName ());
 
         // Create a batch
         Batch batch;
