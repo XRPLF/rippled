@@ -27,6 +27,7 @@
 #include <beast/module/core/time/Time.h>
 
 #include <cassert>
+#include <thread>
 
 namespace beast {
 
@@ -130,28 +131,17 @@ void Thread::signalThreadShouldExit()
     shouldExit = true;
 }
 
-bool Thread::waitForThreadToExit (const int timeOutMilliseconds) const
+void Thread::waitForThreadToExit () const
 {
     // Doh! So how exactly do you expect this thread to wait for itself to stop??
     bassert (getThreadId() != getCurrentThreadId() || getCurrentThreadId() == 0);
 
-    const std::uint32_t timeoutEnd = Time::getMillisecondCounter() + (std::uint32_t) timeOutMilliseconds;
-
     while (isThreadRunning())
-    {
-        if (timeOutMilliseconds >= 0 && Time::getMillisecondCounter() > timeoutEnd)
-            return false;
-
-        sleep (2);
-    }
-
-    return true;
+        std::this_thread::sleep (std::chrono::seconds (1));
 }
 
-bool Thread::stopThread (const int timeOutMilliseconds)
+void Thread::stopThread ()
 {
-    bool cleanExit = true;
-
     // agh! You can't stop the thread that's calling this method! How on earth
     // would that work??
     bassert (getCurrentThreadId() != getThreadId());
@@ -162,32 +152,10 @@ bool Thread::stopThread (const int timeOutMilliseconds)
     {
         signalThreadShouldExit();
         notify();
-
-        if (timeOutMilliseconds != 0)
-        {
-            cleanExit = waitForThreadToExit (timeOutMilliseconds);
-        }
-
-        if (isThreadRunning())
-        {
-            bassert (! cleanExit);
-
-            // very bad karma if this point is reached, as there are bound to be
-            // locks and events left in silly states when a thread is killed by force..
-            killThread();
-
-            threadHandle = nullptr;
-            threadId = 0;
-
-            cleanExit = false;
-        }
-        else
-        {
-            cleanExit = true;
-        }
+        waitForThreadToExit ();
     }
 
-    return cleanExit;
+    return true;
 }
 
 void Thread::stopThreadAsync ()
@@ -254,17 +222,6 @@ void Thread::closeThreadHandle()
     threadHandle = 0;
 }
 
-void Thread::killThread()
-{
-    if (threadHandle != 0)
-    {
-       #if BEAST_DEBUG
-        OutputDebugStringA ("** Warning - Forced thread termination **\n");
-       #endif
-        TerminateThread (threadHandle, 0);
-    }
-}
-
 void Thread::setCurrentThreadName (std::string const& name)
 {
    #if BEAST_DEBUG && BEAST_MSVC
@@ -277,7 +234,7 @@ void Thread::setCurrentThreadName (std::string const& name)
     } info;
 
     info.dwType = 0x1000;
-    info.szName = name.toUTF8();
+    info.szName = name.c_str ();
     info.dwThreadID = GetCurrentThreadId();
     info.dwFlags = 0;
 
@@ -367,24 +324,12 @@ void Thread::closeThreadHandle()
     threadHandle = 0;
 }
 
-void Thread::killThread()
-{
-    if (threadHandle != 0)
-    {
-       #if BEAST_ANDROID
-        bassertfalse; // pthread_cancel not available!
-       #else
-        pthread_cancel ((pthread_t) threadHandle);
-       #endif
-    }
-}
-
 void Thread::setCurrentThreadName (std::string const& name)
 {
    #if BEAST_IOS || (BEAST_MAC && defined (MAC_OS_X_VERSION_10_5) && MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5)
     BEAST_AUTORELEASEPOOL
     {
-        [[NSThread currentThread] setName: beastStringToNS (name)];
+        [[NSThread currentThread] setName: beastStringToNS (beast::String (name))];
     }
    #elif BEAST_LINUX
     #if (__GLIBC__ * 1000 + __GLIBC_MINOR__) >= 2012

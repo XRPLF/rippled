@@ -94,23 +94,8 @@ public:
 
         This method will cause the threadShouldExit() method to return true
         and call notify() in case the thread is currently waiting.
-
-        Hopefully the thread will then respond to this by exiting cleanly, and
-        the stopThread method will wait for a given time-period for this to
-        happen.
-
-        If the thread is stuck and fails to respond after the time-out, it gets
-        forcibly killed, which is a very bad thing to happen, as it could still
-        be holding locks, etc. which are needed by other parts of your program.
-
-        @param timeOutMilliseconds  The number of milliseconds to wait for the
-                                    thread to finish before killing it by force. A negative
-                                    value in here will wait forever.
-        @see signalThreadShouldExit, threadShouldExit, waitForThreadToExit, isThreadRunning
-
-        @returns    true if the thread exits, or false if the timeout expires first.
     */
-    bool stopThread (int timeOutMilliseconds = -1);
+    void stopThread ();
 
     /** Stop the thread without blocking.
         This calls signalThreadShouldExit followed by notify.
@@ -146,13 +131,9 @@ public:
 
     /** Waits for the thread to stop.
 
-        This will waits until isThreadRunning() is false or until a timeout expires.
-
-        @param timeOutMilliseconds  the time to wait, in milliseconds. If this value
-                                    is less than zero, it will wait forever.
-        @returns    true if the thread exits, or false if the timeout expires first.
+        This will waits until isThreadRunning() is false.
     */
-    bool waitForThreadToExit (int timeOutMilliseconds = -1) const;
+    void waitForThreadToExit () const;
 
     //==============================================================================
     /** Makes the thread wait for a notification.
@@ -227,7 +208,6 @@ private:
 
     void launchThread();
     void closeThreadHandle();
-    void killThread();
     void threadEntryPoint();
 };
 
