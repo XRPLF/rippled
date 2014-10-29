@@ -137,7 +137,7 @@ void Thread::waitForThreadToExit () const
     bassert (getThreadId() != getCurrentThreadId() || getCurrentThreadId() == 0);
 
     while (isThreadRunning())
-        std::this_thread::sleep (std::chrono::seconds (1));
+        std::this_thread::sleep_for (std::chrono::seconds (1));
 }
 
 void Thread::stopThread ()
@@ -154,8 +154,6 @@ void Thread::stopThread ()
         notify();
         waitForThreadToExit ();
     }
-
-    return true;
 }
 
 void Thread::stopThreadAsync ()
