@@ -193,13 +193,6 @@ public:
     */
     static ThreadID getCurrentThreadId();
 
-    /** Finds the thread object that is currently running.
-
-        Note that the main UI thread (or other non-Beast threads) don't have a Thread
-        object associated with them, so this will return 0.
-    */
-    static Thread* getCurrentThread();
-
     /** Returns the ID of this thread.
 
         That means the ID of this thread object - not of the thread that's calling the method.
