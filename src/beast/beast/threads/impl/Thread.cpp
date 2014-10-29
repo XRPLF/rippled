@@ -297,43 +297,6 @@ Thread::ThreadID Thread::getCurrentThreadId()
     return (ThreadID) (std::intptr_t) GetCurrentThreadId();
 }
 
-struct SleepEvent
-{
-    SleepEvent() noexcept
-        : handle (CreateEvent (nullptr, FALSE, FALSE,
-                              #if BEAST_DEBUG
-                               _T("BEAST Sleep Event")))
-                              #else
-                               nullptr))
-                              #endif
-    {}
-
-    ~SleepEvent() noexcept
-    {
-        CloseHandle (handle);
-        handle = 0;
-    }
-
-    HANDLE handle;
-};
-
-static SleepEvent sleepEvent;
-
-void Thread::sleep (const int millisecs)
-{
-    if (millisecs >= 10 || sleepEvent.handle == 0)
-    {
-        Sleep ((DWORD) millisecs);
-    }
-    else
-    {
-        // unlike Sleep() this is guaranteed to return to the current thread after
-        // the time expires, so we'll use this for short waits, which are more likely
-        // to need to be accurate
-        WaitForSingleObject (sleepEvent.handle, (DWORD) millisecs);
-    }
-}
-
 }
 
 //------------------------------------------------------------------------------
@@ -361,14 +324,6 @@ namespace beast{
 #endif
 
 namespace beast {
-
-void Thread::sleep (int millisecs)
-{
-    struct timespec time;
-    time.tv_sec = millisecs / 1000;
-    time.tv_nsec = (millisecs % 1000) * 1000000;
-    nanosleep (&time, nullptr);
-}
 
 void beast_threadEntryPoint (void*);
 
