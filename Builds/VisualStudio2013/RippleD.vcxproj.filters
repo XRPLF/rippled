@@ -1518,6 +1518,9 @@
     <ClCompile Include="..\..\src\beast\beast\threads\impl\Stoppable.cpp">
       <Filter>beast\threads\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\threads\impl\Stoppable.test.cpp">
+      <Filter>beast\threads\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\threads\impl\Thread.cpp">
       <Filter>beast\threads\impl</Filter>
     </ClCompile>
