@@ -86,7 +86,7 @@ void Thread::threadEntryPoint()
     const CurrentThreadHolder::Ptr currentThreadHolder (getCurrentThreadHolder());
     currentThreadHolder->value = this;
 
-    if (threadName.isNotEmpty())
+    if (!threadName.empty ())
         setCurrentThreadName (threadName);
 
     if (startSuspensionEvent.wait (10000))
@@ -438,9 +438,9 @@ void Thread::setCurrentThreadName (std::string const& name)
     }
    #elif BEAST_LINUX
     #if (__GLIBC__ * 1000 + __GLIBC_MINOR__) >= 2012
-     pthread_setname_np (pthread_self(), name.toRawUTF8());
+     pthread_setname_np (pthread_self(), name.c_str ());
     #else
-     prctl (PR_SET_NAME, name.toRawUTF8(), 0, 0, 0);
+     prctl (PR_SET_NAME, name.c_str (), 0, 0, 0);
     #endif
    #endif
 }

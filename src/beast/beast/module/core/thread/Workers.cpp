@@ -141,7 +141,7 @@ void Workers::deleteWorkers (LockFreeStack <Worker>& stack)
 
 //------------------------------------------------------------------------------
 
-Workers::Worker::Worker (Workers& workers, String const& threadName)
+Workers::Worker::Worker (Workers& workers, std::string const& threadName)
     : Thread (threadName)
     , m_workers (workers)
 {
