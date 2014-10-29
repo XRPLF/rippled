@@ -706,7 +706,7 @@ PeerImp::on_read_protocol (error_code ec, std::size_t bytes_transferred)
     if (! ec)
     {
         read_buffer_.commit (bytes_transferred);
-        ec = message_stream_.write_one (read_buffer_.data());
+        ec = message_stream_.write (read_buffer_.data());
         read_buffer_.consume (read_buffer_.size());
     }
 

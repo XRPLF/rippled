@@ -39,6 +39,7 @@
 
 #include <beast/asio/IPAddressConversion.h>
 #include <beast/asio/placeholders.h>
+#include <beast/asio/streambuf.h>
 #include <beast/http/message.h>
 #include <beast/http/parser.h>
 
@@ -169,12 +170,12 @@ private:
     // The slot assigned to us by PeerFinder
     PeerFinder::Slot::ptr slot_;
 
-    boost::asio::streambuf read_buffer_;
+    beast::asio::streambuf read_buffer_;
     boost::optional <beast::http::message> http_message_;
     boost::optional <beast::http::parser> http_parser_;
     message_stream message_stream_;
 
-    boost::asio::streambuf write_buffer_;
+    beast::asio::streambuf write_buffer_;
 
     std::unique_ptr <LoadEvent> load_event_;
 
