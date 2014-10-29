@@ -124,11 +124,6 @@ bool Thread::isThreadRunning() const
     return threadHandle != nullptr;
 }
 
-Thread* Thread::getCurrentThread()
-{
-    return getCurrentThreadHolder()->value.get();
-}
-
 //==============================================================================
 void Thread::signalThreadShouldExit()
 {
