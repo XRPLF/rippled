@@ -103,6 +103,7 @@ protected:
 
     boost::asio::streambuf read_buf_;
     beast::http::message message_;
+    beast::http::body body_;
     std::list <buffer> write_queue_;
     std::mutex mutex_;
     bool graceful_ = false;
@@ -181,9 +182,15 @@ protected:
     }
 
     beast::http::message&
-    message() override
+    request() override
     {
         return message_;
+    }
+
+    beast::http::body const&
+    body() override
+    {
+        return body_;
     }
 
     void
@@ -481,7 +488,8 @@ Peer<Impl>::do_read (boost::asio::yield_context yield)
 
     error_code ec;
     bool eof = false;
-    beast::http::parser parser (message_, true);
+    body_.clear();
+    beast::http::parser parser (message_, body_, true);
     for(;;)
     {
         if (read_buf_.size() == 0)

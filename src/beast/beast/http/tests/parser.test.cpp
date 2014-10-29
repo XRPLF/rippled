@@ -20,6 +20,7 @@
 #include <beast/http/message.h>
 #include <beast/http/parser.h>
 #include <beast/unit_test/suite.h>
+#include <utility>
 
 namespace beast {
 namespace http {
@@ -31,7 +32,8 @@ public:
     request (std::string const& text)
     {
         message m;
-        parser p (m, true);
+        body b;
+        parser p (m, b, true);
         auto result (p.write (boost::asio::buffer(text)));
         p.write_eof();
         return std::make_pair (std::move(m), result.first);
@@ -65,7 +67,8 @@ public:
                 "\r\n"
                 ;
             message m;
-            parser p (m, true);
+            body b;
+            parser p (m, b, true);
             auto result (p.write (boost::asio::buffer(text)));
             expect (! result.first);
             auto result2 (p.write_eof());
@@ -80,7 +83,8 @@ public:
                 "\r\n"
                 ;
             message m;
-            parser p (m, true);
+            body b;
+            parser p (m, b, true);
             auto result = p.write (boost::asio::buffer(text));
             if (expect (result.first))
                 expect (result.first.message() == "invalid HTTP method");

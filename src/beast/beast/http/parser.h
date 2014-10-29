@@ -21,6 +21,8 @@
 #define BEAST_HTTP_PARSER_H_INCLUDED
 
 #include <beast/http/message.h>
+#include <beast/http/body.h>
+#include <functional>
 #include <string>
 #include <utility>
 
@@ -34,15 +36,33 @@ class parser : public beast::http::basic_parser
 {
 private:
     std::reference_wrapper <message> message_;
+    std::function<void(void const*, std::size_t)> write_body_;
 
 public:
     /** Construct a parser for HTTP request or response.
-        The result is stored in the passed message.
+        The headers plus request or status line are stored in message.
+        The content-body, if any, is passed as a series of calls to
+        the write_body function. Transfer encodings are applied before
+        any data is passed to the write_body function.
     */
-    parser (message& m, bool request)
+    parser (std::function<void(void const*, std::size_t)> write_body,
+            message& m, bool request)
+        : beast::http::basic_parser (request)
+        , message_(m)
+        , write_body_(std::move(write_body)) 
+    {
+        message_.get().request(request);
+    }
+
+    parser (message& m, body& b, bool request)
         : beast::http::basic_parser (request)
         , message_(m)
     {
+        write_body_ = [&b](void const* data, std::size_t size)
+            {
+                b.write(data, size);
+            };
+
         message_.get().request(request);
     }
 
@@ -135,7 +155,7 @@ parser::operator= (parser&& other)
 
 template <class>
 void
-parser::do_start ()
+parser::do_start()
 {
 }
 
@@ -176,7 +196,7 @@ template <class>
 void
 parser::do_body (void const* data, std::size_t bytes)
 {
-    message_.get().body.write (data, bytes);
+    write_body_(data, bytes);
 }
 
 template <class>

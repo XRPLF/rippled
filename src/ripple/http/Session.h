@@ -20,6 +20,7 @@
 #ifndef RIPPLE_HTTP_SESSION_H_INCLUDED
 #define RIPPLE_HTTP_SESSION_H_INCLUDED
 
+#include <beast/http/body.h>
 #include <beast/http/message.h>
 #include <beast/net/IPEndpoint.h>
 #include <beast/utility/Journal.h>
@@ -59,10 +60,15 @@ public:
     beast::IP::Endpoint
     remoteAddress() = 0;
 
-    /** Returns the currently known set of headers. */
+    /** Returns the current HTTP request. */
     virtual
     beast::http::message&
-    message() = 0;
+    request() = 0;
+
+    /** Returns the Content-Body of the current HTTP request. */
+    virtual
+    beast::http::body const&
+    body() = 0;
 
     /** Send a copy of data asynchronously. */
     /** @{ */
