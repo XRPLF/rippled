@@ -55,10 +55,10 @@ public:
     {
         ServiceType& m_service;
         Random m_random;
-        String m_string;
+        std::string m_string;
 
         Consumer (int id, std::int64_t seedValue, ServiceType& service)
-            : Thread ("C#" + String::fromNumber (id))
+            : Thread ("C#" + std::to_string (id))
             , m_service (service)
             , m_random (seedValue)
             { startThread(); }
@@ -80,10 +80,9 @@ public:
 
         void do_handler()
         {
-            String const s (String::fromNumber (m_random.nextInt()));
-            m_string += s;
-            if (m_string.length() > 100)
-                m_string = String::empty;
+            m_string += std::to_string (m_random.nextInt());
+            if (m_string.size () > 100)
+                m_string.clear ();
         }
 
         void run ()
@@ -101,10 +100,10 @@ public:
     {
         ServiceType& m_service;
         Random m_random;
-        String m_string;
+        std::string m_string;
 
         Producer (int id, std::int64_t seedValue, ServiceType& service)
-            : Thread ("P#" + String::fromNumber (id))
+            : Thread ("P#" + std::to_string (id))
             , m_service (service)
             , m_random (seedValue)
             { }
@@ -116,10 +115,9 @@ public:
         {
             for (std::size_t i = 0; i < callsPerThread; ++i)
             {
-                String const s (String::fromNumber (m_random.nextInt()));
-                m_string += s;
-                if (m_string.length() > 100)
-                    m_string = String::empty;
+                m_string += std::to_string (m_random.nextInt());
+                if (m_string.size () > 100)
+                    m_string.clear ();
                 m_service.dispatch (std::bind (&Consumer<ServiceType>::handler));
             }
         }
@@ -206,11 +204,11 @@ public:
     {
         Random m_random;
         ServiceQueue& m_service;
-        String m_string;
+        std::string m_string;
 
         ServiceThread (int id, std::int64_t seedValue,
             ServiceQueue& service)
-            : Thread ("#" + String::fromNumber (id))
+            : Thread ("#" + std::to_string (id))
             , m_random (seedValue)
             , m_service (service)
         {
@@ -241,10 +239,9 @@ public:
         void do_handler()
         {
 #if 1
-            String const s (String::fromNumber (m_random.nextInt()));
-            m_string += s;
-            if (m_string.length() > 100)
-                m_string = String::empty;
+            m_string += std::to_string (m_random.nextInt());
+            if (m_string.size () > 100)
+                m_string.clear ();
 #endif
         }
 

@@ -24,10 +24,11 @@
 #ifndef BEAST_THREADS_THREAD_H_INCLUDED
 #define BEAST_THREADS_THREAD_H_INCLUDED
 
-#include <beast/strings/String.h>
 #include <beast/utility/LeakChecked.h>
 #include <beast/threads/RecursiveMutex.h>
 #include <beast/threads/WaitableEvent.h>
+
+#include <string>
 
 namespace beast {
 
@@ -55,7 +56,7 @@ public:
         When first created, the thread is not running. Use the startThread()
         method to start it.
     */
-    explicit Thread (const String& threadName);
+    explicit Thread (std::string const& threadName);
 
     Thread (Thread const&) = delete;
     Thread& operator= (Thread const&) = delete;
@@ -89,36 +90,12 @@ public:
     */
     void startThread();
 
-    /** Starts the thread with a given priority.
-
-        Launches the thread with a given priority, where 0 = lowest, 10 = highest.
-        If the thread is already running, its priority will be changed.
-
-        @see startThread, setPriority
-    */
-    void startThread (int priority);
-
     /** Attempts to stop the thread running.
 
         This method will cause the threadShouldExit() method to return true
         and call notify() in case the thread is currently waiting.
-
-        Hopefully the thread will then respond to this by exiting cleanly, and
-        the stopThread method will wait for a given time-period for this to
-        happen.
-
-        If the thread is stuck and fails to respond after the time-out, it gets
-        forcibly killed, which is a very bad thing to happen, as it could still
-        be holding locks, etc. which are needed by other parts of your program.
-
-        @param timeOutMilliseconds  The number of milliseconds to wait for the
-                                    thread to finish before killing it by force. A negative
-                                    value in here will wait forever.
-        @see signalThreadShouldExit, threadShouldExit, waitForThreadToExit, isThreadRunning
-
-        @returns    true if the thread exits, or false if the timeout expires first.
     */
-    bool stopThread (int timeOutMilliseconds = -1);
+    void stopThread ();
 
     /** Stop the thread without blocking.
         This calls signalThreadShouldExit followed by notify.
@@ -154,53 +131,9 @@ public:
 
     /** Waits for the thread to stop.
 
-        This will waits until isThreadRunning() is false or until a timeout expires.
-
-        @param timeOutMilliseconds  the time to wait, in milliseconds. If this value
-                                    is less than zero, it will wait forever.
-        @returns    true if the thread exits, or false if the timeout expires first.
+        This will waits until isThreadRunning() is false.
     */
-    bool waitForThreadToExit (int timeOutMilliseconds = -1) const;
-
-    //==============================================================================
-    /** Changes the thread's priority.
-        May return false if for some reason the priority can't be changed.
-
-        @param priority     the new priority, in the range 0 (lowest) to 10 (highest). A priority
-                            of 5 is normal.
-    */
-    bool setPriority (int priority);
-
-    /** Changes the priority of the caller thread.
-
-        Similar to setPriority(), but this static method acts on the caller thread.
-        May return false if for some reason the priority can't be changed.
-
-        @see setPriority
-    */
-    static bool setCurrentThreadPriority (int priority);
-
-    //==============================================================================
-    /** Sets the affinity mask for the thread.
-
-        This will only have an effect next time the thread is started - i.e. if the
-        thread is already running when called, it'll have no effect.
-
-        @see setCurrentThreadAffinityMask
-    */
-    void setAffinityMask (std::uint32_t affinityMask);
-
-    /** Changes the affinity mask for the caller thread.
-
-        This will change the affinity mask for the thread that calls this static method.
-
-        @see setAffinityMask
-    */
-    static void setCurrentThreadAffinityMask (std::uint32_t affinityMask);
-
-    //==============================================================================
-    // this can be called from any thread that needs to pause..
-    static void sleep (int milliseconds);
+    void waitForThreadToExit () const;
 
     //==============================================================================
     /** Makes the thread wait for a notification.
@@ -237,13 +170,6 @@ public:
     */
     static ThreadID getCurrentThreadId();
 
-    /** Finds the thread object that is currently running.
-
-        Note that the main UI thread (or other non-Beast threads) don't have a Thread
-        object associated with them, so this will return 0.
-    */
-    static Thread* getCurrentThread();
-
     /** Returns the ID of this thread.
 
         That means the ID of this thread object - not of the thread that's calling the method.
@@ -259,23 +185,21 @@ public:
 
         This is the name that gets set in the constructor.
     */
-    const String& getThreadName() const                             { return threadName; }
+    std::string const& getThreadName() const                             { return threadName; }
 
     /** Changes the name of the caller thread.
         Different OSes may place different length or content limits on this name.
     */
-    static void setCurrentThreadName (const String& newThreadName);
+    static void setCurrentThreadName (std::string const& newThreadName);
 
 
 private:
     //==============================================================================
-    const String threadName;
+    std::string const threadName;
     void* volatile threadHandle;
     ThreadID threadId;
     RecursiveMutex startStopLock;
     WaitableEvent startSuspensionEvent, defaultEvent;
-    int threadPriority;
-    std::uint32_t affinityMask;
     bool volatile shouldExit;
 
    #ifndef DOXYGEN
@@ -284,9 +208,7 @@ private:
 
     void launchThread();
     void closeThreadHandle();
-    void killThread();
     void threadEntryPoint();
-    static bool setThreadPriority (void*, int);
 };
 
 }
