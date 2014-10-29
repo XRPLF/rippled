@@ -62,9 +62,10 @@ class RootStoppable;
     3.  onPrepare()
 
         This override is called for all Stoppable objects in the hierarchy
-        during the prepare stage. Objects are called from the bottom up.
-        It is guaranteed that all child Stoppable objects have already been
-        prepared when this is called.
+        during the prepare stage. It is guaranteed that all child Stoppable
+        objects have already been prepared when this is called.
+        
+        Objects are called children first.
 
     4.  start()
 
@@ -77,9 +78,10 @@ class RootStoppable;
     5.  onStart()
 
         This override is called for all Stoppable objects in the hierarchy
-        during the start stage. Objects are called from the bottom up.
-        It is guaranteed that all child Stoppable objects have already been
-        started when this is called.
+        during the start stage. It is guaranteed that no child Stoppable
+        objects have been started when this is called.
+
+        Objects are called parent first.
 
     This is the sequence of events involved in stopping:
 
@@ -103,12 +105,16 @@ class RootStoppable;
         timers, signal that threads should exit, queue cleanup jobs, and perform
         any other necessary final actions in preparation for exit.
 
+        Objects are called parent first.
+
     9.  onChildrenStopped()
 
         This override is called when all the children have stopped. This informs
         the Stoppable that there should not be any more dependents making calls
         into its member functions. A Stoppable that has no children will still
         have this function called.
+
+        Objects are called children first.
 
     10. stopped()
 
@@ -183,9 +189,11 @@ public:
     /** Returns `true` if all children have stopped. */
     bool areChildrenStopped () const;
 
+protected:
     /** Called by derived classes to indicate that the stoppable has stopped. */
     void stopped ();
 
+private:
     /** Override called during preparation.
         Since all other Stoppable objects in the tree have already been
         constructed, this provides an opportunity to perform initialization which
@@ -242,7 +250,6 @@ public:
     */
     virtual void onChildrenStopped ();
 
-private:
     friend class RootStoppable;
 
     struct Child;
@@ -262,13 +269,12 @@ private:
     void stopAsyncRecursive ();
     void stopRecursive (Journal journal);
 
-protected:
-    char const* m_name;
+    std::string m_name;
     RootStoppable& m_root;
     Child m_child;
-    std::atomic <int> m_started;
-    bool volatile m_stopped;
-    bool volatile m_childrenStopped;
+    std::atomic<bool> m_started;
+    std::atomic<bool> m_stopped;
+    std::atomic<bool> m_childrenStopped;
     Children m_children;
     WaitableEvent m_stoppedEvent;
 };
@@ -309,7 +315,7 @@ public:
             Safe to call from any thread not associated with a Stoppable.
     */
     void stop (Journal journal = Journal());
-
+private:
     /** Notify a root stoppable and children to stop, without waiting.
         Has no effect if the stoppable was already notified.
 
@@ -318,10 +324,9 @@ public:
     */
     void stopAsync ();
 
-private:
-    std::atomic <int> m_prepared;
-    std::atomic <int> m_calledStop;
-    std::atomic <int> m_calledStopAsync;
+    std::atomic<bool> m_prepared;
+    std::atomic<bool> m_calledStop;
+    std::atomic<bool> m_calledStopAsync;
 };
 /** @} */
 
