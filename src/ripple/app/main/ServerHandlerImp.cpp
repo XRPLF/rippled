@@ -113,7 +113,7 @@ void
 ServerHandlerImp::onRequest (HTTP::Session& session)
 {
     // Check user/password authorization
-    auto const headers (build_map (session.message().headers));
+    auto const headers = build_map (session.request().headers);
     if (! HTTPAuthorized (headers))
     {
         session.write (HTTPReply (403, "Forbidden"));
@@ -146,11 +146,10 @@ ServerHandlerImp::onStopped (HTTP::Server&)
 void
 ServerHandlerImp::processSession (Job& job, HTTP::Session& session)
 {
-    auto const s (to_string(session.message().body));
-    session.write (processRequest (to_string(session.message().body),
+    session.write (processRequest (to_string(session.body()),
         session.remoteAddress().at_port(0)));
 
-    if (session.message().keep_alive())
+    if (session.request().keep_alive())
     {
         session.complete();
     }

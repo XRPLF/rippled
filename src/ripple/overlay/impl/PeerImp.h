@@ -172,6 +172,7 @@ private:
     boost::asio::streambuf read_buffer_;
     boost::optional <beast::http::message> http_message_;
     boost::optional <beast::http::parser> http_parser_;
+    beast::http::body http_body_;
     message_stream message_stream_;
 
     boost::asio::streambuf write_buffer_;

@@ -413,7 +413,9 @@ PeerImp::on_write_http_request (error_code ec, std::size_t bytes_transferred)
     {
         // done sending request, now read the response
         http_message_ = boost::in_place ();
-        http_parser_ = boost::in_place (std::ref(*http_message_), false);
+        http_body_.clear();
+        http_parser_ = boost::in_place (std::ref(*http_message_),
+            std::ref(http_body_), false);
         on_read_http_response (error_code(), 0);
         return;
     }
@@ -559,7 +561,9 @@ PeerImp::on_read_http_detect (error_code ec, std::size_t bytes_transferred)
     else if (! is_peer_protocol)
     {
         http_message_ = boost::in_place ();
-        http_parser_ = boost::in_place (std::ref(*http_message_), true);
+        http_body_.clear();
+        http_parser_ = boost::in_place (std::ref(*http_message_),
+            std::ref(http_body_), true);
         on_read_http_request (error_code(), 0);
         return;
     }

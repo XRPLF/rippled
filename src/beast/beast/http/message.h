@@ -21,7 +21,6 @@
 #define BEAST_HTTP_MESSAGE_H_INCLUDED
 
 #include <beast/http/basic_parser.h>
-#include <beast/http/body.h>
 #include <beast/http/method.h>
 #include <beast/http/headers.h>
 #include <beast/utility/ci_char_traits.h>
@@ -72,9 +71,8 @@ public:
 
 #endif
 
-    // Memberspaces
+    // Memberspace
     beast::http::headers headers;
-    beast::http::body body;
 
     bool
     request() const
@@ -213,7 +211,6 @@ message::message (message&& other)
     , keep_alive_ (other.keep_alive_)
     , upgrade_ (other.upgrade_)
     , headers (std::move(other.headers))
-    , body (std::move(other.body))
 {
 }
 
@@ -230,33 +227,32 @@ message::operator= (message&& other)
     keep_alive_ = other.keep_alive_;
     upgrade_ = other.upgrade_;
     headers = std::move(other.headers);
-    body = std::move(other.body);
     return *this;    
 }
 #endif
 
 //------------------------------------------------------------------------------
 
-template <class AsioStreamBuf>
+template <class Streambuf>
 void
-write (AsioStreamBuf& stream, std::string const& s)
+write (Streambuf& stream, std::string const& s)
 {
     stream.commit (boost::asio::buffer_copy (
         stream.prepare (s.size()), boost::asio::buffer(s)));
 }
 
-template <class AsioStreamBuf>
+template <class Streambuf>
 void
-write (AsioStreamBuf& stream, char const* s)
+write (Streambuf& stream, char const* s)
 {
     auto const len (::strlen(s));
     stream.commit (boost::asio::buffer_copy (
         stream.prepare (len), boost::asio::buffer (s, len)));
 }
 
-template <class AsioStreamBuf>
+template <class Streambuf>
 void
-write (AsioStreamBuf& stream, message const& m)
+write (Streambuf& stream, message const& m)
 {
     if (m.request())
     {

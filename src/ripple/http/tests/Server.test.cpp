@@ -66,7 +66,7 @@ public:
         onRequest (Session& session) override
         {
             session.write (std::string ("Hello, world!\n"));
-            if (session.message().keep_alive())
+            if (session.request().keep_alive())
                 session.complete();
             else
                 session.close (true);
