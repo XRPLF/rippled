@@ -50,17 +50,16 @@ public:
     body (body const&) = delete;
     body& operator= (body const&) = delete;
 
+    template <class = void>
+    void
+    clear();
+
     void
     write (void const* data, std::size_t bytes);
 
     template <class ConstBufferSequence>
     void
-    write (ConstBufferSequence const& buffers)
-    {
-        for (auto const& buffer : buffers)
-            write (boost::asio::buffer_cast <void const*> (buffer),
-                boost::asio::buffer_size (buffer));
-    }
+    write (ConstBufferSequence const& buffers);
 
     std::size_t
     size() const;
@@ -92,8 +91,9 @@ body::body()
 
 inline
 body::body (body&& other)
+    : buf_ (std::move(other.buf_))
 {
-    buf_ = std::move(other.buf_);
+    other.clear();
 }
 
 inline
@@ -101,7 +101,15 @@ body&
 body::operator= (body&& other)
 {
     buf_ = std::move(other.buf_);
+    other.clear();
     return *this;
+}
+
+template <class>
+void
+body::clear()
+{
+    buf_ = std::make_unique <buffer_type>();
 }
 
 inline
@@ -110,6 +118,15 @@ body::write (void const* data, std::size_t bytes)
 {
     buf_->commit (boost::asio::buffer_copy (buf_->prepare (bytes),
         boost::asio::const_buffers_1 (data, bytes)));
+}
+
+template <class ConstBufferSequence>
+void
+body::write (ConstBufferSequence const& buffers)
+{
+    for (auto const& buffer : buffers)
+        write (boost::asio::buffer_cast <void const*> (buffer),
+            boost::asio::buffer_size (buffer));
 }
 
 inline
