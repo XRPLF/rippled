@@ -155,10 +155,6 @@ public:
     bool waitForThreadToExit (int timeOutMilliseconds = -1) const;
 
     //==============================================================================
-    // this can be called from any thread that needs to pause..
-    static void sleep (int milliseconds);
-
-    //==============================================================================
     /** Makes the thread wait for a notification.
 
         This puts the thread to sleep until either the timeout period expires, or
