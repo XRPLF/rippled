@@ -54,39 +54,39 @@ private:
 
         Input and output sequences are contained entirely in one element:
 
-                          out_
-        |<-----+----------+----------+-------->|
-        0    in_pos_   out_pos_   out_end_   size()
+                             out_
+        |<-----+----------+-------------+-------->|
+        0    in_pos_   out_pos_      out_end_
 
 
         Output sequence is entirely contained in the second element:
 
-                                      out_
-        |<-----+----->|   |<-----+----------+-------->|
-        0    in_pos_          out_pos_   out_end_   size()
+                                                     out_
+        |<------------+------------>|   |<----+----------+--------->|
+        0           in_pos_                out_pos_   out_end_
 
 
         Output sequence occupies the second and third elements:
 
-                                out_
-        |<-----+----->|   |<-----+------->|   |<---+-------->|
-        0    in_pos_          out_pos_          out_end_   size()
+                                     out_
+        |<-----+-------->|   |<-------+------>|   |<-----+--------->|
+        0    in_pos_               out_pos_           out_end_
 
 
         Input sequence is empty:
 
-            out_
-        |<---+------->|   |<-----+------->|
-          out_pos_            out_end_  size()
-           in_pos_
+                     out_
+        |<------+------------------>|   |<-----------+------------->|
+             out_pos_                             out_end_
+              in_pos_
 
 
         Output sequence is empty:
 
-                                out_
-        |<---+------->|   |<-----+------->|
-           in_pos_            out_pos_  size()
-                              out_end_
+                                                     out_
+        |<------+------------------>|   |<------+------------------>|
+              in_pos_                        out_pos_
+                                             out_end_
 
 
         Normally if the output is empty but there is an element in out_,
@@ -95,12 +95,10 @@ private:
         last element. In this case out_pos_ becomes out_->size(),
         and the result looks like this:
 
-                                out_
-        |<---+------->|   |<------------->|
-           in_pos_                     size()
-                                       out_pos_  
-                                       out_end_
-        
+                                                  out_
+        |<------+------------------>|   |<------------------------->|
+              in_pos_                                           out_pos_  
+                                                                out_end_
     */
 
     list_type list_;
