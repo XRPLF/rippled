@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <cctype>
+
 namespace Json
 {
 // Implementation of class Reader
