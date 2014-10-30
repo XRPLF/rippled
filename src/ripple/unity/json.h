@@ -28,19 +28,7 @@
 #include <deque>
 #include <stack>
 #include <vector>
-
-// For json/
-//
-// VFALCO TODO Clean up these one-offs
-#include <ripple/json/json_config.h> // Needed before these cpptl includes
-#ifndef JSON_USE_CPPTL_SMALLMAP
 #include <map>
-#else
-#include <cpptl/smallmap.h>
-#endif
-#ifdef JSON_USE_CPPTL
-#include <cpptl/forwards.h>
-#endif
 
 #include <ripple/json/json_forwards.h>
 #include <ripple/json/json_features.h>
