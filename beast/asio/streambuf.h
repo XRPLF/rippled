@@ -220,11 +220,15 @@ private:
         using argument_type = element;
         using result_type = value_type;
 
-        const_buffers_type const& buffers_;
+        const_buffers_type const* buffers_;
+
+        transform()
+            : buffers_ (nullptr)
+            { }
 
         explicit
         transform (const_buffers_type const& buffers)
-            : buffers_(buffers)
+            : buffers_(&buffers)
             { }
 
         value_type
@@ -278,8 +282,8 @@ basic_streambuf<Allocator>::const_buffers_type::
         value_type
 {
     return value_type(e.data(),
-        (&e == &*std::prev(buffers_.end_)) ? buffers_.out_pos_ : e.size()) +
-        ((&e == &*buffers_.begin_) ? buffers_.in_pos_ : 0);
+        (&e == &*std::prev(buffers_->end_)) ? buffers_->out_pos_ : e.size()) +
+        ((&e == &*buffers_->begin_) ? buffers_->in_pos_ : 0);
 }
 
 //------------------------------------------------------------------------------
@@ -296,13 +300,16 @@ private:
         using argument_type = element;
         using result_type = value_type;
 
-        mutable_buffers_type const& buffers_;
+        mutable_buffers_type const* buffers_;
+
+        transform()
+            : buffers_ (nullptr)
+            { }
 
         explicit
         transform (mutable_buffers_type const& buffers)
-            : buffers_(buffers)
-        {
-        }
+            : buffers_(&buffers)
+            { }
 
         value_type
         operator() (element& e) const;
@@ -355,8 +362,8 @@ basic_streambuf<Allocator>::mutable_buffers_type::
         value_type
 {
     return value_type(e.data(),
-        (&e == &*std::prev(buffers_.end_)) ? buffers_.out_end_ : e.size()) +
-        ((&e == &*buffers_.begin_) ? buffers_.out_pos_ : 0);
+        (&e == &*std::prev(buffers_->end_)) ? buffers_->out_end_ : e.size()) +
+        ((&e == &*buffers_->begin_) ? buffers_->out_pos_ : 0);
 }
 
 //------------------------------------------------------------------------------
