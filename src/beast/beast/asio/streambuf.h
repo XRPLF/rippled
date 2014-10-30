@@ -50,10 +50,57 @@ private:
     using iterator = typename list_type::iterator;
     using const_iterator = typename list_type::const_iterator;
 
-    /*
-        |<------->|<------------->|<---------------->|<-------------->|
-        0       in_pos_        out_pos_           out_end_          size()
+    /*  These diagrams illustrate the layout and state variables.
 
+        Input and output sequences are contained entirely in one element:
+
+                          out_
+        |<-----+----------+----------+-------->|
+        0    in_pos_   out_pos_   out_end_   size()
+
+
+        Output sequence is entirely contained in the second element:
+
+                                      out_
+        |<-----+----->|   |<-----+----------+-------->|
+        0    in_pos_          out_pos_   out_end_   size()
+
+
+        Output sequence occupies the second and third elements:
+
+                                out_
+        |<-----+----->|   |<-----+------->|   |<---+-------->|
+        0    in_pos_          out_pos_          out_end_   size()
+
+
+        Input sequence is empty:
+
+            out_
+        |<---+------->|   |<-----+------->|
+          out_pos_            out_end_  size()
+           in_pos_
+
+
+        Output sequence is empty:
+
+                                out_
+        |<---+------->|   |<-----+------->|
+           in_pos_            out_pos_  size()
+                              out_end_
+
+
+        Normally if the output is empty but there is an element in out_,
+        out_pos_ and out_end_ will be set to zero. Except after comitting
+        everything, and causing the output sequence to start at the
+        last element. In this case out_pos_ becomes out_->size(),
+        and the result looks like this:
+
+                                out_
+        |<---+------->|   |<------------->|
+           in_pos_                     size()
+                                       out_pos_  
+                                       out_end_
+        
     */
 
     list_type list_;
@@ -473,7 +520,7 @@ basic_streambuf<Allocator>::commit (size_type n)
             out_end_ - out_pos_;
         if (n > avail)
             n = avail;
-        // out_pos_ can become out_->size() here
+        // out_pos_ can become out_->size() here (*)
         in_size_ += n;
         out_pos_ += n;
         debug_check();
