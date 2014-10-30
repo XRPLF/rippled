@@ -62,10 +62,10 @@ class RootStoppable;
     3.  onPrepare()
 
         This override is called for all Stoppable objects in the hierarchy
-        during the prepare stage. Objects are called from the bottom up.
-        It is guaranteed that all child Stoppable objects have already been
-        prepared when this is called.  Siblings are called in reverse order
-        of their registration with their parent.
+        during the prepare stage. It is guaranteed that all child Stoppable
+        objects have already been prepared when this is called.
+        
+        Objects are called children first.
 
     4.  start()
 
@@ -78,10 +78,10 @@ class RootStoppable;
     5.  onStart()
 
         This override is called for all Stoppable objects in the hierarchy
-        during the start stage. Objects are called from the top down.
-        It is guaranteed that no child Stoppable objects have been
-        started when this is called.  Siblings are called in reverse order
-        of their registration with their parent.
+        during the start stage. It is guaranteed that no child Stoppable
+        objects have been started when this is called.
+
+        Objects are called parent first.
 
     This is the sequence of events involved in stopping:
 
@@ -103,9 +103,9 @@ class RootStoppable;
         This override is called for the root Stoppable and all its children when
         stopAsync() is called. Derived classes should cancel pending I/O and
         timers, signal that threads should exit, queue cleanup jobs, and perform
-        any other necessary final actions in preparation for exit.  Objects are
-        called from the top down.  Siblings are called in reverse order
-        of their registration with their parent.
+        any other necessary final actions in preparation for exit.
+
+        Objects are called parent first.
 
     9.  onChildrenStopped()
 
@@ -113,6 +113,8 @@ class RootStoppable;
         the Stoppable that there should not be any more dependents making calls
         into its member functions. A Stoppable that has no children will still
         have this function called.
+
+        Objects are called children first.
 
     10. stopped()
 
@@ -267,7 +269,7 @@ private:
     void stopAsyncRecursive ();
     void stopRecursive (Journal journal);
 
-    char const* m_name;
+    std::string m_name;
     RootStoppable& m_root;
     Child m_child;
     std::atomic<bool> m_started;

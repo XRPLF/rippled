@@ -433,8 +433,8 @@ public:
     void run()
     {
         {
-        Root rt(*this);
-        rt.run();
+            Root rt(*this);
+            rt.run();
         }
         pass();
     }
