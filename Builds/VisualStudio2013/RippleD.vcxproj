@@ -2416,6 +2416,9 @@
     <ClCompile Include="..\..\src\ripple\json\impl\Tests.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\json\impl\to_string.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\json\JsonPropertyStream.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\json\json_config.h">
@@ -2429,6 +2432,8 @@
     <ClInclude Include="..\..\src\ripple\json\json_value.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\json\json_writer.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\json\to_string.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\net\HTTPClient.h">
     </ClInclude>
