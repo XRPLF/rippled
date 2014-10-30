@@ -20,30 +20,6 @@
 namespace ripple {
 namespace HTTP {
 
-Port::Port ()
-    : security (Security::no_ssl)
-    , port (0)
-    , context (nullptr)
-{
-}
-
-Port::Port (Port const& other)
-    : security (other.security)
-    , port (other.port)
-    , addr (other.addr)
-    , context (other.context)
-{
-}
-
-Port& Port::operator= (Port const& other)
-{
-    port = other.port;
-    addr = other.addr;
-    security = other.security;
-    context = other.context;
-    return *this;
-}
-
 Port::Port (std::uint16_t port_, beast::IP::Endpoint const& addr_,
         Security security_, SSLContext* context_)
     : security (security_)
@@ -51,38 +27,6 @@ Port::Port (std::uint16_t port_, beast::IP::Endpoint const& addr_,
     , addr (addr_)
     , context (context_)
 {
-}
-
-bool operator== (Port const& lhs, Port const& rhs)
-{
-    if (lhs.addr != rhs.addr)
-        return false;
-    if (lhs.port != rhs.port)
-        return false;
-    if (lhs.security != rhs.security)
-        return false;
-    // 'context' does not participate in the comparison
-    return true;
-}
-
-bool operator< (Port const& lhs, Port const& rhs)
-{
-    if (lhs.addr > rhs.addr)
-        return false;
-    else if (lhs.addr < rhs.addr)
-        return true;
-
-    if (lhs.port > rhs.port)
-        return false;
-    else if (lhs.port < rhs.port)
-        return true;
-
-    if (lhs.security > rhs.security)
-        return false;
-    else if (lhs.security < rhs.security)
-        return true;
-
-    return true;
 }
 
 }

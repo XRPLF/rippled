@@ -32,19 +32,13 @@
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/data/protocol/Protocol.h>
 #include <ripple/validators/Manager.h>
-
-// VFALCO This is unfortunate. Comment this out and
-//        just include what is needed.
-#include <ripple/unity/app.h>
-
+#include <ripple/unity/app.h> // VFALCO REMOVE
 #include <beast/asio/IPAddressConversion.h>
 #include <beast/asio/placeholders.h>
 #include <beast/asio/streambuf.h>
+#include <beast/asio/ssl_bundle.h>
 #include <beast/http/message.h>
 #include <beast/http/parser.h>
-
-#include <boost/foreach.hpp>
-
 #include <cstdint>
 
 namespace ripple {
@@ -110,8 +104,9 @@ private:
     static const size_t sslMinimumFinishedLength = 12;
 
     beast::Journal journal_;
-    socket_type socket_;
-    stream_type stream_;
+    std::unique_ptr<beast::asio::ssl_bundle> ssl_bundle_;
+    socket_type& socket_;
+    stream_type& stream_;
     boost::asio::io_service::strand strand_;
     boost::asio::deadline_timer timer_;
 
@@ -187,7 +182,7 @@ public:
     PeerImp (socket_type&& socket, beast::IP::Endpoint remoteAddress,
         OverlayImpl& overlay, Resource::Manager& resourceManager,
             PeerFinder::Manager& peerFinder, PeerFinder::Slot::ptr const& slot,
-                boost::asio::ssl::context& ssl_context);
+                std::shared_ptr<boost::asio::ssl::context> const& context);
 
     /** Create an outgoing peer
         @note Construction of outbound peers is a two step process: a second
@@ -198,7 +193,7 @@ public:
     PeerImp (beast::IP::Endpoint remoteAddress, boost::asio::io_service& io_service,
         OverlayImpl& overlay, Resource::Manager& resourceManager,
             PeerFinder::Manager& peerFinder, PeerFinder::Slot::ptr const& slot,
-                boost::asio::ssl::context& ssl_context);
+                std::shared_ptr<boost::asio::ssl::context> const& context);
 
     virtual
     ~PeerImp ();

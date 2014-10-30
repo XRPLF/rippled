@@ -193,7 +193,6 @@ public:
     std::unique_ptr <DatabaseCon> mLedgerDB;
     std::unique_ptr <DatabaseCon> mWalletDB;
 
-    std::unique_ptr <SSLContext> m_peerSSLContext;
     std::unique_ptr <SSLContext> m_wsSSLContext;
     std::unique_ptr <Overlay> m_peers;
     std::unique_ptr <RPCDoor>  m_rpcDoor;
@@ -713,30 +712,18 @@ public:
         m_treeNodeCache.setTargetSize (getConfig ().getSize (siTreeCacheSize));
         m_treeNodeCache.setTargetAge (getConfig ().getSize (siTreeCacheAge));
 
-
         //----------------------------------------------------------------------
-        //
-        //
-
-        // SSL context used for Peer connections.
-        {
-            m_peerSSLContext.reset (RippleSSLContext::createAnonymous (
-                getConfig ().PEER_SSL_CIPHER_LIST));
-
-            // VFALCO NOTE, It seems the WebSocket context never has
-            // set_verify_mode called, for either setting of WEBSOCKET_SECURE
-            m_peerSSLContext->get().set_verify_mode (boost::asio::ssl::verify_none);
-        }
 
         // VFALCO NOTE Unfortunately, in stand-alone mode some code still
         //             foolishly calls overlay(). When this is fixed we can
         //             move the instantiation inside a conditional:
         //
         //             if (!getConfig ().RUN_STANDALONE)
-        m_peers = make_Overlay (m_mainIoPool, *m_resourceManager,
-            *m_siteFiles, getConfig ().getModuleDatabasePath (),
-                *m_resolver, m_mainIoPool, m_peerSSLContext->get ());
-        add (*m_peers); // add to Stoppable
+        m_peers = make_Overlay (setup_Overlay(getConfig()), m_mainIoPool,
+            *m_resourceManager, *m_siteFiles,
+                getConfig().getModuleDatabasePath(), *m_resolver,
+                    m_mainIoPool);
+        add (*m_peers); // add to PropertyStream
 
         // SSL context used for WebSocket connections.
         if (getConfig ().WEBSOCKET_SECURE)

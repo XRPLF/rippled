@@ -265,6 +265,7 @@ def config_env(toolchain, variant, env):
 
         if toolchain == 'clang':
             env.Append(CCFLAGS=['-Wno-redeclared-class-member'])
+            env.Append(CPPDEFINES=['BOOST_ASIO_HAS_STD_ARRAY'])
 
         env.Append(CXXFLAGS=[
             '-frtti',

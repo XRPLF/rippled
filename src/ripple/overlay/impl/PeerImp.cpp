@@ -22,16 +22,19 @@
 #include <ripple/overlay/impl/Tuning.h>
 #include <beast/streams/debug_ostream.h>
 #include <functional>
+#include <beast/cxx14/memory.h> // <memory>
 
 namespace ripple {
 
 PeerImp::PeerImp (socket_type&& socket, beast::IP::Endpoint remoteAddress,
     OverlayImpl& overlay, Resource::Manager& resourceManager,
         PeerFinder::Manager& peerFinder, PeerFinder::Slot::ptr const& slot,
-            boost::asio::ssl::context& ssl_context)
+            std::shared_ptr<boost::asio::ssl::context> const& context)
     : journal_ (deprecatedLogs().journal("Peer"))
-    , socket_ (std::move (socket))
-    , stream_ (socket_, ssl_context)
+    , ssl_bundle_(std::make_unique<beast::asio::ssl_bundle>(
+        context, std::move(socket)))
+    , socket_ (ssl_bundle_->socket)
+    , stream_ (ssl_bundle_->stream)
     , strand_ (socket_.get_io_service())
     , timer_ (socket_.get_io_service())
     , remote_address_ (remoteAddress)
@@ -49,10 +52,12 @@ PeerImp::PeerImp (beast::IP::Endpoint remoteAddress,
     boost::asio::io_service& io_service, OverlayImpl& overlay,
         Resource::Manager& resourceManager, PeerFinder::Manager& peerFinder,
             PeerFinder::Slot::ptr const& slot,
-                boost::asio::ssl::context& ssl_context)
+                std::shared_ptr<boost::asio::ssl::context> const& context)
     : journal_ (deprecatedLogs().journal("Peer"))
-    , socket_ (io_service)
-    , stream_ (socket_, ssl_context)
+    , ssl_bundle_(std::make_unique<beast::asio::ssl_bundle>(
+        context, io_service))
+    , socket_ (ssl_bundle_->socket)
+    , stream_ (ssl_bundle_->stream)
     , strand_ (socket_.get_io_service())
     , timer_ (socket_.get_io_service())
     , remote_address_ (remoteAddress)
@@ -381,15 +386,16 @@ PeerImp::on_connect_ssl (error_code ec)
         return;
     }
 
-#if RIPPLE_STRUCTURED_OVERLAY_CLIENT
-    beast::http::message req (make_request());
-    beast::http::write (write_buffer_, req);
-    on_write_http_request (error_code(), 0);
-
-#else
-    do_protocol_start();
-
-#endif
+    if (overlay_.setup().http_handshake)
+    {
+        beast::http::message req (make_request());
+        beast::http::write (write_buffer_, req);
+        on_write_http_request (error_code(), 0);
+    }
+    else
+    {
+        do_protocol_start();
+    }
 }
 
 // Called repeatedly with the http request data
@@ -525,12 +531,10 @@ PeerImp::on_accept_ssl (error_code ec)
         return;
     }
 
-#if RIPPLE_STRUCTURED_OVERLAY_SERVER
+#if 1
     on_read_http_detect (error_code(), 0);
-
 #else
     do_protocol_start();
-
 #endif
 }
 

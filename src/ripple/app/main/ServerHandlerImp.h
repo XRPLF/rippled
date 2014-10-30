@@ -38,7 +38,7 @@ private:
     beast::Journal m_journal;
     JobQueue& m_jobQueue;
     NetworkOPs& m_networkOPs;
-    HTTP::Server m_server;
+    std::unique_ptr<HTTP::Server> m_server;
     std::unique_ptr <RippleSSLContext> m_context;
     RPC::Setup setup_;
 

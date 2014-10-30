@@ -37,7 +37,8 @@ ServerHandlerImp::ServerHandlerImp (Stoppable& parent, JobQueue& jobQueue,
     , m_journal (deprecatedLogs().journal("Server"))
     , m_jobQueue (jobQueue)
     , m_networkOPs (networkOPs)
-    , m_server (*this, deprecatedLogs().journal("Server"))
+    , m_server (HTTP::make_Server(
+        *this, deprecatedLogs().journal("Server")))
     , setup_ (setup)
 {
     if (setup_.secure)
@@ -49,7 +50,7 @@ ServerHandlerImp::ServerHandlerImp (Stoppable& parent, JobQueue& jobQueue,
 
 ServerHandlerImp::~ServerHandlerImp()
 {
-    m_server.stop();
+    m_server = nullptr;
 }
 
 void
@@ -77,9 +78,9 @@ ServerHandlerImp::setup (beast::Journal journal)
                 port.port = ep.port();
             port.context = m_context.get ();
 
-            HTTP::Ports ports;
-            ports.push_back (port);
-            m_server.setPorts (ports);
+            std::vector<HTTP::Port> list;
+            list.push_back (port);
+            m_server->ports(list);
         }
     }
     else
@@ -93,7 +94,7 @@ ServerHandlerImp::setup (beast::Journal journal)
 void
 ServerHandlerImp::onStop()
 {
-    m_server.stopAsync();
+    m_server->close();
 }
 
 //--------------------------------------------------------------------------
@@ -256,7 +257,7 @@ ServerHandlerImp::processRequest (std::string const& request,
 void
 ServerHandlerImp::onWrite (beast::PropertyStream::Map& map)
 {
-    m_server.onWrite (map);
+    m_server->onWrite (map);
 }
 
 //------------------------------------------------------------------------------

@@ -20,6 +20,7 @@
 #ifndef RIPPLE_HTTP_SERVER_H_INCLUDED
 #define RIPPLE_HTTP_SERVER_H_INCLUDED
 
+#include <ripple/basics/BasicConfig.h>
 #include <ripple/common/RippleSSLContext.h>
 #include <beast/net/IPEndpoint.h>
 #include <beast/utility/Journal.h>
@@ -44,23 +45,19 @@ struct Port
         require_ssl
     };
 
-    Security security;
-    std::uint16_t port;
+    Security security = Security::no_ssl;
+    std::uint16_t port = 0;
     beast::IP::Endpoint addr;
-    SSLContext* context;
+    SSLContext* context = nullptr;
 
-    Port ();
-    Port (Port const& other);
-    Port& operator= (Port const& other);
+    Port() = default;
     Port (std::uint16_t port_, beast::IP::Endpoint const& addr_,
-            Security security_, SSLContext* context_);
+        Security security_, SSLContext* context_);
+
+    static
+    void
+    parse (Port& result, Section const& section, std::ostream& log);
 };
-
-bool operator== (Port const& lhs, Port const& rhs);
-bool operator<  (Port const& lhs, Port const& rhs);
-
-/** A set of listening ports settings. */
-typedef std::vector <Port> Ports;
 
 //------------------------------------------------------------------------------
 
@@ -92,64 +89,56 @@ struct Handler
 
 //------------------------------------------------------------------------------
 
-class ServerImpl;
-
 /** Multi-threaded, asynchronous HTTP server. */
 class Server
 {
 public:
-    /** Create the server using the specified handler. */
-    Server (Handler& handler, beast::Journal journal);
-
     /** Destroy the server.
-        This blocks until the server stops.
+        The server is closed if it is not already closed. This call
+        blocks until the server has stopped.
     */
     virtual
-    ~Server ();
+    ~Server() = default;
 
     /** Returns the Journal associated with the server. */
+    virtual
     beast::Journal
-    journal () const;
+    journal() = 0;
 
-    /** Returns the listening ports settings.
-        Thread safety:
-            Safe to call from any thread.
-            Cannot be called concurrently with setPorts.
+    /** Set the listening port settings.
+        This may only be called once.
     */
-    Ports const&
-    getPorts () const;
-
-    /** Set the listening ports settings.
-        These take effect immediately. Any current ports that are not in the
-        new set will be closed. Established connections will not be disturbed.
-        Thread safety:
-            Cannot be called concurrently.
-    */
+    virtual
     void
-    setPorts (Ports const& ports);
+    ports (std::vector<Port> const& v) = 0;
 
-    /** Notify the server to stop, without blocking.
+    virtual
+    void
+    onWrite (beast::PropertyStream::Map& map) = 0;
+
+    /** Close the server.
+        The close is performed asynchronously. The handler will be notified
+        when the server has stopped. The server is considered stopped when
+        there are no pending I/O completion handlers and all connections
+        have closed.
         Thread safety:
             Safe to call concurrently from any thread.
     */
+    virtual
     void
-    stopAsync ();
+    close() = 0;
 
-    /** Notify the server to stop, and block until the stop is complete.
-        The handler's onStopped method will be called when the stop completes.
-        Thread safety:
-            Cannot be called concurrently.
-            Cannot be called from the thread of execution of any Handler functions.
-    */
-    void
-    stop ();
-
-    void
-    onWrite (beast::PropertyStream::Map& map);
-
-private:
-    std::unique_ptr <ServerImpl> m_impl;
+    /** Parse configuration settings into a list of ports. */
+    static
+    std::vector<Port>
+    parse (BasicConfig const& config, std::ostream& log);
 };
+
+/** Create the HTTP server using the specified handler. */
+std::unique_ptr<Server>
+make_Server (Handler& handler, beast::Journal journal);
+
+//------------------------------------------------------------------------------
 
 } // HTTP
 } // ripple

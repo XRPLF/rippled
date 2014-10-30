@@ -155,8 +155,6 @@ public:
     void
     test_request()
     {
-        testcase("request");
-
         boost::asio::io_service ios;
         typedef boost::asio::ip::tcp::socket socket;
         socket s (ios);
@@ -189,8 +187,6 @@ public:
     void
     test_keepalive()
     {
-        testcase("keepalive");
-
         boost::asio::io_service ios;
         typedef boost::asio::ip::tcp::socket socket;
         socket s (ios);
@@ -234,19 +230,19 @@ public:
         sink.severity (beast::Journal::Severity::kAll);
         beast::Journal journal {sink};
         TestHandler handler;
-        Server s (handler, journal);
-        Ports ports;
+        auto s = make_Server (handler, journal);
+        std::vector<Port> list;
         std::unique_ptr <RippleSSLContext> c (
             RippleSSLContext::createBare ());
-        ports.emplace_back (testPort, beast::IP::Endpoint (
+        list.emplace_back (testPort, beast::IP::Endpoint (
             beast::IP::AddressV4 (127, 0, 0, 1), 0),
                  Port::Security::no_ssl, c.get());
-        s.setPorts (ports);
+        s->ports (list);
 
         test_request();
         //test_keepalive();
-
-        s.stop();
+        //s->close();
+        s = nullptr;
 
         pass();
     }
