@@ -153,9 +153,6 @@
     <ClCompile Include="..\..\src\beast\beast\asio\tests\bind_handler.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\asio\tests\streambuf.test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\Atomic.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\boost\Boost.unity.cpp">
