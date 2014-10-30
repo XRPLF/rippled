@@ -142,6 +142,12 @@ public:
         return size_;
     }
 
+    size_type
+    alloc_size() const
+    {
+        return size_ + sizeof(*this);
+    }
+
     char*
     data()
     {
@@ -316,7 +322,7 @@ basic_streambuf<Allocator>::~basic_streambuf()
     for(auto iter = list_.begin(); iter != list_.end();)
     {
         auto& e = *iter++;
-        size_type const n = e.size() + sizeof(e);
+        size_type const n = e.alloc_size();
         e.~element();
         alloc_traits::deallocate(alloc_,
             reinterpret_cast<char*>(&e), n);
@@ -424,7 +430,7 @@ basic_streambuf<Allocator>::prepare (size_type n) ->
         {
             element& e = *last++;
             list_.erase(list_.iterator_to(e));
-            size_type const len = e.size() + sizeof(e);
+            size_type const len = e.alloc_size();
             e.~element();
             alloc_traits::deallocate(alloc_,
                 reinterpret_cast<char*>(&e), len);
@@ -515,7 +521,7 @@ basic_streambuf<Allocator>::consume (size_type n)
 
             element& e = *iter++;
             list_.erase(list_.iterator_to(e));
-            size_type const len = e.size() + sizeof(e);
+            size_type const len = e.alloc_size();
             e.~element();
             alloc_traits::deallocate(alloc_,
                 reinterpret_cast<char*>(&e), len);
@@ -536,7 +542,7 @@ basic_streambuf<Allocator>::consume (size_type n)
                 {
                     element& e = *out_++;
                     list_.erase(list_.iterator_to(e));
-                    size_type const len = e.size() + sizeof(e);
+                    size_type const len = e.alloc_size();
                     e.~element();
                     alloc_traits::deallocate(alloc_,
                         reinterpret_cast<char*>(&e), len);
@@ -546,7 +552,7 @@ basic_streambuf<Allocator>::consume (size_type n)
                 {
                     element& e = *out_++;
                     list_.erase(list_.iterator_to(e));
-                    size_type const len = e.size() + sizeof(e);
+                    size_type const len = e.alloc_size();
                     e.~element();
                     alloc_traits::deallocate(alloc_,
                         reinterpret_cast<char*>(&e), len);
