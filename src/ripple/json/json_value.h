@@ -23,6 +23,7 @@
 #include <ripple/json/json_config.h>
 #include <ripple/json/json_forwards.h>
 #include <beast/strings/String.h>
+#include <functional>
 #include <map>
 #include <vector>
 
@@ -1082,6 +1083,13 @@ public:
     }
 };
 
+//------------------------------------------------------------------------------
+
+using write_t = std::function<void(void const*, std::size_t)>;
+
+/** Stream compact JSON to the specified function. */
+void
+stream (Json::Value const& jv, write_t write);
 
 } // namespace Json
 
