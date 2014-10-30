@@ -368,7 +368,7 @@ basic_streambuf<Allocator>::~basic_streambuf()
     {
         auto& e = *iter++;
         size_type const n = e.alloc_size();
-        e.~element();
+        alloc_traits::destroy(alloc_, &e);
         alloc_traits::deallocate(alloc_,
             reinterpret_cast<char*>(&e), n);
     }
@@ -451,7 +451,7 @@ basic_streambuf<Allocator>::prepare (size_type n) ->
             size_type const avail = block_size_next_;
             element& e = *reinterpret_cast<element*>(alloc_traits::allocate(
                 alloc_, avail + sizeof(element)));
-            ::new(&e) element(avail);
+            alloc_traits::construct(alloc_, &e, avail);
             list_.push_back(e);
             if (out_ == list_.end())
             {
@@ -476,7 +476,7 @@ basic_streambuf<Allocator>::prepare (size_type n) ->
             element& e = *last++;
             list_.erase(list_.iterator_to(e));
             size_type const len = e.alloc_size();
-            e.~element();
+            alloc_traits::destroy(alloc_, &e);
             alloc_traits::deallocate(alloc_,
                 reinterpret_cast<char*>(&e), len);
             // do we set out_ to list_.end() if empty?
@@ -567,7 +567,7 @@ basic_streambuf<Allocator>::consume (size_type n)
             element& e = *iter++;
             list_.erase(list_.iterator_to(e));
             size_type const len = e.alloc_size();
-            e.~element();
+            alloc_traits::destroy(alloc_, &e);
             alloc_traits::deallocate(alloc_,
                 reinterpret_cast<char*>(&e), len);
         }
@@ -588,7 +588,7 @@ basic_streambuf<Allocator>::consume (size_type n)
                     element& e = *out_++;
                     list_.erase(list_.iterator_to(e));
                     size_type const len = e.alloc_size();
-                    e.~element();
+                    alloc_traits::destroy(alloc_, &e);
                     alloc_traits::deallocate(alloc_,
                         reinterpret_cast<char*>(&e), len);
                     out_pos_ = 0;
@@ -598,7 +598,7 @@ basic_streambuf<Allocator>::consume (size_type n)
                     element& e = *out_++;
                     list_.erase(list_.iterator_to(e));
                     size_type const len = e.alloc_size();
-                    e.~element();
+                    alloc_traits::destroy(alloc_, &e);
                     alloc_traits::deallocate(alloc_,
                         reinterpret_cast<char*>(&e), len);
                     out_pos_ = 0;
