@@ -31,76 +31,65 @@ Json::Value doTx (RPC::Context& context)
     bool binary = context.params_.isMember (jss::binary)
             && context.params_[jss::binary].asBool ();
 
-    std::string strTransaction  = context.params_[jss::transaction].asString ();
+    auto const txid  = context.params_[jss::transaction].asString ();
 
-    if (Transaction::isHexTxID (strTransaction))
+    if (!Transaction::isHexTxID (txid))
+        return rpcError (rpcNOT_IMPL);
+
+    auto txn = getApp().getMasterTransaction ().fetch (uint256 (txid), true);
+
+    if (!txn)
+        return rpcError (rpcTXN_NOT_FOUND);
+
+    Json::Value ret = txn->getJson (1, binary);
+
+    if (txn->getLedger () == 0)
+        return ret;
+
+    if (auto lgr = context.netOps_.getLedgerBySeq (txn->getLedger ()))
     {
-        // transaction by ID
-        uint256 txid (strTransaction);
-
-        auto txn = getApp().getMasterTransaction ().fetch (txid, true);
-
-        if (!txn)
-            return rpcError (rpcTXN_NOT_FOUND);
-
-#ifdef READY_FOR_NEW_TX_FORMAT
-        // TODO(tom): what new format is this?
-        Json::Value ret;
-        ret[jss::transaction] = txn->getJson (1, binary);
-#else
-        Json::Value ret = txn->getJson (1, binary);
-#endif
-
-        if (txn->getLedger () != 0)
+        bool okay = false;
+        if (binary)
         {
-            if (auto lgr = context.netOps_.getLedgerBySeq (txn->getLedger ()))
+            std::string meta;
+
+            if (lgr->getMetaHex (txn->getID (), meta))
             {
-                bool okay = false;
-                if (binary)
+                ret[jss::meta] = meta;
+                okay = true;
+            }
+        }
+        else
+        {
+            TransactionMetaSet::pointer set;
+
+            if (lgr->getTransactionMeta (txn->getID (), set))
+            {
+                okay = true;
+
+                auto meta_json = set->getJson (0);
+
+                auto const stx = txn->getSTransaction ();
+
+                if (stx && stx->getTxnType () == ttPAYMENT)
                 {
-                    std::string meta;
+                    auto delivered_amount = stx->getFieldAmount (sfAmount);
 
-                    if (lgr->getMetaHex (txid, meta))
-                    {
-                        ret[jss::meta] = meta;
-                        okay = true;
-                    }
-                }
-                else
-                {
-                    TransactionMetaSet::pointer set;
+                    if (set->hasDeliveredAmount ())
+                        delivered_amount = set->getDeliveredAmount ();
 
-                    if (lgr->getTransactionMeta (txn->getID (), set))
-                    {
-                        okay = true;
-                        
-                        auto meta_json = set->getJson (0);
-
-                        auto const stx = txn->getSTransaction ();
-
-                        if (stx && stx->getTxnType () == ttPAYMENT)
-                        {
-                            auto delivered_amount = stx->getFieldAmount (sfAmount);
-
-                            if (set->hasDeliveredAmount ())
-                                delivered_amount = set->getDeliveredAmount ();
-
-                            meta_json[jss::delivered_amount] = delivered_amount.getJson (1);
-                        }
-
-                        ret[jss::meta] = meta_json;
-                    }
+                    meta_json[jss::delivered_amount] = delivered_amount.getJson (1);
                 }
 
-                if (okay)
-                    ret[jss::validated] = context.netOps_.isValidated (lgr);
+                ret[jss::meta] = meta_json;
             }
         }
 
-        return ret;
+        if (okay)
+            ret[jss::validated] = context.netOps_.isValidated (lgr);
     }
 
-    return rpcError (rpcNOT_IMPL);
+    return ret;
 }
 
 } // ripple
