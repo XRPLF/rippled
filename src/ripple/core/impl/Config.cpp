@@ -245,8 +245,6 @@ Config::Config ()
     WEBSOCKET_PORT          = 6562;
     WEBSOCKET_PUBLIC_PORT   = 6563;
     WEBSOCKET_PUBLIC_SECURE = 1;
-    WEBSOCKET_PROXY_PORT    = 0;
-    WEBSOCKET_PROXY_SECURE  = 1;
     WEBSOCKET_SECURE        = 0;
     WEBSOCKET_PING_FREQ     = (5 * 60);
 
@@ -577,19 +575,11 @@ void Config::load ()
             if (getSingleSection (secConfig, SECTION_WEBSOCKET_PUBLIC_PORT, strTemp))
                 WEBSOCKET_PUBLIC_PORT   = beast::lexicalCastThrow <int> (strTemp);
 
-            (void) getSingleSection (secConfig, SECTION_WEBSOCKET_PROXY_IP, WEBSOCKET_PROXY_IP);
-
-            if (getSingleSection (secConfig, SECTION_WEBSOCKET_PROXY_PORT, strTemp))
-                WEBSOCKET_PROXY_PORT   = beast::lexicalCastThrow <int> (strTemp);
-
             if (getSingleSection (secConfig, SECTION_WEBSOCKET_SECURE, strTemp))
                 WEBSOCKET_SECURE    = beast::lexicalCastThrow <int> (strTemp);
 
             if (getSingleSection (secConfig, SECTION_WEBSOCKET_PUBLIC_SECURE, strTemp))
                 WEBSOCKET_PUBLIC_SECURE = beast::lexicalCastThrow <int> (strTemp);
-
-            if (getSingleSection (secConfig, SECTION_WEBSOCKET_PROXY_SECURE, strTemp))
-                WEBSOCKET_PROXY_SECURE = beast::lexicalCastThrow <int> (strTemp);
 
             if (getSingleSection (secConfig, SECTION_WEBSOCKET_PING_FREQ, strTemp))
                 WEBSOCKET_PING_FREQ = beast::lexicalCastThrow <int> (strTemp);

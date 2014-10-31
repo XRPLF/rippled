@@ -198,7 +198,6 @@ public:
     std::unique_ptr <RPCDoor>  m_rpcDoor;
     std::unique_ptr <WSDoor> m_wsPublicDoor;
     std::unique_ptr <WSDoor> m_wsPrivateDoor;
-    std::unique_ptr <WSDoor> m_wsProxyDoor;
 
     beast::WaitableEvent m_stop;
 
@@ -776,19 +775,6 @@ public:
         else
         {
             m_journal.info << "WebSocket public interface: disabled";
-        }
-        if (!getConfig ().WEBSOCKET_PROXY_IP.empty () && getConfig ().WEBSOCKET_PROXY_PORT)
-        {
-            m_wsProxyDoor.reset (WSDoor::New (*m_resourceManager,
-                getOPs(), getConfig ().WEBSOCKET_PROXY_IP,
-                    getConfig ().WEBSOCKET_PROXY_PORT, true, true,
-                        m_wsSSLContext->get ()));
-
-            if (m_wsProxyDoor == nullptr)
-            {
-                beast::FatalError ("Could not open the WebSocket public interface.",
-                    __FILE__, __LINE__);
-            }
         }
 
         //----------------------------------------------------------------------

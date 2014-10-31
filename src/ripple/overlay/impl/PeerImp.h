@@ -116,8 +116,7 @@ private:
     ShortId shortId_ = 0;
 
     // Updated at each stage of the connection process to reflect
-    // the current conditions as closely as possible. This includes
-    // the case where we learn the true IP via a PROXY handshake.
+    // the current conditions as closely as possible.
     beast::IP::Endpoint remote_address_;
 
     // These is up here to prevent warnings about order of initializations
