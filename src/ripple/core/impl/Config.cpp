@@ -86,9 +86,8 @@ parseIniFile (std::string const& strInput, const bool bTrim)
         else if (strValue[0] == '[' && strValue[strValue.length () - 1] == ']')
         {
             // New Section.
-
             strSection              = strValue.substr (1, strValue.length () - 2);
-            secResult[strSection]   = IniFileSections::mapped_type ();
+            secResult.emplace(strSection, IniFileSections::mapped_type{});
         }
         else
         {
