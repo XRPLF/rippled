@@ -45,15 +45,14 @@ class WSDoorImp
 {
 public:
     WSDoorImp (Resource::Manager& resourceManager,
-        InfoSub::Source& source, std::string const& strIp,
-            int iPort, bool bPublic, bool bProxy, boost::asio::ssl::context& ssl_context)
+        InfoSub::Source& source, std::string const& strIp, int iPort,
+            bool bPublic, boost::asio::ssl::context& ssl_context)
         : WSDoor (source)
         , Thread ("websocket")
         , m_resourceManager (resourceManager)
         , m_source (source)
         , m_ssl_context (ssl_context)
         , mPublic (bPublic)
-        , mProxy (bProxy)
         , mIp (strIp)
         , mPort (iPort)
     {
@@ -72,14 +71,14 @@ private:
             boost::format ("Websocket: %s: Listening: %s %d ") %
                 (mPublic ? "Public" : "Private") % mIp % mPort);
 
-        websocketpp::server_multitls::handler::ptr handler (
-            new WSServerHandler <websocketpp::server_multitls> (
-                m_resourceManager, m_source, m_ssl_context, mPublic, mProxy));
+        websocketpp::server_autotls::handler::ptr handler (
+            new WSServerHandler <websocketpp::server_autotls> (
+                m_resourceManager, m_source, m_ssl_context, mPublic));
 
         {
             ScopedLockType lock (m_endpointLock);
 
-            m_endpoint = std::make_shared<websocketpp::server_multitls> (handler);
+            m_endpoint = std::make_shared<websocketpp::server_autotls> (handler);
         }
 
         // Call the main-event-loop of the websocket server.
@@ -120,7 +119,7 @@ private:
 
     void onStop ()
     {
-        std::shared_ptr<websocketpp::server_multitls> endpoint;
+        std::shared_ptr<websocketpp::server_autotls> endpoint;
 
         {
             ScopedLockType lock (m_endpointLock);
@@ -146,9 +145,8 @@ private:
     boost::asio::ssl::context& m_ssl_context;
     LockType m_endpointLock;
 
-    std::shared_ptr<websocketpp::server_multitls> m_endpoint;
+    std::shared_ptr<websocketpp::server_autotls> m_endpoint;
     bool                            mPublic;
-    bool                            mProxy;
     std::string                     mIp;
     int                             mPort;
 };
@@ -162,16 +160,16 @@ WSDoor::WSDoor (Stoppable& parent)
 
 //------------------------------------------------------------------------------
 
-WSDoor* WSDoor::New (Resource::Manager& resourceManager,
-    InfoSub::Source& source, std::string const& strIp,
-        int iPort, bool bPublic, bool bProxy, boost::asio::ssl::context& ssl_context)
+WSDoor* WSDoor::New (Resource::Manager& resourceManager, InfoSub::Source& source,
+    std::string const& strIp, int iPort, bool bPublic,
+        boost::asio::ssl::context& ssl_context)
 {
     std::unique_ptr <WSDoor> door;
 
     try
     {
         door = std::make_unique <WSDoorImp> (resourceManager,
-            source, strIp, iPort, bPublic, bProxy, ssl_context);
+            source, strIp, iPort, bPublic, ssl_context);
     }
     catch (...)
     {

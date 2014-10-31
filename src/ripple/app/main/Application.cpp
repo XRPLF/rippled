@@ -742,9 +742,8 @@ public:
         if (!getConfig ().WEBSOCKET_IP.empty () && getConfig ().WEBSOCKET_PORT)
         {
             m_wsPrivateDoor.reset (WSDoor::New (*m_resourceManager,
-                getOPs(), getConfig ().WEBSOCKET_IP,
-                    getConfig ().WEBSOCKET_PORT, false, false,
-                        m_wsSSLContext->get ()));
+                getOPs(), getConfig ().WEBSOCKET_IP, getConfig ().WEBSOCKET_PORT,
+                    false, m_wsSSLContext->get ()));
 
             if (m_wsPrivateDoor == nullptr)
             {
@@ -762,9 +761,8 @@ public:
         if (!getConfig ().WEBSOCKET_PUBLIC_IP.empty () && getConfig ().WEBSOCKET_PUBLIC_PORT)
         {
             m_wsPublicDoor.reset (WSDoor::New (*m_resourceManager,
-                getOPs(), getConfig ().WEBSOCKET_PUBLIC_IP,
-                    getConfig ().WEBSOCKET_PUBLIC_PORT, true, false,
-                        m_wsSSLContext->get ()));
+                getOPs(), getConfig ().WEBSOCKET_PUBLIC_IP, getConfig ().WEBSOCKET_PUBLIC_PORT,
+                    true, m_wsSSLContext->get ()));
 
             if (m_wsPublicDoor == nullptr)
             {

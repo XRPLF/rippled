@@ -77,16 +77,14 @@ protected:
     typedef hash_map <connection_ptr, wsc_ptr> MapType;
     MapType mMap;
     bool const mPublic;
-    bool const mProxy;
 
 public:
     WSServerHandler (Resource::Manager& resourceManager,
-        InfoSub::Source& source, boost::asio::ssl::context& ssl_context, bool bPublic, bool bProxy)
+        InfoSub::Source& source, boost::asio::ssl::context& ssl_context, bool bPublic)
         : m_resourceManager (resourceManager)
         , m_source (source)
         , m_ssl_context (ssl_context)
         , mPublic (bPublic)
-        , mProxy (bProxy)
     {
     }
 
@@ -408,10 +406,6 @@ public:
     boost::asio::ssl::context& get_ssl_context ()
     {
         return m_ssl_context;
-    }
-    bool get_proxy ()
-    {
-        return mProxy;
     }
 
     // Respond to http requests.
