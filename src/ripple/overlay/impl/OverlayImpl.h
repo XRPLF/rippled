@@ -21,7 +21,8 @@
 #define RIPPLE_OVERLAY_OVERLAYIMPL_H_INCLUDED
 
 #include <ripple/overlay/Overlay.h>
-
+#include <ripple/server/Handoff.h>
+#include <ripple/server/ServerHandler.h>
 #include <ripple/common/Resolver.h>
 #include <ripple/common/seconds_clock.h>
 #include <ripple/common/UnorderedContainers.h>
@@ -42,7 +43,6 @@
 
 namespace ripple {
 
-class PeerDoor;
 class PeerImp;
 
 class OverlayImpl : public Overlay
@@ -106,6 +106,8 @@ private:
 
     Setup setup_;
     beast::Journal journal_;
+    ServerHandler& serverHandler_;
+
     Resource::Manager& m_resourceManager;
 
     std::unique_ptr <PeerFinder::Manager> m_peerFinder;
@@ -119,12 +121,6 @@ private:
     /** Tracks peers by their session ID */
     PeerByShortId m_shortIdMap;
 
-    /** The peer door for regular SSL connections */
-    std::unique_ptr <PeerDoor> m_doorDirect;
-
-    /** The peer door for proxy connections */
-    std::unique_ptr <PeerDoor> m_doorProxy;
-
     /** The resolver we use for peer hostnames */
     Resolver& m_resolver;
 
@@ -135,9 +131,9 @@ private:
 
 public:
     OverlayImpl (Setup const& setup, Stoppable& parent,
-        Resource::Manager& resourceManager, SiteFiles::Manager& siteFiles,
-            beast::File const& pathToDbFileOrDirectory, Resolver& resolver,
-                boost::asio::io_service& io_service);
+        ServerHandler& serverHandler, Resource::Manager& resourceManager,
+            beast::File const& pathToDbFileOrDirectory,
+                Resolver& resolver, boost::asio::io_service& io_service);
 
     ~OverlayImpl ();
 
@@ -147,18 +143,27 @@ public:
         return setup_;
     }
 
+    ServerHandler&
+    serverHandler()
+    {
+        return serverHandler_;
+    }
+
+    void
+    onLegacyPeerHello (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
+        boost::asio::const_buffer buffer,
+            boost::asio::ip::tcp::endpoint remote_address) override;
+
+    Handoff
+    onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
+        beast::http::message&& request,
+            boost::asio::ip::tcp::endpoint remote_address) override;
+
     PeerSequence
-    getActivePeers () override;
+    getActivePeers() override;
 
     Peer::ptr
     findPeerByShortID (Peer::ShortId const& id) override;
-
-    /** Process an incoming connection using the Peer protocol.
-        The caller transfers ownership of the socket via rvalue move.
-        @param socket A socket in the accepted state.
-    */
-    void
-    accept (socket_type&& socket);
 
     Peer::ShortId
     next_id();
@@ -185,6 +190,13 @@ public:
 private:
     OverlayImpl (OverlayImpl const&) = delete;
     OverlayImpl& operator= (OverlayImpl const&) = delete;
+
+    bool
+    isPeerUpgrade (beast::http::message const& request);
+
+    std::shared_ptr<HTTP::Writer>
+    makeRedirectResponse (PeerFinder::Slot::ptr const& slot,
+        beast::http::message const& request);
 
     void
     connect (beast::IP::Endpoint const& remote_endpoint) override;
@@ -226,16 +238,19 @@ private:
     remove (Child& child);
 
     void
-    close();
-
-    void
     checkStopped ();
 
     void
-    sendpeers();
+    close();
 
     void
-    autoconnect();
+    addpeer (std::shared_ptr<PeerImp> const& peer);
+
+    void
+    autoConnect();
+
+    void
+    sendEndpoints();
 };
 
 } // ripple

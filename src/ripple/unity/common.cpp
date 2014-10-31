@@ -20,8 +20,8 @@
 #include <BeastConfig.h>
 
 #include <ripple/common/impl/KeyCache.cpp>
+#include <ripple/common/impl/make_SSLContext.cpp>
 #include <ripple/common/impl/ResolverAsio.cpp>
-#include <ripple/common/impl/RippleSSLContext.cpp>
 #include <ripple/common/impl/TaggedCache.cpp>
 
 #include <ripple/common/tests/cross_offer.test.cpp>

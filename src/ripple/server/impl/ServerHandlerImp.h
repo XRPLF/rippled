@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_MAIN_SERVERHANDLERIMP_H_INCLUDED
-#define RIPPLE_APP_MAIN_SERVERHANDLERIMP_H_INCLUDED
+#ifndef RIPPLE_SERVER_SERVERHANDLERIMP_H_INCLUDED
+#define RIPPLE_SERVER_SERVERHANDLERIMP_H_INCLUDED
 
-#include <ripple/app/main/ServerHandler.h>
-#include <ripple/common/RippleSSLContext.h>
-#include <ripple/http/Session.h>
+#include <ripple/core/Job.h>
+#include <ripple/server/ServerHandler.h>
+#include <ripple/server/Session.h>
 #include <ripple/rpc/RPCHandler.h>
 
 namespace ripple {
@@ -39,19 +39,24 @@ private:
     JobQueue& m_jobQueue;
     NetworkOPs& m_networkOPs;
     std::unique_ptr<HTTP::Server> m_server;
-    std::unique_ptr <RippleSSLContext> m_context;
-    RPC::Setup setup_;
+    Setup setup_;
 
 public:
-    ServerHandlerImp (Stoppable& parent, JobQueue& jobQueue,
-        NetworkOPs& networkOPs, Resource::Manager& resourceManager,
-            RPC::Setup const& setup);
+    ServerHandlerImp (Stoppable& parent, boost::asio::io_service& io_service,
+        JobQueue& jobQueue, NetworkOPs& networkOPs,
+            Resource::Manager& resourceManager);
 
     ~ServerHandlerImp();
 
 private:
     void
-    setup (beast::Journal journal) override;
+    setup (Setup const& setup, beast::Journal journal) override;
+
+    Setup const&
+    setup() const override
+    {
+        return setup_;
+    }
 
     //
     // Stoppable
@@ -67,6 +72,25 @@ private:
     void
     onAccept (HTTP::Session& session) override;
 
+    bool
+    onAccept (HTTP::Session& session,
+        boost::asio::ip::tcp::endpoint endpoint) override;
+
+    void
+    onLegacyPeerHello (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
+        boost::asio::const_buffer buffer,
+            boost::asio::ip::tcp::endpoint remote_address) override;
+
+    Handoff
+    onHandoff (HTTP::Session& session,
+        std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
+            beast::http::message&& request,
+                boost::asio::ip::tcp::endpoint remote_address) override;
+
+    Handoff
+    onHandoff (HTTP::Session& session, boost::asio::ip::tcp::socket&& socket,
+        beast::http::message&& request,
+            boost::asio::ip::tcp::endpoint remote_address) override;
     void
     onRequest (HTTP::Session& session) override;
 
@@ -87,7 +111,7 @@ private:
     createResponse (int statusCode, std::string const& description);
 
     std::string
-    processRequest (std::string const& request,
+    processRequest (HTTP::Port const& port, std::string const& request,
         beast::IP::Endpoint const& remoteIPAddress);
 
     //
@@ -96,14 +120,15 @@ private:
 
     void
     onWrite (beast::PropertyStream::Map& map) override;
+
+private:
+    bool
+    isWebsocketUpgrade (beast::http::message const& request);
+
+    bool
+    authorized (HTTP::Port const& port,
+        std::map<std::string, std::string> const& h);
 };
-
-//------------------------------------------------------------------------------
-
-std::unique_ptr <ServerHandler>
-make_RPCHTTPServer (beast::Stoppable& parent, JobQueue& jobQueue,
-    NetworkOPs& networkOPs, Resource::Manager& resourceManager,
-        RPC::Setup const& setup);
 
 }
 

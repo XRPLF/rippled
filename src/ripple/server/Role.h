@@ -17,40 +17,36 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_MAIN_SERVERHANDLER_H_INCLUDED
-#define RIPPLE_APP_MAIN_SERVERHANDLER_H_INCLUDED
+#ifndef RIPPLE_SERVER_ROLE_H_INCLUDED
+#define RIPPLE_SERVER_ROLE_H_INCLUDED
 
-#include <ripple/core/Config.h>
-#include <beast/utility/Journal.h>
-#include <beast/utility/PropertyStream.h>
-#include <beast/cxx14/memory.h> // <memory>
+#include <ripple/server/Port.h>
+#include <ripple/json/json_value.h>
+#include <beast/net/IPEndpoint.h>
+#include <vector>
 
 namespace ripple {
 
-class ServerHandler
-    : public beast::Stoppable
-    , public beast::PropertyStream::Source
+/** Indicates the level of administrative permission to grant. */
+enum class Role
 {
-protected:
-    ServerHandler (Stoppable& parent);
-
-public:
-    virtual
-    ~ServerHandler() = default;
-
-    /** Opens listening ports based on the Config settings
-        This is implemented outside the constructor to support
-        two-stage initialization in the Application object.
-    */
-    virtual
-    void
-    setup (beast::Journal journal) = 0;
+    GUEST,
+    USER,
+    ADMIN,
+    FORBID
 };
 
-std::unique_ptr <ServerHandler>
-make_ServerHandler (beast::Stoppable& parent, JobQueue& jobQueue,
-    NetworkOPs& networkOPs, Resource::Manager& resourceManager,
-        RPC::Setup const& setup);
+/** Return the allowed privilege role.
+    jsonRPC must meet the requirements of the JSON-RPC
+    specification. It must be of type Object, containing the key params
+    which is an array with at least one object. Inside this object
+    are the optional keys 'admin_user' and 'admin_password' used to
+    validate the credentials.
+*/
+Role
+adminRole (HTTP::Port const& port, Json::Value const& jsonRPC,
+    beast::IP::Endpoint const& remoteIp,
+        std::vector<beast::IP::Endpoint> const& admin_allow);
 
 } // ripple
 

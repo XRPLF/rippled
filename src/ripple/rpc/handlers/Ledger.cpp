@@ -67,7 +67,7 @@ Json::Value doLedger (RPC::Context& context)
     if (bFull || bAccounts)
     {
 
-        if (context.role_ != Config::ADMIN)
+        if (context.role_ != Role::ADMIN)
         {
             // Until some sane way to get full ledgers has been implemented,
             // disallow retrieving all state nodes.
@@ -75,7 +75,7 @@ Json::Value doLedger (RPC::Context& context)
         }
 
         if (getApp().getFeeTrack().isLoadedLocal() &&
-            context.role_ != Config::ADMIN)
+            context.role_ != Role::ADMIN)
         {
             WriteLog (lsDEBUG, Peer) << "Too busy to give full ledger";
             return rpcError(rpcTOO_BUSY);

@@ -364,15 +364,6 @@
     <Filter Include="ripple\data\utility">
       <UniqueIdentifier>{1906827A-5174-9515-DC11-9D11C511E0CB}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ripple\http">
-      <UniqueIdentifier>{8601C61D-413C-725E-C9E6-BD4F97E40032}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ripple\http\impl">
-      <UniqueIdentifier>{43D68742-4714-D103-EE00-EB10BD045FB6}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ripple\http\tests">
-      <UniqueIdentifier>{AA0D98CC-99E6-61CE-86D7-35156DC4EE55}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ripple\json">
       <UniqueIdentifier>{BEDCC703-A2C8-FF25-7E1E-3471BD39ED98}</UniqueIdentifier>
     </Filter>
@@ -435,6 +426,15 @@
     </Filter>
     <Filter Include="ripple\rpc\impl">
       <UniqueIdentifier>{93AC3675-D183-4DB4-021E-8F4CA1586866}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ripple\server">
+      <UniqueIdentifier>{8A61DBF7-69CB-9043-8312-D44C40EC6AE9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ripple\server\impl">
+      <UniqueIdentifier>{B0649154-4449-1172-FF4F-9F7A46908774}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ripple\server\tests">
+      <UniqueIdentifier>{9BA46DD5-4B0C-3C1D-6F16-93DE8A9B7313}</UniqueIdentifier>
     </Filter>
     <Filter Include="ripple\sitefiles">
       <UniqueIdentifier>{CB0AC82D-AEA3-F41C-847F-D6ECA4971891}</UniqueIdentifier>
@@ -2703,15 +2703,6 @@
     <ClInclude Include="..\..\src\ripple\app\main\ParameterTable.h">
       <Filter>ripple\app\main</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\main\ServerHandler.h">
-      <Filter>ripple\app\main</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\main\ServerHandlerImp.cpp">
-      <Filter>ripple\app\main</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\main\ServerHandlerImp.h">
-      <Filter>ripple\app\main</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\main\Tuning.h">
       <Filter>ripple\app\main</Filter>
     </ClInclude>
@@ -2958,6 +2949,9 @@
     <ClInclude Include="..\..\src\ripple\app\shamap\SHAMapTreeNode.h">
       <Filter>ripple\app\shamap</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\shamap\TreeNodeCache.h">
+      <Filter>ripple\app\shamap</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\transactors\AddWallet.cpp">
       <Filter>ripple\app\transactors</Filter>
     </ClCompile>
@@ -3153,10 +3147,10 @@
     <ClCompile Include="..\..\src\ripple\common\impl\KeyCache.cpp">
       <Filter>ripple\common\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\common\impl\ResolverAsio.cpp">
+    <ClCompile Include="..\..\src\ripple\common\impl\make_SSLContext.cpp">
       <Filter>ripple\common\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\common\impl\RippleSSLContext.cpp">
+    <ClCompile Include="..\..\src\ripple\common\impl\ResolverAsio.cpp">
       <Filter>ripple\common\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\common\impl\TaggedCache.cpp">
@@ -3168,13 +3162,13 @@
     <ClInclude Include="..\..\src\ripple\common\KeyCache.h">
       <Filter>ripple\common</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\common\make_SSLContext.h">
+      <Filter>ripple\common</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\common\Resolver.h">
       <Filter>ripple\common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\common\ResolverAsio.h">
-      <Filter>ripple\common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\common\RippleSSLContext.h">
       <Filter>ripple\common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\common\seconds_clock.h">
@@ -3378,45 +3372,6 @@
     <ClInclude Include="..\..\src\ripple\data\utility\UptimeTimerAdapter.h">
       <Filter>ripple\data\utility</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\http\impl\Door.cpp">
-      <Filter>ripple\http\impl</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\http\impl\Door.h">
-      <Filter>ripple\http\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\http\impl\Peer.h">
-      <Filter>ripple\http\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\http\impl\PlainPeer.h">
-      <Filter>ripple\http\impl</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\http\impl\Port.cpp">
-      <Filter>ripple\http\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\http\impl\Server.cpp">
-      <Filter>ripple\http\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\http\impl\ServerImpl.cpp">
-      <Filter>ripple\http\impl</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\http\impl\ServerImpl.h">
-      <Filter>ripple\http\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\http\impl\SSLPeer.h">
-      <Filter>ripple\http\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\http\impl\Types.h">
-      <Filter>ripple\http\impl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\http\Server.h">
-      <Filter>ripple\http</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\http\Session.h">
-      <Filter>ripple\http</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\http\tests\Server.test.cpp">
-      <Filter>ripple\http\tests</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\json\impl\JsonPropertyStream.cpp">
       <Filter>ripple\json\impl</Filter>
     </ClCompile>
@@ -3489,9 +3444,6 @@
     <ClCompile Include="..\..\src\ripple\net\impl\RPCCall.cpp">
       <Filter>ripple\net\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\net\impl\RPCDoor.cpp">
-      <Filter>ripple\net\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\net\impl\RPCErr.cpp">
       <Filter>ripple\net\impl</Filter>
     </ClCompile>
@@ -3499,9 +3451,6 @@
       <Filter>ripple\net\impl</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\net\impl\RPCSub.cpp">
-      <Filter>ripple\net\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\net\impl\RPCUtil.cpp">
       <Filter>ripple\net\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\net\impl\SNTPClient.cpp">
@@ -3513,9 +3462,6 @@
     <ClInclude Include="..\..\src\ripple\net\RPCCall.h">
       <Filter>ripple\net</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\net\RPCDoor.h">
-      <Filter>ripple\net</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\net\RPCErr.h">
       <Filter>ripple\net</Filter>
     </ClInclude>
@@ -3523,9 +3469,6 @@
       <Filter>ripple\net</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\net\RPCSub.h">
-      <Filter>ripple\net</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\net\RPCUtil.h">
       <Filter>ripple\net</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\net\SNTPClient.h">
@@ -3676,12 +3619,6 @@
       <Filter>ripple\overlay\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\overlay\impl\OverlayImpl.h">
-      <Filter>ripple\overlay\impl</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\overlay\impl\PeerDoor.cpp">
-      <Filter>ripple\overlay\impl</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\overlay\impl\PeerDoor.h">
       <Filter>ripple\overlay\impl</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\overlay\impl\PeerImp.cpp">
@@ -4179,6 +4116,81 @@
     <ClInclude Include="..\..\src\ripple\rpc\Status.h">
       <Filter>ripple\rpc</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\Handler.h">
+      <Filter>ripple\server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\Handoff.h">
+      <Filter>ripple\server</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\server\impl\Door.cpp">
+      <Filter>ripple\server\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\server\impl\Door.h">
+      <Filter>ripple\server\impl</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\server\impl\JSONRPCUtil.cpp">
+      <Filter>ripple\server\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\server\impl\JSONRPCUtil.h">
+      <Filter>ripple\server\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\impl\Peer.h">
+      <Filter>ripple\server\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\impl\PlainPeer.h">
+      <Filter>ripple\server\impl</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\server\impl\Role.cpp">
+      <Filter>ripple\server\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\server\impl\ServerHandlerImp.cpp">
+      <Filter>ripple\server\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\server\impl\ServerHandlerImp.h">
+      <Filter>ripple\server\impl</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\server\impl\ServerImpl.cpp">
+      <Filter>ripple\server\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\server\impl\ServerImpl.h">
+      <Filter>ripple\server\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\impl\SSLPeer.h">
+      <Filter>ripple\server\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\JsonWriter.h">
+      <Filter>ripple\server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\make_Server.h">
+      <Filter>ripple\server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\make_ServerHandler.h">
+      <Filter>ripple\server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\Port.h">
+      <Filter>ripple\server</Filter>
+    </ClInclude>
+    <None Include="..\..\src\ripple\server\README.md">
+      <Filter>ripple\server</Filter>
+    </None>
+    <ClInclude Include="..\..\src\ripple\server\Role.h">
+      <Filter>ripple\server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\Server.h">
+      <Filter>ripple\server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\ServerHandler.h">
+      <Filter>ripple\server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\Session.h">
+      <Filter>ripple\server</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\server\tests\Server.test.cpp">
+      <Filter>ripple\server\tests</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\server\Writer.h">
+      <Filter>ripple\server</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\sitefiles\impl\Logic.h">
       <Filter>ripple\sitefiles\impl</Filter>
     </ClInclude>
@@ -4359,9 +4371,6 @@
     <ClInclude Include="..\..\src\ripple\unity\data.h">
       <Filter>ripple\unity</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\unity\http.cpp">
-      <Filter>ripple\unity</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\hyperleveldb.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>
@@ -4419,6 +4428,9 @@
     <ClInclude Include="..\..\src\ripple\unity\rpcx.h">
       <Filter>ripple\unity</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\unity\server.cpp">
+      <Filter>ripple\unity</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\sitefiles.cpp">
       <Filter>ripple\unity</Filter>
     </ClCompile>

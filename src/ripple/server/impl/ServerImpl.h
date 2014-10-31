@@ -17,11 +17,12 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_HTTP_SERVERIMPL_H_INCLUDED
-#define RIPPLE_HTTP_SERVERIMPL_H_INCLUDED
+#ifndef RIPPLE_SERVER_SERVERIMPL_H_INCLUDED
+#define RIPPLE_SERVER_SERVERIMPL_H_INCLUDED
 
 #include <ripple/common/seconds_clock.h>
-#include <ripple/http/Server.h>
+#include <ripple/server/Handler.h>
+#include <ripple/server/Server.h>
 #include <beast/intrusive/List.h>
 #include <beast/threads/SharedData.h>
 #include <beast/threads/Thread.h>
@@ -77,22 +78,24 @@ private:
     typedef std::vector <std::shared_ptr<Door>> Doors;
 
     Handler& handler_;
-    std::thread thread_;
+    beast::Journal journal_;
+    boost::asio::io_service& io_service_;
+    boost::asio::io_service::strand strand_;
+    boost::optional <boost::asio::io_service::work> work_;
+
     std::mutex mutable mutex_;
     std::condition_variable cond_;
     list_type list_;
-    beast::Journal journal_;
-    boost::asio::io_service io_service_;
-    boost::asio::io_service::strand strand_;
-    boost::optional <boost::asio::io_service::work> work_;
     std::deque <Stat> stats_;
-    std::array <std::size_t, 64> hist_;
     int high_ = 0;
 
-public:
-    ServerImpl (Handler& handler, beast::Journal journal);
+    std::array <std::size_t, 64> hist_;
 
-    ~ServerImpl ();
+public:
+    ServerImpl (Handler& handler,
+        boost::asio::io_service& io_service, beast::Journal journal);
+
+    ~ServerImpl();
 
     beast::Journal
     journal() override
@@ -138,9 +141,6 @@ private:
     static
     int
     ceil_log2 (unsigned long long x);
-
-    void
-    run();
 };
 
 

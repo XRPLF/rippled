@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/http/impl/Door.h>
-#include <ripple/http/impl/PlainPeer.h>
-#include <ripple/http/impl/SSLPeer.h>
+#include <ripple/server/impl/Door.h>
+#include <ripple/server/impl/PlainPeer.h>
+#include <ripple/server/impl/SSLPeer.h>
 #include <boost/asio/buffer.hpp>
 #include <beast/asio/placeholders.h>
 #include <beast/asio/ssl_bundle.h>
@@ -93,11 +93,11 @@ Door::Child::~Child()
 //------------------------------------------------------------------------------
 
 Door::detector::detector (Door& door, socket_type&& socket,
-        endpoint_type endpoint)
+        endpoint_type remote_address)
     : Child(door)
-    , socket_ (std::move(socket))
-    , timer_ (socket_.get_io_service())
-    , remote_endpoint_ (endpoint)
+    , socket_(std::move(socket))
+    , timer_(socket_.get_io_service())
+    , remote_address_(remote_address)
 {
 }
 
@@ -144,27 +144,35 @@ Door::detector::do_detect (boost::asio::yield_context yield)
     error_code unused;
     timer_.cancel(unused);
     if (! ec)
-        return door_.create(ssl, std::move(buf),
-            std::move(socket_), remote_endpoint_);
+        return door_.create(ssl, buf.data(),
+            std::move(socket_), remote_address_);
     if (ec != boost::asio::error::operation_aborted)
         if (door_.server_.journal().trace) door_.server_.journal().trace <<
             "Error detecting ssl: " << ec.message() <<
-                " from " << remote_endpoint_;
+                " from " << remote_address_;
 }
 
 //------------------------------------------------------------------------------
 
 Door::Door (boost::asio::io_service& io_service,
         ServerImpl& server, Port const& port)
-    : port_(port)
+    : port_(std::make_shared<Port>(port))
     , server_(server)
     , acceptor_(io_service)
     , strand_(io_service)
+    , ssl_ (
+        port_->protocol.count("https") > 0 ||
+        //port_->protocol.count("wss") > 0 ||
+        port_->protocol.count("peer") > 0)
+    , plain_ (
+        //port_->protocol.count("ws") > 0 ||
+        port_->protocol.count("http") > 0)
 {
     server_.add (*this);
 
     error_code ec;
-    endpoint_type const local_address = to_asio(port);
+    endpoint_type const local_address =
+        endpoint_type(port.ip, port.port);
 
     acceptor_.open(local_address.protocol(), ec);
     if (ec)
@@ -206,7 +214,7 @@ Door::Door (boost::asio::io_service& io_service,
     }
 
     if (server_.journal().info) server_.journal().info <<
-        "Bound to endpoint " << to_string (acceptor_.local_endpoint());
+        "Bound to endpoint " << acceptor_.local_endpoint();
 }
 
 Door::~Door()
@@ -263,52 +271,28 @@ Door::add (std::shared_ptr<Child> const& child)
     list_.emplace(child.get(), child);
 }
 
+template <class ConstBufferSequence>
 void
-Door::create (bool ssl, beast::asio::streambuf&& buf,
+Door::create (bool ssl, ConstBufferSequence const& buffers,
     socket_type&& socket, endpoint_type remote_address)
 {
     if (server_.closed())
         return;
-    error_code ec;
-    switch (port_.security)
+
+    if (ssl)
     {
-    case Port::Security::no_ssl:
-        if (ssl)
-            ec = boost::system::errc::make_error_code (
-                boost::system::errc::invalid_argument);
-
-    case Port::Security::require_ssl:
-        if (! ssl)
-            ec = boost::system::errc::make_error_code (
-                boost::system::errc::invalid_argument);
-
-    case Port::Security::allow_ssl:
-        if (! ec)
-        {
-            if (ssl)
-            {
-                auto const peer = std::make_shared <SSLPeer> (*this,
-                    server_.journal(), remote_address, buf.data(),
-                        std::move(socket));
-                add(peer);
-                peer->run();
-                return;
-            }
-
-            auto const peer = std::make_shared <PlainPeer> (*this,
-                server_.journal(), remote_address, buf.data(),
-                    std::move(socket));
-            add(peer);
-            peer->run();
-            return;
-        }
-        break;
+        auto const peer = std::make_shared <SSLPeer> (*this,
+            server_.journal(), remote_address, buffers,
+                std::move(socket));
+        add(peer);
+        return peer->run();
     }
 
-    if (ec)
-        if (server_.journal().trace) server_.journal().trace <<
-            "Error detecting ssl: " << ec.message() <<
-                " from " << remote_address;
+    auto const peer = std::make_shared <PlainPeer> (*this,
+        server_.journal(), remote_address, buffers,
+            std::move(socket));
+    add(peer);
+    peer->run();
 }
 
 void
@@ -317,9 +301,9 @@ Door::do_accept (boost::asio::yield_context yield)
     for(;;)
     {
         error_code ec;
-        endpoint_type endpoint;
+        endpoint_type remote_address;
         socket_type socket (acceptor_.get_io_service());
-        acceptor_.async_accept (socket, endpoint, yield[ec]);
+        acceptor_.async_accept (socket, remote_address, yield[ec]);
         if (ec && ec != boost::asio::error::operation_aborted)
             if (server_.journal().error) server_.journal().error <<
                 "accept: " << ec.message();
@@ -327,28 +311,18 @@ Door::do_accept (boost::asio::yield_context yield)
             break;
         if (ec)
             continue;
-        if (port_.security == Port::Security::no_ssl)
-        {
-            auto const peer = std::make_shared <PlainPeer> (*this,
-                server_.journal(), endpoint, boost::asio::null_buffers(),
-                    std::move(socket));
-            add(peer);
-            peer->run();
-        }
-        else if (port_.security == Port::Security::require_ssl)
-        {
-            auto const peer = std::make_shared <SSLPeer> (*this,
-                server_.journal(), endpoint, boost::asio::null_buffers(),
-                    std::move(socket));
-            add(peer);
-            peer->run();
-        }
-        else
+
+        if (ssl_ && plain_)
         {
             auto const c = std::make_shared <detector> (
-                *this, std::move(socket), endpoint);
+                *this, std::move(socket), remote_address);
             add(c);
             c->run();
+        }
+        else if (ssl_ || plain_)
+        {
+            create(ssl_, boost::asio::null_buffers{},
+                std::move(socket), remote_address);
         }
     }
 }

@@ -24,7 +24,7 @@ namespace ripple {
 //   secret: <string>   // optional
 // }
 //
-// This command requires Config::ADMIN access because it makes no sense to ask
+// This command requires Role::ADMIN access because it makes no sense to ask
 // an untrusted server for this.
 Json::Value doValidationCreate (RPC::Context& context)
 {

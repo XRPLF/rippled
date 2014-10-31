@@ -17,10 +17,11 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_HTTP_PLAINPEER_H_INCLUDED
-#define RIPPLE_HTTP_PLAINPEER_H_INCLUDED
+#ifndef RIPPLE_SERVER_PLAINPEER_H_INCLUDED
+#define RIPPLE_SERVER_PLAINPEER_H_INCLUDED
 
-#include <ripple/http/impl/Peer.h>
+#include <ripple/server/impl/Peer.h>
+#include <memory>
 
 namespace ripple {
 namespace HTTP {
@@ -32,7 +33,8 @@ class PlainPeer
 private:
     friend class Peer <PlainPeer>;
     using socket_type = boost::asio::ip::tcp::socket;
-    socket_type socket_;
+
+    socket_type stream_;
 
 public:
     template <class ConstBufferSequence>
@@ -54,10 +56,10 @@ private:
 
 template <class ConstBufferSequence>
 PlainPeer::PlainPeer (Door& door, beast::Journal journal,
-    endpoint_type endpoint, ConstBufferSequence const& buffers,
-        boost::asio::ip::tcp::socket&& socket)
-    : Peer (door, socket.get_io_service(), journal, endpoint, buffers)
-    , socket_(std::move(socket))
+    endpoint_type remote_address, ConstBufferSequence const& buffers,
+        socket_type&& socket)
+    : Peer (door, socket.get_io_service(), journal, remote_address, buffers)
+    , stream_(std::move(socket))
 {
 }
 
@@ -65,7 +67,7 @@ void
 PlainPeer::run ()
 {
     door_.server().handler().onAccept (session());
-    if (! socket_.is_open())
+    if (! stream_.is_open())
         return;
 
     boost::asio::spawn (strand_, std::bind (&PlainPeer::do_read,
@@ -75,27 +77,36 @@ PlainPeer::run ()
 void
 PlainPeer::do_request()
 {
-    // Perform half-close when Connection: close and not SSL
-    error_code ec;
-    if (! message_.keep_alive())
-        socket_.shutdown (socket_type::shutdown_receive, ec);
-
-    if (! ec)
-    {
-        ++request_count_;
-        door_.server().handler().onRequest (session());
+    ++request_count_;
+    auto const what = door_.server().handler().onHandoff (session(),
+        std::move(stream_), std::move(message_), remote_address_);
+    if (what.moved)
         return;
+    error_code ec;
+    if (what.response)
+    {
+        // half-close on Connection: close
+        if (! what.keep_alive)
+            stream_.shutdown (socket_type::shutdown_receive, ec);
+        if (ec)
+            return fail (ec, "request");
+        return write(what.response, what.keep_alive);
     }
 
+    // Perform half-close when Connection: close and not SSL
+    if (! message_.keep_alive())
+        stream_.shutdown (socket_type::shutdown_receive, ec);
     if (ec)
-        fail (ec, "request");
+        return fail (ec, "request");
+    // legacy
+    door_.server().handler().onRequest (session());
 }
 
 void
 PlainPeer::do_close()
 {
     error_code ec;
-    socket_.shutdown (socket_type::shutdown_send, ec);
+    stream_.shutdown (socket_type::shutdown_send, ec);
 }
 
 }

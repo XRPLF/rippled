@@ -43,18 +43,24 @@ class WSDoorImp
     , protected beast::Thread
     , beast::LeakChecked <WSDoorImp>
 {
+private:
+    typedef RippleRecursiveMutex LockType;
+    typedef std::lock_guard <LockType> ScopedLockType;
+
+    std::shared_ptr<HTTP::Port> port_;
+    Resource::Manager& m_resourceManager;
+    InfoSub::Source& m_source;
+    LockType m_endpointLock;
+    std::shared_ptr<websocketpp::server_autotls> m_endpoint;
+
 public:
-    WSDoorImp (Resource::Manager& resourceManager,
-        InfoSub::Source& source, std::string const& strIp, int iPort,
-            bool bPublic, boost::asio::ssl::context& ssl_context)
+    WSDoorImp (HTTP::Port const& port, Resource::Manager& resourceManager,
+        InfoSub::Source& source)
         : WSDoor (source)
         , Thread ("websocket")
+        , port_(std::make_shared<HTTP::Port>(port))
         , m_resourceManager (resourceManager)
         , m_source (source)
-        , m_ssl_context (ssl_context)
-        , mPublic (bPublic)
-        , mIp (strIp)
-        , mPort (iPort)
     {
         startThread ();
     }
@@ -67,13 +73,14 @@ public:
 private:
     void run ()
     {
-        WriteLog (lsINFO, WSDoor) << boost::str (
-            boost::format ("Websocket: %s: Listening: %s %d ") %
-                (mPublic ? "Public" : "Private") % mIp % mPort);
+        WriteLog (lsINFO, WSDoor) <<
+            "Websocket: '" << port_->name << "' listening on " <<
+                port_->ip.to_string() << ":" << std::to_string(port_->port) <<
+                    (port_->allow_admin ? "(Admin)" : "");
 
         websocketpp::server_autotls::handler::ptr handler (
             new WSServerHandler <websocketpp::server_autotls> (
-                m_resourceManager, m_source, m_ssl_context, mPublic));
+                port_, m_resourceManager, m_source));
 
         {
             ScopedLockType lock (m_endpointLock);
@@ -84,9 +91,7 @@ private:
         // Call the main-event-loop of the websocket server.
         try
         {
-            m_endpoint->listen (
-                boost::asio::ip::tcp::endpoint (
-                    boost::asio::ip::address ().from_string (mIp), mPort));
+            m_endpoint->listen (port_->ip, port_->port);
         }
         catch (websocketpp::exception& e)
         {
@@ -135,20 +140,6 @@ private:
 
         signalThreadShouldExit ();
     }
-
-private:
-    typedef RippleRecursiveMutex LockType;
-    typedef std::lock_guard <LockType> ScopedLockType;
-
-    Resource::Manager& m_resourceManager;
-    InfoSub::Source& m_source;
-    boost::asio::ssl::context& m_ssl_context;
-    LockType m_endpointLock;
-
-    std::shared_ptr<websocketpp::server_autotls> m_endpoint;
-    bool                            mPublic;
-    std::string                     mIp;
-    int                             mPort;
 };
 
 //------------------------------------------------------------------------------
@@ -160,22 +151,22 @@ WSDoor::WSDoor (Stoppable& parent)
 
 //------------------------------------------------------------------------------
 
-WSDoor* WSDoor::New (Resource::Manager& resourceManager, InfoSub::Source& source,
-    std::string const& strIp, int iPort, bool bPublic,
-        boost::asio::ssl::context& ssl_context)
+std::unique_ptr<WSDoor>
+make_WSDoor (HTTP::Port const& port, Resource::Manager& resourceManager,
+    InfoSub::Source& source)
 {
-    std::unique_ptr <WSDoor> door;
+    std::unique_ptr<WSDoor> door;
 
     try
     {
-        door = std::make_unique <WSDoorImp> (resourceManager,
-            source, strIp, iPort, bPublic, ssl_context);
+        door = std::make_unique <WSDoorImp> (port, resourceManager, source);
     }
     catch (...)
     {
     }
 
-    return door.release ();
+    return door;
 }
 
-} // ripple
+}
+

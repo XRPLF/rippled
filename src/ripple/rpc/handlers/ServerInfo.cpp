@@ -26,7 +26,7 @@ Json::Value doServerInfo (RPC::Context& context)
     Json::Value ret (Json::objectValue);
 
     ret["info"] = context.netOps_.getServerInfo (
-        true, context.role_ == Config::ADMIN);
+        true, context.role_ == Role::ADMIN);
 
     return ret;
 }

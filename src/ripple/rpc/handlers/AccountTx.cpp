@@ -103,7 +103,7 @@ Json::Value doAccountTx (RPC::Context& context)
         {
             auto txns = context.netOps_.getTxsAccountB (
                 raAccount, uLedgerMin, uLedgerMax, bForward, resumeToken, limit,
-                context.role_ == Config::ADMIN);
+                context.role_ == Role::ADMIN);
 
             for (auto& it: txns)
             {
@@ -124,7 +124,7 @@ Json::Value doAccountTx (RPC::Context& context)
         {
             auto txns = context.netOps_.getTxsAccount (
                 raAccount, uLedgerMin, uLedgerMax, bForward, resumeToken, limit,
-                context.role_ == Config::ADMIN);
+                context.role_ == Role::ADMIN);
 
             for (auto& it: txns)
             {

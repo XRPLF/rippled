@@ -21,6 +21,7 @@
 #define RIPPLE_RPC_CONTEXT
 
 #include <ripple/core/Config.h>
+#include <ripple/server/ServerHandler.h>
 
 namespace ripple {
 namespace RPC {
@@ -33,7 +34,7 @@ struct Context
     Resource::Charge& loadType_;
     NetworkOPs& netOps_;
     InfoSub::pointer infoSub_;
-    Config::Role role_;
+    Role role_;
 };
 
 } // RPC

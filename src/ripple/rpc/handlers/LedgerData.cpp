@@ -73,7 +73,7 @@ Json::Value doLedgerData (RPC::Context& context)
         limit = jLimit.asInt ();
     }
 
-    if ((limit < 0) || ((limit > maxLimit) && (context.role_ != Config::ADMIN)))
+    if ((limit < 0) || ((limit > maxLimit) && (context.role_ != Role::ADMIN)))
         limit = maxLimit;
 
     Json::Value jvReply = Json::objectValue;

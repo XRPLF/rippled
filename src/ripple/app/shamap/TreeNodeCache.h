@@ -17,17 +17,17 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_APP_SHAMAP_TREENODECACHE_H_INCLUDED
+#define RIPPLE_APP_SHAMAP_TREENODECACHE_H_INCLUDED
+
+#include <ripple/common/TaggedCache.h>
+
 namespace ripple {
-namespace HTTP {
 
-Port::Port (std::uint16_t port_, beast::IP::Endpoint const& addr_,
-        Security security_, SSLContext* context_)
-    : security (security_)
-    , port (port_)
-    , addr (addr_)
-    , context (context_)
-{
-}
+class SHAMapTreeNode;
 
-}
-}
+using TreeNodeCache = TaggedCache <uint256, SHAMapTreeNode>;
+
+} // ripple
+
+#endif

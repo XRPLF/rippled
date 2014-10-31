@@ -17,22 +17,16 @@
 */
 //==============================================================================
 
+#include <ripple/basics/Log.h>
+#include <ripple/server/impl/JSONRPCUtil.h>
 #include <ripple/common/jsonrpc_fields.h>
 #include <ripple/data/protocol/BuildInfo.h>
 #include <ripple/core/SystemParameters.h>
+#include <boost/algorithm/string.hpp>
 
 namespace ripple {
 
 unsigned int const gMaxHTTPHeaderSize = 0x02000000;
-
-std::string gFormatStr ("v1");
-
-// VFALCO TODO clean up this nonsense
-std::string FormatFullVersion ()
-{
-    return (gFormatStr);
-}
-
 
 Json::Value JSONRPCError (int code, std::string const& message)
 {
@@ -42,42 +36,6 @@ Json::Value JSONRPCError (int code, std::string const& message)
     error[jss::message]    = Json::Value (message);
 
     return error;
-}
-
-//
-// HTTP protocol
-//
-// This ain't Apache.  We're just using HTTP header for the length field
-// and to be compatible with other JSON-RPC implementations.
-//
-
-std::string createHTTPPost (
-    std::string const& strHost,
-    std::string const& strPath,
-    std::string const& strMsg,
-    std::map<std::string, std::string> const& mapRequestHeaders)
-{
-    std::ostringstream s;
-
-    // CHECKME this uses a different version than the replies below use. Is
-    //         this by design or an accident or should it be using
-    //         BuildInfo::getFullVersionString () as well?
-
-    s << "POST "
-      << (strPath.empty () ? "/" : strPath)
-      << " HTTP/1.0\r\n"
-      << "User-Agent: " SYSTEM_NAME "-json-rpc/" << FormatFullVersion () << "\r\n"
-      << "Host: " << strHost << "\r\n"
-      << "Content-Type: application/json\r\n"
-      << "Content-Length: " << strMsg.size () << "\r\n"
-      << "Accept: application/json\r\n";
-
-    for (auto const& item : mapRequestHeaders)
-        s << item.first << ": " << item.second << "\r\n";
-
-    s << "\r\n" << strMsg;
-
-    return s.str ();
 }
 
 std::string getHTTPHeaderTimestamp ()
@@ -114,8 +72,7 @@ std::string HTTPReply (int nStatus, std::string const& strMsg)
         // CHECKME this returns a different version than the replies below. Is
         //         this by design or an accident or should it be using
         //         BuildInfo::getFullVersionString () as well?
-        ret.append ("Server: " SYSTEM_NAME "-json-rpc/");
-        ret.append (FormatFullVersion ());
+        ret.append ("Server: " SYSTEM_NAME "-json-rpc/v1");
         ret.append ("\r\n");
 
         // Be careful in modifying this! If you change the contents you MUST
@@ -152,8 +109,9 @@ std::string HTTPReply (int nStatus, std::string const& strMsg)
 
     ret.append ("Connection: Keep-Alive\r\n");
 
-    if (getConfig ().RPC_ALLOW_REMOTE)
-        ret.append ("Access-Control-Allow-Origin: *\r\n");
+    // VFALCO TODO Determine if/when this header should be added
+    //if (getConfig ().RPC_ALLOW_REMOTE)
+    //    ret.append ("Access-Control-Allow-Origin: *\r\n");
 
     ret.append ("Content-Length: ");
     ret.append (std::to_string(strMsg.size () + 2));
@@ -240,67 +198,6 @@ int ReadHTTP (std::basic_istream<char>& stream, std::map<std::string, std::strin
     }
 
     return nStatus;
-}
-
-std::string DecodeBase64 (std::string s)
-{
-    // FIXME: This performs badly
-    BIO* b64, *bmem;
-
-    char* buffer = static_cast<char*> (calloc (s.size (), sizeof (char)));
-
-    b64 = BIO_new (BIO_f_base64 ());
-    BIO_set_flags (b64, BIO_FLAGS_BASE64_NO_NL);
-    bmem = BIO_new_mem_buf (const_cast<char*> (s.data ()), s.size ());
-    bmem = BIO_push (b64, bmem);
-    BIO_read (bmem, buffer, s.size ());
-    BIO_free_all (bmem);
-
-    std::string result (buffer);
-    free (buffer);
-    return result;
-}
-
-bool HTTPAuthorized (const std::map<std::string, std::string>& mapHeaders)
-{
-    bool const credentialsRequired (! getConfig().RPC_USER.empty() &&
-        ! getConfig().RPC_PASSWORD.empty());
-    if (! credentialsRequired)
-        return true;
-
-    auto const it = mapHeaders.find ("authorization");
-    if ((it == mapHeaders.end ()) || (it->second.substr (0, 6) != "Basic "))
-        return false;
-
-    std::string strUserPass64 = it->second.substr (6);
-    boost::trim (strUserPass64);
-    std::string strUserPass = DecodeBase64 (strUserPass64);
-    std::string::size_type nColon = strUserPass.find (":");
-
-    if (nColon == std::string::npos)
-        return false;
-
-    std::string strUser = strUserPass.substr (0, nColon);
-    std::string strPassword = strUserPass.substr (nColon + 1);
-    return (strUser == getConfig ().RPC_USER) && (strPassword == getConfig ().RPC_PASSWORD);
-}
-
-//
-// JSON-RPC protocol.  Bitcoin speaks version 1.0 for maximum compatibility,
-// but uses JSON-RPC 1.1/2.0 standards for parts of the 1.0 standard that were
-// unspecified (HTTP errors and contents of 'error').
-//
-// 1.0 spec: http://json-rpc.org/wiki/specification
-// 1.2 spec: http://groups.google.com/group/json-rpc/web/json-rpc-over-http
-//
-
-std::string JSONRPCRequest (std::string const& strMethod, Json::Value const& params, Json::Value const& id)
-{
-    Json::Value request;
-    request[jss::method] = strMethod;
-    request[jss::params] = params;
-    request[jss::id] = id;
-    return to_string (request) + "\n";
 }
 
 std::string JSONRPCReply (Json::Value const& result, Json::Value const& error, Json::Value const& id)

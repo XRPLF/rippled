@@ -20,7 +20,7 @@
 #ifndef RIPPLE_APP_RPC_HANDLER
 #define RIPPLE_APP_RPC_HANDLER
 
-#include <ripple/app/main/ServerHandler.h>
+#include <ripple/server/Role.h>
 #include <ripple/core/Config.h>
 #include <ripple/net/InfoSub.h>
 
@@ -36,20 +36,20 @@ public:
 
     Json::Value doCommand (
         Json::Value const& request,
-        Config::Role role,
+        Role role,
         Resource::Charge& loadType);
 
     Json::Value doRpcCommand (
         std::string const& command,
         Json::Value const& params,
-        Config::Role role,
+        Role role,
         Resource::Charge& loadType);
 
 private:
     NetworkOPs& netOps_;
     InfoSub::pointer infoSub_;
 
-    Config::Role role_ = Config::FORBID;
+    Role role_ = Role::FORBID;
 };
 
 } // ripple

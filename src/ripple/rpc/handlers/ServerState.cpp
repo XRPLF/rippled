@@ -26,7 +26,7 @@ Json::Value doServerState (RPC::Context& context)
     Json::Value ret (Json::objectValue);
 
     ret["state"] = context.netOps_.getServerInfo (
-        false, context.role_ == Config::ADMIN);
+        false, context.role_ == Role::ADMIN);
 
     return ret;
 }

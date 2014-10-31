@@ -86,7 +86,7 @@ Json::Value doSubmit (RPC::Context& context)
     try
     {
         (void) context.netOps_.processTransaction (
-            tpTrans, context.role_ == Config::ADMIN, true,
+            tpTrans, context.role_ == Role::ADMIN, true,
             context.params_.isMember ("fail_hard")
             && context.params_["fail_hard"].asBool ());
     }

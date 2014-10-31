@@ -46,7 +46,7 @@ Json::Value doConnect (RPC::Context& context)
     if(context.params_.isMember ("port"))
         iPort = context.params_["port"].asInt ();
     else
-        iPort = SYSTEM_PEER_PORT;
+        iPort = 6561;
 
     auto ip = beast::IP::Endpoint::from_string(
         context.params_["ip"].asString ());

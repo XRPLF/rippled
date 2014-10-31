@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/common/make_SSLContext.h>
 #include <ripple/core/Config.h>
 
 namespace ripple {
@@ -88,7 +89,7 @@ bool LocalCredentials::nodeIdentityCreate ()
     RippleAddress   naNodePrivate   = RippleAddress::createNodePrivate (naSeed);
 
     // Make new key.
-    std::string strDh512 (RippleSSLContext::getRawDHParams (512));
+    std::string strDh512 (getRawDHParams (512));
 
     std::string strDh1024 = strDh512;
 

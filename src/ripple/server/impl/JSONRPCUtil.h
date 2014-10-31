@@ -17,35 +17,23 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NET_RPC_RPCUTIL_H_INCLUDED
-#define RIPPLE_NET_RPC_RPCUTIL_H_INCLUDED
+#ifndef RIPPLE_SERVER_JSONRPCUTIL_H_INCLUDED
+#define RIPPLE_SERVER_JSONRPCUTIL_H_INCLUDED
 
 #include <ripple/json/json_value.h>
 
 namespace ripple {
 
-// VFALCO TODO Wrap these up into a class. It looks like they just do some
-//             convenience packaging of JSON data from the pieces. It looks
-//             Ripple client protocol-specific.
-//
-extern std::string JSONRPCRequest (std::string const& strMethod, Json::Value const& params,
-                                   Json::Value const& id);
+// VFALCO These functions are all deprecated they are inefficient and have poor signatures.
 
 extern std::string JSONRPCReply (Json::Value const& result, Json::Value const& error, Json::Value const& id);
 
 extern Json::Value JSONRPCError (int code, std::string const& message);
 
-extern std::string createHTTPPost (std::string const& strHost, std::string const& strPath, std::string const& strMsg,
-                                   const std::map<std::string, std::string>& mapRequestHeaders);
-
+// VFALCO This needs to be rewritten to use beast::http::message
 extern std::string HTTPReply (int nStatus, std::string const& strMsg);
 
-// VFALCO TODO Create a HTTPHeaders class with a nice interface instead of the std::map
-//
-extern bool HTTPAuthorized (std::map <std::string, std::string> const& mapHeaders);
-
 // VFALCO NOTE This one looks like it does some sort of stream i/o
-//
 extern int ReadHTTP (std::basic_istream<char>& stream,
                      std::map<std::string, std::string>& mapHeadersRet,
                      std::string& strMessageRet);

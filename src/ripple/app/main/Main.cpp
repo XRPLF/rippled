@@ -66,7 +66,7 @@ void startServer ()
             RPCHandler  rhHandler (getApp().getOPs ());
 
             Resource::Charge loadType = Resource::feeReferenceRPC;
-            Json::Value jvResult    = rhHandler.doCommand (jvCommand, Config::ADMIN, loadType);
+            Json::Value jvResult    = rhHandler.doCommand (jvCommand, Role::ADMIN, loadType);
 
             if (!getConfig ().QUIET)
                 std::cerr << "Result: " << jvResult << std::endl;
@@ -345,8 +345,9 @@ int run (int argc, char** argv)
         //
         if (vm.count ("rpc_ip"))
         {
-            getConfig ().setRpcIpAndOptionalPort (vm ["rpc_ip"].as <std::string> ());
-            getConfig().overwrite("rpc", "ip", vm["rpc_ip"].as<std::string>());
+            // VFALCO TODO This is currently broken
+            //getConfig ().setRpcIpAndOptionalPort (vm ["rpc_ip"].as <std::string> ());
+            //getConfig().overwrite("rpc", "ip", vm["rpc_ip"].as<std::string>());
         }
 
         // Override the RPC destination port number
@@ -354,8 +355,9 @@ int run (int argc, char** argv)
         if (vm.count ("rpc_port"))
         {
             // VFALCO TODO This should be a short.
-            getConfig ().setRpcPort (vm ["rpc_port"].as <int> ());
-            getConfig().overwrite("rpc", "port", vm["rpc_port"].as<std::string>());
+            // VFALCO TODO This is currently broken
+            //getConfig ().setRpcPort (vm ["rpc_port"].as <int> ());
+            //getConfig().overwrite("rpc", "port", vm["rpc_port"].as<std::string>());
         }
 
         if (vm.count ("quorum"))

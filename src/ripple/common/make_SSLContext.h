@@ -17,23 +17,33 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NET_BASICS_RPCDOOR_H_INCLUDED
-#define RIPPLE_NET_BASICS_RPCDOOR_H_INCLUDED
+#ifndef RIPPLE_COMMON_MAKE_SSLCONTEXT_H_INCLUDED
+#define RIPPLE_COMMON_MAKE_SSLCONTEXT_H_INCLUDED
 
-#include <ripple/net/RPCServer.h>
+#include <boost/asio/ssl/context.hpp>
+#include <beast/utility/noexcept.h>
+#include <string>
 
 namespace ripple {
 
-/** Listening socket for RPC requests.
+/** Retrieve raw DH parameters.
+    This is in the format expected by the OpenSSL function d2i_DHparams.
+    The vector is binary. An empty vector means the key size is unsupported.
+    @note The string may contain nulls in the middle. Use size() to
+            determine the actual size.
 */
-class RPCDoor
-{
-public:
-    static RPCDoor* New (boost::asio::io_service& io_service, RPCServer::Handler& handler);
+std::string
+getRawDHParams(int keySize);
 
-    virtual ~RPCDoor () { }
-};
+/** Create a self-signed SSL context that allows anonymous Diffie Hellman. */
+std::shared_ptr<boost::asio::ssl::context>
+make_SSLContext();
 
-} // ripple
+/** Create an authenticated SSL context using the specified files. */
+std::shared_ptr<boost::asio::ssl::context>
+make_SSLContextAuthed (std::string const& key_file,
+    std::string const& cert_file, std::string const& chain_file);
+
+}
 
 #endif

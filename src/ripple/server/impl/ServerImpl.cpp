@@ -17,8 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/http/impl/ServerImpl.h>
-#include <ripple/http/impl/Peer.h>
+#if DOXYGEN
+#include <ripple/server/README.md>
+#endif
+
+#include <ripple/server/impl/ServerImpl.h>
+#include <ripple/server/impl/Peer.h>
 #include <beast/chrono/chrono_io.h>
 #include <boost/chrono/chrono_io.hpp>
 #include <cassert>
@@ -32,15 +36,15 @@
 namespace ripple {
 namespace HTTP {
 
-ServerImpl::ServerImpl (Handler& handler, beast::Journal journal)
+ServerImpl::ServerImpl (Handler& handler,
+        boost::asio::io_service& io_service, beast::Journal journal)
     : handler_ (handler)
     , journal_ (journal)
+    , io_service_ (io_service)
     , strand_ (io_service_)
-    , work_ (boost::in_place (std::ref (io_service_)))
+    , work_ (boost::in_place (std::ref(io_service)))
     , hist_{}
 {
-    thread_ = std::thread (std::bind (
-        &ServerImpl::run, this));
 }
 
 ServerImpl::~ServerImpl()
@@ -52,7 +56,6 @@ ServerImpl::~ServerImpl()
         while (! list_.empty())
             cond_.wait(lock);
     }
-    thread_.join();
 }
 
 void
@@ -61,8 +64,9 @@ ServerImpl::ports (std::vector<Port> const& ports)
     if (closed())
         throw std::logic_error("ports() on closed HTTP::Server");
     for(auto const& _ : ports)
-        std::make_shared<Door>(
-            io_service_, *this, _)->run();
+        if (! _.websockets())
+            std::make_shared<Door>(
+                io_service_, *this, _)->run();
 }
 
 void
@@ -198,13 +202,13 @@ ServerImpl::ceil_log2 (unsigned long long x)
     return y;
 }
 
-void
-ServerImpl::run()
+//--------------------------------------------------------------------------
+
+std::unique_ptr<Server>
+make_Server (Handler& handler,
+    boost::asio::io_service& io_service, beast::Journal journal)
 {
-    static std::atomic <int> id;
-    beast::Thread::setCurrentThreadName (
-        std::string("HTTP::Server #") + std::to_string (++id));
-    io_service_.run();
+    return std::make_unique<ServerImpl>(handler, io_service, journal);
 }
 
 }

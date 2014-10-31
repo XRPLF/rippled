@@ -32,7 +32,7 @@ Json::Value doTxHistory (RPC::Context& context)
 
     unsigned int startIndex = context.params_["start"].asUInt ();
 
-    if ((startIndex > 10000) &&  (context.role_ != Config::ADMIN))
+    if ((startIndex > 10000) &&  (context.role_ != Role::ADMIN))
         return rpcError (rpcNO_PERMISSION);
 
     Json::Value obj;

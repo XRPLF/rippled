@@ -25,7 +25,6 @@ namespace ripple {
 
 //------------------------------------------------------------------------------
 
-
 namespace RPC {
 
 /** Fill in the fee on behalf of the client.
@@ -98,7 +97,7 @@ static Json::Value signPayment(
     Json::Value& tx_json,
     RippleAddress const& raSrcAddressID,
     Ledger::pointer lSnapshot,
-    int role)
+    Role role)
 {
     RippleAddress dstAccountID;
 
@@ -148,7 +147,7 @@ static Json::Value signPayment(
                 "Cannot build XRP to XRP paths.");
 
         {
-            LegacyPathFind lpf (role == Config::ADMIN);
+            LegacyPathFind lpf (role == Role::ADMIN);
             if (!lpf.isOk ())
                 return rpcError (rpcTOO_BUSY);
 
@@ -190,12 +189,13 @@ static Json::Value signPayment(
 //             as needed, and then there should be a separate function to
 //             submit the tranaction
 //
-Json::Value transactionSign (
+Json::Value
+transactionSign (
     Json::Value params,
     bool bSubmit,
     bool bFailHard,
     NetworkOPs& netOps,
-    int role)
+    Role role)
 {
     Json::Value jvResult;
 
@@ -245,7 +245,7 @@ Json::Value transactionSign (
         return rpcError (rpcNO_CURRENT);
 
     // Check for load
-    if (getApp().getFeeTrack().isLoadedCluster() && (role != Config::ADMIN))
+    if (getApp().getFeeTrack().isLoadedCluster() && (role != Role::ADMIN))
         return rpcError(rpcTOO_BUSY);
 
     Ledger::pointer lSnapshot = netOps.getCurrentLedger ();
@@ -265,7 +265,7 @@ Json::Value transactionSign (
         }
     }
 
-    autofill_fee (params, lSnapshot, jvResult, role == Config::ADMIN);
+    autofill_fee (params, lSnapshot, jvResult, role == Role::ADMIN);
     if (RPC::contains_error (jvResult))
         return jvResult;
 
@@ -383,7 +383,7 @@ Json::Value transactionSign (
     {
         // FIXME: For performance, should use asynch interface
         tpTrans = netOps.submitTransactionSync (tpTrans,
-            role == Config::ADMIN, true, bFailHard, bSubmit);
+            role == Role::ADMIN, true, bFailHard, bSubmit);
 
         if (!tpTrans)
         {

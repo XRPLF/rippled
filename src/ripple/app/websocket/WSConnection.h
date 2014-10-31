@@ -20,7 +20,10 @@
 #ifndef RIPPLE_WSCONNECTION_H
 #define RIPPLE_WSCONNECTION_H
 
+#include <ripple/core/Config.h>
+#include <ripple/server/Port.h>
 #include <beast/asio/placeholders.h>
+#include <memory>
 
 namespace ripple {
 
@@ -38,9 +41,10 @@ public:
 protected:
     typedef websocketpp::message::data::ptr message_ptr;
 
-    WSConnection (Resource::Manager& resourceManager,
-        Resource::Consumer usage, InfoSub::Source& source, bool isPublic,
-            beast::IP::Endpoint const& remoteAddress, boost::asio::io_service& io_service);
+    WSConnection (HTTP::Port const& port,
+        Resource::Manager& resourceManager, Resource::Consumer usage,
+            InfoSub::Source& source, bool isPublic,
+                beast::IP::Endpoint const& remoteAddress, boost::asio::io_service& io_service);
 
     WSConnection(WSConnection const&) = delete;
     WSConnection& operator= (WSConnection const&) = delete;
@@ -59,6 +63,7 @@ public:
     Json::Value invokeCommand (Json::Value& jvRequest);
 
 protected:
+    HTTP::Port const& port_;
     Resource::Manager& m_resourceManager;
     Resource::Consumer m_usage;
     bool const m_isPublic;
@@ -90,11 +95,15 @@ public:
     typedef typename boost::weak_ptr<connection> weak_connection_ptr;
     typedef WSServerHandler <endpoint_type> server_type;
 
+private:
+    server_type& m_serverHandler;
+    weak_connection_ptr m_connection;
+
 public:
-    WSConnectionType (Resource::Manager& resourceManager,
-        InfoSub::Source& source, server_type& serverHandler,
-            connection_ptr const& cpConnection)
+    WSConnectionType (Resource::Manager& resourceManager, InfoSub::Source& source,
+            server_type& serverHandler, connection_ptr const& cpConnection)
         : WSConnection (
+            serverHandler.port(),
             resourceManager,
             resourceManager.newInboundEndpoint (cpConnection->get_socket ().remote_endpoint ()),
             source,
@@ -197,10 +206,6 @@ public:
                     m_connection, &m_serverHandler, beast::asio::placeholders::error)));
         }
     }
-
-private:
-    server_type& m_serverHandler;
-    weak_connection_ptr m_connection;
 };
 
 } // ripple

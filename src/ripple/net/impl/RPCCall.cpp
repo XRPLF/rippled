@@ -17,11 +17,12 @@
 */
 //==============================================================================
 
+#include <ripple/common/jsonrpc_fields.h>
 #include <ripple/basics/ArraySize.h>
 #include <ripple/rpc/ErrorCodes.h>
+#include <ripple/server/ServerHandler.h>
 #include <ripple/net/RPCCall.h>
 #include <ripple/net/RPCErr.h>
-#include <ripple/net/RPCUtil.h>
 #include <boost/regex.hpp>
 #include <iostream>
 
@@ -36,6 +37,42 @@ static inline bool isSwitchChar (char c)
 #else
     return c == '-';
 #endif
+}
+
+//
+// HTTP protocol
+//
+// This ain't Apache.  We're just using HTTP header for the length field
+// and to be compatible with other JSON-RPC implementations.
+//
+
+std::string createHTTPPost (
+    std::string const& strHost,
+    std::string const& strPath,
+    std::string const& strMsg,
+    std::map<std::string, std::string> const& mapRequestHeaders)
+{
+    std::ostringstream s;
+
+    // CHECKME this uses a different version than the replies below use. Is
+    //         this by design or an accident or should it be using
+    //         BuildInfo::getFullVersionString () as well?
+
+    s << "POST "
+      << (strPath.empty () ? "/" : strPath)
+      << " HTTP/1.0\r\n"
+      << "User-Agent: " SYSTEM_NAME "-json-rpc/v1\r\n"
+      << "Host: " << strHost << "\r\n"
+      << "Content-Type: application/json\r\n"
+      << "Content-Length: " << strMsg.size () << "\r\n"
+      << "Accept: application/json\r\n";
+
+    for (auto const& item : mapRequestHeaders)
+        s << item.first << ": " << item.second << "\r\n";
+
+    s << "\r\n" << strMsg;
+
+    return s.str ();
 }
 
 class RPCParser
@@ -887,6 +924,24 @@ public:
 
 //------------------------------------------------------------------------------
 
+//
+// JSON-RPC protocol.  Bitcoin speaks version 1.0 for maximum compatibility,
+// but uses JSON-RPC 1.1/2.0 standards for parts of the 1.0 standard that were
+// unspecified (HTTP errors and contents of 'error').
+//
+// 1.0 spec: http://json-rpc.org/wiki/specification
+// 1.2 spec: http://groups.google.com/group/json-rpc/web/json-rpc-over-http
+//
+
+std::string JSONRPCRequest (std::string const& strMethod, Json::Value const& params, Json::Value const& id)
+{
+    Json::Value request;
+    request[jss::method] = strMethod;
+    request[jss::params] = params;
+    request[jss::id] = id;
+    return to_string (request) + "\n";
+}
+
 struct RPCCallImp
 {
     // VFALCO NOTE Is this a to-do comment or a doc comment?
@@ -909,7 +964,7 @@ struct RPCCallImp
             if (iStatus == 401)
                 throw std::runtime_error ("incorrect rpcuser or rpcpassword (authorization failed)");
             else if ((iStatus >= 400) && (iStatus != 400) && (iStatus != 404) && (iStatus != 500)) // ?
-                throw std::runtime_error (std::string ("server returned HTTP error %d") + std::to_string (iStatus));
+                throw std::runtime_error (std::string ("server returned HTTP error ") + std::to_string (iStatus));
             else if (strData.empty ())
                 throw std::runtime_error ("no response from server");
 
@@ -943,7 +998,6 @@ struct RPCCallImp
         WriteLog (lsDEBUG, RPCParser) << "requestRPC: strPath='" << strPath << "'";
 
         std::ostream    osRequest (&sb);
-
         osRequest <<
                   createHTTPPost (
                       strHost,
@@ -987,35 +1041,35 @@ int RPCCall::fromCommandLine (const std::vector<std::string>& vCmd)
         }
         else
         {
-            auto setup = setup_RPC (getConfig()["rpc"]);
+            auto const setup = setup_ServerHandler(getConfig(), std::cerr);
 
             Json::Value jvParams (Json::arrayValue);
 
+            if (!setup.client.admin_user.empty ())
+                jvRequest["admin_user"] = setup.client.admin_user;
+
+            if (!setup.client.admin_password.empty ())
+                jvRequest["admin_password"] = setup.client.admin_password;
+
             jvParams.append (jvRequest);
 
-            if (!setup.admin_user.empty ())
-                jvRequest["admin_user"] = setup.admin_user;
-
-            if (!setup.admin_password.empty ())
-                jvRequest["admin_password"] = setup.admin_password;
-
-            boost::asio::io_service isService;
-
-            fromNetwork (
-                isService,
-                setup.ip,
-                setup.port,
-                setup.admin_user,
-                setup.admin_password,
-                "",
-                jvRequest.isMember ("method")           // Allow parser to rewrite method.
-                    ? jvRequest["method"].asString () : vCmd[0],
-                jvParams,                               // Parsed, execute.
-                setup.secure != 0,                      // Use SSL
-                std::bind (RPCCallImp::callRPCHandler, &jvOutput,
-                           std::placeholders::_1));
-
-            isService.run (); // This blocks until there is no more outstanding async calls.
+            {
+                boost::asio::io_service isService;
+                fromNetwork (
+                    isService,
+                    setup.client.ip,
+                    setup.client.port,
+                    setup.client.user,
+                    setup.client.password,
+                    "",
+                    jvRequest.isMember ("method")           // Allow parser to rewrite method.
+                        ? jvRequest["method"].asString () : vCmd[0],
+                    jvParams,                               // Parsed, execute.
+                    setup.client.secure != 0,                // Use SSL
+                    std::bind (RPCCallImp::callRPCHandler, &jvOutput,
+                               std::placeholders::_1));
+                isService.run(); // This blocks until there is no more outstanding async calls.
+            }
 
             if (jvOutput.isMember ("result"))
             {

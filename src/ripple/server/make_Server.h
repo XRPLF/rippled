@@ -17,19 +17,23 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_HTTP_H_INCLUDED
-#define RIPPLE_HTTP_H_INCLUDED
+#ifndef RIPPLE_SERVER_MAKE_SERVER_H_INCLUDED
+#define RIPPLE_SERVER_MAKE_SERVER_H_INCLUDED
 
-// VFALCO This entire file is deprecated now, I'm working on a replacement
+#include <ripple/server/Handler.h>
+#include <ripple/server/Server.h>
+#include <beast/utility/Journal.h>
+#include <boost/asio/io_service.hpp>
 
-// VFALCO NOTE this sucks that we have to include asio in the header
-//             just for HTTPMessage!
-#include <beast/module/asio/asio.h>
+namespace ripple {
+namespace HTTP {
 
-#include <ripple/http/api/Port.h>
-#include <ripple/http/api/ScopedStream.h>
-#include <ripple/http/api/Session.h>
-#include <ripple/http/api/Handler.h>
-#include <ripple/http/api/Server.h>
+/** Create the HTTP server using the specified handler. */
+std::unique_ptr<Server>
+make_Server (Handler& handler,
+    boost::asio::io_service& io_service, beast::Journal journal);
+
+} // HTTP
+} // ripple
 
 #endif

@@ -17,36 +17,33 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_HANDLER
-#define RIPPLE_RPC_HANDLER
+#ifndef RIPPLE_SERVER_HANDOFF_H_INCLUDED
+#define RIPPLE_SERVER_HANDOFF_H_INCLUDED
 
-#include <ripple/core/Config.h>
-#include <ripple/rpc/RPCHandler.h>
+#include <ripple/server/Writer.h>
+#include <memory>
 
 namespace ripple {
-namespace RPC {
 
-// Under what condition can we call this RPC?
-enum Condition {
-    NO_CONDITION     = 0,
-    NEEDS_NETWORK_CONNECTION  = 1,
-    NEEDS_CURRENT_LEDGER  = 2 + NEEDS_NETWORK_CONNECTION,
-    NEEDS_CLOSED_LEDGER   = 4 + NEEDS_NETWORK_CONNECTION,
-};
-
-struct Handler
+/** Used to indicate the result of a server connection handoff. */
+struct Handoff
 {
-    typedef Json::Value (*Method) (Context&);
+    // When `true`, the Session will close the socket. The
+    // Handler may optionally take socket ownership using std::move
+    bool moved = false;
 
-    const char* name_;
-    Method method_;
-    Role role_;
-    RPC::Condition condition_;
+    // If response is set, this determines the keep alive
+    bool keep_alive = false;
+
+    // When set, this will be sent back
+    std::shared_ptr<HTTP::Writer> response;
+
+    bool handled() const
+    {
+        return moved || response;
+    }
 };
 
-const Handler* getHandler(std::string name);
-
-} // RPC
 } // ripple
 
 #endif

@@ -17,30 +17,11 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PEERDOOR_H_INCLUDED
-#define RIPPLE_PEERDOOR_H_INCLUDED
+#include <BeastConfig.h>
 
-#include <ripple/overlay/impl/OverlayImpl.h>
-#include <beast/cxx14/memory.h> // <memory>
-
-namespace ripple {
-
-/** Handles incoming connections from peers. */
-class PeerDoor
-{
-public:
-    virtual
-    ~PeerDoor() = default;
-
-    virtual
-    void stop() = 0;
-};
-
-// VFALCO DEPRECATED This will be replaced by a universal door
-std::unique_ptr <PeerDoor>
-make_PeerDoor (OverlayImpl& overlay, std::string const& ip, int port,
-        boost::asio::io_service& io_service);
-
-}
-
-#endif
+#include <ripple/server/impl/Door.cpp>
+#include <ripple/server/impl/JSONRPCUtil.cpp>
+#include <ripple/server/impl/Role.cpp>
+#include <ripple/server/impl/ServerImpl.cpp>
+#include <ripple/server/impl/ServerHandlerImp.cpp>
+#include <ripple/server/tests/Server.test.cpp>
