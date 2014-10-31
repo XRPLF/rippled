@@ -312,17 +312,4 @@ std::string JSONRPCReply (Json::Value const& result, Json::Value const& error, J
     return to_string (reply) + "\n";
 }
 
-void ErrorReply (std::ostream& stream, Json::Value const& objError, Json::Value const& id)
-{
-    // Send error reply from json-rpc error object
-    int nStatus = 500;
-    int code = objError[jss::code].asInt ();
-
-    if (code == -32600) nStatus = 400;
-    else if (code == -32601) nStatus = 404;
-
-    std::string strReply = JSONRPCReply (Json::Value (), objError, id);
-    stream << HTTPReply (nStatus, strReply) << std::flush;
-}
-
 } // ripple
