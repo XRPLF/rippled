@@ -22,6 +22,9 @@
 
 #include <beast/unit_test/suite.h>
 #include <beast/module/core/maths/Random.h>
+#include <ripple/basics/StringUtilities.h>
+#include <boost/algorithm/string.hpp>
+#include <iomanip>
 
 namespace ripple {
 namespace NodeStore {
