@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/app/main/ServerHandler.h>
 #include <ripple/basics/ArraySize.h>
 #include <ripple/rpc/ErrorCodes.h>
 #include <ripple/net/RPCCall.h>
@@ -909,7 +910,7 @@ struct RPCCallImp
             if (iStatus == 401)
                 throw std::runtime_error ("incorrect rpcuser or rpcpassword (authorization failed)");
             else if ((iStatus >= 400) && (iStatus != 400) && (iStatus != 404) && (iStatus != 500)) // ?
-                throw std::runtime_error (std::string ("server returned HTTP error %d") + std::to_string (iStatus));
+                throw std::runtime_error (std::string ("server returned HTTP error ") + std::to_string (iStatus));
             else if (strData.empty ())
                 throw std::runtime_error ("no response from server");
 
@@ -943,7 +944,6 @@ struct RPCCallImp
         WriteLog (lsDEBUG, RPCParser) << "requestRPC: strPath='" << strPath << "'";
 
         std::ostream    osRequest (&sb);
-
         osRequest <<
                   createHTTPPost (
                       strHost,
@@ -987,35 +987,35 @@ int RPCCall::fromCommandLine (const std::vector<std::string>& vCmd)
         }
         else
         {
-            auto setup = setup_RPC (getConfig()["rpc"]);
+            auto const setup = setup_ServerHandler(getConfig(), std::cerr);
 
             Json::Value jvParams (Json::arrayValue);
 
+            if (!setup.client.admin_user.empty ())
+                jvRequest["admin_user"] = setup.client.admin_user;
+
+            if (!setup.client.admin_password.empty ())
+                jvRequest["admin_password"] = setup.client.admin_password;
+
             jvParams.append (jvRequest);
 
-            if (!setup.admin_user.empty ())
-                jvRequest["admin_user"] = setup.admin_user;
-
-            if (!setup.admin_password.empty ())
-                jvRequest["admin_password"] = setup.admin_password;
-
-            boost::asio::io_service isService;
-
-            fromNetwork (
-                isService,
-                setup.ip,
-                setup.port,
-                setup.admin_user,
-                setup.admin_password,
-                "",
-                jvRequest.isMember ("method")           // Allow parser to rewrite method.
-                    ? jvRequest["method"].asString () : vCmd[0],
-                jvParams,                               // Parsed, execute.
-                setup.secure != 0,                      // Use SSL
-                std::bind (RPCCallImp::callRPCHandler, &jvOutput,
-                           std::placeholders::_1));
-
-            isService.run (); // This blocks until there is no more outstanding async calls.
+            {
+                boost::asio::io_service isService;
+                fromNetwork (
+                    isService,
+                    setup.client.ip,
+                    setup.client.port,
+                    setup.client.user,
+                    setup.client.password,
+                    "",
+                    jvRequest.isMember ("method")           // Allow parser to rewrite method.
+                        ? jvRequest["method"].asString () : vCmd[0],
+                    jvParams,                               // Parsed, execute.
+                    setup.client.secure != 0,                // Use SSL
+                    std::bind (RPCCallImp::callRPCHandler, &jvOutput,
+                               std::placeholders::_1));
+                isService.run(); // This blocks until there is no more outstanding async calls.
+            }
 
             if (jvOutput.isMember ("result"))
             {

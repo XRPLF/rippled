@@ -46,7 +46,7 @@ Json::Value doSubscribe (RPC::Context& context)
 
     if (context.params_.isMember ("url"))
     {
-        if (context.role_ != Config::ADMIN)
+        if (context.role_ != Role::ADMIN)
             return rpcError (rpcNO_PERMISSION);
 
         std::string strUrl      = context.params_["url"].asString ();
@@ -114,7 +114,7 @@ Json::Value doSubscribe (RPC::Context& context)
                 if (streamName == "server")
                 {
                     context.netOps_.subServer (ispSub, jvResult,
-                        context.role_ == Config::ADMIN);
+                        context.role_ == Role::ADMIN);
                 }
                 else if (streamName == "ledger")
                 {

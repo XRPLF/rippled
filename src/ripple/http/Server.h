@@ -21,14 +21,20 @@
 #define RIPPLE_HTTP_SERVER_H_INCLUDED
 
 #include <ripple/basics/BasicConfig.h>
-#include <ripple/common/RippleSSLContext.h>
+#include <ripple/http/Writer.h>
+#include <beast/asio/ssl_bundle.h>
+#include <beast/http/message.h>
 #include <beast/net/IPEndpoint.h>
+#include <beast/utility/ci_char_traits.h>
 #include <beast/utility/Journal.h>
 #include <beast/utility/PropertyStream.h>
+#include <boost/asio/ip/address.hpp>
+#include <boost/asio/ssl/context.hpp>
 #include <boost/system/error_code.hpp>
 #include <cstdint>
 #include <memory>
 #include <ostream>
+#include <set>
 
 namespace ripple {
 namespace HTTP {
@@ -38,25 +44,27 @@ namespace HTTP {
 /** Configuration information for a server listening port. */
 struct Port
 {
-    enum class Security
-    {
-        no_ssl,
-        allow_ssl,
-        require_ssl
-    };
-
-    Security security = Security::no_ssl;
+    std::string name;
+    boost::asio::ip::address ip;
     std::uint16_t port = 0;
-    beast::IP::Endpoint addr;
-    SSLContext* context = nullptr;
+    std::set<std::string, beast::ci_less> protocol;
+    bool allow_admin = false;
+    std::string user;
+    std::string password;
+    std::string admin_user;
+    std::string admin_password;
+    std::string ssl_key;
+    std::string ssl_cert;
+    std::string ssl_chain;
+    std::shared_ptr<boost::asio::ssl::context> context;
 
-    Port() = default;
-    Port (std::uint16_t port_, beast::IP::Endpoint const& addr_,
-        Security security_, SSLContext* context_);
+    // Returns `true` if any websocket protocols are specified
+    bool
+    websockets() const;
 
-    static
-    void
-    parse (Port& result, Section const& section, std::ostream& log);
+    // Returns a string containing the list of protocols
+    std::string
+    protocols() const;
 };
 
 //------------------------------------------------------------------------------
@@ -71,9 +79,73 @@ class Session;
 struct Handler
 {
     /** Called when the connection is accepted and we know remoteAddress. */
+    // DEPRECATED
     virtual void onAccept (Session& session) = 0;
 
+    /** Called when a connection is accepted.
+        @return `true` If we should keep the connection.
+    */
+    virtual
+    bool
+    onAccept (Session& session,
+        boost::asio::ip::tcp::endpoint remote_address) = 0;
+
+    /** Called when a legacy peer protocol handshake is detected.
+        If the called function does not take ownership, then the
+        connection is closed.
+        @param buffer The unconsumed bytes in the protocol handshake
+        @param ssl_bundle The active connection.
+    */
+    virtual
+    void
+    onLegacyPeerHello (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
+        boost::asio::const_buffer buffer,
+            boost::asio::ip::tcp::endpoint remote_address) = 0;
+
+    struct What
+    {
+        // When `true`, the Session will close the socket. The
+        // Handler may optionally take socket ownership using std::move
+        bool moved = false;
+
+        // If response is set, this determines the keep alive
+        bool keep_alive = false;
+
+        // When set, this will be sent back
+        std::shared_ptr<Writer> response;
+
+        bool handled() const
+        {
+            return moved || response;
+        }
+    };
+
+    /** Called to process a complete HTTP request.
+        The handler can do one of three things:
+            - Ignore the request (return default constructed What)
+            - Return a response (by setting response in the What)
+            - Take ownership of the socket by using rvalue move
+              and setting moved = `true` in the What.
+        If the handler ignores the request, the legacy onRequest
+        is called.
+    */
+    /** @{ */
+    virtual
+    What
+    onMaybeMove (Session& session,
+        std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
+            beast::http::message&& request,
+                boost::asio::ip::tcp::endpoint remote_address) = 0;
+
+    virtual
+    What
+    onMaybeMove (Session& session, boost::asio::ip::tcp::socket&& socket,
+        beast::http::message&& request,
+            boost::asio::ip::tcp::endpoint remote_address) = 0;
+    /** @} */
+
     /** Called when we have a complete HTTP request. */
+    // VFALCO TODO Pass the beast::http::message as a parameter
     virtual void onRequest (Session& session) = 0;
 
     /** Called when the session ends.
@@ -134,11 +206,12 @@ public:
     parse (BasicConfig const& config, std::ostream& log);
 };
 
+//------------------------------------------------------------------------------
+
 /** Create the HTTP server using the specified handler. */
 std::unique_ptr<Server>
-make_Server (Handler& handler, beast::Journal journal);
-
-//------------------------------------------------------------------------------
+make_Server (Handler& handler,
+    boost::asio::io_service& io_service, beast::Journal journal);
 
 } // HTTP
 } // ripple

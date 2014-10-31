@@ -39,7 +39,7 @@ RPCHandler::RPCHandler (NetworkOPs& netOps, InfoSub::pointer infoSub)
 Json::Value RPCHandler::doRpcCommand (
     const std::string& strMethod,
     Json::Value const& jvParams,
-    Config::Role role,
+    Role role,
     Resource::Charge& loadType)
 {
     WriteLog (lsTRACE, RPCHandler)
@@ -75,10 +75,10 @@ Json::Value RPCHandler::doRpcCommand (
 
 Json::Value RPCHandler::doCommand (
     const Json::Value& params,
-    Config::Role role,
+    Role role,
     Resource::Charge& loadType)
 {
-    if (role != Config::ADMIN)
+    if (role != Role::ADMIN)
     {
         // VFALCO NOTE Should we also add up the jtRPC jobs?
         //
@@ -105,7 +105,7 @@ Json::Value RPCHandler::doCommand (
     if (!handler)
         return rpcError (rpcUNKNOWN_COMMAND);
 
-    if (handler->role_ == Config::ADMIN && role_ != Config::ADMIN)
+    if (handler->role_ == Role::ADMIN && role_ != Role::ADMIN)
         return rpcError (rpcNO_PERMISSION);
 
     if ((handler->condition_ & RPC::NEEDS_NETWORK_CONNECTION) &&

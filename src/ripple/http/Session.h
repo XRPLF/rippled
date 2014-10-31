@@ -20,13 +20,15 @@
 #ifndef RIPPLE_HTTP_SESSION_H_INCLUDED
 #define RIPPLE_HTTP_SESSION_H_INCLUDED
 
+#include <ripple/http/Writer.h>
 #include <beast/http/body.h>
 #include <beast/http/message.h>
 #include <beast/net/IPEndpoint.h>
 #include <beast/utility/Journal.h>
-#include <beast/module/asio/HTTPRequest.h>
+#include <functional>
 #include <memory>
 #include <ostream>
+#include <vector>
 
 namespace ripple {
 
@@ -55,6 +57,11 @@ public:
     virtual
     beast::Journal
     journal() = 0;
+
+    /** Returns the Port settings for this connection. */
+    virtual
+    Port const&
+    port() = 0;
 
     /** Returns the remote address of the connection. */
     virtual
@@ -97,6 +104,12 @@ public:
     virtual
     void
     write (void const* buffer, std::size_t bytes) = 0;
+
+    virtual
+    void
+    write (std::shared_ptr <Writer> const& writer,
+        bool keep_alive) = 0;
+
     /** @} */
 
     /** Detach the session.

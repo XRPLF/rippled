@@ -21,7 +21,6 @@
 #define RIPPLE_HTTP_DOOR_H_INCLUDED
 
 #include <ripple/http/impl/ServerImpl.h>
-#include <ripple/http/impl/Types.h>
 #include <beast/asio/streambuf.h>
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/io_service.hpp>
@@ -71,11 +70,11 @@ private:
     private:
         socket_type socket_;
         timer_type timer_;
-        endpoint_type remote_endpoint_;
+        endpoint_type remote_address_;
 
     public:
         detector (Door& door, socket_type&& socket,
-            endpoint_type endpoint);
+            endpoint_type remote_address);
         void run();
         void close() override;
 
@@ -84,7 +83,7 @@ private:
         void do_detect (yield_context yield);
     };
 
-    Port port_;
+    std::shared_ptr<Port> port_;
     ServerImpl& server_;
     acceptor_type acceptor_;
     boost::asio::io_service::strand strand_;
@@ -92,6 +91,8 @@ private:
     std::condition_variable cond_;
     boost::container::flat_map<
         Child*, std::weak_ptr<Child>> list_;
+    bool ssl_;
+    bool plain_;
 
 public:
     Door (boost::asio::io_service& io_service,
@@ -113,7 +114,7 @@ public:
     Port const&
     port() const
     {
-        return port_;
+        return *port_;
     }
 
     // Work-around because we can't call shared_from_this in ctor
@@ -132,7 +133,8 @@ public:
 private:
     void add (std::shared_ptr<Child> const& child);
 
-    void create (bool ssl, beast::asio::streambuf&& buf,
+    template <class ConstBufferSequence>
+    void create (bool ssl, ConstBufferSequence const& buffers,
         socket_type&& socket, endpoint_type remote_address);
 
     void do_accept (yield_context yield);

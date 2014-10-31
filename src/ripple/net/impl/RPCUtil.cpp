@@ -152,8 +152,9 @@ std::string HTTPReply (int nStatus, std::string const& strMsg)
 
     ret.append ("Connection: Keep-Alive\r\n");
 
-    if (getConfig ().RPC_ALLOW_REMOTE)
-        ret.append ("Access-Control-Allow-Origin: *\r\n");
+    // VFALCO TODO Determine if/when this header should be added
+    //if (getConfig ().RPC_ALLOW_REMOTE)
+    //    ret.append ("Access-Control-Allow-Origin: *\r\n");
 
     ret.append ("Content-Length: ");
     ret.append (std::to_string(strMsg.size () + 2));
@@ -240,49 +241,6 @@ int ReadHTTP (std::basic_istream<char>& stream, std::map<std::string, std::strin
     }
 
     return nStatus;
-}
-
-std::string DecodeBase64 (std::string s)
-{
-    // FIXME: This performs badly
-    BIO* b64, *bmem;
-
-    char* buffer = static_cast<char*> (calloc (s.size (), sizeof (char)));
-
-    b64 = BIO_new (BIO_f_base64 ());
-    BIO_set_flags (b64, BIO_FLAGS_BASE64_NO_NL);
-    bmem = BIO_new_mem_buf (const_cast<char*> (s.data ()), s.size ());
-    bmem = BIO_push (b64, bmem);
-    BIO_read (bmem, buffer, s.size ());
-    BIO_free_all (bmem);
-
-    std::string result (buffer);
-    free (buffer);
-    return result;
-}
-
-bool HTTPAuthorized (const std::map<std::string, std::string>& mapHeaders)
-{
-    bool const credentialsRequired (! getConfig().RPC_USER.empty() &&
-        ! getConfig().RPC_PASSWORD.empty());
-    if (! credentialsRequired)
-        return true;
-
-    auto const it = mapHeaders.find ("authorization");
-    if ((it == mapHeaders.end ()) || (it->second.substr (0, 6) != "Basic "))
-        return false;
-
-    std::string strUserPass64 = it->second.substr (6);
-    boost::trim (strUserPass64);
-    std::string strUserPass = DecodeBase64 (strUserPass64);
-    std::string::size_type nColon = strUserPass.find (":");
-
-    if (nColon == std::string::npos)
-        return false;
-
-    std::string strUser = strUserPass.substr (0, nColon);
-    std::string strPassword = strUserPass.substr (nColon + 1);
-    return (strUser == getConfig ().RPC_USER) && (strPassword == getConfig ().RPC_PASSWORD);
 }
 
 //

@@ -21,7 +21,9 @@
 #define RIPPLE_WSSERVERHANDLER_H_INCLUDED
 
 #include <ripple/common/jsonrpc_fields.h>
+#include <ripple/http/Server.h>
 #include <ripple/app/websocket/WSConnection.h>
+#include <memory>
 
 namespace ripple {
 
@@ -60,6 +62,7 @@ public:
     };
 
 private:
+    std::shared_ptr<HTTP::Port> port_;
     Resource::Manager& m_resourceManager;
     InfoSub::Source& m_source;
 
@@ -69,31 +72,31 @@ protected:
     typedef std::lock_guard <LockType> ScopedLockType;
     LockType mLock;
 
-private:
-    boost::asio::ssl::context& m_ssl_context;
-
-protected:
     // For each connection maintain an associated object to track subscriptions.
     typedef hash_map <connection_ptr, wsc_ptr> MapType;
     MapType mMap;
-    bool const mPublic;
 
 public:
-    WSServerHandler (Resource::Manager& resourceManager,
-        InfoSub::Source& source, boost::asio::ssl::context& ssl_context, bool bPublic)
-        : m_resourceManager (resourceManager)
+    WSServerHandler (std::shared_ptr<HTTP::Port> const& port,
+        Resource::Manager& resourceManager, InfoSub::Source& source)
+        : port_(port)
+        , m_resourceManager (resourceManager)
         , m_source (source)
-        , m_ssl_context (ssl_context)
-        , mPublic (bPublic)
     {
     }
 
     WSServerHandler(WSServerHandler const&) = delete;
     WSServerHandler& operator= (WSServerHandler const&) = delete;
 
-    bool getPublic ()
+    HTTP::Port const&
+    port() const
     {
-        return mPublic;
+        return *port_;
+    }
+
+    bool getPublic()
+    {
+        return port_->allow_admin;
     };
 
     static void ssend (connection_ptr cpClient, message_ptr mpMessage)
@@ -403,9 +406,22 @@ public:
         return true;
     }
 
-    boost::asio::ssl::context& get_ssl_context ()
+    boost::asio::ssl::context&
+    get_ssl_context ()
     {
-        return m_ssl_context;
+        return *port_->context;
+    }
+
+    bool
+    plain_only()
+    {
+        return port_->protocol.count("wss") == 0;
+    }
+
+    bool
+    secure_only()
+    {
+        return port_->protocol.count("ws") == 0;
     }
 
     // Respond to http requests.

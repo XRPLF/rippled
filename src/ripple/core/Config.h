@@ -62,8 +62,6 @@ parseKeyValueSection (IniFileSections& secSource, std::string const& strSection)
 
 //------------------------------------------------------------------------------
 
-const int SYSTEM_PEER_PORT = 6561;
-
 enum SizedItemName
 {
     siSweepInterval,
@@ -151,68 +149,8 @@ public:
     // DEPRECATED
     boost::filesystem::path     VALIDATORS_FILE;        // As specifed in rippled.cfg.
 
-    //--------------------------------------------------------------------------
-
-    // Settings related to RPC
-
-    /** Get the client or server RPC IP address.
-        @note The string may not always be in a valid parsable state.
-        @return A string representing the address.
-    */
-    std::string getRpcIP () const { return m_rpcIP; }
-
-    /** Get the client or server RPC port number.
-        @note The port number may be invalid (out of range or zero)
-        @return The RPC port number.
-    */
-    int getRpcPort () const { return m_rpcPort; }
-
-    /** Set the client or server RPC IP and optional port.
-        @note The string is not syntax checked.
-        @param newAddress A string in the format <ip-address>[':'<port-number>]
-    */
-    void setRpcIpAndOptionalPort (std::string const& newAddress);
-
-    /** Set the client or server RPC IP.
-        @note The string is not syntax-checked.
-        @param newIP A string representing the IP address to use.
-    */
-    void setRpcIP (std::string const& newIP) { m_rpcIP = newIP; }
-
-    /** Set the client or server RPC port number.
-        @note The port number is not range checked.
-        @param newPort The RPC port number to use.
-    */
-    void setRpcPort (int newPort) { m_rpcPort = newPort; }
-
-    /** Convert the RPC/port combination to a readable string.
-    */
-    std::string const getRpcAddress ()
-    {
-        return m_rpcIP + ":" + std::to_string (m_rpcPort);
-    }
-
-    /** Determine the level of administrative permission to grant.
-    */
-    // VFALCO TODO Get this out of here
-    enum Role
-    {
-        GUEST,
-        USER,
-        ADMIN,
-        FORBID
-    };
-    Role getAdminRole (Json::Value const& params, beast::IP::Endpoint const& remoteIp) const;
-
-    /** Listening port number for peer connections. */
-    int peerListeningPort;
-
     /** List of Validators entries from rippled.cfg */
     std::vector <std::string> validators;
-
-private:
-    std::string m_rpcIP;
-    int m_rpcPort; // VFALCO TODO This should be a short.
 
 private:
     /** The folder where new module databases should be located */
@@ -318,38 +256,14 @@ public:
     int                         VALIDATION_QUORUM;      // Minimum validations to consider ledger authoritative
 
     // Peer networking parameters
-    std::string                 PEER_IP;
     bool                        PEER_PRIVATE;           // True to ask peers not to relay current IP.
     unsigned int                PEERS_MAX;
 
-    // Websocket networking parameters
-    std::string                 WEBSOCKET_PUBLIC_IP;        // XXX Going away. Merge with the inbound peer connction.
-    int                         WEBSOCKET_PUBLIC_PORT;
-    int                         WEBSOCKET_PUBLIC_SECURE;
-
-    std::string                 WEBSOCKET_IP;
-    int                         WEBSOCKET_PORT;
-    int                         WEBSOCKET_SECURE;
-
     int                         WEBSOCKET_PING_FREQ;
-
-    std::string                 WEBSOCKET_SSL_CERT;
-    std::string                 WEBSOCKET_SSL_CHAIN;
-    std::string                 WEBSOCKET_SSL_KEY;
 
     // RPC parameters
     std::vector<beast::IP::Endpoint>   RPC_ADMIN_ALLOW;
-    std::string                     RPC_ADMIN_PASSWORD;
-    std::string                     RPC_ADMIN_USER;
-    std::string                     RPC_PASSWORD;
-    std::string                     RPC_USER;
-    bool                            RPC_ALLOW_REMOTE;
     Json::Value                     RPC_STARTUP;
-
-    int                         RPC_SECURE;
-    std::string                 RPC_SSL_CERT;
-    std::string                 RPC_SSL_CHAIN;
-    std::string                 RPC_SSL_KEY;
 
     // Path searching
     int                         PATH_SEARCH_OLD;
@@ -399,36 +313,10 @@ public:
     int getSize (SizedItemName);
     void setup (std::string const& strConf, bool bQuiet);
     void load ();
-
-private:
-    void build_legacy();
 };
 
-extern Config& getConfig ();
-
-//------------------------------------------------------------------------------
-
-namespace RPC {
-
-struct Setup
-{
-    bool allow_remote = false;
-    std::string admin_user;
-    std::string admin_password;
-    std::string ip;
-    int port = 5001;
-    std::string user;
-    std::string password;
-    int secure = 0;
-    std::string ssl_cert;
-    std::string ssl_chain;
-    std::string ssl_key;
-};
-
-}
-
-RPC::Setup
-setup_RPC (Section const& s);
+// VFALCO DEPRECATED
+extern Config& getConfig();
 
 } // ripple
 

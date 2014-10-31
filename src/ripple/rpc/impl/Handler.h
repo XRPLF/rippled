@@ -40,7 +40,7 @@ struct Handler
 
     const char* name_;
     Method method_;
-    Config::Role role_;
+    Role role_;
     RPC::Condition condition_;
 };
 

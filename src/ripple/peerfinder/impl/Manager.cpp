@@ -198,9 +198,9 @@ public:
     }
 
     std::vector<std::pair<Slot::ptr, std::vector<Endpoint>>>
-    sendpeers() override
+    buildEndpointsForPeers() override
     {
-        return m_logic.sendpeers();
+        return m_logic.buildEndpointsForPeers();
     }
 
     //--------------------------------------------------------------------------

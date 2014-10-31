@@ -178,18 +178,24 @@ private:
     //--------------------------------------------------------------------------
 
 public:
-    /** Create an incoming peer from the specified socket */
-    PeerImp (socket_type&& socket, beast::IP::Endpoint remoteAddress,
-        OverlayImpl& overlay, Resource::Manager& resourceManager,
-            PeerFinder::Manager& peerFinder, PeerFinder::Slot::ptr const& slot,
-                std::shared_ptr<boost::asio::ssl::context> const& context);
+    PeerImp (PeerImp const&) = delete;
+    PeerImp& operator= (PeerImp const&) = delete;
 
-    /** Create an outgoing peer
-        @note Construction of outbound peers is a two step process: a second
-              call is needed (to connect or accept) but we cannot make it from
-              inside the constructor because you cannot call shared_from_this
-              from inside constructors.
-    */
+    /** Create an incoming legacy peer from an established ssl connection. */
+    template <class ConstBufferSequence>
+    PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
+        ConstBufferSequence const& buffer, beast::IP::Endpoint remoteAddress,
+            OverlayImpl& overlay, Resource::Manager& resourceManager,
+                PeerFinder::Manager& peerFinder,
+                    PeerFinder::Slot::ptr const& slot);
+
+    /** Create an active incoming peer from an established ssl connection. */
+    PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
+        beast::http::message&& request, beast::IP::Endpoint remoteAddress,
+            OverlayImpl& overlay, Resource::Manager& resourceManager,
+                PeerFinder::Manager& peerFinder, PeerFinder::Slot::ptr const& slot);
+
+    /** Create an outgoing peer. */
     PeerImp (beast::IP::Endpoint remoteAddress, boost::asio::io_service& io_service,
         OverlayImpl& overlay, Resource::Manager& resourceManager,
             PeerFinder::Manager& peerFinder, PeerFinder::Slot::ptr const& slot,
@@ -198,10 +204,13 @@ public:
     virtual
     ~PeerImp ();
 
-    PeerImp (PeerImp const&) = delete;
-    PeerImp& operator= (PeerImp const&) = delete;
+    PeerFinder::Slot::ptr const&
+    slot()
+    {
+        return slot_;
+    }
 
-    // Begin asynchronous initiation function calls
+    // Work-around for calling shared_from_this in constructors
     void
     start();
 
@@ -295,6 +304,10 @@ private:
 
     void
     on_write_http_request (error_code ec, std::size_t bytes_transferred);
+
+    template <class Streambuf>
+    void
+    processResponse (beast::http::message const& m, Streambuf const& body);
 
     void
     on_read_http_response (error_code ec, std::size_t bytes_transferred);
@@ -505,6 +518,32 @@ private:
 };
 
 //------------------------------------------------------------------------------
+
+template <class ConstBufferSequence>
+PeerImp::PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
+    ConstBufferSequence const& buffer, beast::IP::Endpoint remoteAddress,
+        OverlayImpl& overlay, Resource::Manager& resourceManager,
+            PeerFinder::Manager& peerFinder,
+                PeerFinder::Slot::ptr const& slot)
+    : Child (overlay)
+    , journal_ (deprecatedLogs().journal("Peer"))
+    , ssl_bundle_(std::move(ssl_bundle))
+    , socket_ (ssl_bundle_->socket)
+    , stream_ (ssl_bundle_->stream)
+    , strand_ (socket_.get_io_service())
+    , timer_ (socket_.get_io_service())
+    , remote_address_ (remoteAddress)
+    , resourceManager_ (resourceManager)
+    , peerFinder_ (peerFinder)
+    , overlay_ (overlay)
+    , m_inbound (true)
+    , state_ (stateConnected)
+    , slot_ (slot)
+    , message_stream_(*this)
+{
+    read_buffer_.commit(boost::asio::buffer_copy(read_buffer_.prepare(
+        boost::asio::buffer_size(buffer)), buffer));
+}
 
 template <class FwdIt, class>
 void

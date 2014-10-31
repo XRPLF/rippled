@@ -1801,6 +1801,8 @@
     <ClCompile Include="..\..\src\ripple\app\main\Main.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\main\make_ServerHandler.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\main\NodeStoreScheduler.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2190,10 +2192,10 @@
     <ClCompile Include="..\..\src\ripple\common\impl\KeyCache.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\common\impl\ResolverAsio.cpp">
+    <ClCompile Include="..\..\src\ripple\common\impl\make_SSLContext.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\common\impl\RippleSSLContext.cpp">
+    <ClCompile Include="..\..\src\ripple\common\impl\ResolverAsio.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\common\impl\TaggedCache.cpp">
@@ -2203,11 +2205,11 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\common\KeyCache.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\common\make_SSLContext.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\common\Resolver.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\common\ResolverAsio.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\common\RippleSSLContext.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\common\seconds_clock.h">
     </ClInclude>
@@ -2380,12 +2382,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\http\impl\PlainPeer.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\http\impl\Port.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\http\impl\Server.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\http\impl\ServerImpl.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2393,7 +2389,7 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\http\impl\SSLPeer.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\http\impl\Types.h">
+    <ClInclude Include="..\..\src\ripple\http\JsonWriter.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\http\Server.h">
     </ClInclude>
@@ -2402,6 +2398,8 @@
     <ClCompile Include="..\..\src\ripple\http\tests\Server.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\ripple\http\Writer.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\json\impl\JsonPropertyStream.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2460,9 +2458,6 @@
     <ClCompile Include="..\..\src\ripple\net\impl\RPCCall.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\net\impl\RPCDoor.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\net\impl\RPCErr.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2480,8 +2475,6 @@
     <ClInclude Include="..\..\src\ripple\net\InfoSub.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\net\RPCCall.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\net\RPCDoor.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\net\RPCErr.h">
     </ClInclude>
@@ -2614,11 +2607,6 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\overlay\impl\OverlayImpl.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\overlay\impl\PeerDoor.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\overlay\impl\PeerDoor.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\overlay\impl\PeerImp.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>

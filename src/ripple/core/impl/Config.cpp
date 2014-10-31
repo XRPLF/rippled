@@ -223,32 +223,13 @@ parseAddresses (OutputSequence& out, InputIterator first, InputIterator last,
 //------------------------------------------------------------------------------
 
 Config::Config ()
-    : m_rpcPort (5001)
 {
-    //--------------------------------------------------------------------------
-    //
-    // VFALCO NOTE Clean member area
-    //
-
-    peerListeningPort = SYSTEM_PEER_PORT;
-
-    //
-    //
-    //
-    //--------------------------------------------------------------------------
-
     //
     // Defaults
     //
 
-    RPC_SECURE              = 0;
-    WEBSOCKET_PORT          = 6562;
-    WEBSOCKET_PUBLIC_PORT   = 6563;
-    WEBSOCKET_PUBLIC_SECURE = 1;
-    WEBSOCKET_SECURE        = 0;
     WEBSOCKET_PING_FREQ     = (5 * 60);
 
-    RPC_ALLOW_REMOTE        = false;
     RPC_ADMIN_ALLOW.push_back (beast::IP::Endpoint::from_string("127.0.0.1"));
 
     PEER_PRIVATE            = false;
@@ -419,7 +400,6 @@ void Config::load ()
             std::string strTemp;
 
             build (secConfig);
-            build_legacy();
 
             // XXX Leak
             IniFileSections::mapped_type* smtTmp;
@@ -484,8 +464,6 @@ void Config::load ()
 
             (void) getSingleSection (secConfig, SECTION_VALIDATORS_SITE, VALIDATORS_SITE);
 
-            (void) getSingleSection (secConfig, SECTION_PEER_IP, PEER_IP);
-
             if (getSingleSection (secConfig, SECTION_PEER_PRIVATE, strTemp))
                 PEER_PRIVATE        = beast::lexicalCastThrow <bool> (strTemp);
 
@@ -504,18 +482,8 @@ void Config::load ()
                         parsedAddresses.cbegin (), parsedAddresses.cend ());
             }
 
-            (void) getSingleSection (secConfig, SECTION_RPC_ADMIN_PASSWORD, RPC_ADMIN_PASSWORD);
-            (void) getSingleSection (secConfig, SECTION_RPC_ADMIN_USER, RPC_ADMIN_USER);
-            (void) getSingleSection (secConfig, SECTION_RPC_IP, m_rpcIP);
-            (void) getSingleSection (secConfig, SECTION_RPC_PASSWORD, RPC_PASSWORD);
-            (void) getSingleSection (secConfig, SECTION_RPC_USER, RPC_USER);
-
             insightSettings = parseKeyValueSection (secConfig, SECTION_INSIGHT);
 
-            //---------------------------------------
-            //
-            // VFALCO BEGIN CLEAN
-            //
             nodeDatabase = parseKeyValueSection (
                 secConfig, ConfigSection::nodeDatabase ());
 
@@ -524,20 +492,6 @@ void Config::load ()
 
             importNodeDatabase = parseKeyValueSection (
                 secConfig, ConfigSection::importNodeDatabase ());
-
-            if (getSingleSection (secConfig, SECTION_PEER_PORT, strTemp))
-                peerListeningPort = beast::lexicalCastThrow <int> (strTemp);
-
-            //
-            // VFALCO END CLEAN
-            //
-            //---------------------------------------
-
-            if (getSingleSection (secConfig, SECTION_RPC_PORT, strTemp))
-                m_rpcPort = beast::lexicalCastThrow <int> (strTemp);
-
-            if (getSingleSection (secConfig, SECTION_RPC_ALLOW_REMOTE, strTemp))
-                RPC_ALLOW_REMOTE    = beast::lexicalCastThrow <bool> (strTemp);
 
             if (getSingleSection (secConfig, SECTION_NODE_SIZE, strTemp))
             {
@@ -565,36 +519,8 @@ void Config::load ()
             if (getSingleSection (secConfig, SECTION_ELB_SUPPORT, strTemp))
                 ELB_SUPPORT         = beast::lexicalCastThrow <bool> (strTemp);
 
-            (void) getSingleSection (secConfig, SECTION_WEBSOCKET_IP, WEBSOCKET_IP);
-
-            if (getSingleSection (secConfig, SECTION_WEBSOCKET_PORT, strTemp))
-                WEBSOCKET_PORT      = beast::lexicalCastThrow <int> (strTemp);
-
-            (void) getSingleSection (secConfig, SECTION_WEBSOCKET_PUBLIC_IP, WEBSOCKET_PUBLIC_IP);
-
-            if (getSingleSection (secConfig, SECTION_WEBSOCKET_PUBLIC_PORT, strTemp))
-                WEBSOCKET_PUBLIC_PORT   = beast::lexicalCastThrow <int> (strTemp);
-
-            if (getSingleSection (secConfig, SECTION_WEBSOCKET_SECURE, strTemp))
-                WEBSOCKET_SECURE    = beast::lexicalCastThrow <int> (strTemp);
-
-            if (getSingleSection (secConfig, SECTION_WEBSOCKET_PUBLIC_SECURE, strTemp))
-                WEBSOCKET_PUBLIC_SECURE = beast::lexicalCastThrow <int> (strTemp);
-
             if (getSingleSection (secConfig, SECTION_WEBSOCKET_PING_FREQ, strTemp))
                 WEBSOCKET_PING_FREQ = beast::lexicalCastThrow <int> (strTemp);
-
-            getSingleSection (secConfig, SECTION_WEBSOCKET_SSL_CERT, WEBSOCKET_SSL_CERT);
-            getSingleSection (secConfig, SECTION_WEBSOCKET_SSL_CHAIN, WEBSOCKET_SSL_CHAIN);
-            getSingleSection (secConfig, SECTION_WEBSOCKET_SSL_KEY, WEBSOCKET_SSL_KEY);
-
-            if (getSingleSection (secConfig, SECTION_RPC_SECURE, strTemp))
-                RPC_SECURE  = beast::lexicalCastThrow <int> (strTemp);
-
-            getSingleSection (secConfig, SECTION_RPC_SSL_CERT, RPC_SSL_CERT);
-            getSingleSection (secConfig, SECTION_RPC_SSL_CHAIN, RPC_SSL_CHAIN);
-            getSingleSection (secConfig, SECTION_RPC_SSL_KEY, RPC_SSL_KEY);
-
 
             getSingleSection (secConfig, SECTION_SSL_VERIFY_FILE, SSL_VERIFY_FILE);
             getSingleSection (secConfig, SECTION_SSL_VERIFY_DIR, SSL_VERIFY_DIR);
@@ -816,150 +742,9 @@ beast::URL Config::getValidatorsURL () const
     return beast::parse_URL (VALIDATORS_SITE).second;
 }
 
-//------------------------------------------------------------------------------
-
-void Config::setRpcIpAndOptionalPort (std::string const& newAddress)
-{
-    beast::String const s (newAddress.c_str ());
-
-    int const colonPosition = s.lastIndexOfChar (':');
-
-    if (colonPosition != -1)
-    {
-        beast::String const ipPart = s.substring (0, colonPosition);
-        beast::String const portPart = s.substring (colonPosition + 1, s.length ());
-
-        setRpcIP (ipPart.toRawUTF8 ());
-        setRpcPort (portPart.getIntValue ());
-    }
-    else
-    {
-        setRpcIP (newAddress);
-    }
-}
-
-//------------------------------------------------------------------------------
-
-Config::Role Config::getAdminRole (Json::Value const& params, beast::IP::Endpoint const& remoteIp) const
-{
-    Config::Role role (Config::FORBID);
-
-    bool const bPasswordSupplied =
-        params.isMember ("admin_user") ||
-        params.isMember ("admin_password");
-
-    bool const bPasswordRequired =
-        ! this->RPC_ADMIN_USER.empty () ||
-        ! this->RPC_ADMIN_PASSWORD.empty ();
-
-    bool bPasswordWrong;
-
-    if (bPasswordSupplied)
-    {
-        if (bPasswordRequired)
-        {
-            // Required, and supplied, check match
-            bPasswordWrong =
-                (this->RPC_ADMIN_USER !=
-                    (params.isMember ("admin_user") ? params["admin_user"].asString () : ""))
-                ||
-                (this->RPC_ADMIN_PASSWORD !=
-                    (params.isMember ("admin_user") ? params["admin_password"].asString () : ""));
-        }
-        else
-        {
-            // Not required, but supplied
-            bPasswordWrong = false;
-        }
-    }
-    else
-    {
-        // Required but not supplied,
-        bPasswordWrong = bPasswordRequired;
-    }
-
-    // Meets IP restriction for admin.
-    beast::IP::Endpoint const remote_addr (remoteIp.at_port (0));
-    bool bAdminIP = false;
-
-    for (auto const& allow_addr : RPC_ADMIN_ALLOW)
-    {
-        if (allow_addr == remote_addr)
-        {
-            bAdminIP = true;
-            break;
-        }
-    }
-
-    if (bPasswordWrong                          // Wrong
-            || (bPasswordSupplied && !bAdminIP))    // Supplied and doesn't meet IP filter.
-    {
-        role   = Config::FORBID;
-    }
-    // If supplied, password is correct.
-    else
-    {
-        // Allow admin, if from admin IP and no password is required or it was supplied and correct.
-        role = bAdminIP && (!bPasswordRequired || bPasswordSupplied) ? Config::ADMIN : Config::GUEST;
-    }
-
-    return role;
-}
-
 beast::File const& Config::getModuleDatabasePath ()
 {
     return m_moduleDbPath;
-}
-
-//------------------------------------------------------------------------------
-
-void
-Config::build_legacy ()
-{
-    //--------------------------------------------------------------------------
-    //
-    // [rpc]
-    //
-    //--------------------------------------------------------------------------
-
-    remap("rpc_allow_remote",   "allow_remote",     "rpc");
-    //remap("rpc_admin_allow",    "admin_allow",      "rpc"); // Not a key-value pair
-    remap("rpc_admin_user",     "admin_user",       "rpc");
-    remap("rpc_admin_password", "admin_password",   "rpc");
-    remap("rpc_ip",             "ip",               "rpc");
-    remap("rpc_port",           "port",             "rpc");
-    remap("rpc_user",           "user",             "rpc");
-    remap("rpc_password",       "password",         "rpc");
-    //remap("rpc_startup",        "startup",          "rpc"); // Not a key-value pair
-    remap("rpc_secure",         "secure",           "rpc");
-    remap("rpc_ssl_cert",       "ssl_cert",         "rpc");
-    remap("rpc_ssl_chain",      "ssl_chain",        "rpc");
-    remap("rpc_ssl_key",        "ssl_key",          "rpc");
-
-#if DUMP_CONFIG
-    beast::debug_ostream log;
-    log << (BasicConfig const&)*this;
-#endif
-}
-
-//------------------------------------------------------------------------------
-
-RPC::Setup
-setup_RPC (Section const& s)
-{
-    RPC::Setup c;
-    set (c.allow_remote,    "allow_remote", s);
-    set (c.admin_user,      "admin_user", s);
-    set (c.admin_password,  "admin_password", s);
-    set (c.ip,              "ip", s);
-    set (c.port,            "port", s);
-    set (c.user,            "user", s);
-    set (c.password,        "password", s);
-    set (c.secure,          "secure", s);
-    set (c.ssl_cert,        "ssl_cert", s);
-    set (c.ssl_chain,       "ssl_chain", s);
-    set (c.ssl_key,         "ssl_key", s);
-    return c;
 }
 
 } // ripple

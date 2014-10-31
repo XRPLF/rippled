@@ -20,6 +20,8 @@
 #ifndef RIPPLE_RPC_TRANSACTIONSIGN_H_INCLUDED
 #define RIPPLE_RPC_TRANSACTIONSIGN_H_INCLUDED
 
+#include <ripple/app/main/ServerHandler.h>
+
 namespace ripple {
 namespace RPC {
 
@@ -28,7 +30,7 @@ Json::Value transactionSign (
     bool bSubmit,
     bool bFailHard,
     NetworkOPs& netOps,
-    int role);
+    Role role);
 
 } // RPC
 } // ripple

@@ -32,7 +32,6 @@
 #include <ripple/net/impl/HTTPClient.cpp>
 #include <ripple/net/impl/InfoSub.cpp>
 #include <ripple/net/impl/RPCCall.cpp>
-#include <ripple/net/impl/RPCDoor.cpp> // Is this still needed?
 #include <ripple/net/impl/RPCErr.cpp>
 #include <ripple/net/impl/RPCServerImp.h>
 #include <ripple/net/impl/RPCSub.cpp>

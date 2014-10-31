@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/common/RippleSSLContext.h>
+#include <ripple/common/make_SSLContext.h>
 #include <ripple/common/seconds_clock.h>
 #include <beast/container/aged_unordered_set.h>
 #include <beast/module/core/diagnostic/FatalError.h>
@@ -27,8 +27,8 @@
 #include <stdexcept>
 
 namespace ripple {
-
 namespace openssl {
+namespace detail {
 
 template <class>
 struct custom_delete;
@@ -57,6 +57,15 @@ struct custom_delete <X509>
     void operator() (X509* x509) const
     {
         X509_free (x509);
+    }
+};
+
+template <>
+struct custom_delete <DH>
+{
+    void operator() (DH* dh) const
+    {
+        DH_free(dh);
     }
 };
 
@@ -158,79 +167,59 @@ static void ssl_ctx_use_privatekey (SSL_CTX* const ctx, evp_pkey_ptr& key)
     }
 }
 
-}  // namespace openssl
-
-class RippleSSLContextImp : public RippleSSLContext
+// track when SSL connections have last negotiated
+struct StaticData
 {
-private:
-    boost::asio::ssl::context m_context;
+    std::mutex lock;
+    beast::aged_unordered_set <SSL const*> set;
 
-    // track when SSL connections have last negotiated
-
-    struct StaticData
-    {
-        StaticData() : set (ripple::get_seconds_clock ())
-        {
-        }
-
-        std::mutex lock;
-        beast::aged_unordered_set <SSL const*> set;
-    };
-
-public:
-    RippleSSLContextImp ()
-        : RippleSSLContext (m_context)
-        , m_context (boost::asio::ssl::context::sslv23)
-    {
-    }
-
-    ~RippleSSLContextImp ()
-    {
-    }
-
-    static DH* tmp_dh_handler (SSL*, int, int key_length)
-    {
-        return DHparams_dup (getDH (key_length));
-    }
-
-    static bool disallowRenegotiation (SSL const* ssl, bool isNew);
-
-    static void info_handler (SSL const* ssl, int event, int);
-
-    // Pretty prints an error message
-    static std::string error_message (std::string const& what,
-        boost::system::error_code const& ec);
-
-    //--------------------------------------------------------------------------
-
-    static std::string getRawDHParams (int keySize);
-
-    //--------------------------------------------------------------------------
-
-    // Does common initialization for all but the bare context type.
-    static void initCommon (boost::asio::ssl::context& context);
-    void initCommon ();
-
-    //--------------------------------------------------------------------------
-
-    static void initAnonymous (boost::asio::ssl::context& context,
-        std::string const& cipherList);
-    void initAnonymous (std::string const& cipherList);
-
-    //--------------------------------------------------------------------------
-
-    static void initAuthenticated (boost::asio::ssl::context& context,
-        std::string key_file, std::string cert_file, std::string chain_file);
-
-    void initAuthenticated (
-        std::string key_file, std::string cert_file, std::string chain_file);
-
-    //--------------------------------------------------------------------------
-
-    static DH* getDH (int keyLength);
+    StaticData()
+        : set (ripple::get_seconds_clock ())
+        { }
 };
 
-bool RippleSSLContextImp::disallowRenegotiation (SSL const* ssl, bool isNew)
+using dh_ptr = custom_delete_unique_ptr<DH>;
+
+static
+dh_ptr
+make_DH(std::string const& params)
+{
+    auto const* p (
+        reinterpret_cast <std::uint8_t const*>(&params [0]));
+    DH* const dh = d2i_DHparams (nullptr, &p, params.size ());
+    if (p == nullptr)
+        beast::FatalError ("d2i_DHparams returned nullptr.",
+            __FILE__, __LINE__);
+    return dh_ptr(dh);
+}
+
+static
+DH*
+getDH (int keyLength)
+{
+    if (keyLength == 512 || keyLength == 1024)
+    {
+        static dh_ptr dh512 = make_DH(getRawDHParams (keyLength));
+        return dh512.get ();
+    }
+    else
+    {
+        beast::FatalError ("unsupported key length", __FILE__, __LINE__);
+    }
+
+    return nullptr;
+}
+
+static
+DH*
+tmp_dh_handler (SSL*, int, int key_length)
+{
+    return DHparams_dup (getDH (key_length));
+}
+
+static
+bool
+disallowRenegotiation (SSL const* ssl, bool isNew)
 {
     // Do not allow a connection to renegotiate
     // more than once every 4 minutes
@@ -268,7 +257,9 @@ bool RippleSSLContextImp::disallowRenegotiation (SSL const* ssl, bool isNew)
     return false;
 }
 
-void RippleSSLContextImp::info_handler (SSL const* ssl, int event, int)
+static
+void
+info_handler (SSL const* ssl, int event, int)
 {
     if ((ssl->s3) && (event & SSL_CB_HANDSHAKE_START))
     {
@@ -277,7 +268,9 @@ void RippleSSLContextImp::info_handler (SSL const* ssl, int event, int)
     }
 }
 
-std::string RippleSSLContextImp::error_message (std::string const& what,
+static
+std::string
+error_message (std::string const& what,
     boost::system::error_code const& ec)
 {
     std::stringstream ss;
@@ -288,40 +281,9 @@ std::string RippleSSLContextImp::error_message (std::string const& what,
     return ss.str();
 }
 
-std::string RippleSSLContextImp::getRawDHParams (int keySize)
-{
-    std::string params;
-
-    // Original code provided the 512-bit keySize parameters
-    // when 1024 bits were requested so we will do the same.
-    if (keySize == 1024)
-        keySize = 512;
-
-    switch (keySize)
-    {
-    case 512:
-        {
-            // These are the DH parameters that OpenCoin has chosen for Ripple
-            //
-            std::uint8_t const raw [] = {
-                0x30, 0x46, 0x02, 0x41, 0x00, 0x98, 0x15, 0xd2, 0xd0, 0x08, 0x32, 0xda,
-                0xaa, 0xac, 0xc4, 0x71, 0xa3, 0x1b, 0x11, 0xf0, 0x6c, 0x62, 0xb2, 0x35,
-                0x8a, 0x10, 0x92, 0xc6, 0x0a, 0xa3, 0x84, 0x7e, 0xaf, 0x17, 0x29, 0x0b,
-                0x70, 0xef, 0x07, 0x4f, 0xfc, 0x9d, 0x6d, 0x87, 0x99, 0x19, 0x09, 0x5b,
-                0x6e, 0xdb, 0x57, 0x72, 0x4a, 0x7e, 0xcd, 0xaf, 0xbd, 0x3a, 0x97, 0x55,
-                0x51, 0x77, 0x5a, 0x34, 0x7c, 0xe8, 0xc5, 0x71, 0x63, 0x02, 0x01, 0x02
-            };
-
-            params.resize (sizeof (raw));
-            std::copy (raw, raw + sizeof (raw), params.begin ());
-        }
-        break;
-    };
-
-    return params;
-}
-
-void RippleSSLContextImp::initCommon (boost::asio::ssl::context& context)
+static
+void
+initCommon (boost::asio::ssl::context& context)
 {
     context.set_options (
         boost::asio::ssl::context::default_workarounds |
@@ -338,12 +300,9 @@ void RippleSSLContextImp::initCommon (boost::asio::ssl::context& context)
         info_handler);
 }
 
-void RippleSSLContextImp::initCommon ()
-{
-    initCommon(m_context);
-}
-
-void RippleSSLContextImp::initAnonymous (
+static
+void
+initAnonymous (
     boost::asio::ssl::context& context, std::string const& cipherList)
 {
     initCommon(context);
@@ -367,12 +326,9 @@ void RippleSSLContextImp::initAnonymous (
     ssl_ctx_use_privatekey  (ctx, pkey);
 }
 
-void RippleSSLContextImp::initAnonymous (std::string const& cipherList)
-{
-    initAnonymous(m_context, cipherList);
-}
-
-void RippleSSLContextImp::initAuthenticated (boost::asio::ssl::context& context,
+static
+void
+initAuthenticated (boost::asio::ssl::context& context,
     std::string key_file, std::string cert_file, std::string chain_file)
 {
     initCommon (context);
@@ -468,138 +424,53 @@ void RippleSSLContextImp::initAuthenticated (boost::asio::ssl::context& context,
     }
 }
 
-void RippleSSLContextImp::initAuthenticated (
-    std::string key_file, std::string cert_file, std::string chain_file)
-{
-    initAuthenticated (m_context, key_file, cert_file, chain_file);
-}
-
-// A simple RAII container for a DH
-//
-class ScopedDHPointer
-{
-private:
-    ScopedDHPointer            (ScopedDHPointer const&) = delete;
-    ScopedDHPointer& operator= (ScopedDHPointer const&) = delete;
-
-public:
-    // Construct from an existing DH
-    //
-    explicit ScopedDHPointer (DH* dh)
-        : m_dh (dh)
-    {
-    }
-
-    // Construct from raw DH params
-    //
-    explicit ScopedDHPointer (std::string const& params)
-    {
-        auto const* p (
-            reinterpret_cast <std::uint8_t const*>(&params [0]));
-        m_dh = d2i_DHparams (nullptr, &p, params.size ());
-        if (m_dh == nullptr)
-            beast::FatalError ("d2i_DHparams returned nullptr.",
-                __FILE__, __LINE__);
-    }
-
-    ~ScopedDHPointer ()
-    {
-        if (m_dh != nullptr)
-            DH_free (m_dh);
-    }
-
-    operator DH* () const
-    {
-        return get ();
-    }
-
-    DH* get () const
-    {
-        return m_dh;
-    }
-
-private:
-    DH* m_dh;
-};
-
-DH* RippleSSLContextImp::getDH (int keyLength)
-{
-    if (keyLength == 512 || keyLength == 1024)
-    {
-        static ScopedDHPointer dh512 (getRawDHParams (keyLength));
-
-        return dh512.get ();
-    }
-    else
-    {
-        beast::FatalError ("unsupported key length", __FILE__, __LINE__);
-    }
-
-    return nullptr;
-}
+} // detail
+} // openssl
 
 //------------------------------------------------------------------------------
 
-RippleSSLContext::RippleSSLContext (ContextType& context)
-    : SSLContext (context)
+std::string
+getRawDHParams (int keySize)
 {
+    std::string params;
+
+    // Original code provided the 512-bit keySize parameters
+    // when 1024 bits were requested so we will do the same.
+    if (keySize == 1024)
+        keySize = 512;
+
+    switch (keySize)
+    {
+    case 512:
+        {
+            // These are the DH parameters that OpenCoin has chosen for Ripple
+            //
+            std::uint8_t const raw [] = {
+                0x30, 0x46, 0x02, 0x41, 0x00, 0x98, 0x15, 0xd2, 0xd0, 0x08, 0x32, 0xda,
+                0xaa, 0xac, 0xc4, 0x71, 0xa3, 0x1b, 0x11, 0xf0, 0x6c, 0x62, 0xb2, 0x35,
+                0x8a, 0x10, 0x92, 0xc6, 0x0a, 0xa3, 0x84, 0x7e, 0xaf, 0x17, 0x29, 0x0b,
+                0x70, 0xef, 0x07, 0x4f, 0xfc, 0x9d, 0x6d, 0x87, 0x99, 0x19, 0x09, 0x5b,
+                0x6e, 0xdb, 0x57, 0x72, 0x4a, 0x7e, 0xcd, 0xaf, 0xbd, 0x3a, 0x97, 0x55,
+                0x51, 0x77, 0x5a, 0x34, 0x7c, 0xe8, 0xc5, 0x71, 0x63, 0x02, 0x01, 0x02
+            };
+
+            params.resize (sizeof (raw));
+            std::copy (raw, raw + sizeof (raw), params.begin ());
+        }
+        break;
+    };
+
+    return params;
 }
 
-RippleSSLContext* RippleSSLContext::createBare ()
-{
-    std::unique_ptr <RippleSSLContextImp> context (new RippleSSLContextImp ());
-    return context.release ();
-}
-
-RippleSSLContext* RippleSSLContext::createWebSocket ()
-{
-    std::unique_ptr <RippleSSLContextImp> context (new RippleSSLContextImp ());
-    context->initCommon ();
-    return context.release ();
-}
-
-RippleSSLContext* RippleSSLContext::createAnonymous (std::string const& cipherList)
-{
-    std::unique_ptr <RippleSSLContextImp> context (new RippleSSLContextImp ());
-    context->initAnonymous (cipherList);
-    return context.release ();
-}
-
-RippleSSLContext* RippleSSLContext::createAuthenticated (
-    std::string key_file, std::string cert_file, std::string chain_file)
-{
-    std::unique_ptr <RippleSSLContextImp> context (new RippleSSLContextImp ());
-    context->initAuthenticated (key_file, cert_file, chain_file);
-    return context.release ();
-}
-
-std::string RippleSSLContext::getRawDHParams (int keySize)
-{
-    return RippleSSLContextImp::getRawDHParams (keySize);
-}
-
-//------------------------------------------------------------------------------
-
-SSLContext::SSLContext (ContextType& context)
-    : m_context (context)
-{
-}
-
-SSLContext::~SSLContext ()
-{
-}
-
-//------------------------------------------------------------------------------
-
-/** Create a self-signed SSL context that allows anonymous Diffie Hellman. */
 std::shared_ptr<boost::asio::ssl::context>
-make_ssl_context()
+make_SSLContext()
 {
     std::shared_ptr<boost::asio::ssl::context> context =
         std::make_shared<boost::asio::ssl::context> (
             boost::asio::ssl::context::sslv23);
     // By default, allow anonymous DH.
-    RippleSSLContextImp::initAnonymous (
+    openssl::detail::initAnonymous (
         *context, "ALL:!LOW:!EXP:!MD5:@STRENGTH");
     // VFALCO NOTE, It seems the WebSocket context never has
     // set_verify_mode called, for either setting of WEBSOCKET_SECURE
@@ -607,17 +478,17 @@ make_ssl_context()
     return context;
 }
 
-/** Create an authenticated SSL context using the specified files. */
 std::shared_ptr<boost::asio::ssl::context>
-make_authenticated_ssl_context (std::string const& key_file,
+make_SSLContextAuthed (std::string const& key_file,
     std::string const& cert_file, std::string const& chain_file)
 {
     std::shared_ptr<boost::asio::ssl::context> context =
         std::make_shared<boost::asio::ssl::context> (
             boost::asio::ssl::context::sslv23);
-    RippleSSLContextImp::initAuthenticated(*context,
+    openssl::detail::initAuthenticated(*context,
         key_file, cert_file, chain_file);
     return context;
 }
 
-}
+} // ripple
+

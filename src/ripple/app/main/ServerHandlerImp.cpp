@@ -17,7 +17,16 @@
 */
 //==============================================================================
 
+#include <ripple/app/main/Application.h>
+#include <ripple/app/main/make_ServerHandler.h>
 #include <ripple/app/main/ServerHandlerImp.h>
+#include <ripple/common/make_SSLContext.h>
+#include <ripple/overlay/Overlay.h>
+#include <beast/cxx14/algorithm.h> // <algorithm>
+#include <boost/optional.hpp>
+#include <boost/regex.hpp>
+#include <algorithm>
+#include <stdexcept>
 
 namespace ripple {
 
@@ -29,23 +38,17 @@ ServerHandler::ServerHandler (Stoppable& parent)
 
 //------------------------------------------------------------------------------
 
-ServerHandlerImp::ServerHandlerImp (Stoppable& parent, JobQueue& jobQueue,
-    NetworkOPs& networkOPs, Resource::Manager& resourceManager,
-        RPC::Setup const& setup)
+ServerHandlerImp::ServerHandlerImp (Stoppable& parent,
+    boost::asio::io_service& io_service, JobQueue& jobQueue,
+        NetworkOPs& networkOPs, Resource::Manager& resourceManager)
     : ServerHandler (parent)
     , m_resourceManager (resourceManager)
     , m_journal (deprecatedLogs().journal("Server"))
     , m_jobQueue (jobQueue)
     , m_networkOPs (networkOPs)
     , m_server (HTTP::make_Server(
-        *this, deprecatedLogs().journal("Server")))
-    , setup_ (setup)
+        *this, io_service, deprecatedLogs().journal("Server")))
 {
-    if (setup_.secure)
-        m_context.reset (RippleSSLContext::createAuthenticated (
-            setup_.ssl_key, setup_.ssl_cert, setup_.ssl_chain));
-    else
-        m_context.reset (RippleSSLContext::createBare());
 }
 
 ServerHandlerImp::~ServerHandlerImp()
@@ -54,42 +57,13 @@ ServerHandlerImp::~ServerHandlerImp()
 }
 
 void
-ServerHandlerImp::setup (beast::Journal journal)
+ServerHandlerImp::setup (Setup const& setup, beast::Journal journal)
 {
-    if (! setup_.ip.empty() && setup_.port != 0)
-    {
-        auto ep = beast::IP::Endpoint::from_string (setup_.ip);
-
-        // VFALCO TODO IP address should not have an "unspecified" state
-        //if (! is_unspecified (ep))
-        {
-            HTTP::Port port;
-
-            if (setup_.secure == 0)
-                port.security = HTTP::Port::Security::no_ssl;
-            else if (setup_.secure == 1)
-                port.security = HTTP::Port::Security::allow_ssl;
-            else
-                port.security = HTTP::Port::Security::require_ssl;
-            port.addr = ep.at_port(0);
-            if (setup_.port != 0)
-                port.port = setup_.port;
-            else
-                port.port = ep.port();
-            port.context = m_context.get ();
-
-            std::vector<HTTP::Port> list;
-            list.push_back (port);
-            m_server->ports(list);
-        }
-    }
-    else
-    {
-        journal.info << "RPC interface: disabled";
-    }
+    setup_ = setup;
+    m_server->ports (setup.ports);
 }
 
-//--------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 void
 ServerHandlerImp::onStop()
@@ -97,25 +71,78 @@ ServerHandlerImp::onStop()
     m_server->close();
 }
 
-//--------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 void
 ServerHandlerImp::onAccept (HTTP::Session& session)
 {
-    // Reject non-loopback connections if RPC_ALLOW_REMOTE is not set
-    if (! setup_.allow_remote &&
-        ! beast::IP::is_loopback (session.remoteAddress()))
+}
+
+bool
+ServerHandlerImp::onAccept (HTTP::Session& session,
+    boost::asio::ip::tcp::endpoint endpoint)
+{
+    return true;
+}
+
+void
+ServerHandlerImp::onLegacyPeerHello (
+    std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
+        boost::asio::const_buffer buffer,
+            boost::asio::ip::tcp::endpoint remote_address)
+{
+    // VFALCO TODO Inject Overlay
+    getApp().overlay().onLegacyPeerHello(std::move(ssl_bundle),
+        buffer, remote_address);
+}
+
+auto
+ServerHandlerImp::onMaybeMove (HTTP::Session& session,
+    std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
+        beast::http::message&& request,
+            boost::asio::ip::tcp::endpoint remote_address) ->
+    What
+{
+    if (session.port().protocol.count("wss") > 0 &&
+        isWebsocketUpgrade (request))
     {
-        session.close (false);
+        // Pass to websockets
+        What what;
+        // what.moved = true;
+        return what;
     }
+    if (session.port().protocol.count("peer") > 0)
+        return getApp().overlay().onMaybeMove (std::move(bundle),
+            std::move(request), remote_address);
+    // Pass through to legacy onRequest
+    return What{};
+}
+
+auto
+ServerHandlerImp::onMaybeMove (HTTP::Session& session,
+    boost::asio::ip::tcp::socket&& socket,
+        beast::http::message&& request,
+            boost::asio::ip::tcp::endpoint remote_address) ->
+    What
+{
+    if (session.port().protocol.count("ws") > 0 &&
+        isWebsocketUpgrade (request))
+    {
+        // Pass to websockets
+        What what;
+        // what.moved = true;
+        return what;
+    }
+    // Pass through to legacy onRequest
+    return What{};
 }
 
 void
 ServerHandlerImp::onRequest (HTTP::Session& session)
 {
     // Check user/password authorization
-    auto const headers = build_map (session.request().headers);
-    if (! HTTPAuthorized (headers))
+    if (! authorized (session.port(),
+        build_map(session.request().headers)))
     {
         session.write (HTTPReply (403, "Forbidden"));
         session.close (true);
@@ -139,15 +166,15 @@ ServerHandlerImp::onStopped (HTTP::Server&)
     stopped();
 }
 
-//--------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 // Dispatched on the job queue
 void
 ServerHandlerImp::processSession (Job& job,
     std::shared_ptr<HTTP::Session> const& session)
 {
-    session->write (processRequest (to_string(session->body()),
-        session->remoteAddress().at_port(0)));
+    session->write (processRequest (session->port(),
+        to_string(session->body()), session->remoteAddress().at_port(0)));
 
     if (session->request().keep_alive())
     {
@@ -169,26 +196,32 @@ ServerHandlerImp::createResponse (
 
 // VFALCO ARGH! returning a single std::string for the entire response?
 std::string
-ServerHandlerImp::processRequest (std::string const& request,
-    beast::IP::Endpoint const& remoteIPAddress)
+ServerHandlerImp::processRequest (HTTP::Port const& port,
+    std::string const& request, beast::IP::Endpoint const& remoteIPAddress)
 {
-    Json::Value jvRequest;
+    Json::Value jsonRPC;
     {
         Json::Reader reader;
         if ((request.size () > 1000000) ||
-            ! reader.parse (request, jvRequest) ||
-            jvRequest.isNull () ||
-            ! jvRequest.isObject ())
+            ! reader.parse (request, jsonRPC) ||
+            jsonRPC.isNull () ||
+            ! jsonRPC.isObject ())
         {
             return createResponse (400, "Unable to parse request");
         }
     }
 
-    auto const role = getConfig ().getAdminRole (jvRequest, remoteIPAddress);
+    auto role = Role::FORBID;
+    if (jsonRPC.isObject() && jsonRPC.isMember("params") &&
+            jsonRPC["params"].isArray() && jsonRPC["params"].size() > 0 &&
+                jsonRPC["params"][Json::UInt(0)].isObject())
+        role = adminRole(port, jsonRPC["params"][Json::UInt(0)], remoteIPAddress);
+    else
+        role = adminRole(port, Json::objectValue, remoteIPAddress);
 
     Resource::Consumer usage;
 
-    if (role == Config::ADMIN)
+    if (role == Role::ADMIN)
         usage = m_resourceManager.newAdminEndpoint (remoteIPAddress.to_string());
     else
         usage = m_resourceManager.newInboundEndpoint(remoteIPAddress);
@@ -200,9 +233,9 @@ ServerHandlerImp::processRequest (std::string const& request,
     //
     // VFALCO NOTE Except that "id" isn't included in the following errors.
     //
-    Json::Value const id = jvRequest ["id"];
+    Json::Value const id = jsonRPC ["id"];
 
-    Json::Value const method = jvRequest ["method"];
+    Json::Value const method = jsonRPC ["method"];
 
     if (method.isNull ())
         return createResponse (400, "Null method");
@@ -215,7 +248,7 @@ ServerHandlerImp::processRequest (std::string const& request,
         return createResponse (400, "method is empty");
 
     // Parse params
-    Json::Value params = jvRequest ["params"];
+    Json::Value params = jsonRPC ["params"];
 
     if (params.isNull ())
         params = Json::Value (Json::arrayValue);
@@ -225,7 +258,7 @@ ServerHandlerImp::processRequest (std::string const& request,
 
     // VFALCO TODO Shouldn't we handle this earlier?
     //
-    if (role == Config::FORBID)
+    if (role == Role::FORBID)
     {
         // VFALCO TODO Needs implementing
         // FIXME Needs implementing
@@ -253,6 +286,59 @@ ServerHandlerImp::processRequest (std::string const& request,
 
 //------------------------------------------------------------------------------
 
+// Returns `true` if the HTTP request is a Websockets Upgrade
+// http://en.wikipedia.org/wiki/HTTP/1.1_Upgrade_header#Use_with_WebSockets
+bool
+ServerHandlerImp::isWebsocketUpgrade (beast::http::message const& request)
+{
+    if (request.upgrade())
+        return request.headers["Upgrade"] == "websocket";
+    return false;
+}
+
+// VFALCO DEPRECATED
+static std::string
+DecodeBase64 (std::string s)
+{
+    // FIXME: This performs badly
+    BIO* b64, *bmem;
+    // Its 2014 and we're using calloc?
+    char* buffer = static_cast<char*> (calloc (s.size (), sizeof (char)));
+    b64 = BIO_new (BIO_f_base64 ());
+    BIO_set_flags (b64, BIO_FLAGS_BASE64_NO_NL);
+    bmem = BIO_new_mem_buf (const_cast<char*> (s.data ()), s.size ());
+    bmem = BIO_push (b64, bmem);
+    BIO_read (bmem, buffer, s.size ());
+    BIO_free_all (bmem);
+    std::string result (buffer);
+    free (buffer);
+    return result;
+}
+
+// VFALCO TODO Rewrite to use beast::http::headers
+bool
+ServerHandlerImp::authorized (HTTP::Port const& port,
+    std::map<std::string, std::string> const& h)
+{
+    if (port.user.empty() || port.password.empty())
+        return true;
+
+    auto const it = h.find ("authorization");
+    if ((it == h.end ()) || (it->second.substr (0, 6) != "Basic "))
+        return false;
+    std::string strUserPass64 = it->second.substr (6);
+    boost::trim (strUserPass64);
+    std::string strUserPass = DecodeBase64 (strUserPass64);
+    std::string::size_type nColon = strUserPass.find (":");
+    if (nColon == std::string::npos)
+        return false;
+    std::string strUser = strUserPass.substr (0, nColon);
+    std::string strPassword = strUserPass.substr (nColon + 1);
+    return strUser == port.user && strPassword == port.password;
+}
+
+//------------------------------------------------------------------------------
+
 void
 ServerHandlerImp::onWrite (beast::PropertyStream::Map& map)
 {
@@ -261,13 +347,383 @@ ServerHandlerImp::onWrite (beast::PropertyStream::Map& map)
 
 //------------------------------------------------------------------------------
 
-std::unique_ptr <ServerHandler>
-make_RPCHTTPServer (beast::Stoppable& parent, JobQueue& jobQueue,
-    NetworkOPs& networkOPs, Resource::Manager& resourceManager,
-        RPC::Setup const& setup)
+// Copied from Config::getAdminRole and modified to use the Port
+Role
+adminRole (HTTP::Port const& port,
+    Json::Value const& params, beast::IP::Endpoint const& remoteIp)
 {
-    return std::make_unique <ServerHandlerImp> (
-        parent, jobQueue, networkOPs, resourceManager, setup);
+    Role role (Role::FORBID);
+
+    bool const bPasswordSupplied =
+        params.isMember ("admin_user") ||
+        params.isMember ("admin_password");
+
+    bool const bPasswordRequired =
+        ! port.admin_user.empty() || ! port.admin_password.empty();
+
+    bool bPasswordWrong;
+
+    if (bPasswordSupplied)
+    {
+        if (bPasswordRequired)
+        {
+            // Required, and supplied, check match
+            bPasswordWrong =
+                (port.admin_user !=
+                    (params.isMember ("admin_user") ? params["admin_user"].asString () : ""))
+                ||
+                (port.admin_password !=
+                    (params.isMember ("admin_user") ? params["admin_password"].asString () : ""));
+        }
+        else
+        {
+            // Not required, but supplied
+            bPasswordWrong = false;
+        }
+    }
+    else
+    {
+        // Required but not supplied,
+        bPasswordWrong = bPasswordRequired;
+    }
+
+    // Meets IP restriction for admin.
+    beast::IP::Endpoint const remote_addr (remoteIp.at_port (0));
+    bool bAdminIP = false;
+
+    for (auto const& allow_addr : getConfig().RPC_ADMIN_ALLOW)
+    {
+        if (allow_addr == remote_addr)
+        {
+            bAdminIP = true;
+            break;
+        }
+    }
+
+    if (bPasswordWrong                          // Wrong
+            || (bPasswordSupplied && !bAdminIP))    // Supplied and doesn't meet IP filter.
+    {
+        role   = Role::FORBID;
+    }
+    // If supplied, password is correct.
+    else
+    {
+        // Allow admin, if from admin IP and no password is required or it was supplied and correct.
+        role = bAdminIP && (!bPasswordRequired || bPasswordSupplied) ? Role::ADMIN : Role::GUEST;
+    }
+
+    return role;
+}
+
+//------------------------------------------------------------------------------
+
+namespace detail {
+
+// Parse a comma-delimited list of values.
+std::vector<std::string>
+parse_csv (std::string const& in, std::ostream& log)
+{
+    auto first = in.cbegin();
+    auto const last = in.cend();
+    std::vector<std::string> result;
+    if (first != last)
+    {
+        static boost::regex const re(
+            "^"                         // start of line
+            "(?:\\s*)"                  // whitespace (optional)
+            "([a-zA-Z][_a-zA-Z0-9]*)"   // identifier
+            "(?:\\s*)"                  // whitespace (optional)
+            "(?:,?)"                    // comma (optional)
+            "(?:\\s*)"                  // whitespace (optional)
+            , boost::regex_constants::optimize
+        );
+        for(;;)
+        {
+            boost::smatch m;
+            if (! boost::regex_search(first, last, m, re,
+                boost::regex_constants::match_continuous))
+            {
+                log << "Expected <identifier>\n";
+                throw std::exception();
+            }
+            result.push_back(m[1]);
+            first = m[0].second;
+            if (first == last)
+                break;
+        }
+    }
+    return result;
+}
+
+// Intermediate structure used for parsing
+struct ParsedPort
+{
+    std::string name;
+    std::set<std::string, beast::ci_less> protocol;
+    std::string user;
+    std::string password;
+    std::string admin_user;
+    std::string admin_password;
+    std::string ssl_key;
+    std::string ssl_cert;
+    std::string ssl_chain;
+
+    boost::optional<boost::asio::ip::address> ip;
+    boost::optional<std::uint16_t> port;
+    boost::optional<bool> allow_admin;
+};
+
+void
+parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
+{
+    {
+        auto result = section.find("ip");
+        if (result.second)
+        {
+            try
+            {
+                port.ip = boost::asio::ip::address::from_string(result.first);
+            }
+            catch(...)
+            {
+                log << "Invalid value '" << result.first <<
+                    "' for key 'ip' in [" << section.name() << "]\n";
+                throw std::exception();
+            }
+        }
+    }
+
+    {
+        auto const result = section.find("port");
+        if (result.second)
+        {
+            auto const ul = std::stoul(result.first);
+            if (ul > std::numeric_limits<std::uint16_t>::max())
+            {
+                log <<
+                    "Value '" << result.first << "' for key 'port' is out of range\n";
+                throw std::exception();
+            }
+            if (ul == 0)
+            {
+                log <<
+                    "Value '0' for key 'port' is invalid\n";
+                throw std::exception();
+            }
+            port.port = static_cast<std::uint16_t>(ul);
+        }
+    }
+
+    {
+        auto const result = section.find("protocol");
+        if (result.second)
+        {
+            for (auto const& s : parse_csv(result.first, log))
+                port.protocol.insert(s);
+        }
+    }
+
+    {
+        auto const result = section.find("admin");
+        if (result.second)
+        {
+            if (result.first == "no")
+            {
+                port.allow_admin = false;
+            }
+            else if (result.first == "allow")
+            {
+                port.allow_admin = true;
+            }
+            else
+            {
+                log << "Invalid value '" << result.first <<
+                    "' for key 'admin' in [" << section.name() << "]\n";
+                throw std::exception();
+            }
+        }
+    }
+
+    set(port.user, "user", section);
+    set(port.password, "password", section);
+    set(port.admin_user, "admin_user", section);
+    set(port.admin_password, "admin_password", section);
+    set(port.ssl_key, "ssl_key", section);
+    set(port.ssl_cert, "ssl_cert", section);
+    set(port.ssl_chain, "ssl_chain", section);
+}
+
+HTTP::Port
+to_Port(ParsedPort const& parsed, std::ostream& log)
+{
+    HTTP::Port p;
+    p.name = parsed.name;
+
+    if (! parsed.ip)
+    {
+        log << "Missing 'ip' in [" << p.name << "]\n";
+        throw std::exception();
+    }
+    p.ip = *parsed.ip;
+
+    if (! parsed.port)
+    {
+        log << "Missing 'port' in [" << p.name << "]\n";
+        throw std::exception();
+    }
+    else if (*parsed.port == 0)
+    {
+        log << "Port " << *parsed.port << "in [" << p.name << "] is invalid\n";
+        throw std::exception();
+    }
+    p.port = *parsed.port;
+
+    if (! parsed.allow_admin)
+        p.allow_admin = false;
+    else
+        p.allow_admin = *parsed.allow_admin;
+
+    if (parsed.protocol.empty())
+    {
+        log << "Missing 'protocol' in [" << p.name << "]\n";
+        throw std::exception();
+    }
+    p.protocol = parsed.protocol;
+    if (p.websockets() && 
+        (parsed.protocol.count("peer") > 0 ||
+        parsed.protocol.count("http") > 0 ||
+        parsed.protocol.count("https") > 0))
+    {
+        log << "Invalid protocol combination in [" << p.name << "]\n";
+        throw std::exception();
+    }
+
+    p.user = parsed.user;
+    p.password = parsed.password;
+    p.admin_user = parsed.admin_user;
+    p.admin_password = parsed.admin_password;
+    p.ssl_key = parsed.ssl_key;
+    p.ssl_cert = parsed.ssl_cert;
+    p.ssl_chain = parsed.ssl_chain;
+
+    if (p.ssl_key.empty() && p.ssl_cert.empty() &&
+            p.ssl_chain.empty())
+        p.context = make_SSLContext();
+    else
+        p.context = make_SSLContextAuthed (
+            p.ssl_key, p.ssl_cert, p.ssl_chain);
+
+    return p;
+}
+
+std::vector<HTTP::Port>
+parse_Ports (BasicConfig const& config, std::ostream& log)
+{
+    std::vector<HTTP::Port> result;
+
+    if (! config.exists("server"))
+    {
+        log <<
+            "Missing section: [server]\n";
+        return result;
+    }
+
+    ParsedPort common;
+    parse_Port (common, config["server"], log);
+
+    auto const& names = config.section("server").values();
+    result.reserve(names.size());
+    for (auto const& name : names)
+    {
+        if (! config.exists(name))
+        {
+            log <<
+                "Missing section: [" << name << "]\n";
+            throw std::exception();
+        }
+        ParsedPort parsed = common;
+        parsed.name = name;
+        parse_Port(parsed, config[name], log);
+        result.push_back(to_Port(parsed, log));
+    }
+
+    std::size_t count = 0;
+    for (auto const& p : result)
+        if (p.protocol.count("peer") > 0)
+            ++count;
+    if (count > 1)
+    {
+        log << "Error: More than one peer protocol configured in [server]\n";
+        throw std::exception();
+    }
+    if (count == 0)
+        log << "Warning: No peer protocol configured\n";
+
+    return result;
+}
+
+// Fill out the client portion of the Setup
+void
+setup_Client (ServerHandler::Setup& setup)
+{
+    decltype(setup.ports)::const_iterator iter;
+    for (iter = setup.ports.cbegin();
+            iter != setup.ports.cend(); ++iter)
+        if (iter->protocol.count("http") > 0 ||
+                iter->protocol.count("https") > 0)
+            break;
+    if (iter == setup.ports.cend())
+        return;
+    setup.client.secure =
+        iter->protocol.count("https") > 0;
+    setup.client.ip = iter->ip.to_string();
+    // VFALCO HACK! to make localhost work
+    if (setup.client.ip == "0.0.0.0")
+        setup.client.ip = "127.0.0.1";
+    setup.client.port = iter->port;
+    setup.client.user = iter->user;
+    setup.client.password = iter->password;
+    setup.client.admin_user = iter->admin_user;
+    setup.client.admin_password = iter->admin_password;
+}
+
+// Fill out the overlay portion of the Setup
+void
+setup_Overlay (ServerHandler::Setup& setup)
+{
+    auto const iter = std::find_if(setup.ports.cbegin(), setup.ports.cend(),
+        [](HTTP::Port const& port)
+        {
+            return port.protocol.count("peer") > 0;
+        });
+    if (iter == setup.ports.cend())
+    {
+        setup.overlay.port = 0;
+        return;
+    }
+    setup.overlay.ip = iter->ip;
+    setup.overlay.port = iter->port;
+}
+
+}
+
+ServerHandler::Setup
+setup_ServerHandler (BasicConfig const& config, std::ostream& log)
+{
+    ServerHandler::Setup setup;
+    setup.ports = detail::parse_Ports (config, log);
+    detail::setup_Client(setup);
+    detail::setup_Overlay(setup);
+    return setup;
+}
+
+std::unique_ptr <ServerHandler>
+make_ServerHandler (beast::Stoppable& parent,
+    boost::asio::io_service& io_service, JobQueue& jobQueue,
+        NetworkOPs& networkOPs, Resource::Manager& resourceManager)
+{
+    return std::make_unique <ServerHandlerImp> (parent, io_service,
+        jobQueue, networkOPs, resourceManager);
 }
 
 }

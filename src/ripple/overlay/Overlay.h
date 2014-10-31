@@ -21,10 +21,14 @@
 #define RIPPLE_OVERLAY_OVERLAY_H_INCLUDED
 
 #include <ripple/overlay/Peer.h>
+#include <ripple/http/Server.h>
+#include <beast/asio/ssl_bundle.h>
 #include <beast/threads/Stoppable.h>
 #include <beast/utility/PropertyStream.h>
 #include <memory>
 #include <beast/cxx14/type_traits.h> // <type_traits>
+#include <boost/asio/buffer.hpp>
+#include <boost/asio/ip/tcp.hpp>
 
 namespace boost { namespace asio { namespace ssl { class context; } } }
 
@@ -65,6 +69,20 @@ public:
     typedef std::vector <Peer::ptr> PeerSequence;
 
     virtual ~Overlay() = default;
+
+    /** Accept a legacy protocol handshake connection. */
+    virtual
+    void
+    onLegacyPeerHello (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
+        boost::asio::const_buffer buffer,
+            boost::asio::ip::tcp::endpoint remote_address) = 0;
+
+    /** Conditionally accept an incoming HTTP request. */
+    virtual
+    HTTP::Handler::What
+    onMaybeMove (std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
+        beast::http::message&& request,
+            boost::asio::ip::tcp::endpoint remote_address) = 0;
 
     /** Establish a peer connection to the specified endpoint.
         The call returns immediately, the connection attempt is

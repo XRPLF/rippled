@@ -17,23 +17,25 @@
 */
 //==============================================================================
 
+#include <ripple/app/main/ServerHandler.h>
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/json/json_reader.h>
 #include <ripple/overlay/impl/PeerImp.h>
 #include <ripple/overlay/impl/Tuning.h>
 #include <beast/streams/debug_ostream.h>
 #include <functional>
 #include <beast/cxx14/memory.h> // <memory>
+#include <sstream>
 
 namespace ripple {
 
-PeerImp::PeerImp (socket_type&& socket, beast::IP::Endpoint remoteAddress,
-    OverlayImpl& overlay, Resource::Manager& resourceManager,
-        PeerFinder::Manager& peerFinder, PeerFinder::Slot::ptr const& slot,
-            std::shared_ptr<boost::asio::ssl::context> const& context)
+PeerImp::PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
+    beast::http::message&& request, beast::IP::Endpoint remoteAddress,
+        OverlayImpl& overlay, Resource::Manager& resourceManager,
+            PeerFinder::Manager& peerFinder, PeerFinder::Slot::ptr const& slot)
     : Child (overlay)
     , journal_ (deprecatedLogs().journal("Peer"))
-    , ssl_bundle_(std::make_unique<beast::asio::ssl_bundle>(
-        context, std::move(socket)))
+    , ssl_bundle_(std::move(ssl_bundle))
     , socket_ (ssl_bundle_->socket)
     , stream_ (ssl_bundle_->stream)
     , strand_ (socket_.get_io_service())
@@ -79,12 +81,22 @@ PeerImp::~PeerImp ()
 }
 
 void
-PeerImp::start ()
+PeerImp::start()
 {
+    boost::system::error_code ec;
+    timer_.expires_from_now (nodeVerifySeconds, ec);
+    timer_.async_wait (strand_.wrap (std::bind (&PeerImp::handleVerifyTimer,
+        shared_from_this (), beast::asio::placeholders::error)));
+    if (ec)
+    {
+        journal_.error << "Failed to set verify timer.";
+        return detach ("start");
+    }
+
     if (m_inbound)
-        do_accept ();
+        do_accept();
     else
-        do_connect ();
+        do_connect();
 }
 
 void
@@ -298,19 +310,8 @@ void PeerImp::do_connect ()
     journal_.info << "Connecting to " << remote_address_;
 
     usage_ = resourceManager_.newOutboundEndpoint (remote_address_);
-
     if (usage_.disconnect ())
         return detach ("do_connect");
-
-    boost::system::error_code ec;
-    timer_.expires_from_now (nodeVerifySeconds, ec);
-    timer_.async_wait (strand_.wrap (std::bind (&PeerImp::handleVerifyTimer,
-        shared_from_this (), beast::asio::placeholders::error)));
-    if (ec)
-    {
-        journal_.error << "Failed to set verify timer.";
-        return detach ("do_connect");
-    }
 
     stream_.next_layer().async_connect (
         beast::IPAddressConversion::to_asio_endpoint (remote_address_),
@@ -434,6 +435,70 @@ PeerImp::on_write_http_request (error_code ec, std::size_t bytes_transferred)
                 beast::asio::placeholders::bytes_transferred)));
 }
 
+template <class = void>
+boost::asio::ip::tcp::endpoint
+parse_endpoint (std::string const& s, boost::system::error_code& ec)
+{
+    beast::IP::Endpoint bep;
+    std::istringstream is(s);
+    is >> bep;
+    if (is.fail())
+    {
+        ec = boost::system::errc::make_error_code(
+            boost::system::errc::invalid_argument);
+        return boost::asio::ip::tcp::endpoint{};
+    }
+
+    return beast::IPAddressConversion::to_asio_endpoint(bep);
+}
+
+template <class Streambuf>
+void
+PeerImp::processResponse (beast::http::message const& m,
+    Streambuf const& body)
+{
+    if (http_message_->status() == 503)
+    {
+        Json::Value json;
+        Json::Reader r;
+        auto const success = r.parse(to_string(body), json);
+        if (success)
+        {
+            if (json.isObject() && json.isMember("peer-ips"))
+            {
+                Json::Value const& ips = json["peer-ips"];
+                if (ips.isArray())
+                {
+                    std::vector<boost::asio::ip::tcp::endpoint> eps;
+                    eps.reserve(ips.size());
+                    for (auto const& v : ips)
+                    {
+                        if (v.isString())
+                        {
+                            error_code ec;
+                            auto const ep = parse_endpoint(v.asString(), ec);
+                            if (!ec)
+                                eps.push_back(ep);
+                        }
+                    }
+                    peerFinder_.onRedirects(beast::IPAddressConversion::
+                        to_asio_endpoint(remote_address_), eps);
+                }
+            }
+        }
+    }
+
+    if (http_message_->status() != 200)
+    {
+        if (journal_.info) journal_.info <<
+            "HTTP Response: " << m.status() << " " << m.reason();
+        detach("processResponse");
+        return;
+    }
+
+    do_protocol_start();
+}
+
 // Called repeatedly with the http response data
 void
 PeerImp::on_read_http_response (error_code ec, std::size_t bytes_transferred)
@@ -452,22 +517,7 @@ PeerImp::on_read_http_response (error_code ec, std::size_t bytes_transferred)
             read_buffer_.consume (bytes_consumed);
             if (http_parser_->complete())
             {
-                //
-                // TODO Apply response to connection state, then:
-                //      - Go into protocol loop, or
-                //      - Submit a new request (call on_write_http_request), or
-                //      - Close the connection.
-                //
-                if (http_message_->status() != 200)
-                {
-                    journal_.info <<
-                        "HTTP Response: " << http_message_->reason() <<
-                        "(" << http_message_->status() << ")";
-                    detach("on_read_http_response");
-                    return;
-                }
-                do_protocol_start ();
-                return;
+                return processResponse(*http_message_, http_body_);
             }
         }
     }
@@ -501,7 +551,7 @@ PeerImp::on_read_http_response (error_code ec, std::size_t bytes_transferred)
         3. If HTTP request received, send HTTP response
         4. Enter protocol loop
 */
-void PeerImp::do_accept ()
+void PeerImp::do_accept()
 {
     journal_.info << "Accepted " << remote_address_;
 
@@ -511,6 +561,11 @@ void PeerImp::do_accept ()
         detach ("do_accept");
         return;
     }
+
+    // VFALCO Hack to receive a legacy protocol connection
+    //        from the HTTP server
+    if (read_buffer_.size() > 0)
+        return do_protocol_start();
 
     stream_.set_verify_mode (boost::asio::ssl::verify_none);
     stream_.async_handshake (boost::asio::ssl::stream_base::server,
@@ -694,7 +749,7 @@ PeerImp::on_write_http_response (error_code ec, std::size_t bytes_transferred)
 // connection detail. Also need to establish no man in the middle attack
 // is in progress.
 void
-PeerImp::do_protocol_start ()
+PeerImp::do_protocol_start()
 {
     if (!sendHello ())
     {
@@ -2267,7 +2322,6 @@ PeerImp::sendHello ()
         secureCookie_, vchSig);
 
     protocol::TMHello h;
-
     h.set_protoversion (to_packed (BuildInfo::getCurrentProtocol()));
     h.set_protoversionmin (to_packed (BuildInfo::getMinimumProtocol()));
     h.set_fullversion (BuildInfo::getFullVersionString ());
@@ -2275,7 +2329,8 @@ PeerImp::sendHello ()
     h.set_nodepublic (getApp().getLocalCredentials ().getNodePublic (
         ).humanNodePublic ());
     h.set_nodeproof (&vchSig[0], vchSig.size ());
-    h.set_ipv4port (getConfig ().peerListeningPort);
+    // DEPRECATED
+    h.set_ipv4port (overlay_.serverHandler().setup().overlay.port);
     h.set_testnet (false);
 
     // We always advertise ourselves as private in the HELLO message. This

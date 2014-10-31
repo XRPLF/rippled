@@ -22,10 +22,12 @@
 
 namespace ripple {
 
-WSConnection::WSConnection (Resource::Manager& resourceManager,
-    Resource::Consumer usage, InfoSub::Source& source, bool isPublic,
-        beast::IP::Endpoint const& remoteAddress, boost::asio::io_service& io_service)
+WSConnection::WSConnection (HTTP::Port const& port,
+    Resource::Manager& resourceManager, Resource::Consumer usage,
+        InfoSub::Source& source, bool isPublic,
+            beast::IP::Endpoint const& remoteAddress, boost::asio::io_service& io_service)
     : InfoSub (source, usage)
+    , port_(port)
     , m_resourceManager (resourceManager)
     , m_isPublic (isPublic)
     , m_remoteAddress (remoteAddress)
@@ -154,12 +156,10 @@ Json::Value WSConnection::invokeCommand (Json::Value& jvRequest)
     RPCHandler  mRPCHandler (m_netOPs, std::dynamic_pointer_cast<InfoSub> (this->shared_from_this ()));
     Json::Value jvResult (Json::objectValue);
 
-    Config::Role const role = m_isPublic
-            ? Config::GUEST     // Don't check on the public interface.
-            : getConfig ().getAdminRole (
-                jvRequest, m_remoteAddress);
+    Role const role = port_.allow_admin ?
+        adminRole(port_, jvRequest, m_remoteAddress) : Role::GUEST;
 
-    if (Config::FORBID == role)
+    if (Role::FORBID == role)
     {
         jvResult[jss::result]  = rpcError (rpcFORBIDDEN);
     }

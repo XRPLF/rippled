@@ -18,13 +18,14 @@
 //==============================================================================
 
 #include <ripple/app/impl/BasicApp.h>
+#include <ripple/app/main/make_ServerHandler.h>
 #include <ripple/app/main/Tuning.h>
 #include <ripple/app/misc/ProofOfWorkFactory.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/LoggedTimings.h>
 #include <ripple/basics/Sustain.h>
 #include <ripple/common/seconds_clock.h>
-#include <ripple/common/RippleSSLContext.h>
+#include <ripple/common/make_SSLContext.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/rpc/Manager.h>
 #include <ripple/nodestore/Database.h>
@@ -193,12 +194,8 @@ public:
     std::unique_ptr <DatabaseCon> mTxnDB;
     std::unique_ptr <DatabaseCon> mLedgerDB;
     std::unique_ptr <DatabaseCon> mWalletDB;
-
-    std::unique_ptr <SSLContext> m_wsSSLContext;
-    std::unique_ptr <Overlay> m_peers;
-    std::unique_ptr <RPCDoor>  m_rpcDoor;
-    std::unique_ptr <WSDoor> m_wsPublicDoor;
-    std::unique_ptr <WSDoor> m_wsPrivateDoor;
+    std::unique_ptr <Overlay> m_overlay;
+    std::vector <std::unique_ptr<WSDoor>> wsDoors_;
 
     beast::WaitableEvent m_stop;
 
@@ -305,9 +302,9 @@ public:
         // VFALCO NOTE LocalCredentials starts the deprecated UNL service
         , m_deprecatedUNL (make_UniqueNodeList (*m_jobQueue))
 
-        , serverHandler_ (make_RPCHTTPServer (*m_networkOPs,
-            *m_jobQueue, *m_networkOPs, *m_resourceManager,
-                setup_RPC(getConfig()["rpc"])))
+        , serverHandler_ (make_ServerHandler (*m_networkOPs,
+            get_io_service(), *m_jobQueue, *m_networkOPs,
+                *m_resourceManager))
 
         , m_nodeStore (m_nodeStoreManager->make_Database ("NodeStore.main",
             m_nodeStoreScheduler, m_logs.journal("NodeObject"),
@@ -520,7 +517,7 @@ public:
 
     Overlay& overlay ()
     {
-        return *m_peers;
+        return *m_overlay;
     }
 
     // VFALCO TODO Move these to the .cpp
@@ -708,72 +705,41 @@ public:
         m_treeNodeCache.setTargetAge (getConfig ().getSize (siTreeCacheAge));
 
         //----------------------------------------------------------------------
+        //
+        // Server
+        //
+        //----------------------------------------------------------------------
+
+        serverHandler_->setup (setup_ServerHandler(getConfig(), std::cerr),
+            m_journal);
 
         // VFALCO NOTE Unfortunately, in stand-alone mode some code still
         //             foolishly calls overlay(). When this is fixed we can
         //             move the instantiation inside a conditional:
         //
         //             if (!getConfig ().RUN_STANDALONE)
-        m_peers = make_Overlay (setup_Overlay(getConfig()), *m_jobQueue,
-            *m_resourceManager, *m_siteFiles,
-                getConfig().getModuleDatabasePath(), *m_resolver,
+        m_overlay = make_Overlay (setup_Overlay(getConfig()), *m_jobQueue,
+            *serverHandler_, *m_resourceManager, *m_siteFiles,
+                getConfig ().getModuleDatabasePath (), *m_resolver,
                     get_io_service());
-        add (*m_peers); // add to PropertyStream
+        add (*m_overlay); // add to PropertyStream
 
-        // SSL context used for WebSocket connections.
-        if (getConfig ().WEBSOCKET_SECURE)
+        // Create websocket doors
+        for (auto const& port : serverHandler_->setup().ports)
         {
-            m_wsSSLContext.reset (RippleSSLContext::createAuthenticated (
-                getConfig ().WEBSOCKET_SSL_KEY,
-                getConfig ().WEBSOCKET_SSL_CERT,
-                getConfig ().WEBSOCKET_SSL_CHAIN));
-        }
-        else
-        {
-            m_wsSSLContext.reset (RippleSSLContext::createWebSocket ());
-        }
-
-        // Create private listening WebSocket socket
-        //
-        if (!getConfig ().WEBSOCKET_IP.empty () && getConfig ().WEBSOCKET_PORT)
-        {
-            m_wsPrivateDoor.reset (WSDoor::New (*m_resourceManager,
-                getOPs(), getConfig ().WEBSOCKET_IP, getConfig ().WEBSOCKET_PORT,
-                    false, m_wsSSLContext->get ()));
-
-            if (m_wsPrivateDoor == nullptr)
+            if (! port.websockets())
+                continue;
+            auto door = make_WSDoor(port, *m_resourceManager, getOPs());
+            if (door == nullptr)
             {
-                beast::FatalError ("Could not open the WebSocket private interface.",
-                    __FILE__, __LINE__);
+                m_journal.fatal << "Could not create Websocket for [" <<
+                    port.name << "]";
+                throw std::exception();
             }
-        }
-        else
-        {
-            m_journal.info << "WebSocket private interface: disabled";
-        }
-
-        // Create public listening WebSocket socket
-        //
-        if (!getConfig ().WEBSOCKET_PUBLIC_IP.empty () && getConfig ().WEBSOCKET_PUBLIC_PORT)
-        {
-            m_wsPublicDoor.reset (WSDoor::New (*m_resourceManager,
-                getOPs(), getConfig ().WEBSOCKET_PUBLIC_IP, getConfig ().WEBSOCKET_PUBLIC_PORT,
-                    true, m_wsSSLContext->get ()));
-
-            if (m_wsPublicDoor == nullptr)
-            {
-                beast::FatalError ("Could not open the WebSocket public interface.",
-                    __FILE__, __LINE__);
-            }
-        }
-        else
-        {
-            m_journal.info << "WebSocket public interface: disabled";
+            wsDoors_.emplace_back(std::move(door));
         }
 
         //----------------------------------------------------------------------
-
-        serverHandler_->setup (m_journal);
 
         // Begin connecting to network.
         if (!getConfig ().RUN_STANDALONE)
@@ -923,12 +889,6 @@ public:
         doStop ();
 
         {
-            // These two asssignment should no longer be necessary
-            // once the WSDoor cancels its pending I/O correctly
-            //m_wsPublicDoor = nullptr;
-            //m_wsPrivateDoor = nullptr;
-            //m_wsProxyDoor = nullptr;
-
             // VFALCO TODO Try to not have to do this early, by using observers to
             //             eliminate LoadManager's dependency inversions.
             //

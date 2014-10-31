@@ -17,17 +17,33 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_COMMON_MAKE_SSLCONTEXT_H_INCLUDED
+#define RIPPLE_COMMON_MAKE_SSLCONTEXT_H_INCLUDED
+
+#include <boost/asio/ssl/context.hpp>
+#include <beast/utility/noexcept.h>
+#include <string>
+
 namespace ripple {
-namespace HTTP {
 
-Port::Port (std::uint16_t port_, beast::IP::Endpoint const& addr_,
-        Security security_, SSLContext* context_)
-    : security (security_)
-    , port (port_)
-    , addr (addr_)
-    , context (context_)
-{
-}
+/** Retrieve raw DH parameters.
+    This is in the format expected by the OpenSSL function d2i_DHparams.
+    The vector is binary. An empty vector means the key size is unsupported.
+    @note The string may contain nulls in the middle. Use size() to
+            determine the actual size.
+*/
+std::string
+getRawDHParams(int keySize);
+
+/** Create a self-signed SSL context that allows anonymous Diffie Hellman. */
+std::shared_ptr<boost::asio::ssl::context>
+make_SSLContext();
+
+/** Create an authenticated SSL context using the specified files. */
+std::shared_ptr<boost::asio::ssl::context>
+make_SSLContextAuthed (std::string const& key_file,
+    std::string const& cert_file, std::string const& chain_file);
 
 }
-}
+
+#endif

@@ -17,11 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/common/RippleSSLContext.h>
+#include <ripple/common/make_SSLContext.h>
 #include <ripple/http/Session.h>
 #include <ripple/http/Server.h>
 #include <beast/unit_test/suite.h>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/optional.hpp>
 #include <chrono>
 #include <stdexcept>
 #include <thread>
@@ -36,6 +37,35 @@ public:
     {
         testPort = 1001
     };
+
+    class TestThread
+    {
+    private:
+        boost::asio::io_service io_service_;
+        boost::optional<boost::asio::io_service::work> work_;
+        std::thread thread_;
+
+    public:
+        TestThread()
+            : work_(boost::in_place(std::ref(io_service_)))
+            , thread_([&]() { this->io_service_.run(); })
+        {
+        }
+
+        ~TestThread()
+        {
+            work_ = boost::none;
+            thread_.join();
+        }
+
+        boost::asio::io_service&
+        get_io_service()
+        {
+            return io_service_;
+        }
+    };
+
+    //--------------------------------------------------------------------------
 
     class TestSink : public beast::Journal::Sink
     {
@@ -55,11 +85,44 @@ public:
         }
     };
 
+    //--------------------------------------------------------------------------
+
     struct TestHandler : Handler
     {
         void
         onAccept (Session& session) override
         {
+        }
+
+        bool
+        onAccept (Session& session,
+            boost::asio::ip::tcp::endpoint endpoint) override
+        {
+            return true;
+        }
+
+        void
+        onLegacyPeerHello (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
+            boost::asio::const_buffer buffer,
+                boost::asio::ip::tcp::endpoint remote_address) override
+        {
+        }
+
+        What
+        onMaybeMove (Session& session,
+            std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
+                beast::http::message&& request,
+                    boost::asio::ip::tcp::endpoint remote_address) override
+        {
+            return What{};
+        }
+
+        What
+        onMaybeMove (Session& session, boost::asio::ip::tcp::socket&& socket,
+            beast::http::message&& request,
+                boost::asio::ip::tcp::endpoint remote_address) override
+        {
+            return What{};
         }
 
         void
@@ -83,6 +146,8 @@ public:
         {
         }
     };
+
+    //--------------------------------------------------------------------------
 
     // Connect to an address
     template <class Socket>
@@ -227,16 +292,18 @@ public:
     run()
     {
         TestSink sink {*this};
+        TestThread thread;
         sink.severity (beast::Journal::Severity::kAll);
         beast::Journal journal {sink};
         TestHandler handler;
-        auto s = make_Server (handler, journal);
+        auto s = make_Server (handler,
+            thread.get_io_service(), journal);
         std::vector<Port> list;
-        std::unique_ptr <RippleSSLContext> c (
-            RippleSSLContext::createBare ());
-        list.emplace_back (testPort, beast::IP::Endpoint (
-            beast::IP::AddressV4 (127, 0, 0, 1), 0),
-                 Port::Security::no_ssl, c.get());
+        list.resize(1);
+        list.back().port = testPort;
+        list.back().ip = boost::asio::ip::address::from_string (
+            "127.0.0.1");
+        list.back().protocol.insert("http");
         s->ports (list);
 
         test_request();

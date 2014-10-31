@@ -21,9 +21,13 @@
 #define RIPPLE_APP_MAIN_SERVERHANDLER_H_INCLUDED
 
 #include <ripple/core/Config.h>
+#include <ripple/http/Server.h>
+#include <ripple/overlay/Overlay.h>
 #include <beast/utility/Journal.h>
 #include <beast/utility/PropertyStream.h>
 #include <beast/cxx14/memory.h> // <memory>
+#include <boost/asio/ip/address.hpp>
+#include <vector>
 
 namespace ripple {
 
@@ -35,6 +39,35 @@ protected:
     ServerHandler (Stoppable& parent);
 
 public:
+    struct Setup
+    {
+        std::vector<HTTP::Port> ports;
+
+        // Memberspace
+        struct client_t
+        {
+            bool secure;
+            std::string ip;
+            std::uint16_t port;
+            std::string user;
+            std::string password;
+            std::string admin_user;
+            std::string admin_password;
+        };
+
+        // Configuration when acting in client role
+        client_t client;
+
+        // Configuration for the Overlay
+        struct overlay_t
+        {
+            boost::asio::ip::address ip;
+            std::uint16_t port = 0;
+        };
+
+        overlay_t overlay;
+    };
+
     virtual
     ~ServerHandler() = default;
 
@@ -44,13 +77,40 @@ public:
     */
     virtual
     void
-    setup (beast::Journal journal) = 0;
+    setup (Setup const& setup, beast::Journal journal) = 0;
+
+    /** Returns the setup associated with the handler. */
+    virtual
+    Setup const&
+    setup() const = 0;
 };
 
-std::unique_ptr <ServerHandler>
-make_ServerHandler (beast::Stoppable& parent, JobQueue& jobQueue,
-    NetworkOPs& networkOPs, Resource::Manager& resourceManager,
-        RPC::Setup const& setup);
+//------------------------------------------------------------------------------
+
+/** Determine the level of administrative permission to grant. */
+/** @{ */
+enum class Role
+{
+    GUEST,
+    USER,
+    ADMIN,
+    FORBID
+};
+
+/** Return the allowed privilege role.
+    jsonRPC must meet the requirements of the JSON-RPC
+    specification. It must be of type Object, containing the key params
+    which is an array with at least one object. Inside this object
+    are the optional keys 'admin_user' and 'admin_password' used to
+    validate the credentials.
+*/
+Role
+adminRole (HTTP::Port const& port, Json::Value const& jsonRPC,
+    beast::IP::Endpoint const& remoteIp);
+/** @} */
+
+ServerHandler::Setup
+setup_ServerHandler (BasicConfig const& c, std::ostream& log);
 
 } // ripple
 

@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/common/RippleSSLContext.h>
+#include <ripple/common/make_SSLContext.h>
+#include <ripple/http/JsonWriter.h>
 #include <ripple/overlay/impl/OverlayImpl.h>
-#include <ripple/overlay/impl/PeerDoor.h>
 #include <ripple/overlay/impl/PeerImp.h>
 #include <ripple/peerfinder/make_Manager.h>
 #include <beast/ByteOrder.h>
@@ -100,8 +100,8 @@ OverlayImpl::Timer::on_timer (error_code ec)
     }
 
     overlay_.m_peerFinder->once_per_second();
-    overlay_.sendpeers();
-    overlay_.autoconnect();
+    overlay_.sendEndpoints();
+    overlay_.autoConnect();
 
     timer_.expires_from_now (std::chrono::seconds(1));
     timer_.async_wait(overlay_.strand_.wrap(std::bind(
@@ -114,6 +114,7 @@ OverlayImpl::Timer::on_timer (error_code ec)
 OverlayImpl::OverlayImpl (
     Setup const& setup,
     Stoppable& parent,
+    ServerHandler& serverHandler,
     Resource::Manager& resourceManager,
     SiteFiles::Manager& siteFiles,
     beast::File const& pathToDbFileOrDirectory,
@@ -125,6 +126,7 @@ OverlayImpl::OverlayImpl (
     , strand_ (io_service_)
     , setup_(setup)
     , journal_ (deprecatedLogs().journal("Overlay"))
+    , serverHandler_(serverHandler)
     , m_resourceManager (resourceManager)
     , m_peerFinder (PeerFinder::make_Manager (*this, io_service,
         pathToDbFileOrDirectory, get_seconds_clock(),
@@ -146,49 +148,112 @@ OverlayImpl::~OverlayImpl ()
     cond_.wait (lock, [this] { return list_.empty(); });
 }
 
+//------------------------------------------------------------------------------
+
 void
-OverlayImpl::accept (socket_type&& socket)
+OverlayImpl::onLegacyPeerHello (
+    std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
+        boost::asio::const_buffer buffer,
+            boost::asio::ip::tcp::endpoint remote_address)
 {
-    // An error getting an endpoint means the connection closed.
-    // Just do nothing and the socket will be closed by the caller.
-    boost::system::error_code ec;
-    auto const local_endpoint_native (socket.local_endpoint (ec));
-    if (ec)
-        return;
-    auto const remote_endpoint_native (socket.remote_endpoint (ec));
+    error_code ec;
+    auto const local_endpoint (ssl_bundle->socket.local_endpoint(ec));
     if (ec)
         return;
 
-    auto const local_endpoint (
-        beast::IPAddressConversion::from_asio (local_endpoint_native));
-    auto const remote_endpoint (
-        beast::IPAddressConversion::from_asio (remote_endpoint_native));
+    auto const slot = m_peerFinder->new_inbound_slot (
+        beast::IPAddressConversion::from_asio(local_endpoint),
+            beast::IPAddressConversion::from_asio(remote_address));
 
-    PeerFinder::Slot::ptr const slot (m_peerFinder->new_inbound_slot (
-        local_endpoint, remote_endpoint));
-
-    if (slot == nullptr)
-        return;
-
-    PeerImp::ptr const peer (std::make_shared <PeerImp> (
-        std::move (socket), remote_endpoint, *this, m_resourceManager,
-            *m_peerFinder, slot, setup_.context));
-
-    {
-        std::lock_guard <decltype(mutex_)> lock (mutex_);
-        {
-            std::pair <PeersBySlot::iterator, bool> const result (
-                m_peers.emplace (slot, peer));
-            assert (result.second);
-            (void) result.second;
-        }
-        list_.emplace(peer.get(), peer);
-
-        // This has to happen while holding the lock,
-        // otherwise the socket might not be canceled during a stop.
-        peer->start();
-    }
+    addpeer (std::make_shared<PeerImp>(std::move(ssl_bundle),
+        boost::asio::const_buffers_1(buffer),
+            beast::IPAddressConversion::from_asio(remote_address),
+                *this, m_resourceManager, *m_peerFinder, slot));
 }
+
+HTTP::Handler::What
+OverlayImpl::onMaybeMove (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
+    beast::http::message&& request,
+        boost::asio::ip::tcp::endpoint remote_address)
+{
+    HTTP::Handler::What what;
+    if (! isPeerUpgrade(request))
+        return what;
+
+    error_code ec;
+    auto const local_endpoint (ssl_bundle->socket.local_endpoint(ec));
+    if (ec)
+    {
+        // log?
+        // Since we don't call std::move the socket will be closed.
+        what.moved = false;
+        return what;
+    }
+
+    // TODO Validate HTTP request
+
+    auto const slot = m_peerFinder->new_inbound_slot (
+        beast::IPAddressConversion::from_asio(local_endpoint),
+            beast::IPAddressConversion::from_asio(remote_address));
+
+#if 0
+    if (slot == nullptr)
+#else
+    // For now, always redirect.
+    if (true)
+#endif
+    {
+        // Full, give them some addresses
+        what.response = makeRedirectResponse(slot, request);
+        what.keep_alive = request.keep_alive();
+        return what;
+    }
+
+    addpeer (std::make_shared<PeerImp>(std::move(ssl_bundle),
+        std::move(request), beast::IPAddressConversion::from_asio(remote_address),
+            *this, m_resourceManager, *m_peerFinder, slot));
+    what.moved = true;
+    return what;
+}
+
+//------------------------------------------------------------------------------
+
+bool
+OverlayImpl::isPeerUpgrade(beast::http::message const& request)
+{
+    if (! request.upgrade())
+        return false;
+    if (request.headers["Upgrade"] != "Ripple/1.2")
+        return false;
+    return true;
+}
+
+std::shared_ptr<HTTP::Writer>
+OverlayImpl::makeRedirectResponse (PeerFinder::Slot::ptr const& slot,
+    beast::http::message const& request)
+{
+    Json::Value json(Json::objectValue);
+    {
+        auto const result = m_peerFinder->redirect(slot);
+        Json::Value& ips = (json["peer-ips"] = Json::arrayValue);
+        for (auto const& _ : m_peerFinder->redirect(slot))
+            ips.append(_.address.to_string());
+    }
+
+    beast::http::message m;
+    m.request(false);
+    m.status(503);
+    m.reason("Service Unavailable");
+    m.version(request.version());
+    if (request.version() == std::make_pair(1, 0))
+    {
+        //?
+    }
+    auto const response = HTTP::make_JsonWriter (m, json);
+    return response;
+}
+
+//------------------------------------------------------------------------------
 
 void
 OverlayImpl::connect (beast::IP::Endpoint const& remote_endpoint)
@@ -201,24 +266,8 @@ OverlayImpl::connect (beast::IP::Endpoint const& remote_endpoint)
     if (slot == nullptr)
         return;
 
-    PeerImp::ptr const peer (std::make_shared <PeerImp> (
-        remote_endpoint, io_service_, *this, m_resourceManager,
-            *m_peerFinder, slot, setup_.context));
-
-    {
-        std::lock_guard <decltype(mutex_)> lock (mutex_);
-        {
-            std::pair <PeersBySlot::iterator, bool> const result (
-                m_peers.emplace (slot, peer));
-            assert (result.second);
-            (void) result.second;
-        }
-        list_.emplace(peer.get(), peer);
-
-        // This has to happen while holding the lock,
-        // otherwise the socket might not be canceled during a stop.
-        peer->start ();
-    }
+    addpeer (std::make_shared <PeerImp> (remote_endpoint, io_service_, *this,
+        m_resourceManager, *m_peerFinder, slot, setup_.context));
 }
 
 Peer::ShortId
@@ -245,7 +294,7 @@ OverlayImpl::remove (PeerFinder::Slot::ptr const& slot)
 //--------------------------------------------------------------------------
 
 void
-OverlayImpl::onPrepare ()
+OverlayImpl::onPrepare()
 {
     PeerFinder::Config config;
 
@@ -254,22 +303,20 @@ OverlayImpl::onPrepare ()
 
     config.outPeers = config.calcOutPeers();
 
-    config.wantIncoming =
-        (! getConfig ().PEER_PRIVATE) &&
-        (getConfig().peerListeningPort != 0);
+    auto const port = serverHandler_.setup().overlay.port;
 
+    config.wantIncoming =
+        (! getConfig ().PEER_PRIVATE) && (port != 0);
     // if it's a private peer or we are running as standalone
     // automatic connections would defeat the purpose.
     config.autoConnect =
         !getConfig().RUN_STANDALONE &&
         !getConfig().PEER_PRIVATE;
-
-    config.listeningPort = getConfig().peerListeningPort;
-
+    config.listeningPort = port;
     config.features = "";
 
     // Enforce business rules
-    config.applyTuning ();
+    config.applyTuning();
 
     m_peerFinder->setConfig (config);
 
@@ -311,14 +358,6 @@ OverlayImpl::onPrepare ()
                     m_peerFinder->addFixedPeer (name, addresses);
             });
     }
-
-    // Configure the peer doors, which allow the server to accept incoming
-    // peer connections:
-    if (! getConfig ().RUN_STANDALONE)
-    {
-        m_doorDirect = make_PeerDoor (*this, getConfig ().PEER_IP,
-            getConfig ().peerListeningPort, io_service_);
-    }
 }
 
 void
@@ -334,11 +373,6 @@ OverlayImpl::onStart ()
 void
 OverlayImpl::onStop ()
 {
-    if (m_doorDirect)
-        m_doorDirect->stop();
-    if (m_doorProxy)
-        m_doorProxy->stop();
-
     strand_.dispatch(std::bind(&OverlayImpl::close, this));
 }
 
@@ -470,6 +504,14 @@ OverlayImpl::remove (Child& child)
         checkStopped();
 }
 
+// Caller must hold the mutex
+void
+OverlayImpl::checkStopped ()
+{
+    if (isStopping() && areChildrenStopped () && list_.empty())
+        stopped();
+}
+
 void
 OverlayImpl::close()
 {
@@ -487,19 +529,35 @@ OverlayImpl::close()
     }
 }
 
-// Check for the stopped condition
-// Caller must hold the mutex
 void
-OverlayImpl::checkStopped ()
+OverlayImpl::addpeer (std::shared_ptr<PeerImp> const& peer)
 {
-    if (isStopping() && areChildrenStopped () && list_.empty())
-        stopped();
+    std::lock_guard <decltype(mutex_)> lock (mutex_);
+    {
+        std::pair <PeersBySlot::iterator, bool> const result (
+            m_peers.emplace (peer->slot(), peer));
+        assert (result.second);
+        (void) result.second;
+    }
+    list_.emplace(peer.get(), peer);
+
+    // This has to happen while holding the lock,
+    // otherwise the socket might not be canceled during a stop.
+    peer->start();
 }
 
 void
-OverlayImpl::sendpeers()
+OverlayImpl::autoConnect()
 {
-    auto const result = m_peerFinder->sendpeers();
+    auto const result = m_peerFinder->autoconnect();
+    for (auto addr : result)
+        connect (addr);
+}
+
+void
+OverlayImpl::sendEndpoints()
+{
+    auto const result = m_peerFinder->buildEndpointsForPeers();
     for (auto const& e : result)
     {
         // VFALCO TODO Make sure this doesn't race with closing the peer
@@ -515,13 +573,6 @@ OverlayImpl::sendpeers()
     }
 }
 
-void
-OverlayImpl::autoconnect()
-{
-    auto const result = m_peerFinder->autoconnect();
-    for (auto addr : result)
-        connect (addr);
-}
 
 //------------------------------------------------------------------------------
 
@@ -540,7 +591,7 @@ setup_Overlay (BasicConfig const& config)
         setup.promote = Overlay::Promote::always;
     else
         setup.promote = Overlay::Promote::automatic;
-    setup.context = make_ssl_context();
+    setup.context = make_SSLContext();
     return setup;
 }
 
@@ -548,14 +599,16 @@ std::unique_ptr <Overlay>
 make_Overlay (
     Overlay::Setup const& setup,
     beast::Stoppable& parent,
+    ServerHandler& serverHandler,
     Resource::Manager& resourceManager,
     SiteFiles::Manager& siteFiles,
     beast::File const& pathToDbFileOrDirectory,
     Resolver& resolver,
     boost::asio::io_service& io_service)
 {
-    return std::make_unique <OverlayImpl> (setup, parent, resourceManager,
-        siteFiles, pathToDbFileOrDirectory, resolver, io_service);
+    return std::make_unique <OverlayImpl> (setup, parent, serverHandler,
+        resourceManager, siteFiles, pathToDbFileOrDirectory, resolver,
+            io_service);
 }
 
 }

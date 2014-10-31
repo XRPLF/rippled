@@ -23,8 +23,8 @@
 #include <ripple/http/impl/Door.h>
 #include <ripple/http/Server.h>
 #include <ripple/http/Session.h>
-#include <ripple/http/impl/Types.h>
 #include <ripple/http/impl/ServerImpl.h>
+#include <beast/asio/IPAddressConversion.h>
 #include <beast/asio/placeholders.h>
 #include <beast/asio/ssl.h> // for is_short_read?
 #include <beast/http/message.h>
@@ -54,12 +54,14 @@ class Peer
 {
 protected:
     using clock_type = std::chrono::system_clock;
+    using error_code = boost::system::error_code;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using waitable_timer = boost::asio::basic_waitable_timer <clock_type>;
+    using yield_context = boost::asio::yield_context;
 
     enum
     {
-        // Size of our receive buffer
+        // Size of our read/write buffer
         bufferSize = 4 * 1024,
 
         // Max seconds without completing a message
@@ -85,7 +87,7 @@ protected:
     boost::asio::io_service::work work_;
     boost::asio::io_service::strand strand_;
     waitable_timer timer_;
-    endpoint_type endpoint_;
+    endpoint_type remote_address_;
     beast::Journal journal_;
 
     std::string id_;
@@ -111,7 +113,7 @@ protected:
 public:
     template <class ConstBufferSequence>
     Peer (Door& door, boost::asio::io_service& io_service,
-        beast::Journal journal, endpoint_type endpoint,
+        beast::Journal journal, endpoint_type remote_address,
             ConstBufferSequence const& buffers);
 
     virtual
@@ -145,10 +147,14 @@ protected:
     on_timer (error_code ec);
 
     void
-    do_read (boost::asio::yield_context yield);
+    do_read (yield_context yield);
 
     void
-    do_write (boost::asio::yield_context yield);
+    do_write (yield_context yield);
+
+    void
+    do_writer (std::shared_ptr <Writer> const& writer,
+        bool keep_alive, yield_context yield);
 
     virtual
     void
@@ -166,10 +172,16 @@ protected:
         return door_.server().journal();
     }
 
+    Port const&
+    port() override
+    {
+        return door_.port();
+    }
+
     beast::IP::Endpoint
     remoteAddress() override
     {
-        return from_asio (endpoint_);
+        return beast::IPAddressConversion::from_asio(remote_address_);
     }
 
     beast::http::message&
@@ -187,6 +199,10 @@ protected:
     void
     write (void const* buffer, std::size_t bytes) override;
 
+    void
+    write (std::shared_ptr <Writer> const& writer,
+        bool keep_alive) override;
+
     std::shared_ptr<Session>
     detach() override;
 
@@ -202,13 +218,13 @@ protected:
 template <class Impl>
 template <class ConstBufferSequence>
 Peer<Impl>::Peer (Door& door, boost::asio::io_service& io_service,
-    beast::Journal journal, endpoint_type endpoint,
+    beast::Journal journal, endpoint_type remote_address,
         ConstBufferSequence const& buffers)
     : Child(door)
     , work_ (io_service)
     , strand_ (io_service)
     , timer_ (io_service)
-    , endpoint_ (endpoint)
+    , remote_address_ (remote_address)
     , journal_ (journal)
 {
     read_buf_.commit(boost::asio::buffer_copy(read_buf_.prepare (
@@ -217,7 +233,7 @@ Peer<Impl>::Peer (Door& door, boost::asio::io_service& io_service,
     nid_ = ++sid;
     id_ = std::string("#") + std::to_string(nid_) + " ";
     if (journal_.trace) journal_.trace << id_ <<
-        "accept:    " << endpoint.address();
+        "accept:    " << remote_address_.address();
     when_ = clock_type::now();
     when_str_ = beast::Time::getCurrentTime().formatted (
         "%Y-%b-%d %H:%M:%S").toStdString();
@@ -251,7 +267,7 @@ Peer<Impl>::close()
             (void(Peer::*)(void))&Peer::close,
                 impl().shared_from_this()));
     error_code ec;
-    impl().socket_.lowest_layer().close(ec);
+    impl().stream_.lowest_layer().close(ec);
 }
 
 //------------------------------------------------------------------------------
@@ -265,7 +281,7 @@ Peer<Impl>::fail (error_code ec, char const* what)
         ec_ = ec;
         if (journal_.trace) journal_.trace << id_ <<
             std::string(what) << ": " << ec.message();
-        impl().socket_.lowest_layer().close (ec);
+        impl().stream_.lowest_layer().close (ec);
     }
 }
 
@@ -308,7 +324,7 @@ Peer<Impl>::on_timer (error_code ec)
 
 template <class Impl>
 void
-Peer<Impl>::do_read (boost::asio::yield_context yield)
+Peer<Impl>::do_read (yield_context yield)
 {
     complete_ = false;
 
@@ -322,7 +338,7 @@ Peer<Impl>::do_read (boost::asio::yield_context yield)
         {
             start_timer();
             auto const bytes_transferred = boost::asio::async_read (
-                impl().socket_, read_buf_.prepare (bufferSize),
+                impl().stream_, read_buf_.prepare (bufferSize),
                     boost::asio::transfer_at_least(1), yield[ec]);
             cancel_timer();
 
@@ -375,7 +391,7 @@ Peer<Impl>::do_read (boost::asio::yield_context yield)
 // The write queue must not be empty upon entry.
 template <class Impl>
 void
-Peer<Impl>::do_write (boost::asio::yield_context yield)
+Peer<Impl>::do_write (yield_context yield)
 {
     error_code ec;
     std::size_t bytes = 0;
@@ -405,7 +421,7 @@ Peer<Impl>::do_write (boost::asio::yield_context yield)
             break;
 
         start_timer();
-        bytes = boost::asio::async_write (impl().socket_,
+        bytes = boost::asio::async_write (impl().stream_,
             boost::asio::buffer (data, bytes),
                 boost::asio::transfer_at_least(1), yield[ec]);
         cancel_timer();
@@ -418,6 +434,45 @@ Peer<Impl>::do_write (boost::asio::yield_context yield)
         return;
 
     if (graceful_)
+        return do_close();
+
+    boost::asio::spawn (strand_, std::bind (&Peer<Impl>::do_read,
+        impl().shared_from_this(), std::placeholders::_1));
+}
+
+template <class Impl>
+void
+Peer<Impl>::do_writer (std::shared_ptr <Writer> const& writer,
+    bool keep_alive, yield_context yield)
+{
+    std::function <void(void)> resume;
+    {
+        auto const p = impl().shared_from_this();
+        resume = std::function <void(void)>(
+            [this, p, writer, keep_alive]()
+            {
+                boost::asio::spawn (strand_, std::bind (
+                    &Peer<Impl>::do_writer, p, writer, keep_alive,
+                        std::placeholders::_1));
+            });
+    }
+
+    for(;;)
+    {
+        if (! writer->prepare (bufferSize, resume))
+            return;
+        error_code ec;
+        auto const bytes_transferred = boost::asio::async_write (
+            impl().stream_, writer->data(), boost::asio::transfer_at_least(1),
+                yield[ec]);
+        if (ec)
+            return fail (ec, "writer");
+        writer->consume(bytes_transferred);
+        if (writer->complete())
+            break;
+    }
+
+    if (! keep_alive)
         return do_close();
 
     boost::asio::spawn (strand_, std::bind (&Peer<Impl>::do_read,
@@ -446,6 +501,17 @@ Peer<Impl>::write (void const* buffer, std::size_t bytes)
             impl().shared_from_this(), std::placeholders::_1));
 }
 
+template <class Impl>
+void
+Peer<Impl>::write (std::shared_ptr <Writer> const& writer,
+    bool keep_alive)
+{
+    boost::asio::spawn (strand_, std::bind (
+        &Peer<Impl>::do_writer, impl().shared_from_this(),
+            writer, keep_alive, std::placeholders::_1));
+}
+
+// DEPRECATED
 // Make the Session asynchronous
 template <class Impl>
 std::shared_ptr<Session>
@@ -454,6 +520,7 @@ Peer<Impl>::detach()
     return impl().shared_from_this();
 }
 
+// DEPRECATED
 // Called to indicate the response has been written (but not sent)
 template <class Impl>
 void
@@ -474,6 +541,7 @@ Peer<Impl>::complete()
         impl().shared_from_this(), std::placeholders::_1));
 }
 
+// DEPRECATED
 // Called from the Handler to close the session.
 template <class Impl>
 void
@@ -494,7 +562,7 @@ Peer<Impl>::close (bool graceful)
     }
 
     error_code ec;
-    impl().socket_.lowest_layer().close (ec);
+    impl().stream_.lowest_layer().close (ec);
 }
 
 }

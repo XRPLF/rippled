@@ -40,10 +40,6 @@ extern std::string createHTTPPost (std::string const& strHost, std::string const
 
 extern std::string HTTPReply (int nStatus, std::string const& strMsg);
 
-// VFALCO TODO Create a HTTPHeaders class with a nice interface instead of the std::map
-//
-extern bool HTTPAuthorized (std::map <std::string, std::string> const& mapHeaders);
-
 // VFALCO NOTE This one looks like it does some sort of stream i/o
 //
 extern int ReadHTTP (std::basic_istream<char>& stream,

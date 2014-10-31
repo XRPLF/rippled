@@ -42,6 +42,7 @@ std::unique_ptr <Overlay>
 make_Overlay (
     Overlay::Setup const& setup,
     beast::Stoppable& parent,
+    ServerHandler& serverHandler,
     Resource::Manager& resourceManager,
     SiteFiles::Manager& siteFiles,
     beast::File const& pathToDbFileOrDirectory,

@@ -589,7 +589,7 @@ public:
     }
 
     std::vector<std::pair<Slot::ptr, std::vector<Endpoint>>>
-    sendpeers()
+    buildEndpointsForPeers()
     {
         std::vector<std::pair<Slot::ptr, std::vector<Endpoint>>> result;
 

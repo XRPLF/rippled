@@ -24,7 +24,7 @@ namespace ripple {
 // This interface is deprecated.
 Json::Value doRipplePathFind (RPC::Context& context)
 {
-    RPC::LegacyPathFind lpf (context.role_ == Config::ADMIN);
+    RPC::LegacyPathFind lpf (context.role_ == Role::ADMIN);
     if (!lpf.isOk ())
         return rpcError (rpcTOO_BUSY);
 
@@ -192,7 +192,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
                 && context.params_["depth"].isIntegral())
             {
                 int rLev = context.params_["search_depth"].asInt ();
-                if ((rLev < level) || (context.role_ == Config::ADMIN))
+                if ((rLev < level) || (context.role_ == Role::ADMIN))
                     level = rLev;
             }
 

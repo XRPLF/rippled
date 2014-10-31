@@ -51,14 +51,6 @@ public:
     static void handle_shutdown(autotls_socket_ptr, const boost::system::error_code&) {
     }
 
-    void set_secure_only() {
-        m_secure_only = true;
-	}
-
-	void set_plain_only() {
-		m_plain_only = true;
-	}
-
     // should be private friended?
     autotls_socket::handshake_type get_handshake_type() {
         if (static_cast< endpoint_type* >(this)->is_server()) {
@@ -70,10 +62,12 @@ public:
 
     class handler_interface {
     public:
-    	virtual ~handler_interface() {}
+    	virtual ~handler_interface() = default;
 
         virtual void on_tcp_init() {};
         virtual boost::asio::ssl::context& get_ssl_context () = 0;
+        virtual bool plain_only() = 0;
+        virtual bool secure_only() = 0;
     };
     
     // Connection specific details
@@ -106,10 +100,10 @@ public:
         void init() {
             boost::asio::ssl::context& ssl_context (
                 m_connection.get_handler()->get_ssl_context());
-            
+
             m_socket_ptr = autotls_socket_ptr (new autotls_socket (
-                m_endpoint.get_io_service(), ssl_context, m_endpoint.m_secure_only,
-                    m_endpoint.m_plain_only));
+                m_endpoint.get_io_service(), ssl_context, m_connection.get_handler()->secure_only(),
+                    m_connection.get_handler()->plain_only()));
         }
         
         void async_init(boost::function<void(const boost::system::error_code&)> callback)
@@ -164,11 +158,12 @@ public:
         connection_type&                                m_connection;
     };
 protected:
-    autotls (boost::asio::io_service& m) : m_io_service(m), m_secure_only(false), m_plain_only(false) {}
+    autotls (boost::asio::io_service& m) : m_io_service(m)
+    {
+    }
+
 private:
     boost::asio::io_service&    m_io_service;
-    bool						m_secure_only;
-    bool						m_plain_only;
 };
     
 } // namespace socket

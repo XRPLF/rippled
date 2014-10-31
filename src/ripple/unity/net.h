@@ -32,7 +32,6 @@
 #include <ripple/net/HTTPRequest.h>
 #include <ripple/net/HTTPClient.h>
 #include <ripple/net/RPCServer.h>
-#include <ripple/net/RPCDoor.h>
 #include <ripple/net/SNTPClient.h>
 
 #include <ripple/net/RPCErr.h>

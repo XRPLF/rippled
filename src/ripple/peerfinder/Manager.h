@@ -225,7 +225,7 @@ public:
 
     virtual
     std::vector<std::pair<Slot::ptr, std::vector<Endpoint>>>
-    sendpeers() = 0;
+    buildEndpointsForPeers() = 0;
 
     /** Perform periodic activity.
         This should be called once per second.
