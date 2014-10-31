@@ -35,6 +35,20 @@
 namespace beast {
 namespace http {
 
+inline
+std::pair<int, int>
+http_1_0()
+{
+    return std::pair<int, int>(1, 0);
+}
+
+inline
+std::pair<int, int>
+http_1_1()
+{
+    return std::pair<int, int>(1, 1);
+}
+
 class message
 {
 private:
@@ -178,6 +192,12 @@ public:
         version_ = std::make_pair (major, minor);
     }
 
+    void
+    version (std::pair<int, int> p)
+    {
+        version_ = p;
+    }
+
     std::pair<int, int>
     version() const
     {
@@ -235,23 +255,6 @@ message::operator= (message&& other)
 
 template <class Streambuf>
 void
-write (Streambuf& stream, std::string const& s)
-{
-    stream.commit (boost::asio::buffer_copy (
-        stream.prepare (s.size()), boost::asio::buffer(s)));
-}
-
-template <class Streambuf>
-void
-write (Streambuf& stream, char const* s)
-{
-    auto const len (::strlen(s));
-    stream.commit (boost::asio::buffer_copy (
-        stream.prepare (len), boost::asio::buffer (s, len)));
-}
-
-template <class Streambuf>
-void
 write (Streambuf& stream, message const& m)
 {
     if (m.request())
@@ -276,13 +279,7 @@ write (Streambuf& stream, message const& m)
         write (stream, m.reason());
     }
     write (stream, "\r\n");
-    for (auto const& header : m.headers)
-    {
-        write (stream, header.field);
-        write (stream, ": ");
-        write (stream, header.value);
-        write (stream, "\r\n");
-    }
+    write(stream, m.headers);
     write (stream, "\r\n");
 }
 

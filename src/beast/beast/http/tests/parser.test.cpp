@@ -59,8 +59,18 @@ public:
     }
 
     void
+    test_headers()
+    {
+        headers h;
+        h.append("Field", "Value");
+        expect (h.erase("Field") == 1);
+    }
+
+    void
     run()
     {
+        test_headers();
+
         {
             std::string const text =
                 "GET / HTTP/1.1\r\n"
