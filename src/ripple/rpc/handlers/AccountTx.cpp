@@ -109,14 +109,15 @@ Json::Value doAccountTx (RPC::Context& context)
             {
                 Json::Value& jvObj = jvTxns.append (Json::objectValue);
 
-                std::uint32_t uLedgerIndex = std::get<2> (it);
                 jvObj["tx_blob"] = std::get<0> (it);
                 jvObj["meta"] = std::get<1> (it);
+
+                std::uint32_t uLedgerIndex = std::get<2> (it);
+
                 jvObj["ledger_index"] = uLedgerIndex;
-                jvObj[jss::validated]
-                        = bValidated
-                        && uValidatedMin <= uLedgerIndex
-                        && uValidatedMax >= uLedgerIndex;
+                jvObj[jss::validated] = bValidated &&
+                    uValidatedMin <= uLedgerIndex &&
+                    uValidatedMax >= uLedgerIndex;
 
             }
         }
@@ -135,13 +136,27 @@ Json::Value doAccountTx (RPC::Context& context)
 
                 if (it.second)
                 {
+                    auto meta_json = it.second->getJson (1);
+
+                    auto const stx = it.first->getSTransaction ();
+
+                    if (stx && stx->getTxnType () == ttPAYMENT)
+                    {
+                        auto delivered = stx->getFieldAmount (sfAmount);
+
+                        if (it.second->hasDeliveredAmount ())
+                            delivered = it.second->getDeliveredAmount ();
+
+                        meta_json[jss::delivered_amount] = delivered.getJson (1);
+                    }
+
+                    jvObj[jss::meta] = meta_json;
+
                     std::uint32_t uLedgerIndex = it.second->getLgrSeq ();
 
-                    jvObj[jss::meta] = it.second->getJson (0);
-                    jvObj[jss::validated]
-                            = bValidated
-                            && uValidatedMin <= uLedgerIndex
-                            && uValidatedMax >= uLedgerIndex;
+                    jvObj[jss::validated] = bValidated &&
+                        uValidatedMin <= uLedgerIndex &&
+                        uValidatedMax >= uLedgerIndex;
                 }
 
             }
