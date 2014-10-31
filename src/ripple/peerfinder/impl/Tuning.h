@@ -58,6 +58,12 @@ enum
 
     /** The default value of Config::maxPeers. */
     ,defaultMaxPeers = 21
+
+    /** Max redirects we will accept from one connection.
+        Redirects are limited for security purposes, to prevent
+        the address caches from getting flooded.
+    */
+    ,maxRedirects = 30
 };
 
 //------------------------------------------------------------------------------

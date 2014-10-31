@@ -93,25 +93,26 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    void setConfig (Config const& config)
+    void setConfig (Config const& config) override
     {
         m_logic.config (config);
     }
 
     void addFixedPeer (std::string const& name,
-        std::vector <beast::IP::Endpoint> const& addresses)
+        std::vector <beast::IP::Endpoint> const& addresses) override
     {
         m_logic.addFixedPeer (name, addresses);
     }
 
     void
     addFallbackStrings (std::string const& name,
-        std::vector <std::string> const& strings)
+        std::vector <std::string> const& strings) override
     {
         m_logic.addStaticSource (SourceStrings::New (name, strings));
     }
 
-    void addFallbackURL (std::string const& name, std::string const& url)
+    void addFallbackURL (std::string const& name,
+        std::string const& url)
     {
         // VFALCO TODO This needs to be implemented
     }
@@ -121,35 +122,43 @@ public:
     Slot::ptr
     new_inbound_slot (
         beast::IP::Endpoint const& local_endpoint,
-            beast::IP::Endpoint const& remote_endpoint)
+            beast::IP::Endpoint const& remote_endpoint) override
     {
         return m_logic.new_inbound_slot (local_endpoint, remote_endpoint);
     }
 
     Slot::ptr
-    new_outbound_slot (beast::IP::Endpoint const& remote_endpoint)
+    new_outbound_slot (beast::IP::Endpoint const& remote_endpoint) override
     {
         return m_logic.new_outbound_slot (remote_endpoint);
     }
 
     void
-    on_endpoints (Slot::ptr const& slot, Endpoints const& endpoints)
+    on_endpoints (Slot::ptr const& slot,
+        Endpoints const& endpoints)  override
     {
         SlotImp::ptr impl (std::dynamic_pointer_cast <SlotImp> (slot));
         m_logic.on_endpoints (impl, endpoints);
     }
 
     void
-    on_legacy_endpoints (IPAddresses const& addresses)
+    on_legacy_endpoints (IPAddresses const& addresses)  override
     {
         m_logic.on_legacy_endpoints (addresses);
     }
 
     void
-    on_closed (Slot::ptr const& slot)
+    on_closed (Slot::ptr const& slot)  override
     {
         SlotImp::ptr impl (std::dynamic_pointer_cast <SlotImp> (slot));
         m_logic.on_closed (impl);
+    }
+
+    void
+    onRedirects (boost::asio::ip::tcp::endpoint const& remote_address,
+        std::vector<boost::asio::ip::tcp::endpoint> const& eps) override
+    {
+        m_logic.onRedirects(eps.begin(), eps.end(), remote_address);
     }
 
     //--------------------------------------------------------------------------

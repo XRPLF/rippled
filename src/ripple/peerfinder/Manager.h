@@ -24,6 +24,7 @@
 #include <ripple/sitefiles/Sitefiles.h>
 #include <beast/chrono/abstract_clock.h>
 #include <beast/module/core/files/File.h>
+#include <boost/asio/ip/tcp.hpp>
 
 namespace ripple {
 namespace PeerFinder {
@@ -190,6 +191,12 @@ public:
         was canceled.
     */
     virtual void on_closed (Slot::ptr const& slot) = 0;
+
+    /** Called when we received redirect IPs from a busy peer. */
+    virtual
+    void
+    onRedirects (boost::asio::ip::tcp::endpoint const& remote_address,
+        std::vector<boost::asio::ip::tcp::endpoint> const& eps) = 0;
 
     //--------------------------------------------------------------------------
 

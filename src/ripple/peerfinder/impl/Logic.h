@@ -924,6 +924,12 @@ public:
         }
     }
 
+    // Insert a set of redirect IP addresses into the Bootcache
+    template <class FwdIter>
+    void
+    onRedirects (FwdIter first, FwdIter last,
+        boost::asio::ip::tcp::endpoint const& remote_address);
+
     //--------------------------------------------------------------------------
 
     // Returns `true` if the address matches a fixed slot address
@@ -1185,6 +1191,24 @@ public:
         return "?";
     }
 };
+
+//------------------------------------------------------------------------------
+
+template <class Checker>
+template <class FwdIter>
+void
+Logic<Checker>::onRedirects (FwdIter first, FwdIter last,
+    boost::asio::ip::tcp::endpoint const& remote_address)
+{
+    typename SharedState::Access state (m_state);
+    std::size_t n = 0;
+    for(;first != last && n < Tuning::maxRedirects; ++first, ++n)
+        state->bootcache.insert(
+            beast::IPAddressConversion::from_asio(*first));
+    if (n > 0)
+        if (m_journal.trace) m_journal.trace << beast::leftw (18) <<
+            "Logic add " << n << " redirect IPs from " << remote_address;
+}
 
 }
 }
