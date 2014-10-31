@@ -817,6 +817,40 @@ extend path_finding_cases,
     }
   }
 
+  "Path Tests #6: Two orderbooks": {
+    ledger:
+      accounts:
+        Alice:
+          balance: ["1000000000", "1/FOO/GW1"]
+          trusts:  ["1/FOO/GW1"]
+        Mark:
+          balance: ["1000000000", "1/FOO/GW2", "1/FOO/GW3"]
+          trusts:  ["1/FOO/GW2", "1/FOO/GW3"]
+          offers:  [
+            ["1/FOO/GW1",    "1/FOO/GW2"]
+            ["1/FOO/GW2",    "1/FOO/GW3"]
+          ]
+        GW1:
+          balance: ["1000000000"]
+        GW2:
+          balance: ["1000000000"]
+        GW3:
+          balance: ["1000000000"]
+
+    paths_expected: {
+      A1:
+        "E) user to gateway to gateyway to user":
+          ledger: false
+          comment: 'Source -> OB -> OB -> Destination'
+          src: "Alice"
+          send: "1/FOO/GW1"
+          dst: "GW3"
+          # via: "FOO"  TODO(tom): do I need this, what is it?
+          debug: false
+          alternatives: [] # Bug: we should find a path.
+    }
+  }
+
 ################################# DEFINE SUITES ################################
 
 define_suites(path_finding_cases)
