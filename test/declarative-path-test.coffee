@@ -24,35 +24,35 @@ simple_assert              = require 'assert'
 #################################### README ####################################
 """
 The tests are written in a declarative style:
-  
+
   Each case has an entry in the `path_finding_cases` object
   The key translates to a `suite(key, {...})`
   The `{...}` passed in is compiled into a setup/teardown for the `ledger` and
   into a bunch of `test` invokations for the `paths_expected`
-    
+
     - aliases are used throughout for easier reading
 
       - test account addresses will be created `on the fly`
-         
+
          no need to declare in testconfig.js
          debugged responses from the server substitute addresses for aliases
 
     - The fixtures are setup just once for each ledger, multiple path finding
       tests can be executed
-     
+
     - `paths_expected` top level keys are group names
                        2nd level keys are path test declarations
-                       
+
                        test declaration keys can be suffixed meaningfully with
-                       
+
                           `_skip`
                           `_only`
-                          
+
                         test declaration values can set
-                        
+
                           debug: true
-                          
-                            Will dump the path declaration and 
+
+                            Will dump the path declaration and
                             translated request and subsequent response
 
     - hops in `alternatives[*][paths][*]` can be written in shorthand
@@ -64,9 +64,9 @@ The tests are written in a declarative style:
             get `ABC/M1` through `M1`
 
           XRP|$
-            get `XRP` through `$` 
+            get `XRP` through `$`
                               $ signifies an order book rather than account
-  
+
   ------------------------------------------------------------------------------
   Tests can be written in the 'path-tests-json.js' file in same directory   # <--
   ------------------------------------------------------------------------------
@@ -105,9 +105,9 @@ config = testutils.init_config()
 
 expand_alternative = (alt) ->
   """
-  
+
   Make explicit the currency and issuer in each hop in paths_computed
-  
+
   """
   amt = Amount.from_json(alt.source_amount)
 
@@ -137,10 +137,10 @@ expand_alternative = (alt) ->
 
 create_shorthand = (alternatives) ->
   """
-  
+
   Convert explicit paths_computed into the format used by `paths_expected`
   These can be pasted in as the basis of tests.
-  
+
   """
   shorthand = []
 
@@ -178,8 +178,8 @@ ensure_list = (v) ->
 
 test_alternatives_factory = (realias_pp, realias_text) ->
   """
-  
-  We are using a factory to create `test_alternatives` because it needs the 
+
+  We are using a factory to create `test_alternatives` because it needs the
   per ledger `realias_*` functions
 
   """
@@ -207,16 +207,16 @@ test_alternatives_factory = (realias_pp, realias_text) ->
 
   simple_match_path = (test, path, ai, pi) ->
     """
-    
+
       @test
 
         A shorthand specified path
 
       @path
-        
+
         A path as returned by the server with `expand_alternative` done
         so issuer and currency are always stated.
-    
+
     """
     test = (hop_matcher(hop) for hop in test)
     return false if not test.length == path.length
@@ -248,15 +248,15 @@ test_alternatives_factory = (realias_pp, realias_text) ->
 
   test_alternatives = (test, actual, error_context) ->
     """
-    
+
       @test
         alternatives in shorthand format
 
       @actual
         alternatives as returned in a `path_find` response
-        
+
       @error_context
-      
+
         a function providing a string with extra context to provide to assertion
         messages
 
@@ -467,7 +467,12 @@ extend path_finding_cases,
   "CNY test":
     paths_expected:
       BS:
-        P101: src: "SRC", dst: "GATEWAY_DST", send: "10.1/CNY/GATEWAY_DST", via: "XRP", n_alternatives: 1
+        P101:
+          src: "SRC"
+          dst: "GATEWAY_DST"
+          send: "10.1/CNY/GATEWAY_DST"
+          via: "XRP"
+          n_alternatives: 1
 
     ledger:
       accounts:
@@ -809,6 +814,40 @@ extend path_finding_cases,
 
         "I3) XRP bridge  _skip":
           comment: 'Source -> OB to XRP -> OB from XRP -> AC -> Destination'
+    }
+  }
+
+  "Path Tests #6: Two orderbooks": {
+    ledger:
+      accounts:
+        Alice:
+          balance: ["1000000000", "1/FOO/GW1"]
+          trusts:  ["1/FOO/GW1"]
+        Mark:
+          balance: ["1000000000", "1/FOO/GW2", "1/FOO/GW3"]
+          trusts:  ["1/FOO/GW2", "1/FOO/GW3"]
+          offers:  [
+            ["1/FOO/GW1",    "1/FOO/GW2"]
+            ["1/FOO/GW2",    "1/FOO/GW3"]
+          ]
+        GW1:
+          balance: ["1000000000"]
+        GW2:
+          balance: ["1000000000"]
+        GW3:
+          balance: ["1000000000"]
+
+    paths_expected: {
+      A1:
+        "E) user to gateway to gateyway to user":
+          ledger: false
+          comment: 'Source -> OB -> OB -> Destination'
+          src: "Alice"
+          send: "1/FOO/GW1"
+          dst: "GW3"
+          # via: "FOO"  TODO(tom): do I need this, what is it?
+          debug: false
+          alternatives: [] # Bug: we should find a path.
     }
   }
 
