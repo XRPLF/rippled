@@ -38,11 +38,7 @@ namespace http {
 class headers
 {
 public:
-    struct value_type
-    {
-        std::string field;
-        std::string value;
-    };
+    using value_type = std::pair<std::string, std::string>;
 
 private:
     struct element
@@ -139,6 +135,13 @@ public:
     void
     clear() noexcept;
 
+    /** Remove a field.
+        @return The number of fields removed.
+    */
+    template <class = void>
+    std::size_t
+    erase (std::string const& field);
+
     /** Append a field value.
         If a field value already exists the new value will be
         extended as per RFC2616 Section 4.2.
@@ -164,8 +167,8 @@ template <class>
 headers::element::element (
     std::string const& f, std::string const& v)
 {
-    data.field = f;
-    data.value = v;
+    data.first = f;
+    data.second = v;
 }
 
 template <class String>
@@ -173,7 +176,7 @@ bool
 headers::less::operator() (
     String const& lhs, element const& rhs) const
 {
-    return beast::ci_less::operator() (lhs, rhs.data.field);
+    return beast::ci_less::operator() (lhs, rhs.data.first);
 }
 
 template <class String>
@@ -181,7 +184,7 @@ bool
 headers::less::operator() (
     element const& lhs, String const& rhs) const
 {
-    return beast::ci_less::operator() (lhs.data.field, rhs);
+    return beast::ci_less::operator() (lhs.data.first, rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -210,7 +213,7 @@ inline
 headers::headers (headers const& other)
 {
     for (auto const& e : other.list_)
-        append (e.data.field, e.data.value);
+        append (e.data.first, e.data.second);
 }
 
 inline
@@ -219,7 +222,7 @@ headers::operator= (headers const& other)
 {
     clear();
     for (auto const& e : other.list_)
-        append (e.data.field, e.data.value);
+        append (e.data.first, e.data.second);
     return *this;
 }
 
@@ -269,7 +272,7 @@ headers::operator[] (std::string const& field) const
     auto const found (find (field));
     if (found == end())
         return none;
-    return found->value;
+    return found->second;
 }
 
 template <class>
@@ -278,6 +281,20 @@ headers::clear() noexcept
 {
     for (auto iter (list_.begin()); iter != list_.end();)
         delete &(*iter++);
+}
+
+template <class>
+std::size_t
+headers::erase (std::string const& field)
+{
+    auto const iter = set_.find(field, less{});
+    if (iter == set_.end())
+        return 0;
+    element& e = *iter;
+    set_.erase(set_.iterator_to(e));
+    list_.erase(list_.iterator_to(e));
+    delete &e;
+    return 1;
 }
 
 template <class>
@@ -296,13 +313,43 @@ headers::append (std::string const& field,
     }
     // If field already exists, append comma
     // separated value as per RFC2616 section 4.2
-    auto& cur (result.first->data.value);
+    auto& cur (result.first->data.second);
     cur.reserve (cur.size() + 1 + value.size());
     cur.append (1, ',');
     cur.append (value);
 }
 
 //------------------------------------------------------------------------------
+
+template <class Streambuf>
+void
+write (Streambuf& stream, std::string const& s)
+{
+    stream.commit (boost::asio::buffer_copy (
+        stream.prepare (s.size()), boost::asio::buffer(s)));
+}
+
+template <class Streambuf>
+void
+write (Streambuf& stream, char const* s)
+{
+    auto const len (::strlen(s));
+    stream.commit (boost::asio::buffer_copy (
+        stream.prepare (len), boost::asio::buffer (s, len)));
+}
+
+template <class Streambuf>
+void
+write (Streambuf& stream, headers const& h)
+{
+    for (auto const& _ : h)
+    {
+        write (stream, _.first);
+        write (stream, ": ");
+        write (stream, _.second);
+        write (stream, "\r\n");
+    }
+}
 
 template <class>
 std::string
@@ -311,13 +358,13 @@ to_string (headers const& h)
     std::string s;
     std::size_t n (0);
     for (auto const& e : h)
-        n += e.field.size() + 2 + e.value.size() + 2;
+        n += e.first.size() + 2 + e.second.size() + 2;
     s.reserve (n);
     for (auto const& e : h)
     {
-        s.append (e.field);
+        s.append (e.first);
         s.append (": ");
-        s.append (e.value);
+        s.append (e.second);
         s.append ("\r\n");
     }
     return s;
@@ -338,10 +385,10 @@ build_map (headers const& h)
     std::map <std::string, std::string> c;
     for (auto const& e : h)
     {
-        auto key (e.field);
+        auto key (e.first);
         // TODO Replace with safe C++14 version
         std::transform (key.begin(), key.end(), key.begin(), ::tolower);
-        c [key] = e.value;
+        c [key] = e.second;
     }
     return c;
 }
