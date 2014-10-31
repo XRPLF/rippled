@@ -2517,6 +2517,11 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\nodestore\backend\RocksDBFactory.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\nodestore\backend\RocksDBQuickFactory.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\nodestore\backend\RocksDBQuickFactory.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\nodestore\Database.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\nodestore\DummyScheduler.h">
