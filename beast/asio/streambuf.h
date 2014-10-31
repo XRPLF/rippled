@@ -27,6 +27,7 @@
 #include <memory>
 #include <exception>
 #include <beast/cxx14/type_traits.h> // <type_traits>
+#include <string>
 #include <utility>
 
 namespace beast {
@@ -653,6 +654,20 @@ basic_streambuf<Allocator>::debug_check() const
 //------------------------------------------------------------------------------
 
 using streambuf = basic_streambuf<std::allocator<char>>;
+
+/** Convert the entire basic_streambuf to a string.
+    @note It is more efficient to deal directly in the streambuf instead.
+*/
+template <class Allocator>
+std::string
+to_string (basic_streambuf<Allocator> const& buf)
+{
+    std::string s;
+    s.resize(buf.size());
+    boost::asio::buffer_copy(boost::asio::buffer(s),
+        buf.data());
+    return s;
+}
 
 }
 }
