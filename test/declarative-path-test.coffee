@@ -463,6 +463,8 @@ catch e
 # You need two gateways, same currency. A market maker. A source that trusts one
 # gateway and holds its currency, and a destination that trusts the other.
 
+RIPD_639_FIXED = false
+
 extend path_finding_cases,
   "CNY test":
     paths_expected:
@@ -847,7 +849,16 @@ extend path_finding_cases,
           dst: "GW3"
           # via: "FOO"  TODO(tom): do I need this, what is it?
           debug: false
-          alternatives: [] # Bug: we should find a path.
+          alternatives:
+            if RIPD_639_FIXED then [
+              amount: "1/FOO/GW1"
+              paths: [
+                ["FOO/GW1|GW1", "FOO/GW2|GW2"]
+              ]
+            ]
+            else [
+            ]
+
     }
   }
 
