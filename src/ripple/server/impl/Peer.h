@@ -17,13 +17,12 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_HTTP_PEER_H_INCLUDED
-#define RIPPLE_HTTP_PEER_H_INCLUDED
+#ifndef RIPPLE_SERVER_PEER_H_INCLUDED
+#define RIPPLE_SERVER_PEER_H_INCLUDED
 
-#include <ripple/http/impl/Door.h>
-#include <ripple/http/Server.h>
-#include <ripple/http/Session.h>
-#include <ripple/http/impl/ServerImpl.h>
+#include <ripple/server/impl/Door.h>
+#include <ripple/server/Session.h>
+#include <ripple/server/impl/ServerImpl.h>
 #include <beast/asio/IPAddressConversion.h>
 #include <beast/asio/placeholders.h>
 #include <beast/asio/ssl.h> // for is_short_read?

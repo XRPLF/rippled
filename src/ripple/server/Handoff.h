@@ -17,29 +17,33 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_CONTEXT
-#define RIPPLE_RPC_CONTEXT
+#ifndef RIPPLE_SERVER_HANDOFF_H_INCLUDED
+#define RIPPLE_SERVER_HANDOFF_H_INCLUDED
 
-#include <ripple/core/Config.h>
-#include <ripple/server/ServerHandler.h>
+#include <ripple/server/Writer.h>
+#include <memory>
 
 namespace ripple {
-namespace RPC {
 
-/** The context of information needed to call an RPC. */
-struct Context
+/** Used to indicate the result of a server connection handoff. */
+struct Handoff
 {
-    // VFALCO NOTE Public members should not have underscores appended
-    Json::Value params_;
-    Resource::Charge& loadType_;
-    NetworkOPs& netOps_;
-    InfoSub::pointer infoSub_;
-    Role role_;
+    // When `true`, the Session will close the socket. The
+    // Handler may optionally take socket ownership using std::move
+    bool moved = false;
+
+    // If response is set, this determines the keep alive
+    bool keep_alive = false;
+
+    // When set, this will be sent back
+    std::shared_ptr<HTTP::Writer> response;
+
+    bool handled() const
+    {
+        return moved || response;
+    }
 };
 
-} // RPC
 } // ripple
-
-
 
 #endif

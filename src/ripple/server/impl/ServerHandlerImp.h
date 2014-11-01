@@ -17,11 +17,12 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_MAIN_SERVERHANDLERIMP_H_INCLUDED
-#define RIPPLE_APP_MAIN_SERVERHANDLERIMP_H_INCLUDED
+#ifndef RIPPLE_SERVER_SERVERHANDLERIMP_H_INCLUDED
+#define RIPPLE_SERVER_SERVERHANDLERIMP_H_INCLUDED
 
-#include <ripple/app/main/ServerHandler.h>
-#include <ripple/http/Session.h>
+#include <ripple/core/Job.h>
+#include <ripple/server/ServerHandler.h>
+#include <ripple/server/Session.h>
 #include <ripple/rpc/RPCHandler.h>
 
 namespace ripple {
@@ -80,14 +81,14 @@ private:
         boost::asio::const_buffer buffer,
             boost::asio::ip::tcp::endpoint remote_address) override;
 
-    What
-    onMaybeMove (HTTP::Session& session,
+    Handoff
+    onHandoff (HTTP::Session& session,
         std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
             beast::http::message&& request,
                 boost::asio::ip::tcp::endpoint remote_address) override;
 
-    What
-    onMaybeMove (HTTP::Session& session, boost::asio::ip::tcp::socket&& socket,
+    Handoff
+    onHandoff (HTTP::Session& session, boost::asio::ip::tcp::socket&& socket,
         beast::http::message&& request,
             boost::asio::ip::tcp::endpoint remote_address) override;
     void

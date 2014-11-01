@@ -17,48 +17,37 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_HTTP_WRITER_H_INCLUDED
-#define RIPPLE_HTTP_WRITER_H_INCLUDED
+#ifndef RIPPLE_SERVER_ROLE_H_INCLUDED
+#define RIPPLE_SERVER_ROLE_H_INCLUDED
 
-#include <boost/asio/buffer.hpp>
-#include <functional>
+#include <ripple/server/Port.h>
+#include <ripple/json/json_value.h>
+#include <beast/net/IPEndpoint.h>
 #include <vector>
 
 namespace ripple {
-namespace HTTP {
 
-class Writer
+/** Indicates the level of administrative permission to grant. */
+enum class Role
 {
-public:
-    virtual ~Writer() = default;
-
-    /** Returns `true` if there is no more data to pull. */
-    virtual
-    bool
-    complete() = 0;
-
-    /** Removes bytes from the input sequence. */
-    virtual
-    void
-    consume (std::size_t bytes) = 0;
-
-    /** Add data to the input sequence.
-        @param bytes A hint to the number of bytes desired.
-        @param resume A functor to later resume execution.
-        @return `true` if the writer is ready to provide more data.
-    */
-    virtual
-    bool
-    prepare (std::size_t bytes,
-        std::function<void(void)> resume) = 0;
-
-    /** Returns a ConstBufferSequence representing the input sequence. */
-    virtual
-    std::vector<boost::asio::const_buffer>
-    data() = 0;
+    GUEST,
+    USER,
+    ADMIN,
+    FORBID
 };
 
-}
-}
+/** Return the allowed privilege role.
+    jsonRPC must meet the requirements of the JSON-RPC
+    specification. It must be of type Object, containing the key params
+    which is an array with at least one object. Inside this object
+    are the optional keys 'admin_user' and 'admin_password' used to
+    validate the credentials.
+*/
+Role
+adminRole (HTTP::Port const& port, Json::Value const& jsonRPC,
+    beast::IP::Endpoint const& remoteIp,
+        std::vector<beast::IP::Endpoint> const& admin_allow);
+
+} // ripple
 
 #endif

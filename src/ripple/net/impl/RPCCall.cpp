@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/app/main/ServerHandler.h>
+#include <ripple/common/jsonrpc_fields.h>
 #include <ripple/basics/ArraySize.h>
 #include <ripple/rpc/ErrorCodes.h>
+#include <ripple/server/ServerHandler.h>
 #include <ripple/net/RPCCall.h>
 #include <ripple/net/RPCErr.h>
-#include <ripple/net/RPCUtil.h>
 #include <boost/regex.hpp>
 #include <iostream>
 
@@ -37,6 +37,42 @@ static inline bool isSwitchChar (char c)
 #else
     return c == '-';
 #endif
+}
+
+//
+// HTTP protocol
+//
+// This ain't Apache.  We're just using HTTP header for the length field
+// and to be compatible with other JSON-RPC implementations.
+//
+
+std::string createHTTPPost (
+    std::string const& strHost,
+    std::string const& strPath,
+    std::string const& strMsg,
+    std::map<std::string, std::string> const& mapRequestHeaders)
+{
+    std::ostringstream s;
+
+    // CHECKME this uses a different version than the replies below use. Is
+    //         this by design or an accident or should it be using
+    //         BuildInfo::getFullVersionString () as well?
+
+    s << "POST "
+      << (strPath.empty () ? "/" : strPath)
+      << " HTTP/1.0\r\n"
+      << "User-Agent: " SYSTEM_NAME "-json-rpc/v1\r\n"
+      << "Host: " << strHost << "\r\n"
+      << "Content-Type: application/json\r\n"
+      << "Content-Length: " << strMsg.size () << "\r\n"
+      << "Accept: application/json\r\n";
+
+    for (auto const& item : mapRequestHeaders)
+        s << item.first << ": " << item.second << "\r\n";
+
+    s << "\r\n" << strMsg;
+
+    return s.str ();
 }
 
 class RPCParser
@@ -887,6 +923,24 @@ public:
 };
 
 //------------------------------------------------------------------------------
+
+//
+// JSON-RPC protocol.  Bitcoin speaks version 1.0 for maximum compatibility,
+// but uses JSON-RPC 1.1/2.0 standards for parts of the 1.0 standard that were
+// unspecified (HTTP errors and contents of 'error').
+//
+// 1.0 spec: http://json-rpc.org/wiki/specification
+// 1.2 spec: http://groups.google.com/group/json-rpc/web/json-rpc-over-http
+//
+
+std::string JSONRPCRequest (std::string const& strMethod, Json::Value const& params, Json::Value const& id)
+{
+    Json::Value request;
+    request[jss::method] = strMethod;
+    request[jss::params] = params;
+    request[jss::id] = id;
+    return to_string (request) + "\n";
+}
 
 struct RPCCallImp
 {

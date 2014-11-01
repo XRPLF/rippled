@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_HTTP_PLAINPEER_H_INCLUDED
-#define RIPPLE_HTTP_PLAINPEER_H_INCLUDED
+#ifndef RIPPLE_SERVER_PLAINPEER_H_INCLUDED
+#define RIPPLE_SERVER_PLAINPEER_H_INCLUDED
 
-#include <ripple/http/impl/Peer.h>
+#include <ripple/server/impl/Peer.h>
 #include <memory>
 
 namespace ripple {
@@ -78,7 +78,7 @@ void
 PlainPeer::do_request()
 {
     ++request_count_;
-    auto const what = door_.server().handler().onMaybeMove (session(),
+    auto const what = door_.server().handler().onHandoff (session(),
         std::move(stream_), std::move(message_), remote_address_);
     if (what.moved)
         return;

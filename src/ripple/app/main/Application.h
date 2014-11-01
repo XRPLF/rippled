@@ -21,6 +21,12 @@
 #define RIPPLE_APP_APPLICATION_H_INCLUDED
 
 #include <ripple/app/main/FullBelowCache.h>
+#include <ripple/app/shamap/TreeNodeCache.h>
+#include <ripple/common/TaggedCache.h>
+#include <beast/utility/PropertyStream.h>
+#include <mutex>
+
+namespace boost { namespace asio { class io_service; } }
 
 namespace ripple {
 
@@ -31,12 +37,12 @@ namespace NodeStore { class Database; }
 namespace RPC { class Manager; }
 
 // VFALCO TODO Fix forward declares required for header dependency loops
-class CollectorManager;
 class AmendmentTable;
+class CollectorManager;
 class IHashRouter;
 class Logs;
 class LoadFeeTrack;
-class Overlay;
+class LocalCredentials;
 class UniqueNodeList;
 class JobQueue;
 class InboundLedgers;
@@ -44,12 +50,13 @@ class LedgerMaster;
 class LoadManager;
 class NetworkOPs;
 class OrderBookDB;
+class Overlay;
+class PathRequests;
 class ProofOfWorkFactory;
 class SerializedLedgerEntry;
 class TransactionMaster;
 class TxQueue;
-class LocalCredentials;
-class PathRequests;
+class Validations;
 
 class DatabaseCon;
 
@@ -70,7 +77,7 @@ public:
 
         other things
     */
-    typedef RippleRecursiveMutex LockType;
+    typedef std::recursive_mutex LockType;
     typedef std::unique_lock <LockType> ScopedLockType;
     typedef std::unique_ptr <ScopedLockType> ScopedLock;
 

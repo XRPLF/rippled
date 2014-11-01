@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_HTTP_JSONWRITER_H_INCLUDED
-#define RIPPLE_HTTP_JSONWRITER_H_INCLUDED
+#ifndef RIPPLE_SERVER_JSONWRITER_H_INCLUDED
+#define RIPPLE_SERVER_JSONWRITER_H_INCLUDED
 
-#include <ripple/http/Writer.h>
+#include <ripple/server/Writer.h>
 #include <ripple/json/json_value.h>
 #include <beast/asio/streambuf.h>
 #include <beast/http/message.h>

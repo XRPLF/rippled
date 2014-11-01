@@ -20,8 +20,9 @@
 #ifndef RIPPLE_OVERLAY_OVERLAYIMPL_H_INCLUDED
 #define RIPPLE_OVERLAY_OVERLAYIMPL_H_INCLUDED
 
-#include <ripple/app/main/ServerHandler.h>
 #include <ripple/overlay/Overlay.h>
+#include <ripple/server/Handoff.h>
+#include <ripple/server/ServerHandler.h>
 #include <ripple/common/Resolver.h>
 #include <ripple/common/seconds_clock.h>
 #include <ripple/common/UnorderedContainers.h>
@@ -131,9 +132,8 @@ private:
 public:
     OverlayImpl (Setup const& setup, Stoppable& parent,
         ServerHandler& serverHandler, Resource::Manager& resourceManager,
-            SiteFiles::Manager& siteFiles,
-                beast::File const& pathToDbFileOrDirectory,
-                    Resolver& resolver, boost::asio::io_service& io_service);
+            beast::File const& pathToDbFileOrDirectory,
+                Resolver& resolver, boost::asio::io_service& io_service);
 
     ~OverlayImpl ();
 
@@ -154,8 +154,8 @@ public:
         boost::asio::const_buffer buffer,
             boost::asio::ip::tcp::endpoint remote_address) override;
 
-    HTTP::Handler::What
-    onMaybeMove (std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
+    Handoff
+    onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
         beast::http::message&& request,
             boost::asio::ip::tcp::endpoint remote_address) override;
 

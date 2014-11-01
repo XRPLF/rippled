@@ -17,25 +17,23 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_MAIN_MAKE_SERVERHANDLER_H_INCLUDED
-#define RIPPLE_APP_MAIN_MAKE_SERVERHANDLER_H_INCLUDED
+#ifndef RIPPLE_SERVER_MAKE_SERVER_H_INCLUDED
+#define RIPPLE_SERVER_MAKE_SERVER_H_INCLUDED
 
-#include <ripple/app/main/ServerHandler.h>
-#include <ripple/core/Config.h>
-#include <ripple/http/Server.h>
-#include <ripple/overlay/Overlay.h>
+#include <ripple/server/Handler.h>
+#include <ripple/server/Server.h>
 #include <beast/utility/Journal.h>
-#include <beast/utility/PropertyStream.h>
-#include <beast/cxx14/memory.h> // <memory>
 #include <boost/asio/io_service.hpp>
-#include <vector>
 
 namespace ripple {
+namespace HTTP {
 
-std::unique_ptr <ServerHandler>
-make_ServerHandler (beast::Stoppable& parent, boost::asio::io_service& io_service,
-    JobQueue& jobQueue, NetworkOPs& networkOPs, Resource::Manager& resourceManager);
+/** Create the HTTP server using the specified handler. */
+std::unique_ptr<Server>
+make_Server (Handler& handler,
+    boost::asio::io_service& io_service, beast::Journal journal);
 
+} // HTTP
 } // ripple
 
 #endif

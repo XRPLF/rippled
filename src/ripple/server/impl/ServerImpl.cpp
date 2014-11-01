@@ -17,8 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/http/impl/ServerImpl.h>
-#include <ripple/http/impl/Peer.h>
+#if DOXYGEN
+#include <ripple/server/README.md>
+#endif
+
+#include <ripple/server/impl/ServerImpl.h>
+#include <ripple/server/impl/Peer.h>
 #include <beast/chrono/chrono_io.h>
 #include <boost/chrono/chrono_io.hpp>
 #include <cassert>
@@ -31,24 +35,6 @@
 
 namespace ripple {
 namespace HTTP {
-
-bool
-Port::websockets() const
-{
-    return protocol.count("ws") > 0 || protocol.count("wss") > 0;
-}
-
-std::string
-Port::protocols() const
-{
-    std::string s;
-    for (auto iter = protocol.cbegin();
-            iter != protocol.cend(); ++iter)
-        s += (iter != protocol.cbegin() ? "," : "") + *iter;
-    return s;
-}
-
-//------------------------------------------------------------------------------
 
 ServerImpl::ServerImpl (Handler& handler,
         boost::asio::io_service& io_service, beast::Journal journal)

@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_HTTP_SESSION_H_INCLUDED
-#define RIPPLE_HTTP_SESSION_H_INCLUDED
+#ifndef RIPPLE_SERVER_SESSION_H_INCLUDED
+#define RIPPLE_SERVER_SESSION_H_INCLUDED
 
-#include <ripple/http/Writer.h>
+#include <ripple/server/Writer.h>
 #include <beast/http/body.h>
 #include <beast/http/message.h>
 #include <beast/net/IPEndpoint.h>

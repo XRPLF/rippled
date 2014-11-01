@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_HTTP_DOOR_H_INCLUDED
-#define RIPPLE_HTTP_DOOR_H_INCLUDED
+#ifndef RIPPLE_SERVER_DOOR_H_INCLUDED
+#define RIPPLE_SERVER_DOOR_H_INCLUDED
 
-#include <ripple/http/impl/ServerImpl.h>
+#include <ripple/server/impl/ServerImpl.h>
 #include <beast/asio/streambuf.h>
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/io_service.hpp>

@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/common/make_SSLContext.h>
-#include <ripple/http/JsonWriter.h>
+#include <ripple/server/JsonWriter.h>
 #include <ripple/overlay/impl/OverlayImpl.h>
 #include <ripple/overlay/impl/PeerImp.h>
 #include <ripple/peerfinder/make_Manager.h>
@@ -116,7 +116,6 @@ OverlayImpl::OverlayImpl (
     Stoppable& parent,
     ServerHandler& serverHandler,
     Resource::Manager& resourceManager,
-    SiteFiles::Manager& siteFiles,
     beast::File const& pathToDbFileOrDirectory,
     Resolver& resolver,
     boost::asio::io_service& io_service)
@@ -171,14 +170,14 @@ OverlayImpl::onLegacyPeerHello (
                 *this, m_resourceManager, *m_peerFinder, slot));
 }
 
-HTTP::Handler::What
-OverlayImpl::onMaybeMove (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
+Handoff
+OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
     beast::http::message&& request,
         boost::asio::ip::tcp::endpoint remote_address)
 {
-    HTTP::Handler::What what;
+    Handoff handoff;
     if (! isPeerUpgrade(request))
-        return what;
+        return handoff;
 
     error_code ec;
     auto const local_endpoint (ssl_bundle->socket.local_endpoint(ec));
@@ -186,8 +185,8 @@ OverlayImpl::onMaybeMove (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle
     {
         // log?
         // Since we don't call std::move the socket will be closed.
-        what.moved = false;
-        return what;
+        handoff.moved = false;
+        return handoff;
     }
 
     // TODO Validate HTTP request
@@ -204,16 +203,16 @@ OverlayImpl::onMaybeMove (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle
 #endif
     {
         // Full, give them some addresses
-        what.response = makeRedirectResponse(slot, request);
-        what.keep_alive = request.keep_alive();
-        return what;
+        handoff.response = makeRedirectResponse(slot, request);
+        handoff.keep_alive = request.keep_alive();
+        return handoff;
     }
 
     addpeer (std::make_shared<PeerImp>(std::move(ssl_bundle),
         std::move(request), beast::IPAddressConversion::from_asio(remote_address),
             *this, m_resourceManager, *m_peerFinder, slot));
-    what.moved = true;
-    return what;
+    handoff.moved = true;
+    return handoff;
 }
 
 //------------------------------------------------------------------------------
@@ -601,14 +600,12 @@ make_Overlay (
     beast::Stoppable& parent,
     ServerHandler& serverHandler,
     Resource::Manager& resourceManager,
-    SiteFiles::Manager& siteFiles,
     beast::File const& pathToDbFileOrDirectory,
     Resolver& resolver,
     boost::asio::io_service& io_service)
 {
     return std::make_unique <OverlayImpl> (setup, parent, serverHandler,
-        resourceManager, siteFiles, pathToDbFileOrDirectory, resolver,
-            io_service);
+        resourceManager, pathToDbFileOrDirectory, resolver, io_service);
 }
 
 }

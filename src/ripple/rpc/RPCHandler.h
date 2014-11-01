@@ -20,7 +20,7 @@
 #ifndef RIPPLE_APP_RPC_HANDLER
 #define RIPPLE_APP_RPC_HANDLER
 
-#include <ripple/app/main/ServerHandler.h>
+#include <ripple/server/Role.h>
 #include <ripple/core/Config.h>
 #include <ripple/net/InfoSub.h>
 

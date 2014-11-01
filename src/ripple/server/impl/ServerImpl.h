@@ -17,11 +17,12 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_HTTP_SERVERIMPL_H_INCLUDED
-#define RIPPLE_HTTP_SERVERIMPL_H_INCLUDED
+#ifndef RIPPLE_SERVER_SERVERIMPL_H_INCLUDED
+#define RIPPLE_SERVER_SERVERIMPL_H_INCLUDED
 
 #include <ripple/common/seconds_clock.h>
-#include <ripple/http/Server.h>
+#include <ripple/server/Handler.h>
+#include <ripple/server/Server.h>
 #include <beast/intrusive/List.h>
 #include <beast/threads/SharedData.h>
 #include <beast/threads/Thread.h>

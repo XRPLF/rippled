@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_MAIN_SERVERHANDLER_H_INCLUDED
-#define RIPPLE_APP_MAIN_SERVERHANDLER_H_INCLUDED
+#ifndef RIPPLE_SERVER_SERVERHANDLER_H_INCLUDED
+#define RIPPLE_SERVER_SERVERHANDLER_H_INCLUDED
 
-#include <ripple/core/Config.h>
-#include <ripple/http/Server.h>
+#include <ripple/basics/BasicConfig.h>
+#include <ripple/server/Port.h>
 #include <ripple/overlay/Overlay.h>
 #include <beast/utility/Journal.h>
 #include <beast/utility/PropertyStream.h>
@@ -86,28 +86,6 @@ public:
 };
 
 //------------------------------------------------------------------------------
-
-/** Determine the level of administrative permission to grant. */
-/** @{ */
-enum class Role
-{
-    GUEST,
-    USER,
-    ADMIN,
-    FORBID
-};
-
-/** Return the allowed privilege role.
-    jsonRPC must meet the requirements of the JSON-RPC
-    specification. It must be of type Object, containing the key params
-    which is an array with at least one object. Inside this object
-    are the optional keys 'admin_user' and 'admin_password' used to
-    validate the credentials.
-*/
-Role
-adminRole (HTTP::Port const& port, Json::Value const& jsonRPC,
-    beast::IP::Endpoint const& remoteIp);
-/** @} */
 
 ServerHandler::Setup
 setup_ServerHandler (BasicConfig const& c, std::ostream& log);

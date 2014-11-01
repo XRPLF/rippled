@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_HTTP_SSLPEER_H_INCLUDED
-#define RIPPLE_HTTP_SSLPEER_H_INCLUDED
+#ifndef RIPPLE_SERVER_SSLPEER_H_INCLUDED
+#define RIPPLE_SERVER_SSLPEER_H_INCLUDED
 
-#include <ripple/http/impl/Peer.h>
+#include <ripple/server/impl/Peer.h>
 #include <beast/asio/ssl_bundle.h>
 #include <beast/cxx14/memory.h> // <memory>
 
@@ -171,7 +171,7 @@ void
 SSLPeer::do_request()
 {
     ++request_count_;
-    auto const what = door_.server().handler().onMaybeMove (session(),
+    auto const what = door_.server().handler().onHandoff (session(),
         std::move(ssl_bundle_), std::move(message_), remote_address_);
     if (what.moved)
         return;

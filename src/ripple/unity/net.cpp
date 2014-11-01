@@ -35,5 +35,4 @@
 #include <ripple/net/impl/RPCErr.cpp>
 #include <ripple/net/impl/RPCServerImp.h>
 #include <ripple/net/impl/RPCSub.cpp>
-#include <ripple/net/impl/RPCUtil.cpp>
 #include <ripple/net/impl/SNTPClient.cpp>

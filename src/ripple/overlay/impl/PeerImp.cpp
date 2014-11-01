@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/app/main/ServerHandler.h>
+#include <ripple/server/ServerHandler.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/overlay/impl/PeerImp.h>

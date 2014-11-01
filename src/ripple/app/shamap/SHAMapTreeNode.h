@@ -21,6 +21,7 @@
 #define RIPPLE_SHAMAPTREENODE_H
 
 #include <ripple/app/shamap/SHAMapNodeID.h>
+#include <ripple/app/shamap/TreeNodeCache.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/common/TaggedCache.h>
 
@@ -202,8 +203,6 @@ private:
 
     static std::mutex       childLock;
 };
-
-using TreeNodeCache = TaggedCache <uint256, SHAMapTreeNode>;
 
 } // ripple
 

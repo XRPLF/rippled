@@ -18,11 +18,18 @@
 //==============================================================================
 
 #include <ripple/app/main/Application.h>
-#include <ripple/app/main/make_ServerHandler.h>
-#include <ripple/app/main/ServerHandlerImp.h>
+#include <ripple/server/make_ServerHandler.h>
+#include <ripple/server/impl/JSONRPCUtil.h>
+#include <ripple/server/impl/ServerHandlerImp.h>
+#include <ripple/basics/Log.h>
 #include <ripple/common/make_SSLContext.h>
+#include <ripple/core/JobQueue.h>
+#include <ripple/server/make_Server.h>
 #include <ripple/overlay/Overlay.h>
+#include <ripple/resource/api/Manager.h>
+#include <ripple/resource/api/Fees.h>
 #include <beast/cxx14/algorithm.h> // <algorithm>
+#include <boost/algorithm/string.hpp>
 #include <boost/optional.hpp>
 #include <boost/regex.hpp>
 #include <algorithm>
@@ -97,44 +104,44 @@ ServerHandlerImp::onLegacyPeerHello (
 }
 
 auto
-ServerHandlerImp::onMaybeMove (HTTP::Session& session,
+ServerHandlerImp::onHandoff (HTTP::Session& session,
     std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
         beast::http::message&& request,
             boost::asio::ip::tcp::endpoint remote_address) ->
-    What
+    Handoff
 {
     if (session.port().protocol.count("wss") > 0 &&
         isWebsocketUpgrade (request))
     {
         // Pass to websockets
-        What what;
-        // what.moved = true;
-        return what;
+        Handoff handoff;
+        // handoff.moved = true;
+        return handoff;
     }
     if (session.port().protocol.count("peer") > 0)
-        return getApp().overlay().onMaybeMove (std::move(bundle),
+        return getApp().overlay().onHandoff (std::move(bundle),
             std::move(request), remote_address);
     // Pass through to legacy onRequest
-    return What{};
+    return Handoff{};
 }
 
 auto
-ServerHandlerImp::onMaybeMove (HTTP::Session& session,
+ServerHandlerImp::onHandoff (HTTP::Session& session,
     boost::asio::ip::tcp::socket&& socket,
         beast::http::message&& request,
             boost::asio::ip::tcp::endpoint remote_address) ->
-    What
+    Handoff
 {
     if (session.port().protocol.count("ws") > 0 &&
         isWebsocketUpgrade (request))
     {
         // Pass to websockets
-        What what;
-        // what.moved = true;
-        return what;
+        Handoff handoff;
+        // handoff.moved = true;
+        return handoff;
     }
     // Pass through to legacy onRequest
-    return What{};
+    return Handoff{};
 }
 
 void
@@ -211,13 +218,16 @@ ServerHandlerImp::processRequest (HTTP::Port const& port,
         }
     }
 
+    auto const& admin_allow = getConfig().RPC_ADMIN_ALLOW;
     auto role = Role::FORBID;
     if (jsonRPC.isObject() && jsonRPC.isMember("params") &&
             jsonRPC["params"].isArray() && jsonRPC["params"].size() > 0 &&
                 jsonRPC["params"][Json::UInt(0)].isObject())
-        role = adminRole(port, jsonRPC["params"][Json::UInt(0)], remoteIPAddress);
+        role = adminRole(port, jsonRPC["params"][Json::UInt(0)],
+            remoteIPAddress, admin_allow);
     else
-        role = adminRole(port, Json::objectValue, remoteIPAddress);
+        role = adminRole(port, Json::objectValue,
+            remoteIPAddress, admin_allow);
 
     Resource::Consumer usage;
 

@@ -21,8 +21,9 @@
 #define RIPPLE_OVERLAY_OVERLAY_H_INCLUDED
 
 #include <ripple/overlay/Peer.h>
-#include <ripple/http/Server.h>
+#include <ripple/server/Handoff.h>
 #include <beast/asio/ssl_bundle.h>
+#include <beast/http/message.h>
 #include <beast/threads/Stoppable.h>
 #include <beast/utility/PropertyStream.h>
 #include <memory>
@@ -79,8 +80,8 @@ public:
 
     /** Conditionally accept an incoming HTTP request. */
     virtual
-    HTTP::Handler::What
-    onMaybeMove (std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
+    Handoff
+    onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
         beast::http::message&& request,
             boost::asio::ip::tcp::endpoint remote_address) = 0;
 

@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <ripple/app/impl/BasicApp.h>
-#include <ripple/app/main/make_ServerHandler.h>
 #include <ripple/app/main/Tuning.h>
 #include <ripple/app/misc/ProofOfWorkFactory.h>
 #include <ripple/basics/Log.h>
@@ -27,11 +26,13 @@
 #include <ripple/common/seconds_clock.h>
 #include <ripple/common/make_SSLContext.h>
 #include <ripple/core/LoadFeeTrack.h>
-#include <ripple/rpc/Manager.h>
 #include <ripple/nodestore/Database.h>
 #include <ripple/nodestore/DummyScheduler.h>
 #include <ripple/nodestore/Manager.h>
 #include <ripple/overlay/make_Overlay.h>
+#include <ripple/rpc/Manager.h>
+#include <ripple/server/make_ServerHandler.h>
+#include <ripple/sitefiles/Sitefiles.h>
 #include <ripple/validators/Manager.h>
 #include <beast/asio/io_latency_probe.h>
 #include <beast/module/core/thread/DeadlineTimer.h>
@@ -719,7 +720,7 @@ public:
         //
         //             if (!getConfig ().RUN_STANDALONE)
         m_overlay = make_Overlay (setup_Overlay(getConfig()), *m_jobQueue,
-            *serverHandler_, *m_resourceManager, *m_siteFiles,
+            *serverHandler_, *m_resourceManager,
                 getConfig ().getModuleDatabasePath (), *m_resolver,
                     get_io_service());
         add (*m_overlay); // add to PropertyStream

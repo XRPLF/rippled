@@ -19,6 +19,9 @@
 
 #include <BeastConfig.h>
 
-#include <ripple/http/impl/Door.cpp>
-#include <ripple/http/impl/ServerImpl.cpp>
-#include <ripple/http/tests/Server.test.cpp>
+#include <ripple/server/impl/Door.cpp>
+#include <ripple/server/impl/JSONRPCUtil.cpp>
+#include <ripple/server/impl/Role.cpp>
+#include <ripple/server/impl/ServerImpl.cpp>
+#include <ripple/server/impl/ServerHandlerImp.cpp>
+#include <ripple/server/tests/Server.test.cpp>

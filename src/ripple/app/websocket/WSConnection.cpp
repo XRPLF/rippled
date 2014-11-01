@@ -19,6 +19,7 @@
 
 #include <ripple/common/jsonrpc_fields.h>
 #include <ripple/rpc/RPCHandler.h>
+#include <ripple/server/Role.h>
 
 namespace ripple {
 
@@ -156,8 +157,8 @@ Json::Value WSConnection::invokeCommand (Json::Value& jvRequest)
     RPCHandler  mRPCHandler (m_netOPs, std::dynamic_pointer_cast<InfoSub> (this->shared_from_this ()));
     Json::Value jvResult (Json::objectValue);
 
-    Role const role = port_.allow_admin ?
-        adminRole(port_, jvRequest, m_remoteAddress) : Role::GUEST;
+    Role const role = port_.allow_admin ? adminRole (port_, jvRequest,
+        m_remoteAddress, getConfig().RPC_ADMIN_ALLOW) : Role::GUEST;
 
     if (Role::FORBID == role)
     {

@@ -1801,8 +1801,6 @@
     <ClCompile Include="..\..\src\ripple\app\main\Main.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\main\make_ServerHandler.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\main\NodeStoreScheduler.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -1812,13 +1810,6 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\main\ParameterTable.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\app\main\ServerHandler.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\main\ServerHandlerImp.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\main\ServerHandlerImp.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\main\Tuning.h">
     </ClInclude>
@@ -2025,6 +2016,8 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\shamap\SHAMapTreeNode.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\shamap\TreeNodeCache.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\transactors\AddWallet.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -2373,33 +2366,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\data\utility\UptimeTimerAdapter.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\http\impl\Door.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\http\impl\Door.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\http\impl\Peer.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\http\impl\PlainPeer.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\http\impl\ServerImpl.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\http\impl\ServerImpl.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\http\impl\SSLPeer.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\http\JsonWriter.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\http\Server.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\http\Session.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\http\tests\Server.test.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\http\Writer.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\json\impl\JsonPropertyStream.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2466,9 +2432,6 @@
     <ClCompile Include="..\..\src\ripple\net\impl\RPCSub.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\net\impl\RPCUtil.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\net\impl\SNTPClient.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2481,8 +2444,6 @@
     <ClInclude Include="..\..\src\ripple\net\RPCServer.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\net\RPCSub.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\net\RPCUtil.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\net\SNTPClient.h">
     </ClInclude>
@@ -3040,6 +3001,62 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\Status.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\Handler.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\Handoff.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\server\impl\Door.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\server\impl\Door.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\server\impl\JSONRPCUtil.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\server\impl\JSONRPCUtil.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\impl\Peer.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\impl\PlainPeer.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\server\impl\Role.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\server\impl\ServerHandlerImp.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\server\impl\ServerHandlerImp.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\server\impl\ServerImpl.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\server\impl\ServerImpl.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\impl\SSLPeer.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\JsonWriter.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\make_Server.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\make_ServerHandler.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\Port.h">
+    </ClInclude>
+    <None Include="..\..\src\ripple\server\README.md">
+    </None>
+    <ClInclude Include="..\..\src\ripple\server\Role.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\Server.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\ServerHandler.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\server\Session.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\server\tests\Server.test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\server\Writer.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\sitefiles\impl\Logic.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\sitefiles\impl\Manager.cpp">
@@ -3173,8 +3190,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\unity\data.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\unity\http.cpp">
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\hyperleveldb.cpp">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\src\hyperleveldb;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\hyperleveldb;..\..\src\snappy\config;..\..\src\snappy\snappy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -3221,6 +3236,8 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\unity\rpcx.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\unity\server.cpp">
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\sitefiles.cpp">
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\snappy.cpp">

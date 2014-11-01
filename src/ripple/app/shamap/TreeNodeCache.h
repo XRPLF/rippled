@@ -17,19 +17,17 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_HTTP_H_INCLUDED
-#define RIPPLE_HTTP_H_INCLUDED
+#ifndef RIPPLE_APP_SHAMAP_TREENODECACHE_H_INCLUDED
+#define RIPPLE_APP_SHAMAP_TREENODECACHE_H_INCLUDED
 
-// VFALCO This entire file is deprecated now, I'm working on a replacement
+#include <ripple/common/TaggedCache.h>
 
-// VFALCO NOTE this sucks that we have to include asio in the header
-//             just for HTTPMessage!
-#include <beast/module/asio/asio.h>
+namespace ripple {
 
-#include <ripple/http/api/Port.h>
-#include <ripple/http/api/ScopedStream.h>
-#include <ripple/http/api/Session.h>
-#include <ripple/http/api/Handler.h>
-#include <ripple/http/api/Server.h>
+class SHAMapTreeNode;
+
+using TreeNodeCache = TaggedCache <uint256, SHAMapTreeNode>;
+
+} // ripple
 
 #endif

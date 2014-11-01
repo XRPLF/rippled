@@ -20,7 +20,7 @@
 #ifndef RIPPLE_WSDOOR_H_INCLUDED
 #define RIPPLE_WSDOOR_H_INCLUDED
 
-#include <ripple/http/Server.h>
+#include <ripple/server/Port.h>
 
 namespace ripple {
 

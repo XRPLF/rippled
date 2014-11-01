@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <ripple/common/make_SSLContext.h>
-#include <ripple/http/Session.h>
-#include <ripple/http/Server.h>
+#include <ripple/server/Server.h>
+#include <ripple/server/Session.h>
 #include <beast/unit_test/suite.h>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/optional.hpp>
@@ -108,21 +108,21 @@ public:
         {
         }
 
-        What
-        onMaybeMove (Session& session,
+        Handoff
+        onHandoff (Session& session,
             std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
                 beast::http::message&& request,
                     boost::asio::ip::tcp::endpoint remote_address) override
         {
-            return What{};
+            return Handoff{};
         }
 
-        What
-        onMaybeMove (Session& session, boost::asio::ip::tcp::socket&& socket,
+        Handoff
+        onHandoff (Session& session, boost::asio::ip::tcp::socket&& socket,
             beast::http::message&& request,
                 boost::asio::ip::tcp::endpoint remote_address) override
         {
-            return What{};
+            return Handoff{};
         }
 
         void

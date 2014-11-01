@@ -20,7 +20,8 @@
 #ifndef RIPPLE_WSCONNECTION_H
 #define RIPPLE_WSCONNECTION_H
 
-#include <ripple/http/Server.h>
+#include <ripple/core/Config.h>
+#include <ripple/server/Port.h>
 #include <beast/asio/placeholders.h>
 #include <memory>
 

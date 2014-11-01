@@ -35,7 +35,6 @@
 #include <ripple/net/SNTPClient.h>
 
 #include <ripple/net/RPCErr.h>
-#include <ripple/net/RPCUtil.h>
 #include <ripple/net/RPCCall.h>
 #include <ripple/net/InfoSub.h>
 #include <ripple/net/RPCSub.h>
