@@ -63,6 +63,7 @@ public:
 
     #if RIPPLE_ROCKSDB_AVAILABLE
         add_factory (make_RocksDBFactory ());
+        add_factory (make_RocksDBQuickFactory ());
     #endif
     }
 
