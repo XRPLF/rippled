@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/rpc/impl/Accounts.h>
+#include <ripple/rpc/impl/GetMasterGenerator.h>
 
 namespace ripple {
 

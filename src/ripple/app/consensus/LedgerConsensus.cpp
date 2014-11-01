@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/basics/CountedObject.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/overlay/predicates.h>
 #include <ripple/types/UintTypes.h>

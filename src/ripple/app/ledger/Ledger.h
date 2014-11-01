@@ -20,6 +20,15 @@
 #ifndef RIPPLE_LEDGER_H
 #define RIPPLE_LEDGER_H
 
+#include <ripple/app/shamap/SHAMap.h>
+#include <ripple/app/tx/Transaction.h>
+#include <ripple/app/tx/TransactionMeta.h>
+#include <ripple/app/misc/AccountState.h>
+#include <ripple/app/misc/SerializedLedger.h>
+#include <ripple/basics/CountedObject.h>
+#include <ripple/data/protocol/Serializer.h>
+#include <ripple/types/Book.h>
+
 namespace ripple {
 
 class Job;

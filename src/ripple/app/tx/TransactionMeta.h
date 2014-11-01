@@ -20,6 +20,8 @@
 #ifndef RIPPLE_TRANSACTIONMETA_H
 #define RIPPLE_TRANSACTIONMETA_H
 
+#include <ripple/app/misc/SerializedLedger.h>
+#include <ripple/data/protocol/STArray.h>
 #include <boost/optional.hpp>
 
 namespace ripple {

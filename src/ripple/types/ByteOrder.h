@@ -20,6 +20,8 @@
 #ifndef RIPPLE_TYPES_BYTEORDER_H
 #define RIPPLE_TYPES_BYTEORDER_H
 
+#include <cstdint>
+
 namespace ripple {
 
 // Routines for converting endianness
@@ -27,10 +29,10 @@ namespace ripple {
 // Reference: http://www.mail-archive.com/licq-commits@googlegroups.com/msg02334.html
 
 #ifdef _MSC_VER
-extern uint64_t htobe64 (uint64_t value);
-extern uint64_t be64toh (uint64_t value);
-extern uint32_t htobe32 (uint32_t value);
-extern uint32_t be32toh (uint32_t value);
+extern std::uint64_t htobe64 (uint64_t value);
+extern std::uint64_t be64toh (uint64_t value);
+extern std::uint32_t htobe32 (uint32_t value);
+extern std::uint32_t be32toh (uint32_t value);
 
 #elif __APPLE__
 #define htobe16(x) OSSwapHostToBigInt16(x)

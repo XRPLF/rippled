@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/rpc/impl/TransactionSign.h>
 
 namespace ripple {
 

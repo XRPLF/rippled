@@ -23,6 +23,7 @@
 #include <ripple/data/protocol/SField.h>
 #include <ripple/data/protocol/Serializer.h>
 #include <ripple/data/protocol/SerializedType.h>
+#include <ripple/types/Issue.h>
 
 #include <beast/cxx14/memory.h> // <memory>
 

@@ -20,6 +20,7 @@
 #ifndef RIPPLE_NETWORKOPS_H
 #define RIPPLE_NETWORKOPS_H
 
+#include <ripple/app/ledger/SerializedValidation.h>
 #include <ripple/net/InfoSub.h>
 #include <beast/cxx14/memory.h> // <memory>
 #include <beast/threads/Stoppable.h>

@@ -20,6 +20,7 @@
 #ifndef RIPPLE_KNOWNFORMATS_H_INCLUDED
 #define RIPPLE_KNOWNFORMATS_H_INCLUDED
 
+#include <ripple/data/protocol/SerializedObjectTemplate.h>
 #include <beast/cxx14/memory.h> // <memory>
 
 namespace ripple {

@@ -20,6 +20,8 @@
 #ifndef RIPPLE_SHAMAPSYNCFILTER_H
 #define RIPPLE_SHAMAPSYNCFILTER_H
 
+#include <ripple/app/shamap/SHAMapTreeNode.h>
+
 /** Callback for filtering SHAMap during sync. */
 namespace ripple {
 

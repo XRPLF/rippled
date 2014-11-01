@@ -22,6 +22,7 @@
 
 #include <ripple/app/shamap/SHAMapNodeID.h>
 #include <ripple/basics/CountedObject.h>
+#include <ripple/common/TaggedCache.h>
 
 namespace ripple {
 

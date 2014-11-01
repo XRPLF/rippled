@@ -20,6 +20,9 @@
 #ifndef RIPPLE_TRANSACTION_H
 #define RIPPLE_TRANSACTION_H
 
+#include <ripple/app/misc/SerializedTransaction.h>
+#include <ripple/data/protocol/TER.h>
+
 namespace ripple {
 
 //

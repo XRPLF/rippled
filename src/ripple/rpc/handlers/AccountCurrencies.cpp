@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+#include <ripple/rpc/impl/AccountFromString.h>
+#include <ripple/rpc/impl/LookupLedger.h>
+
 namespace ripple {
 
 Json::Value doAccountCurrencies (RPC::Context& context)

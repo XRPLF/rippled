@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/rpc/impl/ParseAccountIds.h>
 
 namespace ripple {
 

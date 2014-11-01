@@ -20,6 +20,8 @@
 #ifndef RIPPLE_RPC_ACCOUNTS_H_INCLUDED
 #define RIPPLE_RPC_ACCOUNTS_H_INCLUDED
 
+#include <ripple/app/ledger/Ledger.h>
+
 namespace ripple {
 namespace RPC {
 

@@ -23,7 +23,7 @@ namespace ripple {
 
 // from: http://stackoverflow.com/questions/3022552/is-there-any-standard-htonl-like-function-for-64-bits-integers-in-c
 // but we don't need to check the endianness
-uint64_t htobe64 (uint64_t value)
+std::uint64_t htobe64 (uint64_t value)
 {
     // The answer is 42
     //static const int num = 42;
@@ -41,17 +41,17 @@ uint64_t htobe64 (uint64_t value)
     //}
 }
 
-uint64_t be64toh (uint64_t value)
+std::uint64_t be64toh (uint64_t value)
 {
     return (_byteswap_uint64 (value));
 }
 
-uint32_t htobe32 (uint32_t value)
+std::uint32_t htobe32 (uint32_t value)
 {
     return (htonl (value));
 }
 
-uint32_t be32toh (uint32_t value)
+std::uint32_t be32toh (uint32_t value)
 {
     return ( _byteswap_ulong (value));
 }

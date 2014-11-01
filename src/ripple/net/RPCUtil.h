@@ -20,6 +20,8 @@
 #ifndef RIPPLE_NET_RPC_RPCUTIL_H_INCLUDED
 #define RIPPLE_NET_RPC_RPCUTIL_H_INCLUDED
 
+#include <ripple/json/json_value.h>
+
 namespace ripple {
 
 // VFALCO TODO Wrap these up into a class. It looks like they just do some

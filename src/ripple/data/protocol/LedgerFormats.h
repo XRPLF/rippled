@@ -20,6 +20,8 @@
 #ifndef RIPPLE_LEDGERFORMATS_H_INCLUDED
 #define RIPPLE_LEDGERFORMATS_H_INCLUDED
 
+#include <ripple/data/protocol/KnownFormats.h>
+
 namespace ripple {
 
 /** Ledger entry types.

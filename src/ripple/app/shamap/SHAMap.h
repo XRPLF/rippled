@@ -20,6 +20,12 @@
 #ifndef RIPPLE_SHAMAP_H
 #define RIPPLE_SHAMAP_H
 
+#include <ripple/app/shamap/SHAMapAddNode.h>
+#include <ripple/app/shamap/SHAMapItem.h>
+#include <ripple/app/shamap/SHAMapMissingNode.h>
+#include <ripple/app/shamap/SHAMapNodeID.h>
+#include <ripple/app/shamap/SHAMapSyncFilter.h>
+#include <ripple/app/shamap/SHAMapTreeNode.h>
 #include <ripple/basics/LoggedTimings.h>
 #include <ripple/common/UnorderedContainers.h>
 #include <ripple/app/main/FullBelowCache.h>

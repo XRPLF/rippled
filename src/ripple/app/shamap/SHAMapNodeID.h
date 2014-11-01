@@ -20,6 +20,7 @@
 #ifndef RIPPLE_SHAMAPNODEID_H
 #define RIPPLE_SHAMAPNODEID_H
 
+#include <ripple/data/protocol/Serializer.h>
 #include <ripple/types/base_uint.h>
 #include <ostream>
 #include <string>

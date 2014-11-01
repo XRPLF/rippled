@@ -20,6 +20,8 @@
 #ifndef RIPPLE_SERIALIZEDTRANSACTION_H
 #define RIPPLE_SERIALIZEDTRANSACTION_H
 
+#include <ripple/data/protocol/STObject.h>
+#include <ripple/data/protocol/TxFormats.h>
 #include <boost/logic/tribool.hpp>
 
 namespace ripple {

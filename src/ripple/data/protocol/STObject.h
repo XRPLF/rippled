@@ -21,6 +21,10 @@
 #define RIPPLE_STOBJECT_H
 
 #include <ripple/basics/CountedObject.h>
+#include <ripple/data/protocol/STAmount.h>
+#include <ripple/data/protocol/SerializedType.h>
+#include <ripple/data/protocol/SerializedTypes.h>
+#include <ripple/data/protocol/SerializedObjectTemplate.h>
 #include <boost/ptr_container/ptr_vector.hpp>
 
 namespace ripple {

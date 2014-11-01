@@ -20,20 +20,12 @@
 #ifndef RIPPLE_APP_RPC_HANDLER
 #define RIPPLE_APP_RPC_HANDLER
 
+#include <ripple/app/main/ServerHandler.h>
 #include <ripple/core/Config.h>
-
-#include <ripple/rpc/impl/AccountFromString.h>
-#include <ripple/rpc/impl/Accounts.h>
-#include <ripple/rpc/impl/Context.h>
-#include <ripple/rpc/impl/GetMasterGenerator.h>
-#include <ripple/rpc/impl/LookupLedger.h>
-#include <ripple/rpc/impl/ParseAccountIds.h>
-#include <ripple/rpc/impl/TransactionSign.h>
+#include <ripple/net/InfoSub.h>
 
 namespace ripple {
 
-// used by the RPCServer or WSDoor to carry out these RPC commands
-class InfoSub;
 class NetworkOPs;
 
 class RPCHandler
