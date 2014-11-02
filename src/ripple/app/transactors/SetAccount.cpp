@@ -177,6 +177,12 @@ public:
 
         if ((uSetFlag == asfNoFreeze) && (uClearFlag != asfNoFreeze))
         {
+            if (!mSigMaster)
+            {
+                m_journal.trace << "Can't use regular key to set NoFreeze.";
+                return tecNEED_MASTER_KEY;
+            }
+
             m_journal.trace << "Set NoFreeze flag";
             uFlagsOut |= lsfNoFreeze;
         }
