@@ -1,31 +1,20 @@
 #Benchmarks
 
 ```
-$rippled --unittest=NodeStoreTiming --unittest-arg="type=rocksdbquick,style=level,num_objects=2000000"
-
+rippled --unittest=NodeStoreTiming --unittest-arg="type=rocksdb,num_objects=2000000,open_files=2000,filter_bits=12,cache_mb=256,file_size_mb=8,file_size_mult=2;type=rocksdbquick,num_objects=2000000"
+2014-Nov-01 21:49:02 Validators:NFO Validators constructed (info)
 ripple.bench.NodeStoreTiming repeatableObject
-  Batch Insert    Fetch 50/50  Fetch Missing   Fetch Random        Inserts  Ordered Fetch
-         59.53          12.67           6.04          11.33          25.55          52.15 type=rocksdbquick,style=level,num_objects=2000000
+ Config Run       Inserts  Batch Insert   Fetch 50/50 Ordered Fetch  Fetch Random Fetch Missing
+      0   0        160.57        699.08         50.88         51.17         29.99         14.05
+      0   1        406.70        797.47         32.53         60.18         46.63         14.94
+      0   2        408.81        743.89         42.79         72.99         49.03         14.93
+      1   0        111.03        151.06         28.89         53.44         31.88         18.46
+      1   1         92.63        160.75         19.64         41.60         28.17         10.40
+      1   2        101.31        122.83         30.66         55.65         32.69         16.15
 
-$rippled --unittest=NodeStoreTiming --unittest-arg="type=rocksdbquick,style=level,num_objects=2000000"
-
-ripple.bench.NodeStoreTiming repeatableObject
-  Batch Insert    Fetch 50/50  Fetch Missing   Fetch Random        Inserts  Ordered Fetch
-         44.29          27.45           5.95          20.47          23.58          53.60 type=rocksdbquick,style=level,num_objects=2000000
-```
-
-```
-$rippled --unittest=NodeStoreTiming --unittest-arg="type=rocksdb,num_objects=2000000,open_files=2000,filter_bits=12,cache_mb=256,file_size_mb=8,file_size_mult=2"
-
-ripple.bench.NodeStoreTiming repeatableObject
-  Batch Insert    Fetch 50/50  Fetch Missing   Fetch Random        Inserts  Ordered Fetch
-        377.61          30.62          10.05          17.41         201.73          64.46 type=rocksdb,num_objects=2000000,open_files=2000,filter_bits=12,cache_mb=256,file_size_mb=8,file_size_mult=2
-
-$rippled --unittest=NodeStoreTiming --unittest-arg="type=rocksdb,num_objects=2000000,open_files=2000,filter_bits=12,cache_mb=256,file_size_mb=8,file_size_mult=2"
-
-ripple.bench.NodeStoreTiming repeatableObject
-  Batch Insert    Fetch 50/50  Fetch Missing   Fetch Random        Inserts  Ordered Fetch
-        405.83          29.48          11.29          25.81         209.05          55.75 type=rocksdb,num_objects=2000000,open_files=2000,filter_bits=12,cache_mb=256,file_size_mb=8,file_size_mult=2
+Configs:
+ 0: type=rocksdb,num_objects=2000000,open_files=2000,filter_bits=12,cache_mb=256,file_size_mb=8,file_size_mult=2
+ 1: type=rocksdbquick,num_objects=2000000
 ```
 
 ##Discussion
