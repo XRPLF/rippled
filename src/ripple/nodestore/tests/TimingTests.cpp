@@ -28,16 +28,19 @@ class NodeStoreTiming_test : public TestBase
 public:
     // Simple and fast RNG based on:
     // http://xorshift.di.unimi.it/xorshift128plus.c
+    // does not accept seed==0
     class XORShiftEngine{
        public:
         using result_type = std::uint64_t;
         
         static const result_type default_seed = 1977u;
 
-        explicit XORShiftEngine(result_type val = default_seed) {}
+        explicit XORShiftEngine(result_type val = default_seed) { seed(val); }
 
         void seed(result_type const seed)
         {
+            if (seed==0)
+                throw std::range_error("zero seed supplied");
             s[0] = murmurhash3(seed);
             s[1] = murmurhash3(s[0]);
         }
@@ -92,7 +95,7 @@ public:
               numObjects_(numObjects),
               count_(0),
               rng_(seed),
-              key_(minKey, maxKey),
+              key_(minKey+1, maxKey+1),
               value_(minValueLength, maxValueLength),
               type_(hotLEDGER, hotTRANSACTION_NODE),
               ledger_(minLedger, maxLedger)
@@ -102,7 +105,8 @@ public:
         NodeObject::Ptr next()
         {
             // Stop when done
-            if (count_==numObjects_) return nullptr;
+            if (count_ == numObjects_)
+                return nullptr;
             count_++;
 
             // Seed from range between minKey and maxKey to ensure repeatability
@@ -231,7 +235,8 @@ public:
 
             Status const status =
                 backend->fetch(expected->getHash().cbegin(), &got);
-            expect(f(status), "Wrong status");
+            expect(f(status),
+                   "Wrong status for: " + to_string(expected->getHash()));
             if (status == ok)
             {
                 expect(got != nullptr, "Should not be null");
