@@ -21,6 +21,7 @@
 #include <ripple/overlay/impl/OverlayImpl.h>
 #include <ripple/overlay/impl/PeerDoor.h>
 #include <ripple/overlay/impl/PeerImp.h>
+#include <ripple/peerfinder/make_Manager.h>
 #include <beast/ByteOrder.h>
 
 #if DOXYGEN
@@ -52,6 +53,64 @@ struct get_peer_json
 
 //------------------------------------------------------------------------------
 
+OverlayImpl::Child::Child (OverlayImpl& overlay)
+    : overlay_(overlay)
+{
+}
+
+OverlayImpl::Child::~Child()
+{
+    overlay_.remove(*this);
+}
+
+//------------------------------------------------------------------------------
+
+OverlayImpl::Timer::Timer (OverlayImpl& overlay)
+    : Child(overlay)
+    , timer_(overlay_.io_service_)
+{
+}
+
+void
+OverlayImpl::Timer::close()
+{
+    error_code ec;
+    timer_.cancel(ec);
+}
+
+void
+OverlayImpl::Timer::run()
+{
+    error_code ec;
+    timer_.expires_from_now (std::chrono::seconds(1));
+    timer_.async_wait(overlay_.strand_.wrap(
+        std::bind(&Timer::on_timer, shared_from_this(),
+            beast::asio::placeholders::error)));
+}
+
+void
+OverlayImpl::Timer::on_timer (error_code ec)
+{
+    if (ec || overlay_.isStopping())
+    {
+        if (ec && ec != boost::asio::error::operation_aborted)
+            if (overlay_.journal_.error) overlay_.journal_.error <<
+                "on_timer: " << ec.message();
+        return;
+    }
+
+    overlay_.m_peerFinder->once_per_second();
+    overlay_.sendpeers();
+    overlay_.autoconnect();
+
+    timer_.expires_from_now (std::chrono::seconds(1));
+    timer_.async_wait(overlay_.strand_.wrap(std::bind(
+        &Timer::on_timer, shared_from_this(),
+            beast::asio::placeholders::error)));
+}
+
+//------------------------------------------------------------------------------
+
 OverlayImpl::OverlayImpl (
     Setup const& setup,
     Stoppable& parent,
@@ -61,28 +120,30 @@ OverlayImpl::OverlayImpl (
     Resolver& resolver,
     boost::asio::io_service& io_service)
     : Overlay (parent)
+    , io_service_ (io_service)
+    , work_ (boost::in_place(std::ref(io_service_)))
+    , strand_ (io_service_)
     , setup_(setup)
-    , m_child_count (1)
-    , m_journal (deprecatedLogs().journal("Overlay"))
+    , journal_ (deprecatedLogs().journal("Overlay"))
     , m_resourceManager (resourceManager)
-    , m_peerFinder (add (PeerFinder::Manager::New (*this,
-        pathToDbFileOrDirectory, get_seconds_clock (),
-            deprecatedLogs().journal("PeerFinder"))))
-    , m_io_service (io_service)
-    , timer_(io_service)
+    , m_peerFinder (PeerFinder::make_Manager (*this, io_service,
+        pathToDbFileOrDirectory, get_seconds_clock(),
+            deprecatedLogs().journal("PeerFinder")))
     , m_resolver (resolver)
     , m_nextShortId (0)
 {
+    beast::PropertyStream::Source::add (m_peerFinder.get());
 }
 
 OverlayImpl::~OverlayImpl ()
 {
+    close();
+
     // Block until dependent objects have been destroyed.
     // This is just to catch improper use of the Stoppable API.
     //
-    std::unique_lock <decltype(m_mutex)> lock (m_mutex);
-    m_cond.wait (lock, [this] {
-        return this->m_child_count == 0; });
+    std::unique_lock <decltype(mutex_)> lock (mutex_);
+    cond_.wait (lock, [this] { return list_.empty(); });
 }
 
 void
@@ -114,31 +175,25 @@ OverlayImpl::accept (socket_type&& socket)
             *m_peerFinder, slot, setup_.context));
 
     {
-        std::lock_guard <decltype(m_mutex)> lock (m_mutex);
+        std::lock_guard <decltype(mutex_)> lock (mutex_);
         {
             std::pair <PeersBySlot::iterator, bool> const result (
                 m_peers.emplace (slot, peer));
             assert (result.second);
             (void) result.second;
         }
-        ++m_child_count;
+        list_.emplace(peer.get(), peer);
 
         // This has to happen while holding the lock,
         // otherwise the socket might not be canceled during a stop.
-        peer->start ();
+        peer->start();
     }
 }
 
 void
 OverlayImpl::connect (beast::IP::Endpoint const& remote_endpoint)
 {
-    if (isStopping())
-    {
-        m_journal.debug <<
-            "Skipping " << remote_endpoint <<
-            " connect on stop";
-        return;
-    }
+    assert(work_);
 
     PeerFinder::Slot::ptr const slot (
         m_peerFinder->new_outbound_slot (remote_endpoint));
@@ -147,18 +202,18 @@ OverlayImpl::connect (beast::IP::Endpoint const& remote_endpoint)
         return;
 
     PeerImp::ptr const peer (std::make_shared <PeerImp> (
-        remote_endpoint, m_io_service, *this, m_resourceManager,
+        remote_endpoint, io_service_, *this, m_resourceManager,
             *m_peerFinder, slot, setup_.context));
 
     {
-        std::lock_guard <decltype(m_mutex)> lock (m_mutex);
+        std::lock_guard <decltype(mutex_)> lock (mutex_);
         {
             std::pair <PeersBySlot::iterator, bool> const result (
                 m_peers.emplace (slot, peer));
             assert (result.second);
             (void) result.second;
         }
-        ++m_child_count;
+        list_.emplace(peer.get(), peer);
 
         // This has to happen while holding the lock,
         // otherwise the socket might not be canceled during a stop.
@@ -174,41 +229,13 @@ OverlayImpl::next_id()
 
 //--------------------------------------------------------------------------
 
-// Check for the stopped condition
-// Caller must hold the mutex
-void
-OverlayImpl::check_stopped ()
-{
-    // To be stopped, child Stoppable objects must be stopped
-    // and the count of dependent objects must be zero
-    if (areChildrenStopped () && m_child_count == 0)
-    {
-        m_cond.notify_all ();
-        m_journal.info <<
-            "Stopped.";
-        stopped ();
-    }
-}
-
-// Decrement the count of dependent objects
-// Caller must hold the mutex
-void
-OverlayImpl::release ()
-{
-    if (--m_child_count == 0)
-        check_stopped ();
-}
-
 void
 OverlayImpl::remove (PeerFinder::Slot::ptr const& slot)
 {
-    std::lock_guard <decltype(m_mutex)> lock (m_mutex);
-
+    std::lock_guard <decltype(mutex_)> lock (mutex_);
     PeersBySlot::iterator const iter (m_peers.find (slot));
     assert (iter != m_peers.end ());
     m_peers.erase (iter);
-
-    release();
 }
 
 //--------------------------------------------------------------------------
@@ -290,62 +317,36 @@ OverlayImpl::onPrepare ()
     if (! getConfig ().RUN_STANDALONE)
     {
         m_doorDirect = make_PeerDoor (*this, getConfig ().PEER_IP,
-            getConfig ().peerListeningPort, m_io_service);
+            getConfig ().peerListeningPort, io_service_);
     }
 }
 
 void
 OverlayImpl::onStart ()
 {
-    // mutex not needed since we aren't running
-    ++m_child_count;
-    boost::asio::spawn (m_io_service, std::bind (
-        &OverlayImpl::do_timer, this, std::placeholders::_1));
-}
-
-/** Close all peer connections.
-    If `graceful` is true then active
-    Requirements:
-        Caller must hold the mutex.
-*/
-void
-OverlayImpl::close_all (bool graceful)
-{
-    for (auto const& entry : m_peers)
-    {
-        PeerImp::ptr const peer (entry.second.lock());
-
-        // VFALCO The only case where the weak_ptr is expired should be if
-        //        ~PeerImp is pre-empted before it calls m_peers.remove()
-        //
-        if (peer != nullptr)
-            peer->close();
-    }
+    auto const timer = std::make_shared<Timer>(*this);
+    std::lock_guard <decltype(mutex_)> lock (mutex_);
+    list_.emplace(timer.get(), timer);
+    timer_ = timer;
+    timer->run();
 }
 
 void
 OverlayImpl::onStop ()
 {
-    error_code ec;
-    timer_.cancel(ec);
-
     if (m_doorDirect)
         m_doorDirect->stop();
     if (m_doorProxy)
         m_doorProxy->stop();
 
-    std::lock_guard <decltype(m_mutex)> lock (m_mutex);
-    // Take off the extra count we added in the constructor
-    release();
-
-    close_all (false);
+    strand_.dispatch(std::bind(&OverlayImpl::close, this));
 }
 
 void
 OverlayImpl::onChildrenStopped ()
 {
-    std::lock_guard <decltype(m_mutex)> lock (m_mutex);
-    check_stopped ();
+    std::lock_guard <decltype(mutex_)> lock (mutex_);
+    checkStopped ();
 }
 
 //--------------------------------------------------------------------------
@@ -368,7 +369,7 @@ OverlayImpl::onWrite (beast::PropertyStream::Map& stream)
 void
 OverlayImpl::activate (Peer::ptr const& peer)
 {
-    std::lock_guard <decltype(m_mutex)> lock (m_mutex);
+    std::lock_guard <decltype(mutex_)> lock (mutex_);
 
     // Now track this peer
     {
@@ -389,7 +390,7 @@ OverlayImpl::activate (Peer::ptr const& peer)
         (void) result.second;
     }
 
-    m_journal.debug <<
+    journal_.debug <<
         "activated " << peer->getRemoteAddress() <<
         " (" << peer->getShortId() <<
         ":" << RipplePublicKey(peer->getNodePublic()) << ")";
@@ -406,7 +407,7 @@ OverlayImpl::activate (Peer::ptr const& peer)
 void
 OverlayImpl::onPeerDisconnect (Peer::ptr const& peer)
 {
-    std::lock_guard <decltype(m_mutex)> lock (m_mutex);
+    std::lock_guard <decltype(mutex_)> lock (mutex_);
     m_shortIdMap.erase (peer->getShortId ());
     m_publicKeyMap.erase (peer->getNodePublic ());
 }
@@ -416,9 +417,9 @@ OverlayImpl::onPeerDisconnect (Peer::ptr const& peer)
     and are running the Ripple protocol.
 */
 std::size_t
-OverlayImpl::size ()
+OverlayImpl::size()
 {
-    std::lock_guard <decltype(m_mutex)> lock (m_mutex);
+    std::lock_guard <decltype(mutex_)> lock (mutex_);
     return m_publicKeyMap.size ();
 }
 
@@ -434,7 +435,7 @@ OverlayImpl::getActivePeers ()
 {
     Overlay::PeerSequence ret;
 
-    std::lock_guard <decltype(m_mutex)> lock (m_mutex);
+    std::lock_guard <decltype(mutex_)> lock (mutex_);
 
     ret.reserve (m_publicKeyMap.size ());
 
@@ -450,7 +451,7 @@ OverlayImpl::getActivePeers ()
 Peer::ptr
 OverlayImpl::findPeerByShortID (Peer::ShortId const& id)
 {
-    std::lock_guard <decltype(m_mutex)> lock (m_mutex);
+    std::lock_guard <decltype(mutex_)> lock (mutex_);
     PeerByShortId::iterator const iter (
         m_shortIdMap.find (id));
     if (iter != m_shortIdMap.end ())
@@ -461,11 +462,38 @@ OverlayImpl::findPeerByShortID (Peer::ShortId const& id)
 //------------------------------------------------------------------------------
 
 void
-OverlayImpl::autoconnect()
+OverlayImpl::remove (Child& child)
 {
-    auto const result = m_peerFinder->autoconnect();
-    for (auto addr : result)
-        connect (addr);
+    std::lock_guard<decltype(mutex_)> lock(mutex_);
+    list_.erase(&child);
+    if (list_.empty())
+        checkStopped();
+}
+
+void
+OverlayImpl::close()
+{
+    std::lock_guard<decltype(mutex_)> lock(mutex_);
+    if (work_)
+    {
+        work_ = boost::none;
+        for (auto& _ : list_)
+        {
+            auto const child = _.second.lock();
+            // Happens when the child is about to be destroyed
+            if (child != nullptr)
+                child->close();
+        }
+    }
+}
+
+// Check for the stopped condition
+// Caller must hold the mutex
+void
+OverlayImpl::checkStopped ()
+{
+    if (isStopping() && areChildrenStopped () && list_.empty())
+        stopped();
 }
 
 void
@@ -477,7 +505,7 @@ OverlayImpl::sendpeers()
         // VFALCO TODO Make sure this doesn't race with closing the peer
         PeerImp::ptr peer;
         {
-            std::lock_guard <decltype(m_mutex)> lock (m_mutex);
+            std::lock_guard <decltype(mutex_)> lock (mutex_);
             PeersBySlot::iterator const iter = m_peers.find (e.first);
             if (iter != m_peers.end())
                 peer = iter->second.lock();
@@ -488,24 +516,11 @@ OverlayImpl::sendpeers()
 }
 
 void
-OverlayImpl::do_timer (yield_context yield)
+OverlayImpl::autoconnect()
 {
-    for(;;)
-    {
-        m_peerFinder->once_per_second();
-        sendpeers();
-        autoconnect();
-
-        timer_.expires_from_now (std::chrono::seconds(1));
-        error_code ec;
-        timer_.async_wait (yield[ec]);
-        if (ec == boost::asio::error::operation_aborted)
-            break;
-    }
-
-    // Take off a reference
-    std::lock_guard <decltype(m_mutex)> lock (m_mutex);
-    release();
+    auto const result = m_peerFinder->autoconnect();
+    for (auto addr : result)
+        connect (addr);
 }
 
 //------------------------------------------------------------------------------

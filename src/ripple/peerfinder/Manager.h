@@ -121,11 +121,6 @@ protected:
     explicit Manager (Stoppable& parent);
 
 public:
-    /** Create a new Manager. */
-    static Manager* New (Stoppable& parent,
-        beast::File const& pathToDbFileOrDirectory,
-            clock_type& clock, beast::Journal journal);
-
     /** Destroy the object.
         Any pending source fetch operations are aborted.
         There may be some listener calls made before the

@@ -62,6 +62,7 @@ std::ostream& operator<< (std::ostream& os, PeerImp const* peer);
 class PeerImp
     : public Peer
     , public std::enable_shared_from_this <PeerImp>
+    , public OverlayImpl::Child
     , private beast::LeakChecked <Peer>
     , private abstract_protocol_handler
 {
@@ -202,14 +203,14 @@ public:
 
     // Begin asynchronous initiation function calls
     void
-    start ();
-
-    // Cancel all I/O and close the socket
-    void
-    close();
+    start();
 
     void
     getLedger (protocol::TMGetLedger& packet);
+
+    // Cancel all I/O and close the socket
+    void
+    close() override;
 
     //
     // Network

@@ -31,6 +31,7 @@
 #include <boost/asio/ssl/context.hpp>
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/spawn.hpp>
+#include <boost/container/flat_map.hpp>
 #include <beast/cxx14/memory.h> // <memory>
 #include <atomic>
 #include <cassert>
@@ -46,37 +47,68 @@ class PeerImp;
 
 class OverlayImpl : public Overlay
 {
+public:
+    class Child
+    {
+    protected:
+        OverlayImpl& overlay_;
+
+        explicit
+        Child (OverlayImpl& overlay);
+
+        virtual ~Child();
+
+    public:
+        virtual void close() = 0;
+    };
+
 private:
     using clock_type = std::chrono::steady_clock;
     using socket_type = boost::asio::ip::tcp::socket;
     using error_code = boost::system::error_code;
     using yield_context = boost::asio::yield_context;
 
-    typedef hash_map <PeerFinder::Slot::ptr,
-                      std::weak_ptr <PeerImp>> PeersBySlot;
+    using PeersBySlot = hash_map <PeerFinder::Slot::ptr,
+        std::weak_ptr <PeerImp>>;
 
-    typedef hash_map <RippleAddress, Peer::ptr> PeerByPublicKey;
+    using PeerByPublicKey = hash_map<RippleAddress, Peer::ptr>;
 
-    typedef hash_map <Peer::ShortId, Peer::ptr> PeerByShortId;
+    using PeerByShortId = hash_map<Peer::ShortId, Peer::ptr>;
+
+    struct Timer
+        : Child
+        , std::enable_shared_from_this<Timer>
+    {
+        boost::asio::basic_waitable_timer <clock_type> timer_;
+
+        explicit
+        Timer (OverlayImpl& overlay);
+
+        void
+        close() override;
+
+        void
+        run();
+
+        void
+        on_timer (error_code ec);
+    };
+
+    boost::asio::io_service& io_service_;
+    boost::optional<boost::asio::io_service::work> work_;
+    boost::asio::io_service::strand strand_;
+
+    std::recursive_mutex mutex_; // VFALCO use std::mutex
+    std::condition_variable_any cond_;
+    std::weak_ptr<Timer> timer_;
+    boost::container::flat_map<
+        Child*, std::weak_ptr<Child>> list_;
 
     Setup setup_;
-
-    // VFALCO TODO Change to regular mutex and eliminate re-entrancy
-    std::recursive_mutex m_mutex;
-
-    // Blocks us until dependent objects have been destroyed
-    std::condition_variable_any m_cond;
-
-    // Number of dependencies that must be destroyed before we can stop
-    std::size_t m_child_count;
-
-    beast::Journal m_journal;
+    beast::Journal journal_;
     Resource::Manager& m_resourceManager;
 
     std::unique_ptr <PeerFinder::Manager> m_peerFinder;
-
-    boost::asio::io_service& m_io_service;
-    boost::asio::basic_waitable_timer <clock_type> timer_;
 
     /** Associates slots to peers. */
     PeersBySlot m_peers;
@@ -165,32 +197,21 @@ private:
 
     //--------------------------------------------------------------------------
 
-    void
-    check_stopped ();
-
     //
     // Stoppable
     //
 
     void
-    onPrepare () override;
+    onPrepare() override;
 
     void
-    onStart () override;
-
-    /** Close all peer connections.
-        If `graceful` is true then active
-        Requirements:
-            Caller must hold the mutex.
-    */
-    void
-    close_all (bool graceful);
+    onStart() override;
 
     void
-    onStop () override;
+    onStop() override;
 
     void
-    onChildrenStopped () override;
+    onChildrenStopped() override;
 
     //
     // PropertyStream
@@ -202,16 +223,19 @@ private:
     //--------------------------------------------------------------------------
 
     void
-    release();
+    remove (Child& child);
+
+    void
+    close();
+
+    void
+    checkStopped ();
 
     void
     sendpeers();
 
     void
     autoconnect();
-
-    void
-    do_timer (yield_context yield);
 };
 
 } // ripple

@@ -30,7 +30,8 @@ PeerImp::PeerImp (socket_type&& socket, beast::IP::Endpoint remoteAddress,
     OverlayImpl& overlay, Resource::Manager& resourceManager,
         PeerFinder::Manager& peerFinder, PeerFinder::Slot::ptr const& slot,
             std::shared_ptr<boost::asio::ssl::context> const& context)
-    : journal_ (deprecatedLogs().journal("Peer"))
+    : Child (overlay)
+    , journal_ (deprecatedLogs().journal("Peer"))
     , ssl_bundle_(std::make_unique<beast::asio::ssl_bundle>(
         context, std::move(socket)))
     , socket_ (ssl_bundle_->socket)
@@ -53,7 +54,8 @@ PeerImp::PeerImp (beast::IP::Endpoint remoteAddress,
         Resource::Manager& resourceManager, PeerFinder::Manager& peerFinder,
             PeerFinder::Slot::ptr const& slot,
                 std::shared_ptr<boost::asio::ssl::context> const& context)
-    : journal_ (deprecatedLogs().journal("Peer"))
+    : Child (overlay)
+    , journal_ (deprecatedLogs().journal("Peer"))
     , ssl_bundle_(std::make_unique<beast::asio::ssl_bundle>(
         context, io_service))
     , socket_ (ssl_bundle_->socket)

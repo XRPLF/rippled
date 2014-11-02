@@ -3786,6 +3786,9 @@
     <ClInclude Include="..\..\src\ripple\peerfinder\impl\Tuning.h">
       <Filter>ripple\peerfinder\impl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\peerfinder\make_Manager.h">
+      <Filter>ripple\peerfinder</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\peerfinder\Manager.h">
       <Filter>ripple\peerfinder</Filter>
     </ClInclude>

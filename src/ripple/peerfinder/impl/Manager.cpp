@@ -24,6 +24,7 @@
 #include <ripple/peerfinder/impl/StoreSqdb.h>
 #include <boost/asio/io_service.hpp>
 #include <boost/optional.hpp>
+#include <beast/cxx14/memory.h> // <memory>
 #include <thread>
 
 #if DOXYGEN
@@ -38,6 +39,8 @@ class ManagerImp
     , public beast::LeakChecked <ManagerImp>
 {
 public:
+    boost::asio::io_service &io_service_;
+    boost::optional <boost::asio::io_service::work> work_;
     beast::File m_databaseFile;
     clock_type& m_clock;
     beast::Journal m_journal;
@@ -45,19 +48,17 @@ public:
     Checker<boost::asio::ip::tcp> checker_;
     Logic <decltype(checker_)> m_logic;
 
-    // Temporary
-    std::thread thread_;
-    boost::asio::io_service io_service_;
-    boost::optional <boost::asio::io_service::work> work_;
-
     //--------------------------------------------------------------------------
 
     ManagerImp (
         Stoppable& stoppable,
+        boost::asio::io_service& io_service,
         beast::File const& pathToDbFileOrDirectory,
         clock_type& clock,
         beast::Journal journal)
         : Manager (stoppable)
+        , io_service_(io_service)
+        , work_(boost::in_place(std::ref(io_service_)))
         , m_databaseFile (pathToDbFileOrDirectory)
         , m_clock (clock)
         , m_journal (journal)
@@ -67,23 +68,21 @@ public:
     {
         if (m_databaseFile.isDirectory ())
             m_databaseFile = m_databaseFile.getChildFile("peerfinder.sqlite");
-
-        work_ = boost::in_place (std::ref(io_service_));
-        thread_ = std::thread ([&]() { this->io_service_.run(); });
     }
 
     ~ManagerImp()
     {
-        stop();
+        close();
     }
 
     void
-    stop()
+    close()
     {
-        if (thread_.joinable())
+        if (work_)
         {
             work_ = boost::none;
-            thread_.join();
+            checker_.stop();
+            m_logic.stop();
         }
     }
 
@@ -228,15 +227,8 @@ public:
 
     void onStop ()
     {
-        m_journal.debug << "Stopping";
-        checker_.stop();
-        m_logic.stop();
+        close();
         stopped();
-        /*
-        signalThreadShouldExit();
-        m_queue.dispatch (m_context.wrap (
-            std::bind (&Thread::signalThreadShouldExit, this)));
-        */
     }
 
     //--------------------------------------------------------------------------
@@ -259,10 +251,12 @@ Manager::Manager (Stoppable& parent)
 {
 }
 
-Manager* Manager::New (Stoppable& parent, beast::File const& databaseFile,
-    clock_type& clock, beast::Journal journal)
+std::unique_ptr<Manager>
+make_Manager (beast::Stoppable& parent, boost::asio::io_service& io_service,
+    beast::File const& databaseFile, clock_type& clock, beast::Journal journal)
 {
-    return new ManagerImp (parent, databaseFile, clock, journal);
+    return std::make_unique<ManagerImp> (
+        parent, io_service, databaseFile, clock, journal);
 }
 
 }
