@@ -27,5 +27,8 @@
 #include <ripple/overlay/impl/message_name.cpp>
 #include <ripple/overlay/impl/OverlayImpl.cpp>
 #include <ripple/overlay/impl/PeerImp.cpp>
+#include <ripple/overlay/impl/TMHello.cpp>
+
 #include <ripple/overlay/tests/short_read.test.cpp>
+#include <ripple/overlay/tests/TMHello.test.cpp>
 

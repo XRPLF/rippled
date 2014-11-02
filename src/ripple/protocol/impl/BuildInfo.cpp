@@ -49,9 +49,10 @@ char const* getRawVersionString ()
     return rawText;
 }
 
-Protocol const& getCurrentProtocol ()
+ProtocolVersion const&
+getCurrentProtocol ()
 {
-    static Protocol currentProtocol (
+    static ProtocolVersion currentProtocol (
     //--------------------------------------------------------------------------
     //
     // The protocol version we speak and prefer (edit this if necessary)
@@ -65,9 +66,10 @@ Protocol const& getCurrentProtocol ()
     return currentProtocol;
 }
 
-Protocol const& getMinimumProtocol ()
+ProtocolVersion const&
+getMinimumProtocol ()
 {
-    static Protocol minimumProtocol (
+    static ProtocolVersion minimumProtocol (
 
     //--------------------------------------------------------------------------
     //
@@ -88,7 +90,8 @@ Protocol const& getMinimumProtocol ()
 //
 //------------------------------------------------------------------------------
 
-std::string const& getVersionString ()
+std::string const&
+getVersionString ()
 {
     struct SanityChecker
     {
@@ -129,10 +132,10 @@ std::string const& getFullVersionString ()
     return value.fullVersionString;
 }
 
-Protocol
+ProtocolVersion
 make_protocol (std::uint32_t version)
 {
-    return Protocol (
+    return ProtocolVersion(
         static_cast<std::uint16_t> ((version >> 16) & 0xffff),
         static_cast<std::uint16_t> (version & 0xffff));
 }
@@ -140,13 +143,13 @@ make_protocol (std::uint32_t version)
 }
 
 std::string
-to_string (BuildInfo::Protocol const& p)
+to_string (ProtocolVersion const& p)
 {
     return std::to_string (p.first) + "." + std::to_string (p.second);
 }
 
 std::uint32_t
-to_packed (BuildInfo::Protocol const& p)
+to_packed (ProtocolVersion const& p)
 {
     return (static_cast<std::uint32_t> (p.first) << 16) + p.second;
 }
@@ -166,10 +169,10 @@ public:
     }
 
 
-    BuildInfo::Protocol
+    ProtocolVersion
     from_version (std::uint16_t major, std::uint16_t minor)
     {
-        return BuildInfo::Protocol (major, minor);
+        return ProtocolVersion (major, minor);
     }
 
     void testValues ()

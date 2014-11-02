@@ -25,51 +25,48 @@
 
 namespace ripple {
 
+/** Describes a Ripple/RTXP protocol version. */
+using ProtocolVersion = std::pair<std::uint16_t, std::uint16_t>;
+
 /** Versioning information for this build. */
-namespace BuildInfo
-{
-    /** Server version.
+// VFALCO The namespace is deprecated
+namespace BuildInfo {
 
-        Follows the Semantic Versioning Specification:
+/** Server version.
+    Follows the Semantic Versioning Specification:
+    http://semver.org/
+*/
+std::string const&
+getVersionString();
 
-        http://semver.org/
-    */
-    std::string const& getVersionString ();
+/** Full server version string.
+    This includes the name of the server. It is used in the peer
+    protocol hello message and also the headers of some HTTP replies.
+*/
+std::string const&
+getFullVersionString();
 
-    /** Full server version string.
+/** Construct a protocol version from a packed 32-bit protocol identifier */
+ProtocolVersion
+make_protocol (std::uint32_t version);
 
-        This includes the name of the server. It is used in the peer
-        protocol hello message and also the headers of some HTTP replies.
-    */
-    std::string const& getFullVersionString ();
+/** The protocol version we speak and prefer. */
+ProtocolVersion const&
+getCurrentProtocol();
 
-    //--------------------------------------------------------------------------
+/** The oldest protocol version we will accept. */
+ProtocolVersion const& getMinimumProtocol ();
 
-    /** The wire protocol version.
+char const*
+getRawVersionString();
 
-        The version consists of two unsigned 16 bit integers representing
-        major and minor version numbers. All values are permissible.
-    */
-    using Protocol = std::pair <std::uint16_t const, std::uint16_t const>;
-
-    /** Construct a protocol version from a packed 32-bit protocol identifier */
-    Protocol
-    make_protocol (std::uint32_t version);
-
-    /** The protocol version we speak and prefer. */
-    Protocol const& getCurrentProtocol ();
-
-    /** The oldest protocol version we will accept. */
-    Protocol const& getMinimumProtocol ();
-
-    char const* getRawVersionString ();
-};
+} // BuildInfo (DEPRECATED)
 
 std::string
-to_string (BuildInfo::Protocol const& p);
+to_string (ProtocolVersion const& p);
 
 std::uint32_t
-to_packed (BuildInfo::Protocol const& p);
+to_packed (ProtocolVersion const& p);
 
 } // ripple
 

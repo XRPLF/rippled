@@ -59,21 +59,16 @@ public:
         virtual ~Child();
 
     public:
-        virtual void close() = 0;
+        virtual void stop() = 0;
     };
 
 private:
     using clock_type = std::chrono::steady_clock;
     using socket_type = boost::asio::ip::tcp::socket;
+    using address_type = boost::asio::ip::address;
+    using endpoint_type = boost::asio::ip::tcp::endpoint;
     using error_code = boost::system::error_code;
     using yield_context = boost::asio::yield_context;
-
-    using PeersBySlot = hash_map <PeerFinder::Slot::ptr,
-        std::weak_ptr <PeerImp>>;
-
-    using PeerByPublicKey = hash_map<RippleAddress, Peer::ptr>;
-
-    using PeerByShortId = hash_map<Peer::ShortId, Peer::ptr>;
 
     struct Timer
         : Child
@@ -85,7 +80,7 @@ private:
         Timer (OverlayImpl& overlay);
 
         void
-        close() override;
+        stop() override;
 
         void
         run();
@@ -112,20 +107,16 @@ private:
 
     std::unique_ptr <PeerFinder::Manager> m_peerFinder;
 
-    /** Associates slots to peers. */
-    PeersBySlot m_peers;
+    hash_map <PeerFinder::Slot::ptr,
+        std::weak_ptr <PeerImp>> m_peers;
 
-    /** Tracks peers by their public key */
-    PeerByPublicKey m_publicKeyMap;
+    hash_map<RippleAddress, std::weak_ptr<PeerImp>> m_publicKeyMap;
 
-    /** Tracks peers by their session ID */
-    PeerByShortId m_shortIdMap;
+    hash_map<Peer::id_t, std::weak_ptr<PeerImp>> m_shortIdMap;
 
-    /** The resolver we use for peer hostnames */
     Resolver& m_resolver;
 
-    /** Monotically increasing identifiers for peers */
-    std::atomic <Peer::ShortId> m_nextShortId;
+    std::atomic <Peer::id_t> next_id_;
 
     //--------------------------------------------------------------------------
 
@@ -135,7 +126,10 @@ public:
             beast::File const& pathToDbFileOrDirectory,
                 Resolver& resolver, boost::asio::io_service& io_service);
 
-    ~OverlayImpl ();
+    ~OverlayImpl();
+
+    OverlayImpl (OverlayImpl const&) = delete;
+    OverlayImpl& operator= (OverlayImpl const&) = delete;
 
     Setup const&
     setup() const
@@ -152,21 +146,18 @@ public:
     void
     onLegacyPeerHello (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
         boost::asio::const_buffer buffer,
-            boost::asio::ip::tcp::endpoint remote_address) override;
+            endpoint_type remote_endpoint) override;
 
     Handoff
     onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& bundle,
         beast::http::message&& request,
-            boost::asio::ip::tcp::endpoint remote_address) override;
+            endpoint_type remote_endpoint) override;
 
     PeerSequence
     getActivePeers() override;
 
     Peer::ptr
-    findPeerByShortID (Peer::ShortId const& id) override;
-
-    Peer::ShortId
-    next_id();
+    findPeerByShortID (Peer::id_t const& id) override;
 
     void
     remove (PeerFinder::Slot::ptr const& slot);
@@ -177,26 +168,20 @@ public:
         are known.
     */
     void
-    activate (Peer::ptr const& peer);
+    activate (std::shared_ptr<PeerImp> const& peer);
 
-    /** A peer is being disconnected
-        This is called during the disconnection of a known, activated peer. It
-        will not be called for outbound peer connections that don't succeed or
-        for connections of peers that are dropped prior to being activated.
-    */
+    /** Called when an active peer is destroyed. */
     void
-    onPeerDisconnect (Peer::ptr const& peer);
+    onPeerDeactivate (Peer::id_t id, RippleAddress const& publicKey);
 
-private:
-    OverlayImpl (OverlayImpl const&) = delete;
-    OverlayImpl& operator= (OverlayImpl const&) = delete;
-
+    static
     bool
     isPeerUpgrade (beast::http::message const& request);
 
+private:
     std::shared_ptr<HTTP::Writer>
     makeRedirectResponse (PeerFinder::Slot::ptr const& slot,
-        beast::http::message const& request);
+        beast::http::message const& request, address_type remote_address);
 
     void
     connect (beast::IP::Endpoint const& remote_endpoint) override;
@@ -212,6 +197,9 @@ private:
     //
     // Stoppable
     //
+
+    void
+    checkStopped();
 
     void
     onPrepare() override;
@@ -235,16 +223,13 @@ private:
     //--------------------------------------------------------------------------
 
     void
+    add (std::shared_ptr<PeerImp> const& peer);
+
+    void
     remove (Child& child);
 
     void
-    checkStopped ();
-
-    void
-    close();
-
-    void
-    addpeer (std::shared_ptr<PeerImp> const& peer);
+    stop();
 
     void
     autoConnect();

@@ -154,7 +154,7 @@ protected:
     boost::asio::deadline_timer             mTimer;
 
     // VFALCO TODO Verify that these are used in the way that the names suggest.
-    typedef Peer::ShortId PeerIdentifier;
+    typedef Peer::id_t PeerIdentifier;
     typedef int ReceivedChunkCount;
     typedef hash_map <PeerIdentifier, ReceivedChunkCount> PeerSetMap;
 

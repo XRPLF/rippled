@@ -21,12 +21,14 @@
 #include <ripple/basics/UptimeTimer.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/json/json_reader.h>
+#include <ripple/overlay/impl/TMHello.h>
 #include <ripple/overlay/impl/PeerImp.h>
 #include <ripple/overlay/impl/Tuning.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/server/ServerHandler.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <beast/streams/debug_ostream.h>
+#include <beast/weak_fn.h>
 #include <functional>
 #include <beast/cxx14/memory.h> // <memory>
 #include <sstream>
@@ -34,12 +36,15 @@
 namespace ripple {
 
 PeerImp::PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
-    beast::http::message&& request, beast::IP::Endpoint remoteAddress,
-        OverlayImpl& overlay, Resource::Manager& resourceManager,
-            PeerFinder::Manager& peerFinder, PeerFinder::Slot::ptr const& slot)
+    beast::http::message&& request, protocol::TMHello const& hello,
+    endpoint_type remote_endpoint, RippleAddress const& publicKey,
+        Resource::Consumer consumer, PeerFinder::Slot::ptr const& slot,
+            OverlayImpl& overlay, Resource::Manager& resourceManager,
+                PeerFinder::Manager& peerFinder, id_t id)
     : Child (overlay)
-    , sink_(deprecatedLogs().journal("Peer"))
-    , p_sink_(deprecatedLogs().journal("Protocol"))
+    , id_(id)
+    , sink_(deprecatedLogs().journal("Peer"), makePrefix(id))
+    , p_sink_(deprecatedLogs().journal("Protocol"), makePrefix(id))
     , journal_ (sink_)
     , p_journal_(p_sink_)
     , ssl_bundle_(std::move(ssl_bundle))
@@ -47,26 +52,31 @@ PeerImp::PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
     , stream_ (ssl_bundle_->stream)
     , strand_ (socket_.get_io_service())
     , timer_ (socket_.get_io_service())
-    , remote_address_ (remoteAddress)
+    , remote_address_ (
+        beast::IPAddressConversion::from_asio(remote_endpoint))
     , resourceManager_ (resourceManager)
     , peerFinder_ (peerFinder)
     , overlay_ (overlay)
     , m_inbound (true)
-    , state_ (stateConnected)
+    , state_ (State::active)
+    , publicKey_(publicKey)
+    , hello_(hello)
+    , usage_(consumer)
     , slot_ (slot)
+    , http_message_(std::move(request))
     , message_stream_(*this)
 {
-    setPrefix();
 }
 
 PeerImp::PeerImp (beast::IP::Endpoint remoteAddress,
     boost::asio::io_service& io_service, OverlayImpl& overlay,
         Resource::Manager& resourceManager, PeerFinder::Manager& peerFinder,
             PeerFinder::Slot::ptr const& slot,
-                std::shared_ptr<boost::asio::ssl::context> const& context)
+                std::shared_ptr<boost::asio::ssl::context> const& context, id_t id)
     : Child (overlay)
-    , sink_(deprecatedLogs().journal("Peer"))
-    , p_sink_(deprecatedLogs().journal("Protocol"))
+    , id_(id)
+    , sink_(deprecatedLogs().journal("Peer"), makePrefix(id))
+    , p_sink_(deprecatedLogs().journal("Protocol"), makePrefix(id))
     , journal_ (sink_)
     , p_journal_(p_sink_)
     , ssl_bundle_(std::make_unique<beast::asio::ssl_bundle>(
@@ -80,41 +90,68 @@ PeerImp::PeerImp (beast::IP::Endpoint remoteAddress,
     , peerFinder_ (peerFinder)
     , overlay_ (overlay)
     , m_inbound (false)
-    , state_ (stateConnecting)
+    , state_ (State::connecting)
     , slot_ (slot)
     , message_stream_(*this)
 {
-    setPrefix();
 }
 
 PeerImp::~PeerImp ()
 {
+    if (clusterNode_)
+        if (journal_.warning) journal_.warning <<
+            name_ << " left cluster";
+    if (state_ == State::active)
+    {
+        assert(publicKey_.isSet());
+        assert(publicKey_.isValid());
+        overlay_.onPeerDeactivate(id_, publicKey_);
+    }
+    peerFinder_.on_closed (slot_);
     overlay_.remove (slot_);
 }
 
 void
-PeerImp::start()
+PeerImp::run()
 {
-    boost::system::error_code ec;
-    timer_.expires_from_now (nodeVerifySeconds, ec);
-    timer_.async_wait (strand_.wrap (std::bind (&PeerImp::handleVerifyTimer,
-        shared_from_this (), beast::asio::placeholders::error)));
-    if (ec)
-    {
-        journal_.error << "Failed to set verify timer.";
-        return detach ("start");
-    }
-
     if (m_inbound)
-        do_accept();
+    {
+        if (read_buffer_.size() > 0)
+            doLegacyAccept();
+        else
+            doAccept();
+    }
     else
-        do_connect();
+    {
+        doConnect();
+    }
 }
 
 void
-PeerImp::close()
+PeerImp::stop()
 {
-    detach("close");
+    if(! strand_.running_in_this_thread())
+        return strand_.post(std::bind (
+            &PeerImp::stop, shared_from_this()));
+    if (socket_.is_open())
+    {
+        // The rationale for using different severity levels is that
+        // outbound connections are under our control and may be logged
+        // at a higher level, but inbound connections are more numerous and
+        // uncontrolled so to prevent log flooding the severity is reduced.
+        //
+        if(m_inbound)
+        {
+            if(journal_.debug) journal_.debug <<
+                "Stop";
+        }
+        else
+        {
+            if(journal_.info) journal_.info <<
+                "Stop";
+        }
+    }
+    close();
 }
 
 //------------------------------------------------------------------------------
@@ -122,48 +159,32 @@ PeerImp::close()
 void
 PeerImp::send (Message::pointer const& m)
 {
-    // VFALCO NOTE why call this with null?
-    if (! m)
-        return;
-
     if (! strand_.running_in_this_thread())
-    {
-        strand_.post (std::bind (&PeerImp::send, shared_from_this(), m));
+        return strand_.post(std::bind (
+            &PeerImp::send, shared_from_this(), m));
+    if(gracefulClose_)
         return;
-    }
-
-    if (send_packet_)
-        send_queue_.push_back (m);
-    else
-        sendForce (m);
-}
-
-beast::IP::Endpoint
-PeerImp::getRemoteAddress() const
-{
-    return remote_address_;
+    if(detaching_)
+        return;
+    send_queue_.push(m);
+    if(send_queue_.size() > 1)
+        return;
+    setTimer();
+    boost::asio::async_write (stream_, boost::asio::buffer(
+        send_queue_.front()->getBuffer()), strand_.wrap(std::bind(
+            &PeerImp::onWriteMessage, shared_from_this(),
+                beast::asio::placeholders::error,
+                    beast::asio::placeholders::bytes_transferred)));
 }
 
 void
 PeerImp::charge (Resource::Charge const& fee)
 {
-    if ((usage_.charge (fee) == Resource::drop) && usage_.disconnect ())
-        detach ("resource");
+    if ((usage_.charge(fee) == Resource::drop) && usage_.disconnect())
+        fail("charge: Resources");
 }
 
 //------------------------------------------------------------------------------
-
-Peer::ShortId
-PeerImp::getShortId () const
-{
-    return shortId_;
-}
-
-RippleAddress const&
-PeerImp::getNodePublic () const
-{
-    return publicKey_;
-}
 
 Json::Value
 PeerImp::json()
@@ -239,25 +260,7 @@ PeerImp::json()
     return ret;
 }
 
-bool
-PeerImp::isInCluster () const
-{
-    return clusterNode_;
-}
-
-std::string const&
-PeerImp::getClusterNodeName() const
-{
-    return name_;
-}
-
 //------------------------------------------------------------------------------
-
-uint256 const&
-PeerImp::getClosedLedgerHash () const
-{
-    return closedLedgerHash_;
-}
 
 bool
 PeerImp::hasLedger (uint256 const& hash, std::uint32_t seq) const
@@ -308,89 +311,116 @@ PeerImp::hasRange (std::uint32_t uMin, std::uint32_t uMax)
 
 //------------------------------------------------------------------------------
 
-// Puts a string at the beginning of each string logged to the journal
 void
-PeerImp::setPrefix()
+PeerImp::close()
 {
-    static std::atomic<std::size_t> id;
-    std::stringstream ss;
-    ss << "[" << std::setfill('0') << std::setw(3) << ++id << "] ";
-    sink_.prefix(ss.str());
-    p_sink_.prefix(ss.str());
-}
-
-/*  Completion handlers for client role.
-    Logic steps:
-        1. Establish outgoing connection
-        2. Perform SSL handshake
-        3. Send HTTP request
-        4. Receive HTTP response
-        5. Enter protocol loop
-*/
-
-void PeerImp::do_connect ()
-{
-    journal_.info << "Connecting to " << remote_address_;
-
-    usage_ = resourceManager_.newOutboundEndpoint (remote_address_);
-    if (usage_.disconnect ())
-        return detach ("do_connect");
-
-    stream_.next_layer().async_connect (
-        beast::IPAddressConversion::to_asio_endpoint (remote_address_),
-            strand_.wrap (std::bind (&PeerImp::on_connect,
-                shared_from_this (), beast::asio::placeholders::error)));
+    assert(strand_.running_in_this_thread());
+    if (socket_.is_open())
+    {
+        detaching_ = true; // DEPRECATED
+        error_code ec;
+        timer_.cancel(ec);
+        socket_.close(ec);
+        if(m_inbound)
+        {
+            if(journal_.debug) journal_.debug <<
+                "Closed";
+        }
+        else
+        {
+            if(journal_.info) journal_.info <<
+                "Closed";
+        }
+    }
 }
 
 void
-PeerImp::on_connect (error_code ec)
+PeerImp::fail(std::string const& reason)
 {
-    if (detaching_ || ec == boost::asio::error::operation_aborted)
+    assert(strand_.running_in_this_thread());
+    if (socket_.is_open())
+        if (journal_.debug) journal_.debug <<
+            reason;
+    close();
+}
+
+void
+PeerImp::fail(std::string const& name, error_code ec)
+{
+    assert(strand_.running_in_this_thread());
+    if (socket_.is_open())
+        if (journal_.debug) journal_.debug <<
+            name << ": " << ec.message();
+    close();
+}
+
+void
+PeerImp::gracefulClose()
+{
+    assert(strand_.running_in_this_thread());
+    assert(socket_.is_open());
+    assert(! gracefulClose_);
+    gracefulClose_ = true;
+#if 0
+    // Flush messages
+    while(send_queue_.size() > 1)
+        send_queue_.pop_back();
+#endif
+    if (send_queue_.size() > 0)
         return;
+    setTimer();
+    stream_.async_shutdown(strand_.wrap(std::bind(&PeerImp::onShutdown,
+        shared_from_this(), beast::asio::placeholders::error)));
+}
 
-    socket_type::endpoint_type local_endpoint;
-    if (! ec)
-        local_endpoint = stream_.next_layer().local_endpoint (ec);
-
+void
+PeerImp::setTimer()
+{
+    error_code ec;
+    timer_.expires_from_now(std::chrono::seconds(15), ec);
     if (ec)
     {
-        journal_.error <<
-            "Connect to " << remote_address_ <<
-            " failed: " << ec.message();
-        return detach ("hc");
+        if (journal_.error) journal_.error <<
+            "setTimer: " << ec.message();
+        return;
     }
+    timer_.async_wait(strand_.wrap(std::bind(&PeerImp::onTimer,
+        shared_from_this(), beast::asio::placeholders::error)));
+}
 
-    assert (state_ == stateConnecting);
-    state_ = stateConnected;
+// convenience for ignoring the error code
+void
+PeerImp::cancelTimer()
+{
+    error_code ec;
+    timer_.cancel(ec);
+}
 
-    if (! peerFinder_.connected (slot_,
-        beast::IPAddressConversion::from_asio (local_endpoint)))
-        return detach("dup");
+//------------------------------------------------------------------------------
 
-    stream_.set_verify_mode (boost::asio::ssl::verify_none);
-    stream_.async_handshake (
-        boost::asio::ssl::stream_base::client,
-        strand_.wrap (std::bind (&PeerImp::on_connect_ssl,
-            std::static_pointer_cast <PeerImp> (shared_from_this ()),
-                beast::asio::placeholders::error)));
+std::string
+PeerImp::makePrefix(id_t id)
+{
+    std::stringstream ss;
+    ss << "[" << std::setfill('0') << std::setw(3) << id << "] ";
+    return ss.str();
 }
 
 beast::http::message
-PeerImp::make_request()
+PeerImp::makeRequest(boost::asio::ip::address const& remote_address)
 {
-    assert (! m_inbound);
     beast::http::message m;
     m.method (beast::http::method_t::http_get);
     m.url ("/");
     m.version (1, 1);
     m.headers.append ("User-Agent", BuildInfo::getFullVersionString());
-    //m.headers.append ("Local-Address", stream_.
-    m.headers.append ("Remote-Address", remote_address_.to_string());
-    m.headers.append ("Upgrade",
-        std::string("Ripple/") + to_string (BuildInfo::getCurrentProtocol()));
+    m.headers.append ("Upgrade", "RTXP/1.3");
+        //std::string("RTXP/") + to_string (BuildInfo::getCurrentProtocol()));
     m.headers.append ("Connection", "Upgrade");
-    m.headers.append ("Connect-As", "Leaf, Peer");
-    m.headers.append ("Accept-Encoding", "identity, snappy");
+    m.headers.append ("Connect-As", "Peer");
+    //m.headers.append ("Connect-As", "Leaf, Peer");
+    //m.headers.append ("Accept-Encoding", "identity");
+    //m.headers.append ("Local-Address", stream_.
     //m.headers.append ("X-Try-IPs", "192.168.0.1:51234");
     //m.headers.append ("X-Try-IPs", "208.239.114.74:51234");
     //m.headers.append ("A", "BC");
@@ -399,61 +429,152 @@ PeerImp::make_request()
 }
 
 void
-PeerImp::on_connect_ssl (error_code ec)
+PeerImp::onTimer (error_code const& ec)
 {
-    if (detaching_ || ec == boost::asio::error::operation_aborted)
+    if (! socket_.is_open())
+        return;
+
+    if (ec == boost::asio::error::operation_aborted)
         return;
 
     if (ec)
     {
-        journal_.info <<
-            "on_connect_ssl: " << ec.message();
-        detach("on_connect_ssl");
-        return;
+        // This should never happen
+        if (journal_.error) journal_.error <<
+            "onTimer: " << ec.message();
+        return close();
     }
 
-    if (overlay_.setup().http_handshake)
+    fail("Timeout");
+}
+
+void
+PeerImp::onShutdown(error_code ec)
+{
+    cancelTimer();
+    // If we don't get eof then something went wrong
+    if (! ec)
     {
-        beast::http::message req (make_request());
-        beast::http::write (write_buffer_, req);
-        on_write_http_request (error_code(), 0);
+        if (journal_.error) journal_.error <<
+            "onShutdown: expected error condition";
+        return close();
     }
-    else
-    {
-        do_protocol_start();
-    }
+    if (ec != boost::asio::error::eof)
+        return fail("onShutdown", ec);
+    close();
+}
+
+//------------------------------------------------------------------------------
+//
+// outbound
+//
+
+void PeerImp::doConnect()
+{
+    if (journal_.info) journal_.info <<
+        "Connect " << remote_address_;
+    usage_ = resourceManager_.newOutboundEndpoint (remote_address_);
+    if (usage_.disconnect())
+        return fail("doConnect: Resources");
+
+    setTimer();
+    stream_.next_layer().async_connect (
+        beast::IPAddressConversion::to_asio_endpoint (remote_address_),
+            strand_.wrap (std::bind (&PeerImp::onConnect,
+                shared_from_this (), beast::asio::placeholders::error)));
+}
+
+void
+PeerImp::onConnect (error_code ec)
+{
+    assert(state_ == State::connecting);
+    cancelTimer();
+    if(! socket_.is_open())
+        return;
+    if(ec == boost::asio::error::operation_aborted)
+        return;
+    socket_type::endpoint_type local_endpoint;
+    if(! ec)
+        local_endpoint = stream_.next_layer().local_endpoint (ec);
+    if(ec)
+        return fail("onConnect", ec);
+    if(journal_.trace) journal_.trace <<
+        "onConnect";
+
+    // VFALCO Can we do this after the call to onConnected?
+    state_ = State::connected;
+    if (! peerFinder_.onConnected (slot_,
+            beast::IPAddressConversion::from_asio (local_endpoint)))
+        return fail("onConnect: Duplicate");
+
+    setTimer();
+    stream_.set_verify_mode (boost::asio::ssl::verify_none);
+    stream_.async_handshake (
+        boost::asio::ssl::stream_base::client,
+        strand_.wrap (std::bind (&PeerImp::onHandshake,
+            std::static_pointer_cast <PeerImp> (shared_from_this ()),
+                beast::asio::placeholders::error)));
+}
+
+void
+PeerImp::onHandshake (error_code ec)
+{
+    cancelTimer();
+    if(! socket_.is_open())
+        return;
+    if(ec == boost::asio::error::operation_aborted)
+        return;
+    if(ec)
+        return fail("onHandshake", ec);
+    if(journal_.trace) journal_.trace <<
+        "onHandshake";
+    if (! overlay_.setup().http_handshake)
+        return doProtocolStart(true); // legacy
+
+    bool success;
+    std::tie(sharedValue_, success) = makeSharedValue(
+        stream_.native_handle(), journal_);
+    if (! success)
+        return close(); // makeSharedValue logs
+
+    beast::http::message req = makeRequest(
+        beast::IPAddressConversion::to_asio_address(remote_address_));
+    auto const hello = buildHello (sharedValue_, getApp());
+    appendHello (req, hello);
+    write (write_buffer_, req);
+
+    setTimer();
+    stream_.async_write_some (write_buffer_.data(),
+        strand_.wrap (std::bind (&PeerImp::onWriteRequest,
+            shared_from_this(), beast::asio::placeholders::error,
+                beast::asio::placeholders::bytes_transferred)));
 }
 
 // Called repeatedly with the http request data
 void
-PeerImp::on_write_http_request (error_code ec, std::size_t bytes_transferred)
+PeerImp::onWriteRequest (error_code ec, std::size_t bytes_transferred)
 {
-    if (detaching_ || ec == boost::asio::error::operation_aborted)
+    cancelTimer();
+    if(! socket_.is_open())
         return;
-
-    if (ec)
-    {
-        journal_.info <<
-            "on_write_http_request: " << ec.message();
-        detach("on_write_http_request");
+    if(ec == boost::asio::error::operation_aborted)
         return;
-    }
+    if(ec)
+        return fail("onWriteRequest", ec);
+    if(journal_.trace) journal_.trace <<
+        "onWriteRequest: " << bytes_transferred << " bytes";
 
     write_buffer_.consume (bytes_transferred);
-
     if (write_buffer_.size() == 0)
     {
-        // done sending request, now read the response
-        http_message_ = boost::in_place ();
-        http_body_.clear();
-        http_parser_ = boost::in_place (std::ref(*http_message_),
+        http_parser_ = boost::in_place (std::ref(http_message_),
             std::ref(http_body_), false);
-        on_read_http_response (error_code(), 0);
-        return;
+        return onReadResponse (error_code(), 0);
     }
 
+    setTimer();
     stream_.async_write_some (write_buffer_.data(),
-        strand_.wrap (std::bind (&PeerImp::on_write_http_request,
+        strand_.wrap (std::bind (&PeerImp::onWriteRequest,
             shared_from_this(), beast::asio::placeholders::error,
                 beast::asio::placeholders::bytes_transferred)));
 }
@@ -475,12 +596,65 @@ parse_endpoint (std::string const& s, boost::system::error_code& ec)
     return beast::IPAddressConversion::to_asio_endpoint(bep);
 }
 
+// Called repeatedly with the http response data
+void
+PeerImp::onReadResponse (error_code ec, std::size_t bytes_transferred)
+{
+    cancelTimer();
+    if(! socket_.is_open())
+        return;
+    if(ec == boost::asio::error::operation_aborted)
+        return;
+    if(ec == boost::asio::error::eof)
+    {
+        if(journal_.info) journal_.info <<
+            "EOF";
+        setTimer();
+        return stream_.async_shutdown(strand_.wrap(std::bind(&PeerImp::onShutdown,
+            shared_from_this(), beast::asio::placeholders::error)));
+    }
+    if(ec)
+        return fail("onReadResponse", ec);
+    if(journal_.trace)
+    {
+        if(bytes_transferred > 0) journal_.trace <<
+            "onReadResponse: " << bytes_transferred << " bytes";
+        else journal_.trace <<
+            "onReadResponse";
+    }
+
+    if (! ec)
+    {
+        read_buffer_.commit (bytes_transferred);
+        std::size_t bytes_consumed;
+        std::tie (ec, bytes_consumed) = http_parser_->write (
+            read_buffer_.data());
+        if (! ec)
+        {
+            read_buffer_.consume (bytes_consumed);
+            if (http_parser_->complete())
+                return processResponse(http_message_, http_body_);
+        }
+    }
+
+    if (ec)
+    {
+        return fail("onReadResponse", ec);
+    }
+
+    setTimer();
+    stream_.async_read_some (read_buffer_.prepare (Tuning::readBufferBytes),
+        strand_.wrap (std::bind (&PeerImp::onReadResponse,
+            shared_from_this(), beast::asio::placeholders::error,
+                beast::asio::placeholders::bytes_transferred)));
+}
+
 template <class Streambuf>
 void
 PeerImp::processResponse (beast::http::message const& m,
     Streambuf const& body)
 {
-    if (http_message_->status() == 503)
+    if (http_message_.status() == 503)
     {
         Json::Value json;
         Json::Reader r;
@@ -511,253 +685,187 @@ PeerImp::processResponse (beast::http::message const& m,
         }
     }
 
-    if (http_message_->status() != 200)
+    if (! OverlayImpl::isPeerUpgrade(m))
     {
         if (journal_.info) journal_.info <<
             "HTTP Response: " << m.status() << " " << m.reason();
-        detach("processResponse");
-        return;
+        return close();
     }
 
-    do_protocol_start();
-}
+    bool success;
+    std::tie(hello_, success) = parseHello (http_message_, journal_);
+    if(! success)
+        return fail("processResponse: Bad TMHello");
 
-// Called repeatedly with the http response data
-void
-PeerImp::on_read_http_response (error_code ec, std::size_t bytes_transferred)
-{
-    if (detaching_ || ec == boost::asio::error::operation_aborted)
-        return;
+    uint256 sharedValue;
+    std::tie(sharedValue, success) = makeSharedValue(
+        ssl_bundle_->stream.native_handle(), journal_);
+    if(! success)
+        return close(); // makeSharedValue logs
 
-    if (! ec)
+    std::tie(publicKey_, success) = verifyHello (hello_,
+        sharedValue, journal_, getApp());
+    if(! success)
+        return close(); // verifyHello logs
+
+    auto protocol = BuildInfo::make_protocol(hello_.protoversion());
+    if(journal_.info) journal_.info <<
+        "Protocol: " << to_string(protocol);
+    if(journal_.info) journal_.info <<
+        "Public Key: " << publicKey_.humanNodePublic();
+    clusterNode_ = getApp().getUNL().nodeInCluster(publicKey_, name_);
+    if (clusterNode_)
+        if (journal_.info) journal_.info <<
+            "Cluster name: " << name_;
+
+    auto const result = peerFinder_.activate (slot_,
+        RipplePublicKey(publicKey_), clusterNode_);
+    if (result != PeerFinder::Result::success)
+        return fail("Outbound slots full");
+
+    state_ = State::active;
+    overlay_.activate(shared_from_this ());
+
+    // XXX Set timer: connection is in grace period to be useful.
+    // XXX Set timer: connection idle (idle may vary depending on connection type.)
+    if ((hello_.has_ledgerclosed ()) && (
+        hello_.ledgerclosed ().size () == (256 / 8)))
     {
-        read_buffer_.commit (bytes_transferred);
-        std::size_t bytes_consumed;
-        std::tie (ec, bytes_consumed) = http_parser_->write (
-            read_buffer_.data());
-        if (! ec)
+        memcpy (closedLedgerHash_.begin (),
+            hello_.ledgerclosed ().data (), 256 / 8);
+        if ((hello_.has_ledgerprevious ()) &&
+            (hello_.ledgerprevious ().size () == (256 / 8)))
         {
-            read_buffer_.consume (bytes_consumed);
-            if (http_parser_->complete())
-            {
-                return processResponse(*http_message_, http_body_);
-            }
+            memcpy (previousLedgerHash_.begin (),
+                hello_.ledgerprevious ().data (), 256 / 8);
+            addLedger (previousLedgerHash_);
+        }
+        else
+        {
+            previousLedgerHash_.zero();
         }
     }
 
-    if (ec == boost::asio::error::eof)
-    {
-        // remote closed their end
-        // VFALCO TODO Clean up the shutdown of the socket
-    }
-
-    if (ec)
-    {
-        journal_.info <<
-            "on_read_response: " << ec.message();
-        detach("on_read_response");
-        return;
-    }
-
-    stream_.async_read_some (read_buffer_.prepare (Tuning::readBufferBytes),
-        strand_.wrap (std::bind (&PeerImp::on_read_http_response,
-            shared_from_this(), beast::asio::placeholders::error,
-                beast::asio::placeholders::bytes_transferred)));
+    doProtocolStart(false);
 }
 
 //------------------------------------------------------------------------------
+//
+// inbound
+//
 
-/*  Completion handlers for server role.
-    Logic steps:
-        1. Perform SSL handshake
-        2. Detect HTTP request or protocol TMHello
-        3. If HTTP request received, send HTTP response
-        4. Enter protocol loop
-*/
-void PeerImp::do_accept()
+void PeerImp::doLegacyAccept()
 {
-    journal_.info << "Accepted " << remote_address_;
-
+    assert(read_buffer_.size() > 0);
+    if(journal_.debug) journal_.debug <<
+        "doLegacyAccept: " << remote_address_;
     usage_ = resourceManager_.newInboundEndpoint (remote_address_);
     if (usage_.disconnect ())
-    {
-        detach ("do_accept");
-        return;
-    }
-
-    // VFALCO Hack to receive a legacy protocol connection
-    //        from the HTTP server
-    if (read_buffer_.size() > 0)
-        return do_protocol_start();
-
-    stream_.set_verify_mode (boost::asio::ssl::verify_none);
-    stream_.async_handshake (boost::asio::ssl::stream_base::server,
-        strand_.wrap (std::bind (&PeerImp::on_accept_ssl,
-            std::static_pointer_cast <PeerImp> (shared_from_this ()),
-                beast::asio::placeholders::error)));
+        return fail("doLegacyAccept: Resources");
+    doProtocolStart(true);
 }
 
-void
-PeerImp::on_accept_ssl (error_code ec)
+void PeerImp::doAccept()
 {
-    if (detaching_ || ec == boost::asio::error::operation_aborted)
-        return;
+    assert(read_buffer_.size() == 0);
+    assert(http_message_.upgrade());
 
-    if (ec)
+    if(journal_.debug) journal_.debug <<
+        "doAccept: " << remote_address_;
+
+    bool success;
+    uint256 sharedValue;
+    std::tie(sharedValue, success) = makeSharedValue(
+        ssl_bundle_->stream.native_handle(), journal_);
+    // This shouldn't fail since we already computed
+    // the shared value successfully in OverlayImpl
+    if(! success)
+        return fail("makeSharedValue: Unexpected failure");
+
+    // TODO Apply headers to connection state.
+
+    auto resp = makeResponse(http_message_, sharedValue);
+    beast::http::write (write_buffer_, resp);
+
+    auto const protocol = BuildInfo::make_protocol(hello_.protoversion());
+    if(journal_.info) journal_.info <<
+        "Protocol: " << to_string(protocol);
+    if(journal_.info) journal_.info <<
+        "Public Key: " << publicKey_.humanNodePublic();
+    clusterNode_ = getApp().getUNL().nodeInCluster(publicKey_, name_);
+    if (clusterNode_)
+        if (journal_.info) journal_.info <<
+            "Cluster name: " << name_;
+
+    overlay_.activate(shared_from_this());
+
+    // XXX Set timer: connection is in grace period to be useful.
+    // XXX Set timer: connection idle (idle may vary depending on connection type.)
+    if ((hello_.has_ledgerclosed ()) && (
+        hello_.ledgerclosed ().size () == (256 / 8)))
     {
-        journal_.info <<
-            "on_accept_ssl: " << ec.message();
-        detach("on_accept_ssl");
-        return;
-    }
-
-#if 1
-    on_read_http_detect (error_code(), 0);
-#else
-    do_protocol_start();
-#endif
-}
-
-// Called repeatedly with the initial bytes received on the connection
-void
-PeerImp::on_read_http_detect (error_code ec, std::size_t bytes_transferred)
-{
-    if (detaching_ || ec == boost::asio::error::operation_aborted)
-        return;
-
-    if (ec)
-    {
-        journal_.info <<
-            "on_read_detect: " << ec.message();
-        detach("on_read_detect");
-        return;
-    }
-
-    read_buffer_.commit (bytes_transferred);
-    peer_protocol_detector detector;
-    boost::tribool const is_peer_protocol (detector (read_buffer_.data()));
-
-    if (is_peer_protocol)
-    {
-        do_protocol_start();
-        return;
-    }
-    else if (! is_peer_protocol)
-    {
-        http_message_ = boost::in_place ();
-        http_body_.clear();
-        http_parser_ = boost::in_place (std::ref(*http_message_),
-            std::ref(http_body_), true);
-        on_read_http_request (error_code(), 0);
-        return;
-    }
-
-    stream_.async_read_some (read_buffer_.prepare (Tuning::readBufferBytes),
-        strand_.wrap (std::bind (&PeerImp::on_read_http_detect,
-            shared_from_this(), beast::asio::placeholders::error,
-                beast::asio::placeholders::bytes_transferred)));
-}
-
-// Called repeatedly with the http request data
-void
-PeerImp::on_read_http_request (error_code ec, std::size_t bytes_transferred)
-{
-    if (detaching_ || ec == boost::asio::error::operation_aborted)
-        return;
-
-    if (! ec)
-    {
-        read_buffer_.commit (bytes_transferred);
-        std::size_t bytes_consumed;
-        std::tie (ec, bytes_consumed) = http_parser_->write (
-            read_buffer_.data());
-
-        if (! ec)
+        memcpy (closedLedgerHash_.begin (),
+            hello_.ledgerclosed ().data (), 256 / 8);
+        if ((hello_.has_ledgerprevious ()) &&
+            (hello_.ledgerprevious ().size () == (256 / 8)))
         {
-            read_buffer_.consume (bytes_consumed);
-            if (http_parser_->complete())
-            {
-                //
-                // TODO Apply headers to connection state.
-                //
-                if (http_message_->upgrade())
-                {
-                    std::stringstream ss;
-                    ss <<
-                        "HTTP/1.1 200 OK\r\n"
-                        "Server: " << BuildInfo::getFullVersionString() << "\r\n"
-                        "Upgrade: Ripple/1.2\r\n"
-                        "Connection: Upgrade\r\n"
-                        "\r\n";
-                    beast::http::write (write_buffer_, ss.str());
-                    on_write_http_response(error_code(), 0);
-                }
-                else
-                {
-                    std::stringstream ss;
-                    ss <<
-                        "HTTP/1.1 400 Bad Request\r\n"
-                        "Server: " << BuildInfo::getFullVersionString() << "\r\n"
-                        "\r\n"
-                        "<html><head></head><body>"
-                        "400 Bad Request<br>"
-                        "The server requires an Upgrade request."
-                        "</body></html>";
-                    beast::http::write (write_buffer_, ss.str());
-                    on_write_http_response(error_code(), 0);
-                }
-                return;
-            }
+            memcpy (previousLedgerHash_.begin (),
+                hello_.ledgerprevious ().data (), 256 / 8);
+            addLedger (previousLedgerHash_);
+        }
+        else
+        {
+            previousLedgerHash_.zero();
         }
     }
 
-    if (ec)
-    {
-        journal_.info <<
-            "on_read_http_request: " << ec.message();
-        detach("on_read_http_request");
-        return;
-    }
-
-    stream_.async_read_some (read_buffer_.prepare (Tuning::readBufferBytes),
-        strand_.wrap (std::bind (&PeerImp::on_read_http_request,
-            shared_from_this(), beast::asio::placeholders::error,
-                beast::asio::placeholders::bytes_transferred)));
+    onWriteResponse(error_code(), 0);
 }
 
 beast::http::message
-PeerImp::make_response (beast::http::message const& req)
+PeerImp::makeResponse (beast::http::message const& req,
+    uint256 const& sharedValue)
 {
     beast::http::message resp;
-    // Unimplemented
+    resp.request(false);
+    resp.status(101);
+    resp.reason("Switching Protocols");
+    resp.version(req.version());
+    resp.headers.append("Connection", "Upgrade");
+    resp.headers.append("Upgrade", "RTXP/1.3");
+    resp.headers.append("Connect-AS", "Peer");
+    resp.headers.append("Server", BuildInfo::getFullVersionString());
+    protocol::TMHello hello = buildHello(sharedValue, getApp());
+    appendHello(resp, hello);
     return resp;
 }
 
 // Called repeatedly to send the bytes in the response
 void
-PeerImp::on_write_http_response (error_code ec, std::size_t bytes_transferred)
+PeerImp::onWriteResponse (error_code ec, std::size_t bytes_transferred)
 {
-    if (detaching_ || ec == boost::asio::error::operation_aborted)
+    cancelTimer();
+    if(! socket_.is_open())
         return;
-
-    if (ec)
+    if(ec == boost::asio::error::operation_aborted)
+        return;
+    if(ec)
+        return fail("onWriteResponse", ec);
+    if(journal_.trace)
     {
-        journal_.info <<
-            "on_write_http_response: " << ec.message();
-        detach("on_write_http_response");
-        return;
+        if (bytes_transferred > 0) journal_.trace <<
+            "onWriteResponse: " << bytes_transferred << " bytes";
+        else journal_.trace <<
+            "onWriteResponse";
     }
 
     write_buffer_.consume (bytes_transferred);
-
     if (write_buffer_.size() == 0)
-    {
-        do_protocol_start();
-        return;
-    }
+        return doProtocolStart(false);
 
+    setTimer();
     stream_.async_write_some (write_buffer_.data(),
-        strand_.wrap (std::bind (&PeerImp::on_write_http_response,
+        strand_.wrap (std::bind (&PeerImp::onWriteResponse,
             shared_from_this(), beast::asio::placeholders::error,
                 beast::asio::placeholders::bytes_transferred)));
 }
@@ -772,127 +880,92 @@ PeerImp::on_write_http_response (error_code ec, std::size_t bytes_transferred)
 // connection detail. Also need to establish no man in the middle attack
 // is in progress.
 void
-PeerImp::do_protocol_start()
+PeerImp::doProtocolStart(bool legacy)
 {
-    if (!sendHello ())
+    if (legacy && !sendHello ())
     {
         journal_.error << "Unable to send HELLO to " << remote_address_;
-        detach ("hello");
-        return;
+        return fail ("hello");
     }
 
-    on_read_protocol (error_code(), 0);
+    onReadMessage(error_code(), 0);
 }
 
 // Called repeatedly with protocol message data
 void
-PeerImp::on_read_protocol (error_code ec, std::size_t bytes_transferred)
+PeerImp::onReadMessage (error_code ec, std::size_t bytes_transferred)
 {
-    if (detaching_ || ec == boost::asio::error::operation_aborted)
+    if(! socket_.is_open())
         return;
-
-    if (! ec)
+    if(ec == boost::asio::error::operation_aborted)
+        return;
+    if(ec == boost::asio::error::eof)
     {
-        read_buffer_.commit (bytes_transferred);
-        ec = message_stream_.write (read_buffer_.data());
-        read_buffer_.consume (read_buffer_.size());
+        if(journal_.info) journal_.info <<
+            "EOF";
+        return gracefulClose();
+    }
+    if(ec)
+        return fail("onReadMessage", ec);
+    if(journal_.trace)
+    {
+        if (bytes_transferred > 0) journal_.trace <<
+            "onReadMessage: " << bytes_transferred << " bytes";
+        else journal_.trace <<
+            "onReadMessage";
     }
 
-    if (ec)
-    {
-        journal_.info <<
-            "on_read_protocol: " << ec.message();
-        detach("on_read_protocol");
+    read_buffer_.commit (bytes_transferred);
+    ec = message_stream_.write (read_buffer_.data());
+    read_buffer_.consume (read_buffer_.size());
+    if(ec)
+        return fail("onReadMessage", ec);
+    if(gracefulClose_)
         return;
-    }
-
+    // Timeout on writes only
     stream_.async_read_some (read_buffer_.prepare (Tuning::readBufferBytes),
-        strand_.wrap (std::bind (&PeerImp::on_read_protocol,
+        strand_.wrap (std::bind (&PeerImp::onReadMessage,
             shared_from_this(), beast::asio::placeholders::error,
                 beast::asio::placeholders::bytes_transferred)));
 }
 
-// Called repeatedly to send protcol message data
 void
-PeerImp::on_write_protocol (error_code ec, std::size_t bytes_transferred)
+PeerImp::onWriteMessage (error_code ec, std::size_t bytes_transferred)
 {
-    // (this function isn't called yet)
-
-    if (detaching_ || ec == boost::asio::error::operation_aborted)
+    cancelTimer();
+    if(! socket_.is_open())
         return;
-}
-
-void
-PeerImp::handleShutdown (boost::system::error_code const& ec)
-{
-    if (detaching_)
+    if(ec == boost::asio::error::operation_aborted)
         return;
-
-    if (ec == boost::asio::error::operation_aborted)
-        return;
-
-    if (ec)
+    if(ec)
+        return fail("onWriteMessage", ec);
+    if(journal_.trace)
     {
-        journal_.info << "Shutdown: " << ec.message ();
-        detach ("hsd");
-        return;
-    }
-}
-
-void
-PeerImp::handleWrite (boost::system::error_code const& ec, size_t bytes)
-{
-    if (detaching_)
-        return;
-
-    // Call on IO strand
-
-    send_packet_.reset ();
-
-    if (ec == boost::asio::error::operation_aborted)
-        return;
-
-    if (detaching_)
-        return;
-
-    if (ec)
-    {
-        journal_.info << "Write: " << ec.message ();
-        detach ("hw");
-        return;
+        if (bytes_transferred > 0) journal_.trace <<
+            "onWriteMessage: " << bytes_transferred << " bytes";
+        else journal_.trace <<
+            "onWriteMessage";
     }
 
-    if (!send_queue_.empty ())
+    assert(! send_queue_.empty());
+    send_queue_.pop();
+    if (! send_queue_.empty())
     {
-        Message::pointer packet = send_queue_.front ();
-
-        if (packet)
-        {
-            sendForce (packet);
-            send_queue_.pop_front ();
-        }
+        // Timeout on writes only
+        setTimer();
+        return boost::asio::async_write (stream_, boost::asio::buffer(
+            send_queue_.front()->getBuffer()), strand_.wrap(std::bind(
+                &PeerImp::onWriteMessage, shared_from_this(),
+                    beast::asio::placeholders::error,
+                        beast::asio::placeholders::bytes_transferred)));
     }
-}
 
-void
-PeerImp::handleVerifyTimer (boost::system::error_code const& ec)
-{
-    if (detaching_)
-        return;
-
-    if (ec == boost::asio::error::operation_aborted)
+    if (gracefulClose_)
     {
-        // Timer canceled because deadline no longer needed.
-    }
-    else if (ec)
-    {
-        journal_.info << "Peer verify timer error";
-    }
-    else
-    {
-        //  journal_.info << "Verify: Peer failed to verify in time.";
-
-        detach ("hvt");
+        setTimer();
+        return stream_.async_shutdown(strand_.wrap(std::bind(
+            &PeerImp::onShutdown, shared_from_this(),
+                beast::asio::placeholders::error)));
     }
 }
 
@@ -916,18 +989,13 @@ PeerImp::on_message_begin (std::uint16_t type,
 {
     error_code ec;
 
-#if 0
-    beast::debug_ostream log;
-    log << m->DebugString();
-#endif
-
-    if (type == protocol::mtHELLO && state_ != stateConnected)
+    if (type == protocol::mtHELLO && state_ != State::connected)
     {
         journal_.warning <<
             "Unexpected TMHello";
         ec = invalid_argument_error();
     }
-    else if (type != protocol::mtHELLO && state_ == stateConnected)
+    else if (type != protocol::mtHELLO && state_ == State::connected)
     {
         journal_.warning <<
             "Expected TMHello";
@@ -966,14 +1034,13 @@ PeerImp::on_message (std::shared_ptr <protocol::TMHello> const& m)
         std::int64_t to = ourTime;
         to -= m->nettime ();
         journal_.debug <<
-            "Connect: time offset " << to;
+            "Time offset: " << to;
     }
 #endif
 
-    auto protocol = BuildInfo::make_protocol(m->protoversion());
-
     // VFALCO TODO Report these failures in the HTTP response
 
+    auto const protocol = BuildInfo::make_protocol(m->protoversion());
     if (m->has_nettime () &&
         ((m->nettime () < minTime) || (m->nettime () > maxTime)))
     {
@@ -1001,7 +1068,7 @@ PeerImp::on_message (std::shared_ptr <protocol::TMHello> const& m)
             "Hello: Disconnect: Bad node public key.";
     }
     else if (! publicKey_.verifyNodePublic (
-        secureCookie_, m->nodeproof (), ECDSA::not_strict))
+        sharedValue_, m->nodeproof (), ECDSA::not_strict))
     {
         // Unable to verify they have private key for claimed public key.
         journal_.info <<
@@ -1009,39 +1076,26 @@ PeerImp::on_message (std::shared_ptr <protocol::TMHello> const& m)
     }
     else
     {
-        // Successful connection.
-        journal_.info <<
-            "Hello: Connect: " << publicKey_.humanNodePublic ();
-
-        if ((protocol != BuildInfo::getCurrentProtocol()) &&
-            journal_.active(beast::Journal::Severity::kInfo))
-        {
-            journal_.info <<
-                "Peer protocol: " << to_string (protocol);
-        }
-
-        hello_ = *m;
-
-        // Determine if this peer belongs to our cluster and get it's name
-        clusterNode_ = getApp().getUNL().nodeInCluster (
-            publicKey_, name_);
-
+        if(journal_.info) journal_.info <<
+            "Protocol: " << to_string(protocol);
+        if(journal_.info) journal_.info <<
+            "Public Key: " << publicKey_.humanNodePublic();
+        clusterNode_ = getApp().getUNL().nodeInCluster(publicKey_, name_);
         if (clusterNode_)
-            journal_.info <<
-            "Connected to cluster node " << name_;
+            if (journal_.info) journal_.info <<
+                "Cluster name: " << name_;
 
-        assert (state_ == stateConnected);
+        assert (state_ == State::connected);
         // VFALCO TODO Remove this needless state
-        state_ = stateHandshaked;
+        state_ = State::handshaked;
+        hello_ = *m;
 
         auto const result = peerFinder_.activate (slot_,
             RipplePublicKey (publicKey_), clusterNode_);
 
         if (result == PeerFinder::Result::success)
         {
-            state_ = stateActive;
-            assert(shortId_ == 0);
-            shortId_ = overlay_.next_id();
+            state_ = State::active;
             overlay_.activate(shared_from_this ());
 
             // XXX Set timer: connection is in grace period to be useful.
@@ -1051,7 +1105,6 @@ PeerImp::on_message (std::shared_ptr <protocol::TMHello> const& m)
             {
                 memcpy (closedLedgerHash_.begin (),
                     hello_.ledgerclosed ().data (), 256 / 8);
-
                 if ((hello_.has_ledgerprevious ()) &&
                     (hello_.ledgerprevious ().size () == (256 / 8)))
                 {
@@ -1073,20 +1126,18 @@ PeerImp::on_message (std::shared_ptr <protocol::TMHello> const& m)
         {
             // TODO Provide correct HTTP response
             auto const redirects = peerFinder_.redirect (slot_);
-            send_endpoints (redirects.begin(), redirects.end());
+            sendEndpoints (redirects.begin(), redirects.end());
+            gracefulClose();
+            return ec;
         }
         else
         {
-            // TODO Duplicate connection
+            // VFALCO TODO Duplicate connection
+            //fail("Hello: Duplicate public key");
         }
     }
 
-    // VFALCO Commented this out because we return an error code
-    //        to the caller, who calls detach for us.
-    //publicKey_.clear ();
-    //detach ("recvh");
     ec = invalid_argument_error();
-
     return ec;
 }
 
@@ -1325,7 +1376,7 @@ PeerImp::on_message (std::shared_ptr <protocol::TMTransaction> const& m)
         int flags;
 
         if (! getApp().getHashRouter ().addSuppressionPeer (
-            txID, shortId_, flags))
+            txID, id_, flags))
         {
             // we have seen this transaction recently
             if (flags & SF_BAD)
@@ -1365,11 +1416,8 @@ PeerImp::on_message (std::shared_ptr <protocol::TMTransaction> const& m)
         else
             getApp().getJobQueue ().addJob (jtTRANSACTION,
                 "recvTransaction->checkTransaction",
-                std::bind (
-                    &PeerImp::checkTransaction, std::placeholders::_1,
-                    flags, stx,
-                    std::weak_ptr<PeerImp> (shared_from_this ())));
-
+                std::bind(beast::weak_fn(&PeerImp::checkTransaction,
+                shared_from_this()), std::placeholders::_1, flags, stx));
     }
     catch (...)
     {
@@ -1383,9 +1431,8 @@ PeerImp::error_code
 PeerImp::on_message (std::shared_ptr <protocol::TMGetLedger> const& m)
 {
     error_code ec;
-    getApp().getJobQueue().addJob (jtPACK, "recvGetLedger",
-        std::bind (&PeerImp::sGetLedger, std::weak_ptr<PeerImp> (
-            shared_from_this ()), m));
+    getApp().getJobQueue().addJob (jtPACK, "recvGetLedger", std::bind(
+        beast::weak_fn(&PeerImp::getLedger, shared_from_this()), m));
     return ec;
 }
 
@@ -1435,10 +1482,9 @@ PeerImp::on_message (std::shared_ptr <protocol::TMLedgerData> const& m)
     {
         // got data for a candidate transaction set
 
-        getApp().getJobQueue().addJob (jtTXN_DATA, "recvPeerData",
-            std::bind (&PeerImp::peerTXData, std::placeholders::_1,
-                std::weak_ptr<PeerImp> (shared_from_this ()),
-                    hash, m, p_journal_));
+        getApp().getJobQueue().addJob(jtTXN_DATA, "recvPeerData", std::bind(
+            beast::weak_fn(&PeerImp::peerTXData, shared_from_this()),
+            std::placeholders::_1, hash, m, p_journal_));
 
         return ec;
     }
@@ -1496,7 +1542,7 @@ PeerImp::on_message (std::shared_ptr <protocol::TMProposeSet> const& m)
                 Blob(set.signature ().begin (), set.signature ().end ()));
 
     if (! getApp().getHashRouter ().addSuppressionPeer (
-        suppression, shortId_))
+        suppression, id_))
     {
         p_journal_.trace << "Proposal: duplicate";
         return ec;
@@ -1534,11 +1580,9 @@ PeerImp::on_message (std::shared_ptr <protocol::TMProposeSet> const& m)
                 signerPublic, suppression);
 
     getApp().getJobQueue ().addJob (isTrusted ? jtPROPOSAL_t : jtPROPOSAL_ut,
-        "recvPropose->checkPropose", std::bind (
-            &PeerImp::checkPropose, std::placeholders::_1, &overlay_,
-                m, proposal, consensusLCL, publicKey_,
-                    std::weak_ptr<PeerImp> (shared_from_this ()), clusterNode_,
-                        p_journal_));
+        "recvPropose->checkPropose", std::bind(beast::weak_fn(
+            &PeerImp::checkPropose, shared_from_this()), std::placeholders::_1,
+            m, proposal, consensusLCL));
     return ec;
 }
 
@@ -1669,7 +1713,7 @@ PeerImp::on_message (std::shared_ptr <protocol::TMValidation> const& m)
         }
 
         if (! getApp().getHashRouter ().addSuppressionPeer (
-            s.getSHA512Half(), shortId_))
+            s.getSHA512Half(), id_))
         {
             p_journal_.trace << "Validation: duplicate";
             return ec;
@@ -1678,13 +1722,11 @@ PeerImp::on_message (std::shared_ptr <protocol::TMValidation> const& m)
         bool isTrusted = getApp().getUNL ().nodeInUNL (val->getSignerPublic ());
         if (isTrusted || !getApp().getFeeTrack ().isLoadedLocal ())
         {
-            getApp().getJobQueue ().addJob (
-                isTrusted ? jtVALIDATION_t : jtVALIDATION_ut,
-                "recvValidation->checkValidation",
-                std::bind (&PeerImp::checkValidation, std::placeholders::_1,
-                    &overlay_, val, isTrusted, clusterNode_, m,
-                        std::weak_ptr<PeerImp> (shared_from_this ()),
-                            p_journal_));
+            getApp().getJobQueue ().addJob (isTrusted ?
+                jtVALIDATION_t : jtVALIDATION_ut, "recvValidation->checkValidation",
+                    std::bind(beast::weak_fn(&PeerImp::checkValidation,
+                        shared_from_this()), std::placeholders::_1, val,
+                            isTrusted, m));
         }
         else
         {
@@ -1827,12 +1869,297 @@ PeerImp::on_message (std::shared_ptr <protocol::TMGetObjectByHash> const& m)
     return ec;
 }
 
-//------------------------------------------------------------------------------
+//--------------------------------------------------------------------------
+
+void
+PeerImp::sendGetPeers ()
+{
+    // Ask peer for known other peers.
+    protocol::TMGetPeers msg;
+
+    msg.set_doweneedthis (1);
+
+    Message::pointer packet = std::make_shared<Message> (
+        msg, protocol::mtGET_PEERS);
+
+    send (packet);
+}
+
+bool
+PeerImp::sendHello()
+{
+    bool success;
+    std::tie(sharedValue_, success) = makeSharedValue(
+        stream_.native_handle(), journal_);
+    if (! success)
+        return false;
+
+    auto const hello = buildHello (sharedValue_, getApp());
+    auto const m = std::make_shared<Message> (
+        std::move(hello), protocol::mtHELLO);
+    send (m);
+    return true;
+}
+
+void
+PeerImp::addLedger (uint256 const& hash)
+{
+    std::lock_guard<std::mutex> sl(recentLock_);
+
+    if (std::find (recentLedgers_.begin(),
+        recentLedgers_.end(), hash) != recentLedgers_.end())
+        return;
+
+    // VFALCO TODO See if a sorted vector would be better.
+
+    if (recentLedgers_.size () == 128)
+        recentLedgers_.pop_front ();
+
+    recentLedgers_.push_back (hash);
+}
+
+void
+PeerImp::addTxSet (uint256 const& hash)
+{
+    std::lock_guard<std::mutex> sl(recentLock_);
+
+    if (std::find (recentTxSets_.begin (),
+        recentTxSets_.end (), hash) != recentTxSets_.end ())
+        return;
+
+    if (recentTxSets_.size () == 128)
+        recentTxSets_.pop_front ();
+
+    recentTxSets_.push_back (hash);
+}
+
+void
+PeerImp::doFetchPack (const std::shared_ptr<protocol::TMGetObjectByHash>& packet)
+{
+    // VFALCO TODO Invert this dependency using an observer and shared state object.
+    // Don't queue fetch pack jobs if we're under load or we already have
+    // some queued.
+    if (getApp().getFeeTrack ().isLoadedLocal () ||
+        (getApp().getLedgerMaster().getValidatedLedgerAge() > 40) ||
+        (getApp().getJobQueue().getJobCount(jtPACK) > 10))
+    {
+        p_journal_.info << "Too busy to make fetch pack";
+        return;
+    }
+
+    if (packet->ledgerhash ().size () != 32)
+    {
+        p_journal_.warning << "FetchPack hash size malformed";
+        charge (Resource::feeInvalidRequest);
+        return;
+    }
+
+    uint256 hash;
+    memcpy (hash.begin (), packet->ledgerhash ().data (), 32);
+
+    getApp().getJobQueue ().addJob (jtPACK, "MakeFetchPack",
+        std::bind (&NetworkOPs::makeFetchPack, &getApp().getOPs (),
+            std::placeholders::_1, std::weak_ptr<PeerImp> (shared_from_this ()),
+                packet, hash, UptimeTimer::getInstance ().getElapsedSeconds ()));
+}
+
+void
+PeerImp::doProofOfWork (Job&, std::weak_ptr <PeerImp> peer,
+    ProofOfWork::pointer pow)
+{
+    if (peer.expired ())
+        return;
+
+    uint256 solution = pow->solve ();
+
+    if (solution.isZero ())
+    {
+        p_journal_.warning << "Failed to solve proof of work";
+    }
+    else
+    {
+        Peer::ptr pptr (peer.lock ());
+
+        if (pptr)
+        {
+            protocol::TMProofWork reply;
+            reply.set_token (pow->getToken ());
+            reply.set_response (solution.begin (), solution.size ());
+            pptr->send (std::make_shared<Message> (
+                reply, protocol::mtPROOFOFWORK));
+        }
+        else
+        {
+            // WRITEME: Save solved proof of work for new connection
+        }
+    }
+}
+
+void
+PeerImp::checkTransaction (Job&, int flags,
+    STTx::pointer stx)
+{
+    // VFALCO TODO Rewrite to not use exceptions
+    try
+    {
+        // Expired?
+        if (stx->isFieldPresent(sfLastLedgerSequence) &&
+            (stx->getFieldU32 (sfLastLedgerSequence) <
+            getApp().getLedgerMaster().getValidLedgerIndex()))
+        {
+            getApp().getHashRouter().setFlag(stx->getTransactionID(), SF_BAD);
+            return charge (Resource::feeUnwantedData);
+        }
+
+        auto validate = (flags & SF_SIGGOOD) ? Validate::NO : Validate::YES;
+        auto tx = std::make_shared<Transaction> (stx, validate);
+
+        if (tx->getStatus () == INVALID)
+        {
+            getApp().getHashRouter ().setFlag (stx->getTransactionID (), SF_BAD);
+            return charge (Resource::feeInvalidSignature);
+        }
+        else
+        {
+            getApp().getHashRouter ().setFlag (stx->getTransactionID (), SF_SIGGOOD);
+        }
+
+        bool const trusted (flags & SF_TRUSTED);
+        getApp().getOPs ().processTransaction (tx, trusted, false, false);
+    }
+    catch (...)
+    {
+        getApp().getHashRouter ().setFlag (stx->getTransactionID (), SF_BAD);
+        charge (Resource::feeInvalidRequest);
+    }
+}
+
+// Called from our JobQueue
+void
+PeerImp::checkPropose (Job& job,
+    std::shared_ptr <protocol::TMProposeSet> const& packet,
+        LedgerProposal::pointer proposal, uint256 consensusLCL)
+{
+    bool sigGood = false;
+    bool isTrusted = (job.getType () == jtPROPOSAL_t);
+
+    p_journal_.trace <<
+        "Checking " << (isTrusted ? "trusted" : "UNTRUSTED") << " proposal";
+
+    assert (packet);
+    protocol::TMProposeSet& set = *packet;
+
+    uint256 prevLedger;
+
+    if (set.has_previousledger ())
+    {
+        // proposal includes a previous ledger
+        p_journal_.trace <<
+            "proposal with previous ledger";
+        memcpy (prevLedger.begin (), set.previousledger ().data (), 256 / 8);
+
+        if (!clusterNode_ && !proposal->checkSign (set.signature ()))
+        {
+            p_journal_.warning <<
+                "Proposal with previous ledger fails sig check";
+            charge (Resource::feeInvalidSignature);
+            return;
+        }
+        else
+            sigGood = true;
+    }
+    else
+    {
+        if (consensusLCL.isNonZero () && proposal->checkSign (set.signature ()))
+        {
+            prevLedger = consensusLCL;
+            sigGood = true;
+        }
+        else
+        {
+            // Could be mismatched prev ledger
+            p_journal_.warning <<
+                "Ledger proposal fails signature check";
+            proposal->setSignature (set.signature ());
+        }
+    }
+
+    if (isTrusted)
+    {
+        getApp().getOPs ().processTrustedProposal (
+            proposal, packet, publicKey_, prevLedger, sigGood);
+    }
+    else if (sigGood && (prevLedger == consensusLCL))
+    {
+        // relay untrusted proposal
+        p_journal_.trace <<
+            "relaying UNTRUSTED proposal";
+        std::set<Peer::id_t> peers;
+
+        if (getApp().getHashRouter ().swapSet (
+            proposal->getSuppressionID (), peers, SF_RELAYED))
+        {
+            overlay_.foreach (send_if_not (
+                std::make_shared<Message> (set, protocol::mtPROPOSE_LEDGER),
+                peer_in_set(peers)));
+        }
+    }
+    else
+    {
+        p_journal_.debug <<
+            "Not relaying UNTRUSTED proposal";
+    }
+}
+
+void
+PeerImp::checkValidation (Job&, STValidation::pointer val,
+    bool isTrusted, std::shared_ptr<protocol::TMValidation> const& packet)
+{
+    try
+    {
+        // VFALCO Which functions throw?
+        uint256 signingHash = val->getSigningHash();
+        if (!clusterNode_ && !val->isValid (signingHash))
+        {
+            p_journal_.warning <<
+                "Validation is invalid";
+            charge (Resource::feeInvalidRequest);
+            return;
+        }
+
+        //----------------------------------------------------------------------
+        {
+            STValidation const& sv (*val);
+            Validators::ReceivedValidation rv;
+            rv.ledgerHash = sv.getLedgerHash ();
+            rv.publicKey = sv.getSignerPublic();
+            getApp ().getValidators ().on_receive_validation (rv);
+        }
+        //----------------------------------------------------------------------
+
+        std::set<Peer::id_t> peers;
+        if (getApp().getOPs ().recvValidation (val, std::to_string(id())) &&
+                getApp().getHashRouter ().swapSet (
+                    signingHash, peers, SF_RELAYED))
+        {
+            overlay_.foreach (send_if_not (
+                std::make_shared<Message> (*packet, protocol::mtVALIDATION),
+                peer_in_set(peers)));
+        }
+    }
+    catch (...)
+    {
+        p_journal_.trace <<
+            "Exception processing validation";
+        charge (Resource::feeInvalidRequest);
+    }
+}
 
 // VFALCO NOTE This function is way too big and cumbersome.
 void
-PeerImp::getLedger (protocol::TMGetLedger& packet)
+PeerImp::getLedger (std::shared_ptr<protocol::TMGetLedger> const& m)
 {
+    protocol::TMGetLedger& packet = *m;
     SHAMap::pointer map;
     protocol::TMLedgerData reply;
     bool fatLeaves = true, fatRoot = false;
@@ -1906,7 +2233,7 @@ PeerImp::getLedger (protocol::TMGetLedger& packet)
 
                 Peer::ptr const& selectedPeer = usablePeers [
                     rand () % usablePeers.size ()];
-                packet.set_requestcookie (getShortId ());
+                packet.set_requestcookie (id ());
                 selectedPeer->send (std::make_shared<Message> (
                     packet, protocol::mtGET_LEDGER));
                 return;
@@ -1984,7 +2311,7 @@ PeerImp::getLedger (protocol::TMGetLedger& packet)
 
                 Peer::ptr const& selectedPeer = usablePeers [
                     rand () % usablePeers.size ()];
-                packet.set_requestcookie (getShortId ());
+                packet.set_requestcookie (id ());
                 selectedPeer->send (
                     std::make_shared<Message> (packet, protocol::mtGET_LEDGER));
                 p_journal_.debug <<
@@ -2191,485 +2518,12 @@ PeerImp::getLedger (protocol::TMGetLedger& packet)
     send (oPacket);
 }
 
-//------------------------------------------------------------------------------
-
-void
-PeerImp::detach (const char* rsn)
-{
-    if (! strand_.running_in_this_thread ())
-    {
-        strand_.post (std::bind (&PeerImp::detach,
-            shared_from_this (), rsn));
-        return;
-    }
-
-    if (!detaching_)
-    {
-        // NIKB TODO No - a race is NOT ok. This needs to be fixed
-        //           to have PeerFinder work reliably.
-        detaching_  = true; // Race is ok.
-
-        peerFinder_.on_closed (slot_);
-
-        if (state_ == stateActive)
-            overlay_.onPeerDisconnect (shared_from_this ());
-
-        state_ = stateGracefulClose;
-
-        if (clusterNode_ && p_journal_.active(beast::Journal::Severity::kWarning))
-            journal_.warning <<
-                name_ << " left cluster: " << rsn;
-
-        send_queue_.clear ();
-        error_code ec;
-        timer_.cancel(ec);
-        stream_.next_layer().close(ec);
-
-        // VFALCO TODO Stop doing this.
-        if (publicKey_.isValid ())
-            publicKey_.clear ();       // Be idempotent.
-    }
-}
-
-//--------------------------------------------------------------------------
-
-void
-PeerImp::sendGetPeers ()
-{
-    // Ask peer for known other peers.
-    protocol::TMGetPeers msg;
-
-    msg.set_doweneedthis (1);
-
-    Message::pointer packet = std::make_shared<Message> (
-        msg, protocol::mtGET_PEERS);
-
-    send (packet);
-}
-
-void
-PeerImp::charge (std::weak_ptr <PeerImp>& peer, Resource::Charge const& fee)
-{
-    Peer::ptr p (peer.lock());
-
-    if (p != nullptr)
-        p->charge (fee);
-}
-
-void
-PeerImp::sendForce (const Message::pointer& packet)
-{
-    // must be on IO strand
-    if (!detaching_)
-    {
-        send_packet_ = packet;
-
-        boost::asio::async_write (stream_,
-            boost::asio::buffer (packet->getBuffer ()),
-            strand_.wrap (std::bind (
-                &PeerImp::handleWrite,
-                std::static_pointer_cast <PeerImp> (shared_from_this ()),
-                beast::asio::placeholders::error,
-                beast::asio::placeholders::bytes_transferred)));
-    }
-}
-
-bool
-PeerImp::hashLatestFinishedMessage (const SSL *sslSession, unsigned char *hash,
-    size_t (*getFinishedMessage)(const SSL *, void *buf, size_t))
-{
-    unsigned char buf[1024];
-
-    // Get our finished message and hash it.
-    std::memset(hash, 0, 64);
-
-    size_t len = getFinishedMessage (sslSession, buf, sizeof (buf));
-
-    if(len < sslMinimumFinishedLength)
-        return false;
-
-    SHA512 (buf, len, hash);
-
-    return true;
-}
-
-bool
-PeerImp::calculateSessionCookie ()
-{
-    SSL* ssl = stream_.native_handle();
-
-    if (!ssl)
-    {
-        journal_.error << "Cookie generation: No underlying connection";
-        return false;
-    }
-
-    unsigned char sha1[64];
-    unsigned char sha2[64];
-
-    if (!hashLatestFinishedMessage(ssl, sha1, SSL_get_finished))
-    {
-        journal_.error << "Cookie generation: local setup not complete";
-        return false;
-    }
-
-    if (!hashLatestFinishedMessage(ssl, sha2, SSL_get_peer_finished))
-    {
-        journal_.error << "Cookie generation: peer setup not complete";
-        return false;
-    }
-
-    // If both messages hash to the same value (i.e. match) something is
-    // wrong. This would cause the resulting cookie to be 0.
-    if (memcmp (sha1, sha2, sizeof (sha1)) == 0)
-    {
-        journal_.error << "Cookie generation: identical finished messages";
-        return false;
-    }
-
-    for (size_t i = 0; i < sizeof (sha1); ++i)
-        sha1[i] ^= sha2[i];
-
-    // Finally, derive the actual cookie for the values that we have
-    // calculated.
-    secureCookie_ = Serializer::getSHA512Half (sha1, sizeof(sha1));
-
-    return true;
-}
-
-bool
-PeerImp::sendHello ()
-{
-    if (!calculateSessionCookie())
-        return false;
-
-    Blob vchSig;
-    getApp().getLocalCredentials ().getNodePrivate ().signNodePrivate (
-        secureCookie_, vchSig);
-
-    protocol::TMHello h;
-    h.set_protoversion (to_packed (BuildInfo::getCurrentProtocol()));
-    h.set_protoversionmin (to_packed (BuildInfo::getMinimumProtocol()));
-    h.set_fullversion (BuildInfo::getFullVersionString ());
-    h.set_nettime (getApp().getOPs ().getNetworkTimeNC ());
-    h.set_nodepublic (getApp().getLocalCredentials ().getNodePublic (
-        ).humanNodePublic ());
-    h.set_nodeproof (&vchSig[0], vchSig.size ());
-    // DEPRECATED
-    h.set_ipv4port (overlay_.serverHandler().setup().overlay.port);
-    h.set_testnet (false);
-
-    // We always advertise ourselves as private in the HELLO message. This
-    // suppresses the old peer advertising code and allows PeerFinder to
-    // take over the functionality.
-    h.set_nodeprivate (true);
-
-    Ledger::pointer closedLedger = getApp().getLedgerMaster ().getClosedLedger ();
-
-    if (closedLedger && closedLedger->isClosed ())
-    {
-        uint256 hash = closedLedger->getHash ();
-        h.set_ledgerclosed (hash.begin (), hash.size ());
-        hash = closedLedger->getParentHash ();
-        h.set_ledgerprevious (hash.begin (), hash.size ());
-    }
-
-    Message::pointer packet = std::make_shared<Message> (
-        h, protocol::mtHELLO);
-    send (packet);
-
-    return true;
-}
-
-void
-PeerImp::addLedger (uint256 const& hash)
-{
-    std::lock_guard<std::mutex> sl(recentLock_);
-
-    if (std::find (recentLedgers_.begin(),
-        recentLedgers_.end(), hash) != recentLedgers_.end())
-        return;
-
-    // VFALCO TODO See if a sorted vector would be better.
-
-    if (recentLedgers_.size () == 128)
-        recentLedgers_.pop_front ();
-
-    recentLedgers_.push_back (hash);
-}
-
-void
-PeerImp::addTxSet (uint256 const& hash)
-{
-    std::lock_guard<std::mutex> sl(recentLock_);
-
-    if (std::find (recentTxSets_.begin (),
-        recentTxSets_.end (), hash) != recentTxSets_.end ())
-        return;
-
-    if (recentTxSets_.size () == 128)
-        recentTxSets_.pop_front ();
-
-    recentTxSets_.push_back (hash);
-}
-
-void
-PeerImp::doFetchPack (const std::shared_ptr<protocol::TMGetObjectByHash>& packet)
-{
-    // VFALCO TODO Invert this dependency using an observer and shared state object.
-    // Don't queue fetch pack jobs if we're under load or we already have
-    // some queued.
-    if (getApp().getFeeTrack ().isLoadedLocal () ||
-        (getApp().getLedgerMaster().getValidatedLedgerAge() > 40) ||
-        (getApp().getJobQueue().getJobCount(jtPACK) > 10))
-    {
-        p_journal_.info << "Too busy to make fetch pack";
-        return;
-    }
-
-    if (packet->ledgerhash ().size () != 32)
-    {
-        p_journal_.warning << "FetchPack hash size malformed";
-        charge (Resource::feeInvalidRequest);
-        return;
-    }
-
-    uint256 hash;
-    memcpy (hash.begin (), packet->ledgerhash ().data (), 32);
-
-    getApp().getJobQueue ().addJob (jtPACK, "MakeFetchPack",
-        std::bind (&NetworkOPs::makeFetchPack, &getApp().getOPs (),
-            std::placeholders::_1, std::weak_ptr<PeerImp> (shared_from_this ()),
-                packet, hash, UptimeTimer::getInstance ().getElapsedSeconds ()));
-}
-
-void
-PeerImp::doProofOfWork (Job&, std::weak_ptr <PeerImp> peer,
-    ProofOfWork::pointer pow)
-{
-    if (peer.expired ())
-        return;
-
-    uint256 solution = pow->solve ();
-
-    if (solution.isZero ())
-    {
-        p_journal_.warning << "Failed to solve proof of work";
-    }
-    else
-    {
-        Peer::ptr pptr (peer.lock ());
-
-        if (pptr)
-        {
-            protocol::TMProofWork reply;
-            reply.set_token (pow->getToken ());
-            reply.set_response (solution.begin (), solution.size ());
-            pptr->send (std::make_shared<Message> (
-                reply, protocol::mtPROOFOFWORK));
-        }
-        else
-        {
-            // WRITEME: Save solved proof of work for new connection
-        }
-    }
-}
-
-void
-PeerImp::checkTransaction (Job&, int flags,
-    STTx::pointer stx, std::weak_ptr<PeerImp> peer)
-{
-    // VFALCO TODO Rewrite to not use exceptions
-    try
-    {
-        // Expired?
-        if (stx->isFieldPresent(sfLastLedgerSequence) &&
-            (stx->getFieldU32 (sfLastLedgerSequence) <
-            getApp().getLedgerMaster().getValidLedgerIndex()))
-        {
-            getApp().getHashRouter().setFlag(stx->getTransactionID(), SF_BAD);
-            charge (peer, Resource::feeUnwantedData);
-            return;
-        }
-
-        auto validate = (flags & SF_SIGGOOD) ? Validate::NO : Validate::YES;
-        auto tx = std::make_shared<Transaction> (stx, validate);
-
-        if (tx->getStatus () == INVALID)
-        {
-            getApp().getHashRouter ().setFlag (stx->getTransactionID (), SF_BAD);
-            charge (peer, Resource::feeInvalidSignature);
-            return;
-        }
-        else
-            getApp().getHashRouter ().setFlag (stx->getTransactionID (), SF_SIGGOOD);
-
-        bool const trusted (flags & SF_TRUSTED);
-        getApp().getOPs ().processTransaction (tx, trusted, false, false);
-    }
-    catch (...)
-    {
-        getApp().getHashRouter ().setFlag (stx->getTransactionID (), SF_BAD);
-        charge (peer, Resource::feeInvalidRequest);
-    }
-}
-
-// Called from our JobQueue
-void
-PeerImp::checkPropose (Job& job, Overlay* pPeers,
-    std::shared_ptr <protocol::TMProposeSet> packet,
-        LedgerProposal::pointer proposal, uint256 consensusLCL,
-            RippleAddress nodePublic, std::weak_ptr<PeerImp> peer,
-                bool fromCluster, beast::Journal journal)
-{
-    bool sigGood = false;
-    bool isTrusted = (job.getType () == jtPROPOSAL_t);
-
-    journal.trace <<
-        "Checking " << (isTrusted ? "trusted" : "UNTRUSTED") << " proposal";
-
-    assert (packet);
-    protocol::TMProposeSet& set = *packet;
-
-    uint256 prevLedger;
-
-    if (set.has_previousledger ())
-    {
-        // proposal includes a previous ledger
-        journal.trace <<
-            "proposal with previous ledger";
-        memcpy (prevLedger.begin (), set.previousledger ().data (), 256 / 8);
-
-        if (!fromCluster && !proposal->checkSign (set.signature ()))
-        {
-            Peer::ptr p = peer.lock ();
-            journal.warning <<
-                "Proposal with previous ledger fails sig check";
-            charge (peer, Resource::feeInvalidSignature);
-            return;
-        }
-        else
-            sigGood = true;
-    }
-    else
-    {
-        if (consensusLCL.isNonZero () && proposal->checkSign (set.signature ()))
-        {
-            prevLedger = consensusLCL;
-            sigGood = true;
-        }
-        else
-        {
-            // Could be mismatched prev ledger
-            journal.warning <<
-                "Ledger proposal fails signature check";
-            proposal->setSignature (set.signature ());
-        }
-    }
-
-    if (isTrusted)
-    {
-        getApp().getOPs ().processTrustedProposal (
-            proposal, packet, nodePublic, prevLedger, sigGood);
-    }
-    else if (sigGood && (prevLedger == consensusLCL))
-    {
-        // relay untrusted proposal
-        journal.trace <<
-            "relaying UNTRUSTED proposal";
-        std::set<Peer::ShortId> peers;
-
-        if (getApp().getHashRouter ().swapSet (
-            proposal->getSuppressionID (), peers, SF_RELAYED))
-        {
-            pPeers->foreach (send_if_not (
-                std::make_shared<Message> (set, protocol::mtPROPOSE_LEDGER),
-                peer_in_set(peers)));
-        }
-    }
-    else
-    {
-        journal.debug <<
-            "Not relaying UNTRUSTED proposal";
-    }
-}
-
-void
-PeerImp::checkValidation (Job&, Overlay* pPeers,
-    STValidation::pointer val, bool isTrusted, bool isCluster,
-        std::shared_ptr<protocol::TMValidation> packet,
-            std::weak_ptr<PeerImp> peer, beast::Journal journal)
-{
-    try
-    {
-        uint256 signingHash = val->getSigningHash();
-        if (!isCluster && !val->isValid (signingHash))
-        {
-            journal.warning <<
-                "Validation is invalid";
-            charge (peer, Resource::feeInvalidRequest);
-            return;
-        }
-
-        std::string source;
-        PeerImp::ptr lp = peer.lock ();
-
-        if (lp)
-            source = std::to_string(lp->getShortId());
-        else
-            source = "unknown";
-
-        std::set<Peer::ShortId> peers;
-
-        //----------------------------------------------------------------------
-        //
-        {
-            STValidation const& sv (*val);
-            Validators::ReceivedValidation rv;
-            rv.ledgerHash = sv.getLedgerHash ();
-            rv.publicKey = sv.getSignerPublic();
-            getApp ().getValidators ().on_receive_validation (rv);
-        }
-        //
-        //----------------------------------------------------------------------
-
-        if (getApp().getOPs ().recvValidation (val, source) &&
-                getApp().getHashRouter ().swapSet (
-                    signingHash, peers, SF_RELAYED))
-        {
-            pPeers->foreach (send_if_not (
-                std::make_shared<Message> (*packet, protocol::mtVALIDATION),
-                peer_in_set(peers)));
-        }
-    }
-    catch (...)
-    {
-        journal.trace <<
-            "Exception processing validation";
-        charge (peer, Resource::feeInvalidRequest);
-    }
-}
-
-// This is dispatched by the job queue
-void
-PeerImp::sGetLedger (std::weak_ptr<PeerImp> wPeer,
-    std::shared_ptr <protocol::TMGetLedger> packet)
-{
-    std::shared_ptr<PeerImp> peer = wPeer.lock ();
-
-    if (peer)
-        peer->getLedger (*packet);
-}
-
 // VFALCO TODO Make this non-static
 void
-PeerImp::peerTXData (Job&, std::weak_ptr <PeerImp> wPeer, uint256 const& hash,
-    std::shared_ptr <protocol::TMLedgerData> pPacket, beast::Journal journal)
+PeerImp::peerTXData (Job&, uint256 const& hash,
+    std::shared_ptr <protocol::TMLedgerData> const& pPacket,
+        beast::Journal journal)
 {
-    std::shared_ptr <PeerImp> peer = wPeer.lock ();
-    if (!peer)
-        return;
-
     protocol::TMLedgerData& packet = *pPacket;
 
     std::list<SHAMapNodeID> nodeIDs;
@@ -2682,7 +2536,7 @@ PeerImp::peerTXData (Job&, std::weak_ptr <PeerImp> wPeer, uint256 const& hash,
             node.nodeid ().size () != 33))
         {
             journal.warning << "LedgerData request with invalid node ID";
-            peer->charge (Resource::feeInvalidRequest);
+            charge (Resource::feeInvalidRequest);
             return;
         }
 
@@ -2696,13 +2550,12 @@ PeerImp::peerTXData (Job&, std::weak_ptr <PeerImp> wPeer, uint256 const& hash,
     {
         Application::ScopedLockType lock (getApp ().getMasterLock ());
 
-        san =  getApp().getOPs().gotTXData (peer, hash, nodeIDs, nodeData);
+        san =  getApp().getOPs().gotTXData (shared_from_this(),
+            hash, nodeIDs, nodeData);
     }
 
     if (san.isInvalid ())
-    {
-        peer->charge (Resource::feeUnwantedData);
-    }
+        charge (Resource::feeUnwantedData);
 }
 
 } // ripple

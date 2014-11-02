@@ -2506,7 +2506,10 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\overlay\impl\PeerImp.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\overlay\impl\peer_protocol_detector.h">
+    <ClCompile Include="..\..\src\ripple\overlay\impl\TMHello.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\TMHello.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\overlay\impl\Tuning.h">
     </ClInclude>
@@ -2523,6 +2526,9 @@
     <None Include="..\..\src\ripple\overlay\README.md">
     </None>
     <ClCompile Include="..\..\src\ripple\overlay\tests\short_read.test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\overlay\tests\TMHello.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\peerfinder\impl\Bootcache.cpp">

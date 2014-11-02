@@ -204,7 +204,7 @@ public:
     */
     virtual
     bool
-    connected (Slot::ptr const& slot,
+    onConnected (Slot::ptr const& slot,
         beast::IP::Endpoint const& local_endpoint) = 0;
 
     /** Request an active slot type. */

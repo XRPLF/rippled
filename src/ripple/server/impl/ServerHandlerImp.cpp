@@ -429,6 +429,13 @@ adminRole (HTTP::Port const& port,
 //------------------------------------------------------------------------------
 
 void
+ServerHandler::appendStandardFields (beast::http::message& message)
+{
+}
+
+//------------------------------------------------------------------------------
+
+void
 ServerHandler::Setup::makeContexts()
 {
     for(auto& p : ports)
@@ -452,42 +459,6 @@ ServerHandler::Setup::makeContexts()
 }
 
 namespace detail {
-
-// Parse a comma-delimited list of values.
-std::vector<std::string>
-parse_csv (std::string const& in, std::ostream& log)
-{
-    auto first = in.cbegin();
-    auto const last = in.cend();
-    std::vector<std::string> result;
-    if (first != last)
-    {
-        static boost::regex const re(
-            "^"                         // start of line
-            "(?:\\s*)"                  // whitespace (optional)
-            "([a-zA-Z][_a-zA-Z0-9]*)"   // identifier
-            "(?:\\s*)"                  // whitespace (optional)
-            "(?:,?)"                    // comma (optional)
-            "(?:\\s*)"                  // whitespace (optional)
-            , boost::regex_constants::optimize
-        );
-        for(;;)
-        {
-            boost::smatch m;
-            if (! boost::regex_search(first, last, m, re,
-                boost::regex_constants::match_continuous))
-            {
-                log << "Expected <identifier>\n";
-                throw std::exception();
-            }
-            result.push_back(m[1]);
-            first = m[0].second;
-            if (first == last)
-                break;
-        }
-    }
-    return result;
-}
 
 // Intermediate structure used for parsing
 struct ParsedPort

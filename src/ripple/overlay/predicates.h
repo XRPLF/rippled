@@ -154,15 +154,15 @@ struct peer_in_cluster
 /** Select all peers that are in the specified set */
 struct peer_in_set
 {
-    std::set <Peer::ShortId> const& peerSet;
+    std::set <Peer::id_t> const& peerSet;
 
-    peer_in_set (std::set<Peer::ShortId> const& peers)
+    peer_in_set (std::set<Peer::id_t> const& peers)
         : peerSet (peers)
     { }
 
     bool operator() (Peer::ptr const& peer) const
     {
-        if (peerSet.count (peer->getShortId ()) == 0)
+        if (peerSet.count (peer->id ()) == 0)
             return false;
 
         return true;

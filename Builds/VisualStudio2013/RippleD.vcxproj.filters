@@ -3531,7 +3531,10 @@
     <ClInclude Include="..\..\src\ripple\overlay\impl\PeerImp.h">
       <Filter>ripple\overlay\impl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\overlay\impl\peer_protocol_detector.h">
+    <ClCompile Include="..\..\src\ripple\overlay\impl\TMHello.cpp">
+      <Filter>ripple\overlay\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\overlay\impl\TMHello.h">
       <Filter>ripple\overlay\impl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\overlay\impl\Tuning.h">
@@ -3556,6 +3559,9 @@
       <Filter>ripple\overlay</Filter>
     </None>
     <ClCompile Include="..\..\src\ripple\overlay\tests\short_read.test.cpp">
+      <Filter>ripple\overlay\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\overlay\tests\TMHello.test.cpp">
       <Filter>ripple\overlay\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\peerfinder\impl\Bootcache.cpp">

@@ -40,31 +40,54 @@ class Peer
 public:
     typedef std::shared_ptr <Peer> ptr;
 
-    /** Uniquely identifies a particular connection of a peer. */
-    typedef std::uint32_t ShortId;
+    /** Uniquely identifies a peer.
+        This can be stored in tables to find the peer later. Callers
+        can discover if the peer is no longer connected and make
+        adjustments as needed.
+    */
+    using id_t = std::uint32_t;
 
     //
     // Network
     //
 
-    virtual void send (Message::pointer const& m) = 0;
-    virtual beast::IP::Endpoint getRemoteAddress() const = 0;
+    virtual
+    void
+    send (Message::pointer const& m) = 0;
+
+    virtual
+    beast::IP::Endpoint
+    getRemoteAddress() const = 0;
 
     /** Adjust this peer's load balance based on the type of load imposed. */
-    virtual void charge (Resource::Charge const& fee) = 0;
+    virtual
+    void
+    charge (Resource::Charge const& fee) = 0;
 
     //
     // Identity
     //
 
-    virtual ShortId getShortId () const = 0;
-    virtual RippleAddress const& getNodePublic () const = 0;
-    virtual Json::Value json () = 0;
+    virtual
+    id_t
+    id() const = 0;
+
+    virtual
+    RippleAddress const&
+    getNodePublic() const = 0;
+
+    virtual
+    Json::Value json() = 0;
+
     // VFALCO TODO Replace both with
     //             boost::optional<std::string> const& cluster_id();
-    //
-    virtual bool isInCluster () const = 0;
-    virtual std::string const& getClusterNodeName() const = 0;
+    virtual
+    bool
+    isInCluster() const = 0;
+
+    virtual
+    std::string const&
+    getClusterNodeName() const = 0;
 
     //
     // Ledger

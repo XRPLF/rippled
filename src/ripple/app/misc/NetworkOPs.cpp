@@ -1031,7 +1031,7 @@ Transaction::pointer NetworkOPsImp::processTransactionCb (
 
         if (didApply || ((mMode != omFULL) && !bFailHard && bLocal))
         {
-            std::set<Peer::ShortId> peers;
+            std::set<Peer::id_t> peers;
 
             if (getApp().getHashRouter ().swapSet (
                     trans->getID (), peers, SF_RELAYED))
@@ -1593,7 +1593,7 @@ void NetworkOPsImp::processTrustedProposal (
 
         if (relay)
         {
-            std::set<Peer::ShortId> peers;
+            std::set<Peer::id_t> peers;
             if (getApp().getHashRouter ().swapSet (
                 proposal->getSuppressionID (), peers, SF_RELAYED))
             {

@@ -118,7 +118,7 @@ public:
     /** Returns the peer with the matching short id, or null. */
     virtual
     Peer::ptr
-    findPeerByShortID (Peer::ShortId const& id) = 0;
+    findPeerByShortID (Peer::id_t const& id) = 0;
 
     /** Visit every active peer and return a value
         The functor must:

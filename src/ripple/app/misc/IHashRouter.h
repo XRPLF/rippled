@@ -44,7 +44,7 @@ namespace ripple {
 class IHashRouter
 {
 public:
-    // The type here *MUST* match the type of Peer::ShortId
+    // The type here *MUST* match the type of Peer::id_t
     typedef std::uint32_t PeerShortID;
 
     // VFALCO NOTE this preferred alternative to default parameters makes

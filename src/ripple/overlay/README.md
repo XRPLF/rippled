@@ -63,12 +63,11 @@ custom fields to communicate protocol specific information:
 
 ```
 GET / HTTP/1.1
-User-Agent: Ripple-0.26.0
+User-Agent: rippled-0.27.0
 Local-Address: 192.168.0.101:8421
-Upgrade: Ripple/1.2, Ripple/1.3
+Upgrade: RTXP/1.2, RTXP/1.3
 Connection: Upgrade
 Connect-As: Leaf, Peer
-Content-Length: 0
 Accept-Encoding: identity, zlib, snappy
 Protocol-Public-Key: aBRoQibi2jpDofohooFuzZi9nEzKw9Zdfc4ExVNmuXHaJpSPh8uJ
 Protocol-Session-Cookie: 71ED064155FFADFA38782C5E0158CB26
@@ -79,9 +78,9 @@ HTTP response indicating the connection status:
 
 ```
 HTTP/1.1 101 Switching Protocols
-Server: Ripple-0.26.5
+Server: rippled-0.27.0
 Remote-Address: 63.104.209.13
-Upgrade: Ripple/1.2
+Upgrade: RTXP/1.2
 Connection: Upgrade
 Connect-As: Leaf
 Transfer-Encoding: snappy
@@ -96,7 +95,7 @@ servers that may have open slots:
 
 ```
 HTTP/1.1 503 Service Unavailable
-Server: Ripple-0.26.5
+Server: rippled-0.27.0
 Remote-Address: 63.104.209.13
 Content-Length: 253
 Content-Type: application/json
@@ -138,7 +137,7 @@ Content-Type: application/json
 * `Upgrade`
 
     This field must be present and for requests consist of a comma delimited
-    list of at least one element where each element is of the form "Ripple/"
+    list of at least one element where each element is of the form "RTXP/"
     followed by the dotted major and minor protocol version number. For
     responses the value must be a single element matching one of the elements
     provided in the corresponding request field. If the server does not

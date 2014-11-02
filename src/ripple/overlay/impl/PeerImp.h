@@ -25,7 +25,6 @@
 #include <ripple/overlay/impl/message_name.h>
 #include <ripple/overlay/impl/message_stream.h>
 #include <ripple/overlay/impl/OverlayImpl.h>
-#include <ripple/overlay/impl/peer_protocol_detector.h>
 #include <ripple/app/misc/ProofOfWork.h>
 #include <ripple/app/misc/ProofOfWorkFactory.h>
 #include <ripple/core/Config.h>
@@ -41,6 +40,7 @@
 #include <beast/http/parser.h>
 #include <beast/utility/WrappedSink.h>
 #include <cstdint>
+#include <queue>
 
 namespace ripple {
 
@@ -54,117 +54,62 @@ class PeerImp
     , private abstract_protocol_handler
 {
 public:
+    /** Type of connection.
+        The affects how messages are routed.
+    */
+    enum class Type
+    {
+        legacy,
+        leaf,
+        peer
+    };
+
     /** Current state */
-    enum State
+    enum class State
     {
         /** A connection is being established (outbound) */
-         stateConnecting
+        connecting
 
         /** Connection has been successfully established */
-        ,stateConnected
+        ,connected
 
         /** Handshake has been received from this peer */
-        ,stateHandshaked
+        ,handshaked
 
         /** Running the Ripple protocol actively */
-        ,stateActive
-
-        /** Gracefully closing */
-        ,stateGracefulClose
+        ,active
     };
 
     typedef std::shared_ptr <PeerImp> ptr;
 
 private:
-    /** Wraps a Journal::Sink to prefix it's output. */
-    class WrappedSink : public beast::Journal::Sink
-    {
-    private:
-        std::string prefix_;
-        beast::Journal::Sink& sink_;
-
-    public:
-        explicit
-        WrappedSink (beast::Journal::Sink& sink)
-            : sink_ (sink)
-        {
-        }
-
-        explicit
-        WrappedSink (beast::Journal const& journal)
-            : sink_ (journal.sink())
-        {
-        }
-
-        void prefix (std::string const& s)
-        {
-            prefix_ = s;
-        }
-
-        bool
-        active (beast::Journal::Severity level) const override
-        {
-            return sink_.active (level);
-        }
-
-        bool
-        console () const override
-        {
-            return sink_.console ();
-        }
-
-        void console (bool output) override
-        {
-            sink_.console (output);
-        }
-
-        beast::Journal::Severity
-        severity() const
-        {
-            return sink_.severity();
-        }
-
-        void severity (beast::Journal::Severity level)
-        {
-            sink_.severity (level);
-        }
-
-        void write (beast::Journal::Severity level, std::string const& text)
-        {
-            using beast::Journal;
-            sink_.write (level, prefix_ + text);
-        }
-    };
-
     using clock_type = std::chrono::steady_clock;
     using error_code= boost::system::error_code ;
     using yield_context = boost::asio::yield_context;
     using socket_type = boost::asio::ip::tcp::socket;
     using stream_type = boost::asio::ssl::stream <socket_type&>;
+    using address_type = boost::asio::ip::address;
+    using endpoint_type = boost::asio::ip::tcp::endpoint;
 
     // Time alloted for a peer to send a HELLO message (DEPRECATED)
     static const boost::posix_time::seconds nodeVerifySeconds;
 
-    // The clock drift we allow a remote peer to have
-    static const std::uint32_t clockToleranceDeltaSeconds = 20;
-
     // The length of the smallest valid finished message
     static const size_t sslMinimumFinishedLength = 12;
 
-    WrappedSink sink_;
-    WrappedSink p_sink_;
+    id_t const id_;
+    beast::WrappedSink sink_;
+    beast::WrappedSink p_sink_;
     beast::Journal journal_;
     beast::Journal p_journal_;
     std::unique_ptr<beast::asio::ssl_bundle> ssl_bundle_;
     socket_type& socket_;
     stream_type& stream_;
     boost::asio::io_service::strand strand_;
-    boost::asio::deadline_timer timer_;
+    boost::asio::basic_waitable_timer<
+        std::chrono::steady_clock> timer_;
 
-    // A unique identifier (up to a restart of rippled) for this particular
-    // peer instance. A peer that disconnects will, upon reconnection, get a
-    // new ID.
-    ShortId shortId_ = 0;
+    Type type_ = Type::legacy;
 
     // Updated at each stage of the connection process to reflect
     // the current conditions as closely as possible.
@@ -188,10 +133,7 @@ private:
 
     std::string name_;
 
-    // Both sides of the peer calculate this value and verify that it matches
-    // to detect/prevent man-in-the-middle attacks.
-    //
-    uint256 secureCookie_;
+    uint256 sharedValue_;
 
     // The indices of the smallest and largest ledgers this peer has available
     //
@@ -205,23 +147,20 @@ private:
     std::list<uint256> recentTxSets_;
     mutable std::mutex recentLock_;
 
-    std::list <Message::pointer> send_queue_;
-    Message::pointer send_packet_;
     protocol::TMStatusChange last_status_;
     protocol::TMHello hello_;
 
     Resource::Consumer usage_;
-
-    // The slot assigned to us by PeerFinder
     PeerFinder::Slot::ptr slot_;
 
     beast::asio::streambuf read_buffer_;
-    boost::optional <beast::http::message> http_message_;
+    beast::http::message http_message_;
     boost::optional <beast::http::parser> http_parser_;
     beast::http::body http_body_;
     message_stream message_stream_;
-
     beast::asio::streambuf write_buffer_;
+    std::queue<Message::pointer> send_queue_;
+    bool gracefulClose_ = false;
 
     std::unique_ptr <LoadEvent> load_event_;
 
@@ -234,22 +173,24 @@ public:
     /** Create an incoming legacy peer from an established ssl connection. */
     template <class ConstBufferSequence>
     PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
-        ConstBufferSequence const& buffer, beast::IP::Endpoint remoteAddress,
+        ConstBufferSequence const& buffer, endpoint_type remote_endpoint,
             OverlayImpl& overlay, Resource::Manager& resourceManager,
                 PeerFinder::Manager& peerFinder,
-                    PeerFinder::Slot::ptr const& slot);
+                    PeerFinder::Slot::ptr const& slot, id_t id);
 
     /** Create an active incoming peer from an established ssl connection. */
     PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
-        beast::http::message&& request, beast::IP::Endpoint remoteAddress,
-            OverlayImpl& overlay, Resource::Manager& resourceManager,
-                PeerFinder::Manager& peerFinder, PeerFinder::Slot::ptr const& slot);
+        beast::http::message&& request, protocol::TMHello const& hello,
+            endpoint_type remote_endpoint, RippleAddress const& publicKey,
+                Resource::Consumer consumer, PeerFinder::Slot::ptr const& slot,
+                    OverlayImpl& overlay, Resource::Manager& resourceManager,
+                        PeerFinder::Manager& peerFinder, id_t id);
 
     /** Create an outgoing peer. */
     PeerImp (beast::IP::Endpoint remoteAddress, boost::asio::io_service& io_service,
         OverlayImpl& overlay, Resource::Manager& resourceManager,
             PeerFinder::Manager& peerFinder, PeerFinder::Slot::ptr const& slot,
-                std::shared_ptr<boost::asio::ssl::context> const& context);
+                std::shared_ptr<boost::asio::ssl::context> const& context, id_t id);
 
     virtual
     ~PeerImp ();
@@ -262,14 +203,11 @@ public:
 
     // Work-around for calling shared_from_this in constructors
     void
-    start();
+    run();
 
+    // Called when Overlay gets a stop request.
     void
-    getLedger (protocol::TMGetLedger& packet);
-
-    // Cancel all I/O and close the socket
-    void
-    close() override;
+    stop() override;
 
     //
     // Network
@@ -283,10 +221,13 @@ public:
         typename std::iterator_traits<FwdIt>::value_type,
             PeerFinder::Endpoint>::value>>
     void
-    send_endpoints (FwdIt first, FwdIt last);
+    sendEndpoints (FwdIt first, FwdIt last);
 
     beast::IP::Endpoint
-    getRemoteAddress() const override;
+    getRemoteAddress() const override
+    {
+        return remote_address_;
+    }
 
     void
     charge (Resource::Charge const& fee) override;
@@ -295,27 +236,42 @@ public:
     // Identity
     //
 
-    Peer::ShortId
-    getShortId () const override;
+    Peer::id_t
+    id() const override
+    {
+        return id_;
+    }
 
     RippleAddress const&
-    getNodePublic () const override;
+    getNodePublic () const override
+    {
+        return publicKey_;
+    }
 
     Json::Value
     json() override;
 
     bool
-    isInCluster () const override;
+    isInCluster () const override
+    {
+        return clusterNode_;
+    }
 
     std::string const&
-    getClusterNodeName() const override;
+    getClusterNodeName() const override
+    {
+        return name_;
+    }
 
     //
     // Ledger
     //
 
     uint256 const&
-    getClosedLedgerHash () const override;
+    getClosedLedgerHash () const override
+    {
+        return closedLedgerHash_;
+    }
 
     bool
     hasLedger (uint256 const& hash, std::uint32_t seq) const override;
@@ -337,77 +293,95 @@ public:
 
 private:
     void
-    setPrefix();
-
-    //
-    // client role
-    //
+    close();
 
     void
-    do_connect();
+    fail(std::string const& reason);
 
     void
-    on_connect (error_code ec);
+    fail(std::string const& name, error_code ec);
 
+    void
+    gracefulClose();
+
+    void
+    setTimer();
+
+    void
+    cancelTimer();
+
+    static
+    std::string
+    makePrefix(id_t id);
+
+    static
     beast::http::message
-    make_request();
+    makeRequest (boost::asio::ip::address const& remote_address);
+
+    // Called when the timer wait completes
+    void
+    onTimer (boost::system::error_code const& ec);
+
+    // Called when SSL shutdown completes
+    void
+    onShutdown (error_code ec);
+
+    //
+    // outbound completion path
+    //
 
     void
-    on_connect_ssl (error_code ec);
+    doConnect();
 
     void
-    on_write_http_request (error_code ec, std::size_t bytes_transferred);
+    onConnect (error_code ec);
+
+    void
+    onHandshake (error_code ec);
+
+    void
+    onWriteRequest (error_code ec, std::size_t bytes_transferred);
+
+    void
+    onReadResponse (error_code ec, std::size_t bytes_transferred);
 
     template <class Streambuf>
     void
     processResponse (beast::http::message const& m, Streambuf const& body);
 
-    void
-    on_read_http_response (error_code ec, std::size_t bytes_transferred);
-
     //
-    // server role
+    // inbound completion path
     //
 
     void
-    do_accept();
+    doAccept();
 
     void
-    on_accept_ssl (error_code ec);
+    doLegacyAccept();
 
-    void
-    on_read_http_detect (error_code ec, std::size_t bytes_transferred);
-
-    void
-    on_read_http_request (error_code ec, std::size_t bytes_transferred);
-
+    static
     beast::http::message
-    make_response (beast::http::message const& req);
+    makeResponse (beast::http::message const& req,
+        uint256 const& sharedValue);
 
     void
-    on_write_http_response (error_code ec, std::size_t bytes_transferred);
+    onWriteResponse (error_code ec, std::size_t bytes_transferred);
 
     //
-    // protocol
+    // protocol message loop
     //
 
+    // Starts the protocol message loop
     void
-    do_protocol_start();
+    doProtocolStart (bool legacy);
 
+    // Called when protocol message bytes are received
     void
-    on_read_protocol (error_code ec, std::size_t bytes_transferred);
+    onReadMessage (error_code ec, std::size_t bytes_transferred);
 
+    // Called when protocol messages bytes are sent
     void
-    on_write_protocol (error_code ec, std::size_t bytes_transferred);
-
-    void
-    handleShutdown (boost::system::error_code const& ec);
-
-    void
-    handleWrite (boost::system::error_code const& ec, size_t bytes);
-
-    void
-    handleVerifyTimer (boost::system::error_code const& ec);
+    onWriteMessage (error_code ec, std::size_t bytes_transferred);
 
     //--------------------------------------------------------------------------
     //
@@ -466,48 +440,8 @@ private:
 
     //--------------------------------------------------------------------------
 
-    // DEPRECATED Close the socket
     void
-    detach (const char* rsn);
-
-    void
-    sendGetPeers ();
-
-    static
-    void
-    charge (std::weak_ptr <PeerImp>& peer, Resource::Charge const& fee);
-
-    void
-    sendForce (const Message::pointer& packet);
-
-    /** Hashes the latest finished message from an SSL stream
-        @param sslSession the session to get the message from.
-        @param hash       the buffer into which the hash of the retrieved
-                          message will be saved. The buffer MUST be at least
-                          64 bytes long.
-        @param getMessage a pointer to the function to call to retrieve the
-                          finished message. This be either:
-                          `SSL_get_finished` or
-                          `SSL_get_peer_finished`.
-        @return `true` if successful, `false` otherwise.
-    */
-    bool
-    hashLatestFinishedMessage (const SSL *sslSession, unsigned char *hash,
-        size_t (*getFinishedMessage)(const SSL *, void *buf, size_t));
-
-    /** Generates a secure cookie to protect against man-in-the-middle attacks
-        This function should never fail under normal circumstances and regular
-        server operation.
-        A failure prevents the cookie value from being calculated which is an
-        important component of connection security. If this function fails, a
-        secure connection cannot be established and the link MUST be dropped.
-        @return `true` if the cookie was generated, `false` otherwise.
-        @note failure is an exceptional situation - it should never happen and
-              will almost always indicate an active man-in-the-middle attack is
-              taking place.
-    */
-    bool
-    calculateSessionCookie ();
+    sendGetPeers();
 
     /** Perform a secure handshake with the peer at the other end.
         If this function returns false then we cannot guarantee that there
@@ -530,36 +464,25 @@ private:
     void
     doProofOfWork (Job&, std::weak_ptr <PeerImp> peer, ProofOfWork::pointer pow);
 
-    static
-    void checkTransaction (Job&, int flags, STTx::pointer stx,
-        std::weak_ptr<PeerImp> peer);
-
-    // Called from our JobQueue
-    static
     void
-    checkPropose (Job& job, Overlay* pPeers,
-        std::shared_ptr<protocol::TMProposeSet> packet,
-            LedgerProposal::pointer proposal, uint256 consensusLCL,
-                RippleAddress nodePublic, std::weak_ptr<PeerImp> peer,
-                    bool fromCluster, beast::Journal journal);
+    checkTransaction (Job&, int flags, STTx::pointer stx);
 
-    static
     void
-    checkValidation (Job&, Overlay* pPeers, STValidation::pointer val,
-        bool isTrusted, bool isCluster,
-            std::shared_ptr<protocol::TMValidation> packet,
-                std::weak_ptr<PeerImp> peer, beast::Journal journal);
+    checkPropose (Job& job,
+        std::shared_ptr<protocol::TMProposeSet> const& packet,
+            LedgerProposal::pointer proposal, uint256 consensusLCL);
 
-    static
     void
-    sGetLedger (std::weak_ptr<PeerImp> wPeer,
-        std::shared_ptr <protocol::TMGetLedger> packet);
+    checkValidation (Job&, STValidation::pointer val,
+        bool isTrusted, std::shared_ptr<protocol::TMValidation> const& packet);
 
-    /** Called when we receive tx set data. */
-    static
     void
-    peerTXData (Job&, std::weak_ptr <PeerImp> wPeer, uint256 const& hash,
-        std::shared_ptr <protocol::TMLedgerData> pPacket,
+    getLedger (std::shared_ptr<protocol::TMGetLedger> const&packet);
+
+    // Called when we receive tx set data.
+    void
+    peerTXData (Job&, uint256 const& hash,
+        std::shared_ptr <protocol::TMLedgerData> const& pPacket,
             beast::Journal journal);
 };
 
@@ -567,13 +490,14 @@ private:
 
 template <class ConstBufferSequence>
 PeerImp::PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
-    ConstBufferSequence const& buffer, beast::IP::Endpoint remoteAddress,
+    ConstBufferSequence const& buffer, endpoint_type remote_endpoint,
         OverlayImpl& overlay, Resource::Manager& resourceManager,
             PeerFinder::Manager& peerFinder,
-                PeerFinder::Slot::ptr const& slot)
+                PeerFinder::Slot::ptr const& slot, id_t id)
     : Child (overlay)
-    , sink_(deprecatedLogs().journal("Peer"))
-    , p_sink_(deprecatedLogs().journal("Protocol"))
+    , id_(id)
+    , sink_(deprecatedLogs().journal("Peer"), makePrefix(id))
+    , p_sink_(deprecatedLogs().journal("Protocol"), makePrefix(id))
     , journal_ (sink_)
     , p_journal_(p_sink_)
     , ssl_bundle_(std::move(ssl_bundle))
@@ -581,23 +505,23 @@ PeerImp::PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
     , stream_ (ssl_bundle_->stream)
     , strand_ (socket_.get_io_service())
     , timer_ (socket_.get_io_service())
-    , remote_address_ (remoteAddress)
+    , remote_address_ (
+        beast::IPAddressConversion::from_asio(remote_endpoint))
     , resourceManager_ (resourceManager)
     , peerFinder_ (peerFinder)
     , overlay_ (overlay)
     , m_inbound (true)
-    , state_ (stateConnected)
+    , state_ (State::connected)
     , slot_ (slot)
     , message_stream_(*this)
 {
-    setPrefix();
     read_buffer_.commit(boost::asio::buffer_copy(read_buffer_.prepare(
         boost::asio::buffer_size(buffer)), buffer));
 }
 
 template <class FwdIt, class>
 void
-PeerImp::send_endpoints (FwdIt first, FwdIt last)
+PeerImp::sendEndpoints (FwdIt first, FwdIt last)
 {
     protocol::TMEndpoints tm;
     for (;first != last; ++first)

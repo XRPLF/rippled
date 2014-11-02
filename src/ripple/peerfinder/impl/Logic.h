@@ -360,7 +360,7 @@ public:
     }
 
     bool
-    connected (SlotImp::ptr const& slot,
+    onConnected (SlotImp::ptr const& slot,
         beast::IP::Endpoint const& local_endpoint)
     {
         if (m_journal.trace) m_journal.trace << beast::leftw (18) <<

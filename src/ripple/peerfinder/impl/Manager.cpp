@@ -159,11 +159,11 @@ public:
     //--------------------------------------------------------------------------
 
     bool
-    connected (Slot::ptr const& slot,
+    onConnected (Slot::ptr const& slot,
         beast::IP::Endpoint const& local_endpoint) override
     {
         SlotImp::ptr impl (std::dynamic_pointer_cast <SlotImp> (slot));
-        return m_logic.connected (impl, local_endpoint);
+        return m_logic.onConnected (impl, local_endpoint);
     }
 
     Result

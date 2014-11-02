@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
+    This file is part of rippled: https://github.com/ripple/rippled
+    Copyright 2014 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -33,6 +33,17 @@
 #include <utility>
 
 namespace ripple {
+/*
+
+Findings from the test:
+
+If the remote host calls async_shutdown then the local host's
+async_read will complete with eof.
+
+If both hosts call async_shutdown then the calls to async_shutdown
+will complete with eof.
+
+*/
 
 class short_read_test : public beast::unit_test::suite
 {
@@ -290,19 +301,26 @@ private:
             {
                 if (ec)
                     return fail("handshake", ec);
+#if 1
                 boost::asio::async_read_until(stream_, buf_, "\n", strand_.wrap(
                     std::bind(&Connection::on_read, shared_from_this(),
                         beast::asio::placeholders::error,
                             beast::asio::placeholders::bytes_transferred)));
+#else
+                close();
+#endif
             }
 
             void
             on_read(error_code ec, std::size_t bytes_transferred)
             {
                 if (ec == boost::asio::error::eof)
+                {
+                    server_.test_.log << "[server] read: EOF";
                     return stream_.async_shutdown(strand_.wrap(std::bind(
                         &Connection::on_shutdown, shared_from_this(),
                             beast::asio::placeholders::error)));
+                }
                 if (ec)
                     return fail("read", ec);
 
@@ -463,7 +481,7 @@ private:
                 buf_.consume(bytes_transferred);
                 if (ec)
                     return fail("write", ec);
-#if 0
+#if 1
                 boost::asio::async_read_until(stream_, buf_, "\n", strand_.wrap(
                     std::bind(&Connection::on_read, shared_from_this(),
                         beast::asio::placeholders::error,

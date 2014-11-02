@@ -57,7 +57,7 @@ bool PeerSet::peerHas (Peer::ptr const& ptr)
 {
     ScopedLockType sl (mLock);
 
-    if (!mPeers.insert (std::make_pair (ptr->getShortId (), 0)).second)
+    if (!mPeers.insert (std::make_pair (ptr->id (), 0)).second)
         return false;
 
     newPeer (ptr);
@@ -67,7 +67,7 @@ bool PeerSet::peerHas (Peer::ptr const& ptr)
 void PeerSet::badPeer (Peer::ptr const& ptr)
 {
     ScopedLockType sl (mLock);
-    mPeers.erase (ptr->getShortId ());
+    mPeers.erase (ptr->id ());
 }
 
 void PeerSet::setTimer ()

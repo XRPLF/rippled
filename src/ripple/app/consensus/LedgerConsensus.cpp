@@ -1963,7 +1963,7 @@ private:
 
     #if 0
     // FIXME: We can't do delayed relay because we don't have the signature
-                std::set<Peer::ShortId> peers
+                std::set<Peer::id_t> peers
 
                 if (relay && getApp().getHashRouter ().swapSet (proposal.getSuppress (), set, SF_RELAYED))
                 {
