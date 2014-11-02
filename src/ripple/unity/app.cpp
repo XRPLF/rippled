@@ -25,9 +25,9 @@
 #include <ripple/unity/websocket.h>
 #include <ripple/unity/resource.h>
 #include <ripple/http/Server.h>
+#include <ripple/app/impl/BasicApp.cpp>
 #include <ripple/app/main/CollectorManager.cpp>
 #include <ripple/app/main/NodeStoreScheduler.cpp>
-#include <ripple/app/main/IoServicePool.cpp>
 #include <ripple/app/main/FatalErrorReporter.cpp>
 #include <ripple/app/main/ServerHandlerImp.cpp>
 #include <ripple/app/tx/TxQueueEntry.h>

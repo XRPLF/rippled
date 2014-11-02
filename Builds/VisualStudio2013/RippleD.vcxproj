@@ -1682,6 +1682,11 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\data\SqliteDatabase.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\impl\BasicApp.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\impl\BasicApp.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\AcceptedLedger.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -1782,11 +1787,6 @@
     <ClInclude Include="..\..\src\ripple\app\main\FatalErrorReporter.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\main\FullBelowCache.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\main\IoServicePool.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\main\IoServicePool.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\main\LoadManager.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>

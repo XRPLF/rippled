@@ -17,44 +17,32 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_IOSERVICEPOOL_H_INCLUDED
-#define RIPPLE_APP_IOSERVICEPOOL_H_INCLUDED
+#ifndef RIPPLE_APP_BASICAPP_H_INCLUDED
+#define RIPPLE_APP_BASICAPP_H_INCLUDED
 
-#include <beast/threads/Stoppable.h>
 #include <boost/asio/io_service.hpp>
 #include <boost/optional.hpp>
+#include <thread>
+#include <vector>
 
-#include <atomic>
-
-namespace ripple {
-
-/** An io_service with an associated group of threads. */
-class IoServicePool : public beast::Stoppable
+// This is so that the io_service can outlive all the children
+class BasicApp
 {
-public:
-    IoServicePool (Stoppable& parent, std::string const& name, int numberOfThreads);
-    ~IoServicePool ();
-
-    boost::asio::io_service& getService ();
-    operator boost::asio::io_service& ();
-
-    void onStart ();
-    void onStop ();
-    void onChildrenStopped ();
-
 private:
-    class ServiceThread;
+    boost::optional<boost::asio::io_service::work> work_;
+    std::vector<std::thread> threads_;
+    boost::asio::io_service io_service_;
 
-    void onThreadExit();
+protected:
+    BasicApp(std::size_t numberOfThreads);
+    ~BasicApp();
 
-    std::string m_name;
-    boost::asio::io_service m_service;
-    boost::optional <boost::asio::io_service::work> m_work;
-    std::vector <std::unique_ptr <ServiceThread>> m_threads;
-    int m_threadsDesired;
-    std::atomic <int> m_threadsRunning;
+public:
+    boost::asio::io_service&
+    get_io_service()
+    {
+        return io_service_;
+    }
 };
-
-} // ripple
 
 #endif

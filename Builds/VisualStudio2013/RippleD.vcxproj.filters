@@ -295,6 +295,9 @@
     <Filter Include="ripple\app\data">
       <UniqueIdentifier>{44B63F90-BC60-A7C7-24A1-632A358E285B}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ripple\app\impl">
+      <UniqueIdentifier>{17F94278-7CDE-3EBE-7CD3-372F08902314}</UniqueIdentifier>
+    </Filter>
     <Filter Include="ripple\app\ledger">
       <UniqueIdentifier>{CE126498-A44D-30A2-345B-0F672BCDF947}</UniqueIdentifier>
     </Filter>
@@ -2544,6 +2547,12 @@
     <ClInclude Include="..\..\src\ripple\app\data\SqliteDatabase.h">
       <Filter>ripple\app\data</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\impl\BasicApp.cpp">
+      <Filter>ripple\app\impl</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\impl\BasicApp.h">
+      <Filter>ripple\app\impl</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\AcceptedLedger.cpp">
       <Filter>ripple\app\ledger</Filter>
     </ClCompile>
@@ -2665,12 +2674,6 @@
       <Filter>ripple\app\main</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\main\FullBelowCache.h">
-      <Filter>ripple\app\main</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\main\IoServicePool.cpp">
-      <Filter>ripple\app\main</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\main\IoServicePool.h">
       <Filter>ripple\app\main</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\main\LoadManager.cpp">

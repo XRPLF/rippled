@@ -17,13 +17,14 @@
 */
 //==============================================================================
 
+#include <ripple/app/impl/BasicApp.h>
+#include <ripple/app/main/Tuning.h>
+#include <ripple/app/misc/ProofOfWorkFactory.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/LoggedTimings.h>
 #include <ripple/basics/Sustain.h>
 #include <ripple/common/seconds_clock.h>
 #include <ripple/common/RippleSSLContext.h>
-#include <ripple/app/main/Tuning.h>
-#include <ripple/app/misc/ProofOfWorkFactory.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/rpc/Manager.h>
 #include <ripple/nodestore/Database.h>
@@ -78,6 +79,7 @@ class ApplicationImp
     , public beast::RootStoppable
     , public beast::DeadlineTimer::Listener
     , public beast::LeakChecked <ApplicationImp>
+    , public BasicApp
 {
 private:
     class io_latency_sampler
@@ -164,7 +166,6 @@ public:
     // These are Stoppable-related
     NodeStoreScheduler m_nodeStoreScheduler;
     std::unique_ptr <JobQueue> m_jobQueue;
-    IoServicePool m_mainIoPool;
     std::unique_ptr <SiteFiles::Manager> m_siteFiles;
     std::unique_ptr <RPC::Manager> m_rpcManager;
     // VFALCO TODO Make OrderBookDB abstract
@@ -221,21 +222,21 @@ public:
         return list;
     }
 
-    //--------------------------------------------------------------------------
-
     static
-    int
-    calculateNumberOfIoServiceThreads()
+    std::size_t numberOfThreads()
     {
     #if RIPPLE_SINGLE_IO_SERVICE_THREAD
         return 1;
     #else
-        return (getConfig ().NODE_SIZE >= 2) ? 2 : 1;
+        return (getConfig().NODE_SIZE >= 2) ? 2 : 1;
     #endif
     }
 
+    //--------------------------------------------------------------------------
+
     ApplicationImp (Logs& logs)
         : RootStoppable ("Application")
+        , BasicApp (numberOfThreads())
         , m_logs (logs)
 
         , m_journal (m_logs.journal("Application"))
@@ -270,11 +271,6 @@ public:
         //
         , m_jobQueue (make_JobQueue (m_collectorManager->group ("jobq"),
             m_nodeStoreScheduler, m_logs.journal("JobQueue")))
-
-        // The io_service must be a child of the JobQueue since we call addJob
-        // in response to newtwork data from peers and also client requests.
-        //
-        , m_mainIoPool (*m_jobQueue, "io", calculateNumberOfIoServiceThreads())
 
         //
         // Anything which calls addJob must be a descendant of the JobQueue
@@ -344,10 +340,10 @@ public:
 
         , mShutdown (false)
 
-        , m_resolver (ResolverAsio::New (m_mainIoPool.getService (), beast::Journal ()))
+        , m_resolver (ResolverAsio::New (get_io_service(), beast::Journal ()))
 
         , m_io_latency_sampler (m_collectorManager->collector()->make_event ("ios_latency"),
-            m_logs.journal("Application"), std::chrono::milliseconds (100), m_mainIoPool.getService())
+            m_logs.journal("Application"), std::chrono::milliseconds (100), get_io_service())
     {
         add (m_resourceManager.get ());
 
@@ -412,7 +408,7 @@ public:
 
     boost::asio::io_service& getIOService ()
     {
-        return m_mainIoPool;
+        return get_io_service();
     }
 
     std::chrono::milliseconds getIOLatency ()
@@ -718,10 +714,10 @@ public:
         //             move the instantiation inside a conditional:
         //
         //             if (!getConfig ().RUN_STANDALONE)
-        m_peers = make_Overlay (setup_Overlay(getConfig()), m_mainIoPool,
+        m_peers = make_Overlay (setup_Overlay(getConfig()), *m_jobQueue,
             *m_resourceManager, *m_siteFiles,
                 getConfig().getModuleDatabasePath(), *m_resolver,
-                    m_mainIoPool);
+                    get_io_service());
         add (*m_peers); // add to PropertyStream
 
         // SSL context used for WebSocket connections.
