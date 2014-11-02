@@ -262,7 +262,7 @@ public:
 
                 mTxnAccount->makeFieldAbsent (sfMessageKey);
             }
-            if (vucPublic.size () > PUBLIC_BYTES_MAX)
+            else if (vucPublic.size () > PUBLIC_BYTES_MAX)
             {
                 m_journal.trace << "message key too long";
 
