@@ -265,17 +265,18 @@ public:
 
         if (mTxn.isFieldPresent (sfMessageKey))
         {
-            Blob messageKey = mTxn.getFieldVL (sfMessageKey);
+            Blob const messageKey = mTxn.getFieldVL (sfMessageKey);
+
+            if (messageKey.size () > PUBLIC_BYTES_MAX)
+            {
+                m_journal.trace << "message key too long";
+                return telBAD_PUBLIC_KEY;
+            }
 
             if (messageKey.empty ())
             {
                 m_journal.debug << "set message key";
                 mTxnAccount->makeFieldAbsent (sfMessageKey);
-            }
-            if (messageKey.size () > PUBLIC_BYTES_MAX)
-            {
-                m_journal.trace << "message key too long";
-                return telBAD_PUBLIC_KEY;
             }
             else
             {
