@@ -17,12 +17,66 @@
 */
 //==============================================================================
 
+#include <limits>
+#include <beast/Config.h>
+
 namespace ripple {
 namespace NodeStore {
 
 class NodeStoreTiming_test : public TestBase
 {
 public:
+    // Simple and fast RNG based on:
+    // http://xorshift.di.unimi.it/xorshift128plus.c
+    // does not accept seed==0
+    class XORShiftEngine{
+       public:
+        using result_type = std::uint64_t;
+        
+        static const result_type default_seed = 1977u;
+
+        explicit XORShiftEngine(result_type val = default_seed) { seed(val); }
+
+        void seed(result_type const seed)
+        {
+            if (seed==0)
+                throw std::range_error("zero seed supplied");
+            s[0] = murmurhash3(seed);
+            s[1] = murmurhash3(s[0]);
+        }
+
+        result_type operator()()
+        {
+            result_type s1 = s[0];
+            const result_type s0 = s[1];
+            s[0] = s0;
+            s1 ^= s1 << 23;
+            return (s[1] = (s1 ^ s0 ^ (s1 >> 17) ^ (s0 >> 26))) + s0;
+        }
+
+        static BEAST_CONSTEXPR result_type min()
+        {
+            return std::numeric_limits<result_type>::min();
+        }
+
+        static BEAST_CONSTEXPR result_type max()
+        {
+            return std::numeric_limits<result_type>::max();
+        }
+
+       private:
+        result_type s[2];
+
+        static result_type murmurhash3(result_type x)
+        {
+            x ^= x >> 33;
+            x *= 0xff51afd7ed558ccdULL;
+            x ^= x >> 33;
+            x *= 0xc4ceb9fe1a85ec53ULL;
+            return x ^= x >> 33;
+        }
+    };
+
     class NodeFactory
     {
         enum
@@ -41,7 +95,7 @@ public:
               numObjects_(numObjects),
               count_(0),
               rng_(seed),
-              key_(minKey, maxKey),
+              key_(minKey+1, maxKey+1),
               value_(minValueLength, maxValueLength),
               type_(hotLEDGER, hotTRANSACTION_NODE),
               ledger_(minLedger, maxLedger)
@@ -51,7 +105,8 @@ public:
         NodeObject::Ptr next()
         {
             // Stop when done
-            if (count_==numObjects_) return nullptr;
+            if (count_ == numObjects_)
+                return nullptr;
             count_++;
 
             // Seed from range between minKey and maxKey to ensure repeatability
@@ -96,7 +151,7 @@ public:
         std::int64_t numObjects_;
         std::int64_t count_;
         std::mt19937_64 rng_;
-        std::mt19937_64 r_;
+        XORShiftEngine r_;
         std::uniform_int_distribution<std::uint64_t> key_;
         std::uniform_int_distribution<std::uint64_t> value_;
         std::uniform_int_distribution<std::uint32_t> type_;
@@ -113,7 +168,7 @@ public:
 
         std::set<NodeObject::Ptr, NodeObject::LessThan> out;
 
-        for (auto node = factory.next(); node; node = factory.next())
+        while (auto node = factory.next())
         {
             auto it = out.find(node);
             if (it == out.end())
@@ -131,21 +186,16 @@ public:
     class Stopwatch
     {
     public:
-        Stopwatch ()
-        {
-        }
+     Stopwatch() {}
 
-        void start ()
-        {
-            m_startTime = beast::Time::getHighResolutionTicks ();
-        }
+     void start() { m_startTime = beast::Time::getHighResolutionTicks(); }
 
-        double getElapsed ()
-        {
-            std::int64_t const now = beast::Time::getHighResolutionTicks();
+     double getElapsed()
+     {
+         std::int64_t const now = beast::Time::getHighResolutionTicks();
 
-            return beast::Time::highResolutionTicksToSeconds (now - m_startTime);
-        }
+         return beast::Time::highResolutionTicksToSeconds(now - m_startTime);
+     }
 
     private:
         std::int64_t m_startTime;
@@ -161,7 +211,7 @@ public:
     using check_func = std::function<bool(Status const)>;
     using backend_ptr = std::unique_ptr<Backend>;
     using manager_ptr = std::unique_ptr<Manager>;
-    using result_type = std::map<std::string, double>;
+    using result_type = std::vector<std::pair<std::string, double>>;
 
     static bool checkNotFound(Status const status)
     {
@@ -179,13 +229,14 @@ public:
                    check_func f)
     {
         factory.reset();
-        for (auto expected = factory.next(); expected; expected = factory.next())
+        while (auto expected = factory.next())
         {
             NodeObject::Ptr got;
 
             Status const status =
                 backend->fetch(expected->getHash().cbegin(), &got);
-            expect(f(status), "Wrong status");
+            expect(f(status),
+                   "Wrong status for: " + to_string(expected->getHash()));
             if (status == ok)
             {
                 expect(got != nullptr, "Should not be null");
@@ -197,33 +248,24 @@ public:
     static void testInsert(backend_ptr& backend, NodeFactory& factory)
     {
         factory.reset();
-        while (auto node = factory.next())
-            backend->store(node);
+        while (auto node = factory.next()) backend->store(node);
     }
 
     static void testBatchInsert(backend_ptr& backend, NodeFactory& factory)
     {
         factory.reset();
         Batch batch;
-        for (; factory.fillBatch(batch, batchSize);)
-            backend->storeBatch(batch);
+        while (factory.fillBatch(batch, batchSize)) backend->storeBatch(batch);
     }
 
-    result_type benchmarkBackend(std::string const& config,
-                                 std::int64_t const seedValue)
+    result_type benchmarkBackend(beast::StringPairArray const& params,
+                                 std::int64_t const seedValue,
+                                 std::int64_t const numObjects)
     {
         Stopwatch t;
         result_type results;
 
-        auto params = parseDelimitedKeyValueString(config, ',');
-
-        std::int64_t numObjects = params["num_objects"].getIntValue();
-        params.remove("num_objects");
-
         auto manager = make_Manager();
-
-        beast::UnitTestUtilities::TempDirectory path ("node_db");
-        params.set("path", path.getFullPathName());
         DummyScheduler scheduler;
         beast::Journal j;
 
@@ -245,27 +287,27 @@ public:
 
         t.start();
         testInsert(backend, insertFactory);
-        results["Inserts"] = t.getElapsed();
+        results.emplace_back("Inserts", t.getElapsed());
 
         t.start();
         testBatchInsert(backend, batchFactory);
-        results["Batch Insert"] = t.getElapsed();
+        results.emplace_back("Batch Insert", t.getElapsed());
 
         t.start();
         testFetch(backend, mixedFactory, checkOkOrNotFound);
-        results["Fetch 50/50"] = t.getElapsed();
+        results.emplace_back("Fetch 50/50", t.getElapsed());
 
         t.start();
         testFetch(backend, insertFactory, checkOk);
-        results["Ordered Fetch"] = t.getElapsed();
+        results.emplace_back("Ordered Fetch", t.getElapsed());
 
         t.start();
         testFetch(backend, randomFactory, checkOkOrNotFound);
-        results["Fetch Random"] = t.getElapsed();
+        results.emplace_back("Fetch Random", t.getElapsed());
 
         t.start();
         testFetch(backend, missingFactory, checkNotFound);
-        results["Fetch Missing"] = t.getElapsed();
+        results.emplace_back("Fetch Missing", t.getElapsed());
 
         return results;
     }
@@ -282,12 +324,14 @@ public:
         // Each configuration is a comma delimited list of key-value pairs.
         // Each pair is separated by a '='.
         // 'type' defaults to 'rocksdb'
-        // 'num_objects' defaults to '100000' 
+        // 'num_objects' defaults to '100000'
+        // 'num_runs' defaults to '3'
         // defaultArguments serves as an example.
 
         std::string defaultArguments =
-            "type=rocksdb,open_files=2000,filter_bits=12,cache_mb=256,file_size_mb=8,file_size_mult=2,num_objects=100000;"
-            "type=hyperleveldb,num_objects=100000";
+            "type=rocksdb,open_files=2000,filter_bits=12,cache_mb=256"
+            "file_size_mb=8,file_size_mult=2,num_objects=100000,num_runs=3;"
+            "type=hyperleveldb,num_objects=100000,num_runs=3";
 
         auto args = arg();
 
@@ -296,33 +340,65 @@ public:
         std::vector<std::string> configs;
         boost::split (configs, args, boost::algorithm::is_any_of (";"));
 
-        std::map<std::string, result_type> results;
+        std::map<std::string, std::vector<result_type>> results;
 
         for (auto& config : configs)
         {
-            // Trim trailing comma if exists
-            boost::trim_right_if(config, boost::algorithm::is_any_of(","));
+            auto params = parseDelimitedKeyValueString(config, ',');
 
             // Defaults
-            if (config.find("type=") == std::string::npos)
-                config += ",type=rocksdb";
-            if (config.find("num_objects") == std::string::npos)
-                config += ",num_objects=100000";
-            results[config] = benchmarkBackend(config, seedValue);
+            std::int64_t numRuns = 3;
+            std::int64_t numObjects = 100000;
+
+            if (!params["num_objects"].isEmpty())
+                numObjects = params["num_objects"].getIntValue();
+
+            if (!params["num_runs"].isEmpty())
+                numRuns = params["num_runs"].getIntValue();
+
+            if (params["type"].isEmpty())
+                params.set("type", "rocksdb");
+
+            for (std::int64_t i = 0; i < numRuns; i++)
+            {
+                beast::UnitTestUtilities::TempDirectory path("node_db");
+                params.set("path", path.getFullPathName());
+                results[config].emplace_back(
+                    benchmarkBackend(params, seedValue + i, numObjects));
+            }
         }
 
-        std::stringstream ss;
-        ss << std::setprecision(2) << std::fixed;
-        for (auto const& header : results.begin()->second)
-            ss << std::setw(14) << header.first << " ";
-        ss << std::endl;
+        std::stringstream header;
+        std::stringstream stats;
+        std::stringstream legend;
+
+        auto firstRun = results.begin()->second.begin();
+        header << std::setw(7) << "Config" << std::setw(4) << "Run";
+        for (auto const& title : *firstRun)
+            header << std::setw(14) << title.first;
+
+        stats << std::setprecision(2) << std::fixed;
+
+        std::int64_t resultCount = 0;
         for (auto const& result : results)
         {
-            for (auto const item : result.second)
-                ss << std::setw(14) << item.second << " ";
-            ss << result.first << std::endl;
+            std::int64_t runCount = 0;
+            for (auto const& run : result.second)
+            {
+                stats << std::setw(7) << resultCount << std::setw(4)
+                      << runCount;
+                for (auto const& item : run)
+                    stats << std::setw(14) << item.second;
+                runCount++;
+                stats << std::endl;
+
+            }
+            legend << std::setw(2) << resultCount << ": " << result.first
+                   << std::endl;
+            resultCount++;
         }
-        log << ss.str();
+        log << header.str() << std::endl << stats.str() << std::endl
+            << "Configs:" << std::endl << legend.str();
     }
 };
 BEAST_DEFINE_TESTSUITE_MANUAL(NodeStoreTiming,bench,ripple);
