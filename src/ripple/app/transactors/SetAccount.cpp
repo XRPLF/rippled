@@ -156,30 +156,36 @@ public:
 
         if ((uSetFlag == asfDisableMaster) && !(uFlagsIn & lsfDisableMaster))
         {
+            if (!mSigMaster)
+            {
+                m_journal.trace << "Can't use regular key to disable master key.";
+                return tecNEED_MASTER_KEY;
+            }
+
             if (!mTxnAccount->isFieldPresent (sfRegularKey))
                 return tecNO_REGULAR_KEY;
 
             m_journal.trace << "Set lsfDisableMaster.";
-            uFlagsOut   |= lsfDisableMaster;
+            uFlagsOut |= lsfDisableMaster;
         }
 
         if ((uClearFlag == asfDisableMaster) && (uFlagsIn & lsfDisableMaster))
         {
             m_journal.trace << "Clear lsfDisableMaster.";
-            uFlagsOut   &= ~lsfDisableMaster;
+            uFlagsOut &= ~lsfDisableMaster;
         }
 
         if ((uSetFlag == asfNoFreeze) && (uClearFlag != asfNoFreeze))
         {
             m_journal.trace << "Set NoFreeze flag";
-            uFlagsOut   |= lsfNoFreeze;
+            uFlagsOut |= lsfNoFreeze;
         }
 
         // Anyone may set global freeze
         if ((uSetFlag == asfGlobalFreeze) && (uClearFlag != asfGlobalFreeze))
         {
             m_journal.trace << "Set GlobalFreeze flag";
-            uFlagsOut   |= lsfGlobalFreeze;
+            uFlagsOut |= lsfGlobalFreeze;
         }
 
         // If you have set NoFreeze, you may not clear GlobalFreeze
@@ -189,7 +195,7 @@ public:
             ((uFlagsOut & lsfNoFreeze) == 0))
         {
             m_journal.trace << "Clear GlobalFreeze flag";
-            uFlagsOut   &= ~lsfGlobalFreeze;
+            uFlagsOut &= ~lsfGlobalFreeze;
         }
 
         //
