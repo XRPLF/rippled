@@ -25,6 +25,7 @@
 #include <beast/net/IPEndpoint.h>
 #include <beast/utility/Journal.h>
 #include <beast/module/asio/HTTPRequest.h>
+#include <memory>
 #include <ostream>
 
 namespace ripple {
@@ -104,7 +105,7 @@ public:
         will not return until all detached sessions are closed.
     */
     virtual
-    void
+    std::shared_ptr<Session>
     detach() = 0;
 
     /** Indicate that the response is complete.

@@ -80,7 +80,8 @@ private:
     //--------------------------------------------------------------------------
 
     void
-    processSession (Job& job, HTTP::Session& session);
+    processSession (Job& job,
+        std::shared_ptr<HTTP::Session> const& session);
 
     std::string
     createResponse (int statusCode, std::string const& description);

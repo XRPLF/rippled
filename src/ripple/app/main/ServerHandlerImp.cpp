@@ -122,11 +122,9 @@ ServerHandlerImp::onRequest (HTTP::Session& session)
         return;
     }
 
-    session.detach();
-
     m_jobQueue.addJob (jtCLIENT, "RPC-Client", std::bind (
         &ServerHandlerImp::processSession, this, std::placeholders::_1,
-            std::ref (session)));
+            session.detach()));
 }
 
 void
@@ -145,18 +143,19 @@ ServerHandlerImp::onStopped (HTTP::Server&)
 
 // Dispatched on the job queue
 void
-ServerHandlerImp::processSession (Job& job, HTTP::Session& session)
+ServerHandlerImp::processSession (Job& job,
+    std::shared_ptr<HTTP::Session> const& session)
 {
-    session.write (processRequest (to_string(session.body()),
-        session.remoteAddress().at_port(0)));
+    session->write (processRequest (to_string(session->body()),
+        session->remoteAddress().at_port(0)));
 
-    if (session.request().keep_alive())
+    if (session->request().keep_alive())
     {
-        session.complete();
+        session->complete();
     }
     else
     {
-        session.close (true);
+        session->close (true);
     }
 }
 

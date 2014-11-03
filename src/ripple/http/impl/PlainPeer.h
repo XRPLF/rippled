@@ -40,7 +40,7 @@ public:
         ConstBufferSequence const& buffers, socket_type&& socket);
 
     void
-    accept();
+    run();
 
 private:
     void
@@ -62,7 +62,7 @@ PlainPeer::PlainPeer (Door& door, beast::Journal journal,
 }
 
 void
-PlainPeer::accept ()
+PlainPeer::run ()
 {
     door_.server().handler().onAccept (session());
     if (! socket_.is_open())

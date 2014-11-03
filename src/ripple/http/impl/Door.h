@@ -27,7 +27,7 @@
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/spawn.hpp>
-#include <boost/intrusive/list.hpp>
+#include <boost/container/flat_map.hpp>
 #include <chrono>
 #include <condition_variable>
 #include <memory>
@@ -41,6 +41,18 @@ class Door
     : public ServerImpl::Child
     , public std::enable_shared_from_this <Door>
 {
+public:
+    class Child
+    {
+    protected:
+        Door& door_;
+
+    public:
+        Child (Door& door);
+        virtual ~Child();
+        virtual void close() = 0;
+    };
+
 private:
     using clock_type = std::chrono::steady_clock;
     using timer_type = boost::asio::basic_waitable_timer<clock_type>;
@@ -53,11 +65,10 @@ private:
 
     // Detects SSL on a socket
     class detector
-        : public std::enable_shared_from_this <detector>
-        , public ServerImpl::Child
+        : public Child
+        , public std::enable_shared_from_this <detector>
     {
     private:
-        Door& door_;
         socket_type socket_;
         timer_type timer_;
         endpoint_type remote_endpoint_;
@@ -65,19 +76,13 @@ private:
     public:
         detector (Door& door, socket_type&& socket,
             endpoint_type endpoint);
-
-        ~detector();
-
         void run();
-        void close();
+        void close() override;
 
     private:
         void do_timer (yield_context yield);
         void do_detect (yield_context yield);
     };
-
-    using list_type = boost::intrusive::make_list <Child,
-        boost::intrusive::constant_time_size <false>>::type;
 
     Port port_;
     ServerImpl& server_;
@@ -85,7 +90,8 @@ private:
     boost::asio::io_service::strand strand_;
     std::mutex mutex_;
     std::condition_variable cond_;
-    list_type list_;
+    boost::container::flat_map<
+        Child*, std::weak_ptr<Child>> list_;
 
 public:
     Door (boost::asio::io_service& io_service,
@@ -113,10 +119,6 @@ public:
     // Work-around because we can't call shared_from_this in ctor
     void run();
 
-    void add (Child& c);
-
-    void remove (Child& c);
-
     /** Close the Door listening socket and connections.
         The listening socket is closed, and all open connections
         belonging to the Door are closed.
@@ -125,7 +127,11 @@ public:
     */
     void close();
 
+    void remove (Child& c);
+
 private:
+    void add (std::shared_ptr<Child> const& child);
+
     void create (bool ssl, beast::asio::streambuf&& buf,
         socket_type&& socket, endpoint_type remote_address);
 

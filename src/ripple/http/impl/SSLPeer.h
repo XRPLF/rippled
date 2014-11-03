@@ -42,7 +42,7 @@ public:
         ConstBufferSequence const& buffers, next_layer_type&& socket);
 
     void
-    accept();
+    run();
 
 private:
     void
@@ -72,10 +72,10 @@ SSLPeer::SSLPeer (Door& door, beast::Journal journal,
 
 // Called when the acceptor accepts our socket.
 void
-SSLPeer::accept ()
+SSLPeer::run ()
 {
     door_.server().handler().onAccept (session());
-    if (! next_layer_.is_open())
+    if (! socket_.lowest_layer().is_open())
         return;
 
     boost::asio::spawn (strand_, std::bind (&SSLPeer::do_handshake,
@@ -86,11 +86,12 @@ void
 SSLPeer::do_handshake (boost::asio::yield_context yield)
 {
     error_code ec;
-    std::size_t const bytes_transferred = socket_.async_handshake (
-        socket_type::server, read_buf_.data(), yield[ec]);
+    start_timer();
+    read_buf_.consume(socket_.async_handshake(
+        socket_type::server, read_buf_.data(), yield[ec]));
+    cancel_timer();
     if (ec)
         return fail (ec, "handshake");
-    read_buf_.consume (bytes_transferred);
     boost::asio::spawn (strand_, std::bind (&SSLPeer::do_read,
         shared_from_this(), std::placeholders::_1));
 }
@@ -106,15 +107,17 @@ void
 SSLPeer::do_close()
 {
     error_code ec;
+    start_timer();
     socket_.async_shutdown (strand_.wrap (std::bind (
         &SSLPeer::on_shutdown, shared_from_this(),
             std::placeholders::_1)));
+    cancel_timer();
 }
 
 void
 SSLPeer::on_shutdown (error_code ec)
 {
-    socket_.next_layer().close(ec);
+    socket_.lowest_layer().close(ec);
 }
 
 }

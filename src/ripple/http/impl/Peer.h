@@ -20,6 +20,7 @@
 #ifndef RIPPLE_HTTP_PEER_H_INCLUDED
 #define RIPPLE_HTTP_PEER_H_INCLUDED
 
+#include <ripple/http/impl/Door.h>
 #include <ripple/http/Server.h>
 #include <ripple/http/Session.h>
 #include <ripple/http/impl/Types.h>
@@ -48,7 +49,7 @@ namespace HTTP {
 /** Represents an active connection. */
 template <class Impl>
 class Peer
-    : public ServerImpl::Child
+    : public Door::Child
     , public Session
 {
 protected:
@@ -81,7 +82,6 @@ protected:
         std::size_t used;
     };
 
-    Door& door_;
     boost::asio::io_service::work work_;
     boost::asio::io_service::strand strand_;
     waitable_timer timer_;
@@ -98,7 +98,6 @@ protected:
     std::mutex mutex_;
     bool graceful_ = false;
     bool complete_ = false;
-    std::shared_ptr <Peer> detach_ref_;
     boost::system::error_code ec_;
 
     clock_type::time_point when_;
@@ -188,7 +187,7 @@ protected:
     void
     write (void const* buffer, std::size_t bytes) override;
 
-    void
+    std::shared_ptr<Session>
     detach() override;
 
     void
@@ -205,14 +204,13 @@ template <class ConstBufferSequence>
 Peer<Impl>::Peer (Door& door, boost::asio::io_service& io_service,
     beast::Journal journal, endpoint_type endpoint,
         ConstBufferSequence const& buffers)
-    : door_(door)
+    : Child(door)
     , work_ (io_service)
     , strand_ (io_service)
     , timer_ (io_service)
     , endpoint_ (endpoint)
     , journal_ (journal)
 {
-    door_.add(*this);
     read_buf_.commit(boost::asio::buffer_copy(read_buf_.prepare (
         boost::asio::buffer_size (buffers)), buffers));
     static std::atomic <int> sid;
@@ -242,7 +240,6 @@ Peer<Impl>::~Peer()
     if (journal_.trace) journal_.trace << id_ <<
         "destroyed: " << request_count_ <<
             ((request_count_ == 1) ? " request" : " requests");
-    door_.remove (*this);
 }
 
 template <class Impl>
@@ -254,7 +251,6 @@ Peer<Impl>::close()
             (void(Peer::*)(void))&Peer::close,
                 impl().shared_from_this()));
     error_code ec;
-    timer_.cancel(ec);
     impl().socket_.lowest_layer().close(ec);
 }
 
@@ -452,12 +448,10 @@ Peer<Impl>::write (void const* buffer, std::size_t bytes)
 
 // Make the Session asynchronous
 template <class Impl>
-void
-Peer<Impl>::detach ()
+std::shared_ptr<Session>
+Peer<Impl>::detach()
 {
-    // Maintain an additional reference while detached
-    if (! detach_ref_)
-        detach_ref_ = impl().shared_from_this();
+    return impl().shared_from_this();
 }
 
 // Called to indicate the response has been written (but not sent)
@@ -468,9 +462,6 @@ Peer<Impl>::complete()
     if (! strand_.running_in_this_thread())
         return strand_.post(std::bind (&Peer<Impl>::complete,
             impl().shared_from_this()));
-
-    // Reattach
-    detach_ref_.reset();
 
     message_ = beast::http::message{};
     complete_ = true;
@@ -493,21 +484,16 @@ Peer<Impl>::close (bool graceful)
             (void(Peer::*)(bool))&Peer<Impl>::close,
                 impl().shared_from_this(), graceful));
 
-    // Reattach
-    detach_ref_.reset();
-
     complete_ = true;
-
     if (graceful)
     {
         graceful_ = true;
-
         if (! write_queue_.empty())
             return;
+        return do_close();
     }
 
     error_code ec;
-    timer_.cancel (ec);
     impl().socket_.lowest_layer().close (ec);
 }
 

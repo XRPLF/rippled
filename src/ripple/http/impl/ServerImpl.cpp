@@ -107,14 +107,22 @@ ServerImpl::onWrite (beast::PropertyStream::Map& map)
 void
 ServerImpl::close()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (work_)
+    bool stopped = false;
     {
-        work_ = boost::none;
-        // Close all Door objects
-        for(auto& _ :list_)
-            _.close();
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (work_)
+        {
+            work_ = boost::none;
+            // Close all Door objects
+            if (list_.empty())
+                stopped = true;
+            else
+                for(auto& _ :list_)
+                    _.close();
+        }
     }
+    if (stopped)
+        handler_.onStopped(*this);
 }
 
 //--------------------------------------------------------------------------
@@ -129,13 +137,18 @@ ServerImpl::add (Child& child)
 void
 ServerImpl::remove (Child& child)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
-    list_.erase(list_.iterator_to(child));
-    if (list_.empty())
+    bool stopped = false;
     {
-        handler_.onStopped(*this);
-        cond_.notify_all();
+        std::lock_guard<std::mutex> lock(mutex_);
+        list_.erase(list_.iterator_to(child));
+        if (list_.empty())
+        {
+            cond_.notify_all();
+            stopped = true;
+        }
     }
+    if (stopped)
+        handler_.onStopped(*this);
 }
 
 bool
