@@ -28,10 +28,10 @@ Json::Value doUnlAdd (RPC::Context& context)
 {
     auto lock = getApp().masterLock();
 
-    std::string strNode = context.params_.isMember ("node")
-            ? context.params_["node"].asString () : "";
-    std::string strComment = context.params_.isMember ("comment")
-            ? context.params_["comment"].asString () : "";
+    std::string strNode = context.params.isMember ("node")
+            ? context.params["node"].asString () : "";
+    std::string strComment = context.params.isMember ("comment")
+            ? context.params["comment"].asString () : "";
 
     RippleAddress raNodePublic;
 

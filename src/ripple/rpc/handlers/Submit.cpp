@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/server/Role.h>
 
 namespace ripple {
 
@@ -27,19 +28,19 @@ namespace ripple {
 // }
 Json::Value doSubmit (RPC::Context& context)
 {
-    context.loadType_ = Resource::feeMediumBurdenRPC;
+    context.loadType = Resource::feeMediumBurdenRPC;
 
-    if (!context.params_.isMember ("tx_blob"))
+    if (!context.params.isMember ("tx_blob"))
     {
-        bool bFailHard = context.params_.isMember ("fail_hard")
-                && context.params_["fail_hard"].asBool ();
+        bool bFailHard = context.params.isMember ("fail_hard")
+                && context.params["fail_hard"].asBool ();
         return RPC::transactionSign (
-            context.params_, true, bFailHard, context.netOps_, context.role_);
+            context.params, true, bFailHard, context.netOps, context.role);
     }
 
     Json::Value                 jvResult;
 
-    std::pair<Blob, bool> ret(strUnHex (context.params_["tx_blob"].asString ()));
+    std::pair<Blob, bool> ret(strUnHex (context.params["tx_blob"].asString ()));
 
     if (!ret.second || !ret.first.size ())
         return rpcError (rpcINVALID_PARAMS);
@@ -85,10 +86,10 @@ Json::Value doSubmit (RPC::Context& context)
 
     try
     {
-        (void) context.netOps_.processTransaction (
-            tpTrans, context.role_ == Role::ADMIN, true,
-            context.params_.isMember ("fail_hard")
-            && context.params_["fail_hard"].asBool ());
+        (void) context.netOps.processTransaction (
+            tpTrans, context.role == Role::ADMIN, true,
+            context.params.isMember ("fail_hard")
+            && context.params["fail_hard"].asBool ());
     }
     catch (std::exception& e)
     {

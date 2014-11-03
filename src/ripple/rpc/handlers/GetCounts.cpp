@@ -31,8 +31,8 @@ Json::Value doGetCounts (RPC::Context& context)
 
     int minCount = 10;
 
-    if (context.params_.isMember ("min_count"))
-        minCount = context.params_["min_count"].asUInt ();
+    if (context.params.isMember ("min_count"))
+        minCount = context.params["min_count"].asUInt ();
 
     auto objectCounts = CountedObjects::getInstance ().getCounts (minCount);
 

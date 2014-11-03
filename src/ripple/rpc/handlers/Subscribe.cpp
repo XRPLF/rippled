@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/rpc/impl/ParseAccountIds.h>
+#include <ripple/server/Role.h>
 
 namespace ripple {
 
@@ -30,12 +31,12 @@ Json::Value doSubscribe (RPC::Context& context)
 
     InfoSub::pointer ispSub;
     Json::Value jvResult (Json::objectValue);
-    std::uint32_t uLedgerIndex = context.params_.isMember (jss::ledger_index)
-            && context.params_[jss::ledger_index].isNumeric ()
-            ? context.params_[jss::ledger_index].asUInt ()
+    std::uint32_t uLedgerIndex = context.params.isMember (jss::ledger_index)
+            && context.params[jss::ledger_index].isNumeric ()
+            ? context.params[jss::ledger_index].asUInt ()
             : 0;
 
-    if (!context.infoSub_ && !context.params_.isMember ("url"))
+    if (!context.infoSub && !context.params.isMember ("url"))
     {
         // Must be a JSON-RPC call.
         WriteLog (lsINFO, RPCHandler)
@@ -44,26 +45,26 @@ Json::Value doSubscribe (RPC::Context& context)
         return rpcError (rpcINVALID_PARAMS);
     }
 
-    if (context.params_.isMember ("url"))
+    if (context.params.isMember ("url"))
     {
-        if (context.role_ != Role::ADMIN)
+        if (context.role != Role::ADMIN)
             return rpcError (rpcNO_PERMISSION);
 
-        std::string strUrl      = context.params_["url"].asString ();
-        std::string strUsername = context.params_.isMember ("url_username") ?
-                context.params_["url_username"].asString () : "";
-        std::string strPassword = context.params_.isMember ("url_password") ?
-                context.params_["url_password"].asString () : "";
+        std::string strUrl      = context.params["url"].asString ();
+        std::string strUsername = context.params.isMember ("url_username") ?
+                context.params["url_username"].asString () : "";
+        std::string strPassword = context.params.isMember ("url_password") ?
+                context.params["url_password"].asString () : "";
 
         // DEPRECATED
-        if (context.params_.isMember ("username"))
-            strUsername = context.params_["username"].asString ();
+        if (context.params.isMember ("username"))
+            strUsername = context.params["username"].asString ();
 
         // DEPRECATED
-        if (context.params_.isMember ("password"))
-            strPassword = context.params_["password"].asString ();
+        if (context.params.isMember ("password"))
+            strPassword = context.params["password"].asString ();
 
-        ispSub  = context.netOps_.findRpcSub (strUrl);
+        ispSub  = context.netOps.findRpcSub (strUrl);
 
         if (!ispSub)
         {
@@ -73,7 +74,7 @@ Json::Value doSubscribe (RPC::Context& context)
             RPCSub::pointer rspSub = RPCSub::New (getApp ().getOPs (),
                 getApp ().getIOService (), getApp ().getJobQueue (),
                     strUrl, strUsername, strPassword);
-            ispSub  = context.netOps_.addRpcSub (
+            ispSub  = context.netOps.addRpcSub (
                 strUrl, std::dynamic_pointer_cast<InfoSub> (rspSub));
         }
         else
@@ -81,22 +82,22 @@ Json::Value doSubscribe (RPC::Context& context)
             WriteLog (lsTRACE, RPCHandler)
                 << "doSubscribe: reusing: " << strUrl;
 
-            if (context.params_.isMember ("username"))
+            if (context.params.isMember ("username"))
                 dynamic_cast<RPCSub*> (&*ispSub)->setUsername (strUsername);
 
-            if (context.params_.isMember ("password"))
+            if (context.params.isMember ("password"))
                 dynamic_cast<RPCSub*> (&*ispSub)->setPassword (strPassword);
         }
     }
     else
     {
-        ispSub  = context.infoSub_;
+        ispSub  = context.infoSub;
     }
 
-    if (!context.params_.isMember ("streams"))
+    if (!context.params.isMember ("streams"))
     {
     }
-    else if (!context.params_["streams"].isArray ())
+    else if (!context.params["streams"].isArray ())
     {
         WriteLog (lsINFO, RPCHandler)
             << "doSubscribe: streams requires an array.";
@@ -105,7 +106,7 @@ Json::Value doSubscribe (RPC::Context& context)
     }
     else
     {
-        for (auto& it: context.params_["streams"])
+        for (auto& it: context.params["streams"])
         {
             if (it.isString ())
             {
@@ -113,21 +114,21 @@ Json::Value doSubscribe (RPC::Context& context)
 
                 if (streamName == "server")
                 {
-                    context.netOps_.subServer (ispSub, jvResult,
-                        context.role_ == Role::ADMIN);
+                    context.netOps.subServer (ispSub, jvResult,
+                        context.role == Role::ADMIN);
                 }
                 else if (streamName == "ledger")
                 {
-                    context.netOps_.subLedger (ispSub, jvResult);
+                    context.netOps.subLedger (ispSub, jvResult);
                 }
                 else if (streamName == "transactions")
                 {
-                    context.netOps_.subTransactions (ispSub);
+                    context.netOps.subTransactions (ispSub);
                 }
                 else if (streamName == "transactions_proposed"
                          || streamName == "rt_transactions") // DEPRECATED
                 {
-                    context.netOps_.subRTTransactions (ispSub);
+                    context.netOps.subRTTransactions (ispSub);
                 }
                 else
                 {
@@ -142,36 +143,36 @@ Json::Value doSubscribe (RPC::Context& context)
     }
 
     std::string strAccountsProposed =
-               context.params_.isMember ("accounts_proposed")
+               context.params.isMember ("accounts_proposed")
                ? "accounts_proposed" : "rt_accounts";  // DEPRECATED
 
-    if (!context.params_.isMember (strAccountsProposed))
+    if (!context.params.isMember (strAccountsProposed))
     {
     }
-    else if (!context.params_[strAccountsProposed].isArray ())
+    else if (!context.params[strAccountsProposed].isArray ())
     {
         return rpcError (rpcINVALID_PARAMS);
     }
     else
     {
-        auto ids  = RPC::parseAccountIds (context.params_[strAccountsProposed]);
+        auto ids  = RPC::parseAccountIds (context.params[strAccountsProposed]);
 
         if (ids.empty ())
             jvResult[jss::error] = "malformedAccount";
         else
-            context.netOps_.subAccount (ispSub, ids, uLedgerIndex, true);
+            context.netOps.subAccount (ispSub, ids, uLedgerIndex, true);
     }
 
-    if (!context.params_.isMember ("accounts"))
+    if (!context.params.isMember ("accounts"))
     {
     }
-    else if (!context.params_["accounts"].isArray ())
+    else if (!context.params["accounts"].isArray ())
     {
         return rpcError (rpcINVALID_PARAMS);
     }
     else
     {
-        auto ids  = RPC::parseAccountIds (context.params_["accounts"]);
+        auto ids  = RPC::parseAccountIds (context.params["accounts"]);
 
         if (ids.empty ())
         {
@@ -179,23 +180,23 @@ Json::Value doSubscribe (RPC::Context& context)
         }
         else
         {
-            context.netOps_.subAccount (ispSub, ids, uLedgerIndex, false);
+            context.netOps.subAccount (ispSub, ids, uLedgerIndex, false);
             WriteLog (lsDEBUG, RPCHandler)
                 << "doSubscribe: accounts: " << ids.size ();
         }
     }
 
     bool bHaveMasterLock = true;
-    if (!context.params_.isMember ("books"))
+    if (!context.params.isMember ("books"))
     {
     }
-    else if (!context.params_["books"].isArray ())
+    else if (!context.params["books"].isArray ())
     {
         return rpcError (rpcINVALID_PARAMS);
     }
     else
     {
-        for (auto& j: context.params_["books"])
+        for (auto& j: context.params["books"])
         {
             if (!j.isObject ()
                     || !j.isMember (jss::taker_pays)
@@ -284,10 +285,10 @@ Json::Value doSubscribe (RPC::Context& context)
                 return rpcError (rpcBAD_MARKET);
             }
 
-            context.netOps_.subBook (ispSub, book);
+            context.netOps.subBook (ispSub, book);
 
             if (bBoth)
-                context.netOps_.subBook (ispSub, book);
+                context.netOps.subBook (ispSub, book);
 
             if (bSnapshot)
             {
@@ -297,7 +298,7 @@ Json::Value doSubscribe (RPC::Context& context)
                     bHaveMasterLock = false;
                 }
 
-                context.loadType_ = Resource::feeMediumBurdenRPC;
+                context.loadType = Resource::feeMediumBurdenRPC;
                 auto lpLedger = getApp().getLedgerMaster ().
                         getPublishedLedger ();
                 if (lpLedger)
@@ -309,14 +310,14 @@ Json::Value doSubscribe (RPC::Context& context)
                         Json::Value jvBids (Json::objectValue);
                         Json::Value jvAsks (Json::objectValue);
 
-                        context.netOps_.getBookPage (
+                        context.netOps.getBookPage (
                             lpLedger, book, raTakerID.getAccountID (), false, 0,
                             jvMarker, jvBids);
 
                         if (jvBids.isMember (jss::offers))
                             jvResult[jss::bids] = jvBids[jss::offers];
 
-                        context.netOps_.getBookPage (
+                        context.netOps.getBookPage (
                             lpLedger, book, raTakerID.getAccountID (),
                             false, 0, jvMarker, jvAsks);
 
@@ -325,7 +326,7 @@ Json::Value doSubscribe (RPC::Context& context)
                     }
                     else
                     {
-                        context.netOps_.getBookPage (
+                        context.netOps.getBookPage (
                             lpLedger, book, raTakerID.getAccountID (), false, 0,
                             jvMarker, jvResult);
                     }

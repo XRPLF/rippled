@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/server/Role.h>
 
 namespace ripple {
 
@@ -29,48 +30,48 @@ Json::Value doUnsubscribe (RPC::Context& context)
     InfoSub::pointer ispSub;
     Json::Value jvResult (Json::objectValue);
 
-    if (!context.infoSub_ && !context.params_.isMember ("url"))
+    if (!context.infoSub && !context.params.isMember ("url"))
     {
         // Must be a JSON-RPC call.
         return rpcError (rpcINVALID_PARAMS);
     }
 
-    if (context.params_.isMember ("url"))
+    if (context.params.isMember ("url"))
     {
-        if (context.role_ != Role::ADMIN)
+        if (context.role != Role::ADMIN)
             return rpcError (rpcNO_PERMISSION);
 
-        std::string strUrl  = context.params_["url"].asString ();
-        ispSub  = context.netOps_.findRpcSub (strUrl);
+        std::string strUrl  = context.params["url"].asString ();
+        ispSub  = context.netOps.findRpcSub (strUrl);
 
         if (!ispSub)
             return jvResult;
     }
     else
     {
-        ispSub  = context.infoSub_;
+        ispSub  = context.infoSub;
     }
 
-    if (context.params_.isMember ("streams"))
+    if (context.params.isMember ("streams"))
     {
-        for (auto& it: context.params_["streams"])
+        for (auto& it: context.params["streams"])
         {
             if (it.isString ())
             {
                 std::string streamName = it.asString ();
 
                 if (streamName == "server")
-                    context.netOps_.unsubServer (ispSub->getSeq ());
+                    context.netOps.unsubServer (ispSub->getSeq ());
 
                 else if (streamName == "ledger")
-                    context.netOps_.unsubLedger (ispSub->getSeq ());
+                    context.netOps.unsubLedger (ispSub->getSeq ());
 
                 else if (streamName == "transactions")
-                    context.netOps_.unsubTransactions (ispSub->getSeq ());
+                    context.netOps.unsubTransactions (ispSub->getSeq ());
 
                 else if (streamName == "transactions_proposed"
                          || streamName == "rt_transactions") // DEPRECATED
-                    context.netOps_.unsubRTTransactions (ispSub->getSeq ());
+                    context.netOps.unsubRTTransactions (ispSub->getSeq ());
 
                 else
                     jvResult["error"] = "Unknown stream: " + streamName;
@@ -82,40 +83,40 @@ Json::Value doUnsubscribe (RPC::Context& context)
         }
     }
 
-    if (context.params_.isMember ("accounts_proposed")
-        || context.params_.isMember ("rt_accounts"))
+    if (context.params.isMember ("accounts_proposed")
+        || context.params.isMember ("rt_accounts"))
     {
         auto accounts  = RPC::parseAccountIds (
-                    context.params_.isMember ("accounts_proposed")
-                    ? context.params_["accounts_proposed"]
-                    : context.params_["rt_accounts"]); // DEPRECATED
+                    context.params.isMember ("accounts_proposed")
+                    ? context.params["accounts_proposed"]
+                    : context.params["rt_accounts"]); // DEPRECATED
 
         if (accounts.empty ())
             jvResult["error"]   = "malformedAccount";
         else
-            context.netOps_.unsubAccount (ispSub->getSeq (), accounts, true);
+            context.netOps.unsubAccount (ispSub->getSeq (), accounts, true);
     }
 
-    if (context.params_.isMember ("accounts"))
+    if (context.params.isMember ("accounts"))
     {
-        auto accounts  = RPC::parseAccountIds (context.params_["accounts"]);
+        auto accounts  = RPC::parseAccountIds (context.params["accounts"]);
 
         if (accounts.empty ())
             jvResult["error"]   = "malformedAccount";
         else
-            context.netOps_.unsubAccount (ispSub->getSeq (), accounts, false);
+            context.netOps.unsubAccount (ispSub->getSeq (), accounts, false);
     }
 
-    if (!context.params_.isMember ("books"))
+    if (!context.params.isMember ("books"))
     {
     }
-    else if (!context.params_["books"].isArray ())
+    else if (!context.params["books"].isArray ())
     {
         return rpcError (rpcINVALID_PARAMS);
     }
     else
     {
-        for (auto& jv: context.params_["books"])
+        for (auto& jv: context.params["books"])
         {
             if (!jv.isObject ()
                     || !jv.isMember ("taker_pays")
@@ -185,10 +186,10 @@ Json::Value doUnsubscribe (RPC::Context& context)
                 return rpcError (rpcBAD_MARKET);
             }
 
-            context.netOps_.unsubBook (ispSub->getSeq (), book);
+            context.netOps.unsubBook (ispSub->getSeq (), book);
 
             if (bBoth)
-                context.netOps_.unsubBook (ispSub->getSeq (), book);
+                context.netOps.unsubBook (ispSub->getSeq (), book);
         }
     }
 

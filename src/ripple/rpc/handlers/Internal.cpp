@@ -26,11 +26,11 @@ RPC::InternalHandler* RPC::InternalHandler::headHandler = nullptr;
 Json::Value doInternal (RPC::Context& context)
 {
     // Used for debug or special-purpose RPC commands
-    if (!context.params_.isMember ("internal_command"))
+    if (!context.params.isMember ("internal_command"))
         return rpcError (rpcINVALID_PARAMS);
 
-    auto name = context.params_["internal_command"].asString ();
-    auto params = context.params_["params"];
+    auto name = context.params["internal_command"].asString ();
+    auto params = context.params["params"];
 
     for (auto* h = RPC::InternalHandler::headHandler; h; )
     {

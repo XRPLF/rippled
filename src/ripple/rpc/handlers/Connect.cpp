@@ -32,24 +32,24 @@ Json::Value doConnect (RPC::Context& context)
     if (getConfig ().RUN_STANDALONE)
         return "cannot connect in standalone mode";
 
-    if (!context.params_.isMember ("ip"))
+    if (!context.params.isMember ("ip"))
         return RPC::missing_field_error ("ip");
 
-    if (context.params_.isMember ("port") &&
-        !context.params_["port"].isConvertibleTo (Json::intValue))
+    if (context.params.isMember ("port") &&
+        !context.params["port"].isConvertibleTo (Json::intValue))
     {
         return rpcError (rpcINVALID_PARAMS);
     }
 
     int iPort;
 
-    if(context.params_.isMember ("port"))
-        iPort = context.params_["port"].asInt ();
+    if(context.params.isMember ("port"))
+        iPort = context.params["port"].asInt ();
     else
         iPort = 6561;
 
     auto ip = beast::IP::Endpoint::from_string(
-        context.params_["ip"].asString ());
+        context.params["ip"].asString ());
 
     if (! is_unspecified (ip))
         getApp().overlay ().connect (ip.at_port(iPort));

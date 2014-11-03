@@ -74,10 +74,10 @@ void addLine (Json::Value& jsonLines, RippleState const& line)
 // }
 Json::Value doAccountLines (RPC::Context& context)
 {
-    auto& params = context.params_;
+    auto& params = context.params;
 
     Ledger::pointer ledger;
-    Json::Value result (RPC::lookupLedger (params, ledger, context.netOps_));
+    Json::Value result (RPC::lookupLedger (params, ledger, context.netOps));
 
     if (! ledger)
         return result;
@@ -91,7 +91,7 @@ Json::Value doAccountLines (RPC::Context& context)
     RippleAddress rippleAddress;
 
     result = RPC::accountFromString (
-        ledger, rippleAddress, bIndex, strIdent, iIndex, false, context.netOps_);
+        ledger, rippleAddress, bIndex, strIdent, iIndex, false, context.netOps);
 
     if (! result.empty ())
         return result;
@@ -114,7 +114,7 @@ Json::Value doAccountLines (RPC::Context& context)
             result[jss::peer_index] = iPeerIndex;
 
         result = RPC::accountFromString (ledger, rippleAddressPeer, bPeerIndex, strPeer,
-            iPeerIndex, false, context.netOps_);
+            iPeerIndex, false, context.netOps);
 
         if (! result.empty ())
             return result;
@@ -212,7 +212,7 @@ Json::Value doAccountLines (RPC::Context& context)
     for (auto const& item : visitData.items)
         addLine (jsonLines, *item.get ());
 
-    context.loadType_ = Resource::feeMediumBurdenRPC;
+    context.loadType = Resource::feeMediumBurdenRPC;
     return result;
 }
 

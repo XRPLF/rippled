@@ -27,10 +27,10 @@ Json::Value doUnlDelete (RPC::Context& context)
 {
     auto lock = getApp().masterLock();
 
-    if (!context.params_.isMember ("node"))
+    if (!context.params.isMember ("node"))
         return rpcError (rpcINVALID_PARAMS);
 
-    auto strNode = context.params_["node"].asString ();
+    auto strNode = context.params["node"].asString ();
     RippleAddress raNodePublic;
 
     if (raNodePublic.setNodePublic (strNode))

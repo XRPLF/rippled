@@ -24,11 +24,11 @@ namespace ripple {
 
 Json::Value doAccountCurrencies (RPC::Context& context)
 {
-    auto& params = context.params_;
+    auto& params = context.params;
 
     // Get the current ledger
     Ledger::pointer ledger;
-    Json::Value result (RPC::lookupLedger (params, ledger, context.netOps_));
+    Json::Value result (RPC::lookupLedger (params, ledger, context.netOps));
 
     if (!ledger)
         return result;
@@ -50,7 +50,7 @@ Json::Value doAccountCurrencies (RPC::Context& context)
     bool bIndex; // out param
     RippleAddress naAccount; // out param
     Json::Value jvAccepted (RPC::accountFromString (
-        ledger, naAccount, bIndex, strIdent, iIndex, bStrict, context.netOps_));
+        ledger, naAccount, bIndex, strIdent, iIndex, bStrict, context.netOps));
 
     if (!jvAccepted.empty ())
         return jvAccepted;

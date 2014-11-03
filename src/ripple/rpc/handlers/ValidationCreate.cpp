@@ -31,13 +31,13 @@ Json::Value doValidationCreate (RPC::Context& context)
     RippleAddress   raSeed;
     Json::Value     obj (Json::objectValue);
 
-    if (!context.params_.isMember ("secret"))
+    if (!context.params.isMember ("secret"))
     {
         WriteLog (lsDEBUG, RPCHandler) << "Creating random validation seed.";
 
         raSeed.setSeedRandom ();                // Get a random seed.
     }
-    else if (!raSeed.setSeedGeneric (context.params_["secret"].asString ()))
+    else if (!raSeed.setSeedGeneric (context.params["secret"].asString ()))
     {
         return rpcError (rpcBAD_SEED);
     }

@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/server/Role.h>
 
 namespace ripple {
 
@@ -34,55 +35,55 @@ Json::Value doAccountTxOld (RPC::Context& context)
 {
     RippleAddress   raAccount;
     std::uint32_t offset
-            = context.params_.isMember ("offset")
-            ? context.params_["offset"].asUInt () : 0;
-    int limit = context.params_.isMember ("limit")
-            ? context.params_["limit"].asUInt () : -1;
-    bool bBinary = context.params_.isMember ("binary")
-            && context.params_["binary"].asBool ();
-    bool bDescending = context.params_.isMember ("descending")
-            && context.params_["descending"].asBool ();
-    bool bCount = context.params_.isMember ("count")
-            && context.params_["count"].asBool ();
+            = context.params.isMember ("offset")
+            ? context.params["offset"].asUInt () : 0;
+    int limit = context.params.isMember ("limit")
+            ? context.params["limit"].asUInt () : -1;
+    bool bBinary = context.params.isMember ("binary")
+            && context.params["binary"].asBool ();
+    bool bDescending = context.params.isMember ("descending")
+            && context.params["descending"].asBool ();
+    bool bCount = context.params.isMember ("count")
+            && context.params["count"].asBool ();
     std::uint32_t   uLedgerMin;
     std::uint32_t   uLedgerMax;
     std::uint32_t   uValidatedMin;
     std::uint32_t   uValidatedMax;
-    bool bValidated  = context.netOps_.getValidatedRange (
+    bool bValidated  = context.netOps.getValidatedRange (
         uValidatedMin, uValidatedMax);
 
-    if (!context.params_.isMember ("account"))
+    if (!context.params.isMember ("account"))
         return rpcError (rpcINVALID_PARAMS);
 
-    if (!raAccount.setAccountID (context.params_["account"].asString ()))
+    if (!raAccount.setAccountID (context.params["account"].asString ()))
         return rpcError (rpcACT_MALFORMED);
 
     if (offset > 3000)
         return rpcError (rpcATX_DEPRECATED);
 
-    context.loadType_ = Resource::feeHighBurdenRPC;
+    context.loadType = Resource::feeHighBurdenRPC;
 
     // DEPRECATED
-    if (context.params_.isMember ("ledger_min"))
+    if (context.params.isMember ("ledger_min"))
     {
-        context.params_["ledger_index_min"]   = context.params_["ledger_min"];
+        context.params["ledger_index_min"]   = context.params["ledger_min"];
         bDescending = true;
     }
 
     // DEPRECATED
-    if (context.params_.isMember ("ledger_max"))
+    if (context.params.isMember ("ledger_max"))
     {
-        context.params_["ledger_index_max"]   = context.params_["ledger_max"];
+        context.params["ledger_index_max"]   = context.params["ledger_max"];
         bDescending = true;
     }
 
-    if (context.params_.isMember ("ledger_index_min")
-        || context.params_.isMember ("ledger_index_max"))
+    if (context.params.isMember ("ledger_index_min")
+        || context.params.isMember ("ledger_index_max"))
     {
-        std::int64_t iLedgerMin  = context.params_.isMember ("ledger_index_min")
-                ? context.params_["ledger_index_min"].asInt () : -1;
-        std::int64_t iLedgerMax  = context.params_.isMember ("ledger_index_max")
-                ? context.params_["ledger_index_max"].asInt () : -1;
+        std::int64_t iLedgerMin  = context.params.isMember ("ledger_index_min")
+                ? context.params["ledger_index_min"].asInt () : -1;
+        std::int64_t iLedgerMax  = context.params.isMember ("ledger_index_max")
+                ? context.params["ledger_index_max"].asInt () : -1;
 
         if (!bValidated && (iLedgerMin == -1 || iLedgerMax == -1))
         {
@@ -101,7 +102,7 @@ Json::Value doAccountTxOld (RPC::Context& context)
     else
     {
         Ledger::pointer l;
-        Json::Value ret = RPC::lookupLedger (context.params_, l, context.netOps_);
+        Json::Value ret = RPC::lookupLedger (context.params, l, context.netOps);
 
         if (!l)
             return ret;
@@ -124,9 +125,9 @@ Json::Value doAccountTxOld (RPC::Context& context)
 
         if (bBinary)
         {
-            auto txns = context.netOps_.getAccountTxsB (
+            auto txns = context.netOps.getAccountTxsB (
                 raAccount, uLedgerMin, uLedgerMax, bDescending, offset, limit,
-                context.role_ == Role::ADMIN);
+                context.role == Role::ADMIN);
 
             for (auto it = txns.begin (), end = txns.end (); it != end; ++it)
             {
@@ -146,9 +147,9 @@ Json::Value doAccountTxOld (RPC::Context& context)
         }
         else
         {
-            auto txns = context.netOps_.getAccountTxs (
+            auto txns = context.netOps.getAccountTxs (
                 raAccount, uLedgerMin, uLedgerMax, bDescending, offset, limit,
-                context.role_ == Role::ADMIN);
+                context.role == Role::ADMIN);
 
             for (auto it = txns.begin (), end = txns.end (); it != end; ++it)
             {
@@ -187,7 +188,7 @@ Json::Value doAccountTxOld (RPC::Context& context)
         if (bCount)
             ret["count"]        = count;
 
-        if (context.params_.isMember ("limit"))
+        if (context.params.isMember ("limit"))
             ret["limit"]        = limit;
 
 

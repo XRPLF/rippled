@@ -31,10 +31,10 @@ namespace ripple {
 // }
 Json::Value doAccountOffers (RPC::Context& context)
 {
-    auto const& params (context.params_);
+    auto const& params (context.params);
 
     Ledger::pointer ledger;
-    Json::Value result (RPC::lookupLedger (params, ledger, context.netOps_));
+    Json::Value result (RPC::lookupLedger (params, ledger, context.netOps));
 
     if (! ledger)
         return result;
@@ -49,7 +49,7 @@ Json::Value doAccountOffers (RPC::Context& context)
     RippleAddress rippleAddress;
 
     result = RPC::accountFromString (ledger, rippleAddress, bIndex, strIdent,
-        iIndex, false, context.netOps_);
+        iIndex, false, context.netOps);
 
     if (! result.empty ())
         return result;
@@ -151,7 +151,7 @@ Json::Value doAccountOffers (RPC::Context& context)
         obj[jss::flags] = offer->getFieldU32 (sfFlags);
     }
 
-    context.loadType_ = Resource::feeMediumBurdenRPC;
+    context.loadType = Resource::feeMediumBurdenRPC;
     return result;
 }
 

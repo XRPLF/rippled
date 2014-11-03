@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/server/Role.h>
 
 namespace ripple {
 
@@ -31,7 +32,7 @@ namespace ripple {
 // }
 Json::Value doAccountTx (RPC::Context& context)
 {
-    auto& params = context.params_;
+    auto& params = context.params;
 
     RippleAddress   raAccount;
     int limit = params.isMember (jss::limit) ?
@@ -42,7 +43,7 @@ Json::Value doAccountTx (RPC::Context& context)
     std::uint32_t   uLedgerMax;
     std::uint32_t   uValidatedMin;
     std::uint32_t   uValidatedMax;
-    bool bValidated = context.netOps_.getValidatedRange (
+    bool bValidated = context.netOps.getValidatedRange (
         uValidatedMin, uValidatedMax);
 
     if (!bValidated)
@@ -57,7 +58,7 @@ Json::Value doAccountTx (RPC::Context& context)
     if (!raAccount.setAccountID (params["account"].asString ()))
         return rpcError (rpcACT_MALFORMED);
 
-    context.loadType_ = Resource::feeMediumBurdenRPC;
+    context.loadType = Resource::feeMediumBurdenRPC;
 
     if (params.isMember ("ledger_index_min") ||
         params.isMember ("ledger_index_max"))
@@ -76,7 +77,7 @@ Json::Value doAccountTx (RPC::Context& context)
     else
     {
         Ledger::pointer l;
-        Json::Value ret = RPC::lookupLedger (params, l, context.netOps_);
+        Json::Value ret = RPC::lookupLedger (params, l, context.netOps);
 
         if (!l)
             return ret;
@@ -101,9 +102,9 @@ Json::Value doAccountTx (RPC::Context& context)
 
         if (bBinary)
         {
-            auto txns = context.netOps_.getTxsAccountB (
+            auto txns = context.netOps.getTxsAccountB (
                 raAccount, uLedgerMin, uLedgerMax, bForward, resumeToken, limit,
-                context.role_ == Role::ADMIN);
+                context.role == Role::ADMIN);
 
             for (auto& it: txns)
             {
@@ -122,9 +123,9 @@ Json::Value doAccountTx (RPC::Context& context)
         }
         else
         {
-            auto txns = context.netOps_.getTxsAccount (
+            auto txns = context.netOps.getTxsAccount (
                 raAccount, uLedgerMin, uLedgerMax, bForward, resumeToken, limit,
-                context.role_ == Role::ADMIN);
+                context.role == Role::ADMIN);
 
             for (auto& it: txns)
             {

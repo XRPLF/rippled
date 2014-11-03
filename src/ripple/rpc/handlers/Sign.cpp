@@ -27,11 +27,11 @@ namespace ripple {
 // }
 Json::Value doSign (RPC::Context& context)
 {
-    context.loadType_ = Resource::feeHighBurdenRPC;
-    bool bFailHard = context.params_.isMember ("fail_hard")
-            && context.params_["fail_hard"].asBool ();
+    context.loadType = Resource::feeHighBurdenRPC;
+    bool bFailHard = context.params.isMember ("fail_hard")
+            && context.params["fail_hard"].asBool ();
     return RPC::transactionSign (
-        context.params_, false, bFailHard, context.netOps_, context.role_);
+        context.params, false, bFailHard, context.netOps, context.role);
 }
 
 } // ripple
