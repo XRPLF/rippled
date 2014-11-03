@@ -100,7 +100,6 @@ public:
 
     void start ()
     {
-        assert (m_work.empty ());
         assert (m_stopped == true);
         assert (m_stop_called == false);
 
