@@ -468,6 +468,7 @@ public:
 
     void onStop ()
     {
+        mAcquiringLedger.reset();
         m_heartbeatTimer.cancel();
         m_clusterTimer.cancel();
 
