@@ -31,18 +31,18 @@ Json::Value doProofCreate (RPC::Context& context)
     // XXX: Add ability to create proof with arbitrary time
     Json::Value     jvResult (Json::objectValue);
 
-    if (context.params_.isMember ("difficulty") ||
-        context.params_.isMember ("secret"))
+    if (context.params.isMember ("difficulty") ||
+        context.params.isMember ("secret"))
     {
         // VFALCO TODO why aren't we using the app's factory?
         auto pgGen = make_ProofOfWorkFactory ();
 
-        if (context.params_.isMember ("difficulty"))
+        if (context.params.isMember ("difficulty"))
         {
-            if (!context.params_["difficulty"].isIntegral ())
+            if (!context.params["difficulty"].isIntegral ())
                 return RPC::invalid_field_error ("difficulty");
 
-            int const iDifficulty (context.params_["difficulty"].asInt ());
+            int const iDifficulty (context.params["difficulty"].asInt ());
 
             if (iDifficulty < 0 ||
                 iDifficulty > ProofOfWorkFactory::kMaxDifficulty)
@@ -53,9 +53,9 @@ Json::Value doProofCreate (RPC::Context& context)
             pgGen->setDifficulty (iDifficulty);
         }
 
-        if (context.params_.isMember ("secret"))
+        if (context.params.isMember ("secret"))
         {
-            uint256 uSecret (context.params_["secret"].asString ());
+            uint256 uSecret (context.params["secret"].asString ());
             pgGen->setSecret (uSecret);
         }
 

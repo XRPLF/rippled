@@ -22,46 +22,46 @@ namespace ripple {
 
 Json::Value doPathFind (RPC::Context& context)
 {
-    Ledger::pointer lpLedger = context.netOps_.getClosedLedger();
+    Ledger::pointer lpLedger = context.netOps.getClosedLedger();
 
-    if (!context.params_.isMember ("subcommand") ||
-        !context.params_["subcommand"].isString ())
+    if (!context.params.isMember ("subcommand") ||
+        !context.params["subcommand"].isString ())
     {
         return rpcError (rpcINVALID_PARAMS);
     }
 
-    if (!context.infoSub_)
+    if (!context.infoSub)
         return rpcError (rpcNO_EVENTS);
 
-    std::string sSubCommand = context.params_["subcommand"].asString ();
+    std::string sSubCommand = context.params["subcommand"].asString ();
 
     if (sSubCommand == "create")
     {
-        context.loadType_ = Resource::feeHighBurdenRPC;
-        context.infoSub_->clearPathRequest ();
+        context.loadType = Resource::feeHighBurdenRPC;
+        context.infoSub->clearPathRequest ();
         return getApp().getPathRequests().makePathRequest (
-            context.infoSub_, lpLedger, context.params_);
+            context.infoSub, lpLedger, context.params);
     }
 
     if (sSubCommand == "close")
     {
-        PathRequest::pointer request = context.infoSub_->getPathRequest ();
+        PathRequest::pointer request = context.infoSub->getPathRequest ();
 
         if (!request)
             return rpcError (rpcNO_PF_REQUEST);
 
-        context.infoSub_->clearPathRequest ();
-        return request->doClose (context.params_);
+        context.infoSub->clearPathRequest ();
+        return request->doClose (context.params);
     }
 
     if (sSubCommand == "status")
     {
-        PathRequest::pointer request = context.infoSub_->getPathRequest ();
+        PathRequest::pointer request = context.infoSub->getPathRequest ();
 
         if (!request)
             return rpcError (rpcNO_PF_REQUEST);
 
-        return request->doStatus (context.params_);
+        return request->doStatus (context.params);
     }
 
     return rpcError (rpcINVALID_PARAMS);

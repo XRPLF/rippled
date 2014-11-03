@@ -31,19 +31,19 @@ Json::Value doTransactionEntry (RPC::Context& context)
 {
     Ledger::pointer     lpLedger;
     Json::Value jvResult = RPC::lookupLedger (
-        context.params_,
+        context.params,
         lpLedger,
-        context.netOps_);
+        context.netOps);
 
     if (!lpLedger)
         return jvResult;
 
-    if (!context.params_.isMember ("tx_hash"))
+    if (!context.params.isMember ("tx_hash"))
     {
         jvResult["error"]   = "fieldNotFoundTransaction";
     }
-    else if (!context.params_.isMember ("ledger_hash")
-             && !context.params_.isMember ("ledger_index"))
+    else if (!context.params.isMember ("ledger_hash")
+             && !context.params.isMember ("ledger_index"))
     {
         // We don't work on ledger current.
 
@@ -55,7 +55,7 @@ Json::Value doTransactionEntry (RPC::Context& context)
         uint256 uTransID;
         // XXX Relying on trusted WSS client. Would be better to have a strict
         // routine, returning success or failure.
-        uTransID.SetHex (context.params_["tx_hash"].asString ());
+        uTransID.SetHex (context.params["tx_hash"].asString ());
 
         if (!lpLedger)
         {

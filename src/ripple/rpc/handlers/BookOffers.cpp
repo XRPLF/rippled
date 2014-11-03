@@ -29,24 +29,24 @@ Json::Value doBookOffers (RPC::Context& context)
 
     Ledger::pointer lpLedger;
     Json::Value jvResult (
-        RPC::lookupLedger (context.params_, lpLedger, context.netOps_));
+        RPC::lookupLedger (context.params, lpLedger, context.netOps));
 
     if (!lpLedger)
         return jvResult;
 
-    if (!context.params_.isMember ("taker_pays"))
+    if (!context.params.isMember ("taker_pays"))
         return RPC::missing_field_error ("taker_pays");
 
-    if (!context.params_.isMember ("taker_gets"))
+    if (!context.params.isMember ("taker_gets"))
         return RPC::missing_field_error ("taker_gets");
 
-    if (!context.params_["taker_pays"].isObject ())
+    if (!context.params["taker_pays"].isObject ())
         return RPC::object_field_error ("taker_pays");
 
-    if (!context.params_["taker_gets"].isObject ())
+    if (!context.params["taker_gets"].isObject ())
         return RPC::object_field_error ("taker_gets");
 
-    Json::Value const& taker_pays (context.params_["taker_pays"]);
+    Json::Value const& taker_pays (context.params["taker_pays"]);
 
     if (!taker_pays.isMember ("currency"))
         return RPC::missing_field_error ("taker_pays.currency");
@@ -54,7 +54,7 @@ Json::Value doBookOffers (RPC::Context& context)
     if (! taker_pays ["currency"].isString ())
         return RPC::expected_field_error ("taker_pays.currency", "string");
 
-    Json::Value const& taker_gets = context.params_["taker_gets"];
+    Json::Value const& taker_gets = context.params["taker_gets"];
 
     if (! taker_gets.isMember ("currency"))
         return RPC::missing_field_error ("taker_gets.currency");
@@ -143,12 +143,12 @@ Json::Value doBookOffers (RPC::Context& context)
 
     RippleAddress raTakerID;
 
-    if (context.params_.isMember ("taker"))
+    if (context.params.isMember ("taker"))
     {
-        if (! context.params_ ["taker"].isString ())
+        if (! context.params ["taker"].isString ())
             return RPC::expected_field_error ("taker", "string");
 
-        if (! raTakerID.setAccountID (context.params_ ["taker"].asString ()))
+        if (! raTakerID.setAccountID (context.params ["taker"].asString ()))
             return RPC::invalid_field_error ("taker");
     }
     else
@@ -162,28 +162,28 @@ Json::Value doBookOffers (RPC::Context& context)
         return RPC::make_error (rpcBAD_MARKET);
     }
 
-    if (context.params_.isMember ("limit") &&
-        !context.params_ ["limit"].isIntegral())
+    if (context.params.isMember ("limit") &&
+        !context.params ["limit"].isIntegral())
     {
         return RPC::expected_field_error ("limit", "integer");
     }
 
-    unsigned int const iLimit (context.params_.isMember ("limit")
-        ? context.params_ ["limit"].asUInt ()
+    unsigned int const iLimit (context.params.isMember ("limit")
+        ? context.params ["limit"].asUInt ()
         : 0);
 
-    bool const bProof (context.params_.isMember ("proof"));
+    bool const bProof (context.params.isMember ("proof"));
 
-    Json::Value const jvMarker (context.params_.isMember ("marker")
-        ? context.params_["marker"]
+    Json::Value const jvMarker (context.params.isMember ("marker")
+        ? context.params["marker"]
         : Json::Value (Json::nullValue));
 
-    context.netOps_.getBookPage (
+    context.netOps.getBookPage (
         lpLedger,
         {{pay_currency, pay_issuer}, {get_currency, get_issuer}},
         raTakerID.getAccountID (), bProof, iLimit, jvMarker, jvResult);
 
-    context.loadType_ = Resource::feeMediumBurdenRPC;
+    context.loadType = Resource::feeMediumBurdenRPC;
 
     return jvResult;
 }

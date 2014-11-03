@@ -31,10 +31,10 @@ Json::Value doLedgerAccept (RPC::Context& context)
     }
     else
     {
-        context.netOps_.acceptLedger ();
+        context.netOps.acceptLedger ();
 
         jvResult["ledger_current_index"]
-                = context.netOps_.getCurrentLedgerID ();
+                = context.netOps.getCurrentLedgerID ();
     }
 
     return jvResult;

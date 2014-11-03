@@ -24,13 +24,13 @@ Json::Value doFetchInfo (RPC::Context& context)
 {
     Json::Value ret (Json::objectValue);
 
-    if (context.params_.isMember("clear") && context.params_["clear"].asBool())
+    if (context.params.isMember("clear") && context.params["clear"].asBool())
     {
-        context.netOps_.clearLedgerFetch();
+        context.netOps.clearLedgerFetch();
         ret["clear"] = true;
     }
 
-    ret["info"] = context.netOps_.getLedgerFetchInfo();
+    ret["info"] = context.netOps.getLedgerFetchInfo();
 
     return ret;
 }

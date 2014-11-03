@@ -25,13 +25,13 @@ namespace ripple {
 // }
 Json::Value doTx (RPC::Context& context)
 {
-    if (!context.params_.isMember (jss::transaction))
+    if (!context.params.isMember (jss::transaction))
         return rpcError (rpcINVALID_PARAMS);
 
-    bool binary = context.params_.isMember (jss::binary)
-            && context.params_[jss::binary].asBool ();
+    bool binary = context.params.isMember (jss::binary)
+            && context.params[jss::binary].asBool ();
 
-    std::string strTransaction  = context.params_[jss::transaction].asString ();
+    std::string strTransaction  = context.params[jss::transaction].asString ();
 
     if (Transaction::isHexTxID (strTransaction))
     {
@@ -53,7 +53,7 @@ Json::Value doTx (RPC::Context& context)
 
         if (txn->getLedger () != 0)
         {
-            if (auto lgr = context.netOps_.getLedgerBySeq (txn->getLedger ()))
+            if (auto lgr = context.netOps.getLedgerBySeq (txn->getLedger ()))
             {
                 bool okay = false;
                 if (binary)
@@ -77,7 +77,7 @@ Json::Value doTx (RPC::Context& context)
                 }
 
                 if (okay)
-                    ret[jss::validated] = context.netOps_.isValidated (lgr);
+                    ret[jss::validated] = context.netOps.isValidated (lgr);
             }
         }
 

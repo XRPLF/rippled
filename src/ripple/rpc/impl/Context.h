@@ -28,12 +28,11 @@ namespace RPC {
 /** The context of information needed to call an RPC. */
 struct Context
 {
-    // VFALCO NOTE Public members should not have underscores appended
-    Json::Value params_;
-    Resource::Charge& loadType_;
-    NetworkOPs& netOps_;
-    InfoSub::pointer infoSub_;
-    Config::Role role_;
+    Json::Value params;
+    Resource::Charge& loadType;
+    NetworkOPs& netOps;
+    InfoSub::pointer infoSub;
+    Config::Role role;
 };
 
 } // RPC

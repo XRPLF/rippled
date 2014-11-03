@@ -43,7 +43,7 @@ static void textTime (
 
 Json::Value doFeature (RPC::Context& context)
 {
-    if (!context.params_.isMember ("feature"))
+    if (!context.params.isMember ("feature"))
     {
         Json::Value jvReply = Json::objectValue;
         jvReply["features"] = getApp().getAmendmentTable ().getJson(0);
@@ -52,17 +52,17 @@ Json::Value doFeature (RPC::Context& context)
 
     uint256 uFeature
             = getApp().getAmendmentTable ().get(
-                context.params_["feature"].asString());
+                context.params["feature"].asString());
 
     if (uFeature.isZero ())
     {
-        uFeature.SetHex (context.params_["feature"].asString ());
+        uFeature.SetHex (context.params["feature"].asString ());
 
         if (uFeature.isZero ())
             return rpcError (rpcBAD_FEATURE);
     }
 
-    if (!context.params_.isMember ("vote"))
+    if (!context.params.isMember ("vote"))
         return getApp().getAmendmentTable ().getJson(uFeature);
 
     // WRITEME

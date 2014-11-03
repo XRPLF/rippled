@@ -25,9 +25,9 @@ namespace ripple {
 Json::Value doWalletSeed (RPC::Context& context)
 {
     RippleAddress   seed;
-    bool bSecret = context.params_.isMember ("secret");
+    bool bSecret = context.params.isMember ("secret");
 
-    if (bSecret && !seed.setSeedGeneric (context.params_["secret"].asString ()))
+    if (bSecret && !seed.setSeedGeneric (context.params["secret"].asString ()))
     {
         return rpcError (rpcBAD_SEED);
     }

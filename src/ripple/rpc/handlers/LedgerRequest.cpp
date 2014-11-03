@@ -26,8 +26,8 @@ namespace ripple {
 // }
 Json::Value doLedgerRequest (RPC::Context& context)
 {
-    auto const hasHash = context.params_.isMember (jss::ledger_hash);
-    auto const hasIndex = context.params_.isMember (jss::ledger_index);
+    auto const hasHash = context.params.isMember (jss::ledger_hash);
+    auto const hasIndex = context.params.isMember (jss::ledger_index);
 
     auto& ledgerMaster = getApp().getLedgerMaster();
     LedgerHash ledgerHash;
@@ -40,11 +40,11 @@ Json::Value doLedgerRequest (RPC::Context& context)
 
     if (hasHash)
     {
-        auto const& jsonHash = context.params_[jss::ledger_hash];
+        auto const& jsonHash = context.params[jss::ledger_hash];
         if (!jsonHash.isString() || !ledgerHash.SetHex (jsonHash.asString ()))
             return RPC::invalid_field_message ("ledger_hash");
     } else {
-        auto const& jsonIndex = context.params_[jss::ledger_index];
+        auto const& jsonIndex = context.params[jss::ledger_index];
         if (!jsonIndex.isNumeric ())
             return RPC::invalid_field_message ("ledger_index");
 
