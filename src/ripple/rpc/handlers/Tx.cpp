@@ -49,6 +49,7 @@ Json::Value doTx (RPC::Context& context)
         ret[jss::transaction] = txn->getJson (1, binary);
 #else
         Json::Value ret = txn->getJson (1, binary);
+        ret[jss::transaction] = txn->getJson (1, binary);
 #endif
 
         if (txn->getLedger () != 0)
