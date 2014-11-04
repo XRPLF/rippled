@@ -20,7 +20,7 @@
 #include <ripple/common/jsonrpc_fields.h>
 #include <ripple/data/protocol/BuildInfo.h>
 #include <ripple/core/SystemParameters.h>
-#include <websocket/src/base64/base64.h>
+#include <beast/crypto/base64.h>
 
 namespace ripple {
 
@@ -28,7 +28,7 @@ namespace {
 
 unsigned int const gMaxHTTPHeaderSize = 0x02000000;
 
-std::string versionNumber = "v1";
+std::string const versionNumber = "v1";
 
 std::string getHTTPHeaderTimestamp ()
 {
@@ -86,7 +86,7 @@ std::string createHTTPPost (
 
     (s += "\r\n") += strMsg;
 
-    return std::move (s);
+    return s;
 }
 
 std::string HTTPReply (int nStatus, std::string const& strMsg)
@@ -164,7 +164,7 @@ std::string HTTPReply (int nStatus, std::string const& strMsg)
         ret.append ("\r\n");
     }
 
-    return std::move (ret);
+    return ret;
 }
 
 bool HTTPAuthorized (HTTPHeaders const& mapHeaders)
@@ -180,7 +180,7 @@ bool HTTPAuthorized (HTTPHeaders const& mapHeaders)
 
     std::string strUserPass64 = it->second.substr (6);
     boost::trim (strUserPass64);
-    std::string strUserPass = base64_decode (strUserPass64);
+    std::string strUserPass = beast::base64_decode (strUserPass64);
     std::string::size_type nColon = strUserPass.find (":");
 
     if (nColon == std::string::npos)
@@ -205,7 +205,7 @@ static std::string toStringWithCarriageReturn (Json::Value const& value)
 {
     auto s = to_string (value);
     s += '\n';
-    return std::move (s);
+    return s;
 }
 
 std::string JSONRPCRequest (
