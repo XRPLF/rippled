@@ -182,10 +182,12 @@ public:
     HostAndPort parseName(std::string const& str)
     {
         // Attempt to find the first and last non-whitespace
-        auto const find_whitespace = std::bind (
-            &std::isspace <std::string::value_type>,
-            std::placeholders::_1,
-            std::locale ());
+        auto const find_whitespace = [](char const c) -> bool
+        {
+            if (std::isspace (c))
+                return true;
+            return false;
+        };
 
         auto host_first = std::find_if_not (
             str.begin (), str.end (), find_whitespace);
@@ -202,11 +204,7 @@ public:
         {
             if (std::isspace (c))
                 return true;
-
-            if (c == ':')
-                return true;
-
-            return false;
+            return (c == ':');
         };
 
         auto host_last = std::find_if (
