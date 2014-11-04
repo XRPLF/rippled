@@ -47,7 +47,7 @@
 #include <ripple/unity/data.h>
 #include <ripple/unity/net.h>
 
-#include <ripple/common/ResolverAsio.h>
+#include <ripple/common/Resolver.h>
 
 // VFALCO TODO Remove this include
 #include <beast/module/sqlite/sqlite.h>

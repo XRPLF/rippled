@@ -293,7 +293,7 @@ public:
 std::unique_ptr<Resolver>
 make_Resolver (boost::asio::io_service& io_service, beast::Journal journal)
 {
-    return std::make_unique<ResolverImpl> (io_service, journal)
+    return std::make_unique<ResolverImpl> (io_service, journal);
 }
 
 }
