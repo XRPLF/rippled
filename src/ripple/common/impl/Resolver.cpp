@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/common/ResolverAsio.h>
+#include <ripple/common/Resolver.h>
 #include <beast/asio/IPAddressConversion.h>
 #include <beast/asio/placeholders.h>
 #include <beast/threads/WaitableEvent.h>
@@ -29,8 +29,8 @@
 
 namespace ripple {
 
-class ResolverAsioImpl
-    : public ResolverAsio
+class ResolverImpl
+    : public Resolver
 {
 public:
     typedef std::pair <std::string, std::string> HostAndPort;
@@ -64,7 +64,7 @@ public:
 
     std::deque <Work> m_work;
 
-    ResolverAsioImpl (boost::asio::io_service& io_service,
+    ResolverImpl (boost::asio::io_service& io_service,
         beast::Journal journal)
             : m_journal (journal)
             , m_io_service (io_service)
@@ -77,7 +77,7 @@ public:
 
     }
 
-    ~ResolverAsioImpl ()
+    ~ResolverImpl ()
     {
         assert (m_work.empty ());
         assert (m_stopped);
@@ -105,7 +105,7 @@ public:
         if (m_stop_called.exchange (true) == false)
         {
             m_io_service.dispatch (m_strand.wrap (std::bind (
-                &ResolverAsioImpl::do_stop, this)));
+                &ResolverImpl::do_stop, this)));
 
             m_journal.debug << "Queued a stop request";
         }
@@ -129,7 +129,7 @@ public:
         assert (!names.empty());
 
         m_io_service.dispatch (m_strand.wrap (std::bind (
-            &ResolverAsioImpl::do_resolve, this, names, handler)));
+            &ResolverImpl::do_resolve, this, names, handler)));
     }
 
     //-------------------------------------------------------------------------
@@ -156,7 +156,7 @@ public:
         if (ec == boost::asio::error::operation_aborted)
         {
             m_io_service.post (m_strand.wrap (std::bind (
-                &ResolverAsioImpl::do_work, this)));
+                &ResolverImpl::do_work, this)));
             return;
         }
 
@@ -176,7 +176,7 @@ public:
         handler (name, addresses);
 
         m_io_service.post (m_strand.wrap (std::bind (
-            &ResolverAsioImpl::do_work, this)));
+            &ResolverImpl::do_work, this)));
     }
 
     HostAndPort parseName(std::string const& str)
@@ -252,7 +252,7 @@ public:
                 "Unable to parse '" << name << "'";
 
             m_io_service.post (m_strand.wrap (std::bind (
-                &ResolverAsioImpl::do_work, this)));
+                &ResolverImpl::do_work, this)));
 
             return;
         }
@@ -261,7 +261,7 @@ public:
             hp.first, hp.second);
 
         m_resolver.async_resolve (query, std::bind (
-            &ResolverAsioImpl::do_finish, this, name,
+            &ResolverImpl::do_finish, this, name,
                 beast::asio::placeholders::error, handler,
                     beast::asio::placeholders::iterator));
     }
@@ -284,23 +284,16 @@ public:
         if (m_work.size() == 1)
         {
             m_io_service.post (m_strand.wrap (std::bind (
-                &ResolverAsioImpl::do_work, this)));
+                &ResolverImpl::do_work, this)));
         }
     }
 };
 
 //-----------------------------------------------------------------------------
-
-ResolverAsio *ResolverAsio::New (
-    boost::asio::io_service& io_service,
-    beast::Journal journal)
+std::unique_ptr<Resolver>
+make_Resolver (boost::asio::io_service& io_service, beast::Journal journal)
 {
-    return new ResolverAsioImpl (io_service, journal);
-}
-
-//-----------------------------------------------------------------------------
-Resolver::~Resolver ()
-{
+    return std::make_unique<ResolverImpl> (io_service, journal)
 }
 
 }

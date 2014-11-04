@@ -20,11 +20,15 @@
 #ifndef RIPPLE_COMMON_RESOLVER_H_INCLUDED
 #define RIPPLE_COMMON_RESOLVER_H_INCLUDED
 
-#include <vector>
-#include <functional>
-
+#include <beast/utility/Journal.h>
 #include <beast/boost/ErrorCode.h>
 #include <beast/net/IPEndpoint.h>
+
+#include <boost/asio/io_service.hpp>
+
+#include <vector>
+#include <functional>
+#include <beast/cxx14/memory.h>
 
 namespace ripple {
 
@@ -36,7 +40,7 @@ public:
             std::vector <beast::IP::Endpoint>) >
         HandlerType;
 
-    virtual ~Resolver () = 0;
+    virtual ~Resolver () = default;
 
     /** Issue an asynchronous stop request. */
     virtual void stop_async () = 0;
@@ -63,6 +67,9 @@ public:
         HandlerType const& handler) = 0;
     /** @} */
 };
+
+std::unique_ptr<Resolver>
+make_Resolver (boost::asio::io_service& io_service, beast::Journal journal);
 
 }
 
