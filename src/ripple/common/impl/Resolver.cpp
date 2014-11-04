@@ -17,10 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/common/ResolverAsio.h>
+#include <ripple/common/Resolver.h>
 #include <beast/asio/IPAddressConversion.h>
 #include <beast/asio/placeholders.h>
-#include <beast/module/asio/AsyncObject.h>
 #include <beast/threads/WaitableEvent.h>
 #include <boost/asio.hpp>
 #include <atomic>
@@ -30,22 +29,21 @@
 
 namespace ripple {
 
-class ResolverAsioImpl
-    : public ResolverAsio
-    , public beast::asio::AsyncObject <ResolverAsioImpl>
+class ResolverImpl
+    : public Resolver
 {
 public:
     typedef std::pair <std::string, std::string> HostAndPort;
 
-    beast::Journal m_journal;
+    beast::Journal journal_;
 
-    boost::asio::io_service& m_io_service;
-    boost::asio::io_service::strand m_strand;
-    boost::asio::ip::tcp::resolver m_resolver;
+    boost::asio::io_service& io_service_;
+    boost::asio::io_service::strand strand_;
+    boost::asio::ip::tcp::resolver resolver_;
 
-    beast::WaitableEvent m_stop_complete;
-    std::atomic <bool> m_stop_called;
-    std::atomic <bool> m_stopped;
+    beast::WaitableEvent stop_complete_;
+    std::atomic <bool> stop_called_;
+    std::atomic <bool> stopped_;
 
     // Represents a unit of work for the resolver to do
     struct Work
@@ -64,32 +62,25 @@ public:
         }
     };
 
-    std::deque <Work> m_work;
+    std::deque <Work> work_;
 
-    ResolverAsioImpl (boost::asio::io_service& io_service,
+    ResolverImpl (boost::asio::io_service& io_service,
         beast::Journal journal)
-            : m_journal (journal)
-            , m_io_service (io_service)
-            , m_strand (io_service)
-            , m_resolver (io_service)
-            , m_stop_complete (true, true)
-            , m_stop_called (false)
-            , m_stopped (true)
+            : journal_ (journal)
+            , io_service_ (io_service)
+            , strand_ (io_service)
+            , resolver_ (io_service)
+            , stop_complete_ (true, true)
+            , stop_called_ (false)
+            , stopped_ (true)
     {
 
     }
 
-    ~ResolverAsioImpl ()
+    ~ResolverImpl ()
     {
-        assert (m_work.empty ());
-        assert (m_stopped);
-    }
-
-    //-------------------------------------------------------------------------
-    // AsyncObject
-    void asyncHandlersComplete()
-    {
-        m_stop_complete.signal ();
+        assert (work_.empty ());
+        assert (stopped_);
     }
 
     //--------------------------------------------------------------------------
@@ -100,25 +91,23 @@ public:
 
     void start ()
     {
-        assert (m_stopped == true);
-        assert (m_stop_called == false);
+        assert (stopped_.load () == true);
+        assert (stop_called_.load () == false);
 
-        if (m_stopped.exchange (false) == true)
-        {
-            m_stop_complete.reset ();
-            addReference ();
-        }
+        work_.clear ();
+
+        if (stopped_.exchange (false) == true)
+            stop_complete_.reset ();
     }
 
     void stop_async ()
     {
-        if (m_stop_called.exchange (true) == false)
+        if (stop_called_.exchange (true) == false)
         {
-            m_io_service.dispatch (m_strand.wrap (std::bind (
-                &ResolverAsioImpl::do_stop,
-                    this, CompletionCounter (this))));
+            io_service_.dispatch (strand_.wrap (std::bind (
+                &ResolverImpl::do_stop, this)));
 
-            m_journal.debug << "Queued a stop request";
+            journal_.debug << "Queued a stop request";
         }
     }
 
@@ -126,50 +115,50 @@ public:
     {
         stop_async ();
 
-        m_journal.debug << "Waiting to stop";
-        m_stop_complete.wait();
-        m_journal.debug << "Stopped";
+        journal_.debug << "Waiting to stop";
+        stop_complete_.wait();
+        journal_.debug << "Stopped";
     }
 
     void resolve (
         std::vector <std::string> const& names,
         HandlerType const& handler)
     {
-        assert (m_stop_called == false);
-        assert (m_stopped == true);
+        assert (stop_called_ == false);
+        assert (stopped_ == true);
         assert (!names.empty());
 
-        // TODO NIKB use rvalue references to construct and move
-        //           reducing cost.
-        m_io_service.dispatch (m_strand.wrap (std::bind (
-            &ResolverAsioImpl::do_resolve, this,
-                names, handler, CompletionCounter (this))));
+        io_service_.dispatch (strand_.wrap (std::bind (
+            &ResolverImpl::do_resolve, this, names, handler)));
     }
 
     //-------------------------------------------------------------------------
     // Resolver
-    void do_stop (CompletionCounter)
+    void do_stop ()
     {
-        assert (m_stop_called == true);
+        assert (stop_called_ == true);
 
-        if (m_stopped.exchange (true) == false)
-        {
-            m_work.clear ();
-            m_resolver.cancel ();
+        if (stopped_.exchange (true) == false)
+            resolver_.cancel ();
 
-            removeReference ();
-        }
+        // If the work queue is already empty, then we can signal a stop right
+        // away, since nothing else is actively running.
+        if (work_.empty ())
+            stop_complete_.signal ();
     }
 
     void do_finish (
         std::string name,
         boost::system::error_code const& ec,
         HandlerType handler,
-        boost::asio::ip::tcp::resolver::iterator iter,
-        CompletionCounter)
+        boost::asio::ip::tcp::resolver::iterator iter)
     {
         if (ec == boost::asio::error::operation_aborted)
+        {
+            io_service_.post (strand_.wrap (std::bind (
+                &ResolverImpl::do_work, this)));
             return;
+        }
 
         std::vector <beast::IP::Endpoint> addresses;
 
@@ -186,18 +175,19 @@ public:
 
         handler (name, addresses);
 
-        m_io_service.post (m_strand.wrap (std::bind (
-            &ResolverAsioImpl::do_work, this,
-                CompletionCounter (this))));
+        io_service_.post (strand_.wrap (std::bind (
+            &ResolverImpl::do_work, this)));
     }
 
     HostAndPort parseName(std::string const& str)
     {
         // Attempt to find the first and last non-whitespace
-        auto const find_whitespace = std::bind (
-            &std::isspace <std::string::value_type>,
-            std::placeholders::_1,
-            std::locale ());
+        auto const find_whitespace = [](char const c) -> bool
+        {
+            if (std::isspace (c))
+                return true;
+            return false;
+        };
 
         auto host_first = std::find_if_not (
             str.begin (), str.end (), find_whitespace);
@@ -214,11 +204,7 @@ public:
         {
             if (std::isspace (c))
                 return true;
-
-            if (c == ':')
-                return true;
-
-            return false;
+            return (c == ':');
         };
 
         auto host_last = std::find_if (
@@ -232,33 +218,41 @@ public:
             std::string (port_first, port_last));
     }
 
-    void do_work (CompletionCounter)
+    void do_work ()
     {
-        if (m_stop_called == true)
+        if (stop_called_ && !work_.empty ())
+        {
+            journal_.debug << "Trying to work with stop called. " <<
+                "Flushing " << work_.size () << " items from work queue.";
+            work_.clear ();
+        }
+
+        // We don't have any more work to do at this time
+        if (work_.empty ())
+        {
+            if (stop_called_)
+                stop_complete_.signal ();
+
             return;
+        }
 
-        // We don't have any work to do at this time
-        if (m_work.empty ())
-            return;
+        std::string const name (work_.front ().names.back());
+        HandlerType handler (work_.front ().handler);
 
-        std::string const name (m_work.front ().names.back());
-        HandlerType handler (m_work.front ().handler);
+        work_.front ().names.pop_back ();
 
-        m_work.front ().names.pop_back ();
-
-        if (m_work.front ().names.empty ())
-            m_work.pop_front();
+        if (work_.front ().names.empty ())
+            work_.pop_front();
 
         HostAndPort const hp (parseName (name));
 
         if (hp.first.empty ())
         {
-            m_journal.error <<
+            journal_.error <<
                 "Unable to parse '" << name << "'";
 
-            m_io_service.post (m_strand.wrap (std::bind (
-                &ResolverAsioImpl::do_work, this,
-                CompletionCounter (this))));
+            io_service_.post (strand_.wrap (std::bind (
+                &ResolverImpl::do_work, this)));
 
             return;
         }
@@ -266,48 +260,40 @@ public:
         boost::asio::ip::tcp::resolver::query query (
             hp.first, hp.second);
 
-        m_resolver.async_resolve (query, std::bind (
-            &ResolverAsioImpl::do_finish, this, name,
+        resolver_.async_resolve (query, std::bind (
+            &ResolverImpl::do_finish, this, name,
                 beast::asio::placeholders::error, handler,
-                    beast::asio::placeholders::iterator,
-                        CompletionCounter (this)));
+                    beast::asio::placeholders::iterator));
     }
 
-    void do_resolve (std::vector <std::string> const& names,
-        HandlerType const& handler, CompletionCounter)
+    void do_resolve (
+        std::vector <std::string> const& names,
+        HandlerType const& handler)
     {
         assert (! names.empty());
 
-        if (m_stop_called == false)
+        if (stop_called_)
+            return;
+
+        work_.emplace_back (names, handler);
+
+        journal_.debug <<
+            "Queued new job with " << names.size() <<
+            " tasks. " << work_.size() << " jobs outstanding.";
+
+        if (work_.size() == 1)
         {
-            m_work.emplace_back (names, handler);
-
-            m_journal.debug <<
-                "Queued new job with " << names.size() <<
-                " tasks. " << m_work.size() << " jobs outstanding.";
-
-            if (m_work.size() == 1)
-            {
-                m_io_service.post (m_strand.wrap (std::bind (
-                    &ResolverAsioImpl::do_work, this,
-                        CompletionCounter (this))));
-            }
+            io_service_.post (strand_.wrap (std::bind (
+                &ResolverImpl::do_work, this)));
         }
     }
 };
 
 //-----------------------------------------------------------------------------
-
-ResolverAsio *ResolverAsio::New (
-    boost::asio::io_service& io_service,
-    beast::Journal journal)
+std::unique_ptr<Resolver>
+make_Resolver (boost::asio::io_service& io_service, beast::Journal journal)
 {
-    return new ResolverAsioImpl (io_service, journal);
-}
-
-//-----------------------------------------------------------------------------
-Resolver::~Resolver ()
-{
+    return std::make_unique<ResolverImpl> (io_service, journal);
 }
 
 }

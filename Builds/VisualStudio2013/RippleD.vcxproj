@@ -447,8 +447,6 @@
     <ClCompile Include="..\..\src\beast\beast\module\asio\asio.unity.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\beast\beast\module\asio\AsyncObject.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\module\asio\HTTPField.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2190,7 +2188,7 @@
     <ClCompile Include="..\..\src\ripple\common\impl\KeyCache.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\common\impl\ResolverAsio.cpp">
+    <ClCompile Include="..\..\src\ripple\common\impl\Resolver.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\common\impl\RippleSSLContext.cpp">
@@ -2204,8 +2202,6 @@
     <ClInclude Include="..\..\src\ripple\common\KeyCache.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\common\Resolver.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\common\ResolverAsio.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\common\RippleSSLContext.h">
     </ClInclude>

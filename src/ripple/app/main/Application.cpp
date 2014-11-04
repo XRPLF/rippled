@@ -202,7 +202,7 @@ public:
 
     beast::WaitableEvent m_stop;
 
-    std::unique_ptr <ResolverAsio> m_resolver;
+    std::unique_ptr <Resolver> m_resolver;
 
     io_latency_sampler m_io_latency_sampler;
 
@@ -340,7 +340,7 @@ public:
 
         , mShutdown (false)
 
-        , m_resolver (ResolverAsio::New (get_io_service(), beast::Journal ()))
+        , m_resolver (make_Resolver(get_io_service(), beast::Journal ()))
 
         , m_io_latency_sampler (m_collectorManager->collector()->make_event ("ios_latency"),
             m_logs.journal("Application"), std::chrono::milliseconds (100), get_io_service())
@@ -849,11 +849,10 @@ public:
         //        forcing a call to io_service::stop()
         m_io_latency_sampler.cancel ();
 
-        m_resolver->stop_async ();
-
         // NIKB This is a hack - we need to wait for the resolver to
         //      stop. before we stop the io_server_queue or weird
         //      things will happen.
+        m_journal.debug << "Waiting for resolver to stop...";
         m_resolver->stop ();
 
         m_sweepTimer.cancel ();
