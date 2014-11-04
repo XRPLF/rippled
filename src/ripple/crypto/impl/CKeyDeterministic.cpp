@@ -292,12 +292,6 @@ EC_KEY* CKey::GeneratePublicDeterministicKey (RippleAddress const& pubGen, int s
     return success ? pkey : nullptr;
 }
 
-EC_KEY* CKey::GeneratePrivateDeterministicKey (RippleAddress const& pubGen, uint256 const& u, int seq)
-{
-    CBigNum bn (u);
-    return GeneratePrivateDeterministicKey (pubGen, static_cast<BIGNUM*> (&bn), seq);
-}
-
 // --> root private key
 EC_KEY* CKey::GeneratePrivateDeterministicKey (RippleAddress const& pubGen, const BIGNUM* rootPrivKey, int seq)
 {

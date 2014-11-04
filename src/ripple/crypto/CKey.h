@@ -42,46 +42,6 @@ namespace ripple {
 // see www.keylength.com
 // script supports up to 75 for single byte push
 
-// VFALCO NOTE this is unused
-/*
-int static inline EC_KEY_regenerate_key(EC_KEY *eckey, BIGNUM *priv_key)
-{
-    int okay = 0;
-    BN_CTX *ctx = NULL;
-    EC_POINT *pub_key = NULL;
-
-    if (!eckey) return 0;
-
-    const EC_GROUP *group = EC_KEY_get0_group(eckey);
-
-    if ((ctx = BN_CTX_new()) == NULL)
-        goto err;
-
-    pub_key = EC_POINT_new(group);
-
-    if (pub_key == NULL)
-        goto err;
-
-    if (!EC_POINT_mul(group, pub_key, priv_key, NULL, NULL, ctx))
-        goto err;
-
-    EC_KEY_set_conv_form(eckey, POINT_CONVERSION_COMPRESSED);
-    EC_KEY_set_private_key(eckey, priv_key);
-    EC_KEY_set_public_key(eckey, pub_key);
-
-    okay = 1;
-
-err:
-
-    if (pub_key)
-        EC_POINT_free(pub_key);
-    if (ctx != NULL)
-        BN_CTX_free(ctx);
-
-    return (okay);
-}
-*/
-
 class key_error : public std::runtime_error
 {
 public:
@@ -96,8 +56,6 @@ protected:
 
 
 public:
-    typedef std::shared_ptr<CKey> pointer;
-
     CKey ()
     {
         pkey = EC_KEY_new_by_curve_name (NID_secp256k1);
@@ -143,7 +101,6 @@ public:
     static EC_KEY* GenerateRootPubKey (BIGNUM* pubGenerator);
     static EC_KEY* GeneratePublicDeterministicKey (RippleAddress const& generator, int n);
     static EC_KEY* GeneratePrivateDeterministicKey (RippleAddress const& family, const BIGNUM* rootPriv, int n);
-    static EC_KEY* GeneratePrivateDeterministicKey (RippleAddress const& family, uint256 const& rootPriv, int n);
 
     CKey (const uint128& passPhrase) : fSet (false)
     {
@@ -172,23 +129,6 @@ public:
     {
         // XXX Broken pkey is null.
         SetPrivateKeyU (privateKey);
-    }
-
-#if 0
-    CKey (RippleAddress const& masterKey, int keyNum, bool isPublic) : pkey (nullptr), fSet (false)
-    {
-        if (isPublic)
-            SetPubSeq (masterKey, keyNum);
-        else
-            SetPrivSeq (masterKey, keyNum); // broken, need seed
-
-        fSet = true;
-    }
-#endif
-
-    bool IsNull () const
-    {
-        return !fSet;
     }
 
     void MakeNewKey ()
@@ -255,11 +195,6 @@ public:
         return SetPubKey (&vchPubKey[0], vchPubKey.size ());
     }
 
-    bool SetPubKey (std::string const& pubKey)
-    {
-        return SetPubKey (pubKey.data (), pubKey.size ());
-    }
-
     Blob GetPubKey () const
     {
         unsigned int nSize = i2o_ECPublicKey (pkey, nullptr);
@@ -306,11 +241,6 @@ public:
     bool Verify (uint256 const& hash, Blob const& vchSig) const
     {
         return Verify (hash, &vchSig[0], vchSig.size ());
-    }
-
-    bool Verify (uint256 const& hash, std::string const& sig) const
-    {
-        return Verify (hash, sig.data (), sig.size ());
     }
 
     // ECIES functions. These throw on failure
