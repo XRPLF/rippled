@@ -35,15 +35,15 @@ class ResolverImpl
 public:
     typedef std::pair <std::string, std::string> HostAndPort;
 
-    beast::Journal m_journal;
+    beast::Journal journal_;
 
-    boost::asio::io_service& m_io_service;
-    boost::asio::io_service::strand m_strand;
-    boost::asio::ip::tcp::resolver m_resolver;
+    boost::asio::io_service& io_service_;
+    boost::asio::io_service::strand strand_;
+    boost::asio::ip::tcp::resolver resolver_;
 
-    beast::WaitableEvent m_stop_complete;
-    std::atomic <bool> m_stop_called;
-    std::atomic <bool> m_stopped;
+    beast::WaitableEvent stop_complete_;
+    std::atomic <bool> stop_called_;
+    std::atomic <bool> stopped_;
 
     // Represents a unit of work for the resolver to do
     struct Work
@@ -62,25 +62,25 @@ public:
         }
     };
 
-    std::deque <Work> m_work;
+    std::deque <Work> work_;
 
     ResolverImpl (boost::asio::io_service& io_service,
         beast::Journal journal)
-            : m_journal (journal)
-            , m_io_service (io_service)
-            , m_strand (io_service)
-            , m_resolver (io_service)
-            , m_stop_complete (true, true)
-            , m_stop_called (false)
-            , m_stopped (true)
+            : journal_ (journal)
+            , io_service_ (io_service)
+            , strand_ (io_service)
+            , resolver_ (io_service)
+            , stop_complete_ (true, true)
+            , stop_called_ (false)
+            , stopped_ (true)
     {
 
     }
 
     ~ResolverImpl ()
     {
-        assert (m_work.empty ());
-        assert (m_stopped);
+        assert (work_.empty ());
+        assert (stopped_);
     }
 
     //--------------------------------------------------------------------------
@@ -91,23 +91,23 @@ public:
 
     void start ()
     {
-        assert (m_stopped.load () == true);
-        assert (m_stop_called.load () == false);
+        assert (stopped_.load () == true);
+        assert (stop_called_.load () == false);
 
-        m_work.clear ();
+        work_.clear ();
 
-        if (m_stopped.exchange (false) == true)
-            m_stop_complete.reset ();
+        if (stopped_.exchange (false) == true)
+            stop_complete_.reset ();
     }
 
     void stop_async ()
     {
-        if (m_stop_called.exchange (true) == false)
+        if (stop_called_.exchange (true) == false)
         {
-            m_io_service.dispatch (m_strand.wrap (std::bind (
+            io_service_.dispatch (strand_.wrap (std::bind (
                 &ResolverImpl::do_stop, this)));
 
-            m_journal.debug << "Queued a stop request";
+            journal_.debug << "Queued a stop request";
         }
     }
 
@@ -115,20 +115,20 @@ public:
     {
         stop_async ();
 
-        m_journal.debug << "Waiting to stop";
-        m_stop_complete.wait();
-        m_journal.debug << "Stopped";
+        journal_.debug << "Waiting to stop";
+        stop_complete_.wait();
+        journal_.debug << "Stopped";
     }
 
     void resolve (
         std::vector <std::string> const& names,
         HandlerType const& handler)
     {
-        assert (m_stop_called == false);
-        assert (m_stopped == true);
+        assert (stop_called_ == false);
+        assert (stopped_ == true);
         assert (!names.empty());
 
-        m_io_service.dispatch (m_strand.wrap (std::bind (
+        io_service_.dispatch (strand_.wrap (std::bind (
             &ResolverImpl::do_resolve, this, names, handler)));
     }
 
@@ -136,15 +136,15 @@ public:
     // Resolver
     void do_stop ()
     {
-        assert (m_stop_called == true);
+        assert (stop_called_ == true);
 
-        if (m_stopped.exchange (true) == false)
-            m_resolver.cancel ();
+        if (stopped_.exchange (true) == false)
+            resolver_.cancel ();
 
         // If the work queue is already empty, then we can signal a stop right
         // away, since nothing else is actively running.
-        if (m_work.empty ())
-            m_stop_complete.signal ();
+        if (work_.empty ())
+            stop_complete_.signal ();
     }
 
     void do_finish (
@@ -155,7 +155,7 @@ public:
     {
         if (ec == boost::asio::error::operation_aborted)
         {
-            m_io_service.post (m_strand.wrap (std::bind (
+            io_service_.post (strand_.wrap (std::bind (
                 &ResolverImpl::do_work, this)));
             return;
         }
@@ -175,7 +175,7 @@ public:
 
         handler (name, addresses);
 
-        m_io_service.post (m_strand.wrap (std::bind (
+        io_service_.post (strand_.wrap (std::bind (
             &ResolverImpl::do_work, this)));
     }
 
@@ -220,38 +220,38 @@ public:
 
     void do_work ()
     {
-        if (m_stop_called && !m_work.empty ())
+        if (stop_called_ && !work_.empty ())
         {
-            m_journal.debug << "Trying to work with stop called. " <<
-                "Flushing " << m_work.size () << " items from work queue.";
-            m_work.clear ();
+            journal_.debug << "Trying to work with stop called. " <<
+                "Flushing " << work_.size () << " items from work queue.";
+            work_.clear ();
         }
 
         // We don't have any more work to do at this time
-        if (m_work.empty ())
+        if (work_.empty ())
         {
-            if (m_stop_called)
-                m_stop_complete.signal ();
+            if (stop_called_)
+                stop_complete_.signal ();
 
             return;
         }
 
-        std::string const name (m_work.front ().names.back());
-        HandlerType handler (m_work.front ().handler);
+        std::string const name (work_.front ().names.back());
+        HandlerType handler (work_.front ().handler);
 
-        m_work.front ().names.pop_back ();
+        work_.front ().names.pop_back ();
 
-        if (m_work.front ().names.empty ())
-            m_work.pop_front();
+        if (work_.front ().names.empty ())
+            work_.pop_front();
 
         HostAndPort const hp (parseName (name));
 
         if (hp.first.empty ())
         {
-            m_journal.error <<
+            journal_.error <<
                 "Unable to parse '" << name << "'";
 
-            m_io_service.post (m_strand.wrap (std::bind (
+            io_service_.post (strand_.wrap (std::bind (
                 &ResolverImpl::do_work, this)));
 
             return;
@@ -260,7 +260,7 @@ public:
         boost::asio::ip::tcp::resolver::query query (
             hp.first, hp.second);
 
-        m_resolver.async_resolve (query, std::bind (
+        resolver_.async_resolve (query, std::bind (
             &ResolverImpl::do_finish, this, name,
                 beast::asio::placeholders::error, handler,
                     beast::asio::placeholders::iterator));
@@ -272,18 +272,18 @@ public:
     {
         assert (! names.empty());
 
-        if (m_stop_called)
+        if (stop_called_)
             return;
 
-        m_work.emplace_back (names, handler);
+        work_.emplace_back (names, handler);
 
-        m_journal.debug <<
+        journal_.debug <<
             "Queued new job with " << names.size() <<
-            " tasks. " << m_work.size() << " jobs outstanding.";
+            " tasks. " << work_.size() << " jobs outstanding.";
 
-        if (m_work.size() == 1)
+        if (work_.size() == 1)
         {
-            m_io_service.post (m_strand.wrap (std::bind (
+            io_service_.post (strand_.wrap (std::bind (
                 &ResolverImpl::do_work, this)));
         }
     }
