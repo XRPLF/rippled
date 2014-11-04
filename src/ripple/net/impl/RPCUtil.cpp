@@ -20,6 +20,7 @@
 #include <ripple/common/jsonrpc_fields.h>
 #include <ripple/data/protocol/BuildInfo.h>
 #include <ripple/core/SystemParameters.h>
+#include <websocket/src/base64/base64.h>
 
 namespace ripple {
 
@@ -42,25 +43,6 @@ std::string getHTTPHeaderTimestamp ()
         "Date: %a, %d %b %Y %H:%M:%S +0000\r\n",
         now_gmt);
     return std::string (buffer);
-}
-
-std::string DecodeBase64 (std::string s)
-{
-    // FIXME: This performs badly
-    BIO* b64, *bmem;
-
-    char* buffer = static_cast<char*> (calloc (s.size (), sizeof (char)));
-
-    b64 = BIO_new (BIO_f_base64 ());
-    BIO_set_flags (b64, BIO_FLAGS_BASE64_NO_NL);
-    bmem = BIO_new_mem_buf (const_cast<char*> (s.data ()), s.size ());
-    bmem = BIO_push (b64, bmem);
-    BIO_read (bmem, buffer, s.size ());
-    BIO_free_all (bmem);
-
-    std::string result (buffer);
-    free (buffer);
-    return std::move (result);
 }
 
 } // namespace
@@ -198,7 +180,7 @@ bool HTTPAuthorized (HTTPHeaders const& mapHeaders)
 
     std::string strUserPass64 = it->second.substr (6);
     boost::trim (strUserPass64);
-    std::string strUserPass = DecodeBase64 (strUserPass64);
+    std::string strUserPass = base64_decode (strUserPass64);
     std::string::size_type nColon = strUserPass.find (":");
 
     if (nColon == std::string::npos)
