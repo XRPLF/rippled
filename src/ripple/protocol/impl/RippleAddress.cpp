@@ -32,6 +32,21 @@
 
 namespace ripple {
 
+// <-- seed
+static uint128 PassPhraseToKey (std::string const& passPhrase)
+{
+    Serializer s;
+
+    s.addRaw (passPhrase);
+    // NIKB TODO this caling sequence is a bit ugly; this should be improved.
+    uint256 hash256 = s.getSHA512Half ();
+    uint128 ret (uint128::fromVoid (hash256.data()));
+
+    s.secureErase ();
+
+    return ret;
+}
+
 RippleAddress::RippleAddress ()
     : mIsValid (false)
 {
@@ -807,7 +822,7 @@ bool RippleAddress::setSeedGeneric (std::string const& strText)
     }
     else
     {
-        setSeed (CKey::PassPhraseToKey (strText));
+        setSeed (PassPhraseToKey (strText));
     }
 
     return bResult;

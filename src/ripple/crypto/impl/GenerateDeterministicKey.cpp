@@ -28,22 +28,6 @@ namespace ripple {
 
 // Functions to add CKey support for deterministic EC keys
 
-// <-- seed
-uint128 CKey::PassPhraseToKey (std::string const& passPhrase)
-{
-    // VFALCO NOTE This is a bad dependency, CKey shouldn't need it
-    Serializer s;
-
-    s.addRaw (passPhrase);
-    // NIKB TODO this caling sequence is a bit ugly; this should be improved.
-    uint256 hash256 = s.getSHA512Half ();
-    uint128 ret (uint128::fromVoid (hash256.data()));
-
-    s.secureErase ();
-
-    return ret;
-}
-
 // --> seed
 // <-- private root generator + public root generator
 EC_KEY* CKey::GenerateRootDeterministicKey (uint128 const& seed)

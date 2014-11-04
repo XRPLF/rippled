@@ -89,7 +89,6 @@ public:
     }
 
 
-    static uint128 PassPhraseToKey (std::string const& passPhrase);
     static EC_KEY* GenerateRootDeterministicKey (const uint128& passPhrase);
     static EC_KEY* GenerateRootPubKey (BIGNUM* pubGenerator);
     static EC_KEY* GeneratePublicDeterministicKey (Blob const& generator, int n);
