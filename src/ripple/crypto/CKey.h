@@ -26,8 +26,8 @@
 #define RIPPLE_CRYPTO_CKEY_H_INCLUDED
 
 #include <ripple/crypto/ECDSACanonical.h>
+#include <ripple/crypto/GenerateDeterministicKey.h>
 #include <ripple/types/base_uint.h>
-#include <openssl/ec.h>
 #include <openssl/ecdsa.h>
 #include <openssl/hmac.h>
 
@@ -88,11 +88,6 @@ public:
         EC_KEY_free (pkey);
     }
 
-
-    static EC_KEY* GenerateRootDeterministicKey (const uint128& passPhrase);
-    static EC_KEY* GenerateRootPubKey (BIGNUM* pubGenerator);
-    static EC_KEY* GeneratePublicDeterministicKey (Blob const& generator, int n);
-    static EC_KEY* GeneratePrivateDeterministicKey (Blob const& family, const BIGNUM* rootPriv, int n);
 
     CKey (const uint128& passPhrase)
     {

@@ -17,8 +17,9 @@
 */
 //==============================================================================
 
+#include <ripple/crypto/GenerateDeterministicKey.h>
+
 #include <ripple/crypto/CBigNum.h>
-#include <ripple/crypto/CKey.h>
 #include <ripple/protocol/Serializer.h>
 #include <string>
 
@@ -26,11 +27,11 @@ namespace ripple {
 
 // #define EC_DEBUG
 
-// Functions to add CKey support for deterministic EC keys
+// Functions to add support for deterministic EC keys
 
 // --> seed
 // <-- private root generator + public root generator
-EC_KEY* CKey::GenerateRootDeterministicKey (uint128 const& seed)
+EC_KEY* GenerateRootDeterministicKey (uint128 const& seed)
 {
     BN_CTX* ctx = BN_CTX_new ();
 
@@ -138,7 +139,7 @@ EC_KEY* CKey::GenerateRootDeterministicKey (uint128 const& seed)
 // Take ripple address.
 // --> root public generator (consumes)
 // <-- root public generator in EC format
-EC_KEY* CKey::GenerateRootPubKey (BIGNUM* pubGenerator)
+static EC_KEY* GenerateRootPubKey (BIGNUM* pubGenerator)
 {
     if (pubGenerator == nullptr)
     {
@@ -203,7 +204,7 @@ static BIGNUM* makeHash (Blob const& pubGen, int seq, BIGNUM const* order)
 }
 
 // --> public generator
-EC_KEY* CKey::GeneratePublicDeterministicKey (Blob const& pubGen, int seq)
+EC_KEY* GeneratePublicDeterministicKey (Blob const& pubGen, int seq)
 {
     // publicKey(n) = rootPublicKey EC_POINT_+ Hash(pubHash|seq)*point
     BIGNUM* generator = BN_bin2bn (
@@ -214,7 +215,7 @@ EC_KEY* CKey::GeneratePublicDeterministicKey (Blob const& pubGen, int seq)
     if (generator == nullptr)
         return nullptr;
 
-    EC_KEY*         rootKey     = CKey::GenerateRootPubKey (generator);
+    EC_KEY*         rootKey     = GenerateRootPubKey (generator);
     const EC_POINT* rootPubKey  = EC_KEY_get0_public_key (rootKey);
     BN_CTX*         ctx         = BN_CTX_new ();
     EC_KEY*         pkey        = EC_KEY_new_by_curve_name (NID_secp256k1);
@@ -277,7 +278,7 @@ EC_KEY* CKey::GeneratePublicDeterministicKey (Blob const& pubGen, int seq)
 }
 
 // --> root private key
-EC_KEY* CKey::GeneratePrivateDeterministicKey (Blob const& pubGen, const BIGNUM* rootPrivKey, int seq)
+EC_KEY* GeneratePrivateDeterministicKey (Blob const& pubGen, const BIGNUM* rootPrivKey, int seq)
 {
     // privateKey(n) = (rootPrivateKey + Hash(pubHash|seq)) % order
     BN_CTX* ctx = BN_CTX_new ();

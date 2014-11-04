@@ -2278,6 +2278,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\crypto\ec_key.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\crypto\GenerateDeterministicKey.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\crypto\impl\Base58Data.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
