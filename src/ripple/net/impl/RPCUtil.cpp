@@ -60,7 +60,7 @@ std::string DecodeBase64 (std::string s)
 
     std::string result (buffer);
     free (buffer);
-    return result;
+    return std::move (result);
 }
 
 } // namespace
@@ -78,28 +78,33 @@ std::string createHTTPPost (
     std::string const& strMsg,
     HTTPHeaders const& mapRequestHeaders)
 {
-    std::ostringstream s;
+    std::string s;
 
     // CHECKME this uses a different version than the replies below use. Is
     //         this by design or an accident or should it be using
     //         BuildInfo::getFullVersionString () as well?
 
-    s << "POST "
-      << (strPath.empty () ? "/" : strPath)
-      << " HTTP/1.0\r\n"
-      << "User-Agent: " SYSTEM_NAME "-json-rpc/"
-      << versionNumber << "\r\n"
-      << "Host: " << strHost << "\r\n"
-      << "Content-Type: application/json\r\n"
-      << "Content-Length: " << strMsg.size () << "\r\n"
-      << "Accept: application/json\r\n";
+    s += "POST ";
+    s += strPath.empty () ? "/" : strPath;
+    s += " HTTP/1.0\r\n"
+            "User-Agent: " SYSTEM_NAME "-json-rpc/";
+    s += versionNumber;
+    s += "\r\n"
+            "Host: ";
+    s += strHost;
+    s += "\r\n"
+            "Content-Type: application/json\r\n"
+            "Content-Length: ";
+    s += std::to_string (strMsg.size ());
+    s += "\r\n"
+            "Accept: application/json\r\n";
 
     for (auto const& item : mapRequestHeaders)
-        s << item.first << ": " << item.second << "\r\n";
+        (((s += item.first) += ": ") += item.second) += "\r\n";
 
-    s << "\r\n" << strMsg;
+    (s += "\r\n") += strMsg;
 
-    return s.str ();
+    return std::move (s);
 }
 
 std::string HTTPReply (int nStatus, std::string const& strMsg)
@@ -143,43 +148,41 @@ std::string HTTPReply (int nStatus, std::string const& strMsg)
             "charset=ISO-8859-1'>\r\n"
             "</HEAD>\r\n"
             "<BODY><H1>401 Unauthorized.</H1></BODY>\r\n");
-
-        return ret;
     }
-
-    ret.reserve(256 + strMsg.length());
-
-    switch (nStatus)
+    else
     {
-    case 200: ret.append ("HTTP/1.1 200 OK\r\n"); break;
-    case 400: ret.append ("HTTP/1.1 400 Bad Request\r\n"); break;
-    case 403: ret.append ("HTTP/1.1 403 Forbidden\r\n"); break;
-    case 404: ret.append ("HTTP/1.1 404 Not Found\r\n"); break;
-    case 500: ret.append ("HTTP/1.1 500 Internal Server Error\r\n"); break;
+
+        ret.reserve(256 + strMsg.length());
+
+        switch (nStatus)
+        {
+        case 200: ret.append ("HTTP/1.1 200 OK\r\n"); break;
+        case 400: ret.append ("HTTP/1.1 400 Bad Request\r\n"); break;
+        case 403: ret.append ("HTTP/1.1 403 Forbidden\r\n"); break;
+        case 404: ret.append ("HTTP/1.1 404 Not Found\r\n"); break;
+        case 500: ret.append ("HTTP/1.1 500 Internal Server Error\r\n"); break;
+        }
+
+        ret.append (getHTTPHeaderTimestamp ());
+
+        ret.append ("Connection: Keep-Alive\r\n");
+
+        if (getConfig ().RPC_ALLOW_REMOTE)
+            ret.append ("Access-Control-Allow-Origin: *\r\n");
+
+        ret.append ("Content-Length: ");
+        ret.append (std::to_string(strMsg.size () + 2));
+        ret.append ("\r\n"
+                    "Content-Type: application/json; charset=UTF-8\r\n"
+                    "Server: " SYSTEM_NAME "-json-rpc/");
+        ret.append (BuildInfo::getFullVersionString ());
+        ret.append ("\r\n"
+                    "\r\n");
+        ret.append (strMsg);
+        ret.append ("\r\n");
     }
 
-    ret.append (getHTTPHeaderTimestamp ());
-
-    ret.append ("Connection: Keep-Alive\r\n");
-
-    if (getConfig ().RPC_ALLOW_REMOTE)
-        ret.append ("Access-Control-Allow-Origin: *\r\n");
-
-    ret.append ("Content-Length: ");
-    ret.append (std::to_string(strMsg.size () + 2));
-    ret.append ("\r\n");
-
-    ret.append ("Content-Type: application/json; charset=UTF-8\r\n");
-
-    ret.append ("Server: " SYSTEM_NAME "-json-rpc/");
-    ret.append (BuildInfo::getFullVersionString ());
-    ret.append ("\r\n");
-
-    ret.append ("\r\n");
-    ret.append (strMsg);
-    ret.append ("\r\n");
-
-    return ret;
+    return std::move (ret);
 }
 
 bool HTTPAuthorized (HTTPHeaders const& mapHeaders)
@@ -216,6 +219,13 @@ bool HTTPAuthorized (HTTPHeaders const& mapHeaders)
 // 1.2 spec: http://groups.google.com/group/json-rpc/web/json-rpc-over-http
 //
 
+static std::string toStringWithCarriageReturn (Json::Value const& value)
+{
+    auto s = to_string (value);
+    s += '\n';
+    return std::move (s);
+}
+
 std::string JSONRPCRequest (
     std::string const& method, Json::Value const& params, Json::Value const& id)
 {
@@ -223,7 +233,8 @@ std::string JSONRPCRequest (
     request[jss::method] = method;
     request[jss::params] = params;
     request[jss::id] = id;
-    return to_string (request) + "\n";
+
+    return toStringWithCarriageReturn (request);
 }
 
 std::string JSONRPCReply (
@@ -231,7 +242,8 @@ std::string JSONRPCReply (
 {
     Json::Value reply (Json::objectValue);
     reply[jss::result] = result;
-    return to_string (reply) + "\n";
+
+    return toStringWithCarriageReturn (reply);
 }
 
 } // ripple
