@@ -52,8 +52,6 @@ class CKey
 {
 protected:
     EC_KEY* pkey;
-    bool fSet;
-
 
 public:
     CKey ()
@@ -64,8 +62,6 @@ public:
             throw key_error ("CKey::CKey() : EC_KEY_new_by_curve_name failed");
 
         EC_KEY_set_conv_form (pkey, POINT_CONVERSION_COMPRESSED);
-
-        fSet = false;
     }
 
     CKey (const CKey& b)
@@ -76,8 +72,6 @@ public:
             throw key_error ("CKey::CKey(const CKey&) : EC_KEY_dup failed");
 
         EC_KEY_set_conv_form (pkey, POINT_CONVERSION_COMPRESSED);
-
-        fSet = b.fSet;
     }
 
     CKey& operator= (const CKey& b)
@@ -85,7 +79,6 @@ public:
         if (!EC_KEY_copy (pkey, b.pkey))
             throw key_error ("CKey::operator=(const CKey&) : EC_KEY_copy failed");
 
-        fSet = b.fSet;
         return (*this);
     }
 
@@ -102,30 +95,27 @@ public:
     static EC_KEY* GeneratePublicDeterministicKey (RippleAddress const& generator, int n);
     static EC_KEY* GeneratePrivateDeterministicKey (RippleAddress const& family, const BIGNUM* rootPriv, int n);
 
-    CKey (const uint128& passPhrase) : fSet (false)
+    CKey (const uint128& passPhrase)
     {
         pkey = GenerateRootDeterministicKey (passPhrase);
-        fSet = true;
         assert (pkey);
     }
 
-    CKey (RippleAddress const& generator, int n) : fSet (false)
+    CKey (RippleAddress const& generator, int n)
     {
         // public deterministic key
         pkey = GeneratePublicDeterministicKey (generator, n);
-        fSet = true;
         assert (pkey);
     }
 
-    CKey (RippleAddress const& base, const BIGNUM* rootPrivKey, int n) : fSet (false)
+    CKey (RippleAddress const& base, const BIGNUM* rootPrivKey, int n)
     {
         // private deterministic key
         pkey = GeneratePrivateDeterministicKey (base, rootPrivKey, n);
-        fSet = true;
         assert (pkey);
     }
 
-    CKey (uint256 const& privateKey) : pkey (nullptr), fSet (false)
+    CKey (uint256 const& privateKey) : pkey (nullptr)
     {
         // XXX Broken pkey is null.
         SetPrivateKeyU (privateKey);
@@ -137,7 +127,6 @@ public:
             throw key_error ("CKey::MakeNewKey() : EC_KEY_generate_key failed");
 
         EC_KEY_set_conv_form (pkey, POINT_CONVERSION_COMPRESSED);
-        fSet = true;
     }
 
     // XXX Still used!
@@ -168,7 +157,6 @@ public:
 
         if (bSuccess)
         {
-            fSet = true;
         }
         else if (bThrow)
         {
@@ -186,7 +174,7 @@ public:
             return false;
 
         EC_KEY_set_conv_form (pkey, POINT_CONVERSION_COMPRESSED);
-        fSet = true;
+
         return true;
     }
 
