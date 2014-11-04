@@ -23,62 +23,11 @@
 
 namespace ripple {
 
+namespace {
+
 unsigned int const gMaxHTTPHeaderSize = 0x02000000;
 
-std::string gFormatStr ("v1");
-
-// VFALCO TODO clean up this nonsense
-std::string FormatFullVersion ()
-{
-    return (gFormatStr);
-}
-
-
-Json::Value JSONRPCError (int code, std::string const& message)
-{
-    Json::Value error (Json::objectValue);
-
-    error[jss::code]       = Json::Value (code);
-    error[jss::message]    = Json::Value (message);
-
-    return error;
-}
-
-//
-// HTTP protocol
-//
-// This ain't Apache.  We're just using HTTP header for the length field
-// and to be compatible with other JSON-RPC implementations.
-//
-
-std::string createHTTPPost (
-    std::string const& strHost,
-    std::string const& strPath,
-    std::string const& strMsg,
-    std::map<std::string, std::string> const& mapRequestHeaders)
-{
-    std::ostringstream s;
-
-    // CHECKME this uses a different version than the replies below use. Is
-    //         this by design or an accident or should it be using
-    //         BuildInfo::getFullVersionString () as well?
-
-    s << "POST "
-      << (strPath.empty () ? "/" : strPath)
-      << " HTTP/1.0\r\n"
-      << "User-Agent: " SYSTEM_NAME "-json-rpc/" << FormatFullVersion () << "\r\n"
-      << "Host: " << strHost << "\r\n"
-      << "Content-Type: application/json\r\n"
-      << "Content-Length: " << strMsg.size () << "\r\n"
-      << "Accept: application/json\r\n";
-
-    for (auto const& item : mapRequestHeaders)
-        s << item.first << ": " << item.second << "\r\n";
-
-    s << "\r\n" << strMsg;
-
-    return s.str ();
-}
+std::string versionNumber = "v1";
 
 std::string getHTTPHeaderTimestamp ()
 {
@@ -93,6 +42,64 @@ std::string getHTTPHeaderTimestamp ()
         "Date: %a, %d %b %Y %H:%M:%S +0000\r\n",
         now_gmt);
     return std::string (buffer);
+}
+
+std::string DecodeBase64 (std::string s)
+{
+    // FIXME: This performs badly
+    BIO* b64, *bmem;
+
+    char* buffer = static_cast<char*> (calloc (s.size (), sizeof (char)));
+
+    b64 = BIO_new (BIO_f_base64 ());
+    BIO_set_flags (b64, BIO_FLAGS_BASE64_NO_NL);
+    bmem = BIO_new_mem_buf (const_cast<char*> (s.data ()), s.size ());
+    bmem = BIO_push (b64, bmem);
+    BIO_read (bmem, buffer, s.size ());
+    BIO_free_all (bmem);
+
+    std::string result (buffer);
+    free (buffer);
+    return result;
+}
+
+} // namespace
+
+//
+// HTTP protocol
+//
+// This ain't Apache.  We're just using HTTP header for the length field
+// and to be compatible with other JSON-RPC implementations.
+//
+
+std::string createHTTPPost (
+    std::string const& strHost,
+    std::string const& strPath,
+    std::string const& strMsg,
+    HTTPHeaders const& mapRequestHeaders)
+{
+    std::ostringstream s;
+
+    // CHECKME this uses a different version than the replies below use. Is
+    //         this by design or an accident or should it be using
+    //         BuildInfo::getFullVersionString () as well?
+
+    s << "POST "
+      << (strPath.empty () ? "/" : strPath)
+      << " HTTP/1.0\r\n"
+      << "User-Agent: " SYSTEM_NAME "-json-rpc/"
+      << versionNumber << "\r\n"
+      << "Host: " << strHost << "\r\n"
+      << "Content-Type: application/json\r\n"
+      << "Content-Length: " << strMsg.size () << "\r\n"
+      << "Accept: application/json\r\n";
+
+    for (auto const& item : mapRequestHeaders)
+        s << item.first << ": " << item.second << "\r\n";
+
+    s << "\r\n" << strMsg;
+
+    return s.str ();
 }
 
 std::string HTTPReply (int nStatus, std::string const& strMsg)
@@ -115,24 +122,27 @@ std::string HTTPReply (int nStatus, std::string const& strMsg)
         //         this by design or an accident or should it be using
         //         BuildInfo::getFullVersionString () as well?
         ret.append ("Server: " SYSTEM_NAME "-json-rpc/");
-        ret.append (FormatFullVersion ());
+        ret.append (versionNumber);
         ret.append ("\r\n");
 
         // Be careful in modifying this! If you change the contents you MUST
         // update the Content-Length header as well to indicate the correct
         // size of the data.
-        ret.append ("WWW-Authenticate: Basic realm=\"jsonrpc\"\r\n"
-                    "Content-Type: text/html\r\n"
-                    "Content-Length: 296\r\n"
-                    "\r\n"
-                    "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\"\r\n"
-                    "\"http://www.w3.org/TR/1999/REC-html401-19991224/loose.dtd\">\r\n"
-                    "<HTML>\r\n"
-                    "<HEAD>\r\n"
-                    "<TITLE>Error</TITLE>\r\n"
-                    "<META HTTP-EQUIV='Content-Type' CONTENT='text/html; charset=ISO-8859-1'>\r\n"
-                    "</HEAD>\r\n"
-                    "<BODY><H1>401 Unauthorized.</H1></BODY>\r\n");
+        ret.append (
+            "WWW-Authenticate: Basic realm=\"jsonrpc\"\r\n"
+            "Content-Type: text/html\r\n"
+            "Content-Length: 296\r\n"
+            "\r\n"
+            "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN"
+            "\"\r\n"
+            "\"http://www.w3.org/TR/1999/REC-html401-19991224/loose.dtd\">\r\n"
+            "<HTML>\r\n"
+            "<HEAD>\r\n"
+            "<TITLE>Error</TITLE>\r\n"
+            "<META HTTP-EQUIV='Content-Type' CONTENT='text/html; "
+            "charset=ISO-8859-1'>\r\n"
+            "</HEAD>\r\n"
+            "<BODY><H1>401 Unauthorized.</H1></BODY>\r\n");
 
         return ret;
     }
@@ -172,96 +182,7 @@ std::string HTTPReply (int nStatus, std::string const& strMsg)
     return ret;
 }
 
-int ReadHTTPStatus (std::basic_istream<char>& stream)
-{
-    std::string str;
-    getline (stream, str);
-    std::vector<std::string> vWords;
-    boost::split (vWords, str, boost::is_any_of (" "));
-
-    if (vWords.size () < 2)
-        return 500;
-
-    return atoi (vWords[1].c_str ());
-}
-
-int ReadHTTPHeader (std::basic_istream<char>& stream, std::map<std::string, std::string>& mapHeadersRet)
-{
-    int nLen = 0;
-
-    for (;;)
-    {
-        std::string str;
-        std::getline (stream, str);
-
-        if (str.empty () || str == "\r")
-            break;
-
-        std::string::size_type nColon = str.find (":");
-
-        if (nColon != std::string::npos)
-        {
-            std::string strHeader = str.substr (0, nColon);
-            boost::trim (strHeader);
-            boost::to_lower (strHeader);
-            std::string strValue = str.substr (nColon + 1);
-            boost::trim (strValue);
-            mapHeadersRet[strHeader] = strValue;
-
-            if (strHeader == "content-length")
-                nLen = atoi (strValue.c_str ());
-        }
-    }
-
-    return nLen;
-}
-
-int ReadHTTP (std::basic_istream<char>& stream, std::map<std::string, std::string>& mapHeadersRet,
-              std::string& strMessageRet)
-{
-    mapHeadersRet.clear ();
-    strMessageRet = "";
-
-    // Read status
-    int nStatus = ReadHTTPStatus (stream);
-
-    // Read header
-    int nLen = ReadHTTPHeader (stream, mapHeadersRet);
-
-    if (nLen < 0 || nLen > gMaxHTTPHeaderSize)
-        return 500;
-
-    // Read message
-    if (nLen > 0)
-    {
-        std::vector<char> vch (nLen);
-        stream.read (&vch[0], nLen);
-        strMessageRet = std::string (vch.begin (), vch.end ());
-    }
-
-    return nStatus;
-}
-
-std::string DecodeBase64 (std::string s)
-{
-    // FIXME: This performs badly
-    BIO* b64, *bmem;
-
-    char* buffer = static_cast<char*> (calloc (s.size (), sizeof (char)));
-
-    b64 = BIO_new (BIO_f_base64 ());
-    BIO_set_flags (b64, BIO_FLAGS_BASE64_NO_NL);
-    bmem = BIO_new_mem_buf (const_cast<char*> (s.data ()), s.size ());
-    bmem = BIO_push (b64, bmem);
-    BIO_read (bmem, buffer, s.size ());
-    BIO_free_all (bmem);
-
-    std::string result (buffer);
-    free (buffer);
-    return result;
-}
-
-bool HTTPAuthorized (const std::map<std::string, std::string>& mapHeaders)
+bool HTTPAuthorized (HTTPHeaders const& mapHeaders)
 {
     bool const credentialsRequired (! getConfig().RPC_USER.empty() &&
         ! getConfig().RPC_PASSWORD.empty());
@@ -282,7 +203,8 @@ bool HTTPAuthorized (const std::map<std::string, std::string>& mapHeaders)
 
     std::string strUser = strUserPass.substr (0, nColon);
     std::string strPassword = strUserPass.substr (nColon + 1);
-    return (strUser == getConfig ().RPC_USER) && (strPassword == getConfig ().RPC_PASSWORD);
+    return strUser == getConfig ().RPC_USER &&
+            strPassword == getConfig ().RPC_PASSWORD;
 }
 
 //
@@ -294,21 +216,21 @@ bool HTTPAuthorized (const std::map<std::string, std::string>& mapHeaders)
 // 1.2 spec: http://groups.google.com/group/json-rpc/web/json-rpc-over-http
 //
 
-std::string JSONRPCRequest (std::string const& strMethod, Json::Value const& params, Json::Value const& id)
+std::string JSONRPCRequest (
+    std::string const& method, Json::Value const& params, Json::Value const& id)
 {
     Json::Value request;
-    request[jss::method] = strMethod;
+    request[jss::method] = method;
     request[jss::params] = params;
     request[jss::id] = id;
     return to_string (request) + "\n";
 }
 
-std::string JSONRPCReply (Json::Value const& result, Json::Value const& error, Json::Value const& id)
+std::string JSONRPCReply (
+    Json::Value const& result, Json::Value const& error, Json::Value const& id)
 {
     Json::Value reply (Json::objectValue);
     reply[jss::result] = result;
-    //reply["error"]=error;
-    //reply["id"]=id;
     return to_string (reply) + "\n";
 }
 
