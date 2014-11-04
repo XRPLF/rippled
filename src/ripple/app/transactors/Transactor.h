@@ -63,6 +63,10 @@ protected:
     virtual TER checkSig ();
     virtual TER doApply () = 0;
 
+    TER checkSign ();
+    TER checkSingleSign ();
+    TER checkMultiSign ();
+
     Transactor (
         const SerializedTransaction& txn,
         TransactionEngineParams params,

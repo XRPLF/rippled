@@ -652,12 +652,9 @@ Json::Value transactionSubmitMultiSigned (
             return RPC::make_error (rpcINTERNAL,
                 "Exception while serializing transaction. Are fields missing?");
         }
-
-        {
-            std::string reason;
-            if (!passesLocalChecks (*stpTrans, reason))
-                return RPC::make_error (rpcINVALID_PARAMS, reason);
-        }
+        std::string reason;
+        if (!passesLocalChecks (*stpTrans, reason))
+            return RPC::make_error (rpcINVALID_PARAMS, reason);
     }
 
     // Validate the fields in the serialized transaction.
@@ -692,17 +689,13 @@ Json::Value transactionSubmitMultiSigned (
             return RPC::make_error (rpcINVALID_PARAMS, err.str ());
         }
 
-        // Save the Account for testing against the SigningAccounts.
         if (!stpTrans->isFieldPresent (sfAccount))
             return RPC::missing_field_error (sfAccount.getName ());
     }
+    // Save the Account for testing against the SigningAccounts.
     RippleAddress const txnAccount = stpTrans->getFieldAccount (sfAccount);
 
-    // Check SigningAccounts.  For the moment I'm just going to return an
-    // error if the signature is invalid.  Later (inside the transaction)
-    // we'll need to sum the weights of the signatures and see whether we
-    // equal or exceed the quorum.
-
+    // Check SigningAccounts for valid entries.
     const char* signingAccocuntsArrayName {
         sfSigningAccounts.getJsonName ().c_str ()};
 
@@ -798,50 +791,14 @@ Json::Value transactionSubmitMultiSigned (
                 << ", may not be a signer of a multi-signed transaction.";
             return RPC::make_param_error(err.str ());
         }
-
-        RippleAddress const pubKey = RippleAddress::createAccountPublic (
-            signingAccount.getFieldVL (sfPublicKey));
-
-        // Verify that the Account and PublicKey belong together.
-        std::string const pubHumanAccount = pubKey.humanAccountID ();
-        if (pubHumanAccount != signer.humanAccountID ())
-        {
-            std::ostringstream err;
-            err << "The SignerEntry.Account \"" << signer.humanAccountPublic ()
-                << "\" and the PublicKey do not correlate.";
-            return RPC::make_param_error(err.str ());
-        }
-
-        Blob const signature =
-            signingAccount.getFieldVL (sfMultiSignature);
-        uint256 const trans_hash = stpTrans->getSigningHash ();
-
-        bool validSig = false;
-        try
-        {
-            validSig = pubKey.accountPublicVerify (
-                trans_hash, signature, ECDSA::not_strict);
-        }
-        catch (...)
-        {
-            // We assume any problem lies with the signature.  That's better
-            // than returning "internal error".
-        }
-        if (!validSig)
-        {
-            std::ostringstream err;
-            err << "Invalid MultiSignature for account: "
-                << signer.ToString () << ".";
-            return RPC::make_error (rpcBAD_SIGNATURE, err.str ());
-        }
     }
 
     // SigningAccounts are submitted sorted in Account order.  This
     // assures that the same list will always have the same hash.
     signingAccounts->sort (
         [] (STObject const& a, STObject const& b) {
-            return (a.getFieldAccount (sfAccount).humanAccountID () <
-                b.getFieldAccount (sfAccount).humanAccountID ()); });
+            return (a.getFieldAccount (sfAccount).getAccountID () <
+                b.getFieldAccount (sfAccount).getAccountID ()); });
 
     // There may be no duplicate Accounts in SigningAccounts
     auto const signingAccountsEnd = signingAccounts->end ();
@@ -849,8 +806,8 @@ Json::Value transactionSubmitMultiSigned (
     auto const dupAccountItr = std::adjacent_find (
         signingAccounts->begin (), signingAccountsEnd,
             [] (STObject const& a, STObject const& b) {
-                return (a.getFieldAccount (sfAccount).humanAccountID () ==
-                    b.getFieldAccount (sfAccount).humanAccountID ()); });
+                return (a.getFieldAccount (sfAccount).getAccountID () ==
+                    b.getFieldAccount (sfAccount).getAccountID ()); });
 
     if (dupAccountItr != signingAccountsEnd)
     {
@@ -861,12 +818,8 @@ Json::Value transactionSubmitMultiSigned (
         return RPC::make_param_error(err.str ());
     }
 
-    uint256 const preHash = stpTrans->getSigningHash (); // !!!! DEBUG !!!!
-
     // Insert the SigningAccounts into the transaction.
     stpTrans->setFieldArray (sfSigningAccounts, *signingAccounts);
-
-    uint256 const postHash = stpTrans->getSigningHash (); // !!!! DEBUG !!!!
 
     // Finally, submit the transaction.
     return RPCDetail::transactionSubmitImpl (

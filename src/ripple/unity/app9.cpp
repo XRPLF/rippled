@@ -39,3 +39,4 @@
 #include <ripple/app/transactors/CreateTicket.cpp>
 #include <ripple/app/transactors/CancelTicket.cpp>
 #include <ripple/app/transactors/SetSignerList.cpp>
+#include <ripple/app/transactors/Impl/SignerEntries.cpp>
