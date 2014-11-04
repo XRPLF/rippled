@@ -307,20 +307,12 @@ create_path_test = (pth) ->
     test_alternatives = test_alternatives_factory ledger.pretty_json.bind(ledger),
                                                   ledger.realias_issuer
 
-
     WHAT "#{pth.title}: #{pth.src} sending #{pth.dst}, "+
          "#{pth.send}, via #{pth.via}"
-
-    one_message = (f) ->
-      self.remote._servers[0].once 'before_send_message_for_non_mutators', f
-
-    sent = "TODO: need to patch ripple-lib"
-    one_message (m) -> sent = m
 
     error_info = (m, more) ->
       info =
         path_expected:     pth,
-        path_find_request: sent,
         path_find_updates: messages
 
       extend(info, more) if more?
@@ -333,7 +325,9 @@ create_path_test = (pth) ->
     _dst = UInt160.json_rewrite(pth.dst)
     _amt = Amount.from_json(pth.send)
 
-    # self.server.clear_logs() "TODO: need to patch ripple-lib"
+    assert pth.via?,
+           "`via` must be defined"
+
     pf = self.remote.path_find(_src, _dst, _amt, [{currency: pth.via}])
 
     updates  = 0
@@ -347,13 +341,19 @@ create_path_test = (pth) ->
       done()
 
     pf.on "update", propagates (m) ->                                      # <--
-      # TODO:hack:
-      expand_alternative alt for alt in m.alternatives
+      # TODO:hack:STILL:TODO
 
+      # ND: The story was I developed a shorthand notation as it helped to see
+      # the possible paths, seeing everything in a condensed form, with aliases
+      # instead of rBigZfkunAdresZeseck2aaaa0aapl, and the like. It turned out
+      # that rippled was over-specifying a lot of the information in the paths
+      # returned by the path finding commands, but by the time that was
+      # discovered a lot of the tests were written, so I wrote a routine to fill
+      # in the implied information.
+      expand_alternative alt for alt in m.alternatives
 
       messages[if updates then "update-#{updates}" else 'initial-response'] = m
       updates++
-      # console.log updates
 
       assert m.alternatives.length >= max_seen,
              "Subsequent path_find update' should never have less " +
@@ -361,12 +361,7 @@ create_path_test = (pth) ->
 
       max_seen = m.alternatives.length
 
-      # if updates == 2
-      #   testutils.ledger_close(self.remote, -> )
-
       if updates == 2
-        # "TODO: need to patch ripple-lib"
-        # self.log_pre(self.server.get_logs(), "Server Logs")
 
         if pth.do_send?
           do_send( (ledger.pretty_json.bind ledger), WHAT, self.remote, pth,
@@ -430,7 +425,7 @@ suite_factory = (declaration) ->
       context = @
       @log_what = ->
 
-      testutils.build_setup().call @, ->
+      testutils.build_setup({no_server: declaration.no_server}).call @, ->
         context.ledger = new LedgerState(declaration.ledger,
                                          assert,
                                          context.remote,

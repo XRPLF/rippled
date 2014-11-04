@@ -1,4 +1,82 @@
 module.exports = {
+
+  // Suffixing this suite name with _only will run ONLY this test
+  // "Path Tests #6: Two orderbooks _only": {
+
+  // Suffixing this suite name with _skip will skip the test
+  // "Path Tests #6: Two orderbooks _skip": {
+
+  "Path Tests #6: Two orderbooks": {
+    // Maybe don't want to spawn the server, as we want to run the server under
+    // gdb or some other debugger.
+    // We can run `build/rippled -a --conf tmp/server/alpha/rippled.cfg`
+    no_server: false,
+
+    ledger: {
+      // Set path to dump a full ledger after setup via `ledger` rpc request
+      // Includes this structure plus a realiased accountState (as well as
+      // unmodified).
+      // dump_ledger: "/some/path/ledger-dump.json",
+
+      // This will dump an equivalent rpc script, which will do the setting up.
+      // dump_setup_script: "/some/path/some-script.sh",
+
+      accounts: {
+        Alice: {
+          balance: ["1000.0", "1/FOO/GW1"],
+          // We only need to specify the trust if we need a trust greater
+          // than the balance.
+          // trusts: ["1/FOO/GW1"]
+        },
+
+        Mark: {
+          balance: ["1000.0", "1/FOO/GW2", "1/FOO/GW3"],
+          // We only need to specify the trust if we need a trust greater
+          // than the balance.
+          // trusts: ["1/FOO/GW2", "1/FOO/GW3"],
+
+                  // Pays          Gets
+          offers: [["1/FOO/GW1", "1/FOO/GW2"],
+                   ["1/FOO/GW2", "1/FOO/GW3"]]
+        },
+
+        GW1: {balance: ["1000.0"]},
+        GW2: {balance: ["1000.0"]},
+        GW3: {balance: ["1000.0"]}
+      }
+    },
+    paths_expected: {
+      A1: {
+        "E) user to gateway to gateyway to user": {
+          comment: 'Source -> OB -> OB -> Destination',
+          src: "Alice",
+          // destination_amount
+          send: "1/FOO/GW3",
+          // destination account
+          dst: "GW3",
+          // specify as source currency (non optional)
+          via: "FOO",
+          // will dump more information
+          debug: false,
+          alternatives: [
+            {
+              // source_amount
+              amount: "1/FOO/Alice",
+
+              paths: [[
+                // Through GW1
+                "FOO/GW1|GW1",
+                // Through Orderbook
+                "FOO/GW2|$",
+                // Through Orderbook
+                "FOO/GW3|$"
+              ]]
+            }]
+        }
+      }
+    }
+  },
+
   "Path Tests #1 (XRP -> XRP) and #2 (XRP -> IOU)": {
 
     "ledger": {"accounts": {"A1": {"balance": ["100000.0",

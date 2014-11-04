@@ -1,6 +1,9 @@
 ################################### REQUIRES ###################################
 
 # This gives coffee-script proper file/lines in the exceptions
+{
+  writeFileSync
+}           = require 'fs'
 
 async       = require 'async'
 assert      = require 'assert'
@@ -197,6 +200,7 @@ class AliasManager
     "#{currency}/#{issuer}"
 
   create_issuer_realiaser: ->
+
     users = @config.accounts
     lookup = {}
     accounts = []
@@ -206,7 +210,9 @@ class AliasManager
       lookup[user.account] = name
 
     realias = new RegExp(accounts.join("|"), "g")
-    (str) -> str.replace(realias, (match) ->lookup[match])
+    (str, f) ->
+      f ?= (a) -> a
+      str.replace(realias, (match) -> f(lookup[match]))
 
 ############################# LEDGER STATE COMPILER ############################
 
@@ -412,6 +418,8 @@ exports.LedgerState = class LedgerState
     @am = new AliasManager(@config, @remote, Object.keys(@declaration.accounts))
     @realias_issuer = @am.realias_issuer
 
+  # bound to `this` via => so we can pass it around without having to bind every
+  # time
   pretty_json: (v) =>
     @realias_issuer pretty_json(v)
 
@@ -438,6 +446,8 @@ exports.LedgerState = class LedgerState
     @add_transaction_fees()
 
   compile_to_rpc_commands: ->
+    lines = ['#!/bin/bash']
+
     passphrase = (src) ->
       if src == 'root'
         'masterpassphrase'
@@ -447,47 +457,66 @@ exports.LedgerState = class LedgerState
     make_tx_json = (src, tt) ->
       {"Account": UInt160.json_rewrite(src), "TransactionType": tt}
 
-    submit_line = (src, tx_json) ->
-      "build/rippled submit #{passphrase(src)} '#{JSON.stringify tx_json}'"
+    submit_line = (src, tx_json) =>
+      # prefix any aliases with $ for later use as an environment variable
+      f = (a) -> "$#{a}"
+      "submit #{passphrase(src)} '#{@realias_issuer(pretty_json(tx_json), f)}'"
 
-    lines = []
-    ledger_accept = -> lines.push('build/rippled ledger_accept')
+    L = (l) -> lines.push l
+    separator = -> L('')
+    ledger_accept = ->
+      separator()
+      L('$RIPPLED ledger_accept')
+      separator()
 
+    separator()
+    L("export RIPPLED='build/gcc.debug/rippled'")
+    separator()
+
+    L("function submit ()")
+    L("{")
+    L('    txn="$(echo $2 | sed \'s/"/\\\\"/g\')"')
+    L('    ${RIPPLED} submit $1 "`eval echo -e $txn`" ')
+    L("}")
+    separator()
+
+    L('# All the accounts used')
+    Object.keys(@accounts).concat('root').forEach (a) ->
+      L("export #{a}='#{UInt160.json_rewrite a}'")
+
+    separator()
+    L('# Funding the accounts via XRP Payment from root')
     for [src, dst, amount] in @xrp_payments
       tx_json = make_tx_json(src, 'Payment')
       tx_json.Destination =  UInt160.json_rewrite dst
       tx_json.Amount = amount.to_json()
-      lines.push submit_line(src, tx_json)
+      L submit_line(src, tx_json)
 
     ledger_accept()
 
+    L('# Setting up trusts')
     for [src, limit] in @trusts
       tx_json = make_tx_json(src, 'TrustSet')
       tx_json.LimitAmount = limit.to_json()
-      lines.push submit_line(src, tx_json)
+      L submit_line(src, tx_json)
 
     ledger_accept()
 
+    L('# Issuing credit')
     for [src, dst, amount] in @iou_payments
       tx_json = make_tx_json(src, 'Payment')
       tx_json.Destination = UInt160.json_rewrite dst
       tx_json.Amount = amount.to_json()
-      lines.push submit_line(src, tx_json)
+      L submit_line(src, tx_json)
 
     ledger_accept()
 
+    L('# Setting up the books')
     for [src, pays, gets, flags] in @offers
       tx = new Transaction({secrets: {}})
       tx.offer_create(src, pays, gets)
       tx.set_flags(flags)
-
-      # console.log tx.tx_json
-      # process.exit()
-
-      # tx_json = make_tx_json(src, 'OfferCreate')
-      # tx_json.TakerPays = pays.to_json()
-      # tx_json.TakerGets = gets.to_json()
-      lines.push submit_line(src, tx.tx_json)
+      L submit_line(src, tx.tx_json)
 
     ledger_accept()
     lines.join('\n')
@@ -568,6 +597,29 @@ exports.LedgerState = class LedgerState
             cb)
       (cb) ->
         testutils.ledger_close self.remote, cb
+
+      (cb) =>
+        to = @declaration.dump_ledger
+        if to?
+          req = @remote.request_ledger {full: true}
+          req.message.ledger_index = 'validated'
+          req.request (e, m) =>
+            m.ledger.accountStateRealiased = JSON.parse(@pretty_json(
+                                                        m.ledger.accountState))
+            m.ledger.declaration = @declaration
+            ledger_dump = pretty_json m.ledger
+            writeFileSync(to, ledger_dump)
+            cb()
+        else
+          cb()
+
+      (cb) =>
+        to = @declaration.dump_setup_script
+        if to?
+          writeFileSync(to, @compile_to_rpc_commands())
+
+        cb()
+
     ], (error) ->
       assert !error,
              "There was an error @ #{self.what}"
