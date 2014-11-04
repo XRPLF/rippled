@@ -105,7 +105,6 @@ enum TER    // aka TransactionEngineResult
     tefBAD_AUTH,
     tefBAD_LEDGER,
     tefCREATED,
-    tefDST_TAG_NEEDED,
     tefEXCEPTION,
     tefINTERNAL,
     tefNO_AUTH_REQUIRED,    // Can't set auth if auth is not required.
@@ -193,6 +192,7 @@ enum TER    // aka TransactionEngineResult
     tecNO_ENTRY                 = 140,
     tecINSUFFICIENT_RESERVE     = 141,
     tecNEED_MASTER_KEY          = 142,
+    tecDST_TAG_NEEDED           = 143,
 };
 
 inline bool isTelLocal(TER x)

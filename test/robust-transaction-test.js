@@ -53,26 +53,6 @@ make_suite('Robust transaction submission', function() {
         testutils.create_accounts($.remote, 'root', '20000.0', [ 'alice', 'bob' ], callback);
       },
 
-      function setRequireDestTag(callback) {
-        self.what = 'Set RequireDestTag';
-
-        var tx = $.remote.transaction().account_set('alice');
-        tx.set_flags('RequireDestTag');
-
-        tx.once('submitted', function(m) {
-
-          assert.strictEqual('tesSUCCESS', m.engine_result);
-        });
-
-        tx.once('final', function() {
-          callback();
-        });
-
-        tx.submit();
-
-        testutils.ledger_wait($.remote, tx);
-      },
-
       function sendInvalidTransaction(callback) {
         self.what = 'Send transaction without a destination tag';
 
@@ -83,9 +63,12 @@ make_suite('Robust transaction submission', function() {
         });
 
         tx.once('submitted', function(m) {
-          assert.strictEqual('tefDST_TAG_NEEDED', m.engine_result);
+          assert.strictEqual('tefMAX_LEDGER', m.engine_result);
         });
 
+        // Standalone mode starts with the open ledger as 3, so there's no way
+        // for this to be anything other than tefMAX_LEDGER.
+        tx.lastLedger(1);
         tx.submit();
 
         //Invoke callback immediately
