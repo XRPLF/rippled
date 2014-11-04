@@ -849,11 +849,10 @@ public:
         //        forcing a call to io_service::stop()
         m_io_latency_sampler.cancel ();
 
-        m_resolver->stop_async ();
-
         // NIKB This is a hack - we need to wait for the resolver to
         //      stop. before we stop the io_server_queue or weird
         //      things will happen.
+        m_journal.debug << "Waiting for resolver to stop...";
         m_resolver->stop ();
 
         m_sweepTimer.cancel ();

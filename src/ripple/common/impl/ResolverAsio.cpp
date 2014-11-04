@@ -20,7 +20,6 @@
 #include <ripple/common/ResolverAsio.h>
 #include <beast/asio/IPAddressConversion.h>
 #include <beast/asio/placeholders.h>
-#include <beast/module/asio/AsyncObject.h>
 #include <beast/threads/WaitableEvent.h>
 #include <boost/asio.hpp>
 #include <atomic>
@@ -32,7 +31,6 @@ namespace ripple {
 
 class ResolverAsioImpl
     : public ResolverAsio
-    , public beast::asio::AsyncObject <ResolverAsioImpl>
 {
 public:
     typedef std::pair <std::string, std::string> HostAndPort;
@@ -85,13 +83,6 @@ public:
         assert (m_stopped);
     }
 
-    //-------------------------------------------------------------------------
-    // AsyncObject
-    void asyncHandlersComplete()
-    {
-        m_stop_complete.signal ();
-    }
-
     //--------------------------------------------------------------------------
     //
     // Resolver
@@ -100,14 +91,13 @@ public:
 
     void start ()
     {
-        assert (m_stopped == true);
-        assert (m_stop_called == false);
+        assert (m_stopped.load () == true);
+        assert (m_stop_called.load () == false);
+
+        m_work.clear ();
 
         if (m_stopped.exchange (false) == true)
-        {
             m_stop_complete.reset ();
-            addReference ();
-        }
     }
 
     void stop_async ()
@@ -115,8 +105,7 @@ public:
         if (m_stop_called.exchange (true) == false)
         {
             m_io_service.dispatch (m_strand.wrap (std::bind (
-                &ResolverAsioImpl::do_stop,
-                    this, CompletionCounter (this))));
+                &ResolverAsioImpl::do_stop, this)));
 
             m_journal.debug << "Queued a stop request";
         }
@@ -139,37 +128,37 @@ public:
         assert (m_stopped == true);
         assert (!names.empty());
 
-        // TODO NIKB use rvalue references to construct and move
-        //           reducing cost.
         m_io_service.dispatch (m_strand.wrap (std::bind (
-            &ResolverAsioImpl::do_resolve, this,
-                names, handler, CompletionCounter (this))));
+            &ResolverAsioImpl::do_resolve, this, names, handler)));
     }
 
     //-------------------------------------------------------------------------
     // Resolver
-    void do_stop (CompletionCounter)
+    void do_stop ()
     {
         assert (m_stop_called == true);
 
         if (m_stopped.exchange (true) == false)
-        {
-            m_work.clear ();
             m_resolver.cancel ();
 
-            removeReference ();
-        }
+        // If the work queue is already empty, then we can signal a stop right
+        // away, since nothing else is actively running.
+        if (m_work.empty ())
+            m_stop_complete.signal ();
     }
 
     void do_finish (
         std::string name,
         boost::system::error_code const& ec,
         HandlerType handler,
-        boost::asio::ip::tcp::resolver::iterator iter,
-        CompletionCounter)
+        boost::asio::ip::tcp::resolver::iterator iter)
     {
         if (ec == boost::asio::error::operation_aborted)
+        {
+            m_io_service.post (m_strand.wrap (std::bind (
+                &ResolverAsioImpl::do_work, this)));
             return;
+        }
 
         std::vector <beast::IP::Endpoint> addresses;
 
@@ -187,8 +176,7 @@ public:
         handler (name, addresses);
 
         m_io_service.post (m_strand.wrap (std::bind (
-            &ResolverAsioImpl::do_work, this,
-                CompletionCounter (this))));
+            &ResolverAsioImpl::do_work, this)));
     }
 
     HostAndPort parseName(std::string const& str)
@@ -232,14 +220,23 @@ public:
             std::string (port_first, port_last));
     }
 
-    void do_work (CompletionCounter)
+    void do_work ()
     {
-        if (m_stop_called == true)
-            return;
+        if (m_stop_called && !m_work.empty ())
+        {
+            m_journal.debug << "Trying to work with stop called. " <<
+                "Flushing " << m_work.size () << " items from work queue.";
+            m_work.clear ();
+        }
 
-        // We don't have any work to do at this time
+        // We don't have any more work to do at this time
         if (m_work.empty ())
+        {
+            if (m_stop_called)
+                m_stop_complete.signal ();
+
             return;
+        }
 
         std::string const name (m_work.front ().names.back());
         HandlerType handler (m_work.front ().handler);
@@ -257,8 +254,7 @@ public:
                 "Unable to parse '" << name << "'";
 
             m_io_service.post (m_strand.wrap (std::bind (
-                &ResolverAsioImpl::do_work, this,
-                CompletionCounter (this))));
+                &ResolverAsioImpl::do_work, this)));
 
             return;
         }
@@ -269,29 +265,28 @@ public:
         m_resolver.async_resolve (query, std::bind (
             &ResolverAsioImpl::do_finish, this, name,
                 beast::asio::placeholders::error, handler,
-                    beast::asio::placeholders::iterator,
-                        CompletionCounter (this)));
+                    beast::asio::placeholders::iterator));
     }
 
-    void do_resolve (std::vector <std::string> const& names,
-        HandlerType const& handler, CompletionCounter)
+    void do_resolve (
+        std::vector <std::string> const& names,
+        HandlerType const& handler)
     {
         assert (! names.empty());
 
-        if (m_stop_called == false)
+        if (m_stop_called)
+            return;
+
+        m_work.emplace_back (names, handler);
+
+        m_journal.debug <<
+            "Queued new job with " << names.size() <<
+            " tasks. " << m_work.size() << " jobs outstanding.";
+
+        if (m_work.size() == 1)
         {
-            m_work.emplace_back (names, handler);
-
-            m_journal.debug <<
-                "Queued new job with " << names.size() <<
-                " tasks. " << m_work.size() << " jobs outstanding.";
-
-            if (m_work.size() == 1)
-            {
-                m_io_service.post (m_strand.wrap (std::bind (
-                    &ResolverAsioImpl::do_work, this,
-                        CompletionCounter (this))));
-            }
+            m_io_service.post (m_strand.wrap (std::bind (
+                &ResolverAsioImpl::do_work, this)));
         }
     }
 };
