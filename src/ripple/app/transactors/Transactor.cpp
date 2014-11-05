@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/app/transactors/Transactor.h>
-#include <ripple/app/transactors/Impl/SignerEntries.h>
+#include <ripple/app/transactors/impl/SignerEntries.h>
 #include <ripple/core/Config.h>
 
 namespace ripple {
