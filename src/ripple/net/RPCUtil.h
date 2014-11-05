@@ -22,31 +22,28 @@
 
 namespace ripple {
 
+using HeaderMap = std::map<std::string, std::string>;
+
 // VFALCO TODO Wrap these up into a class. It looks like they just do some
 //             convenience packaging of JSON data from the pieces. It looks
 //             Ripple client protocol-specific.
 //
-extern std::string JSONRPCRequest (std::string const& strMethod, Json::Value const& params,
-                                   Json::Value const& id);
+std::string JSONRPCRequest (
+    std::string const& method, Json::Value const& param, Json::Value const& id);
 
-extern std::string JSONRPCReply (Json::Value const& result, Json::Value const& error, Json::Value const& id);
+std::string JSONRPCReply (
+    Json::Value const& result, Json::Value const& error, Json::Value const& id);
 
-extern Json::Value JSONRPCError (int code, std::string const& message);
+std::string HTTPReply (int nStatus, std::string const& strMsg);
 
-extern std::string createHTTPPost (std::string const& strHost, std::string const& strPath, std::string const& strMsg,
-                                   const std::map<std::string, std::string>& mapRequestHeaders);
+// VFALCO TODO Create a HeaderMap class with a nice interface.
+bool HTTPAuthorized (HeaderMap const& mapHeaders);
 
-extern std::string HTTPReply (int nStatus, std::string const& strMsg);
-
-// VFALCO TODO Create a HTTPHeaders class with a nice interface instead of the std::map
-//
-extern bool HTTPAuthorized (std::map <std::string, std::string> const& mapHeaders);
-
-// VFALCO NOTE This one looks like it does some sort of stream i/o
-//
-extern int ReadHTTP (std::basic_istream<char>& stream,
-                     std::map<std::string, std::string>& mapHeadersRet,
-                     std::string& strMessageRet);
+std::string createHTTPPost (
+    std::string const& host,
+    std::string const& path,
+    std::string const& msg,
+    HeaderMap const& requestHeaders);
 
 } // ripple
 
