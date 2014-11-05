@@ -65,7 +65,6 @@ custom fields to communicate protocol specific information:
 GET / HTTP/1.1
 User-Agent: Ripple-0.26.0
 Local-Address: 192.168.0.101:8421
-Remote-Address: 208.239.76.97:51234
 Upgrade: Ripple/1.2, Ripple/1.3
 Connection: Upgrade
 Connect-As: Leaf, Peer
@@ -81,8 +80,7 @@ HTTP response indicating the connection status:
 ```
 HTTP/1.1 101 Switching Protocols
 Server: Ripple-0.26.5
-Local-Address: 192.168.0.101:8421
-Remote-Address: 63.104.209.13:8421
+Remote-Address: 63.104.209.13
 Upgrade: Ripple/1.2
 Connection: Upgrade
 Connect-As: Leaf
@@ -99,8 +97,7 @@ servers that may have open slots:
 ```
 HTTP/1.1 503 Service Unavailable
 Server: Ripple-0.26.5
-Local-Address: 192.168.0.101:8421
-Remote-Address: 63.104.209.13:8421
+Remote-Address: 63.104.209.13
 Content-Length: 253
 Content-Type: application/json
 {"peer-ips":["54.68.219.39:51235","54.187.191.179:51235",
@@ -131,17 +128,12 @@ Content-Type: application/json
     Contains information about the software providing the response. The
     specification is identical to RFC2616 Section 14.38.
 
-* `Local-Address` (optional)
-
-    This field must be present and contain the string representation of the
-    IP and port address of the local end of the connection as seen by the peer.
-
 * `Remote-Address` (optional)
 
-    This field must be present and contain the string representation of the
-    IP and port address of the remote end of the connection as seen by the peer.
+    This optional field contains the string representation of the IP
+    address of the remote end of the connection as seen by the peer.
     By observing values of this field from a sufficient number of different
-    servers, a peer can deduce its own IP address.
+    servers, a peer making outgoing connections can deduce its own IP address.
 
 * `Upgrade`
 
