@@ -98,7 +98,7 @@ bool RippleAddress::isSet () const
 // NodePublic
 //
 
-uint160 Hash160 (Blob const& vch)
+static uint160 Hash160 (Blob const& vch)
 {
     uint256 hash1;
     SHA256 (vch.data (), vch.size (), hash1.data ());
