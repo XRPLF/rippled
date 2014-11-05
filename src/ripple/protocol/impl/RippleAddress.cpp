@@ -50,38 +50,6 @@ bool RippleAddress::isSet () const
     return nVersion != VER_NONE;
 }
 
-std::string RippleAddress::humanAddressType () const
-{
-    switch (nVersion)
-    {
-    case VER_NONE:
-        return "VER_NONE";
-
-    case VER_NODE_PUBLIC:
-        return "VER_NODE_PUBLIC";
-
-    case VER_NODE_PRIVATE:
-        return "VER_NODE_PRIVATE";
-
-    case VER_ACCOUNT_ID:
-        return "VER_ACCOUNT_ID";
-
-    case VER_ACCOUNT_PUBLIC:
-        return "VER_ACCOUNT_PUBLIC";
-
-    case VER_ACCOUNT_PRIVATE:
-        return "VER_ACCOUNT_PRIVATE";
-
-    case VER_FAMILY_GENERATOR:
-        return "VER_FAMILY_GENERATOR";
-
-    case VER_FAMILY_SEED:
-        return "VER_FAMILY_SEED";
-    }
-
-    return "unknown";
-}
-
 //
 // NodePublic
 //
