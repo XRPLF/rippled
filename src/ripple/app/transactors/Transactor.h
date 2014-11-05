@@ -52,6 +52,13 @@ protected:
     beast::Journal m_journal;
 
     virtual TER preCheck ();
+
+    TER preCheckSign ();
+private:
+    TER preCheckSingleSign ();
+    TER preCheckMultiSign ();
+
+protected:
     virtual TER checkSeq ();
     virtual TER payFee ();
 
@@ -60,13 +67,16 @@ protected:
     // Returns the fee, not scaled for load (Should be in fee units. FIXME)
     virtual std::uint64_t calculateBaseFee ();
 
-    virtual TER checkSig ();
-    virtual TER doApply () = 0;
-
-    TER checkSign ();
+protected:
+    virtual TER checkSign ();
+private:
     TER checkSingleSign ();
     TER checkMultiSign ();
 
+protected:
+    virtual TER doApply () = 0;
+
+protected:
     Transactor (
         const SerializedTransaction& txn,
         TransactionEngineParams params,
