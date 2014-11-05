@@ -127,7 +127,7 @@ class Writer
 public:
     enum CollectionType {array, object};
 
-    explicit Writer (Output& output);
+    explicit Writer (Output output);
     Writer(Writer&&);
     Writer& operator=(Writer&&);
 
