@@ -24,11 +24,11 @@ namespace ripple {
 // This interface is deprecated.
 Json::Value doRipplePathFind (RPC::Context& context)
 {
-    RPC::LegacyPathFind lpf (context.role_ == Config::ADMIN);
+    RPC::LegacyPathFind lpf (context.role == Config::ADMIN);
     if (!lpf.isOk ())
         return rpcError (rpcTOO_BUSY);
 
-    context.loadType_ = Resource::feeHighBurdenRPC;
+    context.loadType = Resource::feeHighBurdenRPC;
 
     RippleAddress raSrc;
     RippleAddress raDst;
@@ -38,41 +38,41 @@ Json::Value doRipplePathFind (RPC::Context& context)
     Json::Value jvResult;
 
     if (getConfig().RUN_STANDALONE ||
-        context.params_.isMember(jss::ledger) ||
-        context.params_.isMember(jss::ledger_index) ||
-        context.params_.isMember(jss::ledger_hash))
+        context.params.isMember(jss::ledger) ||
+        context.params.isMember(jss::ledger_index) ||
+        context.params.isMember(jss::ledger_hash))
     {
         // The caller specified a ledger
         jvResult = RPC::lookupLedger (
-            context.params_, lpLedger, context.netOps_);
+            context.params, lpLedger, context.netOps);
         if (!lpLedger)
             return jvResult;
     }
 
-    if (!context.params_.isMember ("source_account"))
+    if (!context.params.isMember ("source_account"))
     {
         jvResult = rpcError (rpcSRC_ACT_MISSING);
     }
-    else if (!context.params_["source_account"].isString ()
+    else if (!context.params["source_account"].isString ()
              || !raSrc.setAccountID (
-                 context.params_["source_account"].asString ()))
+                 context.params["source_account"].asString ()))
     {
         jvResult = rpcError (rpcSRC_ACT_MALFORMED);
     }
-    else if (!context.params_.isMember ("destination_account"))
+    else if (!context.params.isMember ("destination_account"))
     {
         jvResult = rpcError (rpcDST_ACT_MISSING);
     }
-    else if (!context.params_["destination_account"].isString ()
+    else if (!context.params["destination_account"].isString ()
              || !raDst.setAccountID (
-                 context.params_["destination_account"].asString ()))
+                 context.params["destination_account"].asString ()))
     {
         jvResult = rpcError (rpcDST_ACT_MALFORMED);
     }
     else if (
         // Parse saDstAmount.
-        !context.params_.isMember ("destination_amount")
-        || ! amountFromJsonNoThrow(saDstAmount, context.params_["destination_amount"])
+        !context.params.isMember ("destination_amount")
+        || ! amountFromJsonNoThrow(saDstAmount, context.params["destination_amount"])
         || saDstAmount <= zero
         || (!isXRP(saDstAmount.getCurrency ())
             && (!saDstAmount.getIssuer () ||
@@ -83,9 +83,9 @@ Json::Value doRipplePathFind (RPC::Context& context)
     }
     else if (
         // Checks on source_currencies.
-        context.params_.isMember ("source_currencies")
-        && (!context.params_["source_currencies"].isArray ()
-            || !context.params_["source_currencies"].size ())
+        context.params.isMember ("source_currencies")
+        && (!context.params["source_currencies"].isArray ()
+            || !context.params["source_currencies"].size ())
         // Don't allow empty currencies.
     )
     {
@@ -94,7 +94,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
     }
     else
     {
-        context.loadType_ = Resource::feeHighBurdenRPC;
+        context.loadType = Resource::feeHighBurdenRPC;
         RippleLineCache::pointer cache;
 
         if (lpLedger)
@@ -107,15 +107,15 @@ Json::Value doRipplePathFind (RPC::Context& context)
         {
             // The closed ledger is recent and any nodes made resident
             // have the best chance to persist
-            lpLedger = context.netOps_.getClosedLedger();
+            lpLedger = context.netOps.getClosedLedger();
             cache = getApp().getPathRequests().getLineCache(lpLedger, false);
         }
 
         Json::Value     jvSrcCurrencies;
 
-        if (context.params_.isMember ("source_currencies"))
+        if (context.params.isMember ("source_currencies"))
         {
-            jvSrcCurrencies = context.params_["source_currencies"];
+            jvSrcCurrencies = context.params["source_currencies"];
         }
         else
         {
@@ -188,17 +188,17 @@ Json::Value doRipplePathFind (RPC::Context& context)
             {
                 ++level;
             }
-            if (context.params_.isMember("depth")
-                && context.params_["depth"].isIntegral())
+            if (context.params.isMember("depth")
+                && context.params["depth"].isIntegral())
             {
-                int rLev = context.params_["search_depth"].asInt ();
-                if ((rLev < level) || (context.role_ == Config::ADMIN))
+                int rLev = context.params["search_depth"].asInt ();
+                if ((rLev < level) || (context.role == Config::ADMIN))
                     level = rLev;
             }
 
-            if (context.params_.isMember("paths"))
+            if (context.params.isMember("paths"))
             {
-                STParsedJSONObject paths ("paths", context.params_["paths"]);
+                STParsedJSONObject paths ("paths", context.params["paths"]);
                 if (paths.object.get() == nullptr)
                     return paths.error;
                 else

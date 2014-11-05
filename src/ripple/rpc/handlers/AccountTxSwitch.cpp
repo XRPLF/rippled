@@ -22,11 +22,11 @@ namespace ripple {
 // Temporary switching code until the old account_tx is removed
 Json::Value doAccountTxSwitch (RPC::Context& context)
 {
-    if (context.params_.isMember("offset") ||
-        context.params_.isMember("count") ||
-        context.params_.isMember("descending") ||
-        context.params_.isMember("ledger_max") ||
-        context.params_.isMember("ledger_min"))
+    if (context.params.isMember("offset") ||
+        context.params.isMember("count") ||
+        context.params.isMember("descending") ||
+        context.params.isMember("ledger_max") ||
+        context.params.isMember("ledger_min"))
     {
         return doAccountTxOld(context);
     }

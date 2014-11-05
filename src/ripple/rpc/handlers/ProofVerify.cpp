@@ -33,29 +33,29 @@ Json::Value doProofVerify (RPC::Context& context)
 
     Json::Value jvResult;
 
-    if (!context.params_.isMember ("token"))
+    if (!context.params.isMember ("token"))
         return RPC::missing_field_error ("token");
 
-    if (!context.params_.isMember ("solution"))
+    if (!context.params.isMember ("solution"))
         return RPC::missing_field_error ("solution");
 
-    std::string strToken = context.params_["token"].asString ();
-    uint256 uSolution (context.params_["solution"].asString ());
+    std::string strToken = context.params["token"].asString ();
+    uint256 uSolution (context.params["solution"].asString ());
 
     PowResult prResult;
 
-    if (context.params_.isMember ("difficulty") ||
-        context.params_.isMember ("secret"))
+    if (context.params.isMember ("difficulty") ||
+        context.params.isMember ("secret"))
     {
         // VFALCO TODO why aren't we using the app's factory?
         auto pgGen = make_ProofOfWorkFactory ();
 
-        if (context.params_.isMember ("difficulty"))
+        if (context.params.isMember ("difficulty"))
         {
-            if (!context.params_["difficulty"].isIntegral ())
+            if (!context.params["difficulty"].isIntegral ())
                 return RPC::invalid_field_error ("difficulty");
 
-            int iDifficulty = context.params_["difficulty"].asInt ();
+            int iDifficulty = context.params["difficulty"].asInt ();
 
             if (iDifficulty < 0 ||
                 iDifficulty > ProofOfWorkFactory::kMaxDifficulty)
@@ -66,9 +66,9 @@ Json::Value doProofVerify (RPC::Context& context)
             pgGen->setDifficulty (iDifficulty);
         }
 
-        if (context.params_.isMember ("secret"))
+        if (context.params.isMember ("secret"))
         {
-            uint256 uSecret (context.params_["secret"].asString ());
+            uint256 uSecret (context.params["secret"].asString ());
             pgGen->setSecret (uSecret);
         }
 

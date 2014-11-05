@@ -23,7 +23,7 @@ namespace ripple {
 Json::Value doLogLevel (RPC::Context& context)
 {
     // log_level
-    if (!context.params_.isMember ("severity"))
+    if (!context.params.isMember ("severity"))
     {
         // get log severities
         Json::Value ret (Json::objectValue);
@@ -42,14 +42,14 @@ Json::Value doLogLevel (RPC::Context& context)
     }
 
     LogSeverity const sv (
-        Logs::fromString (context.params_["severity"].asString ()));
+        Logs::fromString (context.params["severity"].asString ()));
 
     if (sv == lsINVALID)
         return rpcError (rpcINVALID_PARAMS);
 
     auto severity = Logs::toSeverity(sv);
     // log_level severity
-    if (!context.params_.isMember ("partition"))
+    if (!context.params.isMember ("partition"))
     {
         // set base log severity
         deprecatedLogs().severity(severity);
@@ -57,10 +57,10 @@ Json::Value doLogLevel (RPC::Context& context)
     }
 
     // log_level partition severity base?
-    if (context.params_.isMember ("partition"))
+    if (context.params.isMember ("partition"))
     {
         // set partition severity
-        std::string partition (context.params_["partition"].asString ());
+        std::string partition (context.params["partition"].asString ());
 
         if (boost::iequals (partition, "base"))
             deprecatedLogs().severity (severity);

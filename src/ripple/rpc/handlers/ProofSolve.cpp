@@ -27,10 +27,10 @@ Json::Value doProofSolve (RPC::Context& context)
 {
     Json::Value jvResult;
 
-    if (!context.params_.isMember ("token"))
+    if (!context.params.isMember ("token"))
         return RPC::missing_field_error ("token");
 
-    std::string strToken = context.params_["token"].asString ();
+    std::string strToken = context.params["token"].asString ();
 
     if (!ProofOfWork::validateToken (strToken))
         return RPC::invalid_field_error ("token");

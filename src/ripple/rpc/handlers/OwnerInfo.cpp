@@ -27,24 +27,24 @@ namespace ripple {
 Json::Value doOwnerInfo (RPC::Context& context)
 {
     auto lock = getApp().masterLock();
-    if (!context.params_.isMember ("account") &&
-        !context.params_.isMember ("ident"))
+    if (!context.params.isMember ("account") &&
+        !context.params.isMember ("ident"))
     {
         return RPC::missing_field_error ("account");
     }
 
-    std::string strIdent = context.params_.isMember ("account")
-            ? context.params_["account"].asString ()
-            : context.params_["ident"].asString ();
+    std::string strIdent = context.params.isMember ("account")
+            ? context.params["account"].asString ()
+            : context.params["ident"].asString ();
     bool bIndex;
-    int iIndex = context.params_.isMember ("account_index")
-            ? context.params_["account_index"].asUInt () : 0;
+    int iIndex = context.params.isMember ("account_index")
+            ? context.params["account_index"].asUInt () : 0;
     RippleAddress raAccount;
     Json::Value ret;
 
     // Get info on account.
 
-    auto const& closedLedger = context.netOps_.getClosedLedger ();
+    auto const& closedLedger = context.netOps.getClosedLedger ();
     Json::Value jAccepted = RPC::accountFromString (
         closedLedger,
         raAccount,
@@ -52,12 +52,12 @@ Json::Value doOwnerInfo (RPC::Context& context)
         strIdent,
         iIndex,
         false,
-        context.netOps_);
+        context.netOps);
 
-    ret["accepted"] = jAccepted.empty () ? context.netOps_.getOwnerInfo (
+    ret["accepted"] = jAccepted.empty () ? context.netOps.getOwnerInfo (
         closedLedger, raAccount) : jAccepted;
 
-    auto const& currentLedger = context.netOps_.getCurrentLedger ();
+    auto const& currentLedger = context.netOps.getCurrentLedger ();
     Json::Value jCurrent = RPC::accountFromString (
         currentLedger,
         raAccount,
@@ -65,9 +65,9 @@ Json::Value doOwnerInfo (RPC::Context& context)
         strIdent,
         iIndex,
         false,
-        context.netOps_);
+        context.netOps);
 
-    ret["current"] = jCurrent.empty () ? context.netOps_.getOwnerInfo (
+    ret["current"] = jCurrent.empty () ? context.netOps.getOwnerInfo (
         currentLedger, raAccount) : jCurrent;
 
     return ret;
