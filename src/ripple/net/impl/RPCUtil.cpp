@@ -58,7 +58,7 @@ std::string createHTTPPost (
     std::string const& strHost,
     std::string const& strPath,
     std::string const& strMsg,
-    HTTPHeaders const& mapRequestHeaders)
+    HeaderMap const& mapRequestHeaders)
 {
     std::string s;
 
@@ -69,17 +69,17 @@ std::string createHTTPPost (
     s += "POST ";
     s += strPath.empty () ? "/" : strPath;
     s += " HTTP/1.0\r\n"
-            "User-Agent: " SYSTEM_NAME "-json-rpc/";
+         "User-Agent: " SYSTEM_NAME "-json-rpc/";
     s += versionNumber;
     s += "\r\n"
-            "Host: ";
+         "Host: ";
     s += strHost;
     s += "\r\n"
-            "Content-Type: application/json\r\n"
-            "Content-Length: ";
+         "Content-Type: application/json\r\n"
+         "Content-Length: ";
     s += std::to_string (strMsg.size ());
     s += "\r\n"
-            "Accept: application/json\r\n";
+         "Accept: application/json\r\n";
 
     for (auto const& item : mapRequestHeaders)
         (((s += item.first) += ": ") += item.second) += "\r\n";
@@ -133,7 +133,6 @@ std::string HTTPReply (int nStatus, std::string const& strMsg)
     }
     else
     {
-
         ret.reserve(256 + strMsg.length());
 
         switch (nStatus)
@@ -167,7 +166,7 @@ std::string HTTPReply (int nStatus, std::string const& strMsg)
     return ret;
 }
 
-bool HTTPAuthorized (HTTPHeaders const& mapHeaders)
+bool HTTPAuthorized (HeaderMap const& mapHeaders)
 {
     bool const credentialsRequired (! getConfig().RPC_USER.empty() &&
         ! getConfig().RPC_PASSWORD.empty());

@@ -22,7 +22,7 @@
 
 namespace ripple {
 
-using HTTPHeaders = std::map<std::string, std::string>;
+using HeaderMap = std::map<std::string, std::string>;
 
 // VFALCO TODO Wrap these up into a class. It looks like they just do some
 //             convenience packaging of JSON data from the pieces. It looks
@@ -36,14 +36,14 @@ std::string JSONRPCReply (
 
 std::string HTTPReply (int nStatus, std::string const& strMsg);
 
-// VFALCO TODO Create a HTTPHeaders class with a nice interface.
-bool HTTPAuthorized (HTTPHeaders const& mapHeaders);
+// VFALCO TODO Create a HeaderMap class with a nice interface.
+bool HTTPAuthorized (HeaderMap const& mapHeaders);
 
 std::string createHTTPPost (
     std::string const& host,
     std::string const& path,
     std::string const& msg,
-    HTTPHeaders const& requestHeaders);
+    HeaderMap const& requestHeaders);
 
 } // ripple
 
