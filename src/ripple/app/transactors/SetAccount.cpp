@@ -24,8 +24,8 @@ namespace ripple {
 class SetAccount
     : public Transactor
 {
-    static int const DOMAIN_BYTES_MAX = 256;
-    static int const PUBLIC_BYTES_MAX = 33;
+    static std::size_t const DOMAIN_BYTES_MAX = 256;
+    static std::size_t const PUBLIC_BYTES_MAX = 33;
 
 public:
     SetAccount (
@@ -49,7 +49,7 @@ public:
         std::uint32_t uFlagsOut = uFlagsIn;
 
         std::uint32_t const uSetFlag = mTxn.getFieldU32 (sfSetFlag);
-        std::uint32_t const uClearFlag  = mTxn.getFieldU32 (sfClearFlag);
+        std::uint32_t const uClearFlag = mTxn.getFieldU32 (sfClearFlag);
 
         if ((uSetFlag != 0) && (uSetFlag == uClearFlag))
         {
@@ -86,12 +86,11 @@ public:
             if (!mEngine->view().dirIsEmpty (getOwnerDirIndex (mTxnAccountID)))
             {
                 m_journal.trace << "Retry: Owner directory not empty.";
-
                 return (mParams & tapRETRY) ? terOWNERS : tecOWNERS;
             }
 
             m_journal.trace << "Set RequireAuth.";
-            uFlagsOut   |= lsfRequireAuth;
+            uFlagsOut |= lsfRequireAuth;
         }
 
         if (bClearRequireAuth && (uFlagsIn & lsfRequireAuth))
@@ -113,13 +112,13 @@ public:
         if (bSetRequireDest && !(uFlagsIn & lsfRequireDestTag))
         {
             m_journal.trace << "Set lsfRequireDestTag.";
-            uFlagsOut   |= lsfRequireDestTag;
+            uFlagsOut |= lsfRequireDestTag;
         }
 
         if (bClearRequireDest && (uFlagsIn & lsfRequireDestTag))
         {
             m_journal.trace << "Clear lsfRequireDestTag.";
-            uFlagsOut   &= ~lsfRequireDestTag;
+            uFlagsOut &= ~lsfRequireDestTag;
         }
 
         //
@@ -135,24 +134,18 @@ public:
         if (bSetDisallowXRP && !(uFlagsIn & lsfDisallowXRP))
         {
             m_journal.trace << "Set lsfDisallowXRP.";
-            uFlagsOut   |= lsfDisallowXRP;
+            uFlagsOut |= lsfDisallowXRP;
         }
 
         if (bClearDisallowXRP && (uFlagsIn & lsfDisallowXRP))
         {
             m_journal.trace << "Clear lsfDisallowXRP.";
-            uFlagsOut   &= ~lsfDisallowXRP;
+            uFlagsOut &= ~lsfDisallowXRP;
         }
 
         //
         // DisableMaster
         //
-
-        if ((uSetFlag == asfDisableMaster) && (uClearFlag == asfDisableMaster))
-        {
-            m_journal.trace << "Malformed transaction: Contradictory flags set.";
-            return temINVALID_FLAG;
-        }
 
         if ((uSetFlag == asfDisableMaster) && !(uFlagsIn & lsfDisableMaster))
         {
@@ -169,14 +162,14 @@ public:
             uFlagsOut   &= ~lsfDisableMaster;
         }
 
-        if ((uSetFlag == asfNoFreeze) && (uClearFlag != asfNoFreeze))
+        if (uSetFlag == asfNoFreeze)
         {
             m_journal.trace << "Set NoFreeze flag";
             uFlagsOut   |= lsfNoFreeze;
         }
 
         // Anyone may set global freeze
-        if ((uSetFlag == asfGlobalFreeze) && (uClearFlag != asfGlobalFreeze))
+        if (uSetFlag == asfGlobalFreeze)
         {
             m_journal.trace << "Set GlobalFreeze flag";
             uFlagsOut   |= lsfGlobalFreeze;
@@ -196,13 +189,13 @@ public:
         // Track transaction IDs signed by this account in its root
         //
 
-        if ((uSetFlag == asfAccountTxnID) && (uClearFlag != asfAccountTxnID) && !mTxnAccount->isFieldPresent (sfAccountTxnID))
+        if ((uSetFlag == asfAccountTxnID) && !mTxnAccount->isFieldPresent (sfAccountTxnID))
         {
             m_journal.trace << "Set AccountTxnID";
             mTxnAccount->makeFieldPresent (sfAccountTxnID);
          }
 
-        if ((uClearFlag == asfAccountTxnID) && (uSetFlag != asfAccountTxnID) && mTxnAccount->isFieldPresent (sfAccountTxnID))
+        if ((uClearFlag == asfAccountTxnID) && mTxnAccount->isFieldPresent (sfAccountTxnID))
         {
             m_journal.trace << "Clear AccountTxnID";
             mTxnAccount->makeFieldAbsent (sfAccountTxnID);
@@ -214,7 +207,7 @@ public:
 
         if (mTxn.isFieldPresent (sfEmailHash))
         {
-            uint128     uHash   = mTxn.getFieldH128 (sfEmailHash);
+            uint128 const uHash = mTxn.getFieldH128 (sfEmailHash);
 
             if (!uHash)
             {
@@ -234,7 +227,7 @@ public:
 
         if (mTxn.isFieldPresent (sfWalletLocator))
         {
-            uint256     uHash   = mTxn.getFieldH256 (sfWalletLocator);
+            uint256 const uHash = mTxn.getFieldH256 (sfWalletLocator);
 
             if (!uHash)
             {
@@ -254,25 +247,22 @@ public:
 
         if (mTxn.isFieldPresent (sfMessageKey))
         {
-            Blob    vucPublic   = mTxn.getFieldVL (sfMessageKey);
+            Blob messageKey = mTxn.getFieldVL (sfMessageKey);
 
-            if (vucPublic.empty ())
+            if (messageKey.empty ())
             {
                 m_journal.debug << "set message key";
-
                 mTxnAccount->makeFieldAbsent (sfMessageKey);
             }
-            if (vucPublic.size () > PUBLIC_BYTES_MAX)
+            if (messageKey.size () > PUBLIC_BYTES_MAX)
             {
                 m_journal.trace << "message key too long";
-
                 return telBAD_PUBLIC_KEY;
             }
             else
             {
                 m_journal.debug << "set message key";
-
-                mTxnAccount->setFieldVL (sfMessageKey, vucPublic);
+                mTxnAccount->setFieldVL (sfMessageKey, messageKey);
             }
         }
 
@@ -282,25 +272,23 @@ public:
 
         if (mTxn.isFieldPresent (sfDomain))
         {
-            Blob    vucDomain   = mTxn.getFieldVL (sfDomain);
+            Blob const domain = mTxn.getFieldVL (sfDomain);
 
-            if (vucDomain.empty ())
-            {
-                m_journal.trace << "unset domain";
-
-                mTxnAccount->makeFieldAbsent (sfDomain);
-            }
-            else if (vucDomain.size () > DOMAIN_BYTES_MAX)
+            if (domain.size () > DOMAIN_BYTES_MAX)
             {
                 m_journal.trace << "domain too long";
-
                 return telBAD_DOMAIN;
+            }
+
+            if (domain.empty ())
+            {
+                m_journal.trace << "unset domain";
+                mTxnAccount->makeFieldAbsent (sfDomain);
             }
             else
             {
                 m_journal.trace << "set domain";
-
-                mTxnAccount->setFieldVL (sfDomain, vucDomain);
+                mTxnAccount->setFieldVL (sfDomain, domain);
             }
         }
 
@@ -310,7 +298,7 @@ public:
 
         if (mTxn.isFieldPresent (sfTransferRate))
         {
-            std::uint32_t      uRate   = mTxn.getFieldU32 (sfTransferRate);
+            std::uint32_t uRate = mTxn.getFieldU32 (sfTransferRate);
 
             if (!uRate || uRate == QUALITY_ONE)
             {
