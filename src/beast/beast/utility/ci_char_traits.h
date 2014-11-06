@@ -47,83 +47,19 @@ struct ci_less
     }
 };
 
-/** Case-insensitive function object for performing equal to comparisons. */
-struct ci_equal_to
+/** Returns `true` if strings are case-insensitive equal. */
+template <class String>
+bool
+ci_equal(String const& lhs, String const& rhs)
 {
-    static bool const is_transparent = true;
-
-    template <class String>
-    bool
-    operator() (String const& lhs, String const& rhs) const
-    {
-        typedef typename String::value_type char_type;
-        return std::equal (lhs.begin(), lhs.end(), rhs.begin(), rhs.end(),
-            [] (char_type lhs, char_type rhs)
-            {
-                return std::tolower(lhs) == std::tolower(rhs);
-            }
-        );
-    }
-};
-
-// DEPRECATED VFALCO This causes far more problems than it solves!
-//
-/** Case insensitive character traits. */
-struct ci_char_traits : std::char_traits <char>
-{
-    static
-    bool
-    eq (char c1, char c2)
-    {
-        return ::toupper(c1) ==
-               ::toupper(c2);
-    }
-
-    static
-    bool
-    ne (char c1, char c2)
-    {
-        return ::toupper(c1) !=
-               ::toupper(c2);
-    }
-
-    static
-    bool
-    lt (char c1, char c2)
-    {
-        return ::toupper(c1) <
-               ::toupper(c2);
-    }
-
-    static
-    int
-    compare (char const* s1, char const* s2, std::size_t n)
-    {
-        while (n-- > 0)
+    typedef typename String::value_type char_type;
+    return std::equal (lhs.begin(), lhs.end(), rhs.begin(), rhs.end(),
+        [] (char_type lhs, char_type rhs)
         {
-            auto const comp (
-                int(::toupper(*s1++)) -
-                int(::toupper(*s2++)));
-            if (comp != 0)
-                return comp;
+            return std::tolower(lhs) == std::tolower(rhs);
         }
-        return 0;
-    }
-
-    static
-    char const*
-    find (char const* s, int n, char a)
-    {
-        auto const ua (::toupper(a));
-        for (;n--;)
-        {
-            if (::toupper(*s) == ua)
-                return s;
-            s++;
-        }
-        return nullptr;
-    }
-};
+    );
+}
 
 }
 

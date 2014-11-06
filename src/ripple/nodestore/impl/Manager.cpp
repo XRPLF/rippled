@@ -70,12 +70,10 @@ public:
     Factory*
     find (std::string const& name) const
     {
-        beast::ci_equal_to casecmp;
-
         for (List::const_iterator iter (m_list.begin ());
             iter != m_list.end (); ++iter)
         {
-            if (casecmp ((*iter)->getName(), name))
+            if (beast::ci_equal ((*iter)->getName(), name))
                 return iter->get();
         }
         return nullptr;
