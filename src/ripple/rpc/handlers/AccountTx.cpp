@@ -136,7 +136,7 @@ Json::Value doAccountTx (RPC::Context& context)
 
                 if (it.second)
                 {
-                    auto meta_json = it.second->getJson (1);
+                    auto meta = it.second->getJson (1);
 
                     auto const stx = it.first->getSTransaction ();
 
@@ -147,10 +147,10 @@ Json::Value doAccountTx (RPC::Context& context)
                         if (it.second->hasDeliveredAmount ())
                             delivered = it.second->getDeliveredAmount ();
 
-                        meta_json[jss::delivered_amount] = delivered.getJson (1);
+                        meta[jss::delivered_amount] = delivered.getJson (1);
                     }
 
-                    jvObj[jss::meta] = meta_json;
+                    jvObj[jss::meta] = meta;
 
                     std::uint32_t uLedgerIndex = it.second->getLgrSeq ();
 

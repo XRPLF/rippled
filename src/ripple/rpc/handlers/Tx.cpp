@@ -61,13 +61,13 @@ Json::Value doTx (RPC::Context& context)
         }
         else
         {
-            TransactionMetaSet::pointer set;
+            TransactionMetaSet::pointer txMeta;
 
-            if (lgr->getTransactionMeta (txn->getID (), set))
+            if (lgr->getTransactionMeta (txn->getID (), txMeta))
             {
                 okay = true;
 
-                auto meta_json = set->getJson (0);
+                auto meta = txMeta->getJson (0);
 
                 auto const stx = txn->getSTransaction ();
 
@@ -75,13 +75,13 @@ Json::Value doTx (RPC::Context& context)
                 {
                     auto delivered_amount = stx->getFieldAmount (sfAmount);
 
-                    if (set->hasDeliveredAmount ())
-                        delivered_amount = set->getDeliveredAmount ();
+                    if (txMeta->hasDeliveredAmount ())
+                        delivered_amount = txMeta->getDeliveredAmount ();
 
-                    meta_json[jss::delivered_amount] = delivered_amount.getJson (1);
+                    meta[jss::delivered_amount] = delivered_amount.getJson (1);
                 }
 
-                ret[jss::meta] = meta_json;
+                ret[jss::meta] = meta;
             }
         }
 
