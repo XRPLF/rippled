@@ -3252,6 +3252,9 @@
     <ClInclude Include="..\..\src\ripple\crypto\DHUtil.h">
       <Filter>ripple\crypto</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\crypto\ECDSA.h">
+      <Filter>ripple\crypto</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\crypto\ECDSACanonical.h">
       <Filter>ripple\crypto</Filter>
     </ClInclude>
@@ -3271,6 +3274,9 @@
       <Filter>ripple\crypto\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\crypto\impl\DHUtil.cpp">
+      <Filter>ripple\crypto\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\crypto\impl\ECDSA.cpp">
       <Filter>ripple\crypto\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\crypto\impl\ECDSACanonical.cpp">

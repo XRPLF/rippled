@@ -2274,6 +2274,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\crypto\DHUtil.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\crypto\ECDSA.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\crypto\ECDSACanonical.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\crypto\ec_key.h">
@@ -2291,6 +2293,9 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\crypto\impl\DHUtil.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\crypto\impl\ECDSA.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\crypto\impl\ECDSACanonical.cpp">
