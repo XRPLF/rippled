@@ -24,6 +24,8 @@
 #include <string>
 #include <utility>
 
+#include <boost/regex.hpp>
+
 namespace beast {
 namespace http {
 
@@ -228,6 +230,44 @@ for_each_element (FwdIter first, FwdIter last, Function func)
         if (! e.empty())
             func (e);
     }
+}
+
+// Parse a comma-delimited list of values.
+template <class CharT, class Traits, class Allocator>
+std::vector<std::basic_string<CharT, Traits, Allocator>>
+parse_csv (std::basic_string <CharT, Traits, Allocator> const& in,
+    std::ostream& log)
+{
+    auto first = in.cbegin();
+    auto const last = in.cend();
+    std::vector<std::basic_string<CharT, Traits, Allocator>> result;
+    if (first != last)
+    {
+        static boost::regex const re(
+            "^"                         // start of line
+            "(?:\\s*)"                  // whitespace (optional)
+            "([a-zA-Z][_a-zA-Z0-9]*)"   // identifier
+            "(?:\\s*)"                  // whitespace (optional)
+            "(?:,?)"                    // comma (optional)
+            "(?:\\s*)"                  // whitespace (optional)
+            , boost::regex_constants::optimize
+        );
+        for(;;)
+        {
+            boost::smatch m;
+            if (! boost::regex_search(first, last, m, re,
+                boost::regex_constants::match_continuous))
+            {
+                log << "Expected <identifier>\n";
+                throw std::exception();
+            }
+            result.push_back(m[1]);
+            first = m[0].second;
+            if (first == last)
+                break;
+        }
+    }
+    return result;
 }
 
 } // rfc2616
