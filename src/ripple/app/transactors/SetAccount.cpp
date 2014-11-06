@@ -147,12 +147,6 @@ public:
         // DisableMaster
         //
 
-        if ((uSetFlag == asfDisableMaster) && (uClearFlag == asfDisableMaster))
-        {
-            m_journal.trace << "Malformed transaction: Contradictory flags set.";
-            return temINVALID_FLAG;
-        }
-
         if ((uSetFlag == asfDisableMaster) && !(uFlagsIn & lsfDisableMaster))
         {
             if (!mTxnAccount->isFieldPresent (sfRegularKey))
@@ -168,14 +162,14 @@ public:
             uFlagsOut   &= ~lsfDisableMaster;
         }
 
-        if ((uSetFlag == asfNoFreeze) && (uClearFlag != asfNoFreeze))
+        if (uSetFlag == asfNoFreeze)
         {
             m_journal.trace << "Set NoFreeze flag";
             uFlagsOut   |= lsfNoFreeze;
         }
 
         // Anyone may set global freeze
-        if ((uSetFlag == asfGlobalFreeze) && (uClearFlag != asfGlobalFreeze))
+        if (uSetFlag == asfGlobalFreeze)
         {
             m_journal.trace << "Set GlobalFreeze flag";
             uFlagsOut   |= lsfGlobalFreeze;
@@ -195,13 +189,13 @@ public:
         // Track transaction IDs signed by this account in its root
         //
 
-        if ((uSetFlag == asfAccountTxnID) && (uClearFlag != asfAccountTxnID) && !mTxnAccount->isFieldPresent (sfAccountTxnID))
+        if ((uSetFlag == asfAccountTxnID) && !mTxnAccount->isFieldPresent (sfAccountTxnID))
         {
             m_journal.trace << "Set AccountTxnID";
             mTxnAccount->makeFieldPresent (sfAccountTxnID);
          }
 
-        if ((uClearFlag == asfAccountTxnID) && (uSetFlag != asfAccountTxnID) && mTxnAccount->isFieldPresent (sfAccountTxnID))
+        if ((uClearFlag == asfAccountTxnID) && mTxnAccount->isFieldPresent (sfAccountTxnID))
         {
             m_journal.trace << "Clear AccountTxnID";
             mTxnAccount->makeFieldAbsent (sfAccountTxnID);
