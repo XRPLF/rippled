@@ -49,7 +49,7 @@ public:
         std::uint32_t uFlagsOut = uFlagsIn;
 
         std::uint32_t const uSetFlag = mTxn.getFieldU32 (sfSetFlag);
-        std::uint32_t const uClearFlag  = mTxn.getFieldU32 (sfClearFlag);
+        std::uint32_t const uClearFlag = mTxn.getFieldU32 (sfClearFlag);
 
         if ((uSetFlag != 0) && (uSetFlag == uClearFlag))
         {
@@ -90,7 +90,7 @@ public:
             }
 
             m_journal.trace << "Set RequireAuth.";
-            uFlagsOut   |= lsfRequireAuth;
+            uFlagsOut |= lsfRequireAuth;
         }
 
         if (bClearRequireAuth && (uFlagsIn & lsfRequireAuth))
@@ -112,13 +112,13 @@ public:
         if (bSetRequireDest && !(uFlagsIn & lsfRequireDestTag))
         {
             m_journal.trace << "Set lsfRequireDestTag.";
-            uFlagsOut   |= lsfRequireDestTag;
+            uFlagsOut |= lsfRequireDestTag;
         }
 
         if (bClearRequireDest && (uFlagsIn & lsfRequireDestTag))
         {
             m_journal.trace << "Clear lsfRequireDestTag.";
-            uFlagsOut   &= ~lsfRequireDestTag;
+            uFlagsOut &= ~lsfRequireDestTag;
         }
 
         //
@@ -134,13 +134,13 @@ public:
         if (bSetDisallowXRP && !(uFlagsIn & lsfDisallowXRP))
         {
             m_journal.trace << "Set lsfDisallowXRP.";
-            uFlagsOut   |= lsfDisallowXRP;
+            uFlagsOut |= lsfDisallowXRP;
         }
 
         if (bClearDisallowXRP && (uFlagsIn & lsfDisallowXRP))
         {
             m_journal.trace << "Clear lsfDisallowXRP.";
-            uFlagsOut   &= ~lsfDisallowXRP;
+            uFlagsOut &= ~lsfDisallowXRP;
         }
 
         //
@@ -153,26 +153,26 @@ public:
                 return tecNO_REGULAR_KEY;
 
             m_journal.trace << "Set lsfDisableMaster.";
-            uFlagsOut   |= lsfDisableMaster;
+            uFlagsOut |= lsfDisableMaster;
         }
 
         if ((uClearFlag == asfDisableMaster) && (uFlagsIn & lsfDisableMaster))
         {
             m_journal.trace << "Clear lsfDisableMaster.";
-            uFlagsOut   &= ~lsfDisableMaster;
+            uFlagsOut &= ~lsfDisableMaster;
         }
 
         if (uSetFlag == asfNoFreeze)
         {
             m_journal.trace << "Set NoFreeze flag";
-            uFlagsOut   |= lsfNoFreeze;
+            uFlagsOut |= lsfNoFreeze;
         }
 
         // Anyone may set global freeze
         if (uSetFlag == asfGlobalFreeze)
         {
             m_journal.trace << "Set GlobalFreeze flag";
-            uFlagsOut   |= lsfGlobalFreeze;
+            uFlagsOut |= lsfGlobalFreeze;
         }
 
         // If you have set NoFreeze, you may not clear GlobalFreeze
@@ -182,7 +182,7 @@ public:
             ((uFlagsOut & lsfNoFreeze) == 0))
         {
             m_journal.trace << "Clear GlobalFreeze flag";
-            uFlagsOut   &= ~lsfGlobalFreeze;
+            uFlagsOut &= ~lsfGlobalFreeze;
         }
 
         //
@@ -207,7 +207,7 @@ public:
 
         if (mTxn.isFieldPresent (sfEmailHash))
         {
-            uint128     uHash   = mTxn.getFieldH128 (sfEmailHash);
+            uint128 const uHash = mTxn.getFieldH128 (sfEmailHash);
 
             if (!uHash)
             {
@@ -227,7 +227,7 @@ public:
 
         if (mTxn.isFieldPresent (sfWalletLocator))
         {
-            uint256     uHash   = mTxn.getFieldH256 (sfWalletLocator);
+            uint256 const uHash = mTxn.getFieldH256 (sfWalletLocator);
 
             if (!uHash)
             {
@@ -247,15 +247,15 @@ public:
 
         if (mTxn.isFieldPresent (sfMessageKey))
         {
-            Blob    vucPublic   = mTxn.getFieldVL (sfMessageKey);
+            Blob const messageKey = mTxn.getFieldVL (sfMessageKey);
 
-            if (vucPublic.size () > PUBLIC_BYTES_MAX)
+            if (messageKey.size () > PUBLIC_BYTES_MAX)
             {
                 m_journal.trace << "message key too long";
                 return telBAD_PUBLIC_KEY;
             }
 
-            if (vucPublic.empty ())
+            if (messageKey.empty ())
             {
                 m_journal.debug << "set message key";
                 mTxnAccount->makeFieldAbsent (sfMessageKey);
@@ -263,7 +263,7 @@ public:
             else
             {
                 m_journal.debug << "set message key";
-                mTxnAccount->setFieldVL (sfMessageKey, vucPublic);
+                mTxnAccount->setFieldVL (sfMessageKey, messageKey);
             }
         }
 
@@ -273,15 +273,15 @@ public:
 
         if (mTxn.isFieldPresent (sfDomain))
         {
-            Blob    vucDomain   = mTxn.getFieldVL (sfDomain);
+            Blob const domain = mTxn.getFieldVL (sfDomain);
 
-            if (vucDomain.size () > DOMAIN_BYTES_MAX)
+            if (domain.size () > DOMAIN_BYTES_MAX)
             {
                 m_journal.trace << "domain too long";
                 return telBAD_DOMAIN;
             }
 
-            if (vucDomain.empty ())
+            if (domain.empty ())
             {
                 m_journal.trace << "unset domain";
                 mTxnAccount->makeFieldAbsent (sfDomain);
@@ -289,7 +289,7 @@ public:
             else
             {
                 m_journal.trace << "set domain";
-                mTxnAccount->setFieldVL (sfDomain, vucDomain);
+                mTxnAccount->setFieldVL (sfDomain, domain);
             }
         }
 
@@ -299,7 +299,7 @@ public:
 
         if (mTxn.isFieldPresent (sfTransferRate))
         {
-            std::uint32_t      uRate   = mTxn.getFieldU32 (sfTransferRate);
+            std::uint32_t uRate = mTxn.getFieldU32 (sfTransferRate);
 
             if (!uRate || uRate == QUALITY_ONE)
             {
