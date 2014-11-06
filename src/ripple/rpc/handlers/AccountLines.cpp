@@ -74,27 +74,29 @@ void addLine (Json::Value& jsonLines, RippleState const& line)
 // }
 Json::Value doAccountLines (RPC::Context& context)
 {
-    auto& params = context.params_;
+    auto const& params (context.params_);
+    if (! params.isMember (jss::account))
+        return RPC::missing_field_error ("account");
 
     Ledger::pointer ledger;
     Json::Value result (RPC::lookupLedger (params, ledger, context.netOps_));
-
     if (! ledger)
         return result;
-
-    if (! params.isMember (jss::account))
-        return RPC::missing_field_error ("account");
 
     std::string strIdent (params[jss::account].asString ());
     bool bIndex (params.isMember (jss::account_index));
     int iIndex (bIndex ? params[jss::account_index].asUInt () : 0);
     RippleAddress rippleAddress;
 
-    result = RPC::accountFromString (
-        ledger, rippleAddress, bIndex, strIdent, iIndex, false, context.netOps_);
+    Json::Value const jv (RPC::accountFromString (ledger, rippleAddress, bIndex,
+        strIdent, iIndex, false, context.netOps_));
+    if (! jv.empty ())
+    {
+        for (Json::Value::const_iterator it (jv.begin ()); it != jv.end (); ++it)
+            result[it.memberName ()] = it.key ();
 
-    if (! result.empty ())
         return result;
+    }
 
     if (! ledger->hasAccount (rippleAddress))
         return rpcError (rpcACT_NOT_FOUND);
@@ -113,8 +115,8 @@ Json::Value doAccountLines (RPC::Context& context)
         if (bPeerIndex)
             result[jss::peer_index] = iPeerIndex;
 
-        result = RPC::accountFromString (ledger, rippleAddressPeer, bPeerIndex, strPeer,
-            iPeerIndex, false, context.netOps_);
+        result = RPC::accountFromString (ledger, rippleAddressPeer, bPeerIndex,
+            strPeer, iPeerIndex, false, context.netOps_);
 
         if (! result.empty ())
             return result;
@@ -127,9 +129,18 @@ Json::Value doAccountLines (RPC::Context& context)
     unsigned int limit;
     if (params.isMember (jss::limit))
     {
-        limit = std::max (RPC::Tuning::minLinesPerRequest,
-            std::min (params[jss::limit].asUInt (),
-            RPC::Tuning::maxLinesPerRequest));
+        auto const& jvLimit (params[jss::limit]);
+        if (! jvLimit.isIntegral ())
+            return RPC::expected_field_error ("limit", "unsigned integer");
+
+        limit = jvLimit.isUInt () ? jvLimit.asUInt () :
+            std::max (0, jvLimit.asInt ());
+
+        if (context.role_ != Config::ADMIN)
+        {
+            limit = std::max (RPC::Tuning::minLinesPerRequest,
+                std::min (limit, RPC::Tuning::maxLinesPerRequest));
+        }
     }
     else
     {
@@ -150,7 +161,7 @@ Json::Value doAccountLines (RPC::Context& context)
         Json::Value const& marker (params[jss::marker]);
 
         if (! marker.isString ())
-            return rpcError (rpcACT_MALFORMED);
+            return RPC::expected_field_error ("marker", "string");
 
         startAfter.SetHex (marker.asString ());
         SLE::pointer sleLine (ledger->getSLEi (startAfter));
