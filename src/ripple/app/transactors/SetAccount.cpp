@@ -24,8 +24,8 @@ namespace ripple {
 class SetAccount
     : public Transactor
 {
-    static int const DOMAIN_BYTES_MAX = 256;
-    static int const PUBLIC_BYTES_MAX = 33;
+    static std::size_t const DOMAIN_BYTES_MAX = 256;
+    static std::size_t const PUBLIC_BYTES_MAX = 33;
 
 public:
     SetAccount (
@@ -86,7 +86,6 @@ public:
             if (!mEngine->view().dirIsEmpty (Ledger::getOwnerDirIndex (mTxnAccountID)))
             {
                 m_journal.trace << "Retry: Owner directory not empty.";
-
                 return (mParams & tapRETRY) ? terOWNERS : tecOWNERS;
             }
 
@@ -256,22 +255,20 @@ public:
         {
             Blob    vucPublic   = mTxn.getFieldVL (sfMessageKey);
 
+            if (vucPublic.size () > PUBLIC_BYTES_MAX)
+            {
+                m_journal.trace << "message key too long";
+                return telBAD_PUBLIC_KEY;
+            }
+
             if (vucPublic.empty ())
             {
                 m_journal.debug << "set message key";
-
                 mTxnAccount->makeFieldAbsent (sfMessageKey);
-            }
-            else if (vucPublic.size () > PUBLIC_BYTES_MAX)
-            {
-                m_journal.trace << "message key too long";
-
-                return telBAD_PUBLIC_KEY;
             }
             else
             {
                 m_journal.debug << "set message key";
-
                 mTxnAccount->setFieldVL (sfMessageKey, vucPublic);
             }
         }
@@ -284,22 +281,20 @@ public:
         {
             Blob    vucDomain   = mTxn.getFieldVL (sfDomain);
 
+            if (vucDomain.size () > DOMAIN_BYTES_MAX)
+            {
+                m_journal.trace << "domain too long";
+                return telBAD_DOMAIN;
+            }
+
             if (vucDomain.empty ())
             {
                 m_journal.trace << "unset domain";
-
                 mTxnAccount->makeFieldAbsent (sfDomain);
-            }
-            else if (vucDomain.size () > DOMAIN_BYTES_MAX)
-            {
-                m_journal.trace << "domain too long";
-
-                return telBAD_DOMAIN;
             }
             else
             {
                 m_journal.trace << "set domain";
-
                 mTxnAccount->setFieldVL (sfDomain, vucDomain);
             }
         }
