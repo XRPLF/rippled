@@ -253,13 +253,9 @@ public:
     // Book functions
     //
 
-    void getBookPage (Ledger::pointer lpLedger,
-                      Book const&,
-                      Account const& uTakerID,
-                      const bool bProof,
-                      const unsigned int iLimit,
-                      Json::Value const& jvMarker,
-                      Json::Value& jvResult);
+    void getBookPage (bool bAdmin, Ledger::pointer lpLedger, Book const&,
+        Account const& uTakerID, const bool bProof, const unsigned int iLimit,
+            Json::Value const& jvMarker, Json::Value& jvResult);
 
     // ledger proposal/close functions
     void processTrustedProposal (
@@ -3090,6 +3086,7 @@ InfoSub::pointer NetworkOPsImp::addRpcSub (
 //
 // FIXME : support iLimit.
 void NetworkOPsImp::getBookPage (
+    bool bAdmin,
     Ledger::pointer lpLedger,
     Book const& book,
     Account const& uTakerID,
@@ -3127,14 +3124,13 @@ void NetworkOPsImp::getBookPage (
     unsigned int    uBookEntry;
     STAmount        saDirRate;
 
-    unsigned int    iLeft           = iLimit;
-
-    if (iLeft == 0 || iLeft > 300)
-        iLeft = 300;
-
     auto uTransferRate = rippleTransferRate (lesActive, book.out.account);
 
-    while (! bDone && iLeft-- > 0)
+    unsigned int left (iLimit == 0 ? 300 : iLimit);
+    if (! bAdmin && left > 300)
+        left = 300;
+
+    while (!bDone && left-- > 0)
     {
         if (bDirectAdvance)
         {
@@ -3308,6 +3304,7 @@ void NetworkOPsImp::getBookPage (
 
 // FIXME : support iLimit.
 void NetworkOPsImp::getBookPage (
+    bool bAdmin,
     Ledger::pointer lpLedger,
     Book const& book,
     Account const& uTakerID,
@@ -3323,18 +3320,16 @@ void NetworkOPsImp::getBookPage (
     LedgerEntrySet  lesActive (lpLedger, tapNONE, true);
     OrderBookIterator obIterator (lesActive, book);
 
-    unsigned int iLeft = iLimit;
-
-    if (iLeft == 0 || iLeft > 300)
-        iLeft = 300;
-
     auto uTransferRate = rippleTransferRate (lesActive, book.out.account);
 
     const bool bGlobalFreeze = lesActive.isGlobalFrozen (book.out.account) ||
                                lesActive.isGlobalFrozen (book.in.account);
 
+    unsigned int left (iLimit == 0 ? 300 : iLimit);
+    if (! bAdmin && left > 300)
+        left = 300;
 
-    while (iLeft-- > 0 && obIterator.nextOffer ())
+    while (left-- > 0 && obIterator.nextOffer ())
     {
 
         SLE::pointer    sleOffer        = obIterator.getCurrentOffer();
