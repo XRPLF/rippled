@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+#include <ripple/app/ledger/LedgerTiming.h>
+#include <ripple/basics/Log.h>
+
 namespace ripple {
 
 // VFALCO Should rename ContinuousLedgerTiming to LedgerTiming

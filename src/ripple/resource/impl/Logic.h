@@ -20,9 +20,15 @@
 #ifndef RIPPLE_RESOURCE_LOGIC_H_INCLUDED
 #define RIPPLE_RESOURCE_LOGIC_H_INCLUDED
 
-#include <ripple/common/UnorderedContainers.h>
-
+#include <ripple/resource/Fees.h>
+#include <ripple/resource/Gossip.h>
+#include <ripple/resource/impl/Import.h>
+#include <ripple/basics/UnorderedContainers.h>
+#include <ripple/json/json_value.h>
 #include <beast/chrono/abstract_clock.h>
+#include <beast/Insight.h>
+#include <beast/threads/SharedData.h>
+#include <beast/utility/PropertyStream.h>
 
 namespace ripple {
 namespace Resource {

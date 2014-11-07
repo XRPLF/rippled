@@ -17,10 +17,6 @@
 */
 //==============================================================================
 
-#if DOXYGEN
-#include <ripple/server/README.md>
-#endif
-
 #include <ripple/server/impl/ServerImpl.h>
 #include <ripple/server/impl/Peer.h>
 #include <beast/chrono/chrono_io.h>

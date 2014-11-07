@@ -19,6 +19,7 @@
 
 #include <ripple/app/paths/AccountCurrencies.h>
 #include <ripple/app/paths/FindPaths.h>
+#include <ripple/protocol/STParsedJSON.h>
 #include <ripple/rpc/impl/LegacyPathFind.h>
 #include <ripple/server/Role.h>
 

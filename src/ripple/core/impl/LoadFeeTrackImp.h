@@ -20,7 +20,7 @@
 #ifndef RIPPLE_LOADFEETRACKIMP_H_INCLUDED
 #define RIPPLE_LOADFEETRACKIMP_H_INCLUDED
 
-#include <ripple/common/jsonrpc_fields.h>
+#include <ripple/protocol/JsonFields.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <mutex>
 

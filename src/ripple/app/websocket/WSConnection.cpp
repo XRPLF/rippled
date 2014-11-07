@@ -17,7 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/common/jsonrpc_fields.h>
+#include <ripple/net/RPCErr.h>
+#include <ripple/protocol/JsonFields.h>
+#include <ripple/resource/Fees.h>
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/server/Role.h>
 

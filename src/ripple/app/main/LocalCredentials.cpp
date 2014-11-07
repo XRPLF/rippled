@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/basics/StringUtilities.h>
-#include <ripple/common/make_SSLContext.h>
+#include <ripple/basics/make_SSLContext.h>
 #include <ripple/core/Config.h>
 
 namespace ripple {

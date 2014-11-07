@@ -20,6 +20,9 @@
 #ifndef RIPPLE_TXQUEUE_H_INCLUDED
 #define RIPPLE_TXQUEUE_H_INCLUDED
 
+// VFALCO TODO merge TxQueueEntry.h into this file
+#include <ripple/app/tx/TxQueueEntry.h>
+
 namespace ripple {
 
 class TxQueue : beast::LeakChecked <TxQueue>

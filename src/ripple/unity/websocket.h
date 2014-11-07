@@ -25,8 +25,6 @@
   #define __STDC_LIMIT_MACROS
 #endif
 
-#include <ripple/unity/net.h>
-
 #include <beast/module/core/text/LexicalCast.h>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>

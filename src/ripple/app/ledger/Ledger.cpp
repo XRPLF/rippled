@@ -17,13 +17,16 @@
 */
 //==============================================================================
 
+#include <ripple/basics/Log.h>
 #include <ripple/basics/LoggedTimings.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/Time.h>
-#include <ripple/common/jsonrpc_fields.h>
+#include <ripple/protocol/JsonFields.h>
 #include <ripple/core/Config.h>
+#include <ripple/core/JobQueue.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/nodestore/Database.h>
+#include <ripple/protocol/HashPrefix.h>
 #include <beast/unit_test/suite.h>
 #include <boost/date_time/posix_time/posix_time.hpp>
 

@@ -22,12 +22,12 @@
 #include <ripple/server/impl/JSONRPCUtil.h>
 #include <ripple/server/impl/ServerHandlerImp.h>
 #include <ripple/basics/Log.h>
-#include <ripple/common/make_SSLContext.h>
+#include <ripple/basics/make_SSLContext.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/server/make_Server.h>
 #include <ripple/overlay/Overlay.h>
-#include <ripple/resource/api/Manager.h>
-#include <ripple/resource/api/Fees.h>
+#include <ripple/resource/Manager.h>
+#include <ripple/resource/Fees.h>
 #include <beast/cxx14/algorithm.h> // <algorithm>
 #include <boost/algorithm/string.hpp>
 #include <boost/optional.hpp>

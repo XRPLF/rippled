@@ -23,7 +23,7 @@
 #include <ripple/app/shamap/SHAMapNodeID.h>
 #include <ripple/app/shamap/TreeNodeCache.h>
 #include <ripple/basics/CountedObject.h>
-#include <ripple/common/TaggedCache.h>
+#include <ripple/basics/TaggedCache.h>
 
 namespace ripple {
 

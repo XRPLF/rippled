@@ -19,8 +19,11 @@
 
 #include <ripple/app/paths/AccountCurrencies.h>
 #include <ripple/app/paths/FindPaths.h>
+#include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/LoadFeeTrack.h>
+#include <ripple/net/RPCErr.h>
+#include <ripple/rpc/ErrorCodes.h>
 #include <ripple/types/UintTypes.h>
 #include <boost/log/trivial.hpp>
 #include <tuple>

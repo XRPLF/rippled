@@ -17,8 +17,14 @@
 */
 //==============================================================================
 
+#include <ripple/app/shamap/SHAMapNodeID.h>
+#include <ripple/basics/Log.h>
+#include <ripple/core/JobQueue.h>
 #include <ripple/overlay/Overlay.h>
+#include <ripple/resource/Fees.h>
+#include <ripple/protocol/HashPrefix.h>
 #include <ripple/nodestore/Database.h>
+#include <boost/foreach.hpp>
 
 namespace ripple {
 

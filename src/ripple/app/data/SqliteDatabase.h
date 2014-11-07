@@ -21,6 +21,7 @@
 #define RIPPLE_SQLITEDATABASE_H_INCLUDED
 
 #include <beast/threads/Thread.h>
+#include <mutex>
 
 namespace ripple {
 
@@ -80,7 +81,7 @@ private:
     void run ();
     void runWal ();
 
-    typedef RippleMutex LockType;
+    typedef std::mutex LockType;
     typedef std::lock_guard <LockType> ScopedLockType;
     LockType m_walMutex;
 

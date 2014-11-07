@@ -20,7 +20,7 @@
 #ifndef RIPPLE_APP_SHAMAP_TREENODECACHE_H_INCLUDED
 #define RIPPLE_APP_SHAMAP_TREENODECACHE_H_INCLUDED
 
-#include <ripple/common/TaggedCache.h>
+#include <ripple/basics/TaggedCache.h>
 
 namespace ripple {
 

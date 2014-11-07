@@ -22,8 +22,8 @@
 
 #include <ripple/server/ServerHandler.h>
 #include <ripple/overlay/Overlay.h>
-#include <ripple/resource/api/Manager.h>
-#include <ripple/common/Resolver.h>
+#include <ripple/resource/Manager.h>
+#include <ripple/basics/Resolver.h>
 #include <beast/threads/Stoppable.h>
 #include <beast/module/core/files/File.h>
 #include <boost/asio/io_service.hpp>

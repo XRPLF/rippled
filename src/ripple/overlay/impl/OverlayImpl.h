@@ -23,11 +23,11 @@
 #include <ripple/overlay/Overlay.h>
 #include <ripple/server/Handoff.h>
 #include <ripple/server/ServerHandler.h>
-#include <ripple/common/Resolver.h>
-#include <ripple/common/seconds_clock.h>
-#include <ripple/common/UnorderedContainers.h>
+#include <ripple/basics/Resolver.h>
+#include <ripple/basics/seconds_clock.h>
+#include <ripple/basics/UnorderedContainers.h>
 #include <ripple/peerfinder/Manager.h>
-#include <ripple/resource/api/Manager.h>
+#include <ripple/resource/Manager.h>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/context.hpp>
 #include <boost/asio/basic_waitable_timer.hpp>

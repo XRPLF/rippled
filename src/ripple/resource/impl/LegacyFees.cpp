@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/resource/LegacyFees.h>
+
 namespace ripple {
 namespace Resource {
 

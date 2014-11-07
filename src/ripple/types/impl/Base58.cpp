@@ -17,6 +17,11 @@
 */
 //==============================================================================
 
+#include <ripple/crypto/CAutoBN_CTX.h>
+#include <ripple/crypto/CBigNum.h>
+#include <ripple/types/Base58.h>
+#include <openssl/sha.h>
+
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2011 The Bitcoin Developers
 // Distributed under the MIT/X11 software license, see the accompanying

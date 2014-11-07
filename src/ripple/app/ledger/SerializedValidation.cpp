@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/core/Config.h>
+#include <ripple/protocol/HashPrefix.h>
 
 namespace ripple {
 

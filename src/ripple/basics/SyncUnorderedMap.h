@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SYNC_UNORDERED_MAP_H
-#define RIPPLE_SYNC_UNORDERED_MAP_H
+#ifndef RIPPLE_BASICS_SYNCUNORDEREDMAP_H_INCLUDED
+#define RIPPLE_BASICS_SYNCUNORDEREDMAP_H_INCLUDED
 
-#include <ripple/common/UnorderedContainers.h>
+#include <ripple/basics/UnorderedContainers.h>
 #include <mutex>
 
 namespace ripple {

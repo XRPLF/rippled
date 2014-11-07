@@ -17,8 +17,13 @@
 */
 //==============================================================================
 
+#include <ripple/app/misc/ProofOfWorkFactory.h>
+#include <ripple/crypto/RandomNumbers.h>
 #include <beast/unit_test/suite.h>
 #include <boost/algorithm/string.hpp>
+#include <boost/bimap/bimap.hpp>
+#include <boost/bimap/multiset_of.hpp>
+#include <boost/bimap/unordered_set_of.hpp>
 #include <beast/cxx14/memory.h> // <memory>
 
 namespace ripple {
@@ -28,7 +33,7 @@ class ProofOfWorkFactoryImp
     , public beast::LeakChecked <ProofOfWorkFactoryImp>
 {
 public:
-    typedef boost::bimap< boost::bimaps::multiset_of<time_t>,
+    typedef boost::bimaps::bimap< boost::bimaps::multiset_of<time_t>,
         boost::bimaps::unordered_set_of<uint256> > powMap_t;
 
     typedef powMap_t::value_type    powMap_vt;

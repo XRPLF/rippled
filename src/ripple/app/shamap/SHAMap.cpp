@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/basics/Log.h>
 #include <ripple/nodestore/Database.h>
 #include <beast/unit_test/suite.h>
 #include <beast/chrono/manual_clock.h>

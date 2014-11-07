@@ -27,27 +27,25 @@
 struct bignum_st;
 typedef struct bignum_st BIGNUM;
 
-#include <ripple/data/crypto/Base58Data.h>
-#include <ripple/data/crypto/RFC1751.h>
-#include <ripple/data/protocol/BuildInfo.h>
-#include <ripple/data/protocol/SField.h>
-#include <ripple/data/protocol/HashPrefix.h>
-#include <ripple/data/protocol/Protocol.h>
-#include <ripple/data/protocol/RippleAddress.h>
-#include <ripple/data/protocol/Serializer.h> // needs CKey
-#include <ripple/data/protocol/TER.h>
-#include <ripple/data/protocol/SerializedTypes.h> // needs Serializer, TER
-#include <ripple/data/protocol/SerializedObjectTemplate.h>
-#include <ripple/data/protocol/KnownFormats.h>
-#include <ripple/data/protocol/LedgerFormats.h> // needs SOTemplate from SerializedObjectTemplate
-#include <ripple/data/protocol/TxFormats.h>
-#include <ripple/data/protocol/STObject.h>
-#include <ripple/data/protocol/STArray.h>
-#include <ripple/data/protocol/TxFlags.h>
+#include <ripple/crypto/Base58Data.h>
+#include <ripple/crypto/RFC1751.h>
+#include <ripple/protocol/BuildInfo.h>
+#include <ripple/protocol/SField.h>
+#include <ripple/protocol/HashPrefix.h>
+#include <ripple/protocol/Protocol.h>
+#include <ripple/protocol/RippleAddress.h>
+#include <ripple/protocol/Serializer.h> // needs CKey
+#include <ripple/protocol/TER.h>
+#include <ripple/protocol/SerializedTypes.h> // needs Serializer, TER
+#include <ripple/protocol/SerializedObjectTemplate.h>
+#include <ripple/protocol/KnownFormats.h>
+#include <ripple/protocol/LedgerFormats.h> // needs SOTemplate from SerializedObjectTemplate
+#include <ripple/protocol/TxFormats.h>
+#include <ripple/protocol/STObject.h>
+#include <ripple/protocol/STArray.h>
+#include <ripple/protocol/TxFlags.h>
 
-#include <ripple/data/utility/UptimeTimerAdapter.h>
-
-#include <ripple/data/protocol/STParsedJSON.h>
+#include <ripple/protocol/STParsedJSON.h>
 
 //------------------------------------------------------------------------------
 

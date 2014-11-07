@@ -27,9 +27,9 @@
 
 #include <beast/cxx14/memory.h>
 
-#include <ripple/common/seconds_clock.h>
-#include <ripple/common/TaggedCache.h>
-#include <ripple/common/KeyCache.h>
+#include <ripple/basics/seconds_clock.h>
+#include <ripple/basics/TaggedCache.h>
+#include <ripple/basics/KeyCache.h>
 
 #include <ripple/nodestore/impl/Tuning.h>
 #include <ripple/nodestore/impl/DecodedBlob.h>

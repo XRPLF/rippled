@@ -20,7 +20,7 @@
 #ifndef RIPPLE_VALIDATORS_CHOSENLIST_H_INCLUDED
 #define RIPPLE_VALIDATORS_CHOSENLIST_H_INCLUDED
 
-#include <ripple/common/UnorderedContainers.h>
+#include <ripple/basics/UnorderedContainers.h>
 #include <ripple/types/RipplePublicKeyHash.h>
 
 namespace ripple {

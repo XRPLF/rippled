@@ -22,7 +22,7 @@
 
 #include <ripple/app/main/FullBelowCache.h>
 #include <ripple/app/shamap/TreeNodeCache.h>
-#include <ripple/common/TaggedCache.h>
+#include <ripple/basics/TaggedCache.h>
 #include <beast/utility/PropertyStream.h>
 #include <mutex>
 

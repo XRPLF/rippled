@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TOSTRING_H
-#define RIPPLE_TOSTRING_H
+#ifndef RIPPLE_BASICS_TOSTRING_H_INCLUDED
+#define RIPPLE_BASICS_TOSTRING_H_INCLUDED
 
 namespace ripple {
 

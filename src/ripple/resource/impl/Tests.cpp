@@ -18,8 +18,10 @@
 //==============================================================================
 
 #include <beast/unit_test/suite.h>
+#include <beast/chrono/chrono_io.h>
 #include <beast/chrono/manual_clock.h>
 #include <beast/module/core/maths/Random.h>
+#include <boost/utility/base_from_member.hpp>
 
 namespace ripple {
 namespace Resource {

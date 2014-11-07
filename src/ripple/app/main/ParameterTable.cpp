@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/common/jsonrpc_fields.h>
+#include <ripple/protocol/JsonFields.h>
 #include <boost/foreach.hpp>
 
 namespace ripple {

@@ -19,9 +19,10 @@
 
 #include <ripple/basics/Log.h>
 #include <ripple/server/impl/JSONRPCUtil.h>
-#include <ripple/common/jsonrpc_fields.h>
-#include <ripple/data/protocol/BuildInfo.h>
+#include <ripple/protocol/JsonFields.h>
+#include <ripple/protocol/BuildInfo.h>
 #include <ripple/core/SystemParameters.h>
+#include <ripple/json/to_string.h>
 #include <boost/algorithm/string.hpp>
 
 namespace ripple {

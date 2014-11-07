@@ -22,7 +22,9 @@
 
 #include <ripple/app/misc/PowResult.h>
 #include <ripple/app/misc/ProofOfWork.h>
+#include <ripple/types/base_uint.h>
 #include <beast/cxx14/memory.h> // <memory>
+#include <cstdint>
 
 namespace ripple {
 

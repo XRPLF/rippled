@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/basics/seconds_clock.h>
+
 namespace ripple {
 
 TransactionMaster::TransactionMaster ()

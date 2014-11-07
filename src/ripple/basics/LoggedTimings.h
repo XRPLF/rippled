@@ -20,6 +20,7 @@
 #ifndef RIPPLE_BASICS_LOGGEDTIMINGS_H_INCLUDED
 #define RIPPLE_BASICS_LOGGEDTIMINGS_H_INCLUDED
 
+#include <ripple/basics/Log.h>
 #include <beast/module/core/time/Time.h>
 #include <beast/module/core/diagnostic/MeasureFunctionCallTime.h>
 #include <beast/utility/Debug.h>

@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/common/jsonrpc_fields.h>
+#include <ripple/protocol/JsonFields.h>
 #include <ripple/basics/ArraySize.h>
 #include <ripple/rpc/ErrorCodes.h>
 #include <ripple/server/ServerHandler.h>

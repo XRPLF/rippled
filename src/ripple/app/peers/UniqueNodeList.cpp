@@ -20,6 +20,7 @@
 #include <ripple/basics/Time.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/LoadFeeTrack.h>
+#include <ripple/net/HTTPClient.h>
 #include <beast/module/core/thread/DeadlineTimer.h>
 #include <beast/cxx14/memory.h> // <memory>
 #include <boost/algorithm/string.hpp>
@@ -27,6 +28,7 @@
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <boost/regex.hpp>
+#include <fstream>
 
 namespace ripple {
 

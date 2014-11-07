@@ -21,7 +21,8 @@
 #define RIPPLE_TRANSACTIONMETA_H
 
 #include <ripple/app/misc/SerializedLedger.h>
-#include <ripple/data/protocol/STArray.h>
+#include <ripple/protocol/STArray.h>
+#include <ripple/protocol/TER.h>
 #include <boost/optional.hpp>
 
 namespace ripple {

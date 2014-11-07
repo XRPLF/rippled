@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_UPTIMETIMER_H
-#define RIPPLE_UPTIMETIMER_H
+#ifndef RIPPLE_BASICS_UPTIMETIMER_H_INCLUDED
+#define RIPPLE_BASICS_UPTIMETIMER_H_INCLUDED
 
 #include <ctime>
 

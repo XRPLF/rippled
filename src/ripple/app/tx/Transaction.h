@@ -21,7 +21,7 @@
 #define RIPPLE_TRANSACTION_H
 
 #include <ripple/app/misc/SerializedTransaction.h>
-#include <ripple/data/protocol/TER.h>
+#include <ripple/protocol/TER.h>
 
 namespace ripple {
 

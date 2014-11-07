@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
+#include <ripple/resource/Charge.h>
 #include <sstream>
 
 namespace ripple {
 namespace Resource {
-
 
 Charge::Charge (value_type cost, std::string const& label)
     : m_cost (cost)

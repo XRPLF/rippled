@@ -20,7 +20,7 @@
 #ifndef RIPPLE_CORE_AMOUNT_H_INCLUDED
 #define RIPPLE_CORE_AMOUNT_H_INCLUDED
 
-#include <ripple/data/protocol/STObject.h>
+#include <ripple/protocol/STObject.h>
 
 #include <beast/utility/noexcept.h>
 #include <beast/cxx14/type_traits.h> // <type_traits>

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SUSTAIN_H
-#define RIPPLE_SUSTAIN_H
+#ifndef RIPPLE_BASICS_SUSTAIN_H_INCLUDED
+#define RIPPLE_BASICS_SUSTAIN_H_INCLUDED
 
 namespace ripple {
 

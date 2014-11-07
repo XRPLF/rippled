@@ -20,7 +20,7 @@
 #ifndef RIPPLE_STATUS_H
 #define RIPPLE_STATUS_H
 
-#include <ripple/data/protocol/TER.h>
+#include <ripple/protocol/TER.h>
 #include <ripple/rpc/ErrorCodes.h>
 
 namespace ripple {

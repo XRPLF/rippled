@@ -22,7 +22,7 @@
 
 #include <ripple/basics/BasicConfig.h>
 #include <ripple/core/SystemParameters.h>
-#include <ripple/data/protocol/RippleAddress.h>
+#include <ripple/protocol/RippleAddress.h>
 #include <ripple/unity/json.h>
 #include <beast/http/URL.h>
 #include <beast/net/IPEndpoint.h>

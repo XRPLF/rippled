@@ -21,24 +21,19 @@
 
 #include <ripple/unity/app.h>
 
-#include <ripple/common/seconds_clock.h>
-
-#include <ripple/app/shamap/SHAMap.cpp> // Uses theApp
-#include <ripple/app/shamap/SHAMapItem.cpp>
-#include <ripple/app/shamap/SHAMapSync.cpp>
-#include <ripple/app/shamap/SHAMapMissingNode.cpp>
-
-#include <ripple/app/misc/CanonicalTXSet.cpp>
-#include <ripple/app/ledger/LedgerProposal.cpp>
-#include <ripple/app/main/LoadManager.cpp>
-#include <ripple/app/ledger/BookListeners.cpp>
-#include <ripple/app/ledger/OrderBookDB.cpp>
-
 #include <ripple/app/data/Database.cpp>
 #include <ripple/app/data/DatabaseCon.cpp>
 #include <ripple/app/data/SqliteDatabase.cpp>
 #include <ripple/app/data/DBInit.cpp>
-
+#include <ripple/app/ledger/BookListeners.cpp>
+#include <ripple/app/ledger/LedgerProposal.cpp>
+#include <ripple/app/ledger/OrderBookDB.cpp>
+#include <ripple/app/main/LoadManager.cpp>
+#include <ripple/app/misc/CanonicalTXSet.cpp>
+#include <ripple/app/shamap/SHAMap.cpp>
+#include <ripple/app/shamap/SHAMapItem.cpp>
+#include <ripple/app/shamap/SHAMapSync.cpp>
+#include <ripple/app/shamap/SHAMapMissingNode.cpp>
 #include <ripple/app/shamap/RadixMapTest.h>
 #include <ripple/app/shamap/RadixMapTest.cpp>
 #include <ripple/app/shamap/FetchPackTests.cpp>

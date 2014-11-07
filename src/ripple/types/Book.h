@@ -21,6 +21,7 @@
 #define RIPPLE_TYPES_BOOK_H_INCLUDED
 
 #include <ripple/types/Issue.h>
+#include <boost/utility/base_from_member.hpp>
 
 namespace ripple {
 

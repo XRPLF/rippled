@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <ripple/basics/Log.h>
+#include <ripple/crypto/RandomNumbers.h>
 #include <ripple/net/SNTPClient.h>
-#include <ripple/types/RandomNumbers.h>
 #include <beast/asio/placeholders.h>
 #include <beast/threads/Thread.h>
 #include <boost/foreach.hpp>

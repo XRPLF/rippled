@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#if DOXYGEN
+#include <ripple/peerfinder/README.md>
+#endif
+
 #include <BeastConfig.h>
 
 #ifndef NDEBUG

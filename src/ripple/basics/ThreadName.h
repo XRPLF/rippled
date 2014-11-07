@@ -17,11 +17,12 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_THREADNAME_H
-#define RIPPLE_THREADNAME_H
+#ifndef RIPPLE_BASICS_THREADNAME_H_INCLUDED
+#define RIPPLE_BASICS_THREADNAME_H_INCLUDED
 
 namespace ripple {
 
+// VFALCO This should use the beast function
 extern void setCallingThreadName (char const*);
 
 } // ripple

@@ -20,7 +20,7 @@
 #ifndef RIPPLE_VALIDATORS_VALIDATOR_H_INCLUDED
 #define RIPPLE_VALIDATORS_VALIDATOR_H_INCLUDED
 
-#include <ripple/common/seconds_clock.h> // VFALCO Doesn't belong here
+#include <ripple/basics/seconds_clock.h>
 #include <ripple/validators/impl/Count.h>
 #include <beast/container/aged_unordered_map.h>
 #include <beast/container/aged_map.h>

@@ -20,7 +20,7 @@
 #ifndef RIPPLE_TYPES_BASICS
 #define RIPPLE_TYPES_BASICS
 
-#include <ripple/common/UnorderedContainers.h>
+#include <ripple/basics/UnorderedContainers.h>
 #include <ripple/types/base_uint.h>
 
 namespace ripple {

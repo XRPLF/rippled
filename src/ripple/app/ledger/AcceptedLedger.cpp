@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+#include <ripple/app/ledger/AcceptedLedger.h>
+#include <ripple/basics/seconds_clock.h>
+
 namespace ripple {
 
 // VFALCO TODO Remove this global and make it a member of the App

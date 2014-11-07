@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CHECKLIBRARYVERSIONS_H_INCLUDED
-#define RIPPLE_CHECKLIBRARYVERSIONS_H_INCLUDED
+#ifndef RIPPLE_BASICS_CHECKLIBRARYVERSIONS_H_INCLUDED
+#define RIPPLE_BASICS_CHECKLIBRARYVERSIONS_H_INCLUDED
 
 #include <string>
 

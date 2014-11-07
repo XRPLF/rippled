@@ -19,26 +19,14 @@
 
 #include <BeastConfig.h>
 
-#include <boost/bimap.hpp>
-#include <boost/bimap/multiset_of.hpp>
-#include <boost/bimap/unordered_set_of.hpp>
-
 #include <ripple/unity/app.h>
 
+#include <ripple/app/consensus/LedgerConsensus.cpp>
 #include <ripple/app/misc/PowResult.h>
-
-#include <ripple/app/misc/ProofOfWorkFactory.h>
-
-#include <ripple/app/peers/PeerSet.cpp>
 #include <ripple/app/misc/ProofOfWorkFactory.cpp>
 #include <ripple/app/misc/ProofOfWork.cpp>
 #include <ripple/app/misc/SerializedTransaction.cpp>
-
-// requires Application
+#include <ripple/app/peers/PeerSet.cpp>
 #include <ripple/app/shamap/SHAMapSyncFilters.cpp>
-
-#include <ripple/app/consensus/LedgerConsensus.cpp>
-
-#include <ripple/app/ledger/LedgerCleaner.h>
 #include <ripple/app/ledger/LedgerCleaner.cpp>
 #include <ripple/app/ledger/LedgerMaster.cpp>
