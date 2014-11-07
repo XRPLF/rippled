@@ -427,6 +427,29 @@ adminRole (HTTP::Port const& port,
 
 //------------------------------------------------------------------------------
 
+void
+ServerHandler::Setup::makeContexts()
+{
+    for(auto& p : ports)
+    {
+        if (p.secure())
+        {
+            if (p.ssl_key.empty() && p.ssl_cert.empty() &&
+                    p.ssl_chain.empty())
+                p.context = make_SSLContext();
+            else
+                p.context = make_SSLContextAuthed (
+                    p.ssl_key, p.ssl_cert, p.ssl_chain);
+        }
+        else
+        {
+            p.context = std::make_shared<
+                boost::asio::ssl::context>(
+                    boost::asio::ssl::context::sslv23);
+        }
+    }
+}
+
 namespace detail {
 
 // Parse a comma-delimited list of values.
@@ -615,13 +638,6 @@ to_Port(ParsedPort const& parsed, std::ostream& log)
     p.ssl_key = parsed.ssl_key;
     p.ssl_cert = parsed.ssl_cert;
     p.ssl_chain = parsed.ssl_chain;
-
-    if (p.ssl_key.empty() && p.ssl_cert.empty() &&
-            p.ssl_chain.empty())
-        p.context = make_SSLContext();
-    else
-        p.context = make_SSLContextAuthed (
-            p.ssl_key, p.ssl_cert, p.ssl_chain);
 
     return p;
 }

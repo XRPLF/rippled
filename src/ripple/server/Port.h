@@ -54,6 +54,11 @@ struct Port
     bool
     websockets() const;
 
+    // Returns `true` if any secure protocols are specified
+    template <class = void>
+    bool
+    secure() const;
+
     // Returns a string containing the list of protocols
     template <class = void>
     std::string
@@ -67,6 +72,14 @@ bool
 Port::websockets() const
 {
     return protocol.count("ws") > 0 || protocol.count("wss") > 0;
+}
+
+template <class>
+bool
+Port::secure() const
+{
+    return protocol.count("peer") > 0 ||
+        protocol.count("https") > 0 || protocol.count("wss") > 0;
 }
 
 template <class>

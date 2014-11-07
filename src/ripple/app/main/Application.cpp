@@ -712,8 +712,11 @@ public:
         //
         //----------------------------------------------------------------------
 
-        serverHandler_->setup (setup_ServerHandler(getConfig(), std::cerr),
-            m_journal);
+        {
+            auto setup = setup_ServerHandler(getConfig(), std::cerr);
+            setup.makeContexts();
+            serverHandler_->setup (setup, m_journal);
+        }
 
         // VFALCO NOTE Unfortunately, in stand-alone mode some code still
         //             foolishly calls overlay(). When this is fixed we can

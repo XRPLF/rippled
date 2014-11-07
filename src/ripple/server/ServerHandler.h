@@ -66,6 +66,9 @@ public:
         };
 
         overlay_t overlay;
+
+        void
+        makeContexts();
     };
 
     virtual
