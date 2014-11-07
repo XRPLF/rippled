@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RANGESET_H_INCLUDED
-#define RIPPLE_RANGESET_H_INCLUDED
+#ifndef RIPPLE_BASICS_RANGESET_H_INCLUDED
+#define RIPPLE_BASICS_RANGESET_H_INCLUDED
 
 #include <beast/utility/noexcept.h>
 #include <cstdint>

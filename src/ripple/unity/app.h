@@ -44,10 +44,8 @@
 //------------------------------------------------------------------------------
 
 #include <ripple/unity/types.h>
-#include <ripple/unity/data.h>
-#include <ripple/unity/net.h>
 
-#include <ripple/common/ResolverAsio.h>
+#include <ripple/basics/ResolverAsio.h>
 
 // VFALCO TODO Remove this include
 #include <beast/module/sqlite/sqlite.h>
@@ -55,8 +53,8 @@
 // Order matters here. If you get compile errors,
 // reorder the include lines until the order is correct.
 
-#include <ripple/common/KeyCache.h>
-#include <ripple/common/TaggedCache.h>
+#include <ripple/basics/KeyCache.h>
+#include <ripple/basics/TaggedCache.h>
 
 #include <ripple/app/data/Database.h>
 #include <ripple/app/data/DatabaseCon.h>

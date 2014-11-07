@@ -18,7 +18,11 @@
 //==============================================================================
 
 #include <ripple/basics/CountedObject.h>
+#include <ripple/basics/Log.h>
+#include <ripple/core/Config.h>
+#include <ripple/core/JobQueue.h>
 #include <ripple/core/LoadFeeTrack.h>
+#include <ripple/overlay/Overlay.h>
 #include <ripple/overlay/predicates.h>
 #include <ripple/types/UintTypes.h>
 

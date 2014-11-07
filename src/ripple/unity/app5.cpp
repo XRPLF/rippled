@@ -20,15 +20,6 @@
 #include <BeastConfig.h>
 
 #include <ripple/unity/app.h>
-#include <ripple/unity/net.h>
-#include <ripple/common/jsonrpc_fields.h>
-
-#include <ripple/common/seconds_clock.h>
-#include <ripple/unity/resource.h>
-
-#include <deque>
-
-#include <ripple/app/misc/ProofOfWork.h>
 
 #include <ripple/app/ledger/LedgerTiming.cpp>
 #include <ripple/app/ledger/AcceptedLedgerTx.cpp>

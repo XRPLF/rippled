@@ -20,7 +20,7 @@
 #ifndef RIPPLE_RADMAP_BASICFULLBELOWCACHE_H_INCLUDED
 #define RIPPLE_RADMAP_BASICFULLBELOWCACHE_H_INCLUDED
 
-#include <ripple/common/KeyCache.h>
+#include <ripple/basics/KeyCache.h>
 #include <ripple/app/main/Tuning.h>
 #include <beast/insight/Collector.h>
 

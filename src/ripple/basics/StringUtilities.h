@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_STRINGUTILITIES_H
-#define RIPPLE_STRINGUTILITIES_H
+#ifndef RIPPLE_BASICS_STRINGUTILITIES_H_INCLUDED
+#define RIPPLE_BASICS_STRINGUTILITIES_H_INCLUDED
 
 #include <ripple/types/Blob.h>
 #include <ripple/types/ByteOrder.h>

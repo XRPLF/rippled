@@ -19,6 +19,7 @@
 
 #include <ripple/nodestore/Database.h>
 #include <beast/unit_test/suite.h>
+#include <openssl/rand.h> // DEPRECATED
 
 namespace ripple {
 
@@ -808,7 +809,7 @@ public:
     {
         unsigned int seed;
 
-        // VFALCO TODO Replace this with beast::Random
+        // VFALCO DEPRECATED Should use C++11
         RAND_pseudo_bytes (reinterpret_cast<unsigned char*> (&seed), sizeof (seed));
         srand (seed);
 

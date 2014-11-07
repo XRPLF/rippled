@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#if DOXYGEN
+#include <ripple/basics/README.md>
+#endif
+
 #include <BeastConfig.h>
 
 #include <ripple/basics/impl/BasicConfig.cpp>
@@ -29,3 +33,10 @@
 #include <ripple/basics/impl/ThreadName.cpp>
 #include <ripple/basics/impl/Time.cpp>
 #include <ripple/basics/impl/UptimeTimer.cpp>
+
+#include <ripple/basics/impl/KeyCache.cpp>
+#include <ripple/basics/impl/make_SSLContext.cpp>
+#include <ripple/basics/impl/ResolverAsio.cpp>
+#include <ripple/basics/impl/TaggedCache.cpp>
+
+#include <ripple/basics/tests/cross_offer.test.cpp>

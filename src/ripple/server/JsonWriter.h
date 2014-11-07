@@ -26,6 +26,7 @@
 #include <beast/http/message.h>
 #include <algorithm>
 #include <cstddef>
+#include <sstream>
 
 namespace ripple {
 namespace HTTP {

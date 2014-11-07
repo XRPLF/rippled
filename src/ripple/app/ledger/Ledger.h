@@ -26,7 +26,7 @@
 #include <ripple/app/misc/AccountState.h>
 #include <ripple/app/misc/SerializedLedger.h>
 #include <ripple/basics/CountedObject.h>
-#include <ripple/data/protocol/Serializer.h>
+#include <ripple/protocol/Serializer.h>
 #include <ripple/types/Book.h>
 
 namespace ripple {

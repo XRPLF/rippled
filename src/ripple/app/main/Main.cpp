@@ -21,6 +21,10 @@
 #include <ripple/basics/Sustain.h>
 #include <ripple/basics/ThreadName.h>
 #include <ripple/core/ConfigSections.h>
+#include <ripple/crypto/RandomNumbers.h>
+#include <ripple/net/RPCCall.h>
+#include <ripple/resource/Fees.h>
+#include <ripple/protocol/BuildInfo.h>
 #include <beast/unit_test.h>
 #include <beast/streams/debug_ostream.h>
 

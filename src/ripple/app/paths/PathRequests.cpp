@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+#include <ripple/app/paths/PathRequests.h>
+#include <ripple/core/JobQueue.h>
+#include <ripple/resource/Fees.h>
 #include <boost/foreach.hpp>
 
 namespace ripple {

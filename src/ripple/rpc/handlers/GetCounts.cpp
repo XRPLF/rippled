@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/basics/UptimeTimer.h>
 #include <ripple/nodestore/Database.h>
 #include <boost/foreach.hpp>
 

@@ -17,7 +17,9 @@
 */
 //==============================================================================
 
+#include <ripple/basics/UptimeTimer.h>
 #include <ripple/core/LoadFeeTrack.h>
+#include <ripple/resource/LegacyFees.h>
 
 namespace ripple {
 

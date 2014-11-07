@@ -30,7 +30,7 @@
 #include <ripple/app/misc/ProofOfWorkFactory.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/LoadFeeTrack.h>
-#include <ripple/data/protocol/Protocol.h>
+#include <ripple/protocol/Protocol.h>
 #include <ripple/validators/Manager.h>
 #include <ripple/unity/app.h> // VFALCO REMOVE
 #include <beast/asio/IPAddressConversion.h>

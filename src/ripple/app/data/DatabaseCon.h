@@ -21,12 +21,15 @@
 #define RIPPLE_DATABASECON_H
 
 #include <mutex>
+#include <string>
 
 namespace ripple {
 
+class Database;
+
 // VFALCO NOTE This looks like a pointless class. Figure out
 //         what purpose it is really trying to serve and do it better.
-class DatabaseCon : beast::LeakChecked <DatabaseCon>
+class DatabaseCon
 {
 public:
     DatabaseCon (std::string const& name, const char* initString[], int countInit);

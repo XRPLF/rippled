@@ -19,7 +19,7 @@
 
 #include <ripple/app/paths/Tuning.h>
 #include <ripple/app/paths/Pathfinder.h>
-
+#include <ripple/core/JobQueue.h>
 #include <tuple>
 
 namespace ripple {

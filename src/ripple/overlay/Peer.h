@@ -24,7 +24,7 @@
 
 #include <ripple/unity/json.h>
 #include <ripple/types/base_uint.h>
-#include <ripple/data/protocol/RippleAddress.h>
+#include <ripple/protocol/RippleAddress.h>
 
 #include <beast/net/IPEndpoint.h>
 

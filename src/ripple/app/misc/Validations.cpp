@@ -18,6 +18,8 @@
 //==============================================================================
 
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/basics/seconds_clock.h>
+#include <ripple/core/JobQueue.h>
 #include <beast/cxx14/memory.h> // <memory>
 #include <mutex>
 #include <thread>

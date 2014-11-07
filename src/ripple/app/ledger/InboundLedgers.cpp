@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+#include <ripple/app/ledger/InboundLedgers.h>
+#include <ripple/basics/Log.h>
+#include <ripple/core/JobQueue.h>
 #include <beast/cxx14/memory.h> // <memory>
 
 namespace ripple {

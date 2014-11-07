@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/basics/UptimeTimer.h>
 #include <boost/foreach.hpp>
 
 namespace ripple {

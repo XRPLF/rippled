@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+#include <ripple/app/data/DatabaseCon.h>
+#include <ripple/core/Config.h>
+
 namespace ripple {
 
 DatabaseCon::DatabaseCon (std::string const& strName, const char* initStrings[], int initCount)

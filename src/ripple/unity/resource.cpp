@@ -17,28 +17,18 @@
 */
 //==============================================================================
 
+#if DOXYGEN
+#include <ripple/resource/README.md>
+#endif
+
 #include <BeastConfig.h>
 
-#include <ripple/unity/resource.h>
-
-#include <boost/utility/base_from_member.hpp>
-
-#include <ripple/common/DecayingSample.h>
-#include <ripple/common/seconds_clock.h>
-
-#include <beast/Insight.h>
-#include <beast/cxx14/memory.h>
-#include <beast/chrono/chrono_io.h>
-
-#include <ripple/resource/impl/Fees.cpp>
-#include <ripple/resource/impl/Kind.h>
-#include <ripple/resource/impl/Key.h>
-#include <ripple/resource/impl/Tuning.h>
-#include <ripple/resource/impl/Entry.h>
-#include <ripple/resource/impl/Import.h>
 #include <ripple/resource/impl/Charge.cpp>
-#include <ripple/resource/impl/Logic.h>
 #include <ripple/resource/impl/Consumer.cpp>
+#include <ripple/resource/impl/Fees.cpp>
+#include <ripple/resource/impl/Key.h>
+#include <ripple/resource/impl/Kind.h>
 #include <ripple/resource/impl/LegacyFees.cpp>
 #include <ripple/resource/impl/Manager.cpp>
 #include <ripple/resource/impl/Tests.cpp>
+#include <ripple/resource/impl/Tuning.h>

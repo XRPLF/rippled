@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#if DOXYGEN
+#include <ripple/server/README.md>
+#endif
+
 #include <BeastConfig.h>
 
 #include <ripple/server/impl/Door.cpp>

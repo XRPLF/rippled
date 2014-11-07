@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/crypto/RandomNumbers.h>
+#include <ripple/json/json_value.h>
 
 namespace ripple {
 

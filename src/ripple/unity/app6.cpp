@@ -21,8 +21,6 @@
 
 #include <ripple/unity/app.h>
 
-#include <ripple/common/seconds_clock.h>
-
 #include <ripple/app/ledger/LedgerEntrySet.cpp>
 #include <ripple/app/ledger/AcceptedLedger.cpp>
 #include <ripple/app/ledger/DirectoryEntryIterator.cpp>

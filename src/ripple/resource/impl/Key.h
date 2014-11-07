@@ -20,6 +20,10 @@
 #ifndef RIPPLE_RESOURCE_KEY_H_INCLUDED
 #define RIPPLE_RESOURCE_KEY_H_INCLUDED
 
+#include <ripple/resource/impl/Kind.h>
+#include <beast/net/IPEndpoint.h>
+#include <cassert>
+
 namespace ripple {
 namespace Resource {
 
@@ -64,7 +68,7 @@ struct Key
                 return m_name_hash (v.name);
 
             default:
-                bassertfalse;
+                assert(false);
             };
 
             return 0;
@@ -92,7 +96,7 @@ struct Key
                 return lhs.name == rhs.name;
 
             default:
-                bassertfalse;
+                assert(false);
             };
 
             return false;

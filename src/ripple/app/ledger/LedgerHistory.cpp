@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+#include <ripple/basics/seconds_clock.h>
+#include <ripple/app/ledger/LedgerHistory.h>
+
 namespace ripple {
 
 // VFALCO TODO replace macros

@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/resource/Charge.h>
+
 namespace ripple {
 namespace Resource {
 

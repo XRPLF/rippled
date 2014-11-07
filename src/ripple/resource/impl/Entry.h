@@ -20,13 +20,21 @@
 #ifndef RIPPLE_RESOURCE_ENTRY_H_INCLUDED
 #define RIPPLE_RESOURCE_ENTRY_H_INCLUDED
 
+#include <ripple/basics/DecayingSample.h>
+#include <ripple/resource/impl/Key.h>
+#include <ripple/resource/impl/Tuning.h>
+#include <beast/chrono/abstract_clock.h>
+#include <beast/intrusive/List.h>
+
 namespace ripple {
 namespace Resource {
 
 typedef beast::abstract_clock <std::chrono::seconds> clock_type;
 
 // An entry in the table
-struct Entry : public beast::List <Entry>::Node
+// VFALCO DEPRECATED using boost::intrusive list
+struct Entry 
+    : public beast::List <Entry>::Node
 {
     Entry () = delete;
 

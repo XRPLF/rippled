@@ -21,16 +21,9 @@
 
 #include <ripple/unity/app.h>
 
-#include <ripple/unity/resource.h>
-
-#include <ripple/common/seconds_clock.h>
-
 #include <ripple/app/ledger/InboundLedgers.cpp>
 #include <ripple/app/ledger/LedgerHistory.cpp>
 #include <ripple/app/misc/SerializedLedger.cpp>
 #include <ripple/app/tx/TransactionAcquire.cpp>
-
-#include <ripple/app/tx/TxQueueEntry.h>
-#include <ripple/app/tx/TxQueue.h>
 #include <ripple/app/tx/LocalTxs.cpp>
 #include <ripple/app/misc/NetworkOPs.cpp>

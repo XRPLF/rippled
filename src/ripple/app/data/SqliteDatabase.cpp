@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include <ripple/app/data/SqliteDatabase.h>
+#include <ripple/core/JobQueue.h>
+#include <ripple/basics/Log.h>
+
 namespace ripple {
 
 SqliteStatement::SqliteStatement (SqliteDatabase* db, const char* sql, bool aux)

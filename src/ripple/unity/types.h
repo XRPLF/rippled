@@ -45,7 +45,6 @@
 #include <ripple/types/ByteOrder.h>
 #include <ripple/types/strHex.h>
 #include <ripple/types/UInt160.h>
-#include <ripple/types/RandomNumbers.h>
 
 #include <ripple/types/IdentifierType.h>
 #include <ripple/types/IdentifierStorage.h>

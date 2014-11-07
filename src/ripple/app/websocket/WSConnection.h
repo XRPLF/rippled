@@ -21,6 +21,7 @@
 #define RIPPLE_WSCONNECTION_H
 
 #include <ripple/core/Config.h>
+#include <ripple/resource/Manager.h>
 #include <ripple/server/Port.h>
 #include <beast/asio/placeholders.h>
 #include <memory>

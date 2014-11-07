@@ -20,6 +20,8 @@
 #ifndef RIPPLE_RESOURCE_IMPORT_H_INCLUDED
 #define RIPPLE_RESOURCE_IMPORT_H_INCLUDED
 
+#include <ripple/resource/Consumer.h>
+
 namespace ripple {
 namespace Resource {
 

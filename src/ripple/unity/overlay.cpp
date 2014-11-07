@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#if DOXYGEN
+#include <ripple/overlay/README.md>
+#endif
+
 #include <BeastConfig.h>
 
 #include <ripple/overlay/impl/Message.cpp>

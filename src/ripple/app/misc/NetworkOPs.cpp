@@ -19,12 +19,22 @@
 
 #include <ripple/app/book/Quality.h>
 #include <ripple/app/misc/FeeVote.h>
+#include <ripple/app/tx/TxQueue.h>
+#include <ripple/app/tx/TxQueueEntry.h>
 #include <ripple/basics/Time.h>
 #include <ripple/basics/StringUtilities.h>
-#include <ripple/common/jsonrpc_fields.h>
+#include <ripple/basics/UptimeTimer.h>
+#include <ripple/protocol/JsonFields.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/LoadFeeTrack.h>
+#include <ripple/crypto/RandomNumbers.h>
+#include <ripple/crypto/RFC1751.h>
 #include <ripple/overlay/predicates.h>
+#include <ripple/protocol/BuildInfo.h>
+#include <ripple/protocol/HashPrefix.h>
+#include <ripple/resource/Fees.h>
+#include <ripple/resource/Gossip.h>
+#include <ripple/resource/Manager.h>
 #include <beast/module/core/thread/DeadlineTimer.h>
 #include <beast/module/core/system/SystemStats.h>
 #include <beast/cxx14/memory.h> // <memory>

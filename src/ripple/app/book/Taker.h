@@ -24,10 +24,8 @@
 #include <ripple/app/book/Quality.h>
 #include <ripple/app/book/Offer.h>
 #include <ripple/app/book/Types.h>
-
-#include <beast/streams/debug_ostream.h>
+#include <ripple/protocol/TxFlags.h>
 #include <beast/utility/noexcept.h>
-
 #include <functional>
 
 namespace ripple {

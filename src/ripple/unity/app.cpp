@@ -20,10 +20,8 @@
 #include <BeastConfig.h>
 
 #include <ripple/unity/app.h>
-#include <ripple/unity/net.h>
 #include <ripple/unity/rpcx.h>
 #include <ripple/unity/websocket.h>
-#include <ripple/unity/resource.h>
 #include <ripple/app/impl/BasicApp.cpp>
 #include <ripple/app/main/CollectorManager.cpp>
 #include <ripple/app/main/NodeStoreScheduler.cpp>
@@ -37,7 +35,7 @@
 #include <ripple/app/node/SqliteFactory.cpp>
 #include <ripple/app/main/Application.cpp>
 #include <ripple/app/main/Main.cpp>
-
+#include <ripple/resource/Manager.h>
 #include <beast/module/core/time/Time.h>
 
 //------------------------------------------------------------------------------

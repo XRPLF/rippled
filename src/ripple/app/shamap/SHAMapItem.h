@@ -21,7 +21,7 @@
 #define RIPPLE_SHAMAPITEM_H
 
 #include <ripple/basics/CountedObject.h>
-#include <ripple/data/protocol/Serializer.h>
+#include <ripple/protocol/Serializer.h>
 #include <ripple/types/base_uint.h>
 #include <memory>
 

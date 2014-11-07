@@ -17,20 +17,16 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICTYPES_H
-#define RIPPLE_BASICTYPES_H
+#ifndef RIPPLE_BASICS_BASICTYPES_H_INCLUDED
+#define RIPPLE_BASICS_BASICTYPES_H_INCLUDED
 
 #include <mutex>
 
 namespace ripple {
 
-/** Synchronization primitives.
-    This lets us switch between tracked and untracked mutexes.
-*/
+// VFALCO DEPRECATED
 typedef std::mutex RippleMutex;
 typedef std::recursive_mutex RippleRecursiveMutex;
-
-//------------------------------------------------------------------------------
 
 } // ripple
 

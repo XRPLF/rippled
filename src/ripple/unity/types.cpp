@@ -20,7 +20,6 @@
 #include <BeastConfig.h>
 
 #include <ripple/unity/types.h>
-#include <ripple/unity/sslutil.h>
 
 #ifdef BEAST_WIN32
 #include <Winsock2.h> // for ByteOrder.cpp
@@ -38,7 +37,6 @@
 
 #include <ripple/types/impl/Base58.cpp>
 #include <ripple/types/impl/ByteOrder.cpp>
-#include <ripple/types/impl/RandomNumbers.cpp>
 #include <ripple/types/impl/strHex.cpp>
 #include <ripple/types/impl/UintTypes.cpp>
 #include <ripple/types/impl/RippleIdentifierTests.cpp>

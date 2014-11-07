@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PATHREQUESTS_H
 #define RIPPLE_PATHREQUESTS_H
 
+#include <ripple/core/Job.h>
 #include <atomic>
 
 namespace ripple {

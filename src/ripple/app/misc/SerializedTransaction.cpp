@@ -18,6 +18,9 @@
 //==============================================================================
 
 #include <ripple/core/Config.h>
+#include <ripple/protocol/HashPrefix.h>
+#include <ripple/protocol/STParsedJSON.h>
+#include <ripple/protocol/TxFlags.h>
 #include <beast/unit_test/suite.h>
 #include <boost/foreach.hpp>
 

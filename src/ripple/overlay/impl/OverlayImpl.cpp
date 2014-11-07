@@ -17,16 +17,13 @@
 */
 //==============================================================================
 
-#include <ripple/common/make_SSLContext.h>
+#include <ripple/basics/Log.h>
+#include <ripple/basics/make_SSLContext.h>
 #include <ripple/server/JsonWriter.h>
 #include <ripple/overlay/impl/OverlayImpl.h>
 #include <ripple/overlay/impl/PeerImp.h>
 #include <ripple/peerfinder/make_Manager.h>
 #include <beast/ByteOrder.h>
-
-#if DOXYGEN
-#include <ripple/overlay/README.md>
-#endif
 
 namespace ripple {
 

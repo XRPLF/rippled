@@ -22,7 +22,7 @@
 // Unfortunate but necessary since RPC handlers can literally do anything
 #include <ripple/unity/app.h>
 #include <ripple/unity/json.h>
-#include <ripple/common/jsonrpc_fields.h>
+#include <ripple/protocol/JsonFields.h>
 
 #include <ripple/unity/rpcx.h>
 

@@ -17,9 +17,10 @@
 */
 //==============================================================================
 
+#include <ripple/app/shamap/SHAMapNodeID.h>
+#include <ripple/crypto/RandomNumbers.h>
 #include <beast/module/core/text/LexicalCast.h>
 #include <beast/utility/static_initializer.h>
-#include <ripple/app/shamap/SHAMapNodeID.h>
 #include <boost/format.hpp>
 #include <cassert>
 #include <cstring>

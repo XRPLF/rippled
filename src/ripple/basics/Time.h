@@ -17,11 +17,12 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TIME_H
-#define RIPPLE_TIME_H
+#ifndef RIPPLE_BASICS_TIME_H_INCLUDED
+#define RIPPLE_BASICS_TIME_H_INCLUDED
 
 namespace ripple {
 
+// VFALCO TODO Roll this into some utilities header
 int iToSeconds (boost::posix_time::ptime ptWhen);
 boost::posix_time::ptime ptFromSeconds (int iSeconds);
 uint64_t utFromSeconds (int iSeconds);

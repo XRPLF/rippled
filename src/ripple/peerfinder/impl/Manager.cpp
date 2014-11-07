@@ -27,10 +27,6 @@
 #include <beast/cxx14/memory.h> // <memory>
 #include <thread>
 
-#if DOXYGEN
-#include <ripple/peerfinder/README.md>
-#endif
-
 namespace ripple {
 namespace PeerFinder {
 

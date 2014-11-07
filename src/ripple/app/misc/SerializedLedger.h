@@ -20,8 +20,8 @@
 #ifndef RIPPLE_SERIALIZEDLEDGER_H
 #define RIPPLE_SERIALIZEDLEDGER_H
 
-#include <ripple/data/protocol/LedgerFormats.h>
-#include <ripple/data/protocol/STObject.h>
+#include <ripple/protocol/LedgerFormats.h>
+#include <ripple/protocol/STObject.h>
 
 namespace ripple {
 

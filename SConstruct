@@ -199,7 +199,10 @@ def config_base(env):
             )
     check_openssl()
 
-    env.Append(CPPDEFINES=['OPENSSL_NO_SSL2'])
+    env.Append(CPPDEFINES=[
+        'OPENSSL_NO_SSL2'
+        ,'DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER'
+        ])
 
     try:
         BOOST_ROOT = os.path.normpath(os.environ['BOOST_ROOT'])
@@ -568,20 +571,19 @@ for toolchain in all_toolchains:
             'app9.cpp',
             'basics.cpp',
             'beast.cpp',
-            'common.cpp',
             'core.cpp',
-            'data.cpp',
+            'crypto.cpp',
             'json.cpp',
             'net.cpp',
             'overlay.cpp',
             'peerfinder.cpp',
             'protobuf.cpp',
+            'protocol.cpp',
             'ripple.proto.cpp',
             'resource.cpp',
             'rpcx.cpp',
             'server.cpp',
             'sitefiles.cpp',
-            'sslutil.cpp',
             'types.cpp',
             'validators.cpp',
             'websocket.cpp',

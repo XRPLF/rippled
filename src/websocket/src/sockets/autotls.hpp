@@ -28,6 +28,7 @@
 #ifndef WEBSOCKETPP_SOCKET_AUTOTLS_HPP
 #define WEBSOCKETPP_SOCKET_AUTOTLS_HPP
 
+#include <ripple/websocket/autosocket/AutoSocket.h>
 #include <beast/asio/placeholders.h>
 #include <functional>
 

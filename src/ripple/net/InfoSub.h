@@ -21,7 +21,8 @@
 #define RIPPLE_NET_RPC_INFOSUB_H_INCLUDED
 
 #include <ripple/basics/CountedObject.h>
-#include <ripple/resource/api/Consumer.h>
+#include <ripple/protocol/RippleAddress.h>
+#include <ripple/resource/Consumer.h>
 #include <ripple/types/Book.h>
 #include <beast/threads/Stoppable.h>
 #include <mutex>

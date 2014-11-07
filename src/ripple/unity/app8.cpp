@@ -25,9 +25,6 @@
 #pragma warning (push)
 #pragma warning (disable: 4309) // truncation of constant value
 #endif
-
-#include <ripple/rpc/ErrorCodes.h>
-
 #include <ripple/app/paths/Node.cpp>
 #include <ripple/app/paths/PathRequest.cpp>
 #include <ripple/app/paths/PathRequests.cpp>

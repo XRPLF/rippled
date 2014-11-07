@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_ARRAYSIZE_H_INCLUDED
-#define RIPPLE_ARRAYSIZE_H_INCLUDED
+#ifndef RIPPLE_BASICS_ARRAYSIZE_H_INCLUDED
+#define RIPPLE_BASICS_ARRAYSIZE_H_INCLUDED
 
 namespace ripple {
 

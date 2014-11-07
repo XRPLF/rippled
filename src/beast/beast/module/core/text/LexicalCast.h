@@ -22,7 +22,7 @@
 
 #include <beast/Config.h>
 #include <beast/cxx14/type_traits.h> // <type_traits>
-
+#include <algorithm>
 #include <cerrno>
 #include <cstdlib>
 #include <limits>

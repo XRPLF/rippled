@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/basics/Log.h>
+
 namespace ripple {
 
 class Change
