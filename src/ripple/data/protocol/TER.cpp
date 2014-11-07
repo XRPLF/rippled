@@ -123,7 +123,7 @@ bool transResultInfo (TER terCode, std::string& strToken, std::string& strHuman)
         {   terPRE_SEQ,             "terPRE_SEQ",               "Missing/inapplicable prior transaction."               },
         {   terOWNERS,              "terOWNERS",                "Non-zero owner count."                                 },
 
-        {   tesSUCCESS,             "tesSUCCESS",               "The transaction was applied."                          },
+        {   tesSUCCESS,             "tesSUCCESS",               "The transaction was applied. Only final in a validated ledger."        },
     };
 
     int iIndex = RIPPLE_ARRAYSIZE (transResultInfoA);
