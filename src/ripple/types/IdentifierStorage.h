@@ -20,7 +20,6 @@
 #ifndef RIPPLE_TYPES_IDENTIFIERSTORAGE_H_INCLUDED
 #define RIPPLE_TYPES_IDENTIFIERSTORAGE_H_INCLUDED
 
-#include <beast/crypto/MurmurHash.h>
 #include <beast/container/hardened_hash.h>
 #include <array>
 #include <cassert>

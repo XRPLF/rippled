@@ -506,6 +506,8 @@ private:
 
     void pubServer ();
 
+    std::string getHostId (bool forAdmin);
+
 private:
     clock_type& m_clock;
 
@@ -581,6 +583,19 @@ private:
 };
 
 //------------------------------------------------------------------------------
+std::string
+NetworkOPsImp::getHostId (bool forAdmin)
+{
+    if (forAdmin)
+        return beast::SystemStats::getComputerName ();
+
+    // For non-admin uses we hash the node ID into a single RFC1751 word:
+    // (this could be cached instead of recalculated every time)
+    Blob const& addr (getApp ().getLocalCredentials ().getNodePublic ().
+            getNodePublic ());
+        
+    return RFC1751::getWordFromBlob (addr.data (), addr.size ());
+}
 
 void NetworkOPsImp::setStateTimer ()
 {
@@ -2344,22 +2359,7 @@ Json::Value NetworkOPsImp::getServerInfo (bool human, bool admin)
 
     // hostid: unique string describing the machine
     if (human)
-    {
-        if (! admin)
-        {
-            // For a non admin connection, hash the node ID into a single
-            // RFC1751 word.
-            Blob const& addr (getApp().getLocalCredentials ().getNodePublic ().
-                              getNodePublic ());
-            info [jss::hostid] = RFC1751::getWordFromBlob (
-                addr.data (), addr.size ());
-        }
-        else
-        {
-            // Only admins get the hostname for security reasons
-            info [jss::hostid] = beast::SystemStats::getComputerName();
-        }
-    }
+        info [jss::hostid] = getHostId (admin);
 
     info [jss::build_version] = BuildInfo::getVersionString ();
 
@@ -2999,22 +2999,9 @@ bool NetworkOPsImp::subServer (InfoSub::ref isrListener, Json::Value& jvResult,
     jvResult[jss::server_status]   = strOperatingMode ();
     jvResult[jss::load_base]       = getApp().getFeeTrack ().getLoadBase ();
     jvResult[jss::load_factor]     = getApp().getFeeTrack ().getLoadFactor ();
+    jvResult [jss::hostid]         = getHostId (admin);
     jvResult[jss::pubkey_node]     = getApp ().getLocalCredentials ().
         getNodePublic ().humanNodePublic ();
-
-    if (! admin)
-    {
-        // For a non admin connection, hash the node ID into a single RFC1751 word
-        Blob const& addr (getApp ().getLocalCredentials ().getNodePublic ().
-            getNodePublic ());
-        jvResult[jss::hostid] = RFC1751::getWordFromBlob (addr.data (),
-            addr.size ());
-    }
-    else
-    {
-        // Only admins get the hostname for security reasons
-        jvResult[jss::hostid] = beast::SystemStats::getComputerName ();
-    }
 
     ScopedLockType sl (mLock);
     return mSubServer.emplace (isrListener->getSeq (), isrListener).second;

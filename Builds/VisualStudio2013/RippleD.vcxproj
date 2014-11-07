@@ -279,9 +279,6 @@
     <ClCompile Include="..\..\src\beast\beast\crypto\Crypto.unity.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\beast\beast\crypto\impl\MurmurHash.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\crypto\impl\Sha256.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -289,8 +286,6 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\crypto\impl\sha2\sha2.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\crypto\MurmurHash.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\crypto\Sha256.h">
     </ClInclude>

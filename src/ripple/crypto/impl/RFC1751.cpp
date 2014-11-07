@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <ripple/crypto/RFC1751.h>
-#include <beast/crypto/MurmurHash.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/range/adaptor/copied.hpp>
 #include <boost/foreach.hpp>
@@ -482,14 +481,25 @@ void RFC1751::getEnglishFromKey (std::string& strHuman, std::string const& strKe
     strHuman    = strFirst + " " + strSecond;
 }
 
-std::string RFC1751::getWordFromBlob (void const* data, size_t bytes)
+std::string
+RFC1751::getWordFromBlob (void const* blob, size_t bytes)
 {
-    std::uint32_t hash;
+    // This is a simple implementation of the Jenkins one-at-a-time hash
+    // algorithm:
+    // http://en.wikipedia.org/wiki/Jenkins_hash_function#one-at-a-time
+    unsigned char const* data = static_cast<unsigned char const*>(blob);
+    std::uint32_t hash = 0;
 
-    // VFALCO Murmur is deprecated and since this does not need to be
-    //        cryptographically secure we should just replace it with something
-    //        else and remove Murmur from beast.
-    beast::Murmur::Hash (data, bytes, 0, &hash);
+    for (size_t i = 0; i < bytes; ++i)
+    {
+        hash += data[i];
+        hash += (hash << 10);
+        hash ^= (hash >> 6);
+    }
+
+    hash += (hash << 3);
+    hash ^= (hash >> 11);
+    hash += (hash << 15);
 
     return s_dictionary [hash % (sizeof (s_dictionary) / sizeof (s_dictionary [0]))];
 }
