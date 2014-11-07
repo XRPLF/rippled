@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/app/paths/Credit.h>
+
 namespace ripple {
 
 // OPTIMIZE: When calculating path increment, note if increment consumes all
@@ -314,13 +316,13 @@ TER PathState::pushNode (
 
                     if (resultCode == tesSUCCESS)
                     {
-                        STAmount saOwed = credit_balance (lesEntries,
+                        STAmount saOwed = creditBalance (lesEntries,
                             node.account_, backNode.account_,
                             node.issue_.currency);
                         STAmount saLimit;
 
                         if (saOwed <= zero) {
-                            saLimit = credit_limit (lesEntries,
+                            saLimit = creditLimit (lesEntries,
                                 node.account_,
                                 backNode.account_,
                                 node.issue_.currency);

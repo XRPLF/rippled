@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/app/paths/AccountCurrencies.h>
+#include <ripple/app/paths/FindPaths.h>
 #include <ripple/rpc/impl/LegacyPathFind.h>
 
 namespace ripple {
@@ -119,11 +121,10 @@ Json::Value doRipplePathFind (RPC::Context& context)
         }
         else
         {
-            auto usCurrencies = usAccountSourceCurrencies (raSrc, cache, true);
-
+            auto currencies = accountSourceCurrencies (raSrc, cache, true);
             jvSrcCurrencies = Json::Value (Json::arrayValue);
 
-            for (auto const& uCurrency: usCurrencies)
+            for (auto const& uCurrency: currencies)
             {
                 Json::Value jvCurrency (Json::objectValue);
                 jvCurrency["currency"] = to_string(uCurrency);
@@ -134,7 +135,9 @@ Json::Value doRipplePathFind (RPC::Context& context)
         // Fill in currencies destination will accept
         Json::Value jvDestCur (Json::arrayValue);
 
-        auto usDestCurrID = usAccountDestCurrencies (raDst, cache, true);
+        // TODO(tom): this could be optimized the same way that
+        // PathRequest::doUpdate() is - if we don't obsolete this code first.
+        auto usDestCurrID = accountDestCurrencies (raDst, cache, true);
         for (auto const& uCurrency: usDestCurrID)
                 jvDestCur.append (to_string (uCurrency));
 
@@ -142,6 +145,29 @@ Json::Value doRipplePathFind (RPC::Context& context)
         jvResult["destination_account"] = raDst.humanAccountID ();
 
         Json::Value jvArray (Json::arrayValue);
+
+        int level = getConfig().PATH_SEARCH_OLD;
+        if ((getConfig().PATH_SEARCH_MAX > level)
+            && !getApp().getFeeTrack().isLoadedLocal())
+        {
+            ++level;
+        }
+
+        if (context.params_.isMember("depth")
+            && context.params_["depth"].isIntegral())
+        {
+            int rLev = context.params_["search_depth"].asInt ();
+            if ((rLev < level) || (context.role_ == Config::ADMIN))
+                level = rLev;
+        }
+
+        FindPaths fp (
+            cache,
+            raSrc.getAccountID(),
+            raDst.getAccountID(),
+            saDstAmount,
+            level,
+            4); // max paths
 
         for (unsigned int i = 0; i != jvSrcCurrencies.size (); ++i)
         {
@@ -177,11 +203,6 @@ Json::Value doRipplePathFind (RPC::Context& context)
                 return rpcError (rpcSRC_ISR_MALFORMED);
             }
 
-            STPathSet spsComputed;
-            bool bValid;
-            Pathfinder pf (cache, raSrc, raDst, uSrcCurrencyID,
-                           uSrcIssuerID, saDstAmount, bValid);
-
             int level = getConfig().PATH_SEARCH_OLD;
             if ((getConfig().PATH_SEARCH_MAX > level)
                 && !getApp().getFeeTrack().isLoadedLocal())
@@ -196,6 +217,7 @@ Json::Value doRipplePathFind (RPC::Context& context)
                     level = rLev;
             }
 
+            STPathSet spsComputed;
             if (context.params_.isMember("paths"))
             {
                 STParsedJSONObject paths ("paths", context.params_["paths"]);
@@ -205,8 +227,12 @@ Json::Value doRipplePathFind (RPC::Context& context)
                     spsComputed = paths.object.get()->downcast<STPathSet> ();
             }
 
-            STPath extraPath;
-            if (!bValid || !pf.findPaths (level, 4, spsComputed, extraPath))
+            STPath fullLiquidityPath;
+            auto valid = fp.findPathsForIssue (
+                {uSrcCurrencyID, uSrcIssuerID},
+                spsComputed,
+                fullLiquidityPath);
+            if (!valid)
             {
                 WriteLog (lsWARNING, RPCHandler)
                     << "ripple_path_find: No paths found.";
@@ -241,13 +267,13 @@ Json::Value doRipplePathFind (RPC::Context& context)
                     << " saMaxAmountAct=" << rc.actualAmountIn
                     << " saDstAmountAct=" << rc.actualAmountOut;
 
-                if (extraPath.size() > 0 &&
+                if (fullLiquidityPath.size() > 0 &&
                     (rc.result() == terNO_LINE || rc.result() == tecPATH_PARTIAL))
                 {
                     WriteLog (lsDEBUG, PathRequest)
                         << "Trying with an extra path element";
 
-                    spsComputed.push_back (extraPath);
+                    spsComputed.push_back (fullLiquidityPath);
                     lesSandbox.clear ();
                     rc = path::RippleCalc::rippleCalculate (
                         lesSandbox,

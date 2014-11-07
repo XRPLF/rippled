@@ -117,7 +117,5 @@
 #include <ripple/app/main/ParameterTable.h>
  #include <ripple/app/paths/PathState.h>
  #include <ripple/app/paths/RippleCalc.h>
-#include  <ripple/app/paths/Pathfinder.h>
-
 
 #endif

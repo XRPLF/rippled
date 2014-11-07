@@ -17,20 +17,36 @@
 */
 //==============================================================================
 
-#include <BeastConfig.h>
+#ifndef RIPPLED_RIPPLE_APP_PATHS_CREDIT_H
+#define RIPPLED_RIPPLE_APP_PATHS_CREDIT_H
 
-#include <ripple/unity/app.h>
+namespace ripple {
 
-#include <ripple/common/seconds_clock.h>
+/** Calculate the maximum amount of IOUs that an account can hold
+    @param ledger the ledger to check against.
+    @param account the account of interest.
+    @param issuer the issuer of the IOU.
+    @param currency the IOU to check.
+    @return The maximum amount that can be held.
+*/
+STAmount creditLimit (
+    LedgerEntrySet& ledger,
+    Account const& account,
+    Account const& issuer,
+    Currency const& currency);
 
-#include <ripple/app/ledger/LedgerEntrySet.cpp>
-#include <ripple/app/ledger/AcceptedLedger.cpp>
-#include <ripple/app/ledger/DirectoryEntryIterator.cpp>
-#include <ripple/app/ledger/OrderBookIterator.cpp>
-#include <ripple/app/consensus/DisputedTx.cpp>
-#include <ripple/app/misc/HashRouter.cpp>
-#include <ripple/app/paths/AccountCurrencies.cpp>
-#include <ripple/app/paths/Credit.cpp>
-#include <ripple/app/paths/FindPaths.cpp>
-#include <ripple/app/paths/Pathfinder.cpp>
-#include <ripple/app/misc/AmendmentTableImpl.cpp>
+/** Returns the amount of IOUs issued by issuer that are held by an account
+    @param ledger the ledger to check against.
+    @param account the account of interest.
+    @param issuer the issuer of the IOU.
+    @param currency the IOU to check.
+*/
+STAmount creditBalance (
+    LedgerEntrySet& ledger,
+    Account const& account,
+    Account const& issuer,
+    Currency const& currency);
+
+} // ripple
+
+#endif
