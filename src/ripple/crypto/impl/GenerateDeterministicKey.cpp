@@ -25,24 +25,26 @@
 
 namespace ripple {
 
+using openssl::ec_key;
+
 // #define EC_DEBUG
 
 // Functions to add support for deterministic EC keys
 
 // --> seed
 // <-- private root generator + public root generator
-EC_KEY* GenerateRootDeterministicKey (uint128 const& seed)
+ec_key GenerateRootDeterministicKey (uint128 const& seed)
 {
     BN_CTX* ctx = BN_CTX_new ();
 
-    if (!ctx) return nullptr;
+    if (!ctx) return ec_key::invalid;
 
     EC_KEY* pkey = EC_KEY_new_by_curve_name (NID_secp256k1);
 
     if (!pkey)
     {
         BN_CTX_free (ctx);
-        return nullptr;
+        return ec_key::invalid;
     }
 
     EC_KEY_set_conv_form (pkey, POINT_CONVERSION_COMPRESSED);
@@ -53,7 +55,7 @@ EC_KEY* GenerateRootDeterministicKey (uint128 const& seed)
     {
         BN_CTX_free (ctx);
         EC_KEY_free (pkey);
-        return nullptr;
+        return ec_key::invalid;
     }
 
     if (!EC_GROUP_get_order (EC_KEY_get0_group (pkey), order, ctx))
@@ -62,7 +64,7 @@ EC_KEY* GenerateRootDeterministicKey (uint128 const& seed)
         BN_free (order);
         EC_KEY_free (pkey);
         BN_CTX_free (ctx);
-        return nullptr;
+        return ec_key::invalid;
     }
 
     BIGNUM* privKey = nullptr;
@@ -83,7 +85,7 @@ EC_KEY* GenerateRootDeterministicKey (uint128 const& seed)
             EC_KEY_free (pkey);
             BN_free (order);
             BN_CTX_free (ctx);
-            return nullptr;
+            return ec_key::invalid;
         }
 
         root.zero ();
@@ -99,7 +101,7 @@ EC_KEY* GenerateRootDeterministicKey (uint128 const& seed)
         EC_KEY_free (pkey);
         BN_clear_free (privKey);
         BN_CTX_free (ctx);
-        return nullptr;
+        return ec_key::invalid;
     }
 
     EC_POINT* pubKey = EC_POINT_new (EC_KEY_get0_group (pkey));
@@ -112,7 +114,7 @@ EC_KEY* GenerateRootDeterministicKey (uint128 const& seed)
         EC_POINT_free (pubKey);
         EC_KEY_free (pkey);
         BN_CTX_free (ctx);
-        return nullptr;
+        return ec_key::invalid;
     }
 
     BN_clear_free (privKey);
@@ -123,7 +125,7 @@ EC_KEY* GenerateRootDeterministicKey (uint128 const& seed)
         EC_POINT_free (pubKey);
         EC_KEY_free (pkey);
         BN_CTX_free (ctx);
-        return nullptr;
+        return ec_key::invalid;
     }
 
     EC_POINT_free (pubKey);
@@ -133,7 +135,7 @@ EC_KEY* GenerateRootDeterministicKey (uint128 const& seed)
 #ifdef EC_DEBUG
     assert (EC_KEY_check_key (pkey) == 1); // CAUTION: This check is *very* expensive
 #endif
-    return pkey;
+    return ec_key::acquire ((ec_key::pointer_t) pkey);
 }
 
 // Take ripple address.
@@ -204,7 +206,7 @@ static BIGNUM* makeHash (Blob const& pubGen, int seq, BIGNUM const* order)
 }
 
 // --> public generator
-EC_KEY* GeneratePublicDeterministicKey (Blob const& pubGen, int seq)
+ec_key GeneratePublicDeterministicKey (Blob const& pubGen, int seq)
 {
     // publicKey(n) = rootPublicKey EC_POINT_+ Hash(pubHash|seq)*point
     BIGNUM* generator = BN_bin2bn (
@@ -213,7 +215,7 @@ EC_KEY* GeneratePublicDeterministicKey (Blob const& pubGen, int seq)
         nullptr);
 
     if (generator == nullptr)
-        return nullptr;
+        return ec_key::invalid;
 
     EC_KEY*         rootKey     = GenerateRootPubKey (generator);
     const EC_POINT* rootPubKey  = EC_KEY_get0_public_key (rootKey);
@@ -274,23 +276,23 @@ EC_KEY* GeneratePublicDeterministicKey (Blob const& pubGen, int seq)
 
     if (pkey && !success)   EC_KEY_free (pkey);
 
-    return success ? pkey : nullptr;
+    return success ? ec_key::acquire ((ec_key::pointer_t) pkey) : ec_key::invalid;
 }
 
 // --> root private key
-EC_KEY* GeneratePrivateDeterministicKey (Blob const& pubGen, const BIGNUM* rootPrivKey, int seq)
+ec_key GeneratePrivateDeterministicKey (Blob const& pubGen, const BIGNUM* rootPrivKey, int seq)
 {
     // privateKey(n) = (rootPrivateKey + Hash(pubHash|seq)) % order
     BN_CTX* ctx = BN_CTX_new ();
 
-    if (ctx == nullptr) return nullptr;
+    if (ctx == nullptr) return ec_key::invalid;
 
     EC_KEY* pkey = EC_KEY_new_by_curve_name (NID_secp256k1);
 
     if (pkey == nullptr)
     {
         BN_CTX_free (ctx);
-        return nullptr;
+        return ec_key::invalid;
     }
 
     EC_KEY_set_conv_form (pkey, POINT_CONVERSION_COMPRESSED);
@@ -301,7 +303,7 @@ EC_KEY* GeneratePrivateDeterministicKey (Blob const& pubGen, const BIGNUM* rootP
     {
         BN_CTX_free (ctx);
         EC_KEY_free (pkey);
-        return nullptr;
+        return ec_key::invalid;
     }
 
     if (!EC_GROUP_get_order (EC_KEY_get0_group (pkey), order, ctx))
@@ -309,7 +311,7 @@ EC_KEY* GeneratePrivateDeterministicKey (Blob const& pubGen, const BIGNUM* rootP
         BN_free (order);
         BN_CTX_free (ctx);
         EC_KEY_free (pkey);
-        return nullptr;
+        return ec_key::invalid;
     }
 
     // calculate the private additional key
@@ -320,7 +322,7 @@ EC_KEY* GeneratePrivateDeterministicKey (Blob const& pubGen, const BIGNUM* rootP
         BN_free (order);
         BN_CTX_free (ctx);
         EC_KEY_free (pkey);
-        return nullptr;
+        return ec_key::invalid;
     }
 
     // calculate the final private key
@@ -336,7 +338,7 @@ EC_KEY* GeneratePrivateDeterministicKey (Blob const& pubGen, const BIGNUM* rootP
         BN_clear_free (privKey);
         BN_CTX_free (ctx);
         EC_KEY_free (pkey);
-        return nullptr;
+        return ec_key::invalid;
     }
 
     if (EC_POINT_mul (EC_KEY_get0_group (pkey), pubKey, privKey, nullptr, nullptr, ctx) == 0)
@@ -345,7 +347,7 @@ EC_KEY* GeneratePrivateDeterministicKey (Blob const& pubGen, const BIGNUM* rootP
         EC_POINT_free (pubKey);
         EC_KEY_free (pkey);
         BN_CTX_free (ctx);
-        return nullptr;
+        return ec_key::invalid;
     }
 
     BN_clear_free (privKey);
@@ -354,7 +356,7 @@ EC_KEY* GeneratePrivateDeterministicKey (Blob const& pubGen, const BIGNUM* rootP
     EC_POINT_free (pubKey);
     BN_CTX_free (ctx);
 
-    return pkey;
+    return ec_key::acquire ((ec_key::pointer_t) pkey);
 }
 
 } // ripple

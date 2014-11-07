@@ -91,21 +91,21 @@ public:
 
     CKey (const uint128& passPhrase)
     {
-        pkey = GenerateRootDeterministicKey (passPhrase);
+        pkey = (EC_KEY*) GenerateRootDeterministicKey (passPhrase).release();
         assert (pkey);
     }
 
     CKey (Blob const& generator, int n)
     {
         // public deterministic key
-        pkey = GeneratePublicDeterministicKey (generator, n);
+        pkey = (EC_KEY*) GeneratePublicDeterministicKey (generator, n).release();
         assert (pkey);
     }
 
     CKey (Blob const& base, const BIGNUM* rootPrivKey, int n)
     {
         // private deterministic key
-        pkey = GeneratePrivateDeterministicKey (base, rootPrivKey, n);
+        pkey = (EC_KEY*) GeneratePrivateDeterministicKey (base, rootPrivKey, n).release();
         assert (pkey);
     }
 

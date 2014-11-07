@@ -25,14 +25,15 @@
 #ifndef RIPPLE_CKEYDETERMINISTIC_H
 #define RIPPLE_CKEYDETERMINISTIC_H
 
+#include <ripple/crypto/ec_key.h>
 #include <ripple/types/base_uint.h>
-#include <openssl/ec.h>
+#include <openssl/bn.h>
 
 namespace ripple {
 
-EC_KEY* GenerateRootDeterministicKey (const uint128& passPhrase);
-EC_KEY* GeneratePublicDeterministicKey (Blob const& generator, int n);
-EC_KEY* GeneratePrivateDeterministicKey (Blob const& family, const BIGNUM* rootPriv, int n);
+openssl::ec_key GenerateRootDeterministicKey (const uint128& passPhrase);
+openssl::ec_key GeneratePublicDeterministicKey (Blob const& generator, int n);
+openssl::ec_key GeneratePrivateDeterministicKey (Blob const& family, const BIGNUM* rootPriv, int n);
 
 } // ripple
 
