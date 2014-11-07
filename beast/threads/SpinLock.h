@@ -25,8 +25,9 @@
 #define BEAST_THREADS_SPINLOCK_H_INCLUDED
 
 #include <beast/threads/UnlockGuard.h>
-
+#include <beast/utility/noexcept.h>
 #include <atomic>
+#include <cassert>
 #include <mutex>
 #include <thread>
 
@@ -98,7 +99,7 @@ public:
     inline void exit() const noexcept
     {
         // Agh! Releasing a lock that isn't currently held!
-        bassert (m_lock.load () == 1);
+        assert (m_lock.load () == 1);
         m_lock.store (0);
     }
 
