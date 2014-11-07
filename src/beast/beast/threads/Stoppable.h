@@ -25,9 +25,7 @@
 #include <atomic>
 #include <mutex>
 #include <condition_variable>
-#include <chrono>
 #include <deque>
-#include <cassert>
 
 namespace beast {
 
@@ -176,10 +174,8 @@ protected:
     Stoppable (std::string const& name, RootStoppable& root);
 
 public:
-    /** Create the Stoppable. */
     Stoppable (std::string const& name, Stoppable& parent);
 
-    /** Destroy the Stoppable. */
     virtual ~Stoppable ();
 
     /** Returns `true` if the stoppable should stop. */

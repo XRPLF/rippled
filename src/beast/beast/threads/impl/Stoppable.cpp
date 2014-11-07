@@ -18,6 +18,8 @@
 //==============================================================================
 
 #include <beast/threads/Stoppable.h>
+#include <chrono>
+#include <cassert>
 
 namespace beast {
 
@@ -129,7 +131,7 @@ void Stoppable::stopRecursive (Journal& journal)
 
     // Block on each child from the bottom of the tree up.
     //
-    std::lock_guard<std::mutex> lock(m_childrenMutex);
+    std::unique_lock<std::mutex> lock(m_childrenMutex);
     for (auto const& child: m_children)
         child->stopRecursive(journal);
 
@@ -140,13 +142,14 @@ void Stoppable::stopRecursive (Journal& journal)
 
     // Now block on this Stoppable.
     //
-    std::mutex mtx;
-    std::unique_lock<std::mutex> stoppedLock(mtx);
-    m_stoppedEvent.wait_for(stoppedLock, std::chrono::seconds(1));
-    if (!isStopped())
+    auto hasStopped = m_stoppedEvent.wait_for(lock, 
+        std::chrono::seconds(1), [&] {
+        return isStopped();
+    });
+    if (!hasStopped)
     {
         journal.warning << "Waiting for '" << m_name << "' to stop";
-        m_stoppedEvent.wait(stoppedLock,[&]{ return isStopped(); });
+        m_stoppedEvent.wait(lock,[&]{ return isStopped(); });
     }
     journal.info << "'" << m_name << "' has stopped";
 }
@@ -202,5 +205,4 @@ void RootStoppable::stopAsync (Journal journal)
     if (m_calledStopAsync.exchange (true) == false)
         stopAsyncRecursive (journal);
 }
-
 }
