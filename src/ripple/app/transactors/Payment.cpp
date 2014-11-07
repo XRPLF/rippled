@@ -235,7 +235,7 @@ public:
             // no way for this field to be set.
             m_journal.trace << "Malformed transaction: DestinationTag required.";
 
-            return tefDST_TAG_NEEDED;
+            return tecDST_TAG_NEEDED;
         }
         else
         {

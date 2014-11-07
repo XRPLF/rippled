@@ -58,6 +58,7 @@ bool transResultInfo (TER terCode, std::string& strToken, std::string& strHuman)
         {   tecNO_PERMISSION,       "tecNO_PERMISSION",         "No permission to perform requested operation."         },
         {   tecNO_ENTRY,            "tecNO_ENTRY",              "No matching entry found."                              },
         {   tecINSUFFICIENT_RESERVE,"tecINSUFFICIENT_RESERVE",  "Insufficient reserve to complete requested operation." },
+        {   tecDST_TAG_NEEDED,      "tecDST_TAG_NEEDED",        "A destination tag is required."                        },
 
         {   tefALREADY,             "tefALREADY",               "The exact transaction was already in this ledger."     },
         {   tefBAD_ADD_AUTH,        "tefBAD_ADD_AUTH",          "Not authorized to add account."                        },
