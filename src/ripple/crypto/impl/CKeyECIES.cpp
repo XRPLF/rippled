@@ -63,19 +63,17 @@ namespace ripple {
 #define ECIES_HMAC_TYPE     uint256             // Type used to hold HMAC value
 #define ECIES_HMAC_SIZE     (256/8)             // Size of HMAC value
 
-void CKey::getECIESSecret (CKey& otherKey, ECIES_ENC_KEY_TYPE& enc_key, ECIES_HMAC_KEY_TYPE& hmac_key)
+// returns a 32-byte secret unique to these two keys. At least one private key must be known.
+static void getECIESSecret (EC_KEY* privkey, EC_KEY* pubkey, ECIES_ENC_KEY_TYPE& enc_key, ECIES_HMAC_KEY_TYPE& hmac_key)
 {
     // Retrieve a secret generated from an EC key pair. At least one private key must be known.
-    if (!pkey || !otherKey.pkey)
+    if (privkey == nullptr || pubkey == nullptr)
         throw std::runtime_error ("missing key");
 
-    if (EC_KEY_get0_private_key (pkey))
+    if (EC_KEY_get0_private_key (privkey))
     {
         throw std::runtime_error ("not a private key");
     }
-
-    EC_KEY* privkey = pkey;
-    EC_KEY* pubkey  = otherKey.pkey;
 
     unsigned char rawbuf[512];
     int buflen = ECDH_compute_key (rawbuf, 512, EC_KEY_get0_public_key (pubkey), privkey, nullptr);
@@ -134,7 +132,7 @@ Blob CKey::encryptECIES (CKey& otherKey, Blob const& plaintext)
     ECIES_ENC_KEY_TYPE secret;
     ECIES_HMAC_KEY_TYPE hmacKey;
 
-    getECIESSecret (otherKey, secret, hmacKey);
+    getECIESSecret (pkey, otherKey.pkey, secret, hmacKey);
     ECIES_HMAC_TYPE hmac = makeHMAC (hmacKey, plaintext);
     hmacKey.zero ();
 
@@ -216,7 +214,7 @@ Blob CKey::decryptECIES (CKey& otherKey, Blob const& ciphertext)
 
     ECIES_ENC_KEY_TYPE secret;
     ECIES_HMAC_KEY_TYPE hmacKey;
-    getECIESSecret (otherKey, secret, hmacKey);
+    getECIESSecret (pkey, otherKey.pkey, secret, hmacKey);
 
     if (EVP_DecryptInit_ex (&ctx, ECIES_ENC_ALGO, nullptr, secret.begin (), iv.begin ()) != 1)
     {
