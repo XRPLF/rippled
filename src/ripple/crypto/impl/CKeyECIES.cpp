@@ -69,19 +69,13 @@ void CKey::getECIESSecret (CKey& otherKey, ECIES_ENC_KEY_TYPE& enc_key, ECIES_HM
     if (!pkey || !otherKey.pkey)
         throw std::runtime_error ("missing key");
 
-    EC_KEY* pubkey, *privkey;
-
     if (EC_KEY_get0_private_key (pkey))
     {
-        privkey = pkey;
-        pubkey = otherKey.pkey;
+        throw std::runtime_error ("not a private key");
     }
-    else if (EC_KEY_get0_private_key (otherKey.pkey))
-    {
-        privkey = otherKey.pkey;
-        pubkey = pkey;
-    }
-    else throw std::runtime_error ("no private key");
+
+    EC_KEY* privkey = pkey;
+    EC_KEY* pubkey  = otherKey.pkey;
 
     unsigned char rawbuf[512];
     int buflen = ECDH_compute_key (rawbuf, 512, EC_KEY_get0_public_key (pubkey), privkey, nullptr);
