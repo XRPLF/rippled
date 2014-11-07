@@ -154,11 +154,11 @@ Json::Value doRipplePathFind (RPC::Context& context)
             ++level;
         }
 
-        if (context.params_.isMember("depth")
-            && context.params_["depth"].isIntegral())
+        if (context.params.isMember("depth")
+            && context.params["depth"].isIntegral())
         {
-            int rLev = context.params_["search_depth"].asInt ();
-            if ((rLev < level) || (context.role_ == Config::ADMIN))
+            int rLev = context.params["search_depth"].asInt ();
+            if ((rLev < level) || (context.role == Role::ADMIN))
                 level = rLev;
         }
 
