@@ -345,7 +345,7 @@ suite_setup = (state) ->
 ##################################### TESTS ####################################
 
 execute_if_enabled = (fn) ->
-  path = "#{__dirname}/../src/ripple/data/protocol/TxFlags.h"
+  path = "#{__dirname}/../src/ripple/protocol/TxFlags.h"
   skip_it = /asfGlobalFreeze/.exec(fs.readFileSync(path)) == null
   func = if skip_it then global.suite.skip else global.suite
   enforced = false
