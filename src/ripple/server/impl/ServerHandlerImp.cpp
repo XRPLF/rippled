@@ -144,6 +144,12 @@ ServerHandlerImp::onHandoff (HTTP::Session& session,
     return Handoff{};
 }
 
+static inline
+RPC::Output makeOutput (HTTP::Session& session)
+{
+    return [&](RPC::Bytes const& b) { session.write (b.data, b.size); };
+}
+
 void
 ServerHandlerImp::onRequest (HTTP::Session& session)
 {
@@ -151,7 +157,7 @@ ServerHandlerImp::onRequest (HTTP::Session& session)
     if (! authorized (session.port(),
         build_map(session.request().headers)))
     {
-        session.write (HTTPReply (403, "Forbidden"));
+        HTTPReply (403, "Forbidden", makeOutput (session));
         session.close (true);
         return;
     }
@@ -180,8 +186,11 @@ void
 ServerHandlerImp::processSession (Job& job,
     std::shared_ptr<HTTP::Session> const& session)
 {
-    session->write (processRequest (session->port(),
-        to_string(session->body()), session->remoteAddress().at_port(0)));
+    processRequest (
+        session->port(),
+        to_string (session->body()),
+        session->remoteAddress().at_port (0),
+        makeOutput (*session));
 
     if (session->request().keep_alive())
     {
@@ -193,18 +202,19 @@ ServerHandlerImp::processSession (Job& job,
     }
 }
 
-std::string
+void
 ServerHandlerImp::createResponse (
     int statusCode,
-    std::string const& description)
+    std::string const& description,
+    Output output)
 {
-    return HTTPReply (statusCode, description);
+    return HTTPReply (statusCode, description, output);
 }
 
-// VFALCO ARGH! returning a single std::string for the entire response?
-std::string
+void
 ServerHandlerImp::processRequest (HTTP::Port const& port,
-    std::string const& request, beast::IP::Endpoint const& remoteIPAddress)
+    std::string const& request, beast::IP::Endpoint const& remoteIPAddress,
+    Output output)
 {
     Json::Value jsonRPC;
     {
@@ -214,7 +224,7 @@ ServerHandlerImp::processRequest (HTTP::Port const& port,
             jsonRPC.isNull () ||
             ! jsonRPC.isObject ())
         {
-            return createResponse (400, "Unable to parse request");
+            return createResponse (400, "Unable to parse request", output);
         }
     }
 
@@ -237,7 +247,7 @@ ServerHandlerImp::processRequest (HTTP::Port const& port,
         usage = m_resourceManager.newInboundEndpoint(remoteIPAddress);
 
     if (usage.disconnect ())
-        return createResponse (503, "Server is overloaded");
+        return createResponse (503, "Server is overloaded", output);
 
     // Parse id now so errors from here on will have the id
     //
@@ -248,14 +258,14 @@ ServerHandlerImp::processRequest (HTTP::Port const& port,
     Json::Value const method = jsonRPC ["method"];
 
     if (method.isNull ())
-        return createResponse (400, "Null method");
+        return createResponse (400, "Null method", output);
 
     if (! method.isString ())
-        return createResponse (400, "method is not string");
+        return createResponse (400, "method is not string", output);
 
     std::string strMethod = method.asString ();
     if (strMethod.empty())
-        return createResponse (400, "method is empty");
+        return createResponse (400, "method is empty", output);
 
     // Parse params
     Json::Value params = jsonRPC ["params"];
@@ -264,7 +274,7 @@ ServerHandlerImp::processRequest (HTTP::Port const& port,
         params = Json::Value (Json::arrayValue);
 
     else if (!params.isArray ())
-        return HTTPReply (400, "params unparseable");
+        return HTTPReply (400, "params unparseable", output);
 
     // VFALCO TODO Shouldn't we handle this earlier?
     //
@@ -273,11 +283,10 @@ ServerHandlerImp::processRequest (HTTP::Port const& port,
         // VFALCO TODO Needs implementing
         // FIXME Needs implementing
         // XXX This needs rate limiting to prevent brute forcing password.
-        return HTTPReply (403, "Forbidden");
+        return HTTPReply (403, "Forbidden", output);
     }
 
 
-    std::string response;
     RPCHandler rpcHandler (m_networkOPs);
     Resource::Charge loadType = Resource::feeReferenceRPC;
 
@@ -289,9 +298,12 @@ ServerHandlerImp::processRequest (HTTP::Port const& port,
 
     usage.charge (loadType);
 
-    response = JSONRPCReply (result, Json::Value (), id);
+    Json::Value reply (Json::objectValue);
+    reply[jss::result] = result;
+    auto response = to_string (reply);
+    response += '\n';
 
-    return createResponse (200, response);
+    return createResponse (200, response, output);
 }
 
 //------------------------------------------------------------------------------
@@ -599,7 +611,7 @@ to_Port(ParsedPort const& parsed, std::ostream& log)
         throw std::exception();
     }
     p.protocol = parsed.protocol;
-    if (p.websockets() && 
+    if (p.websockets() &&
         (parsed.protocol.count("peer") > 0 ||
         parsed.protocol.count("http") > 0 ||
         parsed.protocol.count("https") > 0))

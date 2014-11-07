@@ -21,22 +21,11 @@
 #define RIPPLE_SERVER_JSONRPCUTIL_H_INCLUDED
 
 #include <ripple/json/json_value.h>
+#include <ripple/rpc/Output.h>
 
 namespace ripple {
 
-// VFALCO These functions are all deprecated they are inefficient and have poor signatures.
-
-extern std::string JSONRPCReply (Json::Value const& result, Json::Value const& error, Json::Value const& id);
-
-extern Json::Value JSONRPCError (int code, std::string const& message);
-
-// VFALCO This needs to be rewritten to use beast::http::message
-extern std::string HTTPReply (int nStatus, std::string const& strMsg);
-
-// VFALCO NOTE This one looks like it does some sort of stream i/o
-extern int ReadHTTP (std::basic_istream<char>& stream,
-                     std::map<std::string, std::string>& mapHeadersRet,
-                     std::string& strMessageRet);
+void HTTPReply (int nStatus, std::string const& strMsg, RPC::Output);
 
 } // ripple
 
