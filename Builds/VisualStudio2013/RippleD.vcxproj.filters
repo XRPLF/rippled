@@ -3255,6 +3255,9 @@
     <ClInclude Include="..\..\src\ripple\crypto\ECDSACanonical.h">
       <Filter>ripple\crypto</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\crypto\ECIES.h">
+      <Filter>ripple\crypto</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\crypto\ec_key.h">
       <Filter>ripple\crypto</Filter>
     </ClInclude>

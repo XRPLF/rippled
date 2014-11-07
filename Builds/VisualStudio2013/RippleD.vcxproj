@@ -2276,6 +2276,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\crypto\ECDSACanonical.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\crypto\ECIES.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\crypto\ec_key.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\crypto\impl\Base58Data.cpp">

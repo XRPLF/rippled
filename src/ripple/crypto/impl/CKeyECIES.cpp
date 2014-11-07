@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/crypto/CKey.h>
+#include <ripple/crypto/ECIES.h>
 #include <ripple/crypto/RandomNumbers.h>
 #include <openssl/ec.h>
 #include <openssl/pem.h>
@@ -125,6 +126,11 @@ static ECIES_HMAC_TYPE makeHMAC (const ECIES_HMAC_KEY_TYPE& secret, Blob const& 
 
 Blob CKey::encryptECIES (CKey& otherKey, Blob const& plaintext)
 {
+    return ::ripple::encryptECIES (pkey, otherKey.pkey, plaintext);
+}
+
+Blob encryptECIES (EC_KEY* secretKey, EC_KEY* publicKey, Blob const& plaintext)
+{
 
     ECIES_ENC_IV_TYPE iv;
     RandomNumbers::getInstance ().fillBytes (iv.begin (), ECIES_ENC_BLK_SIZE);
@@ -132,7 +138,7 @@ Blob CKey::encryptECIES (CKey& otherKey, Blob const& plaintext)
     ECIES_ENC_KEY_TYPE secret;
     ECIES_HMAC_KEY_TYPE hmacKey;
 
-    getECIESSecret (pkey, otherKey.pkey, secret, hmacKey);
+    getECIESSecret (secretKey, publicKey, secret, hmacKey);
     ECIES_HMAC_TYPE hmac = makeHMAC (hmacKey, plaintext);
     hmacKey.zero ();
 
@@ -200,6 +206,11 @@ Blob CKey::encryptECIES (CKey& otherKey, Blob const& plaintext)
 
 Blob CKey::decryptECIES (CKey& otherKey, Blob const& ciphertext)
 {
+    return ::ripple::decryptECIES (pkey, otherKey.pkey, ciphertext);
+}
+
+Blob decryptECIES (EC_KEY* secretKey, EC_KEY* publicKey, Blob const& ciphertext)
+{
     // minimum ciphertext = IV + HMAC + 1 block
     if (ciphertext.size () < ((2 * ECIES_ENC_BLK_SIZE) + ECIES_HMAC_SIZE) )
         throw std::runtime_error ("ciphertext too short");
@@ -214,7 +225,7 @@ Blob CKey::decryptECIES (CKey& otherKey, Blob const& ciphertext)
 
     ECIES_ENC_KEY_TYPE secret;
     ECIES_HMAC_KEY_TYPE hmacKey;
-    getECIESSecret (pkey, otherKey.pkey, secret, hmacKey);
+    getECIESSecret (secretKey, publicKey, secret, hmacKey);
 
     if (EVP_DecryptInit_ex (&ctx, ECIES_ENC_ALGO, nullptr, secret.begin (), iv.begin ()) != 1)
     {
