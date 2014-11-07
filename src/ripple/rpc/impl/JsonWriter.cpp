@@ -64,51 +64,50 @@ size_t lengthWithoutTrailingZeros (std::string const& s)
 class Writer::Impl
 {
 public:
-    Impl (Output& output) : output_(output) {}
+    Impl (Output output) : output_(output) {}
 
     Impl(Impl&&) = delete;
     Impl& operator=(Impl&&) = delete;
-
 
     bool empty() const { return stack_.empty (); }
 
     void start (CollectionType ct)
     {
         char ch = (ct == array) ? openBracket : openBrace;
-        output (&ch, 1);
+        output (ch);
         stack_.push (Collection());
         stack_.top().type = ct;
     }
 
-    void output (char const* data, size_t size)
+    void output (Bytes const& bytes)
     {
         markStarted ();
-        output_.output (data, size);
+        output_ (bytes);
     }
 
-    void stringOutput (char const* data, size_t size)
+    void stringOutput (Bytes const& bytes)
     {
         markStarted ();
-        size_t position = 0, writtenUntil = 0;
+        std::size_t position = 0, writtenUntil = 0;
 
-        output_.output (&quote, 1);
-        for (; position < size; ++position)
+        output_ (quote);
+        auto data = bytes.data;
+        for (; position < bytes.size; ++position)
         {
             auto i = jsonSpecialCharacterEscape.find (data[position]);
             if (i != jsonSpecialCharacterEscape.end ())
             {
                 if (writtenUntil < position)
                 {
-                    output_.output (
-                        data + writtenUntil, position - writtenUntil);
+                    output_ ({data + writtenUntil, position - writtenUntil});
                 }
-                output_.output (i->second, jsonEscapeLength);
+                output_ ({i->second, jsonEscapeLength});
                 writtenUntil = position + 1;
             };
         }
         if (writtenUntil < position)
-            output_.output (data + writtenUntil, position - writtenUntil);
-        output_.output (&quote, 1);
+            output_ ({data + writtenUntil, position - writtenUntil});
+        output_ (quote);
     }
 
     void markStarted ()
@@ -130,7 +129,7 @@ public:
         if (stack_.top ().isFirst)
             stack_.top ().isFirst = false;
         else
-            output (&comma, 1);
+            output_ (comma);
     }
 
     void writeObjectTag (std::string const& tag)
@@ -142,8 +141,8 @@ public:
         tags.insert (tag);
 #endif
 
-        stringOutput (tag.data(), tag.size());
-        output (&colon, 1);
+        stringOutput (tag);
+        output_ (colon);
     }
 
     bool isFinished() const
@@ -157,7 +156,7 @@ public:
 
         auto isArray = stack_.top().type == array;
         auto ch = isArray ? closeBracket : closeBrace;
-        output (&ch, 1);
+        output_ (ch);
         stack_.pop();
     }
 
@@ -189,13 +188,13 @@ private:
 
     using Stack = std::stack <Collection, std::vector<Collection>>;
 
-    Output& output_;
+    Output output_;
     Stack stack_;
 
     bool isStarted_ = false;
 };
 
-Writer::Writer (Output& output) : impl_(std::make_unique <Impl> (output))
+Writer::Writer (Output output) : impl_(std::make_unique <Impl> (output))
 {
 }
 
@@ -217,39 +216,38 @@ Writer& Writer::operator=(Writer&& w)
 
 void Writer::output (char const* s)
 {
-    impl_->stringOutput (s, strlen (s));
+    impl_->stringOutput (s);
 }
 
 void Writer::output (std::string const& s)
 {
-    impl_->stringOutput (s.data(), s.size ());
+    impl_->stringOutput (s);
 }
 
 template <>
 void Writer::output (float f)
 {
     auto s = to_string (f);
-    impl_->output (s.data (), lengthWithoutTrailingZeros (s));
+    impl_->output ({s.data (), lengthWithoutTrailingZeros (s)});
 }
 
 template <>
 void Writer::output (double f)
 {
     auto s = to_string (f);
-    impl_->output (s.data (), lengthWithoutTrailingZeros (s));
+    impl_->output ({s.data (), lengthWithoutTrailingZeros (s)});
 }
 
 template <>
 void Writer::output (std::nullptr_t)
 {
-    impl_->output ("null", strlen("null"));
+    impl_->output ("null");
 }
 
 template <typename Type>
 void Writer::output (Type t)
 {
-    auto s = to_string (t);
-    impl_->output (s.data(), s.size());
+    impl_->output (to_string (t));
 }
 
 void Writer::finishAll ()
