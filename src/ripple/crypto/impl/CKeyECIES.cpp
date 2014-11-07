@@ -288,46 +288,4 @@ Blob CKey::decryptECIES (CKey& otherKey, Blob const& ciphertext)
     return plaintext;
 }
 
-bool checkECIES (void)
-{
-    CKey senderPriv, recipientPriv, senderPub, recipientPub;
-
-    for (int i = 0; i < 30000; ++i)
-    {
-        if ((i % 100) == 0)
-        {
-            // generate new keys every 100 times
-            senderPriv.MakeNewKey ();
-            recipientPriv.MakeNewKey ();
-
-            if (!senderPub.SetPubKey (senderPriv.GetPubKey ()))
-                throw std::runtime_error ("key error");
-
-            if (!recipientPub.SetPubKey (recipientPriv.GetPubKey ()))
-                throw std::runtime_error ("key error");
-        }
-
-        // generate message
-        Blob message (4096);
-        int msglen = i % 3000;
-
-        RandomNumbers::getInstance ().fillBytes (&message.front (), msglen);
-        message.resize (msglen);
-
-        // encrypt message with sender's private key and recipient's public key
-        Blob ciphertext = senderPriv.encryptECIES (recipientPub, message);
-
-        // decrypt message with recipient's private key and sender's public key
-        Blob decrypt = recipientPriv.decryptECIES (senderPub, ciphertext);
-
-        if (decrypt != message)
-        {
-            assert (false);
-            return false;
-        }
-    }
-
-    return true;
-}
-
 } // ripple
