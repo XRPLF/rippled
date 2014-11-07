@@ -24,10 +24,8 @@
 
 #include <beast/Crypto.h>
 
-#include <beast/module/core/system/BeforeBoost.h>
 #include <boost/utility/base_from_member.hpp>
 #include <boost/functional/hash.hpp>
-#include <boost/unordered_set.hpp>
 
 // For ByteOrder
 #if BEAST_WIN32
@@ -40,26 +38,25 @@
 #include <sys/types.h>
 #endif
 
-#include <ripple/types/api/AgedHistory.h>
-#include <ripple/types/api/Blob.h>
-#include <ripple/types/api/Base58.h>
-#include <ripple/types/api/ByteOrder.h>
-#include <ripple/types/api/strHex.h>
-#include <ripple/types/api/UInt160.h>
-#include <ripple/types/api/RandomNumbers.h>
-#include <ripple/types/api/HashMaps.h>
+#include <ripple/types/AgedHistory.h>
+#include <ripple/types/Blob.h>
+#include <ripple/types/Base58.h>
+#include <ripple/types/Book.h>
+#include <ripple/types/ByteOrder.h>
+#include <ripple/types/strHex.h>
+#include <ripple/types/UInt160.h>
+#include <ripple/types/RandomNumbers.h>
 
-#include <ripple/types/api/IdentifierType.h>
-#include <ripple/types/api/IdentifierStorage.h>
-#include <ripple/types/api/CryptoIdentifier.h>
-#include <ripple/types/api/RippleAccountID.h>
-#include <ripple/types/api/RippleAccountPublicKey.h>
-#include <ripple/types/api/RippleAccountPrivateKey.h>
-#include <ripple/types/api/RippleAssets.h>
-#include <ripple/types/api/RipplePublicKey.h>
-#include <ripple/types/api/RipplePrivateKey.h>
-#include <ripple/types/api/SimpleIdentifier.h>
-#include <ripple/types/api/RippleLedgerHash.h>
-#include <ripple/types/api/RipplePublicKeyHash.h>
+#include <ripple/types/IdentifierType.h>
+#include <ripple/types/IdentifierStorage.h>
+#include <ripple/types/CryptoIdentifier.h>
+#include <ripple/types/RippleAccountID.h>
+#include <ripple/types/RippleAccountPublicKey.h>
+#include <ripple/types/RippleAccountPrivateKey.h>
+#include <ripple/types/RipplePublicKey.h>
+#include <ripple/types/RipplePrivateKey.h>
+#include <ripple/types/SimpleIdentifier.h>
+#include <ripple/types/RippleLedgerHash.h>
+#include <ripple/types/RipplePublicKeyHash.h>
 
 #endif

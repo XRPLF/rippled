@@ -18,9 +18,7 @@
 //==============================================================================
 
 #include <beast/http/impl/joyent_parser.h>
-
-#include <beast/http/basic_message.h>
-
+#include <beast/http/method.h>
 #include <boost/system/error_code.hpp>
 
 namespace beast {
@@ -60,50 +58,50 @@ struct is_error_condition_enum <beast::joyent::http_errno>
 namespace beast {
 namespace joyent {
 
-http::method::methodc_t
+http::method_t
 convert_http_method (joyent::http_method m)
 {
     switch (m)
     {
-    case HTTP_DELETE:      return http::method::http_delete;
-    case HTTP_GET:         return http::method::http_get;
-    case HTTP_HEAD:        return http::method::http_head;
-    case HTTP_POST:        return http::method::http_post;
-    case HTTP_PUT:         return http::method::http_put;
+    case HTTP_DELETE:      return http::method_t::http_delete;
+    case HTTP_GET:         return http::method_t::http_get;
+    case HTTP_HEAD:        return http::method_t::http_head;
+    case HTTP_POST:        return http::method_t::http_post;
+    case HTTP_PUT:         return http::method_t::http_put;
 
     // pathological
-    case HTTP_CONNECT:     return http::method::http_connect;
-    case HTTP_OPTIONS:     return http::method::http_options;
-    case HTTP_TRACE:       return http::method::http_trace;
+    case HTTP_CONNECT:     return http::method_t::http_connect;
+    case HTTP_OPTIONS:     return http::method_t::http_options;
+    case HTTP_TRACE:       return http::method_t::http_trace;
 
     // webdav
-    case HTTP_COPY:        return http::method::http_copy;
-    case HTTP_LOCK:        return http::method::http_lock;
-    case HTTP_MKCOL:       return http::method::http_mkcol;
-    case HTTP_MOVE:        return http::method::http_move;
-    case HTTP_PROPFIND:    return http::method::http_propfind;
-    case HTTP_PROPPATCH:   return http::method::http_proppatch;
-    case HTTP_SEARCH:      return http::method::http_search;
-    case HTTP_UNLOCK:      return http::method::http_unlock;
+    case HTTP_COPY:        return http::method_t::http_copy;
+    case HTTP_LOCK:        return http::method_t::http_lock;
+    case HTTP_MKCOL:       return http::method_t::http_mkcol;
+    case HTTP_MOVE:        return http::method_t::http_move;
+    case HTTP_PROPFIND:    return http::method_t::http_propfind;
+    case HTTP_PROPPATCH:   return http::method_t::http_proppatch;
+    case HTTP_SEARCH:      return http::method_t::http_search;
+    case HTTP_UNLOCK:      return http::method_t::http_unlock;
 
     // subversion
-    case HTTP_REPORT:      return http::method::http_report;
-    case HTTP_MKACTIVITY:  return http::method::http_mkactivity;
-    case HTTP_CHECKOUT:    return http::method::http_checkout;
-    case HTTP_MERGE:       return http::method::http_merge;
+    case HTTP_REPORT:      return http::method_t::http_report;
+    case HTTP_MKACTIVITY:  return http::method_t::http_mkactivity;
+    case HTTP_CHECKOUT:    return http::method_t::http_checkout;
+    case HTTP_MERGE:       return http::method_t::http_merge;
 
     // upnp
-    case HTTP_MSEARCH:     return http::method::http_msearch;
-    case HTTP_NOTIFY:      return http::method::http_notify;
-    case HTTP_SUBSCRIBE:   return http::method::http_subscribe;
-    case HTTP_UNSUBSCRIBE: return http::method::http_unsubscribe;
+    case HTTP_MSEARCH:     return http::method_t::http_msearch;
+    case HTTP_NOTIFY:      return http::method_t::http_notify;
+    case HTTP_SUBSCRIBE:   return http::method_t::http_subscribe;
+    case HTTP_UNSUBSCRIBE: return http::method_t::http_unsubscribe;
 
     // RFC-5789
-    case HTTP_PATCH:       return http::method::http_patch;
-    case HTTP_PURGE:       return http::method::http_purge;
+    case HTTP_PATCH:       return http::method_t::http_patch;
+    case HTTP_PURGE:       return http::method_t::http_purge;
     };
 
-    return http::method::http_get;
+    return http::method_t::http_get;
 }
 
 boost::system::error_code

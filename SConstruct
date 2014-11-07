@@ -67,6 +67,7 @@ CHECK_LINE = 'built on: '
 BUILD_TIME = 'Mon Apr  7 20:33:19 UTC 2014'
 OPENSSL_ERROR = ('Your openSSL was built on %s; '
                  'rippled needs a version built on or after %s.')
+UNITY_BUILD_DIRECTORY = 'src/ripple/unity/'
 
 def check_openssl():
     if Beast.system.platform in CHECK_PLATFORMS:
@@ -198,9 +199,7 @@ def config_base(env):
             )
     check_openssl()
 
-    #git = Beast.Git(env) #  TODO(TOM)
-    if False: #git.exists:
-        env.Append(CPPDEFINES={'GIT_COMMIT_ID' : '"%s"' % git.commit_id})
+    env.Append(CPPDEFINES=['OPENSSL_NO_SSL2'])
 
     try:
         BOOST_ROOT = os.path.normpath(os.environ['BOOST_ROOT'])
@@ -214,10 +213,7 @@ def config_base(env):
     except KeyError:
         pass
 
-    if Beast.system.linux:
-        env.ParseConfig('pkg-config --static --cflags --libs openssl')
-        env.ParseConfig('pkg-config --static --cflags --libs protobuf')
-    elif Beast.system.windows:
+    if Beast.system.windows:
         try:
             OPENSSL_ROOT = os.path.normpath(os.environ['OPENSSL_ROOT'])
             env.Append(CPPPATH=[
@@ -235,6 +231,15 @@ def config_base(env):
         env.Prepend(CPPPATH='%s/include' % openssl)
         env.Prepend(LIBPATH=['%s/lib' % openssl])
 
+    # handle command-line arguments
+    profile_jemalloc = ARGUMENTS.get('profile-jemalloc')
+    if profile_jemalloc:
+        env.Append(CPPDEFINES={'PROFILE_JEMALLOC' : profile_jemalloc})
+        env.Append(LIBS=['jemalloc'])
+        env.Append(LIBPATH=[os.path.join(profile_jemalloc, 'lib')])
+        env.Append(CPPPATH=[os.path.join(profile_jemalloc, 'include')])
+        env.Append(LINKFLAGS=['-Wl,-rpath,' + os.path.join(profile_jemalloc, 'lib')])
+
 # Set toolchain and variant specific construction variables
 def config_env(toolchain, variant, env):
     if variant == 'debug':
@@ -244,12 +249,23 @@ def config_env(toolchain, variant, env):
         env.Append(CPPDEFINES=['NDEBUG'])
 
     if toolchain in Split('clang gcc'):
+        if Beast.system.linux:
+            env.ParseConfig('pkg-config --static --cflags --libs openssl')
+            env.ParseConfig('pkg-config --static --cflags --libs protobuf')
+
+        env.Prepend(CFLAGS=['-Wall'])
+        env.Prepend(CXXFLAGS=['-Wall'])
+
         env.Append(CCFLAGS=[
-            '-Wall',
             '-Wno-sign-compare',
             '-Wno-char-subscripts',
             '-Wno-format',
+            '-g'                        # generate debug symbols
             ])
+
+        if toolchain == 'clang':
+            env.Append(CCFLAGS=['-Wno-redeclared-class-member'])
+            env.Append(CPPDEFINES=['BOOST_ASIO_HAS_STD_ARRAY'])
 
         env.Append(CXXFLAGS=[
             '-frtti',
@@ -270,20 +286,24 @@ def config_env(toolchain, variant, env):
                 '-Wno-unused-function',
                 ])
         else:
-            env.Append(CCFLAGS=[
-                '-Wno-unused-but-set-variable'
-                ])
+            if toolchain == 'gcc':
+                env.Append(CCFLAGS=[
+                    '-Wno-unused-but-set-variable'
+                    ])
 
         boost_libs = [
+            'boost_coroutine',
+            'boost_context',
             'boost_date_time',
             'boost_filesystem',
             'boost_program_options',
             'boost_regex',
             'boost_system',
-            'boost_thread'
         ]
         # We prefer static libraries for boost
         if env.get('BOOST_ROOT'):
+            # Need to add boost_thread. Not needed when dynamic linking is used.
+            boost_libs += ['boost_thread']
             static_libs = ['%s/stage/lib/lib%s.a' % (env['BOOST_ROOT'], l) for
                            l in boost_libs]
             if all(os.path.exists(f) for f in static_libs):
@@ -309,32 +329,54 @@ def config_env(toolchain, variant, env):
             '-rdynamic'
             ])
 
-        if variant == 'debug':
-            env.Append(CCFLAGS=[
-                '-g'
-                ])
-        elif variant == 'release':
+        if variant == 'release':
             env.Append(CCFLAGS=[
                 '-O3',
-                '-fno-strict-aliasing'
+                '-fno-strict-aliasing',
+                '-march=native',
+                '-mtune=native'
                 ])
+
+        if toolchain != 'msvc':
+            git = Beast.Git(env)
+            if git.exists:
+                id = '%s+%s.%s' % (git.tags, git.user, git.branch)
+                env.Append(CPPDEFINES={'GIT_COMMIT_ID' : '\'"%s"\'' % id })
 
         if toolchain == 'clang':
             if Beast.system.osx:
                 env.Replace(CC='clang', CXX='clang++', LINK='clang++')
-            else:
-                env.Replace(CC=env['CLANG_CC'], CXX=env['CLANG_CXX'], LINK=env['CLANG_LINK'])
+            elif 'CLANG_CC' in env and 'CLANG_CXX' in env and 'CLANG_LINK' in env:
+                env.Replace(CC=env['CLANG_CC'],
+                            CXX=env['CLANG_CXX'],
+                            LINK=env['CLANG_LINK'])
             # C and C++
             # Add '-Wshorten-64-to-32'
             env.Append(CCFLAGS=[])
             # C++ only
-            # Why is this only for clang?
-            env.Append(CXXFLAGS=['-Wno-mismatched-tags'])
+            env.Append(CXXFLAGS=[
+                '-Wno-mismatched-tags',
+                '-Wno-deprecated-register',
+                ])
 
         elif toolchain == 'gcc':
-            env.Replace(CC=env['GNU_CC'], CXX=env['GNU_CXX'], LINK=env['GNU_LINK'])
+            if 'GNU_CC' in env and 'GNU_CXX' in env and 'GNU_LINK' in env:
+                env.Replace(CC=env['GNU_CC'],
+                            CXX=env['GNU_CXX'],
+                            LINK=env['GNU_LINK'])
             # Why is this only for gcc?!
             env.Append(CCFLAGS=['-Wno-unused-local-typedefs'])
+
+            # If we are in debug mode, use GCC-specific functionality to add
+            # extra error checking into the code (e.g. std::vector will throw
+            # for out-of-bounds conditions)
+            if variant == 'debug':
+                env.Append(CPPDEFINES={
+                    '_FORTIFY_SOURCE': 2
+                    })
+                env.Append(CCFLAGS=[
+                    '-O0'
+                    ])
 
     elif toolchain == 'msvc':
         env.Append (CPPPATH=[
@@ -359,9 +401,10 @@ def config_env(toolchain, variant, env):
             #'/Fd${TARGET}.pdb',     # Path: Program Database (.pdb)
             '/W3',                  # Warning level 3
             '/WX-',                 # Disable warnings as errors
-            '/wd"4018"',            # Disable warning C4018
-            '/wd"4244"',            # Disable warning C4244
-            '/wd"4267"',            # Disable warning 4267
+            '/wd"4018"',
+            '/wd"4244"',
+            '/wd"4267"',
+            '/wd"4800"',            # Disable C4800 (int to bool performance)
             ])
         env.Append(CPPDEFINES={
             '_WIN32_WINNT' : '0x6000',
@@ -396,7 +439,7 @@ def config_env(toolchain, variant, env):
             '/MACHINE:X64',
             '/MANIFEST',
             #'''/MANIFESTUAC:"level='asInvoker' uiAccess='false'"''',
-            #'/NOLOGO',
+            '/nologo',
             '/NXCOMPAT',
             '/SUBSYSTEM:CONSOLE',
             '/TLBID:1',
@@ -423,14 +466,6 @@ def config_env(toolchain, variant, env):
 
 #-------------------------------------------------------------------------------
 
-def addSource(path, env, variant_dirs, CPPPATH=[]):
-    if CPPPATH:
-        env = env.Clone()
-        env.Prepend(CPPPATH=CPPPATH)
-    return env.Object(Beast.variantFile(path, variant_dirs))
-
-#-------------------------------------------------------------------------------
-
 # Configure the base construction environment
 root_dir = Dir('#').srcnode().get_abspath() # Path to this SConstruct file
 build_dir = os.path.join('build')
@@ -446,10 +481,6 @@ base.Append(CPPPATH=[
     os.path.join('src', 'beast'),
     os.path.join(build_dir, 'proto'),
     ])
-if Beast.system.windows:
-    base.Append(CPPPATH=[
-        os.path.join('src', 'protobuf', 'src'),
-        ])
 
 # Configure the toolchains, variants, default toolchain, and default target
 variants = ['debug', 'release']
@@ -473,7 +504,7 @@ else:
         default_toolchain = 'clang'
     else:
         raise ValueError("Don't understand toolchains in " + str(toolchains))
-default_variant = 'debug'
+default_variant = 'release'
 default_target = None
 
 for source in [
@@ -485,10 +516,29 @@ for source in [
         PROTOCOUTDIR=os.path.join(build_dir, 'proto'),
         PROTOCPYTHONOUTDIR=None)
 
+#-------------------------------------------------------------------------------
+
+class ObjectBuilder(object):
+    def __init__(self, env, variant_dirs):
+        self.env = env
+        self.variant_dirs = variant_dirs
+        self.objects = []
+
+    def add_source_files(self, *filenames, **kwds):
+        for filename in filenames:
+            env = self.env
+            if kwds:
+                env = env.Clone()
+                env.Prepend(**kwds)
+            path = UNITY_BUILD_DIRECTORY + filename
+            o = env.Object(Beast.variantFile(path, self.variant_dirs))
+            self.objects.append(o)
+
+
 # Declare the targets
 aliases = collections.defaultdict(list)
 msvc_configs = []
-for toolchain in toolchains:
+for toolchain in all_toolchains:
     for variant in variants:
         # Configure this variant's construction environment
         env = base.Clone()
@@ -503,81 +553,110 @@ for toolchain in toolchains:
             }
         for dest, source in variant_dirs.iteritems():
             env.VariantDir(dest, source, duplicate=0)
-        objects = []
-        objects.append(addSource('src/ripple/unity/app.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/app1.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/app2.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/app3.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/app4.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/app5.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/app6.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/app7.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/app8.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/app9.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/basics.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/beast.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/beastc.c', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/common.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/data.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/http.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/json.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/net.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/overlay.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/rpcx.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/websocket.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/peerfinder.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/protobuf.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/ripple.proto.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/radmap.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/resource.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/sitefiles.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/sslutil.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/testoverlay.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/types.cpp', env, variant_dirs))
-        objects.append(addSource('src/ripple/unity/validators.cpp', env, variant_dirs))
 
-        objects.append(addSource('src/ripple/unity/core.cpp', env, variant_dirs, [
-            'src/leveldb/include',
-            #'src/hyperleveldb/include', # hyper 
-            'src/rocksdb/include',
-            ]))
+        object_builder = ObjectBuilder(env, variant_dirs)
+        object_builder.add_source_files(
+            'app.cpp',
+            'app1.cpp',
+            'app2.cpp',
+            'app3.cpp',
+            'app4.cpp',
+            'app5.cpp',
+            'app6.cpp',
+            'app7.cpp',
+            'app8.cpp',
+            'app9.cpp',
+            'basics.cpp',
+            'beast.cpp',
+            'common.cpp',
+            'core.cpp',
+            'data.cpp',
+            'json.cpp',
+            'net.cpp',
+            'overlay.cpp',
+            'peerfinder.cpp',
+            'protobuf.cpp',
+            'ripple.proto.cpp',
+            'resource.cpp',
+            'rpcx.cpp',
+            'server.cpp',
+            'sitefiles.cpp',
+            'sslutil.cpp',
+            'types.cpp',
+            'validators.cpp',
+            'websocket.cpp',
+        )
 
-        objects.append(addSource('src/ripple/unity/leveldb.cpp', env, variant_dirs, [
-            'src/leveldb/',
-            'src/leveldb/include',
-            'src/snappy/snappy',
-            'src/snappy/config',
-            ]))
+        object_builder.add_source_files(
+            'beastc.c',
+            CCFLAGS=['-Wno-array-bounds'])
 
-        objects.append(addSource('src/ripple/unity/hyperleveldb.cpp', env, variant_dirs, [
-            'src/hyperleveldb',
-            'src/snappy/snappy',
-            'src/snappy/config',
-            ]))
+        object_builder.add_source_files(
+            'nodestore.cpp',
+            CPPPATH=[
+                'src/leveldb/include',
+                #'src/hyperleveldb/include', # hyper
+                'src/rocksdb2/include',
+            ]
+        )
 
-        objects.append(addSource('src/ripple/unity/rocksdb.cpp', env, variant_dirs, [
-            'src/rocksdb',
-            'src/rocksdb/include',
-            'src/snappy/snappy',
-            'src/snappy/config',
-            ]))
+        if 'gcc' in toolchain:
+            no_uninitialized_warning = {'CCFLAGS': ['-Wno-maybe-uninitialized']}
+        else:
+            no_uninitialized_warning = {}
 
-        objects.append(addSource('src/ripple/unity/snappy.cpp', env, variant_dirs, [
-            'src/snappy/snappy',
-            'src/snappy/config',
-            ]))
+        object_builder.add_source_files(
+            'leveldb.cpp',
+            CPPPATH=[
+                'src/leveldb/',
+                'src/leveldb/include',
+                'src/snappy/snappy',
+                'src/snappy/config',
+            ],
+            **no_uninitialized_warning
+        )
 
-        if Beast.system.osx:
-            objects.append(addSource('src/ripple/unity/beastobjc.mm', env, variant_dirs))
+        object_builder.add_source_files(
+            'hyperleveldb.cpp',
+            CPPPATH=[
+                'src/hyperleveldb',
+                'src/snappy/snappy',
+                'src/snappy/config',
+            ],
+            **no_uninitialized_warning
+        )
+
+        object_builder.add_source_files(
+            'rocksdb.cpp',
+            CPPPATH=[
+                'src/rocksdb2',
+                'src/rocksdb2/include',
+                'src/snappy/snappy',
+                'src/snappy/config',
+            ],
+            **no_uninitialized_warning
+        )
+
+        object_builder.add_source_files(
+            'snappy.cpp',
+            CCFLAGS=['-Wno-unused-function'],
+            CPPPATH=[
+                'src/snappy/snappy',
+                'src/snappy/config',
+            ]
+        )
+
+        if toolchain == "clang" and Beast.system.osx:
+            object_builder.add_source_files('beastobjc.mm')
 
         target = env.Program(
-            target = os.path.join(variant_dir, 'rippled'),
-            source = objects
+            target=os.path.join(variant_dir, 'rippled'),
+            source=object_builder.objects
             )
 
         if toolchain == default_toolchain and variant == default_variant:
             default_target = target
-            install_target = env.Install (build_dir, source = default_target)
+            install_target = env.Install (build_dir, source=default_target)
             env.Alias ('install', install_target)
             env.Default (install_target)
             aliases['all'].extend(install_target)
@@ -586,9 +665,10 @@ for toolchain in toolchains:
             msvc_configs.append(config)
         if toolchain in toolchains:
             aliases['all'].extend(target)
-        aliases[variant].extend(target)
-        aliases[toolchain].extend(target)
-        env.Alias(variant_name, target)
+            aliases[variant].extend(target)
+            aliases[toolchain].extend(target)
+            env.Alias(variant_name, target)
+
 for key, value in aliases.iteritems():
     env.Alias(key, value)
 

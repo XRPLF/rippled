@@ -18,6 +18,8 @@
 //==============================================================================
 
 #include <ripple/peerfinder/impl/Bootcache.h>
+#include <ripple/peerfinder/impl/iosformat.h>
+#include <ripple/peerfinder/impl/Tuning.h>
 
 namespace ripple {
 namespace PeerFinder {
@@ -30,6 +32,7 @@ Bootcache::Bootcache (
     , m_clock (clock)
     , m_journal (journal)
     , m_whenUpdate (m_clock.now ())
+    , m_needsUpdate (false)
 {
 }
 

@@ -169,7 +169,7 @@ private:
     // This structure gets zero-filled at static initialization time.
     // No constructors are called.
     //
-    class StaticData : public Uncopyable
+    class StaticData
     {
     public:
         LockType mutex;
@@ -177,9 +177,10 @@ private:
         SharedSingleton  object;
         bool destructorCalled;
 
-    private:
-        StaticData();
-        ~StaticData();
+        StaticData() = delete;
+        StaticData(StaticData const&) = delete;
+        StaticData& operator= (StaticData const&) = delete;
+        ~StaticData() = delete;
     };
 
     static StaticData& getStaticData ()

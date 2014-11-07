@@ -141,154 +141,154 @@ Here is a short example demonstrating its use.
 \snippet cyclic_iterator.cpp cyclic_iterator
 */
 template<
-	typename ContainerIterator
+    typename ContainerIterator
 >
 class cyclic_iterator
 :
-	public detail::cyclic_iterator_base<
-		ContainerIterator
-	>::type
+    public detail::cyclic_iterator_base<
+        ContainerIterator
+    >::type
 {
 public:
-	/**
-	\brief The base type which is a <code>boost::iterator_facade</code>
-	*/
-	typedef typename detail::cyclic_iterator_base<
-		ContainerIterator
-	>::type base_type;
+    /**
+    \brief The base type which is a <code>boost::iterator_facade</code>
+    */
+    typedef typename detail::cyclic_iterator_base<
+        ContainerIterator
+    >::type base_type;
 
-	/**
-	\brief The underlying iterator type
-	*/
-	typedef ContainerIterator container_iterator_type;
+    /**
+    \brief The underlying iterator type
+    */
+    typedef ContainerIterator container_iterator_type;
 
-	/**
-	\brief The value type adapted from \a ContainerIterator
-	*/
-	typedef typename base_type::value_type value_type;
+    /**
+    \brief The value type adapted from \a ContainerIterator
+    */
+    typedef typename base_type::value_type value_type;
 
-	/**
-	\brief The reference type adapted from \a ContainerIterator
-	*/
-	typedef typename base_type::reference reference;
+    /**
+    \brief The reference type adapted from \a ContainerIterator
+    */
+    typedef typename base_type::reference reference;
 
-	/**
-	\brief The pointer type adapted from \a ContainerIterator
-	*/
-	typedef typename base_type::pointer pointer;
+    /**
+    \brief The pointer type adapted from \a ContainerIterator
+    */
+    typedef typename base_type::pointer pointer;
 
-	/**
-	\brief The difference type adapted from \a ContainerIterator
-	*/
-	typedef typename base_type::difference_type difference_type;
+    /**
+    \brief The difference type adapted from \a ContainerIterator
+    */
+    typedef typename base_type::difference_type difference_type;
 
-	/**
-	\brief The iterator category, either Forward or Bidirectional
-	*/
-	typedef typename base_type::iterator_category iterator_category;
+    /**
+    \brief The iterator category, either Forward or Bidirectional
+    */
+    typedef typename base_type::iterator_category iterator_category;
 
-	/**
-	\brief Creates a singular iterator
-	*/
-	cyclic_iterator();
+    /**
+    \brief Creates a singular iterator
+    */
+    cyclic_iterator();
 
-	/**
-	\brief Copy constructs from another cyclic iterator
+    /**
+    \brief Copy constructs from another cyclic iterator
 
-	Copy constructs from another cyclic iterator \a other. This only works
-	if the underlying iterators are convertible.
+    Copy constructs from another cyclic iterator \a other. This only works
+    if the underlying iterators are convertible.
 
-	\param other The iterator to copy construct from
-	*/
-	template<
-		typename OtherIterator
-	>
-	explicit
-	cyclic_iterator(
-		cyclic_iterator<OtherIterator> const &other
-	);
+    \param other The iterator to copy construct from
+    */
+    template<
+        typename OtherIterator
+    >
+    explicit
+    cyclic_iterator(
+        cyclic_iterator<OtherIterator> const &other
+    );
 
-	/**
-	\brief Constructs a new cyclic iterator
+    /**
+    \brief Constructs a new cyclic iterator
 
-	Constructs a new cyclic iterator, starting at \a it, inside
-	a range from \a begin to \a end.
+    Constructs a new cyclic iterator, starting at \a it, inside
+    a range from \a begin to \a end.
 
-	\param pos The start of the iterator
-	\param begin The beginning of the range
-	\param end The end of the range
+    \param pos The start of the iterator
+    \param begin The beginning of the range
+    \param end The end of the range
 
-	\warning The behaviour is undefined if \a pos isn't between \a begin
-	and \a end. Also, the behaviour is undefined, if \a begin and \a end
-	don't form a valid range.
-	*/
-	cyclic_iterator(
-		container_iterator_type const &pos,
-		container_iterator_type const &begin,
-		container_iterator_type const &end
-	);
+    \warning The behaviour is undefined if \a pos isn't between \a begin
+    and \a end. Also, the behaviour is undefined, if \a begin and \a end
+    don't form a valid range.
+    */
+    cyclic_iterator(
+        container_iterator_type const &pos,
+        container_iterator_type const &begin,
+        container_iterator_type const &end
+    );
 
-	/**
-	\brief Assigns from another cyclic iterator
+    /**
+    \brief Assigns from another cyclic iterator
 
-	Assigns from another cyclic iterator \a other. This only works if the
-	underlying iterators are convertible.
+    Assigns from another cyclic iterator \a other. This only works if the
+    underlying iterators are convertible.
 
-	\param other The iterator to assign from
+    \param other The iterator to assign from
 
-	\return <code>*this</code>
-	*/
-	template<
-		typename OtherIterator
-	>
-	cyclic_iterator<ContainerIterator> &
-	operator=(
-		cyclic_iterator<OtherIterator> const &other
-	);
+    \return <code>*this</code>
+    */
+    template<
+        typename OtherIterator
+    >
+    cyclic_iterator<ContainerIterator> &
+    operator=(
+        cyclic_iterator<OtherIterator> const &other
+    );
 
-	/**
-	\brief Returns the beginning of the range
-	*/
-	container_iterator_type
-	begin() const;
+    /**
+    \brief Returns the beginning of the range
+    */
+    container_iterator_type
+    begin() const;
 
-	/**
-	\brief Returns the end of the range
-	*/
-	container_iterator_type
-	end() const;
+    /**
+    \brief Returns the end of the range
+    */
+    container_iterator_type
+    end() const;
 
-	/**
-	\brief Returns the underlying iterator
-	*/
-	container_iterator_type
-	get() const;
+    /**
+    \brief Returns the underlying iterator
+    */
+    container_iterator_type
+    get() const;
 private:
-	friend class boost::iterator_core_access;
+    friend class boost::iterator_core_access;
 
-	void
-	increment();
+    void
+    increment();
 
-	void
-	decrement();
+    void
+    decrement();
 
-	bool
-	equal(
-		cyclic_iterator const &
-	) const;
+    bool
+    equal(
+        cyclic_iterator const &
+    ) const;
 
-	reference
-	dereference() const;
+    reference
+    dereference() const;
 
-	difference_type
-	distance_to(
-		cyclic_iterator const &
-	) const;
+    difference_type
+    distance_to(
+        cyclic_iterator const &
+    ) const;
 private:
-	container_iterator_type
-		it_,
-		begin_,
-		end_;
+    container_iterator_type
+        it_,
+        begin_,
+        end_;
 };
 
 //

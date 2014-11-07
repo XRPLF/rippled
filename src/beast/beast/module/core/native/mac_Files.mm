@@ -49,12 +49,6 @@ bool File::copyInternal (const File& dest) const
     }
 }
 
-void File::findFileSystemRoots (Array<File>& destArray)
-{
-    destArray.add (File ("/"));
-}
-
-
 //==============================================================================
 namespace FileHelpers
 {
@@ -128,47 +122,6 @@ namespace FileHelpers
     }
 }
 
-bool File::isOnCDRomDrive() const
-{
-    const char* const cdTypes[] = { "cd9660", "cdfs", "cddafs", "udf", 0 };
-
-    return FileHelpers::isFileOnDriveType (*this, cdTypes);
-}
-
-bool File::isOnHardDisk() const
-{
-    const char* const nonHDTypes[] = { "nfs", "smbfs", "ramfs", 0 };
-
-    return ! (isOnCDRomDrive() || FileHelpers::isFileOnDriveType (*this, nonHDTypes));
-}
-
-bool File::isOnRemovableDrive() const
-{
-   #if BEAST_IOS
-    return false; // xxx is this possible?
-   #else
-    BEAST_AUTORELEASEPOOL
-    {
-        BOOL removable = false;
-
-        [[NSWorkspace sharedWorkspace]
-               getFileSystemInfoForPath: beastStringToNS (getFullPathName())
-                            isRemovable: &removable
-                             isWritable: nil
-                          isUnmountable: nil
-                            description: nil
-                                   type: nil];
-
-        return removable;
-    }
-   #endif
-}
-
-bool File::isHidden() const
-{
-    return FileHelpers::isHiddenFile (getFullPathName());
-}
-
 //==============================================================================
 const char* const* beast_argv = nullptr;
 int beast_argc = 0;
@@ -214,38 +167,6 @@ File File::getSpecialLocation (const SpecialLocationType type)
             case commonDocumentsDirectory:          resultPath = "/Users/Shared"; break;
             case globalApplicationsDirectory:       resultPath = "/Applications"; break;
 
-            case invokedExecutableFile:
-                if (beast_argv != nullptr && beast_argc > 0)
-                    return File (CharPointer_UTF8 (beast_argv[0]));
-                // deliberate fall-through...
-
-            case currentExecutableFile:
-                return beast_getExecutableFile();
-
-            case currentApplicationFile:
-            {
-                const File exe (beast_getExecutableFile());
-                const File parent (exe.getParentDirectory());
-
-              #if BEAST_IOS
-                return parent;
-              #else
-                return parent.getFullPathName().endsWithIgnoreCase ("Contents/MacOS")
-                        ? parent.getParentDirectory().getParentDirectory()
-                        : exe;
-              #endif
-            }
-
-            case hostApplicationPath:
-            {
-                unsigned int size = 8192;
-                HeapBlock<char> buffer;
-                buffer.calloc (size + 8);
-
-                _NSGetExecutablePath (buffer.getData(), &size);
-                return String::fromUTF8 (buffer, (int) size);
-            }
-
             default:
                 bassertfalse; // unknown type?
                 break;
@@ -259,60 +180,7 @@ File File::getSpecialLocation (const SpecialLocationType type)
 }
 
 //==============================================================================
-String File::getVersion() const
-{
-    BEAST_AUTORELEASEPOOL
-    {
-        if (NSBundle* bundle = [NSBundle bundleWithPath: beastStringToNS (getFullPathName())])
-            if (NSDictionary* info = [bundle infoDictionary])
-                if (NSString* name = [info valueForKey: nsStringLiteral ("CFBundleShortVersionString")])
-                    return nsStringToBeast (name);
-    }
-
-    return String::empty;
-}
-
-//==============================================================================
-File File::getLinkedTarget() const
-{
-   #if BEAST_IOS || (defined (MAC_OS_X_VERSION_10_5) && MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5)
-    NSString* dest = [[NSFileManager defaultManager] destinationOfSymbolicLinkAtPath: beastStringToNS (getFullPathName()) error: nil];
-   #else
-    // (the cast here avoids a deprecation warning)
-    NSString* dest = [((id) [NSFileManager defaultManager]) pathContentOfSymbolicLinkAtPath: beastStringToNS (getFullPathName())];
-   #endif
-
-    if (dest != nil)
-        return File (nsStringToBeast (dest));
-
-    return *this;
-}
-
-//==============================================================================
-bool File::moveToTrash() const
-{
-    if (! exists())
-        return true;
-
-   #if BEAST_IOS
-    return deleteFile(); //xxx is there a trashcan on the iOS?
-   #else
-    BEAST_AUTORELEASEPOOL
-    {
-        NSString* p = beastStringToNS (getFullPathName());
-
-        return [[NSWorkspace sharedWorkspace]
-                    performFileOperation: NSWorkspaceRecycleOperation
-                                  source: [p stringByDeletingLastPathComponent]
-                             destination: nsEmptyString()
-                                   files: [NSArray arrayWithObject: [p lastPathComponent]]
-                                     tag: nil ];
-    }
-   #endif
-}
-
-//==============================================================================
-class DirectoryIterator::NativeIterator::Pimpl : public Uncopyable
+class DirectoryIterator::NativeIterator::Pimpl
 {
 public:
     Pimpl (const File& directory, const String& wildCard_)
@@ -325,6 +193,9 @@ public:
             enumerator = [[[NSFileManager defaultManager] enumeratorAtPath: beastStringToNS (directory.getFullPathName())] retain];
         }
     }
+
+    Pimpl (Pimpl const&) = delete;
+    Pimpl& operator= (Pimpl const&) = delete;
 
     ~Pimpl()
     {
@@ -385,100 +256,5 @@ bool DirectoryIterator::NativeIterator::next (String& filenameFound,
 {
     return pimpl->next (filenameFound, isDir, isHidden, fileSize, modTime, creationTime, isReadOnly);
 }
-
-
-//==============================================================================
-bool Process::openDocument (const String& fileName, const String& parameters)
-{
-  #if BEAST_IOS
-    return [[UIApplication sharedApplication] openURL: [NSURL URLWithString: beastStringToNS (fileName)]];
-  #else
-    BEAST_AUTORELEASEPOOL
-    {
-        if (parameters.isEmpty())
-        {
-            return [[NSWorkspace sharedWorkspace] openFile: beastStringToNS (fileName)]
-                || [[NSWorkspace sharedWorkspace] openURL: [NSURL URLWithString: beastStringToNS (fileName)]];
-        }
-
-        bool ok = false;
-        const File file (fileName);
-
-        if (file.isBundle())
-        {
-            NSMutableArray* urls = [NSMutableArray array];
-
-            StringArray docs;
-            docs.addTokens (parameters, true);
-            for (int i = 0; i < docs.size(); ++i)
-                [urls addObject: beastStringToNS (docs[i])];
-
-            ok = [[NSWorkspace sharedWorkspace] openURLs: urls
-                                 withAppBundleIdentifier: [[NSBundle bundleWithPath: beastStringToNS (fileName)] bundleIdentifier]
-                                                 options: 0
-                          additionalEventParamDescriptor: nil
-                                       launchIdentifiers: nil];
-        }
-        else if (file.exists())
-        {
-            ok = FileHelpers::launchExecutable ("\"" + fileName + "\" " + parameters);
-        }
-
-        return ok;
-    }
-  #endif
-}
-
-void File::revealToUser() const
-{
-   #if ! BEAST_IOS
-    if (exists())
-        [[NSWorkspace sharedWorkspace] selectFile: beastStringToNS (getFullPathName()) inFileViewerRootedAtPath: nsEmptyString()];
-    else if (getParentDirectory().exists())
-        getParentDirectory().revealToUser();
-   #endif
-}
-
-//==============================================================================
-OSType File::getMacOSType() const
-{
-    BEAST_AUTORELEASEPOOL
-    {
-       #if BEAST_IOS || (defined (MAC_OS_X_VERSION_10_5) && MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5)
-        NSDictionary* fileDict = [[NSFileManager defaultManager] attributesOfItemAtPath: beastStringToNS (getFullPathName()) error: nil];
-       #else
-        // (the cast here avoids a deprecation warning)
-        NSDictionary* fileDict = [((id) [NSFileManager defaultManager]) fileAttributesAtPath: beastStringToNS (getFullPathName()) traverseLink: NO];
-       #endif
-
-        return [fileDict fileHFSTypeCode];
-    }
-}
-
-bool File::isBundle() const
-{
-   #if BEAST_IOS
-    return false; // xxx can't find a sensible way to do this without trying to open the bundle..
-   #else
-    BEAST_AUTORELEASEPOOL
-    {
-        return [[NSWorkspace sharedWorkspace] isFilePackageAtPath: beastStringToNS (getFullPathName())];
-    }
-   #endif
-}
-
-#if BEAST_MAC
-void File::addToDock() const
-{
-    // check that it's not already there...
-    if (! beast_getOutputFromCommand ("defaults read com.apple.dock persistent-apps").containsIgnoreCase (getFullPathName()))
-    {
-        beast_runSystemCommand ("defaults write com.apple.dock persistent-apps -array-add \"<dict><key>tile-data</key><dict><key>file-data</key><dict><key>_CFURLString</key><string>"
-                                 + getFullPathName() + "</string><key>_CFURLStringType</key><integer>0</integer></dict></dict></dict>\"");
-
-        beast_runSystemCommand ("osascript -e \"tell application \\\"Dock\\\" to quit\"");
-    }
-}
-#endif
 
 } // beast

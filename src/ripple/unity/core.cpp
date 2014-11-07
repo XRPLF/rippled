@@ -17,27 +17,11 @@
 */
 //==============================================================================
 
-#include "../../BeastConfig.h"
+#include <BeastConfig.h>
 
-#include <ripple/unity/core.h>
-
-#include <fstream>
-#include <map>
-#include <set>
-
-#include <beast/module/core/system/BeforeBoost.h>
-#include <boost/algorithm/string.hpp>
-#include <boost/foreach.hpp>
-
-#include <ripple/module/core/nodestore/NodeStore.cpp>
-#include <beast/http/ParsedURL.h>
-#include <ripple/unity/net.h> // for HTTPClient
-
-#include <ripple/module/core/functional/Config.cpp>
-#include <ripple/module/core/functional/LoadFeeTrackImp.h> // private
-#include <ripple/module/core/functional/LoadFeeTrackImp.cpp>
-#include <ripple/module/core/functional/LoadEvent.cpp>
-#include <ripple/module/core/functional/LoadMonitor.cpp>
-
-#include <ripple/module/core/functional/Job.cpp>
-#include <ripple/module/core/functional/JobQueue.cpp>
+#include <ripple/core/impl/Config.cpp>
+#include <ripple/core/impl/LoadFeeTrackImp.cpp>
+#include <ripple/core/impl/LoadEvent.cpp>
+#include <ripple/core/impl/LoadMonitor.cpp>
+#include <ripple/core/impl/Job.cpp>
+#include <ripple/core/impl/JobQueue.cpp>

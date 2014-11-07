@@ -20,6 +20,10 @@
 #ifndef RIPPLE_VALIDATORS_STORESQDB_H_INCLUDED
 #define RIPPLE_VALIDATORS_STORESQDB_H_INCLUDED
 
+#include <ripple/validators/impl/Store.h>
+#include <beast/module/sqdb/sqdb.h>
+#include <beast/utility/Error.h>
+
 namespace ripple {
 namespace Validators {
 
@@ -58,6 +62,12 @@ private:
 
     beast::Journal m_journal;
     beast::sqdb::session m_session;
+
+
+    // DEPRECATED
+    static std::string itos (int i, std::size_t fieldSize = 0);
+    static std::string timeToString (beast::Time const& t);
+    static beast::Time stringToTime (std::string const& s);
 };
 
 }

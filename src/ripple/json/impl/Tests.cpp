@@ -25,7 +25,7 @@ namespace ripple {
 class JsonCpp_test : public beast::unit_test::suite
 {
 public:
-    void testBadJson ()
+    void test_bad_json ()
     {
         char const* s (
             "{\"method\":\"ledger\",\"params\":[{\"ledger_index\":1e300}]}"
@@ -35,6 +35,58 @@ public:
         Json::Reader r;
 
         r.parse (s, j);
+        pass ();
+    }
+
+    void test_edge_cases ()
+    {
+        std::string json;
+
+        std::uint32_t max_uint = std::numeric_limits<std::uint32_t>::max ();
+        std::int32_t max_int = std::numeric_limits<std::int32_t>::max ();
+        std::int32_t min_int = std::numeric_limits<std::int32_t>::min ();
+
+        std::uint32_t a_uint = max_uint - 1978;
+        std::int32_t a_large_int = max_int - 1978;
+        std::int32_t a_small_int = min_int + 1978;
+
+        json  = "{\"max_uint\":"    + std::to_string (max_uint);
+        json += ",\"max_int\":"     + std::to_string (max_int);
+        json += ",\"min_int\":"     + std::to_string (min_int);
+        json += ",\"a_uint\":"      + std::to_string (a_uint);
+        json += ",\"a_large_int\":" + std::to_string (a_large_int);
+        json += ",\"a_small_int\":" + std::to_string (a_small_int);
+        json += "}";
+
+        Json::Value j1;
+        Json::Reader r1;
+
+        expect (r1.parse (json, j1), "parsing integer edge cases");
+        expect (j1["max_uint"].asUInt() == max_uint, "max_uint");
+        expect (j1["max_int"].asInt() == max_int, "min_int");
+        expect (j1["min_int"].asInt() == min_int, "max_int");
+        expect (j1["a_uint"].asUInt() == a_uint, "a_uint");
+        expect (j1["a_large_int"].asInt() == a_large_int, "a_large_int");
+        expect (j1["a_small_int"].asInt() == a_small_int, "a_large_int");
+
+        json  = "{\"overflow\":";
+        json += std::to_string(std::uint64_t(max_uint) + 1);
+        json += "}";
+
+        Json::Value j2;
+        Json::Reader r2;
+
+        expect (!r2.parse (json, j2), "parsing unsigned integer that overflows");
+
+        json  = "{\"underflow\":";
+        json += std::to_string(std::int64_t(min_int) - 1);
+        json += "}";
+
+        Json::Value j3;
+        Json::Reader r3;
+
+        expect (!r3.parse (json, j3), "parsing signed integer that underflows");
+
         pass ();
     }
 
@@ -86,7 +138,8 @@ public:
 
     void run ()
     {
-        testBadJson ();
+        test_bad_json ();
+        test_edge_cases ();
         test_copy ();
         test_move ();
     }

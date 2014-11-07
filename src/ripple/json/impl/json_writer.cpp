@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <utility>
+
 namespace Json
 {
 
@@ -90,7 +92,7 @@ std::string valueToString( double value )
     snprintf(buffer, sizeof(buffer), "%.16g", value);
 #endif
     return buffer;
-} 
+}
 
 std::string valueToString ( bool value )
 {
@@ -200,7 +202,7 @@ FastWriter::write ( const Value& root )
     document_ = "";
     writeValue ( root );
     document_ += "\n";
-    return document_;
+    return std::move (document_);
 }
 
 
@@ -259,7 +261,7 @@ FastWriter::writeValue ( const Value& value )
                 it != members.end ();
                 ++it )
         {
-            const std::string& name = *it;
+            std::string const& name = *it;
 
             if ( it != members.begin () )
                 document_ += ",";
@@ -348,7 +350,7 @@ StyledWriter::writeValue ( const Value& value )
 
             while ( true )
             {
-                const std::string& name = *it;
+                std::string const& name = *it;
                 const Value& childValue = value[name];
                 writeCommentBeforeValue ( childValue );
                 writeWithIndent ( valueToQuotedString ( name.c_str () ) );
@@ -474,7 +476,7 @@ StyledWriter::isMultineArray ( const Value& value )
 
 
 void
-StyledWriter::pushValue ( const std::string& value )
+StyledWriter::pushValue ( std::string const& value )
 {
     if ( addChildValues_ )
         childValues_.push_back ( value );
@@ -502,7 +504,7 @@ StyledWriter::writeIndent ()
 
 
 void
-StyledWriter::writeWithIndent ( const std::string& value )
+StyledWriter::writeWithIndent ( std::string const& value )
 {
     writeIndent ();
     document_ += value;
@@ -560,7 +562,7 @@ StyledWriter::hasCommentForValue ( const Value& value )
 
 
 std::string
-StyledWriter::normalizeEOL ( const std::string& text )
+StyledWriter::normalizeEOL ( std::string const& text )
 {
     std::string normalized;
     normalized.reserve ( text.length () );
@@ -659,7 +661,7 @@ StyledStreamWriter::writeValue ( const Value& value )
 
             while ( true )
             {
-                const std::string& name = *it;
+                std::string const& name = *it;
                 const Value& childValue = value[name];
                 writeCommentBeforeValue ( childValue );
                 writeWithIndent ( valueToQuotedString ( name.c_str () ) );
@@ -785,7 +787,7 @@ StyledStreamWriter::isMultineArray ( const Value& value )
 
 
 void
-StyledStreamWriter::pushValue ( const std::string& value )
+StyledStreamWriter::pushValue ( std::string const& value )
 {
     if ( addChildValues_ )
         childValues_.push_back ( value );
@@ -814,7 +816,7 @@ StyledStreamWriter::writeIndent ()
 
 
 void
-StyledStreamWriter::writeWithIndent ( const std::string& value )
+StyledStreamWriter::writeWithIndent ( std::string const& value )
 {
     writeIndent ();
     *document_ << value;
@@ -872,7 +874,7 @@ StyledStreamWriter::hasCommentForValue ( const Value& value )
 
 
 std::string
-StyledStreamWriter::normalizeEOL ( const std::string& text )
+StyledStreamWriter::normalizeEOL ( std::string const& text )
 {
     std::string normalized;
     normalized.reserve ( text.length () );
@@ -906,5 +908,87 @@ std::ostream& operator<< ( std::ostream& sout, const Value& root )
     return sout;
 }
 
+//------------------------------------------------------------------------------
+
+namespace detail {
+
+inline
+void
+write_string (write_t write, std::string const& s)
+{
+    write(s.data(), s.size());
+}
+
+void
+write_value (write_t write, Value const& value)
+{
+    switch (value.type())
+    {
+    case nullValue:
+        write("null", 4);
+        break;
+
+    case intValue:
+        write_string(write, valueToString(value.asInt()));
+        break;
+
+    case uintValue:
+        write_string(write, valueToString(value.asUInt()));
+        break;
+
+    case realValue:
+        write_string(write, valueToString(value.asDouble()));
+        break;
+
+    case stringValue:
+        write_string(write, valueToQuotedString(value.asCString()));
+        break;
+
+    case booleanValue:
+        write_string(write, valueToString(value.asBool()));
+        break;
+
+    case arrayValue:
+    {
+        write("[", 1);
+        int const size = value.size();
+        for (int index = 0; index < size; ++index)
+        {
+            if (index > 0)
+                write(",", 1);
+            write_value(write, value[index]);
+        }
+        write("]", 1);
+        break;
+    }
+
+    case objectValue:
+    {
+        Value::Members const members = value.getMemberNames();
+        write("{", 1);
+        for (auto it = members.begin(); it != members.end(); ++it)
+        {
+            std::string const& name = *it;
+            if (it != members.begin())
+                write(",", 1);
+
+            write_string(write, valueToQuotedString(name.c_str()));
+            write(":", 1);
+            write_value(write, value[name]);
+        }
+        write("}", 1);
+        break;
+    }
+    }
+}
+
+} // detail
+
+void
+stream (Json::Value const& jv, write_t write)
+{
+    detail::write_value(write, jv);
+    write("\n", 1);
+}
 
 } // namespace Json

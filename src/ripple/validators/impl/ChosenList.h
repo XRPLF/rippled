@@ -21,6 +21,7 @@
 #define RIPPLE_VALIDATORS_CHOSENLIST_H_INCLUDED
 
 #include <ripple/common/UnorderedContainers.h>
+#include <ripple/types/RipplePublicKeyHash.h>
 
 namespace ripple {
 namespace Validators {
@@ -37,8 +38,7 @@ public:
         }
     };
 
-    typedef ripple::unordered_map <RipplePublicKey, Info,
-                                 beast::hardened_hash<RipplePublicKey>> MapType;
+    typedef hardened_hash_map <RipplePublicKey, Info> MapType;
 
     ChosenList (std::size_t expectedSize = 0)
     {

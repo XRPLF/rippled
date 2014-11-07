@@ -20,6 +20,8 @@
 #ifndef RIPPLE_RESOURCE_FEES_H_INCLUDED
 #define RIPPLE_RESOURCE_FEES_H_INCLUDED
 
+#include <ripple/resource/api/Charge.h>
+
 namespace ripple {
 namespace Resource {
 
@@ -55,9 +57,6 @@ extern Charge const feeCheapQuery;            // A query that is trivial, cached
 extern Charge const feeWarning;               // The cost of receiving a warning
 extern Charge const feeDrop;                  // The cost of being dropped for excess load
 /** @} */
-
-/** Returns an appropriate Charge based on the legacy LoadType. */
-extern Charge legacyFee (LoadType t);
 
 }
 }

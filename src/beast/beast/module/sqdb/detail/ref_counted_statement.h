@@ -65,7 +65,7 @@ namespace sqdb {
 namespace detail {
 
 // used for "once" and "prepare"
-class ref_counted_statement_base : public Uncopyable
+class ref_counted_statement_base
 {
 public:
     ref_counted_statement_base(session& s);
@@ -82,6 +82,11 @@ public:
     }
 
 public:
+    ref_counted_statement_base (
+        ref_counted_statement_base const&) = delete;
+    ref_counted_statement_base& operator= (
+        ref_counted_statement_base const&) = delete;
+
     // break circular header dependency
     std::ostringstream& get_query_stream();
 

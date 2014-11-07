@@ -9,7 +9,7 @@ suite('WebSocket connection', function() {
   var server;
 
   setup(function(done) {
-    this.timeout(1000);
+    this.timeout(2000);
 
     var cfg = extend({}, config.default_server_config, config.servers.alpha);
     if (cfg.no_server) {
@@ -22,7 +22,7 @@ suite('WebSocket connection', function() {
   });
 
   teardown(function(done) {
-    this.timeout(1000);
+    this.timeout(2000);
     
     if (config.servers.alpha.no_server) {
       done();
@@ -33,7 +33,11 @@ suite('WebSocket connection', function() {
   });
 
   test('WebSocket connect and disconnect', function(done) {
-    this.timeout(1000);
+    // This timeout probably doesn't need to be this long, because
+    // the test itself completes in less than half a second. 
+    // However, some of the overhead, especially on Windows can
+    // push the measured time out this far.
+    this.timeout(3000);
 
     var alpha = Remote.from_config("alpha");
 

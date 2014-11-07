@@ -27,8 +27,7 @@ namespace unit_test {
 
 namespace detail {
 
-// Non const container is a detail, users are not allowed to modify!
-inline
+template <class = void>
 suite_list&
 global_suites()
 {
@@ -36,17 +35,22 @@ global_suites()
     return s;
 }
 
-// Used to insert suites during static initialization
 template <class Suite>
-struct global_suite_instance
+struct insert_suite
 {
-    global_suite_instance (char const* name, char const* module,
-        char const* library, bool manual)
-    {
-        global_suites().insert <Suite> (
-            name, module, library, manual);
-    }
+    template <class = void>
+    insert_suite (char const* name, char const* module,
+        char const* library, bool manual);
 };
+
+template <class Suite>
+template <class>
+insert_suite<Suite>::insert_suite (char const* name,
+    char const* module, char const* library, bool manual)
+{
+    global_suites().insert <Suite> (
+        name, module, library, manual);
+}
 
 } // detail
 
@@ -58,7 +62,7 @@ global_suites()
     return detail::global_suites();
 }
 
-} // unit_test
-} // beast
+}
+}
 
 #endif

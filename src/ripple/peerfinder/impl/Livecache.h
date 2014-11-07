@@ -20,9 +20,10 @@
 #ifndef RIPPLE_PEERFINDER_LIVECACHE_H_INCLUDED
 #define RIPPLE_PEERFINDER_LIVECACHE_H_INCLUDED
 
+#include <ripple/peerfinder/Manager.h>
+#include <beast/chrono/chrono_io.h>
 #include <beast/container/aged_map.h>
 #include <beast/utility/maybe_const.h>
-
 #include <boost/intrusive/list.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 
@@ -166,7 +167,7 @@ protected:
 //------------------------------------------------------------------------------
 
 /** The Livecache holds the short-lived relayed Endpoint messages.
-    
+
     Since peers only advertise themselves when they have open slots,
     we want these messags to expire rather quickly after the peer becomes
     full.

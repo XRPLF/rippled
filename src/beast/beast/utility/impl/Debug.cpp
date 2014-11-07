@@ -336,10 +336,6 @@ public:
     void run ()
     {
         log <<
-            "operatingSystemName              = '" <<
-            SystemStats::getOperatingSystemName () << "'";
-        
-        log <<
             "_DEBUG                           = " <<
             String::fromNumber (envDebug ());
         

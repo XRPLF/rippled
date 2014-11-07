@@ -21,36 +21,12 @@
 #include <BeastConfig.h>
 #endif
 
-#include <beast/module/asio/system/OpenSSLIncludes.h>
-
-#include <beast/module/asio/asio.h>
-
-#include <beast/http/impl/joyent_parser.h>
-
-#include <beast/module/asio/basics/PeerRole.cpp>
-#include <beast/module/asio/basics/SSLContext.cpp>
-
-#include <beast/module/asio/protocol/HandshakeDetectLogicPROXY.cpp>
-
-#include <beast/module/asio/http/HTTPParserImpl.h>
-#include <beast/module/asio/http/HTTPClientType.cpp>
-#include <beast/module/asio/http/HTTPField.cpp>
-#include <beast/module/asio/http/HTTPHeaders.cpp>
-#include <beast/module/asio/http/HTTPMessage.cpp>
-#include <beast/module/asio/http/HTTPRequest.cpp>
-#include <beast/module/asio/http/HTTPResponse.cpp>
-#include <beast/module/asio/http/HTTPVersion.cpp>
-
-#include <beast/module/asio/tests/PeerTest.cpp>
-#include <beast/module/asio/tests/TestPeerBasics.cpp>
-#include <beast/module/asio/tests/TestPeerLogic.cpp>
-#include <beast/module/asio/tests/TestPeerLogicProxyClient.cpp>
-#include <beast/module/asio/tests/TestPeerLogicSyncServer.cpp>
-#include <beast/module/asio/tests/TestPeerLogicSyncClient.cpp>
-#include <beast/module/asio/tests/TestPeerLogicAsyncServer.cpp>
-#include <beast/module/asio/tests/TestPeerLogicAsyncClient.cpp>
-#include <beast/module/asio/tests/TestPeerUnitTests.cpp>
-
-#include <beast/module/asio/http/HTTPParser.cpp>
-#include <beast/module/asio/http/HTTPRequestParser.cpp>
-#include <beast/module/asio/http/HTTPResponseParser.cpp>
+#include <beast/module/asio/HTTPField.cpp>
+#include <beast/module/asio/HTTPHeaders.cpp>
+#include <beast/module/asio/HTTPMessage.cpp>
+#include <beast/module/asio/HTTPRequest.cpp>
+#include <beast/module/asio/HTTPResponse.cpp>
+#include <beast/module/asio/HTTPVersion.cpp>
+#include <beast/module/asio/HTTPParser.cpp>
+#include <beast/module/asio/HTTPRequestParser.cpp>
+#include <beast/module/asio/HTTPResponseParser.cpp>

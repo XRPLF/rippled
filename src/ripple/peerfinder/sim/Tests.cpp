@@ -38,8 +38,7 @@ class Network
 public:
     typedef std::list <Node> Peers;
 
-    typedef ripple::unordered_map <
-        IP::Endpoint, boost::reference_wrapper <Node>> Table;
+    typedef hash_map <IP::Endpoint, boost::reference_wrapper <Node>> Table;
 
     explicit Network (Params const& params,
         Journal journal = Journal());
@@ -113,7 +112,7 @@ public:
     Node const& remote_node () const { return *m_remote_node; }
     Node&       local_node  ()       { return *m_local_node; }
     Node const& local_node  () const { return *m_local_node; }
-        
+
     void post (Message const& m)
     {
         m_pending.push_back (m);
@@ -165,7 +164,7 @@ public:
             : canAccept (true)
         {
         }
-        
+
         bool canAccept;
         IP::Endpoint listening_endpoint;
         IP::Endpoint well_known_endpoint;
@@ -188,7 +187,7 @@ public:
         , m_journal (Journal (m_sink, journal.severity()), Reporting::node)
         , m_next_port (m_config.listening_endpoint.port() + 1)
         , m_logic (boost::in_place (
-            boost::ref (clock), boost::ref (*this), boost::ref (*this), boost::ref (*this), m_journal))
+            std::ref (clock), std::ref (*this), std::ref (*this), std::ref (*this), m_journal))
         , m_when_expire (m_network.now() + std::chrono::seconds (1))
     {
         logic().setConfig (m_config.config);
@@ -408,7 +407,7 @@ public:
             m_network.post (std::bind (&Logic::on_connected,
                 &logic(), local_endpoint, remote_endpoint));
             m_network.post (std::bind (&Node::doCheckAccept,
-                remote_node, boost::ref (*this), local_endpoint));
+                remote_node, std::ref (*this), local_endpoint));
         }
     }
 
@@ -500,7 +499,7 @@ public:
     {
     }
 
-    void async_test (IP::Endpoint const& address,
+    void async_connect (IP::Endpoint const& address,
         asio::shared_handler <void (Result)> handler)
     {
         Node* const node (m_network.find (address));
@@ -603,7 +602,7 @@ void Network::prepare ()
                 config,
                 m_clock,
                 m_journal);
-            m_table.emplace (address, boost::ref (m_nodes.back()));
+            m_table.emplace (address, std::ref (m_nodes.back()));
             address = next_endpoint (address);
         }
 
@@ -624,7 +623,7 @@ void Network::prepare ()
                 config,
                 m_clock,
                 m_journal);
-            m_table.emplace (address, boost::ref (m_nodes.back()));
+            m_table.emplace (address, std::ref (m_nodes.back()));
             address = next_endpoint (address);
         }
     }
@@ -830,7 +829,7 @@ void report_crawls (Stream const& stream, CrawlSequence const& c)
 {
     if (! stream)
         return;
-    stream 
+    stream
         << "Crawl Report"
         << std::endl
         << std::setw (6) << "Step"
@@ -958,7 +957,7 @@ void report_node_timeline (Node const& node, Stream const& stream)
                 field (sequence_to_string (t.begin (), t.end(), " ", 2), histw) <<
                 fpad (2)
                 ;
-    }        
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -1039,7 +1038,7 @@ public:
                     "Time " << n.now ().time_since_epoch () << std::endl <<
                     divider ()
                     ;
-                
+
                 n.step();
                 n.journal().info << std::endl;
             }

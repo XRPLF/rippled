@@ -35,18 +35,11 @@
 
 #include <set>
 #include <map>
-#include <unordered_set>
-#include <unordered_map>
-#include <boost/unordered_set.hpp>
 
 #include <ripple/types/impl/Base58.cpp>
 #include <ripple/types/impl/ByteOrder.cpp>
 #include <ripple/types/impl/RandomNumbers.cpp>
 #include <ripple/types/impl/strHex.cpp>
-#include <ripple/types/impl/base_uint.cpp>
-#include <ripple/types/impl/UInt160.cpp>
+#include <ripple/types/impl/UintTypes.cpp>
 #include <ripple/types/impl/RippleIdentifierTests.cpp>
-#include <ripple/types/impl/RippleAssets.cpp>
-
-#include <ripple/common/tests/cross_offer.test.cpp>
-
+#include <ripple/types/impl/Issue.cpp>

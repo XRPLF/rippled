@@ -42,6 +42,18 @@
 namespace beast {
 namespace detail {
 
+// Traits templates used to discern reverse_iterators, which are disallowed
+// for mutating operations.
+template <class It>
+struct is_boost_reverse_iterator
+    : std::false_type
+{};
+
+template <class It>
+struct is_boost_reverse_iterator<boost::intrusive::detail::reverse_iterator<It>>
+    : std::true_type
+{};
+
 /** Associative container where each element is also indexed by time.
 
     This container mirrors the interface of the standard library ordered
@@ -203,7 +215,7 @@ private:
         {
             return this->member() (k, extract (e.value));
         }
-        
+
         template <class K>
         bool operator() (element const& e, K const& k) const
         {
@@ -215,7 +227,7 @@ private:
         {
             return this->member() (k, extract (e.value));
         }
-        
+
         bool operator() (element const& e, Key const& k) const
         {
             return this->member() (extract (e.value), k);
@@ -377,20 +389,36 @@ private:
     template <class... Args>
     element* new_element (Args&&... args)
     {
-        element* const p (
-            ElementAllocatorTraits::allocate (m_config.alloc(), 1));
+        struct Deleter
+        {
+            std::reference_wrapper <ElementAllocator> a_;
+            Deleter (ElementAllocator& a)
+                : a_(a)
+            {
+            }
+
+            void
+            operator()(element* p)
+            {
+                ElementAllocatorTraits::deallocate (a_.get(), p, 1);
+            }
+        };
+
+        std::unique_ptr <element, Deleter> p (ElementAllocatorTraits::allocate (
+            m_config.alloc(), 1), Deleter(m_config.alloc()));
         ElementAllocatorTraits::construct (m_config.alloc(),
-            p, clock().now(), std::forward <Args> (args)...);
-        return p;
+            p.get(), clock().now(), std::forward <Args> (args)...);
+        return p.release();
     }
 
-    void delete_element (element* p)
+    void delete_element (element const* p)
     {
         ElementAllocatorTraits::destroy (m_config.alloc(), p);
-        ElementAllocatorTraits::deallocate (m_config.alloc(), p, 1);
+        ElementAllocatorTraits::deallocate (
+            m_config.alloc(), const_cast<element*>(p), 1);
     }
 
-    void unlink_and_delete_element (element* p)
+    void unlink_and_delete_element (element const* p)
     {
         chronological.list.erase (
             chronological.list.iterator_to (*p));
@@ -412,11 +440,13 @@ public:
     typedef typename std::allocator_traits <
         Allocator>::const_pointer const_pointer;
 
-    typedef detail::aged_container_iterator <false,
+    // A set (that is, !IsMap) iterator is aways const because the elements
+    // of a set are immutable.
+    typedef detail::aged_container_iterator <!IsMap,
         typename cont_type::iterator> iterator;
     typedef detail::aged_container_iterator <true,
         typename cont_type::iterator> const_iterator;
-    typedef detail::aged_container_iterator <false,
+    typedef detail::aged_container_iterator <!IsMap,
         typename cont_type::reverse_iterator> reverse_iterator;
     typedef detail::aged_container_iterator <true,
         typename cont_type::reverse_iterator> const_reverse_iterator;
@@ -433,11 +463,13 @@ public:
     class chronological_t
     {
     public:
-        typedef detail::aged_container_iterator <false,
+        // A set (that is, !IsMap) iterator is aways const because the elements
+        // of a set are immutable.
+        typedef detail::aged_container_iterator <!IsMap,
             typename list_type::iterator> iterator;
         typedef detail::aged_container_iterator <true,
             typename list_type::iterator> const_iterator;
-        typedef detail::aged_container_iterator <false,
+        typedef detail::aged_container_iterator <!IsMap,
             typename list_type::reverse_iterator> reverse_iterator;
         typedef detail::aged_container_iterator <true,
             typename list_type::reverse_iterator> const_reverse_iterator;
@@ -823,7 +855,7 @@ public:
     template <bool maybe_multi = IsMulti>
     typename std::enable_if <maybe_multi,
         iterator>::type
-    insert (const_iterator const& /*hint*/, value_type const& value)
+    insert (const_iterator /*hint*/, value_type const& value)
     {
         // VFALCO TODO Figure out how to utilize 'hint'
         return insert (value);
@@ -840,7 +872,7 @@ public:
     template <bool maybe_multi = IsMulti>
     typename std::enable_if <maybe_multi,
         iterator>::type
-    insert (const_iterator const& /*hint*/, value_type&& value)
+    insert (const_iterator /*hint*/, value_type&& value)
     {
         // VFALCO TODO Figure out how to utilize 'hint'
         return insert (std::move (value));
@@ -882,7 +914,7 @@ public:
 
     template <class InputIt>
     void
-    insert (InputIt first, InputIt const& last)
+    insert (InputIt first, InputIt last)
     {
         for (; first != last; ++first)
             insert (cend(), *first);
@@ -911,7 +943,7 @@ public:
     // map, set
     template <bool maybe_multi = IsMulti, class... Args>
     auto
-    emplace_hint (const_iterator const& hint, Args&&... args) ->
+    emplace_hint (const_iterator hint, Args&&... args) ->
         typename std::enable_if <! maybe_multi,
             std::pair <iterator, bool>>::type;
 
@@ -919,24 +951,26 @@ public:
     template <bool maybe_multi = IsMulti, class... Args>
     typename std::enable_if <maybe_multi,
         iterator>::type
-    emplace_hint (const_iterator const& /*hint*/, Args&&... args)
+    emplace_hint (const_iterator /*hint*/, Args&&... args)
     {
         // VFALCO TODO Figure out how to utilize 'hint'
         return emplace <maybe_multi> (
             std::forward <Args> (args)...);
     }
 
-    template <bool is_const, class Iterator, class Base>
+    // enable_if prevents erase (reverse_iterator pos) from compiling
+    template <bool is_const, class Iterator, class Base,
+         class = std::enable_if_t<!is_boost_reverse_iterator<Iterator>::value>>
     detail::aged_container_iterator <false, Iterator, Base>
-    erase (detail::aged_container_iterator <
-        is_const, Iterator, Base> const& pos);
+    erase (detail::aged_container_iterator <is_const, Iterator, Base> pos);
 
-    template <bool is_const, class Iterator, class Base>
+    // enable_if prevents erase (reverse_iterator first, reverse_iterator last)
+    // from compiling
+    template <bool is_const, class Iterator, class Base,
+        class = std::enable_if_t<!is_boost_reverse_iterator<Iterator>::value>>
     detail::aged_container_iterator <false, Iterator, Base>
-    erase (detail::aged_container_iterator <
-        is_const, Iterator, Base> first,
-            detail::aged_container_iterator <
-                is_const, Iterator, Base> const& last);
+    erase (detail::aged_container_iterator <is_const, Iterator, Base> first,
+           detail::aged_container_iterator <is_const, Iterator, Base> last);
 
     template <class K>
     auto
@@ -948,10 +982,11 @@ public:
 
     //--------------------------------------------------------------------------
 
-    template <bool is_const, class Iterator, class Base>
+    // enable_if prevents touch (reverse_iterator pos) from compiling
+    template <bool is_const, class Iterator, class Base,
+        class = std::enable_if_t<!is_boost_reverse_iterator<Iterator>::value>>
     void
-    touch (detail::aged_container_iterator <
-        is_const, Iterator, Base> const& pos)
+    touch (detail::aged_container_iterator <is_const, Iterator, Base> pos)
     {
         touch (pos, clock().now());
     }
@@ -1047,7 +1082,7 @@ public:
     const_iterator
     upper_bound (K const& k) const
     {
-        return const_iterator (m_cont.upper_bound (k, 
+        return const_iterator (m_cont.upper_bound (k,
             std::cref (m_config.key_compare())));
     }
 
@@ -1176,10 +1211,12 @@ public:
     }
 
 private:
-    template <bool is_const, class Iterator, class Base>
+    // enable_if prevents erase (reverse_iterator pos, now) from compiling
+    template <bool is_const, class Iterator, class Base,
+        class = std::enable_if_t<!is_boost_reverse_iterator<Iterator>::value>>
     void
     touch (detail::aged_container_iterator <
-        is_const, Iterator, Base> const& pos,
+        is_const, Iterator, Base> pos,
             typename clock_type::time_point const& now);
 
     template <bool maybe_propagate = std::allocator_traits <
@@ -1466,8 +1503,8 @@ operator[] (Key const& key)
         element* const p (new_element (
             std::piecewise_construct, std::forward_as_tuple (key),
                 std::forward_as_tuple ()));
-        chronological.list.push_back (*p);
         m_cont.insert_commit (*p, d);
+        chronological.list.push_back (*p);
         return p->value.second;
     }
     return result.first->value.second;
@@ -1489,8 +1526,8 @@ operator[] (Key&& key)
             std::piecewise_construct,
                 std::forward_as_tuple (std::move (key)),
                     std::forward_as_tuple ()));
-        chronological.list.push_back (*p);
         m_cont.insert_commit (*p, d);
+        chronological.list.push_back (*p);
         return p->value.second;
     }
     return result.first->value.second;
@@ -1527,8 +1564,8 @@ insert (value_type const& value) ->
     if (result.second)
     {
         element* const p (new_element (value));
-        chronological.list.push_back (*p);
         auto const iter (m_cont.insert_commit (*p, d));
+        chronological.list.push_back (*p);
         return std::make_pair (iterator (iter), true);
     }
     return std::make_pair (iterator (result.first), false);
@@ -1568,8 +1605,8 @@ insert (value_type&& value) ->
     if (result.second)
     {
         element* const p (new_element (std::move (value)));
-        chronological.list.push_back (*p);
         auto const iter (m_cont.insert_commit (*p, d));
+        chronological.list.push_back (*p);
         return std::make_pair (iterator (iter), true);
     }
     return std::make_pair (iterator (result.first), false);
@@ -1611,8 +1648,8 @@ insert (const_iterator hint, value_type const& value) ->
     if (result.second)
     {
         element* const p (new_element (value));
-        chronological.list.push_back (*p);
         auto const iter (m_cont.insert_commit (*p, d));
+        chronological.list.push_back (*p);
         return iterator (iter);
     }
     return iterator (result.first);
@@ -1634,8 +1671,8 @@ insert (const_iterator hint, value_type&& value) ->
     if (result.second)
     {
         element* const p (new_element (std::move (value)));
-        chronological.list.push_back (*p);
         auto const iter (m_cont.insert_commit (*p, d));
+        chronological.list.push_back (*p);
         return iterator (iter);
     }
     return iterator (result.first);
@@ -1660,8 +1697,8 @@ emplace (Args&&... args) ->
         std::cref (m_config.key_compare()), d));
     if (result.second)
     {
-        chronological.list.push_back (*p);
         auto const iter (m_cont.insert_commit (*p, d));
+        chronological.list.push_back (*p);
         return std::make_pair (iterator (iter), true);
     }
     delete_element (p);
@@ -1693,7 +1730,7 @@ template <bool IsMulti, bool IsMap, class Key, class T,
 template <bool maybe_multi, class... Args>
 auto
 aged_ordered_container <IsMulti, IsMap, Key, T, Duration, Compare, Allocator>::
-emplace_hint (const_iterator const& hint, Args&&... args) ->
+emplace_hint (const_iterator hint, Args&&... args) ->
     typename std::enable_if <! maybe_multi,
         std::pair <iterator, bool>>::type
 {
@@ -1706,8 +1743,8 @@ emplace_hint (const_iterator const& hint, Args&&... args) ->
         extract (p->value), std::cref (m_config.key_compare()), d));
     if (result.second)
     {
-        chronological.list.push_back (*p);
         auto const iter (m_cont.insert_commit (*p, d));
+        chronological.list.push_back (*p);
         return std::make_pair (iterator (iter), true);
     }
     delete_element (p);
@@ -1716,36 +1753,27 @@ emplace_hint (const_iterator const& hint, Args&&... args) ->
 
 template <bool IsMulti, bool IsMap, class Key, class T,
     class Duration, class Compare, class Allocator>
-template <bool is_const, class Iterator, class Base>
-auto
+template <bool is_const, class Iterator, class Base, class>
+detail::aged_container_iterator <false, Iterator, Base>
 aged_ordered_container <IsMulti, IsMap, Key, T, Duration, Compare, Allocator>::
-erase (detail::aged_container_iterator <
-    is_const, Iterator, Base> const& pos) ->
-    detail::aged_container_iterator <false, Iterator, Base>
+erase (detail::aged_container_iterator <is_const, Iterator, Base> pos)
 {
-    auto iter (pos.iterator());
-    auto p (&*iter++);
-    unlink_and_delete_element (p);
+    unlink_and_delete_element(&*((pos++).iterator()));
     return detail::aged_container_iterator <
-        false, Iterator, Base> (iter);
+        false, Iterator, Base> (pos.iterator());
 }
 
 template <bool IsMulti, bool IsMap, class Key, class T,
     class Duration, class Compare, class Allocator>
-template <bool is_const, class Iterator, class Base>
-auto
+template <bool is_const, class Iterator, class Base, class>
+detail::aged_container_iterator <false, Iterator, Base>
 aged_ordered_container <IsMulti, IsMap, Key, T, Duration, Compare, Allocator>::
-erase (detail::aged_container_iterator <
-    is_const, Iterator, Base> first,
-        detail::aged_container_iterator <
-            is_const, Iterator, Base> const& last) ->
-    detail::aged_container_iterator <false, Iterator, Base>
+erase (detail::aged_container_iterator <is_const, Iterator, Base> first,
+       detail::aged_container_iterator <is_const, Iterator, Base> last)
 {
     for (; first != last;)
-    {
-        auto p (&*first++);
-        unlink_and_delete_element (p);
-    }
+        unlink_and_delete_element(&*((first++).iterator()));
+
     return detail::aged_container_iterator <
         false, Iterator, Base> (first.iterator());
 }
@@ -1839,11 +1867,11 @@ operator== (
 
 template <bool IsMulti, bool IsMap, class Key, class T,
     class Duration, class Compare, class Allocator>
-template <bool is_const, class Iterator, class Base>
+template <bool is_const, class Iterator, class Base, class>
 void
 aged_ordered_container <IsMulti, IsMap, Key, T, Duration, Compare, Allocator>::
 touch (detail::aged_container_iterator <
-    is_const, Iterator, Base> const& pos,
+    is_const, Iterator, Base> pos,
         typename clock_type::time_point const& now)
 {
     auto& e (*pos.iterator());

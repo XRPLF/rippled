@@ -43,6 +43,7 @@
 #include <ripple/json/impl/json_reader.cpp>
 #include <ripple/json/impl/json_value.cpp>
 #include <ripple/json/impl/json_writer.cpp>
+#include <ripple/json/impl/to_string.cpp>
 
 #include <ripple/json/impl/Tests.cpp>
 

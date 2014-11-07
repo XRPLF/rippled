@@ -1,9 +1,9 @@
 # src
 
-Some of these directories come from entire outside repositories
-brought in using git-subtree. This means that the source files are
-inserted directly into the rippled repository. They can be edited
-and committed just as if they were normal files.
+Some of these directories come from entire outside repositories brought in
+using git-subtree. This means that the source files are inserted directly
+into the rippled repository. They can be edited and committed just as if they
+were normal files.
 
 However, if you create a commit that contains files both from a
 subtree, and from the ripple source tree please use care when designing
@@ -99,7 +99,7 @@ ripple-fork
 ## protobuf
 
 Ripple's fork of protobuf. We've changed some names in order to support the
-unity-style of build (a single .cpp addded to the project, instead of
+unity-style of build (a single .cpp added to the project, instead of
 linking to a separately built static library).
 
 Repository

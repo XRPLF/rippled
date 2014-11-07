@@ -55,85 +55,19 @@ bool File::copyInternal (const File& dest) const
     return false;
 }
 
-void File::findFileSystemRoots (Array<File>& destArray)
-{
-    destArray.add (File ("/"));
-}
-
-//==============================================================================
-bool File::isOnCDRomDrive() const
-{
-    struct statfs buf;
-
-    return statfs (getFullPathName().toUTF8(), &buf) == 0
-             && buf.f_type == (short) U_ISOFS_SUPER_MAGIC;
-}
-
-bool File::isOnHardDisk() const
-{
-    struct statfs buf;
-
-    if (statfs (getFullPathName().toUTF8(), &buf) == 0)
-    {
-        switch (buf.f_type)
-        {
-            case U_ISOFS_SUPER_MAGIC:   // CD-ROM
-            case U_MSDOS_SUPER_MAGIC:   // Probably floppy (but could be mounted FAT filesystem)
-            case U_NFS_SUPER_MAGIC:     // Network NFS
-            case U_SMB_SUPER_MAGIC:     // Network Samba
-                return false;
-
-            default:
-                // Assume anything else is a hard-disk (but note it could
-                // be a RAM disk.  There isn't a good way of determining
-                // this for sure)
-                return true;
-        }
-    }
-
-    // Assume so if this fails for some reason
-    return true;
-}
-
-bool File::isOnRemovableDrive() const
-{
-    bassertfalse; // XXX not implemented for FreeBSD!
-    return false;
-}
-
-bool File::isHidden() const
-{
-    return getFileName().startsWithChar ('.');
-}
-
-//==============================================================================
-namespace
-{
-    File beast_readlink (const String& file, const File& defaultFile)
-    {
-        const size_t size = 8192;
-        HeapBlock<char> buffer;
-        buffer.malloc (size + 4);
-
-        const size_t numBytes = readlink (file.toUTF8(), buffer, size);
-
-        if (numBytes > 0 && numBytes <= size)
-            return File (file).getSiblingFile (String::fromUTF8 (buffer, (int) numBytes));
-
-        return defaultFile;
-    }
-}
-
-File File::getLinkedTarget() const
-{
-    return beast_readlink (getFullPathName().toUTF8(), *this);
-}
-
 //==============================================================================
 static File resolveXDGFolder (const char* const type, const char* const fallbackFolder)
 {
+    File userDirs ("~/.config/user-dirs.dirs");
     StringArray confLines;
-    File ("~/.config/user-dirs.dirs").readLines (confLines);
+
+    if (userDirs.existsAsFile())
+    {
+        FileInputStream in (userDirs);
+
+        if (in.openedOk())
+            confLines.addLines (in.readEntireStreamAsString());
+    }
 
     for (int i = 0; i < confLines.size(); ++i)
     {
@@ -199,18 +133,6 @@ File File::getSpecialLocation (const SpecialLocationType type)
             return tmp;
         }
 
-        case invokedExecutableFile:
-            if (beast_argv != nullptr && beast_argc > 0)
-                return File (CharPointer_UTF8 (beast_argv[0]));
-            // deliberate fall-through...
-
-        case currentExecutableFile:
-        case currentApplicationFile:
-            return beast_getExecutableFile();
-
-        case hostApplicationPath:
-            return beast_readlink ("/proc/self/exe", beast_getExecutableFile());
-
         default:
             bassertfalse; // unknown type?
             break;
@@ -220,31 +142,7 @@ File File::getSpecialLocation (const SpecialLocationType type)
 }
 
 //==============================================================================
-String File::getVersion() const
-{
-    return String::empty; // xxx not yet implemented
-}
-
-//==============================================================================
-bool File::moveToTrash() const
-{
-    if (! exists())
-        return true;
-
-    File trashCan ("~/.Trash");
-
-    if (! trashCan.isDirectory())
-        trashCan = "~/.local/share/Trash/files";
-
-    if (! trashCan.isDirectory())
-        return false;
-
-    return moveFileTo (trashCan.getNonexistentChildFile (getFileNameWithoutExtension(),
-                                                         getFileExtension()));
-}
-
-//==============================================================================
-class DirectoryIterator::NativeIterator::Pimpl : public Uncopyable
+class DirectoryIterator::NativeIterator::Pimpl
 {
 public:
     Pimpl (const File& directory, const String& wildCard_)
@@ -253,6 +151,9 @@ public:
           dir (opendir (directory.getFullPathName().toUTF8()))
     {
     }
+
+    Pimpl (Pimpl const&) = delete;
+    Pimpl& operator= (Pimpl const&) = delete;
 
     ~Pimpl()
     {
@@ -314,61 +215,6 @@ bool DirectoryIterator::NativeIterator::next (String& filenameFound,
                                               Time* const modTime, Time* const creationTime, bool* const isReadOnly)
 {
     return pimpl->next (filenameFound, isDir, isHidden, fileSize, modTime, creationTime, isReadOnly);
-}
-
-
-//==============================================================================
-static bool isFileExecutable (const String& filename)
-{
-    beast_statStruct info;
-
-    return beast_stat (filename, info)
-            && S_ISREG (info.st_mode)
-            && access (filename.toUTF8(), X_OK) == 0;
-}
-
-bool Process::openDocument (const String& fileName, const String& parameters)
-{
-    String cmdString (fileName.replace (" ", "\\ ",false));
-    cmdString << " " << parameters;
-
-    if (    cmdString.startsWithIgnoreCase ("file:")
-         || File::createFileWithoutCheckingPath (fileName).isDirectory()
-         || ! isFileExecutable (fileName))
-    {
-        // create a command that tries to launch a bunch of likely browsers
-        const char* const browserNames[] = { "xdg-open", "firefox", "seamonkey",
-                                             "chrome", "opera", "konqueror" };
-        StringArray cmdLines;
-
-        for (int i = 0; i < numElementsInArray (browserNames); ++i)
-            cmdLines.add (String (browserNames[i]) + " " + cmdString.trim().quoted());
-
-        cmdString = cmdLines.joinIntoString (" || ");
-    }
-
-    const char* const argv[4] = { "/bin/sh", "-c", cmdString.toUTF8(), 0 };
-
-    const int cpid = fork();
-
-    if (cpid == 0)
-    {
-        setsid();
-
-        // Child process
-        execve (argv[0], (char**) argv, environ);
-        exit (0);
-    }
-
-    return cpid >= 0;
-}
-
-void File::revealToUser() const
-{
-    if (isDirectory())
-        startAsProcess();
-    else if (getParentDirectory().exists())
-        getParentDirectory().startAsProcess();
 }
 
 } // beast

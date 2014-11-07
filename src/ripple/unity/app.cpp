@@ -17,79 +17,28 @@
 */
 //==============================================================================
 
-#include "../../BeastConfig.h"
-
-#include <beast/module/core/system/BeforeBoost.h>
-#include <boost/bimap.hpp>
-#include <boost/bimap/list_of.hpp>
-#include <boost/bimap/multiset_of.hpp>
-#include <boost/bimap/unordered_set_of.hpp>
-#include <boost/optional.hpp>
-#include <boost/version.hpp>
+#include <BeastConfig.h>
 
 #include <ripple/unity/app.h>
-
 #include <ripple/unity/net.h>
 #include <ripple/unity/rpcx.h>
 #include <ripple/unity/websocket.h>
-#include <ripple/common/jsonrpc_fields.h>
-
-// This .cpp will end up including all of the public header
-// material in Ripple since it holds the Application object.
-
-#include <ripple/common/seconds_clock.h>
-#include <ripple/unity/http.h>
 #include <ripple/unity/resource.h>
-#include <ripple/unity/sitefiles.h>
-#include <ripple/unity/validators.h>
+#include <ripple/app/impl/BasicApp.cpp>
+#include <ripple/app/main/CollectorManager.cpp>
+#include <ripple/app/main/NodeStoreScheduler.cpp>
+#include <ripple/app/main/FatalErrorReporter.cpp>
+#include <ripple/app/tx/TxQueueEntry.h>
+#include <ripple/app/tx/TxQueueEntry.cpp>
+#include <ripple/app/tx/TxQueue.cpp>
+#include <ripple/app/websocket/WSServerHandler.cpp>
+#include <ripple/app/websocket/WSConnection.cpp>
+#include <ripple/app/websocket/WSDoor.cpp>
+#include <ripple/app/node/SqliteFactory.cpp>
+#include <ripple/app/main/Application.cpp>
+#include <ripple/app/main/Main.cpp>
 
-#include <beast/asio/io_latency_probe.h>
-#include <beast/cxx14/memory.h>
-
-#include <fstream> // For Application.cpp
-
-#include <ripple/module/app/main/CollectorManager.h>
-#include <ripple/module/app/main/CollectorManager.cpp>
-
-#include <ripple/module/app/misc/ProofOfWorkFactory.h>
-
-#include <ripple/module/app/main/NodeStoreScheduler.h>
-#include <ripple/module/app/main/NodeStoreScheduler.cpp>
-
-#include <ripple/module/app/main/IoServicePool.h>
-#include <ripple/module/app/main/IoServicePool.cpp>
-
-#include <ripple/module/app/main/FatalErrorReporter.h>
-#include <ripple/module/app/main/FatalErrorReporter.cpp>
-
-#include <ripple/module/app/rpc/RPCHandler.h>
-#include <ripple/module/app/rpc/RPCServerHandler.h>
-#include <ripple/module/app/main/RPCHTTPServer.h>
-#include <ripple/module/app/main/RPCHTTPServer.cpp>
-#include <ripple/module/app/rpc/RPCServerHandler.cpp>
-#include <ripple/module/app/rpc/RPCHandler.cpp>
-
-#include <ripple/module/app/websocket/WSConnection.h>
-
-#include <ripple/module/app/tx/TxQueueEntry.h>
-#include <ripple/module/app/tx/TxQueueEntry.cpp>
-#include <ripple/module/app/tx/TxQueue.h>
-#include <ripple/module/app/tx/TxQueue.cpp>
-
-#include <ripple/module/app/websocket/WSServerHandler.h>
-#include <ripple/module/app/websocket/WSServerHandler.cpp>
-#include <ripple/module/app/websocket/WSConnection.cpp>
-#include <ripple/module/app/websocket/WSDoor.h>
-#include <ripple/module/app/websocket/WSDoor.cpp>
-
-#include <ripple/common/ResolverAsio.h>
-
-#include <ripple/module/app/node/SqliteFactory.h>
-#include <ripple/module/app/node/SqliteFactory.cpp>
-
-#include <ripple/module/app/main/Application.cpp>
-
-#include <ripple/module/app/main/Main.cpp>
+#include <beast/module/core/time/Time.h>
 
 //------------------------------------------------------------------------------
 
@@ -109,6 +58,10 @@ struct ProtobufLibrary
 //
 int main (int argc, char** argv)
 {
+    // Workaround for Boost.Context / Boost.Coroutine
+    // https://svn.boost.org/trac/boost/ticket/10657
+    (void)beast::Time::currentTimeMillis();
+
 #if defined(__GNUC__) && !defined(__clang__)
     auto constexpr gccver = (__GNUC__ * 100 * 100) +
                             (__GNUC_MINOR__ * 100) +
@@ -118,14 +71,9 @@ int main (int argc, char** argv)
         "GCC version 4.8.1 or later is required to compile rippled.");
 #endif
 
-#ifdef _MSC_VER
-    static_assert (_MSC_VER >= 1800,
-        "Visual Studio 2013 or later is required to compile rippled.");
-#endif
-
     static_assert (BOOST_VERSION >= 105500,
         "Boost version 1.55 or later is required to compile rippled");
-        
+
     //
     // These debug heap calls do nothing in release or non Visual Studio builds.
     //
@@ -148,5 +96,9 @@ int main (int argc, char** argv)
 
     beast::SharedSingleton <ProtobufLibrary>::get ();
 
-    return ripple::run (argc, argv);
+    auto const result (ripple::run (argc, argv));
+
+    beast::basic_seconds_clock_main_hook();
+
+    return result;
 }

@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "../../BeastConfig.h"
+#include <BeastConfig.h>
 
 #include <ripple/unity/app.h>
 
@@ -26,16 +26,27 @@
 #pragma warning (disable: 4309) // truncation of constant value
 #endif
 
-#include <ripple/module/rpc/api/ErrorCodes.h>
+#include <ripple/rpc/ErrorCodes.h>
 
-#include <ripple/module/app/paths/PathRequest.cpp>
-#include <ripple/module/app/paths/PathRequests.cpp>
-#include <ripple/module/app/paths/RippleCalc.cpp>
-#include <ripple/module/app/paths/PathState.cpp>
+#include <ripple/app/paths/Node.cpp>
+#include <ripple/app/paths/PathRequest.cpp>
+#include <ripple/app/paths/PathRequests.cpp>
+#include <ripple/app/paths/PathState.cpp>
+#include <ripple/app/paths/RippleCalc.cpp>
+#include <ripple/app/paths/cursor/AdvanceNode.cpp>
+#include <ripple/app/paths/cursor/DeliverNodeForward.cpp>
+#include <ripple/app/paths/cursor/DeliverNodeReverse.cpp>
+#include <ripple/app/paths/cursor/ForwardLiquidity.cpp>
+#include <ripple/app/paths/cursor/ForwardLiquidityForAccount.cpp>
+#include <ripple/app/paths/cursor/Liquidity.cpp>
+#include <ripple/app/paths/cursor/NextIncrement.cpp>
+#include <ripple/app/paths/cursor/ReverseLiquidity.cpp>
+#include <ripple/app/paths/cursor/ReverseLiquidityForAccount.cpp>
+#include <ripple/app/paths/cursor/RippleLiquidity.cpp>
 
-#include <ripple/module/app/main/ParameterTable.cpp>
-#include <ripple/module/app/paths/RippleLineCache.cpp>
-#include <ripple/module/app/ledger/SerializedValidation.cpp>
+#include <ripple/app/main/ParameterTable.cpp>
+#include <ripple/app/paths/RippleLineCache.cpp>
+#include <ripple/app/ledger/SerializedValidation.cpp>
 
 #ifdef _MSC_VER
 #pragma warning (pop)

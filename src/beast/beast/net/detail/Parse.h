@@ -42,6 +42,20 @@ bool expect (InputStream& is, char v)
     return false;
 }
 
+/** Require and consume whitespace from the input.
+    @return `true` if the character matched.
+*/
+template <typename InputStream>
+bool expect_whitespace (InputStream& is)
+{
+    char c;
+    if (is.get(c) && isspace(c))
+        return true;
+    is.unget();
+    is.setstate (std::ios_base::failbit);
+    return false;
+}
+
 /** Used to disambiguate 8-bit integers from characters. */
 template <typename IntType>
 struct integer_holder

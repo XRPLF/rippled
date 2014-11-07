@@ -34,7 +34,7 @@ public:
 
         typedef std::string Key;
         typedef KeyCache <Key> Cache;
-        
+
         // Insert an item, retrieve it, and age it so it gets purged.
         {
             Cache c ("test", clock, 1, 2);

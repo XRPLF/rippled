@@ -1,3 +1,4 @@
+--require ./test/mocha-loader-patch.js
 --reporter spec
 --compilers coffee:coffee-script
 --ui tdd

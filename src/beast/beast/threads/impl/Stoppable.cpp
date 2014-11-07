@@ -25,6 +25,7 @@ Stoppable::Stoppable (char const* name, RootStoppable& root)
     : m_name (name)
     , m_root (root)
     , m_child (this)
+    , m_started (false)
     , m_stopped (false)
     , m_childrenStopped (false)
 {
@@ -34,6 +35,7 @@ Stoppable::Stoppable (char const* name, Stoppable& parent)
     : m_name (name)
     , m_root (parent.m_root)
     , m_child (this)
+    , m_started (false)
     , m_stopped (false)
     , m_childrenStopped (false)
 {
@@ -46,7 +48,7 @@ Stoppable::Stoppable (char const* name, Stoppable& parent)
 Stoppable::~Stoppable ()
 {
     // Children must be stopped.
-    bassert (m_started.get() == 0 || m_childrenStopped);
+    bassert (!m_started || m_childrenStopped);
 }
 
 bool Stoppable::isStopping() const
@@ -122,7 +124,6 @@ void Stoppable::stopRecursive (Journal journal)
 
     // if we get here then all children have stopped
     //
-    memoryBarrier ();
     m_childrenStopped = true;
     onChildrenStopped ();
 
@@ -143,44 +144,39 @@ void Stoppable::stopRecursive (Journal journal)
 
 RootStoppable::RootStoppable (char const* name)
     : Stoppable (name, *this)
-{
-}
-
-RootStoppable::~RootStoppable ()
+    , m_prepared (false)
+    , m_calledStop (false)
+    , m_calledStopAsync (false)
 {
 }
 
 bool RootStoppable::isStopping() const
 {
-    return m_calledStopAsync.get() != 0;
+    return m_calledStopAsync;
 }
 
 void RootStoppable::prepare ()
 {
-    if (! m_prepared.compareAndSetBool (1, 0))
-        return;
-
-    prepareRecursive ();
+    if (m_prepared.exchange (true) == false)
+        prepareRecursive ();
 }
 
 void RootStoppable::start ()
 {
     // Courtesy call to prepare.
-    if (m_prepared.compareAndSetBool (1, 0))
+    if (m_prepared.exchange (true) == false)
         prepareRecursive ();
 
-    if (! m_started.compareAndSetBool (1, 0))
-        return;
-
-    startRecursive ();
+    if (m_started.exchange (true) == false)
+        startRecursive ();
 }
 
 void RootStoppable::stop (Journal journal)
 {
     // Must have a prior call to start()
-    bassert (m_started.get() != 0);
+    bassert (m_started);
 
-    if (! m_calledStop.compareAndSetBool (1, 0))
+    if (m_calledStop.exchange (true) == true)
     {
         journal.warning << "Stoppable::stop called again";
         return;
@@ -192,10 +188,8 @@ void RootStoppable::stop (Journal journal)
 
 void RootStoppable::stopAsync ()
 {
-    if (! m_calledStopAsync.compareAndSetBool (1, 0))
-        return;
-
-    stopAsyncRecursive ();
+    if (m_calledStopAsync.exchange (true) == false)
+        stopAsyncRecursive ();
 }
 
 }

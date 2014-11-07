@@ -21,9 +21,6 @@
 #define RIPPLE_KEYCACHE_H_INCLUDED
 
 #include <mutex>
-#include <unordered_map>
-
-#include <boost/smart_ptr.hpp>
 
 #include <beast/chrono/abstract_clock.h>
 #include <beast/chrono/chrono_io.h>
@@ -42,7 +39,7 @@ namespace ripple {
 // VFALCO TODO Figure out how to pass through the allocator
 template <
     class Key,
-    class Hash = beast::hardened_hash <Key>,
+    class Hash = beast::hardened_hash <>,
     class KeyEqual = std::equal_to <Key>,
     //class Allocator = std::allocator <std::pair <Key const, Entry>>,
     class Mutex = std::mutex
@@ -84,21 +81,23 @@ private:
         clock_type::time_point last_access;
     };
 
-    typedef ripple::unordered_map <key_type, Entry, Hash, KeyEqual> map_type;
+    typedef hardened_hash_map <key_type, Entry, Hash, KeyEqual> map_type;
     typedef typename map_type::iterator iterator;
     typedef std::lock_guard <Mutex> lock_guard;
 
+public:
+    typedef typename map_type::size_type size_type;
+
+private:
     Mutex mutable m_mutex;
     map_type m_map;
     Stats mutable m_stats;
     clock_type& m_clock;
     std::string const m_name;
-    unsigned int m_target_size;
+    size_type m_target_size;
     clock_type::duration m_target_age;
 
 public:
-    typedef typename map_type::size_type size_type;
-
     /** Construct with the specified name.
 
         @param size The initial target size.
@@ -115,7 +114,6 @@ public:
         , m_target_size (target_size)
         , m_target_age (std::chrono::seconds (expiration_seconds))
     {
-        assert (m_target_size >= 0);
     }
 
     // VFALCO TODO Use a forwarding constructor call here
@@ -129,7 +127,6 @@ public:
         , m_target_size (target_size)
         , m_target_age (std::chrono::seconds (expiration_seconds))
     {
-        assert (m_target_size >= 0);
     }
 
     //--------------------------------------------------------------------------

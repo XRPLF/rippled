@@ -22,6 +22,7 @@
 
 #include <cassert>
 #include <cstdint>
+#include <functional>
 #include <ios>
 #include <string>
 #include <utility>
@@ -78,10 +79,6 @@ hash_append(Hasher&, AddressV6 const&)
     assert(false);
 }
 
-/** boost::hash support. */
-inline std::size_t hash_value (AddressV6 const&)
-    { assert(false); return 0; }
-
 /** Returns the address represented as a string. */
 std::string to_string (AddressV6 const& addr);
 
@@ -104,7 +101,7 @@ template <>
 struct hash <beast::IP::AddressV6>
 {
     std::size_t operator() (beast::IP::AddressV6 const& addr) const
-        { return hash_value (addr); }
+        { assert(false); return 0; }
 };
 }
 

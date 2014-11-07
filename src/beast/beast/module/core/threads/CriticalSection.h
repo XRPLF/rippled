@@ -25,6 +25,7 @@
 #define BEAST_CRITICALSECTION_H_INCLUDED
 
 #include <beast/module/core/threads/ScopedLock.h>
+#include <cstdint>
 
 namespace beast {
 
@@ -38,12 +39,15 @@ namespace beast {
 
     @see ScopedLock, ScopedTryLock, ScopedUnlock, SpinLock, Thread
 */
-class CriticalSection : public Uncopyable
+class CriticalSection
 {
 public:
     //==============================================================================
     /** Creates a CriticalSection object. */
     CriticalSection() noexcept;
+
+    CriticalSection (CriticalSection const&) = delete;
+    CriticalSection& operator= (CriticalSection const&) = delete;
 
     /** Destructor.
         If the critical section is deleted whilst locked, any subsequent behaviour
@@ -137,11 +141,13 @@ private:
 
     @see CriticalSection, Array, SharedObjectArray
 */
-class DummyCriticalSection : public Uncopyable
+class DummyCriticalSection
 {
 public:
-    inline DummyCriticalSection() noexcept      {}
-    inline ~DummyCriticalSection() noexcept     {}
+    DummyCriticalSection() = default;
+    DummyCriticalSection (DummyCriticalSection const&) = delete;
+    DummyCriticalSection& operator= (DummyCriticalSection const&) = delete;
+    ~DummyCriticalSection() = default;
 
     inline void enter() const noexcept          {}
     inline bool tryEnter() const noexcept       { return true; }

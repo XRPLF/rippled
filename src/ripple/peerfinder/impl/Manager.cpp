@@ -17,55 +17,73 @@
 */
 //==============================================================================
 
+#include <ripple/peerfinder/Manager.h>
+#include <ripple/peerfinder/impl/Checker.h>
+#include <ripple/peerfinder/impl/Logic.h>
+#include <ripple/peerfinder/impl/SourceStrings.h>
+#include <ripple/peerfinder/impl/StoreSqdb.h>
+#include <boost/asio/io_service.hpp>
+#include <boost/optional.hpp>
+#include <beast/cxx14/memory.h> // <memory>
+#include <thread>
+
+#if DOXYGEN
+#include <ripple/peerfinder/README.md>
+#endif
+
 namespace ripple {
 namespace PeerFinder {
 
 class ManagerImp
     : public Manager
-    , public beast::Thread
-    , public SiteFiles::Listener
-    , public beast::DeadlineTimer::Listener
     , public beast::LeakChecked <ManagerImp>
 {
 public:
-    beast::ServiceQueue m_queue;
-    SiteFiles::Manager& m_siteFiles;
+    boost::asio::io_service &io_service_;
+    boost::optional <boost::asio::io_service::work> work_;
     beast::File m_databaseFile;
     clock_type& m_clock;
     beast::Journal m_journal;
     StoreSqdb m_store;
-    SerializedContext m_context;
-    CheckerAdapter m_checker;
-    Logic m_logic;
-    beast::DeadlineTimer m_secondsTimer;
-    
+    Checker<boost::asio::ip::tcp> checker_;
+    Logic <decltype(checker_)> m_logic;
+
     //--------------------------------------------------------------------------
 
     ManagerImp (
         Stoppable& stoppable,
-        SiteFiles::Manager& siteFiles,
+        boost::asio::io_service& io_service,
         beast::File const& pathToDbFileOrDirectory,
-        Callback& callback,
         clock_type& clock,
         beast::Journal journal)
         : Manager (stoppable)
-        , Thread ("PeerFinder")
-        , m_siteFiles (siteFiles)
+        , io_service_(io_service)
+        , work_(boost::in_place(std::ref(io_service_)))
         , m_databaseFile (pathToDbFileOrDirectory)
         , m_clock (clock)
         , m_journal (journal)
         , m_store (journal)
-        , m_checker (m_context, m_queue)
-        , m_logic (clock, callback, m_store, m_checker, journal)
-        , m_secondsTimer (this)
+        , checker_ (io_service_)
+        , m_logic (clock, m_store, checker_, journal)
     {
         if (m_databaseFile.isDirectory ())
             m_databaseFile = m_databaseFile.getChildFile("peerfinder.sqlite");
     }
 
-    ~ManagerImp ()
+    ~ManagerImp()
     {
-        stopThread ();
+        close();
+    }
+
+    void
+    close()
+    {
+        if (work_)
+        {
+            work_ = boost::none;
+            checker_.stop();
+            m_logic.stop();
+        }
     }
 
     //--------------------------------------------------------------------------
@@ -74,140 +92,115 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    void setConfig (Config const& config)
+    void setConfig (Config const& config) override
     {
-        m_queue.dispatch (
-            m_context.wrap (
-                std::bind (&Logic::setConfig, &m_logic,
-                    config)));
+        m_logic.config (config);
     }
 
     void addFixedPeer (std::string const& name,
-        std::vector <beast::IP::Endpoint> const& addresses)
+        std::vector <beast::IP::Endpoint> const& addresses) override
     {
-        m_queue.dispatch (
-            m_context.wrap (
-                boost::bind (&Logic::addFixedPeer, &m_logic,
-                    name, addresses)));
+        m_logic.addFixedPeer (name, addresses);
     }
 
-    void addFallbackStrings (std::string const& name,
-        std::vector <std::string> const& strings)
+    void
+    addFallbackStrings (std::string const& name,
+        std::vector <std::string> const& strings) override
     {
-        m_queue.dispatch (
-            m_context.wrap (
-                std::bind (&Logic::addStaticSource, &m_logic,
-                    SourceStrings::New (name, strings))));
+        m_logic.addStaticSource (SourceStrings::New (name, strings));
     }
 
-    void addFallbackURL (std::string const& name, std::string const& url)
+    void addFallbackURL (std::string const& name,
+        std::string const& url)
     {
         // VFALCO TODO This needs to be implemented
     }
 
     //--------------------------------------------------------------------------
 
-    Slot::ptr new_inbound_slot (
+    Slot::ptr
+    new_inbound_slot (
         beast::IP::Endpoint const& local_endpoint,
-            beast::IP::Endpoint const& remote_endpoint)
+            beast::IP::Endpoint const& remote_endpoint) override
     {
         return m_logic.new_inbound_slot (local_endpoint, remote_endpoint);
     }
 
-    Slot::ptr new_outbound_slot (beast::IP::Endpoint const& remote_endpoint)
+    Slot::ptr
+    new_outbound_slot (beast::IP::Endpoint const& remote_endpoint) override
     {
         return m_logic.new_outbound_slot (remote_endpoint);
     }
 
-    void on_connected (Slot::ptr const& slot,
-        beast::IP::Endpoint const& local_endpoint)
-    {
-        SlotImp::ptr impl (std::dynamic_pointer_cast <SlotImp> (slot));
-        m_logic.on_connected (impl, local_endpoint);
-    }
-
-    void on_handshake (Slot::ptr const& slot,
-        RipplePublicKey const& key, bool cluster)
-    {
-        SlotImp::ptr impl (std::dynamic_pointer_cast <SlotImp> (slot));
-        m_logic.on_handshake (impl, key, cluster);
-    }
-
-    void on_endpoints (Slot::ptr const& slot,
-        Endpoints const& endpoints)
+    void
+    on_endpoints (Slot::ptr const& slot,
+        Endpoints const& endpoints)  override
     {
         SlotImp::ptr impl (std::dynamic_pointer_cast <SlotImp> (slot));
         m_logic.on_endpoints (impl, endpoints);
     }
 
-    void on_legacy_endpoints (IPAddresses const& addresses)
+    void
+    on_legacy_endpoints (IPAddresses const& addresses)  override
     {
         m_logic.on_legacy_endpoints (addresses);
     }
 
-    void on_closed (Slot::ptr const& slot)
+    void
+    on_closed (Slot::ptr const& slot)  override
     {
         SlotImp::ptr impl (std::dynamic_pointer_cast <SlotImp> (slot));
         m_logic.on_closed (impl);
     }
 
-    void on_cancel (Slot::ptr const& slot)
+    void
+    onRedirects (boost::asio::ip::tcp::endpoint const& remote_address,
+        std::vector<boost::asio::ip::tcp::endpoint> const& eps) override
+    {
+        m_logic.onRedirects(eps.begin(), eps.end(), remote_address);
+    }
+
+    //--------------------------------------------------------------------------
+
+    bool
+    connected (Slot::ptr const& slot,
+        beast::IP::Endpoint const& local_endpoint) override
     {
         SlotImp::ptr impl (std::dynamic_pointer_cast <SlotImp> (slot));
-        m_logic.on_cancel (impl);
+        return m_logic.connected (impl, local_endpoint);
     }
 
-    //--------------------------------------------------------------------------
-    //
-    // SiteFiles
-    //
-    //--------------------------------------------------------------------------
-
-    void parseBootstrapIPs (std::string const& name, SiteFiles::Section const& section)
+    Result
+    activate (Slot::ptr const& slot,
+        RipplePublicKey const& key, bool cluster) override
     {
-        std::size_t n (0);
-        for (SiteFiles::Section::DataType::const_iterator iter (
-            section.data().begin()); iter != section.data().end(); ++iter)
-        {
-            std::string const& s (*iter);
-            beast::IP::Endpoint addr (beast::IP::Endpoint::from_string (s));
-            if (is_unspecified (addr))
-                addr = beast::IP::Endpoint::from_string_altform(s);
-            if (! is_unspecified (addr))
-            {
-                // add IP::Endpoint to bootstrap cache
-                ++n;
-            }
-        }
-
-        m_journal.info <<
-            "Added " << n <<
-            " bootstrap IPs from " << name;
+        SlotImp::ptr impl (std::dynamic_pointer_cast <SlotImp> (slot));
+        return m_logic.activate (impl, key, cluster);
     }
 
-    void parseFixedIPs (SiteFiles::Section const& section)
+    std::vector <Endpoint>
+    redirect (Slot::ptr const& slot) override
     {
-        for (SiteFiles::Section::DataType::const_iterator iter (
-            section.data().begin()); iter != section.data().end(); ++iter)
-        {
-            std::string const& s (*iter);
-            beast::IP::Endpoint addr (beast::IP::Endpoint::from_string (s));
-            if (is_unspecified (addr))
-                addr = beast::IP::Endpoint::from_string_altform(s);
-            if (! is_unspecified (addr))
-            {
-                // add IP::Endpoint to fixed peers
-            }
-        }
+        SlotImp::ptr impl (std::dynamic_pointer_cast <SlotImp> (slot));
+        return m_logic.redirect (impl);
     }
 
-    void onSiteFileFetch (
-        std::string const& name, SiteFiles::SiteFile const& siteFile)
+    std::vector <beast::IP::Endpoint>
+    autoconnect() override
     {
-        parseBootstrapIPs (name, siteFile["ips"]);
+        return m_logic.autoconnect();
+    }
 
-        //if (name == "local")
-        //  parseFixedIPs (name, siteFile["ips_fixed"]);
+    void
+    once_per_second() override
+    {
+        m_logic.once_per_second();
+    }
+
+    std::vector<std::pair<Slot::ptr, std::vector<Endpoint>>>
+    buildEndpointsForPeers() override
+    {
+        return m_logic.buildEndpointsForPeers();
     }
 
     //--------------------------------------------------------------------------
@@ -216,24 +209,26 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    void onPrepare ()
+    void
+    onPrepare ()
     {
+        beast::Error error (m_store.open (m_databaseFile));
+        if (error)
+            m_journal.fatal <<
+                "Failed to open '" << m_databaseFile.getFullPathName() << "'";
+        if (! error)
+            m_logic.load ();
     }
 
-    void onStart ()
+    void
+    onStart()
     {
-        startThread();
     }
 
     void onStop ()
     {
-        m_journal.debug << "Stopping";
-        m_checker.cancel ();
-        m_logic.stop ();
-        m_secondsTimer.cancel();
-        m_queue.dispatch (
-            m_context.wrap (
-                std::bind (&Thread::signalThreadShouldExit, this)));
+        close();
+        stopped();
     }
 
     //--------------------------------------------------------------------------
@@ -244,61 +239,7 @@ public:
 
     void onWrite (beast::PropertyStream::Map& map)
     {
-        SerializedContext::Scope scope (m_context);
-
         m_logic.onWrite (map);
-    }
-
-    //--------------------------------------------------------------------------
-
-    void onDeadlineTimer (beast::DeadlineTimer& timer)
-    {
-        if (timer == m_secondsTimer)
-        {
-            m_queue.dispatch (
-                m_context.wrap (
-                    std::bind (&Logic::periodicActivity, &m_logic)));
-
-            m_secondsTimer.setExpiration (Tuning::secondsPerConnect);
-        }
-    }
-
-    void init ()
-    {
-        m_journal.debug << "Initializing";
-
-        beast::Error error (m_store.open (m_databaseFile));
-
-        if (error)
-        {
-            m_journal.fatal <<
-                "Failed to open '" << m_databaseFile.getFullPathName() << "'";
-        }
-
-        if (! error)
-        {
-            m_logic.load ();
-        }
-
-        m_secondsTimer.setExpiration (std::chrono::seconds (1));
-    }
-
-    void run ()
-    {
-        m_journal.debug << "Started";
-
-        init ();
-
-        m_siteFiles.addListener (*this);
-
-        while (! this->threadShouldExit())
-        {
-            m_queue.run_one();
-        }
-
-        m_siteFiles.removeListener (*this);
-
-        stopped();
     }
 };
 
@@ -310,16 +251,12 @@ Manager::Manager (Stoppable& parent)
 {
 }
 
-Manager* Manager::New (
-    Stoppable& parent,
-    SiteFiles::Manager& siteFiles,
-    beast::File const& databaseFile,
-    Callback& callback,
-    clock_type& clock,
-    beast::Journal journal)
+std::unique_ptr<Manager>
+make_Manager (beast::Stoppable& parent, boost::asio::io_service& io_service,
+    beast::File const& databaseFile, clock_type& clock, beast::Journal journal)
 {
-    return new ManagerImp (parent, siteFiles, databaseFile, 
-        callback, clock, journal);
+    return std::make_unique<ManagerImp> (
+        parent, io_service, databaseFile, clock, journal);
 }
 
 }

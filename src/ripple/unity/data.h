@@ -20,34 +20,34 @@
 #ifndef RIPPLE_DATA_H_INCLUDED
 #define RIPPLE_DATA_H_INCLUDED
 
-#include <ripple/unity/basics.h>
+#include <ripple/unity/types.h>
 #include <ripple/unity/json.h>
-#include <ripple/sslutil/api/ECDSACanonical.h>
+#include <ripple/sslutil/ECDSACanonical.h>
 
 struct bignum_st;
 typedef struct bignum_st BIGNUM;
 
-#include <ripple/module/data/crypto/Base58Data.h>
-#include <ripple/module/data/crypto/RFC1751.h>
-#include <ripple/module/data/protocol/BuildInfo.h>
-#include <ripple/module/data/protocol/FieldNames.h>
-#include <ripple/module/data/protocol/HashPrefix.h>
-#include <ripple/module/data/protocol/Protocol.h>
-#include <ripple/module/data/protocol/RippleAddress.h>
-#include <ripple/module/data/protocol/RippleSystem.h>
-#include <ripple/module/data/protocol/Serializer.h> // needs CKey
-#include <ripple/module/data/protocol/TER.h>
-#include <ripple/module/data/protocol/SerializedTypes.h> // needs Serializer, TER
-#include <ripple/module/data/protocol/SerializedObjectTemplate.h>
- #include <ripple/module/data/protocol/KnownFormats.h>
- #include <ripple/module/data/protocol/LedgerFormats.h> // needs SOTemplate from SerializedObjectTemplate
- #include <ripple/module/data/protocol/TxFormats.h>
-#include <ripple/module/data/protocol/SerializedObject.h>
-#include <ripple/module/data/protocol/TxFlags.h>
+#include <ripple/data/crypto/Base58Data.h>
+#include <ripple/data/crypto/RFC1751.h>
+#include <ripple/data/protocol/BuildInfo.h>
+#include <ripple/data/protocol/SField.h>
+#include <ripple/data/protocol/HashPrefix.h>
+#include <ripple/data/protocol/Protocol.h>
+#include <ripple/data/protocol/RippleAddress.h>
+#include <ripple/data/protocol/Serializer.h> // needs CKey
+#include <ripple/data/protocol/TER.h>
+#include <ripple/data/protocol/SerializedTypes.h> // needs Serializer, TER
+#include <ripple/data/protocol/SerializedObjectTemplate.h>
+#include <ripple/data/protocol/KnownFormats.h>
+#include <ripple/data/protocol/LedgerFormats.h> // needs SOTemplate from SerializedObjectTemplate
+#include <ripple/data/protocol/TxFormats.h>
+#include <ripple/data/protocol/STObject.h>
+#include <ripple/data/protocol/STArray.h>
+#include <ripple/data/protocol/TxFlags.h>
 
-#include <ripple/module/data/utility/UptimeTimerAdapter.h>
+#include <ripple/data/utility/UptimeTimerAdapter.h>
 
-#include <ripple/module/data/protocol/STParsedJSON.h>
+#include <ripple/data/protocol/STParsedJSON.h>
 
 //------------------------------------------------------------------------------
 

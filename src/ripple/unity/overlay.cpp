@@ -17,10 +17,11 @@
 */
 //==============================================================================
 
-#include "../../BeastConfig.h"
+#include <BeastConfig.h>
 
-#include <ripple/module/overlay/impl/Message.cpp>
-#include <ripple/module/overlay/impl/OverlayImpl.cpp>
-#include <ripple/module/overlay/impl/PeerImp.h>
-#include <ripple/module/overlay/impl/PeerDoor.cpp>
+#include <ripple/overlay/impl/Message.cpp>
+#include <ripple/overlay/impl/message_name.cpp>
+#include <ripple/overlay/impl/OverlayImpl.cpp>
+#include <ripple/overlay/impl/PeerImp.cpp>
+#include <ripple/overlay/tests/peer_info.test.cpp>
 

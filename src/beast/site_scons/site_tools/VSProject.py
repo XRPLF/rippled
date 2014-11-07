@@ -78,7 +78,7 @@ V12DSPItemDefinitionGroup= """\
 V12CustomBuildProtoc= """\
       <FileType>Document</FileType>\r
       <Command Condition="'$(Configuration)|$(Platform)'=='%(name)s'">protoc --cpp_out=%(cpp_out)s --proto_path=%%(RelativeDir) %%(Identity)</Command>\r
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='%(name)s'">%(base_out)s.pb.h;%(base_out)s.pb.cc.</Outputs>\r
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='%(name)s'">%(base_out)s.pb.h;%(base_out)s.pb.cc</Outputs>\r
       <Message Condition="'$(Configuration)|$(Platform)'=='%(name)s'">protoc --cpp_out=%(cpp_out)s --proto_path=%%(RelativeDir) %%(Identity)</Message>\r
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='%(name)s'">false</LinkObjects>\r
 """
@@ -94,13 +94,38 @@ def is_subdir(child, parent):
     '''Determine if child is a subdirectory of parent'''
     return os.path.commonprefix([parent, child]) == parent
 
+def _key(item):
+    if isinstance(item, (str, unicode)):
+        return ('s', item.upper(), item)
+    elif isinstance(item, (int, long, float)):
+        return ('n', item)
+    elif isinstance(item, (list, tuple)):
+        return ('l', map(_key, item))
+    elif isinstance(item, dict):
+        return ('d', xsorted(item.keys()), xsorted(item.values()))
+    elif isinstance(item, Configuration):
+        return ('c', _key(item.name), _key(item.target), _key(item.variant), _key(item.platform))
+    elif isinstance(item, Item):
+        return ('i', _key(winpath(item.path())), _key(item.is_compiled()), _key(item.builder()), _key(item.tag()), _key(item.is_excluded()))
+    elif isinstance(item, SCons.Node.FS.File):
+        return ('f', _key(item.name), _key(item.suffix))
+    else:
+        return ('x', item)
+
+def xsorted(tosort, **kwargs):
+    '''Performs sorted in a deterministic manner.'''
+    if 'key' in kwargs:
+        map(kwargs['key'], tosort)
+    kwargs['key'] = _key
+    return sorted(tosort, **kwargs)
+
 def itemList(items, sep):
     if type(items) == str:  # Won't work in Python 3.
         return items
     def gen():
-        for item in sorted(items):
+        for item in xsorted(items):
             if type(item) == dict:
-                for k, v in sorted(item.items()):
+                for k, v in xsorted(item.items()):
                     yield k + '=' + v
             else:
                 yield item
@@ -112,7 +137,7 @@ def itemList(items, sep):
 class SwitchConverter(object):
     '''Converts command line switches to MSBuild XML, using tables'''
 
-    def __init__(self, table, booltable):
+    def __init__(self, table, booltable, retable=None):
         self.table = {}
         for key in table:
             self.table[key] = table[key]
@@ -120,11 +145,25 @@ class SwitchConverter(object):
             value = booltable[key]
             self.table[key] = [value[0], 'True']
             self.table[key + '-'] = [value[0], 'False']
+        if retable != None:
+            self.retable = retable
+        else:
+            self.retable = []
 
     def getXml(self, switches, prefix = ''):
-        if type(switches) != list:
-            switches = list(switches)
+        switches = list(set(switches))      # Filter dupes because on windows platforms, /nologo is added automatically to the environment.
         xml = []
+        for regex, tag in self.retable:
+            matches = []
+            for switch in switches[:]:
+                match = regex.match(switch)
+                if None != match:
+                    matches.append(match.group(1))
+                    switches.remove(switch)
+            if len(matches) > 0:
+                xml.append (
+                    '%s<%s>%s</%s>\r\n' % (
+                        prefix, tag, ';'.join(matches), tag))
         unknown = []
         for switch in switches:
             try:
@@ -236,12 +275,14 @@ class ClSwitchConverter(SwitchConverter):
             '/errorReport:queue'  : ['ErrorReporting', 'Queue'],
             '/errorReport:send'   : ['ErrorReporting', 'Send'],
         }
+        retable = [
+            (re.compile(r'/wd\"(\d+)\"'), 'DisableSpecificWarnings'),
+        ]
         # Ideas from Google's Generate Your Project
         '''
         _Same(_compile, 'AdditionalIncludeDirectories', _folder_list)  # /I
 
         _Same(_compile, 'PreprocessorDefinitions', _string_list)  # /D
-        _Same(_compile, 'DisableSpecificWarnings', _string_list)  # /wd
         _Same(_compile, 'ProgramDataBaseFileName', _file_name)  # /Fd
 
         _Same(_compile, 'AdditionalOptions', _string_list)
@@ -264,17 +305,13 @@ class ClSwitchConverter(SwitchConverter):
         _MSBuildOnly(_compile, 'TreatSpecificWarningsAsErrors', _string_list)  # /we
         _MSBuildOnly(_compile, 'PreprocessOutputPath', _string)  # /Fi
         '''
-        SwitchConverter.__init__(self, table, booltable)
+        SwitchConverter.__init__(self, table, booltable, retable)
 
 class LinkSwitchConverter(SwitchConverter):
     def __init__(self):
         # Based on code in Generate Your Project
         booltable = {
             '/DEBUG'                : ['GenerateDebugInformation'],
-            '/DYNAMICBASE'          : ['RandomizedBaseAddress'],
-            '/DYNAMICBASE'          : ['RandomizedBaseAddress'],
-            '/DYNAMICBASE'          : ['RandomizedBaseAddress'],
-            '/DYNAMICBASE'          : ['RandomizedBaseAddress'],
             '/DYNAMICBASE'          : ['RandomizedBaseAddress'],
             '/NOLOGO'               : ['SuppressStartupBanner'],
             '/nologo'               : ['SuppressStartupBanner'],
@@ -548,7 +585,7 @@ class _ProjectGenerator(object):
 
     def __init__(self, project_node, filters_node, env):
         try:
-            self.configs = sorted(env['VSPROJECT_CONFIGS'], key=lambda x: x.name)
+            self.configs = xsorted(env['VSPROJECT_CONFIGS'])
         except KeyError:
             raise ValueError ('Missing VSPROJECT_CONFIGS')
         self.root_dir = os.getcwd()
@@ -586,7 +623,7 @@ class _ProjectGenerator(object):
             targets = config.target
             for target in targets:
                 _walk(target, items)
-        self.items = sorted(items.itervalues(), key=lambda x: x.path())
+        self.items = xsorted(items.values())
 
     def makeListTag(self, items, prefix, tag, attrs, inherit=True):
         '''Builds an XML tag string from a list of items. If items is
@@ -628,7 +665,7 @@ class _ProjectGenerator(object):
         f.write('  <ItemGroup Label="ProjectConfigurations">\r\n')
         for config in self.configs:
             variant = config.variant
-            platform = config.platform            
+            platform = config.platform           
             f.write(V12DSPProjectConfiguration % locals())
         f.write('  </ItemGroup>\r\n')
 
@@ -640,7 +677,7 @@ class _ProjectGenerator(object):
             variant_dir = os.path.relpath(os.path.dirname(
                 config.target[0].get_abspath()), self.project_dir)
             out_dir = winpath(variant_dir) + ntpath.sep
-            int_dir = winpath(os.path.join(variant_dir, 'src')) + ntpath.sep
+            int_dir = winpath(ntpath.join(variant_dir, 'src')) + ntpath.sep
             f.write(V12DSPPropertyGroup % locals())
 
         f.write('  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />\r\n')
@@ -661,20 +698,23 @@ class _ProjectGenerator(object):
                 '      <PreprocessorDefinitions>%s%%(PreprocessorDefinitions)</PreprocessorDefinitions>\r\n' % (
                     itemList(config.env['CPPDEFINES'], ';')))
             props = ''
-            props += self.makeListTag(self.relPaths(sorted(config.env['CPPPATH'])),
+            props += self.makeListTag(self.relPaths(xsorted(config.env['CPPPATH'])),
                 '      ', 'AdditionalIncludeDirectories', '', True)
             f.write(props)
-            f.write(CLSWITCHES.getXml(sorted(config.env['CCFLAGS']), '      '))
+            f.write(CLSWITCHES.getXml(xsorted(config.env['CCFLAGS']), '      '))
             f.write('    </ClCompile>\r\n')
 
             f.write('    <Link>\r\n')
             props = ''
-            props += self.makeListTag(sorted(config.env['LIBS']),
+            props += self.makeListTag(xsorted(config.env['LIBS']),
                 '      ', 'AdditionalDependencies', '', True)
-            props += self.makeListTag(self.relPaths(sorted(config.env['LIBPATH'])),
-                '      ', 'AdditionalLibraryDirectories', '', True)
+            try:
+                props += self.makeListTag(self.relPaths(xsorted(config.env['LIBPATH'])),
+                    '      ', 'AdditionalLibraryDirectories', '', True)
+            except:
+                pass
             f.write(props)
-            f.write(LINKSWITCHES.getXml(sorted(config.env['LINKFLAGS']), '      '))
+            f.write(LINKSWITCHES.getXml(xsorted(config.env['LINKFLAGS']), '      '))
             f.write('    </Link>\r\n')
 
             f.write('  </ItemDefinitionGroup>\r\n')
@@ -692,21 +732,23 @@ class _ProjectGenerator(object):
                 props = '      <ExcludedFromBuild>True</ExcludedFromBuild>\r\n'
             elif item.builder() == 'Object':
                 props = ''
-                for config, output in sorted(item.node.iteritems()):
+                for config, output in xsorted(item.node.items()):
                     name = config.name
                     env = output.get_build_env()
                     variant = config.variant
                     platform = config.platform
-                    props += self.makeListTag(self.extraRelPaths(sorted(env['CPPPATH']), config.env['CPPPATH']),
+                    props += self.makeListTag(self.extraRelPaths(xsorted(env['CPPPATH']), config.env['CPPPATH']),
                         '      ', 'AdditionalIncludeDirectories',
                         ''' Condition="'$(Configuration)|$(Platform)'=='%(variant)s|%(platform)s'"''' % locals(),
                         True)
             elif item.builder() == 'Protoc':
-                for config, output in sorted(item.node.iteritems()):
+                for config, output in xsorted(item.node.items()):
                     name = config.name
                     out_dir = os.path.relpath(os.path.dirname(str(output)), self.project_dir)
                     cpp_out = winpath(out_dir)
-                    base_out = os.path.join(out_dir, os.path.splitext(os.path.basename(item.path()))[0])
+                    out_parts = out_dir.split(os.sep)
+                    out_parts.append(os.path.splitext(os.path.basename(item.path()))[0])
+                    base_out = ntpath.join(*out_parts)
                     props += V12CustomBuildProtoc % locals()
  
             f.write('    <%(tag)s Include="%(path)s">\r\n' % locals())
@@ -740,7 +782,7 @@ class _ProjectGenerator(object):
             while group != '':
                 groups.add(group)
                 group = ntpath.split(group)[0]
-        for group in sorted(groups):
+        for group in xsorted(groups):
             guid = _guid(self.guid, group)
             f.write(
                 '    <Filter Include="%(group)s">\r\n'

@@ -20,11 +20,55 @@
 #ifndef BEAST_UTILITY_CI_CHAR_TRAITS_H_INCLUDED
 #define BEAST_UTILITY_CI_CHAR_TRAITS_H_INCLUDED
 
+#include <beast/cxx14/algorithm.h> // <algorithm>
+#include <cctype>
 #include <locale>
 #include <string>
 
 namespace beast {
 
+/** Case-insensitive function object for performing less than comparisons. */
+struct ci_less
+{
+    static bool const is_transparent = true;
+
+    template <class String>
+    bool
+    operator() (String const& lhs, String const& rhs) const
+    {
+        typedef typename String::value_type char_type;
+        return std::lexicographical_compare (std::begin(lhs), std::end(lhs),
+            std::begin(rhs), std::end(rhs),
+            [] (char_type lhs, char_type rhs)
+            {
+                return std::tolower(lhs) < std::tolower(rhs);
+            }
+        );
+    }
+};
+
+/** Case-insensitive function object for performing equal to comparisons. */
+struct ci_equal_to
+{
+    static bool const is_transparent = true;
+
+    template <class String>
+    bool
+    operator() (String const& lhs, String const& rhs) const
+    {
+        typedef typename String::value_type char_type;
+        return std::equal (lhs.begin(), lhs.end(), rhs.begin(), rhs.end(),
+            [] (char_type lhs, char_type rhs)
+            {
+                return std::tolower(lhs) == std::tolower(rhs);
+            }
+        );
+    }
+};
+
+// DEPRECATED VFALCO This causes far more problems than it solves!
+//
+/** Case insensitive character traits. */
 struct ci_char_traits : std::char_traits <char>
 {
     static

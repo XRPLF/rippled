@@ -20,7 +20,7 @@
 #ifndef RIPPLE_PEERFINDER_SLOTIMP_H_INCLUDED
 #define RIPPLE_PEERFINDER_SLOTIMP_H_INCLUDED
 
-#include <ripple/peerfinder/api/Slot.h>
+#include <ripple/peerfinder/Slot.h>
 
 #include <beast/container/aged_unordered_map.h>
 #include <beast/container/aged_container_utility.h>
@@ -162,7 +162,7 @@ public:
     // Set to indicate that a connection check for this peer is in
     // progress. Valid always.
     bool connectivityCheckInProgress;
-    
+
     // The time after which we will accept mtENDPOINTS from the peer
     // This is to prevent flooding or spamming. Receipt of mtENDPOINTS
     // sooner than the allotted time should impose a load charge.

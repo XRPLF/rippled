@@ -134,11 +134,6 @@
 #include <beast/module/core/files/File.cpp>
 #include <beast/module/core/files/FileInputStream.cpp>
 #include <beast/module/core/files/FileOutputStream.cpp>
-#include <beast/module/core/files/FileSearchPath.cpp>
-#include <beast/module/core/files/RandomAccessFile.cpp>
-#include <beast/module/core/files/TemporaryFile.cpp>
-
-#include <beast/module/core/logging/Logger.cpp>
 
 #include <beast/module/core/maths/Random.cpp>
 
@@ -182,9 +177,7 @@
 #include <beast/module/core/native/mac_Threads.mm>
 
 #elif BEAST_WINDOWS
-#include <beast/module/core/native/win32_ComSmartPtr.h>
 #include <beast/module/core/native/win32_Files.cpp>
-#include <beast/module/core/native/win32_Registry.cpp>
 #include <beast/module/core/native/win32_SystemStats.cpp>
 #include <beast/module/core/native/win32_Threads.cpp>
 
@@ -232,6 +225,3 @@ void beast_reportFatalError (char const* message, char const* fileName, int line
 #pragma pop_macro("_aligned_offset_recalloc")
 #pragma pop_macro("_aligned_msize")
 #endif
-
-// Must be outside the namespace
-#include <beast/module/core/system/BoostPlaceholdersFix.cpp>

@@ -19,7 +19,7 @@
 
 // Unity build file for LevelDB
 
-#include "../../BeastConfig.h"
+#include <BeastConfig.h>
 
 #include <ripple/unity/leveldb.h>
 
@@ -42,6 +42,11 @@
 
  #endif
 
+#endif
+
+#if BEAST_CLANG
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-function"
 #endif
 
 #include <leveldb/db/builder.cc>
@@ -95,4 +100,8 @@
 #elif defined (LEVELDB_PLATFORM_ANDROID)
 # error Missing Android port!
 
+#endif
+
+#if BEAST_CLANG
+#pragma clang diagnostic pop
 #endif

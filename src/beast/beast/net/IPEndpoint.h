@@ -132,9 +132,6 @@ inline bool  is_public (Endpoint const& endpoint)
 
 //------------------------------------------------------------------------------
 
-/** boost::hash support. */
-std::size_t hash_value (Endpoint const& endpoint);
-
 /** Returns the endpoint represented as a string. */
 inline std::string to_string (Endpoint const& endpoint)
     { return endpoint.to_string(); }
@@ -161,7 +158,17 @@ template <>
 struct hash <beast::IP::Endpoint>
 {
     std::size_t operator() (beast::IP::Endpoint const& endpoint) const
-        { return hash_value (endpoint); }
+        { return beast::uhash<>{} (endpoint); }
+};
+}
+
+namespace boost {
+/** boost::hash support. */
+template <>
+struct hash <beast::IP::Endpoint>
+{
+    std::size_t operator() (beast::IP::Endpoint const& endpoint) const
+        { return beast::uhash<>{} (endpoint); }
 };
 }
 

@@ -23,6 +23,9 @@
 
 #include <beast/unit_test/suite.h>
 
+#include <algorithm>
+#include <memory>
+
 namespace beast {
 
 // We need to make a shared singleton or else there are
@@ -167,10 +170,6 @@ String File::parseAbsolutePath (const String& p)
                 path if that's what was supplied, or would evaluate a partial path relative to the CWD.
             */
             bassertfalse;
-
-           #if BEAST_LOG_ASSERTIONS
-            Logger::writeToLog ("Illegal absolute path: " + path);
-           #endif
         }
        #endif
 
@@ -422,21 +421,6 @@ File File::getSiblingFile (const String& fileName) const
 }
 
 //==============================================================================
-String File::descriptionOfSizeInBytes (const std::int64_t bytes)
-{
-    const char* suffix;
-    double divisor = 0;
-
-    if (bytes == 1)                       { suffix = " byte"; }
-    else if (bytes < 1024)                { suffix = " bytes"; }
-    else if (bytes < 1024 * 1024)         { suffix = " KB"; divisor = 1024.0; }
-    else if (bytes < 1024 * 1024 * 1024)  { suffix = " MB"; divisor = 1024.0 * 1024.0; }
-    else                                  { suffix = " GB"; divisor = 1024.0 * 1024.0 * 1024.0; }
-
-    return (divisor > 0 ? String (bytes / divisor, 1) : String (bytes)) + suffix;
-}
-
-//==============================================================================
 Result File::create() const
 {
     if (exists())
@@ -484,31 +468,6 @@ Time File::getCreationTime() const                   { std::int64_t m, a, c; get
 bool File::setLastModificationTime (Time t) const    { return setFileTimesInternal (t.toMilliseconds(), 0, 0); }
 bool File::setLastAccessTime (Time t) const          { return setFileTimesInternal (0, t.toMilliseconds(), 0); }
 bool File::setCreationTime (Time t) const            { return setFileTimesInternal (0, 0, t.toMilliseconds()); }
-
-//==============================================================================
-bool File::loadFileAsData (MemoryBlock& destBlock) const
-{
-    if (! existsAsFile())
-        return false;
-
-    FileInputStream in (*this);
-    return in.openedOk() && getSize() == in.readIntoMemoryBlock (destBlock);
-}
-
-String File::loadFileAsString() const
-{
-    if (! existsAsFile())
-        return String::empty;
-
-    FileInputStream in (*this);
-    return in.openedOk() ? in.readEntireStreamAsString()
-                         : String::empty;
-}
-
-void File::readLines (StringArray& destLines) const
-{
-    destLines.addLines (loadFileAsString());
-}
 
 //==============================================================================
 int File::findChildFiles (Array<File>& results,
@@ -666,15 +625,9 @@ File File::withFileExtension (const String& newExtension) const
 }
 
 //==============================================================================
-bool File::startAsProcess (const String& parameters) const
-{
-    return exists() && Process::openDocument (fullPath, parameters);
-}
-
-//==============================================================================
 FileInputStream* File::createInputStream() const
 {
-    ScopedPointer<FileInputStream> fin (new FileInputStream (*this));
+    std::unique_ptr <FileInputStream> fin (new FileInputStream (*this));
 
     if (fin->openedOk())
         return fin.release();
@@ -684,7 +637,7 @@ FileInputStream* File::createInputStream() const
 
 FileOutputStream* File::createOutputStream (const size_t bufferSize) const
 {
-    ScopedPointer<FileOutputStream> out (new FileOutputStream (*this, bufferSize));
+    std::unique_ptr <FileOutputStream> out (new FileOutputStream (*this, bufferSize));
 
     return out->failedToOpen() ? nullptr
                                : out.release();
@@ -703,17 +656,6 @@ bool File::appendData (const void* const dataToAppend,
     return out.openedOk() && out.write (dataToAppend, numberOfBytes);
 }
 
-bool File::replaceWithData (const void* const dataToWrite,
-                            const size_t numberOfBytes) const
-{
-    if (numberOfBytes == 0)
-        return deleteFile();
-
-    TemporaryFile tempFile (*this, TemporaryFile::useHiddenFile);
-    tempFile.getFile().appendData (dataToWrite, numberOfBytes);
-    return tempFile.overwriteTargetFileWithTemporary();
-}
-
 bool File::appendText (const String& text,
                        const bool asUnicode,
                        const bool writeUnicodeHeaderBytes) const
@@ -725,49 +667,6 @@ bool File::appendText (const String& text,
 
     out.writeText (text, asUnicode, writeUnicodeHeaderBytes);
     return true;
-}
-
-bool File::replaceWithText (const String& textToWrite,
-                            const bool asUnicode,
-                            const bool writeUnicodeHeaderBytes) const
-{
-    TemporaryFile tempFile (*this, TemporaryFile::useHiddenFile);
-    tempFile.getFile().appendText (textToWrite, asUnicode, writeUnicodeHeaderBytes);
-    return tempFile.overwriteTargetFileWithTemporary();
-}
-
-bool File::hasIdenticalContentTo (const File& other) const
-{
-    if (other == *this)
-        return true;
-
-    if (getSize() == other.getSize() && existsAsFile() && other.existsAsFile())
-    {
-        FileInputStream in1 (*this), in2 (other);
-
-        if (in1.openedOk() && in2.openedOk())
-        {
-            const int bufferSize = 4096;
-            HeapBlock <char> buffer1 (bufferSize), buffer2 (bufferSize);
-
-            for (;;)
-            {
-                const int num1 = in1.read (buffer1, bufferSize);
-                const int num2 = in2.read (buffer2, bufferSize);
-
-                if (num1 != num2)
-                    break;
-
-                if (num1 <= 0)
-                    return true;
-
-                if (memcmp (buffer1, buffer2, (size_t) num1) != 0)
-                    break;
-            }
-        }
-    }
-
-    return false;
 }
 
 //==============================================================================
@@ -797,7 +696,7 @@ String File::createLegalFileName (const String& original)
     {
         const int lastDot = s.lastIndexOfChar ('.');
 
-        if (lastDot > bmax (0, len - 12))
+        if (lastDot > std::max (0, len - 12))
         {
             s = s.substring (0, maxLength - (len - lastDot))
                  + s.substring (lastDot);
@@ -928,33 +827,13 @@ public:
         expect (! home.existsAsFile());
         expect (File::getSpecialLocation (File::userDocumentsDirectory).isDirectory());
         expect (File::getSpecialLocation (File::userApplicationDataDirectory).isDirectory());
-        expect (File::getSpecialLocation (File::currentExecutableFile).exists());
-        expect (File::getSpecialLocation (File::currentApplicationFile).exists());
-        expect (File::getSpecialLocation (File::invokedExecutableFile).exists());
         expect (home.getVolumeTotalSize() > 1024 * 1024);
         expect (home.getBytesFreeOnVolume() > 0);
-        expect (! home.isHidden());
-        expect (home.isOnHardDisk());
-        expect (! home.isOnCDRomDrive());
         expect (File::getCurrentWorkingDirectory().exists());
         expect (home.setAsCurrentWorkingDirectory());
        #if BEAST_WINDOWS
         expect (File::getCurrentWorkingDirectory() == home);
        #endif
-
-        {
-            Array<File> roots;
-            File::findFileSystemRoots (roots);
-            expect (roots.size() > 0);
-
-            int numRootsExisting = 0;
-            for (int i = 0; i < roots.size(); ++i)
-                if (roots[i].exists())
-                    ++numRootsExisting;
-
-            // (on windows, some of the drives may not contain media, so as long as at least one is ok..)
-            expect (numRootsExisting > 0);
-        }
 
         testcase ("Writing");
 
@@ -997,7 +876,6 @@ public:
         expect (tempFile.exists());
         expect (tempFile.getSize() == 10);
         expect (std::abs ((int) (tempFile.getLastModificationTime().toMilliseconds() - Time::getCurrentTime().toMilliseconds())) < 3000);
-        expect (tempFile.loadFileAsString() == String ("0123456789"));
         expect (! demoFolder.containsSubDirectories());
 
         expectEquals (tempFile.getRelativePathFrom (demoFolder.getParentDirectory()), demoFolder.getFileName() + File::separatorString + tempFile.getFileName());
@@ -1023,13 +901,6 @@ public:
         expect (std::abs ((int) (t2.toMilliseconds() - t.toMilliseconds())) <= 1000);
 
         {
-            MemoryBlock mb;
-            tempFile.loadFileAsData (mb);
-            expect (mb.getSize() == 10);
-            expect (mb[0] == '0');
-        }
-
-        {
             expect (tempFile.getSize() == 10);
             FileOutputStream fo (tempFile);
             expect (fo.openedOk());
@@ -1046,13 +917,10 @@ public:
 
         expect (tempFile.appendData ("abcdefghij", 10));
         expect (tempFile.getSize() == 20);
-        expect (tempFile.replaceWithData ("abcdefghij", 10));
-        expect (tempFile.getSize() == 10);
 
         File tempFile2 (tempFile.getNonexistentSibling (false));
         expect (tempFile.copyFileTo (tempFile2));
         expect (tempFile2.exists());
-        expect (tempFile2.hasIdenticalContentTo (tempFile));
         expect (tempFile.deleteFile());
         expect (! tempFile.exists());
         expect (tempFile2.moveFileTo (tempFile));

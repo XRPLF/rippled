@@ -26,10 +26,22 @@ class SourceURLImp
     : public SourceURL
     , public beast::LeakChecked <SourceURLImp>
 {
+private:
+    beast::URL m_url;
+
+    // VFALCO This is turned off because the HTTPClient
+    //        implementation is now obsolete. A new HTTP client
+    //        that uses the latest best practices (asio coroutines,
+    //        beast::http::message and beast::http::parser) should
+    //        be used.
+#if 0
+    std::unique_ptr <beast::asio::HTTPClientBase> m_client;
+#endif
+
 public:
     explicit SourceURLImp (beast::URL const& url)
         : m_url (url)
-        , m_client (beast::asio::HTTPClientBase::New ())
+        //, m_client (beast::asio::HTTPClientBase::New ())
     {
     }
 
@@ -39,29 +51,30 @@ public:
 
     std::string to_string () const
     {
-        std::stringstream ss;
-        ss <<
-            "URL: '" << m_url.to_string() << "'";
-        return ss.str();
+        using std::to_string;
+        return "URL: '" + to_string (m_url) + "'";
     }
 
-    beast::String uniqueID () const
+    std::string uniqueID () const
     {
-        return "URL," + m_url.toString();
+        using std::to_string;
+        return "URL," + to_string (m_url);
     }
 
-    beast::String createParam ()
+    std::string createParam ()
     {
-        return m_url.toString();
+        using std::to_string;
+        return to_string (m_url);
     }
 
     void cancel ()
     {
-        m_client->cancel ();
+        //m_client->cancel ();
     }
 
     void fetch (Results& results, beast::Journal journal)
     {
+#if 0
         auto httpResult (m_client->get (m_url));
 
         if (httpResult.first == 0)
@@ -76,11 +89,8 @@ public:
                 "HTTP GET to " << m_url <<
                 " failed: '" << httpResult.first.message () << "'";
         }
+#endif
     }
-
-private:
-    beast::URL m_url;
-    std::unique_ptr <beast::asio::HTTPClientBase> m_client;
 };
 
 //------------------------------------------------------------------------------

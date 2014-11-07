@@ -59,9 +59,10 @@ class __System(object):
             self.__display = '%s %s (%s)' % (self.distro, self.version, self.name)
 
         elif self.osx:
-            ten, major, minor = platform.mac_ver()[0].split('.')
-            self.__display = '%s %s.%s.%s' % (self.name, ten, major, minor)
-
+            parts = platform.mac_ver()[0].split('.')
+            while len(parts) < 3:
+                parts.append('0')
+            self.__display = '%s %s' % (self.name, '.'.join(parts))
         elif self.windows:
             release, version, csd, ptype = platform.win32_ver()
             self.__display = '%s %s %s (%s)' % (self.name, release, version, ptype)
@@ -77,11 +78,16 @@ class __System(object):
 class Git(object):
     """Provides information about git and the repository we are called from"""
     def __init__(self, env):
+        self.tags = self.branch = self.user = ''
         self.exists = env.Detect('git')
         if self.exists:
-            self.commit_id = _execute('git describe --tags')
-        else:
-            self.commit_id = None
+            try:
+                self.tags = _execute('git describe --tags')
+                self.branch = _execute('git rev-parse --abbrev-ref HEAD')
+                remote = _execute('git config remote.origin.url')
+                self.user = remote.split(':')[1].split('/')[0]
+            except:
+                self.exists = False
 
 system = __System()
 

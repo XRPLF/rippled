@@ -17,6 +17,9 @@ before_install:
       mkdir -p $BOOST_ROOT/stage
       ln -s /usr/lib/x86_64-linux-gnu $BOOST_ROOT/stage/lib
       ln -s /usr/include/boost $BOOST_ROOT/boost
+  - | # Try to patch boost
+      sudo patch /usr/include/boost/bimap/detail/debug/static_error.hpp Builds/travis/static_error.boost.patch
+      sudo patch /usr/include/boost/config/compiler/clang.hpp Builds/travis/clang.boost.patch
   - sudo apt-get install -qq mlocate
   - sudo updatedb
   - sudo locate libboost | grep /lib | grep -e ".a$"
@@ -32,23 +35,35 @@ before_install:
   # What versions are we ACTUALLY running?
   - g++ -v
   - clang -v
+  # Avoid `spurious errors` caused by ~/.npm permission issues
+  # Does it already exist? Who owns? What permissions?
+  - ls -lah ~/.npm || mkdir ~/.npm
+  # Make sure we own it
+  - sudo chown -R $USER ~/.npm
 
 script:
   # Set so any failing command will abort the build
   - set -e
-  # If only we could do -j12 ;)
-  - scons 
+  # $CC will be either `clang` or `gcc` (If only we could do -j12 ;)
+  - scons $CC.debug
+  # We can be sure we're using the build/$CC.debug variant (-f so never err)
+  - rm -f build/rippled 
+  - export RIPPLED_PATH="$PWD/build/$CC.debug/rippled"
   # See what we've actually built
-  - ldd ./build/rippled
+  - ldd $RIPPLED_PATH
   # Run unittests (under gdb)
   - | # create gdb script
     echo "set env MALLOC_CHECK_=3" > script.gdb 
     echo "run" >> script.gdb
     echo "backtrace full" >> script.gdb 
     # gdb --help
-  - cat script.gdb | gdb --ex 'set print thread-events off' --return-child-result --args ./build/rippled --unittest 
-  # Run integration tests
+  - cat script.gdb | gdb --ex 'set print thread-events off' --return-child-result --args $RIPPLED_PATH --unittest
   - npm install
+  # Use build/(gcc|clang).debug/rippled
+  - |
+    echo "exports.default_server_config = {\"rippled_path\" : \"$RIPPLED_PATH\"};" > test/config.js
+
+  # Run integration tests
   - npm test
 notifications:
   email:

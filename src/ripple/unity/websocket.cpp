@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "../../BeastConfig.h"
+#include <BeastConfig.h>
 
 #ifndef __STDC_LIMIT_MACROS
 #define __STDC_LIMIT_MACROS 1
@@ -42,5 +42,5 @@
 #include <websocket/src/network_utilities.cpp>
 #include <websocket/src/sha1/sha1.cpp>
 
-#include <ripple/module/websocket/autosocket/AutoSocket.cpp>
-#include <ripple/module/websocket/autosocket/LogWebsockets.cpp>
+#include <ripple/websocket/autosocket/AutoSocket.cpp>
+#include <ripple/websocket/autosocket/LogWebsockets.cpp>

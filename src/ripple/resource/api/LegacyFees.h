@@ -20,6 +20,8 @@
 #ifndef RIPPLE_RESOURCE_LEGACYFEES_H_INCLUDED
 #define RIPPLE_RESOURCE_LEGACYFEES_H_INCLUDED
 
+#include <ripple/resource/api/Charge.h>
+
 namespace ripple {
 
 enum LoadType
@@ -49,6 +51,9 @@ enum LoadType
 
     LT_MAX                      // MUST BE LAST
 };
+
+/** Returns an appropriate Charge based on the legacy LoadType. */
+extern Resource::Charge legacyFee (LoadType t);
 
 }
 

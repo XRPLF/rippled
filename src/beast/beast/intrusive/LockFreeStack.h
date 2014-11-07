@@ -20,9 +20,7 @@
 #ifndef BEAST_INTRUSIVE_LOCKFREESTACK_H_INCLUDED
 #define BEAST_INTRUSIVE_LOCKFREESTACK_H_INCLUDED
 
-#include <beast/Atomic.h>
-#include <beast/Uncopyable.h>
-
+#include <atomic>
 #include <iterator>
 #include <type_traits>
 
@@ -81,7 +79,7 @@ public:
 
     LockFreeStackIterator& operator++ ()
     {
-        m_node = m_node->m_next.get();
+        m_node = m_node->m_next.load ();
         return static_cast <LockFreeStackIterator&> (*this);
     }
 
@@ -142,19 +140,22 @@ bool operator!= (LockFreeStackIterator <Container, LhsIsConst> const& lhs,
                 omitted, the default tag is used.
 */
 template <class Element, class Tag = void>
-class LockFreeStack : public Uncopyable
+class LockFreeStack
 {
 public:
-    class Node : public Uncopyable
+    class Node
     {
     public:
-        Node ()
-        {
-        }
+        Node () 
+            : m_next (nullptr)
+        { }
 
-        explicit Node (Node* next) : m_next (next)
-        {
-        }
+        explicit Node (Node* next)
+            : m_next (next)
+        { }
+
+        Node(Node const&) = delete;
+        Node& operator= (Node const&) = delete;
 
     private:
         friend class LockFreeStack;
@@ -162,7 +163,7 @@ public:
         template <class Container, bool IsConst>
         friend class LockFreeStackIterator;
 
-        Atomic <Node*> m_next;
+        std::atomic <Node*> m_next;
     };
 
 public:
@@ -184,10 +185,13 @@ public:
     {
     }
 
+    LockFreeStack(LockFreeStack const&) = delete;
+    LockFreeStack& operator= (LockFreeStack const&) = delete;
+
     /** Returns true if the stack is empty. */
     bool empty() const
     {
-        return m_head.get() == &m_end;
+        return m_head.load () == &m_end;
     }
 
     /** Push a node onto the stack.
@@ -205,14 +209,15 @@ public:
     bool push_front (Node* node)
     {
         bool first;
-        Node* head;
+        Node* old_head = m_head.load (std::memory_order_relaxed);
         do
         {
-            head = m_head.get ();
-            first = head == &m_end;
-            node->m_next = head;
+            first = (old_head == &m_end);
+            node->m_next = old_head;
         }
-        while (!m_head.compareAndSetBool (node, head));
+        while (!m_head.compare_exchange_strong (old_head, node,
+                                                std::memory_order_release,
+                                                std::memory_order_relaxed));
         return first;
     }
 
@@ -227,16 +232,17 @@ public:
     */
     Element* pop_front ()
     {
-        Node* node;
-        Node* head;
+        Node* node = m_head.load ();
+        Node* new_head;
         do
         {
-            node = m_head.get ();
             if (node == &m_end)
                 return nullptr;
-            head = node->m_next.get ();
+            new_head = node->m_next.load ();
         }
-        while (!m_head.compareAndSetBool (head, node));
+        while (!m_head.compare_exchange_strong (node, new_head,
+                                                std::memory_order_release,
+                                                std::memory_order_relaxed));
         return static_cast <Element*> (node);
     }
 
@@ -249,7 +255,7 @@ public:
     /** @{ */
     iterator begin ()
     {
-        return iterator (m_head.get ());
+        return iterator (m_head.load ());
     }
 
     iterator end ()
@@ -259,7 +265,7 @@ public:
     
     const_iterator begin () const
     {
-        return const_iterator (m_head.get ());
+        return const_iterator (m_head.load ());
     }
 
     const_iterator end () const
@@ -269,7 +275,7 @@ public:
     
     const_iterator cbegin () const
     {
-        return const_iterator (m_head.get ());
+        return const_iterator (m_head.load ());
     }
 
     const_iterator cend () const
@@ -280,7 +286,7 @@ public:
 
 private:
     Node m_end;
-    Atomic <Node*> m_head;
+    std::atomic <Node*> m_head;
 };
 
 }

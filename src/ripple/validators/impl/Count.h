@@ -67,7 +67,7 @@ struct Count
     }
 
     /** Output to PropertyStream. */
-    void onWrite (beast::PropertyStream::Map& map)
+    void onWrite (beast::PropertyStream::Map& map) const
     {
         map["received"] = received;
         map["expected"] = expected;
@@ -80,14 +80,6 @@ struct Count
     std::size_t expected;   // Count of closed ledgers without a validation
     std::size_t closed;     // Number of validations with closed ledgers
 };
-
-inline Count operator+ (Count const& lhs, Count const& rhs)
-{
-    return Count (
-        lhs.received + rhs.received,
-        lhs.expected + rhs.expected,
-        lhs.closed   + rhs.closed);
-}
 
 }
 }

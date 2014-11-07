@@ -29,27 +29,32 @@ namespace Resource {
 
 class Logic
 {
-public:
+private:
     typedef beast::abstract_clock <std::chrono::seconds> clock_type;
-    typedef ripple::unordered_map <std::string, Import> Imports;
-    typedef ripple::unordered_map <Key, Entry, Key::hasher, Key::key_equal> Table;
+    typedef hash_map <std::string, Import> Imports;
+    typedef hash_map <Key, Entry, Key::hasher, Key::key_equal> Table;
+    typedef beast::List <Entry> EntryIntrusiveList;
 
     struct State
     {
         // Table of all entries
         Table table;
 
+        // Because the following are intrusive lists, a given Entry may be in
+        // at most list at a given instant.  The Entry must be removed from
+        // one list before placing it in another.
+
         // List of all active inbound entries
-        beast::List <Entry> inbound;
+        EntryIntrusiveList inbound;
 
         // List of all active outbound entries
-        beast::List <Entry> outbound;
+        EntryIntrusiveList outbound;
 
         // List of all active admin entries
-        beast::List <Entry> admin;
+        EntryIntrusiveList admin;
 
         // List of all inactve entries
-        beast::List <Entry> inactive;
+        EntryIntrusiveList inactive;
 
         // All imported gossip data
         Imports import_table;
@@ -75,6 +80,7 @@ public:
     beast::Journal m_journal;
 
     //--------------------------------------------------------------------------
+public:
 
     Logic (beast::insight::Collector::ptr const& collector,
         clock_type& clock, beast::Journal journal)
@@ -101,24 +107,25 @@ public:
         if (isWhitelisted (address))
             return newAdminEndpoint (to_string (address));
 
-        Key key;
-        key.kind = kindInbound;
-        key.address = address.at_port (0);
-
         Entry* entry (nullptr);
 
         {
             SharedState::Access state (m_state);
             std::pair <Table::iterator, bool> result (
-                state->table.emplace (key, 0));
+                state->table.emplace (std::piecewise_construct,
+                    std::make_tuple (kindInbound, address.at_port (0)), // Key
+                    std::make_tuple (m_clock.now())));                  // Entry
+
             entry = &result.first->second;
             entry->key = &result.first->first;
             ++entry->refcount;
             if (entry->refcount == 1)
             {
                 if (! result.second)
+                {
                     state->inactive.erase (
                         state->inactive.iterator_to (*entry));
+                }
                 state->inbound.push_back (*entry);
             }
         }
@@ -134,16 +141,15 @@ public:
         if (isWhitelisted (address))
             return newAdminEndpoint (to_string (address));
 
-        Key key;
-        key.kind = kindOutbound;
-        key.address = address;
-
         Entry* entry (nullptr);
 
         {
             SharedState::Access state (m_state);
             std::pair <Table::iterator, bool> result (
-                state->table.emplace (key, 0));
+                state->table.emplace (std::piecewise_construct,
+                    std::make_tuple (kindOutbound, address),            // Key
+                    std::make_tuple (m_clock.now())));                  // Entry
+
             entry = &result.first->second;
             entry->key = &result.first->first;
             ++entry->refcount;
@@ -164,16 +170,15 @@ public:
 
     Consumer newAdminEndpoint (std::string const& name)
     {
-        Key key;
-        key.kind = kindAdmin;
-        key.name = name;
-
         Entry* entry (nullptr);
 
         {
             SharedState::Access state (m_state);
             std::pair <Table::iterator, bool> result (
-                state->table.emplace (key, 0));
+                state->table.emplace (std::piecewise_construct,
+                    std::make_tuple (kindAdmin, name),                  // Key
+                    std::make_tuple (m_clock.now())));                  // Entry
+
             entry = &result.first->second;
             entry->key = &result.first->first;
             ++entry->refcount;
@@ -194,10 +199,6 @@ public:
 
     Entry& elevateToAdminEndpoint (Entry& prior, std::string const& name)
     {
-        Key key;
-        key.kind = kindAdmin;
-        key.name = name;
-
         m_journal.info <<
             "Elevate " << prior << " to " << name;
 
@@ -206,7 +207,10 @@ public:
         {
             SharedState::Access state (m_state);
             std::pair <Table::iterator, bool> result (
-                state->table.emplace (key, 0));
+                state->table.emplace (std::piecewise_construct,
+                    std::make_tuple (kindAdmin, name),                  // Key
+                    std::make_tuple (m_clock.now())));                  // Entry
+
             entry = &result.first->second;
             entry->key = &result.first->first;
             ++entry->refcount;
@@ -231,46 +235,43 @@ public:
 
     Json::Value getJson (int threshold)
     {
-        clock_type::rep const now (m_clock.elapsed());
+        clock_type::time_point const now (m_clock.now());
 
         Json::Value ret (Json::objectValue);
         SharedState::Access state (m_state);
 
-        for (beast::List <Entry>::iterator iter (state->inbound.begin());
-            iter != state->inbound.end(); ++iter)
+        for (auto& inboundEntry : state->inbound)
         {
-            int localBalance = iter->local_balance.value (now);
-            if ((localBalance + iter->remote_balance) >= threshold)
+            int localBalance = inboundEntry.local_balance.value (now);
+            if ((localBalance + inboundEntry.remote_balance) >= threshold)
             {
-                Json::Value& entry = (ret[iter->to_string()] = Json::objectValue);
+                Json::Value& entry = (ret[inboundEntry.to_string()] = Json::objectValue);
                 entry["local"] = localBalance;
-                entry["remote"] = iter->remote_balance;
+                entry["remote"] = inboundEntry.remote_balance;
                 entry["type"] = "outbound";
             }
 
         }
-        for (beast::List <Entry>::iterator iter (state->outbound.begin());
-            iter != state->outbound.end(); ++iter)
+        for (auto& outboundEntry : state->outbound)
         {
-            int localBalance = iter->local_balance.value (now);
-            if ((localBalance + iter->remote_balance) >= threshold)
+            int localBalance = outboundEntry.local_balance.value (now);
+            if ((localBalance + outboundEntry.remote_balance) >= threshold)
             {
-                Json::Value& entry = (ret[iter->to_string()] = Json::objectValue);
+                Json::Value& entry = (ret[outboundEntry.to_string()] = Json::objectValue);
                 entry["local"] = localBalance;
-                entry["remote"] = iter->remote_balance;
+                entry["remote"] = outboundEntry.remote_balance;
                 entry["type"] = "outbound";
             }
 
         }
-        for (beast::List <Entry>::iterator iter (state->admin.begin());
-            iter != state->admin.end(); ++iter)
+        for (auto& adminEntry : state->admin)
         {
-            int localBalance = iter->local_balance.value (now);
-            if ((localBalance + iter->remote_balance) >= threshold)
+            int localBalance = adminEntry.local_balance.value (now);
+            if ((localBalance + adminEntry.remote_balance) >= threshold)
             {
-                Json::Value& entry = (ret[iter->to_string()] = Json::objectValue);
+                Json::Value& entry = (ret[adminEntry.to_string()] = Json::objectValue);
                 entry["local"] = localBalance;
-                entry["remote"] = iter->remote_balance;
+                entry["remote"] = adminEntry.remote_balance;
                 entry["type"] = "admin";
             }
 
@@ -281,21 +282,20 @@ public:
 
     Gossip exportConsumers ()
     {
-        clock_type::rep const now (m_clock.elapsed());
+        clock_type::time_point const now (m_clock.now());
 
         Gossip gossip;
         SharedState::Access state (m_state);
 
         gossip.items.reserve (state->inbound.size());
 
-        for (beast::List <Entry>::iterator iter (state->inbound.begin());
-            iter != state->inbound.end(); ++iter)
+        for (auto& inboundEntry : state->inbound)
         {
             Gossip::Item item;
-            item.balance = iter->local_balance.value (now);
+            item.balance = inboundEntry.local_balance.value (now);
             if (item.balance >= minimumGossipBalance)
             {
-                item.address = iter->key->address;
+                item.address = inboundEntry.key->address;
                 gossip.items.push_back (item);
             }
         }
@@ -307,25 +307,26 @@ public:
 
     void importConsumers (std::string const& origin, Gossip const& gossip)
     {
-        clock_type::rep const now (m_clock.elapsed());
-
+        clock_type::rep const elapsed (m_clock.elapsed());
         {
             SharedState::Access state (m_state);
             std::pair <Imports::iterator, bool> result (
-                state->import_table.emplace (origin, 0));
+                state->import_table.emplace (std::piecewise_construct,
+                    std::make_tuple(origin),                  // Key
+                    std::make_tuple(m_clock.elapsed())));     // Import
 
             if (result.second)
             {
                 // This is a new import
                 Import& next (result.first->second);
-                next.whenExpires = now + gossipExpirationSeconds;
+                next.whenExpires = elapsed + gossipExpirationSeconds;
                 next.items.reserve (gossip.items.size());
-                for (std::vector <Gossip::Item>::const_iterator iter (gossip.items.begin());
-                    iter != gossip.items.end(); ++iter)
+
+                for (auto const& gossipItem : gossip.items)
                 {
                     Import::Item item;
-                    item.balance = iter->balance;
-                    item.consumer = newInboundEndpoint (iter->address);
+                    item.balance = gossipItem.balance;
+                    item.consumer = newInboundEndpoint (gossipItem.address);
                     item.consumer.entry().remote_balance += item.balance;
                     next.items.push_back (item);
                 }
@@ -336,23 +337,21 @@ public:
                 // balances and then deduct the old remote balances.
 
                 Import next;
-                next.whenExpires = now + gossipExpirationSeconds;
+                next.whenExpires = elapsed + gossipExpirationSeconds;
                 next.items.reserve (gossip.items.size());
-                for (std::vector <Gossip::Item>::const_iterator iter (gossip.items.begin());
-                    iter != gossip.items.end(); ++iter)
+                for (auto const& gossipItem : gossip.items)
                 {
                     Import::Item item;
-                    item.balance = iter->balance;
-                    item.consumer = newInboundEndpoint (iter->address);
+                    item.balance = gossipItem.balance;
+                    item.consumer = newInboundEndpoint (gossipItem.address);
                     item.consumer.entry().remote_balance += item.balance;
                     next.items.push_back (item);
                 }
 
                 Import& prev (result.first->second);
-                for (std::vector <Import::Item>::iterator iter (prev.items.begin());
-                    iter != prev.items.end(); ++iter)
+                for (auto& item : prev.items)
                 {
-                    iter->consumer.entry().remote_balance -= iter->balance;
+                    item.consumer.entry().remote_balance -= item.balance;
                 }
 
                 std::swap (next, prev);
@@ -376,12 +375,11 @@ public:
     {
         SharedState::Access state (m_state);
 
-        clock_type::rep const now (m_clock.elapsed());
+        clock_type::rep const elapsed (m_clock.elapsed());
 
-        for (beast::List <Entry>::iterator iter (
-            state->inactive.begin()); iter != state->inactive.end();)
+        for (auto iter (state->inactive.begin()); iter != state->inactive.end();)
         {
-            if (iter->whenExpires <= now)
+            if (iter->whenExpires <= elapsed)
             {
                 m_journal.debug << "Expired " << *iter;
                 Table::iterator table_iter (
@@ -399,9 +397,9 @@ public:
         while (iter != state->import_table.end())
         {
             Import& import (iter->second);
-            if (iter->second.whenExpires <= now)
+            if (iter->second.whenExpires <= elapsed)
             {
-                for (std::vector <Import::Item>::iterator item_iter (import.items.begin());
+                for (auto item_iter (import.items.begin());
                     item_iter != import.items.end(); ++item_iter)
                 {
                     item_iter->consumer.entry().remote_balance -= item_iter->balance;
@@ -474,7 +472,7 @@ public:
 
     Disposition charge (Entry& entry, Charge const& fee, SharedState::Access& state)
     {
-        clock_type::rep const now (m_clock.elapsed());
+        clock_type::time_point const now (m_clock.now());
         int const balance (entry.add (fee.cost(), now));
         m_journal.trace <<
             "Charging " << entry << " for " << fee;
@@ -484,12 +482,13 @@ public:
     bool warn (Entry& entry, SharedState::Access& state)
     {
         bool notify (false);
-        clock_type::rep const now (m_clock.elapsed());
-        if (entry.balance (now) >= warningThreshold && now != entry.lastWarningTime)
+        clock_type::rep const elapsed (m_clock.elapsed());
+        if (entry.balance (m_clock.now()) >= warningThreshold &&
+            elapsed != entry.lastWarningTime)
         {
             charge (entry, feeWarning, state);
             notify = true;
-            entry.lastWarningTime = now;
+            entry.lastWarningTime = elapsed;
         }
 
         if (notify)
@@ -505,20 +504,28 @@ public:
     bool disconnect (Entry& entry, SharedState::Access& state)
     {
         bool drop (false);
-        clock_type::rep const now (m_clock.elapsed());
-        if (entry.balance (now) >= dropThreshold)
+        clock_type::time_point const now (m_clock.now());
+        int const balance (entry.balance (now));
+        if (balance >= dropThreshold)
         {
+            m_journal.warning <<
+                "Consumer entry " << entry <<
+                " dropped with balance " << balance <<
+                " at or above drop threshold " << dropThreshold;
+
+            // Adding feeDrop at this point keeps the dropped connection
+            // from re-connecting for at least a little while after it is
+            // dropped.
             charge (entry, feeDrop, state);
+            ++m_stats.drop;
             drop = true;
         }
-        if (drop)
-            ++m_stats.drop;
         return drop;
     }
 
     int balance (Entry& entry, SharedState::Access& state)
     {
-        return entry.balance (m_clock.elapsed());
+        return entry.balance (m_clock.now());
     }
 
     //--------------------------------------------------------------------------
@@ -568,26 +575,25 @@ public:
     //--------------------------------------------------------------------------
 
     void writeList (
-        clock_type::rep const now,
+        clock_type::time_point const now,
             beast::PropertyStream::Set& items,
-                beast::List <Entry>& list)
+                EntryIntrusiveList& list)
     {
-        for (beast::List <Entry>::iterator iter (list.begin());
-            iter != list.end(); ++iter)
+        for (auto& entry : list)
         {
             beast::PropertyStream::Map item (items);
-            if (iter->refcount != 0)
-                item ["count"] = iter->refcount;
-            item ["name"] = iter->to_string();
-            item ["balance"] = iter->balance(now);
-            if (iter->remote_balance != 0)
-                item ["remote_balance"] = iter->remote_balance;
+            if (entry.refcount != 0)
+                item ["count"] = entry.refcount;
+            item ["name"] = entry.to_string();
+            item ["balance"] = entry.balance(now);
+            if (entry.remote_balance != 0)
+                item ["remote_balance"] = entry.remote_balance;
         }
     }
 
     void onWrite (beast::PropertyStream::Map& map)
     {
-        clock_type::rep const now (m_clock.elapsed());
+        clock_type::time_point const now (m_clock.now());
 
         SharedState::Access state (m_state);
 

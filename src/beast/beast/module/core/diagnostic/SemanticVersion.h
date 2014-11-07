@@ -20,8 +20,12 @@
 #ifndef BEAST_SEMANTICVERSION_H_INCLUDED
 #define BEAST_SEMANTICVERSION_H_INCLUDED
 
-namespace beast
-{
+#include <vector>
+#include <string>
+
+#include <beast/utility/noexcept.h>
+
+namespace beast {
 
 /** A Semantic Version number.
 
@@ -33,46 +37,78 @@ namespace beast
 class SemanticVersion
 {
 public:
+    typedef std::vector<std::string> identifier_list;
+
     int majorVersion;
     int minorVersion;
     int patchVersion;
-    StringArray preReleaseIdentifiers;
-    StringArray metaData;
+
+    identifier_list preReleaseIdentifiers;
+    identifier_list metaData;
 
     SemanticVersion ();
+
+    SemanticVersion (std::string const& version);
 
     /** Parse a semantic version string.
         The parsing is as strict as possible.
         @return `true` if the string was parsed.
     */
-    bool parse (String input);
+    bool parse (std::string const& input, bool debug = false);
 
     /** Produce a string from semantic version components. */
-    String print () const;
+    std::string print () const;
 
-    inline bool isRelease () const noexcept { return preReleaseIdentifiers.size () <= 0; }
-    inline bool isPreRelease () const noexcept { return ! isRelease (); }
-
-    /** Compare this against another version.
-        The comparison follows the rules as per the specification.
-    */
-    int compare (SemanticVersion const& rhs) const noexcept;
-
-    inline bool operator== (SemanticVersion const& other) const noexcept { return compare (other) == 0; }
-    inline bool operator!= (SemanticVersion const& other) const noexcept { return compare (other) != 0; }
-    inline bool operator>= (SemanticVersion const& other) const noexcept { return compare (other) >= 0; }
-    inline bool operator<= (SemanticVersion const& other) const noexcept { return compare (other) <= 0; }
-    inline bool operator>  (SemanticVersion const& other) const noexcept { return compare (other) >  0; }
-    inline bool operator<  (SemanticVersion const& other) const noexcept { return compare (other) <  0; }
-
-private:
-    static bool isNumeric (String const& s);
-    static String printIdentifiers (StringArray const& list);
-    static bool chop (String const& what, String& input);
-    static bool chopUInt (int* value, int limit, String& input);
-    static bool chopIdentifier (String* value, bool allowLeadingZeroes, String& input);
-    static bool chopIdentifiers (StringArray* value, bool preRelease, String& input);
+    inline bool isRelease () const noexcept
+    { 
+        return preReleaseIdentifiers.empty();
+    }
+    inline bool isPreRelease () const noexcept
+    {
+        return !isRelease ();
+    }
 };
+
+/** Compare two SemanticVersions against each other.
+    The comparison follows the rules as per the specification.
+*/
+int compare (SemanticVersion const& lhs, SemanticVersion const& rhs);
+
+inline bool
+operator== (SemanticVersion const& lhs, SemanticVersion const& rhs) 
+{ 
+    return compare (lhs, rhs) == 0;
+}
+
+inline bool
+operator!= (SemanticVersion const& lhs, SemanticVersion const& rhs)
+{
+    return compare (lhs, rhs) != 0;
+}
+
+inline bool
+operator>= (SemanticVersion const& lhs, SemanticVersion const& rhs)
+{
+    return compare (lhs, rhs) >= 0;
+}
+
+inline bool
+operator<= (SemanticVersion const& lhs, SemanticVersion const& rhs)
+{
+    return compare (lhs, rhs) <= 0;
+}
+
+inline bool
+operator>  (SemanticVersion const& lhs, SemanticVersion const& rhs)
+{
+    return compare (lhs, rhs) >  0;
+}
+
+inline bool
+operator<  (SemanticVersion const& lhs, SemanticVersion const& rhs)
+{
+    return compare (lhs, rhs) <  0;
+}
 
 } // beast
 

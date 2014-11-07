@@ -27,7 +27,6 @@
 #include <atomic>
 
 #include <beast/Config.h>
-#include <beast/Uncopyable.h>
 
 namespace beast {
 
@@ -63,7 +62,7 @@ namespace beast {
 
     @see SharedPtr, SharedObjectArray, SingleThreadedSharedObject
 */
-class SharedObject : public Uncopyable
+class SharedObject
 {
 public:
     //==============================================================================
@@ -77,15 +76,7 @@ public:
         ++refCount;
     }
 
-    /** Decreases the object's reference count.
-
-        If doDelete is true the object will be deleted when the reference
-        count drops to zero. The delete is performed using the regular
-        operator and does NOT go through the ContainerDeletePolicy.
-
-        The return value indicates if the reference count dropped to zero,
-        so callers who know the derived type can use the ContainerDeletePolicy.
-    */
+    /** Decreases the object's reference count. */
     void decReferenceCount () const
     {
         bassert (getReferenceCount() > 0);
@@ -106,6 +97,9 @@ protected:
         : refCount (0)
     {
     }
+
+    SharedObject (SharedObject const&) = delete;
+    SharedObject& operator= (SharedObject const&) = delete;
 
     /** Destructor. */
     virtual ~SharedObject()

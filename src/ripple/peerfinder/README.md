@@ -117,8 +117,6 @@ value for outPeers:
 
 **(Need example here)**
 
-
-
 ### Livecache
 
 The Livecache holds relayed IP addresses that have been received recently in
@@ -163,11 +161,6 @@ Endpoint messages are received from the overlay over time.
 
 The `Bootcache` stores IP addresses useful for gaining initial connections.
 Each address is associated with the following metadata:
-
-* **Uptime**
-
-  The number of seconds that the address has maintained an active
-  peer connection, cumulative, without a connection attempt failure.
  
 * **Valence**
 
@@ -175,17 +168,16 @@ Each address is associated with the following metadata:
   consecutive connection attempts when positive, and the number of
   failed consecutive connection attempts when negative. If an outgoing
   connection attempt to the corresponding IP address fails to complete the
-  handshake, the valence is reset to negative one, and all accrued uptime is
-  reset to zero. This harsh penalty is intended to prevent popular servers
-  from forever remaining top ranked in all peer databases.
+  handshake the valence is reset to negative one. This harsh penalty is
+  intended to prevent popular servers from forever remaining top ranked in
+  all peer databases.
 
 When choosing addresses from the boot cache for the purpose of
-establishing outgoing connections, addresses are ranked in decreasing
-order of high uptime, with valence as the tie breaker. The Bootcache is
-persistent. Entries are periodically inserted and updated in the corresponding
-SQLite database during program operation. When **rippled** is launched, the
-existing Bootcache database data is accessed and loaded to accelerate the
-bootstrap process.
+establishing outgoing connections, addresses are ranked in decreasing order of
+valence. The Bootcache is persistent. Entries are periodically inserted and
+updated in the corresponding SQLite database during program operation. When
+**rippled** is launched, the existing Bootcache database data is accessed and
+loaded to accelerate the bootstrap process.
 
 Desirable entries in the Bootcache are addresses for servers which are known to
 have high uptimes, and for which connection attempts usually succeed. However,
@@ -343,12 +335,12 @@ desired. The stage remains active while:
 
 * There are addresses in the cache that have not been tried recently.
 
-Entries in the Bootcache are ranked, with high uptime and highly connectible
-addresses preferred over others. Connection attempts to Bootcache addresses
-are very likely to succeed but unlikely to produce an active connection since
-the peers likely do not have open slots. Before the remote peer closes the
-connection it will send a handful of addresses from its Livecache to help the
-new peer coming online obtain connections.
+Entries in the Bootcache are ranked, with highly connectible addresses preferred
+over others. Connection attempts to Bootcache addresses are very likely to
+succeed but unlikely to produce an active connection since the peers likely do
+not have open slots. Before the remote peer closes the connection it will send
+a handful of addresses from its Livecache to help the new peer coming online
+obtain connections.
 
 --------------------------------------------------------------------------------
 

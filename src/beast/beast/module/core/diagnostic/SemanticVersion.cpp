@@ -18,8 +18,130 @@
 //==============================================================================
 
 #include <beast/unit_test/suite.h>
+#include <beast/module/core/text/LexicalCast.h>
+
+#include <algorithm>
 
 namespace beast {
+
+std::string print_identifiers (SemanticVersion::identifier_list const& list)
+{
+    std::string ret;
+
+    for (auto const& x : list)
+    {
+        if (!ret.empty ())
+            ret += ".";
+        ret += x;
+    }
+
+    return ret;
+}
+
+bool isNumeric (std::string const& s)
+{
+    int n;
+
+    // Must be convertible to an integer
+    if (!lexicalCastChecked (n, s))
+        return false;
+
+    // Must not have leading zeroes
+    return std::to_string (n) == s;
+}
+
+bool chop (std::string const& what, std::string& input)
+{
+    auto ret = input.find (what);
+
+    if (ret != 0)
+        return false;
+
+    input.erase (0, what.size ());
+    return true;
+}
+
+bool chopUInt (int& value, int limit, std::string& input)
+{
+    // Must not be empty
+    if (input.empty ())
+        return false;
+
+    auto left_iter = std::find_if_not (input.begin (), input.end (),
+        [](std::string::value_type c)
+        {
+            return std::isdigit (c, std::locale::classic()); 
+        });
+
+    std::string item (input.begin (), left_iter);
+
+    // Must not be empty
+    if (item.empty ())
+        return false;
+
+    int n;
+
+    // Must be convertible to an integer
+    if (!lexicalCastChecked (n, item))
+        return false;
+
+    // Must not have leading zeroes
+    if (std::to_string (n) != item)
+        return false;
+
+    // Must not be out of range
+    if (n < 0 || n > limit)
+        return false;
+
+    input.erase (input.begin (), left_iter);
+    value = n;
+
+    return true;
+}
+
+bool extract_identifier (
+    std::string& value, bool allowLeadingZeroes, std::string& input)
+{
+    // Must not be empty
+    if (input.empty ())
+        return false;
+
+    // Must not have a leading 0
+    if (!allowLeadingZeroes && input [0] == '0')
+        return false;
+
+    auto last = input.find_first_not_of (
+        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-");
+
+    // Must not be empty
+    if (last == 0)
+        return false;
+
+    value = input.substr (0, last);
+    input.erase (0, last);
+    return true;
+}
+
+bool extract_identifiers (
+    SemanticVersion::identifier_list& identifiers,
+    bool allowLeadingZeroes,
+    std::string& input)
+{
+    if (input.empty ())
+        return false;
+
+    do {
+        std::string s;
+
+        if (!extract_identifier (s, allowLeadingZeroes, input))
+            return false;
+        identifiers.push_back (s);
+    } while (chop (".", input));
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
 
 SemanticVersion::SemanticVersion ()
     : majorVersion (0)
@@ -28,108 +150,138 @@ SemanticVersion::SemanticVersion ()
 {
 }
 
-bool SemanticVersion::parse (String input)
+SemanticVersion::SemanticVersion (std::string const& version)
+    : SemanticVersion ()
+{
+    if (!parse (version))
+        throw std::invalid_argument ("invalid version string");
+}
+
+bool SemanticVersion::parse (std::string const& input, bool debug)
 {
     // May not have leading or trailing whitespace
-    if (input.trim () != input)
+    auto left_iter = std::find_if_not (input.begin (), input.end (),
+        [](std::string::value_type c)
+        {
+            return std::isspace (c, std::locale::classic()); 
+        });
+
+    auto right_iter = std::find_if_not (input.rbegin (), input.rend (),
+        [](std::string::value_type c)
+        {
+            return std::isspace (c, std::locale::classic());
+        }).base ();
+
+    // Must not be empty!
+    if (left_iter >= right_iter)
+        return false;
+
+    std::string version (left_iter, right_iter);
+
+    // May not have leading or trailing whitespace
+    if (version != input)
         return false;
 
     // Must have major version number
-    if (! chopUInt (&majorVersion, std::numeric_limits <int>::max (), input))
+    if (! chopUInt (majorVersion, std::numeric_limits <int>::max (), version))
         return false;
-
-    if (! chop (".", input))
+    if (! chop (".", version))
         return false;
 
     // Must have minor version number
-    if (! chopUInt (&minorVersion, std::numeric_limits <int>::max (), input))
+    if (! chopUInt (minorVersion, std::numeric_limits <int>::max (), version))
         return false;
-
-    if (! chop (".", input))
+    if (! chop (".", version))
         return false;
 
     // Must have patch version number
-    if (! chopUInt (&patchVersion, std::numeric_limits <int>::max (), input))
+    if (! chopUInt (patchVersion, std::numeric_limits <int>::max (), version))
         return false;
 
     // May have pre-release identifier list
-    if (chop ("-", input))
+    if (chop ("-", version))
     {
-        chopIdentifiers (&preReleaseIdentifiers, false, input);
+        if (!extract_identifiers (preReleaseIdentifiers, false, version))
+            return false;
 
         // Must not be empty
-        if (preReleaseIdentifiers.size () <= 0)
+        if (preReleaseIdentifiers.empty ())
             return false;
     }
 
     // May have metadata identifier list
-    if (chop ("+", input))
+    if (chop ("+", version))
     {
-        chopIdentifiers (&metaData, true, input);
+        if (!extract_identifiers (metaData, true, version))
+            return false;
 
         // Must not be empty
-        if (metaData.size () <= 0)
+        if (metaData.empty ())
             return false;
     }
 
-    // May not have anything left
-    if (input.length () > 0)
-        return false;
-
-    return true;
+    return version.empty ();
 }
 
-String SemanticVersion::print () const
+std::string SemanticVersion::print () const
 {
-    String s;
+    std::string s;
 
-    s << String (majorVersion) << "." << String (minorVersion) << "." << String (patchVersion);
+    s = std::to_string (majorVersion) + "." +
+        std::to_string (minorVersion) + "." +
+        std::to_string (patchVersion);
 
-    if (preReleaseIdentifiers.size () > 0)
-        s << "-" << printIdentifiers (preReleaseIdentifiers);
+    if (!preReleaseIdentifiers.empty ())
+    {
+        s += "-";
+        s += print_identifiers (preReleaseIdentifiers);
+    }
 
-    if (metaData.size () > 0)
-        s << "+" << printIdentifiers (metaData);
+    if (!metaData.empty ())
+    {
+        s += "+";
+        s += print_identifiers (metaData);
+    }
 
     return s;
 }
 
-int SemanticVersion::compare (SemanticVersion const& rhs) const noexcept
+int compare (SemanticVersion const& lhs, SemanticVersion const& rhs)
 {
-    if (majorVersion > rhs.majorVersion)
+    if (lhs.majorVersion > rhs.majorVersion)
         return 1;
-    else if (majorVersion < rhs.majorVersion)
+    else if (lhs.majorVersion < rhs.majorVersion)
         return -1;
 
-    if (minorVersion > rhs.minorVersion)
+    if (lhs.minorVersion > rhs.minorVersion)
         return 1;
-    else if (minorVersion < rhs.minorVersion)
+    else if (lhs.minorVersion < rhs.minorVersion)
         return -1;
 
-    if (patchVersion > rhs.patchVersion)
+    if (lhs.patchVersion > rhs.patchVersion)
         return 1;
-    else if (patchVersion < rhs.patchVersion)
+    else if (lhs.patchVersion < rhs.patchVersion)
         return -1;
 
-    if (isPreRelease () || rhs.isPreRelease ())
+    if (lhs.isPreRelease () || rhs.isPreRelease ())
     {
         // Pre-releases have a lower precedence
-        if (isRelease () && rhs.isPreRelease ())
+        if (lhs.isRelease () && rhs.isPreRelease ())
             return 1;
-        else if (isPreRelease () && rhs.isRelease ())
+        else if (lhs.isPreRelease () && rhs.isRelease ())
             return -1;
 
         // Compare pre-release identifiers
-        for (int i = 0; i < bmax (preReleaseIdentifiers.size (), rhs.preReleaseIdentifiers.size ()); ++i)
+        for (int i = 0; i < std::max (lhs.preReleaseIdentifiers.size (), rhs.preReleaseIdentifiers.size ()); ++i)
         {
             // A larger list of identifiers has a higher precedence
             if (i >= rhs.preReleaseIdentifiers.size ())
                 return 1;
-            else if (i >= preReleaseIdentifiers.size ())
+            else if (i >= lhs.preReleaseIdentifiers.size ())
                 return -1;
 
-            String const& left (preReleaseIdentifiers [i]);
-            String const& right (rhs.preReleaseIdentifiers [i]);
+            std::string const& left (lhs.preReleaseIdentifiers [i]);
+            std::string const& right (rhs.preReleaseIdentifiers [i]);
 
             // Numeric identifiers have lower precedence
             if (! isNumeric (left) && isNumeric (right))
@@ -141,8 +293,8 @@ int SemanticVersion::compare (SemanticVersion const& rhs) const noexcept
             {
                 bassert (isNumeric (right));
 
-                int const iLeft (left.getIntValue ());
-                int const iRight (right.getIntValue ());
+                int const iLeft (lexicalCastThrow <int> (left));
+                int const iRight (lexicalCastThrow <int> (right));
 
                 if (iLeft > iRight)
                     return 1;
@@ -153,7 +305,7 @@ int SemanticVersion::compare (SemanticVersion const& rhs) const noexcept
             {
                 bassert (! isNumeric (right));
 
-                int result = left.compareLexicographically (right);
+                int result = left.compare (right);
 
                 if (result != 0)
                     return result;
@@ -166,133 +318,14 @@ int SemanticVersion::compare (SemanticVersion const& rhs) const noexcept
     return 0;
 }
 
-bool SemanticVersion::isNumeric (String const& s)
-{
-    return String (s.getIntValue ()) == s;
-}
-
-bool SemanticVersion::chop (String const& what, String& input)
-{
-    if (input.startsWith (what))
-    {
-        input = input.substring (what.length ());
-
-        return true;
-    }
-
-    return false;
-}
-
-String SemanticVersion::printIdentifiers (StringArray const& list)
-{
-    String s;
-
-    if (list.size () > 0)
-    {
-        s << list [0];
-
-        for (int i = 1; i < list.size (); ++i)
-            s << "." << list [i];
-    }
-
-    return s;
-}
-
-bool SemanticVersion::chopUInt (int* value, int limit, String& input)
-{
-    // Must not be empty
-    if (input.length () <= 0)
-        return false;
-
-    int firstNonDigit = 0;
-    for (; firstNonDigit < input.length (); ++firstNonDigit)
-    {
-        if (! CharacterFunctions::isDigit (input [firstNonDigit]))
-            break;
-    }
-
-    String const s = input.substring (0, firstNonDigit);
-
-    // Must not be empty
-    if (s.length () <= 0)
-        return false;
-
-    int const n = s.getIntValue ();
-
-    // Must not have leading zeroes
-    if (String (n) != s)
-        return false;
-
-    // Must not be out of range
-    if (n < 0 || n > limit)
-        return false;
-
-    input = input.substring (s.length ());
-
-    *value = n;
-
-    return true;
-}
-
-bool SemanticVersion::chopIdentifier (String* value, bool allowLeadingZeroes, String& input)
-{
-    // Must not be empty
-    if (input.length () <= 0)
-        return false;
-
-    // Must not have a leading 0
-    if (! allowLeadingZeroes && input [0] == '0')
-        return false;
-
-    // Find the first character that cannot be part of an identifier
-    int i;
-    for (i = 0; i < input.length (); ++i)
-    {
-        static char const* validSet =
-            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-";
-
-        if (! String (validSet).contains (String::charToString (input [i])))
-            break;
-    }
-
-    // Must not be empty
-    if (i <= 0)
-        return false;
-
-    *value = input.substring (0, i);
-
-    input = input.substring (i);
-
-    return true;
-}
-
-bool SemanticVersion::chopIdentifiers (StringArray* value, bool allowLeadingZeroes, String& input)
-{
-    if (input.length () <= 0)
-        return false;
-
-    for (;;)
-    {
-        String s;
-
-        if (! chopIdentifier (&s, allowLeadingZeroes, input))
-            return false;
-
-        value->add (s);
-
-        if (! chop (".", input))
-            break;
-    }
-
-    return true;
-}
-
 //------------------------------------------------------------------------------
 
 class SemanticVersion_test: public unit_test::suite
 {
+    typedef SemanticVersion::identifier_list identifier_list;
+
 public:
-    void checkPass (String const& input, bool shouldPass = true)
+    void checkPass (std::string const& input, bool shouldPass = true)
     {
         SemanticVersion v;
 
@@ -307,13 +340,13 @@ public:
         }
     }
 
-    void checkFail (String const& input)
+    void checkFail (std::string const& input)
     {
         checkPass (input, false);
     }
 
     // check input and input with appended metadata
-    void checkMeta (String const& input, bool shouldPass)
+    void checkMeta (std::string const& input, bool shouldPass)
     {
         checkPass (input, shouldPass);
 
@@ -330,7 +363,7 @@ public:
         checkFail (input + "+a.!");
     }
 
-    void checkMetaFail (String const& input)
+    void checkMetaFail (std::string const& input)
     {
         checkMeta (input, false);
     }
@@ -339,7 +372,7 @@ public:
     // input with appended metadata, and input with both
     // appended release data and appended metadata
     //
-    void checkRelease (String const& input, bool shouldPass = true)
+    void checkRelease (std::string const& input, bool shouldPass = true)
     {
         checkMeta (input, shouldPass);
 
@@ -362,19 +395,19 @@ public:
     // Checks the major.minor.version string alone and with all
     // possible combinations of release identifiers and metadata.
     //
-    void check (String const& input, bool shouldPass = true)
+    void check (std::string const& input, bool shouldPass = true)
     {
         checkRelease (input, shouldPass);
     }
 
-    void negcheck (String const& input)
+    void negcheck (std::string const& input)
     {
         check (input, false);
     }
 
     void testParse ()
     {
-        testcase ("parse");
+        testcase ("parsing");
 
         check ("0.0.0");
         check ("1.2.3");
@@ -405,42 +438,45 @@ public:
         negcheck ("1.2.03");
     }
 
-    static StringArray ids ()
+    static identifier_list ids ()
     {
-        return StringArray ();
+        return identifier_list ();
     }
 
-    static StringArray ids (String const& s1)
+    static identifier_list ids (
+        std::string const& s1)
     {
-        StringArray v;
-        v.add (s1);
+        identifier_list v;
+        v.push_back (s1);
         return v;
     }
 
-    static StringArray ids (String const& s1, String const& s2)
+    static identifier_list ids (
+        std::string const& s1, std::string const& s2)
     {
-        StringArray v;
-        v.add (s1);
-        v.add (s2);
+        identifier_list v;
+        v.push_back (s1);
+        v.push_back (s2);
         return v;
     }
 
-    static StringArray ids (String const& s1, String const& s2, String const& s3)
+    static identifier_list ids (
+        std::string const& s1, std::string const& s2, std::string const& s3)
     {
-        StringArray v;
-        v.add (s1);
-        v.add (s2);
-        v.add (s3);
+        identifier_list v;
+        v.push_back (s1);
+        v.push_back (s2);
+        v.push_back (s3);
         return v;
     }
 
     // Checks the decomposition of the input into appropriate values
-    void checkValues (String const& input,
-                      int majorVersion,
-                      int minorVersion,
-                      int patchVersion,
-                      StringArray const& preReleaseIdentifiers = StringArray (),
-                      StringArray const& metaData = StringArray ())
+    void checkValues (std::string const& input,
+        int majorVersion,
+        int minorVersion,
+        int patchVersion,
+        identifier_list const& preReleaseIdentifiers = identifier_list (),
+        identifier_list const& metaData = identifier_list ())
     {
         SemanticVersion v;
 
@@ -456,6 +492,8 @@ public:
 
     void testValues ()
     {
+        testcase ("values");
+
         checkValues ("0.1.2", 0, 1, 2);
         checkValues ("1.2.3", 1, 2, 3);
         checkValues ("1.2.3-rc1", 1, 2, 3, ids ("rc1"));
@@ -469,7 +507,7 @@ public:
     }
 
     // makes sure the left version is less than the right
-    void checkLessInternal (String const& lhs, String const& rhs)
+    void checkLessInternal (std::string const& lhs, std::string const& rhs)
     {
         SemanticVersion left;
         SemanticVersion right;
@@ -477,10 +515,10 @@ public:
         expect (left.parse (lhs));
         expect (right.parse (rhs));
 
-        expect (left.compare (left) == 0);
-        expect (right.compare (right) == 0);
-        expect (left.compare (right) < 0);
-        expect (right.compare (left) > 0);
+        expect (compare (left, left) == 0);
+        expect (compare (right, right) == 0);
+        expect (compare (left, right) < 0);
+        expect (compare (right, left) > 0);
 
         expect (left < right);
         expect (right > left);
@@ -488,7 +526,7 @@ public:
         expect (right == right);
     }
 
-    void checkLess (String const& lhs, String const& rhs)
+    void checkLess (std::string const& lhs, std::string const& rhs)
     {
         checkLessInternal (lhs, rhs);
         checkLessInternal (lhs + "+meta", rhs);
@@ -498,6 +536,8 @@ public:
 
     void testCompare ()
     {
+        testcase ("comparisons");
+
         checkLess ("1.0.0-alpha", "1.0.0-alpha.1");
         checkLess ("1.0.0-alpha.1", "1.0.0-alpha.beta");
         checkLess ("1.0.0-alpha.beta", "1.0.0-beta");

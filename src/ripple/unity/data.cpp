@@ -17,13 +17,12 @@
 */
 //==============================================================================
 
-#include "../../BeastConfig.h"
+#include <BeastConfig.h>
 
 #include <ripple/unity/data.h>
 
 //#include <cmath>
 
-#include <beast/module/core/system/BeforeBoost.h>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/trim.hpp>
@@ -43,7 +42,7 @@
 #include <openssl/err.h>
 
 #include <ripple/unity/sslutil.h>
-#include <ripple/module/rpc/api/ErrorCodes.h>
+#include <ripple/rpc/ErrorCodes.h>
 #include <ripple/common/jsonrpc_fields.h>
 
 // VFALCO TODO fix these warnings!
@@ -56,36 +55,32 @@
 #undef min
 #endif
 
-#include <ripple/module/data/protocol/STParsedJSON.cpp>
+#include <ripple/data/protocol/STParsedJSON.cpp>
 
-#include <ripple/module/data/crypto/CKey.h> // needs RippleAddress VFALCO TODO remove this dependency cycle
-#include <ripple/module/data/crypto/RFC1751.h>
+#include <ripple/data/crypto/CKey.h> // needs RippleAddress VFALCO TODO remove this dependency cycle
+#include <ripple/data/crypto/RFC1751.h>
 
-#include <ripple/module/data/crypto/CKey.cpp>
-#include <ripple/module/data/crypto/CKeyDeterministic.cpp>
-#include <ripple/module/data/crypto/CKeyECIES.cpp>
-#include <ripple/module/data/crypto/Base58Data.cpp>
-#include <ripple/module/data/crypto/RFC1751.cpp>
+#include <ripple/data/crypto/CKey.cpp>
+#include <ripple/data/crypto/CKeyDeterministic.cpp>
+#include <ripple/data/crypto/CKeyECIES.cpp>
+#include <ripple/data/crypto/Base58Data.cpp>
+#include <ripple/data/crypto/RFC1751.cpp>
 
-#include <ripple/module/data/protocol/BuildInfo.cpp>
-#include <ripple/module/data/protocol/FieldNames.cpp>
-#include <ripple/module/data/protocol/HashPrefix.cpp>
-#include <ripple/module/data/protocol/LedgerFormats.cpp>
-#include <ripple/module/data/protocol/RippleAddress.cpp>
-#include <ripple/module/data/protocol/SerializedTypes.cpp>
-#include <ripple/module/data/protocol/Serializer.cpp>
-#include <ripple/module/data/protocol/SerializedObjectTemplate.cpp>
-#include <ripple/module/data/protocol/SerializedObject.cpp>
-#include <ripple/module/data/protocol/TER.cpp>
-#include <ripple/module/data/protocol/TxFormats.cpp>
-
-// These are for STAmount
-static const std::uint64_t tenTo14 = 100000000000000ull;
-static const std::uint64_t tenTo14m1 = tenTo14 - 1;
-static const std::uint64_t tenTo17 = tenTo14 * 1000;
-static const std::uint64_t tenTo17m1 = tenTo17 - 1;
-#include <ripple/module/data/protocol/STAmount.cpp>
-#include <ripple/module/data/protocol/STAmountRound.cpp>
+#include <ripple/data/protocol/BuildInfo.cpp>
+#include <ripple/data/protocol/SField.cpp>
+#include <ripple/data/protocol/HashPrefix.cpp>
+#include <ripple/data/protocol/LedgerFormats.cpp>
+#include <ripple/data/protocol/RippleAddress.cpp>
+#include <ripple/data/protocol/STInteger.cpp>
+#include <ripple/data/protocol/SerializedTypes.cpp>
+#include <ripple/data/protocol/Serializer.cpp>
+#include <ripple/data/protocol/SerializedObjectTemplate.cpp>
+#include <ripple/data/protocol/STObject.cpp>
+#include <ripple/data/protocol/STArray.cpp>
+#include <ripple/data/protocol/TER.cpp>
+#include <ripple/data/protocol/TxFormats.cpp>
+#include <ripple/data/protocol/STAmount.cpp>
+#include <ripple/data/protocol/STAmount.test.cpp>
 
 #if BEAST_MSVC
 #pragma warning (pop)

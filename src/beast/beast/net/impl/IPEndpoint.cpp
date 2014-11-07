@@ -79,14 +79,14 @@ Endpoint Endpoint::from_string_altform (std::string const& s)
 
         if (is.rdbuf()->in_avail()>0)
         {
-            if (! IP::detail::expect (is, ' '))
+            if (! IP::detail::expect_whitespace (is))
                 return Endpoint();
 
             while (is.rdbuf()->in_avail()>0)
             {
                 char c;
                 is.get(c);
-                if (c != ' ')
+                if (!isspace (c))
                 {
                     is.unget();
                     break;
@@ -136,15 +136,6 @@ bool operator<  (Endpoint const& lhs, Endpoint const& rhs)
 }
 
 //------------------------------------------------------------------------------
-
-std::size_t hash_value (Endpoint const& endpoint)
-{
-    std::size_t seed (hash_value (endpoint.address ()));
-    // boost::hash_combine()
-    seed ^= (std::hash <Port> () (endpoint.port ()))
-        + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-    return seed;
-}
 
 std::istream& operator>> (std::istream& is, Endpoint& endpoint)
 {

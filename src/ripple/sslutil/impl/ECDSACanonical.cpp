@@ -66,7 +66,7 @@ namespace detail {
         {
             return num;
         }
-        
+
         operator BIGNUM const* () const
         {
             return num;
@@ -94,9 +94,9 @@ namespace detail {
             // The format is: <02> <length of signature> <signature>
             if ((sig[0] != 0x02) || (size < 3))
                 return;
-            
+
             size_t const len (sig[1]);
-            
+
             // Claimed length can't be longer than amount of data available
             if (len > (size - 2))
                 return;
@@ -133,7 +133,7 @@ namespace detail {
         {
             return m_bn;
         }
-        
+
         // Returns the number of bytes to skip for this signature part
         size_t skip () const
         {
@@ -148,11 +148,11 @@ namespace detail {
 
 /** Determine whether a signature is canonical.
     Canonical signatures are important to protect against signature morphing
-    attacks. 
+    attacks.
     @param vSig the signature data
     @param sigLen the length of the signature
     @param strict_param whether to enforce strictly canonical semantics
-    
+
     @note For more details please see:
     https://ripple.com/wiki/Transaction_Malleability
     https://bitcointalk.org/index.php?topic=8392.msg127623#msg127623
@@ -170,27 +170,27 @@ bool isCanonicalECDSASig (void const* vSig, size_t sigLen, ECDSA strict_param)
 
     if ((sig[0] != 0x30) || (sig[1] != (sigLen - 2)))
         return false;
-    
+
     // The first two bytes are verified. Eat them.
     sig += 2;
     sigLen -= 2;
 
     // Verify the R signature
     detail::SignaturePart sigR (sig, sigLen);
-    
+
     if (!sigR.valid ())
         return false;
 
     // Eat the number of bytes we consumed
     sig += sigR.skip ();
     sigLen -= sigR.skip ();
-    
+
     // Verify the S signature
     detail::SignaturePart sigS (sig, sigLen);
-    
+
     if (!sigS.valid ())
         return false;
-    
+
     // Eat the number of bytes we consumed
     sig += sigS.skip ();
     sigLen -= sigS.skip ();
@@ -207,7 +207,7 @@ bool isCanonicalECDSASig (void const* vSig, size_t sigLen, ECDSA strict_param)
         return false;
 
     if (BN_cmp (bnS, detail::modulus) != -1)
-        return false; 
+        return false;
 
     // For a given signature, (R,S), the signature (R, N-S) is also valid. For
     // a signature to be fully-canonical, the smaller of these two values must
@@ -228,7 +228,7 @@ bool isCanonicalECDSASig (void const* vSig, size_t sigLen, ECDSA strict_param)
 
 /** Convert a signature into strictly canonical form.
     Given the signature (R, S) then (R, G-S) is also valid. For a signature
-    to be canonical, the smaller of { S, G-S } must be specified. 
+    to be canonical, the smaller of { S, G-S } must be specified.
     @param vSig the signature we wish to convert
     @param sigLen the length of the signature
     @returns true if the signature was already canonical, false otherwise
@@ -340,12 +340,12 @@ public:
             "022100FF478110D1D4294471EC76E0157540C2181F47DEBD25D7F9E7DDCCCD47EEE905"
             "0220078F07CDAE6C240855D084AD91D1479609533C147C93B0AEF19BC9724D003F28"),
             "Strictly canonical signature");
- 
+
         expect (isStrictlyCanonical("3045"
             "0221009218248292F1762D8A51BE80F8A7F2CD288D810CE781D5955700DA1684DF1D2D"
             "022041A1EE1746BFD72C9760CC93A7AAA8047D52C8833A03A20EAAE92EA19717B454"),
             "Strictly canonical signature");
- 
+
         expect (isStrictlyCanonical("3044"
             "02206A9E43775F73B6D1EC420E4DDD222A80D4C6DF5D1BEECC431A91B63C928B7581"
             "022023E9CC2D61DDA6F73EAA6BCB12688BEB0F434769276B3127E4044ED895C9D96B"),
@@ -389,8 +389,8 @@ public:
         testcase ("Canonical signature checks", abort_on_fail);
 
         // r and s 1 byte 1
-        expect (isValid ("3006" 
-            "020101" 
+        expect (isValid ("3006"
+            "020101"
             "020102"),
             "Well-formed short signature");
 
@@ -413,12 +413,12 @@ public:
             "022100FF478110D1D4294471EC76E0157540C2181F47DEBD25D7F9E7DDCCCD47EEE905"
             "0220078F07CDAE6C240855D084AD91D1479609533C147C93B0AEF19BC9724D003F28"),
             "Canonical signature");
- 
+
         expect (isStrictlyCanonical("3045"
             "0221009218248292F1762D8A51BE80F8A7F2CD288D810CE781D5955700DA1684DF1D2D"
             "022041A1EE1746BFD72C9760CC93A7AAA8047D52C8833A03A20EAAE92EA19717B454"),
             "Canonical signature");
- 
+
         expect (isStrictlyCanonical("3044"
             "02206A9E43775F73B6D1EC420E4DDD222A80D4C6DF5D1BEECC431A91B63C928B7581"
             "022023E9CC2D61DDA6F73EAA6BCB12688BEB0F434769276B3127E4044ED895C9D96B"),
@@ -445,38 +445,38 @@ public:
             "0200"),
             "tooshort");
 
-        expect (!isValid ("3006" 
-            "020101" 
+        expect (!isValid ("3006"
+            "020101"
             "020202"),
             "Slen-Overlong");
 
-        expect (!isValid ("3006" 
-            "020701" 
+        expect (!isValid ("3006"
+            "020701"
             "020102"),
             "Rlen-Overlong-OOB");
 
-        expect (!isValid ("3006" 
-            "020401" 
+        expect (!isValid ("3006"
+            "020401"
             "020102"),
             "Rlen-Overlong-OOB");
 
-        expect (!isValid ("3006" 
-            "020501" 
+        expect (!isValid ("3006"
+            "020501"
             "020102"),
             "Rlen-Overlong-OOB");
 
-        expect (!isValid ("3006" 
-            "020201" 
+        expect (!isValid ("3006"
+            "020201"
             "020102"),
             "Rlen-Overlong");
 
-        expect (!isValid ("3006" 
-            "020301" 
+        expect (!isValid ("3006"
+            "020301"
             "020202"),
             "Rlen Overlong and Slen-Overlong");
 
-        expect (!isValid ("3006" 
-            "020401" 
+        expect (!isValid ("3006"
+            "020401"
             "020202"),
             "Rlen Overlong and OOB and Slen-Overlong");
 
@@ -554,7 +554,7 @@ public:
 
         size_t len = b.size ();
 
-        expect (!makeCanonicalECDSASig (&b[0], len), 
+        expect (!makeCanonicalECDSASig (&b[0], len),
             "non-canonical signature was already canonical");
 
         expect (b.size () >= len,
@@ -602,7 +602,7 @@ public:
             "3045"
                 "02210099DCA1188663DDEA506A06A7B20C2B7D8C26AFF41DECE69D6C5F7C967D32625F"
                 "02207689A7594E06111A2EBF285CCD25F4277EF55371C4F4AA1BA4D09CD73B43BA57");
- 
+
         convertNonCanonical (
             "3045"
                 "02200855DE366E4E323AA2CE2A25674401A7D11F72EC432770D07F7B57DF7387AEC0"

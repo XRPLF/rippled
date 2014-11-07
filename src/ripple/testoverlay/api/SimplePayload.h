@@ -27,30 +27,15 @@ namespace TestOverlay
 class SimplePayload
 {
 public:
-    SimplePayload ()
-    {
-    }
+    SimplePayload () = default;
+    SimplePayload (SimplePayload const& other) = default;
+    SimplePayload& operator= (SimplePayload const& other) = default;
 
-    SimplePayload (int what, beast::String data = beast::String::empty, int hops = 0)
+    SimplePayload (int what, std::string const& data = "", int hops = 0)
         : m_hops (hops)
         , m_what (what)
         , m_data (data)
     {
-    }
-
-    SimplePayload (SimplePayload const& other)
-        : m_hops (other.m_hops)
-        , m_what (other.m_what)
-        , m_data (other.m_data)
-    {
-    }
-
-    SimplePayload& operator= (SimplePayload const& other)
-    {
-        m_hops = other.m_hops;
-        m_what = other.m_what;
-        m_data = other.m_data;
-        return *this;
     }
 
     SimplePayload withHop () const
@@ -68,7 +53,7 @@ public:
         return m_what;
     }
 
-    beast::String data () const
+    std::string data () const
     {
         return m_data;
     }
@@ -76,7 +61,7 @@ public:
 private:
     int m_hops;
     int m_what;
-    beast::String m_data;
+    std::string m_data;
 };
 
 }

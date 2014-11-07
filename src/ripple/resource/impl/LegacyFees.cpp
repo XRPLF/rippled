@@ -47,7 +47,7 @@ Charge legacyFee (LoadType t)
     case LT_NeededData:         return feeSatisfiedRequest;
 
     case LT_RequestData:        return feeRequestedData;
-    
+
     default:
         bassertfalse;
     case LT_CheapQuery:         return feeCheapQuery;

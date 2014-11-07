@@ -20,31 +20,23 @@
 #ifndef RIPPLE_NET_H_INCLUDED
 #define RIPPLE_NET_H_INCLUDED
 
-#include <beast/module/core/system/BeforeBoost.h>
-#include <boost/unordered_set.hpp> // For InfoSub
-
-#include <boost/asio.hpp>
 #undef DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER
 #define DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER /**/
 #include <boost/asio/ssl.hpp>
 
 #include <ripple/unity/resource.h>
 
-#include <ripple/unity/basics.h>
-#include <ripple/unity/core.h>
 #include <ripple/unity/data.h>
-#include <ripple/module/websocket/autosocket/AutoSocket.h>
+#include <ripple/websocket/autosocket/AutoSocket.h>
 
-#include <ripple/module/net/basics/HTTPRequest.h>
-#include <ripple/module/net/basics/HTTPClient.h>
-#include <ripple/module/net/basics/RPCServer.h>
-#include <ripple/module/net/basics/RPCDoor.h>
-#include <ripple/module/net/basics/SNTPClient.h>
+#include <ripple/net/HTTPRequest.h>
+#include <ripple/net/HTTPClient.h>
+#include <ripple/net/RPCServer.h>
+#include <ripple/net/SNTPClient.h>
 
-#include <ripple/module/net/rpc/RPCErr.h>
-#include <ripple/module/net/rpc/RPCUtil.h>
-#include <ripple/module/net/rpc/RPCCall.h>
-#include <ripple/module/net/rpc/InfoSub.h>
-#include <ripple/module/net/rpc/RPCSub.h>
+#include <ripple/net/RPCErr.h>
+#include <ripple/net/RPCCall.h>
+#include <ripple/net/InfoSub.h>
+#include <ripple/net/RPCSub.h>
 
 #endif

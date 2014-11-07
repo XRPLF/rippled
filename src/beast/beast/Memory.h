@@ -27,7 +27,6 @@
 #include <cstring>
     
 #include <beast/Config.h>
-#include <beast/Uncopyable.h>
 
 namespace beast {
 
@@ -43,7 +42,7 @@ void zerostruct (Type& structure) noexcept
 
 /** Delete an object pointer, and sets the pointer to null.
 
-    Remember that it's not good c++ practice to use delete directly - always try to use a ScopedPointer
+    Remember that it's not good c++ practice to use delete directly - always try to use a std::unique_ptr
     or other automatic lifetime-management system rather than resorting to deleting raw pointers!
 */
 template <typename Type>
@@ -78,12 +77,16 @@ Type* createCopyIfNotNull (const Type* pointer)
  /** A handy C++ wrapper that creates and deletes an NSAutoreleasePool object using RAII.
      You should use the BEAST_AUTORELEASEPOOL macro to create a local auto-release pool on the stack.
  */
- class ScopedAutoReleasePool : public Uncopyable
+ class ScopedAutoReleasePool
  {
  public:
      ScopedAutoReleasePool();
      ~ScopedAutoReleasePool();
 
+
+    ScopedAutoReleasePool(ScopedAutoReleasePool const&) = delete;
+    ScopedAutoReleasePool& operator= (ScopedAutoReleasePool const&) = delete;
+    
  private:
      void* pool;
  };

@@ -20,16 +20,13 @@
 #ifndef RIPPLE_TAGGEDCACHE_H_INCLUDED
 #define RIPPLE_TAGGEDCACHE_H_INCLUDED
 
+#include <ripple/common/UnorderedContainers.h>
 #include <beast/chrono/abstract_clock.h>
 #include <beast/chrono/chrono_io.h>
 #include <beast/Insight.h>
 #include <beast/container/hardened_hash.h>
-
-#include <boost/smart_ptr.hpp>
-
 #include <functional>
 #include <mutex>
-#include <unordered_map>
 #include <vector>
 
 namespace ripple {
@@ -53,7 +50,7 @@ struct TaggedCacheLog;
 template <
     class Key,
     class T,
-    class Hash = beast::hardened_hash <Key>,
+    class Hash = beast::hardened_hash <>,
     class KeyEqual = std::equal_to <Key>,
     //class Allocator = std::allocator <std::pair <Key const, Entry>>,
     class Mutex = std::recursive_mutex
@@ -173,7 +170,7 @@ public:
         // so that we can destroy them outside the lock.
         //
         std::vector <mapped_ptr> stuffToSweep;
-    
+
         {
             clock_type::time_point const now (m_clock.now());
             clock_type::time_point when_expire;
@@ -304,7 +301,9 @@ public:
 
         if (cit == m_cache.end ())
         {
-            m_cache.insert (cache_pair (key, Entry (m_clock.now(), data)));
+            m_cache.emplace (std::piecewise_construct,
+                std::forward_as_tuple(key),
+                std::forward_as_tuple(m_clock.now(), data));
             ++m_cache_count;
             return false;
         }
@@ -449,7 +448,7 @@ public:
                 }
                 else
                 {
-                    // Couldn't get strong pointer, 
+                    // Couldn't get strong pointer,
                     // object fell out of the cache so remove the entry.
                     m_cache.erase (cit);
                 }
@@ -529,8 +528,7 @@ private:
         void touch (clock_type::time_point const& now) { last_access = now; }
     };
 
-    typedef std::pair <key_type, Entry> cache_pair;
-    typedef ripple::unordered_map <key_type, Entry, Hash, KeyEqual> cache_type;
+    typedef hardened_hash_map <key_type, Entry, Hash, KeyEqual> cache_type;
     typedef typename cache_type::iterator cache_iterator;
 
     beast::Journal m_journal;

@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include "../../BeastConfig.h"
+#include <BeastConfig.h>
 
 #include <ripple/unity/app.h>
 
@@ -27,16 +27,16 @@
 
 #include <fstream> // for UniqueNodeList.cpp
 
-#include <ripple/module/app/transactors/Transactor.h>
+#include <ripple/app/transactors/Transactor.h>
 
-#include <ripple/module/app/paths/RippleState.cpp>
-#include <ripple/module/app/peers/UniqueNodeList.cpp>
-#include <ripple/module/app/ledger/InboundLedger.cpp>
-#include <ripple/module/app/tx/TransactionCheck.cpp>
-#include <ripple/module/app/tx/TransactionMaster.cpp>
-#include <ripple/module/app/tx/Transaction.cpp>
-#include <ripple/module/app/tx/TransactionEngine.cpp>
-#include <ripple/module/app/tx/TransactionMeta.cpp>
+#include <ripple/app/paths/RippleState.cpp>
+#include <ripple/app/peers/UniqueNodeList.cpp>
+#include <ripple/app/ledger/InboundLedger.cpp>
+#include <ripple/app/tx/TransactionCheck.cpp>
+#include <ripple/app/tx/TransactionMaster.cpp>
+#include <ripple/app/tx/Transaction.cpp>
+#include <ripple/app/tx/TransactionEngine.cpp>
+#include <ripple/app/tx/TransactionMeta.cpp>
 
-#include <ripple/module/app/book/tests/OfferStream.test.cpp>
-#include <ripple/module/app/book/tests/Quality.test.cpp>
+#include <ripple/app/book/tests/OfferStream.test.cpp>
+#include <ripple/app/book/tests/Quality.test.cpp>

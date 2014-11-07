@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <beast/utility/LeakChecked.h>
-#include <beast/module/core/logging/Logger.h>
 
 namespace beast {
 
@@ -62,6 +61,7 @@ private:
 //------------------------------------------------------------------------------
 
 LeakCheckedBase::LeakCounterBase::LeakCounterBase ()
+    : m_count (0)
 {
     Singleton::getInstance ().push_back (this);
 }
@@ -73,51 +73,20 @@ void LeakCheckedBase::LeakCounterBase::checkForLeaks ()
     //
     this->checkPureVirtual ();
 
-    int const count = m_count.get ();
+    int const count = m_count.load ();
 
     if (count > 0)
     {
-        /** If you hit this, then you've leaked one or more objects of the
-            specified class; the name should have been printed by the line
-            below.
-
-            If you're leaking, it's probably because you're using old-fashioned,
-            non-RAII techniques for your object management. Tut, tut. Always,
-            always use ScopedPointers, OwnedArrays, SharedObjects,
-            etc, and avoid the 'delete' operator at all costs!
-        */
-        BDBG ("Leaked objects: " << count << " of " << getClassName ());
-
-        //bassertfalse;
+        outputDebugString ("Leaked objects: " + std::to_string (count) + 
+            " instances of " + getClassName ());
     }
 }
 
 //------------------------------------------------------------------------------
 
-#if BEAST_DEBUG
 void LeakCheckedBase::reportDanglingPointer (char const* objectName)
-#else
-void LeakCheckedBase::reportDanglingPointer (char const*)
-#endif
 {
-    /*  If you hit this, then you've managed to delete more instances
-        of this class than you've created. That indicates that you're
-        deleting some dangling pointers.
-
-        Note that although this assertion will have been triggered
-        during a destructor, it might not be this particular deletion
-        that's at fault - the incorrect one may have happened at an
-        earlier point in the program, and simply not been detected
-        until now.
-
-        Most errors like this are caused by using old-fashioned,
-        non-RAII techniques for your object management. Tut, tut.
-        Always, always use ScopedPointers, OwnedArrays,
-        SharedObjects, etc, and avoid the 'delete' operator
-        at all costs!
-    */
-    BDBG ("Dangling pointer deletion: " << objectName);
-
+    outputDebugString (std::string ("Dangling pointer deletion: ") + objectName);
     bassertfalse;
 }
 

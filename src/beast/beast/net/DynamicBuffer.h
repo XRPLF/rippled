@@ -60,7 +60,8 @@ public:
             ConstBufferType (void const* buffer, size_type bytes);
     */
     template <typename ConstBufferType>
-    std::vector <ConstBufferType> data () const
+    std::vector <ConstBufferType>
+    data () const
     {
         std::vector <ConstBufferType> buffers;
         buffers.reserve (m_buffers.size());
@@ -81,7 +82,8 @@ public:
             MutableBufferType (void* buffer, size_type bytes);
     */
     template <typename MutableBufferType>
-    std::vector <MutableBufferType> prepare (size_type amount)
+    std::vector <MutableBufferType>
+    prepare (size_type amount)
     {
         std::vector <MutableBufferType> buffers;
         buffers.reserve (m_buffers.size());

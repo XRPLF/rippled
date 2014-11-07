@@ -18,17 +18,15 @@
 //==============================================================================
 
 #include <beast/asio/IPAddressConversion.h>
+#include <beast/asio/placeholders.h>
 #include <beast/intrusive/List.h>
 #include <beast/threads/SharedData.h>
-
 #include <boost/asio/ip/tcp.hpp>
-#include <boost/bind.hpp>
-#include <boost/move/move.hpp>
 #include <boost/optional.hpp>
-
 #include <cassert>
 #include <climits>
 #include <deque>
+#include <functional>
 #include <set>
 #include <sstream>
 #include <thread>
@@ -206,6 +204,7 @@ private:
     std::string m_prefix;
     boost::asio::io_service m_io_service;
     boost::optional <boost::asio::io_service::work> m_work;
+    boost::asio::io_service::strand m_strand;
     boost::asio::deadline_timer m_timer;
     boost::asio::ip::udp::socket m_socket;
     std::deque <std::string> m_data;
@@ -238,7 +237,8 @@ public:
         : m_journal (journal)
         , m_address (address)
         , m_prefix (prefix)
-        , m_work (boost::ref (m_io_service))
+        , m_work (std::ref (m_io_service))
+        , m_strand (m_io_service)
         , m_timer (m_io_service)
         , m_socket (m_io_service)
         , m_thread (&StatsDCollectorImp::run, this)
@@ -317,9 +317,9 @@ public:
 
     void post_buffer (std::string&& buffer)
     {
-        m_io_service.dispatch (std::bind (
+        m_io_service.dispatch (m_strand.wrap (std::bind (
             &StatsDCollectorImp::do_post_buffer, this,
-                std::move (buffer)));
+                std::move (buffer))));
     }
 
     void on_send (boost::system::error_code ec, std::size_t)
@@ -347,7 +347,7 @@ public:
             ss << s;
         }
         //m_journal.trace << std::endl << ss.str ();
-        Logger::outputDebugString (ss.str ());
+        outputDebugString (ss.str ());
 #endif
     }
 
@@ -361,36 +361,36 @@ public:
         std::vector <boost::asio::const_buffer> buffers;
         buffers.reserve (m_data.size ());
         std::size_t size (0);
-        for (std::deque <std::string>::const_iterator iter (m_data.begin());
-            iter != m_data.end(); ++iter)
+        for (auto const& s : m_data)
         {
-            std::string const& buffer (*iter);
-            std::size_t const length (buffer.size ());
-            assert (! buffer.empty ());
+            std::size_t const length (s.size ());
+            assert (! s.empty ());
             if (! buffers.empty () && (size + length) > max_packet_size)
             {
 #if BEAST_STATSDCOLLECTOR_TRACING_ENABLED
                 log (buffers);
 #endif
-                m_socket.async_send (buffers, boost::bind (
+                m_socket.async_send (buffers, std::bind (
                     &StatsDCollectorImp::on_send, this,
-                        boost::asio::placeholders::error,
-                            boost::asio::placeholders::bytes_transferred));
+                        beast::asio::placeholders::error,
+                            beast::asio::placeholders::bytes_transferred));
                 buffers.clear ();
                 size = 0;
             }
-            buffers.emplace_back (&buffer[0], length);
+
+            buffers.emplace_back (&s[0], length);
             size += length;
         }
+
         if (! buffers.empty ())
         {
 #if BEAST_STATSDCOLLECTOR_TRACING_ENABLED
             log (buffers);
 #endif
-            m_socket.async_send (buffers, boost::bind (
+            m_socket.async_send (buffers, std::bind (
                 &StatsDCollectorImp::on_send, this,
-                    boost::asio::placeholders::error,
-                        boost::asio::placeholders::bytes_transferred));
+                    beast::asio::placeholders::error,
+                        beast::asio::placeholders::bytes_transferred));
         }
         m_data.clear ();
     }
@@ -398,9 +398,9 @@ public:
     void set_timer ()
     {
         m_timer.expires_from_now (boost::posix_time::seconds (1));
-        m_timer.async_wait (boost::bind (
+        m_timer.async_wait (std::bind (
             &StatsDCollectorImp::on_timer, this,
-                boost::asio::placeholders::error));
+                beast::asio::placeholders::error));
     }
 
     void on_timer (boost::system::error_code ec)

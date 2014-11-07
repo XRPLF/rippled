@@ -21,12 +21,18 @@
 
 namespace beast {
 
-Workers::Workers (Callback& callback, String const& threadNames, int numberOfThreads)
-    : m_callback (callback)
-    , m_threadNames (threadNames)
-    , m_allPaused (true, true)
-    , m_semaphore (0)
-    , m_numberOfThreads (0)
+Workers::Workers (
+    Callback& callback,
+    std::string const& threadNames,
+    int numberOfThreads)
+        : m_callback (callback)
+        , m_threadNames (threadNames)
+        , m_allPaused (true, true)
+        , m_semaphore (0)
+        , m_numberOfThreads (0)
+        , m_activeCount (0)
+        , m_pauseCount (0)
+        , m_runningTaskCount (0)
 {
     setNumberOfThreads (numberOfThreads);
 }
@@ -112,7 +118,7 @@ void Workers::addTask ()
 
 int Workers::numberOfCurrentlyRunningTasks () const noexcept
 {
-    return m_runningTaskCount.get ();
+    return m_runningTaskCount.load ();
 }
 
 void Workers::deleteWorkers (LockFreeStack <Worker>& stack)
@@ -166,7 +172,7 @@ void Workers::Worker::run ()
             // See if there's a pause request. This
             // counts as an "internal task."
             //
-            int pauseCount = m_workers.m_pauseCount.get ();
+            int pauseCount = m_workers.m_pauseCount.load ();
 
             if (pauseCount > 0)
             {
@@ -242,7 +248,7 @@ public:
         }
 
         WaitableEvent finished;
-        Atomic <int> count;
+        std::atomic <int> count;
     };
 
     template <class T1, class T2>
@@ -254,10 +260,7 @@ public:
 
     void testThreads (int const threadCount)
     {
-        std::stringstream ss;
-        ss <<
-            "threadCount = " << threadCount;
-        testcase (ss.str());
+        testcase ("threadCount = " + std::to_string (threadCount));
 
         TestCallback cb (threadCount);
 
@@ -278,7 +281,7 @@ public:
 
         w.pauseAllThreadsAndWait ();
 
-        int const count (cb.count.get ());
+        int const count (cb.count.load ());
 
         expectEquals (count, 0);
     }

@@ -20,7 +20,8 @@
 #ifndef RIPPLE_PEERFINDER_COUNTS_H_INCLUDED
 #define RIPPLE_PEERFINDER_COUNTS_H_INCLUDED
 
-#include <ripple/peerfinder/api/Slot.h>
+#include <ripple/peerfinder/Manager.h>
+#include <ripple/peerfinder/Slot.h>
 
 namespace ripple {
 namespace PeerFinder {
@@ -315,7 +316,7 @@ private:
 
     /** Active outbound slots. */
     std::size_t m_out_active;
-    
+
     /** Fixed connections. */
     std::size_t m_fixed;
 

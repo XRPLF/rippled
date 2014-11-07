@@ -20,14 +20,14 @@
 #ifndef BEAST_DEADLINETIMER_H_INCLUDED
 #define BEAST_DEADLINETIMER_H_INCLUDED
 
-namespace beast
-{
+#include <beast/module/core/memory/SharedSingleton.h>
+
+namespace beast {
 
 /** Provides periodic or one time notifications at a specified time interval.
 */
 class DeadlineTimer
     : public List <DeadlineTimer>::Node
-    , public Uncopyable
 {
 public:
     /** Listener for a deadline timer.
@@ -49,6 +49,9 @@ public:
     */
     explicit DeadlineTimer (Listener* listener);
 
+    DeadlineTimer (DeadlineTimer const&) = delete;
+    DeadlineTimer& operator= (DeadlineTimer const&) = delete;
+    
     ~DeadlineTimer ();
 
     /** Cancel all notifications.

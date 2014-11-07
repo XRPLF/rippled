@@ -22,11 +22,5 @@
 #endif
 
 #include <beast/asio/impl/IPAddressConversion.cpp>
-
-#include <beast/asio/tests/wrap_handler.test.cpp>
 #include <beast/asio/tests/bind_handler.test.cpp>
-#include <beast/asio/tests/enable_wait_for_async.test.cpp>
-#include <beast/asio/tests/shared_handler.test.cpp>
-
-#include <beast/asio/abstract_socket.cpp> // TEMPORARY!
 

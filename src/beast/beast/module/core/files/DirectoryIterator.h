@@ -24,8 +24,9 @@
 #ifndef BEAST_DIRECTORYITERATOR_H_INCLUDED
 #define BEAST_DIRECTORYITERATOR_H_INCLUDED
 
-namespace beast
-{
+#include <memory>
+
+namespace beast {
 
 //==============================================================================
 /**
@@ -40,7 +41,7 @@ namespace beast
 
     It can also guess how far it's got using a wildly inaccurate algorithm.
 */
-class DirectoryIterator : LeakChecked <DirectoryIterator>, public Uncopyable
+class DirectoryIterator : LeakChecked <DirectoryIterator>
 {
 public:
     //==============================================================================
@@ -70,6 +71,9 @@ public:
                        bool isRecursive,
                        const String& wildCard = "*",
                        int whatToLookFor = File::findFiles);
+
+    DirectoryIterator(DirectoryIterator const&) = delete;
+    DirectoryIterator& operator= (DirectoryIterator const&) = delete;
 
     /** Destructor. */
     ~DirectoryIterator();
@@ -115,10 +119,14 @@ public:
 
 private:
     //==============================================================================
-    class NativeIterator : LeakChecked <NativeIterator>, public Uncopyable
+    class NativeIterator : LeakChecked <NativeIterator>
     {
     public:
         NativeIterator (const File& directory, const String& wildCard);
+
+        NativeIterator(NativeIterator const&) = delete;
+        NativeIterator& operator= (NativeIterator const&) = delete;
+
         ~NativeIterator();
 
         bool next (String& filenameFound,
@@ -129,11 +137,9 @@ private:
 
     private:
         friend class DirectoryIterator;
-        friend class ScopedPointer<Pimpl>;
-        ScopedPointer<Pimpl> pimpl;
+        std::unique_ptr<Pimpl> pimpl;
     };
 
-    friend class ScopedPointer<NativeIterator::Pimpl>;
     StringArray wildCards;
     NativeIterator fileFinder;
     String wildCard, path;
@@ -142,7 +148,7 @@ private:
     const int whatToLookFor;
     const bool isRecursive;
     bool hasBeenAdvanced;
-    ScopedPointer <DirectoryIterator> subIterator;
+    std::unique_ptr <DirectoryIterator> subIterator;
     File currentFile;
 };
 

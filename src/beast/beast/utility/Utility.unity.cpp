@@ -26,10 +26,11 @@
 #include <beast/utility/impl/Debug.cpp>
 #include <beast/utility/impl/Journal.cpp>
 #include <beast/utility/impl/LeakChecked.cpp>
-#include <beast/utility/impl/StaticObject.cpp>
 #include <beast/utility/impl/PropertyStream.cpp>
 
 #include <beast/utility/tests/bassert.test.cpp>
 #include <beast/utility/tests/empty_base_optimization.test.cpp>
-#include <beast/utility/tests/Zero.test.cpp>
+#include <beast/utility/tests/Journal.test.cpp>
+#include <beast/utility/tests/static_initializer.test.cpp>
 #include <beast/utility/tests/tagged_integer.test.cpp>
+#include <beast/utility/tests/Zero.test.cpp>

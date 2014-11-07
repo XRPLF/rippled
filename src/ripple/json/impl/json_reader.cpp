@@ -127,7 +127,7 @@ Reader::Reader ( const Features& features )
 
 
 bool
-Reader::parse ( const std::string& document,
+Reader::parse ( std::string const& document,
                 Value& root,
                 bool collectComments )
 {
@@ -643,8 +643,8 @@ Reader::readArray ( Token& tokenStart )
             ok = readToken ( token );
         }
 
-        bool badTokenType = ( token.type_ == tokenArraySeparator  &&
-                              token.type_ == tokenArrayEnd );
+        bool badTokenType = ( token.type_ != tokenArraySeparator &&
+                              token.type_ != tokenArrayEnd );
 
         if ( !ok  ||  badTokenType )
         {
@@ -682,29 +682,57 @@ Reader::decodeNumber ( Token& token )
     if ( isNegative )
         ++current;
 
-    Value::UInt threshold = (isNegative ? Value::UInt (-Value::minInt)
-                             : Value::maxUInt) / 10;
-    Value::UInt value = 0;
+    std::int64_t value = 0;
 
-    while ( current < token.end_ )
+    static_assert(sizeof(value) > sizeof(Value::maxUInt),
+        "The JSON integer overflow logic will need to be reworked.");
+
+    while (current < token.end_ && (value <= Value::maxUInt))
     {
         Char c = *current++;
 
         if ( c < '0'  ||  c > '9' )
-            return addError ( "'" + std::string ( token.start_, token.end_ ) + "' is not a number.", token );
+        {
+            return addError ( "'" + std::string ( token.start_, token.end_ ) +
+                "' is not a number.", token );
+        }
 
-        if ( value >= threshold )
-            return decodeDouble ( token );
+        value = (value * 10) + (c - '0');
+    }
 
-        value = value * 10 + Value::UInt (c - '0');
+    // More tokens left -> input is larger than largest possible return value
+    if (current != token.end_)
+    {
+        return addError ( "'" + std::string ( token.start_, token.end_ ) +
+            "' exceeds the allowable range.", token );
     }
 
     if ( isNegative )
-        currentValue () = -Value::Int ( value );
-    else if ( value <= Value::UInt (Value::maxInt) )
-        currentValue () = Value::Int ( value );
+    {
+        value = -value;
+
+        if (value < Value::minInt || value > Value::maxInt)
+        {
+            return addError ( "'" + std::string ( token.start_, token.end_ ) +
+                "' exceeds the allowable range.", token );
+        }
+
+        currentValue () = static_cast<Value::Int>( value );
+    }
     else
-        currentValue () = value;
+    {
+        if (value > Value::maxUInt)
+        {
+            return addError ( "'" + std::string ( token.start_, token.end_ ) +
+                "' exceeds the allowable range.", token );
+        }
+
+        // If it's representable as a signed integer, construct it as one.
+        if ( value <= Value::maxInt )
+            currentValue () = static_cast<Value::Int>( value );
+        else
+            currentValue () = static_cast<Value::UInt>( value );
+    }
 
     return true;
 }
@@ -742,7 +770,7 @@ Reader::decodeDouble( Token &token )
         return addError( "'" + std::string( token.start_, token.end_ ) + "' is not a number.", token );
     currentValue() = value;
     return true;
-} 
+}
 
 
 
@@ -902,7 +930,7 @@ Reader::decodeUnicodeEscapeSequence ( Token& token,
 
 
 bool
-Reader::addError ( const std::string& message,
+Reader::addError ( std::string const& message,
                    Token& token,
                    Location extra )
 {
@@ -936,7 +964,7 @@ Reader::recoverFromError ( TokenType skipUntilToken )
 
 
 bool
-Reader::addErrorAndRecover ( const std::string& message,
+Reader::addErrorAndRecover ( std::string const& message,
                              Token& token,
                              TokenType skipUntilToken )
 {

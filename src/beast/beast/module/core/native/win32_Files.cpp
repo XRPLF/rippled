@@ -31,6 +31,9 @@ namespace beast
 //==============================================================================
 namespace WindowsFileHelpers
 {
+    static_assert (sizeof (ULARGE_INTEGER) == sizeof (FILETIME),
+        "The FILETIME structure format has been modified.");
+
     DWORD getAtts (const String& path)
     {
         return GetFileAttributes (path.toWideCharPointer());
@@ -38,8 +41,6 @@ namespace WindowsFileHelpers
 
     std::int64_t fileTimeToTime (const FILETIME* const ft)
     {
-        static_bassert (sizeof (ULARGE_INTEGER) == sizeof (FILETIME)); // tell me if this fails!
-
         return (std::int64_t) ((reinterpret_cast<const ULARGE_INTEGER*> (ft)->QuadPart - 116444736000000000LL) / 10000);
     }
 
@@ -161,11 +162,6 @@ bool File::setFileReadOnlyInternal (const bool shouldBeReadOnly) const
             || SetFileAttributes (fullPath.toWideCharPointer(), newAtts) != FALSE;
 }
 
-bool File::isHidden() const
-{
-    return (WindowsFileHelpers::getAtts (fullPath) & FILE_ATTRIBUTE_HIDDEN) != 0;
-}
-
 //==============================================================================
 bool File::deleteFile() const
 {
@@ -174,26 +170,6 @@ bool File::deleteFile() const
 
     return isDirectory() ? RemoveDirectory (fullPath.toWideCharPointer()) != 0
                          : DeleteFile (fullPath.toWideCharPointer()) != 0;
-}
-
-bool File::moveToTrash() const
-{
-    if (! exists())
-        return true;
-
-    // The string we pass in must be double null terminated..
-    const size_t numBytes = CharPointer_UTF16::getBytesRequiredFor (fullPath.getCharPointer()) + 8;
-    HeapBlock<WCHAR> doubleNullTermPath;
-    doubleNullTermPath.calloc (numBytes, 1);
-    fullPath.copyToUTF16 (doubleNullTermPath, numBytes);
-
-    SHFILEOPSTRUCT fos = { 0 };
-    fos.wFunc = FO_DELETE;
-    fos.pFrom = doubleNullTermPath;
-    fos.fFlags = FOF_ALLOWUNDO | FOF_NOERRORUI | FOF_SILENT | FOF_NOCONFIRMATION
-                   | FOF_NOCONFIRMMKDIR | FOF_RENAMEONCOLLISION;
-
-    return SHFileOperation (&fos) == 0;
 }
 
 bool File::copyInternal (const File& dest) const
@@ -312,162 +288,6 @@ Result FileOutputStream::truncate()
 
 //==============================================================================
 
-Result RandomAccessFile::nativeOpen (File const& path, Mode mode)
-{
-    bassert (! isOpen ());
-
-    Result result (Result::ok ());
-
-    DWORD dwDesiredAccess;
-    switch (mode)
-    {
-    case readOnly:
-        dwDesiredAccess = GENERIC_READ;
-        break;
-
-    default:
-    case readWrite:
-        dwDesiredAccess = GENERIC_READ | GENERIC_WRITE;
-        break;   
-    };
-
-    DWORD dwCreationDisposition;
-    switch (mode)
-    {
-    case readOnly:
-        dwCreationDisposition = OPEN_EXISTING;
-        break;
-
-    default:
-    case readWrite:
-         dwCreationDisposition = OPEN_ALWAYS;
-         break;
-    };
-
-    HANDLE h = CreateFile (path.getFullPathName().toWideCharPointer(),
-                           dwDesiredAccess,
-                           FILE_SHARE_READ,
-                           0,
-                           dwCreationDisposition,
-                           FILE_ATTRIBUTE_NORMAL,
-                           0);
-
-    if (h != INVALID_HANDLE_VALUE)
-    {
-        file = path;
-        fileHandle = h;
-
-        result = setPosition (0);
-
-        if (result.failed ())
-            nativeClose ();
-    }
-    else
-    {
-        result = WindowsFileHelpers::getResultForLastError();
-    }
-
-    return result;
-}
-
-void RandomAccessFile::nativeClose ()
-{
-    bassert (isOpen ());
-
-    CloseHandle ((HANDLE) fileHandle);
-
-    file = File::nonexistent ();
-    fileHandle = nullptr;
-    currentPosition = 0;
-}
-
-Result RandomAccessFile::nativeSetPosition (FileOffset newPosition)
-{
-    bassert (isOpen ());
-
-    Result result (Result::ok ());
-
-    LARGE_INTEGER li;
-    li.QuadPart = newPosition;
-    li.LowPart = SetFilePointer ((HANDLE) fileHandle,
-                                 (LONG) li.LowPart,
-                                 &li.HighPart,
-                                 FILE_BEGIN);
-
-    if (li.LowPart != INVALID_SET_FILE_POINTER)
-    {
-        currentPosition = li.QuadPart;
-    }
-    else
-    {
-        result = WindowsFileHelpers::getResultForLastError();
-    }
-
-    return result;
-}
-
-Result RandomAccessFile::nativeRead (void* buffer, ByteCount numBytes, ByteCount* pActualAmount)
-{
-    bassert (isOpen ());
-
-    Result result (Result::ok ());
-
-    DWORD actualNum = 0;
-
-    if (! ReadFile ((HANDLE) fileHandle, buffer, (DWORD) numBytes, &actualNum, 0))
-        result = WindowsFileHelpers::getResultForLastError();
-
-    currentPosition += actualNum;
-
-    if (pActualAmount != nullptr)
-        *pActualAmount = actualNum;
-
-    return result;
-}
-
-Result RandomAccessFile::nativeWrite (void const* data, ByteCount numBytes, size_t* pActualAmount)
-{
-    bassert (isOpen ());
-
-    Result result (Result::ok ());
-
-    DWORD actualNum = 0;
-
-    if (! WriteFile ((HANDLE) fileHandle, data, (DWORD) numBytes, &actualNum, 0))
-        result = WindowsFileHelpers::getResultForLastError();
-
-    if (pActualAmount != nullptr)
-        *pActualAmount = actualNum;
-
-    return result;
-}
-
-Result RandomAccessFile::nativeTruncate ()
-{
-    bassert (isOpen ());
-
-    Result result (Result::ok ());
-
-    if (! SetEndOfFile ((HANDLE) fileHandle))
-        result = WindowsFileHelpers::getResultForLastError();
-
-    return result;
-}
-
-Result RandomAccessFile::nativeFlush ()
-{
-    bassert (isOpen ());
-
-    Result result (Result::ok ());
-
-    if (! FlushFileBuffers ((HANDLE) fileHandle))
-        result = WindowsFileHelpers::getResultForLastError();
-
-    return result;
-}
-
-//==============================================================================
-
 std::int64_t File::getSize() const
 {
     WIN32_FILE_ATTRIBUTE_DATA attributes;
@@ -519,51 +339,6 @@ bool File::setFileTimesInternal (std::int64_t modificationTime, std::int64_t acc
 }
 
 //==============================================================================
-void File::findFileSystemRoots (Array<File>& destArray)
-{
-    TCHAR buffer [2048] = { 0 };
-    GetLogicalDriveStrings (2048, buffer);
-
-    const TCHAR* n = buffer;
-    StringArray roots;
-
-    while (*n != 0)
-    {
-        roots.add (String (n));
-
-        while (*n++ != 0)
-        {}
-    }
-
-    roots.sort (true);
-
-    for (int i = 0; i < roots.size(); ++i)
-        destArray.add (roots [i]);
-}
-
-//==============================================================================
-String File::getVolumeLabel() const
-{
-    TCHAR dest[64];
-    if (! GetVolumeInformation (WindowsFileHelpers::getDriveFromPath (getFullPathName()).toWideCharPointer(), dest,
-                                (DWORD) numElementsInArray (dest), 0, 0, 0, 0, 0))
-        dest[0] = 0;
-
-    return dest;
-}
-
-int File::getVolumeSerialNumber() const
-{
-    TCHAR dest[64];
-    DWORD serialNum;
-
-    if (! GetVolumeInformation (WindowsFileHelpers::getDriveFromPath (getFullPathName()).toWideCharPointer(), dest,
-                                (DWORD) numElementsInArray (dest), &serialNum, 0, 0, 0, 0))
-        return 0;
-
-    return (int) serialNum;
-}
-
 std::int64_t File::getBytesFreeOnVolume() const
 {
     return WindowsFileHelpers::getDiskSpaceInfo (getFullPathName(), false);
@@ -572,38 +347,6 @@ std::int64_t File::getBytesFreeOnVolume() const
 std::int64_t File::getVolumeTotalSize() const
 {
     return WindowsFileHelpers::getDiskSpaceInfo (getFullPathName(), true);
-}
-
-//==============================================================================
-bool File::isOnCDRomDrive() const
-{
-    return WindowsFileHelpers::getWindowsDriveType (getFullPathName()) == DRIVE_CDROM;
-}
-
-bool File::isOnHardDisk() const
-{
-    if (fullPath.isEmpty())
-        return false;
-
-    const unsigned int n = WindowsFileHelpers::getWindowsDriveType (getFullPathName());
-
-    if (fullPath.toLowerCase()[0] <= 'b' && fullPath[1] == ':')
-        return n != DRIVE_REMOVABLE;
-
-    return n != DRIVE_CDROM && n != DRIVE_REMOTE;
-}
-
-bool File::isOnRemovableDrive() const
-{
-    if (fullPath.isEmpty())
-        return false;
-
-    const unsigned int n = WindowsFileHelpers::getWindowsDriveType (getFullPathName());
-
-    return n == DRIVE_CDROM
-        || n == DRIVE_REMOTE
-        || n == DRIVE_REMOVABLE
-        || n == DRIVE_RAMDISK;
 }
 
 //==============================================================================
@@ -632,14 +375,6 @@ File File::getSpecialLocation (const SpecialLocationType type)
             return File (String (dest));
         }
 
-        case invokedExecutableFile:
-        case currentExecutableFile:
-        case currentApplicationFile:
-            return WindowsFileHelpers::getModuleFileName ((HINSTANCE) Process::getCurrentModuleInstanceHandle());
-
-        case hostApplicationPath:
-            return WindowsFileHelpers::getModuleFileName (0);
-
         default:
             bassertfalse; // unknown type?
             return File::nonexistent ();
@@ -663,79 +398,8 @@ bool File::setAsCurrentWorkingDirectory() const
 }
 
 //==============================================================================
-String File::getVersion() const
-{
-    String result;
-
-    DWORD handle = 0;
-    DWORD bufferSize = GetFileVersionInfoSize (getFullPathName().toWideCharPointer(), &handle);
-    HeapBlock<char> buffer;
-    buffer.calloc (bufferSize);
-
-    if (GetFileVersionInfo (getFullPathName().toWideCharPointer(), 0, bufferSize, buffer))
-    {
-        VS_FIXEDFILEINFO* vffi;
-        UINT len = 0;
-
-        if (VerQueryValue (buffer, (LPTSTR) _T("\\"), (LPVOID*) &vffi, &len))
-        {
-            result << (int) HIWORD (vffi->dwFileVersionMS) << '.'
-                   << (int) LOWORD (vffi->dwFileVersionMS) << '.'
-                   << (int) HIWORD (vffi->dwFileVersionLS) << '.'
-                   << (int) LOWORD (vffi->dwFileVersionLS);
-        }
-    }
-
-    return result;
-}
-
-//==============================================================================
-File File::getLinkedTarget() const
-{
-    File result (*this);
-    String p (getFullPathName());
-
-    if (! exists())
-        p += ".lnk";
-    else if (! hasFileExtension (".lnk"))
-        return result;
-
-    ComSmartPtr <IShellLink> shellLink;
-    ComSmartPtr <IPersistFile> persistFile;
-
-    if (SUCCEEDED (shellLink.CoCreateInstance (CLSID_ShellLink))
-         && SUCCEEDED (shellLink.QueryInterface (persistFile))
-         && SUCCEEDED (persistFile->Load (p.toWideCharPointer(), STGM_READ))
-         && SUCCEEDED (shellLink->Resolve (0, SLR_ANY_MATCH | SLR_NO_UI)))
-    {
-        WIN32_FIND_DATA winFindData;
-        WCHAR resolvedPath [MAX_PATH];
-
-        if (SUCCEEDED (shellLink->GetPath (resolvedPath, MAX_PATH, &winFindData, SLGP_UNCPRIORITY)))
-            result = File (resolvedPath);
-    }
-
-    return result;
-}
-
-bool File::createLink (const String& description, const File& linkFileToCreate) const
-{
-    linkFileToCreate.deleteFile();
-
-    ComSmartPtr <IShellLink> shellLink;
-    ComSmartPtr <IPersistFile> persistFile;
-
-    return SUCCEEDED (shellLink.CoCreateInstance (CLSID_ShellLink))
-        && SUCCEEDED (shellLink->SetPath (getFullPathName().toWideCharPointer()))
-        && SUCCEEDED (shellLink->SetDescription (description.toWideCharPointer()))
-        && SUCCEEDED (shellLink.QueryInterface (persistFile))
-        && SUCCEEDED (persistFile->Save (linkFileToCreate.getFullPathName().toWideCharPointer(), TRUE));
-}
-
-//==============================================================================
 class DirectoryIterator::NativeIterator::Pimpl
     : LeakChecked <DirectoryIterator::NativeIterator::Pimpl>
-    , public Uncopyable
 {
 public:
     Pimpl (const File& directory, const String& wildCard)
@@ -743,6 +407,9 @@ public:
           handle (INVALID_HANDLE_VALUE)
     {
     }
+
+    Pimpl (Pimpl const&) = delete;
+    Pimpl& operator= (Pimpl const&) = delete;
 
     ~Pimpl()
     {
@@ -801,35 +468,6 @@ bool DirectoryIterator::NativeIterator::next (String& filenameFound,
                                               Time* const modTime, Time* const creationTime, bool* const isReadOnly)
 {
     return pimpl->next (filenameFound, isDir, isHidden, fileSize, modTime, creationTime, isReadOnly);
-}
-
-
-//==============================================================================
-bool Process::openDocument (const String& fileName, const String& parameters)
-{
-    HINSTANCE hInstance = 0;
-
-    hInstance = ShellExecute (0, 0, fileName.toWideCharPointer(),
-                                parameters.toWideCharPointer(), 0, SW_SHOWDEFAULT);
-
-    return hInstance > (HINSTANCE) 32;
-}
-
-void File::revealToUser() const
-{
-    DynamicLibrary dll ("Shell32.dll");
-    BEAST_LOAD_WINAPI_FUNCTION (dll, ILCreateFromPathW, ilCreateFromPathW, ITEMIDLIST*, (LPCWSTR))
-    BEAST_LOAD_WINAPI_FUNCTION (dll, ILFree, ilFree, void, (ITEMIDLIST*))
-    BEAST_LOAD_WINAPI_FUNCTION (dll, SHOpenFolderAndSelectItems, shOpenFolderAndSelectItems, HRESULT, (ITEMIDLIST*, UINT, void*, DWORD))
-
-    if (ilCreateFromPathW != nullptr && shOpenFolderAndSelectItems != nullptr && ilFree != nullptr)
-    {
-        if (ITEMIDLIST* const itemIDList = ilCreateFromPathW (fullPath.toWideCharPointer()))
-        {
-            shOpenFolderAndSelectItems (itemIDList, 0, nullptr, 0);
-            ilFree (itemIDList);
-        }
-    }
 }
 
 } // beast

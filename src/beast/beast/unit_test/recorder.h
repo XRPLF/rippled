@@ -35,15 +35,13 @@ private:
     case_results m_case;
 
 public:
+    recorder() = default;
     recorder (recorder const&) = default;
     recorder& operator= (recorder const&) = default;
 
-    recorder()
-    {
-    }
-
     /** Returns a report with the results of all completed suites. */
-    results const& report() const
+    results const&
+    report() const
     {
         return m_results;
     }

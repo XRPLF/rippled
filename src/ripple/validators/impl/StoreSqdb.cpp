@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#include <beast/module/core/text/LexicalCast.h>
+#include <beast/utility/Debug.h>
+#include <boost/regex.hpp>
+
 namespace ripple {
 namespace Validators {
 
@@ -65,10 +69,10 @@ void StoreSqdb::insert (SourceDesc& desc)
     {
         beast::Error error;
 
-        beast::String const sourceID (desc.source->uniqueID().toStdString());
-        beast::String const createParam (desc.source->createParam().toStdString());
-        beast::String const lastFetchTime (Utilities::timeToString (desc.lastFetchTime));
-        beast::String const expirationTime (Utilities::timeToString (desc.expirationTime));
+        auto const sourceID (desc.source->uniqueID());
+        auto const createParam (desc.source->createParam());
+        auto const lastFetchTime (timeToString (desc.lastFetchTime));
+        auto const expirationTime (timeToString (desc.expirationTime));
 
         beast::sqdb::statement st = (m_session.prepare <<
             "INSERT INTO Validators_Source ( "
@@ -101,14 +105,80 @@ void StoreSqdb::insert (SourceDesc& desc)
 }
 
 //--------------------------------------------------------------------------
+std::string StoreSqdb::itos (int i, std::size_t width)
+{
+    auto s = std::to_string (i);
 
+    if (s.length () < width)
+        s = std::string (width - s.length(), '0').append (s);
+
+    return s;
+}
+
+beast::Time StoreSqdb::stringToTime (std::string const& s)
+{
+    static boost::regex const date_pattern (
+        "^"                                     // the beginning of the string
+        "(19[789][0-9]|[2-9][0-9][0-9][0-9])-"  // 1970-9999 followed by -
+        "(0[0-9]|1[01])-"                       // 0-11 followed by -
+        "(0[1-9]|[12][0-9]|3[01]) "             // 1-31 followed by space
+        "([01][0-9]|2[0-3]):"                   // 0-23 followed by :
+        "([0-5][0-9]):"                         // 0-59 followed by :
+        "([0-5][0-9])"                          // 0-59
+        "$",
+        boost::regex_constants::optimize);
+
+    boost::smatch match;
+
+    if (boost::regex_match (s, match, date_pattern))
+    {
+        int const year = beast::lexicalCast<int> (std::string (match[1]), -1);
+        int const mon  = beast::lexicalCast<int> (std::string (match[2]), -1);
+        int const day  = beast::lexicalCast<int> (std::string (match[3]), -1);
+        int const hour = beast::lexicalCast<int> (std::string (match[4]), -1);
+        int const min  = beast::lexicalCast<int> (std::string (match[5]), -1);
+        int const sec  = beast::lexicalCast<int> (std::string (match[6]), -1);
+
+        if (year != -1 &&
+            mon  != -1 &&
+            day  != -1 &&
+            hour != -1 &&
+            min  != -1 &&
+            sec  != -1)
+        {
+            // local time
+            return beast::Time (year, mon, day, hour, min, sec, 0, true);
+        }
+    }
+
+    return beast::Time (0);
+}
+
+std::string StoreSqdb::timeToString (beast::Time const& t)
+{
+    std::string ret;
+
+    if (t.isNotNull ())
+    {
+        ret = itos (t.getYear(), 4)        + "-" +
+              itos (t.getMonth(), 2)       + "-" +
+              itos (t.getDayOfMonth (), 2) + " " +
+              itos (t.getHours () , 2)     + ":" +
+              itos (t.getMinutes (), 2)    + ":" +
+              itos (t.getSeconds(), 2);
+    }
+
+    return ret;
+}
+
+//--------------------------------------------------------------------------
 void StoreSqdb::update (SourceDesc& desc, bool updateFetchResults)
 {
     beast::Error error;
 
-    beast::String const sourceID (desc.source->uniqueID());
-    beast::String const lastFetchTime (Utilities::timeToString (desc.lastFetchTime));
-    beast::String const expirationTime (Utilities::timeToString (desc.expirationTime));
+    std::string const sourceID (desc.source->uniqueID());
+    std::string const lastFetchTime (timeToString (desc.lastFetchTime));
+    std::string const expirationTime (timeToString (desc.expirationTime));
 
     beast::sqdb::transaction tr (m_session);
 
@@ -136,7 +206,7 @@ void StoreSqdb::update (SourceDesc& desc, bool updateFetchResults)
         if (! error)
         {
             std::string publicKeyString;
-            beast::String label;
+            std::string label;
 
             beast::sqdb::statement st = (m_session.prepare <<
                 "INSERT INTO Validators_SourceItem ( "
@@ -197,9 +267,10 @@ bool StoreSqdb::select (SourceDesc& desc)
 
     beast::Error error;
 
-    beast::String const sourceID (desc.source->uniqueID());
-    beast::String lastFetchTime;
-    beast::String expirationTime;
+    std::string const sourceID (desc.source->uniqueID());
+    std::string lastFetchTime;
+    std::string expirationTime;
+
     beast::sqdb::statement st = (m_session.prepare <<
         "SELECT "
         "  lastFetchTime, "
@@ -215,10 +286,10 @@ bool StoreSqdb::select (SourceDesc& desc)
     {
         m_journal.debug <<
             "Found record for " << *desc.source;
-        
+
         found = true;
-        desc.lastFetchTime = Utilities::stringToTime (lastFetchTime);
-        desc.expirationTime = Utilities::stringToTime (expirationTime);
+        desc.lastFetchTime = stringToTime (lastFetchTime);
+        desc.expirationTime = stringToTime (expirationTime);
     }
     else if (! error)
     {
@@ -242,8 +313,8 @@ bool StoreSqdb::select (SourceDesc& desc)
 void StoreSqdb::selectList (SourceDesc& desc)
 {
     beast::Error error;
-       
-    beast::String const sourceID (desc.source->uniqueID());
+
+    std::string const sourceID (desc.source->uniqueID());
 
     // Get the count
     std::size_t count;

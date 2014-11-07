@@ -110,7 +110,7 @@ namespace beast {
 */
 template <typename Value, class SharedMutexType =
     SharedMutexAdapter <RecursiveMutex> >
-class SharedData : public Uncopyable
+class SharedData
 {
 private:
     typedef typename SharedMutexType::LockGuardType LockGuardType;
@@ -131,7 +131,7 @@ public:
         generated.
     */
     /** @{ */
-    SharedData () { }
+    SharedData () = default;
 
     template <class T1>
     explicit SharedData (T1 t1)
@@ -165,6 +165,9 @@ public:
         : m_value (t1, t2, t3, t4, t5, t6, t7, t8) { }
     /** @} */
 
+    SharedData (SharedData const&) = delete;
+    SharedData& operator= (SharedData const&) = delete;
+
 private:
     Value m_value;
     SharedMutexType m_mutex;
@@ -176,13 +179,16 @@ private:
     This acquires a unique lock on the underlying mutex.
 */
 template <class Data, class SharedMutexType>
-class SharedData <Data, SharedMutexType>::Access : public Uncopyable
+class SharedData <Data, SharedMutexType>::Access
 {
 public:
     explicit Access (SharedData& state)
         : m_state (state)
         , m_lock (m_state.m_mutex)
         { }
+
+    Access (Access const&) = delete;
+    Access& operator= (Access const&) = delete;
 
     Data const& get () const { return m_state.m_value; }
     Data const& operator* () const { return get (); }
@@ -202,7 +208,7 @@ private:
     This acquires a shared lock on the underlying mutex.
 */
 template <class Data, class SharedMutexType>
-class SharedData <Data, SharedMutexType>::ConstAccess : public Uncopyable
+class SharedData <Data, SharedMutexType>::ConstAccess
 {
 public:
     /** Create a ConstAccess from the specified SharedData */
@@ -210,6 +216,9 @@ public:
         : m_state (const_cast <SharedData const&> (state))
         , m_lock (m_state.m_mutex)
         { }
+
+    ConstAccess (ConstAccess const&) = delete;
+    ConstAccess& operator= (ConstAccess const&) = delete;
 
     Data const& get () const { return m_state.m_value; }
     Data const& operator* () const { return get (); }
@@ -226,13 +235,16 @@ private:
     This acquires a shared lock on the underlying mutex.
 */
 template <class Data, class SharedMutexType>
-class SharedData <Data, SharedMutexType>::ConstUnlockedAccess : public Uncopyable
+class SharedData <Data, SharedMutexType>::ConstUnlockedAccess
 {
 public:
     /** Create an UnlockedAccess from the specified SharedData */
     explicit ConstUnlockedAccess (SharedData const volatile& state)
         : m_state (const_cast <SharedData const&> (state))
         { }
+
+    ConstUnlockedAccess (ConstUnlockedAccess const&) = delete;
+    ConstUnlockedAccess& operator= (ConstUnlockedAccess const&) = delete;
 
     Data const& get () const { return m_state.m_value; }
     Data const& operator* () const { return get (); }
@@ -248,13 +260,16 @@ private:
     This acquires a shared lock on the underlying mutex.
 */
 template <class Data, class SharedMutexType>
-class SharedData <Data, SharedMutexType>::UnlockedAccess : public Uncopyable
+class SharedData <Data, SharedMutexType>::UnlockedAccess
 {
 public:
     /** Create an UnlockedAccess from the specified SharedData */
     explicit UnlockedAccess (SharedData& state)
         : m_state (state)
         { }
+
+    UnlockedAccess (UnlockedAccess const&) = delete;
+    UnlockedAccess& operator= (UnlockedAccess const&) = delete;
 
     Data const& get () const { return m_state.m_value; }
     Data const& operator* () const { return get (); }

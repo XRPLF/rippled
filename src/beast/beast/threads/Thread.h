@@ -45,7 +45,7 @@ namespace beast {
     @see CriticalSection, WaitableEvent, Process, ThreadWithProgressWindow,
          MessageManagerLock
 */
-class Thread : LeakChecked <Thread>, public Uncopyable
+class Thread : LeakChecked <Thread>
 {
 public:
     //==============================================================================
@@ -57,6 +57,9 @@ public:
     */
     explicit Thread (const String& threadName);
 
+    Thread (Thread const&) = delete;
+    Thread& operator= (Thread const&) = delete;
+    
     /** Destructor.
 
         If the thread has not been stopped first, this will generate a fatal error.
@@ -198,9 +201,6 @@ public:
     //==============================================================================
     // this can be called from any thread that needs to pause..
     static void sleep (int milliseconds);
-
-    /** Yields the calling thread's current time-slot. */
-    static void yield();
 
     //==============================================================================
     /** Makes the thread wait for a notification.

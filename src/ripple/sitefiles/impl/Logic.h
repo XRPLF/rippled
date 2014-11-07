@@ -20,9 +20,12 @@
 #ifndef RIPPLE_SITEFILES_LOGIC_H_INCLUDED
 #define RIPPLE_SITEFILES_LOGIC_H_INCLUDED
 
-#include <ripple/common/UnorderedContainers.h>
-
+#include <beast/http/URL.h>
+#include <beast/module/asio/HTTPResponse.h> // DEPRECATED
+#include <boost/regex.hpp>
+#include <map>
 #include <memory>
+#include <set>
 
 namespace ripple {
 namespace SiteFiles {
@@ -62,7 +65,7 @@ class Logic
 {
 public:
     typedef std::set <Listener*> Listeners;
-    typedef ripple::unordered_map <beast::URL, SiteFile> SiteFiles;
+    typedef std::map <beast::URL, SiteFile> SiteFiles;
 
     struct State
     {
@@ -78,11 +81,9 @@ public:
 
     SharedState m_state;
     beast::Journal m_journal;
-    std::unique_ptr <beast::asio::HTTPClientBase> m_client;
 
     explicit Logic (beast::Journal journal)
         : m_journal (journal)
-        , m_client (beast::asio::HTTPClientBase::New (journal))
     {
     }
 
@@ -104,7 +105,7 @@ public:
         for (SiteFiles::const_iterator iter (state->files.begin());
             iter != state->files.end(); ++iter)
         {
-            listener.onSiteFileFetch (iter->first.to_string(), iter->second);
+            listener.onSiteFileFetch (to_string (iter->first), iter->second);
         }
 
         state->listeners.insert (&listener);
@@ -118,34 +119,40 @@ public:
 
     void addURL (std::string const& urlstr)
     {
-        beast::ParsedURL const p (urlstr);
+        // VFALCO This is commented out because the HTTPClient
+        //        implementation is now obsolete. A new HTTP client
+        //        that uses the latest best practices (asio coroutines,
+        //        beast::http::message and beast::http::parser) should
+        //        be used.
+        //
+        //        NOTE SiteFiles is currently an unused module.
+        //
+#if 0
+        auto url = beast::parse_URL (urlstr);
 
-        if (p.error())
+        if (!url.first)
         {
             m_journal.error <<
                 "Error parsing '" << urlstr << "'";
             return;
         }
 
-        beast::URL const& url (p.url());
-
-        auto const result (m_client->get (url));
-
-        //---
+        auto const result (m_client->get (url.second));
 
         boost::system::error_code const error (result.first);
 
         if (error)
         {
-            m_journal.error
-                << "HTTP GET '" << url <<
+            m_journal.error <<
+                "HTTP GET '" << url.second <<
                 "' failed: " << error.message();
             return;
         }
 
         beast::HTTPResponse const& response (*result.second);
 
-        processResponse (url, response);
+        processResponse (url.second, response);
+#endif
     }
 
     //--------------------------------------------------------------------------
@@ -175,7 +182,7 @@ public:
             iter != state->listeners.end(); ++iter)
         {
             Listener* const listener (*iter);
-            listener->onSiteFileFetch (url.to_string(), siteFile);
+            listener->onSiteFileFetch (to_string (url), siteFile);
         }
     }
 

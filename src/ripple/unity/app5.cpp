@@ -17,24 +17,21 @@
 */
 //==============================================================================
 
-#include "../../BeastConfig.h"
+#include <BeastConfig.h>
 
 #include <ripple/unity/app.h>
 #include <ripple/unity/net.h>
 #include <ripple/common/jsonrpc_fields.h>
 
 #include <ripple/common/seconds_clock.h>
-#include <ripple/unity/peerfinder.h>
 #include <ripple/unity/resource.h>
-#include <ripple/unity/validators.h>
-#include <ripple/common/RippleSSLContext.h>
 
 #include <deque>
 
-#include <ripple/module/app/misc/ProofOfWork.h>
+#include <ripple/app/misc/ProofOfWork.h>
 
-#include <ripple/module/app/ledger/LedgerTiming.cpp>
-#include <ripple/module/app/ledger/AcceptedLedgerTx.cpp>
-#include <ripple/module/app/main/LocalCredentials.cpp>
-#include <ripple/module/app/misc/Validations.cpp>
-#include <ripple/module/app/misc/FeeVoteImpl.cpp>
+#include <ripple/app/ledger/LedgerTiming.cpp>
+#include <ripple/app/ledger/AcceptedLedgerTx.cpp>
+#include <ripple/app/main/LocalCredentials.cpp>
+#include <ripple/app/misc/Validations.cpp>
+#include <ripple/app/misc/FeeVoteImpl.cpp>

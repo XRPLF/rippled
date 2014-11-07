@@ -21,9 +21,10 @@
 #define BEAST_UTILITY_LEAKCHECKED_H_INCLUDED
 
 #include <beast/Config.h>
-#include <beast/Atomic.h>
 #include <beast/intrusive/LockFreeStack.h>
 #include <beast/utility/StaticObject.h>
+
+#include <atomic>
 
 namespace beast {
 
@@ -63,7 +64,7 @@ protected:
         class Singleton;
         friend class LeakCheckedBase;
 
-        Atomic <int> m_count;
+        std::atomic <int> m_count;
     };
 
     static void reportDanglingPointer (char const* objectName);

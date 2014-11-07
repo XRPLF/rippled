@@ -121,15 +121,6 @@ public:
         std::string const& line,
         beast::Journal journal = beast::Journal());
 
-    // helpers
-    static beast::String itos (int i, int fieldSize = 0);
-    static int stoi (beast::String& s, int fieldSize, int minValue, int maxValue,
-                     beast::beast_wchar delimiter);
-
-    // conversion betwen Time and String
-    static beast::String timeToString (beast::Time const& t);
-    static beast::Time stringToTime (beast::String s);
-
     struct Helpers;
 
     /** Parse a string into a Source::Item.

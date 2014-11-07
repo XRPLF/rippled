@@ -42,19 +42,9 @@ private:
     run_type m_run;
 
 public:
-    suite_info (
-        char const* name,
-        char const* module,
-        char const* library,
-        bool manual,
-        run_type run)
-        : m_name (name)
-        , m_module (module)
-        , m_library (library)
-        , m_manual (manual)
-        , m_run (std::move (run))
-    {
-    }
+    template <class = void>
+    suite_info (char const* name, char const* module, char const* library,
+        bool manual, run_type run);
 
     char const*
     name() const
@@ -82,14 +72,9 @@ public:
     }
 
     /** Return the canonical suite name as a string. */
+    template <class = void>
     std::string
-    full_name() const
-    {
-        return 
-            std::string (m_library) + "." +
-            std::string (m_module) + "." +
-            std::string (m_name);
-    }
+    full_name() const;
 
     /** Run a new instance of the associated test suite. */
     void
@@ -98,6 +83,33 @@ public:
         m_run (r);
     }
 };
+
+//------------------------------------------------------------------------------
+
+template <class>
+suite_info::suite_info (
+    char const* name,
+    char const* module,
+    char const* library,
+    bool manual,
+    run_type run)
+    : m_name (name)
+    , m_module (module)
+    , m_library (library)
+    , m_manual (manual)
+    , m_run (std::move (run))
+{
+}
+
+template <class>
+std::string
+suite_info::full_name() const
+{
+    return 
+        std::string (m_library) + "." +
+        std::string (m_module) + "." +
+        std::string (m_name);
+}
 
 inline
 bool
@@ -108,8 +120,9 @@ operator< (suite_info const& lhs, suite_info const& rhs)
 
 /** Convenience for producing suite_info for a given test type. */
 template <class Suite>
-suite_info make_suite_info (char const* name, char const* module,
-    char const* library, bool manual)
+suite_info
+make_suite_info (char const* name, char const* module, char const* library,
+    bool manual)
 {
     return suite_info (name, module, library, manual,
         [](runner& r)

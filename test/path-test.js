@@ -1013,9 +1013,7 @@ suite('More path finding', function() {
     //carol holds mtgoxAUD, sells mtgoxAUD for XRP
     //bob will hold mtgoxAUD
     //alice pays bob mtgoxAUD using XRP
-    test("via gateway : FIX ME fails due to XRP rounding and not properly handling dry.", function (done) {
-      return done();
-
+    test.skip("via gateway : FIX ME fails due to XRP rounding and not properly handling dry.", function (done) {
       var self = this;
 
       async.waterfall([
@@ -1220,10 +1218,8 @@ suite('Quality paths', function() {
       });
   });
 
-  test("// quality payment (BROKEN DUE TO ROUNDING)", function (done) {
+  test.skip("quality payment (BROKEN DUE TO ROUNDING)", function (done) {
     var self = this;
-
-    return done();
 
     async.waterfall([
         function (callback) {

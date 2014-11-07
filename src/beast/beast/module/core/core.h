@@ -28,10 +28,6 @@
 #include <beast/Config.h>
 #include <beast/config/ContractChecks.h>
 
-#include <beast/module/core/system/BeforeBoost.h>
-#include <beast/module/core/system/BoostIncludes.h>
-#include <beast/module/core/system/FunctionalIncludes.h>
-
 #if BEAST_MSVC
 # pragma warning (disable: 4251) // (DLL build warning, must be disabled before pushing the warning state)
 # pragma warning (push)
@@ -45,8 +41,6 @@
 
 // New header-only library modeled more closely according to boost
 #include <beast/SmartPtr.h>
-#include <beast/StaticAssert.h>
-#include <beast/Uncopyable.h>
 #include <beast/Atomic.h>
 #include <beast/Arithmetic.h>
 #include <beast/ByteOrder.h>
@@ -77,8 +71,6 @@ class FileOutputStream;
 
 // Order matters, since headers don't have their own #include lines.
 // Add new includes to the bottom.
-
-#include <beast/module/core/system/Functional.h>
 
 #include <beast/module/core/time/AtExitHook.h>
 #include <beast/module/core/time/Time.h>
@@ -143,13 +135,9 @@ class FileOutputStream;
 #include <beast/module/core/thread/MutexTraits.h>
 #include <beast/module/core/diagnostic/FatalError.h>
 #include <beast/module/core/text/LexicalCast.h>
-#include <beast/module/core/maths/Math.h>
 #include <beast/module/core/logging/Logger.h>
-#include <beast/module/core/containers/LinkedListPointer.h>
 #include <beast/module/core/maths/Random.h>
 #include <beast/module/core/text/StringPairArray.h>
-#include <beast/module/core/containers/ScopedValueSetter.h>
-#include <beast/module/core/maths/Range.h>
 #include <beast/module/core/files/DirectoryIterator.h>
 #include <beast/module/core/streams/InputStream.h>
 #include <beast/module/core/files/FileInputStream.h>
@@ -157,17 +145,11 @@ class FileOutputStream;
 #include <beast/module/core/streams/FileInputSource.h>
 #include <beast/module/core/streams/OutputStream.h>
 #include <beast/module/core/files/FileOutputStream.h>
-#include <beast/module/core/files/FileSearchPath.h>
-#include <beast/module/core/files/RandomAccessFile.h>
-#include <beast/module/core/files/TemporaryFile.h>
-#include <beast/module/core/logging/Logger.h>
 #include <beast/module/core/memory/SharedSingleton.h>
-#include <beast/module/core/misc/WindowsRegistry.h>
 #include <beast/module/core/streams/MemoryOutputStream.h>
 
 #include <beast/module/core/system/SystemStats.h>
 #include <beast/module/core/diagnostic/SemanticVersion.h>
-#include <beast/module/core/threads/DynamicLibrary.h>
 #include <beast/module/core/threads/Process.h>
 #include <beast/module/core/diagnostic/UnitTestUtilities.h>
 

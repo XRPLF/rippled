@@ -57,18 +57,6 @@
 //#define BEAST_FORCE_DEBUG 1
 #endif
 
-/** Config: BEAST_LOG_ASSERTIONS
-    If this flag is enabled, the the bassert and bassertfalse macros will always
-    use Logger::writeToLog() to write a message when an assertion happens.
-    Enabling it will also leave this turned on in release builds. When it's
-    disabled, however, the bassert and bassertfalse macros will not be compiled
-    in a release build.
-    @see bassert, bassertfalse, Logger
-*/
-#ifndef   BEAST_LOG_ASSERTIONS
-//#define BEAST_LOG_ASSERTIONS 1
-#endif
-
 /** Config: BEAST_CHECK_MEMORY_LEAKS
     Enables a memory-leak check for certain objects when the app terminates.
     See the LeakChecked class for more details about enabling leak checking for
@@ -166,16 +154,6 @@
 #define RIPPLE_DUMP_LEAKS_ON_EXIT 1
 #endif
 
-/** Config: RIPPLE_TRACK_MUTEXES
-    Turns on a feature that enables tracking and diagnostics for mutex
-    and recursive mutex objects. This affects the type of lock used
-    by RippleMutex and RippleRecursiveMutex
-    @note This can slow down performance considerably.
-*/
-#ifndef RIPPLE_TRACK_MUTEXES
-#define RIPPLE_TRACK_MUTEXES 0
-#endif
-
 //------------------------------------------------------------------------------
 
 // These control whether or not certain functionality gets
@@ -200,26 +178,34 @@
 #endif
 
 /** Config: BEAST_USE_BOOST_FEATURES
-This activates boost specific features and improvements. If this is
-turned on, the include paths for your build environment must be set
-correctly to find the boost headers.
+    This activates boost specific features and improvements. If this is
+    turned on, the include paths for your build environment must be set
+    correctly to find the boost headers.
 */
 #ifndef   BEAST_USE_BOOST_FEATURES
 //#define BEAST_USE_BOOST_FEATURES 1
 #endif
 
 /** Config: RIPPLE_PROPOSE_FEATURES
-This determines whether to add any features to the proposed transaction set.
+    This determines whether to add any features to the proposed transaction set.
 */
 #ifndef RIPPLE_PROPOSE_AMENDMENTS
 #define RIPPLE_PROPOSE_AMENDMENTS 0
 #endif
 
-/** Config: RIPPLE_USE_OLD_CREATE_TRANSACTOR
-This determines whether ripple uses the legacy OfferCreate transactor.
+/** Config: RIPPLE_ENABLE_AUTOBRIDGING
+    This determines whether ripple implements offer autobridging via XRP.
 */
-#ifndef RIPPLE_USE_OLD_CREATE_TRANSACTOR
-#define RIPPLE_USE_OLD_CREATE_TRANSACTOR 1
+#ifndef RIPPLE_ENABLE_AUTOBRIDGING
+#define RIPPLE_ENABLE_AUTOBRIDGING 0
+#endif
+
+/** Config: RIPPLE_SINGLE_IO_SERVICE_THREAD
+    When set, restricts the number of threads calling io_service::run to one.
+    This is useful when debugging.
+*/
+#ifndef RIPPLE_SINGLE_IO_SERVICE_THREAD
+#define RIPPLE_SINGLE_IO_SERVICE_THREAD 0
 #endif
 
 #endif
