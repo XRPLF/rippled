@@ -28,7 +28,7 @@
 #include <limits>
 #include <string>
 #include <utility>
-
+#include <typeinfo>
 #include <iostream>
 
 namespace beast {
