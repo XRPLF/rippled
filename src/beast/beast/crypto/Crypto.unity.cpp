@@ -21,7 +21,6 @@
 #include <BeastConfig.h>
 #endif
 
-#include <beast/crypto/impl/MurmurHash.cpp>
 #include <beast/crypto/impl/Sha256.cpp>
 
 #include <beast/crypto/tests/base64.test.cpp>
