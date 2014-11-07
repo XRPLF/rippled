@@ -21,34 +21,37 @@
 
 namespace beast {
 
-Stoppable::Stoppable (char const* name, RootStoppable& root)
+Stoppable::Stoppable (std::string const& name, RootStoppable& root)
     : m_name (name)
     , m_root (root)
-    , m_child (this)
     , m_started (false)
     , m_stopped (false)
     , m_childrenStopped (false)
 {
 }
 
-Stoppable::Stoppable (char const* name, Stoppable& parent)
+Stoppable::Stoppable (std::string const& name, Stoppable& parent)
     : m_name (name)
     , m_root (parent.m_root)
-    , m_child (this)
     , m_started (false)
     , m_stopped (false)
     , m_childrenStopped (false)
 {
     // Must not have stopping parent.
-    bassert (! parent.isStopping());
+    assert (! parent.isStopping());
 
-    parent.m_children.push_front (&m_child);
+    parent.addChild(this);
 }
 
 Stoppable::~Stoppable ()
 {
     // Children must be stopped.
-    bassert (!m_started || m_childrenStopped);
+    assert (!m_started || m_childrenStopped);
+}
+
+void Stoppable::addChild(Stoppable* child) {
+    std::lock_guard<std::mutex> lock(m_childrenMutex);
+    m_children.push_front(child);
 }
 
 bool Stoppable::isStopping() const
@@ -68,7 +71,8 @@ bool Stoppable::areChildrenStopped () const
 
 void Stoppable::stopped ()
 {
-    m_stoppedEvent.signal();
+    m_stopped = true;
+    m_stoppedEvent.notify_one();
 }
 
 void Stoppable::onPrepare ()
@@ -90,37 +94,44 @@ void Stoppable::onChildrenStopped ()
 
 //------------------------------------------------------------------------------
 
-void Stoppable::prepareRecursive ()
+void Stoppable::prepareRecursive (Journal& journal)
 {
-    for (Children::const_iterator iter (m_children.cbegin ());
-        iter != m_children.cend(); ++iter)
-        iter->stoppable->prepareRecursive ();
+    journal.debug << "Stoppable::prepareRecursive called for: " << m_name;
+    {
+        std::lock_guard<std::mutex> lock(m_childrenMutex);
+        for (auto const& child : m_children) 
+            child->prepareRecursive(journal);
+    }
     onPrepare ();
 }
 
-void Stoppable::startRecursive ()
+void Stoppable::startRecursive (Journal& journal)
 {
+    journal.debug << "Stoppable::startRecursive called for: " << m_name;
     onStart ();
-    for (Children::const_iterator iter (m_children.cbegin ());
-        iter != m_children.cend(); ++iter)
-        iter->stoppable->startRecursive ();
+    std::lock_guard<std::mutex> lock(m_childrenMutex);
+    for (auto const& child: m_children)
+        child->startRecursive(journal);
 }
 
-void Stoppable::stopAsyncRecursive ()
+void Stoppable::stopAsyncRecursive (Journal& journal)
 {
+    journal.debug << "Stoppable::stopAsyncRecursive called for: " << m_name;
     onStop ();
-    for (Children::const_iterator iter (m_children.cbegin ());
-        iter != m_children.cend(); ++iter)
-        iter->stoppable->stopAsyncRecursive ();
+    std::lock_guard<std::mutex> lock(m_childrenMutex);
+    for (auto const& child: m_children)
+        child->stopAsyncRecursive(journal);
 }
 
-void Stoppable::stopRecursive (Journal journal)
+void Stoppable::stopRecursive (Journal& journal)
 {
+    journal.debug << "Stoppable::stopRecursive called for: " << m_name;
+
     // Block on each child from the bottom of the tree up.
     //
-    for (Children::const_iterator iter (m_children.cbegin ());
-        iter != m_children.cend(); ++iter)
-        iter->stoppable->stopRecursive (journal);
+    std::lock_guard<std::mutex> lock(m_childrenMutex);
+    for (auto const& child: m_children)
+        child->stopRecursive(journal);
 
     // if we get here then all children have stopped
     //
@@ -129,20 +140,20 @@ void Stoppable::stopRecursive (Journal journal)
 
     // Now block on this Stoppable.
     //
-    bool const timedOut (! m_stoppedEvent.wait (1 * 1000)); // milliseconds
-    if (timedOut)
+    std::mutex mtx;
+    std::unique_lock<std::mutex> stoppedLock(mtx);
+    m_stoppedEvent.wait_for(stoppedLock, std::chrono::seconds(1));
+    if (!isStopped())
     {
         journal.warning << "Waiting for '" << m_name << "' to stop";
-        m_stoppedEvent.wait ();
+        m_stoppedEvent.wait(stoppedLock,[&]{ return isStopped(); });
     }
-
-    // once we get here, we know the stoppable has stopped.
-    m_stopped = true;
+    journal.info << "'" << m_name << "' has stopped";
 }
 
 //------------------------------------------------------------------------------
 
-RootStoppable::RootStoppable (char const* name)
+RootStoppable::RootStoppable (std::string const& name)
     : Stoppable (name, *this)
     , m_prepared (false)
     , m_calledStop (false)
@@ -155,26 +166,26 @@ bool RootStoppable::isStopping() const
     return m_calledStopAsync;
 }
 
-void RootStoppable::prepare ()
+void RootStoppable::prepare (Journal journal)
 {
     if (m_prepared.exchange (true) == false)
-        prepareRecursive ();
+        prepareRecursive (journal);
 }
 
-void RootStoppable::start ()
+void RootStoppable::start (Journal journal)
 {
     // Courtesy call to prepare.
     if (m_prepared.exchange (true) == false)
-        prepareRecursive ();
+        prepareRecursive (journal);
 
     if (m_started.exchange (true) == false)
-        startRecursive ();
+        startRecursive (journal);
 }
 
 void RootStoppable::stop (Journal journal)
 {
     // Must have a prior call to start()
-    bassert (m_started);
+    assert (m_started);
 
     if (m_calledStop.exchange (true) == true)
     {
@@ -182,14 +193,14 @@ void RootStoppable::stop (Journal journal)
         return;
     }
 
-    stopAsync ();
+    stopAsync (journal);
     stopRecursive (journal);
 }
 
-void RootStoppable::stopAsync ()
+void RootStoppable::stopAsync (Journal journal)
 {
     if (m_calledStopAsync.exchange (true) == false)
-        stopAsyncRecursive ();
+        stopAsyncRecursive (journal);
 }
 
 }

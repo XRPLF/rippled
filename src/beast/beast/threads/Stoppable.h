@@ -20,12 +20,14 @@
 #ifndef BEAST_THREADS_STOPPABLE_H_INCLUDED
 #define BEAST_THREADS_STOPPABLE_H_INCLUDED
 
-#include <beast/intrusive/LockFreeStack.h>
 #include <beast/utility/Journal.h>
 
-#include <beast/threads/WaitableEvent.h>
-
 #include <atomic>
+#include <mutex>
+#include <condition_variable>
+#include <chrono>
+#include <deque>
+#include <cassert>
 
 namespace beast {
 
@@ -171,11 +173,11 @@ class RootStoppable;
 class Stoppable
 {
 protected:
-    Stoppable (char const* name, RootStoppable& root);
+    Stoppable (std::string const& name, RootStoppable& root);
 
 public:
     /** Create the Stoppable. */
-    Stoppable (char const* name, Stoppable& parent);
+    Stoppable (std::string const& name, Stoppable& parent);
 
     /** Destroy the Stoppable. */
     virtual ~Stoppable ();
@@ -252,31 +254,21 @@ private:
 
     friend class RootStoppable;
 
-    struct Child;
-    typedef LockFreeStack <Child> Children;
-
-    struct Child : Children::Node
-    {
-        Child (Stoppable* stoppable_) : stoppable (stoppable_)
-        {
-        }
-
-        Stoppable* stoppable;
-    };
-
-    void prepareRecursive ();
-    void startRecursive ();
-    void stopAsyncRecursive ();
-    void stopRecursive (Journal journal);
+    void addChild(Stoppable* child);
+    void prepareRecursive (Journal& journal);
+    void startRecursive (Journal& journal);
+    void stopAsyncRecursive (Journal& journal);
+    void stopRecursive (Journal& journal);
 
     std::string m_name;
     RootStoppable& m_root;
-    Child m_child;
     std::atomic<bool> m_started;
     std::atomic<bool> m_stopped;
     std::atomic<bool> m_childrenStopped;
-    Children m_children;
-    WaitableEvent m_stoppedEvent;
+    std::deque<Stoppable*> m_children;
+    std::mutex m_childrenMutex;
+    std::condition_variable m_stoppedEvent;
+ 
 };
 
 //------------------------------------------------------------------------------
@@ -284,7 +276,7 @@ private:
 class RootStoppable : public Stoppable
 {
 public:
-    explicit RootStoppable (char const* name);
+    explicit RootStoppable (std::string const& name);
 
     ~RootStoppable () = default;
 
@@ -296,7 +288,7 @@ public:
         Thread safety:
             May be called from any thread.
     */
-    void prepare ();
+    void prepare (Journal journal = Journal());
 
     /** Start all contained Stoppable objects.
         The default implementation does nothing.
@@ -304,7 +296,7 @@ public:
         Thread safety:
             May be called from any thread.
     */
-    void start ();
+    void start (Journal journal = Journal());
 
     /** Notify a root stoppable and children to stop, and block until stopped.
         Has no effect if the stoppable was already notified.
@@ -322,7 +314,7 @@ private:
         Thread safety:
             Safe to call from any thread at any time.
     */
-    void stopAsync ();
+    void stopAsync (Journal journal = Journal());
 
     std::atomic<bool> m_prepared;
     std::atomic<bool> m_calledStop;
