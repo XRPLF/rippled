@@ -1674,6 +1674,9 @@
     <ClCompile Include="..\..\src\beast\beast\utility\tests\tagged_integer.test.cpp">
       <Filter>beast\utility\tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\beast\beast\utility\tests\weak_fn.test.cpp">
+      <Filter>beast\utility\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\utility\tests\Zero.test.cpp">
       <Filter>beast\utility\tests</Filter>
     </ClCompile>
@@ -1687,6 +1690,9 @@
       <Filter>beast\utility</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\Version.h">
+      <Filter>beast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\weak_fn.h">
       <Filter>beast</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\hyperleveldb\db\builder.cc">
