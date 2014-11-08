@@ -650,8 +650,8 @@ parse_Ports (BasicConfig const& config, std::ostream& log)
     if (! config.exists("server"))
     {
         log <<
-            "Missing section: [server]\n";
-        return result;
+            "Required section [server] is missing\n";
+        throw std::exception();
     }
 
     ParsedPort common;
