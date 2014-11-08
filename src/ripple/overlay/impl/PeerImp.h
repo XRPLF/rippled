@@ -46,20 +46,6 @@ namespace ripple {
 
 class PeerImp;
 
-std::string to_string (Peer const& peer);
-std::ostream& operator<< (std::ostream& os, Peer const& peer);
-
-std::string to_string (Peer const* peer);
-std::ostream& operator<< (std::ostream& os, Peer const* peer);
-
-std::string to_string (PeerImp const& peer);
-std::ostream& operator<< (std::ostream& os, PeerImp const& peer);
-
-std::string to_string (PeerImp const* peer);
-std::ostream& operator<< (std::ostream& os, PeerImp const* peer);
-
-//------------------------------------------------------------------------------
-
 class PeerImp
     : public Peer
     , public std::enable_shared_from_this <PeerImp>
@@ -90,6 +76,66 @@ public:
     typedef std::shared_ptr <PeerImp> ptr;
 
 private:
+    /** Wraps a Journal::Sink to prefix it's output. */
+    class WrappedSink : public beast::Journal::Sink
+    {
+    private:
+        std::string prefix_;
+        beast::Journal::Sink& sink_;
+
+    public:
+        explicit
+        WrappedSink (beast::Journal::Sink& sink)
+            : sink_ (sink)
+        {
+        }
+
+        explicit
+        WrappedSink (beast::Journal const& journal)
+            : sink_ (journal.sink())
+        {
+        }
+
+        void prefix (std::string const& s)
+        {
+            prefix_ = s;
+        }
+
+        bool
+        active (beast::Journal::Severity level) const override
+        {
+            return sink_.active (level);
+        }
+
+        bool
+        console () const override
+        {
+            return sink_.console ();
+        }
+
+        void console (bool output) override
+        {
+            sink_.console (output);
+        }
+
+        beast::Journal::Severity
+        severity() const
+        {
+            return sink_.severity();
+        }
+
+        void severity (beast::Journal::Severity level)
+        {
+            sink_.severity (level);
+        }
+
+        void write (beast::Journal::Severity level, std::string const& text)
+        {
+            using beast::Journal;
+            sink_.write (level, prefix_ + text);
+        }
+    };
+
     using clock_type = std::chrono::steady_clock;
     using error_code= boost::system::error_code ;
     using yield_context = boost::asio::yield_context;
@@ -105,7 +151,10 @@ private:
     // The length of the smallest valid finished message
     static const size_t sslMinimumFinishedLength = 12;
 
+    WrappedSink sink_;
+    WrappedSink p_sink_;
     beast::Journal journal_;
+    beast::Journal p_journal_;
     std::unique_ptr<beast::asio::ssl_bundle> ssl_bundle_;
     socket_type& socket_;
     stream_type& stream_;
@@ -287,6 +336,9 @@ public:
     hasRange (std::uint32_t uMin, std::uint32_t uMax) override;
 
 private:
+    void
+    setPrefix();
+
     //
     // client role
     //
@@ -414,23 +466,16 @@ private:
 
     //--------------------------------------------------------------------------
 
-    /** Disconnect a peer
-
-        The peer transitions from its current state into `stateGracefulClose`
-
-        @param rsn a code indicating why the peer was disconnected
-        @param onIOStrand true if called on an I/O strand. It if is not, then
-               a callback will be queued up.
-    */
+    // DEPRECATED Close the socket
     void
-    detach (const char* rsn, bool graceful = true);
+    detach (const char* rsn);
 
     void
     sendGetPeers ();
 
     static
     void
-    charge (std::weak_ptr <Peer>& peer, Resource::Charge const& fee);
+    charge (std::weak_ptr <PeerImp>& peer, Resource::Charge const& fee);
 
     void
     sendForce (const Message::pointer& packet);
@@ -483,11 +528,11 @@ private:
     doFetchPack (const std::shared_ptr<protocol::TMGetObjectByHash>& packet);
 
     void
-    doProofOfWork (Job&, std::weak_ptr <Peer> peer, ProofOfWork::pointer pow);
+    doProofOfWork (Job&, std::weak_ptr <PeerImp> peer, ProofOfWork::pointer pow);
 
     static
     void checkTransaction (Job&, int flags, SerializedTransaction::pointer stx,
-        std::weak_ptr<Peer> peer);
+        std::weak_ptr<PeerImp> peer);
 
     // Called from our JobQueue
     static
@@ -495,7 +540,7 @@ private:
     checkPropose (Job& job, Overlay* pPeers,
         std::shared_ptr<protocol::TMProposeSet> packet,
             LedgerProposal::pointer proposal, uint256 consensusLCL,
-                RippleAddress nodePublic, std::weak_ptr<Peer> peer,
+                RippleAddress nodePublic, std::weak_ptr<PeerImp> peer,
                     bool fromCluster, beast::Journal journal);
 
     static
@@ -503,7 +548,7 @@ private:
     checkValidation (Job&, Overlay* pPeers, SerializedValidation::pointer val,
         bool isTrusted, bool isCluster,
             std::shared_ptr<protocol::TMValidation> packet,
-                std::weak_ptr<Peer> peer, beast::Journal journal);
+                std::weak_ptr<PeerImp> peer, beast::Journal journal);
 
     static
     void
@@ -513,7 +558,7 @@ private:
     /** Called when we receive tx set data. */
     static
     void
-    peerTXData (Job&, std::weak_ptr <Peer> wPeer, uint256 const& hash,
+    peerTXData (Job&, std::weak_ptr <PeerImp> wPeer, uint256 const& hash,
         std::shared_ptr <protocol::TMLedgerData> pPacket,
             beast::Journal journal);
 };
@@ -527,7 +572,10 @@ PeerImp::PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
             PeerFinder::Manager& peerFinder,
                 PeerFinder::Slot::ptr const& slot)
     : Child (overlay)
-    , journal_ (deprecatedLogs().journal("Peer"))
+    , sink_(deprecatedLogs().journal("Peer"))
+    , p_sink_(deprecatedLogs().journal("Protocol"))
+    , journal_ (sink_)
+    , p_journal_(p_sink_)
     , ssl_bundle_(std::move(ssl_bundle))
     , socket_ (ssl_bundle_->socket)
     , stream_ (ssl_bundle_->stream)
@@ -542,6 +590,7 @@ PeerImp::PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
     , slot_ (slot)
     , message_stream_(*this)
 {
+    setPrefix();
     read_buffer_.commit(boost::asio::buffer_copy(read_buffer_.prepare(
         boost::asio::buffer_size(buffer)), buffer));
 }
@@ -572,78 +621,6 @@ PeerImp::send_endpoints (FwdIt first, FwdIt last)
 
 // DEPRECATED
 const boost::posix_time::seconds PeerImp::nodeVerifySeconds (15);
-
-//------------------------------------------------------------------------------
-
-// to_string should not be used we should just use lexical_cast maybe
-
-inline
-std::string
-to_string (PeerImp const& peer)
-{
-    if (peer.isInCluster())
-        return peer.getClusterNodeName();
-
-    return peer.getRemoteAddress().to_string();
-}
-
-inline
-std::string
-to_string (PeerImp const* peer)
-{
-    return to_string (*peer);
-}
-
-inline
-std::ostream&
-operator<< (std::ostream& os, PeerImp const& peer)
-{
-    os << to_string (peer);
-
-    return os;
-}
-
-inline
-std::ostream&
-operator<< (std::ostream& os, PeerImp const* peer)
-{
-    os << to_string (peer);
-    return os;
-}
-
-//------------------------------------------------------------------------------
-
-inline
-std::string
-to_string (Peer const& peer)
-{
-    if (peer.isInCluster())
-        return peer.getClusterNodeName();
-    return peer.getRemoteAddress().to_string();
-}
-
-inline
-std::string
-to_string (Peer const* peer)
-{
-    return to_string (*peer);
-}
-
-inline
-std::ostream&
-operator<< (std::ostream& os, Peer const& peer)
-{
-    os << to_string (peer);
-    return os;
-}
-
-inline
-std::ostream&
-operator<< (std::ostream& os, Peer const* peer)
-{
-    os << to_string (peer);
-    return os;
-}
 
 }
 
