@@ -187,8 +187,10 @@ class Stoppable_test
 
         void run()
         {
-            while (stop_ == running)
-                ;
+            while (stop_ == running){
+                // Stop this check from being a spinlock
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            }
             stop_ = have_stopped;
         }
 
