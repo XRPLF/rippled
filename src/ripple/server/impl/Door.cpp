@@ -178,7 +178,7 @@ Door::Door (boost::asio::io_service& io_service,
     if (ec)
     {
         if (server_.journal().error) server_.journal().error <<
-            "Error opening listener: " << ec.message();
+            "Open port '" << port.name << "' failed:" << ec.message();
         throw std::exception();
         return;
     }
@@ -188,7 +188,7 @@ Door::Door (boost::asio::io_service& io_service,
     if (ec)
     {
         if (server_.journal().error) server_.journal().error <<
-            "Error setting listener options: " << ec.message();
+            "Option for port '" << port.name << "' failed:" << ec.message();
         throw std::exception();
         return;
     }
@@ -197,8 +197,7 @@ Door::Door (boost::asio::io_service& io_service,
     if (ec)
     {
         if (server_.journal().error) server_.journal().error <<
-            "Error binding to endpoint " << local_address <<
-                ", '" << ec.message() << "'";
+            "Bind port '" << port.name << "' failed:" << ec.message();
         throw std::exception();
         return;
     }
@@ -207,14 +206,13 @@ Door::Door (boost::asio::io_service& io_service,
     if (ec)
     {
         if (server_.journal().error) server_.journal().error <<
-            "Error on listen: " << local_address <<
-                ", '" << ec.message() << "'";
+            "Listen on port '" << port.name << "' failed:" << ec.message();
         throw std::exception();
         return;
     }
 
     if (server_.journal().info) server_.journal().info <<
-        "Bound to endpoint " << acceptor_.local_endpoint();
+        "Opened " << port;
 }
 
 Door::~Door()
