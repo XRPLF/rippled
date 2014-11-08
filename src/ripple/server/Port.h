@@ -93,6 +93,18 @@ Port::protocols() const
     return s;
 }
 
+inline
+std::ostream&
+operator<< (std::ostream& os, Port const& p)
+{
+    os <<
+        "'" << p.name <<
+        "' (ip=" << p.ip << ":" << p.port <<
+        (p.allow_admin ? ", admin, " : ", ") <<
+        p.protocols() << ")";
+    return os;
+}
+
 } // HTTP
 } // ripple
 
