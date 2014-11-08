@@ -136,7 +136,7 @@ void Stoppable::stopRecursive (Journal& journal)
         for (auto const& child: m_children)
             child->stopRecursive(journal);
     }
-    
+
     // if we get here then all children have stopped
     //
     m_childrenStopped = true;
@@ -146,7 +146,7 @@ void Stoppable::stopRecursive (Journal& journal)
     //
     {
         std::unique_lock<std::mutex> lock(m_childrenMutex);
-        auto hasStopped = m_stoppedEvent.wait_for(lock, 
+        auto const hasStopped = m_stoppedEvent.wait_for(lock, 
             std::chrono::seconds(1), [&] {
             return isStopped();
         });
