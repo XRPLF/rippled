@@ -651,6 +651,18 @@ basic_streambuf<Allocator>::debug_check() const
 #endif
 }
 
+template <class Alloc, class T>
+basic_streambuf<Alloc>&
+operator<< (basic_streambuf<Alloc>& buf, T const& t)
+{
+    std::stringstream ss;
+    ss << t;
+    auto const& s = ss.str();
+    buf.commit(boost::asio::buffer_copy(
+        buf.prepare(s.size()), boost::asio::buffer(s)));
+    return buf;
+}
+
 //------------------------------------------------------------------------------
 
 using streambuf = basic_streambuf<std::allocator<char>>;
