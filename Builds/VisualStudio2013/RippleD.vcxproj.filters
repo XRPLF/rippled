@@ -3561,9 +3561,6 @@
     <ClInclude Include="..\..\src\ripple\overlay\impl\PeerImp.h">
       <Filter>ripple\overlay\impl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\overlay\impl\peer_info.h">
-      <Filter>ripple\overlay\impl</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\overlay\impl\peer_protocol_detector.h">
       <Filter>ripple\overlay\impl</Filter>
     </ClInclude>
@@ -3588,7 +3585,7 @@
     <None Include="..\..\src\ripple\overlay\README.md">
       <Filter>ripple\overlay</Filter>
     </None>
-    <ClCompile Include="..\..\src\ripple\overlay\tests\peer_info.test.cpp">
+    <ClCompile Include="..\..\src\ripple\overlay\tests\short_read.test.cpp">
       <Filter>ripple\overlay\tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\peerfinder\impl\Bootcache.cpp">
