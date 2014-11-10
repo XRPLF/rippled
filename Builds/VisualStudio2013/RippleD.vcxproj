@@ -1877,6 +1877,16 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\node\SqliteFactory.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\paths\AccountCurrencies.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\paths\AccountCurrencies.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\paths\Credit.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\paths\Credit.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\paths\cursor\AdvanceNode.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -1910,6 +1920,11 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\paths\cursor\RippleLiquidity.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\paths\FindPaths.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\paths\FindPaths.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\paths\Node.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -3000,6 +3015,8 @@
     <ClInclude Include="..\..\src\ripple\rpc\RPCHandler.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\Status.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rpc\Yield.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\server\Handler.h">
     </ClInclude>

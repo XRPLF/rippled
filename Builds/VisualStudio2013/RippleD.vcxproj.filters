@@ -2784,6 +2784,18 @@
     <ClInclude Include="..\..\src\ripple\app\node\SqliteFactory.h">
       <Filter>ripple\app\node</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\paths\AccountCurrencies.cpp">
+      <Filter>ripple\app\paths</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\paths\AccountCurrencies.h">
+      <Filter>ripple\app\paths</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\paths\Credit.cpp">
+      <Filter>ripple\app\paths</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\paths\Credit.h">
+      <Filter>ripple\app\paths</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\paths\cursor\AdvanceNode.cpp">
       <Filter>ripple\app\paths\cursor</Filter>
     </ClCompile>
@@ -2819,6 +2831,12 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\paths\cursor\RippleLiquidity.h">
       <Filter>ripple\app\paths\cursor</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\paths\FindPaths.cpp">
+      <Filter>ripple\app\paths</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\app\paths\FindPaths.h">
+      <Filter>ripple\app\paths</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\paths\Node.cpp">
       <Filter>ripple\app\paths</Filter>
@@ -4114,6 +4132,9 @@
       <Filter>ripple\rpc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\Status.h">
+      <Filter>ripple\rpc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rpc\Yield.h">
       <Filter>ripple\rpc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\server\Handler.h">

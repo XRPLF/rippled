@@ -43,6 +43,11 @@ struct Bytes
     Bytes (char const* cstr, std::size_t s) : data (cstr), size (s)
     {
     }
+
+    void appendTo (std::string& s) const
+    {
+        s.append (data, size);
+    }
 };
 
 using Output = std::function <void (Bytes const&)>;
@@ -50,7 +55,7 @@ using Output = std::function <void (Bytes const&)>;
 inline
 Output stringOutput (std::string& s)
 {
-    return [&](Bytes const& b) { s.append (b.data, b.size); };
+    return [&](Bytes const& b) { b.appendTo (s); };
 }
 
 } // RPC
