@@ -3018,6 +3018,12 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\impl\Tuning.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\Yield.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\Yield_test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\InternalHandler.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\Manager.h">
@@ -3029,6 +3035,8 @@
     <ClInclude Include="..\..\src\ripple\rpc\RPCHandler.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\rpc\Status.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rpc\Yield.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\server\Handler.h">
     </ClInclude>
