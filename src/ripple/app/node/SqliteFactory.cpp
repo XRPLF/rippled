@@ -133,7 +133,7 @@ public:
         pStB.step();
         pStB.reset();
 
-        BOOST_FOREACH (NodeObject::Ptr const& object, batch)
+        for (NodeObject::Ptr const& object : batch)
         {
             doBind (pSt, object);
 

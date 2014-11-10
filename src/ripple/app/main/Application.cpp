@@ -183,7 +183,6 @@ public:
     std::unique_ptr <ServerHandler> serverHandler_;
     std::unique_ptr <NodeStore::Database> m_nodeStore;
     std::unique_ptr <SNTPClient> m_sntpClient;
-    std::unique_ptr <TxQueue> m_txQueue;
     std::unique_ptr <Validators::Manager> m_validators;
     std::unique_ptr <AmendmentTable> m_amendmentTable;
     std::unique_ptr <LoadFeeTrack> mFeeTrack;
@@ -316,8 +315,6 @@ public:
             getConfig ().nodeDatabase, getConfig ().ephemeralNodeDatabase))
 
         , m_sntpClient (SNTPClient::New (*this))
-
-        , m_txQueue (TxQueue::New ())
 
         , m_validators (add (Validators::Manager::New (
             *this,
@@ -462,11 +459,6 @@ public:
     Resource::Manager& getResourceManager ()
     {
         return *m_resourceManager;
-    }
-
-    TxQueue& getTxQueue ()
-    {
-        return *m_txQueue;
     }
 
     OrderBookDB& getOrderBookDB ()
