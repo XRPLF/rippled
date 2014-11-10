@@ -998,6 +998,8 @@
     <ClCompile Include="..\..\src\beast\beast\utility\Utility.unity.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\utility\WrappedSink.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\utility\Zero.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\Version.h">
