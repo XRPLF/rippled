@@ -998,6 +998,8 @@
     <ClCompile Include="..\..\src\beast\beast\utility\Utility.unity.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\utility\WrappedSink.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\utility\Zero.h">
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\Version.h">
@@ -2530,8 +2532,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\overlay\impl\PeerImp.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\overlay\impl\peer_info.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\overlay\impl\peer_protocol_detector.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\overlay\impl\Tuning.h">
@@ -2548,7 +2548,7 @@
     </ClInclude>
     <None Include="..\..\src\ripple\overlay\README.md">
     </None>
-    <ClCompile Include="..\..\src\ripple\overlay\tests\peer_info.test.cpp">
+    <ClCompile Include="..\..\src\ripple\overlay\tests\short_read.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\peerfinder\impl\Bootcache.cpp">
