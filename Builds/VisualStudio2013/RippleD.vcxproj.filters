@@ -3378,9 +3378,6 @@
     <ClCompile Include="..\..\src\ripple\net\impl\RPCErr.cpp">
       <Filter>ripple\net\impl</Filter>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\net\impl\RPCServerImp.h">
-      <Filter>ripple\net\impl</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\net\impl\RPCSub.cpp">
       <Filter>ripple\net\impl</Filter>
     </ClCompile>
@@ -3394,9 +3391,6 @@
       <Filter>ripple\net</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\net\RPCErr.h">
-      <Filter>ripple\net</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\net\RPCServer.h">
       <Filter>ripple\net</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\net\RPCSub.h">

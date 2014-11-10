@@ -2383,8 +2383,6 @@
     <ClCompile Include="..\..\src\ripple\net\impl\RPCErr.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\net\impl\RPCServerImp.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\net\impl\RPCSub.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2396,8 +2394,6 @@
     <ClInclude Include="..\..\src\ripple\net\RPCCall.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\net\RPCErr.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\net\RPCServer.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\net\RPCSub.h">
     </ClInclude>
