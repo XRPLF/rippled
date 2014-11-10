@@ -42,46 +42,6 @@ namespace ripple {
 // see www.keylength.com
 // script supports up to 75 for single byte push
 
-// VFALCO NOTE this is unused
-/*
-int static inline EC_KEY_regenerate_key(EC_KEY *eckey, BIGNUM *priv_key)
-{
-    int okay = 0;
-    BN_CTX *ctx = NULL;
-    EC_POINT *pub_key = NULL;
-
-    if (!eckey) return 0;
-
-    const EC_GROUP *group = EC_KEY_get0_group(eckey);
-
-    if ((ctx = BN_CTX_new()) == NULL)
-        goto err;
-
-    pub_key = EC_POINT_new(group);
-
-    if (pub_key == NULL)
-        goto err;
-
-    if (!EC_POINT_mul(group, pub_key, priv_key, NULL, NULL, ctx))
-        goto err;
-
-    EC_KEY_set_conv_form(eckey, POINT_CONVERSION_COMPRESSED);
-    EC_KEY_set_private_key(eckey, priv_key);
-    EC_KEY_set_public_key(eckey, pub_key);
-
-    okay = 1;
-
-err:
-
-    if (pub_key)
-        EC_POINT_free(pub_key);
-    if (ctx != NULL)
-        BN_CTX_free(ctx);
-
-    return (okay);
-}
-*/
-
 class key_error : public std::runtime_error
 {
 public:
@@ -92,12 +52,8 @@ class CKey
 {
 protected:
     EC_KEY* pkey;
-    bool fSet;
-
 
 public:
-    typedef std::shared_ptr<CKey> pointer;
-
     CKey ()
     {
         pkey = EC_KEY_new_by_curve_name (NID_secp256k1);
@@ -106,8 +62,6 @@ public:
             throw key_error ("CKey::CKey() : EC_KEY_new_by_curve_name failed");
 
         EC_KEY_set_conv_form (pkey, POINT_CONVERSION_COMPRESSED);
-
-        fSet = false;
     }
 
     CKey (const CKey& b)
@@ -118,8 +72,6 @@ public:
             throw key_error ("CKey::CKey(const CKey&) : EC_KEY_dup failed");
 
         EC_KEY_set_conv_form (pkey, POINT_CONVERSION_COMPRESSED);
-
-        fSet = b.fSet;
     }
 
     CKey& operator= (const CKey& b)
@@ -127,7 +79,6 @@ public:
         if (!EC_KEY_copy (pkey, b.pkey))
             throw key_error ("CKey::operator=(const CKey&) : EC_KEY_copy failed");
 
-        fSet = b.fSet;
         return (*this);
     }
 
@@ -143,52 +94,31 @@ public:
     static EC_KEY* GenerateRootPubKey (BIGNUM* pubGenerator);
     static EC_KEY* GeneratePublicDeterministicKey (RippleAddress const& generator, int n);
     static EC_KEY* GeneratePrivateDeterministicKey (RippleAddress const& family, const BIGNUM* rootPriv, int n);
-    static EC_KEY* GeneratePrivateDeterministicKey (RippleAddress const& family, uint256 const& rootPriv, int n);
 
-    CKey (const uint128& passPhrase) : fSet (false)
+    CKey (const uint128& passPhrase)
     {
         pkey = GenerateRootDeterministicKey (passPhrase);
-        fSet = true;
         assert (pkey);
     }
 
-    CKey (RippleAddress const& generator, int n) : fSet (false)
+    CKey (RippleAddress const& generator, int n)
     {
         // public deterministic key
         pkey = GeneratePublicDeterministicKey (generator, n);
-        fSet = true;
         assert (pkey);
     }
 
-    CKey (RippleAddress const& base, const BIGNUM* rootPrivKey, int n) : fSet (false)
+    CKey (RippleAddress const& base, const BIGNUM* rootPrivKey, int n)
     {
         // private deterministic key
         pkey = GeneratePrivateDeterministicKey (base, rootPrivKey, n);
-        fSet = true;
         assert (pkey);
     }
 
-    CKey (uint256 const& privateKey) : pkey (nullptr), fSet (false)
+    CKey (uint256 const& privateKey) : pkey (nullptr)
     {
         // XXX Broken pkey is null.
         SetPrivateKeyU (privateKey);
-    }
-
-#if 0
-    CKey (RippleAddress const& masterKey, int keyNum, bool isPublic) : pkey (nullptr), fSet (false)
-    {
-        if (isPublic)
-            SetPubSeq (masterKey, keyNum);
-        else
-            SetPrivSeq (masterKey, keyNum); // broken, need seed
-
-        fSet = true;
-    }
-#endif
-
-    bool IsNull () const
-    {
-        return !fSet;
     }
 
     void MakeNewKey ()
@@ -197,7 +127,6 @@ public:
             throw key_error ("CKey::MakeNewKey() : EC_KEY_generate_key failed");
 
         EC_KEY_set_conv_form (pkey, POINT_CONVERSION_COMPRESSED);
-        fSet = true;
     }
 
     // XXX Still used!
@@ -228,7 +157,6 @@ public:
 
         if (bSuccess)
         {
-            fSet = true;
         }
         else if (bThrow)
         {
@@ -246,18 +174,13 @@ public:
             return false;
 
         EC_KEY_set_conv_form (pkey, POINT_CONVERSION_COMPRESSED);
-        fSet = true;
+
         return true;
     }
 
     bool SetPubKey (Blob const& vchPubKey)
     {
         return SetPubKey (&vchPubKey[0], vchPubKey.size ());
-    }
-
-    bool SetPubKey (std::string const& pubKey)
-    {
-        return SetPubKey (pubKey.data (), pubKey.size ());
     }
 
     Blob GetPubKey () const
@@ -306,11 +229,6 @@ public:
     bool Verify (uint256 const& hash, Blob const& vchSig) const
     {
         return Verify (hash, &vchSig[0], vchSig.size ());
-    }
-
-    bool Verify (uint256 const& hash, std::string const& sig) const
-    {
-        return Verify (hash, sig.data (), sig.size ());
     }
 
     // ECIES functions. These throw on failure
