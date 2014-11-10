@@ -39,6 +39,7 @@
 #include <beast/asio/ssl_bundle.h>
 #include <beast/http/message.h>
 #include <beast/http/parser.h>
+#include <beast/utility/WrappedSink.h>
 #include <cstdint>
 
 namespace ripple {
