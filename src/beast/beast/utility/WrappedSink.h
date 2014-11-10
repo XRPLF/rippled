@@ -24,7 +24,7 @@
 
 namespace beast {
 
-/** Wraps a Journal::Sink to prefix it's output with a string. */
+/** Wraps a Journal::Sink to prefix its output with a string. */
 class WrappedSink : public beast::Journal::Sink
 {
 private:
