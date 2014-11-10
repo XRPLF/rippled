@@ -108,9 +108,10 @@ public:
             auto p = std::make_shared<T>(called);
             try
             {
-                std::bind(weak_fn(&T::fis, p, throw_if_invalid<>()),
-                    1, std::placeholders::_1)("foo");
+                auto call = std::bind(weak_fn(&T::fis, p, throw_if_invalid<>()),
+                    1, std::placeholders::_1);
                 p.reset();
+                call("foo");
                 fail();
             }
             catch(std::bad_weak_ptr const&)
