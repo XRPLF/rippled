@@ -30,7 +30,6 @@
 #include <ripple/overlay/Overlay.h>
 #include <tuple>
 
-#include <ripple/rpc/RPCHandler.h>
 #include <ripple/rpc/impl/ErrorCodes.cpp>
 #include <ripple/rpc/impl/JsonObject.cpp>
 #include <ripple/rpc/impl/JsonWriter.cpp>
@@ -38,6 +37,7 @@
 #include <ripple/rpc/impl/RPCHandler.cpp>
 #include <ripple/rpc/impl/Status.cpp>
 #include <ripple/rpc/impl/Status_test.cpp>
+#include <ripple/rpc/impl/Yield_test.cpp>
 
 #include <ripple/rpc/handlers/Handlers.h>
 #include <ripple/rpc/handlers/AccountCurrencies.cpp>
