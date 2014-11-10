@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/crypto/CKey.h>
+#include <ripple/crypto/GenerateDeterministicKey.h>
 #include <ripple/protocol/RippleAddress.h>
 #include <ripple/types/base_uint.h>
 #include <beast/unit_test/suite.h>
@@ -41,11 +41,12 @@ public:
         uint128 seed1, seed2;
         seed1.SetHex ("71ED064155FFADFA38782C5E0158CB26");
         seed2.SetHex ("CF0C3BE4485961858C4198515AE5B965");
-        CKey root1 (seed1), root2 (seed2);
 
-        uint256 priv1, priv2;
-        root1.GetPrivateKeyU (priv1);
-        root2.GetPrivateKeyU (priv2);
+        openssl::ec_key root1 = GenerateRootDeterministicKey (seed1);
+        openssl::ec_key root2 = GenerateRootDeterministicKey (seed2);
+
+        uint256 const priv1 = root1.get_private_key();
+        uint256 const priv2 = root2.get_private_key();
 
         unexpected (to_string (priv1) != "7CFBA64F771E93E817E15039215430B53F7401C34931D111EAB3510B22DBB0D8",
             "Incorrect private key for generator");
