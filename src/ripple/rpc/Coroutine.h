@@ -17,48 +17,37 @@
 */
 //==============================================================================
 
-#ifndef RIPPLED_RIPPLE_RPC_IMPL_TESTOUTPUT_H
-#define RIPPLED_RIPPLE_RPC_IMPL_TESTOUTPUT_H
+#ifndef RIPPLED_RIPPLE_RPC_COROUTINE_H
+#define RIPPLED_RIPPLE_RPC_COROUTINE_H
 
-#include <ripple/rpc/Output.h>
-#include <ripple/rpc/impl/JsonWriter.h>
-#include <beast/unit_test/suite.h>
+#include <ripple/rpc/Yield.h>
 
 namespace ripple {
 namespace RPC {
-namespace New {
 
-class TestOutputSuite : public beast::unit_test::suite
+/** Runs a function that takes a yield as a coroutine. */
+class Coroutine
 {
-protected:
-    std::string output_;
+public:
+    using YieldFunction = std::function <void (Yield const&)>;
 
-    std::unique_ptr <Writer> writer_;
+    explicit Coroutine (YieldFunction const&);
+    ~Coroutine();
 
-    void setup (std::string const& testName)
-    {
-        testcase (testName);
-        output_.clear ();
-        writer_ = std::make_unique <Writer> (stringOutput (output_));
-    }
+    /** Is the coroutine finished? */
+    operator bool() const;
 
-    // Test the result and report values.
-    void expectResult (std::string const& expected)
-    {
-        writer_.reset ();
-        expectEquals (output_, expected);
-    }
+    /** Run one more step of the coroutine. */
+    void operator()() const;
 
-    // Test the result and report values.
-    void expectEquals (std::string const& result, std::string const& expected)
-    {
-        expect (result == expected,
-                "\n" "result:   '" + result + "'" +
-                "\n" "expected: '" + expected + "'");
-    }
+private:
+    struct Impl;
+
+    std::shared_ptr<Impl> impl_;
+    // We'd prefer to use std::unique_ptr here, but unfortunately, in C++11
+    // move semantics don't work well with `std::bind` or lambdas.
 };
 
-} // New
 } // RPC
 } // ripple
 
