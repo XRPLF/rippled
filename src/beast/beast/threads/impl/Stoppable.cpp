@@ -73,6 +73,7 @@ bool Stoppable::areChildrenStopped () const
 
 void Stoppable::stopped ()
 {
+    std::lock_guard<std::mutex> lock(m_childrenMutex);
     m_stopped = true;
     m_stoppedEvent.notify_one();
 }
@@ -142,19 +143,24 @@ void Stoppable::stopRecursive (Journal& journal)
     m_childrenStopped = true;
     onChildrenStopped ();
 
-    // Now block on this Stoppable.
+    bool hasStopped = false;
+    // Now block on this Stoppable for 1 second.
     //
     {
         std::unique_lock<std::mutex> lock(m_childrenMutex);
-        auto const hasStopped = m_stoppedEvent.wait_for(lock, 
+        hasStopped = m_stoppedEvent.wait_for(lock, 
             std::chrono::seconds(1), [&] {
             return isStopped();
         });
-        if (!hasStopped)
-        {
-            journal.warning << "Waiting for '" << m_name << "' to stop";
-            m_stoppedEvent.wait(lock,[&]{ return isStopped(); });
-        }
+    }
+
+    // Release lock temporarily in case stopped() is blocking.
+    //
+    if (!hasStopped)
+    {
+        std::unique_lock<std::mutex> lock(m_childrenMutex);
+        journal.warning << "Waiting for '" << m_name << "' to stop";
+        m_stoppedEvent.wait(lock,[&]{ return isStopped(); });
     }
     journal.info << "'" << m_name << "' has stopped";
 }
