@@ -2110,16 +2110,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\tx\TransactionMeta.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\tx\TxQueue.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\tx\TxQueue.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\tx\TxQueueEntry.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\tx\TxQueueEntry.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\websocket\WSConnection.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>

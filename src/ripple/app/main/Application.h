@@ -55,7 +55,6 @@ class PathRequests;
 class ProofOfWorkFactory;
 class SerializedLedgerEntry;
 class TransactionMaster;
-class TxQueue;
 class Validations;
 
 class DatabaseCon;
@@ -117,7 +116,6 @@ public:
     virtual NetworkOPs&             getOPs () = 0;
     virtual OrderBookDB&            getOrderBookDB () = 0;
     virtual TransactionMaster&      getMasterTransaction () = 0;
-    virtual TxQueue&                getTxQueue () = 0;
     virtual LocalCredentials&       getLocalCredentials () = 0;
     virtual Resource::Manager&      getResourceManager () = 0;
     virtual PathRequests&           getPathRequests () = 0;

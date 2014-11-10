@@ -3039,18 +3039,6 @@
     <ClInclude Include="..\..\src\ripple\app\tx\TransactionMeta.h">
       <Filter>ripple\app\tx</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\tx\TxQueue.cpp">
-      <Filter>ripple\app\tx</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\tx\TxQueue.h">
-      <Filter>ripple\app\tx</Filter>
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\tx\TxQueueEntry.cpp">
-      <Filter>ripple\app\tx</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\tx\TxQueueEntry.h">
-      <Filter>ripple\app\tx</Filter>
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\websocket\WSConnection.cpp">
       <Filter>ripple\app\websocket</Filter>
     </ClCompile>

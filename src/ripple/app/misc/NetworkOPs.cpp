@@ -19,8 +19,6 @@
 
 #include <ripple/app/book/Quality.h>
 #include <ripple/app/misc/FeeVote.h>
-#include <ripple/app/tx/TxQueue.h>
-#include <ripple/app/tx/TxQueueEntry.h>
 #include <ripple/basics/Time.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/UptimeTimer.h>
@@ -195,7 +193,6 @@ public:
         Transaction::ref tpTrans,
         bool bAdmin, bool bLocal, bool bFailHard, bool bSubmit);
 
-    void runTransactionQueue ();
     Transaction::pointer processTransactionCb (
         Transaction::pointer,
         bool bAdmin, bool bLocal, bool bFailHard, stCallback);
@@ -928,103 +925,6 @@ Transaction::pointer NetworkOPsImp::submitTransactionSync (
     }
 
     return tpTransNew;
-}
-
-void NetworkOPsImp::runTransactionQueue ()
-{
-    TxQueueEntry::pointer txn;
-
-    for (int i = 0; i < 10; ++i)
-    {
-        getApp().getTxQueue ().getJob (txn);
-
-        if (!txn)
-            return;
-
-        {
-            auto ev = m_job_queue.getLoadEventAP (
-                jtTXN_PROC, "runTxnQ");
-
-            {
-                auto lock = getApp().masterLock();
-
-                auto dbtx = getApp().getMasterTransaction ().fetch (
-                    txn->getID (), true);
-                assert (dbtx);
-
-                bool didApply;
-                TER r = m_ledgerMaster.doTransaction (
-                    dbtx->getSTransaction (), tapOPEN_LEDGER | tapNO_CHECK_SIGN,
-                    didApply);
-                dbtx->setResult (r);
-
-                if (isTemMalformed (r)) // malformed, cache bad
-                    getApp().getHashRouter ().setFlag (txn->getID (), SF_BAD);
-
-
-                if (isTerRetry (r))
-                {
-                    // transaction should be held
-                    m_journal.debug << "QTransaction should be held: " << r;
-                    dbtx->setStatus (HELD);
-                    getApp().getMasterTransaction ().canonicalize (&dbtx);
-                    m_ledgerMaster.addHeldTransaction (dbtx);
-                }
-                else if (r == tefPAST_SEQ)
-                {
-                    // duplicate or conflict
-                    m_journal.info << "QTransaction is obsolete";
-                    dbtx->setStatus (OBSOLETE);
-                }
-                else if (r == tesSUCCESS)
-                {
-                    m_journal.info
-                        << "QTransaction is now included in open ledger";
-                    dbtx->setStatus (INCLUDED);
-                    getApp().getMasterTransaction ().canonicalize (&dbtx);
-                }
-                else
-                {
-                    m_journal.debug << "QStatus other than success " << r;
-                    dbtx->setStatus (INVALID);
-                }
-
-                if (didApply /*|| (mMode != omFULL)*/ )
-                {
-                    std::set <Peer::ShortId> peers;
-
-                    if (getApp().getHashRouter ().swapSet (
-                            txn->getID (), peers, SF_RELAYED))
-                    {
-                        m_journal.debug << "relaying";
-                        protocol::TMTransaction tx;
-                        Serializer s;
-                        dbtx->getSTransaction ()->add (s);
-                        tx.set_rawtransaction (
-                            &s.getData ().front (), s.getLength ());
-                        tx.set_status (protocol::tsCURRENT);
-                        tx.set_receivetimestamp (getNetworkTimeNC ());
-                        // FIXME: This should be when we received it
-
-                        getApp ().overlay ().foreach (send_if_not (
-                            std::make_shared<Message> (
-                                tx, protocol::mtTRANSACTION),
-                            peer_in_set(peers)));
-                    }
-                    else
-                        m_journal.debug << "recently relayed";
-                }
-
-                txn->doCallbacks (r);
-            }
-        }
-    }
-
-    if (getApp().getTxQueue ().stopProcessing (txn))
-    {
-        getApp().getIOService ().post (std::bind (
-            &NetworkOPsImp::runTransactionQueue, this));
-    }
 }
 
 Transaction::pointer NetworkOPsImp::processTransactionCb (
