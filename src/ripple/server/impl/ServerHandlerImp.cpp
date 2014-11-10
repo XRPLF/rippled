@@ -204,15 +204,6 @@ ServerHandlerImp::processSession (Job& job,
 }
 
 void
-ServerHandlerImp::createResponse (
-    int statusCode,
-    std::string const& description,
-    Output output)
-{
-    return HTTPReply (statusCode, description, output);
-}
-
-void
 ServerHandlerImp::processRequest (HTTP::Port const& port,
     std::string const& request, beast::IP::Endpoint const& remoteIPAddress,
     Output output)
@@ -225,7 +216,8 @@ ServerHandlerImp::processRequest (HTTP::Port const& port,
             jsonRPC.isNull () ||
             ! jsonRPC.isObject ())
         {
-            return createResponse (400, "Unable to parse request", output);
+            HTTPReply (400, "Unable to parse request", output);
+            return;
         }
     }
 
@@ -248,25 +240,36 @@ ServerHandlerImp::processRequest (HTTP::Port const& port,
         usage = m_resourceManager.newInboundEndpoint(remoteIPAddress);
 
     if (usage.disconnect ())
-        return createResponse (503, "Server is overloaded", output);
+    {
+        HTTPReply (503, "Server is overloaded", output);
+        return;
+    }
 
     // Parse id now so errors from here on will have the id
     //
     // VFALCO NOTE Except that "id" isn't included in the following errors.
     //
     Json::Value const id = jsonRPC ["id"];
-
     Json::Value const method = jsonRPC ["method"];
 
     if (method.isNull ())
-        return createResponse (400, "Null method", output);
+    {
+        HTTPReply (400, "Null method", output);
+        return;
+    }
 
     if (! method.isString ())
-        return createResponse (400, "method is not string", output);
+    {
+        HTTPReply (400, "method is not string", output);
+        return;
+    }
 
     std::string strMethod = method.asString ();
     if (strMethod.empty())
-        return createResponse (400, "method is empty", output);
+    {
+        HTTPReply (400, "method is empty", output);
+        return;
+    }
 
     // Parse params
     Json::Value params = jsonRPC ["params"];
@@ -275,7 +278,10 @@ ServerHandlerImp::processRequest (HTTP::Port const& port,
         params = Json::Value (Json::arrayValue);
 
     else if (!params.isArray ())
-        return HTTPReply (400, "params unparseable", output);
+    {
+        HTTPReply (400, "params unparseable", output);
+        return;
+    }
 
     // VFALCO TODO Shouldn't we handle this earlier?
     //
@@ -284,7 +290,8 @@ ServerHandlerImp::processRequest (HTTP::Port const& port,
         // VFALCO TODO Needs implementing
         // FIXME Needs implementing
         // XXX This needs rate limiting to prevent brute forcing password.
-        return HTTPReply (403, "Forbidden", output);
+        HTTPReply (403, "Forbidden", output);
+        return;
     }
 
 
@@ -293,18 +300,17 @@ ServerHandlerImp::processRequest (HTTP::Port const& port,
 
     m_journal.debug << "Query: " << strMethod << params;
 
-    Json::Value const result (rpcHandler.doRpcCommand (
-        strMethod, params, role, loadType));
+    auto result = rpcHandler.doRpcCommand (strMethod, params, role, loadType);
     m_journal.debug << "Reply: " << result;
 
     usage.charge (loadType);
 
     Json::Value reply (Json::objectValue);
-    reply[jss::result] = result;
+    reply[jss::result] = std::move (result);
     auto response = to_string (reply);
     response += '\n';
 
-    return createResponse (200, response, output);
+    HTTPReply (200, response, output);
 }
 
 //------------------------------------------------------------------------------

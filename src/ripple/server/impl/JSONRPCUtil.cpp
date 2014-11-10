@@ -28,10 +28,6 @@ namespace ripple {
 
 unsigned int const gMaxHTTPHeaderSize = 0x02000000;
 
-/** If non-zero, the content is output separately in chunks of at most
-    this size. */
-static unsigned int const outputChunkSize = 0;
-
 std::string getHTTPHeaderTimestamp ()
 {
     // CHECKME This is probably called often enough that optimizing it makes
@@ -98,35 +94,22 @@ void HTTPReply (int nStatus, std::string const& content, RPC::Output output)
 
     output (getHTTPHeaderTimestamp ());
 
-    output ("Connection: Keep-Alive\r\n");
+    output ("Connection: Keep-Alive\r\n"
+            "Content-Length: ");
 
     // VFALCO TODO Determine if/when this header should be added
     //if (getConfig ().RPC_ALLOW_REMOTE)
     //    output ("Access-Control-Allow-Origin: *\r\n");
 
-    output ("Content-Length: ");
     output (std::to_string(content.size () + 2));
-    output ("\r\n");
-
-    output ("Content-Type: application/json; charset=UTF-8\r\n");
+    output ("\r\n"
+            "Content-Type: application/json; charset=UTF-8\r\n");
 
     output ("Server: " SYSTEM_NAME "-json-rpc/");
     output (BuildInfo::getFullVersionString ());
-    output ("\r\n");
-
-    output ("\r\n");
-    if (outputChunkSize && outputChunkSize < content.size())
-    {
-        for (auto i = 0; i < content.size(); i += outputChunkSize)
-        {
-            unsigned int remains = content.size() - i;
-            output ({content.data() + i, std::min (remains, outputChunkSize)});
-        }
-    }
-    else
-    {
-        output (content);
-    }
+    output ("\r\n"
+            "\r\n");
+    output (content);
     output ("\r\n");
 }
 

@@ -111,9 +111,6 @@ private:
         std::shared_ptr<HTTP::Session> const& session);
 
     void
-    createResponse (int statusCode, std::string const& description, Output);
-
-    void
     processRequest (HTTP::Port const& port, std::string const& request,
         beast::IP::Endpoint const& remoteIPAddress, Output);
 
