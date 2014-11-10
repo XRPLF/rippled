@@ -254,5 +254,15 @@ void executeRPC (
     }
 }
 
+Role roleRequired (std::string const& method)
+{
+    auto handler = RPC::getHandler(method);
+
+    if (!handler)
+        return Role::FORBID;
+
+    return handler->role_;
+}
+
 } // RPC
 } // ripple

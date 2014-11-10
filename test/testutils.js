@@ -69,6 +69,33 @@ function prepare_tests(tests, fn) {
   return result;
 };
 
+exports.definer_matching = function(matchers, def) {
+  return function (name, func)
+  {
+    var definer = def;
+    var skip_if_not_match = matchers.skip_if_not_match || [];
+    var skip_if_match = matchers.skip_if_match || [];
+
+    for (var i = 0; i < skip_if_not_match.length; i++) {
+      var regex = skip_if_not_match[i];
+      if (!~name.search(regex)) {
+        definer = definer.skip;
+        break;
+      }
+    }
+
+    for (var i = 0; i < skip_if_match.length; i++) {
+      var regex = skip_if_match[i];
+      if (~name.search(regex)) {
+        definer = definer.skip;
+        break;
+      }
+    }
+
+    definer(name, func);
+  };
+};
+
 /**
  * Helper called by test cases to generate a setUp routine.
  *
@@ -101,7 +128,7 @@ function build_setup(opts, host) {
   if (opts.verbose) {
     opts.verbose_ws     = true;
     opts.verbose_server = true;
-  };
+  }
 
   function setup(done) {
     var self = this;
@@ -113,7 +140,7 @@ function build_setup(opts, host) {
 
     self.amount_for = function(options) {
       var reserve = self.remote.reserve(options.ledger_entries || 0);
-      var fees = self.compute_fees_amount_for_txs(options.default_transactions || 0)
+      var fees = self.compute_fees_amount_for_txs(options.default_transactions || 0);
       return reserve.add(fees).add(options.extra || 0);
     };
 
@@ -136,7 +163,7 @@ function build_setup(opts, host) {
         // Setting undefined is a noop here
         if (data.opts.ledger_file != null) {
           data.server.set_ledger_file(data.opts.ledger_file);
-        };
+        }
 
         data.server.once('started', function() {
           callback();
@@ -159,8 +186,6 @@ function build_setup(opts, host) {
 
       function connect_websocket(callback) {
         self.remote = data.remote = Remote.from_config(host, !!opts.verbose_ws);
-
-        // TODO:
         self.remote.once('connected', function() {
         // self.remote.once('ledger_closed', function() {
           callback();
@@ -625,7 +650,8 @@ exports.verify_owner_count     = verify_owner_count;
 exports.verify_owner_counts    = verify_owner_counts;
 exports.ledger_wait            = ledger_wait;
 
-process.on('uncaughtException', function() {
+// Close up all unclosed servers on exit.
+process.on('exit', function() {
   Object.keys(server).forEach(function(host) {
     server[host].stop();
   });

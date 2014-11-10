@@ -44,8 +44,8 @@ enum class Role
     validate the credentials.
 */
 Role
-adminRole (HTTP::Port const& port, Json::Value const& jsonRPC,
-    beast::IP::Endpoint const& remoteIp,
+requestRole (Role const& required, HTTP::Port const& port,
+    Json::Value const& jsonRPC, beast::IP::Endpoint const& remoteIp,
         std::vector<beast::IP::Endpoint> const& admin_allow);
 
 } // ripple
