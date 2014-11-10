@@ -37,8 +37,7 @@ Status doCommand (RPC::Context&, Json::Value&, YieldStrategy const& s = {});
 /** Execute an RPC command and store the results in an std::string. */
 void executeRPC (RPC::Context&, std::string&, YieldStrategy const& s = {});
 
-/** Temporary flag to enable RPCs. */
-auto const streamingRPC = false;
+Role roleRequired (std::string const& method );
 
 } // RPC
 } // ripple

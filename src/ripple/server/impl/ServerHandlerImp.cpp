@@ -33,7 +33,7 @@
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Coroutine.h>
 #include <beast/crypto/base64.h>
-#include <ripple/rpc/RPCHandler.h> 
+#include <ripple/rpc/RPCHandler.h>
 #include <beast/cxx14/algorithm.h> // <algorithm>
 #include <beast/http/rfc2616.h>
 #include <boost/algorithm/string.hpp>
@@ -283,16 +283,41 @@ ServerHandlerImp::processRequest (
         }
     }
 
+    // Parse id now so errors from here on will have the id
+    //
+    // VFALCO NOTE Except that "id" isn't included in the following errors.
+    //
+    Json::Value const& id = jsonRPC ["id"];
+
+    Json::Value const& method = jsonRPC ["method"];
+
+    if (method.isNull ()) {
+        HTTPReply (400, "Null method", output);
+        return;
+    }
+
+    if (!method.isString ()) {
+        HTTPReply (400, "method is not string", output);
+        return;
+    }
+
+    /* ---------------------------------------------------------------------- */
     auto const& admin_allow = getConfig().RPC_ADMIN_ALLOW;
     auto role = Role::FORBID;
-    if (jsonRPC.isObject() && jsonRPC.isMember(jss::params) &&
-            jsonRPC[jss::params].isArray() && jsonRPC[jss::params].size() > 0 &&
-                jsonRPC[jss::params][Json::UInt(0)].isObject())
-        role = adminRole(port, jsonRPC[jss::params][Json::UInt(0)],
+    auto required = RPC::roleRequired(id.asString());
+
+    if (jsonRPC.isObject() && jsonRPC.isMember("params") &&
+            jsonRPC["params"].isArray() && jsonRPC["params"].size() > 0 &&
+                jsonRPC["params"][Json::UInt(0)].isObject())
+    {
+        role = requestRole(required, port, jsonRPC["params"][Json::UInt(0)],
             remoteIPAddress, admin_allow);
+    }
     else
-        role = adminRole(port, Json::objectValue,
+    {
+        role = requestRole(required, port, Json::objectValue,
             remoteIPAddress, admin_allow);
+    }
 
     Resource::Consumer usage;
 
@@ -304,25 +329,6 @@ ServerHandlerImp::processRequest (
     if (usage.disconnect ())
     {
         HTTPReply (503, "Server is overloaded", output);
-        return;
-    }
-
-    // Parse id now so errors from here on will have the id
-    //
-    // VFALCO NOTE Except that "id" isn't included in the following errors.
-    //
-    Json::Value const id = jsonRPC ["id"];
-    Json::Value const method = jsonRPC ["method"];
-
-    if (method.isNull ())
-    {
-        HTTPReply (400, "Null method", output);
-        return;
-    }
-
-    if (! method.isString ())
-    {
-        HTTPReply (400, "method is not string", output);
         return;
     }
 
@@ -419,7 +425,7 @@ ServerHandlerImp::processRequest (
         context.metrics.fetches));
     rpc_size_.notify (static_cast <beast::insight::Event::value_type> (
         response.size ()));
-    
+
     response += '\n';
     usage.charge (loadType);
 
@@ -475,76 +481,6 @@ void
 ServerHandlerImp::onWrite (beast::PropertyStream::Map& map)
 {
     m_server->onWrite (map);
-}
-
-//------------------------------------------------------------------------------
-
-// Copied from Config::getAdminRole and modified to use the Port
-Role
-adminRole (HTTP::Port const& port,
-    Json::Value const& params, beast::IP::Endpoint const& remoteIp)
-{
-    Role role (Role::FORBID);
-
-    bool const bPasswordSupplied =
-        params.isMember ("admin_user") ||
-        params.isMember ("admin_password");
-
-    bool const bPasswordRequired =
-        ! port.admin_user.empty() || ! port.admin_password.empty();
-
-    bool bPasswordWrong;
-
-    if (bPasswordSupplied)
-    {
-        if (bPasswordRequired)
-        {
-            // Required, and supplied, check match
-            bPasswordWrong =
-                (port.admin_user !=
-                    (params.isMember ("admin_user") ? params["admin_user"].asString () : ""))
-                ||
-                (port.admin_password !=
-                    (params.isMember ("admin_user") ? params["admin_password"].asString () : ""));
-        }
-        else
-        {
-            // Not required, but supplied
-            bPasswordWrong = false;
-        }
-    }
-    else
-    {
-        // Required but not supplied,
-        bPasswordWrong = bPasswordRequired;
-    }
-
-    // Meets IP restriction for admin.
-    beast::IP::Endpoint const remote_addr (remoteIp.at_port (0));
-    bool bAdminIP = false;
-
-    for (auto const& allow_addr : getConfig().RPC_ADMIN_ALLOW)
-    {
-        if (allow_addr == remote_addr)
-        {
-            bAdminIP = true;
-            break;
-        }
-    }
-
-    if (bPasswordWrong                          // Wrong
-            || (bPasswordSupplied && !bAdminIP))    // Supplied and doesn't meet IP filter.
-    {
-        role   = Role::FORBID;
-    }
-    // If supplied, password is correct.
-    else
-    {
-        // Allow admin, if from admin IP and no password is required or it was supplied and correct.
-        role = bAdminIP && (!bPasswordRequired || bPasswordSupplied) ? Role::ADMIN : Role::GUEST;
-    }
-
-    return role;
 }
 
 //------------------------------------------------------------------------------
@@ -841,7 +777,7 @@ setup_ServerHandler (BasicConfig const& config, std::ostream& log)
 
 std::unique_ptr <ServerHandler>
 make_ServerHandler (beast::Stoppable& parent,
-    boost::asio::io_service& io_service, JobQueue& jobQueue, 
+    boost::asio::io_service& io_service, JobQueue& jobQueue,
         NetworkOPs& networkOPs, Resource::Manager& resourceManager,
             CollectorManager& cm)
 {

@@ -24,6 +24,7 @@
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/server/Role.h>
+#include <ripple/rpc/RPCHandler.h>
 
 namespace ripple {
 
@@ -163,8 +164,11 @@ Json::Value WSConnection::invokeCommand (Json::Value& jvRequest)
     Resource::Charge loadType = Resource::feeReferenceRPC;
     Json::Value jvResult (Json::objectValue);
 
-    Role const role = port_.allow_admin ? adminRole (port_, jvRequest,
-        m_remoteAddress, getConfig().RPC_ADMIN_ALLOW) : Role::GUEST;
+    Role const required = RPC::roleRequired (
+                                jvRequest[jss::command].asString());
+
+    Role const role = requestRole (required, port_, jvRequest, m_remoteAddress,
+                                 getConfig().RPC_ADMIN_ALLOW);
 
     if (Role::FORBID == role)
     {
