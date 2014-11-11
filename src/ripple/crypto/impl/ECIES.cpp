@@ -124,11 +124,6 @@ static ECIES_HMAC_TYPE makeHMAC (const ECIES_HMAC_KEY_TYPE& secret, Blob const& 
     return ret;
 }
 
-Blob CKey::encryptECIES (CKey& otherKey, Blob const& plaintext)
-{
-    return ::ripple::encryptECIES (pkey, otherKey.pkey, plaintext);
-}
-
 Blob encryptECIES (EC_KEY* secretKey, EC_KEY* publicKey, Blob const& plaintext)
 {
 
@@ -202,11 +197,6 @@ Blob encryptECIES (EC_KEY* secretKey, EC_KEY* publicKey, Blob const& plaintext)
     out.resize (len);
     EVP_CIPHER_CTX_cleanup (&ctx);
     return out;
-}
-
-Blob CKey::decryptECIES (CKey& otherKey, Blob const& ciphertext)
-{
-    return ::ripple::decryptECIES (pkey, otherKey.pkey, ciphertext);
 }
 
 Blob decryptECIES (EC_KEY* secretKey, EC_KEY* publicKey, Blob const& ciphertext)
