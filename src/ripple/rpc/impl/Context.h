@@ -21,6 +21,7 @@
 #define RIPPLE_RPC_CONTEXT
 
 #include <ripple/core/Config.h>
+#include <ripple/rpc/Yield.h>
 #include <ripple/server/ServerHandler.h>
 
 namespace ripple {
@@ -34,6 +35,7 @@ struct Context
     NetworkOPs& netOps;
     InfoSub::pointer infoSub;
     Role role;
+    RPC::Yield yield;
 };
 
 } // RPC

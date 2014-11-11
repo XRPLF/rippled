@@ -23,6 +23,7 @@
 #include <ripple/server/Role.h>
 #include <ripple/core/Config.h>
 #include <ripple/net/InfoSub.h>
+#include <ripple/rpc/Yield.h>
 
 namespace ripple {
 
@@ -34,16 +35,20 @@ public:
     explicit RPCHandler (
         NetworkOPs& netOps, InfoSub::pointer infoSub = nullptr);
 
+    using Yield = RPC::Yield;
+
     Json::Value doCommand (
         Json::Value const& request,
         Role role,
-        Resource::Charge& loadType);
+        Resource::Charge& loadType,
+        Yield yield = {});
 
     Json::Value doRpcCommand (
         std::string const& command,
         Json::Value const& params,
         Role role,
-        Resource::Charge& loadType);
+        Resource::Charge& loadType,
+        Yield yield = {});
 
 private:
     NetworkOPs& netOps_;
