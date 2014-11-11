@@ -369,25 +369,6 @@ ServerHandlerImp::isWebsocketUpgrade (beast::http::message const& request)
     return false;
 }
 
-// VFALCO DEPRECATED
-static std::string
-DecodeBase64 (std::string s)
-{
-    // FIXME: This performs badly
-    BIO* b64, *bmem;
-    // Its 2014 and we're using calloc?
-    char* buffer = static_cast<char*> (calloc (s.size (), sizeof (char)));
-    b64 = BIO_new (BIO_f_base64 ());
-    BIO_set_flags (b64, BIO_FLAGS_BASE64_NO_NL);
-    bmem = BIO_new_mem_buf (const_cast<char*> (s.data ()), s.size ());
-    bmem = BIO_push (b64, bmem);
-    BIO_read (bmem, buffer, s.size ());
-    BIO_free_all (bmem);
-    std::string result (buffer);
-    free (buffer);
-    return result;
-}
-
 // VFALCO TODO Rewrite to use beast::http::headers
 bool
 ServerHandlerImp::authorized (HTTP::Port const& port,
@@ -401,7 +382,7 @@ ServerHandlerImp::authorized (HTTP::Port const& port,
         return false;
     std::string strUserPass64 = it->second.substr (6);
     boost::trim (strUserPass64);
-    std::string strUserPass = DecodeBase64 (strUserPass64);
+    std::string strUserPass = beast::base64_decode (strUserPass64);
     std::string::size_type nColon = strUserPass.find (":");
     if (nColon == std::string::npos)
         return false;
