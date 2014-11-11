@@ -3270,13 +3270,13 @@
     <ClCompile Include="..\..\src\ripple\crypto\impl\CKeyDeterministic.cpp">
       <Filter>ripple\crypto\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\crypto\impl\CKeyECIES.cpp">
-      <Filter>ripple\crypto\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\crypto\impl\DHUtil.cpp">
       <Filter>ripple\crypto\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\crypto\impl\ECDSACanonical.cpp">
+      <Filter>ripple\crypto\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\crypto\impl\ECIES.cpp">
       <Filter>ripple\crypto\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\crypto\impl\ec_key.cpp">
