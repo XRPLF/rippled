@@ -29,6 +29,7 @@
 #include <ripple/resource/Manager.h>
 #include <ripple/resource/Fees.h>
 #include <beast/cxx14/algorithm.h> // <algorithm>
+#include <beast/http/rfc2616.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/optional.hpp>
 #include <boost/regex.hpp>
@@ -551,7 +552,8 @@ parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
         auto const result = section.find("protocol");
         if (result.second)
         {
-            for (auto const& s : parse_csv(result.first, log))
+            for (auto const& s : beast::rfc2616::split_commas(
+                    result.first.begin(), result.first.end()))
                 port.protocol.insert(s);
         }
     }
