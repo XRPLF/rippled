@@ -440,6 +440,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Stoppable,beast_core,beast);
+BEAST_DEFINE_TESTSUITE_MANUAL(Stoppable,beast_core,beast);
 
 }
