@@ -230,8 +230,9 @@ Json::Value doRipplePathFind (RPC::Context& context)
             }
 
             STPath fullLiquidityPath;
+            bool sourceIsXrp = isXRP (uSrcCurrencyID);
             auto valid = fp.findPathsForIssue (
-                {uSrcCurrencyID, uSrcIssuerID},
+                {uSrcCurrencyID, sourceIsXrp ? xrpAccount() : uSrcIssuerID},
                 spsComputed,
                 fullLiquidityPath);
             if (!valid)
@@ -299,6 +300,9 @@ Json::Value doRipplePathFind (RPC::Context& context)
                     // Reuse the expanded as it would need to be calcuated
                     // anyway to produce the canonical.  (At least unless we
                     // make a direct canonical.)
+
+                    if (!sourceIsXrp)
+                        rc.actualAmountIn.setIssuer (issuer);
 
                     jvEntry["source_amount"] = rc.actualAmountIn.getJson (0);
                     jvEntry["paths_canonical"]  = Json::arrayValue;

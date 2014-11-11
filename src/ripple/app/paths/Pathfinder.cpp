@@ -172,7 +172,8 @@ Pathfinder::Pathfinder (
         mDstAmount (saDstAmount),
         mSrcCurrency (uSrcCurrency),
         mSrcIssuer (uSrcIssuer),
-        mSrcAmount ({uSrcCurrency, uSrcIssuer}, 1u, 0, true),
+        mSrcAmount ({uSrcCurrency,
+            isXRP (uSrcCurrency) ? xrpAccount() : uSrcIssuer }, 1u, 0, true),
         mLedger (cache->getLedger ()),
         mRLCache (cache)
 {
@@ -188,7 +189,8 @@ Pathfinder::Pathfinder (
         mDstAccount (uDstAccount),
         mDstAmount (saDstAmount),
         mSrcCurrency (uSrcCurrency),
-        mSrcAmount ({uSrcCurrency, uSrcAccount}, 1u, 0, true),
+        mSrcAmount ({uSrcCurrency,
+            isXRP (uSrcCurrency) ? xrpAccount() : uSrcAccount }, 1u, 0, true),
         mLedger (cache->getLedger ()),
         mRLCache (cache)
 {
