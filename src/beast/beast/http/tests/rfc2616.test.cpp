@@ -27,67 +27,60 @@
 #include <vector>
 
 namespace beast {
-namespace http {
 namespace rfc2616 {
 
 class rfc2616_test : public beast::unit_test::suite
 {
 public:
     void
-    check (std::string const& value,
+    check (std::string const& s,
         std::vector <std::string> const& expected)
     {
-        std::vector <std::string> parsed;
-        for_each_element (value.begin(), value.end(),
-            [&](std::string const& element)
-            {
-                parsed.push_back (element);
-            });
+        auto const parsed = split_commas(s.begin(), s.end());
         expect (parsed == expected);
+    }
+
+    void test_split_commas()
+    {
+        testcase("split_commas");
+        check ("",              {});
+        check (" ",             {});
+        check ("  ",            {});
+        check ("\t",            {});
+        check (" \t ",          {});
+        check (",",             {});
+        check (",,",            {});
+        check (" ,",            {});
+        check (" , ,",          {});
+        check ("x",             {"x"});
+        check (" x",            {"x"});
+        check (" \t x",         {"x"});
+        check ("x ",            {"x"});
+        check ("x \t",          {"x"});
+        check (" \t x \t ",     {"x"});
+        check ("\"\"",          {});
+        check (" \"\"",         {});
+        check ("\"\" ",         {});
+        check ("\"x\"",         {"x"});
+        check ("\" \"",         {" "});
+        check ("\" x\"",        {" x"});
+        check ("\"x \"",        {"x "});
+        check ("\" x \"",       {" x "});
+        check ("\"\tx \"",      {"\tx "});
+        check ("x,y",           { "x", "y" });
+        check ("x ,\ty ",       { "x", "y" });
+        check ("x, y, z",       {"x","y","z"});
+        check ("x, \"y\", z",   {"x","y","z"});
     }
 
     void
     run()
     {
-        check ("", {});
-        check (" ", {});
-        check ("  ", {});
-        check ("\t", {});
-        check (" \t ", {});
-
-        check (",", {});
-        check (",,", {});
-        check (" ,", {});
-        check (" , ,", {});
-
-        check ("x", {"x"});
-        check (" x", {"x"});
-        check (" \t x", {"x"});
-        check ("x ", {"x"});
-        check ("x \t", {"x"});
-        check (" \t x \t ", {"x"});
-
-        check ("\"\"", {});
-        check (" \"\"", {});
-        check ("\"\" ", {});
-
-        check ("\"x\"", {"x"});
-        check ("\" \"", {" "});
-        check ("\" x\"", {" x"});
-        check ("\"x \"", {"x "});
-        check ("\" x \"", {" x "});
-        check ("\"\tx \"", {"\tx "});
-
-        check ("x,y", { "x", "y" });
-        check ("x ,\ty ", { "x", "y" });
-
-        check ("x, y, z", {"x","y","z"});
-        check ("x, \"y\", z", {"x","y","z"});
+        test_split_commas();
     }
 };
 
 BEAST_DEFINE_TESTSUITE(rfc2616,http,beast);
 
-}
 }
 }

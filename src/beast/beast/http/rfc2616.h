@@ -23,11 +23,10 @@
 #include <algorithm>
 #include <string>
 #include <utility>
-
+#include <vector>
 #include <boost/regex.hpp>
 
 namespace beast {
-namespace http {
 
 /** Routines for performing RFC2616 compliance.
     RFC2616:
@@ -156,21 +155,23 @@ trim (std::string const& s)
     return trim <std::string> (s);
 }
 
-/** Call a functor for each comma delimited element.
-    Quotes and escape sequences will be parsed and converted appropriately.
-    Excess white space, commas, double quotes, and empty elements are not
-    passed to func.
+/** Parse a character sequence of values separated by commas.
+    Double quotes and escape sequences will be converted.  Excess white
+    space, commas, double quotes, and empty elements are not copied.
     Format:
        #(token|quoted-string)
     Reference:
         http://www.w3.org/Protocols/rfc2616/rfc2616-sec2.html#sec2
 */
-template <class FwdIter, class Function>
-void
-for_each_element (FwdIter first, FwdIter last, Function func)
+template <class FwdIt,
+    class Result = std::vector<std::basic_string<typename FwdIt::value_type>>>
+Result
+split_commas(FwdIt first, FwdIt last)
 {
-    FwdIter iter (first);
-    std::string e;
+    Result result;
+    using string = typename Result::value_type;
+    FwdIt iter = first;
+    string e;
     while (iter != last)
     {
         if (*iter == '"')
@@ -200,7 +201,7 @@ for_each_element (FwdIter first, FwdIter last, Function func)
             }
             if (! e.empty())
             {
-                func (e);
+                result.emplace_back(std::move(e));
                 e.clear();
             }
         }
@@ -209,7 +210,7 @@ for_each_element (FwdIter first, FwdIter last, Function func)
             e = trim_right (e);
             if (! e.empty())
             {
-                func (e);
+                result.emplace_back(std::move(e));
                 e.clear();
             }
             ++iter;
@@ -228,51 +229,13 @@ for_each_element (FwdIter first, FwdIter last, Function func)
     {
         e = trim_right (e);
         if (! e.empty())
-            func (e);
-    }
-}
-
-// Parse a comma-delimited list of values.
-template <class CharT, class Traits, class Allocator>
-std::vector<std::basic_string<CharT, Traits, Allocator>>
-parse_csv (std::basic_string <CharT, Traits, Allocator> const& in,
-    std::ostream& log)
-{
-    auto first = in.cbegin();
-    auto const last = in.cend();
-    std::vector<std::basic_string<CharT, Traits, Allocator>> result;
-    if (first != last)
-    {
-        static boost::regex const re(
-            "^"                         // start of line
-            "(?:\\s*)"                  // whitespace (optional)
-            "([a-zA-Z][_a-zA-Z0-9]*)"   // identifier
-            "(?:\\s*)"                  // whitespace (optional)
-            "(?:,?)"                    // comma (optional)
-            "(?:\\s*)"                  // whitespace (optional)
-            , boost::regex_constants::optimize
-        );
-        for(;;)
-        {
-            boost::smatch m;
-            if (! boost::regex_search(first, last, m, re,
-                boost::regex_constants::match_continuous))
-            {
-                log << "Expected <identifier>\n";
-                throw std::exception();
-            }
-            result.push_back(m[1]);
-            first = m[0].second;
-            if (first == last)
-                break;
-        }
+            result.emplace_back(std::move(e));
     }
     return result;
 }
 
 } // rfc2616
 
-} // http
 } // beast
 
 #endif
