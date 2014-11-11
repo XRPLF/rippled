@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <ripple/app/paths/FindPaths.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/rpc/impl/TransactionSign.h>
 #include <beast/unit_test.h>
@@ -126,6 +125,7 @@ static Json::Value signPayment(
         && params.isMember ("build_path"))
     {
         // Need a ripple path.
+        STPathSet   spsPaths;
         Currency uSrcCurrencyID;
         Account uSrcIssuerID;
 
@@ -152,21 +152,22 @@ static Json::Value signPayment(
             if (!lpf.isOk ())
                 return rpcError (rpcTOO_BUSY);
 
+            bool bValid;
             auto cache = std::make_shared<RippleLineCache> (lSnapshot);
-            STPathSet spsPaths;
-            STPath fullLiquidityPath;
-            auto valid = findPathsForOneIssuer (
+            Pathfinder pf (
                 cache,
-                raSrcAddressID.getAccountID(),
-                dstAccountID.getAccountID(),
-                saSendMax.issue (),
-                amount,
-                getConfig ().PATH_SEARCH_OLD,
-                4,  // iMaxPaths
-                spsPaths,
-                fullLiquidityPath);
+                raSrcAddressID,
+                dstAccountID,
+                saSendMax.getCurrency (),
+                saSendMax.getIssuer (),
+                amount, bValid);
 
-            if (!valid)
+            STPath extraPath;
+            if (!bValid ||
+                !pf.findPaths (getConfig ().PATH_SEARCH_OLD,
+                               4,
+                               spsPaths,
+                               extraPath))
             {
                 WriteLog (lsDEBUG, RPCHandler)
                         << "transactionSign: build_path: No paths found.";

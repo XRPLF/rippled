@@ -309,7 +309,6 @@ Json::Value doSubscribe (RPC::Context& context)
                         Json::Value jvAsks (Json::objectValue);
 
                         context.netOps_.getBookPage (
-                            context.role_ == Config::ADMIN,
                             lpLedger, book, raTakerID.getAccountID (), false, 0,
                             jvMarker, jvBids);
 
@@ -317,7 +316,6 @@ Json::Value doSubscribe (RPC::Context& context)
                             jvResult[jss::bids] = jvBids[jss::offers];
 
                         context.netOps_.getBookPage (
-                            context.role_ == Config::ADMIN,
                             lpLedger, book, raTakerID.getAccountID (),
                             false, 0, jvMarker, jvAsks);
 
@@ -327,7 +325,6 @@ Json::Value doSubscribe (RPC::Context& context)
                     else
                     {
                         context.netOps_.getBookPage (
-                            context.role_ == Config::ADMIN,
                             lpLedger, book, raTakerID.getAccountID (), false, 0,
                             jvMarker, jvResult);
                     }

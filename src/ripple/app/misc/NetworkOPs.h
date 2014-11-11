@@ -187,7 +187,6 @@ public:
     //
 
     virtual void getBookPage (
-        bool bAdmin,
         Ledger::pointer lpLedger,
         Book const& book,
         Account const& uTakerID,

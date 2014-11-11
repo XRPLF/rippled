@@ -29,8 +29,5 @@
 #include <ripple/app/ledger/OrderBookIterator.cpp>
 #include <ripple/app/consensus/DisputedTx.cpp>
 #include <ripple/app/misc/HashRouter.cpp>
-#include <ripple/app/paths/AccountCurrencies.cpp>
-#include <ripple/app/paths/Credit.cpp>
-#include <ripple/app/paths/FindPaths.cpp>
 #include <ripple/app/paths/Pathfinder.cpp>
 #include <ripple/app/misc/AmendmentTableImpl.cpp>

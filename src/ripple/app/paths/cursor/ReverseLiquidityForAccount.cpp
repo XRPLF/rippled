@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <ripple/app/book/Quality.h>
-#include <ripple/app/paths/Credit.h>
 #include <ripple/app/paths/cursor/RippleLiquidity.h>
 
 namespace ripple {
@@ -47,8 +46,8 @@ TER PathCursor::reverseLiquidityForAccount () const
     auto const isFinalNode = (nodeIndex_ == lastNodeIndex);
 
     // 0 quality means none has yet been determined.
-    std::uint64_t uRateMax = 0
-;
+    std::uint64_t uRateMax = 0;
+
     // Current is allowed to redeem to next.
     const bool previousNodeIsAccount = !nodeIndex_ ||
             previousNode().isAccount();
@@ -81,7 +80,7 @@ TER PathCursor::reverseLiquidityForAccount () const
     // For previousNodeIsAccount:
     // Previous account is already owed.
     const STAmount saPrvOwed = (previousNodeIsAccount && nodeIndex_ != 0)
-        ? creditBalance (ledger(),
+        ? credit_balance (ledger(),
             node().account_,
             previousAccountID,
             node().issue_.currency)
@@ -89,7 +88,7 @@ TER PathCursor::reverseLiquidityForAccount () const
 
     // The limit amount that the previous account may owe.
     const STAmount saPrvLimit = (previousNodeIsAccount && nodeIndex_ != 0)
-        ? creditLimit (ledger(),
+        ? credit_limit (ledger(),
             node().account_,
             previousAccountID,
             node().issue_.currency)
@@ -97,7 +96,7 @@ TER PathCursor::reverseLiquidityForAccount () const
 
     // Next account is owed.
     const STAmount saNxtOwed = (nextNodeIsAccount && nodeIndex_ != lastNodeIndex)
-        ? creditBalance (ledger(),
+        ? credit_balance (ledger(),
             node().account_,
             nextAccountID,
             node().issue_.currency)

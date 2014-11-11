@@ -162,21 +162,15 @@ Json::Value doBookOffers (RPC::Context& context)
         return RPC::make_error (rpcBAD_MARKET);
     }
 
-    unsigned int iLimit;
-    if (context.params_.isMember (jss::limit))
+    if (context.params_.isMember ("limit") &&
+        !context.params_ ["limit"].isIntegral())
     {
-        auto const& jvLimit (context.params_[jss::limit]);
-
-        if (! jvLimit.isIntegral ())
-            return RPC::expected_field_error ("limit", "unsigned integer");
-
-        iLimit = jvLimit.isUInt () ? jvLimit.asUInt () :
-            std::max (0, jvLimit.asInt ());
+        return RPC::expected_field_error ("limit", "integer");
     }
-    else
-    {
-        iLimit = 0;
-    }
+
+    unsigned int const iLimit (context.params_.isMember ("limit")
+        ? context.params_ ["limit"].asUInt ()
+        : 0);
 
     bool const bProof (context.params_.isMember ("proof"));
 
@@ -185,7 +179,6 @@ Json::Value doBookOffers (RPC::Context& context)
         : Json::Value (Json::nullValue));
 
     context.netOps_.getBookPage (
-        context.role_ == Config::ADMIN,
         lpLedger,
         {{pay_currency, pay_issuer}, {get_currency, get_issuer}},
         raTakerID.getAccountID (), bProof, iLimit, jvMarker, jvResult);

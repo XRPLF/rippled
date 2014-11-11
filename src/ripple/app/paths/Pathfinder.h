@@ -31,160 +31,114 @@ namespace ripple {
 class Pathfinder
 {
 public:
-    /** Construct a pathfinder with an issuer.*/
     Pathfinder (
         RippleLineCache::ref cache,
-        Account const& srcAccount,
-        Account const& dstAccount,
-        Currency const& uSrcCurrency,
-        Account const& uSrcIssuer,
-        STAmount const& dstAmount);
+        RippleAddress const& srcAccountID,
+        RippleAddress const& dstAccountID,
+        Currency const& srcCurrencyID,
+        Account const& srcIssuerID,
+        STAmount const& dstAmount,
+        bool& bValid);
 
-    /** Construct a pathfinder without an issuer.*/
-    Pathfinder (
-        RippleLineCache::ref cache,
-        Account const& srcAccount,
-        Account const& dstAccount,
-        Currency const& uSrcCurrency,
-        STAmount const& dstAmount);
+    static void initPathTable();
 
-    ~Pathfinder();
+    bool findPaths (
+        int iLevel,
+        unsigned int const iMaxPaths,
+        STPathSet& spsDst,
+        STPath& spExtraPath);
 
-    static void initPathTable ();
-
-    bool findPaths (int searchLevel);
-
-    /** Make sure that all the input paths are included in mCompletePaths. */
-    void addPathsFromPreviousPathfinding (STPathSet&);
-
-    /** Compute the rankings of the paths. */
-    void computePathRanks (int maxPaths);
-
-    /* Get the best paths, up to maxPaths in number, from mCompletePaths.
-
-       On return, if fullLiquidityPath is not empty, then it contains the best
-       additional single path which can consume all the liquidity.
-    */
-    STPathSet getBestPaths (
-        int maxPaths,
-        STPath& fullLiquidityPath,
-        Account const& srcIssuer);
-
-    enum NodeType
-    {
-        nt_SOURCE,     // The source account: with an issuer account, if needed.
-        nt_ACCOUNTS,   // Accounts that connect from this source/currency.
-        nt_BOOKS,      // Order books that connect to this currency.
-        nt_XRP_BOOK,   // The order book from this currency to XRP.
-        nt_DEST_BOOK,  // The order book to the destination currency/issuer.
-        nt_DESTINATION // The destination account only.
-    };
-
-    // The PathType is a list of the NodeTypes for a path.
-    using PathType = std::vector <NodeType>;
-
-    // PaymentType represents the types of the source and destination currencies
-    // in a path request.
+private:
     enum PaymentType
     {
         pt_XRP_to_XRP,
         pt_XRP_to_nonXRP,
         pt_nonXRP_to_XRP,
-        pt_nonXRP_to_same,   // Destination currency is the same as source.
-        pt_nonXRP_to_nonXRP  // Destination currency is NOT the same as source.
+        pt_nonXRP_to_same,
+        pt_nonXRP_to_nonXRP
     };
 
-    struct PathRank
+    enum NodeType
     {
-        std::uint64_t quality;
-        std::uint64_t length;
-        STAmount liquidity;
-        int index;
+        nt_SOURCE,     // The source account with an issuer account, if required
+        nt_ACCOUNTS,   // Accounts that connect from this source/currency
+        nt_BOOKS,      // Order books that connect to this currency
+        nt_XRP_BOOK,   // The order book from this currency to XRP
+        nt_DEST_BOOK,  // The order book to the destination currency/issuer
+        nt_DESTINATION // The destination account only
     };
 
-private:
-    /*
-      Call graph of Pathfinder methods.
+    typedef std::vector<NodeType>         PathType_t;
+    typedef std::pair<int, PathType_t>    CostedPath_t;
+    typedef std::vector<CostedPath_t>     CostedPathList_t;
 
-      findPaths:
-          addPathsForType:
-              addLinks:
-                  addLink:
-                      getPathsOut
-                      issueMatchesOrigin
-                      isNoRippleOut:
-                          isNoRipple
+    typedef std::pair<int, const char*>   PathCost;
+    typedef std::vector<PathCost>         PathCostList;
 
-      addPathsFromPreviousPathfinding
-
-      computePathRanks:
-          rippleCalculate
-          getPathLiquidity:
-              rippleCalculate
-
-      getBestPaths
-     */
+    typedef std::map<PaymentType, CostedPathList_t> PathTable;
 
 
-    // Add all paths of one type to mCompletePaths.
-    STPathSet& addPathsForType (PathType const& type);
+    /** Fill a CostedPathList_t from its description. */
+    static void fillPaths(PaymentType type,
+                          PathCostList const& costs);
 
-    bool issueMatchesOrigin (Issue const&);
+    /** @return true if any building paths are now complete. */
+    bool checkComplete (STPathSet& retPathSet);
+
+    static std::string pathTypeToString(PathType_t const&);
+
+    bool matchesOrigin (Issue const&);
 
     int getPathsOut (
         Currency const& currency,
-        Account const& account,
+        Account const& accountID,
         bool isDestCurrency,
         Account const& dest);
 
-    void addLink (
+    void addLink(
         STPath const& currentPath,
         STPathSet& incompletePaths,
         int addFlags);
 
-    // Call addLink() for each path in currentPaths.
-    void addLinks (
+    void addLink(
         STPathSet const& currentPaths,
         STPathSet& incompletePaths,
         int addFlags);
 
-    // Compute the liquidity for a path.  Return tesSUCCESS if it has has enough
-    // liquidity to be worth keeping, otherwise an error.
-    TER getPathLiquidity (
-        STPath const& path,            // IN:  The path to check.
-        STAmount const& minDstAmount,  // IN:  The minimum output this path must
-                                       //      deliver to be worth keeping.
-        STAmount& amountOut,           // OUT: The actual liquidity on the path.
-        uint64_t& qualityOut) const;   // OUT: The returned initial quality
+    STPathSet& getPaths(PathType_t const& type,
+                        bool addComplete = true);
 
-    // Does this path end on an account-to-account link whose last account has
-    // set the "no ripple" flag on the link?
+    STPathSet filterPaths(int iMaxPaths,
+                          STPath& extraPath);
+
+    TER checkPath (STPath const& path, STAmount const& minDestAmount,
+        STAmount& amount, uint64_t& quality) const;
+
     bool isNoRippleOut (STPath const& currentPath);
-
-    // Is the "no ripple" flag set from one account to another?
     bool isNoRipple (
-        Account const& fromAccount,
-        Account const& toAccount,
-        Currency const& currency);
+        Account const& setByID,
+        Account const& setOnID,
+        Currency const& currencyID);
 
-    Account mSrcAccount;
-    Account mDstAccount;
-    STAmount mDstAmount;
-    Currency mSrcCurrency;
-    boost::optional<Account> mSrcIssuer;
-    STAmount mSrcAmount;
-    /** The amount remaining from mSrcAccount after the default liquidity has
-        been removed. */
-    STAmount mRemainingAmount;
+    // Our main table of paths
 
-    Ledger::pointer mLedger;
-    LoadEvent::pointer m_loadEvent;
-    RippleLineCache::pointer mRLCache;
+    static PathTable mPathTable;
+    static PathType_t makePath(char const*);
+
+    Account             mSrcAccountID;
+    Account             mDstAccountID;
+    STAmount            mDstAmount;
+    Currency            mSrcCurrencyID;
+    Account             mSrcIssuerID;
+    STAmount            mSrcAmount;
+
+    Ledger::pointer     mLedger;
+    LoadEvent::pointer  m_loadEvent;
+    RippleLineCache::pointer    mRLCache;
 
     STPathElement mSource;
     STPathSet mCompletePaths;
-    std::vector<PathRank> mPathRanks;
-    std::map<PathType, STPathSet> mPaths;
+    std::map<PathType_t, STPathSet> mPaths;
 
     hash_map<Issue, int> mPathsOutCountMap;
 
@@ -192,17 +146,50 @@ private:
     static std::uint32_t const afADD_ACCOUNTS = 0x001;
 
     // Add order books
-    static std::uint32_t const afADD_BOOKS = 0x002;
+    static std::uint32_t const afADD_BOOKS    = 0x002;
 
     // Add order book to XRP only
-    static std::uint32_t const afOB_XRP = 0x010;
+    static std::uint32_t const afOB_XRP       = 0x010;
 
     // Must link to destination currency
-    static std::uint32_t const afOB_LAST = 0x040;
+    static std::uint32_t const afOB_LAST      = 0x040;
 
     // Destination account only
-    static std::uint32_t const afAC_LAST = 0x080;
+    static std::uint32_t const afAC_LAST      = 0x080;
 };
+
+CurrencySet usAccountDestCurrencies
+        (RippleAddress const& raAccountID,
+         RippleLineCache::ref cache,
+         bool includeXRP);
+
+CurrencySet usAccountSourceCurrencies
+        (RippleAddress const& raAccountID,
+         RippleLineCache::ref lrLedger,
+         bool includeXRP);
+
+/** Calculate the maximum amount of IOUs that an account can hold
+    @param ledger the ledger to check against.
+    @param account the account of interest.
+    @param issuer the issuer of the IOU.
+    @param currency the IOU to check.
+    @return The maximum amount that can be held.
+*/
+STAmount
+credit_limit (
+    LedgerEntrySet& ledger, Account const& account,
+    Account const& issuer, Currency const& currency);
+
+/** Returns the amount of IOUs issued by issuer that are held by an account
+    @param ledger the ledger to check against.
+    @param account the account of interest.
+    @param issuer the issuer of the IOU.
+    @param currency the IOU to check.
+*/
+STAmount
+credit_balance (
+    LedgerEntrySet& ledger, Account const& account,
+    Account const& issuer, Currency const& currency);
 
 } // ripple
 
