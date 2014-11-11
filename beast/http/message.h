@@ -30,6 +30,7 @@
 #include <cctype>
 #include <ostream>
 #include <string>
+#include <sstream>
 #include <utility>
 
 namespace beast {
