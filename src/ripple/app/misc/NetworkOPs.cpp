@@ -194,13 +194,11 @@ public:
         Job&, SerializedTransaction::pointer,
         stCallback callback = stCallback ()) override;
 
-    Transaction::pointer submitTransactionSync (
-        Transaction::ref tpTrans,
-        bool bAdmin, bool bLocal, FailHard failType, SubmitTxn submit) override;
 
     Transaction::pointer processTransactionCb (
         Transaction::pointer,
         bool bAdmin, bool bLocal, FailHard failType, stCallback) override;
+
     Transaction::pointer processTransaction (
         Transaction::pointer transaction,
         bool bAdmin, bool bLocal, FailHard failType) override
@@ -909,44 +907,6 @@ void NetworkOPsImp::submitTransaction (
                    false,
                    FailHard::no,
                    callback));
-}
-
-// Sterilize transaction through serialization.
-// This is fully synchronous and deprecated
-Transaction::pointer NetworkOPsImp::submitTransactionSync (
-    Transaction::ref tpTrans,
-    bool bAdmin, bool bLocal, FailHard failType, SubmitTxn submit)
-{
-    Serializer s;
-    tpTrans->getSTransaction ()->add (s);
-
-    auto tpTransNew = Transaction::sharedTransaction (
-        s.getData (), Validate::YES);
-
-    if (!tpTransNew)
-    {
-        // Could not construct transaction.
-        return tpTransNew;
-    }
-
-    if (tpTransNew->getSTransaction ()->isEquivalent (
-            *tpTrans->getSTransaction ()))
-    {
-        if (submit == SubmitTxn::yes)
-            processTransaction (tpTransNew, bAdmin, bLocal, failType);
-    }
-    else
-    {
-        m_journal.fatal << "Transaction reconstruction failure";
-        m_journal.fatal << tpTransNew->getSTransaction ()->getJson (0);
-        m_journal.fatal << tpTrans->getSTransaction ()->getJson (0);
-
-        // assert (false); "1e-95" as amount can trigger this
-
-        tpTransNew.reset ();
-    }
-
-    return tpTransNew;
 }
 
 Transaction::pointer NetworkOPsImp::processTransactionCb (

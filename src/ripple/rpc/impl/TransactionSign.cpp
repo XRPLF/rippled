@@ -222,115 +222,56 @@ static Json::Value signPayment(
     return Json::Value();
 }
 
-static Json::Value transactionSubmitImpl (
-    SerializedTransaction::pointer stpTrans,
-    NetworkOPs::SubmitTxn submit,
-    NetworkOPs::FailHard failType,
-    NetworkOPs& netOps,
-    Role role)
-{
-    Transaction::pointer tpTrans;
-    try
-    {
-        tpTrans = std::make_shared<Transaction> (stpTrans, Validate::NO);
-    }
-    catch (std::exception&)
-    {
-        return RPC::make_error (rpcINTERNAL,
-            "Exception occurred during transaction");
-    }
-
-    try
-    {
-        // FIXME: For performance, should use asynch interface
-        tpTrans = netOps.submitTransactionSync (tpTrans,
-            role == Role::ADMIN, true, failType, submit);
-
-        if (!tpTrans)
-        {
-            return RPC::make_error (rpcINTERNAL,
-                "Unable to sterilize transaction.");
-        }
-    }
-    catch (std::exception&)
-    {
-        return RPC::make_error (rpcINTERNAL,
-            "Exception occurred during transaction submission.");
-    }
-
-    try
-    {
-        Json::Value jvResult;
-        jvResult["tx_json"] = tpTrans->getJson (0);
-        jvResult["tx_blob"] = strHex (
-            tpTrans->getSTransaction ()->getSerializer ().peekData ());
-
-        if (temUNCERTAIN != tpTrans->getResult ())
-        {
-            std::string sToken;
-            std::string sHuman;
-
-            transResultInfo (tpTrans->getResult (), sToken, sHuman);
-
-            jvResult["engine_result"]           = sToken;
-            jvResult["engine_result_code"]      = tpTrans->getResult ();
-            jvResult["engine_result_message"]   = sHuman;
-        }
-
-        return jvResult;
-    }
-    catch (std::exception&)
-    {
-        return RPC::make_error (rpcINTERNAL,
-            "Exception occurred during JSON handling.");
-    }
-}
-
 //------------------------------------------------------------------------------
 
-// VFALCO TODO This function should take a reference to the params, modify it
-//             as needed, and then there should be a separate function to
-//             submit the tranaction
-//
-static Json::Value transactionProcessImpl (
+// #defines are frowned on by the popular kids.  But this one:
+//  o is localized,
+//  o allows for the Return Value Optimization, and
+//  o allows single line error returns in transactionPreProcessImpl
+// The do/while is only to require a semicolon after RET_ERR
+#define RET_ERR(ARG) do { ret.first = ARG; return ret; } while (false)
+
+static
+std::pair<Json::Value, SerializedTransaction::pointer>
+transactionPreProcessImpl (
     Json::Value params,
-    NetworkOPs::SubmitTxn submit,
-    NetworkOPs::FailHard failType,
     NetworkOPs& netOps,
     Role role,
     SigningAccountParams const& signingArgs = SigningAccountParams())
 {
+    std::pair<Json::Value, SerializedTransaction::pointer> ret;
+
     if (! params.isMember ("secret"))
-        return RPC::missing_field_error ("secret");
+        RET_ERR (RPC::missing_field_error ("secret"));
 
     {
         RippleAddress naSeed;
 
         if (! naSeed.setSeedGeneric (params["secret"].asString ()))
-            return RPC::make_error (rpcBAD_SEED,
-                RPC::invalid_field_message ("secret"));
+            RET_ERR (RPC::make_error (rpcBAD_SEED,
+                RPC::invalid_field_message ("secret")));
     }
 
     if (! params.isMember ("tx_json"))
-        return RPC::missing_field_error ("tx_json");
+        RET_ERR (RPC::missing_field_error ("tx_json"));
 
     Json::Value& tx_json (params ["tx_json"]);
 
     if (! tx_json.isObject ())
-        return RPC::object_field_error ("tx_json");
+        RET_ERR (RPC::object_field_error ("tx_json"));
 
     if (! tx_json.isMember ("TransactionType"))
-        return RPC::missing_field_error ("tx_json.TransactionType");
+        RET_ERR (RPC::missing_field_error ("tx_json.TransactionType"));
 
     if (! tx_json.isMember ("Account"))
-        return RPC::make_error (rpcSRC_ACT_MISSING,
-            RPC::missing_field_message ("tx_json.Account"));
+        RET_ERR (RPC::make_error (rpcSRC_ACT_MISSING,
+            RPC::missing_field_message ("tx_json.Account")));
 
     RippleAddress raSrcAddressID;
 
     if (! raSrcAddressID.setAccountID (tx_json["Account"].asString ()))
-        return RPC::make_error (rpcSRC_ACT_MALFORMED,
-            RPC::invalid_field_message ("tx_json.Account"));
+        RET_ERR (RPC::make_error (rpcSRC_ACT_MALFORMED,
+            RPC::invalid_field_message ("tx_json.Account")));
 
     bool const verify = !(params.isMember ("offline")
                           && params["offline"].asBool ());
@@ -339,16 +280,16 @@ static Json::Value transactionProcessImpl (
     // cannot be determined locally.  If we're offline then the caller must
     // provide the sequence number.
     if (!verify && !tx_json.isMember ("Sequence"))
-        return RPC::missing_field_error ("tx_json.Sequence");
+        RET_ERR (RPC::missing_field_error ("tx_json.Sequence"));
 
     // Check for current ledger
     if (verify && !getConfig ().RUN_STANDALONE &&
         (getApp().getLedgerMaster().getValidatedLedgerAge() > 120))
-        return rpcError (rpcNO_CURRENT);
+        RET_ERR (rpcError (rpcNO_CURRENT));
 
     // Check for load
     if (getApp().getFeeTrack().isLoadedCluster() && (role != Role::ADMIN))
-        return rpcError(rpcTOO_BUSY);
+        RET_ERR (rpcError(rpcTOO_BUSY));
 
     Ledger::pointer lSnapshot = netOps.getCurrentLedger ();
     AccountState::pointer asSrc;
@@ -363,34 +304,33 @@ static Json::Value transactionProcessImpl (
                 << "in current ledger: "
                 << raSrcAddressID.humanAccountID ();
 
-            return rpcError (rpcSRC_ACT_NOT_FOUND);
+            RET_ERR (rpcError (rpcSRC_ACT_NOT_FOUND));
         }
     }
-
-    Json::Value jvResult;
 
     if (!signingArgs.isMultiSigning ())
     {
         // Only auto-fill the "Fee" for non-multisign stuff.  Multisign
         // must come in with the fee already in place or the signature
         // will be invalid later.
+        Json::Value jvResult;
         autofill_fee (params, lSnapshot, jvResult, role == Role::ADMIN);
         if (RPC::contains_error (jvResult))
-            return jvResult;
+            RET_ERR (jvResult);
     }
 
     auto const& transactionType = tx_json["TransactionType"].asString ();
 
     if ("Payment" == transactionType)
     {
-        auto e = signPayment(
+        Json::Value e = signPayment(
             params,
             tx_json,
             raSrcAddressID,
             lSnapshot,
             role);
         if (contains_error(e))
-            return e;
+            RET_ERR (e);
     }
 
     if (!tx_json.isMember ("Sequence"))
@@ -406,7 +346,7 @@ static Json::Value transactionProcessImpl (
 
         if (!sleAccountRoot)
             // XXX Ignore transactions for accounts not created.
-            return rpcError (rpcSRC_ACT_NOT_FOUND);
+            RET_ERR (rpcError (rpcSRC_ACT_NOT_FOUND));
     }
 
     RippleAddress secret = RippleAddress::createSeedGeneric (
@@ -436,22 +376,22 @@ static Json::Value transactionProcessImpl (
         if (raSignAddressId.getAccountID () == account)
         {
             if (sle.isFlag(lsfDisableMaster))
-                return rpcError (rpcMASTER_DISABLED);
+                RET_ERR (rpcError (rpcMASTER_DISABLED));
         }
         else if (!sle.isFieldPresent(sfRegularKey) ||
                  account != sle.getFieldAccount160 (sfRegularKey))
         {
-            return rpcError (rpcBAD_SECRET);
+            RET_ERR (rpcError (rpcBAD_SECRET));
         }
     }
 
     STParsedJSONObject parsed ("tx_json", tx_json);
     if (!parsed.object.get())
     {
-        jvResult ["error"] = parsed.error ["error"];
-        jvResult ["error_code"] = parsed.error ["error_code"];
-        jvResult ["error_message"] = parsed.error ["error_message"];
-        return jvResult;
+        ret.first ["error"] = parsed.error ["error"];
+        ret.first ["error_code"] = parsed.error ["error_code"];
+        ret.first ["error_message"] = parsed.error ["error_message"];
+        return ret;
     }
 
     SerializedTransaction::pointer stpTrans;
@@ -472,20 +412,13 @@ static Json::Value transactionProcessImpl (
     }
     catch (std::exception&)
     {
-        return RPC::make_error (rpcINTERNAL,
-            "Exception occurred during transaction");
+        RET_ERR (RPC::make_error (rpcINTERNAL,
+            "Exception occurred during transaction"));
     }
 
     std::string reason;
     if (!passesLocalChecks (*stpTrans, reason))
-        return RPC::make_error (rpcINVALID_PARAMS, reason);
-
-    if (params.isMember ("debug_signing"))
-    {
-        jvResult["tx_unsigned"] = strHex (
-            stpTrans->getSerializer ().peekData ());
-        jvResult["tx_signing_hash"] = to_string (stpTrans->getSigningHash ());
-    }
+        RET_ERR (RPC::make_error (rpcINVALID_PARAMS, reason));
 
     RippleAddress naAccountPrivate = RippleAddress::createAccountPrivate (
         masterGenerator, secret, 0);
@@ -499,7 +432,95 @@ static Json::Value transactionProcessImpl (
     else
         stpTrans->sign (naAccountPrivate);
 
-    return transactionSubmitImpl (stpTrans, submit, failType, netOps, role);
+    ret.second = stpTrans;
+    return ret;
+}
+#undef RET_ERR
+
+static
+std::pair <Json::Value, Transaction::pointer>
+transactionConstructImpl (SerializedTransaction::pointer stpTrans)
+{
+    std::pair <Json::Value, Transaction::pointer> ret;
+
+    // Turn the passed in SerializedTrnasatcion into a Transaction
+    Transaction::pointer tpTrans;
+    try
+    {
+        tpTrans = std::make_shared<Transaction> (stpTrans, Validate::NO);
+    }
+    catch (std::exception&)
+    {
+        ret.first = RPC::make_error (rpcINTERNAL,
+            "Exception occurred constructing transaction");
+        return ret;
+    }
+
+    try
+    {
+        // Make sure the Transaction we just built is legit by serializing it
+        // and then de-serializing it.  If the result isn't equivalent
+        // to the initial transaction then there's something wrong with the
+        // passed-in SerializedTransaction.
+        {
+            Serializer s;
+            tpTrans->getSTransaction ()->add (s);
+
+            Transaction::pointer tpTransNew =
+                Transaction::sharedTransaction (s.getData (), Validate::YES);
+
+            if (tpTransNew && (
+                !tpTransNew->getSTransaction ()->isEquivalent (
+                    *tpTrans->getSTransaction ())))
+            {
+                tpTransNew.reset ();
+            }
+            tpTrans = std::move (tpTransNew);
+        }
+    }
+    catch (std::exception&)
+    {
+        // Assume that any exceptions are related to transaction sterilization.
+        tpTrans.reset ();
+    }
+
+    if (!tpTrans)
+    {
+        ret.first = RPC::make_error (rpcINTERNAL,
+            "Unable to sterilize transaction.");
+        return ret;
+    }
+    ret.second = std::move (tpTrans);
+    return ret;
+}
+
+Json::Value transactionFormatResultImpl (Transaction::pointer tpTrans)
+{
+    Json::Value jvResult;
+    try
+    {
+        jvResult["tx_json"] = tpTrans->getJson (0);
+        jvResult["tx_blob"] = strHex (
+            tpTrans->getSTransaction ()->getSerializer ().peekData ());
+
+        if (temUNCERTAIN != tpTrans->getResult ())
+        {
+            std::string sToken;
+            std::string sHuman;
+
+            transResultInfo (tpTrans->getResult (), sToken, sHuman);
+
+            jvResult["engine_result"]           = sToken;
+            jvResult["engine_result_code"]      = tpTrans->getResult ();
+            jvResult["engine_result_message"]   = sHuman;
+        }
+    }
+    catch (std::exception&)
+    {
+        jvResult = RPC::make_error (rpcINTERNAL,
+            "Exception occurred during JSON handling.");
+    }
+    return jvResult;
 }
 
 } // namespace RPCDetail
@@ -514,15 +535,23 @@ Json::Value transactionSign (
 {
     WriteLog (lsDEBUG, RPCHandler) << "transactionSign: " << jvRequest;
 
-    RippleAddress raNotMultisign;           // Default constructs to invalid
+    using namespace RPCDetail;
 
-    // Get the signature
-    return RPCDetail::transactionProcessImpl (
-        jvRequest,
-        NetworkOPs::SubmitTxn::no,
-        failType,
-        netOps,
-        role);
+    // Add and amend fields based on the transaction type.
+    std::pair<Json::Value, SerializedTransaction::pointer> preprocResult =
+        RPCDetail::transactionPreProcessImpl (jvRequest, netOps, role);
+
+    if (!preprocResult.second)
+        return preprocResult.first;
+
+    // Make sure the SerializedTransaction makes a legitimate Transaction.
+    std::pair <Json::Value, Transaction::pointer> txn =
+        transactionConstructImpl (preprocResult.second);
+
+    if (!txn.second)
+        return txn.first;
+
+    return transactionFormatResultImpl (txn.second);
 }
 
 Json::Value transactionSubmit (
@@ -533,15 +562,36 @@ Json::Value transactionSubmit (
 {
     WriteLog (lsDEBUG, RPCHandler) << "transactionSubmit: " << jvRequest;
 
-    RippleAddress raNotMultisign;           // Default constructs to invalid
+    using namespace RPCDetail;
 
-    // Submit the transaction
-    return RPCDetail::transactionProcessImpl (
-        jvRequest,
-        NetworkOPs::SubmitTxn::yes,
-        failType,
-        netOps,
-        role);
+    // Add and amend fields based on the transaction type.
+    std::pair<Json::Value, SerializedTransaction::pointer> preprocResult =
+        transactionPreProcessImpl (jvRequest, netOps, role);
+
+    if (!preprocResult.second)
+        return preprocResult.first;
+
+    // Make sure the SerializedTransaction makes a legitimate Transaction.
+    std::pair <Json::Value, Transaction::pointer> txn =
+        transactionConstructImpl (preprocResult.second);
+
+    if (!txn.second)
+        return txn.first;
+
+    // Finally, submit the transaction.
+    try
+    {
+        // FIXME: For performance, should use asynch interface
+        netOps.processTransaction (
+            txn.second, role == Role::ADMIN, true, failType);
+    }
+    catch (std::exception&)
+    {
+        return RPC::make_error (rpcINTERNAL,
+            "Exception occurred during transaction submission.");
+    }
+
+    return transactionFormatResultImpl (txn.second);
 }
 
 Json::Value transactionGetSigningAccount (
@@ -583,30 +633,39 @@ Json::Value transactionGetSigningAccount (
             RPC::invalid_field_message (accountField));
     }
 
-    // Get Multisignature
     using namespace RPCDetail;
-    return transactionProcessImpl (
-        jvRequest,
-        NetworkOPs::SubmitTxn::no,
-        failType,
-        netOps,
-        role,
-        SigningAccountParams (multiSignAddressID, multiSignPublicKey));
+
+    // Add and amend fields based on the transaction type.
+    std::pair<Json::Value, SerializedTransaction::pointer> preprocResult =
+        transactionPreProcessImpl (
+            jvRequest,
+            netOps,
+            role,
+            SigningAccountParams (multiSignAddressID, multiSignPublicKey));
+
+    if (!preprocResult.second)
+        return preprocResult.first;
+
+    // Make sure the SerializedTransaction makes a legitimate Transaction.
+    std::pair <Json::Value, Transaction::pointer> txn =
+        transactionConstructImpl (preprocResult.second);
+
+    if (!txn.second)
+        return txn.first;
+
+    return transactionFormatResultImpl (txn.second);
 }
 
-// SSCHURR FIXME: transactionSubmit/Sign *must* be refactored.
+// SSCHURR FIXME: transactionPreProcessImpl *must* be refactored.
 //
-// In this implementation the transactionProcessImpl() does a bunch of stuff
-// in an organic sort of way.  The tests and adjustments in there are
+// In this implementation the transactionPreProcessImpl() does a bunch of
+// stuff in an organic sort of way.  The tests and adjustments in there are
 // important, but not well structured.
 //
 // This function, transactionSubmitMultiSigned(), needs to be making many (but
-// not all) of the same adjustments that transactionProcessImpl () does.  But
-// it can't call transactionProcessImpl(), since that function does some of
-// the wrong stuff.
-//
-// Note to reviewers: do not allow this code to be merged to develop until
-// this refactoring issue is addressed.
+// not all) of the same tests that transactionSubmitMultiSigned () does.  But
+// it can't call transactionSubmitMultiSigned (), since that function does
+// some of the wrong stuff.
 Json::Value transactionSubmitMultiSigned (
     Json::Value jvRequest,
     NetworkOPs::FailHard failType,
@@ -821,9 +880,28 @@ Json::Value transactionSubmitMultiSigned (
     // Insert the SigningAccounts into the transaction.
     stpTrans->setFieldArray (sfSigningAccounts, *signingAccounts);
 
+    // Make sure the SrializedTransaction makes a legitimate Transaction.
+    using namespace RPCDetail;
+    std::pair <Json::Value, Transaction::pointer> txn =
+        transactionConstructImpl (stpTrans);
+
+    if (!txn.second)
+        return txn.first;
+
     // Finally, submit the transaction.
-    return RPCDetail::transactionSubmitImpl (
-        stpTrans, NetworkOPs::SubmitTxn::yes, failType, netOps, role);
+    try
+    {
+        // FIXME: For performance, should use asynch interface
+        netOps.processTransaction (
+            txn.second, role == Role::ADMIN, true, failType);
+    }
+    catch (std::exception&)
+    {
+        return RPC::make_error (rpcINTERNAL,
+            "Exception occurred during transaction submission.");
+    }
+
+    return transactionFormatResultImpl (txn.second);
 }
 
 //------------------------------------------------------------------------------

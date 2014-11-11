@@ -93,12 +93,6 @@ public:
         return noMeansDont ? FailHard::yes : FailHard::no;
     }
 
-    enum class SubmitTxn : unsigned char
-    {
-        no,
-        yes
-    };
-
     // VFALCO TODO Fix OrderBookDB to not need this unrelated type.
     //
     typedef hash_map <std::uint64_t, InfoSub::wptr> SubMapType;
@@ -159,8 +153,6 @@ public:
     typedef std::function<void (Transaction::pointer, TER)> stCallback;
     virtual void submitTransaction (Job&, SerializedTransaction::pointer,
         stCallback callback = stCallback ()) = 0;
-    virtual Transaction::pointer submitTransactionSync (Transaction::ref tpTrans,
-        bool bAdmin, bool bLocal, FailHard failType, SubmitTxn submit) = 0;
     virtual Transaction::pointer processTransactionCb (Transaction::pointer,
         bool bAdmin, bool bLocal, FailHard failType, stCallback) = 0;
     virtual Transaction::pointer processTransaction (Transaction::pointer transaction,
