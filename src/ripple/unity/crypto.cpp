@@ -25,11 +25,11 @@
 
 #include <ripple/crypto/impl/Base58Data.cpp>
 #include <ripple/crypto/impl/CBigNum.cpp>
-#include <ripple/crypto/impl/CKeyDeterministic.cpp>
 #include <ripple/crypto/impl/CKeyECIES.cpp>
 #include <ripple/crypto/impl/DHUtil.cpp>
 #include <ripple/crypto/impl/ec_key.cpp>
 #include <ripple/crypto/impl/ECDSACanonical.cpp>
+#include <ripple/crypto/impl/GenerateDeterministicKey.cpp>
 #include <ripple/crypto/impl/RandomNumbers.cpp>
 #include <ripple/crypto/impl/RFC1751.cpp>
 #include <ripple/crypto/tests/CKey.test.cpp>
