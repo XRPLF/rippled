@@ -706,12 +706,6 @@ public:
         //
         //----------------------------------------------------------------------
 
-        {
-            auto setup = setup_ServerHandler(getConfig(), std::cerr);
-            setup.makeContexts();
-            serverHandler_->setup (setup, m_journal);
-        }
-
         // VFALCO NOTE Unfortunately, in stand-alone mode some code still
         //             foolishly calls overlay(). When this is fixed we can
         //             move the instantiation inside a conditional:
@@ -722,6 +716,12 @@ public:
                 getConfig ().getModuleDatabasePath (), *m_resolver,
                     get_io_service());
         add (*m_overlay); // add to PropertyStream
+
+        {
+            auto setup = setup_ServerHandler(getConfig(), std::cerr);
+            setup.makeContexts();
+            serverHandler_->setup (setup, m_journal);
+        }
 
         // Create websocket doors
         for (auto const& port : serverHandler_->setup().ports)
