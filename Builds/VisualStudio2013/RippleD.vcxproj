@@ -2282,13 +2282,12 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\crypto\ec_key.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\crypto\GenerateDeterministicKey.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\crypto\impl\Base58Data.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\crypto\impl\CBigNum.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\crypto\impl\CKeyDeterministic.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\crypto\impl\DHUtil.cpp">
@@ -2304,6 +2303,9 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\crypto\impl\ec_key.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\crypto\impl\GenerateDeterministicKey.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\crypto\impl\RandomNumbers.cpp">

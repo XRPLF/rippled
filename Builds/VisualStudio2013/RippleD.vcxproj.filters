@@ -3264,13 +3264,13 @@
     <ClInclude Include="..\..\src\ripple\crypto\ec_key.h">
       <Filter>ripple\crypto</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\crypto\GenerateDeterministicKey.h">
+      <Filter>ripple\crypto</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\crypto\impl\Base58Data.cpp">
       <Filter>ripple\crypto\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\crypto\impl\CBigNum.cpp">
-      <Filter>ripple\crypto\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\crypto\impl\CKeyDeterministic.cpp">
       <Filter>ripple\crypto\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\crypto\impl\DHUtil.cpp">
@@ -3286,6 +3286,9 @@
       <Filter>ripple\crypto\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\crypto\impl\ec_key.cpp">
+      <Filter>ripple\crypto\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\crypto\impl\GenerateDeterministicKey.cpp">
       <Filter>ripple\crypto\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\crypto\impl\RandomNumbers.cpp">
