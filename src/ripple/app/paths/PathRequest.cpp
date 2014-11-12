@@ -518,7 +518,9 @@ Json::Value PathRequest::doUpdate (RippleLineCache::ref cache, bool fast)
             if (rc.result () == tesSUCCESS)
             {
                 Json::Value jvEntry (Json::objectValue);
-                rc.actualAmountIn.setIssuer (sourceAccount);
+
+                if (!isXRP (currIssuer.currency))
+                    rc.actualAmountIn.setIssuer (sourceAccount);
 
                 jvEntry["source_amount"] = rc.actualAmountIn.getJson (0);
                 jvEntry["paths_computed"] = spsPaths.getJson (0);
