@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/crypto/CKey.h>
+#include <ripple/protocol/RippleAddress.h>
 #include <ripple/types/base_uint.h>
 #include <beast/unit_test/suite.h>
 

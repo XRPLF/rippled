@@ -196,7 +196,7 @@ EC_KEY* CKey::GenerateRootPubKey (BIGNUM* pubGenerator)
 }
 
 // --> public generator
-static BIGNUM* makeHash (RippleAddress const& pubGen, int seq, BIGNUM const* order)
+static BIGNUM* makeHash (Blob const& pubGen, int seq, BIGNUM const* order)
 {
     int subSeq = 0;
     BIGNUM* ret = nullptr;
@@ -204,7 +204,7 @@ static BIGNUM* makeHash (RippleAddress const& pubGen, int seq, BIGNUM const* ord
     do
     {
         Serializer s ((33 * 8 + 32 + 32) / 8);
-        s.addRaw (pubGen.getGenerator ());
+        s.addRaw (pubGen);
         s.add32 (seq);
         s.add32 (subSeq++);
         uint256 root = s.getSHA512Half ();
@@ -219,12 +219,12 @@ static BIGNUM* makeHash (RippleAddress const& pubGen, int seq, BIGNUM const* ord
 }
 
 // --> public generator
-EC_KEY* CKey::GeneratePublicDeterministicKey (RippleAddress const& pubGen, int seq)
+EC_KEY* CKey::GeneratePublicDeterministicKey (Blob const& pubGen, int seq)
 {
     // publicKey(n) = rootPublicKey EC_POINT_+ Hash(pubHash|seq)*point
     BIGNUM* generator = BN_bin2bn (
-        pubGen.getGenerator ().data (),
-        pubGen.getGenerator ().size (),
+        pubGen.data(),
+        pubGen.size(),
         nullptr);
 
     if (generator == nullptr)
@@ -292,14 +292,8 @@ EC_KEY* CKey::GeneratePublicDeterministicKey (RippleAddress const& pubGen, int s
     return success ? pkey : nullptr;
 }
 
-EC_KEY* CKey::GeneratePrivateDeterministicKey (RippleAddress const& pubGen, uint256 const& u, int seq)
-{
-    CBigNum bn (u);
-    return GeneratePrivateDeterministicKey (pubGen, static_cast<BIGNUM*> (&bn), seq);
-}
-
 // --> root private key
-EC_KEY* CKey::GeneratePrivateDeterministicKey (RippleAddress const& pubGen, const BIGNUM* rootPrivKey, int seq)
+EC_KEY* CKey::GeneratePrivateDeterministicKey (Blob const& pubGen, const BIGNUM* rootPrivKey, int seq)
 {
     // privateKey(n) = (rootPrivateKey + Hash(pubHash|seq)) % order
     BN_CTX* ctx = BN_CTX_new ();
