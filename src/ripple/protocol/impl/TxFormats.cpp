@@ -24,64 +24,69 @@ namespace ripple {
 TxFormats::TxFormats ()
 {
     add ("AccountSet", ttACCOUNT_SET)
-        << SOElement (sfEmailHash,           SOE_OPTIONAL)
-        << SOElement (sfWalletLocator,       SOE_OPTIONAL)
-        << SOElement (sfWalletSize,          SOE_OPTIONAL)
-        << SOElement (sfMessageKey,          SOE_OPTIONAL)
-        << SOElement (sfDomain,              SOE_OPTIONAL)
-        << SOElement (sfTransferRate,        SOE_OPTIONAL)
-        << SOElement (sfSetFlag,             SOE_OPTIONAL)
-        << SOElement (sfClearFlag,           SOE_OPTIONAL)
+        << SOElement (sfEmailHash,            SOE_OPTIONAL)
+        << SOElement (sfWalletLocator,        SOE_OPTIONAL)
+        << SOElement (sfWalletSize,           SOE_OPTIONAL)
+        << SOElement (sfMessageKey,           SOE_OPTIONAL)
+        << SOElement (sfDomain,               SOE_OPTIONAL)
+        << SOElement (sfTransferRate,         SOE_OPTIONAL)
+        << SOElement (sfSetFlag,              SOE_OPTIONAL)
+        << SOElement (sfClearFlag,            SOE_OPTIONAL)
         ;
 
     add ("TrustSet", ttTRUST_SET)
-        << SOElement (sfLimitAmount,         SOE_OPTIONAL)
-        << SOElement (sfQualityIn,           SOE_OPTIONAL)
-        << SOElement (sfQualityOut,          SOE_OPTIONAL)
+        << SOElement (sfLimitAmount,          SOE_OPTIONAL)
+        << SOElement (sfQualityIn,            SOE_OPTIONAL)
+        << SOElement (sfQualityOut,           SOE_OPTIONAL)
         ;
 
     add ("OfferCreate", ttOFFER_CREATE)
-        << SOElement (sfTakerPays,           SOE_REQUIRED)
-        << SOElement (sfTakerGets,           SOE_REQUIRED)
-        << SOElement (sfExpiration,          SOE_OPTIONAL)
-        << SOElement (sfOfferSequence,       SOE_OPTIONAL)
+        << SOElement (sfTakerPays,            SOE_REQUIRED)
+        << SOElement (sfTakerGets,            SOE_REQUIRED)
+        << SOElement (sfExpiration,           SOE_OPTIONAL)
+        << SOElement (sfOfferSequence,        SOE_OPTIONAL)
         ;
 
     add ("OfferCancel", ttOFFER_CANCEL)
-        << SOElement (sfOfferSequence,       SOE_REQUIRED)
+        << SOElement (sfOfferSequence,        SOE_REQUIRED)
         ;
 
     add ("SetRegularKey", ttREGULAR_KEY_SET)
-        << SOElement (sfRegularKey,          SOE_OPTIONAL)
+        << SOElement (sfRegularKey,           SOE_OPTIONAL)
         ;
 
     add ("Payment", ttPAYMENT)
-        << SOElement (sfDestination,         SOE_REQUIRED)
-        << SOElement (sfAmount,              SOE_REQUIRED)
-        << SOElement (sfSendMax,             SOE_OPTIONAL)
-        << SOElement (sfPaths,               SOE_DEFAULT)
-        << SOElement (sfInvoiceID,           SOE_OPTIONAL)
-        << SOElement (sfDestinationTag,      SOE_OPTIONAL)
+        << SOElement (sfDestination,          SOE_REQUIRED)
+        << SOElement (sfAmount,               SOE_REQUIRED)
+        << SOElement (sfSendMax,              SOE_OPTIONAL)
+        << SOElement (sfPaths,                SOE_DEFAULT)
+        << SOElement (sfInvoiceID,            SOE_OPTIONAL)
+        << SOElement (sfDestinationTag,       SOE_OPTIONAL)
         ;
 
     add ("EnableAmendment", ttAMENDMENT)
-        << SOElement (sfAmendment,           SOE_REQUIRED)
+        << SOElement (sfAmendment,            SOE_REQUIRED)
         ;
 
     add ("SetFee", ttFEE)
-        << SOElement (sfBaseFee,             SOE_REQUIRED)
-        << SOElement (sfReferenceFeeUnits,   SOE_REQUIRED)
-        << SOElement (sfReserveBase,         SOE_REQUIRED)
-        << SOElement (sfReserveIncrement,    SOE_REQUIRED)
+        << SOElement (sfBaseFee,              SOE_REQUIRED)
+        << SOElement (sfReferenceFeeUnits,    SOE_REQUIRED)
+        << SOElement (sfReserveBase,          SOE_REQUIRED)
+        << SOElement (sfReserveIncrement,     SOE_REQUIRED)
         ;
 
     add ("TicketCreate", ttTICKET_CREATE)
-        << SOElement (sfTarget,              SOE_OPTIONAL)
-        << SOElement (sfExpiration,          SOE_OPTIONAL)
+        << SOElement (sfTarget,               SOE_OPTIONAL)
+        << SOElement (sfExpiration,           SOE_OPTIONAL)
         ;
 
     add ("TicketCancel", ttTICKET_CANCEL)
-        << SOElement (sfTicketID,            SOE_REQUIRED)
+        << SOElement (sfTicketID,             SOE_REQUIRED)
+        ;
+
+    add ("SignerListSet", ttSIGNER_LIST_SET)
+        << SOElement (sfSignerQuorum,         SOE_OPTIONAL)
+        << SOElement (sfSignerEntries,        SOE_OPTIONAL)
         ;
 }
 
@@ -101,6 +106,8 @@ void TxFormats::addCommonFields (Item& item)
         << SOElement(sfMemos,               SOE_OPTIONAL)
         << SOElement(sfSigningPubKey,       SOE_REQUIRED)
         << SOElement(sfTxnSignature,        SOE_OPTIONAL)
+        << SOElement(sfSigningAccount,      SOE_OPTIONAL) // for get_signingaccount
+        << SOElement(sfSigningAccounts,     SOE_OPTIONAL) // for submit_multisigned
         ;
 }
 

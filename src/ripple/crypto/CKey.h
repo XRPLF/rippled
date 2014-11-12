@@ -297,10 +297,10 @@ public:
     bool Verify (uint256 const& hash, const void* sig, size_t sigLen) const
     {
         // -1 = error, 0 = bad sig, 1 = good
-        if (ECDSA_verify (0, hash.begin (), hash.size (), (const unsigned char*) sig, sigLen, pkey) != 1)
-            return false;
+        bool const verifyRet =
+            ECDSA_verify (0, hash.begin (), hash.size (), (const unsigned char*) sig, sigLen, pkey);
 
-        return true;
+        return verifyRet == 1;
     }
 
     bool Verify (uint256 const& hash, Blob const& vchSig) const

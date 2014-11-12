@@ -111,13 +111,20 @@ public:
         sMD_Default        = sMD_ChangeOrig | sMD_ChangeNew | sMD_DeleteFinal | sMD_Create
     };
 
-    const int               fieldCode;      // (type<<16)|index
-    const SerializedTypeID  fieldType;      // STI_*
-    const int               fieldValue;     // Code number for protocol
+    enum class IsSigning : unsigned char
+    {
+        no,
+        yes
+    };
+    static IsSigning const notSigning = IsSigning::no;
+
+    int const               fieldCode;      // (type<<16)|index
+    SerializedTypeID const  fieldType;      // STI_*
+    int const               fieldValue;     // Code number for protocol
     std::string             fieldName;
     int                     fieldMeta;
     int                     fieldNum;
-    bool                    signingField;
+    IsSigning               signingField;
     std::string             rawJsonName;
     Json::StaticString      jsonName;
 
@@ -142,7 +149,7 @@ public:
 private:
     // These constructors can only be called from FieldNames.cpp
     SField (SerializedTypeID tid, int fv, const char* fn,
-            int meta = sMD_Default, bool signing = true);
+            int meta = sMD_Default, IsSigning signing = IsSigning::yes);
     explicit SField (int fc);
     SField (SerializedTypeID id, int val);
 
@@ -215,11 +222,11 @@ public:
 
     bool isSigningField () const
     {
-        return signingField;
+        return signingField == IsSigning::yes;
     }
     void notSigningField ()
     {
-        signingField = false;
+        signingField = IsSigning::no;
     }
     bool shouldMeta (int c) const
     {
@@ -232,7 +239,8 @@ public:
 
     bool shouldInclude (bool withSigningField) const
     {
-        return (fieldValue < 256) && (withSigningField || signingField);
+        return (fieldValue < 256) &&
+            (withSigningField || (signingField == IsSigning::yes));
     }
 
     bool operator== (const SField& f) const
@@ -268,6 +276,7 @@ extern SField const sfTransactionResult;
 // 16-bit integers
 extern SField const sfLedgerEntryType;
 extern SField const sfTransactionType;
+extern SField const sfSignerWeight;
 
 // 32-bit integers (common)
 extern SField const sfFlags;
@@ -304,6 +313,7 @@ extern SField const sfReserveBase;
 extern SField const sfReserveIncrement;
 extern SField const sfSetFlag;
 extern SField const sfClearFlag;
+extern SField const sfSignerQuorum;
 
 // 64-bit integers
 extern SField const sfIndexNext;
@@ -373,6 +383,7 @@ extern SField const sfCreateCode;
 extern SField const sfMemoType;
 extern SField const sfMemoData;
 extern SField const sfMemoFormat;
+extern SField const sfMultiSignature;
 
 // account
 extern SField const sfAccount;
@@ -401,12 +412,14 @@ extern SField const sfFinalFields;
 extern SField const sfNewFields;
 extern SField const sfTemplateEntry;
 extern SField const sfMemo;
+extern SField const sfSignerEntry;
+extern SField const sfSigningAccount;
 
 // array of objects
 // ARRAY/1 is reserved for end of array
 extern SField const sfSigningAccounts;
 extern SField const sfTxnSignatures;
-extern SField const sfSignatures;
+extern SField const sfSignerEntries;
 extern SField const sfTemplate;
 extern SField const sfNecessary;
 extern SField const sfSufficient;

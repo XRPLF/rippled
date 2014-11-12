@@ -87,7 +87,6 @@ const std::uint32_t tfSetFreeze            = 0x00100000;
 const std::uint32_t tfClearFreeze          = 0x00200000;
 const std::uint32_t tfTrustSetMask         = ~ (tfUniversal | tfSetfAuth | tfSetNoRipple | tfClearNoRipple
                                              | tfSetFreeze | tfClearFreeze);
-
 } // ripple
 
 #endif

@@ -48,7 +48,7 @@ public:
         return temUNKNOWN;
     }
 
-    TER checkSig () override
+    TER checkSign () override
     {
         if (mTxn.getFieldAccount160 (sfAccount).isNonZero ())
         {

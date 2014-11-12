@@ -82,6 +82,7 @@ enum error_code_i
     rpcBAD_MARKET,
     rpcBAD_SECRET,
     rpcBAD_SEED,
+    rpcBAD_SIGNATURE,
     rpcCOMMAND_MISSING,
     rpcDST_ACT_MALFORMED,
     rpcDST_ACT_MISSING,
