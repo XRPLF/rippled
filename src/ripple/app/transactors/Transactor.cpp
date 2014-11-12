@@ -74,8 +74,12 @@ Transactor::transact (
     case ttTICKET_CANCEL:
         return transact_CancelTicket (txn, params, engine);
 
+#ifdef READY_FOR_MULTI_SIGN
+
     case ttSIGNER_LIST_SET:
         return transact_SetSignerList (txn, params, engine);
+
+#endif // READY_FOR_MULTI_SIGN
 
     default:
         return temUNKNOWN;

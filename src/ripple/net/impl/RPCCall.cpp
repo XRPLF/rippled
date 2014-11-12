@@ -884,7 +884,9 @@ public:
             {   "feature",              &RPCParser::parseFeature,               0,  2   },
             {   "fetch_info",           &RPCParser::parseFetchInfo,             0,  1   },
             {   "get_counts",           &RPCParser::parseGetCounts,             0,  1   },
+#ifdef READY_FOR_MULTI_SIGN
             {   "get_signingaccount",   &RPCParser::parseGetSigningAccount,     1,  1   },
+#endif // READY_FOR_MULTI_SIGN
             {   "json",                 &RPCParser::parseJson,                  2,  2   },
             {   "ledger",               &RPCParser::parseLedger,                0,  2   },
             {   "ledger_accept",        &RPCParser::parseAsIs,                  0,  0   },
@@ -908,7 +910,9 @@ public:
             {   "sign",                 &RPCParser::parseSignSubmit,            2,  3   },
             {   "sms",                  &RPCParser::parseSMS,                   1,  1   },
             {   "submit",               &RPCParser::parseSignSubmit,            1,  3   },
+#ifdef READY_FOR_MULTI_SIGN
             {   "submit_multisigned",   &RPCParser::parseSubmitMultiSigned,     1,  1   },
+#endif // READY_FOR_MULTI_SIGN
             {   "server_info",          &RPCParser::parseAsIs,                  0,  0   },
             {   "server_state",         &RPCParser::parseAsIs,                  0,  0   },
             {   "stop",                 &RPCParser::parseAsIs,                  0,  0   },
