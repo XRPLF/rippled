@@ -30,8 +30,6 @@ namespace ripple {
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
 
-// VFALCO TODO move inlined stuff from CKey into here
-
 class CKey_test : public beast::unit_test::suite
 {
 public:
