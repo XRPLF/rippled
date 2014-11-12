@@ -2278,6 +2278,8 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\crypto\ECDSACanonical.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\crypto\ECIES.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\crypto\ec_key.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\crypto\impl\Base58Data.cpp">
@@ -2289,9 +2291,6 @@
     <ClCompile Include="..\..\src\ripple\crypto\impl\CKeyDeterministic.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\crypto\impl\CKeyECIES.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\crypto\impl\DHUtil.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2299,6 +2298,9 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\crypto\impl\ECDSACanonical.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\crypto\impl\ECIES.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\crypto\impl\ec_key.cpp">

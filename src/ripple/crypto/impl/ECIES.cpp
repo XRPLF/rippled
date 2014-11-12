@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/crypto/CKey.h>
+#include <ripple/crypto/ECIES.h>
 #include <ripple/crypto/RandomNumbers.h>
 #include <openssl/ec.h>
 #include <openssl/pem.h>
@@ -63,25 +64,17 @@ namespace ripple {
 #define ECIES_HMAC_TYPE     uint256             // Type used to hold HMAC value
 #define ECIES_HMAC_SIZE     (256/8)             // Size of HMAC value
 
-void CKey::getECIESSecret (CKey& otherKey, ECIES_ENC_KEY_TYPE& enc_key, ECIES_HMAC_KEY_TYPE& hmac_key)
+// returns a 32-byte secret unique to these two keys. At least one private key must be known.
+static void getECIESSecret (EC_KEY* privkey, EC_KEY* pubkey, ECIES_ENC_KEY_TYPE& enc_key, ECIES_HMAC_KEY_TYPE& hmac_key)
 {
     // Retrieve a secret generated from an EC key pair. At least one private key must be known.
-    if (!pkey || !otherKey.pkey)
+    if (privkey == nullptr || pubkey == nullptr)
         throw std::runtime_error ("missing key");
 
-    EC_KEY* pubkey, *privkey;
-
-    if (EC_KEY_get0_private_key (pkey))
+    if (EC_KEY_get0_private_key (privkey))
     {
-        privkey = pkey;
-        pubkey = otherKey.pkey;
+        throw std::runtime_error ("not a private key");
     }
-    else if (EC_KEY_get0_private_key (otherKey.pkey))
-    {
-        privkey = otherKey.pkey;
-        pubkey = pkey;
-    }
-    else throw std::runtime_error ("no private key");
 
     unsigned char rawbuf[512];
     int buflen = ECDH_compute_key (rawbuf, 512, EC_KEY_get0_public_key (pubkey), privkey, nullptr);
@@ -133,6 +126,11 @@ static ECIES_HMAC_TYPE makeHMAC (const ECIES_HMAC_KEY_TYPE& secret, Blob const& 
 
 Blob CKey::encryptECIES (CKey& otherKey, Blob const& plaintext)
 {
+    return ::ripple::encryptECIES (pkey, otherKey.pkey, plaintext);
+}
+
+Blob encryptECIES (EC_KEY* secretKey, EC_KEY* publicKey, Blob const& plaintext)
+{
 
     ECIES_ENC_IV_TYPE iv;
     RandomNumbers::getInstance ().fillBytes (iv.begin (), ECIES_ENC_BLK_SIZE);
@@ -140,7 +138,7 @@ Blob CKey::encryptECIES (CKey& otherKey, Blob const& plaintext)
     ECIES_ENC_KEY_TYPE secret;
     ECIES_HMAC_KEY_TYPE hmacKey;
 
-    getECIESSecret (otherKey, secret, hmacKey);
+    getECIESSecret (secretKey, publicKey, secret, hmacKey);
     ECIES_HMAC_TYPE hmac = makeHMAC (hmacKey, plaintext);
     hmacKey.zero ();
 
@@ -208,6 +206,11 @@ Blob CKey::encryptECIES (CKey& otherKey, Blob const& plaintext)
 
 Blob CKey::decryptECIES (CKey& otherKey, Blob const& ciphertext)
 {
+    return ::ripple::decryptECIES (pkey, otherKey.pkey, ciphertext);
+}
+
+Blob decryptECIES (EC_KEY* secretKey, EC_KEY* publicKey, Blob const& ciphertext)
+{
     // minimum ciphertext = IV + HMAC + 1 block
     if (ciphertext.size () < ((2 * ECIES_ENC_BLK_SIZE) + ECIES_HMAC_SIZE) )
         throw std::runtime_error ("ciphertext too short");
@@ -222,7 +225,7 @@ Blob CKey::decryptECIES (CKey& otherKey, Blob const& ciphertext)
 
     ECIES_ENC_KEY_TYPE secret;
     ECIES_HMAC_KEY_TYPE hmacKey;
-    getECIESSecret (otherKey, secret, hmacKey);
+    getECIESSecret (secretKey, publicKey, secret, hmacKey);
 
     if (EVP_DecryptInit_ex (&ctx, ECIES_ENC_ALGO, nullptr, secret.begin (), iv.begin ()) != 1)
     {
