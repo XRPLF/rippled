@@ -706,12 +706,6 @@ public:
         //
         //----------------------------------------------------------------------
 
-        {
-            auto setup = setup_ServerHandler(getConfig(), std::cerr);
-            setup.makeContexts();
-            serverHandler_->setup (setup, m_journal);
-        }
-
         // VFALCO NOTE Unfortunately, in stand-alone mode some code still
         //             foolishly calls overlay(). When this is fixed we can
         //             move the instantiation inside a conditional:
@@ -736,6 +730,12 @@ public:
                 throw std::exception();
             }
             wsDoors_.emplace_back(std::move(door));
+        }
+
+        {
+            auto setup = setup_ServerHandler(getConfig(), std::cerr);
+            setup.makeContexts();
+            serverHandler_->setup (setup, m_journal);
         }
 
         //----------------------------------------------------------------------
