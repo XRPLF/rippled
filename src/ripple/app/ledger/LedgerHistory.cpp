@@ -299,7 +299,7 @@ void LedgerHistory::clearLedgerCachePrior (std::uint32_t seq)
     for (LedgerHash it: m_ledgers_by_hash.getKeys())
     {
         if (getLedgerByHash (it)->getLedgerSeq() < seq)
-        m_ledgers_by_hash.del (it, false);
+            m_ledgers_by_hash.del (it, false);
     }
 }
 

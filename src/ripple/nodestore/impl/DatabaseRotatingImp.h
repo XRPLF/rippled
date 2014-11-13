@@ -108,8 +108,7 @@ public:
 
     std::unique_lock <std::mutex> getRotateLock() const override
     {
-        std::unique_lock <std::mutex> l (rotateMutex_);
-        return l;
+        return std::unique_lock <std::mutex>(rotateMutex_);
     }
 
     std::string getName() const override

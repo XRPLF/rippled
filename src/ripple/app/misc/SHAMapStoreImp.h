@@ -52,8 +52,7 @@ private:
 
         // Just instantiate without any logic in case online delete is not
         // configured
-        SavedStateDB()
-        {}
+        SavedStateDB() = default;
 
         // opens SQLite database and, if necessary, creates & initializes its tables.
         void

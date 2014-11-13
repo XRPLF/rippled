@@ -367,11 +367,11 @@ private:
             return jvRequest;
 
         std::string input = jvParams[0u].asString();
-        if (jvParams[0u].asString().find_first_not_of("0123456789") ==
+        if (input.find_first_not_of("0123456789") ==
                 std::string::npos)
             jvRequest["can_delete"] = jvParams[0u].asUInt();
         else
-            jvRequest["can_delete"] = jvParams[0u].asString();
+            jvRequest["can_delete"] = input;
 
         return jvRequest;
     }

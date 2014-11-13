@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/app/misc/SHAMapStore.h>
+#include <boost/algorithm/string/case_conv.hpp>
 
 namespace ripple {
 
@@ -40,7 +41,8 @@ Json::Value doCanDelete (RPC::Context& context)
         }
         else
         {
-            std::string canDeleteStr = canDelete.asString();
+            std::string canDeleteStr =canDelete.asString();
+//                    boost::algorithm::to_lower <std::string>(canDelete.asString());
 
             if (canDeleteStr.find_first_not_of ("0123456789") ==
                 std::string::npos)

@@ -1488,7 +1488,7 @@ public:
         for (std::uint32_t i = mCompleteLedgers.getFirst(); i < seq; ++i)
         {
             if (haveLedger (i))
-            clearLedger (i);
+                clearLedger (i);
         }
     }
 
