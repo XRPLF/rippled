@@ -65,6 +65,7 @@ public:
         add (rpcDST_ISR_MALFORMED,     "dstIsrMalformed",   "Destination issuer is malformed.");
         add (rpcFAIL_GEN_DECRYPT,      "failGenDecrypt",    "Failed to decrypt generator.");
         add (rpcFORBIDDEN,             "forbidden",         "Bad credentials.");
+        add (rpcGENERAL,               "general",           "Generic error reason.");
         add (rpcGETS_ACT_MALFORMED,    "getsActMalformed",  "Gets account malformed.");
         add (rpcGETS_AMT_MALFORMED,    "getsAmtMalformed",  "Gets amount malformed.");
         add (rpcHIGH_FEE,              "highFee",           "Current transaction fee exceeds your limit.");
@@ -78,9 +79,7 @@ public:
         add (rpcLGR_NOT_FOUND,         "lgrNotFound",       "Ledger not found.");
         add (rpcLOAD_FAILED,           "loadFailed",        "Load failed");
         add (rpcMASTER_DISABLED,       "masterDisabled",    "Master key is disabled.");
-        add (rpcNOT_ENABLED,           "notEnabled",        "Not enabled in configuration.");
         add (rpcNOT_IMPL,              "notImpl",           "Not implemented.");
-        add (rpcNOT_READY,             "notReady",          "Not ready to handle this request.");
         add (rpcNOT_STANDALONE,        "notStandAlone",     "Operation valid in debug mode only.");
         add (rpcNOT_SUPPORTED,         "notSupported",      "Operation not supported.");
         add (rpcNO_ACCOUNT,            "noAccount",         "No such account.");
