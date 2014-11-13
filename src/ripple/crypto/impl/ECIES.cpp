@@ -75,7 +75,7 @@ static void getECIESSecret (const openssl::ec_key& secretKey, const openssl::ec_
     if (privkey == nullptr || pubkey == nullptr)
         throw std::runtime_error ("missing key");
 
-    if (EC_KEY_get0_private_key (privkey))
+    if (! EC_KEY_get0_private_key (privkey))
     {
         throw std::runtime_error ("not a private key");
     }
