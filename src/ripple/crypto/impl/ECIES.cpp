@@ -21,6 +21,7 @@
 #include <ripple/crypto/ECIES.h>
 #include <ripple/crypto/RandomNumbers.h>
 #include <openssl/ec.h>
+#include <openssl/ecdsa.h>
 #include <openssl/pem.h>
 
 namespace ripple {
@@ -65,8 +66,11 @@ namespace ripple {
 #define ECIES_HMAC_SIZE     (256/8)             // Size of HMAC value
 
 // returns a 32-byte secret unique to these two keys. At least one private key must be known.
-static void getECIESSecret (EC_KEY* privkey, EC_KEY* pubkey, ECIES_ENC_KEY_TYPE& enc_key, ECIES_HMAC_KEY_TYPE& hmac_key)
+static void getECIESSecret (const openssl::ec_key& secretKey, const openssl::ec_key& publicKey, ECIES_ENC_KEY_TYPE& enc_key, ECIES_HMAC_KEY_TYPE& hmac_key)
 {
+    EC_KEY* privkey = (EC_KEY*) secretKey.get();
+    EC_KEY* pubkey  = (EC_KEY*) publicKey.get();
+
     // Retrieve a secret generated from an EC key pair. At least one private key must be known.
     if (privkey == nullptr || pubkey == nullptr)
         throw std::runtime_error ("missing key");
@@ -124,7 +128,7 @@ static ECIES_HMAC_TYPE makeHMAC (const ECIES_HMAC_KEY_TYPE& secret, Blob const& 
     return ret;
 }
 
-Blob encryptECIES (EC_KEY* secretKey, EC_KEY* publicKey, Blob const& plaintext)
+Blob encryptECIES (const openssl::ec_key& secretKey, const openssl::ec_key& publicKey, Blob const& plaintext)
 {
 
     ECIES_ENC_IV_TYPE iv;
@@ -199,7 +203,7 @@ Blob encryptECIES (EC_KEY* secretKey, EC_KEY* publicKey, Blob const& plaintext)
     return out;
 }
 
-Blob decryptECIES (EC_KEY* secretKey, EC_KEY* publicKey, Blob const& ciphertext)
+Blob decryptECIES (const openssl::ec_key& secretKey, const openssl::ec_key& publicKey, Blob const& ciphertext)
 {
     // minimum ciphertext = IV + HMAC + 1 block
     if (ciphertext.size () < ((2 * ECIES_ENC_BLK_SIZE) + ECIES_HMAC_SIZE) )

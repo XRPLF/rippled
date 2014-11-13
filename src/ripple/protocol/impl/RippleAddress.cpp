@@ -599,7 +599,7 @@ Blob RippleAddress::accountPrivateEncrypt (
     {
         try
         {
-            vucCipherText = encryptECIES ((EC_KEY*) secretKey.get(), (EC_KEY*) publicKey.get(), vucPlainText);
+            vucCipherText = encryptECIES (secretKey, publicKey, vucPlainText);
         }
         catch (...)
         {
@@ -632,7 +632,7 @@ Blob RippleAddress::accountPrivateDecrypt (
     {
         try
         {
-            vucPlainText = decryptECIES ((EC_KEY*) secretKey.get(), (EC_KEY*) publicKey.get(), vucCipherText);
+            vucPlainText = decryptECIES (secretKey, publicKey, vucCipherText);
         }
         catch (...)
         {

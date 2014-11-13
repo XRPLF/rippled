@@ -20,8 +20,8 @@
 #ifndef RIPPLE_ECIES_H
 #define RIPPLE_ECIES_H
 
+#include <ripple/crypto/ec_key.h>
 #include <ripple/types/Blob.h>
-#include <openssl/ecdsa.h>
 
 namespace ripple {
 
@@ -29,8 +29,8 @@ namespace ripple {
 
 // encrypt/decrypt functions with integrity checking.
 // Note that the other side must somehow know what keys to use
-Blob encryptECIES (EC_KEY* secretKey, EC_KEY* publicKey, Blob const& plaintext);
-Blob decryptECIES (EC_KEY* secretKey, EC_KEY* publicKey, Blob const& ciphertext);
+Blob encryptECIES (const openssl::ec_key& secretKey, const openssl::ec_key& publicKey, Blob const& plaintext);
+Blob decryptECIES (const openssl::ec_key& secretKey, const openssl::ec_key& publicKey, Blob const& ciphertext);
 
 } // ripple
 
