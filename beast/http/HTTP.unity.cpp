@@ -27,6 +27,7 @@
 #include <beast/http/impl/raw_parser.cpp>
 #include <beast/http/impl/URL.cpp>
 
+#include <beast/http/tests/chunked_encoder.test.cpp>
 #include <beast/http/tests/parser.test.cpp>
 #include <beast/http/tests/rfc2616.test.cpp>
 #include <beast/http/tests/URL.test.cpp>
