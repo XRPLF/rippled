@@ -702,17 +702,6 @@ private:
         journal_.debug << "finished: " << deleteQuery;
     }
 
-    /** execute SQLite incremental vacuum */
-    void
-    incrementalVacuum (Database* db,
-            std::unique_lock <std::recursive_mutex> lock,
-            std::string const& dbName)
-    {
-        journal_.debug << "start incremental_vacuum " << dbName;
-        db->executeSQL ("PRAGMA incremental_vacuum;");
-        journal_.debug << "finished incremental vacuum" << dbName;
-    }
-
     void
     clearCaches (LedgerIndex validatedSeq)
     {
@@ -727,10 +716,6 @@ private:
             return;
         if (freshenCache (getApp().getTreeNodeCache()))
             return;
-        if (freshenCache (getApp().getTempNodeCache()))
-            return;
-        if (freshenCache (getApp().getSLECache()))
-            return;
         if (freshenCache (getApp().getMasterTransaction().getCache()))
             return;
     }
@@ -742,6 +727,9 @@ private:
         if (stop_)
             return;
 
+        // TODO this won't remove validations for ledgers that do not get
+        // validated. That will likely require inserting LedgerSeq into
+        // the validations table
         clearSql (getApp().getLedgerDB().getDB(),
             getApp().getLedgerDB().lock (true), lastRotated,
             "SELECT MIN(LedgerSeq) FROM Ledgers;",
@@ -754,11 +742,6 @@ private:
             getApp().getLedgerDB().lock (true), lastRotated,
             "SELECT MIN(LedgerSeq) FROM Ledgers;",
             "DELETE FROM Ledgers WHERE LedgerSeq < %u;");
-        if (stop_)
-            return;
-
-        incrementalVacuum (getApp().getLedgerDB().getDB(),
-            getApp().getLedgerDB().lock(), "ledgerdb");
         if (stop_)
             return;
 
@@ -775,9 +758,6 @@ private:
             "DELETE FROM AccountTransactions WHERE LedgerSeq < %u;");
         if (stop_)
             return;
-
-        incrementalVacuum (getApp().getTxnDB().getDB(),
-            getApp().getTxnDB().lock(), "transactiondb");
     }
 
     //

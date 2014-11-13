@@ -27,7 +27,7 @@ namespace ripple {
 Json::Value doCanDelete (RPC::Context& context)
 {
     if (! getApp().getSHAMapStore().advisoryDelete())
-        return RPC::make_error(rpcGENERAL, "advisory_delete not configured.");
+        return RPC::make_error(rpcNOT_ENABLED);
 
     Json::Value ret (Json::objectValue);
 
@@ -63,9 +63,7 @@ Json::Value doCanDelete (RPC::Context& context)
             {
                 canDeleteSeq = getApp().getSHAMapStore().getLastRotated();
                 if (!canDeleteSeq)
-                    return RPC::make_error (rpcGENERAL,
-                            "rippled is not ready to service this request.");
-            }
+                    return RPC::make_error (rpcNOT_READY);            }
             else if (canDeleteStr.size() == 64 &&
                     canDeleteStr.find_first_not_of("0123456789abcdef") ==
                     std::string::npos)

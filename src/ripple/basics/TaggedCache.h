@@ -476,11 +476,11 @@ public:
     std::vector <key_type> getKeys ()
     {
         std::vector <key_type> v;
-        v.reserve (m_cache.size());
 
         {
             lock_guard lock (m_mutex);
 
+            v.reserve (m_cache.size());
             for (cache_iterator it = m_cache.begin(); it != m_cache.end(); ++it)
                 v.push_back (it->first);
         }

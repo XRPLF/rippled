@@ -79,7 +79,9 @@ public:
         add (rpcLGR_NOT_FOUND,         "lgrNotFound",       "Ledger not found.");
         add (rpcLOAD_FAILED,           "loadFailed",        "Load failed");
         add (rpcMASTER_DISABLED,       "masterDisabled",    "Master key is disabled.");
+        add (rpcNOT_ENABLED,           "notEnabled",        "Not enabled in configuration.");
         add (rpcNOT_IMPL,              "notImpl",           "Not implemented.");
+        add (rpcNOT_READY,             "notReady",          "Not ready to handle this request.");
         add (rpcNOT_STANDALONE,        "notStandAlone",     "Operation valid in debug mode only.");
         add (rpcNOT_SUPPORTED,         "notSupported",      "Operation not supported.");
         add (rpcNO_ACCOUNT,            "noAccount",         "No such account.");
