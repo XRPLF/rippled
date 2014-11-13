@@ -834,6 +834,9 @@
     <ClInclude Include="..\..\src\beast\beast\http\body.h">
       <Filter>beast\http</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\beast\beast\http\chunk_encode.h">
+      <Filter>beast\http</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\http\headers.h">
       <Filter>beast\http</Filter>
     </ClInclude>
@@ -879,6 +882,9 @@
     <ClInclude Include="..\..\src\beast\beast\http\rfc2616.h">
       <Filter>beast\http</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\beast\beast\http\tests\chunked_encoder.test.cpp">
+      <Filter>beast\http\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\beast\beast\http\tests\parser.test.cpp">
       <Filter>beast\http\tests</Filter>
     </ClCompile>
