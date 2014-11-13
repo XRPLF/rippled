@@ -294,7 +294,7 @@ void LedgerHistory::tune (int size, int age)
     m_ledgers_by_hash.setTargetAge (age);
 }
 
-void LedgerHistory::clearLedgerCachePrior (std::uint32_t seq)
+void LedgerHistory::clearLedgerCachePrior (LedgerIndex seq)
 {
     for (LedgerHash it: m_ledgers_by_hash.getKeys())
     {

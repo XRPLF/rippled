@@ -1482,17 +1482,17 @@ public:
         return *mLedgerCleaner;
     }
 
-    void clearPriorLedgers (std::uint32_t seq) override
+    void clearPriorLedgers (LedgerIndex seq) override
     {
         ScopedLockType sl (mCompleteLock);
-        for (std::uint32_t i = mCompleteLedgers.getFirst(); i < seq; ++i)
+        for (LedgerIndex i = mCompleteLedgers.getFirst(); i < seq; ++i)
         {
             if (haveLedger (i))
                 clearLedger (i);
         }
     }
 
-    void clearLedgerCachePrior (std::uint32_t seq) override
+    void clearLedgerCachePrior (LedgerIndex seq) override
     {
         mLedgerHistory.clearLedgerCachePrior (seq);
     }

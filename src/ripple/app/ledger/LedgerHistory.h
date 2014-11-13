@@ -92,7 +92,7 @@ public:
     */
     bool fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash);
 
-    void clearLedgerCachePrior (std::uint32_t seq);
+    void clearLedgerCachePrior (LedgerIndex seq);
 
 private:
 

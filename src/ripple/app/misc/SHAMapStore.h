@@ -56,16 +56,16 @@ public:
             std::string const& name, std::int32_t readThreads) = 0;
 
     /** set ledger up to which can be deleted */
-    virtual std::uint32_t setCanDelete (std::uint32_t canDelete) = 0;
+    virtual LedgerIndex setCanDelete (LedgerIndex canDelete) = 0;
 
     /** whether advisory delete is enabled */
     virtual bool advisoryDelete() const = 0;
 
     /** last ledger which was copied for rotation of backends */
-    virtual std::uint32_t getLastRotated() = 0;
+    virtual LedgerIndex getLastRotated() = 0;
 
     /** get the ledger up to which can be deleted */
-    virtual std::uint32_t getCanDelete() = 0;
+    virtual LedgerIndex getCanDelete() = 0;
 };
 
 //------------------------------------------------------------------------------

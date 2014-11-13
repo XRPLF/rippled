@@ -87,7 +87,6 @@ const char* LedgerDBInit[] =
         TransSetHash    CHARACTER(64)               \
     );",
     "CREATE INDEX SeqLedger ON Ledgers(LedgerSeq);",
-    "CREATE INDEX HashLedger ON Ledgers(LedgerHash);",
 
     "CREATE TABLE Validations   (                   \
         LedgerHash  CHARACTER(64),                  \

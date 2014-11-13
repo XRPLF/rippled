@@ -37,7 +37,7 @@ private:
     {
         std::string writableDb;
         std::string archiveDb;
-        std::uint32_t lastRotated;
+        LedgerIndex lastRotated;
     };
 
     // keep this all within SHAMapStore, with forwarding functions for
@@ -118,11 +118,11 @@ private:
         }
 
         // get/set the ledger index that we can delete up to and including
-        std::uint32_t
+        LedgerIndex
         getCanDelete()
         {
             beast::Error error;
-            std::uint32_t seq;
+            LedgerIndex seq;
 
             {
                 std::lock_guard <std::mutex> l (mutex_);
@@ -138,7 +138,7 @@ private:
         }
 
         void
-        setCanDelete (std::uint32_t canDelete)
+        setCanDelete (LedgerIndex canDelete)
         {
             beast::Error error;
             {
@@ -196,7 +196,7 @@ private:
         }
 
         void
-        setLastRotated (std::uint32_t seq)
+        setLastRotated (LedgerIndex seq)
         {
             beast::Error error;
             {
@@ -336,8 +336,8 @@ public:
         return db;
     }
 
-    std::uint32_t
-    setCanDelete (std::uint32_t seq) override
+    LedgerIndex
+    setCanDelete (LedgerIndex seq) override
     {
         state_db_.setCanDelete (seq);
 
@@ -350,13 +350,13 @@ public:
         return setup_.advisoryDelete;
     }
 
-    std::uint32_t
+    LedgerIndex
     getLastRotated() override
     {
         return state_db_.getState().lastRotated;
     }
 
-    std::uint32_t
+    LedgerIndex
     getCanDelete() override
     {
         return state_db_.getCanDelete();
@@ -396,7 +396,7 @@ private:
     void
     run()
     {
-        std::uint32_t lastRotated = state_db_.getState().lastRotated;
+        LedgerIndex lastRotated = state_db_.getState().lastRotated;
 
         while (1)
         {
@@ -416,14 +416,14 @@ private:
             validatedLedger_.reset();
             l.unlock();
 
-            std::uint32_t validatedSeq = validatedLedger->getLedgerSeq();
+            LedgerIndex validatedSeq = validatedLedger->getLedgerSeq();
             if (!lastRotated)
             {
                 lastRotated = validatedSeq;
                 state_db_.setLastRotated (lastRotated);
             }
-            std::uint32_t canDelete =
-                    std::numeric_limits <std::uint32_t>::max();
+            LedgerIndex canDelete =
+                    std::numeric_limits <LedgerIndex>::max();
             if (setup_.advisoryDelete)
                 canDelete = state_db_.getCanDelete();
 
@@ -670,11 +670,11 @@ private:
     void
     clearSql (Database* db,
             std::unique_lock <std::recursive_mutex> lock,
-            std::uint32_t lastRotated,
+            LedgerIndex lastRotated,
             std::string minQuery,
             std::string deleteQuery)
     {
-        std::uint32_t min = std::numeric_limits <std::uint32_t>::max();
+        LedgerIndex min = std::numeric_limits <LedgerIndex>::max();
         lock.lock();
         if (!db->executeSQL (minQuery) || !db->startIterRows())
             return;
@@ -714,7 +714,7 @@ private:
     }
 
     void
-    clearCaches (std::uint32_t validatedSeq)
+    clearCaches (LedgerIndex validatedSeq)
     {
         getApp().getLedgerMaster().clearLedgerCachePrior (validatedSeq);
         getApp().getFullBelowCache().clear();
@@ -736,7 +736,7 @@ private:
     }
 
     void
-    clearPrior (std::uint32_t lastRotated)
+    clearPrior (LedgerIndex lastRotated)
     {
         getApp().getLedgerMaster().clearPriorLedgers (lastRotated);
         if (stop_)

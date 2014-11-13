@@ -19,6 +19,7 @@
 
 #include <ripple/app/misc/SHAMapStore.h>
 #include <boost/algorithm/string/case_conv.hpp>
+#include <boost/format.hpp>
 
 namespace ripple {
 
@@ -41,8 +42,8 @@ Json::Value doCanDelete (RPC::Context& context)
         }
         else
         {
-            std::string canDeleteStr =canDelete.asString();
-//                    boost::algorithm::to_lower <std::string>(canDelete.asString());
+            std::string canDeleteStr = canDelete.asString();
+            boost::to_lower (canDeleteStr);
 
             if (canDeleteStr.find_first_not_of ("0123456789") ==
                 std::string::npos)
@@ -66,7 +67,7 @@ Json::Value doCanDelete (RPC::Context& context)
                             "rippled is not ready to service this request.");
             }
             else if (canDeleteStr.size() == 64 &&
-                    canDeleteStr.find_first_not_of("0123456789abcdefABCDEF") ==
+                    canDeleteStr.find_first_not_of("0123456789abcdef") ==
                     std::string::npos)
             {
                 uint256 ledgerHash (0);
