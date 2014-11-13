@@ -23,7 +23,7 @@
 namespace ripple {
 namespace RPC {
 
-class Yield_test : public New::TestOutputSuite
+class Coroutine_test : public New::TestOutputSuite
 {
 public:
     using Strings = std::vector <std::string>;
@@ -35,7 +35,7 @@ public:
         std::string buffer;
         Output output = stringOutput (buffer);
 
-        auto coroutine = yieldingCoroutine ([=] (Yield yield)
+        auto coroutine = Coroutine ([=] (Yield yield)
         {
             auto out = chunkedYieldingOutput (output, yield, chunkSize);
             out ("hello ");
@@ -67,7 +67,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Yield, RPC, ripple);
+BEAST_DEFINE_TESTSUITE(Coroutine, RPC, ripple);
 
 } // RPC
 } // ripple

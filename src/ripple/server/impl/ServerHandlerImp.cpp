@@ -28,12 +28,11 @@
 #include <ripple/overlay/Overlay.h>
 #include <ripple/resource/Manager.h>
 #include <ripple/resource/Fees.h>
-#include <ripple/rpc/Yield.h>
+#include <ripple/rpc/Coroutine.h>
 #include <beast/crypto/base64.h>
 #include <beast/cxx14/algorithm.h> // <algorithm>
 #include <boost/algorithm/string.hpp>
 #include <boost/type_traits.hpp>
-#include <boost/coroutine/all.hpp>
 #include <boost/optional.hpp>
 #include <boost/regex.hpp>
 #include <algorithm>
@@ -154,6 +153,27 @@ RPC::Output makeOutput (HTTP::Session& session)
     return [&](RPC::Bytes const& b) { session.write (b.data, b.size); };
 }
 
+namespace {
+
+void runCoroutine (RPC::Coroutine coroutine, JobQueue& jobQueue)
+{
+    if (!coroutine)
+        return;
+    coroutine();
+    if (!coroutine)
+        return;
+
+    // Reschedule the job on the job queue.
+    jobQueue.addJob (
+        jtCLIENT, "RPC-Coroutine",
+        [coroutine, &jobQueue] (Job&)
+        {
+            runCoroutine (coroutine, jobQueue);
+        });
+}
+
+} // namespace
+
 void
 ServerHandlerImp::onRequest (HTTP::Session& session)
 {
@@ -167,9 +187,11 @@ ServerHandlerImp::onRequest (HTTP::Session& session)
     }
 
     auto detach = session.detach();
-    m_jobQueue.addJob (
-        jtCLIENT, "RPC-Client",
-        [detach, this] (Job& job) { processSession (job, detach); });
+
+    RPC::Coroutine::YieldFunction yieldFunction =
+        [this, detach] (Yield const& y) { processSession (detach, y); };
+    RPC::Coroutine coroutine (yieldFunction);
+    runCoroutine (std::move(coroutine), m_jobQueue);
 }
 
 void
@@ -184,26 +206,6 @@ ServerHandlerImp::onStopped (HTTP::Server&)
     stopped();
 }
 
-namespace {
-
-template <typename CoroutinePtr>
-void runCoroutineOnJobQueue (CoroutinePtr cp, JobQueue& jobQueue)
-{
-    auto& coroutine = *cp;
-    if (!coroutine)
-        return;
-    coroutine();
-    if (!coroutine)
-        return;
-
-    // Reschedule the job on the job queue.
-    jobQueue.addJob (
-        jtCLIENT, "RPC-Coroutine",
-        [cp, &jobQueue] (Job& job) { runCoroutineOnJobQueue (cp, jobQueue); });
-}
-
-} // namespace
-
 //------------------------------------------------------------------------------
 
 // ServerHandlerImp will yield after emitting serverOutputChunkSize bytes.
@@ -215,32 +217,26 @@ const int serverOutputChunkSize = -1;
 // Dispatched on the job queue
 void
 ServerHandlerImp::processSession (
-    Job&, std::shared_ptr<HTTP::Session> const& session)
+    std::shared_ptr<HTTP::Session> const& session, Yield const& yield)
 {
-    auto coroutine = std::make_shared<RPC::Coroutine> (
-        RPC::yieldingCoroutine ([=] (Yield const& yield)
-        {
-            auto output = makeOutput (*session);
-            if (serverOutputChunkSize >= 0)
-            {
-                output = RPC::chunkedYieldingOutput (
-                    output, yield, serverOutputChunkSize);
-            }
+    auto output = makeOutput (*session);
+    if (serverOutputChunkSize >= 0)
+    {
+        output = RPC::chunkedYieldingOutput (
+            output, yield, serverOutputChunkSize);
+    }
 
-            processRequest (
-                session->port(),
-                to_string (session->body()),
-                session->remoteAddress().at_port (0),
-                output,
-                yield);
+    processRequest (
+        session->port(),
+        to_string (session->body()),
+        session->remoteAddress().at_port (0),
+        output,
+        yield);
 
-            if (session->request().keep_alive())
-                session->complete();
-            else
-                session->close (true);
-        }));
-
-    runCoroutineOnJobQueue (coroutine, m_jobQueue);
+    if (session->request().keep_alive())
+        session->complete();
+    else
+        session->close (true);
 }
 
 void

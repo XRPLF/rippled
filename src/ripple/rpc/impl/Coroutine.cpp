@@ -17,23 +17,45 @@
 */
 //==============================================================================
 
-#include <ripple/rpc/Yield.h>
+#include <ripple/rpc/Coroutine.h>
 #include <ripple/rpc/impl/TestOutputSuite.h>
 
 namespace ripple {
 namespace RPC {
 
-Output chunkedYieldingOutput (
-    Output const& output, Yield const& yield, std::size_t chunkSize)
+using CoroutinePull = boost::coroutines::coroutine <void>::pull_type;
+
+struct Coroutine::Impl : CoroutinePull
 {
-    auto count = std::make_shared <std::size_t> (0);
-    return [chunkSize, count, output, yield] (Bytes const& bytes)
+    Impl (CoroutinePull&& p) : CoroutinePull (std::move(p)) {}
+};
+
+Coroutine::Coroutine (YieldFunction const& yieldFunction)
+{
+    CoroutinePull pull ([yieldFunction] (
+        boost::coroutines::coroutine <void>::push_type& push)
     {
-        if (*count > chunkSize)
-            yield();
-        output (bytes);
-        *count += bytes.size;
-    };
+        Yield yield = [&push] () { push(); };
+        yield ();
+        yieldFunction (yield);
+    });
+
+    impl_ = std::make_shared<Impl> (std::move (pull));
+    // NOTE: Passing the lambda above directly to `std::make_shared()` results
+    // in a compilation error due to a missing assignment operator that's needed
+    // but never actually called.
+}
+
+Coroutine::~Coroutine() = default;
+
+Coroutine::operator bool() const
+{
+    return bool (*impl_);
+}
+
+void Coroutine::operator()() const
+{
+    (*impl_)();
 }
 
 } // RPC

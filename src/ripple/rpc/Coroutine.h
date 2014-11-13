@@ -17,24 +17,38 @@
 */
 //==============================================================================
 
+#ifndef RIPPLED_RIPPLE_RPC_COROUTINE_H
+#define RIPPLED_RIPPLE_RPC_COROUTINE_H
+
 #include <ripple/rpc/Yield.h>
-#include <ripple/rpc/impl/TestOutputSuite.h>
 
 namespace ripple {
 namespace RPC {
 
-Output chunkedYieldingOutput (
-    Output const& output, Yield const& yield, std::size_t chunkSize)
+/** Runs a function that takes a yield as a coroutine. */
+class Coroutine
 {
-    auto count = std::make_shared <std::size_t> (0);
-    return [chunkSize, count, output, yield] (Bytes const& bytes)
-    {
-        if (*count > chunkSize)
-            yield();
-        output (bytes);
-        *count += bytes.size;
-    };
-}
+public:
+    using YieldFunction = std::function <void (Yield const&)>;
+
+    explicit Coroutine (YieldFunction const&);
+    ~Coroutine();
+
+    /** Is the coroutine finished? */
+    operator bool() const;
+
+    /** Run one more step of the coroutine. */
+    void operator()() const;
+
+private:
+    struct Impl;
+
+    std::shared_ptr<Impl> impl_;
+    // We'd prefer to use std::unique_ptr here, but unfortunately, in C++11
+    // move semantics don't work well with `std::bind` or lambdas.
+};
 
 } // RPC
 } // ripple
+
+#endif

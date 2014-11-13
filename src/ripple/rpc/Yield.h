@@ -35,10 +35,7 @@ namespace RPC {
     By convention you must not be holding any locks or any resource that would
     prevent any other task from making forward progress when you call Yield.
 */
-using Yield = std::function <void()>;
-
-/** Coroutine is the controller class for RPC coroutines. */
-using Coroutine = boost::coroutines::coroutine <void>::pull_type;
+using Yield = std::function <void ()>;
 
 /** Wrap an Output so it yields after approximately `chunkSize` bytes.
 
@@ -47,26 +44,6 @@ using Coroutine = boost::coroutines::coroutine <void>::pull_type;
  */
 Output chunkedYieldingOutput (
     Output const&, Yield const&, std::size_t chunkSize);
-
-/** Run a function that's expecting a Yield as a coroutine.
-
-    This adaptor from Coroutine to Yield is necessary:
-      * because Coroutine immediately starts operating in the constructor
-        but we want to defer operation to the loop.
-      * because Coroutine is not copyable.
-      * because Coroutine doesn't have an empty constructor.
-      * because C++11 lambdas don't handle move parameters yet.
- */
-template <typename OutputFunction>
-Coroutine yieldingCoroutine (OutputFunction function)
-{
-    return Coroutine([=] (boost::coroutines::coroutine <void>::push_type& push)
-    {
-        Yield yield = [&] () { push(); };
-        yield ();
-        function (yield);
-    });
-}
 
 } // RPC
 } // ripple

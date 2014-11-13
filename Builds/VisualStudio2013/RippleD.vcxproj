@@ -1756,6 +1756,8 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\LedgerTiming.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\ledger\LedgerToJson.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\OrderBookDB.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>

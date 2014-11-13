@@ -108,8 +108,7 @@ private:
     //--------------------------------------------------------------------------
 
     void
-    processSession (Job& job,
-        std::shared_ptr<HTTP::Session> const& session);
+    processSession (std::shared_ptr<HTTP::Session> const&, Yield const&);
 
     void
     processRequest (HTTP::Port const& port, std::string const& request,
