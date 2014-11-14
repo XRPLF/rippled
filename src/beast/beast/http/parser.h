@@ -45,8 +45,8 @@ public:
         the write_body function. Transfer encodings are applied before
         any data is passed to the write_body function.
     */
-    parser (std::function<void(void const*, std::size_t)> write_body,
-            message& m, bool request)
+    parser (message& m, bool request,
+            std::function<void(void const*, std::size_t)> write_body)
         : beast::http::basic_parser (request)
         , message_(m)
         , write_body_(std::move(write_body))
@@ -146,6 +146,7 @@ bool
 parser::do_request (method_t method, std::string const& url,
     int major, int minor, bool keep_alive, bool upgrade)
 {
+    message_.get().request(true);
     message_.get().method (method);
     message_.get().url (url);
     message_.get().version (major, minor);
@@ -159,6 +160,7 @@ bool
 parser::do_response (int status, std::string const& text,
     int major, int minor, bool keep_alive, bool upgrade)
 {
+    message_.get().request(false);
     message_.get().status (status);
     message_.get().reason (text);
     message_.get().version (major, minor);

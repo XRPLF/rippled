@@ -124,12 +124,12 @@ public:
         read_until(stream_, bin_, "\r\n\r\n");
         beast::asio::streambuf body;
         beast::http::message m;
-        beast::http::parser p(
+        beast::http::parser p(m, false,
             [&](void const* data, std::size_t size)
             {
                 body.commit(buffer_copy(
                     body.prepare(size), const_buffer(data, size)));
-            }, m, false);
+            });
 
         for(;;)
         {
