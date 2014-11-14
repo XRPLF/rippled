@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2014 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,20 +17,22 @@
 */
 //==============================================================================
 
-#if DOXYGEN
-#include <ripple/crypto/README.md>
+#ifndef RIPPLE_ECDSA_H
+#define RIPPLE_ECDSA_H
+
+#include <ripple/crypto/ec_key.h>
+#include <ripple/types/base_uint.h>
+#include <ripple/types/Blob.h>
+
+namespace ripple {
+
+openssl::ec_key ECDSAPrivateKey (uint256 const& serialized);
+openssl::ec_key ECDSAPublicKey  (Blob    const& serialized);
+
+Blob ECDSASign (uint256 const& hash, const openssl::ec_key& key);
+
+bool ECDSAVerify (uint256 const& hash, Blob const& sig, const openssl::ec_key& key);
+
+} // ripple
+
 #endif
-
-#include <BeastConfig.h>
-
-#include <ripple/crypto/impl/Base58Data.cpp>
-#include <ripple/crypto/impl/CBigNum.cpp>
-#include <ripple/crypto/impl/DHUtil.cpp>
-#include <ripple/crypto/impl/ec_key.cpp>
-#include <ripple/crypto/impl/ECDSA.cpp>
-#include <ripple/crypto/impl/ECDSACanonical.cpp>
-#include <ripple/crypto/impl/ECIES.cpp>
-#include <ripple/crypto/impl/GenerateDeterministicKey.cpp>
-#include <ripple/crypto/impl/RandomNumbers.cpp>
-#include <ripple/crypto/impl/RFC1751.cpp>
-#include <ripple/crypto/tests/CKey.test.cpp>

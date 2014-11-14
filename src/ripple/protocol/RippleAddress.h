@@ -67,8 +67,6 @@ public:
     void clear ();
     bool isSet () const;
 
-    std::string humanAddressType () const;
-
     //
     // Node Public - Also used for Validators
     //
