@@ -60,27 +60,6 @@ private:
         }
     };
 
-public:
-    // Memberspace
-    class log_t
-    {
-    private:
-        friend class suite;
-        suite* suite_ = nullptr;
-
-    public:
-        log_t () = default;
-
-        template <class T>
-        abstract_ostream::scoped_stream_type
-        operator<< (T const& t);
-
-        /** Returns the raw stream used for output. */
-        abstract_ostream&
-        stream();
-    };
-private:
-
     class scoped_testcase;
 
     // Memberspace
@@ -118,6 +97,29 @@ private:
     };
 
 public:
+    /** Type used for logging.
+
+        Designed to be lightweight and copyable.
+    */
+    class log_type
+    {
+    private:
+        friend class suite;
+        suite* suite_ = nullptr;
+
+    public:
+        log_type() = default;
+        log_type& operator= (log_type const&) = delete;
+
+        template <class T>
+        abstract_ostream::scoped_stream_type
+        operator<< (T const& t);
+
+        /** Returns the raw stream used for output. */
+        abstract_ostream&
+        stream();
+    };
+
     /** Type for scoped stream logging.
         To use this type, declare a local variable of the type
         on the stack in derived class member function and construct
@@ -144,7 +146,7 @@ public:
     using scoped_stream = abstract_ostream::scoped_stream_type;
 
     /** Memberspace for logging. */
-    log_t log;
+    log_type log;
 
     /** Memberspace for declaring test cases. */
     testcase_t testcase;
@@ -287,7 +289,7 @@ private:
 template <class T>
 inline
 abstract_ostream::scoped_stream_type
-suite::log_t::operator<< (T const& t)
+suite::log_type::operator<< (T const& t)
 {
     return suite_->runner_->stream() << t;
 }
@@ -295,7 +297,7 @@ suite::log_t::operator<< (T const& t)
 /** Returns the raw stream used for output. */
 inline
 abstract_ostream&
-suite::log_t::stream()
+suite::log_type::stream()
 {
     return suite_->runner_->stream();
 }
