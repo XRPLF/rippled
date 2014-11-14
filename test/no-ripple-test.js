@@ -61,7 +61,7 @@ suite('NoRipple', function() {
       function (callback) {
         self.what = 'Check no-ripple sender';
 
-        $.remote.requestAccountLines('root', void(0), 'CURRENT', function(err, m) {
+        $.remote.requestAccountLines({ account: 'root', ledger: 'validated' }, function(err, m) {
           if (err) return callback(err);
           assert(typeof m === 'object');
           assert(Array.isArray(m.lines));
@@ -73,7 +73,7 @@ suite('NoRipple', function() {
       function (callback) {
         self.what = 'Check no-ripple destination';
 
-        $.remote.requestAccountLines('alice', void(0), 'CURRENT', function(err, m) {
+        $.remote.requestAccountLines({ account: 'alice', ledger: 'validated' }, function(err, m) {
           if (err) return callback(err);
           assert(typeof m === 'object');
           assert(Array.isArray(m.lines));
@@ -104,7 +104,7 @@ suite('NoRipple', function() {
       function (callback) {
         self.what = 'Check no-ripple cleared sender';
 
-        $.remote.requestAccountLines('root', void(0), 'CURRENT', function(err, m) {
+        $.remote.requestAccountLines({ account: 'root', ledger: 'validated' }, function(err, m) {
           if (err) return callback(err);
           assert(typeof m === 'object');
           assert(Array.isArray(m.lines));
@@ -116,7 +116,7 @@ suite('NoRipple', function() {
       function (callback) {
         self.what = 'Check no-ripple cleared destination';
 
-        $.remote.requestAccountLines('alice', void(0), 'CURRENT', function(err, m) {
+        $.remote.requestAccountLines({ account: 'alice', ledger: 'validated' }, function(err, m) {
           if (err) return callback(err);
           assert(typeof m === 'object');
           assert(Array.isArray(m.lines));
@@ -217,7 +217,7 @@ suite('NoRipple', function() {
       },
 
       function (callback) {
-        $.remote.requestAccountLines('alice', function(err, res) {
+        $.remote.requestAccountLines({ account: 'alice' }, function(err, res) {
           assert.ifError(err);
           assert.strictEqual(typeof res, 'object');
           assert(Array.isArray(res.lines));
