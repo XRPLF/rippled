@@ -125,7 +125,7 @@ class BulkRequests
     @assert callback?, "Must supply a callback"
 
     async.concatSeries(args_list, ((args, callback) =>
-      req = fn.apply @remote, args
+      req = fn.apply @remote, (args.map (arg) -> return { account: arg })
       on_each?(args..., req)
       req.on("success", (m) =>
         if m.status?

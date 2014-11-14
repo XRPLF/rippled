@@ -188,7 +188,7 @@ config = testutils.init_config()
 #################################### HELPERS ###################################
 
 get_lines = (remote, acc, done) ->
-  remote.request_account_lines acc, null, 'validated', (err, lines) ->
+  remote.request_account_lines { account: acc, ledger: 'validated' }, (err, lines) ->
     done(lines)
 
 account_set_factory = (remote, ledger, alias_for) ->
@@ -636,7 +636,7 @@ execute_if_enabled (suite, skipped, enforced) ->
           test_if enforced, 'account_offers always shows their own offers', (done) ->
             {remote} = h = get_helpers()
 
-            remote.request_account_offers 'G1', null, 'validated', (err, res) ->
+            remote.request_account_offers { account: 'G1', ledger: 'validated' }, (err, res) ->
               assert.equal res.offers.length, 2
               done()
 
@@ -756,7 +756,7 @@ execute_if_enabled (suite, skipped, enforced) ->
             done()
 
         test 'offer was only partially consumed', (done) ->
-          remote.request_account_offers 'A3', null, 'validated', (err, res) ->
+          remote.request_account_offers { account: 'A3', ledger: 'validated' }, (err, res) ->
             assert res.offers.length == 1
             assert res.offers[0].taker_gets.value, '999'
             done()
@@ -794,7 +794,7 @@ execute_if_enabled (suite, skipped, enforced) ->
             done()
 
         test_if enforced, 'Partially consumed offer was removed by tes* payment', (done) ->
-          remote.request_account_offers 'A3', null, 'validated', (err, res) ->
+          remote.request_account_offers { account: 'A3', ledger: 'validated' }, (err, res) ->
             assert res.offers.length == 0
             done()
 
@@ -825,6 +825,6 @@ execute_if_enabled (suite, skipped, enforced) ->
             done()
 
         test_if enforced, 'offer was removed by offer_create', (done) ->
-          remote.request_account_offers 'A4', null, 'validated', (err, res) ->
+          remote.request_account_offers { account: 'A4', ledger: 'validated' }, (err, res) ->
             assert res.offers.length == 0
             done()
