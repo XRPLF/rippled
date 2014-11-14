@@ -21,6 +21,7 @@
 #define BEAST_UTILITY_CI_CHAR_TRAITS_H_INCLUDED
 
 #include <beast/cxx14/algorithm.h> // <algorithm>
+#include <beast/cxx14/type_traits.h> // <type_traits>
 #include <cctype>
 #include <locale>
 #include <string>
@@ -48,13 +49,13 @@ struct ci_less
 };
 
 /** Returns `true` if strings are case-insensitive equal. */
-template <class String>
-bool
-ci_equal(String const& lhs, String const& rhs)
+template <class Lhs, class Rhs>
+std::enable_if_t<std::is_same<typename Lhs::value_type, char>::value &&
+    std::is_same<typename Lhs::value_type, char>::value, bool>
+ci_equal(Lhs const& lhs, Rhs const& rhs)
 {
-    typedef typename String::value_type char_type;
     return std::equal (lhs.begin(), lhs.end(), rhs.begin(), rhs.end(),
-        [] (char_type lhs, char_type rhs)
+        [] (char lhs, char rhs)
         {
             return std::tolower(lhs) == std::tolower(rhs);
         }
