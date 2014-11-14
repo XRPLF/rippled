@@ -44,6 +44,7 @@ public:
     using size_type = typename std::allocator_traits<Allocator>::size_type;
     using const_buffer = boost::asio::const_buffer;
     using mutable_buffer = boost::asio::mutable_buffer;
+    using allocator_type = Allocator;
 
 private:
     class element;
