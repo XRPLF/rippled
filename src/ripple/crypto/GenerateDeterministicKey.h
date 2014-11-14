@@ -17,20 +17,24 @@
 */
 //==============================================================================
 
-#if DOXYGEN
-#include <ripple/crypto/README.md>
+// Copyright (c) 2009-2010 Satoshi Nakamoto
+// Copyright (c) 2011 The Bitcoin developers
+// Distributed under the MIT/X11 software license, see the accompanying
+// file license.txt or http://www.opensource.org/licenses/mit-license.php.
+
+#ifndef RIPPLE_CKEYDETERMINISTIC_H
+#define RIPPLE_CKEYDETERMINISTIC_H
+
+#include <ripple/crypto/ec_key.h>
+#include <ripple/types/base_uint.h>
+#include <openssl/bn.h>
+
+namespace ripple {
+
+openssl::ec_key GenerateRootDeterministicKey (const uint128& passPhrase);
+openssl::ec_key GeneratePublicDeterministicKey (Blob const& generator, int n);
+openssl::ec_key GeneratePrivateDeterministicKey (Blob const& family, const BIGNUM* rootPriv, int n);
+
+} // ripple
+
 #endif
-
-#include <BeastConfig.h>
-
-#include <ripple/crypto/impl/Base58Data.cpp>
-#include <ripple/crypto/impl/CBigNum.cpp>
-#include <ripple/crypto/impl/DHUtil.cpp>
-#include <ripple/crypto/impl/ec_key.cpp>
-#include <ripple/crypto/impl/ECDSA.cpp>
-#include <ripple/crypto/impl/ECDSACanonical.cpp>
-#include <ripple/crypto/impl/ECIES.cpp>
-#include <ripple/crypto/impl/GenerateDeterministicKey.cpp>
-#include <ripple/crypto/impl/RandomNumbers.cpp>
-#include <ripple/crypto/impl/RFC1751.cpp>
-#include <ripple/crypto/tests/CKey.test.cpp>

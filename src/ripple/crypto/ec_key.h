@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2014 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,37 +17,66 @@
 */
 //==============================================================================
 
-// Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2011 The Bitcoin developers
-// Distributed under the MIT/X11 software license, see the accompanying
-// file license.txt or http://www.opensource.org/licenses/mit-license.php.
+#ifndef RIPPLE_ECKEY_H
+#define RIPPLE_ECKEY_H
 
-#ifndef RIPPLE_CRYPTO_CKEY_H_INCLUDED
-#define RIPPLE_CRYPTO_CKEY_H_INCLUDED
-
-#include <ripple/crypto/ECDSACanonical.h>
-#include <ripple/crypto/GenerateDeterministicKey.h>
 #include <ripple/types/base_uint.h>
-#include <openssl/ecdsa.h>
-#include <openssl/hmac.h>
 
 namespace ripple {
+namespace openssl {
 
-// secp256k1:
-// const unsigned int PRIVATE_KEY_SIZE = 279;
-// const unsigned int PUBLIC_KEY_SIZE  = 65; // but we don't use full keys
-// const unsigned int COMPUB_KEY_SIZE  = 33;
-// const unsigned int SIGNATURE_SIZE   = 72;
-//
-// see www.keylength.com
-// script supports up to 75 for single byte push
-
-class key_error : public std::runtime_error
+class ec_key
 {
 public:
-    explicit key_error (std::string const& str) : std::runtime_error (str) {}
+    typedef struct opaque_EC_KEY* pointer_t;
+
+private:
+    pointer_t ptr;
+
+    void destroy();
+
+    ec_key (pointer_t raw) : ptr(raw)
+    {
+    }
+
+public:
+    static const ec_key invalid;
+
+    static ec_key acquire (pointer_t raw)  { return ec_key (raw); }
+
+    //ec_key() : ptr() {}
+
+    ec_key            (const ec_key&);
+    ec_key& operator= (const ec_key&) = delete;
+
+    ~ec_key()
+    {
+        destroy();
+    }
+
+    pointer_t get() const  { return ptr; }
+
+    pointer_t release()
+    {
+        pointer_t released = ptr;
+
+        ptr = nullptr;
+
+        return released;
+    }
+
+    bool valid() const  { return ptr != nullptr; }
+
+    uint256 get_private_key() const;
+
+    static std::size_t get_public_key_max_size()  { return 33; }
+
+    std::size_t get_public_key_size() const;
+
+    uint8_t get_public_key (uint8* buffer) const;
 };
 
+} // openssl
 } // ripple
 
 #endif

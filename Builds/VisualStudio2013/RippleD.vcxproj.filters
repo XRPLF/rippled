@@ -352,6 +352,9 @@
     <Filter Include="ripple\crypto\impl">
       <UniqueIdentifier>{8EF07519-1C32-2E82-D707-702EB0157733}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ripple\crypto\tests">
+      <UniqueIdentifier>{ACAAFBB2-022D-2EAB-80CD-FBE3D9432F17}</UniqueIdentifier>
+    </Filter>
     <Filter Include="ripple\json">
       <UniqueIdentifier>{BEDCC703-A2C8-FF25-7E1E-3471BD39ED98}</UniqueIdentifier>
     </Filter>
@@ -3249,7 +3252,19 @@
     <ClInclude Include="..\..\src\ripple\crypto\DHUtil.h">
       <Filter>ripple\crypto</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\crypto\ECDSA.h">
+      <Filter>ripple\crypto</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\crypto\ECDSACanonical.h">
+      <Filter>ripple\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\crypto\ECIES.h">
+      <Filter>ripple\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\crypto\ec_key.h">
+      <Filter>ripple\crypto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\crypto\GenerateDeterministicKey.h">
       <Filter>ripple\crypto</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\crypto\impl\Base58Data.cpp">
@@ -3258,19 +3273,22 @@
     <ClCompile Include="..\..\src\ripple\crypto\impl\CBigNum.cpp">
       <Filter>ripple\crypto\impl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\crypto\impl\CKey.cpp">
-      <Filter>ripple\crypto\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\crypto\impl\CKeyDeterministic.cpp">
-      <Filter>ripple\crypto\impl</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\crypto\impl\CKeyECIES.cpp">
-      <Filter>ripple\crypto\impl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\crypto\impl\DHUtil.cpp">
       <Filter>ripple\crypto\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\crypto\impl\ECDSA.cpp">
+      <Filter>ripple\crypto\impl</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\crypto\impl\ECDSACanonical.cpp">
+      <Filter>ripple\crypto\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\crypto\impl\ECIES.cpp">
+      <Filter>ripple\crypto\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\crypto\impl\ec_key.cpp">
+      <Filter>ripple\crypto\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\crypto\impl\GenerateDeterministicKey.cpp">
       <Filter>ripple\crypto\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\crypto\impl\RandomNumbers.cpp">
@@ -3288,6 +3306,9 @@
     <ClInclude Include="..\..\src\ripple\crypto\RFC1751.h">
       <Filter>ripple\crypto</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\crypto\tests\CKey.test.cpp">
+      <Filter>ripple\crypto\tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\json\impl\JsonPropertyStream.cpp">
       <Filter>ripple\json\impl</Filter>
     </ClCompile>
