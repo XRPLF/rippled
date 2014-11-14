@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
+#include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/LoggedTimings.h>
 #include <ripple/basics/StringUtilities.h>
-#include <ripple/basics/Time.h>
 #include <ripple/protocol/JsonFields.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/JobQueue.h>
@@ -28,7 +28,6 @@
 #include <ripple/nodestore/Database.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <beast/unit_test/suite.h>
-#include <boost/date_time/posix_time/posix_time.hpp>
 
 namespace ripple {
 
@@ -643,7 +642,8 @@ bool Ledger::saveValidatedLedger (bool current)
 
     if (!getAccountHash ().isNonZero ())
     {
-        WriteLog (lsFATAL, Ledger) << "AH is zero: " << getJson (0);
+        WriteLog (lsFATAL, Ledger) << "AH is zero: "
+                                   << getJson (*this, 0);
         assert (false);
     }
 
@@ -920,7 +920,7 @@ Ledger::pointer Ledger::getSQL (std::string const& sql)
         {
             WriteLog (lsERROR, Ledger) << "Failed on ledger";
             Json::Value p;
-            ret->addJson (p, LEDGER_JSON_FULL);
+            addJson (*ret, p, LEDGER_JSON_FULL);
             WriteLog (lsERROR, Ledger) << p;
         }
 
@@ -1117,127 +1117,6 @@ Ledger::pointer Ledger::getLastFullLedger ()
                 << "Database contains ledger with missing nodes: " << sn;
         return Ledger::pointer ();
     }
-}
-
-void Ledger::addJson (Json::Value& ret, int options)
-{
-    ret[jss::ledger] = getJson (options);
-}
-
-static void stateItemTagAppender(Json::Value& value, SHAMapItem::ref smi)
-{
-    value.append (to_string (smi->getTag ()));
-}
-
-static void stateItemFullAppender(Json::Value& value, SLE::ref sle)
-{
-    value.append (sle->getJson (0));
-}
-
-Json::Value Ledger::getJson (int options) const
-{
-    Json::Value ledger (Json::objectValue);
-
-    bool const bFull (options & LEDGER_JSON_FULL);
-    bool const bExpand (options & LEDGER_JSON_EXPAND);
-
-    // DEPRECATED
-    ledger[jss::seqNum]
-            = beast::lexicalCastThrow <std::string> (mLedgerSeq);
-    ledger[jss::parent_hash] = to_string (mParentHash);
-    ledger[jss::ledger_index]
-            = beast::lexicalCastThrow <std::string> (mLedgerSeq);
-
-    if (mClosed || bFull)
-    {
-        if (mClosed)
-            ledger[jss::closed] = true;
-
-        // DEPRECATED
-        ledger[jss::hash] = to_string (mHash);
-
-        // DEPRECATED
-        ledger[jss::totalCoins]
-                = beast::lexicalCastThrow <std::string> (mTotCoins);
-        ledger[jss::ledger_hash]       = to_string (mHash);
-        ledger[jss::transaction_hash]  = to_string (mTransHash);
-        ledger[jss::account_hash]      = to_string (mAccountHash);
-        ledger[jss::accepted]          = mAccepted;
-        ledger[jss::total_coins]
-                = beast::lexicalCastThrow <std::string> (mTotCoins);
-
-        if (mCloseTime != 0)
-        {
-            ledger[jss::close_time]            = mCloseTime;
-            ledger[jss::close_time_human]
-                    = boost::posix_time::to_simple_string (
-                        ptFromSeconds (mCloseTime));
-            ledger[jss::close_time_resolution] = mCloseResolution;
-
-            if ((mCloseFlags & sLCF_NoConsensusTime) != 0)
-                ledger[jss::close_time_estimated] = true;
-        }
-    }
-    else
-    {
-        ledger[jss::closed] = false;
-    }
-
-    if (mTransactionMap && (bFull || options & LEDGER_JSON_DUMP_TXRP))
-    {
-        Json::Value& txns = (ledger[jss::transactions] = Json::arrayValue);
-        SHAMapTreeNode::TNType type;
-
-        for (auto item = mTransactionMap->peekFirstItem (type); item;
-             item = mTransactionMap->peekNextItem (item->getTag (), type))
-        {
-            if (bFull || bExpand)
-            {
-                if (type == SHAMapTreeNode::tnTRANSACTION_NM)
-                {
-                    SerializerIterator sit (item->peekSerializer ());
-                    SerializedTransaction txn (sit);
-                    txns.append (txn.getJson (0));
-                }
-                else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
-                {
-                    SerializerIterator sit (item->peekSerializer ());
-                    Serializer sTxn (sit.getVL ());
-
-                    SerializerIterator tsit (sTxn);
-                    SerializedTransaction txn (tsit);
-
-                    TransactionMetaSet meta (
-                        item->getTag (), mLedgerSeq, sit.getVL ());
-                    Json::Value txJson = txn.getJson (0);
-                    txJson[jss::metaData] = meta.getJson (0);
-                    txns.append (txJson);
-                }
-                else
-                {
-                    Json::Value error = Json::objectValue;
-                    error[to_string (item->getTag ())] = type;
-                    txns.append (error);
-                }
-            }
-            else txns.append (to_string (item->getTag ()));
-        }
-
-    }
-
-    if (mAccountStateMap && (bFull || options & LEDGER_JSON_DUMP_STATE))
-    {
-        Json::Value& state = (ledger[jss::accountState] = Json::arrayValue);
-        if (bFull || bExpand)
-            visitStateItems(std::bind(stateItemFullAppender, std::ref(state),
-                                      std::placeholders::_1));
-        else
-            mAccountStateMap->visitLeaves(
-                std::bind(stateItemTagAppender, std::ref(state),
-                          std::placeholders::_1));
-    }
-
-    return ledger;
 }
 
 void Ledger::setAcquiring (void)
@@ -1934,7 +1813,7 @@ bool Ledger::assertSane () const
 
     WriteLog (lsFATAL, Ledger) << "ledger is not sane";
 
-    Json::Value j = getJson (0);
+    Json::Value j = getJson (*this, 0);
 
     j [jss::accountTreeHash] = to_string (mAccountHash);
     j [jss::transTreeHash] = to_string (mTransHash);

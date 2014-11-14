@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
@@ -545,7 +546,7 @@ public:
             WriteLog (lsWARNING, LedgerConsensus) << mPrevLedgerHash
                 << " to " << netLgr;
             WriteLog (lsWARNING, LedgerConsensus)
-                << mPreviousLedger->getJson (0);
+                << ripple::getJson (*mPreviousLedger, 0);
 
             if (ShouldLog (lsDEBUG, LedgerConsensus))
             {

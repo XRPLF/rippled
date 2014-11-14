@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/core/LoadFeeTrack.h>
 #include <ripple/server/Role.h>
 
@@ -36,11 +37,11 @@ Json::Value doLedger (RPC::Context& context)
         Json::Value ret (Json::objectValue), current (Json::objectValue),
                 closed (Json::objectValue);
 
-        getApp().getLedgerMaster ().getCurrentLedger ()->addJson (current, 0);
-        getApp().getLedgerMaster ().getClosedLedger ()->addJson (closed, 0);
+        addJson (*getApp().getLedgerMaster ().getCurrentLedger (), current, 0);
+        addJson (*getApp().getLedgerMaster ().getClosedLedger (), closed, 0);
 
-        ret["open"] = current;
-        ret["closed"] = closed;
+        ret["open"] = std::move (current);
+        ret["closed"] = std::move (closed);
 
         return ret;
     }
@@ -84,11 +85,8 @@ Json::Value doLedger (RPC::Context& context)
         context.loadType = Resource::feeHighBurdenRPC;
     }
 
-
-    Json::Value ret (Json::objectValue);
-    lpLedger->addJson (ret, iOptions);
-
-    return ret;
+    addJson (*lpLedger, jvResult, iOptions, context.yield);
+    return jvResult;
 }
 
 } // ripple

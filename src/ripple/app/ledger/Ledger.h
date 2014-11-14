@@ -488,8 +488,12 @@ public:
 
     static std::set<std::uint32_t> getPendingSaves();
 
-    Json::Value getJson (int options) const;
-    void addJson (Json::Value&, int options);
+    /** Const version of getHash() which gets the current value without calling
+        updateHash(). */
+    uint256 const& getRawHash () const
+    {
+        return mHash;
+    }
 
     bool walkLedger () const;
     bool assertSane () const;

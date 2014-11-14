@@ -101,7 +101,7 @@ void fillJson (
     auto transactionMap = ledger.peekTransactionMap();
     if (transactionMap && (bFull || options & LEDGER_JSON_DUMP_TXRP))
     {
-        auto txns = RPC::addArray (json, jss::transactions);
+        auto&& txns = RPC::addArray (json, jss::transactions);
         SHAMapTreeNode::TNType type;
 
         int count = 0;
@@ -149,7 +149,7 @@ void fillJson (
     auto accountStateMap = ledger.peekAccountStateMap();
     if (accountStateMap && (bFull || options & LEDGER_JSON_DUMP_STATE))
     {
-        auto array = RPC::addArray (json, jss::accountState);
+        auto&& array = RPC::addArray (json, jss::accountState);
         auto count = 0;
         if (bFull || bExpand)
         {
@@ -185,7 +185,8 @@ template <class JsonValue>
 void addJson (
     Ledger const& ledger, JsonValue& json, int options, RPC::Yield const& yield)
 {
-    fillJson (ledger, RPC::addObject (json, jss::ledger), options, yield);
+    auto&& object = RPC::addObject (json, jss::ledger);
+    fillJson (ledger, object, options, yield);
 }
 
 inline
