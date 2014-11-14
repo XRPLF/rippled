@@ -29,6 +29,7 @@
 #include <ripple/resource/Manager.h>
 #include <ripple/resource/Fees.h>
 #include <beast/cxx14/algorithm.h> // <algorithm>
+#include <beast/http/rfc2616.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/optional.hpp>
 #include <boost/regex.hpp>
@@ -452,42 +453,6 @@ ServerHandler::Setup::makeContexts()
 
 namespace detail {
 
-// Parse a comma-delimited list of values.
-std::vector<std::string>
-parse_csv (std::string const& in, std::ostream& log)
-{
-    auto first = in.cbegin();
-    auto const last = in.cend();
-    std::vector<std::string> result;
-    if (first != last)
-    {
-        static boost::regex const re(
-            "^"                         // start of line
-            "(?:\\s*)"                  // whitespace (optional)
-            "([a-zA-Z][_a-zA-Z0-9]*)"   // identifier
-            "(?:\\s*)"                  // whitespace (optional)
-            "(?:,?)"                    // comma (optional)
-            "(?:\\s*)"                  // whitespace (optional)
-            , boost::regex_constants::optimize
-        );
-        for(;;)
-        {
-            boost::smatch m;
-            if (! boost::regex_search(first, last, m, re,
-                boost::regex_constants::match_continuous))
-            {
-                log << "Expected <identifier>\n";
-                throw std::exception();
-            }
-            result.push_back(m[1]);
-            first = m[0].second;
-            if (first == last)
-                break;
-        }
-    }
-    return result;
-}
-
 // Intermediate structure used for parsing
 struct ParsedPort
 {
@@ -551,7 +516,8 @@ parse_Port (ParsedPort& port, Section const& section, std::ostream& log)
         auto const result = section.find("protocol");
         if (result.second)
         {
-            for (auto const& s : parse_csv(result.first, log))
+            for (auto const& s : beast::rfc2616::split_commas(
+                    result.first.begin(), result.first.end()))
                 port.protocol.insert(s);
         }
     }
