@@ -50,38 +50,6 @@ bool RippleAddress::isSet () const
     return nVersion != VER_NONE;
 }
 
-std::string RippleAddress::humanAddressType () const
-{
-    switch (nVersion)
-    {
-    case VER_NONE:
-        return "VER_NONE";
-
-    case VER_NODE_PUBLIC:
-        return "VER_NODE_PUBLIC";
-
-    case VER_NODE_PRIVATE:
-        return "VER_NODE_PRIVATE";
-
-    case VER_ACCOUNT_ID:
-        return "VER_ACCOUNT_ID";
-
-    case VER_ACCOUNT_PUBLIC:
-        return "VER_ACCOUNT_PUBLIC";
-
-    case VER_ACCOUNT_PRIVATE:
-        return "VER_ACCOUNT_PRIVATE";
-
-    case VER_FAMILY_GENERATOR:
-        return "VER_FAMILY_GENERATOR";
-
-    case VER_FAMILY_SEED:
-        return "VER_FAMILY_SEED";
-    }
-
-    return "unknown";
-}
-
 //
 // NodePublic
 //
@@ -412,7 +380,7 @@ void RippleAddress::setAccountID (Account const& hash160)
 RippleAddress RippleAddress::createAccountPublic (
     RippleAddress const& generator, int iSeq)
 {
-    CKey            ckPub (generator, iSeq);
+    CKey            ckPub (generator.getGenerator(), iSeq);
     RippleAddress   naNew;
 
     naNew.setAccountPublic (ckPub.GetPubKey ());
@@ -473,7 +441,7 @@ void RippleAddress::setAccountPublic (Blob const& vPublic)
 
 void RippleAddress::setAccountPublic (RippleAddress const& generator, int seq)
 {
-    CKey    pubkey  = CKey (generator, seq);
+    CKey pubkey (generator.getGenerator(), seq);
 
     setAccountPublic (pubkey.GetPubKey ());
 }
@@ -576,7 +544,7 @@ void RippleAddress::setAccountPrivate (
     RippleAddress const& generator, RippleAddress const& naSeed, int seq)
 {
     CKey    ckPubkey    = CKey (naSeed.getSeed ());
-    CKey    ckPrivkey   = CKey (generator, ckPubkey.GetSecretBN (), seq);
+    CKey    ckPrivkey   = CKey (generator.getGenerator(), ckPubkey.GetSecretBN(), seq);
     uint256 uPrivKey;
 
     ckPrivkey.GetPrivateKeyU (uPrivKey);

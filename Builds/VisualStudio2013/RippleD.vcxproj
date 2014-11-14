@@ -2282,9 +2282,6 @@
     <ClCompile Include="..\..\src\ripple\crypto\impl\CBigNum.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\crypto\impl\CKey.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\crypto\impl\CKeyDeterministic.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -2309,6 +2306,9 @@
     </None>
     <ClInclude Include="..\..\src\ripple\crypto\RFC1751.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\crypto\tests\CKey.test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\json\impl\JsonPropertyStream.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
