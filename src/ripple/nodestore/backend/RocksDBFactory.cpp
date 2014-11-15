@@ -79,6 +79,9 @@ class RocksDBBackend
     , public BatchWriter::Callback
     , public beast::LeakChecked <RocksDBBackend>
 {
+private:
+    std::atomic <bool> m_deletePath;
+
 public:
     beast::Journal m_journal;
     size_t const m_keyBytes;
@@ -89,7 +92,8 @@ public:
 
     RocksDBBackend (int keyBytes, Parameters const& keyValues,
         Scheduler& scheduler, beast::Journal journal, RocksDBEnv* env)
-        : m_journal (journal)
+        : m_deletePath (false)
+        , m_journal (journal)
         , m_keyBytes (keyBytes)
         , m_scheduler (scheduler)
         , m_batch (*this, scheduler)
@@ -192,6 +196,12 @@ public:
 
     ~RocksDBBackend ()
     {
+        if (m_deletePath)
+        {
+            m_db.reset();
+            boost::filesystem::path dir = m_name;
+            boost::filesystem::remove_all (dir);
+        }
     }
 
     std::string
@@ -324,6 +334,12 @@ public:
     getWriteLoad ()
     {
         return m_batch.getWriteLoad ();
+    }
+
+    void
+    setDeletePath() override
+    {
+        m_deletePath = true;
     }
 
     //--------------------------------------------------------------------------

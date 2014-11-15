@@ -479,33 +479,8 @@ private:
                             database_->getArchiveBackend (true)->getName());
                 }
                 journal_.debug << "finished rotation " << validatedSeq;
-                if (checkStop())
-                    return;
 
-                // it's either this or go into each backend, set a flag
-                // then modify destructor
-                // it's OK to stop before deleting the old backend path because
-                // it will get deleted on restart
-                boost::filesystem::path oldBackendPath = oldBackend->getName();
-                while (oldBackend.use_count() > 1)
-                {
-                    journal_.debug << validatedSeq
-                            << "while oldBackend.use_count "
-                            << oldBackend.use_count();
-                    if (checkStop())
-                        return;
-                    std::this_thread::sleep_for (std::chrono::seconds (1));
-                }
-                oldBackend.reset();
-                boost::filesystem::remove_all (oldBackendPath);
-
-                journal_.debug << validatedSeq << " backends: "
-                        << database_->getWritableBackend()->getName() << ","
-                        << database_->getArchiveBackend()->getName() << ";"
-                        << " statedb: " << state_db_.getState().writableDb
-                        << "," << state_db_.getState().archiveDb;
-
-                journal_.debug << "end rotating " << validatedSeq;
+                oldBackend->setDeletePath();
             }
         }
     }

@@ -178,6 +178,8 @@ public:
         return 0;
     }
 
+    void setDeletePath() override {}
+
     //--------------------------------------------------------------------------
 
     void doBind (SqliteStatement& statement, NodeObject::ref object)

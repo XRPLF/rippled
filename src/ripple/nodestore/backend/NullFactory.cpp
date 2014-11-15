@@ -64,6 +64,9 @@ public:
         return 0;
     }
 
+    void
+    setDeletePath() override {}
+
 private:
 };
 
