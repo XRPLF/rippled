@@ -36,20 +36,14 @@ private:
     mutable std::mutex rotateMutex_;
 
     struct Backends {
-        std::shared_ptr <Backend> writableBackend;
-        std::shared_ptr <Backend> archiveBackend;
+        std::shared_ptr <Backend> const& writableBackend;
+        std::shared_ptr <Backend> const& archiveBackend;
     };
 
     Backends getBackends() const
     {
-        Backends b;
-        {
-            std::lock_guard <std::mutex> l (rotateMutex_);
-            b.writableBackend = writableBackend_;
-            b.archiveBackend = archiveBackend_;
-        }
-
-        return b;
+        std::lock_guard <std::mutex> lock (rotateMutex_);
+        return Backends {writableBackend_, archiveBackend_};
     }
 
 public:
@@ -67,7 +61,7 @@ public:
             , archiveBackend_ (archiveBackend)
     {}
 
-    std::shared_ptr <Backend> getWritableBackend (
+    std::shared_ptr <Backend> const &getWritableBackend (
             bool unlocked=false) const override
     {
         if (unlocked)
@@ -77,7 +71,7 @@ public:
         return writableBackend_;
     }
 
-    std::shared_ptr <Backend> getArchiveBackend (
+    std::shared_ptr <Backend> const& getArchiveBackend (
             bool unlocked=false) const override
     {
         if (unlocked)
@@ -93,7 +87,7 @@ public:
 
     // make sure to call it already locked!
     std::shared_ptr <Backend> rotateBackends (
-            std::shared_ptr <Backend> newBackend) override
+            std::shared_ptr <Backend> const& newBackend) override
     {
         std::shared_ptr <Backend> oldBackend = archiveBackend_;
         archiveBackend_ = writableBackend_;

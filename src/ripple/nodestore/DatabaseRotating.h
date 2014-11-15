@@ -35,14 +35,14 @@ public:
     /** Returns a lock for rotating backends */
     virtual std::unique_lock <std::mutex> getRotateLock() const = 0;
 
-    virtual std::shared_ptr <Backend> getWritableBackend (
+    virtual std::shared_ptr <Backend> const& getWritableBackend (
             bool unlocked=false) const = 0;
 
-    virtual std::shared_ptr <Backend> getArchiveBackend (
+    virtual std::shared_ptr <Backend> const& getArchiveBackend (
             bool unlocked=false) const = 0;
 
     virtual std::shared_ptr <Backend> rotateBackends (
-            std::shared_ptr <Backend> newBackend) = 0;
+            std::shared_ptr <Backend> const& newBackend) = 0;
 
     /** Ensure that node is in writableBackend */
     virtual NodeObject::Ptr fetchNode (uint256 const& hash) = 0;

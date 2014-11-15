@@ -254,6 +254,8 @@ private:
     std::string const dbPrefix_ = "rippledb";
     Ledger::pointer validatedLedger_;
     std::uint64_t const checkStopInterval_ = 1000;
+    std::uint32_t const batchSize_ = 5000;
+    std::uint32_t pause_ = 1000;
 
 public:
     SHAMapStoreImp (Setup const& setup,
@@ -651,22 +653,20 @@ private:
         db->endIterRows ();
         lock.unlock();
 
-        std::uint32_t const batchSize = 5000;
-        std::uint32_t pause = 1000;
         boost::format formattedDeleteQuery (deleteQuery);
 
         journal_.debug << "start: " << deleteQuery << " from "
                 << min << " to " << lastRotated;
         while (min < lastRotated)
         {
-            min = (min + batchSize >= lastRotated) ? lastRotated :
-                min + batchSize;
+            min = (min + batchSize_ >= lastRotated) ? lastRotated :
+                min + batchSize_;
             lock.lock();
             db->executeSQL (boost::str (formattedDeleteQuery % min));
             lock.unlock();
             if ( checkStop (false))
                 return;
-            std::this_thread::sleep_for (std::chrono::microseconds (pause));
+            std::this_thread::sleep_for (std::chrono::microseconds (pause_));
         }
         journal_.debug << "finished: " << deleteQuery;
     }
