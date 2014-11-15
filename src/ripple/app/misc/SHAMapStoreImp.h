@@ -427,7 +427,7 @@ private:
                 canDelete = state_db_.getCanDelete();
 
             if (validatedSeq >= lastRotated + setup_.deleteInterval
-                    && canDelete >= lastRotated-1)
+                    && canDelete >= lastRotated - 1)
             {
                 journal_.debug << "rotating  validatedSeq " << validatedSeq
                         << " lastRotated " << lastRotated << " deleteInterval "
@@ -539,17 +539,11 @@ private:
                 it != boost::filesystem::directory_iterator(); ++it)
         {
             if (! state.writableDb.compare (it->path().native()))
-            {
                 writableDbExists = true;
-            }
             else if (! state.archiveDb.compare (it->path().native()))
-            {
                 archiveDbExists = true;
-            }
             else if (! dbPrefix_.compare (it->path().stem().native()))
-            {
                 boost::filesystem::remove_all (it->path());
-            }
         }
 
         if ((!writableDbExists && state.writableDb.size()) ||

@@ -71,14 +71,10 @@ public:
             bool unlocked=false) const override
     {
         if (unlocked)
-        {
             return writableBackend_;
-        }
-        else
-        {
-            std::lock_guard <std::mutex> l (rotateMutex_);
-            return writableBackend_;
-        }
+
+        std::lock_guard <std::mutex> l (rotateMutex_);
+        return writableBackend_;
     }
 
     std::shared_ptr <Backend> getArchiveBackend (
