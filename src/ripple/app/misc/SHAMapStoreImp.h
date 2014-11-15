@@ -292,8 +292,8 @@ public:
     std::uint32_t
     clampFetchDepth (std::uint32_t fetch_depth) const override
     {
-        if (setup_.deleteInterval && fetch_depth > setup_.deleteInterval)
-            fetch_depth = setup_.deleteInterval;
+        if (setup_.deleteInterval)
+            fetch_depth = std::min (fetch_depth, setup_.deleteInterval);
 
         return fetch_depth;
     }
@@ -402,19 +402,18 @@ private:
         {
             Ledger::pointer validatedLedger;
 
-            std::unique_lock <std::mutex> l (mutex_);
+            std::unique_lock <std::mutex> lock (mutex_);
             if (stop_)
             {
                 stopped();
                 return;
             }
-            cond_.wait (l);
+            cond_.wait (lock);
             if (validatedLedger_.get())
-                validatedLedger = validatedLedger_;
+                validatedLedger = std::move (validatedLedger_);
             else
                 continue;
-            validatedLedger_.reset();
-            l.unlock();
+            lock.unlock();
 
             LedgerIndex validatedSeq = validatedLedger->getLedgerSeq();
             if (!lastRotated)
@@ -506,7 +505,7 @@ private:
                         << " statedb: " << state_db_.getState().writableDb
                         << "," << state_db_.getState().archiveDb;
 
-            journal_.debug << "end rotating " << validatedSeq;
+                journal_.debug << "end rotating " << validatedSeq;
             }
         }
     }
@@ -633,14 +632,15 @@ private:
     }
 
     bool
-    checkStop()
+    checkStop (bool callStopped=true)
     {
         bool r = false;
 
         std::lock_guard <std::mutex> l (mutex_);
         if (stop_)
         {
-            stopped();
+            if (callStopped)
+                stopped();
             r = true;
         }
 
@@ -656,7 +656,7 @@ private:
         for (uint256 it: cache.getKeys())
         {
             database_->fetchNode (it);
-            if ((! ++check % checkStopInterval_) && stop_)
+            if (! (++check % checkStopInterval_) && checkStop (false))
                 return true;
         }
 
@@ -695,7 +695,7 @@ private:
             lock.lock();
             db->executeSQL (boost::str (formattedDeleteQuery % min));
             lock.unlock();
-            if (stop_)
+            if ( checkStop (false))
                 return;
             std::this_thread::sleep_for (std::chrono::microseconds (pause));
         }
@@ -724,7 +724,7 @@ private:
     clearPrior (LedgerIndex lastRotated)
     {
         getApp().getLedgerMaster().clearPriorLedgers (lastRotated);
-        if (stop_)
+        if (checkStop (false))
             return;
 
         // TODO this won't remove validations for ledgers that do not get
@@ -735,28 +735,28 @@ private:
             "SELECT MIN(LedgerSeq) FROM Ledgers;",
             "DELETE FROM Validations WHERE Ledgers.LedgerSeq < %u"
             " AND Validations.LedgerHash = Ledgers.LedgerHash;");
-        if (stop_)
+        if (checkStop (false))
             return;
 
         clearSql (getApp().getLedgerDB().getDB(),
             getApp().getLedgerDB().lock (true), lastRotated,
             "SELECT MIN(LedgerSeq) FROM Ledgers;",
             "DELETE FROM Ledgers WHERE LedgerSeq < %u;");
-        if (stop_)
+        if (checkStop (false))
             return;
 
         clearSql (getApp().getTxnDB().getDB(),
             getApp().getTxnDB().lock (true), lastRotated,
             "SELECT MIN(LedgerSeq) FROM Transactions;",
             "DELETE FROM Transactions WHERE LedgerSeq < %u;");
-        if (stop_)
+        if (checkStop (false))
             return;
 
         clearSql (getApp().getTxnDB().getDB(),
             getApp().getTxnDB().lock (true), lastRotated,
             "SELECT MIN(LedgerSeq) FROM AccountTransactions;",
             "DELETE FROM AccountTransactions WHERE LedgerSeq < %u;");
-        if (stop_)
+        if (checkStop (false))
             return;
     }
 
@@ -783,7 +783,7 @@ private:
         if (setup_.deleteInterval)
         {
             {
-                std::lock_guard <std::mutex> l (mutex_);
+                std::lock_guard <std::mutex> lock (mutex_);
                 stop_ = true;
             }
             cond_.notify_one();

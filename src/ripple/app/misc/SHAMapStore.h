@@ -73,7 +73,6 @@ public:
 SHAMapStore::Setup
 setup_SHAMapStore(Config const& c);
 
-// ApplicationImp initializer: make_SHAMapStore(setup_SHAMapStore(getConfig())
 std::unique_ptr<SHAMapStore>
 make_SHAMapStore(SHAMapStore::Setup const& s,
         beast::Stoppable& parent,

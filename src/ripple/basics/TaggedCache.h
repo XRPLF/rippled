@@ -479,10 +479,9 @@ public:
 
         {
             lock_guard lock (m_mutex);
-
             v.reserve (m_cache.size());
-            for (cache_iterator it = m_cache.begin(); it != m_cache.end(); ++it)
-                v.push_back (it->first);
+            for (auto const& _ : m_cache)
+                v.push_back (_.first);
         }
 
         return v;
