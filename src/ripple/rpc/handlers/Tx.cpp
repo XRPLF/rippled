@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-
 namespace ripple {
 
 // {
@@ -66,21 +65,8 @@ Json::Value doTx (RPC::Context& context)
             if (lgr->getTransactionMeta (txn->getID (), txMeta))
             {
                 okay = true;
-
                 auto meta = txMeta->getJson (0);
-
-                auto const stx = txn->getSTransaction ();
-
-                if (stx && stx->getTxnType () == ttPAYMENT)
-                {
-                    auto delivered_amount = stx->getFieldAmount (sfAmount);
-
-                    if (txMeta->hasDeliveredAmount ())
-                        delivered_amount = txMeta->getDeliveredAmount ();
-
-                    meta[jss::delivered_amount] = delivered_amount.getJson (1);
-                }
-
+                addPaymentDeliveredAmount (meta, context, txn, txMeta);
                 ret[jss::meta] = meta;
             }
         }

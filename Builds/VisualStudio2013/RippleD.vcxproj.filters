@@ -4161,6 +4161,9 @@
     <ClInclude Include="..\..\src\ripple\rpc\impl\Tuning.h">
       <Filter>ripple\rpc\impl</Filter>
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\rpc\impl\utilities.cpp">
+      <Filter>ripple\rpc\impl</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\InternalHandler.h">
       <Filter>ripple\rpc</Filter>
     </ClInclude>

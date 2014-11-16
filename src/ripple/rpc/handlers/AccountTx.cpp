@@ -118,7 +118,6 @@ Json::Value doAccountTx (RPC::Context& context)
                 jvObj[jss::validated] = bValidated &&
                     uValidatedMin <= uLedgerIndex &&
                     uValidatedMax >= uLedgerIndex;
-
             }
         }
         else
@@ -137,19 +136,7 @@ Json::Value doAccountTx (RPC::Context& context)
                 if (it.second)
                 {
                     auto meta = it.second->getJson (1);
-
-                    auto const stx = it.first->getSTransaction ();
-
-                    if (stx && stx->getTxnType () == ttPAYMENT)
-                    {
-                        auto delivered = stx->getFieldAmount (sfAmount);
-
-                        if (it.second->hasDeliveredAmount ())
-                            delivered = it.second->getDeliveredAmount ();
-
-                        meta[jss::delivered_amount] = delivered.getJson (1);
-                    }
-
+                    addPaymentDeliveredAmount (meta, context, it.first, it.second);
                     jvObj[jss::meta] = meta;
 
                     std::uint32_t uLedgerIndex = it.second->getLgrSeq ();

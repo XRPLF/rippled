@@ -38,6 +38,7 @@
 #include <ripple/rpc/impl/RPCHandler.cpp>
 #include <ripple/rpc/impl/Status.cpp>
 #include <ripple/rpc/impl/Status_test.cpp>
+#include <ripple/rpc/impl/utilities.cpp>
 
 #include <ripple/rpc/handlers/Handlers.h>
 #include <ripple/rpc/handlers/AccountCurrencies.cpp>
