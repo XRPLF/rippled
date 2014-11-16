@@ -26,10 +26,6 @@ DatabaseCon::DatabaseCon (Setup const& setup,
         const char* initStrings[],
         int initCount)
 {
-    // VFALCO TODO remove this dependency on the config by making it the caller's
-    //         responsibility to pass in the path. Add a member function to Application
-    //         or Config to compute this path.
-    //
     auto const useTempFiles  // Use temporary files or regular DB files?
         = setup.standAlone &&
           setup.startUp != Config::LOAD &&
