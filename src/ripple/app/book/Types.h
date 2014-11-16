@@ -29,6 +29,14 @@
 namespace ripple {
 namespace core {
 
+/** The flavor of an offer crossing */
+enum class CrossType
+{
+    XrpToIou,
+    IouToXrp,
+    IouToIou
+};
+
 /** A mutable view that overlays an immutable ledger to track changes. */
 typedef LedgerEntrySet LedgerView;
 

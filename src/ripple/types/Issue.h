@@ -86,6 +86,9 @@ bool isConsistent(IssueType<ByValue> const& ac)
 template <bool ByValue>
 std::string to_string (IssueType<ByValue> const& ac)
 {
+    if (isXRP (ac.account))
+        return to_string (ac.currency);
+
     return to_string(ac.account) + "/" + to_string(ac.currency);
 }
 

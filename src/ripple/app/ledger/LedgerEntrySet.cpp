@@ -1263,37 +1263,6 @@ STAmount LedgerEntrySet::accountFunds (
     return saFunds;
 }
 
-// Calculate transit fee.
-STAmount LedgerEntrySet::rippleTransferFee (
-    Account const& uSenderID,
-    Account const& uReceiverID,
-    Account const& issuer,
-    STAmount const& saAmount)
-{
-    if (uSenderID != issuer && uReceiverID != issuer)
-    {
-        std::uint32_t uTransitRate = rippleTransferRate (*this, issuer);
-
-        if (QUALITY_ONE != uTransitRate)
-        {
-            // NIKB use STAmount::saFromRate
-            STAmount saTransitRate (
-                noIssue(), static_cast<std::uint64_t> (uTransitRate), -9);
-
-            STAmount saTransferTotal = multiply (
-                saAmount, saTransitRate, saAmount.issue ());
-            STAmount saTransferFee = saTransferTotal - saAmount;
-
-            WriteLog (lsDEBUG, LedgerEntrySet) << "rippleTransferFee:" <<
-                " saTransferFee=" << saTransferFee.getFullText ();
-
-            return saTransferFee;
-        }
-    }
-
-    return saAmount.zeroed();
-}
-
 TER LedgerEntrySet::trustCreate (
     const bool      bSrcHigh,
     Account const&  uSrcAccountID,
@@ -1564,42 +1533,71 @@ TER LedgerEntrySet::rippleSend (
     Account const& uSenderID, Account const& uReceiverID,
     STAmount const& saAmount, STAmount& saActual)
 {
-    auto const issuer   = saAmount.getIssuer ();
-    TER             terResult;
+    auto const& issue = saAmount.issue ();
+    auto const& issuer = saAmount.issue ().account;
 
     assert (!isXRP (uSenderID) && !isXRP (uReceiverID));
     assert (uSenderID != uReceiverID);
 
-    if (uSenderID == issuer || uReceiverID == issuer || issuer == noAccount())
+    // Issues and redeems are processed directly without any fees.
+    if (uSenderID == issue.account)
     {
-        // Direct send: redeeming IOUs and/or sending own IOUs.
-        terResult   = rippleCredit (uSenderID, uReceiverID, saAmount, false);
-        saActual    = saAmount;
-        terResult   = tesSUCCESS;
+        assert (issue.account != noAccount ());
+        saActual = saAmount;
+        return issue_iou (uReceiverID, saAmount, issue);
     }
-    else
+
+    if (uReceiverID == issue.account)
     {
-        // Sending 3rd party IOUs: transit.
+        assert (issue.account != noAccount ());
+        saActual = saAmount;
+        return redeem_iou (uSenderID, saAmount, issue);
+    }
 
-        STAmount saTransitFee = rippleTransferFee (
-            uSenderID, uReceiverID, issuer, saAmount);
-
-        saActual = !saTransitFee ? saAmount : saAmount + saTransitFee;
-
-        saActual.setIssuer (issuer); // XXX Make sure this done in + above.
-
-        WriteLog (lsDEBUG, LedgerEntrySet) << "rippleSend> " <<
-            to_string (uSenderID) <<
+    // NIKB TODO: What is going on here? Under what circumstances would we try
+    // to transfer some currency without a specified issuer?
+    if (issue.account == noAccount())
+    {
+        WriteLog (lsDEBUG, LedgerEntrySet) <<
+            "rippleSend> " << to_string (uSenderID) <<
             " - > " << to_string (uReceiverID) <<
-            " : deliver=" << saAmount.getFullText () <<
-            " fee=" << saTransitFee.getFullText () <<
-            " cost=" << saActual.getFullText ();
+            " : amount with issuer=1: " << saAmount.getFullText ();
 
-        terResult   = rippleCredit (issuer, uReceiverID, saAmount);
+        // Direct send: redeeming IOUs and/or sending own IOUs.
+        TER result = rippleCredit (uSenderID, uReceiverID, saAmount, false);
+        saActual = saAmount;
 
-        if (tesSUCCESS == terResult)
-            terResult   = rippleCredit (uSenderID, issuer, saActual);
+        // NIKB CHECKME: Why are we setting terResult to tesSUCCESS here?
+        result = tesSUCCESS;
+
+        return result;
     }
+    
+    assert (uSenderID != issue.account && uReceiverID != issue.account);
+
+    // Sending IOUs to a third party: we must calculate the transit fee, by
+    // applying the transfer rate, if any.
+    saActual = saAmount;
+
+    std::uint32_t const transit_rate = rippleTransferRate (*this, issuer);
+
+    if (QUALITY_ONE != transit_rate)
+    {
+        saActual = multiply (saActual, STAmount::saFromRate (transit_rate),
+            saActual.issue ());
+    }
+
+    WriteLog (lsDEBUG, LedgerEntrySet) <<
+        "rippleSend> " << to_string (uSenderID) <<
+        " - > " << to_string (uReceiverID) <<
+        " : deliver=" << saAmount.getFullText () <<
+        " cost=" << saActual.getFullText () <<
+        " fee=" << (saActual - saAmount).getFullText ();
+
+    TER terResult = issue_iou (uReceiverID, saAmount, saAmount.issue ());
+
+    if (tesSUCCESS == terResult)
+        terResult = redeem_iou (uSenderID, saActual, saActual.issue ());
 
     return terResult;
 }
@@ -1702,6 +1700,219 @@ TER LedgerEntrySet::accountSend (
     }
 
     return terResult;
+}
+
+bool LedgerEntrySet::checkState (
+    SLE::pointer state,
+    bool bIssuerHigh,
+    Account const& sender,
+    STAmount const& before,
+    STAmount const& after)
+{
+    std::uint32_t const flags (state->getFieldU32 (sfFlags));
+
+    // YYY Could skip this if rippling in reverse.
+    if (before > zero
+        // Sender balance was positive.
+        && after <= zero
+        // Sender is zero or negative.
+        && (flags & (!bIssuerHigh ? lsfLowReserve : lsfHighReserve))
+        // Sender reserve is set.
+        && !(flags & (!bIssuerHigh ? lsfLowNoRipple : lsfHighNoRipple))
+        && !(flags & (!bIssuerHigh ? lsfLowFreeze : lsfHighFreeze))
+        && !state->getFieldAmount (
+            !bIssuerHigh ? sfLowLimit : sfHighLimit)
+        // Sender trust limit is 0.
+        && !state->getFieldU32 (
+            !bIssuerHigh ? sfLowQualityIn : sfHighQualityIn)
+        // Sender quality in is 0.
+        && !state->getFieldU32 (
+            !bIssuerHigh ? sfLowQualityOut : sfHighQualityOut))
+        // Sender quality out is 0.
+    {
+        // Clear the reserve of the sender, possibly delete the line!
+        decrementOwnerCount (sender);
+
+        // Clear reserve flag.
+        state->setFieldU32 (
+            sfFlags,
+            flags & (!bIssuerHigh ? ~lsfLowReserve : ~lsfHighReserve));
+
+        // Balance is zero, receiver reserve is clear.
+        if (!after        // Balance is zero.
+            && !(flags & (bIssuerHigh ? lsfLowReserve : lsfHighReserve)))
+            return true;
+    }
+
+    return false;
+}
+
+TER LedgerEntrySet::issue_iou (
+    Account const& account,
+    STAmount const& amount,
+    Issue const& issue)
+{
+    assert (!isXRP (account) && !isXRP (issue.account));
+
+    // Consistency check
+    assert (issue == amount.issue ());
+
+    // Can't send to self!
+    assert (issue.account != account);
+
+    WriteLog (lsTRACE, LedgerEntrySet) << "issue_iou: " <<
+        to_string (account) << ": " <<
+        amount.getFullText ();
+
+    bool bSenderHigh = issue.account > account;
+    uint256 const index = Ledger::getRippleStateIndex (
+        issue.account, account, issue.currency);
+    auto state = entryCache (ltRIPPLE_STATE, index);
+
+    if (!state)
+    {
+        // NIKB TODO: The limit uses the receiver's account as the issuer and
+        // this is unnecessarily inefficient as copying which could be avoided
+        // is now required. Consider available options.
+        STAmount limit({issue.currency, account});
+        STAmount final_balance = amount;
+
+        final_balance.setIssuer (noAccount());
+
+        return trustCreate (bSenderHigh, issue.account, account,
+            index, entryCache (ltACCOUNT_ROOT, 
+                Ledger::getAccountRootIndex (account)),
+            false, false, false, final_balance, limit);
+    }
+
+    STAmount final_balance = state->getFieldAmount (sfBalance);
+
+    if (bSenderHigh)
+        final_balance.negate ();    // Put balance in sender terms.
+
+    STAmount const start_balance = final_balance;
+
+    final_balance -= amount;
+
+    if (bSenderHigh)
+        final_balance.negate ();
+
+    // Adjust the balance on the trust line if necessary. We do this even if we
+    // are going to delete the line to reflect the correct balance at the time
+    // of deletion.
+    state->setFieldAmount (sfBalance, final_balance);
+
+    if (checkState (state, bSenderHigh, issue.account, start_balance, final_balance))
+    {
+        return trustDelete (state,
+            bSenderHigh ? account : issue.account,
+            bSenderHigh ? issue.account : account);
+    }
+
+    entryModify (state);
+    return tesSUCCESS;
+}
+
+TER LedgerEntrySet::redeem_iou (
+    Account const& account,
+    STAmount const& amount,
+    Issue const& issue)
+{
+    assert (!isXRP (account) && !isXRP (issue.account));
+
+    // Consistency check
+    assert (issue == amount.issue ());
+
+    // Can't send to self!
+    assert (issue.account != account);
+
+    WriteLog (lsTRACE, LedgerEntrySet) << "redeem_iou: " <<
+        to_string (account) << ": " <<
+        amount.getFullText ();
+
+    bool bSenderHigh = account > issue.account;
+    uint256 const index = Ledger::getRippleStateIndex (
+        account, issue.account, amount.getCurrency ());
+    auto state  = entryCache (ltRIPPLE_STATE, index);
+
+    if (!state)
+    {
+        STAmount limit(issue);
+        STAmount final_balance = amount;
+
+        final_balance.setIssuer (noAccount());
+
+        return trustCreate (bSenderHigh, account, issue.account,
+            index, entryCache (ltACCOUNT_ROOT, 
+                Ledger::getAccountRootIndex (issue.account)),
+            false, false, false, final_balance, limit);
+    }
+
+    STAmount final_balance = state->getFieldAmount (sfBalance);
+
+    if (bSenderHigh)
+        final_balance.negate ();    // Put balance in sender terms.
+
+    STAmount const start_balance = final_balance;
+
+    final_balance -= amount;
+
+    if (bSenderHigh)
+        final_balance.negate ();
+
+    // Adjust the balance on the trust line if necessary. We do this even if we
+    // are going to delete the line to reflect the correct balance at the time
+    // of deletion.
+    state->setFieldAmount (sfBalance, final_balance);
+
+    if (checkState (state, bSenderHigh, account, start_balance, final_balance))
+    {
+        return trustDelete (state,
+            bSenderHigh ? issue.account : account,
+            bSenderHigh ? account : issue.account);
+    }
+    
+    entryModify (state);
+    return tesSUCCESS;
+}
+
+TER LedgerEntrySet::transfer_xrp (
+    Account const& from,
+    Account const& to,
+    STAmount const& amount)
+{
+    assert (from != beast::zero);
+    assert (to != beast::zero);
+    assert (from != to);
+    assert (amount.isNative ());
+
+    SLE::pointer sender = entryCache (ltACCOUNT_ROOT,
+        Ledger::getAccountRootIndex (from));
+    SLE::pointer receiver = entryCache (ltACCOUNT_ROOT,
+        Ledger::getAccountRootIndex (to));
+
+    WriteLog (lsTRACE, LedgerEntrySet) << "transfer_xrp: " <<
+        to_string (from) <<  " -> " << to_string (to) <<
+        ") : " << amount.getFullText ();
+
+    if (sender->getFieldAmount (sfBalance) < amount)
+    {
+        // FIXME: this logic should be moved to callers maybe?
+        return (mParams & tapOPEN_LEDGER)
+            ? telFAILED_PROCESSING
+            : tecFAILED_PROCESSING;
+    }
+
+    // Decrement XRP balance.
+    sender->setFieldAmount (sfBalance,
+        sender->getFieldAmount (sfBalance) - amount);
+    entryModify (sender);
+
+    receiver->setFieldAmount (sfBalance,
+        receiver->getFieldAmount (sfBalance) + amount);
+    entryModify (receiver);
+    
+    return tesSUCCESS;
 }
 
 std::uint32_t

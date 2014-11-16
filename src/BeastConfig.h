@@ -197,7 +197,7 @@
     This determines whether ripple implements offer autobridging via XRP.
 */
 #ifndef RIPPLE_ENABLE_AUTOBRIDGING
-#define RIPPLE_ENABLE_AUTOBRIDGING 0
+#define RIPPLE_ENABLE_AUTOBRIDGING 1
 #endif
 
 /** Config: RIPPLE_SINGLE_IO_SERVICE_THREAD

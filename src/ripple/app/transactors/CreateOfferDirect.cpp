@@ -17,39 +17,67 @@
 */
 //==============================================================================
 
-#include <ripple/app/book/OfferStream.h>
 #include <ripple/app/book/Taker.h>
-#include <beast/streams/debug_ostream.h>
+#include <stdexcept>
 
 namespace ripple {
 
 std::pair<TER, core::Amounts>
-CreateOffer::crossOffersDirect (
+CreateOffer::direct_cross (
+    core::Taker& taker,
     core::LedgerView& view,
-    core::Amounts const& taker_amount)
+    core::LedgerView& view_cancel,
+    core::Clock::time_point const when)
 {
-    core::Taker::Options const options (mTxn.getFlags());
-
-    core::Clock::time_point const when (
-        mEngine->getLedger ()->getParentCloseTimeNC ());
-
-    core::LedgerView view_cancel (view.duplicate());
     core::OfferStream offers (
         view, view_cancel,
-        Book (taker_amount.in.issue(), taker_amount.out.issue()),
+        Book (taker.issue_in (), taker.issue_out ()),
         when, m_journal);
-    core::Taker taker (offers.view(), mTxnAccountID, taker_amount, options);
 
     TER cross_result (tesSUCCESS);
+    int count = 0;
 
-    while (true)
+    bool have_offer = step_account (offers, taker);
+
+    // Modifying the order or logic of the operations in the loop will cause
+    // a protocol breaking change.
+    while (have_offer)
     {
-        // Modifying the order or logic of these
-        // operations causes a protocol breaking change.
+        bool direct_consumed = false;
+        auto const& offer (offers.tip());
 
-        // Checks which remove offers are performed early so we
-        // can reduce the size of the order book as much as possible
-        // before terminating the loop.
+        // We are done with crossing as soon as we cross the quality boundary
+        if (taker.reject (offer.quality()))
+            break;
+
+        count++;
+
+        if (m_journal.debug)
+        {
+            m_journal.debug << count << " Direct:";
+            m_journal.debug << "  offer: " << offer;
+            m_journal.debug << "     in: " << offer.amount ().in;
+            m_journal.debug << "    out: " << offer.amount ().out;
+            m_journal.debug << "  owner: " << offer.owner ();
+            m_journal.debug << "  funds: " << view.accountFunds (
+                offer.owner (), offer.amount ().out, fhIGNORE_FREEZE);
+        }
+
+        cross_result = taker.cross (offer);
+
+        m_journal.debug << "Direct Result: " << transToken (cross_result);
+
+        if (dry_offer (view, offer))
+        {
+            direct_consumed = true;
+            have_offer = step_account (offers, taker);
+        }
+
+        if (cross_result != tesSUCCESS)
+        {
+            cross_result = tecFAILED_PROCESSING;
+            break;
+        }
 
         if (taker.done())
         {
@@ -57,41 +85,12 @@ CreateOffer::crossOffersDirect (
             break;
         }
 
-        if (! offers.step ())
-        {
-            // Place the order since there are no
-            // more offers and the order has a balance.
-            m_journal.debug << "No more offers to consider during crossing!";
-            break;
-        }
+        // Postcondition: If we aren't done, then we *must* have consumed the
+        //                offer on the books fully!
+        assert (direct_consumed);
 
-        auto const& offer (offers.tip());
-
-        if (taker.reject (offer.quality()))
-        {
-            // Place the order since there are no more offers
-            // at the desired quality, and the order has a balance.
-            break;
-        }
-
-        if (offer.account() == taker.account())
-        {
-            // Skip offer from self. The offer will be considered expired and
-            // will get deleted.
-            continue;
-        }
-
-        if (m_journal.debug) m_journal.debug <<
-                "  Offer: " << offer.entry()->getIndex() << std::endl <<
-                "         " << offer.amount().in << " : " << offer.amount().out;
-
-        cross_result = taker.cross (offer);
-
-        if (cross_result != tesSUCCESS)
-        {
-            cross_result = tecFAILED_PROCESSING;
-            break;
-        }
+        if (!direct_consumed)
+            throw std::logic_error ("direct crossing: nothing was fully consumed.");
     }
 
     return std::make_pair(cross_result, taker.remaining_offer ());

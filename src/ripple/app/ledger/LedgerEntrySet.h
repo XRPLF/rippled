@@ -207,10 +207,6 @@ public:
 
     bool isGlobalFrozen (Account const& issuer);
 
-    STAmount rippleTransferFee (
-        Account const& uSenderID, Account const& uReceiverID,
-        Account const& issuer, const STAmount & saAmount);
-
     TER rippleCredit (
         Account const& uSenderID, Account const& uReceiverID,
         const STAmount & saAmount, bool bCheckIssuer = true);
@@ -282,6 +278,14 @@ public:
         mSet.setDeliveredAmount (amt);
     }
 
+    TER issue_iou (Account const& account,
+        STAmount const& amount, Issue const& issue);
+
+    TER redeem_iou (Account const& account,
+        STAmount const& amount, Issue const& issue);
+
+    TER transfer_xrp (Account const& from, Account const& to, STAmount const& amount);
+
 private:
     Ledger::pointer mLedger;
     std::map<uint256, LedgerEntrySetEntry>  mEntries; // cannot be unordered!
@@ -321,6 +325,9 @@ private:
     STAmount rippleHolds (
         Account const& account, Currency const& currency,
         Account const& issuer, FreezeHandling zeroIfFrozen);
+
+    bool checkState (SLE::pointer state, bool bIssuerHigh, 
+        Account const& sender, STAmount const& before, STAmount const& after);
 };
 
 // NIKB FIXME: move these to the right place

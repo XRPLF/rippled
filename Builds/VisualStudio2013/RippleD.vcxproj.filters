@@ -2499,6 +2499,9 @@
     <ClCompile Include="..\..\src\ripple\app\book\tests\Quality.test.cpp">
       <Filter>ripple\app\book\tests</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\app\book\tests\Taker.test.cpp">
+      <Filter>ripple\app\book\tests</Filter>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\book\Types.h">
       <Filter>ripple\app\book</Filter>
     </ClInclude>
