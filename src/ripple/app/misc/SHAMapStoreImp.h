@@ -28,6 +28,8 @@
 #include <iostream>
 #include <condition_variable>
 
+#include "NetworkOPs.h"
+
 namespace ripple {
 
 class SHAMapStoreImp : public SHAMapStore
@@ -38,6 +40,13 @@ private:
         std::string writableDb;
         std::string archiveDb;
         LedgerIndex lastRotated;
+    };
+
+    enum Health : std::uint8_t
+    {
+        ok = 0,
+        stopping,
+        unhealthy
     };
 
     // keep this all within SHAMapStore, with forwarding functions for
@@ -239,6 +248,19 @@ private:
         }
     };
 
+    // name of sqlite state database
+    std::string const dbName_ = "state.db";
+    // prefix of on-disk nodestore backend instances
+    std::string const dbPrefix_ = "rippledb";
+    // check health/stop status as records are copied
+    std::uint64_t const checkHealthInterval_ = 1000;
+    // batch size in ledgers for deleting from sqlite
+    std::uint32_t const batchSize_ = 1000;
+    // microseconds to back off between sqlite deletion batches
+    std::uint32_t pause_ = 1000;
+    // seconds to compare against ledger age
+    std::uint16_t ageTooHigh_ = 60;
+
     Setup setup_;
     NodeStore::Manager& manager_;
     NodeStore::Scheduler& scheduler_;
@@ -247,15 +269,21 @@ private:
     NodeStore::DatabaseRotating* database_;
     SavedStateDB state_db_;
     std::thread thread_;
-    bool stop_;
+    bool stop_ = false;
+    bool healthy_ = true;
     mutable std::condition_variable cond_;
     mutable std::mutex mutex_;
-    std::string const dbName_ = "state.db";
-    std::string const dbPrefix_ = "rippledb";
+    Ledger::pointer newLedger_;
     Ledger::pointer validatedLedger_;
-    std::uint64_t const checkStopInterval_ = 1000;
-    std::uint32_t const batchSize_ = 5000;
-    std::uint32_t pause_ = 1000;
+    TransactionMaster& transactionMaster_;
+    // these do not exist upon SHAMapStore creation, but do exist
+    // as of onPrepare() or before
+    NetworkOPs* netOPs_ = nullptr;
+    LedgerMaster* ledgerMaster_ = nullptr;
+    FullBelowCache* fullBelowCache_ = nullptr;
+    TreeNodeCache* treeNodeCache_ = nullptr;
+    DatabaseCon* transactionDb_ = nullptr;
+    DatabaseCon* ledgerDb_ = nullptr;
 
 public:
     SHAMapStoreImp (Setup const& setup,
@@ -263,7 +291,8 @@ public:
             NodeStore::Manager& manager,
             NodeStore::Scheduler& scheduler,
             beast::Journal journal,
-            beast::Journal nodeStoreJournal)
+            beast::Journal nodeStoreJournal,
+            TransactionMaster& transactionMaster)
         : SHAMapStore (parent)
         , setup_ (setup)
         , manager_ (manager)
@@ -271,7 +300,7 @@ public:
         , journal_ (journal)
         , nodeStoreJournal_ (nodeStoreJournal)
         , database_ (nullptr)
-        , stop_ (false)
+        , transactionMaster_ (transactionMaster)
     {
         if (setup_.deleteInterval)
         {
@@ -368,8 +397,8 @@ public:
     onLedgerClosed (Ledger::pointer validatedLedger) override
     {
         {
-            std::lock_guard <std::mutex> l (mutex_);
-            validatedLedger_ = validatedLedger;
+            std::lock_guard <std::mutex> lock (mutex_);
+            newLedger_ = validatedLedger;
         }
         cond_.notify_one();
     }
@@ -378,31 +407,34 @@ private:
     // callback for visitNodes
     bool
     copyNode (std::uint64_t& nodeCount,
-            SHAMapTreeNode const& node) const
+            SHAMapTreeNode const& node)
     {
-        bool ret = false;
         // Copy a single record from node to database_
         database_->fetchNode (node.getNodeHash());
-        if (! (++nodeCount % checkStopInterval_))
+        if (! (++nodeCount % checkHealthInterval_))
         {
-            std::lock_guard <std::mutex> l (mutex_);
-            if (stop_)
-            {
-                ret = true;
-            }
+            if (health())
+                return true;
         }
 
-        return ret;
+        return false;
     }
 
     void
     run()
     {
         LedgerIndex lastRotated = state_db_.getState().lastRotated;
+        netOPs_ = &getApp().getOPs();
+        ledgerMaster_ = &getApp().getLedgerMaster();
+        fullBelowCache_ = &getApp().getFullBelowCache();
+        treeNodeCache_ = &getApp().getTreeNodeCache();
+        transactionDb_ = &getApp().getTxnDB();
+        ledgerDb_ = &getApp().getLedgerDB();
 
         while (1)
         {
-            Ledger::pointer validatedLedger;
+            healthy_ = true;
+            validatedLedger_.reset();
 
             std::unique_lock <std::mutex> lock (mutex_);
             if (stop_)
@@ -411,13 +443,13 @@ private:
                 return;
             }
             cond_.wait (lock);
-            if (validatedLedger_.get())
-                validatedLedger = std::move (validatedLedger_);
+            if (newLedger_)
+                validatedLedger_ = std::move (newLedger_);
             else
                 continue;
             lock.unlock();
 
-            LedgerIndex validatedSeq = validatedLedger->getLedgerSeq();
+            LedgerIndex validatedSeq = validatedLedger_->getLedgerSeq();
             if (!lastRotated)
             {
                 lastRotated = validatedSeq;
@@ -428,6 +460,7 @@ private:
             if (setup_.advisoryDelete)
                 canDelete = state_db_.getCanDelete();
 
+            // will delete up to (not including) lastRotated)
             if (validatedSeq >= lastRotated + setup_.deleteInterval
                     && canDelete >= lastRotated - 1)
             {
@@ -435,28 +468,66 @@ private:
                         << " lastRotated " << lastRotated << " deleteInterval "
                         << setup_.deleteInterval << " canDelete " << canDelete;
 
-                // will delete up to (not including) lastRotated)
+                switch (health())
+                {
+                    case Health::stopping:
+                        stopped();
+                        return;
+                    case Health::unhealthy:
+                        continue;
+                    case Health::ok:
+                    default:
+                        ;
+                }
+
                 clearPrior (lastRotated);
-                if (checkStop())
-                    return;
+                switch (health())
+                {
+                    case Health::stopping:
+                        stopped();
+                        return;
+                    case Health::unhealthy:
+                        continue;
+                    case Health::ok:
+                    default:
+                        ;
+                }
 
                 lastRotated = validatedSeq;
                 state_db_.setLastRotated (lastRotated);
 
                 std::uint64_t nodeCount = 0;
-                validatedLedger->peekAccountStateMap()->snapShot (
+                validatedLedger_->peekAccountStateMap()->snapShot (
                         false)->visitNodes (
                         std::bind (&SHAMapStoreImp::copyNode, this,
                         std::ref(nodeCount), std::placeholders::_1));
                 journal_.debug << "copied ledger " << validatedSeq
                         << " nodecount " << nodeCount;
-                if (checkStop())
-                    return;
+                switch (health())
+                {
+                    case Health::stopping:
+                        stopped();
+                        return;
+                    case Health::unhealthy:
+                        continue;
+                    case Health::ok:
+                    default:
+                        ;
+                }
 
                 freshenCaches();
                 journal_.debug << validatedSeq << " freshened caches";
-                if (checkStop())
-                    return;
+                switch (health())
+                {
+                    case Health::stopping:
+                        stopped();
+                        return;
+                    case Health::unhealthy:
+                        continue;
+                    case Health::ok:
+                    default:
+                        ;
+                }
 
                 std::shared_ptr <NodeStore::Backend> newBackend =
                         makeBackendRotating();
@@ -465,17 +536,22 @@ private:
                 std::shared_ptr <NodeStore::Backend> oldBackend;
 
                 clearCaches (validatedSeq);
-                if (checkStop())
-                    return;
+                switch (health())
+                {
+                    case Health::stopping:
+                        stopped();
+                        return;
+                    case Health::unhealthy:
+                        continue;
+                    case Health::ok:
+                    default:
+                        ;
+                }
 
                 {
-                    std::unique_lock <std::mutex> l =
-                            database_->getRotateLock();
-
+                    std::lock_guard <std::mutex> lock (database_->peekMutex());
                     clearCaches (validatedSeq);
-
                     oldBackend = database_->rotateBackends (newBackend);
-
                     state_db_.setBackends (
                             database_->getWritableBackend (true)->getName(),
                             database_->getArchiveBackend (true)->getName());
@@ -602,22 +678,6 @@ private:
                 nodeStoreJournal_);
     }
 
-    bool
-    checkStop (bool callStopped=true)
-    {
-        bool r = false;
-
-        std::lock_guard <std::mutex> l (mutex_);
-        if (stop_)
-        {
-            if (callStopped)
-                stopped();
-            r = true;
-        }
-
-        return r;
-    }
-
     template <class CacheInstance>
     bool
     freshenCache (CacheInstance& cache)
@@ -627,7 +687,7 @@ private:
         for (uint256 it: cache.getKeys())
         {
             database_->fetchNode (it);
-            if (! (++check % checkStopInterval_) && checkStop (false))
+            if (! (++check % checkHealthInterval_) && health())
                 return true;
         }
 
@@ -639,19 +699,22 @@ private:
      *  call with mutex object unlocked
      */
     void
-    clearSql (Database* db,
-            std::unique_lock <std::recursive_mutex> lock,
+    clearSql (DatabaseCon& database,
             LedgerIndex lastRotated,
             std::string minQuery,
             std::string deleteQuery)
     {
         LedgerIndex min = std::numeric_limits <LedgerIndex>::max();
-        lock.lock();
+        Database* db = database.getDB();
+
+        std::unique_lock <std::recursive_mutex> lock (database.peekMutex());
         if (!db->executeSQL (minQuery) || !db->startIterRows())
             return;
         min = db->getBigInt (0);
         db->endIterRows ();
         lock.unlock();
+        if (health() != Health::ok)
+            return;
 
         boost::format formattedDeleteQuery (deleteQuery);
 
@@ -664,9 +727,11 @@ private:
             lock.lock();
             db->executeSQL (boost::str (formattedDeleteQuery % min));
             lock.unlock();
-            if ( checkStop (false))
+            if (health())
                 return;
-            std::this_thread::sleep_for (std::chrono::microseconds (pause_));
+            if (min < lastRotated)
+                std::this_thread::sleep_for (
+                        std::chrono::microseconds (pause_));
         }
         journal_.debug << "finished: " << deleteQuery;
     }
@@ -674,8 +739,8 @@ private:
     void
     clearCaches (LedgerIndex validatedSeq)
     {
-        getApp().getLedgerMaster().clearLedgerCachePrior (validatedSeq);
-        getApp().getFullBelowCache().clear();
+        ledgerMaster_->clearLedgerCachePrior (validatedSeq);
+        fullBelowCache_->clear();
     }
 
     void
@@ -683,50 +748,80 @@ private:
     {
         if (freshenCache (database_->getPositiveCache()))
             return;
-        if (freshenCache (getApp().getTreeNodeCache()))
+        if (freshenCache (*treeNodeCache_))
             return;
-        if (freshenCache (getApp().getMasterTransaction().getCache()))
+        if (freshenCache (transactionMaster_.getCache()))
             return;
     }
 
     void
     clearPrior (LedgerIndex lastRotated)
     {
-        getApp().getLedgerMaster().clearPriorLedgers (lastRotated);
-        if (checkStop (false))
+        ledgerMaster_->clearPriorLedgers (lastRotated);
+        if (health())
             return;
 
         // TODO this won't remove validations for ledgers that do not get
         // validated. That will likely require inserting LedgerSeq into
         // the validations table
-        clearSql (getApp().getLedgerDB().getDB(),
-            getApp().getLedgerDB().lock (true), lastRotated,
+        clearSql (*ledgerDb_, lastRotated,
             "SELECT MIN(LedgerSeq) FROM Ledgers;",
             "DELETE FROM Validations WHERE Ledgers.LedgerSeq < %u"
             " AND Validations.LedgerHash = Ledgers.LedgerHash;");
-        if (checkStop (false))
+        if (health())
             return;
 
-        clearSql (getApp().getLedgerDB().getDB(),
-            getApp().getLedgerDB().lock (true), lastRotated,
+        clearSql (*ledgerDb_, lastRotated,
             "SELECT MIN(LedgerSeq) FROM Ledgers;",
             "DELETE FROM Ledgers WHERE LedgerSeq < %u;");
-        if (checkStop (false))
+        if (health())
             return;
 
-        clearSql (getApp().getTxnDB().getDB(),
-            getApp().getTxnDB().lock (true), lastRotated,
+        clearSql (*transactionDb_, lastRotated,
             "SELECT MIN(LedgerSeq) FROM Transactions;",
             "DELETE FROM Transactions WHERE LedgerSeq < %u;");
-        if (checkStop (false))
+        if (health())
             return;
 
-        clearSql (getApp().getTxnDB().getDB(),
-            getApp().getTxnDB().lock (true), lastRotated,
+        clearSql (*transactionDb_, lastRotated,
             "SELECT MIN(LedgerSeq) FROM AccountTransactions;",
             "DELETE FROM AccountTransactions WHERE LedgerSeq < %u;");
-        if (checkStop (false))
+        if (health())
             return;
+    }
+
+    // if rippled is not healthy, defer rotate-delete
+    // if already unhealthy, do not change state on further check
+    // assume that, once unhealthy, a necessary step has been
+    // aborted, so the online-delete process needs to restart
+    // at next ledger
+    Health health()
+    {
+        {
+            std::lock_guard<std::mutex> lock (mutex_);
+            if (stop_)
+                return Health::stopping;
+        }
+        if (!netOPs_)
+            return Health::ok;
+
+        NetworkOPs::OperatingMode mode = netOPs_->getOperatingMode();
+        std::uint32_t age = netOPs_->getNetworkTimeNC() - (
+                validatedLedger_->getCloseTimeNC() -
+                validatedLedger_->getCloseResolution());
+
+        if (mode != NetworkOPs::omFULL || age >= ageTooHigh_)
+        {
+            journal_.warning << "server not healthy, not deleting. state: "
+                    << mode << " age " << age << " age threshold "
+                    << ageTooHigh_;
+            healthy_ = false;
+        }
+
+        if (healthy_)
+            return Health::ok;
+        else
+            return Health::unhealthy;
     }
 
     //

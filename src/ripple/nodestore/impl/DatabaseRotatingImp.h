@@ -96,9 +96,9 @@ public:
         return oldBackend;
     }
 
-    std::unique_lock <std::mutex> getRotateLock() const override
+    std::mutex& peekMutex() const override
     {
-        return std::unique_lock <std::mutex>(rotateMutex_);
+        return rotateMutex_;
     }
 
     std::string getName() const override

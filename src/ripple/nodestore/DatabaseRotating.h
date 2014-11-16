@@ -32,8 +32,7 @@ public:
 
     virtual TaggedCache <uint256, NodeObject>& getPositiveCache() = 0;
 
-    /** Returns a lock for rotating backends */
-    virtual std::unique_lock <std::mutex> getRotateLock() const = 0;
+    virtual std::mutex& peekMutex() const = 0;
 
     virtual std::shared_ptr <Backend> const& getWritableBackend (
             bool unlocked=false) const = 0;

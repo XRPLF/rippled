@@ -252,7 +252,7 @@ public:
         , m_shaMapStore (make_SHAMapStore (setup_SHAMapStore (
                 getConfig()), *this, *m_nodeStoreManager.get(),
                 m_nodeStoreScheduler, m_logs.journal ("SHAMapStore"),
-                m_logs.journal ("NodeObject")))
+                m_logs.journal ("NodeObject"), m_txMaster))
 
         , m_nodeStore (m_shaMapStore->makeDatabase ("NodeStore.main", 4))
 
@@ -569,10 +569,29 @@ public:
         assert (mLedgerDB.get () == nullptr);
         assert (mWalletDB.get () == nullptr);
 
-        mRpcDB = std::make_unique <DatabaseCon> ("rpc.db", RpcDBInit, RpcDBCount);
-        mTxnDB = std::make_unique <DatabaseCon> ("transaction.db", TxnDBInit, TxnDBCount);
-        mLedgerDB = std::make_unique <DatabaseCon> ("ledger.db", LedgerDBInit, LedgerDBCount);
-        mWalletDB = std::make_unique <DatabaseCon> ("wallet.db", WalletDBInit, WalletDBCount);
+        DatabaseCon::Setup setup = setup_DatabaseCon (getConfig());
+        mRpcDB = std::make_unique <DatabaseCon> (setup, "rpc.db", RpcDBInit,
+                RpcDBCount);
+        mTxnDB = std::make_unique <DatabaseCon> (setup, "transaction.db",
+                TxnDBInit, TxnDBCount);
+        mLedgerDB = std::make_unique <DatabaseCon> (setup, "ledger.db",
+                LedgerDBInit, LedgerDBCount);
+        mWalletDB = std::make_unique <DatabaseCon> (setup, "wallet.db",
+                WalletDBInit, WalletDBCount);
+
+        if (setup.onlineDelete && mTxnDB && mLedgerDB)
+        {
+            {
+                std::lock_guard <std::recursive_mutex> lock (
+                        mTxnDB->peekMutex());
+                mTxnDB->getDB()->executeSQL ("VACUUM;");
+            }
+            {
+                std::lock_guard <std::recursive_mutex> lock (
+                        mLedgerDB->peekMutex());
+                mLedgerDB->getDB()->executeSQL ("VACUUM;");
+            }
+        }
 
         return
             mRpcDB.get() != nullptr &&
