@@ -34,11 +34,9 @@ public:
 
     virtual std::mutex& peekMutex() const = 0;
 
-    virtual std::shared_ptr <Backend> const& getWritableBackend (
-            bool unlocked=false) const = 0;
+    virtual std::shared_ptr <Backend> const& getWritableBackend() const = 0;
 
-    virtual std::shared_ptr <Backend> const& getArchiveBackend (
-            bool unlocked=false) const = 0;
+    virtual std::shared_ptr <Backend> const& getArchiveBackend () const = 0;
 
     virtual std::shared_ptr <Backend> rotateBackends (
             std::shared_ptr <Backend> const& newBackend) = 0;

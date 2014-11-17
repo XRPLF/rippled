@@ -61,28 +61,16 @@ public:
             , archiveBackend_ (archiveBackend)
     {}
 
-    std::shared_ptr <Backend> const &getWritableBackend (
-            bool unlocked=false) const override
+    std::shared_ptr <Backend> const& getWritableBackend() const override
     {
-        if (unlocked)
-            return writableBackend_;
-
         std::lock_guard <std::mutex> l (rotateMutex_);
         return writableBackend_;
     }
 
-    std::shared_ptr <Backend> const& getArchiveBackend (
-            bool unlocked=false) const override
+    std::shared_ptr <Backend> const& getArchiveBackend() const override
     {
-        if (unlocked)
-        {
-            return archiveBackend_;
-        }
-        else
-        {
-            std::lock_guard <std::mutex> l (rotateMutex_);
-            return archiveBackend_;
-        }
+        std::lock_guard <std::mutex> l (rotateMutex_);
+        return archiveBackend_;
     }
 
     // make sure to call it already locked!
@@ -120,7 +108,7 @@ public:
 
     void import (Database& source) override
     {
-        importInternal (source, *getWritableBackend().get());
+        importInternal (source, *getWritableBackend());
     }
 
     void store (NodeObjectType type,
@@ -129,7 +117,7 @@ public:
                 uint256 const& hash) override
     {
         storeInternal (type, index, std::move(data), hash,
-                *getWritableBackend().get());
+                *getWritableBackend());
     }
 
     NodeObject::Ptr fetchNode (uint256 const& hash) override
@@ -140,10 +128,10 @@ public:
     NodeObject::Ptr fetchFrom (uint256 const& hash) override
     {
         Backends b = getBackends();
-        NodeObject::Ptr object = fetchInternal (*b.writableBackend.get(), hash);
+        NodeObject::Ptr object = fetchInternal (*b.writableBackend, hash);
         if (!object)
         {
-            object = fetchInternal (*b.archiveBackend.get(), hash);
+            object = fetchInternal (*b.archiveBackend, hash);
             if (object)
             {
                 getWritableBackend()->store (object);

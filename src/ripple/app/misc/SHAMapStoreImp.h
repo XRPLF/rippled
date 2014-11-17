@@ -84,7 +84,7 @@ private:
                     "  Key                    INTEGER PRIMARY KEY,"
                     "  WritableDb             TEXT,"
                     "  ArchiveDb              TEXT,"
-                    "  LastDeletedLedger      INTEGER"
+                    "  LastRotatedLedger      INTEGER"
                     ");"
                     ;
             checkError (error);
@@ -171,7 +171,7 @@ private:
                 std::lock_guard <std::mutex> l (mutex_);
 
                 session_.once (error) <<
-                        "SELECT WritableDb, ArchiveDb, LastDeletedLedger"
+                        "SELECT WritableDb, ArchiveDb, LastRotatedLedger"
                         " FROM DbState WHERE Key = 1;"
                         , beast::sqdb::into (state.writableDb)
                         , beast::sqdb::into (state.archiveDb)
@@ -194,7 +194,7 @@ private:
                         "UPDATE DbState"
                         " SET WritableDb = ?,"
                         " ArchiveDb = ?,"
-                        " LastDeletedLedger = ?"
+                        " LastRotatedLedger = ?"
                         " WHERE Key = 1;"
                         , beast::sqdb::use (state.writableDb)
                         , beast::sqdb::use (state.archiveDb)
@@ -211,26 +211,9 @@ private:
             {
                 std::lock_guard <std::mutex> l (mutex_);
                 session_.once (error) <<
-                        "UPDATE DbState SET LastDeletedLedger = ?"
+                        "UPDATE DbState SET LastRotatedLedger = ?"
                         " WHERE Key = 1;"
                         , beast::sqdb::use (seq)
-                        ;
-            }
-            checkError (error);
-        }
-
-        void
-        setBackends (std::string const& writableBackend,
-                std::string const& archiveBackend)
-        {
-            beast::Error error;
-            {
-                std::lock_guard <std::mutex> l (mutex_);
-                session_.once (error) <<
-                        "UPDATE DbState SET WritableDb = ?, ArchiveDb = ?"
-                        " WHERE Key=1;"
-                        , beast::sqdb::use (writableBackend)
-                        , beast::sqdb::use (archiveBackend)
                         ;
             }
             checkError (error);
@@ -512,9 +495,6 @@ private:
                         ;
                 }
 
-                lastRotated = validatedSeq;
-                state_db_.setLastRotated (lastRotated);
-
                 freshenCaches();
                 journal_.debug << validatedSeq << " freshened caches";
                 switch (health())
@@ -548,13 +528,16 @@ private:
                         ;
                 }
 
+                std::string nextArchiveDir =
+                        database_->getWritableBackend()->getName();
+                lastRotated = validatedSeq;
                 {
                     std::lock_guard <std::mutex> lock (database_->peekMutex());
+
+                    state_db_.setState (SavedState {newBackend->getName(),
+                            nextArchiveDir, lastRotated});
                     clearCaches (validatedSeq);
                     oldBackend = database_->rotateBackends (newBackend);
-                    state_db_.setBackends (
-                            database_->getWritableBackend (true)->getName(),
-                            database_->getArchiveBackend (true)->getName());
                 }
                 journal_.debug << "finished rotation " << validatedSeq;
 

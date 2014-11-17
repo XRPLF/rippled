@@ -232,7 +232,7 @@ public:
                 {
                     m_fastBackend->store (obj);
                     ++m_storeCount;
-                    if (obj.get())
+                    if (obj)
                         m_storeSize += obj->getData().size();
                 }
 
@@ -262,7 +262,7 @@ public:
         {
         case ok:
             ++m_fetchHitCount;
-            if (object.get())
+            if (object)
                 m_fetchSize += object->getData().size();
         case notFound:
             break;
@@ -310,7 +310,7 @@ public:
 
         backend.store (object);
         ++m_storeCount;
-        if (object.get())
+        if (object)
             m_storeSize += object->getData().size();
 
         m_negCache.erase (hash);
@@ -319,7 +319,7 @@ public:
         {
             m_fastBackend->store (object);
             ++m_storeCount;
-            if (object.get())
+            if (object)
                 m_storeSize += object->getData().size();
         }
     }
@@ -422,7 +422,7 @@ public:
 
             b.push_back (object);
             ++m_storeCount;
-            if (object.get())
+            if (object)
                 m_storeSize += object->getData().size();
         });
 
