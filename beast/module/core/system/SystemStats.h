@@ -48,7 +48,8 @@ namespace SystemStats
         The usefulness of the result will depend on the level of debug symbols
         that are available in the executable.
     */
-    std::string getStackBacktrace();
+    std::vector <std::string>
+    getStackBacktrace();
 
     /** A void() function type, used by setApplicationCrashHandler(). */
     typedef void (*CrashHandlerFunction)();
