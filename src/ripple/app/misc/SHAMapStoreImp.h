@@ -493,9 +493,6 @@ private:
                         ;
                 }
 
-                lastRotated = validatedSeq;
-                state_db_.setLastRotated (lastRotated);
-
                 std::uint64_t nodeCount = 0;
                 validatedLedger_->peekAccountStateMap()->snapShot (
                         false)->visitNodes (
@@ -514,6 +511,9 @@ private:
                     default:
                         ;
                 }
+
+                lastRotated = validatedSeq;
+                state_db_.setLastRotated (lastRotated);
 
                 freshenCaches();
                 journal_.debug << validatedSeq << " freshened caches";
