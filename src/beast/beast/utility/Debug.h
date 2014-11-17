@@ -46,15 +46,6 @@ String getSourceLocation (char const* fileName, int lineNumber,
 */
 String getFileNameFromPath (const char* sourceFileName, int numberOfParents = 0);
 
-// Convert a String that may contain double quotes and newlines
-// into a String with double quotes escaped as \" and each
-// line as a separate quoted command line argument.
-String stringToCommandLine (const String& s);
-
-// Convert a quoted and escaped command line back into a String
-// that can contain newlines and double quotes.
-String commandLineToString (const String& commandLine);
-
 //
 // These control the MSVC C Runtime Debug heap.
 //

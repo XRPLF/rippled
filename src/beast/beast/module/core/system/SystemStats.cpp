@@ -48,15 +48,15 @@ SystemStats::getBeastVersion()
 }
 
 //==============================================================================
-std::string
+std::vector <std::string>
 SystemStats::getStackBacktrace()
 {
-    std::string result;
+    std::vector <std::string> result;
 
-   #if BEAST_ANDROID || BEAST_MINGW || BEAST_BSD
+#if BEAST_ANDROID || BEAST_MINGW || BEAST_BSD
     bassertfalse; // sorry, not implemented yet!
 
-   #elif BEAST_WINDOWS
+#elif BEAST_WINDOWS
     HANDLE process = GetCurrentProcess();
     SymInitialize (process, nullptr, TRUE);
 
@@ -74,7 +74,9 @@ SystemStats::getStackBacktrace()
 
         if (SymFromAddr (process, (DWORD64) stack[i], &displacement, symbol))
         {
-            result.append (std::to_string (i) + ": ");
+            std::string frame;
+
+            frame.append (std::to_string (i) + ": ");
 
             IMAGEHLP_MODULE64 moduleInfo;
             zerostruct (moduleInfo);
@@ -82,35 +84,32 @@ SystemStats::getStackBacktrace()
 
             if (::SymGetModuleInfo64 (process, symbol->ModBase, &moduleInfo))
             {
-                result.append (moduleInfo.ModuleName);
-                result.append (": ");
+                frame.append (moduleInfo.ModuleName);
+                frame.append (": ");
             }
 
-            result.append (symbol->Name);
+            frame.append (symbol->Name);
 
             if (displacement)
             {
-                result.append ("+");
-                result.append (std::to_string (displacement));
+                frame.append ("+");
+                frame.append (std::to_string (displacement));
             }
 
-            result.append ("\r\n");
+            result.push_back (frame);
         }
     }
 
-   #else
+#else
     void* stack[128];
     int frames = backtrace (stack, numElementsInArray (stack));
     char** frameStrings = backtrace_symbols (stack, frames);
 
     for (int i = 0; i < frames; ++i)
-    {
-        result.append (frameStrings[i]);
-        result.append ("\n");
-    }
+        result.push_back (frameStrings[i]);
 
     ::free (frameStrings);
-   #endif
+#endif
 
     return result;
 }
