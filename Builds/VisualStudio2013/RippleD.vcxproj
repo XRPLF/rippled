@@ -1781,11 +1781,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\main\CollectorManager.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\main\FatalErrorReporter.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\main\FatalErrorReporter.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\main\FullBelowCache.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\main\LoadManager.cpp">

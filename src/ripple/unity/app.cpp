@@ -25,7 +25,6 @@
 #include <ripple/app/impl/BasicApp.cpp>
 #include <ripple/app/main/CollectorManager.cpp>
 #include <ripple/app/main/NodeStoreScheduler.cpp>
-#include <ripple/app/main/FatalErrorReporter.cpp>
 #include <ripple/app/websocket/WSServerHandler.cpp>
 #include <ripple/app/websocket/WSConnection.cpp>
 #include <ripple/app/websocket/WSDoor.cpp>

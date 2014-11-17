@@ -2655,12 +2655,6 @@
     <ClInclude Include="..\..\src\ripple\app\main\CollectorManager.h">
       <Filter>ripple\app\main</Filter>
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\main\FatalErrorReporter.cpp">
-      <Filter>ripple\app\main</Filter>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\main\FatalErrorReporter.h">
-      <Filter>ripple\app\main</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\main\FullBelowCache.h">
       <Filter>ripple\app\main</Filter>
     </ClInclude>
