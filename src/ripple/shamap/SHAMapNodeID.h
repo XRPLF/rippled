@@ -30,7 +30,7 @@
 namespace ripple {
 
 // Identifies a node in a SHA256 hash map
-class SHAMapNodeID
+class SHAMapNodeID final
 {
 private:
     uint256 mNodeID;
@@ -108,7 +108,7 @@ public:
     }
     bool operator!= (uint256 const& n) const {return !(*this == n);}
 
-    virtual std::string getString () const;
+    std::string getString () const;
 
     static uint256 getNodeID (int depth, uint256 const& hash);
 
