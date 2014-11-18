@@ -161,10 +161,11 @@ OverlayImpl::onLegacyPeerHello (
         beast::IPAddressConversion::from_asio(local_endpoint),
             beast::IPAddressConversion::from_asio(remote_address));
 
-    addpeer (std::make_shared<PeerImp>(std::move(ssl_bundle),
-        boost::asio::const_buffers_1(buffer),
-            beast::IPAddressConversion::from_asio(remote_address),
-                *this, m_resourceManager, *m_peerFinder, slot));
+    if (slot != nullptr)
+        return addpeer (std::make_shared<PeerImp>(std::move(ssl_bundle),
+            boost::asio::const_buffers_1(buffer),
+                beast::IPAddressConversion::from_asio(remote_address),
+                    *this, m_resourceManager, *m_peerFinder, slot));
 }
 
 Handoff
@@ -192,23 +193,17 @@ OverlayImpl::onHandoff (std::unique_ptr <beast::asio::ssl_bundle>&& ssl_bundle,
         beast::IPAddressConversion::from_asio(local_endpoint),
             beast::IPAddressConversion::from_asio(remote_address));
 
-#if 0
     if (slot == nullptr)
-#else
-    // For now, always redirect.
-    if (true)
-#endif
     {
-        // Full, give them some addresses
-        handoff.response = makeRedirectResponse(slot, request);
-        handoff.keep_alive = request.keep_alive();
+        // self connect
+        handoff.moved = false;
         return handoff;
     }
 
-    addpeer (std::make_shared<PeerImp>(std::move(ssl_bundle),
-        std::move(request), beast::IPAddressConversion::from_asio(remote_address),
-            *this, m_resourceManager, *m_peerFinder, slot));
-    handoff.moved = true;
+    // For now, always redirect
+    // Full, give them some addresses
+    handoff.response = makeRedirectResponse(slot, request);
+    handoff.keep_alive = request.keep_alive();
     return handoff;
 }
 
