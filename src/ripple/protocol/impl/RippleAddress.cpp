@@ -330,9 +330,17 @@ Account RippleAddress::getAccountID () const
 
 typedef std::mutex StaticLockType;
 typedef std::lock_guard <StaticLockType> StaticScopedLockType;
-static StaticLockType s_lock;
 
-static hash_map< Blob , std::string > rncMap;
+static StaticLockType s_lock;
+static hash_map <Blob, std::string> rncMapOld, rncMapNew;
+
+void RippleAddress::clearCache ()
+{
+    StaticScopedLockType sl (s_lock);
+
+    rncMapOld.clear ();
+    rncMapNew.clear ();
+}
 
 std::string RippleAddress::humanAccountID () const
 {
@@ -343,21 +351,42 @@ std::string RippleAddress::humanAccountID () const
 
     case VER_ACCOUNT_ID:
     {
-        StaticScopedLockType sl (s_lock);
+        std::string ret;
 
-        auto it = rncMap.find (vchData);
+        {
+            StaticScopedLockType sl (s_lock);
 
-        if (it != rncMap.end ())
-            return it->second;
+            auto it = rncMapNew.find (vchData);
 
-        // VFALCO NOTE Why do we throw everything out? We could keep two maps
-        //             here, switch back and forth keep one of them full and clear the
-        //             other on a swap - but always check both maps for cache hits.
-        //
-        if (rncMap.size () > 250000)
-            rncMap.clear ();
+            if (it != rncMapNew.end ())
+            {
+                // Found in new map, nothing to do
+                ret = it->second;
+            }
+            else
+            {
+                it = rncMapOld.find (vchData);
 
-        return rncMap[vchData] = ToString ();
+                if (it != rncMapOld.end ())
+                {
+                    ret = it->second;
+                    rncMapOld.erase (it);
+                }
+                else
+                    ret = ToString ();
+
+                if (rncMapNew.size () >= 128000)
+                {
+                    rncMapOld = std::move (rncMapNew);
+                    rncMapNew.clear ();
+                    rncMapNew.reserve (128000);
+                }
+
+                rncMapNew[vchData] = ret;
+            }
+        }
+
+        return ret;
     }
 
     case VER_ACCOUNT_PUBLIC:

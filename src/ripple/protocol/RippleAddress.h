@@ -67,6 +67,8 @@ public:
     void clear ();
     bool isSet () const;
 
+    static void clearCache ();
+
     //
     // Node Public - Also used for Validators
     //
