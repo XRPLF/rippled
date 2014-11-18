@@ -852,6 +852,7 @@ public:
 
         mValidations->flush ();
 
+        RippleAddress::clearCache ();
         stopped ();
     }
 
