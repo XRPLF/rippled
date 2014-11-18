@@ -991,6 +991,57 @@
     </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\weak_fn.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ed25519-donna\curve25519-donna-32bit.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ed25519-donna\curve25519-donna-64bit.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ed25519-donna\curve25519-donna-helpers.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ed25519-donna\curve25519-donna-sse2.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ed25519-donna\ed25519-donna-32bit-sse2.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ed25519-donna\ed25519-donna-32bit-tables.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ed25519-donna\ed25519-donna-64bit-sse2.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ed25519-donna\ed25519-donna-64bit-tables.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ed25519-donna\ed25519-donna-64bit-x86-32bit.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ed25519-donna\ed25519-donna-64bit-x86.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ed25519-donna\ed25519-donna-basepoint-table.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ed25519-donna\ed25519-donna-batchverify.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ed25519-donna\ed25519-donna-impl-base.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ed25519-donna\ed25519-donna-impl-sse2.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ed25519-donna\ed25519-donna-portable-identify.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ed25519-donna\ed25519-donna-portable.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ed25519-donna\ed25519-donna.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ed25519-donna\ed25519-hash-custom.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ed25519-donna\ed25519-hash.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ed25519-donna\ed25519-randombytes-custom.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ed25519-donna\ed25519-randombytes.h">
+    </ClInclude>
+    <ClCompile Include="..\..\src\ed25519-donna\ed25519.c">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ed25519-donna\ed25519.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ed25519-donna\modm-donna-32bit.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ed25519-donna\modm-donna-64bit.h">
+    </ClInclude>
     <ClCompile Include="..\..\src\hyperleveldb\db\builder.cc">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -3221,6 +3272,10 @@
     <ClCompile Include="..\..\src\ripple\unity\core.cpp">
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\crypto.cpp">
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\unity\ed25519.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='debug|x64'">..\..\src\ed25519-donna;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='release|x64'">..\..\src\ed25519-donna;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\git_id.cpp">
     </ClCompile>
