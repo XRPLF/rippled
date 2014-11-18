@@ -175,8 +175,6 @@ public:
         mFullBelowGen = gen;
     }
 
-    // VFALCO Why is this virtual?
-    virtual void dump (SHAMapNodeID const&, beast::Journal journal);
     virtual std::string getString (SHAMapNodeID const&) const;
 
     SHAMapTreeNode* getChildPointer (int branch);

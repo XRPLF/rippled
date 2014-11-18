@@ -437,12 +437,6 @@ void SHAMapTreeNode::makeInner ()
     mHash.zero ();
 }
 
-void SHAMapTreeNode::dump (const SHAMapNodeID & id, beast::Journal journal)
-{
-    if (journal.debug) journal.debug <<
-        "SHAMapTreeNode(" << id.getNodeID () << ")";
-}
-
 std::string SHAMapTreeNode::getString (const SHAMapNodeID & id) const
 {
     std::string ret = "NodeID(";

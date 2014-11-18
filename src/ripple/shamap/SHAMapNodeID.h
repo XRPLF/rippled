@@ -109,7 +109,6 @@ public:
     bool operator!= (uint256 const& n) const {return !(*this == n);}
 
     virtual std::string getString () const;
-    void dump (beast::Journal journal) const;
 
     static uint256 getNodeID (int depth, uint256 const& hash);
 
