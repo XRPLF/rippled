@@ -62,6 +62,7 @@ PeerImp::PeerImp (id_t id, endpoint_type remote_endpoint,
     , usage_(consumer)
     , slot_ (slot)
     , http_message_(std::move(request))
+    , validatorsConnection_(getApp().getValidators().newConnection(id))
 {
 }
 
@@ -1784,15 +1785,9 @@ PeerImp::checkValidation (Job&, STValidation::pointer val,
             return;
         }
 
-        //----------------------------------------------------------------------
-        {
-            STValidation const& sv (*val);
-            Validators::ReceivedValidation rv;
-            rv.ledgerHash = sv.getLedgerHash ();
-            rv.publicKey = sv.getSignerPublic();
-            getApp ().getValidators ().on_receive_validation (rv);
-        }
-        //----------------------------------------------------------------------
+    #if RIPPLE_HOOK_VALIDATORS
+        validatorsConnection_->onValidation(*val);
+    #endif
 
         std::set<Peer::id_t> peers;
         if (getApp().getOPs ().recvValidation (val, std::to_string(id())) &&

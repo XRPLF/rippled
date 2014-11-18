@@ -19,13 +19,10 @@
 
 #include <BeastConfig.h>
 
+#include <ripple/validators/impl/ConnectionImp.cpp>
+#include <ripple/validators/impl/Logic.cpp>
 #include <ripple/validators/impl/Manager.cpp>
-#include <ripple/validators/impl/Source.cpp>
-#include <ripple/validators/impl/SourceFile.cpp>
-#include <ripple/validators/impl/SourceStrings.cpp>
-#include <ripple/validators/impl/SourceURL.cpp>
 #include <ripple/validators/impl/StoreSqdb.cpp>
 #include <ripple/validators/impl/Tests.cpp>
-#include <ripple/validators/impl/Utilities.cpp>
 
 #include <ripple/validators/tests/Validators.test.cpp>

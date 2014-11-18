@@ -18,15 +18,16 @@
 //==============================================================================
 
 #include <ripple/validators/Manager.h>
+#include <ripple/validators/make_Manager.h>
+#include <ripple/validators/impl/ConnectionImp.h>
 #include <ripple/validators/impl/Logic.h>
-#include <ripple/validators/impl/SourceFile.h>
-#include <ripple/validators/impl/SourceStrings.h>
-#include <ripple/validators/impl/SourceURL.h>
 #include <ripple/validators/impl/StoreSqdb.h>
-#include <beast/module/core/thread/DeadlineTimer.h>
-#include <beast/threads/ScopedWrapperContext.h>
-#include <beast/threads/ServiceQueue.h>
-#include <beast/threads/Thread.h>
+#include <beast/asio/placeholders.h>
+#include <beast/asio/waitable_executor.h>
+#include <boost/asio/basic_waitable_timer.hpp>
+#include <boost/asio/io_service.hpp>
+#include <boost/asio/strand.hpp>
+#include <beast/cxx14/memory.h> // <memory>
 
 /** ChosenValidators (formerly known as UNL)
 
@@ -133,63 +134,99 @@
 
 */
 
+#include <ripple/core/JobQueue.h>
+#include <memory>
+
 namespace ripple {
+
+/** Executor which dispatches to JobQueue threads at a given JobType. */
+class job_executor
+{
+private:
+    struct impl
+    {
+        impl (JobQueue& ex_, JobType type_, std::string const& name_)
+            : ex(ex_), type(type_), name(name_)
+        {
+        }
+
+        JobQueue& ex;
+        JobType type;
+        std::string name;
+    };
+
+    std::shared_ptr<impl> impl_;
+
+public:
+    job_executor (JobType type, std::string const& name,
+            JobQueue& ex)
+        : impl_(std::make_shared<impl>(ex, type, name))
+    {
+    }
+
+    template <class Handler>
+    void
+    post (Handler&& handler)
+    {
+        impl_->ex.addJob(impl_->type, impl_->name,
+            std::forward<Handler>(handler));
+    }
+
+    template <class Handler>
+    void
+    dispatch (Handler&& handler)
+    {
+        impl_->ex.addJob(impl_->type, impl_->name,
+            std::forward<Handler>(handler));
+    }
+
+    template <class Handler>
+    void
+    defer (Handler&& handler)
+    {
+        impl_->ex.addJob(impl_->type, impl_->name,
+            std::forward<Handler>(handler));
+    }
+};
+
+//------------------------------------------------------------------------------
+
 namespace Validators {
 
+// template <class Executor>
 class ManagerImp
     : public Manager
     , public beast::Stoppable
-    , public beast::Thread
-    , public beast::DeadlineTimer::Listener
-    , public beast::LeakChecked <ManagerImp>
 {
 public:
-    beast::Journal m_journal;
-    beast::File m_databaseFile;
-    StoreSqdb m_store;
-    Logic m_logic;
-    beast::DeadlineTimer m_checkTimer;
-    beast::ServiceQueue m_queue;
+    boost::asio::io_service& io_service_;
+    boost::asio::io_service::strand strand_;
+    beast::asio::waitable_executor exec_;
+    boost::asio::basic_waitable_timer<
+        std::chrono::steady_clock> timer_;
+    beast::Journal journal_;
+    beast::File dbFile_;
+    StoreSqdb store_;
+    Logic logic_;
 
-    typedef beast::ScopedWrapperContext <
-        beast::RecursiveMutex, beast::RecursiveMutex::ScopedLockType> Context;
-
-    Context m_context;
-
-    // True if we should call check on idle.
-    // This gets set to false once we make it through the whole list.
-    //
-    bool m_checkSources;
-
-    ManagerImp (
-        Stoppable& parent,
-        beast::File const& pathToDbFileOrDirectory,
-        beast::Journal journal)
+    ManagerImp (Stoppable& parent, boost::asio::io_service& io_service,
+        beast::File const& pathToDbFileOrDirectory, beast::Journal journal)
         : Stoppable ("Validators::Manager", parent)
-        , Thread ("Validators")
-        , m_journal (journal)
-        , m_databaseFile (pathToDbFileOrDirectory)
-        , m_store (m_journal)
-        , m_logic (m_store, m_journal)
-        , m_checkTimer (this)
-        , m_checkSources (false)
+        , io_service_(io_service)
+        , strand_(io_service_)
+        , timer_(io_service_)
+        , journal_ (journal)
+        , dbFile_ (pathToDbFileOrDirectory)
+        , store_ (journal_)
+        , logic_ (store_, journal_)
     {
-        m_journal.trace <<
-            "Validators constructed";
-        m_journal.debug <<
-            "Validators constructed (debug)";
-        m_journal.info <<
-            "Validators constructed (info)";
-
-        if (m_databaseFile.isDirectory ())
-            m_databaseFile = m_databaseFile.getChildFile("validators.sqlite");
-
+        if (dbFile_.isDirectory ())
+            dbFile_ = dbFile_.getChildFile("validators.sqlite");
 
     }
 
-    ~ManagerImp ()
+    ~ManagerImp()
     {
-        stopThread ();
     }
 
     //--------------------------------------------------------------------------
@@ -198,53 +235,18 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    void addStrings (std::string const& name, std::vector <std::string> const& strings)
+    std::unique_ptr<Connection>
+    newConnection (int id) override
     {
-        if (strings.empty ())
-        {
-            m_journal.debug << "Static source '" << name << "' is empty.";
-            return;
-        }
-
-        addStaticSource (SourceStrings::New (name, strings));
+        return std::make_unique<ConnectionImp>(
+            id, logic_, get_seconds_clock());
     }
 
-    void addFile (beast::File const& file)
+    void
+    onLedgerClosed (LedgerIndex index,
+        LedgerHash const& hash, LedgerHash const& parent) override
     {
-        addStaticSource (SourceFile::New (file));
-    }
-
-    void addStaticSource (Validators::Source* source)
-    {
-        m_queue.dispatch (m_context.wrap (std::bind (
-            &Logic::addStatic, &m_logic, source)));
-    }
-
-    void addURL (beast::URL const& url)
-    {
-        addSource (SourceURL::New (url));
-    }
-
-    void addSource (Validators::Source* source)
-    {
-        m_queue.dispatch (m_context.wrap (std::bind (
-            &Logic::add, &m_logic, source)));
-    }
-
-    //--------------------------------------------------------------------------
-
-    void on_receive_validation (ReceivedValidation const& rv)
-    {
-        if (! isStopping())
-            m_queue.dispatch (m_context.wrap (std::bind (
-                &Logic::receiveValidation, &m_logic, rv)));
-    }
-
-    void on_ledger_closed (RippleLedgerHash const& ledgerHash)
-    {
-        if (! isStopping())
-            m_queue.dispatch (m_context.wrap (std::bind (
-                &Logic::ledgerClosed, &m_logic, ledgerHash)));
+        logic_.onLedgerClosed (index, hash, parent);
     }
 
     //--------------------------------------------------------------------------
@@ -253,25 +255,23 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    void onPrepare ()
+    void onPrepare()
+    {
+        init();
+    }
+
+    void onStart()
     {
     }
 
-    void onStart ()
+    void onStop()
     {
-        // Do this late so the sources have a chance to be added.
-        m_queue.dispatch (m_context.wrap (std::bind (
-            &ManagerImp::setCheckSources, this)));
+        boost::system::error_code ec;
+        timer_.cancel(ec);
 
-        startThread();
-    }
+        logic_.stop();
 
-    void onStop ()
-    {
-        m_logic.stop ();
-
-        m_queue.dispatch (m_context.wrap (std::bind (
-            &Thread::signalThreadShouldExit, this)));
+        exec_.async_wait([this]() { stopped(); });
     }
 
     //--------------------------------------------------------------------------
@@ -282,28 +282,6 @@ public:
 
     void onWrite (beast::PropertyStream::Map& map)
     {
-        Context::Scope scope (m_context);
-
-        map ["trusted"] = m_logic.getChosenSize();
-        {
-            beast::PropertyStream::Set items ("sources", map);
-            for (auto const& entry : m_logic.getSources())
-            {
-                items.add (entry.source->to_string());
-            }
-        }
-
-        {
-            beast::PropertyStream::Set items ("validators", map);
-            for (auto const& entry : m_logic.getValidators())
-            {
-                RipplePublicKey const& publicKey (entry.first);
-                Validator const& validator (entry.second);
-                beast::PropertyStream::Map item (items);
-                item["public_key"] = publicKey.to_string();
-                validator.count().onWrite (item);
-            }
-        }
     }
 
     //--------------------------------------------------------------------------
@@ -312,64 +290,33 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    void init ()
+    void init()
     {
-        beast::Error error (m_store.open (m_databaseFile));
+        beast::Error error (store_.open (dbFile_));
 
         if (! error)
         {
-            m_logic.load ();
+            logic_.load ();
         }
     }
 
-    void onDeadlineTimer (beast::DeadlineTimer& timer)
+    void
+    onTimer (boost::system::error_code ec)
     {
-        if (timer == m_checkTimer)
+        if (ec)
         {
-            m_journal.trace << "Check timer expired";
-            m_queue.dispatch (m_context.wrap (std::bind (
-                &ManagerImp::setCheckSources, this)));
-        }
-    }
-
-    void setCheckSources ()
-    {
-        m_journal.trace << "Checking sources";
-        m_checkSources = true;
-    }
-
-    void checkSources ()
-    {
-        if (m_checkSources)
-        {
-            if (m_logic.fetch_one () == 0)
-            {
-                m_journal.trace << "All sources checked";
-
-                // Made it through the list without interruption!
-                // Clear the flag and set the deadline timer again.
-                //
-                m_checkSources = false;
-
-                m_journal.trace << "Next check timer expires in " <<
-                    beast::RelativeTime::seconds (checkEverySeconds);
-
-                m_checkTimer.setExpiration (checkEverySeconds);
-            }
-        }
-    }
-
-    void run ()
-    {
-        init ();
-
-        while (! this->threadShouldExit())
-        {
-            checkSources ();
-            m_queue.run_one();
+            if (ec != boost::asio::error::operation_aborted)
+                journal_.error <<
+                    "onTimer: " << ec.message();
+            return;
         }
 
-        stopped();
+        logic_.onTimer();
+
+        timer_.expires_from_now(std::chrono::seconds(1), ec);
+        timer_.async_wait(strand_.wrap(exec_.wrap(
+            std::bind(&ManagerImp::onTimer, this,
+                beast::asio::placeholders::error))));
     }
 };
 
@@ -380,12 +327,14 @@ Manager::Manager ()
 {
 }
 
-Validators::Manager* Validators::Manager::New (
-    beast::Stoppable& parent,
-    beast::File const& pathToDbFileOrDirectory,
-    beast::Journal journal)
+std::unique_ptr<Manager>
+make_Manager(beast::Stoppable& parent,
+    boost::asio::io_service& io_service,
+        beast::File const& pathToDbFileOrDirectory,
+            beast::Journal journal)
 {
-    return new Validators::ManagerImp (parent, pathToDbFileOrDirectory, journal);
+    return std::make_unique<ManagerImp> (parent,
+        io_service, pathToDbFileOrDirectory, journal);
 }
 
 }

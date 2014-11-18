@@ -31,6 +31,7 @@
 #include <ripple/protocol/Protocol.h>
 #include <ripple/validators/Manager.h>
 #include <ripple/unity/app.h> // VFALCO REMOVE
+#include <beast/ByteOrder.h>
 #include <beast/asio/IPAddressConversion.h>
 #include <beast/asio/placeholders.h>
 #include <beast/asio/streambuf.h>
@@ -151,6 +152,8 @@ private:
     bool gracefulClose_ = false;
 
     std::unique_ptr <LoadEvent> load_event_;
+
+    std::unique_ptr<Validators::Connection> validatorsConnection_;
 
     //--------------------------------------------------------------------------
 
@@ -467,6 +470,7 @@ PeerImp::PeerImp (id_t id, endpoint_type remote_endpoint,
     , m_inbound (true)
     , state_ (State::connected)
     , slot_ (slot)
+    , validatorsConnection_(getApp().getValidators().newConnection(id))
 {
     read_buffer_.commit(boost::asio::buffer_copy(read_buffer_.prepare(
         boost::asio::buffer_size(buffers)), buffers));
@@ -497,6 +501,7 @@ PeerImp::PeerImp (std::unique_ptr<beast::asio::ssl_bundle>&& ssl_bundle,
     , hello_ (std::move(hello))
     , usage_ (usage)
     , slot_ (std::move(slot))
+    , validatorsConnection_(getApp().getValidators().newConnection(id))
 {
     read_buffer_.commit (boost::asio::buffer_copy(read_buffer_.prepare(
         boost::asio::buffer_size(buffers)), buffers));

@@ -17,42 +17,13 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_VALIDATORS_VALIDATION_INCLUDED
-#define RIPPLE_VALIDATORS_VALIDATION_INCLUDED
+#include <ripple/validators/impl/ConnectionImp.h>
 
 namespace ripple {
 namespace Validators {
 
-/** Hash function for ReceivedValidation. */
-class ReceivedValidationHash
-{
-public:
-    std::size_t operator() (ReceivedValidation const& key) const
-    {
-        return m_ledger_hasher (key.ledgerHash) +
-                m_key_hasher (key.publicKey);
-    }
 
-private:
-    RippleLedgerHash::hasher m_ledger_hasher;
-    RipplePublicKey::hasher m_key_hasher;
-};
 
-//------------------------------------------------------------------------------
-
-/** KeyEqual function for ReceivedValidation. */
-class ReceivedValidationKeyEqual
-{
-public:
-    bool operator() (ReceivedValidation const& lhs,
-                     ReceivedValidation const& rhs) const
-    {
-        return lhs.ledgerHash == rhs.ledgerHash &&
-               lhs.publicKey == rhs.publicKey;
-    }
-};
 
 }
 }
-
-#endif

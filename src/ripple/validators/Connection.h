@@ -17,52 +17,22 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_VALIDATORS_SOURCEDESC_H_INCLUDED
-#define RIPPLE_VALIDATORS_SOURCEDESC_H_INCLUDED
+#ifndef RIPPLE_VALIDATORS_CONNECTION_H_INCLUDED
+#define RIPPLE_VALIDATORS_CONNECTION_H_INCLUDED
 
-#include <beast/smart_ptr/SharedPtr.h>
+#include <ripple/protocol/STValidation.h>
 
 namespace ripple {
 namespace Validators {
 
-/** Additional state information associated with a Source. */
-struct SourceDesc
+/** Represents validator concerns on a protocol connection. */
+class Connection
 {
-    enum Status
-    {
-        statusNone,
-        statusFetched,
-        statusFailed
-    };
+public:
+    virtual ~Connection() = default;
 
-    beast::SharedPtr <Source> source;
-    Status status;
-    beast::Time whenToFetch;
-    int numberOfFailures;
-
-    // The result of the last fetch
-    Source::Results results;
-
-    //------------------------------------------------------------------
-
-    /** The time of the last successful fetch. */
-    beast::Time lastFetchTime;
-
-    /** When to expire this source's list of cached results (if any) */
-    beast::Time expirationTime;
-
-    //------------------------------------------------------------------
-
-    SourceDesc () noexcept
-        : status (statusNone)
-        , whenToFetch (beast::Time::getCurrentTime ())
-        , numberOfFailures (0)
-    {
-    }
-
-    ~SourceDesc ()
-    {
-    }
+    /** Called when a signed validation is received on the connection. */
+    virtual void onValidation (STValidation const& v) = 0;
 };
 
 }
