@@ -43,7 +43,8 @@ struct LedgerFill
     {
     }
 
-    enum Options {dumpTxrp = 1, dumpState = 2, expand = 4, full = 8};
+    enum Options {
+        dumpTxrp = 1, dumpState = 2, expand = 4, full = 8, binary = 16};
 
     Ledger const& ledger;
     int options;
@@ -71,10 +72,13 @@ Json::Value getJson (LedgerFill const&);
 template <typename Object>
 void fillJson (Object& json, LedgerFill const& fill)
 {
+    using namespace ripple::RPC;
+
     auto const& ledger = fill.ledger;
 
     bool const bFull (fill.options & LedgerFill::full);
     bool const bExpand (fill.options & LedgerFill::expand);
+    bool const bBinary (fill.options & LedgerFill::binary);
 
     // DEPRECATED
     json[jss::seqNum]       = to_string (ledger.getLedgerSeq());
@@ -118,10 +122,10 @@ void fillJson (Object& json, LedgerFill const& fill)
     auto &transactionMap = ledger.peekTransactionMap();
     if (transactionMap && (bFull || fill.options & LedgerFill::dumpTxrp))
     {
-        auto&& txns = Json::setArray (json, jss::transactions);
+        auto&& txns = setArray (json, jss::transactions);
         SHAMapTreeNode::TNType type;
 
-        RPC::CountedYield count (
+        CountedYield count (
             fill.yieldStrategy.transactionYieldCount, fill.yield);
         for (auto item = transactionMap->peekFirstItem (type); item;
              item = transactionMap->peekNextItem (item->getTag (), type))
@@ -131,32 +135,54 @@ void fillJson (Object& json, LedgerFill const& fill)
             {
                 if (type == SHAMapTreeNode::tnTRANSACTION_NM)
                 {
-                    SerialIter sit (item->peekSerializer ());
-                    STTx txn (sit);
-                    txns.append (txn.getJson (0));
+                     if (bBinary)
+                    {
+                        auto&& obj = appendObject (txns);
+                        obj[jss::tx_blob] = strHex (item->peekData ());
+                    }
+                    else
+                    {
+                        SerialIter sit (item->peekSerializer ());
+                        STTx txn (sit);
+                        txns.append (txn.getJson (0));
+                    }
                 }
                 else if (type == SHAMapTreeNode::tnTRANSACTION_MD)
                 {
-                    SerialIter sit (item->peekSerializer ());
-                    Serializer sTxn (sit.getVL ());
+                    if (bBinary)
+                    {
+                        SerialIter sit (item->peekSerializer ());
 
-                    SerialIter tsit (sTxn);
-                    STTx txn (tsit);
+                        auto&& obj = appendObject (txns);
+                        obj[jss::tx_blob] = strHex (sit.getVL ());
+                        obj[jss::meta] = strHex (sit.getVL ());
+                    }
+                    else
+                    {
+                        SerialIter sit (item->peekSerializer ());
+                        Serializer sTxn (sit.getVL ());
 
-                    TransactionMetaSet meta (
-                        item->getTag (), ledger.getLedgerSeq(), sit.getVL ());
-                    Json::Value txJson = txn.getJson (0);
-                    txJson[jss::metaData] = meta.getJson (0);
-                    txns.append (txJson);
+                        SerialIter tsit (sTxn);
+                        STTx txn (tsit);
+
+                        TransactionMetaSet meta (
+                            item->getTag (), ledger.getLedgerSeq(), sit.getVL ());
+
+                        auto&& txJson = appendObject (txns);
+                        copyFrom(txJson, txn.getJson (0));
+                        txJson[jss::metaData] = meta.getJson (0);
+                    }
                 }
                 else
                 {
-                    Json::Value error = Json::objectValue;
-                    error[to_string (item->getTag ())] = type;
-                    txns.append (error);
+                    auto&& error = appendObject (txns);
+                    error[to_string (item->getTag ())] = (int) type;
                 }
             }
-            else txns.append (to_string (item->getTag ()));
+            else
+            {
+                txns.append (to_string (item->getTag ()));
+            }
         }
     }
 
@@ -168,12 +194,25 @@ void fillJson (Object& json, LedgerFill const& fill)
             fill.yieldStrategy.accountYieldCount, fill.yield);
         if (bFull || bExpand)
         {
-            ledger.visitStateItems (
-                [&array, &count] (SLE::ref sle)
-                {
-                    count.yield();
-                    array.append (sle->getJson(0));
-                });
+             if (bBinary)
+             {
+                 ledger.peekAccountStateMap()->visitLeaves (
+                     [&array] (std::shared_ptr<SHAMapItem> const& smi)
+                     {
+                         auto&& obj = appendObject (array);
+                         obj[jss::hash] = to_string(smi->getTag ());
+                         obj[jss::tx_blob] = strHex(smi->peekData ());
+                     });
+             }
+             else
+             {
+                 ledger.visitStateItems (
+                     [&array, &count] (SLE::ref sle)
+                     {
+                         count.yield();
+                         array.append (sle->getJson(0));
+                     });
+             }
         }
         else
         {
