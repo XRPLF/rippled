@@ -661,6 +661,13 @@ for tu_style in ['classic', 'unity']:
                 no_uninitialized_warning = {}
 
             object_builder.add_source_files(
+                'src/ripple/unity/ed25519.c',
+                CPPPATH=[
+                    'src/ed25519-donna',
+                ]
+            )
+
+            object_builder.add_source_files(
                 'src/ripple/unity/leveldb.cpp',
                 CPPPATH=[
                     'src/leveldb/',
