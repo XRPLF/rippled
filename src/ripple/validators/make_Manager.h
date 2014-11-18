@@ -17,21 +17,24 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_VALIDATORS_SOURCESTRINGS_H_INCLUDED
-#define RIPPLE_VALIDATORS_SOURCESTRINGS_H_INCLUDED
+#ifndef RIPPLE_VALIDATORS_MAKE_MANAGER_H_INCLUDED
+#define RIPPLE_VALIDATORS_MAKE_MANAGER_H_INCLUDED
+
+#include <ripple/validators/Manager.h>
+#include <beast/threads/Stoppable.h>
+#include <beast/utility/Journal.h>
+#include <beast/module/core/files/File.h>
+#include <boost/asio/io_service.hpp>
+#include <memory>
 
 namespace ripple {
 namespace Validators {
 
-/** Provides validators from a set of Validator strings.
-    Typically this will come from a local configuration file.
-*/
-class SourceStrings : public Source
-{
-public:
-    static SourceStrings* New (
-        std::string const& name, std::vector <std::string> const& strings);
-};
+std::unique_ptr<Manager>
+make_Manager (beast::Stoppable& stoppableParent,
+    boost::asio::io_service& io_service,
+        beast::File const& pathToDbFileOrDirectory,
+            beast::Journal journal);
 
 }
 }

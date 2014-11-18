@@ -200,6 +200,11 @@ public:
         mValidLedgerSeq = l->getLedgerSeq();
         getApp().getOPs().updateLocalTx (l);
         getApp().getSHAMapStore().onLedgerClosed (getValidatedLedger());
+
+    #if RIPPLE_HOOK_VALIDATORS
+        getApp().getValidators().onLedgerClosed (l->getLedgerSeq(),
+            l->getHash(), l->getParentHash());
+    #endif
     }
 
     void setPubLedger(Ledger::ref l)
@@ -666,15 +671,6 @@ public:
                 }
             }
         }
-
-        //--------------------------------------------------------------------------
-        //
-        {
-            if (isCurrent)
-                getApp ().getValidators ().on_ledger_closed (ledger->getHash());
-        }
-        //
-        //--------------------------------------------------------------------------
     }
 
     void failedSave(std::uint32_t seq, uint256 const& hash)

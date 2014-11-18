@@ -20,8 +20,9 @@
 #ifndef RIPPLE_VALIDATORS_MANAGER_H_INCLUDED
 #define RIPPLE_VALIDATORS_MANAGER_H_INCLUDED
 
-#include <ripple/validators/Source.h>
-#include <ripple/validators/Types.h>
+#include <ripple/protocol/Protocol.h>
+#include <ripple/validators/Connection.h>
+#include <ripple/types/RippleLedgerHash.h>
 #include <beast/threads/Stoppable.h>
 #include <beast/http/URL.h>
 #include <beast/module/core/files/File.h>
@@ -41,64 +42,23 @@ protected:
     Manager();
 
 public:
-    /** Create a new Manager object.
-        @param parent The parent Stoppable.
-        @param pathToDbFileOrDirectory The directory where our database is stored
-        @param journal Where to send log output.
-    */
-    static Manager* New (
-        beast::Stoppable& stoppableParent,
-        beast::File const& pathToDbFileOrDirectory,
-        beast::Journal journal);
-
     /** Destroy the object.
         Any pending source fetch operations are aborted. This will block
         until any pending database I/O has completed and the thread has
         stopped.
     */
-    virtual ~Manager () { }
+    virtual ~Manager() = default;
 
-    /** Add a static source of validators.
-        The validators added using these methods will always be chosen when
-        constructing the UNL regardless of statistics. The fetch operation
-        is performed asynchronously, so this call returns immediately. A
-        failed fetch (depending on the source) is not retried. The caller
-        loses ownership of any dynamic objects.
-        Thread safety:
-            Can be called from any thread.
-    */
-    /** @{ */
-    virtual void addStrings (std::string const& name,
-                             std::vector <std::string> const& strings) = 0;
-    virtual void addFile (beast::File const& file) = 0;
-    virtual void addStaticSource (Validators::Source* source) = 0;
-    /** @} */
+    /** Create a new Connection. */
+    virtual
+    std::unique_ptr<Connection>
+    newConnection (int id) = 0;
 
-    /** Add a live source of validators from a trusted URL.
-        The URL will be contacted periodically to update the list. The fetch
-        operation is performed asynchronously, this call doesn't block.
-        Thread safety:
-            Can be called from any thread.
-    */
-    virtual void addURL (beast::URL const& url) = 0;
-
-    /** Add a live source of validators.
-        The caller loses ownership of the object. The fetch is performed
-        asynchronously, this call doesn't block.
-        Thread safety:
-            Can be called from any thread.
-    */
-    virtual void addSource (Validators::Source* source) = 0;
-
-    //--------------------------------------------------------------------------
-
-    //virtual bool isPublicKeyTrusted (RipplePublicKey const& publicKey) = 0;
-
-    /** Callback to call when a properly signed validation is received. */
-    virtual void on_receive_validation (ReceivedValidation const& rv) = 0;
-
-    /** Callback to call when a ledger is closed. */
-    virtual void on_ledger_closed (RippleLedgerHash const& ledgerHash) = 0;
+    /** Called when a ledger is built. */
+    virtual
+    void
+    onLedgerClosed (LedgerIndex index,
+        LedgerHash const& hash, LedgerHash const& parent) = 0;
 };
 
 }

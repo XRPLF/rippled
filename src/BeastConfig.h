@@ -197,4 +197,11 @@
 #define RIPPLE_SINGLE_IO_SERVICE_THREAD 0
 #endif
 
+/** Config: RIPPLE_HOOK_VALIDATORS
+    Activates code for handling validations and validators (work in progress).
+*/
+#ifndef RIPPLE_HOOK_VALIDATORS
+#define RIPPLE_HOOK_VALIDATORS 0
+#endif
+
 #endif

@@ -156,6 +156,8 @@
     <ClCompile Include="..\..\src\beast\beast\asio\tests\streambuf.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClInclude Include="..\..\src\beast\beast\asio\waitable_executor.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\Atomic.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\boost\Boost.unity.cpp">
@@ -3299,35 +3301,21 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\unity\websocket.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\validators\impl\ChosenList.h">
+    <ClInclude Include="..\..\src\ripple\validators\Connection.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\validators\impl\Count.h">
+    <ClCompile Include="..\..\src\ripple\validators\impl\ConnectionImp.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ripple\validators\impl\ConnectionImp.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\validators\impl\Logic.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClInclude Include="..\..\src\ripple\validators\impl\Logic.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\validators\impl\Manager.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\validators\impl\Source.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\validators\impl\SourceDesc.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\validators\impl\SourceFile.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\validators\impl\SourceFile.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\validators\impl\SourceStrings.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\validators\impl\SourceStrings.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\validators\impl\SourceURL.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\validators\impl\SourceURL.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\validators\impl\Store.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\validators\impl\StoreSqdb.cpp">
@@ -3340,24 +3328,13 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\validators\impl\Tuning.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\validators\impl\Utilities.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\validators\impl\Utilities.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\validators\impl\Validation.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\validators\impl\Validator.h">
+    <ClInclude Include="..\..\src\ripple\validators\make_Manager.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\validators\Manager.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\validators\Source.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\validators\tests\Validators.test.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\validators\Types.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\websocket\autosocket\AutoSocket.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>

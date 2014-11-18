@@ -17,8 +17,13 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SERIALIZEDVALIDATION_H
-#define RIPPLE_SERIALIZEDVALIDATION_H
+#ifndef RIPPLE_PROTOCOL_STVALIDATION_H_INCLUDED
+#define RIPPLE_PROTOCOL_STVALIDATION_H_INCLUDED
+
+#include <ripple/protocol/RippleAddress.h>
+#include <ripple/protocol/STObject.h>
+#include <cstdint>
+#include <memory>
 
 namespace ripple {
 

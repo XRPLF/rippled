@@ -20,8 +20,6 @@
 #ifndef RIPPLE_VALIDATORS_STORE_H_INCLUDED
 #define RIPPLE_VALIDATORS_STORE_H_INCLUDED
 
-#include <ripple/validators/impl/SourceDesc.h>
-
 namespace ripple {
 namespace Validators {
 
@@ -29,19 +27,7 @@ namespace Validators {
 class Store
 {
 public:
-    virtual ~Store () { }
-
-    /** Insert a new SourceDesc to the Store.
-        The caller's SourceDesc will have any available persistent
-        information filled in from the Store.
-    */
-    virtual void insert (SourceDesc& desc) = 0;
-
-    /** Update the SourceDesc fixed fields.  */
-    virtual void update (SourceDesc& desc, bool updateFetchResults = false) = 0;
-
-protected:
-    Store () { }
+    virtual ~Store() = default;
 };
 
 }

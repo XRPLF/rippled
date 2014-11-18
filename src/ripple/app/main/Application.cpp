@@ -37,7 +37,7 @@
 #include <ripple/rpc/Manager.h>
 #include <ripple/server/make_ServerHandler.h>
 #include <ripple/sitefiles/Sitefiles.h>
-#include <ripple/validators/Manager.h>
+#include <ripple/validators/make_Manager.h>
 #include <beast/asio/io_latency_probe.h>
 #include <beast/module/core/thread/DeadlineTimer.h>
 #include <boost/asio/signal_set.hpp>
@@ -318,10 +318,8 @@ public:
 
         , m_sntpClient (SNTPClient::New (*this))
 
-        , m_validators (add (Validators::Manager::New (
-            *this,
-            getConfig ().getModuleDatabasePath (),
-            m_logs.journal("Validators"))))
+        , m_validators (Validators::make_Manager(*this, get_io_service(),
+            getConfig ().getModuleDatabasePath (), m_logs.journal("UVL")))
 
         , m_amendmentTable (make_AmendmentTable (weeks(2), MAJORITY_FRACTION,
             m_logs.journal("AmendmentTable")))
@@ -365,6 +363,7 @@ public:
         // VFALCO HACK
         m_nodeStoreScheduler.setJobQueue (*m_jobQueue);
 
+        add (*m_validators);
         add (m_ledgerMaster->getPropertySource ());
         add (*serverHandler_);
     }
@@ -788,27 +787,12 @@ public:
     }
 
     //--------------------------------------------------------------------------
-
-    // Initialize the Validators object with Config information.
-    void prepareValidators ()
-    {
-        m_validators->addStrings ("rippled.cfg", getConfig().validators);
-
-        if (! getConfig().getValidatorsURL().empty())
-            m_validators->addURL (getConfig().getValidatorsURL());
-
-        if (getConfig().getValidatorsFile() != beast::File::nonexistent ())
-            m_validators->addFile (getConfig().getValidatorsFile());
-    }
-
-    //--------------------------------------------------------------------------
     //
     // Stoppable
     //
 
-    void onPrepare ()
+    void onPrepare() override
     {
-        prepareValidators ();
     }
 
     void onStart ()

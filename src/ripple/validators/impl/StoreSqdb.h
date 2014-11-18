@@ -21,53 +21,35 @@
 #define RIPPLE_VALIDATORS_STORESQDB_H_INCLUDED
 
 #include <ripple/validators/impl/Store.h>
+#include <beast/module/core/files/File.h>
 #include <beast/module/sqdb/sqdb.h>
 #include <beast/utility/Error.h>
+#include <beast/utility/Journal.h>
 
 namespace ripple {
 namespace Validators {
 
 /** Database persistence for Validators using SQLite */
-class StoreSqdb
-    : public Store
-    , public beast::LeakChecked <StoreSqdb>
+class StoreSqdb : public Store
 {
+private:
+    beast::Journal m_journal;
+    beast::sqdb::session m_session;
+
 public:
     enum
     {
         // This affects the format of the data!
-        currentSchemaVersion = 2
+        currentSchemaVersion = 1
     };
 
-    explicit StoreSqdb (beast::Journal journal = beast::Journal());
+    explicit
+    StoreSqdb (beast::Journal journal);
 
-    ~StoreSqdb ();
+    ~StoreSqdb();
 
-    beast::Error open (beast::File const& file);
-
-    void insert (SourceDesc& desc);
-
-    void update (SourceDesc& desc, bool updateFetchResults);
-
-    void remove (RipplePublicKey const& publicKey);
-
-private:
-    void report (beast::Error const& error, char const* fileName, int lineNumber);
-
-    bool select (SourceDesc& desc);
-    void selectList (SourceDesc& desc);
-
-    beast::Error update ();
-    beast::Error init ();
-
-    beast::Journal m_journal;
-    beast::sqdb::session m_session;
-
-
-    // DEPRECATED
-    static std::string itos (int i, std::size_t fieldSize = 0);
-    static std::string timeToString (beast::Time const& t);
-    static beast::Time stringToTime (std::string const& s);
+    beast::Error
+    open (beast::File const& file);
 };
 
 }

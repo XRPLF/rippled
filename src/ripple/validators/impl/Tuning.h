@@ -23,34 +23,6 @@
 namespace ripple {
 namespace Validators {
 
-// Tunable constants
-//
-enum
-{
-#if 1
-    // We will fetch a source at this interval
-    hoursBetweenFetches = 24
-    ,secondsBetweenFetches = hoursBetweenFetches * 60 * 60
-    // We check Source expirations on this time interval
-    ,checkEverySeconds = 60 * 60
-#else
-     secondsBetweenFetches = 59
-    ,checkEverySeconds = 60
-#endif
-
-    // This tunes the preallocated arrays
-    ,expectedNumberOfResults    = 1000
-
-    // Number of entries in the recent validations cache
-    ,recentValidationsCacheSize = 1000
-
-    // Number of entries in the recent ledgers cache
-    ,recentLedgersCacheSize     = 1000 // about half an hour at 2/sec
-
-    // Number of closed Ledger entries per Validator
-    ,ledgersPerValidator        =  100 // this shouldn't be too large
-};
-
 }
 }
 
