@@ -66,7 +66,7 @@ Json::Value lookupLedger (
         }
     }
 
-    uint256 ledgerHash (0);
+    uint256 ledgerHash;
 
     if (!jsonHash.isString() || !ledgerHash.SetHex (jsonHash.asString ()))
         return make_error(rpcINVALID_PARAMS, "ledgerHashMalformed");
