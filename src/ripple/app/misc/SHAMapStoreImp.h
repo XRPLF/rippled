@@ -49,9 +49,6 @@ private:
         unhealthy
     };
 
-    // keep this all within SHAMapStore, with forwarding functions for
-    // RPC advisory_delete & OnlineDelete, with public interface.
-    // There *should* be no reason to expose this class outside of SHAMapStore
     class SavedStateDB
     {
     public:
@@ -71,7 +68,7 @@ private:
             boost::filesystem::path pathName = databasePath;
             pathName /= dbName;
 
-            std::lock_guard <std::mutex> l (mutex_);
+            std::lock_guard <std::mutex> lock (mutex_);
 
             beast::Error error (session_.open (pathName.native()));
             checkError (error);
@@ -134,7 +131,7 @@ private:
             LedgerIndex seq;
 
             {
-                std::lock_guard <std::mutex> l (mutex_);
+                std::lock_guard <std::mutex> lock (mutex_);
 
                 session_.once (error) <<
                         "SELECT CanDeleteSeq FROM CanDelete WHERE Key = 1;"
@@ -151,7 +148,7 @@ private:
         {
             beast::Error error;
             {
-                std::lock_guard <std::mutex> l (mutex_);
+                std::lock_guard <std::mutex> lock (mutex_);
 
                 session_.once (error) <<
                         "UPDATE CanDelete SET CanDeleteSeq = ? WHERE Key = 1;"
@@ -168,7 +165,7 @@ private:
             SavedState state;
 
             {
-                std::lock_guard <std::mutex> l (mutex_);
+                std::lock_guard <std::mutex> lock (mutex_);
 
                 session_.once (error) <<
                         "SELECT WritableDb, ArchiveDb, LastRotatedLedger"
@@ -189,7 +186,7 @@ private:
             beast::Error error;
 
             {
-                std::lock_guard <std::mutex> l (mutex_);
+                std::lock_guard <std::mutex> lock (mutex_);
                 session_.once (error) <<
                         "UPDATE DbState"
                         " SET WritableDb = ?,"
@@ -209,7 +206,7 @@ private:
         {
             beast::Error error;
             {
-                std::lock_guard <std::mutex> l (mutex_);
+                std::lock_guard <std::mutex> lock (mutex_);
                 session_.once (error) <<
                         "UPDATE DbState SET LastRotatedLedger = ?"
                         " WHERE Key = 1;"
@@ -744,7 +741,7 @@ private:
         if (health())
             return;
 
-        // TODO this won't remove validations for ledgers that do not get
+        // TODO This won't remove validations for ledgers that do not get
         // validated. That will likely require inserting LedgerSeq into
         // the validations table
         clearSql (*ledgerDb_, lastRotated,
@@ -773,11 +770,11 @@ private:
             return;
     }
 
-    // if rippled is not healthy, defer rotate-delete
-    // if already unhealthy, do not change state on further check
-    // assume that, once unhealthy, a necessary step has been
+    // If rippled is not healthy, defer rotate-delete.
+    // If already unhealthy, do not change state on further check.
+    // Assume that, once unhealthy, a necessary step has been
     // aborted, so the online-delete process needs to restart
-    // at next ledger
+    // at next ledger.
     Health health()
     {
         {
@@ -815,7 +812,6 @@ private:
     {
     }
 
-    // Called when all stoppables are known to exist
     void
     onStart() override
     {
@@ -848,7 +844,7 @@ private:
         if (setup_.deleteInterval)
         {
             {
-                std::lock_guard <std::mutex> l (mutex_);
+                std::lock_guard <std::mutex> lock (mutex_);
                 stop_ = true;
             }
             cond_.notify_one();

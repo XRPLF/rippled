@@ -64,7 +64,7 @@ Json::Value doCanDelete (RPC::Context& context)
                 canDeleteSeq = getApp().getSHAMapStore().getLastRotated();
                 if (!canDeleteSeq)
                     return RPC::make_error (rpcNOT_READY);            }
-            else if (canDeleteStr.size() == 64 &&
+                else if (canDeleteStr.size() == 64 &&
                     canDeleteStr.find_first_not_of("0123456789abcdef") ==
                     std::string::npos)
             {

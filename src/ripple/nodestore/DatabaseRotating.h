@@ -25,6 +25,11 @@
 namespace ripple {
 namespace NodeStore {
 
+/* This class has two key-value store Backend objects for persisting SHAMap
+ * records. This facilitates online deletion of data. New backends are
+ * rotated in. Old ones are rotated out and deleted.
+ */
+
 class DatabaseRotating
 {
 public:

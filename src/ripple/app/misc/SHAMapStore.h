@@ -47,7 +47,7 @@ public:
 
     SHAMapStore (Stoppable& parent) : Stoppable ("SHAMapStore", parent) {}
 
-    /** Called by LedgerMaster every time a ledger closes. */
+    /** Called by LedgerMaster every time a ledger validates. */
     virtual void onLedgerClosed (Ledger::pointer validatedLedger) = 0;
 
     virtual std::uint32_t clampFetchDepth (std::uint32_t fetch_depth) const = 0;
@@ -55,16 +55,16 @@ public:
     virtual std::unique_ptr <NodeStore::Database> makeDatabase (
             std::string const& name, std::int32_t readThreads) = 0;
 
-    /** set ledger up to which can be deleted */
+    /** Highest ledger that may be deleted. */
     virtual LedgerIndex setCanDelete (LedgerIndex canDelete) = 0;
 
-    /** whether advisory delete is enabled */
+    /** Whether advisory delete is enabled. */
     virtual bool advisoryDelete() const = 0;
 
-    /** last ledger which was copied for rotation of backends */
+    /** Last ledger which was copied during rotation of backends. */
     virtual LedgerIndex getLastRotated() = 0;
 
-    /** get the ledger up to which can be deleted */
+    /** Highest ledger that may be deleted. */
     virtual LedgerIndex getCanDelete() = 0;
 };
 
