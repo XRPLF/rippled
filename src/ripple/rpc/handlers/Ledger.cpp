@@ -48,11 +48,13 @@ Status LedgerHandler::check ()
     bool bTransactions = params[jss::transactions].asBool();
     bool bAccounts = params[jss::accounts].asBool();
     bool bExpand = params[jss::expand].asBool();
+    bool bBinary = params[jss::binary].asBool();
 
     options_ = (bFull ? LedgerFill::full : 0)
             | (bExpand ? LedgerFill::expand : 0)
             | (bTransactions ? LedgerFill::dumpTxrp : 0)
-            | (bAccounts ? LedgerFill::dumpState : 0);
+            | (bAccounts ? LedgerFill::dumpState : 0)
+            | (bBinary ? LedgerFill::binary : 0);
 
     if (bFull || bAccounts)
     {
@@ -66,7 +68,8 @@ Status LedgerHandler::check ()
         {
             return rpcTOO_BUSY;
         }
-        context_.loadType = Resource::feeHighBurdenRPC;
+        context_.loadType = bBinary ? Resource::feeMediumBurdenRPC :
+            Resource::feeHighBurdenRPC;
     }
 
     return Status::OK;
