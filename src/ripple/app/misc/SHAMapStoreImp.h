@@ -234,8 +234,6 @@ private:
     std::string const dbPrefix_ = "rippledb";
     // check health/stop status as records are copied
     std::uint64_t const checkHealthInterval_ = 1000;
-    // batch size in ledgers for deleting from sqlite
-    std::uint32_t const batchSize_ = 1000;
     // microseconds to back off between sqlite deletion batches
     std::uint32_t pause_ = 1000;
     // seconds to compare against ledger age
@@ -702,8 +700,8 @@ private:
                 << min << " to " << lastRotated;
         while (min < lastRotated)
         {
-            min = (min + batchSize_ >= lastRotated) ? lastRotated :
-                min + batchSize_;
+            min = (min + setup_.deleteBatch >= lastRotated) ? lastRotated :
+                min + setup_.deleteBatch;
             lock.lock();
             db->executeSQL (boost::str (formattedDeleteQuery % min));
             lock.unlock();

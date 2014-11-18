@@ -43,6 +43,7 @@ public:
         beast::StringPairArray nodeDatabase;
         beast::StringPairArray ephemeralNodeDatabase;
         std::string databasePath;
+        std::uint32_t deleteBatch = 1000;
     };
 
     SHAMapStore (Stoppable& parent) : Stoppable ("SHAMapStore", parent) {}

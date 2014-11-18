@@ -35,6 +35,8 @@ setup_SHAMapStore (Config const& c)
     setup.nodeDatabase = c.nodeDatabase;
     setup.ephemeralNodeDatabase = c.ephemeralNodeDatabase;
     setup.databasePath = c.DATABASE_PATH;
+    if (c.nodeDatabase["delete_batch"].isNotEmpty())
+        setup.deleteBatch = c.nodeDatabase["delete_batch"].getIntValue();
 
     return setup;
 }

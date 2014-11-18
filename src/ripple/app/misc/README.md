@@ -135,3 +135,5 @@ deletion routine.
 * online_delete must not be greater than the [ledger_history] parameter.
 * [fetch_depth] will be silently set to equal the online_delete setting if
 online_delete is greater than fetch_depth.
+* In the [node_db] section, there is a performance tuning option, delete_batch,
+which sets the maximum size in ledgers for each SQL DELETE query.
