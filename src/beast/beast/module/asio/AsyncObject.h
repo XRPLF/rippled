@@ -83,8 +83,8 @@ public:
 
     void removeReference ()
     {
-        if (--m_pending)
-            (static_cast <Derived *> (this))->asyncHandlersComplete ();
+        if (--m_pending == 0)
+            (static_cast<Derived*>(this))->asyncHandlersComplete();
     }
 
 private:
