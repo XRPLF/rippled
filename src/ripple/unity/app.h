@@ -56,6 +56,8 @@
 #include <ripple/basics/KeyCache.h>
 #include <ripple/basics/TaggedCache.h>
 
+#include <ripple/protocol/Indexes.h>
+
 #include <ripple/app/data/Database.h>
 #include <ripple/app/data/DatabaseCon.h>
 #include <ripple/app/data/SqliteDatabase.h>
@@ -113,7 +115,7 @@
 #include <ripple/app/paths/PathRequest.h>
 #include <ripple/app/paths/PathRequests.h>
 #include <ripple/app/main/ParameterTable.h>
- #include <ripple/app/paths/PathState.h>
- #include <ripple/app/paths/RippleCalc.h>
+#include <ripple/app/paths/PathState.h>
+#include <ripple/app/paths/RippleCalc.h>
 
 #endif

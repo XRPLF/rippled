@@ -56,7 +56,7 @@ Json::Value doLedgerEntry (RPC::Context& context)
         else
         {
             uNodeIndex
-                    = Ledger::getAccountRootIndex (naAccount.getAccountID ());
+                    = getAccountRootIndex (naAccount.getAccountID ());
         }
     }
     else if (context.params.isMember ("directory"))
@@ -82,7 +82,7 @@ Json::Value doLedgerEntry (RPC::Context& context)
 
                 uDirRoot.SetHex (context.params["dir_root"].asString ());
 
-                uNodeIndex  = Ledger::getDirNodeIndex (uDirRoot, uSubIndex);
+                uNodeIndex  = getDirNodeIndex (uDirRoot, uSubIndex);
             }
             else if (context.params["directory"].isMember ("owner"))
             {
@@ -96,9 +96,9 @@ Json::Value doLedgerEntry (RPC::Context& context)
                 else
                 {
                     uint256 uDirRoot
-                            = Ledger::getOwnerDirIndex (
+                            = getOwnerDirIndex (
                                 naOwnerID.getAccountID ());
-                    uNodeIndex  = Ledger::getDirNodeIndex (uDirRoot, uSubIndex);
+                    uNodeIndex  = getDirNodeIndex (uDirRoot, uSubIndex);
                 }
             }
             else
@@ -132,7 +132,7 @@ Json::Value doLedgerEntry (RPC::Context& context)
 
             na0Public.setAccountPublic (naGenerator, 0);
 
-            uNodeIndex  = Ledger::getGeneratorIndex (na0Public.getAccountID ());
+            uNodeIndex  = getGeneratorIndex (na0Public.getAccountID ());
         }
     }
     else if (context.params.isMember ("offer"))
@@ -156,9 +156,8 @@ Json::Value doLedgerEntry (RPC::Context& context)
         }
         else
         {
-            auto uSequence = context.params["offer"]["seq"].asUInt ();
-            uNodeIndex  = Ledger::getOfferIndex (
-                naAccountID.getAccountID (), uSequence);
+            uNodeIndex  = getOfferIndex (naAccountID.getAccountID (),
+                context.params["offer"]["seq"].asUInt ());
         }
     }
     else if (context.params.isMember ("ripple_state"))
@@ -195,7 +194,7 @@ Json::Value doLedgerEntry (RPC::Context& context)
         }
         else
         {
-            uNodeIndex  = Ledger::getRippleStateIndex (
+            uNodeIndex  = getRippleStateIndex (
                 naA.getAccountID (), naB.getAccountID (), uCurrency);
         }
     }

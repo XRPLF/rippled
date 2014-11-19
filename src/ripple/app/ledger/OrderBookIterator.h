@@ -67,7 +67,7 @@ public:
     */
     std::uint64_t getCurrentQuality () const
     {
-        return Ledger::getQuality(mIndex);
+        return getQuality(mIndex);
     }
 
     /** Make this iterator refer to the next book

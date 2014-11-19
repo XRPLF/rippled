@@ -1741,6 +1741,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\app\ledger\LedgerHolder.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\ledger\LedgerIndexCalc.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\ledger\LedgerMaster.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>

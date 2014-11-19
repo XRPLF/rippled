@@ -1143,7 +1143,7 @@ Json::Value NetworkOPsImp::getOwnerInfo (
     Ledger::pointer lpLedger, RippleAddress const& naAccount)
 {
     Json::Value jvObjects (Json::objectValue);
-    auto uRootIndex = lpLedger->getOwnerDirIndex (naAccount.getAccountID ());
+    auto uRootIndex = getOwnerDirIndex (naAccount.getAccountID ());
     auto sleNode = lpLedger->getDirNode (uRootIndex);
 
     if (sleNode)
@@ -1189,7 +1189,7 @@ Json::Value NetworkOPsImp::getOwnerInfo (
             if (uNodeDir)
             {
                 sleNode = lpLedger->getDirNode (
-                    Ledger::getDirNodeIndex (uRootIndex, uNodeDir));
+                    getDirNodeIndex (uRootIndex, uNodeDir));
                 assert (sleNode);
             }
         }
@@ -2986,8 +2986,8 @@ void NetworkOPsImp::getBookPage (
             (jvResult[jss::offers] = Json::Value (Json::arrayValue));
 
     std::map<Account, STAmount> umBalance;
-    const uint256   uBookBase   = Ledger::getBookBase (book);
-    const uint256   uBookEnd    = Ledger::getQualityNext (uBookBase);
+    const uint256   uBookBase   = getBookBase (book);
+    const uint256   uBookEnd    = getQualityNext (uBookBase);
     uint256         uTipIndex   = uBookBase;
 
     if (m_journal.trace)
@@ -3036,7 +3036,7 @@ void NetworkOPsImp::getBookPage (
             else
             {
                 uTipIndex = sleOfferDir->getIndex ();
-                saDirRate = amountFromQuality (Ledger::getQuality (uTipIndex));
+                saDirRate = amountFromQuality (getQuality (uTipIndex));
 
                 lesActive.dirFirst (
                     uTipIndex, sleOfferDir, uBookEntry, offerIndex);

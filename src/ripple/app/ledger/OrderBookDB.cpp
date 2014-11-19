@@ -78,7 +78,7 @@ static void updateHelper (SLE::ref entry,
         book.out.account.copyFrom (entry->getFieldH160 (sfTakerGetsIssuer));
         book.out.currency.copyFrom (entry->getFieldH160 (sfTakerGetsCurrency));
 
-        uint256 index = Ledger::getBookBase (book);
+        uint256 index = getBookBase (book);
         if (seen.insert (index).second)
         {
             auto orderBook = std::make_shared<OrderBook> (index, book);
@@ -156,7 +156,7 @@ void OrderBookDB::addOrderBook(Book const& book)
             }
         }
     }
-    uint256 index = Ledger::getBookBase(book);
+    uint256 index = getBookBase(book);
     auto orderBook = std::make_shared<OrderBook> (index, book);
 
     mSourceMap[book.in].push_back (orderBook);

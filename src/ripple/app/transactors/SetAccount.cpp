@@ -83,7 +83,7 @@ public:
 
         if (bSetRequireAuth && !(uFlagsIn & lsfRequireAuth))
         {
-            if (!mEngine->view().dirIsEmpty (Ledger::getOwnerDirIndex (mTxnAccountID)))
+            if (!mEngine->view().dirIsEmpty (getOwnerDirIndex (mTxnAccountID)))
             {
                 m_journal.trace << "Retry: Owner directory not empty.";
 

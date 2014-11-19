@@ -70,7 +70,7 @@ public:
         std::uint64_t const hint (sleTicket->getFieldU64 (sfOwnerNode));
 
         TER const result = mEngine->view ().dirDelete (false, hint,
-            Ledger::getOwnerDirIndex (ticket_owner), ticketId, false, (hint == 0));
+            getOwnerDirIndex (ticket_owner), ticketId, false, (hint == 0));
 
         mEngine->view ().decrementOwnerCount (mTxnAccount);
         mEngine->view ().entryDelete (sleTicket);

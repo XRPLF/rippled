@@ -112,14 +112,12 @@ private:
     {
         uint256 amendment (mTxn.getFieldH256 (sfAmendment));
 
-        SLE::pointer amendmentObject (mEngine->entryCache (
-            ltAMENDMENTS, Ledger::getLedgerAmendmentIndex ()));
+        auto const index = getLedgerAmendmentIndex ();
+
+        SLE::pointer amendmentObject (mEngine->entryCache (ltAMENDMENTS, index));
 
         if (!amendmentObject)
-        {
-            amendmentObject = mEngine->entryCreate(
-                ltAMENDMENTS, Ledger::getLedgerAmendmentIndex());
-        }
+            amendmentObject = mEngine->entryCreate(ltAMENDMENTS, index);
 
         STVector256 amendments (amendmentObject->getFieldV256 (sfAmendments));
 
@@ -143,12 +141,12 @@ private:
 
     TER applyFee ()
     {
-        SLE::pointer feeObject = mEngine->entryCache (
-            ltFEE_SETTINGS, Ledger::getLedgerFeeIndex ());
+        auto const index = getLedgerFeeIndex ();
+
+        SLE::pointer feeObject = mEngine->entryCache (ltFEE_SETTINGS, index);
 
         if (!feeObject)
-            feeObject = mEngine->entryCreate (
-                ltFEE_SETTINGS, Ledger::getLedgerFeeIndex ());
+            feeObject = mEngine->entryCreate (ltFEE_SETTINGS, index);
 
         m_journal.trace <<
             "Previous fee object: " << feeObject->getJson (0);
