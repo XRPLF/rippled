@@ -39,12 +39,10 @@
 #include <ripple/validators/Manager.h>
 #include <beast/asio/io_latency_probe.h>
 #include <beast/module/core/thread/DeadlineTimer.h>
+#include <boost/asio/signal_set.hpp>
 #include <fstream>
 
 namespace ripple {
-
-// VFALCO TODO Clean this global up
-static bool volatile doShutdown = false;
 
 // 204/256 about 80%
 static int const MAJORITY_FRACTION (204);
@@ -191,7 +189,6 @@ public:
     std::unique_ptr <ProofOfWorkFactory> mProofOfWorkFactory;
     std::unique_ptr <LoadManager> m_loadManager;
     beast::DeadlineTimer m_sweepTimer;
-    bool volatile mShutdown;
 
     std::unique_ptr <DatabaseCon> mRpcDB;
     std::unique_ptr <DatabaseCon> mTxnDB;
@@ -200,6 +197,7 @@ public:
     std::unique_ptr <Overlay> m_overlay;
     std::vector <std::unique_ptr<WSDoor>> wsDoors_;
 
+    boost::asio::signal_set m_signals;
     beast::WaitableEvent m_stop;
 
     std::unique_ptr <ResolverAsio> m_resolver;
@@ -336,9 +334,9 @@ public:
 
         , m_sweepTimer (this)
 
-        , mShutdown (false)
+        , m_signals(get_io_service(), SIGINT)
 
-        , m_resolver (ResolverAsio::New (get_io_service(), beast::Journal ()))
+        , m_resolver (ResolverAsio::New (get_io_service(), m_logs.journal("Resolver")))
 
         , m_io_latency_sampler (m_collectorManager->collector()->make_event ("ios_latency"),
             m_logs.journal("Application"), std::chrono::milliseconds (100), get_io_service())
@@ -549,7 +547,8 @@ public:
 
     bool isShutdown ()
     {
-        return mShutdown;
+        // from Stoppable mixin
+        return isStopped();
     }
 
     //--------------------------------------------------------------------------
@@ -572,12 +571,24 @@ public:
             mWalletDB.get () != nullptr;
     }
 
-#ifdef SIGINT
-    static void sigIntHandler (int)
+    void signalled(const boost::system::error_code& ec, int signal_number)
     {
-        doShutdown = true;
+        if (ec == boost::asio::error::operation_aborted)
+        {
+            // Indicates the signal handler has been aborted
+            // do nothing
+        }
+        else if (ec)
+        {
+            m_journal.error << "Received signal: " << signal_number
+                            << " with error: " << ec.message();
+        }
+        else
+        {
+            m_journal.debug << "Received signal: " << signal_number;
+            signalStop();
+        }
     }
-#endif
 
     // VFALCO TODO Break this function up into many small initialization segments.
     //             Or better yet refactor these initializations into RAII classes
@@ -588,19 +599,9 @@ public:
         // VFALCO NOTE: 0 means use heuristics to determine the thread count.
         m_jobQueue->setThreadCount (0, getConfig ().RUN_STANDALONE);
 
-    #if ! BEAST_WIN32
-    #ifdef SIGINT
-
-        if (!getConfig ().RUN_STANDALONE)
-        {
-            struct sigaction sa;
-            memset (&sa, 0, sizeof (sa));
-            sa.sa_handler = &ApplicationImp::sigIntHandler;
-            sigaction (SIGINT, &sa, nullptr);
-        }
-
-    #endif
-    #endif
+        m_signals.async_wait(std::bind(&ApplicationImp::signalled, this,
+                                      std::placeholders::_1,
+                                      std::placeholders::_2));
 
         assert (mTxnDB == nullptr);
 
@@ -624,7 +625,7 @@ public:
         if (!initSqliteDbs ())
         {
             m_journal.fatal << "Can not create database connections!";
-            exit (3);
+            exitWithCode(3);
         }
 
         getApp().getLedgerDB ().getDB ()->executeSQL (boost::str (boost::format ("PRAGMA cache_size=-%d;") %
@@ -660,9 +661,7 @@ public:
                                 startUp == Config::REPLAY,
                                 startUp == Config::LOAD_FILE))
             {
-                // wtf?
-                getApp().signalStop ();
-                exit (-1);
+                exitWithCode(-1);
             }
         }
         else if (startUp == Config::NETWORK)
@@ -823,11 +822,7 @@ public:
 
         m_sweepTimer.cancel ();
 
-        // VFALCO TODO get rid of this flag
-        mShutdown = true;
-
         mValidations->flush ();
-        mShutdown = false;
 
         stopped ();
     }
@@ -864,51 +859,19 @@ public:
             }
         }
 
-        // Wait for the stop signal
-#ifdef SIGINT
-        for(;;)
-        {
-            bool const signaled (m_stop.wait (100));
-            if (signaled)
-                break;
-            // VFALCO NOTE It is unfortunate that we have to resort to
-            //             polling but thats what the signal() interface
-            //             forces us to do.
-            //
-            if (doShutdown)
-                break;
-        }
-#else
         m_stop.wait ();
-#endif
 
         // Stop the server. When this returns, all
         // Stoppable objects should be stopped.
-
-        doStop ();
-
-        {
-            // VFALCO TODO Try to not have to do this early, by using observers to
-            //             eliminate LoadManager's dependency inversions.
-            //
-            // This deletes the object and therefore, stops the thread.
-            //m_loadManager = nullptr;
-
-            m_journal.info << "Done.";
-
-            // VFALCO NOTE This is a sign that something is wrong somewhere, it
-            //             shouldn't be necessary to sleep until some flag is set.
-            while (mShutdown)
-                std::this_thread::sleep_for (std::chrono::milliseconds (100));
-        }
+        m_journal.info << "Received shutdown request";
+        stop (m_journal);
+        m_journal.info << "Done.";
+        exitWithCode(0);
     }
 
-    void doStop ()
-    {
-        m_journal.info << "Received shutdown request";
-        StopSustain ();
-
-        stop (m_journal);
+    void exitWithCode(int code){
+        StopSustain();
+        std::exit(code);
     }
 
     void signalStop ()
@@ -1414,8 +1377,7 @@ void ApplicationImp::updateTables ()
     if (getConfig ().nodeDatabase.size () <= 0)
     {
         WriteLog (lsFATAL, Application) << "The [node_db] configuration setting has been updated and must be set";
-        StopSustain ();
-        exit (1);
+        exitWithCode(1);
     }
 
     // perform any needed table updates
@@ -1426,8 +1388,7 @@ void ApplicationImp::updateTables ()
     if (schemaHas (getApp().getTxnDB (), "AccountTransactions", 0, "PRIMARY"))
     {
         WriteLog (lsFATAL, Application) << "AccountTransactions database should not have a primary key";
-        StopSustain ();
-        exit (1);
+        exitWithCode(1);
     }
 
     if (getConfig ().doImport)

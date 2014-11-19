@@ -286,7 +286,7 @@ public:
                 "Queued new job with " << names.size() <<
                 " tasks. " << m_work.size() << " jobs outstanding.";
 
-            if (m_work.size() == 1)
+            if (m_work.size() > 0)
             {
                 m_io_service.post (m_strand.wrap (std::bind (
                     &ResolverAsioImpl::do_work, this,
