@@ -337,11 +337,11 @@ transactionSign (
         sfSigningPubKey,
         masterAccountPublic.getAccountPublic ());
 
-    SerializedTransaction::pointer stpTrans;
+    STTx::pointer stpTrans;
 
     try
     {
-        stpTrans = std::make_shared<SerializedTransaction> (*sopTrans);
+        stpTrans = std::make_shared<STTx> (*sopTrans);
     }
     catch (std::exception&)
     {

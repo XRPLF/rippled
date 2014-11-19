@@ -69,7 +69,7 @@ public:
     }
 
 private:
-    bool addValidation (SerializedValidation::ref val, std::string const& source)
+    bool addValidation (STValidation::ref val, std::string const& source)
     {
         RippleAddress signer = val->getSignerPublic ();
         bool isCurrent = false;
@@ -293,11 +293,11 @@ private:
         return (goodNodes * 100) / (goodNodes + badNodes);
     }
 
-    std::list<SerializedValidation::pointer> getCurrentTrustedValidations ()
+    std::list<STValidation::pointer> getCurrentTrustedValidations ()
     {
         std::uint32_t cutoff = getApp().getOPs ().getNetworkTimeNC () - LEDGER_VAL_INTERVAL;
 
-        std::list<SerializedValidation::pointer> ret;
+        std::list<STValidation::pointer> ret;
 
         ScopedLockType sl (mLock);
         auto it = mCurrentValidations.begin ();

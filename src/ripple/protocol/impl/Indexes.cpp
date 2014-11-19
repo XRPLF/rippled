@@ -18,13 +18,6 @@
 //==============================================================================
 
 #include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/LedgerFormats.h>
-#include <ripple/protocol/RippleAddress.h>
-#include <ripple/protocol/Serializer.h>
-
-#include <ripple/types/base_uint.h>
-#include <ripple/types/Book.h>
-#include <ripple/types/UintTypes.h>
 
 namespace ripple {
 

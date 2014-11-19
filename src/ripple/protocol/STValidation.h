@@ -25,15 +25,15 @@ namespace ripple {
 // Validation flags
 const std::uint32_t vfFullyCanonicalSig    = 0x80000000; // signature is fully canonical
 
-class SerializedValidation
+class STValidation
     : public STObject
-    , public CountedObject <SerializedValidation>
+    , public CountedObject <STValidation>
 {
 public:
-    static char const* getCountedObjectName () { return "SerializedValidation"; }
+    static char const* getCountedObjectName () { return "STValidation"; }
 
-    typedef std::shared_ptr<SerializedValidation>         pointer;
-    typedef const std::shared_ptr<SerializedValidation>&  ref;
+    typedef std::shared_ptr<STValidation>         pointer;
+    typedef const std::shared_ptr<STValidation>&  ref;
 
     enum
     {
@@ -41,10 +41,10 @@ public:
     };
 
     // These throw if the object is not valid
-    SerializedValidation (SerializerIterator & sit, bool checkSignature = true);
+    STValidation (SerializerIterator & sit, bool checkSignature = true);
 
     // Does not sign the validation
-    SerializedValidation (uint256 const& ledgerHash, std::uint32_t signTime,
+    STValidation (uint256 const& ledgerHash, std::uint32_t signTime,
                           const RippleAddress & raPub, bool isFull);
 
     uint256         getLedgerHash ()     const;

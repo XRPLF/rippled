@@ -32,7 +32,7 @@ class Payment
 
 public:
     Payment (
-        SerializedTransaction const& txn,
+        STTx const& txn,
         TransactionEngineParams params,
         TransactionEngine* engine)
         : Transactor (
@@ -372,7 +372,7 @@ public:
 
 TER
 transact_Payment (
-    SerializedTransaction const& txn,
+    STTx const& txn,
     TransactionEngineParams params,
     TransactionEngine* engine)
 {

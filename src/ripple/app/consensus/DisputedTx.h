@@ -20,6 +20,11 @@
 #ifndef RIPPLE_DISPUTEDTX_H
 #define RIPPLE_DISPUTEDTX_H
 
+#include <ripple/protocol/UintTypes.h>
+#include <ripple/protocol/Serializer.h>
+#include <ripple/types/base_uint.h>
+#include <memory>
+
 namespace ripple {
 
 /** A transaction discovered to be in dispute during conensus.

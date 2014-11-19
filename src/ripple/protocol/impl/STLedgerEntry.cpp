@@ -17,9 +17,12 @@
 */
 //==============================================================================
 
+#include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/STLedgerEntry.h>
+
 namespace ripple {
 
-SerializedLedgerEntry::SerializedLedgerEntry (
+STLedgerEntry::STLedgerEntry (
     SerializerIterator& sit, uint256 const& index)
     : STObject (sfLedgerEntry), mIndex (index), mMutable (true)
 {
@@ -27,7 +30,7 @@ SerializedLedgerEntry::SerializedLedgerEntry (
     setSLEType ();
 }
 
-SerializedLedgerEntry::SerializedLedgerEntry (
+STLedgerEntry::STLedgerEntry (
     const Serializer& s, uint256 const& index)
     : STObject (sfLedgerEntry), mIndex (index), mMutable (true)
 {
@@ -37,14 +40,14 @@ SerializedLedgerEntry::SerializedLedgerEntry (
     setSLEType ();
 }
 
-SerializedLedgerEntry::SerializedLedgerEntry (
+STLedgerEntry::STLedgerEntry (
     const STObject & object, uint256 const& index)
     : STObject (object), mIndex(index),  mMutable (true)
 {
     setSLEType ();
 }
 
-void SerializedLedgerEntry::setSLEType ()
+void STLedgerEntry::setSLEType ()
 {
     mFormat = LedgerFormats::getInstance().findByType (
         static_cast <LedgerEntryType> (getFieldU16 (sfLedgerEntryType)));
@@ -62,7 +65,7 @@ void SerializedLedgerEntry::setSLEType ()
     }
 }
 
-SerializedLedgerEntry::SerializedLedgerEntry (LedgerEntryType type, uint256 const& index) :
+STLedgerEntry::STLedgerEntry (LedgerEntryType type, uint256 const& index) :
     STObject (sfLedgerEntry), mIndex (index), mType (type), mMutable (true)
 {
     mFormat = LedgerFormats::getInstance().findByType (type);
@@ -75,14 +78,14 @@ SerializedLedgerEntry::SerializedLedgerEntry (LedgerEntryType type, uint256 cons
         static_cast <std::uint16_t> (mFormat->getType ()));
 }
 
-SerializedLedgerEntry::pointer SerializedLedgerEntry::getMutable () const
+STLedgerEntry::pointer STLedgerEntry::getMutable () const
 {
-    SerializedLedgerEntry::pointer ret = std::make_shared<SerializedLedgerEntry> (std::cref (*this));
+    STLedgerEntry::pointer ret = std::make_shared<STLedgerEntry> (std::cref (*this));
     ret->mMutable = true;
     return ret;
 }
 
-std::string SerializedLedgerEntry::getFullText () const
+std::string STLedgerEntry::getFullText () const
 {
     std::string ret = "\"";
     ret += to_string (mIndex);
@@ -94,14 +97,14 @@ std::string SerializedLedgerEntry::getFullText () const
     return ret;
 }
 
-std::string SerializedLedgerEntry::getText () const
+std::string STLedgerEntry::getText () const
 {
     return str (boost::format ("{ %s, %s }")
                 % to_string (mIndex)
                 % STObject::getText ());
 }
 
-Json::Value SerializedLedgerEntry::getJson (int options) const
+Json::Value STLedgerEntry::getJson (int options) const
 {
     Json::Value ret (STObject::getJson (options));
 
@@ -110,27 +113,27 @@ Json::Value SerializedLedgerEntry::getJson (int options) const
     return ret;
 }
 
-bool SerializedLedgerEntry::isThreadedType ()
+bool STLedgerEntry::isThreadedType ()
 {
     return getFieldIndex (sfPreviousTxnID) != -1;
 }
 
-bool SerializedLedgerEntry::isThreaded ()
+bool STLedgerEntry::isThreaded ()
 {
     return isFieldPresent (sfPreviousTxnID);
 }
 
-uint256 SerializedLedgerEntry::getThreadedTransaction ()
+uint256 STLedgerEntry::getThreadedTransaction ()
 {
     return getFieldH256 (sfPreviousTxnID);
 }
 
-std::uint32_t SerializedLedgerEntry::getThreadedLedger ()
+std::uint32_t STLedgerEntry::getThreadedLedger ()
 {
     return getFieldU32 (sfPreviousTxnLgrSeq);
 }
 
-bool SerializedLedgerEntry::thread (uint256 const& txID, std::uint32_t ledgerSeq,
+bool STLedgerEntry::thread (uint256 const& txID, std::uint32_t ledgerSeq,
                                     uint256& prevTxID, std::uint32_t& prevLedgerID)
 {
     uint256 oldPrevTxID = getFieldH256 (sfPreviousTxnID);
@@ -150,32 +153,32 @@ bool SerializedLedgerEntry::thread (uint256 const& txID, std::uint32_t ledgerSeq
     return true;
 }
 
-bool SerializedLedgerEntry::hasOneOwner ()
+bool STLedgerEntry::hasOneOwner ()
 {
     return (mType != ltACCOUNT_ROOT) && (getFieldIndex (sfAccount) != -1);
 }
 
-bool SerializedLedgerEntry::hasTwoOwners ()
+bool STLedgerEntry::hasTwoOwners ()
 {
     return mType == ltRIPPLE_STATE;
 }
 
-RippleAddress SerializedLedgerEntry::getOwner ()
+RippleAddress STLedgerEntry::getOwner ()
 {
     return getFieldAccount (sfAccount);
 }
 
-RippleAddress SerializedLedgerEntry::getFirstOwner ()
+RippleAddress STLedgerEntry::getFirstOwner ()
 {
     return RippleAddress::createAccountID (getFieldAmount (sfLowLimit).getIssuer ());
 }
 
-RippleAddress SerializedLedgerEntry::getSecondOwner ()
+RippleAddress STLedgerEntry::getSecondOwner ()
 {
     return RippleAddress::createAccountID (getFieldAmount (sfHighLimit).getIssuer ());
 }
 
-std::vector<uint256> SerializedLedgerEntry::getOwners ()
+std::vector<uint256> STLedgerEntry::getOwners ()
 {
     std::vector<uint256> owners;
     Account account;

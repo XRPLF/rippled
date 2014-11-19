@@ -29,7 +29,7 @@ AcceptedLedgerTx::AcceptedLedgerTx (Ledger::ref ledger, SerializerIterator& sit)
     Serializer          txnSer (sit.getVL ());
     SerializerIterator  txnIt (txnSer);
 
-    mTxn =      std::make_shared<SerializedTransaction> (std::ref (txnIt));
+    mTxn =      std::make_shared<STTx> (std::ref (txnIt));
     mRawMeta =  sit.getVL ();
     mMeta =     std::make_shared<TransactionMetaSet> (mTxn->getTransactionID (),
         ledger->getLedgerSeq (), mRawMeta);
@@ -39,7 +39,7 @@ AcceptedLedgerTx::AcceptedLedgerTx (Ledger::ref ledger, SerializerIterator& sit)
 }
 
 AcceptedLedgerTx::AcceptedLedgerTx (Ledger::ref ledger,
-    SerializedTransaction::ref txn, TransactionMetaSet::ref met)
+    STTx::ref txn, TransactionMetaSet::ref met)
     : mLedger (ledger)
     , mTxn (txn)
     , mMeta (met)
@@ -50,7 +50,7 @@ AcceptedLedgerTx::AcceptedLedgerTx (Ledger::ref ledger,
 }
 
 AcceptedLedgerTx::AcceptedLedgerTx (Ledger::ref ledger,
-    SerializedTransaction::ref txn, TER result)
+    STTx::ref txn, TER result)
     : mLedger (ledger)
     , mTxn (txn)
     , mResult (result)

@@ -27,6 +27,7 @@
 #include <ripple/protocol/BuildInfo.h>
 #include <beast/unit_test.h>
 #include <beast/streams/debug_ostream.h>
+#include <boost/program_options.hpp>
 
 #if defined(BEAST_LINUX) || defined(BEAST_MAC) || defined(BEAST_BSD)
 #include <sys/resource.h>

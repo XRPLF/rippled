@@ -38,7 +38,7 @@ public:
     virtual ~RippleState () { }
 
     static RippleState::pointer makeItem (
-        Account const& accountID, SerializedLedgerEntry::ref ledgerEntry);
+        Account const& accountID, STLedgerEntry::ref ledgerEntry);
 
     LedgerEntryType getType ()
     {
@@ -113,17 +113,17 @@ public:
         return ((std::uint32_t) (mViewLowest ? mLowQualityOut : mHighQualityOut));
     }
 
-    SerializedLedgerEntry::pointer getSLE ()
+    STLedgerEntry::pointer getSLE ()
     {
         return mLedgerEntry;
     }
 
-    const SerializedLedgerEntry& peekSLE () const
+    const STLedgerEntry& peekSLE () const
     {
         return *mLedgerEntry;
     }
 
-    SerializedLedgerEntry& peekSLE ()
+    STLedgerEntry& peekSLE ()
     {
         return *mLedgerEntry;
     }
@@ -134,11 +134,11 @@ public:
 
 private:
     RippleState (
-        SerializedLedgerEntry::ref ledgerEntry,
+        STLedgerEntry::ref ledgerEntry,
         Account const& viewAccount);
 
 private:
-    SerializedLedgerEntry::pointer  mLedgerEntry;
+    STLedgerEntry::pointer  mLedgerEntry;
 
     bool                            mViewLowest;
 

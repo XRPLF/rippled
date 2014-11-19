@@ -20,7 +20,7 @@
 #ifndef RIPPLE_NETWORKOPS_H
 #define RIPPLE_NETWORKOPS_H
 
-#include <ripple/app/ledger/SerializedValidation.h>
+#include <ripple/protocol/STValidation.h>
 #include <ripple/net/InfoSub.h>
 #include <beast/cxx14/memory.h> // <memory>
 #include <beast/threads/Stoppable.h>
@@ -128,8 +128,8 @@ public:
     virtual bool getValidatedRange (std::uint32_t& minVal, std::uint32_t& maxVal) = 0;
     virtual bool getFullValidatedRange (std::uint32_t& minVal, std::uint32_t& maxVal) = 0;
 
-    virtual SerializedValidation::ref getLastValidation () = 0;
-    virtual void setLastValidation (SerializedValidation::ref v) = 0;
+    virtual STValidation::ref getLastValidation () = 0;
+    virtual void setLastValidation (STValidation::ref v) = 0;
     virtual SLE::pointer getSLE (Ledger::pointer lpLedger, uint256 const& uHash) = 0;
     virtual SLE::pointer getSLEi (Ledger::pointer lpLedger, uint256 const& uHash) = 0;
 
@@ -141,7 +141,7 @@ public:
     // must complete immediately
     // VFALCO TODO Make this a TxCallback structure
     typedef std::function<void (Transaction::pointer, TER)> stCallback;
-    virtual void submitTransaction (Job&, SerializedTransaction::pointer,
+    virtual void submitTransaction (Job&, STTx::pointer,
         stCallback callback = stCallback ()) = 0;
     virtual Transaction::pointer submitTransactionSync (Transaction::ref tpTrans,
         bool bAdmin, bool bLocal, bool bFailHard, bool bSubmit) = 0;
@@ -207,7 +207,7 @@ public:
         uint256 const& hash, const std::list<SHAMapNodeID>& nodeIDs,
         const std::list< Blob >& nodeData) = 0;
 
-    virtual bool recvValidation (SerializedValidation::ref val,
+    virtual bool recvValidation (STValidation::ref val,
         std::string const& source) = 0;
 
     virtual void takePosition (int seq, SHAMap::ref position) = 0;
@@ -274,7 +274,7 @@ public:
     virtual void reportFeeChange () = 0;
 
     virtual void updateLocalTx (Ledger::ref newValidLedger) = 0;
-    virtual void addLocalTx (Ledger::ref openLedger, SerializedTransaction::ref txn) = 0;
+    virtual void addLocalTx (Ledger::ref openLedger, STTx::ref txn) = 0;
     virtual std::size_t getLocalTxCount () = 0;
 
     //Helper function to generate SQL query to get transactions
@@ -321,7 +321,7 @@ public:
     //
     virtual void pubLedger (Ledger::ref lpAccepted) = 0;
     virtual void pubProposedTransaction (Ledger::ref lpCurrent,
-        SerializedTransaction::ref stTxn, TER terResult) = 0;
+        STTx::ref stTxn, TER terResult) = 0;
 };
 
 std::unique_ptr<NetworkOPs>

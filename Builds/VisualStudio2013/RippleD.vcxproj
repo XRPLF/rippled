@@ -272,8 +272,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\beast\beast\container\tests\hash_metrics.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\beast\beast\Crypto.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\beast\beast\crypto\base64.h">
     </ClInclude>
     <ClCompile Include="..\..\src\beast\beast\crypto\Crypto.unity.cpp">
@@ -1766,11 +1764,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\OrderBookIterator.h">
     </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\ledger\SerializedValidation.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\ledger\SerializedValidation.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\main\Application.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
@@ -1858,16 +1851,6 @@
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\misc\ProofOfWorkFactory.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\misc\SerializedLedger.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\misc\SerializedLedger.h">
-    </ClInclude>
-    <ClCompile Include="..\..\src\ripple\app\misc\SerializedTransaction.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClInclude Include="..\..\src\ripple\app\misc\SerializedTransaction.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\misc\Validations.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
@@ -2641,16 +2624,16 @@
     <ClCompile Include="..\..\src\ripple\protocol\impl\RippleAddress.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\protocol\impl\SerializedObjectTemplate.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\src\ripple\protocol\impl\SerializedTypes.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\impl\Serializer.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\impl\SField.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\impl\SOTemplate.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\impl\STAccount.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\impl\STAmount.cpp">
@@ -2662,7 +2645,16 @@
     <ClCompile Include="..\..\src\ripple\protocol\impl\STArray.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\impl\STBase.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\impl\STBlob.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\impl\STInteger.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\impl\STLedgerEntry.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\impl\STObject.cpp">
@@ -2671,10 +2663,25 @@
     <ClCompile Include="..\..\src\ripple\protocol\impl\STParsedJSON.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\impl\STPathSet.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\impl\STTx.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\impl\STValidation.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\impl\STVector256.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\impl\TER.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\protocol\impl\TxFormats.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ripple\protocol\impl\UintTypes.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\protocol\Indexes.h">
@@ -2691,33 +2698,47 @@
     </None>
     <ClInclude Include="..\..\src\ripple\protocol\RippleAddress.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\protocol\SerializedObjectTemplate.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\protocol\SerializedType.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\protocol\SerializedTypes.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\Serializer.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\SField.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\protocol\SOTemplate.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\protocol\STAccount.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\STAmount.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\STArray.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\protocol\STBase.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\STBitString.h">
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\protocol\STBlob.h">
+    </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\STInteger.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\protocol\STLedgerEntry.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\STObject.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\STParsedJSON.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\protocol\STPathSet.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\protocol\STTx.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\protocol\STValidation.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\protocol\STVector256.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\TER.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\TxFlags.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\protocol\TxFormats.h">
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\protocol\UintTypes.h">
     </ClInclude>
     <CustomBuild Include="..\..\src\ripple\proto\ripple.proto">
       <FileType>Document</FileType>
@@ -3118,8 +3139,6 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\sitefiles\Sitefiles.h">
     </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\AgedHistory.h">
-    </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\Base58.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\base_uint.h">
@@ -3151,9 +3170,6 @@
     <ClCompile Include="..\..\src\ripple\types\impl\strHex.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\src\ripple\types\impl\UintTypes.cpp">
-      <ExcludedFromBuild>True</ExcludedFromBuild>
-    </ClCompile>
     <ClInclude Include="..\..\src\ripple\types\Issue.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\RippleAccountID.h">
@@ -3175,8 +3191,6 @@
     <ClInclude Include="..\..\src\ripple\types\strHex.h">
     </ClInclude>
     <ClInclude Include="..\..\src\ripple\types\UInt160.h">
-    </ClInclude>
-    <ClInclude Include="..\..\src\ripple\types\UintTypes.h">
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\app.cpp">
     </ClCompile>
@@ -3264,8 +3278,6 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\types.cpp">
     </ClCompile>
-    <ClInclude Include="..\..\src\ripple\unity\types.h">
-    </ClInclude>
     <ClCompile Include="..\..\src\ripple\unity\validators.cpp">
     </ClCompile>
     <ClCompile Include="..\..\src\ripple\unity\websocket.cpp">

@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/protocol/STAccount.h>
+
 namespace ripple {
 
 // VFALCO TODO rename class to TransactionMeta
@@ -27,7 +29,7 @@ TransactionMetaSet::TransactionMetaSet (uint256 const& txid, std::uint32_t ledge
     Serializer s (vec);
     SerializerIterator sit (s);
 
-    std::unique_ptr<SerializedType> pobj = STObject::deserialize (sit, sfMetadata);
+    std::unique_ptr<STBase> pobj = STObject::deserialize (sit, sfMetadata);
     STObject* obj = static_cast<STObject*> (pobj.get ());
 
     if (!obj)
@@ -100,7 +102,7 @@ std::vector<RippleAddress> TransactionMetaSet::getAffectedAccounts ()
 
             if (inner)
             {
-                BOOST_FOREACH (const SerializedType & field, inner->peekData ())
+                BOOST_FOREACH (const STBase & field, inner->peekData ())
                 {
                     const STAccount* sa = dynamic_cast<const STAccount*> (&field);
 

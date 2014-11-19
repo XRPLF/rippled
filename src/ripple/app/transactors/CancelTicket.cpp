@@ -24,7 +24,7 @@ class CancelTicket
 {
 public:
     CancelTicket (
-        SerializedTransaction const& txn,
+        STTx const& txn,
         TransactionEngineParams params,
         TransactionEngine* engine)
         : Transactor (
@@ -81,7 +81,7 @@ public:
 
 TER
 transact_CancelTicket (
-    SerializedTransaction const& txn,
+    STTx const& txn,
     TransactionEngineParams params,
     TransactionEngine* engine)
 {

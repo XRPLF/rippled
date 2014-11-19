@@ -24,7 +24,7 @@ class CreateTicket
 {
 public:
     CreateTicket (
-        SerializedTransaction const& txn,
+        STTx const& txn,
         TransactionEngineParams params,
         TransactionEngine* engine)
         : Transactor (
@@ -123,7 +123,7 @@ public:
 
 TER
 transact_CreateTicket (
-    SerializedTransaction const& txn,
+    STTx const& txn,
     TransactionEngineParams params,
     TransactionEngine* engine)
 {

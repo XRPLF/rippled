@@ -22,20 +22,20 @@
 
 namespace ripple {
 
-TER transact_Payment (SerializedTransaction const& txn, TransactionEngineParams params, TransactionEngine* engine);
-TER transact_SetAccount (SerializedTransaction const& txn, TransactionEngineParams params, TransactionEngine* engine);
-TER transact_SetRegularKey (SerializedTransaction const& txn, TransactionEngineParams params, TransactionEngine* engine);
-TER transact_SetTrust (SerializedTransaction const& txn, TransactionEngineParams params, TransactionEngine* engine);
-TER transact_CreateOffer (SerializedTransaction const& txn, TransactionEngineParams params, TransactionEngine* engine);
-TER transact_CancelOffer (SerializedTransaction const& txn, TransactionEngineParams params, TransactionEngine* engine);
-TER transact_AddWallet (SerializedTransaction const& txn, TransactionEngineParams params, TransactionEngine* engine);
-TER transact_Change (SerializedTransaction const& txn, TransactionEngineParams params, TransactionEngine* engine);
-TER transact_CreateTicket (SerializedTransaction const& txn, TransactionEngineParams params, TransactionEngine* engine);
-TER transact_CancelTicket (SerializedTransaction const& txn, TransactionEngineParams params, TransactionEngine* engine);
+TER transact_Payment (STTx const& txn, TransactionEngineParams params, TransactionEngine* engine);
+TER transact_SetAccount (STTx const& txn, TransactionEngineParams params, TransactionEngine* engine);
+TER transact_SetRegularKey (STTx const& txn, TransactionEngineParams params, TransactionEngine* engine);
+TER transact_SetTrust (STTx const& txn, TransactionEngineParams params, TransactionEngine* engine);
+TER transact_CreateOffer (STTx const& txn, TransactionEngineParams params, TransactionEngine* engine);
+TER transact_CancelOffer (STTx const& txn, TransactionEngineParams params, TransactionEngine* engine);
+TER transact_AddWallet (STTx const& txn, TransactionEngineParams params, TransactionEngine* engine);
+TER transact_Change (STTx const& txn, TransactionEngineParams params, TransactionEngine* engine);
+TER transact_CreateTicket (STTx const& txn, TransactionEngineParams params, TransactionEngine* engine);
+TER transact_CancelTicket (STTx const& txn, TransactionEngineParams params, TransactionEngine* engine);
 
 TER
 Transactor::transact (
-    SerializedTransaction const& txn,
+    STTx const& txn,
     TransactionEngineParams params,
     TransactionEngine* engine)
 {
@@ -78,7 +78,7 @@ Transactor::transact (
 }
 
 Transactor::Transactor (
-    SerializedTransaction const& txn,
+    STTx const& txn,
     TransactionEngineParams params,
     TransactionEngine* engine,
     beast::Journal journal)

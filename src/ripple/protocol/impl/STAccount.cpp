@@ -17,38 +17,52 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LOCALTRANSACTIONS_H
-#define RIPPLE_LOCALTRANSACTIONS_H
-
-#include <ripple/app/tx/TransactionEngine.h>
-#include <ripple/app/ledger/Ledger.h>
+#include <ripple/protocol/STAccount.h>
 
 namespace ripple {
 
-// Track transactions issued by local clients
-// Ensure we always apply them to our open ledger
-// Hold them until we see them in a fully-validated ledger
-
-class LocalTxs
+std::string STAccount::getText () const
 {
-public:
+    Account u;
+    RippleAddress a;
 
-    virtual ~LocalTxs () = default;
+    if (!getValueH160 (u))
+        return STBlob::getText ();
 
-    static std::unique_ptr<LocalTxs> New ();
+    a.setAccountID (u);
+    return a.humanAccountID ();
+}
 
-    // Add a new local transaction
-    virtual void push_back (LedgerIndex index, STTx::ref txn) = 0;
+STAccount*
+STAccount::construct (SerializerIterator& u, SField::ref name)
+{
+    return new STAccount (name, u.getVL ());
+}
 
-    // Apply local transactions to a new open ledger
-    virtual void apply (TransactionEngine&) = 0;
+STAccount::STAccount (SField::ref n, Account const& v) : STBlob (n)
+{
+    peekValue ().insert (peekValue ().end (), v.begin (), v.end ());
+}
 
-    // Remove obsolete transactions based on a new fully-valid ledger
-    virtual void sweep (Ledger::ref validLedger) = 0;
+bool STAccount::isValueH160 () const
+{
+    return peekValue ().size () == (160 / 8);
+}
 
-    virtual std::size_t size () = 0;
-};
+RippleAddress STAccount::getValueNCA () const
+{
+    RippleAddress a;
+    Account account;
+
+    if (getValueH160 (account))
+        a.setAccountID (account);
+
+    return a;
+}
+
+void STAccount::setValueNCA (RippleAddress const& nca)
+{
+    setValueH160 (nca.getAccountID ());
+}
 
 } // ripple
-
-#endif

@@ -24,7 +24,7 @@
 #include <functional>
 #include <type_traits>
 
-#include <ripple/types/UintTypes.h>
+#include <ripple/protocol/UintTypes.h>
 
 namespace ripple {
 

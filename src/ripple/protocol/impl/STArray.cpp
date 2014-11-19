@@ -18,12 +18,12 @@
 //==============================================================================
 
 #include <ripple/basics/Log.h>
-#include <ripple/protocol/SerializedType.h>
+#include <ripple/protocol/STBase.h>
 #include <ripple/protocol/STArray.h>
 
 namespace ripple {
 
-std::unique_ptr<SerializedType>
+std::unique_ptr<STBase>
 STArray::deserialize (SerializerIterator& sit, SField::ref field)
 {
     std::unique_ptr <STArray> ret (std::make_unique <STArray> (field));
@@ -130,7 +130,7 @@ void STArray::add (Serializer& s) const
     }
 }
 
-bool STArray::isEquivalent (const SerializedType& t) const
+bool STArray::isEquivalent (const STBase& t) const
 {
     const STArray* v = dynamic_cast<const STArray*> (&t);
 

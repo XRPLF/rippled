@@ -48,11 +48,11 @@ Json::Value doSubmit (RPC::Context& context)
     Serializer                  sTrans (ret.first);
     SerializerIterator          sitTrans (sTrans);
 
-    SerializedTransaction::pointer stpTrans;
+    STTx::pointer stpTrans;
 
     try
     {
-        stpTrans = std::make_shared<SerializedTransaction> (std::ref (sitTrans));
+        stpTrans = std::make_shared<STTx> (std::ref (sitTrans));
     }
     catch (std::exception& e)
     {

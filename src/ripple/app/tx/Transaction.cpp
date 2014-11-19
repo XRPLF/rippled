@@ -19,7 +19,7 @@
 
 namespace ripple {
 
-Transaction::Transaction (SerializedTransaction::ref sit, Validate validate)
+Transaction::Transaction (STTx::ref sit, Validate validate)
     : mInLedger (0),
       mStatus (INVALID),
       mResult (temUNCERTAIN),
@@ -52,7 +52,7 @@ Transaction::pointer Transaction::sharedTransaction (
         SerializerIterator sit (s);
 
         return std::make_shared<Transaction> (
-            std::make_shared<SerializedTransaction> (sit),
+            std::make_shared<STTx> (sit),
             validate);
     }
     catch (...)
@@ -105,7 +105,7 @@ Transaction::pointer Transaction::transactionFromSQL (
     rawTxn.resize (txSize);
 
     SerializerIterator it (rawTxn);
-    auto txn = std::make_shared<SerializedTransaction> (it);
+    auto txn = std::make_shared<STTx> (it);
     auto tr = std::make_shared<Transaction> (txn, validate);
 
     TransStatus st (INVALID);
@@ -177,7 +177,7 @@ Transaction::pointer Transaction::transactionFromSQL (std::string const& sql)
     rawTxn.resize (txSize);
 
     SerializerIterator it (rawTxn);
-    auto txn = std::make_shared<SerializedTransaction> (it);
+    auto txn = std::make_shared<STTx> (it);
     auto tr = std::make_shared<Transaction> (txn, Validate::YES);
 
     TransStatus st (INVALID);

@@ -20,7 +20,7 @@
 namespace ripple {
 
 RippleState::pointer RippleState::makeItem (
-    Account const& accountID, SerializedLedgerEntry::ref ledgerEntry)
+    Account const& accountID, STLedgerEntry::ref ledgerEntry)
 {
     if (!ledgerEntry || ledgerEntry->getType () != ltRIPPLE_STATE)
         return pointer ();
@@ -29,7 +29,7 @@ RippleState::pointer RippleState::makeItem (
 }
 
 RippleState::RippleState (
-        SerializedLedgerEntry::ref ledgerEntry,
+        STLedgerEntry::ref ledgerEntry,
         Account const& viewAccount)
     : mLedgerEntry (ledgerEntry)
     , mLowLimit (ledgerEntry->getFieldAmount (sfLowLimit))

@@ -17,84 +17,89 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_STINTEGER_H_INCLUDED
-#define RIPPLE_PROTOCOL_STINTEGER_H_INCLUDED
+#ifndef RIPPLE_PROTOCOL_STBLOB_H_INCLUDED
+#define RIPPLE_PROTOCOL_STBLOB_H_INCLUDED
 
 #include <ripple/protocol/STBase.h>
+#include <memory>
 
 namespace ripple {
 
-template <typename Integer>
-class STInteger : public STBase
+// variable length byte string
+class STBlob : public STBase
 {
 public:
-    explicit STInteger (Integer v) : value_ (v)
+    STBlob (Blob const& v) : value (v)
     {
+        ;
     }
-
-    STInteger (SField::ref n, Integer v = 0) : STBase (n), value_ (v)
+    STBlob (SField::ref n, Blob const& v) : STBase (n), value (v)
     {
+        ;
     }
-
-    static std::unique_ptr<STBase> deserialize (
-        SerializerIterator& sit, SField::ref name)
+    STBlob (SField::ref n) : STBase (n)
+    {
+        ;
+    }
+    STBlob (SerializerIterator&, SField::ref name = sfGeneric);
+    STBlob ()
+    {
+        ;
+    }
+    static std::unique_ptr<STBase> deserialize (SerializerIterator& sit, SField::ref name)
     {
         return std::unique_ptr<STBase> (construct (sit, name));
     }
 
-    SerializedTypeID getSType () const
+    virtual SerializedTypeID getSType () const
     {
-        return STI_UINT8;
+        return STI_VL;
     }
-
-    Json::Value getJson (int) const;
-    std::string getText () const;
-
+    virtual std::string getText () const;
     void add (Serializer& s) const
     {
         assert (fName->isBinary ());
-        assert (fName->fieldType == getSType ());
-        s.addInteger (value_);
+        assert ((fName->fieldType == STI_VL) ||
+            (fName->fieldType == STI_ACCOUNT));
+        s.addVL (value);
     }
 
-    Integer getValue () const
+    Blob const& peekValue () const
     {
-        return value_;
+        return value;
     }
-    void setValue (Integer v)
+    Blob& peekValue ()
     {
-        value_ = v;
+        return value;
+    }
+    Blob getValue () const
+    {
+        return value;
+    }
+    void setValue (Blob const& v)
+    {
+        value = v;
     }
 
-    operator Integer () const
+    operator Blob () const
     {
-        return value_;
+        return value;
     }
+    virtual bool isEquivalent (const STBase& t) const;
     virtual bool isDefault () const
     {
-        return value_ == 0;
-    }
-
-    bool isEquivalent (const STBase& t) const
-    {
-        const STInteger* v = dynamic_cast<const STInteger*> (&t);
-        return v && (value_ == v->value_);
+        return value.empty ();
     }
 
 private:
-    Integer value_;
+    Blob value;
 
-    STInteger* duplicate () const
+    virtual STBlob* duplicate () const
     {
-        return new STInteger (*this);
+        return new STBlob (*this);
     }
-    static STInteger* construct (SerializerIterator&, SField::ref f);
+    static STBlob* construct (SerializerIterator&, SField::ref);
 };
-
-using STUInt8 = STInteger<unsigned char>;
-using STUInt16 = STInteger<std::uint16_t>;
-using STUInt32 = STInteger<std::uint32_t>;
-using STUInt64 = STInteger<std::uint64_t>;
 
 } // ripple
 

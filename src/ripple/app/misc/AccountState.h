@@ -58,17 +58,17 @@ public:
         return mLedgerEntry->getFieldU32 (sfSequence);
     }
 
-    SerializedLedgerEntry::pointer getSLE ()
+    STLedgerEntry::pointer getSLE ()
     {
         return mLedgerEntry;
     }
 
-    SerializedLedgerEntry const& peekSLE () const
+    STLedgerEntry const& peekSLE () const
     {
         return *mLedgerEntry;
     }
 
-    SerializedLedgerEntry& peekSLE ()
+    STLedgerEntry& peekSLE ()
     {
         return *mLedgerEntry;
     }
@@ -84,7 +84,7 @@ public:
 private:
     RippleAddress const mAccountID;
     RippleAddress                  mAuthorizedKey;
-    SerializedLedgerEntry::pointer mLedgerEntry;
+    STLedgerEntry::pointer mLedgerEntry;
 
     bool                           mValid;
 };

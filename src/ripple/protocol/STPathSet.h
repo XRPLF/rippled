@@ -17,162 +17,14 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_SERIALIZEDTYPES_H_INCLUDED
-#define RIPPLE_PROTOCOL_SERIALIZEDTYPES_H_INCLUDED
+#ifndef RIPPLE_PROTOCOL_STPATHELEMENT_H_INCLUDED
+#define RIPPLE_PROTOCOL_STPATHELEMENT_H_INCLUDED
 
-#include <ripple/protocol/SField.h>
-#include <ripple/protocol/Serializer.h>
-#include <ripple/protocol/STBitString.h>
-#include <ripple/protocol/STInteger.h>
-#include <ripple/protocol/SerializedType.h>
-#include <ripple/protocol/STAmount.h>
-#include <ripple/protocol/RippleAddress.h>
+#include <cstddef>
 
 namespace ripple {
 
-//------------------------------------------------------------------------------
-
-// variable length byte string
-class STVariableLength : public SerializedType
-{
-public:
-    STVariableLength (Blob const& v) : value (v)
-    {
-        ;
-    }
-    STVariableLength (SField::ref n, Blob const& v) : SerializedType (n), value (v)
-    {
-        ;
-    }
-    STVariableLength (SField::ref n) : SerializedType (n)
-    {
-        ;
-    }
-    STVariableLength (SerializerIterator&, SField::ref name = sfGeneric);
-    STVariableLength ()
-    {
-        ;
-    }
-    static std::unique_ptr<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
-    {
-        return std::unique_ptr<SerializedType> (construct (sit, name));
-    }
-
-    virtual SerializedTypeID getSType () const
-    {
-        return STI_VL;
-    }
-    virtual std::string getText () const;
-    void add (Serializer& s) const
-    {
-        assert (fName->isBinary ());
-        assert ((fName->fieldType == STI_VL) ||
-            (fName->fieldType == STI_ACCOUNT));
-        s.addVL (value);
-    }
-
-    Blob const& peekValue () const
-    {
-        return value;
-    }
-    Blob& peekValue ()
-    {
-        return value;
-    }
-    Blob getValue () const
-    {
-        return value;
-    }
-    void setValue (Blob const& v)
-    {
-        value = v;
-    }
-
-    operator Blob () const
-    {
-        return value;
-    }
-    virtual bool isEquivalent (const SerializedType& t) const;
-    virtual bool isDefault () const
-    {
-        return value.empty ();
-    }
-
-private:
-    Blob value;
-
-    virtual STVariableLength* duplicate () const
-    {
-        return new STVariableLength (*this);
-    }
-    static STVariableLength* construct (SerializerIterator&, SField::ref);
-};
-
-//------------------------------------------------------------------------------
-
-class STAccount : public STVariableLength
-{
-public:
-    STAccount (Blob const& v) : STVariableLength (v)
-    {
-        ;
-    }
-    STAccount (SField::ref n, Blob const& v) : STVariableLength (n, v)
-    {
-        ;
-    }
-    STAccount (SField::ref n, Account const& v);
-    STAccount (SField::ref n) : STVariableLength (n)
-    {
-        ;
-    }
-    STAccount ()
-    {
-        ;
-    }
-    static std::unique_ptr<SerializedType> deserialize (SerializerIterator& sit, SField::ref name)
-    {
-        return std::unique_ptr<SerializedType> (construct (sit, name));
-    }
-
-    SerializedTypeID getSType () const
-    {
-        return STI_ACCOUNT;
-    }
-    std::string getText () const;
-
-    RippleAddress getValueNCA () const;
-    void setValueNCA (RippleAddress const& nca);
-
-    template <typename Tag>
-    void setValueH160 (base_uint<160, Tag> const& v)
-    {
-        peekValue ().clear ();
-        peekValue ().insert (peekValue ().end (), v.begin (), v.end ());
-        assert (peekValue ().size () == (160 / 8));
-    }
-
-    template <typename Tag>
-    bool getValueH160 (base_uint<160, Tag>& v) const
-    {
-        auto success = isValueH160 ();
-        if (success)
-            memcpy (v.begin (), & (peekValue ().front ()), (160 / 8));
-        return success;
-    }
-
-    bool isValueH160 () const;
-
-private:
-    virtual STAccount* duplicate () const
-    {
-        return new STAccount (*this);
-    }
-    static STAccount* construct (SerializerIterator&, SField::ref);
-};
-
-//------------------------------------------------------------------------------
-
+// VFALCO Why isn't this derived from STBase?
 class STPathElement
 {
 public:
@@ -273,8 +125,6 @@ private:
     std::size_t hash_value_;
 };
 
-//------------------------------------------------------------------------------
-
 class STPath
 {
 public:
@@ -348,20 +198,20 @@ private:
 //------------------------------------------------------------------------------
 
 // A set of zero or more payment paths
-class STPathSet : public SerializedType
+class STPathSet : public STBase
 {
 public:
     STPathSet () = default;
 
     STPathSet (SField::ref n)
-        : SerializedType (n)
+        : STBase (n)
     { }
 
     static
-    std::unique_ptr<SerializedType>
+    std::unique_ptr<STBase>
     deserialize (SerializerIterator& sit, SField::ref name)
     {
-        return std::unique_ptr<SerializedType> (construct (sit, name));
+        return std::unique_ptr<STBase> (construct (sit, name));
     }
 
     void add (Serializer& s) const;
@@ -407,7 +257,7 @@ public:
         return true;
     }
 
-    virtual bool isEquivalent (const SerializedType& t) const;
+    virtual bool isEquivalent (const STBase& t) const;
     virtual bool isDefault () const
     {
         return value.empty ();
@@ -433,7 +283,7 @@ private:
     std::vector<STPath> value;
 
     STPathSet (SField::ref n, const std::vector<STPath>& v)
-        : SerializedType (n), value (v)
+        : STBase (n), value (v)
     { }
 
     STPathSet* duplicate () const
@@ -444,104 +294,6 @@ private:
     static
     STPathSet*
     construct (SerializerIterator&, SField::ref);
-};
-
-//------------------------------------------------------------------------------
-
-class STVector256 : public SerializedType
-{
-public:
-    STVector256 () = default;
-    explicit STVector256 (SField::ref n)
-        : SerializedType (n)
-    { }
-    explicit STVector256 (std::vector<uint256> const& vector)
-        : mValue (vector)
-    { }
-
-    SerializedTypeID getSType () const
-    {
-        return STI_VECTOR256;
-    }
-    void add (Serializer& s) const;
-
-    static
-    std::unique_ptr<SerializedType>
-    deserialize (SerializerIterator& sit, SField::ref name)
-    {
-        return std::unique_ptr<SerializedType> (construct (sit, name));
-    }
-
-    const std::vector<uint256>&
-    peekValue () const
-    {
-        return mValue;
-    }
-
-    std::vector<uint256>&
-    peekValue ()
-    {
-        return mValue;
-    }
-
-    virtual bool isEquivalent (const SerializedType& t) const;
-    virtual bool isDefault () const
-    {
-        return mValue.empty ();
-    }
-
-    std::vector<uint256>::size_type
-    size () const
-    {
-        return mValue.size ();
-    }
-    bool empty () const
-    {
-        return mValue.empty ();
-    }
-
-    std::vector<uint256>::const_reference
-    operator[] (std::vector<uint256>::size_type n) const
-    {
-        return mValue[n];
-    }
-
-    void setValue (const STVector256& v)
-    {
-        mValue = v.mValue;
-    }
-
-    void push_back (uint256 const& v)
-    {
-        mValue.push_back (v);
-    }
-
-    void sort ()
-    {
-        std::sort (mValue.begin (), mValue.end ());
-    }
-
-    Json::Value getJson (int) const;
-
-    std::vector<uint256>::const_iterator
-    begin() const
-    {
-        return mValue.begin ();
-    }
-    std::vector<uint256>::const_iterator
-    end() const
-    {
-        return mValue.end ();
-    }
-
-private:
-    std::vector<uint256>    mValue;
-
-    STVector256* duplicate () const
-    {
-        return new STVector256 (*this);
-    }
-    static STVector256* construct (SerializerIterator&, SField::ref);
 };
 
 } // ripple
