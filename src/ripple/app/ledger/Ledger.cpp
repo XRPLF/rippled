@@ -1899,43 +1899,6 @@ std::vector<uint256> Ledger::getNeededAccountStateHashes (
     return ret;
 }
 
-//------------------------------------------------------------------------------
-
-class Ledger_test : public beast::unit_test::suite
-{
-    void test_genesis_ledger ()
-    {
-        RippleAddress rootSeedMaster
-                = RippleAddress::createSeedGeneric ("masterpassphrase");
-        RippleAddress rootGeneratorMaster
-                = RippleAddress::createGeneratorPublic (rootSeedMaster);
-        RippleAddress rootAddress
-                = RippleAddress::createAccountPublic (rootGeneratorMaster, 0);
-        std::uint64_t startAmount (100000);
-        Ledger::pointer ledger (std::make_shared <Ledger> (
-            rootAddress, startAmount));
-        ledger->updateHash();
-        expect(ledger->assertSane());
-    }
-
-    void test_getQuality ()
-    {
-        uint256 uBig (
-            "D2DC44E5DC189318DB36EF87D2104CDF0A0FE3A4B698BEEE55038D7EA4C68000");
-
-        // VFALCO NOTE This fails in the original version as well.
-        expect (6125895493223874560 == getQuality (uBig));
-    }
-public:
-    void run ()
-    {
-        test_genesis_ledger ();
-        test_getQuality ();
-    }
-};
-
-BEAST_DEFINE_TESTSUITE(Ledger,ripple_app,ripple);
-
 Ledger::StaticLockType Ledger::sPendingSaveLock;
 std::set<std::uint32_t> Ledger::sPendingSaves;
 
