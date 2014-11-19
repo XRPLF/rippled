@@ -24,10 +24,11 @@
 #include <ripple/app/tx/Transaction.h>
 #include <ripple/app/tx/TransactionMeta.h>
 #include <ripple/app/misc/AccountState.h>
-#include <ripple/app/misc/SerializedLedger.h>
+#include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/protocol/Serializer.h>
 #include <ripple/types/Book.h>
+#include <set>
 
 namespace ripple {
 
@@ -274,9 +275,9 @@ public:
         uint256 const& transID, TransactionMetaSet::pointer & txMeta) const;
     bool getMetaHex (uint256 const& transID, std::string & hex) const;
 
-    static SerializedTransaction::pointer getSTransaction (
+    static STTx::pointer getSTransaction (
         SHAMapItem::ref, SHAMapTreeNode::TNType);
-    SerializedTransaction::pointer getSMTransaction (
+    STTx::pointer getSMTransaction (
         SHAMapItem::ref, SHAMapTreeNode::TNType,
         TransactionMetaSet::pointer & txMeta) const;
 
@@ -330,18 +331,10 @@ public:
     uint256 getPrevLedgerIndex (uint256 const& uHash, uint256 const& uBegin) const;
 
     // Ledger hash table function
-    static uint256 getLedgerHashIndex ();
-    static uint256 getLedgerHashIndex (std::uint32_t desiredLedgerIndex);
-    static int getLedgerHashOffset (std::uint32_t desiredLedgerIndex);
-    static int getLedgerHashOffset (
-        std::uint32_t desiredLedgerIndex, std::uint32_t currentLedgerIndex);
-
     uint256 getLedgerHash (std::uint32_t ledgerIndex);
     typedef std::vector<std::pair<std::uint32_t, uint256>> LedgerHashes;
     LedgerHashes getLedgerHashes () const;
 
-    static uint256 getLedgerAmendmentIndex ();
-    static uint256 getLedgerFeeIndex ();
     std::vector<uint256> getLedgerAmendments () const;
 
     std::vector<uint256> getNeededTransactionHashes (
@@ -349,60 +342,24 @@ public:
     std::vector<uint256> getNeededAccountStateHashes (
         int max, SHAMapSyncFilter* filter) const;
 
-    // index calculation functions
-    static uint256 getAccountRootIndex (Account const&);
-
-    static uint256 getAccountRootIndex (const RippleAddress & account)
-    {
-        return getAccountRootIndex (account.getAccountID ());
-    }
-
     //
     // Generator Map functions
     //
 
     SLE::pointer getGenerator (Account const& uGeneratorID) const;
-    static uint256 getGeneratorIndex (Account const& uGeneratorID);
-
-    //
-    // Order book functions
-    //
-
-    // Order book dirs have a base so we can use next to step through them in
-    // quality order.
-    static uint256 getBookBase (Book const&);
 
     //
     // Offer functions
     //
 
     SLE::pointer getOffer (uint256 const& uIndex) const;
-    SLE::pointer getOffer (Account const& account, std::uint32_t uSequence) const
-    {
-        return getOffer (getOfferIndex (account, uSequence));
-    }
-
-    // The index of an offer.
-    static uint256 getOfferIndex (
-        Account const& account, std::uint32_t uSequence);
-
-    //
-    // Owner functions
-    //
-
-    // VFALCO NOTE This is a simple math operation that converts the account ID
-    //             into a 256 bit object (I think....need to research this)
-    //
-    // All items controlled by an account are here: offers
-    static uint256 getOwnerDirIndex (Account const&account);
+    SLE::pointer getOffer (Account const& account, std::uint32_t uSequence) const;
 
     //
     // Directory functions
     // Directories are doubly linked lists of nodes.
 
     // Given a directory root and and index compute the index of a node.
-    static uint256 getDirNodeIndex (
-        uint256 const& uDirRoot, const std::uint64_t uNodeIndex = 0);
     static void ownerDirDescriber (SLE::ref, bool, Account const& owner);
 
     // Return a node: root or normal
@@ -412,10 +369,6 @@ public:
     // Quality
     //
 
-    static uint256 getQualityIndex (
-        uint256 const& uBase, const std::uint64_t uNodeDir = 0);
-    static uint256 getQualityNext (uint256 const& uBase);
-    static std::uint64_t getQuality (uint256 const& uBase);
     static void qualityDirDescriber (
         SLE::ref, bool,
         Currency const& uTakerPaysCurrency, Account const& uTakerPaysIssuer,
@@ -423,37 +376,15 @@ public:
         const std::uint64_t & uRate);
 
     //
-    // Tickets
-    //
-
-    static uint256 getTicketIndex (
-        Account const& account, std::uint32_t uSequence);
-
-    //
     // Ripple functions : credit lines
     //
-    //
-    // Index of node which is the ripple state between two accounts for a
-    // currency.
-    //
-    // VFALCO NOTE Rename these to make it clear they are simple functions that
-    //             don't access global variables. e.g.
-    //             "calculateKeyFromRippleStateAndAddress"
-    static uint256 getRippleStateIndex (
-        Account const& a, Account const& b, Currency const& currency);
-    static uint256 getRippleStateIndex (
-        Account const& a, Issue const& issue)
-    {
-        return getRippleStateIndex (a, issue.account, issue.currency);
-    }
 
-    SLE::pointer getRippleState (uint256 const& uNode) const;
-
-    SLE::pointer getRippleState (
-        Account const& a, Account const& b, Currency const& currency) const
-    {
-        return getRippleState (getRippleStateIndex (a, b, currency));
-    }
+    SLE::pointer
+    getRippleState (uint256 const& uNode) const;
+    
+    SLE::pointer
+    getRippleState (
+        Account const& a, Account const& b, Currency const& currency) const;
 
     std::uint32_t getReferenceFeeUnits ()
     {

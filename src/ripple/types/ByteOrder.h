@@ -20,6 +20,18 @@
 #ifndef RIPPLE_TYPES_BYTEORDER_H
 #define RIPPLE_TYPES_BYTEORDER_H
 
+#include <beast/Config.h>
+
+// For ByteOrder
+#if BEAST_WIN32
+// (nothing)
+#elif __APPLE__
+#include <libkern/OSByteOrder.h>
+#elif defined(__FreeBSD__) || defined(__NetBSD__)
+#include <sys/endian.h>
+#elif defined(__OpenBSD__)
+#include <sys/types.h>
+#endif
 #include <cstdint>
 
 namespace ripple {

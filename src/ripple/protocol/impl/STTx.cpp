@@ -19,14 +19,15 @@
 
 #include <ripple/core/Config.h>
 #include <ripple/protocol/HashPrefix.h>
+#include <ripple/protocol/Protocol.h>
+#include <ripple/protocol/STTx.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/TxFlags.h>
 #include <beast/unit_test/suite.h>
-#include <boost/foreach.hpp>
 
 namespace ripple {
 
-SerializedTransaction::SerializedTransaction (TxType type)
+STTx::STTx (TxType type)
     : STObject (sfTransaction)
     , tx_type_ (type)
     , sig_state_ (boost::indeterminate)
@@ -35,7 +36,7 @@ SerializedTransaction::SerializedTransaction (TxType type)
 
     if (format == nullptr)
     {
-        WriteLog (lsWARNING, SerializedTransaction) <<
+        WriteLog (lsWARNING, STTx) <<
             "Transaction type: " << type;
         throw std::runtime_error ("invalid transaction type");
     }
@@ -44,7 +45,7 @@ SerializedTransaction::SerializedTransaction (TxType type)
     setFieldU16 (sfTransactionType, format->getType ());
 }
 
-SerializedTransaction::SerializedTransaction (STObject const& object)
+STTx::STTx (STObject const& object)
     : STObject (object)
     , sig_state_ (boost::indeterminate)
 {
@@ -54,20 +55,20 @@ SerializedTransaction::SerializedTransaction (STObject const& object)
 
     if (!format)
     {
-        WriteLog (lsWARNING, SerializedTransaction) <<
+        WriteLog (lsWARNING, STTx) <<
             "Transaction type: " << tx_type_;
         throw std::runtime_error ("invalid transaction type");
     }
 
     if (!setType (format->elements))
     {
-        WriteLog (lsWARNING, SerializedTransaction) <<
+        WriteLog (lsWARNING, STTx) <<
             "Transaction not legal for format";
         throw std::runtime_error ("transaction not valid");
     }
 }
 
-SerializedTransaction::SerializedTransaction (SerializerIterator& sit)
+STTx::STTx (SerializerIterator& sit)
     : STObject (sfTransaction)
     , sig_state_ (boost::indeterminate)
 {
@@ -75,7 +76,7 @@ SerializedTransaction::SerializedTransaction (SerializerIterator& sit)
 
     if ((length < Protocol::txMinSizeBytes) || (length > Protocol::txMaxSizeBytes))
     {
-        WriteLog (lsERROR, SerializedTransaction) <<
+        WriteLog (lsERROR, STTx) <<
             "Transaction has invalid length: " << length;
         throw std::runtime_error ("Transaction length invalid");
     }
@@ -87,21 +88,21 @@ SerializedTransaction::SerializedTransaction (SerializerIterator& sit)
 
     if (!format)
     {
-        WriteLog (lsWARNING, SerializedTransaction) <<
+        WriteLog (lsWARNING, STTx) <<
             "Invalid transaction type: " << tx_type_;
         throw std::runtime_error ("invalid transaction type");
     }
 
     if (!setType (format->elements))
     {
-        WriteLog (lsWARNING, SerializedTransaction) <<
+        WriteLog (lsWARNING, STTx) <<
             "Transaction not legal for format";
         throw std::runtime_error ("transaction not valid");
     }
 }
 
 std::string
-SerializedTransaction::getFullText () const
+STTx::getFullText () const
 {
     std::string ret = "\"";
     ret += to_string (getTransactionID ());
@@ -112,7 +113,7 @@ SerializedTransaction::getFullText () const
 }
 
 std::vector<RippleAddress>
-SerializedTransaction::getMentionedAccounts () const
+STTx::getMentionedAccounts () const
 {
     std::vector<RippleAddress> accounts;
 
@@ -144,18 +145,18 @@ SerializedTransaction::getMentionedAccounts () const
 }
 
 uint256
-SerializedTransaction::getSigningHash () const
+STTx::getSigningHash () const
 {
     return STObject::getSigningHash (HashPrefix::txSign);
 }
 
 uint256
-SerializedTransaction::getTransactionID () const
+STTx::getTransactionID () const
 {
     return getHash (HashPrefix::transactionID);
 }
 
-Blob SerializedTransaction::getSignature () const
+Blob STTx::getSignature () const
 {
     try
     {
@@ -167,14 +168,14 @@ Blob SerializedTransaction::getSignature () const
     }
 }
 
-void SerializedTransaction::sign (RippleAddress const& private_key)
+void STTx::sign (RippleAddress const& private_key)
 {
     Blob signature;
     private_key.accountPrivateSign (getSigningHash (), signature);
     setFieldVL (sfTxnSignature, signature);
 }
 
-bool SerializedTransaction::checkSign () const
+bool STTx::checkSign () const
 {
     if (boost::indeterminate (sig_state_))
     {
@@ -196,7 +197,7 @@ bool SerializedTransaction::checkSign () const
     return static_cast<bool> (sig_state_);
 }
 
-bool SerializedTransaction::checkSign (RippleAddress const& public_key) const
+bool STTx::checkSign (RippleAddress const& public_key) const
 {
     try
     {
@@ -213,24 +214,24 @@ bool SerializedTransaction::checkSign (RippleAddress const& public_key) const
     }
 }
 
-void SerializedTransaction::setSigningPubKey (RippleAddress const& naSignPubKey)
+void STTx::setSigningPubKey (RippleAddress const& naSignPubKey)
 {
     setFieldVL (sfSigningPubKey, naSignPubKey.getAccountPublic ());
 }
 
-void SerializedTransaction::setSourceAccount (RippleAddress const& naSource)
+void STTx::setSourceAccount (RippleAddress const& naSource)
 {
     setFieldAccount (sfAccount, naSource);
 }
 
-Json::Value SerializedTransaction::getJson (int) const
+Json::Value STTx::getJson (int) const
 {
     Json::Value ret = STObject::getJson (0);
     ret["hash"] = to_string (getTransactionID ());
     return ret;
 }
 
-Json::Value SerializedTransaction::getJson (int options, bool binary) const
+Json::Value STTx::getJson (int options, bool binary) const
 {
     if (binary)
     {
@@ -244,7 +245,7 @@ Json::Value SerializedTransaction::getJson (int options, bool binary) const
 }
 
 std::string const&
-SerializedTransaction::getMetaSQLInsertReplaceHeader ()
+STTx::getMetaSQLInsertReplaceHeader ()
 {
     static std::string const sql = "INSERT OR REPLACE INTO Transactions "
         "(TransID, TransType, FromAcct, FromSeq, LedgerSeq, Status, RawTxn, TxnMeta)"
@@ -253,7 +254,7 @@ SerializedTransaction::getMetaSQLInsertReplaceHeader ()
     return sql;
 }
 
-std::string SerializedTransaction::getMetaSQL (std::uint32_t inLedger,
+std::string STTx::getMetaSQL (std::uint32_t inLedger,
                                                std::string const& escapedMetaData) const
 {
     Serializer s;
@@ -262,7 +263,7 @@ std::string SerializedTransaction::getMetaSQL (std::uint32_t inLedger,
 }
 
 std::string
-SerializedTransaction::getMetaSQL (Serializer rawTxn,
+STTx::getMetaSQL (Serializer rawTxn,
     std::uint32_t inLedger, char status, std::string const& escapedMetaData) const
 {
     static boost::format bfTrans ("('%s', '%s', '%s', '%d', '%d', '%c', %s, %s)");
@@ -363,7 +364,7 @@ bool passesLocalChecks (STObject const& st)
 
 //------------------------------------------------------------------------------
 
-class SerializedTransaction_test : public beast::unit_test::suite
+class STTx_test : public beast::unit_test::suite
 {
 public:
     void run()
@@ -374,7 +375,7 @@ public:
         RippleAddress publicAcct = RippleAddress::createAccountPublic (generator, 1);
         RippleAddress privateAcct = RippleAddress::createAccountPrivate (generator, seed, 1);
 
-        SerializedTransaction j (ttACCOUNT_SET);
+        STTx j (ttACCOUNT_SET);
         j.setSourceAccount (publicAcct);
         j.setSigningPubKey (publicAcct);
         j.setFieldVL (sfMessageKey, publicAcct.getAccountPublic ());
@@ -385,7 +386,7 @@ public:
         Serializer rawTxn;
         j.add (rawTxn);
         SerializerIterator sit (rawTxn);
-        SerializedTransaction copy (sit);
+        STTx copy (sit);
 
         if (copy != j)
         {
@@ -417,6 +418,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(SerializedTransaction,ripple_app,ripple);
+BEAST_DEFINE_TESTSUITE(STTx,ripple_app,ripple);
 
 } // ripple

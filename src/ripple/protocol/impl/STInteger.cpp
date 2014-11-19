@@ -63,7 +63,7 @@ Json::Value STUInt8::getJson (int) const
         if (transResultInfo (static_cast<TER> (value_), token, human))
             return token;
         else
-            WriteLog (lsWARNING, SerializedType)
+            WriteLog (lsWARNING, STBase)
                 << "Unknown result code in metadata: " << value_;
     }
 

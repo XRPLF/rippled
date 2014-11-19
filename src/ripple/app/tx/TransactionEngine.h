@@ -17,8 +17,11 @@
 */
 //==============================================================================
 
-#ifndef __TRANSACTIONENGINE__
-#define __TRANSACTIONENGINE__
+#ifndef RIPPLE_APP_TRANSACTIONENGINE_H_INCLUDED
+#define RIPPLE_APP_TRANSACTIONENGINE_H_INCLUDED
+
+#include <ripple/app/ledger/Ledger.h>
+#include <ripple/app/ledger/LedgerEntrySet.h>
 
 namespace ripple {
 
@@ -36,8 +39,8 @@ public:
 private:
     LedgerEntrySet      mNodes;
 
-    TER setAuthorized (const SerializedTransaction & txn, bool bMustSetGenerator);
-    TER checkSig (const SerializedTransaction & txn);
+    TER setAuthorized (const STTx & txn, bool bMustSetGenerator);
+    TER checkSig (const STTx & txn);
 
 protected:
     Ledger::pointer     mLedger;
@@ -95,8 +98,8 @@ public:
         mNodes.entryModify (sleEntry);
     }
 
-    TER applyTransaction (const SerializedTransaction&, TransactionEngineParams, bool & didApply);
-    bool checkInvariants (TER result, const SerializedTransaction & txn, TransactionEngineParams params);
+    TER applyTransaction (const STTx&, TransactionEngineParams, bool & didApply);
+    bool checkInvariants (TER result, const STTx & txn, TransactionEngineParams params);
 };
 
 inline TransactionEngineParams operator| (const TransactionEngineParams& l1, const TransactionEngineParams& l2)

@@ -473,7 +473,7 @@ AmendmentTableImpl::doVoting (Ledger::ref lastClosedLedger,
             "Voting for amendment: " << uAmendment;
 
         // Create the transaction to enable the amendment
-        SerializedTransaction trans (ttAMENDMENT);
+        STTx trans (ttAMENDMENT);
         trans.setFieldAccount (sfAccount, Account ());
         trans.setFieldH256 (sfAmendment, uAmendment);
         uint256 txID = trans.getTransactionID ();

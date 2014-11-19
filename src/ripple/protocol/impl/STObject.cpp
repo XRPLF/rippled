@@ -20,7 +20,8 @@
 #include <ripple/basics/Log.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/json/to_string.h>
-#include <ripple/protocol/SerializedType.h>
+#include <ripple/protocol/STBase.h>
+#include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/STArray.h>
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/STParsedJSON.h>
@@ -30,7 +31,7 @@
 
 namespace ripple {
 
-std::unique_ptr<SerializedType>
+std::unique_ptr<STBase>
 STObject::makeDefaultObject (SerializedTypeID id, SField::ref name)
 {
     assert ((id == STI_NOTPRESENT) || (id == name.fieldType));
@@ -38,7 +39,7 @@ STObject::makeDefaultObject (SerializedTypeID id, SField::ref name)
     switch (id)
     {
     case STI_NOTPRESENT:
-        return std::make_unique <SerializedType> (name);
+        return std::make_unique <STBase> (name);
 
     case STI_UINT8:
         return std::make_unique <STUInt8> (name);
@@ -68,7 +69,7 @@ STObject::makeDefaultObject (SerializedTypeID id, SField::ref name)
         return std::make_unique <STVector256> (name);
 
     case STI_VL:
-        return std::make_unique <STVariableLength> (name);
+        return std::make_unique <STBlob> (name);
 
     case STI_ACCOUNT:
         return std::make_unique <STAccount> (name);
@@ -91,14 +92,14 @@ STObject::makeDefaultObject (SerializedTypeID id, SField::ref name)
 }
 
 // VFALCO TODO Remove the 'depth' parameter
-std::unique_ptr<SerializedType>
+std::unique_ptr<STBase>
 STObject::makeDeserializedObject (SerializedTypeID id, SField::ref name,
         SerializerIterator& sit, int depth)
 {
     switch (id)
     {
     case STI_NOTPRESENT:
-        return SerializedType::deserialize (name);
+        return STBase::deserialize (name);
 
     case STI_UINT8:
         return STUInt8::deserialize (sit, name);
@@ -128,7 +129,7 @@ STObject::makeDeserializedObject (SerializedTypeID id, SField::ref name,
         return STVector256::deserialize (sit, name);
 
     case STI_VL:
-        return STVariableLength::deserialize (sit, name);
+        return STBlob::deserialize (sit, name);
 
     case STI_ACCOUNT:
         return STAccount::deserialize (sit, name);
@@ -163,12 +164,12 @@ void STObject::set (const SOTemplate& type)
 
 bool STObject::setType (const SOTemplate& type)
 {
-    boost::ptr_vector<SerializedType> newData (type.peek ().size ());
+    boost::ptr_vector<STBase> newData (type.peek ().size ());
     bool valid = true;
 
     mType = &type;
 
-    SerializedType** array = mData.c_array();
+    STBase** array = mData.c_array();
     std::size_t count = mData.size ();
 
     for (auto const& elem : type.peek ())
@@ -233,7 +234,7 @@ bool STObject::setType (const SOTemplate& type)
 
 bool STObject::isValidForType ()
 {
-    boost::ptr_vector<SerializedType>::iterator it = mData.begin ();
+    boost::ptr_vector<STBase>::iterator it = mData.begin ();
 
     for (SOTemplate::value_type const& elem : mType->peek ())
     {
@@ -311,7 +312,7 @@ bool STObject::set (SerializerIterator& sit, int depth)
 }
 
 
-std::unique_ptr<SerializedType>
+std::unique_ptr<STBase>
 STObject::deserialize (SerializerIterator& sit, SField::ref name)
 {
     std::unique_ptr <STObject> object (std::make_unique <STObject> (name));
@@ -319,9 +320,9 @@ STObject::deserialize (SerializerIterator& sit, SField::ref name)
     return std::move (object);
 }
 
-bool STObject::hasMatchingEntry (const SerializedType& t)
+bool STObject::hasMatchingEntry (const STBase& t)
 {
-    const SerializedType* o = peekAtPField (t.getFName ());
+    const STBase* o = peekAtPField (t.getFName ());
 
     if (!o)
         return false;
@@ -341,7 +342,7 @@ std::string STObject::getFullText () const
     }
     else ret = "{";
 
-    for (SerializedType const& elem : mData)
+    for (STBase const& elem : mData)
     {
         if (elem.getSType () != STI_NOTPRESENT)
         {
@@ -360,9 +361,9 @@ std::string STObject::getFullText () const
 
 void STObject::add (Serializer& s, bool withSigningFields) const
 {
-    std::map<int, const SerializedType*> fields;
+    std::map<int, const STBase*> fields;
 
-    for (SerializedType const& elem : mData)
+    for (STBase const& elem : mData)
     {
         // pick out the fields and sort them
         if ((elem.getSType () != STI_NOTPRESENT) &&
@@ -372,11 +373,11 @@ void STObject::add (Serializer& s, bool withSigningFields) const
         }
     }
 
-    typedef std::map<int, const SerializedType*>::value_type field_iterator;
+    typedef std::map<int, const STBase*>::value_type field_iterator;
     for (auto const& mapEntry : fields)
     {
         // insert them in sorted order
-        const SerializedType* field = mapEntry.second;
+        const STBase* field = mapEntry.second;
 
         // When we serialize an object inside another object,
         // the type associated by rule with this field name
@@ -398,7 +399,7 @@ std::string STObject::getText () const
 {
     std::string ret = "{";
     bool first = false;
-    for (SerializedType const& elem : mData)
+    for (STBase const& elem : mData)
     {
         if (!first)
         {
@@ -412,7 +413,7 @@ std::string STObject::getText () const
     return ret;
 }
 
-bool STObject::isEquivalent (const SerializedType& t) const
+bool STObject::isEquivalent (const STBase& t) const
 {
     const STObject* v = dynamic_cast<const STObject*> (&t);
 
@@ -423,7 +424,7 @@ bool STObject::isEquivalent (const SerializedType& t) const
         return false;
     }
 
-    typedef boost::ptr_vector<SerializedType>::const_iterator const_iter;
+    typedef boost::ptr_vector<STBase>::const_iterator const_iter;
     const_iter it1 = mData.begin (), end1 = mData.end ();
     const_iter it2 = v->mData.begin (), end2 = v->mData.end ();
 
@@ -473,7 +474,7 @@ int STObject::getFieldIndex (SField::ref field) const
         return mType->getIndex (field);
 
     int i = 0;
-    for (SerializedType const& elem : mData)
+    for (STBase const& elem : mData)
     {
         if (elem.getFName () == field)
             return i;
@@ -483,7 +484,7 @@ int STObject::getFieldIndex (SField::ref field) const
     return -1;
 }
 
-const SerializedType& STObject::peekAtField (SField::ref field) const
+const STBase& STObject::peekAtField (SField::ref field) const
 {
     int index = getFieldIndex (field);
 
@@ -493,7 +494,7 @@ const SerializedType& STObject::peekAtField (SField::ref field) const
     return peekAtIndex (index);
 }
 
-SerializedType& STObject::getField (SField::ref field)
+STBase& STObject::getField (SField::ref field)
 {
     int index = getFieldIndex (field);
 
@@ -508,7 +509,7 @@ SField::ref STObject::getFieldSType (int index) const
     return mData[index].getFName ();
 }
 
-const SerializedType* STObject::peekAtPField (SField::ref field) const
+const STBase* STObject::peekAtPField (SField::ref field) const
 {
     int index = getFieldIndex (field);
 
@@ -518,7 +519,7 @@ const SerializedType* STObject::peekAtPField (SField::ref field) const
     return peekAtPIndex (index);
 }
 
-SerializedType* STObject::getPField (SField::ref field, bool createOkay)
+STBase* STObject::getPField (SField::ref field, bool createOkay)
 {
     int index = getFieldIndex (field);
 
@@ -545,7 +546,7 @@ bool STObject::isFieldPresent (SField::ref field) const
 
 STObject& STObject::peekFieldObject (SField::ref field)
 {
-    SerializedType* rf = getPField (field, true);
+    STBase* rf = getPField (field, true);
 
     if (!rf)
         throw std::runtime_error ("Field not found");
@@ -598,7 +599,7 @@ std::uint32_t STObject::getFlags (void) const
     return t->getValue ();
 }
 
-SerializedType* STObject::makeFieldPresent (SField::ref field)
+STBase* STObject::makeFieldPresent (SField::ref field)
 {
     int index = getFieldIndex (field);
 
@@ -610,7 +611,7 @@ SerializedType* STObject::makeFieldPresent (SField::ref field)
         return getPIndex (giveObject (makeNonPresentObject (field)));
     }
 
-    SerializedType* f = getPIndex (index);
+    STBase* f = getPIndex (index);
 
     if (f->getSType () != STI_NOTPRESENT)
         return f;
@@ -626,7 +627,7 @@ void STObject::makeFieldAbsent (SField::ref field)
     if (index == -1)
         throw std::runtime_error ("Field not found");
 
-    const SerializedType& f = peekAtIndex (index);
+    const STBase& f = peekAtIndex (index);
 
     if (f.getSType () == STI_NOTPRESENT)
         return;
@@ -652,7 +653,7 @@ void STObject::delField (int index)
 
 std::string STObject::getFieldString (SField::ref field) const
 {
-    const SerializedType* rf = peekAtPField (field);
+    const STBase* rf = peekAtPField (field);
 
     if (!rf) throw std::runtime_error ("Field not found");
 
@@ -696,7 +697,7 @@ uint256 STObject::getFieldH256 (SField::ref field) const
 
 RippleAddress STObject::getFieldAccount (SField::ref field) const
 {
-    const SerializedType* rf = peekAtPField (field);
+    const STBase* rf = peekAtPField (field);
 
     if (!rf)
         throw std::runtime_error ("Field not found");
@@ -735,7 +736,7 @@ Account STObject::getFieldAccount160 (SField::ref field) const
 
 Blob STObject::getFieldVL (SField::ref field) const
 {
-    return getFieldByValue <STVariableLength> (field);
+    return getFieldByValue <STBlob> (field);
 }
 
 STAmount const& STObject::getFieldAmount (SField::ref field) const
@@ -799,7 +800,7 @@ void STObject::setFieldV256 (SField::ref field, STVector256 const& v)
 
 void STObject::setFieldAccount (SField::ref field, Account const& v)
 {
-    SerializedType* rf = getPField (field, true);
+    STBase* rf = getPField (field, true);
 
     if (!rf)
         throw std::runtime_error ("Field not found");
@@ -817,7 +818,7 @@ void STObject::setFieldAccount (SField::ref field, Account const& v)
 
 void STObject::setFieldVL (SField::ref field, Blob const& v)
 {
-    setFieldUsingSetValue <STVariableLength> (field, v);
+    setFieldUsingSetValue <STBlob> (field, v);
 }
 
 void STObject::setFieldAmount (SField::ref field, STAmount const& v)
@@ -859,13 +860,13 @@ bool STObject::operator== (const STObject& obj) const
     // This is not particularly efficient, and only compares data elements
     // with binary representations
     int matches = 0;
-    for (SerializedType const& t1 : mData)
+    for (STBase const& t1 : mData)
     {
         if ((t1.getSType () != STI_NOTPRESENT) && t1.getFName ().isBinary ())
         {
             // each present field must have a matching field
             bool match = false;
-            for (SerializedType const& t2 : obj.mData)
+            for (STBase const& t2 : obj.mData)
             {
                 if (t1.getFName () == t2.getFName ())
                 {
@@ -889,7 +890,7 @@ bool STObject::operator== (const STObject& obj) const
     }
 
     int fields = 0;
-    for (SerializedType const& t2 : obj.mData)
+    for (STBase const& t2 : obj.mData)
     {
         if ((t2.getSType () != STI_NOTPRESENT) && t2.getFName ().isBinary ())
             ++fields;

@@ -17,50 +17,31 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/SerializedObjectTemplate.h>
+#include <ripple/protocol/STBlob.h>
+#include <ripple/basics/StringUtilities.h>
 
 namespace ripple {
 
-SOTemplate::SOTemplate ()
+STBlob::STBlob (SerializerIterator& st, SField::ref name)
+    : STBase (name)
 {
+    value = st.getVL ();
 }
 
-void SOTemplate::push_back (SOElement const& r)
+std::string STBlob::getText () const
 {
-    // Ensure there is the enough space in the index mapping
-    // table for all possible fields.
-    //
-    if (mIndex.empty ())
-    {
-        // Unmapped indices will be set to -1
-        //
-        mIndex.resize (SField::getNumFields () + 1, -1);
-    }
-
-    // Make sure the field's index is in range
-    //
-    assert (r.e_field.getNum () < mIndex.size ());
-
-    // Make sure that this field hasn't already been assigned
-    //
-    assert (getIndex (r.e_field) == -1);
-
-    // Add the field to the index mapping table
-    //
-    mIndex [r.e_field.getNum ()] = mTypes.size ();
-
-    // Append the new element.
-    //
-    mTypes.push_back (value_type (new SOElement (r)));
+    return strHex (value);
 }
 
-int SOTemplate::getIndex (SField::ref f) const
+STBlob* STBlob::construct (SerializerIterator& u, SField::ref name)
 {
-    // The mapping table should be large enough for any possible field
-    //
-    assert (f.getNum () < mIndex.size ());
+    return new STBlob (name, u.getVL ());
+}
 
-    return mIndex[f.getNum ()];
+bool STBlob::isEquivalent (const STBase& t) const
+{
+    const STBlob* v = dynamic_cast<const STBlob*> (&t);
+    return v && (value == v->value);
 }
 
 } // ripple

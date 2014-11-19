@@ -29,7 +29,7 @@ class SetAccount
 
 public:
     SetAccount (
-        SerializedTransaction const& txn,
+        STTx const& txn,
         TransactionEngineParams params,
         TransactionEngine* engine)
         : Transactor (
@@ -83,7 +83,7 @@ public:
 
         if (bSetRequireAuth && !(uFlagsIn & lsfRequireAuth))
         {
-            if (!mEngine->view().dirIsEmpty (Ledger::getOwnerDirIndex (mTxnAccountID)))
+            if (!mEngine->view().dirIsEmpty (getOwnerDirIndex (mTxnAccountID)))
             {
                 m_journal.trace << "Retry: Owner directory not empty.";
 
@@ -338,7 +338,7 @@ public:
 
 TER
 transact_SetAccount (
-    SerializedTransaction const& txn,
+    STTx const& txn,
     TransactionEngineParams params,
     TransactionEngine* engine)
 {

@@ -17,16 +17,15 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_SERIALIZEDOBJECTTEMPLATE_H_INCLUDED
-#define RIPPLE_PROTOCOL_SERIALIZEDOBJECTTEMPLATE_H_INCLUDED
+#ifndef RIPPLE_PROTOCOL_SOTEMPLATE_H_INCLUDED
+#define RIPPLE_PROTOCOL_SOTEMPLATE_H_INCLUDED
 
 #include <ripple/protocol/SField.h>
 #include <memory>
 
 namespace ripple {
 
-/** Flags for elements in a SerializedObjectTemplate.
-*/
+/** Flags for elements in a SOTemplate. */
 // VFALCO NOTE these don't look like bit-flags...
 enum SOE_Flags
 {
@@ -38,8 +37,7 @@ enum SOE_Flags
 
 //------------------------------------------------------------------------------
 
-/** An element in a SerializedObjectTemplate.
-*/
+/** An element in a SOTemplate. */
 class SOElement
 {
 public:
@@ -55,7 +53,7 @@ public:
 
 //------------------------------------------------------------------------------
 
-/** Defines the fields and their attributes within a SerializedObject.
+/** Defines the fields and their attributes within a STObject.
     Each subclass of SerializedObject will provide its own template
     describing the available fields and their metadata attributes.
 */

@@ -24,7 +24,7 @@ class CreateTicket
 {
 public:
     CreateTicket (
-        SerializedTransaction const& txn,
+        STTx const& txn,
         TransactionEngineParams params,
         TransactionEngine* engine)
         : Transactor (
@@ -68,7 +68,7 @@ public:
         }
 
         SLE::pointer sleTicket = mEngine->entryCreate (ltTICKET,
-            Ledger::getTicketIndex (mTxnAccountID, mTxn.getSequence ()));
+            getTicketIndex (mTxnAccountID, mTxn.getSequence ()));
 
         sleTicket->setFieldAccount (sfAccount, mTxnAccountID);
         sleTicket->setFieldU32 (sfSequence, mTxn.getSequence ());
@@ -81,7 +81,7 @@ public:
             Account const target_account (mTxn.getFieldAccount160 (sfTarget));
 
             SLE::pointer sleTarget = mEngine->entryCache (ltACCOUNT_ROOT,
-                Ledger::getAccountRootIndex (target_account));
+                getAccountRootIndex (target_account));
 
             // Destination account does not exist.
             if (!sleTarget)
@@ -101,7 +101,7 @@ public:
         };
         TER result = mEngine->view ().dirAdd (
             hint,
-            Ledger::getOwnerDirIndex (mTxnAccountID),
+            getOwnerDirIndex (mTxnAccountID),
             sleTicket->getIndex (),
             describer);
 
@@ -123,7 +123,7 @@ public:
 
 TER
 transact_CreateTicket (
-    SerializedTransaction const& txn,
+    STTx const& txn,
     TransactionEngineParams params,
     TransactionEngine* engine)
 {

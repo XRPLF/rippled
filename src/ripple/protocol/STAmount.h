@@ -22,7 +22,7 @@
 
 #include <ripple/protocol/SField.h>
 #include <ripple/protocol/Serializer.h>
-#include <ripple/protocol/SerializedType.h>
+#include <ripple/protocol/STBase.h>
 #include <ripple/types/Issue.h>
 #include <beast/cxx14/memory.h> // <memory>
 
@@ -38,7 +38,7 @@ namespace ripple {
 // Wire form:
 // High 8 bits are (offset+142), legal range is, 80 to 22 inclusive
 // Low 56 bits are value, legal range is 10^15 to (10^16 - 1) inclusive
-class STAmount : public SerializedType
+class STAmount : public STBase
 {
 public:
     typedef std::uint64_t mantissa_type;
@@ -115,7 +115,7 @@ public:
     createFromInt64 (SField::ref n, std::int64_t v);
 
     static
-    std::unique_ptr <SerializedType>
+    std::unique_ptr <STBase>
     deserialize (
         SerializerIterator& sit, SField::ref name)
     {
@@ -263,7 +263,7 @@ public:
 
     //--------------------------------------------------------------------------
     //
-    // SerializedType
+    // STBase
     //
     //--------------------------------------------------------------------------
 
@@ -286,7 +286,7 @@ public:
     add (Serializer& s) const override;
 
     bool
-    isEquivalent (const SerializedType& t) const override;
+    isEquivalent (const STBase& t) const override;
 
     bool
     isDefault() const override

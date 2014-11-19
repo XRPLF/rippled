@@ -18,11 +18,12 @@
 //==============================================================================
 
 #include <ripple/core/Config.h>
+#include <ripple/protocol/STValidation.h>
 #include <ripple/protocol/HashPrefix.h>
 
 namespace ripple {
 
-SerializedValidation::SerializedValidation (SerializerIterator& sit, bool checkSignature)
+STValidation::STValidation (SerializerIterator& sit, bool checkSignature)
     : STObject (getFormat (), sit, sfValidation)
     , mTrusted (false)
 {
@@ -36,7 +37,7 @@ SerializedValidation::SerializedValidation (SerializerIterator& sit, bool checkS
     }
 }
 
-SerializedValidation::SerializedValidation (
+STValidation::STValidation (
     uint256 const& ledgerHash, std::uint32_t signTime,
     RippleAddress const& raPub, bool isFull)
     : STObject (getFormat (), sfValidation)
@@ -54,13 +55,13 @@ SerializedValidation::SerializedValidation (
         setFlag (kFullFlag);
 }
 
-void SerializedValidation::sign (RippleAddress const& raPriv)
+void STValidation::sign (RippleAddress const& raPriv)
 {
     uint256 signingHash;
     sign (signingHash, raPriv);
 }
 
-void SerializedValidation::sign (uint256& signingHash, RippleAddress const& raPriv)
+void STValidation::sign (uint256& signingHash, RippleAddress const& raPriv)
 {
     setFlag (vfFullyCanonicalSig);
 
@@ -70,32 +71,32 @@ void SerializedValidation::sign (uint256& signingHash, RippleAddress const& raPr
     setFieldVL (sfSignature, signature);
 }
 
-uint256 SerializedValidation::getSigningHash () const
+uint256 STValidation::getSigningHash () const
 {
     return STObject::getSigningHash (HashPrefix::validation);
 }
 
-uint256 SerializedValidation::getLedgerHash () const
+uint256 STValidation::getLedgerHash () const
 {
     return getFieldH256 (sfLedgerHash);
 }
 
-std::uint32_t SerializedValidation::getSignTime () const
+std::uint32_t STValidation::getSignTime () const
 {
     return getFieldU32 (sfSigningTime);
 }
 
-std::uint32_t SerializedValidation::getFlags () const
+std::uint32_t STValidation::getFlags () const
 {
     return getFieldU32 (sfFlags);
 }
 
-bool SerializedValidation::isValid () const
+bool STValidation::isValid () const
 {
     return isValid (getSigningHash ());
 }
 
-bool SerializedValidation::isValid (uint256 const& signingHash) const
+bool STValidation::isValid (uint256 const& signingHash) const
 {
     try
     {
@@ -112,31 +113,31 @@ bool SerializedValidation::isValid (uint256 const& signingHash) const
     }
 }
 
-RippleAddress SerializedValidation::getSignerPublic () const
+RippleAddress STValidation::getSignerPublic () const
 {
     RippleAddress a;
     a.setNodePublic (getFieldVL (sfSigningPubKey));
     return a;
 }
 
-bool SerializedValidation::isFull () const
+bool STValidation::isFull () const
 {
     return (getFlags () & kFullFlag) != 0;
 }
 
-Blob SerializedValidation::getSignature () const
+Blob STValidation::getSignature () const
 {
     return getFieldVL (sfSignature);
 }
 
-Blob SerializedValidation::getSigned () const
+Blob STValidation::getSigned () const
 {
     Serializer s;
     add (s);
     return s.peekData ();
 }
 
-SOTemplate const& SerializedValidation::getFormat ()
+SOTemplate const& STValidation::getFormat ()
 {
     struct FormatHolder
     {

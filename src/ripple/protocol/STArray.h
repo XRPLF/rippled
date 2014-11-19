@@ -27,7 +27,7 @@
 namespace ripple {
 
 class STArray final
-    : public SerializedType
+    : public STBase
     , public CountedObject <STArray>
 {
 public:
@@ -50,15 +50,15 @@ public:
     {
         value.reserve (n);
     }
-    explicit STArray (SField::ref f) : SerializedType (f)
+    explicit STArray (SField::ref f) : STBase (f)
     {
         ;
     }
-    STArray (SField::ref f, int n) : SerializedType (f)
+    STArray (SField::ref f, int n) : STBase (f)
     {
         value.reserve (n);
     }
-    STArray (SField::ref f, const vector & v) : SerializedType (f), value (v)
+    STArray (SField::ref f, const vector & v) : STBase (f), value (v)
     {
         ;
     }
@@ -69,7 +69,7 @@ public:
 
     virtual ~STArray () { }
 
-    static std::unique_ptr<SerializedType>
+    static std::unique_ptr<STBase>
     deserialize (SerializerIterator & sit, SField::ref name);
 
     const vector& getValue () const
@@ -191,7 +191,7 @@ public:
     {
         return STI_ARRAY;
     }
-    virtual bool isEquivalent (const SerializedType & t) const override;
+    virtual bool isEquivalent (const STBase & t) const override;
     virtual bool isDefault () const override
     {
         return value.empty ();

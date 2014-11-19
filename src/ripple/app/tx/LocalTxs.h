@@ -20,6 +20,9 @@
 #ifndef RIPPLE_LOCALTRANSACTIONS_H
 #define RIPPLE_LOCALTRANSACTIONS_H
 
+#include <ripple/app/tx/TransactionEngine.h>
+#include <ripple/app/ledger/Ledger.h>
+
 namespace ripple {
 
 // Track transactions issued by local clients
@@ -35,7 +38,7 @@ public:
     static std::unique_ptr<LocalTxs> New ();
 
     // Add a new local transaction
-    virtual void push_back (LedgerIndex index, SerializedTransaction::ref txn) = 0;
+    virtual void push_back (LedgerIndex index, STTx::ref txn) = 0;
 
     // Apply local transactions to a new open ledger
     virtual void apply (TransactionEngine&) = 0;

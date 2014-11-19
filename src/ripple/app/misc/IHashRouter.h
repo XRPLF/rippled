@@ -20,6 +20,9 @@
 #ifndef RIPPLE_HASHROUTER_H_INCLUDED
 #define RIPPLE_HASHROUTER_H_INCLUDED
 
+#include <cstdint>
+#include <set>
+
 namespace ripple {
 
 // VFALCO NOTE Are these the flags?? Why aren't we using a packed struct?

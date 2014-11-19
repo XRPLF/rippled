@@ -20,6 +20,11 @@
 #ifndef RIPPLE_RIPPLELINECACHE_H
 #define RIPPLE_RIPPLELINECACHE_H
 
+#include <ripple/app/paths/RippleState.h>
+#include <cstddef>
+#include <memory>
+#include <vector>
+
 namespace ripple {
 
 // Used by Pathfinder

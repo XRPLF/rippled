@@ -53,14 +53,14 @@ class OrderBookDB;
 class Overlay;
 class PathRequests;
 class ProofOfWorkFactory;
-class SerializedLedgerEntry;
+class STLedgerEntry;
 class TransactionMaster;
 class Validations;
 
 class DatabaseCon;
 
 using NodeCache     = TaggedCache <uint256, Blob>;
-using SLECache      = TaggedCache <uint256, SerializedLedgerEntry>;
+using SLECache      = TaggedCache <uint256, STLedgerEntry>;
 
 class Application : public beast::PropertyStream::Source
 {

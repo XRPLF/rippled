@@ -43,7 +43,7 @@ private:
         assert (!isXRP (issue.currency));
 
         SLE::pointer const issuerAccount = mEngine->entryCache (
-            ltACCOUNT_ROOT, Ledger::getAccountRootIndex (issue.account));
+            ltACCOUNT_ROOT, getAccountRootIndex (issue.account));
 
         if (!issuerAccount)
         {
@@ -59,7 +59,7 @@ private:
         if (issuerAccount->getFieldU32 (sfFlags) & lsfRequireAuth)
         {
             SLE::pointer const trustLine (mEngine->entryCache (
-                ltRIPPLE_STATE, Ledger::getRippleStateIndex (
+                ltRIPPLE_STATE, getRippleStateIndex (
                     mTxnAccountID, issue.account, issue.currency)));
 
             if (!trustLine)
@@ -126,7 +126,7 @@ private:
 public:
     CreateOffer (
             bool autobridging,
-            SerializedTransaction const& txn,
+            STTx const& txn,
             TransactionEngineParams params,
             TransactionEngine* engine)
         : Transactor (
@@ -179,7 +179,7 @@ public:
         std::uint32_t const uAccountSequenceNext = mTxnAccount->getFieldU32 (sfSequence);
         std::uint32_t const uSequence = mTxn.getSequence ();
 
-        const uint256 uLedgerIndex = Ledger::getOfferIndex (mTxnAccountID, uSequence);
+        const uint256 uLedgerIndex = getOfferIndex (mTxnAccountID, uSequence);
 
         if (m_journal.debug)
         {
@@ -211,7 +211,7 @@ public:
         view.bumpSeq (); // Begin ledger variance.
 
         SLE::pointer sleCreator = mEngine->entryCache (
-            ltACCOUNT_ROOT, Ledger::getAccountRootIndex (mTxnAccountID));
+            ltACCOUNT_ROOT, getAccountRootIndex (mTxnAccountID));
 
         if (uTxFlags & tfOfferCreateMask)
         {
@@ -309,7 +309,7 @@ public:
         if ((terResult == tesSUCCESS) && bHaveCancel)
         {
             uint256 const uCancelIndex (
-                Ledger::getOfferIndex (mTxnAccountID, uCancelSequence));
+                getOfferIndex (mTxnAccountID, uCancelSequence));
             SLE::pointer sleCancel = mEngine->entryCache (ltOFFER, uCancelIndex);
 
             // It's not an error to not find the offer to cancel: it might have
@@ -485,7 +485,7 @@ public:
 
             // Add offer to owner's directory.
             terResult = view.dirAdd (uOwnerNode,
-                Ledger::getOwnerDirIndex (mTxnAccountID), uLedgerIndex,
+                getOwnerDirIndex (mTxnAccountID), uLedgerIndex,
                 std::bind (
                     &Ledger::ownerDirDescriber, std::placeholders::_1,
                     std::placeholders::_2, mTxnAccountID));
@@ -495,7 +495,7 @@ public:
                 // Update owner count.
                 view.incrementOwnerCount (sleCreator);
 
-                uint256 const uBookBase (Ledger::getBookBase (
+                uint256 const uBookBase (getBookBase (
                     {{uPaysCurrency, uPaysIssuerID},
                         {uGetsCurrency, uGetsIssuerID}}));
 
@@ -507,7 +507,7 @@ public:
                     "/" << to_string (saTakerGets.getIssuer ());
 
                 // We use the original rate to place the offer.
-                uDirectory = Ledger::getQualityIndex (uBookBase, uRate);
+                uDirectory = getQualityIndex (uBookBase, uRate);
 
                 // Add offer to order book.
                 terResult = view.dirAdd (uBookNode, uDirectory, uLedgerIndex,
@@ -582,7 +582,7 @@ public:
 
 TER
 transact_CreateOffer (
-    SerializedTransaction const& txn,
+    STTx const& txn,
     TransactionEngineParams params,
     TransactionEngine* engine)
 {

@@ -24,7 +24,7 @@ class SetTrust
 {
 public:
     SetTrust (
-        SerializedTransaction const& txn,
+        STTx const& txn,
         TransactionEngineParams params,
         TransactionEngine* engine)
         : Transactor (
@@ -126,7 +126,7 @@ public:
         {
             SLE::pointer selDelete (
                 mEngine->entryCache (ltRIPPLE_STATE,
-                    Ledger::getRippleStateIndex (
+                    getRippleStateIndex (
                         mTxnAccountID, uDstAccountID, currency)));
 
             if (selDelete)
@@ -146,7 +146,7 @@ public:
         }
 
         SLE::pointer sleDst (mEngine->entryCache (
-            ltACCOUNT_ROOT, Ledger::getAccountRootIndex (uDstAccountID)));
+            ltACCOUNT_ROOT, getAccountRootIndex (uDstAccountID)));
 
         if (!sleDst)
         {
@@ -159,7 +159,7 @@ public:
         saLimitAllow.setIssuer (mTxnAccountID);
 
         SLE::pointer sleRippleState (mEngine->entryCache (ltRIPPLE_STATE,
-            Ledger::getRippleStateIndex (mTxnAccountID, uDstAccountID, currency)));
+            getRippleStateIndex (mTxnAccountID, uDstAccountID, currency)));
 
         if (sleRippleState)
         {
@@ -392,7 +392,7 @@ public:
             // Zero balance in currency.
             STAmount saBalance ({currency, noAccount()});
 
-            uint256 index (Ledger::getRippleStateIndex (
+            uint256 index (getRippleStateIndex (
                 mTxnAccountID, uDstAccountID, currency));
 
             m_journal.trace <<
@@ -421,7 +421,7 @@ public:
 
 TER
 transact_SetTrust (
-    SerializedTransaction const& txn,
+    STTx const& txn,
     TransactionEngineParams params,
     TransactionEngine* engine)
 {

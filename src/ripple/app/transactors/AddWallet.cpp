@@ -24,7 +24,7 @@ class AddWallet
 {
 public:
     AddWallet (
-        SerializedTransaction const& txn,
+        STTx const& txn,
         TransactionEngineParams params,
         TransactionEngine* engine)
         : Transactor (
@@ -67,7 +67,7 @@ public:
         }
 
         SLE::pointer sleDst (mEngine->entryCache (
-            ltACCOUNT_ROOT, Ledger::getAccountRootIndex (uDstAccountID)));
+            ltACCOUNT_ROOT, getAccountRootIndex (uDstAccountID)));
 
         if (sleDst)
         {
@@ -105,7 +105,7 @@ public:
 
         // Create the account.
         sleDst  = mEngine->entryCreate (ltACCOUNT_ROOT,
-            Ledger::getAccountRootIndex (uDstAccountID));
+            getAccountRootIndex (uDstAccountID));
 
         sleDst->setFieldAccount (sfAccount, uDstAccountID);
         sleDst->setFieldU32 (sfSequence, 1);
@@ -118,7 +118,7 @@ public:
 
 TER
 transact_AddWallet (
-    SerializedTransaction const& txn,
+    STTx const& txn,
     TransactionEngineParams params,
     TransactionEngine* engine)
 {

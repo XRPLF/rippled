@@ -19,6 +19,10 @@
 
 #include <ripple/basics/RangeSet.h>
 #include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/app/ledger/LedgerHistory.h>
+#include <ripple/app/ledger/LedgerHolder.h>
+#include <ripple/app/ledger/OrderBookDB.h>
+#include <ripple/app/paths/PathRequests.h>
 #include <ripple/validators/Manager.h>
 #include <algorithm>
 #include <cassert>
@@ -355,7 +359,7 @@ public:
         mBuildingLedgerSeq.store (i);
     }
 
-    TER doTransaction (SerializedTransaction::ref txn, TransactionEngineParams params, bool& didApply)
+    TER doTransaction (STTx::ref txn, TransactionEngineParams params, bool& didApply)
     {
         Ledger::pointer ledger;
         TransactionEngine engine;

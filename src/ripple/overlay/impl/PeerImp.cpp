@@ -1318,8 +1318,8 @@ PeerImp::on_message (std::shared_ptr <protocol::TMTransaction> const& m)
     try
     {
         SerializerIterator sit (s);
-        SerializedTransaction::pointer stx = std::make_shared <
-            SerializedTransaction> (std::ref (sit));
+        STTx::pointer stx = std::make_shared <
+            STTx> (std::ref (sit));
         uint256 txID = stx->getTransactionID ();
 
         int flags;
@@ -1658,8 +1658,8 @@ PeerImp::on_message (std::shared_ptr <protocol::TMValidation> const& m)
     {
         Serializer s (m->validation ());
         SerializerIterator sit (s);
-        SerializedValidation::pointer val = std::make_shared <
-            SerializedValidation> (std::ref (sit), false);
+        STValidation::pointer val = std::make_shared <
+            STValidation> (std::ref (sit), false);
 
         if (closeTime > (120 + val->getFieldU32(sfSigningTime)))
         {
@@ -2477,7 +2477,7 @@ PeerImp::doProofOfWork (Job&, std::weak_ptr <PeerImp> peer,
 
 void
 PeerImp::checkTransaction (Job&, int flags,
-    SerializedTransaction::pointer stx, std::weak_ptr<PeerImp> peer)
+    STTx::pointer stx, std::weak_ptr<PeerImp> peer)
 {
     // VFALCO TODO Rewrite to not use exceptions
     try
@@ -2596,7 +2596,7 @@ PeerImp::checkPropose (Job& job, Overlay* pPeers,
 
 void
 PeerImp::checkValidation (Job&, Overlay* pPeers,
-    SerializedValidation::pointer val, bool isTrusted, bool isCluster,
+    STValidation::pointer val, bool isTrusted, bool isCluster,
         std::shared_ptr<protocol::TMValidation> packet,
             std::weak_ptr<PeerImp> peer, beast::Journal journal)
 {
@@ -2624,7 +2624,7 @@ PeerImp::checkValidation (Job&, Overlay* pPeers,
         //----------------------------------------------------------------------
         //
         {
-            SerializedValidation const& sv (*val);
+            STValidation const& sv (*val);
             Validators::ReceivedValidation rv;
             rv.ledgerHash = sv.getLedgerHash ();
             rv.publicKey = sv.getSignerPublic();

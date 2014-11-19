@@ -55,7 +55,7 @@ public:
     // get into a fully-validated ledger.
     static int const holdLedgers = 5;
 
-    LocalTx (LedgerIndex index, SerializedTransaction::ref txn)
+    LocalTx (LedgerIndex index, STTx::ref txn)
         : m_txn (txn)
         , m_expire (index + holdLedgers)
         , m_id (txn->getTransactionID ())
@@ -81,7 +81,7 @@ public:
         return i > m_expire;
     }
 
-    SerializedTransaction::ref getTX () const
+    STTx::ref getTX () const
     {
         return m_txn;
     }
@@ -93,7 +93,7 @@ public:
 
 private:
 
-    SerializedTransaction::pointer m_txn;
+    STTx::pointer m_txn;
     LedgerIndex                    m_expire;
     uint256                        m_id;
     RippleAddress                  m_account;
@@ -108,7 +108,7 @@ public:
     { }
 
     // Add a new transaction to the set of local transactions
-    void push_back (LedgerIndex index, SerializedTransaction::ref txn) override
+    void push_back (LedgerIndex index, STTx::ref txn) override
     {
         std::lock_guard <std::mutex> lock (m_lock);
 

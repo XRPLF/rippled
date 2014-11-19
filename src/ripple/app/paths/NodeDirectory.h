@@ -52,8 +52,8 @@ class NodeDirectory {
         if (current != zero)
             return false;
 
-        current.copyFrom (Ledger::getBookBase (book));
-        next.copyFrom (Ledger::getQualityNext (current));
+        current.copyFrom (getBookBase (book));
+        next.copyFrom (getQualityNext (current));
 
         // TODO(tom): it seems impossible that any actual offers with
         // quality == 0 could occur - we should disallow them, and clear

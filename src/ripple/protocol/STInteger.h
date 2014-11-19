@@ -20,26 +20,26 @@
 #ifndef RIPPLE_PROTOCOL_STINTEGER_H_INCLUDED
 #define RIPPLE_PROTOCOL_STINTEGER_H_INCLUDED
 
-#include <ripple/protocol/SerializedType.h>
+#include <ripple/protocol/STBase.h>
 
 namespace ripple {
 
 template <typename Integer>
-class STInteger : public SerializedType
+class STInteger : public STBase
 {
 public:
     explicit STInteger (Integer v) : value_ (v)
     {
     }
 
-    STInteger (SField::ref n, Integer v = 0) : SerializedType (n), value_ (v)
+    STInteger (SField::ref n, Integer v = 0) : STBase (n), value_ (v)
     {
     }
 
-    static std::unique_ptr<SerializedType> deserialize (
+    static std::unique_ptr<STBase> deserialize (
         SerializerIterator& sit, SField::ref name)
     {
-        return std::unique_ptr<SerializedType> (construct (sit, name));
+        return std::unique_ptr<STBase> (construct (sit, name));
     }
 
     SerializedTypeID getSType () const
@@ -75,7 +75,7 @@ public:
         return value_ == 0;
     }
 
-    bool isEquivalent (const SerializedType& t) const
+    bool isEquivalent (const STBase& t) const
     {
         const STInteger* v = dynamic_cast<const STInteger*> (&t);
         return v && (value_ == v->value_);

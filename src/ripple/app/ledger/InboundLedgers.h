@@ -20,6 +20,8 @@
 #ifndef RIPPLE_INBOUNDLEDGERS_H
 #define RIPPLE_INBOUNDLEDGERS_H
 
+#include <ripple/app/ledger/InboundLedger.h>
+#include <ripple/types/RippleLedgerHash.h>
 #include <beast/threads/Stoppable.h>
 #include <beast/cxx14/memory.h> // <memory>
 

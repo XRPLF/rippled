@@ -23,7 +23,7 @@ namespace ripple {
 
 // Double check a transaction's metadata to make sure no system invariants were broken
 
-bool TransactionEngine::checkInvariants (TER result, const SerializedTransaction& txn, TransactionEngineParams params)
+bool TransactionEngine::checkInvariants (TER result, const STTx& txn, TransactionEngineParams params)
 {
     // VFALCO I deleted a bunch of code that was wrapped in #if 0.
     //        If you need it, check the commit log.

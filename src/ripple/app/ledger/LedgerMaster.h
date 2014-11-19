@@ -21,6 +21,7 @@
 #define RIPPLE_LEDGERMASTER_H_INCLUDED
 
 #include <ripple/basics/StringUtilities.h>
+#include <ripple/types/RippleLedgerHash.h>
 #include <beast/insight/Collector.h>
 #include <beast/threads/Stoppable.h>
 #include <beast/threads/UnlockGuard.h>
@@ -72,7 +73,7 @@ public:
     virtual bool isCaughtUp(std::string& reason) = 0;
 
     virtual TER doTransaction (
-        SerializedTransaction::ref txn,
+        STTx::ref txn,
             TransactionEngineParams params, bool& didApply) = 0;
 
     virtual int getMinValidations () = 0;

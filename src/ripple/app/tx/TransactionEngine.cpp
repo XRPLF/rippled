@@ -71,7 +71,7 @@ void TransactionEngine::txnWrite ()
 }
 
 TER TransactionEngine::applyTransaction (
-    SerializedTransaction const& txn,
+    STTx const& txn,
     TransactionEngineParams params,
     bool& didApply)
 {
@@ -86,7 +86,7 @@ TER TransactionEngine::applyTransaction (
         Serializer ser;
         txn.add (ser);
         SerializerIterator sit (ser);
-        SerializedTransaction s2 (sit);
+        STTx s2 (sit);
 
         if (!s2.isEquivalent (txn))
         {
@@ -139,7 +139,7 @@ TER TransactionEngine::applyTransaction (
         mNodes.clear ();
 
         SLE::pointer txnAcct = entryCache (ltACCOUNT_ROOT,
-            Ledger::getAccountRootIndex (txn.getSourceAccount ()));
+            getAccountRootIndex (txn.getSourceAccount ()));
 
         if (!txnAcct)
             terResult = terNO_ACCOUNT;

@@ -161,11 +161,11 @@ public:
         return m_ledgerMaster.getFullValidatedRange (minVal, maxVal);
     }
 
-    SerializedValidation::ref getLastValidation ()
+    STValidation::ref getLastValidation ()
     {
         return mLastValidation;
     }
-    void setLastValidation (SerializedValidation::ref v)
+    void setLastValidation (STValidation::ref v)
     {
         mLastValidation = v;
     }
@@ -186,7 +186,7 @@ public:
     // must complete immediately
     typedef std::function<void (Transaction::pointer, TER)> stCallback;
     void submitTransaction (
-        Job&, SerializedTransaction::pointer,
+        Job&, STTx::pointer,
         stCallback callback = stCallback ());
 
     Transaction::pointer submitTransactionSync (
@@ -266,7 +266,7 @@ public:
         const std::list< Blob >& nodeData);
 
     bool recvValidation (
-        SerializedValidation::ref val, std::string const& source);
+        STValidation::ref val, std::string const& source);
     void takePosition (int seq, SHAMap::ref position);
     SHAMap::pointer getTXMap (uint256 const& hash);
     bool hasTXSet (
@@ -382,7 +382,7 @@ public:
         m_localTX->sweep (newValidLedger);
     }
     void addLocalTx (
-        Ledger::ref openLedger, SerializedTransaction::ref txn) override
+        Ledger::ref openLedger, STTx::ref txn) override
     {
         m_localTX->push_back (openLedger->getLedgerSeq(), txn);
     }
@@ -433,7 +433,7 @@ public:
     //
     void pubLedger (Ledger::ref lpAccepted);
     void pubProposedTransaction (
-        Ledger::ref lpCurrent, SerializedTransaction::ref stTxn, TER terResult);
+        Ledger::ref lpCurrent, STTx::ref stTxn, TER terResult);
 
     //--------------------------------------------------------------------------
     //
@@ -488,7 +488,7 @@ private:
     void setMode (OperatingMode);
 
     Json::Value transJson (
-        const SerializedTransaction& stTxn, TER terResult, bool bValidated,
+        const STTx& stTxn, TER terResult, bool bValidated,
         Ledger::ref lpCurrent);
     bool haveConsensusObject ();
 
@@ -549,7 +549,7 @@ private:
 
     std::uint32_t mLastCloseTime;
     std::uint32_t mLastValidationTime;
-    SerializedValidation::pointer       mLastValidation;
+    STValidation::pointer       mLastValidation;
 
     // Recent positions taken
     std::map<uint256, std::pair<int, SHAMap::pointer> > mRecentPositions;
@@ -834,14 +834,14 @@ bool NetworkOPsImp::isValidated (std::uint32_t seq)
 }
 
 void NetworkOPsImp::submitTransaction (
-    Job&, SerializedTransaction::pointer iTrans, stCallback callback)
+    Job&, STTx::pointer iTrans, stCallback callback)
 {
     // this is an asynchronous interface
     Serializer s;
     iTrans->add (s);
 
     SerializerIterator sit (s);
-    auto trans = std::make_shared<SerializedTransaction> (std::ref (sit));
+    auto trans = std::make_shared<STTx> (std::ref (sit));
 
     uint256 suppress = trans->getTransactionID ();
     int flags;
@@ -1143,7 +1143,7 @@ Json::Value NetworkOPsImp::getOwnerInfo (
     Ledger::pointer lpLedger, RippleAddress const& naAccount)
 {
     Json::Value jvObjects (Json::objectValue);
-    auto uRootIndex = lpLedger->getOwnerDirIndex (naAccount.getAccountID ());
+    auto uRootIndex = getOwnerDirIndex (naAccount.getAccountID ());
     auto sleNode = lpLedger->getDirNode (uRootIndex);
 
     if (sleNode)
@@ -1189,7 +1189,7 @@ Json::Value NetworkOPsImp::getOwnerInfo (
             if (uNodeDir)
             {
                 sleNode = lpLedger->getDirNode (
-                    Ledger::getDirNodeIndex (uRootIndex, uNodeDir));
+                    getDirNodeIndex (uRootIndex, uNodeDir));
                 assert (sleNode);
             }
         }
@@ -2235,7 +2235,7 @@ NetworkOPsImp::getLedgerAffectedAccounts (std::uint32_t ledgerSeq)
 }
 
 bool NetworkOPsImp::recvValidation (
-    SerializedValidation::ref val, std::string const& source)
+    STValidation::ref val, std::string const& source)
 {
     m_journal.debug << "recvValidation " << val->getLedgerHash ()
                     << " from " << source;
@@ -2449,7 +2449,7 @@ Json::Value NetworkOPsImp::pubBootstrapAccountInfo (
 }
 
 void NetworkOPsImp::pubProposedTransaction (
-    Ledger::ref lpCurrent, SerializedTransaction::ref stTxn, TER terResult)
+    Ledger::ref lpCurrent, STTx::ref stTxn, TER terResult)
 {
     Json::Value jvObj   = transJson (*stTxn, terResult, false, lpCurrent);
 
@@ -2549,7 +2549,7 @@ void NetworkOPsImp::reportFeeChange ()
 // This routine should only be used to publish accepted or validated
 // transactions.
 Json::Value NetworkOPsImp::transJson(
-    const SerializedTransaction& stTxn, TER terResult, bool bValidated,
+    const STTx& stTxn, TER terResult, bool bValidated,
     Ledger::ref lpCurrent)
 {
     Json::Value jvObj (Json::objectValue);
@@ -2986,8 +2986,8 @@ void NetworkOPsImp::getBookPage (
             (jvResult[jss::offers] = Json::Value (Json::arrayValue));
 
     std::map<Account, STAmount> umBalance;
-    const uint256   uBookBase   = Ledger::getBookBase (book);
-    const uint256   uBookEnd    = Ledger::getQualityNext (uBookBase);
+    const uint256   uBookBase   = getBookBase (book);
+    const uint256   uBookEnd    = getQualityNext (uBookBase);
     uint256         uTipIndex   = uBookBase;
 
     if (m_journal.trace)
@@ -3036,7 +3036,7 @@ void NetworkOPsImp::getBookPage (
             else
             {
                 uTipIndex = sleOfferDir->getIndex ();
-                saDirRate = amountFromQuality (Ledger::getQuality (uTipIndex));
+                saDirRate = amountFromQuality (getQuality (uTipIndex));
 
                 lesActive.dirFirst (
                     uTipIndex, sleOfferDir, uBookEntry, offerIndex);

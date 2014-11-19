@@ -531,7 +531,7 @@ private:
     doProofOfWork (Job&, std::weak_ptr <PeerImp> peer, ProofOfWork::pointer pow);
 
     static
-    void checkTransaction (Job&, int flags, SerializedTransaction::pointer stx,
+    void checkTransaction (Job&, int flags, STTx::pointer stx,
         std::weak_ptr<PeerImp> peer);
 
     // Called from our JobQueue
@@ -545,7 +545,7 @@ private:
 
     static
     void
-    checkValidation (Job&, Overlay* pPeers, SerializedValidation::pointer val,
+    checkValidation (Job&, Overlay* pPeers, STValidation::pointer val,
         bool isTrusted, bool isCluster,
             std::shared_ptr<protocol::TMValidation> packet,
                 std::weak_ptr<PeerImp> peer, beast::Journal journal);
