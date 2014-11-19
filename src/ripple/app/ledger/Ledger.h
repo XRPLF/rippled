@@ -498,57 +498,6 @@ inline LedgerStateParms operator& (
         static_cast<int> (l1) & static_cast<int> (l2));
 }
 
-uint256
-getLedgerHashIndex ();
-
-uint256
-getLedgerHashIndex (std::uint32_t desiredLedgerIndex);
-
-uint256
-getLedgerAmendmentIndex ();
-
-uint256
-getLedgerFeeIndex ();
-
-uint256
-getAccountRootIndex (Account const& account);
-
-uint256
-getAccountRootIndex (const RippleAddress & account);
-
-uint256
-getGeneratorIndex (Account const& uGeneratorID);
-
-uint256
-getBookBase (Book const& book);
-
-uint256
-getOfferIndex (Account const& account, std::uint32_t uSequence);
-
-uint256
-getOwnerDirIndex (Account const& account);
-
-uint256
-getDirNodeIndex (uint256 const& uDirRoot, const std::uint64_t uNodeIndex = 0);
-
-uint256
-getQualityIndex (uint256 const& uBase, const std::uint64_t uNodeDir = 0);
-
-uint256
-getQualityNext (uint256 const& uBase);
-
-std::uint64_t
-getQuality (uint256 const& uBase);
-
-uint256
-getTicketIndex (Account const& account, std::uint32_t uSequence);
-
-uint256
-getRippleStateIndex (Account const& a, Account const& b, Currency const& currency);
-
-uint256
-getRippleStateIndex (Account const& a, Issue const& issue);
-
 } // ripple
 
 #endif

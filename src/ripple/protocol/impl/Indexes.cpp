@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/LedgerFormats.h>
 #include <ripple/protocol/RippleAddress.h>
 #include <ripple/protocol/Serializer.h>
