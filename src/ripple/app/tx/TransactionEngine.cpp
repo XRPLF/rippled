@@ -42,7 +42,7 @@ void TransactionEngine::txnWrite ()
 
         case taaCREATE:
         {
-            WriteLog (lsINFO, TransactionEngine) << "applyTransaction: taaCREATE: " << sleEntry->getText ();
+            WriteLog (lsDEBUG, TransactionEngine) << "applyTransaction: taaCREATE: " << sleEntry->getText ();
 
             if (mLedger->writeBack (lepCREATE, sleEntry) & lepERROR)
                 assert (false);
@@ -51,7 +51,7 @@ void TransactionEngine::txnWrite ()
 
         case taaMODIFY:
         {
-            WriteLog (lsINFO, TransactionEngine) << "applyTransaction: taaMODIFY: " << sleEntry->getText ();
+            WriteLog (lsDEBUG, TransactionEngine) << "applyTransaction: taaMODIFY: " << sleEntry->getText ();
 
             if (mLedger->writeBack (lepNONE, sleEntry) & lepERROR)
                 assert (false);
@@ -60,7 +60,7 @@ void TransactionEngine::txnWrite ()
 
         case taaDELETE:
         {
-            WriteLog (lsINFO, TransactionEngine) << "applyTransaction: taaDELETE: " << sleEntry->getText ();
+            WriteLog (lsDEBUG, TransactionEngine) << "applyTransaction: taaDELETE: " << sleEntry->getText ();
 
             if (!mLedger->peekAccountStateMap ()->delItem (it.first))
                 assert (false);
@@ -117,14 +117,14 @@ TER TransactionEngine::applyTransaction (
         return temUNKNOWN;
     }
 
-    if (ShouldLog (lsINFO, TransactionEngine))
+    if (ShouldLog (lsDEBUG, TransactionEngine))
     {
         std::string strToken;
         std::string strHuman;
 
         transResultInfo (terResult, strToken, strHuman);
 
-        WriteLog (lsINFO, TransactionEngine) <<
+        WriteLog (lsDEBUG, TransactionEngine) <<
             "applyTransaction: terResult=" << strToken <<
             " : " << terResult <<
             " : " << strHuman;

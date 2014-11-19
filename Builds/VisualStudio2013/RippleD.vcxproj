@@ -1730,6 +1730,9 @@
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\app\ledger\Ledger.h">
     </ClInclude>
+    <ClCompile Include="..\..\src\ripple\app\ledger\Ledger.test.cpp">
+      <ExcludedFromBuild>True</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\ripple\app\ledger\LedgerCleaner.cpp">
       <ExcludedFromBuild>True</ExcludedFromBuild>
     </ClCompile>

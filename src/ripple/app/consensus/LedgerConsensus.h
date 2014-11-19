@@ -22,6 +22,7 @@
 
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/LedgerProposal.h>
+#include <ripple/app/misc/CanonicalTXSet.h>
 #include <ripple/app/misc/FeeVote.h>
 #include <ripple/app/tx/LocalTxs.h>
 #include <ripple/json/json_value.h>
@@ -94,6 +95,11 @@ std::shared_ptr <LedgerConsensus>
 make_LedgerConsensus (LedgerConsensus::clock_type& clock, LocalTxs& localtx,
     LedgerHash const & prevLCLHash, Ledger::ref previousLedger,
         std::uint32_t closeTime, FeeVote& feeVote);
+
+void
+applyTransactions(SHAMap::ref set, Ledger::ref applyLedger,
+                  Ledger::ref checkLedger,
+                  CanonicalTXSet& retriableTransactions, bool openLgr);
 
 } // ripple
 
