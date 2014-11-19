@@ -63,27 +63,18 @@ public:
 
     std::shared_ptr <Backend> const& getWritableBackend() const override
     {
-        std::lock_guard <std::mutex> l (rotateMutex_);
+        std::lock_guard <std::mutex> lock (rotateMutex_);
         return writableBackend_;
     }
 
     std::shared_ptr <Backend> const& getArchiveBackend() const override
     {
-        std::lock_guard <std::mutex> l (rotateMutex_);
+        std::lock_guard <std::mutex> lock (rotateMutex_);
         return archiveBackend_;
     }
 
-    // make sure to call it already locked!
     std::shared_ptr <Backend> rotateBackends (
-            std::shared_ptr <Backend> const& newBackend) override
-    {
-        std::shared_ptr <Backend> oldBackend = archiveBackend_;
-        archiveBackend_ = writableBackend_;
-        writableBackend_ = newBackend;
-
-        return oldBackend;
-    }
-
+            std::shared_ptr <Backend> const& newBackend) override;
     std::mutex& peekMutex() const override
     {
         return rotateMutex_;
@@ -125,23 +116,7 @@ public:
         return fetchFrom (hash);
     }
 
-    NodeObject::Ptr fetchFrom (uint256 const& hash) override
-    {
-        Backends b = getBackends();
-        NodeObject::Ptr object = fetchInternal (*b.writableBackend, hash);
-        if (!object)
-        {
-            object = fetchInternal (*b.archiveBackend, hash);
-            if (object)
-            {
-                getWritableBackend()->store (object);
-                m_negCache.erase (hash);
-            }
-        }
-
-        return object;
-    }
-
+    NodeObject::Ptr fetchFrom (uint256 const& hash) override;
     TaggedCache <uint256, NodeObject>& getPositiveCache() override
     {
         return m_cache;
