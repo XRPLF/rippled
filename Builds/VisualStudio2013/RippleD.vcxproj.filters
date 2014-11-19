@@ -2622,6 +2622,9 @@
     <ClInclude Include="..\..\src\ripple\app\ledger\LedgerTiming.h">
       <Filter>ripple\app\ledger</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\ripple\app\ledger\LedgerToJson.h">
+      <Filter>ripple\app\ledger</Filter>
+    </ClInclude>
     <ClCompile Include="..\..\src\ripple\app\ledger\OrderBookDB.cpp">
       <Filter>ripple\app\ledger</Filter>
     </ClCompile>
@@ -4066,6 +4069,9 @@
       <Filter>ripple\rpc\impl</Filter>
     </ClCompile>
     <ClInclude Include="..\..\src\ripple\rpc\impl\Handler.h">
+      <Filter>ripple\rpc\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ripple\rpc\impl\HandlerBase.h">
       <Filter>ripple\rpc\impl</Filter>
     </ClInclude>
     <ClCompile Include="..\..\src\ripple\rpc\impl\JsonObject.cpp">
