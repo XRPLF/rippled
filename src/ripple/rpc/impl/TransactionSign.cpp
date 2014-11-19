@@ -28,11 +28,11 @@ namespace ripple {
 //------------------------------------------------------------------------------
 
 namespace RPC {
-namespace RPCDetail {
+namespace detail {
 
-// LedgerFacade methods
+// TxSignApiFacade methods
 
-void LedgerFacade::snapshotAccountState (RippleAddress const& accountID)
+void TxSignApiFacade::snapshotAccountState (RippleAddress const& accountID)
 {
     if (!netOPs_) // Unit testing.
         return;
@@ -42,7 +42,7 @@ void LedgerFacade::snapshotAccountState (RippleAddress const& accountID)
     accountState_ = netOPs_->getAccountState (ledger_, accountID_);
 }
 
-bool LedgerFacade::isValidAccount () const
+bool TxSignApiFacade::isValidAccount () const
 {
     if (!ledger_) // Unit testing.
         return true;
@@ -50,7 +50,7 @@ bool LedgerFacade::isValidAccount () const
     return static_cast <bool> (accountState_);
 }
 
-std::uint32_t LedgerFacade::getSeq () const
+std::uint32_t TxSignApiFacade::getSeq () const
 {
     if (!ledger_) // Unit testing.
         return 0;
@@ -58,7 +58,7 @@ std::uint32_t LedgerFacade::getSeq () const
     return accountState_->getSeq ();
 }
 
-Transaction::pointer LedgerFacade::submitTransactionSync (
+Transaction::pointer TxSignApiFacade::submitTransactionSync (
     Transaction::ref tpTrans,
     bool bAdmin,
     bool bLocal,
@@ -72,7 +72,7 @@ Transaction::pointer LedgerFacade::submitTransactionSync (
         tpTrans, bAdmin, bLocal, bFailHard, bSubmit);
 }
 
-bool LedgerFacade::findPathsForOneIssuer (
+bool TxSignApiFacade::findPathsForOneIssuer (
     RippleAddress const& dstAccountID,
     Issue const& srcIssue,
     STAmount const& dstAmount,
@@ -98,7 +98,7 @@ bool LedgerFacade::findPathsForOneIssuer (
         fullLiquidityPath);
 }
 
-std::uint64_t LedgerFacade::scaleFeeBase (std::uint64_t fee) const
+std::uint64_t TxSignApiFacade::scaleFeeBase (std::uint64_t fee) const
 {
     if (!ledger_) // Unit testing.
         return fee;
@@ -106,7 +106,7 @@ std::uint64_t LedgerFacade::scaleFeeBase (std::uint64_t fee) const
     return ledger_->scaleFeeBase (fee);
 }
 
-std::uint64_t LedgerFacade::scaleFeeLoad (std::uint64_t fee, bool bAdmin) const
+std::uint64_t TxSignApiFacade::scaleFeeLoad (std::uint64_t fee, bool bAdmin) const
 {
     if (!ledger_) // Unit testing.
         return fee;
@@ -114,7 +114,7 @@ std::uint64_t LedgerFacade::scaleFeeLoad (std::uint64_t fee, bool bAdmin) const
     return ledger_->scaleFeeLoad (fee, bAdmin);
 }
 
-bool LedgerFacade::hasAccountRoot () const
+bool TxSignApiFacade::hasAccountRoot () const
 {
     if (!netOPs_) // Unit testing.
         return true;
@@ -125,7 +125,7 @@ bool LedgerFacade::hasAccountRoot () const
     return static_cast <bool> (sleAccountRoot);
 }
 
-bool LedgerFacade::accountMasterDisabled () const
+bool TxSignApiFacade::accountMasterDisabled () const
 {
     if (!accountState_) // Unit testing.
         return false;
@@ -134,7 +134,7 @@ bool LedgerFacade::accountMasterDisabled () const
     return sle.isFlag(lsfDisableMaster);
 }
 
-bool LedgerFacade::accountMatchesRegularKey (Account account) const
+bool TxSignApiFacade::accountMatchesRegularKey (Account account) const
 {
     if (!accountState_) // Unit testing.
         return true;
@@ -144,7 +144,7 @@ bool LedgerFacade::accountMatchesRegularKey (Account account) const
         (account == sle.getFieldAccount160 (sfRegularKey)));
 }
 
-int LedgerFacade::getValidatedLedgerAge () const
+int TxSignApiFacade::getValidatedLedgerAge () const
 {
     if (!netOPs_) // Unit testing.
         return 0;
@@ -152,14 +152,14 @@ int LedgerFacade::getValidatedLedgerAge () const
     return getApp( ).getLedgerMaster ().getValidatedLedgerAge ();
 }
 
-bool LedgerFacade::isLoadedCluster () const
+bool TxSignApiFacade::isLoadedCluster () const
 {
     if (!netOPs_) // Unit testing.
         return false;
 
     return getApp().getFeeTrack().isLoadedCluster();
 }
-} // namespace RPCDetail
+} // namespace detail
 
 //------------------------------------------------------------------------------
 
@@ -185,7 +185,7 @@ bool LedgerFacade::isLoadedCluster () const
 */
 static void autofill_fee (
     Json::Value& request,
-    RPCDetail::LedgerFacade& ledgerFacade,
+    detail::TxSignApiFacade& apiFacade,
     Json::Value& result,
     bool admin)
 {
@@ -212,8 +212,8 @@ static void autofill_fee (
     std::uint64_t const feeDefault = getConfig().TRANSACTION_FEE_BASE;
 
     // Administrative endpoints are exempt from local fees.
-    std::uint64_t const fee = ledgerFacade.scaleFeeLoad (feeDefault, admin);
-    std::uint64_t const limit = mult * ledgerFacade.scaleFeeBase (feeDefault);
+    std::uint64_t const fee = apiFacade.scaleFeeLoad (feeDefault, admin);
+    std::uint64_t const limit = mult * apiFacade.scaleFeeBase (feeDefault);
 
     if (fee > limit)
     {
@@ -232,7 +232,7 @@ static Json::Value signPayment(
     Json::Value const& params,
     Json::Value& tx_json,
     RippleAddress const& raSrcAddressID,
-    RPCDetail::LedgerFacade& ledgerFacade,
+    detail::TxSignApiFacade& apiFacade,
     Role role)
 {
     RippleAddress dstAccountID;
@@ -288,7 +288,7 @@ static Json::Value signPayment(
 
             STPathSet spsPaths;
             STPath fullLiquidityPath;
-            bool valid = ledgerFacade.findPathsForOneIssuer (
+            bool valid = apiFacade.findPathsForOneIssuer (
                 dstAccountID,
                 saSendMax.issue (),
                 amount,
@@ -323,10 +323,10 @@ static Json::Value signPayment(
 //
 Json::Value
 transactionSign (
-    Json::Value params,
+    Json::Value params, // Passed by value because fields are added locally.
     bool bSubmit,
     bool bFailHard,
-    RPCDetail::LedgerFacade& ledgerFacade,
+    detail::TxSignApiFacade& apiFacade,
     Role role)
 {
     Json::Value jvResult;
@@ -373,17 +373,17 @@ transactionSign (
 
     // Check for current ledger.
     if (verify && !getConfig ().RUN_STANDALONE &&
-        (ledgerFacade.getValidatedLedgerAge () > 120))
+        (apiFacade.getValidatedLedgerAge () > 120))
         return rpcError (rpcNO_CURRENT);
 
     // Check for load.
-    if (ledgerFacade.isLoadedCluster () && (role != Role::ADMIN))
+    if (apiFacade.isLoadedCluster () && (role != Role::ADMIN))
         return rpcError (rpcTOO_BUSY);
 
-    ledgerFacade.snapshotAccountState (raSrcAddressID);
+    apiFacade.snapshotAccountState (raSrcAddressID);
 
     if (verify) {
-        if (!ledgerFacade.isValidAccount ())
+        if (!apiFacade.isValidAccount ())
         {
             // If not offline and did not find account, error.
             WriteLog (lsDEBUG, RPCHandler)
@@ -395,7 +395,7 @@ transactionSign (
         }
     }
 
-    autofill_fee (params, ledgerFacade, jvResult, role == Role::ADMIN);
+    autofill_fee (params, apiFacade, jvResult, role == Role::ADMIN);
     if (RPC::contains_error (jvResult))
         return jvResult;
 
@@ -405,21 +405,21 @@ transactionSign (
             params,
             tx_json,
             raSrcAddressID,
-            ledgerFacade,
+            apiFacade,
             role);
         if (contains_error(e))
             return e;
     }
 
     if (!tx_json.isMember ("Sequence"))
-        tx_json["Sequence"] = ledgerFacade.getSeq ();
+        tx_json["Sequence"] = apiFacade.getSeq ();
 
     if (!tx_json.isMember ("Flags"))
         tx_json["Flags"] = tfFullyCanonicalSig;
 
     if (verify)
     {
-        if (!ledgerFacade.hasAccountRoot ())
+        if (!apiFacade.hasAccountRoot ())
             // XXX Ignore transactions for accounts not created.
             return rpcError (rpcSRC_ACT_NOT_FOUND);
     }
@@ -440,10 +440,10 @@ transactionSign (
         auto const secretAccountID = masterAccountPublic.getAccountID();
         if (raSrcAddressID.getAccountID () == secretAccountID)
         {
-            if (ledgerFacade.accountMasterDisabled ())
+            if (apiFacade.accountMasterDisabled ())
                 return rpcError (rpcMASTER_DISABLED);
         }
-        else if (!ledgerFacade.accountMatchesRegularKey (secretAccountID))
+        else if (!apiFacade.accountMatchesRegularKey (secretAccountID))
         {
             return rpcError (rpcBAD_SECRET);
         }
@@ -507,7 +507,7 @@ transactionSign (
     try
     {
         // FIXME: For performance, should use asynch interface.
-        tpTrans = ledgerFacade.submitTransactionSync (tpTrans,
+        tpTrans = apiFacade.submitTransactionSync (tpTrans,
             role == Role::ADMIN, true, bFailHard, bSubmit);
 
         if (!tpTrans)
@@ -1013,8 +1013,8 @@ public:
         Ledger::pointer ledger (std::make_shared <Ledger> (
             rootAddress, startAmount));
 
-        using namespace RPCDetail;
-        LedgerFacade facade (LedgerFacade::noNetOPs, ledger);
+        using namespace detail;
+        TxSignApiFacade apiFacade (TxSignApiFacade::noNetOPs, ledger);
 
        {
             Json::Value req;
@@ -1022,7 +1022,7 @@ public:
             Json::Reader ().parse (
                 R"({ "fee_mult_max" : 1, "tx_json" : { } } )"
                 , req);
-            autofill_fee (req, facade, result, true);
+            autofill_fee (req, apiFacade, result, true);
 
             expect (! contains_error (result));
         }
@@ -1033,7 +1033,7 @@ public:
             Json::Reader ().parse (
                 R"({ "fee_mult_max" : 0, "tx_json" : { } } )"
                 , req);
-            autofill_fee (req, facade, result, true);
+            autofill_fee (req, apiFacade, result, true);
 
             expect (contains_error (result));
         }
@@ -1069,8 +1069,8 @@ public:
                 for (Role testRole : testedRoles)
                 {
                     // Mock so we can run without a ledger.
-                    RPCDetail::LedgerFacade fakeNetOPs (
-                        RPCDetail::LedgerFacade::noNetOPs);
+                    detail::TxSignApiFacade fakeNetOPs (
+                        detail::TxSignApiFacade::noNetOPs);
 
                     Json::Value result = transactionSign (
                         req,

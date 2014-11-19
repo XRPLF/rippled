@@ -25,10 +25,10 @@
 namespace ripple {
 namespace RPC {
 
-namespace RPCDetail {
+namespace detail {
 // A class that allows these methods to be called with or without a
 // real NetworkOPs instance.  This allows for unit testing.
-class LedgerFacade
+class TxSignApiFacade
 {
 private:
     NetworkOPs* const netOPs_;
@@ -42,21 +42,21 @@ public:
         noNetOPs
     };
 
-    LedgerFacade () = delete;
-    LedgerFacade (LedgerFacade const&) = delete;
-    LedgerFacade& operator= (LedgerFacade const&) = delete;
+    TxSignApiFacade () = delete;
+    TxSignApiFacade (TxSignApiFacade const&) = delete;
+    TxSignApiFacade& operator= (TxSignApiFacade const&) = delete;
 
     // For use in non unit testing circumstances.
-    explicit LedgerFacade (NetworkOPs& netOPs)
+    explicit TxSignApiFacade (NetworkOPs& netOPs)
     : netOPs_ (&netOPs)
     { }
 
     // For testTransactionRPC unit tests.
-    explicit LedgerFacade (NoNetworkOPs noOPs)
+    explicit TxSignApiFacade (NoNetworkOPs noOPs)
     : netOPs_ (nullptr) { }
 
     // For testAutoFillFees unit tests.
-    LedgerFacade (NoNetworkOPs noOPs, Ledger::pointer ledger)
+    TxSignApiFacade (NoNetworkOPs noOPs, Ledger::pointer ledger)
     : netOPs_ (nullptr)
     , ledger_ (ledger)
     { }
@@ -101,21 +101,21 @@ public:
 } // namespace RPCDetail
 
 Json::Value transactionSign (
-    Json::Value params,
+    Json::Value params, // Passed by value so the local copy can be changed.
     bool bSubmit,
     bool bFailHard,
-    RPCDetail::LedgerFacade& ledgerFacade,
+    detail::TxSignApiFacade& apiFacade,
     Role role);
 
 inline Json::Value transactionSign (
-    Json::Value params,
+    Json::Value const& params,
     bool bSubmit,
     bool bFailHard,
     NetworkOPs& netOPs,
     Role role)
 {
-    RPCDetail::LedgerFacade ledgerFacade (netOPs);
-    return transactionSign (params, bSubmit, bFailHard, ledgerFacade, role);
+    detail::TxSignApiFacade apiFacade (netOPs);
+    return transactionSign (params, bSubmit, bFailHard, apiFacade, role);
 }
 
 } // RPC
